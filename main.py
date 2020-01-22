@@ -18,6 +18,8 @@ path="/Users/bjornssonsu/ownCloud/PyQMMM-project/Yggdrasill-testdir"
 os.chdir(path)
 
 
+#GITHUB test
+
 #Define optionalXYZ coordinates as multi-line string
 #fragcoords="""
 #H 0.0 0.0 0.0
