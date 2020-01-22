@@ -14,7 +14,7 @@ currtime=time.time()
 path="/Users/bjornssonsu/molcrys-testdir"
 os.chdir(path)
 
-
+#testX
 #######################
 # USER INPUT          #
 #######################
