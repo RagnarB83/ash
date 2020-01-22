@@ -137,6 +137,9 @@ F 0.0 0.0 1.0
 """
 HCl_frag.coords_from_string(fragcoords)
 ```
+Note: This will append coordinates to fragment. If fragment already contains some coordinates the added coordinates
+will follow.
+
 *Add coordinates from lists* 
 
 ```sh
@@ -147,12 +150,16 @@ where elems and coords are lists:
 elems=['H', 'Cl']
 coords=[[0.0, 0.0, 0.0], [0.0, 0.0, 0.9]]
 ```
+Note: This will append coordinates to fragment. If fragment already contains some coordinates the added coordinates
+will follow.
 *Add coordinates from XYZ file* 
 
 ```sh
 HF_frag.read_xyzfile("hcl.xyz")
 ```
-***Modifying coordinates of object***
+Note: This will append coordinates to fragment. If fragment already contains some coordinates the added coordinates
+will follow.
+***Replace coordinates of object***
 
 If you want to replace coords and elems of a fragment object with new information this can be done conveniently through lists.
 ```sh
@@ -162,8 +169,13 @@ HF_frag.replace_coords(elems,coords)
 ```
 TODO:
 Add option here of replacing coords from XYZ file and string as well.
-Maybe already works via add_coords and coords_from_string object functions. Need to check.
 
+***Delete coordinates of object***
+
+If you want to delete coordinates from object (both coords list and elems lists) then this is easily done.
+```sh
+HF_frag.delete_coords()
+```
 
 ***Calculate connectivity of fragment object***
 
@@ -181,7 +193,7 @@ The connectivity table is available as:
 ```sh
 mol_frag.connectivity
 ```
-TODO: The connectivity table should ideally be calculated automatically when coordinates are added/updated to the fragment.
+Note:: The connectivity table is calculated or recalculated automatically when coordinates are added or when modified to the fragment.
 
 ***Inspect defined fragment objects***
 
@@ -189,16 +201,35 @@ To inspect a defined fragment one can print out a Python dictionary of all defin
 ```sh
 print("HF_frag dict", HF_frag.__dict__)
 ```
-One can also access individual attributes like this:
+One can also access individual attributes like accessing the pure coordinates only:
 ```sh
 print("HF_frag.coords")
 ```
+More conveniently would be to use the print_coords function though (to print elems and coords):
+```sh
+print("HF_frag.print_coords")
+```
+
+Get coords and elems of specific atom indices:
+```sh
+specific_coords,specific_elems=HF_frag.get_coords_for_atoms([0,1,2])
+```
+Print connectivity:
 ```sh
 conn = FeFeH2ase.connectivity
 print("conn:", conn)
-```
-```sh
 print("Number of subfragments in FeFeH2ase", len(conn))
+```
+Print number of atoms and number of connected atoms:
+```sh
 print("Number of atoms in FeFeH2ase", FeFeH2ase.numatoms)
 print("Number atoms in connectivity in FeFeH2ase", FeFeH2ase.connected_atoms_number)
+```
+All defined system attributed can be printed conveniently to disk:
+```sh
+HF_frag.print_system(filename='fragment-info.txt')
+```
+An XYZ file of coordinates can be printed out:
+```sh
+HF_frag.write_xyzfile(xyzfilename="Fragment-xyzfile.xyz")
 ```

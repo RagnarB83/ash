@@ -850,25 +850,29 @@ class Fragment:
         self.elems=[]
         self.coords=[]
         self.connectivity=[]
+        self.atomcharges = []
         if coords is not None:
             self.coords=coords
             self.elems=elems
         #If coordsstring given, read elems and coords from it
         elif coordsstring is not None:
-            self.coords_from_string(coordsstring)
+            self.add_coords_from_string(coordsstring)
         #If xyzfile argument, run read_xyzfile
         elif len(xyzfile) is not None:
             self.read_xyzfile(xyzfile)
-        self.nuccharge = nucchargelist(self.elems)
-        self.numatoms = len(self.coords)
-        self.atomlist = list(range(0, self.numatoms))
-        self.allatoms = self.atomlist
-        self.mass = totmasslist(self.elems)
-        self.list_of_masses = list_of_masses(self.elems)
-        self.atomcharges = []
+        if len(coords)>0:
+            self.nuccharge = nucchargelist(self.elems)
+            self.numatoms = len(self.coords)
+            self.atomlist = list(range(0, self.numatoms))
+            self.allatoms = self.atomlist
+            self.mass = totmasslist(self.elems)
+            self.list_of_masses = list_of_masses(self.elems)
     #Add coordinates from geometry string. Will replace.
-    def coords_from_string(self, coordsstring):
+    def add_coords_from_string(self, coordsstring):
         print("Getting coordinates from string:", coordsstring)
+        if len(self.coords)>0:
+            print("Fragment already contains coordinates")
+            print("Adding extra coordinates")
         coordslist=coordsstring.split('\n')
         for count, line in enumerate(coordslist):
             if len(line)> 1:
@@ -880,6 +884,7 @@ class Fragment:
         self.allatoms = self.atomlist
         self.mass = totmasslist(self.elems)
         self.list_of_masses = list_of_masses(self.elems)
+        self.calc_connectivity()
     #Replace coordinates by providing elems and coords lists.
     def replace_coords(self, elems, coords):
         print("Replacing coordinates in fragment.")
@@ -891,8 +896,16 @@ class Fragment:
         self.allatoms = self.atomlist
         self.mass = totmasslist(self.elems)
         self.list_of_masses = list_of_masses(self.elems)
+        self.calc_connectivity()
+    def delete_coords(self):
+        self.coords=[]
+        self.elems=[]
+        self.connectivity=[]
     def add_coords(self, elems,coords):
         print("Adding coordinates to fragment.")
+        if len(self.coords)>0:
+            print("Fragment already contains coordinates")
+            print("Adding extra coordinates")
         self.elems = self.elems+elems
         self.coords = self.coords+coords
         self.nuccharge = nucchargelist(self.elems)
@@ -901,6 +914,7 @@ class Fragment:
         self.allatoms = self.atomlist
         self.mass = totmasslist(self.elems)
         self.list_of_masses = list_of_masses(self.elems)
+        self.calc_connectivity()
     def print_coords(self):
         print("Defined coordinates (Å):")
         print_coords_all(self.coords,self.elems)
@@ -920,6 +934,7 @@ class Fragment:
         self.allatoms = self.atomlist
         self.mass = totmasslist(self.elems)
         self.list_of_masses = list_of_masses(self.elems)
+        self.calc_connectivity()
     # Get coordinates for specific atoms (from list of atom indices)
     def get_coords_for_atoms(self, atoms):
         subcoords=[self.coords[i] for i in atoms]
