@@ -90,7 +90,8 @@ Fragments can be created in multiple ways but will behave the same after creatio
  
 ***Direct creation***
 
-*From string* 
+*From string*
+
 First define multi-line string (called fragcoords here) with element and coordinates (Å) separated by space:
 ```sh
 fragcoords="""
@@ -113,12 +114,14 @@ elems=['H', 'Cl']
 coords=[[0.0, 0.0, 0.0], [0.0, 0.0, 0.9]]
 HCl_frag.add_coords(elems,coords)
 ```
+---
 *From external XYZ file* 
 
 Perhaps most convenient is to define the fragment directly from reading an XYZ-file (that exists in the same directory as the script)
 ```sh
 HI_frag = Fragment(xyzfile="hi.xyz")
 ```
+---
 ***Via empty object***
 
 An alternative is to first create an empty fragment and then add the coordinate and element information later. This can sometimes be useful and demonstrates here the built-in fragment object functions available (coords_from_string, add_coords, read_xyzfile)
@@ -126,7 +129,7 @@ First create empty fragment: HCl_frag:
 ```sh
 HCl_frag=Fragment()
 ```
-
+---
 *Add coordinates from string* 
 
 Here adding coordinates from a string
@@ -139,7 +142,7 @@ HCl_frag.coords_from_string(fragcoords)
 ```
 Note: This will append coordinates to fragment. If fragment already contains some coordinates the added coordinates
 will follow.
-
+---
 *Add coordinates from lists* 
 
 ```sh
@@ -152,6 +155,7 @@ coords=[[0.0, 0.0, 0.0], [0.0, 0.0, 0.9]]
 ```
 Note: This will append coordinates to fragment. If fragment already contains some coordinates the added coordinates
 will follow.
+---
 *Add coordinates from XYZ file* 
 
 ```sh
@@ -159,6 +163,7 @@ HF_frag.read_xyzfile("hcl.xyz")
 ```
 Note: This will append coordinates to fragment. If fragment already contains some coordinates the added coordinates
 will follow.
+---
 ***Replace coordinates of object***
 
 If you want to replace coords and elems of a fragment object with new information this can be done conveniently through lists.
@@ -169,14 +174,14 @@ HF_frag.replace_coords(elems,coords)
 ```
 TODO:
 Add option here of replacing coords from XYZ file and string as well.
-
+---
 ***Delete coordinates of object***
 
 If you want to delete coordinates from object (both coords list and elems lists) then this is easily done.
 ```sh
 HF_frag.delete_coords()
 ```
-
+---
 ***Calculate connectivity of fragment object***
 
 Connectivity is an important aspect of the fragment as it distinguishes atoms that are in close-contact (i.e. forming some kind of stable covalent bond) and atoms further apart and obviously not bonded. Correct connectivity is crucial for some Yggdrasill functionality.
@@ -194,7 +199,7 @@ The connectivity table is available as:
 mol_frag.connectivity
 ```
 Note:: The connectivity table is calculated or recalculated automatically when coordinates are added or when modified to the fragment.
-
+---
 ***Inspect defined fragment objects***
 
 To inspect a defined fragment one can print out a Python dictionary of all defined attributes of the object.
