@@ -89,6 +89,7 @@ Fragments can be created in multiple ways but will behave the same after creatio
  
  
 ***Direct creation***
+
 *From string* 
 First define multi-line string (called fragcoords here) with element and coordinates (Å) separated by space:
 ```sh
@@ -105,6 +106,7 @@ HF_frag=Fragment(coordsstring=fragcoords)
 ```
 ---
 *From list* 
+
 Another way is if you have lists of coordinates and element information already available.
 ```sh
 elems=['H', 'Cl']
@@ -112,11 +114,13 @@ coords=[[0.0, 0.0, 0.0], [0.0, 0.0, 0.9]]
 HCl_frag.add_coords(elems,coords)
 ```
 *From external XYZ file* 
+
 Perhaps most convenient is to define the fragment directly from reading an XYZ-file (that exists in the same directory as the script)
 ```sh
 HI_frag = Fragment(xyzfile="hi.xyz")
 ```
 ***Via empty object***
+
 An alternative is to first create an empty fragment and then add the coordinate and element information later. This can sometimes be useful and demonstrates here the built-in fragment object functions available (coords_from_string, add_coords, read_xyzfile)
 First create empty fragment: HCl_frag:
 ```sh
@@ -124,6 +128,7 @@ HCl_frag=Fragment()
 ```
 
 *Add coordinates from string* 
+
 Here adding coordinates from a string
 ```sh
 fragcoords="""
@@ -133,6 +138,7 @@ F 0.0 0.0 1.0
 HCl_frag.coords_from_string(fragcoords)
 ```
 *Add coordinates from lists* 
+
 ```sh
 HCl_frag.add_coords(elems,coords)
 ```
@@ -142,10 +148,12 @@ elems=['H', 'Cl']
 coords=[[0.0, 0.0, 0.0], [0.0, 0.0, 0.9]]
 ```
 *Add coordinates from XYZ file* 
+
 ```sh
 HF_frag.read_xyzfile("hcl.xyz")
 ```
 ***Modifying coordinates of object***
+
 If you want to replace coords and elems of a fragment object with new information this can be done conveniently through lists.
 ```sh
 elems=['H', 'Cl']
@@ -158,6 +166,7 @@ Maybe already works via add_coords and coords_from_string object functions. Need
 
 
 ***Calculate connectivity of fragment object***
+
 Connectivity is an important aspect of the fragment as it distinguishes atoms that are in close-contact (i.e. forming some kind of stable covalent bond) and atoms further apart and obviously not bonded. Correct connectivity is crucial for some Yggdrasill functionality.
 Currently, connectivity is calculated based on a distance and radii-based criterion (to be documented later).
 
@@ -175,6 +184,7 @@ mol_frag.connectivity
 TODO: The connectivity table should ideally be calculated automatically when coordinates are added/updated to the fragment.
 
 ***Inspect defined fragment objects***
+
 To inspect a defined fragment one can print out a Python dictionary of all defined attributes of the object.
 ```sh
 print("HF_frag dict", HF_frag.__dict__)
