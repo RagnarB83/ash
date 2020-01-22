@@ -57,6 +57,7 @@ os.chdir(path)
 #print("HF_frag4 dict", HF_frag4.__dict__)
 #print("-------------")
 
+#
 #Option 5
 #Replace coords and elems of fragment object with new lists
 #elems=['H', 'Cl']
