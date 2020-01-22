@@ -140,6 +140,7 @@ F 0.0 0.0 1.0
 """
 HCl_frag.coords_from_string(fragcoords)
 ```
+
 Note: This will append coordinates to fragment. If fragment already contains some coordinates the added coordinates
 will follow.
 ---
@@ -153,6 +154,7 @@ where elems and coords are lists:
 elems=['H', 'Cl']
 coords=[[0.0, 0.0, 0.0], [0.0, 0.0, 0.9]]
 ```
+
 Note: This will append coordinates to fragment. If fragment already contains some coordinates the added coordinates
 will follow.
 ---
@@ -161,6 +163,7 @@ will follow.
 ```sh
 HF_frag.read_xyzfile("hcl.xyz")
 ```
+
 Note: This will append coordinates to fragment. If fragment already contains some coordinates the added coordinates
 will follow.
 ---
@@ -172,6 +175,7 @@ elems=['H', 'Cl']
 coords=[[0.0, 0.0, 0.0], [0.0, 0.0, 1.1]]
 HF_frag.replace_coords(elems,coords)
 ```
+
 TODO:
 Add option here of replacing coords from XYZ file and string as well.
 ---
@@ -198,7 +202,8 @@ The connectivity table is available as:
 ```sh
 mol_frag.connectivity
 ```
-Note:: The connectivity table is calculated or recalculated automatically when coordinates are added or when modified to the fragment.
+
+Note: The connectivity table is calculated or recalculated automatically when coordinates are added or when modified to the fragment.
 ---
 ***Inspect defined fragment objects***
 
