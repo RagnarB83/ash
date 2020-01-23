@@ -1,4 +1,4 @@
-<img align="right" src="yggdrasill-templogo.png">
+<img align="right" src="yggdrasill-templogo50.png">
 
  # Yggdrasill: a computational chemistry environment
 
