@@ -1,9 +1,13 @@
+<img align="right" src="yggdrasill-templogo.png">
+
  # Yggdrasill: a computational chemistry environment
 
  ### Current features: 
-- Read in coordinates in multiple ways:
+- Flexible coordinate input:
     - coordinate string
     - XYZ file
+    - CIF file (to be finished)
+    - PDB file (TODO)
     - Python lists
 - Single-point QM energies with ORCA and xTB:
     - Flexible input structure support any Hamiltonian/basis set available in ORCA or xTB.

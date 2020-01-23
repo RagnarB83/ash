@@ -37,6 +37,8 @@ def write_xyz_trajectory(file, coords, elems, titleline):
 
 
 #TODO: More complex optimizer options:
+# https://github.com/eljost/pysisyphus/tree/master/pysisyphus/optimizers
+# Has QN, RFO, LBFGS, etc, linesearches etc.
 # Add Pele: https://pele-python.github.io/pele/quenching.html
 # Add stuff from ASE: https://wiki.fysik.dtu.dk/ase/ase/optimize.html  Maybe GP minimizer??
 # https://wiki.fysik.dtu.dk/ase/_modules/ase/optimize/gpmin/gpmin.html#GPMin

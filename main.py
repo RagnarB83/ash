@@ -20,6 +20,8 @@ os.chdir(path)
 
 #GITHUB test2
 
+#TODO: Read in PDB file
+#TODO: REead in
 #Define optionalXYZ coordinates as multi-line string
 #fragcoords="""
 #H 0.0 0.0 0.0
