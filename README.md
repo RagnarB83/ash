@@ -3,24 +3,24 @@
  # Yggdrasill: a computational chemistry environment
 
  ### Current features: 
-- Flexible coordinate input:
+- **Flexible coordinate input:**
     - coordinate string
     - XYZ file
     - CIF file (to be finished)
     - PDB file (TODO)
     - Python lists
-- Single-point QM energies with ORCA and xTB:
+- **Single-point QM energies with ORCA and xTB:**
     - Flexible input structure support any Hamiltonian/basis set available in ORCA or xTB.
     - ORCA parallelization available via OpenMPI
     - To do: Broken-symmetry, ECP-embedding, basis set on specific atoms
-- Single-point electrostic embedding QM/MM with ORCA.
+- **Single-point electrostic embedding QM/MM with ORCA.**
     - To do: Lennard-Jones
-- Nonbonded Molecular Mechanics (MM) via pointcharges and Lennard-Jones potentials
+- **Nonbonded Molecular Mechanics (MM) via pointcharges and Lennard-Jones potentials**
     - Flexible definition of charges and Lennard-Jones potentials. Either via flexible forcefield inputfile or 
-    via 
+    in script.
     - Both energy and gradient available.
     - Limitation: No bonded MM yet.
-- Geometry optimization with multiple optimizers
+- **Geometry optimization with multiple optimizers**
      - Python LBFGS-optimizer in Cartesian coordinates (credit: Vilhjálmur Ásgeirsson). 
      No internal coordinates. Coming: frozen atoms
      - PyBerny optimizer interface with internal coordinates. Limitation: No frozen atoms or constraints.
@@ -28,14 +28,14 @@
      (TRIC, HDLC, DLC etc.), frozen atoms, constraints.
      - To do: DL-FIND interface: powerful optimizer supporting DLC, HDLC internal coordinates, frozen atoms, constraints.
      - To do: Support for additional QM codes besides ORCA: xTB, Psi4
-- Nonbonded QM/MM Geometry optimization:
+- **Nonbonded QM/MM Geometry optimization:**
     - Possible with geomeTRIC
-- Numerical frequencies: one-point (forward difference) and two-point (central difference)
+- **Numerical frequencies: one-point (forward difference) and two-point (central difference)**
      - Partial Hessian
      - QM=ORCA supported. Todo: xTB
      - QM/MM not yet supported.
      - Todo: Anfreq read-in from ORCA and xTB
-- Hessian analysis
+- **Hessian analysis**
   - Diagonalization of Hessian (from Yggdrasill or ORCA). Print frequencies and normal modes.
   - Todo: projection of translation/rotational modes
   - Normal mode composition analysis in terms of individual atoms, elements and atom groups.
@@ -47,13 +47,13 @@
   - Write frequency output as pseudo ORCA-outputfile (enables visualization of modes in Chemcraft/Avogadro)
 
   
-- Python multiprocessing parallelization functionality for running multiple jobs in parallel.
+- **Python multiprocessing parallelization functionality for running multiple jobs in parallel.**
    - Running many single-point calculations in parallel
    - Running numerical frequency displacements in parallel
-- Molecular dynamics
+- **Molecular dynamics**
     - To be done
     
-- Submodules:
+- **Submodules:**
     - molcrys: Automatic Molecular crystal QM/MM
       - Read-in CIF-file, extract cell information and coordinates of asymmetric unit.
       - Fill-up coordinates of unitcell.
@@ -66,5 +66,5 @@
       - QM/MM Geometry optimization of central fragment of cluster to capture solid-state geometrical effects.
       - QM/MM Numerical frequencies of central fragment of cluster.
       
-    - solvshell: Multi-shell solvation for redox potentials
+    - **solvshell: Multi-shell solvation for redox potentials**
     
