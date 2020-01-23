@@ -1,5 +1,10 @@
-<img align="right" src="yggdrasill-templogo50.png">
+
 <img src="yggdrasill-templogo50.png" alt="drawing" width="200" align="right"/>
+
+<img src="yggdrasill-templogo50.png" alt="drawing" width="300" align="right"/>
+
+<img src="yggdrasill-templogo50.png" alt="drawing" width="400" align="right"/>
+
  # Yggdrasill: a computational chemistry environment
 
  ### Current features: 
