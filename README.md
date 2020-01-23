@@ -2,6 +2,21 @@
 
  # Yggdrasill: a computational chemistry environment
 
+Yggdrasill is a Python-based computational chemistry environment, primarily for molecular calculations
+in the gas phase, explicit solution, crystal or protein environment.
+
+Requirements:
+- Python3 installation
+- Numpy
+- Matplotlib (for some scientific plottin options).
+- Optional Python modules (installed via pip):
+    - PyBerny
+    - geomeTRIC
+    - 
+
+We recommend Anaconda (https://www.anaconda.com/distribution/) for a good scientific Python distribution. 
+Contains Python3, Numpy, SciPy, Matplotlib.
+
  ### Current features: 
 - **Flexible coordinate input:**
     - coordinate string
@@ -54,7 +69,7 @@
     - To be done
     
 - **Submodules:**
-    - molcrys: Automatic Molecular crystal QM/MM
+    - **molcrys: Automatic Molecular crystal QM/MM**
       - Read-in CIF-file, extract cell information and coordinates of asymmetric unit.
       - Fill-up coordinates of unitcell.
       - Expand unit cell.
