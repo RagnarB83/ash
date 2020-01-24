@@ -851,6 +851,7 @@ class Fragment:
         self.coords=[]
         self.connectivity=[]
         self.atomcharges = []
+        print("co")
         if coords is not None:
             self.coords=coords
             self.elems=elems
@@ -858,9 +859,9 @@ class Fragment:
         elif coordsstring is not None:
             self.add_coords_from_string(coordsstring)
         #If xyzfile argument, run read_xyzfile
-        elif len(xyzfile) is not None:
+        elif xyzfile is not None:
             self.read_xyzfile(xyzfile)
-        if len(coords)>0:
+        if coords is not None:
             self.nuccharge = nucchargelist(self.elems)
             self.numatoms = len(self.coords)
             self.atomlist = list(range(0, self.numatoms))
@@ -943,6 +944,13 @@ class Fragment:
     #Calculate connectivity (list of lists) of coords
     def calc_connectivity(self, conndepth=99, scale=None, tol=None ):
         print("Calculating connectivity of fragment...")
+        if scale == None:
+            scale=settings_yggdrasill.scale
+            tol=settings_yggdrasill.tol
+            print("Using global scale and tol parameters")
+
+        print("Scale:", scale)
+        print("Tol:", tol)
         # Calculate connectivity by looping over all atoms
         found_atoms = []
         fraglist = []

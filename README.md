@@ -12,7 +12,6 @@ Requirements:
 - Optional Python modules (installed via pip):
     - PyBerny
     - geomeTRIC
-    - 
 
 We recommend Anaconda (https://www.anaconda.com/distribution/) for a good scientific Python distribution. 
 Contains Python3, Numpy, SciPy, Matplotlib.
@@ -24,13 +23,13 @@ Contains Python3, Numpy, SciPy, Matplotlib.
     - CIF file (to be finished)
     - PDB file (TODO)
     - Python lists
-- **Single-point QM energies with ORCA and xTB:**
+- **QM interfaces for ORCA and xTB:**
     - Flexible input structure support any Hamiltonian/basis set available in ORCA or xTB.
     - ORCA parallelization available via OpenMPI
     - To do: Broken-symmetry, ECP-embedding, basis set on specific atoms
 - **Single-point electrostic embedding QM/MM with ORCA.**
-    - To do: Lennard-Jones
-- **Nonbonded Molecular Mechanics (MM) via pointcharges and Lennard-Jones potentials**
+    - To do: xTB
+- ** Molecular Mechanics (MM) via pointcharges and Lennard-Jones potentials**
     - Flexible definition of charges and Lennard-Jones potentials. Either via flexible forcefield inputfile or 
     in script.
     - Both energy and gradient available.

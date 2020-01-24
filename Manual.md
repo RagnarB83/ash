@@ -46,12 +46,13 @@ Another way is if you have lists of coordinates and element information already 
 ```sh
 elems=['H', 'Cl']
 coords=[[0.0, 0.0, 0.0], [0.0, 0.0, 0.9]]
-HCl_frag=Fragment(elems,coords)
+HCl_frag=Fragment(elems=elems,coords=coords)
 ```
 ---
 *From external XYZ file* 
 
 Perhaps most convenient is to define the fragment directly from reading an XYZ-file (that exists in the same directory as the script):
+
 ```sh
 HI_frag = Fragment(xyzfile="hi.xyz")
 ```~~~~~~~~~~~~
@@ -72,7 +73,7 @@ fragcoords="""
 H 0.0 0.0 0.0
 F 0.0 0.0 1.0
 """
-HCl_frag.coords_from_string(fragcoords)
+HCl_frag.add_coords_from_string(fragcoords)
 ```
 
 Note. This will append coordinates to fragment. If fragment already contains some coordinates the added coordinates
