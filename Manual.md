@@ -55,11 +55,12 @@ Perhaps most convenient is to define the fragment directly from reading an XYZ-f
 
 ```sh
 HI_frag = Fragment(xyzfile="hi.xyz")
-```~~~~~~~~~~~~
+```
 ---
 ***Via empty object***
 
-An alternative is to first create an empty fragment and then add the coordinate and element information later. This can sometimes be useful and demonstrates here the built-in fragment object functions available (coords_from_string, add_coords, read_xyzfile)
+An alternative to the direct way is to first create an empty fragment and then add the coordinate and element information later.
+This can sometimes be useful and demonstrates here the built-in fragment object functions available (coords_from_string, add_coords, read_xyzfile)
 First create empty fragment:
 ```sh
 HCl_frag=Fragment()
