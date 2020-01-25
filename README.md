@@ -1,8 +1,7 @@
 
 <img src="yggdrasill-logo-v02.png" alt="drawing" width="300" align="right"/>
-<img src="yggdrasill-log-v01.png" alt="drawing" width="300" align="right"/>
- # Yggdrasill: a computational chemistry environment
 
+ # Yggdrasill: a computational chemistry environment
 Yggdrasill is a Python-based computational chemistry environment, primarily for molecular calculations
 in the gas phase, explicit solution, crystal or protein environment.
 
