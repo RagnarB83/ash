@@ -17,84 +17,9 @@ print(settings_yggdrasill.tol)
 path="/Users/bjornssonsu/ownCloud/PyQMMM-project/Yggdrasill-testdir"
 os.chdir(path)
 
-
-#GITHUB test2
-
 #TODO: Read in PDB file
-#TODO: REead in
-#Define optionalXYZ coordinates as multi-line string
-#fragcoords="""
-#H 0.0 0.0 0.0
-#F 0.0 0.0 1.0
-#"""
+#TODO: Read in CIF_file. Create XYZ file of both types of fragments???
 
-#FRAGMENT CREATION.
-
-#Option 1.
-#Step 1. Creation of empty fragment
-#HF_frag=Fragment()
-#print("HF_frag dict", HF_frag.__dict__)
-#Add coordinates to fragment
-#HF_frag.coords_from_string(fragcoords)
-#print("")
-#print("HF_frag dict", HF_frag.__dict__)
-#print("-------------")
-
-#Option 2.
-#Direct creation of new fragment with coords
-#HF_frag2=Fragment(coordsstring=fragcoords)
-#print("HF_frag2 dict", HF_frag2.__dict__)
-#print("-------------")
-
-#Option 3
-#Create fragment from xyzfile via initialization and then run read_xyz class-function
-#HF_frag3=Fragment()
-#HF_frag3.read_xyzfile("hf.xyz")
-#print("HF_frag3 dict", HF_frag3.__dict__)
-#print("-------------")
-
-#Option 4
-#Create fragment from xyzfile directly
-#HF_frag4 = Fragment(xyzfile="hf.xyz")
-#print("HF_frag4 dict", HF_frag4.__dict__)
-#print("-------------")
-
-#
-#Option 5
-#Replace coords and elems of fragment object with new lists
-#elems=['H', 'Cl']
-#coords=[[0.0, 0.0, 0.0], [0.0, 0.0, 0.9]]
-#HF_frag5=Fragment()
-#HF_frag5.replace_coords(elems,coords)
-#print("HF_frag5 dict", HF_frag5.__dict__)
-#print("-------------")
-
-#Option 6:
-#Add  atoms to fragment multiple times
-#Empty fragment
-#print("Fragment defined")
-#HCl_H2O=Fragment()
-#elems=['H', 'Cl']
-#coords=[[0.0, 0.0, 0.0], [0.0, 0.0, 0.9]]
-#HCl_H2O.add_coords(elems,coords)
-#elems=['O', 'H', 'H']
-#coords=[[2.172092667, -1.008295059, 2.571252403],[1.454071996, -0.674986676, 2.018792653],
-#        [2.237951295, -1.940936718, 2.331039759]]
-#HCl_H2O.add_coords(elems,coords)
-#print("HCl_H2O dict", HCl_H2O.__dict__)
-#print("-------------")
-#HCl_H2O.print__coords()
-
-#Option 7. Add molecule from XYZ and calculate connectivity:
-#FeFeH2ase = Fragment(xyzfile="fefhe2ase.xyz")
-#print("FeFeH2ase dict", FeFeH2ase.__dict__)
-#FeFeH2ase.calc_connectivity()
-#print("FeFeH2ase dict", FeFeH2ase.__dict__)
-#conn = FeFeH2ase.connectivity
-#print("conn:", conn)
-#print("Number of subfragments in FeFeH2ase", len(conn))
-#print("Number of atoms in FeFeH2ase", FeFeH2ase.numatoms)
-#print("Number atoms in connectivity in FeFeH2ase", FeFeH2ase.connected_atoms_number)
 
 ################################
 # SINGLE-POINT QM CALCULATIONS #

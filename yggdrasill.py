@@ -277,177 +277,6 @@ class MolecularDynamics:
         print("Molecular dynamics is not ready yet")
         exit()
 
-
-#Optimizer class
-class Optimizer:
-    def __init__(self, fragment, theory, optimizer, maxiter=50):
-        self.fragment=fragment
-        self.theory=theory
-        self.optimizer=optimizer
-        self.maxiter=maxiter
-    def run(self):
-        beginTime = time.time()
-        print(BC.OKRED, BC.BOLD, "------------STARTING OPTIMIZER-------------", BC.END)
-        print_option='Big'
-        RMSGtolerance=0.0001
-        MaxGtolerance=0.0003
-        print("Running Optimizer")
-        print("Optimization algorithm:", self.optimizer)
-        #Printing info and basic initalization of parameters
-        if self.optimizer=="SD":
-            print("Using very basic stupid Steepest Descent algorithm")
-            sdscaling=0.85
-            print("SD Scaling parameter:", sdscaling)
-        elif self.optimizer=="KNARR-LBFGS":
-            print("Using LBFGS optimizer from Knarr by Vilhjálmur Ásgeirsson")
-            print("LBFGS parameters (currently hardcoded)")
-            print(LBFGS_parameters)
-            reset_opt = False
-        elif self.optimizer=="SD2":
-            sdscaling = 0.01
-            print("Using different SD optimizer")
-            print("SD Scaling parameter:", sdscaling)
-        elif self.optimizer=="KNARR-FIRE":
-            time_step=0.01
-            was_scaled=False
-            print("FIRE Parameters for timestep:", timestep)
-            print(GetFIREParam(time_step))
-
-        print("Tolerances:  RMSG: {}  MaxG: {}  Eh/Bohr".format(RMSGtolerance, MaxGtolerance))
-        #Name of trajectory file
-        trajname="opt-trajectory.xyz"
-        print("Writing XYZ trajectory file: ", trajname)
-        print("Frozen atoms:")
-        # TODO: Frozen atoms
-        print("TODO....")
-        try:
-            os.remove(trajname)
-        except:
-            pass
-        #Current coordinates
-        current_coords=self.fragment.coords
-        elems=self.fragment.elems
-
-        #OPTIMIZATION LOOP
-        for step in range(1,self.maxiter):
-            CheckpointTime = time.time()
-            blankline()
-            print("GEOMETRY OPTIMIZATION STEP", step)
-            print("Current geometry (Å):")
-            if self.theory.__class__.__name__ == "QMMMTheory":
-                print_coords_all(current_coords,elems, indices=self.fragment.allatoms, labels=self.theory.hybridatomlabels)
-            else:
-                print_coords_all(current_coords, elems, indices=self.fragment.allatoms)
-            blankline()
-
-            #Running E+G theory job.
-            E, Grad = self.theory.run(current_coords=current_coords, elems=self.fragment.elems, Grad=True)
-            #Converting to atomic forces in eV/Angstrom. Used by Knarr
-            forces_evAng=Grad * (-1) * constants.hartoeV / constants.bohr2ang
-            blankline()
-            print("Step: {}    Energy: {} Eh.".format(step, E))
-            if print_option=='Big':
-                blankline()
-                print("Gradient (Eh/Bohr): \n{}".format(Grad))
-                blankline()
-            RMSG=RMS_G(Grad)
-            MaxG=Max_G(Grad)
-            # Convergence threshold check
-            if RMSG < RMSGtolerance and MaxG < MaxGtolerance:
-                print("RMSG: {:3.9f}       Tolerance: {:3.9f}    YES".format(RMSG, RMSGtolerance))
-                print("MaxG: {:3.9f}       Tolerance: {:3.9f}    YES".format(MaxG, MaxGtolerance))
-                print(BC.OKGREEN,"Geometry optimization Converged!",BC.END)
-                write_xyz_trajectory(trajname, current_coords, elems, E)
-                blankline()
-                print_time_rel_and_tot(CheckpointTime, beginTime, 'Opt Step')
-                return
-            elif RMSG > RMSGtolerance and MaxG < MaxGtolerance:
-                print("RMSG: {:3.9f}       Tolerance: {:3.9f}    NO".format(RMSG, RMSGtolerance))
-                print("MaxG: {:3.9f}       Tolerance: {:3.9f}    YES".format(MaxG, MaxGtolerance))
-                print(BC.WARNING,"Not converged",BC.END)
-            elif RMSG < RMSGtolerance and MaxG > MaxGtolerance:
-                print("RMSG: {:3.9f}       Tolerance: {:3.9f}    YES".format(RMSG, RMSGtolerance))
-                print("MaxG: {:3.9f}       Tolerance: {:3.9f}    NO".format(MaxG, MaxGtolerance))
-                print(BC.WARNING,"Not converged",BC.END)
-            else:
-                print("RMSG: {:3.9f}       Tolerance: {:3.9f}    NO".format(RMSG, RMSGtolerance))
-                print("MaxG: {:3.9f}       Tolerance: {:3.9f}    NO".format(MaxG, MaxGtolerance))
-                print(BC.WARNING,"Not converged",BC.END)
-
-            write_xyz_trajectory(trajname, current_coords, elems, E)
-            blankline()
-            if self.optimizer=='SD':
-                print("Using Basic Steepest Descent optimizer")
-                print("Scaling parameter:", sdscaling)
-                current_coords=steepest_descent(current_coords,Grad,sdscaling)
-            if self.optimizer=='SD2':
-                print("Using Basic Steepest Descent optimizer, SD2 with norm")
-                print("Scaling parameter:", sdscaling)
-                current_coords=steepest_descent2(current_coords,Grad,sdscaling)
-            elif self.optimizer=="KNARR-FIRE":
-                print("Taking FIRE step")
-                # FIRE
-                if step == 1 or reset_opt:
-                    reset_opt = False
-                    fire_param = GetFIREParam(time_step)
-                    ZeroVel=np.zeros( (3*len(current_coords),1))
-                    CurrentVel=ZeroVel
-                if was_scaled:
-                    time_step *= 0.95
-                velo, time_step, fire_param = GlobalFIRE(forces_evAng, CurrentVel, time_step, fire_param)
-                CurrentVel=velo
-                step, velo = EulerStep(CurrentVel, forces_evAng, time_step)
-                CurrentVel=velo
-                # Take the actual step
-                current_coords = current_coords + step
-            elif self.optimizer=='NR':
-                print("disabled")
-                exit()
-                #Identity matrix
-                Hess_approx=np.identity(3*len(current_coords))
-                #TODO: Not active
-                current_coords = newton_raphson(current_coords, Grad, Hess_approx)
-            elif self.optimizer=='KNARR-LBFGS':
-                if step == 1 or reset_opt:
-                    if reset_opt == True:
-                        print("Resetting optimizer")
-                    print("Taking SD-like step")
-                    reset_opt = False
-                    sk = []
-                    yk = []
-                    rhok = []
-                    #Store original atomic forces (in eV/Å)
-                    keepf=np.copy(forces_evAng)
-                    keepr = np.copy(current_coords)
-                    step = TakeFDStep(self.theory, current_coords, LBFGS_parameters["fd_step"], forces_evAng, self.fragment.elems)
-
-                    #Take the actual step
-                    current_coords=current_coords+step
-                else:
-                    print("Doing LBFGS Update")
-                    sk, yk, rhok = LBFGSUpdate(current_coords, keepr, forces_evAng, keepf,
-                                               sk, yk, rhok, LBFGS_parameters["lbfgs_memory"])
-                    keepf=np.copy(forces_evAng)
-                    keepr = np.copy(current_coords)
-                    print("Taking LBFGS Step")
-                    step, negativecurv = LBFGSStep(forces_evAng, sk, yk, rhok)
-                    step *= LBFGS_parameters["lbfgs_damping"]
-
-                    if negativecurv:
-                        reset_opt = True
-
-                    #Take the actual step
-                    current_coords=current_coords+step
-
-            else:
-                print("Optimizer option not supported.")
-                exit()
-            write_xyz_trajectory(trajname, current_coords, elems, E)
-            blankline()
-            print_time_rel_and_tot(CheckpointTime, beginTime, 'ORCA Opt Step')
-        print(BC.FAIL,"Optimization did not converge in {} iteration".format(self.maxiter),BC.END)
-
-
 def print_time_rel_and_tot(timestampA,timestampB, modulename=''):
     secsA=time.time()-timestampA
     minsA=secsA/60
@@ -1018,7 +847,7 @@ class Fragment:
         self.energy=float(energy)
 
 class xTBTheory:
-    def __init__(self, xtbdir, fragment, charge, mult, xtbmethod):
+    def __init__(self, xtbdir, fragment='', charge='', mult='', xtbmethod=''):
         self.xtbdir = xtbdir
         self.fragment=fragment
         self.coords=fragment.coords
@@ -1026,27 +855,33 @@ class xTBTheory:
         self.charge=charge
         self.mult=mult
         self.xtbmethod=xtbmethod
-    def run(self):
+    def run(self, current_coords=[], current_MM_coords=[], MMcharges=[], qm_elems=[],
+                mm_elems=[], elems=[], Grad=False, PC=False, nprocs=1):
         print("------------STARTING XTB INTERFACE-------------")
         #Create XYZfile with generic name for xTB to run
         inputfilename="xtb-inpfile"
         print("Creating inputfile:", inputfilename+'.xyz')
+        #Todo: make coords more flexible. not just self.coords
+        numatoms=len(self.coords)
         write_xyzfile(self.elems, self.coords, inputfilename)
         #Run inputfile. Take nprocs argument. Orcadir argument??
         print("------------Running xTB-------------")
         print("...")
-        run_xtb_SP_serial(self.xtbdir, xtbmethod, inputfilename+'.xyz', self.charge, self.mult)
+        if Grad==True:
+            run_xtb_SP_serial(self.xtbdir, self.xtbmethod, inputfilename + '.xyz', self.charge, self.mult, Grad=True)
+        else:
+            run_xtb_SP_serial(self.xtbdir, self.xtbmethod, inputfilename+'.xyz', self.charge, self.mult)
+
+
         print("------------xTB calculation done-------------")
         #Check if finished. Grab energy
-        outfile=inputfilename+'.out'
-        xtbfinalenergygrab(outfile)
+        if Grad==True:
+            self.energy,self.grad=xtbgradientgrab('gradient',numatoms)
+        else:
+            outfile=inputfilename+'.out'
+            self.energy=xtbfinalenergygrab(outfile)
         print("------------ENDING XTB-INTERFACE-------------")
-        #if checkORCAfinished(outfile) == True:
-        #    self.energy=finalenergygrab(outfile)
-        ##    print("ORCA energy:", self.energy)
-        #else:
-        #    print("Problem with ORCA run")
-        #    exit()
+
 
 
 # TEST: Run multiple  QM/MM Engrad calculations in parallel

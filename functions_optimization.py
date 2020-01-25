@@ -1,9 +1,11 @@
 import numpy as np
 import constants
 from functions_general import *
+from functions_coords import *
 import time
 import os
 import shutil
+import yggdrasill
 #Root mean square of numpy array, e.g. gradient
 def RMS_G(grad):
     sumsq = 0;
@@ -43,7 +45,189 @@ def write_xyz_trajectory(file, coords, elems, titleline):
 # Add stuff from ASE: https://wiki.fysik.dtu.dk/ase/ase/optimize.html  Maybe GP minimizer??
 # https://wiki.fysik.dtu.dk/ase/_modules/ase/optimize/gpmin/gpmin.html#GPMin
 # Interface DL-FIND (internal coords, HDLC etc.): https://www.chemshell.org/dl-find
-# Geometric TRIC optimizer (special internal coords and good optimizer)
+
+
+
+#Yggdrasill Optimizer class for basic usage
+class Optimizer:
+    def __init__(self, fragment, theory, optimizer, maxiter=50):
+        self.fragment=fragment
+        self.theory=theory
+        self.optimizer=optimizer
+        self.maxiter=maxiter
+    def run(self):
+        beginTime = time.time()
+        print(BC.OKRED, BC.BOLD, "------------STARTING OPTIMIZER-------------", BC.END)
+        print_option='Big'
+        RMSGtolerance=0.0001
+        MaxGtolerance=0.0003
+        print("Running Optimizer")
+        print("Optimization algorithm:", self.optimizer)
+        #Printing info and basic initalization of parameters
+        if self.optimizer=="SD":
+            print("Using very basic stupid Steepest Descent algorithm")
+            sdscaling=0.85
+            print("SD Scaling parameter:", sdscaling)
+        elif self.optimizer=="KNARR-LBFGS":
+            print("Using LBFGS optimizer from Knarr by Vilhjálmur Ásgeirsson")
+            print("LBFGS parameters (currently hardcoded)")
+            print(LBFGS_parameters)
+            reset_opt = False
+        elif self.optimizer=="SD2":
+            sdscaling = 0.01
+            print("Using different SD optimizer")
+            print("SD Scaling parameter:", sdscaling)
+        elif self.optimizer=="KNARR-FIRE":
+            time_step=0.01
+            was_scaled=False
+            print("FIRE Parameters for timestep:", timestep)
+            print(GetFIREParam(time_step))
+
+        print("Tolerances:  RMSG: {}  MaxG: {}  Eh/Bohr".format(RMSGtolerance, MaxGtolerance))
+        #Name of trajectory file
+        trajname="opt-trajectory.xyz"
+        print("Writing XYZ trajectory file: ", trajname)
+        print("Frozen atoms:")
+        # TODO: Frozen atoms
+        print("TODO....")
+        try:
+            os.remove(trajname)
+        except:
+            pass
+        #Current coordinates
+        current_coords=self.fragment.coords
+        elems=self.fragment.elems
+
+        #OPTIMIZATION LOOP
+        #TODO: think about whether we should switch to fragment object for geometry handling
+        for step in range(1,self.maxiter):
+            CheckpointTime = time.time()
+            blankline()
+            print("GEOMETRY OPTIMIZATION STEP", step)
+            print("Current geometry (Å):")
+            if self.theory.__class__.__name__ == "QMMMTheory":
+                print_coords_all(current_coords,elems, indices=self.fragment.allatoms, labels=self.theory.hybridatomlabels)
+            else:
+                print_coords_all(current_coords, elems, indices=self.fragment.allatoms)
+            blankline()
+
+            #Running E+G theory job.
+            E, Grad = self.theory.run(current_coords=current_coords, elems=self.fragment.elems, Grad=True)
+            #Converting to atomic forces in eV/Angstrom. Used by Knarr
+            forces_evAng=Grad * (-1) * constants.hartoeV / constants.bohr2ang
+            blankline()
+            print("Step: {}    Energy: {} Eh.".format(step, E))
+            if print_option=='Big':
+                blankline()
+                print("Gradient (Eh/Bohr): \n{}".format(Grad))
+                blankline()
+            RMSG=RMS_G(Grad)
+            MaxG=Max_G(Grad)
+
+            #Write geometry to trajectory (with energy)
+            write_xyz_trajectory(trajname, current_coords, elems, E)
+
+            # Convergence threshold check
+            if RMSG < RMSGtolerance and MaxG < MaxGtolerance:
+                print("RMSG: {:3.9f}       Tolerance: {:3.9f}    YES".format(RMSG, RMSGtolerance))
+                print("MaxG: {:3.9f}       Tolerance: {:3.9f}    YES".format(MaxG, MaxGtolerance))
+                print(BC.OKGREEN,"Geometry optimization Converged!",BC.END)
+                write_xyz_trajectory(trajname, current_coords, elems, E)
+
+                # Updating energy and coordinates of Yggdrasill fragment before ending
+                fragment.set_energy(E)
+                print("Final optimized energy:", fragment.energy)
+                fragment.replace_coords(elems, current_coords)
+
+                blankline()
+                print_time_rel_and_tot(CheckpointTime, beginTime, 'Opt Step')
+                return
+            elif RMSG > RMSGtolerance and MaxG < MaxGtolerance:
+                print("RMSG: {:3.9f}       Tolerance: {:3.9f}    NO".format(RMSG, RMSGtolerance))
+                print("MaxG: {:3.9f}       Tolerance: {:3.9f}    YES".format(MaxG, MaxGtolerance))
+                print(BC.WARNING,"Not converged",BC.END)
+            elif RMSG < RMSGtolerance and MaxG > MaxGtolerance:
+                print("RMSG: {:3.9f}       Tolerance: {:3.9f}    YES".format(RMSG, RMSGtolerance))
+                print("MaxG: {:3.9f}       Tolerance: {:3.9f}    NO".format(MaxG, MaxGtolerance))
+                print(BC.WARNING,"Not converged",BC.END)
+            else:
+                print("RMSG: {:3.9f}       Tolerance: {:3.9f}    NO".format(RMSG, RMSGtolerance))
+                print("MaxG: {:3.9f}       Tolerance: {:3.9f}    NO".format(MaxG, MaxGtolerance))
+                print(BC.WARNING,"Not converged",BC.END)
+
+            blankline()
+            if self.optimizer=='SD':
+                print("Using Basic Steepest Descent optimizer")
+                print("Scaling parameter:", sdscaling)
+                current_coords=steepest_descent(current_coords,Grad,sdscaling)
+            elif self.optimizer=='SD2':
+                print("Using Basic Steepest Descent optimizer, SD2 with norm")
+                print("Scaling parameter:", sdscaling)
+                current_coords=steepest_descent2(current_coords,Grad,sdscaling)
+            elif self.optimizer=="KNARR-FIRE":
+                print("Taking FIRE step")
+                # FIRE
+                if step == 1 or reset_opt:
+                    reset_opt = False
+                    fire_param = GetFIREParam(time_step)
+                    ZeroVel=np.zeros( (3*len(current_coords),1))
+                    CurrentVel=ZeroVel
+                if was_scaled:
+                    time_step *= 0.95
+                velo, time_step, fire_param = GlobalFIRE(forces_evAng, CurrentVel, time_step, fire_param)
+                CurrentVel=velo
+                step, velo = EulerStep(CurrentVel, forces_evAng, time_step)
+                CurrentVel=velo
+
+            elif self.optimizer=='NR':
+                print("disabled")
+                exit()
+                #Identity matrix
+                Hess_approx=np.identity(3*len(current_coords))
+                #TODO: Not active
+                current_coords = newton_raphson(current_coords, Grad, Hess_approx)
+            elif self.optimizer=='KNARR-LBFGS':
+                if step == 1 or reset_opt:
+                    if reset_opt == True:
+                        print("Resetting optimizer")
+                    print("Taking SD-like step")
+                    reset_opt = False
+                    sk = []
+                    yk = []
+                    rhok = []
+                    #Store original atomic forces (in eV/Å)
+                    keepf=np.copy(forces_evAng)
+                    keepr = np.copy(current_coords)
+                    step = TakeFDStep(self.theory, current_coords, LBFGS_parameters["fd_step"], forces_evAng, self.fragment.elems)
+
+                else:
+                    print("Doing LBFGS Update")
+                    sk, yk, rhok = LBFGSUpdate(current_coords, keepr, forces_evAng, keepf,
+                                               sk, yk, rhok, LBFGS_parameters["lbfgs_memory"])
+                    keepf=np.copy(forces_evAng)
+                    keepr = np.copy(current_coords)
+                    print("Taking LBFGS Step")
+                    step, negativecurv = LBFGSStep(forces_evAng, sk, yk, rhok)
+                    step *= LBFGS_parameters["lbfgs_damping"]
+
+                    if negativecurv:
+                        reset_opt = True
+            else:
+                print("Optimizer option not supported.")
+                exit()
+            #Take the actual step
+            #Todo: Implement maxmove-scaling here if step too large
+            current_coords=current_coords+step
+            #Write current geometry (after step) to disk as 'Current_geometry.xyz'.
+            # Can be used if optimization failed, SCF convergence problemt etc.
+            write_xyzfile(elems, current_coords, 'Current_geometry')
+            blankline()
+            print_time_rel_and_tot(CheckpointTime, beginTime, 'ORCA Opt Step')
+        print(BC.FAIL,"Optimization did not converge in {} iteration".format(self.maxiter),BC.END)
+
+
+
+
 
 #Very basic bad steepest descent algorithm.
 #Arbitrary scaling parameter instead of linesearch
@@ -224,11 +408,19 @@ def newton_raphson(coords, Gradient,Hessian):
 ########################
 
 def BernyOpt(theory,fragment):
+    blankline()
     print("Beginning Py-Berny Optimization")
+    try:
+        from berny import Berny, geomlib
+    except:
+        blankline()
+        print(BC.FAIL,"pyberny module not found!", BC.END)
+        print(BC.WARNING,"Either install pyberny using pip:\n pip install pyberny\n "
+                         "or manually from Github (https://github.com/jhrmnn/pyberny)", BC.END)
+        exit()
     print("See: https://github.com/jhrmnn/pyberny")
     elems=fragment.elems
     coords=fragment.coords
-    from berny import Berny, geomlib
     #Options: Berny(ethanol, steprms=0.01, stepmax=0.05, maxsteps=5)
     optimizer = Berny(geomlib.Geometry(fragment.elems,fragment.coords))
     for geom in optimizer:
@@ -236,7 +428,11 @@ def BernyOpt(theory,fragment):
         E, Grad = theory.run(current_coords=geom.coords, elems=elems, Grad=True)
         optimizer.send((E,Grad))
     print("BernyOpt Geometry optimization converged!")
-
+    #Updating energy and coordinates of Yggdrasill fragment before ending
+    fragment.set_energy(E)
+    print("Final optimized energy:",  fragment.energy)
+    fragment.replace_coords(elems,geom.coords)
+    blankline()
 
 #########################
 # geomeTRIC Optimization
@@ -265,7 +461,7 @@ def geomeTRICOptimizer(theory='',fragment='', coordsystem='tric', frozenatoms=[]
         blankline()
         print(BC.FAIL,"geomeTRIC module not found!", BC.END)
         print(BC.WARNING,"Either install geomeTRIC using pip:\n pip install geometric\n or manually from Github (https://github.com/leeping/geomeTRIC)", BC.END)
-
+        exit()
     #Easiest to  write coordinates from Yggdrasill fragment to disk as XYZ-file
     fragment.write_xyzfile("initialxyzfiletric.xyz")
     #Reading coords from XYZfile and define molecule object within geometric
@@ -296,7 +492,9 @@ def geomeTRICOptimizer(theory='',fragment='', coordsystem='tric', frozenatoms=[]
             self.input='dummyinputname'
             self.constraints=constraints
             #Created log.ini file here. Missing from pip installation for some reason?
-            self.logIni='/Users/bjornssonsu/ownCloud/PyQMMM-project/log.ini'
+            #Storing log.ini in yggdrasill dir
+            path = os.path.dirname(yggdrasill.__file__)
+            self.logIni=path+'/log.ini'
             self.customengine=eng
 
     #Define constraints provided. Write constraints.txt file

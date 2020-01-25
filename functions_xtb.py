@@ -22,6 +22,31 @@ def xtbfinalenergygrab(file):
                 Energy=float(line.split()[-3])
     return Energy
 
+#Grab gradient and energy from gradient file
+def xtbgradientgrab(file,numatoms):
+    grab=False
+    gradient = np.zeros((numatoms, 3))
+    count=0
+    #Converting Fortran D exponent to E
+    t = 'string'.maketrans('D', 'E')
+    row=0
+    #Read file in reverse
+    with open(file) as f:
+        for line in reverse_lines(f):
+            if '  cycle =' in line:
+                energy=float(line.split()[6])
+                return energy, gradient
+            if count==numatoms:
+                grab=False
+            if grab==True:
+                gradient[row] = [float( line.split()[0].translate(t)), float(line.split()[1].translate(t)),
+                                 float(line.split()[2].translate(t))]
+                count+=1
+                row+=1
+            if '$end' in line:
+                grab=True
+
+
 def xtbVIPgrab(file):
     with open(file) as f:
         for line in f:
@@ -37,12 +62,17 @@ def xtbVEAgrab(file):
     return VIP
 
 # Run xTB single-point job
-def run_xtb_SP_serial(xtbdir, xtbmethod, xyzfile, charge, mult):
+def run_xtb_SP_serial(xtbdir, xtbmethod, xyzfile, charge, mult, Grad=False):
     basename = xyzfile.split('.')[0]
     uhf=mult-1
     with open(basename+'.out', 'w') as ofile:
-        process = sp.run([xtbdir + '/xtb', basename+'.xyz', '--gfn', str(xtbmethod), '--chrg', str(charge), '--uhf', str(uhf) ], check=True, stdout=ofile, stderr=ofile, universal_newlines=True)
-
+        if Grad==True:
+            process = sp.run([xtbdir + '/xtb', basename+'.xyz', '--gfn', str(xtbmethod), '--chrg', str(charge), '--uhf',
+                              str(uhf) ], check=True, stdout=ofile, stderr=ofile, universal_newlines=True)
+        else:
+            process = sp.run(
+                [xtbdir + '/xtb', basename + '.xyz', '--gfn', str(xtbmethod), '--grad', '--chrg', str(charge), '--uhf', str(uhf)],
+                check=True, stdout=ofile, stderr=ofile, universal_newlines=True)
 # Run GFN-xTB single-point job (for multiprocessing execution) for both state A and B (e.g. VIE calc)
 #Takes 1 argument: line with xyzfilename and the xtb options.
 #Runs inside separate dir
