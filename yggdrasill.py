@@ -836,7 +836,7 @@ class Fragment:
         self.energy=float(energy)
 
 class xTBTheory:
-    def __init__(self, xtbdir, fragment='', charge='', mult='', xtbmethod=''):
+    def __init__(self, xtbdir, fragment=None, charge=None, mult=None, xtbmethod=None):
         self.xtbdir = xtbdir
         self.fragment=fragment
         self.coords=fragment.coords
@@ -866,10 +866,14 @@ class xTBTheory:
         #Check if finished. Grab energy
         if Grad==True:
             self.energy,self.grad=xtbgradientgrab('gradient',numatoms)
+            print("------------ENDING XTB-INTERFACE-------------")
+            return self.energy, self.grad
         else:
             outfile=inputfilename+'.out'
             self.energy=xtbfinalenergygrab(outfile)
-        print("------------ENDING XTB-INTERFACE-------------")
+            print("------------ENDING XTB-INTERFACE-------------")
+            return self.energy
+
 
 
 

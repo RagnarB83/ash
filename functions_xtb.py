@@ -35,6 +35,8 @@ def xtbgradientgrab(file,numatoms):
         for line in reverse_lines(f):
             if '  cycle =' in line:
                 energy=float(line.split()[6])
+                print("energy:", energy)
+                print("gradient:", gradient)
                 return energy, gradient
             if count==numatoms:
                 grab=False
