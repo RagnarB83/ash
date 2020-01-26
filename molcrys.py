@@ -118,19 +118,19 @@ def molcrys(cif_file='', fragmentobjects=[], theory=None, numcores=None, chargem
             if ncharge == fragmentobject.Nuccharge:
                 fragmentobject.add_clusterfraglist(frag)
 
-    print(mainfrag.clusterfraglist)
+    print(fragmentobjects[0].clusterfraglist)
     #TODO: Reorder cluster with reflections also
 
     #Reorder fraglists in each fragmenttype via Hungarian algorithm.
     # Ordered fraglists can then easily be used in pointchargeupdating
-    reordercluster(Cluster,mainfrag)
-    reordercluster(Cluster,counterfrag1)
+    reordercluster(Cluster,fragmentobjects[0])
+    reordercluster(Cluster,fragmentobjects[1])
     #TODO: after removing partial fragments and getting connectivity etc. Would be good to make MM cluster neutral
-    print(mainfrag.clusterfraglist)
-    print(counterfrag1.clusterfraglist)
+    print(fragmentobjects[0].clusterfraglist)
+    print(fragmentobjects[1].clusterfraglist)
 
-    mainfrag.print_infofile('mainfrag-info.txt')
-    counterfrag1.print_infofile('counterfrag1-info.txt')
+    fragmentobjects[0].print_infofile('mainfrag-info.txt')
+    fragmentobjects[1].print_infofile('counterfrag1-info.txt')
 
     #Add fragmentobject-info to Cluster fragment
     Cluster.add_fragment_type_info(fragmentobjects)
@@ -157,7 +157,7 @@ def molcrys(cif_file='', fragmentobjects=[], theory=None, numcores=None, chargem
 
     #Cluster is now complete. Print info to file
     Cluster.print_system("Cluster-info_afterGas.txt")
-    mainfrag.print_infofile('mainfrag-info_afterGas.txt')
+    fragmentobjects[0].print_infofile('mainfrag-info_afterGas.txt')
 
     sum_atomcharges_cluster=sum(Cluster.atomcharges)
     print("sum_atomcharges_cluster:", sum_atomcharges_cluster)
@@ -213,7 +213,7 @@ def molcrys(cif_file='', fragmentobjects=[], theory=None, numcores=None, chargem
         # Assign pointcharges to each atom of MM cluster.
         pointchargeupdate(Cluster, fragmentobjects[0], atomcharges)
         Cluster.print_system("Cluster-info_afterSP{}.txt".format(SPLoopNum))
-        mainfrag.print_infofile('mainfrag-info_afterSP{}.txt'.format(SPLoopNum))
+        fragmentobjects[0].print_infofile('mainfrag-info_afterSP{}.txt'.format(SPLoopNum))
         blankline()
         print("Current charges:", fragmentobjects[0].all_atomcharges[-1])
         print("Previous charges:", fragmentobjects[0].all_atomcharges[-2])
