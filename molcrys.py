@@ -16,7 +16,7 @@ def molcrys(cif_file='', fragmentobjects=[], theory=None, numcores=None, chargem
     #Here assuming theory can only be ORCA for now
     orcadir=theory.orcadir
     orcablocks=theory.orcablocks
-    orcasimpleinput=theory.simpleinput
+    orcasimpleinput=theory.orcasimpleinput
 
     print("Fragments defined:")
     print("Mainfrag:", fragmentobjects[0].__dict__)
