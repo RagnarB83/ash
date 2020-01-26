@@ -852,10 +852,13 @@ class xTBTheory:
         print("Creating inputfile:", inputfilename+'.xyz')
         #What coordinates to work with
         if len(current_coords) != 0:
+            print("if. using provided")
             pass
         else:
+            print("else. using built-in coords")
             current_coords=self.coords
-
+        print("Inside xtb run")
+        print("Current_coords:", current_coords )
         #Using current_coords from now on
         numatoms=len(current_coords)
         write_xyzfile(self.elems, current_coords, inputfilename)

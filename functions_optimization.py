@@ -259,11 +259,14 @@ SD_parameters = {'sd_step' : 0.001}
 def TakeFDStep(theory, current_coords, fd_step, forces, elems):
     # keep config / forces
     current_forces = np.copy(forces)
+    print("current_forces:", current_forces)
     #Current config is in Å
     current_config = np.copy(current_coords)
+    print("current_config:", current_config)
     # Get direction of force and generate step in that direction
     Fu = current_forces / np.linalg.norm(current_forces)
     step = fd_step * Fu
+    print("step", step)
     # Take step - but we do not save it.
     new_config = current_config + step
 
