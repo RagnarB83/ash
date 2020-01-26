@@ -572,8 +572,10 @@ class ORCATheory:
             self.coords=fragment.coords
             self.elems=fragment.elems
         #print("frag elems", self.fragment.elems)
-        self.charge=int(charge)
-        self.mult=int(mult)
+        if charge!='':
+            self.charge=int(charge)
+        if mult!='':
+            self.mult=int(mult)
         self.orcasimpleinput=orcasimpleinput
         self.orcablocks=orcablocks
         self.extraline=extraline
