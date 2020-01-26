@@ -1001,7 +1001,7 @@ def MMforcefield_read(file):
 class Logger(object):
     def __init__(self):
         self.terminal = sys.stdout
-        self.log = open(str(os.path.basename(__file__)), "a")
+        self.log = open(str(os.path.basename(__file__))+'.out', "a")
     def write(self, message):
         self.terminal.write(message)
         self.log.write(message)
