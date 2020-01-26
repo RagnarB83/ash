@@ -139,7 +139,7 @@ class Optimizer:
 
                 # Updating energy and coordinates of Yggdrasill fragment before ending
                 self.fragment.set_energy(E)
-                print("Final optimized energy:", fragment.energy)
+                print("Final optimized energy:", self.fragment.energy)
                 self.fragment.replace_coords(elems, current_coords)
                 blankline()
                 print_time_rel_and_tot(CheckpointTime, beginTime, 'Opt Step')
