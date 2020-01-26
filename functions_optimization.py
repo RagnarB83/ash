@@ -268,7 +268,11 @@ def TakeFDStep(theory, current_coords, fd_step, forces, elems):
     new_config = current_config + step
 
     # Compute forces and energy at new step
+    print("new_config:", new_config)
     E, Grad = theory.run(current_coords=new_config, elems=elems, Grad=True)
+    print("E:", E)
+    print("Grad:", Grad)
+    exit()
     # Restore previous values and store new forces
     new_forces = Grad*(-1)*constants.hartoeV/constants.bohr2ang
     new_forces_unflat=new_forces.reshape(len(new_forces)*3,-1)
