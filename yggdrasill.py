@@ -850,9 +850,15 @@ class xTBTheory:
         #Create XYZfile with generic name for xTB to run
         inputfilename="xtb-inpfile"
         print("Creating inputfile:", inputfilename+'.xyz')
-        #Todo: make coords more flexible. not just self.coords
-        numatoms=len(self.coords)
-        write_xyzfile(self.elems, self.coords, inputfilename)
+        #What coordinates to work with
+        if len(current_coords) != 0:
+            pass
+        else:
+            current_coords=self.coords
+
+        #Using current_coords from now on
+        numatoms=len(current_coords)
+        write_xyzfile(self.elems, current_coords, inputfilename)
         #Run inputfile. Take nprocs argument. Orcadir argument??
         print("------------Running xTB-------------")
         print("...")
