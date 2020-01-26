@@ -201,9 +201,7 @@ class Optimizer:
                     #Store original atomic forces (in eV/Å)
                     keepf=np.copy(forces_evAng)
                     keepr = np.copy(current_coords)
-                    print("here nn")
                     step = TakeFDStep(self.theory, current_coords, LBFGS_parameters["fd_step"], forces_evAng, self.fragment.elems)
-                    print("step:", step)
 
                 else:
                     print("Doing LBFGS Update")
@@ -214,7 +212,6 @@ class Optimizer:
                     print("Taking LBFGS Step")
                     step, negativecurv = LBFGSStep(forces_evAng, sk, yk, rhok)
                     step *= LBFGS_parameters["lbfgs_damping"]
-                    print("step:", step)
                     if negativecurv:
                         reset_opt = True
             else:
@@ -259,23 +256,17 @@ SD_parameters = {'sd_step' : 0.001}
 def TakeFDStep(theory, current_coords, fd_step, forces, elems):
     # keep config / forces
     current_forces = np.copy(forces)
-    print("current_forces:", current_forces)
     #Current config is in Å
     current_config = np.copy(current_coords)
-    print("current_config:", current_config)
     # Get direction of force and generate step in that direction
     Fu = current_forces / np.linalg.norm(current_forces)
     step = fd_step * Fu
-    print("step", step)
     # Take step - but we do not save it.
     new_config = current_config + step
 
     # Compute forces and energy at new step
-    print("new_config:", new_config)
     E, Grad = theory.run(current_coords=new_config, elems=elems, Grad=True)
-    print("E:", E)
-    print("Grad:", Grad)
-    exit()
+
     # Restore previous values and store new forces
     new_forces = Grad*(-1)*constants.hartoeV/constants.bohr2ang
     new_forces_unflat=new_forces.reshape(len(new_forces)*3,-1)
