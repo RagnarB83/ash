@@ -58,7 +58,7 @@ class Optimizer:
         self.maxiter=maxiter
     def run(self):
         beginTime = time.time()
-        print(BC.OKRED, BC.BOLD, "------------STARTING OPTIMIZER-------------", BC.END)
+        print(BC.OKMAGENTA, BC.BOLD, "------------STARTING OPTIMIZER-------------", BC.END)
         print_option='Big'
         RMSGtolerance=0.0001
         MaxGtolerance=0.0003
