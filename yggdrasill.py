@@ -19,32 +19,21 @@ def print_yggdrasill_header():
     #https://www.gridsagegames.com/rexpaint/
 
 
-    ascii_banner="""
-    (MM) (QM/MM)  (MD)
-(QM ) XX     X    XX
-X     XX    X  XXX   (QM/MM MD)
- X     XX  XX XX    XXX
-  XX    X XX XX  XXXX
-    XXX XXX XX XX
-       XXX  XXX
-         X  X
-         X  X
-         X  X
-         X  X
-        XX  XX
-       X XX  X
-     XX  XX  XXX
-   XXX  XX XX  XX
-  XX   XX   XX    XX
-(ORCA) (xTB) (Psi4) (Dalton)   
+    ascii_banner="""                                                                                                                                                                                                                                                                           
+██╗   ██╗ ██████╗  ██████╗ ██████╗ ██████╗  █████╗ ███████╗██╗██╗     ██╗     
+╚██╗ ██╔╝██╔════╝ ██╔════╝ ██╔══██╗██╔══██╗██╔══██╗██╔════╝██║██║     ██║     
+ ╚████╔╝ ██║  ███╗██║  ███╗██║  ██║██████╔╝███████║███████╗██║██║     ██║     
+  ╚██╔╝  ██║   ██║██║   ██║██║  ██║██╔══██╗██╔══██║╚════██║██║██║     ██║     
+   ██║   ╚██████╔╝╚██████╔╝██████╔╝██║  ██║██║  ██║███████║██║███████╗███████╗
+   ╚═╝    ╚═════╝  ╚═════╝ ╚═════╝ ╚═╝  ╚═╝╚═╝  ╚═╝╚══════╝╚═╝╚══════╝╚══════╝
 """
-    print(BC.WARNING,"--------------------------------------------------",BC.END)
-    print(BC.WARNING,"--------------------------------------------------",BC.END)
+    print(BC.WARNING,"----------------------------------------------------------------------------------",BC.END)
+    print(BC.WARNING,"----------------------------------------------------------------------------------",BC.END)
     print(BC.WARNING,BC.BOLD,"YGGDRASILL version", programversion,BC.END)
-    print(BC.WARNING,"A GENERAL COMPCHEM AND QM/MM ENVIRONMENT", BC.END)
-    print(BC.WARNING,BC.BOLD,ascii_banner,BC.END)
-    print(BC.WARNING,"--------------------------------------------------",BC.END)
-    print(BC.WARNING,"--------------------------------------------------",BC.END)
+    print(BC.WARNING,"A COMPCHEM AND QM/MM ENVIRONMENT", BC.END)
+    print(BC.OKBLUE,ascii_banner,BC.END)
+    print(BC.WARNING,"----------------------------------------------------------------------------------",BC.END)
+    print(BC.WARNING,"----------------------------------------------------------------------------------",BC.END)
 
 
 #Numerical frequencies class
