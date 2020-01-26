@@ -844,6 +844,19 @@ class xTBTheory:
         self.charge=charge
         self.mult=mult
         self.xtbmethod=xtbmethod
+    #Cleanup after run.
+    def cleanup(self):
+        print("Cleaning up old xTB files")
+        try:
+            os.remove('xtb-inpfile.xyz')
+            os.remove('xtb-inpfile.out')
+            os.remove('gradient')
+            os.remove('charges')
+            os.remove('energy')
+            #TODO: Add restart function so that xtbrestart is not always deleted
+            os.remove('xtbrestart')
+        except:
+            pass
     def run(self, current_coords=[], current_MM_coords=[], MMcharges=[], qm_elems=[],
                 mm_elems=[], elems=[], Grad=False, PC=False, nprocs=1):
         print("------------STARTING XTB INTERFACE-------------")
@@ -863,6 +876,7 @@ class xTBTheory:
         numatoms=len(current_coords)
         #TODO: Delete previous possible calcfiles.
         # xyzfile, energy, gradient file,
+        self.cleanup()
         #xtbrestart possibly. needs to be optional
         write_xyzfile(self.elems, current_coords, inputfilename)
 
