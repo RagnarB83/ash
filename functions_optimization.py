@@ -2,6 +2,7 @@ import numpy as np
 import constants
 from functions_general import *
 from functions_coords import *
+from yggdrasill import *
 import time
 import os
 import shutil
@@ -222,7 +223,7 @@ class Optimizer:
             # Can be used if optimization failed, SCF convergence problemt etc.
             write_xyzfile(elems, current_coords, 'Current_geometry')
             blankline()
-            print_time_rel_and_tot(CheckpointTime, beginTime, 'ORCA Opt Step')
+            print_time_rel_and_tot(CheckpointTime, beginTime, 'Opt Step')
         print(BC.FAIL,"Optimization did not converge in {} iteration".format(self.maxiter),BC.END)
 
 
