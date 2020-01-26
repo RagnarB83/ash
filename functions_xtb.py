@@ -68,13 +68,25 @@ def xtbVEAgrab(file):
 def run_xtb_SP_serial(xtbdir, xtbmethod, xyzfile, charge, mult, Grad=False):
     basename = xyzfile.split('.')[0]
     uhf=mult-1
+
+    if 'GFN2' in xtbmethod.upper():
+        xtbflag = 2
+    elif 'GFN1' in xtbmethod.upper():
+        xtbflag = 1
+    elif 'GFN0' in xtbmethod.upper():
+        xtbflag = 0
+    else:
+        print("Unknown xtbmethod chosen. Exiting...")
+        exit()
+    print("xtbflag:", xtbflag)
+    print("Grad:", Grad)
     with open(basename+'.out', 'w') as ofile:
         if Grad==True:
-            process = sp.run([xtbdir + '/xtb', basename+'.xyz', '--gfn', str(xtbmethod), '--chrg', str(charge), '--uhf',
+            process = sp.run([xtbdir + '/xtb', basename+'.xyz', '--gfn', str(xtbflag), '--chrg', str(charge), '--uhf',
                               str(uhf) ], check=True, stdout=ofile, stderr=ofile, universal_newlines=True)
         else:
             process = sp.run(
-                [xtbdir + '/xtb', basename + '.xyz', '--gfn', str(xtbmethod), '--grad', '--chrg', str(charge), '--uhf', str(uhf)],
+                [xtbdir + '/xtb', basename + '.xyz', '--gfn', str(xtbflag), '--grad', '--chrg', str(charge), '--uhf', str(uhf)],
                 check=True, stdout=ofile, stderr=ofile, universal_newlines=True)
 # Run GFN-xTB single-point job (for multiprocessing execution) for both state A and B (e.g. VIE calc)
 #Takes 1 argument: line with xyzfilename and the xtb options.

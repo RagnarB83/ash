@@ -861,7 +861,13 @@ class xTBTheory:
         print("Current_coords:", current_coords )
         #Using current_coords from now on
         numatoms=len(current_coords)
+        #TODO: Delete previous possible calcfiles.
+        # xyzfile, energy, gradient file,
+        #xtbrestart possibly. needs to be optional
         write_xyzfile(self.elems, current_coords, inputfilename)
+
+
+
         #Run inputfile. Take nprocs argument. Orcadir argument??
         print("------------Running xTB-------------")
         print("...")
