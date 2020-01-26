@@ -114,6 +114,9 @@ class Optimizer:
 
             #Running E+G theory job.
             E, Grad = self.theory.run(current_coords=current_coords, elems=self.fragment.elems, Grad=True)
+            print("E,", E)
+            print("Grad,", Grad)
+            exit()
             #Converting to atomic forces in eV/Angstrom. Used by Knarr
             forces_evAng=Grad * (-1) * constants.hartoeV / constants.bohr2ang
             blankline()
