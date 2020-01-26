@@ -29,7 +29,8 @@ def xtbgradientgrab(file,numatoms):
     count=0
     #Converting Fortran D exponent to E
     t = 'string'.maketrans('D', 'E')
-    row=0
+    #Reading file backwards so adding to gradient backwards too
+    row=numatoms-1
     #Read file in reverse
     with open(file) as f:
         for line in reverse_lines(f):
@@ -46,7 +47,7 @@ def xtbgradientgrab(file,numatoms):
                 gradient[row] = [float( line.split()[0].translate(t)), float(line.split()[1].translate(t)),
                                  float(line.split()[2].translate(t))]
                 count+=1
-                row+=1
+                row-=1
             if '$end' in line:
                 grab=True
 
