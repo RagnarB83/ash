@@ -138,10 +138,9 @@ class Optimizer:
                 write_xyz_trajectory(trajname, current_coords, elems, E)
 
                 # Updating energy and coordinates of Yggdrasill fragment before ending
-                fragment.set_energy(E)
+                self.fragment.set_energy(E)
                 print("Final optimized energy:", fragment.energy)
-                fragment.replace_coords(elems, current_coords)
-
+                self.fragment.replace_coords(elems, current_coords)
                 blankline()
                 print_time_rel_and_tot(CheckpointTime, beginTime, 'Opt Step')
                 return
