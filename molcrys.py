@@ -12,6 +12,12 @@ origtime=time.time()
 currtime=time.time()
 
 def molcrys(cif_file='', fragmentobjects=[], theory=None, numcores=None, chargemodel='', clusterradius=None):
+
+    #Here assuming theory can only be ORCA for now
+    orcadir=theory.orcadir
+    orcablocks=theory.orcablocks
+    orcasimpleinput=theory.simpleinput
+
     print("Fragments defined:")
     print("Mainfrag:", fragmentobjects[0].__dict__)
     print("Counterfrag1:", fragmentobjects[1].__dict__)
@@ -19,9 +25,9 @@ def molcrys(cif_file='', fragmentobjects=[], theory=None, numcores=None, chargem
     origtime = time.time()
     currtime = time.time()
     #Read CIF-file
-    print("Read CIF file:", CIF_file)
+    print("Read CIF file:", cif_file)
     blankline()
-    cell_length,cell_angles,atomlabels,elems,asymmcoords,symmops=read_ciffile(CIF_file)
+    cell_length,cell_angles,atomlabels,elems,asymmcoords,symmops=read_ciffile(cif_file)
     print("Cell parameters: {} {} {} {} {} {}".format(cell_length[0],cell_length[1], cell_length[2] , cell_angles[0], cell_angles[1], cell_angles[2]))
     print("Number of fractional coordinates in asymmetric unit:", len(asymmcoords))
 
@@ -66,7 +72,7 @@ def molcrys(cif_file='', fragmentobjects=[], theory=None, numcores=None, chargem
     #TODO: First all mainfrags, then counterfrags ??
 
     #Create MM cluster here already or later
-    cluster_coords,cluster_elems=create_MMcluster(orthogcoords,elems,cell_vectors,sphereradius)
+    cluster_coords,cluster_elems=create_MMcluster(orthogcoords,elems,cell_vectors,clusterradius)
     print_time_rel_and_tot(currtime, origtime)
     currtime=time.time()
 
@@ -74,7 +80,7 @@ def molcrys(cif_file='', fragmentobjects=[], theory=None, numcores=None, chargem
     #import cProfile
     #cProfile.run('remove_partial_fragments(cluster_coords,cluster_elems,sphereradius,fragmentobjects)')
 
-    cluster_coords,cluster_elems=remove_partial_fragments(cluster_coords,cluster_elems,sphereradius,fragmentobjects)
+    cluster_coords,cluster_elems=remove_partial_fragments(cluster_coords,cluster_elems,clusterradius,fragmentobjects)
     print_time_rel_and_tot(currtime, origtime)
     currtime=time.time()
     write_xyzfile(cluster_elems,cluster_coords,"cluster_coords")
