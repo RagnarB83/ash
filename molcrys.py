@@ -11,7 +11,7 @@ import shutil
 origtime=time.time()
 currtime=time.time()
 
-def molcrys(cif_file='', fragmentobjects=[], numcores=None, chargemodel=''):
+def molcrys(cif_file='', fragmentobjects=[], theory=None, numcores=None, chargemodel='', clusterradius=None):
     print("Fragments defined:")
     print("Mainfrag:", fragmentobjects[0].__dict__)
     print("Counterfrag1:", fragmentobjects[1].__dict__)
