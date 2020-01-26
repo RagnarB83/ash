@@ -11,6 +11,11 @@ import shutil
 origtime=time.time()
 currtime=time.time()
 
+
+#TODO: Introduce jobtype. Either SPEmbeddingloop or Optloop.
+#Or maybe have molcrys only be SPEmbedding and in inputfile we do molcrys job and then opt-job.
+#Could do SPembedding again after Opt
+
 def molcrys(cif_file='', fragmentobjects=[], theory=None, numcores=None, chargemodel='', clusterradius=None):
 
     banner="""
@@ -20,6 +25,16 @@ def molcrys(cif_file='', fragmentobjects=[], theory=None, numcores=None, chargem
     
     """
     print(banner)
+    banner2="""
+  __  __    ____    _         _____   _____   __     __   _____ 
+ |  \/  |  / __ \  | |       / ____| |  __ \  \ \   / /  / ____|
+ | \  / | | |  | | | |      | |      | |__) |  \ \_/ /  | (___  
+ | |\/| | | |  | | | |      | |      |  _  /    \   /    \___ \ 
+ | |  | | | |__| | | |____  | |____  | | \ \     | |     ____) |
+ |_|  |_|  \____/  |______|  \_____| |_|  \_\    |_|    |_____/ 
+                                                                
+    """
+    print(banner2)
     banner3="""
 ███╗   ███╗ ██████╗ ██╗      ██████╗██████╗ ██╗   ██╗███████╗
 ████╗ ████║██╔═══██╗██║     ██╔════╝██╔══██╗╚██╗ ██╔╝██╔════╝
@@ -28,7 +43,22 @@ def molcrys(cif_file='', fragmentobjects=[], theory=None, numcores=None, chargem
 ██║ ╚═╝ ██║╚██████╔╝███████╗╚██████╗██║  ██║   ██║   ███████║
 ╚═╝     ╚═╝ ╚═════╝ ╚══════╝ ╚═════╝╚═╝  ╚═╝   ╚═╝   ╚══════╝
     """
-    #print(banner3)
+    print(banner3)
+    banner4="""
+ .----------------.  .----------------.  .----------------.  .----------------.  .----------------.  .----------------.  .----------------. 
+| .--------------. || .--------------. || .--------------. || .--------------. || .--------------. || .--------------. || .--------------. |
+| | ____    ____ | || |     ____     | || |   _____      | || |     ______   | || |  _______     | || |  ____  ____  | || |    _______   | |
+| ||_   \  /   _|| || |   .'    `.   | || |  |_   _|     | || |   .' ___  |  | || | |_   __ \    | || | |_  _||_  _| | || |   /  ___  |  | |
+| |  |   \/   |  | || |  /  .--.  \  | || |    | |       | || |  / .'   \_|  | || |   | |__) |   | || |   \ \  / /   | || |  |  (__ \_|  | |
+| |  | |\  /| |  | || |  | |    | |  | || |    | |   _   | || |  | |         | || |   |  __ /    | || |    \ \/ /    | || |   '.___`-.   | |
+| | _| |_\/_| |_ | || |  \  `--'  /  | || |   _| |__/ |  | || |  \ `.___.'\  | || |  _| |  \ \_  | || |    _|  |_    | || |  |`\____) |  | |
+| ||_____||_____|| || |   `.____.'   | || |  |________|  | || |   `._____.'  | || | |____| |___| | || |   |______|   | || |  |_______.'  | |
+| |              | || |              | || |              | || |              | || |              | || |              | || |              | |
+| '--------------' || '--------------' || '--------------' || '--------------' || '--------------' || '--------------' || '--------------' |
+ '----------------'  '----------------'  '----------------'  '----------------'  '----------------'  '----------------'  '----------------' 
+
+    """
+    print(banner4)
     #Here assuming theory can only be ORCA for now
     orcadir=theory.orcadir
     orcablocks=theory.orcablocks
@@ -192,8 +222,8 @@ def molcrys(cif_file='', fragmentobjects=[], theory=None, numcores=None, chargem
         print_coords_for_atoms(Cluster.coords,Cluster.elems,Centralmainfrag)
 
         bla=Cluster.get_coords_for_atoms(Centralmainfrag)
-        print("bla:", bla)
-        print("z Cluster.atomcharges:", Cluster.atomcharges)
+        #print("bla:", bla)
+        #print("z Cluster.atomcharges:", Cluster.atomcharges)
         QMMM_SP_ORCAcalculation = QMMMTheory(fragment=Cluster, qm_theory=ORCAQMtheory, qmatoms=Centralmainfrag,
                                      atomcharges=Cluster.atomcharges, embedding='Elstat')
 
@@ -202,7 +232,7 @@ def molcrys(cif_file='', fragmentobjects=[], theory=None, numcores=None, chargem
 
         #Grab atomic charges for fragment.
         atomcharges = grabatomcharges(chargemodel, ORCAQMtheory.inputfilename + '.out')
-        print("atomcharges:", atomcharges)
+        #print("atomcharges:", atomcharges)
 
         # Keep backup of ORCA outputfile in dir SPloop-files
         shutil.copyfile('orca-input.out', './SPloop-files/mainfrag-SPloop'+str(SPLoopNum)+'.out')
@@ -215,8 +245,8 @@ def molcrys(cif_file='', fragmentobjects=[], theory=None, numcores=None, chargem
         Cluster.print_system("Cluster-info_afterSP{}.txt".format(SPLoopNum))
         fragmentobjects[0].print_infofile('mainfrag-info_afterSP{}.txt'.format(SPLoopNum))
         blankline()
-        print("Current charges:", fragmentobjects[0].all_atomcharges[-1])
-        print("Previous charges:", fragmentobjects[0].all_atomcharges[-2])
+        #print("Current charges:", fragmentobjects[0].all_atomcharges[-1])
+        #print("Previous charges:", fragmentobjects[0].all_atomcharges[-2])
         RMSD_charges=rmsd_list(fragmentobjects[0].all_atomcharges[-1],fragmentobjects[0].all_atomcharges[-2])
         print("RMSD of charges: {:6.3f} in SP iteration {:6}:".format(RMSD_charges, SPLoopNum))
         if RMSD_charges < RMSD_SP_threshold:
