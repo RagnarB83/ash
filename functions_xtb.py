@@ -38,6 +38,7 @@ def xtbgradientgrab(file,numatoms):
                 print("energy:", energy)
                 print("gradient:", gradient)
                 print(type(gradient))
+                exit()
                 return energy, gradient
             if count==numatoms:
                 grab=False
