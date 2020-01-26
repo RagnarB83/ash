@@ -865,19 +865,13 @@ class xTBTheory:
         print("Creating inputfile:", inputfilename+'.xyz')
         #What coordinates to work with
         if len(current_coords) != 0:
-            print("if. using provided")
             pass
         else:
-            print("else. using built-in coords")
             current_coords=self.coords
-        print("Inside xtb run")
-        print("Current_coords:", current_coords )
         #Using current_coords from now on
         numatoms=len(current_coords)
-        #TODO: Delete previous possible calcfiles.
-        # xyzfile, energy, gradient file,
         self.cleanup()
-        #xtbrestart possibly. needs to be optional
+        #Todo: xtbrestart possibly. needs to be optional
         write_xyzfile(self.elems, current_coords, inputfilename)
 
 
@@ -940,3 +934,64 @@ def run_QMMM_SP_in_parallel(orcadir, list_of__geos, list_of_labels, QMMMtheory, 
     results = pool.map(run_QM_MM_SP, [[orcadir,geo, QMMMtheory ] for geo in list_of__geos])
     pool.close()
     print("Calculations are done")
+
+
+
+#MMAtomobject used to store LJ parameter and possibly charge for MM atom with atomtype, e.g. OT
+class AtomMMobject:
+    def __init__(self, atomcharge=None, LJparameters=[]):
+        sf="dsf"
+        self.atomcharge = atomcharge
+        self.LJparameters = LJparameters
+    def add_charge(self, atomcharge=None):
+        self.atomcharge = atomcharge
+    def add_LJparameters(self, LJparameters=None):
+        self.LJparameters=LJparameters
+
+#Makes more sense to store this here. Simplifies Yggdrasill inputfile import.
+def MMforcefield_read(file):
+    print("Reading forcefield file:", file)
+    MM_forcefield = {}
+    atomtypes=[]
+    with open(file) as f:
+        for line in f:
+            if 'combination_rule' in line:
+                combrule=line.split()[-1]
+                print("Found combination rule defintion in forcefield file:", combrule)
+                MM_forcefield["combination_rule"]=combrule
+            if 'charge' in line:
+                print("Found charge definition in forcefield file:", ' '.join(line.split()[:]))
+                atomtype=line.split()[1]
+                if atomtype not in MM_forcefield.keys():
+                    MM_forcefield[atomtype]=AtomMMobject()
+                charge=float(line.split()[2])
+                MM_forcefield[atomtype].add_charge(atomcharge=charge)
+                # TODO: Charges defined are currently not used I think
+            if 'LennardJones_i_sigma' in line:
+                print("Found LJ single-atom sigma definition in forcefield file:", ' '.join(line.split()[:]))
+                atomtype=line.split()[1]
+                if atomtype not in MM_forcefield.keys():
+                    MM_forcefield[atomtype] = AtomMMobject()
+                sigma_i=float(line.split()[2])
+                eps_i=float(line.split()[3])
+                MM_forcefield[atomtype].add_LJparameters(LJparameters=[sigma_i,eps_i])
+            if 'LennardJones_i_R0' in line:
+                print("Found LJ single-atom R0 definition in forcefield file:", ' '.join(line.split()[:]))
+                atomtype=line.split()[1]
+                R0tosigma=0.5**(1/6)
+                print("R0tosigma conversion", R0tosigma)
+                if atomtype not in MM_forcefield.keys():
+                    MM_forcefield[atomtype] = AtomMMobject()
+                sigma_i=float(line.split()[2]*R0tosigma)
+                eps_i=float(line.split()[3])
+                MM_forcefield[atomtype].add_LJparameters(LJparameters=[sigma_i,eps_i])
+            if 'LennardJones_ij' in line:
+                print("Found LJ pair definition in forcefield file")
+                atomtype_i=line.split()[1]
+                atomtype_j=line.split()[2]
+                sigma_ij=float(line.split()[3])
+                eps_ij=float(line.split()[4])
+                print("This is incomplete. Exiting")
+                exit()
+                # TODO: Need to finish this. Should replace LennardJonespairpotentials later
+    return MM_forcefield
