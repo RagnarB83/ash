@@ -116,7 +116,6 @@ class Optimizer:
             E, Grad = self.theory.run(current_coords=current_coords, elems=self.fragment.elems, Grad=True)
             print("E,", E)
             print("Grad,", Grad)
-            exit()
             #Converting to atomic forces in eV/Angstrom. Used by Knarr
             forces_evAng=Grad * (-1) * constants.hartoeV / constants.bohr2ang
             blankline()
@@ -202,7 +201,9 @@ class Optimizer:
                     #Store original atomic forces (in eV/Å)
                     keepf=np.copy(forces_evAng)
                     keepr = np.copy(current_coords)
+                    print("here nn")
                     step = TakeFDStep(self.theory, current_coords, LBFGS_parameters["fd_step"], forces_evAng, self.fragment.elems)
+                    print("step:", step)
 
                 else:
                     print("Doing LBFGS Update")
@@ -213,7 +214,7 @@ class Optimizer:
                     print("Taking LBFGS Step")
                     step, negativecurv = LBFGSStep(forces_evAng, sk, yk, rhok)
                     step *= LBFGS_parameters["lbfgs_damping"]
-
+                    print("step:", step)
                     if negativecurv:
                         reset_opt = True
             else:
