@@ -998,16 +998,16 @@ def MMforcefield_read(file):
 #Logger class for writing both to file and stdout
 #From: https://stackoverflow.com/questions/14906764/how-to-redirect-stdout-to-both-file-and-console-with-scripting
 
-#class Logger(object):
-#    def __init__(self):
-#        self.terminal = sys.stdout
-#        self.log = open(os.path.basename(__file__)+'.out', "a")
-#    def write(self, message):
-#        self.terminal.write(message)
-#        self.log.write(message)
-#    def flush(self):
-#        #this flush method is needed for python 3 compatibility.
-#        #this handles the flush command by doing nothing.
-#        #you might want to specify some extra behavior here.
-#        pass
+class Logger(object):
+    def __init__(self):
+        self.terminal = sys.stdout
+        self.log = open(os.path.basename(__file__)+'.out', "a")
+    def write(self, message):
+        self.terminal.write(message)
+        self.log.write(message)
+    def flush(self):
+        #this flush method is needed for python 3 compatibility.
+        #this handles the flush command by doing nothing.
+        #you might want to specify some extra behavior here.
+        pass
 
