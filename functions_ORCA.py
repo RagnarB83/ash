@@ -5,8 +5,15 @@ from functions_general import *
 import settings_solvation
 import constants
 
-#Run inputfiles in parallel using multiprocessing
+
 def run_inputfiles_in_parallel(orcadir, inpfiles, numcores):
+    """
+    Run inputfiles in parallel using multiprocessing
+    :param orcadir: path to ORCA directory
+    :param inpfiles: list of inputfiles
+    :param numcores: number of cores to use (integer)
+    ;return: returns nothing. Outputfiles on disk parsed separately
+    """
     import multiprocessing as mp
     blankline()
     print("Number of CPU cores: ", numcores)
@@ -544,7 +551,8 @@ def create_orca_inputVIEcomp_gas(name, name2, elems, coords, orcasimpleinput, or
 #Create PC-embedded ORCA inputfile from elems,coords, input, charge, mult,pointcharges
 #Allows for extraline that could be another '!' line or block-inputline.
 #Used by Yggdrasill
-def create_orca_input_pc(name,elems,coords,orcasimpleinput,orcablockinput,charge,mult, Grad=False, extraline=''):
+def create_orca_input_pc(name,elems,coords,orcasimpleinput,orcablockinput,charge,mult, Grad=False, extraline='',
+                         HSmult=None, atomstoflip=[]):
     pcfile=name+'.pc'
     with open(name+'.inp', 'w') as orcafile:
         orcafile.write(orcasimpleinput+'\n')
@@ -554,8 +562,17 @@ def create_orca_input_pc(name,elems,coords,orcasimpleinput,orcablockinput,charge
             orcafile.write('! Engrad' + '\n')
         orcafile.write('%pointcharges "{}"\n'.format(pcfile))
         orcafile.write(orcablockinput + '\n')
+        if len(atomstoflip) > 0:
+            atomstoflipstring= ','.join(map(str, atomstoflip))
+            orcafile.write('%scf\n')
+            orcafile.write('Flipspin {}'.format(atomstoflipstring)+ '\n')
+            orcafile.write('FinalMs {}'.format((mult-1)/2)+ '\n')
+            orcafile.write('end  \n')
         orcafile.write('\n')
-        orcafile.write('*xyz {} {}\n'.format(charge,mult))
+        if len(atomstoflip) > 0:
+            orcafile.write('*xyz {} {}\n'.format(charge,HSmult))
+        else:
+            orcafile.write('*xyz {} {}\n'.format(charge,mult))
         for el,c in zip(elems,coords):
             orcafile.write('{} {} {} {} \n'.format(el,c[0], c[1], c[2]))
         orcafile.write('*\n')
@@ -563,7 +580,8 @@ def create_orca_input_pc(name,elems,coords,orcasimpleinput,orcablockinput,charge
 #Create simple ORCA inputfile from elems,coords, input, charge, mult,pointcharges
 #Allows for extraline that could be another '!' line or block-inputline.
 #Used by Yggdrasill
-def create_orca_input_plain(name,elems,coords,orcasimpleinput,orcablockinput,charge,mult, Grad=False, extraline=''):
+def create_orca_input_plain(name,elems,coords,orcasimpleinput,orcablockinput,charge,mult, Grad=False, extraline='',
+                            HSmult=None, atomstoflip=[]):
     with open(name+'.inp', 'w') as orcafile:
         orcafile.write(orcasimpleinput+'\n')
         if extraline != '':
@@ -571,8 +589,18 @@ def create_orca_input_plain(name,elems,coords,orcasimpleinput,orcablockinput,cha
         if Grad == True:
             orcafile.write('! Engrad' + '\n')
         orcafile.write(orcablockinput + '\n')
+        if len(atomstoflip) > 0:
+            atomstoflipstring= ','.join(map(str, atomstoflip))
+            orcafile.write('%scf\n')
+            orcafile.write('Flipspin {}'.format(atomstoflipstring)+ '\n')
+            orcafile.write('FinalMs {}'.format((mult-1)/2)+ '\n')
+            orcafile.write('end  \n')
         orcafile.write('\n')
-        orcafile.write('*xyz {} {}\n'.format(charge,mult))
+        if len(atomstoflip) > 0:
+            orcafile.write('*xyz {} {}\n'.format(charge,HSmult))
+        else:
+            orcafile.write('*xyz {} {}\n'.format(charge,mult))
+
         for el,c in zip(elems,coords):
             orcafile.write('{} {} {} {} \n'.format(el,c[0], c[1], c[2]))
         orcafile.write('*\n')

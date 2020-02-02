@@ -565,7 +565,8 @@ class QMMMTheory:
 
 #ORCA Theory object. Fragment object is optional. Only used for single-points.
 class ORCATheory:
-    def __init__(self, orcadir, fragment='', charge='', mult='', orcasimpleinput='', orcablocks='', extraline=''):
+    def __init__(self, orcadir, fragment='', charge='', mult='', orcasimpleinput='',
+                 orcablocks='', extraline='', brokensym=None, HSmult=None, atomstoflip=[]):
         self.orcadir = orcadir
         if fragment != '':
             self.fragment=fragment
@@ -617,11 +618,21 @@ class ORCATheory:
         if PC==True:
             print("Pointcharge embedding is on!")
             create_orca_pcfile(self.inputfilename, mm_elems, current_MM_coords, MMcharges)
-            create_orca_input_pc(self.inputfilename, qm_elems, current_coords, self.orcasimpleinput, self.orcablocks,
-                                    self.charge, self.mult, extraline=self.extraline)
+            if self.brokensym==True:
+                create_orca_input_pc(self.inputfilename, qm_elems, current_coords, self.orcasimpleinput, self.orcablocks,
+                                        self.charge, self.mult, extraline=self.extraline, HSmult=self.HSmult,
+                                     atomstoflip=self.atomstoflip)
+            else:
+                create_orca_input_pc(self.inputfilename, qm_elems, current_coords, self.orcasimpleinput, self.orcablocks,
+                                        self.charge, self.mult, extraline=self.extraline)
         else:
-            create_orca_input_plain(self.inputfilename, qm_elems, current_coords, self.orcasimpleinput,self.orcablocks,
-                                    self.charge,self.mult, extraline=self.extraline)
+            if self.brokensym == True:
+                create_orca_input_plain(self.inputfilename, qm_elems, current_coords, self.orcasimpleinput,self.orcablocks,
+                                        self.charge,self.mult, extraline=self.extraline, HSmult=self.HSmult,
+                                     atomstoflip=self.atomstoflip)
+            else:
+                create_orca_input_plain(self.inputfilename, qm_elems, current_coords, self.orcasimpleinput,self.orcablocks,
+                                        self.charge,self.mult, extraline=self.extraline)
 
         #Run inputfile using ORCA parallelization. Take nprocs argument.
         #print(BC.OKGREEN, "------------Running ORCA calculation-------------", BC.END)
@@ -633,6 +644,10 @@ class ORCATheory:
             run_orca_SP_ORCApar(self.orcadir, self.inputfilename + '.inp', nprocs=nprocs)
         #print(BC.OKGREEN, "------------ORCA calculation done-------------", BC.END)
         print(BC.OKGREEN, "ORCA Calculation done.", BC.END)
+
+        #Now that we have possibly run a BS-DFT calculation, turning Brokensym off for future calcs (opt, restart, etc.)
+        #TODO: Possibly use different flag for this???
+        self.brokensym=False
 
         #Check if finished. Grab energy and gradient
         outfile=self.inputfilename+'.out'
@@ -663,14 +678,15 @@ class ORCATheory:
 
 # Fragment class
 class Fragment:
-    def __init__(self, coordsstring=None, xyzfile=None, coords=None, elems=None):
+    def __init__(self, coordsstring=None, xyzfile=None, pdbfile=None, coords=None, elems=None):
         print("Defining new Yggdrasill fragment object")
         self.energy = None
         self.elems=[]
         self.coords=[]
         self.connectivity=[]
         self.atomcharges = []
-        print("co")
+        #TODO: Not sure if we use or not
+        self.atomtypes = []
         if coords is not None:
             self.coords=coords
             self.elems=elems
@@ -680,6 +696,8 @@ class Fragment:
         #If xyzfile argument, run read_xyzfile
         elif xyzfile is not None:
             self.read_xyzfile(xyzfile)
+        elif pdbfile is not None:
+            self.read_pdbfile(pdbfile)
         if coords is not None:
             self.nuccharge = nucchargelist(self.elems)
             self.numatoms = len(self.coords)
@@ -739,8 +757,36 @@ class Fragment:
         print("Defined coordinates (Å):")
         print_coords_all(self.coords,self.elems)
     #Read XYZ file
+    def read_pdbfile(self,filename):
+        print("Reading coordinates from PDBfile \"{}\" into fragment".format(filename))
+        residuelist=[]
+        #If elemcolumn found
+        elemcol=[]
+        #TODO: Are there different PDB formats?
+        with open(filename) as f:
+            for line in f:
+                if 'ATOM' in line:
+                    self.coords.append([float(line.split()[6]), float(line.split()[7]), float(line.split()[8])])
+                    elemcol.append(line.split()[-1])
+                    residuelist.append(line.split()[3])
+        if len(elemcol) != len(self.coords):
+            print("did not find same number of elements as coordinates")
+            print("Need to define elements in some other way")
+            exit()
+        else:
+            self.elems=elemcol
+
+        self.nuccharge = nucchargelist(self.elems)
+        self.numatoms = len(self.coords)
+        self.atomlist = list(range(0, self.numatoms))
+        self.allatoms = self.atomlist
+        self.mass = totmasslist(self.elems)
+        self.list_of_masses = list_of_masses(self.elems)
+        self.calc_connectivity()
+
+    #Read XYZ file
     def read_xyzfile(self,filename):
-        print("Reading coordinates from {} into fragment".format(filename))
+        print("Reading coordinates from XYZfile {} into fragment".format(filename))
         with open(filename) as f:
             for count,line in enumerate(f):
                 if count == 0:
@@ -763,6 +809,10 @@ class Fragment:
     #Calculate connectivity (list of lists) of coords
     def calc_connectivity(self, conndepth=99, scale=None, tol=None ):
         print("Calculating connectivity of fragment...")
+
+        if len(self.coords) > 10000:
+            print("Atom number > 10K. Connectivity calculation could take a while")
+
         if scale == None:
             scale=settings_yggdrasill.scale
             tol=settings_yggdrasill.tol

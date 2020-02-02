@@ -21,7 +21,7 @@ Contains Python3, Numpy, SciPy, Matplotlib.
     - coordinate string
     - XYZ file
     - CIF file (to be finished)
-    - PDB file (TODO)
+    - PDB file
     - Python lists
 - **QM interfaces for ORCA and xTB:**
     - Flexible input structure support any Hamiltonian/basis set available in ORCA or xTB.

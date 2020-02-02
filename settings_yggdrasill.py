@@ -1,5 +1,7 @@
+import yggdrasill
 #Defining global variables here: called as settings_yggdrasill.scale etc.
 def init():
+    yggdrasill.print_yggdrasill_header()
     global scale
     global tol
     global conndepth
@@ -8,3 +10,4 @@ def init():
     scale = 1.0
     tol = 0.1
     conndepth = 10
+    print(f"Setting global settings: \n Connectivity scale: {scale} and tol: {tol}")

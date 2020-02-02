@@ -1,25 +1,70 @@
 from yggdrasill import *
 import settings_yggdrasill
-from functions_MM import *
-########################################################
-# YGGDRASILL - A GENERAL COMPCHEM AND QM/MM ENVIRONMENT#
-########################################################
-print_yggdrasill_header()
-#TODO: Write Psi4 interface
-#Todo: Write Dalton interface
-
-#Define global system settings ( scale, tol and conndepth keywords for connectivity)
 settings_yggdrasill.init() #initialize
 
-print(settings_yggdrasill.scale)
-print(settings_yggdrasill.tol)
-#General program
+#Test settings
 path="/Users/bjornssonsu/ownCloud/PyQMMM-project/Yggdrasill-testdir"
 os.chdir(path)
 
-#TODO: Read in PDB file
-#TODO: Read in CIF_file. Create XYZ file of both types of fragments???
+exit()
 
+
+#PDB read in
+PDB_frag = Fragment(pdbfile="xraymodel-solvionated.pdb")
+print("PDB_frag:", PDB_frag)
+
+
+#print(PDB_frag.__dict__)
+print(PDB_frag.numatoms)
+
+
+
+####################################
+# OPEN MM
+from simtk.openmm.app import *
+from simtk.openmm import *
+from simtk.unit import *
+from sys import stdout, exit, stderr
+
+# Load CHARMM files
+psf = CharmmPsfFile('step5_charmm2omm.psf')
+pdb = PDBFile('step5_charmm2omm.pdb')
+params = CharmmPsfFile('par_all36_prot.rtf', 'top_all36_prot.prm',
+                       'par_all36_lipid.rtf', 'top_all36_lipid.prm',
+                       'toppar_water_ion.str')
+
+# Create an openmm system by calling createSystem on psf
+system = psf.createSystem(params, nonbondedMethod=NoCutoff,
+         nonbondedCutoff=1*nanometer, constraints=HBonds)
+
+integrator = LangevinIntegrator(300*kelvin,   # Temperature of head bath
+                                1/picosecond, # Friction coefficient
+                                0.002*picoseconds) # Time step
+
+simulation = Simulation(psf.topology, system, integrator)
+
+
+###############
+exit()
+###########################
+#Basic pyscf usage
+from pyscf import gto, scf
+
+mol = gto.Mole()
+mol.verbose = 5
+#mol.output = 'out_h2o'
+mol.atom = '''
+O 0 0      0
+H 0 -2.757 2.587
+H 0  2.757 2.587'''
+mol.basis = 'ccpvdz'
+mol.symmetry = 1
+mol.build()
+
+mf = scf.RHF(mol)
+mf.kernel()
+
+exit()
 
 ################################
 # SINGLE-POINT QM CALCULATIONS #
@@ -42,14 +87,12 @@ xtbmethod='GFN2-xTB'
 #energy=ORCASPcalculation.energy
 #blankline()
 #xTBSPcalculation.run()
-#Todo: Write BS functionality into ORCATheory
-# Todo. Add extra basis functionality
+
 
 ###########################################
 # POINT-CHARGE EMBEDDED QM-SP CALCULATION #
 ###########################################
-#TODO: Add ORCA extrabasis-feature on specific atoms
-#Todo: Add embedding ECP atoms
+
 
 #HCl_vdw = Fragment(xyzfile="HCl-H2O-vdw.xyz")
 
@@ -211,8 +254,7 @@ ORCAQMtheory = ORCATheory(orcadir=orcadir, charge=0, mult=1, orcasimpleinput=orc
 ##############################
 # QM NUMERICAL FREQUENCIES   #
 ##############################
-#TODO: Allow for QM/MM Hessian. Requires some thinking.
-#TODO: Project out translational and rotational modes.
+
 #Creating ORCA theory object without fragment information
 #numcores=8
 #BORCAQMtheory = ORCATheory(orcadir=orcadir, charge=0, mult=1, orcasimpleinput=orcasimpleinput, orcablocks=orcablocks )
@@ -237,19 +279,13 @@ exit()
 ###############################
 # QM/MM GEOMETRY OPTIMIZATION #
 ###############################
-#TODO: Write code for creating Lennard-Jones parameters for any molecule
-#TODO: Interface MEDFF??
-# TODO: Interface something for bonding MM and QM/MM??? orca_mm ???
+
 
 
 ###########################
 # MOLECULAR DYNAMICS      #
 ###########################
-#TODO: Create initial Python-based MD code for basic functionality and understanding.
-#TODO: Replace with C++/Fortran written code?? Or interface something ??
-#TODO: Add thermostat and Shake functionality?
-#TODO: Maybe just do xtb MD with solute and a few xtB MD waters. Rest is frozen TIP3P.
-#TODO: Alternatively look into GFN-FF
+
 #Creating ORCA theory object without fragment information
 #ORCAQMtheory = ORCATheory(orcadir=orcadir, charge=0, mult=1, orcasimpleinput=orcasimpleinput, orcablocks=orcablocks)
 
@@ -257,14 +293,5 @@ exit()
 
 #MD_frag = MolecularDynamics(fragment=NewHCl_H2O, theory=ORCAQMtheory, ensemble='NVT', temperature=300)
 
-#xtb MD: https://xtb-docs.readthedocs.io/en/latest/md.html
 
 
-#MD program options:
-#https://github.com/openmm/openmm
-#http://openmd.org/category/examples/
-
-#MD analysis: https://github.com/MDAnalysis/mdanalysis
-
-#Metadynamics: https://github.com/openmm/openmm/issues/2126
-#http://docs.openmm.org/latest/api-python/generated/simtk.openmm.app.metadynamics.Metadynamics.html

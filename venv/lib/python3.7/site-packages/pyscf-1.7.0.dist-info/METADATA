@@ -1,0 +1,36 @@
+Metadata-Version: 2.1
+Name: pyscf
+Version: 1.7.0
+Summary: PySCF: Python-based Simulations of Chemistry Framework
+Home-page: http://www.pyscf.org
+Author: Qiming Sun
+Author-email: osirpt.sun@gmail.com
+License: Apache License 2.0
+Download-URL: http://github.com/sunqm/pyscf
+Platform: Linux
+Platform: Mac OS-X
+Platform: Unix
+Classifier: Development Status :: 5 - Production/Stable
+Classifier: Intended Audience :: Science/Research
+Classifier: Intended Audience :: Developers
+Classifier: License :: OSI Approved :: Apache Software License
+Classifier: Programming Language :: C
+Classifier: Programming Language :: Python
+Classifier: Programming Language :: Python :: 2.7
+Classifier: Programming Language :: Python :: 3.4
+Classifier: Programming Language :: Python :: 3.5
+Classifier: Programming Language :: Python :: 3.6
+Classifier: Programming Language :: Python :: 3.7
+Classifier: Programming Language :: Python :: 3.8
+Classifier: Topic :: Software Development
+Classifier: Topic :: Scientific/Engineering
+Classifier: Operating System :: POSIX
+Classifier: Operating System :: Unix
+Classifier: Operating System :: MacOS
+Requires-Dist: numpy
+Requires-Dist: scipy
+Requires-Dist: h5py
+
+UNKNOWN
+
+
