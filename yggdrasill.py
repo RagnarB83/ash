@@ -580,6 +580,9 @@ class ORCATheory:
         self.orcasimpleinput=orcasimpleinput
         self.orcablocks=orcablocks
         self.extraline=extraline
+        self.brokensym=brokensym
+        self.HSmult=HSmult
+        self.atomstoflip=atomstoflip
     #Cleanup after run.
     def cleanup(self):
         print("Cleaning up old ORCA files")
