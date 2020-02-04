@@ -3,13 +3,28 @@
    You can adapt this file completely to your liking, but it should at least
    contain the root `toctree` directive.
 
-Welcome to Yggdrasill's documentation!
+Yggdrasill: Documentation
 ======================================
+
+These are the documentation pages of Yggdrasill.
 
 .. toctree::
    :maxdepth: 2
    :caption: Contents:
 
+   installation
+   TODO
+   basics
+   coordinate-input
+   job-types
+   QM-interfaces
+   orca-interface
+
+
+
+
+
+.. warning:: This is Yggdrasill version 0.1. Use at your own risk!
 
 
 Indices and tables

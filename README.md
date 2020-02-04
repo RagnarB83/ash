@@ -9,7 +9,7 @@ Requirements:
 - Python3 installation
 - Numpy
 - Matplotlib (for some scientific plottin options).
-- Optional Python modules (installed via pip):
+- Optional Python modules for specific functionality (can be installed via pip):
     - PyBerny
     - geomeTRIC
 
