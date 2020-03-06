@@ -339,7 +339,7 @@ class NonBondedTheory:
             exit()
 
         #A large has many atomtypes. Creating list of unique atomtypes to simplify loop
-        uniqatomtypes== np.unique(atomtypes).tolist()
+        uniqatomtypes = np.unique(atomtypes).tolist()
         for count_i, at_i in enumerate(uniqatomtypes):
             print("count_i:", count_i)
             for count_j,at_j in enumerate(uniqatomtypes):
