@@ -315,6 +315,7 @@ class NonBondedTheory:
                 self.calculate_LJ_pairpotentials(LJcombrule)
 
     def calculate_LJ_pairpotentials(self,combination_rule='geometric'):
+        import math
         print("Defining Lennard-Jones pair potentials")
         #Printlevel. Todo: Make more general
         printsetting='normal'
@@ -342,9 +343,9 @@ class NonBondedTheory:
                     #print("at_i {} and at_j {}".format(at_i,at_j))
                     #Calculating sigma-pair and epsilon-pair
                     #Geometric means used.
-                    if len(self.forcefield[at_i].LJparameters)==0:
+                    if len(self.forcefield[at_i].LJparameters) == 0:
                         continue
-                    if len(self.forcefield[at_j].LJparameters)==0:
+                    if len(self.forcefield[at_j].LJparameters) == 0:
                         continue
                     if printsetting=='Debug':
                         print("LJ sigma_i {} for atomtype {}:".format(self.forcefield[at_i].LJparameters[0], at_i))
@@ -353,8 +354,8 @@ class NonBondedTheory:
                         print("LJ eps_j {} for atomtype {}:".format(self.forcefield[at_j].LJparameters[1], at_j))
                         blankline()
                     if combination_rule=='geometric':
-                        sigma=np.sqrt(self.forcefield[at_i].LJparameters[0]*self.forcefield[at_j].LJparameters[0])
-                        epsilon=np.sqrt(self.forcefield[at_i].LJparameters[1]*self.forcefield[at_j].LJparameters[1])
+                        sigma=math.sqrt(self.forcefield[at_i].LJparameters[0]*self.forcefield[at_j].LJparameters[0])
+                        epsilon=math.sqrt(self.forcefield[at_i].LJparameters[1]*self.forcefield[at_j].LJparameters[1])
                         if printsetting == 'Debug':
                             print("LJ sigma_ij : {} for atomtype-pair: {} {}".format(sigma,at_i, at_j))
                             print("LJ epsilon_ij : {} for atomtype-pair: {} {}".format(epsilon,at_i, at_j))
@@ -370,7 +371,7 @@ class NonBondedTheory:
                             print("Using geometric mean for LJ sigma parameters")
                             print("Using arithmetic mean for LJ epsilon parameters")
                             print("NOTE: to be confirmed")
-                        sigma=np.sqrt(self.forcefield[at_i].LJparameters[0]*self.forcefield[at_j].LJparameters[0])
+                        sigma=math.sqrt(self.forcefield[at_i].LJparameters[0]*self.forcefield[at_j].LJparameters[0])
                         epsilon=0.5-(self.forcefield[at_i].LJparameters[1]+self.forcefield[at_j].LJparameters[1])
                     elif combination_rule=='mixed_geoepsilon':
                         if printsetting == 'Debug':
@@ -378,7 +379,7 @@ class NonBondedTheory:
                             print("Using geometric mean for LJ epsilon parameters")
                             print("NOTE: to be confirmed")
                         sigma=0.5*(self.forcefield[at_i].LJparameters[0]+self.forcefield[at_j].LJparameters[0])
-                        epsilon=np.sqrt(self.forcefield[at_i].LJparameters[1]*self.forcefield[at_j].LJparameters[1])
+                        epsilon=math.sqrt(self.forcefield[at_i].LJparameters[1]*self.forcefield[at_j].LJparameters[1])
                     self.LJpairpotentials.append([at_i, at_j, sigma, epsilon])
         #Remove redundant pair potentials
         for acount, pairpot_a in enumerate(self.LJpairpotentials):
