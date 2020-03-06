@@ -314,6 +314,7 @@ class NonBondedTheory:
             if len(self.forcefield) > 0:
                 self.calculate_LJ_pairpotentials(LJcombrule)
 
+    #This is horribly slow for 13K atom system. Need to rewrite via vector math. Similar to connectivity
     def calculate_LJ_pairpotentials(self,combination_rule='geometric'):
         import math
         print("Defining Lennard-Jones pair potentials")
@@ -382,8 +383,11 @@ class NonBondedTheory:
                         sigma=0.5*(self.forcefield[at_i].LJparameters[0]+self.forcefield[at_j].LJparameters[0])
                         epsilon=math.sqrt(self.forcefield[at_i].LJparameters[1]*self.forcefield[at_j].LJparameters[1])
                     self.LJpairpotentials.append([at_i, at_j, sigma, epsilon])
+                    print(LJpairpotentials)
         #Remove redundant pair potentials
+        #Todo: make a lot faster
         for acount, pairpot_a in enumerate(self.LJpairpotentials):
+            print("acount:", acount)
             for bcount, pairpot_b in enumerate(self.LJpairpotentials):
                 if acount < bcount:
                     if set(pairpot_a) == set(pairpot_b):
