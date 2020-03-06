@@ -316,6 +316,8 @@ class NonBondedTheory:
 
     def calculate_LJ_pairpotentials(self,combination_rule='geometric'):
         print("Defining Lennard-Jones pair potentials")
+        #Printlevel. Todo: Make more general
+        printsetting='normal'
         #List to store pairpotentials
         self.LJpairpotentials=[]
         print("Atom types:", self.atomtypes)
@@ -344,31 +346,36 @@ class NonBondedTheory:
                         continue
                     if len(self.forcefield[at_j].LJparameters)==0:
                         continue
-                    print("LJ sigma_i {} for atomtype {}:".format(self.forcefield[at_i].LJparameters[0], at_i))
-                    print("LJ sigma_j {} for atomtype {}:".format(self.forcefield[at_j].LJparameters[0], at_j))
-                    print("LJ eps_i {} for atomtype {}:".format(self.forcefield[at_i].LJparameters[1], at_i))
-                    print("LJ eps_j {} for atomtype {}:".format(self.forcefield[at_j].LJparameters[1], at_j))
-                    blankline()
+                    if printsetting=='Debug':
+                        print("LJ sigma_i {} for atomtype {}:".format(self.forcefield[at_i].LJparameters[0], at_i))
+                        print("LJ sigma_j {} for atomtype {}:".format(self.forcefield[at_j].LJparameters[0], at_j))
+                        print("LJ eps_i {} for atomtype {}:".format(self.forcefield[at_i].LJparameters[1], at_i))
+                        print("LJ eps_j {} for atomtype {}:".format(self.forcefield[at_j].LJparameters[1], at_j))
+                        blankline()
                     if combination_rule=='geometric':
                         sigma=np.sqrt(self.forcefield[at_i].LJparameters[0]*self.forcefield[at_j].LJparameters[0])
                         epsilon=np.sqrt(self.forcefield[at_i].LJparameters[1]*self.forcefield[at_j].LJparameters[1])
-                        print("LJ sigma_ij : {} for atomtype-pair: {} {}".format(sigma,at_i, at_j))
-                        print("LJ epsilon_ij : {} for atomtype-pair: {} {}".format(epsilon,at_i, at_j))
-                        blankline()
+                        if printsetting == 'Debug':
+                            print("LJ sigma_ij : {} for atomtype-pair: {} {}".format(sigma,at_i, at_j))
+                            print("LJ epsilon_ij : {} for atomtype-pair: {} {}".format(epsilon,at_i, at_j))
+                            blankline()
                     elif combination_rule=='arithmetic':
-                        print("Using arithmetic mean for LJ pair potentials")
-                        print("NOTE: to be confirmed")
+                        if printsetting == 'Debug':
+                            print("Using arithmetic mean for LJ pair potentials")
+                            print("NOTE: to be confirmed")
                         sigma=0.5*(self.forcefield[at_i].LJparameters[0]+self.forcefield[at_j].LJparameters[0])
                         epsilon=0.5-(self.forcefield[at_i].LJparameters[1]+self.forcefield[at_j].LJparameters[1])
                     elif combination_rule=='mixed_geosigma':
-                        print("Using geometric mean for LJ sigma parameters")
-                        print("Using arithmetic mean for LJ epsilon parameters")
+                        if printsetting == 'Debug':
+                            print("Using geometric mean for LJ sigma parameters")
+                            print("Using arithmetic mean for LJ epsilon parameters")
                         print("NOTE: to be confirmed")
                         sigma=np.sqrt(self.forcefield[at_i].LJparameters[0]*self.forcefield[at_j].LJparameters[0])
                         epsilon=0.5-(self.forcefield[at_i].LJparameters[1]+self.forcefield[at_j].LJparameters[1])
                     elif combination_rule=='mixed_geoepsilon':
-                        print("Using arithmetic mean for LJ sigma parameters")
-                        print("Using geometric mean for LJ epsilon parameters")
+                        if printsetting == 'Debug':
+                            print("Using arithmetic mean for LJ sigma parameters")
+                            print("Using geometric mean for LJ epsilon parameters")
                         print("NOTE: to be confirmed")
                         sigma=0.5*(self.forcefield[at_i].LJparameters[0]+self.forcefield[at_j].LJparameters[0])
                         epsilon=np.sqrt(self.forcefield[at_i].LJparameters[1]*self.forcefield[at_j].LJparameters[1])
