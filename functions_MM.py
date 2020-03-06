@@ -11,7 +11,6 @@ from functions_coords import *
 def LennardJones(coords,atomtypes, LJPairpotentials, connectivity=[]):
     print("Inside Lennard_jones function")
     print("Calculating LJ pairs based on connectivity")
-    print("")
     if len(connectivity)==0:
         print("Warning!. No connectivity list present. Will treat all LJ pairs.")
     else:
@@ -61,11 +60,11 @@ def LennardJones(coords,atomtypes, LJPairpotentials, connectivity=[]):
                                      (coords[i][2] - coords[j][2])*LJgrad_const])
                                 gradient[i] += gr
                                 gradient[j] -= gr
-                            blankline()
     #Convert gradient from kcal/mol per Å to hartree/Bohr
     final_gradient=gradient * (1/constants.harkcal) / constants.ang2bohr
     #Converg energy from kcal/mol to hartree
     final_energy=energy*(1/constants.harkcal)
+
     return final_energy,final_gradient
 
 #TODO: Do we always calculate charge if atoms are connected? Need connectivity for CHARMM/Amber expressions
