@@ -58,16 +58,23 @@ def LennardJones(coords,atomtypes, LJPairpotentials, connectivity=[]):
                                 print("------------------------------")
                                 #Typo in http://localscf.com/localscf.com/LJPotential.aspx.html ??
                                 #Using http://www.courses.physics.helsinki.fi/fys/moldyn/lectures/L4.pdf
+                                #TODO: Equation needs to be double-checked for correctness. L4.pdf equation ambiguous
                                 LJgrad_const=(24*eps*((sigma/pairdistance)**6-2*(sigma/pairdistance)**12))*(1/(pairdistance**2))
                                 print("LJgrad_const:", LJgrad_const)
                                 gr=np.array([(coords[i][0] - coords[j][0])*LJgrad_const, (coords[i][1] - coords[j][1])*LJgrad_const,
                                      (coords[i][2] - coords[j][2])*LJgrad_const])
+                                print("gr:", gr)
                                 gradient[i] += gr
                                 gradient[j] -= gr
+                                print("gradient[i]:", gradient[i])
+                                print("gradient[j]:", gradient[j])
+                                exit()
     #Convert gradient from kcal/mol per Å to hartree/Bohr
     final_gradient=gradient * (1/constants.harkcal) / constants.ang2bohr
+    print("final_gradient (hartree/Bohr):", final_gradient)
     #Converg energy from kcal/mol to hartree
     final_energy=energy*(1/constants.harkcal)
+    print("final_energy (hartree)", final_energy)
 
     return final_energy,final_gradient
 
