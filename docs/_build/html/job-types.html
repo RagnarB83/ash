@@ -4,44 +4,108 @@
 <html xmlns="http://www.w3.org/1999/xhtml">
   <head>
     <meta charset="utf-8" />
-    <title>Job types &#8212; Yggdrasill 0.1 documentation</title>
-    <link rel="stylesheet" href="_static/classic.css" type="text/css" />
+    <title>Job Types &#8212; Yggdrasill 0.1 documentation</title>
+    <link rel="stylesheet" href="_static/alabaster.css" type="text/css" />
     <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
-    
     <script type="text/javascript" id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
     <script type="text/javascript" src="_static/jquery.js"></script>
     <script type="text/javascript" src="_static/underscore.js"></script>
     <script type="text/javascript" src="_static/doctools.js"></script>
     <script type="text/javascript" src="_static/language_data.js"></script>
-    
     <link rel="index" title="Index" href="genindex.html" />
-    <link rel="search" title="Search" href="search.html" /> 
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="QM Interfaces" href="QM-interfaces.html" />
+    <link rel="prev" title="Coordinates and fragments" href="coordinate-input.html" />
+   
+  <link rel="stylesheet" href="_static/custom.css" type="text/css" />
+  
+  
+  <meta name="viewport" content="width=device-width, initial-scale=0.9, maximum-scale=0.9" />
+
   </head><body>
-    <div class="related" role="navigation" aria-label="related navigation">
-      <h3>Navigation</h3>
-      <ul>
-        <li class="right" style="margin-right: 10px">
-          <a href="genindex.html" title="General Index"
-             accesskey="I">index</a></li>
-        <li class="nav-item nav-item-0"><a href="index.html">Yggdrasill 0.1 documentation</a> &#187;</li> 
-      </ul>
-    </div>  
+  
 
     <div class="document">
       <div class="documentwrapper">
         <div class="bodywrapper">
+          
+
           <div class="body" role="main">
             
   <div class="section" id="job-types">
-<h1>Job types<a class="headerlink" href="#job-types" title="Permalink to this headline">¶</a></h1>
+<h1>Job Types<a class="headerlink" href="#job-types" title="Permalink to this headline">¶</a></h1>
+<div class="section" id="single-point-calculation">
+<h2>Single-point calculation<a class="headerlink" href="#single-point-calculation" title="Permalink to this headline">¶</a></h2>
+<p>A single-point calculation is the most basic job to perform.
+After creating an Yggdrasill fragment, you create a Theory object, e.g. a QMTheory from: <a class="reference internal" href="QM-interfaces.html"><span class="doc">QM Interfaces</span></a> an
+MMTheory (TODO) or a QM/MMTheory (see XX).
+The ORCATheory class (see:  <a class="reference internal" href="orca-interface.html"><span class="doc">ORCA Interface</span></a>) is the most common theory to use.
+Below, the ORCASP object is created from the ORCATheory class, providing a fragment object and various ORCA-interface
+variables to it.</p>
+<p>For a single-point calculation only then simply runs the Theory object via executing the internal run function of the
+object.</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">yggdrasill</span> <span class="kn">import</span> <span class="o">*</span>
+<span class="kn">import</span> <span class="nn">sys</span>
+<span class="n">settings_yggdrasill</span><span class="o">.</span><span class="n">init</span><span class="p">()</span> <span class="c1">#initialize</span>
+
+<span class="n">HF_frag</span><span class="o">=</span><span class="n">Fragment</span><span class="p">(</span><span class="n">xyzfiles</span><span class="o">=</span><span class="s2">&quot;hf.xyz&quot;</span><span class="p">)</span>
+<span class="c1">#ORCA</span>
+<span class="n">orcadir</span><span class="o">=</span><span class="s1">&#39;/opt/orca_4.2.1&#39;</span>
+<span class="n">orcasimpleinput</span><span class="o">=</span><span class="s2">&quot;! BP86 def2-SVP Grid5 Finalgrid6 tightscf&quot;</span>
+<span class="n">orcablocks</span><span class="o">=</span><span class="s2">&quot;</span><span class="si">%s</span><span class="s2">cf maxiter 200 end&quot;</span>
+<span class="n">ORCASP</span> <span class="o">=</span> <span class="n">ORCATheory</span><span class="p">(</span><span class="n">orcadir</span><span class="o">=</span><span class="n">orcadir</span><span class="p">,</span> <span class="n">fragment</span><span class="o">=</span><span class="n">HF_frag</span><span class="p">,</span> <span class="n">charge</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">mult</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span>
+                    <span class="n">orcasimpleinput</span><span class="o">=</span><span class="n">orcasimpleinput</span><span class="p">,</span> <span class="n">orcablocks</span><span class="o">=</span><span class="n">orcablocks</span><span class="p">)</span>
+
+<span class="c1">#Simple Energy SP calc</span>
+<span class="n">ORCASP</span><span class="o">.</span><span class="n">run</span><span class="p">()</span>
+</pre></div>
+</div>
+<p>The flexible input-nature of the ORCA interface here allows one to use any method/basis/property inside ORCA for the
+single-point job.</p>
+<p>It is also possible to request a gradient calculation :</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1">#An Energy+Gradient calculation</span>
+<span class="n">ORCASP</span><span class="o">.</span><span class="n">run</span><span class="p">(</span><span class="n">Grad</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>While Yggdrasill will print out basic information about the run at runtime (e.g. the energy) the energy or gradient
+(if requested) is also stored inside the object and can be accessed:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="nb">print</span><span class="p">(</span><span class="n">ORCASP</span><span class="o">.</span><span class="n">energy</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="n">ORCASP</span><span class="o">.</span><span class="n">grad</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>By default the files created by the Theory interface are not cleaned up. To have ORCA (in this example) clean up
+temporary files (e.g. so they don’t interfere with a future job), one can use the cleanup function.</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1">#Clean up</span>
+<span class="n">ORCASP</span><span class="o">.</span><span class="n">cleanup</span><span class="p">()</span>
+</pre></div>
+</div>
+</div>
+<div class="section" id="geometry-optimization">
+<h2>Geometry optimization<a class="headerlink" href="#geometry-optimization" title="Permalink to this headline">¶</a></h2>
+</div>
+<div class="section" id="numerical-frequencies">
+<h2>Numerical frequencies<a class="headerlink" href="#numerical-frequencies" title="Permalink to this headline">¶</a></h2>
+</div>
+<div class="section" id="molecular-dynamics">
+<h2>Molecular Dynamics<a class="headerlink" href="#molecular-dynamics" title="Permalink to this headline">¶</a></h2>
+</div>
 </div>
 
 
           </div>
+          
         </div>
       </div>
       <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
-        <div class="sphinxsidebarwrapper">
+        <div class="sphinxsidebarwrapper"><div class="relations">
+<h3>Related Topics</h3>
+<ul>
+  <li><a href="index.html">Documentation overview</a><ul>
+      <li>Previous: <a href="coordinate-input.html" title="previous chapter">Coordinates and fragments</a></li>
+      <li>Next: <a href="QM-interfaces.html" title="next chapter">QM Interfaces</a></li>
+  </ul></li>
+</ul>
+</div>
 <div id="searchbox" style="display: none" role="search">
   <h3 id="searchlabel">Quick search</h3>
     <div class="searchformwrapper">
@@ -56,18 +120,20 @@
       </div>
       <div class="clearer"></div>
     </div>
-    <div class="related" role="navigation" aria-label="related navigation">
-      <h3>Navigation</h3>
-      <ul>
-        <li class="right" style="margin-right: 10px">
-          <a href="genindex.html" title="General Index"
-             >index</a></li>
-        <li class="nav-item nav-item-0"><a href="index.html">Yggdrasill 0.1 documentation</a> &#187;</li> 
-      </ul>
+    <div class="footer">
+      &copy;2020, Ragnar Bjornsson.
+      
+      |
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 2.3.1</a>
+      &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.12</a>
+      
+      |
+      <a href="_sources/job-types.rst.txt"
+          rel="nofollow">Page source</a>
     </div>
-    <div class="footer" role="contentinfo">
-        &#169; Copyright 2020, Ragnar Bjornsson.
-      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 2.3.1.
-    </div>
+
+    
+
+    
   </body>
 </html>

@@ -165,6 +165,7 @@ Inspect defined fragment objects
 ==============================
 
 To inspect a defined fragment one can print out a Python dictionary of all defined attributes of the object.
+
 .. code-block:: python
 
     print("HF_frag dict", HF_frag.__dict__)

@@ -12,14 +12,14 @@ These are the documentation pages of Yggdrasill.
    :maxdepth: 2
    :caption: Contents:
 
-   installation
-   TODO
+   setup
    basics
    coordinate-input
    job-types
    QM-interfaces
    orca-interface
-
+   TODO
+   yggdrasill-classes
 
 
 

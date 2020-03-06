@@ -1,0 +1,129 @@
+
+<!DOCTYPE html>
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta charset="utf-8" />
+    <title>Yggdrasill object classes &#8212; Yggdrasill 0.1 documentation</title>
+    <link rel="stylesheet" href="_static/alabaster.css" type="text/css" />
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    <script type="text/javascript" id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
+    <script type="text/javascript" src="_static/jquery.js"></script>
+    <script type="text/javascript" src="_static/underscore.js"></script>
+    <script type="text/javascript" src="_static/doctools.js"></script>
+    <script type="text/javascript" src="_static/language_data.js"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="prev" title="Things to todo" href="TODO.html" />
+   
+  <link rel="stylesheet" href="_static/custom.css" type="text/css" />
+  
+  
+  <meta name="viewport" content="width=device-width, initial-scale=0.9, maximum-scale=0.9" />
+
+  </head><body>
+  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          
+
+          <div class="body" role="main">
+            
+  <div class="section" id="yggdrasill-object-classes">
+<h1>Yggdrasill object classes<a class="headerlink" href="#yggdrasill-object-classes" title="Permalink to this headline">¶</a></h1>
+<p>Information about the Yggdrasill object classes.</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="k">class</span> <span class="nc">Fragment</span><span class="p">:</span>
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">coordsstring</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">xyzfile</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">pdbfile</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">coords</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">elems</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+
+    <span class="c1">#Add coordinates from geometry string. Will replace.</span>
+    <span class="k">def</span> <span class="nf">add_coords_from_string</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">coordsstring</span><span class="p">):</span>
+
+    <span class="c1">#Replace coordinates by providing elems and coords lists.</span>
+    <span class="k">def</span> <span class="nf">replace_coords</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">elems</span><span class="p">,</span> <span class="n">coords</span><span class="p">):</span>
+
+    <span class="c1">#Delete coordinates</span>
+    <span class="k">def</span> <span class="nf">delete_coords</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+
+    <span class="c1">#Add coordinates</span>
+    <span class="k">def</span> <span class="nf">add_coords</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">elems</span><span class="p">,</span><span class="n">coords</span><span class="p">):</span>
+
+    <span class="c1">#Print coordinates</span>
+    <span class="k">def</span> <span class="nf">print_coords</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+
+    <span class="c1">#Read PDB file</span>
+    <span class="k">def</span> <span class="nf">read_pdbfile</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">filename</span><span class="p">):</span>
+
+    <span class="c1">#Read XYZ file</span>
+    <span class="k">def</span> <span class="nf">read_xyzfile</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">filename</span><span class="p">):</span>
+
+    <span class="c1"># Get coordinates for specific atoms (from list of atom indices)</span>
+    <span class="k">def</span> <span class="nf">get_coords_for_atoms</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">atoms</span><span class="p">):</span>
+
+    <span class="c1">#Calculate connectivity (list of lists) of coords</span>
+    <span class="k">def</span> <span class="nf">calc_connectivity</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">conndepth</span><span class="o">=</span><span class="mi">99</span><span class="p">,</span> <span class="n">scale</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">tol</span><span class="o">=</span><span class="kc">None</span> <span class="p">):</span>
+
+    <span class="c1">#Update atomcharges of object</span>
+    <span class="k">def</span> <span class="nf">update_atomcharges</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">charges</span><span class="p">):</span>
+
+    <span class="c1">#Adding fragment-type info (used by molcrys, identifies whether atom is mainfrag, counterfrag1 etc.)</span>
+    <span class="k">def</span> <span class="nf">add_fragment_type_info</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">fragmentobjects</span><span class="p">):</span>
+
+    <span class="c1">#Write XYZfile with provided name</span>
+    <span class="k">def</span> <span class="nf">write_xyzfile</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">xyzfilename</span><span class="o">=</span><span class="s2">&quot;Fragment-xyzfile.xyz&quot;</span><span class="p">):</span>
+
+    <span class="c1">#Print system-fragment information to file. Default name of file: &quot;fragment-info</span>
+    <span class="k">def</span> <span class="nf">print_system</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">filename</span><span class="o">=</span><span class="s1">&#39;fragment-info.txt&#39;</span><span class="p">):</span>
+
+    <span class="c1">#Set energy of fragmentobject</span>
+    <span class="k">def</span> <span class="nf">set_energy</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">energy</span><span class="p">):</span>
+</pre></div>
+</div>
+</div>
+
+
+          </div>
+          
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper"><div class="relations">
+<h3>Related Topics</h3>
+<ul>
+  <li><a href="index.html">Documentation overview</a><ul>
+      <li>Previous: <a href="TODO.html" title="previous chapter">Things to todo</a></li>
+  </ul></li>
+</ul>
+</div>
+<div id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="search.html" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" />
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="footer">
+      &copy;2020, Ragnar Bjornsson.
+      
+      |
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 2.3.1</a>
+      &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.12</a>
+      
+      |
+      <a href="_sources/yggdrasill-classes.rst.txt"
+          rel="nofollow">Page source</a>
+    </div>
+
+    
+
+    
+  </body>
+</html>

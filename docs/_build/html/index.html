@@ -5,35 +5,30 @@
   <head>
     <meta charset="utf-8" />
     <title>Yggdrasill: Documentation &#8212; Yggdrasill 0.1 documentation</title>
-    <link rel="stylesheet" href="_static/classic.css" type="text/css" />
+    <link rel="stylesheet" href="_static/alabaster.css" type="text/css" />
     <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
-    
     <script type="text/javascript" id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
     <script type="text/javascript" src="_static/jquery.js"></script>
     <script type="text/javascript" src="_static/underscore.js"></script>
     <script type="text/javascript" src="_static/doctools.js"></script>
     <script type="text/javascript" src="_static/language_data.js"></script>
-    
     <link rel="index" title="Index" href="genindex.html" />
     <link rel="search" title="Search" href="search.html" />
-    <link rel="next" title="Installation" href="installation.html" /> 
+    <link rel="next" title="Setup" href="setup.html" />
+   
+  <link rel="stylesheet" href="_static/custom.css" type="text/css" />
+  
+  
+  <meta name="viewport" content="width=device-width, initial-scale=0.9, maximum-scale=0.9" />
+
   </head><body>
-    <div class="related" role="navigation" aria-label="related navigation">
-      <h3>Navigation</h3>
-      <ul>
-        <li class="right" style="margin-right: 10px">
-          <a href="genindex.html" title="General Index"
-             accesskey="I">index</a></li>
-        <li class="right" >
-          <a href="installation.html" title="Installation"
-             accesskey="N">next</a> |</li>
-        <li class="nav-item nav-item-0"><a href="#">Yggdrasill 0.1 documentation</a> &#187;</li> 
-      </ul>
-    </div>  
+  
 
     <div class="document">
       <div class="documentwrapper">
         <div class="bodywrapper">
+          
+
           <div class="body" role="main">
             
   <div class="section" id="yggdrasill-documentation">
@@ -42,15 +37,7 @@
 <div class="toctree-wrapper compound">
 <p class="caption"><span class="caption-text">Contents:</span></p>
 <ul>
-<li class="toctree-l1"><a class="reference internal" href="installation.html">Installation</a></li>
-<li class="toctree-l1"><a class="reference internal" href="TODO.html">Things to todo</a><ul>
-<li class="toctree-l2"><a class="reference internal" href="TODO.html#general-things">General things</a></li>
-<li class="toctree-l2"><a class="reference internal" href="TODO.html#small-things">Small things</a></li>
-<li class="toctree-l2"><a class="reference internal" href="TODO.html#big-projects-upcoming">Big projects: UPCOMING</a></li>
-<li class="toctree-l2"><a class="reference internal" href="TODO.html#big-projects-one-day">BIG projects: one day</a></li>
-<li class="toctree-l2"><a class="reference internal" href="TODO.html#vague-ideas">VAGUE IDEAS:</a></li>
-</ul>
-</li>
+<li class="toctree-l1"><a class="reference internal" href="setup.html">Setup</a></li>
 <li class="toctree-l1"><a class="reference internal" href="basics.html">Basic usage</a><ul>
 <li class="toctree-l2"><a class="reference internal" href="basics.html#input-structure">Input structure</a></li>
 <li class="toctree-l2"><a class="reference internal" href="basics.html#example-script">Example script</a></li>
@@ -62,9 +49,24 @@
 <li class="toctree-l2"><a class="reference internal" href="coordinate-input.html#creating-modifying-fragment-objects">Creating/modifying fragment objects</a></li>
 </ul>
 </li>
-<li class="toctree-l1"><a class="reference internal" href="job-types.html">Job types</a></li>
+<li class="toctree-l1"><a class="reference internal" href="job-types.html">Job Types</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="job-types.html#single-point-calculation">Single-point calculation</a></li>
+<li class="toctree-l2"><a class="reference internal" href="job-types.html#geometry-optimization">Geometry optimization</a></li>
+<li class="toctree-l2"><a class="reference internal" href="job-types.html#numerical-frequencies">Numerical frequencies</a></li>
+<li class="toctree-l2"><a class="reference internal" href="job-types.html#molecular-dynamics">Molecular Dynamics</a></li>
+</ul>
+</li>
 <li class="toctree-l1"><a class="reference internal" href="QM-interfaces.html">QM Interfaces</a></li>
 <li class="toctree-l1"><a class="reference internal" href="orca-interface.html">ORCA Interface</a></li>
+<li class="toctree-l1"><a class="reference internal" href="TODO.html">Things to todo</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="TODO.html#general-things">General things</a></li>
+<li class="toctree-l2"><a class="reference internal" href="TODO.html#small-things">Small things</a></li>
+<li class="toctree-l2"><a class="reference internal" href="TODO.html#big-projects-upcoming">Big projects: UPCOMING</a></li>
+<li class="toctree-l2"><a class="reference internal" href="TODO.html#big-projects-one-day">BIG projects: one day</a></li>
+<li class="toctree-l2"><a class="reference internal" href="TODO.html#vague-ideas">VAGUE IDEAS:</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="yggdrasill-classes.html">Yggdrasill object classes</a></li>
 </ul>
 </div>
 <div class="admonition warning">
@@ -83,13 +85,18 @@
 
 
           </div>
+          
         </div>
       </div>
       <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
-        <div class="sphinxsidebarwrapper">
-  <h4>Next topic</h4>
-  <p class="topless"><a href="installation.html"
-                        title="next chapter">Installation</a></p>
+        <div class="sphinxsidebarwrapper"><div class="relations">
+<h3>Related Topics</h3>
+<ul>
+  <li><a href="#">Documentation overview</a><ul>
+      <li>Next: <a href="setup.html" title="next chapter">Setup</a></li>
+  </ul></li>
+</ul>
+</div>
 <div id="searchbox" style="display: none" role="search">
   <h3 id="searchlabel">Quick search</h3>
     <div class="searchformwrapper">
@@ -104,21 +111,20 @@
       </div>
       <div class="clearer"></div>
     </div>
-    <div class="related" role="navigation" aria-label="related navigation">
-      <h3>Navigation</h3>
-      <ul>
-        <li class="right" style="margin-right: 10px">
-          <a href="genindex.html" title="General Index"
-             >index</a></li>
-        <li class="right" >
-          <a href="installation.html" title="Installation"
-             >next</a> |</li>
-        <li class="nav-item nav-item-0"><a href="#">Yggdrasill 0.1 documentation</a> &#187;</li> 
-      </ul>
+    <div class="footer">
+      &copy;2020, Ragnar Bjornsson.
+      
+      |
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 2.3.1</a>
+      &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.12</a>
+      
+      |
+      <a href="_sources/index.rst.txt"
+          rel="nofollow">Page source</a>
     </div>
-    <div class="footer" role="contentinfo">
-        &#169; Copyright 2020, Ragnar Bjornsson.
-      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 2.3.1.
-    </div>
+
+    
+
+    
   </body>
 </html>

@@ -64,6 +64,9 @@ class NumericalFrequencies:
             print("One-point formula used (forward difference)")
         elif self.npoint == 2:
             print("Two-point formula used (central difference)")
+        else:
+            print("Unknown npoint option. npoint should be set to 1 (one-point) or 2 (two-point formula).")
+            exit()
         print("Displacement: {:3.3f} Å ({:3.3f} Bohr)".format(self.displacement,self.displacement_bohr))
         blankline()
         print("Starting geometry:")
@@ -589,6 +592,9 @@ class ORCATheory:
         try:
             os.remove(self.inputfilename+'.gbw')
             os.remove(self.inputfilename + '.ges')
+            os.remove(self.inputfilename + '.prop')
+            os.remove(self.inputfilename + '.uco')
+            os.remove(self.inputfilename + '_property.txt')
             #os.remove(self.inputfilename + '.out')
             for tmpfile in glob.glob("self.inputfilename*tmp"):
                 os.remove(tmpfile)
@@ -1022,6 +1028,7 @@ def MMforcefield_read(file):
                 MM_forcefield[atomtype].add_charge(atomcharge=charge)
                 # TODO: Charges defined are currently not used I think
             if 'LennardJones_i_sigma' in line:
+                #TODO: need to have it ignore commented-outl ines
                 print("Found LJ single-atom sigma definition in forcefield file:", ' '.join(line.split()[:]))
                 atomtype=line.split()[1]
                 if atomtype not in MM_forcefield.keys():
@@ -1036,7 +1043,7 @@ def MMforcefield_read(file):
                 print("R0tosigma conversion", R0tosigma)
                 if atomtype not in MM_forcefield.keys():
                     MM_forcefield[atomtype] = AtomMMobject()
-                sigma_i=float(line.split()[2]*R0tosigma)
+                sigma_i=float(line.split()[2])*R0tosigma
                 eps_i=float(line.split()[3])
                 MM_forcefield[atomtype].add_LJparameters(LJparameters=[sigma_i,eps_i])
             if 'LennardJones_ij' in line:

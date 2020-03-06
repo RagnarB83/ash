@@ -18,8 +18,6 @@ Small things
 ##############
 
 - ORCA interface:
-    - Todo: Write test for ORCA BS functionality
-    - Todo. Add extra basis functionality
     - Todo: Add ORCA extrabasis-feature on specific atoms
     - Todo: Add embedding ECP atoms
 

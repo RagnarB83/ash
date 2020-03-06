@@ -4,6 +4,10 @@ from functions_coords import *
 
 # TODO: Create function to do Coulomb and LJ terms together in one loop.
 #will be necessary for efficiency for large system
+
+#TODO: For really fast COulomb and LJ. Probably have to write in Fortran/C/C++.
+#Can steal from ABIN maybe: force_mm.f90  and interface ??
+
 def LennardJones(coords,atomtypes, LJPairpotentials, connectivity=[]):
     print("Inside Lennard_jones function")
     print("Calculating LJ pairs based on connectivity:", connectivity)

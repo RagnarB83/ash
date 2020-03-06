@@ -31,9 +31,14 @@
 # Add any Sphinx extension module names here, as strings. They can be
 # extensions coming with Sphinx (named 'sphinx.ext.*') or your custom
 # ones.
-extensions = ['sphinx.ext.todo',
-    'sphinx.ext.mathjax']
 
+
+
+
+extensions = ['sphinx.ext.todo',
+    'sphinx.ext.mathjax', 'sphinx_rtd_theme']
+
+#'sphinx-pdj-theme','msmb_theme','rtcat-sphinx-theme', 'sphinx-catalystcloud-theme', 'ovs-sphinx-theme', 'sphinx_drove_theme'
 # Add any paths that contain templates here, relative to this directory.
 templates_path = ['_templates']
 
@@ -84,7 +89,21 @@ todo_include_todos = True
 # The theme to use for HTML and HTML Help pages.  See the documentation for
 # a list of builtin themes.
 #
-html_theme = 'classic'
+#Good ones: sphinx_rtd_theme, sphinx_drove_theme, classic, sphinx-pdj-theme, msmb_theme,
+# rtcat-sphinx-theme, sphinx-catalystcloud-theme, ovs-sphinx-theme
+#html_theme = 'ovs-sphinx-theme'
+
+
+#
+#import ovs_sphinx_theme
+#html_theme_path = [ovs_sphinx_theme.get_theme_dir()]
+#html_theme = 'ovs'
+
+#import sphinx-pdj-theme
+#html_theme_path = [sphinx_drove_theme.get_theme_dir()]
+#html_theme = 'sphinx-pdj-theme'
+#####
+
 
 # Theme options are theme-specific and customize the look and feel of a theme
 # further.  For a list of options available for each theme, see the

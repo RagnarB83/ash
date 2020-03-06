@@ -10,13 +10,14 @@ You create a Python3 script (e.g. called system.py) and import the Yggdrasill fu
 .. code-block:: python
 
     from yggdrasill import *
-    import settings_yggdrasill
 
 For convenience you may want to initalize standard global settings (connectivity etc.):
 
 .. code-block:: python
 
     settings_yggdrasill.init()
+
+The global settings are stored in your *yggdrasill-dir/settings_yggdrasill.py* and can be modified.
 
 From then on you have the freedom of writing a Python script in any way you prefer but taking the advantage
 of Yggdrasill functionality. Typically you would first create one (or more) molecule fragments, then define a theory
@@ -32,7 +33,6 @@ Here is a basic Yggdrasill Python script, e.g. named: yggtest.py
 .. code-block:: python
 
     from yggdrasill import *
-    import settings_yggdrasill
     settings_yggdrasill.init()
 
     #Create fragment
@@ -43,16 +43,18 @@ Here is a basic Yggdrasill Python script, e.g. named: yggtest.py
     orcasimpleinput="! BP86 def2-SVP Grid5 Finalgrid6 tightscf"
     orcablocks="%scf maxiter 200 end"
 
-    ORCASPcalculation = ORCATheory(orcadir=orcadir, fragment=Ironhexacyanide, charge=0, mult=1,
+    ORCAcalc = ORCATheory(orcadir=orcadir, charge=0, mult=1,
                                 orcasimpleinput=orcasimpleinput, orcablocks=orcablocks)
 
-    #Simple Energy SP calc
-    ORCASPcalculation.run()
+    #Basic Cartesian optimization with KNARR-LBFGS
+    Opt_frag = Optimizer(fragment=Ironhexacyanide, theory=ORCAcalc, optimizer='KNARR-LBFGS')
+    Opt_frag.run()
 
 
 The script above loads Yggdrasill, creates a new fragment from an XYZ file (see :doc:`coordinate-input` for other ways),
 defines variables related to the ORCA-interface (see :doc:`orca-interface`), creates an ORCA-theory object
-(see :doc:`QM-interfaces`)and finally runs a single-point calculation (see :doc:`job-types`)
+(see :doc:`QM-interfaces`), defines an Optimizer object and finally runs a geometry
+optimization  (see :doc:`job-types` for other options).
 
 #####################
 Running script directly
@@ -63,6 +65,13 @@ For a simple job we can just run the script directly
 .. code-block:: shell
 
     python3 yggtest.py
+
+The output will be written to standard output (i.e. your shell). You can redirect the output to a file.
+
+.. code-block:: shell
+
+    python3 yggtest.py >& yggtest.out
+
 
 #####################
 Submitting job

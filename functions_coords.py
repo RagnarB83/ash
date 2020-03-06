@@ -286,28 +286,19 @@ def molformulatolist(formulastring):
     return atoms
 
 
-#Marius read_xyz
-def read_xyz(xyz):
-    x = []
-    y = []
-    z = []
-    atom = []
-    f = open(xyz, "r")
-    f.next()
-    f.next()
-    for line in f:
-        data = line.split()
-        atom.append(data[0])
-        x.append(float(data[1]))
-        y.append(float(data[2]))
-        z.append(float(data[3]))
-    f.close()
-    for item in atom:
-        if len(item) == 1:
-            atom[atom.index(item)] = item.replace(item[0], item[0].upper())
-        if len(item) >= 2:
-            atom[atom.index(item)] = item.replace(item, item[0].upper()+item[1:].lower())
-    return atom, np.array(x), np.array(y), np.array(z)
+#Read XYZ file
+def read_xyzfile(filename):
+    print("Reading coordinates from XYZfile {} into fragment".format(filename))
+    coords=[]
+    elems=[]
+    with open(filename) as f:
+        for count,line in enumerate(f):
+            if count == 0:
+                numatoms=int(line.split()[0])
+            if count > 1:
+                elems.append(line.split()[0])
+                coords.append([float(line.split()[1]), float(line.split()[2]), float(line.split()[3])])
+    return elems,coords
 
 
 def set_coordinates(atoms, V, title="", decimals=8):

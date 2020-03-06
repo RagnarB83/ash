@@ -5,39 +5,31 @@
   <head>
     <meta charset="utf-8" />
     <title>Basic usage &#8212; Yggdrasill 0.1 documentation</title>
-    <link rel="stylesheet" href="_static/classic.css" type="text/css" />
+    <link rel="stylesheet" href="_static/alabaster.css" type="text/css" />
     <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
-    
     <script type="text/javascript" id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
     <script type="text/javascript" src="_static/jquery.js"></script>
     <script type="text/javascript" src="_static/underscore.js"></script>
     <script type="text/javascript" src="_static/doctools.js"></script>
     <script type="text/javascript" src="_static/language_data.js"></script>
-    
     <link rel="index" title="Index" href="genindex.html" />
     <link rel="search" title="Search" href="search.html" />
     <link rel="next" title="Coordinates and fragments" href="coordinate-input.html" />
-    <link rel="prev" title="Things to todo" href="TODO.html" /> 
+    <link rel="prev" title="Setup" href="setup.html" />
+   
+  <link rel="stylesheet" href="_static/custom.css" type="text/css" />
+  
+  
+  <meta name="viewport" content="width=device-width, initial-scale=0.9, maximum-scale=0.9" />
+
   </head><body>
-    <div class="related" role="navigation" aria-label="related navigation">
-      <h3>Navigation</h3>
-      <ul>
-        <li class="right" style="margin-right: 10px">
-          <a href="genindex.html" title="General Index"
-             accesskey="I">index</a></li>
-        <li class="right" >
-          <a href="coordinate-input.html" title="Coordinates and fragments"
-             accesskey="N">next</a> |</li>
-        <li class="right" >
-          <a href="TODO.html" title="Things to todo"
-             accesskey="P">previous</a> |</li>
-        <li class="nav-item nav-item-0"><a href="index.html">Yggdrasill 0.1 documentation</a> &#187;</li> 
-      </ul>
-    </div>  
+  
 
     <div class="document">
       <div class="documentwrapper">
         <div class="bodywrapper">
+          
+
           <div class="body" role="main">
             
   <div class="section" id="basic-usage">
@@ -46,13 +38,13 @@
 <h2>Input structure<a class="headerlink" href="#input-structure" title="Permalink to this headline">¶</a></h2>
 <p>You create a Python3 script (e.g. called system.py) and import the Yggdrasill functionality:</p>
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">yggdrasill</span> <span class="kn">import</span> <span class="o">*</span>
-<span class="kn">import</span> <span class="nn">settings_yggdrasill</span>
 </pre></div>
 </div>
 <p>For convenience you may want to initalize standard global settings (connectivity etc.):</p>
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">settings_yggdrasill</span><span class="o">.</span><span class="n">init</span><span class="p">()</span>
 </pre></div>
 </div>
+<p>The global settings are stored in your <em>yggdrasill-dir/settings_yggdrasill.py</em> and can be modified.</p>
 <p>From then on you have the freedom of writing a Python script in any way you prefer but taking the advantage
 of Yggdrasill functionality. Typically you would first create one (or more) molecule fragments, then define a theory
 object and then call a specific job-module (an optimizer, numerical-frequencies, MD).
@@ -62,7 +54,6 @@ See  <a class="reference internal" href="coordinate-input.html"><span class="doc
 <h2>Example script<a class="headerlink" href="#example-script" title="Permalink to this headline">¶</a></h2>
 <p>Here is a basic Yggdrasill Python script, e.g. named: yggtest.py</p>
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">yggdrasill</span> <span class="kn">import</span> <span class="o">*</span>
-<span class="kn">import</span> <span class="nn">settings_yggdrasill</span>
 <span class="n">settings_yggdrasill</span><span class="o">.</span><span class="n">init</span><span class="p">()</span>
 
 <span class="c1">#Create fragment</span>
@@ -73,21 +64,27 @@ See  <a class="reference internal" href="coordinate-input.html"><span class="doc
 <span class="n">orcasimpleinput</span><span class="o">=</span><span class="s2">&quot;! BP86 def2-SVP Grid5 Finalgrid6 tightscf&quot;</span>
 <span class="n">orcablocks</span><span class="o">=</span><span class="s2">&quot;</span><span class="si">%s</span><span class="s2">cf maxiter 200 end&quot;</span>
 
-<span class="n">ORCASPcalculation</span> <span class="o">=</span> <span class="n">ORCATheory</span><span class="p">(</span><span class="n">orcadir</span><span class="o">=</span><span class="n">orcadir</span><span class="p">,</span> <span class="n">fragment</span><span class="o">=</span><span class="n">Ironhexacyanide</span><span class="p">,</span> <span class="n">charge</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">mult</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span>
+<span class="n">ORCAcalc</span> <span class="o">=</span> <span class="n">ORCATheory</span><span class="p">(</span><span class="n">orcadir</span><span class="o">=</span><span class="n">orcadir</span><span class="p">,</span> <span class="n">charge</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">mult</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span>
                             <span class="n">orcasimpleinput</span><span class="o">=</span><span class="n">orcasimpleinput</span><span class="p">,</span> <span class="n">orcablocks</span><span class="o">=</span><span class="n">orcablocks</span><span class="p">)</span>
 
-<span class="c1">#Simple Energy SP calc</span>
-<span class="n">ORCASPcalculation</span><span class="o">.</span><span class="n">run</span><span class="p">()</span>
+<span class="c1">#Basic Cartesian optimization with KNARR-LBFGS</span>
+<span class="n">Opt_frag</span> <span class="o">=</span> <span class="n">Optimizer</span><span class="p">(</span><span class="n">fragment</span><span class="o">=</span><span class="n">Ironhexacyanide</span><span class="p">,</span> <span class="n">theory</span><span class="o">=</span><span class="n">ORCAcalc</span><span class="p">,</span> <span class="n">optimizer</span><span class="o">=</span><span class="s1">&#39;KNARR-LBFGS&#39;</span><span class="p">)</span>
+<span class="n">Opt_frag</span><span class="o">.</span><span class="n">run</span><span class="p">()</span>
 </pre></div>
 </div>
 <p>The script above loads Yggdrasill, creates a new fragment from an XYZ file (see <a class="reference internal" href="coordinate-input.html"><span class="doc">Coordinates and fragments</span></a> for other ways),
 defines variables related to the ORCA-interface (see <a class="reference internal" href="orca-interface.html"><span class="doc">ORCA Interface</span></a>), creates an ORCA-theory object
-(see <a class="reference internal" href="QM-interfaces.html"><span class="doc">QM Interfaces</span></a>)and finally runs a single-point calculation (see <a class="reference internal" href="job-types.html"><span class="doc">Job types</span></a>)</p>
+(see <a class="reference internal" href="QM-interfaces.html"><span class="doc">QM Interfaces</span></a>), defines an Optimizer object and finally runs a geometry
+optimization  (see <a class="reference internal" href="job-types.html"><span class="doc">Job Types</span></a> for other options).</p>
 </div>
 <div class="section" id="running-script-directly">
 <h2>Running script directly<a class="headerlink" href="#running-script-directly" title="Permalink to this headline">¶</a></h2>
 <p>For a simple job we can just run the script directly</p>
 <div class="highlight-shell notranslate"><div class="highlight"><pre><span></span>python3 yggtest.py
+</pre></div>
+</div>
+<p>The output will be written to standard output (i.e. your shell). You can redirect the output to a file.</p>
+<div class="highlight-shell notranslate"><div class="highlight"><pre><span></span>python3 yggtest.py &gt;<span class="p">&amp;</span> yggtest.out
 </pre></div>
 </div>
 </div>
@@ -157,16 +154,19 @@ cp <span class="nv">$tdir</span>/*.xyz <span class="nv">$SLURM_SUBMIT_DIR</span>
 
 
           </div>
+          
         </div>
       </div>
       <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
-        <div class="sphinxsidebarwrapper">
-  <h4>Previous topic</h4>
-  <p class="topless"><a href="TODO.html"
-                        title="previous chapter">Things to todo</a></p>
-  <h4>Next topic</h4>
-  <p class="topless"><a href="coordinate-input.html"
-                        title="next chapter">Coordinates and fragments</a></p>
+        <div class="sphinxsidebarwrapper"><div class="relations">
+<h3>Related Topics</h3>
+<ul>
+  <li><a href="index.html">Documentation overview</a><ul>
+      <li>Previous: <a href="setup.html" title="previous chapter">Setup</a></li>
+      <li>Next: <a href="coordinate-input.html" title="next chapter">Coordinates and fragments</a></li>
+  </ul></li>
+</ul>
+</div>
 <div id="searchbox" style="display: none" role="search">
   <h3 id="searchlabel">Quick search</h3>
     <div class="searchformwrapper">
@@ -181,24 +181,20 @@ cp <span class="nv">$tdir</span>/*.xyz <span class="nv">$SLURM_SUBMIT_DIR</span>
       </div>
       <div class="clearer"></div>
     </div>
-    <div class="related" role="navigation" aria-label="related navigation">
-      <h3>Navigation</h3>
-      <ul>
-        <li class="right" style="margin-right: 10px">
-          <a href="genindex.html" title="General Index"
-             >index</a></li>
-        <li class="right" >
-          <a href="coordinate-input.html" title="Coordinates and fragments"
-             >next</a> |</li>
-        <li class="right" >
-          <a href="TODO.html" title="Things to todo"
-             >previous</a> |</li>
-        <li class="nav-item nav-item-0"><a href="index.html">Yggdrasill 0.1 documentation</a> &#187;</li> 
-      </ul>
+    <div class="footer">
+      &copy;2020, Ragnar Bjornsson.
+      
+      |
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 2.3.1</a>
+      &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.12</a>
+      
+      |
+      <a href="_sources/basics.rst.txt"
+          rel="nofollow">Page source</a>
     </div>
-    <div class="footer" role="contentinfo">
-        &#169; Copyright 2020, Ragnar Bjornsson.
-      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 2.3.1.
-    </div>
+
+    
+
+    
   </body>
 </html>
