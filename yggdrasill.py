@@ -339,10 +339,10 @@ class NonBondedTheory:
             exit()
 
         #A large has many atomtypes. Creating list of unique atomtypes to simplify loop
-        uniqatomtypes = np.unique(atomtypes).tolist()
-        for count_i, at_i in enumerate(uniqatomtypes):
+        self.uniqatomtypes = np.unique(self.atomtypes).tolist()
+        for count_i, at_i in enumerate(self.uniqatomtypes):
             print("count_i:", count_i)
-            for count_j,at_j in enumerate(uniqatomtypes):
+            for count_j,at_j in enumerate(self.uniqatomtypes):
                 if count_i < count_j:
                     #print("at_i {} and at_j {}".format(at_i,at_j))
                     #Calculating sigma-pair and epsilon-pair
