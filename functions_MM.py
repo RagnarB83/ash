@@ -66,6 +66,8 @@ def LennardJones(coords,atomtypes, LJPairpotentials, connectivity=[]):
 #Coulomb energy and gradient in Bohrs
 def coulombcharge(charges, coords):
     print("MM charges:", charges)
+    print("Num MM charges:", len(charges))
+    print("Num coords:", len(coords))
     #Converting list to numpy array and converting to bohr
     coords_b=np.array(coords)*constants.ang2bohr
     #Coulomb energy
