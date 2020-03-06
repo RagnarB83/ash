@@ -1,0 +1,204 @@
+{#
+    ovs/layout.html
+    ~~~~~~~~~~~~~~~
+
+    Sphinx layout template for the ovs theme.
+
+    :copyright: Copyright 2016, Stephen Finucane <stephen@that.guru>
+    :license: Apache 2.0
+#}
+{% extends "basic/layout.html" %}
+
+{%- macro relbar() %}
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>{{ _('Navigation') }}</h3>
+    </div>
+{%- endmacro %}
+
+{%- block doctype %}
+<!DOCTYPE html>
+{%- endblock %}
+
+{%- block extrahead %}
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+{%- endblock %}
+
+{% block header %}
+<header role="banner">
+  <div class="cp--header collaborative-projects">
+    <div class="gray-diagonal">
+      <div class="container">
+        <a id="cp--logo" href="http://collabprojects.linuxfoundation.org">
+          <img src="{{ pathto('_static/lf/lfcollabprojects_logo_gray.png', 1) }}" alt="Linux Foundation Collaborative Projects"/>
+        </a>
+      </div>
+    </div>
+  </div>
+  <div id="logo">
+    <div class="container">
+      <a href="//openvswitch.org">
+        <img src="{{ pathto('_static/vswitch.png', 1) }}" alt="Open vSwitch"></a>
+    </div>
+  </div>
+  <div class="subnav">
+    <div class="container">
+      <nav id="menu">
+        <label for="tm" id="toggle-menu">Navigation <span class="drop-icon">▾</span></label>
+        <input type="checkbox" id="tm">
+        <ul class="main-menu clearfix">
+          <li>
+            <a href="//openvswitch.org/features">Overview</a>
+          </li>
+          <li>
+            <a href="/">Documentation
+              <span class="drop-icon">▾</span>
+              <label title="Toggle Drop-down" class="drop-icon" for="sm20">▾</label>
+            </a>
+            <input type="checkbox" id="sm20">
+            <ul class="sub-menu">
+              <li>
+                <a href="/">Open vSwitch (latest)</a>
+              </li>
+              <li>
+                <a href="//openvswitch.org/support/dist-docs-2.5">Open vSwitch 2.5.x
+                </a>
+              </li>
+              <li>
+                <a href="//openvswitch.org/support/dist-docs">Man Pages</a>
+              </li>
+            </ul>
+          </li>
+          <li>
+            <a href="">Talks &amp; Presentations
+              <span class="drop-icon">▾</span>
+              <label title="Toggle Drop-down" class="drop-icon" for="sm21">▾</label>
+            </a>
+            <input type="checkbox" id="sm21">
+            <ul class="sub-menu">
+              <li>
+                <a href="//openvswitch.org/support/ovscon2016">OVScon 2016</a>
+              </li>
+              <li>
+                <a href="//openvswitch.org/support/ovscon2015">OVScon 2015</a>
+              </li>
+              <li>
+                <a href="//openvswitch.org/support/ovscon2014">OVScon 2014</a>
+              </li>
+              <li>
+                <a href="//openvswitch.org/support/papers">Papers</a>
+              </li>
+              <li>
+                <a href="//openvswitch.org/support/slides">Presentations</a>
+              </li>
+              <li>
+                <a href="//openvswitch.org/support/interviews">Interviews</a>
+              </li>
+            </ul>
+          </li>
+          <li>
+            <a href="//openvswitch.org/download">Download</a>
+          </li>
+          <li>
+            <a href="//mail.openvswitch.org/">Mailing Lists</a>
+          </li>
+          <li>
+            <a href="//openvswitch.org/charter">Charter</a>
+          </li>
+        </ul>
+      </nav>
+    </div>
+  </div>
+</header>
+{% endblock %}
+
+{% block content %}
+<main id="content">
+  <div class="container">
+    <div class="section group">
+      <div class="col-2-3">
+        {% block body %}{% endblock %}
+        <div class="browse">
+          {% if prev %}
+          <div class="right">
+            <a href="{{ next.link|e }}">{{ next.title }} &rsaquo;</a>
+          </div>
+          {% endif %}
+          {% if next %}
+          <div class="left">
+            <a href="{{ prev.link|e }}">&lsaquo; {{ prev.title }}</a>
+          </div>
+          {% endif %}
+        </div>
+      </div>
+      <div class="col-1-3">
+        <div class="widget">
+          <form class="search" action="{{ pathto('search') }}" method="get">
+            <input type="text" name="q" placeholder="Search {{ version }} documentation" /><button type="submit"></button>
+            <input type="hidden" name="check_keywords" value="yes" />
+            <input type="hidden" name="area" value="default" />
+          </form>
+        </div>
+        <div class="widget">
+          <div class="widget-title">
+            Contents
+          </div>
+          <div class="widget-body">
+            {{ toctree() }}
+          </div>
+        </div>
+        <div class="widget">
+          <div class="widget-title">
+            Browse
+          </div>
+          <div class="widget-body">
+            <ul>
+              {%- for rellink in rellinks %}
+              <li>
+                <a href="{{ pathto(rellink[0]) }}" title="{{ rellink[1]|striptags|e }}"
+                   {{ accesskey(rellink[2]) }}>{{ rellink[1]|striptags|e }}</a>
+              </li>
+              {%- endfor %}
+            </ul>
+          </div>
+        </div>
+        <div class="widget">
+          <div class="widget-title">
+            Navigation
+          </div>
+          <div class="widget-body">
+            <ul>
+              <li class="nav-item nav-item-0">
+                <a href="{{ pathto(master_doc) }}">{{ shorttitle|e }}</a>
+                {%- for parent in parents %}
+                <ul>
+                  <li class="nav-item nav-item-{{ loop.index }}">
+                    <a href="{{ parent.link|e }}" {% if loop.last %}{{ accesskey("U") }}{% endif %}>{{ parent.title }}</a>
+                {%- endfor %}
+                  <ul><li>{{ title }}</li></ul>
+{%- for parent in parents %}</li></ul>{%- endfor %}
+              </li>
+            </ul>
+          </div>
+        </div>
+      </div>
+    </div>
+  <div>
+</main>
+{% endblock %}
+
+{% block footer %}
+<footer role="contentinfo">
+  <div class="cp--footer collaborative-projects">
+    <div class="gray-diagonal">
+      <div class="container">
+        <p>&copy; 2016 A Linux Foundation Collaborative Project. All Rights Reserved.</p>
+        <p>Linux Foundation is a registered trademark of The Linux Foundation. Linux is a registered <a href="http://www.linuxfoundation.org/programs/legal/trademark" title="Linux Mark Institute">trademark</a> of Linus Torvalds. Open vSwitch and OvS are trademarks of The Linux Foundation.</p>
+        <p>Please see our <a href="http://www.linuxfoundation.org/privacy">privacy policy</a> and <a href="http://www.linuxfoundation.org/terms">terms of use</a>.</p>
+      </div>
+    </div>
+  </div>
+</footer>
+{% endblock %}
+
+{% block relbar1 %}{% endblock %}
+{% block relbar2 %}{% endblock %}

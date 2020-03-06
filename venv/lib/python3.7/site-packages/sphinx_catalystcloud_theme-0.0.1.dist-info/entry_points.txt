@@ -1,0 +1,3 @@
+[sphinx.html_themes]
+sphinx_catalystcloud_theme = sphinx_catalystcloud_theme
+

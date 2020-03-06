@@ -331,7 +331,7 @@ class NonBondedTheory:
             print("Using mixed rule for LJ pair potentials")
             print("Using geometric rule for r/sigma")
             print("Using arithmetic rule for epsilon")
-            else:
+        else:
             print("Unknown combination rule. Exiting")
             exit()
         for count_i, at_i in enumerate(self.atomtypes):
