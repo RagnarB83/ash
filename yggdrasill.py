@@ -342,7 +342,7 @@ class NonBondedTheory:
         self.uniqatomtypes = np.unique(self.atomtypes).tolist()
         DoAll=True
         for count_i, at_i in enumerate(self.uniqatomtypes):
-            print("count_i:", count_i)
+            #print("count_i:", count_i)
             for count_j,at_j in enumerate(self.uniqatomtypes):
                 #if count_i < count_j:
                 if DoAll==True:
@@ -385,11 +385,10 @@ class NonBondedTheory:
                         sigma=0.5*(self.forcefield[at_i].LJparameters[0]+self.forcefield[at_j].LJparameters[0])
                         epsilon=math.sqrt(self.forcefield[at_i].LJparameters[1]*self.forcefield[at_j].LJparameters[1])
                     self.LJpairpotentials.append([at_i, at_j, sigma, epsilon])
-                    print(self.LJpairpotentials)
+                    #print(self.LJpairpotentials)
         #Remove redundant pair potentials
         #Todo: make a lot faster
         for acount, pairpot_a in enumerate(self.LJpairpotentials):
-            print("acount:", acount)
             for bcount, pairpot_b in enumerate(self.LJpairpotentials):
                 if acount < bcount:
                     if set(pairpot_a) == set(pairpot_b):
@@ -403,6 +402,11 @@ class NonBondedTheory:
         print("Charges are now:", charges)
     #Provide specific coordinates (MM region) and charges (MM region) upon run
     def run(self, full_coords=[], mm_coords=[], charges=[], connectivity=[]):
+
+        #If charges not provided to run function. Use object charges
+        if len(charges)==0:
+            charges=self.atom_charges
+
         print(BC.OKBLUE, BC.BOLD, "------------RUNNING NONBONDED MM CODE-------------", BC.END)
         print("Calculating Coulomb+LJ energy and gradient")
         #Sending full coords and charges over. QM charges are set to 0.
