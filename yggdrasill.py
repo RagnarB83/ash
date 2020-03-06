@@ -321,7 +321,6 @@ class NonBondedTheory:
         printsetting='normal'
         #List to store pairpotentials
         self.LJpairpotentials=[]
-        print("Atom types:", self.atomtypes)
         if combination_rule == 'geometric':
             print("Using geometric mean for LJ pair potentials")
         elif combination_rule == 'arithmetic':
