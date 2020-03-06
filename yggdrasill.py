@@ -383,7 +383,7 @@ class NonBondedTheory:
                         sigma=0.5*(self.forcefield[at_i].LJparameters[0]+self.forcefield[at_j].LJparameters[0])
                         epsilon=math.sqrt(self.forcefield[at_i].LJparameters[1]*self.forcefield[at_j].LJparameters[1])
                     self.LJpairpotentials.append([at_i, at_j, sigma, epsilon])
-                    print(LJpairpotentials)
+                    print(self.LJpairpotentials)
         #Remove redundant pair potentials
         #Todo: make a lot faster
         for acount, pairpot_a in enumerate(self.LJpairpotentials):
