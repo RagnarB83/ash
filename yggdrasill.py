@@ -338,6 +338,7 @@ class NonBondedTheory:
             print("Unknown combination rule. Exiting")
             exit()
         for count_i, at_i in enumerate(self.atomtypes):
+            print("count_i:", count_i)
             for count_j,at_j in enumerate(self.atomtypes):
                 if count_i < count_j:
                     #print("at_i {} and at_j {}".format(at_i,at_j))
