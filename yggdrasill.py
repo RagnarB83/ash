@@ -369,14 +369,14 @@ class NonBondedTheory:
                         if printsetting == 'Debug':
                             print("Using geometric mean for LJ sigma parameters")
                             print("Using arithmetic mean for LJ epsilon parameters")
-                        print("NOTE: to be confirmed")
+                            print("NOTE: to be confirmed")
                         sigma=np.sqrt(self.forcefield[at_i].LJparameters[0]*self.forcefield[at_j].LJparameters[0])
                         epsilon=0.5-(self.forcefield[at_i].LJparameters[1]+self.forcefield[at_j].LJparameters[1])
                     elif combination_rule=='mixed_geoepsilon':
                         if printsetting == 'Debug':
                             print("Using arithmetic mean for LJ sigma parameters")
                             print("Using geometric mean for LJ epsilon parameters")
-                        print("NOTE: to be confirmed")
+                            print("NOTE: to be confirmed")
                         sigma=0.5*(self.forcefield[at_i].LJparameters[0]+self.forcefield[at_j].LJparameters[0])
                         epsilon=np.sqrt(self.forcefield[at_i].LJparameters[1]*self.forcefield[at_j].LJparameters[1])
                     self.LJpairpotentials.append([at_i, at_j, sigma, epsilon])
