@@ -10,17 +10,18 @@ from functions_coords import *
 
 def LennardJones(coords,atomtypes, LJPairpotentials, connectivity=[]):
     print("Inside Lennard_jones function")
-    print("Calculating LJ pairs based on connectivity:", connectivity)
+    print("Calculating LJ pairs based on connectivity")
     print("")
     if len(connectivity)==0:
         print("Warning!. No connectivity list present. Will treat all LJ pairs.")
+    else:
+        print(len(connectivity)," connectivity lists present")
 
     atomlist=list(range(0, len(coords)))
     #LJ energy
     energy=0
     #LJ gradient
     gradient = np.zeros((len(coords), 3))
-    exit()
     #Iterating over atom i
     for i in atomlist:
         #Iterating over atom j
