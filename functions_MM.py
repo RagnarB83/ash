@@ -11,6 +11,10 @@ from functions_coords import *
 def LennardJones(coords,atomtypes, LJPairpotentials, connectivity=[]):
     print("Inside Lennard_jones function")
     print("Calculating LJ pairs based on connectivity:", connectivity)
+    print("")
+    if len(connectivity)==0:
+        print("Warning!. No connectivity list present. Will treat all LJ pairs.")
+
     atomlist=list(range(0, len(coords)))
     #LJ energy
     energy=0
