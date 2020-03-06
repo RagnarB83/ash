@@ -323,7 +323,15 @@ class NonBondedTheory:
             print("Using geometric mean for LJ pair potentials")
         elif combination_rule == 'arithmetic':
             print("Using geometric mean for LJ pair potentials")
-        else:
+        elif combination_rule == 'mixed_geoepsilon':
+            print("Using mixed rule for LJ pair potentials")
+            print("Using arithmetic rule for r/sigma")
+            print("Using geometric rule for epsilon")
+        elif combination_rule == 'mixed_geosigma':
+            print("Using mixed rule for LJ pair potentials")
+            print("Using geometric rule for r/sigma")
+            print("Using arithmetic rule for epsilon")
+            else:
             print("Unknown combination rule. Exiting")
             exit()
         for count_i, at_i in enumerate(self.atomtypes):
