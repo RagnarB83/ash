@@ -59,6 +59,7 @@ def LennardJones(coords,atomtypes, LJPairpotentials, connectivity=[]):
                                 #Typo in http://localscf.com/localscf.com/LJPotential.aspx.html ??
                                 #Using http://www.courses.physics.helsinki.fi/fys/moldyn/lectures/L4.pdf
                                 LJgrad_const=(24*eps*((sigma/pairdistance)**6-2*(sigma/pairdistance)**12))*(1/(pairdistance**2))
+                                print("LJgrad_const:", LJgrad_const)
                                 gr=np.array([(coords[i][0] - coords[j][0])*LJgrad_const, (coords[i][1] - coords[j][1])*LJgrad_const,
                                      (coords[i][2] - coords[j][2])*LJgrad_const])
                                 gradient[i] += gr
