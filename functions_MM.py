@@ -45,6 +45,7 @@ def LennardJones(coords,atomtypes, LJPairpotentials, connectivity=[]):
                                     skip=True
                                     continue
                             if skip == False:
+                                print("i : {}  and j : {}".format(i,j))
                                 print("atomtype_i : {}  and atomtype_j : {}".format(atomtypes[i],atomtypes[j]))
                                 sigma=l[2]
                                 eps=l[3]
@@ -54,6 +55,7 @@ def LennardJones(coords,atomtypes, LJPairpotentials, connectivity=[]):
                                 print("V_LJ: {} au  V_LJ: {} kcal/mol:".format(V_LJ,V_LJ*constants.harkcal))
                                 energy+=V_LJ
                                 print("energy: {} au  energy: {} kcal/mol:".format(energy, energy * constants.harkcal))
+                                print("------------------------------")
                                 #Typo in http://localscf.com/localscf.com/LJPotential.aspx.html ??
                                 #Using http://www.courses.physics.helsinki.fi/fys/moldyn/lectures/L4.pdf
                                 LJgrad_const=(24*eps*((sigma/pairdistance)**6-2*(sigma/pairdistance)**12))*(1/(pairdistance**2))
