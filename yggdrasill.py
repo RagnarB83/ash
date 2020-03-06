@@ -340,13 +340,13 @@ class NonBondedTheory:
 
         #A large has many atomtypes. Creating list of unique atomtypes to simplify loop
         self.uniqatomtypes = np.unique(self.atomtypes).tolist()
+        DoAll=True
         for count_i, at_i in enumerate(self.uniqatomtypes):
             print("count_i:", count_i)
             for count_j,at_j in enumerate(self.uniqatomtypes):
-                if count_i < count_j:
+                #if count_i < count_j:
+                if DoAll==True:
                     #print("at_i {} and at_j {}".format(at_i,at_j))
-                    #Calculating sigma-pair and epsilon-pair
-                    #Geometric means used.
                     if len(self.forcefield[at_i].LJparameters) == 0:
                         continue
                     if len(self.forcefield[at_j].LJparameters) == 0:
