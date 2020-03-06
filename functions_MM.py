@@ -20,7 +20,6 @@ def LennardJones(coords,atomtypes, LJPairpotentials, connectivity=[]):
     energy=0
     #LJ gradient
     gradient = np.zeros((len(coords), 3))
-    print("atomlist:", atomlist)
     exit()
     #Iterating over atom i
     for i in atomlist:
