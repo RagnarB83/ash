@@ -845,6 +845,8 @@ class Fragment:
                 if count == 0:
                     self.numatoms=int(line.split()[0])
                 if count > 1:
+                    print(line)
+                    print("lne line", len(line))
                     if len(line) > 0:
                         self.elems.append(line.split()[0])
                         self.coords.append([float(line.split()[1]), float(line.split()[2]), float(line.split()[3])])
