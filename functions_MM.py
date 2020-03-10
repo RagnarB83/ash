@@ -1,12 +1,19 @@
 from functions_coords import *
 
 
+#Fast LJ-Coulomb via Fortran and f2PY
+def LJCoulomb(coords,atomtypes,LJPairpotentials, charges, connectivity=[]):
 
-# TODO: Create function to do Coulomb and LJ terms together in one loop.
-#will be necessary for efficiency for large system
 
-#TODO: For really fast COulomb and LJ. Probably have to write in Fortran/C/C++.
-#Can steal from ABIN maybe: force_mm.f90  and interface ??
+    print("LJPairpotentials:", LJPairpotentials)
+    epsij=[]
+    sigmaij
+    rc=9999
+    import LJCoulombv1
+    penergy, LJenergy, coulenergy, forces = LJCoulombv1.energyforces(coords, rc, epsij, sigmaij,
+                                                                     charges, forces, dim=3,
+                                                                     natom=len(coords))
+    return final_energy, final_gradient
 
 def LennardJones(coords,atomtypes, LJPairpotentials, connectivity=[]):
     print("Inside Lennard_jones function")

@@ -400,7 +400,7 @@ class NonBondedTheory:
         self.atom_charges = charges
         print("Charges are now:", charges)
     #Provide specific coordinates (MM region) and charges (MM region) upon run
-    def run(self, full_coords=[], mm_coords=[], charges=[], connectivity=[], LJ=True, Coulomb=True, Grad=True):
+    def run(self, full_coords=[], mm_coords=[], charges=[], connectivity=[], LJ=True, Coulomb=True, Grad=True, version='py'):
 
         #If charges not provided to run function. Use object charges
         if len(charges)==0:
@@ -420,22 +420,30 @@ class NonBondedTheory:
         self.Coulombchargegradient=[]
         self.LJgradient=[]
 
+        #Slow Python version or fast Fortran version
+        if version=='py':
+            print("Using slow Python MM code")
+            #Sending full coords and charges over. QM charges are set to 0.
+            if Coulomb==True:
+                self.Coulombchargeenergy, self.Coulombchargegradient  = coulombcharge(charges, full_coords)
+                print("Coulomb Energy (au):", self.Coulombchargeenergy)
+                print("Coulomb Energy (kcal/mol):", self.Coulombchargeenergy * constants.harkcal)
+            # NOTE: Lennard-Jones should  calculate both MM-MM and QM-MM LJ interactions. Full coords necessary.
+            if LJ==True:
+                self.LJenergy,self.LJgradient = LennardJones(full_coords,self.atomtypes, self.LJpairpotentials, connectivity=connectivity)
+                print("Lennard-Jones Energy (au):", self.LJenergy)
+                print("Lennard-Jones Energy (kcal/mol):", self.LJenergy*constants.harkcal)
 
-        #Sending full coords and charges over. QM charges are set to 0.
-        if Coulomb==True:
-            self.Coulombchargeenergy, self.Coulombchargegradient  = coulombcharge(charges, full_coords)
-            print("Coulomb Energy (au):", self.Coulombchargeenergy)
-            print("Coulomb Energy (kcal/mol):", self.Coulombchargeenergy * constants.harkcal)
-        # NOTE: Lennard-Jones should  calculate both MM-MM and QM-MM LJ interactions. Full coords necessary.
-        if LJ==True:
-            self.LJenergy,self.LJgradient = LennardJones(full_coords,self.atomtypes, self.LJpairpotentials, connectivity=connectivity)
-            print("Lennard-Jones Energy (au):", self.LJenergy)
-            print("Lennard-Jones Energy (kcal/mol):", self.LJenergy*constants.harkcal)
+            self.MMEnergy = self.Coulombchargeenergy+self.LJenergy
+            print("MM Energy:", self.MMEnergy)
+            if Grad==True:
+                self.MMGradient = self.Coulombchargegradient+self.LJgradient
+        elif version=='f2py':
+            print("Using fast Fortran F2Py MM code")
+            self.MMEnergy, self.MMGradient=LJCoulomb(full_coords, self.atomtypes, self.LJPairpotentials, charges, connectivity=connectivity):
+        else:
+            print("Unknown version of MM code")
 
-        self.MMEnergy = self.Coulombchargeenergy+self.LJenergy
-        print("MM Energy:", self.MMEnergy)
-        if Grad==True:
-            self.MMGradient = self.Coulombchargegradient+self.LJgradient
         print(BC.OKBLUE, BC.BOLD, "------------ENDING NONBONDED MM CODE-------------", BC.END)
         return self.MMEnergy, self.MMGradient
 
