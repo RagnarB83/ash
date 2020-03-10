@@ -440,7 +440,7 @@ class NonBondedTheory:
                 self.MMGradient = self.Coulombchargegradient+self.LJgradient
         elif version=='f2py':
             print("Using fast Fortran F2Py MM code")
-            self.MMEnergy, self.MMGradient=LJCoulomb(full_coords, self.atomtypes, self.LJPairpotentials, charges, connectivity=connectivity):
+            self.MMEnergy, self.MMGradient=LJCoulomb(full_coords, self.atomtypes, self.LJPairpotentials, charges, connectivity=connectivity)
         else:
             print("Unknown version of MM code")
 
