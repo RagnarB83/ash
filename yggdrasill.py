@@ -482,6 +482,7 @@ class NonBondedTheory:
             try:
                 import LJCoulombv1
                 print(LJCoulombv1.__doc__)
+                print("----------")
             except:
                 print("Fortran library: LJCoulombv1 not found! Make sure you have run the installation script.")
 
