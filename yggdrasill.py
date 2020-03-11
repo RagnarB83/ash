@@ -401,21 +401,24 @@ class NonBondedTheory:
         sigmaij = np.zeros((numatoms, numatoms))
         epsij = np.zeros((numatoms, numatoms))
         print("Creating epsij and sigmaij arrays")
+        beginTime = time.time()
+        CheckpointTime = time.time()
         for i in range(numatoms):
             for j in range(numatoms):
                 for ljpot in self.LJpairpotentials:
                     if self.atomtypes[i] == ljpot[0] and self.atomtypes[j] == ljpot[1]:
-                        print("Here")
+                        #print("Here")
                         sigmaij[i, j] = ljpot[2]
                         epsij[i, j] = ljpot[3]
                     elif self.atomtypes[j] == ljpot[0] and self.atomtypes[i] == ljpot[1]:
-                        print("here 2")
+                        #print("here 2")
                         sigmaij[i, j] = ljpot[2]
                         epsij[i, j] = ljpot[3]
                     else:
-                        print("no match")
+                        #print("no match")
         print("sigmaij:", sigmaij)
         print("epsij:", epsij)
+        print_time_rel_and_tot(CheckpointTime, beginTime)
 
     def update_charges(self,charges):
         print("Updating charges.")
