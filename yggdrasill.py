@@ -410,8 +410,8 @@ class NonBondedTheory:
         #Create numatomxnumatom array of eps and sigma
         #Todo: rewrite in Fortran like in Abin.
         numatoms=len(self.atomtypes)
-        sigmaij = np.zeros((numatoms, numatoms))
-        epsij = np.zeros((numatoms, numatoms))
+        self.sigmaij = np.zeros((numatoms, numatoms))
+        self.epsij = np.zeros((numatoms, numatoms))
         print("Creating epsij and sigmaij arrays")
         beginTime = time.time()
         CheckpointTime = time.time()
@@ -420,14 +420,14 @@ class NonBondedTheory:
                 for ljpot in self.LJpairpotentials:
                     if self.atomtypes[i] == ljpot[0] and self.atomtypes[j] == ljpot[1]:
                         #print("Here")
-                        sigmaij[i, j] = ljpot[2]
-                        epsij[i, j] = ljpot[3]
+                        self.sigmaij[i, j] = ljpot[2]
+                        self.epsij[i, j] = ljpot[3]
                     elif self.atomtypes[j] == ljpot[0] and self.atomtypes[i] == ljpot[1]:
                         #print("here 2")
-                        sigmaij[i, j] = ljpot[2]
-                        epsij[i, j] = ljpot[3]
-        print("sigmaij:", sigmaij)
-        print("epsij:", epsij)
+                        self.sigmaij[i, j] = ljpot[2]
+                        self.epsij[i, j] = ljpot[3]
+        print("self.sigmaij:", self.sigmaij)
+        print("self.epsij:", self.epsij)
         print_time_rel_and_tot(CheckpointTime, beginTime)
 
     def update_charges(self,charges):
@@ -484,7 +484,7 @@ class NonBondedTheory:
             except:
                 print("Fortran library: LJCoulombv1 not found! Make sure you have run the installation script.")
 
-            self.MMEnergy, self.MMGradient=LJCoulomb(full_coords, self.atomtypes, self.LJpairpotentials, charges, connectivity=connectivity)
+            self.MMEnergy, self.MMGradient=LJCoulomb(full_coords, self.epsij, self.sigmaij, charges, connectivity=connectivity)
         else:
             print("Unknown version of MM code")
 

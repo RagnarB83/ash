@@ -2,20 +2,24 @@ from functions_coords import *
 
 
 #Fast LJ-Coulomb via Fortran and f2PY
-def LJCoulomb(coords,atomtypes,LJPairpotentials, charges, connectivity=[]):
+def LJCoulomb(coords,epsij, sigmaij, charges, connectivity=[]):
 
     #Need to either create NxN arrays with epsij and sigmaij values. See yggdrasill.py
     #Maybe do by Fortran
     #Or a simple dict-like thing with LJPairpotentials in? fed to LJCoulmbv1?
-
-    print("LJPairpotentials:", LJPairpotentials)
+    numatom=len(coords)
     epsij=[]
     sigmaij=[]
     rc=9999
-    penergy, LJenergy, coulenergy, forces = LJCoulombv1.energyforces(coords, rc, epsij, sigmaij,
-                                                                     charges, forces, dim=3,
-                                                                     natom=len(coords))
-    return final_energy, final_gradient
+    grad = np.zeros((numatoms,numatoms))
+    penergy, LJenergy, coulenergy, grad = LJCoulombv1.ljcoulegrad(coords, rc, epsij, sigmaij,
+                                                                     charges, grad, dim=3,
+                                                                     natom=numatoms)
+    print("penergy:", penergy)
+    print("LJenergy:", LJenergy)
+    print("coulenergy:", coulenergy)
+    print("grad:", grad)
+    return penergy, grad
 
 def LennardJones(coords,atomtypes, LJPairpotentials, connectivity=[]):
     print("Inside Lennard_jones function")
