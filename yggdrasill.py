@@ -347,6 +347,7 @@ class NonBondedTheory:
             exit()
 
         #A large system has many atomtypes. Creating list of unique atomtypes to simplify loop
+        CheckpointTime = time.time()
         self.uniqatomtypes = np.unique(self.atomtypes).tolist()
         DoAll=True
         for count_i, at_i in enumerate(self.uniqatomtypes):
@@ -395,14 +396,16 @@ class NonBondedTheory:
                     self.LJpairpotentials.append([at_i, at_j, sigma, epsilon])
                     self.LJpairpotdict[(at_i,at_j)] = [sigma, epsilon]
                     #print(self.LJpairpotentials)
+        print_time_rel(CheckpointTime)
         #Remove redundant pair potentials
         #Todo: make a lot faster
+        CheckpointTime = time.time()
         for acount, pairpot_a in enumerate(self.LJpairpotentials):
             for bcount, pairpot_b in enumerate(self.LJpairpotentials):
                 if acount < bcount:
                     if set(pairpot_a) == set(pairpot_b):
                         del self.LJpairpotentials[bcount]
-
+        print_time_rel(CheckpointTime)
         print("Final LJ pair potentials (sigma_ij, epsilon_ij):\n", self.LJpairpotentials)
         print("New: as dict:")
         print("self.LJpairpotdict:", self.LJpairpotdict)
@@ -414,6 +417,7 @@ class NonBondedTheory:
         self.epsij = np.zeros((numatoms, numatoms))
         print("Creating epsij and sigmaij arrays")
         beginTime = time.time()
+
         CheckpointTime = time.time()
         for i in range(numatoms):
             for j in range(numatoms):
@@ -428,7 +432,7 @@ class NonBondedTheory:
                         self.epsij[i, j] = ljpot[3]
         print("self.sigmaij:", self.sigmaij)
         print("self.epsij:", self.epsij)
-        print_time_rel_and_tot(CheckpointTime, beginTime)
+        print_time_rel(CheckpointTime)
 
     def update_charges(self,charges):
         print("Updating charges.")
