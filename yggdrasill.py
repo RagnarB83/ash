@@ -463,6 +463,9 @@ class NonBondedTheory:
                 self.Coulombchargeenergy, self.Coulombchargegradient  = coulombcharge(charges, full_coords)
                 print("Coulomb Energy (au):", self.Coulombchargeenergy)
                 print("Coulomb Energy (kcal/mol):", self.Coulombchargeenergy * constants.harkcal)
+                print("")
+                print("self.Coulombchargegradient:", self.Coulombchargegradient)
+                blankline()
             # NOTE: Lennard-Jones should  calculate both MM-MM and QM-MM LJ interactions. Full coords necessary.
             if LJ==True:
                 self.LJenergy,self.LJgradient = LennardJones(full_coords,self.atomtypes, self.LJpairpotentials, connectivity=connectivity)
