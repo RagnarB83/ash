@@ -414,8 +414,6 @@ class NonBondedTheory:
                         #print("here 2")
                         sigmaij[i, j] = ljpot[2]
                         epsij[i, j] = ljpot[3]
-                    else:
-                        #print("no match")
         print("sigmaij:", sigmaij)
         print("epsij:", epsij)
         print_time_rel_and_tot(CheckpointTime, beginTime)
