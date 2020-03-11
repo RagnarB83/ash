@@ -397,11 +397,12 @@ class NonBondedTheory:
 
         #Create numatomxnumatom array of eps and sigma
         #Todo: rewrite in Fortran like in Abin.
-        sigmaij=np.zeros(len(self.atomtypes),len(self.atomtypes))
-        epsij=np.zeros(len(self.atomtypes),len(self.atomtypes))
+        numatoms=len(self.atomtypes)
+        sigmaij = np.zeros((numatoms, numatoms))
+        epsij = np.zeros((numatoms, numatoms))
         print("Creating epsij and sigmaij arrays")
-        for i in range(self.atomtypes):
-            for j in range(self.atomtypes):
+        for i in range(numatoms):
+            for j in range(numatoms):
                 for ljpot in self.LJpairpotentials:
                     if self.atomtypes[i] == ljpot[0] and self.atomtypes[j] == ljpot[1]:
                         print("Here")
