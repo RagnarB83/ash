@@ -7,7 +7,7 @@ def LJCoulomb(coords,epsij, sigmaij, charges, connectivity=[]):
     #Need to either create NxN arrays with epsij and sigmaij values. See yggdrasill.py
     #Maybe do by Fortran
     #Or a simple dict-like thing with LJPairpotentials in? fed to LJCoulmbv1?
-    numatom=len(coords)
+    numatoms=len(coords)
     epsij=[]
     sigmaij=[]
     rc=9999
