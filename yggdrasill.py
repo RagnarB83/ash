@@ -471,12 +471,11 @@ class NonBondedTheory:
                 self.LJenergy,self.LJgradient = LennardJones(full_coords,self.atomtypes, self.LJpairpotentials, connectivity=connectivity)
                 print("Lennard-Jones Energy (au):", self.LJenergy)
                 print("Lennard-Jones Energy (kcal/mol):", self.LJenergy*constants.harkcal)
-
             self.MMEnergy = self.Coulombchargeenergy+self.LJenergy
-            print("MM Energy:", self.MMEnergy)
+
             if Grad==True:
                 self.MMGradient = self.Coulombchargegradient+self.LJgradient
-                print("self.MMGradient:", self.MMGradient)
+
         elif version=='f2py':
             print("Using fast Fortran F2Py MM code")
             try:
@@ -485,10 +484,19 @@ class NonBondedTheory:
                 print("----------")
             except:
                 print("Fortran library LJCoulombv1 not found! Make sure you have run the installation script.")
+            self.MMEnergy, self.MMGradient, self.LJenergy, self.Coulombchargeenergy =\
+                LJCoulomb(full_coords, self.epsij, self.sigmaij, charges, connectivity=connectivity)
 
-            self.MMEnergy, self.MMGradient=LJCoulomb(full_coords, self.epsij, self.sigmaij, charges, connectivity=connectivity)
+
         else:
             print("Unknown version of MM code")
+
+        print("Lennard-Jones Energy (au):", self.LJenergy)
+        print("Lennard-Jones Energy (kcal/mol):", self.LJenergy * constants.harkcal)
+        print("Coulomb Energy (au):", self.Coulombchargeenergy)
+        print("Coulomb Energy (kcal/mol):", self.Coulombchargeenergy * constants.harkcal)
+        print("MM Energy:", self.MMEnergy)
+        print("self.MMGradient:", self.MMGradient)
 
         print(BC.OKBLUE, BC.BOLD, "------------ENDING NONBONDED MM CODE-------------", BC.END)
         return self.MMEnergy, self.MMGradient

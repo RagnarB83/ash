@@ -16,11 +16,7 @@ def LJCoulomb(coords,epsij, sigmaij, charges, connectivity=[]):
     rc=9999.5
     grad = np.zeros((numatoms,3))
     penergy, LJenergy, coulenergy, grad = LJCoulombv1.ljcoulegrad(coords, rc, epsij, sigmaij, charges, grad, dim=3, natom=numatoms)
-    print("penergy:", penergy)
-    print("LJenergy:", LJenergy)
-    print("coulenergy:", coulenergy)
-    print("grad:", grad)
-    return penergy, grad
+    return penergy, grad, LJenergy, coulenergy
 
 def LennardJones(coords,atomtypes, LJPairpotentials, connectivity=[]):
     print("Inside Lennard_jones function")
