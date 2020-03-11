@@ -397,8 +397,8 @@ class NonBondedTheory:
 
         #Create numatomxnumatom array of eps and sigma
         #Todo: rewrite in Fortran like in Abin.
-        sigmaij=np.zeros(x,x)
-        epsij=np.zeros(x,x)
+        sigmaij=np.zeros(len(self.atomtypes),len(self.atomtypes))
+        epsij=np.zeros(len(self.atomtypes),len(self.atomtypes))
         print("Creating epsij and sigmaij arrays")
         for i in range(self.atomtypes):
             for j in range(self.atomtypes):
