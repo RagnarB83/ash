@@ -268,6 +268,13 @@ class MolecularDynamics:
         print("Molecular dynamics is not ready yet")
         exit()
 
+def print_time_rel(timestampA,modulename=''):
+    secsA=time.time()-timestampA
+    minsA=secsA/60
+    print("-------------------------------------------------------------------")
+    print("Time to calculate step ({}): {:3.1f} seconds, {:3.1f} minutes.".format(modulename, secsA, minsA ))
+    print("-------------------------------------------------------------------")
+
 def print_time_rel_and_tot(timestampA,timestampB, modulename=''):
     secsA=time.time()-timestampA
     minsA=secsA/60
@@ -321,6 +328,8 @@ class NonBondedTheory:
         printsetting='normal'
         #List to store pairpotentials
         self.LJpairpotentials=[]
+        #New: multi-key dict instead using tuple
+        self.LJpairpotdict={}
         if combination_rule == 'geometric':
             print("Using geometric mean for LJ pair potentials")
         elif combination_rule == 'arithmetic':
@@ -384,6 +393,7 @@ class NonBondedTheory:
                         sigma=0.5*(self.forcefield[at_i].LJparameters[0]+self.forcefield[at_j].LJparameters[0])
                         epsilon=math.sqrt(self.forcefield[at_i].LJparameters[1]*self.forcefield[at_j].LJparameters[1])
                     self.LJpairpotentials.append([at_i, at_j, sigma, epsilon])
+                    self.LJpairpotdict[(at_i,at_j)] = [sigma, epsilon]
                     #print(self.LJpairpotentials)
         #Remove redundant pair potentials
         #Todo: make a lot faster
@@ -394,6 +404,8 @@ class NonBondedTheory:
                         del self.LJpairpotentials[bcount]
 
         print("Final LJ pair potentials (sigma_ij, epsilon_ij):\n", self.LJpairpotentials)
+        print("New: as dict:")
+        print("self.LJpairpotdict:", self.LJpairpotdict)
 
         #Create numatomxnumatom array of eps and sigma
         #Todo: rewrite in Fortran like in Abin.
@@ -915,6 +927,8 @@ class Fragment:
         found_atoms = []
         fraglist = []
         count = 0
+        #Todo: replace by Fortran code? Pretty slow for 10K atoms
+        timestampA=time.time()
         for atom in range(0, len(self.elems)):
             if atom not in found_atoms:
                 count += 1
@@ -923,6 +937,7 @@ class Fragment:
                 if members not in fraglist:
                     fraglist.append(members)
                     found_atoms += members
+        print_time_rel(timestampA)
         #flat_fraglist = [item for sublist in fraglist for item in sublist]
         self.connectivity=fraglist
         #Calculate number of atoms in connectivity list of lists
