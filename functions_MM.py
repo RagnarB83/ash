@@ -7,15 +7,22 @@ def LJCoulomb(coords,epsij, sigmaij, charges, connectivity=[]):
     #Todo: Avoid calling import everytime in the future...
     import LJCoulombv1
     print(LJCoulombv1.__doc__)
-
-    #Need to either create NxN arrays with epsij and sigmaij values. See yggdrasill.py
-    #Maybe do by Fortran
-    #Or a simple dict-like thing with LJPairpotentials in? fed to LJCoulmbv1?
-
     numatoms=len(coords)
     rc=9999.5
     grad = np.zeros((numatoms,3))
     penergy, LJenergy, coulenergy, grad = LJCoulombv1.ljcoulegrad(coords, rc, epsij, sigmaij, charges, grad, dim=3, natom=numatoms)
+    return penergy, grad, LJenergy, coulenergy
+
+#Fast LJ-Coulomb via Fortran and f2PY
+def LJCoulombv2(coords,epsij, sigmaij, charges, connectivity=[]):
+    print("Inside LJCoulomb")
+    #Todo: Avoid calling import everytime in the future...
+    import LJCoulombv2
+    print(LJCoulombv2.__doc__)
+    numatoms=len(coords)
+    rc=9999.5
+    grad = np.zeros((numatoms,3))
+    penergy, LJenergy, coulenergy, grad = LJCoulombv2.ljcoulegrad(coords, rc, epsij, sigmaij, charges, grad, dim=3, natom=numatoms)
     return penergy, grad, LJenergy, coulenergy
 
 def LennardJones(coords,atomtypes, LJPairpotentials, connectivity=[]):

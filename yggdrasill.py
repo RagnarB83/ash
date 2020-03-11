@@ -486,7 +486,16 @@ class NonBondedTheory:
                 print("Fortran library LJCoulombv1 not found! Make sure you have run the installation script.")
             self.MMEnergy, self.MMGradient, self.LJenergy, self.Coulombchargeenergy =\
                 LJCoulomb(full_coords, self.epsij, self.sigmaij, charges, connectivity=connectivity)
-
+        elif version=='f2pyv2':
+            print("Using fast Fortran F2Py MM code v2")
+            try:
+                import LJCoulombv2
+                print(LJCoulombv2.__doc__)
+                print("----------")
+            except:
+                print("Fortran library LJCoulombv1 not found! Make sure you have run the installation script.")
+            self.MMEnergy, self.MMGradient, self.LJenergy, self.Coulombchargeenergy =\
+                LJCoulombv2(full_coords, self.epsij, self.sigmaij, charges, connectivity=connectivity)
 
         else:
             print("Unknown version of MM code")
