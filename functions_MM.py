@@ -13,10 +13,10 @@ def LJCoulomb(coords,epsij, sigmaij, charges, connectivity=[]):
     print("epsij:", epsij)
     print("sigmaij:", sigmaij)
     print("charges:", charges)
-    rc=9999
+    rc=9999.5
     grad = np.zeros((numatoms,numatoms))
-    penergy, LJenergy, coulenergy, grad = LJCoulombv1.ljcoulegrad(coords, rc, epsij, sigmaij,
-                                                                     charges, grad, dim=3, natom=numatoms)
+    print("numatoms", numatoms)
+    penergy, LJenergy, coulenergy, grad = LJCoulombv1.ljcoulegrad(coords, rc, epsij, sigmaij, charges, grad, dim=3, natom=numatoms)
     print("penergy:", penergy)
     print("LJenergy:", LJenergy)
     print("coulenergy:", coulenergy)
