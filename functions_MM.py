@@ -10,6 +10,8 @@ def LJCoulomb(coords,epsij, sigmaij, charges, connectivity=[]):
     #Maybe do by Fortran
     #Or a simple dict-like thing with LJPairpotentials in? fed to LJCoulmbv1?
     numatoms=len(coords)
+    epsij = [[0.0, 0.1521], [0.1521, 0.0]]
+    sigmaij = [[0.0, 3.1505742], [3.1505742, 0.0]]
     print("epsij:", epsij)
     print("sigmaij:", sigmaij)
     print("charges:", charges)
