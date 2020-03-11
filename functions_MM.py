@@ -62,33 +62,33 @@ def LennardJones(coords,atomtypes, LJPairpotentials, connectivity=[]):
                                     skip=True
                                     continue
                             if skip == False:
-                                print("i : {}  and j : {}".format(i,j))
-                                print("atomtype_i : {}  and atomtype_j : {}".format(atomtypes[i],atomtypes[j]))
+                                #print("i : {}  and j : {}".format(i,j))
+                                #print("atomtype_i : {}  and atomtype_j : {}".format(atomtypes[i],atomtypes[j]))
                                 sigma=l[2]
                                 eps=l[3]
                                 pairdistance = distance(coords[i], coords[j])
-                                print("sigma, eps, pairdistance", sigma,eps,pairdistance)
+                                #print("sigma, eps, pairdistance", sigma,eps,pairdistance)
                                 V_LJ=4*eps*((sigma/pairdistance)**12-(sigma/pairdistance)**6)
-                                print("V_LJ: {} kcal/mol  V_LJ: {} au:".format(V_LJ,V_LJ/constants.harkcal))
+                                #print("V_LJ: {} kcal/mol  V_LJ: {} au:".format(V_LJ,V_LJ/constants.harkcal))
                                 energy+=V_LJ
-                                print("energy: {} kcal/mol  energy: {} au:".format(energy, energy / constants.harkcal))
-                                print("------------------------------")
+                                #print("energy: {} kcal/mol  energy: {} au:".format(energy, energy / constants.harkcal))
+                                #print("------------------------------")
                                 #Typo in http://localscf.com/localscf.com/LJPotential.aspx.html ??
                                 #Using http://www.courses.physics.helsinki.fi/fys/moldyn/lectures/L4.pdf
                                 #TODO: Equation needs to be double-checked for correctness. L4.pdf equation ambiguous
                                 #Check this: http://people.virginia.edu/~lz2n/mse627/notes/Potentials.pdf
                                 LJgrad_const=(24*eps*((sigma/pairdistance)**6-2*(sigma/pairdistance)**12))*(1/(pairdistance**2))
-                                print("LJgrad_const:", LJgrad_const)
+                                #print("LJgrad_const:", LJgrad_const)
                                 gr=np.array([(coords[i][0] - coords[j][0])*LJgrad_const, (coords[i][1] - coords[j][1])*LJgrad_const,
                                      (coords[i][2] - coords[j][2])*LJgrad_const])
-                                print("gr:", gr)
+                                #print("gr:", gr)
                                 gradient[i] += gr
                                 gradient[j] -= gr
-                                print("gradient[i]:", gradient[i])
-                                print("gradient[j]:", gradient[j])
-                                print("gradients in hartree/Bohr:")
-                                print("gradient[i]:", gradient[i]* (1/constants.harkcal) / constants.ang2bohr)
-                                print("gradient[j]:", gradient[j]* (1/constants.harkcal) / constants.ang2bohr)
+                                #print("gradient[i]:", gradient[i])
+                                #print("gradient[j]:", gradient[j])
+                                #print("gradients in hartree/Bohr:")
+                                #print("gradient[i]:", gradient[i]* (1/constants.harkcal) / constants.ang2bohr)
+                                #print("gradient[j]:", gradient[j]* (1/constants.harkcal) / constants.ang2bohr)
     #Convert gradient from kcal/mol per Å to hartree/Bohr
     final_gradient=gradient * (1/constants.harkcal) / constants.ang2bohr
     print("final_gradient (hartree/Bohr):", final_gradient)
