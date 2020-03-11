@@ -4,21 +4,17 @@ from functions_coords import *
 #Fast LJ-Coulomb via Fortran and f2PY
 def LJCoulomb(coords,epsij, sigmaij, charges, connectivity=[]):
     print("Inside LJCoulomb")
+    #Todo: Avoid calling import everytime in the future...
     import LJCoulombv1
     print(LJCoulombv1.__doc__)
+
     #Need to either create NxN arrays with epsij and sigmaij values. See yggdrasill.py
     #Maybe do by Fortran
     #Or a simple dict-like thing with LJPairpotentials in? fed to LJCoulmbv1?
+
     numatoms=len(coords)
-    #epsij = [[0.0, 0.1521], [0.1521, 0.0]]
-    #sigmaij = [[0.0, 3.1505742], [3.1505742, 0.0]]
-    print("coords:", coords)
-    print("epsij:", epsij)
-    print("sigmaij:", sigmaij)
-    print("charges:", charges)
     rc=9999.5
     grad = np.zeros((numatoms,3))
-    print("numatoms", numatoms)
     penergy, LJenergy, coulenergy, grad = LJCoulombv1.ljcoulegrad(coords, rc, epsij, sigmaij, charges, grad, dim=3, natom=numatoms)
     print("penergy:", penergy)
     print("LJenergy:", LJenergy)
