@@ -10,15 +10,14 @@ def LJCoulomb(coords,epsij, sigmaij, charges, connectivity=[]):
     #Maybe do by Fortran
     #Or a simple dict-like thing with LJPairpotentials in? fed to LJCoulmbv1?
     numatoms=len(coords)
-    epsij = [[0.0, 0.1521], [0.1521, 0.0]]
-    sigmaij = [[0.0, 3.1505742], [3.1505742, 0.0]]
+    #epsij = [[0.0, 0.1521], [0.1521, 0.0]]
+    #sigmaij = [[0.0, 3.1505742], [3.1505742, 0.0]]
     print("coords:", coords)
     print("epsij:", epsij)
     print("sigmaij:", sigmaij)
     print("charges:", charges)
     rc=9999.5
-    #grad = np.zeros((numatoms,numatoms))
-    grad = np.array([[0.0, 0.0, 0.0], [0.0, 0.0, 0.0]], float)
+    grad = np.zeros((numatoms,3))
     print("numatoms", numatoms)
     penergy, LJenergy, coulenergy, grad = LJCoulombv1.ljcoulegrad(coords, rc, epsij, sigmaij, charges, grad, dim=3, natom=numatoms)
     print("penergy:", penergy)
