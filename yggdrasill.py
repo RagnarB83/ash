@@ -476,7 +476,7 @@ class NonBondedTheory:
             print("MM Energy:", self.MMEnergy)
             if Grad==True:
                 self.MMGradient = self.Coulombchargegradient+self.LJgradient
-                print("self.MMGradient:", self.MMgradient)
+                print("self.MMGradient:", self.MMGradient)
         elif version=='f2py':
             print("Using fast Fortran F2Py MM code")
             try:
