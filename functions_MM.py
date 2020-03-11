@@ -3,7 +3,8 @@ from functions_coords import *
 
 #Fast LJ-Coulomb via Fortran and f2PY
 def LJCoulomb(coords,epsij, sigmaij, charges, connectivity=[]):
-
+    import LJCoulombv1
+    print(LJCoulombv1.__doc__)
     #Need to either create NxN arrays with epsij and sigmaij values. See yggdrasill.py
     #Maybe do by Fortran
     #Or a simple dict-like thing with LJPairpotentials in? fed to LJCoulmbv1?

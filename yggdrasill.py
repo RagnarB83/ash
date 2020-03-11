@@ -481,6 +481,7 @@ class NonBondedTheory:
             print("Using fast Fortran F2Py MM code")
             try:
                 import LJCoulombv1
+                print(LJCoulombv1.__doc__)
             except:
                 print("Fortran library: LJCoulombv1 not found! Make sure you have run the installation script.")
 
