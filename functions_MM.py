@@ -4,12 +4,14 @@ from functions_coords import *
 #Fast LJ-Coulomb via Fortran and f2PY
 def LJCoulomb(coords,atomtypes,LJPairpotentials, charges, connectivity=[]):
 
+    #Need to either create NxN arrays with epsij and sigmaij values. See yggdrasill.py
+    #Maybe do by Fortran
+    #Or a simple dict-like thing with LJPairpotentials in? fed to LJCoulmbv1?
 
     print("LJPairpotentials:", LJPairpotentials)
     epsij=[]
-    sigmaij
+    sigmaij=[]
     rc=9999
-    import LJCoulombv1
     penergy, LJenergy, coulenergy, forces = LJCoulombv1.energyforces(coords, rc, epsij, sigmaij,
                                                                      charges, forces, dim=3,
                                                                      natom=len(coords))

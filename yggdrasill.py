@@ -337,7 +337,7 @@ class NonBondedTheory:
             print("Unknown combination rule. Exiting")
             exit()
 
-        #A large has many atomtypes. Creating list of unique atomtypes to simplify loop
+        #A large system has many atomtypes. Creating list of unique atomtypes to simplify loop
         self.uniqatomtypes = np.unique(self.atomtypes).tolist()
         DoAll=True
         for count_i, at_i in enumerate(self.uniqatomtypes):
@@ -395,6 +395,27 @@ class NonBondedTheory:
 
         print("Final LJ pair potentials (sigma_ij, epsilon_ij):\n", self.LJpairpotentials)
 
+        #Create numatomxnumatom array of eps and sigma
+        #Todo: rewrite in Fortran like in Abin.
+        sigmaij=np.zeros(x,x)
+        epsij=np.zeros(x,x)
+        print("Creating epsij and sigmaij arrays")
+        for i in range(self.atomtypes):
+            for j in range(self.atomtypes):
+                for ljpot in self.LJpairpotentials:
+                    if self.atomtypes[i] == ljpot[0] and self.atomtypes[j] == ljpot[1]:
+                        print("Here")
+                        sigmaij[i, j] = ljpot[2]
+                        epsij[i, j] = ljpot[3]
+                    elif self.atomtypes[j] == ljpot[0] and self.atomtypes[i] == ljpot[1]:
+                        print("here 2")
+                        sigmaij[i, j] = ljpot[2]
+                        epsij[i, j] = ljpot[3]
+                    else:
+                        print("no match")
+        print("sigmaij:", sigmaij)
+        print("epsij:", epsij)
+
     def update_charges(self,charges):
         print("Updating charges.")
         self.atom_charges = charges
@@ -440,7 +461,12 @@ class NonBondedTheory:
                 self.MMGradient = self.Coulombchargegradient+self.LJgradient
         elif version=='f2py':
             print("Using fast Fortran F2Py MM code")
-            self.MMEnergy, self.MMGradient=LJCoulomb(full_coords, self.atomtypes, self.LJPairpotentials, charges, connectivity=connectivity)
+            try:
+                import LJCoulombv1
+            except:
+                print("Fortran library: LJCoulombv1 not found! Make sure you have run the installation script.")
+
+            self.MMEnergy, self.MMGradient=LJCoulomb(full_coords, self.atomtypes, self.LJpairpotentials, charges, connectivity=connectivity)
         else:
             print("Unknown version of MM code")
 
