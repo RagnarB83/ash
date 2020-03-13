@@ -869,10 +869,15 @@ class Psi4Theory:
             except:
                 print("Problem importing psi4. Make sure psi4 has been installed as part of same Python as Yggdrasill")
                 print("If problematic, switch to inputfile based Psi4 interface")
+                exit()
+
             #Printing to output or not:
-            psi4.core.set_output_file('output.dat', False)
+            #psi4.core.set_output_file('output.dat', False)
 
             #Creating Psi4 molecule object using lists and manual information
+            print("elems:", elems)
+            print("elemstonuccharges(elems)", elemstonuccharges(elems))
+            print("current_coords:", current_coords)
             psi4molfrag = psi4.core.Molecule.from_arrays(
                 elez=elemstonuccharges(elems),
                 fix_com=True,
