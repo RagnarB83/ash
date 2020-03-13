@@ -844,7 +844,7 @@ class Psi4Theory:
         #    pass
     #Run function. Takes coords, elems etc. arguments and computes E or E+G.
     def run(self, current_coords=[], current_MM_coords=[], MMcharges=[], qm_elems=[],
-            mm_elems=[], elems=[], Grad=False, PC=False, nprocs=1 ):
+            mm_elems=[], elems=[], Grad=False, PC=False, nprocs=1, printsetting='' ):
         print(BC.OKBLUE,BC.BOLD, "------------RUNNING PSI4 INTERFACE-------------", BC.END)
         #Coords provided to run or else taken from initialization.
         if len(current_coords) != 0:
@@ -877,9 +877,8 @@ class Psi4Theory:
                 exit()
 
             #Printing to output or not:
-            if printsetting='File':
+            if printsetting=='File':
                 psi4.core.set_output_file('psi4output.dat', False)
-            else:
 
 
 
