@@ -850,6 +850,10 @@ class Psi4Theory:
             pass
         else:
             current_coords=self.coords
+        if len(elems) != 0:
+            pass
+        else:
+            elems=self.elems
 
         #What elemlist to use. If qm_elems provided then QM/MM job, otherwise use elems list or self.elems
         if qm_elems == []:
