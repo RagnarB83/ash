@@ -877,7 +877,11 @@ class Psi4Theory:
                 exit()
 
             #Printing to output or not:
-            #psi4.core.set_output_file('output.dat', False)
+            if printsetting='File':
+                psi4.core.set_output_file('psi4output.dat', False)
+            else:
+
+
 
             #Creating Psi4 molecule object using lists and manual information
             psi4molfrag = psi4.core.Molecule.from_arrays(
