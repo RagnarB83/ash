@@ -881,13 +881,10 @@ class Psi4Theory:
                 exit()
 
             #Printing to output or not:
-            print("x self.printsetting:", self.printsetting)
             if self.printsetting=='File':
-                print("Printsetting = 'File' . Printing Psi4 output to psi4output.dat ")
+                print("Printsetting = 'File' . Printing output to file: psi4output.dat ")
                 print("Set Printsetting ='Screen' to get psi4output in stdout")
                 psi4.core.set_output_file('psi4output.dat', False)
-            else:
-                print("Printing to stdout")
 
             #Creating Psi4 molecule object using lists and manual information
             psi4molfrag = psi4.core.Molecule.from_arrays(
