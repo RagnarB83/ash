@@ -879,9 +879,6 @@ class Psi4Theory:
             #psi4.core.set_output_file('output.dat', False)
 
             #Creating Psi4 molecule object using lists and manual information
-            print("elems:", elems)
-            print("elemstonuccharges(elems)", elemstonuccharges(elems))
-            print("current_coords:", current_coords)
             psi4molfrag = psi4.core.Molecule.from_arrays(
                 elez=elemstonuccharges(elems),
                 fix_com=True,
@@ -900,12 +897,17 @@ class Psi4Theory:
             #psi4molfrag.set_molecular_charge(self.charge)
             #psi4molfrag.set_multiplicity(self.mult)
 
-            #Set self.psi4settings  dict??
-
-            #psi4.set_options({'reference': 'uhf'})
+            #Reading dict object with basic settings. Todo: Make more flexible for other options
             psi4.set_options(self.psi4settings)
-            psi4.energy('scf/6-31g**')
 
+            #Running energy or energy+gradient. Currently hardcoded to SCF jobs.
+            if Grad==True:
+                psi4.energy('scf')
+            else:
+                psi4.gradient('scf')
+
+
+        #INPUT-FILE BASED INTERFACE: TODO: finish
         else:
             print("PSI4 Run Mode: Inputfile based")
             print("Not complete yet...")
