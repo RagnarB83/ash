@@ -835,13 +835,12 @@ class Psi4Theory:
     #Cleanup after run.
     def cleanup(self):
         print("Cleaning up old Psi4 files")
-        #try:
-            #os.remove(self.inputfilename+'.gbw')
-            #os.remove(self.inputfilename + '.out')
-            #for tmpfile in glob.glob("self.inputfilename*tmp"):
-            #    os.remove(tmpfile)
-        #except:
-        #    pass
+        try:
+            os.remove('psi4output.dat')
+            os.remove('timer.dat')
+
+        except:
+            pass
     #Run function. Takes coords, elems etc. arguments and computes E or E+G.
     def run(self, current_coords=[], current_MM_coords=[], MMcharges=[], qm_elems=[],
             mm_elems=[], elems=[], Grad=False, PC=False, nprocs=1, printsetting='' ):
