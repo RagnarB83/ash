@@ -903,11 +903,11 @@ class Psi4Theory:
             #Running energy or energy+gradient. Currently hardcoded to SCF jobs.
             #TODO: Support pointcharges and PE embedding
             if Grad==True:
-                self.energy=psi4.energy('scf')
-            else:
                 grad=psi4.gradient('scf')
                 self.gradient=np.array(grad)
                 self.energy = psi4.variable("CURRENT ENERGY")
+            else:
+                self.energy=psi4.energy('scf')
 
             #TODO: write in error handling here
 
