@@ -815,11 +815,13 @@ class ORCATheory:
 # PE: Polarizable embedding (CPPE). Pass pe_modulesettings dict as well
 class Psi4Theory:
     def __init__(self, fragment='', charge='', mult='', psi4settings='', psi4functional='',
-                 runmode='library', psi4dir='', printsetting='File', pe=False, pe_modulesettings={}):
+                 runmode='library', psi4dir='', printsetting='File', pe=False, potfile=''):
         self.runmode=runmode
         self.printsetting = printsetting
+        #CPPE Polarizable Embedding options
         self.pe=pe
-        self.pe_modulesettings=pe_modulesettings
+        #Potfile from user or passed on via QM/MM Theory object ?
+        self.potfile=potfile
         if self.runmode != 'library':
             try:
                 self.psi4dir = psi4dir
@@ -912,18 +914,21 @@ class Psi4Theory:
             psi4.set_options(self.psi4settings)
 
             #Reading module options dict and passing to Psi4
-            #TODO.
-            potfile='blux.pot'
-            print("potfile:", potfile)
+            #TODO: Make one for SCF, CC, PCM etc.
+            psi4.set_module_options(modulename, moduledict)
+
             #Reading PE module options if PE=True
             if self.pe==True:
-                print("Polarizable Embedding Option On! Using CPPE module inside Psi4")
-                #{'potfile': 'cppe-potfile.pot'}
-                #self.pe_modulesettings should be a dictionary of PE settings
-                #psi4.set_module_options('pe', self.pe_modulesettings)
+                print(BC.OKGREEN,"Polarizable Embedding Option On! Using CPPE module inside Psi4", BC.END)
+                print(BC.WARNING, "Potfile: ", potfile)
+                try:
+                    if os.path.exists(potfile):
+                        pass
+                except:
+                    print(BC.FAIL, "Potfile: ", potfile, "does not exist!")
                 psi4.set_module_options('pe', {'potfile' : potfile})
 
-            #Controlling parallelization
+            #Controlling OpenMP parallelization. Controlled here, not via OMP_NUM_THREADS etc.
             psi4.set_num_threads(nprocs)
 
             #Running energy or energy+gradient. Currently hardcoded to SCF-DFT jobs
