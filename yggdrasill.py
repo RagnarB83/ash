@@ -916,7 +916,7 @@ class Psi4Theory:
             potfile='blux.pot'
             print("potfile:", blux.pot)
             #Reading PE module options if PE=True
-            if self.pe=True:
+            if self.pe==True:
                 #{'potfile': 'cppe-potfile.pot'}
                 #self.pe_modulesettings should be a dictionary of PE settings
                 #psi4.set_module_options('pe', self.pe_modulesettings)
