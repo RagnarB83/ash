@@ -812,8 +812,10 @@ class ORCATheory:
 #   : inputfile means that Yggdrasill will create Psi4 inputfile and run a separate psi4 executable
 #psi4dir only necessary for inputfile-used
 class Psi4Theory:
-    def __init__(self, fragment='', charge='', mult='', psi4settings='', psi4functional='', runmode='library', psi4dir=''):
+    def __init__(self, fragment='', charge='', mult='', psi4settings='', psi4functional='',
+                 runmode='library', psi4dir='', printsetting='File'):
         self.runmode=runmode
+        self.printsetting = printsetting
         if self.runmode != 'library':
             try:
                 self.psi4dir = psi4dir
@@ -838,12 +840,15 @@ class Psi4Theory:
         try:
             os.remove('psi4output.dat')
             os.remove('timer.dat')
-
         except:
             pass
     #Run function. Takes coords, elems etc. arguments and computes E or E+G.
     def run(self, current_coords=[], current_MM_coords=[], MMcharges=[], qm_elems=[],
             mm_elems=[], elems=[], Grad=False, PC=False, nprocs=1, printsetting='' ):
+
+        if len(printsetting)>0:
+            self.printsetting=printsetting
+
         print(BC.OKBLUE,BC.BOLD, "------------RUNNING PSI4 INTERFACE-------------", BC.END)
         #Coords provided to run or else taken from initialization.
         if len(current_coords) != 0:
@@ -876,7 +881,7 @@ class Psi4Theory:
                 exit()
 
             #Printing to output or not:
-            if printsetting=='File':
+            if self.printsetting=='File':
                 psi4.core.set_output_file('psi4output.dat', False)
 
 
