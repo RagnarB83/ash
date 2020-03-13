@@ -914,7 +914,7 @@ class Psi4Theory:
             #Reading module options dict and passing to Psi4
             #TODO.
             potfile='blux.pot'
-            print("potfile:", blux.pot)
+            print("potfile:", potfile)
             #Reading PE module options if PE=True
             if self.pe==True:
                 #{'potfile': 'cppe-potfile.pot'}
