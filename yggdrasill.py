@@ -880,8 +880,8 @@ class Psi4Theory:
             try:
                 import psi4
             except:
-                print("Problem importing psi4. Make sure psi4 has been installed as part of same Python as Yggdrasill")
-                print("If problematic, switch to inputfile based Psi4 interface")
+                print(BC.FAIL,"Problem importing psi4. Make sure psi4 has been installed as part of same Python as Yggdrasill", BC.END)
+                print(BC.WARNING,"If problematic, switch to inputfile based Psi4 interface: NOT YET READY", BC.END)
                 exit()
 
             #Printing to output or not:
@@ -914,6 +914,7 @@ class Psi4Theory:
             #Reading module options dict and passing to Psi4
             #TODO.
             potfile='blux.pot'
+            print("potfile:", blux.pot)
             #Reading PE module options if PE=True
             if self.pe=True:
                 #{'potfile': 'cppe-potfile.pot'}
