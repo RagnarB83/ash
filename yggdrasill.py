@@ -815,7 +815,7 @@ class ORCATheory:
 # PE: Polarizable embedding (CPPE). Pass pe_modulesettings dict as well
 class Psi4Theory:
     def __init__(self, fragment='', charge='', mult='', psi4settings='', psi4functional='',
-                 runmode='library', psi4dir='', printsetting='File', pe=False, potfile=''):
+                 runmode='library', psi4dir='', printsetting=False, pe=False, potfile=''):
         self.runmode=runmode
         self.printsetting = printsetting
         #CPPE Polarizable Embedding options
@@ -850,10 +850,8 @@ class Psi4Theory:
             pass
     #Run function. Takes coords, elems etc. arguments and computes E or E+G.
     def run(self, current_coords=[], current_MM_coords=[], MMcharges=[], qm_elems=[],
-            mm_elems=[], elems=[], Grad=False, PC=False, nprocs=1, printsetting='' ):
+            mm_elems=[], elems=[], Grad=False, PC=False, nprocs=1, printsetting=False ):
 
-        if len(printsetting)>1:
-            self.printsetting=printsetting
 
         print(BC.OKBLUE,BC.BOLD, "------------RUNNING PSI4 INTERFACE-------------", BC.END)
         #Coords provided to run or else taken from initialization.
@@ -887,8 +885,10 @@ class Psi4Theory:
                 exit()
 
             #Printing to output or not:
-            if self.printsetting=='File':
-                print("Printsetting = 'File' . Printing output to file: psi4output.dat ")
+            if self.printsetting==True:
+                print("Printsetting = True. Printing output to stdout...")
+            else:
+                print("Printsetting = False. Printing output to file: psi4output.dat ")
                 psi4.core.set_output_file('psi4output.dat', False)
 
             #Creating Psi4 molecule object using lists and manual information
@@ -948,6 +948,7 @@ class Psi4Theory:
             print(BC.OKBLUE, BC.BOLD, "------------ENDING PSI4-INTERFACE-------------", BC.END)
 
             if Grad == True:
+                print("Single-point PSI4 energy:", self.energy)
                 return self.energy, self.gradient
             else:
                 print("Single-point PSI4 energy:", self.energy)
