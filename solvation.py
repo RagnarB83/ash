@@ -39,9 +39,10 @@ sys.path.append(calcdir)
 os.chdir(calcdir)
 
 # Read inputfile in cwd, called: solvshell_input.py
+#Disabling xtbdir, xtbmethod
 try:
-    from solvshell_input import (programdir, orcadir, xtbdir, NumCores, calctype, orcasimpleinput_LL, orcablockinput_LL,
-    orcasimpleinput_HL, orcablockinput_HL, orcasimpleinput_SRPOL, orcablockinput_SRPOL, xtbmethod, EOM, BulkCorrection, GasCorrection, ShortRangePolarization,
+    from solvshell_input import (programdir, orcadir, NumCores, calctype, orcasimpleinput_LL, orcablockinput_LL,
+    orcasimpleinput_HL, orcablockinput_HL, orcasimpleinput_SRPOL, orcablockinput_SRPOL, EOM, BulkCorrection, GasCorrection, ShortRangePolarization,
     SRPolShell, LRPolShell, LongRangePolarization, PrintFinalOutput, Testmode, repsnapmethod, repsnapnumber, solvbasis)
 except ImportError as error:
     print("Missing variable in solvshell_input.py file!")
@@ -55,7 +56,7 @@ print("-----------------------------------")
 print("Program directory:", programdir)
 print("Calculation directory:", calcdir)
 print("orcadir:", orcadir )
-print("xtbdir:", xtbdir )
+#print("xtbdir:", xtbdir )
 print("NumCores:", NumCores )
 print("calctype:", BC.OKBLUE,calctype )
 print("EOM:", EOM)
@@ -67,7 +68,7 @@ print("orcablockinput_SRPOL:", orcablockinput_SRPOL)
 print("solvbasis:", solvbasis)
 print("SRPolShell:", SRPolShell)
 print("LongRangePolarization:", LongRangePolarization)
-print("xtbmethod:", xtbmethod)
+#print("xtbmethod:", xtbmethod)
 print("LRPolShell:", LRPolShell)
 print("BulkCorrection:", BulkCorrection)
 print("GasCorrection:", GasCorrection)
@@ -435,15 +436,16 @@ else:
 if LongRangePolarization==True:
     ##############################################################
     # Long-Range Polarization (QM-region expansion) calculations #
+    #Now using PolEmbed via psi4
     ##############################################################
-    print_line_with_mainheader("Long-Range Polarization calculations: xTB Level")
+    print_line_with_mainheader("Long-Range Polarization calculations: Psi4 Level")
     os.mkdir('LRPol-LL')
     os.chdir('./LRPol-LL')
     for i in repsnaplistAB:
         shutil.copyfile('../' + i + '.c', './' + i + '.c')
     print("Current dir:", os.getcwd())
 
-    print("Using xTB method:", xtbmethod)
+    #print("Using xTB method:", xtbmethod)
     print("Doing Long-Range Polarization Step. Creating inputfiles...")
     print("Snapshots:", repsnaplistAB)
     print("Using SR QM-region shell:", SRPolShell, "Å")
@@ -452,21 +454,21 @@ if LongRangePolarization==True:
     #Create inputfiles of repsnapshots with increased QM regions
     print("Creating inputfiles for Long-Range Correction Region1:", SRPolShell, "Å")
     identifiername='_LR_LL-R1'
-    LRPolinpfiles_Region1 = create_AB_inputfiles_xtb(solute_atoms, solvent_atoms, solvsphere, repsnaplistAB,
+    LRPolinpfiles_Region1 = create_AB_inputfiles_psi4(solute_atoms, solvent_atoms, solvsphere, repsnaplistAB,
                                      solventunitcharges, identifiername, shell=SRPolShell)
     blankline()
     print("Creating inputfiles for Long-Range Correction Region2:", LRPolShell, "Å")
     identifiername='_LR_LL-R2'
-    LRPolinpfiles_Region2 = create_AB_inputfiles_xtb(solute_atoms, solvent_atoms, solvsphere, repsnaplistAB,
+    LRPolinpfiles_Region2 = create_AB_inputfiles_psi4(solute_atoms, solvent_atoms, solvsphere, repsnaplistAB,
                                      solventunitcharges, identifiername, shell=LRPolShell)
     blankline()
 
-    # Run xTB calculations using XYZ-files
-    print_line_with_subheader1("Running LRPol calculations Region 1 at xTB level of theory")
+    # Run Psi4 calculations using input-files
+    print_line_with_subheader1("Running LRPol calculations Region 1 at Psi4 level of theory")
     print("LRPolinpfiles_Region1:", LRPolinpfiles_Region1)
     print(BC.WARNING,"xtb theory:", xtbmethod, BC.END)
     run_inputfiles_in_parallel_xtb(LRPolinpfiles_Region1, xtbmethod, solvsphere.ChargeA, solvsphere.MultA,solvsphere.ChargeB, solvsphere.MultB )
-    print_line_with_subheader1("Running LRPol calculations Region 2 at xTB level of theory")
+    print_line_with_subheader1("Running LRPol calculations Region 2 at Psi4 level of theory")
     print("LRPolinpfiles_Region2:", LRPolinpfiles_Region2)
     print(BC.WARNING,"xtb theory:", xtbmethod, BC.END)
     run_inputfiles_in_parallel_xtb(LRPolinpfiles_Region2, xtbmethod, solvsphere.ChargeA, solvsphere.MultA, solvsphere.ChargeB, solvsphere.MultB)

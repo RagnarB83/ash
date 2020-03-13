@@ -1,7 +1,7 @@
 #does not work to import this for some reason
 
 #TODO: Look into: https://github.com/awvwgk/QCElemental
-f
+
 
 #Dictionary to handle fragments. e.g. mainfrag will contain list of unique elements, charge and multiplicity:
 #{'mainfrag': [['C', 'Cl', 'Co', 'H', 'N', 'O'], '1', '1']}

@@ -386,6 +386,15 @@ def nucchargelist(ellist):
         totnuccharge+=atcharge
     return totnuccharge
 
+#get list of nuclear charges from list of elements
+#Used by Psi4
+def elemstonuccharges(ellist):
+    nuccharges=[]
+    for e in ellist:
+        atcharge=elematomnumbers[e.lower()]
+        nuccharges.append(atcharge)
+    return nuccharges
+
 #Calculate molecular mass from list of atoms
 def totmasslist(ellist):
     totmass=0

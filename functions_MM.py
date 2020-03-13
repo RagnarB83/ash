@@ -20,8 +20,10 @@ def LJCoulombv2(coords,epsij, sigmaij, charges, connectivity=[]):
     import LJCoulombv2
     print(LJCoulombv2.__doc__)
     numatoms=len(coords)
+    #rc: threshold for ignoring LJ interaction
     rc=9999.5
     grad = np.zeros((numatoms,3))
+    #Calling Fortran function
     penergy, LJenergy, coulenergy, grad = LJCoulombv2.ljcoulegrad(coords, rc, epsij, sigmaij, charges, grad, dim=3, natom=numatoms)
     return penergy, grad, LJenergy, coulenergy
 

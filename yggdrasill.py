@@ -394,11 +394,11 @@ class NonBondedTheory:
                         sigma=0.5*(self.forcefield[at_i].LJparameters[0]+self.forcefield[at_j].LJparameters[0])
                         epsilon=math.sqrt(self.forcefield[at_i].LJparameters[1]*self.forcefield[at_j].LJparameters[1])
                     self.LJpairpotentials.append([at_i, at_j, sigma, epsilon])
+                    #Dict using two keys (actually a tuple of two keys)
                     self.LJpairpotdict[(at_i,at_j)] = [sigma, epsilon]
                     #print(self.LJpairpotentials)
         print_time_rel(CheckpointTime)
         #Remove redundant pair potentials
-        #Todo: make a lot faster
         CheckpointTime = time.time()
         for acount, pairpot_a in enumerate(self.LJpairpotentials):
             for bcount, pairpot_b in enumerate(self.LJpairpotentials):
@@ -407,7 +407,7 @@ class NonBondedTheory:
                         del self.LJpairpotentials[bcount]
         print_time_rel(CheckpointTime)
         print("Final LJ pair potentials (sigma_ij, epsilon_ij):\n", self.LJpairpotentials)
-        print("New: as dict:")
+        print("New: LJ pair potentials as dict:")
         print("self.LJpairpotdict:", self.LJpairpotdict)
 
         #Create numatomxnumatom array of eps and sigma
@@ -803,6 +803,160 @@ class ORCATheory:
             print(BC.FAIL,"Problem with ORCA run", BC.END)
             print(BC.OKBLUE,BC.BOLD, "------------ENDING ORCA-INTERFACE-------------", BC.END)
             exit()
+
+
+
+#Psi4 Theory object. Fragment object is optional. Only used for single-points.
+#PSI4 runmode:
+#   : library means that Yggdrasill will load Psi4 libraries and run psi4 directly
+#   : inputfile means that Yggdrasill will create Psi4 inputfile and run a separate psi4 executable
+#psi4dir only necessary for inputfile-used
+class Psi4Theory:
+    def __init__(self, fragment='', charge='', mult='', psi4settings='', runmode='library', psi4dir=''):
+        self.runmode=runmode
+        if self.runmode != 'library':
+            try:
+                self.psi4dir = psi4dir
+            except:
+                print("For Psi4 runmode=inputfile interface, the psi4dir variable needs to included")
+                exit()
+
+        if fragment != '':
+            self.fragment=fragment
+            self.coords=fragment.coords
+            self.elems=fragment.elems
+        #print("frag elems", self.fragment.elems)
+        if charge!='':
+            self.charge=int(charge)
+        if mult!='':
+            self.mult=int(mult)
+        self.psi4settings=psi4settings
+    #Cleanup after run.
+    def cleanup(self):
+        print("Cleaning up old Psi4 files")
+        #try:
+            #os.remove(self.inputfilename+'.gbw')
+            #os.remove(self.inputfilename + '.out')
+            #for tmpfile in glob.glob("self.inputfilename*tmp"):
+            #    os.remove(tmpfile)
+        #except:
+        #    pass
+    #Run function. Takes coords, elems etc. arguments and computes E or E+G.
+    def run(self, current_coords=[], current_MM_coords=[], MMcharges=[], qm_elems=[],
+            mm_elems=[], elems=[], Grad=False, PC=False, nprocs=1 ):
+        print(BC.OKBLUE,BC.BOLD, "------------RUNNING PSI4 INTERFACE-------------", BC.END)
+        #Coords provided to run or else taken from initialization.
+        if len(current_coords) != 0:
+            pass
+        else:
+            current_coords=self.coords
+
+        #What elemlist to use. If qm_elems provided then QM/MM job, otherwise use elems list or self.elems
+        if qm_elems == []:
+            if elems == []:
+                qm_elems=self.elems
+            else:
+                qm_elems = elems
+
+
+        #PSI4 runmode:
+        #   : library means that Yggdrasill will load Psi4 libraries and run psi4 directly
+        #   : inputfile means that Yggdrasill will create Psi4 inputfile and run a separate psi4 executable
+
+        if self.runmode=='library'
+            try:
+                import psi4
+            except:
+                print("Problem importing psi4. Make sure psi4 has been installed as part of same Python as Yggdrasill")
+                print("If problematic, switch to inputfile based Psi4 interface")
+            #Printing to output or not:
+            psi4.core.set_output_file('output.dat', False)
+
+            #Creating Psi4 molecule object using lists and manual information
+            psi4molfrag = psi4.core.Molecule.from_arrays(
+                elez=elemstonuccharges(elems),
+                fix_com=True,
+                fix_orientation=True,
+                fix_symmetry='c1',
+                molecular_charge=self.charge,
+                molecular_multiplicity=self.mult,
+                geom=current_coords)
+            psi4.activate(psi4molfrag)
+
+            #Setting inputvariables
+            #Todo: make memory psi4-interface variable ?
+            psi4.set_memory('500 MB')
+
+            #Changing charge and multiplicity
+            #psi4molfrag.set_molecular_charge(self.charge)
+            #psi4molfrag.set_multiplicity(self.mult)
+
+            #Set self.psi4settings  dict??
+
+            #psi4.set_options({'reference': 'uhf'})
+            psi4.set_options(self.psi4settings)
+            psi4.energy('scf/6-31g**')
+
+        else:
+            print("PSI4 Run Mode: Inputfile based")
+            print("Not complete yet...")
+            exit()
+            #Create Psi4 inputfile with generic name
+            self.inputfilename="orca-input"
+            print("Creating inputfile:", self.inputfilename+'.inp')
+            print("ORCA input:")
+            print(self.orcasimpleinput)
+            print(self.extraline)
+            print(self.orcablocks)
+            if PC==True:
+                print("Pointcharge embedding is on!")
+                create_psi4_pcfile(self.inputfilename, mm_elems, current_MM_coords, MMcharges)
+                create_psi4_input_pc(self.inputfilename, qm_elems, current_coords, self.psi4settings,
+                                        self.charge, self.mult)
+            else:
+                create_psi4_input_plain(self.inputfilename, qm_elems, current_coords, self.psi4settings,
+                                        self.charge,self.mult)
+
+
+            #Run inputfile using Psi4 parallelization. Take nprocs argument.
+            print(BC.OKGREEN, "Psi4 Calculation started.", BC.END)
+            # Doing gradient or not.
+            if Grad == True:
+                run_orca_SP_Psi4par(self.psi4dir, self.inputfilename + '.inp', nprocs=nprocs, Grad=True)
+            else:
+                run_orca_SP_Psi4par(self.psi4dir, self.inputfilename + '.inp', nprocs=nprocs)
+            #print(BC.OKGREEN, "------------ORCA calculation done-------------", BC.END)
+            print(BC.OKGREEN, "Psi4 Calculation done.", BC.END)
+
+        #Check if finished. Grab energy and gradient
+        outfile=self.inputfilename+'.out'
+        engradfile=self.inputfilename+'.engrad'
+        pcgradfile=self.inputfilename+'.pcgrad'
+        if checkORCAfinished(outfile) == True:
+            self.energy=finalenergygrab(outfile)
+
+            if Grad == True:
+                self.grad=gradientgrab(engradfile)
+                if PC == True:
+                    #Grab pointcharge gradient. i.e. gradient on MM atoms from QM-MM elstat interaction.
+                    self.pcgrad=pcgradientgrab(pcgradfile)
+                    print(BC.OKBLUE,BC.BOLD,"------------ENDING PSI4-INTERFACE-------------", BC.END)
+                    return self.energy, self.grad, self.pcgrad
+                else:
+                    print(BC.OKBLUE,BC.BOLD,"------------ENDING PSI4-INTERFACE-------------", BC.END)
+                    return self.energy, self.grad
+
+            else:
+                print("Single-point PSI4 energy:", self.energy)
+                print(BC.OKBLUE,BC.BOLD,"------------ENDING PSI4-INTERFACE-------------", BC.END)
+                return self.energy
+        else:
+            print(BC.FAIL,"Problem with Psi4 run", BC.END)
+            print(BC.OKBLUE,BC.BOLD, "------------ENDING PSI4-INTERFACE-------------", BC.END)
+            exit()
+
+
+
 
 # Fragment class
 class Fragment:
