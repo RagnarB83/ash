@@ -815,9 +815,8 @@ class ORCATheory:
 # PE: Polarizable embedding (CPPE). Pass pe_modulesettings dict as well
 class Psi4Theory:
     def __init__(self, fragment='', charge='', mult='', psi4settings='', psi4functional='',
-                 runmode='library', psi4dir='', printsetting=False, pe=False, potfile=''):
+                 runmode='library', psi4dir='', pe=False, potfile=''):
         self.runmode=runmode
-        self.printsetting = printsetting
         #CPPE Polarizable Embedding options
         self.pe=pe
         #Potfile from user or passed on via QM/MM Theory object ?
@@ -852,7 +851,6 @@ class Psi4Theory:
     def run(self, current_coords=[], current_MM_coords=[], MMcharges=[], qm_elems=[],
             mm_elems=[], elems=[], Grad=False, PC=False, nprocs=1, printsetting=False ):
 
-
         print(BC.OKBLUE,BC.BOLD, "------------RUNNING PSI4 INTERFACE-------------", BC.END)
         #Coords provided to run or else taken from initialization.
         if len(current_coords) != 0:
@@ -885,7 +883,7 @@ class Psi4Theory:
                 exit()
 
             #Printing to output or not:
-            if self.printsetting==True:
+            if printsetting==True:
                 print("Printsetting = True. Printing output to stdout...")
             else:
                 print("Printsetting = False. Printing output to file: psi4output.dat ")
