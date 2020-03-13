@@ -810,12 +810,16 @@ class ORCATheory:
 #PSI4 runmode:
 #   : library means that Yggdrasill will load Psi4 libraries and run psi4 directly
 #   : inputfile means that Yggdrasill will create Psi4 inputfile and run a separate psi4 executable
-#psi4dir only necessary for inputfile-used
+#psi4dir only necessary for inputfile-based userinterface
+#printsetting is by default set to 'File. Change to something else for stdout print
+# PE: Polarizable embedding (CPPE). Pass pe_modulesettings dict as well
 class Psi4Theory:
     def __init__(self, fragment='', charge='', mult='', psi4settings='', psi4functional='',
-                 runmode='library', psi4dir='', printsetting='File'):
+                 runmode='library', psi4dir='', printsetting='File', pe=False, pe_modulesettings={}):
         self.runmode=runmode
         self.printsetting = printsetting
+        self.pe=pe
+        self.pe_modulesettings=pe_modulesettings
         if self.runmode != 'library':
             try:
                 self.psi4dir = psi4dir
@@ -883,7 +887,6 @@ class Psi4Theory:
             #Printing to output or not:
             if self.printsetting=='File':
                 print("Printsetting = 'File' . Printing output to file: psi4output.dat ")
-                print("Set Printsetting ='Screen' to get psi4output in stdout")
                 psi4.core.set_output_file('psi4output.dat', False)
 
             #Creating Psi4 molecule object using lists and manual information
@@ -905,9 +908,18 @@ class Psi4Theory:
             #psi4molfrag.set_molecular_charge(self.charge)
             #psi4molfrag.set_multiplicity(self.mult)
 
-            #Reading dict object with basic settings. Todo: Make more flexible for other options
+            #Reading dict object with basic settings and passing to Psi4
             psi4.set_options(self.psi4settings)
 
+            #Reading module options dict and passing to Psi4
+            #TODO.
+            potfile='blux.pot'
+            #Reading PE module options if PE=True
+            if self.pe=True:
+                #{'potfile': 'cppe-potfile.pot'}
+                #self.pe_modulesettings should be a dictionary of PE settings
+                #psi4.set_module_options('pe', self.pe_modulesettings)
+                psi4.set_module_options('pe', {'potfile' : potfile})
 
             #Controlling parallelization
             psi4.set_num_threads(nprocs)
