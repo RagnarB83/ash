@@ -917,11 +917,11 @@ class Psi4Theory:
             print("potfile:", potfile)
             #Reading PE module options if PE=True
             if self.pe==True:
+                print("Polarizable Embedding Option On! Using CPPE module inside Psi4")
                 #{'potfile': 'cppe-potfile.pot'}
                 #self.pe_modulesettings should be a dictionary of PE settings
                 #psi4.set_module_options('pe', self.pe_modulesettings)
-                print("dd")
-                #psi4.set_module_options('pe', {'potfile' : potfile})
+                psi4.set_module_options('pe', {'potfile' : potfile})
 
             #Controlling parallelization
             psi4.set_num_threads(nprocs)
