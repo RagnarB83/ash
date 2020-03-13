@@ -831,6 +831,7 @@ class Psi4Theory:
         if mult!='':
             self.mult=int(mult)
         self.psi4settings=psi4settings
+        self.psi4functional=psi4functional
     #Cleanup after run.
     def cleanup(self):
         print("Cleaning up old Psi4 files")
