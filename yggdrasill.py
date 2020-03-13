@@ -901,11 +901,23 @@ class Psi4Theory:
             psi4.set_options(self.psi4settings)
 
             #Running energy or energy+gradient. Currently hardcoded to SCF jobs.
+            #TODO: Support pointcharges and PE embedding
             if Grad==True:
-                psi4.energy('scf')
+                self.energy=psi4.energy('scf')
             else:
-                psi4.gradient('scf')
+                grad=psi4.gradient('scf')
+                self.gradient=np.array(grad)
+                self.energy = psi4.variable("CURRENT ENERGY")
 
+            #TODO: write in error handling here
+
+            print(BC.OKBLUE, BC.BOLD, "------------ENDING PSI4-INTERFACE-------------", BC.END)
+
+            if Grad == True:
+                return self.energy, self.gradient
+            else:
+                print("Single-point PSI4 energy:", self.energy)
+                return self.energy
 
         #INPUT-FILE BASED INTERFACE: TODO: finish
         else:
@@ -939,32 +951,32 @@ class Psi4Theory:
             #print(BC.OKGREEN, "------------ORCA calculation done-------------", BC.END)
             print(BC.OKGREEN, "Psi4 Calculation done.", BC.END)
 
-        #Check if finished. Grab energy and gradient
-        outfile=self.inputfilename+'.out'
-        engradfile=self.inputfilename+'.engrad'
-        pcgradfile=self.inputfilename+'.pcgrad'
-        if checkORCAfinished(outfile) == True:
-            self.energy=finalenergygrab(outfile)
+            #Check if finished. Grab energy and gradient
+            outfile=self.inputfilename+'.out'
+            engradfile=self.inputfilename+'.engrad'
+            pcgradfile=self.inputfilename+'.pcgrad'
+            if checkPsi4finished(outfile) == True:
+                self.energy=finalenergygrab(outfile)
 
-            if Grad == True:
-                self.grad=gradientgrab(engradfile)
-                if PC == True:
-                    #Grab pointcharge gradient. i.e. gradient on MM atoms from QM-MM elstat interaction.
-                    self.pcgrad=pcgradientgrab(pcgradfile)
-                    print(BC.OKBLUE,BC.BOLD,"------------ENDING PSI4-INTERFACE-------------", BC.END)
-                    return self.energy, self.grad, self.pcgrad
+                if Grad == True:
+                    self.grad=gradientgrab(engradfile)
+                    if PC == True:
+                        #Grab pointcharge gradient. i.e. gradient on MM atoms from QM-MM elstat interaction.
+                        self.pcgrad=pcgradientgrab(pcgradfile)
+                        print(BC.OKBLUE,BC.BOLD,"------------ENDING PSI4-INTERFACE-------------", BC.END)
+                        return self.energy, self.grad, self.pcgrad
+                    else:
+                        print(BC.OKBLUE,BC.BOLD,"------------ENDING PSI4-INTERFACE-------------", BC.END)
+                        return self.energy, self.grad
+
                 else:
+                    print("Single-point PSI4 energy:", self.energy)
                     print(BC.OKBLUE,BC.BOLD,"------------ENDING PSI4-INTERFACE-------------", BC.END)
-                    return self.energy, self.grad
-
+                    return self.energy
             else:
-                print("Single-point PSI4 energy:", self.energy)
-                print(BC.OKBLUE,BC.BOLD,"------------ENDING PSI4-INTERFACE-------------", BC.END)
-                return self.energy
-        else:
-            print(BC.FAIL,"Problem with Psi4 run", BC.END)
-            print(BC.OKBLUE,BC.BOLD, "------------ENDING PSI4-INTERFACE-------------", BC.END)
-            exit()
+                print(BC.FAIL,"Problem with Psi4 run", BC.END)
+                print(BC.OKBLUE,BC.BOLD, "------------ENDING PSI4-INTERFACE-------------", BC.END)
+                exit()
 
 
 
