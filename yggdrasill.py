@@ -903,6 +903,10 @@ class Psi4Theory:
             #Reading dict object with basic settings. Todo: Make more flexible for other options
             psi4.set_options(self.psi4settings)
 
+
+            #Controlling parallelization
+            psi4.set_num_threads(nprocs)
+
             #Running energy or energy+gradient. Currently hardcoded to SCF-DFT jobs
             #TODO: Support pointcharges and PE embedding
             if Grad==True:
