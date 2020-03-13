@@ -915,18 +915,18 @@ class Psi4Theory:
 
             #Reading module options dict and passing to Psi4
             #TODO: Make one for SCF, CC, PCM etc.
-            psi4.set_module_options(modulename, moduledict)
+            #psi4.set_module_options(modulename, moduledict)
 
             #Reading PE module options if PE=True
             if self.pe==True:
                 print(BC.OKGREEN,"Polarizable Embedding Option On! Using CPPE module inside Psi4", BC.END)
-                print(BC.WARNING, "Potfile: ", potfile)
+                print(BC.WARNING, "Potfile: ", self.potfile)
                 try:
-                    if os.path.exists(potfile):
+                    if os.path.exists(self.potfile):
                         pass
                 except:
-                    print(BC.FAIL, "Potfile: ", potfile, "does not exist!")
-                psi4.set_module_options('pe', {'potfile' : potfile})
+                    print(BC.FAIL, "Potfile: ", self.potfile, "does not exist!")
+                psi4.set_module_options('pe', {'potfile' : self.potfile})
 
             #Controlling OpenMP parallelization. Controlled here, not via OMP_NUM_THREADS etc.
             psi4.set_num_threads(nprocs)
