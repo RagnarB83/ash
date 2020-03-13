@@ -812,7 +812,7 @@ class ORCATheory:
 #   : inputfile means that Yggdrasill will create Psi4 inputfile and run a separate psi4 executable
 #psi4dir only necessary for inputfile-used
 class Psi4Theory:
-    def __init__(self, fragment='', charge='', mult='', psi4settings='', runmode='library', psi4dir=''):
+    def __init__(self, fragment='', charge='', mult='', psi4settings='', psi4functional='', runmode='library', psi4dir=''):
         self.runmode=runmode
         if self.runmode != 'library':
             try:
@@ -900,14 +900,14 @@ class Psi4Theory:
             #Reading dict object with basic settings. Todo: Make more flexible for other options
             psi4.set_options(self.psi4settings)
 
-            #Running energy or energy+gradient. Currently hardcoded to SCF jobs.
+            #Running energy or energy+gradient. Currently hardcoded to SCF-DFT jobs
             #TODO: Support pointcharges and PE embedding
             if Grad==True:
-                grad=psi4.gradient('scf')
+                grad=psi4.gradient('scf', dft_functional=self.psi4functional)
                 self.gradient=np.array(grad)
                 self.energy = psi4.variable("CURRENT ENERGY")
             else:
-                self.energy=psi4.energy('scf')
+                self.energy=psi4.energy('scf', dft_functional=self.psi4functional)
 
             #TODO: write in error handling here
 
