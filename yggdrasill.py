@@ -928,7 +928,6 @@ class Psi4Theory:
                         print(BC.FAIL, "Potfile: ", self.potfile, "does not exist!", BC.END)
                         exit()
                 except:
-                    print(BC.FAIL, "xzzzPotfile: ", self.potfile, "does not exist!", BC.END)
                     exit()
                 psi4.set_module_options('pe', {'potfile' : self.potfile})
 
