@@ -846,7 +846,7 @@ class Psi4Theory:
     def run(self, current_coords=[], current_MM_coords=[], MMcharges=[], qm_elems=[],
             mm_elems=[], elems=[], Grad=False, PC=False, nprocs=1, printsetting='' ):
 
-        if len(printsetting)>0:
+        if len(printsetting)>1:
             self.printsetting=printsetting
 
         print(BC.OKBLUE,BC.BOLD, "------------RUNNING PSI4 INTERFACE-------------", BC.END)
@@ -880,10 +880,13 @@ class Psi4Theory:
                 print("If problematic, switch to inputfile based Psi4 interface")
                 exit()
 
-            #Printing to output or not:
-            if self.printsetting=='File':
-                psi4.core.set_output_file('psi4output.dat', False)
-
+        #Printing to output or not:
+        print("x self.printsetting:", self.printsetting)
+        if self.printsetting=='File':
+            print("Printsetting = 'File' . Printing Psi4 output to psi4output.dat ")
+            print("Set Printsetting ='Screen' to get psi4output in stdout")
+            psi4.core.set_output_file('psi4output.dat', False)
+        else:
 
 
             #Creating Psi4 molecule object using lists and manual information
