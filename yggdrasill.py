@@ -863,7 +863,7 @@ class Psi4Theory:
         #   : library means that Yggdrasill will load Psi4 libraries and run psi4 directly
         #   : inputfile means that Yggdrasill will create Psi4 inputfile and run a separate psi4 executable
 
-        if self.runmode=='library'
+        if self.runmode=='library':
             try:
                 import psi4
             except:
