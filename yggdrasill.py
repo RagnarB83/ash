@@ -920,7 +920,7 @@ class Psi4Theory:
             #Reading PE module options if PE=True
             if self.pe==True:
                 print(BC.OKGREEN,"Polarizable Embedding Option On! Using CPPE module inside Psi4", BC.END)
-                print(BC.WARNING, "Potfile: ", self.potfile)
+                print(BC.WARNING, "Potfile: ", self.potfile, BC.END)
                 try:
                     if os.path.exists(self.potfile):
                         pass
