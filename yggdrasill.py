@@ -920,7 +920,8 @@ class Psi4Theory:
                 #{'potfile': 'cppe-potfile.pot'}
                 #self.pe_modulesettings should be a dictionary of PE settings
                 #psi4.set_module_options('pe', self.pe_modulesettings)
-                psi4.set_module_options('pe', {'potfile' : potfile})
+                print("dd")
+                #psi4.set_module_options('pe', {'potfile' : potfile})
 
             #Controlling parallelization
             psi4.set_num_threads(nprocs)
