@@ -924,8 +924,10 @@ class Psi4Theory:
                 try:
                     if os.path.exists(self.potfile):
                         pass
+                    else:
+                        print(BC.FAIL, "Potfile: ", self.potfile, "does not exist!")
                 except:
-                    print(BC.FAIL, "Potfile: ", self.potfile, "does not exist!")
+                    print(BC.FAIL, "xzzzPotfile: ", self.potfile, "does not exist!")
                 psi4.set_module_options('pe', {'potfile' : self.potfile})
 
             #Controlling OpenMP parallelization. Controlled here, not via OMP_NUM_THREADS etc.
