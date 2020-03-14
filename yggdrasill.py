@@ -850,8 +850,11 @@ class ORCATheory:
 #printsetting is by default set to 'File. Change to something else for stdout print
 # PE: Polarizable embedding (CPPE). Pass pe_modulesettings dict as well
 class Psi4Theory:
-    def __init__(self, fragment='', charge='', mult='', psi4settings='', psi4functional='',
+    def __init__(self, fragment='', charge='', mult='', printsetting='False', psi4settings='', psi4functional='',
                  runmode='library', psi4dir='', pe=False, potfile=''):
+
+        self.printsetting=printsetting
+
         self.runmode=runmode
         #CPPE Polarizable Embedding options
         self.pe=pe
@@ -885,7 +888,7 @@ class Psi4Theory:
             pass
     #Run function. Takes coords, elems etc. arguments and computes E or E+G.
     def run(self, current_coords=[], current_MM_coords=[], MMcharges=[], qm_elems=[],
-            mm_elems=[], elems=[], Grad=False, PC=False, nprocs=1, printsetting=False ):
+            mm_elems=[], elems=[], Grad=False, PC=False, nprocs=1 ):
 
         print(BC.OKBLUE,BC.BOLD, "------------RUNNING PSI4 INTERFACE-------------", BC.END)
         #Coords provided to run or else taken from initialization.
@@ -915,7 +918,7 @@ class Psi4Theory:
                 exit()
 
             #Printing to output or not:
-            if printsetting==True:
+            if self.printsetting==True:
                 print("Printsetting = True. Printing output to stdout...")
             else:
                 print("Printsetting = False. Printing output to file: psi4output.dat ")
