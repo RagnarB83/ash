@@ -672,6 +672,7 @@ class PolEmbedTheory:
         self.MMEnergy=0
         #Final QM/MM Energy
         self.PolEmbedEnergy = self.QMEnergy+self.MMEnergy
+        self.energy=self.PolEmbedEnergy
         blankline()
         print("{:<20} {:>20.12f}".format("QM energy: ",self.QMEnergy))
         print("{:<20} {:>20.12f}".format("MM energy: ", self.MMEnergy))
