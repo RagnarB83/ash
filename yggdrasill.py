@@ -584,7 +584,7 @@ class PolEmbedTheory:
                 core = system.get_fragments_by_name(names=['QM'])
                 #system.set_core_region(fragments=core, program='Dalton', basis='pcset-1')
                 # solvent = system.get_fragments_by_distance(reference=core, distance=4.0)
-                solvent = system.get_fragments_by_name(names=self.PElabel_pyframe
+                solvent = system.get_fragments_by_name(names=self.PElabel_pyframe)
                 system.add_region(name='solvent', fragments=solvent, use_standard_potentials=True,
                           standard_potential_model=self.pot_option)
                 project = pyframe.Project()
