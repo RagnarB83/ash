@@ -945,12 +945,15 @@ class Psi4Theory:
 
             #Adding MM charges as pointcharges
             if PC==True:
-                psi4.Chrgfield = psi4.QMMM()
+                Chargefield = psi4.QMMM()
                 #Mmcoords are input in Bohr
                 for mmcharge,mmcoord in zip(MMcharges,current_MM_coords):
-                    psi4.Chrgfield.extern.addCharge(mmcharge, mmcoord[0]*constants.ang2bohr,
+                    Chargefield.extern.addCharge(mmcharge, mmcoord[0]*constants.ang2bohr,
                                                     mmcoord[1]*constants.ang2bohr, mmcoord[2]*constants.ang2bohr)
-                #psi4.set_global_option_python('EXTERN', Chrgfield.extern)
+                #TODO: need to figure out how to do the set global option thing
+                psi4.core.set_global_option("EXTERN", True)
+                psi4.core.EXTERN = Chargefield
+                print("THis needs to be confirmed by ORCA comparison!!")
 
             #Setting inputvariables
             #Todo: make memory psi4-interface variable ?
