@@ -1071,6 +1071,9 @@ class Psi4Theory:
             #Reading dict object with basic settings and passing to Psi4
             psi4.set_options(self.psi4settings)
             print("self.psi4settings:", self.psi4settings)
+
+            psi4.set_module_options('scf', {'e_convergence': '1e-11'})
+
             #Reading module options dict and passing to Psi4
             #TODO: Make one for SCF, CC, PCM etc.
             #psi4.set_module_options(modulename, moduledict)
@@ -1099,7 +1102,7 @@ class Psi4Theory:
                 self.gradient=np.array(grad)
                 self.energy = psi4.variable("CURRENT ENERGY")
             else:
-                self.energy=psi4.energy('scf', dft_functional=self.psi4functional)
+                self.energy=psi4.energy('scf', dft_functional=self.psi4functional, options=)
 
             #TODO: write in error handling here
 
