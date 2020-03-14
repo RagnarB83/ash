@@ -23,7 +23,7 @@ def xtbfinalenergygrab(file):
     return Energy
 
 #Grab gradient and energy from gradient file
-def xtbgradientgrab(file,numatoms):
+def xtbgradientgrab(numatoms):
     grab=False
     gradient = np.zeros((numatoms, 3))
     count=0
@@ -32,7 +32,7 @@ def xtbgradientgrab(file,numatoms):
     #Reading file backwards so adding to gradient backwards too
     row=numatoms-1
     #Read file in reverse
-    with open(file) as f:
+    with open('gradient') as f:
         for line in reverse_lines(f):
             if '  cycle =' in line:
                 energy=float(line.split()[6])

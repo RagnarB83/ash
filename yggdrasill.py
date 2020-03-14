@@ -1450,9 +1450,8 @@ class xTBTheory:
         inputfilename="xtb-inpfile"
         print("Creating inputfile:", inputfilename+'.xyz')
 
-        #Using current_coords from now on
-        numatoms=len(current_coords)
-
+        num_qmatoms=len(current_coords)
+        num_mmatoms=len(MMcharges)
         self.cleanup()
         #Todo: xtbrestart possibly. needs to be optional
 
@@ -1479,11 +1478,11 @@ class xTBTheory:
         print("------------xTB calculation done-------------")
         #Check if finished. Grab energy
         if Grad==True:
-            self.energy,self.grad=xtbgradientgrab(len(MMcharges))
+            self.energy,self.grad=xtbgradientgrab(num_qmatoms)
             if PC==True:
                 print("xTB PC gradient to be grabbed here")
                 # Grab pointcharge gradient. i.e. gradient on MM atoms from QM-MM elstat interaction.
-                self.pcgrad = xtbpcgradientgrab()
+                self.pcgrad = xtbpcgradientgrab(num_mmatoms)
                 print("------------ENDING XTB-INTERFACE-------------")
                 return self.energy, self.grad, self.pcgrad
             else:
