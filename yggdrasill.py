@@ -356,6 +356,8 @@ class NonBondedTheory:
                 #if count_i < count_j:
                 if DoAll==True:
                     #print("at_i {} and at_j {}".format(at_i,at_j))
+                    #Todo: if atom type not in dict we get a KeyError here.
+                    # Todo: Add exception or add zero-entry to dict ??
                     if len(self.forcefield[at_i].LJparameters) == 0:
                         continue
                     if len(self.forcefield[at_j].LJparameters) == 0:
@@ -624,10 +626,46 @@ class QMMMTheory:
                 self.QMEnergy = self.qm_theory.run(current_coords=self.qmcoords,
                                                       current_MM_coords=self.mmcoords, MMcharges=self.mmcharges,
                                                       qm_elems=self.qmelems, mm_elems=self.mmelems, Grad=False, PC=PC, nprocs=nprocs)
+        elif self.qm_theory_name == "Psi4Theory":
+            print("recently implemented")
+            #Calling Psi4 theory, providing current QM and MM coordinates.
+            if Grad==True:
+                print("Grad true")
+                if PC==True:
+                    print("Grad. PC-embedding true. not rady")
+                    exit()
+                    #self.QMEnergy, self.QMgradient, self.PCgradient = self.qm_theory.run(current_coords=self.qmcoords,
+                    #                                                                     current_MM_coords=self.mmcoords,
+                    #                                                                     MMcharges=self.mmcharges,
+                    #                                                                     qm_elems=self.qmelems, mm_elems=self.mmelems,
+                    #                                                                     Grad=True, PC=True, nprocs=nprocs)
+                elif PE==True:
+                    print("Grad. PolEmbedding true. not ready")
+                    exit()
+                else:
+                    print("grad. mechh embedding. not ready")
+                    exit()
+                    self.QMEnergy, self.QMgradient = self.qm_theory.run(current_coords=self.qmcoords,
+                                                      current_MM_coords=self.mmcoords, MMcharges=self.mmcharges,
+                                                      qm_elems=self.qmelems, mm_elems=self.mmelems, Grad=True, PC=False, nprocs=nprocs)
+            else:
+                print("grad false.")
+                if PC == True:
+                    print("PC embed true. not ready")
+
+                    exit()
+                    self.QMEnergy = self.qm_theory.run(current_coords=self.qmcoords,
+                                                      current_MM_coords=self.mmcoords, MMcharges=self.mmcharges,
+                                                      qm_elems=self.qmelems, mm_elems=self.mmelems, Grad=False, PC=PC, nprocs=nprocs)
+                elif PE==True:
+                    print("PolEmbed true")
+
+                else
+                    print("mech true". not ready)
+                    exit()
+
 
         elif self.qm_theory_name == "xTBTheory":
-            print("not yet implemented")
-        elif self.qm_theory_name == "Psi4Theory":
             print("not yet implemented")
         elif self.qm_theory_name == "DaltonTheory":
             print("not yet implemented")
