@@ -660,7 +660,7 @@ class QMMMTheory:
                 elif PE==True:
                     print("PolEmbed true")
 
-                else
+                else:
                     print("mech true". not ready)
                     exit()
 
