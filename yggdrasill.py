@@ -1461,14 +1461,14 @@ class xTBTheory:
         print("...")
         if Grad==True:
             if PC==True:
-                create_xtb_pcfile_general(coords, MMcharges)
+                create_xtb_pcfile_general(current_MM_coords, MMcharges)
                 run_xtb_SP_serial(self.xtbdir, self.xtbmethod, inputfilename + '.xyz', self.charge, self.mult, Grad=True)
             else:
                 run_xtb_SP_serial(self.xtbdir, self.xtbmethod, inputfilename + '.xyz', self.charge, self.mult,
                                   Grad=True)
         else:
             if PC==True:
-                create_xtb_pcfile_general(coords, MMcharges)
+                create_xtb_pcfile_general(current_MM_coords, MMcharges)
                 run_xtb_SP_serial(self.xtbdir, self.xtbmethod, inputfilename + '.xyz', self.charge, self.mult)
             else:
                 run_xtb_SP_serial(self.xtbdir, self.xtbmethod, inputfilename + '.xyz', self.charge, self.mult)
@@ -1478,6 +1478,9 @@ class xTBTheory:
         #Check if finished. Grab energy
         if Grad==True:
             self.energy,self.grad=xtbgradientgrab('gradient',numatoms)
+            if PC==True:
+                print("xTB PC gradient to be grabbed here")
+                exit()
             print("------------ENDING XTB-INTERFACE-------------")
             return self.energy, self.grad
         else:
