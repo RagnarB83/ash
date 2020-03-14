@@ -570,12 +570,13 @@ class PolEmbedTheory:
 
                 try:
                     import pyframe
+                    print("pyframe found")
                 except:
                     print("Pyframe not found. Install pyframe via pip (https://pypi.org/project/PyFraME):")
                     print("pip install pyframe")
 
                 #Todo: create PDB file
-                write_pdbfile_dummy(self.elems, self.coords, 'System', hybridatomlabels)
+                write_pdbfile_dummy(self.elems, self.coords, 'System', self.hybridatomlabels)
 
                 #file = sys.argv[1]
                 system = pyframe.MolecularSystem(input_file=file)
