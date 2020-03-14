@@ -520,14 +520,13 @@ class NonBondedTheory:
 #Required at init: qm_theory and qmatoms, X, Y
 #Currently only Polarizable Embedding (PE). Only available for Psi4, PySCF and Dalton.
 class PolEmbedTheory:
-    def __init__(self, qm_theory, qmatoms, fragment='', mm_theory="" , atomcharges="", printlevel=3):
+    def __init__(self, fragment='', qm_theory='', qmatoms=[], peatoms=[], pot_option=''):
         print(BC.WARNING,BC.BOLD,"------------Defining PolEmbedTheory object-------------", BC.END)
         #Theory level definitions
-        self.printlevel=printlevel
         self.qm_theory=qm_theory
         self.qm_theory_name = self.qm_theory.__class__.__name__
         print("QM-theory:", self.qm_theory_name)
-
+        exit()
         self.qmatoms = qmatoms
         #If fragment object has been defined
         if fragment != '':
