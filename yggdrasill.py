@@ -950,7 +950,7 @@ class Psi4Theory:
                 for mmcharge,mmcoord in zip(MMcharges,current_MM_coords):
                     psi4.Chrgfield.extern.addCharge(mmcharge, mmcoord[0]*constants.ang2bohr,
                                                     mmcoord[1]*constants.ang2bohr, mmcoord[2]*constants.ang2bohr)
-                psi4.set_global_option_python('EXTERN', Chrgfield.extern)
+                #psi4.set_global_option_python('EXTERN', Chrgfield.extern)
 
             #Setting inputvariables
             #Todo: make memory psi4-interface variable ?
