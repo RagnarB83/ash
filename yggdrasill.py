@@ -561,18 +561,22 @@ class PolEmbedTheory:
             self.hybridatomlabels=[]
             for i in self.allatoms:
                 if i in self.qmatoms:
-                    self.hybridatomlabels.append('UNL')
+                    self.hybridatomlabels.append('QM')
                 elif i in self.peatoms:
                     self.hybridatomlabels.append(self.PElabel_pyframe)
         print("self.hybridatomlabels:", self.hybridatomlabels)
-        #Create Potential file here
+
+
+
+        #Create Potential file here. Usually true.
         #TODO: PyFrame or manual or both?
         if self.pot_create==True:
+            print("Potfile Creation is on!")
             if self.pyframe==True:
-
+                print("Using PyFrame")
                 try:
                     import pyframe
-                    print("pyframe found")
+                    print("PyFrame found")
                 except:
                     print("Pyframe not found. Install pyframe via pip (https://pypi.org/project/PyFraME):")
                     print("pip install pyframe")
@@ -582,25 +586,51 @@ class PolEmbedTheory:
                 write_pdbfile_dummy(self.elems, self.coords, filename, self.hybridatomlabels)
                 file=filename+'.pdb'
                 #Pyframe
-                system = pyframe.MolecularSystem(input_file=file)
-                core = system.get_fragments_by_name(names=['UNL'])
-                #system.set_core_region(fragments=core, program='Dalton', basis='pcset-1')
-                # solvent = system.get_fragments_by_distance(reference=core, distance=4.0)
-                solvent = system.get_fragments_by_name(names=[self.PElabel_pyframe])
-                system.add_region(name='solvent', fragments=solvent, use_standard_potentials=True,
+                if self.pot_option=='SEP':
+                    print("Pot option: SEP")
+                    system = pyframe.MolecularSystem(input_file=file)
+                    solvent = system.get_fragments_by_name(names=[self.PElabel_pyframe])
+                    system.add_region(name='solvent', fragments=solvent, use_standard_potentials=True,
+                          standard_potential_model='SEP')
+                    project = pyframe.Project()
+                    project.create_embedding_potential(system)
+                    project.write_potential(system)
+                    self.potfile=filename+'.pot'
+                    print("Created potfile: ", self.potfile)
+                else:
+                    #TODO: Create pot file from scratch. Requires LoProp and Dalton I guess
+                    print("Only pot_option SEP possible right now")
+                    exit()
+                    system = pyframe.MolecularSystem(input_file=file)
+                    core = system.get_fragments_by_name(names=['QM'])
+                    system.set_core_region(fragments=core, program='Dalton', basis='pcset-1')
+                    # solvent = system.get_fragments_by_distance(reference=core, distance=4.0)
+                    solvent = system.get_fragments_by_name(names=[self.PElabel_pyframe])
+                    system.add_region(name='solvent', fragments=solvent, use_standard_potentials=True,
                           standard_potential_model=self.pot_option)
-                project = pyframe.Project()
-                project.create_embedding_potential(system)
-                #project.write_core(system)
-                project.write_potential(system)
+                    project = pyframe.Project()
+                    project.create_embedding_potential(system)
+                    project.write_core(system)
+                    project.write_potential(system)
+                    self.potfile=filename+'.pot
+
             #Manual potential file creation
             else:
-                pfsd="dsf"
+                print("Manual potential file creation (instead of Pyframe)")
+                print("Not ready yet!")
+                exit()
 
 
-    def run(self, current_coords=[], elems=[], Grad=False, nprocs=1):
+    def run(self, current_coords=[], elems=[], Grad=False, nprocs=1, potfile=''):
         print(BC.WARNING, BC.BOLD, "------------RUNNING PolEmbedTheory MODULE-------------", BC.END)
         print("QM Module:", self.qm_theory_name)
+
+        #Check if potfile provide to run (rare use). If not, use object file
+        if potfile == '':
+            self.potfile=potfile
+
+        print("Using potfile:", self.potfile)
+
         #If no coords provided to run (from Optimizer or NumFreq or MD) then use coords associated with object.
         if len(current_coords) != 0:
             pass
@@ -610,7 +640,6 @@ class PolEmbedTheory:
         #Updating QM coords and MM coords.
         #TODO: Should we use different name for updated QMcoords and MMcoords here??
         self.qmcoords=[current_coords[i] for i in self.qmatoms]
-        self.mmcoords=[current_coords[i] for i in self.mmatoms]
 
         if self.qm_theory_name == "Psi4Theory":
             print("recently implemented")
@@ -619,19 +648,20 @@ class PolEmbedTheory:
 
             self.QMEnergy = self.qm_theory.run(current_coords=self.qmcoords,
                                                       current_MM_coords=self.mmcoords, MMcharges=self.mmcharges,
-                                                      qm_elems=self.qmelems, mm_elems=self.mmelems, Grad=False, PC=PC, nprocs=nprocs)
+                                                      qm_elems=self.qmelems, mm_elems=self.mmelems, Grad=False, cnprocs=nprocs)
 
         elif self.qm_theory_name == "PySCFTheory":
+            print("not yet implemented with PolEmbed")
+            exit()
+        elif self.qm_theory_name == "DaltonTheory":
             print("not yet implemented")
             exit()
         elif self.qm_theory_name == "ORCATheory":
             print("not available for ORCATheory")
             exit()
-        elif self.qm_theory_name == "DaltonTheory":
-            print("not yet implemented")
-            exit()
+
         elif self.qm_theory_name == "NWChemTheory":
-            print("not availabel for NWChemTheory")
+            print("not available for NWChemTheory")
             exit()
         else:
             print("invalid QM theory")
@@ -640,13 +670,13 @@ class PolEmbedTheory:
         #Todo: self.MM_Energy from PolEmbed calc?
         self.MMEnergy=0
         #Final QM/MM Energy
-        self.QM_MM_Energy= self.QMEnergy+self.MMEnergy
+        self.PolEmbedEnergy = self.QMEnergy+self.MMEnergy
         blankline()
         print("{:<20} {:>20.12f}".format("QM energy: ",self.QMEnergy))
         print("{:<20} {:>20.12f}".format("MM energy: ", self.MMEnergy))
-        print("{:<20} {:>20.12f}".format("QM/MM energy: ", self.QM_MM_Energy))
+        print("{:<20} {:>20.12f}".format("PolEmbed energy: ", self.PolEmbedEnergy))
         blankline()
-        return self.QM_MM_Energy
+        return self.PolEmbedEnergy
 
 
 #QM/MM theory object.
