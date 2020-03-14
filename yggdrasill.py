@@ -826,10 +826,10 @@ class QMMMTheory:
 
 #ORCA Theory object. Fragment object is optional. Only used for single-points.
 class ORCATheory:
-    def __init__(self, orcadir, fragment='', charge='', mult='', orcasimpleinput='',
+    def __init__(self, orcadir, fragment=None, charge='', mult='', orcasimpleinput='',
                  orcablocks='', extraline='', brokensym=None, HSmult=None, atomstoflip=[]):
         self.orcadir = orcadir
-        if fragment != '':
+        if fragment != None:
             self.fragment=fragment
             self.coords=fragment.coords
             self.elems=fragment.elems
@@ -1050,13 +1050,9 @@ class Psi4Theory:
             if PC==True:
                 #Chargefield = psi4.QMMM()
                 Chargefield = psi4.core.ExternalPotential()
-                #Mmcoords are input in Bohr
+                #Mmcoords seems to be in Angstrom
                 for mmcharge,mmcoord in zip(MMcharges,current_MM_coords):
-                    print("mmcharge, mmcoord", mmcharge,mmcoord)
-                    #Chargefield.addCharge(mmcharge, mmcoord[0]*constants.ang2bohr,
-                    #                                mmcoord[1]*constants.ang2bohr, mmcoord[2]*constants.ang2bohr)
                     Chargefield.addCharge(mmcharge, mmcoord[0], mmcoord[1], mmcoord[2])
-                #TODO: need to figure out how to do the set global option thing
                 psi4.core.set_global_option("EXTERN", True)
                 psi4.core.EXTERN = Chargefield
                 print("THis needs to be confirmed by ORCA comparison!!")
@@ -1394,10 +1390,11 @@ class Fragment:
 
 class xTBTheory:
     def __init__(self, xtbdir, fragment=None, charge=None, mult=None, xtbmethod=None):
+        if fragment != None:
+            self.fragment=fragment
+            self.coords=fragment.coords
+            self.elems=fragment.elems
         self.xtbdir = xtbdir
-        self.fragment=fragment
-        self.coords=fragment.coords
-        self.elems=fragment.elems
         self.charge=charge
         self.mult=mult
         self.xtbmethod=xtbmethod
