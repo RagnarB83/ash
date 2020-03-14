@@ -364,7 +364,8 @@ def write_xyzfile(elems,coords,name):
             ofile.write(line+'\n')
     print("Wrote XYZ file:", name+'.xyz')
 
-def write_pdbfile(elems,coords,name):
+#Write PDBfile (dummy version) for PyFrame
+def write_pdbfile_dummy(elems,coords,name):
     with open(name+'.pdb', 'w') as pfile:
         pfile.write(str(len(elems))+'\n')
         pfile.write("title"+'\n')

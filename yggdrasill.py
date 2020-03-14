@@ -563,35 +563,35 @@ class PolEmbedTheory:
             #    elif i in self.mmatoms:
             #        self.hybridatomlabels.append('MM')
 
-    #Create Potential file here
-    #TODO: PyFrame or manual or both?
-    if self.pot_create==True:
-        if self.pyframe==True:
+        #Create Potential file here
+        #TODO: PyFrame or manual or both?
+        if self.pot_create==True:
+            if self.pyframe==True:
 
-            try:
-                import pyframe
-            except:
-                print("Pyframe not found. Install pyframe via pip (https://pypi.org/project/PyFraME):")
-                print("pip install pyframe")
+                try:
+                    import pyframe
+                except:
+                    print("Pyframe not found. Install pyframe via pip (https://pypi.org/project/PyFraME):")
+                    print("pip install pyframe")
 
-            #Todo: create PDB file
-            write_pdbfile(self.elems, self.coords, 'System')
+                #Todo: create PDB file
+                write_pdbfile_dummy(self.elems, self.coords, 'System')
 
-            #file = sys.argv[1]
-            system = pyframe.MolecularSystem(input_file=file)
-            core = system.get_fragments_by_name(names=['UNL'])
-            #system.set_core_region(fragments=core, program='Dalton', basis='pcset-1')
-            # solvent = system.get_fragments_by_distance(reference=core, distance=4.0)
-            solvent = system.get_fragments_by_name(names=['HOH'])
-            system.add_region(name='solvent', fragments=solvent, use_standard_potentials=True,
+                #file = sys.argv[1]
+                system = pyframe.MolecularSystem(input_file=file)
+                core = system.get_fragments_by_name(names=['UNL'])
+                #system.set_core_region(fragments=core, program='Dalton', basis='pcset-1')
+                # solvent = system.get_fragments_by_distance(reference=core, distance=4.0)
+                solvent = system.get_fragments_by_name(names=['HOH'])
+                system.add_region(name='solvent', fragments=solvent, use_standard_potentials=True,
                           standard_potential_model='SEP')
-            project = pyframe.Project()
-            project.create_embedding_potential(system)
-            #project.write_core(system)
-            project.write_potential(system)
-        #Manual potential file creation
-        else:
-            pfsd="dsf"
+                project = pyframe.Project()
+                project.create_embedding_potential(system)
+                #project.write_core(system)
+                project.write_potential(system)
+            #Manual potential file creation
+            else:
+                pfsd="dsf"
 
 
     def run(self, current_coords=[], elems=[], Grad=False, nprocs=1):
