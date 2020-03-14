@@ -562,7 +562,7 @@ class PolEmbedTheory:
                     self.hybridatomlabels.append('QM')
                 elif i in self.peatoms:
                     self.hybridatomlabels.append('PE')
-        print("hybridatomlabels:", hybridatomlabels)
+        print("self.hybridatomlabels:", self.hybridatomlabels)
         #Create Potential file here
         #TODO: PyFrame or manual or both?
         if self.pot_create==True:
