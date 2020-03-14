@@ -560,7 +560,7 @@ class PolEmbedTheory:
             self.hybridatomlabels=[]
             for i in self.allatoms:
                 if i in self.qmatoms:
-                    self.hybridatomlabels.append('QM')
+                    self.hybridatomlabels.append('QMY')
                 elif i in self.peatoms:
                     self.hybridatomlabels.append(self.PElabel_pyframe)
         print("self.hybridatomlabels:", self.hybridatomlabels)
@@ -580,8 +580,9 @@ class PolEmbedTheory:
                 filename='System'
                 write_pdbfile_dummy(self.elems, self.coords, filename, self.hybridatomlabels)
                 file=filename+'.pdb'
+                #Pyframe
                 system = pyframe.MolecularSystem(input_file=file)
-                core = system.get_fragments_by_name(names=['QM'])
+                core = system.get_fragments_by_name(names=['QMY'])
                 #system.set_core_region(fragments=core, program='Dalton', basis='pcset-1')
                 # solvent = system.get_fragments_by_distance(reference=core, distance=4.0)
                 solvent = system.get_fragments_by_name(names=self.PElabel_pyframe)
