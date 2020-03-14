@@ -576,14 +576,14 @@ class PolEmbedTheory:
                     print("pip install pyframe")
 
                 #Todo: create PDB file
-                write_pdbfile_dummy(self.elems, self.coords, 'System', self.hybridatomlabels)
-
-                #file = sys.argv[1]
+                filename='System'
+                write_pdbfile_dummy(self.elems, self.coords, filename, self.hybridatomlabels)
+                file=filename+'.pdb'
                 system = pyframe.MolecularSystem(input_file=file)
-                core = system.get_fragments_by_name(names=['UNL'])
+                core = system.get_fragments_by_name(names=['QM'])
                 #system.set_core_region(fragments=core, program='Dalton', basis='pcset-1')
                 # solvent = system.get_fragments_by_distance(reference=core, distance=4.0)
-                solvent = system.get_fragments_by_name(names=['HOH'])
+                solvent = system.get_fragments_by_name(names=['PE'])
                 system.add_region(name='solvent', fragments=solvent, use_standard_potentials=True,
                           standard_potential_model='SEP')
                 project = pyframe.Project()
