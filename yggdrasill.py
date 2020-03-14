@@ -646,9 +646,7 @@ class PolEmbedTheory:
             #Calling Psi4 theory, providing current QM and MM coordinates.
             #Currently doing SP case only without Grad
 
-            self.QMEnergy = self.qm_theory.run(current_coords=self.qmcoords,
-                                                      current_MM_coords=self.mmcoords, MMcharges=self.mmcharges,
-                                                      qm_elems=self.qmelems, mm_elems=self.mmelems, Grad=False, cnprocs=nprocs)
+            self.QMEnergy = self.qm_theory.run(current_coords=self.qmcoords, qm_elems=self.qmelems, Grad=False, nprocs=nprocs)
 
         elif self.qm_theory_name == "PySCFTheory":
             print("not yet implemented with PolEmbed")
