@@ -921,7 +921,8 @@ class Psi4Theory:
                 exit()
 
             #Printing to output or not:
-            if self.printsetting==True:
+            print("a self.printsetting:", self.printsetting)
+            if self.printsetting:
                 print("Printsetting = True. Printing output to stdout...")
             else:
                 print("Printsetting = False. Printing output to file: psi4output.dat ")
