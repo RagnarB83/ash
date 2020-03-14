@@ -626,7 +626,7 @@ class PolEmbedTheory:
         print("QM Module:", self.qm_theory_name)
 
         #Check if potfile provide to run (rare use). If not, use object file
-        if potfile == '':
+        if potfile != '':
             self.potfile=potfile
 
         print("Using potfile:", self.potfile)
