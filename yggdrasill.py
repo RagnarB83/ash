@@ -767,7 +767,24 @@ class QMMMTheory:
 
 
         elif self.qm_theory_name == "xTBTheory":
-            print("not yet implemented")
+            #Calling xTB theory, providing current QM and MM coordinates.
+            if Grad==True:
+                if PC==True:
+                    self.QMEnergy, self.QMgradient, self.PCgradient = self.qm_theory.run(current_coords=self.qmcoords,
+                                                                                         current_MM_coords=self.mmcoords,
+                                                                                         MMcharges=self.mmcharges,
+                                                                                         qm_elems=self.qmelems, mm_elems=self.mmelems,
+                                                                                         Grad=True, PC=True, nprocs=nprocs)
+                else:
+                    self.QMEnergy, self.QMgradient = self.qm_theory.run(current_coords=self.qmcoords,
+                                                      current_MM_coords=self.mmcoords, MMcharges=self.mmcharges,
+                                                      qm_elems=self.qmelems, mm_elems=self.mmelems, Grad=True, PC=False, nprocs=nprocs)
+            else:
+                self.QMEnergy = self.qm_theory.run(current_coords=self.qmcoords,
+                                                      current_MM_coords=self.mmcoords, MMcharges=self.mmcharges,
+                                                      qm_elems=self.qmelems, mm_elems=self.mmelems, Grad=False, PC=PC, nprocs=nprocs)
+
+
         elif self.qm_theory_name == "DaltonTheory":
             print("not yet implemented")
         elif self.qm_theory_name == "NWChemtheory":
