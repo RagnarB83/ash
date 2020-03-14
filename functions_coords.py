@@ -378,7 +378,7 @@ def write_pdbfile_dummy(elems,coords,name, atomlabels):
             resid=1
             #Using string format from: https://cupnet.net/pdb-format/
             line="{:6s}{:5d} {:^4s}{:1s}{:3s} {:1s}{:4d}{:1s}   {:8.3f}{:8.3f}{:8.3f}{:6.2f}{:6.2f}          {:>2s}{:2s}".format(
-                'ATOM', count+1, el, '', resname, 'A', resid, '',    c[0], c[1], c[2], 1.0, 0.00, 'X', '')
+                'ATOM', count+1, el, '', resname, 'A', resid, '',    c[0], c[1], c[2], 1.0, 0.00, el, '')
             pfile.write(line+'\n')
     print("Wrote PDB file:", name+'.pdb')
 
