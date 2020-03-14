@@ -827,7 +827,7 @@ class QMMMTheory:
 
             if self.printlevel==3:
                 print("QM gradient (au/Bohr):")
-                print_coords_all(self.QMgradient, self.qmelems_, self.qmatoms)
+                print_coords_all(self.QMgradient, self.qmelems, self.qmatoms)
                 blankline()
                 print("PC gradient (au/Bohr):")
                 print_coords_all(self.PCgradient, self.mmelems, self.mmatoms)
