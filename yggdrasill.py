@@ -661,7 +661,7 @@ class QMMMTheory:
                     print("PolEmbed true")
 
                 else:
-                    print("mech true". not ready)
+                    print("mech true", not ready)
                     exit()
 
 
