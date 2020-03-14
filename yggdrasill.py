@@ -945,10 +945,11 @@ class Psi4Theory:
 
             #Adding MM charges as pointcharges
             if PC==True:
-                Chargefield = psi4.QMMM()
+                #Chargefield = psi4.QMMM()
+                Chargefield = psi4.core.ExternalPotential()
                 #Mmcoords are input in Bohr
                 for mmcharge,mmcoord in zip(MMcharges,current_MM_coords):
-                    Chargefield.extern.addCharge(mmcharge, mmcoord[0]*constants.ang2bohr,
+                    Chargefield.addCharge(mmcharge, mmcoord[0]*constants.ang2bohr,
                                                     mmcoord[1]*constants.ang2bohr, mmcoord[2]*constants.ang2bohr)
                 #TODO: need to figure out how to do the set global option thing
                 psi4.core.set_global_option("EXTERN", True)
