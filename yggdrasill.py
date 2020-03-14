@@ -520,8 +520,11 @@ class NonBondedTheory:
 #Required at init: qm_theory and qmatoms, X, Y
 #Currently only Polarizable Embedding (PE). Only available for Psi4, PySCF and Dalton.
 class PolEmbedTheory:
-    def __init__(self, fragment='', qm_theory='', qmatoms=[], peatoms=[], pot_option=''):
+    def __init__(self, fragment='', qm_theory='', qmatoms=[], peatoms=[], pot_create=True, pot_option='', pyframe=False):
         print(BC.WARNING,BC.BOLD,"------------Defining PolEmbedTheory object-------------", BC.END)
+        self.pot_create=pot_create
+        self.pyframe=pyframe
+        self.pot_option=pot_option
         #Theory level definitions
         allowed_qmtheories=['Psi4Theory', 'PySCFTheory', 'DaltonTheory']
         self.qm_theory=qm_theory
@@ -543,32 +546,57 @@ class PolEmbedTheory:
 
             self.qmcoords=[self.coords[i] for i in self.qmatoms]
             self.qmelems=[self.elems[i] for i in self.qmatoms]
-            self.mmatoms=listdiff(self.allatoms,self.qmatoms)
+            self.peatoms=listdiff(self.allatoms,self.qmatoms)
 
-            self.mmcoords=[self.coords[i] for i in self.mmatoms]
-            self.mmelems=[self.elems[i] for i in self.mmatoms]
+            self.pecoords=[self.coords[i] for i in self.peatoms]
+            self.peelems=[self.elems[i] for i in self.peatoms]
             print("List of all atoms:", self.allatoms)
             print("QM region:", self.qmatoms)
-            print("MM region", self.mmatoms)
+            print("PE region", self.peatoms)
             blankline()
 
             #List of QM and MM labels
-            self.hybridatomlabels=[]
-            for i in self.allatoms:
-                if i in self.qmatoms:
-                    self.hybridatomlabels.append('QM')
-                elif i in self.mmatoms:
-                    self.hybridatomlabels.append('MM')
+            #self.hybridatomlabels=[]
+            #for i in self.allatoms:
+            #    if i in self.qmatoms:
+            #        self.hybridatomlabels.append('QM')
+            #    elif i in self.mmatoms:
+            #        self.hybridatomlabels.append('MM')
 
     #Create Potential file here
     #TODO: PyFrame or manual or both?
+    if self.pot_create==True:
+        if self.pyframe==True:
 
+            try:
+                import pyframe
+            except:
+                print("Pyframe not found. Install pyframe via pip (https://pypi.org/project/PyFraME):")
+                print("pip install pyframe")
+
+            #Todo: create PDB file
+            write_pdbfile(self.elems, self.coords, 'System')
+
+            #file = sys.argv[1]
+            system = pyframe.MolecularSystem(input_file=file)
+            core = system.get_fragments_by_name(names=['UNL'])
+            #system.set_core_region(fragments=core, program='Dalton', basis='pcset-1')
+            # solvent = system.get_fragments_by_distance(reference=core, distance=4.0)
+            solvent = system.get_fragments_by_name(names=['HOH'])
+            system.add_region(name='solvent', fragments=solvent, use_standard_potentials=True,
+                          standard_potential_model='SEP')
+            project = pyframe.Project()
+            project.create_embedding_potential(system)
+            #project.write_core(system)
+            project.write_potential(system)
+        #Manual potential file creation
+        else:
+            pfsd="dsf"
 
 
     def run(self, current_coords=[], elems=[], Grad=False, nprocs=1):
         print(BC.WARNING, BC.BOLD, "------------RUNNING PolEmbedTheory MODULE-------------", BC.END)
         print("QM Module:", self.qm_theory_name)
-        print("MM Module:", self.mm_theory_name)
         #If no coords provided to run (from Optimizer or NumFreq or MD) then use coords associated with object.
         if len(current_coords) != 0:
             pass

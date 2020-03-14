@@ -364,6 +364,31 @@ def write_xyzfile(elems,coords,name):
             ofile.write(line+'\n')
     print("Wrote XYZ file:", name+'.xyz')
 
+def write_pdbfile(elems,coords,name)
+    with open(name+'.pdb', 'w') as pfile:
+        pfile.write(str(len(elems))+'\n')
+        pfile.write("title"+'\n')
+        resnames=[]
+        resids=[]
+        print("ATOM      1  N   SER A   2      65.342  32.035  32.324  1.00  0.00           N")
+        for count,(el,c,res) in enumerate(zip(elems,coords, resnames, resids)):
+            line="{:4} {:4d} {:4} {:4} {:4d} {:8.3f} {:8.3f} {:8.3f} {:4} {:4} {:4}".format('ATOM', num, el,
+                                                                                            resname, resid,
+                                                                                            c[0], c[1], c[2],
+                                                                                            '1.0', '0.00', 'X')
+            pfile.write(line+'\n')
+    print("Wrote PDB file:", name+'.pdb')
+
+#set out [open "result.pdb" w ]
+#foreach a $atomindexlist b $segmentlist c $residlist d $resnamelist e $atomnamelist f $typeslist cx $coords_x cy $coords_y cz $coords_z el $ellist {
+# #ATOM      1  N   SER A   2      65.342  32.035  32.324  1.00  0.00           N
+#             set fmt1 "ATOM%7d %4s%4s%-1s%5d%12.3f%8.3f%8.3f%6s%6s%10s%2s"
+# puts $out [format $fmt1 $a $e $d " " $c $cx $cy $cz "1.00" "0.00" $b $el]
+#
+#}
+#close $out
+
+
 #Calculate nuclear charge from XYZ-file
 def nucchargexyz(file):
     el=[]
