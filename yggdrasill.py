@@ -813,8 +813,6 @@ class QMMMTheory:
         #Final QM/MM gradient. Combine QM gradient, MM gradient and PC-gradient (elstat MM gradient from QM code).
         #First combining QM and PC gradient to one.
         if Grad == True:
-            print("self.QMgradient:", self.QMgradient)
-            print("self.PCgradient:", self.PCgradient)
             self.QM_PC_Gradient = np.zeros((len(self.allatoms), 3))
             qmcount=0;pccount=0
             for i in self.allatoms:
@@ -828,6 +826,12 @@ class QMMMTheory:
             self.QM_MM_Gradient=self.QM_PC_Gradient+self.MMGradient
 
             if self.printlevel==3:
+                print("QM gradient (au/Bohr):")
+                print_coords_all(self.QMgradient, self.elems, self.allatoms)
+                blankline()
+                print("PC gradient (au/Bohr):")
+                print_coords_all(self.PCgradient, self.elems, self.allatoms)
+                blankline()
                 print("QM+PC gradient (au/Bohr):")
                 print_coords_all(self.QM_PC_Gradient, self.elems, self.allatoms)
                 blankline()
