@@ -1431,29 +1431,47 @@ class xTBTheory:
     def run(self, current_coords=[], current_MM_coords=[], MMcharges=[], qm_elems=[],
                 mm_elems=[], elems=[], Grad=False, PC=False, nprocs=1):
         print("------------STARTING XTB INTERFACE-------------")
-        #Create XYZfile with generic name for xTB to run
-        inputfilename="xtb-inpfile"
-        print("Creating inputfile:", inputfilename+'.xyz')
-        #What coordinates to work with
+        #Coords provided to run or else taken from initialization.
         if len(current_coords) != 0:
             pass
         else:
             current_coords=self.coords
+
+        #What elemlist to use. If qm_elems provided then QM/MM job, otherwise use elems list or self.elems
+        if qm_elems == []:
+            if elems == []:
+                qm_elems=self.elems
+            else:
+                qm_elems = elems
+
+        #Create XYZfile with generic name for xTB to run
+        inputfilename="xtb-inpfile"
+        print("Creating inputfile:", inputfilename+'.xyz')
+
         #Using current_coords from now on
         numatoms=len(current_coords)
+
         self.cleanup()
         #Todo: xtbrestart possibly. needs to be optional
-        write_xyzfile(self.elems, current_coords, inputfilename)
 
+        write_xyzfile(qm_elems, current_coords, inputfilename)
 
-
-        #Run inputfile. Take nprocs argument. Orcadir argument??
+        #Run inputfile. Take nprocs argument.
         print("------------Running xTB-------------")
         print("...")
         if Grad==True:
-            run_xtb_SP_serial(self.xtbdir, self.xtbmethod, inputfilename + '.xyz', self.charge, self.mult, Grad=True)
+            if PC==True:
+                create_xtb_pcfile_general(coords, MMcharges)
+                run_xtb_SP_serial(self.xtbdir, self.xtbmethod, inputfilename + '.xyz', self.charge, self.mult, Grad=True)
+            else:
+                run_xtb_SP_serial(self.xtbdir, self.xtbmethod, inputfilename + '.xyz', self.charge, self.mult,
+                                  Grad=True)
         else:
-            run_xtb_SP_serial(self.xtbdir, self.xtbmethod, inputfilename+'.xyz', self.charge, self.mult)
+            if PC==True:
+                create_xtb_pcfile_general(coords, MMcharges)
+                run_xtb_SP_serial(self.xtbdir, self.xtbmethod, inputfilename + '.xyz', self.charge, self.mult)
+            else:
+                run_xtb_SP_serial(self.xtbdir, self.xtbmethod, inputfilename + '.xyz', self.charge, self.mult)
 
 
         print("------------xTB calculation done-------------")

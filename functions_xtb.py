@@ -66,6 +66,13 @@ def xtbVEAgrab(file):
 def run_xtb_SP_serial(xtbdir, xtbmethod, xyzfile, charge, mult, Grad=False):
     basename = xyzfile.split('.')[0]
     uhf=mult-1
+
+    #Writing xtbinputfile to disk so that we use ORCA-style PCfile and embedding
+    with open('xtbinput', 'w') as xfile:
+        xfile.write('$embedding\n')
+        xfile.write('interface=orca\n')
+        xfile.write('end\n')
+
     if 'GFN2' in xtbmethod.upper():
         xtbflag = 2
     elif 'GFN1' in xtbmethod.upper():
@@ -78,11 +85,11 @@ def run_xtb_SP_serial(xtbdir, xtbmethod, xyzfile, charge, mult, Grad=False):
     with open(basename+'.out', 'w') as ofile:
         if Grad==True:
             process = sp.run([xtbdir + '/xtb', basename+'.xyz', '--gfn', str(xtbflag), '--grad', '--chrg', str(charge), '--uhf',
-                              str(uhf) ], check=True, stdout=ofile, stderr=ofile, universal_newlines=True)
+                              str(uhf), '--input', 'xtbinput' ], check=True, stdout=ofile, stderr=ofile, universal_newlines=True)
         else:
             process = sp.run(
-                [xtbdir + '/xtb', basename + '.xyz', '--gfn', str(xtbflag), '--chrg', str(charge), '--uhf', str(uhf)],
-                check=True, stdout=ofile, stderr=ofile, universal_newlines=True)
+                [xtbdir + '/xtb', basename + '.xyz', '--gfn', str(xtbflag), '--chrg', str(charge), '--uhf', str(uhf),
+                 '--input', 'xtbinput'], check=True, stdout=ofile, stderr=ofile, universal_newlines=True)
 # Run GFN-xTB single-point job (for multiprocessing execution) for both state A and B (e.g. VIE calc)
 #Takes 1 argument: line with xyzfilename and the xtb options.
 #Runs inside separate dir
@@ -207,7 +214,7 @@ def run_inputfiles_in_parallel_xtb(xyzfiles, xtbmethod, chargeA, multA, chargeB,
 #Assuming elems and coords list are in regular order, e.g. for TIP3P waters: O H H O H H etc.
 #Using Bohrs for xTB. Will be renamed to pcharge when copied to dir.
 #Hardness parameter removes the damping used by xTB.
-def create_xtb_pcfile(name,elems,coords,solventunitcharges,bulkcorr=False):
+def create_xtb_pcfile_solvent(name,elems,coords,solventunitcharges,bulkcorr=False):
     #Creating list of pointcharges based on solventunitcharges and number of elements provided
     #Modifying
     pchargelist=solventunitcharges*int(len(elems)/len(solventunitcharges))
@@ -218,4 +225,17 @@ def create_xtb_pcfile(name,elems,coords,solventunitcharges,bulkcorr=False):
         pcfile.write(str(len(elems))+'\n')
         for p,c in zip(pchargelist,coords):
             line = "{} {} {} {} {}".format(p, c[0]/bohr2ang, c[1]/bohr2ang, c[2]/bohr2ang, hardness)
+            pcfile.write(line+'\n')
+
+#General xtb pointchargefile creation
+#Using ORCA-style format: pc-coords in Å
+def create_xtb_pcfile_general(coords,pchargelist):
+    #Creating list of pointcharges based on solventunitcharges and number of elements provided
+    bohr2ang=constants.bohr2ang
+    hardness=1000
+    #https://xtb-docs.readthedocs.io/en/latest/pcem.html
+    with open('pcharge', 'w') as pcfile:
+        pcfile.write(str(len(elems))+'\n')
+        for p,c in zip(pchargelist,coords):
+            line = "{} {} {} {} {}".format(p, c[0], c[1], c[2], hardness)
             pcfile.write(line+'\n')
