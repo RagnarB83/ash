@@ -1477,7 +1477,7 @@ class xTBTheory:
         print("------------xTB calculation done-------------")
         #Check if finished. Grab energy
         if Grad==True:
-            self.energy,self.grad=xtbgradientgrab('gradient',numatoms)
+            self.energy,self.grad=xtbgradientgrab(len(MMcharges))
             if PC==True:
                 print("xTB PC gradient to be grabbed here")
                 # Grab pointcharge gradient. i.e. gradient on MM atoms from QM-MM elstat interaction.
