@@ -245,7 +245,7 @@ def create_xtb_pcfile_general(coords,pchargelist):
 def xtbpcgradientgrab(numatoms):
     gradient = np.zeros((numatoms, 3))
     print("gradient:", gradient)
-    with open(pcgradfile) as pgradfile:
+    with open('pcgrad') as pgradfile:
         for count,line in enumerate(pgradfile):
             val_x=float(line.split()[0])
             val_y = float(line.split()[1])
