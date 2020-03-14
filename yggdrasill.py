@@ -813,6 +813,8 @@ class QMMMTheory:
         #Final QM/MM gradient. Combine QM gradient, MM gradient and PC-gradient (elstat MM gradient from QM code).
         #First combining QM and PC gradient to one.
         if Grad == True:
+            print("self.QMgradient:", self.QMgradient)
+            print("self.PCgradient:", self.PCgradient)
             self.QM_PC_Gradient = np.zeros((len(self.allatoms), 3))
             qmcount=0;pccount=0
             for i in self.allatoms:
