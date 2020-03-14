@@ -854,7 +854,8 @@ class Psi4Theory:
                  runmode='library', psi4dir='', pe=False, potfile=''):
 
         self.printsetting=printsetting
-
+        print("printsetting:", printsetting)
+        print("self.printsetting:", self.printsetting)
         self.runmode=runmode
         #CPPE Polarizable Embedding options
         self.pe=pe
