@@ -612,7 +612,7 @@ class PolEmbedTheory:
                     project.create_embedding_potential(system)
                     project.write_core(system)
                     project.write_potential(system)
-                    self.potfile=filename+'.pot
+                    self.potfile=filename+'.pot'
 
             #Manual potential file creation
             else:
