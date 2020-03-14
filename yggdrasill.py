@@ -945,7 +945,7 @@ class Psi4Theory:
 
             #Adding MM charges as pointcharges
             if PC==True:
-                psi4.Chrgfield = QMMM()
+                psi4.Chrgfield = psi4.QMMM()
                 #Mmcoords are input in Bohr
                 for mmcharge,mmcoord in zip(MMcharges,current_MM_coords):
                     psi4.Chrgfield.extern.addCharge(mmcharge, mmcoord[0]*constants.ang2bohr,
