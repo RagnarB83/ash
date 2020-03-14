@@ -516,6 +516,112 @@ class NonBondedTheory:
         print(BC.OKBLUE, BC.BOLD, "------------ENDING NONBONDED MM CODE-------------", BC.END)
         return self.MMEnergy, self.MMGradient
 
+#Polarizable Embedding theory object.
+#Required at init: qm_theory and qmatoms, X, Y
+#Currently only Polarizable Embedding (PE). Only available for Psi4, PySCF and Dalton.
+class PolEmbedTheory:
+    def __init__(self, qm_theory, qmatoms, fragment='', mm_theory="" , atomcharges="", printlevel=3):
+        print(BC.WARNING,BC.BOLD,"------------Defining PolEmbedTheory object-------------", BC.END)
+        #Theory level definitions
+        self.printlevel=printlevel
+        self.qm_theory=qm_theory
+        self.qm_theory_name = self.qm_theory.__class__.__name__
+        print("QM-theory:", self.qm_theory_name)
+
+        self.qmatoms = qmatoms
+        #If fragment object has been defined
+        if fragment != '':
+            self.fragment=fragment
+            self.coords=fragment.coords
+            self.elems=fragment.elems
+            self.connectivity=fragment.connectivity
+
+            # Region definitions
+            self.allatoms=list(range(0,len(self.elems)))
+
+            self.qmcoords=[self.coords[i] for i in self.qmatoms]
+            self.qmelems=[self.elems[i] for i in self.qmatoms]
+            self.mmatoms=listdiff(self.allatoms,self.qmatoms)
+
+            self.mmcoords=[self.coords[i] for i in self.mmatoms]
+            self.mmelems=[self.elems[i] for i in self.mmatoms]
+            print("List of all atoms:", self.allatoms)
+            print("QM region:", self.qmatoms)
+            print("MM region", self.mmatoms)
+            blankline()
+
+            #List of QM and MM labels
+            self.hybridatomlabels=[]
+            for i in self.allatoms:
+                if i in self.qmatoms:
+                    self.hybridatomlabels.append('QM')
+                elif i in self.mmatoms:
+                    self.hybridatomlabels.append('MM')
+
+            print("atomcharges:", atomcharges)
+            # Charges defined for regions
+            self.qmcharges=[atomcharges[i] for i in self.qmatoms]
+            print("self.qmcharges:", self.qmcharges)
+            self.mmcharges=[atomcharges[i] for i in self.mmatoms]
+            print("self.mmcharges:", self.mmcharges)
+
+    #Create Potential file here
+    #TODO: PyFrame or manual or both?
+
+
+
+    def run(self, current_coords=[], elems=[], Grad=False, nprocs=1):
+        print(BC.WARNING, BC.BOLD, "------------RUNNING PolEmbedTheory MODULE-------------", BC.END)
+        print("QM Module:", self.qm_theory_name)
+        print("MM Module:", self.mm_theory_name)
+        #If no coords provided to run (from Optimizer or NumFreq or MD) then use coords associated with object.
+        if len(current_coords) != 0:
+            pass
+        else:
+            current_coords=self.coords
+
+        #Updating QM coords and MM coords.
+        #TODO: Should we use different name for updated QMcoords and MMcoords here??
+        self.qmcoords=[current_coords[i] for i in self.qmatoms]
+        self.mmcoords=[current_coords[i] for i in self.mmatoms]
+
+        if self.qm_theory_name == "Psi4Theory":
+            print("recently implemented")
+            #Calling Psi4 theory, providing current QM and MM coordinates.
+            #Currently doing SP case only without Grad
+
+            self.QMEnergy = self.qm_theory.run(current_coords=self.qmcoords,
+                                                      current_MM_coords=self.mmcoords, MMcharges=self.mmcharges,
+                                                      qm_elems=self.qmelems, mm_elems=self.mmelems, Grad=False, PC=PC, nprocs=nprocs)
+
+        elif self.qm_theory_name == "PySCFTheory":
+            print("not yet implemented")
+            exit()
+        elif self.qm_theory_name == "ORCATheory":
+            print("not available for ORCATheory")
+            exit()
+        elif self.qm_theory_name == "DaltonTheory":
+            print("not yet implemented")
+            exit()
+        elif self.qm_theory_name == "NWChemTheory":
+            print("not availabel for NWChemTheory")
+            exit()
+        else:
+            print("invalid QM theory")
+            exit()
+
+        #Todo: self.MM_Energy from PolEmbed calc?
+        self.MMEnergy=0
+        #Final QM/MM Energy
+        self.QM_MM_Energy= self.QMEnergy+self.MMEnergy
+        blankline()
+        print("{:<20} {:>20.12f}".format("QM energy: ",self.QMEnergy))
+        print("{:<20} {:>20.12f}".format("MM energy: ", self.MMEnergy))
+        print("{:<20} {:>20.12f}".format("QM/MM energy: ", self.QM_MM_Energy))
+        blankline()
+        return self.QM_MM_Energy
+
+
 #QM/MM theory object.
 #Required at init: qm_theory and qmatoms. Fragment not. Can come later
 class QMMMTheory:
@@ -631,19 +737,19 @@ class QMMMTheory:
             #Calling Psi4 theory, providing current QM and MM coordinates.
             if Grad==True:
                 print("Grad true")
+
                 if PC==True:
                     print("Grad. PC-embedding true. not rady")
+                    print("pointcharge gradients in Psi4 not implemented...exiting")
+                    exit()
                     exit()
                     #self.QMEnergy, self.QMgradient, self.PCgradient = self.qm_theory.run(current_coords=self.qmcoords,
                     #                                                                     current_MM_coords=self.mmcoords,
                     #                                                                     MMcharges=self.mmcharges,
                     #                                                                     qm_elems=self.qmelems, mm_elems=self.mmelems,
                     #                                                                     Grad=True, PC=True, nprocs=nprocs)
-                elif PE==True:
-                    print("Grad. PolEmbedding true. not ready")
-                    exit()
                 else:
-                    print("grad. mechh embedding. not ready")
+                    print("grad. mech embedding. not ready")
                     exit()
                     self.QMEnergy, self.QMgradient = self.qm_theory.run(current_coords=self.qmcoords,
                                                       current_MM_coords=self.mmcoords, MMcharges=self.mmcharges,
@@ -655,9 +761,6 @@ class QMMMTheory:
                     self.QMEnergy = self.qm_theory.run(current_coords=self.qmcoords,
                                                       current_MM_coords=self.mmcoords, MMcharges=self.mmcharges,
                                                       qm_elems=self.qmelems, mm_elems=self.mmelems, Grad=False, PC=PC, nprocs=nprocs)
-                elif PE==True:
-                    print("PolEmbed true")
-
                 else:
                     print("mech true", not ready)
                     exit()
@@ -949,6 +1052,7 @@ class Psi4Theory:
                 Chargefield = psi4.core.ExternalPotential()
                 #Mmcoords are input in Bohr
                 for mmcharge,mmcoord in zip(MMcharges,current_MM_coords):
+                    print("mmcharge, mmcoord", mmcharge,mmcoord)
                     Chargefield.addCharge(mmcharge, mmcoord[0]*constants.ang2bohr,
                                                     mmcoord[1]*constants.ang2bohr, mmcoord[2]*constants.ang2bohr)
                 #TODO: need to figure out how to do the set global option thing
