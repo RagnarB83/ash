@@ -892,6 +892,8 @@ class Psi4Theory:
             mm_elems=[], elems=[], Grad=False, PC=False, nprocs=1 ):
 
         print(BC.OKBLUE,BC.BOLD, "------------RUNNING PSI4 INTERFACE-------------", BC.END)
+        print("self.printsetting:", self.printsetting)
+
         #Coords provided to run or else taken from initialization.
         if len(current_coords) != 0:
             pass
