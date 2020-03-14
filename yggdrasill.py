@@ -569,7 +569,6 @@ class PolEmbedTheory:
 
 
         #Create Potential file here. Usually true.
-        #TODO: PyFrame or manual or both?
         if self.pot_create==True:
             print("Potfile Creation is on!")
             if self.pyframe==True:
@@ -581,7 +580,6 @@ class PolEmbedTheory:
                     print("Pyframe not found. Install pyframe via pip (https://pypi.org/project/PyFraME):")
                     print("pip install pyframe")
 
-                #Todo: create PDB file
                 filename='System'
                 write_pdbfile_dummy(self.elems, self.coords, filename, self.hybridatomlabels)
                 file=filename+'.pdb'
@@ -613,12 +611,16 @@ class PolEmbedTheory:
                     project.write_core(system)
                     project.write_potential(system)
                     self.potfile=filename+'.pot'
+                #Copying pyframe-created potfile from dir:
+                import shutil
+                shutil.copyfile(filename+'/' + filename+'.pot', './')
 
-            #Manual potential file creation
+            #Todo: Manual potential file creation. Maybe only if pyframe is buggy
             else:
                 print("Manual potential file creation (instead of Pyframe)")
                 print("Not ready yet!")
                 exit()
+
 
 
     def run(self, current_coords=[], elems=[], Grad=False, nprocs=1, potfile=''):
