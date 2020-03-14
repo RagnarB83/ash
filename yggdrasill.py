@@ -933,7 +933,7 @@ class Psi4Theory:
             print("current_MM_coords:", current_MM_coords)
             print("MMcharges:", MMcharges)
             psi4molfrag = psi4.core.Molecule.from_arrays(
-                elez=elemstonuccharges(elems),
+                elez=elemstonuccharges(qm_elems),
                 fix_com=True,
                 fix_orientation=True,
                 fix_symmetry='c1',
