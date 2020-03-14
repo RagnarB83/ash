@@ -1103,7 +1103,8 @@ class Psi4Theory:
                 self.gradient=np.array(grad)
                 self.energy = psi4.variable("CURRENT ENERGY")
             else:
-                self.energy=psi4.energy('scf', dft_functional=self.psi4functional)
+                #self.energy=psi4.energy('scf', dft_functional=self.psi4functional)
+                self.energy=psi4.energy(self.psi4functional)
 
             #TODO: write in error handling here
 
