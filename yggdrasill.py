@@ -920,7 +920,7 @@ class Psi4Theory:
                 exit()
 
             #Printing to output or not:
-            print("self.printsetting:", self.printsetting)
+            #print("self.printsetting:", self.printsetting)
             if self.printsetting:
                 print("Printsetting = True. Printing output to stdout...")
             else:
@@ -928,6 +928,10 @@ class Psi4Theory:
                 psi4.core.set_output_file('psi4output.dat', False)
 
             #Creating Psi4 molecule object using lists and manual information
+            print("elems:", elems)
+            print("current_coords:", current_coords)
+            print("current_MM_coords:", current_MM_coords)
+            print("MMcharges:", MMcharges)
             psi4molfrag = psi4.core.Molecule.from_arrays(
                 elez=elemstonuccharges(elems),
                 fix_com=True,
