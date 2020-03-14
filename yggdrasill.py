@@ -646,7 +646,8 @@ class PolEmbedTheory:
             #Calling Psi4 theory, providing current QM and MM coordinates.
             #Currently doing SP case only without Grad
 
-            self.QMEnergy = self.qm_theory.run(current_coords=self.qmcoords, qm_elems=self.qmelems, Grad=False, nprocs=nprocs)
+            self.QMEnergy = self.qm_theory.run(current_coords=self.qmcoords, qm_elems=self.qmelems, Grad=False,
+                                               nprocs=nprocs, pe=True, potfile=self.potfile)
 
         elif self.qm_theory_name == "PySCFTheory":
             print("not yet implemented with PolEmbed")
@@ -1070,9 +1071,16 @@ class Psi4Theory:
             pass
     #Run function. Takes coords, elems etc. arguments and computes E or E+G.
     def run(self, current_coords=[], current_MM_coords=[], MMcharges=[], qm_elems=[],
-            mm_elems=[], elems=[], Grad=False, PC=False, nprocs=1 ):
+            mm_elems=[], elems=[], Grad=False, PC=False, nprocs=1, pe=False, potfile='' ):
 
         print(BC.OKBLUE,BC.BOLD, "------------RUNNING PSI4 INTERFACE-------------", BC.END)
+
+        #If pe and potfile given as run argument
+        if pe not False:
+            self.pe=pe
+        if potfile != '':
+            self.potfile=potfile
+
 
         #Coords provided to run or else taken from initialization.
         if len(current_coords) != 0:
@@ -1124,7 +1132,7 @@ class Psi4Theory:
             psi4.activate(psi4molfrag)
 
 
-            #Adding MM charges as pointcharges
+            #Adding MM charges as pointcharges if PC=True
             if PC==True:
                 #Chargefield = psi4.QMMM()
                 Chargefield = psi4.core.ExternalPotential()
