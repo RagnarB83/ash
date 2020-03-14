@@ -372,7 +372,7 @@ def write_pdbfile_dummy(elems,coords,name, atomlabels):
         resids=[1,1,1,1,1,1,1,1,1,1,1,1,1,2,2,2]
         print("ATOM      1  N   SER A   2      65.342  32.035  32.324  1.00  0.00           N")
         for count,(el,c,resname, resid) in enumerate(zip(elems,coords, resnames, resids)):
-            print(count, el,c,res)
+            print(count, el,c,resname, resid)
             line="{:4} {:4d} {:4} {:4} {:4d} {:8.3f} {:8.3f} {:8.3f} {:4} {:4} {:4}".format('ATOM', num, el,
                                                                                             resname, resid,
                                                                                             c[0], c[1], c[2],
