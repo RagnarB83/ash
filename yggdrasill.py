@@ -892,7 +892,6 @@ class Psi4Theory:
             mm_elems=[], elems=[], Grad=False, PC=False, nprocs=1 ):
 
         print(BC.OKBLUE,BC.BOLD, "------------RUNNING PSI4 INTERFACE-------------", BC.END)
-        print("self.printsetting:", self.printsetting)
 
         #Coords provided to run or else taken from initialization.
         if len(current_coords) != 0:
@@ -921,7 +920,7 @@ class Psi4Theory:
                 exit()
 
             #Printing to output or not:
-            print("a self.printsetting:", self.printsetting)
+            print("self.printsetting:", self.printsetting)
             if self.printsetting:
                 print("Printsetting = True. Printing output to stdout...")
             else:
@@ -938,6 +937,16 @@ class Psi4Theory:
                 molecular_multiplicity=self.mult,
                 geom=current_coords)
             psi4.activate(psi4molfrag)
+
+
+            #Adding MM charges as pointcharges
+            if PC==True:
+                psi4.Chrgfield = QMMM()
+                #Mmcoords are input in Bohr
+                for mmcharge,mmcoord in zip(MMcharges,current_MM_coords):
+                    psi4.Chrgfield.extern.addCharge(mmcharge, mmcoord[0]*constants.ang2bohr,
+                                                    mmcoord[1]*constants.ang2bohr, mmcoord[2]*constants.ang2bohr)
+                psi4.set_global_option_python('EXTERN', Chrgfield.extern)
 
             #Setting inputvariables
             #Todo: make memory psi4-interface variable ?
