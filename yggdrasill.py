@@ -556,13 +556,13 @@ class PolEmbedTheory:
             blankline()
 
             #List of QM and MM labels
-            #self.hybridatomlabels=[]
-            #for i in self.allatoms:
-            #    if i in self.qmatoms:
-            #        self.hybridatomlabels.append('QM')
-            #    elif i in self.mmatoms:
-            #        self.hybridatomlabels.append('MM')
-
+            self.hybridatomlabels=[]
+            for i in self.allatoms:
+                if i in self.qmatoms:
+                    self.hybridatomlabels.append('QM')
+                elif i in self.peatoms:
+                    self.hybridatomlabels.append('PE')
+        print("hybridatomlabels:", hybridatomlabels)
         #Create Potential file here
         #TODO: PyFrame or manual or both?
         if self.pot_create==True:
@@ -575,7 +575,7 @@ class PolEmbedTheory:
                     print("pip install pyframe")
 
                 #Todo: create PDB file
-                write_pdbfile_dummy(self.elems, self.coords, 'System')
+                write_pdbfile_dummy(self.elems, self.coords, 'System', hybridatomlabels)
 
                 #file = sys.argv[1]
                 system = pyframe.MolecularSystem(input_file=file)
