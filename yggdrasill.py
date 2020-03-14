@@ -1076,7 +1076,7 @@ class Psi4Theory:
         print(BC.OKBLUE,BC.BOLD, "------------RUNNING PSI4 INTERFACE-------------", BC.END)
 
         #If pe and potfile given as run argument
-        if pe not False:
+        if pe is not False:
             self.pe=pe
         if potfile != '':
             self.potfile=potfile
