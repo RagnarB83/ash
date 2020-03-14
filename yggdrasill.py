@@ -523,10 +523,13 @@ class PolEmbedTheory:
     def __init__(self, fragment='', qm_theory='', qmatoms=[], peatoms=[], pot_option=''):
         print(BC.WARNING,BC.BOLD,"------------Defining PolEmbedTheory object-------------", BC.END)
         #Theory level definitions
+        allowed_qmtheories=['Psi4Theory', 'PySCFTheory', 'DaltonTheory']
         self.qm_theory=qm_theory
         self.qm_theory_name = self.qm_theory.__class__.__name__
-        print("QM-theory:", self.qm_theory_name)
-        exit()
+        if self.qm_theory_name in allowed_qmtheories:
+            print(BC.OKGREEN, "QM-theory:", self.qm_theory_name, "is supported in Polarizable Embedding", BC.END)
+        else:
+            print(BC.FAIL, "QM-theory:", self.qm_theory_name, "is  NOT supported in Polarizable Embedding", BC.END)
         self.qmatoms = qmatoms
         #If fragment object has been defined
         if fragment != '':
@@ -556,13 +559,6 @@ class PolEmbedTheory:
                     self.hybridatomlabels.append('QM')
                 elif i in self.mmatoms:
                     self.hybridatomlabels.append('MM')
-
-            print("atomcharges:", atomcharges)
-            # Charges defined for regions
-            self.qmcharges=[atomcharges[i] for i in self.qmatoms]
-            print("self.qmcharges:", self.qmcharges)
-            self.mmcharges=[atomcharges[i] for i in self.mmatoms]
-            print("self.mmcharges:", self.mmcharges)
 
     #Create Potential file here
     #TODO: PyFrame or manual or both?
