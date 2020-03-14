@@ -235,7 +235,7 @@ def create_xtb_pcfile_general(coords,pchargelist):
     hardness=1000
     #https://xtb-docs.readthedocs.io/en/latest/pcem.html
     with open('pcharge', 'w') as pcfile:
-        pcfile.write(str(len(elems))+'\n')
+        pcfile.write(str(len(pchargelist))+'\n')
         for p,c in zip(pchargelist,coords):
             line = "{} {} {} {} {}".format(p, c[0], c[1], c[2], hardness)
             pcfile.write(line+'\n')
