@@ -1070,7 +1070,7 @@ class Psi4Theory:
 
             #Reading dict object with basic settings and passing to Psi4
             psi4.set_options(self.psi4settings)
-
+            print("self.psi4settings:", self.psi4settings)
             #Reading module options dict and passing to Psi4
             #TODO: Make one for SCF, CC, PCM etc.
             #psi4.set_module_options(modulename, moduledict)
