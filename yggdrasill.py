@@ -520,11 +520,12 @@ class NonBondedTheory:
 #Required at init: qm_theory and qmatoms, X, Y
 #Currently only Polarizable Embedding (PE). Only available for Psi4, PySCF and Dalton.
 class PolEmbedTheory:
-    def __init__(self, fragment='', qm_theory='', qmatoms=[], peatoms=[], pot_create=True, pot_option='', pyframe=False):
+    def __init__(self, fragment='', qm_theory='', qmatoms=[], peatoms=[], pot_create=True, pot_option='', pyframe=False, PElabel_pyframe='MM'):
         print(BC.WARNING,BC.BOLD,"------------Defining PolEmbedTheory object-------------", BC.END)
         self.pot_create=pot_create
         self.pyframe=pyframe
         self.pot_option=pot_option
+        self.PElabel_pyframe = PElabel_pyframe
         #Theory level definitions
         allowed_qmtheories=['Psi4Theory', 'PySCFTheory', 'DaltonTheory']
         self.qm_theory=qm_theory
@@ -555,13 +556,13 @@ class PolEmbedTheory:
             print("PE region", self.peatoms)
             blankline()
 
-            #List of QM and MM labels
+            #List of QM and PE labels
             self.hybridatomlabels=[]
             for i in self.allatoms:
                 if i in self.qmatoms:
                     self.hybridatomlabels.append('QM')
                 elif i in self.peatoms:
-                    self.hybridatomlabels.append('PE')
+                    self.hybridatomlabels.append(self.PElabel_pyframe)
         print("self.hybridatomlabels:", self.hybridatomlabels)
         #Create Potential file here
         #TODO: PyFrame or manual or both?
@@ -583,9 +584,9 @@ class PolEmbedTheory:
                 core = system.get_fragments_by_name(names=['QM'])
                 #system.set_core_region(fragments=core, program='Dalton', basis='pcset-1')
                 # solvent = system.get_fragments_by_distance(reference=core, distance=4.0)
-                solvent = system.get_fragments_by_name(names=['PE'])
+                solvent = system.get_fragments_by_name(names=self.PElabel_pyframe
                 system.add_region(name='solvent', fragments=solvent, use_standard_potentials=True,
-                          standard_potential_model='SEP')
+                          standard_potential_model=self.pot_option)
                 project = pyframe.Project()
                 project.create_embedding_potential(system)
                 #project.write_core(system)
