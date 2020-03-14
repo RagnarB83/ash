@@ -893,7 +893,9 @@ class Psi4Theory:
             pass
         else:
             current_coords=self.coords
-        if len(elems) != 0:
+        print("elems:", elems)
+        print("len elems", len(elems))
+        if len(elems) > 0:
             pass
         else:
             elems=self.elems
