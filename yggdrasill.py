@@ -1072,9 +1072,6 @@ class Psi4Theory:
             psi4.set_options(self.psi4settings)
             print("self.psi4settings:", self.psi4settings)
 
-            psi4.set_module_options('scf', {'e_convergence': '1e-11'})
-            #psi4.set_module_options('scf', {'e_convergence': '1e-11'})
-
             #Reading module options dict and passing to Psi4
             #TODO: Make one for SCF, CC, PCM etc.
             #psi4.set_module_options(modulename, moduledict)
@@ -1097,14 +1094,15 @@ class Psi4Theory:
             psi4.set_num_threads(nprocs)
 
             #Running energy or energy+gradient. Currently hardcoded to SCF-DFT jobs
+            print("All options passed to psi4 object")
+            print("psi4 dict", psi4.__dict__)
             #TODO: Support pointcharges and PE embedding
             if Grad==True:
                 grad=psi4.gradient('scf', dft_functional=self.psi4functional)
                 self.gradient=np.array(grad)
                 self.energy = psi4.variable("CURRENT ENERGY")
             else:
-                #self.energy=psi4.energy('scf', dft_functional=self.psi4functional)
-                self.energy=psi4.energy(self.psi4functional)
+                self.energy=psi4.energy('scf', dft_functional=self.psi4functional)
 
             #TODO: write in error handling here
 
