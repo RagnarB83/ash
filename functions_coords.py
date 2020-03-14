@@ -373,10 +373,14 @@ def write_pdbfile_dummy(elems,coords,name, atomlabels):
         pfile.write("ATOM      1  N   SER A   2      65.342  32.035  32.324  1.00  0.00           N\n")
         for count,(el,c,resname, resid) in enumerate(zip(elems,coords, resnames, resids)):
             print(count, el,c,resname, resid)
-            line="{:>4}{:>7d}{:>3}{:>5}{:3d}{:8.3f}{:8.3f}{:8.3f}{:4}{:4}{:4}".format('ATOM', count+1, el,
-                                                                                            resname, resid,
-                                                                                            c[0], c[1], c[2],
-                                                                                            '1.0', '0.00', 'X')
+            #line="{:>4}{:>7d}{:>3}{:>5}{:3d}{:8.3f}{:8.3f}{:8.3f}{:4}{:4}{:4}".format('ATOM', count+1, el,
+            #                                                                                resname, resid,
+            #                                                                                c[0], c[1], c[2],
+            #                                                                                '1.0', '0.00', 'X')
+            #
+            line="{:6s}{:5d} {:^4s}{:1s}{:3s} {:1s}{:4d}{:1s}   {:8.3f}{:8.3f}{:8.3f}{:6.2f}{:6.2f}          {:>2s}{:2s}".format(
+                'ATOM', count+1, el, resname, resid, 'Y', c[0], c[1], c[2], 1.0, 0.00, 'X', 'X')
+
             pfile.write(line+'\n')
     print("Wrote PDB file:", name+'.pdb')
 
