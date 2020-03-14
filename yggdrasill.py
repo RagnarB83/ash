@@ -613,7 +613,7 @@ class PolEmbedTheory:
                     self.potfile=filename+'.pot'
                 #Copying pyframe-created potfile from dir:
                 import shutil
-                shutil.copyfile(filename+'/' + filename+'.pot', './')
+                shutil.copyfile(filename+'/' + filename+'.pot', './'+filename+'.pot')
 
             #Todo: Manual potential file creation. Maybe only if pyframe is buggy
             else:
