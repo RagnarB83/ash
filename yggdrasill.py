@@ -652,8 +652,6 @@ class QMMMTheory:
                 print("grad false.")
                 if PC == True:
                     print("PC embed true. not ready")
-
-                    exit()
                     self.QMEnergy = self.qm_theory.run(current_coords=self.qmcoords,
                                                       current_MM_coords=self.mmcoords, MMcharges=self.mmcharges,
                                                       qm_elems=self.qmelems, mm_elems=self.mmelems, Grad=False, PC=PC, nprocs=nprocs)
