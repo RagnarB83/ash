@@ -47,7 +47,45 @@ def exit_solvshell():
     print("Solvshell exited ")
 
 # Define System Class. Useful for storing information about the system
-class System:
+# Define System Class. Useful for storing information about the system
+class SystemA:
+    def __init__(self, name, chargeA, multA, solutetypesA, solventtypes, snapslist, snapshotsA, solvtype):
+        self.snapdir = 'snaps'
+        self.Name = name
+        self.ChargeA = chargeA
+        self.MultA = multA
+        self.solutetypesA = solutetypesA
+        self.solventtypes = solventtypes
+        # Creating list of atoms. Assuming solute atoms are at top.
+        self.soluteatomsA = list(range(0,len(solutetypesA)))
+        self.snapslist = snapslist
+        self.snapshotsA = snapshotsA
+        self.snapshots = snapshotsA
+        self.solvtype = solvtype
+        self.numatoms = self.get_numatoms_from_snaps(self.snapshotsA[0])
+        self.allatoms = list(range(0,self.numatoms))
+        #List of solvent atoms
+        self.solventatoms = listdiff(self.allatoms, self.soluteatomsA)
+        #No connectivity unless function is run
+        self.connectivity=[]
+    def change_name(self, new_name): # note that the first argument is self
+        self.name = new_name # access the class attribute with the self keyword1
+    #Get number of atoms from first snapshot in list. Assuming all snapshots the same. To be replaced by reading in from md-variables.defs
+    def get_numatoms_from_snaps(self, snap):
+        with open(self.snapdir+'/'+snap+'.c') as file:
+            for line in file:
+                if 'block = coordinates records = ' in line:
+                    return int(line.split()[-1])
+    #Calculate connectivity. Assuming all snapshots are identical w.r.t. connectivity. Assuming 3-atom solvent also.
+    def calc_connectivity(self):
+        self.connectivity=[]
+        self.connectivity.append(self.soluteatomsA)
+        for i in range(0,len(self.solventatoms),3):
+            solv=self.solventatoms[i]
+            self.connectivity.append([solv, solv+1, solv+2])
+
+# Define System Class. Useful for storing information about the system
+class SystemAB:
     def __init__(self, name, chargeA, multA, chargeB, multB, solutetypesA, solutetypesB, solventtypes, snapslist, snapshotsA, snapshotsB, solvtype):
         self.snapdir = 'snaps'
         self.Name = name
@@ -87,6 +125,7 @@ class System:
         for i in range(0,len(self.solventatoms),3):
             solv=self.solventatoms[i]
             self.connectivity.append([solv, solv+1, solv+2])
+
 
 
 #Function to determine solvshell or increased QM-region
@@ -303,7 +342,7 @@ def create_AB_inputfiles_old(solvsphere, snapshotsA, snapshotsB, orcasimpleinput
     return snaphotinpfiles
 
 
-def read_md_variables_file(varfile):
+def read_md_variables_fileAB(varfile):
     with open(varfile) as vfile:
         for line in vfile:
             if 'snapslist' in line:
@@ -336,7 +375,32 @@ def read_md_variables_file(varfile):
                 solvtype = line.split()[-1]
             #TODO: File should contain information about number of solvent atoms. To be added to Chemshell MD file
 
-    system = System("Solvsphere", chargeA, multA, chargeB, multB, solutetypesA, solutetypesB, solventtypes, snapslist, snapshotsA, snapshotsB, solvtype )
+    system = SystemAB("Solvsphere", chargeA, multA, chargeB, multB, solutetypesA, solutetypesB, solventtypes, snapslist, snapshotsA, snapshotsB, solvtype )
+    return system
+
+def read_md_variables_fileA(varfile):
+    with open(varfile) as vfile:
+        for line in vfile:
+            if 'snapslist' in line:
+                snapslist = [i.replace('{', '').replace('}', '') for i in line.split()[2:]]
+            if 'snapshotsA' in line:
+                snapshotsA = [i.replace('{', '').replace('}', '') for i in line.split()[2:]]
+                snapshotsA = [i.replace('.c','') for i in snapshotsA]
+            if 'chargeA' in line:
+                chargeA=int(line.split()[-1])
+            if 'multA' in line:
+                multA=int(line.split()[-1])
+            if 'solvwitht' in line:
+                solventtypes=[i.replace('{','').replace('}','') for i in line.split()[2:]]
+            if 'solutetypesA' in line:
+                solutetypesA=[i.replace('{','').replace('}','') for i in line.split()[2:]]
+            if 'numatomsoluteA' in line:
+                numatomsoluteA=int(line.split()[-1])
+            if 'solvtype' in line:
+                solvtype = line.split()[-1]
+            #TODO: File should contain information about number of solvent atoms. To be added to Chemshell MD file
+
+    system = SystemA("Solvsphere", chargeA, multA, solutetypesA, solventtypes, snapslist, snapshotsA, solvtype )
     return system
 
 #Read Tcl-Chemshell fragment file and grab elems and coords. Coordinates converted from Bohr to Angstrom

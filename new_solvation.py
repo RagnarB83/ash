@@ -62,6 +62,7 @@ def solvshell ( orcadir='', NumCores='', calctype='', orcasimpleinput_LL='',
     print("PrintFinalOutput:", PrintFinalOutput)
     print("Testmode:", Testmode)
     print("-----------------------------------")
+
     #Load some global settings and making orcadir global
     settings_solvation.init(programdir,orcadir,NumCores)
 
@@ -70,13 +71,24 @@ def solvshell ( orcadir='', NumCores='', calctype='', orcasimpleinput_LL='',
     blankline()
 
     mdvarfile=calcdir+'/md-variables.defs'
+
+    #Getting system information from MD-run variable file
     print("Reading MD-run variable file:", mdvarfile)
     #calcdir contains md-variables.defs and snaps dir with snapshots
     #Create system object with information about the system (charge,mult of states A, B, forcefield, snapshotlist etc.)
     #Attributes: name, chargeA, multA, chargeB, multB, solutetypesA, solutetypesB, solventtypes, snapslist, snapshotsA, snapshotsB
-    solvsphere=read_md_variables_file(mdvarfile)
+    if calctype=="redox":
+        solvsphere=read_md_variables_fileAB(mdvarfile)
+    elif calctype=="vie":
+        solvsphere=read_md_variables_fileA(mdvarfile)
+    else:
+        print("unknown calctype for md-read")
+        exit()
     print("Solvsphere Object defined.")
     print("Solvsphere atoms:", solvsphere.numatoms)
+
+
+
     #Simple general connectivity stored in solvsphere object: solvsphere.connectivity
     solvsphere.calc_connectivity()
     print("Solvsphere connectivity stored in file: snaps/stored_connectivity")
