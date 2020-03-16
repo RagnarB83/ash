@@ -6,7 +6,7 @@ from functions_xtb import *
 import functions_general
 
 
-def TestModerun():
+def TestModerunAB():
     snapslist = ['60000', '60400', '60800', '61200', '61600', '62000']
     snapshotsA = ['snapA-60000', 'snapA-60400', 'snapA-60800', 'snapA-61200', 'snapA-61600', 'snapA-62000']
     snapshotsB = ['snapB-60000', 'snapB-60400', 'snapB-60800', 'snapB-61200', 'snapB-61600', 'snapB-62000']
