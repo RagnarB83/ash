@@ -23,8 +23,8 @@ def solvshell ( orcadir='', NumCores='', calctype='', orcasimpleinput_LL='',
         orcasimpleinput_SRPOL='', orcablockinput_SRPOL='', EOM='', BulkCorrection='',
         GasCorrection='', ShortRangePolarization='', SRPolShell='', LRPolShell='',
         LongRangePolarization='', PrintFinalOutput='', Testmode='', repsnapmethod='',
-        repsnapnumber='', solvbasis='',
-        chargeA='', multA='', chargeB='', multB=''):
+        repsnapnumber='', solvbasis='', chargeA='', multA='', chargeB='', multB='',
+        psi4_functional='', psi4dict=''):
 
     #While charge/mult info is read from md-variables.defs in case redox AB job, this info is not present
     # for both states in case of single trajectory. Plus one might want to do either VIE, VEA or SpinState change
@@ -517,13 +517,58 @@ def solvshell ( orcadir='', NumCores='', calctype='', orcasimpleinput_LL='',
         #Create inputfiles of repsnapshots with increased QM regions
         print("Creating inputfiles for Long-Range Correction Region1:", SRPolShell, "Å")
         identifiername='_LR_LL-R1'
-        LRPolinpfiles_Region1 = create_AB_inputfiles_psi4(solute_atoms, solvent_atoms, solvsphere, totrepsnaps,
-                                         solventunitcharges, identifiername, shell=SRPolShell)
+
+
+        #Option 1: Psi4SPcalc with manual pot creation
+        #Possibly use Psi4 parallelization.
+        #for snapx in totrepsnaps:
+        #    #create fragment for snap
+        #
+        #    #Create potential file
+
+        #   #Define PSi4 theory
+        #    Psi4SPcalculation = Psi4Theory(fragment=PhenolH2O_frag, charge=0, mult=1, psi4settings=psi4dictvar,
+        #                                   psi4functional=functional, runmode='library', pe=True,
+        #                                   potfile='phenolacceptor-FULL-H2O-n-MOD.pot', printsetting=True)
+        #    # Run Psi4 calc
+        #    Psi4SPcalculation.run(nprocs=NumCores)
+
+        # Option 2: PolEmbed Theory
+        # Possibly use Psi4 parallelization.
+        for snapx in totrepsnaps:
+            # create fragment for snap
+
+            # QM and PE regions
+            qmatoms = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12]
+            peatoms = [13, 14, 15]
+
+            #Define Psi4 QMregion
+            Psi4QMpart = Psi4Theory(fragment=PhenolH2O_frag, charge=0, mult=1, psi4settings=psi4dictvar,
+                                    psi4functional=functional, runmode='library', printsetting=True)
+
+
+            # Potential options: SEP (Standard Potential) Todo: Other options: To be done!
+            pot_option = 'SEP'
+            # PE Solvent-type label for PyFrame. For water, use: HOH, TIP3? WAT?
+            PElabel_pyframe = 'HOH'
+            # Create PolEmbed theory object. fragment always defined with it
+            PolEmbed_SP = PolEmbedTheory(fragment=PhenolH2O_frag, qm_theory=Psi4QMpart,
+                                         qmatoms=qmatoms, peatoms=peatoms, pot_option=pot_option,
+                                         pyframe=True, pot_create=True, PElabel_pyframe=PElabel_pyframe)
+
+            # Simple Energy SP calc.
+            PolEmbed_SP.run(nprocs=NumCores)
+
+
+
+        #LRPolinpfiles_Region1 = create_AB_inputfiles_psi4(solute_atoms, solvent_atoms, solvsphere, totrepsnaps,
+        #                                 solventunitcharges, identifiername, shell=SRPolShell)
         blankline()
         print("Creating inputfiles for Long-Range Correction Region2:", LRPolShell, "Å")
         identifiername='_LR_LL-R2'
-        LRPolinpfiles_Region2 = create_AB_inputfiles_psi4(solute_atoms, solvent_atoms, solvsphere, totrepsnaps,
-                                         solventunitcharges, identifiername, shell=LRPolShell)
+
+        #LRPolinpfiles_Region2 = create_AB_inputfiles_psi4(solute_atoms, solvent_atoms, solvsphere, totrepsnaps,
+        #                                 solventunitcharges, identifiername, shell=LRPolShell)
         blankline()
 
 
@@ -754,7 +799,7 @@ def solvshell ( orcadir='', NumCores='', calctype='', orcasimpleinput_LL='',
                                      SRPol_ave_trajAB, SRPol_stdev_trajAB, SRPolcorr_mean_AB, LRPol_ave_trajAB_Region1, LRPol_ave_trajAB_Region2,
                                      LRPol_stdev_trajAB_Region1, LRPol_stdev_trajAB_Region2, LRPolcorr_mean_AB, gasAB_AIE_LL, gasAB_AIE_HL)
         else:
-            print_line_with_mainheader("FINAL OUTPUT:", calctype)
+            print_line_with_mainheader("FINAL OUTPUT: {}".format(calctype))
             blankline()
             print_line_with_subheader1("Trajectory A")
 
