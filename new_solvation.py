@@ -689,7 +689,7 @@ def solvshell ( orcadir='', NumCores='', calctype='', orcasimpleinput_LL='',
         gasA_VIE_LL=(gasA_stateB_LL-gasA_stateA_LL)*constants.hartoeV
         print("gasA_VIE_LL:", gasA_VIE_LL)
 
-        if calctype == "redox:"
+        if calctype == "redox":
             gasB_stateA_LL=finalenergiesgrab('gas-molB_StateAB_Gas_LL.out')[0]
             gasB_stateB_LL=finalenergiesgrab('gas-molB_StateAB_Gas_LL.out')[1]
             gasB_VIE_LL=(gasA_stateB_LL-gasB_stateB_LL)*constants.hartoeV
@@ -700,7 +700,7 @@ def solvshell ( orcadir='', NumCores='', calctype='', orcasimpleinput_LL='',
         blankline()
 
 
-        if calctype == "redox:"
+        if calctype == "redox":
             gasA_stateA_HL=finalenergiesgrab('gas-molA_StateAB_Gas_HL.out')[0]
             gasA_stateB_HL=finalenergiesgrab('gas-molA_StateAB_Gas_HL.out')[1]
             gasA_VIE_HL=(gasA_stateB_HL-gasA_stateA_HL)*constants.hartoeV
