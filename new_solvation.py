@@ -210,7 +210,8 @@ def solvshell ( orcadir='', NumCores='', calctype='', orcasimpleinput_LL='',
     print("Representative snapshot number:", repsnapnumber)
     #Creating dictionaries:
     repsnapsA=repsnaplist(repsnapmethod, repsnapnumber, AsnapsABenergy)
-    repsnapsB=repsnaplist(repsnapmethod, repsnapnumber, BsnapsABenergy)
+    if calctype=="redox":
+        repsnapsB=repsnaplist(repsnapmethod, repsnapnumber, BsnapsABenergy)
     #Combined list of repsnaps
     print("Representative snapshots for each trajectory")
     blankline()
@@ -218,27 +219,32 @@ def solvshell ( orcadir='', NumCores='', calctype='', orcasimpleinput_LL='',
     for i in repsnapsA:
         print(i)
     blankline()
-    print("Traj B:")
-    for i in repsnapsB:
-        print(i)
+    if calctype=="redox":
+        print("Traj B:")
+        for i in repsnapsB:
+            print(i)
 
     repsnaplistA = list(repsnapsA.keys())
-    repsnaplistB = list(repsnapsB.keys())
-    repsnaplistAB=repsnaplistA+repsnaplistB
+    if calctype=="redox":
+        repsnaplistB = list(repsnapsB.keys())
+        repsnaplistAB=repsnaplistA+repsnaplistB
     blankline()
     #Averages and stdeviations over repsnaps  at LL theory
     repsnap_ave_trajA = statistics.mean(list(repsnapsA.values()))
     repsnap_stdev_trajA = statistics.stdev(list(repsnapsA.values()))
-    repsnap_ave_trajB = statistics.mean(list(repsnapsB.values()))
-    repsnap_stdev_trajB = statistics.stdev(list(repsnapsB.values()))
-    repsnap_ave_trajAB= statistics.mean([repsnap_ave_trajA,repsnap_ave_trajB])
-    repsnap_stdev_trajAB= "TBD"
+    if calctype=="redox":
+        repsnap_ave_trajB = statistics.mean(list(repsnapsB.values()))
+        repsnap_stdev_trajB = statistics.stdev(list(repsnapsB.values()))
+        repsnap_ave_trajAB= statistics.mean([repsnap_ave_trajA,repsnap_ave_trajB])
+        repsnap_stdev_trajAB= "TBD"
+        print("Repsnaps TrajB average: {:3.3f} ± {:3.3f} eV".format(repsnap_ave_trajB, repsnap_stdev_trajB))
+        print("Repsnaps TrajAB average: {:3.3f} ± TBD eV".format(repsnap_ave_trajAB))
     print("Repsnaps TrajA average: {:3.3f} ± {:3.3f} eV".format(repsnap_ave_trajA, repsnap_stdev_trajA))
-    print("Repsnaps TrajB average: {:3.3f} ± {:3.3f} eV".format(repsnap_ave_trajB, repsnap_stdev_trajB))
-    print("Repsnaps TrajAB average: {:3.3f} ± TBD eV".format(repsnap_ave_trajAB))
+
     blankline()
     print("Deviation between repsnaps mean and full mean for A: {:3.3f} eV.".format(ave_trajA-repsnap_ave_trajA))
-    print("Deviation between repsnaps mean and full mean for B: {:3.3f} eV.".format(ave_trajB-repsnap_ave_trajB))
+    if calctype=="redox":
+        print("Deviation between repsnaps mean and full mean for B: {:3.3f} eV.".format(ave_trajB-repsnap_ave_trajB))
     blankline()
     print_time_rel_and_tot(CheckpointTime, beginTime,'All snaps')
     CheckpointTime = time.time()
