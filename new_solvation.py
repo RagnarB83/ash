@@ -407,7 +407,8 @@ def solvshell ( orcadir='', NumCores='', calctype='', orcasimpleinput_LL='',
             print("orcasimpleinput_SRPOL is same as orcasimpleinput_LL")
             print("Using previously calculated values for Region1")
             SRPol_Arepsnaps_ABenergy_Region1=repsnapsA
-            SRPol_Brepsnaps_ABenergy_Region1=repsnapsB
+            if calctype=="redox":
+                SRPol_Brepsnaps_ABenergy_Region1=repsnapsB
         else:
             print("orcasimpleinput_SRPOL is different")
             print("Need to recalculate repsnapshots at SRPOL level of theory using regular QM-region")
@@ -681,8 +682,8 @@ def solvshell ( orcadir='', NumCores='', calctype='', orcasimpleinput_LL='',
         print_line_with_subheader1("Running Gas calculations at HL theory")
         print(BC.WARNING,"HL-theory:", orcasimpleinput_HL,BC.END)
         #run_inputfiles_in_parallel_AB(gasinpfiles_HL)
-        run_orca_SP_ORCApar(gasinpfiles_HL[0], nprocs=NumCores)
-        run_orca_SP_ORCApar(gasinpfiles_HL[1], nprocs=NumCores)
+        run_orca_SP_ORCApar(orcadir, gasinpfiles_HL[0], nprocs=NumCores)
+        run_orca_SP_ORCApar(orcadir, gasinpfiles_HL[1], nprocs=NumCores)
 
         #GRAB output
         gasA_stateA_LL=finalenergiesgrab('gas-molA_StateAB_Gas_LL.out')[0]

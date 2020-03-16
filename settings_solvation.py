@@ -6,7 +6,7 @@ class Sphere:
         self.pathtofile = path + '/' + file
         self.numatoms = numatoms
 
-# Defining global variables here: called as settings_molcrys.scale etc.
+# Defining global variables here:
 def init(progdir,ORCApath,ncores):
     #Disabled XTBpath
     global bulkfile
