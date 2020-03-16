@@ -158,7 +158,7 @@ def solvshell ( orcadir='', NumCores='', calctype='', orcasimpleinput_LL='',
     if calctype == "redox":
         print("There are {} snapshots for A trajectory.".format(len(solvsphere.snapshotsA)))
         print("There are {} snapshots for B trajectory.".format(len(solvsphere.snapshotsB)))
-    elif calctype == "vie":
+    else:
         print("There are {} snapshots for A trajectory.".format(len(solvsphere.snapshotsA)))
 
     print("There are {} snapshots in total.".format(len(snapshotinpfiles)))
@@ -197,9 +197,11 @@ def solvshell ( orcadir='', NumCores='', calctype='', orcasimpleinput_LL='',
         stdev_trajAB = 0.0
         ave_trajB = statistics.mean(list(BsnapsABenergy.values()))
         stdev_trajB = statistics.stdev(list(BsnapsABenergy.values()))
+        print("TrajA average: {:3.3f} eV. Stdev: {:3.3f} eV.".format(ave_trajA, stdev_trajA))
         print("TrajB average: {:3.3f} eV. Stdev: {:3.3f} eV.".format(ave_trajB, stdev_trajB))
         print("A+B average: {:3.3f} eV. Stdev: {:3.3f} eV.".format(ave_trajAB, stdev_trajAB))
-    print("TrajA average: {:3.3f} eV. Stdev: {:3.3f} eV.".format(ave_trajA, stdev_trajA))
+    else:
+        print("TrajA average: {:3.3f} eV. Stdev: {:3.3f} eV.".format(ave_trajA, stdev_trajA))
 
     blankline()
 
@@ -237,9 +239,11 @@ def solvshell ( orcadir='', NumCores='', calctype='', orcasimpleinput_LL='',
         repsnap_stdev_trajB = statistics.stdev(list(repsnapsB.values()))
         repsnap_ave_trajAB= statistics.mean([repsnap_ave_trajA,repsnap_ave_trajB])
         repsnap_stdev_trajAB= "TBD"
+        print("Repsnaps TrajA average: {:3.3f} ± {:3.3f} eV".format(repsnap_ave_trajA, repsnap_stdev_trajA))
         print("Repsnaps TrajB average: {:3.3f} ± {:3.3f} eV".format(repsnap_ave_trajB, repsnap_stdev_trajB))
         print("Repsnaps TrajAB average: {:3.3f} ± TBD eV".format(repsnap_ave_trajAB))
-    print("Repsnaps TrajA average: {:3.3f} ± {:3.3f} eV".format(repsnap_ave_trajA, repsnap_stdev_trajA))
+    else:
+        print("Repsnaps TrajA average: {:3.3f} ± {:3.3f} eV".format(repsnap_ave_trajA, repsnap_stdev_trajA))
 
     blankline()
     print("Deviation between repsnaps mean and full mean for A: {:3.3f} eV.".format(ave_trajA-repsnap_ave_trajA))
