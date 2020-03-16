@@ -18,11 +18,11 @@ import statistics
 import shutil
 
 def solvshell ( orcadir='', NumCores='', calctype='', orcasimpleinput_LL='',
-        orcablockinput_LL=orcablockinput_LL, orcasimpleinput_HL='', orcablockinput_HL='',
+        orcablockinput_LL='', orcasimpleinput_HL='', orcablockinput_HL='',
         orcasimpleinput_SRPOL='', orcablockinput_SRPOL='', EOM='', BulkCorrection='',
         GasCorrection='', ShortRangePolarization='', SRPolShell='', LRPolShell='',
         LongRangePolarization='', PrintFinalOutput='', Testmode='', repsnapmethod='', repsnapnumber='',
-              solvbasis='' )
+              solvbasis='' ):
 
     programversion=0.1
     blankline()
