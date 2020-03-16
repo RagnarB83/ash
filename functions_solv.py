@@ -164,10 +164,11 @@ def grab_energies_output_xtb(xtbmethod, inpfiles):
         os.chdir('..')
     return AllsnapsABenergy, AsnapsABenergy, BsnapsABenergy
 
-def print_solvshell_header(version):
+def print_solvshell_header(version, progdir):
     print(BC.WARNING,"--------------------------------------------------",BC.END)
     print(BC.WARNING,"--------------------------------------------------",BC.END)
     print(BC.WARNING,BC.BOLD,"SOLVSHELL version", version,BC.END)
+    print("SOLVSHELL dir:", progdir)
     print(BC.WARNING,"--------------------------------------------------",BC.END)
     print(BC.WARNING,"--------------------------------------------------",BC.END)
 

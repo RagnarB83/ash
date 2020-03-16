@@ -23,10 +23,11 @@ def solvshell ( orcadir='', NumCores='', calctype='', orcasimpleinput_LL='',
         GasCorrection='', ShortRangePolarization='', SRPolShell='', LRPolShell='',
         LongRangePolarization='', PrintFinalOutput='', Testmode='', repsnapmethod='', repsnapnumber='',
               solvbasis='' ):
-
+    #Yggdrasill dir (needed for init function and print_header below). Todo: remove
+    programdir=os.path.dirname(yggdrasill.__file__)
     programversion=0.1
     blankline()
-    print_solvshell_header(programversion)
+    print_solvshell_header(programversion,programdir)
 
     #TODO: reduce number of variables being passed to functions. Pass whole solvsphere object sometimes. Careful though, breaks generality
     #TODO: Create more objects. QMtheory object or Input object or something and then pass that around
