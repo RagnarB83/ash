@@ -60,7 +60,7 @@ def run_orca_SP(list, Grad=False):
 
 # Run ORCA single-point job using ORCA parallelization. Will add pal-block if nprocs >1.
 # Takes possible Grad boolean argument.
-def run_orca_SP_ORCApar(orcadir, inpfile,nprocs=1, Grad=False):
+def run_orca_SP_ORCApar(orcadir, inpfile, nprocs=1, Grad=False):
     if Grad==True:
         with open(inpfile) as ifile:
             insert_line_into_file(inpfile, '!', '! Engrad')

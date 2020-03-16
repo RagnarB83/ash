@@ -262,8 +262,12 @@ def solvshell ( orcadir='', NumCores='', calctype='', orcasimpleinput_LL='',
         print_line_with_mainheader("Bulk Correction on Representative Snapshots")
         os.mkdir('Bulk-LL')
         os.chdir('./Bulk-LL')
-        for i in repsnaplistAB:
-            shutil.copyfile('../' + i + '.c', './' + i + '.c')
+        if calctype=="redox":
+            for i in repsnaplistAB:
+                shutil.copyfile('../' + i + '.c', './' + i + '.c')
+        else:
+            for i in repsnaplistA:
+                shutil.copyfile('../' + i + '.c', './' + i + '.c')
         print("Entering dir:", os.getcwd())
 
         print("Doing BulkCorrection on representative snapshots. Creating inputfiles...")
@@ -272,11 +276,15 @@ def solvshell ( orcadir='', NumCores='', calctype='', orcasimpleinput_LL='',
         bulkcorr=True
         identifiername='_Bulk_LL'
         print("repsnaplistA:", repsnaplistA)
-        print("repsnaplistB:", repsnaplistB)
+        if calctype == "redox":
+            print("repsnaplistB:", repsnaplistB)
         blankline()
-        bulkinpfiles = create_AB_inputfiles_ORCA(solute_atoms, solvent_atoms, solvsphere, repsnaplistAB,
+        if calctype == "redox":
+            bulkinpfiles = create_AB_inputfiles_ORCA(solute_atoms, solvent_atoms, solvsphere, repsnaplistAB,
                                                          orcasimpleinput_LL, orcablockinput_LL, solventunitcharges, identifiername, None, bulkcorr)
-
+        else:
+            bulkinpfiles = create_AB_inputfiles_ORCA(solute_atoms, solvent_atoms, solvsphere, repsnaplistA,
+                                                         orcasimpleinput_LL, orcablockinput_LL, solventunitcharges, identifiername, None, bulkcorr)
         # RUN BULKCORRECTION INPUTFILES
         print_line_with_subheader1("Running Bulk Correction calculations at LL theory")
         print(BC.WARNING,"LL-theory:", orcasimpleinput_LL,BC.END)
@@ -369,7 +377,7 @@ def solvshell ( orcadir='', NumCores='', calctype='', orcasimpleinput_LL='',
             print("Using ORCA parallelization. Running each file 1 by 1. ORCA using {} cores".format(NumCores))
             for SRPolinpfile in SRPolinpfiles:
                 print("Running file: ", SRPolinpfile)
-                run_orca_SP_ORCApar(SRPolinpfile, nprocs=NumCores)
+                run_orca_SP_ORCApar(orcadir, SRPolinpfile, nprocs=NumCores)
         else:
             print("Using multiproc parallelization. All calculations running in parallel but each ORCA calculation using 1 core.")
             run_inputfiles_in_parallel(orcadir, SRPolinpfiles, NumCores)
