@@ -683,7 +683,8 @@ def solvshell ( orcadir='', NumCores='', calctype='', orcasimpleinput_LL='',
         print(BC.WARNING,"HL-theory:", orcasimpleinput_HL,BC.END)
         #run_inputfiles_in_parallel_AB(gasinpfiles_HL)
         run_orca_SP_ORCApar(orcadir, gasinpfiles_HL[0], nprocs=NumCores)
-        run_orca_SP_ORCApar(orcadir, gasinpfiles_HL[1], nprocs=NumCores)
+        if calctype=="redox":
+            run_orca_SP_ORCApar(orcadir, gasinpfiles_HL[1], nprocs=NumCores)
 
         #GRAB output
         gasA_stateA_LL=finalenergiesgrab('gas-molA_StateAB_Gas_LL.out')[0]
