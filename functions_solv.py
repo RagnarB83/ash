@@ -54,7 +54,6 @@ def exit_solvshell():
     print("Solvshell exited ")
 
 # Define System Class. Useful for storing information about the system
-# Define System Class. Useful for storing information about the system
 class SystemA:
     def __init__(self, name, chargeA, multA, solutetypesA, solventtypes, snapslist, snapshotsA, solvtype):
         self.snapdir = 'snaps'
@@ -266,7 +265,7 @@ def create_AB_inputfiles_xtb(solute_atoms, solvent_atoms, solvsphere, snapshots,
     return xtb_xyzfiles
 
 
-#Create ORCA inputfiles where state A and B (e.g. VIE calc) are calculation in same job using $new_job
+#Create ORCA inputfiles where state A and B (e.g. VIE calc) are calculated in same job using $new_job
 def create_AB_inputfiles_ORCA(solute_atoms, solvent_atoms, solvsphere, snapshots, orcasimpleinput,
                               orcablockinput, solventunitcharges, identifier,shell=None, bulkcorr=False, solvbasis=''):
     snaphotinpfiles = []

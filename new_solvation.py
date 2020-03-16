@@ -22,8 +22,14 @@ def solvshell ( orcadir='', NumCores='', calctype='', orcasimpleinput_LL='',
         orcablockinput_LL='', orcasimpleinput_HL='', orcablockinput_HL='',
         orcasimpleinput_SRPOL='', orcablockinput_SRPOL='', EOM='', BulkCorrection='',
         GasCorrection='', ShortRangePolarization='', SRPolShell='', LRPolShell='',
-        LongRangePolarization='', PrintFinalOutput='', Testmode='', repsnapmethod='', repsnapnumber='',
-              solvbasis='' ):
+        LongRangePolarization='', PrintFinalOutput='', Testmode='', repsnapmethod='',
+        repsnapnumber='', solvbasis='',
+        chargeA=multA, multA=multA, chargeB=chargeB, multB=multB):
+
+    #While charge/mult info is read from md-variables.defs in case redox AB job, this info is not present
+    # for both states in case of single trajectory. Plus one might want to do either VIE, VEA or SpinState change
+    #Hence defining in original py inputfile makes sense
+
     #Yggdrasill dir (needed for init function and print_header below). Todo: remove
     programdir=os.path.dirname(yggdrasill.__file__)
     programversion=0.1
@@ -87,7 +93,11 @@ def solvshell ( orcadir='', NumCores='', calctype='', orcasimpleinput_LL='',
     print("Solvsphere Object defined.")
     print("Solvsphere atoms:", solvsphere.numatoms)
 
-
+    #Updating charge/mult info in solvsphere object since not always present (in md file) for VIE/VEA/Spinstate jobs
+    solvsphere.ChargeA=chargeA
+    solvsphere.MultA=multA
+    solvsphere.ChargeB=chargeB
+    solvsphere.MultB=multB
 
     #Simple general connectivity stored in solvsphere object: solvsphere.connectivity
     solvsphere.calc_connectivity()
@@ -145,8 +155,12 @@ def solvshell ( orcadir='', NumCores='', calctype='', orcasimpleinput_LL='',
     snapshotinpfiles = create_AB_inputfiles_ORCA(solute_atoms, solvent_atoms, solvsphere, solvsphere.snapshots,
                                                       orcasimpleinput_LL, orcablockinput_LL, solventunitcharges, identifiername)
 
-    print("There are {} snapshots for A trajectory.".format(len(solvsphere.snapshotsA)))
-    print("There are {} snapshots for B trajectory.".format(len(solvsphere.snapshotsB)))
+    if calctype == "redox":
+        print("There are {} snapshots for A trajectory.".format(len(solvsphere.snapshotsA)))
+        print("There are {} snapshots for B trajectory.".format(len(solvsphere.snapshotsB)))
+    elif calctype == "vie":
+        print("There are {} snapshots for A trajectory.".format(len(solvsphere.snapshotsA)))
+
     print("There are {} snapshots in total.".format(len(snapshotinpfiles)))
     blankline()
     print_time_rel_and_tot(CheckpointTime, beginTime)
