@@ -16,6 +16,7 @@ import settings_solvation
 import constants
 import statistics
 import shutil
+import yggdrasill
 
 def solvshell ( orcadir='', NumCores='', calctype='', orcasimpleinput_LL='',
         orcablockinput_LL='', orcasimpleinput_HL='', orcablockinput_HL='',
