@@ -15,6 +15,13 @@ def TestModerun():
     print("Test mode True. Only running snapshots (for A and B respectively):", snapslist)
     return snapslist, snapshotsA, snapshotsB, snapshots
 
+def TestModerunA():
+    snapslist = ['60000', '60400', '60800', '61200', '61600', '62000']
+    snapshotsA = ['snapA-60000', 'snapA-60400', 'snapA-60800', 'snapA-61200', 'snapA-61600', 'snapA-62000']
+    snapshots = ['snapA-60000', 'snapA-60400', 'snapA-60800', 'snapA-61200', 'snapA-61600', 'snapA-62000']
+    print("Test mode True. Only running snapshots (for A ):", snapslist)
+    return snapslist, snapshotsA, snapshots
+
 def print_time_rel_and_tot(timestampA,timestampB, modulename=''):
     secsA=time.time()-timestampA
     minsA=secsA/60

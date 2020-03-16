@@ -98,7 +98,10 @@ def solvshell ( orcadir='', NumCores='', calctype='', orcasimpleinput_LL='',
 
     #Temporary redefinition of lists for easier faster test runs
     if Testmode == True:
-        solvsphere.snapslist, solvsphere.snapshotsA, solvsphere.snapshotsB, solvsphere.snapshots = TestModerun()
+        if calctype=='redox':
+            solvsphere.snapslist, solvsphere.snapshotsA, solvsphere.snapshotsB, solvsphere.snapshots = TestModerun()
+        elif calctype=='vie':
+            solvsphere.snapslist, solvsphere.snapshotsA, solvsphere.snapshots = TestModerun()
 
     #Get solvent pointcharges for solvent-unit. e.g. [-0.8, 0.4, 0.4] for TIP3P, assuming [O, H, H] order
     # Later use dictionary or object or something for this
