@@ -300,13 +300,14 @@ def solvshell ( orcadir='', NumCores='', calctype='', orcasimpleinput_LL='',
         if calctype == "redox":
             print("Non-Bulk values for repsnapsB:", repsnapsB)
 
+        Bulk_ave_trajA=statistics.mean(Bulk_Arepsnaps_ABenergy.values())
+        Bulk_stdev_trajA=statistics.stdev(Bulk_Arepsnaps_ABenergy.values())
         if calctype == "redox":
             Bulk_ave_trajB=statistics.mean(Bulk_Brepsnaps_ABenergy.values())
             Bulk_ave_trajAB=statistics.mean([Bulk_ave_trajA,Bulk_ave_trajB])
             Bulk_stdev_trajB=statistics.stdev(Bulk_Brepsnaps_ABenergy.values())
             Bulk_stdev_trajAB=0.0
-        Bulk_ave_trajA=statistics.mean(Bulk_Arepsnaps_ABenergy.values())
-        Bulk_stdev_trajA=statistics.stdev(Bulk_Arepsnaps_ABenergy.values())
+
         blankline()
         if calctype == "redox":
             print("Bulk calculation TrajA average: {:3.3f} ± {:3.3f}".format(Bulk_ave_trajA, Bulk_stdev_trajA))
