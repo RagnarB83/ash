@@ -182,25 +182,25 @@ def solvshell ( orcadir='', NumCores='', calctype='', orcasimpleinput_LL='',
     blankline()
     AllsnapsABenergy, AsnapsABenergy, BsnapsABenergy=grab_energies_output(snapshotinpfiles)
     blankline()
-    #print("AllsnapsABenergy:", AllsnapsABenergy)
-    #print("AsnapsABenergy:", AsnapsABenergy)
-    #print("BsnapsABenergy:", BsnapsABenergy)
+    print("AllsnapsABenergy:", AllsnapsABenergy)
+    print("AsnapsABenergy:", AsnapsABenergy)
+    print("BsnapsABenergy:", BsnapsABenergy)
     blankline()
 
     #Average and stdevs of
-
-    #Averages and stdeviations over whole trajectory at LL theory
-    ave_trajAB = statistics.mean(list(AllsnapsABenergy.values()))
-    #stdev_trajAB = statistics.stdev(list(AllsnapsABenergy.values()))
-    stdev_trajAB = 0.0
     ave_trajA = statistics.mean(list(AsnapsABenergy.values()))
     stdev_trajA = statistics.stdev(list(AsnapsABenergy.values()))
-    ave_trajB = statistics.mean(list(BsnapsABenergy.values()))
-    stdev_trajB = statistics.stdev(list(BsnapsABenergy.values()))
-
+    if calctype=="redox":
+        # Averages and stdeviations over whole trajectory at LL theory
+        ave_trajAB = statistics.mean(list(AllsnapsABenergy.values()))
+        # stdev_trajAB = statistics.stdev(list(AllsnapsABenergy.values()))
+        stdev_trajAB = 0.0
+        ave_trajB = statistics.mean(list(BsnapsABenergy.values()))
+        stdev_trajB = statistics.stdev(list(BsnapsABenergy.values()))
+        print("TrajB average: {:3.3f} eV. Stdev: {:3.3f} eV.".format(ave_trajB, stdev_trajB))
+        print("A+B average: {:3.3f} eV. Stdev: {:3.3f} eV.".format(ave_trajAB, stdev_trajAB))
     print("TrajA average: {:3.3f} eV. Stdev: {:3.3f} eV.".format(ave_trajA, stdev_trajA))
-    print("TrajB average: {:3.3f} eV. Stdev: {:3.3f} eV.".format(ave_trajB, stdev_trajB))
-    print("A+B average: {:3.3f} eV. Stdev: {:3.3f} eV.".format(ave_trajAB, stdev_trajAB))
+
     blankline()
 
     #######################################################

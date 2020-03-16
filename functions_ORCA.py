@@ -136,26 +136,7 @@ def pcgradientgrab(pcgradfile):
                 gradient[count-1] = [val_x,val_y,val_z]
     return gradient
 
-#Grab 2 total energies from list of ORCA outputfiles (basenames), e.g. VIEs.
-#TODO: move to functions_solv or make more general
-def grab_energies_output(inpfiles):
-    # Dictionaries to  hold VIEs. Currently not keeping track of total energies
-    AsnapsABenergy = {}
-    BsnapsABenergy = {}
-    AllsnapsABenergy = {}
-    for snap in inpfiles:
-        snapbase=snap.split('_')[0]
-        outfile=snap.replace('.inp','.out')
-        done=checkORCAfinished(outfile)
-        if done==True:
-            energies=finalenergiesgrab(outfile)
-            delta_AB=(energies[1]-energies[0])*constants.hartoeV
-            if 'snapA' in snapbase:
-                AsnapsABenergy[snapbase]=delta_AB
-            elif 'snapB' in snapbase:
-                BsnapsABenergy[snapbase]=delta_AB
-            AllsnapsABenergy[snapbase]=delta_AB
-    return AllsnapsABenergy, AsnapsABenergy, BsnapsABenergy
+
 
 #Grab multiple Final single point energies in output. e.g. new_job calculation
 def finalenergiesgrab(file):
