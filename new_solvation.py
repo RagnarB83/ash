@@ -40,7 +40,7 @@ def solvshell ( orcadir='', NumCores='', calctype='', orcasimpleinput_LL='',
     print("Calculation directory:", calcdir)
     print("orcadir:", orcadir )
     print("NumCores:", NumCores )
-    print("calctype:", BC.OKBLUE,calctype )
+    print("calctype:", calctype )
     print("EOM:", EOM)
     print("orcasimpleinput_LL:", orcasimpleinput_LL)
     print("orcablockinput_LL:", orcablockinput_LL)
@@ -60,7 +60,6 @@ def solvshell ( orcadir='', NumCores='', calctype='', orcasimpleinput_LL='',
     print("PrintFinalOutput:", PrintFinalOutput)
     print("Testmode:", Testmode)
     print("-----------------------------------")
-    exit()
     #Load some global settings and making orcadir global
     settings_solvation.init(programdir,orcadir,NumCores)
 
