@@ -230,6 +230,10 @@ def solvshell ( orcadir='', NumCores='', calctype='', orcasimpleinput_LL='',
     if calctype=="redox":
         repsnaplistB = list(repsnapsB.keys())
         repsnaplistAB=repsnaplistA+repsnaplistB
+        totrepsnaps=repsnaplistAB
+    else:
+        totrepsnaps = repsnaplistA
+    #New repsnapsvariable:  totrepsnaps  (contains either A or B snapshots)
     blankline()
     #Averages and stdeviations over repsnaps  at LL theory
     repsnap_ave_trajA = statistics.mean(list(repsnapsA.values()))
@@ -262,12 +266,8 @@ def solvshell ( orcadir='', NumCores='', calctype='', orcasimpleinput_LL='',
         print_line_with_mainheader("Bulk Correction on Representative Snapshots")
         os.mkdir('Bulk-LL')
         os.chdir('./Bulk-LL')
-        if calctype=="redox":
-            for i in repsnaplistAB:
-                shutil.copyfile('../' + i + '.c', './' + i + '.c')
-        else:
-            for i in repsnaplistA:
-                shutil.copyfile('../' + i + '.c', './' + i + '.c')
+        for i in totrepsnaps:
+            shutil.copyfile('../' + i + '.c', './' + i + '.c')
         print("Entering dir:", os.getcwd())
 
         print("Doing BulkCorrection on representative snapshots. Creating inputfiles...")
@@ -279,12 +279,9 @@ def solvshell ( orcadir='', NumCores='', calctype='', orcasimpleinput_LL='',
         if calctype == "redox":
             print("repsnaplistB:", repsnaplistB)
         blankline()
-        if calctype == "redox":
-            bulkinpfiles = create_AB_inputfiles_ORCA(solute_atoms, solvent_atoms, solvsphere, repsnaplistAB,
+        bulkinpfiles = create_AB_inputfiles_ORCA(solute_atoms, solvent_atoms, solvsphere, totrepsnaps,
                                                          orcasimpleinput_LL, orcablockinput_LL, solventunitcharges, identifiername, None, bulkcorr)
-        else:
-            bulkinpfiles = create_AB_inputfiles_ORCA(solute_atoms, solvent_atoms, solvsphere, repsnaplistA,
-                                                         orcasimpleinput_LL, orcablockinput_LL, solventunitcharges, identifiername, None, bulkcorr)
+
         # RUN BULKCORRECTION INPUTFILES
         print_line_with_subheader1("Running Bulk Correction calculations at LL theory")
         print(BC.WARNING,"LL-theory:", orcasimpleinput_LL,BC.END)
@@ -296,44 +293,60 @@ def solvshell ( orcadir='', NumCores='', calctype='', orcasimpleinput_LL='',
         #Get bulk correction per snapshot
         #print("Bulk_Allrepsnaps_ABenergy:", Bulk_Allrepsnaps_ABenergy)
         print("Bulk-IP values for traj A:", Bulk_Arepsnaps_ABenergy)
-        print("Bulk-IP values for traj B:", Bulk_Brepsnaps_ABenergy)
+        if calctype == "redox":
+            print("Bulk-IP values for traj B:", Bulk_Brepsnaps_ABenergy)
         blankline()
         print("Non-Bulk values for repsnapsA:", repsnapsA)
-        print("Non-Bulk values for repsnapsB:", repsnapsB)
+        if calctype == "redox":
+            print("Non-Bulk values for repsnapsB:", repsnapsB)
+
+        if calctype == "redox":
+            Bulk_ave_trajB=statistics.mean(Bulk_Brepsnaps_ABenergy.values())
+            Bulk_ave_trajAB=statistics.mean([Bulk_ave_trajA,Bulk_ave_trajB])
+            Bulk_stdev_trajB=statistics.stdev(Bulk_Brepsnaps_ABenergy.values())
+            Bulk_stdev_trajAB=0.0
         Bulk_ave_trajA=statistics.mean(Bulk_Arepsnaps_ABenergy.values())
-        Bulk_ave_trajB=statistics.mean(Bulk_Brepsnaps_ABenergy.values())
-        Bulk_ave_trajAB=statistics.mean([Bulk_ave_trajA,Bulk_ave_trajB])
         Bulk_stdev_trajA=statistics.stdev(Bulk_Arepsnaps_ABenergy.values())
-        Bulk_stdev_trajB=statistics.stdev(Bulk_Brepsnaps_ABenergy.values())
-        Bulk_stdev_trajAB=0.0
         blankline()
-        print("Bulk calculation TrajA average: {:3.3f} ± {:3.3f}".format(Bulk_ave_trajA, Bulk_stdev_trajA))
-        print("Bulk calculation TrajB average: {:3.3f} ± {:3.3f}".format(Bulk_ave_trajB, Bulk_stdev_trajB))
-        print("Bulk calculation TrajAB average: {:3.3f} ± TBD".format(Bulk_ave_trajAB))
+        if calctype == "redox":
+            print("Bulk calculation TrajA average: {:3.3f} ± {:3.3f}".format(Bulk_ave_trajA, Bulk_stdev_trajA))
+            print("Bulk calculation TrajB average: {:3.3f} ± {:3.3f}".format(Bulk_ave_trajB, Bulk_stdev_trajB))
+            print("Bulk calculation TrajAB average: {:3.3f} ± TBD".format(Bulk_ave_trajAB))
+        else:
+            print("Bulk calculation TrajA average: {:3.3f} ± {:3.3f}".format(Bulk_ave_trajA, Bulk_stdev_trajA))
+
         bulkcorrdict_A={}
         bulkcorrdict_B={}
         for b in Bulk_Arepsnaps_ABenergy:
             for c in repsnapsA:
                 if b==c:
                     bulkcorrdict_A[b]=Bulk_Arepsnaps_ABenergy[b]-repsnapsA[b]
-        for b in Bulk_Brepsnaps_ABenergy:
-            for c in repsnapsB:
-                if b==c:
-                    bulkcorrdict_B[b]=Bulk_Brepsnaps_ABenergy[b]-repsnapsB[b]
+        if calctype == "redox":
+            for b in Bulk_Brepsnaps_ABenergy:
+                for c in repsnapsB:
+                    if b==c:
+                        bulkcorrdict_B[b]=Bulk_Brepsnaps_ABenergy[b]-repsnapsB[b]
 
         blankline()
         print("Bulk corrections per snapshot:")
         print("bulkcorrdict_A:", bulkcorrdict_A)
-        print("bulkcorrdict_B", bulkcorrdict_B)
-        Bulkcorr_mean_A=statistics.mean(bulkcorrdict_A.values())
-        Bulkcorr_mean_B=statistics.mean(bulkcorrdict_B.values())
-        Bulkcorr_stdev_A=statistics.stdev(bulkcorrdict_A.values())
-        Bulkcorr_stdev_B=statistics.stdev(bulkcorrdict_B.values())
-        Bulkcorr_mean_AB=statistics.mean([Bulkcorr_mean_A,Bulkcorr_mean_B])
-        blankline()
-        print("Traj A: Bulkcorrection {:3.3f} ± {:3.3f} eV".format(Bulkcorr_mean_A, Bulkcorr_stdev_A))
-        print("Traj B: Bulkcorrection {:3.3f} ± {:3.3f} eV".format(Bulkcorr_mean_B, Bulkcorr_stdev_B))
-        print("Combined Bulkcorrection {:3.3f} eV".format(Bulkcorr_mean_AB))
+        if calctype == "redox":
+            print("bulkcorrdict_B", bulkcorrdict_B)
+            Bulkcorr_mean_A=statistics.mean(bulkcorrdict_A.values())
+            Bulkcorr_mean_B=statistics.mean(bulkcorrdict_B.values())
+            Bulkcorr_stdev_A=statistics.stdev(bulkcorrdict_A.values())
+            Bulkcorr_stdev_B=statistics.stdev(bulkcorrdict_B.values())
+            Bulkcorr_mean_AB=statistics.mean([Bulkcorr_mean_A,Bulkcorr_mean_B])
+            blankline()
+            print("Traj A: Bulkcorrection {:3.3f} ± {:3.3f} eV".format(Bulkcorr_mean_A, Bulkcorr_stdev_A))
+            print("Traj B: Bulkcorrection {:3.3f} ± {:3.3f} eV".format(Bulkcorr_mean_B, Bulkcorr_stdev_B))
+            print("Combined Bulkcorrection {:3.3f} eV".format(Bulkcorr_mean_AB))
+        else:
+            Bulkcorr_mean_A = statistics.mean(bulkcorrdict_A.values())
+            Bulkcorr_stdev_A = statistics.stdev(bulkcorrdict_A.values())
+            blankline()
+            print("Traj A: Bulkcorrection {:3.3f} ± {:3.3f} eV".format(Bulkcorr_mean_A, Bulkcorr_stdev_A))
+
         blankline()
         print_time_rel_and_tot(CheckpointTime, beginTime,'Bulk')
         CheckpointTime = time.time()
@@ -351,19 +364,20 @@ def solvshell ( orcadir='', NumCores='', calctype='', orcasimpleinput_LL='',
         print_line_with_mainheader("Short-Range Polarization calculations: QM-Region Expansion")
         os.mkdir('SRPol-LL')
         os.chdir('./SRPol-LL')
-        for i in repsnaplistAB:
+        for i in totrepsnaps:
             shutil.copyfile('../' + i + '.c', './' + i + '.c')
+
+        print("Snapshots:", totrepsnaps)
         print("Current dir:", os.getcwd())
 
         # INCREASED QM-REGION CALCULATIONS
         print("Doing Short-Range Polarization Step. Creating inputfiles...")
-        print("Snapshots:", repsnaplistAB)
         print("Using QM-region shell:", SRPolShell, "Å")
         blankline()
         # PART 1
         #Create inputfiles of repsnapshots with increased QM regions
         identifiername='_SR_LL'
-        SRPolinpfiles = create_AB_inputfiles_ORCA(solute_atoms, solvent_atoms, solvsphere, repsnaplistAB,
+        SRPolinpfiles = create_AB_inputfiles_ORCA(solute_atoms, solvent_atoms, solvsphere, totrepsnaps,
                                                          orcasimpleinput_SRPOL, orcablockinput_SRPOL, solventunitcharges,
                                                           identifiername, SRPolShell, False, solvbasis)
 
@@ -397,7 +411,7 @@ def solvshell ( orcadir='', NumCores='', calctype='', orcasimpleinput_LL='',
             print("orcasimpleinput_SRPOL is different")
             print("Need to recalculate repsnapshots at SRPOL level of theory using regular QM-region")
             identifiername = '_SR_LL_Region1'
-            SRPolinpfiles_Region1 = create_AB_inputfiles_ORCA(solute_atoms, solvent_atoms, solvsphere, repsnaplistAB,
+            SRPolinpfiles_Region1 = create_AB_inputfiles_ORCA(solute_atoms, solvent_atoms, solvsphere, totrepsnaps,
                                                          orcasimpleinput_SRPOL, orcablockinput_SRPOL, solventunitcharges,
                                                           identifiername, None, False, solvbasis)
             #Run the inputfiles
@@ -410,22 +424,31 @@ def solvshell ( orcadir='', NumCores='', calctype='', orcasimpleinput_LL='',
         #Calculate SRPol correction per snapshot
         #print("SRPol_Allrepsnaps_ABenergy:", SRPol_Allrepsnaps_ABenergy)
         print("Large QM-region SRPol-IP for traj A:", SRPol_Arepsnaps_ABenergy)
-        print("Large QM-region SRPol-IP for traj B", SRPol_Brepsnaps_ABenergy)
+        if calctype=="redox":
+            print("Large QM-region SRPol-IP for traj B", SRPol_Brepsnaps_ABenergy)
         blankline()
-
         print("Regular QM-region values for repsnapsA:", SRPol_Arepsnaps_ABenergy_Region1)
-        print("Regular QM-region for repsnapsB:", SRPol_Brepsnaps_ABenergy_Region1)
+        if calctype=="redox":
+            print("Regular QM-region for repsnapsB:", SRPol_Brepsnaps_ABenergy_Region1)
 
-        SRPol_ave_trajA=statistics.mean(SRPol_Arepsnaps_ABenergy.values())
-        SRPol_ave_trajB=statistics.mean(SRPol_Brepsnaps_ABenergy.values())
-        SRPol_ave_trajAB=statistics.mean([SRPol_ave_trajA,SRPol_ave_trajB])
-        SRPol_stdev_trajA=statistics.stdev(SRPol_Arepsnaps_ABenergy.values())
-        SRPol_stdev_trajB=statistics.stdev(SRPol_Brepsnaps_ABenergy.values())
-        SRPol_stdev_trajAB=0.0
-        blankline()
-        print("SRPol calculation TrajA average: {:3.3f} ± {:3.3f}".format(SRPol_ave_trajA, SRPol_stdev_trajA))
-        print("SRPol calculation TrajB average: {:3.3f} ± {:3.3f}".format(SRPol_ave_trajB, SRPol_stdev_trajB))
-        print("SRPol calculation TrajAB average: {:3.3f} ± TBD".format(SRPol_ave_trajAB))
+
+        if calctype=="redox":
+            SRPol_ave_trajA=statistics.mean(SRPol_Arepsnaps_ABenergy.values())
+            SRPol_ave_trajB=statistics.mean(SRPol_Brepsnaps_ABenergy.values())
+            SRPol_ave_trajAB=statistics.mean([SRPol_ave_trajA,SRPol_ave_trajB])
+            SRPol_stdev_trajA=statistics.stdev(SRPol_Arepsnaps_ABenergy.values())
+            SRPol_stdev_trajB=statistics.stdev(SRPol_Brepsnaps_ABenergy.values())
+            SRPol_stdev_trajAB=0.0
+            blankline()
+            print("SRPol calculation TrajA average: {:3.3f} ± {:3.3f}".format(SRPol_ave_trajA, SRPol_stdev_trajA))
+            print("SRPol calculation TrajB average: {:3.3f} ± {:3.3f}".format(SRPol_ave_trajB, SRPol_stdev_trajB))
+            print("SRPol calculation TrajAB average: {:3.3f} ± TBD".format(SRPol_ave_trajAB))
+        else:
+            SRPol_ave_trajA=statistics.mean(SRPol_Arepsnaps_ABenergy.values())
+            SRPol_stdev_trajA=statistics.stdev(SRPol_Arepsnaps_ABenergy.values())
+            blankline()
+            print("SRPol calculation TrajA average: {:3.3f} ± {:3.3f}".format(SRPol_ave_trajA, SRPol_stdev_trajA))
+
         SRPolcorrdict_A={}
         SRPolcorrdict_B={}
 
@@ -434,24 +457,32 @@ def solvshell ( orcadir='', NumCores='', calctype='', orcasimpleinput_LL='',
             for c in repsnapsA:
                 if b==c:
                     SRPolcorrdict_A[b]=SRPol_Arepsnaps_ABenergy[b]-SRPol_Arepsnaps_ABenergy_Region1[b]
-        for b in SRPol_Brepsnaps_ABenergy:
-            for c in repsnapsB:
-                if b==c:
-                    SRPolcorrdict_B[b]=SRPol_Brepsnaps_ABenergy[b]-SRPol_Brepsnaps_ABenergy_Region1[b]
+        if calctype == "redox":
+            for b in SRPol_Brepsnaps_ABenergy:
+                for c in repsnapsB:
+                    if b==c:
+                        SRPolcorrdict_B[b]=SRPol_Brepsnaps_ABenergy[b]-SRPol_Brepsnaps_ABenergy_Region1[b]
 
         blankline()
         print("Dictionaries of corrections per snapshots:")
         print("SRPolcorrdict_A:", SRPolcorrdict_A)
         print("SRPolcorrdict_B", SRPolcorrdict_B)
-        SRPolcorr_mean_A=statistics.mean(SRPolcorrdict_A.values())
-        SRPolcorr_mean_B=statistics.mean(SRPolcorrdict_B.values())
-        SRPolcorr_stdev_A=statistics.stdev(SRPolcorrdict_A.values())
-        SRPolcorr_stdev_B=statistics.stdev(SRPolcorrdict_B.values())
-        SRPolcorr_mean_AB=statistics.mean([SRPolcorr_mean_A,SRPolcorr_mean_B])
-        blankline()
-        print("Traj A: SRPolcorrection {:3.3f} ± {:3.3f} eV".format(SRPolcorr_mean_A, SRPolcorr_stdev_A))
-        print("Traj B: SRPolcorrection {:3.3f} ± {:3.3f} eV".format(SRPolcorr_mean_B, SRPolcorr_stdev_B))
-        print("Combined SRPolcorrection {:3.3f} eV".format(SRPolcorr_mean_AB))
+
+        if calctype == "redox":
+            SRPolcorr_mean_A=statistics.mean(SRPolcorrdict_A.values())
+            SRPolcorr_mean_B=statistics.mean(SRPolcorrdict_B.values())
+            SRPolcorr_stdev_A=statistics.stdev(SRPolcorrdict_A.values())
+            SRPolcorr_stdev_B=statistics.stdev(SRPolcorrdict_B.values())
+            SRPolcorr_mean_AB=statistics.mean([SRPolcorr_mean_A,SRPolcorr_mean_B])
+            blankline()
+            print("Traj A: SRPolcorrection {:3.3f} ± {:3.3f} eV".format(SRPolcorr_mean_A, SRPolcorr_stdev_A))
+            print("Traj B: SRPolcorrection {:3.3f} ± {:3.3f} eV".format(SRPolcorr_mean_B, SRPolcorr_stdev_B))
+            print("Combined SRPolcorrection {:3.3f} eV".format(SRPolcorr_mean_AB))
+        else:
+            SRPolcorr_mean_A=statistics.mean(SRPolcorrdict_A.values())
+            SRPolcorr_stdev_A=statistics.stdev(SRPolcorrdict_A.values())
+            blankline()
+            print("Traj A: SRPolcorrection {:3.3f} ± {:3.3f} eV".format(SRPolcorr_mean_A, SRPolcorr_stdev_A))
         blankline()
         print_time_rel_and_tot(CheckpointTime, beginTime,'SRPol')
         CheckpointTime = time.time()
@@ -470,27 +501,29 @@ def solvshell ( orcadir='', NumCores='', calctype='', orcasimpleinput_LL='',
         print_line_with_mainheader("Long-Range Polarization calculations: Psi4 Level")
         os.mkdir('LRPol-LL')
         os.chdir('./LRPol-LL')
-        for i in repsnaplistAB:
+        for i in totrepsnaps:
             shutil.copyfile('../' + i + '.c', './' + i + '.c')
         print("Current dir:", os.getcwd())
 
         #print("Using xTB method:", xtbmethod)
         print("Doing Long-Range Polarization Step. Creating inputfiles...")
-        print("Snapshots:", repsnaplistAB)
+        print("Snapshots:", totrepsnaps)
         print("Using SR QM-region shell:", SRPolShell, "Å")
         print("Using LR QM-region shell:", LRPolShell, "Å")
         blankline()
+
         #Create inputfiles of repsnapshots with increased QM regions
         print("Creating inputfiles for Long-Range Correction Region1:", SRPolShell, "Å")
         identifiername='_LR_LL-R1'
-        LRPolinpfiles_Region1 = create_AB_inputfiles_psi4(solute_atoms, solvent_atoms, solvsphere, repsnaplistAB,
+        LRPolinpfiles_Region1 = create_AB_inputfiles_psi4(solute_atoms, solvent_atoms, solvsphere, totrepsnaps,
                                          solventunitcharges, identifiername, shell=SRPolShell)
         blankline()
         print("Creating inputfiles for Long-Range Correction Region2:", LRPolShell, "Å")
         identifiername='_LR_LL-R2'
-        LRPolinpfiles_Region2 = create_AB_inputfiles_psi4(solute_atoms, solvent_atoms, solvsphere, repsnaplistAB,
+        LRPolinpfiles_Region2 = create_AB_inputfiles_psi4(solute_atoms, solvent_atoms, solvsphere, totrepsnaps,
                                          solventunitcharges, identifiername, shell=LRPolShell)
         blankline()
+
 
         # Run Psi4 calculations using input-files
         print_line_with_subheader1("Running LRPol calculations Region 1 at Psi4 level of theory")
@@ -508,33 +541,54 @@ def solvshell ( orcadir='', NumCores='', calctype='', orcasimpleinput_LL='',
         LRPol_Allrepsnaps_ABenergy_Region2, LRPol_Arepsnaps_ABenergy_Region2, LRPol_Brepsnaps_ABenergy_Region2 = grab_energies_output_xtb(xtbmethod, LRPolinpfiles_Region2)
 
         # Gathering stuff for both regions
-        print("LRPol_Allrepsnaps_ABenergy_Region1:", LRPol_Allrepsnaps_ABenergy_Region1)
-        print("LRPol_Arepsnaps_ABenergy_Region1:", LRPol_Arepsnaps_ABenergy_Region1)
-        print("LRPol_Brepsnaps_ABenergy_Region1:", LRPol_Brepsnaps_ABenergy_Region1)
-        print("LRPol_Allrepsnaps_ABenergy_Region2:", LRPol_Allrepsnaps_ABenergy_Region2)
-        print("LRPol_Arepsnaps_ABenergy_Region2:", LRPol_Arepsnaps_ABenergy_Region2)
-        print("LRPol_Brepsnaps_ABenergy_Region2:", LRPol_Brepsnaps_ABenergy_Region2)
+        if calctype == "redox":
+            print("LRPol_Allrepsnaps_ABenergy_Region1:", LRPol_Allrepsnaps_ABenergy_Region1)
+            print("LRPol_Arepsnaps_ABenergy_Region1:", LRPol_Arepsnaps_ABenergy_Region1)
+            print("LRPol_Brepsnaps_ABenergy_Region1:", LRPol_Brepsnaps_ABenergy_Region1)
+            print("LRPol_Allrepsnaps_ABenergy_Region2:", LRPol_Allrepsnaps_ABenergy_Region2)
+            print("LRPol_Arepsnaps_ABenergy_Region2:", LRPol_Arepsnaps_ABenergy_Region2)
+            print("LRPol_Brepsnaps_ABenergy_Region2:", LRPol_Brepsnaps_ABenergy_Region2)
 
-        #Calculating averages and stdevs
-        LRPol_ave_trajA_Region2 = statistics.mean(LRPol_Arepsnaps_ABenergy_Region2.values())
-        LRPol_ave_trajB_Region2 = statistics.mean(LRPol_Brepsnaps_ABenergy_Region2.values())
-        LRPol_ave_trajAB_Region2 = statistics.mean([LRPol_ave_trajA_Region2, LRPol_ave_trajB_Region2])
-        LRPol_stdev_trajA_Region2 = statistics.stdev(LRPol_Arepsnaps_ABenergy_Region2.values())
-        LRPol_stdev_trajB_Region2 = statistics.stdev(LRPol_Brepsnaps_ABenergy_Region2.values())
-        LRPol_stdev_trajAB_Region2 = 0.0
-        LRPol_ave_trajA_Region1 = statistics.mean(LRPol_Arepsnaps_ABenergy_Region1.values())
-        LRPol_ave_trajB_Region1 = statistics.mean(LRPol_Brepsnaps_ABenergy_Region1.values())
-        LRPol_ave_trajAB_Region1 = statistics.mean([LRPol_ave_trajA_Region1, LRPol_ave_trajB_Region1])
-        LRPol_stdev_trajA_Region1 = statistics.stdev(LRPol_Arepsnaps_ABenergy_Region1.values())
-        LRPol_stdev_trajB_Region1 = statistics.stdev(LRPol_Brepsnaps_ABenergy_Region1.values())
-        LRPol_stdev_trajAB_Region1 = 0.0
-        blankline()
-        print("LRPol_Region2 calculation TrajA average: {:3.3f} ± {:3.3f}".format(LRPol_ave_trajA_Region2, LRPol_stdev_trajA_Region2))
-        print("LRPol_Region2 calculation TrajB average: {:3.3f} ± {:3.3f}".format(LRPol_ave_trajB_Region2, LRPol_stdev_trajB_Region2))
-        print("LRPol_Region2 calculation TrajAB average: {:3.3f} ± TBD".format(LRPol_ave_trajAB_Region2))
-        print("LRPol_Region1 calculation TrajA average: {:3.3f} ± {:3.3f}".format(LRPol_ave_trajA_Region1, LRPol_stdev_trajA_Region1))
-        print("LRPol_Region1 calculation TrajB average: {:3.3f} ± {:3.3f}".format(LRPol_ave_trajB_Region1, LRPol_stdev_trajB_Region1))
-        print("LRPol_Region1 calculation TrajAB average: {:3.3f} ± TBD".format(LRPol_ave_trajAB_Region1))
+            #Calculating averages and stdevs
+            LRPol_ave_trajA_Region2 = statistics.mean(LRPol_Arepsnaps_ABenergy_Region2.values())
+            LRPol_ave_trajB_Region2 = statistics.mean(LRPol_Brepsnaps_ABenergy_Region2.values())
+            LRPol_ave_trajAB_Region2 = statistics.mean([LRPol_ave_trajA_Region2, LRPol_ave_trajB_Region2])
+            LRPol_stdev_trajA_Region2 = statistics.stdev(LRPol_Arepsnaps_ABenergy_Region2.values())
+            LRPol_stdev_trajB_Region2 = statistics.stdev(LRPol_Brepsnaps_ABenergy_Region2.values())
+            LRPol_stdev_trajAB_Region2 = 0.0
+            LRPol_ave_trajA_Region1 = statistics.mean(LRPol_Arepsnaps_ABenergy_Region1.values())
+            LRPol_ave_trajB_Region1 = statistics.mean(LRPol_Brepsnaps_ABenergy_Region1.values())
+            LRPol_ave_trajAB_Region1 = statistics.mean([LRPol_ave_trajA_Region1, LRPol_ave_trajB_Region1])
+            LRPol_stdev_trajA_Region1 = statistics.stdev(LRPol_Arepsnaps_ABenergy_Region1.values())
+            LRPol_stdev_trajB_Region1 = statistics.stdev(LRPol_Brepsnaps_ABenergy_Region1.values())
+            LRPol_stdev_trajAB_Region1 = 0.0
+            blankline()
+            print("LRPol_Region2 calculation TrajA average: {:3.3f} ± {:3.3f}".format(LRPol_ave_trajA_Region2, LRPol_stdev_trajA_Region2))
+            print("LRPol_Region2 calculation TrajB average: {:3.3f} ± {:3.3f}".format(LRPol_ave_trajB_Region2, LRPol_stdev_trajB_Region2))
+            print("LRPol_Region2 calculation TrajAB average: {:3.3f} ± TBD".format(LRPol_ave_trajAB_Region2))
+            print("LRPol_Region1 calculation TrajA average: {:3.3f} ± {:3.3f}".format(LRPol_ave_trajA_Region1, LRPol_stdev_trajA_Region1))
+            print("LRPol_Region1 calculation TrajB average: {:3.3f} ± {:3.3f}".format(LRPol_ave_trajB_Region1, LRPol_stdev_trajB_Region1))
+            print("LRPol_Region1 calculation TrajAB average: {:3.3f} ± TBD".format(LRPol_ave_trajAB_Region1))
+        else:
+            print("LRPol_Allrepsnaps_ABenergy_Region1:", LRPol_Allrepsnaps_ABenergy_Region1)
+            print("LRPol_Arepsnaps_ABenergy_Region1:", LRPol_Arepsnaps_ABenergy_Region1)
+            print("LRPol_Brepsnaps_ABenergy_Region1:", LRPol_Brepsnaps_ABenergy_Region1)
+            print("LRPol_Allrepsnaps_ABenergy_Region2:", LRPol_Allrepsnaps_ABenergy_Region2)
+            print("LRPol_Arepsnaps_ABenergy_Region2:", LRPol_Arepsnaps_ABenergy_Region2)
+            print("LRPol_Brepsnaps_ABenergy_Region2:", LRPol_Brepsnaps_ABenergy_Region2)
+
+            # Calculating averages and stdevs
+            LRPol_ave_trajA_Region2 = statistics.mean(LRPol_Arepsnaps_ABenergy_Region2.values())
+            LRPol_stdev_trajA_Region2 = statistics.stdev(LRPol_Arepsnaps_ABenergy_Region2.values())
+            LRPol_ave_trajA_Region1 = statistics.mean(LRPol_Arepsnaps_ABenergy_Region1.values())
+            LRPol_stdev_trajA_Region1 = statistics.stdev(LRPol_Arepsnaps_ABenergy_Region1.values())
+            blankline()
+            print("LRPol_Region2 calculation TrajA average: {:3.3f} ± {:3.3f}".format(LRPol_ave_trajA_Region2,
+                                                                                      LRPol_stdev_trajA_Region2))
+            print("LRPol_Region1 calculation TrajA average: {:3.3f} ± {:3.3f}".format(LRPol_ave_trajA_Region1,
+                                                                                      LRPol_stdev_trajA_Region1))
+
+
         #Calculating correction per snapshot
         LRPolcorrdict_A = {}
         LRPolcorrdict_B = {}
@@ -542,23 +596,30 @@ def solvshell ( orcadir='', NumCores='', calctype='', orcasimpleinput_LL='',
             for c in repsnapsA:
                 if b == c:
                     LRPolcorrdict_A[b] = LRPol_Arepsnaps_ABenergy_Region2[b] - LRPol_Arepsnaps_ABenergy_Region1[b]
-        for b in LRPol_Brepsnaps_ABenergy_Region2:
-            for c in repsnapsB:
-                if b == c:
-                    LRPolcorrdict_B[b] = LRPol_Brepsnaps_ABenergy_Region2[b] - LRPol_Brepsnaps_ABenergy_Region1[b]
+        if calctype == "redox":
+            for b in LRPol_Brepsnaps_ABenergy_Region2:
+                for c in repsnapsB:
+                    if b == c:
+                        LRPolcorrdict_B[b] = LRPol_Brepsnaps_ABenergy_Region2[b] - LRPol_Brepsnaps_ABenergy_Region1[b]
         blankline()
         print("Dictionaries of corrections per snapshots:")
         print("LRPolcorrdict_A:", LRPolcorrdict_A)
         print("LRPolcorrdict_B", LRPolcorrdict_B)
-        LRPolcorr_mean_A = statistics.mean(LRPolcorrdict_A.values())
-        LRPolcorr_mean_B = statistics.mean(LRPolcorrdict_B.values())
-        LRPolcorr_stdev_A = statistics.stdev(LRPolcorrdict_A.values())
-        LRPolcorr_stdev_B = statistics.stdev(LRPolcorrdict_B.values())
-        LRPolcorr_mean_AB = statistics.mean([LRPolcorr_mean_A, LRPolcorr_mean_B])
-        blankline()
-        print("Traj A: LRPolcorrection {:3.3f} ± {:3.3f} eV".format(LRPolcorr_mean_A, LRPolcorr_stdev_A))
-        print("Traj B: LRPolcorrection {:3.3f} ± {:3.3f} eV".format(LRPolcorr_mean_B, LRPolcorr_stdev_B))
-        print("Combined LRPolcorrection {:3.3f} eV".format(LRPolcorr_mean_AB))
+        if calctype == "redox":
+            LRPolcorr_mean_A = statistics.mean(LRPolcorrdict_A.values())
+            LRPolcorr_mean_B = statistics.mean(LRPolcorrdict_B.values())
+            LRPolcorr_stdev_A = statistics.stdev(LRPolcorrdict_A.values())
+            LRPolcorr_stdev_B = statistics.stdev(LRPolcorrdict_B.values())
+            LRPolcorr_mean_AB = statistics.mean([LRPolcorr_mean_A, LRPolcorr_mean_B])
+            blankline()
+            print("Traj A: LRPolcorrection {:3.3f} ± {:3.3f} eV".format(LRPolcorr_mean_A, LRPolcorr_stdev_A))
+            print("Traj B: LRPolcorrection {:3.3f} ± {:3.3f} eV".format(LRPolcorr_mean_B, LRPolcorr_stdev_B))
+            print("Combined LRPolcorrection {:3.3f} eV".format(LRPolcorr_mean_AB))
+        else:
+            LRPolcorr_mean_A = statistics.mean(LRPolcorrdict_A.values())
+            LRPolcorr_stdev_A = statistics.stdev(LRPolcorrdict_A.values())
+            blankline()
+            print("Traj A: LRPolcorrection {:3.3f} ± {:3.3f} eV".format(LRPolcorr_mean_A, LRPolcorr_stdev_A))
         blankline()
         print_time_rel_and_tot(CheckpointTime, beginTime,'LRPol')
         CheckpointTime = time.time()
@@ -584,16 +645,22 @@ def solvshell ( orcadir='', NumCores='', calctype='', orcasimpleinput_LL='',
         print_line_with_mainheader("Gas calculations: Low-Level and High-Level Theory")
 
         gaslistA = ['gas-molA.c']
-        gaslistB = ['gas-molB.c']
+
         os.mkdir('Gas-calculations')
         os.chdir('./Gas-calculations')
         shutil.copyfile('../' + 'gas-molA.c', './' + 'gas-molA.c')
-        shutil.copyfile('../' + 'gas-molB.c', './' + 'gas-molB.c')
+        if calctype=="redox":
+            gaslistB = ['gas-molB.c']
+            shutil.copyfile('../' + 'gas-molB.c', './' + 'gas-molB.c')
         print("Current dir:", os.getcwd())
 
         print("Doing Gas calculations. Creating inputfiles...")
-        print("gaslistA:", gaslistA); print("gaslistB:", gaslistB)
-        gaslist=gaslistA+gaslistB
+        print("gaslistA:", gaslistA)
+        if calctype=="redox":
+            print("gaslistB:", gaslistB)
+            gaslist=gaslistA+gaslistB
+        else:
+            gaslist=gaslistA
         identifiername='_Gas_LL'
         #create_AB_inputfiles_onelist
         gasinpfiles_LL = create_AB_inputfiles_ORCA(solute_atoms, [], solvsphere, gaslist,orcasimpleinput_LL,
@@ -615,29 +682,42 @@ def solvshell ( orcadir='', NumCores='', calctype='', orcasimpleinput_LL='',
         #run_inputfiles_in_parallel_AB(gasinpfiles_HL)
         run_orca_SP_ORCApar(gasinpfiles_HL[0], nprocs=NumCores)
         run_orca_SP_ORCApar(gasinpfiles_HL[1], nprocs=NumCores)
+
         #GRAB output
         gasA_stateA_LL=finalenergiesgrab('gas-molA_StateAB_Gas_LL.out')[0]
         gasA_stateB_LL=finalenergiesgrab('gas-molA_StateAB_Gas_LL.out')[1]
         gasA_VIE_LL=(gasA_stateB_LL-gasA_stateA_LL)*constants.hartoeV
-        gasB_stateA_LL=finalenergiesgrab('gas-molB_StateAB_Gas_LL.out')[0]
-        gasB_stateB_LL=finalenergiesgrab('gas-molB_StateAB_Gas_LL.out')[1]
-        gasB_VIE_LL=(gasA_stateB_LL-gasB_stateB_LL)*constants.hartoeV
-        gasAB_AIE_LL=(gasB_stateB_LL-gasA_stateA_LL)*constants.hartoeV
         print("gasA_VIE_LL:", gasA_VIE_LL)
-        print("gasB_VIE_LL:", gasB_VIE_LL)
-        print("gasAB_AIE_LL:", gasAB_AIE_LL)
+
+        if calctype == "redox:"
+            gasB_stateA_LL=finalenergiesgrab('gas-molB_StateAB_Gas_LL.out')[0]
+            gasB_stateB_LL=finalenergiesgrab('gas-molB_StateAB_Gas_LL.out')[1]
+            gasB_VIE_LL=(gasA_stateB_LL-gasB_stateB_LL)*constants.hartoeV
+            gasAB_AIE_LL=(gasB_stateB_LL-gasA_stateA_LL)*constants.hartoeV
+
+            print("gasB_VIE_LL:", gasB_VIE_LL)
+            print("gasAB_AIE_LL:", gasAB_AIE_LL)
         blankline()
 
-        gasA_stateA_HL=finalenergiesgrab('gas-molA_StateAB_Gas_HL.out')[0]
-        gasA_stateB_HL=finalenergiesgrab('gas-molA_StateAB_Gas_HL.out')[1]
-        gasA_VIE_HL=(gasA_stateB_HL-gasA_stateA_HL)*constants.hartoeV
-        gasB_stateA_HL=finalenergiesgrab('gas-molB_StateAB_Gas_HL.out')[0]
-        gasB_stateB_HL=finalenergiesgrab('gas-molB_StateAB_Gas_HL.out')[1]
-        gasB_VIE_HL=(gasA_stateB_HL-gasB_stateB_HL)*constants.hartoeV
-        gasAB_AIE_HL=(gasB_stateB_HL-gasA_stateA_HL)*constants.hartoeV
-        print("gasA_VIE_HL:", gasA_VIE_HL)
-        print("gasB_VIE_HL:", gasB_VIE_HL)
-        print("gasAB_AIE_HL:", gasAB_AIE_HL)
+
+        if calctype == "redox:"
+            gasA_stateA_HL=finalenergiesgrab('gas-molA_StateAB_Gas_HL.out')[0]
+            gasA_stateB_HL=finalenergiesgrab('gas-molA_StateAB_Gas_HL.out')[1]
+            gasA_VIE_HL=(gasA_stateB_HL-gasA_stateA_HL)*constants.hartoeV
+            gasB_stateA_HL=finalenergiesgrab('gas-molB_StateAB_Gas_HL.out')[0]
+            gasB_stateB_HL=finalenergiesgrab('gas-molB_StateAB_Gas_HL.out')[1]
+            gasB_VIE_HL=(gasA_stateB_HL-gasB_stateB_HL)*constants.hartoeV
+            gasAB_AIE_HL=(gasB_stateB_HL-gasA_stateA_HL)*constants.hartoeV
+            print("gasA_VIE_HL:", gasA_VIE_HL)
+            print("gasB_VIE_HL:", gasB_VIE_HL)
+            print("gasAB_AIE_HL:", gasAB_AIE_HL)
+        else:
+            gasA_stateA_HL=finalenergiesgrab('gas-molA_StateAB_Gas_HL.out')[0]
+            gasA_stateB_HL=finalenergiesgrab('gas-molA_StateAB_Gas_HL.out')[1]
+            gasA_VIE_HL=(gasA_stateB_HL-gasA_stateA_HL)*constants.hartoeV
+            print("gasA_VIE_HL:", gasA_VIE_HL)
+
+
         blankline()
         print_time_rel_and_tot(CheckpointTime, beginTime,'Gas calculations')
         CheckpointTime = time.time()
@@ -661,7 +741,7 @@ def solvshell ( orcadir='', NumCores='', calctype='', orcasimpleinput_LL='',
                                      SRPol_ave_trajA, SRPol_stdev_trajA, SRPolcorr_mean_A, LRPol_ave_trajA_Region1, LRPol_ave_trajA_Region2,
                                      LRPol_stdev_trajA_Region1, LRPol_stdev_trajA_Region2, LRPolcorr_mean_A, gasA_VIE_LL, gasA_VIE_HL)
             print_line_with_subheader1("Trajectory B")
-            print_redox_output_state("A", solvsphere, orcasimpleinput_LL, orcasimpleinput_HL, solvsphere.snapshotsB, ave_trajB, stdev_trajB,
+            print_redox_output_state("B", solvsphere, orcasimpleinput_LL, orcasimpleinput_HL, solvsphere.snapshotsB, ave_trajB, stdev_trajB,
                                      repsnap_ave_trajB, repsnap_stdev_trajB, repsnaplistB, Bulk_ave_trajB, Bulk_stdev_trajB, Bulkcorr_mean_B,
                                      SRPol_ave_trajB, SRPol_stdev_trajB, SRPolcorr_mean_B, LRPol_ave_trajB_Region1, LRPol_ave_trajB_Region2,
                                      LRPol_stdev_trajB_Region1, LRPol_stdev_trajB_Region2, LRPolcorr_mean_B, gasB_VIE_LL, gasB_VIE_HL)
@@ -670,6 +750,15 @@ def solvshell ( orcadir='', NumCores='', calctype='', orcasimpleinput_LL='',
                                      repsnap_ave_trajAB, repsnap_stdev_trajAB, repsnaplistAB, Bulk_ave_trajAB, Bulk_stdev_trajAB, Bulkcorr_mean_AB,
                                      SRPol_ave_trajAB, SRPol_stdev_trajAB, SRPolcorr_mean_AB, LRPol_ave_trajAB_Region1, LRPol_ave_trajAB_Region2,
                                      LRPol_stdev_trajAB_Region1, LRPol_stdev_trajAB_Region2, LRPolcorr_mean_AB, gasAB_AIE_LL, gasAB_AIE_HL)
+        else:
+            print_line_with_mainheader("FINAL OUTPUT:", calctype)
+            blankline()
+            print_line_with_subheader1("Trajectory A")
+
+            print_redox_output_state("A", solvsphere, orcasimpleinput_LL, orcasimpleinput_HL, solvsphere.snapshotsA, ave_trajA, stdev_trajA,
+                                     repsnap_ave_trajA, repsnap_stdev_trajA, repsnaplistA, Bulk_ave_trajA, Bulk_stdev_trajA, Bulkcorr_mean_A,
+                                     SRPol_ave_trajA, SRPol_stdev_trajA, SRPolcorr_mean_A, LRPol_ave_trajA_Region1, LRPol_ave_trajA_Region2,
+                                     LRPol_stdev_trajA_Region1, LRPol_stdev_trajA_Region2, LRPolcorr_mean_A, gasA_VIE_LL, gasA_VIE_HL)
 
             blankline()
     blankline()
