@@ -406,7 +406,7 @@ def newton_raphson(coords, Gradient,Hessian):
 # Has internal coordinates
 #PyBerny: https://github.com/jhrmnn/pyberny/blob/master/README.md
 #Installed via pip
-#Todo: Limitations: No constraints or frozen atoms
+#Limitations: No constraints or frozen atoms
 ########################
 
 def BernyOpt(theory,fragment):

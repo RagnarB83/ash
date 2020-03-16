@@ -1074,9 +1074,13 @@ class Psi4Theory:
             pass
     #Run function. Takes coords, elems etc. arguments and computes E or E+G.
     def run(self, current_coords=[], current_MM_coords=[], MMcharges=[], qm_elems=[],
-            mm_elems=[], elems=[], Grad=False, PC=False, nprocs=1, pe=False, potfile='' ):
+            mm_elems=[], elems=[], Grad=False, PC=False, nprocs=1, pe=False, potfile='', runmode='library' ):
 
         print(BC.OKBLUE,BC.BOLD, "------------RUNNING PSI4 INTERFACE-------------", BC.END)
+        if runmode != 'library':
+            self.runmode=runmode
+
+
 
         #If pe and potfile given as run argument
         if pe is not False:
@@ -1258,9 +1262,6 @@ class Psi4Theory:
                 print(BC.FAIL,"Problem with Psi4 run", BC.END)
                 print(BC.OKBLUE,BC.BOLD, "------------ENDING PSI4-INTERFACE-------------", BC.END)
                 exit()
-
-
-
 
 # Fragment class
 class Fragment:
@@ -1496,7 +1497,6 @@ class xTBTheory:
             os.remove('gradient')
             os.remove('charges')
             os.remove('energy')
-            #TODO: Add restart function so that xtbrestart is not always deleted
             os.remove('xtbrestart')
         except:
             pass
@@ -1516,6 +1516,7 @@ class xTBTheory:
             else:
                 qm_elems = elems
 
+        #TODO: Add restart function so that xtbrestart is not always deleted
         #Create XYZfile with generic name for xTB to run
         inputfilename="xtb-inpfile"
         print("Creating inputfile:", inputfilename+'.xyz')
@@ -1565,22 +1566,6 @@ class xTBTheory:
             return self.energy
 
 
-
-
-# TEST: Run multiple  QM/MM Engrad calculations in parallel
-
- #       for disp, geo in zip(list_of_displacements,list_of_displaced_geos):
- #           atom_disp=disp[0]
- #           if disp[1] == 0:
- #               crd='x'
- #           elif disp[1] == 1:
- #               crd = 'y'
- #           elif disp[1] == 2:
- #               crd = 'z'
- #           drection=disp[2]
- #           displacement_jobname='Numfreq-Disp-'+'Atom'+str(atom_disp)+crd+drection
- #           print("Displacing Atom: {} Coordinate: {} Direction: {}".format(atom_disp, crd, drection))
-
 #Called from run_QMMM_SP_in_parallel. Runs
 def run_QM_MM_SP(list):
     orcadir=list[0]
@@ -1622,46 +1607,46 @@ def MMforcefield_read(file):
     atomtypes=[]
     with open(file) as f:
         for line in f:
-            if 'combination_rule' in line:
-                combrule=line.split()[-1]
-                print("Found combination rule defintion in forcefield file:", combrule)
-                MM_forcefield["combination_rule"]=combrule
-            if 'charge' in line:
-                print("Found charge definition in forcefield file:", ' '.join(line.split()[:]))
-                atomtype=line.split()[1]
-                if atomtype not in MM_forcefield.keys():
-                    MM_forcefield[atomtype]=AtomMMobject()
-                charge=float(line.split()[2])
-                MM_forcefield[atomtype].add_charge(atomcharge=charge)
-                # TODO: Charges defined are currently not used I think
-            if 'LennardJones_i_sigma' in line:
-                #TODO: need to have it ignore commented-outl ines
-                print("Found LJ single-atom sigma definition in forcefield file:", ' '.join(line.split()[:]))
-                atomtype=line.split()[1]
-                if atomtype not in MM_forcefield.keys():
-                    MM_forcefield[atomtype] = AtomMMobject()
-                sigma_i=float(line.split()[2])
-                eps_i=float(line.split()[3])
-                MM_forcefield[atomtype].add_LJparameters(LJparameters=[sigma_i,eps_i])
-            if 'LennardJones_i_R0' in line:
-                print("Found LJ single-atom R0 definition in forcefield file:", ' '.join(line.split()[:]))
-                atomtype=line.split()[1]
-                R0tosigma=0.5**(1/6)
-                print("R0tosigma conversion", R0tosigma)
-                if atomtype not in MM_forcefield.keys():
-                    MM_forcefield[atomtype] = AtomMMobject()
-                sigma_i=float(line.split()[2])*R0tosigma
-                eps_i=float(line.split()[3])
-                MM_forcefield[atomtype].add_LJparameters(LJparameters=[sigma_i,eps_i])
-            if 'LennardJones_ij' in line:
-                print("Found LJ pair definition in forcefield file")
-                atomtype_i=line.split()[1]
-                atomtype_j=line.split()[2]
-                sigma_ij=float(line.split()[3])
-                eps_ij=float(line.split()[4])
-                print("This is incomplete. Exiting")
-                exit()
-                # TODO: Need to finish this. Should replace LennardJonespairpotentials later
+            if '#' not in line:
+                if 'combination_rule' in line:
+                    combrule=line.split()[-1]
+                    print("Found combination rule defintion in forcefield file:", combrule)
+                    MM_forcefield["combination_rule"]=combrule
+                if 'charge' in line:
+                    print("Found charge definition in forcefield file:", ' '.join(line.split()[:]))
+                    atomtype=line.split()[1]
+                    if atomtype not in MM_forcefield.keys():
+                        MM_forcefield[atomtype]=AtomMMobject()
+                    charge=float(line.split()[2])
+                    MM_forcefield[atomtype].add_charge(atomcharge=charge)
+                    # TODO: Charges defined are currently not used I think
+                if 'LennardJones_i_sigma' in line:
+                    print("Found LJ single-atom sigma definition in forcefield file:", ' '.join(line.split()[:]))
+                    atomtype=line.split()[1]
+                    if atomtype not in MM_forcefield.keys():
+                        MM_forcefield[atomtype] = AtomMMobject()
+                    sigma_i=float(line.split()[2])
+                    eps_i=float(line.split()[3])
+                    MM_forcefield[atomtype].add_LJparameters(LJparameters=[sigma_i,eps_i])
+                if 'LennardJones_i_R0' in line:
+                    print("Found LJ single-atom R0 definition in forcefield file:", ' '.join(line.split()[:]))
+                    atomtype=line.split()[1]
+                    R0tosigma=0.5**(1/6)
+                    print("R0tosigma conversion", R0tosigma)
+                    if atomtype not in MM_forcefield.keys():
+                        MM_forcefield[atomtype] = AtomMMobject()
+                    sigma_i=float(line.split()[2])*R0tosigma
+                    eps_i=float(line.split()[3])
+                    MM_forcefield[atomtype].add_LJparameters(LJparameters=[sigma_i,eps_i])
+                if 'LennardJones_ij' in line:
+                    print("Found LJ pair definition in forcefield file")
+                    atomtype_i=line.split()[1]
+                    atomtype_j=line.split()[2]
+                    sigma_ij=float(line.split()[3])
+                    eps_ij=float(line.split()[4])
+                    print("This is incomplete. Exiting")
+                    exit()
+                    # TODO: Need to finish this. Should replace LennardJonespairpotentials later
     return MM_forcefield
 
 

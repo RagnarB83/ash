@@ -569,6 +569,12 @@ def coord2xyz(inputfile):
 
 #HESSIAN-related functions below
 
+# Open-source project in Fortran:
+#https://github.com/zorkzou/UniMoVib
+#Calculates Hessian etc. Has IR and Raman intensity
+#Todo: Add IR/Raman intensity support
+
+
 #Taken from Hess-tool on 21st Dec 2019. Modified to read in Hessian array instead of ORCA-hessfile
 def diagonalizeHessian(hessian, masses, elems):
     # Grab masses, elements and numatoms from Hessianfile

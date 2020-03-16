@@ -7,7 +7,8 @@ class Sphere:
         self.numatoms = numatoms
 
 # Defining global variables here: called as settings_molcrys.scale etc.
-def init(progdir,ORCApath,XTBpath,ncores):
+def init(progdir,ORCApath,ncores):
+    #Disabled XTBpath
     global bulkfile
     global bulksphere
     global scale
@@ -19,7 +20,7 @@ def init(progdir,ORCApath,XTBpath,ncores):
     global NumCores
     global print_time
     orcadir=ORCApath
-    xtbdir=XTBpath
+    #xtbdir=XTBpath
     NumCores=ncores
     # Scaling and tolerance settings for connectivity
     scale=1.0
