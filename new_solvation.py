@@ -547,9 +547,9 @@ def solvshell ( orcadir='', NumCores='', calctype='', orcasimpleinput_LL='',
 
                 #Define Psi4 QMregion
                 Psi4QMpart_A = yggdrasill.Psi4Theory(charge=solvsphere.ChargeA, mult=solvsphere.MultA, psi4settings=psi4dict,
-                                        psi4functional=functional, runmode='library', printsetting=True)
+                                        psi4functional=psi4_functional, runmode='library', printsetting=True)
                 Psi4QMpart_B = yggdrasill.Psi4Theory(charge=solvsphere.ChargeB, mult=solvsphere.MultB, psi4settings=psi4dict,
-                                        psi4functional=functional, runmode='library', printsetting=True)
+                                        psi4functional=psi4_functional, runmode='library', printsetting=True)
 
                 # Potential options: SEP (Standard Potential) Todo: Other options: To be done!
                 pot_option = 'SEP'
