@@ -401,7 +401,8 @@ def read_md_variables_fileAB(varfile):
                 solvtype = line.split()[-1]
             #TODO: File should contain information about number of solvent atoms. To be added to Chemshell MD file
 
-    system = SystemAB("Solvsphere", chargeA, multA, chargeB, multB, solutetypesA, solutetypesB, solventtypes, snapslist, snapshotsA, snapshotsB, solvtype )
+    system = SystemAB("Solvsphere", chargeA, multA, chargeB, multB, solutetypesA,
+                      solutetypesB, solventtypes, snapslist, snapshotsA, snapshotsB, solvtype )
     return system
 
 def read_md_variables_fileA(varfile):

@@ -514,78 +514,66 @@ def solvshell ( orcadir='', NumCores='', calctype='', orcasimpleinput_LL='',
         print("Using LR QM-region shell:", LRPolShell, "Å")
         blankline()
 
+        #Todo: make more general
+        ShellRegion1=SRPolShell
+        ShellRegion2=LRPolShell
+
         #Create inputfiles of repsnapshots with increased QM regions
         print("Creating inputfiles for Long-Range Correction Region1:", SRPolShell, "Å")
-        identifiername='_LR_LL-R1'
+        #identifiername='_LR_LL-R1'
+        for ShellRegion in ['ShellRegion1', 'ShellRegion2']
+            for snapshot in totrepsnaps:
+                #Get elems and coords from each Chemshell frament file
+                #Todo: Change to XYZ-file read-in instead (if snapfiles have been converted)
+                elems, coords = read_fragfile_xyz(snapshot)
+                # create Yggdrasill fragment
+                snap_frag=yggdrasill.Fragment(elems=elems, coords=coords)
+                # QM and PE regions
+                solute_elems = [elems[i] for i in solvsphere.soluteatomsA]
+                solute_coords = [coords[i] for i in solvsphere.soluteatomsA]
 
+                #Defining QM and PE regions
+                solvshell = get_solvshell(solvsphere, snap_frag.elems, snap_frag.coords, ShellRegion, solute_elems, solute_coords,
+                                          settings_solvation.scale, settings_solvation.tol)
+                qmatoms = qmatoms + solvshell
+                peatoms = listdiff(solvsphere.allatoms, qmatoms)
 
-        #Option 1: Psi4SPcalc with manual pot creation
-        #Possibly use Psi4 parallelization.
-        #for snapx in totrepsnaps:
-        #    #create fragment for snap
-        #
-        #    #Create potential file
+                #Define Psi4 QMregion
+                Psi4QMpart_A = Psi4Theory(charge=solvsphere.ChargeA, mult=solvsphere.MultA, psi4settings=psi4dict,
+                                        psi4functional=functional, runmode='library', printsetting=True)
+                Psi4QMpart_B = Psi4Theory(charge=solvsphere.ChargeB, mult=solvsphere.MultB, psi4settings=psi4dict,
+                                        psi4functional=functional, runmode='library', printsetting=True)
 
-        #   #Define PSi4 theory
-        #    Psi4SPcalculation = Psi4Theory(fragment=PhenolH2O_frag, charge=0, mult=1, psi4settings=psi4dictvar,
-        #                                   psi4functional=functional, runmode='library', pe=True,
-        #                                   potfile='phenolacceptor-FULL-H2O-n-MOD.pot', printsetting=True)
-        #    # Run Psi4 calc
-        #    Psi4SPcalculation.run(nprocs=NumCores)
+                # Potential options: SEP (Standard Potential) Todo: Other options: To be done!
+                pot_option = 'SEP'
+                # PE Solvent-type label for PyFrame. For water, use: HOH, TIP3? WAT?
+                PElabel_pyframe = 'HOH'
+                # Create PolEmbed theory object. fragment always defined with it
+                PolEmbed_SP_A = PolEmbedTheory(fragment=snap_frag, qm_theory=Psi4QMpart_A,
+                                             qmatoms=qmatoms, peatoms=peatoms, pot_option=pot_option,
+                                             pyframe=True, pot_create=True, PElabel_pyframe=PElabel_pyframe)
+                PolEmbed_SP_B = PolEmbedTheory(fragment=snap_frag, qm_theory=Psi4QMpart_B,
+                                             qmatoms=qmatoms, peatoms=peatoms, pot_option=pot_option,
+                                             pyframe=True, pot_create=True, PElabel_pyframe=PElabel_pyframe)
+                # Simple Energy SP calc.
+                PolEmbedEnergyA=PolEmbed_SP_A.run(nprocs=NumCores)
+                PolEmbedEnergyB=PolEmbed_SP_B.run(nprocs=NumCores)
+                PolEmbedEnergyAB=(PolEmbedEnergyB-PolEmbedEnergyA)*constants.hartoeV
 
-        # Option 2: PolEmbed Theory
-        # Possibly use Psi4 parallelization.
-        for snapx in totrepsnaps:
-            # create fragment for snap
-
-            # QM and PE regions
-            qmatoms = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12]
-            peatoms = [13, 14, 15]
-
-            #Define Psi4 QMregion
-            Psi4QMpart = Psi4Theory(fragment=PhenolH2O_frag, charge=0, mult=1, psi4settings=psi4dictvar,
-                                    psi4functional=functional, runmode='library', printsetting=True)
-
-
-            # Potential options: SEP (Standard Potential) Todo: Other options: To be done!
-            pot_option = 'SEP'
-            # PE Solvent-type label for PyFrame. For water, use: HOH, TIP3? WAT?
-            PElabel_pyframe = 'HOH'
-            # Create PolEmbed theory object. fragment always defined with it
-            PolEmbed_SP = PolEmbedTheory(fragment=PhenolH2O_frag, qm_theory=Psi4QMpart,
-                                         qmatoms=qmatoms, peatoms=peatoms, pot_option=pot_option,
-                                         pyframe=True, pot_create=True, PElabel_pyframe=PElabel_pyframe)
-
-            # Simple Energy SP calc.
-            PolEmbed_SP.run(nprocs=NumCores)
-
-
-
-        #LRPolinpfiles_Region1 = create_AB_inputfiles_psi4(solute_atoms, solvent_atoms, solvsphere, totrepsnaps,
-        #                                 solventunitcharges, identifiername, shell=SRPolShell)
-        blankline()
-        print("Creating inputfiles for Long-Range Correction Region2:", LRPolShell, "Å")
-        identifiername='_LR_LL-R2'
-
-        #LRPolinpfiles_Region2 = create_AB_inputfiles_psi4(solute_atoms, solvent_atoms, solvsphere, totrepsnaps,
-        #                                 solventunitcharges, identifiername, shell=LRPolShell)
-        blankline()
-
-
-        # Run Psi4 calculations using input-files
-        print_line_with_subheader1("Running LRPol calculations Region 1 at Psi4 level of theory")
-        print("LRPolinpfiles_Region1:", LRPolinpfiles_Region1)
-        print(BC.WARNING,"xtb theory:", xtbmethod, BC.END)
-        run_inputfiles_in_parallel_xtb(LRPolinpfiles_Region1, xtbmethod, solvsphere.ChargeA, solvsphere.MultA,solvsphere.ChargeB, solvsphere.MultB )
-        print_line_with_subheader1("Running LRPol calculations Region 2 at Psi4 level of theory")
-        print("LRPolinpfiles_Region2:", LRPolinpfiles_Region2)
-        print(BC.WARNING,"xtb theory:", xtbmethod, BC.END)
-        run_inputfiles_in_parallel_xtb(LRPolinpfiles_Region2, xtbmethod, solvsphere.ChargeA, solvsphere.MultA, solvsphere.ChargeB, solvsphere.MultB)
-
-        # GRAB output
-        LRPol_Allrepsnaps_ABenergy_Region1, LRPol_Arepsnaps_ABenergy_Region1, LRPol_Brepsnaps_ABenergy_Region1 = grab_energies_output_xtb(xtbmethod, LRPolinpfiles_Region1)
-        blankline()
-        LRPol_Allrepsnaps_ABenergy_Region2, LRPol_Arepsnaps_ABenergy_Region2, LRPol_Brepsnaps_ABenergy_Region2 = grab_energies_output_xtb(xtbmethod, LRPolinpfiles_Region2)
+                if ShellRegion==ShellRegion1:
+                    if 'snapA' in snapshot:
+                        LRPol_Arepsnaps_ABenergy_Region1.append(PolEmbedEnergyAB)
+                    if calctype=="redox":
+                        if 'snapB' in snapshot:
+                            LRPol_Brepsnaps_ABenergy_Region1.append(PolEmbedEnergyAB)
+                        LRPol_Allrepsnaps_ABenergy_Region1.append(PolEmbedEnergyAB)
+                elif ShellRegion==ShellRegion2:
+                    if 'snapA' in snapshot:
+                        LRPol_Arepsnaps_ABenergy_Region1.append(PolEmbedEnergyAB)
+                    if calctype=="redox":
+                        if 'snapB' in snapshot:
+                            LRPol_Brepsnaps_ABenergy_Region1.append(PolEmbedEnergyAB)
+                        LRPol_Allrepsnaps_ABenergy_Region1.append(PolEmbedEnergyAB)
 
         # Gathering stuff for both regions
         if calctype == "redox":
@@ -634,8 +622,6 @@ def solvshell ( orcadir='', NumCores='', calctype='', orcasimpleinput_LL='',
                                                                                       LRPol_stdev_trajA_Region2))
             print("LRPol_Region1 calculation TrajA average: {:3.3f} ± {:3.3f}".format(LRPol_ave_trajA_Region1,
                                                                                       LRPol_stdev_trajA_Region1))
-
-
         #Calculating correction per snapshot
         LRPolcorrdict_A = {}
         LRPolcorrdict_B = {}
