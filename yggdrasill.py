@@ -520,7 +520,8 @@ class NonBondedTheory:
 #Required at init: qm_theory and qmatoms, X, Y
 #Currently only Polarizable Embedding (PE). Only available for Psi4, PySCF and Dalton.
 class PolEmbedTheory:
-    def __init__(self, fragment='', qm_theory='', qmatoms=[], peatoms=[], pot_create=True, pot_option='', pyframe=False, PElabel_pyframe='MM'):
+    def __init__(self, fragment='', qm_theory='', qmatoms=[], peatoms=[], pot_create=True,
+                 pot_option='', pyframe=False, PElabel_pyframe='MM'):
         print(BC.WARNING,BC.BOLD,"------------Defining PolEmbedTheory object-------------", BC.END)
         self.pot_create=pot_create
         self.pyframe=pyframe
@@ -688,7 +689,7 @@ class PolEmbedTheory:
             print("Pot creation is off.")
 
 
-    def run(self, current_coords=[], elems=[], Grad=False, nprocs=1, potfile=''):
+    def run(self, current_coords=[], elems=[], Grad=False, nprocs=1, potfile='', restart=False):
         print(BC.WARNING, BC.BOLD, "------------RUNNING PolEmbedTheory MODULE-------------", BC.END)
         print("QM Module:", self.qm_theory_name)
 
@@ -709,12 +710,11 @@ class PolEmbedTheory:
         self.qmcoords=[current_coords[i] for i in self.qmatoms]
 
         if self.qm_theory_name == "Psi4Theory":
-            print("recently implemented")
             #Calling Psi4 theory, providing current QM and MM coordinates.
             #Currently doing SP case only without Grad
 
             self.QMEnergy = self.qm_theory.run(current_coords=self.qmcoords, qm_elems=self.qmelems, Grad=False,
-                                               nprocs=nprocs, pe=True, potfile=self.potfile)
+                                               nprocs=nprocs, pe=True, potfile=self.potfile, restart=restart)
 
         elif self.qm_theory_name == "PySCFTheory":
             print("not yet implemented with PolEmbed")
@@ -1139,7 +1139,7 @@ class Psi4Theory:
             pass
     #Run function. Takes coords, elems etc. arguments and computes E or E+G.
     def run(self, current_coords=[], current_MM_coords=[], MMcharges=[], qm_elems=[],
-            mm_elems=[], elems=[], Grad=False, PC=False, nprocs=1, pe=False, potfile='', runmode='library' ):
+            mm_elems=[], elems=[], Grad=False, PC=False, nprocs=1, pe=False, potfile='', runmode='library', restart=False ):
 
         print(BC.OKBLUE,BC.BOLD, "------------RUNNING PSI4 INTERFACE-------------", BC.END)
         if runmode != 'library':
@@ -1227,10 +1227,16 @@ class Psi4Theory:
             #Setting RKS or UKS reference
             #For now, RKS always if mult 1 Todo: Make more flexible
             if self.mult == 1:
-                reference='RKS'
+                self.psi4settings['reference'] = 'RKS'
             else:
-                reference='UKS'
-            self.psi4settings['reference'] = reference
+                self.psi4settings['reference'] = 'UKS'
+
+            #Controlling orb-read in guess.
+            if restart==True:
+                self.psi4settings['guess'] = 'read'
+            else:
+                self.psi4settings['guess'] = 'sad'
+
 
             #Reading dict object with basic settings and passing to Psi4
             psi4.set_options(self.psi4settings)
