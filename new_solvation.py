@@ -521,7 +521,7 @@ def solvshell ( orcadir='', NumCores='', calctype='', orcasimpleinput_LL='',
         #Create inputfiles of repsnapshots with increased QM regions
         print("Creating inputfiles for Long-Range Correction Region1:", SRPolShell, "Å")
         #identifiername='_LR_LL-R1'
-        for ShellRegion in ['ShellRegion1', 'ShellRegion2']
+        for ShellRegion in ['ShellRegion1', 'ShellRegion2']:
             for snapshot in totrepsnaps:
                 #Get elems and coords from each Chemshell frament file
                 #Todo: Change to XYZ-file read-in instead (if snapfiles have been converted)
