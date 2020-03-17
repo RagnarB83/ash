@@ -542,7 +542,7 @@ def solvshell ( orcadir='', NumCores='', calctype='', orcasimpleinput_LL='',
                 #Defining QM and PE regions
                 solvshell = get_solvshell(solvsphere, snap_frag.elems, snap_frag.coords, shell, solute_elems, solute_coords,
                                           settings_solvation.scale, settings_solvation.tol)
-                qmatoms = qmatoms + solvshell
+                qmatoms = solvsphere.soluteatomsA + solvshell
                 peatoms = listdiff(solvsphere.allatoms, qmatoms)
 
                 #Define Psi4 QMregion
