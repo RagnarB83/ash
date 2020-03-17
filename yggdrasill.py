@@ -538,7 +538,6 @@ class PolEmbedTheory:
             print(BC.FAIL, "QM-theory:", self.qm_theory_name, "is  NOT supported in Polarizable Embedding", BC.END)
 
         # Region definitions
-        self.allatoms = list(range(0, len(self.elems)))
         self.qmatoms = qmatoms
         self.peatoms = peatoms
         self.mmatoms = mmatoms
@@ -550,6 +549,7 @@ class PolEmbedTheory:
             self.elems=fragment.elems
             self.connectivity=fragment.connectivity
 
+            self.allatoms = list(range(0, len(self.elems)))
             self.qmcoords=[self.coords[i] for i in self.qmatoms]
             self.qmelems=[self.elems[i] for i in self.qmatoms]
             self.pecoords=[self.coords[i] for i in self.peatoms]
