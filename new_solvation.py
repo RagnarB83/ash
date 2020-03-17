@@ -521,7 +521,14 @@ def solvshell ( orcadir='', NumCores='', calctype='', orcasimpleinput_LL='',
         #Create inputfiles of repsnapshots with increased QM regions
         print("Creating inputfiles for Long-Range Correction Region1:", SRPolShell, "Å")
         #identifiername='_LR_LL-R1'
+        #Looping over shell region
         for ShellRegion in ['ShellRegion1', 'ShellRegion2']:
+            #TODO: This is silly. Need to make better!!
+            if ShellRegion=="ShellRegion1":
+                shell = ShellRegion1
+            elif ShellRegion=="ShellRegion2":
+                shell = ShellRegion2
+            #Looping over snapshot
             for snapshot in totrepsnaps:
                 #Get elems and coords from each Chemshell frament file
                 #Todo: Change to XYZ-file read-in instead (if snapfiles have been converted)
@@ -533,7 +540,7 @@ def solvshell ( orcadir='', NumCores='', calctype='', orcasimpleinput_LL='',
                 solute_coords = [coords[i] for i in solvsphere.soluteatomsA]
 
                 #Defining QM and PE regions
-                solvshell = get_solvshell(solvsphere, snap_frag.elems, snap_frag.coords, ShellRegion, solute_elems, solute_coords,
+                solvshell = get_solvshell(solvsphere, snap_frag.elems, snap_frag.coords, shell, solute_elems, solute_coords,
                                           settings_solvation.scale, settings_solvation.tol)
                 qmatoms = qmatoms + solvshell
                 peatoms = listdiff(solvsphere.allatoms, qmatoms)
@@ -560,14 +567,14 @@ def solvshell ( orcadir='', NumCores='', calctype='', orcasimpleinput_LL='',
                 PolEmbedEnergyB=PolEmbed_SP_B.run(nprocs=NumCores)
                 PolEmbedEnergyAB=(PolEmbedEnergyB-PolEmbedEnergyA)*constants.hartoeV
 
-                if ShellRegion==ShellRegion1:
+                if shell==ShellRegion1:
                     if 'snapA' in snapshot:
                         LRPol_Arepsnaps_ABenergy_Region1.append(PolEmbedEnergyAB)
                     if calctype=="redox":
                         if 'snapB' in snapshot:
                             LRPol_Brepsnaps_ABenergy_Region1.append(PolEmbedEnergyAB)
                         LRPol_Allrepsnaps_ABenergy_Region1.append(PolEmbedEnergyAB)
-                elif ShellRegion==ShellRegion2:
+                elif shell==ShellRegion2:
                     if 'snapA' in snapshot:
                         LRPol_Arepsnaps_ABenergy_Region1.append(PolEmbedEnergyAB)
                     if calctype=="redox":
