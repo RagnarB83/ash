@@ -24,7 +24,7 @@ def solvshell ( orcadir='', NumCores='', calctype='', orcasimpleinput_LL='',
         GasCorrection='', ShortRangePolarization='', SRPolShell='', LRPolShell='',
         LongRangePolarization='', PrintFinalOutput='', Testmode='', repsnapmethod='',
         repsnapnumber='', solvbasis='', chargeA='', multA='', chargeB='', multB='',
-        psi4_functional='', psi4dict=''):
+        psi4_functional='', psi4dict='', pot_option=''):
 
     #While charge/mult info is read from md-variables.defs in case redox AB job, this info is not present
     # for both states in case of single trajectory. Plus one might want to do either VIE, VEA or SpinState change
