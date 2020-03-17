@@ -568,6 +568,7 @@ class PolEmbedTheory:
             self.hybridatomlabels=[]
             self.residlabels=[]
             count=2
+            rescount=1
             for i in self.allatoms:
                 if i in self.qmatoms:
                     self.hybridatomlabels.append('QM')
@@ -575,11 +576,14 @@ class PolEmbedTheory:
                 elif i in self.peatoms:
                     self.hybridatomlabels.append(self.PElabel_pyframe)
                     self.residlabels.append(count)
-                    count+=1
+                    rescount+=1
                 elif i in self.mmatoms:
                     self.hybridatomlabels.append('WAT')
                     self.residlabels.append(count)
+                    rescount+=1
+                if rescount=3:
                     count+=1
+                    rescount=1
 
         print("self.hybridatomlabels:", self.hybridatomlabels)
 
