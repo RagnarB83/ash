@@ -523,6 +523,12 @@ def solvshell ( orcadir='', NumCores='', calctype='', orcasimpleinput_LL='',
         print("Creating inputfiles for Long-Range Correction Region1:", SRPolShell, "Å")
         #identifiername='_LR_LL-R1'
         #Looping over shell region
+        LRPol_Arepsnaps_ABenergy_Region1=[]
+        LRPol_Arepsnaps_ABenergy_Region2=[]
+        LRPol_Brepsnaps_ABenergy_Region1=[]
+        LRPol_Arepsnaps_ABenergy_Region2=[]
+        LRPol_Allrepsnaps_ABenergy_Region1=[]
+        LRPol_Allrepsnaps_ABenergy_Region2=[]
         for ShellRegion in ['ShellRegion1', 'ShellRegion2']:
             #TODO: This is silly. Need to make better!!
             if ShellRegion=="ShellRegion1":
