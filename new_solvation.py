@@ -556,7 +556,8 @@ def solvshell ( orcadir='', NumCores='', calctype='', orcasimpleinput_LL='',
                 #qmatoms = solvsphere.soluteatomsA + solvshell
                 qmatoms = solvsphere.soluteatomsA
                 peatoms = solvshell #Polarizable atoms
-                mmatoms = listdiff(solvsphere.allatoms, qmatoms+mmatoms) #Nonpolarizable atoms
+                print("qmatoms+peatoms:", qmatoms+peatoms)
+                mmatoms = listdiff(solvsphere.allatoms, qmatoms+peatoms) #Nonpolarizable atoms
 
                 print("qmatoms ({} atoms): {}".format(len(qmatoms), qmatoms ))
                 print("peatoms ({} atoms)".format(len(peatoms)))
