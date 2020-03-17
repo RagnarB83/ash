@@ -611,7 +611,7 @@ class PolEmbedTheory:
                 elif self.pot_option=='TIP3P':
                     print("Pot option: TIP3P")
                     system = pyframe.MolecularSystem(input_file=file)
-                    solvent = system.get_fragments_by_name(names=[self.PElabel_pyframe])
+                    solvent = system.get_fragments_by_name(names=['WAT'])
                     system.add_region(name='solvent', fragments=solvent, use_standard_potentials=True,
                           standard_potential_model='TIP3P')
                     project = pyframe.Project()
