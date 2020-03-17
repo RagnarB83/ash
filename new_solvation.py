@@ -528,7 +528,7 @@ def solvshell ( orcadir='', NumCores='', calctype='', orcasimpleinput_LL='',
         LRPol_Arepsnaps_ABenergy_Region1=[]
         LRPol_Arepsnaps_ABenergy_Region2=[]
         LRPol_Brepsnaps_ABenergy_Region1=[]
-        LRPol_Arepsnaps_ABenergy_Region2=[]
+        LRPol_Brepsnaps_ABenergy_Region2=[]
         LRPol_Allrepsnaps_ABenergy_Region1=[]
         LRPol_Allrepsnaps_ABenergy_Region2=[]
         for ShellRegion in ['ShellRegion2', 'ShellRegion1']:
