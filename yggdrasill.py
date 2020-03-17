@@ -563,8 +563,8 @@ class PolEmbedTheory:
             print("MM region size", len(self.mmatoms))
             blankline()
 
-            #List of QM and PE labels
-            #Currently used by Pyframe only
+            #Creating list of QM, PE, MM labels used by reading residues in PDB-file
+            #Also making residlist necessary
             self.hybridatomlabels=[]
             self.residlabels=[]
             count=2
@@ -581,7 +581,7 @@ class PolEmbedTheory:
                     self.hybridatomlabels.append('WAT')
                     self.residlabels.append(count)
                     rescount+=1
-                if rescount=3:
+                if rescount==3:
                     count+=1
                     rescount=1
 
