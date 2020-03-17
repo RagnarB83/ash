@@ -615,6 +615,8 @@ class PolEmbedTheory:
                     project.write_potential(system)
                     self.potfile=filename+'.pot'
                     print("Created potfile: ", self.potfile)
+                    print("exiting")
+                    exit()
                 elif self.pot_option=='TIP3P':
                     print("Pot option: TIP3P")
                     system = pyframe.MolecularSystem(input_file=file)
