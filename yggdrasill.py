@@ -585,7 +585,7 @@ class PolEmbedTheory:
                     count+=1
                     rescount=0
 
-        print("self.hybridatomlabels:", self.hybridatomlabels)
+        #print("self.hybridatomlabels:", self.hybridatomlabels)
 
 
 
@@ -620,6 +620,7 @@ class PolEmbedTheory:
                     self.potfile=filename+'.pot'
                     print("Created potfile: ", self.potfile)
                 elif self.pot_option=='TIP3P':
+                    #Not sure if we use this much or at all. Needs to be checked.
                     print("Pot option: TIP3P")
                     system = pyframe.MolecularSystem(input_file=file)
                     solvent = system.get_fragments_by_name(names=['WAT'])
@@ -630,7 +631,6 @@ class PolEmbedTheory:
                     project.write_potential(system)
                     self.potfile=filename+'.pot'
                     print("Created potfile: ", self.potfile)
-
 
                 else:
                     #TODO: Create pot file from scratch. Requires LoProp and Dalton I guess

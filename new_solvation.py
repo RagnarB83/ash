@@ -600,11 +600,11 @@ def solvshell ( orcadir='', NumCores='', calctype='', orcasimpleinput_LL='',
                         LRPol_Allrepsnaps_ABenergy_Region1.append(PolEmbedEnergyAB)
                 elif shell==ShellRegion2:
                     if 'snapA' in snapshot:
-                        LRPol_Arepsnaps_ABenergy_Region1.append(PolEmbedEnergyAB)
+                        LRPol_Arepsnaps_ABenergy_Region2.append(PolEmbedEnergyAB)
                     if calctype=="redox":
                         if 'snapB' in snapshot:
-                            LRPol_Brepsnaps_ABenergy_Region1.append(PolEmbedEnergyAB)
-                        LRPol_Allrepsnaps_ABenergy_Region1.append(PolEmbedEnergyAB)
+                            LRPol_Brepsnaps_ABenergy_Region2.append(PolEmbedEnergyAB)
+                        LRPol_Allrepsnaps_ABenergy_Region2.append(PolEmbedEnergyAB)
 
         # Gathering stuff for both regions
         if calctype == "redox":
