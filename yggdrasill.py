@@ -682,7 +682,8 @@ class PolEmbedTheory:
                 else:
                     print("Other pot options not yet available")
                     exit()
-
+        else:
+            print("Pot creation is off.")
 
 
     def run(self, current_coords=[], elems=[], Grad=False, nprocs=1, potfile=''):

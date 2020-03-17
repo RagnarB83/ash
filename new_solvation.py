@@ -563,18 +563,20 @@ def solvshell ( orcadir='', NumCores='', calctype='', orcasimpleinput_LL='',
                 # PE Solvent-type label for PyFrame. For water, use: HOH, TIP3? WAT?
                 PElabel_pyframe = 'HOH'
                 # Create PolEmbed theory object. fragment always defined with it
-                #Todo: T
                 PolEmbed_SP_A = yggdrasill.PolEmbedTheory(fragment=snap_frag, qm_theory=Psi4QMpart_A,
                                              qmatoms=qmatoms, peatoms=peatoms, pot_option=pot_option,
                                              pyframe=True, pot_create=True, PElabel_pyframe=PElabel_pyframe)
+
                 #Note: pot_create=False for B since the embedding potential is the same
                 PolEmbed_SP_B = yggdrasill.PolEmbedTheory(fragment=snap_frag, qm_theory=Psi4QMpart_B,
                                              qmatoms=qmatoms, peatoms=peatoms, pot_option=pot_option,
                                              pyframe=True, pot_create=False, PElabel_pyframe=PElabel_pyframe)
-                # Simple Energy SP calc.
-                PolEmbedEnergyA=PolEmbed_SP_A.run(nprocs=NumCores)
-                PolEmbedEnergyB=PolEmbed_SP_B.run(nprocs=NumCores)
+                # Simple Energy SP calc. potfile needed for B run.
+                PolEmbedEnergyA=PolEmbed_SP_A.run(potfile='System.pot', nprocs=NumCores)
+                PolEmbedEnergyB=PolEmbed_SP_B.run(potfile='System.pot', nprocs=NumCores)
                 PolEmbedEnergyAB=(PolEmbedEnergyB-PolEmbedEnergyA)*constants.hartoeV
+                #Deleting pot file. Todo: Delete other stuff
+                os.remove('System.pot')
 
                 if shell==ShellRegion1:
                     if 'snapA' in snapshot:
