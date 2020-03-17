@@ -515,8 +515,9 @@ def solvshell ( orcadir='', NumCores='', calctype='', orcasimpleinput_LL='',
         blankline()
 
         #Todo: make more general
-        ShellRegion1=SRPolShell
-        ShellRegion2=LRPolShell
+        #Ignoring QM region for now. Only setting PE region
+        ShellRegion1=0
+        ShellRegion2=10
 
         #Create inputfiles of repsnapshots with increased QM regions
         print("Creating inputfiles for Long-Range Correction Region1:", SRPolShell, "Å")
@@ -542,7 +543,8 @@ def solvshell ( orcadir='', NumCores='', calctype='', orcasimpleinput_LL='',
                 #Defining QM and PE regions
                 solvshell = get_solvshell(solvsphere, snap_frag.elems, snap_frag.coords, shell, solute_elems, solute_coords,
                                           settings_solvation.scale, settings_solvation.tol)
-                qmatoms = solvsphere.soluteatomsA + solvshell
+                #qmatoms = solvsphere.soluteatomsA + solvshell
+                qmatoms = solvsphere.soluteatomsA
                 peatoms = listdiff(solvsphere.allatoms, qmatoms)
 
                 #Define Psi4 QMregion
