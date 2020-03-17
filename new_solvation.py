@@ -553,8 +553,7 @@ def solvshell ( orcadir='', NumCores='', calctype='', orcasimpleinput_LL='',
                 Psi4QMpart_B = yggdrasill.Psi4Theory(charge=solvsphere.ChargeB, mult=solvsphere.MultB, psi4settings=psi4dict,
                                         psi4functional=psi4_functional, runmode='library', printsetting=True)
 
-                # Potential options: SEP (Standard Potential) Todo: Other options: To be done!
-                pot_option = 'SEP'
+                # Potential options: SEP (Standard Potential), TIP3P Todo: Other options: To be done!
                 # PE Solvent-type label for PyFrame. For water, use: HOH, TIP3? WAT?
                 PElabel_pyframe = 'HOH'
                 # Create PolEmbed theory object. fragment always defined with it
