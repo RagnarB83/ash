@@ -564,19 +564,22 @@ class PolEmbedTheory:
             blankline()
 
             #List of QM and PE labels
-            #Currently used by Pyfram only
+            #Currently used by Pyframe only
             self.hybridatomlabels=[]
             self.residlabels=[]
+            count=2
             for i in self.allatoms:
                 if i in self.qmatoms:
                     self.hybridatomlabels.append('QM')
                     self.residlabels.append(1)
                 elif i in self.peatoms:
                     self.hybridatomlabels.append(self.PElabel_pyframe)
-                    self.residlabels.append(2)
+                    self.residlabels.append(count)
+                    count+=1
                 elif i in self.mmatoms:
                     self.hybridatomlabels.append('WAT')
-                    self.residlabels.append(3)
+                    self.residlabels.append(count)
+                    count+=1
 
         print("self.hybridatomlabels:", self.hybridatomlabels)
 
