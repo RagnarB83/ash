@@ -551,9 +551,9 @@ class PolEmbedTheory:
 
             self.pecoords=[self.coords[i] for i in self.peatoms]
             self.peelems=[self.elems[i] for i in self.peatoms]
-            print("List of all atoms:", self.allatoms)
+            #print("List of all atoms:", self.allatoms)
             print("QM region:", self.qmatoms)
-            print("PE region", self.peatoms)
+            print("PE region size", len(self.peatoms))
             blankline()
 
             #List of QM and PE labels
@@ -564,7 +564,9 @@ class PolEmbedTheory:
                     self.hybridatomlabels.append('QM')
                 elif i in self.peatoms:
                     self.hybridatomlabels.append(self.PElabel_pyframe)
-        print("self.hybridatomlabels:", self.hybridatomlabels)
+
+
+        #print("self.hybridatomlabels:", self.hybridatomlabels)
 
 
 
@@ -1187,10 +1189,10 @@ class Psi4Theory:
                 psi4.core.set_output_file('psi4output.dat', False)
 
             #Creating Psi4 molecule object using lists and manual information
-            print("elems:", elems)
-            print("current_coords:", current_coords)
-            print("current_MM_coords:", current_MM_coords)
-            print("MMcharges:", MMcharges)
+            #print("elems:", elems)
+            #print("current_coords:", current_coords)
+            #print("current_MM_coords:", current_MM_coords)
+            #print("MMcharges:", MMcharges)
             psi4molfrag = psi4.core.Molecule.from_arrays(
                 elez=elemstonuccharges(qm_elems),
                 fix_com=True,
@@ -1203,6 +1205,7 @@ class Psi4Theory:
 
 
             #Adding MM charges as pointcharges if PC=True
+            #Might be easier to use PE and potfile ??
             if PC==True:
                 #Chargefield = psi4.QMMM()
                 Chargefield = psi4.core.ExternalPotential()
@@ -1220,6 +1223,14 @@ class Psi4Theory:
             #Changing charge and multiplicity
             #psi4molfrag.set_molecular_charge(self.charge)
             #psi4molfrag.set_multiplicity(self.mult)
+
+            #Setting RKS or UKS reference
+            #For now, RKS always if mult 1 Todo: Make more flexible
+            if self.mult == 1:
+                reference='RKS'
+            else:
+                reference='UKS'
+            self.psi4settings['reference'] = reference
 
             #Reading dict object with basic settings and passing to Psi4
             psi4.set_options(self.psi4settings)
