@@ -546,9 +546,9 @@ def solvshell ( orcadir='', NumCores='', calctype='', orcasimpleinput_LL='',
                 peatoms = listdiff(solvsphere.allatoms, qmatoms)
 
                 #Define Psi4 QMregion
-                Psi4QMpart_A = Psi4Theory(charge=solvsphere.ChargeA, mult=solvsphere.MultA, psi4settings=psi4dict,
+                Psi4QMpart_A = yggdrasill.Psi4Theory(charge=solvsphere.ChargeA, mult=solvsphere.MultA, psi4settings=psi4dict,
                                         psi4functional=functional, runmode='library', printsetting=True)
-                Psi4QMpart_B = Psi4Theory(charge=solvsphere.ChargeB, mult=solvsphere.MultB, psi4settings=psi4dict,
+                Psi4QMpart_B = yggdrasill.Psi4Theory(charge=solvsphere.ChargeB, mult=solvsphere.MultB, psi4settings=psi4dict,
                                         psi4functional=functional, runmode='library', printsetting=True)
 
                 # Potential options: SEP (Standard Potential) Todo: Other options: To be done!
@@ -556,15 +556,15 @@ def solvshell ( orcadir='', NumCores='', calctype='', orcasimpleinput_LL='',
                 # PE Solvent-type label for PyFrame. For water, use: HOH, TIP3? WAT?
                 PElabel_pyframe = 'HOH'
                 # Create PolEmbed theory object. fragment always defined with it
-                PolEmbed_SP_A = PolEmbedTheory(fragment=snap_frag, qm_theory=Psi4QMpart_A,
+                PolEmbed_SP_A = yggdrasill.PolEmbedTheory(fragment=snap_frag, qm_theory=Psi4QMpart_A,
                                              qmatoms=qmatoms, peatoms=peatoms, pot_option=pot_option,
                                              pyframe=True, pot_create=True, PElabel_pyframe=PElabel_pyframe)
-                PolEmbed_SP_B = PolEmbedTheory(fragment=snap_frag, qm_theory=Psi4QMpart_B,
+                PolEmbed_SP_B = yggdrasill.PolEmbedTheory(fragment=snap_frag, qm_theory=Psi4QMpart_B,
                                              qmatoms=qmatoms, peatoms=peatoms, pot_option=pot_option,
                                              pyframe=True, pot_create=True, PElabel_pyframe=PElabel_pyframe)
                 # Simple Energy SP calc.
-                PolEmbedEnergyA=PolEmbed_SP_A.run(nprocs=NumCores)
-                PolEmbedEnergyB=PolEmbed_SP_B.run(nprocs=NumCores)
+                PolEmbedEnergyA=yggdrasill.PolEmbed_SP_A.run(nprocs=NumCores)
+                PolEmbedEnergyB=yggdrasill.PolEmbed_SP_B.run(nprocs=NumCores)
                 PolEmbedEnergyAB=(PolEmbedEnergyB-PolEmbedEnergyA)*constants.hartoeV
 
                 if shell==ShellRegion1:
