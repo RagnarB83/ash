@@ -563,8 +563,8 @@ def solvshell ( orcadir='', NumCores='', calctype='', orcasimpleinput_LL='',
                                              qmatoms=qmatoms, peatoms=peatoms, pot_option=pot_option,
                                              pyframe=True, pot_create=True, PElabel_pyframe=PElabel_pyframe)
                 # Simple Energy SP calc.
-                PolEmbedEnergyA=yggdrasill.PolEmbed_SP_A.run(nprocs=NumCores)
-                PolEmbedEnergyB=yggdrasill.PolEmbed_SP_B.run(nprocs=NumCores)
+                PolEmbedEnergyA=PolEmbed_SP_A.run(nprocs=NumCores)
+                PolEmbedEnergyB=PolEmbed_SP_B.run(nprocs=NumCores)
                 PolEmbedEnergyAB=(PolEmbedEnergyB-PolEmbedEnergyA)*constants.hartoeV
 
                 if shell==ShellRegion1:
