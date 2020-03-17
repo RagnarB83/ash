@@ -365,17 +365,17 @@ def write_xyzfile(elems,coords,name):
     print("Wrote XYZ file:", name+'.xyz')
 
 #Write PDBfile (dummy version) for PyFrame
-def write_pdbfile_dummy(elems,coords,name, atomlabels):
+def write_pdbfile_dummy(elems,coords,name, atomlabels,residlabels):
     with open(name+'.pdb', 'w') as pfile:
         resnames=atomlabels
         #resnames=['QM', 'QM', 'QM', 'QM', 'QM', 'QM', 'QM', 'QM', 'QM', 'QM', 'QM', 'QM', 'QM', 'HOH', 'HOH','HOH']
         #resids=[1,1,1,1,1,1,1,1,1,1,1,1,1,2,2,2]
         #Example:
         #pfile.write("ATOM      1  N   SER A   2      65.342  32.035  32.324  1.00  0.00           N\n")
-        for count,(el,c,resname) in enumerate(zip(elems,coords, resnames)):
+        for count,(el,c,resname,resid) in enumerate(zip(elems,coords, resnames, residlabels)):
             #print(count, el,c,resname)
             #Dummy resid for everything
-            resid=1
+            #resid=1
             #Using string format from: https://cupnet.net/pdb-format/
             line="{:6s}{:5d} {:^4s}{:1s}{:3s} {:1s}{:4d}{:1s}   {:8.3f}{:8.3f}{:8.3f}{:6.2f}{:6.2f}          {:>2s}{:2s}".format(
                 'ATOM', count+1, el, '', resname, '', resid, '',    c[0], c[1], c[2], 1.0, 0.00, el, '')
