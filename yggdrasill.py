@@ -519,8 +519,9 @@ class NonBondedTheory:
 #Polarizable Embedding theory object.
 #Required at init: qm_theory and qmatoms, X, Y
 #Currently only Polarizable Embedding (PE). Only available for Psi4, PySCF and Dalton.
+#Peatoms: polarizable atoms. MMatoms: nonpolarizable atoms (e.g. TIP3P)
 class PolEmbedTheory:
-    def __init__(self, fragment='', qm_theory='', qmatoms=[], peatoms=[], pot_create=True,
+    def __init__(self, fragment='', qm_theory='', qmatoms=[], peatoms=[], mmatoms=[], pot_create=True,
                  pot_option='', pyframe=False, PElabel_pyframe='MM'):
         print(BC.WARNING,BC.BOLD,"------------Defining PolEmbedTheory object-------------", BC.END)
         self.pot_create=pot_create
@@ -535,7 +536,13 @@ class PolEmbedTheory:
             print(BC.OKGREEN, "QM-theory:", self.qm_theory_name, "is supported in Polarizable Embedding", BC.END)
         else:
             print(BC.FAIL, "QM-theory:", self.qm_theory_name, "is  NOT supported in Polarizable Embedding", BC.END)
+
+        # Region definitions
+        self.allatoms = list(range(0, len(self.elems)))
         self.qmatoms = qmatoms
+        self.peatoms = peatoms
+        self.mmatoms = mmatoms
+
         #If fragment object has been defined
         if fragment != '':
             self.fragment=fragment
@@ -543,18 +550,17 @@ class PolEmbedTheory:
             self.elems=fragment.elems
             self.connectivity=fragment.connectivity
 
-            # Region definitions
-            self.allatoms=list(range(0,len(self.elems)))
-
             self.qmcoords=[self.coords[i] for i in self.qmatoms]
             self.qmelems=[self.elems[i] for i in self.qmatoms]
-            self.peatoms=listdiff(self.allatoms,self.qmatoms)
-
             self.pecoords=[self.coords[i] for i in self.peatoms]
             self.peelems=[self.elems[i] for i in self.peatoms]
+            self.mmcoords=[self.coords[i] for i in self.mmatoms]
+            self.mmelems=[self.elems[i] for i in self.mmatoms]
+
             #print("List of all atoms:", self.allatoms)
-            print("QM region:", self.qmatoms)
+            print("QM region size:", len(self.qmatoms))
             print("PE region size", len(self.peatoms))
+            print("MM region size", len(self.mmatoms))
             blankline()
 
             #List of QM and PE labels
@@ -565,9 +571,10 @@ class PolEmbedTheory:
                     self.hybridatomlabels.append('QM')
                 elif i in self.peatoms:
                     self.hybridatomlabels.append(self.PElabel_pyframe)
+                elif i in self.mmatoms:
+                    self.hybridatomlabels.append('WAT')
 
-
-        #print("self.hybridatomlabels:", self.hybridatomlabels)
+        print("self.hybridatomlabels:", self.hybridatomlabels)
 
 
 
@@ -590,9 +597,12 @@ class PolEmbedTheory:
                 if self.pot_option=='SEP':
                     print("Pot option: SEP")
                     system = pyframe.MolecularSystem(input_file=file)
-                    solvent = system.get_fragments_by_name(names=[self.PElabel_pyframe])
-                    system.add_region(name='solvent', fragments=solvent, use_standard_potentials=True,
+                    solventPol = system.get_fragments_by_name(names=[self.PElabel_pyframe])
+                    solventNonPol = system.get_fragments_by_name(names=['WAT'])
+                    system.add_region(name='solventpol', fragments=solventPol, use_standard_potentials=True,
                           standard_potential_model='SEP')
+                    system.add_region(name='solventnonpol', fragments=solventNonPol, use_standard_potentials=True,
+                          standard_potential_model='TIP3P')
                     project = pyframe.Project()
                     project.create_embedding_potential(system)
                     project.write_potential(system)
@@ -686,11 +696,15 @@ class PolEmbedTheory:
                     print("Other pot options not yet available")
                     exit()
         else:
-            print("Pot creation is off.")
+            print("Pot creation is off for this object.")
 
 
     def run(self, current_coords=[], elems=[], Grad=False, nprocs=1, potfile='', restart=False):
         print(BC.WARNING, BC.BOLD, "------------RUNNING PolEmbedTheory MODULE-------------", BC.END)
+        if restart==True:
+            print("Restart Option On!")
+        else:
+            print("Restart Option Off!")
         print("QM Module:", self.qm_theory_name)
 
         #Check if potfile provide to run (rare use). If not, use object file
@@ -1142,6 +1156,11 @@ class Psi4Theory:
             mm_elems=[], elems=[], Grad=False, PC=False, nprocs=1, pe=False, potfile='', runmode='library', restart=False ):
 
         print(BC.OKBLUE,BC.BOLD, "------------RUNNING PSI4 INTERFACE-------------", BC.END)
+        if restart==True:
+            print("Restart Option On!")
+        else:
+            print("Restart Option Off!")
+
         if runmode != 'library':
             self.runmode=runmode
 

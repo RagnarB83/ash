@@ -518,6 +518,8 @@ def solvshell ( orcadir='', NumCores='', calctype='', orcasimpleinput_LL='',
         #Ignoring QM region for now. Only setting PE region
         ShellRegion1=0
         ShellRegion2=10
+        print("ShellRegion1: ", ShellRegion1)
+        print("ShellRegion2: ", ShellRegion2)
 
         #Create inputfiles of repsnapshots with increased QM regions
         print("Creating inputfiles for Long-Range Correction Region1:", SRPolShell, "Å")
@@ -530,11 +532,12 @@ def solvshell ( orcadir='', NumCores='', calctype='', orcasimpleinput_LL='',
         LRPol_Allrepsnaps_ABenergy_Region1=[]
         LRPol_Allrepsnaps_ABenergy_Region2=[]
         for ShellRegion in ['ShellRegion1', 'ShellRegion2']:
-            #TODO: This is silly. Need to make better!!
+            #TODO: This is silly.
             if ShellRegion=="ShellRegion1":
                 shell = ShellRegion1
             elif ShellRegion=="ShellRegion2":
                 shell = ShellRegion2
+            print("This is  {} with a shell radius of {} Å".format(ShellRegion, shell))
             #Looping over snapshot
             for snapshot in totrepsnaps:
                 #Get elems and coords from each Chemshell frament file
@@ -549,9 +552,15 @@ def solvshell ( orcadir='', NumCores='', calctype='', orcasimpleinput_LL='',
                 #Defining QM and PE regions
                 solvshell = get_solvshell(solvsphere, snap_frag.elems, snap_frag.coords, shell, solute_elems, solute_coords,
                                           settings_solvation.scale, settings_solvation.tol)
+                print("solvshell is", solvshell)
                 #qmatoms = solvsphere.soluteatomsA + solvshell
                 qmatoms = solvsphere.soluteatomsA
-                peatoms = listdiff(solvsphere.allatoms, qmatoms)
+                peatoms = solvshell #Polarizable atoms
+                mmatoms = listdiff(solvsphere.allatoms, qmatoms+mmatoms) #Nonpolarizable atoms
+
+                print("qmatoms ({} atoms): {}".format(len(qmatoms), qmatoms ))
+                print("peatoms ({} atoms)".format(len(peatoms)))
+                print("mmatoms ({} atoms)".format(len(mmatoms)))
 
                 #Define Psi4 QMregion
                 Psi4QMpart_A = yggdrasill.Psi4Theory(charge=solvsphere.ChargeA, mult=solvsphere.MultA, psi4settings=psi4dict,
@@ -564,12 +573,12 @@ def solvshell ( orcadir='', NumCores='', calctype='', orcasimpleinput_LL='',
                 PElabel_pyframe = 'HOH'
                 # Create PolEmbed theory object. fragment always defined with it
                 PolEmbed_SP_A = yggdrasill.PolEmbedTheory(fragment=snap_frag, qm_theory=Psi4QMpart_A,
-                                             qmatoms=qmatoms, peatoms=peatoms, pot_option=pot_option,
+                                             qmatoms=qmatoms, peatoms=peatoms, mmatoms=mmatoms, pot_option=pot_option,
                                              pyframe=True, pot_create=True, PElabel_pyframe=PElabel_pyframe)
 
                 #Note: pot_create=False for B since the embedding potential is the same
                 PolEmbed_SP_B = yggdrasill.PolEmbedTheory(fragment=snap_frag, qm_theory=Psi4QMpart_B,
-                                             qmatoms=qmatoms, peatoms=peatoms, pot_option=pot_option,
+                                             qmatoms=qmatoms, peatoms=peatoms, mmatoms=mmatoms, pot_option=pot_option,
                                              pyframe=True, pot_create=False, PElabel_pyframe=PElabel_pyframe)
                 # Simple Energy SP calc. potfile needed for B run.
                 blankline()
