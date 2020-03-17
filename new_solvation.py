@@ -572,9 +572,9 @@ def solvshell ( orcadir='', NumCores='', calctype='', orcasimpleinput_LL='',
                                              qmatoms=qmatoms, peatoms=peatoms, pot_option=pot_option,
                                              pyframe=True, pot_create=False, PElabel_pyframe=PElabel_pyframe)
                 # Simple Energy SP calc. potfile needed for B run.
-                print("Starting PolEmbed job (state A). Charge: {}  Mult: {}".format(solvsphere.ChargeA, solvsphere.MultA ))
+                print("Starting PolEmbed job for snapshot {} with ShellRegion: {}. State A: Charge: {}  Mult: {}".format(snapshot, ShellRegion, solvsphere.ChargeA, solvsphere.MultA ))
                 PolEmbedEnergyA=PolEmbed_SP_A.run(potfile='System.pot', nprocs=NumCores)
-                print("Starting PolEmbed job (state B). Charge: {}  Mult: {}".format(solvsphere.ChargeB, solvsphere.MultB ))
+                print("Starting PolEmbed job for snapshot {} with ShellRegion: {}. State B: Charge: {}  Mult: {}".format(snapshot, ShellRegion, solvsphere.ChargeB, solvsphere.MultB ))
                 PolEmbedEnergyB=PolEmbed_SP_B.run(potfile='System.pot', nprocs=NumCores)
                 PolEmbedEnergyAB=(PolEmbedEnergyB-PolEmbedEnergyA)*constants.hartoeV
                 #Deleting pot file. Todo: Delete other stuff
