@@ -509,7 +509,6 @@ def solvshell ( orcadir='', NumCores='', calctype='', orcasimpleinput_LL='',
             shutil.copyfile('../' + i + '.c', './' + i + '.c')
         print("Current dir:", os.getcwd())
 
-        #print("Using xTB method:", xtbmethod)
         print("Doing Long-Range Polarization Step. Creating inputfiles...")
         print("Snapshots:", totrepsnaps)
         print("Using SR QM-region shell:", SRPolShell, "Å")
@@ -546,13 +545,17 @@ def solvshell ( orcadir='', NumCores='', calctype='', orcasimpleinput_LL='',
         LRPol_Brepsnaps_ABenergy_Region2=[]
         LRPol_Allrepsnaps_ABenergy_Region1=[]
         LRPol_Allrepsnaps_ABenergy_Region2=[]
+        LRPolcorrdict_A = {}
+        LRPolcorrdict_B = {}
         for r in results:
             if 'snapA' in r[0]:
                 LRPol_Arepsnaps_ABenergy_Region1.append(r[1])
                 LRPol_Arepsnaps_ABenergy_Region2.append(r[2])
+                LRPolcorrdict_A[r[0]]=r[2]-r[1]
             elif 'snapB' in r[0]:
                 LRPol_Brepsnaps_ABenergy_Region1.append(r[1])
                 LRPol_Brepsnaps_ABenergy_Region2.append(r[2])
+                LRPolcorrdict_B[r[0]] = r[2]-r[1]
             if calctype=="redox":
                 LRPol_Allrepsnaps_ABenergy_Region1.append(r[1])
                 LRPol_Allrepsnaps_ABenergy_Region2.append(r[2])
@@ -565,7 +568,6 @@ def solvshell ( orcadir='', NumCores='', calctype='', orcasimpleinput_LL='',
             print("LRPol_Allrepsnaps_ABenergy_Region2:", LRPol_Allrepsnaps_ABenergy_Region2)
             print("LRPol_Arepsnaps_ABenergy_Region2:", LRPol_Arepsnaps_ABenergy_Region2)
             print("LRPol_Brepsnaps_ABenergy_Region2:", LRPol_Brepsnaps_ABenergy_Region2)
-
             #Calculating averages and stdevs
             LRPol_ave_trajA_Region2 = statistics.mean(LRPol_Arepsnaps_ABenergy_Region2)
             LRPol_ave_trajB_Region2 = statistics.mean(LRPol_Brepsnaps_ABenergy_Region2)
@@ -586,6 +588,17 @@ def solvshell ( orcadir='', NumCores='', calctype='', orcasimpleinput_LL='',
             print("LRPol_Region1 calculation TrajA average: {:3.3f} ± {:3.3f}".format(LRPol_ave_trajA_Region1, LRPol_stdev_trajA_Region1))
             print("LRPol_Region1 calculation TrajB average: {:3.3f} ± {:3.3f}".format(LRPol_ave_trajB_Region1, LRPol_stdev_trajB_Region1))
             print("LRPol_Region1 calculation TrajAB average: {:3.3f} ± TBD".format(LRPol_ave_trajAB_Region1))
+
+            LRPolcorr_mean_A = statistics.mean(LRPolcorrdict_A.values())
+            LRPolcorr_mean_B = statistics.mean(LRPolcorrdict_B.values())
+            LRPolcorr_stdev_A = statistics.stdev(LRPolcorrdict_A.values())
+            LRPolcorr_stdev_B = statistics.stdev(LRPolcorrdict_B.values())
+            LRPolcorr_mean_AB = statistics.mean([LRPolcorr_mean_A, LRPolcorr_mean_B])
+            blankline()
+            print("Traj A: LRPolcorrection {:3.3f} ± {:3.3f} eV".format(LRPolcorr_mean_A, LRPolcorr_stdev_A))
+            print("Traj B: LRPolcorrection {:3.3f} ± {:3.3f} eV".format(LRPolcorr_mean_B, LRPolcorr_stdev_B))
+            print("Combined LRPolcorrection {:3.3f} eV".format(LRPolcorr_mean_AB))
+
         else:
             print("LRPol_Allrepsnaps_ABenergy_Region1:", LRPol_Allrepsnaps_ABenergy_Region1)
             print("LRPol_Arepsnaps_ABenergy_Region1:", LRPol_Arepsnaps_ABenergy_Region1)
@@ -593,7 +606,6 @@ def solvshell ( orcadir='', NumCores='', calctype='', orcasimpleinput_LL='',
             print("LRPol_Allrepsnaps_ABenergy_Region2:", LRPol_Allrepsnaps_ABenergy_Region2)
             print("LRPol_Arepsnaps_ABenergy_Region2:", LRPol_Arepsnaps_ABenergy_Region2)
             print("LRPol_Brepsnaps_ABenergy_Region2:", LRPol_Brepsnaps_ABenergy_Region2)
-
             # Calculating averages and stdevs
             LRPol_ave_trajA_Region2 = statistics.mean(LRPol_Arepsnaps_ABenergy_Region2)
             LRPol_stdev_trajA_Region2 = statistics.stdev(LRPol_Arepsnaps_ABenergy_Region2)
@@ -604,37 +616,11 @@ def solvshell ( orcadir='', NumCores='', calctype='', orcasimpleinput_LL='',
                                                                                       LRPol_stdev_trajA_Region2))
             print("LRPol_Region1 calculation TrajA average: {:3.3f} ± {:3.3f}".format(LRPol_ave_trajA_Region1,
                                                                                       LRPol_stdev_trajA_Region1))
-        #Calculating correction per snapshot
-        LRPolcorrdict_A = {}
-        LRPolcorrdict_B = {}
-        for b in LRPol_Arepsnaps_ABenergy_Region2:
-            for c in repsnapsA:
-                if b == c:
-                    LRPolcorrdict_A[b] = LRPol_Arepsnaps_ABenergy_Region2[b] - LRPol_Arepsnaps_ABenergy_Region1[b]
-        if calctype == "redox":
-            for b in LRPol_Brepsnaps_ABenergy_Region2:
-                for c in repsnapsB:
-                    if b == c:
-                        LRPolcorrdict_B[b] = LRPol_Brepsnaps_ABenergy_Region2[b] - LRPol_Brepsnaps_ABenergy_Region1[b]
-        blankline()
-        print("Dictionaries of corrections per snapshots:")
-        print("LRPolcorrdict_A:", LRPolcorrdict_A)
-        print("LRPolcorrdict_B", LRPolcorrdict_B)
-        if calctype == "redox":
-            LRPolcorr_mean_A = statistics.mean(LRPolcorrdict_A.values())
-            LRPolcorr_mean_B = statistics.mean(LRPolcorrdict_B.values())
-            LRPolcorr_stdev_A = statistics.stdev(LRPolcorrdict_A.values())
-            LRPolcorr_stdev_B = statistics.stdev(LRPolcorrdict_B.values())
-            LRPolcorr_mean_AB = statistics.mean([LRPolcorr_mean_A, LRPolcorr_mean_B])
-            blankline()
-            print("Traj A: LRPolcorrection {:3.3f} ± {:3.3f} eV".format(LRPolcorr_mean_A, LRPolcorr_stdev_A))
-            print("Traj B: LRPolcorrection {:3.3f} ± {:3.3f} eV".format(LRPolcorr_mean_B, LRPolcorr_stdev_B))
-            print("Combined LRPolcorrection {:3.3f} eV".format(LRPolcorr_mean_AB))
-        else:
             LRPolcorr_mean_A = statistics.mean(LRPolcorrdict_A.values())
             LRPolcorr_stdev_A = statistics.stdev(LRPolcorrdict_A.values())
             blankline()
             print("Traj A: LRPolcorrection {:3.3f} ± {:3.3f} eV".format(LRPolcorr_mean_A, LRPolcorr_stdev_A))
+
         blankline()
         print_time_rel_and_tot(CheckpointTime, beginTime,'LRPol')
         CheckpointTime = time.time()
