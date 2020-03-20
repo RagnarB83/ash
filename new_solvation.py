@@ -910,4 +910,4 @@ def LRPolsnapshotcalc(args):
     LRPoldict_snaps_LR1[snapshot] = PolEmbedEnergyAB_LR1
     LRPoldict_snaps_LR2[snapshot] = PolEmbedEnergyAB_LR2
 
-    os.chdir(snapshot + '_dir')
+    #os.chdir(snapshot + '_dir')

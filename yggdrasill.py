@@ -1297,11 +1297,27 @@ class Psi4Theory:
 
             #TODO: Support pointcharges and PE embedding
             if Grad==True:
-                grad=psi4.gradient('scf', dft_functional=self.psi4functional)
+                if restart == True:
+                    grad=psi4.gradient('scf', dft_functional=self.psi4functional, restart_file='./lastrestart.180')
+                else:
+                    grad=psi4.gradient('scf', dft_functional=self.psi4functional)
                 self.gradient=np.array(grad)
                 self.energy = psi4.variable("CURRENT ENERGY")
             else:
-                self.energy=psi4.energy('scf', dft_functional=self.psi4functional)
+                if restart == True:
+                    self.energy=psi4.energy('scf', dft_functional=self.psi4functional, restart_file='./lastrestart.180')
+                else:
+                    self.energy = psi4.energy('scf', dft_functional=self.psi4functional)
+
+            #Keep restart file 180 as lastrestart.180
+
+            #snapA-62000Psi4_A_LR1.default.87544.180.npy
+            #self.outputname
+            PID=str(os.getpid())
+            print("XXX:", self.outputname+'.default.'+PID+'.180.npy')
+            print("PID:", PID)
+            os.rename(self.outputname+'.default'+PID+'.180.npy', 'lastrestart.180')
+
 
             #TODO: write in error handling here
 
