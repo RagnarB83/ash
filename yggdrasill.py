@@ -522,12 +522,13 @@ class NonBondedTheory:
 #Peatoms: polarizable atoms. MMatoms: nonpolarizable atoms (e.g. TIP3P)
 class PolEmbedTheory:
     def __init__(self, fragment='', qm_theory='', qmatoms=[], peatoms=[], mmatoms=[], pot_create=True,
-                 pot_option='', pyframe=False, PElabel_pyframe='MM'):
+                 potfilename='System.pot', pot_option='', pyframe=False, PElabel_pyframe='MM'):
         print(BC.WARNING,BC.BOLD,"------------Defining PolEmbedTheory object-------------", BC.END)
         self.pot_create=pot_create
         self.pyframe=pyframe
         self.pot_option=pot_option
         self.PElabel_pyframe = PElabel_pyframe
+        self.potfilename = potfilename
         #Theory level definitions
         allowed_qmtheories=['Psi4Theory', 'PySCFTheory', 'DaltonTheory']
         self.qm_theory=qm_theory
@@ -601,9 +602,8 @@ class PolEmbedTheory:
                     print("Pyframe not found. Install pyframe via pip (https://pypi.org/project/PyFraME):")
                     print("pip install pyframe")
 
-                filename='System'
-                write_pdbfile_dummy(self.elems, self.coords, filename, self.hybridatomlabels, self.residlabels)
-                file=filename+'.pdb'
+                write_pdbfile_dummy(self.elems, self.coords, self.potfilename, self.hybridatomlabels, self.residlabels)
+                file=self.potfilename+'.pdb'
                 #Pyframe
                 if self.pot_option=='SEP':
                     print("Pot option: SEP")
@@ -617,7 +617,7 @@ class PolEmbedTheory:
                     project = pyframe.Project()
                     project.create_embedding_potential(system)
                     project.write_potential(system)
-                    self.potfile=filename+'.pot'
+                    self.potfile=self.potfilename+'.pot'
                     print("Created potfile: ", self.potfile)
                 elif self.pot_option=='TIP3P':
                     #Not sure if we use this much or at all. Needs to be checked.
@@ -629,7 +629,7 @@ class PolEmbedTheory:
                     project = pyframe.Project()
                     project.create_embedding_potential(system)
                     project.write_potential(system)
-                    self.potfile=filename+'.pot'
+                    self.potfile=self.potfilename+'.pot'
                     print("Created potfile: ", self.potfile)
 
                 else:
@@ -647,10 +647,10 @@ class PolEmbedTheory:
                     project.create_embedding_potential(system)
                     project.write_core(system)
                     project.write_potential(system)
-                    self.potfile=filename+'.pot'
+                    self.potfile=self.potfilename+'.pot'
                 #Copying pyframe-created potfile from dir:
                 import shutil
-                shutil.copyfile(filename+'/' + filename+'.pot', './'+filename+'.pot')
+                shutil.copyfile(self.potfilename+'/' + self.potfilename+'.pot', './'+self.potfilename+'.pot')
 
             #Todo: Manual potential file creation. Maybe only if pyframe is buggy
             else:
@@ -1588,6 +1588,9 @@ class Fragment:
     def set_energy(self,energy):
         self.energy=float(energy)
 
+
+#TODO: Replace this inputfile-based (or keep as option) with shared-library version:
+# https://github.com/grimme-lab/xtb/blob/master/python/xtb/interface.py
 class xTBTheory:
     def __init__(self, xtbdir, fragment=None, charge=None, mult=None, xtbmethod=None):
         if fragment != None:

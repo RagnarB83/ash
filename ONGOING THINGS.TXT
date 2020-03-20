@@ -30,8 +30,7 @@ General things to do do:
 #TODO: Project out translational and rotational modes.
 
 #TODO: Add PySCF interface
-
-#TODO: Write Psi4 interface
+#TODO: Write shared-library xtb interface: https://github.com/grimme-lab/xtb/blob/master/python/xtb/interface.py
 
 #TODO: OpenMM interface for bonded MM interactions
 #TODO: Look into using orca_mm
@@ -91,6 +90,12 @@ General things to do do:
 #http://openmd.org/category/examples/
 #Ab initio MD program written in Fortran. Includes ORCA interface already
 #https://github.com/PHOTOX/ABIN
+
+https://github.com/romerogroup/mdwc
+https://github.com/romerogroup/mdwc/blob/master/MD_suite_fortran_lib/MD_suite.f90
+https://github.com/glennklockwood/allen-tildesley/blob/master/README.md
+https://github.com/Allen-Tildesley/examples
+
 #orca_md by Martin Brehm. Seems to be able to run as standalone via file read-in
 #MD analysis: https://github.com/MDAnalysis/mdanalysis
 #Metadynamics: https://github.com/openmm/openmm/issues/2126
