@@ -550,6 +550,7 @@ def solvshell ( orcadir='', NumCores='', calctype='', orcasimpleinput_LL='',
 
         pool.close()
         print("Pool closed")
+        print("Current dir:", os.getcwd())
         print("LRPoldict_snaps_LR1:", LRPoldict_snaps_LR1)
         print("LRPoldict_snaps_LR2:", LRPoldict_snaps_LR2)
 
@@ -797,7 +798,12 @@ def LRPolsnapshotcalc(args):
     print("pot_option:", pot_option)
     # Cores to be set depending on snapshots available and total cores
     NumCoresPsi4 = 8
+
     # create dir for each snapshot?
+    os.mkdir(snapshot+'_dir')
+    os.chdir(snapshot+'_dir')
+
+
     # Global vars need to be acccessed: yggdrasill.Fragment,  solvsphere, settings_solvation (scale and tol)
     # yggdrasill.Psi4Theory, yggdrasill.PolEmbedTheory, psi4dict, psi4_funcitonal, pot_option
 
@@ -903,6 +909,4 @@ def LRPolsnapshotcalc(args):
     LRPoldict_snaps_LR1[snapshot] = PolEmbedEnergyAB_LR1
     LRPoldict_snaps_LR2[snapshot] = PolEmbedEnergyAB_LR2
 
-    # Deleting pot file. Todo: Delete other stuff?
-    os.remove('System_LR1.pot')
-    os.remove('System_LR2.pot')
+    os.chdir(snapshot + '_dir')
