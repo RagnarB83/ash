@@ -837,41 +837,41 @@ def LRPolsnapshotcalc(args):
     print("mmatoms_LR2 ({} atoms)".format(len(mmatoms_LR2)))
     # Define Psi4 QMregion
     Psi4QMpart_A_LR1 = yggdrasill.Psi4Theory(charge=solvsphere.ChargeA, mult=solvsphere.MultA,
-                                         psi4settings=psi4dict, outputname=str(snapshot)+'Psi4_A_LR1.out',
+                                         psi4settings=psi4dict, outputname=snapshot+'Psi4_A_LR1.out',
                                          psi4functional=psi4_functional, runmode='library', printsetting=False)
     Psi4QMpart_B_LR1 = yggdrasill.Psi4Theory(charge=solvsphere.ChargeB, mult=solvsphere.MultB,
-                                         psi4settings=psi4dict, outputname=str(snapshot)+'Psi4_B_LR1.out',
+                                         psi4settings=psi4dict, outputname=snapshot+'Psi4_B_LR1.out',
                                          psi4functional=psi4_functional, runmode='library', printsetting=False)
 
     Psi4QMpart_A_LR2 = yggdrasill.Psi4Theory(charge=solvsphere.ChargeA, mult=solvsphere.MultA,
-                                             psi4settings=psi4dict, outputname=str(snapshot) + 'Psi4_A_LR2.out',
+                                             psi4settings=psi4dict, outputname=snapshot + 'Psi4_A_LR2.out',
                                             psi4functional = psi4_functional, runmode = 'library', printsetting = False)
     Psi4QMpart_B_LR2 = yggdrasill.Psi4Theory(charge=solvsphere.ChargeB, mult=solvsphere.MultB,
-                                             psi4settings=psi4dict, outputname=str(snapshot) + 'Psi4_B_LR2.out',
+                                             psi4settings=psi4dict, outputname=snapshot + 'Psi4_B_LR2.out',
                                             psi4functional = psi4_functional, runmode = 'library', printsetting = False)
 
     # Create PolEmbed theory object. fragment always defined with it
     PolEmbed_SP_A_LR1 = yggdrasill.PolEmbedTheory(fragment=snap_frag, qm_theory=Psi4QMpart_A_LR1,
                                                   qmatoms=qmatoms, peatoms=peatoms_LR1, mmatoms=mmatoms_LR1,
-                                                  pot_option=pot_option, potfilename='System_LR1',
+                                                  pot_option=pot_option, potfilename=snapshot+'System_LR1',
                                                   pyframe=True, pot_create=True, PElabel_pyframe=PElabel_pyframe)
 
     # Note: pot_create=False for B since the embedding potential is the same
     PolEmbed_SP_B_LR1 = yggdrasill.PolEmbedTheory(fragment=snap_frag, qm_theory=Psi4QMpart_B_LR1,
                                                   qmatoms=qmatoms, peatoms=peatoms_LR1, mmatoms=mmatoms_LR1,
-                                                  pot_option=pot_option, potfilename='System_LR1',
+                                                  pot_option=pot_option, potfilename=snapshot+'System_LR1',
                                                   pyframe=True, pot_create=False, PElabel_pyframe=PElabel_pyframe)
 
     # Create PolEmbed theory object. fragment always defined with it
     PolEmbed_SP_A_LR2 = yggdrasill.PolEmbedTheory(fragment=snap_frag, qm_theory=Psi4QMpart_A_LR2,
                                                   qmatoms=qmatoms, peatoms=peatoms_LR2, mmatoms=mmatoms_LR2,
-                                                  pot_option=pot_option, potfilename='System_LR2',
+                                                  pot_option=pot_option, potfilename=snapshot+'System_LR2',
                                                   pyframe=True, pot_create=True, PElabel_pyframe=PElabel_pyframe)
 
     # Note: pot_create=False for B since the embedding potential is the same
     PolEmbed_SP_B_LR2 = yggdrasill.PolEmbedTheory(fragment=snap_frag, qm_theory=Psi4QMpart_B_LR2,
                                                   qmatoms=qmatoms, peatoms=peatoms_LR2, mmatoms=mmatoms_LR2,
-                                                  pot_option=pot_option, potfilename='System_LR2',
+                                                  pot_option=pot_option, potfilename=snapshot+'System_LR2',
                                                   pyframe=True, pot_create=False, PElabel_pyframe=PElabel_pyframe)
 
     # Simple Energy SP calc. potfile needed for B run.
@@ -879,22 +879,22 @@ def LRPolsnapshotcalc(args):
     print(BC.OKGREEN,
           "Starting PolEmbed job for snapshot {} with ShellRegion: {}. State A: Charge: {}  Mult: {}".format(
               snapshot, ShellRegion1, solvsphere.ChargeA, solvsphere.MultA), BC.END)
-    PolEmbedEnergyA_LR1 = PolEmbed_SP_A_LR1.run(potfile='System_LR1.pot', nprocs=NumCoresPsi4)
+    PolEmbedEnergyA_LR1 = PolEmbed_SP_A_LR1.run(potfile=snapshot+'System_LR1.pot', nprocs=NumCoresPsi4)
     print(BC.OKGREEN,
           "Starting PolEmbed job for snapshot {} with ShellRegion: {}. State A: Charge: {}  Mult: {}".format(
               snapshot, ShellRegion2, solvsphere.ChargeA, solvsphere.MultA), BC.END)
-    PolEmbedEnergyA_LR2 = PolEmbed_SP_A_LR2.run(potfile='System_LR2.pot', nprocs=NumCoresPsi4, restart=True)
+    PolEmbedEnergyA_LR2 = PolEmbed_SP_A_LR2.run(potfile=snapshot+'System_LR2.pot', nprocs=NumCoresPsi4, restart=True)
 
     # Doing chargeB (assumed open-shell) after closed-shell.
     print(BC.OKGREEN,
           "Starting PolEmbed job for snapshot {} with ShellRegion: {}. State B: Charge: {}  Mult: {}".format(
               snapshot, ShellRegion1, solvsphere.ChargeB, solvsphere.MultB), BC.END)
-    PolEmbedEnergyB_LR1 = PolEmbed_SP_B_LR1.run(potfile='System_LR1.pot', nprocs=NumCoresPsi4, restart=True)
+    PolEmbedEnergyB_LR1 = PolEmbed_SP_B_LR1.run(potfile=snapshot+'System_LR1.pot', nprocs=NumCoresPsi4, restart=True)
 
     print(BC.OKGREEN,
           "Starting PolEmbed job for snapshot {} with ShellRegion: {}. State B: Charge: {}  Mult: {}".format(
               snapshot, ShellRegion2, solvsphere.ChargeB, solvsphere.MultB), BC.END)
-    PolEmbedEnergyB_LR2 = PolEmbed_SP_B_LR2.run(potfile='System_LR2.pot', nprocs=NumCoresPsi4, restart=True)
+    PolEmbedEnergyB_LR2 = PolEmbed_SP_B_LR2.run(potfile=snapshot+'System_LR2.pot', nprocs=NumCoresPsi4, restart=True)
 
     PolEmbedEnergyAB_LR1 = (PolEmbedEnergyB_LR1 - PolEmbedEnergyA_LR1) * constants.hartoeV
     PolEmbedEnergyAB_LR2 = (PolEmbedEnergyB_LR2 - PolEmbedEnergyA_LR2) * constants.hartoeV
