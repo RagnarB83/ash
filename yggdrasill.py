@@ -1305,6 +1305,7 @@ class Psi4Theory:
                 self.energy = psi4.energy('scf', dft_functional=self.psi4functional)
 
             #Keep restart file 180 as lastrestart.180
+            PID = str(os.getpid())
             print("Renaming {} to lastrestart.180".format(os.path.splitext(self.outputname)[0]+'.default.'+PID+'.180.npy'))
             os.rename(os.path.splitext(self.outputname)[0]+'.default.'+PID+'.180.npy', 'lastrestart.180')
 
