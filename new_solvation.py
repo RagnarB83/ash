@@ -540,19 +540,21 @@ def solvshell ( orcadir='', NumCores='', calctype='', orcasimpleinput_LL='',
         #RUNNING LRPOL PSI4 jobs in parallel
         # EXAMPLE:
         print("totrepsnaps:", totrepsnaps)
-        pool = mp.Pool(len(totrepsnaps))
 
-        #def LRPolsnapshotcalc(snapshot, ShellRegion1, ShellRegion2):
-        #results = pool.map(LRPolsnapshotcalc, [[snapshotfile,] for snapshotfile in totrepsnaps])
+        # Cores for Psi4 set depending on snapshots available (len(totrepsnaps))and total cores(NumCores)
+        NumCoresPsi4 = int(NumCores/len(totrepsnaps))
+        pool = mp.Pool(len(totrepsnaps))
         results = pool.map(LRPolsnapshotcalc, [[snapshot, solvsphere, psi4dict, psi4_functional, pot_option,
-                                                ShellRegion1, ShellRegion2, LRPoldict_snaps_LR1, LRPoldict_snaps_LR2]
+                                                ShellRegion1, ShellRegion2, LRPoldict_snaps_LR1, LRPoldict_snaps_LR2, NumCoresPsi4]
                                                for snapshot in totrepsnaps])
 
         pool.close()
         print("Pool closed")
         print("Current dir:", os.getcwd())
+        print("results:", results)
         print("LRPoldict_snaps_LR1:", LRPoldict_snaps_LR1)
         print("LRPoldict_snaps_LR2:", LRPoldict_snaps_LR2)
+
 
         # Gathering stuff for both regions
         if calctype == "redox":
@@ -794,14 +796,13 @@ def LRPolsnapshotcalc(args):
     ShellRegion2=args[6]
     LRPoldict_snaps_LR1=args[7]
     LRPoldict_snaps_LR2=args[8]
+    NumCoresPsi4=args[9]
 
-    print("pot_option:", pot_option)
-    # Cores to be set depending on snapshots available and total cores
-    NumCoresPsi4 = 8
 
-    # create dir for each snapshot?
+    # create dir for each snapshot and copy snapshot into it
     os.mkdir(snapshot+'_dir')
     os.chdir(snapshot+'_dir')
+    shutil.copyfile('../' + snapshot + '.c', './' + snapshot + '.c')
 
 
     # Global vars need to be acccessed: yggdrasill.Fragment,  solvsphere, settings_solvation (scale and tol)
