@@ -1314,9 +1314,9 @@ class Psi4Theory:
             #snapA-62000Psi4_A_LR1.default.87544.180.npy
             #self.outputname
             PID=str(os.getpid())
-            print("XXX:", self.outputname+'.default.'+PID+'.180.npy')
+            print("XXX:", os.path.splitext(self.outputname)[0]+'.default.'+PID+'.180.npy')
             print("PID:", PID)
-            os.rename(self.outputname+'.default'+PID+'.180.npy', 'lastrestart.180')
+            os.rename(os.path.splitext(self.outputname)[0]+'.default'+PID+'.180.npy', 'lastrestart.180')
 
 
             #TODO: write in error handling here
