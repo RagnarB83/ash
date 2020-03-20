@@ -535,6 +535,7 @@ def solvshell ( orcadir='', NumCores='', calctype='', orcasimpleinput_LL='',
         LRPoldict_snaps_LR1 = {}
         LRPoldict_snaps_LR2 = {}
 
+        pot_option='SEP'
 
         #Function to do all calcs for 1 snapshot (used with multiprocessing)
         #, ShellRegion1, ShellRegion2
