@@ -1219,6 +1219,12 @@ class Psi4Theory:
                 print("Printsetting = False. Printing output to file: {}) ".format(self.outputname))
                 psi4.core.set_output_file(self.outputname, False)
 
+            #Psi4 scratch dir
+            print("Current dir:", os.getcwd())
+            print("Setting Psi4 scratchdir to ", os.getcwd())
+            psi4_io.set_default_path(os.getcwd())
+
+
             #Creating Psi4 molecule object using lists and manual information
             #print("elems:", elems)
             #print("current_coords:", current_coords)
