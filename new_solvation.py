@@ -524,19 +524,7 @@ def solvshell ( orcadir='', NumCores='', calctype='', orcasimpleinput_LL='',
         print("ShellRegion2: ", ShellRegion2)
 
         #Create inputfiles of repsnapshots with increased QM regions
-        print("Creating inputfiles for Long-Range Correction Region1:", SRPolShell, "Å")
-        #identifiername='_LR_LL-R1'
-        #Looping over shell region
-        LRPol_Arepsnaps_ABenergy_Region1=[]
-        LRPol_Arepsnaps_ABenergy_Region2=[]
-        LRPol_Brepsnaps_ABenergy_Region1=[]
-        LRPol_Brepsnaps_ABenergy_Region2=[]
-        LRPol_Allrepsnaps_ABenergy_Region1=[]
-        LRPol_Allrepsnaps_ABenergy_Region2=[]
-        # Changing to dict
-        LRPoldict_snaps_LR1 = {}
-        LRPoldict_snaps_LR2 = {}
-
+        print("Running jobs for Long-Range Correction Region1:", SRPolShell, "Å")
         #RUNNING LRPOL PSI4 jobs in parallel
         # EXAMPLE:
         print("totrepsnaps:", totrepsnaps)
@@ -545,19 +533,29 @@ def solvshell ( orcadir='', NumCores='', calctype='', orcasimpleinput_LL='',
         NumCoresPsi4 = int(NumCores/len(totrepsnaps))
         pool = mp.Pool(len(totrepsnaps))
         results = pool.map(LRPolsnapshotcalc, [[snapshot, solvsphere, psi4dict, psi4_functional, pot_option,
-                                                ShellRegion1, ShellRegion2, LRPoldict_snaps_LR1, LRPoldict_snaps_LR2, NumCoresPsi4]
+                                                ShellRegion1, ShellRegion2, NumCoresPsi4]
                                                for snapshot in totrepsnaps])
-
         pool.close()
         pool.join()
-        print("Pool closed")
-        print("Current dir:", os.getcwd())
+        #Results contain list of lists where each list : [snapshotname, VIE_LR1, VIE_LR2]
         print("results:", results)
-
-
-        print("LRPoldict_snaps_LR1:", LRPoldict_snaps_LR1)
-        print("LRPoldict_snaps_LR2:", LRPoldict_snaps_LR2)
-        exit()
+        #Combinining
+        LRPol_Arepsnaps_ABenergy_Region1=[]
+        LRPol_Arepsnaps_ABenergy_Region2=[]
+        LRPol_Brepsnaps_ABenergy_Region1=[]
+        LRPol_Brepsnaps_ABenergy_Region2=[]
+        LRPol_Allrepsnaps_ABenergy_Region1=[]
+        LRPol_Allrepsnaps_ABenergy_Region2=[]
+        for r in results:
+            if 'snapA' in r[0]:
+                LRPol_Arepsnaps_ABenergy_Region1.append(r[1])
+                LRPol_Arepsnaps_ABenergy_Region2.append(r[2])
+            elif 'snapB' in r[0]:
+                LRPol_Brepsnaps_ABenergy_Region1.append(r[1])
+                LRPol_Brepsnaps_ABenergy_Region2.append(r[2])
+            if calctype=="redox":
+                LRPol_Allrepsnaps_ABenergy_Region1.append(r[1])
+                LRPol_Allrepsnaps_ABenergy_Region2.append(r[2])
 
         # Gathering stuff for both regions
         if calctype == "redox":
@@ -797,9 +795,7 @@ def LRPolsnapshotcalc(args):
     pot_option=args[4]
     ShellRegion1=args[5]
     ShellRegion2=args[6]
-    LRPoldict_snaps_LR1=args[7]
-    LRPoldict_snaps_LR2=args[8]
-    NumCoresPsi4=args[9]
+    NumCoresPsi4=args[7]
 
 
     # create dir for each snapshot and copy snapshot into it
@@ -909,11 +905,6 @@ def LRPolsnapshotcalc(args):
     PolEmbedEnergyAB_LR1 = (PolEmbedEnergyB_LR1 - PolEmbedEnergyA_LR1) * constants.hartoeV
     PolEmbedEnergyAB_LR2 = (PolEmbedEnergyB_LR2 - PolEmbedEnergyA_LR2) * constants.hartoeV
 
-    # Changing to dict
-    LRPoldict_snaps_LR1[snapshot] = PolEmbedEnergyAB_LR1
-    LRPoldict_snaps_LR2[snapshot] = PolEmbedEnergyAB_LR2
-    print("LRPoldict_snaps_LR1:", LRPoldict_snaps_LR1)
-    print("LRPoldict_snaps_LR2:", LRPoldict_snaps_LR2)
+    #Returning list of snapshotname and energies for both regions
     return [snapshot, PolEmbedEnergyAB_LR1, PolEmbedEnergyAB_LR2]
 
-    #os.chdir(snapshot + '_dir')
