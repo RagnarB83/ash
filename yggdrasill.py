@@ -1316,7 +1316,7 @@ class Psi4Theory:
             PID=str(os.getpid())
             print("XXX:", os.path.splitext(self.outputname)[0]+'.default.'+PID+'.180.npy')
             print("PID:", PID)
-            os.rename(os.path.splitext(self.outputname)[0]+'.default'+PID+'.180.npy', 'lastrestart.180')
+            os.rename(os.path.splitext(self.outputname)[0]+'.default.'+PID+'.180.npy', 'lastrestart.180')
 
 
             #TODO: write in error handling here
