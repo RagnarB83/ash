@@ -17,6 +17,7 @@ import constants
 import statistics
 import shutil
 import yggdrasill
+import multiprocessing as mp
 
 
 def solvshell ( orcadir='', NumCores='', calctype='', orcasimpleinput_LL='',
@@ -538,7 +539,6 @@ def solvshell ( orcadir='', NumCores='', calctype='', orcasimpleinput_LL='',
 
         #RUNNING LRPOL PSI4 jobs in parallel
         # EXAMPLE:
-        import multiprocessing as mp
         print("totrepsnaps:", totrepsnaps)
         pool = mp.Pool(len(totrepsnaps))
 
