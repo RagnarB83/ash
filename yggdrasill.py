@@ -1173,17 +1173,11 @@ class Psi4Theory:
         else:
             print("Restart Option Off!")
 
-        if runmode != 'library':
-            self.runmode=runmode
-
-
-
         #If pe and potfile given as run argument
         if pe is not False:
             self.pe=pe
         if potfile != '':
             self.potfile=potfile
-
 
         #Coords provided to run or else taken from initialization.
         if len(current_coords) != 0:
@@ -1198,7 +1192,6 @@ class Psi4Theory:
             else:
                 qm_elems = elems
 
-
         #PSI4 runmode:
         #   : library means that Yggdrasill will load Psi4 libraries and run psi4 directly
         #   : inputfile means that Yggdrasill will create Psi4 inputfile and run a separate psi4 executable
@@ -1212,7 +1205,6 @@ class Psi4Theory:
                 exit()
 
             #Printing to output or not:
-            #print("self.printsetting:", self.printsetting)
             if self.printsetting:
                 print("Printsetting = True. Printing output to stdout...")
             else:
@@ -1222,9 +1214,9 @@ class Psi4Theory:
             #Psi4 scratch dir
             print("Current dir:", os.getcwd())
             print("Setting Psi4 scratchdir to ", os.getcwd())
-            psi4_io = psi4.IOManager.shared_object()
+            psi4_io = psi4.core.IOManager.shared_object()
             psi4_io.set_default_path(os.getcwd())
-
+            print("Current dir:", os.getcwd())
 
             #Creating Psi4 molecule object using lists and manual information
             #print("elems:", elems)
