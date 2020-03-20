@@ -549,12 +549,15 @@ def solvshell ( orcadir='', NumCores='', calctype='', orcasimpleinput_LL='',
                                                for snapshot in totrepsnaps])
 
         pool.close()
+        pool.join()
         print("Pool closed")
         print("Current dir:", os.getcwd())
         print("results:", results)
+
+
         print("LRPoldict_snaps_LR1:", LRPoldict_snaps_LR1)
         print("LRPoldict_snaps_LR2:", LRPoldict_snaps_LR2)
-
+        exit()
 
         # Gathering stuff for both regions
         if calctype == "redox":
@@ -909,5 +912,8 @@ def LRPolsnapshotcalc(args):
     # Changing to dict
     LRPoldict_snaps_LR1[snapshot] = PolEmbedEnergyAB_LR1
     LRPoldict_snaps_LR2[snapshot] = PolEmbedEnergyAB_LR2
+    print("LRPoldict_snaps_LR1:", LRPoldict_snaps_LR1)
+    print("LRPoldict_snaps_LR2:", LRPoldict_snaps_LR2)
+    return [snapshot, PolEmbedEnergyAB_LR1, PolEmbedEnergyAB_LR2]
 
     #os.chdir(snapshot + '_dir')
