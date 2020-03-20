@@ -544,7 +544,8 @@ def solvshell ( orcadir='', NumCores='', calctype='', orcasimpleinput_LL='',
 
         #def LRPolsnapshotcalc(snapshot, ShellRegion1, ShellRegion2):
         #results = pool.map(LRPolsnapshotcalc, [[snapshotfile,] for snapshotfile in totrepsnaps])
-        results = pool.map(LRPolsnapshotcalc, [[snapshot, solvsphere, psi4dict, psi4_functional, pot_option] for snapshot in totrepsnaps])
+        results = pool.map(LRPolsnapshotcalc, [[snapshot, solvsphere, psi4dict, psi4_functional, pot_option,
+                                                ShellRegion1, ShellRegion2] for snapshot in totrepsnaps])
         pool.close()
 
         print("Pool closed")
@@ -785,6 +786,8 @@ def LRPolsnapshotcalc(args):
     psi4dict=args[2]
     psi4_functional=args[3]
     pot_option=args[4]
+    ShellRegion1=args[5]
+    ShellRegion2=args[6]
     print("pot_option:", pot_option)
     # Cores to be set depending on snapshots available and total cores
     NumCoresPsi4 = 8
