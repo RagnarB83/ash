@@ -1222,7 +1222,7 @@ class Psi4Theory:
             #Psi4 scratch dir
             print("Current dir:", os.getcwd())
             print("Setting Psi4 scratchdir to ", os.getcwd())
-            psi4_io.set_default_path(os.getcwd())
+            psi.psi4_io.set_default_path(os.getcwd())
 
 
             #Creating Psi4 molecule object using lists and manual information
