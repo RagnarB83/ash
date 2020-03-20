@@ -778,7 +778,11 @@ def solvshell ( orcadir='', NumCores='', calctype='', orcasimpleinput_LL='',
 
 # Function to do all calcs for 1 snapshot (used with multiprocessing)
 # , ShellRegion1, ShellRegion2
-def LRPolsnapshotcalc(snapshot, solvsphere):
+def LRPolsnapshotcalc(args):
+    print("args:", args)
+    snapshot=args[0]
+    print("snapshot:", snapshot)
+    exit()
     # Cores to be set depending on snapshots available and total cores
     NumCoresPsi4 = 8
     # create dir for each snapshot?
