@@ -1126,8 +1126,9 @@ class ORCATheory:
 # PE: Polarizable embedding (CPPE). Pass pe_modulesettings dict as well
 class Psi4Theory:
     def __init__(self, fragment='', charge='', mult='', printsetting='False', psi4settings='', psi4functional='',
-                 runmode='library', psi4dir='', pe=False, potfile=''):
+                 runmode='library', psi4dir='', pe=False, potfile='', outputname='psi4output.dat'):
 
+        self.outputname=outputname
         self.printsetting=printsetting
         print("printsetting:", printsetting)
         print("self.printsetting:", self.printsetting)
@@ -1215,8 +1216,8 @@ class Psi4Theory:
             if self.printsetting:
                 print("Printsetting = True. Printing output to stdout...")
             else:
-                print("Printsetting = False. Printing output to file: psi4output.dat ")
-                psi4.core.set_output_file('psi4output.dat', False)
+                print("Printsetting = False. Printing output to file: {}) ".format(self.outputname))
+                psi4.core.set_output_file(self.outputname, False)
 
             #Creating Psi4 molecule object using lists and manual information
             #print("elems:", elems)
