@@ -781,6 +781,8 @@ def solvshell ( orcadir='', NumCores='', calctype='', orcasimpleinput_LL='',
 # Function to do all calcs for 1 snapshot (used with multiprocessing)
 # , ShellRegion1, ShellRegion2
 def LRPolsnapshotcalc(args):
+    print("Starting function: LRPolsnapshotcalc")
+    print(mp.current_process())
     print("args:", args)
     snapshot=args[0]
     solvsphere=args[1]
