@@ -544,7 +544,7 @@ def solvshell ( orcadir='', NumCores='', calctype='', orcasimpleinput_LL='',
 
         #def LRPolsnapshotcalc(snapshot, ShellRegion1, ShellRegion2):
         #results = pool.map(LRPolsnapshotcalc, [[snapshotfile,] for snapshotfile in totrepsnaps])
-        results = pool.map(LRPolsnapshotcalc, totrepsnaps)
+        results = pool.map(LRPolsnapshotcalc, [[snapshot, solvsphere] for snapshot in totrepsnaps])
         pool.close()
 
         print("Pool closed")
@@ -778,8 +778,7 @@ def solvshell ( orcadir='', NumCores='', calctype='', orcasimpleinput_LL='',
 
 # Function to do all calcs for 1 snapshot (used with multiprocessing)
 # , ShellRegion1, ShellRegion2
-def LRPolsnapshotcalc(snapshot):
-    global solvsphere
+def LRPolsnapshotcalc(snapshot, solvsphere):
     # Cores to be set depending on snapshots available and total cores
     NumCoresPsi4 = 8
     # create dir for each snapshot?
