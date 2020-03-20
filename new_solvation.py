@@ -645,6 +645,8 @@ def solvshell ( orcadir='', NumCores='', calctype='', orcasimpleinput_LL='',
 
         #RUNNING LRPOL PSI4 jobs in parallel
         # EXAMPLE:
+        import multiprocessing as mp
+        print("totrepsnaps:", totrepsnaps)
         pool = mp.Pool(len(totrepsnaps))
 
         #def LRPolsnapshotcalc(snapshot, ShellRegion1, ShellRegion2):
