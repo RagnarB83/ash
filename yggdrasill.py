@@ -1168,10 +1168,6 @@ class Psi4Theory:
             mm_elems=[], elems=[], Grad=False, PC=False, nprocs=1, pe=False, potfile='', runmode='library', restart=False ):
 
         print(BC.OKBLUE,BC.BOLD, "------------RUNNING PSI4 INTERFACE-------------", BC.END)
-        if restart==True:
-            print("Restart Option On!")
-        else:
-            print("Restart Option Off!")
 
         #If pe and potfile given as run argument
         if pe is not False:
@@ -1266,6 +1262,8 @@ class Psi4Theory:
                 self.psi4settings['guess'] = 'read'
                 #Renameing orbital file
                 PID = str(os.getpid())
+                print("Restart Option On!")
+                print("Renaming lastrestart.180 to {}".format(os.path.splitext( self.outputname)[0] + '.default.' + PID + '.180.npy'))
                 os.rename('lastrestart.180', os.path.splitext( self.outputname)[0] + '.default.' + PID + '.180.npy')
             else:
                 self.psi4settings['guess'] = 'sad'
@@ -1307,6 +1305,7 @@ class Psi4Theory:
                 self.energy = psi4.energy('scf', dft_functional=self.psi4functional)
 
             #Keep restart file 180 as lastrestart.180
+            print("Renaming {} to lastrestart.180".format(os.path.splitext(self.outputname)[0]+'.default.'+PID+'.180.npy'))
             os.rename(os.path.splitext(self.outputname)[0]+'.default.'+PID+'.180.npy', 'lastrestart.180')
 
 
