@@ -37,6 +37,7 @@ def run_orca_SP(list, Grad=False):
     inpfile=list[1]
     try:
         print(mp.current_process())
+        print("Running inpfile", inpfile)
     except:
         pass
     if Grad==True:
