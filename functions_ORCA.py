@@ -6,6 +6,12 @@ import settings_solvation
 import constants
 
 
+# Once inputfiles are ready, organize them. We want open-shell calculation (e.g. oxidized) to reuse closed-shell GBW file
+# https://www.machinelearningplus.com/python/parallel-processing-python/
+# Good subprocess documentation: http://queirozf.com/entries/python-3-subprocess-examples
+# https://shuzhanfan.github.io/2017/12/parallel-processing-python-subprocess/
+# https://data-flair.training/blogs/python-multiprocessing/
+# https://rsmith.home.xs4all.nl/programming/parallel-execution-with-python.html
 def run_inputfiles_in_parallel(orcadir, inpfiles, numcores):
     """
     Run inputfiles in parallel using multiprocessing
@@ -24,33 +30,15 @@ def run_inputfiles_in_parallel(orcadir, inpfiles, numcores):
     pool.close()
     print("Calculations are done")
 
-#TODO: Same as above?? Delete???
-#TODO: Yes, delete once solvshell is confirmed to work.
-def run_inputfiles_in_parallel_AB(inpfiles, numcores):
-    print("can we replace this one with run_inputfiles_in_parallel instead??")
-
-    exit()
-    import multiprocessing as mp
-    # Once inputfiles are ready, organize them. We want open-shell calculation (e.g. oxidized) to reuse closed-shell GBW file
-    #https://www.machinelearningplus.com/python/parallel-processing-python/
-    #Good subprocess documentation: http://queirozf.com/entries/python-3-subprocess-examples
-    #https://shuzhanfan.github.io/2017/12/parallel-processing-python-subprocess/
-    #https://data-flair.training/blogs/python-multiprocessing/
-    #https://rsmith.home.xs4all.nl/programming/parallel-execution-with-python.html
-    blankline()
-    print("Number of CPU cores: ", numcores)
-    print("Number of inputfiles:", len(inpfiles))
-    print("Running snapshots in parallel (both states in each calculation).")
-    pool = mp.Pool(numcores)
-    results = pool.map(run_orca_SP, [file for file in inpfiles])
-    pool.close()
-    print("Calculations are done")
-
 #Run single-point ORCA calculation (Energy or Engrad). Assumes no ORCA parallelization.
-#Function can be  called by multiprocessing.
+#Function can be called by multiprocessing.
 def run_orca_SP(list, Grad=False):
     orcadir=list[0]
     inpfile=list[1]
+    try:
+        print(mp.current_process())
+    except:
+        pass
     if Grad==True:
         with open(inpfile) as ifile:
             insert_line_into_file(inpfile, '!', '! Engrad')
