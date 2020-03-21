@@ -140,6 +140,8 @@ def solvshell ( orcadir='', NumCores='', calctype='', orcasimpleinput_LL='',
     os.chdir('./snaps')
     os.mkdir('snaps-LL')
     os.chdir('./snaps-LL')
+    print("solvsphere.snapshotsA:", solvsphere.snapshotsA)
+    print("solvsphere.snapshots:", solvsphere.snapshots)
     for i in solvsphere.snapshots:
         shutil.copyfile('../'+i+'.c', './'+i+'.c')
     print("Current dir:", os.getcwd())
