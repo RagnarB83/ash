@@ -156,7 +156,7 @@ def solvshell ( orcadir='', NumCores='', calctype='', orcasimpleinput_LL='',
     solvent_atoms=solvsphere.solventatoms
     snapshotinpfiles = create_AB_inputfiles_ORCA(solute_atoms, solvent_atoms, solvsphere, solvsphere.snapshots,
                                                       orcasimpleinput_LL, orcablockinput_LL, solventunitcharges, identifiername)
-
+    print("solvsphere.snapshotsA:", solvsphere.snapshotsA)
     if calctype == "redox":
         print("There are {} snapshots for A trajectory.".format(len(solvsphere.snapshotsA)))
         print("There are {} snapshots for B trajectory.".format(len(solvsphere.snapshotsB)))
