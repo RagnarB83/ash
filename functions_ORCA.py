@@ -4,6 +4,7 @@ from functions_coords import *
 from functions_general import *
 import settings_solvation
 import constants
+import multiprocessing as mp
 
 
 # Once inputfiles are ready, organize them. We want open-shell calculation (e.g. oxidized) to reuse closed-shell GBW file
@@ -20,7 +21,6 @@ def run_inputfiles_in_parallel(orcadir, inpfiles, numcores):
     :param numcores: number of cores to use (integer)
     ;return: returns nothing. Outputfiles on disk parsed separately
     """
-    import multiprocessing as mp
     blankline()
     print("Number of CPU cores: ", numcores)
     print("Number of inputfiles:", len(inpfiles))
