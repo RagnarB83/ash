@@ -522,7 +522,7 @@ class NonBondedTheory:
 #Peatoms: polarizable atoms. MMatoms: nonpolarizable atoms (e.g. TIP3P)
 class PolEmbedTheory:
     def __init__(self, fragment='', qm_theory='', qmatoms=[], peatoms=[], mmatoms=[], pot_create=True,
-                 potfilename='System.pot', pot_option='', pyframe=False, PElabel_pyframe='MM'):
+                 potfilename='System', pot_option='', pyframe=False, PElabel_pyframe='MM'):
         print(BC.WARNING,BC.BOLD,"------------Defining PolEmbedTheory object-------------", BC.END)
         self.pot_create=pot_create
         self.pyframe=pyframe
