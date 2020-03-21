@@ -164,7 +164,7 @@ def solvshell ( orcadir='', NumCores='', calctype='', orcasimpleinput_LL='',
 
     print("There are {} snapshots in total.".format(len(snapshotinpfiles)))
     blankline()
-    print_time_rel_and_tot(CheckpointTime, beginTime)
+    print_time_rel_and_tot(CheckpointTime, beginTime, 'LL-theory prep')
     CheckpointTime = time.time()
     #print("The following snapshot inputfiles will be run:\n", snapshotinpfiles)
     blankline()
@@ -765,7 +765,7 @@ def solvshell ( orcadir='', NumCores='', calctype='', orcasimpleinput_LL='',
             blankline()
     blankline()
     blankline()
-    print_time_rel_and_tot(CheckpointTime, beginTime)
+    print_time_rel_and_tot(CheckpointTime, beginTime, 'final output')
     print_solvshell_footer()
 
 # Function to do all calcs for 1 snapshot (used with multiprocessing)
