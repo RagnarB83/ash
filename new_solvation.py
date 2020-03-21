@@ -140,8 +140,6 @@ def solvshell ( orcadir='', NumCores='', calctype='', orcasimpleinput_LL='',
     os.chdir('./snaps')
     os.mkdir('snaps-LL')
     os.chdir('./snaps-LL')
-    print("solvsphere.snapshotsA:", solvsphere.snapshotsA)
-    print("solvsphere.snapshots:", solvsphere.snapshots)
     for i in solvsphere.snapshots:
         shutil.copyfile('../'+i+'.c', './'+i+'.c')
     print("Current dir:", os.getcwd())
@@ -158,7 +156,6 @@ def solvshell ( orcadir='', NumCores='', calctype='', orcasimpleinput_LL='',
     solvent_atoms=solvsphere.solventatoms
     snapshotinpfiles = create_AB_inputfiles_ORCA(solute_atoms, solvent_atoms, solvsphere, solvsphere.snapshots,
                                                       orcasimpleinput_LL, orcablockinput_LL, solventunitcharges, identifiername)
-    print("solvsphere.snapshotsA:", solvsphere.snapshotsA)
     if calctype == "redox":
         print("There are {} snapshots for A trajectory.".format(len(solvsphere.snapshotsA)))
         print("There are {} snapshots for B trajectory.".format(len(solvsphere.snapshotsB)))
