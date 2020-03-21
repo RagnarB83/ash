@@ -516,13 +516,14 @@ def solvshell ( orcadir='', NumCores='', calctype='', orcasimpleinput_LL='',
 
         #Todo: make more general
         #Ignoring QM region for now. Only setting PE region
-        ShellRegion1=0
-        ShellRegion2=10
+        ShellRegion1=SRPolShell
+        ShellRegion2=LRPolShell
         print("ShellRegion1: ", ShellRegion1)
         print("ShellRegion2: ", ShellRegion2)
 
         #Create inputfiles of repsnapshots with increased QM regions
-        print("Running jobs for Long-Range Correction Region1:", SRPolShell, "Å")
+        print("Running jobs for Long-Range Correction Region1:", ShellRegion1, "Å")
+        print("Running jobs for Long-Range Correction Region2:", ShellRegion2, "Å")
         #RUNNING LRPOL PSI4 jobs in parallel
         # EXAMPLE:
         print("totrepsnaps:", totrepsnaps)
