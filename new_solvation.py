@@ -813,10 +813,8 @@ def LRPolsnapshotcalc(args):
     qm_solvshell_LR2 = get_solvshell(solvsphere, snap_frag.elems, snap_frag.coords, LRPolQMRegion, solute_elems,
                                   solute_coords,
                                   settings_solvation.scale, settings_solvation.tol)
-    qmatoms_LR2 = solvsphere.soluteatomsA + qm_solvshell_LR2
-
-    peatoms_LR2 = listdiff(PEsolvshell_LR2.allatoms, qmatoms_LR2 )  # Polarizable atoms
-
+    qmatoms_LR2 = solvsphere.soluteatomsA + qm_solvshell_LR2 #QMatoms. solute + possible QM solvshell
+    peatoms_LR2 = listdiff(PEsolvshell_LR2, qmatoms_LR2 )  # Polarizable atoms, except QM shell
     mmatoms_LR2 = listdiff(solvsphere.allatoms, qmatoms_LR2 + peatoms_LR2)  # Nonpolarizable atoms
 
     print("qmatoms_LR1 ({} atoms): {}".format(len(qmatoms_LR1), qmatoms_LR1))
