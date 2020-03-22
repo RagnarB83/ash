@@ -510,17 +510,10 @@ def solvshell ( orcadir='', NumCores='', calctype='', orcasimpleinput_LL='',
 
         print("Doing Long-Range Polarization Step. Creating inputfiles...")
         print("Snapshots:", totrepsnaps)
-        print("SR QM-region shell:", SRPolShell, "Å")
-        print("LR QM-region shell:", LRPolShell, "Å")
+        print("LRPolRegion1", LRPolRegion1, "Å")
+        print("LRPolRegion2:", LRPolRegion2, "Å")
+        print("LRPolQMRegion:", LRPolQMRegion, "Å")
         blankline()
-
-        #Todo: make more general
-        #Ignoring QM region for now. Only setting PE region
-        #LRPolRegion1=0, LRPolRegion2=20, LRPolQMRegion=0
-        print("LRPolRegion1: ", LRPolRegion1)
-        print("LRPolRegion2: ", LRPolRegion2)
-        print("LRPolQMRegion:", LRPolQMRegion)
-
         #RUNNING LRPOL PSI4 jobs in parallel
         # EXAMPLE:
         print("totrepsnaps:", totrepsnaps)
