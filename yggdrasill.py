@@ -1242,7 +1242,7 @@ class Psi4Theory:
 
             #Setting inputvariables
             #Todo: make memory psi4-interface variable ?
-            psi4.set_memory('1500 MB')
+            psi4.set_memory('2500 MB')
 
             #Changing charge and multiplicity
             #psi4molfrag.set_molecular_charge(self.charge)
@@ -1292,7 +1292,8 @@ class Psi4Theory:
             #Controlling OpenMP parallelization. Controlled here, not via OMP_NUM_THREADS etc.
             psi4.set_num_threads(nprocs)
 
-            #Namespace issue overlap integrals
+            #Namespace issue overlap integrals requires this when running with multiprocessing:
+            # http://forum.psicode.org/t/wfn-form-h-errors/1304/2
             psi4.core.clean()
 
             #Running energy or energy+gradient. Currently hardcoded to SCF-DFT jobs
@@ -1305,6 +1306,7 @@ class Psi4Theory:
             else:
                 self.energy = psi4.energy('scf', dft_functional=self.psi4functional)
 
+            psi4.core.clean()
             #Keep restart file 180 as lastrestart.180
             PID = str(os.getpid())
             try:
