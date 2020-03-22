@@ -1126,8 +1126,9 @@ class ORCATheory:
 # PE: Polarizable embedding (CPPE). Pass pe_modulesettings dict as well
 class Psi4Theory:
     def __init__(self, fragment='', charge='', mult='', printsetting='False', psi4settings='', psi4functional='',
-                 runmode='library', psi4dir='', pe=False, potfile='', outputname='psi4output.dat'):
+                 runmode='library', psi4dir='', pe=False, potfile='', outputname='psi4output.dat', label=''):
 
+        self.label=label
         self.outputname=outputname
         self.printsetting=printsetting
         self.runmode=runmode
@@ -1198,6 +1199,11 @@ class Psi4Theory:
                 print(BC.WARNING,"If problematic, switch to inputfile based Psi4 interface: NOT YET READY", BC.END)
                 exit()
 
+            if self.label=='label':
+                psi4.IO.set_default_namespace("psi4job_ygg")
+            else:
+                psi4.IO.set_default_namespace(self.label)
+
             #Printing to output or not:
             if self.printsetting:
                 print("Printsetting = True. Printing output to stdout...")
@@ -1206,18 +1212,13 @@ class Psi4Theory:
                 psi4.core.set_output_file(self.outputname, False)
 
             #Psi4 scratch dir
-            print("Current dir:", os.getcwd())
             print("Setting Psi4 scratchdir to ", os.getcwd())
             psi4_io = psi4.core.IOManager.shared_object()
             psi4_io.set_default_path(os.getcwd())
             print("Current dir:", os.getcwd())
 
             #Creating Psi4 molecule object using lists and manual information
-            #print("elems:", elems)
-            #print("current_coords:", current_coords)
-            #print("current_MM_coords:", current_MM_coords)
-            #print("MMcharges:", MMcharges)
-            psi4molfrag = psi4.core.Molecule.from_arrays(
+            self.label = psi4.core.Molecule.from_arrays(
                 elez=elemstonuccharges(qm_elems),
                 fix_com=True,
                 fix_orientation=True,
@@ -1225,8 +1226,8 @@ class Psi4Theory:
                 molecular_charge=self.charge,
                 molecular_multiplicity=self.mult,
                 geom=current_coords)
-            psi4.activate(psi4molfrag)
-
+            #psi4.activate(psi4molfrag)
+            psi4.activate(self.label)
 
             #Adding MM charges as pointcharges if PC=True
             #Might be easier to use PE and potfile ??
@@ -1306,7 +1307,6 @@ class Psi4Theory:
             else:
                 self.energy = psi4.energy('scf', dft_functional=self.psi4functional)
 
-            psi4.core.clean()
             #Keep restart file 180 as lastrestart.180
             PID = str(os.getpid())
             try:
