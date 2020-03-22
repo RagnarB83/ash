@@ -35,11 +35,7 @@ def run_inputfiles_in_parallel(orcadir, inpfiles, numcores):
 def run_orca_SP(list, Grad=False):
     orcadir=list[0]
     inpfile=list[1]
-    try:
-        print(mp.current_process())
-        print("Running inpfile", inpfile)
-    except:
-        pass
+    print("Running inpfile", inpfile)
     if Grad==True:
         with open(inpfile) as ifile:
             insert_line_into_file(inpfile, '!', '! Engrad')
