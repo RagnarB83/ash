@@ -1242,7 +1242,7 @@ class Psi4Theory:
 
             #Setting inputvariables
             #Todo: make memory psi4-interface variable ?
-            psi4.set_memory('500 MB')
+            psi4.set_memory('1500 MB')
 
             #Changing charge and multiplicity
             #psi4molfrag.set_molecular_charge(self.charge)
@@ -1291,6 +1291,9 @@ class Psi4Theory:
 
             #Controlling OpenMP parallelization. Controlled here, not via OMP_NUM_THREADS etc.
             psi4.set_num_threads(nprocs)
+
+            #Namespace issue overlap integrals
+            psi4.core.clean()
 
             #Running energy or energy+gradient. Currently hardcoded to SCF-DFT jobs
 
