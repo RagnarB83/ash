@@ -1200,9 +1200,9 @@ class Psi4Theory:
                 exit()
 
             if self.label=='label':
-                psi4.IO.set_default_namespace("psi4job_ygg")
+                psi4.core.IO.set_default_namespace("psi4job_ygg")
             else:
-                psi4.IO.set_default_namespace(self.label)
+                psi4.core.IO.set_default_namespace(self.label)
 
             #Printing to output or not:
             if self.printsetting:
