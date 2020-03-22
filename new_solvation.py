@@ -801,7 +801,7 @@ def LRPolsnapshotcalc(args):
     PEsolvshell_LR1 = get_solvshell(solvsphere, snap_frag.elems, snap_frag.coords, LRPolRegion1, qmatoms_LR1_elems,
                                   qmatoms_LR1_coords,
                                   settings_solvation.scale, settings_solvation.tol)
-    peatoms_LR1 = solvshell_LR1  # Polarizable atoms
+    peatoms_LR1 = PEsolvshell_LR1  # Polarizable atoms
     mmatoms_LR1 = listdiff(solvsphere.allatoms, qmatoms_LR1 + peatoms_LR1)  # Nonpolarizable atoms
 
     #Region 2 calcs. QM, PE and MM
