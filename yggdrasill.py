@@ -1130,8 +1130,6 @@ class Psi4Theory:
 
         self.outputname=outputname
         self.printsetting=printsetting
-        print("printsetting:", printsetting)
-        print("self.printsetting:", self.printsetting)
         self.runmode=runmode
         #CPPE Polarizable Embedding options
         self.pe=pe

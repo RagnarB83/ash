@@ -818,20 +818,23 @@ def LRPolsnapshotcalc(args):
     mmatoms_LR2 = listdiff(solvsphere.allatoms, qmatoms_LR2 + peatoms_LR2)  # Nonpolarizable atoms
 
     print("qmatoms_LR1 ({} atoms): {}".format(len(qmatoms_LR1), qmatoms_LR1))
-    print("PEsolvshell_LR1 is", PEsolvshell_LR1)
+    print("PEsolvshell_LR1 num is", len(PEsolvshell_LR1))
     print("peatoms_LR1 ({} atoms)".format(len(peatoms_LR1)))
     print("mmatoms_LR1 ({} atoms)".format(len(mmatoms_LR1)))
     print("Sum of LR1 QM+PE+MM atoms:", len(qmatoms_LR1)+len(peatoms_LR1)+len(mmatoms_LR1))
     blankline()
     print("qmatoms_LR2 ({} atoms): {}".format(len(qmatoms_LR2), qmatoms_LR2))
     print("qm_solvshell_LR2:", qm_solvshell_LR2)
-    print("PEsolvshell_LR2 is", PEsolvshell_LR2)
+    print("PEsolvshell_LR2 num is", len(PEsolvshell_LR2))
     print("peatoms_LR2 ({} atoms)".format(len(peatoms_LR2)))
     print("mmatoms_LR2 ({} atoms)".format(len(mmatoms_LR2)))
     blankline()
     print("Num All atoms:", len(solvsphere.allatoms))
     print("Sum of LR2 QM+PE+MM atoms:", len(qmatoms_LR2)+len(peatoms_LR2)+len(mmatoms_LR2))
-
+    if len(qmatoms_LR2)+len(peatoms_LR2)+len(mmatoms_LR2) != len(solvsphere.allatoms):
+        print("QM + MM + PE atoms ({})not equal to total numatoms({})".format(len(qmatoms_LR2)+len(peatoms_LR2)+len(mmatoms_LR2),
+                                                                              len(solvsphere.allatoms)))
+        exit()
 
     # Define Psi4 QMregion
     Psi4QMpart_A_LR1 = yggdrasill.Psi4Theory(charge=solvsphere.ChargeA, mult=solvsphere.MultA,
