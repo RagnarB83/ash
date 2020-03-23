@@ -1198,6 +1198,7 @@ class Psi4Theory:
         #   : inputfile means that Yggdrasill will create Psi4 inputfile and run a separate psi4 executable
 
         if self.runmode=='library':
+            print("Psi4 Runmode: Library")
             try:
                 import psi4
             except:
@@ -1330,6 +1331,7 @@ class Psi4Theory:
 
         #Psithon INPUT-FILE BASED INTERFACE. Creates Psi4 inputfiles and runs Psithon as subprocessses
         elif self.runmode=='psithon':
+            print("Psi4 Runmode: Psithon")
             print("Current directory:", os.getcwd())
             #Psi4 scratch dir
             #print("Setting Psi4 scratchdir to ", os.getcwd())
@@ -1417,7 +1419,8 @@ class Psi4Theory:
             print("Running inputfile:", self.label+'.inp')
             #Running inputfile
             with open(self.label + '.out', 'w') as ofile:
-                process = sp.run(['psi4', '-i', self.label + '.inp', '-o', self.label + '.out', '-n', str(nprocs) ],
+                #Psi4 -m option for saving 180 file
+                process = sp.run(['psi4', '-m -i', self.label + '.inp', '-o', self.label + '.out', '-n', str(nprocs) ],
                                  check=True, stdout=ofile, stderr=ofile, universal_newlines=True)
 
             #Grab energy and possibly gradient
