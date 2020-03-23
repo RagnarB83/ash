@@ -28,7 +28,7 @@ def grabPsi4EandG(outfile, numatoms, Grad):
 
                 if gradgrab==True:
                     print("len(line)", len(line))
-                    if len(line) < 1:
+                    if len(line) < 2:
                         gradgrab=False
                     if '--' not in line:
                         if 'Atom' not in line:
