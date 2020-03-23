@@ -1434,6 +1434,7 @@ class Psi4Theory:
                 return self.energy
         else:
             print("Unknown Psi4 runmode")
+            exit()
 
 # Fragment class
 class Fragment:
