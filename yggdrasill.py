@@ -1170,7 +1170,7 @@ class Psi4Theory:
             pass
     #Run function. Takes coords, elems etc. arguments and computes E or E+G.
     def run(self, current_coords=[], current_MM_coords=[], MMcharges=[], qm_elems=[],
-            mm_elems=[], elems=[], Grad=False, PC=False, nprocs=1, pe=False, potfile='', runmode='library', restart=False ):
+            mm_elems=[], elems=[], Grad=False, PC=False, nprocs=1, pe=False, potfile='', restart=False ):
 
         print(BC.OKBLUE,BC.BOLD, "------------RUNNING PSI4 INTERFACE-------------", BC.END)
 
@@ -1329,7 +1329,7 @@ class Psi4Theory:
                 return self.energy
 
         #Psithon INPUT-FILE BASED INTERFACE. Creates Psi4 inputfiles and runs Psithon as subprocessses
-        elif runmode=='psithon':
+        elif self.runmode=='psithon':
             print("Current directory:", os.getcwd())
             #Psi4 scratch dir
             #print("Setting Psi4 scratchdir to ", os.getcwd())
