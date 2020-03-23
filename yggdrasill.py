@@ -1359,7 +1359,7 @@ class Psi4Theory:
 
             #Write inputfile
             with open(self.label+'.inp', 'w') as inputfile:
-                inputfile.write('psi4_io.set_default_path(\'{}'\')\n'.format(os.getcwd()))
+                inputfile.write('psi4_io.set_default_path(\'{}\')'.format(os.getcwd()))
                 inputfile.write('memory {} MB\n'.format(self.psi4memory))
                 inputfile.write('molecule molfrag {\n')
                 inputfile.write(str(self.charge)+' '+str(self.mult)+'\n')
