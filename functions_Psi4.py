@@ -15,6 +15,7 @@ import numpy as np
 def grabPsi4EandG(outfile, numatoms, Grad):
     gradient = np.zeros((numatoms, 3))
     row=0
+    print("here")
     with open(outfile) as ofile:
         for line in ofile:
             if '    Total Energy =' in line:
