@@ -839,17 +839,17 @@ def LRPolsnapshotcalc(args):
 
     # Define Psi4 QMregion
     Psi4QMpart_A_LR1 = yggdrasill.Psi4Theory(charge=solvsphere.ChargeA, mult=solvsphere.MultA, label=snapshot+'A_LR1',
-                                         psi4settings=psi4dict, outputname=snapshot+'Psi4_A_LR1.out', psi4memory=psi4memory,
+                                         psi4settings=psi4dict, outputname=snapshot+'A_LR1.out', psi4memory=psi4memory,
                                          psi4functional=psi4_functional, runmode=psi4runmode, printsetting=False)
     Psi4QMpart_B_LR1 = yggdrasill.Psi4Theory(charge=solvsphere.ChargeB, mult=solvsphere.MultB, label=snapshot+'B_LR1',
-                                         psi4settings=psi4dict, outputname=snapshot+'Psi4_B_LR1.out', psi4memory=psi4memory,
+                                         psi4settings=psi4dict, outputname=snapshot+'B_LR1.out', psi4memory=psi4memory,
                                          psi4functional=psi4_functional, runmode=psi4runmode, printsetting=False)
 
     Psi4QMpart_A_LR2 = yggdrasill.Psi4Theory(charge=solvsphere.ChargeA, mult=solvsphere.MultA, label=snapshot+'A_LR2',
-                                             psi4settings=psi4dict, outputname=snapshot + 'Psi4_A_LR2.out', psi4memory=psi4memory,
+                                             psi4settings=psi4dict, outputname=snapshot + 'A_LR2.out', psi4memory=psi4memory,
                                             psi4functional = psi4_functional, runmode = psi4runmode, printsetting = False)
     Psi4QMpart_B_LR2 = yggdrasill.Psi4Theory(charge=solvsphere.ChargeB, mult=solvsphere.MultB, label=snapshot+'B_LR2',
-                                             psi4settings=psi4dict, outputname=snapshot + 'Psi4_B_LR2.out', psi4memory=psi4memory,
+                                             psi4settings=psi4dict, outputname=snapshot + 'B_LR2.out', psi4memory=psi4memory,
                                             psi4functional = psi4_functional, runmode = psi4runmode, printsetting = False)
 
     # Create PolEmbed theory object. fragment always defined with it

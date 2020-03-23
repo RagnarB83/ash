@@ -1434,7 +1434,7 @@ class Psi4Theory:
             #Keep restart file 180 as lastrestart.180
             try:
                 print("Renaming {} to lastrestart.180".format(os.path.splitext(self.outputname)[0]+'.default.'+PID+'.180.npy'))
-                os.rename(os.path.splitext(self.outputname)[0]+'.default.'+str(os.getpid())+'.180.npy', 'lastrestart.180')
+                os.rename(os.path.splitext(self.outputname)[0]+'.molfrag.'+str(os.getpid())+'.180.npy', 'lastrestart.180')
             except:
                 pass
 
