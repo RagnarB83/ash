@@ -1416,12 +1416,28 @@ class Psi4Theory:
                     inputfile.write('oeprop(wfn, \'MULLIKEN_CHARGES\', title=\'mulchrg\')\n')
                     inputfile.write('\n')
 
+            #Controlling orbital read-in guess.
+            if restart==True:
+                #Renameing orbital file from lastrestart.180 to current ID
+                PID = str(os.getpid())
+                print("Restart Option On!")
+                print("Renaming lastrestart.180 to {}".format(os.path.splitext( self.outputname)[0] + '.default.' + PID + '.180.npy'))
+                os.rename('lastrestart.180', os.path.splitext( self.outputname)[0] + '.default.' + PID + '.180.npy')
+
             print("Running inputfile:", self.label+'.inp')
             #Running inputfile
             with open(self.label + '.out', 'w') as ofile:
                 #Psi4 -m option for saving 180 file
-                process = sp.run(['psi4', '-m -i', self.label + '.inp', '-o', self.label + '.out', '-n', str(nprocs) ],
+                process = sp.run(['psi4', '-m', '-i', self.label + '.inp', '-o', self.label + '.out', '-n', str(nprocs) ],
                                  check=True, stdout=ofile, stderr=ofile, universal_newlines=True)
+
+            #Keep restart file 180 as lastrestart.180
+            try:
+                print("Renaming {} to lastrestart.180".format(os.path.splitext(self.outputname)[0]+'.default.'+PID+'.180.npy'))
+                os.rename(os.path.splitext(self.outputname)[0]+'.default.'+str(os.getpid())+'.180.npy', 'lastrestart.180')
+            except:
+                pass
+
 
             #Grab energy and possibly gradient
             self.energy, self.gradient = grabPsi4EandG(self.label + '.out', len(qm_elems), Grad)
