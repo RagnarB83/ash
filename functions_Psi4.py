@@ -25,17 +25,18 @@ def grabPsi4EandG(outfile, numatoms, Grad):
                 energy = float(line.split()[-1])
                 print("energy:", energy)
             if Grad == True:
-                print("Psi4 gradient grab not tested yet")
-                if '  -Total Gradient:' in line:
-                    gradgrab = True
+
                 if gradgrab==True:
                     print("len(line)", len(line))
                     if len(line) < 1:
                         gradgrab=False
-                    if '--' not in line and 'Atom' not in line:
-                        val=line.split()
-                        gradient[row] = [float(val[1]),float(val[2]),float(val[3])]
-                        row+=1
+                    if '--' not in line:
+                        if 'Atom' not in line:
+                            val=line.split()
+                            gradient[row] = [float(val[1]),float(val[2]),float(val[3])]
+                            row+=1
+                if '  -Total Gradient:' in line:
+                    gradgrab = True
     print("energy:", energy)
     print("gradient:", gradient)
     if energy == None:
