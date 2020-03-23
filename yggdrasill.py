@@ -11,6 +11,8 @@ from functions_general import *
 import settings_yggdrasill
 from functions_MM import *
 from functions_optimization import *
+import shutil
+import subprocess as sp
 
 def print_yggdrasill_header():
     programversion = 0.1
@@ -649,7 +651,6 @@ class PolEmbedTheory:
                     project.write_potential(system)
                     self.potfile=self.potfilename+'.pot'
                 #Copying pyframe-created potfile from dir:
-                import shutil
                 shutil.copyfile(self.potfilename+'/' + self.potfilename+'.pot', './'+self.potfilename+'.pot')
 
             #Todo: Manual potential file creation. Maybe only if pyframe is buggy
@@ -1121,13 +1122,15 @@ class ORCATheory:
 #PSI4 runmode:
 #   : library means that Yggdrasill will load Psi4 libraries and run psi4 directly
 #   : inputfile means that Yggdrasill will create Psi4 inputfile and run a separate psi4 executable
-#psi4dir only necessary for inputfile-based userinterface
+#psi4dir only necessary for inputfile-based userinterface. Todo: Possibly unnexessary
 #printsetting is by default set to 'File. Change to something else for stdout print
 # PE: Polarizable embedding (CPPE). Pass pe_modulesettings dict as well
 class Psi4Theory:
     def __init__(self, fragment='', charge='', mult='', printsetting='False', psi4settings='', psi4functional='',
-                 runmode='library', psi4dir='', pe=False, potfile='', outputname='psi4output.dat', label=''):
+                 runmode='library', psi4dir='', pe=False, potfile='', outputname='psi4output.dat', label='',
+                 psi4memory=3000):
 
+        self.psi4memory=psi4memory
         self.label=label
         self.outputname=outputname
         self.printsetting=printsetting
@@ -1137,11 +1140,13 @@ class Psi4Theory:
         #Potfile from user or passed on via QM/MM Theory object ?
         self.potfile=potfile
         if self.runmode != 'library':
-            try:
-                self.psi4dir = psi4dir
-            except:
-                print("For Psi4 runmode=inputfile interface, the psi4dir variable needs to included")
+            self.psi4path=shutil.which('psi4')
+            if psi4path==None:
+                print("Found no psi4 in path. Add Psi4 to Shell environment or provide psi4dir variable")
                 exit()
+            else:
+                print("Found psi4 in path:", self.psi4path)
+
 
         if fragment != '':
             self.fragment=fragment
@@ -1198,13 +1203,13 @@ class Psi4Theory:
                 print(BC.FAIL,"Problem importing psi4. Make sure psi4 has been installed as part of same Python as Yggdrasill", BC.END)
                 print(BC.WARNING,"If problematic, switch to inputfile based Psi4 interface: NOT YET READY", BC.END)
                 exit()
-
+            #Changing namespace may prevent crashes due to multiple jobs running at same time
             if self.label=='label':
                 psi4.core.IO.set_default_namespace("psi4job_ygg")
             else:
                 psi4.core.IO.set_default_namespace(self.label)
 
-            #Printing to output or not:
+            #Printing to stdout or not:
             if self.printsetting:
                 print("Printsetting = True. Printing output to stdout...")
             else:
@@ -1215,10 +1220,9 @@ class Psi4Theory:
             print("Setting Psi4 scratchdir to ", os.getcwd())
             psi4_io = psi4.core.IOManager.shared_object()
             psi4_io.set_default_path(os.getcwd())
-            print("Current dir:", os.getcwd())
 
             #Creating Psi4 molecule object using lists and manual information
-            self.label = psi4.core.Molecule.from_arrays(
+            psi4molfrag = psi4.core.Molecule.from_arrays(
                 elez=elemstonuccharges(qm_elems),
                 fix_com=True,
                 fix_orientation=True,
@@ -1226,8 +1230,7 @@ class Psi4Theory:
                 molecular_charge=self.charge,
                 molecular_multiplicity=self.mult,
                 geom=current_coords)
-            #psi4.activate(psi4molfrag)
-            psi4.activate(self.label)
+            psi4.activate(psi4molfrag)
 
             #Adding MM charges as pointcharges if PC=True
             #Might be easier to use PE and potfile ??
@@ -1239,7 +1242,6 @@ class Psi4Theory:
                     Chargefield.addCharge(mmcharge, mmcoord[0], mmcoord[1], mmcoord[2])
                 psi4.core.set_global_option("EXTERN", True)
                 psi4.core.EXTERN = Chargefield
-                print("THis needs to be confirmed by ORCA comparison!!")
 
             #Setting inputvariables
             #Todo: make memory psi4-interface variable ?
@@ -1256,7 +1258,7 @@ class Psi4Theory:
             else:
                 self.psi4settings['reference'] = 'UKS'
 
-            #Controlling orb-read in guess.
+            #Controlling orbital read-in guess.
             if restart==True:
                 self.psi4settings['guess'] = 'read'
                 #Renameing orbital file
@@ -1267,10 +1269,9 @@ class Psi4Theory:
             else:
                 self.psi4settings['guess'] = 'sad'
 
-
             #Reading dict object with basic settings and passing to Psi4
             psi4.set_options(self.psi4settings)
-            print("self.psi4settings:", self.psi4settings)
+            print("Psi4 settings:", self.psi4settings)
 
             #Reading module options dict and passing to Psi4
             #TODO: Make one for SCF, CC, PCM etc.
@@ -1295,11 +1296,11 @@ class Psi4Theory:
 
             #Namespace issue overlap integrals requires this when running with multiprocessing:
             # http://forum.psicode.org/t/wfn-form-h-errors/1304/2
-            psi4.core.clean()
+            #psi4.core.clean()
 
             #Running energy or energy+gradient. Currently hardcoded to SCF-DFT jobs
 
-            #TODO: Support pointcharges and PE embedding
+            #TODO: Support pointcharges and PE embedding in Grad job?
             if Grad==True:
                 grad=psi4.gradient('scf', dft_functional=self.psi4functional)
                 self.gradient=np.array(grad)
@@ -1327,63 +1328,107 @@ class Psi4Theory:
                 return self.energy
 
         #INPUT-FILE BASED INTERFACE: TODO: finish
+        #Creates Psi4 inputfiles and runs Psithon as subprocessses
         else:
-            print("PSI4 Run Mode: Inputfile based")
-            print("Not complete yet...")
-            exit()
-            #Create Psi4 inputfile with generic name
-            self.inputfilename="orca-input"
-            print("Creating inputfile:", self.inputfilename+'.inp')
-            print("ORCA input:")
-            print(self.orcasimpleinput)
-            print(self.extraline)
-            print(self.orcablocks)
-            if PC==True:
-                print("Pointcharge embedding is on!")
-                create_psi4_pcfile(self.inputfilename, mm_elems, current_MM_coords, MMcharges)
-                create_psi4_input_pc(self.inputfilename, qm_elems, current_coords, self.psi4settings,
-                                        self.charge, self.mult)
-            else:
-                create_psi4_input_plain(self.inputfilename, qm_elems, current_coords, self.psi4settings,
-                                        self.charge,self.mult)
 
+            #Psi4 scratch dir
+            #print("Setting Psi4 scratchdir to ", os.getcwd())
+            #Possible option: Set scratch env-variable as subprocess??? TODO:
+            #export PSI_SCRATCH=/path/to/existing/writable/local-not-network/directory/for/scratch/files
+            #Better :
+            #psi4_io.set_default_path('/scratch/user')
+            #Setting inputvariables
 
-            #Run inputfile using Psi4 parallelization. Take nprocs argument.
-            print(BC.OKGREEN, "Psi4 Calculation started.", BC.END)
-            # Doing gradient or not.
-            if Grad == True:
-                run_orca_SP_Psi4par(self.psi4dir, self.inputfilename + '.inp', nprocs=nprocs, Grad=True)
-            else:
-                run_orca_SP_Psi4par(self.psi4dir, self.inputfilename + '.inp', nprocs=nprocs)
-            #print(BC.OKGREEN, "------------ORCA calculation done-------------", BC.END)
-            print(BC.OKGREEN, "Psi4 Calculation done.", BC.END)
+            print("Psi4 Memory:", self.psi4memory)
 
-            #Check if finished. Grab energy and gradient
-            outfile=self.inputfilename+'.out'
-            engradfile=self.inputfilename+'.engrad'
-            pcgradfile=self.inputfilename+'.pcgrad'
-            if checkPsi4finished(outfile) == True:
-                self.energy=finalenergygrab(outfile)
+            #Printing Psi4settings
+            print("Psi4 settings:", self.psi4settings)
 
-                if Grad == True:
-                    self.grad=gradientgrab(engradfile)
-                    if PC == True:
-                        #Grab pointcharge gradient. i.e. gradient on MM atoms from QM-MM elstat interaction.
-                        self.pcgrad=pcgradientgrab(pcgradfile)
-                        print(BC.OKBLUE,BC.BOLD,"------------ENDING PSI4-INTERFACE-------------", BC.END)
-                        return self.energy, self.grad, self.pcgrad
+            #Printing PE options and checking for ptfile
+            if self.pe==True:
+                print(BC.OKGREEN,"Polarizable Embedding Option On! Using CPPE module inside Psi4", BC.END)
+                print(BC.WARNING, "Potfile: ", self.potfile, BC.END)
+                try:
+                    if os.path.exists(self.potfile):
+                        pass
                     else:
-                        print(BC.OKBLUE,BC.BOLD,"------------ENDING PSI4-INTERFACE-------------", BC.END)
-                        return self.energy, self.grad
+                        print(BC.FAIL, "Potfile: ", self.potfile, "does not exist!", BC.END)
+                        exit()
+                except:
+                    exit()
 
+            #Write inputfile
+            with open(self.label+'.inp', 'w') as inputfile:
+                inputfile.write('memory {} MB'.format(self.psi4memory)
+                inputfile.write('molecule {} {\n'.format(molfrag))
+                inputfile.write(str(self.charge)+' '+str(self.mult))
+                for el,c in zip(qm_elems, current_coords):
+                    inputfile.write(el+' '+c[0]+' '+c[1]+' '+c[2]+'\n')
+                inputfile.write('symmetry c1\n')
+                inputfile.write('no_reorient\n')
+                inputfile.write('no_com\n')
+                inputfile.write('}\n')
+                inputfile.write('\n')
+
+                # Adding MM charges as pointcharges if PC=True
+                # Might be easier to use PE and potfile ??
+                if PC == True:
+                    inputfile.write('Chrgfield = QMMM()')
+                    # Mmcoords in Angstrom
+                    for mmcharge, mmcoord in zip(MMcharges, current_MM_coords):
+                        inputfile.write('Chrgfield.extern.addCharge({}, {}, {}, {})'.format(mmcharge, mmcoord[0], mmcoord[1], mmcoord[2]))
+                    inputfile.write('psi4.set_global_option_python(\'EXTERN\', Chrgfield.extern)')
+
+                #Adding Psi4 settings
+                inputfile.write('set {\n')
+                for key,val in self.psi4settings.items():
+                    inputfile.write(key+' '+val+'\n')
+                #Setting RKS or UKS reference. For now, RKS always if mult 1 Todo: Make more flexible
+                if self.mult == 1:
+                    self.psi4settings['reference'] = 'RKS'
                 else:
-                    print("Single-point PSI4 energy:", self.energy)
-                    print(BC.OKBLUE,BC.BOLD,"------------ENDING PSI4-INTERFACE-------------", BC.END)
-                    return self.energy
+                    inputfile.write('reference UKS \n')
+                #Orbital guess
+                if restart == True:
+                    inputfile.write('guess read \n')
+                else:
+                    inputfile.write('guess sad \n')
+                #PE
+                if self.pe == True:
+                    inputfile.write('pe true \n')
+                #end
+                inputfile.write('}\n')
+
+                if self.pe==True:
+                    inputfile.write('set pe { \n')
+                    inputfile.write(' potfile {} \n'.format(self.potfile))
+                    inputfile.write('}\n')
+
+                #Writing job directive
+                if Grad==True:
+                    inputfile.write('scf_energy, wfn = gradient(\'scf\', dft_functional=\'{}\', return_wfn=True'.format(self.psi4functional))
+                else:
+                    inputfile.write('scf_energy, wfn = energy(\'scf\', dft_functional=\'{}\', return_wfn=True'.format(self.psi4functional))
+                    inputfile.write('oeprop(wfn, \'MULLIKEN_CHARGES\', title=\'mulchrg\')'
+
+            #Running inputfile
+            with open(self.label + '.out', 'w') as ofile:
+                process = sp.run(['psi4 -i', self.label + '.inp', '-o', self.label + '.inp', '-n', nprocs ],
+                                 check=True, stdout=ofile, stderr=ofile, universal_newlines=True)
+
+            #psi4 -i $job.dat -o $SLURM_SUBMIT_DIR/$job.out -n $SLURM_TASKS_PER_NODE
+
+            #TODO: write in error handling here
+
+            print(BC.OKBLUE, BC.BOLD, "------------ENDING PSI4-INTERFACE-------------", BC.END)
+
+            if Grad == True:
+                print("Single-point PSI4 energy:", self.energy)
+                return self.energy, self.gradient
             else:
-                print(BC.FAIL,"Problem with Psi4 run", BC.END)
-                print(BC.OKBLUE,BC.BOLD, "------------ENDING PSI4-INTERFACE-------------", BC.END)
-                exit()
+                print("Single-point PSI4 energy:", self.energy)
+                return self.energy
+
 
 # Fragment class
 class Fragment:

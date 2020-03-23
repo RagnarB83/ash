@@ -25,7 +25,7 @@ def solvshell ( orcadir='', NumCores='', calctype='', orcasimpleinput_LL='',
         orcasimpleinput_SRPOL='', orcablockinput_SRPOL='', EOM='', BulkCorrection='',
         GasCorrection='', ShortRangePolarization='', SRPolShell='',
         LongRangePolarization='', PrintFinalOutput='', Testmode='', repsnapmethod='',
-        repsnapnumber='', solvbasis='', chargeA='', multA='', chargeB='', multB='',
+        repsnapnumber='', solvbasis='', chargeA='', multA='', chargeB='', multB='', psi4memory=3000,
         psi4_functional='', psi4dict='', pot_option='', LRPolRegion1=0, LRPolRegion2=20, LRPolQMRegion=0):
 
     #While charge/mult info is read from md-variables.defs in case redox AB job, this info is not present
@@ -838,17 +838,17 @@ def LRPolsnapshotcalc(args):
 
     # Define Psi4 QMregion
     Psi4QMpart_A_LR1 = yggdrasill.Psi4Theory(charge=solvsphere.ChargeA, mult=solvsphere.MultA, label=snapshot+'A_LR1',
-                                         psi4settings=psi4dict, outputname=snapshot+'Psi4_A_LR1.out',
+                                         psi4settings=psi4dict, outputname=snapshot+'Psi4_A_LR1.out', psi4memory=psi4memory,
                                          psi4functional=psi4_functional, runmode='library', printsetting=False)
     Psi4QMpart_B_LR1 = yggdrasill.Psi4Theory(charge=solvsphere.ChargeB, mult=solvsphere.MultB, label=snapshot+'B_LR1',
-                                         psi4settings=psi4dict, outputname=snapshot+'Psi4_B_LR1.out',
+                                         psi4settings=psi4dict, outputname=snapshot+'Psi4_B_LR1.out', psi4memory=psi4memory,
                                          psi4functional=psi4_functional, runmode='library', printsetting=False)
 
     Psi4QMpart_A_LR2 = yggdrasill.Psi4Theory(charge=solvsphere.ChargeA, mult=solvsphere.MultA, label=snapshot+'A_LR2',
-                                             psi4settings=psi4dict, outputname=snapshot + 'Psi4_A_LR2.out',
+                                             psi4settings=psi4dict, outputname=snapshot + 'Psi4_A_LR2.out', psi4memory=psi4memory,
                                             psi4functional = psi4_functional, runmode = 'library', printsetting = False)
     Psi4QMpart_B_LR2 = yggdrasill.Psi4Theory(charge=solvsphere.ChargeB, mult=solvsphere.MultB, label=snapshot+'B_LR2',
-                                             psi4settings=psi4dict, outputname=snapshot + 'Psi4_B_LR2.out',
+                                             psi4settings=psi4dict, outputname=snapshot + 'Psi4_B_LR2.out', psi4memory=psi4memory,
                                             psi4functional = psi4_functional, runmode = 'library', printsetting = False)
 
     # Create PolEmbed theory object. fragment always defined with it
