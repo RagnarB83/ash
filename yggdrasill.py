@@ -1328,8 +1328,8 @@ class Psi4Theory:
                 print("Single-point PSI4 energy:", self.energy)
                 return self.energy
 
-        #INPUT-FILE BASED INTERFACE Creates Psi4 inputfiles and runs Psithon as subprocessses
-        elif runmode=='input':
+        #Psithon INPUT-FILE BASED INTERFACE. Creates Psi4 inputfiles and runs Psithon as subprocessses
+        elif runmode=='psithon':
             print("Current directory:", os.getcwd())
             #Psi4 scratch dir
             #print("Setting Psi4 scratchdir to ", os.getcwd())
@@ -1432,7 +1432,8 @@ class Psi4Theory:
             else:
                 print("Single-point PSI4 energy:", self.energy)
                 return self.energy
-
+        else:
+            print("Unknown Psi4 runmode")
 
 # Fragment class
 class Fragment:
