@@ -773,6 +773,7 @@ def LRPolsnapshotcalc(args):
     NumCoresPsi4=args[7]
     LRPolQMRegion=args[8]
     psi4memory=args[9]
+    psi4runmode=args[10]
 
     # create dir for each snapshot and copy snapshot into it
     os.mkdir(snapshot+'_dir')
