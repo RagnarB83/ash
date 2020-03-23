@@ -1329,7 +1329,7 @@ class Psi4Theory:
 
         #INPUT-FILE BASED INTERFACE Creates Psi4 inputfiles and runs Psithon as subprocessses
         else:
-
+            print("We are here:", os.getcwd())
             #Psi4 scratch dir
             #print("Setting Psi4 scratchdir to ", os.getcwd())
             #Possible option: Set scratch env-variable as subprocess??? TODO:
@@ -1358,6 +1358,8 @@ class Psi4Theory:
 
             #Write inputfile
             with open(self.label+'.inp', 'w') as inputfile:
+                print("writing...")
+                print("self.label:", self.label)
                 inputfile.write('memory {} MB'.format(self.psi4memory))
                 inputfile.write('molecule molfrag {\n')
                 inputfile.write(str(self.charge)+' '+str(self.mult))
@@ -1410,7 +1412,8 @@ class Psi4Theory:
                     inputfile.write('scf_energy, wfn = energy(\'scf\', dft_functional=\'{}\', return_wfn=True'.format(self.psi4functional))
                     inputfile.write('oeprop(wfn, \'MULLIKEN_CHARGES\', title=\'mulchrg\')')
 
-            print("here")
+            print("here x")
+
             exit()
             #Running inputfile
             with open(self.label + '.out', 'w') as ofile:
