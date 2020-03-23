@@ -12,7 +12,7 @@ import numpy as np
 
 #grab energy from output
 
-def grabPsi4EandG(outfile, numatoms,Grad=False):
+def grabPsi4EandG(outfile, numatoms, Grad):
     gradient = np.zeros((numatoms, 3))
     row=0
     with open(outfile) as ofile:
