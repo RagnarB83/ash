@@ -1420,7 +1420,7 @@ class Psi4Theory:
                                  check=True, stdout=ofile, stderr=ofile, universal_newlines=True)
 
             #Grab energy and possibly gradient
-            self.energy, self.gradient = grabPsi4EandG(self.label + '.out', len(qm_elems))
+            self.energy, self.gradient = grabPsi4EandG(self.label + '.out', len(qm_elems),Grad)
 
             #TODO: write in error handling here
 
