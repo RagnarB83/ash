@@ -1164,8 +1164,8 @@ class Psi4Theory:
     def cleanup(self):
         print("Cleaning up old Psi4 files")
         try:
-            os.remove('psi4output.dat')
             os.remove('timer.dat')
+            os.remove('psi4output.dat')
         except:
             pass
     #Run function. Takes coords, elems etc. arguments and computes E or E+G.
