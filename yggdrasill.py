@@ -1406,7 +1406,7 @@ class Psi4Theory:
                     inputfile.write('}\n')
 
                 #Writing job directive
-                inputfile.write('}\n')
+                inputfile.write('\n')
                 if Grad==True:
                     inputfile.write('scf_energy, wfn = gradient(\'scf\', dft_functional=\'{}\', return_wfn=True)\n'.format(self.psi4functional))
                 else:
