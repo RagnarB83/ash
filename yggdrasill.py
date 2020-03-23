@@ -1360,7 +1360,7 @@ class Psi4Theory:
             #Write inputfile
             with open(self.label+'.inp', 'w') as inputfile:
                 inputfile.write('memory {} MB'.format(self.psi4memory))
-                inputfile.write('molecule {} {\n'.format(molfrag))
+                inputfile.write('molecule molfrag {\n')
                 inputfile.write(str(self.charge)+' '+str(self.mult))
                 for el,c in zip(qm_elems, current_coords):
                     inputfile.write(el+' '+c[0]+' '+c[1]+' '+c[2]+'\n')
