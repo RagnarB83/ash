@@ -68,7 +68,7 @@ def checkORCAfinished(file):
                 return True
 
 #Grab Final single point energy
-def finalenergygrab(file):
+def ORCAfinalenergygrab(file):
     with open(file) as f:
         for line in f:
             if 'FINAL SINGLE POINT ENERGY' in line:
@@ -76,7 +76,7 @@ def finalenergygrab(file):
     return Energy
 
 #Grab gradient from ORCA engrad file
-def gradientgrab(engradfile):
+def ORCAgradientgrab(engradfile):
     grab=False
     numatomsgrab=False
     row=0
@@ -107,7 +107,7 @@ def gradientgrab(engradfile):
     return gradient
 
 #Grab pointcharge gradient from ORCA pcgrad file
-def pcgradientgrab(pcgradfile):
+def ORCApcgradientgrab(pcgradfile):
     with open(pcgradfile) as pgradfile:
         for count,line in enumerate(pgradfile):
             if count==0:

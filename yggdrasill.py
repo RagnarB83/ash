@@ -7,6 +7,7 @@ import glob
 from functions_solv import *
 from functions_coords import *
 from functions_ORCA import *
+from functions_Psi4 import *
 from functions_general import *
 import settings_yggdrasill
 from functions_MM import *
@@ -153,7 +154,7 @@ class NumericalFrequencies:
             exit()
 
         #Grab energy and gradient of original geometry. Only used for onepoint formula
-        original_grad = gradientgrab('Originalgeo' + '.engrad')
+        original_grad = ORCAgradientgrab('Originalgeo' + '.engrad')
 
         #If partial Hessian remove non-hessatoms part of gradient:
         #Get partial matrix by deleting atoms not present in list.
@@ -172,7 +173,7 @@ class NumericalFrequencies:
                     count+=1
                     if count == 1:
                         if type(self.theory) == ORCATheory:
-                            grad_pos = gradientgrab(file + '.engrad')
+                            grad_pos = ORCAgradientgrab(file + '.engrad')
                         else:
                             print("theory not implemented for numfreq yet")
                             exit()
@@ -182,7 +183,7 @@ class NumericalFrequencies:
                     elif count == 2:
                         #Getting grad as numpy matrix and converting to 1d
                         if type(self.theory) == ORCATheory:
-                            grad_neg=gradientgrab(file+'.engrad')
+                            grad_neg=ORCAgradientgrab(file+'.engrad')
                         else:
                             print("theory not implemented for numfreq yet")
                             exit()
@@ -207,7 +208,7 @@ class NumericalFrequencies:
                 if file != 'Originalgeo':
                     #Getting grad as numpy matrix and converting to 1d
                     if type(self.theory) == ORCATheory:
-                        grad=gradientgrab(file+'.engrad')
+                        grad=ORCAgradientgrab(file+'.engrad')
                     else:
                         print("theory not implemented for numfreq yet")
                         exit()
@@ -1094,13 +1095,13 @@ class ORCATheory:
         engradfile=self.inputfilename+'.engrad'
         pcgradfile=self.inputfilename+'.pcgrad'
         if checkORCAfinished(outfile) == True:
-            self.energy=finalenergygrab(outfile)
+            self.energy=ORCAfinalenergygrab(outfile)
 
             if Grad == True:
-                self.grad=gradientgrab(engradfile)
+                self.grad=ORCAgradientgrab(engradfile)
                 if PC == True:
                     #Grab pointcharge gradient. i.e. gradient on MM atoms from QM-MM elstat interaction.
-                    self.pcgrad=pcgradientgrab(pcgradfile)
+                    self.pcgrad=ORCApcgradientgrab(pcgradfile)
                     print(BC.OKBLUE,BC.BOLD,"------------ENDING ORCA-INTERFACE-------------", BC.END)
                     return self.energy, self.grad, self.pcgrad
                 else:
@@ -1358,8 +1359,6 @@ class Psi4Theory:
 
             #Write inputfile
             with open(self.label+'.inp', 'w') as inputfile:
-                print("writing...")
-                print("self.label:", self.label)
                 inputfile.write('memory {} MB\n'.format(self.psi4memory))
                 inputfile.write('molecule molfrag {\n')
                 inputfile.write(str(self.charge)+' '+str(self.mult)+'\n')
@@ -1414,14 +1413,14 @@ class Psi4Theory:
                     inputfile.write('oeprop(wfn, \'MULLIKEN_CHARGES\', title=\'mulchrg\')\n')
                     inputfile.write('\n')
 
-            print("here x")
-
+            print("Running inputfile:", self.label+'inp')
             #Running inputfile
             with open(self.label + '.out', 'w') as ofile:
                 process = sp.run(['psi4', '-i', self.label + '.inp', '-o', self.label + '.out', '-n', str(nprocs) ],
                                  check=True, stdout=ofile, stderr=ofile, universal_newlines=True)
 
-            #psi4 -i $job.dat -o $SLURM_SUBMIT_DIR/$job.out -n $SLURM_TASKS_PER_NODE
+            #Grab energy and possibly gradient
+            self.energy, self.gradient = grabPsi4EandG(self.label + '.out', len(qm_elems))
 
             #TODO: write in error handling here
 
