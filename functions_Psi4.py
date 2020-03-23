@@ -13,6 +13,7 @@ import numpy as np
 #grab energy from output
 
 def grabPsi4EandG(outfile, numatoms, Grad):
+    energy=None
     gradient = np.zeros((numatoms, 3))
     row=0
     gradgrab=False
@@ -37,7 +38,7 @@ def grabPsi4EandG(outfile, numatoms, Grad):
                         row+=1
     print("energy:", energy)
     print("gradient:", gradient)
-    if Grad==True:
-        return energy, gradient
-    else:
-        return energy
+    if energy == None:
+        print("Found no energy in Psi4 outputfile:", outfile)
+        exit()
+    return energy, gradient
