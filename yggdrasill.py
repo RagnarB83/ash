@@ -1329,8 +1329,8 @@ class Psi4Theory:
                 return self.energy
 
         #INPUT-FILE BASED INTERFACE Creates Psi4 inputfiles and runs Psithon as subprocessses
-        else:
-            print("We are here:", os.getcwd())
+        elif runmode=='input':
+            print("Current directory:", os.getcwd())
             #Psi4 scratch dir
             #print("Setting Psi4 scratchdir to ", os.getcwd())
             #Possible option: Set scratch env-variable as subprocess??? TODO:
