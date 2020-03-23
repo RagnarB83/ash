@@ -1127,7 +1127,7 @@ class ORCATheory:
 # PE: Polarizable embedding (CPPE). Pass pe_modulesettings dict as well
 class Psi4Theory:
     def __init__(self, fragment='', charge='', mult='', printsetting='False', psi4settings='', psi4functional='',
-                 runmode='library', psi4dir='', pe=False, potfile='', outputname='psi4output.dat', label='',
+                 runmode='library', psi4dir='', pe=False, potfile='', outputname='psi4output.dat', label='psi4input',
                  psi4memory=3000):
 
         self.psi4memory=psi4memory
