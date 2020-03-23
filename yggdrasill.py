@@ -1413,7 +1413,7 @@ class Psi4Theory:
                     inputfile.write('oeprop(wfn, \'MULLIKEN_CHARGES\', title=\'mulchrg\')\n')
                     inputfile.write('\n')
 
-            print("Running inputfile:", self.label+'inp')
+            print("Running inputfile:", self.label+'.inp')
             #Running inputfile
             with open(self.label + '.out', 'w') as ofile:
                 process = sp.run(['psi4', '-i', self.label + '.inp', '-o', self.label + '.out', '-n', str(nprocs) ],
