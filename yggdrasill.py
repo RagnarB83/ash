@@ -1410,10 +1410,17 @@ class Psi4Theory:
                 #Writing job directive
                 inputfile.write('\n')
                 if Grad==True:
-                    inputfile.write('scf_energy, wfn = gradient(\'scf\', dft_functional=\'{}\', return_wfn=True)\n'.format(self.psi4functional))
+                    if restart==True:
+                        inputfile.write('scf_energy, wfn = gradient(\'scf\', dft_functional=\'{}\',
+                                        'return_wfn=True, restart_file=\"{}\")\n'.format(self.psi4functional, 'lastrestart.180' ))
+                    else:
+                        inputfile.write('scf_energy, wfn = gradient(\'scf\', dft_functional=\'{}\', return_wfn=True)\n'.format(self.psi4functional))
                 else:
-                    inputfile.write('scf_energy, wfn = energy(\'scf\', dft_functional=\'{}\', return_wfn=True)\n'.format(self.psi4functional))
-                    inputfile.write('oeprop(wfn, \'MULLIKEN_CHARGES\', title=\'mulchrg\')\n')
+                    if restart==True:
+                        inputfile.write('scf_energy, wfn = energy(\'scf\', dft_functional=\'{}\',
+                                        'return_wfn=True, restart_file=\"{}\")\n'.format(self.psi4functional, 'lastrestart.180' ))
+                    else:
+                        inputfile.write('scf_energy, wfn = energy(\'scf\', dft_functional=\'{}\', return_wfn=True)\n'.format(self.psi4functional))
                     inputfile.write('\n')
 
             #Controlling orbital read-in guess.
