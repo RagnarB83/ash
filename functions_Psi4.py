@@ -18,17 +18,12 @@ def grabPsi4EandG(outfile, numatoms, Grad):
     gradient = np.zeros((numatoms, 3))
     row=0
     gradgrab=False
-    print("here")
     with open(outfile) as ofile:
         for line in ofile:
-            print("line:", line)
             if '    Total Energy =' in line:
                 energy = float(line.split()[-1])
-                print("energy:", energy)
             if Grad == True:
-
                 if gradgrab==True:
-                    print("len(line)", len(line))
                     if len(line) < 2:
                         gradgrab=False
                         break
@@ -39,8 +34,6 @@ def grabPsi4EandG(outfile, numatoms, Grad):
                             row+=1
                 if '  -Total Gradient:' in line:
                     gradgrab = True
-    print("energy:", energy)
-    print("gradient:", gradient)
     if energy == None:
         print("Found no energy in Psi4 outputfile:", outfile)
         exit()
