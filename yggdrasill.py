@@ -1416,7 +1416,6 @@ class Psi4Theory:
 
             print("here x")
 
-            exit()
             #Running inputfile
             with open(self.label + '.out', 'w') as ofile:
                 process = sp.run(['psi4 -i', self.label + '.inp', '-o', self.label + '.inp', '-n', nprocs ],
