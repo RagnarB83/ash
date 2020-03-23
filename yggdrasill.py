@@ -1418,7 +1418,7 @@ class Psi4Theory:
 
             #Running inputfile
             with open(self.label + '.out', 'w') as ofile:
-                process = sp.run(['psi4', '-i', self.label + '.inp', '-o', self.label + '.out', '-n', nprocs ],
+                process = sp.run(['psi4', '-i', self.label + '.inp', '-o', self.label + '.out', '-n', str(nprocs) ],
                                  check=True, stdout=ofile, stderr=ofile, universal_newlines=True)
 
             #psi4 -i $job.dat -o $SLURM_SUBMIT_DIR/$job.out -n $SLURM_TASKS_PER_NODE
