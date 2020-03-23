@@ -12,6 +12,7 @@ import numpy as np
 
 #grab energy from output
 
+#Slightly ugly
 def grabPsi4EandG(outfile, numatoms, Grad):
     energy=None
     gradient = np.zeros((numatoms, 3))
@@ -30,6 +31,7 @@ def grabPsi4EandG(outfile, numatoms, Grad):
                     print("len(line)", len(line))
                     if len(line) < 2:
                         gradgrab=False
+                        continue
                     if '--' not in line:
                         if 'Atom' not in line:
                             val=line.split()
