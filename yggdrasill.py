@@ -1327,8 +1327,7 @@ class Psi4Theory:
                 print("Single-point PSI4 energy:", self.energy)
                 return self.energy
 
-        #INPUT-FILE BASED INTERFACE: TODO: finish
-        #Creates Psi4 inputfiles and runs Psithon as subprocessses
+        #INPUT-FILE BASED INTERFACE Creates Psi4 inputfiles and runs Psithon as subprocessses
         else:
 
             #Psi4 scratch dir
@@ -1411,6 +1410,8 @@ class Psi4Theory:
                     inputfile.write('scf_energy, wfn = energy(\'scf\', dft_functional=\'{}\', return_wfn=True'.format(self.psi4functional))
                     inputfile.write('oeprop(wfn, \'MULLIKEN_CHARGES\', title=\'mulchrg\')')
 
+            print("here")
+            exit()
             #Running inputfile
             with open(self.label + '.out', 'w') as ofile:
                 process = sp.run(['psi4 -i', self.label + '.inp', '-o', self.label + '.inp', '-n', nprocs ],
