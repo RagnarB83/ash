@@ -1363,7 +1363,7 @@ class Psi4Theory:
                 inputfile.write('molecule molfrag {\n')
                 inputfile.write(str(self.charge)+' '+str(self.mult))
                 for el,c in zip(qm_elems, current_coords):
-                    inputfile.write(el+' '+c[0]+' '+c[1]+' '+c[2]+'\n')
+                    inputfile.write(el+' '+str(c[0])+' '+str(c[1])+' '+str(c[2])+'\n')
                 inputfile.write('symmetry c1\n')
                 inputfile.write('no_reorient\n')
                 inputfile.write('no_com\n')
