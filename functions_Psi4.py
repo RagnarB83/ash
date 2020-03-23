@@ -30,7 +30,7 @@ def grabPsi4EandG(outfile, numatoms, Grad):
                         gradgrab=False
                     if '--' not in line and 'Atom' not in line:
                         val=line.split()
-                        gradient[row] = [val[1],val[2],val[3]]
+                        gradient[row] = [float(val[1]),float(val[2]),float(val[3])]
                         row+=1
 
     if Grad==True:
