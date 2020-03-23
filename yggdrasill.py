@@ -1411,14 +1411,12 @@ class Psi4Theory:
                 inputfile.write('\n')
                 if Grad==True:
                     if restart==True:
-                        inputfile.write('scf_energy, wfn = gradient(\'scf\', dft_functional=\'{}\',
-                                        'return_wfn=True, restart_file=\"{}\")\n'.format(self.psi4functional, 'lastrestart.180' ))
+                        inputfile.write('scf_energy, wfn = gradient(\'scf\', dft_functional=\'{}\', return_wfn=True, restart_file=\"{}\")\n'.format(self.psi4functional, 'lastrestart.180' ))
                     else:
                         inputfile.write('scf_energy, wfn = gradient(\'scf\', dft_functional=\'{}\', return_wfn=True)\n'.format(self.psi4functional))
                 else:
                     if restart==True:
-                        inputfile.write('scf_energy, wfn = energy(\'scf\', dft_functional=\'{}\',
-                                        'return_wfn=True, restart_file=\"{}\")\n'.format(self.psi4functional, 'lastrestart.180' ))
+                        inputfile.write('scf_energy, wfn = energy(\'scf\', dft_functional=\'{}\', return_wfn=True, restart_file=\"{}\")\n'.format(self.psi4functional, 'lastrestart.180' ))
                     else:
                         inputfile.write('scf_energy, wfn = energy(\'scf\', dft_functional=\'{}\', return_wfn=True)\n'.format(self.psi4functional))
                     inputfile.write('\n')
