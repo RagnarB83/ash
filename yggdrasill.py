@@ -1141,7 +1141,7 @@ class Psi4Theory:
         self.potfile=potfile
         if self.runmode != 'library':
             self.psi4path=shutil.which('psi4')
-            if psi4path==None:
+            if self.psi4path==None:
                 print("Found no psi4 in path. Add Psi4 to Shell environment or provide psi4dir variable")
                 exit()
             else:
