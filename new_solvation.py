@@ -522,7 +522,7 @@ def solvshell ( orcadir='', NumCores='', calctype='', orcasimpleinput_LL='',
         NumCoresPsi4 = int(NumCores/len(totrepsnaps))
         pool = mp.Pool(len(totrepsnaps))
         results = pool.map(LRPolsnapshotcalc, [[snapshot, solvsphere, psi4dict, psi4_functional, pot_option,
-                                                LRPolRegion1, LRPolRegion2, NumCoresPsi4, LRPolQMRegion]
+                                                LRPolRegion1, LRPolRegion2, NumCoresPsi4, LRPolQMRegion, psi4memory, psi4runmode]
                                                for snapshot in totrepsnaps])
         pool.close()
         pool.join()
@@ -772,7 +772,7 @@ def LRPolsnapshotcalc(args):
     LRPolRegion2=args[6]
     NumCoresPsi4=args[7]
     LRPolQMRegion=args[8]
-
+    psi4memory=args[9]
 
     # create dir for each snapshot and copy snapshot into it
     os.mkdir(snapshot+'_dir')
