@@ -1411,8 +1411,8 @@ class Psi4Theory:
                     inputfile.write('scf_energy, wfn = gradient(\'scf\', dft_functional=\'{}\', return_wfn=True)\n'.format(self.psi4functional))
                 else:
                     inputfile.write('scf_energy, wfn = energy(\'scf\', dft_functional=\'{}\', return_wfn=True)\n'.format(self.psi4functional))
-                    inputfile.write('oeprop(wfn, \'MULLIKEN_CHARGES\', title=\'mulchrg\')')
-                    inputfile.write('}\n')
+                    inputfile.write('oeprop(wfn, \'MULLIKEN_CHARGES\', title=\'mulchrg\')\n')
+                    inputfile.write('\n')
 
             print("here x")
 
