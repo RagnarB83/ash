@@ -261,6 +261,7 @@ def solvshell ( orcadir='', NumCores='', calctype='', orcasimpleinput_LL='',
     os.chdir('..')
 
     if BulkCorrection==True:
+        CheckpointTime = time.time()
         #############################################
         # Representative snapshots: Bulk Correction #
         #############################################
@@ -360,6 +361,7 @@ def solvshell ( orcadir='', NumCores='', calctype='', orcasimpleinput_LL='',
         Bulk_ave_trajA=0; Bulk_stdev_trajA=0; Bulkcorr_mean_A=0
 
     if ShortRangePolarization==True:
+        CheckpointTime = time.time()
         #############################################
         # Short-Range Polarization (QM-region expansion) calculations #
         #############################################
@@ -497,6 +499,7 @@ def solvshell ( orcadir='', NumCores='', calctype='', orcasimpleinput_LL='',
         SRPol_ave_trajA=0; SRPol_stdev_trajA=0; SRPolcorr_mean_A=0
 
     if LongRangePolarization==True:
+        CheckpointTime = time.time()
         ##############################################################
         # Long-Range Polarization (QM-region expansion) calculations #
         #Now using PolEmbed via psi4

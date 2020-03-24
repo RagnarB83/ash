@@ -1439,6 +1439,10 @@ class Psi4Theory:
             except:
                 pass
 
+            #Delete big WF files. Todo: move to cleanup function?
+            wffiles=glob.glob('*.34')
+            for wffile in wffiles:
+                os.remove(wffile)
 
             #Grab energy and possibly gradient
             self.energy, self.gradient = grabPsi4EandG(self.label + '.out', len(qm_elems), Grad)
