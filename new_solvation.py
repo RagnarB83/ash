@@ -18,6 +18,7 @@ import statistics
 import shutil
 import yggdrasill
 import multiprocessing as mp
+import glob
 
 
 def solvshell ( orcadir='', NumCores='', calctype='', orcasimpleinput_LL='',
@@ -257,6 +258,16 @@ def solvshell ( orcadir='', NumCores='', calctype='', orcasimpleinput_LL='',
     blankline()
     print_time_rel_and_tot(CheckpointTime, beginTime,'All snaps')
     CheckpointTime = time.time()
+    # Clean up GBW files and other
+    gbwfiles = glob.glob('*.gbw')
+    fragfiles = glob.glob('*.c')
+    pcfiles = glob.glob('*.pc')
+    for gbwfile in gbwfiles:
+        os.remove(gbwfile)
+    for fragfile in fragfiles:
+        os.remove(fragfile)
+    for pcfile in pcfiles:
+        os.remove(pcfile)
     #Going up to snaps dir again
     os.chdir('..')
 
@@ -353,6 +364,16 @@ def solvshell ( orcadir='', NumCores='', calctype='', orcasimpleinput_LL='',
         blankline()
         print_time_rel_and_tot(CheckpointTime, beginTime,'Bulk')
         CheckpointTime = time.time()
+        #Clean up GBW files and other
+        gbwfiles = glob.glob('*.gbw')
+        fragfiles = glob.glob('*.c')
+        pcfiles = glob.glob('*.pc')
+        for gbwfile in gbwfiles:
+            os.remove(gbwfile)
+        for fragfile in fragfiles:
+            os.remove(fragfile)
+        for pcfile in pcfiles:
+            os.remove(pcfile)
         #Going up to snaps dir again
         os.chdir('..')
     else:
@@ -760,6 +781,16 @@ def solvshell ( orcadir='', NumCores='', calctype='', orcasimpleinput_LL='',
     blankline()
     print_time_rel_and_tot(CheckpointTime, beginTime, 'final output')
     print_solvshell_footer()
+
+    #Clean-up files
+    #Snapshot frag files
+    fragfiles = glob.glob('*.c')
+    for fragfile in fragfiles:
+        os.remove(fragfile)
+
+    print("Solvshell done!")
+
+
 
 # Function to do all calcs for 1 snapshot (used with multiprocessing)
 def LRPolsnapshotcalc(args):
