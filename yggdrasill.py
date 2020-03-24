@@ -1409,23 +1409,18 @@ class Psi4Theory:
 
                 #Writing job directive
                 inputfile.write('\n')
-                if Grad==True:
-                    if restart==True:
-                        inputfile.write('scf_energy, wfn = gradient(\'scf\', dft_functional=\'{}\', return_wfn=True, restart_file=\"{}\")\n'.format(self.psi4functional, 'lastrestart.180' ))
-                    else:
-                        inputfile.write('scf_energy, wfn = gradient(\'scf\', dft_functional=\'{}\', return_wfn=True)\n'.format(self.psi4functional))
-                else:
-                    if restart==True:
-                        inputfile.write('scf_energy, wfn = energy(\'scf\', dft_functional=\'{}\', return_wfn=True, restart_file=\"{}\")\n'.format(self.psi4functional, 'lastrestart.180' ))
-                    else:
-                        inputfile.write('scf_energy, wfn = energy(\'scf\', dft_functional=\'{}\', return_wfn=True)\n'.format(self.psi4functional))
-                    inputfile.write('\n')
 
-            #Controlling orbital read-in guess.
-            if restart==True:
-                #Renameing orbital file from lastrestart.180 to current ID
-                print("Restart Option On!")
-                #os.rename('lastrestart.180', os.path.splitext( self.outputname)[0] + '.molfrag.' + str(os.getpid()) + '.180.npy')
+                if restart==True:
+                    #function add .npy extension to lastrestart.180
+                    inputfile.write('wfn = core.Wavefunction.from_file(\'{}\')'.format('lastrestart.180'))
+                    inputfile.write('newfile = wfn.get_scratch_filename(180)')
+                    inputfile.write('wfn.to_file(newfile)')
+
+                if Grad==True:
+                    inputfile.write('scf_energy, wfn = gradient(\'scf\', dft_functional=\'{}\', return_wfn=True)\n'.format(self.psi4functional))
+                else:
+                    inputfile.write('scf_energy, wfn = energy(\'scf\', dft_functional=\'{}\', return_wfn=True)\n'.format(self.psi4functional))
+                    inputfile.write('\n')
 
             print("Running inputfile:", self.label+'.inp')
             #Running inputfile
@@ -1438,8 +1433,8 @@ class Psi4Theory:
             try:
                 restartfile=glob.glob(self.label+'*180.npy')[0]
                 print("restartfile:", restartfile)
-                print("SCF Done. Renaming {} to lastrestart.180".format(restartfile))
-                os.rename(restartfile, 'lastrestart.180')
+                print("SCF Done. Renaming {} to lastrestart.180.npy".format(restartfile))
+                os.rename(restartfile, 'lastrestart.180.npy')
             except:
                 pass
 
