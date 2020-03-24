@@ -1412,9 +1412,10 @@ class Psi4Theory:
 
                 if restart==True:
                     #function add .npy extension to lastrestart.180
-                    inputfile.write('wfn = core.Wavefunction.from_file(\'{}\')'.format('lastrestart.180'))
-                    inputfile.write('newfile = wfn.get_scratch_filename(180)')
-                    inputfile.write('wfn.to_file(newfile)')
+                    inputfile.write('wfn = core.Wavefunction.from_file(\'{}\')\n'.format('lastrestart.180'))
+                    inputfile.write('newfile = wfn.get_scratch_filename(180)\n')
+                    inputfile.write('wfn.to_file(newfile)\n')
+                    inputfile.write('\n')
 
                 if Grad==True:
                     inputfile.write('scf_energy, wfn = gradient(\'scf\', dft_functional=\'{}\', return_wfn=True)\n'.format(self.psi4functional))
