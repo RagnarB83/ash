@@ -881,17 +881,19 @@ def LRPolsnapshotcalc(args):
     print(BC.OKGREEN,
           "Starting PolEmbed job for snapshot {} with LRPolRegion1: {}. State A: Charge: {}  Mult: {}".format(
               snapshot, LRPolRegion1, solvsphere.ChargeA, solvsphere.MultA), BC.END)
-    PolEmbedEnergyA_LR1 = PolEmbed_SP_A_LR1.run(potfile=snapshot+'System_LR1.pot', nprocs=NumCoresPsi4)
-    print(BC.OKGREEN,
-          "Starting PolEmbed job for snapshot {} with LRPolRegion1: {}. State A: Charge: {}  Mult: {}".format(
-              snapshot, LRPolRegion2, solvsphere.ChargeA, solvsphere.MultA), BC.END)
-    PolEmbedEnergyA_LR2 = PolEmbed_SP_A_LR2.run(potfile=snapshot+'System_LR2.pot', nprocs=NumCoresPsi4, restart=True)
+    PolEmbedEnergyA_LR1 = PolEmbed_SP_A_LR1.run(potfile=snapshot+'System_LR1.pot', nprocs=NumCoresPsi4, restart=False)
 
     # Doing chargeB (assumed open-shell) after closed-shell.
     print(BC.OKGREEN,
           "Starting PolEmbed job for snapshot {} with LRPolRegion1: {}. State B: Charge: {}  Mult: {}".format(
               snapshot, LRPolRegion1, solvsphere.ChargeB, solvsphere.MultB), BC.END)
     PolEmbedEnergyB_LR1 = PolEmbed_SP_B_LR1.run(potfile=snapshot+'System_LR1.pot', nprocs=NumCoresPsi4, restart=True)
+
+    #Doing Region2 state A. No re-start as not compatible with QM-region increase
+    print(BC.OKGREEN,
+          "Starting PolEmbed job for snapshot {} with LRPolRegion1: {}. State A: Charge: {}  Mult: {}".format(
+              snapshot, LRPolRegion2, solvsphere.ChargeA, solvsphere.MultA), BC.END)
+    PolEmbedEnergyA_LR2 = PolEmbed_SP_A_LR2.run(potfile=snapshot+'System_LR2.pot', nprocs=NumCoresPsi4, restart=False)
 
     print(BC.OKGREEN,
           "Starting PolEmbed job for snapshot {} with LRPolRegion2: {}. State B: Charge: {}  Mult: {}".format(
