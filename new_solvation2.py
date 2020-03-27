@@ -828,7 +828,7 @@ def Polsnapshotcalc(args):
     peatoms = listdiff(PEsolvshell, qmatoms )  # Polarizable atoms, except QM shell
     mmatoms = listdiff(solvsphere.allatoms, qmatoms + peatoms)  # Nonpolarizable atoms
 
-    print("qmatoms ({} atoms): {}".format(len(qmatoms), qmatoms)
+    print("qmatoms ({} atoms): {}".format(len(qmatoms), qmatoms))
     print("PEsolvshell num is", len(PEsolvshell))
     print("peatoms ({} atoms)".format(len(peatoms)))
     print("mmatoms ({} atoms)".format(len(mmatoms)))
