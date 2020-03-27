@@ -1,4 +1,28 @@
-#NEW SOLVSHELL VERSION. PolEm
+#####################
+# SOLVSHELL MODULE (PART OF YGGDRASILL) #
+#####################
+# For now only the snapshot-part. Will read snapshots from QM/MM MD Tcl-Chemshell run.
+import numpy as np
+import time
+
+beginTime = time.time()
+CheckpointTime = time.time()
+import os
+import sys
+from functions_solv import *
+from functions_general import *
+from functions_coords import *
+from functions_ORCA import *
+import settings_solvation
+import constants
+import statistics
+import shutil
+import yggdrasill
+import multiprocessing as mp
+import glob
+
+
+#NEW SOLVSHELL VERSION. PolEmbedding used from beginning
 def solvshell_v2 ( orcadir='', NumCores='', calctype='', orcasimpleinput_LL='',
         orcablockinput_LL='', orcasimpleinput_HL='', orcablockinput_HL='',
         orcasimpleinput_SRPOL='', orcablockinput_SRPOL='', EOM='', BulkCorrection='',
