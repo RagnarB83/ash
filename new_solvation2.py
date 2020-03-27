@@ -1,33 +1,11 @@
-#####################
-# SOLVSHELL MODULE (PART OF YGGDRASILL) #
-#####################
-# For now only the snapshot-part. Will read snapshots from QM/MM MD Tcl-Chemshell run.
-import numpy as np
-import time
-beginTime = time.time()
-CheckpointTime = time.time()
-import os
-import sys
-from functions_solv import *
-from functions_general import *
-from functions_coords import *
-from functions_ORCA import *
-import settings_solvation
-import constants
-import statistics
-import shutil
-import yggdrasill
-import multiprocessing as mp
-import glob
-
-
-def solvshell ( orcadir='', NumCores='', calctype='', orcasimpleinput_LL='',
+#NEW SOLVSHELL VERSION. PolEm
+def solvshell_v2 ( orcadir='', NumCores='', calctype='', orcasimpleinput_LL='',
         orcablockinput_LL='', orcasimpleinput_HL='', orcablockinput_HL='',
         orcasimpleinput_SRPOL='', orcablockinput_SRPOL='', EOM='', BulkCorrection='',
         GasCorrection='', ShortRangePolarization='', SRPolShell='',
         LongRangePolarization='', PrintFinalOutput='', Testmode='', repsnapmethod='',
         repsnapnumber='', solvbasis='', chargeA='', multA='', chargeB='', multB='', psi4memory=3000,
-        psi4_functional='', psi4dict='', pot_option='', LRPolRegion1=0, LRPolRegion2=20, LRPolQMRegion=0, psi4runmode='psithon'):
+        psi4_functional='', psi4dict='', pot_option='', LRPolRegion=20, PolQMRegion=0, psi4runmode='psithon'):
 
     #While charge/mult info is read from md-variables.defs in case redox AB job, this info is not present
     # for both states in case of single trajectory. Plus one might want to do either VIE, VEA or SpinState change
@@ -59,9 +37,8 @@ def solvshell ( orcadir='', NumCores='', calctype='', orcasimpleinput_LL='',
     print("solvbasis:", solvbasis)
     print("SRPolShell:", SRPolShell)
     print("LongRangePolarization:", LongRangePolarization)
-    print("LRPolRegion1:", LRPolRegion1)
-    print("LRPolRegion2:", LRPolRegion2)
-    print("LRPolQMRegion:", LRPolQMRegion)
+    print("LRPolRegion:", LRPolRegion)
+    print("PolQMRegion:", PolQMRegion)
     print("BulkCorrection:", BulkCorrection)
     print("GasCorrection:", GasCorrection)
     print("orcasimpleinput_HL:", orcasimpleinput_HL)
@@ -132,9 +109,9 @@ def solvshell ( orcadir='', NumCores='', calctype='', orcasimpleinput_LL='',
 
     blankline()
 
-    ###################################
-    # All snapshots: Low-Level Theory #
-    ###################################
+    ###################################################
+    # All snapshots: POLARIZED Low-Level Theory  PSI4 #
+    ###################################################
     print_line_with_mainheader("Low-level theory on All Snapshots")
     CheckpointTime = time.time()
     # cd to snaps dir, create separate dir for calculations and copy fragmentfiles to it.
@@ -147,43 +124,32 @@ def solvshell ( orcadir='', NumCores='', calctype='', orcasimpleinput_LL='',
     # Temp: Convert snapshots in Tcl-Chemshell fragment file format to xyz coords in Angstrom.
     #Future change: Have code spit out XYZ files instead of Chemshell fragment files
 
-    #Write ORCA inputfiles and pointchargesfiles for lowlevel theory
-    # Doing both redox states in each inputfile
+    # RUNNING POL PSI4 jobs in parallel
+    #Possible increased QM-region. TODO: Make variable
+    PolQMRegion=0
+    # Cores for Psi4. Only 1 since we are parallelizing over all snapshots
+    NumCoresPsi4 = 1
+    pool = mp.Pool(NumCores)
+    results = pool.map(Polsnapshotcalc, [[snapshot, solvsphere, psi4dict, psi4_functional, pot_option,
+                                            NumCoresPsi4, PolQMRegion, LRPolRegion, psi4memory, psi4runmode]
+                                           for snapshot in solvsphere.snapshots])
+    pool.close()
+    pool.join()
+    print("results:", results)
+    # Combining
+    AsnapsABenergy = []
+    BsnapsABenergy = []
+    AllsnapsABenergy = []
+    for r in results:
+        if 'snapA' in r[0]:
+            AsnapsABenergy.append(r[1])
+        elif 'snapB' in r[0]:
+            BsnapsABenergy.append(r[1])
+        if calctype == "redox":
+            AllsnapsABenergy.append(r[1])
 
-
-    print("Creating inputfiles")
-    identifiername = '_LL'
-    solute_atoms=solvsphere.soluteatomsA
-    solvent_atoms=solvsphere.solventatoms
-    snapshotinpfiles = create_AB_inputfiles_ORCA(solute_atoms, solvent_atoms, solvsphere, solvsphere.snapshots,
-                                                      orcasimpleinput_LL, orcablockinput_LL, solventunitcharges, identifiername)
-    if calctype == "redox":
-        print("There are {} snapshots for A trajectory.".format(len(solvsphere.snapshotsA)))
-        print("There are {} snapshots for B trajectory.".format(len(solvsphere.snapshotsB)))
-    else:
-        print("There are {} snapshots for A trajectory.".format(len(solvsphere.snapshotsA)))
-
-    print("There are {} snapshots in total.".format(len(snapshotinpfiles)))
     blankline()
-    print_time_rel_and_tot(CheckpointTime, beginTime, 'LL-theory prep')
-    CheckpointTime = time.time()
-    #print("The following snapshot inputfiles will be run:\n", snapshotinpfiles)
-    blankline()
 
-    #RUN INPUT
-
-    print_line_with_subheader1("Running snapshot calculations at LL theory")
-    print(BC.WARNING,"LL-theory:", orcasimpleinput_LL,BC.END)
-    run_inputfiles_in_parallel(orcadir, snapshotinpfiles, NumCores)
-
-    #TODO: Clean up. Delete GBW files etc. Needed ??
-
-    ###################################
-    # GRAB OUTPUT #
-    ###################################
-    blankline()
-    AllsnapsABenergy, AsnapsABenergy, BsnapsABenergy=grab_energies_output(snapshotinpfiles)
-    blankline()
     print("AllsnapsABenergy:", AllsnapsABenergy)
     print("AsnapsABenergy:", AsnapsABenergy)
     print("BsnapsABenergy:", BsnapsABenergy)
@@ -274,7 +240,7 @@ def solvshell ( orcadir='', NumCores='', calctype='', orcasimpleinput_LL='',
     if BulkCorrection==True:
         CheckpointTime = time.time()
         #############################################
-        # Representative snapshots: Bulk Correction #
+        # Representative snapshots: Bulk Correction. Done with ORCA ??TODO:  #
         #############################################
         print_line_with_mainheader("Bulk Correction on Representative Snapshots")
         os.mkdir('Bulk-LL')
@@ -793,10 +759,8 @@ def solvshell ( orcadir='', NumCores='', calctype='', orcasimpleinput_LL='',
 
     print("Solvshell done!")
 
-
-
 # Function to do all calcs for 1 snapshot (used with multiprocessing)
-def LRPolsnapshotcalc(args):
+def Polsnapshotcalc(args):
     print("Starting function: LRPolsnapshotcalc")
     print(mp.current_process())
     print("args:", args)
@@ -805,12 +769,11 @@ def LRPolsnapshotcalc(args):
     psi4dict=args[2]
     psi4_functional=args[3]
     pot_option=args[4]
-    LRPolRegion1=args[5]
-    LRPolRegion2=args[6]
-    NumCoresPsi4=args[7]
-    LRPolQMRegion=args[8]
-    psi4memory=args[9]
-    psi4runmode=args[10]
+    NumCoresPsi4=args[5]
+    PolQMRegion=args[6]
+    LRPolRegion=args[7]
+    psi4memory=args[8]
+    psi4runmode=args[9]
 
     # create dir for each snapshot and copy snapshot into it
     os.mkdir(snapshot+'_dir')
@@ -831,29 +794,15 @@ def LRPolsnapshotcalc(args):
     solute_coords = [coords[i] for i in solvsphere.soluteatomsA]
 
     # Defining QM and PE regions
-    #Region 1 calcs. QM, PE and MM
-    qmatoms_LR1 = solvsphere.soluteatomsA
-    qmatoms_LR1_elems = [snap_frag.elems[i] for i in qmatoms_LR1]
-    qmatoms_LR1_coords = [snap_frag.coords[i] for i in qmatoms_LR1]
-    #Typically LRPolRegion1=0 i.e. nonpolarizable MM
-    PEsolvshell_LR1 = get_solvshell(solvsphere, snap_frag.elems, snap_frag.coords, LRPolRegion1, qmatoms_LR1_elems,
-                                  qmatoms_LR1_coords,
-                                  settings_solvation.scale, settings_solvation.tol)
-    peatoms_LR1 = PEsolvshell_LR1  # Polarizable atoms
-    mmatoms_LR1 = listdiff(solvsphere.allatoms, qmatoms_LR1 + peatoms_LR1)  # Nonpolarizable atoms
-
-    #Region 2 calcs. QM, PE and MM
-    #QM solvshell in LR2 region. i.e. accounting for shortrangepol by QM at same time
-    #Typically LRPolregion2=20  i.e 20 Åpolarizable region
-    PEsolvshell_LR2 = get_solvshell(solvsphere, snap_frag.elems, snap_frag.coords, LRPolRegion2, solute_elems,
+    PEsolvshell = get_solvshell(solvsphere, snap_frag.elems, snap_frag.coords, LRPolRegion, solute_elems,
                                   solute_coords,
                                   settings_solvation.scale, settings_solvation.tol)
-    qm_solvshell_LR2 = get_solvshell(solvsphere, snap_frag.elems, snap_frag.coords, LRPolQMRegion, solute_elems,
+    qm_solvshell = get_solvshell(solvsphere, snap_frag.elems, snap_frag.coords, PolQMRegion, solute_elems,
                                   solute_coords,
                                   settings_solvation.scale, settings_solvation.tol)
-    qmatoms_LR2 = solvsphere.soluteatomsA + qm_solvshell_LR2 #QMatoms. solute + possible QM solvshell
-    peatoms_LR2 = listdiff(PEsolvshell_LR2, qmatoms_LR2 )  # Polarizable atoms, except QM shell
-    mmatoms_LR2 = listdiff(solvsphere.allatoms, qmatoms_LR2 + peatoms_LR2)  # Nonpolarizable atoms
+    qmatoms = solvsphere.soluteatomsA + qm_solvshell #QMatoms. solute + possible QM solvshell
+    peatoms = listdiff(PEsolvshell, qmatoms )  # Polarizable atoms, except QM shell
+    mmatoms = listdiff(solvsphere.allatoms, qmatoms + peatoms)  # Nonpolarizable atoms
 
     print("qmatoms_LR1 ({} atoms): {}".format(len(qmatoms_LR1), qmatoms_LR1))
     print("PEsolvshell_LR1 num is", len(PEsolvshell_LR1))
@@ -942,4 +891,3 @@ def LRPolsnapshotcalc(args):
 
     #Returning list of snapshotname and energies for both regions
     return [snapshot, PolEmbedEnergyAB_LR1, PolEmbedEnergyAB_LR2]
-
