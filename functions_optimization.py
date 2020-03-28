@@ -120,9 +120,9 @@ class Optimizer:
             print("GEOMETRY OPTIMIZATION STEP", step)
             print("Current geometry (Å):")
             if self.theory.__class__.__name__ == "QMMMTheory":
-                print_coords_all(current_coords,elems, indices=self.fragment.allatoms, labels=self.theory.hybridatomlabels)
+                print_coords_all(current_coords,elems, indices=self.fragment.allatoms, labels=self.theory.hybridatomlabels, labels2=self.frozen_atoms)
             else:
-                print_coords_all(current_coords, elems, indices=self.fragment.allatoms)
+                print_coords_all(current_coords, elems, indices=self.fragment.allatoms, labels=self.frozen_atoms)
             blankline()
 
             #Running E+G theory job.
