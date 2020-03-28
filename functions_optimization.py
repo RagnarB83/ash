@@ -138,7 +138,6 @@ class Optimizer:
                     if num in self.frozen_atoms:
                         Grad[num]=[0.0,0.0,0.0]
             print("Grad (after frozen constraints)", Grad)
-            exit()
             #Converting to atomic forces in eV/Angstrom. Used by Knarr
             forces_evAng=Grad * (-1) * constants.hartoeV / constants.bohr2ang
             blankline()
