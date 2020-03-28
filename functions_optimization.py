@@ -123,12 +123,13 @@ class Optimizer:
             if len(self.frozen_atoms) > 0:
                 print("Applying frozen-atom constraints")
                 print(type(Grad))
-                Grad_frozen=[]
-                for num,gradcomp in enumerate(Grad):
+                Grad_frozen=np.copy(Grad)
+                print("orig Grad_frozen:", Grad_frozen)
+                #Setting gradient for atoms to zero
+                for num,gradcomp in enumerate(Grad_frozen):
+                    print("num, gradcomp", num, gradcomp)
                     if num in self.frozen_atoms:
-                        gradcomp=[0.0,0.0,0.0]
-                    else:
-                        Grad_frozen.append(gradcomp)
+                        Grad_frozen[num]=[0.0,0.0,0.0]
 
                 print("Grad_frozen:", Grad_frozen)
                 exit()
