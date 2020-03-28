@@ -27,7 +27,6 @@ def print_coords_for_atoms(coords,elems,members):
 #If list of labels provided, print as rightmost column
 #If list of labels2 provided, print as rightmost column
 def print_coords_all(coords,elems,indices=[], labels=[], labels2=[]):
-    print("labels2:", labels2)
     if indices == []:
         if labels == []:
             for i in range(len(elems)):
@@ -38,21 +37,18 @@ def print_coords_all(coords,elems,indices=[], labels=[], labels2=[]):
                     print("{:>4} {:>12.8f}  {:>12.8f}  {:>12.8f} {:>6}".format(elems[i],coords[i][0], coords[i][1], coords[i][2], labels[i]))
             else:
                 for i in range(len(elems)):
-                    print("{:>4} {:>12.8f}  {:>12.8f}  {:>12.8f} {:>6}".format(elems[i],coords[i][0], coords[i][1], coords[i][2], labels[i], label2[i]))
+                    print("{:>4} {:>12.8f}  {:>12.8f}  {:>12.8f} {:>6} :>6".format(elems[i],coords[i][0], coords[i][1], coords[i][2], labels[i], label2[i]))
     else:
-        print("h1")
         if labels == []:
             for i in range(len(elems)):
                 print("{:>1} {:>4} {:>12.8f}  {:>12.8f}  {:>12.8f}".format(indices[i],elems[i],coords[i][0], coords[i][1], coords[i][2]))
         else:
-            print("h2")
             if labels2 == []:
                 for i in range(len(elems)):
                     print("{:>1} {:>4} {:>12.8f}  {:>12.8f}  {:>12.8f} {:>6}".format(indices[i],elems[i],coords[i][0], coords[i][1], coords[i][2], labels[i]))
             else:
-                print("h3")
                 for i in range(len(elems)):
-                    print("{:>1} {:>4} {:>12.8f}  {:>12.8f}  {:>12.8f} {:>6}".format(indices[i],elems[i],coords[i][0], coords[i][1], coords[i][2], labels[i], labels2[i]))
+                    print("{:>1} {:>4} {:>12.8f}  {:>12.8f}  {:>12.8f} {:>6} {:>6}".format(indices[i],elems[i],coords[i][0], coords[i][1], coords[i][2], labels[i], labels2[i]))
 
 def distance(A,B):
     return sqrt(pow(A[0] - B[0],2) + pow(A[1] - B[1],2) + pow(A[2] - B[2],2)) #fastest
