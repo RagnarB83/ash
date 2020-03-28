@@ -1580,7 +1580,7 @@ class PySCFTheory:
             mf.verbose=4
 
         #Printing settings. TODO: Adapt more to pyscf
-        if self.printsetting:
+        if self.printsetting==True:
             print("Printsetting = True. Printing output to stdout...")
             #np.set_printoptions(linewidth=500) TODO: not sure
         else:
