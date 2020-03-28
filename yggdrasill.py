@@ -1551,10 +1551,7 @@ class PySCFTheory:
         print(len(coords_string))
         print("----")
         #mol.atom = """""".format(coords_string)
-        mol.atom = """H 0.0 0.0 0.0
-F 0.0 0.0 1.0
-H 3.0 3.0 3.0
-F 3.0 3.0 4.0""".format(coords_string)
+        mol.atom = coords_string
         print("mol.atom:", mol.atom)
         mol.basis='def2-SVP'
         #mol.symmetry = 1
