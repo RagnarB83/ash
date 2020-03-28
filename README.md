@@ -61,7 +61,7 @@ geomeTRICOptimizer(PySCFcalc,HF_frag)
     - Todo: Numfreq parallelization.
 - **Single-point electrostic embedding QM/MM with ORCA, xTB and Psi4.**
     - To do: PySCF
-- ** Molecular Mechanics (MM) via pointcharges and Lennard-Jones potentials**
+- **Molecular Mechanics (MM) via pointcharges and Lennard-Jones potentials**
     - Flexible definition of charges and Lennard-Jones potentials. Either via flexible forcefield inputfile or 
     in script.
     - Both energy and gradient available.
@@ -111,4 +111,11 @@ geomeTRICOptimizer(PySCFcalc,HF_frag)
       - QM/MM Numerical frequencies of central fragment of cluster.
       
     - **solvshell: Multi-shell solvation for redox potentials**
+      - Reads snapshots from molecular dynamics trajectory and calculates VIE, VEA, redox pot. or other property.
+      - Parallelization over snapshots. Averages over snapshots and finds representative snapshots of trajectory.
+      - QM/MM single-points with/without increased QM-region.
+      - Bulk correction for aqueous solutions.
+      - Automatic procedure for accounting for short-range and long-range polarization effects.
+      - Polarizable embedding via Psi4 or PySCF (soon available).
+      
     
