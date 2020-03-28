@@ -1292,6 +1292,7 @@ class Psi4Theory:
                 except:
                     exit()
                 psi4.set_module_options('pe', {'potfile' : self.potfile})
+                self.psi4settings['pe'] = 'true'
 
             #Controlling OpenMP parallelization. Controlled here, not via OMP_NUM_THREADS etc.
             psi4.set_num_threads(nprocs)
