@@ -1544,6 +1544,7 @@ class PySCFTheory:
 
         #Defining mol object
         mol = gto.Mole()
+        mol.verbose = 4
         coords_string=create_coords_string(qm_elems,current_coords)
         print("coords_string:", coords_string)
         print("----")
@@ -1551,9 +1552,10 @@ class PySCFTheory:
         print("----")
         mol.atom = """""".format(create_coords_string(qm_elems,current_coords))
         print("mol.atom:", mol.atom)
-        mol.symmetry = 1
-        mol.charge = self.charge
-        mol.spin = self.mult-1
+        mol.basis='def2-SVP'
+        #mol.symmetry = 1
+        #mol.charge = self.charge
+        #mol.spin = self.mult-1
         mol.build()
         if self.pe==True:
             print(BC.OKGREEN, "Polarizable Embedding Option On! Using CPPE module inside PySCF", BC.END)
