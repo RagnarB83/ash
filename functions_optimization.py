@@ -122,17 +122,11 @@ class Optimizer:
             #Applying frozen atoms constraint. Setting gradient to zero on atoms
             if len(self.frozen_atoms) > 0:
                 print("Applying frozen-atom constraints")
-                print(type(Grad))
-                Grad_frozen=np.copy(Grad)
-                print("orig Grad_frozen:", Grad_frozen)
                 #Setting gradient for atoms to zero
-                for num,gradcomp in enumerate(Grad_frozen):
-                    print("num, gradcomp", num, gradcomp)
+                for num,gradcomp in enumerate(Grad):
                     if num in self.frozen_atoms:
-                        Grad_frozen[num]=[0.0,0.0,0.0]
-
-                print("Grad_frozen:", Grad_frozen)
-                exit()
+                        Grad[num]=[0.0,0.0,0.0]
+            print("Grad (after frozen constraints)", Grad)
             #Converting to atomic forces in eV/Angstrom. Used by Knarr
             forces_evAng=Grad * (-1) * constants.hartoeV / constants.bohr2ang
             blankline()
