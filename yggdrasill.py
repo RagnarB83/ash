@@ -1555,7 +1555,10 @@ class PySCFTheory:
         #PYSCF basis object: https://sunqm.github.io/pyscf/tutorial.html
         #Object can be string ('def2-SVP') or a dict with element-specific keys and values
         mol.basis=self.pyscfbasis
-        print("xx2")
+        #Memory settings
+        mol.max_memory = self.pyscfmemory
+        #BUILD mol object
+        mol.build()
         if self.pe==True:
             print(BC.OKGREEN, "Polarizable Embedding Option On! Using CPPE module inside PySCF", BC.END)
             print(BC.WARNING, "Potfile: ", self.potfile, BC.END)
@@ -1591,13 +1594,10 @@ class PySCFTheory:
             print("Printsetting = False. Printing to:", self.outputname )
             mf.stdout = open(self.outputname, 'w')
         print("xx3")
-        #Memory settings
-        mol.max_memory = self.pyscfmemory
+
 
         #TODO: Restart settings for PySCF
 
-        #BUILD mol object
-        mol.build()
 
         #Controlling OpenMP parallelization.
         lib.num_threads(nprocs)
