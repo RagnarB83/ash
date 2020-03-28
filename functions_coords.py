@@ -248,7 +248,7 @@ def get_molecule_members_fixed(coords,elems, scale,tol, atomindex='', members=[]
 def create_coords_string(elems,coords):
     coordsstring=''
     for el, c in zip(elems,coords):
-        coordsstring=coordsstring+el+' '+str(c[0])+' '+str(c[1])+' '+str(c[2])+'\n'
+        coordsstring=coordsstring+el+'  '+str(c[0])+'  '+str(c[1])+'  '+str(c[2])+'\n'
     return coordsstring[:-1]
 
 
