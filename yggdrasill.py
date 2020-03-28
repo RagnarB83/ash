@@ -1546,18 +1546,15 @@ class PySCFTheory:
         mol = gto.Mole()
         mol.verbose = 4
         coords_string=create_coords_string(qm_elems,current_coords)
-        print("coords_string:", coords_string)
-        print("----")
-        print(len(coords_string))
-        print("----")
-        #mol.atom = """""".format(coords_string)
         mol.atom = coords_string
-        print("mol.atom:", mol.atom)
-        mol.basis='def2-SVP'
-        #mol.symmetry = 1
-        #mol.charge = self.charge
-        #mol.spin = self.mult-1
+        mol.symmetry = 1
+        mol.charge = self.charge
+        mol.spin = self.mult-1
+        #PYSCF basis object: https://sunqm.github.io/pyscf/tutorial.html
+        #Object can be string ('def2-SVP') or a dict with element-specific keys and values
+        mol.basis=self.pyscfbasis
         mol.build()
+
         if self.pe==True:
             print(BC.OKGREEN, "Polarizable Embedding Option On! Using CPPE module inside PySCF", BC.END)
             print(BC.WARNING, "Potfile: ", self.potfile, BC.END)
@@ -1592,9 +1589,6 @@ class PySCFTheory:
 
         #TODO: Restart settings for PySCF
 
-        #PYSCF basis object: https://sunqm.github.io/pyscf/tutorial.html
-        #Object can be string ('def2-SVP') or a dict with element-specific keys and values
-        mol.basis=self.pyscfbasis
 
         #Controlling OpenMP parallelization.
         lib.num_threads(nprocs)
