@@ -93,10 +93,10 @@ def LennardJones(coords,atomtypes, LJPairpotentials, connectivity=[]):
                                 #print("gradient[j]:", gradient[j]* (1/constants.harkcal) / constants.ang2bohr)
     #Convert gradient from kcal/mol per Å to hartree/Bohr
     final_gradient=gradient * (1/constants.harkcal) / constants.ang2bohr
-    print("final_gradient (hartree/Bohr):", final_gradient)
+    print("LJ gradient (hartree/Bohr):", final_gradient)
     #Converg energy from kcal/mol to hartree
     final_energy=energy*(1/constants.harkcal)
-    print("final_energy (hartree)", final_energy)
+    print("LJ energy (hartree)", final_energy)
 
     return final_energy,final_gradient
 
