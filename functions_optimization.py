@@ -51,11 +51,13 @@ def write_xyz_trajectory(file, coords, elems, titleline):
 
 #Yggdrasill Optimizer class for basic usage
 class Optimizer:
-    def __init__(self, fragment, theory, optimizer, maxiter=50):
+    def __init__(self, fragment, theory, optimizer, maxiter=50, frozen_atoms=[]):
         self.fragment=fragment
         self.theory=theory
         self.optimizer=optimizer
         self.maxiter=maxiter
+        #Frozen atoms: List of atoms that should be frozen
+        self.frozen_atoms=[]
     def run(self):
         beginTime = time.time()
         print(BC.OKMAGENTA, BC.BOLD, "------------STARTING OPTIMIZER-------------", BC.END)
@@ -64,6 +66,9 @@ class Optimizer:
         MaxGtolerance=0.0003
         print("Running Optimizer")
         print("Optimization algorithm:", self.optimizer)
+        if len(self.frozen_atoms)> 0:
+            print("Frozen atoms:", self.frozen_atoms)
+        blankline()
         #Printing info and basic initalization of parameters
         if self.optimizer=="SD":
             print("Using very basic stupid Steepest Descent algorithm")
@@ -116,6 +121,20 @@ class Optimizer:
             E, Grad = self.theory.run(current_coords=current_coords, elems=self.fragment.elems, Grad=True)
             print("E,", E)
             print("Grad,", Grad)
+
+            #Applying frozen atoms constraint. Setting gradient to zero on atoms
+            if len(self.frozen_atoms) > 0:
+                print("Applying frozen-atom constraints")
+                print(type(Grad))
+                Grad_frozen=[]
+                for num,gradcomp in enumerate(Grad):
+                    if num in self.frozen_atoms:
+                        gradcomp=[0.0,0.0,0.0]
+                    else:
+                        Grad_frozen.append(gradcomp)
+
+                print("Grad_frozen:", Grad_frozen)
+                exit()
             #Converting to atomic forces in eV/Angstrom. Used by Knarr
             forces_evAng=Grad * (-1) * constants.hartoeV / constants.bohr2ang
             blankline()

@@ -31,8 +31,6 @@ Big projects: UPCOMING
 #######################
 - TODO: Allow Numfreq module to do QM/MM Hessian. Requires some thinking.
 - TODO: Project out translational and rotational modes.
-- TODO: Add PySCF interface
-- TODO: Write Psi4 interface
 - TODO: OpenMM interface for bonded MM interactions
 - TODO: Look into using orca_mm
 - Fit LJ parameters for molecules based on el-dens analysis DDEC3 approach.

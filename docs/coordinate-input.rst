@@ -142,7 +142,7 @@ Currently, connectivity is calculated based on a distance and radii-based criter
 
 :red:`DOCUMENT BASIC CONNECTIVITY HERE`
 
-To calculate the connectivity table for a table
+To calculate the connectivity table for a molecule:
 
 .. code-block:: python
 
