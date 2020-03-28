@@ -1577,6 +1577,7 @@ class PySCFTheory:
             print("xy3")
             mf = solvent.PE(scf.RKS(mol), pe)
         else:
+            print("xyb")
             #TODO: Adapt to RKS vs. UKS etc.
             mf = scf.RKS(mol)
             #Verbose printing. TODO: put somewhere else
