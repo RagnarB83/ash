@@ -1462,6 +1462,169 @@ class Psi4Theory:
             print("Unknown Psi4 runmode")
             exit()
 
+
+
+#PySCF Theory object. Fragment object is optional. Only used for single-points.
+#PySCF runmode: Library only
+# PE: Polarizable embedding (CPPE). Not completely active in PySCF 1.7.1. Bugfix required I think
+class PySCFTheory:
+    def __init__(self, fragment='', charge='', mult='', printsetting='False', pyscfbasis='', pyscffunctional='',
+                pyscfdir='', pe=False, potfile='', outputname='pyscfoutput.dat', pyscfmemory=3000):
+
+        self.pyscfmemory=pyscfmemory
+        self.outputname=outputname
+        self.printsetting=printsetting
+        #CPPE Polarizable Embedding options
+        self.pe=pe
+        #Potfile from user or passed on via QM/MM Theory object ?
+        self.potfile=potfile
+
+
+        if fragment != '':
+            self.fragment=fragment
+            self.coords=fragment.coords
+            self.elems=fragment.elems
+        #print("frag elems", self.fragment.elems)
+        if charge!='':
+            self.charge=int(charge)
+        if mult!='':
+            self.mult=int(mult)
+        self.pyscfbasis=pyscfbasis
+        self.pyscffunctional=pyscffunctional
+    #Cleanup after run.
+    def cleanup(self):
+        print("Cleaning up old PySCF files")
+        try:
+            os.remove('timer.dat')
+            os.remove('pyscfoutput.dat')
+        except:
+            pass
+    #Run function. Takes coords, elems etc. arguments and computes E or E+G.
+    def run(self, current_coords=[], current_MM_coords=[], MMcharges=[], qm_elems=[],
+            mm_elems=[], elems=[], Grad=False, PC=False, nprocs=1, pe=False, potfile='', restart=False ):
+
+        print(BC.OKBLUE,BC.BOLD, "------------RUNNING PYSCF INTERFACE-------------", BC.END)
+
+        #If pe and potfile given as run argument
+        if pe is not False:
+            self.pe=pe
+        if potfile != '':
+            self.potfile=potfile
+
+        #Coords provided to run or else taken from initialization.
+        if len(current_coords) != 0:
+            pass
+        else:
+            current_coords=self.coords
+
+        #What elemlist to use. If qm_elems provided then QM/MM job, otherwise use elems list or self.elems
+        if qm_elems == []:
+            if elems == []:
+                qm_elems=self.elems
+            else:
+                qm_elems = elems
+
+
+        try:
+            import pyscf
+        except:
+            print(BC.FAIL, "Problem importing pyscf. Make sure pyscf has been installed: pip install pyscf", BC.END)
+
+        #PySCF scratch dir. Todo: Need to adapt
+        #print("Setting PySCF scratchdir to ", os.getcwd())
+
+        from pyscf import gto
+        from pyscf import scf
+        from pyscf import lib
+        from pyscf.dft import xcfun
+        if self.pe==True:
+            import pyscf.solvent as solvent
+            from pyscf.solvent import pol_embed
+            import cppe
+
+        #Defining mol object
+        mol = gto.Mole()
+        mol.atom = """
+        
+        """.format(create_coords_string(qm_elems,current_coords))
+        mol.symmetry = 1
+        mol.charge = self.charge
+        mol.spin = self.mult-1
+        mol.build()
+        if self.pe==True:
+            print(BC.OKGREEN, "Polarizable Embedding Option On! Using CPPE module inside PySCF", BC.END)
+            print(BC.WARNING, "Potfile: ", self.potfile, BC.END)
+            try:
+                if os.path.exists(self.potfile):
+                    pass
+                else:
+                    print(BC.FAIL, "Potfile: ", self.potfile, "does not exist!", BC.END)
+                    exit()
+            except:
+                exit()
+            pe_options = cppe.PeOptions()
+            pe_options.do_diis = True
+            pe_options.potfile = self.potfile
+            pe = pol_embed.PolEmbed(mol, pe_options)
+            # TODO: Adapt to RKS vs. UKS etc.
+            mf = solvent.PE(scf.RKS(mol), pe)
+        else:
+            #TODO: Adapt to RKS vs. UKS etc.
+            mf = scf.RKS(mol)
+
+        #Printing settings. TODO: Adapt more to pyscf
+        if self.printsetting:
+            print("Printsetting = True. Printing output to stdout...")
+            #np.set_printoptions(linewidth=500) TODO: not sure
+        else:
+            print("Printsetting = False. ")
+            mol.output = 'self.outputname'
+
+        #Memory settings
+        mol.max_memory = self.pyscfmemory
+
+        #TODO: Restart settings for PySCF
+
+        #PYSCF basis object: https://sunqm.github.io/pyscf/tutorial.html
+        #Object can be string ('def2-SVP') or a dict with element-specific keys and values
+        mol.basis=self.pyscfbasis
+
+        #Controlling OpenMP parallelization.
+        lib.num_threads(nprocs)
+
+        #Setting functional
+        mf.xc = self.pyscffunctional
+        #TODO: libxc vs. xcfun interface control here
+        #mf._numint.libxc = xcfun
+
+        mf.conv_tol = 1e-8
+        #Control printing here. TOdo: make variable
+        mf.verbose = 4
+
+        #RUN ENERGY job
+        self.energy = mf.kernel()
+
+        if self.pe==True:
+            print(mf._pol_embed.cppe_state.summary_string)
+
+        #Grab energy and gradient
+        if Grad==True:
+            grad = mf.nuc_grad_method()
+            self.gradient = grad.kernel()
+
+
+        #TODO: write in error handling here
+        print(BC.OKBLUE, BC.BOLD, "------------ENDING PYSCF INTERFACE-------------", BC.END)
+        if Grad == True:
+            print("Single-point PySCF energy:", self.energy)
+            return self.energy, self.gradient
+        else:
+            print("Single-point PySCF energy:", self.energy)
+            return self.energy
+
+
+
+
 # Fragment class
 class Fragment:
     def __init__(self, coordsstring=None, xyzfile=None, pdbfile=None, coords=None, elems=None):
