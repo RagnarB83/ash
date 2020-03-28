@@ -51,7 +51,7 @@ def write_xyz_trajectory(file, coords, elems, titleline):
 
 #Yggdrasill Optimizer class for basic usage
 class Optimizer:
-    def __init__(self, fragment='', theory='', optimizer='', maxiter=50, frozen_atoms=[]):
+    def __init__(self, fragment='', theory='', optimizer='', maxiter=50, frozen_atoms=[], RMSGtolerance=0.0001, MaxGtolerance=0.0003):
         if len(fragment)>0:
             self.fragment=fragment
         else:
@@ -67,6 +67,8 @@ class Optimizer:
         self.theory=theory
         self.optimizer=optimizer
         self.maxiter=maxiter
+        self.RMSGtolerance=RMSGtolerance
+        self.MaxGtolerance=MaxGtolerance
         #Frozen atoms: List of atoms that should be frozen
         self.frozen_atoms=frozen_atoms
         #List of active vs. frozen labels
@@ -82,8 +84,6 @@ class Optimizer:
         beginTime = time.time()
         print(BC.OKMAGENTA, BC.BOLD, "------------STARTING OPTIMIZER-------------", BC.END)
         print_option='Big'
-        RMSGtolerance=0.0001
-        MaxGtolerance=0.0003
         print("Running Optimizer")
         print("Optimization algorithm:", self.optimizer)
         if len(self.frozen_atoms)> 0:
@@ -109,10 +109,11 @@ class Optimizer:
             print("FIRE Parameters for timestep:", timestep)
             print(GetFIREParam(time_step))
 
-        print("Tolerances:  RMSG: {}  MaxG: {}  Eh/Bohr".format(RMSGtolerance, MaxGtolerance))
+        print("Tolerances:  RMSG: {}  MaxG: {}  Eh/Bohr".format(self.RMSGtolerance, self.MaxGtolerance))
         #Name of trajectory file
         trajname="opt-trajectory.xyz"
         print("Writing XYZ trajectory file: ", trajname)
+        #Remove old trajectory file if present
         try:
             os.remove(trajname)
         except:
@@ -162,9 +163,9 @@ class Optimizer:
             write_xyz_trajectory(trajname, current_coords, elems, E)
 
             # Convergence threshold check
-            if RMSG < RMSGtolerance and MaxG < MaxGtolerance:
-                print("RMSG: {:3.9f}       Tolerance: {:3.9f}    YES".format(RMSG, RMSGtolerance))
-                print("MaxG: {:3.9f}       Tolerance: {:3.9f}    YES".format(MaxG, MaxGtolerance))
+            if RMSG < self.RMSGtolerance and MaxG < self.MaxGtolerance:
+                print("RMSG: {:3.9f}       Tolerance: {:3.9f}    YES".format(RMSG, self.RMSGtolerance))
+                print("MaxG: {:3.9f}       Tolerance: {:3.9f}    YES".format(MaxG, self.MaxGtolerance))
                 print(BC.OKGREEN,"Geometry optimization Converged!",BC.END)
                 write_xyz_trajectory(trajname, current_coords, elems, E)
 
@@ -175,17 +176,17 @@ class Optimizer:
                 blankline()
                 print_time_rel_and_tot(CheckpointTime, beginTime, 'Opt Step')
                 return
-            elif RMSG > RMSGtolerance and MaxG < MaxGtolerance:
-                print("RMSG: {:3.9f}       Tolerance: {:3.9f}    NO".format(RMSG, RMSGtolerance))
-                print("MaxG: {:3.9f}       Tolerance: {:3.9f}    YES".format(MaxG, MaxGtolerance))
+            elif RMSG > self.RMSGtolerance and MaxG < self.MaxGtolerance:
+                print("RMSG: {:3.9f}       Tolerance: {:3.9f}    NO".format(RMSG, self.RMSGtolerance))
+                print("MaxG: {:3.9f}       Tolerance: {:3.9f}    YES".format(MaxG, self.MaxGtolerance))
                 print(BC.WARNING,"Not converged",BC.END)
-            elif RMSG < RMSGtolerance and MaxG > MaxGtolerance:
-                print("RMSG: {:3.9f}       Tolerance: {:3.9f}    YES".format(RMSG, RMSGtolerance))
-                print("MaxG: {:3.9f}       Tolerance: {:3.9f}    NO".format(MaxG, MaxGtolerance))
+            elif RMSG < self.RMSGtolerance and MaxG > self.MaxGtolerance:
+                print("RMSG: {:3.9f}       Tolerance: {:3.9f}    YES".format(RMSG, self.RMSGtolerance))
+                print("MaxG: {:3.9f}       Tolerance: {:3.9f}    NO".format(MaxG, self.MaxGtolerance))
                 print(BC.WARNING,"Not converged",BC.END)
             else:
-                print("RMSG: {:3.9f}       Tolerance: {:3.9f}    NO".format(RMSG, RMSGtolerance))
-                print("MaxG: {:3.9f}       Tolerance: {:3.9f}    NO".format(MaxG, MaxGtolerance))
+                print("RMSG: {:3.9f}       Tolerance: {:3.9f}    NO".format(RMSG, self.RMSGtolerance))
+                print("MaxG: {:3.9f}       Tolerance: {:3.9f}    NO".format(MaxG, self.MaxGtolerance))
                 print(BC.WARNING,"Not converged",BC.END)
 
             blankline()
