@@ -51,8 +51,19 @@ def write_xyz_trajectory(file, coords, elems, titleline):
 
 #Yggdrasill Optimizer class for basic usage
 class Optimizer:
-    def __init__(self, fragment, theory, optimizer, maxiter=50, frozen_atoms=[]):
-        self.fragment=fragment
+    def __init__(self, fragment='', theory='', optimizer='', maxiter=50, frozen_atoms=[]):
+        if len(fragment)>0:
+            self.fragment=fragment
+        else:
+            print("No fragment provided to optimizer")
+            print("Checking if theory object contains defined fragment")
+            try:
+                self.fragment=theory.fragment
+                print("Found theory fragment")
+            except:
+                print("Found no fragment in theory object either.")
+                print("Exiting...")
+                exit()
         self.theory=theory
         self.optimizer=optimizer
         self.maxiter=maxiter
