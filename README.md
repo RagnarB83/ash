@@ -19,6 +19,25 @@ Requirements:
 We recommend Anaconda (https://www.anaconda.com/distribution/) for a good scientific Python distribution. 
 Contains Python3, Numpy, SciPy, Matplotlib.
 
+Example:
+```sh
+from yggdrasill import *
+import sys
+settings_yggdrasill.init()
+
+coords="""
+H 0.0 0.0 0.0
+F 0.0 0.0 1.0
+"""
+#Create fragment
+HF_frag=Fragment(coordsstring=coords)
+
+PySCFcalc = PySCFTheory(charge=0, mult=1, pyscfbasis='def2-SVP', 
+	pyscffunctional='bp86', printsetting=False)
+
+geomeTRICOptimizer(PySCFcalc,HF_frag)
+ ```
+
  ### Current features: 
 - **Flexible coordinate input:**
     - coordinate string
