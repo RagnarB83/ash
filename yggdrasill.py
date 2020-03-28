@@ -1568,10 +1568,13 @@ class PySCFTheory:
             except:
                 exit()
             pe_options = cppe.PeOptions()
+            print("xybbb")
             pe_options.do_diis = True
             pe_options.potfile = self.potfile
+            print("xy2a")
             pe = pol_embed.PolEmbed(mol, pe_options)
             # TODO: Adapt to RKS vs. UKS etc.
+            print("xy3")
             mf = solvent.PE(scf.RKS(mol), pe)
         else:
             #TODO: Adapt to RKS vs. UKS etc.
