@@ -1469,7 +1469,7 @@ class Psi4Theory:
 # PE: Polarizable embedding (CPPE). Not completely active in PySCF 1.7.1. Bugfix required I think
 class PySCFTheory:
     def __init__(self, fragment='', charge='', mult='', printsetting='False', pyscfbasis='', pyscffunctional='',
-                 pe=False, potfile='', outputname='pyscfoutput.dat', pyscfmemory=3000):
+                 pe=False, potfile='', outputname='pyscfoutput.dat', pyscfmemory=3100):
 
         self.pyscfmemory=pyscfmemory
         self.outputname=outputname
@@ -1542,6 +1542,7 @@ class PySCFTheory:
             from pyscf.solvent import pol_embed
             import cppe
 
+        print("xx1")
         #Defining mol object
         mol = gto.Mole()
         #Not very verbose system printing
@@ -1554,7 +1555,7 @@ class PySCFTheory:
         #PYSCF basis object: https://sunqm.github.io/pyscf/tutorial.html
         #Object can be string ('def2-SVP') or a dict with element-specific keys and values
         mol.basis=self.pyscfbasis
-
+        print("xx2")
         if self.pe==True:
             print(BC.OKGREEN, "Polarizable Embedding Option On! Using CPPE module inside PySCF", BC.END)
             print(BC.WARNING, "Potfile: ", self.potfile, BC.END)
@@ -1577,18 +1578,15 @@ class PySCFTheory:
             mf = scf.RKS(mol)
             #Verbose printing. TODO: put somewhere else
             mf.verbose=4
-
-        #Printing settings. TODO: Adapt more to pyscf
+        print("xx12a")
+        #Printing settings.
         if self.printsetting==True:
             print("Printsetting = True. Printing output to stdout...")
             #np.set_printoptions(linewidth=500) TODO: not sure
         else:
             print("Printsetting = False. Printing to:", self.outputname )
-            print("Print to file not working currently....")
-            #mol.output = self.outputname
-            mol.stdout = open('example.log', 'w')
-            mf.stdout = open('example2.log', 'w')
-
+            mf.stdout = open(self.outputname, 'w')
+        print("xx3")
         #Memory settings
         mol.max_memory = self.pyscfmemory
 
