@@ -1544,7 +1544,8 @@ class PySCFTheory:
 
         #Defining mol object
         mol = gto.Mole()
-        mol.verbose = 4
+        #Not very verbose system printing
+        mol.verbose = 3
         coords_string=create_coords_string(qm_elems,current_coords)
         mol.atom = coords_string
         mol.symmetry = 1
@@ -1575,6 +1576,8 @@ class PySCFTheory:
         else:
             #TODO: Adapt to RKS vs. UKS etc.
             mf = scf.RKS(mol)
+            #Verbose printing. TODO: put somewhere else
+            mf.verbose=4
 
         #Printing settings. TODO: Adapt more to pyscf
         if self.printsetting:
