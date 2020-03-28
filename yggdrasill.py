@@ -1542,7 +1542,6 @@ class PySCFTheory:
             from pyscf.solvent import pol_embed
             import cppe
 
-        print("xx1")
         #Defining mol object
         mol = gto.Mole()
         #Not very verbose system printing
