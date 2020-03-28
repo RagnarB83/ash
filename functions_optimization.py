@@ -57,7 +57,7 @@ class Optimizer:
         self.optimizer=optimizer
         self.maxiter=maxiter
         #Frozen atoms: List of atoms that should be frozen
-        self.frozen_atoms=[]
+        self.frozen_atoms=frozen_atoms
     def run(self):
         beginTime = time.time()
         print(BC.OKMAGENTA, BC.BOLD, "------------STARTING OPTIMIZER-------------", BC.END)
@@ -93,9 +93,6 @@ class Optimizer:
         #Name of trajectory file
         trajname="opt-trajectory.xyz"
         print("Writing XYZ trajectory file: ", trajname)
-        print("Frozen atoms:")
-        # TODO: Frozen atoms
-        print("TODO....")
         try:
             os.remove(trajname)
         except:
