@@ -69,6 +69,15 @@ class Optimizer:
         self.maxiter=maxiter
         #Frozen atoms: List of atoms that should be frozen
         self.frozen_atoms=frozen_atoms
+        #List of active vs. frozen labels
+        self.actfrozen_labels=[]
+        for i in range(fragment.numatoms):
+            print("i", i)
+            if i in self.frozen_atoms:
+                actfrozen_labels.append('Frozen')
+            else:
+                actfrozen_labels.append('Active')
+
     def run(self):
         beginTime = time.time()
         print(BC.OKMAGENTA, BC.BOLD, "------------STARTING OPTIMIZER-------------", BC.END)
@@ -120,9 +129,9 @@ class Optimizer:
             print("GEOMETRY OPTIMIZATION STEP", step)
             print("Current geometry (Å):")
             if self.theory.__class__.__name__ == "QMMMTheory":
-                print_coords_all(current_coords,elems, indices=self.fragment.allatoms, labels=self.theory.hybridatomlabels, labels2=self.frozen_atoms)
+                print_coords_all(current_coords,elems, indices=self.fragment.allatoms, labels=self.theory.hybridatomlabels, labels2=self.actfrozen_labels)
             else:
-                print_coords_all(current_coords, elems, indices=self.fragment.allatoms, labels=self.frozen_atoms)
+                print_coords_all(current_coords, elems, indices=self.fragment.allatoms, labels=self.actfrozen_labels)
             blankline()
 
             #Running E+G theory job.
