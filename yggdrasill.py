@@ -1919,7 +1919,6 @@ class xTBTheory:
         if Grad==True:
             self.energy,self.grad=xtbgradientgrab(num_qmatoms)
             if PC==True:
-                print("xTB PC gradient to be grabbed here")
                 # Grab pointcharge gradient. i.e. gradient on MM atoms from QM-MM elstat interaction.
                 self.pcgrad = xtbpcgradientgrab(num_mmatoms)
                 print("------------ENDING XTB-INTERFACE-------------")

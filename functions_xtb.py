@@ -244,12 +244,10 @@ def create_xtb_pcfile_general(coords,pchargelist):
 #Grab pointcharge gradient (Eh/Bohr) from xtb pcgrad file
 def xtbpcgradientgrab(numatoms):
     gradient = np.zeros((numatoms, 3))
-    print("gradient:", gradient)
     with open('pcgrad') as pgradfile:
         for count,line in enumerate(pgradfile):
             val_x=float(line.split()[0])
             val_y = float(line.split()[1])
             val_z = float(line.split()[2])
             gradient[count-1] = [val_x,val_y,val_z]
-    print("gradient:", gradient)
     return gradient
