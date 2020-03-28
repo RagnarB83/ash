@@ -1544,7 +1544,11 @@ class PySCFTheory:
 
         #Defining mol object
         mol = gto.Mole()
-        print(create_coords_string(qm_elems,current_coords))
+        coords_string=create_coords_string(qm_elems,current_coords)
+        print("coords_string:", coords_string)
+        print("----")
+        print(len(coords_string))
+        print("----")
         mol.atom = """""".format(create_coords_string(qm_elems,current_coords))
         print("mol.atom:", mol.atom)
         mol.symmetry = 1
