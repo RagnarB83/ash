@@ -23,7 +23,7 @@ import glob
 
 
 #NEW SOLVSHELL VERSION. PolEmbedding used from beginning
-def solvshell_v2 ( orcadir='', NumCores='', calctype='', orcasimpleinput_LL='',
+def solvshell_v2 ( orcadir='', NumCores=None, calctype='', orcasimpleinput_LL='',
         orcablockinput_LL='', orcasimpleinput_HL='', orcablockinput_HL='',
         orcasimpleinput_SRPOL='', orcablockinput_SRPOL='', EOM='', BulkCorrection='',
         GasCorrection='', ShortRangePolarization='', SRPolShell='',
@@ -149,8 +149,6 @@ def solvshell_v2 ( orcadir='', NumCores='', calctype='', orcasimpleinput_LL='',
     #Future change: Have code spit out XYZ files instead of Chemshell fragment files
 
     # RUNNING POL PSI4 jobs in parallel
-    #Possible increased QM-region. TODO: Make variable
-    PolQMRegion=0
     # Cores for Psi4. Only 1 since we are parallelizing over all snapshots
     NumCoresPsi4 = 1
     pool = mp.Pool(NumCores)
@@ -180,15 +178,15 @@ def solvshell_v2 ( orcadir='', NumCores='', calctype='', orcasimpleinput_LL='',
     blankline()
 
     #Average and stdevs of
-    ave_trajA = statistics.mean(list(AsnapsABenergy.values()))
-    stdev_trajA = statistics.stdev(list(AsnapsABenergy.values()))
+    ave_trajA = statistics.mean(AsnapsABenergy)
+    stdev_trajA = statistics.stdev(AsnapsABenergy)
     if calctype=="redox":
         # Averages and stdeviations over whole trajectory at LL theory
-        ave_trajAB = statistics.mean(list(AllsnapsABenergy.values()))
+        ave_trajAB = statistics.mean(AllsnapsABenergy)
         # stdev_trajAB = statistics.stdev(list(AllsnapsABenergy.values()))
         stdev_trajAB = 0.0
-        ave_trajB = statistics.mean(list(BsnapsABenergy.values()))
-        stdev_trajB = statistics.stdev(list(BsnapsABenergy.values()))
+        ave_trajB = statistics.mean(BsnapsABenergy)
+        stdev_trajB = statistics.stdev(BsnapsABenergy)
         print("TrajA average: {:3.3f} eV. Stdev: {:3.3f} eV.".format(ave_trajA, stdev_trajA))
         print("TrajB average: {:3.3f} eV. Stdev: {:3.3f} eV.".format(ave_trajB, stdev_trajB))
         print("A+B average: {:3.3f} eV. Stdev: {:3.3f} eV.".format(ave_trajAB, stdev_trajAB))
@@ -248,16 +246,6 @@ def solvshell_v2 ( orcadir='', NumCores='', calctype='', orcasimpleinput_LL='',
     blankline()
     print_time_rel_and_tot(CheckpointTime, beginTime,'All snaps')
     CheckpointTime = time.time()
-    # Clean up GBW files and other
-    gbwfiles = glob.glob('*.gbw')
-    fragfiles = glob.glob('*.c')
-    pcfiles = glob.glob('*.pc')
-    for gbwfile in gbwfiles:
-        os.remove(gbwfile)
-    for fragfile in fragfiles:
-        os.remove(fragfile)
-    for pcfile in pcfiles:
-        os.remove(pcfile)
     #Going up to snaps dir again
     os.chdir('..')
 
@@ -876,6 +864,9 @@ def Polsnapshotcalc(args):
     PolEmbedEnergyB = PolEmbed_SP_B.run(potfile=snapshot+'System.pot', nprocs=NumCoresPsi4, restart=True)
 
     PolEmbedEnergyAB = (PolEmbedEnergyB - PolEmbedEnergyA) * constants.hartoeV
+
+    #Going up one dir
+    os.chdir('..')
 
     #Returning list of snapshotname and energies for both regions
     return [snapshot, PolEmbedEnergyAB]
