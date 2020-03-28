@@ -1469,7 +1469,7 @@ class Psi4Theory:
 # PE: Polarizable embedding (CPPE). Not completely active in PySCF 1.7.1. Bugfix required I think
 class PySCFTheory:
     def __init__(self, fragment='', charge='', mult='', printsetting='False', pyscfbasis='', pyscffunctional='',
-                pyscfdir='', pe=False, potfile='', outputname='pyscfoutput.dat', pyscfmemory=3000):
+                 pe=False, potfile='', outputname='pyscfoutput.dat', pyscfmemory=3000):
 
         self.pyscfmemory=pyscfmemory
         self.outputname=outputname
@@ -1544,9 +1544,9 @@ class PySCFTheory:
 
         #Defining mol object
         mol = gto.Mole()
-        mol.atom = """
-        
-        """.format(create_coords_string(qm_elems,current_coords))
+        print(create_coords_string(qm_elems,current_coords))
+        mol.atom = """""".format(create_coords_string(qm_elems,current_coords))
+        print("mol.atom:", mol.atom)
         mol.symmetry = 1
         mol.charge = self.charge
         mol.spin = self.mult-1
