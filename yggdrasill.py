@@ -1469,7 +1469,7 @@ class Psi4Theory:
 # PE: Polarizable embedding (CPPE). Not completely active in PySCF 1.7.1. Bugfix required I think
 class PySCFTheory:
     def __init__(self, fragment='', charge='', mult='', printsetting='False', pyscfbasis='', pyscffunctional='',
-                 pe=False, potfile='', outputname='pyscfoutput.dat', pyscfmemory=3100):
+                 pe=False, potfile='', outputname='pyscf.out', pyscfmemory=3100):
 
         self.pyscfmemory=pyscfmemory
         self.outputname=outputname
@@ -1571,21 +1571,16 @@ class PySCFTheory:
             except:
                 exit()
             pe_options = cppe.PeOptions()
-            print("xybbb")
             pe_options.do_diis = True
             pe_options.potfile = self.potfile
-            print("xy2a")
             pe = pol_embed.PolEmbed(mol, pe_options)
             # TODO: Adapt to RKS vs. UKS etc.
-            print("xy3")
             mf = solvent.PE(scf.RKS(mol), pe)
         else:
-            print("xyb")
             #TODO: Adapt to RKS vs. UKS etc.
             mf = scf.RKS(mol)
             #Verbose printing. TODO: put somewhere else
             mf.verbose=4
-        print("xx12a")
         #Printing settings.
         if self.printsetting==True:
             print("Printsetting = True. Printing output to stdout...")
@@ -1593,7 +1588,6 @@ class PySCFTheory:
         else:
             print("Printsetting = False. Printing to:", self.outputname )
             mf.stdout = open(self.outputname, 'w')
-        print("xx3")
 
 
         #TODO: Restart settings for PySCF
