@@ -2,8 +2,10 @@
 <img src="yggdrasill-logo-v02.png" alt="drawing" width="300" align="right"/>
 
  # Yggdrasill: a computational chemistry environment
-Yggdrasill is a Python-based computational chemistry environment, primarily for molecular calculations
-in the gas phase, explicit solution, crystal or protein environment.
+Yggdrasill is a Python-based computational chemistry and QM/MM environment, primarily for molecular calculations
+in the gas phase, explicit solution, crystal or protein environment. Can do single-point calculations,
+geometry optimizations, molecular dynamics (soon), numerical frequencies using a MM, QM or QM/MM Hamiltonian.
+Interfaces to popular QM codes: ORCA, xTB, Psi4, PySCF
 
 Requirements:
 - Python3 installation
