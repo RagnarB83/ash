@@ -1584,7 +1584,10 @@ class PySCFTheory:
             #np.set_printoptions(linewidth=500) TODO: not sure
         else:
             print("Printsetting = False. Printing to:", self.outputname )
-            mol.output = self.outputname
+            print("Print to file not working currently....")
+            #mol.output = self.outputname
+            mol.stdout = open('example.log', 'w')
+            mf.stdout = open('example2.log', 'w')
 
         #Memory settings
         mol.max_memory = self.pyscfmemory
