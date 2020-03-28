@@ -71,7 +71,7 @@ class Optimizer:
         self.frozen_atoms=frozen_atoms
         #List of active vs. frozen labels
         self.actfrozen_labels=[]
-        for i in range(fragment.numatoms):
+        for i in range(self.fragment.numatoms):
             print("i", i)
             if i in self.frozen_atoms:
                 actfrozen_labels.append('Frozen')
