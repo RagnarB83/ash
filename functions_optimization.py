@@ -74,9 +74,9 @@ class Optimizer:
         for i in range(self.fragment.numatoms):
             print("i", i)
             if i in self.frozen_atoms:
-                actfrozen_labels.append('Frozen')
+                self.actfrozen_labels.append('Frozen')
             else:
-                actfrozen_labels.append('Active')
+                self.actfrozen_labels.append('Active')
 
     def run(self):
         beginTime = time.time()
