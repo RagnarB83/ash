@@ -539,23 +539,23 @@ def geomeTRICOptimizer(theory=None,fragment=None, coordsystem='tric', frozenatom
             print("ClearCalcs option chosen by geomeTRIC. Not sure why")
         def calc(self,coords,tmp):
             #Updating coords in object
-            #TODO: here we get updated act coords from geomeTRIC I think.
             #Need to combine with rest of full-syme coords I think
             self.M.xyzs[0] = coords.reshape(-1, 3) * constants.bohr2ang
             currcoords=self.M.xyzs[0]
             print("currcoords:", currcoords)
             #Special act-region QM/MM since GeomeTRIC does not handle huge system and constraints
             if self.QM_MM==True:
+                #Defining full_coords as original coords temporarily
                 full_coords = np.array(fragment.coords)
                 print("full_coords:", full_coords)
+                #Replacing act-region coordinates with coords from currcoords
                 for i, c in enumerate(full_coords):
                     if i in actatoms:
-                        full_currcoords[i] = currcoords
+                        full_coords[i] = currcoords
                 print("full_coords:", full_coords)
                 #Request Engrad calc for full system
-                E, Grad = self.theory.run(current_coords=full_currcoords, elems=fragment.elems, Grad=True)
+                E, Grad = self.theory.run(current_coords=full_coords, elems=fragment.elems, Grad=True)
                 #Trim gradient down to only QM atom gradient aka act atom gradient
-                #TODO here: trim  gradient
                 print("Grad:", Grad)
                 Grad_act = [Grad[i] for i in actatoms]
                 print("Grad_act:", Grad_act)
