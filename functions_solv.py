@@ -176,7 +176,7 @@ def get_solvshell(solvsphere, allelems,allcoords,QMregion,subsetelems,subsetcoor
     return atomlist
 
 #Grab 2 total energies from list of ORCA outputfiles (basenames), e.g. VIEs.
-def grab_energies_output(inpfiles):
+def grab_energies_output_ORCA(inpfiles):
     # Dictionaries to  hold VIEs. Currently not keeping track of total energies
     AsnapsABenergy = {}
     BsnapsABenergy = {}

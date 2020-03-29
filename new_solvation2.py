@@ -158,17 +158,21 @@ def solvshell_v2 ( orcadir='', NumCores=None, calctype='', orcasimpleinput_LL=''
     pool.close()
     pool.join()
     print("results:", results)
-    # Combining
-    AsnapsABenergy = []
-    BsnapsABenergy = []
-    AllsnapsABenergy = []
+    # Combining and making dicts
+    #AllsnapsABenergy, AsnapsABenergy, BsnapsABenergy=grab_energies_output_ORCA(snapshotinpfiles)
+    AsnapsABenergy = {}
+    BsnapsABenergy = {}
+    AllsnapsABenergy = {}
     for r in results:
         if 'snapA' in r[0]:
-            AsnapsABenergy.append(r[1])
+            AsnapsABenergy[r[0]] = r[1]
+            #AsnapsABenergy.append(r[1])
         elif 'snapB' in r[0]:
-            BsnapsABenergy.append(r[1])
+            BsnapsABenergy[r[0]] = r[1]
+            #BsnapsABenergy.append(r[1])
         if calctype == "redox":
-            AllsnapsABenergy.append(r[1])
+            AllsnapsABenergy[r[0]] = r[1]
+            #AllsnapsABenergy.append(r[1])
 
     blankline()
 
@@ -178,15 +182,15 @@ def solvshell_v2 ( orcadir='', NumCores=None, calctype='', orcasimpleinput_LL=''
     blankline()
 
     #Average and stdevs of
-    ave_trajA = statistics.mean(AsnapsABenergy)
-    stdev_trajA = statistics.stdev(AsnapsABenergy)
+    ave_trajA = statistics.mean(AsnapsABenergy.values())
+    stdev_trajA = statistics.stdev(AsnapsABenergy.values())
     if calctype=="redox":
         # Averages and stdeviations over whole trajectory at LL theory
-        ave_trajAB = statistics.mean(AllsnapsABenergy)
+        ave_trajAB = statistics.mean(AllsnapsABenergy.values())
         # stdev_trajAB = statistics.stdev(list(AllsnapsABenergy.values()))
         stdev_trajAB = 0.0
-        ave_trajB = statistics.mean(BsnapsABenergy)
-        stdev_trajB = statistics.stdev(BsnapsABenergy)
+        ave_trajB = statistics.mean(BsnapsABenergy.values())
+        stdev_trajB = statistics.stdev(BsnapsABenergy.values())
         print("TrajA average: {:3.3f} eV. Stdev: {:3.3f} eV.".format(ave_trajA, stdev_trajA))
         print("TrajB average: {:3.3f} eV. Stdev: {:3.3f} eV.".format(ave_trajB, stdev_trajB))
         print("A+B average: {:3.3f} eV. Stdev: {:3.3f} eV.".format(ave_trajAB, stdev_trajAB))
@@ -279,7 +283,7 @@ def solvshell_v2 ( orcadir='', NumCores=None, calctype='', orcasimpleinput_LL=''
         run_inputfiles_in_parallel(orcadir, bulkinpfiles, NumCores)
 
         #GRAB output
-        Bulk_Allrepsnaps_ABenergy, Bulk_Arepsnaps_ABenergy, Bulk_Brepsnaps_ABenergy=grab_energies_output(bulkinpfiles)
+        Bulk_Allrepsnaps_ABenergy, Bulk_Arepsnaps_ABenergy, Bulk_Brepsnaps_ABenergy=grab_energies_output_ORCA(bulkinpfiles)
         blankline()
         #Get bulk correction per snapshot
         #print("Bulk_Allrepsnaps_ABenergy:", Bulk_Allrepsnaps_ABenergy)
@@ -400,7 +404,7 @@ def solvshell_v2 ( orcadir='', NumCores=None, calctype='', orcasimpleinput_LL=''
             run_inputfiles_in_parallel(orcadir, SRPolinpfiles, NumCores)
 
         #GRAB output
-        SRPol_Allrepsnaps_ABenergy, SRPol_Arepsnaps_ABenergy, SRPol_Brepsnaps_ABenergy=grab_energies_output(SRPolinpfiles)
+        SRPol_Allrepsnaps_ABenergy, SRPol_Arepsnaps_ABenergy, SRPol_Brepsnaps_ABenergy=grab_energies_output_ORCA(SRPolinpfiles)
         blankline()
 
         # PART 2.
@@ -421,7 +425,7 @@ def solvshell_v2 ( orcadir='', NumCores=None, calctype='', orcasimpleinput_LL=''
             #Run the inputfiles
             run_inputfiles_in_parallel(orcadir, SRPolinpfiles_Region1, NumCores)
             #Grab the energies
-            SRPol_Allrepsnaps_ABenergy_Region1, SRPol_Arepsnaps_ABenergy_Region1, SRPol_Brepsnaps_ABenergy_Region1 = grab_energies_output(
+            SRPol_Allrepsnaps_ABenergy_Region1, SRPol_Arepsnaps_ABenergy_Region1, SRPol_Brepsnaps_ABenergy_Region1 = grab_energies_output_ORCA(
                 SRPolinpfiles_Region1)
 
 

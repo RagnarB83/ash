@@ -182,7 +182,7 @@ def solvshell ( orcadir='', NumCores='', calctype='', orcasimpleinput_LL='',
     # GRAB OUTPUT #
     ###################################
     blankline()
-    AllsnapsABenergy, AsnapsABenergy, BsnapsABenergy=grab_energies_output(snapshotinpfiles)
+    AllsnapsABenergy, AsnapsABenergy, BsnapsABenergy=grab_energies_output_ORCA(snapshotinpfiles)
     blankline()
     print("AllsnapsABenergy:", AllsnapsABenergy)
     print("AsnapsABenergy:", AsnapsABenergy)
