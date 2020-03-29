@@ -506,6 +506,7 @@ def geomeTRICOptimizer(theory=None,fragment=None, coordsystem='tric', frozenatom
 
     #QM_MM interface where geomeTRIC only sees the QM part that is being optimized
     if QM_MM == True:
+        print("ACT-REGION OPTION")
         print("Note: Passing only active-region coordinates to geomeTRIC.")
         print("geomeTRIC limitation: Does not handle large systems (G-matrices and Hessians)")
         #Discussed here: https://github.com/leeping/geomeTRIC/commit/584869707aca1dbeabab6fe873fdf139d384ca66#diff-2af7dd72b77dac63cea64c052a549fe0
@@ -514,7 +515,7 @@ def geomeTRICOptimizer(theory=None,fragment=None, coordsystem='tric', frozenatom
         #frozenatoms=listdiff(fragment.allatoms, actatoms)
         #frozencoords, frozenelems = fragment.get_coords_for_atoms(frozenatoms)
         #Writing act-region coords (only) of Yggdrasill fragment to disk
-        write_xyzfile(actelems, actcoords, 'initialxyzfiletric.xyz')
+        write_xyzfile(actelems, actcoords, 'initialxyzfiletric')
         #Reading act-region coords from XYZfile and define molecule object within geomeTRIC
         mol_geometric_frag=geometric.molecule.Molecule("initialxyzfiletric.xyz")
 
