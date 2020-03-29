@@ -476,7 +476,11 @@ def BernyOpt(theory,fragment):
 #Supports frozen atoms right now
 #TODO: Get other constraints (angle-constraints etc.) working.
 # Add optional print-coords in each step option. Maybe only print QM-coords (if QM/MM).
-def geomeTRICOptimizer(theory='',fragment='', coordsystem='tric', frozenatoms=[],bondconstraints=[], maxiter=50):
+#TODO: Get frozen-atom optimization working. 10K system to big for constraint feature.
+#TODO: Mimic terachem interface? where geometric only sees the act part?
+#Testing. Creating QM_MM=True variable
+#Maybe actregion is better name. Since does not matter if QM or MM.
+def geomeTRICOptimizer(theory='',fragment='', coordsystem='tric', frozenatoms=[],bondconstraints=[], maxiter=50, QM_MM=True, actatoms=[]):
     try:
         os.remove('geometric_OPTtraj.log')
         os.remove('geometric_OPTtraj.xyz')
@@ -496,27 +500,69 @@ def geomeTRICOptimizer(theory='',fragment='', coordsystem='tric', frozenatoms=[]
         print(BC.FAIL,"geomeTRIC module not found!", BC.END)
         print(BC.WARNING,"Either install geomeTRIC using pip:\n pip install geometric\n or manually from Github (https://github.com/leeping/geomeTRIC)", BC.END)
         exit()
-    #Easiest to  write coordinates from Yggdrasill fragment to disk as XYZ-file
-    fragment.write_xyzfile("initialxyzfiletric.xyz")
-    #Reading coords from XYZfile and define molecule object within geometric
-    mol_geometric_frag=geometric.molecule.Molecule("initialxyzfiletric.xyz")
+
+    #QM_MM interface where geomeTRIC only sees the QM part that is being optimized
+    if QM_MM = True:
+        print("Note: Passing only active-region coordinates to geomeTRIC.")
+        print("geomeTRIC limitation: Does not handle large systems (G-matrices and Hessians)")
+        #Discussed here: https://github.com/leeping/geomeTRIC/commit/584869707aca1dbeabab6fe873fdf139d384ca66#diff-2af7dd72b77dac63cea64c052a549fe0
+        actcoords, actelems = get_coords_for_atoms(actatoms)
+        #Defining frozen coords here. Used below
+        frozenatoms=listdiff(fragment.allatoms, actatoms)
+        frozencoords, frozenelems = get_coords_for_atoms(frozenatoms)
+        #Writing act-region coords (only) of Yggdrasill fragment to disk
+        write_xyzfile(actelems, actcoords, 'initialxyzfiletric.xyz')
+        #Reading act-region coords from XYZfile and define molecule object within geomeTRIC
+        mol_geometric_frag=geometric.molecule.Molecule("initialxyzfiletric.xyz")
+
+    else:
+        #Easiest to  write coordinates from Yggdrasill fragment to disk as XYZ-file
+        fragment.write_xyzfile("initialxyzfiletric.xyz")
+        #Reading coords from XYZfile and define molecule object within geometric
+        mol_geometric_frag=geometric.molecule.Molecule("initialxyzfiletric.xyz")
 
     class Yggdrasillengineclass:
-        def __init__(self,geometric_molf,theory):
+        def __init__(self,geometric_molf,theory, QM_MM=False):
             #Defining M attribute of engine object as geomeTRIC Molecule object
             self.M=geometric_molf
             #Defining theory from argument
             self.theory=theory
+            self.QM_MM=QM_MM
         #Defining calculator
         def clearCalcs(self):
             print("ClearCalcs option chosen by geomeTRIC. Not sure why")
         def calc(self,coords,tmp):
             #Updating coords in object
+            #TODO: here we get updated act coords from geomeTRIC I think.
+            #Need to combine with rest of full-syme coords I think
             self.M.xyzs[0] = coords.reshape(-1, 3) * constants.bohr2ang
             currcoords=self.M.xyzs[0]
-            E,Grad=self.theory.run(current_coords=currcoords, elems=self.M.elem, Grad=True)
-            self.energy=E
-            return {'energy': E, 'gradient': Grad.flatten()}
+            print("currcoords:", currcoords)
+            #Special act-region QM/MM since GeomeTRIC does not handle huge system and constraints
+            if self.QM_MM==True:
+                full_coords = np.array(fragment.coords)
+                print("full_coords:", full_coords)
+                for i, c in enumerate(full_coords):
+                    if i in actatoms:
+                        full_currcoords[i] = currcoords
+                print("full_coords:", full_coords)
+                #Request Engrad calc for full system
+                E, Grad = self.theory.run(current_coords=full_currcoords, elems=fragment.elems, Grad=True)
+                #Trim gradient down to only QM atom gradient aka act atom gradient
+                #TODO here: trim  gradient
+                print("Grad:", Grad)
+                Grad_act = [Grad[i] for i in actatoms]
+                print("Grad_act:", Grad_act)
+                #Grad= only act part of gradient
+                #We can keep E of full system though
+                self.energy = E
+                return {'energy': E, 'gradient': Grad_act.flatten()}
+            else:
+                E,Grad=self.theory.run(current_coords=currcoords, elems=self.M.elem, Grad=True)
+                self.energy = E
+                return {'energy': E, 'gradient': Grad.flatten()}
+
+
 
     class geomeTRICArgsObject:
         def __init__(self,eng,constraints, coordsys, maxiter):
