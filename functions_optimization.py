@@ -510,9 +510,9 @@ def geomeTRICOptimizer(theory=None,fragment=None, coordsystem='tric', frozenatom
         print("geomeTRIC limitation: Does not handle large systems (G-matrices and Hessians)")
         #Discussed here: https://github.com/leeping/geomeTRIC/commit/584869707aca1dbeabab6fe873fdf139d384ca66#diff-2af7dd72b77dac63cea64c052a549fe0
         actcoords, actelems = fragment.get_coords_for_atoms(actatoms)
-        #Defining frozen coords here. Used below
-        frozenatoms=listdiff(fragment.allatoms, actatoms)
-        frozencoords, frozenelems = fragment.get_coords_for_atoms(frozenatoms)
+        #Defining frozen coords here. Maybe Used below
+        #frozenatoms=listdiff(fragment.allatoms, actatoms)
+        #frozencoords, frozenelems = fragment.get_coords_for_atoms(frozenatoms)
         #Writing act-region coords (only) of Yggdrasill fragment to disk
         write_xyzfile(actelems, actcoords, 'initialxyzfiletric.xyz')
         #Reading act-region coords from XYZfile and define molecule object within geomeTRIC
@@ -583,6 +583,7 @@ def geomeTRICOptimizer(theory=None,fragment=None, coordsystem='tric', frozenatom
     #Define constraints provided. Write constraints.txt file
     #Frozen atoms
     if len(frozenatoms) > 0 :
+        print("Writing frozen atom constraints")
         constraints='constraints.txt'
         with open("constraints.txt", 'w') as confile:
             confile.write('$freeze\n')
