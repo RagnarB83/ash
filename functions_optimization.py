@@ -502,7 +502,7 @@ def geomeTRICOptimizer(theory='',fragment='', coordsystem='tric', frozenatoms=[]
         exit()
 
     #QM_MM interface where geomeTRIC only sees the QM part that is being optimized
-    if QM_MM = True:
+    if QM_MM == True:
         print("Note: Passing only active-region coordinates to geomeTRIC.")
         print("geomeTRIC limitation: Does not handle large systems (G-matrices and Hessians)")
         #Discussed here: https://github.com/leeping/geomeTRIC/commit/584869707aca1dbeabab6fe873fdf139d384ca66#diff-2af7dd72b77dac63cea64c052a549fe0
