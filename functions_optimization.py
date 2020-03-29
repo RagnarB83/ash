@@ -551,8 +551,11 @@ def geomeTRICOptimizer(theory=None,fragment=None, coordsystem='tric', frozenatom
                 #Replacing act-region coordinates with coords from currcoords
                 for i, c in enumerate(full_coords):
                     if i in actatoms:
-                        full_coords[i] = currcoords
+                        #Silly. Pop-ing first coord from currcoords and updating
+                        curr_c, currcoords = currcoords[0], currcoords[1:]
+                        full_coords[i] = curr_c
                 print("full_coords:", full_coords)
+                print("currcoords:", currcoords)
                 #Request Engrad calc for full system
                 E, Grad = self.theory.run(current_coords=full_coords, elems=fragment.elems, Grad=True)
                 #Trim gradient down to only QM atom gradient aka act atom gradient
