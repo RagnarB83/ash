@@ -480,7 +480,7 @@ def BernyOpt(theory,fragment):
 #TODO: Mimic terachem interface? where geometric only sees the act part?
 #Testing. Creating QM_MM=True variable
 #Maybe actregion is better name. Since does not matter if QM or MM.
-def geomeTRICOptimizer(theory='',fragment='', coordsystem='tric', frozenatoms=[],bondconstraints=[], maxiter=50, QM_MM=True, actatoms=[]):
+def geomeTRICOptimizer(theory=None,fragment=None, coordsystem='tric', frozenatoms=[],bondconstraints=[], maxiter=50, QM_MM=True, actatoms=[]):
     try:
         os.remove('geometric_OPTtraj.log')
         os.remove('geometric_OPTtraj.xyz')
@@ -506,7 +506,7 @@ def geomeTRICOptimizer(theory='',fragment='', coordsystem='tric', frozenatoms=[]
         print("Note: Passing only active-region coordinates to geomeTRIC.")
         print("geomeTRIC limitation: Does not handle large systems (G-matrices and Hessians)")
         #Discussed here: https://github.com/leeping/geomeTRIC/commit/584869707aca1dbeabab6fe873fdf139d384ca66#diff-2af7dd72b77dac63cea64c052a549fe0
-        actcoords, actelems = get_coords_for_atoms(actatoms)
+        actcoords, actelems = fragment.get_coords_for_atoms(actatoms)
         #Defining frozen coords here. Used below
         frozenatoms=listdiff(fragment.allatoms, actatoms)
         frozencoords, frozenelems = get_coords_for_atoms(frozenatoms)
