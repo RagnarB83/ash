@@ -512,7 +512,7 @@ def geomeTRICOptimizer(theory=None,fragment=None, coordsystem='tric', frozenatom
         actcoords, actelems = fragment.get_coords_for_atoms(actatoms)
         #Defining frozen coords here. Used below
         frozenatoms=listdiff(fragment.allatoms, actatoms)
-        frozencoords, frozenelems = get_coords_for_atoms(frozenatoms)
+        frozencoords, frozenelems = fragment.get_coords_for_atoms(frozenatoms)
         #Writing act-region coords (only) of Yggdrasill fragment to disk
         write_xyzfile(actelems, actcoords, 'initialxyzfiletric.xyz')
         #Reading act-region coords from XYZfile and define molecule object within geomeTRIC
