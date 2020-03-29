@@ -560,7 +560,7 @@ def geomeTRICOptimizer(theory=None,fragment=None, coordsystem='tric', frozenatom
                 E, Grad = self.theory.run(current_coords=full_coords, elems=fragment.elems, Grad=True)
                 #Trim gradient down to only QM atom gradient aka act atom gradient
                 print("Grad:", Grad)
-                Grad_act = [Grad[i] for i in actatoms]
+                Grad_act = np.array([Grad[i] for i in actatoms])
                 print("Grad_act:", Grad_act)
                 #Grad= only act part of gradient
                 #We can keep E of full system though
