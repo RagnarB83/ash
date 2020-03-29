@@ -493,6 +493,9 @@ def geomeTRICOptimizer(theory=None,fragment=None, coordsystem='tric', frozenatom
         pass
     blankline()
     print("Launching geomeTRIC optimization module")
+    if fragment==None:
+        print("geomeTRIC requires fragment objec")
+        exit()
     try:
         import geometric
     except:
