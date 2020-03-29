@@ -25,40 +25,6 @@ def molcrys(cif_file='', fragmentobjects=[], theory=None, numcores=None, chargem
     
     """
     print(banner)
-    banner2="""
-  __  __    ____    _         _____   _____   __     __   _____ 
- |  \/  |  / __ \  | |       / ____| |  __ \  \ \   / /  / ____|
- | \  / | | |  | | | |      | |      | |__) |  \ \_/ /  | (___  
- | |\/| | | |  | | | |      | |      |  _  /    \   /    \___ \ 
- | |  | | | |__| | | |____  | |____  | | \ \     | |     ____) |
- |_|  |_|  \____/  |______|  \_____| |_|  \_\    |_|    |_____/ 
-                                                                
-    """
-    print(banner2)
-    banner3="""
-███╗   ███╗ ██████╗ ██╗      ██████╗██████╗ ██╗   ██╗███████╗
-████╗ ████║██╔═══██╗██║     ██╔════╝██╔══██╗╚██╗ ██╔╝██╔════╝
-██╔████╔██║██║   ██║██║     ██║     ██████╔╝ ╚████╔╝ ███████╗
-██║╚██╔╝██║██║   ██║██║     ██║     ██╔══██╗  ╚██╔╝  ╚════██║
-██║ ╚═╝ ██║╚██████╔╝███████╗╚██████╗██║  ██║   ██║   ███████║
-╚═╝     ╚═╝ ╚═════╝ ╚══════╝ ╚═════╝╚═╝  ╚═╝   ╚═╝   ╚══════╝
-    """
-    print(banner3)
-    banner4="""
- .----------------.  .----------------.  .----------------.  .----------------.  .----------------.  .----------------.  .----------------. 
-| .--------------. || .--------------. || .--------------. || .--------------. || .--------------. || .--------------. || .--------------. |
-| | ____    ____ | || |     ____     | || |   _____      | || |     ______   | || |  _______     | || |  ____  ____  | || |    _______   | |
-| ||_   \  /   _|| || |   .'    `.   | || |  |_   _|     | || |   .' ___  |  | || | |_   __ \    | || | |_  _||_  _| | || |   /  ___  |  | |
-| |  |   \/   |  | || |  /  .--.  \  | || |    | |       | || |  / .'   \_|  | || |   | |__) |   | || |   \ \  / /   | || |  |  (__ \_|  | |
-| |  | |\  /| |  | || |  | |    | |  | || |    | |   _   | || |  | |         | || |   |  __ /    | || |    \ \/ /    | || |   '.___`-.   | |
-| | _| |_\/_| |_ | || |  \  `--'  /  | || |   _| |__/ |  | || |  \ `.___.'\  | || |  _| |  \ \_  | || |    _|  |_    | || |  |`\____) |  | |
-| ||_____||_____|| || |   `.____.'   | || |  |________|  | || |   `._____.'  | || | |____| |___| | || |   |______|   | || |  |_______.'  | |
-| |              | || |              | || |              | || |              | || |              | || |              | || |              | |
-| '--------------' || '--------------' || '--------------' || '--------------' || '--------------' || '--------------' || '--------------' |
- '----------------'  '----------------'  '----------------'  '----------------'  '----------------'  '----------------'  '----------------' 
-
-    """
-    print(banner4)
     #Here assuming theory can only be ORCA for now
     orcadir=theory.orcadir
     orcablocks=theory.orcablocks
@@ -255,14 +221,17 @@ def molcrys(cif_file='', fragmentobjects=[], theory=None, numcores=None, chargem
             break
         print("Not converged in iteration {}. Continuing SP loop".format(SPLoopNum))
 
-    print("Now Doing Optimization")
-    OptLoopMaxIter=10
-    for OptLoopNum in range(0,OptLoopMaxIter):
-        frozenlist=listdiff(Cluster.allatoms,Centralmainfrag)
-        geomeTRICOptimizer(theory=QMMM_SP_ORCAcalculation, fragment=Cluster, frozenatoms=frozenlist,
-                       coordsystem='tric', maxiter=70)
+    print("Molcrys Charge-Iteration done!")
+    Cluster.print_system('Cluster-info.txt')
 
-        exit()
+    #print("Now Doing Optimization")
+    #OptLoopMaxIter=10
+    #for OptLoopNum in range(0,OptLoopMaxIter):
+    #    frozenlist=listdiff(Cluster.allatoms,Centralmainfrag)
+    #    geomeTRICOptimizer(theory=QMMM_SP_ORCAcalculation, fragment=Cluster, frozenatoms=frozenlist,
+    #                   coordsystem='tric', maxiter=70)
+#
+#        exit()
 
     #OPT of mainfrag:   Interface to Py-Chemshell (should be easy)  or maybe DL-FIND directly
     # Updating of coordinates???
