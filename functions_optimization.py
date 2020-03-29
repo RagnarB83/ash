@@ -480,7 +480,7 @@ def BernyOpt(theory,fragment):
 #TODO: Mimic terachem interface? where geometric only sees the act part?
 #Testing. Creating QM_MM=True variable
 #Maybe actregion is better name. Since does not matter if QM or MM.
-def geomeTRICOptimizer(theory=None,fragment=None, coordsystem='tric', frozenatoms=[],bondconstraints=[], maxiter=50, QM_MM=True, actatoms=[]):
+def geomeTRICOptimizer(theory=None,fragment=None, coordsystem='tric', frozenatoms=[],bondconstraints=[], maxiter=50, QM_MM=False, actatoms=[]):
     try:
         os.remove('geometric_OPTtraj.log')
         os.remove('geometric_OPTtraj.xyz')
@@ -525,8 +525,10 @@ def geomeTRICOptimizer(theory=None,fragment=None, coordsystem='tric', frozenatom
         #Reading coords from XYZfile and define molecule object within geometric
         mol_geometric_frag=geometric.molecule.Molecule("initialxyzfiletric.xyz")
 
+
+    #Defining Yggdrasill engine class used to communicate with geomeTRIC
     class Yggdrasillengineclass:
-        def __init__(self,geometric_molf,theory, QM_MM=False):
+        def __init__(self,geometric_molf, theory, QM_MM=False):
             #Defining M attribute of engine object as geomeTRIC Molecule object
             self.M=geometric_molf
             #Defining theory from argument
@@ -605,7 +607,7 @@ def geomeTRICOptimizer(theory=None,fragment=None, coordsystem='tric', frozenatom
         constraints=None
 
     #Defining Yggdrasill engine object containing geometry and theory
-    yggdrasillengine = Yggdrasillengineclass(mol_geometric_frag,theory)
+    yggdrasillengine = Yggdrasillengineclass(mol_geometric_frag,theory, QM_MM=QM_MM)
     #Defining args object, containing engine object
     args=geomeTRICArgsObject(yggdrasillengine,constraints,coordsys=coordsystem, maxiter=maxiter)
 
