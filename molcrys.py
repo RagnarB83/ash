@@ -75,7 +75,7 @@ def molcrys(cif_file='', fragmentobjects=[], theory=None, numcores=None, chargem
 
     #Define fragments of unitcell. Updates mainfrag, counterfrag1 etc. object information
     frag_define(orthogcoords,elems,cell_vectors,fragments=fragmentobjects)
-    print_time_rel_and_tot(currtime, origtime)
+    print_time_rel_and_tot(currtime, origtime, modulename='frag_define')
     currtime=time.time()
 
     #Reorder coordinates of cell based on Hungarian algorithm
@@ -85,7 +85,7 @@ def molcrys(cif_file='', fragmentobjects=[], theory=None, numcores=None, chargem
 
     #Create MM cluster here already or later
     cluster_coords,cluster_elems=create_MMcluster(orthogcoords,elems,cell_vectors,clusterradius)
-    print_time_rel_and_tot(currtime, origtime)
+    print_time_rel_and_tot(currtime, origtime, modulename='create_MMcluster')
     currtime=time.time()
 
     #Removing partial fragments present in cluster
@@ -93,7 +93,7 @@ def molcrys(cif_file='', fragmentobjects=[], theory=None, numcores=None, chargem
     #cProfile.run('remove_partial_fragments(cluster_coords,cluster_elems,sphereradius,fragmentobjects)')
 
     cluster_coords,cluster_elems=remove_partial_fragments(cluster_coords,cluster_elems,clusterradius,fragmentobjects)
-    print_time_rel_and_tot(currtime, origtime)
+    print_time_rel_and_tot(currtime, origtime, modulename='remove_partial_fragments')
     currtime=time.time()
     write_xyzfile(cluster_elems,cluster_coords,"cluster_coords")
 
@@ -102,7 +102,7 @@ def molcrys(cif_file='', fragmentobjects=[], theory=None, numcores=None, chargem
     print("Creating new Cluster fragment:")
     Cluster=Fragment(elems=cluster_elems, coords=cluster_coords)
     Cluster.calc_connectivity(scale=settings_molcrys.scale, tol=settings_molcrys.tol)
-    print_time_rel_and_tot(currtime, origtime)
+    print_time_rel_and_tot(currtime, origtime, modulename='Cluster.calc_connectivity')
     currtime=time.time()
 
     print("Cluster conn:", Cluster.connectivity)
@@ -145,7 +145,7 @@ def molcrys(cif_file='', fragmentobjects=[], theory=None, numcores=None, chargem
     # Calculate atom charges for each gas fragment. Updates atomcharges list inside Cluster fragment
     gasfragcalc(fragmentobjects,Cluster,chargemodel,orcadir,orcasimpleinput,orcablocks,numcores)
 
-    print_time_rel_and_tot_color(currtime, origtime)
+    print_time_rel_and_tot_color(currtime, origtime, modulename='gasfragcalc')
     currtime=time.time()
     print("Atom charge assignments in Cluster done!")
     blankline()
