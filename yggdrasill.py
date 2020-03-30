@@ -1788,7 +1788,7 @@ class Fragment:
                 if members not in fraglist:
                     fraglist.append(members)
                     found_atoms += members
-        print_time_rel(timestampA)
+        print_time_rel(timestampA, modulename'calc connectivity')
         #flat_fraglist = [item for sublist in fraglist for item in sublist]
         self.connectivity=fraglist
         #Calculate number of atoms in connectivity list of lists

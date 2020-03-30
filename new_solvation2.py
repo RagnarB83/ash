@@ -274,6 +274,8 @@ def solvshell_v2 ( orcadir='', NumCores=None, calctype='', orcasimpleinput_LL=''
         if calctype == "redox":
             print("repsnaplistB:", repsnaplistB)
         blankline()
+        solute_atoms = solvsphere.soluteatomsA
+        solvent_atoms = solvsphere.solventatoms
         bulkinpfiles = create_AB_inputfiles_ORCA(solute_atoms, solvent_atoms, solvsphere, totrepsnaps,
                                                          orcasimpleinput_LL, orcablockinput_LL, solventunitcharges, identifiername, None, bulkcorr)
 
