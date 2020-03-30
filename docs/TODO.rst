@@ -42,6 +42,10 @@ Big projects: UPCOMING
 BIG projects: one day
 #######################
 
+
+- Look into iPy for path-integral MD. Interfaces to lots of things, like DFTB+, CP2K etc:
+http://ipi-code.org
+
 - TODO: NAMD QM/MM with xtB: https://github.com/fhh2626/NAMD-xtb-QMMM-interface
     https://www.ks.uiuc.edu/Research/namd/mailing_list/namd-l.2017-2018/1261.html
 
