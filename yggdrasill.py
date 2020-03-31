@@ -1630,7 +1630,7 @@ class PySCFTheory:
 
 # Fragment class
 class Fragment:
-    def __init__(self, coordsstring=None, xyzfile=None, pdbfile=None, coords=None, elems=None):
+    def __init__(self, coordsstring=None, xyzfile=None, pdbfile=None, coords=None, elems=None, connectivity=None):
         print("Defining new Yggdrasill fragment object")
         self.energy = None
         self.elems=[]
@@ -1639,9 +1639,12 @@ class Fragment:
         self.atomcharges = []
         #TODO: Not sure if we use or not
         self.atomtypes = []
+        #Here either providing coords, elems as lists. Possibly reading connectivity also
         if coords is not None:
             self.coords=coords
             self.elems=elems
+            if connectivity is not None:
+                self.connectivity=connectivity
         #If coordsstring given, read elems and coords from it
         elif coordsstring is not None:
             self.add_coords_from_string(coordsstring)
@@ -1834,14 +1837,53 @@ class Fragment:
             for at, el, coord, charge, label in zip(self.atomlist, self.elems,self.coords,self.atomcharges, self.fragmenttype_labels):
                 line="{:6} {:6}  {:12.6f}  {:12.6f}  {:12.6f}  {:12.6f} {:6d}\n".format(at, el,coord[0], coord[1], coord[2], charge, label)
                 outfile.write(line)
-            outfile.write("elems: {}\n".format(self.elems))
-            outfile.write("coords: {}\n".format(self.coords))
+            #outfile.write("elems: {}\n".format(self.elems))
+            #outfile.write("coords: {}\n".format(self.coords))
             #outfile.write("list of masses: {}\n".format(self.list_of_masses))
             outfile.write("atomcharges: {}\n".format(self.atomcharges))
             outfile.write("Sum of atomcharges: {}\n".format(sum(self.atomcharges)))
             outfile.write("connectivity: {}\n".format(self.connectivity))
     def set_energy(self,energy):
         self.energy=float(energy)
+
+#Reading fragment from file. File created from Fragment.print_system
+#TODO. Make better
+def read_fragment_from_file(fragfile)
+    coordgrab=False
+    coords=[]
+    elems=[]
+    charges=[]
+    fragment_type_labels=[]
+    connectivity=[]
+    with open(fragfile) as file:
+        for n, line in enumerate(file):
+            if 'Num atoms:' in line:
+                numatoms=int(line.split()[-1])
+            if coordgrab==True:
+                #If end of coords section
+                if int(line.split()[0]) == numatoms-1:
+                    coordgrab=False
+                    continue
+                elems.append(line.split()[1])
+                coords.append([float(line.split()[2]), float(line.split()[3]), float(line.split()[4])])
+                charges.append(float(line.split()[5]))
+                fragment_type_labels.append(int(line.split()[6]))
+            if '--------------------------' in line:
+                coordgrab=True
+            #Incredibly ugly but oh well
+            if 'connectivity:' in line:
+                l=line.lstrip('connectivity:')
+                l=l.replace(" ", "")
+                for x in l.split(']'):
+                    if len(x) < 1:
+                        break
+                    y=x.strip(',[')
+                    y=y.strip('[')
+                    y=y.strip(']')
+                    list=[int(i) for i in y.split(',')]
+                    connectivity.append(list)
+    frag=Fragment(coords=coords, elems=elems, connectivity=connectivity)
+    return frag
 
 
 #TODO: Replace this inputfile-based (or keep as option) with shared-library version:
