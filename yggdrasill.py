@@ -1714,7 +1714,7 @@ class Fragment:
     def print_coords(self):
         print("Defined coordinates (Å):")
         print_coords_all(self.coords,self.elems)
-    #Read XYZ file
+    #Read PDB file
     def read_pdbfile(self,filename):
         print("Reading coordinates from PDBfile \"{}\" into fragment".format(filename))
         residuelist=[]
@@ -1741,7 +1741,6 @@ class Fragment:
         self.mass = totmasslist(self.elems)
         self.list_of_masses = list_of_masses(self.elems)
         self.calc_connectivity()
-
     #Read XYZ file
     def read_xyzfile(self,filename):
         print("Reading coordinates from XYZfile {} into fragment".format(filename))
@@ -1760,6 +1759,8 @@ class Fragment:
         self.mass = totmasslist(self.elems)
         self.list_of_masses = list_of_masses(self.elems)
         self.calc_connectivity()
+    def set_energy(self,energy):
+        self.energy=float(energy)
     # Get coordinates for specific atoms (from list of atom indices)
     def get_coords_for_atoms(self, atoms):
         subcoords=[self.coords[i] for i in atoms]
@@ -1846,8 +1847,47 @@ class Fragment:
             outfile.write("atomcharges: {}\n".format(self.atomcharges))
             outfile.write("Sum of atomcharges: {}\n".format(sum(self.atomcharges)))
             outfile.write("connectivity: {}\n".format(self.connectivity))
-    def set_energy(self,energy):
-        self.energy=float(energy)
+    #Reading fragment from file. File created from Fragment.print_system
+    def read_fragment_from_file(self, fragfile):
+        coordgrab=False
+        coords=[]
+        elems=[]
+        charges=[]
+        fragment_type_labels=[]
+        connectivity=[]
+        with open(fragfile) as file:
+            for n, line in enumerate(file):
+                if 'Num atoms:' in line:
+                    numatoms=int(line.split()[-1])
+                if coordgrab==True:
+                    #If end of coords section
+                    if int(line.split()[0]) == numatoms-1:
+                        coordgrab=False
+                        continue
+                    elems.append(line.split()[1])
+                    coords.append([float(line.split()[2]), float(line.split()[3]), float(line.split()[4])])
+                    charges.append(float(line.split()[5]))
+                    fragment_type_labels.append(int(line.split()[6]))
+                if '--------------------------' in line:
+                    coordgrab=True
+                #Incredibly ugly but oh well
+                if 'connectivity:' in line:
+                    l=line.lstrip('connectivity:')
+                    l=l.replace(" ", "")
+                    for x in l.split(']'):
+                        if len(x) < 1:
+                            break
+                        y=x.strip(',[')
+                        y=y.strip('[')
+                        y=y.strip(']')
+                        list=[int(i) for i in y.split(',')]
+                        connectivity.append(list)
+        self.elems=elems
+        self.coords=coords
+        self.connectivity=connectivity
+        self.atomcharges=atomcharges
+        #frag=Fragment(coords=coords, elems=elems, connectivity=connectivity, atomcharges=charges)
+        #return frag
 
 #Reading fragment from file. File created from Fragment.print_system
 #TODO. Make better. Alternatively: Make part of Fragment class??
@@ -1885,7 +1925,7 @@ def read_fragment_from_file(fragfile):
                     y=y.strip(']')
                     list=[int(i) for i in y.split(',')]
                     connectivity.append(list)
-    frag=Fragment(coords=coords, elems=elems, connectivity=connectivity)
+    frag=Fragment(coords=coords, elems=elems, connectivity=connectivity, atomcharges=charges)
     return frag
 
 
