@@ -1852,7 +1852,7 @@ class Fragment:
         coordgrab=False
         coords=[]
         elems=[]
-        charges=[]
+        atomcharges=[]
         fragment_type_labels=[]
         connectivity=[]
         with open(fragfile) as file:
@@ -1866,7 +1866,7 @@ class Fragment:
                         continue
                     elems.append(line.split()[1])
                     coords.append([float(line.split()[2]), float(line.split()[3]), float(line.split()[4])])
-                    charges.append(float(line.split()[5]))
+                    atomcharges.append(float(line.split()[5]))
                     fragment_type_labels.append(int(line.split()[6]))
                 if '--------------------------' in line:
                     coordgrab=True
