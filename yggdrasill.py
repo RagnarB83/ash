@@ -1630,13 +1630,16 @@ class PySCFTheory:
 
 # Fragment class
 class Fragment:
-    def __init__(self, coordsstring=None, xyzfile=None, pdbfile=None, coords=None, elems=None, connectivity=None):
+    def __init__(self, coordsstring=None, xyzfile=None, pdbfile=None, coords=None, elems=None, connectivity=None,
+                 atomcharges=None):
         print("Defining new Yggdrasill fragment object")
         self.energy = None
         self.elems=[]
         self.coords=[]
         self.connectivity=[]
         self.atomcharges = []
+        if atomcharges is not None:
+            self.atomcharges=atomcharges
         #TODO: Not sure if we use or not
         self.atomtypes = []
         #Here either providing coords, elems as lists. Possibly reading connectivity also
@@ -1847,8 +1850,8 @@ class Fragment:
         self.energy=float(energy)
 
 #Reading fragment from file. File created from Fragment.print_system
-#TODO. Make better
-def read_fragment_from_file(fragfile)
+#TODO. Make better. Alternatively: Make part of Fragment class??
+def read_fragment_from_file(fragfile):
     coordgrab=False
     coords=[]
     elems=[]
