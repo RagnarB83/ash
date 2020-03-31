@@ -1658,7 +1658,7 @@ class Fragment:
         elif pdbfile is not None:
             self.read_pdbfile(pdbfile)
         elif fragfile is not None:
-            self.read_fragment_from_file()
+            self.read_fragment_from_file(fragfile)
     def update_attributes(self):
         self.nuccharge = nucchargelist(self.elems)
         self.numatoms = len(self.coords)
@@ -1869,8 +1869,9 @@ class Fragment:
 
 
 #Reading fragment from file. File created from Fragment.print_system
-#TODO. Make better. Alternatively: Make part of Fragment class??
-def read_fragment_from_file(fragfile):
+#TODO. Make better.
+#TODO: Marked for deletion
+def old_read_fragment_from_file(fragfile):
     coordgrab=False
     coords=[]
     elems=[]
