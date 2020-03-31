@@ -1630,8 +1630,8 @@ class PySCFTheory:
 
 # Fragment class
 class Fragment:
-    def __init__(self, coordsstring=None, xyzfile=None, pdbfile=None, coords=None, elems=None, connectivity=None,
-                 atomcharges=None):
+    def __init__(self, coordsstring=None, fragfile=None, xyzfile=None, pdbfile=None, coords=None, elems=None, connectivity=None,
+                 atomcharges=None, atomtypes=None):
         print("Defining new Yggdrasill fragment object")
         self.energy = None
         self.elems=[]
@@ -1648,6 +1648,7 @@ class Fragment:
             self.elems=elems
             if connectivity is not None:
                 self.connectivity=connectivity
+            self.update_attributes()
         #If coordsstring given, read elems and coords from it
         elif coordsstring is not None:
             self.add_coords_from_string(coordsstring)
@@ -1656,13 +1657,15 @@ class Fragment:
             self.read_xyzfile(xyzfile)
         elif pdbfile is not None:
             self.read_pdbfile(pdbfile)
-        if coords is not None:
-            self.nuccharge = nucchargelist(self.elems)
-            self.numatoms = len(self.coords)
-            self.atomlist = list(range(0, self.numatoms))
-            self.allatoms = self.atomlist
-            self.mass = totmasslist(self.elems)
-            self.list_of_masses = list_of_masses(self.elems)
+        elif fragfile is not None:
+            self.read_fragment_from_file()
+    def update_attributes(self):
+        self.nuccharge = nucchargelist(self.elems)
+        self.numatoms = len(self.coords)
+        self.atomlist = list(range(0, self.numatoms))
+        self.allatoms = self.atomlist
+        self.mass = totmasslist(self.elems)
+        self.list_of_masses = list_of_masses(self.elems)
     #Add coordinates from geometry string. Will replace.
     def add_coords_from_string(self, coordsstring):
         print("Getting coordinates from string:", coordsstring)
@@ -1674,24 +1677,14 @@ class Fragment:
             if len(line)> 1:
                 self.elems.append(line.split()[0])
                 self.coords.append([float(line.split()[1]), float(line.split()[2]), float(line.split()[3])])
-        self.nuccharge = nucchargelist(self.elems)
-        self.numatoms = len(self.coords)
-        self.atomlist = list(range(0, self.numatoms))
-        self.allatoms = self.atomlist
-        self.mass = totmasslist(self.elems)
-        self.list_of_masses = list_of_masses(self.elems)
+        self.update_attributes()
         self.calc_connectivity()
     #Replace coordinates by providing elems and coords lists.
     def replace_coords(self, elems, coords):
         print("Replacing coordinates in fragment.")
         self.elems=elems
         self.coords=coords
-        self.nuccharge = nucchargelist(self.elems)
-        self.numatoms = len(self.coords)
-        self.atomlist = list(range(0, self.numatoms))
-        self.allatoms = self.atomlist
-        self.mass = totmasslist(self.elems)
-        self.list_of_masses = list_of_masses(self.elems)
+        self.update_attributes()
         self.calc_connectivity()
     def delete_coords(self):
         self.coords=[]
@@ -1704,12 +1697,7 @@ class Fragment:
             print("Adding extra coordinates")
         self.elems = self.elems+elems
         self.coords = self.coords+coords
-        self.nuccharge = nucchargelist(self.elems)
-        self.numatoms = len(self.coords)
-        self.atomlist = list(range(0, self.numatoms))
-        self.allatoms = self.atomlist
-        self.mass = totmasslist(self.elems)
-        self.list_of_masses = list_of_masses(self.elems)
+        self.update_attributes()
         self.calc_connectivity()
     def print_coords(self):
         print("Defined coordinates (Å):")
@@ -1734,12 +1722,7 @@ class Fragment:
         else:
             self.elems=elemcol
 
-        self.nuccharge = nucchargelist(self.elems)
-        self.numatoms = len(self.coords)
-        self.atomlist = list(range(0, self.numatoms))
-        self.allatoms = self.atomlist
-        self.mass = totmasslist(self.elems)
-        self.list_of_masses = list_of_masses(self.elems)
+        self.update_attributes()
         self.calc_connectivity()
     #Read XYZ file
     def read_xyzfile(self,filename):
@@ -1752,12 +1735,7 @@ class Fragment:
                     if len(line) > 3:
                         self.elems.append(line.split()[0])
                         self.coords.append([float(line.split()[1]), float(line.split()[2]), float(line.split()[3])])
-        self.nuccharge = nucchargelist(self.elems)
-        self.numatoms = len(self.coords)
-        self.atomlist = list(range(0, self.numatoms))
-        self.allatoms = self.atomlist
-        self.mass = totmasslist(self.elems)
-        self.list_of_masses = list_of_masses(self.elems)
+        self.update_attributes()
         self.calc_connectivity()
     def set_energy(self,energy):
         self.energy=float(energy)
@@ -1849,6 +1827,7 @@ class Fragment:
             outfile.write("connectivity: {}\n".format(self.connectivity))
     #Reading fragment from file. File created from Fragment.print_system
     def read_fragment_from_file(self, fragfile):
+        print("Reading Yggdrasill fragment from file:", fragfile)
         coordgrab=False
         coords=[]
         elems=[]
@@ -1884,10 +1863,10 @@ class Fragment:
                         connectivity.append(list)
         self.elems=elems
         self.coords=coords
-        self.connectivity=connectivity
         self.atomcharges=atomcharges
-        #frag=Fragment(coords=coords, elems=elems, connectivity=connectivity, atomcharges=charges)
-        #return frag
+        self.update_attributes()
+        self.connectivity=connectivity
+
 
 #Reading fragment from file. File created from Fragment.print_system
 #TODO. Make better. Alternatively: Make part of Fragment class??
