@@ -319,6 +319,8 @@ class NonBondedTheory:
         #Atom types
         self.atomtypes=atomtypes
 
+        print("self.atomtypes:", self.atomtypes)
+        print("self.forcefield", self.forcefield)
         #If atomtypes and forcefield both defined then calculate pairpotentials
         if len(self.atomtypes) > 0:
             if len(self.forcefield) > 0:
