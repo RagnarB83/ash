@@ -1807,6 +1807,14 @@ class Fragment:
     def print_system(self,filename='fragment.ygg'):
         print("Printing fragment information to disk:", filename)
 
+        #Setting atomcharges, fragmenttype_labels and atomtypes to dummy lists if empty
+        if len(self.atomcharges)==0:
+            self.atomcharges=['None' for i in range(0,self.numatoms)]
+        if len(self.fragmenttype_labels)==0:
+            self.fragmenttype_labels=['None' for i in range(0,self.numatoms)]
+        if len(self.atomtypes)==0:
+            self.atomtypes=['None' for i in range(0,self.numatoms)]
+
         with open(filename, 'w') as outfile:
             outfile.write("Fragment: \n")
             outfile.write("Num elems: {}\n".format(len(self.elems)))
