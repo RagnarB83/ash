@@ -1828,7 +1828,7 @@ class Fragment:
             outfile.write("Index Atom            x             y             z           charge        fragment-type        atom-type\n")
             outfile.write("-----------------------------------------------------------------------------------------\n")
             #TODO: Add residue-fraglist-number as last column
-            for at, el, coord, charge, label in zip(self.atomlist, self.elems,self.coords,self.atomcharges, self.fragmenttype_labels, self.atomtypes):
+            for at, el, coord, charge, label, atype in zip(self.atomlist, self.elems,self.coords,self.atomcharges, self.fragmenttype_labels, self.atomtypes):
                 line="{:6} {:6}  {:12.6f}  {:12.6f}  {:12.6f}  {:12.6f} {:6d} {:6}\n".format(at, el,coord[0], coord[1], coord[2], charge, label, atype)
                 outfile.write(line)
             #outfile.write("elems: {}\n".format(self.elems))
