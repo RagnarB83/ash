@@ -1809,7 +1809,7 @@ class Fragment:
         print("Wrote XYZ file:", xyzfilename)
     #Print system-fragment information to file. Default name of file: "fragment.ygg
     def print_system(self,filename='fragment.ygg'):
-        print("Printing fragment information to disk:", filename)
+        print("Printing fragment to disk:", filename)
 
         #Setting atomcharges, fragmenttype_labels and atomtypes to dummy lists if empty
         if len(self.atomcharges)==0:
@@ -1826,11 +1826,13 @@ class Fragment:
             outfile.write("Num atoms: {}\n".format(self.numatoms))
             outfile.write("\n")
             outfile.write("Index Atom            x             y             z           charge        fragment-type        atom-type\n")
-            outfile.write("-----------------------------------------------------------------------------------------\n")
+            outfile.write("-------------------------------------------------------------------------------------------------------------\n")
             #TODO: Add residue-fraglist-number as last column
             for at, el, coord, charge, label, atomtype in zip(self.atomlist, self.elems,self.coords,self.atomcharges, self.fragmenttype_labels, self.atomtypes):
-                line="{:6} {:6}  {:12.6f}  {:12.6f}  {:12.6f}  {:12.6f} {:6d} {:6}\n".format(at, el,coord[0], coord[1], coord[2], charge, label, atomtype)
+                line="{:6} {:6}  {:12.6f}  {:12.6f}  {:12.6f}  {:12.6f} {:12d} {:12}\n".format(at, el,coord[0], coord[1], coord[2], charge, label, atomtype)
                 outfile.write(line)
+            outfile.write(
+                "=============================================================================================================\n")
             #outfile.write("elems: {}\n".format(self.elems))
             #outfile.write("coords: {}\n".format(self.coords))
             #outfile.write("list of masses: {}\n".format(self.list_of_masses))
@@ -1852,7 +1854,7 @@ class Fragment:
                     numatoms=int(line.split()[-1])
                 if coordgrab==True:
                     #If end of coords section
-                    if int(line.split()[0]) == numatoms-1:
+                    if '===============' in line:
                         coordgrab=False
                         continue
                     elems.append(line.split()[1])
