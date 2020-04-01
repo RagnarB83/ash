@@ -308,24 +308,22 @@ def print_time_rel_and_tot_color(timestampA,timestampB, modulename=''):
 
 # Simple nonbonded MM theory. Charges and LJ-potentials
 class NonBondedTheory:
-    def __init__(self, charges = [], atomtypes=[], LJ=False, forcefield=[], LJcombrule='geometric'):
+    def __init__(self, charges = [], atomtypes=[], forcefield=[], LJcombrule='geometric'):
         #These are charges for whole system including QM.
         self.atom_charges = charges
         #Possibly have self.mm_charges here also??
-
         #Read MM forcefield.
         self.forcefield=forcefield
-
         #Atom types
         self.atomtypes=atomtypes
 
-        print("self.atomtypes:", self.atomtypes)
-        print("self.forcefield", self.forcefield)
-        #If atomtypes and forcefield both defined then calculate pairpotentials
-        if len(self.atomtypes) > 0:
-            if len(self.forcefield) > 0:
+        #Check if LJparameters in forcefield. Then do pairpotentials
+        try:
+            LJtest = len([i.LJparameters for i in forcefield.values()])
+            if LJtest > 0:
                 self.calculate_LJ_pairpotentials(LJcombrule)
-
+        except:
+            pass
     def calculate_LJ_pairpotentials(self,combination_rule='geometric'):
         import math
         print("Defining Lennard-Jones pair potentials")
