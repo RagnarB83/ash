@@ -222,7 +222,10 @@ def molcrys(cif_file='', fragmentobjects=[], theory=None, numcores=None, chargem
         print("Not converged in iteration {}. Continuing SP loop".format(SPLoopNum))
 
     print("Molcrys Charge-Iteration done!")
+    #Printing out Cluster fragment file
     Cluster.print_system('Cluster-info.txt')
+    print("Printed out Cluster object: Cluster")
+    print("Printed file to disk: Cluster-info.txt")
 
     #print("Now Doing Optimization")
     #OptLoopMaxIter=10
