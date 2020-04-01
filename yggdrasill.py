@@ -1642,6 +1642,10 @@ class Fragment:
             self.atomcharges=atomcharges
         #TODO: Not sure if we use or not
         self.atomtypes = []
+        # Something perhaps only used by molcrys but defined here. Neede for print_system
+        # Todo: revisit this
+        self.fragmenttype_labels=[]
+
         #Here either providing coords, elems as lists. Possibly reading connectivity also
         if coords is not None:
             self.coords=coords
