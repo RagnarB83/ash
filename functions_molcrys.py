@@ -631,7 +631,7 @@ def remove_partial_fragments(coords,elems,sphereradius,fragmentobjects):
     deletionlist=np.unique(deletionlist).tolist()
     #print("Sorted deletionlist({}(: {}".format(len(deletionlist),deletionlist))
     with open('sdeletionlist', 'w') as sdfile:
-        dfile.write('sorted deletionlist: {}'.format(deletionlist))
+        sdfile.write('sorted deletionlist: {}'.format(deletionlist))
     #Deleting atoms in deletion list in reverse
     coords=np.delete(coords, list(reversed(deletionlist)), 0)
     for d in reversed(deletionlist):
