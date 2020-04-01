@@ -126,8 +126,8 @@ def molcrys(cif_file='', fragmentobjects=[], theory=None, numcores=None, chargem
     print(fragmentobjects[0].clusterfraglist)
     print(fragmentobjects[1].clusterfraglist)
 
-    fragmentobjects[0].print_infofile('mainfrag.ygg')
-    fragmentobjects[1].print_infofile('counterfrag1.ygg')
+    fragmentobjects[0].print_infofile('mainfrag.info')
+    fragmentobjects[1].print_infofile('counterfrag1.info')
 
     #Add fragmentobject-info to Cluster fragment
     Cluster.add_fragment_type_info(fragmentobjects)
@@ -168,15 +168,13 @@ def molcrys(cif_file='', fragmentobjects=[], theory=None, numcores=None, chargem
         #Using UFF_ prefix before element
         atomtypelist=['UFF_'+i for i in Cluster.elems]
         atomtypelist_uniq = np.unique(atomtypelist).tolist()
-        print("atomtypelist:", atomtypelist)
-        print("atomtypelist_uniq:", atomtypelist_uniq)
         #Create Yggdrasill forcefield file by looking up UFF parameters
-        with open('Cluster_forcefield.ff.ff', 'w') as forcefile:
+        with open('Cluster_forcefield.ff', 'w') as forcefile:
+            forcefile.write('#UFF Lennard-Jones parameters \n')
             for atomtype in atomtypelist_uniq:
-                print("atomtype:", atomtype)
                 #Getting just element-par for UFFdict lookup
                 atomtype_el=atomtype.replace('UFF_','')
-                forcefile.write('LennardJones_i_R0  {:12.6f}   {:12.6f}'.format(UFFdict[atomtype_el][0],UFFdict[atomtype_el][1]))
+                forcefile.write('LennardJones_i_R0 {}  {:12.6f}   {:12.6f}\n'.format(atomtype, UFFdict[atomtype_el][0],UFFdict[atomtype_el][1]))
     else:
         print("Undefined shortrangemodel")
         exit()
@@ -247,6 +245,7 @@ def molcrys(cif_file='', fragmentobjects=[], theory=None, numcores=None, chargem
     print("Molcrys Charge-Iteration done!")
     #Printing out Cluster fragment file
     Cluster.print_system('Cluster.ygg')
+    return Cluster
 
     #print("Now Doing Optimization")
     #OptLoopMaxIter=10
@@ -256,8 +255,6 @@ def molcrys(cif_file='', fragmentobjects=[], theory=None, numcores=None, chargem
     #                   coordsystem='tric', maxiter=70)
 #
 #        exit()
-
     #OPT of mainfrag:   Interface to Py-Chemshell (should be easy)  or maybe DL-FIND directly
     # Updating of coordinates???
-
     #Calculate Hessian. Easy via Py-Chemshell. Maybe also easy via Dl-FIND
