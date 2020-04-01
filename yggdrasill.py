@@ -1813,9 +1813,9 @@ class Fragment:
 
         #Setting atomcharges, fragmenttype_labels and atomtypes to dummy lists if empty
         if len(self.atomcharges)==0:
-            self.atomcharges=['None' for i in range(0,self.numatoms)]
+            self.atomcharges=[0.0 for i in range(0,self.numatoms)]
         if len(self.fragmenttype_labels)==0:
-            self.fragmenttype_labels=['None' for i in range(0,self.numatoms)]
+            self.fragmenttype_labels=[0 for i in range(0,self.numatoms)]
         if len(self.atomtypes)==0:
             self.atomtypes=['None' for i in range(0,self.numatoms)]
 
@@ -1828,8 +1828,8 @@ class Fragment:
             outfile.write("Index Atom            x             y             z           charge        fragment-type        atom-type\n")
             outfile.write("-----------------------------------------------------------------------------------------\n")
             #TODO: Add residue-fraglist-number as last column
-            for at, el, coord, charge, label, atype in zip(self.atomlist, self.elems,self.coords,self.atomcharges, self.fragmenttype_labels, self.atomtypes):
-                line="{:6} {:6}  {:12.6f}  {:12.6f}  {:12.6f}  {:12.6f} {:6d} {:6}\n".format(at, el,coord[0], coord[1], coord[2], charge, label, atype)
+            for at, el, coord, charge, label, atomtype in zip(self.atomlist, self.elems,self.coords,self.atomcharges, self.fragmenttype_labels, self.atomtypes):
+                line="{:6} {:6}  {:12.6f}  {:12.6f}  {:12.6f}  {:12.6f} {:6d} {:6}\n".format(at, el,coord[0], coord[1], coord[2], charge, label, atomtype)
                 outfile.write(line)
             #outfile.write("elems: {}\n".format(self.elems))
             #outfile.write("coords: {}\n".format(self.coords))
