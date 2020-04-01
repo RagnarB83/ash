@@ -167,12 +167,11 @@ def molcrys(cif_file='', fragmentobjects=[], theory=None, numcores=None, chargem
     if shortrangemodel=='UFF':
         #Using UFF_ prefix before element
         atomtypelist=['UFF_'+i for i in Cluster.elems]
-        atomtypelist_uniq=atomtypelist
         atomtypelist_uniq = np.unique(atomtypelist).tolist()
         print("atomtypelist:", atomtypelist)
         print("atomtypelist_uniq:", atomtypelist_uniq)
         #Create Yggdrasill forcefield file by looking up UFF parameters
-        with open('forcefield_molcrys.ff', 'w') as forcefile:
+        with open('Cluster_forcefield.ff.ff', 'w') as forcefile:
             for atomtype in atomtypelist_uniq:
                 print("atomtype:", atomtype)
                 #Getting just element-par for UFFdict lookup
@@ -181,7 +180,6 @@ def molcrys(cif_file='', fragmentobjects=[], theory=None, numcores=None, chargem
     else:
         print("Undefined shortrangemodel")
         exit()
-
 
     Cluster.update_atomtypes(atomtypelist)
 
@@ -249,8 +247,6 @@ def molcrys(cif_file='', fragmentobjects=[], theory=None, numcores=None, chargem
     print("Molcrys Charge-Iteration done!")
     #Printing out Cluster fragment file
     Cluster.print_system('Cluster.ygg')
-    print("Printed out Cluster object: Cluster")
-    print("Printed file to disk: Cluster-info.ygg")
 
     #print("Now Doing Optimization")
     #OptLoopMaxIter=10
