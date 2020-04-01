@@ -206,7 +206,6 @@ def molcrys(cif_file='', fragmentobjects=[], theory=None, numcores=None, chargem
         Centralmainfrag=fragmentobjects[0].clusterfraglist[0]
         print("Centralmainfrag:", Centralmainfrag)
         print_coords_for_atoms(Cluster.coords,Cluster.elems,Centralmainfrag)
-
         bla=Cluster.get_coords_for_atoms(Centralmainfrag)
         #print("bla:", bla)
         #print("z Cluster.atomcharges:", Cluster.atomcharges)
@@ -214,7 +213,7 @@ def molcrys(cif_file='', fragmentobjects=[], theory=None, numcores=None, chargem
                                      atomcharges=Cluster.atomcharges, embedding='Elstat')
 
         # Run ORCA calculation with charge-model info
-        QMMM_SP_ORCAcalculation.run(nprocs=1)
+        QMMM_SP_ORCAcalculation.run(nprocs=numcores)
 
         #Grab atomic charges for fragment.
         atomcharges = grabatomcharges(chargemodel, ORCAQMtheory.inputfilename + '.out')

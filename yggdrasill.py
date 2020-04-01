@@ -831,7 +831,6 @@ class QMMMTheory:
 
         if mm_theory != "":
             if self.embedding=="Elstat":
-                print("X")
                 #Setting QM charges to 0 since electrostatic embedding
                 self.charges=[]
                 for i,c in enumerate(atomcharges):
