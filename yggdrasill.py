@@ -1841,6 +1841,7 @@ class Fragment:
             #outfile.write("list of masses: {}\n".format(self.list_of_masses))
             outfile.write("atomcharges: {}\n".format(self.atomcharges))
             outfile.write("Sum of atomcharges: {}\n".format(sum(self.atomcharges)))
+            outfile.write("atomtypes: {}\n".format(self.atomtypes))
             outfile.write("connectivity: {}\n".format(self.connectivity))
     #Reading fragment from file. File created from Fragment.print_system
     def read_fragment_from_file(self, fragfile):
@@ -1849,6 +1850,7 @@ class Fragment:
         coords=[]
         elems=[]
         atomcharges=[]
+        atomtypes=[]
         fragment_type_labels=[]
         connectivity=[]
         with open(fragfile) as file:
@@ -1864,6 +1866,8 @@ class Fragment:
                     coords.append([float(line.split()[2]), float(line.split()[3]), float(line.split()[4])])
                     atomcharges.append(float(line.split()[5]))
                     fragment_type_labels.append(int(line.split()[6]))
+                    atomtypes.append(float(line.split()[7]))
+
                 if '--------------------------' in line:
                     coordgrab=True
                 #Incredibly ugly but oh well
@@ -1881,6 +1885,7 @@ class Fragment:
         self.elems=elems
         self.coords=coords
         self.atomcharges=atomcharges
+        self.atomtypes=atomtypes
         self.update_attributes()
         self.connectivity=connectivity
 
