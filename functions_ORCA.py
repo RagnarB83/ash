@@ -606,4 +606,15 @@ def grabatomcharges(chargemodel,outputfile):
                         charges.append(float(line.split()[-1]))
                 if 'CHELPG Charges' in line:
                     grab=True
+    elif chargemodel=="Hirshfeld":
+        with open(outputfile) as ofile:
+            for line in ofile:
+                if grab==True:
+                    if len(line) < 3:
+                        grab=False
+                    if len(line.split()) == 4:
+                        charges.append(float(line.split()[-2]))
+                if '  ATOM     CHARGE      SPIN' in line:
+                    grab=True
+    print("Charges:", charges)
     return charges
