@@ -580,7 +580,9 @@ def remove_partial_fragments(coords,elems,sphereradius,fragmentobjects):
     radius=sphereradius-thickness
     surfaceatoms=np.where(distances>radius)[0].tolist()
     print("Found {} surfaceatoms for outer shell of {} Å".format(len(surfaceatoms),thickness))
-    print("Surfaceatoms:", surfaceatoms)
+    #Todo: remove?
+    with open('surfaceatoms', 'w') as sfile:
+        sfile.write('Surfaceatoms: {}'.format(surfaceatoms))
     counted=[]
     count=0
     #Loopnumber below set to 5. Minimum needed for the Fe2 dimer
@@ -602,9 +604,12 @@ def remove_partial_fragments(coords,elems,sphereradius,fragmentobjects):
                 fraglist.append(members)
                 found_atoms+=members
 
-    print("fraglist:", fraglist)
+    with open('fraglist', 'w') as gfile:
+        gfile.write('fraglist: {}'.format(fraglist))
     flat_fraglist = [item for sublist in fraglist for item in sublist]
-    print("found_atoms:", found_atoms)
+    #Todo: remove?
+    with open('foundatoms', 'w') as ffile:
+        ffile.write('found_atoms: {}'.format(found_atoms))
     print("len(found_atoms)", len(found_atoms))
     print("len(flat_fraglist)", len(flat_fraglist))
     print("final counted atoms:", count)
@@ -620,10 +625,13 @@ def remove_partial_fragments(coords,elems,sphereradius,fragmentobjects):
         else:
             deletionlist+=frag
 
-    print("deletionlist({}(: {}".format(len(deletionlist),deletionlist))
+    #print("deletionlist({}(: {}".format(len(deletionlist),deletionlist))
+    with open('deletionlist', 'w') as dfile:
+        dfile.write('deletionlist: {}'.format(deletionlist))
     deletionlist=np.unique(deletionlist).tolist()
-    print("Sorted deletionlist({}(: {}".format(len(deletionlist),deletionlist))
-
+    #print("Sorted deletionlist({}(: {}".format(len(deletionlist),deletionlist))
+    with open('sdeletionlist', 'w') as sdfile:
+        dfile.write('sorted deletionlist: {}'.format(deletionlist))
     #Deleting atoms in deletion list in reverse
     coords=np.delete(coords, list(reversed(deletionlist)), 0)
     for d in reversed(deletionlist):
