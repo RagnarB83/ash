@@ -1864,7 +1864,7 @@ class Fragment:
                     coords.append([float(line.split()[2]), float(line.split()[3]), float(line.split()[4])])
                     atomcharges.append(float(line.split()[5]))
                     fragment_type_labels.append(int(line.split()[6]))
-                    atomtypes.append(float(line.split()[7]))
+                    atomtypes.append(line.split()[7])
 
                 if '--------------------------' in line:
                     coordgrab=True
