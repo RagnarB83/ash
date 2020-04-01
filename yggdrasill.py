@@ -446,7 +446,7 @@ class NonBondedTheory:
         self.atom_charges = charges
         print("Charges are now:", charges)
     #Provide specific coordinates (MM region) and charges (MM region) upon run
-    def run(self, full_coords=[], mm_coords=[], charges=[], connectivity=[], LJ=True, Coulomb=True, Grad=True, version='py'):
+    def run(self, full_coords=[], mm_coords=[], charges=[], connectivity=[], Coulomb=True, Grad=True, version='py'):
 
         #If charges not provided to run function. Use object charges
         if len(charges)==0:
@@ -465,6 +465,9 @@ class NonBondedTheory:
         self.MMGradient=[]
         self.Coulombchargegradient=[]
         self.LJgradient=[]
+
+        if len(self.LJpairpotentials) > 0:
+            LJ=True
 
         #Slow Python version or fast Fortran version
         if version=='py':
