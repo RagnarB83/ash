@@ -1803,8 +1803,8 @@ class Fragment:
                 line = "{:4} {:12.6f} {:12.6f} {:12.6f}".format(el, c[0], c[1], c[2])
                 ofile.write(line + '\n')
         print("Wrote XYZ file:", xyzfilename)
-    #Print system-fragment information to file. Default name of file: "fragment-info
-    def print_system(self,filename='fragment-info.txt'):
+    #Print system-fragment information to file. Default name of file: "fragment.ygg
+    def print_system(self,filename='fragment.ygg'):
         print("Printing fragment information to disk:", filename)
 
         with open(filename, 'w') as outfile:

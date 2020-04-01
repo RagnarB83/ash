@@ -125,14 +125,14 @@ def molcrys(cif_file='', fragmentobjects=[], theory=None, numcores=None, chargem
     print(fragmentobjects[0].clusterfraglist)
     print(fragmentobjects[1].clusterfraglist)
 
-    fragmentobjects[0].print_infofile('mainfrag-info.txt')
-    fragmentobjects[1].print_infofile('counterfrag1-info.txt')
+    fragmentobjects[0].print_infofile('mainfrag.ygg')
+    fragmentobjects[1].print_infofile('counterfrag1.ygg')
 
     #Add fragmentobject-info to Cluster fragment
     Cluster.add_fragment_type_info(fragmentobjects)
 
     #Cluster is now almost complete, only charges missing. Print info to file
-    print(Cluster.print_system("Cluster-info-nocharges.txt"))
+    print(Cluster.print_system("Cluster-info-nocharges.ygg"))
 
     # Create dirs to keep track of various files before ORCA calculations begin
     try:
@@ -152,8 +152,8 @@ def molcrys(cif_file='', fragmentobjects=[], theory=None, numcores=None, chargem
     print("Cluster:", Cluster.__dict__)
 
     #Cluster is now complete. Print info to file
-    Cluster.print_system("Cluster-info_afterGas.txt")
-    fragmentobjects[0].print_infofile('mainfrag-info_afterGas.txt')
+    Cluster.print_system("Cluster-info_afterGas.ygg")
+    fragmentobjects[0].print_infofile('mainfrag-info_afterGas.ygg')
 
     sum_atomcharges_cluster=sum(Cluster.atomcharges)
     print("sum_atomcharges_cluster:", sum_atomcharges_cluster)
@@ -208,8 +208,8 @@ def molcrys(cif_file='', fragmentobjects=[], theory=None, numcores=None, chargem
         fragmentobjects[0].add_charges(atomcharges)
         # Assign pointcharges to each atom of MM cluster.
         pointchargeupdate(Cluster, fragmentobjects[0], atomcharges)
-        Cluster.print_system("Cluster-info_afterSP{}.txt".format(SPLoopNum))
-        fragmentobjects[0].print_infofile('mainfrag-info_afterSP{}.txt'.format(SPLoopNum))
+        Cluster.print_system("Cluster-info_afterSP{}.ygg".format(SPLoopNum))
+        fragmentobjects[0].print_infofile('mainfrag-info_afterSP{}.ygg'.format(SPLoopNum))
         blankline()
         #print("Current charges:", fragmentobjects[0].all_atomcharges[-1])
         #print("Previous charges:", fragmentobjects[0].all_atomcharges[-2])
@@ -223,9 +223,9 @@ def molcrys(cif_file='', fragmentobjects=[], theory=None, numcores=None, chargem
 
     print("Molcrys Charge-Iteration done!")
     #Printing out Cluster fragment file
-    Cluster.print_system('Cluster-info.txt')
+    Cluster.print_system('Cluster.ygg')
     print("Printed out Cluster object: Cluster")
-    print("Printed file to disk: Cluster-info.txt")
+    print("Printed file to disk: Cluster-info.ygg")
 
     #print("Now Doing Optimization")
     #OptLoopMaxIter=10
