@@ -243,6 +243,8 @@ def molcrys(cif_file='', fragmentobjects=[], theory=None, numcores=None, chargem
     print("Molcrys Charge-Iteration done!")
     #Printing out Cluster fragment file
     Cluster.print_system('Cluster.ygg')
+    print("XXX")
+    print("Cluster.atomtypes", Cluster.atomtypes)
     return Cluster
 
     #print("Now Doing Optimization")

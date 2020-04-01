@@ -1795,6 +1795,7 @@ class Fragment:
         self.atomcharges = charges
     def update_atomtypes(self, types):
         self.atomtypes = types
+        print("here. len atomtypes", self.atomtypes)
     #Adding fragment-type info (used by molcrys, identifies whether atom is mainfrag, counterfrag1 etc.)
     def add_fragment_type_info(self,fragmentobjects):
         # Create list of fragment-type label-list
