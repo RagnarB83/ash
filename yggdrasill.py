@@ -1821,8 +1821,6 @@ class Fragment:
 
         with open(filename, 'w') as outfile:
             outfile.write("Fragment: \n")
-            outfile.write("Num elems: {}\n".format(len(self.elems)))
-            outfile.write("Num coords: {}\n".format(len(self.coords)))
             outfile.write("Num atoms: {}\n".format(self.numatoms))
             outfile.write("\n")
             outfile.write("Index Atom            x             y             z           charge        fragment-type        atom-type\n")
