@@ -16,7 +16,8 @@ currtime=time.time()
 #Or maybe have molcrys only be SPEmbedding and in inputfile we do molcrys job and then opt-job.
 #Could do SPembedding again after Opt
 
-def molcrys(cif_file='', fragmentobjects=[], theory=None, numcores=None, chargemodel='', clusterradius=None):
+def molcrys(cif_file='', fragmentobjects=[], theory=None, numcores=None, chargemodel='',
+            clusterradius=None, shortrangemodel='UFF'):
 
     banner="""
 ╔╦╗╔═╗╦  ╔═╗╦═╗╦ ╦╔═╗
@@ -162,6 +163,29 @@ def molcrys(cif_file='', fragmentobjects=[], theory=None, numcores=None, chargem
         for charge in Cluster.atomcharges:
             acharges.write("{} ".format(charge))
 
+    #Defining atomtypes in Cluster fragment for LJ interaction
+    if shortrangemodel=='UFF':
+        #Using UFF_ prefix before element
+        atomtypelist=['UFF_'+i for i in Cluster.elems]
+        atomtypelist_uniq=atomtypelist
+        atomtypelist_uniq = np.unique(atomtypelist).tolist()
+        print("atomtypelist:", atomtypelist)
+        print("atomtypelist_uniq:", atomtypelist_uniq)
+        #Create Yggdrasill forcefield file by looking up UFF parameters
+        with open('forcefield_molcrys.ff', 'w') as forcefile:
+            for atomtype in atomtypelist_uniq:
+                print("atomtype:", atomtype)
+                #Getting just element-par for UFFdict lookup
+                atomtype_el=atomtype.replace('UFF_','')
+                forcefile.write('LennardJones_i_R0  {:12.6f}   {:12.6f}'.format(UFFdict[atomtype_el][0],UFFdict[atomtype_el][1]))
+    else:
+        print("Undefined shortrangemodel")
+        exit()
+
+
+    Cluster.update_atomtypes(atomtypelist)
+
+
     #SC-QM/MM PC loop of mainfrag for cluster
     #Hard-coded (for now) maxiterations and charge-convergence thresholds
     SPLoopMaxIter=10
@@ -207,6 +231,7 @@ def molcrys(cif_file='', fragmentobjects=[], theory=None, numcores=None, chargem
         #Adding mainfrag charges to mainfrag--object
         fragmentobjects[0].add_charges(atomcharges)
         # Assign pointcharges to each atom of MM cluster.
+        #pointchargeupdate calls: Cluster.update_atomcharges(chargelist)
         pointchargeupdate(Cluster, fragmentobjects[0], atomcharges)
         Cluster.print_system("Cluster-info_afterSP{}.ygg".format(SPLoopNum))
         fragmentobjects[0].print_infofile('mainfrag-info_afterSP{}.ygg'.format(SPLoopNum))

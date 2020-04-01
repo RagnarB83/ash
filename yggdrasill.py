@@ -1640,9 +1640,8 @@ class Fragment:
         self.atomcharges = []
         if atomcharges is not None:
             self.atomcharges=atomcharges
-        #TODO: Not sure if we use or not
         self.atomtypes = []
-        # Something perhaps only used by molcrys but defined here. Neede for print_system
+        # Something perhaps only used by molcrys but defined here. Needed for print_system
         # Todo: revisit this
         self.fragmenttype_labels=[]
 
@@ -1790,6 +1789,8 @@ class Fragment:
         self.connected_atoms_number=conn_number_sum
     def update_atomcharges(self, charges):
         self.atomcharges = charges
+    def update_atomtypes(self, types):
+        self.atomtypes = types
     #Adding fragment-type info (used by molcrys, identifies whether atom is mainfrag, counterfrag1 etc.)
     def add_fragment_type_info(self,fragmentobjects):
         # Create list of fragment-type label-list
