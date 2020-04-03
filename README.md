@@ -34,10 +34,15 @@ F 0.0 0.0 1.0
 #Create fragment
 HF_frag=Fragment(coordsstring=coords)
 
-PySCFcalc = PySCFTheory(charge=0, mult=1, pyscfbasis='def2-SVP', 
-	pyscffunctional='bp86', printsetting=False)
-
-geomeTRICOptimizer(PySCFcalc,HF_frag)
+#ORCA settings
+orcadir='/opt/orca_4.2.1'
+orcasimpleinput="! BP86 def2-SVP Grid5 Finalgrid6 tightscf"
+orcablocks="%scf maxiter 200 end"
+#ORCA theory object
+ORCAcalc = ORCATheory(orcadir=orcadir, fragment=HF_frag, charge=0, mult=1,
+                         	orcasimpleinput=orcasimpleinput, orcablocks=orcablocks)
+#Call optimzier with ORCAtheory object and fragment
+geomeTRICOptimizer(ORCAcalc,HF_frag)
  ```
 
  ### Current features: 
