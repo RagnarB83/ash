@@ -36,11 +36,11 @@ HF_frag=Fragment(coordsstring=coords)
 
 #ORCA settings
 orcadir='/opt/orca_4.2.1'
-orcasimpleinput="! BP86 def2-SVP Grid5 Finalgrid6 tightscf"
-orcablocks="%scf maxiter 200 end"
+input="! BP86 def2-SVP Grid5 Finalgrid6 tightscf"
+blocks="%scf maxiter 200 end"
 #ORCA theory object
 ORCAcalc = ORCATheory(orcadir=orcadir, fragment=HF_frag, charge=0, mult=1,
-                         	orcasimpleinput=orcasimpleinput, orcablocks=orcablocks)
+                         	orcasimpleinput=input, orcablocks=blocks)
 #Call optimzier with ORCAtheory object and fragment
 geomeTRICOptimizer(ORCAcalc,HF_frag)
  ```
