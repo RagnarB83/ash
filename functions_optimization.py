@@ -51,8 +51,8 @@ def write_xyz_trajectory(file, coords, elems, titleline):
 
 #Yggdrasill Optimizer class for basic usage
 class Optimizer:
-    def __init__(self, fragment='', theory='', optimizer='', maxiter=50, frozen_atoms=[], RMSGtolerance=0.0001, MaxGtolerance=0.0003):
-        if len(fragment)>0:
+    def __init__(self, fragment=None, theory='', optimizer='', maxiter=50, frozen_atoms=[], RMSGtolerance=0.0001, MaxGtolerance=0.0003):
+        if fragment is not None:
             self.fragment=fragment
         else:
             print("No fragment provided to optimizer")
