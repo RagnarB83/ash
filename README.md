@@ -54,39 +54,40 @@ geomeTRICOptimizer(ORCAcalc,HF_frag)
     - Python lists
 - **Interfaces to various QM codes:**
     - ORCA (inputfile-based). Parallelization via OpenMPI.
+        - Flexible input, BS-DFT, pointcharge embedding.
+        - To do: ECP-embedding, basis set on specific atoms.
     - xTB (inputfile-based). OpenMP parallelization
     - Psi4 (both as Python library and inputfile-based). OpenMP parallelization.      
     - PySCF (as Python library). OpenMP parallelization.
-    - Flexible input structure supporting any Hamiltonian/basis set available in ORCA or xTB (Pyscf/Psi4 less flexible)
-    - ORCA parallelization available via OpenMPI
-    - To do: Broken-symmetry, ECP-embedding, basis set on specific atoms.
 - **Parallelization :**
     - Parallelization via Python multiprocessing.
     - Support for simultaneous single-point jobs.
     - Todo: Numfreq parallelization.
 - **Single-point electrostic embedding QM/MM with ORCA, xTB and Psi4.**
     - To do: PySCF
+- **Polarizable embedding via Psi4.**
+    - Todo: PySCF
 - **Molecular Mechanics (MM) via pointcharges and Lennard-Jones potentials**
-    - Flexible definition of charges and Lennard-Jones potentials. Either via flexible forcefield inputfile or 
+    - Flexible definition of charges and Lennard-Jones potentials. Either via forcefield inputfile or 
     in script.
     - Both energy and gradient available.
-    - Slow Python version and fast Fortran version available.
+    - Slow Python version and fast Fortran version available (almost ready).
     - Limitation: No bonded MM yet.
 - **Geometry optimization with multiple optimizers**
      - Knarr, Python LBFGS-optimizer in Cartesian coordinates (credit: Vilhjálmur Ásgeirsson). 
-     No internal coordinates. Coming: frozen atoms
+     No internal coordinates but frozen atom support.
      - PyBerny optimizer interface with internal coordinates. Limitation: No frozen atoms or constraints.
+        - Todo: Manual frozen-atom feature to be done.
      - geomeTRIC interface: powerful optimizer supporting multiple internal coordinates 
      (TRIC, HDLC, DLC etc.), frozen atoms, constraints.
      - To do: DL-FIND interface: powerful optimizer supporting DLC, HDLC internal coordinates, frozen atoms, constraints.
-     - To do: Support for additional QM codes besides ORCA: xTB, Psi4
 - **Nonbonded QM/MM Geometry optimization:**
-    - Possible with geomeTRIC optimizer only.
-    - Todo: Knarr support
+    - Possible with geomeTRIC optimizer only currently.
+    - Todo: Knarr-optimizer.
 - **Numerical frequencies: one-point (forward difference) and two-point (central difference)**
      - Partial Hessian possible
-     - QM=ORCA supported. Todo: xTB, Psi4 and PySCF
-     - QM/MM not yet supported.
+     - Currently only ORCA supported. Todo: xTB, Psi4 and PySCF
+     - Todo: QM/MM not yet supported.
      - Todo: Analytical Hessian from ORCA and xTB
 - **Hessian analysis**
   - Diagonalization of Hessian (from Yggdrasill or ORCA). Print frequencies and normal modes.
