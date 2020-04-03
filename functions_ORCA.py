@@ -616,5 +616,7 @@ def grabatomcharges(chargemodel,outputfile):
                         charges.append(float(line.split()[-2]))
                 if '  ATOM     CHARGE      SPIN' in line:
                     grab=True
-    print("Charges:", charges)
+    else:
+        print("Unknown chargemodel. Exiting...")
+        exit()
     return charges

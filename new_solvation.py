@@ -301,7 +301,7 @@ def solvshell ( orcadir='', NumCores='', calctype='', orcasimpleinput_LL='',
         run_inputfiles_in_parallel(orcadir, bulkinpfiles, NumCores)
 
         #GRAB output
-        Bulk_Allrepsnaps_ABenergy, Bulk_Arepsnaps_ABenergy, Bulk_Brepsnaps_ABenergy=grab_energies_output(bulkinpfiles)
+        Bulk_Allrepsnaps_ABenergy, Bulk_Arepsnaps_ABenergy, Bulk_Brepsnaps_ABenergy=grab_energies_output_ORCA(bulkinpfiles)
         blankline()
         #Get bulk correction per snapshot
         #print("Bulk_Allrepsnaps_ABenergy:", Bulk_Allrepsnaps_ABenergy)
@@ -422,7 +422,7 @@ def solvshell ( orcadir='', NumCores='', calctype='', orcasimpleinput_LL='',
             run_inputfiles_in_parallel(orcadir, SRPolinpfiles, NumCores)
 
         #GRAB output
-        SRPol_Allrepsnaps_ABenergy, SRPol_Arepsnaps_ABenergy, SRPol_Brepsnaps_ABenergy=grab_energies_output(SRPolinpfiles)
+        SRPol_Allrepsnaps_ABenergy, SRPol_Arepsnaps_ABenergy, SRPol_Brepsnaps_ABenergy=grab_energies_output_ORCA(SRPolinpfiles)
         blankline()
 
         # PART 2.
@@ -443,7 +443,7 @@ def solvshell ( orcadir='', NumCores='', calctype='', orcasimpleinput_LL='',
             #Run the inputfiles
             run_inputfiles_in_parallel(orcadir, SRPolinpfiles_Region1, NumCores)
             #Grab the energies
-            SRPol_Allrepsnaps_ABenergy_Region1, SRPol_Arepsnaps_ABenergy_Region1, SRPol_Brepsnaps_ABenergy_Region1 = grab_energies_output(
+            SRPol_Allrepsnaps_ABenergy_Region1, SRPol_Arepsnaps_ABenergy_Region1, SRPol_Brepsnaps_ABenergy_Region1 = grab_energies_output_ORCA(
                 SRPolinpfiles_Region1)
 
 
