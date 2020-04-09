@@ -455,6 +455,7 @@ def read_ciffile(file):
 def fill_unitcell(cell_length,cell_angles,atomlabels,elems,coords,symmops):
     fullcell=[]
     for i in symmops:
+        print("symmop i:", i)
         operations_x=[];operations_y=[];operations_z=[]
         #Multoperations are unity by default. Sumoperations are 0 by default
         multoperation_x=1;sumoperation_x=0
