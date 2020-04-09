@@ -427,9 +427,10 @@ def read_ciffile(file):
                 if 'x' not in line:
                     symmopgrab_oldsyntax=False
                 else:
-                    tempvar=line.split(',')
-                    print("tempvar:", tempvar)
-                    exit()
+                    symmops.append(line)
+                    #tempvar=line.split(',')
+                    #print("tempvar:", tempvar)
+                    #xit()
                     #symmops.append(line.split('\'')[1])
 
             if fractgrab == True:
