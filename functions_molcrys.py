@@ -192,7 +192,7 @@ def frag_define(orthogcoords,elems,cell_vectors,fragments):
         print(fragment.fraglist)
         print("")
 
-    print("Systemlist remaining:", systemlist)
+    print("Systemlist ({})remaining: {}".format(len(systemlist), systemlist))
 
     print_time_rel_and_tot(currtime, origtime)
     currtime=time.time()
@@ -457,12 +457,11 @@ def read_ciffile(file):
 
     #Checking if first or second column contains strings that are real periodic-table elements
     if isElementList(firstcolumn):
-        print("First column is element list")
+        print("Found correct elements in 1st column")
         elems=firstcolumn
     else:
-        print("No element list in first column")
         if isElementList(secondcolumn):
-            print("Second column is element list")
+            print("Found correct elements in 2nd column")
             elems = secondcolumn
         else:
             print("Found no valid element list from CIF file in either 1st or 2nd column. Check CIF-file format")
