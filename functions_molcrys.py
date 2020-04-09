@@ -394,7 +394,9 @@ def read_ciffile(file):
     coords=[]
     symmops=[]
     newmol=False
-    fractgrab=False;symmopgrab=False
+    fractgrab=False
+    symmopgrab=False
+    symmopgrab_oldsyntax=False
     with open(file) as f:
         for line in f:
             if 'loop_' in line:
@@ -421,6 +423,15 @@ def read_ciffile(file):
                     symmopgrab=False
                 if 'x' not in line:
                     symmopgrab=False
+            if symmopgrab_oldsyntax==True:
+                if 'x' not in line:
+                    symmopgrab_oldsyntax=False
+                else:
+                    tempvar=line.split(',')
+                    print("tempvar:", tempvar)
+                    exit()
+                    #symmops.append(line.split('\'')[1])
+
             if fractgrab == True:
                 if '_atom_site' not in line and len(line) >5 and 'loop' not in line:
                     atomlabels.append(line.split()[0])
@@ -433,8 +444,9 @@ def read_ciffile(file):
             if '_space_group_s' in line:
                 symmopgrab=True
             if '_symmetry_equiv_pos_as_xyz' in line:
-                print("old syntax. Yet to do")
-                exit()
+                symmopgrab_oldsyntax=True
+    print("symmops:", symmops)
+    exit()
     return [cell_a, cell_b, cell_c],[cell_alpha, cell_beta, cell_gamma],atomlabels,elems,coords,symmops
 
 #From cell parameters, fractional coordinates of asymmetric unit and symmetry operations

@@ -1,5 +1,4 @@
 # YGGDRASILL - A GENERAL COMPCHEM AND QM/MM ENVIRONMENT
-
 from constants import *
 from elstructure_functions import *
 import os

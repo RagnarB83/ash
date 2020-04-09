@@ -32,11 +32,8 @@
 # extensions coming with Sphinx (named 'sphinx.ext.*') or your custom
 # ones.
 
-
-
-
-extensions = ['sphinx.ext.todo',
-    'sphinx.ext.mathjax', 'sphinx_rtd_theme']
+#extensions = ['sphinx.ext.todo',
+#    'sphinx.ext.mathjax', 'sphinx_drove_theme']
 
 #'sphinx-pdj-theme','msmb_theme','rtcat-sphinx-theme', 'sphinx-catalystcloud-theme', 'ovs-sphinx-theme', 'sphinx_drove_theme'
 # Add any paths that contain templates here, relative to this directory.
@@ -92,7 +89,6 @@ todo_include_todos = True
 #Good ones: sphinx_rtd_theme, sphinx_drove_theme, classic, sphinx-pdj-theme, msmb_theme,
 # rtcat-sphinx-theme, sphinx-catalystcloud-theme, ovs-sphinx-theme
 #html_theme = 'ovs-sphinx-theme'
-
 
 #
 #import ovs_sphinx_theme
