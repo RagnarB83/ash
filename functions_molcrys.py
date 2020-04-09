@@ -138,11 +138,13 @@ def frag_define(orthogcoords,elems,cell_vectors,fragments):
         print("el_list:", el_list)
         ncharge = nucchargelist(el_list)
         print("ncharge : ", ncharge)
+        Assign_Flag=False
         for fragment in fragments:
             print("fragment:", fragment)
             if ncharge == fragment.Nuccharge:
                 print("ncharge {} is equal to fragment.Nuccharge {} ".format(ncharge, fragment.Nuccharge))
                 if members not in fragment.fraglist:
+                    Assign_Flag=True
                     print("members not in fragment.fraglist. Adding")
                     fragment.add_fraglist(members)
                     for m in members:
@@ -150,12 +152,13 @@ def frag_define(orthogcoords,elems,cell_vectors,fragments):
                             systemlist.remove(m)
                         except ValueError:
                             continue
-            else:
-                # If members list can not be assigned to fragment then we have a boundary-split
-                # Assigning to unassigned
-                if members not in unassigned:
-                    print("members not in unsassigned")
-                    unassigned.append(members)
+        if Assign_Flag = False:
+            print("Could not assign members to fragment.")
+            # If members list can not be assigned to fragment then we have a boundary-split
+            # Assigning to unassigned
+            if members not in unassigned:
+                print("members not in unsassigned. Adding to unassigned")
+                unassigned.append(members)
 
     for fi, fragment in enumerate(fragments):
         print("Fragment {} has {} fraglists".format(fi, len(fragment.fraglist)))
