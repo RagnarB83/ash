@@ -393,6 +393,8 @@ def read_ciffile(file):
     cell_a=0;cell_b=0;cell_c=0;cell_alpha=0;cell_beta=0;cell_gamma=0
     atomlabels=[]
     elems=[]
+    firstcolumn=[]
+    secondcolumn=[]
     coords=[]
     symmops=[]
     newmol=False
@@ -439,7 +441,7 @@ def read_ciffile(file):
                 if '_atom_site' not in line and len(line) >5 and 'loop' not in line:
                     atomlabels.append(line.split()[0])
                     #Disabling since not always elems in column
-                    #elems.append(line.split()[1])
+                    secondcolumn.append(line.split()[1])
                     coords.append([float(line.split()[2].split('(')[0]),float(line.split()[3].split('(')[0]),float(line.split()[4].split('(')[0])])
             if 'data_' in line:
                 newmol = True
@@ -450,10 +452,28 @@ def read_ciffile(file):
             if '_symmetry_equiv_pos_as_xyz' in line:
                 symmopgrab_oldsyntax=True
 
-    #Convert atomlabels to elements
+    #Removing any numbers from atomlabels in order to get element information
     for atomlabel in atomlabels:
         el = ''.join([i for i in atomlabel if not i.isdigit()])
-        elems.append(el)
+        firstcolumn.append(el)
+
+    #Checking if first or second column contains strings that are real periodic-table elements
+    if isElementList(firstcolumn):
+        print("First column is element list")
+        elems=firstcolumn
+    else:
+        print("No element list in first column")
+        if isElementList(secondcolumn):
+            print("Second column is element list")
+            elems = secondcolumn
+        else:
+            print("Found no valid element list from CIF file in either 1st or 2nd column. Check CIF-file format")
+            print("firstcolumn: ", firstcolumn)
+            print("secondcolumn: ", secondcolumn)
+            exit()
+
+
+
 
     print("elems:", elems)
     print("Symmetry operations found in CIF:", symmops)
