@@ -120,7 +120,9 @@ def frag_define(orthogcoords,elems,cell_vectors,fragments):
     # Extend unit cell in all directions with original cell in center,
     # so that we have no dangling bonds for center unitcell
     print("Creating extended (3x3x3) unit cell for fragment identification")
+    print("elems:", elems)
     temp_extended_coords, temp_extended_elems = old_cell_extend_frag_withcenter(cell_vectors, orthogcoords, elems)
+    print("temp_extended_elems:", temp_extended_elems)
     # Write XYZ-file with orthogonal coordinates for 3x3xcell
     write_xyzfile(temp_extended_elems, temp_extended_coords, "temp_cell_extended_coords")
     blankline()
