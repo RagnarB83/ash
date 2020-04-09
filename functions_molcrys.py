@@ -242,7 +242,7 @@ def frag_define(orthogcoords,elems,cell_vectors,fragments):
     all=sorted(all)
     all_flat = [item for sublist in all for item in sublist]
     if len(all_flat) != len(orthogcoords):
-        print("Number of assigned atoms not matching original atom number.")
+        print("Number of assigned atoms ({}) not matching original atom number ({}).".format(len(all_flat), len(orthogcoords)))
         print("Fragment definition incomplete")
         exit()
     def find_missing(lst):
