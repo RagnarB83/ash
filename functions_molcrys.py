@@ -464,6 +464,9 @@ def fill_unitcell(cell_length,cell_angles,atomlabels,elems,coords,symmops):
         op_x=i.split(',')[0].replace(",","")
         op_y=i.split(',')[1].replace(",","")
         op_z=i.split(',')[2].replace(",","")
+        print("op_x:", op_x)
+        print("op_y:", op_y)
+        print("op_z:", op_z)
         if len(op_x)==1 and len(op_y)==1 and len(op_z)==1:
             for c in coords:
                 if c[0] < 0:
@@ -478,6 +481,7 @@ def fill_unitcell(cell_length,cell_angles,atomlabels,elems,coords,symmops):
                     cnew_z = 1 + c[2]
                 else:
                     cnew_z = c[2]
+                print("[cnew_x,cnew_y,cnew_z]:", [cnew_x,cnew_y,cnew_z])
                 fullcell.append([cnew_x,cnew_y,cnew_z])
         else:
             op_x_split=op_x.split('x')
@@ -523,6 +527,7 @@ def fill_unitcell(cell_length,cell_angles,atomlabels,elems,coords,symmops):
                     cnew_z = 1 + c_new[2]
                 else:
                     cnew_z = c_new[2]
+                print("[cnew_x,cnew_y,cnew_z]  2", [cnew_x,cnew_y,cnew_z])
                 fullcell.append([cnew_x,cnew_y,cnew_z])
     return fullcell,elems*len(symmops)
 
