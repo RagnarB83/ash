@@ -427,7 +427,7 @@ def read_ciffile(file):
                 if 'x' not in line:
                     symmopgrab_oldsyntax=False
                 else:
-                    symmops.append(line)
+                    symmops.append(line.split()[0])
                     #tempvar=line.split(',')
                     #print("tempvar:", tempvar)
                     #xit()
@@ -446,8 +446,8 @@ def read_ciffile(file):
                 symmopgrab=True
             if '_symmetry_equiv_pos_as_xyz' in line:
                 symmopgrab_oldsyntax=True
-    print("symmops:", symmops)
-    exit()
+    print("Symmetry opterations found in CIF:", symmops)
+
     return [cell_a, cell_b, cell_c],[cell_alpha, cell_beta, cell_gamma],atomlabels,elems,coords,symmops
 
 #From cell parameters, fractional coordinates of asymmetric unit and symmetry operations
