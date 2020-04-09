@@ -438,7 +438,8 @@ def read_ciffile(file):
             if fractgrab == True:
                 if '_atom_site' not in line and len(line) >5 and 'loop' not in line:
                     atomlabels.append(line.split()[0])
-                    elems.append(line.split()[1])
+                    #Disabling since not always elems in column
+                    #elems.append(line.split()[1])
                     coords.append([float(line.split()[2].split('(')[0]),float(line.split()[3].split('(')[0]),float(line.split()[4].split('(')[0])])
             if 'data_' in line:
                 newmol = True
@@ -448,6 +449,13 @@ def read_ciffile(file):
                 symmopgrab=True
             if '_symmetry_equiv_pos_as_xyz' in line:
                 symmopgrab_oldsyntax=True
+
+    #Convert atomlabels to elements
+    for atomlabel in atomlabels:
+        el = ''.join([i for i in s if not i.isdigit()])
+        elems.append(el)
+
+    print("elems:", elems)
     print("Symmetry operations found in CIF:", symmops)
 
     return [cell_a, cell_b, cell_c],[cell_alpha, cell_beta, cell_gamma],atomlabels,elems,coords,symmops
