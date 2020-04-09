@@ -152,7 +152,7 @@ def frag_define(orthogcoords,elems,cell_vectors,fragments):
                             systemlist.remove(m)
                         except ValueError:
                             continue
-        if Assign_Flag = False:
+        if Assign_Flag == False:
             print("Could not assign members to fragment.")
             # If members list can not be assigned to fragment then we have a boundary-split
             # Assigning to unassigned
