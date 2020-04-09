@@ -452,7 +452,7 @@ def read_ciffile(file):
 
     #Convert atomlabels to elements
     for atomlabel in atomlabels:
-        el = ''.join([i for i in s if not i.isdigit()])
+        el = ''.join([i for i in atomlabel if not i.isdigit()])
         elems.append(el)
 
     print("elems:", elems)
