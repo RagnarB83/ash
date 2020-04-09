@@ -130,13 +130,20 @@ def frag_define(orthogcoords,elems,cell_vectors,fragments):
     print("Systemlist length:", len(systemlist))
     unassigned = []
     for i in range(len(elems)):
+        print("i : ", i)
         members = get_molecule_members_loop_np2(orthogcoords, elems, 99, settings_molcrys.scale, settings_molcrys.tol,
                                             atomindex=i)
+        print("members:" , members)
         el_list = [elems[i] for i in members]
+        print("el_list:", el_list)
         ncharge = nucchargelist(el_list)
+        print("ncharge : ", ncharge)
         for fragment in fragments:
+            print("fragment:", fragment)
             if ncharge == fragment.Nuccharge:
+                print("ncharge {} is equal to fragment.Nuccharge {} ".format(ncharges, fragment.Nuccharge))
                 if members not in fragment.fraglist:
+                    print("members not in fragment.fraglist. Adding")
                     fragment.add_fraglist(members)
                     for m in members:
                         try:
@@ -147,6 +154,7 @@ def frag_define(orthogcoords,elems,cell_vectors,fragments):
                 # If members list can not be assigned to fragment then we have a boundary-split
                 # Assigning to unassigned
                 if members not in unassigned:
+                    print("members not in unsassigned")
                     unassigned.append(members)
 
     for fi, fragment in enumerate(fragments):
@@ -159,6 +167,7 @@ def frag_define(orthogcoords,elems,cell_vectors,fragments):
     #Systemlist with remaining atoms
     print("systemlist:", systemlist)
     print("Systemlist length:", len(systemlist))
+    exit()
     blankline()
     print_time_rel_and_tot(currtime, origtime)
     currtime=time.time()
