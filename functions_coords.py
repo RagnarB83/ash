@@ -149,7 +149,6 @@ def dummy_mat(mat_v, mat_u):
 #https://semantive.com/pl/blog/high-performance-computation-in-python-numpy/
 #Avoiding for loops
 def get_connected_atoms_np(coords, elems,scale,tol, atomindex):
-    print("elems", elems)
     connatoms = []
     #Creating np array of the coords to compare
     compcoords = np.tile(coords[atomindex], (len(coords), 1))
