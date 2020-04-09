@@ -461,9 +461,9 @@ def fill_unitcell(cell_length,cell_angles,atomlabels,elems,coords,symmops):
         multoperation_x=1;sumoperation_x=0
         multoperation_y=1;sumoperation_y=0
         multoperation_z=1;sumoperation_z=0
-        op_x=i.split(',')[0].replace(",","")
-        op_y=i.split(',')[1].replace(",","")
-        op_z=i.split(',')[2].replace(",","")
+        op_x=i.split(',')[0].replace(",","").replace(" ","")
+        op_y=i.split(',')[1].replace(",","").replace(" ","")
+        op_z=i.split(',')[2].replace(",","").replace(" ","")
         print("op_x:", op_x)
         print("op_y:", op_y)
         print("op_z:", op_z)
