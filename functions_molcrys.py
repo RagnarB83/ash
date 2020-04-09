@@ -446,7 +446,7 @@ def read_ciffile(file):
                 symmopgrab=True
             if '_symmetry_equiv_pos_as_xyz' in line:
                 symmopgrab_oldsyntax=True
-    print("Symmetry opterations found in CIF:", symmops)
+    print("Symmetry operations found in CIF:", symmops)
 
     return [cell_a, cell_b, cell_c],[cell_alpha, cell_beta, cell_gamma],atomlabels,elems,coords,symmops
 
@@ -461,9 +461,9 @@ def fill_unitcell(cell_length,cell_angles,atomlabels,elems,coords,symmops):
         multoperation_x=1;sumoperation_x=0
         multoperation_y=1;sumoperation_y=0
         multoperation_z=1;sumoperation_z=0
-        op_x=i.split()[0].replace(",","")
-        op_y=i.split()[1].replace(",","")
-        op_z=i.split()[2].replace(",","")
+        op_x=i.split(',')[0].replace(",","")
+        op_y=i.split(',')[1].replace(",","")
+        op_z=i.split(',')[2].replace(",","")
         if len(op_x)==1 and len(op_y)==1 and len(op_z)==1:
             for c in coords:
                 if c[0] < 0:
