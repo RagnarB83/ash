@@ -185,7 +185,7 @@ def frag_define(orthogcoords,elems,cell_vectors,fragments):
             el_list = [temp_extended_elems[i] for i in members]
             ncharge = nucchargelist(el_list)
             if ncharge == fragment.Nuccharge:
-                print("Found match. ncharge is", charge)
+                print("Found match. ncharge is", ncharge)
                 if members not in fragment.fraglist:
                     fragment.add_fraglist(members)
                     for m in members:
