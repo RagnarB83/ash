@@ -187,43 +187,45 @@ def molcrys(cif_file='', fragmentobjects=[], theory=None, numcores=None, chargem
     RMSD_SP_threshold=0.001
     blankline()
     #TODO: Make ORCA GBW-read more transparent during SP iterations or in general
+
+    # Charge-model info to add to inputfile
+    chargemodelline = chargemodel_select(chargemodel)
+    # Creating ORCA theory object without fragment information.
+    # fragmentobjects[0] is always mainfrag
+    ORCAQMtheory = ORCATheory(orcadir=orcadir, charge=fragmentobjects[0].Charge, mult=fragmentobjects[0].Mult,
+                              orcasimpleinput=orcasimpleinput,
+                              orcablocks=orcablocks, extraline=chargemodelline)
+    print("ORCAQMtheory:", ORCAQMtheory)
+    print(ORCAQMtheory.__dict__)
+
+    # Defining QM region. Should be the mainfrag at approx origin
+    Centralmainfrag = fragmentobjects[0].clusterfraglist[0]
+    print("Centralmainfrag:", Centralmainfrag)
+
+    QMMM_SP_ORCAcalculation = QMMMTheory(fragment=Cluster, qm_theory=ORCAQMtheory, qmatoms=Centralmainfrag,
+                                         atomcharges=Cluster.atomcharges, embedding='Elstat')
+
     #SP-LOOP FOR MAINFRAG
     for SPLoopNum in range(0,SPLoopMaxIter):
         print("This is Charge-Iteration Loop number", SPLoopNum)
         atomcharges=[]
-        #Creating ORCA theory object without fragment information.
-        #fragmentobjects[0] is always mainfrag
-        # Charge-model info to add to inputfile
-        chargemodelline = chargemodel_select(chargemodel)
-        ORCAQMtheory = ORCATheory(orcadir=orcadir, charge=fragmentobjects[0].Charge, mult=fragmentobjects[0].Mult,
-                              orcasimpleinput=orcasimpleinput,
-                              orcablocks=orcablocks, extraline=chargemodelline)
-
-        print("ORCAQMtheory:", ORCAQMtheory)
-        print(ORCAQMtheory.__dict__)
-        #Defining QM region. Should be the mainfrag at approx origin
-        Centralmainfrag=fragmentobjects[0].clusterfraglist[0]
-        print("Centralmainfrag:", Centralmainfrag)
         print_coords_for_atoms(Cluster.coords,Cluster.elems,Centralmainfrag)
-        bla=Cluster.get_coords_for_atoms(Centralmainfrag)
-        #print("bla:", bla)
-        #print("z Cluster.atomcharges:", Cluster.atomcharges)
-        QMMM_SP_ORCAcalculation = QMMMTheory(fragment=Cluster, qm_theory=ORCAQMtheory, qmatoms=Centralmainfrag,
-                                     atomcharges=Cluster.atomcharges, embedding='Elstat')
 
         # Run ORCA calculation with charge-model info
         QMMM_SP_ORCAcalculation.run(nprocs=numcores)
 
         #Grab atomic charges for fragment.
+
         atomcharges = grabatomcharges(chargemodel, ORCAQMtheory.inputfilename + '.out')
-        #print("atomcharges:", atomcharges)
+        print("Elements:", [Cluster.elems[i] for i in Centralmainfrag ])
+        print("atomcharges (SPloop {}) : {}".format(SPLoopNum,atomcharges))
 
         # Keep backup of ORCA outputfile in dir SPloop-files
         shutil.copyfile('orca-input.out', './SPloop-files/mainfrag-SPloop'+str(SPLoopNum)+'.out')
-
         blankline()
         #Adding mainfrag charges to mainfrag--object
         fragmentobjects[0].add_charges(atomcharges)
+
         # Assign pointcharges to each atom of MM cluster.
         #pointchargeupdate calls: Cluster.update_atomcharges(chargelist)
         pointchargeupdate(Cluster, fragmentobjects[0], atomcharges)
