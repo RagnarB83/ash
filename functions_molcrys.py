@@ -170,7 +170,6 @@ def frag_define(orthogcoords,elems,cell_vectors,fragments):
     #Systemlist with remaining atoms
     print("systemlist:", systemlist)
     print("Systemlist length:", len(systemlist))
-    exit()
     blankline()
     print_time_rel_and_tot(currtime, origtime)
     currtime=time.time()
