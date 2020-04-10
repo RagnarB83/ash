@@ -797,7 +797,7 @@ def gasfragcalc(fragmentobjects,Cluster,chargemodel,orcadir,orcasimpleinput,orca
 
         atomcharges=grabatomcharges(chargemodel,ORCASPcalculation.inputfilename+'.out')
         print("Elements:", gasfrag.elems)
-        print("Gas atomcharges:", atomcharges)
+        print("Gasloop atomcharges:", atomcharges)
         #Updating charges inside mainfrag/counterfrag object
         fragmentobject.add_charges(atomcharges)
         #Assign pointcharges to each atom of MM cluster.
