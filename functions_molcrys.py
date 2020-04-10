@@ -796,6 +796,7 @@ def gasfragcalc(fragmentobjects,Cluster,chargemodel,orcadir,orcasimpleinput,orca
         #Grab atomic charges for fragment.
 
         atomcharges=grabatomcharges(chargemodel,ORCASPcalculation.inputfilename+'.out')
+        print("Elements:", gasfrag.elems)
         print("Gas atomcharges:", atomcharges)
         #Updating charges inside mainfrag/counterfrag object
         fragmentobject.add_charges(atomcharges)
