@@ -143,10 +143,11 @@ def frag_define(orthogcoords,elems,cell_vectors,fragments):
             print("fragment:", fragment)
             if ncharge == fragment.Nuccharge:
                 print("ncharge {} is equal to fragment.Nuccharge {} ".format(ncharge, fragment.Nuccharge))
+                Assign_Flag = True
+                print("Assign_Flag is True!")
+                #Only adding members if not already added
                 if members not in fragment.fraglist:
-                    Assign_Flag=True
-                    print("Assign_Flag is True!")
-                    print("members not in fragment.fraglist. Adding")
+                    print("members not already in fragment.fraglist. Adding")
                     fragment.add_fraglist(members)
                     for m in members:
                         try:
