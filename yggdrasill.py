@@ -480,8 +480,8 @@ class NonBondedTheory:
             # NOTE: Lennard-Jones should  calculate both MM-MM and QM-MM LJ interactions. Full coords necessary.
             if LJ==True:
                 self.LJenergy,self.LJgradient = LennardJones(full_coords,self.atomtypes, self.LJpairpotentials, connectivity=connectivity)
-                print("Lennard-Jones Energy (au):", self.LJenergy)
-                print("Lennard-Jones Energy (kcal/mol):", self.LJenergy*constants.harkcal)
+                #print("Lennard-Jones Energy (au):", self.LJenergy)
+                #print("Lennard-Jones Energy (kcal/mol):", self.LJenergy*constants.harkcal)
             self.MMEnergy = self.Coulombchargeenergy+self.LJenergy
 
             if Grad==True:
@@ -947,7 +947,7 @@ class QMMMTheory:
         # MM theory
         if self.mm_theory_name == "NonBondedTheory":
             print("Running MM theory as part of QM/MM.")
-            print("Using MM on full system. Charges for QM region have to be set to zero ")
+            print("Using MM on full system. Charges for QM region {} have to be set to zero ".format(self.qmatoms))
             print("Charges for full system is: ", self.charges)
             self.MMEnergy, self.MMGradient= self.mm_theory.run(full_coords=current_coords, mm_coords=self.mmcoords, charges=self.charges, connectivity=self.connectivity)
             #self.MMEnergy=self.mm_theory.MMEnergy
