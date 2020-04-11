@@ -1784,9 +1784,19 @@ class Fragment:
             print("Atom number > 10K. Connectivity calculation could take a while")
 
         if scale == None:
-            scale=settings_yggdrasill.scale
-            tol=settings_yggdrasill.tol
-            print("Using global scale and tol parameters")
+            try:
+                scale=settings_molcrys.scale
+                tol=settings_molcrys.tol
+                print("Using global scale and tol parameters from settings_molcrys")
+            except:
+                try:
+                    scale = settings_yggdrasill.scale
+                    tol = settings_yggdrasill.tol
+                    print("Using global scale and tol parameters from settings_yggdrasill")
+                except:
+                    scale = 1
+                    tol = 0.1
+                    print("Exception: Using hard-coded scale and tol parameters from settings_yggdrasill")
 
         print("Scale:", scale)
         print("Tol:", tol)
