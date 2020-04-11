@@ -33,7 +33,7 @@ def molcrys(cif_file='', fragmentobjects=[], theory=None, numcores=None, chargem
 
     print("Fragments defined:")
     for fragment in fragmentobjects:
-        print("Fragment:", f.__dict__)
+        print("Fragment:", fragment.__dict__)
 
     origtime = time.time()
     currtime = time.time()
