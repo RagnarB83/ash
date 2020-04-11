@@ -202,8 +202,7 @@ def molcrys(cif_file='', fragmentobjects=[], theory=None, numcores=None, chargem
     Centralmainfrag = fragmentobjects[0].clusterfraglist[0]
     print("Centralmainfrag:", Centralmainfrag)
 
-    QMMM_SP_ORCAcalculation = QMMMTheory(fragment=Cluster, qm_theory=ORCAQMtheory, qmatoms=Centralmainfrag,
-                                         atomcharges=Cluster.atomcharges, embedding='Elstat')
+
 
     #SP-LOOP FOR MAINFRAG
     for SPLoopNum in range(0,SPLoopMaxIter):
@@ -211,7 +210,9 @@ def molcrys(cif_file='', fragmentobjects=[], theory=None, numcores=None, chargem
         atomcharges=[]
         print_coords_for_atoms(Cluster.coords,Cluster.elems,Centralmainfrag)
 
-        # Run ORCA calculation with charge-model info
+        # Run ORCA QM/MM calculation with charge-model info
+        QMMM_SP_ORCAcalculation = QMMMTheory(fragment=Cluster, qm_theory=ORCAQMtheory, qmatoms=Centralmainfrag,
+                                             atomcharges=Cluster.atomcharges, embedding='Elstat')
         QMMM_SP_ORCAcalculation.run(nprocs=numcores)
 
 
