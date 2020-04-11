@@ -946,7 +946,10 @@ class QMMMTheory:
 
         # MM theory
         if self.mm_theory_name == "NonBondedTheory":
-            self.MMEnergy, self.MMGradient= self.mm_theory.run(full_coords=self.coords, mm_coords=self.mmcoords, charges=self.charges, connectivity=self.connectivity)
+            print("Running MM theory as part of QM/MM.")
+            print("Using MM on full system. Charges for QM region have to be set to zero ")
+            print("Charges for full system is: ", self.charges)
+            self.MMEnergy, self.MMGradient= self.mm_theory.run(full_coords=current_coords, mm_coords=self.mmcoords, charges=self.charges, connectivity=self.connectivity)
             #self.MMEnergy=self.mm_theory.MMEnergy
             #if Grad==True:
             #    self.MMGrad = self.mm_theory.MMGrad
