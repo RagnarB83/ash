@@ -399,7 +399,14 @@ def old_cell_extend_frag(cellvectors, coords,elems,cellextpars):
     return extended, new_elems
 
 
-
+#Read XTL file
+#Grab coordinates, cell parameters
+def read_xtlfile(file):
+    print("not ready")
+    #TODO: finish
+    exit()
+    #with open(file) as f:
+        #for line in f:
 
 
 #Read CIF_file
