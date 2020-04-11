@@ -1711,13 +1711,14 @@ class Fragment:
                 self.coords.append([float(line.split()[1]), float(line.split()[2]), float(line.split()[3])])
         self.update_attributes()
         self.calc_connectivity()
-    #Replace coordinates by providing elems and coords lists.
-    def replace_coords(self, elems, coords):
+    #Replace coordinates by providing elems and coords lists. Optional: recalculate connectivity
+    def replace_coords(self, elems, coords, conn=False):
         print("Replacing coordinates in fragment.")
         self.elems=elems
         self.coords=coords
         self.update_attributes()
-        self.calc_connectivity()
+        if conn==True:
+            self.calc_connectivity()
     def delete_coords(self):
         self.coords=[]
         self.elems=[]

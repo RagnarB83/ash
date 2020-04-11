@@ -615,7 +615,7 @@ def geomeTRICOptimizer(theory=None,fragment=None, coordsystem='tric', frozenatom
     #Updating energy and coordinates of Yggdrasill fragment before ending
     fragment.set_energy(yggdrasillengine.energy)
     print("Final optimized energy:",  fragment.energy)
-    fragment.replace_coords(yggdrasillengine.M.elem,yggdrasillengine.M.xyzs[0])
+    fragment.replace_coords(yggdrasillengine.M.elem,yggdrasillengine.M.xyzs[0], conn=False)
 
 
     #TODO: Possibly write optimized geometry to disk here?
