@@ -1694,6 +1694,7 @@ class Fragment:
         self.nuccharge = nucchargelist(self.elems)
         self.numatoms = len(self.coords)
         self.atomlist = list(range(0, self.numatoms))
+        #Unnecessary alias ? Todo: Delete
         self.allatoms = self.atomlist
         self.mass = totmasslist(self.elems)
         self.list_of_masses = list_of_masses(self.elems)
@@ -1785,18 +1786,19 @@ class Fragment:
 
         if scale == None:
             try:
-                scale=settings_molcrys.scale
-                tol=settings_molcrys.tol
                 print("Using global scale and tol parameters from settings_molcrys")
+                scale = settings_molcrys.scale
+                tol = settings_molcrys.tol
             except:
                 try:
+                    print("Using global scale and tol parameters from settings_yggdrasill")
                     scale = settings_yggdrasill.scale
                     tol = settings_yggdrasill.tol
-                    print("Using global scale and tol parameters from settings_yggdrasill")
                 except:
+                    print("Exception: Using hard-coded scale and tol parameters from settings_yggdrasill")
                     scale = 1
                     tol = 0.1
-                    print("Exception: Using hard-coded scale and tol parameters from settings_yggdrasill")
+
 
         print("Scale:", scale)
         print("Tol:", tol)

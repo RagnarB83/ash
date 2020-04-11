@@ -601,7 +601,10 @@ def geomeTRICOptimizer(theory=None,fragment=None, coordsystem='tric', frozenatom
     geometric.optimize.run_optimizer(**vars(args))
     time.sleep(1)
     blankline()
-    print("geomeTRIC Geometry optimization converged!")
+    print("geomeTRIC Geometry optimization converged in {} steps!".format(geometric.optimize.iteration))
+    print(geometric.optimize.__dict__)
+    #TODO Add iterations here.
+
     blankline()
 
     #Updating energy and coordinates of Yggdrasill fragment before ending
