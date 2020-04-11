@@ -214,6 +214,7 @@ def molcrys(cif_file='', fragmentobjects=[], theory=None, numcores=None, chargem
         # Run ORCA calculation with charge-model info
         QMMM_SP_ORCAcalculation.run(nprocs=numcores)
 
+
         #Grab atomic charges for fragment.
 
         atomcharges = grabatomcharges(chargemodel, ORCAQMtheory.inputfilename + '.out')
@@ -222,6 +223,7 @@ def molcrys(cif_file='', fragmentobjects=[], theory=None, numcores=None, chargem
 
         # Keep backup of ORCA outputfile in dir SPloop-files
         shutil.copyfile('orca-input.out', './SPloop-files/mainfrag-SPloop'+str(SPLoopNum)+'.out')
+        shutil.copyfile('orca-input.pc', './SPloop-files/mainfrag-SPloop'+str(SPLoopNum)+'.pc')
         blankline()
         #Adding mainfrag charges to mainfrag--object
         fragmentobjects[0].add_charges(atomcharges)
