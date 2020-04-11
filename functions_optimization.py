@@ -608,7 +608,7 @@ def geomeTRICOptimizer(theory=None,fragment=None, coordsystem='tric', frozenatom
     blankline()
     print(geometric.__dict__)
     print(geometric.optimize.__dict__)
-    print("geomeTRIC Geometry optimization converged in {} steps!".format(geometric.iteration))
+    #print("geomeTRIC Geometry optimization converged in {} steps!".format(geometric.iteration))
 
     #TODO Add iterations here.
 
