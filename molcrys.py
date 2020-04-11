@@ -32,8 +32,8 @@ def molcrys(cif_file='', fragmentobjects=[], theory=None, numcores=None, chargem
     orcasimpleinput=theory.orcasimpleinput
 
     print("Fragments defined:")
-    for i in fragmentobjects:
-        print("Fragment:", fragmentobjects[i].__dict__)
+    for f in fragmentobjects:
+        print("Fragment:", f[.__dict__)
 
     origtime = time.time()
     currtime = time.time()
