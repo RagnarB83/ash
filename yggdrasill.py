@@ -778,8 +778,16 @@ class PolEmbedTheory:
 #QM/MM theory object.
 #Required at init: qm_theory and qmatoms. Fragment not. Can come later
 class QMMMTheory:
-    def __init__(self, qm_theory, qmatoms, fragment='', mm_theory="" , atomcharges="", embedding="Elstat", printlevel=3):
+    def __init__(self, qm_theory, qmatoms, fragment='', mm_theory="" , atomcharges="",
+                 embedding="Elstat", printlevel=3, nprocs=None):
         print(BC.WARNING,BC.BOLD,"------------Defining QM/MM object-------------", BC.END)
+
+        #Setting nprocs of object
+        if nprocs==None:
+            self.nprocs=1
+        else:
+            self.nprocs=nprocs
+
         #Theory level definitions
         self.printlevel=printlevel
         self.qm_theory=qm_theory
@@ -849,7 +857,7 @@ class QMMMTheory:
                         print("MM atom {} charge: {}".format(i, self.charges[i]))
             blankline()
 
-    def run(self, current_coords=[], elems=[], Grad=False, nprocs=1):
+    def run(self, current_coords=[], elems=[], Grad=False, nprocs=None):
         print(BC.WARNING, BC.BOLD, "------------RUNNING QM/MM MODULE-------------", BC.END)
         print("QM Module:", self.qm_theory_name)
         print("MM Module:", self.mm_theory_name)
@@ -863,6 +871,11 @@ class QMMMTheory:
             PC=True
         else:
             PC=False
+
+        if nprocs==None:
+            nprocs=self.nprocs
+
+        print("Running QM/MM object with {} cores available".format(nprocs))
         #Updating QM coords and MM coords.
         #TODO: Should we use different name for updated QMcoords and MMcoords here??
         self.qmcoords=[current_coords[i] for i in self.qmatoms]
@@ -1005,7 +1018,14 @@ class QMMMTheory:
 #ORCA Theory object. Fragment object is optional. Only used for single-points.
 class ORCATheory:
     def __init__(self, orcadir, fragment=None, charge='', mult='', orcasimpleinput='',
-                 orcablocks='', extraline='', brokensym=None, HSmult=None, atomstoflip=[]):
+                 orcablocks='', extraline='', brokensym=None, HSmult=None, atomstoflip=[], nprocs=None):
+
+        #Setting nprocs of object
+        if nprocs==None:
+            self.nprocs=1
+        else:
+            self.nprocs=nprocs
+
         self.orcadir = orcadir
         if fragment != None:
             self.fragment=fragment
@@ -1038,7 +1058,7 @@ class ORCATheory:
             pass
     #Run function. Takes coords, elems etc. arguments and computes E or E+G.
     def run(self, current_coords=[], current_MM_coords=[], MMcharges=[], qm_elems=[],
-            mm_elems=[], elems=[], Grad=False, PC=False, nprocs=1 ):
+            mm_elems=[], elems=[], Grad=False, PC=False, nprocs=None ):
         print(BC.OKBLUE,BC.BOLD, "------------RUNNING ORCA INTERFACE-------------", BC.END)
         #Coords provided to run or else taken from initialization.
         if len(current_coords) != 0:
@@ -1052,6 +1072,10 @@ class ORCATheory:
                 qm_elems=self.elems
             else:
                 qm_elems = elems
+
+        if nprocs==None:
+            nprocs=self.nprocs
+        print("Running ORCA object with {} cores available".format(nprocs))
 
         #Create inputfile with generic name
         self.inputfilename="orca-input"
