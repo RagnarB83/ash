@@ -494,8 +494,12 @@ def geomeTRICOptimizer(theory=None,fragment=None, coordsystem='tric', frozenatom
         pass
     blankline()
     print("Launching geomeTRIC optimization module")
+    print("Coordinate system: ", coordsystem)
+    print("Max iterations: ", maxiter)
+    print("Frozen atoms: ", frozenatoms)
+    print("Bond constraints: ", bondconstraints)
     if fragment==None:
-        print("geomeTRIC requires fragment objec")
+        print("geomeTRIC requires fragment object")
         exit()
     try:
         import geometric
@@ -509,6 +513,7 @@ def geomeTRICOptimizer(theory=None,fragment=None, coordsystem='tric', frozenatom
     if ActiveRegion == True:
         print("Active Region option Active!")
         print("Note: Passing only active-region coordinates to geomeTRIC.")
+        print("Number of active atoms", len(actatoms))
         actcoords, actelems = fragment.get_coords_for_atoms(actatoms)
         #Writing act-region coords (only) of Yggdrasill fragment to disk as XYZ file and reading into geomeTRIC
         write_xyzfile(actelems, actcoords, 'initialxyzfiletric')
