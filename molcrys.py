@@ -32,7 +32,7 @@ def molcrys(cif_file='', fragmentobjects=[], theory=None, numcores=None, chargem
     orcasimpleinput=theory.orcasimpleinput
 
     print("Fragments defined:")
-    for f in fragmentobjects:
+    for fragment in fragmentobjects:
         print("Fragment:", f.__dict__)
 
     origtime = time.time()
@@ -119,18 +119,14 @@ def molcrys(cif_file='', fragmentobjects=[], theory=None, numcores=None, chargem
 
     #Reorder fraglists in each fragmenttype via Hungarian algorithm.
     # Ordered fraglists can then easily be used in pointchargeupdating
-    reordercluster(Cluster,fragmentobjects[0])
-    reordercluster(Cluster,fragmentobjects[1])
+    for fragmentobject in fragmentobjects:
+        reordercluster(Cluster,fragmentobject)
+        print(fragmentobject.clusterfraglist)
+        fragmentobject.print_infofile(str(fragmentobject.Name)+'.info')
     #TODO: after removing partial fragments and getting connectivity etc. Would be good to make MM cluster neutral
-    print(fragmentobjects[0].clusterfraglist)
-    print(fragmentobjects[1].clusterfraglist)
-
-    fragmentobjects[0].print_infofile('mainfrag.info')
-    fragmentobjects[1].print_infofile('counterfrag1.info')
 
     #Add fragmentobject-info to Cluster fragment
     Cluster.add_fragment_type_info(fragmentobjects)
-
     #Cluster is now almost complete, only charges missing. Print info to file
     print(Cluster.print_system("Cluster-info-nocharges.ygg"))
 
@@ -153,7 +149,8 @@ def molcrys(cif_file='', fragmentobjects=[], theory=None, numcores=None, chargem
 
     #Cluster is now complete. Print info to file
     Cluster.print_system("Cluster-info_afterGas.ygg")
-    fragmentobjects[0].print_infofile('mainfrag-info_afterGas.ygg')
+    for fragmentobject in fragmentobjects:
+        fragmentobject.print_infofile(str(fragmentobject.Name)+'-info_afterGas.ygg')
 
     sum_atomcharges_cluster=sum(Cluster.atomcharges)
     print("sum_atomcharges_cluster:", sum_atomcharges_cluster)
