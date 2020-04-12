@@ -535,6 +535,8 @@ def geomeTRICOptimizer(theory=None,fragment=None, coordsystem='tric', frozenatom
             self.full_current_coords=[]
             #Manual iteration count
             self.iteration_count=0
+            #Defining initial E
+            self.E = 0
         #Defining calculator
         def clearCalcs(self):
             print("ClearCalcs option chosen by geomeTRIC. Not sure why")
@@ -562,7 +564,8 @@ def geomeTRICOptimizer(theory=None,fragment=None, coordsystem='tric', frozenatom
                     trajfile.write(str(fragment.numatoms)+"\n")
                     trajfile.write("Iteration {} Energy {} \n".format(self.iteration_count,self.energy))
                     for el,cor in zip(fragment.elems,self.full_current_coords):
-                        trajfile.write(el + str(cor[0]) + " " + str(cor[1]) + " " + str(cor[2]) + "\n")
+                        trajfile.write(el + str(cor[0]) + " " + str(cor[1]) + " " + str(cor[2]) +
+                                       "\n")
 
                 #Request Engrad calc for full system
                 E, Grad = self.theory.run(current_coords=full_coords, elems=fragment.elems, Grad=True)
