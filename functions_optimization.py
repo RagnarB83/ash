@@ -562,7 +562,7 @@ def geomeTRICOptimizer(theory=None,fragment=None, coordsystem='tric', frozenatom
                     trajfile.write(str(fragment.numatoms)+"\n")
                     trajfile.write("Iteration {} Energy {} \n".format(self.iteration_count,self.energy))
                     for el,cor in zip(fragment.elems,self.full_current_coords):
-                        trajfile.write(el + str(cor[0]) + " " + str(cor[1]) + " " + str(cor[2]) "\n")
+                        trajfile.write(el + str(cor[0]) + " " + str(cor[1]) + " " + str(cor[2]) + "\n")
 
                 #Request Engrad calc for full system
                 E, Grad = self.theory.run(current_coords=full_coords, elems=fragment.elems, Grad=True)
