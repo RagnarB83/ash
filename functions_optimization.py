@@ -536,7 +536,7 @@ def geomeTRICOptimizer(theory=None,fragment=None, coordsystem='tric', frozenatom
             #Manual iteration count
             self.iteration_count=0
             #Defining initial E
-            self.E = 0
+            self.energy = 0
         #Defining calculator
         def clearCalcs(self):
             print("ClearCalcs option chosen by geomeTRIC. Not sure why")
