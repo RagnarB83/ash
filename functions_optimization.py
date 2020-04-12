@@ -612,11 +612,8 @@ def geomeTRICOptimizer(theory=None,fragment=None, coordsystem='tric', frozenatom
     geometric.optimize.run_optimizer(**vars(args))
     time.sleep(1)
     blankline()
-    print(geometric.__dict__)
-    print(geometric.optimize.__dict__)
     #print("geomeTRIC Geometry optimization converged in {} steps!".format(geometric.iteration))
     print("geomeTRIC Geometry optimization converged in {} steps!".format(yggdrasillengine.iteration_count))
-    print("args dict ", args.__dict__)
     #TODO Add iterations here.
 
     blankline()
