@@ -564,7 +564,6 @@ def geomeTRICOptimizer(theory=None,fragment=None, coordsystem='tric', frozenatom
                 self.energy = E
 
                 #Writing out trajectory file for full system. Act system done by GeomeTRIC
-                #Todo: Compare full and act traj files. Check for correctness
                 with open("geometric-Opt-Traj_Full.xyz", "a") as trajfile:
                     trajfile.write(str(fragment.numatoms)+"\n")
                     trajfile.write("Iteration {} Energy {} \n".format(self.iteration_count,self.energy))
@@ -636,9 +635,8 @@ def geomeTRICOptimizer(theory=None,fragment=None, coordsystem='tric', frozenatom
     print("Final optimized energy:",  fragment.energy)
     #
     fragment.replace_coords(fragment.elems,yggdrasillengine.full_current_coords, conn=False)
+    #Writing out fragment file and XYZ file
     fragment.print_system(filename='Fragment-optimized.ygg')
     fragment.write_xyzfile(xyzfilename='Fragment-optimized.xyz')
 
     return fragment
-    # TODO:
-    # Trajectory file. Both active atoms and full?

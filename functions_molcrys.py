@@ -399,16 +399,34 @@ def old_cell_extend_frag(cellvectors, coords,elems,cellextpars):
     return extended, new_elems
 
 
-#Read XTL file
+#Read XTL file. XTL file should contain fractional coordinates o
 #Grab coordinates, cell parameters
 def read_xtlfile(file):
+    grabcell = True
+    grabfract = False
+    coords=[]
+    elems=[]
     print("not ready")
-    #TODO: finish
-    exit()
-    #with open(file) as f:
-        #for line in f:
-
-
+    with open(file) as f:
+        for line in f:
+            if grabcell==True:
+                cell_a = line.split()[0]
+                cell_b = line.split()[1]
+                cell_c = line.split()[2]
+                cell_alpha = line.split()[3]
+                cell_beta = line.split()[4]
+                cell_gamma = line.split()[5]
+                grabcell=False
+            if 'CELL' in line:
+                grabcell=True
+            if grabfract==True:
+                elems.append(line.split()[0])
+                coords.append([float(line.split()[1]), float(line.split()[2]),
+                               float(line.split()[3])])
+            if 'NAME         X           Y           Z' in line:
+                grabfract=True
+    #TODO: Skip lines with negative fractional coords or larger than 1.0
+    return [cell_a, cell_b, cell_c],[cell_alpha, cell_beta, cell_gamma],elems,coords
 #Read CIF_file
 #Grab coordinates, cell parameters and symmetry operations
 def read_ciffile(file):

@@ -16,7 +16,7 @@ currtime=time.time()
 #Or maybe have molcrys only be SPEmbedding and in inputfile we do molcrys job and then opt-job.
 #Could do SPembedding again after Opt
 
-def molcrys(cif_file='', fragmentobjects=[], theory=None, numcores=None, chargemodel='',
+def molcrys(cif_file=None, xtl_file=None, fragmentobjects=[], theory=None, numcores=None, chargemodel='',
             clusterradius=None, shortrangemodel='UFF'):
 
     banner="""
@@ -37,24 +37,38 @@ def molcrys(cif_file='', fragmentobjects=[], theory=None, numcores=None, chargem
 
     origtime = time.time()
     currtime = time.time()
-    #Read CIF-file
-    print("Read CIF file:", cif_file)
-    blankline()
-    cell_length,cell_angles,atomlabels,elems,asymmcoords,symmops=read_ciffile(cif_file)
-    print("Cell parameters: {} {} {} {} {} {}".format(cell_length[0],cell_length[1], cell_length[2] , cell_angles[0], cell_angles[1], cell_angles[2]))
-    print("Number of fractional coordinates in asymmetric unit:", len(asymmcoords))
 
+
+
+    if cif_file is not None:
+        #Read CIF-file
+        print("Read CIF file:", cif_file)
+        blankline()
+        cell_length,cell_angles,atomlabels,elems,asymmcoords,symmops=read_ciffile(cif_file)
+
+        # Create system coordinates for whole cell from asymmetric unit
+        print("Filling up unitcell using symmetry operations")
+        fullcellcoords, elems = fill_unitcell(cell_length, cell_angles, atomlabels, elems, asymmcoords, symmops)
+        numasymmunits = len(fullcellcoords) / len(asymmcoords)
+
+        print("Number of fractional coordinates in asymmetric unit:", len(asymmcoords))
+        print("Number of asymmetric units in whole cell:", numasymmunits)
+    elif xtl_file is not None:
+        #Read XTL-file. Assuming full-cell coordinates present.
+        #TODO: Does XTL file also support asymmetric units with symm information in header?
+        print("Read XTL file:", xtl_file)
+        blankline()
+        cell_length,cell_angles,atomlabels,elems,fullcellcoords=read_xtlfile(xtl_file)
+    else:
+        print("Neither CIF-file or XTL-file passed to molcrys. Exiting...")
+        exit()
+
+    print("Cell parameters: {} {} {} {} {} {}".format(cell_length[0],cell_length[1], cell_length[2] , cell_angles[0], cell_angles[1], cell_angles[2]))
     #Calling new cell vectors function instead of old
     cell_vectors=cellbasis(cell_angles,cell_length)
     #cell_vectors=cellparamtovectors(cell_length,cell_angles)
     print("cell_vectors:", cell_vectors)
-
-    #Create system coordinates for whole cell
-    print("Filling up unitcell using symmetry operations")
-    fullcellcoords,elems=fill_unitcell(cell_length,cell_angles,atomlabels,elems,asymmcoords,symmops)
-    numasymmunits=len(fullcellcoords)/len(asymmcoords)
     print("Number of fractional coordinates in whole cell:", len(fullcellcoords))
-    print("Number of asymmetric units in whole cell:", numasymmunits)
     #print_coordinates(elems, np.array(fullcellcoords), title="Fractional coordinates")
     #print_coords_all(fullcellcoords,elems)
     blankline()
