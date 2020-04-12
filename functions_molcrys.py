@@ -402,7 +402,7 @@ def old_cell_extend_frag(cellvectors, coords,elems,cellextpars):
 #Read XTL file. XTL file should contain fractional coordinates o
 #Grab coordinates, cell parameters
 def read_xtlfile(file):
-    grabcell = True
+    grabcell = False
     grabfract = False
     coords=[]
     elems=[]
