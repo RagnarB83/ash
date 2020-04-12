@@ -130,24 +130,25 @@ def frag_define(orthogcoords,elems,cell_vectors,fragments):
     print("Systemlist length:", len(systemlist))
     unassigned = []
     for i in range(len(elems)):
-        print("i : ", i)
+
+        printdebug("i : ", i)
         members = get_molecule_members_loop_np2(orthogcoords, elems, 99, settings_molcrys.scale, settings_molcrys.tol,
                                             atomindex=i)
-        print("members:" , members)
+        printdebug("members:" , members)
         el_list = [elems[i] for i in members]
-        print("el_list:", el_list)
+        printdebug("el_list:", el_list)
         ncharge = nucchargelist(el_list)
-        print("ncharge : ", ncharge)
+        printdebug("ncharge : ", ncharge)
         Assign_Flag=False
         for fragment in fragments:
-            print("fragment:", fragment)
+            printdebug("fragment:", fragment)
             if ncharge == fragment.Nuccharge:
-                print("ncharge {} is equal to fragment.Nuccharge {} ".format(ncharge, fragment.Nuccharge))
+                printdebug("ncharge {} is equal to fragment.Nuccharge {} ".format(ncharge, fragment.Nuccharge))
                 Assign_Flag = True
-                print("Assign_Flag is True!")
+                printdebug("Assign_Flag is True!")
                 #Only adding members if not already added
                 if members not in fragment.fraglist:
-                    print("members not already in fragment.fraglist. Adding")
+                    printdebug("members not already in fragment.fraglist. Adding")
                     fragment.add_fraglist(members)
                     for m in members:
                         try:
@@ -155,12 +156,12 @@ def frag_define(orthogcoords,elems,cell_vectors,fragments):
                         except ValueError:
                             continue
         if Assign_Flag == False:
-            print("Assign_Flag is False...")
-            print("Could not assign members to fragment.")
+            printdebug("Assign_Flag is False...")
+            printdebug("Could not assign members to fragment.")
             # If members list can not be assigned to fragment then we have a boundary-split
             # Assigning to unassigned
             if members not in unassigned:
-                print("members not in unassigned. Adding to unassigned")
+                printdebug("members not in unassigned. Adding to unassigned")
                 unassigned.append(members)
 
     for fi, fragment in enumerate(fragments):
@@ -180,15 +181,15 @@ def frag_define(orthogcoords,elems,cell_vectors,fragments):
     #2.  Using extended cell find connected members of unassigned fragments
     print("Step 2. Using extended cell to find connected members of unassigned fragments")
     for m in unassigned:
-        print("Trying unassigned m :", m)
+        printdebug("Trying unassigned m :", m)
         members = get_molecule_members_loop_np2(temp_extended_coords, temp_extended_elems, 99,
                                                 settings_molcrys.scale, settings_molcrys.tol, membs=m)
-        print("members:", members)
+        printdebug("members:", members)
         for fragment in fragments:
             el_list = [temp_extended_elems[i] for i in members]
             ncharge = nucchargelist(el_list)
             if ncharge == fragment.Nuccharge:
-                print("Found match. ncharge is", ncharge)
+                printdebug("Found match. ncharge is", ncharge)
                 if members not in fragment.fraglist:
                     fragment.add_fraglist(members)
                     for m in members:

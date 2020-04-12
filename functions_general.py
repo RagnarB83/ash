@@ -14,6 +14,7 @@ class BC:
 
 import numpy as np
 
+
 # Give difference of two lists, sorted. List1: Bigger list
 def listdiff(list1, list2):
     diff = (list(set(list1) - set(list2)))

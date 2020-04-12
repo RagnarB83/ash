@@ -14,6 +14,14 @@ from functions_optimization import *
 import shutil
 import subprocess as sp
 
+debugflag=False
+
+#Debug print. Behaves like print bug reads global debug var first
+def printdebug(string,var):
+    if debugflag is True:
+        print(string,var)
+
+
 def print_yggdrasill_header():
     programversion = 0.1
     #http://asciiflow.com
