@@ -42,7 +42,7 @@ def molcrys(cif_file=None, xtl_file=None, fragmentobjects=[], theory=None, numco
 
     if cif_file is not None:
         #Read CIF-file
-        print("Read CIF file:", cif_file)
+        print("Reading CIF file:", cif_file)
         blankline()
         cell_length,cell_angles,atomlabels,elems,asymmcoords,symmops=read_ciffile(cif_file)
 
@@ -56,7 +56,7 @@ def molcrys(cif_file=None, xtl_file=None, fragmentobjects=[], theory=None, numco
     elif xtl_file is not None:
         #Read XTL-file. Assuming full-cell coordinates present.
         #TODO: Does XTL file also support asymmetric units with symm information in header?
-        print("Read XTL file:", xtl_file)
+        print("Reading XTL file:", xtl_file)
         blankline()
         cell_length,cell_angles,atomlabels,elems,fullcellcoords=read_xtlfile(xtl_file)
     else:
