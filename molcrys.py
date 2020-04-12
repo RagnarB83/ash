@@ -58,7 +58,7 @@ def molcrys(cif_file=None, xtl_file=None, fragmentobjects=[], theory=None, numco
         #TODO: Does XTL file also support asymmetric units with symm information in header?
         print("Reading XTL file:", xtl_file)
         blankline()
-        cell_length,cell_angles,atomlabels,elems,fullcellcoords=read_xtlfile(xtl_file)
+        cell_length,cell_angles,elems,fullcellcoords=read_xtlfile(xtl_file)
     else:
         print("Neither CIF-file or XTL-file passed to molcrys. Exiting...")
         exit()

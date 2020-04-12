@@ -406,11 +406,9 @@ def read_xtlfile(file):
     grabfract = False
     coords=[]
     elems=[]
-    print("not ready")
     with open(file) as f:
         for line in f:
             if grabcell==True:
-                print("line:", line)
                 cell_a = line.split()[0]
                 cell_b = line.split()[1]
                 cell_c = line.split()[2]
