@@ -409,12 +409,12 @@ def read_xtlfile(file):
     with open(file) as f:
         for line in f:
             if grabcell==True:
-                cell_a = line.split()[0]
-                cell_b = line.split()[1]
-                cell_c = line.split()[2]
-                cell_alpha = line.split()[3]
-                cell_beta = line.split()[4]
-                cell_gamma = line.split()[5]
+                cell_a = float(line.split()[0])
+                cell_b = float(line.split()[1])
+                cell_c = float(line.split()[2])
+                cell_alpha = float(line.split()[3])
+                cell_beta = float(line.split()[4])
+                cell_gamma = float(line.split()[5])
                 grabcell=False
             if 'CELL' in line:
                 grabcell=True
