@@ -116,7 +116,7 @@ def molcrys(cif_file=None, xtl_file=None, fragmentobjects=[], theory=None, numco
     blankline()
     print("Creating new Cluster fragment:")
     Cluster=Fragment(elems=cluster_elems, coords=cluster_coords)
-    Cluster.calc_connectivity(scale=settings_molcrys.scale, tol=settings_molcrys.tol)
+    #Cluster.calc_connectivity(scale=settings_molcrys.scale, tol=settings_molcrys.tol)
     print_time_rel_and_tot(currtime, origtime, modulename='Cluster.calc_connectivity')
     currtime=time.time()
 
@@ -128,14 +128,14 @@ def molcrys(cif_file=None, xtl_file=None, fragmentobjects=[], theory=None, numco
             if ncharge == fragmentobject.Nuccharge:
                 fragmentobject.add_clusterfraglist(frag)
 
-    print(fragmentobjects[0].clusterfraglist)
+    printdebug(fragmentobjects[0].clusterfraglist)
     #TODO: Reorder cluster with reflections also
 
     #Reorder fraglists in each fragmenttype via Hungarian algorithm.
     # Ordered fraglists can then easily be used in pointchargeupdating
     for fragmentobject in fragmentobjects:
         reordercluster(Cluster,fragmentobject)
-        print(fragmentobject.clusterfraglist)
+        printdebug(fragmentobject.clusterfraglist)
         fragmentobject.print_infofile(str(fragmentobject.Name)+'.info')
     #TODO: after removing partial fragments and getting connectivity etc. Would be good to make MM cluster neutral
 

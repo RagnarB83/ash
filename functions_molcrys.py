@@ -210,7 +210,7 @@ def frag_define(orthogcoords,elems,cell_vectors,fragments):
         print(fragment.fraglist)
         print("")
 
-    print("Systemlist ({})remaining: {}".format(len(systemlist), systemlist))
+    print("Systemlist ({}) remaining: {}".format(len(systemlist), systemlist))
 
     print_time_rel_and_tot(currtime, origtime)
     currtime=time.time()
@@ -315,7 +315,7 @@ def fract_to_orthogonal(cellvectors, fraccoords):
 #Extend cell in general with original cell in center
 #TODO: Make syntax consistent
 def cell_extend_frag(cellvectors, coords,elems,cellextpars):
-    print("cellextpars:", cellextpars)
+    printdebug("cellextpars:", cellextpars)
     permutations = []
     for i in range(int(cellextpars[0])):
         for j in range(int(cellextpars[1])):
@@ -331,7 +331,7 @@ def cell_extend_frag(cellvectors, coords,elems,cellextpars):
     #Removing duplicates and sorting
     permutations = sorted([list(x) for x in set(tuple(x) for x in permutations)],key=lambda x: (abs(x[0]), abs(x[1]), abs(x[2])))
     #permutations = permutations.sort(key=lambda x: x[0])
-    print("Num permutations:", len(permutations))
+    printdebug("Num permutations:", len(permutations))
     numcells=np.prod(cellextpars)
     numcells=len(permutations)
     extended = np.zeros((len(coords) * numcells, 3))
@@ -348,8 +348,8 @@ def cell_extend_frag(cellvectors, coords,elems,cellextpars):
             #print("extended[index]", extended[index])
             #print("extended[index+1]", extended[index+1])
             index+=1
-    print("extended coords num", len(extended))
-    print("new_elems  num,", len(new_elems))
+    printdebug("extended coords num", len(extended))
+    printdebug("new_elems  num,", len(new_elems))
     return extended, new_elems
 
 #Extend cell in all 3 directions.
@@ -357,7 +357,7 @@ def cell_extend_frag(cellvectors, coords,elems,cellextpars):
 #Loosely based on https://pymolwiki.org/index.php/Supercell
 #TODO: Delete
 def old_cell_extend_frag(cellvectors, coords,elems,cellextpars):
-    print("cellextpars:", cellextpars)
+    printdebug("cellextpars:", cellextpars)
     numcells=np.prod(cellextpars)
     # cellextpars: e.g. [2,2,2]
     permutations = []
@@ -394,9 +394,9 @@ def old_cell_extend_frag(cellvectors, coords,elems,cellextpars):
             #print("extended[index]", extended[index])
             #print("extended[index+1]", extended[index+1])
             index+=1
-    print(extended)
-    print("extended coords num", len(extended))
-    print("new_elems  num,", len(new_elems))
+    printdebug(extended)
+    printdebug("extended coords num", len(extended))
+    printdebug("new_elems  num,", len(new_elems))
     return extended, new_elems
 
 
@@ -633,9 +633,9 @@ def create_MMcluster(orthogcoords,elems,cell_vectors,sphereradius):
     extended_coords,extended_elems=cell_extend_frag(cell_vectors,orthogcoords,elems,[4,4,4])
     #Write XYZ-file with orthogonal coordinates for cell
     write_xyzfile(extended_elems,extended_coords,"cell_extended_coords")
-    print("after extended cell")
-    print(len(extended_coords))
-    print(len(extended_elems))
+    printdebug("after extended cell")
+    printdebug(len(extended_coords))
+    printdebug(len(extended_elems))
     deletionlist=[]
     origin=np.array([0.0,0.0,0.0])
     comparecoords = np.tile(origin, (len(extended_coords), 1))
