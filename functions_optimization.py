@@ -531,6 +531,8 @@ def geomeTRICOptimizer(theory=None,fragment=None, coordsystem='tric', frozenatom
             #Defining theory from argument
             self.theory=theory
             self.ActiveRegion=ActiveRegion
+            #Defining current_coords for full system (not only act region)
+            self.full_current_coords=[]
         #Defining calculator
         def clearCalcs(self):
             print("ClearCalcs option chosen by geomeTRIC. Not sure why")
@@ -549,6 +551,7 @@ def geomeTRICOptimizer(theory=None,fragment=None, coordsystem='tric', frozenatom
                         #Silly. Pop-ing first coord from currcoords until done
                         curr_c, currcoords = currcoords[0], currcoords[1:]
                         full_coords[i] = curr_c
+                self.full_current_coords=full_coords
                 #Request Engrad calc for full system
                 E, Grad = self.theory.run(current_coords=full_coords, elems=fragment.elems, Grad=True)
                 #Trim Full gradient down to only act-atoms gradient
@@ -618,8 +621,8 @@ def geomeTRICOptimizer(theory=None,fragment=None, coordsystem='tric', frozenatom
     #Updating energy and coordinates of Yggdrasill fragment before ending
     fragment.set_energy(yggdrasillengine.energy)
     print("Final optimized energy:",  fragment.energy)
-    fragment.replace_coords(yggdrasillengine.M.elem,yggdrasillengine.M.xyzs[0], conn=False)
-
+    #
+    fragment.replace_coords(fragment.elems,yggdrasillengine.full_current_coords, conn=False)
     fragment.print_system(filename='Fragment-optimized.ygg')
     fragment.write_xyzfile(xyzfilename='Fragment-optimized.xyz')
 
