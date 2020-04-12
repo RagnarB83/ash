@@ -187,7 +187,7 @@ def coulombcharge(charges, coords):
 #Combined Lennard-Jones and Coulomb
 #Terribly written
 
-def LJCoulpy(coords,atomtypes, LJPairpotentials, connectivity=[]):
+def LJCoulpy(coords,atomtypes, charges, LJPairpotentials, connectivity=[]):
     print("Inside LJCoulpy function")
     print("Calculating LJ pairs based on connectivity")
     if len(connectivity)==0:
@@ -211,17 +211,17 @@ def LJCoulpy(coords,atomtypes, LJPairpotentials, connectivity=[]):
 
                     #Coulomb part
                     pairdistance_b=distance(coords_b[i],coords_b[j])
-                    pairenergy=(charge_i*charge_j)/pairdistance_b
+                    pairenergy=(charges[i]*charges[j])/pairdistance_b
                     Coulenergy+=pairenergy
                     #Using electric field expression from: http://www.physnet.org/modules/pdf_modules/m115.pdf
                     Efield_pair_hat=np.array([(coords_b[i][0]-coords_b[j][0])/pairdistance_b,
                                               (coords_b[i][1]-coords_b[j][1])/pairdistance_b,
                                               (coords_b[i][2]-coords_b[j][2])/pairdistance_b ])
                     #Doing ij pair and storing contribution for each
-                    Efield_pair_j=(Efield_pair_hat*charge_j)/(pairdistance_b**2)
-                    Efield_pair_i = (Efield_pair_hat * charge_i) / (pairdistance_b**2)
-                    Coulgradient[i] += -1 * Efield_pair_j*charge_i
-                    Coulgradient[j] -= -1 * Efield_pair_i*charge_j
+                    Efield_pair_j=(Efield_pair_hat*charges[j])/(pairdistance_b**2)
+                    Efield_pair_i = (Efield_pair_hat * charges[i]) / (pairdistance_b**2)
+                    Coulgradient[i] += -1 * Efield_pair_j*charges[i]
+                    Coulgradient[j] -= -1 * Efield_pair_i*charges[j]
 
 
                     for l in LJPairpotentials:
