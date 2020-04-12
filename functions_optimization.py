@@ -620,8 +620,8 @@ def geomeTRICOptimizer(theory=None,fragment=None, coordsystem='tric', frozenatom
     print("Final optimized energy:",  fragment.energy)
     fragment.replace_coords(yggdrasillengine.M.elem,yggdrasillengine.M.xyzs[0], conn=False)
 
+    fragment.print_system(filename='Fragment-optimized.ygg')
+    fragment.write_xyzfile(xyzfilename='Fragment-optimized.xyz')
 
-    #TODO: Possibly write optimized geometry to disk here?
-    # Write XYZfile?
-    # Write an Yggdrasill-fragment file that can be read-in??
+    # TODO:
     # Trajectory file. Both active atoms and full?
