@@ -172,7 +172,12 @@ class Optimizer:
                 # Updating energy and coordinates of Yggdrasill fragment before ending
                 self.fragment.set_energy(E)
                 print("Final optimized energy:", self.fragment.energy)
-                self.fragment.replace_coords(elems, current_coords)
+                self.fragment.replace_coords(elems, current_coords, , conn=False)
+
+                # Writing out fragment file and XYZ file
+                fragment.print_system(filename='Fragment-optimized.ygg')
+                fragment.write_xyzfile(xyzfilename='Fragment-optimized.xyz')
+
                 blankline()
                 print_time_rel_and_tot(CheckpointTime, beginTime, 'Opt Step')
                 return
