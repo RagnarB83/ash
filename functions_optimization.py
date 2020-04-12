@@ -541,7 +541,6 @@ def geomeTRICOptimizer(theory=None,fragment=None, coordsystem='tric', frozenatom
         def clearCalcs(self):
             print("ClearCalcs option chosen by geomeTRIC. Not sure why")
         def calc(self,coords,tmp):
-            self.iteration_count+=1
             #Updating coords in object
             #Need to combine with rest of full-syme coords I think
             self.M.xyzs[0] = coords.reshape(-1, 3) * constants.bohr2ang
@@ -558,6 +557,12 @@ def geomeTRICOptimizer(theory=None,fragment=None, coordsystem='tric', frozenatom
                         full_coords[i] = curr_c
                 self.full_current_coords=full_coords
 
+                #Request Engrad calc for full system
+                E, Grad = self.theory.run(current_coords=full_coords, elems=fragment.elems, Grad=True)
+                #Trim Full gradient down to only act-atoms gradient
+                Grad_act = np.array([Grad[i] for i in actatoms])
+                self.energy = E
+
                 #Writing out trajectory file for full system. Act system done by GeomeTRIC
                 #Todo: Compare full and act traj files. Check for correctness
                 with open("geometric-Opt-Traj_Full.xyz", "a") as trajfile:
@@ -567,11 +572,7 @@ def geomeTRICOptimizer(theory=None,fragment=None, coordsystem='tric', frozenatom
                         trajfile.write(el + str(cor[0]) + " " + str(cor[1]) + " " + str(cor[2]) +
                                        "\n")
 
-                #Request Engrad calc for full system
-                E, Grad = self.theory.run(current_coords=full_coords, elems=fragment.elems, Grad=True)
-                #Trim Full gradient down to only act-atoms gradient
-                Grad_act = np.array([Grad[i] for i in actatoms])
-                self.energy = E
+                self.iteration_count += 1
                 return {'energy': E, 'gradient': Grad_act.flatten()}
             else:
                 E,Grad=self.theory.run(current_coords=currcoords, elems=self.M.elem, Grad=True)
