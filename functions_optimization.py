@@ -564,7 +564,7 @@ def geomeTRICOptimizer(theory=None,fragment=None, coordsystem='tric', frozenatom
                 self.energy = E
 
                 #Writing out trajectory file for full system. Act system done by GeomeTRIC
-                with open("geometric-Opt-Traj_Full.xyz", "a") as trajfile:
+                with open("geometric_OPTtraj_Full.xyz", "a") as trajfile:
                     trajfile.write(str(fragment.numatoms)+"\n")
                     trajfile.write("Iteration {} Energy {} \n".format(self.iteration_count,self.energy))
                     for el,cor in zip(fragment.elems,self.full_current_coords):

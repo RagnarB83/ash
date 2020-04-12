@@ -38,9 +38,8 @@ def molcrys(cif_file=None, xtl_file=None, fragmentobjects=[], theory=None, numco
     origtime = time.time()
     currtime = time.time()
 
-
-
     if cif_file is not None:
+        blankline()
         #Read CIF-file
         print("Reading CIF file:", cif_file)
         blankline()
@@ -54,6 +53,7 @@ def molcrys(cif_file=None, xtl_file=None, fragmentobjects=[], theory=None, numco
         print("Number of fractional coordinates in asymmetric unit:", len(asymmcoords))
         print("Number of asymmetric units in whole cell:", numasymmunits)
     elif xtl_file is not None:
+        blankline()
         #Read XTL-file. Assuming full-cell coordinates present.
         #TODO: Does XTL file also support asymmetric units with symm information in header?
         print("Reading XTL file:", xtl_file)
