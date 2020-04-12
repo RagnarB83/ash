@@ -175,6 +175,7 @@ def molcrys(cif_file=None, xtl_file=None, fragmentobjects=[], theory=None, numco
 
     #Defining atomtypes in Cluster fragment for LJ interaction
     if shortrangemodel=='UFF':
+        print("Using UFF forcefield for all elements")
         #Using UFF_ prefix before element
         atomtypelist=['UFF_'+i for i in Cluster.elems]
         atomtypelist_uniq = np.unique(atomtypelist).tolist()
@@ -185,6 +186,19 @@ def molcrys(cif_file=None, xtl_file=None, fragmentobjects=[], theory=None, numco
                 #Getting just element-par for UFFdict lookup
                 atomtype_el=atomtype.replace('UFF_','')
                 forcefile.write('LennardJones_i_R0 {}  {:12.6f}   {:12.6f}\n'.format(atomtype, UFFdict[atomtype_el][0],UFFdict[atomtype_el][1]))
+    #Modified UFF forcefield with 0 parameter on H atom (avoids repulsion)
+    elif shortrangemodel=='UFF_modH':
+        print("Using UFF forcefield with modified H-parameter (0 values for H)")
+        #Using UFF_ prefix before element
+        atomtypelist=['UFF_'+i for i in Cluster.elems]
+        atomtypelist_uniq = np.unique(atomtypelist).tolist()
+        #Create Yggdrasill forcefield file by looking up UFF parameters
+        with open('Cluster_forcefield.ff', 'w') as forcefile:
+            forcefile.write('#UFF Lennard-Jones parameters \n')
+            for atomtype in atomtypelist_uniq:
+                #Getting just element-par for UFFdict lookup
+                atomtype_el=atomtype.replace('UFF_','')
+                forcefile.write('LennardJones_i_R0 {}  {:12.6f}   {:12.6f}\n'.format(atomtype, UFF_modH_dict[atomtype_el][0],UFF_modH_dict[atomtype_el][1]))
     else:
         print("Undefined shortrangemodel")
         exit()

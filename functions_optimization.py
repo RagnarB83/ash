@@ -264,9 +264,6 @@ class Optimizer:
         print(BC.FAIL,"Optimization did not converge in {} iteration".format(self.maxiter),BC.END)
 
 
-
-
-
 #Very basic bad steepest descent algorithm.
 #Arbitrary scaling parameter instead of linesearch
 #0.8-0.9 seems to work well for H2O
@@ -444,6 +441,7 @@ def newton_raphson(coords, Gradient,Hessian):
 #PyBerny: https://github.com/jhrmnn/pyberny/blob/master/README.md
 #Installed via pip
 #Limitations: No constraints or frozen atoms
+#Todo: Add active-region option like geometric
 ########################
 
 def BernyOpt(theory,fragment):
@@ -631,8 +629,6 @@ def geomeTRICOptimizer(theory=None,fragment=None, coordsystem='tric', frozenatom
     blankline()
     #print("geomeTRIC Geometry optimization converged in {} steps!".format(geometric.iteration))
     print("geomeTRIC Geometry optimization converged in {} steps!".format(yggdrasillengine.iteration_count))
-    #TODO Add iterations here.
-
     blankline()
 
     #Updating energy and coordinates of Yggdrasill fragment before ending
