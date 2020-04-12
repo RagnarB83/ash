@@ -560,7 +560,7 @@ def geomeTRICOptimizer(theory=None,fragment=None, coordsystem='tric', frozenatom
                 #Todo: Compare full and act traj files. Check for correctness
                 with open("geometric-Opt-Traj_Full.xyz", "a") as trajfile:
                     trajfile.write(str(fragment.numatoms)+"\n")
-                    trajfile.write("header \n")
+                    trajfile.write("Iteration {} Energy {} \n".format(self.iteration_count,self.energy))
                     for el,cor in zip(fragment.elems,self.full_current_coords):
                         trajfile.write(el + str(cor[0]) + " " + str(cor[1]) + " " + str(cor[2]) "\n")
 
