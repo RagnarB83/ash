@@ -17,7 +17,7 @@ import subprocess as sp
 debugflag=False
 
 #Debug print. Behaves like print bug reads global debug var first
-def printdebug(string,var):
+def printdebug(string,var=''):
     if debugflag is True:
         print(string,var)
 
