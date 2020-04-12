@@ -408,6 +408,8 @@ def read_xtlfile(file):
     elems=[]
     with open(file) as f:
         for line in f:
+            if 'EOF' in line:
+                grabfract = False
             if grabcell==True:
                 cell_a = float(line.split()[0])
                 cell_b = float(line.split()[1])
@@ -422,6 +424,7 @@ def read_xtlfile(file):
                 elems.append(line.split()[0])
                 coords.append([float(line.split()[1]), float(line.split()[2]),
                                float(line.split()[3])])
+
             if 'NAME         X           Y           Z' in line:
                 grabfract=True
     #TODO: Skip lines with negative fractional coords or larger than 1.0
