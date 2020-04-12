@@ -555,6 +555,15 @@ def geomeTRICOptimizer(theory=None,fragment=None, coordsystem='tric', frozenatom
                         curr_c, currcoords = currcoords[0], currcoords[1:]
                         full_coords[i] = curr_c
                 self.full_current_coords=full_coords
+
+                #Writing out trajectory file for full system. Act system done by GeomeTRIC
+                #Todo: Compare full and act traj files. Check for correctness
+                with open("geometric-Opt-Traj_Full.xyz", "a") as trajfile:
+                    trajfile.write(str(fragment.numatoms)+"\n")
+                    trajfile.write("header \n")
+                    for el,cor in zip(fragment.elems,self.full_current_coords):
+                        trajfile.write(el + str(cor[0]) + " " + str(cor[1]) + " " + str(cor[2]) "\n")
+
                 #Request Engrad calc for full system
                 E, Grad = self.theory.run(current_coords=full_coords, elems=fragment.elems, Grad=True)
                 #Trim Full gradient down to only act-atoms gradient
