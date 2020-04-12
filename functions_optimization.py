@@ -638,5 +638,3 @@ def geomeTRICOptimizer(theory=None,fragment=None, coordsystem='tric', frozenatom
     #Writing out fragment file and XYZ file
     fragment.print_system(filename='Fragment-optimized.ygg')
     fragment.write_xyzfile(xyzfilename='Fragment-optimized.xyz')
-
-    return fragment
