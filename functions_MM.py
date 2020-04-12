@@ -184,4 +184,102 @@ def coulombcharge(charges, coords):
                     gradient[count_j] -= -1 * Efield_pair_i*charge_j
     return energy,gradient
 
+#Combined Lennard-Jones and Coulomb
+#Terribly written
 
+def LJCoulpy(coords,atomtypes, LJPairpotentials, connectivity=[]):
+    print("Inside LJCoulpy function")
+    print("Calculating LJ pairs based on connectivity")
+    if len(connectivity)==0:
+        print("Warning!. No connectivity list present. Will treat all LJ pairs.")
+    else:
+        print(len(connectivity)," connectivity lists present")
+
+    atomlist=list(range(0, len(coords)))
+    #LJ energy
+    energy=0
+    #LJ gradient
+    gradient = np.zeros((len(coords), 3))
+    #Iterating over atom i
+    for i in atomlist:
+        #Iterating over atom j
+        for j in atomlist:
+            #Skipping if same atom
+            if i != j:
+                #Skipping identical pairs
+                if i < j:
+
+                    #Coulomb part
+                    pairdistance_b=distance(coords_b[i],coords_b[j])
+                    pairenergy=(charge_i*charge_j)/pairdistance_b
+                    Coulenergy+=pairenergy
+                    #Using electric field expression from: http://www.physnet.org/modules/pdf_modules/m115.pdf
+                    Efield_pair_hat=np.array([(coords_b[i][0]-coords_b[j][0])/pairdistance_b,
+                                              (coords_b[i][1]-coords_b[j][1])/pairdistance_b,
+                                              (coords_b[i][2]-coords_b[j][2])/pairdistance_b ])
+                    #Doing ij pair and storing contribution for each
+                    Efield_pair_j=(Efield_pair_hat*charge_j)/(pairdistance_b**2)
+                    Efield_pair_i = (Efield_pair_hat * charge_i) / (pairdistance_b**2)
+                    Coulgradient[i] += -1 * Efield_pair_j*charge_i
+                    Coulgradient[j] -= -1 * Efield_pair_i*charge_j
+
+
+                    for l in LJPairpotentials:
+                        #print("l:", l)
+                        #This checks if i-j pair exists in LJPairpotentials list:
+                        if set([atomtypes[i], atomtypes[j]]) == set([l[0],l[1]]):
+                        #if atomtypes[i] in l and atomtypes[j] in l:
+                            #print("COUNTING!!! unless...")
+                            #Now checking connectivity for whether we should calculate LJ energy for pair or not
+                            skip=False
+                            for conn in connectivity:
+                                #print("conn:", conn)
+                                #If i,j in same list
+                                if all(x in conn for x in [i, j]) == True:
+                                    #print("Atoms connected. skipping ")
+                                    skip=True
+                                    continue
+                            if skip == False:
+                                #print("i : {}  and j : {}".format(i,j))
+                                #print("atomtype_i : {}  and atomtype_j : {}".format(atomtypes[i],atomtypes[j]))
+                                sigma=l[2]
+                                eps=l[3]
+                                #pairdistance = distance(coords[i], coords[j])
+                                pairdistance=pairdistance_b*constants.bohr2ang
+                                #print("sigma, eps, pairdistance", sigma,eps,pairdistance)
+                                V_LJ=4*eps*((sigma/pairdistance)**12-(sigma/pairdistance)**6)
+                                #print("V_LJ: {} kcal/mol  V_LJ: {} au:".format(V_LJ,V_LJ/constants.harkcal))
+                                LJenergy+=V_LJ
+                                #print("energy: {} kcal/mol  energy: {} au:".format(energy, energy / constants.harkcal))
+                                #print("------------------------------")
+                                #Typo in http://localscf.com/localscf.com/LJPotential.aspx.html ??
+                                #Using http://www.courses.physics.helsinki.fi/fys/moldyn/lectures/L4.pdf
+                                #TODO: Equation needs to be double-checked for correctness. L4.pdf equation ambiguous
+                                #Check this: http://people.virginia.edu/~lz2n/mse627/notes/Potentials.pdf
+                                LJgrad_const=(24*eps*((sigma/pairdistance)**6-2*(sigma/pairdistance)**12))*(1/(pairdistance**2))
+                                #print("LJgrad_const:", LJgrad_const)
+                                gr=np.array([(coords[i][0] - coords[j][0])*LJgrad_const, (coords[i][1] - coords[j][1])*LJgrad_const,
+                                     (coords[i][2] - coords[j][2])*LJgrad_const])
+                                #print("gr:", gr)
+                                LJgradient[i] += gr
+                                LJgradient[j] -= gr
+                                #print("gradient[i]:", gradient[i])
+                                #print("gradient[j]:", gradient[j])
+                                #print("gradients in hartree/Bohr:")
+                                #print("gradient[i]:", gradient[i]* (1/constants.harkcal) / constants.ang2bohr)
+                                #print("gradient[j]:", gradient[j]* (1/constants.harkcal) / constants.ang2bohr)
+    #Convert gradient from kcal/mol per Å to hartree/Bohr
+    LJfinal_gradient=LJgradient * (1/constants.harkcal) / constants.ang2bohr
+    print("LJ gradient (hartree/Bohr):", LJfinal_gradient)
+    #Converg energy from kcal/mol to hartree
+    LJfinal_energy=LJenergy*(1/constants.harkcal)
+    print("LJ energy (hartree)", LJfinal_energy)
+
+    #Coulomb
+    print("Coulenergy : ", Coulenergy)
+
+    final_energy = LJfinal_energy+Coulenergy
+
+    final_gradient = LJfinal_gradient + Coulgradient
+
+    return final_energy,final_gradient
