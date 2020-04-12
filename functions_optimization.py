@@ -533,10 +533,13 @@ def geomeTRICOptimizer(theory=None,fragment=None, coordsystem='tric', frozenatom
             self.ActiveRegion=ActiveRegion
             #Defining current_coords for full system (not only act region)
             self.full_current_coords=[]
+            #Manual iteration count
+            self.iteration_count=0
         #Defining calculator
         def clearCalcs(self):
             print("ClearCalcs option chosen by geomeTRIC. Not sure why")
         def calc(self,coords,tmp):
+            self.iteration_count+=1
             #Updating coords in object
             #Need to combine with rest of full-syme coords I think
             self.M.xyzs[0] = coords.reshape(-1, 3) * constants.bohr2ang
@@ -612,7 +615,7 @@ def geomeTRICOptimizer(theory=None,fragment=None, coordsystem='tric', frozenatom
     print(geometric.__dict__)
     print(geometric.optimize.__dict__)
     #print("geomeTRIC Geometry optimization converged in {} steps!".format(geometric.iteration))
-    print("geomeTRIC Geometry optimization converged in X steps!")
+    print("geomeTRIC Geometry optimization converged in {} steps!".format(yggdrasillengine.iteration_count))
     print("args dict ", args.__dict__)
     #TODO Add iterations here.
 
