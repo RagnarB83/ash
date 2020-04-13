@@ -131,8 +131,9 @@ def frag_define(orthogcoords,elems,cell_vectors,fragments,cell_angles=[], cell_l
     # Write XYZ-file with orthogonal coordinates for 3x3xcell
     write_xyzfile(temp_extended_elems, temp_extended_coords, "temp_cell_extended_coords")
     #write XTL file for 3x3x3 cell
-    #Todo: fix. Not correct?
-    write_xtl([cell_length[0]*3,cell_length[1]*3,cell_length[2]*3], cell_angles, temp_extended_elems, temp_extended_coords, "temp_cell_extended_coords.xtl")
+    #Todo: fix.
+    # Need to give write_xtl fractional coords for new cell. Requires o
+    #write_xtl([cell_length[0]*3,cell_length[1]*3,cell_length[2]*3], cell_angles, temp_extended_elems, temp_extended_coords, "temp_cell_extended_coords.xtl")
 
 
     blankline()
@@ -325,6 +326,38 @@ def fract_to_orthogonal(cellvectors, fraccoords):
         z = i[0]*cellvectors[0][2] + i[1]*cellvectors[1][2] + i[2]*cellvectors[2][2]
         orthog.append([x, y, z])
     return orthog
+
+#Convert from orthogonal coordinates (Å) to fractional Cartesian coordinates
+#TODO: Has not been checked for correctness
+
+def orthogonal_to_fractional(cellvectors, orthogcoords):
+    print("function not tested")
+    exit()
+    def det3(mat):
+        return ((mat[0][0] * mat[1][1] * mat[2][2]) + (mat[0][1] * mat[1][2] * mat[2][0]) + (
+                    mat[0][2] * mat[1][0] * mat[2][1]) - (mat[0][2] * mat[1][1] * mat[2][0]) - (
+                            mat[0][1] * mat[1][0] * mat[2][2]) - (mat[0][0] * mat[1][2] * mat[2][1]))
+
+    fract = []
+    cellParam=cellvectors
+    latCnt = [x[:] for x in [[None] * 3] * 3]
+    for a in range(3):
+        for b in range(3):
+            latCnt[a][b] = cellParam[b][a]
+    detLatCnt = det3(latCnt)
+    for i in orthogcoords:
+        #x = i[0]*cellvectors[0][0] + i[1]*cellvectors[1][0] + i[2]*cellvectors[2][0]
+        #y = i[0]*cellvectors[0][1] + i[1]*cellvectors[1][1] + i[2]*cellvectors[2][1]
+        #z = i[0]*cellvectors[0][2] + i[1]*cellvectors[1][2] + i[2]*cellvectors[2][2]
+        x = (det3([[i[1], latCnt[0][1], latCnt[0][2]], [i[2], latCnt[1][1], latCnt[1][2]],
+                      [i[3], latCnt[2][1], latCnt[2][2]]])) / detLatCnt
+        y = (det3([[latCnt[0][0], i[1], latCnt[0][2]], [latCnt[1][0], i[2], latCnt[1][2]],
+                      [latCnt[2][0], i[3], latCnt[2][2]]])) / detLatCnt
+        z = (det3([[latCnt[0][0], latCnt[0][1], i[1]], [latCnt[1][0], latCnt[1][1], i[2]],
+                      [latCnt[2][0], latCnt[2][1], i[3]]])) / detLatCnt
+        fract.append([x, y, z])
+    return fract
+
 
 #Extend cell in general with original cell in center
 #TODO: Make syntax consistent
