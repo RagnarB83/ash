@@ -39,7 +39,6 @@ def molcrys(cif_file=None, xtl_file=None, fragmentobjects=[], theory=None, numco
 
     origtime = time.time()
     currtime = time.time()
-    exit()
     if cif_file is not None:
         blankline()
         #Read CIF-file
