@@ -495,13 +495,9 @@ class NonBondedTheory:
             if Grad==True:
                 self.MMGradient = self.Coulombchargegradient+self.LJgradient
         #Combined Coulomb+LJ Python version. Slow
-        elif version=='py_comb'
-
+        elif version=='py_comb':
             self.MMenergy, self.MMgradient = LJCoulpy(full_coords, self.atomtypes, charges, self.LJpairpotentials,
                                                           connectivity=connectivity)
-
-            self.MMEnergy = self.Coulombchargeenergy+self.LJenergy
-
         elif version=='f2py':
             print("Using fast Fortran F2Py MM code")
             try:
