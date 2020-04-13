@@ -611,8 +611,11 @@ def fill_unitcell(cell_length,cell_angles,atomlabels,elems,coords,symmops):
                 fullcell.append([cnew_x,cnew_y,cnew_z])
         else:
             op_x_split=op_x.split('x')
+            print("op_x_split:", op_x_split)
             op_y_split = op_y.split('y')
+            print("op_y_split:", op_y_split)
             op_z_split = op_z.split('z')
+            print("op_z_split:", op_z_split)
             for xj in op_x_split:
                 if len(xj) > 0:
                     if xj =='-':
@@ -630,13 +633,17 @@ def fill_unitcell(cell_length,cell_angles,atomlabels,elems,coords,symmops):
                     elif yj == '-1/2':
                         sumoperation_y = -0.5
             for zj in op_z_split:
+
                 if len(zj) > 0:
                     if zj =='-':
                         multoperation_z=-1
+                        print("multoperation_z:", multoperation_z)
                     elif zj == '+1/2':
                         sumoperation_z = 0.5
+                        print("sumoperation_z:", sumoperation_z)
                     elif zj == '-1/2':
                         sumoperation_z = -0.5
+                        print("sumoperation_z:", sumoperation_z)
             for c in coords:
                 print(c)
                 c_new=[multoperation_x*c[0]+sumoperation_x,multoperation_y*c[1]+sumoperation_y,multoperation_z*c[2]+sumoperation_z]
