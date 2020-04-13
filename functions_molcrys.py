@@ -124,7 +124,9 @@ def frag_define(orthogcoords,elems,cell_vectors,fragments,cell_angles=[], cell_l
     # Write XYZ-file with orthogonal coordinates for 3x3xcell
     write_xyzfile(temp_extended_elems, temp_extended_coords, "temp_cell_extended_coords")
     #write XTL file for 3x3x3 cell
-    write_xtl(cell_length*3, cell_angles, temp_extended_elems, temp_extended_coords, "temp_cell_extended_coords.xtl")
+    print("cell_length:", cell_length)
+    print("cell_length:", cell_length*3)
+    write_xtl([cell_length[0]*3,cell_length[1]*3,cell_length[2]*3], cell_angles, temp_extended_elems, temp_extended_coords, "temp_cell_extended_coords.xtl")
 
     blankline()
     # 1. Divide unitcell into fragments (distance-based) if whole fragments found
