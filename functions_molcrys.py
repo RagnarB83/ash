@@ -253,7 +253,7 @@ def frag_define(orthogcoords,elems,cell_vectors,fragments):
         fragment.fraglist = sorted([list(x) for x in set(tuple(x) for x in fragment.fraglist)])
         all+=fragment.fraglist
         for frlist in fragment.fraglist:
-            print("Fragment {}: {}".format(num,frlist))
+            print("Fragment {} ({}): {}".format(num, fragment.Name, frlist))
         blankline()
 
     # Final check whether assignment is complete.
