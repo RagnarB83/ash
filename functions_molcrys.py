@@ -80,6 +80,7 @@ def print_time_rel_and_tot(timestampA,timestampB, modulename=''):
 #Loosely based on https://pymolwiki.org/index.php/Supercell
 #This is used for fragment identification.
 def old_cell_extend_frag_withcenter(cellvectors, coords,elems):
+    print("inside:", old_cell_extend_frag_withcenter)
     numcells=27
     #All permutations for centered 3x3x3 extension
     permutations = [[0,0,0],[0,0,1],[0,1,0],[1,0,0],
@@ -93,6 +94,8 @@ def old_cell_extend_frag_withcenter(cellvectors, coords,elems):
     extended = np.zeros((len(coords) * numcells, 3))
     new_elems = []
     index = 0
+    print("cellvectors", cellvectors)
+    print("cellvectors[0:3, 0:3]", cellvectors[0:3, 0:3])
     for perm in permutations:
         shift = cellvectors[0:3, 0:3] * perm
         shift = shift[:, 0] + shift[:, 1] + shift[:, 2]
@@ -124,8 +127,7 @@ def frag_define(orthogcoords,elems,cell_vectors,fragments,cell_angles=[], cell_l
     # Write XYZ-file with orthogonal coordinates for 3x3xcell
     write_xyzfile(temp_extended_elems, temp_extended_coords, "temp_cell_extended_coords")
     #write XTL file for 3x3x3 cell
-    print("cell_length:", cell_length)
-    print("cell_length:", cell_length*3)
+    #Todo: fix. Not correct?
     write_xtl([cell_length[0]*3,cell_length[1]*3,cell_length[2]*3], cell_angles, temp_extended_elems, temp_extended_coords, "temp_cell_extended_coords.xtl")
 
     blankline()
