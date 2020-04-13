@@ -638,8 +638,9 @@ def fill_unitcell(cell_length,cell_angles,atomlabels,elems,coords,symmops):
                     elif zj == '-1/2':
                         sumoperation_z = -0.5
             for c in coords:
-                #print(c)
+                print(c)
                 c_new=[multoperation_x*c[0]+sumoperation_x,multoperation_y*c[1]+sumoperation_y,multoperation_z*c[2]+sumoperation_z]
+                print("c_new:", c_new)
                 #Translating coordinates so always positive
                 if c_new[0] < 0:
                     cnew_x=1+c_new[0]
