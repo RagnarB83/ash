@@ -17,7 +17,7 @@ currtime=time.time()
 #Could do SPembedding again after Opt
 
 def molcrys(cif_file=None, xtl_file=None, fragmentobjects=[], theory=None, numcores=None, chargemodel='',
-            clusterradius=None, shortrangemodel='UFF', debugflag=False):
+            clusterradius=None, shortrangemodel='UFF'):
 
     banner="""
 ╔╦╗╔═╗╦  ╔═╗╦═╗╦ ╦╔═╗

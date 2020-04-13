@@ -14,7 +14,7 @@ from functions_optimization import *
 import shutil
 import subprocess as sp
 
-debugflag=False
+debugflag=True
 
 #Debug print. Behaves like print bug reads global debug var first
 def printdebug(string,var=''):
