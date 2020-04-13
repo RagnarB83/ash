@@ -280,9 +280,12 @@ def frag_define(orthogcoords,elems,cell_vectors,fragments,cell_angles=[], cell_l
     all=sorted(all)
     all_flat = [item for sublist in all for item in sublist]
     if len(all_flat) != len(orthogcoords):
-        print("Number of assigned atoms ({}) not matching original atom number ({}).".format(len(all_flat), len(orthogcoords)))
+        print("Number of assigned atoms ({}) not matching number of atoms in cell ({}).".format(len(all_flat), len(orthogcoords)))
         print("Fragment definition incomplete")
         exit()
+    else:
+        print("Number of assigned atoms ({}) matches number of atoms in cell ({}).".format(len(all_flat), len(orthogcoords)))
+
     def find_missing(lst):
         return [x for x in range(lst[0], lst[-1] + 1) if x not in lst]
     if find_missing(all_flat) != []:
