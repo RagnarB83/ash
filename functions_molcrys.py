@@ -101,13 +101,19 @@ def old_cell_extend_frag_withcenter(cellvectors, coords,elems):
 
     #cellvectors = np.transpose(cellvectors)
     #print("Transposed cellvectors:", cellvectors)
-
+    print("cellvectors:", cellvectors)
+    print("cellvectors[0:3, 0:3]", cellvectors[0:3, 0:3])
     for perm in permutations:
+        print("perm:", perm)
         shift = cellvectors[0:3, 0:3] * perm
+        print("shift:", shift)
         shift = shift[:, 0] + shift[:, 1] + shift[:, 2]
+        print("shift:", shift)
         #print("Permutation:", perm, "shift:", shift)
         for d, el in zip(coords, elems):
+            print("d:", d)
             new_pos=d+shift
+            print("new_pos:", new_pos)
             extended[index] = new_pos
             new_elems.append(el)
             index+=1
