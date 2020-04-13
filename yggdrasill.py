@@ -45,7 +45,6 @@ def print_yggdrasill_header():
     print(BC.WARNING,"----------------------------------------------------------------------------------",BC.END)
     print(BC.WARNING,"----------------------------------------------------------------------------------",BC.END)
 
-
 #Numerical frequencies class
 class NumericalFrequencies:
     def __init__(self, fragment, theory, npoint=2, displacement=0.0005, hessatoms=[], numcores=1 ):
