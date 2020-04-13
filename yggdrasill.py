@@ -27,9 +27,11 @@ def print_yggdrasill_header():
     programversion = 0.1
 
     #Getting commit version number from file VERSION (updated by yggpull) inside module dir
-    with open(os.path.dirname(yggdrasill.__file__)+"/VERSION") as f:
-        git_commit_number = int(f.readline()
-
+    try:
+        with open(os.path.dirname(yggdrasill.__file__)+"/VERSION") as f:
+            git_commit_number = int(f.readline()
+    except:
+        git_commit_number="Unknown"
     #http://asciiflow.com
     #https://textik.com/#91d6380098664f89
     #https://www.gridsagegames.com/rexpaint/
