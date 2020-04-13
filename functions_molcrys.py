@@ -130,6 +130,9 @@ def frag_define(orthogcoords,elems,cell_vectors,fragments,cell_angles=[], cell_l
     #Todo: fix. Not correct?
     write_xtl([cell_length[0]*3,cell_length[1]*3,cell_length[2]*3], cell_angles, temp_extended_elems, temp_extended_coords, "temp_cell_extended_coords.xtl")
 
+    print("Exiting")
+    exit()
+
     blankline()
     # 1. Divide unitcell into fragments (distance-based) if whole fragments found
     print("Step 1. Dividing original cell into fragments")
