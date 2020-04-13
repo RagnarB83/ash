@@ -326,6 +326,7 @@ def cellparamtovectors(cell_length,cell_angles):
 #https://github.com/ghevcoul/coordinateTransform/blob/master/coordinateTransform.py
 #Convert from fractional coordinates to orthogonal Cartesian coordinates in Angstrom
 #TODO: check if correct
+
 def fract_to_orthogonal(cellvectors, fraccoords):
     print("Inside fract_to_orthogonal")
     # Transposing cell vectors required here (otherwise nonsense for non-orthorhombic cells)
