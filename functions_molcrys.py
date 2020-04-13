@@ -95,8 +95,6 @@ def old_cell_extend_frag_withcenter(cellvectors, coords,elems):
     extended = np.zeros((len(coords) * numcells, 3))
     new_elems = []
     index = 0
-
-    print("cellvectors:", cellvectors)
     print("cellvectors[0:3, 0:3]", cellvectors[0:3, 0:3])
     for perm in permutations:
         print("perm:", perm)
@@ -209,7 +207,7 @@ def frag_define(orthogcoords,elems,cell_vectors,fragments,cell_angles=[], cell_l
             if ncharge == fragment.Nuccharge:
                 printdebug("Found match. ncharge is", ncharge)
                 if members not in fragment.fraglist:
-                    print("List not already there. Adding")
+                    printdebug("List not already there. Adding")
                     fragment.add_fraglist(members)
                     for m in members:
                         try:
@@ -221,7 +219,8 @@ def frag_define(orthogcoords,elems,cell_vectors,fragments,cell_angles=[], cell_l
             #    exit()
     print("")
 
-    # Too many fragments because we are counting every frag with an atom inside cell.
+    # Too many fragments in fragment.fraglist because we are counting every frag with an atom inside the cell.
+    #Step 3 will convert atom numbers to atom numbers for identical cell. Then identical frags can be deleted.
     print("After 2nd run:")
 
     for fi, fragment in enumerate(fragments):
@@ -235,9 +234,11 @@ def frag_define(orthogcoords,elems,cell_vectors,fragments,cell_angles=[], cell_l
     currtime=time.time()
     #3.  Going through fragment fraglists. Finding atoms that belong to another cell (i.e. large atom index).
     # Finding equivalent atom positions inside original cell
+    #Comparing all lists and removing identical lists created by Step 2
     #Updating fraglist list inside fragment object
     #Permutations for 3x3x3 cell
     print("Step 3. Finding equivalent positions of extended cell in original cell ")
+
     #The permutations used in extended cell above
     permutations = [[0, 0, 0], [0, 0, 1], [0, 1, 0], [1, 0, 0],
                     [0, 0, -1], [0, -1, 0], [-1, 0, 0],
@@ -323,6 +324,10 @@ def cellparamtovectors(cell_length,cell_angles):
 #Convert from fractional coordinates to orthogonal Cartesian coordinates in Angstrom
 #TODO: check if correct
 def fract_to_orthogonal(cellvectors, fraccoords):
+    print("Inside fract_to_orthogonal")
+    # Transposing cell vectors required here (otherwise nonsense for non-orthorhombic cells)
+    cellvectors = np.transpose(cellvectors)
+    print("Back-transposed cell_vectors:", cellvectors)
     orthog = []
     for i in fraccoords:
         x = i[0]*cellvectors[0][0] + i[1]*cellvectors[1][0] + i[2]*cellvectors[2][0]
