@@ -20,7 +20,7 @@ debugflag=True
 def printdebug(string,var=''):
     global debugflag
     if debugflag is True:
-        print(string,var)
+        print(BC.OKRED,string,var,BC.END)
 
 
 def print_yggdrasill_header():
