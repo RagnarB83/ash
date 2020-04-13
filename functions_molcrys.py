@@ -97,7 +97,7 @@ def old_cell_extend_frag_withcenter(cellvectors, coords,elems):
     index = 0
 
     #Transposing:
-    cell_vectors = np.transpose(cell_vectors)
+    cellvectors = np.transpose(cellvectors)
     print("Transposed cellvectors:", cellvectors)
 
     for perm in permutations:
