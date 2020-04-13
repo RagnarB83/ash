@@ -18,6 +18,7 @@ debugflag=False
 
 #Debug print. Behaves like print bug reads global debug var first
 def printdebug(string,var=''):
+    global debugflag
     if debugflag is True:
         print(string,var)
 
