@@ -64,13 +64,13 @@ def molcrys(cif_file=None, xtl_file=None, fragmentobjects=[], theory=None, numco
         exit()
 
     print("Cell parameters: {} {} {} {} {} {}".format(cell_length[0],cell_length[1], cell_length[2] , cell_angles[0], cell_angles[1], cell_angles[2]))
-    #Calling new cell vectors function instead of old
-    cell_vectors=cellbasis(cell_angles,cell_length)
-    print("cell_vectors:", cell_vectors)
-    # Transposing cell vectors required here (otherwise nonsense for non-orthorhombic cells)
-    cell_vectors = np.transpose(cell_vectors)
-    print("Transposed cell_vectors:", cell_vectors)
 
+    #Calculating cell vectors.
+    # Transposed cell vectors used here (otherwise nonsense for non-orthorhombic cells)
+    cell_vectors=np.transpose(cellbasis(cell_angles,cell_length))
+    print("cell_vectors:", cell_vectors)
+    #Used by cell_extend_frag_withcenter and frag_define
+    #fract_to_orthogonal uses original so it is transposed back
 
     #cell_vectors=cellparamtovectors(cell_length,cell_angles)
     print("Number of fractional coordinates in whole cell:", len(fullcellcoords))

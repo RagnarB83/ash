@@ -78,8 +78,8 @@ def print_time_rel_and_tot(timestampA,timestampB, modulename=''):
 
 #Extend cell to 3x3x3 (27 cells) so that original cell is in middle
 #Loosely based on https://pymolwiki.org/index.php/Supercell
-#This is used for fragment identification.
-def old_cell_extend_frag_withcenter(cellvectors, coords,elems):
+#This is used for fragment identification. Not for cluster-creation
+def cell_extend_frag_withcenter(cellvectors, coords,elems):
     numcells=27
     #All permutations for centered 3x3x3 extension
     permutations = [[0,0,0],[0,0,1],[0,1,0],[1,0,0],
@@ -128,7 +128,7 @@ def frag_define(orthogcoords,elems,cell_vectors,fragments,cell_angles=[], cell_l
     # Extend unit cell in all directions with original cell in center,
     # so that we have no dangling bonds for center unitcell
     print("Creating extended (3x3x3) unit cell for fragment identification")
-    temp_extended_coords, temp_extended_elems = old_cell_extend_frag_withcenter(cell_vectors, orthogcoords, elems)
+    temp_extended_coords, temp_extended_elems = cell_extend_frag_withcenter(cell_vectors, orthogcoords, elems)
     # Write XYZ-file with orthogonal coordinates for 3x3xcell
     write_xyzfile(temp_extended_elems, temp_extended_coords, "temp_cell_extended_coords")
     #write XTL file for 3x3x3 cell
@@ -416,6 +416,8 @@ def cell_extend_frag(cellvectors, coords,elems,cellextpars):
 #Loosely based on https://pymolwiki.org/index.php/Supercell
 #TODO: Delete
 def old_cell_extend_frag(cellvectors, coords,elems,cellextpars):
+    print("don't use")
+    exit()
     printdebug("cellextpars:", cellextpars)
     numcells=np.prod(cellextpars)
     # cellextpars: e.g. [2,2,2]
