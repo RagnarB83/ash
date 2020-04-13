@@ -91,6 +91,12 @@ def old_cell_extend_frag_withcenter(cellvectors, coords,elems):
                     [0, 1, -1], [1, -1, 0], [1, 0, -1],
                     [1, 1, -1], [1, -1, 1], [-1, 1, 1],
                     [-1, -1, 1], [-1,1,-1], [1,-1,-1], [1, 1, 1], [-1, -1, -1]]
+
+    numcells=1
+    permutations = [[0, 0, 0]]
+
+
+
     extended = np.zeros((len(coords) * numcells, 3))
     new_elems = []
     index = 0
