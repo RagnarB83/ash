@@ -97,10 +97,8 @@ def old_cell_extend_frag_withcenter(cellvectors, coords,elems):
     index = 0
 
     #Transposing cell vectors required here (otherwise nonsense for non-orthorhombic cells)
-    #But only sometimes. Not for NaH2PO4 but for Ru-allyl??
-
-    #cellvectors = np.transpose(cellvectors)
-    #print("Transposed cellvectors:", cellvectors)
+    cellvectors = np.transpose(cellvectors)
+    print("Transposed cellvectors:", cellvectors)
     print("cellvectors:", cellvectors)
     print("cellvectors[0:3, 0:3]", cellvectors[0:3, 0:3])
     for perm in permutations:
@@ -587,7 +585,7 @@ def fill_unitcell(cell_length,cell_angles,atomlabels,elems,coords,symmops):
         multoperation_x=1;sumoperation_x=0
         multoperation_y=1;sumoperation_y=0
         multoperation_z=1;sumoperation_z=0
-        #Removing blanks and return characters from strings
+        #Splitting by comma
         op_x=i.split(',')[0].replace(",","")
         op_y=i.split(',')[1].replace(",","")
         op_z = i.split(',')[2].replace(",", "")
