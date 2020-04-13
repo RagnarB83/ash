@@ -514,9 +514,8 @@ def geomeTRICOptimizer(theory=None,fragment=None, coordsystem='tric', frozenatom
 
     #ActiveRegion option where geomeTRIC only sees the QM part that is being optimized
     if ActiveRegion == True:
-        print("Active Region option Active!")
-        print("Note: Passing only active-region coordinates to geomeTRIC.")
-        print("Number of active atoms", len(actatoms))
+        print("Active Region option Active. Passing only active-region coordinates to geomeTRIC.")
+        print("Number of active atoms:", len(actatoms))
         actcoords, actelems = fragment.get_coords_for_atoms(actatoms)
         #Writing act-region coords (only) of Yggdrasill fragment to disk as XYZ file and reading into geomeTRIC
         write_xyzfile(actelems, actcoords, 'initialxyzfiletric')

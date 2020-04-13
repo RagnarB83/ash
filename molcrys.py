@@ -165,7 +165,7 @@ def molcrys(cif_file=None, xtl_file=None, fragmentobjects=[], theory=None, numco
     currtime=time.time()
     print("Atom charge assignments in Cluster done!")
     blankline()
-    print("Cluster:", Cluster.__dict__)
+    #print("Cluster:", Cluster.__dict__)
 
     #Cluster is now complete. Print info to file
     Cluster.print_system("Cluster-info_afterGas.ygg")
@@ -182,6 +182,7 @@ def molcrys(cif_file=None, xtl_file=None, fragmentobjects=[], theory=None, numco
     #Defining atomtypes in Cluster fragment for LJ interaction
     if shortrangemodel=='UFF':
         print("Using UFF forcefield for all elements")
+        print("UFF parameters:", UFFdict)
         #Using UFF_ prefix before element
         atomtypelist=['UFF_'+i for i in Cluster.elems]
         atomtypelist_uniq = np.unique(atomtypelist).tolist()
@@ -195,6 +196,7 @@ def molcrys(cif_file=None, xtl_file=None, fragmentobjects=[], theory=None, numco
     #Modified UFF forcefield with 0 parameter on H atom (avoids repulsion)
     elif shortrangemodel=='UFF_modH':
         print("Using UFF forcefield with modified H-parameter (0 values for H)")
+        print("UFF parameters:", UFFdict)
         #Using UFF_ prefix before element
         atomtypelist=['UFF_'+i for i in Cluster.elems]
         atomtypelist_uniq = np.unique(atomtypelist).tolist()

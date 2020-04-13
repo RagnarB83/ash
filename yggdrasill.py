@@ -839,9 +839,10 @@ class QMMMTheory:
 
             self.mmcoords=[self.coords[i] for i in self.mmatoms]
             self.mmelems=[self.elems[i] for i in self.mmatoms]
-            print("List of all atoms:", self.allatoms)
-            print("QM region:", self.qmatoms)
-            print("MM region", self.mmatoms)
+            #print("List of all atoms:", self.allatoms)
+            print("QM region ({}): {}".format(len(self.qmatoms),self.qmatoms))
+            print("MM region ({})".format(len(self.mmatoms)))
+            #print("MM region", self.mmatoms)
             blankline()
 
             #List of QM and MM labels
@@ -852,12 +853,12 @@ class QMMMTheory:
                 elif i in self.mmatoms:
                     self.hybridatomlabels.append('MM')
 
-            print("atomcharges:", atomcharges)
+            #print("atomcharges:", atomcharges)
             # Charges defined for regions
             self.qmcharges=[atomcharges[i] for i in self.qmatoms]
             print("self.qmcharges:", self.qmcharges)
             self.mmcharges=[atomcharges[i] for i in self.mmatoms]
-            print("self.mmcharges:", self.mmcharges)
+            #print("self.mmcharges:", self.mmcharges)
 
         if mm_theory != "":
             if self.embedding=="Elstat":
@@ -1852,7 +1853,6 @@ class Fragment:
         self.atomcharges = charges
     def update_atomtypes(self, types):
         self.atomtypes = types
-        print("here. len atomtypes", self.atomtypes)
     #Adding fragment-type info (used by molcrys, identifies whether atom is mainfrag, counterfrag1 etc.)
     def add_fragment_type_info(self,fragmentobjects):
         # Create list of fragment-type label-list
