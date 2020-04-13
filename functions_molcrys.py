@@ -96,7 +96,7 @@ def old_cell_extend_frag_withcenter(cellvectors, coords,elems):
     new_elems = []
     index = 0
 
-    #Transposing:
+    #Transposing cell vectors required here (otherwise nonsense for non-orthorhombic cells)
     cellvectors = np.transpose(cellvectors)
     print("Transposed cellvectors:", cellvectors)
 
