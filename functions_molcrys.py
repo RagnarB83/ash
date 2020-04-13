@@ -474,9 +474,10 @@ def read_ciffile(file):
                 if 'x' not in line:
                     symmopgrab_oldsyntax=False
                 else:
-                    line2=line.replace("'","")
+                    line2=line.replace("'","").replace(" ","")
                     print("line2", line2)
-                    symmops.append(line2.split(',')[0])
+                    symmops.append(line2.split('')[0])
+
                     #tempvar=line.split(',')
                     #print("tempvar:", tempvar)
                     #xit()
