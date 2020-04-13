@@ -97,8 +97,10 @@ def old_cell_extend_frag_withcenter(cellvectors, coords,elems):
     index = 0
 
     #Transposing cell vectors required here (otherwise nonsense for non-orthorhombic cells)
-    cellvectors = np.transpose(cellvectors)
-    print("Transposed cellvectors:", cellvectors)
+    #But only sometimes. Not for NaH2PO4 but for Ru-allyl??
+
+    #cellvectors = np.transpose(cellvectors)
+    #print("Transposed cellvectors:", cellvectors)
 
     for perm in permutations:
         shift = cellvectors[0:3, 0:3] * perm
