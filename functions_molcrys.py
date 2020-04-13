@@ -100,9 +100,7 @@ def cell_extend_frag_withcenter(cellvectors, coords,elems):
         shift = shift[:, 0] + shift[:, 1] + shift[:, 2]
         #print("Permutation:", perm, "shift:", shift)
         for d, el in zip(coords, elems):
-            printdebug("d:", d)
             new_pos=d+shift
-            printdebug("new_pos:", new_pos)
             extended[index] = new_pos
             new_elems.append(el)
             index+=1
@@ -642,7 +640,6 @@ def fill_unitcell(cell_length,cell_angles,atomlabels,elems,coords,symmops):
                         sumoperation_z = -0.5
                         printdebug("sumoperation_z:", sumoperation_z)
             for c in coords:
-                print(c)
                 c_new=[multoperation_x*c[0]+sumoperation_x,multoperation_y*c[1]+sumoperation_y,multoperation_z*c[2]+sumoperation_z]
                 #Translating coordinates so always positive
                 if c_new[0] < 0:
