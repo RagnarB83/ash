@@ -111,7 +111,7 @@ def old_cell_extend_frag_withcenter(cellvectors, coords,elems):
 #3. Find all whole fragments of the atoms in original cell but capped with atoms from extended cell
 #4. For fragment-atoms outside original cell, find equivalent atoms in original cell.
 #TODO: Skip step1?
-def frag_define(orthogcoords,elems,cell_vectors,fragments):
+def frag_define(orthogcoords,elems,cell_vectors,fragments,cell_angles=[], cell_length=[]):
     blankline()
     print("Frag_Define: Defining fragments of unit cell")
     origtime=time.time()
@@ -123,6 +123,9 @@ def frag_define(orthogcoords,elems,cell_vectors,fragments):
     temp_extended_coords, temp_extended_elems = old_cell_extend_frag_withcenter(cell_vectors, orthogcoords, elems)
     # Write XYZ-file with orthogonal coordinates for 3x3xcell
     write_xyzfile(temp_extended_elems, temp_extended_coords, "temp_cell_extended_coords")
+    #write XTL file for 3x3x3 cell
+    write_xtl(cell_length*3, cell_angles, temp_extended_elems, temp_extended_coords, "temp_cell_extended_coords.xtl")
+
     blankline()
     # 1. Divide unitcell into fragments (distance-based) if whole fragments found
     print("Step 1. Dividing original cell into fragments")
