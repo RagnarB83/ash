@@ -187,6 +187,7 @@ def frag_define(orthogcoords,elems,cell_vectors,fragments):
         printdebug("members:", members)
         for fragment in fragments:
             el_list = [temp_extended_elems[i] for i in members]
+            printdebug("el_list:", el_list)
             ncharge = nucchargelist(el_list)
             if ncharge == fragment.Nuccharge:
                 printdebug("Found match. ncharge is", ncharge)
