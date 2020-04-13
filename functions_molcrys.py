@@ -476,7 +476,7 @@ def read_ciffile(file):
                 else:
                     line2=line.replace("'","").replace(" ","")
                     print("line2", line2)
-                    symmops.append(line2.split('')
+                    symmops.append(line2)
 
                     #tempvar=line.split(',')
                     #print("tempvar:", tempvar)
