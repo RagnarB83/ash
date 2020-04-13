@@ -181,14 +181,13 @@ def frag_define(orthogcoords,elems,cell_vectors,fragments):
     #2.  Using extended cell find connected members of unassigned fragments
     print("Step 2. Using extended cell to find connected members of unassigned fragments")
     for m in unassigned:
-        printdebug("Trying unassigned m :", m)
+        printdebug("Trying unassigned m : {}  ({})".format(m,elems[m]))
         members = get_molecule_members_loop_np2(temp_extended_coords, temp_extended_elems, 99,
                                                 settings_molcrys.scale, settings_molcrys.tol, membs=m)
         el_list = [temp_extended_elems[i] for i in members]
-        printdebug("el_list:", el_list)
         printdebug("members:", members)
+        printdebug("el_list:", el_list)
         for fragment in fragments:
-            el_list = [temp_extended_elems[i] for i in members]
             printdebug("el_list:", el_list)
             ncharge = nucchargelist(el_list)
             if ncharge == fragment.Nuccharge:
