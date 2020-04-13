@@ -165,7 +165,7 @@ def frag_define(orthogcoords,elems,cell_vectors,fragments):
                 unassigned.append(members)
 
     for fi, fragment in enumerate(fragments):
-        print("Fragment {} has {} fraglists".format(fi, len(fragment.fraglist)))
+        print("Fragment {} ({}) has {} fraglists".format(fi, fragment.Name, len(fragment.fraglist)))
         print(fragment.fraglist)
         print("")
     #Sorting and trimming unassigned list of fragments
@@ -206,7 +206,7 @@ def frag_define(orthogcoords,elems,cell_vectors,fragments):
     print("After 2nd run:")
 
     for fi, fragment in enumerate(fragments):
-        print("Fragment {} has {} fraglists".format(fi, len(fragment.fraglist)))
+        print("Fragment {} ({}) has {} fraglists".format(fi, fragment.Name, len(fragment.fraglist)))
         print(fragment.fraglist)
         print("")
 
