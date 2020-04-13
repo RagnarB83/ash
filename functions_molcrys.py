@@ -212,6 +212,7 @@ def frag_define(orthogcoords,elems,cell_vectors,fragments,cell_angles=[], cell_l
             if ncharge == fragment.Nuccharge:
                 printdebug("Found match. ncharge is", ncharge)
                 if members not in fragment.fraglist:
+                    print("List not already there. Adding")
                     fragment.add_fraglist(members)
                     for m in members:
                         try:
