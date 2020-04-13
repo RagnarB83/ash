@@ -20,10 +20,11 @@ def molcrys(cif_file=None, xtl_file=None, fragmentobjects=[], theory=None, numco
             clusterradius=None, shortrangemodel='UFF'):
 
     banner="""
+    THE
 ╔╦╗╔═╗╦  ╔═╗╦═╗╦ ╦╔═╗
 ║║║║ ║║  ║  ╠╦╝╚╦╝╚═╗
 ╩ ╩╚═╝╩═╝╚═╝╩╚═ ╩ ╚═╝
-    
+    MODULE
     """
     print_yggdrasill_header()
     print(banner)
