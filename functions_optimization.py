@@ -543,6 +543,7 @@ def geomeTRICOptimizer(theory=None,fragment=None, coordsystem='tric', frozenatom
         def clearCalcs(self):
             print("ClearCalcs option chosen by geomeTRIC. Not sure why")
         def calc(self,coords,tmp):
+            blankline()
             #Updating coords in object
             #Need to combine with rest of full-syme coords I think
             self.M.xyzs[0] = coords.reshape(-1, 3) * constants.bohr2ang
