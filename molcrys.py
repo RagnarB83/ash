@@ -25,6 +25,7 @@ def molcrys(cif_file=None, xtl_file=None, fragmentobjects=[], theory=None, numco
 ╩ ╩╚═╝╩═╝╚═╝╩╚═ ╩ ╚═╝
     
     """
+    print_yggdrasill_header()
     print(banner)
     #Here assuming theory can only be ORCA for now
     orcadir=theory.orcadir
