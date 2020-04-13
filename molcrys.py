@@ -66,8 +66,11 @@ def molcrys(cif_file=None, xtl_file=None, fragmentobjects=[], theory=None, numco
     print("Cell parameters: {} {} {} {} {} {}".format(cell_length[0],cell_length[1], cell_length[2] , cell_angles[0], cell_angles[1], cell_angles[2]))
     #Calling new cell vectors function instead of old
     cell_vectors=cellbasis(cell_angles,cell_length)
-    #cell_vectors=cellparamtovectors(cell_length,cell_angles)
     print("cell_vectors:", cell_vectors)
+    #Transposing:
+    cell_vectors = np.transpose(cell_vectors)
+    print("cell_vectors:", cell_vectors)
+    #cell_vectors=cellparamtovectors(cell_length,cell_angles)
     print("Number of fractional coordinates in whole cell:", len(fullcellcoords))
     #print_coordinates(elems, np.array(fullcellcoords), title="Fractional coordinates")
     #print_coords_all(fullcellcoords,elems)
