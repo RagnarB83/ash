@@ -330,7 +330,7 @@ def fract_to_orthogonal(cellvectors, fraccoords):
     print("Inside fract_to_orthogonal")
     # Transposing cell vectors required here (otherwise nonsense for non-orthorhombic cells)
     cellvectors = np.transpose(cellvectors)
-    print("Back-transposed cell_vectors:", cellvectors)
+    print("Back-transposed cell_vectors used by fract_to_orthogonal:", cellvectors)
     orthog = []
     for i in fraccoords:
         x = i[0]*cellvectors[0][0] + i[1]*cellvectors[1][0] + i[2]*cellvectors[2][0]
