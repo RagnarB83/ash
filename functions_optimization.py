@@ -562,9 +562,8 @@ def geomeTRICOptimizer(theory=None,fragment=None, coordsystem='tric', frozenatom
 
                 #PRINTING ACTIVE GEOMETRY IN EACH GEOMETRIC ITERATION
                 print("Current geometry (Å) in iteration {} (active region)".format(self.iteration_count))
-                print("--------------------------")
+                print("---------------------------------------------------------------")
                 print_coords_for_atoms(full_coords, fragment.elems, actatoms)
-                print("--------------------------")
 
                 #Request Engrad calc for full system
                 E, Grad = self.theory.run(current_coords=full_coords, elems=fragment.elems, Grad=True)
