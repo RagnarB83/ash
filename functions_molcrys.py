@@ -95,18 +95,14 @@ def cell_extend_frag_withcenter(cellvectors, coords,elems):
     extended = np.zeros((len(coords) * numcells, 3))
     new_elems = []
     index = 0
-    print("cellvectors[0:3, 0:3]", cellvectors[0:3, 0:3])
     for perm in permutations:
-        print("perm:", perm)
         shift = cellvectors[0:3, 0:3] * perm
-        print("shift:", shift)
         shift = shift[:, 0] + shift[:, 1] + shift[:, 2]
-        print("shift:", shift)
         #print("Permutation:", perm, "shift:", shift)
         for d, el in zip(coords, elems):
-            print("d:", d)
+            printdebug("d:", d)
             new_pos=d+shift
-            print("new_pos:", new_pos)
+            printdebug("new_pos:", new_pos)
             extended[index] = new_pos
             new_elems.append(el)
             index+=1
@@ -599,9 +595,6 @@ def fill_unitcell(cell_length,cell_angles,atomlabels,elems,coords,symmops):
         op_y=i.split(',')[1].replace(",","")
         op_z = i.split(',')[2].replace(",", "")
         #op_z=i.split(',')[2].replace(",","").replace(" ","").replace("\n","")
-        print("op_x:", op_x)
-        print("op_y:", op_y)
-        print("op_z:", op_z)
         if len(op_x)==1 and len(op_y)==1 and len(op_z)==1:
             for c in coords:
                 if c[0] < 0:
@@ -616,15 +609,11 @@ def fill_unitcell(cell_length,cell_angles,atomlabels,elems,coords,symmops):
                     cnew_z = 1 + c[2]
                 else:
                     cnew_z = c[2]
-                print("[cnew_x,cnew_y,cnew_z]:", [cnew_x,cnew_y,cnew_z])
                 fullcell.append([cnew_x,cnew_y,cnew_z])
         else:
             op_x_split=op_x.split('x')
-            print("op_x_split:", op_x_split)
             op_y_split = op_y.split('y')
-            print("op_y_split:", op_y_split)
             op_z_split = op_z.split('z')
-            print("op_z_split:", op_z_split)
             for xj in op_x_split:
                 if len(xj) > 0:
                     if xj =='-':
@@ -645,17 +634,16 @@ def fill_unitcell(cell_length,cell_angles,atomlabels,elems,coords,symmops):
                 if len(zj) > 0:
                     if zj =='-':
                         multoperation_z=-1
-                        print("multoperation_z:", multoperation_z)
+                        printdebug("multoperation_z:", multoperation_z)
                     elif zj == '+1/2':
                         sumoperation_z = 0.5
-                        print("sumoperation_z:", sumoperation_z)
+                        printdebug("sumoperation_z:", sumoperation_z)
                     elif zj == '-1/2':
                         sumoperation_z = -0.5
-                        print("sumoperation_z:", sumoperation_z)
+                        printdebug("sumoperation_z:", sumoperation_z)
             for c in coords:
                 print(c)
                 c_new=[multoperation_x*c[0]+sumoperation_x,multoperation_y*c[1]+sumoperation_y,multoperation_z*c[2]+sumoperation_z]
-                print("c_new:", c_new)
                 #Translating coordinates so always positive
                 if c_new[0] < 0:
                     cnew_x=1+c_new[0]
@@ -669,7 +657,6 @@ def fill_unitcell(cell_length,cell_angles,atomlabels,elems,coords,symmops):
                     cnew_z = 1 + c_new[2]
                 else:
                     cnew_z = c_new[2]
-                print("[cnew_x,cnew_y,cnew_z]  2", [cnew_x,cnew_y,cnew_z])
                 fullcell.append([cnew_x,cnew_y,cnew_z])
     return fullcell,elems*len(symmops)
 
