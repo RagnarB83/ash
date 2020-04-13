@@ -234,11 +234,12 @@ def molcrys(cif_file=None, xtl_file=None, fragmentobjects=[], theory=None, numco
     # Defining QM region. Should be the mainfrag at approx origin
     Centralmainfrag = fragmentobjects[0].clusterfraglist[0]
     print("Centralmainfrag:", Centralmainfrag)
-
+    blankline()
 
 
     #SP-LOOP FOR MAINFRAG
     for SPLoopNum in range(0,SPLoopMaxIter):
+        blankline()
         print("This is Charge-Iteration Loop number", SPLoopNum)
         atomcharges=[]
         print_coords_for_atoms(Cluster.coords,Cluster.elems,Centralmainfrag)
