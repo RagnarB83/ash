@@ -529,7 +529,7 @@ def read_ciffile(file):
                 if 'x' not in line:
                     symmopgrab_oldsyntax=False
                 else:
-                    line2=line.replace("'","").replace(" ","")
+                    line2=line.replace("'","").replace(" ","").replace("\n","")
                     print("line2", line2)
                     symmops.append(line2)
 
@@ -587,9 +587,11 @@ def fill_unitcell(cell_length,cell_angles,atomlabels,elems,coords,symmops):
         multoperation_x=1;sumoperation_x=0
         multoperation_y=1;sumoperation_y=0
         multoperation_z=1;sumoperation_z=0
-        op_x=i.split(',')[0].replace(",","").replace(" ","").replace("\n","")
-        op_y=i.split(',')[1].replace(",","").replace(" ","").replace("\n","")
-        op_z=i.split(',')[2].replace(",","").replace(" ","").replace("\n","")
+        #Removing blanks and return characters from strings
+        op_x=i.split(',')[0].replace(",","")
+        op_y=i.split(',')[1].replace(",","")
+        op_z = i.split(',')[2].replace(",", "")
+        #op_z=i.split(',')[2].replace(",","").replace(" ","").replace("\n","")
         print("op_x:", op_x)
         print("op_y:", op_y)
         print("op_z:", op_z)
