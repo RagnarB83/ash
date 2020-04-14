@@ -329,7 +329,7 @@ class NonBondedTheory:
         # If qmatoms list passed to Nonbonded theory then we are doing QM/MM
         self.qmatoms=qmatoms
         print("Defining Nonbonded Theory")
-        print("qmatoms", self.qmatoms)
+        print("qmatoms:", self.qmatoms)
 
         self.codeversion=codeversion
 
@@ -351,6 +351,12 @@ class NonBondedTheory:
     def calculate_LJ_pairpotentials(self,combination_rule='geometric', qmatoms=[]):
         #If qmatoms passed list passed then QM/MM and QM-QM pairs will be ignored from pairlist
         print("Inside calculate_LJ_pairpotentials")
+        #Todo: Figure out if we can find out if qmatoms without being passed
+        #Todo: Do calculate_LJ_pairpotentials as part of run instead?
+        if len(qmatoms) == 0:
+            print("WARNING: qmatoms list is empty")
+            print("This is fine if this is a pure MM job")
+            print("If QM/MM job, then qmatoms list should be passed to NonBonded theory")
         print("qmatoms:", qmatoms)
 
         import math
