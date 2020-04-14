@@ -528,7 +528,7 @@ class NonBondedTheory:
                 print(LJCoulombv2.__doc__)
                 print("----------")
             except:
-                print("Fortran library LJCoulombv1 not found! Make sure you have run the installation script.")
+                print("Fortran library LJCoulombv2 not found! Make sure you have run the installation script.")
             self.MMEnergy, self.MMGradient, self.LJenergy, self.Coulombchargeenergy =\
                 LJCoulombv2(full_coords, self.epsij, self.sigmaij, charges, connectivity=connectivity)
 
