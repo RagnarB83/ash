@@ -324,12 +324,17 @@ def print_time_rel_and_tot_color(timestampA,timestampB, modulename=''):
 
 # Simple nonbonded MM theory. Charges and LJ-potentials
 class NonBondedTheory:
-    def __init__(self, charges = [], atomtypes=[], forcefield=[], LJcombrule='geometric', codeversion='py', qmatoms=[]):
+    def __init__(self, charges = [], atomtypes=[], forcefield=[], LJcombrule='geometric', codeversion='py'):
+        #Atom types
+        self.atomtypes=atomtypes
+        self.numatoms = len(self.atomtypes)
+        self.LJcombrule=LJcombrule
 
+        #Todo: Delete
         # If qmatoms list passed to Nonbonded theory then we are doing QM/MM
-        self.qmatoms=qmatoms
-        print("Defining Nonbonded Theory")
-        print("qmatoms:", self.qmatoms)
+        #self.qmatoms=qmatoms
+        #print("Defining Nonbonded Theory")
+        #print("qmatoms:", self.qmatoms)
 
         self.codeversion=codeversion
 
@@ -338,17 +343,23 @@ class NonBondedTheory:
         #Possibly have self.mm_charges here also??
         #Read MM forcefield.
         self.forcefield=forcefield
-        #Atom types
-        self.atomtypes=atomtypes
+
+        #Initializing sigmaij and epsij arrays. Will be filled by calculate_LJ_pairpotentials
+        self.sigmaij=np.zeros((self.numatoms, self.numatoms))
+        self.epsij=np.zeros((self.numatoms, self.numatoms))
 
         #Check if LJparameters in forcefield. Then do pairpotentials
-        try:
-            LJtest = len([i.LJparameters for i in forcefield.values()])
-            if LJtest > 0:
-                self.calculate_LJ_pairpotentials(LJcombrule, self.qmatoms)
-        except:
-            pass
-    def calculate_LJ_pairpotentials(self,combination_rule='geometric', qmatoms=[]):
+        #try:
+        #    LJtest = len([i.LJparameters for i in forcefield.values()])
+        #    if LJtest > 0:
+        #        self.calculate_LJ_pairpotentials(LJcombrule, self.qmatoms)
+        #except:
+        #    pass
+    def calculate_LJ_pairpotentials(self, qmatoms=[]):
+        #Deleted combination_rule argument. Now using variable assigned to object
+
+        combination_rule=self.LJcombrule
+
         #If qmatoms passed list passed then QM/MM and QM-QM pairs will be ignored from pairlist
         print("Inside calculate_LJ_pairpotentials")
         #Todo: Figure out if we can find out if qmatoms without being passed
@@ -483,8 +494,20 @@ class NonBondedTheory:
         self.atom_charges = charges
         print("Charges are now:", charges)
     #Provide specific coordinates (MM region) and charges (MM region) upon run
-    def run(self, full_coords=[], mm_coords=[], charges=[], connectivity=[], Coulomb=True, Grad=True):
+    def run(self, full_coords=[], mm_coords=[], charges=[], connectivity=[], Coulomb=True, Grad=True, qmatoms=[]):
 
+        #If qmatoms list provided to run (probably by QM/MM object) then we are doing QM/MM
+        #QM-QM pairs will be skipped in LJ
+        #Todo: Check Coulomb part . I guess charges have been set to 0 already
+
+        #Testing if self.sigmaij array has been assigned or not. If not calling calculate_LJ_pairpotentials
+        #Passing qmatoms over so pairs can be skipped
+        #This sets self.sigmaij and self.epsij and also self.LJpairpotentials
+        if np.count_nonzero(self.sigmaij) == 0:
+            self.calculate_LJ_pairpotentials(qmatoms)
+
+        if len(self.LJpairpotentials) > 0:
+            LJ=True
 
         #If charges not provided to run function. Use object charges
         if len(charges)==0:
@@ -504,8 +527,6 @@ class NonBondedTheory:
         self.Coulombchargegradient=[]
         self.LJgradient=[]
 
-        if len(self.LJpairpotentials) > 0:
-            LJ=True
 
         #Slow Python version or fast Fortran version
         if self.codeversion=='py':
@@ -531,6 +552,8 @@ class NonBondedTheory:
                 self.MMGradient = self.Coulombchargegradient+self.LJgradient
         #Combined Coulomb+LJ Python version. Slow
         elif self.codeversion=='py_comb':
+            print("not active")
+            exit()
             self.MMenergy, self.MMgradient = LJCoulpy(full_coords, self.atomtypes, charges, self.LJpairpotentials,
                                                           connectivity=connectivity)
         elif self.codeversion=='f2py':
@@ -1009,7 +1032,10 @@ class QMMMTheory:
             print("Running MM theory as part of QM/MM.")
             print("Using MM on full system. Charges for QM region {} have to be set to zero ".format(self.qmatoms))
             printdebug("Charges for full system is: ", self.charges)
-            self.MMEnergy, self.MMGradient= self.mm_theory.run(full_coords=current_coords, mm_coords=self.mmcoords, charges=self.charges, connectivity=self.connectivity)
+            print("Passing QM atoms to MMtheory run so that QM-QM pairs are skipped in pairlist")
+            self.MMEnergy, self.MMGradient= self.mm_theory.run(full_coords=current_coords, mm_coords=self.mmcoords,
+                                                               charges=self.charges, connectivity=self.connectivity
+                                                               qmatoms=self.qmatoms)
             #self.MMEnergy=self.mm_theory.MMEnergy
             #if Grad==True:
             #    self.MMGrad = self.mm_theory.MMGrad
