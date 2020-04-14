@@ -76,21 +76,21 @@ def LJCoulombv2(coords,epsij, sigmaij, charges, connectivity=[]):
     penergy, LJenergy, coulenergy, grad = LJCoulombv2.ljcoulegrad(coords, rc, epsij, sigmaij, charges, grad, dim=3, natom=numatoms)
     return penergy, grad, LJenergy, coulenergy
 
-def LennardJones(coords,atomtypes, LJPairpotentials, connectivity=[], qmatoms=[]):
+def LennardJones(coords, epsij, sigmaij, connectivity=[], qmatoms=[]):
     print("Inside Python Lennard-Jones function")
-    print("qmatoms:", qmatoms)
-    print("QM atom pairs are skipped if qmatoms list provided")
-    print("connectivity: ", connectivity)
-    print("Calculating LJ pairs based on connectivity if present")
-    print("Note: This means that if two LJ sites are part of same molecular fragment then LJ is not calculated")
-    print("Note: Not correct behaviour for CHARMM/Amber etc")
-    print("Note: Will give correct behaviour for molcrys-QM/MM as QM fragment will not interact with itself")
+    #print("qmatoms:", qmatoms)
+    #print("QM atom pairs are skipped if qmatoms list provided")
+    #print("connectivity: ", connectivity)
+    #print("Calculating LJ pairs based on connectivity if present")
+    #print("Note: This means that if two LJ sites are part of same molecular fragment then LJ is not calculated")
+    #print("Note: Not correct behaviour for CHARMM/Amber etc")
+    #print("Note: Will give correct behaviour for molcrys-QM/MM as QM fragment will not interact with itself")
 
 
-    if len(connectivity)==0:
-        print("Warning!. No connectivity list present. Will treat all LJ pairs.")
-    else:
-        print(len(connectivity)," connectivity lists present")
+    #if len(connectivity)==0:
+    #    print("Warning!. No connectivity list present. Will treat all LJ pairs.")
+    #else:
+    #    print(len(connectivity)," connectivity lists present")
 
     atomlist=list(range(0, len(coords)))
     #LJ energy
@@ -106,53 +106,53 @@ def LennardJones(coords,atomtypes, LJPairpotentials, connectivity=[], qmatoms=[]
                 #Skipping identical pairs
                 if i < j:
                     #Skipping if atom pair in qmatoms list. I.e. not calculate QM-QM LJ terms
-                    if all(x in qmatoms for x in [i, j]) == True:
-                        print("Skipping QM-pair:", i,j)
-                        skip=True
-                    for l in LJPairpotentials:
+                    #if all(x in qmatoms for x in [i, j]) == True:
+                    #    print("Skipping QM-pair:", i,j)
+                    #    continue
+                    #for l in LJPairpotentials:
                         #print("l:", l)
                         #This checks if i-j pair exists in LJPairpotentials list:
-                        if set([atomtypes[i], atomtypes[j]]) == set([l[0],l[1]]):
+                    #    if set([atomtypes[i], atomtypes[j]]) == set([l[0],l[1]]):
                         #if atomtypes[i] in l and atomtypes[j] in l:
                             #print("COUNTING!!! unless...")
                             #Now checking connectivity for whether we should calculate LJ energy for pair or not
                             #Todo: This only makes sense in a QM/MM scheme with frozen MM?
-                            skip=False
-                            for conn in connectivity:
+                    #        skip=False
+                    #        for conn in connectivity:
                                 #print("conn:", conn)
                                 #If i,j in same list
-                                if all(x in conn for x in [i, j]) == True:
+                    #            if all(x in conn for x in [i, j]) == True:
                                     #print("Atoms connected. skipping ")
-                                    skip=True
-                                    continue
-                            if skip == False:
-                                #print("i : {}  and j : {}".format(i,j))
-                                #print("atomtype_i : {}  and atomtype_j : {}".format(atomtypes[i],atomtypes[j]))
-                                sigma=l[2]
-                                eps=l[3]
-                                pairdistance = distance(coords[i], coords[j])
-                                #print("sigma, eps, pairdistance", sigma,eps,pairdistance)
-                                V_LJ=4*eps*((sigma/pairdistance)**12-(sigma/pairdistance)**6)
-                                #print("V_LJ: {} kcal/mol  V_LJ: {} au:".format(V_LJ,V_LJ/constants.harkcal))
-                                energy+=V_LJ
-                                #print("energy: {} kcal/mol  energy: {} au:".format(energy, energy / constants.harkcal))
-                                #print("------------------------------")
-                                #Typo in http://localscf.com/localscf.com/LJPotential.aspx.html ??
-                                #Using http://www.courses.physics.helsinki.fi/fys/moldyn/lectures/L4.pdf
-                                #TODO: Equation needs to be double-checked for correctness. L4.pdf equation ambiguous
-                                #Check this: http://people.virginia.edu/~lz2n/mse627/notes/Potentials.pdf
-                                LJgrad_const=(24*eps*((sigma/pairdistance)**6-2*(sigma/pairdistance)**12))*(1/(pairdistance**2))
-                                #print("LJgrad_const:", LJgrad_const)
-                                gr=np.array([(coords[i][0] - coords[j][0])*LJgrad_const, (coords[i][1] - coords[j][1])*LJgrad_const,
+                    #                skip=True
+                    #                continue
+                    #if skip == False:
+                    #print("i : {}  and j : {}".format(i,j))
+                    #print("atomtype_i : {}  and atomtype_j : {}".format(atomtypes[i],atomtypes[j]))
+                    #sigma=l[2]
+                    #eps=l[3]
+                    pairdistance = distance(coords[i], coords[j])
+                    #print("sigma, eps, pairdistance", sigma,eps,pairdistance)
+                    V_LJ=4*epsij[i,j]*((sigmaij[i,j]/pairdistance)**12-(sigmaij[i,j]/pairdistance)**6)
+                    #print("V_LJ: {} kcal/mol  V_LJ: {} au:".format(V_LJ,V_LJ/constants.harkcal))
+                    energy+=V_LJ
+                    #print("energy: {} kcal/mol  energy: {} au:".format(energy, energy / constants.harkcal))
+                    #print("------------------------------")
+                    #Typo in http://localscf.com/localscf.com/LJPotential.aspx.html ??
+                    #Using http://www.courses.physics.helsinki.fi/fys/moldyn/lectures/L4.pdf
+                    #TODO: Equation needs to be double-checked for correctness. L4.pdf equation ambiguous
+                    #Check this: http://people.virginia.edu/~lz2n/mse627/notes/Potentials.pdf
+                    LJgrad_const=(24*epsij[i,j]*((sigmaij[i,j]/pairdistance)**6-2*(sigmaij[i,j]/pairdistance)**12))*(1/(pairdistance**2))
+                    #print("LJgrad_const:", LJgrad_const)
+                    gr=np.array([(coords[i][0] - coords[j][0])*LJgrad_const, (coords[i][1] - coords[j][1])*LJgrad_const,
                                      (coords[i][2] - coords[j][2])*LJgrad_const])
-                                #print("gr:", gr)
-                                gradient[i] += gr
-                                gradient[j] -= gr
-                                #print("gradient[i]:", gradient[i])
-                                #print("gradient[j]:", gradient[j])
-                                #print("gradients in hartree/Bohr:")
-                                #print("gradient[i]:", gradient[i]* (1/constants.harkcal) / constants.ang2bohr)
-                                #print("gradient[j]:", gradient[j]* (1/constants.harkcal) / constants.ang2bohr)
+                    #print("gr:", gr)
+                    gradient[i] += gr
+                    gradient[j] -= gr
+                    #print("gradient[i]:", gradient[i])
+                    #print("gradient[j]:", gradient[j])
+                    #print("gradients in hartree/Bohr:")
+                    #print("gradient[i]:", gradient[i]* (1/constants.harkcal) / constants.ang2bohr)
+                    #print("gradient[j]:", gradient[j]* (1/constants.harkcal) / constants.ang2bohr)
     #Convert gradient from kcal/mol per Å to hartree/Bohr
     final_gradient=gradient * (1/constants.harkcal) / constants.ang2bohr
     print("LJ gradient (hartree/Bohr):", final_gradient)

@@ -324,7 +324,12 @@ def print_time_rel_and_tot_color(timestampA,timestampB, modulename=''):
 
 # Simple nonbonded MM theory. Charges and LJ-potentials
 class NonBondedTheory:
-    def __init__(self, charges = [], atomtypes=[], forcefield=[], LJcombrule='geometric', codeversion='py'):
+    def __init__(self, charges = [], atomtypes=[], forcefield=[], LJcombrule='geometric', codeversion='py', qmatoms=[]):
+
+        # If qmatoms list passed to Nonbonded theory then we are doing QM/MM
+        self.qmatoms=qmatoms
+        print("Defining Nonbonded Theory")
+        print("qmatoms", self.qmatoms)
 
         self.codeversion=codeversion
 
@@ -340,10 +345,14 @@ class NonBondedTheory:
         try:
             LJtest = len([i.LJparameters for i in forcefield.values()])
             if LJtest > 0:
-                self.calculate_LJ_pairpotentials(LJcombrule)
+                self.calculate_LJ_pairpotentials(LJcombrule, self.qmatoms)
         except:
             pass
-    def calculate_LJ_pairpotentials(self,combination_rule='geometric'):
+    def calculate_LJ_pairpotentials(self,combination_rule='geometric', qmatoms=[]):
+        #If qmatoms passed list passed then QM/MM and QM-QM pairs will be ignored from pairlist
+        print("Inside calculate_LJ_pairpotentials")
+        print("qmatoms:", qmatoms)
+
         import math
         print("Defining Lennard-Jones pair potentials")
         #Printlevel. Todo: Make more general
@@ -436,6 +445,7 @@ class NonBondedTheory:
 
         #Create numatomxnumatom array of eps and sigma
         #Todo: rewrite in Fortran like in Abin.
+        #Todo: Add skipping rules for connectivity and QMatoms here instead?
         numatoms=len(self.atomtypes)
         self.sigmaij = np.zeros((numatoms, numatoms))
         self.epsij = np.zeros((numatoms, numatoms))
@@ -445,6 +455,10 @@ class NonBondedTheory:
         CheckpointTime = time.time()
         for i in range(numatoms):
             for j in range(numatoms):
+                #Skipping if i-j pair in qmatoms list. I.e. not doing QM-QM LJ calc.
+                if all(x in qmatoms for x in [i, j]) == True:
+                    print("Skipping i-j pair", i,j, " as these are QM atoms")
+                    continue
                 for ljpot in self.LJpairpotentials:
                     if self.atomtypes[i] == ljpot[0] and self.atomtypes[j] == ljpot[1]:
                         #print("Here")
@@ -500,7 +514,9 @@ class NonBondedTheory:
                 blankline()
             # NOTE: Lennard-Jones should  calculate both MM-MM and QM-MM LJ interactions. Full coords necessary.
             if LJ==True:
-                self.LJenergy,self.LJgradient = LennardJones(full_coords,self.atomtypes, self.LJpairpotentials, connectivity=connectivity)
+                #LennardJones(coords, epsij, sigmaij, connectivity=[], qmatoms=[])
+                #self.LJenergy,self.LJgradient = LennardJones(full_coords,self.atomtypes, self.LJpairpotentials, connectivity=connectivity)
+                self.LJenergy,self.LJgradient = LennardJones(full_coords,self.epsij,self.sigmaij)
                 #print("Lennard-Jones Energy (au):", self.LJenergy)
                 #print("Lennard-Jones Energy (kcal/mol):", self.LJenergy*constants.harkcal)
             self.MMEnergy = self.Coulombchargeenergy+self.LJenergy
