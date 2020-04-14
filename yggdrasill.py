@@ -447,7 +447,7 @@ class NonBondedTheory:
                     #Dict using two keys (actually a tuple of two keys)
                     self.LJpairpotdict[(at_i,at_j)] = [sigma, epsilon]
                     #print(self.LJpairpotentials)
-        print_time_rel(CheckpointTime)
+        print_time_rel(CheckpointTime, modulename="pairpotentials")
         #Remove redundant pair potentials
         CheckpointTime = time.time()
         for acount, pairpot_a in enumerate(self.LJpairpotentials):
@@ -487,7 +487,7 @@ class NonBondedTheory:
                         self.epsij[i, j] = ljpot[3]
         print("self.sigmaij:", self.sigmaij)
         print("self.epsij:", self.epsij)
-        print_time_rel(CheckpointTime)
+        print_time_rel(CheckpointTime, modulename="pairpot arrays")
 
     def update_charges(self,charges):
         print("Updating charges.")
