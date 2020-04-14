@@ -76,9 +76,13 @@ def LJCoulombv2(coords,epsij, sigmaij, charges, connectivity=[]):
     penergy, LJenergy, coulenergy, grad = LJCoulombv2.ljcoulegrad(coords, rc, epsij, sigmaij, charges, grad, dim=3, natom=numatoms)
     return penergy, grad, LJenergy, coulenergy
 
-def LennardJones(coords,atomtypes, LJPairpotentials, connectivity=[]):
+def LennardJones(coords,atomtypes, LJPairpotentials, connectivity=[], qmatoms=[]):
     print("Inside Lennard_jones function")
     print("Calculating LJ pairs based on connectivity")
+    print("Note: This means that if two LJ sites are part of same molecular fragment then LJ is not calculated")
+    print("Note: Not correct behaviour for CHARMM/Amber etc")
+    print("Note: Will give correct behaviour for molcrys-QM/MM as QM fragment will not interact with itself")
+
     if len(connectivity)==0:
         print("Warning!. No connectivity list present. Will treat all LJ pairs.")
     else:
@@ -97,6 +101,10 @@ def LennardJones(coords,atomtypes, LJPairpotentials, connectivity=[]):
             if i != j:
                 #Skipping identical pairs
                 if i < j:
+                    #Skipping if atom pair in qmatoms list. I.e. not calculate QM-QM LJ terms
+                    if all(x in qmatoms for x in [i, j]) == True:
+                        print("Skipping QM-pair:", i,j)
+                        skip=True
                     for l in LJPairpotentials:
                         #print("l:", l)
                         #This checks if i-j pair exists in LJPairpotentials list:

@@ -12,10 +12,6 @@ origtime=time.time()
 currtime=time.time()
 
 
-#TODO: Introduce jobtype. Either SPEmbeddingloop or Optloop.
-#Or maybe have molcrys only be SPEmbedding and in inputfile we do molcrys job and then opt-job.
-#Could do SPembedding again after Opt
-
 def molcrys(cif_file=None, xtl_file=None, fragmentobjects=[], theory=None, numcores=None, chargemodel='',
             clusterradius=None, shortrangemodel='UFF'):
 
@@ -25,6 +21,7 @@ def molcrys(cif_file=None, xtl_file=None, fragmentobjects=[], theory=None, numco
 ║║║║ ║║  ║  ╠╦╝╚╦╝╚═╗
 ╩ ╩╚═╝╩═╝╚═╝╩╚═ ╩ ╚═╝
     MODULE
+    ----------------------------------------------------------------------------------
     """
     print_yggdrasill_header()
     print(banner)
@@ -284,14 +281,4 @@ def molcrys(cif_file=None, xtl_file=None, fragmentobjects=[], theory=None, numco
     Cluster.print_system('Cluster.ygg')
     return Cluster
 
-    #print("Now Doing Optimization")
-    #OptLoopMaxIter=10
-    #for OptLoopNum in range(0,OptLoopMaxIter):
-    #    frozenlist=listdiff(Cluster.allatoms,Centralmainfrag)
-    #    geomeTRICOptimizer(theory=QMMM_SP_ORCAcalculation, fragment=Cluster, frozenatoms=frozenlist,
-    #                   coordsystem='tric', maxiter=70)
-#
-#        exit()
-    #OPT of mainfrag:   Interface to Py-Chemshell (should be easy)  or maybe DL-FIND directly
-    # Updating of coordinates???
-    #Calculate Hessian. Easy via Py-Chemshell. Maybe also easy via Dl-FIND
+
