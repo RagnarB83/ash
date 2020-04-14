@@ -52,7 +52,7 @@ def molcrys(cif_file=None, xtl_file=None, fragmentobjects=[], theory=None, numco
         numasymmunits = len(fullcellcoords) / len(asymmcoords)
 
         print("Number of fractional coordinates in asymmetric unit:", len(asymmcoords))
-        print("Number of asymmetric units in whole cell:", numasymmunits)
+        print("Number of asymmetric units in whole cell:", int(numasymmunits))
     elif xtl_file is not None:
         blankline()
         #Read XTL-file. Assuming full-cell coordinates present.
