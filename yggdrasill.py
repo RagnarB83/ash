@@ -1034,7 +1034,7 @@ class QMMMTheory:
             printdebug("Charges for full system is: ", self.charges)
             print("Passing QM atoms to MMtheory run so that QM-QM pairs are skipped in pairlist")
             self.MMEnergy, self.MMGradient= self.mm_theory.run(full_coords=current_coords, mm_coords=self.mmcoords,
-                                                               charges=self.charges, connectivity=self.connectivity
+                                                               charges=self.charges, connectivity=self.connectivity,
                                                                qmatoms=self.qmatoms)
             #self.MMEnergy=self.mm_theory.MMEnergy
             #if Grad==True:
