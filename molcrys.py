@@ -279,11 +279,9 @@ def molcrys(cif_file=None, xtl_file=None, fragmentobjects=[], theory=None, numco
             break
         print("Not converged in iteration {}. Continuing SP loop".format(SPLoopNum))
 
-    print("Molcrys Charge-Iteration done!")
+    print(BC.OKMAGENTA,"Molcrys Charge-Iteration done!",BC.END)
     #Printing out Cluster fragment file
     Cluster.print_system('Cluster.ygg')
-    print("XXX")
-    print("Cluster.atomtypes", Cluster.atomtypes)
     return Cluster
 
     #print("Now Doing Optimization")

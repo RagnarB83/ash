@@ -115,7 +115,7 @@ def cell_extend_frag_withcenter(cellvectors, coords,elems):
 #TODO: Skip step1?
 def frag_define(orthogcoords,elems,cell_vectors,fragments,cell_angles=[], cell_length=[]):
     blankline()
-    print("Frag_Define: Defining fragments of unit cell")
+    print(BC.OKBLUE, BC.BOLD,"Frag_Define: Defining fragments of unit cell", BC.END)
     origtime=time.time()
     currtime=time.time()
 
@@ -133,7 +133,7 @@ def frag_define(orthogcoords,elems,cell_vectors,fragments,cell_angles=[], cell_l
 
     blankline()
     # 1. Divide unitcell into fragments (distance-based) if whole fragments found
-    print("Step 1. Dividing original cell into fragments")
+    print(BC.OKBLUE,"Step 1. Dividing original cell into fragments",BC.END)
     systemlist = list(range(0, len(elems)))
     print("Systemlist length:", len(systemlist))
     unassigned = []
@@ -187,7 +187,7 @@ def frag_define(orthogcoords,elems,cell_vectors,fragments,cell_angles=[], cell_l
     currtime=time.time()
 
     #2.  Using extended cell find connected members of unassigned fragments
-    print("Step 2. Using extended cell to find connected members of unassigned fragments")
+    print(BC.OKBLUE,"Step 2. Using extended cell to find connected members of unassigned fragments",BC.END)
     for m in unassigned:
         printdebug("Trying unassigned m : {} ".format(m))
         members = get_molecule_members_loop_np2(temp_extended_coords, temp_extended_elems, 99,
@@ -231,7 +231,7 @@ def frag_define(orthogcoords,elems,cell_vectors,fragments,cell_angles=[], cell_l
     #Comparing all lists and removing identical lists created by Step 2
     #Updating fraglist list inside fragment object
     #Permutations for 3x3x3 cell
-    print("Step 3. Finding equivalent positions of extended cell in original cell ")
+    print(BC.OKBLUE,"Step 3. Finding equivalent positions of extended cell in original cell ",BC.END)
 
     #The permutations used in extended cell above
     permutations = [[0, 0, 0], [0, 0, 1], [0, 1, 0], [1, 0, 0],
@@ -287,7 +287,7 @@ def frag_define(orthogcoords,elems,cell_vectors,fragments,cell_angles=[], cell_l
         print("Fragment definition incomplete")
         exit()
 
-    print("Frag_define done!")
+    print(BC.OKBLUE,"Frag_define done!",BC.END)
 
 
 #From Pymol. Not sure if useful
