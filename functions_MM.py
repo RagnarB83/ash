@@ -104,6 +104,7 @@ def LennardJones(coords,atomtypes, LJPairpotentials, connectivity=[]):
                         #if atomtypes[i] in l and atomtypes[j] in l:
                             #print("COUNTING!!! unless...")
                             #Now checking connectivity for whether we should calculate LJ energy for pair or not
+                            #Todo: This only makes sense in a QM/MM scheme with frozen MM?
                             skip=False
                             for conn in connectivity:
                                 #print("conn:", conn)

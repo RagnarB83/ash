@@ -324,7 +324,10 @@ def print_time_rel_and_tot_color(timestampA,timestampB, modulename=''):
 
 # Simple nonbonded MM theory. Charges and LJ-potentials
 class NonBondedTheory:
-    def __init__(self, charges = [], atomtypes=[], forcefield=[], LJcombrule='geometric'):
+    def __init__(self, charges = [], atomtypes=[], forcefield=[], LJcombrule='geometric', codeversion='py'):
+
+        self.codeversion=codeversion
+
         #These are charges for whole system including QM.
         self.atom_charges = charges
         #Possibly have self.mm_charges here also??
@@ -460,7 +463,8 @@ class NonBondedTheory:
         self.atom_charges = charges
         print("Charges are now:", charges)
     #Provide specific coordinates (MM region) and charges (MM region) upon run
-    def run(self, full_coords=[], mm_coords=[], charges=[], connectivity=[], Coulomb=True, Grad=True, version='py'):
+    def run(self, full_coords=[], mm_coords=[], charges=[], connectivity=[], Coulomb=True, Grad=True):
+
 
         #If charges not provided to run function. Use object charges
         if len(charges)==0:
@@ -484,7 +488,7 @@ class NonBondedTheory:
             LJ=True
 
         #Slow Python version or fast Fortran version
-        if version=='py':
+        if self.codeversion=='py':
             print("Using slow Python MM code")
             #Sending full coords and charges over. QM charges are set to 0.
             if Coulomb==True:
@@ -504,10 +508,10 @@ class NonBondedTheory:
             if Grad==True:
                 self.MMGradient = self.Coulombchargegradient+self.LJgradient
         #Combined Coulomb+LJ Python version. Slow
-        elif version=='py_comb':
+        elif self.codeversion=='py_comb':
             self.MMenergy, self.MMgradient = LJCoulpy(full_coords, self.atomtypes, charges, self.LJpairpotentials,
                                                           connectivity=connectivity)
-        elif version=='f2py':
+        elif self.codeversion=='f2py':
             print("Using fast Fortran F2Py MM code")
             try:
                 import LJCoulombv1
@@ -517,7 +521,7 @@ class NonBondedTheory:
                 print("Fortran library LJCoulombv1 not found! Make sure you have run the installation script.")
             self.MMEnergy, self.MMGradient, self.LJenergy, self.Coulombchargeenergy =\
                 LJCoulomb(full_coords, self.epsij, self.sigmaij, charges, connectivity=connectivity)
-        elif version=='f2pyv2':
+        elif self.codeversion=='f2pyv2':
             print("Using fast Fortran F2Py MM code v2")
             try:
                 import LJCoulombv2
