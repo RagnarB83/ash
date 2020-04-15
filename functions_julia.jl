@@ -18,7 +18,7 @@ end
 #Calculate the sigmaij and epsij arrays
 
 #Dict version
-function pairpot3(numatoms,atomtypes,LJpydict)
+function pairpot3(numatoms,atomtypes,LJpydict,qmatoms)
     #Convert Python dict to Julia dict with correct types
     LJdict_jul=convert(Dict{Tuple{String,String},Array{Float64,1}}, LJpydict)
     #println(typeof(LJdict_jul))
@@ -27,6 +27,10 @@ function pairpot3(numatoms,atomtypes,LJpydict)
 for i in 1:numatoms
     for j in 1:numatoms
         for (ljpot_types, ljpot_values) in LJdict_jul
+            #Skipping if i-j pair in qmatoms list. I.e. not doing QM-QM LJ calc.
+            if all(x in qmatoms for x in [i, j])
+                #print("Skipping i-j pair", i,j, " as these are QM atoms")
+                continue
             if atomtypes[i] == ljpot_types[1] && atomtypes[j] == ljpot_types[2]
                 sigmaij[i, j] = ljpot_values[1]
                 epsij[i, j] = ljpot_values[2]

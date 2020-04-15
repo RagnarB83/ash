@@ -455,7 +455,7 @@ class NonBondedTheory:
         print("self.LJpairpotdict:", self.LJpairpotdict)
 
         #Create numatomxnumatom array of eps and sigma
-        #Todo: rewrite in Fortran like in Abin.
+        blankline()
         print("Creating epsij and sigmaij arrays ({},{})".format(self.numatoms,self.numatoms))
         print("Will skip QM-QM ij pairs for qmatoms: ", qmatoms)
         beginTime = time.time()
@@ -476,7 +476,7 @@ class NonBondedTheory:
             # Defining Julia Module
             Main.include(yggpath + "/functions_julia.jl")
 
-            self.sigmaij, self.epsij = Main.Juliafunctions.pairpot3(self.numatoms, self.atomtypes, self.LJpairpotdict)
+            self.sigmaij, self.epsij = Main.Juliafunctions.pairpot3(self.numatoms, self.atomtypes, self.LJpairpotdict,qmatoms)
             print("self.sigmaij:", self.sigmaij)
             print("self.epsij:", self.epsij)
             print(type(self.sigmaij))
