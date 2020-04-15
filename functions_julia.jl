@@ -16,8 +16,6 @@ end
 
 #Calculate the sigmaij and epsij arrays
 function pairpot3(numatoms,atomtypes,LJpairpotentialsdict)
-println("numatoms: $numatoms")
-exit()
 sigmaij=zeros(numatoms, numatoms)
 epsij=zeros(numatoms, numatoms)
 for i in 1:numatoms
