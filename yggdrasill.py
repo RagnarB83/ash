@@ -1914,6 +1914,7 @@ class Fragment:
             print("Connectivity problem")
             exit()
         self.connected_atoms_number=conn_number_sum
+
     def update_atomcharges(self, charges):
         self.atomcharges = charges
     def update_atomtypes(self, types):
