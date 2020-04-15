@@ -23,7 +23,8 @@ def molcrys(cif_file=None, xtl_file=None, fragmentobjects=[], theory=None, numco
     MODULE
     ----------------------------------------------------------------------------------
     """
-    print_yggdrasill_header()
+    #yggdrasill header now done in settings_yggdrasill.init()
+    #print_yggdrasill_header()
     print(banner)
     #Here assuming theory can only be ORCA for now
     orcadir=theory.orcadir

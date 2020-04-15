@@ -348,13 +348,6 @@ class NonBondedTheory:
         self.sigmaij=np.zeros((self.numatoms, self.numatoms))
         self.epsij=np.zeros((self.numatoms, self.numatoms))
 
-        #Check if LJparameters in forcefield. Then do pairpotentials
-        #try:
-        #    LJtest = len([i.LJparameters for i in forcefield.values()])
-        #    if LJtest > 0:
-        #        self.calculate_LJ_pairpotentials(LJcombrule, self.qmatoms)
-        #except:
-        #    pass
     def calculate_LJ_pairpotentials(self, qmatoms=[]):
         #Deleted combination_rule argument. Now using variable assigned to object
 
@@ -363,7 +356,6 @@ class NonBondedTheory:
         #If qmatoms passed list passed then QM/MM and QM-QM pairs will be ignored from pairlist
         print("Inside calculate_LJ_pairpotentials")
         #Todo: Figure out if we can find out if qmatoms without being passed
-        #Todo: Do calculate_LJ_pairpotentials as part of run instead?
         if len(qmatoms) == 0:
             print("WARNING: qmatoms list is empty")
             print("This is fine if this is a pure MM job")
@@ -467,6 +459,7 @@ class NonBondedTheory:
         self.sigmaij = np.zeros((numatoms, numatoms))
         self.epsij = np.zeros((numatoms, numatoms))
         print("Creating epsij and sigmaij arrays")
+        print("Will skip QM-QM ij pairs for qmatoms: ", qmatoms)
         beginTime = time.time()
 
         CheckpointTime = time.time()
@@ -474,7 +467,7 @@ class NonBondedTheory:
             for j in range(numatoms):
                 #Skipping if i-j pair in qmatoms list. I.e. not doing QM-QM LJ calc.
                 if all(x in qmatoms for x in [i, j]) == True:
-                    print("Skipping i-j pair", i,j, " as these are QM atoms")
+                    #print("Skipping i-j pair", i,j, " as these are QM atoms")
                     continue
                 for ljpot in self.LJpairpotentials:
                     if self.atomtypes[i] == ljpot[0] and self.atomtypes[j] == ljpot[1]:
