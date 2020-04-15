@@ -26,6 +26,7 @@ function pairpot3(numatoms,atomtypes,LJpydict,qmatoms)
     #println(typeof(LJdict_jul))
     sigmaij=zeros(numatoms, numatoms)
     epsij=zeros(numatoms, numatoms)
+    println("starting for-loop")
 for i in 1:numatoms
     for j in 1:numatoms
         for (ljpot_types, ljpot_values) in LJdict_jul
