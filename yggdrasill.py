@@ -456,8 +456,6 @@ class NonBondedTheory:
         #Todo: rewrite in Fortran like in Abin.
         #Todo: Add skipping rules for connectivity and QMatoms here instead?
         numatoms=len(self.atomtypes)
-        self.sigmaij = np.zeros((numatoms, numatoms))
-        self.epsij = np.zeros((numatoms, numatoms))
         print("Creating epsij and sigmaij arrays")
         print("Will skip QM-QM ij pairs for qmatoms: ", qmatoms)
         beginTime = time.time()
