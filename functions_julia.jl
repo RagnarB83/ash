@@ -38,8 +38,10 @@ end
 #println("--")
 #println(sigmaij[500,670])
 #println(epsij[500,670])
-end
+
 return sigmaij,epsij
+end
 
 
+#End of Julia module
 end
