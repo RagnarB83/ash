@@ -466,13 +466,17 @@ class NonBondedTheory:
         # See speed-tests at /home/bjornsson/pairpot-test
 
         if self.pairarrayversion=="julia":
+            print("Using PyJulia for sigmaij and epsij array creation")
             yggpath = os.path.dirname(yggdrasill.__file__)
             print("yggpath:", yggpath)
+
             # Necessary for statically linked libpython
             from julia.api import Julia
             jl = Julia(compiled_modules=False)
             # Import Julia
             from julia import Main
+            # Defining Julia Module
+            Main.include(yggpath + "/functions_julia.jl")
 
             self.sigmaij, self.epsij = Main.Juliafunctions.pairpot3(self.numatoms, self.atomtypes, self.LJpairpotdict)
             print("self.sigmaij:", self.sigmaij)
