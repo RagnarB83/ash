@@ -1759,13 +1759,14 @@ class Fragment:
             #self.add_coords(coords,elems,conn=conncalc)
             self.coords=coords
             self.elems=elems
+            self.update_attributes()
             #If connectivity passed
             if connectivity is not None:
                 self.connectivity=connectivity
             #If connectivity requested (default for new frags)
             if conncalc==True:
                 self.calc_connectivity()
-            self.update_attributes()
+
         #If coordsstring given, read elems and coords from it
         elif coordsstring is not None:
             self.add_coords_from_string(coordsstring)
@@ -1785,6 +1786,7 @@ class Fragment:
         self.mass = totmasslist(self.elems)
         self.list_of_masses = list_of_masses(self.elems)
     #Add coordinates from geometry string. Will replace.
+    #Todo: Needs more work as elems and coords may be lists or numpy arrays
     def add_coords_from_string(self, coordsstring):
         print("Getting coordinates from string:", coordsstring)
         if len(self.coords)>0:
@@ -1820,7 +1822,8 @@ class Fragment:
         self.coords = self.coords+coords
         self.update_attributes()
         if conn==True:
-            self.calc_connectivity()
+            self.calc_connectiv
+            ity()
     def print_coords(self):
         print("Defined coordinates (Å):")
         print_coords_all(self.coords,self.elems)
