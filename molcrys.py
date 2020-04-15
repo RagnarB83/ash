@@ -120,7 +120,8 @@ def molcrys(cif_file=None, xtl_file=None, fragmentobjects=[], theory=None, numco
     blankline()
     print("Creating new Cluster fragment:")
     Cluster=Fragment(elems=cluster_elems, coords=cluster_coords)
-    Cluster.calc_connectivity(scale=settings_molcrys.scale, tol=settings_molcrys.tol)
+    #We have stopped using settings_molcrys
+    #Cluster.calc_connectivity(scale=settings_molcrys.scale, tol=settings_molcrys.tol)
     print_time_rel_and_tot(currtime, origtime, modulename='Cluster.calc_connectivity')
     currtime=time.time()
 
@@ -159,7 +160,7 @@ def molcrys(cif_file=None, xtl_file=None, fragmentobjects=[], theory=None, numco
     # Calculate atom charges for each gas fragment. Updates atomcharges list inside Cluster fragment
     gasfragcalc(fragmentobjects,Cluster,chargemodel,orcadir,orcasimpleinput,orcablocks,numcores)
 
-    print_time_rel_and_tot_color(currtime, origtime, modulename='gasfragcalc')
+    print_time_rel_and_tot(currtime, origtime, modulename="gasfragcalc")
     currtime=time.time()
     print("Atom charge assignments in Cluster done!")
     blankline()
