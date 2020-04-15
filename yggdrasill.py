@@ -1740,7 +1740,7 @@ class PySCFTheory:
 # Fragment class
 class Fragment:
     def __init__(self, coordsstring=None, fragfile=None, xyzfile=None, pdbfile=None, coords=None, elems=None, connectivity=None,
-                 atomcharges=None, atomtypes=None):
+                 atomcharges=None, atomtypes=None,conncalc=True):
         print("Defining new Yggdrasill fragment object")
         self.energy = None
         self.elems=[]
@@ -1756,8 +1756,9 @@ class Fragment:
 
         #Here either providing coords, elems as lists. Possibly reading connectivity also
         if coords is not None:
-            self.coords=coords
-            self.elems=elems
+            self.add_coords(coords,elems,conn=conncalc)
+            #self.coords=coords
+            #self.elems=elems
             if connectivity is not None:
                 self.connectivity=connectivity
             self.update_attributes()
@@ -1804,7 +1805,7 @@ class Fragment:
         self.coords=[]
         self.elems=[]
         self.connectivity=[]
-    def add_coords(self, elems,coords):
+    def add_coords(self, elems,coords,conn=True):
         print("Adding coordinates to fragment.")
         if len(self.coords)>0:
             print("Fragment already contains coordinates")
@@ -1812,7 +1813,8 @@ class Fragment:
         self.elems = self.elems+elems
         self.coords = self.coords+coords
         self.update_attributes()
-        self.calc_connectivity()
+        if conn=True:
+            self.calc_connectivity()
     def print_coords(self):
         print("Defined coordinates (Å):")
         print_coords_all(self.coords,self.elems)
@@ -1868,19 +1870,13 @@ class Fragment:
 
         if scale == None:
             try:
-                print("Using global scale and tol parameters from settings_molcrys")
-                scale = settings_molcrys.scale
-                tol = settings_molcrys.tol
+                print("Using global scale and tol parameters from settings_yggdrasill")
+                scale = settings_yggdrasill.scale
+                tol = settings_yggdrasill.tol
             except:
-                try:
-                    print("Using global scale and tol parameters from settings_yggdrasill")
-                    scale = settings_yggdrasill.scale
-                    tol = settings_yggdrasill.tol
-                except:
-                    print("Exception: Using hard-coded scale and tol parameters from settings_yggdrasill")
-                    scale = 1
-                    tol = 0.1
-
+                print("Exception: Using hard-coded scale and tol parameters")
+                scale = 1
+                tol = 0.1
 
         print("Scale:", scale)
         print("Tol:", tol)

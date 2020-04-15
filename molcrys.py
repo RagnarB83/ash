@@ -122,7 +122,7 @@ def molcrys(cif_file=None, xtl_file=None, fragmentobjects=[], theory=None, numco
     Cluster=Fragment(elems=cluster_elems, coords=cluster_coords)
     #We have stopped using settings_molcrys
     #Cluster.calc_connectivity(scale=settings_molcrys.scale, tol=settings_molcrys.tol)
-    print_time_rel_and_tot(currtime, origtime, modulename='Cluster.calc_connectivity')
+    #print_time_rel_and_tot(currtime, origtime, modulename='Cluster.calc_connectivity')
     currtime=time.time()
 
     # Going through found frags and identify mainfrags and counterfrags
