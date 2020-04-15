@@ -324,11 +324,13 @@ def print_time_rel_and_tot_color(timestampA,timestampB, modulename=''):
 
 # Simple nonbonded MM theory. Charges and LJ-potentials
 class NonBondedTheory:
-    def __init__(self, charges = [], atomtypes=[], forcefield=[], LJcombrule='geometric', codeversion='py'):
+    def __init__(self, charges = [], atomtypes=[], forcefield=[], LJcombrule='geometric', codeversion='py', pairarrayversion='julia'):
         #Atom types
         self.atomtypes=atomtypes
         self.numatoms = len(self.atomtypes)
         self.LJcombrule=LJcombrule
+
+        self.pairarrayversion=pairarrayversion
 
         #Todo: Delete
         # If qmatoms list passed to Nonbonded theory then we are doing QM/MM
@@ -460,20 +462,40 @@ class NonBondedTheory:
 
         CheckpointTime = time.time()
 
-        # New for-loop for creating sigmaij and epsij arrays. Uses dict-lookup instead
+
         # See speed-tests at /home/bjornsson/pairpot-test
-        for i in range(self.numatoms):
-            for j in range(self.numatoms):
-                #Skipping if i-j pair in qmatoms list. I.e. not doing QM-QM LJ calc.
-                if all(x in qmatoms for x in [i, j]) == True:
-                    #print("Skipping i-j pair", i,j, " as these are QM atoms")
-                    continue
-                if (self.atomtypes[i], self.atomtypes[j]) in self.LJpairpotdict:
-                    self.sigmaij[i, j] = self.LJpairpotdict[(self.atomtypes[i], self.atomtypes[j])][0]
-                    self.epsij[i, j] = self.LJpairpotdict[(self.atomtypes[i], self.atomtypes[j])][1]
-                elif (atomtypes[j], atomtypes[i]) in self.LJpairpotdict:
-                    self.sigmaij[i, j] = self.LJpairpotdict[(self.atomtypes[j], self.atomtypes[i])][0]
-                    self.epsij[i, j] = self.LJpairpotdict[(self.atomtypes[j], self.atomtypes[i])][1]
+
+        if self.pairarrayversion=="julia":
+            yggpath = os.path.dirname(yggdrasill.__file__)
+            print("yggpath:", yggpath)
+            # Necessary for statically linked libpython
+            from julia.api import Julia
+            jl = Julia(compiled_modules=False)
+            # Import Julia
+            from julia import Main
+
+            self.sigmaij, self.epsij = Main.Juliafunctions.pairpot3(self.numatoms, self.atomtypes, self.LJpairpotdict)
+            print("self.sigmaij:", self.sigmaij)
+            print("self.epsij:", self.epsij)
+            print(type(sigmaij))
+            exit()
+        # New for-loop for creating sigmaij and epsij arrays. Uses dict-lookup instead
+        elif self.pairarrayversion=="py":
+            for i in range(self.numatoms):
+                for j in range(self.numatoms):
+                    #Skipping if i-j pair in qmatoms list. I.e. not doing QM-QM LJ calc.
+                    if all(x in qmatoms for x in [i, j]) == True:
+                        #print("Skipping i-j pair", i,j, " as these are QM atoms")
+                        continue
+                    if (self.atomtypes[i], self.atomtypes[j]) in self.LJpairpotdict:
+                        self.sigmaij[i, j] = self.LJpairpotdict[(self.atomtypes[i], self.atomtypes[j])][0]
+                        self.epsij[i, j] = self.LJpairpotdict[(self.atomtypes[i], self.atomtypes[j])][1]
+                    elif (atomtypes[j], atomtypes[i]) in self.LJpairpotdict:
+                        self.sigmaij[i, j] = self.LJpairpotdict[(self.atomtypes[j], self.atomtypes[i])][0]
+                        self.epsij[i, j] = self.LJpairpotdict[(self.atomtypes[j], self.atomtypes[i])][1]
+        else:
+            print("unknown pairarrayversion")
+            exit()
 
         #Commenting out slow look-up for-loop
         #for i in range(self.numatoms):
