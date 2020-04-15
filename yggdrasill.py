@@ -463,7 +463,7 @@ class NonBondedTheory:
 
         # New for-loop for creating sigmaij and epsij arrays. Uses dict-lookup instead
         # See speed-tests at /home/bjornsson/pairpot-test
-         for i in range(self.numatoms):
+        for i in range(self.numatoms):
             for j in range(self.numatoms):
                 #Skipping if i-j pair in qmatoms list. I.e. not doing QM-QM LJ calc.
                 if all(x in qmatoms for x in [i, j]) == True:
