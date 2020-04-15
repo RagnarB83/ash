@@ -15,15 +15,18 @@ return var
 end
 
 #Calculate the sigmaij and epsij arrays
-function pairpot3(numatoms,atomtypes,LJpairpotentialsdict)
+function pairpot3(numatoms,atomtypes,LJpydict)
     println("numatoms: $numatoms")
     println("atomtypes: $atomtypes")
-    println("LJpairpotentialsdict : $LJpairpotentialsdict")
+    println("LJpydict : $LJpydict")
+    #Convert Python dict to Julia dict with correct types
+    LJdict_jul=convert(Dict{Tuple{String,String},Array{Float64,1}}, py"LJpydict")
+    println("LJdict_jul : $LJdict_jul")
     sigmaij=zeros(numatoms, numatoms)
     epsij=zeros(numatoms, numatoms)
 for i in 1:numatoms
     for j in 1:numatoms
-        for (ljpot_types, ljpot_values) in LJpairpotentialsdict
+        for (ljpot_types, ljpot_values) in LJdict_jul
             if atomtypes[i] == ljpot_types[1] && atomtypes[j] == ljpot_types[2]
                 sigmaij[i, j] = ljpot_values[1]
                 epsij[i, j] = ljpot_values[2]
