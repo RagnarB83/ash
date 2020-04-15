@@ -124,7 +124,6 @@ def molcrys(cif_file=None, xtl_file=None, fragmentobjects=[], theory=None, numco
     #Cluster.calc_connectivity(scale=settings_molcrys.scale, tol=settings_molcrys.tol)
     #print_time_rel_and_tot(currtime, origtime, modulename='Cluster.calc_connectivity')
     currtime=time.time()
-    print("Cluster creation done. X ")
     # Going through found frags and identify mainfrags and counterfrags
     for frag in Cluster.connectivity:
         el_list = [cluster_elems[i] for i in frag]
