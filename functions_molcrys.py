@@ -140,7 +140,7 @@ def frag_define(orthogcoords,elems,cell_vectors,fragments,cell_angles=[], cell_l
     for i in range(len(elems)):
 
         printdebug("i : ", i)
-        members = get_molecule_members_loop_np2(orthogcoords, elems, 99, settings_molcrys.scale, settings_molcrys.tol,
+        members = get_molecule_members_loop_np2(orthogcoords, elems, 99, settings_yggdrasill.scale, settings_yggdrasill.tol,
                                             atomindex=i)
         printdebug("members:" , members)
         el_list = [elems[i] for i in members]
@@ -191,7 +191,7 @@ def frag_define(orthogcoords,elems,cell_vectors,fragments,cell_angles=[], cell_l
     for m in unassigned:
         printdebug("Trying unassigned m : {} ".format(m))
         members = get_molecule_members_loop_np2(temp_extended_coords, temp_extended_elems, 99,
-                                                settings_molcrys.scale, settings_molcrys.tol, membs=m)
+                                                settings_yggdrasill.scale, settings_yggdrasill.tol, membs=m)
         el_list = [temp_extended_elems[i] for i in members]
         printdebug("members:", members)
         printdebug("el_list:", el_list)
@@ -737,11 +737,11 @@ def remove_partial_fragments(coords,elems,sphereradius,fragmentobjects):
         if surfaceatom not in found_atoms:
             count+=1
             #counted.append(surfaceatom)
-            #cProfile.run('get_molecule_members_loop_np(coords, elems, 99, settings_molcrys.scale, settings_molcrys.tol,atomindex=surfaceatom)')
+            #cProfile.run('get_molecule_members_loop_np(coords, elems, 99, settings_molcrys.scale, settings_yggdrasill.tol,atomindex=surfaceatom)')
             #exit()
             #surfaceatom=0
-            members=get_molecule_members_loop_np2(coords, elems, 99, settings_molcrys.scale,
-                                                settings_molcrys.tol,atomindex=surfaceatom)
+            members=get_molecule_members_loop_np2(coords, elems, 99, settings_yggdrasill.scale,
+                                                settings_yggdrasill.tol,atomindex=surfaceatom)
             #print_time_rel_and_tot(currtime, origtime)
             #currtime = time.time()
             #exit()
