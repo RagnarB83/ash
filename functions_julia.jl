@@ -19,6 +19,8 @@ end
 
 #Dict version
 function pairpot3(numatoms,atomtypes,LJpydict,qmatoms)
+    #Updating atom indices from 0 to 1 syntax
+    qmatoms=[i+1 for i in qmatoms]
     #Convert Python dict to Julia dict with correct types
     LJdict_jul=convert(Dict{Tuple{String,String},Array{Float64,1}}, LJpydict)
     #println(typeof(LJdict_jul))
