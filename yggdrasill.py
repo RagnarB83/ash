@@ -1756,11 +1756,15 @@ class Fragment:
 
         #Here either providing coords, elems as lists. Possibly reading connectivity also
         if coords is not None:
-            self.add_coords(coords,elems,conn=conncalc)
-            #self.coords=coords
-            #self.elems=elems
+            #self.add_coords(coords,elems,conn=conncalc)
+            self.coords=coords
+            self.elems=elems
+            #If connectivity passed
             if connectivity is not None:
                 self.connectivity=connectivity
+            #If connectivity requested (default for new frags)
+            if conncalc==True:
+                self.calc_connectivity()
             self.update_attributes()
         #If coordsstring given, read elems and coords from it
         elif coordsstring is not None:
@@ -1812,10 +1816,10 @@ class Fragment:
             print("Adding extra coordinates")
         print(elems)
         print(type(elems))
-        self.elems = self.elems+elems
+        self.elems = self.elems+list(elems)
         self.coords = self.coords+coords
         self.update_attributes()
-        if conn==\
+        if conn==
                 True:
             self.calc_connectivity()
     def print_coords(self):
