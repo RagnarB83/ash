@@ -1819,8 +1819,7 @@ class Fragment:
         self.elems = self.elems+list(elems)
         self.coords = self.coords+coords
         self.update_attributes()
-        if conn==
-                True:
+        if conn==True:
             self.calc_connectivity()
     def print_coords(self):
         print("Defined coordinates (Å):")
