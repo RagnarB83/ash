@@ -481,7 +481,7 @@ class NonBondedTheory:
             self.sigmaij, self.epsij = Main.Juliafunctions.pairpot3(self.numatoms, self.atomtypes, self.LJpairpotdict)
             print("self.sigmaij:", self.sigmaij)
             print("self.epsij:", self.epsij)
-            print(type(sigmaij))
+            print(type(self.sigmaij))
         # New for-loop for creating sigmaij and epsij arrays. Uses dict-lookup instead
         elif self.pairarrayversion=="py":
             for i in range(self.numatoms):
