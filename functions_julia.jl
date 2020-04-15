@@ -17,14 +17,9 @@ end
 
 #Calculate the sigmaij and epsij arrays
 function pairpot3(numatoms,atomtypes,LJpydict)
-    println("numatoms: $numatoms")
-    println("atomtypes: $atomtypes")
-    println("LJpydict : $LJpydict")
-    println(typeof(LJpydict))
     #Convert Python dict to Julia dict with correct types
     LJdict_jul=convert(Dict{Tuple{String,String},Array{Float64,1}}, LJpydict)
-    println("LJdict_jul : $LJdict_jul")
-        println(typeof(LJdict_jul))
+    #println(typeof(LJdict_jul))
     sigmaij=zeros(numatoms, numatoms)
     epsij=zeros(numatoms, numatoms)
 for i in 1:numatoms
@@ -40,14 +35,11 @@ for i in 1:numatoms
         end
     end
 end
-#println(sigmaij[1,1])
-#println(epsij[1,1])
-#println("--")
-#println(sigmaij[500,670])
-#println(epsij[500,670])
-
 return sigmaij,epsij
 end
+
+
+
 
 
 #End of Julia module
