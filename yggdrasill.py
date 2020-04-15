@@ -455,14 +455,13 @@ class NonBondedTheory:
         #Create numatomxnumatom array of eps and sigma
         #Todo: rewrite in Fortran like in Abin.
         #Todo: Add skipping rules for connectivity and QMatoms here instead?
-        numatoms=len(self.atomtypes)
         print("Creating epsij and sigmaij arrays")
         print("Will skip QM-QM ij pairs for qmatoms: ", qmatoms)
         beginTime = time.time()
 
         CheckpointTime = time.time()
-        for i in range(numatoms):
-            for j in range(numatoms):
+        for i in range(self.numatoms):
+            for j in range(self.numatoms):
                 #Skipping if i-j pair in qmatoms list. I.e. not doing QM-QM LJ calc.
                 if all(x in qmatoms for x in [i, j]) == True:
                     #print("Skipping i-j pair", i,j, " as these are QM atoms")
