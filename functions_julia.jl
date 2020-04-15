@@ -2,7 +2,8 @@
 __precompile__()
 
 module Juliafunctions
-using PyCall
+#using PyCall
+
 function hellofromjulia()
 println("Hello from Julia")
 end
@@ -20,7 +21,7 @@ function pairpot3(numatoms,atomtypes,LJpydict)
     println("atomtypes: $atomtypes")
     println("LJpydict : $LJpydict")
     #Convert Python dict to Julia dict with correct types
-    LJdict_jul=convert(Dict{Tuple{String,String},Array{Float64,1}}, py"LJpydict")
+    LJdict_jul=convert(Dict{Tuple{String,String},Array{Float64,1}}, LJpydict)
     println("LJdict_jul : $LJdict_jul")
     sigmaij=zeros(numatoms, numatoms)
     epsij=zeros(numatoms, numatoms)
