@@ -31,6 +31,7 @@ for i in 1:numatoms
             if all(x in qmatoms for x in [i, j])
                 #print("Skipping i-j pair", i,j, " as these are QM atoms")
                 continue
+            end
             if atomtypes[i] == ljpot_types[1] && atomtypes[j] == ljpot_types[2]
                 sigmaij[i, j] = ljpot_values[1]
                 epsij[i, j] = ljpot_values[2]
