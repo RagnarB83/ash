@@ -16,6 +16,8 @@ return var
 end
 
 #Calculate the sigmaij and epsij arrays
+
+#Dict version
 function pairpot3(numatoms,atomtypes,LJpydict)
     #Convert Python dict to Julia dict with correct types
     LJdict_jul=convert(Dict{Tuple{String,String},Array{Float64,1}}, LJpydict)

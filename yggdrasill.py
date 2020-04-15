@@ -324,7 +324,7 @@ def print_time_rel_and_tot_color(timestampA,timestampB, modulename=''):
 
 # Simple nonbonded MM theory. Charges and LJ-potentials
 class NonBondedTheory:
-    def __init__(self, charges = [], atomtypes=[], forcefield=[], LJcombrule='geometric', codeversion='py', pairarrayversion='julia'):
+    def __init__(self, charges = [], atomtypes=[], forcefield=[], LJcombrule='geometric', codeversion='py', pairarrayversion='py'):
         #Atom types
         self.atomtypes=atomtypes
         self.numatoms = len(self.atomtypes)
@@ -461,8 +461,6 @@ class NonBondedTheory:
         beginTime = time.time()
 
         CheckpointTime = time.time()
-
-
         # See speed-tests at /home/bjornsson/pairpot-test
 
         if self.pairarrayversion=="julia":
@@ -484,6 +482,7 @@ class NonBondedTheory:
             print(type(self.sigmaij))
         # New for-loop for creating sigmaij and epsij arrays. Uses dict-lookup instead
         elif self.pairarrayversion=="py":
+            print("Using Python version for array creation")
             for i in range(self.numatoms):
                 for j in range(self.numatoms):
                     #Skipping if i-j pair in qmatoms list. I.e. not doing QM-QM LJ calc.
