@@ -482,7 +482,6 @@ class NonBondedTheory:
             print("self.sigmaij:", self.sigmaij)
             print("self.epsij:", self.epsij)
             print(type(sigmaij))
-            exit()
         # New for-loop for creating sigmaij and epsij arrays. Uses dict-lookup instead
         elif self.pairarrayversion=="py":
             for i in range(self.numatoms):
