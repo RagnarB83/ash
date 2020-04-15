@@ -460,21 +460,40 @@ class NonBondedTheory:
         beginTime = time.time()
 
         CheckpointTime = time.time()
-        for i in range(self.numatoms):
+
+        # New for-loop for creating sigmaij and epsij arrays. Uses dict-lookup instead
+        # See speed-tests at /home/bjornsson/pairpot-test
+         for i in range(self.numatoms):
             for j in range(self.numatoms):
                 #Skipping if i-j pair in qmatoms list. I.e. not doing QM-QM LJ calc.
                 if all(x in qmatoms for x in [i, j]) == True:
                     #print("Skipping i-j pair", i,j, " as these are QM atoms")
                     continue
-                for ljpot in self.LJpairpotentials:
-                    if self.atomtypes[i] == ljpot[0] and self.atomtypes[j] == ljpot[1]:
-                        #print("Here")
-                        self.sigmaij[i, j] = ljpot[2]
-                        self.epsij[i, j] = ljpot[3]
-                    elif self.atomtypes[j] == ljpot[0] and self.atomtypes[i] == ljpot[1]:
-                        #print("here 2")
-                        self.sigmaij[i, j] = ljpot[2]
-                        self.epsij[i, j] = ljpot[3]
+                if (self.atomtypes[i], self.atomtypes[j]) in self.LJpairpotdict:
+                    self.sigmaij[i, j] = self.LJpairpotdict[(self.atomtypes[i], self.atomtypes[j])][0]
+                    self.epsij[i, j] = self.LJpairpotdict[(self.atomtypes[i], self.atomtypes[j])][1]
+                elif (atomtypes[j], atomtypes[i]) in self.LJpairpotdict:
+                    self.sigmaij[i, j] = self.LJpairpotdict[(self.atomtypes[j], self.atomtypes[i])][0]
+                    self.epsij[i, j] = self.LJpairpotdict[(self.atomtypes[j], self.atomtypes[i])][1]
+
+        #Commenting out slow look-up for-loop
+        #for i in range(self.numatoms):
+        #    for j in range(self.numatoms):
+        #        #Skipping if i-j pair in qmatoms list. I.e. not doing QM-QM LJ calc.
+        #        if all(x in qmatoms for x in [i, j]) == True:
+        #            #print("Skipping i-j pair", i,j, " as these are QM atoms")
+        #            continue
+        #        for ljpot in self.LJpairpotentials:
+        #            if self.atomtypes[i] == ljpot[0] and self.atomtypes[j] == ljpot[1]:
+        #                #print("Here")
+        #                self.sigmaij[i, j] = ljpot[2]
+        #                self.epsij[i, j] = ljpot[3]
+        #            elif self.atomtypes[j] == ljpot[0] and self.atomtypes[i] == ljpot[1]:
+        #                #print("here 2")
+        #                self.sigmaij[i, j] = ljpot[2]
+        #                self.epsij[i, j] = ljpot[3]
+
+
         print("self.sigmaij:", self.sigmaij)
         print("self.epsij:", self.epsij)
         print_time_rel(CheckpointTime, modulename="pairpot arrays")
