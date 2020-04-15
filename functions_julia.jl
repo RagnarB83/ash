@@ -2,7 +2,7 @@
 __precompile__()
 
 module Juliafunctions
-
+using PyCall
 function hellofromjulia()
 println("Hello from Julia")
 end
