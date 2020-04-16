@@ -692,9 +692,10 @@ def create_MMcluster(orthogcoords,elems,cell_vectors,sphereradius):
     print("cell_vectors:", cell_vectors)
     largest_cell_length=np.amax(cell_vectors)
     print("largest_cell_length:", largest_cell_length)
-    #Simple equation to find out how large the extended cell has to be for accommodate cluster-radius
+    #Simple equation to find out roughly how large the extended cell has to be to accommodate cluster-radius
     #Rounds up.
-    cell_expansion=math.ceil(sphereradius/largest_cell_length)
+    #Added extra cell
+    cell_expansion=math.ceil(sphereradius/largest_cell_length)+1
     print("Using cell expansion parameter: [{},{},{}]".format(cell_expansion,cell_expansion,cell_expansion))
     extended_coords,extended_elems=cell_extend_frag(cell_vectors,orthogcoords,elems,[cell_expansion,cell_expansion,cell_expansion])
     #Write XYZ-file with orthogonal coordinates for cell
