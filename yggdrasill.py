@@ -486,7 +486,7 @@ class NonBondedTheory:
             print("Using Python version for array creation")
             #Update: Only doing half of array
             for i in range(self.numatoms):
-                for j in range(i, numatoms):
+                for j in range(i, self.numatoms):
                 #for j in range(self.numatoms):
                     #Skipping if i-j pair in qmatoms list. I.e. not doing QM-QM LJ calc.
                     if all(x in qmatoms for x in [i, j]) == True:
