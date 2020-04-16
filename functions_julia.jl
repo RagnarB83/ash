@@ -28,7 +28,7 @@ function pairpot3(numatoms,atomtypes,LJpydict,qmatoms)
     epsij=zeros(numatoms, numatoms)
     println("starting for-loop")
 for i in 1:numatoms
-    for j in 1:numatoms
+    for j in i:numatoms
         for (ljpot_types, ljpot_values) in LJdict_jul
             #Skipping if i-j pair in qmatoms list. I.e. not doing QM-QM LJ calc.
             if all(x in qmatoms for x in [i, j])
