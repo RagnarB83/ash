@@ -687,6 +687,7 @@ NAME         X           Y           Z
 
 
 def create_MMcluster(orthogcoords,elems,cell_vectors,sphereradius):
+    print("Creating MM cluster-sphere with radius {} Å".format(sphereradius))
     print("Extending MM unit cell")
     extended_coords,extended_elems=cell_extend_frag(cell_vectors,orthogcoords,elems,[4,4,4])
     #Write XYZ-file with orthogonal coordinates for cell
@@ -730,7 +731,6 @@ def remove_partial_fragments(coords,elems,sphereradius,fragmentobjects):
         sfile.write('Surfaceatoms: {}'.format(surfaceatoms))
     counted=[]
     count=0
-    #Loopnumber below set to 5. Minimum needed for the Fe2 dimer
     found_atoms=[]
     fraglist=[]
     for surfaceatom in surfaceatoms:
