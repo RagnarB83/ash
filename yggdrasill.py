@@ -487,12 +487,11 @@ class NonBondedTheory:
             #Update: Only doing half of array
             for i in range(self.numatoms):
                 for j in range(i, self.numatoms):
-                #for j in range(self.numatoms):
                     #Skipping if i-j pair in qmatoms list. I.e. not doing QM-QM LJ calc.
-                    if all(x in qmatoms for x in [i, j]) == True:
+                    if all(x in qmatoms for x in (i, j)) == True:
                         #print("Skipping i-j pair", i,j, " as these are QM atoms")
                         continue
-                    if (self.atomtypes[i], self.atomtypes[j]) in self.LJpairpotdict:
+                    elif (self.atomtypes[i], self.atomtypes[j]) in self.LJpairpotdict:
                         self.sigmaij[i, j] = self.LJpairpotdict[(self.atomtypes[i], self.atomtypes[j])][0]
                         self.epsij[i, j] = self.LJpairpotdict[(self.atomtypes[i], self.atomtypes[j])][1]
                     elif (atomtypes[j], atomtypes[i]) in self.LJpairpotdict:
