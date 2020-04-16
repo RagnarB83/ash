@@ -469,8 +469,9 @@ class NonBondedTheory:
             print("yggpath:", yggpath)
 
             # Necessary for statically linked libpython
-            from julia.api import Julia
-            jl = Julia(compiled_modules=False)
+            #IF not doing python-jl
+            #from julia.api import Julia
+            #jl = Julia(compiled_modules=False)
             # Import Julia
             from julia import Main
             # Defining Julia Module

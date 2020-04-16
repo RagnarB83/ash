@@ -31,7 +31,7 @@ def molcrys(cif_file=None, xtl_file=None, fragmentobjects=[], theory=None, numco
     orcablocks=theory.orcablocks
     orcasimpleinput=theory.orcasimpleinput
 
-    print("Fragments defined:")
+    print("Fragment object defined:")
     for fragment in fragmentobjects:
         print("Fragment:", fragment.__dict__)
 
