@@ -31,7 +31,7 @@ for i in 1:numatoms
     for j in i+1:numatoms
         for (ljpot_types, ljpot_values) in LJdict_jul
             #if all(x in qmatoms for x in (i, j))
-            if i in qmatoms and j in qmatoms:
+            if i in qmatoms and j in qmatoms
                 #print("Skipping i-j pair", i,j, " as these are QM atoms")
                 continue
             elseif atomtypes[i] == ljpot_types[1] && atomtypes[j] == ljpot_types[2]
