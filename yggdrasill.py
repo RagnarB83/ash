@@ -464,7 +464,7 @@ class NonBondedTheory:
         # See speed-tests at /home/bjornsson/pairpot-test
 
         if self.pairarrayversion=="julia":
-            print("Using PyJulia for sigmaij and epsij array creation")
+            print("Using PyJulia for fast sigmaij and epsij array creation")
             yggpath = os.path.dirname(yggdrasill.__file__)
             print("yggpath:", yggpath)
 
@@ -473,7 +473,13 @@ class NonBondedTheory:
             #from julia.api import Julia
             #jl = Julia(compiled_modules=False)
             # Import Julia
-            from julia import Main
+            try:
+                from julia import Main
+            except:
+                print("Problem importing Pyjulia (import julia)")
+                print("Make sure Julia is installed and PyJulia module available")
+                print("Alternatively, use pairarrayversion='py' argument to NonBondedTheory to use slower Python version for array creation")
+                exit()
             # Defining Julia Module
             Main.include(yggpath + "/functions_julia.jl")
 
