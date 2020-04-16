@@ -1062,7 +1062,7 @@ class QMMMTheory:
             print("not yet implemented")
         else:
             print("invalid QM theory")
-        print_time_rel(timestampA, modulename='QM step')
+        print_time_rel(CheckpointTime, modulename='QM step')
         CheckpointTime = time.time()
         # MM theory
         if self.mm_theory_name == "NonBondedTheory":
@@ -1079,7 +1079,7 @@ class QMMMTheory:
             #    print("self.MMGrad:", self.MMGrad)
         else:
             self.MMEnergy=0
-        print_time_rel(timestampA, modulename='MM step')
+        print_time_rel(CheckpointTime, modulename='MM step')
         #Final QM/MM Energy
         self.QM_MM_Energy= self.QMEnergy+self.MMEnergy
         blankline()
@@ -1102,7 +1102,7 @@ class QMMMTheory:
                     pccount += 1
             #Now assemble final QM/MM gradient
             self.QM_MM_Gradient=self.QM_PC_Gradient+self.MMGradient
-            print_time_rel(timestampA, modulename='QM/MM gradient combine')
+            print_time_rel(CheckpointTime, modulename='QM/MM gradient combine')
             if self.printlevel==3:
                 print("QM gradient (au/Bohr):")
                 print_coords_all(self.QMgradient, self.qmelems, self.qmatoms)
