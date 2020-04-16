@@ -705,6 +705,7 @@ def create_MMcluster(orthogcoords,elems,cell_vectors,sphereradius):
     deletionlist=[]
     origin=np.array([0.0,0.0,0.0])
     comparecoords = np.tile(origin, (len(extended_coords), 1))
+    print("Now cutting spherical cluster with radius {} Å from super-cell".format(sphereradius))
     # Einsum is slightly faster than bare_numpy_mat. All distances in one go
     distances = einsum_mat(extended_coords, comparecoords)
     #This for loop goes over 112504 count!!! not the best for mol-members
