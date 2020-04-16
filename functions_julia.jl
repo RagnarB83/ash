@@ -30,7 +30,10 @@ function pairpot3(numatoms,atomtypes,LJpydict,qmatoms)
 for i in 1:numatoms
     for j in i:numatoms
         for (ljpot_types, ljpot_values) in LJdict_jul
-            if atomtypes[i] == ljpot_types[1] && atomtypes[j] == ljpot_types[2]
+            if all(x in qmatoms for x in (i, j))
+                #print("Skipping i-j pair", i,j, " as these are QM atoms")
+                continue
+            elseif atomtypes[i] == ljpot_types[1] && atomtypes[j] == ljpot_types[2]
                 sigmaij[i, j] = ljpot_values[1]
                 epsij[i, j] = ljpot_values[2]
             elseif atomtypes[j] == ljpot_types[1] && atomtypes[i] == ljpot_types[2]
@@ -39,9 +42,6 @@ for i in 1:numatoms
             #Skipping if i-j pair in qmatoms list. I.e. not doing QM-QM LJ calc.
             #tuple much faster than list
             #https://stackoverflow.com/questions/46576037/my-loops-are-slow-is-that-because-of-if-statements
-            elseif all(x in qmatoms for x in (i, j))
-                #print("Skipping i-j pair", i,j, " as these are QM atoms")
-                continue
             end
         end
     end
