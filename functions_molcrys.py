@@ -689,14 +689,13 @@ NAME         X           Y           Z
 def create_MMcluster(orthogcoords,elems,cell_vectors,sphereradius):
     print("Creating MM cluster-sphere with radius {} Å".format(sphereradius))
     print("Extending MM unit cell")
-    print("cell_vectors:", cell_vectors)
     largest_cell_length=np.amax(cell_vectors)
-    print("largest_cell_length:", largest_cell_length)
+    print("Largest_cell_length: {} Å".format(largest_cell_length))
     #Simple equation to find out roughly how large the extended cell has to be to accommodate cluster-radius
     #Rounds up.
     #Added extra cell
     cell_expansion=math.ceil(sphereradius/largest_cell_length)+1
-    print("Using cell expansion parameter: [{},{},{}]".format(cell_expansion,cell_expansion,cell_expansion))
+    print("Using cell expansion: [{},{},{}]".format(cell_expansion,cell_expansion,cell_expansion))
     extended_coords,extended_elems=cell_extend_frag(cell_vectors,orthogcoords,elems,[cell_expansion,cell_expansion,cell_expansion])
     #Write XYZ-file with orthogonal coordinates for cell
     write_xyzfile(extended_elems,extended_coords,"cell_extended_coords")
