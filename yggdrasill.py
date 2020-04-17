@@ -2245,7 +2245,6 @@ def MMforcefield_read(file):
                     print("Found LJ single-atom R0 definition in forcefield file:", ' '.join(line.split()[:]))
                     atomtype=line.split()[1]
                     R0tosigma=0.5**(1/6)
-                    print("R0tosigma conversion", R0tosigma)
                     if atomtype not in MM_forcefield.keys():
                         MM_forcefield[atomtype] = AtomMMobject()
                     sigma_i=float(line.split()[2])*R0tosigma
