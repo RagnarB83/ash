@@ -1086,6 +1086,7 @@ class QMMMTheory:
         else:
             self.MMEnergy=0
         print_time_rel(CheckpointTime, modulename='MM step')
+        CheckpointTime = time.time()
         #Final QM/MM Energy
         self.QM_MM_Energy= self.QMEnergy+self.MMEnergy
         blankline()

@@ -22,7 +22,8 @@ end
 #Key things for speed:
 # i:numatoms, j=i+1:numatoms
 # Using fast dict-lookup, simple double-if condition for qmatoms (was slowing things down a lot with all thing)
-
+# Avoided dict-lookup for both key-existence and value
+#https://stackoverflow.com/questions/58170034/how-do-i-check-if-a-dictionary-has-a-key-in-it-in-julia
 function pairpot3(numatoms,atomtypes,LJpydict,qmatoms)
     #Updating atom indices from 0 to 1 syntax
     qmatoms=[i+1 for i in qmatoms]
@@ -36,6 +37,7 @@ for i in 1:numatoms
         if i in qmatoms && j in qmatoms
                 continue
         else
+           #Checking if dict contains key, return value if so, otherwise nothing
            v = get(LJdict_jul, (atomtypes[i],atomtypes[j]), nothing)
            if v !== nothing
              sigmaij[i, j] = v[1]
