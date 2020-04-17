@@ -19,7 +19,6 @@ end
 
 
 #Calculate the sigmaij and epsij arrays
-
 #Key things for speed:
 # i:numatoms, j=i+1:numatoms
 # Using fast dict-lookup, simple double-if condition for qmatoms (was slowing things down a lot with all thing)
@@ -33,24 +32,24 @@ function pairpot3(numatoms,atomtypes,LJpydict,qmatoms)
     epsij=zeros(numatoms, numatoms)
 for i in 1:numatoms
     for j in i+1:numatoms
-        for (ljpot_types, ljpot_values) in LJdict_jul
             #if all(x in qmatoms for x in (i, j))
             if i in qmatoms && j in qmatoms
                 #print("Skipping i-j pair", i,j, " as these are QM atoms")
                 continue
-            elseif atomtypes[i] == ljpot_types[1] && atomtypes[j] == ljpot_types[2]
-                sigmaij[i, j] = ljpot_values[1]
-                epsij[i, j] = ljpot_values[2]
-            elseif atomtypes[j] == ljpot_types[1] && atomtypes[i] == ljpot_types[2]
-                sigmaij[i, j] = ljpot_values[1]
-                epsij[i, j] = ljpot_values[2]
             end
-        end
+            for (ljpot_types, ljpot_values) in LJdict_jul
+                if atomtypes[i] == ljpot_types[1] && atomtypes[j] == ljpot_types[2]
+                    sigmaij[i, j] = ljpot_values[1]
+                    epsij[i, j] = ljpot_values[2]
+                elseif atomtypes[j] == ljpot_types[1] && atomtypes[i] == ljpot_types[2]
+                    sigmaij[i, j] = ljpot_values[1]
+                    epsij[i, j] = ljpot_values[2]
+                end
+            end
     end
 end
 return sigmaij,epsij
 end
-
 
 
 
