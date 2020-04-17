@@ -441,7 +441,8 @@ class NonBondedTheory:
                     #Dict using two keys (actually a tuple of two keys)
                     self.LJpairpotdict[(at_i,at_j)] = [sigma, epsilon]
                     #print(self.LJpairpotentials)
-        print_time_rel(CheckpointTime, modulename="pairpotentials")
+        #Takes not time so disabling time-printing
+        #print_time_rel(CheckpointTime, modulename="pairpotentials")
         #Remove redundant pair potentials
         CheckpointTime = time.time()
         for acount, pairpot_a in enumerate(self.LJpairpotentials):
@@ -449,7 +450,6 @@ class NonBondedTheory:
                 if acount < bcount:
                     if set(pairpot_a) == set(pairpot_b):
                         del self.LJpairpotentials[bcount]
-        print_time_rel(CheckpointTime)
         print("Final LJ pair potentials (sigma_ij, epsilon_ij):\n", self.LJpairpotentials)
         print("New: LJ pair potentials as dict:")
         print("self.LJpairpotdict:", self.LJpairpotdict)
@@ -472,8 +472,12 @@ class NonBondedTheory:
             #IF not doing python-jl
             #from julia.api import Julia
             #jl = Julia(compiled_modules=False)
+            #Possibly disables deprecated warning
+            #Julia(depwarn=True)
             # Import Julia
             try:
+                from julia.api import Julia
+                jl = Julia(depwarn=True)
                 from julia import Main
             except:
                 print("Problem importing Pyjulia (import julia)")
