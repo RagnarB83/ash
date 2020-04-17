@@ -477,7 +477,7 @@ class NonBondedTheory:
             # Import Julia
             try:
                 from julia.api import Julia
-                jl = Julia(depwarn=True)
+                jl = Julia(depwarn=False)
                 from julia import Main
             except:
                 print("Problem importing Pyjulia (import julia)")
