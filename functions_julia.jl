@@ -36,16 +36,13 @@ for i in 1:numatoms
             if i in qmatoms && j in qmatoms
                 #print("Skipping i-j pair", i,j, " as these are QM atoms")
                 continue
-            end
-            for (ljpot_types, ljpot_values) in LJdict_jul
-                if atomtypes[i] == ljpot_types[1] && atomtypes[j] == ljpot_types[2]
-                    sigmaij[i, j] = ljpot_values[1]
-                    epsij[i, j] = ljpot_values[2]
-                elseif atomtypes[j] == ljpot_types[1] && atomtypes[i] == ljpot_types[2]
-                    sigmaij[i, j] = ljpot_values[1]
-                    epsij[i, j] = ljpot_values[2]
-                end
-            end
+             elseif haskey(LJpairpotentialsdict, (atomtypes[i],atomtypes[j]))
+                    sigmaij[i, j] = LJpairpotentialsdict[(atomtypes[i], atomtypes[j])][1]
+                    epsij[i, j] = LJpairpotentialsdict[(atomtypes[i], atomtypes[j])][2]
+             elseif haskey(LJpairpotentialsdict, (atomtypes[j],atomtypes[i]))
+                sigmaij[i, j] = LJpairpotentialsdict[(atomtypes[j], atomtypes[i])][1]
+                    epsij[i, j] = LJpairpotentialsdict[(atomtypes[j], atomtypes[i])][2]
+             end
     end
 end
 return sigmaij,epsij
