@@ -39,7 +39,7 @@ for i in 1:numatoms
              elseif haskey(LJdict_jul, (atomtypes[i],atomtypes[j]))
                  sigmaij[i, j] = LJdict_jul[(atomtypes[i], atomtypes[j])][1]
                  epsij[i, j] = LJdict_jul[(atomtypes[i], atomtypes[j])][2]
-             elseif haskey(LJpairpotentialsdict, (atomtypes[j],atomtypes[i]))
+             elseif haskey(LJdict_jul, (atomtypes[j],atomtypes[i]))
                 sigmaij[i, j] = LJdict_jul[(atomtypes[j], atomtypes[i])][1]
                 epsij[i, j] = LJdict_jul[(atomtypes[j], atomtypes[i])][2]
              end
