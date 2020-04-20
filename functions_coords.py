@@ -1204,7 +1204,7 @@ def QMregionfragexpand(fragment=None,initial_atoms=[], radius=None):
                     #Get molecule members atoms for atom index.
                     #Using stored connectivity because takes forever otherwise
                     #If no connectivity
-                    if len(frament.connectivity) == 0:
+                    if len(fragment.connectivity) == 0:
                         #wholemol=get_molecule_members_loop(fragment.coords, fragment.elems, index, 1, scale, tol)
                         wholemol=get_molecule_members_loop(fragment.coords, fragment.elems, 99, scale, tol, atomindex=index)
                     #If stored connectivity
