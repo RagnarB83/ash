@@ -284,6 +284,8 @@ In the code example above, a new variable called "expanded_central_region" is de
 whole fragments that are 3 Å away from the central mainfrag.
 This expanded_central_region list can then be fed to qmatoms and actaoms keyword arguments in either a QM/MM optimization
 job or a single-point property job.
+The radius variable would have to be tweaked and the result inspected to get appropriately sized and shaped QM-clusters.
+**Note:** The charge and multiplicity keywords probably need to be changed for the new QM-cluster calculations.
 
 
 
