@@ -72,45 +72,45 @@ function distance(x::Array{Float64, 2}, y::Array{Float64, 2})
     return r
 end
 
-function get_connected_atoms_julia(coords, elems,eldict_covrad, scale,tol, atomindex):
-    eldict_covrad_jul=convert(Dict{String,Float64}, eldict_covrad)
-    connatoms = Array(Int, 0)
-    coords_ref=coords[atomindex]
-    elem_ref=elems[atomindex]
+#function get_connected_atoms_julia(coords, elems,eldict_covrad, scale,tol, atomindex):
+#    eldict_covrad_jul=convert(Dict{String,Float64}, eldict_covrad)
+#    connatoms = Array(Int, 0)
+#    coords_ref=coords[atomindex]
+#    elem_ref=elems[atomindex]
 
-    for (i,c) in enumerate(coords):
-        if distance(coords_ref,c) < scale*(eldict_covrad_jul[elems[i]]+eldict_covrad_jul[elem_ref]) + tol
-            push!(connatoms, i)
+#    for (i,c) in enumerate(coords)
+#        if distance(coords_ref,c) < scale*(eldict_covrad_jul[elems[i]]+eldict_covrad_jul[elem_ref]) + tol
+#            push!(connatoms, i)
 #TODO: remove atomindex from connatoms
-    return connatoms
-end
+#    return connatoms
+#end
 
 
 #Python-ish version
-function get_connected_atoms_julia_vector(coords, elems,eldict_covrad, scale,tol, atomindex):
-    eldict_covrad_jul=convert(Dict{String,Float64}, eldict_covrad)
+#function get_connected_atoms_julia_vector(coords, elems,eldict_covrad, scale,tol, atomindex)
+#    eldict_covrad_jul=convert(Dict{String,Float64}, eldict_covrad)
 
     #Pre-compute Euclidean distance array
-    dists=distance(coords,coords)
+#    dists=distance(coords,coords)
 
     #Getting all thresholds as list via list comprehension.
-    el_covrad_ref=eldict_covrad[elems[atomindex]]
+#    el_covrad_ref=eldict_covrad[elems[atomindex]]
     # TODO: Slowest part but hard to make faster
-    thresholds=np.array([eldict_covrad[elems[i]] for i in range(len(elems))])
+#    thresholds=np.array([eldict_covrad[elems[i]] for i in range(len(elems))])
     #Numpy addition and multiplication done on whole array
-    thresholds=thresholds+el_covrad_ref
-    thresholds=thresholds*scale
-    thresholds=thresholds+tol
+#    thresholds=thresholds+el_covrad_ref
+#    thresholds=thresholds*scale
+#    thresholds=thresholds+tol
     #Old slow way
     #thresholds=np.array([threshold_conn(elems[i], elem_ref,scale,tol) for i in range(len(elems))])
     #Getting difference of distances and thresholds
-    diff=distances-thresholds
+#    diff=distances-thresholds
 
-    connatoms = []
+#    connatoms = []
     #Getting connatoms by finding indices of diff with negative values (i.e. where distance is smaller than threshold)
-    connatoms=np.where(diff<0)[0].tolist()
-    return connatoms
-end
+#    connatoms=np.where(diff<0)[0].tolist()
+#    return connatoms
+#end
 
 
 
