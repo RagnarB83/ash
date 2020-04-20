@@ -273,15 +273,17 @@ The qmatoms and actatoms lists (i.e. the values provided to qmatoms and actatoms
 geomeTRICOptimizer function can be modified manually, e.g. by visually inspecting an XYZ-file version of the Cluster and
 provide the correct list of atom indices (Note: Yggdrasill counts from zero).
 
-More conveniently, the QMregionexpand function can be used to find nearby atoms for a list of atoms.
+More conveniently, the QMregionfragexpand function can be used to find nearby atoms for an initial list of atoms.
 
 .. code-block:: python
 
     Centralmainfrag=Cluster.connectivity[0]
-    expanded_central_region = QMregionexpand(fragment=Cluster,initial_atoms=Centralmainfrag, radius=3)
+    expanded_central_region = QMregionfragexpand(fragment=Cluster,initial_atoms=Centralmainfrag, radius=3)
 
 In the code example above, a new variable called "expanded_central_region" is defined that contains a new list of atoms containing
 whole fragments that are 3 Å away from the central mainfrag.
+This expanded_central_region list can then be fed to qmatoms and actaoms keyword arguments in either a QM/MM optimization
+job or a single-point property job.
 
 
 

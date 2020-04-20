@@ -1,6 +1,7 @@
 from functions_general import *
 import numpy as np
-import settings_molcrys
+#import settings_molcrys
+import settings_yggdrasill
 import constants
 #from math import sqrt
 #from math import pow
@@ -1175,7 +1176,7 @@ AXIS_REFLECTIONS = np.array([
 #Used by molcrys. Similar to get_solvshell function in functions_solv.py
 def QMregionfragexpand(fragment=None,initial_atoms=[], radius=None):
 
-    scale=settings_yggdrasill.scle
+    scale=settings_yggdrasill.scale
     tol=settings_yggdrasill.tol
 
 

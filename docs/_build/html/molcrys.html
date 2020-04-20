@@ -397,13 +397,15 @@ as the QM-MM boundary effect can be reduced.</p>
 <p>The qmatoms and actatoms lists (i.e. the values provided to qmatoms and actatoms keyword arguments to QM/MM object or
 geomeTRICOptimizer function can be modified manually, e.g. by visually inspecting an XYZ-file version of the Cluster and
 provide the correct list of atom indices (Note: Yggdrasill counts from zero).</p>
-<p>More conveniently, the QMregionexpand function can be used to find nearby atoms for a list of atoms.</p>
+<p>More conveniently, the QMregionfragexpand function can be used to find nearby atoms for an initial list of atoms.</p>
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">Centralmainfrag</span><span class="o">=</span><span class="n">Cluster</span><span class="o">.</span><span class="n">connectivity</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
-<span class="n">expanded_central_region</span> <span class="o">=</span> <span class="n">QMregionexpand</span><span class="p">(</span><span class="n">fragment</span><span class="o">=</span><span class="n">Cluster</span><span class="p">,</span><span class="n">initial_atoms</span><span class="o">=</span><span class="n">Centralmainfrag</span><span class="p">,</span> <span class="n">radius</span><span class="o">=</span><span class="mi">3</span><span class="p">)</span>
+<span class="n">expanded_central_region</span> <span class="o">=</span> <span class="n">QMregionfragexpand</span><span class="p">(</span><span class="n">fragment</span><span class="o">=</span><span class="n">Cluster</span><span class="p">,</span><span class="n">initial_atoms</span><span class="o">=</span><span class="n">Centralmainfrag</span><span class="p">,</span> <span class="n">radius</span><span class="o">=</span><span class="mi">3</span><span class="p">)</span>
 </pre></div>
 </div>
 <p>In the code example above, a new variable called “expanded_central_region” is defined that contains a new list of atoms containing
-whole fragments that are 3 Å away from the central mainfrag.</p>
+whole fragments that are 3 Å away from the central mainfrag.
+This expanded_central_region list can then be fed to qmatoms and actaoms keyword arguments in either a QM/MM optimization
+job or a single-point property job.</p>
 </div>
 <div class="section" id="molcrys-property-calculation">
 <h2>MOLCRYS Property calculation<a class="headerlink" href="#molcrys-property-calculation" title="Permalink to this headline">¶</a></h2>
