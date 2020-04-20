@@ -1,0 +1,444 @@
+
+
+<!DOCTYPE html>
+<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>MolCrys: Automatic QM/MM for Molecular Crystals &mdash; Yggdrasill 0.1 documentation</title>
+  
+
+  
+  
+  
+  
+
+  
+  <script type="text/javascript" src="_static/js/modernizr.min.js"></script>
+  
+    
+      <script type="text/javascript" id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
+        <script type="text/javascript" src="_static/jquery.js"></script>
+        <script type="text/javascript" src="_static/underscore.js"></script>
+        <script type="text/javascript" src="_static/doctools.js"></script>
+        <script type="text/javascript" src="_static/language_data.js"></script>
+    
+    <script type="text/javascript" src="_static/js/theme.js"></script>
+
+    
+
+  
+  <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
+  <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+  <link rel="stylesheet" href="_static/my_theme.css" type="text/css" />
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="Things to todo" href="TODO.html" />
+    <link rel="prev" title="ORCA Interface" href="orca-interface.html" /> 
+</head>
+
+<body class="wy-body-for-nav">
+
+   
+  <div class="wy-grid-for-nav">
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search"  style="background: white" >
+          
+
+          
+            <a href="index.html" class="icon icon-home"> Yggdrasill
+          
+
+          
+            
+            <img src="_static/yggdrasill-test-for-ascii.png" class="logo" alt="Logo"/>
+          
+          </a>
+
+          
+            
+            
+              <div class="version">
+                0.1
+              </div>
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+              
+            
+            
+              <p class="caption"><span class="caption-text">Contents:</span></p>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="setup.html">Setup</a></li>
+<li class="toctree-l1"><a class="reference internal" href="basics.html">Basic usage</a></li>
+<li class="toctree-l1"><a class="reference internal" href="coordinate-input.html">Coordinates and fragments</a></li>
+<li class="toctree-l1"><a class="reference internal" href="job-types.html">Job Types</a></li>
+<li class="toctree-l1"><a class="reference internal" href="QM-interfaces.html">QM Interfaces</a></li>
+<li class="toctree-l1"><a class="reference internal" href="orca-interface.html">ORCA Interface</a></li>
+<li class="toctree-l1 current"><a class="current reference internal" href="#">MolCrys: Automatic QM/MM for Molecular Crystals</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#example-qm-mm-cluster-setup-from-cif-file">Example: QM/MM Cluster setup from CIF-file</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#molcrys-geometry-optimization">MOLCRYS Geometry optimization</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#molcrys-property-calculation">MOLCRYS Property calculation</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#molcrys-numerical-frequencies">MOLCRYS Numerical frequencies</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#molecular-dynamics">Molecular Dynamics</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#connectivity-issues">Connectivity issues</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="TODO.html">Things to todo</a></li>
+<li class="toctree-l1"><a class="reference internal" href="yggdrasill-classes.html">Yggdrasill object classes</a></li>
+</ul>
+
+            
+          
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" aria-label="top navigation">
+        
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="index.html">Yggdrasill</a>
+        
+      </nav>
+
+
+      <div class="wy-nav-content">
+        
+        <div class="rst-content">
+        
+          
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+
+  <ul class="wy-breadcrumbs">
+    
+      <li><a href="index.html">Docs</a> &raquo;</li>
+        
+      <li>MolCrys: Automatic QM/MM for Molecular Crystals</li>
+    
+    
+      <li class="wy-breadcrumbs-aside">
+        
+            
+            <a href="_sources/molcrys.rst.txt" rel="nofollow"> View page source</a>
+          
+        
+      </li>
+    
+  </ul>
+
+  
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <div class="section" id="molcrys-automatic-qm-mm-for-molecular-crystals">
+<h1>MolCrys: Automatic QM/MM for Molecular Crystals<a class="headerlink" href="#molcrys-automatic-qm-mm-for-molecular-crystals" title="Permalink to this headline">¶</a></h1>
+<p>The automatic molecular crystal QM/MM method in Yggdrasill is based on the work described
+in articles by Bjornsson et al.[1,2]</p>
+<p><strong>The basic (automatic) protocol is:</strong></p>
+<div class="line-block">
+<div class="line">1. Read CIF-file (or Vesta XTL-file) containing fractional coordinates of the cell.</div>
+<div class="line">2. Apply symmetry operations to get coordinates for whole unit cell</div>
+<div class="line">3. Identify the molecular fragments present in cell via connectivity and match with user-input</div>
+<div class="line">4. Extend the unit cell and cut out a spherical cluster with user-defined MM radius (typically 30-50 Å). Only whole molecules included.</div>
+<div class="line">5. Define atomic charges of the molecular fragments from QM calculations.</div>
+<div class="line">6. Define Lennard-Jones parameters of the molecular fragments.</div>
+<div class="line">7. Iterate the atomic charges of the main molecular fragment in the center of the cluster until self-concistency.</div>
+<div class="line">8. Optional: Perform QM/MM geometry optimization of the central fragment or other job types.</div>
+<div class="line">9. Optional: Extend the QM-region around the central fragment for improved accuracy</div>
+<div class="line">10. Optional: Perform numerical frequency calculations or molecular dynamics simulations</div>
+<div class="line">11. Optional: Molecular property calculation in the solid-state</div>
+</div>
+<div class="line-block">
+<div class="line">Critical features of the implementation:</div>
+<div class="line">- Handles CIF-files with inconsistent atom ordering by automatic fragment reordering.</div>
+<div class="line">- Improved accuracy via QM-region expansion</div>
+<div class="line">- Numerical frequencies (to be tested)</div>
+</div>
+<div class="line-block">
+<div class="line">Limitations:</div>
+<div class="line">- CIF file can not contain extra atoms such as multiple thermal populations. Also missing H-atoms have to be added beforehand.</div>
+<div class="line">- Polymeric systems or pure solids (e.g. metallic) can not be described. Only system with natural fragmentation.</div>
+</div>
+<div class="line-block">
+<div class="line">Features to be implemented:</div>
+<div class="line">- Automatic derivation of Lennard-Jones parameters</div>
+<div class="line">- Beyond Lennard-Jones</div>
+<div class="line">- Molecular dynamics</div>
+</div>
+<div class="line-block">
+<div class="line">1. Modelling Molecular Crystals by QM/MM: Self-Consistent Electrostatic Embedding for Geometry Optimizations and Molecular Property Calculations in the Solid,  R. Bjornsson and M. Bühl,  J. Chem. Theory Comput., 2012, 8, 498-508.</div>
+<div class="line">2. R. Bjornsson, manuscript in preparation</div>
+</div>
+<div class="section" id="example-qm-mm-cluster-setup-from-cif-file">
+<h2>Example: QM/MM Cluster setup from CIF-file<a class="headerlink" href="#example-qm-mm-cluster-setup-from-cif-file" title="Permalink to this headline">¶</a></h2>
+<p>Here we show how to use code for an example Na[H2PO4] crystal. This molecular crystal contains 2 fragment-types:
+Na<sup>+</sup> and H<sub>2</sub>PO<sub>4</sub><sup>-</sup> </p>
+<p>In the Python script, one has to initially import Yggdrasill, the molcrys module and call the settings_yggdrasill.init() function.</p>
+<p>The script then actually just calls one function, called <strong>molcrys</strong> at the bottom of the script:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">Cluster</span> <span class="o">=</span> <span class="n">molcrys</span><span class="p">(</span><span class="n">cif_file</span><span class="o">=</span><span class="n">cif_file</span><span class="p">,</span> <span class="n">fragmentobjects</span><span class="o">=</span><span class="n">fragmentobjects</span><span class="p">,</span> <span class="n">theory</span><span class="o">=</span><span class="n">ORCAcalc</span><span class="p">,</span>
+    <span class="n">numcores</span><span class="o">=</span><span class="n">numcores</span><span class="p">,</span> <span class="n">clusterradius</span><span class="o">=</span><span class="n">sphereradius</span><span class="p">,</span> <span class="n">chargemodel</span><span class="o">=</span><span class="n">chargemodel</span><span class="p">,</span> <span class="n">shortrangemodel</span><span class="o">=</span><span class="n">shortrangemodel</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>This is the only function of this script but as we can see, there are a number of arguments to be provided.
+It is usually more convenient to define first the necessary variables in multiple lines above this command.
+In the full script, seen below, a number of variables are defined, following standard Python syntax.
+The variables are then passed as arguments to the  <strong>molcrys</strong> function at the bottom of the script.</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">yggdrasill</span> <span class="kn">import</span> <span class="o">*</span>
+<span class="kn">from</span> <span class="nn">molcrys</span> <span class="kn">import</span> <span class="o">*</span>
+<span class="n">settings_yggdrasill</span><span class="o">.</span><span class="n">init</span><span class="p">()</span>
+<span class="c1">#######################</span>
+<span class="c1"># MOLCRYS INPUT          #</span>
+<span class="c1">#######################</span>
+<span class="n">cif_file</span><span class="o">=</span><span class="s2">&quot;nah2po4_choudhary1981.cif&quot;</span>
+<span class="n">sphereradius</span><span class="o">=</span><span class="mi">35</span>
+
+<span class="c1">#Number of cores available for either ORCA parallelization or multiprocessing</span>
+<span class="n">numcores</span><span class="o">=</span><span class="mi">12</span>
+
+<span class="c1">#Charge-iteration QMinput</span>
+<span class="n">orcadir</span><span class="o">=</span><span class="s1">&#39;/opt/orca_4.2.1&#39;</span>
+<span class="n">orcasimpleinput</span><span class="o">=</span><span class="s2">&quot;! BP86 def2-SVP def2/J Grid5 Finalgrid6 tightscf&quot;</span>
+<span class="n">orcablocks</span><span class="o">=</span><span class="s2">&quot;</span><span class="si">%s</span><span class="s2">cf maxiter 200 end&quot;</span>
+<span class="c1">#Defining QM theory without fragment, charge or mult</span>
+<span class="n">ORCAcalc</span> <span class="o">=</span> <span class="n">ORCATheory</span><span class="p">(</span><span class="n">orcadir</span><span class="o">=</span><span class="n">orcadir</span><span class="p">,</span> <span class="n">orcasimpleinput</span><span class="o">=</span><span class="n">orcasimpleinput</span><span class="p">,</span> <span class="n">orcablocks</span><span class="o">=</span><span class="n">orcablocks</span><span class="p">,</span> <span class="n">nprocs</span><span class="o">=</span><span class="n">numcores</span><span class="p">)</span>
+
+<span class="c1">#Chargemodel options: CHELPG, Hirshfeld, CM5, NPA, Mulliken</span>
+<span class="n">chargemodel</span><span class="o">=</span><span class="s1">&#39;Hirshfeld&#39;</span>
+<span class="c1">#Shortrange model. Usually Lennard-Jones. Options: UFF_all, UFF_modH</span>
+<span class="n">shortrangemodel</span><span class="o">=</span><span class="s1">&#39;UFF_modH&#39;</span>
+
+<span class="c1">#Define fragment types in crystal: Descriptive name, formula, charge and mult</span>
+<span class="c1">#TODO: Have alternative for formula being nuccharge, as a backup. Maybe mass too (rounded to 1 amu)</span>
+<span class="n">mainfrag</span> <span class="o">=</span> <span class="n">Fragmenttype</span><span class="p">(</span><span class="s2">&quot;Phosphate&quot;</span><span class="p">,</span><span class="s2">&quot;PO4H2&quot;</span><span class="p">,</span> <span class="n">charge</span><span class="o">=-</span><span class="mi">1</span><span class="p">,</span><span class="n">mult</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+<span class="n">counterfrag1</span> <span class="o">=</span> <span class="n">Fragmenttype</span><span class="p">(</span><span class="s2">&quot;Sodium&quot;</span><span class="p">,</span><span class="s2">&quot;Na&quot;</span><span class="p">,</span> <span class="n">charge</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span><span class="n">mult</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+<span class="c1">#Define list of fragmentobjects. Passed on to molcrys</span>
+<span class="n">fragmentobjects</span><span class="o">=</span><span class="p">[</span><span class="n">mainfrag</span><span class="p">,</span><span class="n">counterfrag1</span><span class="p">]</span>
+
+<span class="c1">#Define global system settings (currently scale and tol keywords for connectivity)</span>
+<span class="n">settings_yggdrasill</span><span class="o">.</span><span class="n">scale</span><span class="o">=</span><span class="mf">1.0</span>
+<span class="n">settings_yggdrasill</span><span class="o">.</span><span class="n">tol</span><span class="o">=</span><span class="mf">0.3</span>
+<span class="c1">#settings_molcrys.tol=0.0001</span>
+<span class="c1"># Modified radii to assist with connectivity.</span>
+<span class="c1">#Setting radius of Na to almost 0. Na will then not bond</span>
+<span class="n">eldict_covrad</span><span class="p">[</span><span class="s1">&#39;Na&#39;</span><span class="p">]</span><span class="o">=</span><span class="mf">0.0001</span>
+<span class="c1">#eldict_covrad[&#39;H&#39;]=0.15</span>
+<span class="nb">print</span><span class="p">(</span><span class="n">eldict_covrad</span><span class="p">)</span>
+
+
+<span class="c1">#Calling molcrys function and define Cluster object</span>
+<span class="n">Cluster</span> <span class="o">=</span> <span class="n">molcrys</span><span class="p">(</span><span class="n">cif_file</span><span class="o">=</span><span class="n">cif_file</span><span class="p">,</span> <span class="n">fragmentobjects</span><span class="o">=</span><span class="n">fragmentobjects</span><span class="p">,</span> <span class="n">theory</span><span class="o">=</span><span class="n">ORCAcalc</span><span class="p">,</span>
+        <span class="n">numcores</span><span class="o">=</span><span class="n">numcores</span><span class="p">,</span> <span class="n">clusterradius</span><span class="o">=</span><span class="n">sphereradius</span><span class="p">,</span> <span class="n">chargemodel</span><span class="o">=</span><span class="n">chargemodel</span><span class="p">,</span> <span class="n">shortrangemodel</span><span class="o">=</span><span class="n">shortrangemodel</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>We point to the CIF file that should be read and define a sphereradius. We also define the number of cores available
+(should later match that defined in the jobscript), that both ORCA and Yggdrasill may use in their parallelization.
+Next, an ORCA theory object is defined where we set the path to ORCA and define the structure of the inputfile used
+when running ORCA calculations.</p>
+<p>The chargemodel and shortrangemodel variables are used to define keywords that <strong>molcrys</strong> will recognize.
+The chargemodel defines how to derive the pointcharges for the MM cluster for the QM-MM electrostatic interaction. Available chargemodels are: CHELPG, Hirshfeld, CM5, NPA, Mulliken</p>
+<p>The shortrangemodel defines the short-range interactions between QM and MM atoms (other than the electrostatic).
+Currently, only the UFF Lennard-Jones model is available that uses element-specific parameters (from the Universal Forcefield, UFF) to set up Lennard-Jones potentials between
+all atoms. The “UFF_modH” keyword is currently recommended that uses available parameters for all elements except the LJ
+parameters for H are set to zero to avoid artificial repulsion for acidic H-atoms.</p>
+<p>Next, we have to define the fragments present in the crystal. In the future, this may become more automated.
+Thus, we define a fragment, called <em>mainfrag</em>, that is our primary interest. Here, this is the H<sub>2</sub>PO<sub>4</sub><sup>-</sup> anion, while the counterion Na<sup>+</sup> ion is of less interest, here labelled <em>counterfrag1</em>.
+This distinction between fragments means that the <em>mainfrag</em> will be at the center of the cluster.
+It also means that the charge-iterations are only performed for <em>mainfrag</em>.</p>
+<p>Finally, the script shows how the connectivity can be modified in order for the fragment identification to succeed.
+The fragment identification works by finding what atoms are connected according to the formula:</p>
+<p>(AtomA,AtomB-distance) &lt; scale*(AtomA-covalent-radius+AtomB-covalent-radius) + tol</p>
+<p>Thus, if the distance between atoms A and B is less than the sum of the elemental covalent radii
+(which can be scaled by a parameter scale or shifted by a parameter tol) then the atoms are connected.
+Using default parameters of the element radii (Alvarez 2008), the default scaling of 1.0 and a tolerance of 0.1
+(global scale and tol parameters are defined in settings_yggdrasill file) works in many cases.
+For the NaH<sub>2</sub> PO<sub>4</sub> crystal, however, that features strong hydrogen-bonding and the ionic Na<sup>+</sup> fragment, however, we have to make some modifications.
+In the script above, we thus have to set the tol parameter to 0.3 and change the radius of the Na<sup>+</sup> ion to a small value.
+The covalent radii of the elements are stored in a global Python dictionary, eldict_covrad which can be easily modified as shown
+and its contents printed. In the future, the radius of the Na may by default be set to a small number.</p>
+<p>Unlike the other variables, the settings_yggdrasill.scale, settings_yggdrasill.tol and eldict_covrad are global variables
+that <strong>molcrys</strong> and <strong>Yggdrasill</strong> will have access to.</p>
+<p>The other variables defined in the script have to be passed as keyword argument values to the <strong>molcrys</strong> function:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">Cluster</span> <span class="o">=</span> <span class="n">molcrys</span><span class="p">(</span><span class="n">cif_file</span><span class="o">=</span><span class="n">cif_file</span><span class="p">,</span> <span class="n">fragmentobjects</span><span class="o">=</span><span class="n">fragmentobjects</span><span class="p">,</span> <span class="n">theory</span><span class="o">=</span><span class="n">ORCAcalc</span><span class="p">,</span>
+    <span class="n">numcores</span><span class="o">=</span><span class="n">numcores</span><span class="p">,</span> <span class="n">clusterradius</span><span class="o">=</span><span class="n">sphereradius</span><span class="p">,</span> <span class="n">chargemodel</span><span class="o">=</span><span class="n">chargemodel</span><span class="p">,</span> <span class="n">shortrangemodel</span><span class="o">=</span><span class="n">shortrangemodel</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+<div class="section" id="molcrys-geometry-optimization">
+<h2>MOLCRYS Geometry optimization<a class="headerlink" href="#molcrys-geometry-optimization" title="Permalink to this headline">¶</a></h2>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="k">try</span><span class="p">:</span>
+    <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Cluster:&quot;</span><span class="p">,</span> <span class="n">Cluster</span><span class="p">)</span>
+<span class="k">except</span><span class="p">:</span>
+    <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;No Cluster object found. Reading from file&quot;</span><span class="p">)</span>
+    <span class="n">Cluster</span><span class="o">=</span><span class="n">Fragment</span><span class="p">(</span><span class="n">fragfile</span><span class="o">=</span><span class="s1">&#39;Cluster.ygg&#39;</span><span class="p">)</span>
+
+<span class="c1">#Once molcrys is done we have a Cluster object (named Cluster) in memory and also printed to disk</span>
+<span class="c1"># We can then do optimization right here using Cluster object.</span>
+<span class="c1">#Alternatively or for restart purposes we can read Cluster object into a separate QM/MM Opt job.</span>
+<span class="c1">#READ fragmentobjects also from file. Must have charge and mult attributes</span>
+<span class="c1">#Something similar to mainfrag-info.txt / counterfrag-info.txt but in one file ???</span>
+
+<span class="c1">#Optimization</span>
+<span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Now Doing Optimization&quot;</span><span class="p">)</span>
+<span class="c1"># Defining Centralmainfrag (list of atoms) for optimization</span>
+<span class="c1">#Can also be done manually I guess</span>
+<span class="n">Centralmainfrag</span><span class="o">=</span><span class="n">fragmentobjects</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">clusterfraglist</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+<span class="c1">#Centralmainfrag=[0, 4, 10, 14, 15, 16, 78, 333, 7100, 7101, 7102, 7105, 7107, 7108, 7110, 7111, 7112, 7116, 7117, 7118, 7178, 7179, 7180, 7762]</span>
+<span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Centralmainfrag:&quot;</span><span class="p">,</span> <span class="n">Centralmainfrag</span><span class="p">)</span>
+
+<span class="n">charge</span><span class="o">=</span><span class="n">fragmentobjects</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">Charge</span>
+<span class="n">mult</span><span class="o">=</span><span class="n">fragmentobjects</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">Mult</span>
+<span class="c1">#</span>
+<span class="n">Cluster_FF</span><span class="o">=</span><span class="n">MMforcefield_read</span><span class="p">(</span><span class="s1">&#39;Cluster_forcefield.ff&#39;</span><span class="p">)</span>
+
+<span class="c1">#Theory level for Optimization</span>
+<span class="n">ORCAQMtheory</span> <span class="o">=</span> <span class="n">ORCATheory</span><span class="p">(</span><span class="n">orcadir</span><span class="o">=</span><span class="n">orcadir</span><span class="p">,</span> <span class="n">charge</span><span class="o">=</span><span class="n">charge</span><span class="p">,</span> <span class="n">mult</span><span class="o">=</span><span class="n">mult</span><span class="p">,</span> <span class="n">orcasimpleinput</span><span class="o">=</span><span class="n">orcasimpleinput</span><span class="p">,</span> <span class="n">orcablocks</span><span class="o">=</span><span class="n">orcablocks</span><span class="p">)</span>
+<span class="n">MMpart</span> <span class="o">=</span> <span class="n">NonBondedTheory</span><span class="p">(</span><span class="n">charges</span> <span class="o">=</span> <span class="n">Cluster</span><span class="o">.</span><span class="n">atomcharges</span><span class="p">,</span> <span class="n">atomtypes</span><span class="o">=</span><span class="n">Cluster</span><span class="o">.</span><span class="n">atomtypes</span><span class="p">,</span> <span class="n">forcefield</span><span class="o">=</span><span class="n">Cluster_FF</span><span class="p">,</span> <span class="n">LJcombrule</span><span class="o">=</span><span class="s1">&#39;geometric&#39;</span><span class="p">)</span>
+<span class="n">QMMM_SP_ORCAcalculation</span> <span class="o">=</span> <span class="n">QMMMTheory</span><span class="p">(</span><span class="n">fragment</span><span class="o">=</span><span class="n">Cluster</span><span class="p">,</span> <span class="n">qm_theory</span><span class="o">=</span><span class="n">ORCAQMtheory</span><span class="p">,</span> <span class="n">mm_theory</span><span class="o">=</span><span class="n">MMpart</span><span class="p">,</span>
+    <span class="n">qmatoms</span><span class="o">=</span><span class="n">Centralmainfrag</span><span class="p">,</span> <span class="n">atomcharges</span><span class="o">=</span><span class="n">Cluster</span><span class="o">.</span><span class="n">atomcharges</span><span class="p">,</span> <span class="n">embedding</span><span class="o">=</span><span class="s1">&#39;Elstat&#39;</span><span class="p">,</span> <span class="n">nprocs</span><span class="o">=</span><span class="n">numcores</span><span class="p">)</span>
+
+
+<span class="n">geomeTRICOptimizer</span><span class="p">(</span><span class="n">theory</span><span class="o">=</span><span class="n">QMMM_SP_ORCAcalculation</span><span class="p">,</span> <span class="n">fragment</span><span class="o">=</span><span class="n">Cluster</span><span class="p">,</span> <span class="n">coordsystem</span><span class="o">=</span><span class="s1">&#39;tric&#39;</span><span class="p">,</span> <span class="n">maxiter</span><span class="o">=</span><span class="mi">170</span><span class="p">,</span> <span class="n">ActiveRegion</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">actatoms</span><span class="o">=</span><span class="n">Centralmainfrag</span> <span class="p">)</span>
+
+<span class="n">print_time_rel</span><span class="p">(</span><span class="n">settings_yggdrasill</span><span class="o">.</span><span class="n">init_time</span><span class="p">,</span><span class="n">modulename</span><span class="o">=</span><span class="s1">&#39;Entire job&#39;</span><span class="p">)</span>
+<span class="kn">import</span> <span class="nn">sys</span>
+<span class="n">settings_yggdrasill</span><span class="o">.</span><span class="n">init</span><span class="p">()</span> <span class="c1">#initialize</span>
+
+<span class="n">HF_frag</span><span class="o">=</span><span class="n">Fragment</span><span class="p">(</span><span class="n">xyzfiles</span><span class="o">=</span><span class="s2">&quot;hf.xyz&quot;</span><span class="p">)</span>
+<span class="c1">#ORCA</span>
+<span class="n">orcadir</span><span class="o">=</span><span class="s1">&#39;/opt/orca_4.2.1&#39;</span>
+<span class="n">orcasimpleinput</span><span class="o">=</span><span class="s2">&quot;! BP86 def2-SVP Grid5 Finalgrid6 tightscf&quot;</span>
+<span class="n">orcablocks</span><span class="o">=</span><span class="s2">&quot;</span><span class="si">%s</span><span class="s2">cf maxiter 200 end&quot;</span>
+<span class="n">ORCASP</span> <span class="o">=</span> <span class="n">ORCATheory</span><span class="p">(</span><span class="n">orcadir</span><span class="o">=</span><span class="n">orcadir</span><span class="p">,</span> <span class="n">fragment</span><span class="o">=</span><span class="n">HF_frag</span><span class="p">,</span> <span class="n">charge</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">mult</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span>
+                    <span class="n">orcasimpleinput</span><span class="o">=</span><span class="n">orcasimpleinput</span><span class="p">,</span> <span class="n">orcablocks</span><span class="o">=</span><span class="n">orcablocks</span><span class="p">)</span>
+
+<span class="c1">#Simple Energy SP calc</span>
+<span class="n">ORCASP</span><span class="o">.</span><span class="n">run</span><span class="p">()</span>
+</pre></div>
+</div>
+<p>The flexible input-nature of the ORCA interface here allows one to use any method/basis/property inside ORCA for the
+single-point job.</p>
+<p>It is also possible to request a gradient calculation :</p>
+</div>
+<div class="section" id="molcrys-property-calculation">
+<h2>MOLCRYS Property calculation<a class="headerlink" href="#molcrys-property-calculation" title="Permalink to this headline">¶</a></h2>
+<ul class="simple">
+<li><p>NMR, EPR, Mössbauer, XES etc.</p></li>
+</ul>
+</div>
+<div class="section" id="molcrys-numerical-frequencies">
+<h2>MOLCRYS Numerical frequencies<a class="headerlink" href="#molcrys-numerical-frequencies" title="Permalink to this headline">¶</a></h2>
+<p>Not yet ready</p>
+</div>
+<div class="section" id="molecular-dynamics">
+<h2>Molecular Dynamics<a class="headerlink" href="#molecular-dynamics" title="Permalink to this headline">¶</a></h2>
+<p>Not yet ready</p>
+</div>
+<div class="section" id="connectivity-issues">
+<h2>Connectivity issues<a class="headerlink" href="#connectivity-issues" title="Permalink to this headline">¶</a></h2>
+<p>Connectivity issues</p>
+</div>
+</div>
+
+
+           </div>
+           
+          </div>
+          <footer>
+  
+    <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
+      
+        <a href="TODO.html" class="btn btn-neutral float-right" title="Things to todo" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right"></span></a>
+      
+      
+        <a href="orca-interface.html" class="btn btn-neutral float-left" title="ORCA Interface" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left"></span> Previous</a>
+      
+    </div>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &copy; Copyright 2020, Ragnar Bjornsson
+
+    </p>
+  </div>
+  Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a <a href="https://github.com/rtfd/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script>
+
+  
+  
+    
+    <!-- Theme Analytics -->
+    <script>
+    (function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
+      (i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
+      m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
+    })(window,document,'script','https://www.google-analytics.com/analytics.js','ga');
+
+    ga('create', 'UA-XXXXXXX-1', 'auto');
+    ga('send', 'pageview');
+    </script>
+
+    
+   
+
+</body>
+</html>

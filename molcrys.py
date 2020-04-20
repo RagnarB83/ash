@@ -13,7 +13,7 @@ currtime=time.time()
 
 
 def molcrys(cif_file=None, xtl_file=None, fragmentobjects=[], theory=None, numcores=None, chargemodel='',
-            clusterradius=None, shortrangemodel='UFF'):
+            clusterradius=None, shortrangemodel='UFF_modH'):
 
     banner="""
     THE

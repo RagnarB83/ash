@@ -324,7 +324,7 @@ def print_time_rel_and_tot_color(timestampA,timestampB, modulename=''):
 
 # Simple nonbonded MM theory. Charges and LJ-potentials
 class NonBondedTheory:
-    def __init__(self, charges = [], atomtypes=[], forcefield=[], LJcombrule='geometric', codeversion='py', pairarrayversion='py'):
+    def __init__(self, charges = [], atomtypes=[], forcefield=[], LJcombrule='geometric', codeversion='f2py', pairarrayversion='julia'):
         #Atom types
         self.atomtypes=atomtypes
         self.numatoms = len(self.atomtypes)
@@ -477,7 +477,8 @@ class NonBondedTheory:
             # Import Julia
             try:
                 from julia.api import Julia
-                jl = Julia(depwarn=False)
+                #Does not work
+                #jl = Julia(depwarn=False)
                 from julia import Main
             except:
                 print("Problem importing Pyjulia (import julia)")

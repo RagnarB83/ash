@@ -1,6 +1,11 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 #
+#RB NOTES
+# Instructions on modifying the sphinx_rtd theme
+#: https://sphinx-rtd-theme.readthedocs.io/en/latest/configuring.html
+
+
 # Yggdrasill documentation build configuration file, created by
 # sphinx-quickstart on Mon Jan 27 14:15:55 2020.
 #
@@ -31,6 +36,12 @@
 # Add any Sphinx extension module names here, as strings. They can be
 # extensions coming with Sphinx (named 'sphinx.ext.*') or your custom
 # ones.
+
+
+extensions = [
+    "sphinx_rtd_theme",
+]
+
 
 #extensions = ['sphinx.ext.todo',
 #    'sphinx.ext.mathjax', 'sphinx_drove_theme']
@@ -75,7 +86,11 @@ language = None
 exclude_patterns = ['_build', 'Thumbs.db', '.DS_Store']
 
 # The name of the Pygments (syntax highlighting) style to use.
-pygments_style = 'sphinx'
+#pygments_style = 'sphinx' yellow-green
+#pygments_style = 'default' grey
+#pygments_style = 'monokai' black
+pygments_style = 'fruity'
+
 
 # If true, `todo` and `todoList` produce output, else they produce nothing.
 todo_include_todos = True
@@ -89,7 +104,7 @@ todo_include_todos = True
 #Good ones: sphinx_rtd_theme, sphinx_drove_theme, classic, sphinx-pdj-theme, msmb_theme,
 # rtcat-sphinx-theme, sphinx-catalystcloud-theme, ovs-sphinx-theme
 #html_theme = 'ovs-sphinx-theme'
-
+html_theme = 'sphinx_rtd_theme'
 #
 #import ovs_sphinx_theme
 #html_theme_path = [ovs_sphinx_theme.get_theme_dir()]
@@ -106,6 +121,29 @@ todo_include_todos = True
 # documentation.
 #
 # html_theme_options = {}
+#LOGO
+html_logo= '/Users/bjornssonsu/ownCloud/PyQMMM-project/yggdrasill-test-for-ascii.png'
+html_theme_options = {
+    'canonical_url': '',
+    'analytics_id': 'UA-XXXXXXX-1',  #  Provided by Google in your dashboard
+    'logo_only': False,
+    'display_version': True,
+    'prev_next_buttons_location': 'bottom',
+    'style_external_links': False,
+    #'vcs_pageview_mode': '',
+    'style_nav_header_background': 'white',
+    # Toc options
+    'collapse_navigation': True,
+    'sticky_navigation': True,
+    'navigation_depth': 4,
+    'includehidden': True,
+    'titles_only': False
+}
+
+#RB Added
+def setup(app):
+    app.add_stylesheet('my_theme.css')
+
 
 # Add any paths that contain custom static files (such as style sheets) here,
 # relative to this directory. They are copied after the builtin static files,

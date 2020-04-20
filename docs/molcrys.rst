@@ -1,0 +1,251 @@
+=================================================
+MolCrys: Automatic QM/MM for Molecular Crystals
+=================================================
+The automatic molecular crystal QM/MM method in Yggdrasill is based on the work described
+in articles by Bjornsson et al.[1,2]
+
+**The basic (automatic) protocol is:**
+
+
+| 1. Read CIF-file (or Vesta XTL-file) containing fractional coordinates of the cell.
+| 2. Apply symmetry operations to get coordinates for whole unit cell
+| 3. Identify the molecular fragments present in cell via connectivity and match with user-input
+| 4. Extend the unit cell and cut out a spherical cluster with user-defined MM radius (typically 30-50 Å). Only whole molecules included.
+| 5. Define atomic charges of the molecular fragments from QM calculations.
+| 6. Define Lennard-Jones parameters of the molecular fragments.
+| 7. Iterate the atomic charges of the main molecular fragment in the center of the cluster until self-concistency.
+| 8. Optional: Perform QM/MM geometry optimization of the central fragment or other job types.
+| 9. Optional: Extend the QM-region around the central fragment for improved accuracy
+| 10. Optional: Perform numerical frequency calculations or molecular dynamics simulations
+| 11. Optional: Molecular property calculation in the solid-state
+
+
+
+| Critical features of the implementation:
+| - Handles CIF-files with inconsistent atom ordering by automatic fragment reordering.
+| - Improved accuracy via QM-region expansion
+| - Numerical frequencies (to be tested)
+
+| Limitations:
+| - CIF file can not contain extra atoms such as multiple thermal populations. Also missing H-atoms have to be added beforehand.
+| - Polymeric systems or pure solids (e.g. metallic) can not be described. Only system with natural fragmentation.
+
+| Features to be implemented:
+| - Automatic derivation of Lennard-Jones parameters
+| - Beyond Lennard-Jones
+| - Molecular dynamics
+
+| 1. Modelling Molecular Crystals by QM/MM: Self-Consistent Electrostatic Embedding for Geometry Optimizations and Molecular Property Calculations in the Solid,  R. Bjornsson and M. Bühl,  J. Chem. Theory Comput., 2012, 8, 498-508.
+| 2. R. Bjornsson, manuscript in preparation
+
+###############################################
+Example: QM/MM Cluster setup from CIF-file
+###############################################
+Here we show how to use code for an example Na[H2PO4] crystal. This molecular crystal contains 2 fragment-types:
+Na\ :sup:`+` \ and H\ :sub:`2`\PO\ :sub:`4`:sup:`-` \
+
+In the Python script, one has to initially *import Yggdrasill*, the molcrys module and call the *settings_yggdrasill.init()* function.
+
+The script then actually just calls one function, called **molcrys** at the bottom of the script:
+
+.. code-block:: python
+
+    Cluster = molcrys(cif_file=cif_file, fragmentobjects=fragmentobjects, theory=ORCAcalc,
+        numcores=numcores, clusterradius=sphereradius, chargemodel=chargemodel, shortrangemodel=shortrangemodel)
+
+
+This is the only function of this script but as we can see, there are a number of arguments to be provided.
+It is usually more convenient to define first the necessary variables in multiple lines above this command.
+In the full script, seen below, a number of variables are defined, following standard Python syntax.
+The variables are then passed as arguments to the  **molcrys** function at the bottom of the script.
+
+.. code-block:: python
+
+    from yggdrasill import *
+    from molcrys import *
+    settings_yggdrasill.init()
+    #######################
+    # MOLCRYS INPUT          #
+    #######################
+    cif_file="nah2po4_choudhary1981.cif"
+    sphereradius=35
+
+    #Number of cores available for either ORCA parallelization or multiprocessing
+    numcores=12
+
+    #Charge-iteration QMinput
+    orcadir='/opt/orca_4.2.1'
+    orcasimpleinput="! BP86 def2-SVP def2/J Grid5 Finalgrid6 tightscf"
+    orcablocks="%scf maxiter 200 end"
+    #Defining QM theory without fragment, charge or mult
+    ORCAcalc = ORCATheory(orcadir=orcadir, orcasimpleinput=orcasimpleinput, orcablocks=orcablocks, nprocs=numcores)
+
+    #Chargemodel options: CHELPG, Hirshfeld, CM5, NPA, Mulliken
+    chargemodel='Hirshfeld'
+    #Shortrange model. Usually Lennard-Jones. Options: UFF_all, UFF_modH
+    shortrangemodel='UFF_modH'
+
+    #Define fragment types in crystal: Descriptive name, formula, charge and mult
+    #TODO: Have alternative for formula being nuccharge, as a backup. Maybe mass too (rounded to 1 amu)
+    mainfrag = Fragmenttype("Phosphate","PO4H2", charge=-1,mult=1)
+    counterfrag1 = Fragmenttype("Sodium","Na", charge=1,mult=1)
+    #Define list of fragmentobjects. Passed on to molcrys
+    fragmentobjects=[mainfrag,counterfrag1]
+
+    #Define global system settings (currently scale and tol keywords for connectivity)
+    settings_yggdrasill.scale=1.0
+    settings_yggdrasill.tol=0.3
+    #settings_molcrys.tol=0.0001
+    # Modified radii to assist with connectivity.
+    #Setting radius of Na to almost 0. Na will then not bond
+    eldict_covrad['Na']=0.0001
+    #eldict_covrad['H']=0.15
+    print(eldict_covrad)
+
+
+    #Calling molcrys function and define Cluster object
+    Cluster = molcrys(cif_file=cif_file, fragmentobjects=fragmentobjects, theory=ORCAcalc,
+            numcores=numcores, clusterradius=sphereradius, chargemodel=chargemodel, shortrangemodel=shortrangemodel)
+
+
+We point to the CIF file that should be read and define a sphereradius. We also define the number of cores available
+(should later match that defined in the jobscript), that both ORCA and Yggdrasill may use in their parallelization.
+Next, an ORCA theory object is defined where we set the path to ORCA and define the structure of the inputfile used
+when running ORCA calculations.
+
+
+The chargemodel and shortrangemodel variables are used to define keywords that **molcrys** will recognize.
+The chargemodel defines how to derive the pointcharges for the MM cluster for the QM-MM electrostatic interaction. Available chargemodels are: CHELPG, Hirshfeld, CM5, NPA, Mulliken
+
+The shortrangemodel defines the short-range interactions between QM and MM atoms (other than the electrostatic).
+Currently, only the UFF Lennard-Jones model is available that uses element-specific parameters (from the Universal Forcefield, UFF) to set up Lennard-Jones potentials between
+all atoms. The "UFF_modH" keyword is currently recommended that uses available parameters for all elements except the LJ
+parameters for H are set to zero to avoid artificial repulsion for acidic H-atoms.
+
+Next, we have to define the fragments present in the crystal. In the future, this may become more automated.
+Thus, we define a fragment, called *mainfrag*, that is our primary interest. Here, this is the H\ :sub:`2`\PO\ :sub:`4`:sup:`-` \
+anion, while the counterion Na\ :sup:`+` \ ion is of less interest, here labelled *counterfrag1*.
+This distinction between fragments means that the *mainfrag* will be at the center of the cluster.
+It also means that the charge-iterations are only performed for *mainfrag*.
+
+Finally, the script shows how the connectivity can be modified in order for the fragment identification to succeed.
+The fragment identification works by finding what atoms are connected according to the formula:
+
+(AtomA,AtomB-distance) < scale*(AtomA-covalent-radius+AtomB-covalent-radius) + tol
+
+Thus, if the distance between atoms A and B is less than the sum of the elemental covalent radii
+(which can be scaled by a parameter scale or shifted by a parameter tol) then the atoms are connected.
+Using default parameters of the element radii (Alvarez 2008), the default scaling of 1.0 and a tolerance of 0.1
+(global scale and tol parameters are defined in settings_yggdrasill file) works in many cases.
+For the NaH\ :sub:`2` \PO\ :sub:`4` \ crystal, however, that features strong hydrogen-bonding and the ionic Na\ :sup:`+` \ fragment, however, we have to make some modifications.
+In the script above, we thus have to set the tol parameter to 0.3 and change the radius of the Na\ :sup:`+` \ ion to a small value.
+The covalent radii of the elements are stored in a global Python dictionary, eldict_covrad which can be easily modified as shown
+and its contents printed. In the future, the radius of the Na may by default be set to a small number.
+
+Unlike the other variables, the *settings_yggdrasill.scale*, *settings_yggdrasill.tol* and *eldict_covrad* are global variables
+that **molcrys** and **Yggdrasill** will have access to.
+
+The other variables defined in the script have to be passed as keyword argument values to the respective keyword of
+the **molcrys** function:
+
+.. code-block:: python
+
+    Cluster = molcrys(cif_file=cif_file, fragmentobjects=fragmentobjects, theory=ORCAcalc,
+        numcores=numcores, clusterradius=sphereradius, chargemodel=chargemodel, shortrangemodel=shortrangemodel)
+
+These are currently the only arguments that can be provide to the **molcrys** function, with the exception that
+instead of a *cif_file* argument, an *xtl_file* argument can alternatively be provided where the name of the XTL-file should
+be passed on instead. An XTL-file can be created by the Vesta software (http://jp-minerals.org/vesta/en/).
+
+The purpose of the molcrys function is to create an Yggdrasill cluster-fragment, here called Cluster. The Cluster fragment
+will contain the coordinates of the spherical MM cluster with charges from the self-consistent QM procedure and atom-types
+defined via the shortrange model procedure chosen. Typically the creation takes only a few minutes, depending on the
+size of the molecular fragments and the sphere radius but usually it is easiest to submit this to the cluster.
+
+#########################################
+MOLCRYS Geometry optimization
+#########################################
+.. code-block:: python
+
+    try:
+        print("Cluster:", Cluster)
+    except:
+        print("No Cluster object found. Reading from file")
+        Cluster=Fragment(fragfile='Cluster.ygg')
+
+    #Once molcrys is done we have a Cluster object (named Cluster) in memory and also printed to disk
+    # We can then do optimization right here using Cluster object.
+    #Alternatively or for restart purposes we can read Cluster object into a separate QM/MM Opt job.
+    #READ fragmentobjects also from file. Must have charge and mult attributes
+    #Something similar to mainfrag-info.txt / counterfrag-info.txt but in one file ???
+
+    #Optimization
+    print("Now Doing Optimization")
+    # Defining Centralmainfrag (list of atoms) for optimization
+    #Can also be done manually I guess
+    Centralmainfrag=fragmentobjects[0].clusterfraglist[0]
+    #Centralmainfrag=[0, 4, 10, 14, 15, 16, 78, 333, 7100, 7101, 7102, 7105, 7107, 7108, 7110, 7111, 7112, 7116, 7117, 7118, 7178, 7179, 7180, 7762]
+    print("Centralmainfrag:", Centralmainfrag)
+
+    charge=fragmentobjects[0].Charge
+    mult=fragmentobjects[0].Mult
+    #
+    Cluster_FF=MMforcefield_read('Cluster_forcefield.ff')
+
+    #Theory level for Optimization
+    ORCAQMtheory = ORCATheory(orcadir=orcadir, charge=charge, mult=mult, orcasimpleinput=orcasimpleinput, orcablocks=orcablocks)
+    MMpart = NonBondedTheory(charges = Cluster.atomcharges, atomtypes=Cluster.atomtypes, forcefield=Cluster_FF, LJcombrule='geometric')
+    QMMM_SP_ORCAcalculation = QMMMTheory(fragment=Cluster, qm_theory=ORCAQMtheory, mm_theory=MMpart,
+        qmatoms=Centralmainfrag, atomcharges=Cluster.atomcharges, embedding='Elstat', nprocs=numcores)
+
+
+    geomeTRICOptimizer(theory=QMMM_SP_ORCAcalculation, fragment=Cluster, coordsystem='tric', maxiter=170, ActiveRegion=True, actatoms=Centralmainfrag )
+
+    print_time_rel(settings_yggdrasill.init_time,modulename='Entire job')
+    import sys
+    settings_yggdrasill.init() #initialize
+
+    HF_frag=Fragment(xyzfiles="hf.xyz")
+    #ORCA
+    orcadir='/opt/orca_4.2.1'
+    orcasimpleinput="! BP86 def2-SVP Grid5 Finalgrid6 tightscf"
+    orcablocks="%scf maxiter 200 end"
+    ORCASP = ORCATheory(orcadir=orcadir, fragment=HF_frag, charge=0, mult=1,
+                        orcasimpleinput=orcasimpleinput, orcablocks=orcablocks)
+
+    #Simple Energy SP calc
+    ORCASP.run()
+
+The flexible input-nature of the ORCA interface here allows one to use any method/basis/property inside ORCA for the
+single-point job.
+
+It is also possible to request a gradient calculation :
+
+
+
+
+
+#########################################
+MOLCRYS Property calculation
+#########################################
+- NMR, EPR, Mössbauer, XES etc.
+
+
+#########################################
+MOLCRYS Numerical frequencies
+#########################################
+
+Not yet ready
+
+#########################################
+Molecular Dynamics
+#########################################
+
+Not yet ready
+
+
+#########################################
+Connectivity issues
+#########################################
+Connectivity issues
+

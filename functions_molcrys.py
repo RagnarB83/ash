@@ -735,8 +735,8 @@ def remove_partial_fragments(coords,elems,sphereradius,fragmentobjects):
     surfaceatoms=np.where(distances>radius)[0].tolist()
     print("Found {} surfaceatoms for outer shell of {} Å".format(len(surfaceatoms),thickness))
     #Todo: remove?
-    with open('surfaceatoms', 'w') as sfile:
-        sfile.write('Surfaceatoms: {}'.format(surfaceatoms))
+    #with open('surfaceatoms', 'w') as sfile:
+    #    sfile.write('Surfaceatoms: {}'.format(surfaceatoms))
     counted=[]
     count=0
     found_atoms=[]
@@ -757,8 +757,8 @@ def remove_partial_fragments(coords,elems,sphereradius,fragmentobjects):
                 fraglist.append(members)
                 found_atoms+=members
 
-    with open('fraglist', 'w') as gfile:
-        gfile.write('fraglist: {}'.format(fraglist))
+    #with open('fraglist', 'w') as gfile:
+    #    gfile.write('fraglist: {}'.format(fraglist))
     flat_fraglist = [item for sublist in fraglist for item in sublist]
     #Todo: remove?
     with open('foundatoms', 'w') as ffile:
@@ -779,12 +779,12 @@ def remove_partial_fragments(coords,elems,sphereradius,fragmentobjects):
             deletionlist+=frag
 
     #print("deletionlist({}(: {}".format(len(deletionlist),deletionlist))
-    with open('deletionlist', 'w') as dfile:
-        dfile.write('deletionlist: {}'.format(deletionlist))
+    #with open('deletionlist', 'w') as dfile:
+    #    dfile.write('deletionlist: {}'.format(deletionlist))
     deletionlist=np.unique(deletionlist).tolist()
     #print("Sorted deletionlist({}(: {}".format(len(deletionlist),deletionlist))
-    with open('sdeletionlist', 'w') as sdfile:
-        sdfile.write('sorted deletionlist: {}'.format(deletionlist))
+    #with open('sdeletionlist', 'w') as sdfile:
+    #    sdfile.write('sorted deletionlist: {}'.format(deletionlist))
     #Deleting atoms in deletion list in reverse
     coords=np.delete(coords, list(reversed(deletionlist)), 0)
     for d in reversed(deletionlist):

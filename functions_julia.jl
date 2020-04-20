@@ -55,33 +55,62 @@ end
 return sigmaij,epsij
 end
 
-#Old version. More intuitive but slower
-function pairpot2(numatoms,atomtypes,LJpydict,qmatoms)
-    #Updating atom indices from 0 to 1 syntax
-    qmatoms=[i+1 for i in qmatoms]
-    #Convert Python dict to Julia dict with correct types
-    LJdict_jul=convert(Dict{Tuple{String,String},Array{Float64,1}}, LJpydict)
-    #println(typeof(LJdict_jul))
-    sigmaij=zeros(numatoms, numatoms)
-    epsij=zeros(numatoms, numatoms)
-for i in 1:numatoms
-    for j in i+1:numatoms
-            #if all(x in qmatoms for x in (i, j))
-            if i in qmatoms && j in qmatoms
-                #print("Skipping i-j pair", i,j, " as these are QM atoms")
-                continue
-             elseif haskey(LJdict_jul, (atomtypes[i],atomtypes[j]))
-                 sigmaij[i, j] = LJdict_jul[(atomtypes[i], atomtypes[j])][1]
-                 epsij[i, j] = LJdict_jul[(atomtypes[i], atomtypes[j])][2]
-             elseif haskey(LJdict_jul, (atomtypes[j],atomtypes[i]))
-                sigmaij[i, j] = LJdict_jul[(atomtypes[j], atomtypes[i])][1]
-                epsij[i, j] = LJdict_jul[(atomtypes[j], atomtypes[i])][2]
-             end
-    end
-end
-return sigmaij,epsij
+#Distance for 2D arrays of coords
+function distance(x::Array{Float64, 2}, y::Array{Float64, 2})
+    nx = size(x, 1)
+    ny = size(y, 1)
+    r=zeros(nx,ny)
+        for j = 1:ny
+            @fastmath for i = 1:nx
+                @inbounds dx = y[j, 1] - x[i, 1]
+                @inbounds dy = y[j, 2] - x[i, 2]
+                @inbounds dz = y[j, 3] - x[i, 3]
+                rSq = dx*dx + dy*dy + dz*dz
+                @inbounds r[i, j] = sqrt(rSq)
+            end
+        end
+    return r
 end
 
+function get_connected_atoms_julia(coords, elems,eldict_covrad, scale,tol, atomindex):
+    eldict_covrad_jul=convert(Dict{String,Float64}, eldict_covrad)
+    connatoms = Array(Int, 0)
+    coords_ref=coords[atomindex]
+    elem_ref=elems[atomindex]
+
+    for (i,c) in enumerate(coords):
+        if distance(coords_ref,c) < scale*(eldict_covrad_jul[elems[i]]+eldict_covrad_jul[elem_ref]) + tol
+            push!(connatoms, i)
+#TODO: remove atomindex from connatoms
+    return connatoms
+end
+
+
+#Python-ish version
+function get_connected_atoms_julia_vector(coords, elems,eldict_covrad, scale,tol, atomindex):
+    eldict_covrad_jul=convert(Dict{String,Float64}, eldict_covrad)
+
+    #Pre-compute Euclidean distance array
+    dists=distance(coords,coords)
+
+    #Getting all thresholds as list via list comprehension.
+    el_covrad_ref=eldict_covrad[elems[atomindex]]
+    # TODO: Slowest part but hard to make faster
+    thresholds=np.array([eldict_covrad[elems[i]] for i in range(len(elems))])
+    #Numpy addition and multiplication done on whole array
+    thresholds=thresholds+el_covrad_ref
+    thresholds=thresholds*scale
+    thresholds=thresholds+tol
+    #Old slow way
+    #thresholds=np.array([threshold_conn(elems[i], elem_ref,scale,tol) for i in range(len(elems))])
+    #Getting difference of distances and thresholds
+    diff=distances-thresholds
+
+    connatoms = []
+    #Getting connatoms by finding indices of diff with negative values (i.e. where distance is smaller than threshold)
+    connatoms=np.where(diff<0)[0].tolist()
+    return connatoms
+end
 
 
 
