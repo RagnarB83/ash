@@ -1175,10 +1175,9 @@ AXIS_REFLECTIONS = np.array([
 #QM-region expand function. Finds whole fragments.
 #Used by molcrys. Similar to get_solvshell function in functions_solv.py
 def QMregionfragexpand(fragment=None,initial_atoms=[], radius=None):
-
+    #If needed (connectivity ==0):
     scale=settings_yggdrasill.scale
     tol=settings_yggdrasill.tol
-
 
     if fragment is None:
         print("Provide fragment to QMregionfragexpand!")
@@ -1187,8 +1186,8 @@ def QMregionfragexpand(fragment=None,initial_atoms=[], radius=None):
     subsetcoords=[fragment.coords[i]for i in initial_atoms ]
     print("subsetcoords:", subsetcoords)
     print("subsetelems:", subsetelems)
-    if len(solvsphere.connectivity) == 0:
-        print("No connectivity found. Using slow way of finding nearby solvent molecules...")
+    if len(fragment.connectivity) == 0:
+        print("No connectivity found. Using slow way of finding nearby fragments...")
     atomlist=[]
     for i,c in enumerate(subsetcoords):
         el=subsetelems[i]
