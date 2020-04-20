@@ -1178,9 +1178,8 @@ def QMregionfragexpand(fragment=None,initial_atoms=[], radius=None):
     #If needed (connectivity ==0):
     scale=settings_yggdrasill.scale
     tol=settings_yggdrasill.tol
-
-    if fragment is None:
-        print("Provide fragment to QMregionfragexpand!")
+    if fragment is None or initial_atoms == [] or radius == None:
+        print("Provide fragment, initial_atoms and radius keyword arguments to QMregionfragexpand!")
         exit()
     subsetelems = [fragment.elems[i] for i in initial_atoms]
     subsetcoords=[fragment.coords[i]for i in initial_atoms ]
@@ -1191,36 +1190,25 @@ def QMregionfragexpand(fragment=None,initial_atoms=[], radius=None):
     atomlist=[]
     for i,c in enumerate(subsetcoords):
         el=subsetelems[i]
-        #print("---Solute atom:", el, c)
         for index,allc in enumerate(fragment.coords):
             all_el=fragment.elems[index]
             if index >= len(subsetcoords):
-
                 dist=distance(c,allc)
-                #print("dist:", dist)
                 if dist < radius:
-                    #print("yes. index is:", index)
-                    #print("")
                     #Get molecule members atoms for atom index.
                     #Using stored connectivity because takes forever otherwise
                     #If no connectivity
                     if len(fragment.connectivity) == 0:
                         #wholemol=get_molecule_members_loop(fragment.coords, fragment.elems, index, 1, scale, tol)
-                        wholemol=get_molecule_members_loop(fragment.coords, fragment.elems, 99, scale, tol, atomindex=index)
+                        wholemol=get_molecule_members_loop_np2(fragment.coords, fragment.elems, 99, scale, tol, atomindex=index)
                     #If stored connectivity
                     else:
                         for q in fragment.connectivity:
-                            #print("q:", q)
                             if index in q:
                                 wholemol=q
-                                #print("wholemol", wholemol)
                                 break
                     elematoms=[fragment.elems[i] for i in wholemol]
-                    #print("wholemol:", wholemol)
-                    #print("elematoms:", elematoms)
                     atomlist=atomlist+wholemol
-                    #print(len(atomlist))
-                    #print(atomlist)
     atomlist = np.unique(atomlist).tolist()
     return atomlist
 
