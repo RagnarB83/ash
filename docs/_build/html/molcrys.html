@@ -375,6 +375,11 @@ See QM/MM theory page for more information on this.</p>
 system (here the TRIC internal coordinates are used), max no. of iterations may be provided and finally we specify that we have an active region
 and that only the atoms provided to the actatoms keyword argument should be optimized. Note that MM atoms can not be optimized when
 doing nonbonded QM/MM like we are doing here.</p>
+<p>If the optimization converges, a new fragment containing the optimized geometry is provided, called “Fragment-optimized.ygg”.
+Note: Only the geometry of the central fragment (or whatever qmatoms/actoms was set to) is optimized. The other atoms
+are still at the original positions as determined from the crystal structure.
+The optimization trajectory is also available as a multi-structure XYZ file, as either “geometric_OPTtraj_Full.xyz”
+(Full system) or “geometric_OPTtraj.xyz” (Act-region only).</p>
 <p><strong>Note:</strong></p>
 <p>If the optimization is done separately, the code above would have to be manually changed in a few places.
 First the Cluster fragment would be read in:</p>
@@ -387,7 +392,18 @@ First the Cluster fragment would be read in:</p>
 <h2>MOLCRYS EXPANDED QM region calculation<a class="headerlink" href="#molcrys-expanded-qm-region-calculation" title="Permalink to this headline">¶</a></h2>
 <p>For either a QM/MM geometry optimization or a QM/MM single-point property calculation (see below), the QM-region does
 not have to be a single fragment. If the qmatoms list and the actatoms list (for optimizations) is modified, then a larger
-QM cluster can be calculated instead in the QM/MM calculation. This should generally result in a more accurate calculation.</p>
+QM cluster can be calculated instead in the QM/MM calculation. This should generally result in a more accurate calculation
+as the QM-MM boundary effect can be reduced.</p>
+<p>The qmatoms and actatoms lists (i.e. the values provided to qmatoms and actatoms keyword arguments to QM/MM object or
+geomeTRICOptimizer function can be modified manually, e.g. by visually inspecting an XYZ-file version of the Cluster and
+provide the correct list of atom indices (Note: Yggdrasill counts from zero).</p>
+<p>More conveniently, the QMregionexpand function can be used to find nearby atoms for a list of atoms.</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">Centralmainfrag</span><span class="o">=</span><span class="n">Cluster</span><span class="o">.</span><span class="n">connectivity</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+<span class="n">expanded_central_region</span> <span class="o">=</span> <span class="n">QMregionexpand</span><span class="p">(</span><span class="n">fragment</span><span class="o">=</span><span class="n">Cluster</span><span class="p">,</span><span class="n">initial_atoms</span><span class="o">=</span><span class="n">Centralmainfrag</span><span class="p">,</span> <span class="n">radius</span><span class="o">=</span><span class="mi">3</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>In the code example above, a new variable called “expanded_central_region” is defined that contains a new list of atoms containing
+whole fragments that are 3 Å away from the central mainfrag.</p>
 </div>
 <div class="section" id="molcrys-property-calculation">
 <h2>MOLCRYS Property calculation<a class="headerlink" href="#molcrys-property-calculation" title="Permalink to this headline">¶</a></h2>

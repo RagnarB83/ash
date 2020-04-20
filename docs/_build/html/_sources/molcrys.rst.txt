@@ -239,6 +239,14 @@ system (here the TRIC internal coordinates are used), max no. of iterations may 
 and that only the atoms provided to the actatoms keyword argument should be optimized. Note that MM atoms can not be optimized when
 doing nonbonded QM/MM like we are doing here.
 
+If the optimization converges, a new fragment containing the optimized geometry is provided, called "Fragment-optimized.ygg".
+Note: Only the geometry of the central fragment (or whatever qmatoms/actoms was set to) is optimized. The other atoms
+are still at the original positions as determined from the crystal structure.
+The optimization trajectory is also available as a multi-structure XYZ file, as either "geometric_OPTtraj_Full.xyz"
+(Full system) or "geometric_OPTtraj.xyz" (Act-region only).
+
+
+
 **Note:**
 
 If the optimization is done separately, the code above would have to be manually changed in a few places.
@@ -258,9 +266,22 @@ MOLCRYS EXPANDED QM region calculation
 
 For either a QM/MM geometry optimization or a QM/MM single-point property calculation (see below), the QM-region does
 not have to be a single fragment. If the qmatoms list and the actatoms list (for optimizations) is modified, then a larger
-QM cluster can be calculated instead in the QM/MM calculation. This should generally result in a more accurate calculation.
+QM cluster can be calculated instead in the QM/MM calculation. This should generally result in a more accurate calculation
+as the QM-MM boundary effect can be reduced.
 
+The qmatoms and actatoms lists (i.e. the values provided to qmatoms and actatoms keyword arguments to QM/MM object or
+geomeTRICOptimizer function can be modified manually, e.g. by visually inspecting an XYZ-file version of the Cluster and
+provide the correct list of atom indices (Note: Yggdrasill counts from zero).
 
+More conveniently, the QMregionexpand function can be used to find nearby atoms for a list of atoms.
+
+.. code-block:: python
+
+    Centralmainfrag=Cluster.connectivity[0]
+    expanded_central_region = QMregionexpand(fragment=Cluster,initial_atoms=Centralmainfrag, radius=3)
+
+In the code example above, a new variable called "expanded_central_region" is defined that contains a new list of atoms containing
+whole fragments that are 3 Å away from the central mainfrag.
 
 
 
