@@ -1,4 +1,6 @@
 # YGGDRASILL - A GENERAL COMPCHEM AND QM/MM ENVIRONMENT
+
+#TODO: This is really too much import!!!! Reduce
 from constants import *
 from elstructure_functions import *
 import os
@@ -2095,10 +2097,12 @@ def old_read_fragment_from_file(fragfile):
     return frag
 
 
-#TODO: Replace this inputfile-based (or keep as option) with shared-library version:
+
 # https://github.com/grimme-lab/xtb/blob/master/python/xtb/interface.py
+#Now supports 2 runmodes: 'library' (fast Python C-API) or 'inputfile'
+#
 class xTBTheory:
-    def __init__(self, xtbdir, fragment=None, charge=None, mult=None, xtbmethod=None):
+    def __init__(self, xtbdir=None, fragment=None, charge=None, mult=None, xtbmethod=None, runmode='inputfile'):
         if fragment != None:
             self.fragment=fragment
             self.coords=fragment.coords
@@ -2107,6 +2111,12 @@ class xTBTheory:
         self.charge=charge
         self.mult=mult
         self.xtbmethod=xtbmethod
+        self.runmode=runmode
+        if self.runmode=='library':
+            # Load library
+            import xtb_interface_library
+            self.xtbobject=XTBLibrary()
+
     #Cleanup after run.
     def cleanup(self):
         print("Cleaning up old xTB files")
@@ -2135,54 +2145,89 @@ class xTBTheory:
             else:
                 qm_elems = elems
 
-        #TODO: Add restart function so that xtbrestart is not always deleted
-        #Create XYZfile with generic name for xTB to run
-        inputfilename="xtb-inpfile"
-        print("Creating inputfile:", inputfilename+'.xyz')
 
-        num_qmatoms=len(current_coords)
-        num_mmatoms=len(MMcharges)
-        self.cleanup()
-        #Todo: xtbrestart possibly. needs to be optional
+        if self.runmode=='inputfile':
+            #TODO: Add restart function so that xtbrestart is not always deleted
+            #Create XYZfile with generic name for xTB to run
+            inputfilename="xtb-inpfile"
+            print("Creating inputfile:", inputfilename+'.xyz')
+            num_qmatoms=len(current_coords)
+            num_mmatoms=len(MMcharges)
+            self.cleanup()
+            #Todo: xtbrestart possibly. needs to be optional
+            write_xyzfile(qm_elems, current_coords, inputfilename)
 
-        write_xyzfile(qm_elems, current_coords, inputfilename)
-
-        #Run inputfile. Take nprocs argument.
-        print("------------Running xTB-------------")
-        print("...")
-        if Grad==True:
-            if PC==True:
-                create_xtb_pcfile_general(current_MM_coords, MMcharges)
-                run_xtb_SP_serial(self.xtbdir, self.xtbmethod, inputfilename + '.xyz', self.charge, self.mult, Grad=True)
-            else:
-                run_xtb_SP_serial(self.xtbdir, self.xtbmethod, inputfilename + '.xyz', self.charge, self.mult,
+            #Run inputfile. Take nprocs argument.
+            print("------------Running xTB-------------")
+            print("...")
+            if Grad==True:
+                if PC==True:
+                    create_xtb_pcfile_general(current_MM_coords, MMcharges)
+                    run_xtb_SP_serial(self.xtbdir, self.xtbmethod, inputfilename + '.xyz', self.charge, self.mult, Grad=True)
+                else:
+                    run_xtb_SP_serial(self.xtbdir, self.xtbmethod, inputfilename + '.xyz', self.charge, self.mult,
                                   Grad=True)
-        else:
-            if PC==True:
-                create_xtb_pcfile_general(current_MM_coords, MMcharges)
-                run_xtb_SP_serial(self.xtbdir, self.xtbmethod, inputfilename + '.xyz', self.charge, self.mult)
             else:
-                run_xtb_SP_serial(self.xtbdir, self.xtbmethod, inputfilename + '.xyz', self.charge, self.mult)
+                if PC==True:
+                    create_xtb_pcfile_general(current_MM_coords, MMcharges)
+                    run_xtb_SP_serial(self.xtbdir, self.xtbmethod, inputfilename + '.xyz', self.charge, self.mult)
+                else:
+                    run_xtb_SP_serial(self.xtbdir, self.xtbmethod, inputfilename + '.xyz', self.charge, self.mult)
 
 
-        print("------------xTB calculation done-------------")
-        #Check if finished. Grab energy
-        if Grad==True:
-            self.energy,self.grad=xtbgradientgrab(num_qmatoms)
-            if PC==True:
-                # Grab pointcharge gradient. i.e. gradient on MM atoms from QM-MM elstat interaction.
-                self.pcgrad = xtbpcgradientgrab(num_mmatoms)
-                print("------------ENDING XTB-INTERFACE-------------")
-                return self.energy, self.grad, self.pcgrad
+            print("------------xTB calculation done-------------")
+            #Check if finished. Grab energy
+            if Grad==True:
+                self.energy,self.grad=xtbgradientgrab(num_qmatoms)
+                if PC==True:
+                    # Grab pointcharge gradient. i.e. gradient on MM atoms from QM-MM elstat interaction.
+                    self.pcgrad = xtbpcgradientgrab(num_mmatoms)
+                    print("------------ENDING XTB-INTERFACE-------------")
+                    return self.energy, self.grad, self.pcgrad
+                else:
+                    print("------------ENDING XTB-INTERFACE-------------")
+                    return self.energy, self.grad
             else:
+                outfile=inputfilename+'.out'
+                self.energy=xtbfinalenergygrab(outfile)
                 print("------------ENDING XTB-INTERFACE-------------")
-                return self.energy, self.grad
-        else:
-            outfile=inputfilename+'.out'
-            self.energy=xtbfinalenergygrab(outfile)
-            print("------------ENDING XTB-INTERFACE-------------")
-            return self.energy
+                return self.energy
+        elif runmode=='library':
 
+            #Hard-coded options
+            options = {
+                "print_level": 1,
+                "parallel": 0,
+                "accuracy": 1.0,
+                "electronic_temperature": 300.0,
+                "gradient": True,
+                "restart": False,
+                "ccm": True,
+                "max_iterations": 30,
+                "solvent": "none",
+            }
+
+            #Using the xtbobject previously defined
+            num_qmatoms=len(current_coords)
+            #num_mmatoms=len(MMcharges)
+            #
+            nuc_charges=np.array(elemstonuccharges(qm_elems), dtype=c_int)
+            #numbers = np.array([6, 7, 6, 7, 6, 6, 6, 8, 7, 6, 8, 7, 6, 6, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1], dtype=c_int, )
+            print(nuc_charges)
+            print("type of current_coords",type(current_coords))
+            positions=np.array(current_coords, dtype=c_double)
+            args = (num_qmatoms, nuc_charges, positions, options, 0.0, 0, "-")
+            if self.xtbmethod=='GFN1':
+                results = self.xtbobject.GFN1Calculation(*args)
+            elif self.xtbmethod=='GFN2':
+                results = self.xtbobject.GFN2Calculation(*args)
+
+            else:
+                print("Unknown option to xTB interface")
+                exit()
+            print("results:", results)
+
+            exit()
 
 #Called from run_QMMM_SP_in_parallel. Runs
 def run_QM_MM_SP(list):
