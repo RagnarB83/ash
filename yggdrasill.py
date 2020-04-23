@@ -2102,7 +2102,7 @@ def old_read_fragment_from_file(fragfile):
 #Now supports 2 runmodes: 'library' (fast Python C-API) or 'inputfile'
 #
 class xTBTheory:
-    def __init__(self, xtbdir=None, fragment=None, charge=None, mult=None, xtbmethod=None, runmode='inputfile'):
+    def __init__(self, xtbdir=None, fragment=None, charge=None, mult=None, xtbmethod=None, runmode='library'):
         if fragment != None:
             self.fragment=fragment
             self.coords=fragment.coords
@@ -2113,9 +2113,22 @@ class xTBTheory:
         self.xtbmethod=xtbmethod
         self.runmode=runmode
         if self.runmode=='library':
-            # Load library
-            import xtb_interface_library
-            self.xtbobject=XTBLibrary()
+            print("Using library-based xTB interface")
+            print("Loading library...")
+            # Load xtB library and ctypes datatypes that run uses
+            try:
+                import xtb_interface_library
+                self.xtbobject = xtb_interface_library.XTBLibrary()
+            except:
+                print("Problem importing xTB library. Check that the library is available in LD_LIBRARY_PATH")
+                exit()
+            from ctypes import c_int, c_double
+            #Needed for complete interface?:
+            # from ctypes import Structure, c_int, c_double, c_bool, c_char_p, c_char, POINTER, cdll, CDLL
+            self.c_int = c_int
+            self.c_double = c_double
+
+
 
     #Cleanup after run.
     def cleanup(self):
@@ -2147,6 +2160,7 @@ class xTBTheory:
 
 
         if self.runmode=='inputfile':
+            print("Using inputfile-based xTB interface")
             #TODO: Add restart function so that xtbrestart is not always deleted
             #Create XYZfile with generic name for xTB to run
             inputfilename="xtb-inpfile"
@@ -2192,9 +2206,9 @@ class xTBTheory:
                 self.energy=xtbfinalenergygrab(outfile)
                 print("------------ENDING XTB-INTERFACE-------------")
                 return self.energy
-        elif runmode=='library':
+        elif self.runmode=='library':
 
-            #Hard-coded options
+            #Hard-coded options. Todo: revisit
             options = {
                 "print_level": 1,
                 "parallel": 0,
@@ -2210,24 +2224,31 @@ class xTBTheory:
             #Using the xtbobject previously defined
             num_qmatoms=len(current_coords)
             #num_mmatoms=len(MMcharges)
-            #
-            nuc_charges=np.array(elemstonuccharges(qm_elems), dtype=c_int)
-            #numbers = np.array([6, 7, 6, 7, 6, 6, 6, 8, 7, 6, 8, 7, 6, 6, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1], dtype=c_int, )
-            print(nuc_charges)
-            print("type of current_coords",type(current_coords))
-            positions=np.array(current_coords, dtype=c_double)
+            nuc_charges=np.array(elemstonuccharges(qm_elems), dtype=self.c_int)
+            positions=np.array(current_coords, dtype=self.c_double)
             args = (num_qmatoms, nuc_charges, positions, options, 0.0, 0, "-")
+            print("------------Running xTB-------------")
             if self.xtbmethod=='GFN1':
                 results = self.xtbobject.GFN1Calculation(*args)
             elif self.xtbmethod=='GFN2':
                 results = self.xtbobject.GFN2Calculation(*args)
-
+            print("------------xTB calculation done-------------")
+            if Grad==True:
+                self.energy = float(results['energy'])
+                self.grad = results['gradient']
+                print("self.energy:", self.energy)
+                print("self.grad:", self.grad)
+                print("------------ENDING XTB-INTERFACE-------------")
+                return self.energy, self.grad
             else:
-                print("Unknown option to xTB interface")
-                exit()
-            print("results:", results)
-
+                self.energy = float(results['energy'])
+                print("self.energy:", self.energy)
+                print("------------ENDING XTB-INTERFACE-------------")
+                return self.energy
+        else:
+            print("Unknown option to xTB interface")
             exit()
+
 
 #Called from run_QMMM_SP_in_parallel. Runs
 def run_QM_MM_SP(list):
