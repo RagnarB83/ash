@@ -2110,7 +2110,6 @@ class xTBTheory:
             self.fragment=fragment
             self.coords=fragment.coords
             self.elems=fragment.elems
-        self.xtbdir = xtbdir
         self.charge=charge
         self.mult=mult
         self.xtbmethod=xtbmethod
@@ -2131,9 +2130,17 @@ class xTBTheory:
             # from ctypes import Structure, c_int, c_double, c_bool, c_char_p, c_char, POINTER, cdll, CDLL
             self.c_int = c_int
             self.c_double = c_double
-
-
-
+        else:
+            if xtbdir == None:
+                # Trying to find xtbdir in path
+                print("xtbdir argument not provided to xTBTheory object. Trying to find xtb in path")
+                try:
+                    self.xtbdir = shutil.which('xtb')
+                    print("Found xtb in path. Setting xtbdir.")
+                except:
+                    print("Found no xtb executable in path. Exiting... ")
+            else:
+                self.xtbdir = xtbdir
     #Cleanup after run.
     def cleanup(self):
         print("Cleaning up old xTB files")
