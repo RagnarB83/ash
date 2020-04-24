@@ -2240,12 +2240,10 @@ class xTBTheory:
             num_qmatoms=len(current_coords)
             #num_mmatoms=len(MMcharges)
             nuc_charges=np.array(elemstonuccharges(qm_elems), dtype=self.c_int)
-            print("nuc_charges:", nuc_charges)
-            print("current_coords: ", current_coords)
+
+            #Converting coords to numpy-array and then to Bohr.
             current_coords_bohr=np.array(current_coords)*constants.ang2bohr
-            print("current_coords_bohr:", current_coords_bohr)
             positions=np.array(current_coords_bohr, dtype=self.c_double)
-            print("positions:", positions)
             args = (num_qmatoms, nuc_charges, positions, options, 0.0, 0, "-")
             print("------------Running xTB-------------")
             if self.xtbmethod=='GFN1':
@@ -2253,17 +2251,16 @@ class xTBTheory:
             elif self.xtbmethod=='GFN2':
                 results = self.xtbobject.GFN2Calculation(*args)
             print("------------xTB calculation done-------------")
-            print("results:", results)
             if Grad==True:
                 self.energy = float(results['energy'])
                 self.grad = results['gradient']
-                print("self.energy:", self.energy)
-                print("self.grad:", self.grad)
+                print("xtb energy:", self.energy)
+                #print("self.grad:", self.grad)
                 print("------------ENDING XTB-INTERFACE-------------")
                 return self.energy, self.grad
             else:
                 self.energy = float(results['energy'])
-                print("self.energy:", self.energy)
+                print("xtb energy:", self.energy)
                 print("------------ENDING XTB-INTERFACE-------------")
                 return self.energy
         else:
