@@ -2241,8 +2241,10 @@ class xTBTheory:
             #num_mmatoms=len(MMcharges)
             nuc_charges=np.array(elemstonuccharges(qm_elems), dtype=self.c_int)
             print("nuc_charges:", nuc_charges)
-
-            positions=np.array(current_coords, dtype=self.c_double)
+            print("current_coords: ", current_coords)
+            current_coords_bohr=current_coords*constants.ang2bohr
+            print("current_coords_bohr:", current_coords_bohr)
+            positions=np.array(current_coords_bohr, dtype=self.c_double)
             print("positions:", positions)
             args = (num_qmatoms, nuc_charges, positions, options, 0.0, 0, "-")
             print("------------Running xTB-------------")
