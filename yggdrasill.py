@@ -1903,7 +1903,7 @@ class Fragment:
                     if len(line) > 3:
                         self.elems.append(line.split()[0])
                         self.coords.append([float(line.split()[1]), float(line.split()[2]), float(line.split()[3])])
-        if self.numatoms != len(coords):
+        if self.numatoms != len(self.coords):
             print("Number of atoms in header not equal to number of coordinate-lines. Check XYZ file!")
             exit()
         self.update_attributes()
