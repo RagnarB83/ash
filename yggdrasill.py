@@ -1903,6 +1903,9 @@ class Fragment:
                     if len(line) > 3:
                         self.elems.append(line.split()[0])
                         self.coords.append([float(line.split()[1]), float(line.split()[2]), float(line.split()[3])])
+        if self.numatoms != len(coords):
+            print("Number of atoms in header not equal to number of coordinate-lines. Check XYZ file!")
+            exit()
         self.update_attributes()
         self.calc_connectivity()
     def set_energy(self,energy):
@@ -2120,7 +2123,8 @@ class xTBTheory:
                 import xtb_interface_library
                 self.xtbobject = xtb_interface_library.XTBLibrary()
             except:
-                print("Problem importing xTB library. Check that the library is available in LD_LIBRARY_PATH")
+                print("Problem importing xTB library. Check that the library dir (containing libxtb.so) is available in LD_LIBRARY_PATH.")
+                print("e.g. export LD_LIBRARY_PATH=/path/to/xtb_6.2.3/lib64:$LD_LIBRARY_PATH")
                 exit()
             from ctypes import c_int, c_double
             #Needed for complete interface?:
