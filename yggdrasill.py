@@ -2225,7 +2225,7 @@ class xTBTheory:
 
             #Hard-coded options. Todo: revisit
             options = {
-                "print_level": 1,
+                "print_level": 3,
                 "parallel": 0,
                 "accuracy": 1.0,
                 "electronic_temperature": 300.0,
