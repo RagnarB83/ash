@@ -2242,7 +2242,7 @@ class xTBTheory:
             nuc_charges=np.array(elemstonuccharges(qm_elems), dtype=self.c_int)
             print("nuc_charges:", nuc_charges)
             print("current_coords: ", current_coords)
-            current_coords_bohr=current_coords*constants.ang2bohr
+            current_coords_bohr=np.array(current_coords)*constants.ang2bohr
             print("current_coords_bohr:", current_coords_bohr)
             positions=np.array(current_coords_bohr, dtype=self.c_double)
             print("positions:", positions)
