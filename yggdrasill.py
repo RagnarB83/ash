@@ -2225,7 +2225,7 @@ class xTBTheory:
 
             #Hard-coded options. Todo: revisit
             options = {
-                "print_level": 3,
+                "print_level": 10,
                 "parallel": 0,
                 "accuracy": 1.0,
                 "electronic_temperature": 300.0,
@@ -2241,8 +2241,9 @@ class xTBTheory:
             #num_mmatoms=len(MMcharges)
             nuc_charges=np.array(elemstonuccharges(qm_elems), dtype=self.c_int)
             print("nuc_charges:", nuc_charges)
-            print("positions:", positions)
+
             positions=np.array(current_coords, dtype=self.c_double)
+            print("positions:", positions)
             args = (num_qmatoms, nuc_charges, positions, options, 0.0, 0, "-")
             print("------------Running xTB-------------")
             if self.xtbmethod=='GFN1':
