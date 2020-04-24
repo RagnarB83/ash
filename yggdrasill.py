@@ -2135,7 +2135,7 @@ class xTBTheory:
                 # Trying to find xtbdir in path
                 print("xtbdir argument not provided to xTBTheory object. Trying to find xtb in path")
                 try:
-                    self.xtbdir = shutil.which('xtb')
+                    self.xtbdir = os.path.dirname(shutil.which('xtb'))
                     print("Found xtb in path. Setting xtbdir.")
                 except:
                     print("Found no xtb executable in path. Exiting... ")
