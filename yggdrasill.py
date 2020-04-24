@@ -2240,6 +2240,8 @@ class xTBTheory:
             num_qmatoms=len(current_coords)
             #num_mmatoms=len(MMcharges)
             nuc_charges=np.array(elemstonuccharges(qm_elems), dtype=self.c_int)
+            print("nuc_charges:", nuc_charges)
+            print("positions:", positions)
             positions=np.array(current_coords, dtype=self.c_double)
             args = (num_qmatoms, nuc_charges, positions, options, 0.0, 0, "-")
             print("------------Running xTB-------------")
@@ -2248,6 +2250,7 @@ class xTBTheory:
             elif self.xtbmethod=='GFN2':
                 results = self.xtbobject.GFN2Calculation(*args)
             print("------------xTB calculation done-------------")
+            print("results:", results)
             if Grad==True:
                 self.energy = float(results['energy'])
                 self.grad = results['gradient']
