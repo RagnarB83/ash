@@ -2200,7 +2200,7 @@ class xTBTheory:
                     run_xtb_SP_serial(self.xtbdir, self.xtbmethod, inputfilename + '.xyz', self.charge, self.mult)
 
 
-            print("------------xTB calculation done-------------")
+            print("------------xTB calculation done-----")
             #Check if finished. Grab energy
             if Grad==True:
                 self.energy,self.grad=xtbgradientgrab(num_qmatoms)

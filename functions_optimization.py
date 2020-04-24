@@ -582,7 +582,12 @@ def geomeTRICOptimizer(theory=None,fragment=None, coordsystem='tric', frozenatom
                 self.iteration_count += 1
                 return {'energy': E, 'gradient': Grad_act.flatten()}
             else:
+                #PRINTING ACTIVE GEOMETRY IN EACH GEOMETRIC ITERATION
+                print("Current geometry (Å) in step {}".format(self.iteration_count))
+                print("---------------------------------------------------")
+                print_coords_all(currcoords, fragment.elems)
                 E,Grad=self.theory.run(current_coords=currcoords, elems=self.M.elem, Grad=True)
+                self.iteration_count += 1
                 self.energy = E
                 return {'energy': E, 'gradient': Grad.flatten()}
 
