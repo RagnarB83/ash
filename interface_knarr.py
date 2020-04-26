@@ -205,3 +205,5 @@ def NEB(reactant=None, product=None, theory=None, images=None, interpolation=Non
     DoNEB(path, calculator, neb_settings, optimizer)
 
     print('KNARR successfully terminated')
+    print("Please consider citing the following paper if you found the NEB module (from Knarr) useful:")
+    print("To be added...")

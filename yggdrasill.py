@@ -13,6 +13,7 @@ from functions_general import *
 import settings_yggdrasill
 from functions_MM import *
 from functions_optimization import *
+from interface_geometric import geomeTRICOptimizer
 import shutil
 import subprocess as sp
 
@@ -2139,8 +2140,9 @@ class xTBTheory:
             os.environ["OPENBLAS_NUM_THREADS"] = "1"
             # Load xtB library and ctypes datatypes that run uses
             try:
-                import xtb_interface_library
-                self.xtbobject = xtb_interface_library.XTBLibrary()
+                #import xtb_interface_library
+                import interface_xtb
+                self.xtbobject = interface_xtb.XTBLibrary()
             except:
                 print("Problem importing xTB library. Check that the library dir (containing libxtb.so) is available in LD_LIBRARY_PATH.")
                 print("e.g. export LD_LIBRARY_PATH=/path/to/xtb_6.2.3/lib64:$LD_LIBRARY_PATH")
