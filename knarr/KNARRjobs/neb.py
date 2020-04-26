@@ -165,8 +165,8 @@ def DoNEB(path, calculator, neb, optimizer, second_run=False):
     reset_opt = False
     reparam_only_once = True
     #RB mod: global
-    nonlocal startci
-    startci = False
+    global startci
+    #startci = False
     was_scaled = False
     converged = False
     stop_neb = False
