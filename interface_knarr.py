@@ -141,7 +141,7 @@ def NEB(reactant=None, product=None, theory=None, images=None, interpolation=Non
     if reactant==None or product==None or theory==None:
         print("You need to provide reactant and product fragment and a theory to NEB")
         exit()
-
+    print("Launching Knarr program")
     blankline()
     PrintDivider()
     PrintDivider()
