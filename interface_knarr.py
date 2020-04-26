@@ -192,7 +192,7 @@ def NEB(reactant=None, product=None, theory=None, images=None, interpolation=Non
     rp, ndim, nim, symb = ReadTraj("knarr_path.xyz")
     path = InitializePathObject(nim, react)
     path.SetCoords(rp)
-    global startci
+    #global startci
     startci = False
     #Now starting NEB from path object, using neb_settings and optimizer settings
     DoNEB(path, calculator, neb_settings, optimizer)
