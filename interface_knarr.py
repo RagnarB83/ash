@@ -143,7 +143,7 @@ class KnarrCalculator:
         #Forcecalls
         path.AddFC(counter)
         blankline()
-        global ISCION
+        nonlocal ISCION
         print("ISCION:", ISCION)
         if self.iterations > 2 :
             if ISCION is True:
