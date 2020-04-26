@@ -18,11 +18,10 @@ from KNARRio.io import ReadTraj
 from KNARRjobs.neb import DoNEB
 import KNARRatom.atom
 
-ISCION = False
 #LOG of Knarr-code modifications
 #1. Various python2 print-statements to print-functions changes
 #2. Various additions of int() in order to get integer of division products (Python2/3 change)
-#3. Made startci global??
+#3. Made variable  calculator.ISCION = True . Bad idea?
 
 #Define manual dicts here
 #These will be reasonable defaults that can be overridden by special keywords in Yggdrasill NEB object
@@ -112,6 +111,7 @@ class KnarrCalculator:
         self.fragment1=fragment1
         self.fragment2=fragment2
         self.runmode=runmode
+        self.ISCION=False
     def Compute(self,path, list_to_compute=[]):
         #
         self.iterations+=1
@@ -143,10 +143,10 @@ class KnarrCalculator:
         #Forcecalls
         path.AddFC(counter)
         blankline()
-        nonlocal ISCION
-        print("ISCION:", ISCION)
+
+        print("self.ISCION:", self.ISCION)
         if self.iterations > 2 :
-            if ISCION is True:
+            if self.ISCION is True:
                 print('%4ls  %4s  %9ls %5ls %6ls %9ls %9ls %9ls %6ls' % ('it', 'dS', 'Energy', 'HEI', 'RMSF', 'MaxF', 'RMSF_CI', 'MaxF_CI', 'step'))
             else:
                 print(' %4ls %4s  %9ls %5ls %7ls %9ls %8ls' % ('it', 'dS', 'Energy', 'HEI', 'RMSF', 'MaxF', 'step'))
@@ -202,3 +202,5 @@ def NEB(reactant=None, product=None, theory=None, images=None, interpolation=Non
     path.SetCoords(rp)
     #Now starting NEB from path object, using neb_settings and optimizer settings
     DoNEB(path, calculator, neb_settings, optimizer)
+
+    print('KNARR successfully terminated')
