@@ -1,6 +1,7 @@
 from functions_general import *
 import os
 import shutil
+import yggdrasill
 #########################
 # Interface to geomeTRIC Optimization Library
 ########################
