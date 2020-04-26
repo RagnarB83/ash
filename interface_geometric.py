@@ -5,6 +5,7 @@ from functions_general import *
 import os
 import shutil
 import yggdrasill
+import time
 #########################
 # Interface to geomeTRIC Optimization Library
 ########################
