@@ -136,7 +136,7 @@ class KnarrCalculator:
                 print(path.ndofIm)
                 print(type(path.ndofIm))
                 print(int(path.ndofIm))
-                #print(np.reshape(Grad_image))
+                print(np.reshape(Grad_image,(int(path.ndofIm),1)))
                 F[image_number] = -1 * np.reshape(Grad_image,(int(path.ndofIm),1))
                 print(F[image_number])
         elif self.runmode=='parallel':
