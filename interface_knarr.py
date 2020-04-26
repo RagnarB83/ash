@@ -1,15 +1,17 @@
-#New interface to Knarr so that we don't have to change too much
+#Non-intrusive interface to Knarr
 #Assumes that Knarr directory exists inside Yggdrasill (for now at least)
 
 from yggdrasill import *
 import numpy as np
 import sys
 import os
+
 #This makes Knarr part of python path
 #Recommended way?
 yggpath = os.path.dirname(yggdrasill.__file__)
 sys.path.insert(0,yggpath+'/knarr')
 
+from KNARRio.system_print import PrintHeader, PrintDivider, PrintCredit
 from KNARRatom.utilities import InitializeAtomObject, InitializePathObject
 from KNARRjobs.path import DoPathInterpolation
 from KNARRio.io import ReadTraj
