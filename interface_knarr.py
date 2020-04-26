@@ -23,8 +23,8 @@ import KNARRatom.atom
 #2. Various additions of int() in order to get integer of division products (Python2/3 change)
 #3. Made variable  calculator.ISCION = True . Bad idea?
 
-#Define manual dicts here
-#These will be reasonable defaults that can be overridden by special keywords in Yggdrasill NEB object
+#Knarr settings for path-generation, NEB and optimizer
+#These will be the reasonable defaults that can be overridden by special keywords in Yggdrasill NEB object
 path_parameters = {"METHOD": "DOUBLE", "INTERPOLATION": "IDPP", "NIMAGES": 6,
               "INSERT_CONFIG": None, "IDPP_MAX_ITER": 2000,
               "IDPP_SPRINGCONST": 10.0, "IDPP_TIME_STEP": 0.01,
@@ -158,10 +158,13 @@ class KnarrCalculator:
 
 
 #Yggdrasill NEB function. Calls Knarr
-def NEB(reactant=None, product=None, theory=None, images=None, interpolation=None):
+def NEB(reactant=None, product=None, theory=None, images=None, interpolation=None,
+        CI=None, free_end=None, conv_type=None, tol_scale, tol_max_fci, tol_rms_fci, tol_max_f, tol_rms_f, tol_turn_on_ci):
+
     if reactant==None or product==None or theory==None:
         print("You need to provide reactant and product fragment and a theory to NEB")
         exit()
+
     print("Launching Knarr program")
     blankline()
     PrintDivider()
@@ -173,11 +176,32 @@ def NEB(reactant=None, product=None, theory=None, images=None, interpolation=Non
 
     numatoms = reactant.numatoms
 
-    #Override some default settings
+    #Override some default settings if requested
+    #Default is; NEB-CI, IDPP interpolation, 6 images
     if images is not None:
         path_parameters["NIMAGES"]=images
     if interpolation is not None:
         path_parameters["INTERPOLATION"]=interpolation
+    if CI is not None:
+        if CI is False:
+            neb_settings["CLIMBING"]=False
+    if free_end is not None:
+        neb_settings["FREE_END"] = True
+    if conv_type is not None:
+        neb_settings["CONV_TYPE"] = conv_type
+    if tol_scale is not None:
+        neb_settings["TOL_SCALE"] = tol_scale
+    if tol_max_fci is not None:
+        neb_settings["TOL_MAX_FCI"] = tol_max_fci
+    if tol_rms_fci is not None:
+        neb_settings["TOL_RMS_FCI"] = tol_rms_fci
+    if tol_max_f is not None:
+        neb_settings["TOL_MAX_F"] = tol_max_f
+    if tol_rms_f is not None:
+        neb_settings["TOL_RMS_F"] = tol_rms_f
+    if tol_turn_on_ci is not None:
+        neb_settings["TOL_TURN_ON_CI"] = tol_turn_on_ci
+
 
     #Create Knarr calculator from Yggdrasill theory
     calculator = KnarrCalculator(theory, fragment1=reactant, fragment2=product)
