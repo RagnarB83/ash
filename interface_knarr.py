@@ -162,8 +162,8 @@ def NEB(reactant=None, product=None, theory=None, images=8):
         exit()
     numatoms = reactant.numatoms
 
-    #Create Knarr calculator
-    calculator = KnarrCalculator(xTBcalc, fragment1=reactant, fragment2=product)
+    #Create Knarr calculator from Yggdrasill theory
+    calculator = KnarrCalculator(theory, fragment1=reactant, fragment2=product)
 
     #Zero-valued constraints list. We probably won't use constraints for now
     constr = np.zeros(shape=(numatoms * 3, 1))
