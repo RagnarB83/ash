@@ -115,7 +115,7 @@ class KnarrCalculator:
     def Compute(self,path, list_to_compute=[]):
         #
         self.iterations+=1
-        print("self.iterations:", self.iterations)
+        #print("self.iterations:", self.iterations)
         counter=0
         F = np.zeros(shape=(path.GetNDimIm() * path.GetNim(), 1))
         E = np.zeros(shape=(path.GetNim(), 1))
@@ -144,8 +144,8 @@ class KnarrCalculator:
         path.AddFC(counter)
         blankline()
 
-        print("self.ISCION:", self.ISCION)
-        if self.iterations > 2 :
+        #print("self.ISCION:", self.ISCION)
+        if self.iterations > 3 :
             if self.ISCION is True:
                 print('%4ls  %4s  %9ls %5ls %6ls %9ls %9ls %9ls %6ls' % ('it', 'dS', 'Energy', 'HEI', 'RMSF', 'MaxF', 'RMSF_CI', 'MaxF_CI', 'step'))
             else:
