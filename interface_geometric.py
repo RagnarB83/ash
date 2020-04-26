@@ -1,4 +1,6 @@
 from functions_general import *
+import os
+import shutil
 #########################
 # Interface to geomeTRIC Optimization Library
 ########################
