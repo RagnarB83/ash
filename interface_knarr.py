@@ -137,6 +137,8 @@ class KnarrCalculator:
         #Forcecalls
         path.AddFC(counter)
         blankline()
+        global startci
+        print("startci:", startci)
         if self.iterations > 2 :
             if startci is True:
                 print('%4ls  %4s  %9ls %5ls %6ls %9ls %9ls %9ls %6ls' % ('it', 'dS', 'Energy', 'HEI', 'RMSF', 'MaxF', 'RMSF_CI', 'MaxF_CI', 'step'))
