@@ -10,7 +10,7 @@ import KNARRsettings
 # Author: Vilhjalmur Asgeirsson, 2019.
 
 
-# TODO: one day I should clean up these routinesand merge into one driver and worker
+# TODO: one day I should clean up these routines and merge into one driver and worker
 
 def ReadORCAhess(ndim, fname):
     start_read = False

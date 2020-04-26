@@ -102,62 +102,33 @@ class KnarrCalculator:
         self.fragment1=fragment1
         self.fragment2=fragment2
         self.runmode=runmode
-    #def self.Compute(path, list_to_compute=range(1, path.GetNim() - 1)):
     def Compute(self,path, list_to_compute=[]):
         #
         counter=0
         F = np.zeros(shape=(path.GetNDimIm() * path.GetNim(), 1))
         E = np.zeros(shape=(path.GetNim(), 1))
-        print("F:", F)
-        print("E:", E)
-        print(len(F))
-        print(len(E))
         numatoms=int(path.ndofIm/3)
-        print("Compute called")
-        print("path:", path)
-        print("list_to_compute:", list_to_compute)
-
-        #for i in range(path.GetNim()):
         if self.runmode=='serial':
             for image_number in list_to_compute:
-                print("image_number:", image_number)
                 image_coords_1d = path.GetCoords()[image_number * path.ndimIm : (image_number + 1) * path.ndimIm]
                 image_coords=np.reshape(image_coords_1d, (numatoms, 3))
-                print(image_coords)
-
-
                 # Request Engrad calc
                 En_image, Grad_image = self.theory.run(current_coords=image_coords, elems=self.fragment1.elems, Grad=True)
                 counter += 1
-                print("En_image: ", En_image)
                 #Energies array for all images
                 E[image_number]=En_image
                 #Forces array for all images
                 #Todo: Check units
-                print("Grad_image:", Grad_image)
-                print(path.ndofIm)
-                print(type(path.ndofIm))
-                print(int(path.ndofIm))
-                print(np.reshape(Grad_image,(int(path.ndofIm),1)))
-                print("image_number* path.ndimIm: ", image_number* path.ndimIm)
-                print("(image_number + 1) * path.ndimIm :", (image_number + 1) * path.ndimIm)
                 F[image_number* path.ndimIm : (image_number + 1) * path.ndimIm] = -1 * np.reshape(Grad_image,(int(path.ndofIm),1))
                 print(F[image_number])
         elif self.runmode=='parallel':
             print("not yet done")
             exit()
-
-        #
-        print("F: ", F)
-        print("E:", E)
-
         #Note: F and E is list/arrays of Forces and and Energy for all images in list provided
         path.SetForces(F)
         path.SetEnergy(E)
-
-        #FC=Forcecalls
+        #Forcecalls
         path.AddFC(counter)
-
     def AddFC(self, x=1):
         self.forcecalls += x
         return
