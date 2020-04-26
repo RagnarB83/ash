@@ -1,7 +1,11 @@
-from yggdrasill import *
+#New interface to Knarr so that we don't have to change too much
+#Assumes that Knarr directory exists inside Yggdrasill (for now at least)
 
+from yggdrasill import *
 import numpy as np
 import sys
+#This makes Knarr part of python path
+#Recommended way?
 sys.path.insert(0,'./knarr')
 
 from KNARRatom.utilities import InitializeAtomObject, InitializePathObject
@@ -10,52 +14,8 @@ from KNARRio.io import ReadTraj
 from KNARRjobs.neb import DoNEB
 import KNARRatom.atom
 
-#New interface to Knarr so that we don't have to change
-#Assumes Knarr directory inside Yggdrasill for now
-
-def Knarr_pathgenerator(nebsettings,path_parameters,react,prod):
-    #sett = KNARRsettings.settings_types["PATH"]
-    sett = nebsettings
-    #pathgen = FetchSettings(sett, settings_list, settings_line_ind, full_input)
-    #path_parameters
-    type_of_method_string = path_parameters["METHOD"].upper()
-    if type_of_method_string == "SINGLE":
-        prod_is_needed = False
-    elif type_of_method_string == "DOUBLE":
-        prod_is_needed = True
-    else:
-        raise TypeError("Either choose single or double ended path generation")
-
-    nim = path_parameters["NIMAGES"]
-    path = InitializePathObject(nim, react)
-
-    if prod_is_needed:
-        # Get product
-        #prod = InitializeAtomObject(name="product", input_config=main_control["CONFIG_FILE2"],
-        #                            pbc=main_control["PBC"])
-
-        # Check product
-        if react.GetNDim() != prod.GetNDim():
-            raise RuntimeError("Reactant / product do not match")
-        if react.GetSymbols() != prod.GetSymbols():
-            raise RuntimeError("Reactant / product do not match")
-        path.SetConfig2(prod.GetCoords())
-
-        # check insertion
-        insertion = path_parameters["INSERT_CONFIG"]
-        if insertion is not None:
-            insertion = InitializeAtomObject(name="insertion", input_config=path_parameters["INSERT_CONFIG"],
-                                             pbc=main_control["PBC"])
-            if insertion.GetSymbols() != react.GetSymbols():
-                raise ValueError("Insertion does not match reactant / product")
-            path.SetInsertionConfig(insertion.GetCoords())
-    else:
-        prod = None
-
-    DoPathInterpolation(path, path_parameters)
-
 #Define manual dicts here
-
+#These will be reasonable defaults that can be overridden by special keywords in Yggdrasill NEB object
 path_parameters = {"METHOD": "DOUBLE", "INTERPOLATION": "IDPP", "NIMAGES": 6,
               "INSERT_CONFIG": None, "IDPP_MAX_ITER": 2000,
               "IDPP_SPRINGCONST": 10.0, "IDPP_TIME_STEP": 0.01,
@@ -88,68 +48,47 @@ optimizer = {"OPTIM_METHOD": "LBFGS", "MAX_ITER": 1000, "TOL_MAX_FORCE": 0.01,
              "FD_STEP": 0.001,
              "LINESEARCH": None}
 
-#TEST
+#Path generator
+def Knarr_pathgenerator(nebsettings,path_parameters,react,prod):
+    sett = nebsettings
+    type_of_method_string = path_parameters["METHOD"].upper()
+    if type_of_method_string == "SINGLE":
+        prod_is_needed = False
+    elif type_of_method_string == "DOUBLE":
+        prod_is_needed = True
+    else:
+        raise TypeError("Either choose single or double ended path generation")
 
+    nim = path_parameters["NIMAGES"]
+    path = InitializePathObject(nim, react)
 
-#react = InitializeAtomObject(name="Reactant", input_config=input_config,
-#                             pbc=main_control["PBC"], twodee=main_control["TWO_DEE_SYSTEM"])
-#import knarr
+    if prod_is_needed:
+        # Check product
+        if react.GetNDim() != prod.GetNDim():
+            raise RuntimeError("Reactant / product do not match")
+        if react.GetSymbols() != prod.GetSymbols():
+            raise RuntimeError("Reactant / product do not match")
+        path.SetConfig2(prod.GetCoords())
 
+        # check insertion
+        insertion = path_parameters["INSERT_CONFIG"]
+        if insertion is not None:
+            insertion = InitializeAtomObject(name="insertion", input_config=path_parameters["INSERT_CONFIG"],
+                                             pbc=main_control["PBC"])
+            if insertion.GetSymbols() != react.GetSymbols():
+                raise ValueError("Insertion does not match reactant / product")
+            path.SetInsertionConfig(insertion.GetCoords())
+    else:
+        prod = None
+    DoPathInterpolation(path, path_parameters)
 
-
-react="""
-  C   -1.74466226888029     -0.43764022970111      0.00340875852252
-  Cl  0.08751046227979     -0.43663776654125     -0.00572350984613
-  H   -2.08316380850831     -1.23082242056354      0.67167470171506
-  H   -2.08839756963152     -0.61873908546936     -1.01572923119891
-  H   -2.08452478644406      0.53630031360180      0.35837366325833
-  F   -4.40536202881561     -0.44759081132654      0.07190561754913
-"""
-prod="""
-  C   -2.70156642333543     -0.43658441857463      0.03323212020336
-  Cl  0.24983987904870     -0.43390510382220     -0.01987082558543
-  H   -2.32511980738684     -1.22504253630063      0.69082755791150
-  H   -2.35113324790501     -0.61615683301537     -0.98679738541797
-  H   -2.33164382536765      0.53239758053095      0.37898769832545
-  F   -4.06258048905377     -0.43793231981811      0.05403279356309
-"""
-Reactant=Fragment(coordsstring=react)
-Product=Fragment(coordsstring=prod)
-
-#elems=['H','F']
-#coords=[[0.0,0.0,0.0],[0.0,0.0,1.0]]
-#lems2=['H','F']
-#coords2=[[0.1,0.2,0.3],[1.0,1.0,2.0]]
-#numatoms=2
-
-#Symbols list for Knarr
-Knarr_symbols=[y for y in Reactant.elems for i in range(3)]
-
-#Coords list for Knar
+#Convert coordinates list to Knarr-type array
 def coords_to_Knarr(coords):
     coords_xyz=[]
     for i in coords:
         coords_xyz.append([i[0]]);coords_xyz.append([i[1]]);coords_xyz.append([i[2]])
     coords_xyz_np=np.array(coords_xyz)
-    #print(coords_xyz_np)
     return coords_xyz_np
-
-numatoms=Reactant.numatoms
-constr = np.zeros(shape=(numatoms*3, 1))
-
-#Create KNARR Atom objects
-react = KNARRatom.atom.Atom(coords=coords_to_Knarr(Reactant.coords), symbols=Knarr_symbols, ndim=numatoms*3, ndof=numatoms*3, constraints=constr, pbc=False)
-prod = KNARRatom.atom.Atom(coords=coords_to_Knarr(Product.coords), symbols=Knarr_symbols, ndim=numatoms*3, ndof=numatoms*3, constraints=constr, pbc=False)
-print(react)
-print(react.__dict__)
-print(react.coords)
-print(react.GetCoords())
-
-#Generate path via
-Knarr_pathgenerator(neb_settings,path_parameters,react,prod)
-rp, ndim, nim, symb = ReadTraj("knarr_path.xyz")
-path = InitializePathObject(nim, react)
-path.SetCoords(rp)
 
 #Wrapper around Yggdrasill object
 class KnarrCalculator:
@@ -212,15 +151,36 @@ class KnarrCalculator:
         self.forcecalls += x
         return
 
-#Temp theory
-xTBcalc = xTBTheory(charge=0, mult=1, xtbmethod='GFN1', runmode='inputfile')
 
 
-calculator=KnarrCalculator(xTBcalc,fragment1=Reactant,fragment2=Product)
+#Yggdrasill NEB function. Calls Knarr
+def NEB(reactant=None, product=None, theory=None, images=8):
+    if reactant==None or product==None or theory==None:
+        print("You need to provide reactant and product fragment and a theory to NEB")
+        exit()
+    numatoms = reactant.numatoms
 
-print("path", path)
-print("path", path.__dict__)
-print(path.energy)
-print(path.GetEnergy())
-print("-------")
-DoNEB(path, calculator, neb_settings, optimizer)
+    #Create Knarr calculator
+    calculator = KnarrCalculator(xTBcalc, fragment1=reactant, fragment2=product)
+
+    #Zero-valued constraints list. We probably won't use constraints for now
+    constr = np.zeros(shape=(numatoms * 3, 1))
+
+    # Symbols list for Knarr
+    Knarr_symbols = [y for y in reactant.elems for i in range(3)]
+
+    # Create KNARR Atom objects. Used in path generation
+    react = KNARRatom.atom.Atom(coords=coords_to_Knarr(reactant.coords), symbols=Knarr_symbols, ndim=numatoms * 3,
+                                ndof=numatoms * 3, constraints=constr, pbc=False)
+    prod = KNARRatom.atom.Atom(coords=coords_to_Knarr(product.coords), symbols=Knarr_symbols, ndim=numatoms * 3,
+                               ndof=numatoms * 3, constraints=constr, pbc=False)
+
+    # Generate path via Knarr_pathgenerator
+    Knarr_pathgenerator(neb_settings, path_parameters, react, prod)
+
+    #Reading initial path from XYZ file. Hardcoded as knarr_path.xyz
+    rp, ndim, nim, symb = ReadTraj("knarr_path.xyz")
+    path = InitializePathObject(nim, react)
+    path.SetCoords(rp)
+    #Now starting NEB from path object, using neb_settings and optimizer settings
+    DoNEB(path, calculator, neb_settings, optimizer)
