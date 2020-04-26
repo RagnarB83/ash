@@ -158,8 +158,9 @@ class KnarrCalculator:
 
 
 #Yggdrasill NEB function. Calls Knarr
-def NEB(reactant=None, product=None, theory=None, images=None, interpolation=None,
-        CI=None, free_end=None, conv_type=None, tol_scale, tol_max_fci, tol_rms_fci, tol_max_f, tol_rms_f, tol_turn_on_ci):
+def NEB(reactant=None, product=None, theory=None, images=None, interpolation=None, CI=None, free_end=None,
+        conv_type=None, tol_scale=None, tol_max_fci=None, tol_rms_fci=None, tol_max_f=None, tol_rms_f=None,
+        tol_turn_on_ci=None):
 
     if reactant==None or product==None or theory==None:
         print("You need to provide reactant and product fragment and a theory to NEB")
