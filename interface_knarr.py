@@ -174,7 +174,6 @@ def NEB(reactant=None, product=None, theory=None, images=None, interpolation=Non
     PrintCredit()
     PrintDivider()
     PrintDivider()
-
     numatoms = reactant.numatoms
 
     #Override some default settings if requested
@@ -202,6 +201,11 @@ def NEB(reactant=None, product=None, theory=None, images=None, interpolation=Non
         neb_settings["TOL_RMS_F"] = tol_rms_f
     if tol_turn_on_ci is not None:
         neb_settings["TOL_TURN_ON_CI"] = tol_turn_on_ci
+
+    print("Active Knarr settings:")
+    print(path_parameters)
+    print(neb_settings)
+    print(optimizer)
 
 
     #Create Knarr calculator from Yggdrasill theory
