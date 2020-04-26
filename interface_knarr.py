@@ -4,9 +4,11 @@
 from yggdrasill import *
 import numpy as np
 import sys
+import os
 #This makes Knarr part of python path
 #Recommended way?
-sys.path.insert(0,'./knarr')
+yggpath = os.path.dirname(yggdrasill.__file__)
+sys.path.insert(0,yggpath+'/knarr')
 
 from KNARRatom.utilities import InitializeAtomObject, InitializePathObject
 from KNARRjobs.path import DoPathInterpolation
