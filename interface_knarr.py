@@ -98,6 +98,7 @@ def coords_to_Knarr(coords):
 class KnarrCalculator:
     def __init__(self,theory,fragment1,fragment2,runmode='serial'):
         self.forcecalls=0
+        self.iterations=0
         self.theory=theory
         #Yggdrasill fragments for reactant and product
         #Used for element list and keep track of full system if QM/MM
@@ -106,6 +107,8 @@ class KnarrCalculator:
         self.runmode=runmode
     def Compute(self,path, list_to_compute=[]):
         #
+        self.iterations+=1
+        print("self.iterations:", self.iterations)
         counter=0
         F = np.zeros(shape=(path.GetNDimIm() * path.GetNim(), 1))
         E = np.zeros(shape=(path.GetNim(), 1))
@@ -131,8 +134,9 @@ class KnarrCalculator:
         #Forcecalls
         path.AddFC(counter)
         blankline()
-        print(' %4ls %4s  %9ls %5ls %7ls %9ls %8ls' % ('it', 'dS', 'Energy', 'HEI', 'RMSF', 'MaxF', 'step'))
-        print('%4ls  %4s  %9ls %5ls %6ls %9ls %9ls %9ls %6ls' % ('it', 'dS', 'Energy', 'HEI', 'RMSF', 'MaxF', 'RMSF_CI', 'MaxF_CI', 'step'))
+        if self.iterations > 1 :
+            print(' %4ls %4s  %9ls %5ls %7ls %9ls %8ls' % ('it', 'dS', 'Energy', 'HEI', 'RMSF', 'MaxF', 'step'))
+            print('%4ls  %4s  %9ls %5ls %6ls %9ls %9ls %9ls %6ls' % ('it', 'dS', 'Energy', 'HEI', 'RMSF', 'MaxF', 'RMSF_CI', 'MaxF_CI', 'step'))
 
     def AddFC(self, x=1):
         self.forcecalls += x
