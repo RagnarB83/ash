@@ -142,6 +142,9 @@ def NEB(reactant=None, product=None, theory=None, images=None, interpolation=Non
         print("You need to provide reactant and product fragment and a theory to NEB")
         exit()
 
+    blankline()
+    PrintDivider()
+    PrintDivider()
     PrintHeader()
     PrintCredit()
     PrintDivider()
