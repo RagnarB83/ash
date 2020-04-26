@@ -132,6 +132,9 @@ class KnarrCalculator:
                 E[image_number]=En_image
                 #Forces array for all images
                 #Todo: Check units
+                print("Grad_image:", Grad_image)
+                print(path.ndofIm)
+                #print(np.reshape(Grad_image))
                 F[image_number] = -1 * np.reshape(Grad_image,(path.ndofIm,1))
                 print(F[image_number])
         elif self.runmode=='parallel':
