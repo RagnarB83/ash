@@ -18,6 +18,14 @@ from KNARRio.io import ReadTraj
 from KNARRjobs.neb import DoNEB
 import KNARRatom.atom
 
+# global startci for printing convenience.
+startci = False
+
+#LOG of Knarr-code modifications
+#1. Various python2 print-statements to print-functions changes
+#2. Various additions of int() in order to get integer of division products (Python2/3 change)
+#3. Made startci global
+
 #Define manual dicts here
 #These will be reasonable defaults that can be overridden by special keywords in Yggdrasill NEB object
 path_parameters = {"METHOD": "DOUBLE", "INTERPOLATION": "IDPP", "NIMAGES": 6,
@@ -194,7 +202,5 @@ def NEB(reactant=None, product=None, theory=None, images=None, interpolation=Non
     rp, ndim, nim, symb = ReadTraj("knarr_path.xyz")
     path = InitializePathObject(nim, react)
     path.SetCoords(rp)
-    #global startci
-    startci = False
     #Now starting NEB from path object, using neb_settings and optimizer settings
     DoNEB(path, calculator, neb_settings, optimizer)
