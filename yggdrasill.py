@@ -326,9 +326,13 @@ def print_time_rel_and_tot_color(timestampA,timestampB, modulename=''):
 
 # Simple nonbonded MM theory. Charges and LJ-potentials
 class NonBondedTheory:
-    def __init__(self, charges = [], atomtypes=[], forcefield=[], LJcombrule='geometric', codeversion='f2py', pairarrayversion='julia'):
+    def __init__(self, atomtypes=[], forcefield=[], charges = [], LJcombrule='geometric', codeversion='f2py', pairarrayversion='julia'):
         #Atom types
         self.atomtypes=atomtypes
+        #Read MM forcefield.
+        self.forcefield=forcefield
+
+        #
         self.numatoms = len(self.atomtypes)
         self.LJcombrule=LJcombrule
 
@@ -345,8 +349,7 @@ class NonBondedTheory:
         #These are charges for whole system including QM.
         self.atom_charges = charges
         #Possibly have self.mm_charges here also??
-        #Read MM forcefield.
-        self.forcefield=forcefield
+
 
         #Initializing sigmaij and epsij arrays. Will be filled by calculate_LJ_pairpotentials
         self.sigmaij=np.zeros((self.numatoms, self.numatoms))
@@ -1142,13 +1145,10 @@ class QMMMTheory:
 #ORCA Theory object. Fragment object is optional. Only used for single-points.
 class ORCATheory:
     def __init__(self, orcadir, fragment=None, charge='', mult='', orcasimpleinput='',
-                 orcablocks='', extraline='', brokensym=None, HSmult=None, atomstoflip=[], nprocs=None):
+                 orcablocks='', extraline='', brokensym=None, HSmult=None, atomstoflip=[], nprocs=1):
 
         #Setting nprocs of object
-        if nprocs==None:
-            self.nprocs=1
-        else:
-            self.nprocs=nprocs
+        self.nprocs=nprocs
 
         self.orcadir = orcadir
         if fragment != None:
@@ -1280,9 +1280,10 @@ class ORCATheory:
 # PE: Polarizable embedding (CPPE). Pass pe_modulesettings dict as well
 class Psi4Theory:
     def __init__(self, fragment='', charge='', mult='', printsetting='False', psi4settings='', psi4functional='',
-                 runmode='library', psi4dir='', pe=False, potfile='', outputname='psi4output.dat', label='psi4input',
-                 psi4memory=3000):
+                 runmode='library', psi4dir=None, pe=False, potfile='', outputname='psi4output.dat', label='psi4input',
+                 psi4memory=3000, nprocs=1):
 
+        self.nprocs=nprocs
         self.psi4memory=psi4memory
         self.label=label
         self.outputname=outputname
@@ -1292,13 +1293,19 @@ class Psi4Theory:
         self.pe=pe
         #Potfile from user or passed on via QM/MM Theory object ?
         self.potfile=potfile
+        #Determining runmode
         if self.runmode != 'library':
-            self.psi4path=shutil.which('psi4')
-            if self.psi4path==None:
-                print("Found no psi4 in path. Add Psi4 to Shell environment or provide psi4dir variable")
-                exit()
+            print("Defining Psi4 object with runmode=psithon")
+            if psi4dir is not None:
+                print("Path to Psi4 provided:", psi4dir)
+                self.psi4path=psi4dir
             else:
-                print("Found psi4 in path:", self.psi4path)
+                self.psi4path=shutil.which('psi4')
+                if self.psi4path==None:
+                    print("Found no psi4 in path. Add Psi4 to Shell environment or provide psi4dir variable")
+                    exit()
+                else:
+                    print("Found psi4 in path:", self.psi4path)
 
 
         if fragment != '':
@@ -1322,7 +1329,10 @@ class Psi4Theory:
             pass
     #Run function. Takes coords, elems etc. arguments and computes E or E+G.
     def run(self, current_coords=[], current_MM_coords=[], MMcharges=[], qm_elems=[],
-            mm_elems=[], elems=[], Grad=False, PC=False, nprocs=1, pe=False, potfile='', restart=False ):
+            mm_elems=[], elems=[], Grad=False, PC=False, nprocs=None, pe=False, potfile='', restart=False ):
+
+        if nprocs==None:
+            nprocs=self.nprocs
 
         print(BC.OKBLUE,BC.BOLD, "------------RUNNING PSI4 INTERFACE-------------", BC.END)
 
@@ -1398,8 +1408,7 @@ class Psi4Theory:
                 psi4.core.EXTERN = Chargefield
 
             #Setting inputvariables
-            #Todo: make memory psi4-interface variable ?
-            psi4.set_memory('2500 MB')
+            psi4.set_memory(self.psi4memory)
 
             #Changing charge and multiplicity
             #psi4molfrag.set_molecular_charge(self.charge)
@@ -1621,7 +1630,9 @@ class Psi4Theory:
 # PE: Polarizable embedding (CPPE). Not completely active in PySCF 1.7.1. Bugfix required I think
 class PySCFTheory:
     def __init__(self, fragment='', charge='', mult='', printsetting='False', pyscfbasis='', pyscffunctional='',
-                 pe=False, potfile='', outputname='pyscf.out', pyscfmemory=3100):
+                 pe=False, potfile='', outputname='pyscf.out', pyscfmemory=3100, nprocs=1):
+
+        self.nprocs=nprocs
 
         self.pyscfmemory=pyscfmemory
         self.outputname=outputname
@@ -1653,7 +1664,12 @@ class PySCFTheory:
             pass
     #Run function. Takes coords, elems etc. arguments and computes E or E+G.
     def run(self, current_coords=[], current_MM_coords=[], MMcharges=[], qm_elems=[],
-            mm_elems=[], elems=[], Grad=False, PC=False, nprocs=1, pe=False, potfile='', restart=False ):
+            mm_elems=[], elems=[], Grad=False, PC=False, nprocs=None, pe=False, potfile='', restart=False ):
+
+        if nprocs==None:
+            nprocs=self.nprocs
+
+
 
         print(BC.OKBLUE,BC.BOLD, "------------RUNNING PYSCF INTERFACE-------------", BC.END)
 
@@ -2105,7 +2121,8 @@ def old_read_fragment_from_file(fragfile):
 #Now supports 2 runmodes: 'library' (fast Python C-API) or 'inputfile'
 #
 class xTBTheory:
-    def __init__(self, xtbdir=None, fragment=None, charge=None, mult=None, xtbmethod=None, runmode='library'):
+    def __init__(self, xtbdir=None, fragment=None, charge=None, mult=None, xtbmethod=None, runmode='library', nprocs=1):
+        self.nprocs=nprocs
         if fragment != None:
             self.fragment=fragment
             self.coords=fragment.coords
@@ -2117,6 +2134,9 @@ class xTBTheory:
         if self.runmode=='library':
             print("Using library-based xTB interface")
             print("Loading library...")
+            os.environ["OMP_NUM_THREADS"] = str(nprocs)
+            os.environ["MKL_NUM_THREADS"] = "1"
+            os.environ["OPENBLAS_NUM_THREADS"] = "1"
             # Load xtB library and ctypes datatypes that run uses
             try:
                 import xtb_interface_library
@@ -2154,7 +2174,12 @@ class xTBTheory:
         except:
             pass
     def run(self, current_coords=[], current_MM_coords=[], MMcharges=[], qm_elems=[],
-                mm_elems=[], elems=[], Grad=False, PC=False, nprocs=1):
+                mm_elems=[], elems=[], Grad=False, PC=False, nprocs=None):
+
+        if nprocs is None:
+            nprocs=self.nprocs
+
+
         print("------------STARTING XTB INTERFACE-------------")
         #Coords provided to run or else taken from initialization.
         if len(current_coords) != 0:
@@ -2169,6 +2194,13 @@ class xTBTheory:
             else:
                 qm_elems = elems
 
+
+        #Parallellization
+        #Todo: this has not been confirmed to work
+        #Needs to be done before library-import??
+        os.environ["OMP_NUM_THREADS"] = str(nprocs)
+        os.environ["MKL_NUM_THREADS"] = "1"
+        os.environ["OPENBLAS_NUM_THREADS"] = "1"
 
         if self.runmode=='inputfile':
             print("Using inputfile-based xTB interface")

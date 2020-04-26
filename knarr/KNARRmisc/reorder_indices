@@ -1,0 +1,317 @@
+import numpy as np
+import time
+
+
+import KNARRsettings
+
+
+def ComputeZ(Ai, Bi, Af, Bf):
+    di = Bi - Ai
+    df = Bf - Af
+    return np.dot(di.T, df) / (np.linalg.norm(di) * np.linalg.norm(df))
+
+
+def ReoncstructMolecule(natoms, getUniqueSymb, symb3, X_Deconstr):
+    Rnew = np.zeros(shape=(natoms, 3))
+    ind_type = np.zeros(shape=(len(getUniqueSymb)))
+    for i in range(natoms):
+        for isymb in range(len(getUniqueSymb)):
+            if symb3[i, 0] == getUniqueSymb[isymb]:
+                Rtmp = X_Deconstr[isymb][int(ind_type[isymb])]
+                Rnew[i, 0] = Rtmp[0]
+                Rnew[i, 1] = Rtmp[1]
+                Rnew[i, 2] = Rtmp[2]
+                ind_type[isymb] += 1
+    return Rnew
+
+
+def doExchangeOrder(getUniqueSymb, natoms_type, index_cnstr, Z_tol, R_Deconstr, P_Deconstr):
+    found_exchange = []
+    exchange_type = ''
+    for isymb in range(len(getUniqueSymb)):
+        for i in range(natoms_type[isymb]):
+            if index_cnstr[3 * i] == 0:
+                Ai = R_Deconstr[isymb][i]
+                Af = P_Deconstr[isymb][i]
+            else:
+                continue
+            for j in range(i + 1, natoms_type[isymb]):
+                if index_cnstr[3 * j] == 0:
+                    Bi = R_Deconstr[isymb][j]
+                    Bf = P_Deconstr[isymb][j]
+                    Z = ComputeZ(Ai, Bi, Af, Bf)
+                else:
+                    continue
+
+                # print 'Z=%.2f' % Z
+                if Z == -1.0 or Z < Z_tol:
+                    P_Deconstr[isymb][i] = Bf
+                    P_Deconstr[isymb][j] = Af
+                    found_exchange.append([i, j])
+                    exchange_type = isymb
+                    return 1, P_Deconstr, found_exchange, exchange_type, Z
+
+    return 0, P_Deconstr, found_exchange, exchange_type, Z
+
+
+def doExchangeGlobal(getUniqueSymb, natoms_type, index_cnstr, Z_tol, R_Deconstr, P_Deconstr):
+    found_exchange = []
+    exchange_type = ''
+    Z = 1.0
+    for isymb in range(len(getUniqueSymb)):
+        for i in range(natoms_type[isymb]):
+            cnstr = index_cnstr[isymb][i]
+            if cnstr[0] == 0:
+                Ai = R_Deconstr[isymb][i]
+                Af = P_Deconstr[isymb][i]
+                list_of_Z = []
+                list_of_ind = []
+                list_of_struct = []
+
+                for j in range(i + 1, natoms_type[isymb]):
+
+                    cnstr2 = index_cnstr[isymb][j]
+                    if cnstr2[0] == 0:
+                        Bi = R_Deconstr[isymb][j]
+                        Bf = P_Deconstr[isymb][j]
+                        Z = ComputeZ(Ai, Bi, Af, Bf)
+                        list_of_Z.append(Z)
+                        list_of_ind.append([isymb, i, j])
+                        list_of_struct.append([Bf, Af])
+                    else:
+                        continue
+            else:
+                continue
+
+            if list_of_Z:
+                min_ind = np.argmin(list_of_Z)
+                if list_of_Z[min_ind] < Z_tol:
+                    getInfo = list_of_ind[min_ind]
+                    exchange_type = getInfo[0]
+                    found_exchange.append([getInfo[1], getInfo[2]])
+
+                    structures = list_of_struct[min_ind]
+                    P_Deconstr[getInfo[0]][getInfo[1]] = structures[0]
+                    P_Deconstr[getInfo[0]][getInfo[2]] = structures[1]
+                    return 1, P_Deconstr, found_exchange, exchange_type, list_of_Z[min_ind]
+
+    return 0, P_Deconstr, found_exchange, exchange_type, Z
+
+
+def doatommap():
+    print('==========================================')
+    print('     Re-ordering')
+    print('       of atom inidces              ')
+    print('==========================================')
+    print(' ')
+    print('=> plotting from iteration %i to %i' % (start_at, end_at))
+
+    global_start_t = time.time()
+
+    # Read parameters
+    fname_initial = 'react.xyz'
+    fname_final = 'prod.xyz'
+    output_fname = parameters["OUTPUT"]
+    Z_tol = parameters["Z_TOL"]
+    PBC = parameters["PBC"]
+    fullprint = parameters["DEBUG_PRINT"]
+    min_rmsd = parameters["QUATERN"]
+    npoints = parameters["NPOINTS"]
+
+    # Get Constraints
+    cnstr_E_type_string = parameters["FIX_ELEMENT_TYPE"].split(',')
+    cnstr_E_type = []
+    for i in range(len(cnstr_E_type_string)):
+        cnstr_E_type.append(cnstr_E_type_string[i].upper().strip())
+
+    cnstr_Atom_string = parameters["FIX_ATOM_INDEX"]
+    cnstr_A_type = []
+    if cnstr_Atom_string != '':
+        if isinstance(cnstr_Atom_string, basestring):
+            cnstr_Atom_string = cnstr_Atom_string.split(',')
+            for i in range(len(cnstr_Atom_string)):
+                cnstr_A_type.append(int(cnstr_Atom_string[i].strip()))
+        elif isinstance(cnstr_Atom_string, int):
+            cnstr_A_type.append(cnstr_Atom_string)
+        else:
+            raise TypeError("Unknown type of fix atom indexes")
+    if min_rmsd.upper() == "ALWAYS":
+        min_rmsd = True
+    elif min_rmsd.upper() == "NO":
+        min_rmsd = False
+    else:
+        raise ValueError("Unknown option for quaternions")
+    translation_type = parameters["TRANSLATION_TYPE"]
+    fix_center = parameters["FIX_CENTER"]
+
+    ksp = 10.0 * np.ones(shape=(npoints + 1, 1))
+    # Read and print configs
+    Rinitial, full_ndim, symb3, MassVector, cnstr = get_initial_coord(fname_initial)
+    Rfinal, full_ndim_f, symb3_f, MassVector_f, cnstr_f = get_initial_coord(fname_final)
+
+    printConfiguration("\nReactant configuration", full_ndim, 1, Rinitial, cnstr, symb3, PBC)
+    printConfiguration("\nProduct configuration", full_ndim, 1, Rfinal, cnstr, symb3, PBC)
+
+    RINDEX = GetFreeInd(cnstr)
+    free_ndim = len(RINDEX)
+    KNARRsettings.symb = symb3
+
+    # Generate constraints on indices
+    index_cnstr = np.zeros(shape=(full_ndim, 1))
+    if cnstr_E_type:
+        for j in range(len(cnstr_E_type)):
+            for i, val in enumerate(symb3):
+                if val == cnstr_E_type[j]:
+                    index_cnstr[i] = 1
+
+    if cnstr_A_type:
+        for j in range(len(cnstr_A_type)):
+            index_cnstr[cnstr_A_type[j] * 3 + 0] = 1
+            index_cnstr[cnstr_A_type[j] * 3 + 1] = 1
+            index_cnstr[cnstr_A_type[j] * 3 + 2] = 1
+
+    print '\nConstraints applied:'
+    for i in range(0, full_ndim, 3):
+        print 'Atom no. %3i  type: %2s: fixed: %1i' % (i / 3, symb3[i], index_cnstr[i])
+
+    print ''
+    # Make checks for stupid input
+    if full_ndim != full_ndim_f:
+        raise ValueError("Dimension mismatch between reactant and product state")
+    for i in range(full_ndim):
+        if not symb3[i] == symb3_f[i]:
+            print 'Atom #%i is of type %s in reactant and %s in product' % (i / 3, symb3[i], symb3_f[i])
+            raise ValueError("Ordering of reactant and final state does not match")
+
+    if (Z_tol > 0.0):
+        raise ValueError("Z_tol is too large! Please keep it below 0.0")
+
+    if (Z_tol < -1.0):
+        raise ValueError("Z_tol can not be smaller than -1.00")
+
+    if not PBC and min_rmsd:
+        # Minimize RMSD
+        before = RMSD(Rinitial, Rfinal)
+        Rf, Ri, Rmat = minimize_rotation(full_ndim, translation_type, fix_center, MassVector, Rinitial, Rfinal)
+        after = RMSD(Ri, Rf)
+
+        print ' '
+        print 'RMSD (before): %6.4f Angs' % before
+        print 'RMSD (after) : %6.4f Angs' % after
+        print ''
+
+    # get all unique element types
+    getUniqueSymb = np.unique(symb3)
+    print ''
+    print 'The following unique chemical elements were found:'
+    print ' %s ' * len(getUniqueSymb) % tuple(getUniqueSymb)
+
+    RPATH = LinearInterpol(full_ndim, Rinitial, Rfinal, npoints)
+    WriteTraj('linear_interp_before_remapping.xyz', full_ndim, npoints + 2, RPATH, np.zeros(shape=(npoints + 2, 1)),
+              symb3, 0)
+    WritePath('lin_before.xyz', full_ndim, npoints + 2, RPATH, symb3, 0)
+    if idpp_before:
+        RPATH = IDPP(full_ndim, free_ndim, npoints + 2, 2000, 0.03, ksp, 0.01, 0.05, True, False, MassVector, RINDEX,
+                     RPATH)
+        WriteTraj('idpp_before.xyz', full_ndim, npoints + 2, RPATH, np.zeros(shape=(npoints + 2, 1)), symb3, 0)
+    # easier to use natoms x 3 coord for this routine
+    natoms = full_ndim / 3
+    keep_symb = symb3
+    keep_Rinitial = Rinitial.copy()
+    Rinitial = np.reshape(Rinitial, (natoms, 3))
+    Rfinal = np.reshape(Rfinal, (natoms, 3))
+    index_cnstr = np.reshape(index_cnstr, (natoms, 3))
+    symb3 = np.reshape(symb3, (natoms, 3))
+
+    # From now on, I call initial state = Reactant (R)
+    # and product state = Product (P)
+    R_Deconstr = []
+    P_Deconstr = []
+    Cnstr_Deconstr = []
+    natoms_type = np.zeros(shape=(len(getUniqueSymb), 1))
+    # Deconstruct the system to types
+    ind = 0
+    for symb in getUniqueSymb:
+        tmp_list_R = []
+        tmp_list_P = []
+        tmp_list_C = []
+        for iatm in range(natoms):
+            if symb3[iatm, 0] == symb:
+                tmp_list_R.append(Rinitial[iatm, :])
+                tmp_list_P.append(Rfinal[iatm, :])
+                tmp_list_C.append(index_cnstr[iatm, :])
+                natoms_type[ind] += 1
+        ind += 1
+        R_Deconstr.append(tmp_list_R)
+        P_Deconstr.append(tmp_list_P)
+        Cnstr_Deconstr.append(tmp_list_C)
+
+    # Now we have each element in a seperate list - keep this format until the end
+    # where we construct the final geom again
+
+    # print R_Deconstr[0][0] #select type 0 and atom 0
+    # loop over all unique types
+    no_perm = 1
+    counter = 0
+    nmax = 100
+    while (no_perm != 0):
+
+        # if type_of_mapping == 1:
+        #    no_perm, P_Deconstr, found_exchange, type_exch, Zval = doExchangeOrder(getUniqueSymb, natoms_type, Z_tol, R_Deconstr, P_Deconstr)
+        # elif type_of_mapping == 2:
+        no_perm, P_Deconstr, found_exchange, type_exch, Zval = doExchangeGlobal(getUniqueSymb, natoms_type,
+                                                                                Cnstr_Deconstr,
+                                                                                Z_tol, R_Deconstr, P_Deconstr)
+        # else:
+        # raise TypeError("Unknown mapping method")
+
+        if no_perm == 1:
+            last_exchange = found_exchange[-1]
+            print 'Iter: %i, Atom type: %s exch: %i -to- %i with Z=%.2f in P' % (
+                counter, getUniqueSymb[type_exch], last_exchange[0], last_exchange[-1], Zval)
+        else:
+            print 'No more permutations found.'
+
+        if fullprint and no_perm != 0:
+            Rstep = ReoncstructMolecule(natoms, getUniqueSymb, symb3, P_Deconstr)
+            Rstep = np.reshape(Rstep, (natoms * 3, 1))
+            WriteTraj('mapping.xyz', full_ndim, 1, Rstep, [0.0], keep_symb, counter)
+
+        counter += 1
+
+        if (counter > nmax):
+            break
+
+    # Reconstruct the Product state of the molecule
+    Rnew = ReoncstructMolecule(natoms, getUniqueSymb, symb3, P_Deconstr)
+
+    Rnew = np.reshape(Rnew, (natoms * 3, 1))
+
+    printConfiguration("\nProduct configuration", full_ndim, 1, Rnew, cnstr, keep_symb, PBC)
+
+    RPATH = LinearInterpol(full_ndim, keep_Rinitial, Rnew, npoints)
+    WriteTraj('linear_interp_after_remapping.xyz', full_ndim, npoints + 2, RPATH, np.zeros(shape=(npoints + 2, 1)),
+              keep_symb, 0)
+    WritePath('lin_after.xyz', full_ndim, npoints + 2, RPATH, keep_symb, 0)
+    if idpp_after:
+        RPATH = IDPP(full_ndim, free_ndim, npoints + 2, 2000, 0.03, ksp, 0.01, 0.05, True, False,
+                     MassVector, RINDEX, RPATH)
+        WriteTraj('idpp_after.xyz', full_ndim, npoints + 2, RPATH, np.zeros(shape=(npoints + 2, 1)), keep_symb, 0)
+    print '\nWriting output files...'
+
+    output_extension = output_fname.split('.')[1]
+    if output_extension.upper() == 'CON':
+        WriteCon(output_fname, 1, Rnew, keep_symb, KNARRsettings.cell, cnstr)
+    elif output_extension.upper() == 'XYZ':
+        WriteXYZ(output_fname, Rnew, keep_symb)
+
+    print '  => %s' % output_fname
+    # Return to main
+    printDivider()
+    exectime = time.time() - global_start_t
+    print 'Total number of force calls: %6i' % KNARRsettings.forcecalls
+    print 'Execution terminated successfully in %s seconds!' % np.round(exectime, 3)
+    print ''
+    print ''
+
+    return 0

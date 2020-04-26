@@ -1,0 +1,33 @@
+& main
+
+
+
+config_file = react.xyz
+
+two_dee_system = True
+
+
+
+& calculator
+
+calculator = henkelman
+
+
+
+& dynamics
+
+no_kb = True
+
+thermostat = langevin
+
+langevin_friction = 0.5
+
+simulation_time = 500000
+
+time_step = 0.02
+
+temperature = 0.2
+
+force_temperature = False
+
+Velocity_distr = velofile.dat
