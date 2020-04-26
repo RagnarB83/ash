@@ -156,11 +156,17 @@ class KnarrCalculator:
 
 
 #Yggdrasill NEB function. Calls Knarr
-def NEB(reactant=None, product=None, theory=None, images=8):
+def NEB(reactant=None, product=None, theory=None, images=None, interpolation=None):
     if reactant==None or product==None or theory==None:
         print("You need to provide reactant and product fragment and a theory to NEB")
         exit()
     numatoms = reactant.numatoms
+
+    #Override some default settings
+    if images is not None:
+        path_parameters["NIMAGES"]=images
+    if interpolation is not None:
+        path_parameters["INTERPOLATION"]=interpolation
 
     #Create Knarr calculator from Yggdrasill theory
     calculator = KnarrCalculator(theory, fragment1=reactant, fragment2=product)
@@ -184,5 +190,6 @@ def NEB(reactant=None, product=None, theory=None, images=8):
     rp, ndim, nim, symb = ReadTraj("knarr_path.xyz")
     path = InitializePathObject(nim, react)
     path.SetCoords(rp)
+
     #Now starting NEB from path object, using neb_settings and optimizer settings
     DoNEB(path, calculator, neb_settings, optimizer)
