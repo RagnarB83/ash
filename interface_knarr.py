@@ -18,7 +18,7 @@ from KNARRio.io import ReadTraj
 from KNARRjobs.neb import DoNEB
 import KNARRatom.atom
 
-
+ISCION = False
 #LOG of Knarr-code modifications
 #1. Various python2 print-statements to print-functions changes
 #2. Various additions of int() in order to get integer of division products (Python2/3 change)
