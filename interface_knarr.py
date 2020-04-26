@@ -130,6 +130,10 @@ class KnarrCalculator:
         path.SetEnergy(E)
         #Forcecalls
         path.AddFC(counter)
+        blankline()
+        print(' %4ls %4s  %9ls %5ls %7ls %9ls %8ls' % ('it', 'dS', 'Energy', 'HEI', 'RMSF', 'MaxF', 'step'))
+        print('%4ls  %4s  %9ls %5ls %6ls %9ls %9ls %9ls %6ls' % ('it', 'dS', 'Energy', 'HEI', 'RMSF', 'MaxF', 'RMSF_CI', 'MaxF_CI', 'step'))
+
     def AddFC(self, x=1):
         self.forcecalls += x
         return
