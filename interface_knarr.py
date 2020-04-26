@@ -127,6 +127,7 @@ class KnarrCalculator:
                 # Request Engrad calc
                 #Todo: Reduce printlevel for QM-theory here. Means that printlevel needs to be uniform accross all theories
                 #Todo: Use self.printlevel so that it can adjust from outside
+                blankline()
                 En_image, Grad_image = self.theory.run(current_coords=image_coords, elems=self.fragment1.elems, Grad=True)
                 counter += 1
                 #Energies array for all images
