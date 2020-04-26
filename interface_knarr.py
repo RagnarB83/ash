@@ -134,8 +134,10 @@ class KnarrCalculator:
                 #Todo: Check units
                 print("Grad_image:", Grad_image)
                 print(path.ndofIm)
+                print(type(path.ndofIm))
+                print(int(path.ndofIm))
                 #print(np.reshape(Grad_image))
-                F[image_number] = -1 * np.reshape(Grad_image,(path.ndofIm,1))
+                F[image_number] = -1 * np.reshape(Grad_image,(int(path.ndofIm),1))
                 print(F[image_number])
         elif self.runmode=='parallel':
             print("not yet done")
