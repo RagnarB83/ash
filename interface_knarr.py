@@ -203,10 +203,13 @@ def NEB(reactant=None, product=None, theory=None, images=None, interpolation=Non
         neb_settings["TOL_TURN_ON_CI"] = tol_turn_on_ci
 
     print("Active Knarr settings:")
-    print(path_parameters)
-    print(neb_settings)
-    print(optimizer)
+    blankline()
 
+    print("Interpolation path parameters:\n", path_parameters)
+    blankline()
+    print("NEB parameters:\n", neb_settings)
+    blankline()
+    print("Optimizer parameters:\n", optimizer)
 
     #Create Knarr calculator from Yggdrasill theory
     calculator = KnarrCalculator(theory, fragment1=reactant, fragment2=product)
