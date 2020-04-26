@@ -18,13 +18,11 @@ from KNARRio.io import ReadTraj
 from KNARRjobs.neb import DoNEB
 import KNARRatom.atom
 
-# global startci for printing convenience.
-startci = False
 
 #LOG of Knarr-code modifications
 #1. Various python2 print-statements to print-functions changes
 #2. Various additions of int() in order to get integer of division products (Python2/3 change)
-#3. Made startci global
+#3. Made startci global??
 
 #Define manual dicts here
 #These will be reasonable defaults that can be overridden by special keywords in Yggdrasill NEB object
@@ -145,10 +143,10 @@ class KnarrCalculator:
         #Forcecalls
         path.AddFC(counter)
         blankline()
-        global startci
-        print("startci:", startci)
+        global ISCION
+        print("ISCION:", ISCION)
         if self.iterations > 2 :
-            if startci is True:
+            if ISCION is True:
                 print('%4ls  %4s  %9ls %5ls %6ls %9ls %9ls %9ls %6ls' % ('it', 'dS', 'Energy', 'HEI', 'RMSF', 'MaxF', 'RMSF_CI', 'MaxF_CI', 'step'))
             else:
                 print(' %4ls %4s  %9ls %5ls %7ls %9ls %8ls' % ('it', 'dS', 'Energy', 'HEI', 'RMSF', 'MaxF', 'step'))

@@ -165,7 +165,8 @@ def DoNEB(path, calculator, neb, optimizer, second_run=False):
     reset_opt = False
     reparam_only_once = True
     #RB mod: global
-    global startci
+    #global ISCION
+    ISCION = False
     startci = False
     was_scaled = False
     converged = False
@@ -425,6 +426,8 @@ def DoNEB(path, calculator, neb, optimizer, second_run=False):
                 checkmax = np.argmax(path.GetEnergy())
                 if checkmax != 0 and checkmax != path.GetNim() - 1:
                     startci = True
+                    #Rmod:
+                    ISCION = True
                     ci = checkmax
                     if restart_on_ci:
                         reset_opt = True
