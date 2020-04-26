@@ -96,7 +96,8 @@ def coords_to_Knarr(coords):
 
 #Wrapper around Yggdrasill object
 class KnarrCalculator:
-    def __init__(self,theory,fragment1,fragment2,runmode='serial'):
+    def __init__(self,theory,fragment1,fragment2,runmode='serial',printlevel=None):
+        self.printlevel=printlevel
         self.forcecalls=0
         self.iterations=0
         self.theory=theory
@@ -118,6 +119,8 @@ class KnarrCalculator:
                 image_coords_1d = path.GetCoords()[image_number * path.ndimIm : (image_number + 1) * path.ndimIm]
                 image_coords=np.reshape(image_coords_1d, (numatoms, 3))
                 # Request Engrad calc
+                #Todo: Reduce printlevel for QM-theory here. Means that printlevel needs to be uniform accross all theories
+                #Todo: Use self.printlevel so that it can adjust from outside
                 En_image, Grad_image = self.theory.run(current_coords=image_coords, elems=self.fragment1.elems, Grad=True)
                 counter += 1
                 #Energies array for all images
@@ -134,10 +137,11 @@ class KnarrCalculator:
         #Forcecalls
         path.AddFC(counter)
         blankline()
-        if self.iterations > 1 :
-            print(' %4ls %4s  %9ls %5ls %7ls %9ls %8ls' % ('it', 'dS', 'Energy', 'HEI', 'RMSF', 'MaxF', 'step'))
-            print('%4ls  %4s  %9ls %5ls %6ls %9ls %9ls %9ls %6ls' % ('it', 'dS', 'Energy', 'HEI', 'RMSF', 'MaxF', 'RMSF_CI', 'MaxF_CI', 'step'))
-
+        if self.iterations > 2 :
+            if startci is True:
+                print('%4ls  %4s  %9ls %5ls %6ls %9ls %9ls %9ls %6ls' % ('it', 'dS', 'Energy', 'HEI', 'RMSF', 'MaxF', 'RMSF_CI', 'MaxF_CI', 'step'))
+            else:
+                print(' %4ls %4s  %9ls %5ls %7ls %9ls %8ls' % ('it', 'dS', 'Energy', 'HEI', 'RMSF', 'MaxF', 'step'))
     def AddFC(self, x=1):
         self.forcecalls += x
         return
