@@ -120,7 +120,6 @@ class KnarrCalculator:
                 #Forces array for all images
                 #Todo: Check units
                 F[image_number* path.ndimIm : (image_number + 1) * path.ndimIm] = -1 * np.reshape(Grad_image,(int(path.ndofIm),1))
-                print(F[image_number])
         elif self.runmode=='parallel':
             print("not yet done")
             exit()
@@ -140,6 +139,12 @@ def NEB(reactant=None, product=None, theory=None, images=None, interpolation=Non
     if reactant==None or product==None or theory==None:
         print("You need to provide reactant and product fragment and a theory to NEB")
         exit()
+
+    PrintHeader()
+    PrintCredit()
+    PrintDivider()
+    PrintDivider()
+
     numatoms = reactant.numatoms
 
     #Override some default settings
