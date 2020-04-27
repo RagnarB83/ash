@@ -325,24 +325,31 @@ def NEB(reactant=None, product=None, theory=None, images=None, interpolation=Non
     #Getting saddlepoint-structure and energy if CI-NEB
     if neb_settings["CLIMBING"] is True:
         if ActiveRegion == True:
-            print("This has not been confirmed to work")
-            pass
+            print("Getting saddlepoint geometry and creating new fragment for Full system")
+            print("Has not been confirmed to work...")
+            #Finding CI coords and energy
+            CI = np.argmax(path.GetEnergy())
+            saddle_coords_1d=path.GetCoords()[CI * path.GetNDimIm():(CI + 1) * path.GetNDimIm()]
+            saddle_coords=np.reshape(saddle_coords_1d, (numatoms, 3))
+            saddle_energy = path.GetEnergy()[CI]
 
-            # Write out saddle-point geometry as Yggdrasill fragment
-            image_coords_1d = path.GetCoords()[image_number * path.ndimIm: (image_number + 1) * path.ndimIm]
-            image_coords = np.reshape(image_coords_1d, (numatoms, 3))
-
-            currcoords = image_coords
+            #Combinining frozen region with optimized active-region for saddle-point
             # Defining full_coords as original coords temporarily
             full_coords = self.full_fragment_reactant.coords
             # Replacing act-region coordinates with coords from currcoords
-            for i, c in enumerate(full_coords):
+            for i, c in enumerate(saddle_coords):
                 if i in self.actatoms:
                     # Silly. Pop-ing first coord from currcoords until done
-                    curr_c, currcoords = currcoords[0], currcoords[1:]
+                    curr_c, saddle_coords = saddle_coords[0], saddle_coords[1:]
                     full_coords[i] = curr_c
             full_current_image_coords = full_coords
 
+            #Creating new Yggdrasill fragment for Full Saddle-point geometry
+            Saddlepoint_fragment = Fragment(coords=full_current_image_coords, elems=reactant.elems, connectivity=reactant.connectivity)
+            Saddlepoint_fragment.set_energy(saddle_energy)
+            #Writing out Saddlepoint fragment file and XYZ file
+            Saddlepoint_fragment.print_system(filename='Saddlepoint-optimized.ygg')
+            Saddlepoint_fragment.write_xyzfile(xyzfilename='Saddlepoint-optimized.xyz')
 
         else:
             #Finding CI coords and energy
