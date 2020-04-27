@@ -2283,7 +2283,7 @@ class xTBTheory:
             if PC==True:
                 print("Pointcharge-embedding on but xtb-runmode is library!")
                 print("The xtb library-interface is not yet ready for QM/MM calculations")
-                print("Use runmode='inputfile' for now )
+                print("Use runmode='inputfile' for now")
                 exit(1)
 
 
