@@ -127,6 +127,7 @@ class KnarrCalculator:
         F = np.zeros(shape=(path.GetNDimIm() * path.GetNim(), 1))
         E = np.zeros(shape=(path.GetNim(), 1))
         numatoms=int(path.ndofIm/3)
+        print("list_to_compute:", list_to_compute)
         if self.runmode=='serial':
             for image_number in list_to_compute:
                 image_coords_1d = path.GetCoords()[image_number * path.ndimIm : (image_number + 1) * path.ndimIm]
