@@ -345,21 +345,14 @@ def NEB(reactant=None, product=None, theory=None, images=None, interpolation=Non
 
 
         else:
-            #Finding CI
+            #Finding CI coords and energy
             CI = np.argmax(path.GetEnergy())
-            print("CI:", CI)
             saddle_coords_1d=path.GetCoords()[CI * path.GetNDimIm():(CI + 1) * path.GetNDimIm()]
-            print("saddle_coords_1d:", saddle_coords_1d)
-            print(type(saddle_coords_1d))
-            print(saddle_coords_1d.shape)
             saddle_coords=np.reshape(saddle_coords_1d, (numatoms, 3))
-            print("saddle_coords:", saddle_coords)
             saddle_energy = path.GetEnergy()[CI]
-
+            #Creating new Yggdrasill fragment
             Saddlepoint_fragment = Fragment(coords=saddle_coords, elems=reactant.elems, connectivity=reactant.connectivity)
             Saddlepoint_fragment.set_energy(saddle_energy)
-            print("Saddle-point energy:",  Saddlepoint_fragment.energy)
-            print(Saddlepoint_fragment.__dict__)
             #Writing out Saddlepoint fragment file and XYZ file
             Saddlepoint_fragment.print_system(filename='Saddlepoint-optimized.ygg')
             Saddlepoint_fragment.write_xyzfile(xyzfilename='Saddlepoint-optimized.xyz')
