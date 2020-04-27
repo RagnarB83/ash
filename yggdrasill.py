@@ -2141,7 +2141,7 @@ def old_read_fragment_from_file(fragfile):
 #Now supports 2 runmodes: 'library' (fast Python C-API) or 'inputfile'
 #
 class xTBTheory:
-    def __init__(self, xtbdir=None, fragment=None, charge=None, mult=None, xtbmethod=None, runmode='library', nprocs=1):
+    def __init__(self, xtbdir=None, fragment=None, charge=None, mult=None, xtbmethod=None, runmode='inputfile', nprocs=1):
         self.nprocs=nprocs
         if fragment != None:
             self.fragment=fragment
@@ -2279,6 +2279,13 @@ class xTBTheory:
                 print("------------ENDING XTB-INTERFACE-------------")
                 return self.energy
         elif self.runmode=='library':
+
+            if PC==True:
+                print("Pointcharge-embedding on but xtb-runmode is library!")
+                print("The xtb library-interface is not yet ready for QM/MM calculations")
+                print("Use runmode='inputfile' for now )
+                exit(1)
+
 
             #Hard-coded options. Todo: revisit
             options = {
