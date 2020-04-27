@@ -1,6 +1,10 @@
 #!/bin/bash
 
-#other options:
+#Don't source this script. Run it or do: bash /path/to/set_path.sh
+
+[[ $_ != $0 ]] && echo "Script is being sourced" || echo "Script is a subshell"
+
+#Best option to get DIR? Does not work when script is sourced
 #https://stackoverflow.com/questions/59895/how-to-get-the-source-directory-of-a-bash-script-from-within-the-script-itself/246128#246128
 DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null 2>&1 && pwd )"
 echo "DIR is $DIR"
