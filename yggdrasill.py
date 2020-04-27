@@ -2293,6 +2293,9 @@ class xTBTheory:
                 results = self.xtbobject.GFN1Calculation(*args)
             elif self.xtbmethod=='GFN2':
                 results = self.xtbobject.GFN2Calculation(*args)
+            else:
+                print("Unknown xtbmethod.")
+                exit()
             print("------------xTB calculation done-------------")
             if Grad==True:
                 self.energy = float(results['energy'])

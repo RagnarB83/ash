@@ -6,9 +6,9 @@ import os
 import sys
 import shutil
 
-#xTB interface file
-#TODO: THis should be a general interface so remove settings_solvation calls.
+#xTB functions: primarily for inputfile-based interface. Library-interfaces is in interface_xtb.py
 
+#TODO: THis should be a general interface so remove settings_solvation calls.
 #TODO: xtb. Need to combine OMP-parallelization of xtb and multiprocessing if possible
 #TODO: Currently doing multiprocessing over all 8*2=16 snapshots. First A, then B.
 #TODO: Might not be a need to do first A then B since a ROHF-type Hamiltonian
