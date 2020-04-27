@@ -462,7 +462,7 @@ def BernyOpt(theory,fragment):
         print(BC.FAIL,"pyberny module not found!", BC.END)
         print(BC.WARNING,"Either install pyberny using pip:\n pip install pyberny\n "
                          "or manually from Github (https://github.com/jhrmnn/pyberny)", BC.END)
-        exit()
+        exit(9)
     print("See: https://github.com/jhrmnn/pyberny")
     elems=fragment.elems
     coords=fragment.coords

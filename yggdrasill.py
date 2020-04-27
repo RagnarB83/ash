@@ -737,7 +737,7 @@ class PolEmbedTheory:
                 except:
                     print("Pyframe not found. Install pyframe via pip (https://pypi.org/project/PyFraME):")
                     print("pip install pyframe")
-
+                    exit(9)
                 write_pdbfile_dummy(self.elems, self.coords, self.potfilename, self.hybridatomlabels, self.residlabels)
                 file=self.potfilename+'.pdb'
                 #Pyframe
@@ -1380,7 +1380,7 @@ class Psi4Theory:
             except:
                 print(BC.FAIL,"Problem importing psi4. Make sure psi4 has been installed as part of same Python as Yggdrasill", BC.END)
                 print(BC.WARNING,"If problematic, switch to inputfile based Psi4 interface instead.", BC.END)
-                exit()
+                exit(9)
             #Changing namespace may prevent crashes due to multiple jobs running at same time
             if self.label=='label':
                 psi4.core.IO.set_default_namespace("psi4job_ygg")
@@ -1712,7 +1712,7 @@ class PySCFTheory:
             import pyscf
         except:
             print(BC.FAIL, "Problem importing pyscf. Make sure pyscf has been installed: pip install pyscf", BC.END)
-
+            exit(9)
         #PySCF scratch dir. Todo: Need to adapt
         #print("Setting PySCF scratchdir to ", os.getcwd())
 
@@ -2165,7 +2165,7 @@ class xTBTheory:
             except:
                 print("Problem importing xTB library. Check that the library dir (containing libxtb.so) is available in LD_LIBRARY_PATH.")
                 print("e.g. export LD_LIBRARY_PATH=/path/to/xtb_6.2.3/lib64:$LD_LIBRARY_PATH")
-                exit()
+                exit(9)
             from ctypes import c_int, c_double
             #Needed for complete interface?:
             # from ctypes import Structure, c_int, c_double, c_bool, c_char_p, c_char, POINTER, cdll, CDLL

@@ -45,7 +45,7 @@ def geomeTRICOptimizer(theory=None,fragment=None, coordsystem='tric', frozenatom
         blankline()
         print(BC.FAIL,"geomeTRIC module not found!", BC.END)
         print(BC.WARNING,"Either install geomeTRIC using pip:\n pip install geometric\n or manually from Github (https://github.com/leeping/geomeTRIC)", BC.END)
-        exit()
+        exit(9)
 
     #ActiveRegion option where geomeTRIC only sees the QM part that is being optimized
     if ActiveRegion == True:
