@@ -352,7 +352,7 @@ def NEB(reactant=None, product=None, theory=None, images=None, interpolation=Non
             saddle_coords=path.GetCoords()[CI * path.GetNDimIm():(CI + 1) * path.GetNDimIm()], path.GetSymbols()
             saddle_energy = path.GetEnergy()[CI]
 
-            Saddlepoint_fragment = Fragment(coords=saddle_coords, elems=reactant.elems, conncalc=False)
+            Saddlepoint_fragment = Fragment(coords=saddle_coords, elems=reactant.elems, connectivity=reactant.connectivity)
             Saddlepoint_fragment.set_energy(saddle_energy)
             print("Saddle-point energy:",  Saddlepoint_fragment.energy)
 
