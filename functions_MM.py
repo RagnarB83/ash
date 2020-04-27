@@ -51,7 +51,7 @@ UFF_modH_dict={'H': [0.000, 0.000], 'He': [2.362, 0.056], 'Li': [2.451, 0.025], 
 
 
 #Fast LJ-Coulomb via Fortran and f2PY
-def LJCoulomb(coords,epsij, sigmaij, charges, connectivity=[]):
+def LJCoulomb(coords,epsij, sigmaij, charges, connectivity=None):
     print("Inside LJCoulomb")
     #Todo: Avoid calling import everytime in the future...
     import LJCoulombv1
@@ -63,7 +63,7 @@ def LJCoulomb(coords,epsij, sigmaij, charges, connectivity=[]):
     return penergy, grad, LJenergy, coulenergy
 
 #Fast LJ-Coulomb via Fortran and f2PY
-def LJCoulombv2(coords,epsij, sigmaij, charges, connectivity=[]):
+def LJCoulombv2(coords,epsij, sigmaij, charges, connectivity=None):
     print("Inside LJCoulomb")
     #Todo: Avoid calling import everytime in the future...
     import LJCoulombv2
@@ -76,7 +76,7 @@ def LJCoulombv2(coords,epsij, sigmaij, charges, connectivity=[]):
     penergy, LJenergy, coulenergy, grad = LJCoulombv2.ljcoulegrad(coords, rc, epsij, sigmaij, charges, grad, dim=3, natom=numatoms)
     return penergy, grad, LJenergy, coulenergy
 
-def LennardJones(coords, epsij, sigmaij, connectivity=[], qmatoms=[]):
+def LennardJones(coords, epsij, sigmaij, connectivity=None, qmatoms=None):
     print("Inside Python Lennard-Jones function")
     #print("qmatoms:", qmatoms)
     #print("QM atom pairs are skipped if qmatoms list provided")
@@ -200,7 +200,7 @@ def coulombcharge(charges, coords):
 #Combined Lennard-Jones and Coulomb
 #Terribly written
 
-def LJCoulpy(coords,atomtypes, charges, LJPairpotentials, connectivity=[]):
+def LJCoulpy(coords,atomtypes, charges, LJPairpotentials, connectivity=None):
     print("Inside LJCoulpy function")
     print("Calculating LJ pairs based on connectivity")
     if len(connectivity)==0:

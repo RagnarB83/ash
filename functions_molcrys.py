@@ -113,7 +113,7 @@ def cell_extend_frag_withcenter(cellvectors, coords,elems):
 #3. Find all whole fragments of the atoms in original cell but capped with atoms from extended cell
 #4. For fragment-atoms outside original cell, find equivalent atoms in original cell.
 #TODO: Skip step1?
-def frag_define(orthogcoords,elems,cell_vectors,fragments,cell_angles=[], cell_length=[]):
+def frag_define(orthogcoords,elems,cell_vectors,fragments,cell_angles=None, cell_length=None):
     blankline()
     print(BC.OKBLUE, BC.BOLD,"Frag_Define: Defining fragments of unit cell", BC.END)
     origtime=time.time()

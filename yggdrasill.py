@@ -59,7 +59,7 @@ def print_yggdrasill_header():
 
 #Numerical frequencies class
 class NumericalFrequencies:
-    def __init__(self, fragment, theory, npoint=2, displacement=0.0005, hessatoms=[], numcores=1 ):
+    def __init__(self, fragment, theory, npoint=2, displacement=0.0005, hessatoms=None, numcores=1 ):
         self.numcores=numcores
         self.fragment=fragment
         self.theory=theory
@@ -327,7 +327,7 @@ def print_time_rel_and_tot_color(timestampA,timestampB, modulename=''):
 
 # Simple nonbonded MM theory. Charges and LJ-potentials
 class NonBondedTheory:
-    def __init__(self, atomtypes=[], forcefield=[], charges = [], LJcombrule='geometric', codeversion='f2py', pairarrayversion='julia'):
+    def __init__(self, atomtypes=None, forcefield=None, charges = None, LJcombrule='geometric', codeversion='f2py', pairarrayversion='julia'):
         #Atom types
         self.atomtypes=atomtypes
         #Read MM forcefield.
@@ -356,7 +356,7 @@ class NonBondedTheory:
         self.sigmaij=np.zeros((self.numatoms, self.numatoms))
         self.epsij=np.zeros((self.numatoms, self.numatoms))
 
-    def calculate_LJ_pairpotentials(self, qmatoms=[]):
+    def calculate_LJ_pairpotentials(self, qmatoms=None):
         #Deleted combination_rule argument. Now using variable assigned to object
 
         combination_rule=self.LJcombrule
@@ -547,7 +547,7 @@ class NonBondedTheory:
         self.atom_charges = charges
         print("Charges are now:", charges)
     #Provide specific coordinates (MM region) and charges (MM region) upon run
-    def run(self, full_coords=[], mm_coords=[], charges=[], connectivity=[], Coulomb=True, Grad=True, qmatoms=[]):
+    def run(self, full_coords=None, mm_coords=None, charges=None, connectivity=None, Coulomb=True, Grad=True, qmatoms=None):
 
         #If qmatoms list provided to run (probably by QM/MM object) then we are doing QM/MM
         #QM-QM pairs will be skipped in LJ
@@ -648,7 +648,7 @@ class NonBondedTheory:
 #Currently only Polarizable Embedding (PE). Only available for Psi4, PySCF and Dalton.
 #Peatoms: polarizable atoms. MMatoms: nonpolarizable atoms (e.g. TIP3P)
 class PolEmbedTheory:
-    def __init__(self, fragment='', qm_theory='', qmatoms=[], peatoms=[], mmatoms=[], pot_create=True,
+    def __init__(self, fragment='', qm_theory='', qmatoms=None, peatoms=None, mmatoms=None, pot_create=True,
                  potfilename='System', pot_option='', pyframe=False, PElabel_pyframe='MM'):
         print(BC.WARNING,BC.BOLD,"------------Defining PolEmbedTheory object-------------", BC.END)
         self.pot_create=pot_create
@@ -836,7 +836,7 @@ class PolEmbedTheory:
             print("Pot creation is off for this object.")
 
 
-    def run(self, current_coords=[], elems=[], Grad=False, nprocs=1, potfile='', restart=False):
+    def run(self, current_coords=None, elems=None, Grad=False, nprocs=1, potfile='', restart=False):
         print(BC.WARNING, BC.BOLD, "------------RUNNING PolEmbedTheory MODULE-------------", BC.END)
         if restart==True:
             print("Restart Option On!")
@@ -980,7 +980,7 @@ class QMMMTheory:
                         print("MM atom {} charge: {}".format(i, self.charges[i]))
             blankline()
 
-    def run(self, current_coords=[], elems=[], Grad=False, nprocs=None):
+    def run(self, current_coords=None, elems=None, Grad=False, nprocs=None):
         CheckpointTime = time.time()
         print(BC.WARNING, BC.BOLD, "------------RUNNING QM/MM MODULE-------------", BC.END)
         print("QM Module:", self.qm_theory_name)
@@ -1146,7 +1146,7 @@ class QMMMTheory:
 #ORCA Theory object. Fragment object is optional. Only used for single-points.
 class ORCATheory:
     def __init__(self, orcadir, fragment=None, charge='', mult='', orcasimpleinput='',
-                 orcablocks='', extraline='', brokensym=None, HSmult=None, atomstoflip=[], nprocs=1):
+                 orcablocks='', extraline='', brokensym=None, HSmult=None, atomstoflip=None, nprocs=1):
 
         #Setting nprocs of object
         self.nprocs=nprocs
@@ -1182,8 +1182,8 @@ class ORCATheory:
         except:
             pass
     #Run function. Takes coords, elems etc. arguments and computes E or E+G.
-    def run(self, current_coords=[], current_MM_coords=[], MMcharges=[], qm_elems=[],
-            mm_elems=[], elems=[], Grad=False, PC=False, nprocs=None ):
+    def run(self, current_coords=None, current_MM_coords=None, MMcharges=None, qm_elems=None,
+            mm_elems=None, elems=None, Grad=False, PC=False, nprocs=None ):
         print(BC.OKBLUE,BC.BOLD, "------------RUNNING ORCA INTERFACE-------------", BC.END)
         #Coords provided to run or else taken from initialization.
         if len(current_coords) != 0:
@@ -1192,8 +1192,8 @@ class ORCATheory:
             current_coords=self.coords
 
         #What elemlist to use. If qm_elems provided then QM/MM job, otherwise use elems list or self.elems
-        if qm_elems == []:
-            if elems == []:
+        if qm_elems is None:
+            if elems is None:
                 qm_elems=self.elems
             else:
                 qm_elems = elems
@@ -1329,8 +1329,8 @@ class Psi4Theory:
         except:
             pass
     #Run function. Takes coords, elems etc. arguments and computes E or E+G.
-    def run(self, current_coords=[], current_MM_coords=[], MMcharges=[], qm_elems=[],
-            mm_elems=[], elems=[], Grad=False, PC=False, nprocs=None, pe=False, potfile='', restart=False ):
+    def run(self, current_coords=None, current_MM_coords=None, MMcharges=None, qm_elems=None,
+            mm_elems=None, elems=None, Grad=False, PC=False, nprocs=None, pe=False, potfile='', restart=False ):
 
         if nprocs==None:
             nprocs=self.nprocs
@@ -1350,8 +1350,8 @@ class Psi4Theory:
             current_coords=self.coords
 
         #What elemlist to use. If qm_elems provided then QM/MM job, otherwise use elems list or self.elems
-        if qm_elems == []:
-            if elems == []:
+        if qm_elems is None:
+            if elems is None:
                 qm_elems=self.elems
             else:
                 qm_elems = elems
@@ -1664,8 +1664,8 @@ class PySCFTheory:
         except:
             pass
     #Run function. Takes coords, elems etc. arguments and computes E or E+G.
-    def run(self, current_coords=[], current_MM_coords=[], MMcharges=[], qm_elems=[],
-            mm_elems=[], elems=[], Grad=False, PC=False, nprocs=None, pe=False, potfile='', restart=False ):
+    def run(self, current_coords=None, current_MM_coords=None, MMcharges=None, qm_elems=None,
+            mm_elems=None, elems=None, Grad=False, PC=False, nprocs=None, pe=False, potfile='', restart=False ):
 
         if nprocs==None:
             nprocs=self.nprocs
@@ -1687,8 +1687,8 @@ class PySCFTheory:
             current_coords=self.coords
 
         #What elemlist to use. If qm_elems provided then QM/MM job, otherwise use elems list or self.elems
-        if qm_elems == []:
-            if elems == []:
+        if qm_elems is None:
+            if elems is None:
                 qm_elems=self.elems
             else:
                 qm_elems = elems
@@ -2175,8 +2175,8 @@ class xTBTheory:
             os.remove('xtbrestart')
         except:
             pass
-    def run(self, current_coords=[], current_MM_coords=[], MMcharges=[], qm_elems=[],
-                mm_elems=[], elems=[], Grad=False, PC=False, nprocs=None):
+    def run(self, current_coords=None, current_MM_coords=None, MMcharges=None, qm_elems=None,
+                mm_elems=None, elems=None, Grad=False, PC=False, nprocs=None):
 
         if nprocs is None:
             nprocs=self.nprocs
@@ -2190,8 +2190,8 @@ class xTBTheory:
             current_coords=self.coords
 
         #What elemlist to use. If qm_elems provided then QM/MM job, otherwise use elems list or self.elems
-        if qm_elems == []:
-            if elems == []:
+        if qm_elems is None:
+            if elems is None:
                 qm_elems=self.elems
             else:
                 qm_elems = elems
@@ -2327,7 +2327,7 @@ def run_QMMM_SP_in_parallel(orcadir, list_of__geos, list_of_labels, QMMMtheory, 
 
 #MMAtomobject used to store LJ parameter and possibly charge for MM atom with atomtype, e.g. OT
 class AtomMMobject:
-    def __init__(self, atomcharge=None, LJparameters=[]):
+    def __init__(self, atomcharge=None, LJparameters=None):
         sf="dsf"
         self.atomcharge = atomcharge
         self.LJparameters = LJparameters

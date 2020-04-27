@@ -10,13 +10,13 @@ import time
 # Interface to geomeTRIC Optimization Library
 ########################
 
-#Wrapper function around geomTRIC code. Take theory and fragment info from Yggdrasill
-#Supports frozen atoms and bond constraints in native code. Use frozenatoms and bondconstraints for this.
-#TODO: Get other constraints (angle-constraints etc.) working.
-#New feature: Active Region for huge systems. Use ActiveRegion=True and provide actatoms list.
-#Active-atom coords (e.g. only QM region) are only provided to geomeTRIC during optimization while rest is frozen.
-#E+G still performed on full system
-#Needed as discussed here: https://github.com/leeping/geomeTRIC/commit/584869707aca1dbeabab6fe873fdf139d384ca66#diff-2af7dd72b77dac63cea64c052a549fe0
+'''Wrapper function around geomTRIC code. Take theory and fragment info from Yggdrasill
+Supports frozen atoms and bond constraints in native code. Use frozenatoms and bondconstraints for this.
+New feature: Active Region for huge systems. Use ActiveRegion=True and provide actatoms list.
+Active-atom coords (e.g. only QM region) are only provided to geomeTRIC during optimization while rest is frozen.
+Needed as discussed here: https://github.com/leeping/geomeTRIC/commit/584869707aca1dbeabab6fe873fdf139d384ca66#diff-2af7dd72b77dac63cea64c052a549fe0
+'''
+# TODO: Get other constraints (angle-constraints etc.) working.
 # Todo: Add optional print-coords in each step option. Maybe only print QM-coords (if QM/MM).
 def geomeTRICOptimizer(theory=None,fragment=None, coordsystem='tric', frozenatoms=[], bondconstraints=[],
                        maxiter=50, ActiveRegion=False, actatoms=[]):
@@ -62,7 +62,7 @@ def geomeTRICOptimizer(theory=None,fragment=None, coordsystem='tric', frozenatom
 
     #Defining Yggdrasill engine class used to communicate with geomeTRIC
     class Yggdrasillengineclass:
-        def __init__(self,geometric_molf, theory, ActiveRegion=False):
+        def __init__(self,geometric_molf, theory, ActiveRegion=False, actatoms=actatoms):
             #Defining M attribute of engine object as geomeTRIC Molecule object
             self.M=geometric_molf
             #Defining theory from argument
@@ -74,13 +74,15 @@ def geomeTRICOptimizer(theory=None,fragment=None, coordsystem='tric', frozenatom
             self.iteration_count=0
             #Defining initial E
             self.energy = 0
+            #Active atoms
+            self.actatoms=actatoms
         #Defining calculator
         def clearCalcs(self):
             print("ClearCalcs option chosen by geomeTRIC. Not sure why")
         def calc(self,coords,tmp):
             blankline()
             #Updating coords in object
-            #Need to combine with rest of full-syme coords I think
+            #Need to combine with rest of full-syme coords
             self.M.xyzs[0] = coords.reshape(-1, 3) * constants.bohr2ang
             currcoords=self.M.xyzs[0]
             #Special act-region (for QM/MM) since GeomeTRIC does not handle huge system and constraints
@@ -89,7 +91,7 @@ def geomeTRICOptimizer(theory=None,fragment=None, coordsystem='tric', frozenatom
                 full_coords = np.array(fragment.coords)
                 #Replacing act-region coordinates with coords from currcoords
                 for i, c in enumerate(full_coords):
-                    if i in actatoms:
+                    if i in self.actatoms:
                         #Silly. Pop-ing first coord from currcoords until done
                         curr_c, currcoords = currcoords[0], currcoords[1:]
                         full_coords[i] = curr_c
@@ -98,12 +100,12 @@ def geomeTRICOptimizer(theory=None,fragment=None, coordsystem='tric', frozenatom
                 #PRINTING ACTIVE GEOMETRY IN EACH GEOMETRIC ITERATION
                 print("Current geometry (Å) in step {} (active region)".format(self.iteration_count))
                 print("---------------------------------------------------")
-                print_coords_for_atoms(full_coords, fragment.elems, actatoms)
+                print_coords_for_atoms(full_coords, fragment.elems, self.actatoms)
 
                 #Request Engrad calc for full system
                 E, Grad = self.theory.run(current_coords=full_coords, elems=fragment.elems, Grad=True)
                 #Trim Full gradient down to only act-atoms gradient
-                Grad_act = np.array([Grad[i] for i in actatoms])
+                Grad_act = np.array([Grad[i] for i in self.actatoms])
                 self.energy = E
 
                 #Writing out trajectory file for full system. Act system done by GeomeTRIC
@@ -164,7 +166,7 @@ def geomeTRICOptimizer(theory=None,fragment=None, coordsystem='tric', frozenatom
         constraints=None
 
     #Defining Yggdrasill engine object containing geometry and theory. ActiveRegion boolean passed.
-    yggdrasillengine = Yggdrasillengineclass(mol_geometric_frag,theory, ActiveRegion=ActiveRegion)
+    yggdrasillengine = Yggdrasillengineclass(mol_geometric_frag,theory, ActiveRegion=ActiveRegion, actatoms=actatoms)
     #Defining args object, containing engine object
     args=geomeTRICArgsObject(yggdrasillengine,constraints,coordsys=coordsystem, maxiter=maxiter)
 

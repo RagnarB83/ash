@@ -48,24 +48,24 @@ def print_coords_for_atoms(coords,elems,members):
 #If list of atom indices provided, print as leftmost column
 #If list of labels provided, print as rightmost column
 #If list of labels2 provided, print as rightmost column
-def print_coords_all(coords,elems,indices=[], labels=[], labels2=[]):
-    if indices == []:
-        if labels == []:
+def print_coords_all(coords,elems,indices=None, labels=None, labels2=None):
+    if indices is None:
+        if labels is None:
             for i in range(len(elems)):
                 print("{:>4} {:>12.8f}  {:>12.8f}  {:>12.8f}".format(elems[i],coords[i][0], coords[i][1], coords[i][2]))
         else:
-            if labels2 == []:
+            if labels2 is None:
                 for i in range(len(elems)):
                     print("{:>4} {:>12.8f}  {:>12.8f}  {:>12.8f} {:>6}".format(elems[i],coords[i][0], coords[i][1], coords[i][2], labels[i]))
             else:
                 for i in range(len(elems)):
                     print("{:>4} {:>12.8f}  {:>12.8f}  {:>12.8f} {:>6} :>6".format(elems[i],coords[i][0], coords[i][1], coords[i][2], labels[i], label2[i]))
     else:
-        if labels == []:
+        if labels is None:
             for i in range(len(elems)):
                 print("{:>1} {:>4} {:>12.8f}  {:>12.8f}  {:>12.8f}".format(indices[i],elems[i],coords[i][0], coords[i][1], coords[i][2]))
         else:
-            if labels2 == []:
+            if labels2 is None:
                 for i in range(len(elems)):
                     print("{:>1} {:>4} {:>12.8f}  {:>12.8f}  {:>12.8f} {:>6}".format(indices[i],elems[i],coords[i][0], coords[i][1], coords[i][2], labels[i]))
             else:
@@ -185,8 +185,8 @@ def get_connected_atoms_np(coords, elems,scale,tol, atomindex):
 
 #Numpy clever loop test.
 #Either atomindex or membs has to be defined
-def get_molecule_members_loop_np(coords, elems, loopnumber,scale,tol, atomindex='', membs=[]):
-    if membs==[]:
+def get_molecule_members_loop_np(coords, elems, loopnumber,scale,tol, atomindex='', membs=None):
+    if membs is None:
         membs = []
         membs.append(atomindex)
         membs = get_connected_atoms_np(coords, elems, scale,tol, atomindex)
@@ -227,8 +227,8 @@ def get_molecule_members_loop_np2(coords, elems, loopnumber, scale, tol, atomind
 #Uses loopnumber for when to stop searching.
 #Does extra work but not too bad
 #Uses either single atomindex or members lists
-def get_molecule_members_loop(coords, elems, loopnumber,scale,tol, atomindex='', members=[]):
-    if members== []:
+def get_molecule_members_loop(coords, elems, loopnumber,scale,tol, atomindex='', members=None):
+    if members is None:
         members = []
         members.append(atomindex)
         connatoms = get_connected_atoms(coords, elems,scale,tol,atomindex)
@@ -250,11 +250,12 @@ def get_molecule_members_loop(coords, elems, loopnumber,scale,tol, atomindex='',
 #Efficient but limited to 4
 #Updated to 5
 #Maybe not so efficient after all
-def get_molecule_members_fixed(coords,elems, scale,tol, atomindex='', members=[]):
+def get_molecule_members_fixed(coords,elems, scale,tol, atomindex='', members=None):
     print("Disabled")
     print("not so efficient")
     exit()
-    if members == []:
+    if members is None:
+        members = []
         members.append(atomindex)
         connatoms = get_connected_atoms(coords, elems, scale, tol,atomindex)
         members=members+connatoms
@@ -1174,11 +1175,11 @@ AXIS_REFLECTIONS = np.array([
 
 #QM-region expand function. Finds whole fragments.
 #Used by molcrys. Similar to get_solvshell function in functions_solv.py
-def QMregionfragexpand(fragment=None,initial_atoms=[], radius=None):
+def QMregionfragexpand(fragment=None,initial_atoms=None, radius=None):
     #If needed (connectivity ==0):
     scale=settings_yggdrasill.scale
     tol=settings_yggdrasill.tol
-    if fragment is None or initial_atoms == [] or radius == None:
+    if fragment is None or initial_atoms is None or radius == None:
         print("Provide fragment, initial_atoms and radius keyword arguments to QMregionfragexpand!")
         exit()
     subsetelems = [fragment.elems[i] for i in initial_atoms]

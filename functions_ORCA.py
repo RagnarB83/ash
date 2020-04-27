@@ -518,7 +518,7 @@ def create_orca_inputVIEcomp_gas(name, name2, elems, coords, orcasimpleinput, or
 #Allows for extraline that could be another '!' line or block-inputline.
 #Used by Yggdrasill
 def create_orca_input_pc(name,elems,coords,orcasimpleinput,orcablockinput,charge,mult, Grad=False, extraline='',
-                         HSmult=None, atomstoflip=[]):
+                         HSmult=None, atomstoflip=None):
     pcfile=name+'.pc'
     with open(name+'.inp', 'w') as orcafile:
         orcafile.write(orcasimpleinput+'\n')
@@ -528,7 +528,7 @@ def create_orca_input_pc(name,elems,coords,orcasimpleinput,orcablockinput,charge
             orcafile.write('! Engrad' + '\n')
         orcafile.write('%pointcharges "{}"\n'.format(pcfile))
         orcafile.write(orcablockinput + '\n')
-        if len(atomstoflip) > 0:
+        if atomstoflip is not None:
             atomstoflipstring= ','.join(map(str, atomstoflip))
             orcafile.write('%scf\n')
             orcafile.write('Flipspin {}'.format(atomstoflipstring)+ '\n')
@@ -547,7 +547,7 @@ def create_orca_input_pc(name,elems,coords,orcasimpleinput,orcablockinput,charge
 #Allows for extraline that could be another '!' line or block-inputline.
 #Used by Yggdrasill
 def create_orca_input_plain(name,elems,coords,orcasimpleinput,orcablockinput,charge,mult, Grad=False, extraline='',
-                            HSmult=None, atomstoflip=[]):
+                            HSmult=None, atomstoflip=None):
     with open(name+'.inp', 'w') as orcafile:
         orcafile.write(orcasimpleinput+'\n')
         if extraline != '':
@@ -555,7 +555,7 @@ def create_orca_input_plain(name,elems,coords,orcasimpleinput,orcablockinput,cha
         if Grad == True:
             orcafile.write('! Engrad' + '\n')
         orcafile.write(orcablockinput + '\n')
-        if len(atomstoflip) > 0:
+        if atomstoflip is not None:
             atomstoflipstring= ','.join(map(str, atomstoflip))
             orcafile.write('%scf\n')
             orcafile.write('Flipspin {}'.format(atomstoflipstring)+ '\n')
