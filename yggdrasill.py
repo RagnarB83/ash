@@ -1997,10 +1997,10 @@ class Fragment:
                 if i in fobject.flat_clusterfraglist:
                     self.fragmenttype_labels.append(count)
     def write_xyzfile(self,xyzfilename="Fragment-xyzfile.xyz"):
-
+        #Energy written to XYZ title-line if present. Otherwise: None
         with open(xyzfilename, 'w') as ofile:
             ofile.write(str(len(self.elems)) + '\n')
-            ofile.write("title" + '\n')
+            ofile.write("Energy: {:12.6f}".format(self.energy) + '\n')
             for el, c in zip(self.elems, self.coords):
                 line = "{:4} {:12.6f} {:12.6f} {:12.6f}".format(el, c[0], c[1], c[2])
                 ofile.write(line + '\n')
