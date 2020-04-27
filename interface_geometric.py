@@ -62,7 +62,7 @@ def geomeTRICOptimizer(theory=None,fragment=None, coordsystem='tric', frozenatom
 
     #Defining Yggdrasill engine class used to communicate with geomeTRIC
     class Yggdrasillengineclass:
-        def __init__(self,geometric_molf, theory, ActiveRegion=False, actatoms=actatoms):
+        def __init__(self,geometric_molf, theory, ActiveRegion=False, actatoms=None):
             #Defining M attribute of engine object as geomeTRIC Molecule object
             self.M=geometric_molf
             #Defining theory from argument
@@ -100,10 +100,10 @@ def geomeTRICOptimizer(theory=None,fragment=None, coordsystem='tric', frozenatom
                 #PRINTING ACTIVE GEOMETRY IN EACH GEOMETRIC ITERATION
                 print("Current geometry (Å) in step {} (active region)".format(self.iteration_count))
                 print("---------------------------------------------------")
-                print_coords_for_atoms(full_coords, fragment.elems, self.actatoms)
+                print_coords_for_atoms(self.full_current_coords, fragment.elems, self.actatoms)
 
                 #Request Engrad calc for full system
-                E, Grad = self.theory.run(current_coords=full_coords, elems=fragment.elems, Grad=True)
+                E, Grad = self.theory.run(current_coords=self.full_current_coords, elems=fragment.elems, Grad=True)
                 #Trim Full gradient down to only act-atoms gradient
                 Grad_act = np.array([Grad[i] for i in self.actatoms])
                 self.energy = E
@@ -119,6 +119,7 @@ def geomeTRICOptimizer(theory=None,fragment=None, coordsystem='tric', frozenatom
                 self.iteration_count += 1
                 return {'energy': E, 'gradient': Grad_act.flatten()}
             else:
+                self.full_current_coords=currcoords
                 #PRINTING ACTIVE GEOMETRY IN EACH GEOMETRIC ITERATION
                 print("Current geometry (Å) in step {}".format(self.iteration_count))
                 print("---------------------------------------------------")
