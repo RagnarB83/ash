@@ -2002,7 +2002,7 @@ class Fragment:
             ofile.write(str(len(self.elems)) + '\n')
             ofile.write("Energy: {:12.6f}".format(self.energy) + '\n')
             for el, c in zip(self.elems, self.coords):
-                line = "{:4} {:12.6f} {:12.6f} {:12.6f}".format(el, c[0], c[1], c[2])
+                line = "{:4} {:14.8f} {:14.8f} {:14.8f}".format(el, c[0], c[1], c[2])
                 ofile.write(line + '\n')
         print("Wrote XYZ file:", xyzfilename)
     #Print system-fragment information to file. Default name of file: "fragment.ygg
