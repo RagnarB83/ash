@@ -2183,6 +2183,8 @@ class xTBTheory:
             pass
     def run(self, current_coords=None, current_MM_coords=None, MMcharges=None, qm_elems=None,
                 mm_elems=None, elems=None, Grad=False, PC=False, nprocs=None):
+        if MMcharges is None:
+            MMcharges=[]
 
         if nprocs is None:
             nprocs=self.nprocs
