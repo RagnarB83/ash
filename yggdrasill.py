@@ -1822,6 +1822,7 @@ class Fragment:
             self.update_attributes()
             #If connectivity passed
             if connectivity is not None:
+                conncalc=False
                 self.connectivity=connectivity
             #If connectivity requested (default for new frags)
             if conncalc==True:
