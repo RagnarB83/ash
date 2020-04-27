@@ -563,7 +563,7 @@ class NonBondedTheory:
             LJ=True
 
         #If charges not provided to run function. Use object charges
-        if charges=None
+        if charges == None:
             charges=self.atom_charges
 
         #If coords not provided to run function. Use object coords
