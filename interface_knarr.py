@@ -279,7 +279,7 @@ def NEB(reactant=None, product=None, theory=None, images=None, interpolation=Non
         new_reactant = Fragment(coords=R_actcoords, elems=R_actelems)
         new_product = Fragment(coords=P_actcoords, elems=P_actelems)
         #Create Knarr calculator from Yggdrasill theory.
-        calculator = KnarrCalculator(theory, fragment1=new_reactant, fragment2=new_product, runmode=runmode
+        calculator = KnarrCalculator(theory, fragment1=new_reactant, fragment2=new_product, runmode=runmode,
                                      ActiveRegion=True, full_fragment_reactant=reactant, full_fragment_product=product )
 
         # Symbols list for Knarr
