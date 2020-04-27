@@ -320,11 +320,46 @@ def NEB(reactant=None, product=None, theory=None, images=None, interpolation=Non
     #Now starting NEB from path object, using neb_settings and optimizer settings
     DoNEB(path, calculator, neb_settings, optimizer)
 
-    #TODO: Get NEB-trajectory for full system
-    #Option 1: Read knarr_MEP.xyz, add full part to everything and write out knarr_MEP_FULL.xyz
-    #Option 2: Write out knarr_MEP_FULL.xyz in each NEB iteration inside Compute??
+    #Todo: Check if DoNeb converged or not??
 
-    #TODO: Get Yggdrasill fragment with saddlepoint-geometry. Full system
+    #Getting saddlepoint-structure and energy if CI-NEB
+    if neb_settings["CLIMBING"] is True:
+        if ActiveRegion == True:
+            pass
+
+
+
+            # Write out saddle-point geometry as Yggdrasill fragment
+            image_coords_1d = path.GetCoords()[image_number * path.ndimIm: (image_number + 1) * path.ndimIm]
+            image_coords = np.reshape(image_coords_1d, (numatoms, 3))
+
+            currcoords = image_coords
+            # Defining full_coords as original coords temporarily
+            full_coords = self.full_fragment_reactant.coords
+            # Replacing act-region coordinates with coords from currcoords
+            for i, c in enumerate(full_coords):
+                if i in self.actatoms:
+                    # Silly. Pop-ing first coord from currcoords until done
+                    curr_c, currcoords = currcoords[0], currcoords[1:]
+                    full_coords[i] = curr_c
+            full_current_image_coords = full_coords
+
+
+        else:
+            #Finding CI
+            CI = np.argmax(path.GetEnergy())
+            print("CI:", CI)
+            saddle_coords=path.GetCoords()[CI * path.GetNDimIm():(CI + 1) * path.GetNDimIm()], path.GetSymbols()
+            saddle_energy = path.GetEnergy()[CI]
+
+            Saddlepoint_fragment = Fragment(coords=saddle_coords, elems=reactant.elems)
+            Saddlepoint_fragment.set_energy(saddle_energy)
+            print("Saddle-point energy:",  Saddlepoint_fragment.energy)
+
+            #Writing out Saddlepoint fragment file and XYZ file
+            Saddlepoint_fragment.print_system(filename='Saddlepoint-optimized.ygg')
+            Saddlepoint_fragment.write_xyzfile(xyzfilename='Saddlepoint-optimized.xyz')
+
 
     print('KNARR successfully terminated')
     blankline()
