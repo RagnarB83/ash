@@ -49,9 +49,7 @@ def write_xyz_trajectory(file, coords, elems, titleline):
 
 
 
-
-#Yggdrasill Optimizer function for basic usage
-#Use this instead of boject
+#Yggdrasill Cartesian Optimizer function for basic usage
 def Optimizer(fragment=None, theory='', optimizer='', maxiter=50, frozen_atoms=None, RMSGtolerance=0.0001, MaxGtolerance=0.0003):
     if fragment is not None:
         pass

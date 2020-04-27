@@ -1370,7 +1370,7 @@ class Psi4Theory:
                 import psi4
             except:
                 print(BC.FAIL,"Problem importing psi4. Make sure psi4 has been installed as part of same Python as Yggdrasill", BC.END)
-                print(BC.WARNING,"If problematic, switch to inputfile based Psi4 interface: NOT YET READY", BC.END)
+                print(BC.WARNING,"If problematic, switch to inputfile based Psi4 interface instead.", BC.END)
                 exit()
             #Changing namespace may prevent crashes due to multiple jobs running at same time
             if self.label=='label':
@@ -2000,7 +2000,10 @@ class Fragment:
         #Energy written to XYZ title-line if present. Otherwise: None
         with open(xyzfilename, 'w') as ofile:
             ofile.write(str(len(self.elems)) + '\n')
-            ofile.write("Energy: {:14.8f}".format(self.energy) + '\n')
+            if self.energy is None:
+                ofile.write("Energy: None" + '\n')
+            else:
+                ofile.write("Energy: {:14.8f}".format(self.energy) + '\n')
             for el, c in zip(self.elems, self.coords):
                 line = "{:4} {:14.8f} {:14.8f} {:14.8f}".format(el, c[0], c[1], c[2])
                 ofile.write(line + '\n')
