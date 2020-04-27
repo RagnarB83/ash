@@ -535,7 +535,7 @@ def create_orca_input_pc(name,elems,coords,orcasimpleinput,orcablockinput,charge
             orcafile.write('FinalMs {}'.format((mult-1)/2)+ '\n')
             orcafile.write('end  \n')
         orcafile.write('\n')
-        if len(atomstoflip) > 0:
+        if atomstoflip is not None:
             orcafile.write('*xyz {} {}\n'.format(charge,HSmult))
         else:
             orcafile.write('*xyz {} {}\n'.format(charge,mult))
