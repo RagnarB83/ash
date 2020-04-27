@@ -2165,6 +2165,7 @@ class xTBTheory:
             except:
                 print("Problem importing xTB library. Check that the library dir (containing libxtb.so) is available in LD_LIBRARY_PATH.")
                 print("e.g. export LD_LIBRARY_PATH=/path/to/xtb_6.2.3/lib64:$LD_LIBRARY_PATH")
+                print("Or that the MKL library is available and loaded")
                 exit(9)
             from ctypes import c_int, c_double
             #Needed for complete interface?:
