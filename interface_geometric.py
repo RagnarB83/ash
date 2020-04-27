@@ -182,6 +182,8 @@ def geomeTRICOptimizer(theory=None,fragment=None, coordsystem='tric', frozenatom
     fragment.set_energy(yggdrasillengine.energy)
     print("Final optimized energy:",  fragment.energy)
     #
+    print("fragment.elems: ", fragment.elems)
+    print("yggdrasillengine.full_current_coords : ", yggdrasillengine.full_current_coords)
     fragment.replace_coords(fragment.elems,yggdrasillengine.full_current_coords, conn=False)
     #Writing out fragment file and XYZ file
     fragment.print_system(filename='Fragment-optimized.ygg')
