@@ -2000,7 +2000,7 @@ class Fragment:
         #Energy written to XYZ title-line if present. Otherwise: None
         with open(xyzfilename, 'w') as ofile:
             ofile.write(str(len(self.elems)) + '\n')
-            ofile.write("Energy: {:12.6f}".format(self.energy) + '\n')
+            ofile.write("Energy: {:14.8f}".format(self.energy) + '\n')
             for el, c in zip(self.elems, self.coords):
                 line = "{:4} {:14.8f} {:14.8f} {:14.8f}".format(el, c[0], c[1], c[2])
                 ofile.write(line + '\n')
@@ -2020,6 +2020,7 @@ class Fragment:
         with open(filename, 'w') as outfile:
             outfile.write("Fragment: \n")
             outfile.write("Num atoms: {}\n".format(self.numatoms))
+            outfile.write("Energy: {}\n".format(self.energy))
             outfile.write("\n")
             outfile.write(" Index    Atom         x             y             z          charge        fragment-type        atom-type\n")
             outfile.write("-------------------------------------------------------------------------------------------------------------\n")
