@@ -325,9 +325,8 @@ def NEB(reactant=None, product=None, theory=None, images=None, interpolation=Non
     #Getting saddlepoint-structure and energy if CI-NEB
     if neb_settings["CLIMBING"] is True:
         if ActiveRegion == True:
+            print("This has not been confirmed to work")
             pass
-
-
 
             # Write out saddle-point geometry as Yggdrasill fragment
             image_coords_1d = path.GetCoords()[image_number * path.ndimIm: (image_number + 1) * path.ndimIm]
@@ -349,7 +348,8 @@ def NEB(reactant=None, product=None, theory=None, images=None, interpolation=Non
             #Finding CI
             CI = np.argmax(path.GetEnergy())
             print("CI:", CI)
-            saddle_coords=path.GetCoords()[CI * path.GetNDimIm():(CI + 1) * path.GetNDimIm()], path.GetSymbols()
+            saddle_coords_1d=path.GetCoords()[CI * path.GetNDimIm():(CI + 1) * path.GetNDimIm()], path.GetSymbols()
+            saddle_coords=np.reshape(saddle_coords_1d, (numatoms, 3))
             print("saddle_coords:", saddle_coords)
             saddle_energy = path.GetEnergy()[CI]
 
