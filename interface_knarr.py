@@ -348,9 +348,9 @@ def NEB(reactant=None, product=None, theory=None, images=None, interpolation=Non
             #Finding CI
             CI = np.argmax(path.GetEnergy())
             print("CI:", CI)
-            saddle_coords_1d=path.GetCoords()[CI * path.GetNDimIm():(CI + 1) * path.GetNDimIm()], path.GetSymbols()
+            saddle_coords_1d=path.GetCoords()[CI * path.GetNDimIm():(CI + 1) * path.GetNDimIm()]
             print("saddle_coords_1d:", saddle_coords_1d)
-            print(type(saddle_coords_1d.shape))
+            print(type(saddle_coords_1d))
             print(saddle_coords_1d.shape)
             saddle_coords=np.reshape(saddle_coords_1d, (numatoms, 3))
             print("saddle_coords:", saddle_coords)
