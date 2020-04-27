@@ -65,6 +65,8 @@ def Optimizer(fragment=None, theory='', optimizer='', maxiter=50, frozen_atoms=N
             print("Found no fragment in theory object either.")
             print("Exiting...")
             exit()
+    if frozen_atoms is None:
+        frozen_atoms=[]
 
     #List of active vs. frozen labels
     actfrozen_labels=[]
