@@ -364,7 +364,7 @@ class NonBondedTheory:
         #If qmatoms passed list passed then QM/MM and QM-QM pairs will be ignored from pairlist
         print("Inside calculate_LJ_pairpotentials")
         #Todo: Figure out if we can find out if qmatoms without being passed
-        if len(qmatoms) == 0:
+        if qmatoms is None or qmatoms == []:
             print("WARNING: qmatoms list is empty")
             print("This is fine if this is a pure MM job")
             print("If QM/MM job, then qmatoms list should be passed to NonBonded theory")
@@ -563,7 +563,7 @@ class NonBondedTheory:
             LJ=True
 
         #If charges not provided to run function. Use object charges
-        if len(charges)==0:
+        if charges=None
             charges=self.atom_charges
 
         #If coords not provided to run function. Use object coords
@@ -851,7 +851,8 @@ class PolEmbedTheory:
         print("Using potfile:", self.potfile)
 
         #If no coords provided to run (from Optimizer or NumFreq or MD) then use coords associated with object.
-        if len(current_coords) != 0:
+        #if len(current_coords) != 0:
+        if current_coords is not None:
             pass
         else:
             current_coords=self.coords
@@ -986,7 +987,8 @@ class QMMMTheory:
         print("QM Module:", self.qm_theory_name)
         print("MM Module:", self.mm_theory_name)
         #If no coords provided to run (from Optimizer or NumFreq or MD) then use coords associated with object.
-        if len(current_coords) != 0:
+        #if len(current_coords) != 0:
+        if current_coords is not None:
             pass
         else:
             current_coords=self.coords
@@ -1186,7 +1188,8 @@ class ORCATheory:
             mm_elems=None, elems=None, Grad=False, PC=False, nprocs=None ):
         print(BC.OKBLUE,BC.BOLD, "------------RUNNING ORCA INTERFACE-------------", BC.END)
         #Coords provided to run or else taken from initialization.
-        if len(current_coords) != 0:
+        #if len(current_coords) != 0:
+        if current_coords is not None:
             pass
         else:
             current_coords=self.coords
@@ -1344,7 +1347,8 @@ class Psi4Theory:
             self.potfile=potfile
 
         #Coords provided to run or else taken from initialization.
-        if len(current_coords) != 0:
+        #if len(current_coords) != 0:
+        if current_coords is not None:
             pass
         else:
             current_coords=self.coords
@@ -1681,7 +1685,8 @@ class PySCFTheory:
             self.potfile=potfile
 
         #Coords provided to run or else taken from initialization.
-        if len(current_coords) != 0:
+        #if len(current_coords) != 0:
+        if current_coords is not None:
             pass
         else:
             current_coords=self.coords
@@ -2185,7 +2190,8 @@ class xTBTheory:
 
         print("------------STARTING XTB INTERFACE-------------")
         #Coords provided to run or else taken from initialization.
-        if len(current_coords) != 0:
+        #if len(current_coords) != 0:
+        if current_coords is not None:
             pass
         else:
             current_coords=self.coords
