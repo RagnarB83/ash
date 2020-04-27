@@ -648,7 +648,7 @@ class NonBondedTheory:
 #Currently only Polarizable Embedding (PE). Only available for Psi4, PySCF and Dalton.
 #Peatoms: polarizable atoms. MMatoms: nonpolarizable atoms (e.g. TIP3P)
 class PolEmbedTheory:
-    def __init__(self, fragment='', qm_theory='', qmatoms=None, peatoms=None, mmatoms=None, pot_create=True,
+    def __init__(self, fragment=None, qm_theory=None, qmatoms=None, peatoms=None, mmatoms=None, pot_create=True,
                  potfilename='System', pot_option='', pyframe=False, PElabel_pyframe='MM'):
         print(BC.WARNING,BC.BOLD,"------------Defining PolEmbedTheory object-------------", BC.END)
         self.pot_create=pot_create
@@ -666,12 +666,21 @@ class PolEmbedTheory:
             print(BC.FAIL, "QM-theory:", self.qm_theory_name, "is  NOT supported in Polarizable Embedding", BC.END)
 
         # Region definitions
-        self.qmatoms = qmatoms
-        self.peatoms = peatoms
-        self.mmatoms = mmatoms
+        if qmatoms is None:
+            self.qmatoms = []
+        else:
+            self.qmatoms=qmatoms
+        if peatoms is None:
+            self.peatoms = []
+        else:
+            self.peatoms=peatoms
+        if mmatoms is None:
+            self.mmatoms = []
+        else:
+            self.mmatoms=mmatoms
 
         #If fragment object has been defined
-        if fragment != '':
+        if fragment is not None:
             self.fragment=fragment
             self.coords=fragment.coords
             self.elems=fragment.elems
@@ -836,7 +845,7 @@ class PolEmbedTheory:
             print("Pot creation is off for this object.")
 
 
-    def run(self, current_coords=None, elems=None, Grad=False, nprocs=1, potfile='', restart=False):
+    def run(self, current_coords=None, elems=None, Grad=False, nprocs=1, potfile=None, restart=False):
         print(BC.WARNING, BC.BOLD, "------------RUNNING PolEmbedTheory MODULE-------------", BC.END)
         if restart==True:
             print("Restart Option On!")
@@ -845,7 +854,7 @@ class PolEmbedTheory:
         print("QM Module:", self.qm_theory_name)
 
         #Check if potfile provide to run (rare use). If not, use object file
-        if potfile != '':
+        if potfile is not None:
             self.potfile=potfile
 
         print("Using potfile:", self.potfile)
