@@ -118,7 +118,11 @@ class KnarrCalculator:
         self.ISCION=False
         self.ActiveRegion=ActiveRegion
         self.actatoms=actatoms
-    def Compute(self,path, list_to_compute=[]):
+    def Compute(self,path, list_to_compute=None):
+        if list_to_compute is None:
+            list_to_compute=[]
+
+
         full_coords_images_list=[]
         #
         self.iterations+=1
