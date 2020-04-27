@@ -350,12 +350,13 @@ def NEB(reactant=None, product=None, theory=None, images=None, interpolation=Non
             CI = np.argmax(path.GetEnergy())
             print("CI:", CI)
             saddle_coords=path.GetCoords()[CI * path.GetNDimIm():(CI + 1) * path.GetNDimIm()], path.GetSymbols()
+            print("saddle_coords:", saddle_coords)
             saddle_energy = path.GetEnergy()[CI]
 
             Saddlepoint_fragment = Fragment(coords=saddle_coords, elems=reactant.elems, connectivity=reactant.connectivity)
             Saddlepoint_fragment.set_energy(saddle_energy)
             print("Saddle-point energy:",  Saddlepoint_fragment.energy)
-
+            print(Saddlepoint_fragment.__dict__)
             #Writing out Saddlepoint fragment file and XYZ file
             Saddlepoint_fragment.print_system(filename='Saddlepoint-optimized.ygg')
             Saddlepoint_fragment.write_xyzfile(xyzfilename='Saddlepoint-optimized.xyz')
