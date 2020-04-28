@@ -446,7 +446,6 @@ def nucchargexyz(file):
 def nucchargelist(ellist):
     totnuccharge=0
     els=[]
-    print("ellist:", ellist)
     for e in ellist:
         atcharge=elematomnumbers[e.lower()]
         totnuccharge+=atcharge

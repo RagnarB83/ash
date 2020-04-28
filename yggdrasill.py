@@ -1849,12 +1849,10 @@ class Fragment:
         elif xyzfile is not None:
             self.read_xyzfile(xyzfile)
         elif pdbfile is not None:
-            self.read_pdbfile(pdbfile)
+            self.read_pdbfile(pdbfile, conncalc=conncalc)
         elif fragfile is not None:
             self.read_fragment_from_file(fragfile)
     def update_attributes(self):
-        print("in upd")
-        print(self.elems)
         self.nuccharge = nucchargelist(self.elems)
         self.numatoms = len(self.coords)
         self.atomlist = list(range(0, self.numatoms))
@@ -1905,9 +1903,8 @@ class Fragment:
         print("Defined coordinates (Å):")
         print_coords_all(self.coords,self.elems)
     #Read PDB file
-    def read_pdbfile(self,filename):
-        #THIS is too simplistic as columns are sometimes missing, throwing everything off
-        # Todo: Need to grab specific line-columns themselves as defined in the PDB-format
+    def read_pdbfile(self,filename,conncalc=true):
+
         print("Reading coordinates from PDBfile \"{}\" into fragment".format(filename))
         residuelist=[]
         #If elemcolumn found
@@ -1917,8 +1914,8 @@ class Fragment:
         atomindex=[]
         residname=[]
 
-        #TODO: Are there different PDB formats?
-        #https://cupnet.net/pdb-format/
+        #TODO: Check. Are there different PDB formats?
+        #used this: https://cupnet.net/pdb-format/
         with open(filename) as f:
             for line in f:
                 if 'ATOM' in line:
@@ -1946,10 +1943,9 @@ class Fragment:
             exit()
         else:
             self.elems=elemcol
-        print(self.coords)
-        print(self.elems)
         self.update_attributes()
-        self.calc_connectivity()
+        if conncalc is True:
+            self.calc_connectivity()
     #Read XYZ file
     def read_xyzfile(self,filename):
         print("Reading coordinates from XYZfile {} into fragment".format(filename))
