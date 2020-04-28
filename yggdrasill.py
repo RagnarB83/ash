@@ -325,14 +325,22 @@ def print_time_rel_and_tot_color(timestampA,timestampB, modulename=''):
 
 #Dummy MM theory template
 
-class Theory:
-    def __init__(self, printlevel=None):
-        #Atom types
-    pass
-    def run(self):
-        pass
+#class Theory:
+#    def __init__(self, printlevel=None):
+#        #Atom types
+#    pass
+#    def run(self):
+#        pass
 
 # Dummy QM theory template
+#class Theory:
+#    def __init__(self, charge, mult, printlevel=None):
+#        #Atom types
+#    pass
+#    def run(self):
+#        pass
+
+
 
 # Different MM theories
 
