@@ -379,7 +379,7 @@ class OpenMMTheory:
                                         1 / simtk.openmm.unit.picosecond,  # Friction coefficient
                                         0.002 * simtk.openmm.unit.picoseconds)  # Time step
 
-        self.simulation = simtk.openmm.Simulation(self.psf.topology, self.system, self.integrator)
+        self.simulation = simtk.openmm.app.simulation.Simulation(self.psf.topology, self.system, self.integrator)
     def run(self, coords=None, fragment=None):
         #If no coords given to run then a single-point job probably (not part of Optimizer or MD which would supply coords).
         #Then try if fragment object was supplied.
