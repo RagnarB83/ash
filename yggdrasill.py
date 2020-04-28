@@ -1853,6 +1853,8 @@ class Fragment:
         elif fragfile is not None:
             self.read_fragment_from_file(fragfile)
     def update_attributes(self):
+        print("in upd")
+        print(self.elems)
         self.nuccharge = nucchargelist(self.elems)
         self.numatoms = len(self.coords)
         self.atomlist = list(range(0, self.numatoms))
