@@ -383,6 +383,7 @@ class OpenMMTheory:
 
         self.simulation = simtk.openmm.app.simulation.Simulation(self.psf.topology, self.system, self.integrator)
     def run(self, coords=None, fragment=None):
+        print(BC.OKBLUE, BC.BOLD, "------------RUNNING OPENMM INTERFACE-------------", BC.END)
         #If no coords given to run then a single-point job probably (not part of Optimizer or MD which would supply coords).
         #Then try if fragment object was supplied.
         #Otherwise internal coords if they exist
@@ -402,25 +403,22 @@ class OpenMMTheory:
         #pos = [Vec3(a / 10, b / 10, c / 10)] * u.nanometer
         import simtk.unit as u
         from simtk.openmm import Vec3
-        print("coords[:,0]", coords[:,0])
-        print("coords[:,1]", coords[:,1])
-        print("coords[:,2]", coords[:,2])
-        print("coords[:,0]", len(coords[:,0]))
-        print("coords[:,1]", len(coords[:,1]))
-        print("coords[:,2]", len(coords[:,2]))
 
         #pos = [Vec3(coords[:,0]/10,coords[:,1]/10,coords[:,2]/10)] * u.nanometer
         #Todo: Check speed on this
         pos = [Vec3(coords[i, 0] / 10, coords[i, 1] / 10, coords[i, 2] / 10) for i in range(len(coords))] * u.nanometer
-        print("pos:", pos)
-        print(pos.__dict__)
+
         self.simulation.context.setPositions(pos)
         state = self.simulation.context.getState(getEnergy=True, getForces=True)
-        energy = state.getPotentialEnergy().value_in_unit(u.kilojoule_per_mole) / eqcgmx
-        gradient = state.getForces(asNumpy=True).flatten() / fqcgmx
+        self.energy = state.getPotentialEnergy().value_in_unit(u.kilojoule_per_mole) / eqcgmx
+        self.gradient = state.getForces(asNumpy=True).flatten() / fqcgmx
 
-        print("energy:", energy)
-        print("gradient:", gradient)
+        #Todo: Check units
+        print("self.energy:", self.energy)
+        print("self.gradient:", self.gradient)
+
+        print(BC.OKBLUE, BC.BOLD, "------------ENDING OPENMM INTERFACE-------------", BC.END)
+        return self.energy, self.gradient
 
 # Simple nonbonded MM theory. Charges and LJ-potentials
 class NonBondedTheory:
