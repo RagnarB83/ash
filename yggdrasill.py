@@ -348,37 +348,38 @@ def print_time_rel_and_tot_color(timestampA,timestampB, modulename=''):
 # or allow user to do the openmm object themself and pass it??
 
 #Todo: Also think whether we want do OpenMM simulations in case we have to make another object maybe
+
+
+
 class OpenMMTheory:
     def __init__(self, pdbfile=None, psffile=None, topfile=None, prmfile=None, printlevel=None):
         #Make empty coords list. Might not be used
         self.coords=[]
-
         # OPEN MM
         try:
-            from simtk.openmm.app import *
-            from simtk.openmm import *
-            from simtk.unit import *
+            #from simtk.openmm.app import *
+            #from simtk.openmm import *
+            #from simtk.unit import *
+            import simtk.openmm.app
         except ImportError:
             raise ImportError(
                 "OpenMM requires installing the OpenMM package. Try: conda install -c omnia openmm  \
                 Also see http://docs.openmm.org/latest/userguide/application.html")
 
         # Load CHARMM PSF files. Both CHARMM-style and XPLOR allowed I believe. Todo: Check
-        self.psf = CharmmPsfFile(psffile)
-        self.pdb = PDBFile(pdbfile)
-        self.params = CharmmParameterSet(topfile, prmfile)
+        self.psf = simtk.openmm.app.CharmmPsfFile(psffile)
+        self.pdb = simtk.openmm.app.PDBFile(pdbfile)
+        self.params = simtk.openmm.app.CharmmParameterSet(topfile, prmfile)
 
         # Create an OpeNMM system by calling createSystem on psf
-        self.system = psf.createSystem(self.params, nonbondedMethod=NoCutoff,
-                                  nonbondedCutoff=1 * nanometer, constraints=HBonds)
+        self.system = psf.createSystem(self.params, nonbondedMethod=simtk.openmm.app.NoCutoff,
+                                  nonbondedCutoff=1 * simtk.openmm.unit.nanometer, constraints=simtk.openmm.app.HBonds)
         #Dummy integrator
-        self.integrator = LangevinIntegrator(300 * kelvin,  # Temperature of head bath
-                                        1 / picosecond,  # Friction coefficient
-                                        0.002 * picoseconds)  # Time step
+        self.integrator = simtk.openmm.LangevinIntegrator(300 * simtk.openmm.unit.kelvin,  # Temperature of head bath
+                                        1 / simtk.openmm.unit.picosecond,  # Friction coefficient
+                                        0.002 * simtk.openmm.unit.picoseconds)  # Time step
 
-        self.simulation = Simulation(self.psf.topology, self.system, self.integrator)
-
-    #
+        self.simulation = simtk.openmm.Simulation(self.psf.topology, self.system, self.integrator)
     def run(self, coords=None, fragment=None):
         #If no coords given to run then a single-point job probably (not part of Optimizer or MD which would supply coords).
         #Then try if fragment object was supplied.
