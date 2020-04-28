@@ -372,7 +372,7 @@ class OpenMMTheory:
         self.params = simtk.openmm.app.CharmmParameterSet(topfile, prmfile)
 
         # Create an OpeNMM system by calling createSystem on psf
-        self.system = psf.createSystem(self.params, nonbondedMethod=simtk.openmm.app.NoCutoff,
+        self.system = self.psf.createSystem(self.params, nonbondedMethod=simtk.openmm.app.NoCutoff,
                                   nonbondedCutoff=1 * simtk.openmm.unit.nanometer, constraints=simtk.openmm.app.HBonds)
         #Dummy integrator
         self.integrator = simtk.openmm.LangevinIntegrator(300 * simtk.openmm.unit.kelvin,  # Temperature of head bath
