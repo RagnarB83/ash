@@ -360,7 +360,7 @@ class OpenMMTheory:
         try:
             import simtk.openmm.app
             import simtk.unit
-            import simtk.openmm.Vec3
+            #import simtk.openmm
         except ImportError:
             raise ImportError(
                 "OpenMM requires installing the OpenMM package. Try: conda install -c omnia openmm  \
