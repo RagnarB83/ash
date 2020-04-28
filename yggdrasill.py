@@ -400,7 +400,15 @@ class OpenMMTheory:
         #pos = [Vec3(a / 10, b / 10, c / 10)] * u.nanometer
         import simtk.unit as u
         from simtk.openmm import Vec3
+        print("coords[:,0]", coords[:,0])
+        print("coords[:,1]", coords[:,1])
+        print("coords[:,2]", coords[:,2])
+        print("coords[:,0]", len(coords[:,0]))
+        print("coords[:,1]", len(coords[:,1]))
+        print("coords[:,2]", len(coords[:,2]))
+
         pos = [Vec3(coords[:,0],coords[:,1],coords[:,2])] * u.nanometer
+
         self.simulation.context.setPositions(pos)
         state = self.simulation.context.getState(getEnergy=True, getForces=True)
         energy = state.getPotentialEnergy().value_in_unit(u.kilojoule_per_mole) / eqcgmx
