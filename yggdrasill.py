@@ -353,18 +353,21 @@ def print_time_rel_and_tot_color(timestampA,timestampB, modulename=''):
 
 class OpenMMTheory:
     def __init__(self, pdbfile=None, psffile=None, topfile=None, prmfile=None, printlevel=None):
-        print("Creating OPENMM object")
+        print("Creating OpenMM object")
         #Make empty coords list. Might not be used
         self.coords=[]
         # OPEN MM
         try:
             import simtk.openmm.app
             import simtk.unit
-            #import simtk.openmm import Vec3
+            import simtk.openmm.Vec3
         except ImportError:
             raise ImportError(
                 "OpenMM requires installing the OpenMM package. Try: conda install -c omnia openmm  \
                 Also see http://docs.openmm.org/latest/userguide/application.html")
+
+        self.unit=simtk.unit
+        self.Vec3=simtk.openmm.Vec3
         #Read pdb-file for fun?
         #self.pdb = simtk.openmm.app.PDBFile(pdbfile)
         #PDB_ygg_frag = Fragment(pdbfile=pdbfile, conncalc=False)
@@ -409,7 +412,7 @@ class OpenMMTheory:
 
         #pos = [Vec3(coords[:,0]/10,coords[:,1]/10,coords[:,2]/10)] * u.nanometer
         #Todo: Check speed on this
-        pos = [simtk.openmm.Vec3(coords[i, 0] / 10, coords[i, 1] / 10, coords[i, 2] / 10) for i in range(len(coords))] * simtk.unit.nanometer
+        pos = [self.Vec3(coords[i, 0] / 10, coords[i, 1] / 10, coords[i, 2] / 10) for i in range(len(coords))] * self.unit.nanometer
 
         self.simulation.context.setPositions(pos)
         state = self.simulation.context.getState(getEnergy=True, getForces=True)
