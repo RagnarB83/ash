@@ -365,10 +365,12 @@ class OpenMMTheory:
             raise ImportError(
                 "OpenMM requires installing the OpenMM package. Try: conda install -c omnia openmm  \
                 Also see http://docs.openmm.org/latest/userguide/application.html")
+        #Read pdb-file for fun?
+        #self.pdb = simtk.openmm.app.PDBFile(pdbfile)
+        #PDB_ygg_frag = Fragment(pdbfile=pdbfile, conncalc=False)
 
         # Load CHARMM PSF files. Both CHARMM-style and XPLOR allowed I believe. Todo: Check
         self.psf = simtk.openmm.app.CharmmPsfFile(psffile)
-        self.pdb = simtk.openmm.app.PDBFile(pdbfile)
         self.params = simtk.openmm.app.CharmmParameterSet(topfile, prmfile)
 
         # Create an OpeNMM system by calling createSystem on psf
