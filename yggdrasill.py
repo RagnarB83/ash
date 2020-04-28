@@ -1903,7 +1903,7 @@ class Fragment:
         print("Defined coordinates (Å):")
         print_coords_all(self.coords,self.elems)
     #Read PDB file
-    def read_pdbfile(self,filename,conncalc=true):
+    def read_pdbfile(self,filename,conncalc=True):
 
         print("Reading coordinates from PDBfile \"{}\" into fragment".format(filename))
         residuelist=[]
