@@ -393,6 +393,7 @@ class OpenMMTheory:
         #If no coords given to run then a single-point job probably (not part of Optimizer or MD which would supply coords).
         #Then try if fragment object was supplied.
         #Otherwise internal coords if they exist
+        print("if stuff")
         if coords is None:
             if fragment is None:
                 if len(self.coords) != 0:
@@ -405,6 +406,7 @@ class OpenMMTheory:
                 coords=fragment.coords
 
         #Making sure coords is np array and not list-of-lists
+        print("doing coords array")
         coords=np.array(coords)
 
         ## Q-Chem to GMX unit conversion for energy
@@ -418,7 +420,8 @@ class OpenMMTheory:
         #Todo: Check speed on this
         print("doing pos")
         pos = [self.Vec3(coords[i, 0] / 10, coords[i, 1] / 10, coords[i, 2] / 10) for i in range(len(coords))] * self.unit.nanometer
-        self.simulation.context.setPositions(pos)
+        #self.simulation.context.setPositions(pos)
+        print("doing state")
         state = self.simulation.context.getState(getEnergy=True, getForces=True)
         print("doing energy")
         self.energy = state.getPotentialEnergy().value_in_unit(self.unit.kilojoule_per_mole) / eqcgmx
