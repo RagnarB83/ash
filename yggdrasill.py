@@ -409,7 +409,9 @@ class OpenMMTheory:
         print("coords[:,1]", len(coords[:,1]))
         print("coords[:,2]", len(coords[:,2]))
 
-        pos = [Vec3(coords[:,0],coords[:,1],coords[:,2])] * u.nanometer
+        #pos = [Vec3(coords[:,0]/10,coords[:,1]/10,coords[:,2]/10)] * u.nanometer
+        #Todo: Check speed on this
+        pos = [Vec3(coords[i, 0] / 10, coords[i, 1] / 10, coords[i, 2] / 10) for i in range(len(coords))] * u.nanometer
         print("pos:", pos)
         print(pos.__dict__)
         self.simulation.context.setPositions(pos)
