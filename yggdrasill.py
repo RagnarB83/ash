@@ -410,7 +410,8 @@ class OpenMMTheory:
         print("coords[:,2]", len(coords[:,2]))
 
         pos = [Vec3(coords[:,0],coords[:,1],coords[:,2])] * u.nanometer
-
+        print("pos:", pos)
+        print(pos.__dict__)
         self.simulation.context.setPositions(pos)
         state = self.simulation.context.getState(getEnergy=True, getForces=True)
         energy = state.getPotentialEnergy().value_in_unit(u.kilojoule_per_mole) / eqcgmx
