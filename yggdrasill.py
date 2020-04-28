@@ -1927,6 +1927,7 @@ class Fragment:
                     coords_x=float(line[30:38])
                     coords_y=float(line[38:46])
                     coords_z=float(line[46:54])
+                    print(coords_z)
                     self.coords.append([coords_x,coords_y,coords_z])
                     if len(line[76:78].replace(' ','')) != 0:
                         elemcol.append(line[76:78])
