@@ -353,7 +353,7 @@ def print_time_rel_and_tot_color(timestampA,timestampB, modulename=''):
 
 class OpenMMTheory:
     def __init__(self, pdbfile=None, psffile=None, topfile=None, prmfile=None, printlevel=None):
-        print("Creating OpenMM object")
+        print(BC.WARNING, BC.BOLD, "------------Defining OpenMM object-------------", BC.END)
         #Make empty coords list. Might not be used
         self.coords=[]
         # OPEN MM
@@ -416,7 +416,7 @@ class OpenMMTheory:
 
         self.simulation.context.setPositions(pos)
         state = self.simulation.context.getState(getEnergy=True, getForces=True)
-        self.energy = state.getPotentialEnergy().value_in_unit(u.kilojoule_per_mole) / eqcgmx
+        self.energy = state.getPotentialEnergy().value_in_unit(self.unit.kilojoule_per_mole) / eqcgmx
         self.gradient = state.getForces(asNumpy=True).flatten() / fqcgmx
 
         #Todo: Check units
