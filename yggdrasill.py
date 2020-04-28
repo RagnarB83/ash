@@ -368,9 +368,12 @@ class OpenMMTheory:
 
         self.unit=simtk.unit
         self.Vec3=simtk.openmm.Vec3
+
         #Read pdb-file for fun?
         #self.pdb = simtk.openmm.app.PDBFile(pdbfile)
-        #PDB_ygg_frag = Fragment(pdbfile=pdbfile, conncalc=False)
+        #TODO: Should we keep this?
+        PDB_ygg_frag = Fragment(pdbfile=pdbfile, conncalc=False)
+        self.coords=PDB_ygg_frag.coords
 
         # Load CHARMM PSF files. Both CHARMM-style and XPLOR allowed I believe. Todo: Check
         self.psf = simtk.openmm.app.CharmmPsfFile(psffile)
