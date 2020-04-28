@@ -359,6 +359,8 @@ class OpenMMTheory:
         # OPEN MM
         try:
             import simtk.openmm.app
+            import simtk.unit
+            #import simtk.openmm import Vec3
         except ImportError:
             raise ImportError(
                 "OpenMM requires installing the OpenMM package. Try: conda install -c omnia openmm  \
@@ -403,12 +405,11 @@ class OpenMMTheory:
         ## Q-Chem to GMX unit conversion for force
         fqcgmx = -49621.9
         #pos = [Vec3(a / 10, b / 10, c / 10)] * u.nanometer
-        import simtk.unit as u
-        from simtk.openmm import Vec3
+
 
         #pos = [Vec3(coords[:,0]/10,coords[:,1]/10,coords[:,2]/10)] * u.nanometer
         #Todo: Check speed on this
-        pos = [Vec3(coords[i, 0] / 10, coords[i, 1] / 10, coords[i, 2] / 10) for i in range(len(coords))] * u.nanometer
+        pos = [simtk.openmm.Vec3(coords[i, 0] / 10, coords[i, 1] / 10, coords[i, 2] / 10) for i in range(len(coords))] * simtk.unit.nanometer
 
         self.simulation.context.setPositions(pos)
         state = self.simulation.context.getState(getEnergy=True, getForces=True)
