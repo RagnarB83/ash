@@ -20,6 +20,11 @@ print(PDB_frag.numatoms)
 
 
 ####################################
+#Exception if openmm not found:
+#    from simtk.openmm.app import *
+#ModuleNotFoundError: No module named 'simtk'
+
+
 # OPEN MM
 from simtk.openmm.app import *
 from simtk.openmm import *
@@ -29,7 +34,7 @@ from sys import stdout, exit, stderr
 # Load CHARMM files
 psf = CharmmPsfFile('step5_charmm2omm.psf')
 pdb = PDBFile('step5_charmm2omm.pdb')
-params = CharmmPsfFile('par_all36_prot.rtf', 'top_all36_prot.prm',
+params = CharmmParameterSet('par_all36_prot.rtf', 'top_all36_prot.prm',
                        'par_all36_lipid.rtf', 'top_all36_lipid.prm',
                        'toppar_water_ion.str')
 

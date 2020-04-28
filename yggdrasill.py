@@ -323,7 +323,82 @@ def print_time_rel_and_tot_color(timestampA,timestampB, modulename=''):
 
 #Theory classes
 
+#Dummy MM theory template
+
+class Theory:
+    def __init__(self, printlevel=None):
+        #Atom types
+    pass
+    def run(self):
+        pass
+
+# Dummy QM theory template
+
 # Different MM theories
+
+#Todo: Make this flexible so that we either create OpenMM object from CHARMM-files automicatically, or GROMACS or Amber
+# or allow user to do the openmm object themself and pass it??
+
+#Todo: Also think whether we want do OpenMM simulations in case we have to make another object maybe
+class OpenMMTheory:
+    def __init__(self, pdbfile=None, psffile=None, topfile=None, prmfile=None, printlevel=None):
+        #Make empty coords list. Might not be used
+        self.coords=[]
+
+        # OPEN MM
+        try:
+            from simtk.openmm.app import *
+            from simtk.openmm import *
+            from simtk.unit import *
+        except ImportError:
+            raise ImportError(
+                "OpenMM requires installing the OpenMM package. Try: conda install -c omnia openmm  \
+                Also see http://docs.openmm.org/latest/userguide/application.html")
+
+        # Load CHARMM PSF files. Both CHARMM-style and XPLOR allowed I believe. Todo: Check
+        self.psf = CharmmPsfFile(psffile)
+        self.pdb = PDBFile(pdbfile)
+        self.params = CharmmParameterSet(topfile, prmfile)
+
+        # Create an OpeNMM system by calling createSystem on psf
+        self.system = psf.createSystem(self.params, nonbondedMethod=NoCutoff,
+                                  nonbondedCutoff=1 * nanometer, constraints=HBonds)
+        #Dummy integrator
+        self.integrator = LangevinIntegrator(300 * kelvin,  # Temperature of head bath
+                                        1 / picosecond,  # Friction coefficient
+                                        0.002 * picoseconds)  # Time step
+
+        self.simulation = Simulation(self.psf.topology, self.system, self.integrator)
+
+    #
+    def run(self, coords=None, fragment=None):
+        #If no coords given to run then a single-point job probably (not part of Optimizer or MD which would supply coords).
+        #Then try if fragment object was supplied.
+        #Otherwise internal coords if they exist
+        if coords is None:
+            if fragment is None:
+                coords=self.coords
+            else:
+                coords=fragment.coords
+
+        #Making sure coords is np array and not list-of-lists
+        coords=np.array(coords)
+
+        ## Q-Chem to GMX unit conversion for energy
+        eqcgmx = 2625.5002
+        ## Q-Chem to GMX unit conversion for force
+        fqcgmx = -49621.9
+        #pos = [Vec3(a / 10, b / 10, c / 10)] * u.nanometer
+        import simtk.unit as u
+        from simtk.openmm import Vec3
+        pos = [Vec3(coords[:,0],coords[:,1],coords[:,2])] * u.nanometer
+        self.simulation.context.setPositions(pos)
+        state = self.simulation.context.getState(getEnergy=True, getForces=True)
+        energy = state.getPotentialEnergy().value_in_unit(u.kilojoule_per_mole) / eqcgmx
+        gradient = state.getForces(asNumpy=True).flatten() / fqcgmx
+
+        print("energy:", energy)
+        print("gradient:", gradient)
 
 # Simple nonbonded MM theory. Charges and LJ-potentials
 class NonBondedTheory:
