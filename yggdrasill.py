@@ -353,13 +353,11 @@ def print_time_rel_and_tot_color(timestampA,timestampB, modulename=''):
 
 class OpenMMTheory:
     def __init__(self, pdbfile=None, psffile=None, topfile=None, prmfile=None, printlevel=None):
+        print("Creating OPENMM object")
         #Make empty coords list. Might not be used
         self.coords=[]
         # OPEN MM
         try:
-            #from simtk.openmm.app import *
-            #from simtk.openmm import *
-            #from simtk.unit import *
             import simtk.openmm.app
         except ImportError:
             raise ImportError(
@@ -389,7 +387,11 @@ class OpenMMTheory:
         #Otherwise internal coords if they exist
         if coords is None:
             if fragment is None:
-                coords=self.coords
+                if len(self.coords) != 0:
+                    coords=self.coords
+                else:
+                    print("Found no coordinates!")
+                    exit(1)
             else:
                 coords=fragment.coords
 
