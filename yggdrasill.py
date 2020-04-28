@@ -1920,23 +1920,21 @@ class Fragment:
         with open(filename) as f:
             for line in f:
                 if 'ATOM' in line:
-                    atomindex.append(float(line[6:11]))
-                    atom_name.append(line[12:16])
-                    residname.append(line[17:20])
-                    residuelist.append(line[22:26])
-                    coords_x=float(line[30:38])
-                    coords_y=float(line[38:46])
-                    coords_z=float(line[46:54])
-                    print(coords_z)
+                    atomindex.append(float(line[6:11].replace(' ','')))
+                    atom_name.append(line[12:16].replace(' ',''))
+                    residname.append(line[17:20].replace(' ',''))
+                    residuelist.append(line[22:26].replace(' ',''))
+                    coords_x=float(line[30:38].replace(' ',''))
+                    coords_y=float(line[38:46].replace(' ',''))
+                    coords_z=float(line[46:54].replace(' ',''))
                     self.coords.append([coords_x,coords_y,coords_z])
-                    if len(line[76:78].replace(' ','')) != 0:
-                        elemcol.append(line[76:78])
+                    elem=line[76:78].replace(' ','')
+                    if len(elem) != 0:
+                        elemcol.append(elem)
                     #self.coords.append([float(line.split()[6]), float(line.split()[7]), float(line.split()[8])])
                     #elemcol.append(line.split()[-1])
                     #residuelist.append(line.split()[3])
                     #atom_name.append(line.split()[3])
-
-
                 if 'HETATM' in line:
                     print("HETATM line in file found. Please rename to ATOM")
                     exit()
