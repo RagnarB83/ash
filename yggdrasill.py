@@ -1904,24 +1904,48 @@ class Fragment:
         print_coords_all(self.coords,self.elems)
     #Read PDB file
     def read_pdbfile(self,filename):
+        #THIS is too simplistic as columns are sometimes missing, throwing everything off
+        # Todo: Need to grab specific line-columns themselves as defined in the PDB-format
         print("Reading coordinates from PDBfile \"{}\" into fragment".format(filename))
         residuelist=[]
         #If elemcolumn found
         elemcol=[]
+        #Not atomtype but atomname
+        atomname=[]
+        atomindex=[]
+        residname=[]
         #TODO: Are there different PDB formats?
+        #https://cupnet.net/pdb-format/
         with open(filename) as f:
             for line in f:
                 if 'ATOM' in line:
-                    self.coords.append([float(line.split()[6]), float(line.split()[7]), float(line.split()[8])])
-                    elemcol.append(line.split()[-1])
-                    residuelist.append(line.split()[3])
+                    atomindex.append(float(line[6:11]))
+                    atom_name.append(line[12:16])
+                    residname.append(line[17:20])
+                    residuelist.append(line[22:26])
+                    coords_x=float(line[30:38])
+                    coords_y=float(line[38:46])
+                    coords_z=float(line[46:54])
+                    self.coords.append(coords_x,coords_y,coords_z)
+                    if len(line[76:78].replace(' ','')) != 0:
+                        elemcol.append(line[76:78])
+                    #self.coords.append([float(line.split()[6]), float(line.split()[7]), float(line.split()[8])])
+                    #elemcol.append(line.split()[-1])
+                    #residuelist.append(line.split()[3])
+                    #atom_name.append(line.split()[3])
+
+
+                if 'HETATM' in line:
+                    print("HETATM line in file found. Please rename to ATOM")
+                    exit()
         if len(elemcol) != len(self.coords):
             print("did not find same number of elements as coordinates")
             print("Need to define elements in some other way")
             exit()
         else:
             self.elems=elemcol
-
+        print(self.coords)
+        print(self.elems)
         self.update_attributes()
         self.calc_connectivity()
     #Read XYZ file
