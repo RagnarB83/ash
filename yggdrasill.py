@@ -1911,9 +1911,10 @@ class Fragment:
         #If elemcolumn found
         elemcol=[]
         #Not atomtype but atomname
-        atomname=[]
+        atom_name=[]
         atomindex=[]
         residname=[]
+
         #TODO: Are there different PDB formats?
         #https://cupnet.net/pdb-format/
         with open(filename) as f:
