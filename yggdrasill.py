@@ -396,6 +396,7 @@ class OpenMMTheory:
         if coords is None:
             if fragment is None:
                 if len(self.coords) != 0:
+                    print("Using internal coordinates (from OpenMM object)")
                     coords=self.coords
                 else:
                     print("Found no coordinates!")
@@ -415,11 +416,13 @@ class OpenMMTheory:
 
         #pos = [Vec3(coords[:,0]/10,coords[:,1]/10,coords[:,2]/10)] * u.nanometer
         #Todo: Check speed on this
+        print("doing pos")
         pos = [self.Vec3(coords[i, 0] / 10, coords[i, 1] / 10, coords[i, 2] / 10) for i in range(len(coords))] * self.unit.nanometer
-
         self.simulation.context.setPositions(pos)
         state = self.simulation.context.getState(getEnergy=True, getForces=True)
+        print("doing energy")
         self.energy = state.getPotentialEnergy().value_in_unit(self.unit.kilojoule_per_mole) / eqcgmx
+        print("doing gradient")
         self.gradient = state.getForces(asNumpy=True).flatten() / fqcgmx
 
         #Todo: Check units
