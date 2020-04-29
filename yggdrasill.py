@@ -349,7 +349,7 @@ def print_time_rel_and_tot_color(timestampA,timestampB, modulename=''):
 
 #Todo: Also think whether we want do OpenMM simulations in case we have to make another object maybe
 
-
+#Todo: Add GROMACS-file support, Amber-file support
 
 class OpenMMTheory:
     def __init__(self, pdbfile=None, psffile=None, topfile=None, prmfile=None, printlevel=None):
@@ -387,7 +387,10 @@ class OpenMMTheory:
                                         1 / simtk.openmm.unit.picosecond,  # Friction coefficient
                                         0.002 * simtk.openmm.unit.picoseconds)  # Time step
 
-        self.simulation = simtk.openmm.app.simulation.Simulation(self.psf.topology, self.system, self.integrator)
+        self.platform = simtk.openmm.app.Platform.getPlatformByName('Reference')
+        self.simulation = simtk.openmm.app.simulation.Simulation(self.psf.topology, self.system, self.integrator, self.platform)
+
+
     def run(self, coords=None, fragment=None):
         timeA = time.time()
         print(BC.OKBLUE, BC.BOLD, "------------RUNNING OPENMM INTERFACE-------------", BC.END)
