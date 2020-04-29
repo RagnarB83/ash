@@ -384,6 +384,16 @@ class OpenMMTheory:
         # Create an OpeNMM system by calling createSystem on psf
         self.system = self.psf.createSystem(self.params, nonbondedMethod=simtk.openmm.app.NoCutoff,
                                   nonbondedCutoff=1 * simtk.openmm.unit.nanometer, constraints=simtk.openmm.app.HBonds)
+
+        #Modify particle masses here?? For freezing atoms
+        frozen_atoms=[10,11,12]
+        for i in frozen_atoms:
+            print("i mass:", self.system.getParticleMass(i, 0))
+            system.setParticleMass(i, 0 * u.dalton)
+            print("i mass:", self.system.getParticleMass(i, 0))
+
+
+        exit()
         #Dummy integrator
         self.integrator = simtk.openmm.LangevinIntegrator(300 * simtk.openmm.unit.kelvin,  # Temperature of head bath
                                         1 / simtk.openmm.unit.picosecond,  # Friction coefficient
