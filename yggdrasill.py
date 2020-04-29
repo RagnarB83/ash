@@ -389,7 +389,7 @@ class OpenMMTheory:
         frozen_atoms=[10,11,12]
         for i in frozen_atoms:
             print("i mass:", self.system.getParticleMass(i))
-            self.system.setParticleMass(i, 0 * u.dalton)
+            self.system.setParticleMass(i, 0 * simtk.openmm.unit.dalton)
             print("i mass:", self.system.getParticleMass(i))
 
 
