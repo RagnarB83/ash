@@ -389,18 +389,20 @@ class OpenMMTheory:
 
 
         #FROZEN AND ACTIVE ATOMS
-        numatoms=self.psf.topology.getNumAtoms()
+        self.numatoms=int(self.psf.topology.getNumAtoms())
         print("numatoms:", numatoms)
         self.allatoms=list(range(0,))
         if active_atoms is None and frozen_atoms is None:
-            print("All atoms active, no atoms frozen")
+            print("All {} atoms active, no atoms frozen".format(self.numatoms))
         elif active_atoms is not None and frozen_atoms is None:
             self.active_atoms=active_atoms
             self.frozen_atoms=listdiff(self.allatoms,self.active_atoms)
+            print("{} active atoms, {} frozen atoms".format(self.active_atoms,self.frozen_atoms))
             #listdiff
         elif frozen_atoms is not None and active_atoms is None:
             self.frozen_atoms = frozen_atoms
             self.active_atoms = listdiff(self.allatoms, self.frozen_atoms)
+            print("{} active atoms, {} frozen atoms".format(self.active_atoms,self.frozen_atoms))
         else:
             print("active_atoms and frozen_atoms can not be both defined")
             exit(1)
