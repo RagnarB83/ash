@@ -356,7 +356,6 @@ class OpenMMTheory:
                  platform='CPU', active_atoms=None, frozen_atoms=None):
         print(BC.WARNING, BC.BOLD, "------------Defining OpenMM object-------------", BC.END)
         timeA = time.time()
-        #Make empty coords list. Might not be used
         self.coords=[]
         self.platform_choice=platform
 
@@ -415,23 +414,21 @@ class OpenMMTheory:
             self.system.setParticleMass(i, 0 * simtk.openmm.unit.dalton)
         print_time_rel(timeA, modulename="frozen atom setup")
         timeA = time.time()
-        print(self.system.__dict__)
+
         #Modifying constraints after frozen-atom setting
         print("Constraints:", self.system.getNumConstraints())
-        print("Constraint 0 : ",  self.system.getConstraintParameters(0))
-        print("Constraint 1 : ",  self.system.getConstraintParameters(1))
 
+        #Finding defined constraints that involved frozen atoms. add to remove list
         removelist=[]
         for i in range(0,self.system.getNumConstraints()):
-            #print("i:", i)
             constraint=self.system.getConstraintParameters(i)
-            #print("constraint:", constraint)
             if constraint[0] in self.frozen_atoms or constraint[1] in self.frozen_atoms:
                 #self.system.removeConstraint(i)
                 removelist.append(i)
 
-        print("removelist:", removelist)
+        #print("removelist:", removelist)
         print("length removelist", len(removelist))
+        #Remove constraints
         removelist.reverse()
         for r in removelist:
             self.system.removeConstraint(r)
