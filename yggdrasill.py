@@ -352,10 +352,12 @@ def print_time_rel_and_tot_color(timestampA,timestampB, modulename=''):
 #Todo: Add GROMACS-file support, Amber-file support
 
 class OpenMMTheory:
-    def __init__(self, pdbfile=None, psffile=None, topfile=None, prmfile=None, printlevel=None):
+    def __init__(self, pdbfile=None, psffile=None, topfile=None, prmfile=None, printlevel=None, platform='Reference'):
         print(BC.WARNING, BC.BOLD, "------------Defining OpenMM object-------------", BC.END)
         #Make empty coords list. Might not be used
         self.coords=[]
+        self.platform_choice=platform
+
         # OPEN MM
         try:
             import simtk.openmm.app
@@ -386,8 +388,8 @@ class OpenMMTheory:
         self.integrator = simtk.openmm.LangevinIntegrator(300 * simtk.openmm.unit.kelvin,  # Temperature of head bath
                                         1 / simtk.openmm.unit.picosecond,  # Friction coefficient
                                         0.002 * simtk.openmm.unit.picoseconds)  # Time step
-
-        self.platform = simtk.openmm.Platform.getPlatformByName('Reference')
+        print("self.platform_choice:", self.platform_choice)
+        self.platform = simtk.openmm.Platform.getPlatformByName(self.platform_choice)
         self.simulation = simtk.openmm.app.simulation.Simulation(self.psf.topology, self.system, self.integrator, self.platform)
 
 
