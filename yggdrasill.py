@@ -526,10 +526,10 @@ class OpenMMTheory:
             print(type(charge))
             print("charge:", charge)
             print(charge.__dict__)
-            print("charge 0:", charge[0])
             if isinstance(charge, Quantity):
                 print("charge:", charge)
-                charge = charge / elementary_charge
+                charge = charge / self.unit.elementary_charge
+                print("charge:", charge)
                 chargelist.append(charge)
             print("chargelist:", chargelist)
             exit()
