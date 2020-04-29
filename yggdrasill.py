@@ -388,9 +388,9 @@ class OpenMMTheory:
         #Modify particle masses here?? For freezing atoms
         frozen_atoms=[10,11,12]
         for i in frozen_atoms:
-            print("i mass:", self.system.getParticleMass(i, 0))
+            print("i mass:", self.system.getParticleMass(i))
             system.setParticleMass(i, 0 * u.dalton)
-            print("i mass:", self.system.getParticleMass(i, 0))
+            print("i mass:", self.system.getParticleMass(i))
 
 
         exit()
