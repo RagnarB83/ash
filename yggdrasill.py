@@ -389,6 +389,7 @@ class OpenMMTheory:
 
         self.simulation = simtk.openmm.app.simulation.Simulation(self.psf.topology, self.system, self.integrator)
     def run(self, coords=None, fragment=None):
+        timeA = time.time()
         print(BC.OKBLUE, BC.BOLD, "------------RUNNING OPENMM INTERFACE-------------", BC.END)
         #If no coords given to run then a single-point job probably (not part of Optimizer or MD which would supply coords).
         #Then try if fragment object was supplied.
@@ -405,10 +406,13 @@ class OpenMMTheory:
             else:
                 coords=fragment.coords
 
+        print_time_rel(timeA, modulename="if stuff")
+        timeA = time.time()
         #Making sure coords is np array and not list-of-lists
         print("doing coords array")
         coords=np.array(coords)
-
+        print_time_rel(timeA, modulename="coords array")
+        timeA = time.time()
         ## Q-Chem to GMX unit conversion for energy
         eqcgmx = 2625.5002
         ## Q-Chem to GMX unit conversion for force
@@ -420,13 +424,23 @@ class OpenMMTheory:
         #Todo: Check speed on this
         print("doing pos")
         pos = [self.Vec3(coords[i, 0] / 10, coords[i, 1] / 10, coords[i, 2] / 10) for i in range(len(coords))] * self.unit.nanometer
+        print_time_rel(timeA, modulename="pos create")
+        timeA = time.time()
         self.simulation.context.setPositions(pos)
+        print_time_rel(timeA, modulename="context pos")
+        timeA = time.time()
         print("doing state")
         state = self.simulation.context.getState(getEnergy=True, getForces=True)
+        print_time_rel(timeA, modulename="state")
+        timeA = time.time()
         print("doing energy")
         self.energy = state.getPotentialEnergy().value_in_unit(self.unit.kilojoule_per_mole) / eqcgmx
+        print_time_rel(timeA, modulename="energy")
+        timeA = time.time()
         print("doing gradient")
         self.gradient = state.getForces(asNumpy=True).flatten() / fqcgmx
+        print_time_rel(timeA, modulename="gradient")
+        timeA = time.time()
 
         #Todo: Check units
         print("self.energy:", self.energy)
