@@ -523,16 +523,9 @@ class OpenMMTheory:
         chargelist = []
         for i in range( self.nonbonded_force.getNumParticles() ):
             charge = self.nonbonded_force.getParticleParameters( i )[0]
-            print(type(charge))
-            print("charge:", charge)
-            print(charge.__dict__)
             if isinstance(charge, self.unit.Quantity):
-                print("charge:", charge)
                 charge = charge / self.unit.elementary_charge
-                print("charge:", charge)
                 chargelist.append(charge)
-            print("chargelist:", chargelist)
-            exit()
         return chargelist
 
 # Simple nonbonded MM theory. Charges and LJ-potentials
