@@ -390,7 +390,7 @@ class OpenMMTheory:
 
         #FROZEN AND ACTIVE ATOMS
         self.numatoms=int(self.psf.topology.getNumAtoms())
-        print("numatoms:", numatoms)
+        print("self.numatoms:", self.numatoms)
         self.allatoms=list(range(0,))
         if active_atoms is None and frozen_atoms is None:
             print("All {} atoms active, no atoms frozen".format(self.numatoms))
