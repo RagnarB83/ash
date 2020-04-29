@@ -355,7 +355,7 @@ class OpenMMTheory:
     def __init__(self, pdbfile=None, psffile=None, topfile=None, prmfile=None, printlevel=None,
                  platform='CPU', active_atoms=None, frozen_atoms=None):
         print(BC.WARNING, BC.BOLD, "------------Defining OpenMM object-------------", BC.END)
-
+        timeA = time.time()
         #Make empty coords list. Might not be used
         self.coords=[]
         self.platform_choice=platform
@@ -378,7 +378,8 @@ class OpenMMTheory:
         #TODO: Should we keep this?
         PDB_ygg_frag = Fragment(pdbfile=pdbfile, conncalc=False)
         self.coords=PDB_ygg_frag.coords
-
+        print_time_rel(timeA, modulename="prep")
+        timeA = time.time()
         # Load CHARMM PSF files. Both CHARMM-style and XPLOR allowed I believe. Todo: Check
         self.psf = simtk.openmm.app.CharmmPsfFile(psffile)
         self.params = simtk.openmm.app.CharmmParameterSet(topfile, prmfile)
@@ -386,7 +387,8 @@ class OpenMMTheory:
         # Create an OpeNMM system by calling createSystem on psf
         self.system = self.psf.createSystem(self.params, nonbondedMethod=simtk.openmm.app.NoCutoff,
                                   nonbondedCutoff=1 * simtk.openmm.unit.nanometer)
-
+        print_time_rel(timeA, modulename="system create")
+        timeA = time.time()
         #constraints=simtk.openmm.app.HBonds, AllBonds, HAngles
 
         #FROZEN AND ACTIVE ATOMS
@@ -411,7 +413,8 @@ class OpenMMTheory:
         #Modify particle masses in system object. For freezing atoms
         for i in self.frozen_atoms:
             self.system.setParticleMass(i, 0 * simtk.openmm.unit.dalton)
-
+        print_time_rel(timeA, modulename="frozen atom setup")
+        timeA = time.time()
         print(self.system.__dict__)
         #Modifying constraints after frozen-atom setting
         print("Constraints:", self.system.getNumConstraints())
@@ -431,7 +434,8 @@ class OpenMMTheory:
             self.system.removeConstraint(r)
 
         print("Constraints:", self.system.getNumConstraints())
-
+        print_time_rel(timeA, modulename="constraint fix")
+        timeA = time.time()
         #Dummy integrator
         self.integrator = simtk.openmm.LangevinIntegrator(300 * simtk.openmm.unit.kelvin,  # Temperature of head bath
                                         1 / simtk.openmm.unit.picosecond,  # Friction coefficient
@@ -439,7 +443,8 @@ class OpenMMTheory:
         print("self.platform_choice:", self.platform_choice)
         self.platform = simtk.openmm.Platform.getPlatformByName(self.platform_choice)
         self.simulation = simtk.openmm.app.simulation.Simulation(self.psf.topology, self.system, self.integrator, self.platform)
-
+        print_time_rel(timeA, modulename="simulation setup")
+        timeA = time.time()
 
     def run(self, coords=None, fragment=None):
         timeA = time.time()
