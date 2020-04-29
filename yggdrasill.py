@@ -386,6 +386,18 @@ class OpenMMTheory:
         # Create an OpeNMM system by calling createSystem on psf
         self.system = self.psf.createSystem(self.params, nonbondedMethod=simtk.openmm.app.NoCutoff,
                                   nonbondedCutoff=1 * simtk.openmm.unit.nanometer)
+
+        #Define force object here, for possible modification (QM/MM)
+        forces = {system.getForce(index).__class__.__name__: system.getForce(index) for index in range(system.getNumForces())}
+        self.nonbonded_force = forces['NonbondedForce']
+        #Modify charges here.
+        #1. Set QM-region charges to 0 via this
+        #2. Do the charge-shifting.
+        #3.
+        #charge, sigma, epsilon = nonbonded_force.getParticleParameters(2)
+        #nonbonded_force.setParticleParameters(2, 0.12345, sigma, epsilon)
+
+
         print_time_rel(timeA, modulename="system create")
         timeA = time.time()
         #constraints=simtk.openmm.app.HBonds, AllBonds, HAngles
@@ -506,6 +518,14 @@ class OpenMMTheory:
 
         print(BC.OKBLUE, BC.BOLD, "------------ENDING OPENMM INTERFACE-------------", BC.END)
         return self.energy, self.gradient
+    def getatomcharges():
+        chargelist = []
+        for i in range( self.nonbonded_force.getNumParticles() ):
+            charge = self.nonbonded_force.getParticleParameters( i )[0]
+            #if isinstance(charge, Quantity):
+            #    charge = charge / elementary_charge
+            chargelist.append(charge)
+        return chargelist
 
 # Simple nonbonded MM theory. Charges and LJ-potentials
 class NonBondedTheory:
@@ -1092,7 +1112,7 @@ class PolEmbedTheory:
 #QM/MM theory object.
 #Required at init: qm_theory and qmatoms. Fragment not. Can come later
 class QMMMTheory:
-    def __init__(self, qm_theory, qmatoms, fragment='', mm_theory="" , atomcharges="",
+    def __init__(self, qm_theory="", qmatoms="", fragment='', mm_theory="" , atomcharges=None,
                  embedding="Elstat", printlevel=3, nprocs=None):
         print(BC.WARNING,BC.BOLD,"------------Defining QM/MM object-------------", BC.END)
 
@@ -1113,10 +1133,25 @@ class QMMMTheory:
         print("QM-theory:", self.qm_theory_name)
         print("MM-theory:", self.mm_theory_name)
 
+        #if atomcharges are not passed to QMMMTheory object, get them from MMtheory (that should have been defined then)
+        if atomcharges is None:
+            print("No atomcharges list passed to QMMMTheory object")
+            if self.mm_theory_name == "OpenMMTheory":
+                print("Getting system charges from OpenMM object")
+                self.charges = mm_theory.getatomcharges()
+                print("self.charges:", self.charges)
+            elif self.mm_theory_name == "NonBondedTheory":
+                print("Getting system charges from NonBondedTheory object")
+                self.charges=mm_theory.atom_charges
+            else:
+                print("Unrecognized MM theory for QMMMTheory")
+                exit(1)
+
         #Embedding type: mechanical, electrostatic etc.
         self.embedding=embedding
         print("Embedding:", self.embedding)
         self.qmatoms = qmatoms
+
         #If fragment object has been defined
         if fragment != '':
             self.fragment=fragment
