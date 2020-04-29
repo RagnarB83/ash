@@ -386,6 +386,8 @@ class OpenMMTheory:
         # Create an OpeNMM system by calling createSystem on psf
         self.system = self.psf.createSystem(self.params, nonbondedMethod=simtk.openmm.app.NoCutoff,
                                   nonbondedCutoff=1 * simtk.openmm.unit.nanometer)
+
+        print("Constraints:", self.system.getNumConstraints)
         #constraints=simtk.openmm.app.HBonds, AllBonds, HAngles
 
         #FROZEN AND ACTIVE ATOMS
