@@ -408,8 +408,7 @@ class OpenMMTheory:
             exit(1)
 
         #Modify particle masses in system object. For freezing atoms
-        self.frozen_atoms=frozen_atoms
-        for i in frozen_atoms:
+        for i in self.frozen_atoms:
             self.system.setParticleMass(i, 0 * simtk.openmm.unit.dalton)
 
 
