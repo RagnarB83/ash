@@ -397,12 +397,12 @@ class OpenMMTheory:
         elif active_atoms is not None and frozen_atoms is None:
             self.active_atoms=active_atoms
             self.frozen_atoms=listdiff(self.allatoms,self.active_atoms)
-            print("{} active atoms, {} frozen atoms".format(self.active_atoms,self.frozen_atoms))
+            print("{} active atoms, {} frozen atoms".format(len(self.active_atoms),len(self.frozen_atoms)))
             #listdiff
         elif frozen_atoms is not None and active_atoms is None:
             self.frozen_atoms = frozen_atoms
             self.active_atoms = listdiff(self.allatoms, self.frozen_atoms)
-            print("{} active atoms, {} frozen atoms".format(self.active_atoms,self.frozen_atoms))
+            print("{} active atoms, {} frozen atoms".format(len(self.active_atoms),len(self.frozen_atoms)))
         else:
             print("active_atoms and frozen_atoms can not be both defined")
             exit(1)
