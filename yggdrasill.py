@@ -523,9 +523,13 @@ class OpenMMTheory:
         chargelist = []
         for i in range( self.nonbonded_force.getNumParticles() ):
             charge = self.nonbonded_force.getParticleParameters( i )[0]
-            #if isinstance(charge, Quantity):
-            #    charge = charge / elementary_charge
-            chargelist.append(charge)
+            print("charge:", charge)
+            if isinstance(charge, Quantity):
+                print("charge:", charge)
+                charge = charge / elementary_charge
+                chargelist.append(charge)
+            print("chargelist:", chargelist)
+            exit()
         return chargelist
 
 # Simple nonbonded MM theory. Charges and LJ-potentials
@@ -1143,7 +1147,7 @@ class QMMMTheory:
                 print("self.charges:", self.charges)
             elif self.mm_theory_name == "NonBondedTheory":
                 print("Getting system charges from NonBondedTheory object")
-                self.charges=mm_theory.atom_charges()
+                self.charges=mm_theory.atom_charges
             else:
                 print("Unrecognized MM theory for QMMMTheory")
                 exit(1)
