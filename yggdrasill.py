@@ -388,6 +388,8 @@ class OpenMMTheory:
                                   nonbondedCutoff=1 * simtk.openmm.unit.nanometer)
 
         print("Constraints:", self.system.getNumConstraints())
+        print("Constraint 1 : ",  self.system.getConstraintParameters(1))
+
         #constraints=simtk.openmm.app.HBonds, AllBonds, HAngles
 
         #FROZEN AND ACTIVE ATOMS
