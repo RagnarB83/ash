@@ -523,6 +523,7 @@ class OpenMMTheory:
         chargelist = []
         for i in range( self.nonbonded_force.getNumParticles() ):
             charge = self.nonbonded_force.getParticleParameters( i )[0]
+            print(type(charge))
             print("charge:", charge)
             print("charge 0:", charge[0])
             if isinstance(charge, Quantity):
