@@ -430,6 +430,8 @@ class OpenMMTheory:
                 #self.system.removeConstraint(i)
                 removelist.append(i)
 
+        print("removelist:", removelist)
+        print("length removelist", len(removelist))
         for r in removelist:
             self.system.removeConstraint(r)
 
