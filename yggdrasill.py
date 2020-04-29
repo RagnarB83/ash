@@ -418,12 +418,17 @@ class OpenMMTheory:
         print("Constraint 0 : ",  self.system.getConstraintParameters(0))
         print("Constraint 1 : ",  self.system.getConstraintParameters(1))
 
+        removelist=[]
         for i in range(0,self.system.getNumConstraints()):
-            print("i:", i)
+            #print("i:", i)
             constraint=self.system.getConstraintParameters(i)
-            print("constraint:", constraint)
+            #print("constraint:", constraint)
             if constraint[0] in self.frozen_atoms or constraint[1] in self.frozen_atoms:
-                self.system.removeConstraint(i)
+                #self.system.removeConstraint(i)
+                removelist.append(i)
+
+        for r in removelist:
+            self.system.removeConstraint(r)
 
         print("Constraints:", self.system.getNumConstraints())
 
