@@ -352,8 +352,10 @@ def print_time_rel_and_tot_color(timestampA,timestampB, modulename=''):
 #Todo: Add GROMACS-file support, Amber-file support
 
 class OpenMMTheory:
-    def __init__(self, pdbfile=None, psffile=None, topfile=None, prmfile=None, printlevel=None, platform='CPU'):
+    def __init__(self, pdbfile=None, psffile=None, topfile=None, prmfile=None, printlevel=None,
+                 platform='CPU', active_atoms=None, frozen_atoms=None):
         print(BC.WARNING, BC.BOLD, "------------Defining OpenMM object-------------", BC.END)
+
         #Make empty coords list. Might not be used
         self.coords=[]
         self.platform_choice=platform
@@ -385,12 +387,28 @@ class OpenMMTheory:
         self.system = self.psf.createSystem(self.params, nonbondedMethod=simtk.openmm.app.NoCutoff,
                                   nonbondedCutoff=1 * simtk.openmm.unit.nanometer, constraints=simtk.openmm.app.HBonds)
 
-        #Modify particle masses here?? For freezing atoms
-        frozen_atoms=[10,11,12]
+
+        #FROZEN AND ACTIVE ATOMS
+        numatoms=self.psf.topology.getNumAtoms()
+        print("numatoms:", numatoms)
+        self.allatoms=list(range(0,))
+        if active_atoms is None and frozen_atoms is None:
+            print("All atoms active, no atoms frozen")
+        elif active_atoms is not None and frozen_atoms is None:
+            self.active_atoms=active_atoms
+            self.frozen_atoms=listdiff(self.allatoms,self.active_atoms)
+            #listdiff
+        elif frozen_atoms is not None and active_atoms is None:
+            self.frozen_atoms = frozen_atoms
+            self.active_atoms = listdiff(self.allatoms, self.frozen_atoms)
+        else:
+            print("active_atoms and frozen_atoms can not be both defined")
+            exit(1)
+
+        #Modify particle masses in system object. For freezing atoms
+        self.frozen_atoms=frozen_atoms
         for i in frozen_atoms:
-            print("i mass:", self.system.getParticleMass(i))
             self.system.setParticleMass(i, 0 * simtk.openmm.unit.dalton)
-            print("i mass:", self.system.getParticleMass(i))
 
 
         exit()
