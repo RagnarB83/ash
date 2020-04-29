@@ -519,7 +519,7 @@ class OpenMMTheory:
 
         print(BC.OKBLUE, BC.BOLD, "------------ENDING OPENMM INTERFACE-------------", BC.END)
         return self.energy, self.gradient
-    def getatomcharges():
+    def getatomcharges(self):
         chargelist = []
         for i in range( self.nonbonded_force.getNumParticles() ):
             charge = self.nonbonded_force.getParticleParameters( i )[0]
@@ -1143,7 +1143,7 @@ class QMMMTheory:
                 print("self.charges:", self.charges)
             elif self.mm_theory_name == "NonBondedTheory":
                 print("Getting system charges from NonBondedTheory object")
-                self.charges=mm_theory.atom_charges
+                self.charges=mm_theory.atom_charges()
             else:
                 print("Unrecognized MM theory for QMMMTheory")
                 exit(1)
