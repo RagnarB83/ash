@@ -432,7 +432,8 @@ class OpenMMTheory:
 
         print("removelist:", removelist)
         print("length removelist", len(removelist))
-        for r in removelist.reverse():
+        removelist.reverse()
+        for r in removelist:
             self.system.removeConstraint(r)
 
         print("Constraints:", self.system.getNumConstraints())
