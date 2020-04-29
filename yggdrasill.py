@@ -526,7 +526,7 @@ class OpenMMTheory:
             print(type(charge))
             print("charge:", charge)
             print(charge.__dict__)
-            if isinstance(charge, Quantity):
+            if isinstance(charge, self.unit.Quantity):
                 print("charge:", charge)
                 charge = charge / self.unit.elementary_charge
                 print("charge:", charge)
