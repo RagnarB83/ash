@@ -411,8 +411,6 @@ class OpenMMTheory:
         for i in self.frozen_atoms:
             self.system.setParticleMass(i, 0 * simtk.openmm.unit.dalton)
 
-
-        exit()
         #Dummy integrator
         self.integrator = simtk.openmm.LangevinIntegrator(300 * simtk.openmm.unit.kelvin,  # Temperature of head bath
                                         1 / simtk.openmm.unit.picosecond,  # Friction coefficient
