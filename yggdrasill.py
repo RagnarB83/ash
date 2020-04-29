@@ -526,6 +526,7 @@ class OpenMMTheory:
             if isinstance(charge, self.unit.Quantity):
                 charge = charge / self.unit.elementary_charge
                 chargelist.append(charge)
+        self.atom_charges=chargelist
         return chargelist
 
 # Simple nonbonded MM theory. Charges and LJ-potentials
