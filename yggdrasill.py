@@ -388,7 +388,8 @@ class OpenMMTheory:
                                   nonbondedCutoff=1 * simtk.openmm.unit.nanometer)
 
         #Define force object here, for possible modification (QM/MM)
-        forces = {system.getForce(index).__class__.__name__: system.getForce(index) for index in range(system.getNumForces())}
+        forces = {self.system.getForce(index).__class__.__name__:
+                      self.system.getForce(index) for index in range(self.system.getNumForces())}
         self.nonbonded_force = forces['NonbondedForce']
         #Modify charges here.
         #1. Set QM-region charges to 0 via this
