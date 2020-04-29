@@ -414,6 +414,7 @@ class OpenMMTheory:
 
         #Modifying constraints after frozen-atom setting
         print("Constraints:", self.system.getNumConstraints())
+        print("Constraint 1 : ",  self.system.getConstraintParameters(0))
         print("Constraint 1 : ",  self.system.getConstraintParameters(1))
 
         for i in range(0,self.system.getNumConstraints()):
