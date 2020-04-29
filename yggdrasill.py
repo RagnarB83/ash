@@ -412,9 +412,10 @@ class OpenMMTheory:
         for i in self.frozen_atoms:
             self.system.setParticleMass(i, 0 * simtk.openmm.unit.dalton)
 
+        print(self.system.__dict__)
         #Modifying constraints after frozen-atom setting
         print("Constraints:", self.system.getNumConstraints())
-        print("Constraint 1 : ",  self.system.getConstraintParameters(0))
+        print("Constraint 0 : ",  self.system.getConstraintParameters(0))
         print("Constraint 1 : ",  self.system.getConstraintParameters(1))
 
         for i in range(0,self.system.getNumConstraints()):
