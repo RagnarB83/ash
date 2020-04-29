@@ -63,6 +63,17 @@ def readlinesfile(filename):
     sys.exit(12)
   return out
 
+#Read list of integers from file. Output list of integers. Ignores blanklines, return chars, non-int characters
+def read_intlist_from_file(file):
+    list=[]
+    lines=readlinesfile(file)
+    for line in lines:
+        for l in line.split():
+            if isint(l):
+                list.append(int(l))
+    return list
+
+
 #Write a string to file simply
 def writestringtofile(string,file):
     with open(file, 'w') as f:
