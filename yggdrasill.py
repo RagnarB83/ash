@@ -352,7 +352,7 @@ def print_time_rel_and_tot_color(timestampA,timestampB, modulename=''):
 #Todo: Add GROMACS-file support, Amber-file support
 
 class OpenMMTheory:
-    def __init__(self, pdbfile=None, psffile=None, topfile=None, prmfile=None, printlevel=None, platform='Reference'):
+    def __init__(self, pdbfile=None, psffile=None, topfile=None, prmfile=None, printlevel=None, platform='CPU'):
         print(BC.WARNING, BC.BOLD, "------------Defining OpenMM object-------------", BC.END)
         #Make empty coords list. Might not be used
         self.coords=[]
