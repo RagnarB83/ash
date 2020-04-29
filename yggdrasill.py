@@ -387,9 +387,6 @@ class OpenMMTheory:
         self.system = self.psf.createSystem(self.params, nonbondedMethod=simtk.openmm.app.NoCutoff,
                                   nonbondedCutoff=1 * simtk.openmm.unit.nanometer)
 
-        print("Constraints:", self.system.getNumConstraints())
-        print("Constraint 1 : ",  self.system.getConstraintParameters(1))
-
         #constraints=simtk.openmm.app.HBonds, AllBonds, HAngles
 
         #FROZEN AND ACTIVE ATOMS
@@ -414,6 +411,18 @@ class OpenMMTheory:
         #Modify particle masses in system object. For freezing atoms
         for i in self.frozen_atoms:
             self.system.setParticleMass(i, 0 * simtk.openmm.unit.dalton)
+
+        #Modifying constraints after frozen-atom setting
+        print("Constraints:", self.system.getNumConstraints())
+        print("Constraint 1 : ",  self.system.getConstraintParameters(1))
+
+        for i in range(1,self.system.getNumConstraints()):
+            constraint=self.system.getConstraintParameters(i)
+            print("constraint:", constraint)
+            if constraint[0] in self.frozen_atoms or constraint[1] in self.frozen_atoms:
+                self.system.removeConstraint(i)
+
+        print("Constraints:", self.system.getNumConstraints())
 
         #Dummy integrator
         self.integrator = simtk.openmm.LangevinIntegrator(300 * simtk.openmm.unit.kelvin,  # Temperature of head bath
