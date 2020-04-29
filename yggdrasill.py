@@ -524,6 +524,7 @@ class OpenMMTheory:
         for i in range( self.nonbonded_force.getNumParticles() ):
             charge = self.nonbonded_force.getParticleParameters( i )[0]
             print("charge:", charge)
+            print("charge 0:", charge[0])
             if isinstance(charge, Quantity):
                 print("charge:", charge)
                 charge = charge / elementary_charge
