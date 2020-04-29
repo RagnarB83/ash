@@ -387,7 +387,7 @@ class OpenMMTheory:
                                         1 / simtk.openmm.unit.picosecond,  # Friction coefficient
                                         0.002 * simtk.openmm.unit.picoseconds)  # Time step
 
-        self.platform = simtk.openmm.app.Platform.getPlatformByName('Reference')
+        self.platform = simtk.openmm.Platform.getPlatformByName('Reference')
         self.simulation = simtk.openmm.app.simulation.Simulation(self.psf.topology, self.system, self.integrator, self.platform)
 
 
