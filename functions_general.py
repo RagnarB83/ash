@@ -64,7 +64,7 @@ def readlinesfile(filename):
   return out
 
 #Read list of integers from file. Output list of integers. Ignores blanklines, return chars, non-int characters
-#offset options shifts integers by
+#offset option: shifts integers by a value (e.g. 1 or -1)
 def read_intlist_from_file(file,offset=0):
     list=[]
     lines=readlinesfile(file)
