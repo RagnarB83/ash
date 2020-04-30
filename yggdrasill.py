@@ -348,12 +348,21 @@ def print_time_rel_and_tot_color(timestampA,timestampB, modulename=''):
 # or allow user to do the openmm object themself and pass it??
 
 #Todo: Also think whether we want do OpenMM simulations in case we have to make another object maybe
+#Amberfiles:
+# Needs just amberprmtopfile (new-style Amber7 format). Not inpcrd file, read into Yggdrasill fragment instead
 
-#Todo: Add GROMACS-file support, Amber-file support
+#CHARMMfiles:
+#Need psffile, a CHARMM topologyfile (charmmtopfile) and a CHARMM parameter file (charmmprmfile)
+
+#GROMACSfiles:
+# Need gromacstopfile and grofile (contains periodic information along with coordinates) and gromacstopdir location (topology)
 
 class OpenMMTheory:
-    def __init__(self, pdbfile=None, psffile=None, topfile=None, prmfile=None, printlevel=None,
-                 platform='CPU', active_atoms=None, frozen_atoms=None):
+    def __init__(self, pdbfile=None, printlevel=None, platform='CPU', active_atoms=None, frozen_atoms=None,
+                 CHARMMfiles=False, psffile=None, charmmtopfile=None, charmmprmfile=None,
+                 GROMACSfiles=False, gromacstopfile=None, grofile=None, gromacstopdir=None,
+                 Amberfiles=False, amberprmtopfile=None,
+                 xmlfile=None):
         print(BC.WARNING, BC.BOLD, "------------Defining OpenMM object-------------", BC.END)
         timeA = time.time()
         self.coords=[]
@@ -373,20 +382,58 @@ class OpenMMTheory:
         self.unit=simtk.unit
         self.Vec3=simtk.openmm.Vec3
 
-        #Read pdb-file. Needed?
-        #self.pdb = simtk.openmm.app.PDBFile(pdbfile)
+
+
         #TODO: Should we keep this?
         #PDB_ygg_frag = Fragment(pdbfile=pdbfile, conncalc=False)
         #self.coords=PDB_ygg_frag.coords
         print_time_rel(timeA, modulename="prep")
         timeA = time.time()
-        # Load CHARMM PSF files. Both CHARMM-style and XPLOR allowed I believe. Todo: Check
-        self.psf = simtk.openmm.app.CharmmPsfFile(psffile)
-        self.params = simtk.openmm.app.CharmmParameterSet(topfile, prmfile)
 
-        # Create an OpeNMM system by calling createSystem on psf
-        self.system = self.psf.createSystem(self.params, nonbondedMethod=simtk.openmm.app.NoCutoff,
-                                  nonbondedCutoff=1 * simtk.openmm.unit.nanometer)
+
+        #What type of forcefield files to read. Reads in different way.
+        # #Always creates object we call self.forcefield that contains topology attribute
+        if CHARMMfiles is True:
+            # Load CHARMM PSF files. Both CHARMM-style and XPLOR allowed I believe. Todo: Check
+            self.psf = simtk.openmm.app.CharmmPsfFile(psffile)
+            self.params = simtk.openmm.app.CharmmParameterSet(charmmtopfile, charmmprmfile)
+            # self.pdb = simtk.openmm.app.PDBFile(pdbfile) probably not reading coordinates here
+            #self.forcefield = self.psf
+            self.topology = self.psf.topology
+            # Create an OpenMM system by calling createSystem on psf
+            self.system = psf.createSystem(self.params, nonbondedMethod=simtk.openmm.app.NoCutoff,
+                                                nonbondedCutoff=1 * simtk.openmm.unit.nanometer)
+        elif GROMACSfiles is True:
+            print("Warning: Gromacs-file interface not tested")
+            #Reading grofile, not for coordinates but for periodic vectors
+            gro = simtk.openmm.app.GromacsGroFile(grofile)
+            self.grotop = simtk.openmm.app.GromacsTopFile(gromacstopfile, periodicBoxVectors=gro.getPeriodicBoxVectors(),
+                                 includeDir=gromacstopdir)
+            #self.forcefield=self.grotop
+            self.topology = self.grotop.topology
+            # Create an OpenMM system by calling createSystem on grotop
+            self.system = self.grotop.createSystem(nonbondedMethod=simtk.openmm.app.NoCutoff,
+                                                nonbondedCutoff=1 * simtk.openmm.unit.nanometer)
+        elif Amberfiles is True:
+            print("Warning: Amber-file interface not tested")
+            #Note: Only new-style Amber7 prmtop files work
+            self.prmtop = simtk.openmm.app.AmberPrmtopFile(amberprmtopfile)
+            #inpcrd = simtk.openmm.app.AmberInpcrdFile(inpcrdfile)  probably not reading coordinates here
+            #self.forcefield = self.prmtop
+            self.topology = self.prmtop.topology
+            # Create an OpenMM system by calling createSystem on prmtop
+            self.system = self.prmtop.createSystem(nonbondedMethod=simtk.openmm.app.NoCutoff,
+                                                nonbondedCutoff=1 * simtk.openmm.unit.nanometer)
+        else:
+            #This would be regular OpenMM Forcefield definition using XML file
+            #Topology from PDBfile annoyingly enough
+            pdb = simtk.openmm.app.PDBFile(pdbfile)
+            self.topology = pdb.topology
+            #Todo: support multiple xml file here
+            #forcefield = simtk.openmm.app.ForceField('amber14-all.xml', 'amber14/tip3pfb.xml')
+            self.forcefield = simtk.openmm.app.ForceField(xmlfile)
+            self.system = self.forcefield.createSystem(nonbondedMethod=simtk.openmm.app.NoCutoff,
+                                                nonbondedCutoff=1 * simtk.openmm.unit.nanometer)
 
         #Define force object here, for possible modification of charges (QM/MM)
         forces = {self.system.getForce(index).__class__.__name__:
@@ -452,7 +499,12 @@ class OpenMMTheory:
                                         0.002 * simtk.openmm.unit.picoseconds)  # Time step
         print("self.platform_choice:", self.platform_choice)
         self.platform = simtk.openmm.Platform.getPlatformByName(self.platform_choice)
-        self.simulation = simtk.openmm.app.simulation.Simulation(self.psf.topology, self.system, self.integrator, self.platform)
+
+
+        self.simulation = simtk.openmm.app.simulation.Simulation(self.topology, self.system, self.integrator,
+                                                                 self.platform)
+
+
         print_time_rel(timeA, modulename="simulation setup")
         timeA = time.time()
 
@@ -2157,6 +2209,18 @@ class Fragment:
     def print_coords(self):
         print("Defined coordinates (Å):")
         print_coords_all(self.coords,self.elems)
+    #Read Amber coordinate file?
+    def read_amberinpcrdfile(self,filename,conncalc=False):
+        #Todo: finish
+        pass
+    #Read GROMACS coordinates file
+    def read_grofile(self,filename,conncalc=False):
+        #Todo: finish
+        pass
+    #Read CHARMM? coordinate file?
+    def read_charmmfile(self,filename,conncalc=False):
+        #Todo: finish
+        pass
     #Read PDB file
     def read_pdbfile(self,filename,conncalc=True):
 
