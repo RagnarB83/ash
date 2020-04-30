@@ -68,6 +68,7 @@ def readlinesfile(filename):
 def read_intlist_from_file(file,offset=0):
     list=[]
     lines=readlinesfile(file)
+    print(lines)
     for line in lines:
         for l in line.split():
             if isint(l):
@@ -75,6 +76,7 @@ def read_intlist_from_file(file,offset=0):
                 print("offset:", offset)
                 print("int(l)+offset:", int(l)+offset)
                 list.append(int(l)+offset)
+    list.sort()
     return list
 
 
