@@ -70,6 +70,7 @@ def read_intlist_from_file(file,offset=0):
     lines=readlinesfile(file)
     print(lines)
     for line in lines:
+        print("line:", line)
         for l in line.split():
             if isint(l):
                 print("l:", l)
