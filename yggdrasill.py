@@ -533,8 +533,8 @@ class OpenMMTheory:
     def update_charges(self,charges):
         print("Updating charges in OpenMM object.")
         #Check that force-particles and charges are same number
-        print("force.getNumParticles():", force.getNumParticles())
-        assert force.getNumParticles() == len(charges)
+        print("self.nonbonded_force.getNumParticles():", self.nonbonded_force.getNumParticles())
+        assert self.nonbonded_force.getNumParticles() == len(charges)
 
         for i,newcharge in enumerate(charges):
             oldcharge, sigma, epsilon = self.nonbonded_force.getParticleParameters(2)
