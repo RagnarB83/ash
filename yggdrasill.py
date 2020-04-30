@@ -1223,9 +1223,9 @@ class QMMMTheory:
                 print("Charges of QM atoms set to 0 (since Electrostatic Embedding):")
                 for i in self.allatoms:
                     if i in qmatoms:
-                        print("QM atom {} ({}) charge: {}".format(i, self.charges[i], self.elems[i]))
+                        print("QM atom {} ({}) charge: {}".format(i, self.elems[i], self.charges[i]))
                     else:
-                        print("MM atom {} ({}) charge: {}".format(i, self.charges[i], self.elems[i]))
+                        print("MM atom {} ({}) charge: {}".format(i, self.elems[i], self.charges[i]))
             blankline()
 
     def run(self, current_coords=None, elems=None, Grad=False, nprocs=None):
