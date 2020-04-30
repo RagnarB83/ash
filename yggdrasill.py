@@ -357,10 +357,10 @@ class OpenMMTheory:
         print(BC.WARNING, BC.BOLD, "------------Defining OpenMM object-------------", BC.END)
         timeA = time.time()
         self.coords=[]
-        self.atom_charges=[]
+        self.charges=[]
         self.platform_choice=platform
 
-        # OPEN MM
+        # OPEN MM load
         try:
             import simtk.openmm.app
             import simtk.unit
@@ -393,13 +393,8 @@ class OpenMMTheory:
                       self.system.getForce(index) for index in range(self.system.getNumForces())}
         self.nonbonded_force = forces['NonbondedForce']
 
-        #Modify charges here.
-        #1. Set QM-region charges to 0 via this
-        #2. Do the charge-shifting.
-        #3.
-        #charge, sigma, epsilon = nonbonded_force.getParticleParameters(2)
-        #nonbonded_force.setParticleParameters(2, 0.12345, sigma, epsilon)
-
+        # Get charges from OpenMM object into self.charges
+        self.getatomcharges()
 
         print_time_rel(timeA, modulename="system create")
         timeA = time.time()
@@ -528,19 +523,20 @@ class OpenMMTheory:
             if isinstance(charge, self.unit.Quantity):
                 charge = charge / self.unit.elementary_charge
                 chargelist.append(charge)
-        self.atom_charges=chargelist
+        self.charges=chargelist
         return chargelist
     def update_charges(self,charges):
         print("Updating charges in OpenMM object.")
         #Check that force-particles and charges are same number
         print("self.nonbonded_force.getNumParticles():", self.nonbonded_force.getNumParticles())
         assert self.nonbonded_force.getNumParticles() == len(charges)
-
+        newcharges=[]
         for i,newcharge in enumerate(charges):
-            oldcharge, sigma, epsilon = self.nonbonded_force.getParticleParameters(2)
-            self.nonbonded_force.setParticleParameters(2, 0.12345, sigma, epsilon)
-        #self.atom_charges = charges
-        #print("Charges are now:", charges)
+            oldcharge, sigma, epsilon = self.nonbonded_force.getParticleParameters(i)
+            self.nonbonded_force.setParticleParameters(i, newcharge, sigma, epsilon)
+            newcharges.append(newcharge)
+        self.charges = newcharges
+        print("Charges are now:", self.charges)
 
 # Simple nonbonded MM theory. Charges and LJ-potentials
 class NonBondedTheory:
@@ -1154,10 +1150,12 @@ class QMMMTheory:
             if self.mm_theory_name == "OpenMMTheory":
                 print("Getting system charges from OpenMM object")
                 #Todo: Call getatomcharges directly or should that have been called from within openmm object at init ?
-                self.charges = mm_theory.getatomcharges()
+                #self.charges = mm_theory.getatomcharges()
+                self.charges = mm_theory.charges
                 print("self.charges:", self.charges)
             elif self.mm_theory_name == "NonBondedTheory":
                 print("Getting system charges from NonBondedTheory object")
+                #Todo: normalize charges vs atom_charges
                 self.charges=mm_theory.atom_charges
             else:
                 print("Unrecognized MM theory for QMMMTheory")
