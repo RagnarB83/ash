@@ -72,6 +72,8 @@ def read_intlist_from_file(file,offset=0):
     for line in lines:
         print("line:", line)
         for l in line.split():
+            #Removing non-numeric part
+            l = ''.join(i for i in l if i.isdigit())
             print("l:", l)
             if isint(l):
                 print("l:", l)
