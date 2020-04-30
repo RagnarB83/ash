@@ -529,6 +529,8 @@ class OpenMMTheory:
         print("Updating charges in OpenMM object.")
         #Check that force-particles and charges are same number
         print("self.nonbonded_force.getNumParticles():", self.nonbonded_force.getNumParticles())
+        print(len(charges))
+        print(self.nonbonded_force.getNumParticles())
         assert self.nonbonded_force.getNumParticles() == len(charges)
         newcharges=[]
         for i,newcharge in enumerate(charges):
@@ -536,7 +538,7 @@ class OpenMMTheory:
             self.nonbonded_force.setParticleParameters(i, newcharge, sigma, epsilon)
             newcharges.append(newcharge)
         self.charges = newcharges
-        print("Charges are now:", self.charges)
+        #print("Charges are now:", self.charges)
 
 # Simple nonbonded MM theory. Charges and LJ-potentials
 class NonBondedTheory:
@@ -1152,7 +1154,6 @@ class QMMMTheory:
                 #Todo: Call getatomcharges directly or should that have been called from within openmm object at init ?
                 #self.charges = mm_theory.getatomcharges()
                 self.charges = mm_theory.charges
-                print("self.charges:", self.charges)
             elif self.mm_theory_name == "NonBondedTheory":
                 print("Getting system charges from NonBondedTheory object")
                 #Todo: normalize charges vs atom_charges
@@ -1222,9 +1223,9 @@ class QMMMTheory:
                 print("Charges of QM atoms set to 0 (since Electrostatic Embedding):")
                 for i in self.allatoms:
                     if i in qmatoms:
-                        print("QM atom {} charge: {}".format(i, self.charges[i]))
+                        print("QM atom {} ({}) charge: {}".format(i, self.charges[i], self.elems[i]))
                     else:
-                        print("MM atom {} charge: {}".format(i, self.charges[i]))
+                        print("MM atom {} ({}) charge: {}".format(i, self.charges[i], self.elems[i]))
             blankline()
 
     def run(self, current_coords=None, elems=None, Grad=False, nprocs=None):
