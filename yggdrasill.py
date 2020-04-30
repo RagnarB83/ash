@@ -373,11 +373,11 @@ class OpenMMTheory:
         self.unit=simtk.unit
         self.Vec3=simtk.openmm.Vec3
 
-        #Read pdb-file for fun?
+        #Read pdb-file. Needed?
         #self.pdb = simtk.openmm.app.PDBFile(pdbfile)
         #TODO: Should we keep this?
-        PDB_ygg_frag = Fragment(pdbfile=pdbfile, conncalc=False)
-        self.coords=PDB_ygg_frag.coords
+        #PDB_ygg_frag = Fragment(pdbfile=pdbfile, conncalc=False)
+        #self.coords=PDB_ygg_frag.coords
         print_time_rel(timeA, modulename="prep")
         timeA = time.time()
         # Load CHARMM PSF files. Both CHARMM-style and XPLOR allowed I believe. Todo: Check
@@ -456,7 +456,9 @@ class OpenMMTheory:
         print_time_rel(timeA, modulename="simulation setup")
         timeA = time.time()
 
-    def run(self, coords=None, fragment=None):
+    #Run: coords or framents can be given (usually coords). qmatoms in order to avoid QM-QM interactions (TODO)
+    #Probably best to do QM-QM exclusions etc. in a separate function though as we want run to be as simple as possible
+    def run(self, coords=None, fragment=None, qmatoms=None):
         timeA = time.time()
         print(BC.OKBLUE, BC.BOLD, "------------RUNNING OPENMM INTERFACE-------------", BC.END)
         #If no coords given to run then a single-point job probably (not part of Optimizer or MD which would supply coords).
@@ -481,9 +483,9 @@ class OpenMMTheory:
         coords=np.array(coords)
         print_time_rel(timeA, modulename="coords array")
         timeA = time.time()
-        ## Q-Chem to GMX unit conversion for energy
+        ##  unit conversion for energy
         eqcgmx = 2625.5002
-        ## Q-Chem to GMX unit conversion for force
+        ## unit conversion for force
         fqcgmx = -49621.9
         #pos = [Vec3(a / 10, b / 10, c / 10)] * u.nanometer
 
@@ -538,7 +540,7 @@ class OpenMMTheory:
             self.nonbonded_force.setParticleParameters(i, newcharge, sigma, epsilon)
             newcharges.append(newcharge)
         self.charges = newcharges
-        #print("Charges are now:", self.charges)
+        #print("OpenMMobject charges are now:", self.charges)
 
 # Simple nonbonded MM theory. Charges and LJ-potentials
 class NonBondedTheory:
@@ -766,7 +768,6 @@ class NonBondedTheory:
 
         #If qmatoms list provided to run (probably by QM/MM object) then we are doing QM/MM
         #QM-QM pairs will be skipped in LJ
-        #Todo: Check Coulomb part . I guess charges have been set to 0 already
 
         #Testing if self.sigmaij array has been assigned or not. If not calling calculate_LJ_pairpotentials
         #Passing qmatoms over so pairs can be skipped
@@ -1129,6 +1130,7 @@ class QMMMTheory:
                  embedding="Elstat", printlevel=3, nprocs=None):
         print(BC.WARNING,BC.BOLD,"------------Defining QM/MM object-------------", BC.END)
 
+        self.QMChargesZeroed=False
         #Setting nprocs of object
         if nprocs==None:
             self.nprocs=1
@@ -1214,11 +1216,12 @@ class QMMMTheory:
                         newcharges.append(c)
                     else:
                         newcharges.append(0.0)
+                #Todo: use self.charges or use newcharges. Since done temporarily??
                 self.charges=newcharges
                 #Todo: make sure this works for OpenMM and for NonBOndedTheory
-                #Need to add new function and then update the NonBOndedForce object!!!!!
+                #Updating charges in MM object
                 mm_theory.update_charges(self.charges)
-
+                self.QMChargesZeroed=True
 
                 print("Charges of QM atoms set to 0 (since Electrostatic Embedding):")
                 for i in self.allatoms:
@@ -1330,7 +1333,10 @@ class QMMMTheory:
             print("invalid QM theory")
         print_time_rel(CheckpointTime, modulename='QM step')
         CheckpointTime = time.time()
-        # MM theory
+
+
+
+        # MM THEORY
         if self.mm_theory_name == "NonBondedTheory":
             print("Running MM theory as part of QM/MM.")
             print("Using MM on full system. Charges for QM region {} have to be set to zero ".format(self.qmatoms))
@@ -1343,6 +1349,17 @@ class QMMMTheory:
             #if Grad==True:
             #    self.MMGrad = self.mm_theory.MMGrad
             #    print("self.MMGrad:", self.MMGrad)
+        elif self.mm_theory_name == "OpenMMTheory":
+            print("Running OpenMM theory as part of QM/MM.")
+            if self.QMChargesZeroed==True:
+                print("Using MM on full system. Charges for QM region {} have to be set to zero ".format(self.qmatoms))
+            else:
+                print("QMCharges have not been zeroed")
+                exit(1)
+            printdebug("Charges for full system is: ", self.charges)
+            #Todo: Need to make sure OpenMM skips QM-QM Lj interaction => Exclude
+            #Todo: Need to have OpenMM skip frozen region interaction for speed  => => Exclude
+            self.MMEnergy, self.MMGradient= self.mm_theory.run(coords=current_coords, qmatoms=self.qmatoms)
         else:
             self.MMEnergy=0
         print_time_rel(CheckpointTime, modulename='MM step')
