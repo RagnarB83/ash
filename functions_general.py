@@ -72,6 +72,7 @@ def read_intlist_from_file(file,offset=0):
     for line in lines:
         print("line:", line)
         for l in line.split():
+            print("l:", l)
             if isint(l):
                 print("l:", l)
                 print("offset:", offset)
