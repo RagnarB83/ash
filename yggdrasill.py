@@ -401,7 +401,7 @@ class OpenMMTheory:
             #self.forcefield = self.psf
             self.topology = self.psf.topology
             # Create an OpenMM system by calling createSystem on psf
-            self.system = psf.createSystem(self.params, nonbondedMethod=simtk.openmm.app.NoCutoff,
+            self.system = self.psf.createSystem(self.params, nonbondedMethod=simtk.openmm.app.NoCutoff,
                                                 nonbondedCutoff=1 * simtk.openmm.unit.nanometer)
         elif GROMACSfiles is True:
             print("Warning: Gromacs-file interface not tested")
@@ -425,7 +425,7 @@ class OpenMMTheory:
             self.system = self.prmtop.createSystem(nonbondedMethod=simtk.openmm.app.NoCutoff,
                                                 nonbondedCutoff=1 * simtk.openmm.unit.nanometer)
         else:
-            #This would be regular OpenMM Forcefield definition using XML file
+            #This would be regular OpenMM Forcefield definition requiring XML file
             #Topology from PDBfile annoyingly enough
             pdb = simtk.openmm.app.PDBFile(pdbfile)
             self.topology = pdb.topology
