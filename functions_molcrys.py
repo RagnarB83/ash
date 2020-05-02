@@ -500,8 +500,12 @@ def read_ciffile(file):
     fractgrab=False
     symmopgrab=False
     symmopgrab_oldsyntax=False
+    cellunits=None
     with open(file) as f:
         for line in f:
+            if 'cell_formula_units_Z' in line:
+                cellunits=int(line.split()[-1])
+                print("Found {} cell_formula_units_Z in CIF file".format(cellunits))
             if 'loop_' in line:
                 fractgrab=False
             if newmol==True:
@@ -583,7 +587,7 @@ def read_ciffile(file):
 
     print("Symmetry operations found in CIF:", symmops)
 
-    return [cell_a, cell_b, cell_c],[cell_alpha, cell_beta, cell_gamma],atomlabels,elems,coords,symmops
+    return [cell_a, cell_b, cell_c],[cell_alpha, cell_beta, cell_gamma],atomlabels,elems,coords,symmops,cellunits
 
 #From cell parameters, fractional coordinates of asymmetric unit and symmetry operations
 #create fractional coordinates for atoms of whole cell

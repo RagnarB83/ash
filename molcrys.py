@@ -44,23 +44,27 @@ def molcrys(cif_file=None, xtl_file=None, fragmentobjects=[], theory=None, numco
         blankline()
         cell_length,cell_angles,atomlabels,elems,asymmcoords,symmops=read_ciffile(cif_file)
 
-        # Create system coordinates for whole cell from asymmetric unit
-        print("Filling up unitcell using symmetry operations")
-        fullcellcoords, elems = fill_unitcell(cell_length, cell_angles, atomlabels, elems, asymmcoords, symmops)
-        numasymmunits = len(fullcellcoords) / len(asymmcoords)
-
-        print("Number of fractional coordinates in asymmetric unit:", len(asymmcoords))
-        print("Number of asymmetric units in whole cell:", int(numasymmunits))
+        #Checking if cellunits is None or integer. If none then "_cell_formula_units" not in CIF-file and then unitcell should already be filled
+        if cellunits is None:
+            print("Unitcell is full. Not applying symmetry operations")
+            fullcellcoords=asymmcoords
+        else:
+            # Create system coordinates for whole cell from asymmetric unit
+            print("Filling up unitcell using symmetry operations")
+            fullcellcoords, elems = fill_unitcell(cell_length, cell_angles, atomlabels, elems, asymmcoords, symmops)
+            numasymmunits = len(fullcellcoords) / len(asymmcoords)
+            print("Number of fractional coordinates in asymmetric unit:", len(asymmcoords))
+            print("Number of asymmetric units in whole cell:", int(numasymmunits))
     elif xtl_file is not None:
         blankline()
-        #Read XTL-file. Assuming full-cell coordinates present.
+        #Read XTL-file. Assuming full-cell coordinates presently
         #TODO: Does XTL file also support asymmetric units with symm information in header?
         print("Reading XTL file:", xtl_file)
         blankline()
         cell_length,cell_angles,elems,fullcellcoords=read_xtlfile(xtl_file)
     else:
         print("Neither CIF-file or XTL-file passed to molcrys. Exiting...")
-        exit()
+        exit(1)
 
     print("Cell parameters: {} {} {} {} {} {}".format(cell_length[0],cell_length[1], cell_length[2] , cell_angles[0], cell_angles[1], cell_angles[2]))
 
