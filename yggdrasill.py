@@ -1184,6 +1184,8 @@ class QMMMTheory:
                  embedding="Elstat", printlevel=3, nprocs=None):
         print(BC.WARNING,BC.BOLD,"------------Defining QM/MM object-------------", BC.END)
 
+        self.charges=[]
+
         self.QMChargesZeroed=False
         #Setting nprocs of object
         if nprocs==None:
@@ -1217,7 +1219,8 @@ class QMMMTheory:
             else:
                 print("Unrecognized MM theory for QMMMTheory")
                 exit(1)
-
+        else:
+            self.charges=atomcharges
         #Embedding type: mechanical, electrostatic etc.
         self.embedding=embedding
         print("Embedding:", self.embedding)
