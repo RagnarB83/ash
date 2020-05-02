@@ -479,8 +479,19 @@ def read_xtlfile(file):
                 grabcell=True
             if grabfract==True:
                 elems.append(line.split()[0])
-                coords.append([float(line.split()[1]), float(line.split()[2]),
-                               float(line.split()[3])])
+                x_coord = float(line.split()[1])
+                y_coord = float(line.split()[2])
+                z_coord = float(line.split()[3])
+                #XTL file from VESTA can contain coordinates outside unitcell
+                if x_coord < 0.0 or y_coord < 0.0 or z_coord < 0.0:
+                    print("Skipping fractline in XTL file (outside cell): {} {} {}".format(x_coord,y_coord,z_coord))
+                elif x_coord > 1.0 or y_coord > 1.0 or z_coord > 1.0:
+                    print("Skipping fractline in XTL file (outside cell): {} {} {}".format(x_coord,y_coord,z_coord))
+                else:
+                    coords.append([x_coord,y_coord,z_coord])
+
+                #coords.append([float(line.split()[1]), float(line.split()[2]),
+                #               float(line.split()[3])])
 
             if 'NAME         X           Y           Z' in line:
                 grabfract=True
