@@ -1181,7 +1181,7 @@ class PolEmbedTheory:
 #Required at init: qm_theory and qmatoms. Fragment not. Can come later
 class QMMMTheory:
     def __init__(self, qm_theory="", qmatoms="", fragment='', mm_theory="" , atomcharges=None,
-                 embedding="Elstat", printlevel=3, nprocs=None):
+                 embedding="Elstat", printlevel=2, nprocs=None):
         print(BC.WARNING,BC.BOLD,"------------Defining QM/MM object-------------", BC.END)
 
         self.charges=[]
