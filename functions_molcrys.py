@@ -551,12 +551,13 @@ def read_ciffile(file):
                     x_coord=float(line.split()[2].split('(')[0])
                     y_coord=float(line.split()[3].split('(')[0])
                     z_coord=float(line.split()[4].split('(')[0])
-                    if x_coord < 0.0 or y_coord < 0.0 or z_coord < 0.0:
-                        print("Skipping fractline: {} {} {}".format(x_coord,y_coord,z_coord))
-                    elif x_coord > 1.0 or y_coord > 1.0 or z_coord > 1.0:
-                        print("Skipping fractline: {} {} {}".format(x_coord,y_coord,z_coord))
-                    else:
-                        coords.append([x_coord,y_coord,z_coord])
+                    #if x_coord < 0.0 or y_coord < 0.0 or z_coord < 0.0:
+                    #    print("Skipping fractline: {} {} {}".format(x_coord,y_coord,z_coord))
+                    #elif x_coord > 1.0 or y_coord > 1.0 or z_coord > 1.0:
+                    #    print("Skipping fractline: {} {} {}".format(x_coord,y_coord,z_coord))
+                    #else:
+                    #    coords.append([x_coord,y_coord,z_coord])
+                    coords.append([x_coord, y_coord, z_coord])
             if 'data_' in line:
                 newmol = True
             if '_atom_site_fract_x' in line:
