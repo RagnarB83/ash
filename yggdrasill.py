@@ -394,6 +394,7 @@ class OpenMMTheory:
         #What type of forcefield files to read. Reads in different way.
         # #Always creates object we call self.forcefield that contains topology attribute
         if CHARMMfiles is True:
+            print("Reading CHARMM files")
             # Load CHARMM PSF files. Both CHARMM-style and XPLOR allowed I believe. Todo: Check
             self.psf = simtk.openmm.app.CharmmPsfFile(psffile)
             self.params = simtk.openmm.app.CharmmParameterSet(charmmtopfile, charmmprmfile)
@@ -425,6 +426,7 @@ class OpenMMTheory:
             self.system = self.prmtop.createSystem(nonbondedMethod=simtk.openmm.app.NoCutoff,
                                                 nonbondedCutoff=1 * simtk.openmm.unit.nanometer)
         else:
+            print("Reading OpenMM XML forcefield file")
             #This would be regular OpenMM Forcefield definition requiring XML file
             #Topology from PDBfile annoyingly enough
             pdb = simtk.openmm.app.PDBFile(pdbfile)
@@ -1251,15 +1253,17 @@ class QMMMTheory:
                 elif i in self.mmatoms:
                     self.hybridatomlabels.append('MM')
 
-            #print("atomcharges:", atomcharges)
-            # Charges defined for regions
-            #self.qmcharges=[atomcharges[i] for i in self.qmatoms]
-            self.qmcharges = [self.charges[i] for i in self.qmatoms]
-            print("self.qmcharges:", self.qmcharges)
-            self.mmcharges=[self.charges[i] for i in self.mmatoms]
-            #print("self.mmcharges:", self.mmcharges)
-
         if mm_theory != "":
+            print("Adding link atoms...")
+            #Link atoms. In an additive scheme we would always have link atoms, regardless of mechanical/electrostatic coupling
+            #Charge-shifting would be part of Elstat below
+
+            #Protocol:
+            #1. Recognize QM-MM boundary. Connectivity?? Get QM1 and MM1 coords pairs
+            #2. For QM-region coords, add linkatom at MM1 position initially. Then adjust distance
+            #3. Modify charges of MM atoms according to Chemshell scheme. Update both OpenMM and self.charges
+
+
             if self.embedding=="Elstat":
                 #Setting QM charges to 0 since electrostatic embedding
                 newcharges=[]
@@ -1282,6 +1286,13 @@ class QMMMTheory:
                     else:
                         print("MM atom {} ({}) charge: {}".format(i, self.elems[i], self.charges[i]))
             blankline()
+
+        #QM and MM charges are defined even though an MMtheory may not be present
+        # Charges defined for regions
+        self.qmcharges = [self.charges[i] for i in self.qmatoms]
+        print("self.qmcharges:", self.qmcharges)
+        self.mmcharges=[self.charges[i] for i in self.mmatoms]
+        #print("self.mmcharges:", self.mmcharges)
 
     def run(self, current_coords=None, elems=None, Grad=False, nprocs=None):
         CheckpointTime = time.time()
