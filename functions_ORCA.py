@@ -593,7 +593,7 @@ def chargemodel_select(chargemodel):
         extraline='\n%output Print[ P_Hirshfeld] 1 end'
     return extraline
 
-def grabatomcharges(chargemodel,outputfile):
+def grabatomcharges_ORCA(chargemodel,outputfile):
     grab=False
     charges=[]
     if chargemodel=="CHELPG":

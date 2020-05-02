@@ -885,7 +885,8 @@ def pointchargeupdate(fragment,fragmenttype,chargelist):
 
 #Calculate atomic charges for each fragment of Cluster. Assign charges to Cluster object via pointchargeupdate
 # TODO: In future also calculate LJ parameters here
-def gasfragcalc(fragmentobjects,Cluster,chargemodel,orcadir,orcasimpleinput,orcablocks,NUMPROC):
+#ORCA-specific function
+def gasfragcalc_ORCA(fragmentobjects,Cluster,chargemodel,orcadir,orcasimpleinput,orcablocks,NUMPROC):
     blankline()
     print("Now calculating atom charges for each fragment type in cluster")
     for fragmentobject in fragmentobjects:
@@ -913,7 +914,7 @@ def gasfragcalc(fragmentobjects,Cluster,chargemodel,orcadir,orcasimpleinput,orca
         ORCASPcalculation.run(nprocs=NUMPROC)
         #Grab atomic charges for fragment.
 
-        atomcharges=grabatomcharges(chargemodel,ORCASPcalculation.inputfilename+'.out')
+        atomcharges=grabatomcharges_ORCA(chargemodel,ORCASPcalculation.inputfilename+'.out')
         print("Elements:", gasfrag.elems)
         print("Gasloop atomcharges:", atomcharges)
         #Updating charges inside mainfrag/counterfrag object
@@ -927,6 +928,51 @@ def gasfragcalc(fragmentobjects,Cluster,chargemodel,orcadir,orcasimpleinput,orca
         ORCASPcalculation.cleanup()
         blankline()
 
+#Calculate atomic charges for each fragment of Cluster. Assign charges to Cluster object via pointchargeupdate
+# TODO: In future also calculate LJ parameters here
+def gasfragcalc_xTB(fragmentobjects,Cluster,chargemodel,xtbdir,xtbmethod,NUMPROC):
+    blankline()
+    print("Now calculating atom charges for each fragment type in cluster")
+    print("Using default xTB charges. Ignoring chargemodel selected")
+    for fragmentobject in fragmentobjects:
+        blankline()
+        print("Fragmentobject:", fragmentobject.Name)
+        #Charge-model info to add to inputfile
+        chargemodelline = chargemodel_select(chargemodel)
+
+        #Call Clusterfragment and have print/write/something out coords and elems for atoms in list [0,1,2,3 etc.]
+        atomlist=fragmentobject.clusterfraglist[0]
+        fragcoords,fragelems=Cluster.get_coords_for_atoms(atomlist)
+        write_xyzfile(fragelems, fragcoords, "fragment")
+        gasfrag=Fragment(coords=fragcoords,elems=fragelems)
+
+        print("Defined gasfrag:", gasfrag)
+        print(gasfrag.__dict__)
+        #Creating xTB theory object with fragment
+        xTBSPcalculation = xTBTheory(xtbdir=xtbdir, fragment=gasfrag, charge=fragmentobject.Charge,
+                                   mult=fragmentobject.Mult, xtbmethod=xtbmethod)
+
+        print("xTBSPcalculation:", xTBSPcalculation)
+        print(xTBSPcalculation.__dict__)
+        #Run xTB calculation with charge-model info
+        xTBSPcalculation.run(nprocs=NUMPROC)
+
+
+        #Grab atomic charges for fragment.
+
+        atomcharges=grabatomcharges_xtb()
+        print("Elements:", gasfrag.elems)
+        print("Gasloop atomcharges:", atomcharges)
+        #Updating charges inside mainfrag/counterfrag object
+        fragmentobject.add_charges(atomcharges)
+        #Assign pointcharges to each atom of MM cluster.
+        pointchargeupdate(Cluster,fragmentobject,atomcharges)
+        #Keep backup of xTB outputfiles. Todo:
+        #shutil.copy(xTBSPcalculation.inputfilename + '.out', fragmentobject.Name + '.out')
+        #shutil.copyfile(xTBSPcalculation.inputfilename + '.out', './SPloop-files/'+fragmentobject.Name+'-Gascalc' + '.out')
+        #Clean up xtb job. Todo:
+        #xTBSPcalculation.cleanup()
+        blankline()
 
 def rmsd_list(listA,listB):
     sumsq = 0.0

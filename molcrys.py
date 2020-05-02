@@ -26,10 +26,6 @@ def molcrys(cif_file=None, xtl_file=None, fragmentobjects=[], theory=None, numco
     #yggdrasill header now done in settings_yggdrasill.init()
     #print_yggdrasill_header()
     print(banner)
-    #Here assuming theory can only be ORCA for now
-    orcadir=theory.orcadir
-    orcablocks=theory.orcablocks
-    orcasimpleinput=theory.orcasimpleinput
 
     print("Fragment object defined:")
     for fragment in fragmentobjects:
@@ -152,7 +148,7 @@ def molcrys(cif_file=None, xtl_file=None, fragmentobjects=[], theory=None, numco
     #Cluster is now almost complete, only charges missing. Print info to file
     print(Cluster.print_system("Cluster-info-nocharges.ygg"))
 
-    # Create dirs to keep track of various files before ORCA calculations begin
+    # Create dirs to keep track of various files before QM calculations begin
     try:
         os.mkdir('SPloop-files')
     except:
@@ -161,8 +157,14 @@ def molcrys(cif_file=None, xtl_file=None, fragmentobjects=[], theory=None, numco
 
 
     # Calculate atom charges for each gas fragment. Updates atomcharges list inside Cluster fragment
-    gasfragcalc(fragmentobjects,Cluster,chargemodel,orcadir,orcasimpleinput,orcablocks,numcores)
-
+    if theory.__class__.__name__ == "ORCATheory":
+        gasfragcalc_ORCA(fragmentobjects,Cluster,chargemodel,theory.orcadir,theory.orcasimpleinput,theory.orcablocks,numcores)
+    elif theory.__class__.__name__ == "xTBTheory":
+        pass
+        gasfragcalc_xTB(fragmentobjects,Cluster,chargemodel,theory.xtbdir,theory.xtbmethod,numcores)
+    else:
+        print("Unsupported theory for charge-calculations in MolCrys. Options are: ORCATheory or xTBTheory")
+        exit(1)
     print_time_rel_and_tot(currtime, origtime, modulename="gasfragcalc")
     currtime=time.time()
     print("Atom charge assignments in Cluster done!")
@@ -225,14 +227,17 @@ def molcrys(cif_file=None, xtl_file=None, fragmentobjects=[], theory=None, numco
 
     # Charge-model info to add to inputfile
     chargemodelline = chargemodel_select(chargemodel)
-    # Creating ORCA theory object without fragment information.
+    # Creating QMtheory object without fragment information.
     # fragmentobjects[0] is always mainfrag
-    ORCAQMtheory = ORCATheory(orcadir=orcadir, charge=fragmentobjects[0].Charge, mult=fragmentobjects[0].Mult,
+    if theory.__class__.__name__ == "ORCATheory":
+        QMtheory = ORCATheory(orcadir=orcadir, charge=fragmentobjects[0].Charge, mult=fragmentobjects[0].Mult,
                               orcasimpleinput=orcasimpleinput,
                               orcablocks=orcablocks, extraline=chargemodelline)
-    print("ORCAQMtheory:", ORCAQMtheory)
-    print(ORCAQMtheory.__dict__)
+    elif theory.__class__.__name__ == "xTBTheory":
+        QMtheory = xTBTheory(xtbdir=xtbdir, charge=fragmentobjects[0].Charge, mult=fragmentobjects[0].Mult, xtbmethod=xtbmethod)
 
+    print("QMtheory:", QMtheory)
+    print(QMtheory.__dict__)
     # Defining QM region. Should be the mainfrag at approx origin
     Centralmainfrag = fragmentobjects[0].clusterfraglist[0]
     print("Centralmainfrag:", Centralmainfrag)
@@ -247,21 +252,25 @@ def molcrys(cif_file=None, xtl_file=None, fragmentobjects=[], theory=None, numco
         print_coords_for_atoms(Cluster.coords,Cluster.elems,Centralmainfrag)
 
         # Run ORCA QM/MM calculation with charge-model info
-        QMMM_SP_ORCAcalculation = QMMMTheory(fragment=Cluster, qm_theory=ORCAQMtheory, qmatoms=Centralmainfrag,
+        QMMM_SP_calculation = QMMMTheory(fragment=Cluster, qm_theory=QMtheory, qmatoms=Centralmainfrag,
                                              atomcharges=Cluster.atomcharges, embedding='Elstat')
-        QMMM_SP_ORCAcalculation.run(nprocs=numcores)
+        QMMM_SP_calculation.run(nprocs=numcores)
 
 
         #Grab atomic charges for fragment.
+        if theory.__class__.__name__ == "ORCATheory":
+            atomcharges = grabatomcharges_ORCA(chargemodel, QMtheory.inputfilename + '.out')
+            # Keep backup of ORCA outputfile in dir SPloop-files
+            shutil.copyfile('orca-input.out', './SPloop-files/mainfrag-SPloop' + str(SPLoopNum) + '.out')
+            shutil.copyfile('orca-input.pc', './SPloop-files/mainfrag-SPloop' + str(SPLoopNum) + '.pc')
+            blankline()
+        elif theory.__class__.__name__ == "xTBTheory":
+            atomcharges = grabatomcharges_xTB()
 
-        atomcharges = grabatomcharges(chargemodel, ORCAQMtheory.inputfilename + '.out')
         print("Elements:", [Cluster.elems[i] for i in Centralmainfrag ])
         print("atomcharges (SPloop {}) : {}".format(SPLoopNum,atomcharges))
 
-        # Keep backup of ORCA outputfile in dir SPloop-files
-        shutil.copyfile('orca-input.out', './SPloop-files/mainfrag-SPloop'+str(SPLoopNum)+'.out')
-        shutil.copyfile('orca-input.pc', './SPloop-files/mainfrag-SPloop'+str(SPLoopNum)+'.pc')
-        blankline()
+
         #Adding mainfrag charges to mainfrag--object
         fragmentobjects[0].add_charges(atomcharges)
 
