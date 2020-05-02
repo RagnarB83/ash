@@ -478,7 +478,6 @@ def read_xtlfile(file):
             if 'CELL' in line:
                 grabcell=True
             if grabfract==True:
-                elems.append(line.split()[0])
                 x_coord = float(line.split()[1])
                 y_coord = float(line.split()[2])
                 z_coord = float(line.split()[3])
@@ -488,6 +487,7 @@ def read_xtlfile(file):
                 elif x_coord > 1.0 or y_coord > 1.0 or z_coord > 1.0:
                     print("Skipping fractline in XTL file (outside cell): {} {} {}".format(x_coord,y_coord,z_coord))
                 else:
+                    elems.append(line.split()[0])
                     coords.append([x_coord,y_coord,z_coord])
 
                 #coords.append([float(line.split()[1]), float(line.split()[2]),
