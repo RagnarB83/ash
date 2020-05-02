@@ -2499,7 +2499,7 @@ class xTBTheory:
     def __init__(self, xtbdir=None, fragment=None, charge=None, mult=None, xtbmethod=None, runmode='inputfile', nprocs=1):
 
         if xtbmethod is None:
-            print("xTBTheory requires xtbnmethod keyword to be set"
+            print("xTBTheory requires xtbnmethod keyword to be set")
             exit(1)
 
         self.nprocs=nprocs
