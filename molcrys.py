@@ -46,7 +46,7 @@ def molcrys(cif_file=None, xtl_file=None, fragmentobjects=[], theory=None, numco
 
         #Checking if cellunits is None or integer. If none then "_cell_formula_units" not in CIF-file and then unitcell should already be filled
         if cellunits is None:
-            print("Unitcell is full. Not applying symmetry operations")
+            print("Unitcell is full (based on lack of cell_formula_units_Z line in CIF-file). Not applying symmetry operations")
             fullcellcoords=asymmcoords
         else:
             # Create system coordinates for whole cell from asymmetric unit
