@@ -230,11 +230,11 @@ def molcrys(cif_file=None, xtl_file=None, fragmentobjects=[], theory=None, numco
     # Creating QMtheory object without fragment information.
     # fragmentobjects[0] is always mainfrag
     if theory.__class__.__name__ == "ORCATheory":
-        QMtheory = ORCATheory(orcadir=orcadir, charge=fragmentobjects[0].Charge, mult=fragmentobjects[0].Mult,
-                              orcasimpleinput=orcasimpleinput,
-                              orcablocks=orcablocks, extraline=chargemodelline)
+        QMtheory = ORCATheory(orcadir=theory.orcadir, charge=fragmentobjects[0].Charge, mult=fragmentobjects[0].Mult,
+                              orcasimpleinput=theory.orcasimpleinput,
+                              orcablocks=theory.orcablocks, extraline=chargemodelline)
     elif theory.__class__.__name__ == "xTBTheory":
-        QMtheory = xTBTheory(xtbdir=xtbdir, charge=fragmentobjects[0].Charge, mult=fragmentobjects[0].Mult, xtbmethod=xtbmethod)
+        QMtheory = xTBTheory(xtbdir=theory.xtbdir, charge=fragmentobjects[0].Charge, mult=fragmentobjects[0].Mult, xtbmethod=theory.xtbmethod)
 
     print("QMtheory:", QMtheory)
     print(QMtheory.__dict__)
