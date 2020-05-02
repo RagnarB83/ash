@@ -42,7 +42,7 @@ def molcrys(cif_file=None, xtl_file=None, fragmentobjects=[], theory=None, numco
         #Read CIF-file
         print("Reading CIF file:", cif_file)
         blankline()
-        cell_length,cell_angles,atomlabels,elems,asymmcoords,symmops=read_ciffile(cif_file)
+        cell_length,cell_angles,atomlabels,elems,asymmcoords,symmops,cellunits=read_ciffile(cif_file)
 
         #Checking if cellunits is None or integer. If none then "_cell_formula_units" not in CIF-file and then unitcell should already be filled
         if cellunits is None:
