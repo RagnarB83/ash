@@ -960,7 +960,7 @@ def gasfragcalc_xTB(fragmentobjects,Cluster,chargemodel,xtbdir,xtbmethod,NUMPROC
 
         #Grab atomic charges for fragment.
 
-        atomcharges=grabatomcharges_xtb()
+        atomcharges=grabatomcharges_xTB()
         print("Elements:", gasfrag.elems)
         print("Gasloop atomcharges:", atomcharges)
         #Updating charges inside mainfrag/counterfrag object
