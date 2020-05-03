@@ -61,6 +61,7 @@ def readlinesfile(filename):
     f.close()
   except IOError:
     print('File %s does not exist!' % (filename))
+    exit(12)
     sys.exit(12)
   return out
 
