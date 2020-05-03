@@ -325,6 +325,13 @@ def molformulatolist(formulastring):
 
 #Read XYZ file
 def read_xyzfile(filename):
+    #Will accept atom-numbers as well as symbols
+    elements = ['H', 'He', 'Li', 'Be', 'B', 'C', 'N', 'O', 'F', 'Ne', 'Na', 'Mg', 'Al', 'Si', 'P', 'S', 'Cl', 'Ar', 'K',
+            'Ca', 'Sc', 'Ti', 'V', 'Cr', 'Mn', 'Fe', 'Co', 'Ni', 'Cu', 'Zn', 'Ga', 'Ge', 'As', 'Se', 'Br', 'Kr', 'Rb',
+            'Sr', 'Y', 'Zr', 'Nb', 'Mo', 'Tc', 'Ru', 'Rh', 'Pd', 'Ag', 'Cd', 'In', 'Sn', 'Sb', 'Te', 'I', 'Xe', 'Cs',
+            'Ba', 'La', 'Ce', 'Pr', 'Nd', 'Pm', 'Sm', 'Eu', 'Gd', 'Tb', 'Dy', 'Ho', 'Er', 'Tm', 'Yb', 'Lu', 'Hf', 'Ta',
+            'W', 'Re', 'Os', 'Ir', 'Pt', 'Au', 'Hg', 'Tl', 'Pb', 'Bi', 'Po', 'At', 'Rn', 'Fr', 'Ra', 'Ac', 'Th', 'Pa',
+            'U', 'Np', 'Pu', 'Am', 'Cm', 'Bk', 'Cf', 'Es', 'Fm', 'Md', 'No', 'Lr']
     print("Reading coordinates from XYZfile {} into fragment".format(filename))
     coords=[]
     elems=[]
@@ -334,8 +341,12 @@ def read_xyzfile(filename):
                 numatoms=int(line.split()[0])
             if count > 1:
                 print("line:", line)
-                elems.append(line.split()[0])
-                coords.append([float(line.split()[1]), float(line.split()[2]), float(line.split()[3])])
+                if len(line) >0.
+                    if isint(line.split()[0]) is True:
+                        elems.append(elements[int(line.split()[0])])
+                    else:
+                        elems.append(line.split()[0])
+                    coords.append([float(line.split()[1]), float(line.split()[2]), float(line.split()[3])])
     assert len(x_coords) == numatoms, "Number of coordinates does not match header line"
     return elems,coords
 
