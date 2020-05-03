@@ -1,5 +1,3 @@
-import sys
-
 #ANSI colors: http://jafrog.com/2013/11/23/colors-in-terminal.html
 class BC:
     HEADER = '\033[95m'
@@ -62,7 +60,6 @@ def readlinesfile(filename):
   except IOError:
     print('File %s does not exist!' % (filename))
     exit(12)
-    sys.exit(12)
   return out
 
 #Read list of integers from file. Output list of integers. Ignores blanklines, return chars, non-int characters
