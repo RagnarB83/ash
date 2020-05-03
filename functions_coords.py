@@ -341,7 +341,7 @@ def read_xyzfile(filename):
                 numatoms=int(line.split()[0])
             if count > 1:
                 print("line:", line)
-                if len(line) >0:
+                if len(line.strip()) >0:
                     if isint(line.split()[0]) is True:
                         elems.append(elements[int(line.split()[0])])
                     else:
