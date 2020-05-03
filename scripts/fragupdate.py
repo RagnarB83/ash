@@ -33,6 +33,7 @@ xyzfile="fragment.xyz"
 x_elems,x_coords=read_xyzfile(xyzfile)
 
 print("x_elems")
+print("x_coords")
 coordline=False
 elems=[]
 coords=[]
@@ -52,10 +53,13 @@ with open(fragfile) as file:
         if '-----------------------' in line:
             coordline=True
 
+
+print("fragfile_lines:", fragfile_lines)
 #Write modified Yggdrasill fragfile
 coordline=False
 with open("new-fragfile", 'w') as newfile:
     for line in fragfile_lines:
+
         if '=====' in line:
             coordline=False
         if coordline==True:
