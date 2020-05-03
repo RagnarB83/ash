@@ -22,7 +22,8 @@ except:
     print("No atomlist-file provided as 2nd argument. Attempting to read file named qmatoms from disk")
     qmatoms = read_intlist_from_file("qmatoms")
 
-
+#sort qmatoms list
+qmatoms.sort()
 
 print("qmatoms list: ", qmatoms)
 print("Grabbing QM-region coordinates...")
