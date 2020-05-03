@@ -1,3 +1,4 @@
+import sys
 
 #ANSI colors: http://jafrog.com/2013/11/23/colors-in-terminal.html
 class BC:
@@ -66,6 +67,7 @@ def readlinesfile(filename):
 #Read list of integers from file. Output list of integers. Ignores blanklines, return chars, non-int characters
 #offset option: shifts integers by a value (e.g. 1 or -1)
 def read_intlist_from_file(file,offset=0):
+
     list=[]
     lines=readlinesfile(file)
     for line in lines:
