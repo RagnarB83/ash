@@ -45,26 +45,24 @@ with open(fragfile) as file:
 
 #Write modified Yggdrasill fragfile
 coordline=False
-with open("new-fragfile", 'w') as newfile:
+with open(fragfile, 'w') as newfile:
     for line in fragfile_lines:
         if '=====' in line:
             coordline=False
         if coordline==True:
             if int(line.split()[0]) in qmatoms:
-                print("int(line.split()[0]):", int(line.split()[0]))
-                print("line:", line)
+                #print("int(line.split()[0]):", int(line.split()[0]))
+                #print("line:", line)
                 at=int(line.split()[0])
                 el=line.split()[1]
                 charge=float(line.split()[5])
                 label=int(line.split()[6])
                 atomtype=line.split()[7]
                 newcoords=xyz_coords.pop(0)
-                print("newcoords:", newcoords)
+                #print("newcoords:", newcoords)
                 line = "{:>6} {:>6}  {:12.6f}  {:12.6f}  {:12.6f}  {:12.6f} {:12d} {:>21}\n".format(at, el, newcoords[0],
                                                                                                     newcoords[1], newcoords[2],
                                                                                                     charge, label, atomtype)
-                print("new line:", line)
-
         if '-----------------------' in line:
             coordline=True
 
