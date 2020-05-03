@@ -21,9 +21,9 @@ except:
     try:
         qmatoms = read_intlist_from_file("qmatoms")
         print(qmatoms)
-    except:
-        print("Found no file qmatoms on disk")
-        exit(1)
+    #except:
+    #    print("Found no file qmatoms on disk")
+    #    exit(1)
 
 print("qmatoms list:", qmatoms)
 
