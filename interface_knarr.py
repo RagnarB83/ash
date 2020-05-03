@@ -278,6 +278,9 @@ def NEB(reactant=None, product=None, theory=None, images=None, interpolation=Non
     #ActiveRegion feature
     if ActiveRegion==True:
         print("Active Region option Active. Passing only active-region coordinates to Knarr.")
+        if actatoms is None:
+            print("add actatoms argument to NEB for ActiveRegion True")
+            exit(1)
         print("Number of active atoms:", len(actatoms))
         R_actcoords, R_actelems = reactant.get_coords_for_atoms(actatoms)
         P_actcoords, P_actelems = product.get_coords_for_atoms(actatoms)
