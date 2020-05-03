@@ -1,6 +1,6 @@
 import sys
-import functions_general
-import functions_coords
+from functions_general import read_intlist_from_file
+from functions_coords import write_xyzfile
 
 #Standalone fragment-editing script for Yggdrasill
 
