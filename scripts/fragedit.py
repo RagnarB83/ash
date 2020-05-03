@@ -1,3 +1,5 @@
+#!/bin/env python3
+
 import sys
 from functions_general import read_intlist_from_file
 from functions_coords import write_xyzfile
