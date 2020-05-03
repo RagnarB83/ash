@@ -7,15 +7,22 @@ import functions_coords
 #Reads in Yggdrasill fragment file and qmatoms and output XYZ coordinate file that can be visualized in e.g. Chemcract and edited
 
 #Fragfile is always first argument
-fragfile=sys.argv[1]
-
+try:
+    fragfile=sys.argv[1]
+except:
+    print("Please provide an Yggdrasill fragment file as argument")
+    exit(1)
 #Try to process a qmatoms file if provided
 try:
     qmatoms_file = sys.argv[2]
     read_intlist_from_file(qmatoms_file)
 except:
     print("No atomlist-file provided as 2nd argument. Attempting to read file named qmatoms from disk")
-    qmatoms = read_intlist_from_file("qmatoms")
+    try:
+        qmatoms = read_intlist_from_file("qmatoms")
+    except:
+        print("Found no file qmatoms on disk")
+        exit(1)
 
 print("qmatoms list:", qmatoms)
 
