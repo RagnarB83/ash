@@ -32,6 +32,7 @@ print("qmatoms:", qmatoms)
 xyzfile="fragment.xyz"
 x_elems,x_coords=read_xyzfile(xyzfile)
 
+print("x_elems")
 coordline=False
 elems=[]
 coords=[]
