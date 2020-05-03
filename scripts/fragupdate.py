@@ -26,7 +26,7 @@ except:
 
 #sort qmatoms list
 qmatoms.sort()
-
+print("qmatoms:", qmatoms)
 
 # Read modified XYZfile
 xyzfile="fragment.xyz"
