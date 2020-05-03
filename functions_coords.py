@@ -345,7 +345,7 @@ def read_xyzfile(filename):
                     print("here")
                     if isint(line.split()[0]) is True:
                         print("h. line:", line)
-                        elems.append(elements[int(line.split()[0])])
+                        elems.append(elements[int(line.split()[0])-1])
                     else:
                         print("h2. line:", line)
                         elems.append(line.split()[0])
