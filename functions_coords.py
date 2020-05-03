@@ -340,20 +340,14 @@ def read_xyzfile(filename):
             if count == 0:
                 numatoms=int(line.split()[0])
             if count > 1:
-                print("line:", line)
                 if len(line.strip()) > 0:
-                    print("here")
                     if isint(line.split()[0]) is True:
-                        print("h. line:", line)
                         elems.append(elements[int(line.split()[0])-1])
                     else:
-                        print("h2. line:", line)
                         elems.append(line.split()[0])
                     coords.append([float(line.split()[1]), float(line.split()[2]), float(line.split()[3])])
     assert len(coords) == numatoms, "Number of coordinates does not match header line"
     assert len(coords) == len(elems), "Number of coordinates does not match elements."
-    print("elems", elems)
-    print("coords:", coords)
     return elems,coords
 
 
