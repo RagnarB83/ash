@@ -30,7 +30,7 @@ qmatoms.sort()
 
 # Read modified XYZfile
 xyzfile="fragment.xyz"
-x_elems,x_coords=read_xyz(xyzfile)
+x_elems,x_coords=read_xyzfile(xyzfile)
 
 coordline=False
 elems=[]
