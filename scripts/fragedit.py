@@ -25,7 +25,7 @@ except:
 
 
 print("qmatoms list: ", qmatoms)
-
+print("Grabbing QM-region coordinates...")
 coordline=False
 elems=[]
 coords=[]
