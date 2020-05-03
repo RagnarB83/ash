@@ -20,11 +20,9 @@ except:
     print("No atomlist-file provided as 2nd argument. Attempting to read file named qmatoms from disk")
     qmatoms = read_intlist_from_file("qmatoms")
 
-#except:
-#    print("Found no file qmatoms on disk")
-#    exit(1)
 
-print("qmatoms list:", qmatoms)
+
+print("qmatoms list: ", qmatoms)
 
 coordline=False
 elems=[]
@@ -34,7 +32,6 @@ with open(fragfile) as file:
         if '=====' in line:
             coordline=False
         if coordline==True:
-            print("line:", line)
             if int(line.split()[0]) in qmatoms:
                 el=line.split()[1]
                 c_x=float(line.split()[2]);c_y=float(line.split()[3]);c_z=float(line.split()[4])
@@ -43,4 +40,4 @@ with open(fragfile) as file:
         if '-----------------------' in line:
             coordline=True
 
-write_xyzfile(elems,coords,"fragment.xyz")
+write_xyzfile(elems,coords,"fragment")
