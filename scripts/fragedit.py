@@ -18,9 +18,9 @@ try:
     read_intlist_from_file(qmatoms_file)
 except:
     print("No atomlist-file provided as 2nd argument. Attempting to read file named qmatoms from disk")
-    try:
-        qmatoms = read_intlist_from_file("qmatoms")
-        print(qmatoms)
+    qmatoms = read_intlist_from_file("qmatoms")
+    print(qmatoms)
+
 #except:
 #    print("Found no file qmatoms on disk")
 #    exit(1)
