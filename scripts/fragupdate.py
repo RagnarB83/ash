@@ -42,16 +42,7 @@ fragfile_lines=[]
 #Read Yggdrasill fragfile
 with open(fragfile) as file:
     for line in file:
-        if '=====' in line:
-            coordline=False
-        if coordline==True:
-            if int(line.split()[0]) in qmatoms:
-                el=line.split()[1]
-                c_x=float(line.split()[2]);c_y=float(line.split()[3]);c_z=float(line.split()[4])
-                elems.append(el)
-                coords.append([c_x, c_y,c_z])
-        if '-----------------------' in line:
-            coordline=True
+        fragfile_lines.append(line)
 
 
 print("fragfile_lines:", fragfile_lines)
