@@ -221,26 +221,26 @@ class KnarrCalculator:
                 print("Image last energy", self.full_fragment_product.energy)
                 #print("self.full_fragment_reactant.elems:", self.full_fragment_reactant.elems)
                 #print("self.full_fragment_reactant:", self.full_fragment_reactant)
-                for el, cor in zip(self.full_fragment_reactant.elems, self.full_fragment_reactant.coords):
-                    trajfile.write(el + "  " + str(cor[0]) + " " + str(cor[1]) + " " + str(cor[2]) + "\n")
+                for el, corr in zip(self.full_fragment_reactant.elems, self.full_fragment_reactant.coords):
+                    trajfile.write(el + "  " + str(corr[0]) + " " + str(corr[1]) + " " + str(corr[2]) + "\n")
                 #All active images in this NEB iteration:
                 print("list_to_compute:", list_to_compute)
                 print("full_coords_images_list:", full_coords_images_list)
                 print(len(list_to_compute))
                 print(len(full_coords_images_list))
-                for imageid,fc in zip(list_to_compute,full_coords_images_list):
+                for imageid,fc in zip(list(list_to_compute),full_coords_images_list):
                     print("imageid:", imageid)
-                    print("fc:", fc)
+                    #print("fc:", fc)
                     trajfile.write(str(self.full_fragment_reactant.numatoms) + "\n")
                     trajfile.write("Image {}. Energy: {} \n".format(imageid, E[imageid][0]))
 
-                    for el, cor in zip(self.full_fragment_reactant.elems, fc):
-                        trajfile.write(el + "  " + str(cor[0]) + " " + str(cor[1]) + " " + str(cor[2]) + "\n")
+                    for el, cord in zip(self.full_fragment_reactant.elems, fc):
+                        trajfile.write(el + "  " + str(cord[0]) + " " + str(cord[1]) + " " + str(cord[2]) + "\n")
                 #Writing product image
                 trajfile.write(str(self.full_fragment_product.numatoms) + "\n")
                 trajfile.write("Image {} Energy: {} \n".format(self.numimages-1,path.GetEnergy()[-1][0]))
-                for el, cor in zip(self.full_fragment_product.elems, self.full_fragment_product.coords):
-                    trajfile.write(el + "  " + str(cor[0]) + " " + str(cor[1]) + " " + str(cor[2]) + "\n")
+                for el, corp in zip(self.full_fragment_product.elems, self.full_fragment_product.coords):
+                    trajfile.write(el + "  " + str(corp[0]) + " " + str(corp[1]) + " " + str(corp[2]) + "\n")
 
 
 #Yggdrasill NEB function. Calls Knarr
