@@ -226,7 +226,7 @@ class KnarrCalculator:
                 #Writing product image
                 trajfile.write(str(self.full_fragment_product.numatoms) + "\n")
                 trajfile.write("Image X Energy: {} \n".format(path.GetEnergy()[-1]))
-                for el, cor in zip(self.full_fragment_product.elems, self.full_fragment_product):
+                for el, cor in zip(self.full_fragment_product.elems, self.full_fragment_product.coords):
                     trajfile.write(el + "  " + str(cor[0]) + " " + str(cor[1]) + " " + str(cor[2]) + "\n")
 
 
