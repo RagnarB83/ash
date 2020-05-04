@@ -95,6 +95,12 @@ def Knarr_pathgenerator(nebsettings,path_parameters,react,prod):
             path.SetInsertionConfig(insertion.GetCoords())
     else:
         prod = None
+    print("path iscon", path.IsConstrained())
+    path.
+    print("path iscon", path.IsConstrained())
+    print("path iscon", path.IsTwoDee())
+    path.twodee = True
+    print("path iscon", path.IsTwoDee())
     DoPathInterpolation(path, path_parameters)
 
 #Convert coordinates list to Knarr-type array
