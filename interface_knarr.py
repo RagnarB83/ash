@@ -386,7 +386,7 @@ def NEB(reactant=None, product=None, theory=None, images=None, interpolation=Non
             full_coords = reactant.coords
             # Replacing act-region coordinates with coords from currcoords
             for i, c in enumerate(saddle_coords):
-                if i in self.actatoms:
+                if i in actatoms:
                     # Silly. Pop-ing first coord from currcoords until done
                     curr_c, saddle_coords = saddle_coords[0], saddle_coords[1:]
                     full_coords[i] = curr_c
