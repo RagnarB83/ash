@@ -412,6 +412,9 @@ class Atom(object):
         return
 
     def SetConstraints(self, x):
+        print("x:", x)
+        print("len x", len(x))
+        print("self.ndim:", self.ndim)
         if len(x) != self.ndim:
             raise RuntimeError("Dimension mismatch")
 
