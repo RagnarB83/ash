@@ -213,7 +213,9 @@ class KnarrCalculator:
                 #All active images in this NEB iteration:
                 print("list_to_compute:", list_to_compute)
                 print("full_coords_images_list:", full_coords_images_list)
-                for imageid,fc in list_to_compute,full_coords_images_list:
+                print(len(list_to_compute))
+                print(len(full_coords_images_list))
+                for imageid,fc in zip(list_to_compute,full_coords_images_list):
                     print("imageid:", imageid)
                     print("fc:", fc)
                     trajfile.write(str(self.full_fragment_reactant.numatoms) + "\n")
