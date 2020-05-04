@@ -120,7 +120,7 @@ class KnarrCalculator:
         self.ISCION=False
         self.ActiveRegion=ActiveRegion
         self.actatoms=actatoms
-        print("self.actatoms:", actatoms)
+        print("self.actatoms:", self.actatoms)
     def Compute(self,path, list_to_compute=None):
         if list_to_compute is None:
             list_to_compute=[]
@@ -149,7 +149,7 @@ class KnarrCalculator:
                     # Defining full_coords as original coords temporarily
                     full_coords = self.full_fragment_reactant.coords
                     # Replacing act-region coordinates with coords from currcoords
-                    print("self.actatoms:", actatoms)
+                    print("self.actatoms:", self.actatoms)
                     for i, c in enumerate(full_coords):
                         if i in self.actatoms:
                             # Silly. Pop-ing first coord from currcoords until done
