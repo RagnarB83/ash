@@ -71,6 +71,8 @@ def Knarr_pathgenerator(nebsettings,path_parameters,react,prod):
         raise TypeError("Either choose single or double ended path generation")
 
     nim = path_parameters["NIMAGES"]
+
+    print("react iscon", react.IsConstrained())
     path = InitializePathObject(nim, react)
 
     print("path iscon", path.IsConstrained())
