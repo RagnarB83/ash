@@ -216,6 +216,9 @@ class KnarrCalculator:
                 #Writing reactant image
                 trajfile.write(str(self.full_fragment_reactant.numatoms) + "\n")
                 trajfile.write("Image 0. Energy: {} \n".format(path.GetEnergy()[0][0]))
+                print("Inside write_Full_MEP_Path")
+                print("Image 0 energy", self.full_fragment_reactant.energy)
+                print("Image last energy", self.full_fragment_product.energy)
                 #print("self.full_fragment_reactant.elems:", self.full_fragment_reactant.elems)
                 #print("self.full_fragment_reactant:", self.full_fragment_reactant)
                 for el, cor in zip(self.full_fragment_reactant.elems, self.full_fragment_reactant.coords):
