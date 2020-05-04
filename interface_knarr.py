@@ -113,7 +113,8 @@ def coords_to_Knarr(coords):
 #Wrapper around Yggdrasill object
 class KnarrCalculator:
     def __init__(self,theory,fragment1,fragment2,runmode='serial',printlevel=None, ActiveRegion=False, actatoms=None,
-                 full_fragment_reactant=None, full_fragment_product=None ):
+                 full_fragment_reactant=None, full_fragment_product=None, numimages=None ):
+        self.numimages=numimages
         self.printlevel=printlevel
         self.forcecalls=0
         self.iterations=0
@@ -228,13 +229,13 @@ class KnarrCalculator:
                     print("imageid:", imageid)
                     print("fc:", fc)
                     trajfile.write(str(self.full_fragment_reactant.numatoms) + "\n")
-                    trajfile.write("Image {}. Energy: {} \n".format(imageid, E[imageid]))
+                    trajfile.write("Image {}. Energy: {} \n".format(imageid, E[imageid][0]))
 
                     for el, cor in zip(self.full_fragment_reactant.elems, fc):
                         trajfile.write(el + "  " + str(cor[0]) + " " + str(cor[1]) + " " + str(cor[2]) + "\n")
                 #Writing product image
                 trajfile.write(str(self.full_fragment_product.numatoms) + "\n")
-                trajfile.write("Image X Energy: {} \n".format(path.GetEnergy()[-1]))
+                trajfile.write("Image {} Energy: {} \n".format(self.numimages-1,path.GetEnergy()[-1][0]))
                 for el, cor in zip(self.full_fragment_product.elems, self.full_fragment_product.coords):
                     trajfile.write(el + "  " + str(cor[0]) + " " + str(cor[1]) + " " + str(cor[2]) + "\n")
 
@@ -317,7 +318,8 @@ def NEB(reactant=None, product=None, theory=None, images=None, interpolation=Non
         print("P_actelems:", P_actelems)
         #Create Knarr calculator from Yggdrasill theory.
         calculator = KnarrCalculator(theory, fragment1=new_reactant, fragment2=new_product, runmode=runmode,
-                                     ActiveRegion=True, actatoms=actatoms, full_fragment_reactant=reactant, full_fragment_product=product )
+                                     ActiveRegion=True, actatoms=actatoms, full_fragment_reactant=reactant,
+                                     full_fragment_product=product,numimages=images )
 
         # Symbols list for Knarr
         Knarr_symbols = [y for y in new_reactant.elems for i in range(3)]
@@ -337,7 +339,8 @@ def NEB(reactant=None, product=None, theory=None, images=None, interpolation=Non
 
     else:
         #Create Knarr calculator from Yggdrasill theory
-        calculator = KnarrCalculator(theory, fragment1=reactant, fragment2=product, ActiveRegion=False, runmode=runmode)
+        calculator = KnarrCalculator(theory, fragment1=reactant, fragment2=product,
+                                     ActiveRegion=False, runmode=runmode,numimages=images)
 
         # Symbols list for Knarr
         Knarr_symbols = [y for y in reactant.elems for i in range(3)]
