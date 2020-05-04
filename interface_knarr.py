@@ -275,6 +275,11 @@ def NEB(reactant=None, product=None, theory=None, images=None, interpolation=Non
     if tol_turn_on_ci is not None:
         neb_settings["TOL_TURN_ON_CI"] = tol_turn_on_ci
 
+    if ActiveRegion is True:
+        print("Setting RMSD-alignment to false for QM/MM Active Region")
+        neb_settings["MIN_RMSD"] = False
+
+
     print("Active Knarr settings:")
     blankline()
 
