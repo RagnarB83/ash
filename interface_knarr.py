@@ -96,7 +96,6 @@ def Knarr_pathgenerator(nebsettings,path_parameters,react,prod):
     else:
         prod = None
     print("path iscon", path.IsConstrained())
-    path.
     print("path iscon", path.IsConstrained())
     print("path iscon", path.IsTwoDee())
     path.twodee = True
