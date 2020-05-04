@@ -322,6 +322,10 @@ def NEB(reactant=None, product=None, theory=None, images=None, interpolation=Non
                                     ndof=numatoms * 3, constraints=constr, pbc=False)
         prod = KNARRatom.atom.Atom(coords=coords_to_Knarr(new_product.coords), symbols=Knarr_symbols, ndim=numatoms * 3,
                                    ndof=numatoms * 3, constraints=constr, pbc=False)
+
+        print("react is constrain", react.IsConstrained())
+        print("prod is constrain", prod.IsConstrained())
+
     else:
         #Create Knarr calculator from Yggdrasill theory
         calculator = KnarrCalculator(theory, fragment1=reactant, fragment2=product, ActiveRegion=False, runmode=runmode)
@@ -343,6 +347,8 @@ def NEB(reactant=None, product=None, theory=None, images=None, interpolation=Non
     rp, ndim, nim, symb = ReadTraj("knarr_path.xyz")
     path = InitializePathObject(nim, react)
     path.SetCoords(rp)
+
+    print("path IsConstrained", path.IsConstrained())
 
     #Now starting NEB from path object, using neb_settings and optimizer settings
     DoNEB(path, calculator, neb_settings, optimizer)
