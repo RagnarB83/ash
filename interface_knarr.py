@@ -211,9 +211,14 @@ class KnarrCalculator:
                 for el, cor in zip(self.full_fragment_reactant.elems, self.full_fragment_reactant.coords):
                     trajfile.write(el + "  " + str(cor[0]) + " " + str(cor[1]) + " " + str(cor[2]) + "\n")
                 #All active images in this NEB iteration:
+                print("list_to_compute:", list_to_compute)
+                print("full_coords_images_list:", full_coords_images_list)
                 for imageid,fc in list_to_compute,full_coords_images_list:
+                    print("imageid:", imageid)
+                    print("fc:", fc)
                     trajfile.write(str(self.full_fragment_reactant.numatoms) + "\n")
                     trajfile.write("Image {}. Energy: {} \n".format(imageid, E[imageid]))
+
                     for el, cor in zip(self.full_fragment_reactant.elems, fc):
                         trajfile.write(el + "  " + str(cor[0]) + " " + str(cor[1]) + " " + str(cor[2]) + "\n")
                 #Writing product image
