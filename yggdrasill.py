@@ -816,7 +816,7 @@ class NonBondedTheory:
     def update_charges(self,charges):
         print("Updating charges.")
         self.atom_charges = charges
-        print("Charges are now:", charges)
+        #print("Charges are now:", charges)
     #Provide specific coordinates (MM region) and charges (MM region) upon run
     def run(self, full_coords=None, mm_coords=None, charges=None, connectivity=None, Coulomb=True, Grad=True, qmatoms=None):
 

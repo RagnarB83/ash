@@ -73,6 +73,8 @@ def Knarr_pathgenerator(nebsettings,path_parameters,react,prod):
     nim = path_parameters["NIMAGES"]
     path = InitializePathObject(nim, react)
 
+    print("path iscon", path.IsConstrained())
+
     if prod_is_needed:
         # Check product
         if react.GetNDim() != prod.GetNDim():
