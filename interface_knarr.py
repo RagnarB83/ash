@@ -25,11 +25,12 @@ import KNARRatom.atom
 
 #Knarr settings for path-generation, NEB and optimizer
 #These will be the reasonable defaults that can be overridden by special keywords in Yggdrasill NEB object
-#RB modified springconst to 5
+#RB modified springconst from 10 to 5
+# Changed "IDPP_RMS_F": 0.005    and "IDPP_MAX_F": 0.01
 path_parameters = {"METHOD": "DOUBLE", "INTERPOLATION": "IDPP", "NIMAGES": 6,
               "INSERT_CONFIG": None, "IDPP_MAX_ITER": 100,
               "IDPP_SPRINGCONST": 5.0, "IDPP_TIME_STEP": 0.01,
-              "IDPP_MAX_MOVE": 0.1, "IDPP_MAX_F": 0.01, "IDPP_RMS_F": 0.005}
+              "IDPP_MAX_MOVE": 0.1, "IDPP_MAX_F": 0.03, "IDPP_RMS_F": 0.005}
 
 neb_settings = {"PATH": "neb.xyz",
               "CLIMBING": True,
