@@ -2176,6 +2176,7 @@ class Fragment:
     def update_attributes(self):
         self.nuccharge = nucchargelist(self.elems)
         self.numatoms = len(self.coords)
+        print("Fragment numatoms:", self.numatoms)
         self.atomlist = list(range(0, self.numatoms))
         #Unnecessary alias ? Todo: Delete
         self.allatoms = self.atomlist
