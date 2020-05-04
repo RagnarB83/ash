@@ -120,6 +120,7 @@ class KnarrCalculator:
         self.ISCION=False
         self.ActiveRegion=ActiveRegion
         self.actatoms=actatoms
+        print("self.actatoms:", actatoms)
     def Compute(self,path, list_to_compute=None):
         if list_to_compute is None:
             list_to_compute=[]
@@ -148,6 +149,7 @@ class KnarrCalculator:
                     # Defining full_coords as original coords temporarily
                     full_coords = self.full_fragment_reactant.coords
                     # Replacing act-region coordinates with coords from currcoords
+                    print("self.actatoms:", actatoms)
                     for i, c in enumerate(full_coords):
                         if i in self.actatoms:
                             # Silly. Pop-ing first coord from currcoords until done
@@ -292,7 +294,7 @@ def NEB(reactant=None, product=None, theory=None, images=None, interpolation=Non
         print("P_actelems:", P_actelems)
         #Create Knarr calculator from Yggdrasill theory.
         calculator = KnarrCalculator(theory, fragment1=new_reactant, fragment2=new_product, runmode=runmode,
-                                     ActiveRegion=True, full_fragment_reactant=reactant, full_fragment_product=product )
+                                     ActiveRegion=True, actatoms=actatoms, full_fragment_reactant=reactant, full_fragment_product=product )
 
         # Symbols list for Knarr
         Knarr_symbols = [y for y in new_reactant.elems for i in range(3)]
