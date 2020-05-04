@@ -215,7 +215,7 @@ class KnarrCalculator:
                 #Todo: This will fail if free_end=True
                 #Writing reactant image
                 trajfile.write(str(self.full_fragment_reactant.numatoms) + "\n")
-                trajfile.write("Image 0. Energy: {} \n".format(path.GetEnergy()[0]))
+                trajfile.write("Image 0. Energy: {} \n".format(path.GetEnergy()[0][0]))
                 #print("self.full_fragment_reactant.elems:", self.full_fragment_reactant.elems)
                 #print("self.full_fragment_reactant:", self.full_fragment_reactant)
                 for el, cor in zip(self.full_fragment_reactant.elems, self.full_fragment_reactant.coords):
