@@ -310,6 +310,7 @@ def DoNEB(path, calculator, neb, optimizer, second_run=False):
                 do_reparam = False
 
         if min_rmsd and not path.IsConstrained() and not path.IsTwoDee():
+            print("RB here. Calling path.MinRMSD")
             path.MinRMSD()
 
         # =======================================================

@@ -43,6 +43,7 @@ class Atom(object):
     # ==================================================================
 
     def TranslateToCenter(self):
+        print("RB. Calling TranslateToCenter")
         center = self.GetCenter()
         for i in range(self.GetNDim()):
             self.coords[i] -= center[0]
@@ -51,6 +52,7 @@ class Atom(object):
         return
 
     def Rotate(self, target):
+        print("RB. Calling Rotate")
         from KNARRatom.utilities import MinimizeRotation
         if self.IsChain():
             raise RuntimeError("Rotate method can not be used on a chain")
