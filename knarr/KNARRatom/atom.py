@@ -396,6 +396,8 @@ class Atom(object):
         return
 
     def SetSymbols(self, symbols):
+        print("symbols:", symbols)
+        print("self.ndim:", self.ndim)
         if len(symbols) != self.ndim:
             raise RuntimeError("Dimension mismatch in SetSymbols")
 

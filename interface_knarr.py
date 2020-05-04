@@ -286,13 +286,15 @@ def NEB(reactant=None, product=None, theory=None, images=None, interpolation=Non
         P_actcoords, P_actelems = product.get_coords_for_atoms(actatoms)
         new_reactant = Fragment(coords=R_actcoords, elems=R_actelems)
         new_product = Fragment(coords=P_actcoords, elems=P_actelems)
+        print("R_actelems:", R_actelems)
+        print("P_actelems:", P_actelems)
         #Create Knarr calculator from Yggdrasill theory.
         calculator = KnarrCalculator(theory, fragment1=new_reactant, fragment2=new_product, runmode=runmode,
                                      ActiveRegion=True, full_fragment_reactant=reactant, full_fragment_product=product )
 
         # Symbols list for Knarr
         Knarr_symbols = [y for y in new_reactant.elems for i in range(3)]
-
+        print("Knarr_symbols:", Knarr_symbols)
         # Create KNARR Atom objects. Used in path generation
         react = KNARRatom.atom.Atom(coords=coords_to_Knarr(new_reactant.coords), symbols=Knarr_symbols, ndim=numatoms * 3,
                                     ndof=numatoms * 3, constraints=constr, pbc=False)
