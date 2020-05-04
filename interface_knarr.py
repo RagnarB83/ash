@@ -295,8 +295,9 @@ def NEB(reactant=None, product=None, theory=None, images=None, interpolation=Non
         # Symbols list for Knarr
         Knarr_symbols = [y for y in new_reactant.elems for i in range(3)]
         print("Knarr_symbols:", Knarr_symbols)
-        # New numatoms
+        # New numatoms and constraints for active-region system
         numatoms = new_reactant.numatoms
+        constr = np.zeros(shape=(numatoms * 3, 1))
         print("numatoms:", numatoms)
         # Create KNARR Atom objects. Used in path generation
         react = KNARRatom.atom.Atom(coords=coords_to_Knarr(new_reactant.coords), symbols=Knarr_symbols, ndim=numatoms * 3,
