@@ -27,7 +27,7 @@ import KNARRatom.atom
 #These will be the reasonable defaults that can be overridden by special keywords in Yggdrasill NEB object
 path_parameters = {"METHOD": "DOUBLE", "INTERPOLATION": "IDPP", "NIMAGES": 6,
               "INSERT_CONFIG": None, "IDPP_MAX_ITER": 100,
-              "IDPP_SPRINGCONST": 10.0, "IDPP_TIME_STEP": 0.01,
+              "IDPP_SPRINGCONST": 5.0, "IDPP_TIME_STEP": 0.01,
               "IDPP_MAX_MOVE": 0.1, "IDPP_MAX_F": 0.01, "IDPP_RMS_F": 0.005}
 
 neb_settings = {"PATH": "neb.xyz",
