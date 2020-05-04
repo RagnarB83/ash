@@ -137,6 +137,7 @@ class KnarrCalculator:
 
 
         full_coords_images_list=[]
+        full_coords_images_dict={}
         #
         self.iterations+=1
         #print("self.iterations:", self.iterations)
@@ -173,6 +174,7 @@ class KnarrCalculator:
                     Grad_image = np.array([Grad_image_full[i] for i in self.actatoms])
                     #List of all image-geometries (full coords)
                     full_coords_images_list.append(full_current_image_coords)
+                    full_coords_images_dict[image_number] = full_current_image_coords
 
                 else:
                     En_image, Grad_image = self.theory.run(current_coords=image_coords, elems=self.fragment1.elems, Grad=True)
@@ -234,7 +236,8 @@ class KnarrCalculator:
                     trajfile.write(str(self.full_fragment_reactant.numatoms) + "\n")
                     trajfile.write("Image {}. Energy: {} \n".format(imageid, E[imageid][0]))
 
-                    for el, cord in zip(self.full_fragment_reactant.elems, fc):
+                    #for el, cord in zip(self.full_fragment_reactant.elems, fc):
+                    for el, cord in zip(self.full_fragment_reactant.elems, full_coords_images_dict[imageid]):
                         trajfile.write(el + "  " + str(cord[0]) + " " + str(cord[1]) + " " + str(cord[2]) + "\n")
                 #Writing product image
                 trajfile.write(str(self.full_fragment_product.numatoms) + "\n")
@@ -416,3 +419,4 @@ def NEB(reactant=None, product=None, theory=None, images=None, interpolation=Non
     print('KNARR successfully terminated')
     blankline()
     print("Please consider citing the following paper if you found the NEB module (from Knarr) useful: To be added")
+    print("full_coords_images_dict:", full_coords_images_dict)
