@@ -97,9 +97,9 @@ def Knarr_pathgenerator(nebsettings,path_parameters,react,prod):
         prod = None
     print("path iscon", path.IsConstrained())
     print("path iscon", path.IsConstrained())
-    print("path iscon", path.IsTwoDee())
+    print("path istwodee", path.IsTwoDee())
     path.twodee = True
-    print("path iscon", path.IsTwoDee())
+    print("path istwodee", path.IsTwoDee())
     DoPathInterpolation(path, path_parameters)
 
 #Convert coordinates list to Knarr-type array
@@ -210,13 +210,13 @@ class KnarrCalculator:
     def write_Full_MEP_Path(self, path, list_to_compute, full_coords_images_list, E):
         #Write out MEP for full coords in each iteration. Knarr writes out Active Part.
         if self.ActiveRegion is True:
-            with open("knarr_MEP_FULL.xyz", "a") as trajfile:
+            with open("knarr_MEP_FULL.xyz", "w") as trajfile:
                 #Todo: This will fail if free_end=True
                 #Writing reactant image
                 trajfile.write(str(self.full_fragment_reactant.numatoms) + "\n")
                 trajfile.write("Image 0. Energy: {} \n".format(path.GetEnergy()[0]))
-                print("self.full_fragment_reactant.elems:", self.full_fragment_reactant.elems)
-                print("self.full_fragment_reactant:", self.full_fragment_reactant)
+                #print("self.full_fragment_reactant.elems:", self.full_fragment_reactant.elems)
+                #print("self.full_fragment_reactant:", self.full_fragment_reactant)
                 for el, cor in zip(self.full_fragment_reactant.elems, self.full_fragment_reactant.coords):
                     trajfile.write(el + "  " + str(cor[0]) + " " + str(cor[1]) + " " + str(cor[2]) + "\n")
                 #All active images in this NEB iteration:
@@ -377,7 +377,7 @@ def NEB(reactant=None, product=None, theory=None, images=None, interpolation=Non
 
             #Combinining frozen region with optimized active-region for saddle-point
             # Defining full_coords as original coords temporarily
-            full_coords = self.full_fragment_reactant.coords
+            full_coords = reactant.coords
             # Replacing act-region coordinates with coords from currcoords
             for i, c in enumerate(saddle_coords):
                 if i in self.actatoms:
