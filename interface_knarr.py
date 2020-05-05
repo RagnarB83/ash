@@ -130,8 +130,9 @@ class KnarrCalculator:
         self.full_coords_images_dict={}
         self.energies_dict={}
     def Compute(self,path, list_to_compute=None):
+        self.iterations+=1
         print("Inside Compute")
-        print("Iteration count is .", self.iterations)
+        print("Iteration count is :", self.iterations)
         if list_to_compute is None:
             print("None. list_to_compute:", list_to_compute)
             list_to_compute=[]
@@ -141,7 +142,7 @@ class KnarrCalculator:
 
         full_coords_images_list=[]
         #
-        self.iterations+=1
+
         #print("self.iterations:", self.iterations)
         counter=0
         F = np.zeros(shape=(path.GetNDimIm() * path.GetNim(), 1))
@@ -209,7 +210,8 @@ class KnarrCalculator:
 
         #Write out full MEP path in each NEB iteration.
         if self.ActiveRegion is True:
-            if len(list_to_compute) > 2:
+            #if len(list_to_compute) > 2:
+            if self.iterations > 1:
                 self.write_Full_MEP_Path(path, list_to_compute, full_coords_images_list, E)
 
         #print("self.ISCION:", self.ISCION)
@@ -236,7 +238,7 @@ class KnarrCalculator:
                 print("im0 en:", self.energies_dict[0])
                 print("Image 0 energy", self.full_fragment_reactant.energy)
                 print("Image last energy", self.full_fragment_product.energy)
-                print("im last en:", self.energies_dict[self.numatoms-1])
+                print("im last en:", self.energies_dict[self.numimages-1])
                 #print("self.full_fragment_reactant.elems:", self.full_fragment_reactant.elems)
                 #print("self.full_fragment_reactant:", self.full_fragment_reactant)
                 for el, corr in zip(self.full_fragment_reactant.elems, self.full_fragment_reactant.coords):
