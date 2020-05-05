@@ -427,3 +427,5 @@ def NEB(reactant=None, product=None, theory=None, images=None, interpolation=Non
     for key, value in full_coords_images_dict.items():
         print("key:", key)
         print("len of val", len(value))
+    print("react energy:", react.energy)
+    print("react energy:", react.GetEnergy())
