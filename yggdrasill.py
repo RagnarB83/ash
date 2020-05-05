@@ -1289,8 +1289,8 @@ class QMMMTheory:
             self.mmcoords=[self.coords[i] for i in self.mmatoms]
             self.mmelems=[self.elems[i] for i in self.mmatoms]
             #print("List of all atoms:", self.allatoms)
-            print("QM region ({}): {}".format(len(self.qmatoms),self.qmatoms))
-            print("MM region ({})".format(len(self.mmatoms)))
+            print("QM region ({} atoms): {}".format(len(self.qmatoms),self.qmatoms))
+            print("MM region ({} atoms)".format(len(self.mmatoms)))
             #print("MM region", self.mmatoms)
             blankline()
 
