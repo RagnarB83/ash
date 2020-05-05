@@ -93,8 +93,9 @@ def Knarr_pathgenerator(nebsettings,path_parameters,react,prod,ActiveRegion):
     print("path istwodee", path.IsTwoDee())
     #This prevents RMSD alignment in pathgeneration
     if ActiveRegion is True:
+        print("Using ActiveRegion in NEB. Turning off RMSD alignment in Path generation")
         path.twodee = True
-    print("path istwodee", path.IsTwoDee())
+        print("path istwodee", path.IsTwoDee())
     DoPathInterpolation(path, path_parameters)
 
 #Convert coordinates list to Knarr-type array
@@ -291,7 +292,7 @@ def NEB(reactant=None, product=None, theory=None, images=None, interpolation=Non
         neb_settings["TOL_TURN_ON_CI"] = tol_turn_on_ci
 
     if ActiveRegion is True:
-        print("Setting RMSD-alignment to false for QM/MM Active Region")
+        print("Setting RMSD-alignment in NEB to false for QM/MM Active Region")
         neb_settings["MIN_RMSD"] = False
 
 
