@@ -758,6 +758,7 @@ class NonBondedTheory:
             print("Creating epsij and sigmaij arrays ({},{})".format(self.numatoms,self.numatoms))
             print("Will skip QM-QM ij pairs for qmatoms: ", qmatoms)
             print("Will skip frozen-frozen ij pairs for frozenatoms")
+            print("len frozenatoms:", len(frozenatoms))
         beginTime = time.time()
 
         CheckpointTime = time.time()
