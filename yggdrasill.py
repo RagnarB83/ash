@@ -835,6 +835,7 @@ class NonBondedTheory:
         print("Updating charges.")
         self.atom_charges = charges
         #print("Charges are now:", charges)
+        print("Sum of charges:", sum(charges))
     #Provide specific coordinates (MM region) and charges (MM region) upon run
     def run(self, full_coords=None, mm_coords=None, charges=None, connectivity=None, Coulomb=True, Grad=True, qmatoms=None):
 
@@ -2441,7 +2442,7 @@ class Fragment:
             outfile.write(" Index    Atom         x             y             z          charge        fragment-type        atom-type\n")
             outfile.write("-------------------------------------------------------------------------------------------------------------\n")
             for at, el, coord, charge, label, atomtype in zip(self.atomlist, self.elems,self.coords,self.atomcharges, self.fragmenttype_labels, self.atomtypes):
-                line="{:>6} {:>6}  {:12.6f}  {:12.6f}  {:12.6f}  {:12.6f} {:12d} {:>21}\n".format(at, el,coord[0], coord[1], coord[2], charge, label, atomtype)
+                line="{:>6} {:>6}  {:15.9f}  {:15.9f}  {:15.9f}  {:12.6f} {:12d} {:>21}\n".format(at, el,coord[0], coord[1], coord[2], charge, label, atomtype)
                 outfile.write(line)
             outfile.write(
                 "=============================================================================================================\n")
