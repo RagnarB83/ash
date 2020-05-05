@@ -636,7 +636,12 @@ class NonBondedTheory:
         self.sigmaij=np.zeros((self.numatoms, self.numatoms))
         self.epsij=np.zeros((self.numatoms, self.numatoms))
 
-    def calculate_LJ_pairpotentials(self, qmatoms=None):
+    def calculate_LJ_pairpotentials(self, qmatoms=None, frozenatoms=None):
+
+        #frozenatoms
+        if frozenatoms is None:
+            frozenatoms=[]
+
         #Deleted combination_rule argument. Now using variable assigned to object
 
         combination_rule=self.LJcombrule
@@ -650,6 +655,7 @@ class NonBondedTheory:
             print("This is fine if this is a pure MM job")
             print("If QM/MM job, then qmatoms list should be passed to NonBonded theory")
         print("qmatoms:", qmatoms)
+
 
         import math
         if self.printlevel >= 2:
@@ -751,6 +757,7 @@ class NonBondedTheory:
         if self.printlevel >= 2:
             print("Creating epsij and sigmaij arrays ({},{})".format(self.numatoms,self.numatoms))
             print("Will skip QM-QM ij pairs for qmatoms: ", qmatoms)
+            print("Will skip frozen-frozen ij pairs for frozenatoms")
         beginTime = time.time()
 
         CheckpointTime = time.time()
@@ -781,7 +788,7 @@ class NonBondedTheory:
             # Defining Julia Module
             Main.include(yggpath + "/functions_julia.jl")
 
-            self.sigmaij, self.epsij = Main.Juliafunctions.pairpot3(self.numatoms, self.atomtypes, self.LJpairpotdict,qmatoms)
+            self.sigmaij, self.epsij = Main.Juliafunctions.pairpot3(self.numatoms, self.atomtypes, self.LJpairpotdict,qmatoms,frozenatoms)
             if self.printlevel >= 2:
                 print("self.sigmaij:", self.sigmaij)
                 print("self.epsij:", self.epsij)
@@ -790,6 +797,8 @@ class NonBondedTheory:
         elif self.pairarrayversion=="py":
             if self.printlevel >= 2:
                 print("Using Python version for array creation")
+                print("Does not yet skip frozen-frozen atoms...to be fixed")
+                #Todo: add frozen-frozen atoms skip
             #Update: Only doing half of array
             for i in range(self.numatoms):
                 for j in range(i+1, self.numatoms):
@@ -837,7 +846,8 @@ class NonBondedTheory:
         #print("Charges are now:", charges)
         print("Sum of charges:", sum(charges))
     #Provide specific coordinates (MM region) and charges (MM region) upon run
-    def run(self, full_coords=None, mm_coords=None, charges=None, connectivity=None, Coulomb=True, Grad=True, qmatoms=None):
+    def run(self, full_coords=None, mm_coords=None, charges=None, connectivity=None,
+            Coulomb=True, Grad=True, qmatoms=None, frozenatoms=None):
 
         #If qmatoms list provided to run (probably by QM/MM object) then we are doing QM/MM
         #QM-QM pairs will be skipped in LJ
@@ -846,7 +856,7 @@ class NonBondedTheory:
         #Passing qmatoms over so pairs can be skipped
         #This sets self.sigmaij and self.epsij and also self.LJpairpotentials
         if np.count_nonzero(self.sigmaij) == 0:
-            self.calculate_LJ_pairpotentials(qmatoms)
+            self.calculate_LJ_pairpotentials(qmatoms,frozenatoms)
 
         if len(self.LJpairpotentials) > 0:
             LJ=True
@@ -1209,7 +1219,14 @@ class PolEmbedTheory:
 #Required at init: qm_theory and qmatoms. Fragment not. Can come later
 class QMMMTheory:
     def __init__(self, qm_theory="", qmatoms="", fragment='', mm_theory="" , atomcharges=None,
-                 embedding="Elstat", printlevel=2, nprocs=None):
+                 embedding="Elstat", printlevel=2, nprocs=None, frozenatoms=None):
+
+        #Frozenatoms used for skipping interactions in MM part
+        self.frozenatoms=frozenatoms
+        if self.frozenatoms is not None:
+            print("Frozen atoms passed to QM/MM object. Will skip interactions in MM. ")
+            #Todo: should this be better? Handled by Optimizer/NEB/MD function instead?
+
         print(BC.WARNING,BC.BOLD,"------------Defining QM/MM object-------------", BC.END)
 
         self.charges=[]
@@ -1443,9 +1460,10 @@ class QMMMTheory:
                 print("Using MM on full system. Charges for QM region {} have to be set to zero ".format(self.qmatoms))
                 printdebug("Charges for full system is: ", self.charges)
                 print("Passing QM atoms to MMtheory run so that QM-QM pairs are skipped in pairlist")
+                print("Passing frozen atoms to MMtheory run so that QM-QM pairs are skipped in pairlist")
             self.MMEnergy, self.MMGradient= self.mm_theory.run(full_coords=current_coords, mm_coords=self.mmcoords,
                                                                charges=self.charges, connectivity=self.connectivity,
-                                                               qmatoms=self.qmatoms)
+                                                               qmatoms=self.qmatoms, frozenatoms=self.frozenatoms)
             #self.MMEnergy=self.mm_theory.MMEnergy
             #if Grad==True:
             #    self.MMGrad = self.mm_theory.MMGrad
