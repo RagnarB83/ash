@@ -358,7 +358,7 @@ def print_time_rel_and_tot_color(timestampA,timestampB, modulename=''):
 # Need gromacstopfile and grofile (contains periodic information along with coordinates) and gromacstopdir location (topology)
 
 class OpenMMTheory:
-    def __init__(self, pdbfile=None, printlevel=None, platform='CPU', active_atoms=None, frozen_atoms=None,
+    def __init__(self, pdbfile=None, platform='CPU', active_atoms=None, frozen_atoms=None,
                  CHARMMfiles=False, psffile=None, charmmtopfile=None, charmmprmfile=None,
                  GROMACSfiles=False, gromacstopfile=None, grofile=None, gromacstopdir=None,
                  Amberfiles=False, amberprmtopfile=None, printlevel=2,
