@@ -131,6 +131,7 @@ class KnarrCalculator:
         self.energies_dict={}
     def Compute(self,path, list_to_compute=None):
         print("Inside Compute")
+        print("Iteration count is .", self.iterations)
         if list_to_compute is None:
             list_to_compute=[]
         print("list_to_compute:", list_to_compute)
@@ -205,7 +206,8 @@ class KnarrCalculator:
 
         #Write out full MEP path in each NEB iteration.
         if self.ActiveRegion is True:
-            self.write_Full_MEP_Path(path, list_to_compute, full_coords_images_list, E)
+            if len(list_to_compute) > 2:
+                self.write_Full_MEP_Path(path, list_to_compute, full_coords_images_list, E)
 
         #print("self.ISCION:", self.ISCION)
         if self.iterations > 3 :
