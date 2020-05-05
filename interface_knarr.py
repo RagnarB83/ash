@@ -127,13 +127,15 @@ class KnarrCalculator:
         self.ActiveRegion=ActiveRegion
         self.actatoms=actatoms
         print("self.actatoms:", self.actatoms)
+        self.full_coords_images_dict={}
+        self.energies_dict={}
     def Compute(self,path, list_to_compute=None):
+        print("Inside Compute")
         if list_to_compute is None:
             list_to_compute=[]
-
+        print("list_to_compute:", list_to_compute)
 
         full_coords_images_list=[]
-        self.full_coords_images_dict={}
         #
         self.iterations+=1
         #print("self.iterations:", self.iterations)
@@ -141,9 +143,10 @@ class KnarrCalculator:
         F = np.zeros(shape=(path.GetNDimIm() * path.GetNim(), 1))
         E = np.zeros(shape=(path.GetNim(), 1))
         numatoms=int(path.ndofIm/3)
-        print("list_to_compute:", list_to_compute)
+
         if self.runmode=='serial':
             for image_number in list_to_compute:
+                print("For loop. Image_number is:", image_number)
                 image_coords_1d = path.GetCoords()[image_number * path.ndimIm : (image_number + 1) * path.ndimIm]
                 image_coords=np.reshape(image_coords_1d, (numatoms, 3))
                 # Request Engrad calc
@@ -152,6 +155,7 @@ class KnarrCalculator:
                 blankline()
 
                 if self.ActiveRegion == True:
+                    print("Actregion True")
                     currcoords=image_coords
                     # Defining full_coords as original coords temporarily
                     full_coords = self.full_fragment_reactant.coords
@@ -165,16 +169,22 @@ class KnarrCalculator:
                     full_current_image_coords = full_coords
                     #EnGrad calculation on full system
                     En_image, Grad_image_full = self.theory.run(current_coords=full_current_image_coords, elems=self.full_fragment_reactant.elems, Grad=True)
-
+                    print("Energy of image {} is : ".format(image_number,En_image))
                     #Trim Full gradient down to only act-atoms gradient
                     Grad_image = np.array([Grad_image_full[i] for i in self.actatoms])
                     #List of all image-geometries (full coords)
                     full_coords_images_list.append(full_current_image_coords)
                     self.full_coords_images_dict[image_number] = full_current_image_coords
+                    print("full_coords_images_dict keys:", self.full_coords_images_dict.keys())
+                    #Keeping track of energies for each image in a dict
+                    self.energies_dict[image_number] = En_image
+                    print("self.energies_dict keys:", self.energies_dict.keys())
+                    print("self.energies_dict:", self.energies_dict)
 
                 else:
                     En_image, Grad_image = self.theory.run(current_coords=image_coords, elems=self.fragment1.elems, Grad=True)
-
+                    #Keeping track of energies for each image in a dict
+                    self.energies_dict[image_number] = En_image
 
 
                 counter += 1
@@ -192,10 +202,7 @@ class KnarrCalculator:
         #Forcecalls
         path.AddFC(counter)
         blankline()
-        print("X2 self.full_coords_images_dict:", self.full_coords_images_dict)
-        for key, value in self.full_coords_images_dict.items():
-            print("key:", key)
-            print("len of val", len(value))
+
         #Write out full MEP path in each NEB iteration.
         if self.ActiveRegion is True:
             self.write_Full_MEP_Path(path, list_to_compute, full_coords_images_list, E)
@@ -210,6 +217,7 @@ class KnarrCalculator:
     #    self.forcecalls += x
     #    return
     def write_Full_MEP_Path(self, path, list_to_compute, full_coords_images_list, E):
+        print("Inside write_Full_MEP_Path")
         #Write out MEP for full coords in each iteration. Knarr writes out Active Part.
         if self.ActiveRegion is True:
             with open("knarr_MEP_FULL.xyz", "w") as trajfile:
@@ -218,7 +226,8 @@ class KnarrCalculator:
                 #Writing reactant image
                 trajfile.write(str(self.full_fragment_reactant.numatoms) + "\n")
                 trajfile.write("Image 0. Energy: {} \n".format(path.GetEnergy()[0][0]))
-                print("Inside write_Full_MEP_Path")
+
+                print("self.energies_dict:", self.energies_dict)
                 print("Image 0 energy", self.full_fragment_reactant.energy)
                 print("Image last energy", self.full_fragment_product.energy)
                 #print("self.full_fragment_reactant.elems:", self.full_fragment_reactant.elems)
@@ -226,7 +235,7 @@ class KnarrCalculator:
                 for el, corr in zip(self.full_fragment_reactant.elems, self.full_fragment_reactant.coords):
                     trajfile.write(el + "  " + str(corr[0]) + " " + str(corr[1]) + " " + str(corr[2]) + "\n")
                 #All active images in this NEB iteration:
-                print("list_to_compute:", list_to_compute)
+                print("x list_to_compute:", list_to_compute)
                 print("full_coords_images_list:", full_coords_images_list)
                 print(len(list_to_compute))
                 print(len(full_coords_images_list))
