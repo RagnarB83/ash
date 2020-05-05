@@ -169,7 +169,7 @@ class KnarrCalculator:
                     full_current_image_coords = full_coords
                     #EnGrad calculation on full system
                     En_image, Grad_image_full = self.theory.run(current_coords=full_current_image_coords, elems=self.full_fragment_reactant.elems, Grad=True)
-                    print("Energy of image {} is : ".format(image_number,En_image))
+                    print("Energy of image {} is : {}".format(image_number,En_image))
                     #Trim Full gradient down to only act-atoms gradient
                     Grad_image = np.array([Grad_image_full[i] for i in self.actatoms])
                     #List of all image-geometries (full coords)
