@@ -134,6 +134,8 @@ class KnarrCalculator:
         print("Iteration count is .", self.iterations)
         if list_to_compute is None:
             list_to_compute=[]
+        else:
+            list_to_compute=list(list_to_compute)
         print("list_to_compute:", list_to_compute)
 
         full_coords_images_list=[]
