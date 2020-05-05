@@ -60,7 +60,7 @@ optimizer = {"OPTIM_METHOD": "LBFGS", "MAX_ITER": 1000, "TOL_MAX_FORCE": 0.01,
              "LINESEARCH": None}
 
 #Path generator
-def Knarr_pathgenerator(nebsettings,path_parameters,react,prod):
+def Knarr_pathgenerator(nebsettings,path_parameters,react,prod,ActiveRegion):
     sett = nebsettings
     type_of_method_string = path_parameters["METHOD"].upper()
     if type_of_method_string == "SINGLE":
@@ -71,12 +71,7 @@ def Knarr_pathgenerator(nebsettings,path_parameters,react,prod):
         raise TypeError("Either choose single or double ended path generation")
 
     nim = path_parameters["NIMAGES"]
-
-    print("react iscon", react.IsConstrained())
     path = InitializePathObject(nim, react)
-
-    print("path iscon", path.IsConstrained())
-
     if prod_is_needed:
         # Check product
         if react.GetNDim() != prod.GetNDim():
@@ -95,10 +90,10 @@ def Knarr_pathgenerator(nebsettings,path_parameters,react,prod):
             path.SetInsertionConfig(insertion.GetCoords())
     else:
         prod = None
-    print("path iscon", path.IsConstrained())
-    print("path iscon", path.IsConstrained())
     print("path istwodee", path.IsTwoDee())
-    path.twodee = True
+    #This prevents RMSD alignment in pathgeneration
+    if ActiveRegion is True:
+        path.twodee = True
     print("path istwodee", path.IsTwoDee())
     DoPathInterpolation(path, path_parameters)
 
@@ -362,8 +357,8 @@ def NEB(reactant=None, product=None, theory=None, images=None, interpolation=Non
                                    ndof=numatoms * 3, constraints=constr, pbc=False)
 
 
-    # Generate path via Knarr_pathgenerator
-    Knarr_pathgenerator(neb_settings, path_parameters, react, prod)
+    # Generate path via Knarr_pathgenerator. ActiveRegion used to prevent RMSD alignment if doing actregion QM/MM etc.
+    Knarr_pathgenerator(neb_settings, path_parameters, react, prod, ActiveRegion)
 
     #Reading initial path from XYZ file. Hardcoded as knarr_path.xyz
     rp, ndim, nim, symb = ReadTraj("knarr_path.xyz")
