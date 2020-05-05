@@ -137,7 +137,7 @@ class KnarrCalculator:
 
 
         full_coords_images_list=[]
-        full_coords_images_dict={}
+        self.full_coords_images_dict={}
         #
         self.iterations+=1
         #print("self.iterations:", self.iterations)
@@ -174,7 +174,7 @@ class KnarrCalculator:
                     Grad_image = np.array([Grad_image_full[i] for i in self.actatoms])
                     #List of all image-geometries (full coords)
                     full_coords_images_list.append(full_current_image_coords)
-                    full_coords_images_dict[image_number] = full_current_image_coords
+                    self.full_coords_images_dict[image_number] = full_current_image_coords
 
                 else:
                     En_image, Grad_image = self.theory.run(current_coords=image_coords, elems=self.fragment1.elems, Grad=True)
@@ -196,7 +196,10 @@ class KnarrCalculator:
         #Forcecalls
         path.AddFC(counter)
         blankline()
-
+        print("X2 full_coords_images_dict:", self.full_coords_images_dict)
+        for key, value in self.full_coords_images_dict.iteritems():
+            print("key:", key)
+            print("len of val", len(value))
         #Write out full MEP path in each NEB iteration.
         if self.ActiveRegion is True:
             self.write_Full_MEP_Path(path, list_to_compute, full_coords_images_list, E)
@@ -215,6 +218,7 @@ class KnarrCalculator:
         if self.ActiveRegion is True:
             with open("knarr_MEP_FULL.xyz", "w") as trajfile:
                 #Todo: This will fail if free_end=True
+                #Todo: disable react and prod printing if free_end True
                 #Writing reactant image
                 trajfile.write(str(self.full_fragment_reactant.numatoms) + "\n")
                 trajfile.write("Image 0. Energy: {} \n".format(path.GetEnergy()[0][0]))
@@ -230,12 +234,12 @@ class KnarrCalculator:
                 print("full_coords_images_list:", full_coords_images_list)
                 print(len(list_to_compute))
                 print(len(full_coords_images_list))
-                for imageid,fc in zip(list(list_to_compute),full_coords_images_list):
+                #for imageid,fc in zip(list(list_to_compute),full_coords_images_list):
+                for imageid,fc in zip(list(list_to_compute)):
                     print("imageid:", imageid)
                     #print("fc:", fc)
                     trajfile.write(str(self.full_fragment_reactant.numatoms) + "\n")
                     trajfile.write("Image {}. Energy: {} \n".format(imageid, E[imageid][0]))
-
                     #for el, cord in zip(self.full_fragment_reactant.elems, fc):
                     for el, cord in zip(self.full_fragment_reactant.elems, full_coords_images_dict[imageid]):
                         trajfile.write(el + "  " + str(cord[0]) + " " + str(cord[1]) + " " + str(cord[2]) + "\n")
