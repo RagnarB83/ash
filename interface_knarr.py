@@ -235,7 +235,7 @@ class KnarrCalculator:
                 print(len(list_to_compute))
                 print(len(full_coords_images_list))
                 #for imageid,fc in zip(list(list_to_compute),full_coords_images_list):
-                for imageid,fc in zip(list(list_to_compute)):
+                for imageid,fc in list_to_compute):
                     print("imageid:", imageid)
                     #print("fc:", fc)
                     trajfile.write(str(self.full_fragment_reactant.numatoms) + "\n")
