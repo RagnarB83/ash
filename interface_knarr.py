@@ -192,7 +192,7 @@ class KnarrCalculator:
         #Forcecalls
         path.AddFC(counter)
         blankline()
-        print("X2 full_coords_images_dict:", self.full_coords_images_dict)
+        print("X2 self.full_coords_images_dict:", self.full_coords_images_dict)
         for key, value in self.full_coords_images_dict.items():
             print("key:", key)
             print("len of val", len(value))
@@ -237,7 +237,7 @@ class KnarrCalculator:
                     trajfile.write(str(self.full_fragment_reactant.numatoms) + "\n")
                     trajfile.write("Image {}. Energy: {} \n".format(imageid, E[imageid][0]))
                     #for el, cord in zip(self.full_fragment_reactant.elems, fc):
-                    for el, cord in zip(self.full_fragment_reactant.elems, full_coords_images_dict[imageid]):
+                    for el, cord in zip(self.full_fragment_reactant.elems, self.full_coords_images_dict[imageid]):
                         trajfile.write(el + "  " + str(cord[0]) + " " + str(cord[1]) + " " + str(cord[2]) + "\n")
                 #Writing product image
                 trajfile.write(str(self.full_fragment_product.numatoms) + "\n")
