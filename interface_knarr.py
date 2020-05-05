@@ -91,12 +91,12 @@ def Knarr_pathgenerator(nebsettings,path_parameters,react,prod,ActiveRegion):
             path.SetInsertionConfig(insertion.GetCoords())
     else:
         prod = None
-    print("path istwodee", path.IsTwoDee())
-    #This prevents RMSD alignment in pathgeneration
+
+    #Setting path.twodee True  prevents RMSD alignment in pathgeneration
     if ActiveRegion is True:
         print("Using ActiveRegion in NEB. Turning off RMSD alignment in Path generation")
         path.twodee = True
-        print("path istwodee", path.IsTwoDee())
+        #print("path istwodee", path.IsTwoDee())
     DoPathInterpolation(path, path_parameters)
 
 #Convert coordinates list to Knarr-type array
@@ -110,7 +110,8 @@ def coords_to_Knarr(coords):
 #Wrapper around Yggdrasill object
 class KnarrCalculator:
     def __init__(self,theory,fragment1,fragment2,runmode='serial',printlevel=None, ActiveRegion=False, actatoms=None,
-                 full_fragment_reactant=None, full_fragment_product=None, numimages=None ):
+                 full_fragment_reactant=None, full_fragment_product=None, numimages=None, FreeEnd=False ):
+        self.FreeEnd=FreeEnd
         self.numimages=numimages
         self.printlevel=printlevel
         self.forcecalls=0
@@ -131,15 +132,16 @@ class KnarrCalculator:
         self.full_coords_images_dict={}
         self.energies_dict={}
     def Compute(self,path, list_to_compute=None):
+        blankline()
         self.iterations+=1
-        print("Inside Compute")
-        print("Iteration count is :", self.iterations)
+        print("Calling KnarrCalculator.Compute")
+        print("NEB iteration:", self.iterations)
         if list_to_compute is None:
             print("None. list_to_compute:", list_to_compute)
             list_to_compute=[]
         else:
             list_to_compute=list(list_to_compute)
-        print("list_to_compute:", list_to_compute)
+        print("Computing images:", list_to_compute)
 
         #
 
@@ -151,7 +153,7 @@ class KnarrCalculator:
 
         if self.runmode=='serial':
             for image_number in list_to_compute:
-                print("For loop. Image_number is:", image_number)
+                print("Computing image: ", image_number)
                 image_coords_1d = path.GetCoords()[image_number * path.ndimIm : (image_number + 1) * path.ndimIm]
                 image_coords=np.reshape(image_coords_1d, (numatoms, 3))
                 # Request Engrad calc
@@ -160,7 +162,6 @@ class KnarrCalculator:
                 blankline()
 
                 if self.ActiveRegion == True:
-                    print("Actregion True")
                     currcoords=image_coords
                     # Defining full_coords as original coords temporarily
                     #full_coords = self.full_fragment_reactant.coords
@@ -168,7 +169,6 @@ class KnarrCalculator:
                     full_coords = copy.deepcopy(self.full_fragment_reactant.coords)
 
                     # Replacing act-region coordinates with coords from currcoords
-                    print("self.actatoms:", self.actatoms)
 
                     for i, c in enumerate(full_coords):
                         if i in self.actatoms:
@@ -181,8 +181,6 @@ class KnarrCalculator:
                     #full_coords_images_list.append(full_current_image_coords)
 
                     self.full_coords_images_dict[image_number] = copy.deepcopy(full_current_image_coords)
-                    print("full_coords_images_dict keys:", self.full_coords_images_dict.keys())
-
 
                     #EnGrad calculation on full system
                     En_image, Grad_image_full = self.theory.run(current_coords=full_current_image_coords, elems=self.full_fragment_reactant.elems, Grad=True)
@@ -192,8 +190,6 @@ class KnarrCalculator:
 
                     #Keeping track of energies for each image in a dict
                     self.energies_dict[image_number] = En_image
-                    print("self.energies_dict keys:", self.energies_dict.keys())
-                    print("self.energies_dict:", self.energies_dict)
 
                 else:
                     En_image, Grad_image = self.theory.run(current_coords=image_coords, elems=self.fragment1.elems, Grad=True)
@@ -208,7 +204,7 @@ class KnarrCalculator:
                 #Todo: Check units
                 F[image_number* path.ndimIm : (image_number + 1) * path.ndimIm] = -1 * np.reshape(Grad_image,(int(path.ndofIm),1))
         elif self.runmode=='parallel':
-            print("not yet done")
+            print("parallel is not yet done")
             print("")
             exit()
         path.SetForces(F)
@@ -216,6 +212,9 @@ class KnarrCalculator:
         #Forcecalls
         path.AddFC(counter)
         blankline()
+
+        print("NEB iteration done")
+        print("Energies of images dict:", self.energies_dict)
 
         #Write out full MEP path in each NEB iteration.
         if self.ActiveRegion is True:
@@ -229,46 +228,36 @@ class KnarrCalculator:
                 print('%4ls  %4s  %9ls %5ls %6ls %9ls %9ls %9ls %6ls' % ('it', 'dS', 'Energy', 'HEI', 'RMSF', 'MaxF', 'RMSF_CI', 'MaxF_CI', 'step'))
             else:
                 print(' %4ls %4s  %9ls %5ls %7ls %9ls %8ls' % ('it', 'dS', 'Energy', 'HEI', 'RMSF', 'MaxF', 'step'))
-    #def AddFC(self, x=1):
-    #    self.forcecalls += x
-    #    return
+
     def write_Full_MEP_Path(self, path, list_to_compute, E):
-        print("Inside write_Full_MEP_Path")
         #Write out MEP for full coords in each iteration. Knarr writes out Active Part.
         if self.ActiveRegion is True:
             with open("knarr_MEP_FULL.xyz", "w") as trajfile:
                 #Todo: This will fail if free_end=True
                 #Todo: disable react and prod printing if free_end True
-                #Writing reactant image
-                trajfile.write(str(self.full_fragment_reactant.numatoms) + "\n")
-                trajfile.write("Image 0. Energy: {} \n".format(self.energies_dict[0]))
 
-                print("self.energies_dict:", self.energies_dict)
-                print("im0 en:", self.energies_dict[0])
-                print("Image 0 energy", self.full_fragment_reactant.energy)
-                print("Image last energy", self.full_fragment_product.energy)
-                print("im last en:", self.energies_dict[self.numimages-1])
-                #print("self.full_fragment_reactant.elems:", self.full_fragment_reactant.elems)
-                #print("self.full_fragment_reactant:", self.full_fragment_reactant)
-                for el, corr in zip(self.full_fragment_reactant.elems, self.full_fragment_reactant.coords):
-                    trajfile.write(el + "  " + str(corr[0]) + " " + str(corr[1]) + " " + str(corr[2]) + "\n")
-                #All active images in this NEB iteration:
-                print("x list_to_compute:", list_to_compute)
-                print(len(list_to_compute))
-                #for imageid,fc in zip(list(list_to_compute),full_coords_images_list):
+                #Writing reactant image. Only if FreeEnd is False (normal)
+                if self.FreeEnd is False:
+                    trajfile.write(str(self.full_fragment_reactant.numatoms) + "\n")
+                    trajfile.write("Image 0. Energy: {} \n".format(self.energies_dict[0]))
+                    for el, corr in zip(self.full_fragment_reactant.elems, self.full_fragment_reactant.coords):
+                        trajfile.write(el + "  " + str(corr[0]) + " " + str(corr[1]) + " " + str(corr[2]) + "\n")
+
+                #Writing all active images in this NEB iteration
                 for imageid in list_to_compute:
-                    print("imageid:", imageid)
                     #print("fc:", fc)
                     trajfile.write(str(self.full_fragment_reactant.numatoms) + "\n")
                     trajfile.write("Image {}. Energy: {} \n".format(imageid, E[imageid][0]))
                     #for el, cord in zip(self.full_fragment_reactant.elems, fc):
                     for el, cord in zip(self.full_fragment_reactant.elems, self.full_coords_images_dict[imageid]):
                         trajfile.write(el + "  " + str(cord[0]) + " " + str(cord[1]) + " " + str(cord[2]) + "\n")
-                #Writing product image
-                trajfile.write(str(self.full_fragment_product.numatoms) + "\n")
-                trajfile.write("Image {} Energy: {} \n".format(self.numimages-1,self.energies_dict[self.numimages-1]))
-                for el, corp in zip(self.full_fragment_product.elems, self.full_fragment_product.coords):
-                    trajfile.write(el + "  " + str(corp[0]) + " " + str(corp[1]) + " " + str(corp[2]) + "\n")
+
+                #Writing product image. Only if FreeEnd is False (normal)
+                if self.FreeEnd is False:
+                    trajfile.write(str(self.full_fragment_product.numatoms) + "\n")
+                    trajfile.write("Image {} Energy: {} \n".format(self.numimages-1,self.energies_dict[self.numimages-1]))
+                    for el, corp in zip(self.full_fragment_product.elems, self.full_fragment_product.coords):
+                        trajfile.write(el + "  " + str(corp[0]) + " " + str(corp[1]) + " " + str(corp[2]) + "\n")
 
 
 #Yggdrasill NEB function. Calls Knarr
@@ -317,10 +306,10 @@ def NEB(reactant=None, product=None, theory=None, images=None, interpolation=Non
         neb_settings["TOL_TURN_ON_CI"] = tol_turn_on_ci
 
     if ActiveRegion is True:
-        print("Setting RMSD-alignment in NEB to false for QM/MM Active Region")
+        print("Active Region feature active. Setting RMSD-alignment in NEB to false (required).")
         neb_settings["MIN_RMSD"] = False
 
-
+    blankline()
     print("Active Knarr settings:")
     blankline()
 
@@ -329,7 +318,7 @@ def NEB(reactant=None, product=None, theory=None, images=None, interpolation=Non
     print("NEB parameters:\n", neb_settings)
     blankline()
     print("Optimizer parameters:\n", optimizer)
-
+    blankline()
 
     #Zero-valued constraints list. We probably won't use constraints for now
     constr = np.zeros(shape=(numatoms * 3, 1))
@@ -340,13 +329,11 @@ def NEB(reactant=None, product=None, theory=None, images=None, interpolation=Non
         if actatoms is None:
             print("add actatoms argument to NEB for ActiveRegion True")
             exit(1)
-        print("Number of active atoms:", len(actatoms))
         R_actcoords, R_actelems = reactant.get_coords_for_atoms(actatoms)
         P_actcoords, P_actelems = product.get_coords_for_atoms(actatoms)
         new_reactant = Fragment(coords=R_actcoords, elems=R_actelems)
         new_product = Fragment(coords=P_actcoords, elems=P_actelems)
-        print("R_actelems:", R_actelems)
-        print("P_actelems:", P_actelems)
+
         #Create Knarr calculator from Yggdrasill theory.
         calculator = KnarrCalculator(theory, fragment1=new_reactant, fragment2=new_product, runmode=runmode,
                                      ActiveRegion=True, actatoms=actatoms, full_fragment_reactant=reactant,
@@ -354,19 +341,17 @@ def NEB(reactant=None, product=None, theory=None, images=None, interpolation=Non
 
         # Symbols list for Knarr
         Knarr_symbols = [y for y in new_reactant.elems for i in range(3)]
-        print("Knarr_symbols:", Knarr_symbols)
+
         # New numatoms and constraints for active-region system
         numatoms = new_reactant.numatoms
         constr = np.zeros(shape=(numatoms * 3, 1))
-        print("numatoms:", numatoms)
+
         # Create KNARR Atom objects. Used in path generation
         react = KNARRatom.atom.Atom(coords=coords_to_Knarr(new_reactant.coords), symbols=Knarr_symbols, ndim=numatoms * 3,
                                     ndof=numatoms * 3, constraints=constr, pbc=False)
         prod = KNARRatom.atom.Atom(coords=coords_to_Knarr(new_product.coords), symbols=Knarr_symbols, ndim=numatoms * 3,
                                    ndof=numatoms * 3, constraints=constr, pbc=False)
 
-        print("react is constrain", react.IsConstrained())
-        print("prod is constrain", prod.IsConstrained())
 
     else:
         #Create Knarr calculator from Yggdrasill theory
@@ -393,7 +378,6 @@ def NEB(reactant=None, product=None, theory=None, images=None, interpolation=Non
     path = InitializePathObject(nim, react)
     path.SetCoords(rp)
 
-    print("path IsConstrained", path.IsConstrained())
     print("Starting NEB")
     #Now starting NEB from path object, using neb_settings and optimizer settings
     DoNEB(path, calculator, neb_settings, optimizer)
@@ -413,17 +397,16 @@ def NEB(reactant=None, product=None, theory=None, images=None, interpolation=Non
 
             #Combinining frozen region with optimized active-region for saddle-point
             # Defining full_coords as original coords temporarily
-            full_coords = reactant.coords
+            full_saddleimage_coords = copy.deepcopy(reactant.coords)
             # Replacing act-region coordinates with coords from currcoords
             for i, c in enumerate(saddle_coords):
                 if i in actatoms:
                     # Silly. Pop-ing first coord from currcoords until done
                     curr_c, saddle_coords = saddle_coords[0], saddle_coords[1:]
-                    full_coords[i] = curr_c
-            full_current_image_coords = full_coords
+                    full_saddleimage_coords[i] = curr_c
 
             #Creating new Yggdrasill fragment for Full Saddle-point geometry
-            Saddlepoint_fragment = Fragment(coords=full_current_image_coords, elems=reactant.elems, connectivity=reactant.connectivity)
+            Saddlepoint_fragment = Fragment(coords=full_saddleimage_coords, elems=reactant.elems, connectivity=reactant.connectivity)
             Saddlepoint_fragment.set_energy(saddle_energy)
             #Writing out Saddlepoint fragment file and XYZ file
             Saddlepoint_fragment.print_system(filename='Saddlepoint-optimized.ygg')

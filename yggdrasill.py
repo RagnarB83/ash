@@ -1283,17 +1283,18 @@ class QMMMTheory:
                 self.QMChargesZeroed=True
 
                 print("Charges of QM atoms set to 0 (since Electrostatic Embedding):")
-                for i in self.allatoms:
-                    if i in qmatoms:
-                        print("QM atom {} ({}) charge: {}".format(i, self.elems[i], self.charges[i]))
-                    else:
-                        print("MM atom {} ({}) charge: {}".format(i, self.elems[i], self.charges[i]))
-            blankline()
+                if self.printlevel > 2:
+                    for i in self.allatoms:
+                        if i in qmatoms:
+                            print("QM atom {} ({}) charge: {}".format(i, self.elems[i], self.charges[i]))
+                        else:
+                            print("MM atom {} ({}) charge: {}".format(i, self.elems[i], self.charges[i]))
+                blankline()
 
         #QM and MM charges are defined even though an MMtheory may not be present
         # Charges defined for regions
         self.qmcharges = [self.charges[i] for i in self.qmatoms]
-        print("self.qmcharges:", self.qmcharges)
+        print("QM-region charges:", self.qmcharges)
         self.mmcharges=[self.charges[i] for i in self.mmatoms]
         #print("self.mmcharges:", self.mmcharges)
 
