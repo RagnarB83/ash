@@ -183,7 +183,8 @@ class KnarrCalculator:
                     self.full_coords_images_dict[image_number] = copy.deepcopy(full_current_image_coords)
 
                     #EnGrad calculation on full system
-                    En_image, Grad_image_full = self.theory.run(current_coords=full_current_image_coords, elems=self.full_fragment_reactant.elems, Grad=True)
+                    En_image, Grad_image_full = self.theory.run(current_coords=full_current_image_coords,
+                                                                elems=self.full_fragment_reactant.elems, Grad=True)
                     print("Energy of image {} is : {}".format(image_number,En_image))
                     #Trim Full gradient down to only act-atoms gradient
                     Grad_image = np.array([Grad_image_full[i] for i in self.actatoms])
@@ -263,7 +264,7 @@ class KnarrCalculator:
 #Yggdrasill NEB function. Calls Knarr
 def NEB(reactant=None, product=None, theory=None, images=None, interpolation=None, CI=None, free_end=None,
         conv_type=None, tol_scale=None, tol_max_fci=None, tol_rms_fci=None, tol_max_f=None, tol_rms_f=None,
-        tol_turn_on_ci=None, ActiveRegion=False, actatoms=None, runmode='serial'):
+        tol_turn_on_ci=None, ActiveRegion=False, actatoms=None, runmode='serial', printlevel=1):
 
     if reactant==None or product==None or theory==None:
         print("You need to provide reactant and product fragment and a theory to NEB")
@@ -379,6 +380,13 @@ def NEB(reactant=None, product=None, theory=None, images=None, interpolation=Non
     path.SetCoords(rp)
 
     print("Starting NEB")
+
+    #Setting printlevel of theory during E+Grad steps  1=very-little, 2=more, 3=lots, 4=verymuch
+    print("NEB printlevel is:", printlevel)
+    print("Theory print level currently", theory.printlevel)
+    theory.printlevel=printlevel
+    print("Theory print level currently", theory.printlevel)
+
     #Now starting NEB from path object, using neb_settings and optimizer settings
     DoNEB(path, calculator, neb_settings, optimizer)
 

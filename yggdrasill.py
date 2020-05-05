@@ -361,8 +361,12 @@ class OpenMMTheory:
     def __init__(self, pdbfile=None, printlevel=None, platform='CPU', active_atoms=None, frozen_atoms=None,
                  CHARMMfiles=False, psffile=None, charmmtopfile=None, charmmprmfile=None,
                  GROMACSfiles=False, gromacstopfile=None, grofile=None, gromacstopdir=None,
-                 Amberfiles=False, amberprmtopfile=None,
+                 Amberfiles=False, amberprmtopfile=None, printlevel=2,
                  xmlfile=None):
+
+        #Printlevel
+        self.printlevel=printlevel
+
         print(BC.WARNING, BC.BOLD, "------------Defining OpenMM object-------------", BC.END)
         timeA = time.time()
         self.coords=[]
@@ -598,7 +602,12 @@ class OpenMMTheory:
 
 # Simple nonbonded MM theory. Charges and LJ-potentials
 class NonBondedTheory:
-    def __init__(self, atomtypes=None, forcefield=None, charges = None, LJcombrule='geometric', codeversion='f2py', pairarrayversion='julia'):
+    def __init__(self, atomtypes=None, forcefield=None, charges = None, LJcombrule='geometric',
+                 codeversion='f2py', pairarrayversion='julia', printlevel=2):
+
+        #Printlevel
+        self.printlevel=printlevel
+
         #Atom types
         self.atomtypes=atomtypes
         #Read MM forcefield.
@@ -633,7 +642,8 @@ class NonBondedTheory:
         combination_rule=self.LJcombrule
 
         #If qmatoms passed list passed then QM/MM and QM-QM pairs will be ignored from pairlist
-        print("Inside calculate_LJ_pairpotentials")
+        if self.printlevel >= 2:
+            print("Inside calculate_LJ_pairpotentials")
         #Todo: Figure out if we can find out if qmatoms without being passed
         if qmatoms is None or qmatoms == []:
             print("WARNING: qmatoms list is empty")
@@ -642,25 +652,29 @@ class NonBondedTheory:
         print("qmatoms:", qmatoms)
 
         import math
-        print("Defining Lennard-Jones pair potentials")
-        #Printlevel. Todo: Make more general
-        printsetting='normal'
+        if self.printlevel >= 2:
+            print("Defining Lennard-Jones pair potentials")
+
         #List to store pairpotentials
         self.LJpairpotentials=[]
         #New: multi-key dict instead using tuple
         self.LJpairpotdict={}
         if combination_rule == 'geometric':
-            print("Using geometric mean for LJ pair potentials")
+            if self.printlevel >= 2:
+                print("Using geometric mean for LJ pair potentials")
         elif combination_rule == 'arithmetic':
-            print("Using geometric mean for LJ pair potentials")
+            if self.printlevel >= 2:
+                print("Using geometric mean for LJ pair potentials")
         elif combination_rule == 'mixed_geoepsilon':
-            print("Using mixed rule for LJ pair potentials")
-            print("Using arithmetic rule for r/sigma")
-            print("Using geometric rule for epsilon")
+            if self.printlevel >= 2:
+                print("Using mixed rule for LJ pair potentials")
+                print("Using arithmetic rule for r/sigma")
+                print("Using geometric rule for epsilon")
         elif combination_rule == 'mixed_geosigma':
-            print("Using mixed rule for LJ pair potentials")
-            print("Using geometric rule for r/sigma")
-            print("Using arithmetic rule for epsilon")
+            if self.printlevel >= 2:
+                print("Using mixed rule for LJ pair potentials")
+                print("Using geometric rule for r/sigma")
+                print("Using arithmetic rule for epsilon")
         else:
             print("Unknown combination rule. Exiting")
             exit()
@@ -681,7 +695,7 @@ class NonBondedTheory:
                         continue
                     if len(self.forcefield[at_j].LJparameters) == 0:
                         continue
-                    if printsetting=='Debug':
+                    if self.printlevel >= 3:
                         print("LJ sigma_i {} for atomtype {}:".format(self.forcefield[at_i].LJparameters[0], at_i))
                         print("LJ sigma_j {} for atomtype {}:".format(self.forcefield[at_j].LJparameters[0], at_j))
                         print("LJ eps_i {} for atomtype {}:".format(self.forcefield[at_i].LJparameters[1], at_i))
@@ -690,25 +704,25 @@ class NonBondedTheory:
                     if combination_rule=='geometric':
                         sigma=math.sqrt(self.forcefield[at_i].LJparameters[0]*self.forcefield[at_j].LJparameters[0])
                         epsilon=math.sqrt(self.forcefield[at_i].LJparameters[1]*self.forcefield[at_j].LJparameters[1])
-                        if printsetting == 'Debug':
+                        if self.printlevel >=3:
                             print("LJ sigma_ij : {} for atomtype-pair: {} {}".format(sigma,at_i, at_j))
                             print("LJ epsilon_ij : {} for atomtype-pair: {} {}".format(epsilon,at_i, at_j))
                             blankline()
                     elif combination_rule=='arithmetic':
-                        if printsetting == 'Debug':
+                        if self.printlevel >=3:
                             print("Using arithmetic mean for LJ pair potentials")
                             print("NOTE: to be confirmed")
                         sigma=0.5*(self.forcefield[at_i].LJparameters[0]+self.forcefield[at_j].LJparameters[0])
                         epsilon=0.5-(self.forcefield[at_i].LJparameters[1]+self.forcefield[at_j].LJparameters[1])
                     elif combination_rule=='mixed_geosigma':
-                        if printsetting == 'Debug':
+                        if self.printlevel >=3:
                             print("Using geometric mean for LJ sigma parameters")
                             print("Using arithmetic mean for LJ epsilon parameters")
                             print("NOTE: to be confirmed")
                         sigma=math.sqrt(self.forcefield[at_i].LJparameters[0]*self.forcefield[at_j].LJparameters[0])
                         epsilon=0.5-(self.forcefield[at_i].LJparameters[1]+self.forcefield[at_j].LJparameters[1])
                     elif combination_rule=='mixed_geoepsilon':
-                        if printsetting == 'Debug':
+                        if self.printlevel >=3:
                             print("Using arithmetic mean for LJ sigma parameters")
                             print("Using geometric mean for LJ epsilon parameters")
                             print("NOTE: to be confirmed")
@@ -727,23 +741,25 @@ class NonBondedTheory:
                 if acount < bcount:
                     if set(pairpot_a) == set(pairpot_b):
                         del self.LJpairpotentials[bcount]
-        print("Final LJ pair potentials (sigma_ij, epsilon_ij):\n", self.LJpairpotentials)
-        print("New: LJ pair potentials as dict:")
-        print("self.LJpairpotdict:", self.LJpairpotdict)
+        if self.printlevel >= 2:
+            print("Final LJ pair potentials (sigma_ij, epsilon_ij):\n", self.LJpairpotentials)
+            print("New: LJ pair potentials as dict:")
+            print("self.LJpairpotdict:", self.LJpairpotdict)
 
         #Create numatomxnumatom array of eps and sigma
         blankline()
-        print("Creating epsij and sigmaij arrays ({},{})".format(self.numatoms,self.numatoms))
-        print("Will skip QM-QM ij pairs for qmatoms: ", qmatoms)
+        if self.printlevel >= 2:
+            print("Creating epsij and sigmaij arrays ({},{})".format(self.numatoms,self.numatoms))
+            print("Will skip QM-QM ij pairs for qmatoms: ", qmatoms)
         beginTime = time.time()
 
         CheckpointTime = time.time()
         # See speed-tests at /home/bjornsson/pairpot-test
 
         if self.pairarrayversion=="julia":
-            print("Using PyJulia for fast sigmaij and epsij array creation")
+            if self.printlevel >= 2:
+                print("Using PyJulia for fast sigmaij and epsij array creation")
             yggpath = os.path.dirname(yggdrasill.__file__)
-            print("yggpath:", yggpath)
 
             # Necessary for statically linked libpython
             #IF not doing python-jl
@@ -766,12 +782,14 @@ class NonBondedTheory:
             Main.include(yggpath + "/functions_julia.jl")
 
             self.sigmaij, self.epsij = Main.Juliafunctions.pairpot3(self.numatoms, self.atomtypes, self.LJpairpotdict,qmatoms)
-            print("self.sigmaij:", self.sigmaij)
-            print("self.epsij:", self.epsij)
-            print(type(self.sigmaij))
+            if self.printlevel >= 2:
+                print("self.sigmaij:", self.sigmaij)
+                print("self.epsij:", self.epsij)
+                print(type(self.sigmaij))
         # New for-loop for creating sigmaij and epsij arrays. Uses dict-lookup instead
         elif self.pairarrayversion=="py":
-            print("Using Python version for array creation")
+            if self.printlevel >= 2:
+                print("Using Python version for array creation")
             #Update: Only doing half of array
             for i in range(self.numatoms):
                 for j in range(i+1, self.numatoms):
@@ -808,9 +826,9 @@ class NonBondedTheory:
         #                self.sigmaij[i, j] = ljpot[2]
         #                self.epsij[i, j] = ljpot[3]
 
-
-        print("self.sigmaij:", self.sigmaij)
-        print("self.epsij:", self.epsij)
+        if self.printlevel >= 2:
+            print("self.sigmaij:", self.sigmaij)
+            print("self.epsij:", self.epsij)
         print_time_rel(CheckpointTime, modulename="pairpot arrays")
 
     def update_charges(self,charges):
@@ -841,8 +859,9 @@ class NonBondedTheory:
         #if len(full_cords)==0:
         #    full_coords=
 
-        print(BC.OKBLUE, BC.BOLD, "------------RUNNING NONBONDED MM CODE-------------", BC.END)
-        print("Calculating MM energy and gradient")
+        if self.printlevel >= 2:
+            print(BC.OKBLUE, BC.BOLD, "------------RUNNING NONBONDED MM CODE-------------", BC.END)
+            print("Calculating MM energy and gradient")
         #initializing
         self.Coulombchargeenergy=0
         self.LJenergy=0
@@ -853,14 +872,16 @@ class NonBondedTheory:
 
         #Slow Python version or fast Fortran version
         if self.codeversion=='py':
-            print("Using slow Python MM code")
+            if self.printlevel >= 2:
+                print("Using slow Python MM code")
             #Sending full coords and charges over. QM charges are set to 0.
             if Coulomb==True:
                 self.Coulombchargeenergy, self.Coulombchargegradient  = coulombcharge(charges, full_coords)
-                print("Coulomb Energy (au):", self.Coulombchargeenergy)
-                print("Coulomb Energy (kcal/mol):", self.Coulombchargeenergy * constants.harkcal)
-                print("")
-                print("self.Coulombchargegradient:", self.Coulombchargegradient)
+                if self.printlevel >= 2:
+                    print("Coulomb Energy (au):", self.Coulombchargeenergy)
+                    print("Coulomb Energy (kcal/mol):", self.Coulombchargeenergy * constants.harkcal)
+                    print("")
+                    print("self.Coulombchargegradient:", self.Coulombchargegradient)
                 blankline()
             # NOTE: Lennard-Jones should  calculate both MM-MM and QM-MM LJ interactions. Full coords necessary.
             if LJ==True:
@@ -880,7 +901,8 @@ class NonBondedTheory:
             self.MMenergy, self.MMgradient = LJCoulpy(full_coords, self.atomtypes, charges, self.LJpairpotentials,
                                                           connectivity=connectivity)
         elif self.codeversion=='f2py':
-            print("Using fast Fortran F2Py MM code")
+            if self.printlevel >= 2:
+                print("Using fast Fortran F2Py MM code")
             try:
                 import LJCoulombv1
                 print(LJCoulombv1.__doc__)
@@ -890,7 +912,8 @@ class NonBondedTheory:
             self.MMEnergy, self.MMGradient, self.LJenergy, self.Coulombchargeenergy =\
                 LJCoulomb(full_coords, self.epsij, self.sigmaij, charges, connectivity=connectivity)
         elif self.codeversion=='f2pyv2':
-            print("Using fast Fortran F2Py MM code v2")
+            if self.printlevel >= 2:
+                print("Using fast Fortran F2Py MM code v2")
             try:
                 import LJCoulombv2
                 print(LJCoulombv2.__doc__)
@@ -902,15 +925,19 @@ class NonBondedTheory:
 
         else:
             print("Unknown version of MM code")
+            exit(1)
 
-        print("Lennard-Jones Energy (au):", self.LJenergy)
-        print("Lennard-Jones Energy (kcal/mol):", self.LJenergy * constants.harkcal)
-        print("Coulomb Energy (au):", self.Coulombchargeenergy)
-        print("Coulomb Energy (kcal/mol):", self.Coulombchargeenergy * constants.harkcal)
-        print("MM Energy:", self.MMEnergy)
-        print("self.MMGradient:", self.MMGradient)
+        if self.printlevel >= 2:
+            print("Lennard-Jones Energy (au):", self.LJenergy)
+            print("Lennard-Jones Energy (kcal/mol):", self.LJenergy * constants.harkcal)
+            print("Coulomb Energy (au):", self.Coulombchargeenergy)
+            print("Coulomb Energy (kcal/mol):", self.Coulombchargeenergy * constants.harkcal)
+            print("MM Energy:", self.MMEnergy)
+        if self.printlevel >= 3:
+            print("self.MMGradient:", self.MMGradient)
 
-        print(BC.OKBLUE, BC.BOLD, "------------ENDING NONBONDED MM CODE-------------", BC.END)
+        if self.printlevel >= 2:
+            print(BC.OKBLUE, BC.BOLD, "------------ENDING NONBONDED MM CODE-------------", BC.END)
         return self.MMEnergy, self.MMGradient
 
 #Polarizable Embedding theory object.
@@ -1300,9 +1327,10 @@ class QMMMTheory:
 
     def run(self, current_coords=None, elems=None, Grad=False, nprocs=None):
         CheckpointTime = time.time()
-        print(BC.WARNING, BC.BOLD, "------------RUNNING QM/MM MODULE-------------", BC.END)
-        print("QM Module:", self.qm_theory_name)
-        print("MM Module:", self.mm_theory_name)
+        if self.printlevel >= 2:
+            print(BC.WARNING, BC.BOLD, "------------RUNNING QM/MM MODULE-------------", BC.END)
+            print("QM Module:", self.qm_theory_name)
+            print("MM Module:", self.mm_theory_name)
         #If no coords provided to run (from Optimizer or NumFreq or MD) then use coords associated with object.
         #if len(current_coords) != 0:
         if current_coords is not None:
@@ -1317,7 +1345,8 @@ class QMMMTheory:
 
         if nprocs==None:
             nprocs=self.nprocs
-        print("Running QM/MM object with {} cores available".format(nprocs))
+        if self.printlevel >= 2:
+            print("Running QM/MM object with {} cores available".format(nprocs))
         #Updating QM coords and MM coords.
         #TODO: Should we use different name for updated QMcoords and MMcoords here??
         self.qmcoords=[current_coords[i] for i in self.qmatoms]
@@ -1394,10 +1423,13 @@ class QMMMTheory:
 
         elif self.qm_theory_name == "DaltonTheory":
             print("not yet implemented")
+            exit(1)
         elif self.qm_theory_name == "NWChemtheory":
             print("not yet implemented")
+            exit(1)
         else:
             print("invalid QM theory")
+            exit(1)
         print_time_rel(CheckpointTime, modulename='QM step')
         CheckpointTime = time.time()
 
@@ -1405,10 +1437,11 @@ class QMMMTheory:
 
         # MM THEORY
         if self.mm_theory_name == "NonBondedTheory":
-            print("Running MM theory as part of QM/MM.")
-            print("Using MM on full system. Charges for QM region {} have to be set to zero ".format(self.qmatoms))
-            printdebug("Charges for full system is: ", self.charges)
-            print("Passing QM atoms to MMtheory run so that QM-QM pairs are skipped in pairlist")
+            if self.printlevel >= 2:
+                print("Running MM theory as part of QM/MM.")
+                print("Using MM on full system. Charges for QM region {} have to be set to zero ".format(self.qmatoms))
+                printdebug("Charges for full system is: ", self.charges)
+                print("Passing QM atoms to MMtheory run so that QM-QM pairs are skipped in pairlist")
             self.MMEnergy, self.MMGradient= self.mm_theory.run(full_coords=current_coords, mm_coords=self.mmcoords,
                                                                charges=self.charges, connectivity=self.connectivity,
                                                                qmatoms=self.qmatoms)
@@ -1417,9 +1450,11 @@ class QMMMTheory:
             #    self.MMGrad = self.mm_theory.MMGrad
             #    print("self.MMGrad:", self.MMGrad)
         elif self.mm_theory_name == "OpenMMTheory":
-            print("Running OpenMM theory as part of QM/MM.")
+            if self.printlevel >= 2:
+                print("Running OpenMM theory as part of QM/MM.")
             if self.QMChargesZeroed==True:
-                print("Using MM on full system. Charges for QM region {} have to be set to zero ".format(self.qmatoms))
+                if self.printlevel >= 2:
+                    print("Using MM on full system. Charges for QM region {} have to be set to zero ".format(self.qmatoms))
             else:
                 print("QMCharges have not been zeroed")
                 exit(1)
@@ -1434,9 +1469,10 @@ class QMMMTheory:
         #Final QM/MM Energy
         self.QM_MM_Energy= self.QMEnergy+self.MMEnergy
         blankline()
-        print("{:<20} {:>20.12f}".format("QM energy: ",self.QMEnergy))
-        print("{:<20} {:>20.12f}".format("MM energy: ", self.MMEnergy))
-        print("{:<20} {:>20.12f}".format("QM/MM energy: ", self.QM_MM_Energy))
+        if self.printlevel >= 2:
+            print("{:<20} {:>20.12f}".format("QM energy: ",self.QMEnergy))
+            print("{:<20} {:>20.12f}".format("MM energy: ", self.MMEnergy))
+            print("{:<20} {:>20.12f}".format("QM/MM energy: ", self.QM_MM_Energy))
         blankline()
 
         #Final QM/MM gradient. Combine QM gradient, MM gradient and PC-gradient (elstat MM gradient from QM code).
@@ -1454,7 +1490,7 @@ class QMMMTheory:
             #Now assemble final QM/MM gradient
             self.QM_MM_Gradient=self.QM_PC_Gradient+self.MMGradient
             print_time_rel(CheckpointTime, modulename='QM/MM gradient combine')
-            if self.printlevel==3:
+            if self.printlevel >=3::
                 print("QM gradient (au/Bohr):")
                 print_coords_all(self.QMgradient, self.qmelems, self.qmatoms)
                 blankline()
@@ -1469,7 +1505,8 @@ class QMMMTheory:
                 blankline()
                 print("Total QM/MM gradient (au/Bohr):")
                 print_coords_all(self.QM_MM_Gradient, self.elems,self.allatoms)
-            print(BC.WARNING,BC.BOLD,"------------ENDING QM/MM MODULE-------------",BC.END)
+            if self.printlevel >= 2:
+                print(BC.WARNING,BC.BOLD,"------------ENDING QM/MM MODULE-------------",BC.END)
             return self.QM_MM_Energy, self.QM_MM_Gradient
         else:
             return self.QM_MM_Energy
@@ -1478,8 +1515,11 @@ class QMMMTheory:
 
 #ORCA Theory object. Fragment object is optional. Only used for single-points.
 class ORCATheory:
-    def __init__(self, orcadir, fragment=None, charge='', mult='', orcasimpleinput='',
+    def __init__(self, orcadir, fragment=None, charge='', mult='', orcasimpleinput='', printlevel=2,
                  orcablocks='', extraline='', brokensym=None, HSmult=None, atomstoflip=None, nprocs=1):
+
+        #Printlevel
+        self.printlevel=printlevel
 
         #Setting nprocs of object
         self.nprocs=nprocs
@@ -1616,7 +1656,11 @@ class ORCATheory:
 class Psi4Theory:
     def __init__(self, fragment='', charge='', mult='', printsetting='False', psi4settings='', psi4functional='',
                  runmode='library', psi4dir=None, pe=False, potfile='', outputname='psi4output.dat', label='psi4input',
-                 psi4memory=3000, nprocs=1):
+                 psi4memory=3000, nprocs=1, printlevel=2):
+
+        #Printlevel
+        self.printlevel=printlevel
+
 
         self.nprocs=nprocs
         self.psi4memory=psi4memory
@@ -1965,8 +2009,11 @@ class Psi4Theory:
 #PySCF runmode: Library only
 # PE: Polarizable embedding (CPPE). Not completely active in PySCF 1.7.1. Bugfix required I think
 class PySCFTheory:
-    def __init__(self, fragment='', charge='', mult='', printsetting='False', pyscfbasis='', pyscffunctional='',
+    def __init__(self, fragment='', charge='', mult='', printsetting='False', printlevel=2, pyscfbasis='', pyscffunctional='',
                  pe=False, potfile='', outputname='pyscf.out', pyscfmemory=3100, nprocs=1):
+
+        #Printlevel
+        self.printlevel=printlevel
 
         self.nprocs=nprocs
 
@@ -2498,7 +2545,10 @@ def old_read_fragment_from_file(fragfile):
 #Now supports 2 runmodes: 'library' (fast Python C-API) or 'inputfile'
 #
 class xTBTheory:
-    def __init__(self, xtbdir=None, fragment=None, charge=None, mult=None, xtbmethod=None, runmode='inputfile', nprocs=1):
+    def __init__(self, xtbdir=None, fragment=None, charge=None, mult=None, xtbmethod=None, runmode='inputfile', nprocs=1, printlevel=2):
+
+        #Printlevel
+        self.printlevel=printlevel
 
         if xtbmethod is None:
             print("xTBTheory requires xtbnmethod keyword to be set")
@@ -2547,7 +2597,8 @@ class xTBTheory:
                 self.xtbdir = xtbdir
     #Cleanup after run.
     def cleanup(self):
-        print("Cleaning up old xTB files")
+        if self.printlevel >= 2:
+            print("Cleaning up old xTB files")
         try:
             os.remove('xtb-inpfile.xyz')
             os.remove('xtb-inpfile.out')
@@ -2565,8 +2616,8 @@ class xTBTheory:
         if nprocs is None:
             nprocs=self.nprocs
 
-
-        print("------------STARTING XTB INTERFACE-------------")
+        if self.printlevel >= 2:
+            print("------------STARTING XTB INTERFACE-------------")
         #Coords provided to run or else taken from initialization.
         #if len(current_coords) != 0:
         if current_coords is not None:
@@ -2590,11 +2641,13 @@ class xTBTheory:
         os.environ["OPENBLAS_NUM_THREADS"] = "1"
 
         if self.runmode=='inputfile':
-            print("Using inputfile-based xTB interface")
+            if self.printlevel >=2:
+                print("Using inputfile-based xTB interface")
             #TODO: Add restart function so that xtbrestart is not always deleted
             #Create XYZfile with generic name for xTB to run
             inputfilename="xtb-inpfile"
-            print("Creating inputfile:", inputfilename+'.xyz')
+            if self.printlevel >= 2:
+                print("Creating inputfile:", inputfilename+'.xyz')
             num_qmatoms=len(current_coords)
             num_mmatoms=len(MMcharges)
             self.cleanup()
@@ -2602,8 +2655,9 @@ class xTBTheory:
             write_xyzfile(qm_elems, current_coords, inputfilename)
 
             #Run inputfile. Take nprocs argument.
-            print("------------Running xTB-------------")
-            print("...")
+            if self.printlevel >= 2:
+                print("------------Running xTB-------------")
+                print("...")
             if Grad==True:
                 if PC==True:
                     create_xtb_pcfile_general(current_MM_coords, MMcharges)
@@ -2618,27 +2672,30 @@ class xTBTheory:
                 else:
                     run_xtb_SP_serial(self.xtbdir, self.xtbmethod, inputfilename + '.xyz', self.charge, self.mult)
 
-
-            print("------------xTB calculation done-----")
+            if self.printlevel >= 2:
+                print("------------xTB calculation done-----")
             #Check if finished. Grab energy
             if Grad==True:
                 self.energy,self.grad=xtbgradientgrab(num_qmatoms)
                 if PC==True:
                     # Grab pointcharge gradient. i.e. gradient on MM atoms from QM-MM elstat interaction.
                     self.pcgrad = xtbpcgradientgrab(num_mmatoms)
-                    print("xtb energy :", self.energy)
-                    print("------------ENDING XTB-INTERFACE-------------")
+                    if self.printlevel >= 2:
+                        print("xtb energy :", self.energy)
+                        print("------------ENDING XTB-INTERFACE-------------")
 
                     return self.energy, self.grad, self.pcgrad
                 else:
-                    print("xtb energy :", self.energy)
-                    print("------------ENDING XTB-INTERFACE-------------")
+                    if self.printlevel >= 2:
+                        print("xtb energy :", self.energy)
+                        print("------------ENDING XTB-INTERFACE-------------")
                     return self.energy, self.grad
             else:
                 outfile=inputfilename+'.out'
                 self.energy=xtbfinalenergygrab(outfile)
-                print("xtb energy :", self.energy)
-                print("------------ENDING XTB-INTERFACE-------------")
+                if self.printlevel >= 2:
+                    print("xtb energy :", self.energy)
+                    print("------------ENDING XTB-INTERFACE-------------")
                 return self.energy
         elif self.runmode=='library':
 
