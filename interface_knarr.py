@@ -225,11 +225,13 @@ class KnarrCalculator:
                 #Todo: disable react and prod printing if free_end True
                 #Writing reactant image
                 trajfile.write(str(self.full_fragment_reactant.numatoms) + "\n")
-                trajfile.write("Image 0. Energy: {} \n".format(path.GetEnergy()[0][0]))
+                trajfile.write("Image 0. Energy: {} \n".format(self.energies_dict[0]))
 
                 print("self.energies_dict:", self.energies_dict)
+                print("im0 en:", self.energies_dict[0])
                 print("Image 0 energy", self.full_fragment_reactant.energy)
                 print("Image last energy", self.full_fragment_product.energy)
+                print("im last en:", self.energies_dict[self.numatoms-1])
                 #print("self.full_fragment_reactant.elems:", self.full_fragment_reactant.elems)
                 #print("self.full_fragment_reactant:", self.full_fragment_reactant)
                 for el, corr in zip(self.full_fragment_reactant.elems, self.full_fragment_reactant.coords):
@@ -250,7 +252,7 @@ class KnarrCalculator:
                         trajfile.write(el + "  " + str(cord[0]) + " " + str(cord[1]) + " " + str(cord[2]) + "\n")
                 #Writing product image
                 trajfile.write(str(self.full_fragment_product.numatoms) + "\n")
-                trajfile.write("Image {} Energy: {} \n".format(self.numimages-1,path.GetEnergy()[-1][0]))
+                trajfile.write("Image {} Energy: {} \n".format(self.numimages-1,self.energies_dict[self.numimages-1]))
                 for el, corp in zip(self.full_fragment_product.elems, self.full_fragment_product.coords):
                     trajfile.write(el + "  " + str(corp[0]) + " " + str(corp[1]) + " " + str(corp[2]) + "\n")
 
