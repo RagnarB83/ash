@@ -383,9 +383,11 @@ def NEB(reactant=None, product=None, theory=None, images=None, interpolation=Non
 
     #Setting printlevel of theory during E+Grad steps  1=very-little, 2=more, 3=lots, 4=verymuch
     print("NEB printlevel is:", printlevel)
-    print("Theory print level currently", theory.printlevel)
     theory.printlevel=printlevel
-    print("Theory print level currently", theory.printlevel)
+    print("Theory print level set to:", theory.printlevel)
+    if self.theory.__class__.__name__ == "QMMMTheory":
+        theory.qm_theory.printlevel = printlevel
+        theory.mm_theory.printlevel = printlevel
 
     #Now starting NEB from path object, using neb_settings and optimizer settings
     DoNEB(path, calculator, neb_settings, optimizer)
