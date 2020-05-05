@@ -446,9 +446,3 @@ def NEB(reactant=None, product=None, theory=None, images=None, interpolation=Non
     print('KNARR successfully terminated')
     blankline()
     print("Please consider citing the following paper if you found the NEB module (from Knarr) useful: To be added")
-    print("full_coords_images_dict:", full_coords_images_dict)
-    for key, value in full_coords_images_dict.items():
-        print("key:", key)
-        print("len of val", len(value))
-    print("react energy:", react.energy)
-    print("react energy:", react.GetEnergy())
