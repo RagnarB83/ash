@@ -385,7 +385,7 @@ def NEB(reactant=None, product=None, theory=None, images=None, interpolation=Non
     print("NEB printlevel is:", printlevel)
     theory.printlevel=printlevel
     print("Theory print level set to:", theory.printlevel)
-    if self.theory.__class__.__name__ == "QMMMTheory":
+    if theory.__class__.__name__ == "QMMMTheory":
         theory.qm_theory.printlevel = printlevel
         theory.mm_theory.printlevel = printlevel
 
