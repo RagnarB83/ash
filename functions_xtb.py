@@ -66,11 +66,6 @@ def xtbVEAgrab(file):
 def run_xtb_SP_serial(xtbdir, xtbmethod, xyzfile, charge, mult, Grad=False):
     basename = xyzfile.split('.')[0]
     uhf=mult-1
-    print("uhf: ", uhf)
-    print("charge: ", charge)
-    print("mult: ", mult)
-    print("xtbdir: ", xtbdir)
-    print("xtbmethod: ", xtbmethod)
     #Writing xtbinputfile to disk so that we use ORCA-style PCfile and embedding
     with open('xtbinput', 'w') as xfile:
         xfile.write('$embedding\n')

@@ -2653,7 +2653,7 @@ class xTBTheory:
             num_mmatoms=len(MMcharges)
             self.cleanup()
             #Todo: xtbrestart possibly. needs to be optional
-            write_xyzfile(qm_elems, current_coords, inputfilename)
+            write_xyzfile(qm_elems, current_coords, inputfilename,printlevel=self.printlevel)
 
             #Run inputfile. Take nprocs argument.
             if self.printlevel >= 2:

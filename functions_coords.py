@@ -405,14 +405,15 @@ def print_coordinates(atoms, V, title=""):
     return
 
 #Write XYZfile provided list of elements and list of list of coords and filename
-def write_xyzfile(elems,coords,name):
+def write_xyzfile(elems,coords,name,printlevel=2):
     with open(name+'.xyz', 'w') as ofile:
         ofile.write(str(len(elems))+'\n')
         ofile.write("title"+'\n')
         for el,c in zip(elems,coords):
             line="{:4} {:12.6f} {:12.6f} {:12.6f}".format(el,c[0], c[1], c[2])
             ofile.write(line+'\n')
-    print("Wrote XYZ file:", name+'.xyz')
+    if printlevel >= 2:
+        print("Wrote XYZ file:", name+'.xyz')
 
 #Write PDBfile (dummy version) for PyFrame
 def write_pdbfile_dummy(elems,coords,name, atomlabels,residlabels):
