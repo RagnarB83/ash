@@ -245,7 +245,7 @@ class KnarrCalculator:
                     trajfile.write(el + "  " + str(corr[0]) + " " + str(corr[1]) + " " + str(corr[2]) + "\n")
                 #All active images in this NEB iteration:
                 print("x list_to_compute:", list_to_compute)
-                print("full_coords_images_list:", full_coords_images_list)
+                #print("full_coords_images_list:", full_coords_images_list)
                 print(len(list_to_compute))
                 print(len(full_coords_images_list))
                 #for imageid,fc in zip(list(list_to_compute),full_coords_images_list):
