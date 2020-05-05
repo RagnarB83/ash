@@ -1490,7 +1490,7 @@ class QMMMTheory:
             #Now assemble final QM/MM gradient
             self.QM_MM_Gradient=self.QM_PC_Gradient+self.MMGradient
             print_time_rel(CheckpointTime, modulename='QM/MM gradient combine')
-            if self.printlevel >=3::
+            if self.printlevel >=3:
                 print("QM gradient (au/Bohr):")
                 print_coords_all(self.QMgradient, self.qmelems, self.qmatoms)
                 blankline()
