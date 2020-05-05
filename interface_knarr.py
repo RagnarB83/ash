@@ -5,6 +5,7 @@ from yggdrasill import *
 import numpy as np
 import sys
 import os
+import copy
 
 #This makes Knarr part of python path
 #Recommended way?
@@ -140,7 +141,6 @@ class KnarrCalculator:
             list_to_compute=list(list_to_compute)
         print("list_to_compute:", list_to_compute)
 
-        full_coords_images_list=[]
         #
 
         #print("self.iterations:", self.iterations)
@@ -163,24 +163,33 @@ class KnarrCalculator:
                     print("Actregion True")
                     currcoords=image_coords
                     # Defining full_coords as original coords temporarily
-                    full_coords = self.full_fragment_reactant.coords
+                    #full_coords = self.full_fragment_reactant.coords
+                    #Creating deep copy of reactant coordinates as it will be modified
+                    full_coords = copy.deepcopy(self.full_fragment_reactant.coords)
+
                     # Replacing act-region coordinates with coords from currcoords
                     print("self.actatoms:", self.actatoms)
+
                     for i, c in enumerate(full_coords):
                         if i in self.actatoms:
                             # Silly. Pop-ing first coord from currcoords until done
                             curr_c, currcoords = currcoords[0], currcoords[1:]
                             full_coords[i] = curr_c
                     full_current_image_coords = full_coords
+
+                    #List of all image-geometries (full coords)
+                    #full_coords_images_list.append(full_current_image_coords)
+
+                    self.full_coords_images_dict[image_number] = copy.deepcopy(full_current_image_coords)
+                    print("full_coords_images_dict keys:", self.full_coords_images_dict.keys())
+
+
                     #EnGrad calculation on full system
                     En_image, Grad_image_full = self.theory.run(current_coords=full_current_image_coords, elems=self.full_fragment_reactant.elems, Grad=True)
                     print("Energy of image {} is : {}".format(image_number,En_image))
                     #Trim Full gradient down to only act-atoms gradient
                     Grad_image = np.array([Grad_image_full[i] for i in self.actatoms])
-                    #List of all image-geometries (full coords)
-                    full_coords_images_list.append(full_current_image_coords)
-                    self.full_coords_images_dict[image_number] = full_current_image_coords
-                    print("full_coords_images_dict keys:", self.full_coords_images_dict.keys())
+
                     #Keeping track of energies for each image in a dict
                     self.energies_dict[image_number] = En_image
                     print("self.energies_dict keys:", self.energies_dict.keys())
@@ -212,7 +221,7 @@ class KnarrCalculator:
         if self.ActiveRegion is True:
             #if len(list_to_compute) > 2:
             if self.iterations > 1:
-                self.write_Full_MEP_Path(path, list_to_compute, full_coords_images_list, E)
+                self.write_Full_MEP_Path(path, list_to_compute, E)
 
         #print("self.ISCION:", self.ISCION)
         if self.iterations > 3 :
@@ -223,7 +232,7 @@ class KnarrCalculator:
     #def AddFC(self, x=1):
     #    self.forcecalls += x
     #    return
-    def write_Full_MEP_Path(self, path, list_to_compute, full_coords_images_list, E):
+    def write_Full_MEP_Path(self, path, list_to_compute, E):
         print("Inside write_Full_MEP_Path")
         #Write out MEP for full coords in each iteration. Knarr writes out Active Part.
         if self.ActiveRegion is True:
@@ -245,9 +254,7 @@ class KnarrCalculator:
                     trajfile.write(el + "  " + str(corr[0]) + " " + str(corr[1]) + " " + str(corr[2]) + "\n")
                 #All active images in this NEB iteration:
                 print("x list_to_compute:", list_to_compute)
-                #print("full_coords_images_list:", full_coords_images_list)
                 print(len(list_to_compute))
-                print(len(full_coords_images_list))
                 #for imageid,fc in zip(list(list_to_compute),full_coords_images_list):
                 for imageid in list_to_compute:
                     print("imageid:", imageid)
