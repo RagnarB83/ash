@@ -197,7 +197,7 @@ class KnarrCalculator:
         path.AddFC(counter)
         blankline()
         print("X2 full_coords_images_dict:", self.full_coords_images_dict)
-        for key, value in self.full_coords_images_dict.iteritems():
+        for key, value in self.full_coords_images_dict.items():
             print("key:", key)
             print("len of val", len(value))
         #Write out full MEP path in each NEB iteration.
@@ -424,6 +424,6 @@ def NEB(reactant=None, product=None, theory=None, images=None, interpolation=Non
     blankline()
     print("Please consider citing the following paper if you found the NEB module (from Knarr) useful: To be added")
     print("full_coords_images_dict:", full_coords_images_dict)
-    for key, value in full_coords_images_dict.iteritems():
+    for key, value in full_coords_images_dict.items():
         print("key:", key)
         print("len of val", len(value))
