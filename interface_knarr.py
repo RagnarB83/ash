@@ -360,14 +360,16 @@ def NEB(reactant=None, product=None, theory=None, images=None, interpolation=Non
 
     # Generate path via Knarr_pathgenerator. ActiveRegion used to prevent RMSD alignment if doing actregion QM/MM etc.
     Knarr_pathgenerator(neb_settings, path_parameters, react, prod, ActiveRegion)
-
+    blankline()
+    print("Initial path generation done!")
+    print("Reading initial path")
     #Reading initial path from XYZ file. Hardcoded as knarr_path.xyz
     rp, ndim, nim, symb = ReadTraj("knarr_path.xyz")
     path = InitializePathObject(nim, react)
     path.SetCoords(rp)
 
     print("path IsConstrained", path.IsConstrained())
-
+    print("Starting NEB")
     #Now starting NEB from path object, using neb_settings and optimizer settings
     DoNEB(path, calculator, neb_settings, optimizer)
 
