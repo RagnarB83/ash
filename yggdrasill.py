@@ -866,9 +866,10 @@ class NonBondedTheory:
         #Testing if self.sigmaij array has been assigned or not. If not calling calculate_LJ_pairpotentials
         #Passing qmatoms over so pairs can be skipped
         #This sets self.sigmaij and self.epsij and also self.LJpairpotentials
-        #if actatoms have been defined this will be skipped in pairlist creation
+        #Todo: if actatoms have been defined this will be skipped in pairlist creation
+        #if frozenatoms passed frozen-frozen interactions will be skipped
         if np.count_nonzero(self.sigmaij) == 0:
-            self.calculate_LJ_pairpotentials(qmatoms,actatoms)
+            self.calculate_LJ_pairpotentials(qmatoms,frozenatoms)
 
         if len(self.LJpairpotentials) > 0:
             LJ=True
