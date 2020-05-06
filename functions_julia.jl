@@ -63,6 +63,7 @@ end
 
 #Modified pairpot that only does active atoms
 function pairpot_active(numatoms,atomtypes,LJpydict,qmatoms,actatoms)
+	println("inside pairpot_active")
     #Updating atom indices from 0 to 1 syntax
     qmatoms=[i+1 for i in qmatoms]
     actatoms=[i+1 for i in actatoms]
@@ -76,6 +77,7 @@ function pairpot_active(numatoms,atomtypes,LJpydict,qmatoms,actatoms)
 	println("actatoms: $actatoms")
 	println("-----")
 	println("numatoms: $numatoms")
+	exit()
 	for i in actatoms
 		for j in 1:numatoms
 			#println("i is $i and j is $j")
