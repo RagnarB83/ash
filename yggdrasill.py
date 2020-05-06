@@ -792,13 +792,15 @@ class NonBondedTheory:
             # Defining Julia Module
             Main.include(yggpath + "/functions_julia.jl")
 
-            print("Calculating pairpotential array for whole system")
+
             # Do pairpot array for whole system
-            self.sigmaij, self.epsij = Main.Juliafunctions.pairpot_full(self.numatoms, self.atomtypes, self.LJpairpotdict,qmatoms,frozenatoms)
-            #else:
+            if len(actatoms) == 0:
+                print("Calculating pairpotential array for whole system")
+                self.sigmaij, self.epsij = Main.Juliafunctions.pairpot_full(self.numatoms, self.atomtypes, self.LJpairpotdict,qmatoms)
+            else:
             #    #or only for active region
-            #    print("Calculating pairpotential array for active region only")
-            #    self.sigmaij, self.epsij = Main.Juliafunctions.pairpot_active(self.numatoms, self.atomtypes, self.LJpairpotdict, qmatoms, actatoms)
+                print("Calculating pairpotential array for active region only")
+                self.sigmaij, self.epsij = Main.Juliafunctions.pairpot_active(self.numatoms, self.atomtypes, self.LJpairpotdict, qmatoms, actatoms)
 
             if self.printlevel >= 2:
                 print("self.sigmaij:", self.sigmaij)
@@ -869,7 +871,7 @@ class NonBondedTheory:
         #Todo: if actatoms have been defined this will be skipped in pairlist creation
         #if frozenatoms passed frozen-frozen interactions will be skipped
         if np.count_nonzero(self.sigmaij) == 0:
-            self.calculate_LJ_pairpotentials(qmatoms=qmatoms,frozenatoms=frozenatoms)
+            self.calculate_LJ_pairpotentials(qmatoms=qmatoms,actatoms=actatoms)
 
         if len(self.LJpairpotentials) > 0:
             LJ=True
@@ -1239,6 +1241,8 @@ class QMMMTheory:
         self.frozenatoms=frozenatoms
         if self.frozenatoms is not None:
             print("Frozenatoms list passed to QM/MM object. Will skip all frozen interactions in MM.")
+            print("not active. to be deleted")
+            exit(1)
         elif self.actatoms is not None:
             print("Actatoms list passed to QM/MM object. Will skip all frozen interactions in MM.")
             #Todo: should this be better? Handled by Optimizer/NEB/MD function instead?
@@ -1480,7 +1484,7 @@ class QMMMTheory:
                 print("Passing active atoms to MMtheory run so that frozen pairs are skipped in pairlist")
             self.MMEnergy, self.MMGradient= self.mm_theory.run(full_coords=current_coords, mm_coords=self.mmcoords,
                                                                charges=self.charges, connectivity=self.connectivity,
-                                                               qmatoms=self.qmatoms, actatoms=self.actatoms, frozenatoms=self.frozenatoms)
+                                                               qmatoms=self.qmatoms, actatoms=self.actatoms, actatoms=self.actatoms)
             #self.MMEnergy=self.mm_theory.MMEnergy
             #if Grad==True:
             #    self.MMGrad = self.mm_theory.MMGrad
