@@ -73,28 +73,30 @@ function pairpot_active(numatoms,atomtypes,LJpydict,qmatoms,actatoms)
     sigmaij=zeros(numatoms, numatoms)
     epsij=zeros(numatoms, numatoms)
 
-for (count_i,i) in enumerate(actatoms)
-    for j in actatoms[count_i+1]
-        if i in qmatoms && j in qmatoms
-            continue
-        else
-           #Checking if dict contains key, return value if so, otherwise nothing
-           v = get(LJdict_jul, (atomtypes[i],atomtypes[j]), nothing)
-           if v !== nothing
-             sigmaij[i, j] = v[1]
-             epsij[i, j] =  v[2]
-           else
-             v = get(LJdict_jul, (atomtypes[j],atomtypes[i]), nothing)
-             if v !== nothing
-               sigmaij[i, j] = v[1]
-               epsij[i, j] =  v[2]
-             end
-           end
-	    end
-    end
-end
-return sigmaij,epsij
-end
+	for (count_i,i) in enumerate(actatoms)
+		for j in actatoms[count_i+1]
+			println("i is $i and j is $j")
+			println("count_i is $count_i")
+			if i in qmatoms && j in qmatoms
+				continue
+			else
+			   #Checking if dict contains key, return value if so, otherwise nothing
+			   v = get(LJdict_jul, (atomtypes[i],atomtypes[j]), nothing)
+			   if v !== nothing
+				 sigmaij[i, j] = v[1]
+				 epsij[i, j] =  v[2]
+			   else
+				 v = get(LJdict_jul, (atomtypes[j],atomtypes[i]), nothing)
+				 if v !== nothing
+				   sigmaij[i, j] = v[1]
+				   epsij[i, j] =  v[2]
+				 end
+			   end
+			end
+		end
+	end
+	return sigmaij,epsij
+	end
 
 #Distance for 2D arrays of coords
 function distance(x::Array{Float64, 2}, y::Array{Float64, 2})
