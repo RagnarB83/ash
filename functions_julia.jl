@@ -72,11 +72,13 @@ function pairpot_active(numatoms,atomtypes,LJpydict,qmatoms,actatoms)
     #println(typeof(LJdict_jul))
     sigmaij=zeros(numatoms, numatoms)
     epsij=zeros(numatoms, numatoms)
-
+	println("atomtypes is $atomtypes")
 	for (count_i,i) in enumerate(actatoms)
 		for j in actatoms[count_i+1]
 			println("i is $i and j is $j")
 			println("count_i is $count_i")
+			println("atomtypes[i]", atomtypes[i])
+			println("atomtypes[j]", atomtypes[j])
 			if i in qmatoms && j in qmatoms
 				continue
 			else
@@ -85,11 +87,13 @@ function pairpot_active(numatoms,atomtypes,LJpydict,qmatoms,actatoms)
 			   if v !== nothing
 				 sigmaij[i, j] = v[1]
 				 epsij[i, j] =  v[2]
+				println("here")
 			   else
 				 v = get(LJdict_jul, (atomtypes[j],atomtypes[i]), nothing)
 				 if v !== nothing
 				   sigmaij[i, j] = v[1]
 				   epsij[i, j] =  v[2]
+
 				 end
 			   end
 			end
