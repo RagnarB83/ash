@@ -869,7 +869,7 @@ class NonBondedTheory:
         #Todo: if actatoms have been defined this will be skipped in pairlist creation
         #if frozenatoms passed frozen-frozen interactions will be skipped
         if np.count_nonzero(self.sigmaij) == 0:
-            self.calculate_LJ_pairpotentials(qmatoms,frozenatoms)
+            self.calculate_LJ_pairpotentials(qmatoms=qmatoms,frozenatoms=frozenatoms)
 
         if len(self.LJpairpotentials) > 0:
             LJ=True
