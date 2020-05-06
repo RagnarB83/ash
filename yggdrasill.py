@@ -1484,7 +1484,7 @@ class QMMMTheory:
                 print("Passing active atoms to MMtheory run so that frozen pairs are skipped in pairlist")
             self.MMEnergy, self.MMGradient= self.mm_theory.run(full_coords=current_coords, mm_coords=self.mmcoords,
                                                                charges=self.charges, connectivity=self.connectivity,
-                                                               qmatoms=self.qmatoms, actatoms=self.actatoms, actatoms=self.actatoms)
+                                                               qmatoms=self.qmatoms, actatoms=self.actatoms)
             #self.MMEnergy=self.mm_theory.MMEnergy
             #if Grad==True:
             #    self.MMGrad = self.mm_theory.MMGrad
