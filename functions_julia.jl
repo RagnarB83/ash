@@ -28,10 +28,10 @@ end
 # Avoided dict-lookup for both key-existence and value
 #https://stackoverflow.com/questions/58170034/how-do-i-check-if-a-dictionary-has-a-key-in-it-in-julia
 #frozenatoms option is too slow. Disabling and using pairpot_active function instead
-function pairpot_full(numatoms,atomtypes,LJpydict,qmatoms)
+function pairpot_full(numatoms,atomtypes,LJpydict,qmatoms,frozenatoms)
     #Updating atom indices from 0 to 1 syntax
     qmatoms=[i+1 for i in qmatoms]
-    #frozenatoms=[i+1 for i in frozenatoms]
+    frozenatoms=[i+1 for i in frozenatoms]
     #Convert Python dict to Julia dict with correct types
     LJdict_jul=convert(Dict{Tuple{String,String},Array{Float64,1}}, LJpydict)
     #println(typeof(LJdict_jul))
@@ -39,10 +39,11 @@ function pairpot_full(numatoms,atomtypes,LJpydict,qmatoms)
     epsij=zeros(numatoms, numatoms)
 for i in 1:numatoms
     for j in i+1:numatoms
+		if i in frozenatoms && j in frozenatoms
+            continue
         if i in qmatoms && j in qmatoms
             continue
-        #elseif i in frozenatoms && j in frozenatoms
-        #    continue
+
         else
            #Checking if dict contains key, return value if so, otherwise nothing
            v = get(LJdict_jul, (atomtypes[i],atomtypes[j]), nothing)
