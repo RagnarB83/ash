@@ -82,6 +82,7 @@ function pairpot_active(numatoms,atomtypes,LJpydict,qmatoms,actatoms)
 			if i in qmatoms && j in qmatoms
 				continue
 			else
+				println("else")
 			   #Checking if dict contains key, return value if so, otherwise nothing
 			   v = get(LJdict_jul, (atomtypes[i],atomtypes[j]), nothing)
 			   if v !== nothing
