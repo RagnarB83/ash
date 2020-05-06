@@ -858,7 +858,7 @@ class NonBondedTheory:
         print("Sum of charges:", sum(charges))
     #Provide specific coordinates (MM region) and charges (MM region) upon run
     def run(self, full_coords=None, mm_coords=None, charges=None, connectivity=None,
-            Coulomb=True, Grad=True, qmatoms=None, actatoms=None):
+            Coulomb=True, Grad=True, qmatoms=None, actatoms=None, frozenatoms=None):
 
         #If qmatoms list provided to run (probably by QM/MM object) then we are doing QM/MM
         #QM-QM pairs will be skipped in LJ
