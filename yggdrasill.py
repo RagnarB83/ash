@@ -1236,7 +1236,8 @@ class QMMMTheory:
         if self.actatoms is not None:
             print("Actatoms list passed to QM/MM object. Will skip all frozen interactions in MM.")
             #Todo: should this be better? Handled by Optimizer/NEB/MD function instead?
-
+        else:
+            print("Actatoms list not passed to QM/MM object. Will do all frozen interactions in MM (expensive).")
         print(BC.WARNING,BC.BOLD,"------------Defining QM/MM object-------------", BC.END)
 
         self.charges=[]
