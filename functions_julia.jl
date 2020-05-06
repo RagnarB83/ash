@@ -92,13 +92,16 @@ function pairpot_active(numatoms,atomtypes,LJpydict,qmatoms,actatoms)
 			   if v !== nothing
 				 sigmaij[i, j] = v[1]
 				 epsij[i, j] =  v[2]
+				 sigmaij[j, i] = v[1]
+				 epsij[j, i] =  v[2]
 				#println("here")
 			   else
 				 v = get(LJdict_jul, (atomtypes[j],atomtypes[i]), nothing)
 				 if v !== nothing
 				   sigmaij[i, j] = v[1]
 				   epsij[i, j] =  v[2]
-
+				   sigmaij[j, i] = v[1]
+				   epsij[j, i] =  v[2]
 				 end
 			   end
 			end
