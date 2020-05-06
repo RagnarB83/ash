@@ -81,13 +81,13 @@ function pairpot_active(numatoms,atomtypes,LJpydict,qmatoms,actatoms)
 			if i in qmatoms && j in qmatoms
 				continue
 			else
-				println("else")
+				#println("else")
 			   #Checking if dict contains key, return value if so, otherwise nothing
 			   v = get(LJdict_jul, (atomtypes[i],atomtypes[j]), nothing)
 			   if v !== nothing
 				 sigmaij[i, j] = v[1]
 				 epsij[i, j] =  v[2]
-				println("here")
+				#println("here")
 			   else
 				 v = get(LJdict_jul, (atomtypes[j],atomtypes[i]), nothing)
 				 if v !== nothing
