@@ -66,6 +66,7 @@ end
 function pairpot_active(numatoms,atomtypes,LJpydict,qmatoms,actatoms)
     #Updating atom indices from 0 to 1 syntax
     qmatoms=[i+1 for i in qmatoms]
+    actatoms=[i+1 for i in actatoms]
     #Convert Python dict to Julia dict with correct types
     LJdict_jul=convert(Dict{Tuple{String,String},Array{Float64,1}}, LJpydict)
     #println(typeof(LJdict_jul))
