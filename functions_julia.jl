@@ -41,9 +41,8 @@ for i in 1:numatoms
     for j in i+1:numatoms
 		if i in frozenatoms && j in frozenatoms
             continue
-        if i in qmatoms && j in qmatoms
+        elseif i in qmatoms && j in qmatoms
             continue
-
         else
            #Checking if dict contains key, return value if so, otherwise nothing
            v = get(LJdict_jul, (atomtypes[i],atomtypes[j]), nothing)
