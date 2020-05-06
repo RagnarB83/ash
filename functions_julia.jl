@@ -75,6 +75,7 @@ function pairpot_active(numatoms,atomtypes,LJpydict,qmatoms,actatoms)
 	println("qmatoms : $qmatoms")
 	println("actatoms: $actatoms")
 	println("-----")
+	println("numatoms: $numatoms")
 	for i in actatoms
 		for j in 1:numatoms
 			#println("i is $i and j is $j")
