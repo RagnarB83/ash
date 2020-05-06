@@ -40,7 +40,7 @@ function pairpot_full(numatoms,atomtypes,LJpydict,qmatoms)
 
 for i in 1:numatoms
     for j in i+1:numatoms
-        elseif i in qmatoms && j in qmatoms
+        if i in qmatoms && j in qmatoms
             continue
         else
            #Checking if dict contains key, return value if so, otherwise nothing
