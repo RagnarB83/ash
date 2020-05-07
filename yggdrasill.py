@@ -190,7 +190,7 @@ class NumericalFrequencies:
         if self.npoint == 1:
             original_grad=get_partial_matrix(self.allatoms, self.hessatoms, displacement_dictionary['Originalgeo'])
             original_grad_1d = np.ravel(original_grad)
-
+            print("grad_1d:", grad_1d)
         #Initialize Hessian
         hesslength=3*len(self.hessatoms)
         hessian=np.zeros((hesslength,hesslength))
@@ -204,6 +204,7 @@ class NumericalFrequencies:
                 if displacement != 'Originalgeo':
                     print("displacement:", displacement)
                     index=int(displacement[4])
+                    print("index:", grad)
                     #Getting grad as numpy matrix and converting to 1d
                     # If partial Hessian remove non-hessatoms part of gradient:
                     grad = get_partial_matrix(self.allatoms, self.hessatoms, grad)
@@ -211,7 +212,9 @@ class NumericalFrequencies:
                     grad_1d = np.ravel(grad)
                     print("grad_1d:", grad_1d)
                     Hessrow=(grad_1d - original_grad_1d)/self.displacement_bohr
+                    print("Hessrow:", Hessrow)
                     hessian[index,:]=Hessrow
+                    print("Hessian:", Hessian)
         #Twopoint-formula Hessian. pos and negative directions come in order
         elif self.npoint == 2:
             count=0; hessindex=0
