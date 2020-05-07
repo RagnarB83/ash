@@ -202,9 +202,9 @@ class NumericalFrequencies:
             index=0
             #Todo: Is this always ordered?
             dispkeys = list(displacement_dictionary.keys())
-            print("dispkeys")
+            print("dispkeys", dispkeys)
             dispkeys.sort()
-            print("dispkeys")
+            print("dispkeys", dispkeys)
             exit()
             #for i in k:
             # print(i), d[i]
