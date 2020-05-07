@@ -321,7 +321,7 @@ class NumericalFrequencies:
             self.hessatoms=hessatoms
         self.npoint = npoint
         self.displacement=displacement
-        self.displacement_bohr = self.displacement *constants.bohr2ang
+        #self.displacement_bohr = self.displacement *constants.bohr2ang
         print("self.displacement_bohr:", self.displacement_bohr)
         self.displacement_bohr = 1
         print("self.displacement_bohr:", self.displacement_bohr)
@@ -330,6 +330,7 @@ class NumericalFrequencies:
         print("Starting Numerical Frequencies job for fragment")
         print("System size:", self.numatoms)
         print("Hessian atoms:", self.hessatoms)
+        exit()
         if self.hessatoms != self.allatoms:
             print("This is a partial Hessian.")
         if self.npoint ==  1:
