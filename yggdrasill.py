@@ -157,15 +157,15 @@ class NumericalFrequencies:
                     #create_orca_input_plain(displacement_jobname, self.elems, geo, self.theory.orcasimpleinput,
                     #                    self.theory.orcablocks, self.theory.charge, self.theory.mult, Grad=True)
                     energy, gradient = self.theory.run(current_coords=geo, elems=self.elems, Grad=True,
-                                                                     nprocs=numcores)
+                                                                     nprocs=self.numcores)
                     #Adding gradient to dictionary for AtomNCoordPDirectionm
                     displacement_dictionary[calclabel] = gradient
                 elif type(self.theory)==QMMMTheory:
                     print("QM/MM Theory for Numfreq in progress")
-                    energy, gradient = self.theory.run(current_coords=geo, elems=self.elems, Grad=True, nprocs=numcores)
+                    energy, gradient = self.theory.run(current_coords=geo, elems=self.elems, Grad=True, nprocs=self.numcores)
                     displacement_dictionary[calclabel] = gradient
                 elif type(self.theory)==xTBTheory:
-                    energy, gradient = self.theory.run(current_coords=geo, elems=self.elems, Grad=True, nprocs=numcores)
+                    energy, gradient = self.theory.run(current_coords=geo, elems=self.elems, Grad=True, nprocs=self.numcores)
                     displacement_dictionary[calclabel] = gradient
                 else:
                     print("theory not implemented for numfreq yet")
