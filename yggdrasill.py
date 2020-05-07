@@ -179,7 +179,6 @@ class NumericalFrequencies:
         print("Calculations are done.")
         print("displacement_dictionary:", displacement_dictionary)
 
-        exit()
         #freqinplist is in order of atom, x/y/z-coordinates, direction etc.
         #e.g. Numfreq-Disp-Atom0x+,  Numfreq-Disp-Atom0x-, Numfreq-Disp-Atom0y+  etc.
         #Grab energy and gradient of original geometry. Only used for onepoint formula
@@ -187,7 +186,7 @@ class NumericalFrequencies:
 
         #If partial Hessian remove non-hessatoms part of gradient:
         #Get partial matrix by deleting atoms not present in list.
-        if self.npoint==1:
+        if self.npoint == 1:
             original_grad=get_partial_matrix(self.allatoms, self.hessatoms, displacement_dictionary['Originalgeo'])
             original_grad_1d = np.ravel(original_grad)
 
@@ -195,28 +194,34 @@ class NumericalFrequencies:
         hesslength=3*len(self.hessatoms)
         hessian=np.zeros((hesslength,hesslength))
 
+
+        #Onepoint-formula Hessian
+        if self.npoint == 1:
+            #for index,file in enumerate(freqinputfiles):
+            for displacement, grad in displacement_dictionary.items():
+                #Skipping original geo
+                if displacement != 'Originalgeo':
+                    print("displacement:", displacement)
+                    #Getting grad as numpy matrix and converting to 1d
+                    # If partial Hessian remove non-hessatoms part of gradient:
+                    grad = get_partial_matrix(self.allatoms, self.hessatoms, grad)
+                    grad_1d = np.ravel(grad)
+                    Hessrow=(grad_1d - original_grad_1d)/self.displacement_bohr
+                    hessian[index,:]=Hessrow
         #Twopoint-formula Hessian. pos and negative directions come in order
-        if self.npoint == 2:
+        elif self.npoint == 2:
             count=0; hessindex=0
-            for file in freqinputfiles:
-                if file != 'Originalgeo':
+            #for file in freqinputfiles:
+            for displacement, grad in testdict.items():
+                if displacement != 'Originalgeo':
+                    print("displacement:", displacement)
                     count+=1
                     if count == 1:
-                        if type(self.theory) == ORCATheory:
-                            grad_pos = ORCAgradientgrab(file + '.engrad')
-                        else:
-                            print("theory not implemented for numfreq yet")
-                            exit()
                         # If partial Hessian remove non-hessatoms part of gradient:
                         grad_pos = get_partial_matrix(self.allatoms, self.hessatoms, grad_pos)
                         grad_pos_1d = np.ravel(grad_pos)
                     elif count == 2:
                         #Getting grad as numpy matrix and converting to 1d
-                        if type(self.theory) == ORCATheory:
-                            grad_neg=ORCAgradientgrab(file+'.engrad')
-                        else:
-                            print("theory not implemented for numfreq yet")
-                            exit()
                         # If partial Hessian remove non-hessatoms part of gradient:
                         grad_neg = get_partial_matrix(self.allatoms, self.hessatoms, grad_neg)
                         grad_neg_1d = np.ravel(grad_neg)
@@ -231,22 +236,6 @@ class NumericalFrequencies:
                         exit()
                 blankline()
 
-        #Onepoint-formula Hessian
-        elif self.npoint == 1:
-            for index,file in enumerate(freqinputfiles):
-                #Skipping original geo
-                if file != 'Originalgeo':
-                    #Getting grad as numpy matrix and converting to 1d
-                    if type(self.theory) == ORCATheory:
-                        grad=ORCAgradientgrab(file+'.engrad')
-                    else:
-                        print("theory not implemented for numfreq yet")
-                        exit()
-                    # If partial Hessian remove non-hessatoms part of gradient:
-                    grad = get_partial_matrix(self.allatoms, self.hessatoms, grad)
-                    grad_1d = np.ravel(grad)
-                    Hessrow=(grad_1d - original_grad_1d)/self.displacement_bohr
-                    hessian[index,:]=Hessrow
 
         #Symmetrize Hessian by taking average of matrix and transpose
         symm_hessian=(hessian+hessian.transpose())/2
