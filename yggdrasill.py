@@ -158,6 +158,7 @@ class NumericalFrequencies:
                     #                    self.theory.orcablocks, self.theory.charge, self.theory.mult, Grad=True)
                     energy, gradient = self.theory.run(current_coords=geo, elems=self.elems, Grad=True,
                                                                      nprocs=self.numcores)
+                    print("gradient:", gradient)
                     #Adding gradient to dictionary for AtomNCoordPDirectionm
                     displacement_dictionary[calclabel] = gradient
                 elif type(self.theory)==QMMMTheory:
@@ -206,7 +207,9 @@ class NumericalFrequencies:
                     #Getting grad as numpy matrix and converting to 1d
                     # If partial Hessian remove non-hessatoms part of gradient:
                     grad = get_partial_matrix(self.allatoms, self.hessatoms, grad)
+                    print("grad:", grad)
                     grad_1d = np.ravel(grad)
+                    print("grad_1d:", grad_1d)
                     Hessrow=(grad_1d - original_grad_1d)/self.displacement_bohr
                     hessian[index,:]=Hessrow
         #Twopoint-formula Hessian. pos and negative directions come in order
