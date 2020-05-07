@@ -214,7 +214,7 @@ class NumericalFrequencies:
                     Hessrow=(grad_1d - original_grad_1d)/self.displacement_bohr
                     print("Hessrow:", Hessrow)
                     hessian[index,:]=Hessrow
-                    print("Hessian:", Hessian)
+                    print("hessian:", hessian)
         #Twopoint-formula Hessian. pos and negative directions come in order
         elif self.npoint == 2:
             count=0; hessindex=0
@@ -247,7 +247,7 @@ class NumericalFrequencies:
         #Symmetrize Hessian by taking average of matrix and transpose
         symm_hessian=(hessian+hessian.transpose())/2
         self.hessian=symm_hessian
-
+        print("symm_hessian:", symm_hessian)
         #Write Hessian to file
         with open("Hessian", 'w') as hfile:
             hfile.write(str(hesslength)+' '+str(hesslength)+'\n')
