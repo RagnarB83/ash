@@ -48,6 +48,26 @@ def print_yggdrasill_header():
    ██║   ╚██████╔╝╚██████╔╝██████╔╝██║  ██║██║  ██║███████║██║███████╗███████╗
    ╚═╝    ╚═════╝  ╚═════╝ ╚═════╝ ╚═╝  ╚═╝╚═╝  ╚═╝╚══════╝╚═╝╚══════╝╚══════╝
 """
+ascii_banner2="""
+   ▄████████    ▄████████    ▄█    █▄    
+  ███    ███   ███    ███   ███    ███   
+  ███    ███   ███    █▀    ███    ███   
+  ███    ███   ███         ▄███▄▄▄▄███▄▄ 
+▀███████████ ▀███████████ ▀▀███▀▀▀▀███▀  
+  ███    ███          ███   ███    ███   
+  ███    ███    ▄█    ███   ███    ███   
+  ███    █▀   ▄████████▀    ███    █▀    
+                                         
+"""
+ascii_banner3="""
+ █████╗ ███████╗██╗  ██╗
+██╔══██╗██╔════╝██║  ██║
+███████║███████╗███████║
+██╔══██║╚════██║██╔══██║
+██║  ██║███████║██║  ██║
+╚═╝  ╚═╝╚══════╝╚═╝  ╚═╝
+                        
+"""
     print(BC.WARNING,"----------------------------------------------------------------------------------",BC.END)
     print(BC.WARNING,"----------------------------------------------------------------------------------",BC.END)
     print(BC.OKBLUE,ascii_banner,BC.END)
@@ -198,22 +218,19 @@ class NumericalFrequencies:
 
         #Onepoint-formula Hessian
         if self.npoint == 1:
-            #for index,file in enumerate(freqinputfiles):
+            #Starting index for Hessian array
             index=0
-            #Todo: Is this always ordered?
+            #Getting displacements as keys from dictionary and sort
             dispkeys = list(displacement_dictionary.keys())
-            print("dispkeys", dispkeys)
+            #Sort seems to sort it correctly w.r.t. atomnumber,x,y,z and +/-
             dispkeys.sort()
             print("dispkeys", dispkeys)
-            exit()
-            #for i in k:
-            # print(i), d[i]
-            for displacement, grad in displacement_dictionary.items():
+            #for displacement, grad in displacement_dictionary.items():
+            for dispkey in dispkeys:
+                grad=displacement_dictionary[dispkey]
                 #Skipping original geo
-                if displacement != 'Originalgeo':
-                    print("displacement:", displacement)
-                    #index=int(displacement[4])
-                    #TODO index should be hessian index
+                if dispkey != 'Originalgeo':
+                    print("dispkey:", dispkey)
                     print("index:", index)
                     #Getting grad as numpy matrix and converting to 1d
                     # If partial Hessian remove non-hessatoms part of gradient:
