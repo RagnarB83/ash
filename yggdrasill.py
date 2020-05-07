@@ -190,7 +190,7 @@ class NumericalFrequencies:
         if self.npoint == 1:
             original_grad=get_partial_matrix(self.allatoms, self.hessatoms, displacement_dictionary['Originalgeo'])
             original_grad_1d = np.ravel(original_grad)
-            print("grad_1d:", grad_1d)
+            print("original_grad_1d:", original_grad_1d)
         #Initialize Hessian
         hesslength=3*len(self.hessatoms)
         hessian=np.zeros((hesslength,hesslength))
