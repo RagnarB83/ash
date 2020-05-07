@@ -202,6 +202,7 @@ class NumericalFrequencies:
                 #Skipping original geo
                 if displacement != 'Originalgeo':
                     print("displacement:", displacement)
+                    index=int(displacement[4])
                     #Getting grad as numpy matrix and converting to 1d
                     # If partial Hessian remove non-hessatoms part of gradient:
                     grad = get_partial_matrix(self.allatoms, self.hessatoms, grad)
