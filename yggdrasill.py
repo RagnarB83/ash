@@ -59,7 +59,8 @@ def print_yggdrasill_header():
 
 #Numerical frequencies class
 class NumericalFrequencies:
-    def __init__(self, fragment, theory, npoint=2, displacement=0.0005, hessatoms=None, numcores=1 ):
+    def __init__(self, fragment, theory, npoint=2, displacement=0.0005, hessatoms=None, numcores=1, runmode='serial' ):
+        self.runmode='serial'
         self.numcores=numcores
         self.fragment=fragment
         self.theory=theory
@@ -120,65 +121,74 @@ class NumericalFrequencies:
                     #Displacing back
                     current_coords_array[atom_index, coord_index] = val
 
-        #Looping over geometries and creating inputfiles.
-        freqinputfiles=[]
-        for disp, geo in zip(list_of_displacements,list_of_displaced_geos):
-            atom_disp=disp[0]
-            if disp[1] == 0:
-                crd='x'
-            elif disp[1] == 1:
-                crd = 'y'
-            elif disp[1] == 2:
-                crd = 'z'
-            drection=disp[2]
-            displacement_jobname='Numfreq-Disp-'+'Atom'+str(atom_disp)+crd+drection
-            print("Displacing Atom: {} Coordinate: {} Direction: {}".format(atom_disp, crd, drection))
+        # Original geo added here if onepoint
+        if self.npoint == 1:
+            list_of_displaced_geos.append(current_coords_array)
+            list_of_displacements.append('Originalgeo')
 
-            if type(self.theory)==ORCATheory:
-                create_orca_input_plain(displacement_jobname, self.elems, geo, self.theory.orcasimpleinput,
-                                    self.theory.orcablocks, self.theory.charge, self.theory.mult, Grad=True)
-            elif type(self.theory)==QMMMTheory:
-                print("QM/MM Theory for Numfreq in progress")
-                exit()
-            elif type(self.theory)==xTBTheory:
-                print("xtb for Numfreq not implemented yet")
-                exit()
-            else:
-                print("theory not implemented for numfreq yet")
-                exit()
-            freqinputfiles.append(displacement_jobname)
+        if self.runmode == 'serial':
+            #Looping over geometries and running
+            freqinputfiles=[]
+
+            #Dictionary for each displacement:
+            #   key: AtomNCoordPDirectionm   where N=atomnumber, P=x,y,z and direction m: + or -
+            #   value: gradient
+            displacement_dictionary={}
+            print("list_of_displacements:", list_of_displacements)
+
+            for disp, geo in zip(list_of_displacements,list_of_displaced_geos):
+                if disp == 'Originalgeo':
+                    print("Original geo calculation")
+                    calclabel = 'Originalgeo'
+                else:
+                    atom_disp=disp[0]
+                    if disp[1] == 0:
+                        crd='x'
+                    elif disp[1] == 1:
+                        crd = 'y'
+                    elif disp[1] == 2:
+                        crd = 'z'
+                    drection=disp[2]
+                    #displacement_jobname='Numfreq-Disp-'+'Atom'+str(atom_disp)+crd+drection
+                    print("Displacing Atom: {} Coordinate: {} Direction: {}".format(atom_disp, crd, drection))
+                    calclabel='Atom{}Coord{}Direction{}'.format(atom_disp,crd,drection)
+                if type(self.theory)==ORCATheory:
+                    #create_orca_input_plain(displacement_jobname, self.elems, geo, self.theory.orcasimpleinput,
+                    #                    self.theory.orcablocks, self.theory.charge, self.theory.mult, Grad=True)
+                    energy, gradient = self.theory.run(current_coords=geo, elems=self.elems, Grad=True,
+                                                                     nprocs=numcores)
+                    #Adding gradient to dictionary for AtomNCoordPDirectionm
+                    displacement_dictionary[calclabel] = gradient
+                elif type(self.theory)==QMMMTheory:
+                    print("QM/MM Theory for Numfreq in progress")
+                    energy, gradient = self.theory.run(current_coords=geo, elems=self.elems, Grad=True, nprocs=numcores)
+                    displacement_dictionary[calclabel] = gradient
+                elif type(self.theory)==xTBTheory:
+                    energy, gradient = self.theory.run(current_coords=geo, elems=self.elems, Grad=True, nprocs=numcores)
+                    displacement_dictionary[calclabel] = gradient
+                else:
+                    print("theory not implemented for numfreq yet")
+                    exit()
+                #freqinputfiles.append(displacement_jobname)
+        elif self.runmode == 'parallel':
+            print("parallel not ready")
+            exit(1)
+
+
+        print("Calculations are done.")
+        print("displacement_dictionary:", displacement_dictionary)
+
+        exit()
         #freqinplist is in order of atom, x/y/z-coordinates, direction etc.
         #e.g. Numfreq-Disp-Atom0x+,  Numfreq-Disp-Atom0x-, Numfreq-Disp-Atom0y+  etc.
-
-        #Adding initial geometry to freqinputfiles list
-        if type(self.theory) == ORCATheory:
-            create_orca_input_plain('Originalgeo', self.elems, current_coords_array, self.theory.orcasimpleinput,
-                                self.theory.orcablocks, self.theory.charge, self.theory.mult, Grad=True)
-        elif type(self.theory) == QMMMTheory:
-            print("QM/MM theory for Numfreq in progress")
-        else:
-            print("theory not implemented for numfreq yet")
-            exit()
-        freqinputfiles.append('Originalgeo')
-
-        #Run all inputfiles in parallel by multiprocessing
-        blankline()
-        print("Starting Displacement calculations.")
-        if type(self.theory) == ORCATheory:
-            run_inputfiles_in_parallel(self.theory.orcadir, freqinputfiles, self.numcores)
-        elif type(self.theory) == QMMMTheory:
-            print("QM/MM theory for Numfreq in progress")
-        else:
-            print("theory not implemented for numfreq yet")
-            exit()
-
         #Grab energy and gradient of original geometry. Only used for onepoint formula
-        original_grad = ORCAgradientgrab('Originalgeo' + '.engrad')
+        #original_grad = ORCAgradientgrab('Originalgeo' + '.engrad')
 
         #If partial Hessian remove non-hessatoms part of gradient:
         #Get partial matrix by deleting atoms not present in list.
-        original_grad=get_partial_matrix(self.allatoms, self.hessatoms, original_grad)
-        original_grad_1d = np.ravel(original_grad)
+        if self.npoint==1:
+            original_grad=get_partial_matrix(self.allatoms, self.hessatoms, displacement_dictionary['Originalgeo'])
+            original_grad_1d = np.ravel(original_grad)
 
         #Initialize Hessian
         hesslength=3*len(self.hessatoms)
@@ -2426,7 +2436,7 @@ class Fragment:
                 if members not in fraglist:
                     fraglist.append(members)
                     found_atoms += members
-        print_time_rel(timestampA, modulename='calc connectivity')
+        print_time_rel(timestampA, modulename='calc connectivity1')
         #flat_fraglist = [item for sublist in fraglist for item in sublist]
         self.connectivity=fraglist
         #Calculate number of atoms in connectivity list of lists
