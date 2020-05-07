@@ -636,6 +636,7 @@ class NonBondedTheory:
         self.sigmaij=np.zeros((self.numatoms, self.numatoms))
         self.epsij=np.zeros((self.numatoms, self.numatoms))
 
+    #Todo: Need to make active-region version of pyarray version here. Need to have and should not be terrible
     def calculate_LJ_pairpotentials(self, qmatoms=None, actatoms=None, frozenatoms=None):
 
         #actatoms
@@ -2481,7 +2482,7 @@ class Fragment:
             outfile.write(" Index    Atom         x                  y                  z               charge        fragment-type        atom-type\n")
             outfile.write("----------------------------------------------------------------------------------------------------------------------\n")
             for at, el, coord, charge, label, atomtype in zip(self.atomlist, self.elems,self.coords,self.atomcharges, self.fragmenttype_labels, self.atomtypes):
-                line="{:>6} {:>6}  {:17.11f}  {:17.11f}  {:17.11f}  {:12.6f} {:12d} {:>21}\n".format(at, el,coord[0], coord[1], coord[2], charge, label, atomtype)
+                line="{:>6} {:>6}  {:17.11f}  {:17.11f}  {:17.11f}  {:14.8f} {:12d} {:>21}\n".format(at, el,coord[0], coord[1], coord[2], charge, label, atomtype)
                 outfile.write(line)
             outfile.write(
                 "======================================================================================================================\n")

@@ -67,3 +67,4 @@ with open(fragfile, 'w') as newfile:
             coordline=True
 
         newfile.write(line)
+print("Updated file {} with coordinates from file {}".format(fragfile,xyzfile))

@@ -62,6 +62,7 @@ return sigmaij,epsij
 end
 
 #Modified pairpot that only does active atoms
+#Fills whole symmetric array just in case,i .e. ij and ji
 function pairpot_active(numatoms,atomtypes,LJpydict,qmatoms,actatoms)
 	println("inside pairpot_active")
     #Updating atom indices from 0 to 1 syntax

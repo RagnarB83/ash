@@ -34,7 +34,7 @@ def geomeTRICOptimizer(theory=None,fragment=None, coordsystem='tric', frozenatom
     print("Launching geomeTRIC optimization module")
     print("Coordinate system: ", coordsystem)
     print("Max iterations: ", maxiter)
-    print("Frozen atoms: ", frozenatoms)
+    #print("Frozen atoms: ", frozenatoms)
     print("Bond constraints: ", bondconstraints)
     if fragment==None:
         print("geomeTRIC requires fragment object")
