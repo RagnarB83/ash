@@ -201,6 +201,13 @@ class NumericalFrequencies:
             #for index,file in enumerate(freqinputfiles):
             index=0
             #Todo: Is this always ordered?
+            dispkeys = list(displacement_dictionary.keys())
+            print("dispkeys")
+            dispkeys.sort()
+            print("dispkeys")
+            exit()
+            #for i in k:
+            # print(i), d[i]
             for displacement, grad in displacement_dictionary.items():
                 #Skipping original geo
                 if displacement != 'Originalgeo':
