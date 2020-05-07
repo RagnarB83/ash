@@ -248,16 +248,28 @@ class NumericalFrequencies:
         #Twopoint-formula Hessian. pos and negative directions come in order
         elif self.npoint == 2:
             count=0; hessindex=0
+            #Getting displacements as keys from dictionary and sort
+            dispkeys = list(displacement_dictionary.keys())
+            #Sort seems to sort it correctly w.r.t. atomnumber,x,y,z and +/-
+            dispkeys.sort()
+            print("dispkeys", dispkeys)
             #for file in freqinputfiles:
-            for displacement, grad in testdict.items():
-                if displacement != 'Originalgeo':
-                    print("displacement:", displacement)
+            #for displacement, grad in testdict.items():
+            for dispkey in dispkeys:
+                if dispkey != 'Originalgeo':
+                    print("dispkey:", dispkey)
                     count+=1
                     if count == 1:
+                        grad_pos=displacement_dictionary[dispkey]
+                        print("pos I hope")
+                        print("dispkey:", dispkey)
                         # If partial Hessian remove non-hessatoms part of gradient:
                         grad_pos = get_partial_matrix(self.allatoms, self.hessatoms, grad_pos)
                         grad_pos_1d = np.ravel(grad_pos)
                     elif count == 2:
+                        grad_neg=displacement_dictionary[dispkey]
+                        print("neg I hope")
+                        print("dispkey:", dispkey)
                         #Getting grad as numpy matrix and converting to 1d
                         # If partial Hessian remove non-hessatoms part of gradient:
                         grad_neg = get_partial_matrix(self.allatoms, self.hessatoms, grad_neg)
