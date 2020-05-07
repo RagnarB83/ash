@@ -325,7 +325,7 @@ class NumericalFrequencies:
         print("self.displacement_bohr:", self.displacement_bohr)
         self.displacement_bohr = 1
         print("self.displacement_bohr:", self.displacement_bohr)
-
+        exit())
     def run(self):
         print("Starting Numerical Frequencies job for fragment")
         print("System size:", self.numatoms)
