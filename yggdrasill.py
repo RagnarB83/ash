@@ -58,9 +58,10 @@ def print_yggdrasill_header():
     print(BC.WARNING,"----------------------------------------------------------------------------------",BC.END)
 
 #Numerical frequencies class
+#Todo: Change to function?
 class NumericalFrequencies:
     def __init__(self, fragment, theory, npoint=2, displacement=0.0005, hessatoms=None, numcores=1, runmode='serial' ):
-        self.runmode='serial'
+        self.runmode=runmode
         self.numcores=numcores
         self.fragment=fragment
         self.theory=theory
@@ -1591,6 +1592,11 @@ class ORCATheory:
         self.brokensym=brokensym
         self.HSmult=HSmult
         self.atomstoflip=atomstoflip
+        if self.printlevel >=2:
+            print("Creating ORCA object")
+            print("Charge: {} Mult: {}".format(self.charge,self.mult))
+            print(self.orcasimpleinput)
+            print(self.orcablocks)
     #Cleanup after run.
     def cleanup(self):
         print("Cleaning up old ORCA files")
