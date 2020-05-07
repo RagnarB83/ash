@@ -199,11 +199,14 @@ class NumericalFrequencies:
         #Onepoint-formula Hessian
         if self.npoint == 1:
             #for index,file in enumerate(freqinputfiles):
+            index=0
+            #Todo: Is this always ordered?
             for displacement, grad in displacement_dictionary.items():
                 #Skipping original geo
                 if displacement != 'Originalgeo':
                     print("displacement:", displacement)
-                    index=int(displacement[4])
+                    #index=int(displacement[4])
+                    #TODO index should be hessian index
                     print("index:", index)
                     #Getting grad as numpy matrix and converting to 1d
                     # If partial Hessian remove non-hessatoms part of gradient:
@@ -215,6 +218,7 @@ class NumericalFrequencies:
                     print("Hessrow:", Hessrow)
                     hessian[index,:]=Hessrow
                     print("hessian:", hessian)
+                    index+=1
         #Twopoint-formula Hessian. pos and negative directions come in order
         elif self.npoint == 2:
             count=0; hessindex=0
