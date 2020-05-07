@@ -70,7 +70,7 @@ class NumericalFrequencies:
         self.numatoms=len(self.elems)
         #Hessatoms list is allatoms (if not defined), otherwise the atoms provided and thus a partial Hessian is calculated.
         self.allatoms=list(range(0,self.numatoms))
-        if hessatoms==[]:
+        if hessatoms is None:
             self.hessatoms=self.allatoms
         else:
             self.hessatoms=hessatoms

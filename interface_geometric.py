@@ -57,7 +57,6 @@ def geomeTRICOptimizer(theory=None,fragment=None, coordsystem='tric', frozenatom
         mol_geometric_frag=geometric.molecule.Molecule("initialxyzfiletric.xyz")
     else:
         #Write coordinates from Yggdrasill fragment to disk as XYZ-file and reading into geomeTRIC
-        print("fragment:", fragment)
         fragment.write_xyzfile("initialxyzfiletric.xyz")
         mol_geometric_frag=geometric.molecule.Molecule("initialxyzfiletric.xyz")
 
@@ -190,3 +189,4 @@ def geomeTRICOptimizer(theory=None,fragment=None, coordsystem='tric', frozenatom
     #Writing out fragment file and XYZ file
     fragment.print_system(filename='Fragment-optimized.ygg')
     fragment.write_xyzfile(xyzfilename='Fragment-optimized.xyz')
+    blankline()
