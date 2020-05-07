@@ -261,15 +261,15 @@ class NumericalFrequencies:
                     count+=1
                     if count == 1:
                         grad_pos=displacement_dictionary[dispkey]
-                        print("pos I hope")
-                        print("dispkey:", dispkey)
+                        #print("pos I hope")
+                        #print("dispkey:", dispkey)
                         # If partial Hessian remove non-hessatoms part of gradient:
                         grad_pos = get_partial_matrix(self.allatoms, self.hessatoms, grad_pos)
                         grad_pos_1d = np.ravel(grad_pos)
                     elif count == 2:
                         grad_neg=displacement_dictionary[dispkey]
-                        print("neg I hope")
-                        print("dispkey:", dispkey)
+                        #print("neg I hope")
+                        #print("dispkey:", dispkey)
                         #Getting grad as numpy matrix and converting to 1d
                         # If partial Hessian remove non-hessatoms part of gradient:
                         grad_neg = get_partial_matrix(self.allatoms, self.hessatoms, grad_neg)

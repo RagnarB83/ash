@@ -322,6 +322,9 @@ class NumericalFrequencies:
         self.npoint = npoint
         self.displacement=displacement
         self.displacement_bohr = self.displacement *constants.bohr2ang
+        print("self.displacement_bohr:", self.displacement_bohr)
+        self.displacement_bohr = 1
+        print("self.displacement_bohr:", self.displacement_bohr)
 
     def run(self):
         print("Starting Numerical Frequencies job for fragment")
