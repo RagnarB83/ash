@@ -1,8 +1,8 @@
-import yggdrasill
+import ash
 import time
-#Defining global variables here: called as settings_yggdrasill.scale etc.
+#Defining global variables here: called as settings_ash.scale etc.
 def init():
-    yggdrasill.print_yggdrasill_header()
+    ash.print_ash_header()
     global scale
     global tol
     global conndepth

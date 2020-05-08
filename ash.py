@@ -1,4 +1,4 @@
-# YGGDRASILL - A GENERAL COMPCHEM AND QM/MM ENVIRONMENT
+# ASH - A GENERAL COMPCHEM AND QM/MM ENVIRONMENT
 
 #TODO: This is really too much import!!!! Reduce
 from constants import *
@@ -10,7 +10,7 @@ from functions_coords import *
 from functions_ORCA import *
 from functions_Psi4 import *
 from functions_general import *
-import settings_yggdrasill
+import settings_ash
 from functions_MM import *
 from functions_optimization import *
 from interface_geometric import geomeTRICOptimizer
@@ -26,12 +26,12 @@ def printdebug(string,var=''):
         print(BC.OKRED,string,var,BC.END)
 
 
-def print_yggdrasill_header():
+def print_ash_header():
     programversion = 0.1
 
     #Getting commit version number from file VERSION (updated by yggpull) inside module dir
     try:
-        with open(os.path.dirname(yggdrasill.__file__)+"/VERSION") as f:
+        with open(os.path.dirname(ash.__file__)+"/VERSION") as f:
             git_commit_number = int(f.readline())
     except:
         git_commit_number="Unknown"
@@ -820,7 +820,7 @@ class NonBondedTheory:
         if self.pairarrayversion=="julia":
             if self.printlevel >= 2:
                 print("Using PyJulia for fast sigmaij and epsij array creation")
-            yggpath = os.path.dirname(yggdrasill.__file__)
+            yggpath = os.path.dirname(ash.__file__)
 
             # Necessary for statically linked libpython
             #IF not doing python-jl
@@ -2456,9 +2456,9 @@ class Fragment:
 
         if scale == None:
             try:
-                print("Using global scale and tol parameters from settings_yggdrasill")
-                scale = settings_yggdrasill.scale
-                tol = settings_yggdrasill.tol
+                print("Using global scale and tol parameters from settings_ash")
+                scale = settings_ash.scale
+                tol = settings_ash.tol
             except:
                 print("Exception: Using hard-coded scale and tol parameters")
                 scale = 1

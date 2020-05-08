@@ -26,10 +26,10 @@ SCRIPT=$(readlink -f "$0")
 echo "SCRIPT : $SCRIPT"
 
 
-yggdrasill_path=$(dirname "$SCRIPT")
+ash_path=$(dirname "$SCRIPT")
 
 echo "Setting PYTHONPATH and LD_LIBRARY_PATH for Yggdrasill"
 #PYTHONPATH
-export PYTHONPATH=$yggdrasill_path:$PYTHONPATH
+export PYTHONPATH=$ash_path:$PYTHONPATH
 #Setting LD_LIBRARY_PATH for lib dir
-export LD_LIBRARY_PATH=$yggdrasill_path/lib:$LD_LIBRARY_PATH
+export LD_LIBRARY_PATH=$ash_path/lib:$LD_LIBRARY_PATH

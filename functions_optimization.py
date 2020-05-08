@@ -2,11 +2,11 @@ import numpy as np
 import constants
 from functions_general import *
 from functions_coords import *
-from yggdrasill import *
+from ash import *
 import time
 import os
 import shutil
-import yggdrasill
+import ash
 #Root mean square of numpy array, e.g. gradient
 def RMS_G(grad):
     sumsq = 0;

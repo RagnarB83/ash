@@ -1,0 +1,40 @@
+-------------------------------------------------------------
+----------------------- !PROPERTIES! ------------------------
+-------------------------------------------------------------
+------------------------ !PROPERTY! -------------------------
+   name:        SCF_Energy
+   comment:     The SCF energy
+   geom. index: 1
+   prop. index: 1
+        SCF Energy:     -537.0775451600
+------------------------ !PROPERTY! -------------------------
+   name:        SCF_Electric_Properties
+   comment:     The SCF Calculated Electric Properties
+   geom. index: 1
+   prop. index: 1
+       Filename                          : Originalgeo.scfp 
+       Do Dipole Moment Calculation      : 1 
+       Do Quadrupole Moment Calculation  : 0 
+       Do Polarizability Calculation     : 0 
+** Dipole moment part of electric properties **
+        Magnitude of dipole moment (Debye) :        3.9351102058
+        Electronic Contribution:
+                   0          1          2    
+      0      -3.388094   1.105178  -2.754876
+        Nuclear Contribution:
+                   0          1          2    
+      0       4.084290  -1.927873   3.866309
+        Total Dipole moment:
+                   0          1          2    
+      0       0.696196  -0.822696   1.111433
+-------------------------------------------------------------
+----------------------- !GEOMETRIES! ------------------------
+-------------------------------------------------------------
+------------------------ !GEOMETRY! -------------------------
+    Number of atoms:    5        Geometry Index:    1
+    Coordinates:
+            H      0.658140000000   -0.308236000000    0.933010000000
+            Cl    -0.427316000000   -0.114397000000    0.183491000000
+            O      1.975186000000   -0.753495000000    1.999876000000
+            H      1.561058000000   -0.741776000000    2.885503000000
+            H      2.097046000000   -1.706316000000    1.819205000000

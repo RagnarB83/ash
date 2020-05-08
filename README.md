@@ -1,7 +1,7 @@
 
-<img src="yggdrasill-logo-v02.png" alt="drawing" width="300" align="right"/>
+<img src="ash-logo-v02.png" alt="drawing" width="300" align="right"/>
 
- # Yggdrasill: a computational chemistry environment
+ # Ash: a computational chemistry environment
 Yggdrasill is a Python-based computational chemistry and QM/MM environment, primarily for molecular calculations
 in the gas phase, explicit solution, crystal or protein environment. Can do single-point calculations,
 geometry optimizations, molecular dynamics (soon), numerical frequencies using a MM, QM or QM/MM Hamiltonian.
@@ -23,9 +23,9 @@ Contains Python3, Numpy, SciPy, Matplotlib.
 
 Example:
 ```sh
-from yggdrasill import *
+from ash import *
 import sys
-settings_yggdrasill.init()
+settings_ash.init()
 
 coords="""
 H 0.0 0.0 0.0

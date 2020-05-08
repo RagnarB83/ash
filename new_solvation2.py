@@ -1,5 +1,5 @@
 #####################
-# SOLVSHELL MODULE (PART OF YGGDRASILL) #
+# SOLVSHELL MODULE (PART OF ASH) #
 #####################
 # For now only the snapshot-part. Will read snapshots from QM/MM MD Tcl-Chemshell run.
 import numpy as np
@@ -17,7 +17,7 @@ import settings_solvation
 import constants
 import statistics
 import shutil
-import yggdrasill
+import ash
 import multiprocessing as mp
 import glob
 
@@ -36,7 +36,7 @@ def solvshell_v2 ( orcadir='', NumCores=None, calctype='', orcasimpleinput_LL=''
     #Hence defining in original py inputfile makes sense
 
     #Yggdrasill dir (needed for init function and print_header below). Todo: remove
-    programdir=os.path.dirname(yggdrasill.__file__)
+    programdir=os.path.dirname(ash.__file__)
     programversion=0.1
     blankline()
     print_solvshell_header(programversion,programdir)
@@ -806,7 +806,7 @@ def Polsnapshotcalc(args):
     # Todo: Change to XYZ-file read-in instead (if snapfiles have been converted)
     elems, coords = read_fragfile_xyz(snapshot)
     # create Yggdrasill fragment
-    snap_frag = yggdrasill.Fragment(elems=elems, coords=coords)
+    snap_frag = ash.Fragment(elems=elems, coords=coords)
     # QM and PE regions
     solute_elems = [elems[i] for i in solvsphere.soluteatomsA]
     solute_coords = [coords[i] for i in solvsphere.soluteatomsA]
@@ -836,21 +836,21 @@ def Polsnapshotcalc(args):
         exit()
 
     # Define Psi4 QMregion
-    Psi4QMpart_A = yggdrasill.Psi4Theory(charge=solvsphere.ChargeA, mult=solvsphere.MultA, label=snapshot+'A',
+    Psi4QMpart_A = ash.Psi4Theory(charge=solvsphere.ChargeA, mult=solvsphere.MultA, label=snapshot+'A',
                                          psi4settings=psi4dict, outputname=snapshot+'A.out', psi4memory=psi4memory,
                                          psi4functional=psi4_functional, runmode=psi4runmode, printsetting=False)
-    Psi4QMpart_B = yggdrasill.Psi4Theory(charge=solvsphere.ChargeB, mult=solvsphere.MultB, label=snapshot+'B',
+    Psi4QMpart_B = ash.Psi4Theory(charge=solvsphere.ChargeB, mult=solvsphere.MultB, label=snapshot+'B',
                                          psi4settings=psi4dict, outputname=snapshot+'B.out', psi4memory=psi4memory,
                                          psi4functional=psi4_functional, runmode=psi4runmode, printsetting=False)
 
     # Create PolEmbed theory object. fragment always defined with it
-    PolEmbed_SP_A = yggdrasill.PolEmbedTheory(fragment=snap_frag, qm_theory=Psi4QMpart_A,
+    PolEmbed_SP_A = ash.PolEmbedTheory(fragment=snap_frag, qm_theory=Psi4QMpart_A,
                                                   qmatoms=qmatoms, peatoms=peatoms, mmatoms=mmatoms,
                                                   pot_option=pot_option, potfilename=snapshot+'System',
                                                   pyframe=True, pot_create=True, PElabel_pyframe=PElabel_pyframe)
 
     # Note: pot_create=False for B since the embedding potential is the same
-    PolEmbed_SP_B = yggdrasill.PolEmbedTheory(fragment=snap_frag, qm_theory=Psi4QMpart_B,
+    PolEmbed_SP_B = ash.PolEmbedTheory(fragment=snap_frag, qm_theory=Psi4QMpart_B,
                                                   qmatoms=qmatoms, peatoms=peatoms, mmatoms=mmatoms,
                                                   pot_option=pot_option, potfilename=snapshot+'System',
                                                   pyframe=True, pot_create=False, PElabel_pyframe=PElabel_pyframe)

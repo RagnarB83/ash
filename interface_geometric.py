@@ -4,7 +4,7 @@ from functions_coords import *
 from functions_general import *
 import os
 import shutil
-import yggdrasill
+import ash
 import time
 #########################
 # Interface to geomeTRIC Optimization Library
@@ -138,8 +138,8 @@ def geomeTRICOptimizer(theory=None,fragment=None, coordsystem='tric', frozenatom
             self.input='dummyinputname'
             self.constraints=constraints
             #Created log.ini file here. Missing from pip installation for some reason?
-            #Storing log.ini in yggdrasill dir
-            path = os.path.dirname(yggdrasill.__file__)
+            #Storing log.ini in ash dir
+            path = os.path.dirname(ash.__file__)
             self.logIni=path+'/log.ini'
             self.customengine=eng
 
@@ -167,25 +167,25 @@ def geomeTRICOptimizer(theory=None,fragment=None, coordsystem='tric', frozenatom
         constraints=None
 
     #Defining Yggdrasill engine object containing geometry and theory. ActiveRegion boolean passed.
-    yggdrasillengine = Yggdrasillengineclass(mol_geometric_frag,theory, ActiveRegion=ActiveRegion, actatoms=actatoms)
+    ashengine = Yggdrasillengineclass(mol_geometric_frag,theory, ActiveRegion=ActiveRegion, actatoms=actatoms)
     #Defining args object, containing engine object
-    args=geomeTRICArgsObject(yggdrasillengine,constraints,coordsys=coordsystem, maxiter=maxiter)
+    args=geomeTRICArgsObject(ashengine,constraints,coordsys=coordsystem, maxiter=maxiter)
 
     #Starting geomeTRIC
     geometric.optimize.run_optimizer(**vars(args))
     time.sleep(1)
     blankline()
     #print("geomeTRIC Geometry optimization converged in {} steps!".format(geometric.iteration))
-    print("geomeTRIC Geometry optimization converged in {} steps!".format(yggdrasillengine.iteration_count))
+    print("geomeTRIC Geometry optimization converged in {} steps!".format(ashengine.iteration_count))
     blankline()
 
     #Updating energy and coordinates of Yggdrasill fragment before ending
-    fragment.set_energy(yggdrasillengine.energy)
+    fragment.set_energy(ashengine.energy)
     print("Final optimized energy:",  fragment.energy)
     #
     #print("fragment.elems: ", fragment.elems)
-    #print("yggdrasillengine.full_current_coords : ", yggdrasillengine.full_current_coords)
-    fragment.replace_coords(fragment.elems,yggdrasillengine.full_current_coords, conn=False)
+    #print("ashengine.full_current_coords : ", ashengine.full_current_coords)
+    fragment.replace_coords(fragment.elems,ashengine.full_current_coords, conn=False)
     #Writing out fragment file and XYZ file
     fragment.print_system(filename='Fragment-optimized.ygg')
     fragment.write_xyzfile(xyzfilename='Fragment-optimized.xyz')

@@ -1,0 +1,8 @@
+$freeze
+xyz 1
+xyz 2
+xyz 3
+xyz 4
+xyz 5
+xyz 6
+xyz 7

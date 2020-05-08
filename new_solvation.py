@@ -1,5 +1,5 @@
 #####################
-# SOLVSHELL MODULE (PART OF YGGDRASILL) #
+# SOLVSHELL MODULE (PART OF ASH) #
 #####################
 # For now only the snapshot-part. Will read snapshots from QM/MM MD Tcl-Chemshell run.
 import numpy as np

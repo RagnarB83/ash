@@ -330,7 +330,7 @@ class NumericalFrequencies:
         print("Starting Numerical Frequencies job for fragment")
         print("System size:", self.numatoms)
         print("Hessian atoms:", self.hessatoms)
-        exit()
+        exit(1)
         if self.hessatoms != self.allatoms:
             print("This is a partial Hessian.")
         if self.npoint ==  1:

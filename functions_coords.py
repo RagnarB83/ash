@@ -1,7 +1,7 @@
 from functions_general import *
 import numpy as np
 #import settings_molcrys
-import settings_yggdrasill
+import settings_ash
 import constants
 #from math import sqrt
 #from math import pow
@@ -1191,8 +1191,8 @@ AXIS_REFLECTIONS = np.array([
 #Used by molcrys. Similar to get_solvshell function in functions_solv.py
 def QMregionfragexpand(fragment=None,initial_atoms=None, radius=None):
     #If needed (connectivity ==0):
-    scale=settings_yggdrasill.scale
-    tol=settings_yggdrasill.tol
+    scale=settings_ash.scale
+    tol=settings_ash.tol
     if fragment is None or initial_atoms is None or radius == None:
         print("Provide fragment, initial_atoms and radius keyword arguments to QMregionfragexpand!")
         exit()

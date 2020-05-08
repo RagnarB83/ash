@@ -5,7 +5,7 @@ from functions_ORCA import *
 from functions_optimization import *
 import settings_molcrys
 from functions_molcrys import *
-from yggdrasill import *
+from ash import *
 import time
 import shutil
 origtime=time.time()
@@ -23,8 +23,8 @@ def molcrys(cif_file=None, xtl_file=None, fragmentobjects=[], theory=None, numco
     MODULE
     ----------------------------------------------------------------------------------
     """
-    #yggdrasill header now done in settings_yggdrasill.init()
-    #print_yggdrasill_header()
+    #ash header now done in settings_ash.init()
+    #print_ash_header()
     print(banner)
 
     print("Fragment object defined:")
