@@ -1,8 +1,8 @@
 
-<img src="ash-logo-v02.png" alt="drawing" width="300" align="right"/>
+<img src="ash-simple-logo-letterbig.png" alt="drawing" width="300" align="right"/>
 
  # Ash: a computational chemistry environment
-Yggdrasill is a Python-based computational chemistry and QM/MM environment, primarily for molecular calculations
+Ash is a Python-based computational chemistry and QM/MM environment, primarily for molecular calculations
 in the gas phase, explicit solution, crystal or protein environment. Can do single-point calculations,
 geometry optimizations, molecular dynamics (soon), numerical frequencies using a MM, QM or QM/MM Hamiltonian.
 Interfaces to popular QM codes: ORCA, xTB, Psi4, PySCF
@@ -90,7 +90,7 @@ geomeTRICOptimizer(ORCAcalc,HF_frag)
      - Todo: QM/MM not yet supported.
      - Todo: Analytical Hessian from ORCA and xTB
 - **Hessian analysis**
-  - Diagonalization of Hessian (from Yggdrasill or ORCA). Print frequencies and normal modes.
+  - Diagonalization of Hessian (from Ash or ORCA). Print frequencies and normal modes.
   - Todo: projection of translation/rotational modes
   - Normal mode composition analysis in terms of individual atoms, elements and atom groups.
   - Print vibrational densities of states files (with linebroadening)
