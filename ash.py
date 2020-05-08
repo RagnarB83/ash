@@ -69,16 +69,16 @@ def print_ash_header():
                         
     """
 
-    print(BC.WARNING,"----------------------------------------------------------------------------------",BC.END)
-    print(BC.WARNING,"----------------------------------------------------------------------------------",BC.END)
+    print(BC.OKGREEN,"----------------------------------------------------------------------------------",BC.END)
+    print(BC.OKGREEN,"----------------------------------------------------------------------------------",BC.END)
     #print(BC.OKBLUE,ascii_banner3,BC.END)
-    print(BC.OKBLUE,ascii_banner2,BC.END)
+    #print(BC.OKBLUE,ascii_banner2,BC.END)
     print(BC.OKGREEN,ascii_banner2,BC.END)
     print(BC.WARNING,BC.BOLD,"ASH version", programversion,BC.END)
     print(BC.WARNING, "Git commit version: ", git_commit_number, BC.END)
     print(BC.WARNING,"A COMPCHEM AND QM/MM ENVIRONMENT", BC.END)
-    print(BC.WARNING,"----------------------------------------------------------------------------------",BC.END)
-    print(BC.WARNING,"----------------------------------------------------------------------------------",BC.END)
+    print(BC.OKGREEN,"----------------------------------------------------------------------------------",BC.END)
+    print(BC.OKGREEN,"----------------------------------------------------------------------------------",BC.END)
 
 #Numerical frequencies class
 #Todo: Change to function?

@@ -1,6 +1,6 @@
-from yggdrasill import *
-import settings_yggdrasill
-settings_yggdrasill.init() #initialize
+from ash import *
+import settings_ash
+settings_ash.init() #initialize
 
 #Test settings
 path="/Users/bjornssonsu/ownCloud/PyQMMM-project/Yggdrasill-testdir"
@@ -18,7 +18,7 @@ print("PDB_frag:", PDB_frag)
 print(PDB_frag.numatoms)
 
 
-
+exit()
 ####################################
 #Exception if openmm not found:
 #    from simtk.openmm.app import *
