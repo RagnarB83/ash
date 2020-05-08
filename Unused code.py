@@ -302,8 +302,242 @@ class Optimizer:
 
 
 
-#OLD NUMFREQ CODE
+#OLD NUMFREQ class
 
+#Numerical frequencies class
+#Todo: Change to function?
+class NumericalFrequencies:
+    def __init__(self, fragment, theory, npoint=2, displacement=0.0005, hessatoms=None, numcores=1, runmode='serial' ):
+        self.runmode=runmode
+        self.numcores=numcores
+        self.fragment=fragment
+        self.theory=theory
+        self.coords=fragment.coords
+        self.elems=fragment.elems
+        self.numatoms=len(self.elems)
+        #Hessatoms list is allatoms (if not defined), otherwise the atoms provided and thus a partial Hessian is calculated.
+        self.allatoms=list(range(0,self.numatoms))
+        if hessatoms is None:
+            self.hessatoms=self.allatoms
+        else:
+            self.hessatoms=hessatoms
+        self.npoint = npoint
+        self.displacement=displacement
+        self.displacement_bohr = self.displacement *constants.ang2bohr
+
+
+    def run(self):
+        print("Starting Numerical Frequencies job for fragment")
+        print("System size:", self.numatoms)
+        print("Hessian atoms:", self.hessatoms)
+        if self.hessatoms != self.allatoms:
+            print("This is a partial Hessian.")
+        if self.npoint ==  1:
+            print("One-point formula used (forward difference)")
+        elif self.npoint == 2:
+            print("Two-point formula used (central difference)")
+        else:
+            print("Unknown npoint option. npoint should be set to 1 (one-point) or 2 (two-point formula).")
+            exit()
+        print("Displacement: {:5.4f} Å ({:5.4f} Bohr)".format(self.displacement,self.displacement_bohr))
+        blankline()
+        print("Starting geometry:")
+        #Converting to numpy array
+        #TODO: get rid list->np-array conversion
+        current_coords_array=np.array(self.coords)
+        print_coords_all(current_coords_array, self.elems)
+        blankline()
+
+        #Looping over each atom and each coordinate to create displaced geometries
+        #Only displacing atom if in hessatoms list. i.e. possible partial Hessian
+        list_of_displaced_geos=[]
+        list_of_displacements=[]
+        for atom_index in range(0,len(current_coords_array)):
+            if atom_index in self.hessatoms:
+                for coord_index in range(0,3):
+                    val=current_coords_array[atom_index,coord_index]
+                    #Displacing in + direction
+                    current_coords_array[atom_index,coord_index]=val+self.displacement
+                    y = current_coords_array.copy()
+                    list_of_displaced_geos.append(y)
+                    list_of_displacements.append([atom_index, coord_index, '+'])
+                    if self.npoint == 2:
+                        #Displacing  - direction
+                        current_coords_array[atom_index,coord_index]=val-self.displacement
+                        y = current_coords_array.copy()
+                        list_of_displaced_geos.append(y)
+                        list_of_displacements.append([atom_index, coord_index, '-'])
+                    #Displacing back
+                    current_coords_array[atom_index, coord_index] = val
+
+        # Original geo added here if onepoint
+        if self.npoint == 1:
+            list_of_displaced_geos.append(current_coords_array)
+            list_of_displacements.append('Originalgeo')
+
+        if self.runmode == 'serial':
+            #Looping over geometries and running
+            freqinputfiles=[]
+
+            #Dictionary for each displacement:
+            #   key: AtomNCoordPDirectionm   where N=atomnumber, P=x,y,z and direction m: + or -
+            #   value: gradient
+            displacement_dictionary={}
+            print("List of displacements:", list_of_displacements)
+
+            for disp, geo in zip(list_of_displacements,list_of_displaced_geos):
+                if disp == 'Originalgeo':
+                    calclabel = 'Originalgeo'
+                else:
+                    atom_disp=disp[0]
+                    if disp[1] == 0:
+                        crd='x'
+                    elif disp[1] == 1:
+                        crd = 'y'
+                    elif disp[1] == 2:
+                        crd = 'z'
+                    drection=disp[2]
+                    #displacement_jobname='Numfreq-Disp-'+'Atom'+str(atom_disp)+crd+drection
+                    print("Displacing Atom: {} Coordinate: {} Direction: {}".format(atom_disp, crd, drection))
+                    calclabel='Atom{}Coord{}Direction{}'.format(atom_disp,crd,drection)
+                if type(self.theory)==ORCATheory:
+                    #create_orca_input_plain(displacement_jobname, self.elems, geo, self.theory.orcasimpleinput,
+                    #                    self.theory.orcablocks, self.theory.charge, self.theory.mult, Grad=True)
+                    energy, gradient = self.theory.run(current_coords=geo, elems=self.elems, Grad=True,
+                                                                     nprocs=self.numcores)
+                    print("gradient:", gradient)
+                    #Adding gradient to dictionary for AtomNCoordPDirectionm
+                    displacement_dictionary[calclabel] = gradient
+                elif type(self.theory)==QMMMTheory:
+                    print("QM/MM Theory for Numfreq in progress")
+                    energy, gradient = self.theory.run(current_coords=geo, elems=self.elems, Grad=True, nprocs=self.numcores)
+                    displacement_dictionary[calclabel] = gradient
+                elif type(self.theory)==xTBTheory:
+                    energy, gradient = self.theory.run(current_coords=geo, elems=self.elems, Grad=True, nprocs=self.numcores)
+                    displacement_dictionary[calclabel] = gradient
+                else:
+                    print("theory not implemented for numfreq yet")
+                    exit()
+                #freqinputfiles.append(displacement_jobname)
+        elif self.runmode == 'parallel':
+            print("parallel not ready")
+            exit(1)
+
+
+        print("Calculations are done.")
+
+        #If partial Hessian remove non-hessatoms part of gradient:
+        #Get partial matrix by deleting atoms not present in list.
+        if self.npoint == 1:
+            original_grad=get_partial_matrix(self.allatoms, self.hessatoms, displacement_dictionary['Originalgeo'])
+            original_grad_1d = np.ravel(original_grad)
+        #Initialize Hessian
+        hesslength=3*len(self.hessatoms)
+        hessian=np.zeros((hesslength,hesslength))
+
+
+        #Onepoint-formula Hessian
+        if self.npoint == 1:
+            #Starting index for Hessian array
+            index=0
+            #Getting displacements as keys from dictionary and sort
+            dispkeys = list(displacement_dictionary.keys())
+            #Sort seems to sort it correctly w.r.t. atomnumber,x,y,z and +/-
+            dispkeys.sort()
+            #for displacement, grad in displacement_dictionary.items():
+            for dispkey in dispkeys:
+                grad=displacement_dictionary[dispkey]
+                #Skipping original geo
+                if dispkey != 'Originalgeo':
+                    #Getting grad as numpy matrix and converting to 1d
+                    # If partial Hessian remove non-hessatoms part of gradient:
+                    grad = get_partial_matrix(self.allatoms, self.hessatoms, grad)
+                    grad_1d = np.ravel(grad)
+                    Hessrow=(grad_1d - original_grad_1d)/self.displacement_bohr
+                    hessian[index,:]=Hessrow
+                    index+=1
+        #Twopoint-formula Hessian. pos and negative directions come in order
+        elif self.npoint == 2:
+            count=0; hessindex=0
+            #Getting displacements as keys from dictionary and sort
+            dispkeys = list(displacement_dictionary.keys())
+            #Sort seems to sort it correctly w.r.t. atomnumber,x,y,z and +/-
+            dispkeys.sort()
+            #for file in freqinputfiles:
+            #for displacement, grad in testdict.items():
+            for dispkey in dispkeys:
+                if dispkey != 'Originalgeo':
+                    count+=1
+                    if count == 1:
+                        grad_pos=displacement_dictionary[dispkey]
+                        #print("pos I hope")
+                        #print("dispkey:", dispkey)
+                        # If partial Hessian remove non-hessatoms part of gradient:
+                        grad_pos = get_partial_matrix(self.allatoms, self.hessatoms, grad_pos)
+                        grad_pos_1d = np.ravel(grad_pos)
+                    elif count == 2:
+                        grad_neg=displacement_dictionary[dispkey]
+                        #print("neg I hope")
+                        #print("dispkey:", dispkey)
+                        #Getting grad as numpy matrix and converting to 1d
+                        # If partial Hessian remove non-hessatoms part of gradient:
+                        grad_neg = get_partial_matrix(self.allatoms, self.hessatoms, grad_neg)
+                        grad_neg_1d = np.ravel(grad_neg)
+                        Hessrow=(grad_pos_1d - grad_neg_1d)/(2*self.displacement_bohr)
+                        hessian[hessindex,:]=Hessrow
+                        grad_pos_1d=0
+                        grad_neg_1d=0
+                        count=0
+                        hessindex+=1
+                    else:
+                        print("Something bad happened")
+                        exit()
+                blankline()
+
+
+        #Symmetrize Hessian by taking average of matrix and transpose
+        symm_hessian=(hessian+hessian.transpose())/2
+        self.hessian=symm_hessian
+        #Write Hessian to file
+        with open("Hessian", 'w') as hfile:
+            hfile.write(str(hesslength)+' '+str(hesslength)+'\n')
+            for row in self.hessian:
+                rowline=' '.join(map(str, row))
+                hfile.write(str(rowline)+'\n')
+            blankline()
+            print("Wrote Hessian to file: Hessian")
+        #Write ORCA-style Hessian file
+        write_ORCA_Hessfile(self.hessian, self.coords, self.elems, self.fragment.list_of_masses, self.hessatoms)
+
+        #Project out Translation+Rotational modes
+        #TODO
+
+        #Diagonalize mass-weighted Hessian
+        # Get partial matrix by deleting atoms not present in list.
+        hesselems = get_partial_list(self.allatoms, self.hessatoms, self.elems)
+        hessmasses = get_partial_list(self.allatoms, self.hessatoms, self.fragment.list_of_masses)
+        print("Elements:", hesselems)
+        print("Masses used:", hessmasses)
+        self.frequencies=diagonalizeHessian(self.hessian,hessmasses,hesselems)[0]
+
+        #Print out normal mode output. Like in Chemshell or ORCA
+        blankline()
+        print("Normal modes:")
+        #TODO: Eigenvectors print here
+        print("Eigenvectors to be  be printed here")
+        blankline()
+        #Print out Freq output. Maybe print normal mode compositions here instead???
+        printfreqs(self.frequencies,len(self.hessatoms))
+
+        #Print out thermochemistry
+        thermochemcalc(self.frequencies,self.hessatoms, self.fragment, self.theory.mult, temp=298.18,pressure=1)
+
+        #TODO: https://pages.mtu.edu/~msgocken/ma5630spring2003/lectures/diff/diff/node6.html
+        print("Numerical frequencies done!")
+
+
+
+#EVEN OLDER BAD CODE
 #Numerical frequencies class
 class NumericalFrequencies:
     def __init__(self, fragment, theory, npoint=2, displacement=0.0005, hessatoms=None, numcores=1 ):

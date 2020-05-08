@@ -943,7 +943,7 @@ def thermochemcalc(vfreq,hessatoms,fragment, multiplicity, temp=298.18,pressure=
     freqs=[]
     vibtemps=[]
     #Vibrational part
-    print(vfreq)
+    #print(vfreq)
     for mode in range(0, 3 * len(hessatoms)):
         print(mode)
         if mode < TRmodenum:
