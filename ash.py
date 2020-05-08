@@ -100,10 +100,10 @@ class NumericalFrequencies:
         self.npoint = npoint
         self.displacement=displacement
         print("self.displacement:", self.displacement)
-        self.displacement_bohr = self.displacement *constants.bohr2ang
+        self.displacement_bohr = self.displacement *constants.ang2bohr
         print("self.displacement_bohr:", self.displacement_bohr)
-        self.displacement_bohr =1
-        print("self.displacement_bohr:", self.displacement_bohr)
+        #self.displacement_bohr =1
+        #print("self.displacement_bohr:", self.displacement_bohr)
 
     def run(self):
         print("Starting Numerical Frequencies job for fragment")
