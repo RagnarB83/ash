@@ -21,14 +21,14 @@ echo "DIT : $DIT"
 #echo $(dirname "${BASH_SOURCE{0}}")
 #echo "bash source : $(dirname "${BASH_SOURCE[0]}")"
 
-#Getting path of this shell-script (resids in Yggdrasill main dir)
+#Getting path of this shell-script (resids in Ash main dir)
 SCRIPT=$(readlink -f "$0")
 echo "SCRIPT : $SCRIPT"
 
 
 ash_path=$(dirname "$SCRIPT")
 
-echo "Setting PYTHONPATH and LD_LIBRARY_PATH for Yggdrasill"
+echo "Setting PYTHONPATH and LD_LIBRARY_PATH for Ash"
 #PYTHONPATH
 export PYTHONPATH=$ash_path:$PYTHONPATH
 #Setting LD_LIBRARY_PATH for lib dir
