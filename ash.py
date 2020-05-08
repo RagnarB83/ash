@@ -99,11 +99,8 @@ class NumericalFrequencies:
             self.hessatoms=hessatoms
         self.npoint = npoint
         self.displacement=displacement
-        print("self.displacement:", self.displacement)
         self.displacement_bohr = self.displacement *constants.ang2bohr
-        print("self.displacement_bohr:", self.displacement_bohr)
-        #self.displacement_bohr =1
-        #print("self.displacement_bohr:", self.displacement_bohr)
+
 
     def run(self):
         print("Starting Numerical Frequencies job for fragment")
@@ -162,11 +159,10 @@ class NumericalFrequencies:
             #   key: AtomNCoordPDirectionm   where N=atomnumber, P=x,y,z and direction m: + or -
             #   value: gradient
             displacement_dictionary={}
-            print("list_of_displacements:", list_of_displacements)
+            print("List of displacements:", list_of_displacements)
 
             for disp, geo in zip(list_of_displacements,list_of_displaced_geos):
                 if disp == 'Originalgeo':
-                    print("Original geo calculation")
                     calclabel = 'Originalgeo'
                 else:
                     atom_disp=disp[0]
@@ -205,19 +201,12 @@ class NumericalFrequencies:
 
 
         print("Calculations are done.")
-        print("displacement_dictionary:", displacement_dictionary)
-
-        #freqinplist is in order of atom, x/y/z-coordinates, direction etc.
-        #e.g. Numfreq-Disp-Atom0x+,  Numfreq-Disp-Atom0x-, Numfreq-Disp-Atom0y+  etc.
-        #Grab energy and gradient of original geometry. Only used for onepoint formula
-        #original_grad = ORCAgradientgrab('Originalgeo' + '.engrad')
 
         #If partial Hessian remove non-hessatoms part of gradient:
         #Get partial matrix by deleting atoms not present in list.
         if self.npoint == 1:
             original_grad=get_partial_matrix(self.allatoms, self.hessatoms, displacement_dictionary['Originalgeo'])
             original_grad_1d = np.ravel(original_grad)
-            print("original_grad_1d:", original_grad_1d)
         #Initialize Hessian
         hesslength=3*len(self.hessatoms)
         hessian=np.zeros((hesslength,hesslength))
@@ -231,24 +220,17 @@ class NumericalFrequencies:
             dispkeys = list(displacement_dictionary.keys())
             #Sort seems to sort it correctly w.r.t. atomnumber,x,y,z and +/-
             dispkeys.sort()
-            print("dispkeys", dispkeys)
             #for displacement, grad in displacement_dictionary.items():
             for dispkey in dispkeys:
                 grad=displacement_dictionary[dispkey]
                 #Skipping original geo
                 if dispkey != 'Originalgeo':
-                    print("dispkey:", dispkey)
-                    print("index:", index)
                     #Getting grad as numpy matrix and converting to 1d
                     # If partial Hessian remove non-hessatoms part of gradient:
                     grad = get_partial_matrix(self.allatoms, self.hessatoms, grad)
-                    print("grad:", grad)
                     grad_1d = np.ravel(grad)
-                    print("grad_1d:", grad_1d)
                     Hessrow=(grad_1d - original_grad_1d)/self.displacement_bohr
-                    print("Hessrow:", Hessrow)
                     hessian[index,:]=Hessrow
-                    print("hessian:", hessian)
                     index+=1
         #Twopoint-formula Hessian. pos and negative directions come in order
         elif self.npoint == 2:
@@ -257,12 +239,10 @@ class NumericalFrequencies:
             dispkeys = list(displacement_dictionary.keys())
             #Sort seems to sort it correctly w.r.t. atomnumber,x,y,z and +/-
             dispkeys.sort()
-            print("dispkeys", dispkeys)
             #for file in freqinputfiles:
             #for displacement, grad in testdict.items():
             for dispkey in dispkeys:
                 if dispkey != 'Originalgeo':
-                    print("dispkey:", dispkey)
                     count+=1
                     if count == 1:
                         grad_pos=displacement_dictionary[dispkey]
@@ -294,7 +274,6 @@ class NumericalFrequencies:
         #Symmetrize Hessian by taking average of matrix and transpose
         symm_hessian=(hessian+hessian.transpose())/2
         self.hessian=symm_hessian
-        print("symm_hessian:", symm_hessian)
         #Write Hessian to file
         with open("Hessian", 'w') as hfile:
             hfile.write(str(hesslength)+' '+str(hesslength)+'\n')
@@ -309,20 +288,19 @@ class NumericalFrequencies:
         #Project out Translation+Rotational modes
         #TODO
 
-        #Diagonalize Hessian
-        print("self.fragment.list_of_masses:", self.fragment.list_of_masses)
-        print("self.elems:", self.elems)
+        #Diagonalize mass-weighted Hessian
         # Get partial matrix by deleting atoms not present in list.
         hesselems = get_partial_list(self.allatoms, self.hessatoms, self.elems)
         hessmasses = get_partial_list(self.allatoms, self.hessatoms, self.fragment.list_of_masses)
-        print("hesselems", hesselems)
-        print("hessmasses:", hessmasses)
+        print("Elements:", hesselems)
+        print("Masses used:", hessmasses)
         self.frequencies=diagonalizeHessian(self.hessian,hessmasses,hesselems)[0]
 
         #Print out normal mode output. Like in Chemshell or ORCA
         blankline()
         print("Normal modes:")
-        print("Eigenvectors will be printed here")
+        #TODO: Eigenvectors print here
+        print("Eigenvectors to be  be printed here")
         blankline()
         #Print out Freq output. Maybe print normal mode compositions here instead???
         printfreqs(self.frequencies,len(self.hessatoms))
@@ -331,7 +309,7 @@ class NumericalFrequencies:
         thermochemcalc(self.frequencies,self.hessatoms, self.fragment, self.theory.mult, temp=298.18,pressure=1)
 
         #TODO: https://pages.mtu.edu/~msgocken/ma5630spring2003/lectures/diff/diff/node6.html
-
+        print("Numerical frequencies done!")
 
 #Molecular dynamics class
 class MolecularDynamics:
