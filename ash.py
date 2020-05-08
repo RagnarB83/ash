@@ -99,7 +99,10 @@ class NumericalFrequencies:
             self.hessatoms=hessatoms
         self.npoint = npoint
         self.displacement=displacement
+        print("self.displacement:", self.displacement)
         self.displacement_bohr = self.displacement *constants.bohr2ang
+        print("self.displacement_bohr:", self.displacement_bohr)
+        self.displacement_bohr =1
         print("self.displacement_bohr:", self.displacement_bohr)
 
     def run(self):
@@ -115,7 +118,7 @@ class NumericalFrequencies:
         else:
             print("Unknown npoint option. npoint should be set to 1 (one-point) or 2 (two-point formula).")
             exit()
-        print("Displacement: {:3.3f} Å ({:3.3f} Bohr)".format(self.displacement,self.displacement_bohr))
+        print("Displacement: {:5.4f} Å ({:5.4f} Bohr)".format(self.displacement,self.displacement_bohr))
         blankline()
         print("Starting geometry:")
         #Converting to numpy array
