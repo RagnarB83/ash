@@ -173,19 +173,21 @@ def NumFreq(fragment=None, theory=None, npoint=1, displacement=0.0005, hessatoms
         import multiprocessing as mp
         pool = mp.Pool(numcores)
         blankline()
+        print("Running snapshots in parallel using multiprocessing.Pool")
         print("Number of CPU cores: ", numcores)
         print("Number of displacements:", len(list_of_displaced_geos))
-        print("Running snapshots in parallel using multiprocessing.Pool")
+
 
         def displacement_run(arglist):
             geo=arglist[0]
             elems=arglist[1]
             numcores=arglist[2]
-            label=arglist[3]
+            #label=arglist[3]
+            label="fakelabel"
             energy, gradient = theory.run(current_coords=geo, elems=elems, Grad=True, nprocs=numcores)
             return [label, energy, gradient]
 
-        results = pool.map(displacement_run, [[geo, elems, numcores,label] for geo,label in zip(list_of_labels,list_of_displaced_geos)])
+        results = pool.map(displacement_run, [[geo, elems, numcores,label] for geo in list_of_labels,list_of_displaced_geos])
 
         #results = pool.starmap(theory.run, input_list)
 
