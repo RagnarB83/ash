@@ -74,10 +74,6 @@ def displacement_run(arglist):
     theory = arglist[3]
     label = arglist[4]
     dispdir=label.replace(' ','')
-    try:
-        os.remove(dispdir)
-    except:
-        pass
     os.mkdir(dispdir)
     os.chdir(dispdir)
     #Todo: Copy previous GBW file in here if ORCA, xtbrestart if xtb, etc.
