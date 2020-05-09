@@ -65,6 +65,16 @@ def print_ash_header():
     print(BC.OKGREEN,"----------------------------------------------------------------------------------",BC.END)
     print(BC.OKGREEN,"----------------------------------------------------------------------------------",BC.END)
 
+#Function to run each displacement in parallel NumFreq run
+def displacement_run(arglist):
+    print("arglist:", arglist)
+    geo = arglist[0]
+    elems = arglist[1]
+    numcores = arglist[2]
+    label = arglist[3]
+    energy, gradient = theory.run(current_coords=geo, elems=elems, Grad=True, nprocs=numcores)
+    return [label, energy, gradient]
+
 #Numerical frequencies function
 def NumFreq(fragment=None, theory=None, npoint=1, displacement=0.0005, hessatoms=None, numcores=1, runmode='serial'):
     print(BC.WARNING, BC.BOLD, "------------NUMERICAL FREQUENCIES-------------", BC.END)
@@ -176,16 +186,6 @@ def NumFreq(fragment=None, theory=None, npoint=1, displacement=0.0005, hessatoms
         print("Running snapshots in parallel using multiprocessing.Pool")
         print("Number of CPU cores: ", numcores)
         print("Number of displacements:", len(list_of_displaced_geos))
-
-
-        def displacement_run(arglist):
-            print("arglist:", arglist)
-            geo=arglist[0]
-            elems=arglist[1]
-            numcores=arglist[2]
-            label=arglist[3]
-            energy, gradient = theory.run(current_coords=geo, elems=elems, Grad=True, nprocs=numcores)
-            return [label, energy, gradient]
 
         label="fakelabel"
         #displacement_run(["x", 1, 12, "sdfsdf"])
