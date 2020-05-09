@@ -120,7 +120,9 @@ def NumFreq(fragment=None, theory=None, npoint=1, displacement=0.0005, hessatoms
     #Converting to numpy array
     #TODO: get rid list->np-array conversion
     current_coords_array=np.array(coords)
-    print_coords_all(current_coords_array, elems)
+
+    print("Printing hessatoms geometry...")
+    print_coords_for_atoms(coords,elems,hessatoms)
     blankline()
 
     #Looping over each atom and each coordinate to create displaced geometries

@@ -216,7 +216,7 @@ class KnarrCalculator:
 
         print("NEB iteration done")
         print("Energies of images dict:", self.energies_dict)
-
+        blankline()
         #Write out full MEP path in each NEB iteration.
         if self.ActiveRegion is True:
             #if len(list_to_compute) > 2:
