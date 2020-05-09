@@ -73,7 +73,7 @@ def displacement_run(arglist):
     numcores = arglist[2]
     theory = arglist[3]
     label = arglist[4]
-    energy, gradient = theory.run(current_coords=geo, elems=elems, Grad=True, nprocs=numcores)
+    energy, gradient = theory.run(current_coords=geo, elems=elems, Grad=True, nprocs=1)
     return [label, energy, gradient]
 
 #Numerical frequencies function
