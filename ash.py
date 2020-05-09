@@ -71,7 +71,8 @@ def displacement_run(arglist):
     geo = arglist[0]
     elems = arglist[1]
     numcores = arglist[2]
-    label = arglist[3]
+    theory = arglist[3]
+    label = arglist[4]
     energy, gradient = theory.run(current_coords=geo, elems=elems, Grad=True, nprocs=numcores)
     return [label, energy, gradient]
 
@@ -190,7 +191,7 @@ def NumFreq(fragment=None, theory=None, npoint=1, displacement=0.0005, hessatoms
         label="fakelabel"
         #displacement_run(["x", 1, 12, "sdfsdf"])
         #print("here")
-        results = pool.map(displacement_run, [[geo, elems, numcores,label] for geo in list_of_displaced_geos])
+        results = pool.map(displacement_run, [[geo, elems, numcores, theory, label] for geo in list_of_displaced_geos])
 
         #results = pool.starmap(theory.run, input_list)
 
