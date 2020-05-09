@@ -202,6 +202,7 @@ def NumFreq(fragment=None, theory=None, npoint=1, displacement=0.0005, hessatoms
         #However, this only makes sense to use if way more CPUs available than displacements.
         #Unlikely situation, so hardcoding to 1 for now.
         numcoresQM=1
+        print("Setting nprocs for theory object to: ", numcoresQM)
         results = pool.map(displacement_run, [[geo, elems, numcoresQM, theory, label] for geo,label in zip(list_of_displaced_geos,list_of_labels)])
         pool.close()
         #Gathering results in dictionary

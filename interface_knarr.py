@@ -439,3 +439,5 @@ def NEB(reactant=None, product=None, theory=None, images=None, interpolation=Non
     print('KNARR successfully terminated')
     blankline()
     print("Please consider citing the following paper if you found the NEB module (from Knarr) useful: To be added")
+    if neb_settings["CLIMBING"] is True:
+        return Saddlepoint_fragment
