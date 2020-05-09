@@ -65,6 +65,7 @@ def print_ash_header():
 
 #Numerical frequencies function
 def NumFreq(fragment=None, theory=None, npoint=1, displacement=0.0005, hessatoms=None, numcores=1, runmode='serial'):
+    print(BC.WARNING, BC.BOLD, "------------NUMERICAL FREQUENCIES-------------", BC.END)
         if fragment is None or theory is None:
             print("NumFreq requires a fragment and a theory object")
 
@@ -144,7 +145,7 @@ def NumFreq(fragment=None, theory=None, npoint=1, displacement=0.0005, hessatoms
                 drection = disp[2]
                 # displacement_jobname='Numfreq-Disp-'+'Atom'+str(atom_disp)+crd+drection
                 #print("Displacing Atom: {} Coordinate: {} Direction: {}".format(atom_disp, crd, drection))
-                calclabel = 'Atom{}Coord{}Direction{}'.format(atom_disp, crd, drection)
+                calclabel = 'Atom:{} Coord: {} Direction: {}'.format(atom_disp, crd, drection)
             list_of_labels.append(calclabel)
 
         assert len(list_of_labels) == len(list_of_displaced_geos), "something is wrong"
@@ -305,6 +306,7 @@ def NumFreq(fragment=None, theory=None, npoint=1, displacement=0.0005, hessatoms
         #TODO: https://pages.mtu.edu/~msgocken/ma5630spring2003/lectures/diff/diff/node6.html
         blankline()
         print("Numerical frequencies done!")
+        print(BC.WARNING, BC.BOLD, "------------NUMERICAL FREQUENCIES END-------------", BC.END)
 
 #Molecular dynamics class
 class MolecularDynamics:
