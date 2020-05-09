@@ -82,6 +82,7 @@ def displacement_run(arglist):
     os.chdir(dispdir)
     #Todo: Copy previous GBW file in here if ORCA, xtbrestart if xtb, etc.
     energy, gradient = theory.run(current_coords=geo, elems=elems, Grad=True, nprocs=1)
+    os.chdir('..')
     return [label, energy, gradient]
 
 #Numerical frequencies function
