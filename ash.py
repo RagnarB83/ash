@@ -52,6 +52,8 @@ def print_ash_header():
                                          
     """
 
+
+
     print(BC.OKGREEN,"----------------------------------------------------------------------------------",BC.END)
     print(BC.OKGREEN,"----------------------------------------------------------------------------------",BC.END)
     #print(BC.OKBLUE,ascii_banner3,BC.END)
@@ -172,7 +174,7 @@ def NumFreq(fragment=None, theory=None, npoint=1, displacement=0.0005, hessatoms
         pool = mp.Pool(numcores)
         blankline()
         print("Number of CPU cores: ", numcores)
-        print("Number of displacements:", len(list_of__geos))
+        print("Number of displacements:", len(list_of_displaced_geos))
         print("Running snapshots in parallel using multiprocessing.Pool")
 
         def displacement_run(arglist):
@@ -183,7 +185,7 @@ def NumFreq(fragment=None, theory=None, npoint=1, displacement=0.0005, hessatoms
             energy, gradient = theory.run(current_coords=geo, elems=elems, Grad=True, nprocs=numcores)
             return [label, energy, gradient]
 
-        results = pool.map(displacement_run, [[geo, elems, numcores,label] for geo,label in zip(list_of_labels,list_of__geos)])
+        results = pool.map(displacement_run, [[geo, elems, numcores,label] for geo,label in zip(list_of_labels,list_of_displaced_geos)])
 
         #results = pool.starmap(theory.run, input_list)
 
@@ -195,7 +197,7 @@ def NumFreq(fragment=None, theory=None, npoint=1, displacement=0.0005, hessatoms
         exit(1)
 
 
-    print("Calculations are done.")
+    print("Displacement calculations done.")
 
     #If partial Hessian remove non-hessatoms part of gradient:
     #Get partial matrix by deleting atoms not present in list.
@@ -215,7 +217,7 @@ def NumFreq(fragment=None, theory=None, npoint=1, displacement=0.0005, hessatoms
         dispkeys = list(displacement_grad_dictionary.keys())
         #Sort seems to sort it correctly w.r.t. atomnumber,x,y,z and +/-
         dispkeys.sort()
-        print("dispkeys:", dispkeys)
+        #print("dispkeys:", dispkeys)
         #for displacement, grad in displacement_grad_dictionary.items():
         for dispkey in dispkeys:
             grad=displacement_grad_dictionary[dispkey]
@@ -235,7 +237,7 @@ def NumFreq(fragment=None, theory=None, npoint=1, displacement=0.0005, hessatoms
         dispkeys = list(displacement_grad_dictionary.keys())
         #Sort seems to sort it correctly w.r.t. atomnumber,x,y,z and +/-
         dispkeys.sort()
-        print("dispkeys:", dispkeys)
+        #print("dispkeys:", dispkeys)
         #for file in freqinputfiles:
         #for displacement, grad in testdict.items():
         for dispkey in dispkeys:
@@ -266,9 +268,12 @@ def NumFreq(fragment=None, theory=None, npoint=1, displacement=0.0005, hessatoms
                     print("Something bad happened")
                     exit()
     blankline()
+
     #Symmetrize Hessian by taking average of matrix and transpose
     symm_hessian=(hessian+hessian.transpose())/2
     hessian=symm_hessian
+
+
     #Write Hessian to file
     with open("Hessian", 'w') as hfile:
         hfile.write(str(hesslength)+' '+str(hesslength)+'\n')
@@ -294,7 +299,8 @@ def NumFreq(fragment=None, theory=None, npoint=1, displacement=0.0005, hessatoms
     #Print out normal mode output. Like in Chemshell or ORCA
     blankline()
     print("Normal modes:")
-    #TODO: Eigenvectors print here
+    #TODO: Eigenvectors print here.
+    #TODO: or perhaps elemental normal mode composition factors
     print("Eigenvectors to be  be printed here")
     blankline()
     #Print out Freq output. Maybe print normal mode compositions here instead???
