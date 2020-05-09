@@ -70,6 +70,7 @@ def displacement_run(arglist):
     #print("arglist:", arglist)
     geo = arglist[0]
     elems = arglist[1]
+    #Numcores can be used. We can launch ORCA-OpenMPI in parallel it seems. Only makes sense if we have may more cores available than displacements
     numcores = arglist[2]
     theory = arglist[3]
     label = arglist[4]
@@ -78,7 +79,7 @@ def displacement_run(arglist):
     os.chdir(dispdir)
     #Todo: Copy previous GBW file in here if ORCA, xtbrestart if xtb, etc.
     print("Running displacement: {}".format(label))
-    energy, gradient = theory.run(current_coords=geo, elems=elems, Grad=True, nprocs=2)
+    energy, gradient = theory.run(current_coords=geo, elems=elems, Grad=True, nprocs=numcores)
     print("Energy: ", energy)
     os.chdir('..')
     #Delete dir?
@@ -196,7 +197,12 @@ def NumFreq(fragment=None, theory=None, npoint=1, displacement=0.0005, hessatoms
         print("Running snapshots in parallel using multiprocessing.Pool")
         print("Number of CPU cores: ", numcores)
         print("Number of displacements:", len(list_of_displaced_geos))
-        results = pool.map(displacement_run, [[geo, elems, numcores, theory, label] for geo,label in zip(list_of_displaced_geos,list_of_labels)])
+
+        #NumcoresQM can be larger value (e.g. ORCA-parallelization). ORCA seems to run fine with OpenMPI without complaints.
+        #However, this only makes sense to use if way more CPUs available than displacements.
+        #Unlikely situation, so hardcoding to 1 for now.
+        numcoresQM=1
+        results = pool.map(displacement_run, [[geo, elems, numcoresQM, theory, label] for geo,label in zip(list_of_displaced_geos,list_of_labels)])
         pool.close()
         #Gathering results in dictionary
         for result in results:
@@ -320,7 +326,6 @@ def NumFreq(fragment=None, theory=None, npoint=1, displacement=0.0005, hessatoms
 
     #TODO: https://pages.mtu.edu/~msgocken/ma5630spring2003/lectures/diff/diff/node6.html
     blankline()
-    print("Numerical frequencies done!")
     print(BC.WARNING, BC.BOLD, "------------NUMERICAL FREQUENCIES END-------------", BC.END)
 
 #Molecular dynamics class
