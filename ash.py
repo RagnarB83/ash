@@ -145,7 +145,7 @@ def NumFreq(fragment=None, theory=None, npoint=1, displacement=0.0005, hessatoms
             drection = disp[2]
             # displacement_jobname='Numfreq-Disp-'+'Atom'+str(atom_disp)+crd+drection
             #print("Displacing Atom: {} Coordinate: {} Direction: {}".format(atom_disp, crd, drection))
-            calclabel = 'Atom:{} Coord: {} Direction: {}'.format(atom_disp, crd, drection)
+            calclabel = 'Atom: {} Coord: {} Direction: {}'.format(atom_disp, crd, drection)
         list_of_labels.append(calclabel)
 
     assert len(list_of_labels) == len(list_of_displaced_geos), "something is wrong"
@@ -163,7 +163,7 @@ def NumFreq(fragment=None, theory=None, npoint=1, displacement=0.0005, hessatoms
             else:
                 calclabel=label
                 #displacement_jobname='Numfreq-Disp-'+'Atom'+str(atom_disp)+crd+drection
-                print("Displacing : {}".format(calclabel))
+                print("Displacing {}".format(calclabel))
             energy, gradient = theory.run(current_coords=geo, elems=elems, Grad=True, nprocs=numcores)
             #Adding gradient to dictionary for AtomNCoordPDirectionm
             displacement_grad_dictionary[calclabel] = gradient
@@ -235,6 +235,7 @@ def NumFreq(fragment=None, theory=None, npoint=1, displacement=0.0005, hessatoms
         dispkeys = list(displacement_grad_dictionary.keys())
         #Sort seems to sort it correctly w.r.t. atomnumber,x,y,z and +/-
         dispkeys.sort()
+        print("dispkeys:", dispkeys)
         #for file in freqinputfiles:
         #for displacement, grad in testdict.items():
         for dispkey in dispkeys:
@@ -264,9 +265,7 @@ def NumFreq(fragment=None, theory=None, npoint=1, displacement=0.0005, hessatoms
                 else:
                     print("Something bad happened")
                     exit()
-            blankline()
-
-
+    blankline()
     #Symmetrize Hessian by taking average of matrix and transpose
     symm_hessian=(hessian+hessian.transpose())/2
     hessian=symm_hessian
