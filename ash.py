@@ -199,9 +199,7 @@ def NumFreq(fragment=None, theory=None, npoint=1, displacement=0.0005, hessatoms
             calclabel=result[0]
             energy=result[1]
             gradient=result[2]
-        displacement_grad_dictionary[calclabel] = gradient
-        exit(1)
-
+            displacement_grad_dictionary[calclabel] = gradient
 
     print("Displacement calculations done.")
     print("displacement_grad_dictionary:", displacement_grad_dictionary)
