@@ -77,7 +77,8 @@ def displacement_run(arglist):
     os.mkdir(dispdir)
     os.chdir(dispdir)
     #Todo: Copy previous GBW file in here if ORCA, xtbrestart if xtb, etc.
-    energy, gradient = theory.run(current_coords=geo, elems=elems, Grad=True, nprocs=1)
+    energy, gradient = theory.run(current_coords=geo, elems=elems, Grad=True, nprocs=2)
+    print("Energy: ", energy)
     os.chdir('..')
     return [label, energy, gradient]
 
@@ -194,16 +195,16 @@ def NumFreq(fragment=None, theory=None, npoint=1, displacement=0.0005, hessatoms
         print("Number of displacements:", len(list_of_displaced_geos))
         results = pool.map(displacement_run, [[geo, elems, numcores, theory, label] for geo,label in zip(list_of_displaced_geos,list_of_labels)])
         pool.close()
-
+        #Gathering results in dictionary
         for result in results:
-            print("result:", result)
+            #print("result:", result)
             calclabel=result[0]
             energy=result[1]
             gradient=result[2]
             displacement_grad_dictionary[calclabel] = gradient
 
     print("Displacement calculations done.")
-    print("displacement_grad_dictionary:", displacement_grad_dictionary)
+    #print("displacement_grad_dictionary:", displacement_grad_dictionary)
     #If partial Hessian remove non-hessatoms part of gradient:
     #Get partial matrix by deleting atoms not present in list.
     if npoint == 1:
