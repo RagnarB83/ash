@@ -215,6 +215,7 @@ def NumFreq(fragment=None, theory=None, npoint=1, displacement=0.0005, hessatoms
             dispkeys = list(displacement_grad_dictionary.keys())
             #Sort seems to sort it correctly w.r.t. atomnumber,x,y,z and +/-
             dispkeys.sort()
+            print("dispkeys:", dispkeys)
             #for displacement, grad in displacement_grad_dictionary.items():
             for dispkey in dispkeys:
                 grad=displacement_grad_dictionary[dispkey]
