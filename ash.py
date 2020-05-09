@@ -63,8 +63,7 @@ def print_ash_header():
     print(BC.OKGREEN,"----------------------------------------------------------------------------------",BC.END)
     print(BC.OKGREEN,"----------------------------------------------------------------------------------",BC.END)
 
-#Numerical frequencies class
-#Todo: Change to function?
+#Numerical frequencies function
 def NumFreq(fragment=None, theory=None, npoint=1, displacement=0.0005, hessatoms=None, numcores=1, runmode='serial'):
         if fragment is None or theory is None:
             print("NumFreq requires a fragment and a theory object")
@@ -78,7 +77,6 @@ def NumFreq(fragment=None, theory=None, npoint=1, displacement=0.0005, hessatoms
             hessatoms=allatoms
 
         displacement_bohr = displacement * constants.ang2bohr
-
 
         print("Starting Numerical Frequencies job for fragment")
         print("System size:", numatoms)
@@ -128,49 +126,71 @@ def NumFreq(fragment=None, theory=None, npoint=1, displacement=0.0005, hessatoms
             list_of_displaced_geos.append(current_coords_array)
             list_of_displacements.append('Originalgeo')
 
-        if runmode == 'serial':
-            #Looping over geometries and running
-            freqinputfiles=[]
+        print("List of displacements:", list_of_displacements)
 
-            #Dictionary for each displacement:
+        #Creating displacement labels
+        list_of_labels=[]
+        for disp in list_of_displacements:
+            if disp == 'Originalgeo':
+                calclabel = 'Originalgeo'
+            else:
+                atom_disp = disp[0]
+                if disp[1] == 0:
+                    crd = 'x'
+                elif disp[1] == 1:
+                    crd = 'y'
+                elif disp[1] == 2:
+                    crd = 'z'
+                drection = disp[2]
+                # displacement_jobname='Numfreq-Disp-'+'Atom'+str(atom_disp)+crd+drection
+                #print("Displacing Atom: {} Coordinate: {} Direction: {}".format(atom_disp, crd, drection))
+                calclabel = 'Atom{}Coord{}Direction{}'.format(atom_disp, crd, drection)
+            list_of_labels.append(calclabel)
+
+        assert len(list_of_labels) == len(list_of_displaced_geos), "something is wrong"
+
+        #RUNNING displacements
+        displacement_grad_dictionary = {}
+        if runmode == 'serial':
+            #Looping over geometries and running.
             #   key: AtomNCoordPDirectionm   where N=atomnumber, P=x,y,z and direction m: + or -
             #   value: gradient
-            displacement_dictionary={}
-            print("List of displacements:", list_of_displacements)
-
-            for disp, geo in zip(list_of_displacements,list_of_displaced_geos):
-                if disp == 'Originalgeo':
+            for label, geo in zip(list_of_labels,list_of_displaced_geos):
+                if label == 'Originalgeo':
                     calclabel = 'Originalgeo'
+                    print("Doing original geometry calc.")
                 else:
-                    atom_disp=disp[0]
-                    if disp[1] == 0:
-                        crd='x'
-                    elif disp[1] == 1:
-                        crd = 'y'
-                    elif disp[1] == 2:
-                        crd = 'z'
-                    drection=disp[2]
+                    calclabel=label
                     #displacement_jobname='Numfreq-Disp-'+'Atom'+str(atom_disp)+crd+drection
-                    print("Displacing Atom: {} Coordinate: {} Direction: {}".format(atom_disp, crd, drection))
-                    calclabel='Atom{}Coord{}Direction{}'.format(atom_disp,crd,drection)
-                if type(theory)==ORCATheory:
-                    energy, gradient = theory.run(current_coords=geo, elems=elems, Grad=True,
-                                                                     nprocs=numcores)
-                    #Adding gradient to dictionary for AtomNCoordPDirectionm
-                    displacement_dictionary[calclabel] = gradient
-                elif type(theory)==QMMMTheory:
-                    print("QM/MM Theory for Numfreq in progress")
-                    energy, gradient = theory.run(current_coords=geo, elems=elems, Grad=True, nprocs=numcores)
-                    displacement_dictionary[calclabel] = gradient
-                elif type(theory)==xTBTheory:
-                    energy, gradient = theory.run(current_coords=geo, elems=elems, Grad=True, nprocs=numcores)
-                    displacement_dictionary[calclabel] = gradient
-                else:
-                    print("theory not implemented for numfreq yet")
-                    exit()
-                #freqinputfiles.append(displacement_jobname)
+                    print("Displacing : {}".format(calclabel))
+                energy, gradient = theory.run(current_coords=geo, elems=elems, Grad=True, nprocs=numcores)
+                #Adding gradient to dictionary for AtomNCoordPDirectionm
+                displacement_grad_dictionary[calclabel] = gradient
         elif runmode == 'parallel':
-            print("parallel not ready")
+            import multiprocessing as mp
+            pool = mp.Pool(numcores)
+            blankline()
+            print("Number of CPU cores: ", numcores)
+            print("Number of displacements:", len(list_of__geos))
+            print("Running snapshots in parallel using multiprocessing.Pool")
+
+            def displacement_run(arglist):
+                geo=arglist[0]
+                elems=arglist[1]
+                numcores=arglist[2]
+                label=arglist[3]
+                energy, gradient = theory.run(current_coords=geo, elems=elems, Grad=True, nprocs=numcores)
+                return [label, energy, gradient]
+
+            results = pool.map(displacement_run, [[geo, elems, numcores,label] for geo,label in zip(list_of_labels,list_of__geos)])
+
+            #results = pool.starmap(theory.run, input_list)
+
+            pool.close()
+
+            for result in results:
+                print("result:", result)
+            displacement_grad_dictionary[calclabel] = gradient
             exit(1)
 
 
@@ -2828,6 +2848,16 @@ def run_QMMM_SP_in_parallel(orcadir, list_of__geos, list_of_labels, QMMMtheory, 
     pool.close()
     print("Calculations are done")
 
+#def run_displacements_in_parallel(list_of__geos, list_of_labels, QMMMtheory, numcores):
+#    import multiprocessing as mp
+#    blankline()
+#    print("Number of CPU cores: ", numcores)
+#    print("Number of geos:", len(list_of__geos))
+#    print("Running displacements in parallel")
+#    pool = mp.Pool(numcores)
+#    results = pool.map(theory.run, [[geo, QMMMtheory ] for geo in list_of__geos])
+#    pool.close()
+#    print("Calculations are done")
 
 
 #MMAtomobject used to store LJ parameter and possibly charge for MM atom with atomtype, e.g. OT

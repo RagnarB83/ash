@@ -89,6 +89,7 @@ function pairpot_active(numatoms,atomtypes,LJpydict,qmatoms,actatoms)
 			else
 				#println("else")
 			   #Checking if dict contains key, return value if so, otherwise nothing
+			   #Todo: what if we have v be value or 0 instead of nothing. Can then skip the if statement?
 			   v = get(LJdict_jul, (atomtypes[i],atomtypes[j]), nothing)
 			   if v !== nothing
 				 sigmaij[i, j] = v[1]
