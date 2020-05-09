@@ -67,7 +67,7 @@ def print_ash_header():
 
 #Function to run each displacement in parallel NumFreq run
 def displacement_run(arglist):
-    print("arglist:", arglist)
+    #print("arglist:", arglist)
     geo = arglist[0]
     elems = arglist[1]
     numcores = arglist[2]
@@ -77,9 +77,12 @@ def displacement_run(arglist):
     os.mkdir(dispdir)
     os.chdir(dispdir)
     #Todo: Copy previous GBW file in here if ORCA, xtbrestart if xtb, etc.
+    print("Running displacement: {}".format(label))
     energy, gradient = theory.run(current_coords=geo, elems=elems, Grad=True, nprocs=2)
     print("Energy: ", energy)
     os.chdir('..')
+    #Delete dir?
+    #os.remove(dispdir)
     return [label, energy, gradient]
 
 #Numerical frequencies function
