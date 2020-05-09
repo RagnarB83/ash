@@ -199,7 +199,7 @@ def NumFreq(fragment=None, theory=None, npoint=1, displacement=0.0005, hessatoms
         #If partial Hessian remove non-hessatoms part of gradient:
         #Get partial matrix by deleting atoms not present in list.
         if npoint == 1:
-            original_grad=get_partial_matrix(allatoms, hessatoms, displacement_dictionary['Originalgeo'])
+            original_grad=get_partial_matrix(allatoms, hessatoms, displacement_grad_dictionary['Originalgeo'])
             original_grad_1d = np.ravel(original_grad)
         #Initialize Hessian
         hesslength=3*len(hessatoms)
@@ -211,10 +211,10 @@ def NumFreq(fragment=None, theory=None, npoint=1, displacement=0.0005, hessatoms
             #Starting index for Hessian array
             index=0
             #Getting displacements as keys from dictionary and sort
-            dispkeys = list(displacement_dictionary.keys())
+            dispkeys = list(displacement_grad_dictionary.keys())
             #Sort seems to sort it correctly w.r.t. atomnumber,x,y,z and +/-
             dispkeys.sort()
-            #for displacement, grad in displacement_dictionary.items():
+            #for displacement, grad in displacement_grad_dictionary.items():
             for dispkey in dispkeys:
                 grad=displacement_dictionary[dispkey]
                 #Skipping original geo
@@ -230,7 +230,7 @@ def NumFreq(fragment=None, theory=None, npoint=1, displacement=0.0005, hessatoms
         elif npoint == 2:
             count=0; hessindex=0
             #Getting displacements as keys from dictionary and sort
-            dispkeys = list(displacement_dictionary.keys())
+            dispkeys = list(displacement_grad_dictionary.keys())
             #Sort seems to sort it correctly w.r.t. atomnumber,x,y,z and +/-
             dispkeys.sort()
             #for file in freqinputfiles:
@@ -239,14 +239,14 @@ def NumFreq(fragment=None, theory=None, npoint=1, displacement=0.0005, hessatoms
                 if dispkey != 'Originalgeo':
                     count+=1
                     if count == 1:
-                        grad_pos=displacement_dictionary[dispkey]
+                        grad_pos=displacement_grad_dictionary[dispkey]
                         #print("pos I hope")
                         #print("dispkey:", dispkey)
                         # If partial Hessian remove non-hessatoms part of gradient:
                         grad_pos = get_partial_matrix(allatoms, hessatoms, grad_pos)
                         grad_pos_1d = np.ravel(grad_pos)
                     elif count == 2:
-                        grad_neg=displacement_dictionary[dispkey]
+                        grad_neg=displacement_grad_dictionary[dispkey]
                         #print("neg I hope")
                         #print("dispkey:", dispkey)
                         #Getting grad as numpy matrix and converting to 1d
