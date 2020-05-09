@@ -216,7 +216,7 @@ def NumFreq(fragment=None, theory=None, npoint=1, displacement=0.0005, hessatoms
             dispkeys.sort()
             #for displacement, grad in displacement_grad_dictionary.items():
             for dispkey in dispkeys:
-                grad=displacement_dictionary[dispkey]
+                grad=displacement_grad_dictionary[dispkey]
                 #Skipping original geo
                 if dispkey != 'Originalgeo':
                     #Getting grad as numpy matrix and converting to 1d
