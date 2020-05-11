@@ -90,7 +90,6 @@ def displacement_run(arglist):
 #Function to run each displacement in parallel NumFreq run
 #Version where geo is read from file to avoid large memory pickle inside pool.map
 def displacement_run2(arglist):
-    global theory
     print("arglist:", arglist)
     filelabel=arglist[0]
     #elems = arglist[1]
@@ -98,7 +97,7 @@ def displacement_run2(arglist):
     numcores = arglist[1]
     #theory = arglist[2]
     label = arglist[2]
-
+    theory = arglist[3]
     # Read XYZ-file from file
     elems,coords = read_xyzfile(filelabel+'.xyz')
 
@@ -255,7 +254,7 @@ def NumFreq(fragment=None, theory=None, npoint=1, displacement=0.0005, hessatoms
         print("Setting nprocs for theory object to: ", numcoresQM)
         #results = pool.map(displacement_run, [[geo, elems, numcoresQM, theory, label] for geo,label in zip(list_of_displaced_geos,list_of_labels)])
         #results = pool.map(displacement_run2, [[filelabel, numcoresQM, theory, label] for label,filelabel in zip(list_of_labels,list_of_filelabels)])
-        results = pool.map(displacement_run2, [[filelabel, numcoresQM, label] for label,filelabel in zip(list_of_labels,list_of_filelabels)])
+        results = pool.map(displacement_run2, [[filelabel, numcoresQM, label, theory] for label,filelabel in zip(list_of_labels,list_of_filelabels)])
         pool.close()
 
         #Gathering results in dictionary
