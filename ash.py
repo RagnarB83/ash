@@ -95,8 +95,8 @@ def displacement_run2(arglist):
     #elems = arglist[1]
     #Numcores can be used. We can launch ORCA-OpenMPI in parallel it seems. Only makes sense if we have may more cores available than displacements
     numcores = arglist[1]
-    theory = arglist[2]
-    label = arglist[3]
+    #theory = arglist[2]
+    label = arglist[2]
     dispdir=label.replace(' ','')
     os.mkdir(dispdir)
     os.chdir(dispdir)
