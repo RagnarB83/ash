@@ -352,18 +352,21 @@ def NumFreq(fragment=None, theory=None, npoint=1, displacement=0.0005, hessatoms
                 print("label:", label)
                 print("filelabel:", filelabel)
                 print("theory_shared:", theory_shared)
+                print("theory_shared.qmatoms: ", theory_shared.qmatoms )
                 print("xx")
                 # Numcores can be used. We can launch ORCA-OpenMPI in parallel it seems.
                 # Only makes sense if we have may more cores available than displacements
                 print("a")
+                elems, coords = read_xyzfile(filelabel + '.xyz')
+                print("b")
                 dispdir = label.replace(' ', '')
                 os.mkdir(dispdir)
                 os.chdir(dispdir)
                 print("d")
-                shutil.move('../' + filelabel + '.xyz', './' + filelabel + '.xyz')
+                #shutil.move('../' + filelabel + '.xyz', './' + filelabel + '.xyz')
                 # Read XYZ-file from file
                 print("e")
-                elems, coords = read_xyzfile(filelabel + '.xyz')
+
                 print("f")
                 # Todo: Copy previous GBW file in here if ORCA, xtbrestart if xtb, etc.
                 print("Running displacement: {}".format(label))
