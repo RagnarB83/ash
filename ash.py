@@ -106,7 +106,8 @@ def print_ash_header():
     print(BC.OKGREEN,"----------------------------------------------------------------------------------",BC.END)
 
 #Function to run each displacement in parallel NumFreq run
-def displacement_run(arglist):
+#SImple QM object
+def displacement_QMrun(arglist):
     #print("arglist:", arglist)
     geo = arglist[0]
     elems = arglist[1]
@@ -129,12 +130,12 @@ def displacement_run(arglist):
 
 #Function to run each displacement in parallel NumFreq run
 #Version where geo is read from file to avoid large memory pickle inside pool.map
-def displacement_run2(arglist):
+def displacement_QMMMrun(arglist):
     #global QMMM_xtb
     print("arglist:", arglist)
 
-    print("locals", locals())
-    print("globals", globals())
+    #print("locals", locals())
+    #print("globals", globals())
     print("-----------")
     #import gc
     #print(gc.get_objects())
@@ -143,9 +144,18 @@ def displacement_run2(arglist):
     #elems = arglist[1]
     #Numcores can be used. We can launch ORCA-OpenMPI in parallel it seems. Only makes sense if we have may more cores available than displacements
     numcores = arglist[1]
-    #theory = arglist[2]
     label = arglist[2]
-    #theory = arglist[3]
+    fragment= arglist[3]
+    qm_theory = arglist[4]
+    mm_theory = arglist[5]
+    actatoms = arglist[6]
+    qmatoms = arglist[7]
+    embedding = arglist[8]
+    atomcharges = arglist[9]
+    printlevel = arglist[10]
+    frozenatoms = arglist[11]
+
+
     # Read XYZ-file from file
     elems,coords = read_xyzfile(filelabel+'.xyz')
     dispdir=label.replace(' ','')
@@ -153,7 +163,13 @@ def displacement_run2(arglist):
     os.chdir(dispdir)
     #Todo: Copy previous GBW file in here if ORCA, xtbrestart if xtb, etc.
     print("Running displacement: {}".format(label))
-    energy, gradient = theory.run(current_coords=coords, elems=elems, Grad=True, nprocs=numcores)
+
+    #If QMMMTheory init keywords are changed this needs to be updated
+    qmmmobject = QMMMTheory(fragment=fragment, qm_theory=qm_theory, mm_theory=mm_theory, actatoms=actatoms,
+                          qmatoms=qmatoms, embedding=embedding, atomcharges=atomcharges, printlevel=printlevel,
+                            nprocs=numcores, frozenatoms=frozenatoms)
+
+    energy, gradient = qmmmobject.run(current_coords=coords, elems=elems, Grad=True, nprocs=numcores)
     print("Energy: ", energy)
     os.chdir('..')
     #Delete dir?
@@ -311,7 +327,16 @@ def NumFreq(fragment=None, theory=None, npoint=1, displacement=0.0005, hessatoms
         #                      qmatoms=Centralmainfrag, embedding='Elstat', nprocs=numcores)
 
         #results = pool.map(displacement_run2, [[filelabel, numcoresQM, label] for label,filelabel in zip(list_of_labels,list_of_filelabels)])
-        results = pool.map(displacement_run2, [[filelabel, numcoresQM, label] for label,filelabel in zip(list_of_labels,list_of_filelabels)])
+
+        #Because passing QMMMTheory is too big for pickle inside mp.Pool we create a new QMMMTheory object inside displacement funciont.
+        #This means we need the components
+        if theory.__name__ == "QMMMTheory":
+            results = pool.map(displacement_run2, [[filelabel, numcoresQM, label, theory.fragment, theory.qm_theory, theory.mm_theory,
+                                                    theory.actatoms, theory.qmatoms, theory.embedding, theory.atomcharges, theory.printlevel,
+                                                    theory.frozenatoms] for label,filelabel in zip(list_of_labels,list_of_filelabels)])
+        #Passing QM theory directly
+        else:
+            results = pool.map(displacement_QMrun, [[geo, elems, numcoresQM, theory, label] for geo,label in zip(list_of_displaced_geos,list_of_labels)])
         pool.close()
 
         #Gathering results in dictionary
