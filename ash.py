@@ -363,7 +363,7 @@ def NumFreq(fragment=None, theory=None, npoint=1, displacement=0.0005, hessatoms
                 elems, coords = read_xyzfile(filelabel + '.xyz')
                 # Todo: Copy previous GBW file in here if ORCA, xtbrestart if xtb, etc.
                 print("Running displacement: {}".format(label))
-                energy, gradient = theory.run(current_coords=coords, elems=elems, Grad=True, nprocs=numcoresQM)
+                energy, gradient = theory_shared.run(current_coords=coords, elems=elems, Grad=True, nprocs=numcoresQM)
                 print("Energy: ", energy)
                 os.chdir('..')
                 # Delete dir?
