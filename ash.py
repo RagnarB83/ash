@@ -109,7 +109,7 @@ def displacement_run2(arglist):
 
     #Todo: Copy previous GBW file in here if ORCA, xtbrestart if xtb, etc.
     print("Running displacement: {}".format(label))
-    energy, gradient = theory.run(current_coords=geo, elems=elems, Grad=True, nprocs=numcores)
+    energy, gradient = theory.run(current_coords=coords, elems=elems, Grad=True, nprocs=numcores)
     print("Energy: ", energy)
     os.chdir('..')
     #Delete dir?
@@ -254,6 +254,20 @@ def NumFreq(fragment=None, theory=None, npoint=1, displacement=0.0005, hessatoms
         print("Setting nprocs for theory object to: ", numcoresQM)
         #results = pool.map(displacement_run, [[geo, elems, numcoresQM, theory, label] for geo,label in zip(list_of_displaced_geos,list_of_labels)])
         #results = pool.map(displacement_run2, [[filelabel, numcoresQM, theory, label] for label,filelabel in zip(list_of_labels,list_of_filelabels)])
+
+        #Reducing size of theory object
+        theory.coords=[]
+        theory.elems=[]
+        theory.connectivity=[]
+
+        print(theory.__dict__)
+
+        #QMMM_xtb = QMMMTheory(fragment=Saddlepoint, qm_theory=xtbcalc, mm_theory=MMpart, actatoms=Centralmainfrag,
+        #                      qmatoms=Centralmainfrag, embedding='Elstat', nprocs=numcores)
+
+
+
+
         results = pool.map(displacement_run2, [[filelabel, numcoresQM, label, theory] for label,filelabel in zip(list_of_labels,list_of_filelabels)])
         pool.close()
 
