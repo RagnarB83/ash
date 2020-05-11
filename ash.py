@@ -23,6 +23,9 @@ import sys
 import inspect
 
 
+#Useful function to measure size of object:
+#https://goshippo.com/blog/measure-real-size-any-python-object/
+#https://github.com/bosswissam/pysize/blob/master/pysize.py
 def get_size(obj, seen=None):
     """Recursively finds size of objects in bytes"""
     size = sys.getsizeof(obj)
@@ -128,13 +131,17 @@ def displacement_run(arglist):
 #Version where geo is read from file to avoid large memory pickle inside pool.map
 def displacement_run2(arglist):
     print("arglist:", arglist)
+
+    print("locals", locals())
+    print("globals", globals())
+
     filelabel=arglist[0]
     #elems = arglist[1]
     #Numcores can be used. We can launch ORCA-OpenMPI in parallel it seems. Only makes sense if we have may more cores available than displacements
     numcores = arglist[1]
     #theory = arglist[2]
     label = arglist[2]
-    theory = arglist[3]
+    #theory = arglist[3]
     # Read XYZ-file from file
     elems,coords = read_xyzfile(filelabel+'.xyz')
 
@@ -309,7 +316,7 @@ def NumFreq(fragment=None, theory=None, npoint=1, displacement=0.0005, hessatoms
 
 
 
-        results = pool.map(displacement_run2, [[filelabel, numcoresQM, label, theory] for label,filelabel in zip(list_of_labels,list_of_filelabels)])
+        results = pool.map(displacement_run2, [[filelabel, numcoresQM, label] for label,filelabel in zip(list_of_labels,list_of_filelabels)])
         pool.close()
 
         #Gathering results in dictionary
