@@ -148,13 +148,9 @@ def displacement_run2(arglist):
     #theory = arglist[3]
     # Read XYZ-file from file
     elems,coords = read_xyzfile(filelabel+'.xyz')
-
     dispdir=label.replace(' ','')
     os.mkdir(dispdir)
     os.chdir(dispdir)
-
-
-
     #Todo: Copy previous GBW file in here if ORCA, xtbrestart if xtb, etc.
     print("Running displacement: {}".format(label))
     energy, gradient = theory.run(current_coords=coords, elems=elems, Grad=True, nprocs=numcores)
@@ -164,10 +160,7 @@ def displacement_run2(arglist):
     #os.remove(dispdir)
     return [label, energy, gradient]
 
-def displacement_run3(arglist):
-    print("here")
-    print(arglist)
-    sfds="dsfs"
+
 
 
 #Numerical frequencies function
@@ -317,10 +310,16 @@ def NumFreq(fragment=None, theory=None, npoint=1, displacement=0.0005, hessatoms
         #QMMM_xtb = QMMMTheory(fragment=Saddlepoint, qm_theory=xtbcalc, mm_theory=MMpart, actatoms=Centralmainfrag,
         #                      qmatoms=Centralmainfrag, embedding='Elstat', nprocs=numcores)
 
+        def displacement_run3(arglist):
+            print("here")
+            print(arglist)
+            print("theory:", theory)
+            exit()
+            sfds = "dsfs"
 
 
-
-        results = pool.map(displacement_run2, [[filelabel, numcoresQM, label] for label,filelabel in zip(list_of_labels,list_of_filelabels)])
+        #results = pool.map(displacement_run2, [[filelabel, numcoresQM, label] for label,filelabel in zip(list_of_labels,list_of_filelabels)])
+        results = pool.map(displacement_run3, [[filelabel, numcoresQM, label] for label,filelabel in zip(list_of_labels,list_of_filelabels)])
         pool.close()
 
         #Gathering results in dictionary
