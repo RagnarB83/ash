@@ -4,15 +4,15 @@ import sys
 from functions_general import read_intlist_from_file
 from functions_coords import write_xyzfile
 
-#Standalone fragment-editing script for Yggdrasill
+#Standalone fragment-editing script for Ash
 
-#Reads in Yggdrasill fragment file and qmatoms and output XYZ coordinate file that can be visualized in e.g. Chemcract and edited
+#Reads in Ash fragment file and qmatoms and output XYZ coordinate file that can be visualized in e.g. Chemcraft and edited
 
 #Fragfile is always first argument
 try:
     fragfile=sys.argv[1]
 except:
-    print("Please provide an Yggdrasill fragment file as argument")
+    print("Please provide an Ash fragment file as argument")
     exit(1)
 #Try to process a qmatoms file if provided
 try:

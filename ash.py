@@ -86,6 +86,33 @@ def displacement_run(arglist):
     #os.remove(dispdir)
     return [label, energy, gradient]
 
+
+#Function to run each displacement in parallel NumFreq run
+#Version where geo is read from file to avoid large memory pickle inside pool.map
+def displacement_run2(arglist):
+    print("arglist:", arglist)
+
+    #elems = arglist[1]
+    #Numcores can be used. We can launch ORCA-OpenMPI in parallel it seems. Only makes sense if we have may more cores available than displacements
+    numcores = arglist[2]
+    theory = arglist[3]
+    label = arglist[4]
+    dispdir=label.replace(' ','')
+    os.mkdir(dispdir)
+    os.chdir(dispdir)
+    # Read XYZ-file from file
+    elems,coords = read_xyzfile(label+'.xyz')
+
+
+    #Todo: Copy previous GBW file in here if ORCA, xtbrestart if xtb, etc.
+    print("Running displacement: {}".format(label))
+    energy, gradient = theory.run(current_coords=geo, elems=elems, Grad=True, nprocs=numcores)
+    print("Energy: ", energy)
+    os.chdir('..')
+    #Delete dir?
+    #os.remove(dispdir)
+    return [label, energy, gradient]
+
 #Numerical frequencies function
 def NumFreq(fragment=None, theory=None, npoint=1, displacement=0.0005, hessatoms=None, numcores=1, runmode='serial'):
     print(BC.WARNING, BC.BOLD, "------------NUMERICAL FREQUENCIES-------------", BC.END)
@@ -175,6 +202,10 @@ def NumFreq(fragment=None, theory=None, npoint=1, displacement=0.0005, hessatoms
 
     assert len(list_of_labels) == len(list_of_displaced_geos), "something is wrong"
 
+    #Write all geometries to disk as XYZ-files
+    for label, dispgeo in zip(list_of_labels,list_of_displaced_geos):
+        write_xyzfile(elems=elems, coords=dispgeo,name=label)
+
     #RUNNING displacements
     displacement_grad_dictionary = {}
     if runmode == 'serial':
@@ -205,8 +236,10 @@ def NumFreq(fragment=None, theory=None, npoint=1, displacement=0.0005, hessatoms
         #Unlikely situation, so hardcoding to 1 for now.
         numcoresQM=1
         print("Setting nprocs for theory object to: ", numcoresQM)
-        results = pool.map(displacement_run, [[geo, elems, numcoresQM, theory, label] for geo,label in zip(list_of_displaced_geos,list_of_labels)])
+        #results = pool.map(displacement_run, [[geo, elems, numcoresQM, theory, label] for geo,label in zip(list_of_displaced_geos,list_of_labels)])
+        results = pool.map(displacement_run2, [[elems, numcoresQM, theory, label] for label in list_of_labels])
         pool.close()
+
         #Gathering results in dictionary
         for result in results:
             #print("result:", result)
