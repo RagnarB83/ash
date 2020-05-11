@@ -1417,6 +1417,7 @@ class PolEmbedTheory:
 
 #QM/MM theory object.
 #Required at init: qm_theory and qmatoms. Fragment not. Can come later
+#TODO NOTE: If we add init arguments, remember to update Numfreq QMMM option as it depends on the keywords
 class QMMMTheory:
     def __init__(self, qm_theory="", qmatoms="", fragment='', mm_theory="" , charges=None,
                  embedding="Elstat", printlevel=2, nprocs=None, actatoms=None, frozenatoms=None):
@@ -1434,10 +1435,6 @@ class QMMMTheory:
         else:
             print("Actatoms/frozenatoms list not passed to QM/MM object. Will do all frozen interactions in MM (expensive).")
         print(BC.WARNING,BC.BOLD,"------------Defining QM/MM object-------------", BC.END)
-
-        self.charges=[]
-        if charges is not None:
-            self.charges=charges
 
         self.QMChargesZeroed=False
         #Setting nprocs of object
@@ -1458,8 +1455,9 @@ class QMMMTheory:
         print("MM-theory:", self.mm_theory_name)
 
         #if atomcharges are not passed to QMMMTheory object, get them from MMtheory (that should have been defined then)
-        if atomcharges is None:
+        if charges is None:
             print("No atomcharges list passed to QMMMTheory object")
+            self.charges=[]
             if self.mm_theory_name == "OpenMMTheory":
                 print("Getting system charges from OpenMM object")
                 #Todo: Call getatomcharges directly or should that have been called from within openmm object at init ?
@@ -1473,7 +1471,7 @@ class QMMMTheory:
                 print("Unrecognized MM theory for QMMMTheory")
                 exit(1)
         else:
-            self.charges=atomcharges
+            self.charges=charges
         #Embedding type: mechanical, electrostatic etc.
         self.embedding=embedding
         print("Embedding:", self.embedding)
