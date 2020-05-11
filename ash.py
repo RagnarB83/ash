@@ -134,8 +134,7 @@ def displacement_run2(arglist):
     print("arglist:", arglist)
 
     print("locals", locals())
-    #print("globals", globals())
-    print("ash.QMMM_xtb:", ash.QMMM_xtb)
+    print("globals", globals())
     print("-----------")
     #import gc
     #print(gc.get_objects())
