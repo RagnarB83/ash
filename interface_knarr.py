@@ -418,6 +418,10 @@ def NEB(reactant=None, product=None, theory=None, images=None, interpolation=Non
             #Creating new Yggdrasill fragment for Full Saddle-point geometry
             Saddlepoint_fragment = Fragment(coords=full_saddleimage_coords, elems=reactant.elems, connectivity=reactant.connectivity)
             Saddlepoint_fragment.set_energy(saddle_energy)
+            #Adding atomtypes and charges if present.
+            Saddlepoint_fragment.update_atomcharges(reactant.atomcharges)
+            Saddlepoint_fragment.update_atomtypes(reactant.atomtypes)
+
             #Writing out Saddlepoint fragment file and XYZ file
             Saddlepoint_fragment.print_system(filename='Saddlepoint-optimized.ygg')
             Saddlepoint_fragment.write_xyzfile(xyzfilename='Saddlepoint-optimized.xyz')

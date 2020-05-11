@@ -2314,16 +2314,19 @@ class PySCFTheory:
 # Fragment class
 class Fragment:
     def __init__(self, coordsstring=None, fragfile=None, xyzfile=None, pdbfile=None, coords=None, elems=None, connectivity=None,
-                 atomcharges=None, atomtypes=None,conncalc=True):
+                 atomcharges=None, atomtypes=None, conncalc=True):
         print("Defining new Yggdrasill fragment object")
         self.energy = None
         self.elems=[]
         self.coords=[]
         self.connectivity=[]
         self.atomcharges = []
+        self.atomtypes = []
         if atomcharges is not None:
             self.atomcharges=atomcharges
-        self.atomtypes = []
+        if atomtypes is not None:
+            self.atomtypes=atomtypes
+
         # Something perhaps only used by molcrys but defined here. Needed for print_system
         # Todo: revisit this
         self.fragmenttype_labels=[]
