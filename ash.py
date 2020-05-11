@@ -347,19 +347,23 @@ def NumFreq(fragment=None, theory=None, npoint=1, displacement=0.0005, hessatoms
             theory_shared = ray.put(theory)
 
             @ray.remote
-            def dispfunction_ray(label,filelabel,numcoresQM,geo,elems):
-                print("inside dispfunciton")
+            def dispfunction_ray(label,filelabel,numcoresQM):
+                print("inside dispfunction")
                 print("label:", label)
                 print("filelabel:", filelabel)
                 print("theory_shared:", theory_shared)
                 # Numcores can be used. We can launch ORCA-OpenMPI in parallel it seems.
                 # Only makes sense if we have may more cores available than displacements
+
                 dispdir = label.replace(' ', '')
                 os.mkdir(dispdir)
                 os.chdir(dispdir)
+                shutil.move('../' + filelabel + '.xyz', './' + filelabel + '.xyz')
+                # Read XYZ-file from file
+                elems, coords = read_xyzfile(filelabel + '.xyz')
                 # Todo: Copy previous GBW file in here if ORCA, xtbrestart if xtb, etc.
                 print("Running displacement: {}".format(label))
-                energy, gradient = theory.run(current_coords=geo, elems=elems, Grad=True, nprocs=numcoresQM)
+                energy, gradient = theory.run(current_coords=coords, elems=elems, Grad=True, nprocs=numcoresQM)
                 print("Energy: ", energy)
                 os.chdir('..')
                 # Delete dir?
@@ -368,8 +372,8 @@ def NumFreq(fragment=None, theory=None, npoint=1, displacement=0.0005, hessatoms
 
 
 
-            result_ids = [dispfunction_ray.remote(label,filelabel,numcoresQM,geo,elems) for label,filelabel,geo in
-                          zip(list_of_labels,list_of_filelabels,list_of_displaced_geos)]
+            result_ids = [dispfunction_ray.remote(label,filelabel,numcoresQM) for label,filelabel in
+                          zip(list_of_labels,list_of_filelabels)]
 
             #result_ids = [f.remote(df_id) for _ in range(4)]
 
