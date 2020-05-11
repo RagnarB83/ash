@@ -349,8 +349,11 @@ def NumFreq(fragment=None, theory=None, npoint=1, displacement=0.0005, hessatoms
             @ray.remote
             def dispfunction_ray(label,filelabel):
                 print("inside dispfunciton")
+                print("label:", label)
+                print("filelabel:", filelabel)
+                print("theory_shared:", theory_shared)
 
-            result_ids = [dispfunction_ray.remote(label,filelabel) for label,filelabel in zip(list_of_labels,list-list_of_filelabels)]
+            result_ids = [dispfunction_ray.remote(label,filelabel) for label,filelabel in zip(list_of_labels,list_of_filelabels)]
 
             #result_ids = [f.remote(df_id) for _ in range(4)]
 
