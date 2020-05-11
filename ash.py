@@ -259,7 +259,7 @@ def NumFreq(fragment=None, theory=None, npoint=1, displacement=0.0005, hessatoms
         theory.coords=[]
         theory.elems=[]
         theory.connectivity=[]
-
+        print(theory)
         print(theory.__dict__)
 
         #QMMM_xtb = QMMMTheory(fragment=Saddlepoint, qm_theory=xtbcalc, mm_theory=MMpart, actatoms=Centralmainfrag,
