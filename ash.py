@@ -329,9 +329,9 @@ def NumFreq(fragment=None, theory=None, npoint=1, displacement=0.0005, hessatoms
         #results = pool.map(displacement_run2, [[filelabel, numcoresQM, label] for label,filelabel in zip(list_of_labels,list_of_filelabels)])
 
         #Because passing QMMMTheory is too big for pickle inside mp.Pool we create a new QMMMTheory object inside displacement funciont.
-        #This means we need the components
+        #This means we need the components of theory object. Here distinguishing between QMMMTheory and other theory (QM theory)
         if theory.__name__ == "QMMMTheory":
-            results = pool.map(displacement_run2, [[filelabel, numcoresQM, label, theory.fragment, theory.qm_theory, theory.mm_theory,
+            results = pool.map(displacement_QMMMrun, [[filelabel, numcoresQM, label, theory.fragment, theory.qm_theory, theory.mm_theory,
                                                     theory.actatoms, theory.qmatoms, theory.embedding, theory.atomcharges, theory.printlevel,
                                                     theory.frozenatoms] for label,filelabel in zip(list_of_labels,list_of_filelabels)])
         #Passing QM theory directly
