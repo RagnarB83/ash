@@ -113,6 +113,10 @@ def displacement_run2(arglist):
     #os.remove(dispdir)
     return [label, energy, gradient]
 
+def displacement_run3(arglist):
+    sfds="dsfs"
+
+
 #Numerical frequencies function
 def NumFreq(fragment=None, theory=None, npoint=1, displacement=0.0005, hessatoms=None, numcores=1, runmode='serial'):
     print(BC.WARNING, BC.BOLD, "------------NUMERICAL FREQUENCIES-------------", BC.END)
@@ -207,9 +211,8 @@ def NumFreq(fragment=None, theory=None, npoint=1, displacement=0.0005, hessatoms
     for label, dispgeo in zip(list_of_labels,list_of_displaced_geos):
         filelabel=label.replace(' ','').replace(':','')
         list_of_filelabels.append(filelabel)
-        write_xyzfile(elems=elems, coords=dispgeo,name=label)
+        write_xyzfile(elems=elems, coords=dispgeo,name=filelabel)
 
-    print("list_of_filelabels:", list_of_filelabels)
     #RUNNING displacements
     displacement_grad_dictionary = {}
     if runmode == 'serial':
@@ -245,7 +248,7 @@ def NumFreq(fragment=None, theory=None, npoint=1, displacement=0.0005, hessatoms
         numcoresQM=1
         print("Setting nprocs for theory object to: ", numcoresQM)
         #results = pool.map(displacement_run, [[geo, elems, numcoresQM, theory, label] for geo,label in zip(list_of_displaced_geos,list_of_labels)])
-        results = pool.map(displacement_run2, [[filelabel, elems, numcoresQM, theory, label] for label,filelabel in zip(list_of_labels,list_of_filelabels)])
+        results = pool.map(displacement_run3, [[filelabel, elems, numcoresQM, theory, label] for label,filelabel in zip(list_of_labels,list_of_filelabels)])
         pool.close()
 
         #Gathering results in dictionary
