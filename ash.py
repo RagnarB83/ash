@@ -21,7 +21,7 @@ debugflag=False
 
 import sys
 import inspect
-
+import ray
 
 @ray.remote
 def dispfunction_ray(label, filelabel, numcoresQM, theory_shared):
