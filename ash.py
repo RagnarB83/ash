@@ -97,12 +97,15 @@ def displacement_run2(arglist):
     numcores = arglist[1]
     #theory = arglist[2]
     label = arglist[2]
+
+    # Read XYZ-file from file
+    elems,coords = read_xyzfile(filelabel+'.xyz')
+
     dispdir=label.replace(' ','')
     os.mkdir(dispdir)
     os.chdir(dispdir)
 
-    # Read XYZ-file from file
-    elems,coords = read_xyzfile(filelabel+'.xyz')
+
 
     #Todo: Copy previous GBW file in here if ORCA, xtbrestart if xtb, etc.
     print("Running displacement: {}".format(label))
