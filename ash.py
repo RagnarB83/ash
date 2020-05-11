@@ -105,8 +105,8 @@ def print_ash_header():
     print(BC.OKGREEN,"----------------------------------------------------------------------------------",BC.END)
     print(BC.OKGREEN,"----------------------------------------------------------------------------------",BC.END)
 
-#Function to run each displacement in parallel NumFreq run
-#SImple QM object
+#Functions to run each displacement in parallel NumFreq run. Have to be here.
+#Simple QM object
 def displacement_QMrun(arglist):
     #print("arglist:", arglist)
     geo = arglist[0]
@@ -155,12 +155,13 @@ def displacement_QMMMrun(arglist):
     printlevel = arglist[10]
     frozenatoms = arglist[11]
 
-
-    # Read XYZ-file from file
-    elems,coords = read_xyzfile(filelabel+'.xyz')
     dispdir=label.replace(' ','')
     os.mkdir(dispdir)
     os.chdir(dispdir)
+    shutil.move('../'+filelabel+'.xyz','./'+filelabel+'.xyz')
+    # Read XYZ-file from file
+    elems,coords = read_xyzfile(filelabel+'.xyz')
+
     #Todo: Copy previous GBW file in here if ORCA, xtbrestart if xtb, etc.
     print("Running displacement: {}".format(label))
 
@@ -330,10 +331,38 @@ def NumFreq(fragment=None, theory=None, npoint=1, displacement=0.0005, hessatoms
 
         #Because passing QMMMTheory is too big for pickle inside mp.Pool we create a new QMMMTheory object inside displacement funciont.
         #This means we need the components of theory object. Here distinguishing between QMMMTheory and other theory (QM theory)
+        #Still seems to be too messy
+
+        #https://towardsdatascience.com/10x-faster-parallel-python-without-python-multiprocessing-e5017c93cce1
         if theory.__class__.__name__ == "QMMMTheory":
-            results = pool.map(displacement_QMMMrun, [[filelabel, numcoresQM, label, theory.fragment, theory.qm_theory, theory.mm_theory,
-                                                    theory.actatoms, theory.qmatoms, theory.embedding, theory.charges, theory.printlevel,
-                                                    theory.frozenatoms] for label,filelabel in zip(list_of_labels,list_of_filelabels)])
+            try:
+                import ray
+            except:
+                print("Parallel QM/MM Numerical Frequencies require the ray library.")
+                print("Please install ray : pip install ray")
+                exit(1)
+            print("Numfreq with QMMMTheory")
+            ray.init(num_cpus = numcores)
+            #going to make QMMMTheory object a shared object that all workers can access
+            theory_shared = ray.put(theory)
+
+            @ray.remote
+            def dispfunction_ray(label,filelabel):
+                print("inside dispfunciton")
+
+            result_ids = [dispfunction_ray.remote(label,filelabel) for label,filelabel in zip(list_of_labels,list-list_of_filelabels)]
+
+            #result_ids = [f.remote(df_id) for _ in range(4)]
+
+            #results = pool.map(displacement_QMrun, [[geo, elems, numcoresQM, theory, label] for geo, label in
+            #                                        zip(list_of_displaced_geos, list_of_labels)])
+
+            results = ray.get(result_ids)
+
+            print(results)
+            #results = pool.map(displacement_QMMMrun, [[filelabel, numcoresQM, label, theory.fragment, theory.qm_theory, theory.mm_theory,
+            #                                        theory.actatoms, theory.qmatoms, theory.embedding, theory.charges, theory.printlevel,
+            #                                        theory.frozenatoms] for label,filelabel in zip(list_of_labels,list_of_filelabels)])
         #Passing QM theory directly
         else:
             results = pool.map(displacement_QMrun, [[geo, elems, numcoresQM, theory, label] for geo,label in zip(list_of_displaced_geos,list_of_labels)])
@@ -341,7 +370,7 @@ def NumFreq(fragment=None, theory=None, npoint=1, displacement=0.0005, hessatoms
 
         #Gathering results in dictionary
         for result in results:
-            #print("result:", result)
+            print("result:", result)
             calclabel=result[0]
             energy=result[1]
             gradient=result[2]
