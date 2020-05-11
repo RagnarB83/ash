@@ -90,6 +90,7 @@ def displacement_run(arglist):
 #Function to run each displacement in parallel NumFreq run
 #Version where geo is read from file to avoid large memory pickle inside pool.map
 def displacement_run2(arglist):
+    global theory
     print("arglist:", arglist)
     filelabel=arglist[0]
     #elems = arglist[1]
