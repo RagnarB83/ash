@@ -347,12 +347,11 @@ def NumFreq(fragment=None, theory=None, npoint=1, displacement=0.0005, hessatoms
             theory_shared = ray.put(theory)
 
             @ray.remote
-            def dispfunction_ray(label,filelabel,numcoresQM):
+            def dispfunction_ray(label,filelabel,numcoresQM,theory_shared):
                 print("inside dispfunction")
                 print("label:", label)
                 print("filelabel:", filelabel)
                 print("theory_shared:", theory_shared)
-                print("theory_shared dict:", theory_shared.__dict__)
                 #print("theory_shared.qmatoms: ", theory_shared.qmatoms )
                 print("xx")
                 # Numcores can be used. We can launch ORCA-OpenMPI in parallel it seems.
@@ -378,7 +377,7 @@ def NumFreq(fragment=None, theory=None, npoint=1, displacement=0.0005, hessatoms
                 # os.remove(dispdir)
                 return [label, energy, gradient]
 
-            result_ids = [dispfunction_ray.remote(label,filelabel,numcoresQM) for label,filelabel in
+            result_ids = [dispfunction_ray.remote(label,filelabel,numcoresQM,theory_shared) for label,filelabel in
                           zip(list_of_labels,list_of_filelabels)]
 
             #result_ids = [f.remote(df_id) for _ in range(4)]
