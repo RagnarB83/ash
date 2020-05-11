@@ -130,12 +130,12 @@ def displacement_run(arglist):
 #Function to run each displacement in parallel NumFreq run
 #Version where geo is read from file to avoid large memory pickle inside pool.map
 def displacement_run2(arglist):
-    global QMMM_xtb
+    #global QMMM_xtb
     print("arglist:", arglist)
 
     print("locals", locals())
     #print("globals", globals())
-    print("QMMM_xtb:", QMMM_xtb)
+    print("ash.QMMM_xtb:", ash.QMMM_xtb)
     print("-----------")
     #import gc
     #print(gc.get_objects())
