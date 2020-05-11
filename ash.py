@@ -370,8 +370,6 @@ def NumFreq(fragment=None, theory=None, npoint=1, displacement=0.0005, hessatoms
                 # os.remove(dispdir)
                 return [label, energy, gradient]
 
-
-
             result_ids = [dispfunction_ray.remote(label,filelabel,numcoresQM) for label,filelabel in
                           zip(list_of_labels,list_of_filelabels)]
 
