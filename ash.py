@@ -1419,7 +1419,7 @@ class QMMMTheory:
 
             linkatom=False
 
-            if linkatom=True:
+            if linkatom==True:
                 print("Adding link atoms...")
                 #Link atoms. In an additive scheme we would always have link atoms, regardless of mechanical/electrostatic coupling
                 #Charge-shifting would be part of Elstat below
