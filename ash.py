@@ -133,7 +133,11 @@ def displacement_run2(arglist):
     print("arglist:", arglist)
 
     print("locals", locals())
-    print("globals", globals())
+    #print("globals", globals())
+    print("QMMM_xtb:", QMMM_xtb)
+    print("-----------")
+    import gc
+    print(gc.get_objects())
 
     filelabel=arglist[0]
     #elems = arglist[1]
