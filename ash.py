@@ -352,7 +352,7 @@ def NumFreq(fragment=None, theory=None, npoint=1, displacement=0.0005, hessatoms
                 print("label:", label)
                 print("filelabel:", filelabel)
                 print("theory_shared:", theory_shared)
-                print("theory_shared.qmatoms: ", theory_shared.qmatoms )
+                #print("theory_shared.qmatoms: ", theory_shared.qmatoms )
                 print("xx")
                 # Numcores can be used. We can launch ORCA-OpenMPI in parallel it seems.
                 # Only makes sense if we have may more cores available than displacements
