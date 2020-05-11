@@ -130,6 +130,7 @@ def displacement_run(arglist):
 #Function to run each displacement in parallel NumFreq run
 #Version where geo is read from file to avoid large memory pickle inside pool.map
 def displacement_run2(arglist):
+    global QMMM_xtb
     print("arglist:", arglist)
 
     print("locals", locals())
@@ -310,16 +311,8 @@ def NumFreq(fragment=None, theory=None, npoint=1, displacement=0.0005, hessatoms
         #QMMM_xtb = QMMMTheory(fragment=Saddlepoint, qm_theory=xtbcalc, mm_theory=MMpart, actatoms=Centralmainfrag,
         #                      qmatoms=Centralmainfrag, embedding='Elstat', nprocs=numcores)
 
-        def displacement_run3(arglist):
-            print("here")
-            print(arglist)
-            print("theory:", theory)
-            exit()
-            sfds = "dsfs"
-
-
         #results = pool.map(displacement_run2, [[filelabel, numcoresQM, label] for label,filelabel in zip(list_of_labels,list_of_filelabels)])
-        results = pool.map(displacement_run3, [[filelabel, numcoresQM, label] for label,filelabel in zip(list_of_labels,list_of_filelabels)])
+        results = pool.map(displacement_run2, [[filelabel, numcoresQM, label] for label,filelabel in zip(list_of_labels,list_of_filelabels)])
         pool.close()
 
         #Gathering results in dictionary
