@@ -209,6 +209,7 @@ def NumFreq(fragment=None, theory=None, npoint=1, displacement=0.0005, hessatoms
         list_of_filelabels.append(filelabel)
         write_xyzfile(elems=elems, coords=dispgeo,name=label)
 
+    print("list_of_filelabels:", list_of_filelabels)
     #RUNNING displacements
     displacement_grad_dictionary = {}
     if runmode == 'serial':
