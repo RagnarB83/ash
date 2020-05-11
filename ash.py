@@ -94,9 +94,9 @@ def displacement_run2(arglist):
     filelabel=arglist[0]
     #elems = arglist[1]
     #Numcores can be used. We can launch ORCA-OpenMPI in parallel it seems. Only makes sense if we have may more cores available than displacements
-    numcores = arglist[2]
-    theory = arglist[3]
-    label = arglist[4]
+    numcores = arglist[1]
+    theory = arglist[2]
+    label = arglist[3]
     dispdir=label.replace(' ','')
     os.mkdir(dispdir)
     os.chdir(dispdir)
@@ -114,6 +114,8 @@ def displacement_run2(arglist):
     return [label, energy, gradient]
 
 def displacement_run3(arglist):
+    print("here")
+    print(arglist)
     sfds="dsfs"
 
 
@@ -248,7 +250,8 @@ def NumFreq(fragment=None, theory=None, npoint=1, displacement=0.0005, hessatoms
         numcoresQM=1
         print("Setting nprocs for theory object to: ", numcoresQM)
         #results = pool.map(displacement_run, [[geo, elems, numcoresQM, theory, label] for geo,label in zip(list_of_displaced_geos,list_of_labels)])
-        results = pool.map(displacement_run3, [[filelabel, elems, numcoresQM, theory, label] for label,filelabel in zip(list_of_labels,list_of_filelabels)])
+        #results = pool.map(displacement_run2, [[filelabel, numcoresQM, theory, label] for label,filelabel in zip(list_of_labels,list_of_filelabels)])
+        results = pool.map(displacement_run3, [[filelabel, numcoresQM, label] for label,filelabel in zip(list_of_labels,list_of_filelabels)])
         pool.close()
 
         #Gathering results in dictionary
