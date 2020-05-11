@@ -151,7 +151,7 @@ def displacement_QMMMrun(arglist):
     actatoms = arglist[6]
     qmatoms = arglist[7]
     embedding = arglist[8]
-    atomcharges = arglist[9]
+    charges = arglist[9]
     printlevel = arglist[10]
     frozenatoms = arglist[11]
 
@@ -166,7 +166,7 @@ def displacement_QMMMrun(arglist):
 
     #If QMMMTheory init keywords are changed this needs to be updated
     qmmmobject = QMMMTheory(fragment=fragment, qm_theory=qm_theory, mm_theory=mm_theory, actatoms=actatoms,
-                          qmatoms=qmatoms, embedding=embedding, atomcharges=atomcharges, printlevel=printlevel,
+                          qmatoms=qmatoms, embedding=embedding, charges=charges, printlevel=printlevel,
                             nprocs=numcores, frozenatoms=frozenatoms)
 
     energy, gradient = qmmmobject.run(current_coords=coords, elems=elems, Grad=True, nprocs=numcores)
@@ -332,7 +332,7 @@ def NumFreq(fragment=None, theory=None, npoint=1, displacement=0.0005, hessatoms
         #This means we need the components of theory object. Here distinguishing between QMMMTheory and other theory (QM theory)
         if theory.__class__.__name__ == "QMMMTheory":
             results = pool.map(displacement_QMMMrun, [[filelabel, numcoresQM, label, theory.fragment, theory.qm_theory, theory.mm_theory,
-                                                    theory.actatoms, theory.qmatoms, theory.embedding, theory.atomcharges, theory.printlevel,
+                                                    theory.actatoms, theory.qmatoms, theory.embedding, theory.charges, theory.printlevel,
                                                     theory.frozenatoms] for label,filelabel in zip(list_of_labels,list_of_filelabels)])
         #Passing QM theory directly
         else:
@@ -1418,7 +1418,7 @@ class PolEmbedTheory:
 #QM/MM theory object.
 #Required at init: qm_theory and qmatoms. Fragment not. Can come later
 class QMMMTheory:
-    def __init__(self, qm_theory="", qmatoms="", fragment='', mm_theory="" , atomcharges=None,
+    def __init__(self, qm_theory="", qmatoms="", fragment='', mm_theory="" , charges=None,
                  embedding="Elstat", printlevel=2, nprocs=None, actatoms=None, frozenatoms=None):
 
         #Actatoms list used for skipping frozen-frozeninteractions in MM part
@@ -1436,6 +1436,8 @@ class QMMMTheory:
         print(BC.WARNING,BC.BOLD,"------------Defining QM/MM object-------------", BC.END)
 
         self.charges=[]
+        if charges is not None:
+            self.charges=charges
 
         self.QMChargesZeroed=False
         #Setting nprocs of object
