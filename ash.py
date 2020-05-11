@@ -227,7 +227,11 @@ def NumFreq(fragment=None, theory=None, npoint=1, displacement=0.0005, hessatoms
             #Adding gradient to dictionary for AtomNCoordPDirectionm
             displacement_grad_dictionary[calclabel] = gradient
     elif runmode == 'parallel':
+        import pickle4reducer
         import multiprocessing as mp
+        ctx = mp.get_context()
+        ctx.reducer = pickle4reducer.Pickle4Reducer()
+
         pool = mp.Pool(numcores)
         blankline()
         print("Running snapshots in parallel using multiprocessing.Pool")
@@ -1412,14 +1416,18 @@ class QMMMTheory:
                     self.hybridatomlabels.append('MM')
 
         if mm_theory != "":
-            print("Adding link atoms...")
-            #Link atoms. In an additive scheme we would always have link atoms, regardless of mechanical/electrostatic coupling
-            #Charge-shifting would be part of Elstat below
 
-            #Protocol:
-            #1. Recognize QM-MM boundary. Connectivity?? Get QM1 and MM1 coords pairs
-            #2. For QM-region coords, add linkatom at MM1 position initially. Then adjust distance
-            #3. Modify charges of MM atoms according to Chemshell scheme. Update both OpenMM and self.charges
+            linkatom=False
+
+            if linkatom=True:
+                print("Adding link atoms...")
+                #Link atoms. In an additive scheme we would always have link atoms, regardless of mechanical/electrostatic coupling
+                #Charge-shifting would be part of Elstat below
+
+                #Protocol:
+                #1. Recognize QM-MM boundary. Connectivity?? Get QM1 and MM1 coords pairs
+                #2. For QM-region coords, add linkatom at MM1 position initially. Then adjust distance
+                #3. Modify charges of MM atoms according to Chemshell scheme. Update both OpenMM and self.charges
 
 
             if self.embedding=="Elstat":
