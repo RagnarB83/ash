@@ -91,7 +91,7 @@ def displacement_run(arglist):
 #Version where geo is read from file to avoid large memory pickle inside pool.map
 def displacement_run2(arglist):
     print("arglist:", arglist)
-
+    filelabel=arglist[0]
     #elems = arglist[1]
     #Numcores can be used. We can launch ORCA-OpenMPI in parallel it seems. Only makes sense if we have may more cores available than displacements
     numcores = arglist[2]
@@ -100,9 +100,9 @@ def displacement_run2(arglist):
     dispdir=label.replace(' ','')
     os.mkdir(dispdir)
     os.chdir(dispdir)
-    # Read XYZ-file from file
-    elems,coords = read_xyzfile(label+'.xyz')
 
+    # Read XYZ-file from file
+    elems,coords = read_xyzfile(filelabel+'.xyz')
 
     #Todo: Copy previous GBW file in here if ORCA, xtbrestart if xtb, etc.
     print("Running displacement: {}".format(label))
@@ -203,7 +203,10 @@ def NumFreq(fragment=None, theory=None, npoint=1, displacement=0.0005, hessatoms
     assert len(list_of_labels) == len(list_of_displaced_geos), "something is wrong"
 
     #Write all geometries to disk as XYZ-files
+    list_of_filelabels=[]
     for label, dispgeo in zip(list_of_labels,list_of_displaced_geos):
+        filelabel=label.replace(' ','').replace(':','')
+        list_of_filelabels.append(filelabel)
         write_xyzfile(elems=elems, coords=dispgeo,name=label)
 
     #RUNNING displacements
@@ -237,7 +240,7 @@ def NumFreq(fragment=None, theory=None, npoint=1, displacement=0.0005, hessatoms
         numcoresQM=1
         print("Setting nprocs for theory object to: ", numcoresQM)
         #results = pool.map(displacement_run, [[geo, elems, numcoresQM, theory, label] for geo,label in zip(list_of_displaced_geos,list_of_labels)])
-        results = pool.map(displacement_run2, [[elems, numcoresQM, theory, label] for label in list_of_labels])
+        results = pool.map(displacement_run2, [[filelabel, elems, numcoresQM, theory, label] for label,filelabel in zip(list_of_labels,list_of_filelabels)])
         pool.close()
 
         #Gathering results in dictionary
