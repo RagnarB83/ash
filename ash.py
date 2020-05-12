@@ -21,38 +21,7 @@ debugflag=False
 
 import sys
 import inspect
-import ray
 
-@ray.remote
-def dispfunction_ray(label, filelabel, numcoresQM, theory_shared):
-    print("inside dispfunction")
-    print("label:", label)
-    print("filelabel:", filelabel)
-    print("theory_shared:", theory_shared)
-    # print("theory_shared.qmatoms: ", theory_shared.qmatoms )
-    print("xx")
-    # Numcores can be used. We can launch ORCA-OpenMPI in parallel it seems.
-    # Only makes sense if we have may more cores available than displacements
-    print("a")
-    elems, coords = read_xyzfile(filelabel + '.xyz')
-    print("b")
-    dispdir = label.replace(' ', '')
-    os.mkdir(dispdir)
-    os.chdir(dispdir)
-    print("d")
-    # shutil.move('../' + filelabel + '.xyz', './' + filelabel + '.xyz')
-    # Read XYZ-file from file
-    print("e")
-
-    print("f")
-    # Todo: Copy previous GBW file in here if ORCA, xtbrestart if xtb, etc.
-    print("Running displacement: {}".format(label))
-    energy, gradient = theory_shared.run(current_coords=coords, elems=elems, Grad=True, nprocs=numcoresQM)
-    print("Energy: ", energy)
-    os.chdir('..')
-    # Delete dir?
-    # os.remove(dispdir)
-    return [label, energy, gradient]
 
 
 #Useful function to measure size of object:
@@ -378,6 +347,48 @@ def NumFreq(fragment=None, theory=None, npoint=1, displacement=0.0005, hessatoms
             #going to make QMMMTheory object a shared object that all workers can access
             theory_shared = ray.put(theory)
 
+            @ray.remote
+            def dispfunction_ray(label, filelabel, numcoresQM, theory_shared):
+
+                # Write XYZfile provided list of elements and list of list of coords and filename
+                def write_xyzfile(elems, coords, name, printlevel=2):
+                    with open(name + '.xyz', 'w') as ofile:
+                        ofile.write(str(len(elems)) + '\n')
+                        ofile.write("title" + '\n')
+                        for el, c in zip(elems, coords):
+                            line = "{:4} {:12.6f} {:12.6f} {:12.6f}".format(el, c[0], c[1], c[2])
+                            ofile.write(line + '\n')
+                    if printlevel >= 2:
+                        print("Wrote XYZ file:", name + '.xyz')
+
+                print("inside dispfunction")
+                print("label:", label)
+                print("filelabel:", filelabel)
+                print("theory_shared:", theory_shared)
+                # print("theory_shared.qmatoms: ", theory_shared.qmatoms )
+                print("xx")
+                # Numcores can be used. We can launch ORCA-OpenMPI in parallel it seems.
+                # Only makes sense if we have may more cores available than displacements
+                print("a")
+                elems, coords = read_xyzfile(filelabel + '.xyz')
+                print("b")
+                dispdir = label.replace(' ', '')
+                os.mkdir(dispdir)
+                os.chdir(dispdir)
+                print("d")
+                # shutil.move('../' + filelabel + '.xyz', './' + filelabel + '.xyz')
+                # Read XYZ-file from file
+                print("e")
+
+                print("f")
+                # Todo: Copy previous GBW file in here if ORCA, xtbrestart if xtb, etc.
+                print("Running displacement: {}".format(label))
+                energy, gradient = theory_shared.run(current_coords=coords, elems=elems, Grad=True, nprocs=numcoresQM)
+                print("Energy: ", energy)
+                os.chdir('..')
+                # Delete dir?
+                # os.remove(dispdir)
+                return [label, energy, gradient]
 
 
             result_ids = [dispfunction_ray.remote(label,filelabel,numcoresQM,theory_shared) for label,filelabel in
