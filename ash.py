@@ -346,6 +346,10 @@ def NumFreq(fragment=None, theory=None, npoint=1, displacement=0.0005, hessatoms
             print("Numfreq with QMMMTheory")
             ray.init(num_cpus = numcores)
             #going to make QMMMTheory object a shared object that all workers can access
+
+
+            theory.mm_theory.calculate_LJ_pairpotentials(qmatoms=theory.qmatoms, actatoms=theory.actatoms)
+            print("theory.mm_theory sigmaij", theory.mm_theory.sigmaij)
             theory_shared = ray.put(theory)
 
             @ray.remote
