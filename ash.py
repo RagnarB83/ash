@@ -6,6 +6,7 @@ from elstructure_functions import *
 import os
 import glob
 from functions_solv import *
+import functions_coords
 from functions_coords import *
 from functions_ORCA import *
 from functions_Psi4 import *
@@ -349,18 +350,6 @@ def NumFreq(fragment=None, theory=None, npoint=1, displacement=0.0005, hessatoms
 
             @ray.remote
             def dispfunction_ray(label, filelabel, numcoresQM, theory_shared):
-
-                # Write XYZfile provided list of elements and list of list of coords and filename
-                def write_xyzfile(elems, coords, name, printlevel=2):
-                    with open(name + '.xyz', 'w') as ofile:
-                        ofile.write(str(len(elems)) + '\n')
-                        ofile.write("title" + '\n')
-                        for el, c in zip(elems, coords):
-                            line = "{:4} {:12.6f} {:12.6f} {:12.6f}".format(el, c[0], c[1], c[2])
-                            ofile.write(line + '\n')
-                    if printlevel >= 2:
-                        print("Wrote XYZ file:", name + '.xyz')
-
                 print("inside dispfunction")
                 print("label:", label)
                 print("filelabel:", filelabel)
@@ -2960,7 +2949,7 @@ class xTBTheory:
             num_mmatoms=len(MMcharges)
             self.cleanup()
             #Todo: xtbrestart possibly. needs to be optional
-            write_xyzfile(qm_elems, current_coords, inputfilename,printlevel=self.printlevel)
+            functions_coords.write_xyzfile(qm_elems, current_coords, inputfilename,printlevel=self.printlevel)
 
             #Run inputfile. Take nprocs argument.
             if self.printlevel >= 2:
