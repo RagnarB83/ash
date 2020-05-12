@@ -210,6 +210,11 @@ def NumFreq(fragment=None, theory=None, npoint=1, displacement=0.0005, hessatoms
     else:
         print("Unknown npoint option. npoint should be set to 1 (one-point) or 2 (two-point formula).")
         exit()
+    if runmode=="serial":
+        print("Numfreq running in serial mode")
+    elif runmode=="parallel":
+        print("Numfreq running in parallel mode")
+    blankline()
     print("Displacement: {:5.4f} Å ({:5.4f} Bohr)".format(displacement,displacement_bohr))
     blankline()
     print("Starting geometry:")
