@@ -526,7 +526,10 @@ def NumFreq(fragment=None, theory=None, npoint=1, displacement=0.0005, hessatoms
     printfreqs(frequencies,len(hessatoms))
 
     #Print out thermochemistry
-    thermochemcalc(frequencies,hessatoms, fragment, theory.mult, temp=298.18,pressure=1)
+    if theory.__class__.__name__ == "QMMMTheory":
+        thermochemcalc(frequencies,hessatoms, fragment, theory.qm_theory.mult, temp=298.18,pressure=1)
+    else:
+        thermochemcalc(frequencies,hessatoms, fragment, theory.mult, temp=298.18,pressure=1)
 
     #TODO: https://pages.mtu.edu/~msgocken/ma5630spring2003/lectures/diff/diff/node6.html
     blankline()
