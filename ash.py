@@ -525,6 +525,8 @@ def NumFreq(fragment=None, theory=None, npoint=1, displacement=0.0005, hessatoms
     #Print out Freq output. Maybe print normal mode compositions here instead???
     printfreqs(frequencies,len(hessatoms))
 
+
+
     #Print out thermochemistry
     if theory.__class__.__name__ == "QMMMTheory":
         thermochemcalc(frequencies,hessatoms, fragment, theory.qm_theory.mult, temp=298.18,pressure=1)
@@ -1060,9 +1062,8 @@ class NonBondedTheory:
                 self.sigmaij, self.epsij = Main.Juliafunctions.pairpot_active(self.numatoms, self.atomtypes, self.LJpairpotdict, qmatoms, actatoms)
 
             if self.printlevel >= 2:
-                print("self.sigmaij:", self.sigmaij)
-                print("self.epsij:", self.epsij)
-                print(type(self.sigmaij))
+                print("self.sigmaij ({}) : {}".format(len(self.sigmaij),self.sigmaij))
+                print("self.epsij ({}) : {}".format(len(self.epsij),self.epsij))
         # New for-loop for creating sigmaij and epsij arrays. Uses dict-lookup instead
         elif self.pairarrayversion=="py":
             if self.printlevel >= 2:

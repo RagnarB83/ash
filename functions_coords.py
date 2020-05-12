@@ -916,6 +916,8 @@ def get_partial_list(allatoms,partialatoms,list):
 #list of frequencies and fragment object
 #TODO: Make sure distinction between initial coords and optimized coords?
 def thermochemcalc(vfreq,hessatoms,fragment, multiplicity, temp=298.18,pressure=1):
+    blankline()
+    print("Printing thermochemistry")
     if len(hessatoms) == 2:
         TRmodenum=5
     else:
@@ -950,7 +952,9 @@ def thermochemcalc(vfreq,hessatoms,fragment, multiplicity, temp=298.18,pressure=
             continue
             #print("skipping TR mode with freq:", clean_number(vfreq[mode]) )
         else:
+            print("vib:", vib)
             vib = clean_number(vfreq[mode])
+            print("vib:", vib)
             freqs.append(float(vib))
             freq_Hz=vib*c_cm_s
             vibtemp=(h_planck_hartreeseconds * freq_Hz) / k_b
