@@ -1060,10 +1060,6 @@ class NonBondedTheory:
             #    #or only for active region
                 print("Calculating pairpotential array for active region only")
                 self.sigmaij, self.epsij = Main.Juliafunctions.pairpot_active(self.numatoms, self.atomtypes, self.LJpairpotdict, qmatoms, actatoms)
-
-            if self.printlevel >= 2:
-                print("self.sigmaij ({}) : {}".format(len(self.sigmaij),self.sigmaij))
-                print("self.epsij ({}) : {}".format(len(self.epsij),self.epsij))
         # New for-loop for creating sigmaij and epsij arrays. Uses dict-lookup instead
         elif self.pairarrayversion=="py":
             if self.printlevel >= 2:
@@ -1089,26 +1085,9 @@ class NonBondedTheory:
             print("unknown pairarrayversion")
             exit()
 
-        #Commenting out slow look-up for-loop
-        #for i in range(self.numatoms):
-        #    for j in range(self.numatoms):
-        #        #Skipping if i-j pair in qmatoms list. I.e. not doing QM-QM LJ calc.
-        #        if all(x in qmatoms for x in [i, j]) == True:
-        #            #print("Skipping i-j pair", i,j, " as these are QM atoms")
-        #            continue
-        #        for ljpot in self.LJpairpotentials:
-        #            if self.atomtypes[i] == ljpot[0] and self.atomtypes[j] == ljpot[1]:
-        #                #print("Here")
-        #                self.sigmaij[i, j] = ljpot[2]
-        #                self.epsij[i, j] = ljpot[3]
-        #            elif self.atomtypes[j] == ljpot[0] and self.atomtypes[i] == ljpot[1]:
-        #                #print("here 2")
-        #                self.sigmaij[i, j] = ljpot[2]
-        #                self.epsij[i, j] = ljpot[3]
-
         if self.printlevel >= 2:
-            print("self.sigmaij:", self.sigmaij)
-            print("self.epsij:", self.epsij)
+            print("self.sigmaij ({}) : {}".format(len(self.sigmaij), self.sigmaij))
+            print("self.epsij ({}) : {}".format(len(self.epsij), self.epsij))
         print_time_rel(CheckpointTime, modulename="pairpot arrays")
 
     def update_charges(self,charges):
