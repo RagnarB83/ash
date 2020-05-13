@@ -469,6 +469,7 @@ CARTESIAN COORDINATES (ANGSTROEM)
             freq=clean_number(vfreq[mode])
             print("freq:", freq)
             print("type freq:", type(freq))
+            print("np.real freq", np.real(freq))
         line= "  {0:>3s}{1:13.2f} cm**-1".format(smode, freq)
         outfile.write(line+'\n')
     normalmodeheader="""------------
