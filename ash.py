@@ -535,7 +535,7 @@ def NumFreq(fragment=None, theory=None, npoint=1, displacement=0.0005, hessatoms
         print("Wrote Hessian to file: Hessian")
     #Write ORCA-style Hessian file. Hardcoded filename here. Change?
     write_ORCA_Hessfile(hessian, coords, elems, fragment.list_of_masses, hessatoms, "orcahessfile.hess")
-    print("Wrote ORCA-style Hessian file: orcahessfile.hess)
+    print("Wrote ORCA-style Hessian file: orcahessfile.hess")
     #Create dummy-ORCA file with frequencies and normal modes
     printdummyORCAfile(elems, coords, frequencies, evectors, nmodes, "orcahessfile.hess")
     print("Wrote dummy ORCA outputfile with frequencies and normal modes: orcahessfile.hess_dummy.out")
