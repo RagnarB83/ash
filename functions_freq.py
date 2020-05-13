@@ -467,6 +467,8 @@ CARTESIAN COORDINATES (ANGSTROEM)
             freq=0.00
         else:
             freq=clean_number(vfreq[mode])
+            print("freq:", freq)
+            print("type freq:", type(freq))
         line= "  {0:>3s}{1:13.2f} cm**-1".format(smode, freq)
         outfile.write(line+'\n')
     normalmodeheader="""------------
@@ -514,9 +516,9 @@ Thus, these vectors are normalized but *not* orthogonal"""
 
     #print("Beginning for loop")
     for chunk in range(chunks):
-        print("chunk is", chunk)
+        #print("chunk is", chunk)
         if chunk == chunks - 1:
-            print("a last chunk is", chunk)
+            #print("a last chunk is", chunk)
             # If last chunk and cleft is exactly 0 then all 5 columns should be done
             if left == 0:
                 left = 6
@@ -533,10 +535,10 @@ Thus, these vectors are normalized but *not* orthogonal"""
         for i in range(0, hessdim):
             firstcolumnindex=6*chunk
             j=firstcolumnindex
-            print("firstcolumnindex j is:", firstcolumnindex)
-            print("i is", i)
-            print("nmodes[i]", nmodes[i])
-            print("hessdim:", hessdim)
+            #print("firstcolumnindex j is:", firstcolumnindex)
+            #print("i is", i)
+            #print("nmodes[i]", nmodes[i])
+            #print("hessdim:", hessdim)
             #If chunk = 0 then we are dealing with TR modes in first 6 columns
             if chunk == 0:
                 val1 = 0.0; val2 = 0.0;val3 = 0.0; val4 = 0.0; val5 = 0.0;val6 = 0.0
