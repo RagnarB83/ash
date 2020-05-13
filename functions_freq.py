@@ -1,5 +1,6 @@
 from functions_general import listdiff
 import numpy as np
+import constants
 
 #HESSIAN-related functions below
 
