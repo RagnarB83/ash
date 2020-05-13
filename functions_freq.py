@@ -333,11 +333,12 @@ def thermochemcalc(vfreq,hessatoms,fragment, multiplicity, temp=298.18,pressure=
             print("mode:", mode)
             print("vfreq[mode]:", vfreq[mode])
             print(type(vfreq[mode]))
+
             vib = clean_number(vfreq[mode])
             print("vib:", vib)
-            print(type(vib)
-            if isinstance(vib, complex):
-                print("Mode {} with frequency {} is imaginary. Skipping in thermochemistry".format(mode,vib))
+            print(type(vib))
+            if np.iscomplex(vib):
+                print("2Mode {} with frequency {} is imaginary. Skipping in thermochemistry".format(mode,vib))
             else:
                 freqs.append(float(vib))
                 freq_Hz=vib*c_cm_s
