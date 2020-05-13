@@ -437,7 +437,13 @@ def printdummyORCAfile(elems,coords,vfreq,evectors,nmodes,hessfile):
 ---------------------------------
 CARTESIAN COORDINATES (ANGSTROEM)
 ---------------------------------"""
-    filesimp=hessfile
+    #Very simple check for 2-atom linear molecule
+    #Todo: Need to add support for n-atom linear molecule (HCN e.g.)
+    if len(elems) == 2:
+        TRmodenum=5
+    else:
+        TRmodenum=6
+
     outfile = open(hessfile+'_dummy.out', 'w')
     outfile.write(orca_header+'\n')
     for el,coord in zip(elems,coords):
