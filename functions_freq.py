@@ -470,10 +470,7 @@ CARTESIAN COORDINATES (ANGSTROEM)
             freq=clean_number(vfreq[mode])
 
             if np.iscomplex(freq):
-                print("abs freq", abs(freq))
-                print("freq real ", freq.real)
-                val=str(freq)
-                print("val:", val)
+                imagfreq=-1*abs(freq)
                 complexflag=True
             else:
                 complexflag=False
@@ -481,7 +478,7 @@ CARTESIAN COORDINATES (ANGSTROEM)
             print("type freq:", type(freq))
             print("np.real freq", np.real(freq))
         if complexflag==True:
-            line= "  {0:>3s}{1:13.2f} cm**-1".format(smode, freq)
+            line= "  {0:>3s}{1:13s} cm**-1 ***imaginary mode***".format(smode, imagfreq)
         else:
             line= "  {0:>3s}{1:13.2f} cm**-1".format(smode, freq)
         outfile.write(line+'\n')
