@@ -324,10 +324,19 @@ def write_ORCA_Hessfile(hessian, coords, elems, masses, hessatoms,outputname):
     print("masses ", masses)
     print("elems ", elems)
     print("coords", coords)
+    print(len(elems))
+    print(len(coords))
+    print(len(hessatoms))
+    print(len(masses))
     for atom, mass in zip(hessatoms, masses):
         #mass=atommass[elements.index(elems[atom-1].lower())]
         print("atom:", atom)
         print("mass:", mass)
+        print(str(elems[atom]))
+        print(str(mass))
+        print(str(coords[atom][0]/constants.bohr2ang))
+        print(str(coords[atom][1]/constants.bohr2ang))
+        print(str(coords[atom][2]/constants.bohr2ang))
         orcahessfile.write(" "+str(elems[atom])+'    '+str(mass)+"  "+str(coords[atom][0]/constants.bohr2ang)+
                            " "+str(coords[atom][1]/constants.bohr2ang)+" "+str(coords[atom][2]/constants.bohr2ang)+"\n")
 
