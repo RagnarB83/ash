@@ -188,7 +188,8 @@ def NumFreq(fragment=None, theory=None, npoint=1, displacement=0.0005, hessatoms
     print(BC.WARNING, BC.BOLD, "------------NUMERICAL FREQUENCIES-------------", BC.END)
     if fragment is None or theory is None:
         print("NumFreq requires a fragment and a theory object")
-
+    #Making sure hessatoms list is sorted
+    hessatoms.sort()
     coords=fragment.coords
     elems=fragment.elems
     numatoms=len(elems)
@@ -501,6 +502,7 @@ def NumFreq(fragment=None, theory=None, npoint=1, displacement=0.0005, hessatoms
     # Get partial matrix by deleting atoms not present in list.
     hesselems = get_partial_list(allatoms, hessatoms, elems)
     hessmasses = get_partial_list(allatoms, hessatoms, fragment.list_of_masses)
+    hesscoords = get_partial_list(allatoms, hessatoms, fragment.coords)
     print("Elements:", hesselems)
     print("Masses used:", hessmasses)
     frequencies, nmodes, numatoms, elems, evectors, atomlist, masses = diagonalizeHessian(hessian,hessmasses,hesselems)
@@ -534,8 +536,10 @@ def NumFreq(fragment=None, theory=None, npoint=1, displacement=0.0005, hessatoms
         blankline()
         print("Wrote Hessian to file: Hessian")
     #Write ORCA-style Hessian file. Hardcoded filename here. Change?
-    write_ORCA_Hessfile(hessian, coords, elems, fragment.list_of_masses, hessatoms, "orcahessfile.hess")
+    #Note: Passing hesscords here instead of coords. Change?
+    write_ORCA_Hessfile(hessian, hesscoords, hesselems, hessmasses, hessatoms, "orcahessfile.hess")
     print("Wrote ORCA-style Hessian file: orcahessfile.hess")
+
     #Create dummy-ORCA file with frequencies and normal modes
     printdummyORCAfile(elems, coords, frequencies, evectors, nmodes, "orcahessfile.hess")
     print("Wrote dummy ORCA outputfile with frequencies and normal modes: orcahessfile.hess_dummy.out")

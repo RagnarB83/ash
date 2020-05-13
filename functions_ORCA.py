@@ -328,18 +328,22 @@ def write_ORCA_Hessfile(hessian, coords, elems, masses, hessatoms,outputname):
     print(len(coords))
     print(len(hessatoms))
     print(len(masses))
-    for atom, mass in zip(hessatoms, masses):
+    #TODO. Note. Changed things. We now don't go through hessatoms and analyze atom indices for full system
+    #Either full system lists were passed or partial-system lists
+    #for atom, mass in zip(hessatoms, masses):
+    for el,mass,coord in zip(elems,masses,coords):
         #mass=atommass[elements.index(elems[atom-1].lower())]
-        print("atom:", atom)
-        print("mass:", mass)
-        print(str(elems[atom]))
-        print(str(mass))
-        print(str(coords[atom][0]/constants.bohr2ang))
-        print(str(coords[atom][1]/constants.bohr2ang))
-        print(str(coords[atom][2]/constants.bohr2ang))
-        orcahessfile.write(" "+str(elems[atom])+'    '+str(mass)+"  "+str(coords[atom][0]/constants.bohr2ang)+
-                           " "+str(coords[atom][1]/constants.bohr2ang)+" "+str(coords[atom][2]/constants.bohr2ang)+"\n")
-
+        #print("atom:", atom)
+        #print("mass:", mass)
+        #print(str(elems[atom]))
+        #print(str(mass))
+        #print(str(coords[atom][0]/constants.bohr2ang))
+        #print(str(coords[atom][1]/constants.bohr2ang))
+        #print(str(coords[atom][2]/constants.bohr2ang))
+        #orcahessfile.write(" "+str(elems[atom])+'    '+str(mass)+"  "+str(coords[atom][0]/constants.bohr2ang)+
+        #                   " "+str(coords[atom][1]/constants.bohr2ang)+" "+str(coords[atom][2]/constants.bohr2ang)+"\n")
+        orcahessfile.write(" "+el+'    '+str(mass)+"  "+str(coord[0]/constants.bohr2ang)+
+                           " "+str(coord[1]/constants.bohr2ang)+" "+str(coord[2]/constants.bohr2ang)+"\n")
     orcahessfile.write("\n")
     orcahessfile.write("\n")
     orcahessfile.close()
