@@ -11,6 +11,7 @@ from functions_coords import *
 from functions_ORCA import *
 from functions_Psi4 import *
 from functions_general import *
+from functions_freq import *
 import settings_ash
 from functions_MM import *
 from functions_optimization import *
@@ -493,17 +494,6 @@ def NumFreq(fragment=None, theory=None, npoint=1, displacement=0.0005, hessatoms
     hessian=symm_hessian
 
 
-    #Write Hessian to file
-    with open("Hessian", 'w') as hfile:
-        hfile.write(str(hesslength)+' '+str(hesslength)+'\n')
-        for row in hessian:
-            rowline=' '.join(map(str, row))
-            hfile.write(str(rowline)+'\n')
-        blankline()
-        print("Wrote Hessian to file: Hessian")
-    #Write ORCA-style Hessian file
-    write_ORCA_Hessfile(hessian, coords, elems, fragment.list_of_masses, hessatoms)
-
     #Project out Translation+Rotational modes
     #TODO
 
@@ -513,7 +503,8 @@ def NumFreq(fragment=None, theory=None, npoint=1, displacement=0.0005, hessatoms
     hessmasses = get_partial_list(allatoms, hessatoms, fragment.list_of_masses)
     print("Elements:", hesselems)
     print("Masses used:", hessmasses)
-    frequencies=diagonalizeHessian(hessian,hessmasses,hesselems)[0]
+    frequencies, nmodes, numatoms, elems, evectors, atomlist, masses = diagonalizeHessian(hessian,hessmasses,hesselems)
+    #frequencies=diagonalizeHessian(hessian,hessmasses,hesselems)[0]
 
     #Print out normal mode output. Like in Chemshell or ORCA
     blankline()
@@ -532,6 +523,31 @@ def NumFreq(fragment=None, theory=None, npoint=1, displacement=0.0005, hessatoms
         thermochemcalc(frequencies,hessatoms, fragment, theory.qm_theory.mult, temp=298.18,pressure=1)
     else:
         thermochemcalc(frequencies,hessatoms, fragment, theory.mult, temp=298.18,pressure=1)
+
+
+    #Write Hessian to file
+    with open("Hessian", 'w') as hfile:
+        hfile.write(str(hesslength)+' '+str(hesslength)+'\n')
+        for row in hessian:
+            rowline=' '.join(map(str, row))
+            hfile.write(str(rowline)+'\n')
+        blankline()
+        print("Wrote Hessian to file: Hessian")
+    #Write ORCA-style Hessian file. Hardcoded filename here. Change?
+    write_ORCA_Hessfile(hessian, coords, elems, fragment.list_of_masses, hessatoms, "orcahessfile.hess")
+    print("Wrote ORCA-style Hessian file: orcahessfile.hess)
+    #Create dummy-ORCA file with frequencies and normal modes
+    printdummyORCAfile(elems, coords, frequencies, evectors, nmodes, "orcahessfile.hess")
+    print("Wrote dummy ORCA outputfile with frequencies and normal modes: orcahessfile.hess_dummy.out")
+    print("Can be used for visualization")
+
+
+
+
+
+
+
+
 
     #TODO: https://pages.mtu.edu/~msgocken/ma5630spring2003/lectures/diff/diff/node6.html
     blankline()

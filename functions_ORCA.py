@@ -277,9 +277,9 @@ def grabcoordsfromhessfile(hessfile):
 
 #Function to write ORCA-style Hessian file
 
-def write_ORCA_Hessfile(hessian, coords, elems, masses, hessatoms):
+def write_ORCA_Hessfile(hessian, coords, elems, masses, hessatoms,outputname):
     hessdim=hessian.shape[0]
-    orcahessfile = open('orcahessfile.hess','w')
+    orcahessfile = open(outputname,'w')
     orcahessfile.write("$orca_hessian_file\n")
     orcahessfile.write("\n")
     orcahessfile.write("$hessian\n")
@@ -329,7 +329,7 @@ def write_ORCA_Hessfile(hessian, coords, elems, masses, hessatoms):
     orcahessfile.write("\n")
     orcahessfile.close()
     print("")
-    print("ORCA-style Hessian written to: orcahessfile.hess")
+    print("ORCA-style Hessian written to:", outputname )
 
 #Function to grab Hessian from ORCA-Hessian file
 def Hessgrab(hessfile):
