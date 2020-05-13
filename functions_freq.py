@@ -467,6 +467,9 @@ CARTESIAN COORDINATES (ANGSTROEM)
             freq=0.00
         else:
             freq=clean_number(vfreq[mode])
+            if np.iscomplex(freq):
+                realpart=np.real(freq)
+                print("realpart:", realpart)
             print("freq:", freq)
             print("type freq:", type(freq))
             print("np.real freq", np.real(freq))
