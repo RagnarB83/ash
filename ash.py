@@ -503,7 +503,7 @@ def NumFreq(fragment=None, theory=None, npoint=1, displacement=0.0005, hessatoms
     print("x elems:", elems)
     hesselems = get_partial_list(allatoms, hessatoms, elems)
     hessmasses = get_partial_list(allatoms, hessatoms, fragment.list_of_masses)
-    hesscoords = [fragments.coords[i] for i in hessatoms]
+    hesscoords = [fragment.coords[i] for i in hessatoms]
     print("Elements:", hesselems)
     print("Masses used:", hessmasses)
     print("hesscoords:", hesscoords)
