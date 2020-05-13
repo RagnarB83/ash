@@ -461,20 +461,33 @@ CARTESIAN COORDINATES (ANGSTROEM)
     outfile.write('Scaling factor for frequencies =  1.000000000 (Found in file - NOT applied to frequencies read from HESS file)\n')
     outfile.write('\n')
     numatoms=(len(elems))
+    complexflag=False
     for mode in range(3*numatoms):
         smode = str(mode) + ':'
         if mode < TRmodenum:
             freq=0.00
         else:
             freq=clean_number(vfreq[mode])
+
             if np.iscomplex(freq):
-                realpart=np.real(freq)
-                print("realpart:", realpart)
+                print("abs freq", abs(freq))
+                print("freq real ", freq.real)
+                val=str(freq)
+                print("val:", val)
+                complexflag=True
+            else:
+                complexflag=False
             print("freq:", freq)
             print("type freq:", type(freq))
             print("np.real freq", np.real(freq))
-        line= "  {0:>3s}{1:13.2f} cm**-1".format(smode, freq)
+        if complexflag==True:
+            line= "  {0:>3s}{1:13.2f} cm**-1".format(smode, freq)
+        else:
+            line= "  {0:>3s}{1:13.2f} cm**-1".format(smode, freq)
         outfile.write(line+'\n')
+
+
+
     normalmodeheader="""------------
 NORMAL MODES
 ------------
