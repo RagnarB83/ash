@@ -514,9 +514,9 @@ Thus, these vectors are normalized but *not* orthogonal"""
 
     #print("Beginning for loop")
     for chunk in range(chunks):
-        #print("chunk is", chunk)
+        print("chunk is", chunk)
         if chunk == chunks - 1:
-            #print("a last chunk is", chunk)
+            print("a last chunk is", chunk)
             # If last chunk and cleft is exactly 0 then all 5 columns should be done
             if left == 0:
                 left = 6
@@ -533,9 +533,10 @@ Thus, these vectors are normalized but *not* orthogonal"""
         for i in range(0, hessdim):
             firstcolumnindex=6*chunk
             j=firstcolumnindex
-            #print("firstcolumnindex j is:", firstcolumnindex)
-            #print("i is", i)
-            #print("nmodes[i]", nmodes[i])
+            print("firstcolumnindex j is:", firstcolumnindex)
+            print("i is", i)
+            print("nmodes[i]", nmodes[i])
+            print("hessdim:", hessdim)
             #If chunk = 0 then we are dealing with TR modes in first 6 columns
             if chunk == 0:
                 val1 = 0.0; val2 = 0.0;val3 = 0.0; val4 = 0.0; val5 = 0.0;val6 = 0.0
@@ -555,6 +556,7 @@ Thus, these vectors are normalized but *not* orthogonal"""
                     val1 = nmodes[j][i]; val2 = nmodes[j+1][i];val3 = nmodes[j+2][i];val4 = nmodes[j+3][i];val5 = nmodes[j+4][i];val6 = nmodes[j+5][i]
                 else:
                     print("problem")
+                    print("hessdim - j : ", hessdim - j)
                     exit()
 
             if chunk == chunks - 1:
