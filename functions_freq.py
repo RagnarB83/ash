@@ -552,7 +552,7 @@ Thus, these vectors are normalized but *not* orthogonal"""
                     val1 = nmodes[j][i]; val2 = nmodes[j+1][i];val3 = nmodes[j+2][i];val4 = nmodes[j+3][i]
                 elif hessdim - j == 5:
                     val1 = nmodes[j][i]; val2 = nmodes[j+1][i];val3 = nmodes[j+2][i];val4 = nmodes[j+3][i];val5 = nmodes[j+4][i]
-                elif hessdim - j == 6:
+                elif hessdim - j >= 6:
                     val1 = nmodes[j][i]; val2 = nmodes[j+1][i];val3 = nmodes[j+2][i];val4 = nmodes[j+3][i];val5 = nmodes[j+4][i];val6 = nmodes[j+5][i]
                 else:
                     print("problem")
