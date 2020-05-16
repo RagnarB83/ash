@@ -180,7 +180,27 @@ def displacement_QMMMrun(arglist):
     #os.remove(dispdir)
     return [label, energy, gradient]
 
+#Single-point energy function
+#Should be used by user instead of run.
+def Singlepoint(fragment=None, theory=None, numcores=1, Grad=False):
+    if fragment is None or theory is None:
+        print("Singlepoint requires a fragment and a theory object")
 
+    coords=fragment.coords
+    elems=fragment.elems
+
+    # Run a single-point energy job
+    if Grad ==True:
+        print("Doing single-point Energy+Gradient job")
+        # An Energy+Gradient calculation where we change the number of cores to 12
+        self.energy,self.gradient= theory.run(current_coords=coords, elems=elems, Grad=True, nprocs=numcores)
+        print("Energy: ", self.energy)
+        return self.energy,self.gradient
+    else:
+        print("Doing single-point Energy+Gradient job")
+        self.energy = theory.run(current_coords=coords, elems=elems, nprocs=numcores)
+        print("Energy: ", self.energy)
+        return self.energy
 
 
 #Numerical frequencies function
@@ -625,8 +645,6 @@ def print_time_rel_and_tot_color(timestampA,timestampB, modulename=''):
 
 # Different MM theories
 
-#Todo: Make this flexible so that we either create OpenMM object from CHARMM-files automicatically, or GROMACS or Amber
-# or allow user to do the openmm object themself and pass it??
 
 #Todo: Also think whether we want do OpenMM simulations in case we have to make another object maybe
 #Amberfiles:
