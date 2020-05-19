@@ -6,7 +6,7 @@ Dependencies.
 - Numpy library inside Python.
 - Julia installation.
 - PyJulia installation (Python package via pip)
--
+- geomeTRIC
 
 
 #INSTALLATION AND SETUP
