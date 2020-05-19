@@ -57,10 +57,16 @@ Python packages using pip. If you don't have one then go to 2b.
 
     #If this is successful then the python-jl binary (installed by PyJulia) should be available.
 
+6. Compile Fortran library. When inside ash dir, compile the LJCoulombv1 code using either gfortran or ifort:
+    f2py -c -m ljlib2 ljlib2.f90 --fcompiler=gfortran
+    f2py -c -m ljlib2 ljlib2.f90 --fcompiler=intel
 
-6. Make sure preferred QM packages are available:
-    - The path to ORCA needs to be in PATH and LD_LIBRARY_PATH of your shell.
-    - xTB needs to be in PATH
+    Rename the library file (something like LJCoulombv1.cpython-36m-x86_64-linux-gnu.so) to LJCoulombv1.so
+    and move to lib dir.
+
+7. Make sure preferred QM packages are available:
+    - The path to ORCA needs to be in PATH and LD_LIBRARY_PATH of your shell and later your jobscript
+    - xTB needs to be in PATH and later your jobscript.
 
 
 
