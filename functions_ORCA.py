@@ -576,7 +576,10 @@ def create_orca_input_plain(name,elems,coords,orcasimpleinput,orcablockinput,cha
         orcafile.write(orcablockinput + '\n')
         if atomstoflip is not None:
             print("atomstoflip:", atomstoflip)
-            atomstoflipstring= ','.join(map(str, atomstoflip))
+            if len(atomstoflip) == 1:
+                atomstoflipstring=str(atomstoflip)
+            else:
+                atomstoflipstring= ','.join(map(str, atomstoflip))
             orcafile.write('%scf\n')
             orcafile.write('Flipspin {}'.format(atomstoflipstring)+ '\n')
             orcafile.write('FinalMs {}'.format((mult-1)/2)+ '\n')
