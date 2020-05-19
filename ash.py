@@ -1210,6 +1210,7 @@ class NonBondedTheory:
             try:
                 print("here")
                 print(os.environ.get("LD_LIBRARY_PATH"))
+
                 import LJCoulombv1
                 print(LJCoulombv1.__doc__)
                 print("----------")

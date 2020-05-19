@@ -14,3 +14,4 @@ def init():
     conndepth = 10
     init_time=time.time()
     print(f"Setting global settings: \n Connectivity scale: {scale} and tol: {tol}")
+    

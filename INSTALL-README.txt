@@ -22,7 +22,8 @@ Python packages using pip. If you don't have one then go to 2b.
         conda create -n ashpy37 python=3.7 numpy
      Switch to that environment: conda activate ashpy37. Alternatively you can use the default base environment
 
-3. To make Ash part of the Python environment do: export PYTHONPATH=/path/to/ash:$PYTHONPATH  where /path/to/ash is the dir where all the ASH sourcefiles are.
+3. To make Ash part of the Python environment do:
+    export PYTHONPATH=/path/to/ash:/path/to/ash/lib:$PYTHONPATH  where /path/to/ash is the dir where all the ASH sourcefiles are.
     Also the LD_LIBRARY_PATH need to be set:
       export LD_LIBRARY_PATH=/path/to/ash/lib:$LD_LIBRARY_PATH
     Put these environment definitions in your shell environment startup file e.g. .bashrc, .bash_profile, .zshrc etc.
@@ -30,11 +31,6 @@ Python packages using pip. If you don't have one then go to 2b.
 3. Install necessary Python packages via pip:
    Strongly recommended:
    pip install geometric   (geomeTRIC optimizer)
-
-
-4. Make sure preferred QM packages are available:
-    - The path to ORCA needs to be in PATH and LD_LIBRARY_PATH
-    - xTB needs be in PATH
 
 5a. Install Julia from https://julialang.org/downloads
     i. Download appropriate binaries from site. Extract archive a
@@ -61,7 +57,11 @@ Python packages using pip. If you don't have one then go to 2b.
 
     #If this is successful then the python-jl binary (installed by PyJulia) should be available.
 
-Fortran
+
+6. Make sure preferred QM packages are available:
+    - The path to ORCA needs to be in PATH and LD_LIBRARY_PATH of your shell.
+    - xTB needs to be in PATH
+
 
 
 Optional Python packages to install
