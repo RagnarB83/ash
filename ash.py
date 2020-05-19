@@ -1208,6 +1208,8 @@ class NonBondedTheory:
             if self.printlevel >= 2:
                 print("Using fast Fortran F2Py MM code")
             try:
+                print("here")
+                print(os.environ.get("LD_LIBRARY_PATH"))
                 import LJCoulombv1
                 print(LJCoulombv1.__doc__)
                 print("----------")
@@ -1841,7 +1843,12 @@ class ORCATheory:
                  orcablocks='', extraline='', brokensym=None, HSmult=None, atomstoflip=None, nprocs=1):
 
         #Using orcadir to set LD_LIBRARY_PATH
-        os.environ['LD_LIBRARY_PATH'] = orcadir + ':$LD_LIBRARY_PATH'
+        old = os.environ.get("LD_LIBRARY_PATH")
+        if old:
+            os.environ["LD_LIBRARY_PATH"] = orcadir + ":" + old
+        else:
+            os.environ["LD_LIBRARY_PATH"] = orcadir
+        #os.environ['LD_LIBRARY_PATH'] = orcadir + ':$LD_LIBRARY_PATH'
 
         #Printlevel
         self.printlevel=printlevel
