@@ -894,7 +894,7 @@ def pointchargeupdate(fragment,fragmenttype,chargelist):
 #Calculate atomic charges for each fragment of Cluster. Assign charges to Cluster object via pointchargeupdate
 # TODO: In future also calculate LJ parameters here
 #ORCA-specific function
-def gasfragcalc_ORCA(fragmentobjects,Cluster,chargemodel,orcadir,orcasimpleinput,orcablocks,NUMPROC):
+def gasfragcalc_ORCA(fragmentobjects,Cluster,chargemodel,orcadir,orcasimpleinput,orcablocks,NUMPROC, brokensym=None, HSmult=None, atomstoflip=None):
     blankline()
     print("Now calculating atom charges for each fragment type in cluster")
     for fragmentobject in fragmentobjects:
@@ -912,10 +912,14 @@ def gasfragcalc_ORCA(fragmentobjects,Cluster,chargemodel,orcadir,orcasimpleinput
         print("Defined gasfrag:", gasfrag)
         print(gasfrag.__dict__)
         #Creating ORCA theory object with fragment
-        ORCASPcalculation = ORCATheory(orcadir=orcadir, fragment=gasfrag, charge=fragmentobject.Charge,
+        if brokensym==True:
+            ORCASPcalculation = ORCATheory(orcadir=orcadir, fragment=gasfrag, charge=fragmentobject.Charge,
                                    mult=fragmentobject.Mult, orcasimpleinput=orcasimpleinput,
-                                   orcablocks=orcablocks, extraline=chargemodelline )
-
+                                   orcablocks=orcablocks, extraline=chargemodelline, brokensym=brokensym, HSmult=HSmult, atomstoflip=atomstoflip)
+        else:
+            ORCASPcalculation = ORCATheory(orcadir=orcadir, fragment=gasfrag, charge=fragmentobject.Charge,
+                                   mult=fragmentobject.Mult, orcasimpleinput=orcasimpleinput,
+                                   orcablocks=orcablocks, extraline=chargemodelline)
         print("ORCASPcalculation:", ORCASPcalculation)
         print(ORCASPcalculation.__dict__)
         #Run ORCA calculation with charge-model info
