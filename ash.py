@@ -1875,7 +1875,8 @@ class ORCATheory:
         self.atomstoflip=atomstoflip
         if self.printlevel >=2:
             print("Creating ORCA object")
-            print("Charge: {} Mult: {}".format(self.charge,self.mult))
+            #if molcrys then there is not charge and mult available
+            #print("Charge: {} Mult: {}".format(self.charge,self.mult))
             print(self.orcasimpleinput)
             print(self.orcablocks)
     #Cleanup after run.
