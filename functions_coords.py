@@ -283,6 +283,15 @@ def create_coords_string(elems,coords):
         coordsstring=coordsstring+el+'  '+str(c[0])+'  '+str(c[1])+'  '+str(c[2])+'\n'
     return coordsstring[:-1]
 
+#Takes list of elements and gives formula
+def elemlisttoformula(list):
+    dict = {i: list.count(i) for i in list}
+    formula=""
+    for item in dict.items():
+        el=item[0];count=item[1]
+        string=el+str(count)
+        formula=formula+string
+    return formula
 
 #From molecular formula (string, e.g. "FeCl4") to list of atoms
 def molformulatolist(formulastring):

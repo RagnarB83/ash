@@ -137,17 +137,19 @@ def frag_define(orthogcoords,elems,cell_vectors,fragments,cell_angles=None, cell
     systemlist = list(range(0, len(elems)))
     print("Systemlist length:", len(systemlist))
     unassigned = []
+    unassigned_formulas = []
     for i in range(len(elems)):
 
         printdebug("i : ", i)
         members = get_molecule_members_loop_np2(orthogcoords, elems, 99, settings_ash.scale, settings_ash.tol,
                                             atomindex=i)
         printdebug("members:" , members)
-        print("members:", members)
+        #print("members:", members)
         el_list = [elems[i] for i in members]
+        formula=elemlisttoformula(el_list)
         printdebug("el_list:", el_list)
         ncharge = nucchargelist(el_list)
-        print("Found el_list:", el_list)
+        #print("Found el_list:", el_list)
         printdebug("ncharge : ", ncharge)
         Assign_Flag=False
         for fragment in fragments:
@@ -170,6 +172,7 @@ def frag_define(orthogcoords,elems,cell_vectors,fragments,cell_angles=None, cell
             printdebug("Could not assign members to fragment.")
             # If members list can not be assigned to fragment then we have a boundary-split
             # Assigning to unassigned
+            unassigned_formulas.append(formula)
             if members not in unassigned:
                 printdebug("members not in unassigned. Adding to unassigned")
                 unassigned.append(members)
@@ -181,6 +184,7 @@ def frag_define(orthogcoords,elems,cell_vectors,fragments,cell_angles=None, cell
     #Sorting and trimming unassigned list of fragments
     unassigned = np.unique(unassigned).tolist()
     print("Unassigned members", unassigned)
+    print("unassigned_formulas:", unassigned_formulas)
     #Systemlist with remaining atoms
     print("systemlist:", systemlist)
     print("Systemlist length:", len(systemlist))
