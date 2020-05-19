@@ -182,7 +182,7 @@ def displacement_QMMMrun(arglist):
 
 #Single-point energy function
 #Should be used by user instead of run.
-def Singlepoint(fragment=None, theory=None, numcores=1, Grad=False):
+def Singlepoint(fragment=None, theory=None, Grad=False):
     if fragment is None or theory is None:
         print("Singlepoint requires a fragment and a theory object")
 
@@ -193,12 +193,12 @@ def Singlepoint(fragment=None, theory=None, numcores=1, Grad=False):
     if Grad ==True:
         print("Doing single-point Energy+Gradient job")
         # An Energy+Gradient calculation where we change the number of cores to 12
-        self.energy,self.gradient= theory.run(current_coords=coords, elems=elems, Grad=True, nprocs=numcores)
+        self.energy,self.gradient= theory.run(current_coords=coords, elems=elems, Grad=True)
         print("Energy: ", self.energy)
         return self.energy,self.gradient
     else:
         print("Doing single-point Energy+Gradient job")
-        self.energy = theory.run(current_coords=coords, elems=elems, nprocs=numcores)
+        self.energy = theory.run(current_coords=coords, elems=elems)
         print("Energy: ", self.energy)
         return self.energy
 
@@ -1839,6 +1839,9 @@ class QMMMTheory:
 class ORCATheory:
     def __init__(self, orcadir, fragment=None, charge='', mult='', orcasimpleinput='', printlevel=2,
                  orcablocks='', extraline='', brokensym=None, HSmult=None, atomstoflip=None, nprocs=1):
+
+        #Using orcadir to set LD_LIBRARY_PATH
+        os.environ['LD_LIBRARY_PATH'] = orcadir + ':$LD_LIBRARY_PATH'
 
         #Printlevel
         self.printlevel=printlevel
