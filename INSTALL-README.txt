@@ -38,7 +38,6 @@ Python packages using pip. If you don't have one then go to 2b.
 
 julia
 
-
 Fortran
 
 
