@@ -143,9 +143,11 @@ def frag_define(orthogcoords,elems,cell_vectors,fragments,cell_angles=None, cell
         members = get_molecule_members_loop_np2(orthogcoords, elems, 99, settings_ash.scale, settings_ash.tol,
                                             atomindex=i)
         printdebug("members:" , members)
+        print("members:", members)
         el_list = [elems[i] for i in members]
         printdebug("el_list:", el_list)
         ncharge = nucchargelist(el_list)
+        print("Found el_list:", el_list)
         printdebug("ncharge : ", ncharge)
         Assign_Flag=False
         for fragment in fragments:
