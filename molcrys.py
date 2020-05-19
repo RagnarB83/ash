@@ -158,7 +158,15 @@ def molcrys(cif_file=None, xtl_file=None, fragmentobjects=[], theory=None, numco
 
     # Calculate atom charges for each gas fragment. Updates atomcharges list inside Cluster fragment
     if theory.__class__.__name__ == "ORCATheory":
-        gasfragcalc_ORCA(fragmentobjects,Cluster,chargemodel,theory.orcadir,theory.orcasimpleinput,theory.orcablocks,numcores)
+
+        if theory.brokensym == True:
+            gasfragcalc_ORCA(fragmentobjects, Cluster, chargemodel, theory.orcadir, theory.orcasimpleinput,
+                             theory.orcablocks, numcores, brokensym=True, HSmult=theory.HSmult, atomstoflip=theory.atomstoflip))
+        else:
+            gasfragcalc_ORCA(fragmentobjects, Cluster, chargemodel, theory.orcadir, theory.orcasimpleinput,
+                             theory.orcablocks, numcores)
+
+
     elif theory.__class__.__name__ == "xTBTheory":
         pass
         gasfragcalc_xTB(fragmentobjects,Cluster,chargemodel,theory.xtbdir,theory.xtbmethod,numcores)
