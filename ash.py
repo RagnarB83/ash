@@ -648,7 +648,7 @@ def print_time_rel_and_tot_color(timestampA,timestampB, modulename=''):
 
 #Todo: Also think whether we want do OpenMM simulations in case we have to make another object maybe
 #Amberfiles:
-# Needs just amberprmtopfile (new-style Amber7 format). Not inpcrd file, read into Yggdrasill fragment instead
+# Needs just amberprmtopfile (new-style Amber7 format). Not inpcrd file, read into ASH fragment instead
 
 #CHARMMfiles:
 #Need psffile, a CHARMM topologyfile (charmmtopfile) and a CHARMM parameter file (charmmprmfile)
@@ -660,8 +660,12 @@ class OpenMMTheory:
     def __init__(self, pdbfile=None, platform='CPU', active_atoms=None, frozen_atoms=None,
                  CHARMMfiles=False, psffile=None, charmmtopfile=None, charmmprmfile=None,
                  GROMACSfiles=False, gromacstopfile=None, grofile=None, gromacstopdir=None,
-                 Amberfiles=False, amberprmtopfile=None, printlevel=2,
+                 Amberfiles=False, amberprmtopfile=None, printlevel=2, nprocs=1, qmatoms=None,
                  xmlfile=None):
+
+        print("Setting OpenMM CPU Threads to: ", nprocs)
+        print("TOdo: confirm parallelization")
+        os.environ["OPENMM_CPU_THREADS"] = nprocs
 
         #Printlevel
         self.printlevel=printlevel
@@ -687,7 +691,7 @@ class OpenMMTheory:
 
 
 
-        #TODO: Should we keep this?
+        #TODO: Should we keep this? Probably not. Coordinates would be handled by ASH.
         #PDB_ygg_frag = Fragment(pdbfile=pdbfile, conncalc=False)
         #self.coords=PDB_ygg_frag.coords
         print_time_rel(timeA, modulename="prep")
@@ -729,7 +733,7 @@ class OpenMMTheory:
             self.system = self.prmtop.createSystem(nonbondedMethod=simtk.openmm.app.NoCutoff,
                                                 nonbondedCutoff=1 * simtk.openmm.unit.nanometer)
         else:
-            print("Reading OpenMM XML forcefield file")
+            print("Reading OpenMM XML forcefield file and PDB file")
             #This would be regular OpenMM Forcefield definition requiring XML file
             #Topology from PDBfile annoyingly enough
             pdb = simtk.openmm.app.PDBFile(pdbfile)
@@ -744,6 +748,15 @@ class OpenMMTheory:
         forces = {self.system.getForce(index).__class__.__name__:
                       self.system.getForce(index) for index in range(self.system.getNumForces())}
         self.nonbonded_force = forces['NonbondedForce']
+
+        #Modify Nonbonded force here??
+
+        #Remove QM-QM interactions
+        if qmatoms is not None:
+            print("Removing QM-QM interactions")
+            self.addexceptions(qmatoms)
+
+
 
         # Get charges from OpenMM object into self.charges
         self.getatomcharges()
@@ -770,6 +783,13 @@ class OpenMMTheory:
         else:
             print("active_atoms and frozen_atoms can not be both defined")
             exit(1)
+
+        # Remove QM-QM interactions
+        if frozen_atoms is not None:
+            print("Removing Frozen-Frozen interactions")
+            self.addexceptions(frozen_atoms)
+
+
 
         #Modify particle masses in system object. For freezing atoms
         for i in self.frozen_atoms:
@@ -813,9 +833,16 @@ class OpenMMTheory:
         print_time_rel(timeA, modulename="simulation setup")
         timeA = time.time()
 
+    #This removes interactions between particles (e.g. QM-QM or frozen-frozen pairs)
+    # list of atom indices for which we will remove all pairs
+    def addexceptions(self,atomlist):
+        print("Removing i-j interactions for list: ", atomlist)
+        for i in atomlist:
+            for j in atomlist:
+                self.nonbonded_force.addException(i,j,0, 0, 0)
     #Run: coords or framents can be given (usually coords). qmatoms in order to avoid QM-QM interactions (TODO)
     #Probably best to do QM-QM exclusions etc. in a separate function though as we want run to be as simple as possible
-    def run(self, coords=None, fragment=None, qmatoms=None):
+    def run(self, coords=None, fragment=None):
         timeA = time.time()
         print(BC.OKBLUE, BC.BOLD, "------------RUNNING OPENMM INTERFACE-------------", BC.END)
         #If no coords given to run then a single-point job probably (not part of Optimizer or MD which would supply coords).
@@ -1987,8 +2014,8 @@ class ORCATheory:
 
 #Psi4 Theory object. Fragment object is optional. Only used for single-points.
 #PSI4 runmode:
-#   : library means that Yggdrasill will load Psi4 libraries and run psi4 directly
-#   : inputfile means that Yggdrasill will create Psi4 inputfile and run a separate psi4 executable
+#   : library means that ASH will load Psi4 libraries and run psi4 directly
+#   : inputfile means that ASH will create Psi4 inputfile and run a separate psi4 executable
 #psi4dir only necessary for inputfile-based userinterface. Todo: Possibly unnexessary
 #printsetting is by default set to 'File. Change to something else for stdout print
 # PE: Polarizable embedding (CPPE). Pass pe_modulesettings dict as well
@@ -2075,15 +2102,15 @@ class Psi4Theory:
                 qm_elems = elems
 
         #PSI4 runmode:
-        #   : library means that Yggdrasill will load Psi4 libraries and run psi4 directly
-        #   : inputfile means that Yggdrasill will create Psi4 inputfile and run a separate psi4 executable
+        #   : library means that ASH will load Psi4 libraries and run psi4 directly
+        #   : inputfile means that ASH will create Psi4 inputfile and run a separate psi4 executable
 
         if self.runmode=='library':
             print("Psi4 Runmode: Library")
             try:
                 import psi4
             except:
-                print(BC.FAIL,"Problem importing psi4. Make sure psi4 has been installed as part of same Python as Yggdrasill", BC.END)
+                print(BC.FAIL,"Problem importing psi4. Make sure psi4 has been installed as part of same Python as ASH", BC.END)
                 print(BC.WARNING,"If problematic, switch to inputfile based Psi4 interface instead.", BC.END)
                 exit(9)
             #Changing namespace may prevent crashes due to multiple jobs running at same time
@@ -2523,7 +2550,7 @@ class PySCFTheory:
 class Fragment:
     def __init__(self, coordsstring=None, fragfile=None, xyzfile=None, pdbfile=None, coords=None, elems=None, connectivity=None,
                  atomcharges=None, atomtypes=None, conncalc=True):
-        print("Defining new Yggdrasill fragment object")
+        print("Defining new ASH fragment object")
         self.energy = None
         self.elems=[]
         self.coords=[]
@@ -2796,7 +2823,7 @@ class Fragment:
             outfile.write("connectivity: {}\n".format(self.connectivity))
     #Reading fragment from file. File created from Fragment.print_system
     def read_fragment_from_file(self, fragfile):
-        print("Reading Yggdrasill fragment from file:", fragfile)
+        print("Reading ASH fragment from file:", fragfile)
         coordgrab=False
         coords=[]
         elems=[]
@@ -3140,7 +3167,7 @@ class AtomMMobject:
     def add_LJparameters(self, LJparameters=None):
         self.LJparameters=LJparameters
 
-#Makes more sense to store this here. Simplifies Yggdrasill inputfile import.
+#Makes more sense to store this here. Simplifies ASH inputfile import.
 def MMforcefield_read(file):
     print("Reading forcefield file:", file)
     MM_forcefield = {}
