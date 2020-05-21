@@ -1556,6 +1556,8 @@ class QMMMTheory:
 
             # Region definitions
             self.allatoms=list(range(0,len(self.elems)))
+            self.qmatoms = qmatoms
+            self.mmatoms=listdiff(self.allatoms,self.qmatoms)
 
             # FROZEN AND ACTIVE ATOMS
             if actatoms is None and frozenatoms is None:
@@ -1577,10 +1579,10 @@ class QMMMTheory:
                 print("active_atoms and frozen_atoms can not be both defined")
                 exit(1)
 
+            #Coords and elems lists.
+            #Coords may change by run command
             self.qmcoords=[self.coords[i] for i in self.qmatoms]
             self.qmelems=[self.elems[i] for i in self.qmatoms]
-            self.mmatoms=listdiff(self.allatoms,self.qmatoms)
-
             self.mmcoords=[self.coords[i] for i in self.mmatoms]
             self.mmelems=[self.elems[i] for i in self.mmatoms]
             #print("List of all atoms:", self.allatoms)
@@ -1605,7 +1607,6 @@ class QMMMTheory:
         #Theory level definitions
         self.printlevel=printlevel
         self.qm_theory=qm_theory
-        self.qmatoms = qmatoms
         self.qm_theory_name = self.qm_theory.__class__.__name__
         self.mm_theory=mm_theory
         self.mm_theory_name = self.mm_theory.__class__.__name__
