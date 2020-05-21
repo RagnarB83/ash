@@ -829,7 +829,7 @@ class OpenMMTheory:
     #This removes interactions between particles (e.g. QM-QM or frozen-frozen pairs)
     # list of atom indices for which we will remove all pairs
     def addexceptions(self,atomlist):
-        print("Removing i-j interactions for list: ", atomlist)
+        print("Removing i-j interactions for list :", len(atomlist), "atoms")
         for i in atomlist:
             for j in atomlist:
                 self.nonbonded_force.addException(i,j,0, 0, 0, replace=True)
