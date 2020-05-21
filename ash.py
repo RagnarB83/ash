@@ -665,7 +665,7 @@ class OpenMMTheory:
 
         print("Setting OpenMM CPU Threads to: ", nprocs)
         print("TOdo: confirm parallelization")
-        os.environ["OPENMM_CPU_THREADS"] = nprocs
+        os.environ["OPENMM_CPU_THREADS"] = str(nprocs)
 
         #Printlevel
         self.printlevel=printlevel
@@ -781,7 +781,6 @@ class OpenMMTheory:
         if frozen_atoms is not None:
             print("Removing Frozen-Frozen interactions")
             self.addexceptions(frozen_atoms)
-
 
 
         #Modify particle masses in system object. For freezing atoms
