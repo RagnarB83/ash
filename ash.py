@@ -831,9 +831,10 @@ class OpenMMTheory:
     def addexceptions(self,atomlist):
         print("Removing i-j interactions for list :", len(atomlist), "atoms")
         timeA=time.time()
-        for i in atomlist:
-            for j in atomlist:
-                self.nonbonded_force.addException(i,j,0, 0, 0, replace=True)
+        [self.nonbonded_force.addException(i,j,0, 0, 0, replace=True) for i in atomlist for j in atomlist]
+        #for i in atomlist:
+        #    for j in atomlist:
+        #        self.nonbonded_force.addException(i,j,0, 0, 0, replace=True)
         print_time_rel(timeA, modulename="add exception")
     #Run: coords or framents can be given (usually coords). qmatoms in order to avoid QM-QM interactions (TODO)
     #Probably best to do QM-QM exclusions etc. in a separate function though as we want run to be as simple as possible
