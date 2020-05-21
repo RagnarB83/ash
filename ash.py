@@ -1629,7 +1629,7 @@ class QMMMTheory:
             #Maybe easier to just just set charges to 0. LJ would still be done by
             if self.mm_theory_name == "OpenMMTheory":
                 print("Here. adding exceptions for frozen atoms")
-                mm_theory.addexceptions(frozenatoms)
+                mm_theory.addexceptions(self.frozenatoms)
 
             #    mm_theory.addexceptions(qmatoms)
             linkatom=False
