@@ -664,7 +664,7 @@ class OpenMMTheory:
                  xmlfile=None):
 
         print("Setting OpenMM CPU Threads to: ", nprocs)
-        print("TOdo: confirm parallelization")
+        print("TODO: confirm parallelization")
         os.environ["OPENMM_CPU_THREADS"] = str(nprocs)
 
         #Printlevel
@@ -777,10 +777,11 @@ class OpenMMTheory:
             print("active_atoms and frozen_atoms can not be both defined")
             exit(1)
 
-        # Remove QM-QM interactions
-        if frozen_atoms is not None:
-            print("Removing Frozen-Frozen interactions")
-            self.addexceptions(frozen_atoms)
+        # Remove Frozen-Frozen interactions
+        #Todo: Will be requested by QMMM object so unnecessary unless during pure MM??
+        #if frozen_atoms is not None:
+        #    print("Removing Frozen-Frozen interactions")
+        #    self.addexceptions(frozen_atoms)
 
 
         #Modify particle masses in system object. For freezing atoms
@@ -1626,7 +1627,10 @@ class QMMMTheory:
 
             #Add possible exception for QM-QM atoms here.
             #Maybe easier to just just set charges to 0. LJ would still be done by
-            #if self.mm_theory_name == "OpenMMTheory":
+            if self.mm_theory_name == "OpenMMTheory":
+                print("Here. adding exceptions for frozen atoms")
+                mm_theory.addexceptions(frozenatoms)
+
             #    mm_theory.addexceptions(qmatoms)
             linkatom=False
 
