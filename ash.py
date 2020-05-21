@@ -660,7 +660,7 @@ class OpenMMTheory:
     def __init__(self, pdbfile=None, platform='CPU', active_atoms=None, frozen_atoms=None,
                  CHARMMfiles=False, psffile=None, charmmtopfile=None, charmmprmfile=None,
                  GROMACSfiles=False, gromacstopfile=None, grofile=None, gromacstopdir=None,
-                 Amberfiles=False, amberprmtopfile=None, printlevel=2, nprocs=1, qmatoms=None,
+                 Amberfiles=False, amberprmtopfile=None, printlevel=2, nprocs=1,
                  xmlfile=None):
 
         print("Setting OpenMM CPU Threads to: ", nprocs)
@@ -749,17 +749,10 @@ class OpenMMTheory:
                       self.system.getForce(index) for index in range(self.system.getNumForces())}
         self.nonbonded_force = forces['NonbondedForce']
 
-        #Modify Nonbonded force here??
-
-        #Remove QM-QM interactions
-        if qmatoms is not None:
-            print("Removing QM-QM interactions")
-            self.addexceptions(qmatoms)
-
-
 
         # Get charges from OpenMM object into self.charges
         self.getatomcharges()
+
 
         print_time_rel(timeA, modulename="system create")
         timeA = time.time()
@@ -1632,6 +1625,10 @@ class QMMMTheory:
 
         if mm_theory != "":
 
+            #Add possible exception for QM-QM atoms here.
+            #Maybe easier to just just set charges to 0. LJ would still be done by
+            #if self.mm_theory_name == "OpenMMTheory":
+            #    mm_theory.addexceptions(qmatoms)
             linkatom=False
 
             if linkatom==True:
