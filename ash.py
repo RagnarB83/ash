@@ -1538,62 +1538,16 @@ class QMMMTheory:
     def __init__(self, qm_theory="", qmatoms="", fragment='', mm_theory="" , charges=None,
                  embedding="Elstat", printlevel=2, nprocs=None, actatoms=None, frozenatoms=None):
 
-        #Actatoms list used for skipping frozen-frozeninteractions in MM part
-        self.actatoms=actatoms
-        self.frozenatoms=frozenatoms
-        if self.frozenatoms is not None:
-            print("Frozenatoms list passed to QM/MM object. Will skip all frozen interactions in MM.")
-            print("not active. to be deleted")
-            exit(1)
-        elif self.actatoms is not None:
-            print("Actatoms list passed to QM/MM object. Will skip all frozen interactions in MM.")
-            #Todo: should this be better? Handled by Optimizer/NEB/MD function instead?
-        else:
-            print("Actatoms/frozenatoms list not passed to QM/MM object. Will do all frozen interactions in MM (expensive).")
         print(BC.WARNING,BC.BOLD,"------------Defining QM/MM object-------------", BC.END)
 
-        self.QMChargesZeroed=False
         #Setting nprocs of object
         if nprocs==None:
             self.nprocs=1
         else:
             self.nprocs=nprocs
 
-        #Theory level definitions
-        self.printlevel=printlevel
-        self.qm_theory=qm_theory
-        self.qm_theory_name = self.qm_theory.__class__.__name__
-        self.mm_theory=mm_theory
-        self.mm_theory_name = self.mm_theory.__class__.__name__
-        if self.mm_theory_name == "str":
-            self.mm_theory_name="None"
-        print("QM-theory:", self.qm_theory_name)
-        print("MM-theory:", self.mm_theory_name)
-
-        #if atomcharges are not passed to QMMMTheory object, get them from MMtheory (that should have been defined then)
-        if charges is None:
-            print("No atomcharges list passed to QMMMTheory object")
-            self.charges=[]
-            if self.mm_theory_name == "OpenMMTheory":
-                print("Getting system charges from OpenMM object")
-                #Todo: Call getatomcharges directly or should that have been called from within openmm object at init ?
-                #self.charges = mm_theory.getatomcharges()
-                self.charges = mm_theory.charges
-            elif self.mm_theory_name == "NonBondedTheory":
-                print("Getting system charges from NonBondedTheory object")
-                #Todo: normalize charges vs atom_charges
-                self.charges=mm_theory.atom_charges
-            else:
-                print("Unrecognized MM theory for QMMMTheory")
-                exit(1)
-        else:
-            self.charges=charges
-        #Embedding type: mechanical, electrostatic etc.
-        self.embedding=embedding
-        print("Embedding:", self.embedding)
-        self.qmatoms = qmatoms
-
         #If fragment object has been defined
+        #This probably needs to be always true
         if fragment != '':
             self.fragment=fragment
             self.coords=fragment.coords
@@ -1602,6 +1556,26 @@ class QMMMTheory:
 
             # Region definitions
             self.allatoms=list(range(0,len(self.elems)))
+
+            # FROZEN AND ACTIVE ATOMS
+            if actatoms is None and frozenatoms is None:
+                print("Actatoms/frozenatoms list not passed to QM/MM object. Will do all frozen interactions in MM (expensive).")
+                print("All {} atoms active, no atoms frozen".format(len(self.allatoms)))
+                self.actatoms=self.allatoms
+                self.frozenatoms=[]
+            elif actatoms is not None and frozenatoms is None:
+                print("Actatoms list passed to QM/MM object. Will skip all frozen interactions in MM.")
+                self.actatoms = actatoms
+                self.frozenatoms = listdiff(self.allatoms, self.actatoms)
+                print("{} active atoms, {} frozen atoms".format(len(self.actatoms), len(self.frozenatoms)))
+            elif frozenatoms is not None and actatoms is None:
+                print("Frozenatoms list passed to QM/MM object. Will skip all frozen interactions in MM.")
+                self.frozenatoms = frozenatoms
+                self.actatoms = listdiff(self.allatoms, self.frozenatoms)
+                print("{} active atoms, {} frozen atoms".format(len(self.actatoms), len(self.frozenatoms)))
+            else:
+                print("active_atoms and frozen_atoms can not be both defined")
+                exit(1)
 
             self.qmcoords=[self.coords[i] for i in self.qmatoms]
             self.qmelems=[self.elems[i] for i in self.qmatoms]
@@ -1622,18 +1596,58 @@ class QMMMTheory:
                     self.hybridatomlabels.append('QM')
                 elif i in self.mmatoms:
                     self.hybridatomlabels.append('MM')
+        else:
+            print("Fragment has not been defined for QM/MM. Exiting")
+            exit(1)
 
-        if mm_theory != "":
+        self.QMChargesZeroed=False
 
-            #Add possible exception for QM-QM atoms here.
-            #Maybe easier to just just set charges to 0. LJ would still be done by
+        #Theory level definitions
+        self.printlevel=printlevel
+        self.qm_theory=qm_theory
+        self.qmatoms = qmatoms
+        self.qm_theory_name = self.qm_theory.__class__.__name__
+        self.mm_theory=mm_theory
+        self.mm_theory_name = self.mm_theory.__class__.__name__
+        if self.mm_theory_name == "str":
+            self.mm_theory_name="None"
+        print("QM-theory:", self.qm_theory_name)
+        print("MM-theory:", self.mm_theory_name)
+        #Embedding type: mechanical, electrostatic etc.
+        self.embedding=embedding
+        print("Embedding:", self.embedding)
+
+        #if atomcharges are not passed to QMMMTheory object, get them from MMtheory (that should have been defined then)
+        if charges is None:
+            print("No atomcharges list passed to QMMMTheory object")
+            self.charges=[]
             if self.mm_theory_name == "OpenMMTheory":
-                print("Here. adding exceptions for frozen atoms")
-                mm_theory.addexceptions(self.frozenatoms)
+                print("Getting system charges from OpenMM object")
+                #Todo: Call getatomcharges directly or should that have been called from within openmm object at init ?
+                #self.charges = mm_theory.getatomcharges()
+                self.charges = mm_theory.charges
+            elif self.mm_theory_name == "NonBondedTheory":
+                print("Getting system charges from NonBondedTheory object")
+                #Todo: normalize charges vs atom_charges
+                self.charges=mm_theory.atom_charges
+            else:
+                print("Unrecognized MM theory for QMMMTheory")
+                exit(1)
+        else:
+            self.charges=charges
 
-            #    mm_theory.addexceptions(qmatoms)
+
+        #If MM THEORY (not just pointcharges)
+        if mm_theory != "":
+            #Add possible exception for QM-QM atoms here.
+            #Maybe easier to just just set charges to 0. LJ for QM-QM still needs to be done by MM code
+            if self.mm_theory_name == "OpenMMTheory":
+                print("Now adding exceptions for frozen atoms")
+                if len(self.frozenatoms) > 0:
+                    print("self.frozenatoms ", self.frozenatoms)
+                    mm_theory.addexceptions(self.frozenatoms)
+
             linkatom=False
-
             if linkatom==True:
                 print("Adding link atoms...")
                 #Link atoms. In an additive scheme we would always have link atoms, regardless of mechanical/electrostatic coupling
@@ -1647,19 +1661,7 @@ class QMMMTheory:
 
             if self.embedding=="Elstat":
                 #Setting QM charges to 0 since electrostatic embedding
-                newcharges=[]
-                for i,c in enumerate(self.charges):
-                    if i in self.mmatoms:
-                        newcharges.append(c)
-                    else:
-                        newcharges.append(0.0)
-                #Todo: use self.charges or use newcharges. Since done temporarily??
-                self.charges=newcharges
-                #Todo: make sure this works for OpenMM and for NonBOndedTheory
-                #Updating charges in MM object
-                mm_theory.update_charges(self.charges)
-                self.QMChargesZeroed=True
-
+                ZeroQMCharges()
                 print("Charges of QM atoms set to 0 (since Electrostatic Embedding):")
                 if self.printlevel > 2:
                     for i in self.allatoms:
@@ -1676,6 +1678,20 @@ class QMMMTheory:
         self.mmcharges=[self.charges[i] for i in self.mmatoms]
         #print("self.mmcharges:", self.mmcharges)
 
+    # Set QMcharges to Zero
+    def ZeroQMCharges(self):
+        newcharges = []
+        for i, c in enumerate(self.charges):
+            if i in self.mmatoms:
+                newcharges.append(c)
+            else:
+                newcharges.append(0.0)
+        # Todo: use self.charges or use newcharges. Since done temporarily??
+        self.charges = newcharges
+        # Todo: make sure this works for OpenMM and for NonBOndedTheory
+        # Updating charges in MM object
+        self.mm_theory.update_charges(self.charges)
+        self.QMChargesZeroed = True
     def run(self, current_coords=None, elems=None, Grad=False, nprocs=None):
         CheckpointTime = time.time()
         if self.printlevel >= 2:
