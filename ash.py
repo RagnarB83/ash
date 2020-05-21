@@ -832,7 +832,7 @@ class OpenMMTheory:
         print("Removing i-j interactions for list: ", atomlist)
         for i in atomlist:
             for j in atomlist:
-                self.nonbonded_force.addException(i,j,0, 0, 0)
+                self.nonbonded_force.addException(i,j,0, 0, 0, replace=True)
     #Run: coords or framents can be given (usually coords). qmatoms in order to avoid QM-QM interactions (TODO)
     #Probably best to do QM-QM exclusions etc. in a separate function though as we want run to be as simple as possible
     def run(self, coords=None, fragment=None):
@@ -1645,7 +1645,6 @@ class QMMMTheory:
             if self.mm_theory_name == "OpenMMTheory":
                 print("Now adding exceptions for frozen atoms")
                 if len(self.frozenatoms) > 0:
-                    print("self.frozenatoms ", self.frozenatoms)
                     mm_theory.addexceptions(self.frozenatoms)
 
             linkatom=False
