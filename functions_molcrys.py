@@ -566,7 +566,7 @@ def read_ciffile(file):
                 print("line:", line)
                 if len(line) == 0:
                     fractgrab=False
-                elif '_atom_site' not in line
+                elif '_atom_site' not in line:
                     if 'loop' not in line:
                         atomlabels.append(line.split()[0])
                         #Disabling since not always elems in column
