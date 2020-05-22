@@ -1104,7 +1104,7 @@ class NonBondedTheory:
         if self.pairarrayversion=="julia":
             if self.printlevel >= 2:
                 print("Using PyJulia for fast sigmaij and epsij array creation")
-            yggpath = os.path.dirname(ash.__file__)
+            ashpath = os.path.dirname(ash.__file__)
 
             # Necessary for statically linked libpython
             #IF not doing python-jl
@@ -1125,7 +1125,7 @@ class NonBondedTheory:
                 print("Alternatively, use pairarrayversion='py' argument to NonBondedTheory to use slower Python version for array creation")
                 exit()
             # Defining Julia Module
-            Main.include(yggpath + "/functions_julia.jl")
+            Main.include(ashpath + "/functions_julia.jl")
 
 
             # Do pairpot array for whole system
