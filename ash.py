@@ -828,6 +828,12 @@ class OpenMMTheory:
 
     #This removes interactions between particles (e.g. QM-QM or frozen-frozen pairs)
     # list of atom indices for which we will remove all pairs
+
+    #Todo: Way too slow to do.
+    # Alternative: Remove force interaction and then add in the interaction of active atoms to frozen atoms
+    # should be reasonably fast
+    # https://github.com/openmm/openmm/issues/2124
+    #https://github.com/openmm/openmm/issues/1696
     def addexceptions(self,atomlist):
         import itertools
         print("Removing i-j interactions for list :", len(atomlist), "atoms")
