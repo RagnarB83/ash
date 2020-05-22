@@ -1121,6 +1121,7 @@ class NonBondedTheory:
             except:
                 print("Problem importing Pyjulia (import julia)")
                 print("Make sure Julia is installed and PyJulia module available")
+                print("Also, are you using python-jl ?")
                 print("Alternatively, use pairarrayversion='py' argument to NonBondedTheory to use slower Python version for array creation")
                 exit()
             # Defining Julia Module
