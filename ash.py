@@ -193,14 +193,14 @@ def Singlepoint(fragment=None, theory=None, Grad=False):
     if Grad ==True:
         print("Doing single-point Energy+Gradient job")
         # An Energy+Gradient calculation where we change the number of cores to 12
-        self.energy,self.gradient= theory.run(current_coords=coords, elems=elems, Grad=True)
-        print("Energy: ", self.energy)
-        return self.energy,self.gradient
+        energy,gradient= theory.run(current_coords=coords, elems=elems, Grad=True)
+        print("Energy: ", energy)
+        return energy,gradient
     else:
         print("Doing single-point Energy+Gradient job")
-        self.energy = theory.run(current_coords=coords, elems=elems)
+        energy = theory.run(current_coords=coords, elems=elems)
         print("Energy: ", self.energy)
-        return self.energy
+        return energy
 
 
 #Numerical frequencies function
