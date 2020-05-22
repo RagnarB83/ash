@@ -564,8 +564,9 @@ def read_ciffile(file):
 
             if fractgrab == True:
                 print("line:", line)
-                if len(line) == 0:
+                if line.replace(' ','').split() == 0:
                     fractgrab=False
+                    print("fractgrab False")
                 elif '_atom_site' not in line:
                     if 'loop' not in line:
                         atomlabels.append(line.split()[0])
