@@ -1676,7 +1676,7 @@ class QMMMTheory:
 
             if self.embedding=="Elstat":
                 #Setting QM charges to 0 since electrostatic embedding
-                ZeroQMCharges()
+                self.ZeroQMCharges()
                 print("Charges of QM atoms set to 0 (since Electrostatic Embedding):")
                 if self.printlevel > 2:
                     for i in self.allatoms:
