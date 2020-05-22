@@ -565,9 +565,9 @@ def read_ciffile(file):
             if fractgrab == True:
                 print("line:", line)
                 print(" len line:", len(line))
-                print(" len rep split line:", len(line.replace(' ','').split()))
+                print(" len rep split line:", len(line.replace(' ','')))
                 #If empty line encountered then coordinates-lines should be over
-                if len(line.replace(' ','').split()) < 2:
+                if len(line.replace(' ','')) < 2:
                     fractgrab=False
                     print("fractgrab False")
                 elif '_atom_site' not in line:
