@@ -563,9 +563,11 @@ def read_ciffile(file):
                     #symmops.append(line.split('\'')[1])
 
             if fractgrab == True:
+                print("line:", line)
                 #If empty line encountered then coordinates-lines should be over
                 if len(line.replace(' ','')) < 2:
                     fractgrab=False
+                    print("Found all coordinates")
                 elif '_atom_site' not in line and 'loop' not in line:
                         atomlabels.append(line.split()[0])
                         #Disabling since not always elems in column
@@ -581,6 +583,7 @@ def read_ciffile(file):
                 newmol = True
             if '_atom_site_fract_z' in line:
                 fractgrab=True
+                print("Grabbing coordinates")
             if '_space_group_s' in line:
                 symmopgrab=True
             if '_symmetry_equiv_pos_as_xyz' in line:
