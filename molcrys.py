@@ -260,7 +260,7 @@ def molcrys(cif_file=None, xtl_file=None, fragmentobjects=[], theory=None, numco
 
         # Run ORCA QM/MM calculation with charge-model info
         QMMM_SP_calculation = QMMMTheory(fragment=Cluster, qm_theory=QMtheory, qmatoms=Centralmainfrag,
-                                             atomcharges=Cluster.atomcharges, embedding='Elstat')
+                                             charges=Cluster.atomcharges, embedding='Elstat')
         QMMM_SP_calculation.run(nprocs=numcores)
 
 
