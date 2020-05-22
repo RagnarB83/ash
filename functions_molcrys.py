@@ -569,7 +569,6 @@ def read_ciffile(file):
                     fractgrab=False
                     print("Found all coordinates")
                 elif '_atom_site' not in line:
-                    print("here")
                     if 'loop' not in line:
                         atomlabels.append(line.split()[0])
                         #Disabling since not always elems in column
