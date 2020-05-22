@@ -565,7 +565,7 @@ def read_ciffile(file):
             if fractgrab == True:
                 print("line:", line)
                 print(" len line:", len(line))
-                print(" len rep split line:", line.replace(' ','').split())
+                print(" len rep split line:", len(line.replace(' ','').split()))
                 #If empty line encountered then coordinates-lines should be over
                 if len(line.replace(' ','').split()) < 2:
                     fractgrab=False
