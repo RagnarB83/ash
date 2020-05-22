@@ -563,7 +563,10 @@ def read_ciffile(file):
                     #symmops.append(line.split('\'')[1])
 
             if fractgrab == True:
-                if '_atom_site' not in line and len(line) >5 and 'loop' not in line:
+
+                if len(line) == 0:
+                    fractgrab=False
+                else '_atom_site' not in line and len(line) >5 and 'loop' not in line:
                     atomlabels.append(line.split()[0])
                     #Disabling since not always elems in column
                     secondcolumn.append(line.split()[1])
