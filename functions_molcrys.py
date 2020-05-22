@@ -564,6 +564,8 @@ def read_ciffile(file):
 
             if fractgrab == True:
                 print("line:", line)
+                print(" len line:", len(line))
+                print(" len rep split line:", line.replace(' ','').split())
                 if line.replace(' ','').split() == 0:
                     fractgrab=False
                     print("fractgrab False")
