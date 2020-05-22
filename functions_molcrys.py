@@ -554,16 +554,8 @@ def read_ciffile(file):
                     symmopgrab_oldsyntax=False
                 else:
                     line2=line.replace("'","").replace(" ","").replace("\n","")
-                    print("line2", line2)
                     symmops.append(line2)
-
-                    #tempvar=line.split(',')
-                    #print("tempvar:", tempvar)
-                    #xit()
-                    #symmops.append(line.split('\'')[1])
-
             if fractgrab == True:
-                print("line:", line)
                 #If empty line encountered then coordinates-lines should be over
                 if len(line.replace(' ','')) < 2:
                     fractgrab=False
