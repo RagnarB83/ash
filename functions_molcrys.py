@@ -568,14 +568,15 @@ def read_ciffile(file):
                 if len(line.replace(' ','')) < 2:
                     fractgrab=False
                     print("Found all coordinates")
-                elif '_atom_site' not in line and 'loop' not in line:
-                        atomlabels.append(line.split()[0])
-                        #Disabling since not always elems in column
-                        secondcolumn.append(line.split()[1])
-                        x_coord=float(line.split()[2].split('(')[0])
-                        y_coord=float(line.split()[3].split('(')[0])
-                        z_coord=float(line.split()[4].split('(')[0])
-                        coords.append([x_coord, y_coord, z_coord])
+                elif '_atom_site' not in line:
+                        if 'loop' not in line:
+                            atomlabels.append(line.split()[0])
+                            #Disabling since not always elems in column
+                            secondcolumn.append(line.split()[1])
+                            x_coord=float(line.split()[2].split('(')[0])
+                            y_coord=float(line.split()[3].split('(')[0])
+                            z_coord=float(line.split()[4].split('(')[0])
+                            coords.append([x_coord, y_coord, z_coord])
                 else:
                     print("parsing error")
                     exit()
