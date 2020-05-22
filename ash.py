@@ -199,7 +199,7 @@ def Singlepoint(fragment=None, theory=None, Grad=False):
     else:
         print("Doing single-point Energy+Gradient job")
         energy = theory.run(current_coords=coords, elems=elems)
-        print("Energy: ", self.energy)
+        print("Energy: ", energy)
         return energy
 
 
