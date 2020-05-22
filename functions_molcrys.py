@@ -570,14 +570,14 @@ def read_ciffile(file):
                     print("Found all coordinates")
                 elif '_atom_site' not in line:
                     print("here")
-                        if 'loop' not in line:
-                            atomlabels.append(line.split()[0])
-                            #Disabling since not always elems in column
-                            secondcolumn.append(line.split()[1])
-                            x_coord=float(line.split()[2].split('(')[0])
-                            y_coord=float(line.split()[3].split('(')[0])
-                            z_coord=float(line.split()[4].split('(')[0])
-                            coords.append([x_coord, y_coord, z_coord])
+                    if 'loop' not in line:
+                        atomlabels.append(line.split()[0])
+                        #Disabling since not always elems in column
+                        secondcolumn.append(line.split()[1])
+                        x_coord=float(line.split()[2].split('(')[0])
+                        y_coord=float(line.split()[3].split('(')[0])
+                        z_coord=float(line.split()[4].split('(')[0])
+                        coords.append([x_coord, y_coord, z_coord])
             if 'data_' in line:
                 newmol = True
             if '_atom_site_fract_z' in line:
