@@ -566,7 +566,7 @@ def read_ciffile(file):
                 print("line:", line)
                 if len(line) == 0:
                     fractgrab=False
-                elif '_atom_site' not in line and len(line) >5 and 'loop' not in line:
+                elif '_atom_site' not in line and 'loop' not in line:
 
                     atomlabels.append(line.split()[0])
                     #Disabling since not always elems in column
@@ -574,12 +574,6 @@ def read_ciffile(file):
                     x_coord=float(line.split()[2].split('(')[0])
                     y_coord=float(line.split()[3].split('(')[0])
                     z_coord=float(line.split()[4].split('(')[0])
-                    #if x_coord < 0.0 or y_coord < 0.0 or z_coord < 0.0:
-                    #    print("Skipping fractline: {} {} {}".format(x_coord,y_coord,z_coord))
-                    #elif x_coord > 1.0 or y_coord > 1.0 or z_coord > 1.0:
-                    #    print("Skipping fractline: {} {} {}".format(x_coord,y_coord,z_coord))
-                    #else:
-                    #    coords.append([x_coord,y_coord,z_coord])
                     coords.append([x_coord, y_coord, z_coord])
                 else:
                     print("parsing error")
