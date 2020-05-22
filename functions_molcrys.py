@@ -566,6 +566,7 @@ def read_ciffile(file):
                 print("line:", line)
                 print(" len line:", len(line))
                 print(" len rep split line:", line.replace(' ','').split())
+                #If empty line encountered then coordinates-lines should be over
                 if len(line.replace(' ','').split()) < 2:
                     fractgrab=False
                     print("fractgrab False")
@@ -610,7 +611,7 @@ def read_ciffile(file):
             exit()
 
     print("Symmetry operations found in CIF:", symmops)
-
+    print("coords : ", coords)
     return [cell_a, cell_b, cell_c],[cell_alpha, cell_beta, cell_gamma],atomlabels,elems,coords,symmops,cellunits
 
 #From cell parameters, fractional coordinates of asymmetric unit and symmetry operations
