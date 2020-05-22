@@ -2185,6 +2185,7 @@ class Psi4Theory:
                 psi4.core.EXTERN = Chargefield
 
             #Setting inputvariables
+            print("Psi4 memory: ", self.psi4memory)
             psi4.set_memory(self.psi4memory)
 
             #Changing charge and multiplicity
