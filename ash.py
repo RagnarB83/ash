@@ -2185,8 +2185,9 @@ class Psi4Theory:
                 psi4.core.EXTERN = Chargefield
 
             #Setting inputvariables
-            print("Psi4 memory: ", self.psi4memory)
-            psi4.set_memory(self.psi4memory)
+            print("Psi4 memory (MB): ", self.psi4memory)
+
+            psi4.set_memory(str(self.psi4memory)+' MB')
 
             #Changing charge and multiplicity
             #psi4molfrag.set_molecular_charge(self.charge)
