@@ -566,21 +566,21 @@ def read_ciffile(file):
                 print("line:", line)
                 if len(line) == 0:
                     fractgrab=False
-                elif '_atom_site' not in line and 'loop' not in line:
-
-                    atomlabels.append(line.split()[0])
-                    #Disabling since not always elems in column
-                    secondcolumn.append(line.split()[1])
-                    x_coord=float(line.split()[2].split('(')[0])
-                    y_coord=float(line.split()[3].split('(')[0])
-                    z_coord=float(line.split()[4].split('(')[0])
-                    coords.append([x_coord, y_coord, z_coord])
+                elif '_atom_site' not in line
+                    if 'loop' not in line:
+                        atomlabels.append(line.split()[0])
+                        #Disabling since not always elems in column
+                        secondcolumn.append(line.split()[1])
+                        x_coord=float(line.split()[2].split('(')[0])
+                        y_coord=float(line.split()[3].split('(')[0])
+                        z_coord=float(line.split()[4].split('(')[0])
+                        coords.append([x_coord, y_coord, z_coord])
                 else:
                     print("parsing error")
                     exit()
             if 'data_' in line:
                 newmol = True
-            if '_atom_site_fract_x' in line:
+            if '_atom_site_fract_z' in line:
                 fractgrab=True
             if '_space_group_s' in line:
                 symmopgrab=True
