@@ -969,7 +969,7 @@ class NonBondedTheory:
         self.sigmaij=np.zeros((self.numatoms, self.numatoms))
         self.epsij=np.zeros((self.numatoms, self.numatoms))
 
-    #Todo: Need to make active-region version of pyarray version here. Need to have and should not be terrible
+    #Todo: Need to make active-region version of pyarray version here.
     def calculate_LJ_pairpotentials(self, qmatoms=None, actatoms=None, frozenatoms=None):
 
         #actatoms
