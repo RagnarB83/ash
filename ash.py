@@ -989,8 +989,8 @@ class NonBondedTheory:
         if qmatoms is None or qmatoms == []:
             qmatoms = []
             print("WARNING: qmatoms list is empty.")
-            print("This is fine if this is a pure MM job")
-            print("If QM/MM job, then qmatoms list should be passed to NonBonded theory")
+            print("This is fine if this is a pure MM job.")
+            print("If QM/MM job, then qmatoms list should be passed to NonBonded theory.")
         print("qmatoms:", qmatoms)
 
 
