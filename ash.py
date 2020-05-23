@@ -1947,6 +1947,7 @@ class ORCATheory:
             os.remove(self.inputfilename + '.uco')
             os.remove(self.inputfilename + '_property.txt')
             os.remove(self.inputfilename + '.inp')
+            os.remove(self.inputfilename + '.out')
             os.remove(self.inputfilename + '.engrad')
             #os.remove(self.inputfilename + '.out')
             for tmpfile in glob.glob("self.inputfilename*tmp"):
