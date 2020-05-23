@@ -1940,16 +1940,22 @@ class ORCATheory:
     #Cleanup after run.
     def cleanup(self):
         print("Cleaning up old ORCA files")
-        try:
-            os.remove(self.inputfilename+'.gbw')
-            os.remove(self.inputfilename + '.ges')
-            os.remove(self.inputfilename + '.prop')
-            os.remove(self.inputfilename + '.uco')
-            os.remove(self.inputfilename + '_property.txt')
-            os.remove(self.inputfilename + '.inp')
-            os.remove(self.inputfilename + '.out')
-            os.remove(self.inputfilename + '.engrad')
-            #os.remove(self.inputfilename + '.out')
+        list=[]
+        list.append(self.inputfilename + '.gbw')
+        list.append(self.inputfilename + '.ges')
+        list.append(self.inputfilename + '.prop')
+        list.append(self.inputfilename + '.uco')
+        list.append(self.inputfilename + '_property.txt')
+        list.append(self.inputfilename + '.inp')
+        list.append(self.inputfilename + '.out')
+        list.append(self.inputfilename + '.engrad')
+        for file in list:
+            try:
+                os.remove(file)
+            except:
+                pass
+        # os.remove(self.inputfilename + '.out')
+        try.
             for tmpfile in glob.glob("self.inputfilename*tmp"):
                 os.remove(tmpfile)
         except:
