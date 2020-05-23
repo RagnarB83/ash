@@ -1123,7 +1123,7 @@ class NonBondedTheory:
                 print("Make sure Julia is installed and PyJulia module available")
                 print("Also, are you using python-jl ?")
                 print("Alternatively, use pairarrayversion='py' argument to NonBondedTheory to use slower Python version for array creation")
-                exit()
+                exit(9)
             # Defining Julia Module
             Main.include(ashpath + "/functions_julia.jl")
 
@@ -1946,6 +1946,8 @@ class ORCATheory:
             os.remove(self.inputfilename + '.prop')
             os.remove(self.inputfilename + '.uco')
             os.remove(self.inputfilename + '_property.txt')
+            os.remove(self.inputfilename + '.inp')
+            os.remove(self.inputfilename + '.engrad')
             #os.remove(self.inputfilename + '.out')
             for tmpfile in glob.glob("self.inputfilename*tmp"):
                 os.remove(tmpfile)
