@@ -1955,7 +1955,7 @@ class ORCATheory:
             except:
                 pass
         # os.remove(self.inputfilename + '.out')
-        try.
+        try:
             for tmpfile in glob.glob("self.inputfilename*tmp"):
                 os.remove(tmpfile)
         except:
