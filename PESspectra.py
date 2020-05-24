@@ -1,8 +1,5 @@
 #Module for calculating PhotoElectron Spectra
 
-# Calculate PES spectra using the Dyson orbital approach.
-path_to_wfoverlap='/home/bjornsson/sharc-master/bin/wfoverlap.x'
-
 #####################################3
 
 import glob
@@ -739,15 +736,23 @@ def Gaussian(x, mu, strength, sigma):
 #PhotoElectronSpectrum function
 #Provide theory
 
-def PhotoElectronSpectrum(theory=theory, fragment=fragment, Ionstatemult=None, numstates=50, numcores=1 ):
+
+# Calculate PES spectra using the Dyson orbital approach.
+#path_to_wfoverlap='/home/bjornsson/sharc-master/bin/wfoverlap.x'
+
+def PhotoElectronSpectrum(theory=theory, fragment=fragment, InitialState_charge=None, Initialstate_mult=None,
+                          Ionizedstate_charge=None, Ionizedstate_mult=None, numstates=50, numcores=1, path_wfoverlap=None ):
     print(bcolors.OKGREEN,"PES-calc: Calculated PES spectra via TDDFT and Dyson-norm approach",bcolors.ENDC)
     if Ionstatemult==None:
         print("Provide spin multiplicity of ionized state to PhotoElectronSpectrum: e.g. Ionstatemult=2 ")
         exit(1)
-    stateIcharge=theory.charge
-    stateImult=theory.mult
-    stateFcharge=theory.charge-1
-    stateFmult=Ionstatemult
+
+    #Getting charge/mult of states from function argument
+    stateIcharge=InitialState_charge
+    stateImult=Initialstate_mult
+    stateFcharge=Ionizedstate_charge
+    stateFmult=Ionizedstate_mult
+
     print("")
     print("Coordinates: ")
     fragment.print_coords()
@@ -760,18 +765,35 @@ def PhotoElectronSpectrum(theory=theory, fragment=fragment, Ionstatemult=None, n
     print("CPU Cores available: ", numcores)
     print("")
 
-    #Create inputfiles
-    create_inputfiles()
-    #Run calculations
+    #Create inputfiles or just run
 
-    print(bcolors.OKGREEN,"Reading outputfiles...",bcolors.ENDC)
-    #Initial state orbitals for MO-DOSplot
-    occorbsI_alpha,occorbsI_beta,hftyp_I=orbitalgrab(outfile_init)
-    occorbsF_alpha,occorbsF_beta,hftyp_F=orbitalgrab(outfile_final)
 
-    #SCF energies
-    init_E=scfenergygrab(outfile_init)
-    final_E=scfenergygrab(outfile_final)
+    #ORCA-theory
+    if theory.__class__.__name__ == "ORCATheory":
+
+        #Initial state energy
+        theory.charge=stateIcharge
+        theory.mult=stateImult
+        theory.extraline=theory.extraline+"%method\n"+"frozencore FC_NONE\n"+"end\n"
+        Init_State1_energy = theory.run()
+        # Initial state orbitals for MO-DOSplot
+        occorbsI_alpha, occorbsI_beta, hftyp_I = orbitalgrab(theory.inputfilenam)
+
+        #Final-state TDDFT calc
+        theory.charge=stateFcharge
+        theory.mult=stateFmult
+        #Adding TDDFT block to inputfile
+        tddftstring="%tddft\n"+"tda true\n"+"nroots " + str(numionstates - 1) + '\n'+inpfile_F.write("maxdim 15\n"+"end\n"+"\n"
+        theory.extraline=theory.extraline+tddftstring
+        Final_State1_energy = theory.run()
+        #Grab TDDFT states from ORCA file:
+        tddftstates = tddftgrab(theory.inputfilename)
+        # Final state orbitals for MO-DOSplot
+        occorbsF_alpha, occorbsF_beta, hftyp_F = orbitalgrab(theory.inputfilenam)
+    else:
+        print("Theory not supported for PhotoElectronSpectrum")
+        exit(1)
+
     #1st vertical IP via deltaSCF=
     GSIP=(final_E-init_E)*hartoev
     print(bcolors.OKBLUE,"Initial State SCF energy:", init_E, "au",bcolors.ENDC)
