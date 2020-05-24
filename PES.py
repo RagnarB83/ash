@@ -739,7 +739,7 @@ def PhotoIonSpectrum(theory=None, fragment=None, InitialState_charge=None, Initi
         theory.mult=stateImult
         theory.extraline=theory.extraline+"%method\n"+"frozencore FC_NONE\n"+"end\n"
         #Init_State1_energy = theory.run(current_coords=fragment.coords, elems=fragment.elems)
-        Init_State1_energy = Singlepoint(fragment=fragment, theory=theory
+        Init_State1_energy = Singlepoint(fragment=fragment, theory=theory)
         # Initial state orbitals for MO-DOSplot
         occorbsI_alpha, occorbsI_beta, hftyp_I = orbitalgrab(theory.inputfilenam)
 
