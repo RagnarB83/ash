@@ -1,4 +1,5 @@
-#Module for calculating PhotoElectron Spectra
+#Module for calculating PhotoElectron/PhotoIonization Spectra
+
 
 #####################################3
 
@@ -18,45 +19,7 @@ class bcolors:
 
 eldict={'H':1,'He':2,'Li':3,'Be':4,'B':5,'C':6,'N':7,'O':8,'F':9,'Ne':10,'Na':11,'Mg':12,'Al':13,'Si':14,'P':15,'S':16,'Cl':17,'Ar':18,'K':19,'Ca':20,'Sc':21,'Ti':22,'V':23,'Cr':24,'Mn':25,'Fe':26,'Co':27,'Ni':28,'Cu':29,'Zn':30,'Ga':31,'Ge':32,'As':33,'Se':34,'Br':35,'Kr':36,'Mo':42,'W':74,'Ru':44,'I':53}
 
-def create_ORCA_inputfiles():
-    inpfile_I = open('State_init.inp', 'w')
-    for l in orcatemplate:
-        inpfile_I.write(l)
-    inpfile_I.write("*xyzfile"+' '+str(stateIcharge)+' '+str(stateImult)+' '+xyzfile)
-    inpfile_I.write("\n")
-    inpfile_I.close()
-    inpfile_F = open('State_final.inp', 'w')
-    if stateFmult > stateImult:
-        ElectronSpinRemoval='Beta'
-    else:
-        ElectronSpinRemoval='Alpha'
-    for l in orcatemplate:
-        inpfile_F.write(l)
-    inpfile_F.write("%method\n")
-    inpfile_F.write("frozencore FC_NONE\n")
-    inpfile_F.write("end\n")
-    inpfile_F.write("%tddft\n")
-    inpfile_F.write("tda true\n")
-    inpfile_F.write("nroots "+str(numionstates-1)+'\n')
-    inpfile_F.write("maxdim 10\n")
-    inpfile_F.write("end\n")
-    inpfile_F.write("\n")
-    inpfile_F.write("*xyzfile"+' '+str(stateFcharge)+' '+str(stateFmult)+' '+xyzfile)
-    inpfile_F.write("\n")
-    inpfile_F.close()
-    print(bcolors.OKBLUE,"ORCA Inputfiles created:",bcolors.ENDC)
-    print(bcolors.OKBLUE,"State_init.inp",bcolors.ENDC)
-    print(bcolors.OKBLUE,"State_final.inp",bcolors.ENDC)
 
-#Write logfile for script for 2nd run
-def write_logfile():
-    with open("PEScalclogfile.py", 'w') as logfile:
-        logfile.write("xyzfile="+"\'"+str(xyzfile)+"\'\n")
-        logfile.write("stateIcharge="+str(stateIcharge)+"\n")
-        logfile.write("stateImult="+str(stateImult)+"\n")
-        logfile.write("stateFcharge="+str(stateFcharge)+"\n")
-        logfile.write("stateFmult="+str(stateFmult)+"\n")
-        logfile.write("numionstates="+str(numionstates)+"\n")
 
 #Calculate nuclear charge from XYZ-file
 def nuccharge(file):
