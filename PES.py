@@ -738,7 +738,8 @@ def PhotoIonSpectrum(theory=None, fragment=None, InitialState_charge=None, Initi
         theory.charge=stateIcharge
         theory.mult=stateImult
         theory.extraline=theory.extraline+"%method\n"+"frozencore FC_NONE\n"+"end\n"
-        Init_State1_energy = theory.run()
+        #Init_State1_energy = theory.run(current_coords=fragment.coords, elems=fragment.elems)
+        Init_State1_energy = Singlepoint(fragment=fragment, theory=theory
         # Initial state orbitals for MO-DOSplot
         occorbsI_alpha, occorbsI_beta, hftyp_I = orbitalgrab(theory.inputfilenam)
 
@@ -748,7 +749,9 @@ def PhotoIonSpectrum(theory=None, fragment=None, InitialState_charge=None, Initi
         #Adding TDDFT block to inputfile
         tddftstring="%tddft\n"+"tda true\n"+"nroots " + str(numionstates - 1) + '\n'+"maxdim 15\n"+"end\n"+"\n"
         theory.extraline=theory.extraline+tddftstring
-        Final_State1_energy = theory.run()
+        #Final_State1_energy = theory.run( current_coords=fragment.coords, elems=fragment.elems)
+        Final_State1_energy = Singlepoint(fragment=fragment, theory=theory)
+
         #Grab TDDFT states from ORCA file:
         tddftstates = tddftgrab(theory.inputfilename)
         # Final state orbitals for MO-DOSplot
