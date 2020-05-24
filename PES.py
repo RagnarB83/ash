@@ -865,12 +865,12 @@ def PhotoIonSpectrum(theory=None, fragment=None, InitialState_charge=None, Initi
             print(bcolors.WARNING, "dets_final file already exists in dir! Using (is this what you want?!)", bcolors.ENDC)
         else:
             # Final state
-            det_final = get_dets_from_cis(outfile_final, cisfile_final, restricted_F, mults, stateFcharge, stateFmult,
+            det_final = get_dets_from_cis("Final_State1.out", cisfile_final, restricted_F, mults, stateFcharge, stateFmult,
                                           totnuccharge, statestoextract, statestoskip, no_tda, frozencore, wfthres)
             # Now doing initial state. Redefine necessary here.
             statestoextract = [1, numionstates]
             mults = [1]
-            det_init = get_dets_from_cis(outfile_init, "dummy", restricted_I, mults, stateIcharge, stateImult, totnuccharge,
+            det_init = get_dets_from_cis("Init_State1.out", "dummy", restricted_I, mults, stateIcharge, stateImult, totnuccharge,
                                          statestoextract, statestoskip, no_tda, frozencore, wfthres)
             # Printing to file
             for blockname, string in det_init.items():
