@@ -755,7 +755,7 @@ def PhotoIonSpectrum(theory=None, fragment=None, InitialState_charge=None, Initi
         Final_State1_energy = Singlepoint(fragment=fragment, theory=theory)
 
         #Grab TDDFT states from ORCA file:
-        tddftstates = tddftgrab(theory.inputfilename)
+        TDtransitionenergies = tddftgrab(theory.inputfilename+'.out')
         # Final state orbitals for MO-DOSplot
         occorbsF_alpha, occorbsF_beta, hftyp_F = orbitalgrab(theory.inputfilename+'.out')
     else:
