@@ -703,7 +703,7 @@ def Gaussian(x, mu, strength, sigma):
 # Calculate PES spectra using the Dyson orbital approach.
 #path_to_wfoverlap='/home/bjornsson/sharc-master/bin/wfoverlap.x'
 
-def PhotoElectronSpectrum(theory=None, fragment=None, InitialState_charge=None, Initialstate_mult=None,
+def PhotoIonSpectrum(theory=None, fragment=None, InitialState_charge=None, Initialstate_mult=None,
                           Ionizedstate_charge=None, Ionizedstate_mult=None, numstates=50, numcores=1, path_wfoverlap=None ):
     print(bcolors.OKGREEN,"PES-calc: Calculated PES spectra via TDDFT and Dyson-norm approach",bcolors.ENDC)
     if Ionstatemult==None:
