@@ -783,9 +783,9 @@ def PhotoIonSpectrum(theory=None, fragment=None, InitialState_charge=None, Initi
     IPs = []
     # Adding GS-IP to IP-list and GS ion to ionstate
     IPs.append(GSIP);
-    ionstates.append(final_E)
+    ionstates.append(Final_State1_energy)
     for e in TDtransitionenergies:
-        ionstates.append(e / constants.hartoeV + final_E)
+        ionstates.append(e / constants.hartoeV + Final_State1_energy)
         IPs.append((e / constants.hartoeV + Final_State1_energy - Init_State1_energy) * constants.hartoev)
     print("")
     print(bcolors.OKBLUE, "Final IPs (eV):\n", bcolors.ENDC, IPs)
