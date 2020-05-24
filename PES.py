@@ -1025,6 +1025,8 @@ def PhotoIonSpectrum(theory=None, fragment=None, InitialState_charge=None, Initi
     # TDDFT-STATES
     ###############
     ax.plot(x, tddftDOS, 'C3', label='TDDFT')
+    print(len(IPs))
+    print(len(dysonnorms))
     ax.stem(IPs, dysonnorms, label='TDDFT', markerfmt=' ', basefmt=' ', linefmt='C3-')
     plt.xlabel('eV')
     plt.ylabel('Intensity')
