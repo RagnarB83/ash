@@ -727,7 +727,6 @@ def PhotoIonSpectrum(theory=None, fragment=None, InitialState_charge=None, Initi
     print("")
     print(bcolors.OKBLUE,"Calculated ion states:", numstates,bcolors.ENDC)
     print(bcolors.OKBLUE,"TDDFT-calculated ion states:", numionstates,bcolors.ENDC)
-    print("CPU Cores available: ", numcores)
     print("")
 
     #Create inputfiles or just run
