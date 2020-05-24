@@ -532,12 +532,12 @@ def format_ci_vectors(ci_vectors):
     return string
 
 #Run wfoverlap program
-def run_wfoverlap(wfoverlapinput,path_to_wfoverlap):
+def run_wfoverlap(wfoverlapinput,path_wfoverlap):
     wfoverlapfilefile = open('wfovl.inp', 'w')
     for l in wfoverlapinput:
         wfoverlapfilefile.write(l)
     wfoverlapfilefile.close()
-    wfcommand='%s -m 2000 -f wfovl.inp' % (path_to_wfoverlap)
+    wfcommand='%s -m 2000 -f wfovl.inp' % (path_wfoverlap)
     print("Running wfoverlap program:")
     print("may take a while...")
     print(wfcommand)
@@ -703,7 +703,7 @@ def Gaussian(x, mu, strength, sigma):
 
 
 # Calculate PES spectra using the Dyson orbital approach.
-#path_to_wfoverlap='/home/bjornsson/sharc-master/bin/wfoverlap.x'
+#path_wfoverlap='/home/bjornsson/sharc-master/bin/wfoverlap.x'
 
 def PhotoIonSpectrum(theory=None, fragment=None, InitialState_charge=None, Initialstate_mult=None,
                           Ionizedstate_charge=None, Ionizedstate_mult=None, numstates=50, path_wfoverlap=None ):
@@ -905,7 +905,7 @@ def PhotoIonSpectrum(theory=None, fragment=None, InitialState_charge=None, Initi
             print(bcolors.WARNING, "wfovl.out file exists in dir!",bcolors.ENDC)
             print(bcolors.WARNING,"Using Dyson norms from file (is this what you want?!)",bcolors.ENDC)
         else:
-            run_wfoverlap(wfoverlapinput,path_to_wfoverlap)
+            run_wfoverlap(wfoverlapinput,path_wfoverlap)
 
         #This grabs Dyson norms from wfovl.out file
         dysonnorms=grabDysonnorms()
