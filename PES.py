@@ -786,7 +786,7 @@ def PhotoIonSpectrum(theory=None, fragment=None, InitialState_charge=None, Initi
     ionstates.append(Final_State1_energy)
     for e in TDtransitionenergies:
         ionstates.append(e / constants.hartoeV + Final_State1_energy)
-        IPs.append((e / constants.hartoeV + Final_State1_energy - Init_State1_energy) * constants.hartoev)
+        IPs.append((e / constants.hartoeV + Final_State1_energy - Init_State1_energy) * constants.hartoeV)
     print("")
     print(bcolors.OKBLUE, "Final IPs (eV):\n", bcolors.ENDC, IPs)
     print(bcolors.OKBLUE, "Ion-state energies (au):\n", bcolors.ENDC, ionstates)
