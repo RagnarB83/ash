@@ -706,8 +706,8 @@ def Gaussian(x, mu, strength, sigma):
 def PhotoIonSpectrum(theory=None, fragment=None, InitialState_charge=None, Initialstate_mult=None,
                           Ionizedstate_charge=None, Ionizedstate_mult=None, numstates=50, numcores=1, path_wfoverlap=None ):
     print(bcolors.OKGREEN,"PES-calc: Calculated PES spectra via TDDFT and Dyson-norm approach",bcolors.ENDC)
-    if Ionstatemult==None:
-        print("Provide spin multiplicity of ionized state to PhotoElectronSpectrum: e.g. Ionstatemult=2 ")
+    if InitialState_charge is None or Initialstate_mult is None or Ionizedstate_charge is None or Ionizedstate_mult is None:
+        print("Provide charge and spin multiplicity of initial and ionized state")
         exit(1)
 
     #Getting charge/mult of states from function argument
