@@ -763,7 +763,7 @@ def PhotoIonSpectrum(theory=None, fragment=None, InitialState_charge=None, Initi
         exit(1)
 
     #1st vertical IP via deltaSCF=
-    GSIP=(Final_State1_energy-Init_State1_energy)*constants.hartoev
+    GSIP=(Final_State1_energy-Init_State1_energy)*constants.hartoeV
     print(bcolors.OKBLUE,"Initial State SCF energy:", Init_State1_energy, "au",bcolors.ENDC)
     print(bcolors.OKBLUE,"Initial Final State SCF energy:", Final_State1_energy, "au", bcolors.ENDC)
     print(bcolors.OKBLUE,"1st vertical IP:", GSIP,bcolors.ENDC)
@@ -785,8 +785,8 @@ def PhotoIonSpectrum(theory=None, fragment=None, InitialState_charge=None, Initi
     IPs.append(GSIP);
     ionstates.append(final_E)
     for e in TDtransitionenergies:
-        ionstates.append(e / hartoev + final_E)
-        IPs.append((e / hartoev + final_E - init_E) * hartoev)
+        ionstates.append(e / constants.hartoeV + final_E)
+        IPs.append((e / constants.hartoeV + final_E - init_E) * constants.hartoev)
     print("")
     print(bcolors.OKBLUE, "Final IPs (eV):\n", bcolors.ENDC, IPs)
     print(bcolors.OKBLUE, "Ion-state energies (au):\n", bcolors.ENDC, ionstates)
