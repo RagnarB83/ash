@@ -705,7 +705,7 @@ def Gaussian(x, mu, strength, sigma):
 #path_to_wfoverlap='/home/bjornsson/sharc-master/bin/wfoverlap.x'
 
 def PhotoIonSpectrum(theory=None, fragment=None, InitialState_charge=None, Initialstate_mult=None,
-                          Ionizedstate_charge=None, Ionizedstate_mult=None, numstates=50, numcores=1, path_wfoverlap=None ):
+                          Ionizedstate_charge=None, Ionizedstate_mult=None, numstates=50, path_wfoverlap=None ):
     print(bcolors.OKGREEN,"PES-calc: Calculating PES spectra via TDDFT and Dyson-norm approach",bcolors.ENDC)
     if InitialState_charge is None or Initialstate_mult is None or Ionizedstate_charge is None or Ionizedstate_mult is None:
         print("Provide charge and spin multiplicity of initial and ionized state")
@@ -763,9 +763,9 @@ def PhotoIonSpectrum(theory=None, fragment=None, InitialState_charge=None, Initi
         exit(1)
 
     #1st vertical IP via deltaSCF=
-    GSIP=(final_E-init_E)*hartoev
-    print(bcolors.OKBLUE,"Initial State SCF energy:", init_E, "au",bcolors.ENDC)
-    print(bcolors.OKBLUE,"Initial Final State SCF energy:", final_E, "au", bcolors.ENDC)
+    GSIP=(Final_State1_energy-Init_State1_energy)*hartoev
+    print(bcolors.OKBLUE,"Initial State SCF energy:", Init_State1_energy, "au",bcolors.ENDC)
+    print(bcolors.OKBLUE,"Initial Final State SCF energy:", Final_State1_energy, "au", bcolors.ENDC)
     print(bcolors.OKBLUE,"1st vertical IP:", GSIP,bcolors.ENDC)
     print("")
 
@@ -777,7 +777,6 @@ def PhotoIonSpectrum(theory=None, fragment=None, InitialState_charge=None, Initi
     print("")
 
     # TDDFT states
-    TDtransitionenergies = tddftgrab(outfile_final)
     print(bcolors.OKBLUE, "TDDFT transition energies (eV):\n", bcolors.ENDC, TDtransitionenergies)
 
     ionstates = [];
