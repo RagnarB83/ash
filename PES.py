@@ -711,6 +711,7 @@ def PhotoIonSpectrum(theory=None, fragment=None, InitialState_charge=None, Initi
         print("Provide charge and spin multiplicity of initial and ionized state")
         exit(1)
 
+    numionstates=numstates-1
     #Getting charge/mult of states from function argument
     stateIcharge=InitialState_charge
     stateImult=Initialstate_mult
@@ -725,7 +726,7 @@ def PhotoIonSpectrum(theory=None, fragment=None, InitialState_charge=None, Initi
     print(bcolors.OKBLUE,"StateF: Charge=", stateFcharge, "Multiplicity", stateFmult,bcolors.ENDC)
     print("")
     print(bcolors.OKBLUE,"Calculated ion states:", numstates,bcolors.ENDC)
-    print(bcolors.OKBLUE,"TDDFT-calculated ion states:", numstates-1,bcolors.ENDC)
+    print(bcolors.OKBLUE,"TDDFT-calculated ion states:", numionstates,bcolors.ENDC)
     print("CPU Cores available: ", numcores)
     print("")
 
@@ -748,7 +749,7 @@ def PhotoIonSpectrum(theory=None, fragment=None, InitialState_charge=None, Initi
         theory.charge=stateFcharge
         theory.mult=stateFmult
         #Adding TDDFT block to inputfile
-        tddftstring="%tddft\n"+"tda true\n"+"nroots " + str(numionstates - 1) + '\n'+"maxdim 15\n"+"end\n"+"\n"
+        tddftstring="%tddft\n"+"tda true\n"+"nroots " + str(numionstates) + '\n'+"maxdim 15\n"+"end\n"+"\n"
         theory.extraline=theory.extraline+tddftstring
         #Final_State1_energy = theory.run( current_coords=fragment.coords, elems=fragment.elems)
         Final_State1_energy = Singlepoint(fragment=fragment, theory=theory)
