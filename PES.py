@@ -14,6 +14,7 @@ import struct
 from functions_ORCA import *
 from functions_general import *
 from ash import *
+import constants
 
 class bcolors:
     HEADER = '\033[95m' ; OKBLUE = '\033[94m'; OKGREEN = '\033[92m'; WARNING = '\033[93m'; FAIL = '\033[91m'; ENDC = '\033[0m'; BOLD = '\033[1m'; UNDERLINE = '\033[4m'
@@ -762,7 +763,7 @@ def PhotoIonSpectrum(theory=None, fragment=None, InitialState_charge=None, Initi
         exit(1)
 
     #1st vertical IP via deltaSCF=
-    GSIP=(Final_State1_energy-Init_State1_energy)*hartoev
+    GSIP=(Final_State1_energy-Init_State1_energy)*constants.hartoev
     print(bcolors.OKBLUE,"Initial State SCF energy:", Init_State1_energy, "au",bcolors.ENDC)
     print(bcolors.OKBLUE,"Initial Final State SCF energy:", Final_State1_energy, "au", bcolors.ENDC)
     print(bcolors.OKBLUE,"1st vertical IP:", GSIP,bcolors.ENDC)
