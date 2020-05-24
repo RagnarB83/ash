@@ -743,8 +743,8 @@ def PhotoIonSpectrum(theory=None, fragment=None, InitialState_charge=None, Initi
         #Init_State1_energy = theory.run(current_coords=fragment.coords, elems=fragment.elems)
         Init_State1_energy = Singlepoint(fragment=fragment, theory=theory)
         #Saveing GBW file
-        shutil.copyfile(self.inputfilename + '.gbw', './' + 'Init_State1' + '.gbw')
-        shutil.copyfile(self.inputfilename + '.out', './' + 'Init_State1' + '.out')
+        shutil.copyfile(theory.inputfilename + '.gbw', './' + 'Init_State1' + '.gbw')
+        shutil.copyfile(theory.inputfilename + '.out', './' + 'Init_State1' + '.out')
         # Initial state orbitals for MO-DOSplot
         occorbsI_alpha, occorbsI_beta, hftyp_I = orbitalgrab(theory.inputfilename+'.out')
 
@@ -757,9 +757,9 @@ def PhotoIonSpectrum(theory=None, fragment=None, InitialState_charge=None, Initi
         #Final_State1_energy = theory.run( current_coords=fragment.coords, elems=fragment.elems)
         Final_State1_energy = Singlepoint(fragment=fragment, theory=theory)
         #Saveing GBW and CIS file
-        shutil.copyfile(self.inputfilename + '.gbw', './' + 'Final_State1' + '.gbw')
-        shutil.copyfile(self.inputfilename + '.cis', './' + 'Final_State1' + '.cis')
-        shutil.copyfile(self.inputfilename + '.out', './' + 'Final_State1' + '.out')
+        shutil.copyfile(theory.inputfilename + '.gbw', './' + 'Final_State1' + '.gbw')
+        shutil.copyfile(theory.inputfilename + '.cis', './' + 'Final_State1' + '.cis')
+        shutil.copyfile(theory.inputfilename + '.out', './' + 'Final_State1' + '.out')
         #Grab TDDFT states from ORCA file:
         TDtransitionenergies = tddftgrab(theory.inputfilename+'.out')
         # Final state orbitals for MO-DOSplot
