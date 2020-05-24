@@ -371,26 +371,26 @@ def get_dets_from_cis(logfile,cisfilename,restr,mults,gscharge,gsmult,totnucchar
         for istate in range(nstates_to_extract[mult-1]):
             CCfile.read(40)
             dets={}
-            print("dets:", dets)
-            print("header:", header)
-            print("--------")
-            print("range(header[0],header[1]+1):", range(header[0],header[1]+1))
+            #print("dets:", dets)
+            #print("header:", header)
+            #print("--------")
+            #print("range(header[0],header[1]+1):", range(header[0],header[1]+1))
             for iocc in range(header[0],header[1]+1):
-              print("--------")
-              print("range(header[2],header[3]+1):", range(header[2],header[3]+1))
+              #print("--------")
+              #print("range(header[2],header[3]+1):", range(header[2],header[3]+1))
               for ivirt in range(header[2],header[3]+1):
-                print("istate, iocc, ivirt", istate, iocc, ivirt)
+                #print("istate, iocc, ivirt", istate, iocc, ivirt)
                 #print("here1")
                 dets[ (iocc,ivirt,1) ]=struct.unpack('d', CCfile.read(8))[0]
-            print("1 case done!!")
+            #print("1 case done!!")
             pprint.pprint(dets)
             if not restr:
-              print("here2")
-              print("range(header[4],header[5]+1):", range(header[4],header[5]+1))
+              #print("here2")
+              #print("range(header[4],header[5]+1):", range(header[4],header[5]+1))
               for iocc in range(header[4],header[5]+1):
-                print("range(header[6],header[7]+1):", range(header[6],header[7]+1))
+                #print("range(header[6],header[7]+1):", range(header[6],header[7]+1))
                 for ivirt in range(header[6],header[7]+1):
-                  print("istate, iocc, ivirt", istate, iocc, ivirt)
+                  #print("istate, iocc, ivirt", istate, iocc, ivirt)
                   #print("struct.unpack('d', CCfile.read(8))[0]:", struct.unpack('d', CCfile.read(8))[0])
                   dets[ (iocc,ivirt,2) ]=struct.unpack('d', CCfile.read(8))[0]
             if no_tda:
@@ -402,7 +402,7 @@ def get_dets_from_cis(logfile,cisfilename,restr,mults,gscharge,gsmult,totnucchar
               if not restr:
                 for iocc in range(header[4],header[5]+1):
                   for ivirt in range(header[6],header[7]+1):
-                    print("rb here...")
+                    #print("rb here...")
                     dets[ (iocc,ivirt,2) ]+=struct.unpack('d', CCfile.read(8))[0]
                     dets[ (iocc,ivirt,2) ]/=2.
 
