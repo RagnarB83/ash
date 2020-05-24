@@ -742,6 +742,9 @@ def PhotoIonSpectrum(theory=None, fragment=None, InitialState_charge=None, Initi
         theory.extraline=theory.extraline+"%method\n"+"frozencore FC_NONE\n"+"end\n"
         #Init_State1_energy = theory.run(current_coords=fragment.coords, elems=fragment.elems)
         Init_State1_energy = Singlepoint(fragment=fragment, theory=theory)
+        #Saveing GBW file
+        shutil.copyfile(self.inputfilename + '.gbw', './' + 'Init_State1' + '.gbw')
+        shutil.copyfile(self.inputfilename + '.out', './' + 'Init_State1' + '.out')
         # Initial state orbitals for MO-DOSplot
         occorbsI_alpha, occorbsI_beta, hftyp_I = orbitalgrab(theory.inputfilename+'.out')
 
@@ -753,7 +756,10 @@ def PhotoIonSpectrum(theory=None, fragment=None, InitialState_charge=None, Initi
         theory.extraline=theory.extraline+tddftstring
         #Final_State1_energy = theory.run( current_coords=fragment.coords, elems=fragment.elems)
         Final_State1_energy = Singlepoint(fragment=fragment, theory=theory)
-
+        #Saveing GBW and CIS file
+        shutil.copyfile(self.inputfilename + '.gbw', './' + 'Final_State1' + '.gbw')
+        shutil.copyfile(self.inputfilename + '.cis', './' + 'Final_State1' + '.cis')
+        shutil.copyfile(self.inputfilename + '.out', './' + 'Final_State1' + '.out')
         #Grab TDDFT states from ORCA file:
         TDtransitionenergies = tddftgrab(theory.inputfilename+'.out')
         # Final state orbitals for MO-DOSplot
@@ -795,112 +801,119 @@ def PhotoIonSpectrum(theory=None, fragment=None, InitialState_charge=None, Initi
     ###########################################
     # Dyson orbitals for TDDFT STATES
     ###########################################
+    if theory.__class__.__name__ == "ORCATheory":
+        # Todo: Need to preserve this one as it has been deleted
+        gbwfile_init = glob.glob('Init_State1.gbw')[0]
+        gbwfile_final = glob.glob('Final_State1.gbw')[0]
+        cisfile_final = glob.glob('Final_State1.cis')[0]
 
-    print(bcolors.OKGREEN, "Grabbing AO matrix, MO coefficients and excited states from ORCA GBW file and CIS file",
+        print(bcolors.OKGREEN, "Grabbing AO matrix, MO coefficients and excited states from ORCA GBW file and CIS file",
           bcolors.ENDC)
 
-    print(bcolors.OKGREEN, "Grabbing AO matrix, MO coefficients and excited states from ORCA GBW file and CIS file",
+        print(bcolors.OKGREEN, "Grabbing AO matrix, MO coefficients and excited states from ORCA GBW file and CIS file",
           bcolors.ENDC)
-    print("")
-    # Get AO matrix from init state calculation
-    saveAOmatrix(gbwfile_init)
-    # need to specify Initial/Final states are restricted or not.
-    if hftyp_I == "UHF":
-        restricted_I = False
-    elif hftyp_I == "RHF":
-        restricted_I = True
-    else:
-        print("hmmm")
-        exit()
-    if hftyp_F == "UHF":
-        restricted_F = False
-    elif hftyp_F == "RHF":
-        restricted_F = True
-    else:
-        print("hmmm")
-        exit()
+        print("")
+        # Get AO matrix from init state calculation
+        saveAOmatrix(gbwfile_init)
+        # need to specify Initial/Final states are restricted or not.
+        if hftyp_I == "UHF":
+            restricted_I = False
+        elif hftyp_I == "RHF":
+            restricted_I = True
+        else:
+            print("hmmm")
+            exit()
+        if hftyp_F == "UHF":
+            restricted_F = False
+        elif hftyp_F == "RHF":
+            restricted_F = True
+        else:
+            print("hmmm")
+            exit()
 
-    # Specify frozencore or not.
-    frozencore = 0
-    # Grab MO coefficients and write to files mos_init and mos_final
+        # Specify frozencore or not.
+        frozencore = 0
+        # Grab MO coefficients and write to files mos_init and mos_final
 
-    if os.path.isfile('./mos_init') == True:
-        print(bcolors.WARNING, "mos_init file already exists in dir! Using (is this what you want?!)", bcolors.ENDC)
-    else:
-        mos_init = get_MO_from_gbw(gbwfile_init, restricted_I, frozencore)
-        writestringtofile(mos_init, "mos_init")
-    if os.path.isfile('./mos_final') == True:
-        print(bcolors.WARNING, "mos_final file exists in dir! Using (is this what you want?!)", bcolors.ENDC)
-    else:
-        mos_final = get_MO_from_gbw(gbwfile_final, restricted_F, frozencore)
-        writestringtofile(mos_final, "mos_final")
+        if os.path.isfile('./mos_init') == True:
+            print(bcolors.WARNING, "mos_init file already exists in dir! Using (is this what you want?!)", bcolors.ENDC)
+        else:
+            mos_init = get_MO_from_gbw(gbwfile_init, restricted_I, frozencore)
+            writestringtofile(mos_init, "mos_init")
+        if os.path.isfile('./mos_final') == True:
+            print(bcolors.WARNING, "mos_final file exists in dir! Using (is this what you want?!)", bcolors.ENDC)
+        else:
+            mos_final = get_MO_from_gbw(gbwfile_final, restricted_F, frozencore)
+            writestringtofile(mos_final, "mos_final")
 
-    # Create determinant file for ionized TDDFT states
+        # Create determinant file for ionized TDDFT states
 
-    # Needs Outputfile, CIS-file, restricted-option, XXX, GS multiplicity, number of ion states and states to skip
-    # States per Initial and Final options
-    statestoextract = [1, numionstates]
-    statestoskip = [0, 0]
-    # Number of multiplicity blocks I think. Should be 2 in general, 1 for GS and 1 for ionized
-    mults = [2]
-    # Boolean for whether no_tda is on or not
-    no_tda = False
-    # Threshold for WF. SHARC set it to 2.0
-    wfthres = 2.0
-    # Final state.
-
-    # Skip slow determinant file creation if file already exists
-    if os.path.isfile('./dets_final') == True:
-        print(bcolors.WARNING, "dets_final file already exists in dir! Using (is this what you want?!)", bcolors.ENDC)
-    else:
-        # Final state
-        det_final = get_dets_from_cis(outfile_final, cisfile_final, restricted_F, mults, stateFcharge, stateFmult,
-                                      totnuccharge, statestoextract, statestoskip, no_tda, frozencore, wfthres)
-        # Now doing initial state. Redefine necessary here.
+        # Needs Outputfile, CIS-file, restricted-option, XXX, GS multiplicity, number of ion states and states to skip
+        # States per Initial and Final options
         statestoextract = [1, numionstates]
-        mults = [1]
-        det_init = get_dets_from_cis(outfile_init, "dummy", restricted_I, mults, stateIcharge, stateImult, totnuccharge,
-                                     statestoextract, statestoskip, no_tda, frozencore, wfthres)
-        # Printing to file
-        for blockname, string in det_init.items():
-            writestringtofile(string, "dets_init")
-        for blockname, string in det_final.items():
-            writestringtofile(string, "dets_final")
-        print(bcolors.OKGREEN, "AO matrix, MO coefficients and excited state determinants have been written to files:",
-              bcolors.ENDC)
-        print(bcolors.OKGREEN, "AO_overl, mos_init, mos_final, dets.1, dets.2", bcolors.ENDC)
+        statestoskip = [0, 0]
+        # Number of multiplicity blocks I think. Should be 2 in general, 1 for GS and 1 for ionized
+        mults = [2]
+        # Boolean for whether no_tda is on or not
+        no_tda = False
+        # Threshold for WF. SHARC set it to 2.0
+        wfthres = 2.0
+        # Final state.
+
+        # Skip slow determinant file creation if file already exists
+        if os.path.isfile('./dets_final') == True:
+            print(bcolors.WARNING, "dets_final file already exists in dir! Using (is this what you want?!)", bcolors.ENDC)
+        else:
+            # Final state
+            det_final = get_dets_from_cis(outfile_final, cisfile_final, restricted_F, mults, stateFcharge, stateFmult,
+                                          totnuccharge, statestoextract, statestoskip, no_tda, frozencore, wfthres)
+            # Now doing initial state. Redefine necessary here.
+            statestoextract = [1, numionstates]
+            mults = [1]
+            det_init = get_dets_from_cis(outfile_init, "dummy", restricted_I, mults, stateIcharge, stateImult, totnuccharge,
+                                         statestoextract, statestoskip, no_tda, frozencore, wfthres)
+            # Printing to file
+            for blockname, string in det_init.items():
+                writestringtofile(string, "dets_init")
+            for blockname, string in det_final.items():
+                writestringtofile(string, "dets_final")
+            print(bcolors.OKGREEN, "AO matrix, MO coefficients and excited state determinants have been written to files:",
+                  bcolors.ENDC)
+            print(bcolors.OKGREEN, "AO_overl, mos_init, mos_final, dets.1, dets.2", bcolors.ENDC)
 
 
-    ###################
-    # WFOverlap calculation
-    # Needs files: AO_overl, mos_init, mos_final, dets_final, dets_init
-    wfoverlapinput="""
-    mix_aoovl=AO_overl
-    a_mo=mos_final
-    b_mo=mos_init
-    a_det=dets_final
-    b_det=dets_init
-    a_mo_read=0
-    b_mo_read=0
-    ao_read=0
-    moprint=1
-    """
+        ###################
+        # WFOverlap calculation
+        # Needs files: AO_overl, mos_init, mos_final, dets_final, dets_init
+        wfoverlapinput="""
+        mix_aoovl=AO_overl
+        a_mo=mos_final
+        b_mo=mos_init
+        a_det=dets_final
+        b_det=dets_init
+        a_mo_read=0
+        b_mo_read=0
+        ao_read=0
+        moprint=1
+        """
 
-    # Run Wfoverlap to calculate Dyson norms. Will write to wfovl.out.  Will take a while for big systems.
-    print("")
-    if os.path.isfile('./wfovl.out')==True:
-        print(bcolors.WARNING, "wfovl.out file exists in dir!",bcolors.ENDC)
-        print(bcolors.WARNING,"Using Dyson norms from file (is this what you want?!)",bcolors.ENDC)
+        # Run Wfoverlap to calculate Dyson norms. Will write to wfovl.out.  Will take a while for big systems.
+        print("")
+        if os.path.isfile('./wfovl.out')==True:
+            print(bcolors.WARNING, "wfovl.out file exists in dir!",bcolors.ENDC)
+            print(bcolors.WARNING,"Using Dyson norms from file (is this what you want?!)",bcolors.ENDC)
+        else:
+            run_wfoverlap(wfoverlapinput,path_to_wfoverlap)
+
+        #This grabs Dyson norms from wfovl.out file
+        dysonnorms=grabDysonnorms()
+        print("")
+        print(bcolors.OKBLUE,"Dyson norms:",bcolors.ENDC)
+        print(dysonnorms)
+        print("")
     else:
-        run_wfoverlap(wfoverlapinput,path_to_wfoverlap)
-
-    #This grabs Dyson norms from wfovl.out file
-    dysonnorms=grabDysonnorms()
-    print("")
-    print(bcolors.OKBLUE,"Dyson norms:",bcolors.ENDC)
-    print(dysonnorms)
-    print("")
-
+        print("Unknown option")
+        exit(1)
     #########################
     # Plot spectra.
     ########################
