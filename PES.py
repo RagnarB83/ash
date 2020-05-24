@@ -719,6 +719,8 @@ def PhotoIonSpectrum(theory=None, fragment=None, InitialState_charge=None, Initi
     stateFcharge=Ionizedstate_charge
     stateFmult=Ionizedstate_mult
 
+    totnuccharge=fragment.nuccharge
+
     blankline()
     print("Coordinates: ")
     fragment.print_coords()
@@ -914,6 +916,7 @@ def PhotoIonSpectrum(theory=None, fragment=None, InitialState_charge=None, Initi
     else:
         print("Unknown option")
         exit(1)
+
     #########################
     # Plot spectra.
     ########################
