@@ -706,7 +706,7 @@ def Gaussian(x, mu, strength, sigma):
 
 def PhotoIonSpectrum(theory=None, fragment=None, InitialState_charge=None, Initialstate_mult=None,
                           Ionizedstate_charge=None, Ionizedstate_mult=None, numstates=50, numcores=1, path_wfoverlap=None ):
-    print(bcolors.OKGREEN,"PES-calc: Calculated PES spectra via TDDFT and Dyson-norm approach",bcolors.ENDC)
+    print(bcolors.OKGREEN,"PES-calc: Calculating PES spectra via TDDFT and Dyson-norm approach",bcolors.ENDC)
     if InitialState_charge is None or Initialstate_mult is None or Ionizedstate_charge is None or Ionizedstate_mult is None:
         print("Provide charge and spin multiplicity of initial and ionized state")
         exit(1)
@@ -717,10 +717,10 @@ def PhotoIonSpectrum(theory=None, fragment=None, InitialState_charge=None, Initi
     stateFcharge=Ionizedstate_charge
     stateFmult=Ionizedstate_mult
 
-    print("")
+    blankline()
     print("Coordinates: ")
     fragment.print_coords()
-
+    blankline()
     print(bcolors.OKBLUE,"StateI: Charge=", stateIcharge, "Multiplicity", stateImult,bcolors.ENDC)
     print(bcolors.OKBLUE,"StateF: Charge=", stateFcharge, "Multiplicity", stateFmult,bcolors.ENDC)
     print("")
@@ -742,7 +742,7 @@ def PhotoIonSpectrum(theory=None, fragment=None, InitialState_charge=None, Initi
         #Init_State1_energy = theory.run(current_coords=fragment.coords, elems=fragment.elems)
         Init_State1_energy = Singlepoint(fragment=fragment, theory=theory)
         # Initial state orbitals for MO-DOSplot
-        occorbsI_alpha, occorbsI_beta, hftyp_I = orbitalgrab(theory.inputfilename)
+        occorbsI_alpha, occorbsI_beta, hftyp_I = orbitalgrab(theory.inputfilename+'.out')
 
         #Final-state TDDFT calc
         theory.charge=stateFcharge
@@ -756,7 +756,7 @@ def PhotoIonSpectrum(theory=None, fragment=None, InitialState_charge=None, Initi
         #Grab TDDFT states from ORCA file:
         tddftstates = tddftgrab(theory.inputfilename)
         # Final state orbitals for MO-DOSplot
-        occorbsF_alpha, occorbsF_beta, hftyp_F = orbitalgrab(theory.inputfilename)
+        occorbsF_alpha, occorbsF_beta, hftyp_F = orbitalgrab(theory.inputfilename+'.out')
     else:
         print("Theory not supported for PhotoElectronSpectrum")
         exit(1)
