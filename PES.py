@@ -706,13 +706,12 @@ def Gaussian(x, mu, strength, sigma):
 #path_wfoverlap='/home/bjornsson/sharc-master/bin/wfoverlap.x'
 
 def PhotoIonSpectrum(theory=None, fragment=None, InitialState_charge=None, Initialstate_mult=None,
-                          Ionizedstate_charge=None, Ionizedstate_mult=None, numstates=50, path_wfoverlap=None ):
+                          Ionizedstate_charge=None, Ionizedstate_mult=None, numionstates=50, path_wfoverlap=None ):
     print(bcolors.OKGREEN,"PES-calc: Calculating PES spectra via TDDFT and Dyson-norm approach",bcolors.ENDC)
     if InitialState_charge is None or Initialstate_mult is None or Ionizedstate_charge is None or Ionizedstate_mult is None:
         print("Provide charge and spin multiplicity of initial and ionized state")
         exit(1)
 
-    numionstates=numstates
     #Getting charge/mult of states from function argument
     stateIcharge=InitialState_charge
     stateImult=Initialstate_mult
@@ -728,8 +727,8 @@ def PhotoIonSpectrum(theory=None, fragment=None, InitialState_charge=None, Initi
     print(bcolors.OKBLUE,"StateI: Charge=", stateIcharge, "Multiplicity", stateImult,bcolors.ENDC)
     print(bcolors.OKBLUE,"StateF: Charge=", stateFcharge, "Multiplicity", stateFmult,bcolors.ENDC)
     print("")
-    print(bcolors.OKBLUE,"Calculated ion states:", numstates,bcolors.ENDC)
-    print(bcolors.OKBLUE,"TDDFT-calculated ion states:", numionstates,bcolors.ENDC)
+    print(bcolors.OKBLUE,"Calculated ion states:", numionstates, bcolors.ENDC)
+    print(bcolors.OKBLUE,"TDDFT-calculated ion states:", numionstates-1, bcolors.ENDC)
     print("")
 
     #Create inputfiles or just run
