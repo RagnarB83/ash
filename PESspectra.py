@@ -783,7 +783,7 @@ def PhotoElectronSpectrum(theory=theory, fragment=fragment, InitialState_charge=
         theory.charge=stateFcharge
         theory.mult=stateFmult
         #Adding TDDFT block to inputfile
-        tddftstring="%tddft\n"+"tda true\n"+"nroots " + str(numionstates - 1) + '\n'+inpfile_F.write("maxdim 15\n"+"end\n"+"\n"
+        tddftstring="%tddft\n"+"tda true\n"+"nroots " + str(numionstates - 1) + '\n'+"maxdim 15\n"+"end\n"+"\n"
         theory.extraline=theory.extraline+tddftstring
         Final_State1_energy = theory.run()
         #Grab TDDFT states from ORCA file:
