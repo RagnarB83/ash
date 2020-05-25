@@ -705,11 +705,15 @@ def Gaussian(x, mu, strength, sigma):
 # Calculate PES spectra using the Dyson orbital approach.
 #path_wfoverlap='/home/bjornsson/sharc-master/bin/wfoverlap.x'
 
-def PhotoIonSpectrum(theory=None, fragment=None, InitialState_charge=None, Initialstate_mult=None,
+def PhotoElectronSpectrum(theory=None, fragment=None, InitialState_charge=None, Initialstate_mult=None,
                           Ionizedstate_charge=None, Ionizedstate_mult=None, numionstates=50, path_wfoverlap=None ):
-    print(bcolors.OKGREEN,"PES-calc: Calculating PES spectra via TDDFT and Dyson-norm approach",bcolors.ENDC)
+    blankline()
+    print(bcolors.OKGREEN,"-------------------------------------------------------------------",bcolors.ENDC)
+    print(bcolors.OKGREEN,"PhotoElectronSpectrum: Calculating PES spectra via TDDFT and Dyson-norm approach",bcolors.ENDC)
+    print(bcolors.OKGREEN,"-------------------------------------------------------------------",bcolors.ENDC)
+    blankline()
     if InitialState_charge is None or Initialstate_mult is None or Ionizedstate_charge is None or Ionizedstate_mult is None:
-        print("Provide charge and spin multiplicity of initial and ionized state")
+        print("Provide charge and spin multiplicity of initial and ionized state: InitialState_charge, InitialState_mult, Ionizedstate_charge,Ionizedstate_mult ")
         exit(1)
 
     #Getting charge/mult of states from function argument
@@ -922,7 +926,7 @@ def PhotoIonSpectrum(theory=None, fragment=None, InitialState_charge=None, Initi
         exit(1)
 
 
-def plot_PhotoIonSpectrum(IPs=None, dysonnorms=None, mos_alpha=None, mos_beta=None,
+def plot_PES_Spectrum(IPs=None, dysonnorms=None, mos_alpha=None, mos_beta=None,
                           start=None, finish=None, broadening=0.1, points=10000, hftyp_I=None):
     if hftyp_I is None:
         print("hftyp_I not set (value: RHF or UHF). Assuming hftyp_I=RHF and ignoring beta MOs.")
