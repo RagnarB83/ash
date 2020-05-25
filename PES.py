@@ -1,5 +1,6 @@
 #Module for calculating PhotoElectron/PhotoIonization Spectra
 
+#Todo: Does not work for open-shell yet
 
 #####################################3
 
@@ -920,6 +921,9 @@ def PhotoElectronSpectrum(theory=None, fragment=None, InitialState_charge=None, 
         print(bcolors.OKBLUE,"Dyson norms:",bcolors.ENDC)
         print(dysonnorms)
         print("")
+
+        print("MO-IPs (alpha), eV : ", stk_alpha)
+        print("MO-IPs (beta), eV : ", stk_beta)
 
         return IPs, dysonnorms, stk_alpha,stk_beta
     else:
