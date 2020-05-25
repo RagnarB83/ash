@@ -929,9 +929,16 @@ def PhotoElectronSpectrum(theory=None, fragment=None, InitialState_charge=None, 
 
 def plot_PES_Spectrum(IPs=None, dysonnorms=None, mos_alpha=None, mos_beta=None,
                           start=None, finish=None, broadening=0.1, points=10000, hftyp_I=None):
+
+    blankline()
+    print(bcolors.OKGREEN,"-------------------------------------------------------------------",bcolors.ENDC)
+    print(bcolors.OKGREEN,"plot_PES_Spectrum: Plotting TDDFT-Dyson-norm spectrum and MO-spectrum",bcolors.ENDC)
+    print(bcolors.OKGREEN,"-------------------------------------------------------------------",bcolors.ENDC)
+    blankline()
+
     if hftyp_I is None:
         print("hftyp_I not set (value: RHF or UHF). Assuming hftyp_I=RHF and ignoring beta MOs.")
-
+        blankline()
     if start is None:
         start = IPs[0] - 8
         finish = IPs[-1] + 8
