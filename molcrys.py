@@ -248,6 +248,17 @@ def molcrys(cif_file=None, xtl_file=None, fragmentobjects=[], theory=None, numco
     # Defining QM region. Should be the mainfrag at approx origin
     Centralmainfrag = fragmentobjects[0].clusterfraglist[0]
     print("Centralmainfrag:", Centralmainfrag)
+
+    #Writing Centralmainfrag to disk as Centralmainfrag
+    with open ("Centralmainfrag", 'w') as file:
+        for i in Centralmainfrag:
+            file.write(str(i)+' ')
+
+    #Writing Centralmainfrag to disk as qmatoms
+    with open ("qmatoms", 'w') as file:
+        for i in Centralmainfrag:
+            file.write(str(i)+' ')
+
     blankline()
 
 
@@ -300,6 +311,11 @@ def molcrys(cif_file=None, xtl_file=None, fragmentobjects=[], theory=None, numco
     print(BC.OKMAGENTA,"Molcrys Charge-Iteration done!",BC.END)
     #Printing out Cluster fragment file
     Cluster.print_system('Cluster.ygg')
+
+    #Cleanup
+    #QMMM_SP_calculation.qm_theory.cleanup()
+
+
     return Cluster
 
 
