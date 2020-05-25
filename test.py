@@ -3,7 +3,7 @@ import settings_ash
 settings_ash.init() #initialize
 
 #Test settings
-path="/Users/bjornssonsu/ownCloud/PyQMMM-project/Yggdrasill-testdir"
+path= "//Yggdrasill-testdir"
 os.chdir(path)
 
 exit()

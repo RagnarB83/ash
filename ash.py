@@ -197,7 +197,7 @@ def Singlepoint(fragment=None, theory=None, Grad=False):
         print("Energy: ", energy)
         return energy,gradient
     else:
-        print("Doing single-point Energy+Gradient job")
+        print("Doing single-point Energy job")
         energy = theory.run(current_coords=coords, elems=elems)
         print("Energy: ", energy)
         return energy
@@ -969,7 +969,7 @@ class NonBondedTheory:
         self.sigmaij=np.zeros((self.numatoms, self.numatoms))
         self.epsij=np.zeros((self.numatoms, self.numatoms))
 
-    #Todo: Need to make active-region version of pyarray version here. Need to have and should not be terrible
+    #Todo: Need to make active-region version of pyarray version here.
     def calculate_LJ_pairpotentials(self, qmatoms=None, actatoms=None, frozenatoms=None):
 
         #actatoms
@@ -989,8 +989,8 @@ class NonBondedTheory:
         if qmatoms is None or qmatoms == []:
             qmatoms = []
             print("WARNING: qmatoms list is empty.")
-            print("This is fine if this is a pure MM job")
-            print("If QM/MM job, then qmatoms list should be passed to NonBonded theory")
+            print("This is fine if this is a pure MM job.")
+            print("If QM/MM job, then qmatoms list should be passed to NonBonded theory.")
         print("qmatoms:", qmatoms)
 
 

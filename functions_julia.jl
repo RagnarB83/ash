@@ -20,7 +20,6 @@ end
 #Rewrite connectivity in Julia here
 #Maybe some molcrys cluster-create,delete steps??
 
-
 #Calculate the sigmaij and epsij arrays
 #Key things for speed:
 # i:numatoms, j=i+1:numatoms
