@@ -721,11 +721,7 @@ def PhotoElectronSpectrum(theory=None, fragment=None, InitialState_charge=None, 
     stateImult=Initialstate_mult
     stateFcharge=Ionizedstate_charge
     stateFmult=Ionizedstate_mult
-
     totnuccharge=fragment.nuccharge
-
-    blankline()
-    print("Coordinates: ")
     fragment.print_coords()
     blankline()
     print(bcolors.OKBLUE,"StateI: Charge=", stateIcharge, "Multiplicity", stateImult,bcolors.ENDC)
@@ -746,6 +742,7 @@ def PhotoElectronSpectrum(theory=None, fragment=None, InitialState_charge=None, 
         theory.mult=stateImult
         theory.extraline=theory.extraline+"%method\n"+"frozencore FC_NONE\n"+"end\n"
         #Init_State1_energy = theory.run(current_coords=fragment.coords, elems=fragment.elems)
+        print(bcolors.OKGREEN, "Calculating Initial State SCF.",bcolors.ENDC)
         Init_State1_energy = Singlepoint(fragment=fragment, theory=theory)
         #Saveing GBW file
         shutil.copyfile(theory.inputfilename + '.gbw', './' + 'Init_State1' + '.gbw')
@@ -760,6 +757,8 @@ def PhotoElectronSpectrum(theory=None, fragment=None, InitialState_charge=None, 
         tddftstring="%tddft\n"+"tda true\n"+"nroots " + str(numionstates-1) + '\n'+"maxdim 15\n"+"end\n"+"\n"
         theory.extraline=theory.extraline+tddftstring
         #Final_State1_energy = theory.run( current_coords=fragment.coords, elems=fragment.elems)
+        blankline()
+        print(bcolors.OKGREEN, "Calculating Final State SCF + TDDFT.", bcolors.ENDC)
         Final_State1_energy = Singlepoint(fragment=fragment, theory=theory)
         #Saveing GBW and CIS file
         shutil.copyfile(theory.inputfilename + '.gbw', './' + 'Final_State1' + '.gbw')
@@ -793,10 +792,12 @@ def PhotoElectronSpectrum(theory=None, fragment=None, InitialState_charge=None, 
         exit(1)
 
     #1st vertical IP via deltaSCF=
+    blankline()
+    blankline()
     GSIP=(Final_State1_energy-Init_State1_energy)*constants.hartoeV
     print(bcolors.OKBLUE,"Initial State SCF energy:", Init_State1_energy, "au",bcolors.ENDC)
     print(bcolors.OKBLUE,"Initial Final State SCF energy:", Final_State1_energy, "au", bcolors.ENDC)
-    print(bcolors.OKBLUE,"1st vertical IP:", GSIP,bcolors.ENDC)
+    print(bcolors.OKBLUE,"1st vertical IP (delta-SCF):", GSIP,bcolors.ENDC)
     print("")
 
     #MO IP spectrum:
@@ -818,7 +819,7 @@ def PhotoElectronSpectrum(theory=None, fragment=None, InitialState_charge=None, 
         ionstates.append(e / constants.hartoeV + Final_State1_energy)
         IPs.append((e / constants.hartoeV + Final_State1_energy - Init_State1_energy) * constants.hartoeV)
     print("")
-    print(bcolors.OKBLUE, "Final IPs (eV):\n", bcolors.ENDC, IPs)
+    print(bcolors.OKBLUE, "Final IPs (eV), delta-SCF IP plus TDDFT transition energies:\n", bcolors.ENDC, IPs)
     print(bcolors.OKBLUE, "Ion-state energies (au):\n", bcolors.ENDC, ionstates)
     print("")
 
@@ -1015,17 +1016,17 @@ def plot_PES_Spectrum(IPs=None, dysonnorms=None, mos_alpha=None, mos_beta=None,
     # MO-DOSPLOT for initial state. Here assuming MO energies of initial state to be good approximations for IPs
     fig, ax = plt.subplots()
     ax.plot(x, occDOS_alpha, 'C2', label='alphaMO')
-    ax.stem(stk_alpha2, stk_alpha2height, label='alphaMO', basefmt=" ", markerfmt=' ', linefmt='C2-')
+    ax.stem(stk_alpha2, stk_alpha2height, label='alphaMO', basefmt=" ", markerfmt=' ', linefmt='C2-', use_line_collection=True)
     if hftyp_I == "UHF":
         ax.plot(x, occDOS_beta, 'C2', label='betaMO')
-        ax.stem(stk_beta2, stk_beta2height, label='betaMO', basefmt=" ", markerfmt=' ', linefmt='C2-')
+        ax.stem(stk_beta2, stk_beta2height, label='betaMO', basefmt=" ", markerfmt=' ', linefmt='C2-', use_line_collection=True)
     ########################
 
     ##############
     # TDDFT-STATES
     ###############
     ax.plot(x, tddftDOS, 'C3', label='TDDFT')
-    ax.stem(IPs, dysonnorms, label='TDDFT', markerfmt=' ', basefmt=' ', linefmt='C3-')
+    ax.stem(IPs, dysonnorms, label='TDDFT', markerfmt=' ', basefmt=' ', linefmt='C3-', use_line_collection=True)
     plt.xlabel('eV')
     plt.ylabel('Intensity')
     #################################
