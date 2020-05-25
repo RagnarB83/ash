@@ -765,6 +765,25 @@ def PhotoIonSpectrum(theory=None, fragment=None, InitialState_charge=None, Initi
         TDtransitionenergies = tddftgrab(theory.inputfilename+'.out')
         # Final state orbitals for MO-DOSplot
         occorbsF_alpha, occorbsF_beta, hftyp_F = orbitalgrab(theory.inputfilename+'.out')
+
+
+        # need to specify whether Initial/Final states are restricted or not.
+        if hftyp_I == "UHF":
+            restricted_I = False
+        elif hftyp_I == "RHF":
+            restricted_I = True
+        else:
+            print("hmmm")
+            exit()
+        if hftyp_F == "UHF":
+            restricted_F = False
+        elif hftyp_F == "RHF":
+            restricted_F = True
+        else:
+            print("hmmm")
+            exit()
+
+
     else:
         print("Theory not supported for PhotoElectronSpectrum")
         exit(1)
@@ -816,22 +835,6 @@ def PhotoIonSpectrum(theory=None, fragment=None, InitialState_charge=None, Initi
         print("")
         # Get AO matrix from init state calculation
         saveAOmatrix(gbwfile_init)
-        # need to specify Initial/Final states are restricted or not.
-        if hftyp_I == "UHF":
-            restricted_I = False
-        elif hftyp_I == "RHF":
-            restricted_I = True
-        else:
-            print("hmmm")
-            exit()
-        if hftyp_F == "UHF":
-            restricted_F = False
-        elif hftyp_F == "RHF":
-            restricted_F = True
-        else:
-            print("hmmm")
-            exit()
-
         # Specify frozencore or not.
         frozencore = 0
         # Grab MO coefficients and write to files mos_init and mos_final
@@ -920,7 +923,7 @@ def PhotoIonSpectrum(theory=None, fragment=None, InitialState_charge=None, Initi
 
 
 def plot_PhotoIonSpectrum(IPs=None, dysonnorms=None, mos_alpha=None, mos_beta=None,
-                          start=None, finish=None, broadening=0.1, points=10000):
+                          start=None, finish=None, broadening=0.1, points=10000, hftyp_I='UHF'):
 
     if start is None:
         start = IPs[0] - 8
