@@ -912,38 +912,30 @@ def PhotoIonSpectrum(theory=None, fragment=None, InitialState_charge=None, Initi
         print(bcolors.OKBLUE,"Dyson norms:",bcolors.ENDC)
         print(dysonnorms)
         print("")
+
+        return IPs, dysonnorms, stk_alpha,stk_beta
     else:
         print("Unknown option")
         exit(1)
+
+
+def plot_PhotoIonSpectrum(IPs=None, dysonnorms=dysonnorms, mos_alpha=None, mos_beta=None,
+                          start=None, finish=None, broadening=0.1, points=10000):
+
+    if start is None:
+        start = IPs[0] - 8
+        finish = IPs[-1] + 8
 
     #########################
     # Plot spectra.
     ########################
     print(bcolors.OKGREEN, "------------------------------------", bcolors.ENDC)
     print(bcolors.OKGREEN, "Now in plotting mode", bcolors.ENDC)
-    print(bcolors.WARNING, "You can give plot options as command-line arguments here:", bcolors.ENDC)
-    print(bcolors.WARNING, "PES-calc.py start end points broadening (assuming eV)", bcolors.ENDC)
-    print(bcolors.WARNING, "Example: PES-calc.py 3 8 10000 0.2", bcolors.ENDC)
-    try:
-        start = float(sys.argv[1])
-        finish = float(sys.argv[2])
-        points = int(sys.argv[3])
-        broad = float(sys.argv[4])
-        print("")
-        print(bcolors.OKGREEN, "Plotting-range chosen:", start, "-", finish, "eV", "with ", points, "points and ",
-              broad, "eV broadening.", bcolors.ENDC)
-    except IndexError:
-        start = IPs[0] - 8
-        finish = IPs[-1] + 8
-        points = 10000
-        broad = 0.1
-        print(bcolors.OKGREEN, "Using values for plotting:", bcolors.ENDC)
-        print(bcolors.OKGREEN, "Plotting-range used:", start, "-", finish, "eV. Numpoints:", points, "and broadening:",
-              broad, "eV", bcolors.ENDC)
+    print(bcolors.OKGREEN, "Plotting-range chosen:", start, "-", finish, "eV", "with ", points, "points and ",
+              broadening, "eV broadening.", bcolors.ENDC)
 
     # X-range is electron binding energy
     x = np.linspace(start, finish, points)
-
     stkheight = 0.5
     strength = 1.0
     ######################
@@ -953,21 +945,21 @@ def PhotoIonSpectrum(theory=None, fragment=None, InitialState_charge=None, Initi
     # alpha
     occDOS_alpha = 0
     for count, peak in enumerate(stk_alpha):
-        occdospeak = Gaussian(x, peak, strength, broad)
-        virtdospeak = Gaussian(x, peak, strength, broad)
+        occdospeak = Gaussian(x, peak, strength, broadening)
+        virtdospeak = Gaussian(x, peak, strength, broadening)
         occDOS_alpha += occdospeak
     # beta
     if hftyp_I == "UHF":
         occDOS_beta = 0
         for count, peak in enumerate(stk_beta):
-            occdospeak = Gaussian(x, peak, strength, broad)
-            virtdospeak = Gaussian(x, peak, strength, broad)
+            occdospeak = Gaussian(x, peak, strength, broadening)
+            virtdospeak = Gaussian(x, peak, strength, broadening)
             occDOS_beta += occdospeak
 
     # TDDFT states DOS
     tddftDOS = 0
     for peak, strength in zip(IPs, dysonnorms):
-        tddospeak = Gaussian(x, peak, strength, broad)
+        tddospeak = Gaussian(x, peak, strength, broadening)
         tddftDOS += tddospeak
 
     # Write dat/stk files for MO-DOS
@@ -1024,8 +1016,6 @@ def PhotoIonSpectrum(theory=None, fragment=None, InitialState_charge=None, Initi
     # TDDFT-STATES
     ###############
     ax.plot(x, tddftDOS, 'C3', label='TDDFT')
-    print(len(IPs))
-    print(len(dysonnorms))
     ax.stem(IPs, dysonnorms, label='TDDFT', markerfmt=' ', basefmt=' ', linefmt='C3-')
     plt.xlabel('eV')
     plt.ylabel('Intensity')
