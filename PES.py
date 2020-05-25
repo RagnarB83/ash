@@ -384,7 +384,7 @@ def get_dets_from_cis(logfile,cisfilename,restr,mults,gscharge,gsmult,totnucchar
                 #print("here1")
                 dets[ (iocc,ivirt,1) ]=struct.unpack('d', CCfile.read(8))[0]
             #print("1 case done!!")
-            pprint.pprint(dets)
+            #pprint.pprint(dets)
             if not restr:
               #print("here2")
               #print("range(header[4],header[5]+1):", range(header[4],header[5]+1))
