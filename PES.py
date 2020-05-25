@@ -919,7 +919,7 @@ def PhotoIonSpectrum(theory=None, fragment=None, InitialState_charge=None, Initi
         exit(1)
 
 
-def plot_PhotoIonSpectrum(IPs=None, dysonnorms=dysonnorms, mos_alpha=None, mos_beta=None,
+def plot_PhotoIonSpectrum(IPs=None, dysonnorms=None, mos_alpha=None, mos_beta=None,
                           start=None, finish=None, broadening=0.1, points=10000):
 
     if start is None:
@@ -944,14 +944,14 @@ def plot_PhotoIonSpectrum(IPs=None, dysonnorms=dysonnorms, mos_alpha=None, mos_b
     # Creates DOS out of electron binding energies (negative of occupied MO energies)
     # alpha
     occDOS_alpha = 0
-    for count, peak in enumerate(stk_alpha):
+    for count, peak in enumerate(mos_alpha):
         occdospeak = Gaussian(x, peak, strength, broadening)
         virtdospeak = Gaussian(x, peak, strength, broadening)
         occDOS_alpha += occdospeak
     # beta
     if hftyp_I == "UHF":
         occDOS_beta = 0
-        for count, peak in enumerate(stk_beta):
+        for count, peak in enumerate(mos_beta):
             occdospeak = Gaussian(x, peak, strength, broadening)
             virtdospeak = Gaussian(x, peak, strength, broadening)
             occDOS_beta += occdospeak
@@ -976,7 +976,7 @@ def plot_PhotoIonSpectrum(IPs=None, dysonnorms=dysonnorms, mos_alpha=None, mos_b
     # Creating stk file for alpha. Only including sticks for plotted region
     stk_alpha2 = []
     stk_alpha2height = []
-    for i in stk_alpha:
+    for i in mos_alpha:
         if i > x[-1]:
             # print("i is", i)
             continue
