@@ -927,7 +927,7 @@ def PhotoElectronSpectrum(theory=None, fragment=None, InitialState_charge=None, 
         exit(1)
 
 
-def plot_PES_Spectrum(IPs=None, dysonnorms=None, mos_alpha=None, mos_beta=None,
+def plot_PES_Spectrum(IPs=None, dysonnorms=None, mos_alpha=None, mos_beta=None, plotname='PES-plot',
                           start=None, finish=None, broadening=0.1, points=10000, hftyp_I=None):
 
     blankline()
@@ -946,8 +946,6 @@ def plot_PES_Spectrum(IPs=None, dysonnorms=None, mos_alpha=None, mos_beta=None,
     #########################
     # Plot spectra.
     ########################
-    print(bcolors.OKGREEN, "------------------------------------", bcolors.ENDC)
-    print(bcolors.OKGREEN, "Now in plotting mode", bcolors.ENDC)
     print(bcolors.OKGREEN, "Plotting-range chosen:", start, "-", finish, "eV", "with ", points, "points and ",
               broadening, "eV broadening.", bcolors.ENDC)
 
@@ -1039,6 +1037,6 @@ def plot_PES_Spectrum(IPs=None, dysonnorms=None, mos_alpha=None, mos_beta=None,
     #################################
     plt.xlim(start, finish)
     plt.legend(shadow=True, fontsize='small')
-    plt.savefig('PES-plot' + '.png', format='png', dpi=200)
+    plt.savefig(plotname + '.png', format='png', dpi=200)
     # plt.show()
 
