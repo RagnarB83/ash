@@ -63,7 +63,7 @@ end
 #Modified pairpot that only does active atoms
 #Fills whole symmetric array just in case,i .e. ij and ji
 function pairpot_active(numatoms,atomtypes,LJpydict,qmatoms,actatoms)
-	println("inside pairpot_active")
+	#println("inside pairpot_active")
     #Updating atom indices from 0 to 1 syntax
     qmatoms=[i+1 for i in qmatoms]
     actatoms=[i+1 for i in actatoms]
@@ -72,11 +72,11 @@ function pairpot_active(numatoms,atomtypes,LJpydict,qmatoms,actatoms)
     #println(typeof(LJdict_jul))
     sigmaij=zeros(numatoms, numatoms)
     epsij=zeros(numatoms, numatoms)
-	println("-----")
-	println("qmatoms : $qmatoms")
-	println("actatoms: $actatoms")
-	println("-----")
-	println("numatoms: $numatoms")
+	#println("-----")
+	#println("qmatoms : $qmatoms")
+	#println("actatoms: $actatoms")
+	#println("-----")
+	#println("numatoms: $numatoms")
 	for i in 1:numatoms
 		for j in actatoms
 			#println("i is $i and j is $j")

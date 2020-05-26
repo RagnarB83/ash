@@ -2906,7 +2906,7 @@ class Fragment:
                     print(l)
                     l = l.strip(']')
                     print(l)
-                    Centralmainfrag [i for i in l.split(',')]
+                    Centralmainfrag = [i for i in l.split(',')]
                 #Incredibly ugly but oh well
                 if 'connectivity:' in line:
                     l=line.lstrip('connectivity:')
