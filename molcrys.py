@@ -259,6 +259,8 @@ def molcrys(cif_file=None, xtl_file=None, fragmentobjects=[], theory=None, numco
         for i in Centralmainfrag:
             file.write(str(i)+' ')
 
+
+
     blankline()
 
 
@@ -309,6 +311,11 @@ def molcrys(cif_file=None, xtl_file=None, fragmentobjects=[], theory=None, numco
         print("Not converged in iteration {}. Continuing SP loop".format(SPLoopNum))
 
     print(BC.OKMAGENTA,"Molcrys Charge-Iteration done!",BC.END)
+    
+
+    #Addin Centralmainfrag to Cluster
+    Cluster.add_centralfraginfo(Centralmainfrag)
+
     #Printing out Cluster fragment file
     Cluster.print_system('Cluster.ygg')
 

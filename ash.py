@@ -2600,6 +2600,7 @@ class Fragment:
         self.connectivity=[]
         self.atomcharges = []
         self.atomtypes = []
+        self.Centralmainfrag = []
         if atomcharges is not None:
             self.atomcharges=atomcharges
         if atomtypes is not None:
@@ -2821,6 +2822,9 @@ class Fragment:
             for count,fobject in enumerate(fragmentobjects):
                 if i in fobject.flat_clusterfraglist:
                     self.fragmenttype_labels.append(count)
+    #Molcrys option:
+    def add_centralfraginfo(self,list):
+        self.Centralmainfrag = list
     def write_xyzfile(self,xyzfilename="Fragment-xyzfile.xyz"):
         #Energy written to XYZ title-line if present. Otherwise: None
         with open(xyzfilename, 'w') as ofile:
@@ -2864,6 +2868,8 @@ class Fragment:
             outfile.write("Sum of atomcharges: {}\n".format(sum(self.atomcharges)))
             outfile.write("atomtypes: {}\n".format(self.atomtypes))
             outfile.write("connectivity: {}\n".format(self.connectivity))
+            outfile.write("Centralmainfrag: {}\n".format(self.Centralmainfrag))
+
     #Reading fragment from file. File created from Fragment.print_system
     def read_fragment_from_file(self, fragfile):
         print("Reading ASH fragment from file:", fragfile)
@@ -2874,6 +2880,8 @@ class Fragment:
         atomtypes=[]
         fragment_type_labels=[]
         connectivity=[]
+        #Only used by molcrys:
+        Centralmainfrag = []
         with open(fragfile) as file:
             for n, line in enumerate(file):
                 if 'Num atoms:' in line:
@@ -2891,6 +2899,14 @@ class Fragment:
 
                 if '--------------------------' in line:
                     coordgrab=True
+                if 'Centralmainfrag' in line:
+                    l = line.lstrip('Centralmainfrag:')
+                    print(l)
+                    l = l.strip('[')
+                    print(l)
+                    l = l.strip(']')
+                    print(l)
+                    Centralmainfrag = [i for i in l.split(',')]
                 #Incredibly ugly but oh well
                 if 'connectivity:' in line:
                     l=line.lstrip('connectivity:')
@@ -2909,6 +2925,7 @@ class Fragment:
         self.atomtypes=atomtypes
         self.update_attributes()
         self.connectivity=connectivity
+        self.Centralmainfrag = Centralmainfrag
 
 
 #Reading fragment from file. File created from Fragment.print_system
