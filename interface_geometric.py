@@ -191,6 +191,6 @@ def geomeTRICOptimizer(theory=None,fragment=None, coordsystem='tric', frozenatom
     fragment.print_system(filename='Fragment-optimized.ygg')
     fragment.write_xyzfile(xyzfilename='Fragment-optimized.xyz')
 
-    write_XYZ_for_atoms(fragment.coords, fragment.elems, actatoms, "Fragment-optimized_Active.xyz")
+    write_XYZ_for_atoms(fragment.coords, fragment.elems, actatoms, "Fragment-optimized_Active")
     
     blankline()
