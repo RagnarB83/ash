@@ -186,7 +186,11 @@ def geomeTRICOptimizer(theory=None,fragment=None, coordsystem='tric', frozenatom
     #print("fragment.elems: ", fragment.elems)
     #print("ashengine.full_current_coords : ", ashengine.full_current_coords)
     fragment.replace_coords(fragment.elems,ashengine.full_current_coords, conn=False)
+    
     #Writing out fragment file and XYZ file
     fragment.print_system(filename='Fragment-optimized.ygg')
     fragment.write_xyzfile(xyzfilename='Fragment-optimized.xyz')
+
+    write_XYZ_for_atoms(fragment.coords, fragment.elems, actatoms, "Fragment-optimized_Active")
+    
     blankline()
