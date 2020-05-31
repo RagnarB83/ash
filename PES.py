@@ -250,6 +250,7 @@ mocoef
 #RB. New function
 #get determinant-string output for single-determinant case
 def get_dets_from_single(logfile,restr,mults,gscharge,gsmult,totnuccharge,frozencore):
+    print("Inside get_dets_from_single")
     # get infos from logfile
     data=readfile(logfile)
     infos={}
@@ -322,7 +323,7 @@ def get_dets_from_single(logfile,restr,mults,gscharge,gsmult,totnuccharge,frozen
         print("")
 
     strings={}
-    print("Final eigenvectors:", eigenvectors)
+    print("Final (single-det case) eigenvectors:", eigenvectors)
     for imult,mult in enumerate(mults):
         print("imult, mult :", imult, mult)
         filename='dets.%i' % mult
@@ -589,6 +590,7 @@ def get_dets_from_cis(logfile,cisfilename,restr,mults,gscharge,gsmult,totnucchar
 
 
     strings={}
+    print("Final (CIS) eigenvectors:", eigenvectors)
     for imult,mult in enumerate(mults):
         filename='dets.%i' % mult
         strings[filename]=format_ci_vectors(eigenvectors[mult])
