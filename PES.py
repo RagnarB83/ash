@@ -246,6 +246,89 @@ mocoef
 
     return string
 
+
+#RB. New function
+#get determinant-string output for single-determinant case
+def get_dets_from_single(logfile,restr,mults,gscharge,gsmult,totnuccharge,frozencore):
+    # get infos from logfile
+    data=readfile(logfile)
+    infos={}
+    for iline,line in enumerate(data):
+      if '# of contracted basis functions' in line:
+        infos['nbsuse']=int(line.split()[-1])
+      if 'Orbital ranges used for CIS calculation:' in line:
+        s=data[iline+1].replace('.',' ').split()
+        infos['NFC']=int(s[3])
+        infos['NOA']=int(s[4])-int(s[3])+1
+        infos['NVA']=int(s[7])-int(s[6])+1
+        if restr:
+          infos['NOB']=infos['NOA']
+          infos['NVB']=infos['NVA']
+        else:
+          s=data[iline+2].replace('.',' ').split()
+          infos['NOB']=int(s[4])-int(s[3])+1
+          infos['NVB']=int(s[7])-int(s[6])+1
+
+    if not 'NOA' in  infos:
+      nstates_onfile=0
+      charge=gscharge
+      #charge=QMin['chargemap'][gsmult]
+      nelec=float(totnuccharge-charge)
+      infos['NOA']=int(nelec/2. + float(gsmult-1)/2. )
+      infos['NOB']=int(nelec/2. - float(gsmult-1)/2. )
+      infos['NVA']=infos['nbsuse']-infos['NOA']
+      infos['NVB']=infos['nbsuse']-infos['NOB']
+      infos['NFC']=0
+
+
+    # get ground state configuration
+    # make step vectors (0:empty, 1:alpha, 2:beta, 3:docc)
+    print("restr :", restr)
+    if restr:
+        occ_A=[ 3 for i in range(infos['NFC']+infos['NOA']) ]+[ 0 for i in range(infos['NVA']) ]
+    if not restr:
+        occ_A=[ 1 for i in range(infos['NFC']+infos['NOA']) ]+[ 0 for i in range(infos['NVA']) ]
+        occ_B=[ 2 for i in range(infos['NFC']+infos['NOB']) ]+[ 0 for i in range(infos['NVB']) ]
+    occ_A=tuple(occ_A)
+    if not restr:
+        occ_B=tuple(occ_B)
+
+    print("occ_A :", occ_A)
+    print("occ_B :", occ_B)
+
+    # get infos
+    nocc_A=infos['NOA']
+    nvir_A=infos['NVA']
+    nocc_B=infos['NOB']
+    nvir_B=infos['NVB']
+
+    # get eigenvectors
+    eigenvectors={}
+    print("mults :", mults)
+    for imult,mult in enumerate(mults):
+        print("imult is ", imult, " and mult is ", mult)
+        eigenvectors[mult]=[]
+        print("eigenvectors : ", eigenvectors)
+        if restr:
+            key=tuple(occ_A[frozencore:])
+        else:
+            key=tuple(occ_A[frozencore:]+occ_B[frozencore:])
+            eigenvectors[mult].append( {key:1.0} )
+            print("eigenvectors : ", eigenvectors)
+        print("")
+        print("")
+        print("")
+
+    strings={}
+    print("Final eigenvectors:", eigenvectors)
+    for imult,mult in enumerate(mults):
+        print("imult, mult :", imult, mult)
+        filename='dets.%i' % mult
+        strings[filename]=format_ci_vectors(eigenvectors[mult])
+    return strings
+
+
+
 #Get determinants from ORCA cisfile.
 #Converted to Python3 from function in SHARC
 def get_dets_from_cis(logfile,cisfilename,restr,mults,gscharge,gsmult,totnuccharge,nstates_to_extract,nstates_to_skip,no_tda,frozencore,wfthres):
@@ -272,12 +355,19 @@ def get_dets_from_cis(logfile,cisfilename,restr,mults,gscharge,gsmult,totnucchar
     #print "mults:", mults
     #print "gsmult:", gsmult
     #print "RBX2. nstates_to_extract:", nstates_to_extract
-    for i in range(len(nstates_to_extract)):
-        if not i+1 in mults:
-            nstates_to_extract[i]=0
-            nstates_to_skip[i]=0
-        elif i+1==gsmult:
-            nstates_to_extract[i]-=1
+
+    #This section problematic.
+    #for i in range(len(nstates_to_extract)):
+    #    if not i+1 in mults:
+    #        nstates_to_extract[i]=0
+    #        nstates_to_skip[i]=0
+    #    elif i+1==gsmult:
+    #        nstates_to_extract[i]-=1
+
+    print("RB HACK here...")
+    nstates_to_extract = [0, nstates_to_extract[-1] - 1]
+    print("nstates_to_extract:", nstates_to_extract)
+
     #print restr,mults,gsmult,nstates_to_extract
     #print "RB.....b"
     # get infos from logfile
@@ -877,16 +967,20 @@ def PhotoElectronSpectrum(theory=None, fragment=None, InitialState_charge=None, 
             # Final state
             det_final = get_dets_from_cis("Final_State1.out", cisfile_final, restricted_F, mults, stateFcharge, stateFmult,
                                           totnuccharge, statestoextract, statestoskip, no_tda, frozencore, wfthres)
+            # Printing to file
+            for blockname, string in det_final.items():
+                writestringtofile(string, "dets_final")
             # Now doing initial state. Redefine necessary here.
-            statestoextract = [1, numionstates]
+            #det_init = get_dets_from_cis("Init_State1.out", "dummy", restricted_I, mults, stateIcharge, stateImult, totnuccharge,
+            #                             statestoextract, statestoskip, no_tda, frozencore, wfthres)
+            # RB simplification. Separate function for getting determinant-string for Initial State where only one.
             mults = [1]
-            det_init = get_dets_from_cis("Init_State1.out", "dummy", restricted_I, mults, stateIcharge, stateImult, totnuccharge,
-                                         statestoextract, statestoskip, no_tda, frozencore, wfthres)
+            det_init = get_dets_from_single("Init_State1.out", restricted_I, mults, stateIcharge, stateImult, totnuccharge,
+                                            frozencore)
             # Printing to file
             for blockname, string in det_init.items():
                 writestringtofile(string, "dets_init")
-            for blockname, string in det_final.items():
-                writestringtofile(string, "dets_final")
+
             print(bcolors.OKGREEN, "AO matrix, MO coefficients and excited state determinants have been written to files:",
                   bcolors.ENDC)
             print(bcolors.OKGREEN, "AO_overl, mos_init, mos_final, dets.1, dets.2", bcolors.ENDC)
