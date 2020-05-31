@@ -286,15 +286,17 @@ def get_dets_from_single(logfile,restr,mults,gscharge,gsmult,totnuccharge,frozen
     print("restr :", restr)
     if restr:
         occ_A=[ 3 for i in range(infos['NFC']+infos['NOA']) ]+[ 0 for i in range(infos['NVA']) ]
+        print("occ_A :", occ_A)
     if not restr:
         occ_A=[ 1 for i in range(infos['NFC']+infos['NOA']) ]+[ 0 for i in range(infos['NVA']) ]
         occ_B=[ 2 for i in range(infos['NFC']+infos['NOB']) ]+[ 0 for i in range(infos['NVB']) ]
+        print("occ_A :", occ_A)
+        print("occ_B :", occ_B)
     occ_A=tuple(occ_A)
     if not restr:
         occ_B=tuple(occ_B)
 
-    print("occ_A :", occ_A)
-    print("occ_B :", occ_B)
+
 
     # get infos
     nocc_A=infos['NOA']
