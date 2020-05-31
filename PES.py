@@ -26,6 +26,7 @@ eldict={'H':1,'He':2,'Li':3,'Be':4,'B':5,'C':6,'N':7,'O':8,'F':9,'Ne':10,'Na':11
 #Cleanup function. Delete MO-files, det files, etc.
 def cleanup():
     files=['AO_overl', 'dets_final', 'dets_init', 'memlog', 'wfovl.inp', 'wfovl.out', 'mos_final', 'mos_init']
+    print("Cleaning up files: ", files)
     for file in files:
         try:
             os.remove(file)
