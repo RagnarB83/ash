@@ -314,10 +314,11 @@ def get_dets_from_single(logfile,restr,mults,gscharge,gsmult,totnuccharge,frozen
         print("eigenvectors : ", eigenvectors)
         if restr:
             key=tuple(occ_A[frozencore:])
+            print("key :", key)
         else:
             key=tuple(occ_A[frozencore:]+occ_B[frozencore:])
-            eigenvectors[mult].append( {key:1.0} )
-            print("eigenvectors : ", eigenvectors)
+        eigenvectors[mult].append( {key:1.0} )
+        print("eigenvectors : ", eigenvectors)
         print("")
         print("")
         print("")
