@@ -284,15 +284,15 @@ def get_dets_from_single(logfile,restr,mults,gscharge,gsmult,totnuccharge,frozen
 
     # get ground state configuration
     # make step vectors (0:empty, 1:alpha, 2:beta, 3:docc)
-    print("restr :", restr)
+    #print("restr :", restr)
     if restr:
         occ_A=[ 3 for i in range(infos['NFC']+infos['NOA']) ]+[ 0 for i in range(infos['NVA']) ]
-        print("occ_A :", occ_A)
+        #print("occ_A :", occ_A)
     if not restr:
         occ_A=[ 1 for i in range(infos['NFC']+infos['NOA']) ]+[ 0 for i in range(infos['NVA']) ]
         occ_B=[ 2 for i in range(infos['NFC']+infos['NOB']) ]+[ 0 for i in range(infos['NVB']) ]
-        print("occ_A :", occ_A)
-        print("occ_B :", occ_B)
+        #print("occ_A :", occ_A)
+        #print("occ_B :", occ_B)
     occ_A=tuple(occ_A)
     if not restr:
         occ_B=tuple(occ_B)
@@ -307,26 +307,18 @@ def get_dets_from_single(logfile,restr,mults,gscharge,gsmult,totnuccharge,frozen
 
     # get eigenvectors
     eigenvectors={}
-    print("mults :", mults)
     for imult,mult in enumerate(mults):
-        print("imult is ", imult, " and mult is ", mult)
         eigenvectors[mult]=[]
-        print("eigenvectors : ", eigenvectors)
         if restr:
             key=tuple(occ_A[frozencore:])
-            print("key :", key)
         else:
             key=tuple(occ_A[frozencore:]+occ_B[frozencore:])
         eigenvectors[mult].append( {key:1.0} )
-        print("eigenvectors : ", eigenvectors)
-        print("")
-        print("")
-        print("")
+
 
     strings={}
     print("Final (single-det case) eigenvectors:", eigenvectors)
     for imult,mult in enumerate(mults):
-        print("imult, mult :", imult, mult)
         filename='dets.%i' % mult
         strings[filename]=format_ci_vectors(eigenvectors[mult])
     return strings
@@ -591,7 +583,7 @@ def get_dets_from_cis(logfile,cisfilename,restr,mults,gscharge,gsmult,totnucchar
 
 
     strings={}
-    print("Final (CIS) eigenvectors:", eigenvectors)
+    #print("Final (CIS) eigenvectors:", eigenvectors)
     for imult,mult in enumerate(mults):
         filename='dets.%i' % mult
         strings[filename]=format_ci_vectors(eigenvectors[mult])
