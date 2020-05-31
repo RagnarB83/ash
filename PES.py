@@ -1020,7 +1020,7 @@ def PhotoElectronSpectrum(theory=None, fragment=None, InitialState_charge=None, 
         #This grabs Dyson norms from wfovl.out file
         dysonnorms=grabDysonnorms()
         print("")
-        print(bcolors.OKBLUE,"Dyson norms:",bcolors.ENDC)
+        print(bcolors.OKBLUE,"Dyson norms ({}):".format(len(dysonnorms)),bcolors.ENDC)
         print(dysonnorms)
         print("")
 
@@ -1041,7 +1041,9 @@ def plot_PES_Spectrum(IPs=None, dysonnorms=None, mos_alpha=None, mos_beta=None, 
     print(bcolors.OKGREEN,"plot_PES_Spectrum: Plotting TDDFT-Dyson-norm spectrum and MO-spectrum",bcolors.ENDC)
     print(bcolors.OKGREEN,"-------------------------------------------------------------------",bcolors.ENDC)
     blankline()
-
+    print("IPs ({}): {}".format(len(IPs),IPs))
+    print("Dysonnorms ({}): {}".format(len(dysonnorms),dysonnorms))
+    
     if hftyp_I is None:
         print("hftyp_I not set (value: RHF or UHF). Assuming hftyp_I=RHF and ignoring beta MOs.")
         blankline()
