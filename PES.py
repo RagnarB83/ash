@@ -337,6 +337,8 @@ def get_dets_from_single(logfile,restr,mults,gscharge,gsmult,totnuccharge,frozen
 #Get determinants from ORCA cisfile.
 #Converted to Python3 from function in SHARC
 def get_dets_from_cis(logfile,cisfilename,restr,mults,gscharge,gsmult,totnuccharge,nstates_to_extract,nstates_to_skip,no_tda,frozencore,wfthres):
+    print("Inside get_dets_from_cis")
+    print("")
     print("logfile", logfile)
     print("cisfilename:", cisfilename)
     print("restr:", restr)
@@ -592,7 +594,7 @@ def get_dets_from_cis(logfile,cisfilename,restr,mults,gscharge,gsmult,totnucchar
 
 
     strings={}
-    #print("Final (CIS) eigenvectors:", eigenvectors)
+    print("Final (CIS) eigenvectors:", eigenvectors)
     for imult,mult in enumerate(mults):
         filename='dets.%i' % mult
         strings[filename]=format_ci_vectors(eigenvectors[mult])
