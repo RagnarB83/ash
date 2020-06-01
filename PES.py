@@ -258,7 +258,7 @@ mocoef
 
 #RB. New function
 #get determinant-string output for single-determinant case
-def get_dets_from_single(logfile,restr,mults,gscharge,gsmult,totnuccharge,frozencore):
+def get_dets_from_single(logfile,restr,gscharge,gsmult,totnuccharge,frozencore):
     print("Inside get_dets_from_single")
     # get infos from logfile
     data=readfile(logfile)
@@ -280,7 +280,6 @@ def get_dets_from_single(logfile,restr,mults,gscharge,gsmult,totnuccharge,frozen
           infos['NVB']=int(s[7])-int(s[6])+1
 
     if not 'NOA' in  infos:
-      nstates_onfile=0
       charge=gscharge
       #charge=QMin['chargemap'][gsmult]
       nelec=float(totnuccharge-charge)
@@ -293,43 +292,26 @@ def get_dets_from_single(logfile,restr,mults,gscharge,gsmult,totnuccharge,frozen
 
     # get ground state configuration
     # make step vectors (0:empty, 1:alpha, 2:beta, 3:docc)
-    #print("restr :", restr)
     if restr:
         occ_A=[ 3 for i in range(infos['NFC']+infos['NOA']) ]+[ 0 for i in range(infos['NVA']) ]
-        #print("occ_A :", occ_A)
     if not restr:
         occ_A=[ 1 for i in range(infos['NFC']+infos['NOA']) ]+[ 0 for i in range(infos['NVA']) ]
         occ_B=[ 2 for i in range(infos['NFC']+infos['NOB']) ]+[ 0 for i in range(infos['NVB']) ]
-        #print("occ_A :", occ_A)
-        #print("occ_B :", occ_B)
     occ_A=tuple(occ_A)
     if not restr:
         occ_B=tuple(occ_B)
 
-
-
-    # get infos
-    nocc_A=infos['NOA']
-    nvir_A=infos['NVA']
-    nocc_B=infos['NOB']
-    nvir_B=infos['NVB']
-
     # get eigenvectors
     eigenvectors={}
-    for imult,mult in enumerate(mults):
-        eigenvectors[mult]=[]
-        if restr:
-            key=tuple(occ_A[frozencore:])
-        else:
-            key=tuple(occ_A[frozencore:]+occ_B[frozencore:])
-        eigenvectors[mult].append( {key:1.0} )
-
-
+    eigenvectors[gsmult]=[]
+    if restr:
+        key=tuple(occ_A[frozencore:])
+    else:
+        key=tuple(occ_A[frozencore:]+occ_B[frozencore:])
+    eigenvectors[gsmult].append( {key:1.0} )
     strings={}
     print("Final (single-det case) eigenvectors:", eigenvectors)
-    for imult,mult in enumerate(mults):
-        filename='dets.%i' % mult
-        strings[filename]=format_ci_vectors(eigenvectors[mult])
+    strings["dets."+str(gsmult)] = format_ci_vectors(eigenvectors[gsmult])
     return strings
 
 
@@ -351,28 +333,6 @@ def get_dets_from_cis(logfile,cisfilename,restr,mults,gscharge,gsmult,totnucchar
     print("no_tda:", no_tda)
     print("frozencore:", frozencore)
     print("wfthres", wfthres)
-    import pprint
-    # get general infos
-    #job=QMin['IJOB']
-    #restr=QMin['jobs'][job]['restr']
-    #mults=QMin['jobs'][job]['mults']
-    #gsmult=QMin['multmap'][-job][0]
-    #nstates_to_extract=deepcopy(QMin['states'])
-    #nstates_to_skip=[ QMin['states_to_do'][i]-QMin['states'][i] for i in range(len(QMin['states'])) ]
-    #print "mults:", mults
-    #print "gsmult:", gsmult
-    #print "RBX2. nstates_to_extract:", nstates_to_extract
-
-    #This section problematic.
-    #for i in range(len(nstates_to_extract)):
-    #    if not i+1 in mults:
-    #        nstates_to_extract[i]=0
-    #        nstates_to_skip[i]=0
-    #    elif i+1==gsmult:
-    #        nstates_to_extract[i]-=1
-
-    print("RB HACK here...")
-    nstates_to_extract = [0, nstates_to_extract[-1] - 1]
     print("nstates_to_extract:", nstates_to_extract)
 
     #print restr,mults,gsmult,nstates_to_extract
@@ -396,11 +356,8 @@ def get_dets_from_cis(logfile,cisfilename,restr,mults,gscharge,gsmult,totnucchar
           s=data[iline+2].replace('.',' ').split()
           infos['NOB']=int(s[4])-int(s[3])+1
           infos['NVB']=int(s[7])-int(s[6])+1
-    #print "RB. here 7"
     if not 'NOA' in  infos:
-      nstates_onfile=0
       charge=gscharge
-      #charge=QMin['chargemap'][gsmult]
       nelec=float(totnuccharge-charge)
       infos['NOA']=int(nelec/2. + float(gsmult-1)/2. )
       infos['NOB']=int(nelec/2. - float(gsmult-1)/2. )
@@ -410,10 +367,6 @@ def get_dets_from_cis(logfile,cisfilename,restr,mults,gscharge,gsmult,totnucchar
     else:
       # get all info from cis file
       CCfile=open(cisfilename,'rb')
-     # with open("CCfilewritten", 'w') as ccfilex:
-       # bla=struct.iter_unpack('i', CCfile.read(4))
-       # for b in bla:
-       #     ccfilex.write(str(b))
       nvec  =struct.unpack('i', CCfile.read(4))[0]
       header=[ struct.unpack('i', CCfile.read(4))[0] for i in range(8) ]
       print(infos)
@@ -466,7 +419,8 @@ def get_dets_from_cis(logfile,cisfilename,restr,mults,gscharge,gsmult,totnucchar
                 key=tuple(occ_A[frozencore:]+occ_B[frozencore:])
             eigenvectors[mult].append( {key:1.0} )
         #print("struct.unpack('d', CCfile.read(8))[0]:", struct.unpack('d', CCfile.read(8))[0])
-        for istate in range(nstates_to_extract[mult-1]):
+        #for istate in range(nstates_to_extract[mult-1]):
+        for istate in range(nstates_to_extract[-1] - 1):
             CCfile.read(40)
             dets={}
             #print("dets:", dets)
@@ -961,7 +915,8 @@ def PhotoElectronSpectrum(theory=None, fragment=None, InitialState_charge=None, 
         statestoextract = [1, numionstates]
         statestoskip = [0, 0]
         # Number of multiplicity blocks I think. Should be 2 in general, 1 for GS and 1 for ionized
-        mults = [2]
+        # Not correct, should be actual multiplicites. Finalstate mult. If doing TDDFT-triplets then I guess we have more
+        mults = [stateFmult]
         # Boolean for whether no_tda is on or not
         no_tda = False
         # Threshold for WF. SHARC set it to 2.0
@@ -982,9 +937,7 @@ def PhotoElectronSpectrum(theory=None, fragment=None, InitialState_charge=None, 
             #det_init = get_dets_from_cis("Init_State1.out", "dummy", restricted_I, mults, stateIcharge, stateImult, totnuccharge,
             #                             statestoextract, statestoskip, no_tda, frozencore, wfthres)
             # RB simplification. Separate function for getting determinant-string for Initial State where only one.
-            mults = [1]
-            det_init = get_dets_from_single("Init_State1.out", restricted_I, mults, stateIcharge, stateImult, totnuccharge,
-                                            frozencore)
+            det_init = get_dets_from_single("Init_State1.out", restricted_I, stateIcharge, stateImult, totnuccharge, frozencore)
             # Printing to file
             for blockname, string in det_init.items():
                 writestringtofile(string, "dets_init")
@@ -1043,7 +996,7 @@ def plot_PES_Spectrum(IPs=None, dysonnorms=None, mos_alpha=None, mos_beta=None, 
     blankline()
     print("IPs ({}): {}".format(len(IPs),IPs))
     print("Dysonnorms ({}): {}".format(len(dysonnorms),dysonnorms))
-    
+
     if hftyp_I is None:
         print("hftyp_I not set (value: RHF or UHF). Assuming hftyp_I=RHF and ignoring beta MOs.")
         blankline()
