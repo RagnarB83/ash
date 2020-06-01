@@ -527,7 +527,8 @@ def get_dets_from_cis(logfile,cisfilename,restr,mults,gscharge,gsmult,totnucchar
             # append
             eigenvectors[mult].append(dets3)
         # skip extra roots
-        for istate in range(nstates_to_skip[mult-1]):
+        #RB Removing mult in range. Weird
+        for istate in range(nstates_to_skip[-1]):
             CCfile.read(40)
             for iocc in range(header[0],header[1]+1):
               for ivirt in range(header[2],header[3]+1):
