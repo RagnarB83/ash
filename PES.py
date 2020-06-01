@@ -1050,6 +1050,16 @@ def plot_PES_Spectrum(IPs=None, dysonnorms=None, mos_alpha=None, mos_beta=None, 
         tddospeak = Gaussian(x, peak, strength, broadening)
         tddftDOS += tddospeak
 
+    #Save dat file
+    with open("TDDFT-DOS.dat", 'w') as tdatfile:
+        for i,j in zip(x,tddftDOS):
+            tdatfile.write("{:13.10f} {:13.10f}".format(i,j))
+    #Save stk file
+    with open("TDDFT-DOS.stk", 'w') as tstkfile:
+        for b,c in zip(IPs,dysonnorms):
+            tstkfile.write("{:13.10f} {:13.10f}".format(b,c))
+
+
     # Write dat/stk files for MO-DOS
     datfile = open('MO-DOSPLOT' + '.dat', 'w')
     stkfile_a = open('MO-DOSPLOT' + '_a.stk', 'w')
