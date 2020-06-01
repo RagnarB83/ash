@@ -548,7 +548,7 @@ def get_dets_from_cis(logfile,cisfilename,restr,mults,gscharge,gsmult,totnucchar
 
 
     strings={}
-    print("Final (CIS) eigenvectors:", eigenvectors)
+    #print("Final (CIS) eigenvectors:", eigenvectors)
     for imult,mult in enumerate(mults):
         filename='dets.%i' % mult
         strings[filename]=format_ci_vectors(eigenvectors[mult])
