@@ -1043,12 +1043,14 @@ def plot_PES_Spectrum(IPs=None, dysonnorms=None, mos_alpha=None, mos_beta=None, 
     stkfile_a = open('MO-DOSPLOT' + '_a.stk', 'w')
     if hftyp_I == "UHF":
         stkfile_b = open('MO-DOSPLOT' + '_b.stk', 'w')
+
     for i in range(0, len(x)):
         datfile.write(str(x[i]) + " ")
         datfile.write(str(occDOS_alpha[i]) + " ")
         if hftyp_I == "UHF":
             datfile.write(str(occDOS_beta[i]) + "\n")
     datfile.close()
+
     # Creating stk file for alpha. Only including sticks for plotted region
     stk_alpha2 = []
     stk_alpha2height = []
@@ -1064,7 +1066,7 @@ def plot_PES_Spectrum(IPs=None, dysonnorms=None, mos_alpha=None, mos_beta=None, 
     stk_beta2 = []
     stk_beta2height = []
     if hftyp_I == "UHF":
-        for i in stk_beta:
+        for i in mos_beta:
             if i > x[-1]:
                 print("i is", i)
                 continue
