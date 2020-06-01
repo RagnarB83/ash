@@ -759,7 +759,7 @@ def Gaussian(x, mu, strength, sigma):
 #path_wfoverlap='/home/bjornsson/sharc-master/bin/wfoverlap.x'
 
 def PhotoElectronSpectrum(theory=None, fragment=None, InitialState_charge=None, Initialstate_mult=None,
-                          Ionizedstate_charge=None, Ionizedstate_mult=None, numionstates=50, path_wfoverlap=None ):
+                          Ionizedstate_charge=None, Ionizedstate_mult=None, numionstates=50, path_wfoverlap=None, tda=True ):
     blankline()
     print(bcolors.OKGREEN,"-------------------------------------------------------------------",bcolors.ENDC)
     print(bcolors.OKGREEN,"PhotoElectronSpectrum: Calculating PES spectra via TDDFT and Dyson-norm approach",bcolors.ENDC)
@@ -811,7 +811,14 @@ def PhotoElectronSpectrum(theory=None, fragment=None, InitialState_charge=None, 
         theory.charge=stateFcharge
         theory.mult=stateFmult
         #Adding TDDFT block to inputfile
-        tddftstring="%tddft\n"+"tda true\n"+"nroots " + str(numionstates-1) + '\n'+"maxdim 15\n"+"end\n"+"\n"
+        if tda==False:
+            # Boolean for whether no_tda is on or not
+            no_tda = True
+            tddftstring="%tddft\n"+"tda false\n"+"nroots " + str(numionstates-1) + '\n'+"maxdim 15\n"+"end\n"+"\n"
+        else:
+            tddftstring="%tddft\n"+"tda true\n"+"nroots " + str(numionstates-1) + '\n'+"maxdim 15\n"+"end\n"+"\n"
+            # Boolean for whether no_tda is on or not
+            no_tda = False
         theory.extraline=theory.extraline+tddftstring
         #Final_State1_energy = theory.run( current_coords=fragment.coords, elems=fragment.elems)
         blankline()
@@ -922,8 +929,7 @@ def PhotoElectronSpectrum(theory=None, fragment=None, InitialState_charge=None, 
         # Number of multiplicity blocks I think. Should be 2 in general, 1 for GS and 1 for ionized
         # Not correct, should be actual multiplicites. Finalstate mult. If doing TDDFT-triplets then I guess we have more
         mults = [stateFmult]
-        # Boolean for whether no_tda is on or not
-        no_tda = False
+
         # Threshold for WF. SHARC set it to 2.0
         wfthres = 2.0
         # Final state.
