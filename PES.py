@@ -796,7 +796,11 @@ def PhotoElectronSpectrum(theory=None, fragment=None, InitialState_charge=None, 
         theory.extraline=theory.extraline+"%method\n"+"frozencore FC_NONE\n"+"end\n"
         #Init_State1_energy = theory.run(current_coords=fragment.coords, elems=fragment.elems)
         print(bcolors.OKGREEN, "Calculating Initial State SCF.",bcolors.ENDC)
-        Init_State1_energy = Singlepoint(fragment=fragment, theory=theory)
+        Singlepoint(fragment=fragment, theory=theory)
+        #Note: Using SCF energy and not Final Single Point energy (does not work for TDDFT)
+        Init_State1_energy=scfenergygrab("orca-input.out")
+
+
         #Saveing GBW file
         shutil.copyfile(theory.inputfilename + '.gbw', './' + 'Init_State1' + '.gbw')
         shutil.copyfile(theory.inputfilename + '.out', './' + 'Init_State1' + '.out')
@@ -812,7 +816,8 @@ def PhotoElectronSpectrum(theory=None, fragment=None, InitialState_charge=None, 
         #Final_State1_energy = theory.run( current_coords=fragment.coords, elems=fragment.elems)
         blankline()
         print(bcolors.OKGREEN, "Calculating Final State SCF + TDDFT.", bcolors.ENDC)
-        Final_State1_energy = Singlepoint(fragment=fragment, theory=theory)
+        Singlepoint(fragment=fragment, theory=theory)
+        Final_State1_energy = scfenergygrab("orca-input.out")
         #Saveing GBW and CIS file
         shutil.copyfile(theory.inputfilename + '.gbw', './' + 'Final_State1' + '.gbw')
         shutil.copyfile(theory.inputfilename + '.cis', './' + 'Final_State1' + '.cis')
@@ -1068,7 +1073,6 @@ def plot_PES_Spectrum(IPs=None, dysonnorms=None, mos_alpha=None, mos_beta=None, 
     if hftyp_I == "UHF":
         for i in mos_beta:
             if i > x[-1]:
-                print("i is", i)
                 continue
             else:
                 stkfile_b.write(str(i) + " " + str(stkheight) + "\n")
