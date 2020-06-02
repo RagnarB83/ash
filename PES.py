@@ -791,6 +791,8 @@ def PhotoElectronSpectrum(theory=None, fragment=None, InitialState_charge=None, 
             self.TDtransitionenergies=[]
             self.restricted=None
             self.GSIP=None
+            self.IPs=[]
+            self.ionstates=[]
             self.gbwfile=None
             self.outfile=None
             self.cisfile=None
@@ -914,10 +916,7 @@ def PhotoElectronSpectrum(theory=None, fragment=None, InitialState_charge=None, 
             # Final state orbitals for MO-DOSplot
             fstate.occorbs_alpha, fstate.occorbs_beta, fstate.hftyp = orbitalgrab(theory.inputfilename+'.out')
 
-            print("fstate:", fstate)
             print(fstate.__dict__)
-            print(fstate.hftyp)
-            print(fstate.restricted)
             if fstate.hftyp == "UHF":
                 fstate.restricted = False
             elif fstate.hftyp == "RHF":
@@ -936,37 +935,40 @@ def PhotoElectronSpectrum(theory=None, fragment=None, InitialState_charge=None, 
     print("All SCF and TDDFT calculations done!")
     blankline()
     blankline()
-    ionstates = [];
-    IPs = []
+    FinalIPs = []
+    Finalionstates = []
     print(bcolors.OKBLUE,"Initial State SCF energy:", stateI.energy, "au",bcolors.ENDC)
-
+    print("")
     for fstate in Finalstates:
+        print("---------------------------------------------------------------------------")
         print("Now going through SCF energy and TDDFT transitions for FinalState mult: ", fstate.mult)
         # 1st vertical IP via deltaSCF
         GSIP=(fstate.energy-stateI.energy)*constants.hartoeV
         fstate.GSIP=GSIP
         print(bcolors.OKBLUE,"Initial Final State SCF energy:", fstate.energy, "au", bcolors.ENDC)
-        print(bcolors.OKBLUE,"1st vertical IP (delta-SCF):", GSIP,bcolors.ENDC)
+        print(bcolors.OKBLUE,"1st vertical IP (delta-SCF):", fstate.GSIP,bcolors.ENDC)
         print("")
         # TDDFT states
         print(bcolors.OKBLUE, "TDDFT transition energies (eV) for FinalState (mult: {}) : {}\n".format(fstate.mult, fstate.TDtransitionenergies), bcolors.ENDC, )
 
         # Adding GS-IP to IP-list and GS ion to ionstate
-        IPs.append(GSIP)
-        ionstates.append(fstate.energy)
+        fstate.IPs.append(fstate.GSIP)
+        fstate.ionstates.append(fstate.energy)
         for e in fstate.TDtransitionenergies:
-            ionstates.append(e / constants.hartoeV + fstate.energy)
-            IPs.append((e / constants.hartoeV + fstate.energy - stateI.energy) * constants.hartoeV)
+            fstate.ionstates.append(e / constants.hartoeV + fstate.energy)
+            fstate.IPs.append((e / constants.hartoeV + fstate.energy - stateI.energy) * constants.hartoeV)
         print("")
-        print(bcolors.OKBLUE, "TDDFT-derived IPs (eV), delta-SCF IP plus TDDFT transition energies:\n", bcolors.ENDC, IPs)
-        print(bcolors.OKBLUE, "Ion-state energies (au):\n", bcolors.ENDC, ionstates)
+        print(bcolors.OKBLUE, "TDDFT-derived IPs (eV), delta-SCF IP plus TDDFT transition energies:\n", bcolors.ENDC, fstate.IPs)
+        print(bcolors.OKBLUE, "Ion-state energies (au):\n", bcolors.ENDC, fstate.ionstates)
         print("")
+        FinalIPs = FinalIPs + fstate.IPs
+        Finalionstates = Finalionstates + fstate.ionstates
 
     blankline()
     blankline()
-    print("All combined Final IPs:", IPs)
+    print("All combined Final IPs:", FinalIPs)
     blankline()
-    print("All combined Ion-state energies (au):", ionstates)
+    print("All combined Ion-state energies (au):", Finalionstates)
     #MO IP spectrum:
     stk_alpha,stk_beta=modosplot(stateI.occorbs_alpha,stateI.occorbs_beta,stateI.hftyp)
     moips=sorted(stk_alpha+stk_beta)
