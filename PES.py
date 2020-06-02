@@ -912,7 +912,7 @@ def PhotoElectronSpectrum(theory=None, fragment=None, InitialState_charge=None, 
             #Grab TDDFT states from ORCA file:
             fstate.TDtransitionenergies = tddftgrab(theory.inputfilename+'.out')
             # Final state orbitals for MO-DOSplot
-            fstate.occorbs_alpha, fstate.occorbs_beta, fstate.hftyp_ = orbitalgrab(theory.inputfilename+'.out')
+            fstate.occorbs_alpha, fstate.occorbs_beta, fstate.hftyp = orbitalgrab(theory.inputfilename+'.out')
 
             print("fstate:", fstate)
             print(fstate.__dict__)
