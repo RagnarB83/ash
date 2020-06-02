@@ -697,7 +697,7 @@ def grabatomcharges_ORCA(chargemodel,outputfile):
                     if 'Sum of atomic' in line:
                         grab=False
                     elif '------' not in line:
-                        charges.append(float(line.split()[2]))
+                        charges.append(float(line.split()[3]))
                 if 'MULLIKEN ATOMIC CHARGES' in line:
                     grab=True
     elif chargemodel == "Loewdin":
@@ -707,7 +707,7 @@ def grabatomcharges_ORCA(chargemodel,outputfile):
                     if 'Sum of atomic' in line:
                         grab=False
                     elif '------' not in line:
-                        charges.append(float(line.split()[2]))
+                        charges.append(float(line.split()[3]))
                 if 'LOEWDIN ATOMIC CHARGES' in line:
                     grab=True
     elif chargemodel == "IAO":
