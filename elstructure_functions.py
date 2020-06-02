@@ -1,3 +1,4 @@
+import numpy as np
 #CM5. from https://github.com/patrickmelix/CM5-calculator/blob/master/cm5calculator.py
 
 #data from paper for element 1-118
