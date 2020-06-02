@@ -771,46 +771,112 @@ def PhotoElectronSpectrum(theory=None, fragment=None, InitialState_charge=None, 
         exit(1)
 
     #Getting charge/mult of states from function argument
-    stateIcharge=InitialState_charge
-    stateImult=Initialstate_mult
-    stateFcharge=Ionizedstate_charge
-    stateFmult=Ionizedstate_mult
     totnuccharge=fragment.nuccharge
     fragment.print_coords()
     blankline()
-    print(bcolors.OKBLUE,"StateI: Charge=", stateIcharge, "Multiplicity", stateImult,bcolors.ENDC)
-    print(bcolors.OKBLUE,"StateF: Charge=", stateFcharge, "Multiplicity", stateFmult,bcolors.ENDC)
+
+    # new class for state (Initial, Final etc.) that may differ in charge or spin
+    #Will contain energies, MOs, transition energies, IPs etc.
+    class MolState:
+        def __init__(self,charge,mult):
+
+            self.charge=charge
+            self.mult=mult
+            self.tddftstates=[]
+            self.dysonorbs=[]
+            self.energy=0.0
+            self.occorbs_alpha = []
+            self.occorbs_beta= []
+            self.hftyp = None
+            self.TDtransitionenergies=[]
+            self.restricted=None
+            self.GSIP=None
+            self.gbwfile=None
+            self.outfile=None
+            self.cisfile=None
+
+    # Always just one StateI object with one charge and one spin multiplicity
+    stateI = MolState(charge=InitialState_charge, mult=Initialstate_mult)
+    print(bcolors.OKBLUE, "StateI: Charge=", stateI.charge, "Multiplicity", stateI.mult, bcolors.ENDC)
+
+    if type(Ionizedstate_mult) is int:
+        stateF1 = MolState(charge=Ionizedstate_charge, mult=Ionizedstate_mult)
+        MultipleSpinStates = False
+        Finalstates=[stateF1]
+        print(bcolors.OKBLUE, "StateF_1: Charge=", Finalstates[0].charge, "Multiplicity", Finalstates[0].mult,
+          bcolors.ENDC)
+    #Case list provided for ionized state. Could mean multiple spin states: e.g.  Ionizedstate_mult=[5,7]
+    elif type(Ionizedstate_mult) is list:
+
+        if len(list) == 1:
+            MultipleSpinStates = False
+            stateF1 = MolState(charge=Ionizedstate_charge, mult=Ionizedstate_mult[0])
+            Finalstates = [stateF1]
+            print(bcolors.OKBLUE, "StateF_1: Charge=", Finalstates[0].charge, "Multiplicity", Finalstates[0].mult,
+                  bcolors.ENDC)
+        elif len(list) == 2:
+            MultipleSpinStates = True
+            stateF1 = MolState(charge=Ionizedstate_charge, mult=Ionizedstate_mult[0])
+            stateF2 = MolState(charge=Ionizedstate_charge, mult=Ionizedstate_mult[1])
+            Finalstates = [stateF1,stateF2]
+            print("Multiple spin states for Final State:")
+            print(bcolors.OKBLUE, "StateF_1: Charge=", Finalstates[0].charge, "Multiplicity", Finalstates[0].mult,
+                  bcolors.ENDC)
+            print(bcolors.OKBLUE, "StateF_2: Charge=", Finalstates[1].charge, "Multiplicity", Finalstates[1].mult,
+                  bcolors.ENDC)
+        else:
+            print("More than Two spin multiplicities are now allowed in Ionizedstate_mult argument")
+            exit(1)
+
+    else:
+        print("Unknown type for Ionizedstate_mult value. Should be integer or list of integers")
+
+
+
     print("")
     print(bcolors.OKBLUE,"Calculated ion states:", numionstates, bcolors.ENDC)
     print(bcolors.OKBLUE,"TDDFT-calculated ion states:", numionstates-1, bcolors.ENDC)
     print("")
 
-    #Create inputfiles or just run
 
 
     #ORCA-theory
     if theory.__class__.__name__ == "ORCATheory":
 
         #Initial state energy
-        theory.charge=stateIcharge
-        theory.mult=stateImult
+        theory.charge=stateI.charge
+        theory.mult=stateI.mult
         theory.extraline=theory.extraline+"%method\n"+"frozencore FC_NONE\n"+"end\n"
         #Init_State1_energy = theory.run(current_coords=fragment.coords, elems=fragment.elems)
         print(bcolors.OKGREEN, "Calculating Initial State SCF.",bcolors.ENDC)
         Singlepoint(fragment=fragment, theory=theory)
         #Note: Using SCF energy and not Final Single Point energy (does not work for TDDFT)
-        Init_State1_energy=scfenergygrab("orca-input.out")
+        stateI.energy=scfenergygrab("orca-input.out")
 
 
         #Saveing GBW file
-        shutil.copyfile(theory.inputfilename + '.gbw', './' + 'Init_State1' + '.gbw')
-        shutil.copyfile(theory.inputfilename + '.out', './' + 'Init_State1' + '.out')
+        shutil.copyfile(theory.inputfilename + '.gbw', './' + 'Init_State' + '.gbw')
+        shutil.copyfile(theory.inputfilename + '.out', './' + 'Init_State' + '.out')
+
+        stateI.gbwfile="Init_State"+".gbw"
+        stateI.outfile="Init_State"+".out"
+        stateI.cisfile="Init_State"+".cif"
+
         # Initial state orbitals for MO-DOSplot
-        occorbsI_alpha, occorbsI_beta, hftyp_I = orbitalgrab(theory.inputfilename+'.out')
+        stateI.occorbs_alpha, stateI.occorbs_beta, stateI.hftyp = orbitalgrab(theory.inputfilename+'.out')
+
+
+        # need to specify whether Initial/Final states are restricted or not.
+        if stateI.hftyp == "UHF":
+            stateI.restricted = False
+        elif stateI.hftyp == "RHF":
+            stateI.restricted = True
+        else:
+            print("hmmm")
+            exit()
+
 
         #Final-state TDDFT calc
-        theory.charge=stateFcharge
-        theory.mult=stateFmult
         #Adding TDDFT block to inputfile
         if tda==False:
             # Boolean for whether no_tda is on or not
@@ -824,80 +890,95 @@ def PhotoElectronSpectrum(theory=None, fragment=None, InitialState_charge=None, 
         #Final_State1_energy = theory.run( current_coords=fragment.coords, elems=fragment.elems)
         blankline()
         print(bcolors.OKGREEN, "Calculating Final State SCF + TDDFT.", bcolors.ENDC)
-        Singlepoint(fragment=fragment, theory=theory)
-        Final_State1_energy = scfenergygrab("orca-input.out")
-        #Saveing GBW and CIS file
-        shutil.copyfile(theory.inputfilename + '.gbw', './' + 'Final_State1' + '.gbw')
-        shutil.copyfile(theory.inputfilename + '.cis', './' + 'Final_State1' + '.cis')
-        shutil.copyfile(theory.inputfilename + '.out', './' + 'Final_State1' + '.out')
-        #Grab TDDFT states from ORCA file:
-        TDtransitionenergies = tddftgrab(theory.inputfilename+'.out')
-        # Final state orbitals for MO-DOSplot
-        occorbsF_alpha, occorbsF_beta, hftyp_F = orbitalgrab(theory.inputfilename+'.out')
 
 
-        # need to specify whether Initial/Final states are restricted or not.
-        if hftyp_I == "UHF":
-            restricted_I = False
-        elif hftyp_I == "RHF":
-            restricted_I = True
-        else:
-            print("hmmm")
-            exit()
-        if hftyp_F == "UHF":
-            restricted_F = False
-        elif hftyp_F == "RHF":
-            restricted_F = True
-        else:
-            print("hmmm")
-            exit()
+        for fstate in Finalstates:
+            theory.charge=fstate.charge
+            theory.mult=fstate.mult
+            Singlepoint(fragment=fragment, theory=theory)
+            fstate.energy = scfenergygrab("orca-input.out")
+            #Saveing GBW and CIS file
+            shutil.copyfile(theory.inputfilename + '.gbw', './' + 'Final_State_mult' + str(fstate.mult) + '.gbw')
+            shutil.copyfile(theory.inputfilename + '.cis', './' + 'Final_State_mult' + str(fstate.mult) + '.cis')
+            shutil.copyfile(theory.inputfilename + '.out', './' + 'Final_State_mult' + str(fstate.mult) + '.out')
 
+            fstate.gbwfile="Final_State_mult"+str(fstate.mult)+".gbw"
+            fstate.outfile="Final_State_mult"+str(fstate.mult)+".out"
+            fstate.cisfile="Final_State_mult"+str(fstate.mult)+".cis"
+
+
+            #Grab TDDFT states from ORCA file:
+            fstate.TDtransitionenergies = tddftgrab(theory.inputfilename+'.out')
+            # Final state orbitals for MO-DOSplot
+            fstate.occorbs_alpha, fstate.occorbs_beta, fstate.hftyp_ = orbitalgrab(theory.inputfilename+'.out')
+
+            if fstate.hftyp == "UHF":
+                fstate.restricted = False
+            elif fstate.hftyp == "RHF":
+                fstate.restricted = True
+            else:
+                print("hmmm")
+                exit()
 
     else:
         print("Theory not supported for PhotoElectronSpectrum")
         exit(1)
 
-    #1st vertical IP via deltaSCF=
-    blankline()
-    blankline()
-    GSIP=(Final_State1_energy-Init_State1_energy)*constants.hartoeV
-    print(bcolors.OKBLUE,"Initial State SCF energy:", Init_State1_energy, "au",bcolors.ENDC)
-    print(bcolors.OKBLUE,"Initial Final State SCF energy:", Final_State1_energy, "au", bcolors.ENDC)
-    print(bcolors.OKBLUE,"1st vertical IP (delta-SCF):", GSIP,bcolors.ENDC)
-    print("")
 
+    blankline()
+    blankline()
+    print("All SCF and TDDFT calculations done!")
+    blankline()
+    blankline()
+    ionstates = [];
+    IPs = []
+    print(bcolors.OKBLUE,"Initial State SCF energy:", stateI.energy, "au",bcolors.ENDC)
+
+    for fstate in Finalstates:
+        print("Now going through SCF energy and TDDFT transitions for FinalState mult: ", fstate.mult)
+        # 1st vertical IP via deltaSCF
+        GSIP=(fstate.energy-stateI.energy)*constants.hartoeV
+        fstate.GSIP=GSIP
+        print(bcolors.OKBLUE,"Initial Final State SCF energy:", fstate.energy, "au", bcolors.ENDC)
+        print(bcolors.OKBLUE,"1st vertical IP (delta-SCF):", GSIP,bcolors.ENDC)
+        print("")
+        # TDDFT states
+        print(bcolors.OKBLUE, "TDDFT transition energies (eV) for FinalState (mult: {}) : {}\n".format(fstate.mult, fstate.TDtransitionenergies), bcolors.ENDC, )
+
+        # Adding GS-IP to IP-list and GS ion to ionstate
+        IPs.append(GSIP)
+        ionstates.append(fstate.energy)
+        for e in fstate.TDtransitionenergies:
+            ionstates.append(e / constants.hartoeV + fstate.energy)
+            IPs.append((e / constants.hartoeV + fstate.energy - stateI.energy) * constants.hartoeV)
+        print("")
+        print(bcolors.OKBLUE, "TDDFT-derived IPs (eV), delta-SCF IP plus TDDFT transition energies:\n", bcolors.ENDC, IPs)
+        print(bcolors.OKBLUE, "Ion-state energies (au):\n", bcolors.ENDC, ionstates)
+        print("")
+
+    blankline()
+    blankline()
+    print("All combined Final IPs:", IPs)
+    blankline()
+    print("All combined Ion-state energies (au):", ionstates)
     #MO IP spectrum:
-    stk_alpha,stk_beta=modosplot(occorbsI_alpha,occorbsI_beta,hftyp_I)
+    stk_alpha,stk_beta=modosplot(stateI.occorbs_alpha,stateI.occorbs_beta,stateI.hftyp)
     moips=sorted(stk_alpha+stk_beta)
     print(bcolors.OKBLUE,"MO IPs (negative of MO energies of State I):", bcolors.ENDC)
     print(moips)
     print("")
 
-    # TDDFT states
-    print(bcolors.OKBLUE, "TDDFT transition energies (eV):\n", bcolors.ENDC, TDtransitionenergies)
 
-    ionstates = [];
-    IPs = []
-    # Adding GS-IP to IP-list and GS ion to ionstate
-    IPs.append(GSIP);
-    ionstates.append(Final_State1_energy)
-    for e in TDtransitionenergies:
-        ionstates.append(e / constants.hartoeV + Final_State1_energy)
-        IPs.append((e / constants.hartoeV + Final_State1_energy - Init_State1_energy) * constants.hartoeV)
-    print("")
-    print(bcolors.OKBLUE, "Final IPs (eV), delta-SCF IP plus TDDFT transition energies:\n", bcolors.ENDC, IPs)
-    print(bcolors.OKBLUE, "Ion-state energies (au):\n", bcolors.ENDC, ionstates)
-    print("")
+
 
     ###########################################
     # Dyson orbitals for TDDFT STATES
     ###########################################
     if theory.__class__.__name__ == "ORCATheory":
         # Todo: Need to preserve this one as it has been deleted
-        gbwfile_init = glob.glob('Init_State1.gbw')[0]
-        gbwfile_final = glob.glob('Final_State1.gbw')[0]
-        cisfile_final = glob.glob('Final_State1.cis')[0]
-
+        #gbwfile_init = glob.glob('Init_State.gbw')[0]
+        # gbwfile_final = glob.glob('Final_State_mult.gbw')[0]
+        # cisfile_final = glob.glob('Final_State_mult.cis')[0]
         print(bcolors.OKGREEN, "Grabbing AO matrix, MO coefficients and excited states from ORCA GBW file and CIS file",
           bcolors.ENDC)
 
@@ -905,94 +986,110 @@ def PhotoElectronSpectrum(theory=None, fragment=None, InitialState_charge=None, 
           bcolors.ENDC)
         print("")
         # Get AO matrix from init state calculation
-        saveAOmatrix(gbwfile_init)
+        saveAOmatrix(stateI.gbwfile)
         # Specify frozencore or not.
         frozencore = 0
-        # Grab MO coefficients and write to files mos_init and mos_final
 
+        # Grab MO coefficients and write to files mos_init and mos_final
         if os.path.isfile('./mos_init') == True:
             print(bcolors.WARNING, "mos_init file already exists in dir! Using (is this what you want?!)", bcolors.ENDC)
         else:
-            mos_init = get_MO_from_gbw(gbwfile_init, restricted_I, frozencore)
+            mos_init = get_MO_from_gbw(stateI.gbwfile, stateI.restricted, frozencore)
             writestringtofile(mos_init, "mos_init")
-        if os.path.isfile('./mos_final') == True:
-            print(bcolors.WARNING, "mos_final file exists in dir! Using (is this what you want?!)", bcolors.ENDC)
-        else:
-            mos_final = get_MO_from_gbw(gbwfile_final, restricted_F, frozencore)
-            writestringtofile(mos_final, "mos_final")
+
+        for fstate in Finalstates:
+            mos_final = get_MO_from_gbw(fstate.gbwfile, fstate.restricted, frozencore)
+            writestringtofile(mos_final, "mos_final-mult"+str(fstate.mult))
+            #os.rename("mos_final","mos_final-mult"+str(fstate.mult))
 
         # Create determinant file for ionized TDDFT states
-
         # Needs Outputfile, CIS-file, restricted-option, XXX, GS multiplicity, number of ion states and states to skip
         # States per Initial and Final options
         statestoextract = [1, numionstates]
         statestoskip = [0, 0]
+
         # Number of multiplicity blocks I think. Should be 2 in general, 1 for GS and 1 for ionized
         # Not correct, should be actual multiplicites. Finalstate mult. If doing TDDFT-triplets then I guess we have more
-        mults = [stateFmult]
+
+
 
         # Threshold for WF. SHARC set it to 2.0
         wfthres = 2.0
-        # Final state.
 
-        # Skip slow determinant file creation if file already exists
-        if os.path.isfile('./dets_final') == True:
-            print(bcolors.WARNING, "dets_final file already exists in dir! Using (is this what you want?!)", bcolors.ENDC)
-        else:
-            # Final state
-            det_final = get_dets_from_cis("Final_State1.out", cisfile_final, restricted_F, mults, stateFcharge, stateFmult,
+        # Final state. Create detfiles
+        for fstate in Finalstates:
+            # mults = [stateFmult]
+            mults = [fstate.mult]
+            det_final = get_dets_from_cis(fstate.outfile, fstate.cisfile, fstate.restricted, mults, fstate.chargee, fstate.mult,
                                           totnuccharge, statestoextract, statestoskip, no_tda, frozencore, wfthres)
             # Printing to file
             for blockname, string in det_final.items():
-                writestringtofile(string, "dets_final")
-            # Now doing initial state. Redefine necessary here.
-            #det_init = get_dets_from_cis("Init_State1.out", "dummy", restricted_I, mults, stateIcharge, stateImult, totnuccharge,
-            #                             statestoextract, statestoskip, no_tda, frozencore, wfthres)
-            # RB simplification. Separate function for getting determinant-string for Initial State where only one.
-            det_init = get_dets_from_single("Init_State1.out", restricted_I, stateIcharge, stateImult, totnuccharge, frozencore)
-            # Printing to file
-            for blockname, string in det_init.items():
-                writestringtofile(string, "dets_init")
+                writestringtofile(string, "dets_final_mult"+str(fstate.mult))
 
-            print(bcolors.OKGREEN, "AO matrix, MO coefficients and excited state determinants have been written to files:",
-                  bcolors.ENDC)
-            print(bcolors.OKGREEN, "AO_overl, mos_init, mos_final, dets.1, dets.2", bcolors.ENDC)
+
+        # Now doing initial state. Redefine necessary here.
+        #det_init = get_dets_from_cis("Init_State1.out", "dummy", restricted_I, mults, stateIcharge, stateImult, totnuccharge,
+        #                             statestoextract, statestoskip, no_tda, frozencore, wfthres)
+        # RB simplification. Separate function for getting determinant-string for Initial State where only one.
+        det_init = get_dets_from_single(stateI.outfile, stateI.restricted, stateI.charge, stateI.mult, totnuccharge, frozencore)
+
+        # Printing to file
+        for blockname, string in det_init.items():
+            writestringtofile(string, "dets_init")
+
+        print(bcolors.OKGREEN, "AO matrix, MO coefficients and excited state determinants have been written to files:",
+              bcolors.ENDC)
+        # TODO
+        print(bcolors.OKGREEN, "AO_overl, mos_init, mos_final, dets.1, dets.2", bcolors.ENDC)
 
 
         ###################
-        # WFOverlap calculation
-        # Needs files: AO_overl, mos_init, mos_final, dets_final, dets_init
-        wfoverlapinput="""
-        mix_aoovl=AO_overl
-        a_mo=mos_final
-        b_mo=mos_init
-        a_det=dets_final
-        b_det=dets_init
-        a_mo_read=0
-        b_mo_read=0
-        ao_read=0
-        moprint=1
-        """
-
         # Run Wfoverlap to calculate Dyson norms. Will write to wfovl.out.  Will take a while for big systems.
         print("")
-        if os.path.isfile('./wfovl.out')==True:
-            print(bcolors.WARNING, "wfovl.out file exists in dir!",bcolors.ENDC)
-            print(bcolors.WARNING,"Using Dyson norms from file (is this what you want?!)",bcolors.ENDC)
-        else:
+        finaldysonnorms=[]
+        #Check if binary exists
+        if os.path.exists(path_wfoverlap) is False:
+            print("Path {} does NOT exist !".format(path_wfoverlap))
+            exit()
+
+
+        for fstate in Finalstates:
+            print("Running WFOverlap to calculate Dyson norms for Finalstate with mult: ", fstate.mult)
+            # WFOverlap calculation needs files: AO_overl, mos_init, mos_final, dets_final, dets_init
+            #Poing to file in inputfile
+            wfoverlapinput = """
+            mix_aoovl=AO_overl
+            a_mo=mos_final
+            b_mo=mos_init
+            a_det=dets_final
+            b_det=dets_init
+            a_mo_read=0
+            b_mo_read=0
+            ao_read=0
+            moprint=1
+            """
+            wfoverlapinput = wfoverlapinput.replace("dets_final", "dets_final_mult"+str(fstate.mult))
+            wfoverlapinput = wfoverlapinput.replace("mos_final", "mos_final-mult"+str(fstate.mult))
+
             run_wfoverlap(wfoverlapinput,path_wfoverlap)
 
-        #This grabs Dyson norms from wfovl.out file
-        dysonnorms=grabDysonnorms()
+            #This grabs Dyson norms from wfovl.out file
+            dysonnorms=grabDysonnorms()
+            print("")
+            print(bcolors.OKBLUE,"Dyson norms ({}):".format(len(dysonnorms)),bcolors.ENDC)
+            print(dysonnorms)
+            if len(dysonnorms) == 0:
+                print("List of Dyson norms is empty. Something went wrong. Exiting")
+            print("")
+            finaldysonnorms=finaldysonnorms+dysonnorms
         print("")
-        print(bcolors.OKBLUE,"Dyson norms ({}):".format(len(dysonnorms)),bcolors.ENDC)
-        print(dysonnorms)
+        print(bcolors.OKBLUE, "Final combined Dyson norms ({}):".format(len(finaldysonnorms)), bcolors.ENDC)
+        print(finaldysonnorms)
         print("")
-
         print("MO-IPs (alpha), eV : ", stk_alpha)
         print("MO-IPs (beta), eV : ", stk_beta)
-
-        return IPs, dysonnorms, stk_alpha,stk_beta
+        print("")
+        return IPs, finaldysonnorms, stk_alpha,stk_beta
     else:
         print("Unknown option")
         exit(1)
