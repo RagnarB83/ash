@@ -615,7 +615,7 @@ def chargemodel_select(chargemodel):
     elif chargemodel=='Hirshfeld':
         extraline='! Hirshfeld'
     elif chargemodel=='CM5':
-        extraline='\n%output Print[ P_Hirshfeld] 1 end'
+        extraline='! Hirshfeld'
     elif chargemodel=='Mulliken':
         pass
     elif chargemodel=='Loewdin':
@@ -688,7 +688,7 @@ def grabatomcharges_ORCA(chargemodel,outputfile):
         print("Hirshfeld charges :", charges)
         atomicnumbers=elemstonuccharges(elems)
         print("atomicnumbers:", atomicnumbers)
-        charges = calc_cm5(atomicNumbers, coords, hirschfeldcharges)
+        charges = calc_cm5(atomicnumbers, coords, hirschfeldcharges)
         print("CM5 charges :", charges)
     elif chargemodel == "Mulliken":
         with open(outputfile) as ofile:
