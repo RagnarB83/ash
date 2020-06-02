@@ -1,4 +1,5 @@
 import numpy as np
+import functions_coords
 #CM5. from https://github.com/patrickmelix/CM5-calculator/blob/master/cm5calculator.py
 
 #data from paper for element 1-118
@@ -59,7 +60,7 @@ _DNO = -0.0346
 def distance_matrix_from_coords(coords):
     distmatrix=[]
     for i in coords:
-        dist_row=[distance(i,j) for j in coords]
+        dist_row=[functions_coords.distance(i,j) for j in coords]
         distmatrix.append(dist_row)
     return distmatrix
             
