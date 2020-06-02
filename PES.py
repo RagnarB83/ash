@@ -1097,7 +1097,7 @@ def PhotoElectronSpectrum(theory=None, fragment=None, InitialState_charge=None, 
         print("MO-IPs (alpha), eV : ", stk_alpha)
         print("MO-IPs (beta), eV : ", stk_beta)
         print("")
-        return IPs, finaldysonnorms, stk_alpha,stk_beta
+        return FinalIPs, finaldysonnorms, stk_alpha,stk_beta
     else:
         print("Unknown option")
         exit(1)
