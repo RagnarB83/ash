@@ -606,6 +606,7 @@ def create_orca_pcfile(name,elems,coords,listofcharges):
 # Chargemodel select. Creates ORCA-inputline with appropriate keywords
 # To be added to ORCA input.
 def chargemodel_select(chargemodel):
+    extraline=""
     if chargemodel=='NPA':
         extraline='! NPA'
     elif chargemodel=='CHELPG':
@@ -614,12 +615,31 @@ def chargemodel_select(chargemodel):
         extraline='\n%output Print[ P_Hirshfeld] 1 end'
     elif chargemodel=='CM5':
         extraline='\n%output Print[ P_Hirshfeld] 1 end'
+    elif chargemodel=='Mulliken':
+        pass
+    elif chargemodel=='Loewdin':
+        pass
+    elif chargemodel=="IAO"
+        extraline = '\n%loc LocMet IAOIBO \n T_CORE -99999999 end'
+
     return extraline
 
 def grabatomcharges_ORCA(chargemodel,outputfile):
     grab=False
     charges=[]
-    if chargemodel=="CHELPG":
+    if chargemodel=="NPA" or chargemodel=="NBO":
+        print("Warning: NPA/NBO charge-option in ORCA requires setting environment variable NBOEXE:")
+        print("e.g. export NBOEXE=/path/to/nbo7.exe")
+        with open(outputfile) as ofile:
+            for line in ofile:
+                if grab==True:
+                    if '=======' in line:
+                        grab=False
+                    elif '------' not in line:
+                        charges.append(float(line.split()[2]))
+                if 'Atom No    Charge        Core      Valence    Rydberg      Total' in line:
+                    grab=True
+    elif chargemodel=="CHELPG":
         with open(outputfile) as ofile:
             for line in ofile:
                 if grab==True:
@@ -638,6 +658,37 @@ def grabatomcharges_ORCA(chargemodel,outputfile):
                     if len(line.split()) == 4:
                         charges.append(float(line.split()[-2]))
                 if '  ATOM     CHARGE      SPIN' in line:
+                    grab=True
+    elif chargemodel == "Mulliken":
+        with open(outputfile) as ofile:
+            for line in ofile:
+                if grab==True:
+                    if 'Sum of atomic' in line:
+                        grab=False
+                    elif '------' not in line:
+                        charges.append(float(line.split()[2]))
+                if 'MULLIKEN ATOMIC CHARGES' in line:
+                    grab=True
+    elif chargemodel == "Loewdin":
+        with open(outputfile) as ofile:
+            for line in ofile:
+                if grab==True:
+                    if 'Sum of atomic' in line:
+                        grab=False
+                    elif '------' not in line:
+                        charges.append(float(line.split()[2]))
+                if 'LOEWDIN ATOMIC CHARGES' in line:
+                    grab=True
+    elif chargemodel == "IAO":
+        with open(outputfile) as ofile:
+            for line in ofile:
+                if grab==True:
+                    if 'Sum of atomic' in line:
+                        grab=False
+                    elif '------' not in line:
+                        if 'Warning!!!' not in line:
+                            charges.append(float(line.split()[2]))
+                if 'IAO PARTIAL CHARGES' in line:
                     grab=True
     else:
         print("Unknown chargemodel. Exiting...")

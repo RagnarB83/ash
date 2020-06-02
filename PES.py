@@ -1088,6 +1088,7 @@ def PhotoElectronSpectrum(theory=None, fragment=None, InitialState_charge=None, 
             print(dysonnorms)
             if len(dysonnorms) == 0:
                 print("List of Dyson norms is empty. Something went wrong. Exiting")
+                exit()
             print("")
             finaldysonnorms=finaldysonnorms+dysonnorms
         print("")
