@@ -1026,7 +1026,7 @@ def PhotoElectronSpectrum(theory=None, fragment=None, InitialState_charge=None, 
         for fstate in Finalstates:
             # mults = [stateFmult]
             mults = [fstate.mult]
-            det_final = get_dets_from_cis(fstate.outfile, fstate.cisfile, fstate.restricted, mults, fstate.chargee, fstate.mult,
+            det_final = get_dets_from_cis(fstate.outfile, fstate.cisfile, fstate.restricted, mults, fstate.charge, fstate.mult,
                                           totnuccharge, statestoextract, statestoskip, no_tda, frozencore, wfthres)
             # Printing to file
             for blockname, string in det_final.items():
