@@ -864,6 +864,8 @@ def PhotoElectronSpectrum(theory=None, fragment=None, InitialState_charge=None, 
 
         # Initial state orbitals for MO-DOSplot
         stateI.occorbs_alpha, stateI.occorbs_beta, stateI.hftyp = orbitalgrab(theory.inputfilename+'.out')
+        print("stateI.occorbs_alpha:", stateI.occorbs_alpha)
+        print("stateI.hftyp:", stateI.hftyp)
 
 
         # need to specify whether Initial/Final states are restricted or not.
@@ -912,6 +914,10 @@ def PhotoElectronSpectrum(theory=None, fragment=None, InitialState_charge=None, 
             # Final state orbitals for MO-DOSplot
             fstate.occorbs_alpha, fstate.occorbs_beta, fstate.hftyp_ = orbitalgrab(theory.inputfilename+'.out')
 
+            print("fstate:", fstate)
+            print(fstate.__dict__)
+            print(fstate.hftyp)
+            print(fstate.restricted)
             if fstate.hftyp == "UHF":
                 fstate.restricted = False
             elif fstate.hftyp == "RHF":
@@ -1165,7 +1171,7 @@ def plot_PES_Spectrum(IPs=None, dysonnorms=None, mos_alpha=None, mos_beta=None, 
 
     for i in range(0, len(x)):
         datfile.write(str(x[i]) + " ")
-        datfile.write(str(occDOS_alpha[i]) + " ")
+        datfile.write(str(occDOS_alpha[i]) + " \n")
         if hftyp_I == "UHF":
             datfile.write(str(occDOS_beta[i]) + "\n")
     datfile.close()
