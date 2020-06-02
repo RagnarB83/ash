@@ -101,6 +101,8 @@ def distance(A,B):
     #return sqrt(np.power((A - B), 2).sum())
     #return np.sum((A - B) ** 2)**0.5 #very slow
 
+
+
 def center_of_mass(coords,masses):
     print("to be finished")
     exit()
@@ -478,7 +480,7 @@ def nucchargexyz(file):
         totnuccharge+=atcharge
     return totnuccharge
 
-#Calculate nuclear charge from list of elements
+#Calculate total nuclear charge from list of elements
 def nucchargelist(ellist):
     totnuccharge=0
     els=[]
@@ -488,7 +490,8 @@ def nucchargelist(ellist):
     return totnuccharge
 
 #get list of nuclear charges from list of elements
-#Used by Psi4
+#Used by Psi4 and CM5calc
+# aka atomic numbers, aka atom numbers
 def elemstonuccharges(ellist):
     nuccharges=[]
     for e in ellist:

@@ -2,6 +2,7 @@ import subprocess as sp
 from functions_solv import *
 from functions_coords import *
 from functions_general import *
+from elstructure_functions import *
 import settings_solvation
 import constants
 import multiprocessing as mp
@@ -612,7 +613,7 @@ def chargemodel_select(chargemodel):
     elif chargemodel=='CHELPG':
         extraline='! CHELPG'
     elif chargemodel=='Hirshfeld':
-        extraline='\n%output Print[ P_Hirshfeld] 1 end'
+        extraline='! Hirshfeld'
     elif chargemodel=='CM5':
         extraline='\n%output Print[ P_Hirshfeld] 1 end'
     elif chargemodel=='Mulliken':
@@ -626,7 +627,9 @@ def chargemodel_select(chargemodel):
 
 def grabatomcharges_ORCA(chargemodel,outputfile):
     grab=False
+    coordgrab=False
     charges=[]
+
     if chargemodel=="NPA" or chargemodel=="NBO":
         print("Warning: NPA/NBO charge-option in ORCA requires setting environment variable NBOEXE:")
         print("e.g. export NBOEXE=/path/to/nbo7.exe")
@@ -659,6 +662,34 @@ def grabatomcharges_ORCA(chargemodel,outputfile):
                         charges.append(float(line.split()[-2]))
                 if '  ATOM     CHARGE      SPIN' in line:
                     grab=True
+    elif chargemodel=="CM5":
+        elems = []
+        coords = []
+        with open(outputfile) as ofile:
+            for line in ofile:
+                #Getting coordinates as used in CM5 definition
+                if coordgrab is True:
+                    if '----------------------' not in line:
+                        if len(line.split()) <2:
+                            coordgrab=False
+                        else:
+                            elems.append(line.split()[0])
+                            coords_x=float(line.split()[1]); coords_y=float(line.split()[2]); coords_z=float(line.split()[3])
+                            coords.append([coords_x,coords_y,coords_z])
+                if 'CARTESIAN COORDINATES (ANGSTROEM)' in line:
+                    coordgrab=True
+                if grab==True:
+                    if len(line) < 3:
+                        grab=False
+                    if len(line.split()) == 4:
+                        charges.append(float(line.split()[-2]))
+                if '  ATOM     CHARGE      SPIN' in line:
+                    grab=True
+        print("Hirshfeld charges :", charges)
+        atomicnumbers=elemstonuccharges(elems)
+        print("atomicnumbers:", atomicnumbers)
+        charges = calc_cm5(atomicNumbers, coords, hirschfeldcharges)
+        print("CM5 charges :", charges)
     elif chargemodel == "Mulliken":
         with open(outputfile) as ofile:
             for line in ofile:
@@ -694,3 +725,4 @@ def grabatomcharges_ORCA(chargemodel,outputfile):
         print("Unknown chargemodel. Exiting...")
         exit()
     return charges
+
