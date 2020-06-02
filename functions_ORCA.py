@@ -720,7 +720,7 @@ def grabatomcharges_ORCA(chargemodel,outputfile):
                         grab=False
                     elif '------' not in line:
                         if 'Warning!!!' not in line:
-                            charges.append(float(line.split()[2]))
+                            charges.append(float(line.split()[3]))
                 if 'IAO PARTIAL CHARGES' in line:
                     grab=True
     else:
