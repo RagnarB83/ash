@@ -71,7 +71,7 @@ def calc_cm5(atomicNumbers, coords, hirschfeldcharges):
     atomicNumbers=np.array(atomicNumbers)
     #all matrices have the naming scheme matrix[k,k'] according to the paper
     #distances = atoms.get_all_distances(mic=True)
-    distances = distance_matrix_from_coords(coords)
+    distances = np.array(distance_matrix_from_coords(coords))
     print("distances:", distances)
     #atomicNumbers = np.array(atoms.numbers)
     print("atomicNumbers", atomicNumbers)
