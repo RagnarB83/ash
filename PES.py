@@ -1109,12 +1109,12 @@ def PhotoElectronSpectrum(theory=None, fragment=None, InitialState_charge=None, 
         print("State no.     Mult      TotalE    IE   Dyson-norm   State-type")
         for i, (E, IE, dys) in enumerate(zip(Finalionstates,FinalIPs,finaldysonnorms)):
             if i == 0:
-                type='SCF'
+                stype='SCF'
             else:
-                type = 'TDDFT'
+                stype = 'TDDFT'
                 if MultipleSpinStates is True:
                     if i == numionstates:
-                        type='SCF'
+                        stype='SCF'
 
             if MultipleSpinStates is True:
                 if i < numionstates:
@@ -1124,7 +1124,7 @@ def PhotoElectronSpectrum(theory=None, fragment=None, InitialState_charge=None, 
             else:
                 spinmult=stateF1.mult
 
-            print("{}     {}    {}    {}    {}    {}".format(i, spinmult, E, IE, dys,type))
+            print("{}     {}    {}    {}    {}    {}".format(i, spinmult, E, IE, dys,stype))
 
 
 
