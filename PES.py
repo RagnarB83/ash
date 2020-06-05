@@ -893,10 +893,9 @@ def PhotoElectronSpectrum(theory=None, fragment=None, InitialState_charge=None, 
         theory.extraline=theory.extraline+tddftstring
         #Final_State1_energy = theory.run( current_coords=fragment.coords, elems=fragment.elems)
         blankline()
-        print(bcolors.OKGREEN, "Calculating Final State SCF + TDDFT.", bcolors.ENDC)
-
 
         for fstate in Finalstates:
+            print(bcolors.OKGREEN, "Calculating Final State SCF + TDDFT. Spin Multiplicity: ", fstate.mult bcolors.ENDC)
             theory.charge=fstate.charge
             theory.mult=fstate.mult
             Singlepoint(fragment=fragment, theory=theory)
