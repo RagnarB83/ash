@@ -1101,9 +1101,11 @@ def PhotoElectronSpectrum(theory=None, fragment=None, InitialState_charge=None, 
         print("")
 
         #Print table with info
+        print("-------------------------------------------------------------------------")
         print("Initial state:")
-        print("State no.     Mult      TotalE")
-        print("0     {}    {}".format(stateI.mult, stateI.energy))
+        print("{:<10} {:<10} {:>20}".format("State no.", "Mult", "TotalE"))
+        #{:<20} {:>20.12f}
+        print("{:<10d} {:<10d} {:>20.12f}".format(0, stateI.mult, stateI.energy))
         print("")
         print("Final ionized states:")
         print("State no.     Mult      TotalE    IE   Dyson-norm   State-type")
@@ -1123,8 +1125,7 @@ def PhotoElectronSpectrum(theory=None, fragment=None, InitialState_charge=None, 
                     spinmult=Finalstates[1].mult
             else:
                 spinmult=stateF1.mult
-
-            print("{}     {}    {}    {}    {}    {}".format(i, spinmult, E, IE, dys,stype))
+            print("{:>6d} {:>6d} {:17.11f} {:8.2f} {:10.5f} {:>5}".format(i, spinmult, E, IE, dys,stype))
 
 
 
