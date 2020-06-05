@@ -1110,13 +1110,13 @@ def PhotoElectronSpectrum(theory=None, fragment=None, InitialState_charge=None, 
         print("{:>6d} {:>7d} {:20.11f} {:>8}".format(0, stateI.mult, stateI.energy, "SCF"))
         print("")
         print("Final ionized states:")
-        print("{:>6} {:>7} {:^20} {:8} {:10} {:>5} {:>15}".format("State no.", "Mult", "TotalE (Eh)", "IE (eV)", "Dyson-norm", "State-type", "TDDFT Exc.E. (eV)"))
+        print("{:>6} {:>7} {:^20} {:8} {:10} {:>7} {:>15}".format("State no.", "Mult", "TotalE (Eh)", "IE (eV)", "Dyson-norm", "State-type", "TDDFT Exc.E. (eV)"))
         for i, (E, IE, dys) in enumerate(zip(Finalionstates,FinalIPs,finaldysonnorms)):
             #Getting type of state
             if i == 0:
                 stype='SCF'
             else:
-                stype = 'TDDFT'
+                stype = 'TDA'
                 if MultipleSpinStates is True:
                     if i == numionstates:
                         stype='SCF'
@@ -1129,7 +1129,7 @@ def PhotoElectronSpectrum(theory=None, fragment=None, InitialState_charge=None, 
             else:
                 spinmult=stateF1.mult
             #Getting TDDFT transition energy
-            if stype == "TDDFT":
+            if stype == "TDA":
                 if i < numionstates:
                     TDtransenergy = Finalstates[0].TDtransitionenergies[i-1]
                 else:
