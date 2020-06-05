@@ -1134,9 +1134,10 @@ def PhotoElectronSpectrum(theory=None, fragment=None, InitialState_charge=None, 
                     TDtransenergy = Finalstates[0].TDtransitionenergies[i-1]
                 else:
                     print("i:", i)
+                    index=i-numionstates-1
+                    print("index:", index)
                     print("Finalstates[1].TDtransitionenergies: ", Finalstates[1].TDtransitionenergies)
-                    print("Finalstates[1].TDtransitionenergies[i-1] :", Finalstates[1].TDtransitionenergies[i-1])
-                    TDtransenergy = Finalstates[1].TDtransitionenergies[i-1]
+                    TDtransenergy = Finalstates[1].TDtransitionenergies[index]
 
             else:
                 TDtransenergy=0.0
