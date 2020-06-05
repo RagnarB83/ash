@@ -936,6 +936,7 @@ def PhotoElectronSpectrum(theory=None, fragment=None, InitialState_charge=None, 
     blankline()
     FinalIPs = []
     Finalionstates = []
+    FinalTDtransitionenergies =[]
     print(bcolors.OKBLUE,"Initial State SCF energy:", stateI.energy, "au",bcolors.ENDC)
     print("")
     for fstate in Finalstates:
@@ -962,6 +963,7 @@ def PhotoElectronSpectrum(theory=None, fragment=None, InitialState_charge=None, 
         print("")
         FinalIPs = FinalIPs + fstate.IPs
         Finalionstates = Finalionstates + fstate.ionstates
+        FinalTDtransitionenergies = FinalTDtransitionenergies + fstate.TDtransitionenergies
 
     blankline()
     blankline()
@@ -1108,8 +1110,9 @@ def PhotoElectronSpectrum(theory=None, fragment=None, InitialState_charge=None, 
         print("{:>6d} {:>7d} {:20.11f} {:>8}".format(0, stateI.mult, stateI.energy, "SCF"))
         print("")
         print("Final ionized states:")
-        print("{:>6} {:>7} {:^20} {:8} {:10} {:>5}".format("State no.", "Mult", "TotalE", "IE", "Dyson-norm", "State-type"))
+        print("{:>6} {:>7} {:^20} {:8} {:10} {:>5} {:>10}".format("State no.", "Mult", "TotalE", "IE", "Dyson-norm", "State-type", "TDDFT Exc.E."))
         for i, (E, IE, dys) in enumerate(zip(Finalionstates,FinalIPs,finaldysonnorms)):
+            #Getting type of state
             if i == 0:
                 stype='SCF'
             else:
@@ -1117,7 +1120,7 @@ def PhotoElectronSpectrum(theory=None, fragment=None, InitialState_charge=None, 
                 if MultipleSpinStates is True:
                     if i == numionstates:
                         stype='SCF'
-
+            #Getting spinmult
             if MultipleSpinStates is True:
                 if i < numionstates:
                     spinmult=Finalstates[0].mult
@@ -1125,7 +1128,16 @@ def PhotoElectronSpectrum(theory=None, fragment=None, InitialState_charge=None, 
                     spinmult=Finalstates[1].mult
             else:
                 spinmult=stateF1.mult
-            print("{:>6d} {:>7d} {:20.11f} {:8.3f} {:10.5f} {:>8}".format(i, spinmult, E, IE, dys,stype))
+            #Getting TDDFT transition energy
+            if stype == "TDDFT":
+                if i < numionstates:
+                    TDtransenergy = Finalstates[0].fstate.TDtransitionenergies[i-1]
+                else:
+                    TDtransenergy = Finalstates[1].fstate.TDtransitionenergies[i-1]
+
+            else:
+                TDtransenergy=0.0
+            print("{:>6d} {:>7d} {:20.11f} {:8.3f} {:10.5f} {:>8} {:>8.3f}".format(i, spinmult, E, IE, dys,stype, TDtransenergy))
 
 
 
