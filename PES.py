@@ -1137,7 +1137,7 @@ def PhotoElectronSpectrum(theory=None, fragment=None, InitialState_charge=None, 
 
             else:
                 TDtransenergy=0.0
-            print("{:>6d} {:>7d} {:20.11f} {:8.3f} {:10.5f} {:>8} {:>20.3f}".format(i, spinmult, E, IE, dys,stype, TDtransenergy))
+            print("{:>6d} {:>7d} {:20.11f} {:8.3f} {:10.5f} {:>10} {:>17.3f}".format(i, spinmult, E, IE, dys,stype, TDtransenergy))
 
 
 
