@@ -1106,10 +1106,10 @@ def PhotoElectronSpectrum(theory=None, fragment=None, InitialState_charge=None, 
         print("-------------------------------------------------------------------------")
         print("Initial state:")
         print("{:>6} {:>7} {:^20} {:^5}".format("State no.", "Mult", "TotalE", "State-type"))
-        print("{:>6d} {:>7d} {:20.11f} {:>5}".format(0, stateI.mult, stateI.energy, "SCF"))
+        print("{:>6d} {:>7d} {:20.11f} {:>8}".format(0, stateI.mult, stateI.energy, "SCF"))
         print("")
         print("Final ionized states:")
-        print("{:>6} {:>7} {:^20} {:^8} {:^10} {:>5}".format("State no.", "Mult", "TotalE", "IE", "Dyson-norm", "State-type"))
+        print("{:>6} {:>7} {:^20} {:8} {:10} {:>5}".format("State no.", "Mult", "TotalE", "IE", "Dyson-norm", "State-type"))
         for i, (E, IE, dys) in enumerate(zip(Finalionstates,FinalIPs,finaldysonnorms)):
             if i == 0:
                 stype='SCF'
