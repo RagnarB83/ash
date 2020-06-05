@@ -1131,9 +1131,9 @@ def PhotoElectronSpectrum(theory=None, fragment=None, InitialState_charge=None, 
             #Getting TDDFT transition energy
             if stype == "TDDFT":
                 if i < numionstates:
-                    TDtransenergy = Finalstates[0].fstate.TDtransitionenergies[i-1]
+                    TDtransenergy = Finalstates[0].TDtransitionenergies[i-1]
                 else:
-                    TDtransenergy = Finalstates[1].fstate.TDtransitionenergies[i-1]
+                    TDtransenergy = Finalstates[1].TDtransitionenergies[i-1]
 
             else:
                 TDtransenergy=0.0
