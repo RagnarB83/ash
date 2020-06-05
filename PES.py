@@ -1098,6 +1098,36 @@ def PhotoElectronSpectrum(theory=None, fragment=None, InitialState_charge=None, 
         print("MO-IPs (alpha), eV : ", stk_alpha)
         print("MO-IPs (beta), eV : ", stk_beta)
         print("")
+        print("")
+
+        #Print table with info
+        print("Initial state:")
+        print("State no.     Mult      TotalE")
+        print("0     {}    {}".format(stateI.mult, stateI.energy))
+        print("")
+        print("Final ionized states:")
+        print("State no.     Mult      TotalE    IE   Dyson-norm   State-type")
+        for i, (E, IE, dys) in enumerate(zip(Finalionstates,FinalIPs,finaldysonnorms)):
+            if i == 0:
+                type='SCF'
+            else:
+                type = 'TDDFT'
+                if MultipleSpinStates is True:
+                    if i == numionstates:
+                        type='SCF'
+
+            if MultipleSpinStates is True:
+                if i < numionstates:
+                    spinmult=Finalstates[0].mult
+                else:
+                    spinmult=Finalstates[1].mult
+            else:
+                spinmult=stateF1.mult
+
+            print("{}     {}    {}    {}    {}    {}".format(i, spinmult, E, IE, dys,type))
+
+
+
         return FinalIPs, finaldysonnorms, stk_alpha,stk_beta
     else:
         print("Unknown option")

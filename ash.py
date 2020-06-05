@@ -2049,7 +2049,7 @@ class ORCATheory:
         else:
             print(BC.FAIL,"Problem with ORCA run", BC.END)
             print(BC.OKBLUE,BC.BOLD, "------------ENDING ORCA-INTERFACE-------------", BC.END)
-            exit()
+            exit(1)
 
 
 
