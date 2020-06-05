@@ -1105,12 +1105,12 @@ def PhotoElectronSpectrum(theory=None, fragment=None, InitialState_charge=None, 
         print("FINAL RESULTS")
         print("-------------------------------------------------------------------------")
         print("Initial state:")
-        print("{:>6} {:>6} {:17} {:>5}".format("State no.", "Mult", "TotalE", "State-type"))
+        print("{:>6} {:>10} {:17} {:>5}".format("State no.", "Mult", "TotalE", "State-type"))
         #{:<20} {:>20.12f}
-        print("{:>6} {:>6} {:17}".format(0, stateI.mult, stateI.energy))
+        print("{:>6} {:>10} {:17}".format(0, stateI.mult, stateI.energy))
         print("")
         print("Final ionized states:")
-        print("{:>6} {:>6} {:17} {:8} {:10} {:>5}".format("State no.", "Mult", "TotalE", "IE", "Dyson-norm", "State-type"))
+        print("{:>6} {:>10} {:17} {:8} {:10} {:>5}".format("State no.", "Mult", "TotalE", "IE", "Dyson-norm", "State-type"))
         for i, (E, IE, dys) in enumerate(zip(Finalionstates,FinalIPs,finaldysonnorms)):
             if i == 0:
                 stype='SCF'
@@ -1127,7 +1127,7 @@ def PhotoElectronSpectrum(theory=None, fragment=None, InitialState_charge=None, 
                     spinmult=Finalstates[1].mult
             else:
                 spinmult=stateF1.mult
-            print("{:>6d} {:>6d} {:17.11f} {:8.3f} {:10.5f} {:>8}".format(i, spinmult, E, IE, dys,stype))
+            print("{:>6d} {:>10d} {:17.11f} {:8.3f} {:10.5f} {:>8}".format(i, spinmult, E, IE, dys,stype))
 
 
 
