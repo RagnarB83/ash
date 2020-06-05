@@ -890,7 +890,7 @@ def pointchargeupdate(fragment,fragmenttype,chargelist):
 def gasfragcalc_ORCA(fragmentobjects,Cluster,chargemodel,orcadir,orcasimpleinput,orcablocks,NUMPROC, brokensym=None, HSmult=None, atomstoflip=None):
     blankline()
     print("Now calculating atom charges for each fragment type in cluster")
-    for fragmentobject in fragmentobjects:
+    for id, fragmentobject in enumerate(fragmentobjects):
         blankline()
         print("Fragmentobject:", fragmentobject.Name)
         #Charge-model info to add to inputfile
@@ -905,14 +905,21 @@ def gasfragcalc_ORCA(fragmentobjects,Cluster,chargemodel,orcadir,orcasimpleinput
         print("Defined gasfrag:", gasfrag)
         print(gasfrag.__dict__)
         #Creating ORCA theory object with fragment
-        if brokensym==True:
-            ORCASPcalculation = ORCATheory(orcadir=orcadir, fragment=gasfrag, charge=fragmentobject.Charge,
-                                   mult=fragmentobject.Mult, orcasimpleinput=orcasimpleinput,
-                                   orcablocks=orcablocks, extraline=chargemodelline, brokensym=brokensym, HSmult=HSmult, atomstoflip=atomstoflip)
+
+        #Assuming mainfrag is fragmentobject 0 and only mainfrag can be Broken-symmetry
+        if id == 0:
+            if brokensym==True:
+                ORCASPcalculation = ORCATheory(orcadir=orcadir, fragment=gasfrag, charge=fragmentobject.Charge,
+                                       mult=fragmentobject.Mult, orcasimpleinput=orcasimpleinput,
+                                       orcablocks=orcablocks, extraline=chargemodelline, brokensym=brokensym, HSmult=HSmult, atomstoflip=atomstoflip)
+            else:
+                ORCASPcalculation = ORCATheory(orcadir=orcadir, fragment=gasfrag, charge=fragmentobject.Charge,
+                                       mult=fragmentobject.Mult, orcasimpleinput=orcasimpleinput,
+                                       orcablocks=orcablocks, extraline=chargemodelline)
         else:
             ORCASPcalculation = ORCATheory(orcadir=orcadir, fragment=gasfrag, charge=fragmentobject.Charge,
-                                   mult=fragmentobject.Mult, orcasimpleinput=orcasimpleinput,
-                                   orcablocks=orcablocks, extraline=chargemodelline)
+                                           mult=fragmentobject.Mult, orcasimpleinput=orcasimpleinput,
+                                           orcablocks=orcablocks, extraline=chargemodelline)
         print("ORCASPcalculation:", ORCASPcalculation)
         print(ORCASPcalculation.__dict__)
         #Run ORCA calculation with charge-model info
