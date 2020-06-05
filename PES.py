@@ -1102,6 +1102,8 @@ def PhotoElectronSpectrum(theory=None, fragment=None, InitialState_charge=None, 
 
         #Print table with info
         print("-------------------------------------------------------------------------")
+        print("FINAL RESULTS")
+        print("-------------------------------------------------------------------------")
         print("Initial state:")
         print("{:<10} {:<10} {:>20}".format("State no.", "Mult", "TotalE"))
         #{:<20} {:>20.12f}
