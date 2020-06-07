@@ -936,6 +936,10 @@ def gasfragcalc_ORCA(fragmentobjects,Cluster,chargemodel,orcadir,orcasimpleinput
         #Keep backup of ORCA outputfile
         shutil.copy(ORCASPcalculation.inputfilename + '.out', fragmentobject.Name + '.out')
         shutil.copyfile(ORCASPcalculation.inputfilename + '.out', './SPloop-files/'+fragmentobject.Name+'-Gascalc' + '.out')
+
+        if id ==0:
+            shutil.copy(ORCASPcalculation.inputfilename + '.gbw', ORCASPcalculation.inputfilename + 'lastorbitals.gbw')
+
         #Clean up ORCA job.
         ORCASPcalculation.cleanup()
         blankline()

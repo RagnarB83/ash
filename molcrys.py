@@ -240,6 +240,11 @@ def molcrys(cif_file=None, xtl_file=None, fragmentobjects=[], theory=None, numco
         QMtheory = ORCATheory(orcadir=theory.orcadir, charge=fragmentobjects[0].Charge, mult=fragmentobjects[0].Mult,
                               orcasimpleinput=theory.orcasimpleinput,
                               orcablocks=theory.orcablocks, extraline=chargemodelline)
+
+        #COPY LAST mainfrag orbitals here: called lastorbitals.gbw from gasfragcalc (mainfrag)
+        #Necessary to avoid broken-sym SpinFlip but should be good in general
+        shutil.copyfile('lastorbitals.gbw', 'orca-input.gbw')
+
     elif theory.__class__.__name__ == "xTBTheory":
         QMtheory = xTBTheory(xtbdir=theory.xtbdir, charge=fragmentobjects[0].Charge, mult=fragmentobjects[0].Mult, xtbmethod=theory.xtbmethod)
 
