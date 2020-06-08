@@ -1997,29 +1997,29 @@ class ORCATheory:
             if self.brokensym==True:
                 print("Brokensymmetry SpinFlipping on! HSmult: {} atomstoflip: {}".format(self.HSmult,self.atomstoflip))
                 create_orca_input_pc(self.inputfilename, qm_elems, current_coords, self.orcasimpleinput, self.orcablocks,
-                                        self.charge, self.mult, extraline=self.extraline, HSmult=self.HSmult,
+                                        self.charge, self.mult, extraline=self.extraline, HSmult=self.HSmult, Grad=Grad,
                                      atomstoflip=self.atomstoflip)
             else:
                 create_orca_input_pc(self.inputfilename, qm_elems, current_coords, self.orcasimpleinput, self.orcablocks,
-                                        self.charge, self.mult, extraline=self.extraline)
+                                        self.charge, self.mult, extraline=self.extraline, Grad=Grad)
         else:
             if self.brokensym == True:
                 print("Brokensymmetry SpinFlipping on! HSmult: {} atomstoflip: {}".format(self.HSmult, self.atomstoflip))
                 create_orca_input_plain(self.inputfilename, qm_elems, current_coords, self.orcasimpleinput,self.orcablocks,
-                                        self.charge,self.mult, extraline=self.extraline, HSmult=self.HSmult,
+                                        self.charge,self.mult, extraline=self.extraline, HSmult=self.HSmult, Grad=Grad,
                                      atomstoflip=self.atomstoflip)
             else:
                 create_orca_input_plain(self.inputfilename, qm_elems, current_coords, self.orcasimpleinput,self.orcablocks,
-                                        self.charge,self.mult, extraline=self.extraline)
+                                        self.charge,self.mult, extraline=self.extraline, Grad=Grad)
 
         #Run inputfile using ORCA parallelization. Take nprocs argument.
         #print(BC.OKGREEN, "------------Running ORCA calculation-------------", BC.END)
         print(BC.OKGREEN, "ORCA Calculation started.", BC.END)
-        # Doing gradient or not.
-        if Grad == True:
-            run_orca_SP_ORCApar(self.orcadir, self.inputfilename + '.inp', nprocs=nprocs, Grad=True)
-        else:
-            run_orca_SP_ORCApar(self.orcadir, self.inputfilename + '.inp', nprocs=nprocs)
+        # Doing gradient or not. Disabling.
+        #if Grad == True:
+        #    run_orca_SP_ORCApar(self.orcadir, self.inputfilename + '.inp', nprocs=nprocs, Grad=True)
+        #else:
+        run_orca_SP_ORCApar(self.orcadir, self.inputfilename + '.inp', nprocs=nprocs)
         #print(BC.OKGREEN, "------------ORCA calculation done-------------", BC.END)
         print(BC.OKGREEN, "ORCA Calculation done.", BC.END)
 

@@ -33,23 +33,23 @@ def run_inputfiles_in_parallel(orcadir, inpfiles, numcores):
 
 #Run single-point ORCA calculation (Energy or Engrad). Assumes no ORCA parallelization.
 #Function can be called by multiprocessing.
-def run_orca_SP(list, Grad=False):
+def run_orca_SP(list):
     orcadir=list[0]
     inpfile=list[1]
     print("Running inpfile", inpfile)
-    if Grad==True:
-        with open(inpfile) as ifile:
-            insert_line_into_file(inpfile, '!', '! Engrad')
+    #if Grad==True:
+    #    with open(inpfile) as ifile:
+    #        insert_line_into_file(inpfile, '!', '! Engrad')
     basename = inpfile.split('.')[0]
     with open(basename+'.out', 'w') as ofile:
         process = sp.run([orcadir + '/orca', basename+'.inp'], check=True, stdout=ofile, stderr=ofile, universal_newlines=True)
 
 # Run ORCA single-point job using ORCA parallelization. Will add pal-block if nprocs >1.
 # Takes possible Grad boolean argument.
-def run_orca_SP_ORCApar(orcadir, inpfile, nprocs=1, Grad=False):
-    if Grad==True:
-        with open(inpfile) as ifile:
-            insert_line_into_file(inpfile, '!', '! Engrad')
+def run_orca_SP_ORCApar(orcadir, inpfile, nprocs=1):
+    #if Grad==True:
+    #    with open(inpfile) as ifile:
+    #        insert_line_into_file(inpfile, '!', '! Engrad')
     #Add pal block to inputfile before running. Adding after '!' line. Should work for regular, new_job and compound job.
     if nprocs>1:
         palstring='% pal nprocs {} end'.format(nprocs)
