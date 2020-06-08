@@ -760,7 +760,8 @@ def Gaussian(x, mu, strength, sigma):
 #path_wfoverlap='/home/bjornsson/sharc-master/bin/wfoverlap.x'
 
 def PhotoElectronSpectrum(theory=None, fragment=None, InitialState_charge=None, Initialstate_mult=None,
-                          Ionizedstate_charge=None, Ionizedstate_mult=None, numionstates=50, path_wfoverlap=None, tda=True ):
+                          Ionizedstate_charge=None, Ionizedstate_mult=None, numionstates=50, path_wfoverlap=None, tda=True,
+                          brokensym=False, HSmult=None):
     blankline()
     print(bcolors.OKGREEN,"-------------------------------------------------------------------",bcolors.ENDC)
     print(bcolors.OKGREEN,"PhotoElectronSpectrum: Calculating PES spectra via TDDFT and Dyson-norm approach",bcolors.ENDC)
@@ -800,6 +801,10 @@ def PhotoElectronSpectrum(theory=None, fragment=None, InitialState_charge=None, 
     # Always just one StateI object with one charge and one spin multiplicity
     stateI = MolState(charge=InitialState_charge, mult=Initialstate_mult)
     print(bcolors.OKBLUE, "StateI: Charge=", stateI.charge, "Multiplicity", stateI.mult, bcolors.ENDC)
+
+    if brokensym is True:
+        print("Brokensym True. Will find BS-solution for StateI via spin-flipping. HSMult: ", HSmult)
+
 
     if type(Ionizedstate_mult) is int:
         stateF1 = MolState(charge=Ionizedstate_charge, mult=Ionizedstate_mult)
@@ -849,6 +854,13 @@ def PhotoElectronSpectrum(theory=None, fragment=None, InitialState_charge=None, 
         theory.charge=stateI.charge
         theory.mult=stateI.mult
         theory.extraline=theory.extraline+"%method\n"+"frozencore FC_NONE\n"+"end\n"
+
+        if brokensym is True:
+            theory.brokensym=True
+            theory.HSmult=HSmult
+            theory.atomstoflip=atomstoflip
+
+
         #Init_State1_energy = theory.run(current_coords=fragment.coords, elems=fragment.elems)
         print(bcolors.OKGREEN, "Calculating Initial State SCF.",bcolors.ENDC)
         Singlepoint(fragment=fragment, theory=theory)

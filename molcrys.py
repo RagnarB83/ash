@@ -93,6 +93,8 @@ def molcrys(cif_file=None, xtl_file=None, fragmentobjects=[], theory=None, numco
     #print_coords_all(orthogcoords,elems)
 
     #Define fragments of unitcell. Updates mainfrag, counterfrag1 etc. object information
+    # TODO: Do a loop of frag_define with different connectivity settings.
+    # Break if assignment is complete. Let user know if nothing works
     frag_define(orthogcoords,elems,cell_vectors,fragments=fragmentobjects, cell_angles=cell_angles, cell_length=cell_length)
     print_time_rel_and_tot(currtime, origtime, modulename='frag_define')
     currtime=time.time()
