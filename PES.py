@@ -859,6 +859,8 @@ def PhotoElectronSpectrum(theory=None, fragment=None, InitialState_charge=None, 
             theory.brokensym=True
             theory.HSmult=HSmult
             theory.atomstoflip=atomstoflip
+            if 'UKS' not in theory.orcasimpleinput:
+                theory.orcasimpleinput = theory.orcasimpleinput + ' UKS'
 
 
         #Init_State1_energy = theory.run(current_coords=fragment.coords, elems=fragment.elems)

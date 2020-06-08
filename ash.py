@@ -2015,15 +2015,15 @@ class ORCATheory:
         #Run inputfile using ORCA parallelization. Take nprocs argument.
         #print(BC.OKGREEN, "------------Running ORCA calculation-------------", BC.END)
         print(BC.OKGREEN, "ORCA Calculation started.", BC.END)
-        # Doing gradient or not. Disabling.
+        # Doing gradient or not. Disabling, doing above instead.
         #if Grad == True:
         #    run_orca_SP_ORCApar(self.orcadir, self.inputfilename + '.inp', nprocs=nprocs, Grad=True)
         #else:
         run_orca_SP_ORCApar(self.orcadir, self.inputfilename + '.inp', nprocs=nprocs)
-        #print(BC.OKGREEN, "------------ORCA calculation done-------------", BC.END)
         print(BC.OKGREEN, "ORCA Calculation done.", BC.END)
 
         #Now that we have possibly run a BS-DFT calculation, turning Brokensym off for future calcs (opt, restart, etc.)
+        # using this theory object
         #TODO: Possibly use different flag for this???
         self.brokensym=False
 
