@@ -1990,10 +1990,12 @@ class ORCATheory:
         print(self.orcasimpleinput)
         print(self.extraline)
         print(self.orcablocks)
+        print("Charge: {]  Mult: {}".format(self.charge, self.mult))
         if PC==True:
             print("Pointcharge embedding is on!")
             create_orca_pcfile(self.inputfilename, mm_elems, current_MM_coords, MMcharges)
             if self.brokensym==True:
+                print("Brokensymmetry SpinFlipping on! HSmult: {}. atomstoflip: {}".format(self.HSmult,self.atomstoflip))
                 create_orca_input_pc(self.inputfilename, qm_elems, current_coords, self.orcasimpleinput, self.orcablocks,
                                         self.charge, self.mult, extraline=self.extraline, HSmult=self.HSmult,
                                      atomstoflip=self.atomstoflip)
@@ -2002,6 +2004,7 @@ class ORCATheory:
                                         self.charge, self.mult, extraline=self.extraline)
         else:
             if self.brokensym == True:
+                print("Brokensymmetry SpinFlipping on! HSmult: {}. atomstoflip: {}".format(self.HSmult, self.atomstoflip))
                 create_orca_input_plain(self.inputfilename, qm_elems, current_coords, self.orcasimpleinput,self.orcablocks,
                                         self.charge,self.mult, extraline=self.extraline, HSmult=self.HSmult,
                                      atomstoflip=self.atomstoflip)

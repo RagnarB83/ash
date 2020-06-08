@@ -576,7 +576,6 @@ def create_orca_input_plain(name,elems,coords,orcasimpleinput,orcablockinput,cha
             orcafile.write('! Engrad' + '\n')
         orcafile.write(orcablockinput + '\n')
         if atomstoflip is not None:
-            print("atomstoflip:", atomstoflip)
             if type(atomstoflip) == int:
                 atomstoflipstring=str(atomstoflip)
             else:
