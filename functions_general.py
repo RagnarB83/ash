@@ -31,14 +31,20 @@ def print_line_with_subheader1(line):
     print(BC.OKBLUE,"--------------------------------------------------",BC.END)
 
 
-def insert_line_into_file(file,string,addedstring):
+#Inserts line into file for matched string.
+#option: Once=True means only added for first match
+def insert_line_into_file(file,string,addedstring, Once=True):
+    Added=False
     with open(file, 'r') as ffr:
         contents = ffr.readlines()
     with open(file, 'w') as ffw:
         for l in contents:
             ffw.write(l)
             if string in l:
-                ffw.write(addedstring+'\n')
+                if Added is False:
+                    ffw.write(addedstring+'\n')
+                    if Once is True:
+                        Added=True
 
 def blankline():
     print("")
