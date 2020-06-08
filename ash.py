@@ -1990,7 +1990,7 @@ class ORCATheory:
         print(self.orcasimpleinput)
         print(self.extraline)
         print(self.orcablocks)
-        print("Charge: {]  Mult: {}".format(self.charge, self.mult))
+        print("Charge: {}  Mult: {}".format(self.charge, self.mult))
         if PC==True:
             print("Pointcharge embedding is on!")
             create_orca_pcfile(self.inputfilename, mm_elems, current_MM_coords, MMcharges)
