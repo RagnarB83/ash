@@ -237,10 +237,14 @@ def molcrys(cif_file=None, xtl_file=None, fragmentobjects=[], theory=None, numco
     # Creating QMtheory object without fragment information.
     # fragmentobjects[0] is always mainfrag
     if theory.__class__.__name__ == "ORCATheory":
+
+        if theory.brokensym == True:
+            #Adding UKS keyword if not already present for case AF-coupled BS-singlet to prevent RKS/RHF.
+            if 'UKS' not in theory.orcasimpleinput:
+                theory.orcasimpleinput=theory.orcasimpleinput+' UKS'
         QMtheory = ORCATheory(orcadir=theory.orcadir, charge=fragmentobjects[0].Charge, mult=fragmentobjects[0].Mult,
                               orcasimpleinput=theory.orcasimpleinput,
                               orcablocks=theory.orcablocks, extraline=chargemodelline)
-
         #COPY LAST mainfrag orbitals here: called lastorbitals.gbw from gasfragcalc (mainfrag)
         #Necessary to avoid broken-sym SpinFlip but should be good in general
         shutil.copyfile('lastorbitals.gbw', 'orca-input.gbw')
