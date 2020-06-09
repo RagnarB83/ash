@@ -859,6 +859,7 @@ def PhotoElectronSpectrum(theory=None, fragment=None, InitialState_charge=None, 
             theory.brokensym=True
             theory.HSmult=HSmult
             theory.atomstoflip=atomstoflip
+            #Making sure UKS always present if brokensym feature active. Important for open-shell singlets
             if 'UKS' not in theory.orcasimpleinput:
                 theory.orcasimpleinput = theory.orcasimpleinput + ' UKS'
 

@@ -925,10 +925,11 @@ def gasfragcalc_ORCA(fragmentobjects,Cluster,chargemodel,orcadir,orcasimpleinput
         #Run ORCA calculation with charge-model info
         ORCASPcalculation.run(nprocs=NUMPROC)
         #Grab atomic charges for fragment.
-
         atomcharges=grabatomcharges_ORCA(chargemodel,ORCASPcalculation.inputfilename+'.out')
         print("Elements:", gasfrag.elems)
         print("Gasloop atomcharges:", atomcharges)
+        assert len(atomcharges) != 0, "Atomcharges list is empty. Something went wrong with grabbing charges"
+
         #Updating charges inside mainfrag/counterfrag object
         fragmentobject.add_charges(atomcharges)
         #Assign pointcharges to each atom of MM cluster.
