@@ -718,8 +718,9 @@ def grabatomcharges_ORCA(chargemodel,outputfile):
                     if 'Sum of atomic' in line:
                         grab=False
                     elif '------' not in line:
-                        if 'Warning!!!' not in line:
-                            charges.append(float(line.split()[3]))
+                        if 'Warning' not in line:
+                            print("line:", line)
+                            charges.append(float(line.split()[-1]))
                 if 'IAO PARTIAL CHARGES' in line:
                     grab=True
     else:
