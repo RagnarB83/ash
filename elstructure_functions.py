@@ -121,6 +121,9 @@ def calc_cm5(atomicNumbers, coords, hirschfeldcharges):
     product = np.multiply(Tkk, Bkk)
     assert (np.diagonal(product) == 0).all()
     result = np.sum(product,axis=1)
+    print("hirschfeldcharges:", hirschfeldcharges)
+    print("result:", result)
+    print(type(result))
     return np.array(hirschfeldcharges) + result
 
 
