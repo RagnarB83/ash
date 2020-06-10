@@ -761,7 +761,7 @@ def Gaussian(x, mu, strength, sigma):
 
 def PhotoElectronSpectrum(theory=None, fragment=None, InitialState_charge=None, Initialstate_mult=None,
                           Ionizedstate_charge=None, Ionizedstate_mult=None, numionstates=50, path_wfoverlap=None, tda=True,
-                          brokensym=False, HSmult=None, atomstoflip=None):
+                          brokensym=False, HSmult=None, atomstoflip=None, initialorbitalfiles=None):
     blankline()
     print(bcolors.OKGREEN,"-------------------------------------------------------------------",bcolors.ENDC)
     print(bcolors.OKGREEN,"PhotoElectronSpectrum: Calculating PES spectra via TDDFT and Dyson-norm approach",bcolors.ENDC)
@@ -866,14 +866,20 @@ def PhotoElectronSpectrum(theory=None, fragment=None, InitialState_charge=None, 
 
         #Init_State1_energy = theory.run(current_coords=fragment.coords, elems=fragment.elems)
         print(bcolors.OKGREEN, "Calculating Initial State SCF.",bcolors.ENDC)
+        if initialorbitalfiles is not None:
+            print("initialorbitalfiles keyword provided.")
+            print("Will use file {} as guess GBW file for Initial state".format(initialorbitalfiles[0]))
+            shutil.copyfile(initialorbitalfiles[0], theory.inputfilename + '.gbw')
+
         Singlepoint(fragment=fragment, theory=theory)
         #Note: Using SCF energy and not Final Single Point energy (does not work for TDDFT)
         stateI.energy=scfenergygrab("orca-input.out")
 
 
-        #Saveing GBW file
+        #Saveing GBW/out/in files
         shutil.copyfile(theory.inputfilename + '.gbw', './' + 'Init_State' + '.gbw')
         shutil.copyfile(theory.inputfilename + '.out', './' + 'Init_State' + '.out')
+        shutil.copyfile(theory.inputfilename + '.inp', './' + 'Init_State' + '.inp')
 
         stateI.gbwfile="Init_State"+".gbw"
         stateI.outfile="Init_State"+".out"
@@ -909,16 +915,23 @@ def PhotoElectronSpectrum(theory=None, fragment=None, InitialState_charge=None, 
         #Final_State1_energy = theory.run( current_coords=fragment.coords, elems=fragment.elems)
         blankline()
 
-        for fstate in Finalstates:
+        for findex,fstate in enumerate(Finalstates):
             print(bcolors.OKGREEN, "Calculating Final State SCF + TDDFT. Spin Multiplicity: ", fstate.mult, bcolors.ENDC)
             theory.charge=fstate.charge
             theory.mult=fstate.mult
+            if initialorbitalfiles is not None:
+                print("initialorbitalfiles keyword provided.")
+                print("Will use file {} as guess GBW file for this Final state.".format(initialorbitalfiles[findex+1]))
+                shutil.copyfile(initialorbitalfiles[findex+1], theory.inputfilename + '.gbw')
+
+
             Singlepoint(fragment=fragment, theory=theory)
             fstate.energy = scfenergygrab("orca-input.out")
             #Saveing GBW and CIS file
             shutil.copyfile(theory.inputfilename + '.gbw', './' + 'Final_State_mult' + str(fstate.mult) + '.gbw')
             shutil.copyfile(theory.inputfilename + '.cis', './' + 'Final_State_mult' + str(fstate.mult) + '.cis')
             shutil.copyfile(theory.inputfilename + '.out', './' + 'Final_State_mult' + str(fstate.mult) + '.out')
+            shutil.copyfile(theory.inputfilename + '.inp', './' + 'Final_State_mult' + str(fstate.mult) + '.inp')
 
             fstate.gbwfile="Final_State_mult"+str(fstate.mult)+".gbw"
             fstate.outfile="Final_State_mult"+str(fstate.mult)+".out"
