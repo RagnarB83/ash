@@ -661,6 +661,8 @@ def grabatomcharges_ORCA(chargemodel,outputfile):
                         charges.append(float(line.split()[-2]))
                 if '  ATOM     CHARGE      SPIN' in line:
                     grab=True
+                    #Setting charges list to zero in case of multiple charge-tables. Means we grab second table
+                    charges=[]
     elif chargemodel=="CM5":
         elems = []
         coords = []
@@ -683,6 +685,8 @@ def grabatomcharges_ORCA(chargemodel,outputfile):
                     if len(line.split()) == 4:
                         charges.append(float(line.split()[-2]))
                 if '  ATOM     CHARGE      SPIN' in line:
+                    #Setting charges list to zero in case of multiple charge-tables. Means we grab second table
+                    charges=[]
                     grab=True
         print("Hirshfeld charges :", charges)
         atomicnumbers=elemstonuccharges(elems)
