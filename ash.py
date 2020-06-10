@@ -1902,6 +1902,9 @@ class ORCATheory:
     def __init__(self, orcadir, fragment=None, charge='', mult='', orcasimpleinput='', printlevel=2,
                  orcablocks='', extraline='', brokensym=None, HSmult=None, atomstoflip=None, nprocs=1):
 
+        #Create inputfile with generic name
+        self.inputfilename="orca-input"
+
         #Using orcadir to set LD_LIBRARY_PATH
         old = os.environ.get("LD_LIBRARY_PATH")
         if old:
@@ -1983,8 +1986,7 @@ class ORCATheory:
             nprocs=self.nprocs
         print("Running ORCA object with {} cores available".format(nprocs))
 
-        #Create inputfile with generic name
-        self.inputfilename="orca-input"
+
         print("Creating inputfile:", self.inputfilename+'.inp')
         print("ORCA input:")
         print(self.orcasimpleinput)
