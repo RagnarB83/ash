@@ -651,6 +651,8 @@ def grabatomcharges_ORCA(chargemodel,outputfile):
                         charges.append(float(line.split()[-1]))
                 if 'CHELPG Charges' in line:
                     grab=True
+                    #Setting charges list to zero in case of multiple charge-tables. Means we grab second table
+                    charges=[]
     elif chargemodel=="Hirshfeld":
         with open(outputfile) as ofile:
             for line in ofile:
