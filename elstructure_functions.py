@@ -481,31 +481,34 @@ cnvkdiis false
 end"""
 
 
-        #Creating ORCA object for each element calc
-        ORCASPcalculation = ORCATheory(orcadir=theory.orcadir, fragment=gasfrag, charge=0,
+        #Creating ORCA object for  element
+        ORCASPcalculation = ORCATheory(orcadir=theory.orcadir, charge=0,
                                            mult=spindictionary[el], orcasimpleinput=theory.orcasimpleinput,
                                            orcablocks=theory.orcablocks, extraline=scfextrasettingsstring)
 
+        #Element coordinates
+        Elfrag = Fragment(elems=[el], coords=[0.0,0.0,0.0])
 
         Singlepoint(theory=ORCASPcalculation,frag=Elfrag)
-        theory.run(nprocs=ncores)
+        #Preserve outputfile and GBW file for each element
+        shutil.copyfile('orca-input.out', './' + str(el) + '.out')
+        shutil.copyfile('orca-input.gbw', './' + str(el) + '.gbw')
 
-
-        #Creat molden file
-        subprocess.call(['orca_2mkl', el, '-molden'])
+        #Create molden file from el.gbw
+        subprocess.call([theory.orcadir+'/orca_2mkl', el, '-molden'])
 
         #Write input for molden2aim
         mol2aiminput=[' ',  el+'.molden.input', 'Y', 'Y', 'N', 'N', ' ', ' ']
         m2aimfile = open("mol2aim.inp", "w")
         for mline in mol2aiminput:
             m2aimfile.write(mline+'\n')
-
         m2aimfile.close()
 
         #Run molden2aim
         m2aimfile = open('mol2aim.inp')
         p = Popen(molden2aim, stdin=m2aimfile, stderr=STDOUT)
         p.wait()
+        
         #Write job control file for Chargemol
         wfxfile=el+'.molden.wfx'
         jobcontfilewrite=[

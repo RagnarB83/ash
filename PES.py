@@ -1183,31 +1183,37 @@ def PhotoElectronSpectrum(theory=None, fragment=None, InitialState_charge=None, 
             resultfile.write("IPs : {}\n".format(FinalIPs))
             resultfile.write("Dyson-norms : {}\n".format(finaldysonnorms))
             resultfile.write("MOs_alpha : {}\n".format(stk_alpha))
-            if len(stk_beta) != 0:
-                resultfile.write("MOs_beta : {}\n".format(stk_beta))
+            resultfile.write("MOs_beta : {}\n".format(stk_beta))
 
-
-        return FinalIPs, finaldysonnorms, stk_alpha,stk_beta
+        return FinalIPs, finaldysonnorms, stk_alpha, stk_beta
     else:
         print("Unknown option")
         exit(1)
 
 def Read_old_results():
-    IPs=[]
-    dysonnorms=[]
-    mos_alpha=[]
-    mos_beta=[]
     print("Reading file PES-Results.txt...")
-    with open("PES-Results.txt") as file:
-        for line in file:
-            if 'IPs' in line:
-                IPs = [float(i) for i in line.split(':')[1].replace('[', '').replace(']', '').split(',')]
-            if 'Dyson' in line:
-                dysonnorms = [float(i) for i in line.split(':')[1].replace('[', '').replace(']', '').split(',')]
-            if 'MOs_alpha' in line:
-                mos_alpha = [float(i) for i in line.split(':')[1].replace('[', '').replace(']', '').split(',')]
-            if 'MOs_beta' in line:
-                mos_beta = [float(i) for i in line.split(':')[1].replace('[', '').replace(']', '').split(',')]
+    # Parsing of files
+    import json
+    import configparser
+    #from configparser import ConfigParser
+    parser = configparser.ConfigParser()
+
+    parser.read('PES-Results-new.txt')
+    IPs = json.loads(parser.get("Results", "IPs"))
+    dysonnorms = json.loads(parser.get("Results", "Dyson-norms"))
+    mos_alpha = json.loads(parser.get("Results", "MOs_alpha"))
+    mos_beta = json.loads(parser.get("Results", "MOs_beta"))
+
+    #with open("PES-Results.txt") as file:
+    #    for line in file:
+    #        if 'IPs' in line:
+    #            IPs = [float(i) for i in line.split(':')[1].replace('[', '').replace(']', '').split(',')]
+    #        if 'Dyson' in line:
+    #            dysonnorms = [float(i) for i in line.split(':')[1].replace('[', '').replace(']', '').split(',')]
+    #        if 'MOs_alpha' in line:
+    #            mos_alpha = [float(i) for i in line.split(':')[1].replace('[', '').replace(']', '').split(',')]
+    #        if 'MOs_beta' in line:
+    #            mos_beta = [float(i) for i in line.split(':')[1].replace('[', '').replace(']', '').split(',')]
 
     return IPs, dysonnorms, mos_alpha, mos_beta
 
