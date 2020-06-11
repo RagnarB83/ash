@@ -1176,6 +1176,8 @@ def PhotoElectronSpectrum(theory=None, fragment=None, InitialState_charge=None, 
 
 
         #Writing stuff to file. Useful for separate plotting of IPs and Dysonnorms
+        print("Printing IPs, Dyson-norms, MOs to file: PES-Results.txt")
+        print("Can be read by PES.Read_old_results() function")
         with open("PES-Results.txt", 'w') as resultfile:
             resultfile.write("IPs : {}\n".format(FinalIPs))
             resultfile.write("Dyson-norms : {}\n".format(finaldysonnorms))
