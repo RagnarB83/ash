@@ -1183,7 +1183,7 @@ def PhotoElectronSpectrum(theory=None, fragment=None, InitialState_charge=None, 
             resultfile.write("IPs : {}\n".format(FinalIPs))
             resultfile.write("Dyson-norms : {}\n".format(finaldysonnorms))
             resultfile.write("MOs_alpha : {}\n".format(stk_alpha))
-            if len(stk_alpha) != 0
+            if len(stk_alpha) != 0:
                 resultfile.write("MOs_beta : {}\n".format(stk_beta))
 
 
