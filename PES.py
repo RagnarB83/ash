@@ -1179,7 +1179,7 @@ def PhotoElectronSpectrum(theory=None, fragment=None, InitialState_charge=None, 
         print("")
         print("Printing IPs, Dyson-norms, MOs to file: PES-Results.txt")
         print("Can be read by PES.Read_old_results() function")
-        #Writing file in Configparser format for easy read-in
+        #Writing file in Configparser format for easy read-in below
         with open("PES-Results.txt", 'w') as resultfile:
             resultfile.write("[Results]\n")
             resultfile.write("IPs : {}\n".format(FinalIPs))
@@ -1193,14 +1193,14 @@ def PhotoElectronSpectrum(theory=None, fragment=None, InitialState_charge=None, 
         exit(1)
 
 def Read_old_results():
-    print("Reading file PES-Results.txt...")
+    print("Reading file PES-Results.txt ...")
     # Parsing of files
     import json
     import configparser
     #from configparser import ConfigParser
     parser = configparser.ConfigParser()
 
-    parser.read('PES-Results-new.txt')
+    parser.read('PES-Results.txt')
     #Using JSON to load
     IPs = json.loads(parser.get("Results", "IPs"))
     dysonnorms = json.loads(parser.get("Results", "Dyson-norms"))
