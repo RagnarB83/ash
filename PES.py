@@ -1185,6 +1185,10 @@ def PhotoElectronSpectrum(theory=None, fragment=None, InitialState_charge=None, 
 def plot_PES_Spectrum(IPs=None, dysonnorms=None, mos_alpha=None, mos_beta=None, plotname='PES-plot',
                           start=None, finish=None, broadening=0.1, points=10000, hftyp_I=None):
 
+    if IPs is None or dysonnorms is None:
+        print("plot_PES_Spectrum requires IPs and dysonnorms variables")
+        exit(1)
+
     blankline()
     print(bcolors.OKGREEN,"-------------------------------------------------------------------",bcolors.ENDC)
     print(bcolors.OKGREEN,"plot_PES_Spectrum: Plotting TDDFT-Dyson-norm spectrum and MO-spectrum",bcolors.ENDC)
@@ -1210,23 +1214,25 @@ def plot_PES_Spectrum(IPs=None, dysonnorms=None, mos_alpha=None, mos_beta=None, 
     x = np.linspace(start, finish, points)
     stkheight = 0.5
     strength = 1.0
+
     ######################
     # MO-dosplot
     ##################
-    # Creates DOS out of electron binding energies (negative of occupied MO energies)
-    # alpha
-    occDOS_alpha = 0
-    for count, peak in enumerate(mos_alpha):
-        occdospeak = Gaussian(x, peak, strength, broadening)
-        #virtdospeak = Gaussian(x, peak, strength, broadening)
-        occDOS_alpha += occdospeak
-    # beta
-    if hftyp_I == "UHF":
-        occDOS_beta = 0
-        for count, peak in enumerate(mos_beta):
+    if mos_alpha is not None:
+        # Creates DOS out of electron binding energies (negative of occupied MO energies)
+        # alpha
+        occDOS_alpha = 0
+        for count, peak in enumerate(mos_alpha):
             occdospeak = Gaussian(x, peak, strength, broadening)
             #virtdospeak = Gaussian(x, peak, strength, broadening)
-            occDOS_beta += occdospeak
+            occDOS_alpha += occdospeak
+        # beta
+        if hftyp_I == "UHF":
+            occDOS_beta = 0
+            for count, peak in enumerate(mos_beta):
+                occdospeak = Gaussian(x, peak, strength, broadening)
+                #virtdospeak = Gaussian(x, peak, strength, broadening)
+                occDOS_beta += occdospeak
 
     # TDDFT states DOS
     tddftDOS = 0
