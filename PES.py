@@ -1175,11 +1175,36 @@ def PhotoElectronSpectrum(theory=None, fragment=None, InitialState_charge=None, 
             print("{:>6d} {:>7d} {:20.11f} {:>10.3f} {:>10.5f} {:>10} {:>17.3f}".format(i, spinmult, E, IE, dys,stype, TDtransenergy))
 
 
+        #Writing stuff to file. Useful for separate plotting of IPs and Dysonnorms
+        with open("PES-Results.txt", 'w') as resultfile:
+            resultfile.write("IPs : {}\n".format(FinalIPs))
+            resultfile.write("Dyson-norms : {}\n".format(finaldysonnorms))
+            resultfile.write("MOs_alpha : {}\n".format(stk_alpha))
+            resultfile.write("MOs_beta : {}\n".format(stk_beta))
+
 
         return FinalIPs, finaldysonnorms, stk_alpha,stk_beta
     else:
         print("Unknown option")
         exit(1)
+
+def Read_old_results():
+    IPs=[]
+    dysonnorms=[]
+    mos_alpha=[]
+    mos_beta=[]
+    with open("PES-Results.txt") as file:
+        for line in file:
+            if 'IPs' in line:
+                IPs = [float(i) for i in line.split(':')[1].replace('[', '').replace(']', '').split(',')]
+            if 'Dyson' in line:
+                dysonnorms = [float(i) for i in line.split(':')[1].replace('[', '').replace(']', '').split(',')]
+            if 'MOs_alpha' in line:
+                mos_alpha = [float(i) for i in line.split(':')[1].replace('[', '').replace(']', '').split(',')]
+            if 'MOs_beta' in line:
+                mos_beta = [float(i) for i in line.split(':')[1].replace('[', '').replace(']', '').split(',')]
+
+    return IPs, dysonnorms, mos_alpha, mos_beta
 
 
 def plot_PES_Spectrum(IPs=None, dysonnorms=None, mos_alpha=None, mos_beta=None, plotname='PES-plot',
