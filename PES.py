@@ -1250,29 +1250,29 @@ def plot_PES_Spectrum(IPs=None, dysonnorms=None, mos_alpha=None, mos_beta=None, 
             if hftyp_I == "UHF":
                 datfile.write(str(occDOS_beta[i]) + "\n")
         datfile.close()
-    # Creating stk file for alpha. Only including sticks for plotted region
-    stk_alpha2 = []
-    stk_alpha2height = []
-    for i in mos_alpha:
-        if i > x[-1]:
-            # print("i is", i)
-            continue
-        else:
-            stkfile_a.write(str(i) + " " + str(stkheight) + "\n")
-            stk_alpha2.append(i)
-            stk_alpha2height.append(stkheight)
-    stkfile_a.close()
-    stk_beta2 = []
-    stk_beta2height = []
-    if hftyp_I == "UHF":
-        for i in mos_beta:
+        # Creating stk file for alpha. Only including sticks for plotted region
+        stk_alpha2 = []
+        stk_alpha2height = []
+        for i in mos_alpha:
             if i > x[-1]:
+                # print("i is", i)
                 continue
             else:
-                stkfile_b.write(str(i) + " " + str(stkheight) + "\n")
-                stk_beta2.append(i)
-                stk_beta2height.append(stkheight)
-        stkfile_b.close()
+                stkfile_a.write(str(i) + " " + str(stkheight) + "\n")
+                stk_alpha2.append(i)
+                stk_alpha2height.append(stkheight)
+        stkfile_a.close()
+        stk_beta2 = []
+        stk_beta2height = []
+        if hftyp_I == "UHF":
+            for i in mos_beta:
+                if i > x[-1]:
+                    continue
+                else:
+                    stkfile_b.write(str(i) + " " + str(stkheight) + "\n")
+                    stk_beta2.append(i)
+                    stk_beta2height.append(stkheight)
+            stkfile_b.close()
 
     ######################
     # TDDFT states DOS
