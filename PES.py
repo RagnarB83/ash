@@ -1184,10 +1184,14 @@ def PhotoElectronSpectrum(theory=None, fragment=None, InitialState_charge=None, 
 
 def plot_PES_Spectrum(IPs=None, dysonnorms=None, mos_alpha=None, mos_beta=None, plotname='PES-plot',
                           start=None, finish=None, broadening=0.1, points=10000, hftyp_I=None):
-
     if IPs is None or dysonnorms is None:
         print("plot_PES_Spectrum requires IPs and dysonnorms variables")
         exit(1)
+
+    if mos_alpha is None:
+        MOPlot=False
+    else:
+        MOPlot=True
 
     blankline()
     print(bcolors.OKGREEN,"-------------------------------------------------------------------",bcolors.ENDC)
@@ -1197,9 +1201,6 @@ def plot_PES_Spectrum(IPs=None, dysonnorms=None, mos_alpha=None, mos_beta=None, 
     print("IPs ({}): {}".format(len(IPs),IPs))
     print("Dysonnorms ({}): {}".format(len(dysonnorms),dysonnorms))
 
-    if hftyp_I is None:
-        print("hftyp_I not set (value: RHF or UHF). Assuming hftyp_I=RHF and ignoring beta MOs.")
-        blankline()
     if start is None:
         start = IPs[0] - 8
         finish = IPs[-1] + 8
@@ -1217,8 +1218,11 @@ def plot_PES_Spectrum(IPs=None, dysonnorms=None, mos_alpha=None, mos_beta=None, 
 
     ######################
     # MO-dosplot
-    ##################
-    if mos_alpha is not None:
+    ######################
+    if MOPlot is True:
+        if hftyp_I is None:
+            print("hftyp_I not set (value: RHF or UHF). Assuming hftyp_I=RHF and ignoring beta MOs.")
+            blankline()
         # Creates DOS out of electron binding energies (negative of occupied MO energies)
         # alpha
         occDOS_alpha = 0
@@ -1234,35 +1238,18 @@ def plot_PES_Spectrum(IPs=None, dysonnorms=None, mos_alpha=None, mos_beta=None, 
                 #virtdospeak = Gaussian(x, peak, strength, broadening)
                 occDOS_beta += occdospeak
 
-    # TDDFT states DOS
-    tddftDOS = 0
-    for peak, strength in zip(IPs, dysonnorms):
-        tddospeak = Gaussian(x, peak, strength, broadening)
-        tddftDOS += tddospeak
-
-    #Save dat file
-    with open("TDDFT-DOS.dat", 'w') as tdatfile:
-        for i,j in zip(x,tddftDOS):
-            tdatfile.write("{:13.10f} {:13.10f} \n".format(i,j))
-    #Save stk file
-    with open("TDDFT-DOS.stk", 'w') as tstkfile:
-        for b,c in zip(IPs,dysonnorms):
-            tstkfile.write("{:13.10f} {:13.10f} \n".format(b,c))
-
-
-    # Write dat/stk files for MO-DOS
-    datfile = open('MO-DOSPLOT' + '.dat', 'w')
-    stkfile_a = open('MO-DOSPLOT' + '_a.stk', 'w')
-    if hftyp_I == "UHF":
-        stkfile_b = open('MO-DOSPLOT' + '_b.stk', 'w')
-
-    for i in range(0, len(x)):
-        datfile.write(str(x[i]) + " ")
-        datfile.write(str(occDOS_alpha[i]) + " \n")
+        # Write dat/stk files for MO-DOS
+        datfile = open('MO-DOSPLOT' + '.dat', 'w')
+        stkfile_a = open('MO-DOSPLOT' + '_a.stk', 'w')
         if hftyp_I == "UHF":
-            datfile.write(str(occDOS_beta[i]) + "\n")
-    datfile.close()
+            stkfile_b = open('MO-DOSPLOT' + '_b.stk', 'w')
 
+        for i in range(0, len(x)):
+            datfile.write(str(x[i]) + " ")
+            datfile.write(str(occDOS_alpha[i]) + " \n")
+            if hftyp_I == "UHF":
+                datfile.write(str(occDOS_beta[i]) + "\n")
+        datfile.close()
     # Creating stk file for alpha. Only including sticks for plotted region
     stk_alpha2 = []
     stk_alpha2height = []
@@ -1287,19 +1274,38 @@ def plot_PES_Spectrum(IPs=None, dysonnorms=None, mos_alpha=None, mos_beta=None, 
                 stk_beta2height.append(stkheight)
         stkfile_b.close()
 
+    ######################
+    # TDDFT states DOS
+    ######################
+    tddftDOS = 0
+    for peak, strength in zip(IPs, dysonnorms):
+        tddospeak = Gaussian(x, peak, strength, broadening)
+        tddftDOS += tddospeak
+
+    #Save dat file
+    with open("TDDFT-DOS.dat", 'w') as tdatfile:
+        for i,j in zip(x,tddftDOS):
+            tdatfile.write("{:13.10f} {:13.10f} \n".format(i,j))
+    #Save stk file
+    with open("TDDFT-DOS.stk", 'w') as tstkfile:
+        for b,c in zip(IPs,dysonnorms):
+            tstkfile.write("{:13.10f} {:13.10f} \n".format(b,c))
+
+
     ##################################
     # Plot with Matplotlib
     ####################################
     import matplotlib.pyplot as plt
 
-    # MO-DOSPLOT for initial state. Here assuming MO energies of initial state to be good approximations for IPs
-    fig, ax = plt.subplots()
-    ax.plot(x, occDOS_alpha, 'C2', label='alphaMO')
-    ax.stem(stk_alpha2, stk_alpha2height, label='alphaMO', basefmt=" ", markerfmt=' ', linefmt='C2-', use_line_collection=True)
-    if hftyp_I == "UHF":
-        ax.plot(x, occDOS_beta, 'C2', label='betaMO')
-        ax.stem(stk_beta2, stk_beta2height, label='betaMO', basefmt=" ", markerfmt=' ', linefmt='C2-', use_line_collection=True)
-    ########################
+    if MOPlot is True:
+        # MO-DOSPLOT for initial state. Here assuming MO energies of initial state to be good approximations for IPs
+        fig, ax = plt.subplots()
+        ax.plot(x, occDOS_alpha, 'C2', label='alphaMO')
+        ax.stem(stk_alpha2, stk_alpha2height, label='alphaMO', basefmt=" ", markerfmt=' ', linefmt='C2-', use_line_collection=True)
+        if hftyp_I == "UHF":
+            ax.plot(x, occDOS_beta, 'C2', label='betaMO')
+            ax.stem(stk_beta2, stk_beta2height, label='betaMO', basefmt=" ", markerfmt=' ', linefmt='C2-', use_line_collection=True)
+
 
     ##############
     # TDDFT-STATES
