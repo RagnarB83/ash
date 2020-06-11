@@ -1202,6 +1202,7 @@ def Read_old_results():
 
     parser.read('PES-Results.txt')
     #Using JSON to load
+    #From: https://stackoverflow.com/questions/335695/lists-in-configparser
     IPs = json.loads(parser.get("Results", "IPs"))
     dysonnorms = json.loads(parser.get("Results", "Dyson-norms"))
     mos_alpha = json.loads(parser.get("Results", "MOs_alpha"))
