@@ -1190,6 +1190,7 @@ def plot_PES_Spectrum(IPs=None, dysonnorms=None, mos_alpha=None, mos_beta=None, 
 
     if mos_alpha is None:
         MOPlot=False
+        print("mos_alpha and mos_beta not provided. Skipping MO-DOS plot.")
     else:
         MOPlot=True
 
@@ -1296,10 +1297,9 @@ def plot_PES_Spectrum(IPs=None, dysonnorms=None, mos_alpha=None, mos_beta=None, 
     # Plot with Matplotlib
     ####################################
     import matplotlib.pyplot as plt
-
+    fig, ax = plt.subplots()
     if MOPlot is True:
         # MO-DOSPLOT for initial state. Here assuming MO energies of initial state to be good approximations for IPs
-        fig, ax = plt.subplots()
         ax.plot(x, occDOS_alpha, 'C2', label='alphaMO')
         ax.stem(stk_alpha2, stk_alpha2height, label='alphaMO', basefmt=" ", markerfmt=' ', linefmt='C2-', use_line_collection=True)
         if hftyp_I == "UHF":
