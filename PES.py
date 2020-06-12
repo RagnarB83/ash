@@ -877,7 +877,7 @@ def PhotoElectronSpectrum(theory=None, fragment=None, InitialState_charge=None, 
         #Create Cube file of electron density using orca_plot
         if DiffDens is True:
             print("Difference density active. Calling orca_plot to create Cube-file.")
-            run_orcaplot(orcadir=theory.orcadir,filename=theory.inputfilename + '.gbw', option='density', gridvalue=100)
+            run_orca_plot(orcadir=theory.orcadir,filename=theory.inputfilename + '.gbw', option='density', gridvalue=100)
             shutil.copyfile(theory.inputfilename + '.eldens.cube', './' + 'Init_State' + '.eldens.cube')
 
         #Note: Using SCF energy and not Final Single Point energy (does not work for TDDFT)
@@ -939,7 +939,7 @@ def PhotoElectronSpectrum(theory=None, fragment=None, InitialState_charge=None, 
             # Create Cube file of electron density using orca_plot
             if DiffDens is True:
                 print("Difference density active. Calling orca_plot to create Cube-file.")
-                run_orcaplot(orcadir=theory.orcadir, filename=theory.inputfilename + '.gbw', option='density',
+                run_orca_plot(orcadir=theory.orcadir, filename=theory.inputfilename + '.gbw', option='density',
                              gridvalue=100)
                 shutil.copyfile(theory.inputfilename + '.eldens.cube', './' + 'Final_State_mult' + str(fstate.mult) + '.eldens.cube')
 
