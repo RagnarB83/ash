@@ -742,11 +742,11 @@ def run_orca_plot(orcadir, filename, option, gridvalue=40):
     #Always setting grid (4,gridvalue option)
     #Always choosing a plot (2,X) option:
     # Plot option in orca_plot
-    if option='density':
+    if option=='density':
         plottype = 2
-    elif option='spindensity':
+    elif option=='spindensity':
         plottype = 3
-    elif option='mo':
+    elif option=='mo':
         plottype = 1
     else:
         plottype = 1
