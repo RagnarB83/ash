@@ -941,7 +941,7 @@ def PhotoElectronSpectrum(theory=None, fragment=None, InitialState_charge=None, 
                 print("Difference density active. Calling orca_plot to create Cube-file.")
                 run_orcaplot(orcadir=theory.orcadir, filename=theory.inputfilename + '.gbw', option='density',
                              gridvalue=100)
-                shutil.copyfile(theory.inputfilename + '.eldens.cube', './' + 'Final_State_mult' + str(fstate.mult + '.eldens.cube')
+                shutil.copyfile(theory.inputfilename + '.eldens.cube', './' + 'Final_State_mult' + str(fstate.mult) + '.eldens.cube')
 
             #Saveing GBW and CIS file
             shutil.copyfile(theory.inputfilename + '.gbw', './' + 'Final_State_mult' + str(fstate.mult) + '.gbw')
