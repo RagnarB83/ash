@@ -734,3 +734,22 @@ def grabatomcharges_ORCA(chargemodel,outputfile):
         exit()
     return charges
 
+
+# Wrapper around interactive orca_plot
+# Todo: add TDDFT difference density, natural orbitals, MDCI spin density?
+def run_orca_plot(orcadir, filename, option, gridvalue=40):
+    # Always creating Cube file (5,7 option)
+    #Always setting grid (4,gridvalue option)
+    #Always choosing a plot (2,X) option:
+    # Plot option in orca_plot
+    if option='density':
+        plottype = 2
+    elif option='spindensity':
+        plottype = 3
+    elif option='mo':
+        plottype = 1
+    else:
+        plottype = 1
+    p = subprocess.run([orcadir + '/orca_plot', filename, '-i'], stdout=subprocess.PIPE,
+                       input='5\n7\n4\n{}\n1\n{}\ny\n10\n11\n\n'.format(gridvalue, plottype), encoding='ascii')
+    #print(p.returncode)

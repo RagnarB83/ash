@@ -16,6 +16,7 @@ from functions_ORCA import *
 from functions_general import *
 from ash import *
 import constants
+from elstructure_functions import *
 
 class bcolors:
     HEADER = '\033[95m' ; OKBLUE = '\033[94m'; OKGREEN = '\033[92m'; WARNING = '\033[93m'; FAIL = '\033[91m'; ENDC = '\033[0m'; BOLD = '\033[1m'; UNDERLINE = '\033[4m'
@@ -761,7 +762,7 @@ def Gaussian(x, mu, strength, sigma):
 
 def PhotoElectronSpectrum(theory=None, fragment=None, InitialState_charge=None, Initialstate_mult=None,
                           Ionizedstate_charge=None, Ionizedstate_mult=None, numionstates=50, path_wfoverlap=None, tda=True,
-                          brokensym=False, HSmult=None, atomstoflip=None, initialorbitalfiles=None):
+                          brokensym=False, HSmult=None, atomstoflip=None, initialorbitalfiles=None, DiffDens=True):
     blankline()
     print(bcolors.OKGREEN,"-------------------------------------------------------------------",bcolors.ENDC)
     print(bcolors.OKGREEN,"PhotoElectronSpectrum: Calculating PES spectra via TDDFT and Dyson-norm approach",bcolors.ENDC)
@@ -872,6 +873,13 @@ def PhotoElectronSpectrum(theory=None, fragment=None, InitialState_charge=None, 
             shutil.copyfile(initialorbitalfiles[0], theory.inputfilename + '.gbw')
 
         Singlepoint(fragment=fragment, theory=theory)
+
+        #Create Cube file of electron density using orca_plot
+        if DiffDens is True:
+            print("Difference density active. Calling orca_plot to create Cube-file.")
+            run_orcaplot(orcadir=theory.orcadir,filename=theory.inputfilename + '.gbw', option='density', gridvalue=100)
+            shutil.copyfile(theory.inputfilename + '.eldens.cube', './' + 'Init_State' + '.eldens.cube')
+
         #Note: Using SCF energy and not Final Single Point energy (does not work for TDDFT)
         stateI.energy=scfenergygrab("orca-input.out")
 
@@ -883,7 +891,7 @@ def PhotoElectronSpectrum(theory=None, fragment=None, InitialState_charge=None, 
 
         stateI.gbwfile="Init_State"+".gbw"
         stateI.outfile="Init_State"+".out"
-        stateI.cisfile="Init_State"+".cif"
+        stateI.cisfile="Init_State"+".cis"
 
         # Initial state orbitals for MO-DOSplot
         stateI.occorbs_alpha, stateI.occorbs_beta, stateI.hftyp = orbitalgrab(theory.inputfilename+'.out')
@@ -927,6 +935,14 @@ def PhotoElectronSpectrum(theory=None, fragment=None, InitialState_charge=None, 
 
             Singlepoint(fragment=fragment, theory=theory)
             fstate.energy = scfenergygrab("orca-input.out")
+
+            # Create Cube file of electron density using orca_plot
+            if DiffDens is True:
+                print("Difference density active. Calling orca_plot to create Cube-file.")
+                run_orcaplot(orcadir=theory.orcadir, filename=theory.inputfilename + '.gbw', option='density',
+                             gridvalue=100)
+                shutil.copyfile(theory.inputfilename + '.eldens.cube', './' + 'Final_State_mult' + str(fstate.mult + '.eldens.cube')
+
             #Saveing GBW and CIS file
             shutil.copyfile(theory.inputfilename + '.gbw', './' + 'Final_State_mult' + str(fstate.mult) + '.gbw')
             shutil.copyfile(theory.inputfilename + '.cis', './' + 'Final_State_mult' + str(fstate.mult) + '.cis')
@@ -1173,6 +1189,21 @@ def PhotoElectronSpectrum(theory=None, fragment=None, InitialState_charge=None, 
             else:
                 TDtransenergy=0.0
             print("{:>6d} {:>7d} {:20.11f} {:>10.3f} {:>10.5f} {:>10} {:>17.3f}".format(i, spinmult, E, IE, dys,stype, TDtransenergy))
+
+
+        #Create difference density between Initial-SCF and Finalstate-SCFs
+        init_dens = 'Init_State.eldens.cube'
+        final_dens = 'Final_State_mult2.eldens.cube'
+
+        rlowx, dx, nx, orgx, rlowy, dy, ny, orgy, rlowz, dz, nz, orgz, elems, molcoords, molcoords_ang, numatoms, filebase, vals = read_cube(
+            init_dens)
+        rlowx2, dx2, nx2, orgx2, rlowy2, dy2, ny2, orgy2, rlowz2, dz2, nz2, orgz2, elems2, molcoords2, molcoords_ang2, numatoms2, filebase2, vals2 = read_cube(
+            final_dens)
+
+        write_cube_diff(numatoms, orgx, orgy, orgz, nx, dx, ny, dy, nz, dz, elems, molcoords, vals, vals2)
+        print("Wrote Cube file containing density difference between Initial State and Final State.")
+
+
 
 
         #Writing stuff to file. Useful for separate plotting of IPs and Dysonnorms
