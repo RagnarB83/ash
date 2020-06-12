@@ -209,7 +209,7 @@ def write_cube_diff(numatoms,orgx,orgy,orgz, nx,dx,ny,dy,nz,dz,elems, molcoords,
             diff = [i-j for i,j in zip(v1,v2)]
 
             if len(v1) == 6:
-                file.write("   {:.6e}   {:.6e}   {:.6e}   {:.6f}   {:.6e}   {:.6e}\n".format(diff[0],diff[1],diff[2],diff[3],diff[4],diff[5]))
+                file.write("   {:.6e}   {:.6e}   {:.6e}   {:.6e}   {:.6e}   {:.6e}\n".format(diff[0],diff[1],diff[2],diff[3],diff[4],diff[5]))
             elif len(v1) == 5:
                 file.write("   {:.6e}   {:.6e}   {:.6e}   {:.6e}   {:.6e}\n".format(diff[0],diff[1],diff[2],diff[3],diff[4]))
             elif len(v1) == 4:
