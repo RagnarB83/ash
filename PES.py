@@ -1110,7 +1110,7 @@ def PhotoElectronSpectrum(theory=None, fragment=None, InitialState_charge=None, 
             if DiffDens is True:
                 # Create difference density between Initial-SCF and Finalstate-SCFs
                 init_dens = 'Init_State.eldens.cube'
-                final_dens = 'Final_State_mult' + fstate.mult + '.eldens.cube'
+                final_dens = 'Final_State_mult' + str(fstate.mult) + '.eldens.cube'
                 rlowx, dx, nx, orgx, rlowy, dy, ny, orgy, rlowz, dz, nz, \
                 orgz, elems, molcoords, molcoords_ang, numatoms, filebase, vals = read_cube(init_dens)
                 rlowx2, dx2, nx2, orgx2, rlowy2, dy2, ny2, orgy2, rlowz2, dz2, \
