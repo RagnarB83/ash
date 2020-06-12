@@ -1107,6 +1107,18 @@ def PhotoElectronSpectrum(theory=None, fragment=None, InitialState_charge=None, 
 
 
         for fstate in Finalstates:
+            if DiffDens is True:
+                # Create difference density between Initial-SCF and Finalstate-SCFs
+                init_dens = 'Init_State.eldens.cube'
+                final_dens = 'Final_State_mult' + fstate.mult + '.eldens.cube'
+                rlowx, dx, nx, orgx, rlowy, dy, ny, orgy, rlowz, dz, nz, \
+                orgz, elems, molcoords, molcoords_ang, numatoms, filebase, vals = read_cube(init_dens)
+                rlowx2, dx2, nx2, orgx2, rlowy2, dy2, ny2, orgy2, rlowz2, dz2, \
+                nz2, orgz2, elems2, molcoords2, molcoords_ang2, numatoms2, filebase2, vals2 = read_cube(final_dens)
+                write_cube_diff(numatoms, orgx, orgy, orgz, nx, dx, ny, dy, nz, dz, elems, molcoords, vals, vals2)
+                print("Wrote Cube file containing density difference between Initial State and Final State.")
+
+
             print("Running WFOverlap to calculate Dyson norms for Finalstate with mult: ", fstate.mult)
             # WFOverlap calculation needs files: AO_overl, mos_init, mos_final, dets_final, dets_init
             #Poing to file in inputfile
@@ -1190,18 +1202,6 @@ def PhotoElectronSpectrum(theory=None, fragment=None, InitialState_charge=None, 
                 TDtransenergy=0.0
             print("{:>6d} {:>7d} {:20.11f} {:>10.3f} {:>10.5f} {:>10} {:>17.3f}".format(i, spinmult, E, IE, dys,stype, TDtransenergy))
 
-
-        #Create difference density between Initial-SCF and Finalstate-SCFs
-        init_dens = 'Init_State.eldens.cube'
-        final_dens = 'Final_State_mult2.eldens.cube'
-
-        rlowx, dx, nx, orgx, rlowy, dy, ny, orgy, rlowz, dz, nz, orgz, elems, molcoords, molcoords_ang, numatoms, filebase, vals = read_cube(
-            init_dens)
-        rlowx2, dx2, nx2, orgx2, rlowy2, dy2, ny2, orgy2, rlowz2, dz2, nz2, orgz2, elems2, molcoords2, molcoords_ang2, numatoms2, filebase2, vals2 = read_cube(
-            final_dens)
-
-        write_cube_diff(numatoms, orgx, orgy, orgz, nx, dx, ny, dy, nz, dz, elems, molcoords, vals, vals2)
-        print("Wrote Cube file containing density difference between Initial State and Final State.")
 
 
 
