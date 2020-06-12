@@ -750,6 +750,6 @@ def run_orca_plot(orcadir, filename, option, gridvalue=40):
         plottype = 1
     else:
         plottype = 1
-    p = subprocess.run([orcadir + '/orca_plot', filename, '-i'], stdout=subprocess.PIPE,
+    p = sp.run([orcadir + '/orca_plot', filename, '-i'], stdout=sp.PIPE,
                        input='5\n7\n4\n{}\n1\n{}\ny\n10\n11\n\n'.format(gridvalue, plottype), encoding='ascii')
     #print(p.returncode)
