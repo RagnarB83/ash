@@ -1272,7 +1272,7 @@ def PhotoElectronSpectrum(theory=None, fragment=None, InitialState_charge=None, 
                     # TDDFT state done. Renaming cisp and cisr files
                     os.rename('orca-input.cisp', 'Final_State_mult' + str(fstate.mult)+'TDDFTstate_'+str(tddftstate)+'.cisp')
                     os.rename('orca-input.cisr', 'Final_State_mult' + str(fstate.mult)+'TDDFTstate_'+str(tddftstate)+'.cisr')
-                    print("Densities option active. Calling orca_plot to create Cube-file for Final state TDDFT-state.")
+                    print("Calling orca_plot to create Cube-file for Final state TDDFT-state.")
 
                     #Doing spin-density Cubefilefor each cisr file
                     run_orca_plot(orcadir=theory.orcadir, filename=theory.inputfilename + '.gbw', option='cisspindensity',gridvalue=densgridvalue,
@@ -1287,7 +1287,7 @@ def PhotoElectronSpectrum(theory=None, fragment=None, InitialState_charge=None, 
                     final_dens = 'Final_State_mult' + str(fstate.mult)+'TDDFTstate_'+str(tddftstate)+'.eldens.cube'
                     rlowx2, dx2, nx2, orgx2, rlowy2, dy2, ny2, orgy2, rlowz2, dz2, \
                     nz2, orgz2, elems2, molcoords2, molcoords_ang2, numatoms2, filebase2, finalstate_values = read_cube(final_dens)
-                    write_cube_diff(numatoms, orgx, orgy, orgz, nx, dx, ny, dy, nz, dz, elems, molcoords, finalstate_values, finalstate_values,
+                    write_cube_diff(numatoms, orgx, orgy, orgz, nx, dx, ny, dy, nz, dz, elems, molcoords, initial_values, finalstate_values,
                             "Densdiff_SCFInit-TDDFTFinalmult" + str(fstate.mult)+'TDState'+str(tddftstate))
                     print("Wrote Cube file containing density difference between Initial State and Final TDDFT State: ", tddftstate)
 
