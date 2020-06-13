@@ -1231,6 +1231,7 @@ def PhotoElectronSpectrum(theory=None, fragment=None, InitialState_charge=None, 
 
                 #Looping over each TDDFT-state and doing TDDFT-calc
                 for tddftstate in range(1,numionstates):
+                    print("Running TDDFT-gradient for State: ", tddftstate)
                     #Adding Iroot to get state-specific gradient+density                                              ''
                     if tda == False:
                         # Boolean for whether no_tda is on or not
