@@ -895,9 +895,10 @@ def PhotoElectronSpectrum(theory=None, fragment=None, InitialState_charge=None, 
             #Electron density
             run_orca_plot(orcadir=theory.orcadir,filename=theory.inputfilename + '.gbw', option='density', gridvalue=densgridvalue)
             shutil.copyfile(theory.inputfilename + '.eldens.cube', './' + 'Init_State' + '.eldens.cube')
-            #Spin density
-            run_orca_plot(orcadir=theory.orcadir,filename=theory.inputfilename + '.gbw', option='spindensity', gridvalue=densgridvalue)
-            shutil.copyfile(theory.inputfilename + '.spindens.cube', './' + 'Init_State' + '.spindens.cube')
+            #Spin density (only if UHF). Otherwise orca_plot gets confused (takes difference between alpha-density and nothing)
+            if stateI.hftyp == "UHF":
+                run_orca_plot(orcadir=theory.orcadir,filename=theory.inputfilename + '.gbw', option='spindensity', gridvalue=densgridvalue)
+                shutil.copyfile(theory.inputfilename + '.spindens.cube', './' + 'Init_State' + '.spindens.cube')
             os.chdir('..')
         #Note: Using SCF energy and not Final Single Point energy (does not work for TDDFT)
         stateI.energy=scfenergygrab("orca-input.out")
@@ -966,9 +967,10 @@ def PhotoElectronSpectrum(theory=None, fragment=None, InitialState_charge=None, 
                              gridvalue=densgridvalue)
                 shutil.copyfile(theory.inputfilename + '.eldens.cube', './' + 'Final_State_mult' + str(fstate.mult) + '.eldens.cube')
                 #Spin density
-                run_orca_plot(orcadir=theory.orcadir, filename=theory.inputfilename + '.gbw', option='spindensity',
+                if fstate.hftyp == "UHF":
+                    run_orca_plot(orcadir=theory.orcadir, filename=theory.inputfilename + '.gbw', option='spindensity',
                              gridvalue=densgridvalue)
-                shutil.copyfile(theory.inputfilename + '.spindens.cube', './' + 'Final_State_mult' + str(fstate.mult) + '.spindens.cube')
+                    shutil.copyfile(theory.inputfilename + '.spindens.cube', './' + 'Final_State_mult' + str(fstate.mult) + '.spindens.cube')
                 os.chdir('..')
             #Saveing GBW and CIS file
             shutil.copyfile(theory.inputfilename + '.gbw', './' + 'Final_State_mult' + str(fstate.mult) + '.gbw')
