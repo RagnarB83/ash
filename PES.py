@@ -775,8 +775,10 @@ def PhotoElectronSpectrum(theory=None, fragment=None, InitialState_charge=None, 
     print("Difference Density option is: ", DiffDens, "(options are: SCF, All, None)")
     if DiffDens == 'SCF':
         print("Will do difference densities for Inital-state and Final-state SCF wavefunctions only.")
+        os.mkdir('Calculated_densities')
     elif DiffDens=='All':
         print("Will do difference densities for all states: SCF and TDDFT states")
+        os.mkdir('Calculated_densities')
     else:
         DiffDens=None
         print("Will not calculate densities")
@@ -885,10 +887,12 @@ def PhotoElectronSpectrum(theory=None, fragment=None, InitialState_charge=None, 
 
         #Create Cube file of electron density using orca_plot
         if DiffDens == 'SCF' or DiffDens =='All':
+            os.chdir('Calculated_densities')
             print("Difference density active. Calling orca_plot to create Cube-file for Initial state SCF.")
+            shutil.copyfile('../' + theory.inputfilename + '.gbw', './'+theory.inputfilename + '.gbw')
             run_orca_plot(orcadir=theory.orcadir,filename=theory.inputfilename + '.gbw', option='density', gridvalue=densgridvalue)
             shutil.copyfile(theory.inputfilename + '.eldens.cube', './' + 'Init_State' + '.eldens.cube')
-
+            os.chdir('..')
         #Note: Using SCF energy and not Final Single Point energy (does not work for TDDFT)
         stateI.energy=scfenergygrab("orca-input.out")
 
@@ -948,10 +952,13 @@ def PhotoElectronSpectrum(theory=None, fragment=None, InitialState_charge=None, 
             # Create Cube file of electron density using orca_plot
             if DiffDens == 'SCF' or DiffDens == 'All':
                 print("Difference density active. Calling orca_plot to create Cube-file for Final state SCF.")
+
+                os.chdir('Calculated_densities')
+                shutil.copyfile('../' + theory.inputfilename + '.gbw', './' + theory.inputfilename + '.gbw')
                 run_orca_plot(orcadir=theory.orcadir, filename=theory.inputfilename + '.gbw', option='density',
                              gridvalue=densgridvalue)
                 shutil.copyfile(theory.inputfilename + '.eldens.cube', './' + 'Final_State_mult' + str(fstate.mult) + '.eldens.cube')
-
+                os.chdir('..')
             #Saveing GBW and CIS file
             shutil.copyfile(theory.inputfilename + '.gbw', './' + 'Final_State_mult' + str(fstate.mult) + '.gbw')
             shutil.copyfile(theory.inputfilename + '.cis', './' + 'Final_State_mult' + str(fstate.mult) + '.cis')
@@ -1110,15 +1117,19 @@ def PhotoElectronSpectrum(theory=None, fragment=None, InitialState_charge=None, 
 
         for fstate in Finalstates:
             if DiffDens == 'SCF' or DiffDens == 'All':
-                # Create difference density between Initial-SCF and Finalstate-SCFs
+                os.chdir('Calculated_densities')
+                #Read Initial-state-SCF density Cube file into memory
                 init_dens = 'Init_State.eldens.cube'
                 final_dens = 'Final_State_mult' + str(fstate.mult) + '.eldens.cube'
                 rlowx, dx, nx, orgx, rlowy, dy, ny, orgy, rlowz, dz, nz, \
-                orgz, elems, molcoords, molcoords_ang, numatoms, filebase, vals = read_cube(init_dens)
+                orgz, elems, molcoords, molcoords_ang, numatoms, filebase, initial_values = read_cube(init_dens)
+                # Create difference density between Initial-SCF and Finalstate-SCFs
                 rlowx2, dx2, nx2, orgx2, rlowy2, dy2, ny2, orgy2, rlowz2, dz2, \
-                nz2, orgz2, elems2, molcoords2, molcoords_ang2, numatoms2, filebase2, vals2 = read_cube(final_dens)
-                write_cube_diff(numatoms, orgx, orgy, orgz, nx, dx, ny, dy, nz, dz, elems, molcoords, vals, vals2,"Densdiff_SCFInit-SCFFinalmult"+str(fstate.mult))
+                nz2, orgz2, elems2, molcoords2, molcoords_ang2, numatoms2, filebase2, finalstate_values = read_cube(final_dens)
+                write_cube_diff(numatoms, orgx, orgy, orgz, nx, dx, ny, dy, nz, dz, elems, molcoords, initial_values, finalstate_values,"Densdiff_SCFInit-SCFFinalmult"+str(fstate.mult))
                 print("Wrote Cube file containing density difference between Initial State and Final State.")
+
+
 
             ###################
             # Run Wfoverlap to calculate Dyson norms. Will write to wfovl.out.  Will take a while for big systems.
@@ -1217,8 +1228,7 @@ def PhotoElectronSpectrum(theory=None, fragment=None, InitialState_charge=None, 
         if DiffDens == 'All':
             print("")
             print(bcolors.OKMAGENTA, "DiffDens option: All . Will do TDDFT-gradient calculation for each TDDFT-state (expensive)", bcolors.ENDC)
-            os.mkdir('Diffdens-TD-calcs')
-            os.chdir('Diffdens-TD-calcs')
+            os.chdir('Calculated_densities')
 
             for findex, fstate in enumerate(Finalstates):
                 print(bcolors.OKGREEN, "Calculating Final State SCF + TDDFT DENSITY CALCULATION. Spin Multiplicity: ", fstate.mult, bcolors.ENDC)
@@ -1264,8 +1274,8 @@ def PhotoElectronSpectrum(theory=None, fragment=None, InitialState_charge=None, 
 
                     final_dens = 'Final_State_mult' + str(fstate.mult)+'TDDFTstate_'+str(tddftstate)+'.eldens.cube'
                     rlowx2, dx2, nx2, orgx2, rlowy2, dy2, ny2, orgy2, rlowz2, dz2, \
-                    nz2, orgz2, elems2, molcoords2, molcoords_ang2, numatoms2, filebase2, vals2 = read_cube(final_dens)
-                    write_cube_diff(numatoms, orgx, orgy, orgz, nx, dx, ny, dy, nz, dz, elems, molcoords, vals, vals2,
+                    nz2, orgz2, elems2, molcoords2, molcoords_ang2, numatoms2, filebase2, finalstate_values = read_cube(final_dens)
+                    write_cube_diff(numatoms, orgx, orgy, orgz, nx, dx, ny, dy, nz, dz, elems, molcoords, finalstate_values, finalstate_values,
                             "Densdiff_SCFInit-TDDFTFinalmult" + str(fstate.mult)+'TDState'+str(tddftstate))
                     print("Wrote Cube file containing density difference between Initial State and Final TDDFT State: ", tddftstate)
 
