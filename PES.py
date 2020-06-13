@@ -775,9 +775,11 @@ def PhotoElectronSpectrum(theory=None, fragment=None, InitialState_charge=None, 
     print("Difference Density option is: ", DiffDens, "(options are: SCF, All, None)")
     if DiffDens == 'SCF':
         print("Will do difference densities for Inital-state and Final-state SCF wavefunctions only.")
+        shutil.rmtree('Calculated_densities', ignore_errors=True)
         os.mkdir('Calculated_densities')
     elif DiffDens=='All':
         print("Will do difference densities for all states: SCF and TDDFT states")
+        shutil.rmtree('Calculated_densities', ignore_errors=True)
         os.mkdir('Calculated_densities')
     else:
         DiffDens=None
