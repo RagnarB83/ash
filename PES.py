@@ -1241,7 +1241,7 @@ def PhotoElectronSpectrum(theory=None, fragment=None, InitialState_charge=None, 
                             numionstates - 1) + '\n' + "maxdim 15\n" + "Iroot {}\n".format(tddftstate) + "end\n" + "\n"
                         # Boolean for whether no_tda is on or not
                         no_tda = False
-                    theory.extraline = theory.extraline + tddftstring
+                    theory.extraline = "%method\n"+"frozencore FC_NONE\n"+"end\n" + tddftstring
                     Singlepoint(fragment=fragment, theory=theory)
                     # All TDDFT states done. Now making cube files
                     print("Difference density active. Calling orca_plot to create Cube-file for Final state TDDFT-state.")
