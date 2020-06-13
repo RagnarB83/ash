@@ -1227,7 +1227,7 @@ def PhotoElectronSpectrum(theory=None, fragment=None, InitialState_charge=None, 
                 theory.orcasimpleinput=theory.orcasimpleinput+' KeepDens Engrad' \
 
                 #Looping over each TDDFT-state and doing TDDFT-calc
-                for tddftstate in range(numionstates:
+                for tddftstate in range(numionstates):
                     #Adding Iroot to get state-specific gradient+density                                              ''
                     if tda == False:
                         # Boolean for whether no_tda is on or not
