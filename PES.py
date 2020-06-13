@@ -772,7 +772,7 @@ def PhotoElectronSpectrum(theory=None, fragment=None, InitialState_charge=None, 
         print("Provide charge and spin multiplicity of initial and ionized state: InitialState_charge, InitialState_mult, Ionizedstate_charge,Ionizedstate_mult ")
         exit(1)
 
-    print("Difference Density option is: ", DiffDens, "(options are: SCF, All, None")
+    print("Difference Density option is: ", DiffDens, "(options are: SCF, All, None)")
     if DiffDens == 'SCF':
         print("Will do difference densities for Inital-state and Final-state SCF wavefunctions only.")
     elif DiffDens=='All':
@@ -1214,6 +1214,8 @@ def PhotoElectronSpectrum(theory=None, fragment=None, InitialState_charge=None, 
 
         #Here doing densities for each TDDFT-state. SCF-states already done.
         if DiffDens == 'All':
+            print("")
+            print("DiffDens option: All . Will do TDDFT-gradient calculation for each TDDFT-state (expensive)")
             os.mkdir('Diffdens-TD-calcs')
             os.chdir('Diffdens-TD-calcs')
 
@@ -1222,12 +1224,12 @@ def PhotoElectronSpectrum(theory=None, fragment=None, InitialState_charge=None, 
                 theory.charge = fstate.charge
                 theory.mult = fstate.mult
                 shutil.copyfile('../'+'Final_State_mult' + str(fstate.mult) + '.gbw','Final_State_mult' + str(fstate.mult) + '.gbw')
-
+                os.rename('Final_State_mult' + str(fstate.mult) + '.gbw', theory.inputfilename + '.gbw')
                 #Adding Keepdens and Engrad to do TDDFT gradient
                 theory.orcasimpleinput=theory.orcasimpleinput+' KeepDens Engrad' \
 
                 #Looping over each TDDFT-state and doing TDDFT-calc
-                for tddftstate in range(numionstates):
+                for tddftstate in range(1,numionstates):
                     #Adding Iroot to get state-specific gradient+density                                              ''
                     if tda == False:
                         # Boolean for whether no_tda is on or not
