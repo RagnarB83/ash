@@ -894,6 +894,7 @@ def PhotoElectronSpectrum(theory=None, fragment=None, InitialState_charge=None, 
             shutil.copyfile('../' + theory.inputfilename + '.gbw', './'+theory.inputfilename + '.gbw')
             #Electron density
             run_orca_plot(orcadir=theory.orcadir,filename=theory.inputfilename + '.gbw', option='density', gridvalue=densgridvalue)
+            os.rename(theory.inputfilename+'.scfp','Init_State.scfp')
             shutil.copyfile(theory.inputfilename + '.eldens.cube', './' + 'Init_State' + '.eldens.cube')
 
             # Read Initial-state-SCF density Cube file into memory
@@ -903,6 +904,7 @@ def PhotoElectronSpectrum(theory=None, fragment=None, InitialState_charge=None, 
             #Spin density (only if UHF). Otherwise orca_plot gets confused (takes difference between alpha-density and nothing)
             if stateI.hftyp == "UHF":
                 run_orca_plot(orcadir=theory.orcadir,filename=theory.inputfilename + '.gbw', option='spindensity', gridvalue=densgridvalue)
+                os.rename(theory.inputfilename + '.scfr', 'Init_State.scfr')
                 shutil.copyfile(theory.inputfilename + '.spindens.cube', './' + 'Init_State' + '.spindens.cube')
             os.chdir('..')
         #Note: Using SCF energy and not Final Single Point energy (does not work for TDDFT)
@@ -969,11 +971,13 @@ def PhotoElectronSpectrum(theory=None, fragment=None, InitialState_charge=None, 
                 #Electron density
                 run_orca_plot(orcadir=theory.orcadir, filename=theory.inputfilename + '.gbw', option='density',
                              gridvalue=densgridvalue)
+                os.rename(theory.inputfilename + '.scfp', 'Final_State_mult' + str(fstate.mult) + '.scfp')
                 shutil.copyfile(theory.inputfilename + '.eldens.cube', './' + 'Final_State_mult' + str(fstate.mult) + '.eldens.cube')
                 #Spin density
                 if fstate.hftyp == "UHF":
                     run_orca_plot(orcadir=theory.orcadir, filename=theory.inputfilename + '.gbw', option='spindensity',
                              gridvalue=densgridvalue)
+                    os.rename(theory.inputfilename + '.scfr', 'Final_State_mult' + str(fstate.mult) + '.scfr')
                     shutil.copyfile(theory.inputfilename + '.spindens.cube', './' + 'Final_State_mult' + str(fstate.mult) + '.spindens.cube')
                 os.chdir('..')
             #Saveing GBW and CIS file
