@@ -762,7 +762,7 @@ def Gaussian(x, mu, strength, sigma):
 
 def PhotoElectronSpectrum(theory=None, fragment=None, InitialState_charge=None, Initialstate_mult=None,
                           Ionizedstate_charge=None, Ionizedstate_mult=None, numionstates=50, path_wfoverlap=None, tda=True,
-                          brokensym=False, HSmult=None, atomstoflip=None, initialorbitalfiles=None, DiffDens=True):
+                          brokensym=False, HSmult=None, atomstoflip=None, initialorbitalfiles=None, DiffDens='SCF'):
     blankline()
     print(bcolors.OKGREEN,"-------------------------------------------------------------------",bcolors.ENDC)
     print(bcolors.OKGREEN,"PhotoElectronSpectrum: Calculating PES spectra via TDDFT and Dyson-norm approach",bcolors.ENDC)
@@ -771,6 +771,15 @@ def PhotoElectronSpectrum(theory=None, fragment=None, InitialState_charge=None, 
     if InitialState_charge is None or Initialstate_mult is None or Ionizedstate_charge is None or Ionizedstate_mult is None:
         print("Provide charge and spin multiplicity of initial and ionized state: InitialState_charge, InitialState_mult, Ionizedstate_charge,Ionizedstate_mult ")
         exit(1)
+
+    print("Difference Density option is: ", DiffDens, "(options are: SCF, All, None")
+    if DiffDens == 'SCF':
+        print("Will do difference densities for Inital-state and Final-state SCF wavefunctions only.")
+    elif DiffDens=='All':
+        print("Will do difference densities for all states: SCF and TDDFT states")
+    else:
+        DiffDens=None
+        print("Will not calculate densities")
 
     #Getting charge/mult of states from function argument
     totnuccharge=fragment.nuccharge
@@ -875,8 +884,8 @@ def PhotoElectronSpectrum(theory=None, fragment=None, InitialState_charge=None, 
         Singlepoint(fragment=fragment, theory=theory)
 
         #Create Cube file of electron density using orca_plot
-        if DiffDens is True:
-            print("Difference density active. Calling orca_plot to create Cube-file.")
+        if DiffDens == 'SCF' or DiffDens =='All':
+            print("Difference density active. Calling orca_plot to create Cube-file for Initial state SCF.")
             run_orca_plot(orcadir=theory.orcadir,filename=theory.inputfilename + '.gbw', option='density', gridvalue=100)
             shutil.copyfile(theory.inputfilename + '.eldens.cube', './' + 'Init_State' + '.eldens.cube')
 
@@ -937,8 +946,8 @@ def PhotoElectronSpectrum(theory=None, fragment=None, InitialState_charge=None, 
             fstate.energy = scfenergygrab("orca-input.out")
 
             # Create Cube file of electron density using orca_plot
-            if DiffDens is True:
-                print("Difference density active. Calling orca_plot to create Cube-file.")
+            if DiffDens == 'SCF' or DiffDens == 'All':
+                print("Difference density active. Calling orca_plot to create Cube-file for Final state SCF.")
                 run_orca_plot(orcadir=theory.orcadir, filename=theory.inputfilename + '.gbw', option='density',
                              gridvalue=100)
                 shutil.copyfile(theory.inputfilename + '.eldens.cube', './' + 'Final_State_mult' + str(fstate.mult) + '.eldens.cube')
@@ -1201,6 +1210,54 @@ def PhotoElectronSpectrum(theory=None, fragment=None, InitialState_charge=None, 
             else:
                 TDtransenergy=0.0
             print("{:>6d} {:>7d} {:20.11f} {:>10.3f} {:>10.5f} {:>10} {:>17.3f}".format(i, spinmult, E, IE, dys,stype, TDtransenergy))
+
+
+        #Here doing densities for each TDDFT-state. SCF-states already done.
+        if DiffDens == 'All':
+            os.mkdir('Diffdens-TD-calcs')
+            os.chdir('Diffdens-TD-calcs')
+
+            for findex, fstate in enumerate(Finalstates):
+                print(bcolors.OKGREEN, "Calculating Final State SCF + TDDFT DENSITY CALCULATION. Spin Multiplicity: ", fstate.mult, bcolors.ENDC)
+                theory.charge = fstate.charge
+                theory.mult = fstate.mult
+                shutil.copyfile('../'+'Final_State_mult' + str(fstate.mult) + '.gbw','Final_State_mult' + str(fstate.mult) + '.gbw')
+
+                #Adding Keepdens and Engrad to do TDDFT gradient
+                theory.orcasimpleinput=theory.orcasimpleinput+' KeepDens Engrad' \
+
+                #Looping over each TDDFT-state and doing TDDFT-calc
+                for tddftstate in range(numionstates:
+                    #Adding Iroot to get state-specific gradient+density                                              ''
+                    if tda == False:
+                        # Boolean for whether no_tda is on or not
+                        no_tda = True
+                        tddftstring = "%tddft\n" + "tda false\n" + "nroots " + str(
+                            numionstates - 1) + '\n' + "maxdim 15\n" + "Iroot {}\n".format(tddftstate) + "end\n" + "\n"
+                    else:
+                        tddftstring = "%tddft\n" + "tda true\n" + "nroots " + str(
+                            numionstates - 1) + '\n' + "maxdim 15\n" + "Iroot {}\n".format(tddftstate) + "end\n" + "\n"
+                        # Boolean for whether no_tda is on or not
+                        no_tda = False
+                    theory.extraline = theory.extraline + tddftstring
+                    Singlepoint(fragment=fragment, theory=theory)
+                    # All TDDFT states done. Now making cube files
+                    print("Difference density active. Calling orca_plot to create Cube-file for Final state TDDFT-state.")
+                    run_orca_plot(orcadir=theory.orcadir, filename=theory.inputfilename + '.gbw', option='density',gridvalue=100)
+
+
+
+            shutil.copyfile(theory.inputfilename + '.eldens.cube',
+                            './' + 'Final_State_mult' + str(fstate.mult) + '.eldens.cube')
+
+            rlowx2, dx2, nx2, orgx2, rlowy2, dy2, ny2, orgy2, rlowz2, dz2, \
+            nz2, orgz2, elems2, molcoords2, molcoords_ang2, numatoms2, filebase2, vals2 = read_cube(final_dens)
+            write_cube_diff(numatoms, orgx, orgy, orgz, nx, dx, ny, dy, nz, dz, elems, molcoords, vals, vals2,
+                            "Densdiff_Init-Finalmult" + str(fstate.mult))
+            print("Wrote Cube file containing density difference between Initial State and Final State.")
+
+            os.chdir('..')
+
 
 
 
