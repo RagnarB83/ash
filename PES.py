@@ -1147,8 +1147,6 @@ def PhotoElectronSpectrum(theory=None, fragment=None, InitialState_charge=None, 
                 write_cube_diff(numatoms, orgx, orgy, orgz, nx, dx, ny, dy, nz, dz, elems, molcoords, initial_values, finalstate_values,"Densdiff_SCFInit-SCFFinalmult"+str(fstate.mult))
                 print("Wrote Cube file containing density difference between Initial State and Final State.")
                 os.chdir('..')
-
-                exit()
             ###################
             # Run Wfoverlap to calculate Dyson norms. Will write to wfovl.out.  Will take a while for big systems.
             print("")
