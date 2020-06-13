@@ -918,7 +918,6 @@ def PhotoElectronSpectrum(theory=None, fragment=None, InitialState_charge=None, 
         print("stateI.occorbs_alpha:", stateI.occorbs_alpha)
         print("stateI.hftyp:", stateI.hftyp)
 
-        exit()
         # need to specify whether Initial/Final states are restricted or not.
         if stateI.hftyp == "UHF":
             stateI.restricted = False
