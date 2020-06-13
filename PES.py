@@ -961,25 +961,6 @@ def PhotoElectronSpectrum(theory=None, fragment=None, InitialState_charge=None, 
 
             Singlepoint(fragment=fragment, theory=theory)
             fstate.energy = scfenergygrab("orca-input.out")
-
-            #Create Cube file of electron/spin density using orca_plot for FINAL STATE
-            if Densities == 'SCF' or Densities == 'All':
-                print("Density option active. Calling orca_plot to create Cube-file for Final state SCF.")
-
-                os.chdir('Calculated_densities')
-                shutil.copyfile('../' + theory.inputfilename + '.gbw', './' + theory.inputfilename + '.gbw')
-                #Electron density
-                run_orca_plot(orcadir=theory.orcadir, filename=theory.inputfilename + '.gbw', option='density',
-                             gridvalue=densgridvalue)
-                os.rename(theory.inputfilename + '.scfp', 'Final_State_mult' + str(fstate.mult) + '.scfp')
-                shutil.copyfile(theory.inputfilename + '.eldens.cube', './' + 'Final_State_mult' + str(fstate.mult) + '.eldens.cube')
-                #Spin density
-                if fstate.hftyp == "UHF":
-                    run_orca_plot(orcadir=theory.orcadir, filename=theory.inputfilename + '.gbw', option='spindensity',
-                             gridvalue=densgridvalue)
-                    os.rename(theory.inputfilename + '.scfr', 'Final_State_mult' + str(fstate.mult) + '.scfr')
-                    shutil.copyfile(theory.inputfilename + '.spindens.cube', './' + 'Final_State_mult' + str(fstate.mult) + '.spindens.cube')
-                os.chdir('..')
             #Saveing GBW and CIS file
             shutil.copyfile(theory.inputfilename + '.gbw', './' + 'Final_State_mult' + str(fstate.mult) + '.gbw')
             shutil.copyfile(theory.inputfilename + '.cis', './' + 'Final_State_mult' + str(fstate.mult) + '.cis')
@@ -1004,6 +985,27 @@ def PhotoElectronSpectrum(theory=None, fragment=None, InitialState_charge=None, 
             else:
                 print("hmmm")
                 exit()
+
+                
+            #Create Cube file of electron/spin density using orca_plot for FINAL STATE
+            if Densities == 'SCF' or Densities == 'All':
+                print("Density option active. Calling orca_plot to create Cube-file for Final state SCF.")
+
+                os.chdir('Calculated_densities')
+                shutil.copyfile('../' + theory.inputfilename + '.gbw', './' + theory.inputfilename + '.gbw')
+                #Electron density
+                run_orca_plot(orcadir=theory.orcadir, filename=theory.inputfilename + '.gbw', option='density',
+                             gridvalue=densgridvalue)
+                os.rename(theory.inputfilename + '.scfp', 'Final_State_mult' + str(fstate.mult) + '.scfp')
+                shutil.copyfile(theory.inputfilename + '.eldens.cube', './' + 'Final_State_mult' + str(fstate.mult) + '.eldens.cube')
+                #Spin density
+                if fstate.hftyp == "UHF":
+                    print("We are here. hftyp is not defined.")
+                    run_orca_plot(orcadir=theory.orcadir, filename=theory.inputfilename + '.gbw', option='spindensity',
+                             gridvalue=densgridvalue)
+                    os.rename(theory.inputfilename + '.scfr', 'Final_State_mult' + str(fstate.mult) + '.scfr')
+                    shutil.copyfile(theory.inputfilename + '.spindens.cube', './' + 'Final_State_mult' + str(fstate.mult) + '.spindens.cube')
+                os.chdir('..')
 
     else:
         print("Theory not supported for PhotoElectronSpectrum")
