@@ -762,7 +762,7 @@ def Gaussian(x, mu, strength, sigma):
 
 def PhotoElectronSpectrum(theory=None, fragment=None, InitialState_charge=None, Initialstate_mult=None,
                           Ionizedstate_charge=None, Ionizedstate_mult=None, numionstates=50, path_wfoverlap=None, tda=True,
-                          brokensym=False, HSmult=None, atomstoflip=None, initialorbitalfiles=None, DiffDens='SCF', densgridvalue=100):
+                          brokensym=False, HSmult=None, atomstoflip=None, initialorbitalfiles=None, Densities='SCF', densgridvalue=100):
     blankline()
     print(bcolors.OKGREEN,"-------------------------------------------------------------------",bcolors.ENDC)
     print(bcolors.OKGREEN,"PhotoElectronSpectrum: Calculating PES spectra via TDDFT and Dyson-norm approach",bcolors.ENDC)
@@ -772,17 +772,17 @@ def PhotoElectronSpectrum(theory=None, fragment=None, InitialState_charge=None, 
         print("Provide charge and spin multiplicity of initial and ionized state: InitialState_charge, InitialState_mult, Ionizedstate_charge,Ionizedstate_mult ")
         exit(1)
 
-    print("Difference Density option is: ", DiffDens, "(options are: SCF, All, None)")
-    if DiffDens == 'SCF':
-        print("Will do difference densities for Inital-state and Final-state SCF wavefunctions only.")
+    print("Densities option is: ", Densities, "(options are: SCF, All, None)")
+    if Densities == 'SCF':
+        print("Will do densities (and difference densities) for Inital-state and Final-state SCF wavefunctions only.")
         shutil.rmtree('Calculated_densities', ignore_errors=True)
         os.mkdir('Calculated_densities')
-    elif DiffDens=='All':
-        print("Will do difference densities for all states: SCF and TDDFT states")
+    elif Densities=='All':
+        print("Will do densities (and difference densities) for all states: SCF and TDDFT states")
         shutil.rmtree('Calculated_densities', ignore_errors=True)
         os.mkdir('Calculated_densities')
     else:
-        DiffDens=None
+        Densities=None
         print("Will not calculate densities")
 
     #Getting charge/mult of states from function argument
@@ -887,13 +887,17 @@ def PhotoElectronSpectrum(theory=None, fragment=None, InitialState_charge=None, 
 
         Singlepoint(fragment=fragment, theory=theory)
 
-        #Create Cube file of electron density using orca_plot
-        if DiffDens == 'SCF' or DiffDens =='All':
+        #Create Cube file of electron/spin density using orca_plot for INITIAL STATE
+        if Densities == 'SCF' or Densities =='All':
             os.chdir('Calculated_densities')
-            print("Difference density active. Calling orca_plot to create Cube-file for Initial state SCF.")
+            print("Density option active. Calling orca_plot to create Cube-file for Initial state SCF.")
             shutil.copyfile('../' + theory.inputfilename + '.gbw', './'+theory.inputfilename + '.gbw')
+            #Electron density
             run_orca_plot(orcadir=theory.orcadir,filename=theory.inputfilename + '.gbw', option='density', gridvalue=densgridvalue)
             shutil.copyfile(theory.inputfilename + '.eldens.cube', './' + 'Init_State' + '.eldens.cube')
+            #Spin density
+            run_orca_plot(orcadir=theory.orcadir,filename=theory.inputfilename + '.gbw', option='spindensity', gridvalue=densgridvalue)
+            shutil.copyfile(theory.inputfilename + '.spindens.cube', './' + 'Init_State' + '.spindens.cube')
             os.chdir('..')
         #Note: Using SCF energy and not Final Single Point energy (does not work for TDDFT)
         stateI.energy=scfenergygrab("orca-input.out")
@@ -951,15 +955,20 @@ def PhotoElectronSpectrum(theory=None, fragment=None, InitialState_charge=None, 
             Singlepoint(fragment=fragment, theory=theory)
             fstate.energy = scfenergygrab("orca-input.out")
 
-            # Create Cube file of electron density using orca_plot
-            if DiffDens == 'SCF' or DiffDens == 'All':
-                print("Difference density active. Calling orca_plot to create Cube-file for Final state SCF.")
+            #Create Cube file of electron/spin density using orca_plot for FINAL STATE
+            if Densities == 'SCF' or Densities == 'All':
+                print("Density option active. Calling orca_plot to create Cube-file for Final state SCF.")
 
                 os.chdir('Calculated_densities')
                 shutil.copyfile('../' + theory.inputfilename + '.gbw', './' + theory.inputfilename + '.gbw')
+                #Electron density
                 run_orca_plot(orcadir=theory.orcadir, filename=theory.inputfilename + '.gbw', option='density',
                              gridvalue=densgridvalue)
                 shutil.copyfile(theory.inputfilename + '.eldens.cube', './' + 'Final_State_mult' + str(fstate.mult) + '.eldens.cube')
+                #Spin density
+                run_orca_plot(orcadir=theory.orcadir, filename=theory.inputfilename + '.gbw', option='spindensity',
+                             gridvalue=densgridvalue)
+                shutil.copyfile(theory.inputfilename + '.spindens.cube', './' + 'Final_State_mult' + str(fstate.mult) + '.spindens.cube')
                 os.chdir('..')
             #Saveing GBW and CIS file
             shutil.copyfile(theory.inputfilename + '.gbw', './' + 'Final_State_mult' + str(fstate.mult) + '.gbw')
@@ -1118,7 +1127,7 @@ def PhotoElectronSpectrum(theory=None, fragment=None, InitialState_charge=None, 
 
 
         for fstate in Finalstates:
-            if DiffDens == 'SCF' or DiffDens == 'All':
+            if Densities == 'SCF' or Densities == 'All':
                 os.chdir('Calculated_densities')
                 #Read Initial-state-SCF density Cube file into memory
                 init_dens = 'Init_State.eldens.cube'
@@ -1227,9 +1236,9 @@ def PhotoElectronSpectrum(theory=None, fragment=None, InitialState_charge=None, 
 
 
         #Here doing densities for each TDDFT-state. SCF-states already done.
-        if DiffDens == 'All':
+        if Densities == 'All':
             print("")
-            print(bcolors.OKMAGENTA, "DiffDens option: All . Will do TDDFT-gradient calculation for each TDDFT-state (expensive)", bcolors.ENDC)
+            print(bcolors.OKMAGENTA, "Densities option: All . Will do TDDFT-gradient calculation for each TDDFT-state (expensive)", bcolors.ENDC)
             os.chdir('Calculated_densities')
 
             for findex, fstate in enumerate(Finalstates):
@@ -1262,7 +1271,7 @@ def PhotoElectronSpectrum(theory=None, fragment=None, InitialState_charge=None, 
                     # TDDFT state done. Renaming cisp and cisr files
                     os.rename('orca-input.cisp', 'Final_State_mult' + str(fstate.mult)+'TDDFTstate_'+str(tddftstate)+'.cisp')
                     os.rename('orca-input.cisr', 'Final_State_mult' + str(fstate.mult)+'TDDFTstate_'+str(tddftstate)+'.cisr')
-                    print("Difference density active. Calling orca_plot to create Cube-file for Final state TDDFT-state.")
+                    print("Densities option active. Calling orca_plot to create Cube-file for Final state TDDFT-state.")
 
                     #Doing spin-density Cubefilefor each cisr file
                     run_orca_plot(orcadir=theory.orcadir, filename=theory.inputfilename + '.gbw', option='cisspindensity',gridvalue=densgridvalue,
