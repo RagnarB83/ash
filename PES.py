@@ -19,7 +19,7 @@ import constants
 from elstructure_functions import *
 
 class bcolors:
-    HEADER = '\033[95m' ; OKBLUE = '\033[94m'; OKGREEN = '\033[92m'; WARNING = '\033[93m'; FAIL = '\033[91m'; ENDC = '\033[0m'; BOLD = '\033[1m'; UNDERLINE = '\033[4m'
+    HEADER = '\033[95m' ; OKBLUE = '\033[94m'; OKGREEN = '\033[92m'; OKMAGENTA= '\033[95m'; WARNING = '\033[93m'; FAIL = '\033[91m'; ENDC = '\033[0m'; BOLD = '\033[1m'; UNDERLINE = '\033[4m'
 
 eldict={'H':1,'He':2,'Li':3,'Be':4,'B':5,'C':6,'N':7,'O':8,'F':9,'Ne':10,'Na':11,'Mg':12,'Al':13,'Si':14,'P':15,'S':16,'Cl':17,'Ar':18,'K':19,'Ca':20,'Sc':21,'Ti':22,'V':23,'Cr':24,'Mn':25,'Fe':26,'Co':27,'Ni':28,'Cu':29,'Zn':30,'Ga':31,'Ge':32,'As':33,'Se':34,'Br':35,'Kr':36,'Mo':42,'W':74,'Ru':44,'I':53}
 
@@ -1216,12 +1216,12 @@ def PhotoElectronSpectrum(theory=None, fragment=None, InitialState_charge=None, 
         #Here doing densities for each TDDFT-state. SCF-states already done.
         if DiffDens == 'All':
             print("")
-            print("DiffDens option: All . Will do TDDFT-gradient calculation for each TDDFT-state (expensive)")
+            print(bcolors.OKMAGENTA, "DiffDens option: All . Will do TDDFT-gradient calculation for each TDDFT-state (expensive)", bcolors.ENDC)
             os.mkdir('Diffdens-TD-calcs')
             os.chdir('Diffdens-TD-calcs')
 
             for findex, fstate in enumerate(Finalstates):
-                print(bcolors.OKGREEN, "Calculating Final State SCF + TDDFT DENSITY CALCULATION. Spin Multiplicity: ", fstate.mult, bcolors.ENDC)
+                print(bcolors.OK, "Calculating Final State SCF + TDDFT DENSITY CALCULATION. Spin Multiplicity: ", fstate.mult, bcolors.ENDC)
                 theory.charge = fstate.charge
                 theory.mult = fstate.mult
                 shutil.copyfile('../'+'Final_State_mult' + str(fstate.mult) + '.gbw','Final_State_mult' + str(fstate.mult) + '.gbw')
