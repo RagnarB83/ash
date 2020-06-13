@@ -746,6 +746,8 @@ def run_orca_plot(orcadir, filename, option, gridvalue=40,densityfilename=None):
         plottype = 2
     elif option=='cisdensity':
         plottype = 2
+    elif option=='cisspindensity':
+        plottype = 2
     elif option=='spindensity':
         plottype = 3
     elif option=='mo':
@@ -759,4 +761,5 @@ def run_orca_plot(orcadir, filename, option, gridvalue=40,densityfilename=None):
     elif option == 'cisdensity':
         p = sp.run([orcadir + '/orca_plot', filename, '-i'], stdout=sp.PIPE,
                        input='5\n7\n4\n{}\n1\n{}\nn\n{}\n10\n11\n\n'.format(gridvalue, plottype,densityfilename), encoding='ascii')
+
     #print(p.returncode)

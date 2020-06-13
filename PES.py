@@ -1254,15 +1254,12 @@ def PhotoElectronSpectrum(theory=None, fragment=None, InitialState_charge=None, 
                                   densityfilename='Final_State_mult' + str(fstate.mult)+'TDDFTstate_'+str(tddftstate)+'.cisp' )
                     os.rename(theory.inputfilename + '.eldens.cube', 'Final_State_mult' + str(fstate.mult)+'TDDFTstate_'+str(tddftstate)+'.eldens.cube')
 
-
-            shutil.copyfile(theory.inputfilename + '.eldens.cube',
-                            './' + 'Final_State_mult' + str(fstate.mult) + '.eldens.cube')
-
-            rlowx2, dx2, nx2, orgx2, rlowy2, dy2, ny2, orgy2, rlowz2, dz2, \
-            nz2, orgz2, elems2, molcoords2, molcoords_ang2, numatoms2, filebase2, vals2 = read_cube(final_dens)
-            write_cube_diff(numatoms, orgx, orgy, orgz, nx, dx, ny, dy, nz, dz, elems, molcoords, vals, vals2,
+                    final_dens = 'Final_State_mult' + str(fstate.mult)+'TDDFTstate_'+str(tddftstate)+'.eldens.cube'
+                    rlowx2, dx2, nx2, orgx2, rlowy2, dy2, ny2, orgy2, rlowz2, dz2, \
+                    nz2, orgz2, elems2, molcoords2, molcoords_ang2, numatoms2, filebase2, vals2 = read_cube(final_dens)
+                    write_cube_diff(numatoms, orgx, orgy, orgz, nx, dx, ny, dy, nz, dz, elems, molcoords, vals, vals2,
                             "Densdiff_Init-Finalmult" + str(fstate.mult))
-            print("Wrote Cube file containing density difference between Initial State and Final State.")
+                    print("Wrote Cube file containing density difference between Initial State and Final TDDFT State: ", tddftstate)
 
             os.chdir('..')
 
