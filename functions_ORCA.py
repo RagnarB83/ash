@@ -746,9 +746,9 @@ def run_orca_plot(orcadir, filename, option, gridvalue=40,densityfilename=None):
         plottype = 2
     elif option=='cisdensity':
         plottype = 2
-    elif option=='cisspindensity':
-        plottype = 2
     elif option=='spindensity':
+        plottype = 3
+    elif option=='cisspindensity':
         plottype = 3
     elif option=='mo':
         plottype = 1
@@ -758,7 +758,7 @@ def run_orca_plot(orcadir, filename, option, gridvalue=40,densityfilename=None):
         p = sp.run([orcadir + '/orca_plot', filename, '-i'], stdout=sp.PIPE,
                        input='5\n7\n4\n{}\n1\n{}\ny\n10\n11\n\n'.format(gridvalue, plottype), encoding='ascii')
     #If plotting CIS/TDDFT density then we tell orca_plot explicity.
-    elif option == 'cisdensity':
+    elif option == 'cisdensity' or option == 'cisspindensity':
         p = sp.run([orcadir + '/orca_plot', filename, '-i'], stdout=sp.PIPE,
                        input='5\n7\n4\n{}\n1\n{}\nn\n{}\n10\n11\n\n'.format(gridvalue, plottype,densityfilename), encoding='ascii')
 

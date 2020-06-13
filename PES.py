@@ -1236,6 +1236,7 @@ def PhotoElectronSpectrum(theory=None, fragment=None, InitialState_charge=None, 
                     #Adding Iroot to get state-specific gradient+density                                              ''
                     if tda == False:
                         # Boolean for whether no_tda is on or not
+                        print("Not sure if Full-TDDFT density is available. TO BE CHECKED.")
                         no_tda = True
                         tddftstring = "%tddft\n" + "tda false\n" + "nroots " + str(
                             numionstates - 1) + '\n' + "maxdim 15\n" + "Iroot {}\n".format(tddftstate) + "end\n" + "\n"
@@ -1250,6 +1251,13 @@ def PhotoElectronSpectrum(theory=None, fragment=None, InitialState_charge=None, 
                     os.rename('orca-input.cisp', 'Final_State_mult' + str(fstate.mult)+'TDDFTstate_'+str(tddftstate)+'.cisp')
                     os.rename('orca-input.cisr', 'Final_State_mult' + str(fstate.mult)+'TDDFTstate_'+str(tddftstate)+'.cisr')
                     print("Difference density active. Calling orca_plot to create Cube-file for Final state TDDFT-state.")
+
+                    #Doing spin-density Cubefilefor each cisr file
+                    run_orca_plot(orcadir=theory.orcadir, filename=theory.inputfilename + '.gbw', option='cisspindensity',gridvalue=100,
+                                  densityfilename='Final_State_mult' + str(fstate.mult)+'TDDFTstate_'+str(tddftstate)+'.cisr' )
+                    os.rename(theory.inputfilename + '.spindens.cube', 'Final_State_mult' + str(fstate.mult)+'TDDFTstate_'+str(tddftstate)+'.spindens.cube')
+                    #Doing eldensity Cubefile for each cisp file and then take difference with Initstate-SCF cubefile
+
                     run_orca_plot(orcadir=theory.orcadir, filename=theory.inputfilename + '.gbw', option='cisdensity',gridvalue=100,
                                   densityfilename='Final_State_mult' + str(fstate.mult)+'TDDFTstate_'+str(tddftstate)+'.cisp' )
                     os.rename(theory.inputfilename + '.eldens.cube', 'Final_State_mult' + str(fstate.mult)+'TDDFTstate_'+str(tddftstate)+'.eldens.cube')
