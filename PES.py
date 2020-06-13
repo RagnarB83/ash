@@ -1105,18 +1105,11 @@ def PhotoElectronSpectrum(theory=None, fragment=None, InitialState_charge=None, 
         print(bcolors.OKGREEN, "AO_overl, mos_init, mos_final, dets.1, dets.2", bcolors.ENDC)
 
 
-        ###################
-        # Run Wfoverlap to calculate Dyson norms. Will write to wfovl.out.  Will take a while for big systems.
-        print("")
-        finaldysonnorms=[]
-        #Check if binary exists
-        if os.path.exists(path_wfoverlap) is False:
-            print("Path {} does NOT exist !".format(path_wfoverlap))
-            exit()
+
 
 
         for fstate in Finalstates:
-            if DiffDens is True:
+            if DiffDens == 'SCF' or DiffDens == 'All':
                 # Create difference density between Initial-SCF and Finalstate-SCFs
                 init_dens = 'Init_State.eldens.cube'
                 final_dens = 'Final_State_mult' + str(fstate.mult) + '.eldens.cube'
@@ -1127,6 +1120,14 @@ def PhotoElectronSpectrum(theory=None, fragment=None, InitialState_charge=None, 
                 write_cube_diff(numatoms, orgx, orgy, orgz, nx, dx, ny, dy, nz, dz, elems, molcoords, vals, vals2,"Densdiff_Init-Finalmult"+str(fstate.mult))
                 print("Wrote Cube file containing density difference between Initial State and Final State.")
 
+            ###################
+            # Run Wfoverlap to calculate Dyson norms. Will write to wfovl.out.  Will take a while for big systems.
+            print("")
+            finaldysonnorms = []
+            # Check if binary exists
+            if os.path.exists(path_wfoverlap) is False:
+                print("Path {} does NOT exist !".format(path_wfoverlap))
+                exit()
 
             print("Running WFOverlap to calculate Dyson norms for Finalstate with mult: ", fstate.mult)
             # WFOverlap calculation needs files: AO_overl, mos_init, mos_final, dets_final, dets_init
