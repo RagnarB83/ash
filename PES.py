@@ -1231,6 +1231,7 @@ def PhotoElectronSpectrum(theory=None, fragment=None, InitialState_charge=None, 
 
                 #Looping over each TDDFT-state and doing TDDFT-calc
                 for tddftstate in range(1,numionstates):
+                    print("-------------------------------------------------")
                     print("Running TDDFT-gradient for State: ", tddftstate)
                     #Adding Iroot to get state-specific gradient+density                                              ''
                     if tda == False:
@@ -1245,9 +1246,11 @@ def PhotoElectronSpectrum(theory=None, fragment=None, InitialState_charge=None, 
                         no_tda = False
                     theory.extraline = "%method\n"+"frozencore FC_NONE\n"+"end\n" + tddftstring
                     Singlepoint(fragment=fragment, theory=theory)
-                    # All TDDFT states done. Now making cube files
+                    # TDDFT state done. Renaming cisp and cisr files
+                    os.rename('orca-input.cisp', 'Final_State_mult' + str(fstate.mult)+'TDDFTstate_'+str(tddftstate)+'.cisp')
+                    os.rename('orca-input.cisr', 'Final_State_mult' + str(fstate.mult)+'TDDFTstate_'+str(tddftstate)+'.cisr')
                     print("Difference density active. Calling orca_plot to create Cube-file for Final state TDDFT-state.")
-                    run_orca_plot(orcadir=theory.orcadir, filename=theory.inputfilename + '.gbw', option='density',gridvalue=100)
+                    run_orca_plot(orcadir=theory.orcadir, filename=theory.inputfilename + '.gbw', option='cisdensity',gridvalue=100, )
 
 
 
