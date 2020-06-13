@@ -762,7 +762,7 @@ def Gaussian(x, mu, strength, sigma):
 
 def PhotoElectronSpectrum(theory=None, fragment=None, InitialState_charge=None, Initialstate_mult=None,
                           Ionizedstate_charge=None, Ionizedstate_mult=None, numionstates=50, path_wfoverlap=None, tda=True,
-                          brokensym=False, HSmult=None, atomstoflip=None, initialorbitalfiles=None, DiffDens='SCF'):
+                          brokensym=False, HSmult=None, atomstoflip=None, initialorbitalfiles=None, DiffDens='SCF', densgridvalue=100):
     blankline()
     print(bcolors.OKGREEN,"-------------------------------------------------------------------",bcolors.ENDC)
     print(bcolors.OKGREEN,"PhotoElectronSpectrum: Calculating PES spectra via TDDFT and Dyson-norm approach",bcolors.ENDC)
@@ -886,7 +886,7 @@ def PhotoElectronSpectrum(theory=None, fragment=None, InitialState_charge=None, 
         #Create Cube file of electron density using orca_plot
         if DiffDens == 'SCF' or DiffDens =='All':
             print("Difference density active. Calling orca_plot to create Cube-file for Initial state SCF.")
-            run_orca_plot(orcadir=theory.orcadir,filename=theory.inputfilename + '.gbw', option='density', gridvalue=100)
+            run_orca_plot(orcadir=theory.orcadir,filename=theory.inputfilename + '.gbw', option='density', gridvalue=densgridvalue)
             shutil.copyfile(theory.inputfilename + '.eldens.cube', './' + 'Init_State' + '.eldens.cube')
 
         #Note: Using SCF energy and not Final Single Point energy (does not work for TDDFT)
@@ -949,7 +949,7 @@ def PhotoElectronSpectrum(theory=None, fragment=None, InitialState_charge=None, 
             if DiffDens == 'SCF' or DiffDens == 'All':
                 print("Difference density active. Calling orca_plot to create Cube-file for Final state SCF.")
                 run_orca_plot(orcadir=theory.orcadir, filename=theory.inputfilename + '.gbw', option='density',
-                             gridvalue=100)
+                             gridvalue=densgridvalue)
                 shutil.copyfile(theory.inputfilename + '.eldens.cube', './' + 'Final_State_mult' + str(fstate.mult) + '.eldens.cube')
 
             #Saveing GBW and CIS file
@@ -1253,12 +1253,12 @@ def PhotoElectronSpectrum(theory=None, fragment=None, InitialState_charge=None, 
                     print("Difference density active. Calling orca_plot to create Cube-file for Final state TDDFT-state.")
 
                     #Doing spin-density Cubefilefor each cisr file
-                    run_orca_plot(orcadir=theory.orcadir, filename=theory.inputfilename + '.gbw', option='cisspindensity',gridvalue=100,
+                    run_orca_plot(orcadir=theory.orcadir, filename=theory.inputfilename + '.gbw', option='cisspindensity',gridvalue=densgridvalue,
                                   densityfilename='Final_State_mult' + str(fstate.mult)+'TDDFTstate_'+str(tddftstate)+'.cisr' )
                     os.rename(theory.inputfilename + '.spindens.cube', 'Final_State_mult' + str(fstate.mult)+'TDDFTstate_'+str(tddftstate)+'.spindens.cube')
                     #Doing eldensity Cubefile for each cisp file and then take difference with Initstate-SCF cubefile
 
-                    run_orca_plot(orcadir=theory.orcadir, filename=theory.inputfilename + '.gbw', option='cisdensity',gridvalue=100,
+                    run_orca_plot(orcadir=theory.orcadir, filename=theory.inputfilename + '.gbw', option='cisdensity',gridvalue=densgridvalue,
                                   densityfilename='Final_State_mult' + str(fstate.mult)+'TDDFTstate_'+str(tddftstate)+'.cisp' )
                     os.rename(theory.inputfilename + '.eldens.cube', 'Final_State_mult' + str(fstate.mult)+'TDDFTstate_'+str(tddftstate)+'.eldens.cube')
 
