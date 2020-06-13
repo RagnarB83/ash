@@ -1138,6 +1138,8 @@ def PhotoElectronSpectrum(theory=None, fragment=None, InitialState_charge=None, 
                 # Create difference density between Initial-SCF and Finalstate-SCFs
                 rlowx2, dx2, nx2, orgx2, rlowy2, dy2, ny2, orgy2, rlowz2, dz2, \
                 nz2, orgz2, elems2, molcoords2, molcoords_ang2, numatoms2, filebase2, finalstate_values = read_cube('Final_State_mult' + str(fstate.mult) + '.eldens.cube')
+                print("init value 0:  ", initial_values[0])
+                print("finalstate_values 0:  ", finalstate_values[0])
                 write_cube_diff(numatoms, orgx, orgy, orgz, nx, dx, ny, dy, nz, dz, elems, molcoords, initial_values, finalstate_values,"Densdiff_SCFInit-SCFFinalmult"+str(fstate.mult))
                 print("Wrote Cube file containing density difference between Initial State and Final State.")
                 os.chdir('..')
