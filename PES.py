@@ -1221,7 +1221,7 @@ def PhotoElectronSpectrum(theory=None, fragment=None, InitialState_charge=None, 
             os.chdir('Diffdens-TD-calcs')
 
             for findex, fstate in enumerate(Finalstates):
-                print(bcolors.OK, "Calculating Final State SCF + TDDFT DENSITY CALCULATION. Spin Multiplicity: ", fstate.mult, bcolors.ENDC)
+                print(bcolors.OKGREEN, "Calculating Final State SCF + TDDFT DENSITY CALCULATION. Spin Multiplicity: ", fstate.mult, bcolors.ENDC)
                 theory.charge = fstate.charge
                 theory.mult = fstate.mult
                 shutil.copyfile('../'+'Final_State_mult' + str(fstate.mult) + '.gbw','Final_State_mult' + str(fstate.mult) + '.gbw')
