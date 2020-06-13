@@ -895,6 +895,11 @@ def PhotoElectronSpectrum(theory=None, fragment=None, InitialState_charge=None, 
             #Electron density
             run_orca_plot(orcadir=theory.orcadir,filename=theory.inputfilename + '.gbw', option='density', gridvalue=densgridvalue)
             shutil.copyfile(theory.inputfilename + '.eldens.cube', './' + 'Init_State' + '.eldens.cube')
+
+            # Read Initial-state-SCF density Cube file into memory
+            rlowx, dx, nx, orgx, rlowy, dy, ny, orgy, rlowz, dz, nz, \
+            orgz, elems, molcoords, molcoords_ang, numatoms, filebase, initial_values = read_cube('Init_State.eldens.cube')
+
             #Spin density (only if UHF). Otherwise orca_plot gets confused (takes difference between alpha-density and nothing)
             if stateI.hftyp == "UHF":
                 run_orca_plot(orcadir=theory.orcadir,filename=theory.inputfilename + '.gbw', option='spindensity', gridvalue=densgridvalue)
@@ -1130,19 +1135,14 @@ def PhotoElectronSpectrum(theory=None, fragment=None, InitialState_charge=None, 
         for fstate in Finalstates:
             if Densities == 'SCF' or Densities == 'All':
                 os.chdir('Calculated_densities')
-                #Read Initial-state-SCF density Cube file into memory
-                init_dens = 'Init_State.eldens.cube'
-                final_dens = 'Final_State_mult' + str(fstate.mult) + '.eldens.cube'
-                rlowx, dx, nx, orgx, rlowy, dy, ny, orgy, rlowz, dz, nz, \
-                orgz, elems, molcoords, molcoords_ang, numatoms, filebase, initial_values = read_cube(init_dens)
                 # Create difference density between Initial-SCF and Finalstate-SCFs
                 rlowx2, dx2, nx2, orgx2, rlowy2, dy2, ny2, orgy2, rlowz2, dz2, \
-                nz2, orgz2, elems2, molcoords2, molcoords_ang2, numatoms2, filebase2, finalstate_values = read_cube(final_dens)
+                nz2, orgz2, elems2, molcoords2, molcoords_ang2, numatoms2, filebase2, finalstate_values = read_cube('Final_State_mult' + str(fstate.mult) + '.eldens.cube'))
                 write_cube_diff(numatoms, orgx, orgy, orgz, nx, dx, ny, dy, nz, dz, elems, molcoords, initial_values, finalstate_values,"Densdiff_SCFInit-SCFFinalmult"+str(fstate.mult))
                 print("Wrote Cube file containing density difference between Initial State and Final State.")
                 os.chdir('..')
 
-
+                exit()
             ###################
             # Run Wfoverlap to calculate Dyson norms. Will write to wfovl.out.  Will take a while for big systems.
             print("")
