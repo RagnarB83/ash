@@ -455,6 +455,11 @@ def DDEC_calc(fragment=None, theory=None, ncores=1, DDECmodel='DDEC3'):
             print("Found chargemol in path line (this dir should contain the executables):", p)
             chargemolbinarydir=p
 
+
+    #Finding molden2aim in PATH:
+   # Below works if dir is in PATH
+    molden2aim="molden2aim.exe"
+
     #Defining Chargemoldir (main dir) as 3-up from binary dir
     var=os.path.split(chargemolbinarydir)[0]
     var=os.path.split(var)[0]
@@ -464,7 +469,7 @@ def DDEC_calc(fragment=None, theory=None, ncores=1, DDECmodel='DDEC3'):
 
     os.mkdir('DDEC_calc')
     os.chdir('DDEC_calc')
-    #molden2aim="/users/home/ragnarbj/scripts/molden2aim.exe"
+
     if fragment is None or theory is None :
         print("DDEC_calc requires fragment, theory, keyword arguments")
         exit(1)
@@ -625,7 +630,7 @@ end"""
 
         #Run molden2aim
         m2aimfile = open('mol2aim.inp')
-        p = Popen(molden2aim, stdin=m2aimfile, stderr=STDOUT)
+        p = sp.Popen(molden2aim, stdin=m2aimfile, stderr=STDOUT)
         p.wait()
 
         #Write job control file for Chargemol
