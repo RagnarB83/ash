@@ -705,7 +705,7 @@ end"""
 
     #Run molden2aim
     m2aimfile = open('mol2aim.inp')
-    p = Popen(molden2aim, stdin=m2aimfile, stderr=STDOUT)
+    p = Popen(molden2aim, stdin=m2aimfile, stderr=sp.STDOUT)
     p.wait()
     #Write job control file for Chargemol
     wfxfile=molecule+'.molden.wfx'
