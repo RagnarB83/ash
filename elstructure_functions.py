@@ -447,9 +447,6 @@ def DDEC_calc(fragment=None, theory=None, ncores=1, DDECmodel='DDEC3'):
     for p in PATH:
         if 'chargemol' in p:
             print("Found chargemol in path line (should contain executables):", p)
-            var2=os.path.split(var)[0]=p
-
-
 
 
     #Defining Chargmoldir (main dir)
