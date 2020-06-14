@@ -548,7 +548,7 @@ end"""
         #Element coordinates
         Elfrag = ash.Fragment(elems=[el], coords=[[0.0,0.0,0.0]])
         print("Elfrag dict ", Elfrag.__dict__)
-        ash.Singlepoint(theory=ORCASPcalculation,frag=Elfrag)
+        ash.Singlepoint(theory=ORCASPcalculation,fragment=Elfrag)
         #Preserve outputfile and GBW file for each element
         shutil.copyfile('orca-input.out', './' + str(el) + '.out')
         shutil.copyfile('orca-input.gbw', './' + str(el) + '.gbw')
