@@ -761,7 +761,7 @@ end"""
     print("voldict is", voldict)
     print("ddeccharges: ", ddeccharges)
     print("elems: ", elems)
-
+    os.chdir('..')
     return ddeccharges, molmoms, voldict
 
 
