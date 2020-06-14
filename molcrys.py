@@ -301,8 +301,12 @@ def molcrys(cif_file=None, xtl_file=None, fragmentobjects=[], theory=None, numco
             if chargemodel == 'DDEC3' or chargemodel == 'DDEC6':
                 print("Need to think more about what happens here for DDEC")
                 print("Molecule should be polarized by environment but atoms should not.")
+
                 # Calling DDEC_calc (calls chargemol)
-                atomcharges, molmoms, voldict = DDEC_calc(fragment=Cluster, theory=ORCASPcalculation,
+                #Here providing only QMTheory object to DDEC_calc as this will be used for atomic calculations (not molecule)
+                elemlist_mainfrag = [Cluster.elems[i] for i in Centralmainfrag]
+                print("elemlist_mainfrag: ", elemlist_mainfrag)
+                atomcharges, molmoms, voldict = DDEC_calc(elems=Cluster, theory=QMtheory,
                                                           ncores=numcores, DDECmodel=chargemodel,
                                                           molecule_spinmult=fragmentobjects[0].Mult,
                                                           calcdir="DDEC_fragment_SPloop" + str(SPLoopNum), gbwfile="orca-input.gbw")

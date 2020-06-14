@@ -929,7 +929,7 @@ def gasfragcalc_ORCA(fragmentobjects,Cluster,chargemodel,orcadir,orcasimpleinput
 
         if chargemodel == 'DDEC3' or chargemodel == 'DDEC6':
             #Calling DDEC_calc (calls chargemol)
-            atomcharges, molmoms, voldict = DDEC_calc(fragment=gasfrag, theory=ORCASPcalculation,
+            atomcharges, molmoms, voldict = DDEC_calc(elems=gasfrag.elems, theory=ORCASPcalculation,
                                             ncores=NUMPROC, DDECmodel=chargemodel,molecule_spinmult=fragmentobject.Mult,
                                             calcdir="DDEC_fragment"+str(id), gbwfile="orca-input.gbw")
 

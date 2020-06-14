@@ -442,7 +442,7 @@ def HOMOnumbercalc(file,charge,mult):
 #Uses Chargemol program
 # Uses ORCA to calculate densities of molecule and its free atoms. Uses orca_2mkl to create Molden file and molden2aim to create WFX file from Molden.
 # Wfx file is read into Chargemol program for DDEC analysis which radial moments used to compute C6 parameters and radii for Lennard-Jones equation.
-def DDEC_calc(fragment=None, theory=None, gbwfile=None, ncores=1, DDECmodel='DDEC3', calcdir='DDEC', molecule_spinmult=None):
+def DDEC_calc(elems=None, theory=None, gbwfile=None, ncores=1, DDECmodel='DDEC3', calcdir='DDEC', molecule_spinmult=None):
     #Creating calcdir. Should not exist previously
     os.mkdir(calcdir)
     os.chdir(calcdir)
@@ -475,8 +475,8 @@ def DDEC_calc(fragment=None, theory=None, gbwfile=None, ncores=1, DDECmodel='DDE
 
 
 
-    if fragment is None or theory is None :
-        print("DDEC_calc requires fragment, theory, keyword arguments")
+    if theory is None :
+        print("DDEC_calc requires theory, keyword argument")
         exit(1)
     if theory.__class__.__name__ != "ORCATheory":
         print("Only ORCA is supported as theory in DDEC_calc currently")
@@ -516,9 +516,8 @@ def DDEC_calc(fragment=None, theory=None, gbwfile=None, ncores=1, DDECmodel='DDE
     #Dictionary to keep track of radial volumes
     voldict = {}
 
-    elems=fragment.elems
-    uniqelems=set(fragment.elems)
-    numatoms=fragment.numatoms
+    uniqelems=set(elems)
+    numatoms=len(elems)
 
     print("Lennard-Jones parameter creation from ORCA densities")
     print("")
