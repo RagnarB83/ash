@@ -568,6 +568,9 @@ end"""
         sp.call([theory.orcadir+'/orca_2mkl', el, '-molden'])
 
 
+        #Cleanup ORCA calc for each element
+        ORCASPcalculation.cleanup()
+
         #Write configuration file for molden2aim
         with open("m2a.ini", 'w') as m2afile:
             string = """########################################################################
