@@ -438,7 +438,7 @@ def HOMOnumbercalc(file,charge,mult):
 # Uses ORCA to calculate densities of molecule and its free atoms. Uses orca_2mkl to create Molden file and molden2aim to create WFX file from Molden.
 # Wfx file is read into Chargemol program for DDEC analysis which radial moments used to compute C6 parameters and radii for Lennard-Jones equation.
 def DDEC_calc(fragment=None, theory=None, ncores=1, DDECmodel='DDEC3'):
-    print("DDEC model:", DDECmodel)
+
     #molden2aim=None
 
     #Finding chargemoldir from PATH in os.path
@@ -446,15 +446,25 @@ def DDEC_calc(fragment=None, theory=None, ncores=1, DDECmodel='DDEC3'):
     print("PATH: ", PATH)
     for p in PATH:
         if 'chargemol' in p:
-            print("Found chargemol in path line:", p)
+            print("Found chargemol in path line (should contain executables):", p)
+            var2=os.path.split(var)[0]=p
 
 
+
+
+    #Defining Chargmoldir (main dir)
+    var=os.path.split(chargemolbinarydir)[0]
+    var=os.path.split(var)[0]
+    var=os.path.split(var)[0]
+    chargemoldir=os.path.split(var)[0]
+    print("Chargemoldir (base directory): ", chargemoldir)
+    print("Chargemol binary dir:", chargemolbinarydir)
 
     os.mkdir('DDEC_calc')
     os.chdir('DDEC_calc')
     #molden2aim="/users/home/ragnarbj/scripts/molden2aim.exe"
-    if fragment is None or theory is None or chargemoldir is None or molden2aim is None:
-        print("DDEC_calc requires fragment, theory, molden2aim and chargemoldir keyword arguments")
+    if fragment is None or theory is None :
+        print("DDEC_calc requires fragment, theory, keyword arguments")
         exit(1)
     if theory.__class__.__name__ != "ORCATheory":
         print("Only ORCA is supported as theory in DDEC_calc currently")
@@ -462,17 +472,17 @@ def DDEC_calc(fragment=None, theory=None, ncores=1, DDECmodel='DDEC3'):
 
     # What DDEC charge model to use. Jorgensen paper uses DDEC3. DDEC6 is the newer recommended chargemodel
     # Set variable to 'DDEC3' or 'DDEC6'
-    DDECmodel = 'DDEC3'
+    print("DDEC model:", DDECmodel)
 
     # What oxygen LJ parameters to use in pair-pair parameters.
     # Choices: TIP3P, Chargemol, Manual
     H2Omodel = 'TIP3P'
 
     print("DDEC calc")
-    print("Chargemoldir (base directory): ", chargemoldir)
-    bindir=glob.glob('*chargemol*')[0]
-    chargemolbinarydir=chargemoldir+bindir+'compiled_binaries'+'linux'
-    print("Chargemol binary dir:", chargemolbinarydir)
+
+    #bindir=glob.glob('*chargemol*')[0]
+    #chargemolbinarydir=chargemoldir+bindir+'compiled_binaries'+'linux'
+
 
     # Serial or parallel version
     if ncores == 1:
