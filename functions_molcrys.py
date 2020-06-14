@@ -929,7 +929,9 @@ def gasfragcalc_ORCA(fragmentobjects,Cluster,chargemodel,orcadir,orcasimpleinput
         if chargemodel == 'DDEC3' or chargemodel == 'DDEC6':
             #Calling DDEC_calc (calls chargemol)
             atomcharges, LJpars = DDEC_calc(fragment=gasfrag, theory=ORCASPcalculation,
-                                            ncores=1, DDECmodel=chargemodel, calcdir="DDEC_fragment"+str(id))
+                                            ncores=1, DDECmodel=chargemodel,
+                                            calcdir="DDEC_fragment"+str(id), gbwfile="orca-input.gbw")
+            print("atomcharges:", atomcharges)
         else:
             #Grab atomic charges for fragment.
             atomcharges=grabatomcharges_ORCA(chargemodel,ORCASPcalculation.inputfilename+'.out')
