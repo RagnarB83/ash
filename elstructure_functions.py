@@ -544,8 +544,8 @@ end"""
                                            orcablocks=theory.orcablocks, extraline=scfextrasettingsstring)
 
         #Element coordinates
-        Elfrag = ash.Fragment(elems=[el], coords=[0.0,0.0,0.0])
-
+        Elfrag = ash.Fragment(elems=[el], coords=[[0.0,0.0,0.0]])
+        print("Elfrag dict ", Elfrag.__dict__)
         Singlepoint(theory=ORCASPcalculation,frag=Elfrag)
         #Preserve outputfile and GBW file for each element
         shutil.copyfile('orca-input.out', './' + str(el) + '.out')
