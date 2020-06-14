@@ -306,7 +306,7 @@ def molcrys(cif_file=None, xtl_file=None, fragmentobjects=[], theory=None, numco
                 #Here providing only QMTheory object to DDEC_calc as this will be used for atomic calculations (not molecule)
                 elemlist_mainfrag = [Cluster.elems[i] for i in Centralmainfrag]
                 print("elemlist_mainfrag: ", elemlist_mainfrag)
-                atomcharges, molmoms, voldict = DDEC_calc(elems=Cluster, theory=QMtheory,
+                atomcharges, molmoms, voldict = DDEC_calc(elems=elemlist_mainfrag, theory=QMtheory,
                                                           ncores=numcores, DDECmodel=chargemodel,
                                                           molecule_spinmult=fragmentobjects[0].Mult,
                                                           calcdir="DDEC_fragment_SPloop" + str(SPLoopNum), gbwfile="orca-input.gbw")
