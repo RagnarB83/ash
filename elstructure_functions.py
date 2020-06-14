@@ -526,6 +526,7 @@ def DDEC_calc(fragment=None, theory=None, ncores=1, DDECmodel='DDEC3'):
     print("")
 
     # Calculate elements
+    print("------------------------------------------------------------------------")
     for el in uniqelems:
         print("Doing element:", el)
 
@@ -630,7 +631,7 @@ end"""
 
         #Run molden2aim
         m2aimfile = open('mol2aim.inp')
-        p = sp.Popen(molden2aim, stdin=m2aimfile, stderr=STDOUT)
+        p = sp.Popen(molden2aim, stdin=m2aimfile, stderr=sp.STDOUT)
         p.wait()
 
         #Write job control file for Chargemol
@@ -654,7 +655,11 @@ end"""
 
         jobfile.close()
         sp.call(chargemol)
+        print("------------------------------------------------------------------------")
 
+
+    #DONE WITH ELEMENT CALCS
+    
     print("")
     print("=============================")
     #Getting volumes from output
