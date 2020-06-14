@@ -761,7 +761,6 @@ end"""
                 grabcharge=True
 
     print("")
-    print("elems is", elems)
     print("molmoms is", molmoms)
     print("voldict is", voldict)
     hartokcal=627.5096080305927
