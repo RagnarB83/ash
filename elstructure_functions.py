@@ -521,6 +521,7 @@ def DDEC_calc(fragment=None, theory=None, gbwfile=None, ncores=1, DDECmodel='DDE
     #Dictionary to keep track of radial volumes
     voldict = {}
 
+    elems=fragment.elems
     uniqelems=set(fragment.elems)
     numatoms=fragment.numatoms
 
@@ -763,6 +764,7 @@ end"""
     print("")
     print("molmoms is", molmoms)
     print("voldict is", voldict)
+    print("ddeccharges:", ddeccharges)
     hartokcal=627.5096080305927
     bohrang=0.529177249
 
@@ -820,35 +822,33 @@ end"""
     print("Pair parameters:")
 
     #Water atom parameters
-    if H2Omodel=='TIP3P':
-        water_eps=0.15207217973231357
-        water_sigma=3.15066
-        water_A=582000.0
-        water_B=595.0
-    elif H2Omodel=='Chargemol':
-        #Chargemol for H2o
-        water_eps=0.10009723889719248
-        water_sigma=3.069109977984782
-        water_A=310617.9900759511
-        #water_B=352.6584929270707
-        #B has here been corrected according to eq. 10 in paper
-        water_B=562.5399865110148
-    elif H2Omodel=='Manual':
-        #Manual mod
-        #water_eps=0.75
-        print("add stuff here")
-        exit()
-
-
-    water_r0=r0=water_sigma*(2**(1/6))
-    print("Using Water parameters:")
-    print("Model is:", H2Omodel)
-    print("")
-    print("Ai = ", water_A)
-    print("Bi = ", water_B)
-    print("epsilon=", water_eps, "kcal/mol")
-    print("sigma=", water_sigma, "Angstrom")
-    print("water_r0=", water_r0, "Angstrom")
+    #if H2Omodel=='TIP3P':
+    #    water_eps=0.15207217973231357
+    #    water_sigma=3.15066
+    #    water_A=582000.0
+    #    water_B=595.0
+    #elif H2Omodel=='Chargemol':
+    #    #Chargemol for H2o
+    #    water_eps=0.10009723889719248
+    #    water_sigma=3.069109977984782
+    #    water_A=310617.9900759511
+    #    #water_B=352.6584929270707
+    #    #B has here been corrected according to eq. 10 in paper
+    #    water_B=562.5399865110148
+    #elif H2Omodel=='Manual':
+    #    #Manual mod
+    #    #water_eps=0.75
+    #    print("add stuff here")
+    #    exit()
+    #water_r0=r0=water_sigma*(2**(1/6))
+    #print("Using Water parameters:")
+    #print("Model is:", H2Omodel)
+    #print("")
+    #print("Ai = ", water_A)
+    #print("Bi = ", water_B)
+    #print("epsilon=", water_eps, "kcal/mol")
+    #print("sigma=", water_sigma, "Angstrom")
+    #print("water_r0=", water_r0, "Angstrom")
 
 
     #Creating A and B pairlist
