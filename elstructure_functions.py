@@ -557,8 +557,6 @@ end"""
         sp.call([theory.orcadir+'/orca_2mkl', el, '-molden'])
 
 
-
-
         #Write configuration file for molden2aim
         with open("m2a.ini", 'w') as m2afile:
             string = """########################################################################
@@ -616,7 +614,7 @@ end"""
 
         ########################################################################
         """
-        m2afile.write(string)
+            m2afile.write(string)
 
         #Write settings file
         mol2aiminput=[' ',  el+'.molden.input', 'Y', 'Y', 'N', 'N', ' ', ' ']
