@@ -437,7 +437,21 @@ def HOMOnumbercalc(file,charge,mult):
 #Uses Chargemol program
 # Uses ORCA to calculate densities of molecule and its free atoms. Uses orca_2mkl to create Molden file and molden2aim to create WFX file from Molden.
 # Wfx file is read into Chargemol program for DDEC analysis which radial moments used to compute C6 parameters and radii for Lennard-Jones equation.
-def DDEC_calc(fragment=None, theory=None, chargemoldir=None, ncores=1, molden2aim=None):
+def DDEC_calc(fragment=None, theory=None, ncores=1):
+
+    #molden2aim=None
+
+    #Finding chargemoldir from PATH in os.path
+    PATH=os.environ.get('PATH').split(':')
+    print("PATH: ", PATH)
+    for p in PATH:
+        if 'chargemol' in p:
+            print("Found chargemol in path line:", p)
+
+
+
+    os.mkdir('DDEC_calc')
+    os.chdir('DDEC_calc')
     #molden2aim="/users/home/ragnarbj/scripts/molden2aim.exe"
     if fragment is None or theory is None or chargemoldir is None or molden2aim is None:
         print("DDEC_calc requires fragment, theory, molden2aim and chargemoldir keyword arguments")
