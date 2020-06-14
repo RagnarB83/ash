@@ -449,7 +449,7 @@ def DDEC_calc(fragment=None, theory=None, ncores=1, DDECmodel='DDEC3'):
             print("Found chargemol in path line (should contain executables):", p)
             chargemolbinarydir=p
 
-    #Defining Chargmoldir (main dir)
+    #Defining Chargemoldir (main dir) as 3-up from binary dir
     var=os.path.split(chargemolbinarydir)[0]
     var=os.path.split(var)[0]
     var=os.path.split(var)[0]
