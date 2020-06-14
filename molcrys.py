@@ -168,9 +168,11 @@ def molcrys(cif_file=None, xtl_file=None, fragmentobjects=[], theory=None, numco
                 print("Note IAO charges on broken-symmetry solution are probably not sensible")
 
             gasfragcalc_ORCA(fragmentobjects, Cluster, chargemodel, theory.orcadir, theory.orcasimpleinput,
-                             theory.orcablocks, numcores, brokensym=True, HSmult=theory.HSmult, atomstoflip=theory.atomstoflip)
+                             theory.orcablocks, numcores, brokensym=True, HSmult=theory.HSmult,
+                             atomstoflip=theory.atomstoflip, shortrangemodel=shortrangemodel)
         else:
-            gasfragcalc_ORCA(fragmentobjects, Cluster, chargemodel, theory.orcadir, theory.orcasimpleinput, theory.orcablocks, numcores)
+            gasfragcalc_ORCA(fragmentobjects, Cluster, chargemodel, theory.orcadir, theory.orcasimpleinput,
+                             theory.orcablocks, numcores, shortrangemodel=shortrangemodel)
 
 
     elif theory.__class__.__name__ == "xTBTheory":

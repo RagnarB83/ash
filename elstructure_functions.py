@@ -512,11 +512,6 @@ def DDEC_calc(fragment=None, theory=None, gbwfile=None, ncores=1, DDECmodel='DDE
 
     #Dictionary for spin multiplicities of atoms
     spindictionary = {'H':2, 'He': 1, 'Li':2, 'Be':1, 'B':2, 'C':3, 'N':4, 'O':3, 'F':2, 'Ne':1, 'Na':2, 'Mg':1, 'Al':2, 'Si':3, 'P':4, 'S':3, 'Cl':2, 'Ar':1, 'K':2, 'Ca':1, 'Sc':2, 'Ti':3, 'V':4, 'Cr':7, 'Mn':6, 'Fe':5, 'Co':4, 'Ni':3, 'Cu':2, 'Zn':1, 'Ga':2, 'Ge':3, 'As':4, 'Se':3, 'Br':2, 'Kr':1, 'Rb':2, 'Sr':1, 'Y':2, 'Zr':3, 'Nb':6, 'Mo':7, 'Tc':6, 'Ru':5, 'Rh':4, 'Pd':1, 'Ag':2, 'Cd':1, 'In':2, 'Sn':3, 'Sb':4, 'Te':3, 'I':2, 'Xe':1, 'Cs':2, 'Ba':1, 'La':2, 'Ce':1, 'Pr':4, 'Nd':5, 'Pm':6, 'Sm':7, 'Eu':8, 'Gd':9, 'Tb':6, 'Dy':5, 'Ho':4, 'Er':3, 'Tm':2, 'Yb':1, 'Lu':2, 'Hf':3, 'Ta':4, 'W':5, 'Re':6, 'Os':5, 'Ir':4, 'Pt':3, 'Au':2, 'Hg':1, 'Tl':2, 'Pb':3, 'Bi':4, 'Po':3, 'At':2, 'Rn':1, 'Fr':2, 'Ra':1, 'Ac':2, 'Th':3, 'Pa':4, 'U':5, 'Np':6, 'Pu':7, 'Am':8, 'Cm':9, 'Bk':6, 'Cf':5, 'Es':5, 'Fm':3, 'Md':2, 'No':1, 'Lr':2, 'Rf':3, 'Db':4, 'Sg':5, 'Bh':6, 'Hs':5, 'Mt':4, 'Ds':3, 'Rg':2, 'Cn':1, 'Nh':2, 'Fl':3, 'Mc':4, 'Lv':3, 'Ts':2, 'Og':1 }
-    #Rfree fit parameters. Jorgensen 2016 J. Chem. Theory Comput. 2016, 12, 2312−2323. H,C,N,O,F,S,Cl
-    rfreedict = {'H':1.64, 'C':2.08, 'N':1.72, 'O':1.6, 'F':1.58, 'S':2.0, 'Cl':1.88}
-    #C6 dictionary H-Kr. See MEDFF-horton-parcreate-for-chemshell.py for full periodic table.
-    C6dictionary = {'H':6.5, 'He': 1.42, 'Li':1392, 'Be':227, 'B':99.5, 'C':46.6, 'N':24.2, 'O':15.6, 'F':9.52, 'Ne':6.20, 'Na':1518, 'Mg':626, 'Al':528, 'Si':305, 'P':185, 'S':134, 'Cl':94.6, 'Ar':64.2, 'K':3923, 'Ca':2163, 'Sc':1383, 'Ti':1044, 'V':832, 'Cr':602, 'Mn':552, 'Fe':482, 'Co':408, 'Ni':373, 'Cu':253, 'Zn':284, 'Ga':498, 'Ge':354, 'As':246, 'Se':210, 'Br':162, 'Kr':130}
-
 
     #Dictionary to keep track of radial volumes
     voldict = {}
@@ -764,9 +759,21 @@ end"""
     print("")
     print("molmoms is", molmoms)
     print("voldict is", voldict)
-    print("ddeccharges:", ddeccharges)
+    print("ddeccharges: ", ddeccharges)
+    print("elems: ", elems)
+
+    return ddeccharges, molmoms, voldict
+
+
+#TODO: Not finished
+def DDEC_to_LJparameters(elems, ddeccharges, molmoms, voldict):
     hartokcal=627.5096080305927
     bohrang=0.529177249
+    #Rfree fit parameters. Jorgensen 2016 J. Chem. Theory Comput. 2016, 12, 2312−2323. H,C,N,O,F,S,Cl
+    rfreedict = {'H':1.64, 'C':2.08, 'N':1.72, 'O':1.6, 'F':1.58, 'S':2.0, 'Cl':1.88}
+    #C6 dictionary H-Kr. See MEDFF-horton-parcreate-for-chemshell.py for full periodic table.
+    C6dictionary = {'H':6.5, 'He': 1.42, 'Li':1392, 'Be':227, 'B':99.5, 'C':46.6, 'N':24.2, 'O':15.6, 'F':9.52, 'Ne':6.20, 'Na':1518, 'Mg':626, 'Al':528, 'Si':305, 'P':185, 'S':134, 'Cl':94.6, 'Ar':64.2, 'K':3923, 'Ca':2163, 'Sc':1383, 'Ti':1044, 'V':832, 'Cr':602, 'Mn':552, 'Fe':482, 'Co':408, 'Ni':373, 'Cu':253, 'Zn':284, 'Ga':498, 'Ge':354, 'As':246, 'Se':210, 'Br':162, 'Kr':130}
+
 
 
     #Calculating A_i, B_i, epsilon, sigma, r0 parameters
@@ -795,7 +802,6 @@ end"""
     print("Blist is", Blist)
 
     # Corrections to B according to paper
-
     #Manual phenol modifications
     indextofix=11
     hindex=12
@@ -895,3 +901,5 @@ end"""
     print("")
     for b,a,elm in zip(Bpairlist,Apairlist,elemnumlist):
         print("vdw", elm, "OT", b, a)
+
+    return "something"

@@ -887,7 +887,8 @@ def pointchargeupdate(fragment,fragmenttype,chargelist):
 #Calculate atomic charges for each fragment of Cluster. Assign charges to Cluster object via pointchargeupdate
 # TODO: In future also calculate LJ parameters here
 #ORCA-specific function
-def gasfragcalc_ORCA(fragmentobjects,Cluster,chargemodel,orcadir,orcasimpleinput,orcablocks,NUMPROC, brokensym=None, HSmult=None, atomstoflip=None):
+def gasfragcalc_ORCA(fragmentobjects,Cluster,chargemodel,orcadir,orcasimpleinput,orcablocks,NUMPROC,
+                     brokensym=None, HSmult=None, atomstoflip=None, shortrangemodel=None):
     blankline()
     print("Now calculating atom charges for each fragment type in cluster")
     for id, fragmentobject in enumerate(fragmentobjects):
@@ -928,10 +929,14 @@ def gasfragcalc_ORCA(fragmentobjects,Cluster,chargemodel,orcadir,orcasimpleinput
 
         if chargemodel == 'DDEC3' or chargemodel == 'DDEC6':
             #Calling DDEC_calc (calls chargemol)
-            atomcharges, LJpars = DDEC_calc(fragment=gasfrag, theory=ORCASPcalculation,
+            atomcharges, molmoms, voldict = DDEC_calc(fragment=gasfrag, theory=ORCASPcalculation,
                                             ncores=NUMPROC, DDECmodel=chargemodel,molecule_spinmult=fragmentobject.Mult,
                                             calcdir="DDEC_fragment"+str(id), gbwfile="orca-input.gbw")
+
             print("atomcharges:", atomcharges)
+            if shortrangemodel=='DDEC3' or shortrangemodel=='DDEC6':
+                LJpars = DDEC_to_LJparameters(elems, ddeccharges, molmoms, voldict)
+
         else:
             #Grab atomic charges for fragment.
             atomcharges=grabatomcharges_ORCA(chargemodel,ORCASPcalculation.inputfilename+'.out')
