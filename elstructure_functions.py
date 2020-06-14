@@ -3,6 +3,7 @@ import functions_coords
 import os
 import glob
 import ash
+import subprocess as sp
 
 #CM5. from https://github.com/patrickmelix/CM5-calculator/blob/master/cm5calculator.py
 
@@ -552,7 +553,7 @@ end"""
         shutil.copyfile('orca-input.gbw', './' + str(el) + '.gbw')
 
         #Create molden file from el.gbw
-        subprocess.call([theory.orcadir+'/orca_2mkl', el, '-molden'])
+        sp.call([theory.orcadir+'/orca_2mkl', el, '-molden'])
 
 
 
@@ -648,7 +649,7 @@ end"""
             jobfile.write(jline+'\n')
 
         jobfile.close()
-        subprocess.call(chargemol)
+        sp.call(chargemol)
 
     print("")
     print("=============================")
@@ -685,11 +686,11 @@ end"""
         inputfile.close()
         outputfile = open(molecule+".out", "w")
         #orcaerrors = open("orcaerrors.out", "w")
-        subprocess.call([orcapath, inputname], stdout=outputfile)
+        sp.call([orcapath, inputname], stdout=outputfile)
         outputfile.close()
         #orcaerrors.close()
         #Creat molden file
-        subprocess.call(['orca_2mkl', molecule, '-molden'])
+        sp.call(['orca_2mkl', molecule, '-molden'])
 
     #Write input for molden2aim
     mol2aiminput=[' ',  molecule+'.molden.input', 'Y', 'Y', 'N', 'N', ' ', ' ']
@@ -723,7 +724,7 @@ end"""
 
     jobfile.close()
     if os.path.isfile(molecule+'.molden.output') == False:
-        subprocess.call(chargemol)
+        sp.call(chargemol)
     else:
         print("Skipping Chargemol step. Output file exists")
 
