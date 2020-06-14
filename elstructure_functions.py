@@ -4,6 +4,7 @@ import os
 import glob
 import ash
 import subprocess as sp
+import shutil
 
 #CM5. from https://github.com/patrickmelix/CM5-calculator/blob/master/cm5calculator.py
 
@@ -547,7 +548,7 @@ end"""
         #Element coordinates
         Elfrag = ash.Fragment(elems=[el], coords=[[0.0,0.0,0.0]])
         print("Elfrag dict ", Elfrag.__dict__)
-        Singlepoint(theory=ORCASPcalculation,frag=Elfrag)
+        ash.Singlepoint(theory=ORCASPcalculation,frag=Elfrag)
         #Preserve outputfile and GBW file for each element
         shutil.copyfile('orca-input.out', './' + str(el) + '.out')
         shutil.copyfile('orca-input.gbw', './' + str(el) + '.gbw')
