@@ -485,10 +485,12 @@ def DDEC_calc(fragment=None, theory=None, ncores=1, DDECmodel='DDEC3'):
     # Serial or parallel version
     if ncores == 1:
         print("Using serial version of Chargemol")
-        chargemol=chargemolbinarydir+glob.glob('*serial*')[0]
+        chargemol=glob.glob(chargemolbinarydir+'/*serial*')[0]
+        #chargemol=chargemolbinarydir+glob.glob('*serial*')[0]
     else:
         print("Using parallel version of Chargemol using {} cores".format(ncores))
-        chargemol=chargemolbinarydir+glob.glob('*parallel*')[0]
+        #chargemol=chargemolbinarydir+glob.glob('*parallel*')[0]
+        chargemol=glob.glob(chargemolbinarydir+'/*parallel*')[0]
         # Parallelization of Chargemol code. 8 should be good.
         os.environ['OMP_NUM_THREADS'] = str(ncores)
     print("Using Chargemoldir executable: ", chargemol)
