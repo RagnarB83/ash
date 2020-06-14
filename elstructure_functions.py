@@ -1,6 +1,7 @@
 import numpy as np
 import functions_coords
 import os
+import glob
 #CM5. from https://github.com/patrickmelix/CM5-calculator/blob/master/cm5calculator.py
 
 #data from paper for element 1-118
@@ -444,14 +445,14 @@ def DDEC_calc(fragment=None, theory=None, ncores=1, DDECmodel='DDEC3'):
     #Finding chargemoldir from PATH in os.path
     PATH=os.environ.get('PATH').split(':')
     print("PATH: ", PATH)
+    print("Searching for chargemol in PATH")
     for p in PATH:
         if 'chargemol' in p:
-            print("Found chargemol in path line (should contain executables):", p)
+            print("Found chargemol in path line (this dir should contain the executables):", p)
             chargemolbinarydir=p
 
     #Defining Chargemoldir (main dir) as 3-up from binary dir
     var=os.path.split(chargemolbinarydir)[0]
-    var=os.path.split(var)[0]
     var=os.path.split(var)[0]
     chargemoldir=os.path.split(var)[0]
     print("Chargemoldir (base directory): ", chargemoldir)
