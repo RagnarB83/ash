@@ -538,14 +538,13 @@ cnvsoscf false
 cnvkdiis false
 end"""
 
-
         #Creating ORCA object for  element
         ORCASPcalculation = ash.ORCATheory(orcadir=theory.orcadir, charge=0,
                                            mult=spindictionary[el], orcasimpleinput=theory.orcasimpleinput,
                                            orcablocks=theory.orcablocks, extraline=scfextrasettingsstring)
 
         #Element coordinates
-        Elfrag = Fragment(elems=[el], coords=[0.0,0.0,0.0])
+        Elfrag = ash.Fragment(elems=[el], coords=[0.0,0.0,0.0])
 
         Singlepoint(theory=ORCASPcalculation,frag=Elfrag)
         #Preserve outputfile and GBW file for each element
