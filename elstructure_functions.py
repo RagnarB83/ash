@@ -688,7 +688,7 @@ end"""
     sp.call(['orca_2mkl', "molecule", '-molden'])
 
     #Write input for molden2aim
-    mol2aiminput=[' ',  molecule+'.molden.input', 'Y', 'Y', 'N', 'N', ' ', ' ']
+    mol2aiminput=[' ',  "molecule"+'.molden.input', 'Y', 'Y', 'N', 'N', ' ', ' ']
     m2aimfile = open("mol2aim.inp", "w")
     for mline in mol2aiminput:
         m2aimfile.write(mline+'\n')
