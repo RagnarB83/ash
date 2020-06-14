@@ -2,6 +2,8 @@ import numpy as np
 import functions_coords
 import os
 import glob
+import ash
+
 #CM5. from https://github.com/patrickmelix/CM5-calculator/blob/master/cm5calculator.py
 
 #data from paper for element 1-118
@@ -538,7 +540,7 @@ end"""
 
 
         #Creating ORCA object for  element
-        ORCASPcalculation = ORCATheory(orcadir=theory.orcadir, charge=0,
+        ORCASPcalculation = ash.ORCATheory(orcadir=theory.orcadir, charge=0,
                                            mult=spindictionary[el], orcasimpleinput=theory.orcasimpleinput,
                                            orcablocks=theory.orcablocks, extraline=scfextrasettingsstring)
 
