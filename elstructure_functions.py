@@ -439,7 +439,7 @@ def HOMOnumbercalc(file,charge,mult):
 # Uses ORCA to calculate densities of molecule and its free atoms. Uses orca_2mkl to create Molden file and molden2aim to create WFX file from Molden.
 # Wfx file is read into Chargemol program for DDEC analysis which radial moments used to compute C6 parameters and radii for Lennard-Jones equation.
 def DDEC_calc(fragment=None, theory=None, ncores=1, DDECmodel='DDEC3'):
-
+    print("Warning: DDEC_calc requires chargemol-binary dir to be present in environment PATH variable.")
     #molden2aim=None
 
     #Finding chargemoldir from PATH in os.path
@@ -485,10 +485,10 @@ def DDEC_calc(fragment=None, theory=None, ncores=1, DDECmodel='DDEC3'):
     # Serial or parallel version
     if ncores == 1:
         print("Using serial version of Chargemol")
-        chargemol=chargemoldir+glob.glob('*serial*')[0]
+        chargemol=chargemolbinarydir+glob.glob('*serial*')[0]
     else:
         print("Using parallel version of Chargemol using {} cores".format(ncores))
-        chargemol=chargemoldir+glob.glob('*parallel*')[0]
+        chargemol=chargemolbinarydir+glob.glob('*parallel*')[0]
         # Parallelization of Chargemol code. 8 should be good.
         os.environ['OMP_NUM_THREADS'] = str(ncores)
     print("Using Chargemoldir executable: ", chargemol)
