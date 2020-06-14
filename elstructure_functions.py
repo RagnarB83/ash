@@ -442,7 +442,13 @@ def HOMOnumbercalc(file,charge,mult):
 #Uses Chargemol program
 # Uses ORCA to calculate densities of molecule and its free atoms. Uses orca_2mkl to create Molden file and molden2aim to create WFX file from Molden.
 # Wfx file is read into Chargemol program for DDEC analysis which radial moments used to compute C6 parameters and radii for Lennard-Jones equation.
-def DDEC_calc(fragment=None, theory=None, ncores=1, DDECmodel='DDEC3'):
+def DDEC_calc(fragment=None, theory=None, gbwfile=None, ncores=1, DDECmodel='DDEC3', calcdir='DDEC'):
+    #Creating calcdir. Should not exist previously
+    os.mkdir(calcdir)
+    os.chdir(calcdir)
+    #Copying GBW file to current dir and label as molecule.gbw
+    shutil.copyfile('../'+gbwfile, './' + 'molecule.gbw')
+
     print("Warning: DDEC_calc requires chargemol-binary dir to be present in environment PATH variable.")
     #molden2aim=None
 
@@ -467,8 +473,7 @@ def DDEC_calc(fragment=None, theory=None, ncores=1, DDECmodel='DDEC3'):
     print("Chargemoldir (base directory): ", chargemoldir)
     print("Chargemol binary dir:", chargemolbinarydir)
 
-    os.mkdir('DDEC_calc')
-    os.chdir('DDEC_calc')
+
 
     if fragment is None or theory is None :
         print("DDEC_calc requires fragment, theory, keyword arguments")
@@ -654,12 +659,13 @@ end"""
             jobfile.write(jline+'\n')
 
         jobfile.close()
+        #CALLING chargemol
         sp.call(chargemol)
         print("------------------------------------------------------------------------")
 
 
     #DONE WITH ELEMENT CALCS
-    
+
     print("")
     print("=============================")
     #Getting volumes from output
@@ -677,29 +683,9 @@ end"""
     print("Calculated radial volumes of free atoms (Bohrs^3):", voldict)
     print("")
 
-    #Now doing main molecule. Skipping ORCA calculation if Molden file exists
-    if os.path.isfile(molecule+'.molden.input') == False:
-        print("Doing molecule:", molecule)
-        inputfile = open(molecule+".inp", "w"); inputname=molecule+".inp";
-        inputfile.write(orcasimpleinputline);inputfile.write("\n")
-        inputfile.write("%pal nprocs "+str(numcores)+" end"); inputfile.write("\n")
-        for blockline in orcablocks:
-            inputfile.write(blockline)
-
-        inputfile.write("\n")
-        xyzline="*xyz "+str(charge)+' '+str(spinmult); inputfile.write(xyzline);inputfile.write("\n")
-        for c in coords:
-            inputfile.write(c)
-        inputfile.write("*")
-
-        inputfile.close()
-        outputfile = open(molecule+".out", "w")
-        #orcaerrors = open("orcaerrors.out", "w")
-        sp.call([orcapath, inputname], stdout=outputfile)
-        outputfile.close()
-        #orcaerrors.close()
-        #Creat molden file
-        sp.call(['orca_2mkl', molecule, '-molden'])
+    #Now doing main molecule. Skipping ORCA calculation since we have copied over GBW file
+    # Create molden file
+    sp.call(['orca_2mkl', "molecule", '-molden'])
 
     #Write input for molden2aim
     mol2aiminput=[' ',  molecule+'.molden.input', 'Y', 'Y', 'N', 'N', ' ', ' ']
@@ -710,29 +696,30 @@ end"""
 
     #Run molden2aim
     m2aimfile = open('mol2aim.inp')
-    p = Popen(molden2aim, stdin=m2aimfile, stderr=sp.STDOUT)
+    p = sp.Popen(molden2aim, stdin=m2aimfile, stderr=sp.STDOUT)
     p.wait()
-    #Write job control file for Chargemol
-    wfxfile=molecule+'.molden.wfx'
-    jobcontfilewrite=[
-    '<atomic densities directory complete path>',
-    '/users/work/ragnarbj/chargemol_09_26_2017/atomic_densities/',
-    '</atomic densities directory complete path>',
-    '<input filename>',
-    wfxfile,
-    '<charge type>',
-    'DDEC3',
-    '</charge type>',
-    '<compute BOs>',
-    '.true.',
-    '</compute BOs>',
+
+    # Write job control file for Chargemol
+    wfxfile = "molecule" + '.molden.wfx'
+    jobcontfilewrite = [
+        '<atomic densities directory complete path>',
+        chargemoldir + '/atomic_densities/',
+        '</atomic densities directory complete path>',
+        '<input filename>',
+        wfxfile,
+        '<charge type>',
+        DDECmodel,
+        '</charge type>',
+        '<compute BOs>',
+        '.true.',
+        '</compute BOs>',
     ]
     jobfile = open("job_control.txt", "w")
     for jline in jobcontfilewrite:
         jobfile.write(jline+'\n')
 
     jobfile.close()
-    if os.path.isfile(molecule+'.molden.output') == False:
+    if os.path.isfile("molecule"+'.molden.output') == False:
         sp.call(chargemol)
     else:
         print("Skipping Chargemol step. Output file exists")
@@ -741,7 +728,7 @@ end"""
     #Grabbing radial moments from output
     molmoms=[]
     grabmoms=False
-    with open(molecule+'.molden.output') as momfile:
+    with open("molecule"+'.molden.output') as momfile:
         for line in momfile:
             if ' The computed Rfourth moments of the atoms' in line:
                 grabmoms=False
