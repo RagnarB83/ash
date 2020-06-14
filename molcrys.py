@@ -297,7 +297,17 @@ def molcrys(cif_file=None, xtl_file=None, fragmentobjects=[], theory=None, numco
 
         #Grab atomic charges for fragment.
         if theory.__class__.__name__ == "ORCATheory":
-            atomcharges = grabatomcharges_ORCA(chargemodel, QMtheory.inputfilename + '.out')
+
+            if chargemodel == 'DDEC3' or chargemodel == 'DDEC6':
+                print("Need to think more about what happens here for DDEC")
+                print("Molecule should be polarized by environment but atoms should not.")
+                # Calling DDEC_calc (calls chargemol)
+                atomcharges, molmoms, voldict = DDEC_calc(fragment=Cluster, theory=ORCASPcalculation,
+                                                          ncores=numcores, DDECmodel=chargemodel,
+                                                          molecule_spinmult=fragmentobjects[0].Mult,
+                                                          calcdir="DDEC_fragment_SPloop" + str(SPLoopNum), gbwfile="orca-input.gbw")
+            else:
+                atomcharges = grabatomcharges_ORCA(chargemodel, QMtheory.inputfilename + '.out')
             # Keep backup of ORCA outputfile in dir SPloop-files
             shutil.copyfile('orca-input.out', './SPloop-files/mainfrag-SPloop' + str(SPLoopNum) + '.out')
             shutil.copyfile('orca-input.pc', './SPloop-files/mainfrag-SPloop' + str(SPLoopNum) + '.pc')
