@@ -619,6 +619,8 @@ def chargemodel_select(chargemodel):
         pass
     elif chargemodel=='Loewdin':
         pass
+    elif chargemodel=='DDEC6':
+        pass
     elif chargemodel=="IAO":
         extraline = '\n%loc LocMet IAOIBO \n T_CORE -99999999 end'
 

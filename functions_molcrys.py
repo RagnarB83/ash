@@ -924,8 +924,17 @@ def gasfragcalc_ORCA(fragmentobjects,Cluster,chargemodel,orcadir,orcasimpleinput
         print(ORCASPcalculation.__dict__)
         #Run ORCA calculation with charge-model info
         ORCASPcalculation.run(nprocs=NUMPROC)
-        #Grab atomic charges for fragment.
-        atomcharges=grabatomcharges_ORCA(chargemodel,ORCASPcalculation.inputfilename+'.out')
+
+
+        if chargemodel == 'DDEC3' or chargemodel == 'DDEC6':
+            #Calling DDEC_calc (calls chargemol)
+            atomcharges, LJpars = DDEC_calc(fragment=gasfrag, theory=ORCASPcalculation, chargemoldir=chargemoldir,
+                                            ncores=1, molden2aim=molden2aim, DDECmodel=chargemodel)
+        else:
+            #Grab atomic charges for fragment.
+            atomcharges=grabatomcharges_ORCA(chargemodel,ORCASPcalculation.inputfilename+'.out')
+
+
         print("Elements:", gasfrag.elems)
         print("Gasloop atomcharges:", atomcharges)
         assert len(atomcharges) != 0, "Atomcharges list is empty. Something went wrong with grabbing charges"
