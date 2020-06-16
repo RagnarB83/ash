@@ -3316,8 +3316,11 @@ def get_crest_conformers():
     os.chdir('crest-calc')
     list_conformers=[]
 
-    with open("crest_conformers.xyz") as xfile:
-        for line in xyzfile:
-            print("bla")
+    all_elems, all_coords = split_multimolxyzfile(f,writexyz=True)
+
+    for els,cs in zip(all_elems,all_coords):
+        conf = Fragment(elems=els, coords=cs)
+        list_conformers.append(conf)
+
 
     return list_conformers

@@ -439,6 +439,41 @@ def write_xyzfile(elems,coords,name,printlevel=2):
     if printlevel >= 2:
         print("Wrote XYZ file:", name+'.xyz')
 
+
+#Function that reads XYZ-file with multiple files, splits and return list of coordinates
+def split_multimolxyzfile(f, writexyz=False):
+    all_coords=[]
+    all_elems=[]
+    molcounter = 0
+
+    for index, line in enumerate(f):
+        # print(line.split()[0], " and numatoms is:", numatoms)
+        if index == 0:
+            numatoms = line.split()[0]
+        if coordgrab == True:
+            if len(line.split()) > 1:
+                elems.append(line.split()[0])
+                coords_x=line.split()[1];coords_x=line.split()[2];coords_z=line.split()[3]
+                coords.append([coords_x,coords_y,coords_zy])
+            if len(coords) == int(numatoms):
+                all_coords.append(coords)
+                all_elems.append(elems)
+                if writexyz is True:
+                    #Alternative option: write each conformer/molecule to disk as XYZfile
+                    write_xyzfile(elems, coords, "conformer"+str(molcounter))
+                coords = []
+                elems = []
+        if line.split()[0] == str(numatoms):
+            # print("coords is", len(coords))
+            coordgrab = True
+            molcounter += 1
+
+    return all_elems,all_coords
+
+
+
+
+
 #Write PDBfile (dummy version) for PyFrame
 def write_pdbfile_dummy(elems,coords,name, atomlabels,residlabels):
     with open(name+'.pdb', 'w') as pfile:
