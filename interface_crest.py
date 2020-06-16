@@ -40,7 +40,8 @@ def get_crest_conformers():
     list_conformers=[]
     list_xtb_energies=[]
     all_elems, all_coords, all_titles = split_multimolxyzfile("crest_conformers.xyz",writexyz=True)
-
+    print("Found {} Crest conformers".format(len(all_elems)))
+    
     #Getting energies from title lines
     for i in all_titles:
         en=float(i)
