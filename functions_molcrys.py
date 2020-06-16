@@ -935,7 +935,7 @@ def gasfragcalc_ORCA(fragmentobjects,Cluster,chargemodel,orcadir,orcasimpleinput
 
             print("atomcharges:", atomcharges)
             if shortrangemodel=='DDEC3' or shortrangemodel=='DDEC6':
-                LJpars = DDEC_to_LJparameters(elems, ddeccharges, molmoms, voldict)
+                LJpars = DDEC_to_LJparameters(elems, molmoms, voldict)
 
         else:
             #Grab atomic charges for fragment.

@@ -5,6 +5,7 @@ import glob
 import ash
 import subprocess as sp
 import shutil
+import constants
 
 #CM5. from https://github.com/patrickmelix/CM5-calculator/blob/master/cm5calculator.py
 
@@ -765,15 +766,11 @@ end"""
 
 
 #TODO: Not finished
-def DDEC_to_LJparameters(elems, ddeccharges, molmoms, voldict):
-    hartokcal=627.5096080305927
-    bohrang=0.529177249
+def DDEC_to_LJparameters(elems, molmoms, voldict):
     #Rfree fit parameters. Jorgensen 2016 J. Chem. Theory Comput. 2016, 12, 2312−2323. H,C,N,O,F,S,Cl
     rfreedict = {'H':1.64, 'C':2.08, 'N':1.72, 'O':1.6, 'F':1.58, 'S':2.0, 'Cl':1.88}
     #C6 dictionary H-Kr. See MEDFF-horton-parcreate-for-chemshell.py for full periodic table.
     C6dictionary = {'H':6.5, 'He': 1.42, 'Li':1392, 'Be':227, 'B':99.5, 'C':46.6, 'N':24.2, 'O':15.6, 'F':9.52, 'Ne':6.20, 'Na':1518, 'Mg':626, 'Al':528, 'Si':305, 'P':185, 'S':134, 'Cl':94.6, 'Ar':64.2, 'K':3923, 'Ca':2163, 'Sc':1383, 'Ti':1044, 'V':832, 'Cr':602, 'Mn':552, 'Fe':482, 'Co':408, 'Ni':373, 'Cu':253, 'Zn':284, 'Ga':498, 'Ge':354, 'As':246, 'Se':210, 'Br':162, 'Kr':130}
-
-
 
     #Calculating A_i, B_i, epsilon, sigma, r0 parameters
     Blist=[]
@@ -783,7 +780,7 @@ def DDEC_to_LJparameters(elems, ddeccharges, molmoms, voldict):
     r0list=[]
     for count,el in enumerate(elems):
         volratio=molmoms[count]/voldict[el]
-        C6inkcal=hartokcal*(C6dictionary[el]**(1/6)*bohrang)**6
+        C6inkcal=constants.harkcal*(C6dictionary[el]**(1/6)* constants.bohr2ang)**6
         B_i=C6inkcal*(volratio**2)
         Raim_i=volratio**(1/3)*rfreedict[el]
         A_i=0.5*B_i*(2*Raim_i)**6
@@ -799,6 +796,9 @@ def DDEC_to_LJparameters(elems, ddeccharges, molmoms, voldict):
     print("Before corrections:")
     print("Alist is", Alist)
     print("Blist is", Blist)
+    print("sigmalist is", sigmalist)
+    print("epsilonlist is", epsilonlist)
+    print("r0list is", r0list)
 
     # Corrections to B according to paper
     #Manual phenol modifications
@@ -817,88 +817,8 @@ def DDEC_to_LJparameters(elems, ddeccharges, molmoms, voldict):
     print("Single atom parameters:")
     print("Alist is", Alist)
     print("Blist is", Blist)
-    #print("sigmalist is", sigmalist)
-    #print("epsilonlist is", epsilonlist)
-    #print("r0list is", r0list)
-    print("")
-    print("DDEC charge output:", ddeccharges)
-    print("DDEC model is", DDECmodel)
-    print("")
-    print("Pair parameters:")
-
-    #Water atom parameters
-    #if H2Omodel=='TIP3P':
-    #    water_eps=0.15207217973231357
-    #    water_sigma=3.15066
-    #    water_A=582000.0
-    #    water_B=595.0
-    #elif H2Omodel=='Chargemol':
-    #    #Chargemol for H2o
-    #    water_eps=0.10009723889719248
-    #    water_sigma=3.069109977984782
-    #    water_A=310617.9900759511
-    #    #water_B=352.6584929270707
-    #    #B has here been corrected according to eq. 10 in paper
-    #    water_B=562.5399865110148
-    #elif H2Omodel=='Manual':
-    #    #Manual mod
-    #    #water_eps=0.75
-    #    print("add stuff here")
-    #    exit()
-    #water_r0=r0=water_sigma*(2**(1/6))
-    #print("Using Water parameters:")
-    #print("Model is:", H2Omodel)
-    #print("")
-    #print("Ai = ", water_A)
-    #print("Bi = ", water_B)
-    #print("epsilon=", water_eps, "kcal/mol")
-    #print("sigma=", water_sigma, "Angstrom")
-    #print("water_r0=", water_r0, "Angstrom")
-
-
-    #Creating A and B pairlist
-
-    Apairlist=[]
-    Bpairlist=[]
-    for A,B,elm in zip(Alist,Blist,elems):
-        Apair=(A*water_A)**(1/2)
-        Bpair=(B*water_B)**(1/2)
-        Apairlist.append(Apair)
-        Bpairlist.append(Bpair)
-
-
-
-    r0pairlist=[]
-    epspairlist=[]
-    for r,eps,elm in zip(r0list,epsilonlist,elems):
-        r0pair=(r*water_r0)**(1/2)
-        epspair=(eps*water_eps)**(1/2)
-        r0pairlist.append(r0pair)
-        epspairlist.append(epspair)
-
-
-    #print("r0pairlist :", r0pairlist)
-    #print("epspairlist :", epspairlist)
-    print("")
-    ##Final m_n list
-    #Create numbered element list
-    templist=[]
-    elemnumlist=[]
-    for i in elems:
-        elemnumlist.append(i+str(templist.count(i)+1))
-        templist.append(i)
-
-    print("New soltypes list is: ")
-    [print(i, end=' ') for i in elemnumlist]
-    print("")
-    print("")
-
-
-    #for r0,e,elm in zip(r0pairlist,epspairlist,elemnumlist):
-    #    print("m_n_vdw", elm, "OT", 12, 6, r0, e)
-
-    print("")
-    for b,a,elm in zip(Bpairlist,Apairlist,elemnumlist):
-        print("vdw", elm, "OT", b, a)
+    print("sigmalist is", sigmalist)
+    print("epsilonlist is", epsilonlist)
+    print("r0list is", r0list)
 
     return "something"
