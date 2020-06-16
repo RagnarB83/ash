@@ -742,7 +742,7 @@ end"""
     if DDECmodel == 'DDEC3':
         chargefile='DDEC3_net_atomic_charges.xyz'
     elif DDECmodel == 'DDEC6':
-        chargefile='DDEC3_net_atomic_charges.xyz'
+        chargefile='DDEC6_net_atomic_charges.xyz'
 
     grabcharge=False
     ddeccharges=[]

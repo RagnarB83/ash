@@ -3282,3 +3282,43 @@ def MMforcefield_read(file):
     return MM_forcefield
 
 
+#Very simple crest interface
+def call_crest(fragment=None, xtbmethod=None, crestdir=None,charge=None, mult=None, solvent=None, energywindow=6):
+
+    os.mkdir('crest-calc')
+    os.chdir('crest-calc')
+
+    #Create XYZ file from fragment (for generality)
+    fragment.write_xyzfile(xyzfilename="initial.xyz")
+    #Theory level
+    if 'GFN2' in xtbmethod.upper():
+        xtbflag=2
+    elif 'GFN1' in xtbmethod.upper():
+        xtbflag=1
+    elif 'GFN0' in xtbmethod.upper():
+        xtbflag=0
+
+    uhf=mult-1
+    #GBSA solvation or not
+    if solvent is  None:
+        process = sp.run([crestdir + '/crest', 'initial.xyz', '-gfn'+str(xtbflag), '-ewin', str(energywindow), '-chrg', str(charge),
+        '-uhf', str(mult-1)], check=True, stdout=ofile, stderr=ofile, universal_newlines=True)
+    else:
+        process = sp.run([crestdir + '/crest', 'initial.xyz', '-gfn'+str(xtbflag), '-ewin', str(energywindow), '-gbsa', str(solvent),
+        '-chrg', str(charge), '-uhf', str(mult-1)], check=True, stdout=ofile, stderr=ofile, universal_newlines=True)
+
+    os.chdir('..')
+
+#Grabbing crest conformers. Assuming inside crest-calc dir and in file called crest_conformers.xyz
+#Creating ASH conformers for each
+def get_crest_conformers():
+    os.chdir('crest-calc')
+    list_conformers=[]
+
+    with open("crest_conformers.xyz") as xfile:
+        for line in xyzfile:
+
+
+
+
+    return list_conformers
