@@ -2773,7 +2773,6 @@ class Fragment:
     #Calculate connectivity (list of lists) of coords
     def calc_connectivity(self, conndepth=99, scale=None, tol=None ):
         print("Calculating connectivity of fragment...")
-        print("Number of atoms:", len(self.coords))
 
         if len(self.coords) > 10000:
             print("Atom number > 10K. Connectivity calculation could take a while")
