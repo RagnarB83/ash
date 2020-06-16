@@ -442,33 +442,36 @@ def write_xyzfile(elems,coords,name,printlevel=2):
 
 #Function that reads XYZ-file with multiple files, splits and return list of coordinates
 #Created for splitting crest_conformers.xyz but may also be used for MD traj.
-def split_multimolxyzfile(f, writexyz=False):
+def split_multimolxyzfile(file, writexyz=False):
     all_coords=[]
     all_elems=[]
     molcounter = 0
     coordgrab=False
     coords = []
-    for index, line in enumerate(f):
-        # print(line.split()[0], " and numatoms is:", numatoms)
-        if index == 0:
-            numatoms = line.split()[0]
-        if coordgrab == True:
-            if len(line.split()) > 1:
-                elems.append(line.split()[0])
-                coords_x=line.split()[1];coords_x=line.split()[2];coords_z=line.split()[3]
-                coords.append([coords_x,coords_y,coords_zy])
-            if len(coords) == int(numatoms):
-                all_coords.append(coords)
-                all_elems.append(elems)
-                if writexyz is True:
-                    #Alternative option: write each conformer/molecule to disk as XYZfile
-                    write_xyzfile(elems, coords, "conformer"+str(molcounter))
-                coords = []
-                elems = []
-        if line.split()[0] == str(numatoms):
-            # print("coords is", len(coords))
-            coordgrab = True
-            molcounter += 1
+    elems = []
+    with open(file) as f:
+        for index, line in enumerate(f):
+            print("line:", line)
+            print(line.split()[0])
+            if index == 0:
+                numatoms = line.split()[0]
+            if coordgrab == True:
+                if len(line.split()) > 1:
+                    elems.append(line.split()[0])
+                    coords_x=float(line.split()[1]);coords_y=float(line.split()[2]);coords_z=float(line.split()[3])
+                    coords.append([coords_x,coords_y,coords_z])
+                if len(coords) == int(numatoms):
+                    all_coords.append(coords)
+                    all_elems.append(elems)
+                    if writexyz is True:
+                        #Alternative option: write each conformer/molecule to disk as XYZfile
+                        write_xyzfile(elems, coords, "conformer"+str(molcounter))
+                    coords = []
+                    elems = []
+            if line.split()[0] == str(numatoms):
+                # print("coords is", len(coords))
+                coordgrab = True
+                molcounter += 1
 
     return all_elems,all_coords
 
