@@ -1,3 +1,8 @@
+import os
+from functions_coords import *
+import subprocess as sp
+from ash import *
+
 #Very simple crest interface
 def call_crest(fragment=None, xtbmethod=None, crestdir=None,charge=None, mult=None, solvent=None, energywindow=6):
 
@@ -13,7 +18,9 @@ def call_crest(fragment=None, xtbmethod=None, crestdir=None,charge=None, mult=No
         xtbflag=1
     elif 'GFN0' in xtbmethod.upper():
         xtbflag=0
-
+    else:
+        print("Using default GFN2-xTB")
+        xtbflag=2
     uhf=mult-1
     #GBSA solvation or not
     if solvent is None:
@@ -35,7 +42,7 @@ def get_crest_conformers():
     all_elems, all_coords = split_multimolxyzfile("crest_conformers.xyz",writexyz=True)
 
     for els,cs in zip(all_elems,all_coords):
-        conf = Fragment(elems=els, coords=cs)
+        conf = ash.Fragment(elems=els, coords=cs)
         list_conformers.append(conf)
 
     os.chdir('..')
