@@ -3303,10 +3303,10 @@ def call_crest(fragment=None, xtbmethod=None, crestdir=None,charge=None, mult=No
     if solvent is None:
         print("here")
         print(crestdir)
-        process = sp.run([crestdir + '/crest', 'initial.xyz'])
-        #process = sp.run([crestdir + '/crest', 'initial.xyz', '-gfn'+str(xtbflag), '-ewin', str(energywindow), '-chrg', str(charge), '-uhf', str(mult-1)], check=True, stdout=sp.STDOUT, stderr=sp.STDOUT, universal_newlines=True)
+        process = sp.run([crestdir + '/crest', 'initial.xyz', '-gfn'+str(xtbflag), '-ewin', str(energywindow), '-chrg', str(charge), '-uhf', str(mult-1)])
     else:
-        process = sp.run([crestdir + '/crest', 'initial.xyz', '-gfn'+str(xtbflag), '-ewin', str(energywindow), '-gbsa', str(solvent), '-chrg', str(charge), '-uhf', str(mult-1)], check=True, stdout=sp.STDOUT, stderr=sp.STDOUT, universal_newlines=True)
+        process = sp.run([crestdir + '/crest', 'initial.xyz', '-gfn' + str(xtbflag), '-ewin', str(energywindow), '-chrg','-gbsa', str(solvent),
+             str(charge), '-uhf', str(mult - 1)])
 
     os.chdir('..')
 
