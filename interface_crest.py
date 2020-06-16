@@ -38,12 +38,18 @@ def call_crest(fragment=None, xtbmethod=None, crestdir=None,charge=None, mult=No
 def get_crest_conformers():
     os.chdir('crest-calc')
     list_conformers=[]
+    list_xtb_energies=[]
+    all_elems, all_coords, all_titles = split_multimolxyzfile("crest_conformers.xyz",writexyz=True)
 
-    all_elems, all_coords = split_multimolxyzfile("crest_conformers.xyz",writexyz=True)
+    #Getting energies from title lines
+    print("all_titles:", all_titles)
+    for i in all_titles:
+        en=float(i)
+        list_xtb_energies.append(en)
 
     for els,cs in zip(all_elems,all_coords):
         conf = ash.Fragment(elems=els, coords=cs)
         list_conformers.append(conf)
 
     os.chdir('..')
-    return list_conformers
+    return list_conformers, list_xtb_energies
