@@ -447,6 +447,7 @@ def split_multimolxyzfile(f, writexyz=False):
     all_elems=[]
     molcounter = 0
     coordgrab=False
+    coords = []
     for index, line in enumerate(f):
         # print(line.split()[0], " and numatoms is:", numatoms)
         if index == 0:
