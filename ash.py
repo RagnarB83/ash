@@ -3317,8 +3317,6 @@ def get_crest_conformers():
 
     with open("crest_conformers.xyz") as xfile:
         for line in xyzfile:
-
-
-
+            print("bla")
 
     return list_conformers
