@@ -441,11 +441,12 @@ def write_xyzfile(elems,coords,name,printlevel=2):
 
 
 #Function that reads XYZ-file with multiple files, splits and return list of coordinates
+#Created for splitting crest_conformers.xyz but may also be used for MD traj.
 def split_multimolxyzfile(f, writexyz=False):
     all_coords=[]
     all_elems=[]
     molcounter = 0
-
+    coordgrab=False
     for index, line in enumerate(f):
         # print(line.split()[0], " and numatoms is:", numatoms)
         if index == 0:
