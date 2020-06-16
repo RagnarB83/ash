@@ -442,6 +442,7 @@ def write_xyzfile(elems,coords,name,printlevel=2):
 
 #Function that reads XYZ-file with multiple files, splits and return list of coordinates
 #Created for splitting crest_conformers.xyz but may also be used for MD traj.
+#Also grabs last word in title line. Typically an energy (has to be converted to float outside)
 def split_multimolxyzfile(file, writexyz=False):
     all_coords=[]
     all_elems=[]
