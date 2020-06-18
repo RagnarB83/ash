@@ -838,36 +838,36 @@ def remove_partial_fragments(coords,elems,sphereradius,fragmentobjects):
 #Updating pointcharges of fragment
 def reordercluster(fragment,fragmenttype):
     print("Reordering Cluster fraglists")
-    print("fragment:", fragment)
-    print("fragmenttype:", fragmenttype)
+    #print("fragment:", fragment)
+    #print("fragmenttype:", fragmenttype)
     fraglists=fragmenttype.clusterfraglist
     #print("fraglists:", fraglists)
     frag_ref=fraglists[0]
     elems_frag_ref = np.array([fragment.elems[i] for i in fraglists[0]])
     coords_frag_ref = np.array([fragment.coords[i] for i in fraglists[0]])
-    print("Reference frag 0:", frag_ref)
-    print("elems_frag_ref:", elems_frag_ref)
-    print("coords_frag_ref:", coords_frag_ref)
+    #print("Reference frag 0:", frag_ref)
+    #print("elems_frag_ref:", elems_frag_ref)
+    #print("coords_frag_ref:", coords_frag_ref)
     print_coords_all(coords_frag_ref, elems_frag_ref)
-    print("-----------")
-    print("length fraglists", len(fraglists))
-    print("fraglists:", fraglists)
+    #print("-----------")
+    #print("length fraglists", len(fraglists))
+    #print("fraglists:", fraglists)
     for fragindex,frag in enumerate(fraglists):
-        print("fragindex:", fragindex)
-        print("frag:", frag)
+        #print("fragindex:", fragindex)
+        #print("frag:", frag)
         if fragindex > 0:
-            print("frag:", frag)
+            #print("frag:", frag)
             elems_frag=np.array([fragment.elems[i] for i in frag])
             coords_frag = np.array([fragment.coords[i] for i in frag])
             #print_coords_all(coords_frag,elems_frag)
-            print("elems_frag:", elems_frag)
-            print("coords frag:", coords_frag)
+            #print("elems_frag:", elems_frag)
+            #print("coords frag:", coords_frag)
             order = reorder(reorder_hungarian, coords_frag_ref, coords_frag,
                             elems_frag_ref, elems_frag)
-            print("order:", order)
+            #print("order:", order)
             #Using order list reshuffle frag:
             neworderfrag=[frag[i] for i in order]
-            print("neworderfrag:", neworderfrag)
+            #print("neworderfrag:", neworderfrag)
             fragmenttype.clusterfraglist[fragindex]=neworderfrag
             #blankline()
             #elems_frag_new=np.array([fragment.elems[i] for i in neworderfrag])

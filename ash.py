@@ -59,9 +59,6 @@ def get_size(obj, seen=None):
     return size
 
 
-
-
-debugflag= True
 #Debug print. Behaves like print bug reads global debug var first
 def printdebug(string,var=''):
     global debugflag
