@@ -798,15 +798,26 @@ def remove_partial_fragments(coords,elems,sphereradius,fragmentobjects):
     print("len(found_atoms)", len(found_atoms))
     print("len(flat_fraglist)", len(flat_fraglist))
     print("final counted atoms:", count)
+
     #Going through found frags. If nuccharge of frag does not match known nuccharge it goes to deletionlist
     nuccharges=[fragmentobject.Nuccharge for fragmentobject in fragmentobjects]
-    print("nuccharges:", nuccharges)
+    #18June 2020 update. Adding masses as another discriminator.
+    masses=[fragmentobject.mass for fragmentobject in fragmentobjects]
     deletionlist=[]
     for frag in fraglist:
         el_list = [elems[i] for i in frag]
         ncharge = nucchargelist(el_list)
+        mass = totmasslist(el_list)
+
+        #Checking if valid nuccharge for fragment
         if ncharge in nuccharges:
-            pass
+            #Checking also if valid mass for fragment by subtracting agains known masses
+            #Threshold is 0.1
+            massdiffs = [abs(mass - i) for i in masses]
+            if any(i <= 0.1 for i in massdiffs) is True:
+                pass
+            else:
+                deletionlist += frag
         else:
             deletionlist+=frag
 
