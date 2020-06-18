@@ -834,11 +834,13 @@ def reordercluster(fragment,fragmenttype):
     frag_ref=fraglists[0]
     elems_frag_ref = np.array([fragment.elems[i] for i in fraglists[0]])
     coords_frag_ref = np.array([fragment.coords[i] for i in fraglists[0]])
-    #print("Reference frag 0:", frag_ref)
-    #print("elems_frag_ref:", elems_frag_ref)
-    #print("coords_frag_ref:", coords_frag_ref)
-    #print_coords_all(coords_frag_ref, elems_frag_ref)
-    #print("-----------")
+    print("Reference frag 0:", frag_ref)
+    print("elems_frag_ref:", elems_frag_ref)
+    print("coords_frag_ref:", coords_frag_ref)
+    print_coords_all(coords_frag_ref, elems_frag_ref)
+    print("-----------")
+    print("length fraglists", len(fraglists))
+    print("fraglists:", fraglists)
     for fragindex,frag in enumerate(fraglists):
         print("fragindex:", fragindex)
         print("frag:", frag)

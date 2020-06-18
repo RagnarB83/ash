@@ -841,6 +841,13 @@ def check_reflections(p_atoms, q_atoms, p_coord, q_coord,
 
 
 def reorder(reorder_method, p_coord,q_coord,p_atoms,q_atoms):
+    print("inside reorder")
+    print("reorder_method:", reorder_method)
+    print("p_coord", p_coord)
+    print("q_coord",q_coord )
+    print("p_atoms",p_atoms )
+    print("q_atoms",q_atoms )
+
     p_cent = centroid(p_coord)
     q_cent = centroid(q_coord)
     p_coord -= p_cent
