@@ -807,6 +807,7 @@ def DDEC_to_LJparameters(elems, molmoms, voldict):
     if scale_polarH is True:
         for count,el in enumerate(elems):
             if el == 'H':
+                bla=""
                 #Check if H connected to polar atom (O, N, S ?)
                 #if 'H' connected to polar:
                     #1. Set eps,r0/sigma to 0 if so
