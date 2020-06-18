@@ -140,9 +140,11 @@ def molcrys(cif_file=None, xtl_file=None, fragmentobjects=[], theory=None, numco
     #Reorder fraglists in each fragmenttype via Hungarian algorithm.
     # Ordered fraglists can then easily be used in pointchargeupdating
     for fragmentobject in fragmentobjects:
+        print("fragmentobject :", fragmentobject)
         reordercluster(Cluster,fragmentobject)
         printdebug(fragmentobject.clusterfraglist)
         fragmentobject.print_infofile(str(fragmentobject.Name)+'.info')
+
     #TODO: after removing partial fragments and getting connectivity etc. Would be good to make MM cluster neutral
 
     #Add fragmentobject-info to Cluster fragment

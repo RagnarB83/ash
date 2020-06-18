@@ -827,8 +827,8 @@ def remove_partial_fragments(coords,elems,sphereradius,fragmentobjects):
 #Updating pointcharges of fragment
 def reordercluster(fragment,fragmenttype):
     print("Reordering Cluster fraglists")
-    #print("fragment:", fragment)
-    #print("fragmenttype:", fragmenttype)
+    print("fragment:", fragment)
+    print("fragmenttype:", fragmenttype)
     fraglists=fragmenttype.clusterfraglist
     #print("fraglists:", fraglists)
     frag_ref=fraglists[0]
