@@ -348,8 +348,8 @@ def molcrys(cif_file=None, xtl_file=None, fragmentobjects=[], theory=None, numco
         print("Deriving DDEC Lennard-Jones parameters")
         print("DDEC model :", shortrangemodel)
 
-        for fragindex,fragmentobject in enumerate(fragmentobjects):
-            
+        #for fragindex,fragmentobject in enumerate(fragmentobjects):
+        #    sfd=""
         
         
         #atomcharges, molmoms, voldict
