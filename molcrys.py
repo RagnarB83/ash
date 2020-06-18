@@ -199,39 +199,6 @@ def molcrys(cif_file=None, xtl_file=None, fragmentobjects=[], theory=None, numco
         for charge in Cluster.atomcharges:
             acharges.write("{} ".format(charge))
 
-    #Defining atomtypes in Cluster fragment for LJ interaction
-    if shortrangemodel=='UFF':
-        print("Using UFF forcefield for all elements")
-        print("UFF parameters:", UFFdict)
-        #Using UFF_ prefix before element
-        atomtypelist=['UFF_'+i for i in Cluster.elems]
-        atomtypelist_uniq = np.unique(atomtypelist).tolist()
-        #Create Yggdrasill forcefield file by looking up UFF parameters
-        with open('Cluster_forcefield.ff', 'w') as forcefile:
-            forcefile.write('#UFF Lennard-Jones parameters \n')
-            for atomtype in atomtypelist_uniq:
-                #Getting just element-par for UFFdict lookup
-                atomtype_el=atomtype.replace('UFF_','')
-                forcefile.write('LennardJones_i_R0 {}  {:12.6f}   {:12.6f}\n'.format(atomtype, UFFdict[atomtype_el][0],UFFdict[atomtype_el][1]))
-    #Modified UFF forcefield with 0 parameter on H atom (avoids repulsion)
-    elif shortrangemodel=='UFF_modH':
-        print("Using UFF forcefield with modified H-parameter (0 values for H)")
-        print("UFF parameters:", UFFdict)
-        #Using UFF_ prefix before element
-        atomtypelist=['UFF_'+i for i in Cluster.elems]
-        atomtypelist_uniq = np.unique(atomtypelist).tolist()
-        #Create Yggdrasill forcefield file by looking up UFF parameters
-        with open('Cluster_forcefield.ff', 'w') as forcefile:
-            forcefile.write('#UFF Lennard-Jones parameters \n')
-            for atomtype in atomtypelist_uniq:
-                #Getting just element-par for UFFdict lookup
-                atomtype_el=atomtype.replace('UFF_','')
-                forcefile.write('LennardJones_i_R0 {}  {:12.6f}   {:12.6f}\n'.format(atomtype, UFF_modH_dict[atomtype_el][0],UFF_modH_dict[atomtype_el][1]))
-    else:
-        print("Undefined shortrangemodel")
-        exit()
-
-    Cluster.update_atomtypes(atomtypelist)
 
 
     #SC-QM/MM PC loop of mainfrag for cluster
@@ -263,6 +230,7 @@ def molcrys(cif_file=None, xtl_file=None, fragmentobjects=[], theory=None, numco
 
     print("QMtheory:", QMtheory)
     print(QMtheory.__dict__)
+
     # Defining QM region. Should be the mainfrag at approx origin
     Centralmainfrag = fragmentobjects[0].clusterfraglist[0]
     print("Centralmainfrag:", Centralmainfrag)
@@ -301,7 +269,6 @@ def molcrys(cif_file=None, xtl_file=None, fragmentobjects=[], theory=None, numco
             if chargemodel == 'DDEC3' or chargemodel == 'DDEC6':
                 print("Need to think more about what happens here for DDEC")
                 print("Molecule should be polarized by environment but atoms should not.")
-
                 # Calling DDEC_calc (calls chargemol)
                 #Here providing only QMTheory object to DDEC_calc as this will be used for atomic calculations (not molecule)
                 elemlist_mainfrag = [Cluster.elems[i] for i in Centralmainfrag]
@@ -343,7 +310,56 @@ def molcrys(cif_file=None, xtl_file=None, fragmentobjects=[], theory=None, numco
         print("Not converged in iteration {}. Continuing SP loop".format(SPLoopNum))
 
     print(BC.OKMAGENTA,"Molcrys Charge-Iteration done!",BC.END)
-    
+
+
+    #Now that charges are converged (for mainfrag and counterfrags ???).
+    #Now derive LJ parameters ?? Important for DDEC-LJ derivation
+    #Defining atomtypes in Cluster fragment for LJ interaction
+    if shortrangemodel=='UFF':
+        print("Using UFF forcefield for all elements")
+        print("UFF parameters:", UFFdict)
+        #Using UFF_ prefix before element
+        atomtypelist=['UFF_'+i for i in Cluster.elems]
+        atomtypelist_uniq = np.unique(atomtypelist).tolist()
+        #Create Yggdrasill forcefield file by looking up UFF parameters
+        with open('Cluster_forcefield.ff', 'w') as forcefile:
+            forcefile.write('#UFF Lennard-Jones parameters \n')
+            for atomtype in atomtypelist_uniq:
+                #Getting just element-par for UFFdict lookup
+                atomtype_el=atomtype.replace('UFF_','')
+                forcefile.write('LennardJones_i_R0 {}  {:12.6f}   {:12.6f}\n'.format(atomtype, UFFdict[atomtype_el][0],UFFdict[atomtype_el][1]))
+    #Modified UFF forcefield with 0 parameter on H atom (avoids repulsion)
+    elif shortrangemodel=='UFF_modH':
+        print("Using UFF forcefield with modified H-parameter (0 values for H)")
+        print("UFF parameters:", UFFdict)
+        #Using UFF_ prefix before element
+        atomtypelist=['UFF_'+i for i in Cluster.elems]
+        atomtypelist_uniq = np.unique(atomtypelist).tolist()
+        #Create Yggdrasill forcefield file by looking up UFF parameters
+        with open('Cluster_forcefield.ff', 'w') as forcefile:
+            forcefile.write('#UFF Lennard-Jones parameters \n')
+            for atomtype in atomtypelist_uniq:
+                #Getting just element-par for UFFdict lookup
+                atomtype_el=atomtype.replace('UFF_','')
+                forcefile.write('LennardJones_i_R0 {}  {:12.6f}   {:12.6f}\n'.format(atomtype, UFF_modH_dict[atomtype_el][0],UFF_modH_dict[atomtype_el][1]))
+    elif shortrangemodel=='DDEC3' or shortrangemodel=='DDEC6':
+        print("Deriving DDEC Lennard-Jones parameters")
+        print("DDEC model :", shortrangemodel)
+
+        for fragindex,fragmentobject in enumerate(fragmentobjects):
+            
+        
+        
+        #atomcharges, molmoms, voldict
+        DDEC_to_LJparameters(elems, molmoms, voldict)
+        
+        
+    else:
+        print("Undefined shortrangemodel")
+        exit()
+
+    Cluster.update_atomtypes(atomtypelist)
+
 
     #Addin Centralmainfrag to Cluster
     Cluster.add_centralfraginfo(Centralmainfrag)

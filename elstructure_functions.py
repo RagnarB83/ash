@@ -787,6 +787,7 @@ def DDEC_to_LJparameters(elems, molmoms, voldict):
         sigma=(A_i/B_i)**(1/6)
         r0=sigma*(2**(1/6))
         epsilon=(A_i/(4*sigma**12))
+
         sigmalist.append(sigma)
         Blist.append(B_i)
         Alist.append(A_i)
@@ -800,19 +801,23 @@ def DDEC_to_LJparameters(elems, molmoms, voldict):
     print("epsilonlist is", epsilonlist)
     print("r0list is", r0list)
 
-    # Corrections to B according to paper
-    #Manual phenol modifications
-    indextofix=11
-    hindex=12
-    nH=1
-    Blist[indextofix]=( (Blist[indextofix])**(1/2) + nH*(Blist[hindex])**(1/2) )**2
+    print("Done. but scaling not complete")
+    exit()
+    #Accounting for polar H
+    if scale_polarH is True:
+        for count,el in enumerate(elems):
+            if el == 'H':
+                #Check if H connected to polar atom (O, N, S ?)
+                #if 'H' connected to polar:
+                    #1. Set eps,r0/sigma to 0 if so
+                    #2. Add to heavy atom if so
+                    #nH = 1
+                    #indextofix = 11
+                    #hindex = 12
+                    #Blist[indextofix] = ((Blist[indextofix]) ** (1 / 2) + nH * (Blist[hindex]) ** (1 / 2)) ** 2
 
-    # Set LJ parameter for polar H to zero
-    Blist[hindex]=0.0
-    Alist[hindex]=0.0
-    print("")
+
     print("After corrections:")
-
     print("")
     print("Single atom parameters:")
     print("Alist is", Alist)

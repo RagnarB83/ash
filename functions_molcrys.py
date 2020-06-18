@@ -19,6 +19,10 @@ class Fragmenttype:
         self.Mult = mult
         self.fraglist= []
         self.clusterfraglist= []
+        #Keeping track of molmoms, voldict in case of DDEC
+        self.molmoms=[]
+        self.voldict=None
+
         #Current atom charges defined for fragment. Charges ordered according to something
         self.charges=[]
         #List of lists: All atom charges that have been defined for fragment. First the gasfrag, then from SP-loop etc.
@@ -49,6 +53,9 @@ class Fragmenttype:
             outfile.write("Current atomcharges: {} \n".format(self.charges))
             outfile.write("\n")
             outfile.write("All atomcharges: {} \n".format(self.all_atomcharges))
+            outfile.write("\n")
+            outfile.write("Molmoms: {} \n".format(self.molmoms))
+            outfile.write("Voldicts: {} \n".format(self.voldict))
             outfile.write("\n")
             for al in self.all_atomcharges:
                 outfile.write(' '.join([str(i) for i in al]))
@@ -833,21 +840,21 @@ def reordercluster(fragment,fragmenttype):
     #print_coords_all(coords_frag_ref, elems_frag_ref)
     #print("-----------")
     for fragindex,frag in enumerate(fraglists):
-        #print("i:", i)
-        #print("frag:", frag)
+        print("i:", i)
+        print("frag:", frag)
         if fragindex > 0:
-            #print("frag:", frag)
+            print("frag:", frag)
             elems_frag=np.array([fragment.elems[i] for i in frag])
             coords_frag = np.array([fragment.coords[i] for i in frag])
             #print_coords_all(coords_frag,elems_frag)
-            #print("elems_frag:", elems_frag)
-            #print("coords frag:", coords_frag)
+            print("elems_frag:", elems_frag)
+            print("coords frag:", coords_frag)
             order = reorder(reorder_hungarian, coords_frag_ref, coords_frag,
                             elems_frag_ref, elems_frag)
-            #print("order:", order)
+            print("order:", order)
             #Using order list reshuffle frag:
             neworderfrag=[frag[i] for i in order]
-            #print("neworderfrag:", neworderfrag)
+            print("neworderfrag:", neworderfrag)
             fragmenttype.clusterfraglist[fragindex]=neworderfrag
             #blankline()
             #elems_frag_new=np.array([fragment.elems[i] for i in neworderfrag])
@@ -934,9 +941,7 @@ def gasfragcalc_ORCA(fragmentobjects,Cluster,chargemodel,orcadir,orcasimpleinput
                                             calcdir="DDEC_fragment"+str(id), gbwfile="orca-input.gbw")
 
             print("atomcharges:", atomcharges)
-            if shortrangemodel=='DDEC3' or shortrangemodel=='DDEC6':
-                LJpars = DDEC_to_LJparameters(elems, molmoms, voldict)
-
+            #NOTE: We are not going to derive DDEC LJ parameters here but rather at end of SP loop.
         else:
             #Grab atomic charges for fragment.
             atomcharges=grabatomcharges_ORCA(chargemodel,ORCASPcalculation.inputfilename+'.out')
