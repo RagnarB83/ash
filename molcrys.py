@@ -118,10 +118,13 @@ def molcrys(cif_file=None, xtl_file=None, fragmentobjects=[], theory=None, numco
     currtime=time.time()
     write_xyzfile(cluster_elems,cluster_coords,"cluster_coords")
 
-    #Create Yggdrasill fragment object
+    #Create ASH fragment object
     blankline()
     print("Creating new Cluster fragment:")
     Cluster=Fragment(elems=cluster_elems, coords=cluster_coords)
+
+    Cluster.print_system("Cluster-first.ygg")
+
     #We have stopped using settings_molcrys
     #Cluster.calc_connectivity(scale=settings_molcrys.scale, tol=settings_molcrys.tol)
     #print_time_rel_and_tot(currtime, origtime, modulename='Cluster.calc_connectivity')
