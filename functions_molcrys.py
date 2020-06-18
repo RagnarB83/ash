@@ -840,7 +840,7 @@ def reordercluster(fragment,fragmenttype):
     #print_coords_all(coords_frag_ref, elems_frag_ref)
     #print("-----------")
     for fragindex,frag in enumerate(fraglists):
-        print("i:", i)
+        print("fragindex:", fragindex)
         print("frag:", frag)
         if fragindex > 0:
             print("frag:", frag)
