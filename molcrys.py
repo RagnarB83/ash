@@ -97,7 +97,7 @@ def molcrys(cif_file=None, xtl_file=None, fragmentobjects=[], theory=None, numco
     if connsetting == 'Auto':
         chosenscale=1.0
         test_tolerances = [0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7]
-        print("Automatic connectivity determination:")
+        print(BC.WARNING,"Automatic connectivity determination:", BC.END)
         print("Using Scale : ", chosenscale)
         print("Will loop through tolerances:", test_tolerances)
         for chosentol in test_tolerances:
@@ -106,7 +106,8 @@ def molcrys(cif_file=None, xtl_file=None, fragmentobjects=[], theory=None, numco
                         scale=chosenscale, tol=chosentol)
             if checkflag == 0:
                 print(BC.OKBLUE, "Frag_define done!", BC.END)
-                print("Current connectivity parameters are: Scale: {} and Tol: {}".format(chosenscale, chosentol))
+                print("Final connectivity parameters are: Scale: {} and Tol: {}".format(chosenscale, chosentol))
+                #TODO: Set global settings_ash.scale and settings_ash.tol using chosenscale and chosentol here???
                 print("")
                 break
             else:
@@ -378,7 +379,7 @@ def molcrys(cif_file=None, xtl_file=None, fragmentobjects=[], theory=None, numco
             #fragmentobject.Elements
             for el in fragmentobject.Elements:
                 print("UFF parameter for {} :".format(el, UFFdict[el]))
-                
+
         #Using UFF_ prefix before element
         atomtypelist=['UFF_'+i for i in Cluster.elems]
         atomtypelist_uniq = np.unique(atomtypelist).tolist()
