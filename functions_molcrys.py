@@ -918,7 +918,6 @@ def pointchargeupdate(fragment,fragmenttype,chargelist):
 
 
 #Calculate atomic charges for each fragment of Cluster. Assign charges to Cluster object via pointchargeupdate
-# TODO: In future also calculate LJ parameters here
 #ORCA-specific function
 def gasfragcalc_ORCA(fragmentobjects,Cluster,chargemodel,orcadir,orcasimpleinput,orcablocks,NUMPROC,
                      brokensym=None, HSmult=None, atomstoflip=None):

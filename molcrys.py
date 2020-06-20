@@ -213,10 +213,10 @@ def molcrys(cif_file=None, xtl_file=None, fragmentobjects=[], theory=None, numco
 
             gasfragcalc_ORCA(fragmentobjects, Cluster, chargemodel, theory.orcadir, theory.orcasimpleinput,
                              theory.orcablocks, numcores, brokensym=True, HSmult=theory.HSmult,
-                             atomstoflip=theory.atomstoflip, shortrangemodel=shortrangemodel)
+                             atomstoflip=theory.atomstoflip)
         else:
             gasfragcalc_ORCA(fragmentobjects, Cluster, chargemodel, theory.orcadir, theory.orcasimpleinput,
-                             theory.orcablocks, numcores, shortrangemodel=shortrangemodel)
+                             theory.orcablocks, numcores)
 
 
     elif theory.__class__.__name__ == "xTBTheory":
