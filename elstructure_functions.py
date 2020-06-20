@@ -768,7 +768,9 @@ end"""
 #TODO: Not finished
 def DDEC_to_LJparameters(elems, molmoms, voldict):
     #Rfree fit parameters. Jorgensen 2016 J. Chem. Theory Comput. 2016, 12, 2312−2323. H,C,N,O,F,S,Cl
+    #Thes are free atomic radii. Seem to correspond mostly to vdW radii
     rfreedict = {'H':1.64, 'C':2.08, 'N':1.72, 'O':1.6, 'F':1.58, 'S':2.0, 'Cl':1.88}
+
     #C6 dictionary H-Kr. See MEDFF-horton-parcreate-for-chemshell.py for full periodic table.
     C6dictionary = {'H':6.5, 'He': 1.42, 'Li':1392, 'Be':227, 'B':99.5, 'C':46.6, 'N':24.2, 'O':15.6, 'F':9.52, 'Ne':6.20, 'Na':1518, 'Mg':626, 'Al':528, 'Si':305, 'P':185, 'S':134, 'Cl':94.6, 'Ar':64.2, 'K':3923, 'Ca':2163, 'Sc':1383, 'Ti':1044, 'V':832, 'Cr':602, 'Mn':552, 'Fe':482, 'Co':408, 'Ni':373, 'Cu':253, 'Zn':284, 'Ga':498, 'Ge':354, 'As':246, 'Se':210, 'Br':162, 'Kr':130}
 

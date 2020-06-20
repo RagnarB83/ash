@@ -350,14 +350,16 @@ def molcrys(cif_file=None, xtl_file=None, fragmentobjects=[], theory=None, numco
         print("Deriving DDEC Lennard-Jones parameters")
         print("DDEC model :", shortrangemodel)
 
-        #for fragindex,fragmentobject in enumerate(fragmentobjects):
+        # for fragindex,fragmentobject in enumerate(fragmentobjects):
         #    sfd=""
-        
-        
-        #atomcharges, molmoms, voldict
+
+        # atomcharges, molmoms, voldict
         DDEC_to_LJparameters(elems, molmoms, voldict)
-        
-        
+
+    elif shortrangemodel=='manual':
+        print("shortrangemodel option: manual)
+        print("Will assume presence of ASH forcefield file called: Cluster_forcefield.ff")
+        print("Needs to be created and copied to scratch before optimization.")
     else:
         print("Undefined shortrangemodel")
         exit()
@@ -365,7 +367,7 @@ def molcrys(cif_file=None, xtl_file=None, fragmentobjects=[], theory=None, numco
     Cluster.update_atomtypes(atomtypelist)
 
 
-    #Addin Centralmainfrag to Cluster
+    #Adding Centralmainfrag to Cluster
     Cluster.add_centralfraginfo(Centralmainfrag)
 
     #Printing out Cluster fragment file
