@@ -13,7 +13,7 @@ currtime=time.time()
 
 
 def molcrys(cif_file=None, xtl_file=None, fragmentobjects=[], theory=None, numcores=None, chargemodel='',
-            clusterradius=None, shortrangemodel='UFF_modH'):
+            clusterradius=None, shortrangemodel='UFF_modH', connsetting=None):
 
     banner="""
     THE
@@ -94,7 +94,43 @@ def molcrys(cif_file=None, xtl_file=None, fragmentobjects=[], theory=None, numco
     #Define fragments of unitcell. Updates mainfrag, counterfrag1 etc. object information
     # TODO: Do a loop of frag_define with different connectivity settings.
     # Break if assignment is complete. Let user know if nothing works
-    frag_define(orthogcoords,elems,cell_vectors,fragments=fragmentobjects, cell_angles=cell_angles, cell_length=cell_length)
+
+    #Loop through different tol settings
+    if connsetting == 'Auto':
+        chosenscale=1.0
+        test_tolerances = [0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7]
+        print("Automatic connectivity determination:")
+        print("Using Scale : ", chosenscale)
+        print("Will loop through tolerances:")
+        for chosentol in test_tolerances:
+            print("Current Tol: ", chosentol)
+            checkflag = frag_define(orthogcoords,elems,cell_vectors,fragments=fragmentobjects, cell_angles=cell_angles, cell_length=cell_length,
+                        scale=chosenscale, tol=chosentol)
+            if checkflag == 0:
+                print(BC.OKBLUE, "Frag_define done!", BC.END)
+                print("Scale and Tol parameters are : ", chosenscale, chosentol)
+                print("")
+                break
+            else:
+                print("Frag definition failed. Trying next Tol parameter.")
+    else:
+        chosenscale=settings_ash.scale
+        chosentol=settings_ash.tol
+        #Using the global ASH settings (may have been modified by user)
+        checkflag = frag_define(orthogcoords,elems,cell_vectors,fragments=fragmentobjects, cell_angles=cell_angles, cell_length=cell_length,
+                    scale=chosenscale, tol=chosentol)
+        if checkflag == 0:
+            print(BC.OKBLUE, "Frag_define done!", BC.END)
+            break
+        else:
+            exit(1)
+
+    #If all test_tolerances failed.
+    if checkflag == 1:
+        print("Automatic connectivity failed. Make sure that the fragment definitions are correct, "
+              "that the cell is not missing atoms or that it contains extra atoms")
+        exit(1)
+
     print_time_rel_and_tot(currtime, origtime, modulename='frag_define')
     currtime=time.time()
 
@@ -112,7 +148,7 @@ def molcrys(cif_file=None, xtl_file=None, fragmentobjects=[], theory=None, numco
     #import cProfile
     #cProfile.run('remove_partial_fragments(cluster_coords,cluster_elems,sphereradius,fragmentobjects)')
 
-    cluster_coords,cluster_elems=remove_partial_fragments(cluster_coords,cluster_elems,clusterradius,fragmentobjects)
+    cluster_coords,cluster_elems=remove_partial_fragments(cluster_coords,cluster_elems,clusterradius,fragmentobjects, scale=chosenscale, tol=chosentol)
     print_time_rel_and_tot(currtime, origtime, modulename='remove_partial_fragments')
     currtime=time.time()
     write_xyzfile(cluster_elems,cluster_coords,"cluster_coords")

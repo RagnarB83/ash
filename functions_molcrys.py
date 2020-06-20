@@ -120,7 +120,13 @@ def cell_extend_frag_withcenter(cellvectors, coords,elems):
 #3. Find all whole fragments of the atoms in original cell but capped with atoms from extended cell
 #4. For fragment-atoms outside original cell, find equivalent atoms in original cell.
 #TODO: Skip step1?
-def frag_define(orthogcoords,elems,cell_vectors,fragments,cell_angles=None, cell_length=None):
+def frag_define(orthogcoords,elems,cell_vectors,fragments,cell_angles=None, cell_length=None, scale=None, tol=None):
+
+    if scale is None:
+        scale=settings_ash.scale
+    if tol is None:
+        tol=settings_ash.tol
+
     blankline()
     print(BC.OKBLUE, BC.BOLD,"Frag_Define: Defining fragments of unit cell", BC.END)
     origtime=time.time()
@@ -148,7 +154,7 @@ def frag_define(orthogcoords,elems,cell_vectors,fragments,cell_angles=None, cell
     for i in range(len(elems)):
 
         printdebug("i : ", i)
-        members = get_molecule_members_loop_np2(orthogcoords, elems, 99, settings_ash.scale, settings_ash.tol,
+        members = get_molecule_members_loop_np2(orthogcoords, elems, 99, scale, tol,
                                             atomindex=i)
         printdebug("members:" , members)
         #print("members:", members)
@@ -204,7 +210,7 @@ def frag_define(orthogcoords,elems,cell_vectors,fragments,cell_angles=None, cell
     for m in unassigned:
         printdebug("Trying unassigned m : {} ".format(m))
         members = get_molecule_members_loop_np2(temp_extended_coords, temp_extended_elems, 99,
-                                                settings_ash.scale, settings_ash.tol, membs=m)
+                                                scale, tol, membs=m)
         el_list = [temp_extended_elems[i] for i in members]
         printdebug("members:", members)
         printdebug("el_list:", el_list)
@@ -291,18 +297,20 @@ def frag_define(orthogcoords,elems,cell_vectors,fragments,cell_angles=None, cell
     if len(all_flat) != len(orthogcoords):
         print("Number of assigned atoms ({}) not matching number of atoms in cell ({}).".format(len(all_flat), len(orthogcoords)))
         print("Fragment definition incomplete")
-        exit()
+
+        def find_missing(lst):
+            return [x for x in range(lst[0], lst[-1] + 1) if x not in lst]
+
+        if find_missing(all_flat) != []:
+            print("Missing number in sequence.")
+            print("Fragment definition incomplete")
+
+        return 1
     else:
         print("Number of assigned atoms ({}) matches number of atoms in cell ({}).".format(len(all_flat), len(orthogcoords)))
+        return 0
 
-    def find_missing(lst):
-        return [x for x in range(lst[0], lst[-1] + 1) if x not in lst]
-    if find_missing(all_flat) != []:
-        print("Missing number in sequence.")
-        print("Fragment definition incomplete")
-        exit()
 
-    print(BC.OKBLUE,"Frag_define done!",BC.END)
 
 
 #From Pymol. Not sure if useful
@@ -754,7 +762,13 @@ def create_MMcluster(orthogcoords,elems,cell_vectors,sphereradius):
     return extended_coords,extended_elems
 
 #Remove partial fragments of MM cluster
-def remove_partial_fragments(coords,elems,sphereradius,fragmentobjects):
+def remove_partial_fragments(coords,elems,sphereradius,fragmentobjects, scale=None, tol=None):
+
+    if scale is None:
+        scale=settings_ash.scale
+    if tol is None:
+        tol=settings_ash.tol
+
     print("Removing partial fragments from MM cluster")
     #Finding surfaceatoms
     origin=np.array([0.0,0.0,0.0])
@@ -780,8 +794,7 @@ def remove_partial_fragments(coords,elems,sphereradius,fragmentobjects):
             #cProfile.run('get_molecule_members_loop_np(coords, elems, 99, settings_molcrys.scale, settings_ash.tol,atomindex=surfaceatom)')
             #exit()
             #surfaceatom=0
-            members=get_molecule_members_loop_np2(coords, elems, 99, settings_ash.scale,
-                                                settings_ash.tol,atomindex=surfaceatom)
+            members=get_molecule_members_loop_np2(coords, elems, 99, scale, tol,atomindex=surfaceatom)
             #print_time_rel_and_tot(currtime, origtime)
             #currtime = time.time()
             #exit()
