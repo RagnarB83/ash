@@ -42,7 +42,7 @@ def isElementList(list):
 #From lists of coords,elems and atom indices, print coords with elem
 def print_coords_for_atoms(coords,elems,members):
     for m in members:
-        print("{:4} {:>8.8f}  {:>8.8f}  {:>8.8f}".format(elems[m],coords[m][0], coords[m][1], coords[m][2]))
+        print("{:>4} {:>12.8f}  {:>12.8f}  {:>12.8f}".format(elems[m],coords[m][0], coords[m][1], coords[m][2]))
 
 #From lists of coords,elems and atom indices, write XYZ file coords with elem
 #Todo: make part of Fragment class
