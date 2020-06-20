@@ -910,10 +910,11 @@ def pointchargeupdate(fragment,fragmenttype,chargelist):
 def gasfragcalc_ORCA(fragmentobjects,Cluster,chargemodel,orcadir,orcasimpleinput,orcablocks,NUMPROC,
                      brokensym=None, HSmult=None, atomstoflip=None, shortrangemodel=None):
     blankline()
-    print("Now calculating atom charges for each fragment type in cluster")
+    print(BC., BC.BOLD, "Now calculating atom charges for each fragment type in cluster", BC.END))
+    #print(BC.OKBLUE, BC.BOLD, "Frag_Define: Defining fragments of unit cell", BC.END)
     for id, fragmentobject in enumerate(fragmentobjects):
         blankline()
-        print("Fragmentobject:", fragmentobject.Name)
+        print("Fragmentobject:", BC.WARNING, BC.BOLD, fragmentobject.Name, BC.END)
         #Charge-model info to add to inputfile
         chargemodelline = chargemodel_select(chargemodel)
 
@@ -924,7 +925,7 @@ def gasfragcalc_ORCA(fragmentobjects,Cluster,chargemodel,orcadir,orcasimpleinput
         gasfrag=Fragment(coords=fragcoords,elems=fragelems)
 
         print("Defined gasfrag:", gasfrag)
-        print(gasfrag.__dict__)
+        #print(gasfrag.__dict__)
         #Creating ORCA theory object with fragment
 
         #Assuming mainfrag is fragmentobject 0 and only mainfrag can be Broken-symmetry
@@ -942,7 +943,7 @@ def gasfragcalc_ORCA(fragmentobjects,Cluster,chargemodel,orcadir,orcasimpleinput
                                            mult=fragmentobject.Mult, orcasimpleinput=orcasimpleinput,
                                            orcablocks=orcablocks, extraline=chargemodelline)
         print("ORCASPcalculation:", ORCASPcalculation)
-        print(ORCASPcalculation.__dict__)
+        #print(ORCASPcalculation.__dict__)
         #Run ORCA calculation with charge-model info
         ORCASPcalculation.run(nprocs=NUMPROC)
 
