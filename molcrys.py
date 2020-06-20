@@ -13,7 +13,12 @@ currtime=time.time()
 
 
 def molcrys(cif_file=None, xtl_file=None, fragmentobjects=[], theory=None, numcores=None, chargemodel='',
-            clusterradius=None, shortrangemodel='UFF_modH', connsetting=None):
+            clusterradius=None, shortrangemodel='UFF_modH', auto_connectivity=False):
+
+    #TODO: After more testing auto_connectivity by default to True
+    print("Auto_connectivity setting (auto_connectivity keyword) is set to: ", auto_connectivity)
+    print("Do auto_connectivity=False to turn off.")
+    print("Do auto_connectivity=True to turn on.")
 
     banner="""
     THE
@@ -94,7 +99,7 @@ def molcrys(cif_file=None, xtl_file=None, fragmentobjects=[], theory=None, numco
     #Define fragments of unitcell. Updates mainfrag, counterfrag1 etc. object information
 
     #Loop through different tol settings
-    if connsetting == 'Auto':
+    if auto_connectivity == True:
         chosenscale=1.0
         test_tolerances = [0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7]
         print(BC.WARNING,"Automatic connectivity determination:", BC.END)
@@ -346,15 +351,15 @@ def molcrys(cif_file=None, xtl_file=None, fragmentobjects=[], theory=None, numco
         #print("Current charges:", fragmentobjects[0].all_atomcharges[-1])
         #print("Previous charges:", fragmentobjects[0].all_atomcharges[-2])
         RMSD_charges=rmsd_list(fragmentobjects[0].all_atomcharges[-1],fragmentobjects[0].all_atomcharges[-2])
-        print("RMSD of charges: {:6.3f} in SP iteration {:6}:".format(RMSD_charges, SPLoopNum))
+        print(BC.OKBLUE,"RMSD of charges: {:6.3f} in SP iteration {:6}:".format(RMSD_charges, SPLoopNum),BC.END)
         if RMSD_charges < RMSD_SP_threshold:
             print("RMSD less than threshold: {}".format(RMSD_charges,RMSD_SP_threshold))
-            print("Charges converged in SP iteration {}! SP LOOP over!".format(SPLoopNum))
+            print(BC.OKMAGENTA,"Charges converged in SP iteration {}! SP LOOP over!".format(SPLoopNum),BC.END)
             break
-        print("Not converged in iteration {}. Continuing SP loop".format(SPLoopNum))
+        print(BC.WARNING,"Not converged in iteration {}. Continuing SP loop".format(SPLoopNum),BC.END)
 
     print(BC.OKMAGENTA,"Molcrys Charge-Iteration done!",BC.END)
-
+    print("")
 
     #Now that charges are converged (for mainfrag and counterfrags ???).
     #Now derive LJ parameters ?? Important for DDEC-LJ derivation
@@ -364,7 +369,7 @@ def molcrys(cif_file=None, xtl_file=None, fragmentobjects=[], theory=None, numco
         for fragmentobject in fragmentobjects:
             #fragmentobject.Elements
             for el in fragmentobject.Elements:
-                print("UFF parameter for {} :".format(el, UFFdict[el]))
+                print("UFF parameter for {} :".format(el, UFFdict['UFF_'+str(el)]))
 
         #Using UFF_ prefix before element
         atomtypelist=['UFF_'+i for i in Cluster.elems]
@@ -378,12 +383,12 @@ def molcrys(cif_file=None, xtl_file=None, fragmentobjects=[], theory=None, numco
                 forcefile.write('LennardJones_i_R0 {}  {:12.6f}   {:12.6f}\n'.format(atomtype, UFFdict[atomtype_el][0],UFFdict[atomtype_el][1]))
     #Modified UFF forcefield with 0 parameter on H atom (avoids repulsion)
     elif shortrangemodel=='UFF_modH':
-        print("Using UFF forcefield with modified H-parameter (0 values for H)")
+        print("Using UFF forcefield with modified H-parameter (zero values for H element)")
         #print("UFF parameters:", UFFdict)
         for fragmentobject in fragmentobjects:
             #fragmentobject.Elements
             for el in fragmentobject.Elements:
-                print("UFF parameter for {} :".format(el, UFFdict[el]))
+                print("UFF parameter for {} :".format(el, UFF_modH_dict['UFF_'+str(el)]))
 
         #Using UFF_ prefix before element
         atomtypelist=['UFF_'+i for i in Cluster.elems]

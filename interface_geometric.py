@@ -160,7 +160,7 @@ def geomeTRICOptimizer(theory=None,fragment=None, coordsystem='tric', frozenatom
         with open("constraints.txt", 'w') as confile:
             confile.write('$freeze\n')
             for bondpair in bondconstraints:
-                #Changing from zero-indexing (Yggdrasill) to 1-indexing (geomeTRIC)
+                #Changing from zero-indexing (ASG) to 1-indexing (geomeTRIC)
                 print("bondpair", bondpair)
                 confile.write('distance {} {}\n'.format(bondpair[0]+1,bondpair[1]+1))
     else:
