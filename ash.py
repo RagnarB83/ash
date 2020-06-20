@@ -2596,7 +2596,7 @@ class PySCFTheory:
 # Fragment class
 class Fragment:
     def __init__(self, coordsstring=None, fragfile=None, xyzfile=None, pdbfile=None, coords=None, elems=None, connectivity=None,
-                 atomcharges=None, atomtypes=None, conncalc=True):
+                 atomcharges=None, atomtypes=None, conncalc=True, scale=None, tol=None):
         print("Defining new ASH fragment object")
         self.energy = None
         self.elems=[]
@@ -2626,18 +2626,18 @@ class Fragment:
                 self.connectivity=connectivity
             #If connectivity requested (default for new frags)
             if conncalc==True:
-                self.calc_connectivity()
+                self.calc_connectivity(scale=scale, tol=tol)
 
         #If coordsstring given, read elems and coords from it
         elif coordsstring is not None:
-            self.add_coords_from_string(coordsstring)
+            self.add_coords_from_string(coordsstring, scale=scale, tol=tol)
         #If xyzfile argument, run read_xyzfile
         elif xyzfile is not None:
             self.read_xyzfile(xyzfile)
         elif pdbfile is not None:
             self.read_pdbfile(pdbfile, conncalc=conncalc)
         elif fragfile is not None:
-            self.read_fragment_from_file(fragfile)
+            self.read_fragment_from_file(fragfile, scale=scale, tol=tol)
     def update_attributes(self):
         self.nuccharge = nucchargelist(self.elems)
         self.numatoms = len(self.coords)
@@ -2649,7 +2649,7 @@ class Fragment:
         self.list_of_masses = list_of_masses(self.elems)
     #Add coordinates from geometry string. Will replace.
     #Todo: Needs more work as elems and coords may be lists or numpy arrays
-    def add_coords_from_string(self, coordsstring):
+    def add_coords_from_string(self, coordsstring, scale=None, tol=None):
         print("Getting coordinates from string:", coordsstring)
         if len(self.coords)>0:
             print("Fragment already contains coordinates")
@@ -2660,20 +2660,20 @@ class Fragment:
                 self.elems.append(line.split()[0])
                 self.coords.append([float(line.split()[1]), float(line.split()[2]), float(line.split()[3])])
         self.update_attributes()
-        self.calc_connectivity()
+        self.calc_connectivity(scale=scale, tol=tol)
     #Replace coordinates by providing elems and coords lists. Optional: recalculate connectivity
-    def replace_coords(self, elems, coords, conn=False):
+    def replace_coords(self, elems, coords, conn=False, scale=None, tol=None):
         print("Replacing coordinates in fragment.")
         self.elems=elems
         self.coords=coords
         self.update_attributes()
         if conn==True:
-            self.calc_connectivity()
+            self.calc_connectivity(scale=scale, tol=tol)
     def delete_coords(self):
         self.coords=[]
         self.elems=[]
         self.connectivity=[]
-    def add_coords(self, elems,coords,conn=True):
+    def add_coords(self, elems,coords,conn=True, scale=None, tol=None):
         print("Adding coordinates to fragment.")
         if len(self.coords)>0:
             print("Fragment already contains coordinates")
@@ -2684,8 +2684,7 @@ class Fragment:
         self.coords = self.coords+coords
         self.update_attributes()
         if conn==True:
-            self.calc_connectiv
-            ity()
+            self.calc_connectivity(scale=scale, tol=tol)
     def print_coords(self):
         print("Defined coordinates (Å):")
         print_coords_all(self.coords,self.elems)
@@ -2702,7 +2701,7 @@ class Fragment:
         #Todo: finish
         pass
     #Read PDB file
-    def read_pdbfile(self,filename,conncalc=True):
+    def read_pdbfile(self,filename,conncalc=True, scale=None, tol=None):
 
         print("Reading coordinates from PDBfile \"{}\" into fragment".format(filename))
         residuelist=[]
@@ -2744,9 +2743,9 @@ class Fragment:
             self.elems=elemcol
         self.update_attributes()
         if conncalc is True:
-            self.calc_connectivity()
+            self.calc_connectivity(scale=scale, tol=tol)
     #Read XYZ file
-    def read_xyzfile(self,filename):
+    def read_xyzfile(self,filename, scale=None, tol=None):
         print("Reading coordinates from XYZfile {} into fragment".format(filename))
         with open(filename) as f:
             for count,line in enumerate(f):
@@ -2760,7 +2759,7 @@ class Fragment:
             print("Number of atoms in header not equal to number of coordinate-lines. Check XYZ file!")
             exit()
         self.update_attributes()
-        self.calc_connectivity()
+        self.calc_connectivity(scale=scale, tol=tol)
     def set_energy(self,energy):
         self.energy=float(energy)
     # Get coordinates for specific atoms (from list of atom indices)
@@ -2785,7 +2784,8 @@ class Fragment:
                 scale = 1
                 tol = 0.1
                 print("Exception: Using hard-coded scale and tol parameters. Scale: {} Tol: {} ".format(scale, tol ))
-
+        else:
+            print("Using scale: {} and tol: {} ".format(scale, tol))
         # Calculate connectivity by looping over all atoms
         found_atoms = []
         fraglist = []
