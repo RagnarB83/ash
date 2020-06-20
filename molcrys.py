@@ -105,13 +105,14 @@ def molcrys(cif_file=None, xtl_file=None, fragmentobjects=[], theory=None, numco
             checkflag = frag_define(orthogcoords,elems,cell_vectors,fragments=fragmentobjects, cell_angles=cell_angles, cell_length=cell_length,
                         scale=chosenscale, tol=chosentol)
             if checkflag == 0:
-                print(BC.OKBLUE, "Frag_define done!", BC.END)
+
+                print(BC.OKMAGENTA, "A miracle occurred! Fragment assignment succeeded!", BC.END)
                 print("Final connectivity parameters are: Scale: {} and Tol: {}".format(chosenscale, chosentol))
                 #TODO: Set global settings_ash.scale and settings_ash.tol using chosenscale and chosentol here???
                 print("")
                 break
             else:
-                print("Frag definition failed. Trying next Tol parameter.")
+                print(BC.FAIL,"Frag definition failed.", BC.WARNING,"Trying next Tol parameter.", BC.END)
         # If all test_tolerances failed.
         if checkflag == 1:
             print("Automatic connectivity failed. Make sure that the fragment definitions are correct, "
