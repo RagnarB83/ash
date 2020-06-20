@@ -116,6 +116,8 @@ def molcrys(cif_file=None, xtl_file=None, fragmentobjects=[], theory=None, numco
     else:
         chosenscale=settings_ash.scale
         chosentol=settings_ash.tol
+        print("Determining connectivity using Scale: {} and Tol: {}".format(chosenscale,chosentol))
+
         #Using the global ASH settings (may have been modified by user)
         checkflag = frag_define(orthogcoords,elems,cell_vectors,fragments=fragmentobjects, cell_angles=cell_angles, cell_length=cell_length,
                     scale=chosenscale, tol=chosentol)
