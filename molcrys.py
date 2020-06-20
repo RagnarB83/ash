@@ -325,7 +325,7 @@ def molcrys(cif_file=None, xtl_file=None, fragmentobjects=[], theory=None, numco
         #Using UFF_ prefix before element
         atomtypelist=['UFF_'+i for i in Cluster.elems]
         atomtypelist_uniq = np.unique(atomtypelist).tolist()
-        #Create Yggdrasill forcefield file by looking up UFF parameters
+        #Create ASH forcefield file by looking up UFF parameters
         with open('Cluster_forcefield.ff', 'w') as forcefile:
             forcefile.write('#UFF Lennard-Jones parameters \n')
             for atomtype in atomtypelist_uniq:
@@ -339,7 +339,7 @@ def molcrys(cif_file=None, xtl_file=None, fragmentobjects=[], theory=None, numco
         #Using UFF_ prefix before element
         atomtypelist=['UFF_'+i for i in Cluster.elems]
         atomtypelist_uniq = np.unique(atomtypelist).tolist()
-        #Create Yggdrasill forcefield file by looking up UFF parameters
+        #Create ASH forcefield file by looking up UFF parameters
         with open('Cluster_forcefield.ff', 'w') as forcefile:
             forcefile.write('#UFF Lennard-Jones parameters \n')
             for atomtype in atomtypelist_uniq:
