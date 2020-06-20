@@ -969,10 +969,10 @@ def gasfragcalc_ORCA(fragmentobjects,Cluster,chargemodel,orcadir,orcasimpleinput
         fragmentobject.add_charges(atomcharges)
         #Assign pointcharges to each atom of MM cluster.
         pointchargeupdate(Cluster,fragmentobject,atomcharges)
-        #Keep backup of ORCA outputfile
+        #Keep backup of ORCA outputfile and GBW file
         shutil.copy(ORCASPcalculation.inputfilename + '.out', fragmentobject.Name + '.out')
         shutil.copyfile(ORCASPcalculation.inputfilename + '.out', './SPloop-files/'+fragmentobject.Name+'-Gascalc' + '.out')
-
+        shutil.copyfile(ORCASPcalculation.inputfilename + '.gbw', './SPloop-files/'+fragmentobject.Name+'-Gascalc' + '.gbw')
         if id ==0:
             shutil.copy(ORCASPcalculation.inputfilename + '.gbw', 'lastorbitals.gbw')
 
