@@ -21,7 +21,6 @@ def molcrys(cif_file=None, xtl_file=None, fragmentobjects=[], theory=None, numco
 ║║║║ ║║  ║  ╠╦╝╚╦╝╚═╗
 ╩ ╩╚═╝╩═╝╚═╝╩╚═ ╩ ╚═╝
     MODULE
-    ----------------------------------------------------------------------------------
     """
     #ash header now done in settings_ash.init()
     #print_ash_header()
