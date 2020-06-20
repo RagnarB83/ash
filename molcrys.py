@@ -358,8 +358,13 @@ def molcrys(cif_file=None, xtl_file=None, fragmentobjects=[], theory=None, numco
 
     elif shortrangemodel=='manual':
         print("shortrangemodel option: manual")
+        print("Using atomtypes for Cluster: Man_X  where X is an element, e.g. Man_O, Man_C, Man_H")
         print("Will assume presence of ASH forcefield file called: Cluster_forcefield.ff")
-        print("Needs to be created and copied to scratch before optimization.")
+        print("Should contain Lennard-Jones entries for atomtypes Man_X.")
+        print("File needs to be copied to scratch for geometry optimization job.")
+        #Using MAN prefix before element
+        atomtypelist=['MAN_'+i for i in Cluster.elems]
+
     else:
         print("Undefined shortrangemodel")
         exit()
