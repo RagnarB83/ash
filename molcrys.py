@@ -112,7 +112,7 @@ def molcrys(cif_file=None, xtl_file=None, fragmentobjects=[], theory=None, numco
                 print("")
                 break
             else:
-                print(BC.FAIL,"Frag definition failed.", BC.WARNING,"Trying next Tol parameter.", BC.END)
+                print(BC.FAIL,"Fragment assignment failed.", BC.WARNING,"Trying next Tol parameter.", BC.END)
         # If all test_tolerances failed.
         if checkflag == 1:
             print("Automatic connectivity failed. Make sure that the fragment definitions are correct, "
