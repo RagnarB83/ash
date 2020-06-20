@@ -53,7 +53,7 @@ def write_XYZ_for_atoms(coords,elems,members,name):
         ofile.write(str(len(subset_elems))+'\n')
         ofile.write("title"+'\n')
         for el,c in zip(subset_elems,subset_coords):
-            line="{:4} {:12.6f} {:12.6f} {:12.6f}".format(el,c[0], c[1], c[2])
+            line="{:4} {:>12.6f} {:>12.6f} {:>12.6f}".format(el,c[0], c[1], c[2])
             ofile.write(line+'\n')
 
 
