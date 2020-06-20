@@ -108,6 +108,10 @@ def molcrys(cif_file=None, xtl_file=None, fragmentobjects=[], theory=None, numco
 
                 print(BC.OKMAGENTA, "A miracle occurred! Fragment assignment succeeded!", BC.END)
                 print("Final connectivity parameters are: Scale: {} and Tol: {}".format(chosenscale, chosentol))
+                print("Setting global scale and tol parameters")
+                #Should be safest option I think. To be revisited
+                settings_ash.scale=chosenscale
+                settings_ash.tol=chosentol
                 #TODO: Set global settings_ash.scale and settings_ash.tol using chosenscale and chosentol here???
                 print("")
                 break
