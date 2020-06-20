@@ -121,7 +121,6 @@ def molcrys(cif_file=None, xtl_file=None, fragmentobjects=[], theory=None, numco
                     scale=chosenscale, tol=chosentol)
         if checkflag == 0:
             print(BC.OKBLUE, "Frag_define done!", BC.END)
-            break
         else:
             exit(1)
 
@@ -295,7 +294,7 @@ def molcrys(cif_file=None, xtl_file=None, fragmentobjects=[], theory=None, numco
         print("This is Charge-Iteration Loop number", SPLoopNum)
         atomcharges=[]
         print_coords_for_atoms(Cluster.coords,Cluster.elems,Centralmainfrag)
-
+        print("")
         # Run ORCA QM/MM calculation with charge-model info
         QMMM_SP_calculation = QMMMTheory(fragment=Cluster, qm_theory=QMtheory, qmatoms=Centralmainfrag,
                                              charges=Cluster.atomcharges, embedding='Elstat')
