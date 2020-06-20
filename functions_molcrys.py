@@ -924,7 +924,7 @@ def gasfragcalc_ORCA(fragmentobjects,Cluster,chargemodel,orcadir,orcasimpleinput
         write_xyzfile(fragelems, fragcoords, "fragment")
         gasfrag=Fragment(coords=fragcoords,elems=fragelems)
 
-        print("Defined gasfrag:", gasfrag)
+        #print("Defined gasfrag:", gasfrag)
         #print(gasfrag.__dict__)
         #Creating ORCA theory object with fragment
 
@@ -998,8 +998,8 @@ def gasfragcalc_xTB(fragmentobjects,Cluster,chargemodel,xtbdir,xtbmethod,NUMPROC
         write_xyzfile(fragelems, fragcoords, "fragment")
         gasfrag=Fragment(coords=fragcoords,elems=fragelems)
 
-        print("Defined gasfrag:", gasfrag)
-        print(gasfrag.__dict__)
+        #print("Defined gasfrag:", gasfrag)
+        #print(gasfrag.__dict__)
         #Creating xTB theory object with fragment
         xTBSPcalculation = xTBTheory(xtbdir=xtbdir, fragment=gasfrag, charge=fragmentobject.Charge,
                                    mult=fragmentobject.Mult, xtbmethod=xtbmethod)

@@ -2777,16 +2777,15 @@ class Fragment:
 
         if scale == None:
             try:
-                print("Using global scale and tol parameters from settings_ash")
                 scale = settings_ash.scale
                 tol = settings_ash.tol
+                print("Using global scale and tol parameters from settings_ash. Scale: {} Tol: {} ".format(scale, tol ))
+
             except:
-                print("Exception: Using hard-coded scale and tol parameters")
                 scale = 1
                 tol = 0.1
+                print("Exception: Using hard-coded scale and tol parameters. Scale: {} Tol: {} ".format(scale, tol ))
 
-        print("Scale:", scale)
-        print("Tol:", tol)
         # Calculate connectivity by looping over all atoms
         found_atoms = []
         fraglist = []
