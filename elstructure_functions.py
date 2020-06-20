@@ -79,9 +79,9 @@ def calc_cm5(atomicNumbers, coords, hirschfeldcharges):
     #all matrices have the naming scheme matrix[k,k'] according to the paper
     #distances = atoms.get_all_distances(mic=True)
     distances = np.array(distance_matrix_from_coords(coords))
-    print("distances:", distances)
+    #print("distances:", distances)
     #atomicNumbers = np.array(atoms.numbers)
-    print("atomicNumbers", atomicNumbers)
+    #print("atomicNumbers", atomicNumbers)
     Rz = _radii[atomicNumbers-1]
     RzSum = np.tile(Rz,(len(Rz),1))
     RzSum = np.add(RzSum, np.transpose(RzSum))
@@ -128,9 +128,9 @@ def calc_cm5(atomicNumbers, coords, hirschfeldcharges):
     product = np.multiply(Tkk, Bkk)
     assert (np.diagonal(product) == 0).all()
     result = np.sum(product,axis=1)
-    print("hirschfeldcharges:", hirschfeldcharges)
-    print("result:", result)
-    print(type(result))
+    #print("hirschfeldcharges:", hirschfeldcharges)
+    #print("result:", result)
+    #print(type(result))
     return np.array(hirschfeldcharges) + result
 
 
