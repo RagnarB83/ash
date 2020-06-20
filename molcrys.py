@@ -87,13 +87,11 @@ def molcrys(cif_file=None, xtl_file=None, fragmentobjects=[], theory=None, numco
     #Change origin to centroid of coords
     orthogcoords=change_origin_to_centroid(orthogcoords)
     write_xyzfile(elems,orthogcoords,"cell_orthog-changedORIGIN")
-
+    print("")
     #print_coordinates(elems, orthogcoords, title="Orthogonal coordinates")
     #print_coords_all(orthogcoords,elems)
 
     #Define fragments of unitcell. Updates mainfrag, counterfrag1 etc. object information
-    # TODO: Do a loop of frag_define with different connectivity settings.
-    # Break if assignment is complete. Let user know if nothing works
 
     #Loop through different tol settings
     if connsetting == 'Auto':
@@ -101,18 +99,23 @@ def molcrys(cif_file=None, xtl_file=None, fragmentobjects=[], theory=None, numco
         test_tolerances = [0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7]
         print("Automatic connectivity determination:")
         print("Using Scale : ", chosenscale)
-        print("Will loop through tolerances:")
+        print("Will loop through tolerances:", test_tolerances)
         for chosentol in test_tolerances:
             print("Current Tol: ", chosentol)
             checkflag = frag_define(orthogcoords,elems,cell_vectors,fragments=fragmentobjects, cell_angles=cell_angles, cell_length=cell_length,
                         scale=chosenscale, tol=chosentol)
             if checkflag == 0:
                 print(BC.OKBLUE, "Frag_define done!", BC.END)
-                print("Scale and Tol parameters are : ", chosenscale, chosentol)
+                print("Current connectivity parameters are: Scale: {} and Tol: {}".format(chosenscale, chosentol))
                 print("")
                 break
             else:
                 print("Frag definition failed. Trying next Tol parameter.")
+        # If all test_tolerances failed.
+        if checkflag == 1:
+            print("Automatic connectivity failed. Make sure that the fragment definitions are correct, "
+                  "that the cell is not missing atoms or that it contains extra atoms")
+            exit(1)
     else:
         chosenscale=settings_ash.scale
         chosentol=settings_ash.tol
@@ -126,11 +129,6 @@ def molcrys(cif_file=None, xtl_file=None, fragmentobjects=[], theory=None, numco
         else:
             exit(1)
 
-    #If all test_tolerances failed.
-    if checkflag == 1:
-        print("Automatic connectivity failed. Make sure that the fragment definitions are correct, "
-              "that the cell is not missing atoms or that it contains extra atoms")
-        exit(1)
 
     print_time_rel_and_tot(currtime, origtime, modulename='frag_define')
     currtime=time.time()
@@ -357,7 +355,11 @@ def molcrys(cif_file=None, xtl_file=None, fragmentobjects=[], theory=None, numco
     #Defining atomtypes in Cluster fragment for LJ interaction
     if shortrangemodel=='UFF':
         print("Using UFF forcefield for all elements")
-        print("UFF parameters:", UFFdict)
+        for fragmentobject in fragmentobjects:
+            #fragmentobject.Elements
+            for el in fragmentobject.Elements:
+                print("UFF parameter for {} :".format(el, UFFdict[el]))
+
         #Using UFF_ prefix before element
         atomtypelist=['UFF_'+i for i in Cluster.elems]
         atomtypelist_uniq = np.unique(atomtypelist).tolist()
@@ -371,7 +373,12 @@ def molcrys(cif_file=None, xtl_file=None, fragmentobjects=[], theory=None, numco
     #Modified UFF forcefield with 0 parameter on H atom (avoids repulsion)
     elif shortrangemodel=='UFF_modH':
         print("Using UFF forcefield with modified H-parameter (0 values for H)")
-        print("UFF parameters:", UFFdict)
+        #print("UFF parameters:", UFFdict)
+        for fragmentobject in fragmentobjects:
+            #fragmentobject.Elements
+            for el in fragmentobject.Elements:
+                print("UFF parameter for {} :".format(el, UFFdict[el]))
+                
         #Using UFF_ prefix before element
         atomtypelist=['UFF_'+i for i in Cluster.elems]
         atomtypelist_uniq = np.unique(atomtypelist).tolist()
