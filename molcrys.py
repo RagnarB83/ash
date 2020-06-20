@@ -357,7 +357,7 @@ def molcrys(cif_file=None, xtl_file=None, fragmentobjects=[], theory=None, numco
         DDEC_to_LJparameters(elems, molmoms, voldict)
 
     elif shortrangemodel=='manual':
-        print("shortrangemodel option: manual)
+        print("shortrangemodel option: manual")
         print("Will assume presence of ASH forcefield file called: Cluster_forcefield.ff")
         print("Needs to be created and copied to scratch before optimization.")
     else:
