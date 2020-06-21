@@ -2073,7 +2073,7 @@ class ORCATheory:
 #printsetting is by default set to 'File. Change to something else for stdout print
 # PE: Polarizable embedding (CPPE). Pass pe_modulesettings dict as well
 class Psi4Theory:
-    def __init__(self, fragment='', charge='', mult='', printsetting='False', psi4settings='', psi4functional='',
+    def __init__(self, fragment=None, charge=None, mult=None, printsetting='False', psi4settings=None, psi4method=None, psi4functional=None,
                  runmode='library', psi4dir=None, pe=False, potfile='', outputname='psi4output.dat', label='psi4input',
                  psi4memory=3000, nprocs=1, printlevel=2):
 
@@ -2116,7 +2116,11 @@ class Psi4Theory:
         if mult!='':
             self.mult=int(mult)
         self.psi4settings=psi4settings
+        #DFT-specific. Remove?
         self.psi4functional=psi4functional
+        #All valid Psi4 methods that can be arguments in energy() function
+        self.psi4method=psi4method
+
     #Cleanup after run.
     def cleanup(self):
         print("Cleaning up old Psi4 files")
@@ -2271,8 +2275,11 @@ class Psi4Theory:
                 self.gradient=np.array(grad)
                 self.energy = psi4.variable("CURRENT ENERGY")
             else:
-                self.energy = psi4.energy('scf', dft_functional=self.psi4functional)
-
+                if self.psi4functional is not None:
+                    self.energy = psi4.energy('scf', dft_functional=self.psi4functional)
+                else:
+                    print("here")
+                    self.energy = psi4.energy(self.psi4method)
             #Keep restart file 180 as lastrestart.180
             PID = str(os.getpid())
             try:
