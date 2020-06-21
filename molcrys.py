@@ -100,7 +100,9 @@ def molcrys(cif_file=None, xtl_file=None, fragmentobjects=[], theory=None, numco
 
     #Loop through different tol settings
     if auto_connectivity == True:
-        chosenscale=settings_ash.scale
+        #Sticking to 1.0 here until we find case where modification is needed.
+        #If so we can implement double-loop over both scale and tol parameters
+        chosenscale=1.0
         test_tolerances = [0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7]
         print(BC.WARNING,"Automatic connectivity determination:", BC.END)
         print("Using Scale : ", chosenscale)
@@ -115,7 +117,9 @@ def molcrys(cif_file=None, xtl_file=None, fragmentobjects=[], theory=None, numco
                 print("Final connectivity parameters are: Scale: {} and Tol: {}".format(chosenscale, chosentol))
                 print("Setting global scale and tol parameters")
                 #Should be safest option I think. To be revisited
+                settings_ash.tol=chosenscale
                 settings_ash.tol=chosentol
+
                 print("")
                 break
             else:
