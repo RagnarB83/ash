@@ -172,7 +172,7 @@ def molcrys(cif_file=None, xtl_file=None, fragmentobjects=[], theory=None, numco
     Cluster=Fragment(elems=cluster_elems, coords=cluster_coords, scale=chosenscale, tol=chosentol)
 
     Cluster.print_system("Cluster-first.ygg")
-
+    print("Cluster size: ", Cluster.numatoms, "atoms")
 
 
     #We have stopped using settings_molcrys
