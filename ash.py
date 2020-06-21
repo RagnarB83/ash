@@ -220,7 +220,7 @@ def NumFreq(fragment=None, theory=None, npoint=1, displacement=0.0005, hessatoms
 
     #Making sure hessatoms list is sorted
     hessatoms.sort()
-    
+
     displacement_bohr = displacement * constants.ang2bohr
 
     print("Starting Numerical Frequencies job for fragment")
@@ -3243,8 +3243,8 @@ def MMforcefield_read(file):
 #Better place for this?
 def ReactionEnergy(stoichiometry=None, list_of_fragments=None, list_of_energies=None, unit='kcalpermol'):
     conversionfactor = { 'kcalpermol' : 627.50946900, 'kJpermol' : 2625.499638, 'eV' : 27.211386245988, 'cm-1' : 219474.6313702 }
-    print("ReactionEnergy function.")
-    print("Unit is:", unit)
+    print("ReactionEnergy function. Unit:", unit)
+    print("")
     reactant_energy=0.0 #hartree
     product_energy=0.0 #hartree
     if stoichiometry is None:
@@ -3254,6 +3254,7 @@ def ReactionEnergy(stoichiometry=None, list_of_fragments=None, list_of_energies=
     #List of energies option
     if list_of_energies is not None:
         print("List of total energies provided (Eh units assumed).")
+        print("")
         for i,stoich in enumerate(stoichiometry):
             if stoich < 0:
                 reactant_energy=reactant_energy+list_of_energies[i]*abs(stoich)
@@ -3263,6 +3264,7 @@ def ReactionEnergy(stoichiometry=None, list_of_fragments=None, list_of_energies=
         print("Reaction_energy:", reaction_energy, unit)
     else:
         print("No list of total energies provided. Using internal energy of each fragment instead.")
+        print("")
         for i,stoich in enumerate(stoichiometry):
             if stoich < 0:
                 reactant_energy=reactant_energy+list_of_fragments[i].energy*abs(stoich)
