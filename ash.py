@@ -197,6 +197,10 @@ def Singlepoint(fragment=None, theory=None, Grad=False):
         print("Doing single-point Energy job")
         energy = theory.run(current_coords=coords, elems=elems)
         print("Energy: ", energy)
+
+        #Now adding total energy to fragment
+        fragment.energy=energy
+
         return energy
 
 
@@ -1752,15 +1756,14 @@ class QMMMTheory:
                 print("Grad true")
 
                 if PC==True:
-                    print("Grad. PC-embedding true. not rady")
-                    print("pointcharge gradients in Psi4 not implemented...exiting")
-                    exit()
-                    exit()
-                    #self.QMEnergy, self.QMgradient, self.PCgradient = self.qm_theory.run(current_coords=self.qmcoords,
-                    #                                                                     current_MM_coords=self.mmcoords,
-                    #                                                                     MMcharges=self.mmcharges,
-                    #                                                                     qm_elems=self.qmelems, mm_elems=self.mmelems,
-                    #                                                                     Grad=True, PC=True, nprocs=nprocs)
+                    print("Pointcharge gradient for Psi4 is not implemented.")
+                    print(BC.WARNING, "Warning: Only calculating QM-region contribution, skipping electrstatic-embedding gradient on pointcharges", BC.END)
+                    print(BC.WARNING, "Only makes sense if MM region is frozen! ", BC.END)
+                    self.QMEnergy, self.QMgradient, self.PCgradient = self.qm_theory.run(current_coords=self.qmcoords,
+                                                                                         current_MM_coords=self.mmcoords,
+                                                                                         MMcharges=self.mmcharges,
+                                                                                         qm_elems=self.qmelems, mm_elems=self.mmelems,
+                                                                                         Grad=True, PC=True, nprocs=nprocs)
                 else:
                     print("grad. mech embedding. not ready")
                     exit()
