@@ -3243,7 +3243,8 @@ def MMforcefield_read(file):
 #Better place for this?
 def ReactionEnergy(stoichiometry=None, list_of_fragments=None, list_of_energies=None, unit='kcalpermol'):
     conversionfactor = { 'kcalpermol' : 627.50946900, 'kJpermol' : 2625.499638, 'eV' : 27.211386245988, 'cm-1' : 219474.6313702 }
-    print("ReactionEnergy function. Unit:", unit)
+    print("")
+    print(BC.OKBLUE,BC.BOLD, "ReactionEnergy function. Unit:", unit, BC.END)
     print("")
     reactant_energy=0.0 #hartree
     product_energy=0.0 #hartree
@@ -3261,7 +3262,7 @@ def ReactionEnergy(stoichiometry=None, list_of_fragments=None, list_of_energies=
             if stoich > 0:
                 product_energy=product_energy+list_of_energies[i]*abs(stoich)
         reaction_energy=(product_energy-reactant_energy)*conversionfactor[unit]
-        print("Reaction_energy:", reaction_energy, unit)
+        print(BC.OKGREEN,BC.BOLD, "Reaction_energy:", reaction_energy, unit, BC.END)
     else:
         print("No list of total energies provided. Using internal energy of each fragment instead.")
         print("")
@@ -3271,5 +3272,5 @@ def ReactionEnergy(stoichiometry=None, list_of_fragments=None, list_of_energies=
             if stoich > 0:
                 product_energy=product_energy+list_of_fragments[i].energy*abs(stoich)
         reaction_energy=(product_energy-reactant_energy)*conversionfactor[unit]
-        print("Reaction_energy:", reaction_energy, unit)
+        print(BC.OKGREEN,BC.BOLD, "Reaction_energy:", reaction_energy, unit, BC.END)
     return reaction_energy
