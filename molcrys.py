@@ -369,7 +369,7 @@ def molcrys(cif_file=None, xtl_file=None, fragmentobjects=[], theory=None, numco
         for fragmentobject in fragmentobjects:
             #fragmentobject.Elements
             for el in fragmentobject.Elements:
-                print("UFF parameter for {} :".format(el, UFFdict['UFF_'+str(el)]))
+                print("UFF parameter for {} :".format(el, UFFdict[el]))
 
         #Using UFF_ prefix before element
         atomtypelist=['UFF_'+i for i in Cluster.elems]
@@ -388,7 +388,7 @@ def molcrys(cif_file=None, xtl_file=None, fragmentobjects=[], theory=None, numco
         for fragmentobject in fragmentobjects:
             #fragmentobject.Elements
             for el in fragmentobject.Elements:
-                print("UFF parameter for {} :".format(el, UFF_modH_dict['UFF_'+str(el)]))
+                print("UFF parameter for {} :".format(el, UFF_modH_dict[el]))
 
         #Using UFF_ prefix before element
         atomtypelist=['UFF_'+i for i in Cluster.elems]
