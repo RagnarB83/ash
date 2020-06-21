@@ -2321,6 +2321,7 @@ class Psi4Theory:
             print("Psi4 Memory:", self.psi4memory)
 
             #Printing Psi4settings
+            print("Psi4 method:", self.psi4method)
             print("Psi4 settings:", self.psi4settings)
 
             #Printing PE options and checking for ptfile
