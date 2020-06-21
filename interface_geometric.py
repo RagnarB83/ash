@@ -179,7 +179,7 @@ def geomeTRICOptimizer(theory=None,fragment=None, coordsystem='tric', frozenatom
     print("geomeTRIC Geometry optimization converged in {} steps!".format(ashengine.iteration_count))
     blankline()
 
-    #Updating energy and coordinates of Yggdrasill fragment before ending
+    #Updating energy and coordinates of ASH fragment before ending
     fragment.set_energy(ashengine.energy)
     print("Final optimized energy:",  fragment.energy)
     #

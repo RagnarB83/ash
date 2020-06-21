@@ -3238,4 +3238,34 @@ def MMforcefield_read(file):
                     # TODO: Need to finish this. Should replace LennardJonespairpotentials later
     return MM_forcefield
 
+#Better place for this?
+def ReactionEnergy(stoichiometry=None, list_of_fragments=None, list_of_energies=None, unit='kcalpermol'):
+    conversionfactor = { 'kcalpermol' : 627.50946900, 'kJpermol' : 2625.499638, 'eV' : 27.211386245988, 'cm-1' : 219474.6313702 }
+    print("ReactionEnergy function.")
+    print("Unit is:", unit)
+    reactant_energy=0.0 #hartree
+    product_energy=0.0 #hartree
+    reaction_energy=0.0 #selected unit
+    if stoichiometry is None:
+        print("stoichiometry list is required")
+        exit(1)
 
+    #List of energies option
+    if list_of_energies is not None:
+        print("List of total energies provided (Eh units assumed).")
+        for i,stoich in enumerate(stoichiometry):
+            if stoich < 0:
+          	reactant_energy=reactant_energy+list_of_energies[i]*abs(stoich)
+            if stoich > 0:
+                product_energy=product_energy+list_of_energies[i]*abs(stoich)
+        reaction_energy=(product_energy-reactant_energy)*conversionfactor[unit]
+        print("Reaction_energy:", reaction_energy, unit)
+    else:
+        print("No list of total energies provided. Using internal energy of each fragment instead.")
+        for i,stoich in enumerate(stoichiometry):
+            if stoich < 0:
+                reactant_energy=reactant_energy+list_of_fragments[i].energy*abs(stoich)
+            if stoich > 0:
+                product_energy=product_energy+list_of_fragments[i].energy*abs(stoich)
+        reaction_energy=(product_energy-reactant_energy)*conversionfactor[unit]
+        print("Reaction_energy:", reaction_energy, unit)
