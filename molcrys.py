@@ -15,11 +15,6 @@ currtime=time.time()
 def molcrys(cif_file=None, xtl_file=None, fragmentobjects=[], theory=None, numcores=None, chargemodel='',
             clusterradius=None, shortrangemodel='UFF_modH', auto_connectivity=False):
 
-    #TODO: After more testing auto_connectivity by default to True
-    print("Auto_connectivity setting (auto_connectivity keyword) is set to: ", auto_connectivity)
-    print("Do auto_connectivity=False to turn off.")
-    print("Do auto_connectivity=True to turn on.")
-
     banner="""
     THE
 ╔╦╗╔═╗╦  ╔═╗╦═╗╦ ╦╔═╗
@@ -30,6 +25,11 @@ def molcrys(cif_file=None, xtl_file=None, fragmentobjects=[], theory=None, numco
     #ash header now done in settings_ash.init()
     #print_ash_header()
     print(banner)
+
+    #TODO: After more testing auto_connectivity by default to True
+    print("Auto_connectivity setting (auto_connectivity keyword) is set to: ", auto_connectivity)
+    print("Do auto_connectivity=False to turn off.")
+    print("Do auto_connectivity=True to turn on.")
 
     print("Fragment object defined:")
     for fragment in fragmentobjects:
