@@ -2106,14 +2106,14 @@ class Psi4Theory:
                     print("Found psi4 in path:", self.psi4path)
 
 
-        if fragment != '':
+        if fragment is not None:
             self.fragment=fragment
             self.coords=fragment.coords
             self.elems=fragment.elems
         #print("frag elems", self.fragment.elems)
-        if charge!='':
+        if charge is not None:
             self.charge=int(charge)
-        if mult!='':
+        if mult is not None:
             self.mult=int(mult)
         self.psi4settings=psi4settings
         #DFT-specific. Remove?
