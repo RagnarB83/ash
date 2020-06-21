@@ -161,12 +161,19 @@ def molcrys(cif_file=None, xtl_file=None, fragmentobjects=[], theory=None, numco
     currtime=time.time()
     write_xyzfile(cluster_elems,cluster_coords,"cluster_coords")
 
+    if len(cluster_coords) == 0:
+        print("After removing partial fragments the Cluster fragment is empty. Something went wrong. Exiting.")
+        exit(1)
+
+
     #Create ASH fragment object
     blankline()
     print("Creating new Cluster fragment:")
     Cluster=Fragment(elems=cluster_elems, coords=cluster_coords, scale=chosenscale, tol=chosentol)
 
     Cluster.print_system("Cluster-first.ygg")
+
+
 
     #We have stopped using settings_molcrys
     #Cluster.calc_connectivity(scale=settings_molcrys.scale, tol=settings_molcrys.tol)
