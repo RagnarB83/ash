@@ -1752,7 +1752,6 @@ class QMMMTheory:
                                                       current_MM_coords=self.mmcoords, MMcharges=self.mmcharges,
                                                       qm_elems=self.qmelems, mm_elems=self.mmelems, Grad=False, PC=PC, nprocs=nprocs)
         elif self.qm_theory_name == "Psi4Theory":
-            print("recently implemented")
             #Calling Psi4 theory, providing current QM and MM coordinates.
             if Grad==True:
                 print("Grad true")
@@ -1761,11 +1760,13 @@ class QMMMTheory:
                     print("Pointcharge gradient for Psi4 is not implemented.")
                     print(BC.WARNING, "Warning: Only calculating QM-region contribution, skipping electrstatic-embedding gradient on pointcharges", BC.END)
                     print(BC.WARNING, "Only makes sense if MM region is frozen! ", BC.END)
-                    self.QMEnergy, self.QMgradient, self.PCgradient = self.qm_theory.run(current_coords=self.qmcoords,
+                    self.QMEnergy, self.QMgradient = self.qm_theory.run(current_coords=self.qmcoords,
                                                                                          current_MM_coords=self.mmcoords,
                                                                                          MMcharges=self.mmcharges,
                                                                                          qm_elems=self.qmelems, mm_elems=self.mmelems,
                                                                                          Grad=True, PC=True, nprocs=nprocs)
+                    #Creating zero-gradient array
+                    self.PCgradient = np.zeros((len(self.mmatoms), 3))
                 else:
                     print("grad. mech embedding. not ready")
                     exit()
