@@ -2637,7 +2637,7 @@ class Fragment:
         elif pdbfile is not None:
             self.read_pdbfile(pdbfile, conncalc=conncalc)
         elif fragfile is not None:
-            self.read_fragment_from_file(fragfile, scale=scale, tol=tol)
+            self.read_fragment_from_file(fragfile)
     def update_attributes(self):
         self.nuccharge = nucchargelist(self.elems)
         self.numatoms = len(self.coords)
@@ -2928,47 +2928,6 @@ class Fragment:
         self.update_attributes()
         self.connectivity=connectivity
         self.Centralmainfrag = Centralmainfrag
-
-
-#Reading fragment from file. File created from Fragment.print_system
-#TODO. Make better.
-#TODO: Marked for deletion
-def old_read_fragment_from_file(fragfile):
-    coordgrab=False
-    coords=[]
-    elems=[]
-    charges=[]
-    fragment_type_labels=[]
-    connectivity=[]
-    with open(fragfile) as file:
-        for n, line in enumerate(file):
-            if 'Num atoms:' in line:
-                numatoms=int(line.split()[-1])
-            if coordgrab==True:
-                #If end of coords section
-                if int(line.split()[0]) == numatoms-1:
-                    coordgrab=False
-                    continue
-                elems.append(line.split()[1])
-                coords.append([float(line.split()[2]), float(line.split()[3]), float(line.split()[4])])
-                charges.append(float(line.split()[5]))
-                fragment_type_labels.append(int(line.split()[6]))
-            if '--------------------------' in line:
-                coordgrab=True
-            #Incredibly ugly but oh well
-            if 'connectivity:' in line:
-                l=line.lstrip('connectivity:')
-                l=l.replace(" ", "")
-                for x in l.split(']'):
-                    if len(x) < 1:
-                        break
-                    y=x.strip(',[')
-                    y=y.strip('[')
-                    y=y.strip(']')
-                    list=[int(i) for i in y.split(',')]
-                    connectivity.append(list)
-    frag=Fragment(coords=coords, elems=elems, connectivity=connectivity, atomcharges=charges)
-    return frag
 
 
 
