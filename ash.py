@@ -2271,14 +2271,21 @@ class Psi4Theory:
 
             #TODO: Support pointcharges and PE embedding in Grad job?
             if Grad==True:
-                grad=psi4.gradient('scf', dft_functional=self.psi4functional)
-                self.gradient=np.array(grad)
-                self.energy = psi4.variable("CURRENT ENERGY")
+                if self.psi4functional is not None:
+                    grad=psi4.gradient('scf', dft_functional=self.psi4functional)
+                    self.gradient=np.array(grad)
+                    self.energy = psi4.variable("CURRENT ENERGY")
+                else:
+                    print("Running gradient with Psi4 method:", self.psi4method)
+                    grad=psi4.gradient(self.psi4method)
+                    self.gradient=np.array(grad)
+                    self.energy = psi4.variable("CURRENT ENERGY")
             else:
+                #This might be unnecessary as I think all DFT functionals work as keyword to energy function. Hence psi4method works for all
                 if self.psi4functional is not None:
                     self.energy = psi4.energy('scf', dft_functional=self.psi4functional)
                 else:
-                    print("Running Psi4 method:", self.psi4method)
+                    print("Running energy with Psi4 method:", self.psi4method)
                     self.energy = psi4.energy(self.psi4method)
             #Keep restart file 180 as lastrestart.180
             PID = str(os.getpid())
