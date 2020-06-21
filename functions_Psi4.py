@@ -20,7 +20,7 @@ def grabPsi4EandG(outfile, numatoms, Grad):
     gradgrab=False
     with open(outfile) as ofile:
         for line in ofile:
-            if '    Total Energy =' in line:
+            if 'FINAL TOTAL ENERGY' in line:
                 energy = float(line.split()[-1])
             if Grad == True:
                 if gradgrab==True:
