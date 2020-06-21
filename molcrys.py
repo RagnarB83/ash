@@ -134,7 +134,7 @@ def molcrys(cif_file=None, xtl_file=None, fragmentobjects=[], theory=None, numco
         checkflag = frag_define(orthogcoords,elems,cell_vectors,fragments=fragmentobjects, cell_angles=cell_angles, cell_length=cell_length,
                     scale=chosenscale, tol=chosentol)
         if checkflag == 0:
-            print(BC.OKBLUE, "Frag_define done!", BC.END)
+            print(BC.OKMAGENTA, "A miracle occurred! Fragment assignment succeeded!", BC.END)
         else:
             exit(1)
 

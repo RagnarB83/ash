@@ -988,7 +988,6 @@ class NonBondedTheory:
             print("WARNING: qmatoms list is empty.")
             print("This is fine if this is a pure MM job.")
             print("If QM/MM job, then qmatoms list should be passed to NonBonded theory.")
-        print("qmatoms:", qmatoms)
 
 
         import math
@@ -1081,7 +1080,7 @@ class NonBondedTheory:
                 if acount < bcount:
                     if set(pairpot_a) == set(pairpot_b):
                         del self.LJpairpotentials[bcount]
-        if self.printlevel >= 2:
+        if self.printlevel >= 3:
             print("Final LJ pair potentials (sigma_ij, epsilon_ij):\n", self.LJpairpotentials)
             print("New: LJ pair potentials as dict:")
             print("self.LJpairpotdict:", self.LJpairpotdict)
@@ -1819,7 +1818,7 @@ class QMMMTheory:
         if self.mm_theory_name == "NonBondedTheory":
             if self.printlevel >= 2:
                 print("Running MM theory as part of QM/MM.")
-                print("Using MM on full system. Charges for QM region {} have to be set to zero ".format(self.qmatoms))
+                print("Using MM on full system. Charges for QM region  have to be set to zero ")
                 printdebug("Charges for full system is: ", self.charges)
                 print("Passing QM atoms to MMtheory run so that QM-QM pairs are skipped in pairlist")
                 print("Passing active atoms to MMtheory run so that frozen pairs are skipped in pairlist")
@@ -1870,7 +1869,7 @@ class QMMMTheory:
                     pccount += 1
             #Now assemble final QM/MM gradient
             self.QM_MM_Gradient=self.QM_PC_Gradient+self.MMGradient
-            print_time_rel(CheckpointTime, modulename='QM/MM gradient combine')
+            #print_time_rel(CheckpointTime, modulename='QM/MM gradient combine')
             if self.printlevel >=3:
                 print("QM gradient (au/Bohr):")
                 print_coords_all(self.QMgradient, self.qmelems, self.qmatoms)
