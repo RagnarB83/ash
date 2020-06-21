@@ -2278,7 +2278,7 @@ class Psi4Theory:
                 if self.psi4functional is not None:
                     self.energy = psi4.energy('scf', dft_functional=self.psi4functional)
                 else:
-                    print("here")
+                    print("Running Psi4 method:", self.psi4method)
                     self.energy = psi4.energy(self.psi4method)
             #Keep restart file 180 as lastrestart.180
             PID = str(os.getpid())
