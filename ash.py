@@ -1929,7 +1929,7 @@ class ORCATheory:
         self.brokensym=brokensym
         self.HSmult=HSmult
         if type(atomstoflip) is int:
-            print("Error: atomstoflip should be list of integers (e.g. [0] or [2,3,5]), not a single integer.")
+            print(BC.FAIL,"Error: atomstoflip should be list of integers (e.g. [0] or [2,3,5]), not a single integer.", BC.END)
             exit(1)
         self.atomstoflip=atomstoflip
         if self.printlevel >=2:
