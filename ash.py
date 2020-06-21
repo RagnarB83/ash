@@ -209,8 +209,7 @@ def NumFreq(fragment=None, theory=None, npoint=1, displacement=0.0005, hessatoms
     print(BC.WARNING, BC.BOLD, "------------NUMERICAL FREQUENCIES-------------", BC.END)
     if fragment is None or theory is None:
         print("NumFreq requires a fragment and a theory object")
-    #Making sure hessatoms list is sorted
-    hessatoms.sort()
+
     coords=fragment.coords
     elems=fragment.elems
     numatoms=len(elems)
@@ -219,6 +218,9 @@ def NumFreq(fragment=None, theory=None, npoint=1, displacement=0.0005, hessatoms
     if hessatoms is None:
         hessatoms=allatoms
 
+    #Making sure hessatoms list is sorted
+    hessatoms.sort()
+    
     displacement_bohr = displacement * constants.ang2bohr
 
     print("Starting Numerical Frequencies job for fragment")
@@ -3268,3 +3270,4 @@ def ReactionEnergy(stoichiometry=None, list_of_fragments=None, list_of_energies=
                 product_energy=product_energy+list_of_fragments[i].energy*abs(stoich)
         reaction_energy=(product_energy-reactant_energy)*conversionfactor[unit]
         print("Reaction_energy:", reaction_energy, unit)
+    return reaction_energy
