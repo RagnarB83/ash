@@ -854,7 +854,11 @@ def reordercluster(fragment,fragmenttype):
     #print("fragment:", fragment)
     #print("fragmenttype:", fragmenttype)
     fraglists=fragmenttype.clusterfraglist
-    #print("fraglists:", fraglists)
+    print("fraglists:", fraglists)
+    if len(fraglists) == 0:
+        print(BC.FAIL, "Fragment lists for fragment-type are empty. Makes no sense. Exiting...", BC.END)
+        exit(1)
+
     frag_ref=fraglists[0]
     elems_frag_ref = np.array([fragment.elems[i] for i in fraglists[0]])
     coords_frag_ref = np.array([fragment.coords[i] for i in fraglists[0]])

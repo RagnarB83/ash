@@ -162,7 +162,7 @@ def molcrys(cif_file=None, xtl_file=None, fragmentobjects=[], theory=None, numco
     write_xyzfile(cluster_elems,cluster_coords,"cluster_coords")
 
     if len(cluster_coords) == 0:
-        print("After removing partial fragments the Cluster fragment is empty. Something went wrong. Exiting.")
+        print(BC.FAIL,"After removing all partial fragments, the Cluster fragment is empty. Something went wrong. Exiting.", BC.END)
         exit(1)
 
 
@@ -193,6 +193,7 @@ def molcrys(cif_file=None, xtl_file=None, fragmentobjects=[], theory=None, numco
     #Reorder fraglists in each fragmenttype via Hungarian algorithm.
     # Ordered fraglists can then easily be used in pointchargeupdating
     for fragmentobject in fragmentobjects:
+        print("Redordering fragment object: ", fragmentobject.Name)
         reordercluster(Cluster,fragmentobject)
         printdebug(fragmentobject.clusterfraglist)
         fragmentobject.print_infofile(str(fragmentobject.Name)+'.info')
