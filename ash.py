@@ -1928,6 +1928,9 @@ class ORCATheory:
         self.extraline=extraline
         self.brokensym=brokensym
         self.HSmult=HSmult
+        if type(atomstoflip) is int:
+            print("Error: atomstoflip should be list of integers (e.g. [0] or [2,3,5]), not a single integer.")
+            exit(1)
         self.atomstoflip=atomstoflip
         if self.printlevel >=2:
             print("Creating ORCA object")
