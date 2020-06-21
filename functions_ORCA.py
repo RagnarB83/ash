@@ -321,14 +321,14 @@ def write_ORCA_Hessfile(hessian, coords, elems, masses, hessatoms,outputname):
     orcahessfile.write(str(len(elems))+"\n")
 
     #Write coordinates and masses to Orca Hessian file
-    print("hessatoms", hessatoms)
-    print("masses ", masses)
-    print("elems ", elems)
-    print("coords", coords)
-    print(len(elems))
-    print(len(coords))
-    print(len(hessatoms))
-    print(len(masses))
+    #print("hessatoms", hessatoms)
+    #print("masses ", masses)
+    #print("elems ", elems)
+    #print("coords", coords)
+    #print(len(elems))
+    #print(len(coords))
+    #print(len(hessatoms))
+    #print(len(masses))
     #TODO. Note. Changed things. We now don't go through hessatoms and analyze atom indices for full system
     #Either full system lists were passed or partial-system lists
     #for atom, mass in zip(hessatoms, masses):
