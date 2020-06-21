@@ -2399,7 +2399,7 @@ class Psi4Theory:
                     inputfile.write("energy, wfn = gradient(\'\{}\'\, return_wfn=True)\n".format(self.psi4method))
                 else:
                     #inputfile.write('scf_energy, wfn = energy(\'scf\', dft_functional=\'{}\', return_wfn=True)\n'.format(self.psi4functional))
-                    inputfile.write('energy, wfn = energy(\'\{}\'\, return_wfn=True)\n'.format(self.psi4method))
+                    inputfile.write('energy, wfn = energy(\'{}\', return_wfn=True)\n'.format(self.psi4method))
                     inputfile.write('\n')
 
             print("Running inputfile:", self.label+'.inp')
