@@ -694,9 +694,8 @@ def grabatomcharges_ORCA(chargemodel,outputfile):
                     grab=True
         print("Hirshfeld charges :", charges)
         atomicnumbers=elemstonuccharges(elems)
-        print("atomicnumbers:", atomicnumbers)
         charges = calc_cm5(atomicnumbers, coords, charges)
-        print("CM5 charges :", charges)
+        print("CM5 charges :", list(charges))
     elif chargemodel == "Mulliken":
         with open(outputfile) as ofile:
             for line in ofile:
