@@ -1133,10 +1133,7 @@ def PhotoElectronSpectrum(theory=None, fragment=None, InitialState_charge=None, 
         # TODO
         print(bcolors.OKGREEN, "AO_overl, mos_init, mos_final, dets.1, dets.2", bcolors.ENDC)
 
-
-
-
-
+        finaldysonnorms = []
         for fstate in Finalstates:
             if Densities == 'SCF' or Densities == 'All':
                 os.chdir('Calculated_densities')
@@ -1151,7 +1148,7 @@ def PhotoElectronSpectrum(theory=None, fragment=None, InitialState_charge=None, 
             ###################
             # Run Wfoverlap to calculate Dyson norms. Will write to wfovl.out.  Will take a while for big systems.
             print("")
-            finaldysonnorms = []
+
             # Check if binary exists
             if os.path.exists(path_wfoverlap) is False:
                 print("Path {} does NOT exist !".format(path_wfoverlap))

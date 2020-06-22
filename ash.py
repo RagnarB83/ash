@@ -1754,11 +1754,9 @@ class QMMMTheory:
         elif self.qm_theory_name == "Psi4Theory":
             #Calling Psi4 theory, providing current QM and MM coordinates.
             if Grad==True:
-                print("Grad true")
-
                 if PC==True:
-                    print("Pointcharge gradient for Psi4 is not implemented.")
-                    print(BC.WARNING, "Warning: Only calculating QM-region contribution, skipping electrstatic-embedding gradient on pointcharges", BC.END)
+                    print(BC.WARNING, "Pointcharge gradient for Psi4 is not implemented.",BC.END)
+                    print(BC.WARNING, "Warning: Only calculating QM-region contribution, skipping electrostatic-embedding gradient on pointcharges", BC.END)
                     print(BC.WARNING, "Only makes sense if MM region is frozen! ", BC.END)
                     self.QMEnergy, self.QMgradient = self.qm_theory.run(current_coords=self.qmcoords,
                                                                                          current_MM_coords=self.mmcoords,
@@ -2565,10 +2563,19 @@ class PySCFTheory:
             # TODO: Adapt to RKS vs. UKS etc.
             mf = solvent.PE(scf.RKS(mol), pe)
         else:
-            #TODO: Adapt to RKS vs. UKS etc.
-            mf = scf.RKS(mol)
-            #Verbose printing. TODO: put somewhere else
+
+            if PC is True:
+                # QM/MM pointcharge embedding
+                #mf = mm_charge(dft.RKS(mol), [(0.5, 0.6, 0.8)], MMcharges)
+                mf = mm_charge(dft.RKS(mol), current_MM_coords, MMcharges)
+
+            else:
+                #TODO: Adapt to RKS vs. UKS etc.
+                mf = scf.RKS(mol)
+                #Verbose printing. TODO: put somewhere else
             mf.verbose=4
+
+
         #Printing settings.
         if self.printsetting==True:
             print("Printsetting = True. Printing output to stdout...")
@@ -2579,6 +2586,9 @@ class PySCFTheory:
 
 
         #TODO: Restart settings for PySCF
+
+
+
 
 
         #Controlling OpenMP parallelization.
@@ -2594,6 +2604,7 @@ class PySCFTheory:
         mf.verbose = 4
 
         #RUN ENERGY job
+
         self.energy = mf.kernel()
 
         if self.pe==True:
@@ -2601,8 +2612,15 @@ class PySCFTheory:
 
         #Grab energy and gradient
         if Grad==True:
-            grad = mf.nuc_grad_method()
-            self.gradient = grad.kernel()
+            if PC is True:
+                print("THIS IS NOT CONFIRMED TO WORK!!!!!!!!!!!!")
+                print("Units need to be checked.")
+                hfg = mm_charge_grad(grad.dft.RKS(mf), current_MM_coords, MMcharges)
+                #                grad = mf.nuc_grad_method()
+                self.gradient = hfg.kernel()
+            else:
+                grad = mf.nuc_grad_method()
+                self.gradient = grad.kernel()
 
 
         #TODO: write in error handling here
