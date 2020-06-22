@@ -2389,14 +2389,15 @@ class Psi4Theory:
                     inputfile.write('wfn.to_file(newfile)\n')
                     inputfile.write('\n')
 
+                #RUNNING
                 if Grad==True:
                     #inputfile.write('scf_energy, wfn = gradient(\'scf\', dft_functional=\'{}\', return_wfn=True)\n'.format(self.psi4functional))
                     inputfile.write("energy, wfn = gradient(\'{}\', return_wfn=True)\n".format(self.psi4method))
-                    inputfile.write("print(\"FINAL TOTAL ENERGY :\", energy")
+                    inputfile.write("print(\"FINAL TOTAL ENERGY :\", energy)")
                 else:
                     #inputfile.write('scf_energy, wfn = energy(\'scf\', dft_functional=\'{}\', return_wfn=True)\n'.format(self.psi4functional))
                     inputfile.write('energy, wfn = energy(\'{}\', return_wfn=True)\n'.format(self.psi4method))
-                    inputfile.write("print(\"FINAL TOTAL ENERGY :\", energy")
+                    inputfile.write("print(\"FINAL TOTAL ENERGY :\", energy)")
                     inputfile.write('\n')
 
             print("Running inputfile:", self.label+'.inp')
