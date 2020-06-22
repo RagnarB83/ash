@@ -2360,9 +2360,9 @@ class Psi4Theory:
                     inputfile.write(key+' '+val+'\n')
                 #Setting RKS or UKS reference. For now, RKS always if mult 1 Todo: Make more flexible
                 if self.mult == 1:
-                    self.psi4settings['reference'] = 'RKS'
+                    self.psi4settings['reference'] = 'RHF'
                 else:
-                    inputfile.write('reference UKS \n')
+                    inputfile.write('reference UHF \n')
                 #Orbital guess
                 if restart == True:
                     inputfile.write('guess read \n')
