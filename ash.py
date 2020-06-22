@@ -2222,9 +2222,9 @@ class Psi4Theory:
             #Setting RKS or UKS reference
             #For now, RKS always if mult 1 Todo: Make more flexible
             if self.mult == 1:
-                self.psi4settings['reference'] = 'RKS'
+                self.psi4settings['reference'] = 'RHF'
             else:
-                self.psi4settings['reference'] = 'UKS'
+                self.psi4settings['reference'] = 'UHF'
 
             #Controlling orbital read-in guess.
             if restart==True:
