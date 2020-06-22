@@ -2411,7 +2411,7 @@ class Psi4Theory:
             try:
                 restartfile=glob.glob(self.label+'*180.npy')[0]
                 print("restartfile:", restartfile)
-                print("SCF Done. Renaming {} to lastrestart.180.npy".format(restartfile))
+                print("Psi4 Done. Renaming {} to lastrestart.180.npy".format(restartfile))
                 os.rename(restartfile, 'lastrestart.180.npy')
             except:
                 pass
