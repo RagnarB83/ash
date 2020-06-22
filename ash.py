@@ -2350,7 +2350,7 @@ class Psi4Theory:
                 # Adding MM charges as pointcharges if PC=True
                 # Might be easier to use PE and potfile ??
                 if PC == True:
-                    inputfile.write('Chrgfield = QMMM()')
+                    inputfile.write('Chrgfield = QMMM()\n')
                     # Mmcoords in Angstrom
                     for mmcharge, mmcoord in zip(MMcharges, current_MM_coords):
                         inputfile.write('Chrgfield.extern.addCharge({}, {}, {}, {})\n'.format(mmcharge, mmcoord[0], mmcoord[1], mmcoord[2]))
