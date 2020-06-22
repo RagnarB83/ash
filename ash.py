@@ -2406,7 +2406,7 @@ class Psi4Theory:
             #Running inputfile
             with open(self.label + '.out', 'w') as ofile:
                 #Psi4 -m option for saving 180 file
-                process = sp.run(['psi4', '-m', '-i', self.label + '.inp', '-o', self.label + '.out', '-n', str(nprocs) ],
+                process = sp.run([self.psi4path+'/psi4', '-m', '-i', self.label + '.inp', '-o', self.label + '.out', '-n', str(nprocs) ],
                                  check=True, stdout=ofile, stderr=ofile, universal_newlines=True)
 
             #Keep restart file 180 as lastrestart.180
