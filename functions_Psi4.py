@@ -34,7 +34,11 @@ def grabPsi4EandG(outfile, numatoms, Grad):
                             val=line.split()
                             gradient[row] = [float(val[1]),float(val[2]),float(val[3])]
                             row+=1
+                #SCF case
                 if '  -Total Gradient:' in line:
+                    gradgrab = True
+                #CC case
+                if '-Total gradient:' in line:
                     gradgrab = True
     if energy == None:
         print("Found no energy in Psi4 outputfile:", outfile)
