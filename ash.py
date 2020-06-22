@@ -2116,8 +2116,10 @@ class Psi4Theory:
         if mult is not None:
             self.mult=int(mult)
         self.psi4settings=psi4settings
-        #DFT-specific. Remove?
-        self.psi4functional=psi4functional
+        
+        #DFT-specific. Remove? Marked for deletion
+        #self.psi4functional=psi4functional
+
         #All valid Psi4 methods that can be arguments in energy() function
         self.psi4method=psi4method
 
