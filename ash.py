@@ -2116,7 +2116,7 @@ class Psi4Theory:
         if mult is not None:
             self.mult=int(mult)
         self.psi4settings=psi4settings
-        
+
         #DFT-specific. Remove? Marked for deletion
         #self.psi4functional=psi4functional
 
@@ -2353,9 +2353,9 @@ class Psi4Theory:
                     inputfile.write('Chrgfield = QMMM()')
                     # Mmcoords in Angstrom
                     for mmcharge, mmcoord in zip(MMcharges, current_MM_coords):
-                        inputfile.write('Chrgfield.extern.addCharge({}, {}, {}, {})'.format(mmcharge, mmcoord[0], mmcoord[1], mmcoord[2]))
-                    inputfile.write('psi4.set_global_option_python(\'EXTERN\', Chrgfield.extern)')
-
+                        inputfile.write('Chrgfield.extern.addCharge({}, {}, {}, {})\n'.format(mmcharge, mmcoord[0], mmcoord[1], mmcoord[2]))
+                    inputfile.write('psi4.set_global_option_python(\'EXTERN\', Chrgfield.extern)\n')
+                inputfile.write('\n')
                 #Adding Psi4 settings
                 inputfile.write('set {\n')
                 for key,val in self.psi4settings.items():
