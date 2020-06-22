@@ -2073,7 +2073,7 @@ class ORCATheory:
 #printsetting is by default set to 'File. Change to something else for stdout print
 # PE: Polarizable embedding (CPPE). Pass pe_modulesettings dict as well
 class Psi4Theory:
-    def __init__(self, fragment=None, charge=None, mult=None, printsetting='False', psi4settings=None, psi4method=None, psi4functional=None,
+    def __init__(self, fragment=None, charge=None, mult=None, printsetting='False', psi4settings=None, psi4method=None,
                  runmode='library', psi4dir=None, pe=False, potfile='', outputname='psi4output.dat', label='psi4input',
                  psi4memory=3000, nprocs=1, printlevel=2):
 
