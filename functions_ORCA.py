@@ -2,6 +2,7 @@ import subprocess as sp
 from functions_solv import *
 from functions_coords import *
 from functions_general import *
+from elstructure_functions import *
 import settings_solvation
 import constants
 import multiprocessing as mp
@@ -32,28 +33,28 @@ def run_inputfiles_in_parallel(orcadir, inpfiles, numcores):
 
 #Run single-point ORCA calculation (Energy or Engrad). Assumes no ORCA parallelization.
 #Function can be called by multiprocessing.
-def run_orca_SP(list, Grad=False):
+def run_orca_SP(list):
     orcadir=list[0]
     inpfile=list[1]
     print("Running inpfile", inpfile)
-    if Grad==True:
-        with open(inpfile) as ifile:
-            insert_line_into_file(inpfile, '!', '! Engrad')
+    #if Grad==True:
+    #    with open(inpfile) as ifile:
+    #        insert_line_into_file(inpfile, '!', '! Engrad')
     basename = inpfile.split('.')[0]
     with open(basename+'.out', 'w') as ofile:
         process = sp.run([orcadir + '/orca', basename+'.inp'], check=True, stdout=ofile, stderr=ofile, universal_newlines=True)
 
 # Run ORCA single-point job using ORCA parallelization. Will add pal-block if nprocs >1.
 # Takes possible Grad boolean argument.
-def run_orca_SP_ORCApar(orcadir, inpfile, nprocs=1, Grad=False):
-    if Grad==True:
-        with open(inpfile) as ifile:
-            insert_line_into_file(inpfile, '!', '! Engrad')
+def run_orca_SP_ORCApar(orcadir, inpfile, nprocs=1):
+    #if Grad==True:
+    #    with open(inpfile) as ifile:
+    #        insert_line_into_file(inpfile, '!', '! Engrad')
     #Add pal block to inputfile before running. Adding after '!' line. Should work for regular, new_job and compound job.
     if nprocs>1:
         palstring='% pal nprocs {} end'.format(nprocs)
         with open(inpfile) as ifile:
-            insert_line_into_file(inpfile, '!', palstring )
+            insert_line_into_file(inpfile, '!', palstring, Once=True )
     basename = inpfile.split('.')[0]
     with open(basename+'.out', 'w') as ofile:
         process = sp.run([orcadir + '/orca', basename+'.inp'], check=True, stdout=ofile, stderr=ofile, universal_newlines=True)
@@ -318,16 +319,17 @@ def write_ORCA_Hessfile(hessian, coords, elems, masses, hessatoms,outputname):
     orcahessfile.write("# The atoms: label  mass x y z (in bohrs)\n")
     orcahessfile.write("$atoms\n")
     orcahessfile.write(str(len(elems))+"\n")
+    
 
     #Write coordinates and masses to Orca Hessian file
-    print("hessatoms", hessatoms)
-    print("masses ", masses)
-    print("elems ", elems)
-    print("coords", coords)
-    print(len(elems))
-    print(len(coords))
-    print(len(hessatoms))
-    print(len(masses))
+    #print("hessatoms", hessatoms)
+    #print("masses ", masses)
+    #print("elems ", elems)
+    #print("coords", coords)
+    #print(len(elems))
+    #print(len(coords))
+    #print(len(hessatoms))
+    #print(len(masses))
     #TODO. Note. Changed things. We now don't go through hessatoms and analyze atom indices for full system
     #Either full system lists were passed or partial-system lists
     #for atom, mass in zip(hessatoms, masses):
@@ -575,7 +577,6 @@ def create_orca_input_plain(name,elems,coords,orcasimpleinput,orcablockinput,cha
             orcafile.write('! Engrad' + '\n')
         orcafile.write(orcablockinput + '\n')
         if atomstoflip is not None:
-            print("atomstoflip:", atomstoflip)
             if type(atomstoflip) == int:
                 atomstoflipstring=str(atomstoflip)
             else:
@@ -606,20 +607,44 @@ def create_orca_pcfile(name,elems,coords,listofcharges):
 # Chargemodel select. Creates ORCA-inputline with appropriate keywords
 # To be added to ORCA input.
 def chargemodel_select(chargemodel):
+    extraline=""
     if chargemodel=='NPA':
         extraline='! NPA'
     elif chargemodel=='CHELPG':
         extraline='! CHELPG'
     elif chargemodel=='Hirshfeld':
-        extraline='\n%output Print[ P_Hirshfeld] 1 end'
+        extraline='! Hirshfeld'
     elif chargemodel=='CM5':
-        extraline='\n%output Print[ P_Hirshfeld] 1 end'
+        extraline='! Hirshfeld'
+    elif chargemodel=='Mulliken':
+        pass
+    elif chargemodel=='Loewdin':
+        pass
+    elif chargemodel=='DDEC6':
+        pass
+    elif chargemodel=="IAO":
+        extraline = '\n%loc LocMet IAOIBO \n T_CORE -99999999 end'
+
     return extraline
 
 def grabatomcharges_ORCA(chargemodel,outputfile):
     grab=False
+    coordgrab=False
     charges=[]
-    if chargemodel=="CHELPG":
+
+    if chargemodel=="NPA" or chargemodel=="NBO":
+        print("Warning: NPA/NBO charge-option in ORCA requires setting environment variable NBOEXE:")
+        print("e.g. export NBOEXE=/path/to/nbo7.exe")
+        with open(outputfile) as ofile:
+            for line in ofile:
+                if grab==True:
+                    if '=======' in line:
+                        grab=False
+                    elif '------' not in line:
+                        charges.append(float(line.split()[2]))
+                if 'Atom No    Charge        Core      Valence    Rydberg      Total' in line:
+                    grab=True
+    elif chargemodel=="CHELPG":
         with open(outputfile) as ofile:
             for line in ofile:
                 if grab==True:
@@ -629,6 +654,8 @@ def grabatomcharges_ORCA(chargemodel,outputfile):
                         charges.append(float(line.split()[-1]))
                 if 'CHELPG Charges' in line:
                     grab=True
+                    #Setting charges list to zero in case of multiple charge-tables. Means we grab second table
+                    charges=[]
     elif chargemodel=="Hirshfeld":
         with open(outputfile) as ofile:
             for line in ofile:
@@ -639,7 +666,102 @@ def grabatomcharges_ORCA(chargemodel,outputfile):
                         charges.append(float(line.split()[-2]))
                 if '  ATOM     CHARGE      SPIN' in line:
                     grab=True
+                    #Setting charges list to zero in case of multiple charge-tables. Means we grab second table
+                    charges=[]
+    elif chargemodel=="CM5":
+        elems = []
+        coords = []
+        with open(outputfile) as ofile:
+            for line in ofile:
+                #Getting coordinates as used in CM5 definition
+                if coordgrab is True:
+                    if '----------------------' not in line:
+                        if len(line.split()) <2:
+                            coordgrab=False
+                        else:
+                            elems.append(line.split()[0])
+                            coords_x=float(line.split()[1]); coords_y=float(line.split()[2]); coords_z=float(line.split()[3])
+                            coords.append([coords_x,coords_y,coords_z])
+                if 'CARTESIAN COORDINATES (ANGSTROEM)' in line:
+                    coordgrab=True
+                if grab==True:
+                    if len(line) < 3:
+                        grab=False
+                    if len(line.split()) == 4:
+                        charges.append(float(line.split()[-2]))
+                if '  ATOM     CHARGE      SPIN' in line:
+                    #Setting charges list to zero in case of multiple charge-tables. Means we grab second table
+                    charges=[]
+                    grab=True
+        print("Hirshfeld charges :", charges)
+        atomicnumbers=elemstonuccharges(elems)
+        charges = calc_cm5(atomicnumbers, coords, charges)
+        print("CM5 charges :", list(charges))
+    elif chargemodel == "Mulliken":
+        with open(outputfile) as ofile:
+            for line in ofile:
+                if grab==True:
+                    if 'Sum of atomic' in line:
+                        grab=False
+                    elif '------' not in line:
+                        charges.append(float(line.split()[-1]))
+                if 'MULLIKEN ATOMIC CHARGES' in line:
+                    grab=True
+    elif chargemodel == "Loewdin":
+        with open(outputfile) as ofile:
+            for line in ofile:
+                if grab==True:
+                    if 'Sum of atomic' in line:
+                        grab=False
+                    elif len(line.replace(' ','')) < 2:
+                        grab=False
+                    elif '------' not in line:
+                        charges.append(float(line.split()[-1]))
+                if 'LOEWDIN ATOMIC CHARGES' in line:
+                    grab=True
+    elif chargemodel == "IAO":
+        with open(outputfile) as ofile:
+            for line in ofile:
+                if grab==True:
+                    if 'Sum of atomic' in line:
+                        grab=False
+                    elif '------' not in line:
+                        if 'Warning' not in line:
+                            print("line:", line)
+                            charges.append(float(line.split()[-1]))
+                if 'IAO PARTIAL CHARGES' in line:
+                    grab=True
     else:
         print("Unknown chargemodel. Exiting...")
         exit()
     return charges
+
+
+# Wrapper around interactive orca_plot
+# Todo: add TDDFT difference density, natural orbitals, MDCI spin density?
+def run_orca_plot(orcadir, filename, option, gridvalue=40,densityfilename=None):
+    # Always creating Cube file (5,7 option)
+    #Always setting grid (4,gridvalue option)
+    #Always choosing a plot (2,X) option:
+    # Plot option in orca_plot
+    if option=='density':
+        plottype = 2
+    elif option=='cisdensity':
+        plottype = 2
+    elif option=='spindensity':
+        plottype = 3
+    elif option=='cisspindensity':
+        plottype = 3
+    elif option=='mo':
+        plottype = 1
+    else:
+        plottype = 1
+    if option=='density' or option=='spindensity' or option=='mo':
+        p = sp.run([orcadir + '/orca_plot', filename, '-i'], stdout=sp.PIPE,
+                       input='5\n7\n4\n{}\n1\n{}\ny\n10\n11\n\n'.format(gridvalue, plottype), encoding='ascii')
+    #If plotting CIS/TDDFT density then we tell orca_plot explicity.
+    elif option == 'cisdensity' or option == 'cisspindensity':
+        p = sp.run([orcadir + '/orca_plot', filename, '-i'], stdout=sp.PIPE,
+                       input='5\n7\n4\n{}\n1\n{}\nn\n{}\n10\n11\n\n'.format(gridvalue, plottype,densityfilename), encoding='ascii')
+
+    #print(p.returncode)

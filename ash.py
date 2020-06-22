@@ -59,9 +59,6 @@ def get_size(obj, seen=None):
     return size
 
 
-
-
-
 #Debug print. Behaves like print bug reads global debug var first
 def printdebug(string,var=''):
     global debugflag
@@ -200,6 +197,10 @@ def Singlepoint(fragment=None, theory=None, Grad=False):
         print("Doing single-point Energy job")
         energy = theory.run(current_coords=coords, elems=elems)
         print("Energy: ", energy)
+
+        #Now adding total energy to fragment
+        fragment.energy=energy
+
         return energy
 
 
@@ -208,8 +209,7 @@ def NumFreq(fragment=None, theory=None, npoint=1, displacement=0.0005, hessatoms
     print(BC.WARNING, BC.BOLD, "------------NUMERICAL FREQUENCIES-------------", BC.END)
     if fragment is None or theory is None:
         print("NumFreq requires a fragment and a theory object")
-    #Making sure hessatoms list is sorted
-    hessatoms.sort()
+
     coords=fragment.coords
     elems=fragment.elems
     numatoms=len(elems)
@@ -217,6 +217,9 @@ def NumFreq(fragment=None, theory=None, npoint=1, displacement=0.0005, hessatoms
     allatoms=list(range(0,numatoms))
     if hessatoms is None:
         hessatoms=allatoms
+
+    #Making sure hessatoms list is sorted
+    hessatoms.sort()
 
     displacement_bohr = displacement * constants.ang2bohr
 
@@ -991,7 +994,6 @@ class NonBondedTheory:
             print("WARNING: qmatoms list is empty.")
             print("This is fine if this is a pure MM job.")
             print("If QM/MM job, then qmatoms list should be passed to NonBonded theory.")
-        print("qmatoms:", qmatoms)
 
 
         import math
@@ -1084,7 +1086,7 @@ class NonBondedTheory:
                 if acount < bcount:
                     if set(pairpot_a) == set(pairpot_b):
                         del self.LJpairpotentials[bcount]
-        if self.printlevel >= 2:
+        if self.printlevel >= 3:
             print("Final LJ pair potentials (sigma_ij, epsilon_ij):\n", self.LJpairpotentials)
             print("New: LJ pair potentials as dict:")
             print("self.LJpairpotdict:", self.LJpairpotdict)
@@ -1244,12 +1246,10 @@ class NonBondedTheory:
             if self.printlevel >= 2:
                 print("Using fast Fortran F2Py MM code")
             try:
-                print("here")
-                print(os.environ.get("LD_LIBRARY_PATH"))
-
+                #print(os.environ.get("LD_LIBRARY_PATH"))
                 import LJCoulombv1
-                print(LJCoulombv1.__doc__)
-                print("----------")
+                #print(LJCoulombv1.__doc__)
+                #print("----------")
             except:
                 print("Fortran library LJCoulombv1 not found! Make sure you have run the installation script.")
             self.MMEnergy, self.MMGradient, self.LJenergy, self.Coulombchargeenergy =\
@@ -1752,21 +1752,21 @@ class QMMMTheory:
                                                       current_MM_coords=self.mmcoords, MMcharges=self.mmcharges,
                                                       qm_elems=self.qmelems, mm_elems=self.mmelems, Grad=False, PC=PC, nprocs=nprocs)
         elif self.qm_theory_name == "Psi4Theory":
-            print("recently implemented")
             #Calling Psi4 theory, providing current QM and MM coordinates.
             if Grad==True:
                 print("Grad true")
 
                 if PC==True:
-                    print("Grad. PC-embedding true. not rady")
-                    print("pointcharge gradients in Psi4 not implemented...exiting")
-                    exit()
-                    exit()
-                    #self.QMEnergy, self.QMgradient, self.PCgradient = self.qm_theory.run(current_coords=self.qmcoords,
-                    #                                                                     current_MM_coords=self.mmcoords,
-                    #                                                                     MMcharges=self.mmcharges,
-                    #                                                                     qm_elems=self.qmelems, mm_elems=self.mmelems,
-                    #                                                                     Grad=True, PC=True, nprocs=nprocs)
+                    print("Pointcharge gradient for Psi4 is not implemented.")
+                    print(BC.WARNING, "Warning: Only calculating QM-region contribution, skipping electrstatic-embedding gradient on pointcharges", BC.END)
+                    print(BC.WARNING, "Only makes sense if MM region is frozen! ", BC.END)
+                    self.QMEnergy, self.QMgradient = self.qm_theory.run(current_coords=self.qmcoords,
+                                                                                         current_MM_coords=self.mmcoords,
+                                                                                         MMcharges=self.mmcharges,
+                                                                                         qm_elems=self.qmelems, mm_elems=self.mmelems,
+                                                                                         Grad=True, PC=True, nprocs=nprocs)
+                    #Creating zero-gradient array
+                    self.PCgradient = np.zeros((len(self.mmatoms), 3))
                 else:
                     print("grad. mech embedding. not ready")
                     exit()
@@ -1822,7 +1822,7 @@ class QMMMTheory:
         if self.mm_theory_name == "NonBondedTheory":
             if self.printlevel >= 2:
                 print("Running MM theory as part of QM/MM.")
-                print("Using MM on full system. Charges for QM region {} have to be set to zero ".format(self.qmatoms))
+                print("Using MM on full system. Charges for QM region  have to be set to zero ")
                 printdebug("Charges for full system is: ", self.charges)
                 print("Passing QM atoms to MMtheory run so that QM-QM pairs are skipped in pairlist")
                 print("Passing active atoms to MMtheory run so that frozen pairs are skipped in pairlist")
@@ -1873,7 +1873,7 @@ class QMMMTheory:
                     pccount += 1
             #Now assemble final QM/MM gradient
             self.QM_MM_Gradient=self.QM_PC_Gradient+self.MMGradient
-            print_time_rel(CheckpointTime, modulename='QM/MM gradient combine')
+            #print_time_rel(CheckpointTime, modulename='QM/MM gradient combine')
             if self.printlevel >=3:
                 print("QM gradient (au/Bohr):")
                 print_coords_all(self.QMgradient, self.qmelems, self.qmatoms)
@@ -1901,6 +1901,9 @@ class QMMMTheory:
 class ORCATheory:
     def __init__(self, orcadir, fragment=None, charge='', mult='', orcasimpleinput='', printlevel=2,
                  orcablocks='', extraline='', brokensym=None, HSmult=None, atomstoflip=None, nprocs=1):
+
+        #Create inputfile with generic name
+        self.inputfilename="orca-input"
 
         #Using orcadir to set LD_LIBRARY_PATH
         old = os.environ.get("LD_LIBRARY_PATH")
@@ -1931,6 +1934,9 @@ class ORCATheory:
         self.extraline=extraline
         self.brokensym=brokensym
         self.HSmult=HSmult
+        if type(atomstoflip) is int:
+            print(BC.FAIL,"Error: atomstoflip should be list of integers (e.g. [0] or [2,3,5]), not a single integer.", BC.END)
+            exit(1)
         self.atomstoflip=atomstoflip
         if self.printlevel >=2:
             print("Creating ORCA object")
@@ -1983,44 +1989,50 @@ class ORCATheory:
             nprocs=self.nprocs
         print("Running ORCA object with {} cores available".format(nprocs))
 
-        #Create inputfile with generic name
-        self.inputfilename="orca-input"
+
         print("Creating inputfile:", self.inputfilename+'.inp')
         print("ORCA input:")
         print(self.orcasimpleinput)
         print(self.extraline)
         print(self.orcablocks)
+        print("Charge: {}  Mult: {}".format(self.charge, self.mult))
         if PC==True:
             print("Pointcharge embedding is on!")
             create_orca_pcfile(self.inputfilename, mm_elems, current_MM_coords, MMcharges)
             if self.brokensym==True:
+                print("Brokensymmetry SpinFlipping on! HSmult: {}.".format(self.HSmult))
+                for flipatom in self.atomstoflip:
+                    print("Flipping atom: {} {}".format(flipatom, qm_elems[flipatom]))
                 create_orca_input_pc(self.inputfilename, qm_elems, current_coords, self.orcasimpleinput, self.orcablocks,
-                                        self.charge, self.mult, extraline=self.extraline, HSmult=self.HSmult,
+                                        self.charge, self.mult, extraline=self.extraline, HSmult=self.HSmult, Grad=Grad,
                                      atomstoflip=self.atomstoflip)
             else:
                 create_orca_input_pc(self.inputfilename, qm_elems, current_coords, self.orcasimpleinput, self.orcablocks,
-                                        self.charge, self.mult, extraline=self.extraline)
+                                        self.charge, self.mult, extraline=self.extraline, Grad=Grad)
         else:
             if self.brokensym == True:
+                print("Brokensymmetry SpinFlipping on! HSmult: {}.".format(self.HSmult))
+                for flipatom in self.atomstoflip:
+                    print("Flipping atom: {} {}".format(flipatom, qm_elems[flipatom]))
                 create_orca_input_plain(self.inputfilename, qm_elems, current_coords, self.orcasimpleinput,self.orcablocks,
-                                        self.charge,self.mult, extraline=self.extraline, HSmult=self.HSmult,
+                                        self.charge,self.mult, extraline=self.extraline, HSmult=self.HSmult, Grad=Grad,
                                      atomstoflip=self.atomstoflip)
             else:
                 create_orca_input_plain(self.inputfilename, qm_elems, current_coords, self.orcasimpleinput,self.orcablocks,
-                                        self.charge,self.mult, extraline=self.extraline)
+                                        self.charge,self.mult, extraline=self.extraline, Grad=Grad)
 
         #Run inputfile using ORCA parallelization. Take nprocs argument.
         #print(BC.OKGREEN, "------------Running ORCA calculation-------------", BC.END)
         print(BC.OKGREEN, "ORCA Calculation started.", BC.END)
-        # Doing gradient or not.
-        if Grad == True:
-            run_orca_SP_ORCApar(self.orcadir, self.inputfilename + '.inp', nprocs=nprocs, Grad=True)
-        else:
-            run_orca_SP_ORCApar(self.orcadir, self.inputfilename + '.inp', nprocs=nprocs)
-        #print(BC.OKGREEN, "------------ORCA calculation done-------------", BC.END)
+        # Doing gradient or not. Disabling, doing above instead.
+        #if Grad == True:
+        #    run_orca_SP_ORCApar(self.orcadir, self.inputfilename + '.inp', nprocs=nprocs, Grad=True)
+        #else:
+        run_orca_SP_ORCApar(self.orcadir, self.inputfilename + '.inp', nprocs=nprocs)
         print(BC.OKGREEN, "ORCA Calculation done.", BC.END)
 
         #Now that we have possibly run a BS-DFT calculation, turning Brokensym off for future calcs (opt, restart, etc.)
+        # using this theory object
         #TODO: Possibly use different flag for this???
         self.brokensym=False
 
@@ -2049,7 +2061,7 @@ class ORCATheory:
         else:
             print(BC.FAIL,"Problem with ORCA run", BC.END)
             print(BC.OKBLUE,BC.BOLD, "------------ENDING ORCA-INTERFACE-------------", BC.END)
-            exit()
+            exit(1)
 
 
 
@@ -2061,7 +2073,7 @@ class ORCATheory:
 #printsetting is by default set to 'File. Change to something else for stdout print
 # PE: Polarizable embedding (CPPE). Pass pe_modulesettings dict as well
 class Psi4Theory:
-    def __init__(self, fragment='', charge='', mult='', printsetting='False', psi4settings='', psi4functional='',
+    def __init__(self, fragment=None, charge=None, mult=None, printsetting='False', psi4settings=None, psi4method=None,
                  runmode='library', psi4dir=None, pe=False, potfile='', outputname='psi4output.dat', label='psi4input',
                  psi4memory=3000, nprocs=1, printlevel=2):
 
@@ -2094,17 +2106,23 @@ class Psi4Theory:
                     print("Found psi4 in path:", self.psi4path)
 
 
-        if fragment != '':
+        if fragment is not None:
             self.fragment=fragment
             self.coords=fragment.coords
             self.elems=fragment.elems
         #print("frag elems", self.fragment.elems)
-        if charge!='':
+        if charge is not None:
             self.charge=int(charge)
-        if mult!='':
+        if mult is not None:
             self.mult=int(mult)
         self.psi4settings=psi4settings
-        self.psi4functional=psi4functional
+
+        #DFT-specific. Remove? Marked for deletion
+        #self.psi4functional=psi4functional
+
+        #All valid Psi4 methods that can be arguments in energy() function
+        self.psi4method=psi4method
+
     #Cleanup after run.
     def cleanup(self):
         print("Cleaning up old Psi4 files")
@@ -2206,9 +2224,9 @@ class Psi4Theory:
             #Setting RKS or UKS reference
             #For now, RKS always if mult 1 Todo: Make more flexible
             if self.mult == 1:
-                self.psi4settings['reference'] = 'RKS'
+                self.psi4settings['reference'] = 'RHF'
             else:
-                self.psi4settings['reference'] = 'UKS'
+                self.psi4settings['reference'] = 'UHF'
 
             #Controlling orbital read-in guess.
             if restart==True:
@@ -2255,12 +2273,16 @@ class Psi4Theory:
 
             #TODO: Support pointcharges and PE embedding in Grad job?
             if Grad==True:
-                grad=psi4.gradient('scf', dft_functional=self.psi4functional)
+                print("Running gradient with Psi4 method:", self.psi4method)
+                #grad=psi4.gradient('scf', dft_functional=self.psi4functional)
+                grad=psi4.gradient(self.psi4method)
                 self.gradient=np.array(grad)
                 self.energy = psi4.variable("CURRENT ENERGY")
             else:
-                self.energy = psi4.energy('scf', dft_functional=self.psi4functional)
-
+                #This might be unnecessary as I think all DFT functionals work as keyword to energy function. Hence psi4method works for all
+                #self.energy = psi4.energy('scf', dft_functional=self.psi4functional)
+                print("Running energy with Psi4 method:", self.psi4method)
+                self.energy = psi4.energy(self.psi4method)
             #Keep restart file 180 as lastrestart.180
             PID = str(os.getpid())
             try:
@@ -2295,6 +2317,7 @@ class Psi4Theory:
             print("Psi4 Memory:", self.psi4memory)
 
             #Printing Psi4settings
+            print("Psi4 method:", self.psi4method)
             print("Psi4 settings:", self.psi4settings)
 
             #Printing PE options and checking for ptfile
@@ -2327,21 +2350,21 @@ class Psi4Theory:
                 # Adding MM charges as pointcharges if PC=True
                 # Might be easier to use PE and potfile ??
                 if PC == True:
-                    inputfile.write('Chrgfield = QMMM()')
+                    inputfile.write('Chrgfield = QMMM()\n')
                     # Mmcoords in Angstrom
                     for mmcharge, mmcoord in zip(MMcharges, current_MM_coords):
-                        inputfile.write('Chrgfield.extern.addCharge({}, {}, {}, {})'.format(mmcharge, mmcoord[0], mmcoord[1], mmcoord[2]))
-                    inputfile.write('psi4.set_global_option_python(\'EXTERN\', Chrgfield.extern)')
-
+                        inputfile.write('Chrgfield.extern.addCharge({}, {}, {}, {})\n'.format(mmcharge, mmcoord[0], mmcoord[1], mmcoord[2]))
+                    inputfile.write('psi4.set_global_option_python(\'EXTERN\', Chrgfield.extern)\n')
+                inputfile.write('\n')
                 #Adding Psi4 settings
                 inputfile.write('set {\n')
                 for key,val in self.psi4settings.items():
                     inputfile.write(key+' '+val+'\n')
                 #Setting RKS or UKS reference. For now, RKS always if mult 1 Todo: Make more flexible
                 if self.mult == 1:
-                    self.psi4settings['reference'] = 'RKS'
+                    self.psi4settings['reference'] = 'RHF'
                 else:
-                    inputfile.write('reference UKS \n')
+                    inputfile.write('reference UHF \n')
                 #Orbital guess
                 if restart == True:
                     inputfile.write('guess read \n')
@@ -2368,10 +2391,15 @@ class Psi4Theory:
                     inputfile.write('wfn.to_file(newfile)\n')
                     inputfile.write('\n')
 
+                #RUNNING
                 if Grad==True:
-                    inputfile.write('scf_energy, wfn = gradient(\'scf\', dft_functional=\'{}\', return_wfn=True)\n'.format(self.psi4functional))
+                    #inputfile.write('scf_energy, wfn = gradient(\'scf\', dft_functional=\'{}\', return_wfn=True)\n'.format(self.psi4functional))
+                    inputfile.write("energy, wfn = gradient(\'{}\', return_wfn=True)\n".format(self.psi4method))
+                    inputfile.write("print(\"FINAL TOTAL ENERGY :\", wfn.energy())")
                 else:
-                    inputfile.write('scf_energy, wfn = energy(\'scf\', dft_functional=\'{}\', return_wfn=True)\n'.format(self.psi4functional))
+                    #inputfile.write('scf_energy, wfn = energy(\'scf\', dft_functional=\'{}\', return_wfn=True)\n'.format(self.psi4functional))
+                    inputfile.write('energy, wfn = energy(\'{}\', return_wfn=True)\n'.format(self.psi4method))
+                    inputfile.write("print(\"FINAL TOTAL ENERGY :\", energy)")
                     inputfile.write('\n')
 
             print("Running inputfile:", self.label+'.inp')
@@ -2385,7 +2413,7 @@ class Psi4Theory:
             try:
                 restartfile=glob.glob(self.label+'*180.npy')[0]
                 print("restartfile:", restartfile)
-                print("SCF Done. Renaming {} to lastrestart.180.npy".format(restartfile))
+                print("Psi4 Done. Renaming {} to lastrestart.180.npy".format(restartfile))
                 os.rename(restartfile, 'lastrestart.180.npy')
             except:
                 pass
@@ -2592,7 +2620,7 @@ class PySCFTheory:
 # Fragment class
 class Fragment:
     def __init__(self, coordsstring=None, fragfile=None, xyzfile=None, pdbfile=None, coords=None, elems=None, connectivity=None,
-                 atomcharges=None, atomtypes=None, conncalc=True):
+                 atomcharges=None, atomtypes=None, conncalc=True, scale=None, tol=None):
         print("Defining new ASH fragment object")
         self.energy = None
         self.elems=[]
@@ -2622,11 +2650,11 @@ class Fragment:
                 self.connectivity=connectivity
             #If connectivity requested (default for new frags)
             if conncalc==True:
-                self.calc_connectivity()
+                self.calc_connectivity(scale=scale, tol=tol)
 
         #If coordsstring given, read elems and coords from it
         elif coordsstring is not None:
-            self.add_coords_from_string(coordsstring)
+            self.add_coords_from_string(coordsstring, scale=scale, tol=tol)
         #If xyzfile argument, run read_xyzfile
         elif xyzfile is not None:
             self.read_xyzfile(xyzfile)
@@ -2645,7 +2673,7 @@ class Fragment:
         self.list_of_masses = list_of_masses(self.elems)
     #Add coordinates from geometry string. Will replace.
     #Todo: Needs more work as elems and coords may be lists or numpy arrays
-    def add_coords_from_string(self, coordsstring):
+    def add_coords_from_string(self, coordsstring, scale=None, tol=None):
         print("Getting coordinates from string:", coordsstring)
         if len(self.coords)>0:
             print("Fragment already contains coordinates")
@@ -2656,20 +2684,20 @@ class Fragment:
                 self.elems.append(line.split()[0])
                 self.coords.append([float(line.split()[1]), float(line.split()[2]), float(line.split()[3])])
         self.update_attributes()
-        self.calc_connectivity()
+        self.calc_connectivity(scale=scale, tol=tol)
     #Replace coordinates by providing elems and coords lists. Optional: recalculate connectivity
-    def replace_coords(self, elems, coords, conn=False):
+    def replace_coords(self, elems, coords, conn=False, scale=None, tol=None):
         print("Replacing coordinates in fragment.")
         self.elems=elems
         self.coords=coords
         self.update_attributes()
         if conn==True:
-            self.calc_connectivity()
+            self.calc_connectivity(scale=scale, tol=tol)
     def delete_coords(self):
         self.coords=[]
         self.elems=[]
         self.connectivity=[]
-    def add_coords(self, elems,coords,conn=True):
+    def add_coords(self, elems,coords,conn=True, scale=None, tol=None):
         print("Adding coordinates to fragment.")
         if len(self.coords)>0:
             print("Fragment already contains coordinates")
@@ -2680,8 +2708,7 @@ class Fragment:
         self.coords = self.coords+coords
         self.update_attributes()
         if conn==True:
-            self.calc_connectiv
-            ity()
+            self.calc_connectivity(scale=scale, tol=tol)
     def print_coords(self):
         print("Defined coordinates (Å):")
         print_coords_all(self.coords,self.elems)
@@ -2698,7 +2725,7 @@ class Fragment:
         #Todo: finish
         pass
     #Read PDB file
-    def read_pdbfile(self,filename,conncalc=True):
+    def read_pdbfile(self,filename,conncalc=True, scale=None, tol=None):
 
         print("Reading coordinates from PDBfile \"{}\" into fragment".format(filename))
         residuelist=[]
@@ -2740,9 +2767,9 @@ class Fragment:
             self.elems=elemcol
         self.update_attributes()
         if conncalc is True:
-            self.calc_connectivity()
+            self.calc_connectivity(scale=scale, tol=tol)
     #Read XYZ file
-    def read_xyzfile(self,filename):
+    def read_xyzfile(self,filename, scale=None, tol=None):
         print("Reading coordinates from XYZfile {} into fragment".format(filename))
         with open(filename) as f:
             for count,line in enumerate(f):
@@ -2756,7 +2783,7 @@ class Fragment:
             print("Number of atoms in header not equal to number of coordinate-lines. Check XYZ file!")
             exit()
         self.update_attributes()
-        self.calc_connectivity()
+        self.calc_connectivity(scale=scale, tol=tol)
     def set_energy(self,energy):
         self.energy=float(energy)
     # Get coordinates for specific atoms (from list of atom indices)
@@ -2767,23 +2794,22 @@ class Fragment:
     #Calculate connectivity (list of lists) of coords
     def calc_connectivity(self, conndepth=99, scale=None, tol=None ):
         print("Calculating connectivity of fragment...")
-        print("Number of atoms:", len(self.coords))
 
         if len(self.coords) > 10000:
             print("Atom number > 10K. Connectivity calculation could take a while")
 
         if scale == None:
             try:
-                print("Using global scale and tol parameters from settings_ash")
                 scale = settings_ash.scale
                 tol = settings_ash.tol
+                print("Using global scale and tol parameters from settings_ash. Scale: {} Tol: {} ".format(scale, tol ))
+
             except:
-                print("Exception: Using hard-coded scale and tol parameters")
                 scale = 1
                 tol = 0.1
-
-        print("Scale:", scale)
-        print("Tol:", tol)
+                print("Exception: Using hard-coded scale and tol parameters. Scale: {} Tol: {} ".format(scale, tol ))
+        else:
+            print("Using scale: {} and tol: {} ".format(scale, tol))
         # Calculate connectivity by looping over all atoms
         found_atoms = []
         fraglist = []
@@ -2901,11 +2927,8 @@ class Fragment:
                     coordgrab=True
                 if 'Centralmainfrag' in line:
                     l = line.lstrip('Centralmainfrag:')
-                    print(l)
                     l = l.strip('[')
-                    print(l)
                     l = l.strip(']')
-                    print(l)
                     Centralmainfrag = [i for i in l.split(',')]
                 #Incredibly ugly but oh well
                 if 'connectivity:' in line:
@@ -2926,47 +2949,6 @@ class Fragment:
         self.update_attributes()
         self.connectivity=connectivity
         self.Centralmainfrag = Centralmainfrag
-
-
-#Reading fragment from file. File created from Fragment.print_system
-#TODO. Make better.
-#TODO: Marked for deletion
-def old_read_fragment_from_file(fragfile):
-    coordgrab=False
-    coords=[]
-    elems=[]
-    charges=[]
-    fragment_type_labels=[]
-    connectivity=[]
-    with open(fragfile) as file:
-        for n, line in enumerate(file):
-            if 'Num atoms:' in line:
-                numatoms=int(line.split()[-1])
-            if coordgrab==True:
-                #If end of coords section
-                if int(line.split()[0]) == numatoms-1:
-                    coordgrab=False
-                    continue
-                elems.append(line.split()[1])
-                coords.append([float(line.split()[2]), float(line.split()[3]), float(line.split()[4])])
-                charges.append(float(line.split()[5]))
-                fragment_type_labels.append(int(line.split()[6]))
-            if '--------------------------' in line:
-                coordgrab=True
-            #Incredibly ugly but oh well
-            if 'connectivity:' in line:
-                l=line.lstrip('connectivity:')
-                l=l.replace(" ", "")
-                for x in l.split(']'):
-                    if len(x) < 1:
-                        break
-                    y=x.strip(',[')
-                    y=y.strip('[')
-                    y=y.strip(']')
-                    list=[int(i) for i in y.split(',')]
-                    connectivity.append(list)
-    frag=Fragment(coords=coords, elems=elems, connectivity=connectivity, atomcharges=charges)
-    return frag
 
 
 
@@ -3275,4 +3257,37 @@ def MMforcefield_read(file):
                     # TODO: Need to finish this. Should replace LennardJonespairpotentials later
     return MM_forcefield
 
+#Better place for this?
+def ReactionEnergy(stoichiometry=None, list_of_fragments=None, list_of_energies=None, unit='kcalpermol'):
+    conversionfactor = { 'kcalpermol' : 627.50946900, 'kJpermol' : 2625.499638, 'eV' : 27.211386245988, 'cm-1' : 219474.6313702 }
+    print("")
+    print(BC.OKBLUE,BC.BOLD, "ReactionEnergy function. Unit:", unit, BC.END)
+    print("")
+    reactant_energy=0.0 #hartree
+    product_energy=0.0 #hartree
+    if stoichiometry is None:
+        print("stoichiometry list is required")
+        exit(1)
 
+    #List of energies option
+    if list_of_energies is not None:
+        print("List of total energies provided (Eh units assumed).")
+        print("")
+        for i,stoich in enumerate(stoichiometry):
+            if stoich < 0:
+                reactant_energy=reactant_energy+list_of_energies[i]*abs(stoich)
+            if stoich > 0:
+                product_energy=product_energy+list_of_energies[i]*abs(stoich)
+        reaction_energy=(product_energy-reactant_energy)*conversionfactor[unit]
+        print(BC.OKGREEN,BC.BOLD, "Reaction_energy:", reaction_energy, unit, BC.END)
+    else:
+        print("No list of total energies provided. Using internal energy of each fragment instead.")
+        print("")
+        for i,stoich in enumerate(stoichiometry):
+            if stoich < 0:
+                reactant_energy=reactant_energy+list_of_fragments[i].energy*abs(stoich)
+            if stoich > 0:
+                product_energy=product_energy+list_of_fragments[i].energy*abs(stoich)
+        reaction_energy=(product_energy-reactant_energy)*conversionfactor[unit]
+        print(BC.OKGREEN,BC.BOLD, "Reaction_energy:", reaction_energy, unit, BC.END)
+    return reaction_energy

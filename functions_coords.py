@@ -42,7 +42,7 @@ def isElementList(list):
 #From lists of coords,elems and atom indices, print coords with elem
 def print_coords_for_atoms(coords,elems,members):
     for m in members:
-        print("{:4} {:8.8f}  {:8.8f}  {:8.8f}".format(elems[m],coords[m][0], coords[m][1], coords[m][2]))
+        print("{:>4} {:>12.8f}  {:>12.8f}  {:>12.8f}".format(elems[m],coords[m][0], coords[m][1], coords[m][2]))
 
 #From lists of coords,elems and atom indices, write XYZ file coords with elem
 #Todo: make part of Fragment class
@@ -53,7 +53,7 @@ def write_XYZ_for_atoms(coords,elems,members,name):
         ofile.write(str(len(subset_elems))+'\n')
         ofile.write("title"+'\n')
         for el,c in zip(subset_elems,subset_coords):
-            line="{:4} {:12.6f} {:12.6f} {:12.6f}".format(el,c[0], c[1], c[2])
+            line="{:4} {:>12.6f} {:>12.6f} {:>12.6f}".format(el,c[0], c[1], c[2])
             ofile.write(line+'\n')
 
 
@@ -100,6 +100,8 @@ def distance(A,B):
     #return np.sqrt(np.power((A-B),2).sum()) #very slow
     #return sqrt(np.power((A - B), 2).sum())
     #return np.sum((A - B) ** 2)**0.5 #very slow
+
+
 
 def center_of_mass(coords,masses):
     print("to be finished")
@@ -437,6 +439,51 @@ def write_xyzfile(elems,coords,name,printlevel=2):
     if printlevel >= 2:
         print("Wrote XYZ file:", name+'.xyz')
 
+
+#Function that reads XYZ-file with multiple files, splits and return list of coordinates
+#Created for splitting crest_conformers.xyz but may also be used for MD traj.
+#Also grabs last word in title line. Typically an energy (has to be converted to float outside)
+def split_multimolxyzfile(file, writexyz=False):
+    all_coords=[]
+    all_elems=[]
+    all_titles=[]
+    molcounter = 0
+    coordgrab=False
+    titlegrab=False
+    coords = []
+    elems = []
+    with open(file) as f:
+        for index, line in enumerate(f):
+            if titlegrab is True:
+                all_titles.append(line.split()[-1])
+                titlegrab=False
+            if index == 0:
+                numatoms = line.split()[0]
+            if coordgrab == True:
+                if len(line.split()) > 1:
+                    elems.append(line.split()[0])
+                    coords_x=float(line.split()[1]);coords_y=float(line.split()[2]);coords_z=float(line.split()[3])
+                    coords.append([coords_x,coords_y,coords_z])
+                if len(coords) == int(numatoms):
+                    all_coords.append(coords)
+                    all_elems.append(elems)
+                    if writexyz is True:
+                        #Alternative option: write each conformer/molecule to disk as XYZfile
+                        write_xyzfile(elems, coords, "conformer"+str(molcounter))
+                    coords = []
+                    elems = []
+            if line.split()[0] == str(numatoms):
+                # print("coords is", len(coords))
+                coordgrab = True
+                molcounter += 1
+                titlegrab=True
+
+    return all_elems,all_coords, all_titles
+
+
+
+
+
 #Write PDBfile (dummy version) for PyFrame
 def write_pdbfile_dummy(elems,coords,name, atomlabels,residlabels):
     with open(name+'.pdb', 'w') as pfile:
@@ -478,7 +525,7 @@ def nucchargexyz(file):
         totnuccharge+=atcharge
     return totnuccharge
 
-#Calculate nuclear charge from list of elements
+#Calculate total nuclear charge from list of elements
 def nucchargelist(ellist):
     totnuccharge=0
     els=[]
@@ -488,7 +535,8 @@ def nucchargelist(ellist):
     return totnuccharge
 
 #get list of nuclear charges from list of elements
-#Used by Psi4
+#Used by Psi4 and CM5calc
+# aka atomic numbers, aka atom numbers
 def elemstonuccharges(ellist):
     nuccharges=[]
     for e in ellist:
@@ -793,6 +841,7 @@ def check_reflections(p_atoms, q_atoms, p_coord, q_coord,
 
 
 def reorder(reorder_method, p_coord,q_coord,p_atoms,q_atoms):
+
     p_cent = centroid(p_coord)
     q_cent = centroid(q_coord)
     p_coord -= p_cent

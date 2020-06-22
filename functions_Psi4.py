@@ -13,6 +13,7 @@ import numpy as np
 #grab energy from output
 
 #Slightly ugly
+#Now grabbing specially printed line (FINAL TOTAL ENERGY). Can be either SCF energy or coupled cluster etc.
 def grabPsi4EandG(outfile, numatoms, Grad):
     energy=None
     gradient = np.zeros((numatoms, 3))
@@ -20,8 +21,9 @@ def grabPsi4EandG(outfile, numatoms, Grad):
     gradgrab=False
     with open(outfile) as ofile:
         for line in ofile:
-            if '    Total Energy =' in line:
-                energy = float(line.split()[-1])
+            if 'FINAL TOTAL ENERGY' in line:
+                if 'print' not in line:
+                    energy = float(line.split()[-1])
             if Grad == True:
                 if gradgrab==True:
                     if len(line) < 2:
@@ -32,7 +34,11 @@ def grabPsi4EandG(outfile, numatoms, Grad):
                             val=line.split()
                             gradient[row] = [float(val[1]),float(val[2]),float(val[3])]
                             row+=1
+                #SCF case
                 if '  -Total Gradient:' in line:
+                    gradgrab = True
+                #CC case
+                if '-Total gradient:' in line:
                     gradgrab = True
     if energy == None:
         print("Found no energy in Psi4 outputfile:", outfile)

@@ -160,7 +160,7 @@ def geomeTRICOptimizer(theory=None,fragment=None, coordsystem='tric', frozenatom
         with open("constraints.txt", 'w') as confile:
             confile.write('$freeze\n')
             for bondpair in bondconstraints:
-                #Changing from zero-indexing (Yggdrasill) to 1-indexing (geomeTRIC)
+                #Changing from zero-indexing (ASG) to 1-indexing (geomeTRIC)
                 print("bondpair", bondpair)
                 confile.write('distance {} {}\n'.format(bondpair[0]+1,bondpair[1]+1))
     else:
@@ -179,7 +179,7 @@ def geomeTRICOptimizer(theory=None,fragment=None, coordsystem='tric', frozenatom
     print("geomeTRIC Geometry optimization converged in {} steps!".format(ashengine.iteration_count))
     blankline()
 
-    #Updating energy and coordinates of Yggdrasill fragment before ending
+    #Updating energy and coordinates of ASH fragment before ending
     fragment.set_energy(ashengine.energy)
     print("Final optimized energy:",  fragment.energy)
     #
@@ -192,5 +192,7 @@ def geomeTRICOptimizer(theory=None,fragment=None, coordsystem='tric', frozenatom
     fragment.write_xyzfile(xyzfilename='Fragment-optimized.xyz')
 
     write_XYZ_for_atoms(fragment.coords, fragment.elems, actatoms, "Fragment-optimized_Active")
-    
+
+    print("TO BE ADDED HERE: Internal coordinate table (bond-lengths etc.) for optimized geometry")
+
     blankline()

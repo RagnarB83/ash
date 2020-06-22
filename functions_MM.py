@@ -52,10 +52,10 @@ UFF_modH_dict={'H': [0.000, 0.000], 'He': [2.362, 0.056], 'Li': [2.451, 0.025], 
 
 #Fast LJ-Coulomb via Fortran and f2PY
 def LJCoulomb(coords,epsij, sigmaij, charges, connectivity=None):
-    print("Inside LJCoulomb")
+    #print("Inside LJCoulomb")
     #Todo: Avoid calling import everytime in the future...
     import LJCoulombv1
-    print(LJCoulombv1.__doc__)
+    #print(LJCoulombv1.__doc__)
     numatoms=len(coords)
     rc=9999.5
     grad = np.zeros((numatoms,3))
@@ -64,10 +64,10 @@ def LJCoulomb(coords,epsij, sigmaij, charges, connectivity=None):
 
 #Fast LJ-Coulomb via Fortran and f2PY
 def LJCoulombv2(coords,epsij, sigmaij, charges, connectivity=None):
-    print("Inside LJCoulomb")
+    #print("Inside LJCoulomb")
     #Todo: Avoid calling import everytime in the future...
     import LJCoulombv2
-    print(LJCoulombv2.__doc__)
+    #print(LJCoulombv2.__doc__)
     numatoms=len(coords)
     #rc: threshold for ignoring LJ interaction
     rc=9999.5

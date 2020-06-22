@@ -19,6 +19,10 @@ class Fragmenttype:
         self.Mult = mult
         self.fraglist= []
         self.clusterfraglist= []
+        #Keeping track of molmoms, voldict in case of DDEC
+        self.molmoms=[]
+        self.voldict=None
+
         #Current atom charges defined for fragment. Charges ordered according to something
         self.charges=[]
         #List of lists: All atom charges that have been defined for fragment. First the gasfrag, then from SP-loop etc.
@@ -49,6 +53,9 @@ class Fragmenttype:
             outfile.write("Current atomcharges: {} \n".format(self.charges))
             outfile.write("\n")
             outfile.write("All atomcharges: {} \n".format(self.all_atomcharges))
+            outfile.write("\n")
+            outfile.write("Molmoms: {} \n".format(self.molmoms))
+            outfile.write("Voldicts: {} \n".format(self.voldict))
             outfile.write("\n")
             for al in self.all_atomcharges:
                 outfile.write(' '.join([str(i) for i in al]))
@@ -113,7 +120,13 @@ def cell_extend_frag_withcenter(cellvectors, coords,elems):
 #3. Find all whole fragments of the atoms in original cell but capped with atoms from extended cell
 #4. For fragment-atoms outside original cell, find equivalent atoms in original cell.
 #TODO: Skip step1?
-def frag_define(orthogcoords,elems,cell_vectors,fragments,cell_angles=None, cell_length=None):
+def frag_define(orthogcoords,elems,cell_vectors,fragments,cell_angles=None, cell_length=None, scale=None, tol=None):
+
+    if scale is None:
+        scale=settings_ash.scale
+    if tol is None:
+        tol=settings_ash.tol
+
     blankline()
     print(BC.OKBLUE, BC.BOLD,"Frag_Define: Defining fragments of unit cell", BC.END)
     origtime=time.time()
@@ -141,7 +154,7 @@ def frag_define(orthogcoords,elems,cell_vectors,fragments,cell_angles=None, cell
     for i in range(len(elems)):
 
         printdebug("i : ", i)
-        members = get_molecule_members_loop_np2(orthogcoords, elems, 99, settings_ash.scale, settings_ash.tol,
+        members = get_molecule_members_loop_np2(orthogcoords, elems, 99, scale, tol,
                                             atomindex=i)
         printdebug("members:" , members)
         #print("members:", members)
@@ -197,7 +210,7 @@ def frag_define(orthogcoords,elems,cell_vectors,fragments,cell_angles=None, cell
     for m in unassigned:
         printdebug("Trying unassigned m : {} ".format(m))
         members = get_molecule_members_loop_np2(temp_extended_coords, temp_extended_elems, 99,
-                                                settings_ash.scale, settings_ash.tol, membs=m)
+                                                scale, tol, membs=m)
         el_list = [temp_extended_elems[i] for i in members]
         printdebug("members:", members)
         printdebug("el_list:", el_list)
@@ -284,18 +297,20 @@ def frag_define(orthogcoords,elems,cell_vectors,fragments,cell_angles=None, cell
     if len(all_flat) != len(orthogcoords):
         print("Number of assigned atoms ({}) not matching number of atoms in cell ({}).".format(len(all_flat), len(orthogcoords)))
         print("Fragment definition incomplete")
-        exit()
+
+        def find_missing(lst):
+            return [x for x in range(lst[0], lst[-1] + 1) if x not in lst]
+
+        if find_missing(all_flat) != []:
+            print("Missing number in sequence.")
+            print("Fragment definition incomplete")
+
+        return 1
     else:
         print("Number of assigned atoms ({}) matches number of atoms in cell ({}).".format(len(all_flat), len(orthogcoords)))
+        return 0
 
-    def find_missing(lst):
-        return [x for x in range(lst[0], lst[-1] + 1) if x not in lst]
-    if find_missing(all_flat) != []:
-        print("Missing number in sequence.")
-        print("Fragment definition incomplete")
-        exit()
 
-    print(BC.OKBLUE,"Frag_define done!",BC.END)
 
 
 #From Pymol. Not sure if useful
@@ -747,7 +762,13 @@ def create_MMcluster(orthogcoords,elems,cell_vectors,sphereradius):
     return extended_coords,extended_elems
 
 #Remove partial fragments of MM cluster
-def remove_partial_fragments(coords,elems,sphereradius,fragmentobjects):
+def remove_partial_fragments(coords,elems,sphereradius,fragmentobjects, scale=None, tol=None):
+
+    if scale is None:
+        scale=settings_ash.scale
+    if tol is None:
+        tol=settings_ash.tol
+
     print("Removing partial fragments from MM cluster")
     #Finding surfaceatoms
     origin=np.array([0.0,0.0,0.0])
@@ -773,8 +794,7 @@ def remove_partial_fragments(coords,elems,sphereradius,fragmentobjects):
             #cProfile.run('get_molecule_members_loop_np(coords, elems, 99, settings_molcrys.scale, settings_ash.tol,atomindex=surfaceatom)')
             #exit()
             #surfaceatom=0
-            members=get_molecule_members_loop_np2(coords, elems, 99, settings_ash.scale,
-                                                settings_ash.tol,atomindex=surfaceatom)
+            members=get_molecule_members_loop_np2(coords, elems, 99, scale, tol,atomindex=surfaceatom)
             #print_time_rel_and_tot(currtime, origtime)
             #currtime = time.time()
             #exit()
@@ -791,15 +811,26 @@ def remove_partial_fragments(coords,elems,sphereradius,fragmentobjects):
     print("len(found_atoms)", len(found_atoms))
     print("len(flat_fraglist)", len(flat_fraglist))
     print("final counted atoms:", count)
+
     #Going through found frags. If nuccharge of frag does not match known nuccharge it goes to deletionlist
     nuccharges=[fragmentobject.Nuccharge for fragmentobject in fragmentobjects]
-    print("nuccharges:", nuccharges)
+    #18June 2020 update. Adding masses as another discriminator.
+    masses=[fragmentobject.mass for fragmentobject in fragmentobjects]
     deletionlist=[]
     for frag in fraglist:
         el_list = [elems[i] for i in frag]
         ncharge = nucchargelist(el_list)
+        mass = totmasslist(el_list)
+
+        #Checking if valid nuccharge for fragment
         if ncharge in nuccharges:
-            pass
+            #Checking also if valid mass for fragment by subtracting agains known masses
+            #Threshold is 0.1
+            massdiffs = [abs(mass - i) for i in masses]
+            if any(i <= 0.1 for i in massdiffs) is True:
+                pass
+            else:
+                deletionlist += frag
         else:
             deletionlist+=frag
 
@@ -823,7 +854,10 @@ def reordercluster(fragment,fragmenttype):
     #print("fragment:", fragment)
     #print("fragmenttype:", fragmenttype)
     fraglists=fragmenttype.clusterfraglist
-    #print("fraglists:", fraglists)
+    if len(fraglists) == 0:
+        print(BC.FAIL, "Fragment lists for fragment-type are empty. Makes no sense (too small cluster radius?!). Exiting...", BC.END)
+        exit(1)
+
     frag_ref=fraglists[0]
     elems_frag_ref = np.array([fragment.elems[i] for i in fraglists[0]])
     coords_frag_ref = np.array([fragment.coords[i] for i in fraglists[0]])
@@ -832,8 +866,10 @@ def reordercluster(fragment,fragmenttype):
     #print("coords_frag_ref:", coords_frag_ref)
     #print_coords_all(coords_frag_ref, elems_frag_ref)
     #print("-----------")
+    #print("length fraglists", len(fraglists))
+    #print("fraglists:", fraglists)
     for fragindex,frag in enumerate(fraglists):
-        #print("i:", i)
+        #print("fragindex:", fragindex)
         #print("frag:", frag)
         if fragindex > 0:
             #print("frag:", frag)
@@ -885,14 +921,15 @@ def pointchargeupdate(fragment,fragmenttype,chargelist):
 
 
 #Calculate atomic charges for each fragment of Cluster. Assign charges to Cluster object via pointchargeupdate
-# TODO: In future also calculate LJ parameters here
 #ORCA-specific function
-def gasfragcalc_ORCA(fragmentobjects,Cluster,chargemodel,orcadir,orcasimpleinput,orcablocks,NUMPROC, brokensym=None, HSmult=None, atomstoflip=None):
+def gasfragcalc_ORCA(fragmentobjects,Cluster,chargemodel,orcadir,orcasimpleinput,orcablocks,NUMPROC,
+                     brokensym=None, HSmult=None, atomstoflip=None):
     blankline()
-    print("Now calculating atom charges for each fragment type in cluster")
-    for fragmentobject in fragmentobjects:
+    print(BC.OKBLUE, BC.BOLD, "Now calculating atom charges for each fragment type in cluster", BC.END)
+    #print(BC.OKBLUE, BC.BOLD, "Frag_Define: Defining fragments of unit cell", BC.END)
+    for id, fragmentobject in enumerate(fragmentobjects):
         blankline()
-        print("Fragmentobject:", fragmentobject.Name)
+        print("Fragmentobject:", BC.WARNING, BC.BOLD, fragmentobject.Name, BC.END)
         #Charge-model info to add to inputfile
         chargemodelline = chargemodel_select(chargemodel)
 
@@ -902,33 +939,58 @@ def gasfragcalc_ORCA(fragmentobjects,Cluster,chargemodel,orcadir,orcasimpleinput
         write_xyzfile(fragelems, fragcoords, "fragment")
         gasfrag=Fragment(coords=fragcoords,elems=fragelems)
 
-        print("Defined gasfrag:", gasfrag)
-        print(gasfrag.__dict__)
+        #print("Defined gasfrag:", gasfrag)
+        #print(gasfrag.__dict__)
         #Creating ORCA theory object with fragment
-        if brokensym==True:
-            ORCASPcalculation = ORCATheory(orcadir=orcadir, fragment=gasfrag, charge=fragmentobject.Charge,
-                                   mult=fragmentobject.Mult, orcasimpleinput=orcasimpleinput,
-                                   orcablocks=orcablocks, extraline=chargemodelline, brokensym=brokensym, HSmult=HSmult, atomstoflip=atomstoflip)
+
+        #Assuming mainfrag is fragmentobject 0 and only mainfrag can be Broken-symmetry
+        if id == 0:
+            if brokensym==True:
+                ORCASPcalculation = ORCATheory(orcadir=orcadir, fragment=gasfrag, charge=fragmentobject.Charge,
+                                       mult=fragmentobject.Mult, orcasimpleinput=orcasimpleinput,
+                                       orcablocks=orcablocks, extraline=chargemodelline, brokensym=brokensym, HSmult=HSmult, atomstoflip=atomstoflip)
+            else:
+                ORCASPcalculation = ORCATheory(orcadir=orcadir, fragment=gasfrag, charge=fragmentobject.Charge,
+                                       mult=fragmentobject.Mult, orcasimpleinput=orcasimpleinput,
+                                       orcablocks=orcablocks, extraline=chargemodelline)
         else:
             ORCASPcalculation = ORCATheory(orcadir=orcadir, fragment=gasfrag, charge=fragmentobject.Charge,
-                                   mult=fragmentobject.Mult, orcasimpleinput=orcasimpleinput,
-                                   orcablocks=orcablocks, extraline=chargemodelline)
+                                           mult=fragmentobject.Mult, orcasimpleinput=orcasimpleinput,
+                                           orcablocks=orcablocks, extraline=chargemodelline)
         print("ORCASPcalculation:", ORCASPcalculation)
-        print(ORCASPcalculation.__dict__)
+        #print(ORCASPcalculation.__dict__)
         #Run ORCA calculation with charge-model info
         ORCASPcalculation.run(nprocs=NUMPROC)
-        #Grab atomic charges for fragment.
 
-        atomcharges=grabatomcharges_ORCA(chargemodel,ORCASPcalculation.inputfilename+'.out')
+
+        if chargemodel == 'DDEC3' or chargemodel == 'DDEC6':
+            #Calling DDEC_calc (calls chargemol)
+            atomcharges, molmoms, voldict = DDEC_calc(elems=gasfrag.elems, theory=ORCASPcalculation,
+                                            ncores=NUMPROC, DDECmodel=chargemodel,molecule_spinmult=fragmentobject.Mult,
+                                            calcdir="DDEC_fragment"+str(id), gbwfile="orca-input.gbw")
+
+            print("atomcharges:", atomcharges)
+            #NOTE: We are not going to derive DDEC LJ parameters here but rather at end of SP loop.
+        else:
+            #Grab atomic charges for fragment.
+            atomcharges=grabatomcharges_ORCA(chargemodel,ORCASPcalculation.inputfilename+'.out')
+
+
         print("Elements:", gasfrag.elems)
         print("Gasloop atomcharges:", atomcharges)
+        assert len(atomcharges) != 0, "Atomcharges list is empty. Something went wrong with grabbing charges"
+
         #Updating charges inside mainfrag/counterfrag object
         fragmentobject.add_charges(atomcharges)
         #Assign pointcharges to each atom of MM cluster.
         pointchargeupdate(Cluster,fragmentobject,atomcharges)
-        #Keep backup of ORCA outputfile
+        #Keep backup of ORCA outputfile and GBW file
         shutil.copy(ORCASPcalculation.inputfilename + '.out', fragmentobject.Name + '.out')
         shutil.copyfile(ORCASPcalculation.inputfilename + '.out', './SPloop-files/'+fragmentobject.Name+'-Gascalc' + '.out')
+        shutil.copyfile(ORCASPcalculation.inputfilename + '.gbw', './SPloop-files/'+fragmentobject.Name+'-Gascalc' + '.gbw')
+        if id ==0:
+            shutil.copy(ORCASPcalculation.inputfilename + '.gbw', 'lastorbitals.gbw')
+
         #Clean up ORCA job.
         ORCASPcalculation.cleanup()
         blankline()
@@ -951,8 +1013,8 @@ def gasfragcalc_xTB(fragmentobjects,Cluster,chargemodel,xtbdir,xtbmethod,NUMPROC
         write_xyzfile(fragelems, fragcoords, "fragment")
         gasfrag=Fragment(coords=fragcoords,elems=fragelems)
 
-        print("Defined gasfrag:", gasfrag)
-        print(gasfrag.__dict__)
+        #print("Defined gasfrag:", gasfrag)
+        #print(gasfrag.__dict__)
         #Creating xTB theory object with fragment
         xTBSPcalculation = xTBTheory(xtbdir=xtbdir, fragment=gasfrag, charge=fragmentobject.Charge,
                                    mult=fragmentobject.Mult, xtbmethod=xtbmethod)
