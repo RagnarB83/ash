@@ -916,5 +916,5 @@ def QMregionfragexpand(fragment=None,initial_atoms=None, radius=None):
 def distance_between_atoms(fragment=None, atom1=None, atom2=None):
     atom1_coords=fragment.coords[atom1]
     atom2_coords=fragment.coords[atom2]
-    dist=functions_coords.distance(atom1_coords,atom2_coords)
+    dist=distance(atom1_coords,atom2_coords)
     return dist
