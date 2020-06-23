@@ -2638,8 +2638,12 @@ class PySCFTheory:
 # Fragment class
 class Fragment:
     def __init__(self, coordsstring=None, fragfile=None, xyzfile=None, pdbfile=None, coords=None, elems=None, connectivity=None,
-                 atomcharges=None, atomtypes=None, conncalc=True, scale=None, tol=None):
-        print("Defining new ASH fragment object")
+                 atomcharges=None, atomtypes=None, conncalc=True, scale=None, tol=None, printlevel=2):
+        #Printlevel
+        self.printlevel=printlevel
+
+        if self.printlevel => 2:
+            print("Defining new ASH fragment object")
         self.energy = None
         self.elems=[]
         self.coords=[]
@@ -2683,7 +2687,8 @@ class Fragment:
     def update_attributes(self):
         self.nuccharge = nucchargelist(self.elems)
         self.numatoms = len(self.coords)
-        print("Fragment numatoms:", self.numatoms)
+        if self.printlevel = > 2:
+            print("Fragment numatoms:", self.numatoms)
         self.atomlist = list(range(0, self.numatoms))
         #Unnecessary alias ? Todo: Delete
         self.allatoms = self.atomlist
@@ -2692,10 +2697,12 @@ class Fragment:
     #Add coordinates from geometry string. Will replace.
     #Todo: Needs more work as elems and coords may be lists or numpy arrays
     def add_coords_from_string(self, coordsstring, scale=None, tol=None):
-        print("Getting coordinates from string:", coordsstring)
+        if self.printlevel = > 2:
+            print("Getting coordinates from string:", coordsstring)
         if len(self.coords)>0:
-            print("Fragment already contains coordinates")
-            print("Adding extra coordinates")
+            if self.printlevel = > 2:
+                print("Fragment already contains coordinates")
+                print("Adding extra coordinates")
         coordslist=coordsstring.split('\n')
         for count, line in enumerate(coordslist):
             if len(line)> 1:
@@ -2705,7 +2712,8 @@ class Fragment:
         self.calc_connectivity(scale=scale, tol=tol)
     #Replace coordinates by providing elems and coords lists. Optional: recalculate connectivity
     def replace_coords(self, elems, coords, conn=False, scale=None, tol=None):
-        print("Replacing coordinates in fragment.")
+        if self.printlevel = > 2:
+            print("Replacing coordinates in fragment.")
         self.elems=elems
         self.coords=coords
         self.update_attributes()
@@ -2716,10 +2724,12 @@ class Fragment:
         self.elems=[]
         self.connectivity=[]
     def add_coords(self, elems,coords,conn=True, scale=None, tol=None):
-        print("Adding coordinates to fragment.")
+        if self.printlevel = > 2:
+            print("Adding coordinates to fragment.")
         if len(self.coords)>0:
-            print("Fragment already contains coordinates")
-            print("Adding extra coordinates")
+            if self.printlevel = > 2:
+                print("Fragment already contains coordinates")
+                print("Adding extra coordinates")
         print(elems)
         print(type(elems))
         self.elems = self.elems+list(elems)
@@ -2728,7 +2738,8 @@ class Fragment:
         if conn==True:
             self.calc_connectivity(scale=scale, tol=tol)
     def print_coords(self):
-        print("Defined coordinates (Å):")
+        if self.printlevel = > 2:
+            print("Defined coordinates (Å):")
         print_coords_all(self.coords,self.elems)
     #Read Amber coordinate file?
     def read_amberinpcrdfile(self,filename,conncalc=False):
@@ -2744,8 +2755,8 @@ class Fragment:
         pass
     #Read PDB file
     def read_pdbfile(self,filename,conncalc=True, scale=None, tol=None):
-
-        print("Reading coordinates from PDBfile \"{}\" into fragment".format(filename))
+        if self.printlevel = > 2:
+            print("Reading coordinates from PDBfile \"{}\" into fragment".format(filename))
         residuelist=[]
         #If elemcolumn found
         elemcol=[]
@@ -2788,7 +2799,8 @@ class Fragment:
             self.calc_connectivity(scale=scale, tol=tol)
     #Read XYZ file
     def read_xyzfile(self,filename, scale=None, tol=None):
-        print("Reading coordinates from XYZfile {} into fragment".format(filename))
+        if self.printlevel = > 2:
+            print("Reading coordinates from XYZfile {} into fragment".format(filename))
         with open(filename) as f:
             for count,line in enumerate(f):
                 if count == 0:
@@ -2811,23 +2823,28 @@ class Fragment:
         return subcoords,subelems
     #Calculate connectivity (list of lists) of coords
     def calc_connectivity(self, conndepth=99, scale=None, tol=None ):
-        print("Calculating connectivity of fragment...")
+        if self.printlevel = > 2:
+            print("Calculating connectivity of fragment...")
 
         if len(self.coords) > 10000:
-            print("Atom number > 10K. Connectivity calculation could take a while")
+            if self.printlevel = > 2:
+                print("Atom number > 10K. Connectivity calculation could take a while")
 
         if scale == None:
             try:
                 scale = settings_ash.scale
                 tol = settings_ash.tol
-                print("Using global scale and tol parameters from settings_ash. Scale: {} Tol: {} ".format(scale, tol ))
+                if self.printlevel = > 2:
+                    print("Using global scale and tol parameters from settings_ash. Scale: {} Tol: {} ".format(scale, tol ))
 
             except:
                 scale = 1
                 tol = 0.1
-                print("Exception: Using hard-coded scale and tol parameters. Scale: {} Tol: {} ".format(scale, tol ))
+                if self.printlevel = > 2:
+                    print("Exception: Using hard-coded scale and tol parameters. Scale: {} Tol: {} ".format(scale, tol ))
         else:
-            print("Using scale: {} and tol: {} ".format(scale, tol))
+            if self.printlevel = > 2:
+                print("Using scale: {} and tol: {} ".format(scale, tol))
         # Calculate connectivity by looping over all atoms
         found_atoms = []
         fraglist = []
@@ -2880,10 +2897,12 @@ class Fragment:
             for el, c in zip(self.elems, self.coords):
                 line = "{:4} {:14.8f} {:14.8f} {:14.8f}".format(el, c[0], c[1], c[2])
                 ofile.write(line + '\n')
-        print("Wrote XYZ file:", xyzfilename)
+        if self.printlevel = > 2:
+            print("Wrote XYZ file:", xyzfilename)
     #Print system-fragment information to file. Default name of file: "fragment.ygg
     def print_system(self,filename='fragment.ygg'):
-        print("Printing fragment to disk:", filename)
+        if self.printlevel = > 2:
+            print("Printing fragment to disk:", filename)
 
         #Setting atomcharges, fragmenttype_labels and atomtypes to dummy lists if empty
         if len(self.atomcharges)==0:
@@ -2916,7 +2935,8 @@ class Fragment:
 
     #Reading fragment from file. File created from Fragment.print_system
     def read_fragment_from_file(self, fragfile):
-        print("Reading ASH fragment from file:", fragfile)
+        if self.printlevel = > 2:
+            print("Reading ASH fragment from file:", fragfile)
         coordgrab=False
         coords=[]
         elems=[]
