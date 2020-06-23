@@ -2642,7 +2642,7 @@ class Fragment:
         #Printlevel
         self.printlevel=printlevel
 
-        if self.printlevel => 2:
+        if self.printlevel >= 2:
             print("Defining new ASH fragment object")
         self.energy = None
         self.elems=[]
