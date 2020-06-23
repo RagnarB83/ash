@@ -913,3 +913,8 @@ def QMregionfragexpand(fragment=None,initial_atoms=None, radius=None):
     atomlist = np.unique(atomlist).tolist()
     return atomlist
 
+def Distance_between_atoms(fragment=None, atom1=None, atom2=None):
+    atom1_coords=fragment.coords[atom1]
+    atom2_coords=fragment.coords[atom2]
+    dist=functions_coords.distance(atom1_coords,atom2_coords)
+    return dist
