@@ -1133,10 +1133,7 @@ def PhotoElectronSpectrum(theory=None, fragment=None, InitialState_charge=None, 
         # TODO
         print(bcolors.OKGREEN, "AO_overl, mos_init, mos_final, dets.1, dets.2", bcolors.ENDC)
 
-
-
-
-
+        finaldysonnorms = []
         for fstate in Finalstates:
             if Densities == 'SCF' or Densities == 'All':
                 os.chdir('Calculated_densities')
@@ -1151,7 +1148,7 @@ def PhotoElectronSpectrum(theory=None, fragment=None, InitialState_charge=None, 
             ###################
             # Run Wfoverlap to calculate Dyson norms. Will write to wfovl.out.  Will take a while for big systems.
             print("")
-            finaldysonnorms = []
+
             # Check if binary exists
             if os.path.exists(path_wfoverlap) is False:
                 print("Path {} does NOT exist !".format(path_wfoverlap))
@@ -1247,14 +1244,16 @@ def PhotoElectronSpectrum(theory=None, fragment=None, InitialState_charge=None, 
             print(bcolors.OKMAGENTA, "Densities option: All . Will do TDDFT-gradient calculation for each TDDFT-state (expensive)", bcolors.ENDC)
             os.chdir('Calculated_densities')
 
+            #Adding Keepdens and Engrad to do TDDFT gradient
+            theory.orcasimpleinput=theory.orcasimpleinput+' KeepDens Engrad'
+
             for findex, fstate in enumerate(Finalstates):
                 print(bcolors.OKGREEN, "Calculating Final State SCF + TDDFT DENSITY CALCULATION. Spin Multiplicity: ", fstate.mult, bcolors.ENDC)
                 theory.charge = fstate.charge
                 theory.mult = fstate.mult
                 shutil.copyfile('../'+'Final_State_mult' + str(fstate.mult) + '.gbw','Final_State_mult' + str(fstate.mult) + '.gbw')
                 os.rename('Final_State_mult' + str(fstate.mult) + '.gbw', theory.inputfilename + '.gbw')
-                #Adding Keepdens and Engrad to do TDDFT gradient
-                theory.orcasimpleinput=theory.orcasimpleinput+' KeepDens Engrad' \
+
 
                 #Looping over each TDDFT-state and doing TDDFT-calc
                 for tddftstate in range(1,numionstates):
@@ -1487,4 +1486,4 @@ def plot_PES_Spectrum(IPs=None, dysonnorms=None, mos_alpha=None, mos_beta=None, 
     plt.legend(shadow=True, fontsize='small')
     plt.savefig(plotname + '.png', format='png', dpi=200)
     # plt.show()
-
+    print(BC.OKGREEN,"ALL DONE!", BC.END)
