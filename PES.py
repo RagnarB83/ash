@@ -753,12 +753,7 @@ def Gaussian(x, mu, strength, sigma):
 # MAIN program
 ########################
 
-#PhotoElectronSpectrum function
-#Provide theory
-
-
 # Calculate PES spectra using the Dyson orbital approach.
-#path_wfoverlap='/home/bjornsson/sharc-master/bin/wfoverlap.x'
 
 def PhotoElectronSpectrum(theory=None, fragment=None, InitialState_charge=None, Initialstate_mult=None,
                           Ionizedstate_charge=None, Ionizedstate_mult=None, numionstates=50, path_wfoverlap=None, tda=True,

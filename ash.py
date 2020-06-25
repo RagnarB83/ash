@@ -180,6 +180,15 @@ def displacement_QMMMrun(arglist):
 #Single-point energy function
 #Should be used by user instead of run.
 def Singlepoint(fragment=None, theory=None, Grad=False):
+    '''
+    The Singlepoint function carries out a single-point energy calculation
+    :param fragment:
+    :type fragment: ASH object of class Fragment
+    :param theory:
+    :type theory: ASH theory object
+    :param Grad: whether to do Gradient or not.
+    :type Grad: Boolean.
+    '''
     if fragment is None or theory is None:
         print("Singlepoint requires a fragment and a theory object")
 
@@ -548,9 +557,9 @@ def NumFreq(fragment=None, theory=None, npoint=1, displacement=0.0005, hessatoms
 
     #Print out thermochemistry
     if theory.__class__.__name__ == "QMMMTheory":
-        thermochemcalc(frequencies,hessatoms, fragment, theory.qm_theory.mult, temp=298.18,pressure=1)
+        Thermochemistry = thermochemcalc(frequencies,hessatoms, fragment, theory.qm_theory.mult, temp=298.18,pressure=1)
     else:
-        thermochemcalc(frequencies,hessatoms, fragment, theory.mult, temp=298.18,pressure=1)
+        Thermochemistry = thermochemcalc(frequencies,hessatoms, fragment, theory.mult, temp=298.18,pressure=1)
 
 
     #Write Hessian to file
@@ -571,17 +580,13 @@ def NumFreq(fragment=None, theory=None, npoint=1, displacement=0.0005, hessatoms
     print("Wrote dummy ORCA outputfile with frequencies and normal modes: orcahessfile.hess_dummy.out")
     print("Can be used for visualization")
 
-
-
-
-
-
-
-
-
     #TODO: https://pages.mtu.edu/~msgocken/ma5630spring2003/lectures/diff/diff/node6.html
     blankline()
     print(BC.WARNING, BC.BOLD, "------------NUMERICAL FREQUENCIES END-------------", BC.END)
+
+    #Thermochemistry object. Should contain frequencies, zero-point energy, enthalpycorr, gibbscorr, etc.
+
+    return Thermochemistry
 
 #Molecular dynamics class
 class MolecularDynamics:
