@@ -863,7 +863,10 @@ def PhotoElectronSpectrum(theory=None, fragment=None, InitialState_charge=None, 
         theory.charge=stateI.charge
         theory.mult=stateI.mult
         theory.extraline=theory.extraline+"%method\n"+"frozencore FC_NONE\n"+"end\n"
-
+        # For orbital analysis
+        if 'Normalprint' not in theory.orcasimpleinput:
+            theory.orcasimpleinput = theory.orcasimpleinput + ' Normalprint'
+            
         if brokensym is True:
             theory.brokensym=True
             theory.HSmult=HSmult
@@ -871,9 +874,7 @@ def PhotoElectronSpectrum(theory=None, fragment=None, InitialState_charge=None, 
             #Making sure UKS always present if brokensym feature active. Important for open-shell singlets
             if 'UKS' not in theory.orcasimpleinput:
                 theory.orcasimpleinput = theory.orcasimpleinput + ' UKS'
-            #For orbital analysis
-            if 'Normalprint' not in theory.orcasimpleinput:
-                theory.orcasimpleinput = theory.orcasimpleinput + ' Normalprint'
+
 
         #Init_State1_energy = theory.run(current_coords=fragment.coords, elems=fragment.elems)
         print(bcolors.OKGREEN, "Calculating Initial State SCF.",bcolors.ENDC)
