@@ -532,13 +532,11 @@ def NumFreq(fragment=None, theory=None, npoint=1, displacement=0.0005, hessatoms
 
     #Diagonalize mass-weighted Hessian
     # Get partial matrix by deleting atoms not present in list.
-    print("x elems:", elems)
     hesselems = get_partial_list(allatoms, hessatoms, elems)
     hessmasses = get_partial_list(allatoms, hessatoms, fragment.list_of_masses)
     hesscoords = [fragment.coords[i] for i in hessatoms]
     print("Elements:", hesselems)
     print("Masses used:", hessmasses)
-    print("hesscoords:", hesscoords)
     #Todo: Note. elems is redefined here. Not ideal
     frequencies, nmodes, numatoms, elems, evectors, atomlist, masses = diagonalizeHessian(hessian,hessmasses,hesselems)
     #frequencies=diagonalizeHessian(hessian,hessmasses,hesselems)[0]
