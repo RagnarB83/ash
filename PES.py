@@ -748,6 +748,68 @@ def Gaussian(x, mu, strength, sigma):
     return bandshape
 
 
+#Grab determinants from CASSCF-ORCA output with option PrintWF det
+def grab_dets_from_CASSCF_output(file):
+
+    class state_dets():
+        def __init__(self, root,energy):
+            self.root = root
+            self.energy = energy
+            self.determinants = {}
+            self.configurations = {}
+    list_of_states=[]
+    detgrab=False
+    with open(file) as f:
+        for line in f:
+            if detgrab is True:
+                if '[' in line and 'CFG' not in line:
+                    det = line.split()[0]
+                    coeff = float(line.split()[-1])
+                    state.determinants[det] = coeff
+                if '[' in line and 'CFG' in line:
+                    cfg = line.split()[0]
+                    coeff = float(line.split()[-1])
+                    state.configurations[cfg] = coeff
+                if 'ROOT' in line:
+                    root=int(line.split()[1][0])
+                    energy = float(line.split()[3])
+                    state = state_dets(root,energy)
+                    list_of_states.append(state)
+
+            if '  Extended CI Printing (values > TPrintWF)' in line:
+                detgrab=True
+
+#Format determinants from ORCA-CASSCF
+def format_ci_vectors(ci_vectors):
+    print("ci_vectors:", ci_vectors)
+    # get nstates, norb and ndets
+    alldets=set()
+    for dets in ci_vectors:
+        for key in dets:
+            alldets.add(key)
+    ndets=len(alldets)
+    nstates=len(ci_vectors)
+    norb=len(next(iter(alldets)))
+
+    string='%i %i %i\n' % (nstates,norb,ndets)
+    for det in sorted(alldets,reverse=True):
+        for o in det:
+            if o==0:
+                string+='e'
+            elif o==1:
+                string+='a'
+            elif o==2:
+                string+='b'
+            elif o==3:
+                string+='d'
+        for istate in range(len(ci_vectors)):
+            if det in ci_vectors[istate]:
+                string+=' %11.7f ' % ci_vectors[istate][det]
+            else:
+                string+=' %11.7f ' % 0.
+        string+='\n'
+    return string
+
 
 ########################
 # MAIN program
@@ -864,7 +926,7 @@ def PhotoElectronSpectrum(theory=None, fragment=None, InitialState_charge=None, 
         theory.mult=stateI.mult
         theory.extraline=theory.extraline+"%method\n"+"frozencore FC_NONE\n"+"end\n"
         # For orbital analysis
-        if 'Normalprint' not in theory.orcasimpleinput:
+        if 'NORMALPRINT' not in theory.orcasimpleinput.upper():
             theory.orcasimpleinput = theory.orcasimpleinput + ' Normalprint'
             
         if brokensym is True:
@@ -872,7 +934,7 @@ def PhotoElectronSpectrum(theory=None, fragment=None, InitialState_charge=None, 
             theory.HSmult=HSmult
             theory.atomstoflip=atomstoflip
             #Making sure UKS always present if brokensym feature active. Important for open-shell singlets
-            if 'UKS' not in theory.orcasimpleinput:
+            if 'UKS' not in theory.orcasimpleinput.upper():
                 theory.orcasimpleinput = theory.orcasimpleinput + ' UKS'
 
 
@@ -1011,7 +1073,7 @@ def PhotoElectronSpectrum(theory=None, fragment=None, InitialState_charge=None, 
 
     blankline()
     blankline()
-    print("All SCF and TDDFT calculations done!")
+    print("All SCF and TDDFT calculations done (unless Densities=All)!")
     blankline()
     blankline()
     FinalIPs = []
@@ -1270,6 +1332,13 @@ def PhotoElectronSpectrum(theory=None, fragment=None, InitialState_charge=None, 
                         # Boolean for whether no_tda is on or not
                         no_tda = False
                     theory.extraline = "%method\n"+"frozencore FC_NONE\n"+"end\n" + tddftstring
+
+                    #Turning off stability analysis. Not available for gradient run.
+                    if 'stabperform true' in theory.orcablocks:
+                        print("Turning off stability analysis.")
+                        theory.orcablocks=theory.orcablocks.replace("stabperform true", "stabperform false")
+
+
                     Singlepoint(fragment=fragment, theory=theory)
                     # TDDFT state done. Renaming cisp and cisr files
                     os.rename('orca-input.cisp', 'Final_State_mult' + str(fstate.mult)+'TDDFTstate_'+str(tddftstate)+'.cisp')
