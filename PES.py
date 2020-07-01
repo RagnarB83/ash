@@ -930,17 +930,14 @@ def PhotoElectronSpectrum(theory=None, fragment=None, InitialState_charge=None, 
             print("Modifying CASSCF block for initial state, CAS({},{})".format(CAS_Initial[0],CAS_Initial[1]))
             print("{} electrons in {} orbitals".format(CAS_Initial[0],CAS_Initial[1]))
 
-            #Removing nel/norb/nroots linese
+            #Removing nel/norb/nroots lines
             for line in theory.orcablocks.split('\n'):
-                print("line:", line)
                 if 'nel' in line:
-                    print("Here. line:", line)
-                    theory.orcablocks=theory.orcablocks.replace(line,'\n')
+                    theory.orcablocks=theory.orcablocks.replace(line,'')
                 if 'norb' in line:
-                    theory.orcablocks=theory.orcablocks.replace(line,'\n')
+                    theory.orcablocks=theory.orcablocks.replace(line,'')
                 if 'nroots' in line:
-                    theory.orcablocks=theory.orcablocks.replace(line,'\n')
-            print(" theory.orcablocks: ",  theory.orcablocks )
+                    theory.orcablocks=theory.orcablocks.replace(line,'')
             add=False
             for line in theory.orcablocks:
                 if add is True:
@@ -1027,14 +1024,14 @@ def PhotoElectronSpectrum(theory=None, fragment=None, InitialState_charge=None, 
             print("Modifying CASSCF block for final state, CAS({},{})".format(CAS_Final[0],CAS_Final[1]))
             print("{} electrons in {} orbitals".format(CAS_Final[0],CAS_Final[0]))
 
-            #Removing nel/norb/nroots linese
-            for line in theory.orcablocks:
+            #Removing nel/norb/nroots lines
+            for line in theory.orcablocks.split('\n'):
                 if 'nel' in line:
-                    theory.orcablocks.replace(line,'')
+                    theory.orcablocks=theory.orcablocks.replace(line,'')
                 if 'norb' in line:
-                    theory.orcablocks.replace(line,'')
+                    theory.orcablocks=theory.orcablocks.replace(line,'')
                 if 'nroots' in line:
-                    theory.orcablocks.replace(line,'')
+                    theory.orcablocks=theory.orcablocks.replace(line,'')
             add=False
             for line in theory.orcablocks:
                 if add is True:
