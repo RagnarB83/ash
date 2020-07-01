@@ -761,11 +761,29 @@ def grab_dets_from_CASSCF_output(file):
     detgrab=False
     with open(file) as f:
         for line in f:
+            if 'DENSITY MATRIX' in line:
+                detgrab=False
             if detgrab is True:
                 if '[' in line and 'CFG' not in line:
                     det = line.split()[0]
+                    #print("det:", det)
+                    detlist=[i for i in det.replace('[','').replace(']','')]
+                    detlist2=[]
+                    #print("detlist:", detlist)
+                    #Sticking with labelling: 3: doubly occ, 0: empty, 1 for up-alpha, 2 for down-beta
+                    for j in detlist:
+                        if j == '2':
+                            detlist2.append(3)
+                        elif j == '0':
+                            detlist2.append(0)
+                        elif j == 'u':
+                            detlist2.append(1)
+                        elif j == 'd':
+                            detlist2.append(2)
+                    #print("detlist2:", detlist2)
+                    det_tuple=tuple(detlist2)
                     coeff = float(line.split()[-1])
-                    state.determinants[det] = coeff
+                    state.determinants[det_tuple] = coeff
                 if '[' in line and 'CFG' in line:
                     cfg = line.split()[0]
                     coeff = float(line.split()[-1])
@@ -778,38 +796,7 @@ def grab_dets_from_CASSCF_output(file):
 
             if '  Extended CI Printing (values > TPrintWF)' in line:
                 detgrab=True
-
-#Format determinants from ORCA-CASSCF
-def format_ci_vectors(ci_vectors):
-    print("ci_vectors:", ci_vectors)
-    # get nstates, norb and ndets
-    alldets=set()
-    for dets in ci_vectors:
-        for key in dets:
-            alldets.add(key)
-    ndets=len(alldets)
-    nstates=len(ci_vectors)
-    norb=len(next(iter(alldets)))
-
-    string='%i %i %i\n' % (nstates,norb,ndets)
-    for det in sorted(alldets,reverse=True):
-        for o in det:
-            if o==0:
-                string+='e'
-            elif o==1:
-                string+='a'
-            elif o==2:
-                string+='b'
-            elif o==3:
-                string+='d'
-        for istate in range(len(ci_vectors)):
-            if det in ci_vectors[istate]:
-                string+=' %11.7f ' % ci_vectors[istate][det]
-            else:
-                string+=' %11.7f ' % 0.
-        string+='\n'
-    return string
-
+    return list_of_states
 
 ########################
 # MAIN program
@@ -819,7 +806,8 @@ def format_ci_vectors(ci_vectors):
 
 def PhotoElectronSpectrum(theory=None, fragment=None, InitialState_charge=None, Initialstate_mult=None,
                           Ionizedstate_charge=None, Ionizedstate_mult=None, numionstates=50, path_wfoverlap=None, tda=True,
-                          brokensym=False, HSmult=None, atomstoflip=None, initialorbitalfiles=None, Densities='SCF', densgridvalue=100):
+                          brokensym=False, HSmult=None, atomstoflip=None, initialorbitalfiles=None, Densities='SCF', densgridvalue=100,
+                          CAS=False, CAS_Initial=None, CAS_Final = None):
     blankline()
     print(bcolors.OKGREEN,"-------------------------------------------------------------------",bcolors.ENDC)
     print(bcolors.OKGREEN,"PhotoElectronSpectrum: Calculating PES spectra via TDDFT and Dyson-norm approach",bcolors.ENDC)
@@ -913,7 +901,8 @@ def PhotoElectronSpectrum(theory=None, fragment=None, InitialState_charge=None, 
 
     print("")
     print(bcolors.OKBLUE,"Calculated ion states:", numionstates, bcolors.ENDC)
-    print(bcolors.OKBLUE,"TDDFT-calculated ion states:", numionstates-1, bcolors.ENDC)
+    if CAS is False:
+        print(bcolors.OKBLUE,"TDDFT-calculated ion states:", numionstates-1, bcolors.ENDC)
     print("")
 
 
@@ -921,10 +910,23 @@ def PhotoElectronSpectrum(theory=None, fragment=None, InitialState_charge=None, 
     #ORCA-theory
     if theory.__class__.__name__ == "ORCATheory":
 
-        #Initial state energy
+        #Initial state
         theory.charge=stateI.charge
         theory.mult=stateI.mult
         theory.extraline=theory.extraline+"%method\n"+"frozencore FC_NONE\n"+"end\n"
+
+        if CAS is True:
+            print("Modifying CASSCF block for initial state, CAS({},{})".format(CAS_Initial[0],CAS_Initial[1]))
+            print("{} electrons in {} orbitals".format(CAS_Initial[0],CAS_Initial[0]))
+
+            for line in theory.orcablocks:
+                if 'nel' in line:
+                    theory.orcablocks.replace(line,"nel {}\n".format(CAS_Initial[0]))
+                if 'norb' in line:
+                    theory.orcablocks.replace(line,"norb {}\n".format(CAS_Initial[1]))
+                if 'nroots' in line:
+                    theory.orcablocks.replace(line,"nroots 1\n")
+
         # For orbital analysis
         if 'NORMALPRINT' not in theory.orcasimpleinput.upper():
             theory.orcasimpleinput = theory.orcasimpleinput + ' Normalprint'
@@ -995,22 +997,37 @@ def PhotoElectronSpectrum(theory=None, fragment=None, InitialState_charge=None, 
             exit()
 
 
-        #Final-state TDDFT calc
+        #Final-state  calc. TDDFT or CASSCF
         #Adding TDDFT block to inputfile
-        if tda==False:
-            # Boolean for whether no_tda is on or not
-            no_tda = True
-            tddftstring="%tddft\n"+"tda false\n"+"nroots " + str(numionstates-1) + '\n'+"maxdim 15\n"+"end\n"+"\n"
+        if CAS is True:
+            print("Modifying CASSCF block for final state, CAS({},{})".format(CAS_Final[0],CAS_Final[1]))
+            print("{} electrons in {} orbitals".format(CAS_Final[0],CAS_Final[0]))
+
+            for line in theory.orcablocks:
+                if 'nel' in line:
+                    theory.orcablocks.replace(line,"nel {}\n".format(CAS_Final[0]))
+                if 'norb' in line:
+                    theory.orcablocks.replace(line,"norb {}\n".format(CAS_Final[1]))
+                if 'nroots' in line:
+                    theory.orcablocks.replace(line,"nroots {}\n".format(numionstates))
         else:
-            tddftstring="%tddft\n"+"tda true\n"+"nroots " + str(numionstates-1) + '\n'+"maxdim 15\n"+"end\n"+"\n"
-            # Boolean for whether no_tda is on or not
-            no_tda = False
-        theory.extraline=theory.extraline+tddftstring
+            if tda==False:
+                # Boolean for whether no_tda is on or not
+                no_tda = True
+                tddftstring="%tddft\n"+"tda false\n"+"nroots " + str(numionstates-1) + '\n'+"maxdim 15\n"+"end\n"+"\n"
+            else:
+                tddftstring="%tddft\n"+"tda true\n"+"nroots " + str(numionstates-1) + '\n'+"maxdim 15\n"+"end\n"+"\n"
+                # Boolean for whether no_tda is on or not
+                no_tda = False
+            theory.extraline=theory.extraline+tddftstring
         #Final_State1_energy = theory.run( current_coords=fragment.coords, elems=fragment.elems)
         blankline()
 
         for findex,fstate in enumerate(Finalstates):
-            print(bcolors.OKGREEN, "Calculating Final State SCF + TDDFT. Spin Multiplicity: ", fstate.mult, bcolors.ENDC)
+            if CAS is False:
+                print(bcolors.OKGREEN, "Calculating Final State SCF + TDDFT. Spin Multiplicity: ", fstate.mult, bcolors.ENDC)
+            else:
+                print(bcolors.OKGREEN, "Calculating Final State CASSCF Spin Multiplicity: ", fstate.mult, bcolors.ENDC)
             theory.charge=fstate.charge
             theory.mult=fstate.mult
             if initialorbitalfiles is not None:
@@ -1020,7 +1037,8 @@ def PhotoElectronSpectrum(theory=None, fragment=None, InitialState_charge=None, 
 
 
             Singlepoint(fragment=fragment, theory=theory)
-            fstate.energy = scfenergygrab("orca-input.out")
+            if CAS is False:
+                fstate.energy = scfenergygrab("orca-input.out")
             #Saveing GBW and CIS file
             shutil.copyfile(theory.inputfilename + '.gbw', './' + 'Final_State_mult' + str(fstate.mult) + '.gbw')
             shutil.copyfile(theory.inputfilename + '.cis', './' + 'Final_State_mult' + str(fstate.mult) + '.cis')
@@ -1050,7 +1068,9 @@ def PhotoElectronSpectrum(theory=None, fragment=None, InitialState_charge=None, 
             #Create Cube file of electron/spin density using orca_plot for FINAL STATE
             if Densities == 'SCF' or Densities == 'All':
                 print("Density option active. Calling orca_plot to create Cube-file for Final state SCF.")
-
+                if CAS is True:
+                    print("Not implemented for CASSCF yet")
+                    exit()
                 os.chdir('Calculated_densities')
                 shutil.copyfile('../' + theory.inputfilename + '.gbw', './' + theory.inputfilename + '.gbw')
                 #Electron density
