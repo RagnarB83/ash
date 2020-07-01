@@ -872,7 +872,7 @@ def Extrapolation_twopoint(scf_energies, corr_energies, cardinals, basis_family)
     print("SCF energies are:", scf_energies[0], "and", scf_energies[1])
     print("Correlation energies are:", corr_energies[0], "and", corr_energies[1])
 
-    print("Extrapolation values used are:")
+    print("Extrapolation parameters:")
     alpha=extrapolation_parameters_dict[extrap_dict_key][0]
     beta=extrapolation_parameters_dict[extrap_dict_key][1]
     print("alpha :",alpha)
