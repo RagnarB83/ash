@@ -1012,18 +1012,33 @@ def PhotoElectronSpectrum(theory=None, fragment=None, InitialState_charge=None, 
 
         #Final-state  calc. TDDFT or CASSCF
         #Adding TDDFT block to inputfile
+        ##CAS option: State-averaged calculation for both spin multiplicities.
         if CAS is True:
             print("Modifying CASSCF block for final state, CAS({},{})".format(CAS_Final[0],CAS_Final[1]))
             print("{} electrons in {} orbitals".format(CAS_Final[0],CAS_Final[0]))
 
+            #Removing nel/norb/nroots linese
             for line in theory.orcablocks:
                 if 'nel' in line:
-                    theory.orcablocks.replace(line,"nel {}\n".format(CAS_Final[0]))
+                    theory.orcablocks.replace(line,'')
                 if 'norb' in line:
-                    theory.orcablocks.replace(line,"norb {}\n".format(CAS_Final[1]))
+                    theory.orcablocks.replace(line,'')
                 if 'nroots' in line:
-                    theory.orcablocks.replace(line,"nroots {}\n".format(numionstates))
+                    theory.orcablocks.replace(line,'')
+            add=False
+            for line in theory.orcablocks:
+                if add is True:
+                    theory.orcablocks.replace(line,line+"nel {}\n".format(CAS_Final[0])+"norb {}\n".format(CAS_Final[1])+"nroots {}\n".format(numionstates))
+                if '%casscf' in line:
+                    add=True
+            #theory.orcablocks.replace(line, "nel {}\n".format(CAS_Final[0]))
+            #theory.orcablocks.replace(line, "norb {}\n".format(CAS_Final[1]))
+            #theory.orcablocks.replace(line, "nroots {}\n".format(numionstates))
+            print(bcolors.OKGREEN, "Calculating Final State CASSCF Spin Multiplicity: ", fstate.mult, bcolors.ENDC)
+
         else:
+            #TDDFT-option SCF+TDDFT for each spin multiplicity
+            #################################################
             if tda==False:
                 # Boolean for whether no_tda is on or not
                 no_tda = True
@@ -1033,20 +1048,10 @@ def PhotoElectronSpectrum(theory=None, fragment=None, InitialState_charge=None, 
                 # Boolean for whether no_tda is on or not
                 no_tda = False
             theory.extraline=theory.extraline+tddftstring
-        #Final_State1_energy = theory.run( current_coords=fragment.coords, elems=fragment.elems)
-        blankline()
+            blankline()
 
-
-        #CAS option: State-averaged calculation for both spin multiplicities.
-        if CAS is True:
-
-        else:
-            #TDDFT-option SCF+TDDFT for each spin multiplicity
             for findex,fstate in enumerate(Finalstates):
-                if CAS is False:
-                    print(bcolors.OKGREEN, "Calculating Final State SCF + TDDFT. Spin Multiplicity: ", fstate.mult, bcolors.ENDC)
-                else:
-                    print(bcolors.OKGREEN, "Calculating Final State CASSCF Spin Multiplicity: ", fstate.mult, bcolors.ENDC)
+                print(bcolors.OKGREEN, "Calculating Final State SCF + TDDFT. Spin Multiplicity: ", fstate.mult, bcolors.ENDC)
                 theory.charge=fstate.charge
                 theory.mult=fstate.mult
                 if initialorbitalfiles is not None:
@@ -1056,8 +1061,7 @@ def PhotoElectronSpectrum(theory=None, fragment=None, InitialState_charge=None, 
 
 
                 Singlepoint(fragment=fragment, theory=theory)
-                if CAS is False:
-                    fstate.energy = scfenergygrab("orca-input.out")
+                fstate.energy = scfenergygrab("orca-input.out")
                 #Saveing GBW and CIS file
                 shutil.copyfile(theory.inputfilename + '.gbw', './' + 'Final_State_mult' + str(fstate.mult) + '.gbw')
                 shutil.copyfile(theory.inputfilename + '.cis', './' + 'Final_State_mult' + str(fstate.mult) + '.cis')
@@ -1087,9 +1091,6 @@ def PhotoElectronSpectrum(theory=None, fragment=None, InitialState_charge=None, 
                 #Create Cube file of electron/spin density using orca_plot for FINAL STATE
                 if Densities == 'SCF' or Densities == 'All':
                     print("Density option active. Calling orca_plot to create Cube-file for Final state SCF.")
-                    if CAS is True:
-                        print("Not implemented for CASSCF yet")
-                        exit()
                     os.chdir('Calculated_densities')
                     shutil.copyfile('../' + theory.inputfilename + '.gbw', './' + theory.inputfilename + '.gbw')
                     #Electron density
