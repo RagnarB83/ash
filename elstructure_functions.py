@@ -862,7 +862,10 @@ def Extrapolation_twopoint(scf_energies, corr_energies, cardinals, basis_family)
         extrap_dict_key='def2_23'
     elif basis_family=='def2' and all(x in cardinals for x in [3, 4]):
         extrap_dict_key='def2_34'
-
+    elif basis_family=='pc' and all(x in cardinals for x in [2, 3]):
+        extrap_dict_key='pc_23'
+    elif basis_family=='pc' and all(x in cardinals for x in [3, 4]):
+        extrap_dict_key='pc_34'
 
     #Print energies
     print("Basis family is:", basis_family)
