@@ -852,7 +852,7 @@ def Extrapolation_twopoint(scf_energies, corr_energies, cardinals, basis_family)
 
     if basis_family=='cc' and all(x in cardinals for x in [2, 3]):
         extrap_dict_key='cc_23'
-    elif basis_family='aug-cc' and all(x in cardinals for x in [2, 3]):
+    elif basis_family=='aug-cc' and all(x in cardinals for x in [2, 3]):
         extrap_dict_key='aug-cc_23'
     elif basis_family=='cc' and all(x in cardinals for x in [3, 4]):
         extrap_dict_key='cc_34'
