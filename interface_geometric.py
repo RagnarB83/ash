@@ -97,6 +97,11 @@ def geomeTRICOptimizer(theory=None,fragment=None, coordsystem='tric', frozenatom
                         full_coords[i] = curr_c
                 self.full_current_coords=full_coords
 
+                #Write out fragment with updated coordinates for the purpose of doing restart
+
+                fragment.replace_coords(fragment.elems, self.full_current_coords, conn=False)
+                fragment.print_system(filename='Fragment-currentgeo.ygg')
+
                 #PRINTING ACTIVE GEOMETRY IN EACH GEOMETRIC ITERATION
                 print("Current geometry (Å) in step {} (active region)".format(self.iteration_count))
                 print("---------------------------------------------------")
