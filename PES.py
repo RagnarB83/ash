@@ -930,13 +930,21 @@ def PhotoElectronSpectrum(theory=None, fragment=None, InitialState_charge=None, 
             print("Modifying CASSCF block for initial state, CAS({},{})".format(CAS_Initial[0],CAS_Initial[1]))
             print("{} electrons in {} orbitals".format(CAS_Initial[0],CAS_Initial[1]))
 
+            #Removing nel/norb/nroots linese
             for line in theory.orcablocks:
+                print("line:", line)
                 if 'nel' in line:
-                    theory.orcablocks.replace(line,"nel {}\n".format(CAS_Initial[0]))
+                    theory.orcablocks.replace(line,'')
                 if 'norb' in line:
-                    theory.orcablocks.replace(line,"norb {}\n".format(CAS_Initial[1]))
+                    theory.orcablocks.replace(line,'')
                 if 'nroots' in line:
-                    theory.orcablocks.replace(line,"nroots 1\n")
+                    theory.orcablocks.replace(line,'')
+            add=False
+            for line in theory.orcablocks:
+                if add is True:
+                    theory.orcablocks.replace(line,line+"nel {}\n".format(CAS_Initial[0])+"norb {}\n".format(CAS_Initial[1])+"nroots {}\n".format(numionstates))
+                if '%casscf' in line:
+                    add=True
 
         # For orbital analysis
         if 'NORMALPRINT' not in theory.orcasimpleinput.upper():
@@ -1031,6 +1039,7 @@ def PhotoElectronSpectrum(theory=None, fragment=None, InitialState_charge=None, 
                     theory.orcablocks.replace(line,line+"nel {}\n".format(CAS_Final[0])+"norb {}\n".format(CAS_Final[1])+"nroots {}\n".format(numionstates))
                 if '%casscf' in line:
                     add=True
+
             #theory.orcablocks.replace(line, "nel {}\n".format(CAS_Final[0]))
             #theory.orcablocks.replace(line, "norb {}\n".format(CAS_Final[1]))
             #theory.orcablocks.replace(line, "nroots {}\n".format(numionstates))
