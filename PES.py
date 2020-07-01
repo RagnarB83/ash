@@ -934,6 +934,7 @@ def PhotoElectronSpectrum(theory=None, fragment=None, InitialState_charge=None, 
             for line in theory.orcablocks.split('\n'):
                 print("line:", line)
                 if 'nel' in line:
+                    print("Here. line:", line)
                     theory.orcablocks.replace(line,'')
                 if 'norb' in line:
                     theory.orcablocks.replace(line,'')
