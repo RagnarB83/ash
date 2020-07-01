@@ -943,6 +943,7 @@ def PhotoElectronSpectrum(theory=None, fragment=None, InitialState_charge=None, 
                 if add is True:
                     print("add is true")
                     theory.orcablocks=theory.orcablocks.replace(line,line+"nel {}\n".format(CAS_Initial[0])+"norb {}\n".format(CAS_Initial[1])+"nroots {}\n".format(numionstates))
+                    break
                 if '%casscf' in line:
                     print("here add true")
                     add=True
@@ -1039,6 +1040,7 @@ def PhotoElectronSpectrum(theory=None, fragment=None, InitialState_charge=None, 
                 if add is True:
                     print("add is true")
                     theory.orcablocks=theory.orcablocks.replace(line,line+"nel {}\n".format(CAS_Final[0])+"norb {}\n".format(CAS_Final[1])+"nroots {}\n".format(numionstates))
+                    break
                 if '%casscf' in line:
                     print("here add truee")
                     add=True
