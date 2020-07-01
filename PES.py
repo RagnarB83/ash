@@ -931,7 +931,7 @@ def PhotoElectronSpectrum(theory=None, fragment=None, InitialState_charge=None, 
             print("{} electrons in {} orbitals".format(CAS_Initial[0],CAS_Initial[1]))
 
             #Removing nel/norb/nroots linese
-            for line in theory.orcablocks:
+            for line in theory.orcablocks.split('\n'):
                 print("line:", line)
                 if 'nel' in line:
                     theory.orcablocks.replace(line,'')
