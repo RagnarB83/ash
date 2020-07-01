@@ -940,6 +940,7 @@ def PhotoElectronSpectrum(theory=None, fragment=None, InitialState_charge=None, 
                     theory.orcablocks.replace(line,'')
                 if 'nroots' in line:
                     theory.orcablocks.replace(line,'')
+            print(" theory.orcablocks: ",  theory.orcablocks )
             add=False
             for line in theory.orcablocks:
                 if add is True:
