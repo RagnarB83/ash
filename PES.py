@@ -935,11 +935,11 @@ def PhotoElectronSpectrum(theory=None, fragment=None, InitialState_charge=None, 
                 print("line:", line)
                 if 'nel' in line:
                     print("Here. line:", line)
-                    theory.orcablocks.replace(line,'\n')
+                    theory.orcablocks=theory.orcablocks.replace(line,'\n')
                 if 'norb' in line:
-                    theory.orcablocks.replace(line,'\n')
+                    theory.orcablocks=theory.orcablocks.replace(line,'\n')
                 if 'nroots' in line:
-                    theory.orcablocks.replace(line,'\n')
+                    theory.orcablocks=theory.orcablocks.replace(line,'\n')
             print(" theory.orcablocks: ",  theory.orcablocks )
             add=False
             for line in theory.orcablocks:
