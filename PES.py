@@ -714,10 +714,21 @@ def checkORCAfinished(file):
                 return True
 
 def scfenergygrab(file):
+    string='Total Energy       :'
+
     with open(file) as f:
         for line in f:
-            if 'Total Energy       :' in line:
+            if string in line:
                 Energy=float(line.split()[-4])
+    return Energy
+
+#Grabbing first root energy
+def casscfenergygrab(file):
+    string='ROOT   0:  E='
+    with open(file) as f:
+        for line in f:
+            if string in line:
+                Energy=float(line.split()[-2])
     return Energy
 
 def tddftgrab(file):
@@ -917,7 +928,7 @@ def PhotoElectronSpectrum(theory=None, fragment=None, InitialState_charge=None, 
 
         if CAS is True:
             print("Modifying CASSCF block for initial state, CAS({},{})".format(CAS_Initial[0],CAS_Initial[1]))
-            print("{} electrons in {} orbitals".format(CAS_Initial[0],CAS_Initial[0]))
+            print("{} electrons in {} orbitals".format(CAS_Initial[0],CAS_Initial[1]))
 
             for line in theory.orcablocks:
                 if 'nel' in line:
@@ -970,7 +981,10 @@ def PhotoElectronSpectrum(theory=None, fragment=None, InitialState_charge=None, 
                 shutil.copyfile(theory.inputfilename + '.spindens.cube', './' + 'Init_State' + '.spindens.cube')
             os.chdir('..')
         #Note: Using SCF energy and not Final Single Point energy (does not work for TDDFT)
-        stateI.energy=scfenergygrab("orca-input.out")
+        if CAS is True:
+            stateI.energy=casscfenergygrab("orca-input.out")
+        else:
+            stateI.energy=scfenergygrab("orca-input.out")
 
 
         #Saveing GBW/out/in files
@@ -980,7 +994,6 @@ def PhotoElectronSpectrum(theory=None, fragment=None, InitialState_charge=None, 
 
         stateI.gbwfile="Init_State"+".gbw"
         stateI.outfile="Init_State"+".out"
-        stateI.cisfile="Init_State"+".cis"
 
         # Initial state orbitals for MO-DOSplot
         stateI.occorbs_alpha, stateI.occorbs_beta, stateI.hftyp = orbitalgrab(theory.inputfilename+'.out')
@@ -1023,68 +1036,74 @@ def PhotoElectronSpectrum(theory=None, fragment=None, InitialState_charge=None, 
         #Final_State1_energy = theory.run( current_coords=fragment.coords, elems=fragment.elems)
         blankline()
 
-        for findex,fstate in enumerate(Finalstates):
-            if CAS is False:
-                print(bcolors.OKGREEN, "Calculating Final State SCF + TDDFT. Spin Multiplicity: ", fstate.mult, bcolors.ENDC)
-            else:
-                print(bcolors.OKGREEN, "Calculating Final State CASSCF Spin Multiplicity: ", fstate.mult, bcolors.ENDC)
-            theory.charge=fstate.charge
-            theory.mult=fstate.mult
-            if initialorbitalfiles is not None:
-                print("initialorbitalfiles keyword provided.")
-                print("Will use file {} as guess GBW file for this Final state.".format(initialorbitalfiles[findex+1]))
-                shutil.copyfile(initialorbitalfiles[findex+1], theory.inputfilename + '.gbw')
+
+        #CAS option: State-averaged calculation for both spin multiplicities.
+        if CAS is True:
+
+        else:
+            #TDDFT-option SCF+TDDFT for each spin multiplicity
+            for findex,fstate in enumerate(Finalstates):
+                if CAS is False:
+                    print(bcolors.OKGREEN, "Calculating Final State SCF + TDDFT. Spin Multiplicity: ", fstate.mult, bcolors.ENDC)
+                else:
+                    print(bcolors.OKGREEN, "Calculating Final State CASSCF Spin Multiplicity: ", fstate.mult, bcolors.ENDC)
+                theory.charge=fstate.charge
+                theory.mult=fstate.mult
+                if initialorbitalfiles is not None:
+                    print("initialorbitalfiles keyword provided.")
+                    print("Will use file {} as guess GBW file for this Final state.".format(initialorbitalfiles[findex+1]))
+                    shutil.copyfile(initialorbitalfiles[findex+1], theory.inputfilename + '.gbw')
 
 
-            Singlepoint(fragment=fragment, theory=theory)
-            if CAS is False:
-                fstate.energy = scfenergygrab("orca-input.out")
-            #Saveing GBW and CIS file
-            shutil.copyfile(theory.inputfilename + '.gbw', './' + 'Final_State_mult' + str(fstate.mult) + '.gbw')
-            shutil.copyfile(theory.inputfilename + '.cis', './' + 'Final_State_mult' + str(fstate.mult) + '.cis')
-            shutil.copyfile(theory.inputfilename + '.out', './' + 'Final_State_mult' + str(fstate.mult) + '.out')
-            shutil.copyfile(theory.inputfilename + '.inp', './' + 'Final_State_mult' + str(fstate.mult) + '.inp')
+                Singlepoint(fragment=fragment, theory=theory)
+                if CAS is False:
+                    fstate.energy = scfenergygrab("orca-input.out")
+                #Saveing GBW and CIS file
+                shutil.copyfile(theory.inputfilename + '.gbw', './' + 'Final_State_mult' + str(fstate.mult) + '.gbw')
+                shutil.copyfile(theory.inputfilename + '.cis', './' + 'Final_State_mult' + str(fstate.mult) + '.cis')
+                shutil.copyfile(theory.inputfilename + '.out', './' + 'Final_State_mult' + str(fstate.mult) + '.out')
+                shutil.copyfile(theory.inputfilename + '.inp', './' + 'Final_State_mult' + str(fstate.mult) + '.inp')
 
-            fstate.gbwfile="Final_State_mult"+str(fstate.mult)+".gbw"
-            fstate.outfile="Final_State_mult"+str(fstate.mult)+".out"
-            fstate.cisfile="Final_State_mult"+str(fstate.mult)+".cis"
-
-
-            #Grab TDDFT states from ORCA file:
-            fstate.TDtransitionenergies = tddftgrab(theory.inputfilename+'.out')
-            # Final state orbitals for MO-DOSplot
-            fstate.occorbs_alpha, fstate.occorbs_beta, fstate.hftyp = orbitalgrab(theory.inputfilename+'.out')
-
-            print(fstate.__dict__)
-            if fstate.hftyp == "UHF":
-                fstate.restricted = False
-            elif fstate.hftyp == "RHF":
-                fstate.restricted = True
-            else:
-                print("hmmm")
-                exit()
+                fstate.gbwfile="Final_State_mult"+str(fstate.mult)+".gbw"
+                fstate.outfile="Final_State_mult"+str(fstate.mult)+".out"
+                fstate.cisfile="Final_State_mult"+str(fstate.mult)+".cis"
 
 
-            #Create Cube file of electron/spin density using orca_plot for FINAL STATE
-            if Densities == 'SCF' or Densities == 'All':
-                print("Density option active. Calling orca_plot to create Cube-file for Final state SCF.")
-                if CAS is True:
-                    print("Not implemented for CASSCF yet")
-                    exit()
-                os.chdir('Calculated_densities')
-                shutil.copyfile('../' + theory.inputfilename + '.gbw', './' + theory.inputfilename + '.gbw')
-                #Electron density
-                run_orca_plot(orcadir=theory.orcadir, filename=theory.inputfilename + '.gbw', option='density',
-                             gridvalue=densgridvalue)
-                os.rename(theory.inputfilename + '.scfp', 'Final_State_mult' + str(fstate.mult) + '.scfp')
-                shutil.copyfile(theory.inputfilename + '.eldens.cube', './' + 'Final_State_mult' + str(fstate.mult) + '.eldens.cube')
-                #Spin density
+                #Grab TDDFT states from ORCA file:
+                fstate.TDtransitionenergies = tddftgrab(theory.inputfilename+'.out')
+                # Final state orbitals for MO-DOSplot
+                fstate.occorbs_alpha, fstate.occorbs_beta, fstate.hftyp = orbitalgrab(theory.inputfilename+'.out')
+
+                print(fstate.__dict__)
                 if fstate.hftyp == "UHF":
-                    run_orca_plot(orcadir=theory.orcadir, filename=theory.inputfilename + '.gbw', option='spindensity',
-                             gridvalue=densgridvalue)
-                    os.rename(theory.inputfilename + '.scfr', 'Final_State_mult' + str(fstate.mult) + '.scfr')
-                    shutil.copyfile(theory.inputfilename + '.spindens.cube', './' + 'Final_State_mult' + str(fstate.mult) + '.spindens.cube')
-                os.chdir('..')
+                    fstate.restricted = False
+                elif fstate.hftyp == "RHF":
+                    fstate.restricted = True
+                else:
+                    print("hmmm")
+                    exit()
+
+
+                #Create Cube file of electron/spin density using orca_plot for FINAL STATE
+                if Densities == 'SCF' or Densities == 'All':
+                    print("Density option active. Calling orca_plot to create Cube-file for Final state SCF.")
+                    if CAS is True:
+                        print("Not implemented for CASSCF yet")
+                        exit()
+                    os.chdir('Calculated_densities')
+                    shutil.copyfile('../' + theory.inputfilename + '.gbw', './' + theory.inputfilename + '.gbw')
+                    #Electron density
+                    run_orca_plot(orcadir=theory.orcadir, filename=theory.inputfilename + '.gbw', option='density',
+                                 gridvalue=densgridvalue)
+                    os.rename(theory.inputfilename + '.scfp', 'Final_State_mult' + str(fstate.mult) + '.scfp')
+                    shutil.copyfile(theory.inputfilename + '.eldens.cube', './' + 'Final_State_mult' + str(fstate.mult) + '.eldens.cube')
+                    #Spin density
+                    if fstate.hftyp == "UHF":
+                        run_orca_plot(orcadir=theory.orcadir, filename=theory.inputfilename + '.gbw', option='spindensity',
+                                 gridvalue=densgridvalue)
+                        os.rename(theory.inputfilename + '.scfr', 'Final_State_mult' + str(fstate.mult) + '.scfr')
+                        shutil.copyfile(theory.inputfilename + '.spindens.cube', './' + 'Final_State_mult' + str(fstate.mult) + '.spindens.cube')
+                    os.chdir('..')
 
     else:
         print("Theory not supported for PhotoElectronSpectrum")

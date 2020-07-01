@@ -6,6 +6,7 @@ import ash
 import subprocess as sp
 import shutil
 import constants
+import math
 
 #CM5. from https://github.com/patrickmelix/CM5-calculator/blob/master/cm5calculator.py
 
@@ -830,3 +831,56 @@ def DDEC_to_LJparameters(elems, molmoms, voldict):
     print("r0list is", r0list)
 
     return "something"
+
+
+#Extrapolation function for 2-point extrapolations
+def Extrapolation_twopoint(scf_energies, corr_energies, cardinals, basis_family):
+    """
+    :param scf_energies: list of SCF energies
+    :param corr_energies: list of correlation energies
+    :param cardinals: list of basis-cardinal numbers
+    :param basis_family: string (e.g. cc, def2, aug-cc)
+    :return: extrapolated SCF energy and correlation energy
+    """
+    #Dictionary of extrapolation parameters.
+    # Key: Basisfamilyandcardinals Value: list: [alpha, beta]
+    extrapolation_parameters_dict = { 'cc_23' : [4.42, 2.460], 'aug-cc_23' : [4.30, 2.510], 'cc_34' : [5.46, 3.050], 'aug-cc_34' : [5.790, 3.050],
+    'def2_23' : [10.390,2.4], 'def2_34' : [7.880,2.970], 'pc_23' : [7.02, 2.01], 'pc_34': [9.78, 4.09]}
+
+    #NOTE: pc-n family uses different numbering. pc-1 is DZ(cardinal 2), pc-2 is TZ(cardinal 3), pc-4 is QZ(cardinal 4).
+
+
+    if basis_family=='cc' and all(x in cardinals for x in [2, 3]):
+        extrap_dict_key='cc_23'
+    elif basis_family='aug-cc' and all(x in cardinals for x in [2, 3]):
+        extrap_dict_key='aug-cc_23'
+    elif basis_family=='cc' and all(x in cardinals for x in [3, 4]):
+        extrap_dict_key='cc_34'
+    elif basis_family=='aug-cc' and all(x in cardinals for x in [3, 4]):
+        extrap_dict_key='aug-cc_23'
+    elif basis_family=='def2' and all(x in cardinals for x in [2, 3]):
+        extrap_dict_key='def2_23'
+    elif basis_family=='def2' and all(x in cardinals for x in [3, 4]):
+        extrap_dict_key='def2_34'
+
+
+    #Print energies
+    print("Basis family is:", basis_family)
+    print("SCF energies are:", scf_energies[0], "and", scf_energies[1])
+    print("Correlation energies are:", corr_energies[0], "and", corr_energies[1])
+
+    print("Extrapolation values used are:")
+    alpha=extrapolation_parameters_dict[extrap_dict_key][0]
+    beta=extrapolation_parameters_dict[extrap_dict_key][1]
+    print("alpha :",alpha)
+    print("beta :", beta)
+    eX=math.exp(-1*alpha*math.sqrt(cardinals[0]))
+    eY=math.exp(-1*alpha*math.sqrt(cardinals[1]))
+    SCFextrap=(scf_energies[0]*eY-scf_energies[1]*eX)/(eY-eX)
+    corrextrap=(math.pow(cardinals[0],beta)*corr_energies[0] - math.pow(cardinals[1],beta) * corr_energies[1])/(math.pow(cardinals[0],beta)-math.pow(cardinals[1],beta))
+
+    print("SCF Extrapolated value is", SCFextrap)
+    print("Correlation Extrapolated value is", corrextrap)
+    print("Total Extrapolated value is", SCFextrap+corrextrap)
+
+    return SCFextrap, corrextrap
