@@ -917,13 +917,14 @@ def grab_dets_from_CASSCF_output(file):
 def PhotoElectronSpectrum(theory=None, fragment=None, InitialState_charge=None, Initialstate_mult=None,
                           Ionizedstate_charge=None, Ionizedstate_mult=None, numionstates=50, path_wfoverlap=None, tda=True,
                           brokensym=False, HSmult=None, atomstoflip=None, initialorbitalfiles=None, Densities='SCF', densgridvalue=100,
-                          CAS=False, CAS_Initial=None, CAS_Final = None, memory=20000):
+                          CAS=False, CAS_Initial=None, CAS_Final = None, memory=20000, numcores=1):
     blankline()
     print(bcolors.OKGREEN,"-------------------------------------------------------------------",bcolors.ENDC)
     print(bcolors.OKGREEN,"PhotoElectronSpectrum: Calculating PES spectra via TDDFT and Dyson-norm approach",bcolors.ENDC)
     print(bcolors.OKGREEN,"-------------------------------------------------------------------",bcolors.ENDC)
     blankline()
-
+    print("Numcores used for QM-theory and WFoverlap: ", numcores)
+    os.environ["OMP_NUM_THREADS"] = str(numcores)
 
 
     if InitialState_charge is None or Initialstate_mult is None or Ionizedstate_charge is None or Ionizedstate_mult is None:
