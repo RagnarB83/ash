@@ -136,7 +136,7 @@ def get_MO_from_gbw(filename,restr,frozencore):
     #print(data)
     # get size of matrix
     for line in reversed(data):
-      #print line
+      #print(line)
       s=line.split()
       if len(s)>=1:
         NAO=int(line.split()[0])+1
@@ -312,7 +312,9 @@ def get_dets_from_single(logfile,restr,gscharge,gsmult,totnuccharge,frozencore):
     eigenvectors[gsmult].append( {key:1.0} )
     strings={}
     print("Final (single-det case) eigenvectors:", eigenvectors)
+    print("format_ci_vectors(eigenvectors[gsmult] :", format_ci_vectors(eigenvectors[gsmult])
     strings["dets."+str(gsmult)] = format_ci_vectors(eigenvectors[gsmult])
+    print("strings: ", strings)
     return strings
 
 
@@ -740,25 +742,19 @@ def casscf_state_energies_grab(file):
     grab=False
     mult_dict={}
     state_energies=[];Energy=0.0
-    string='STATE   0 MULT'
+    string='STATE'
     with open(file) as f:
         for line in f:
             if grab is True and string in line:
                 Energy=float(line.split()[5])
                 state_energies.append(Energy)
-                print("state_energies:", state_energies)
                 if len(state_energies) == roots:
-                    print("x here")
                     mult_dict[mult] = state_energies
-                    print("mult_dict:", mult_dict)
             if Finished is True and 'CAS-SCF STATES FOR BLOCK' in line:
-                print("here, line:", line)
                 #New mult block. Resetting state-energies.
                 state_energies=[];Energy=0.0
                 mult=int(line.split()[6])
-                print("mult:", mult)
                 roots=int(line.split()[8])
-                print("roots :", roots)
                 grab=True
             if 'Final CASSCF energy' in line:
                 Finished=True
@@ -841,6 +837,26 @@ def grab_dets_from_CASSCF_output(file):
 
             if '  Extended CI Printing (values > TPrintWF)' in line:
                 detgrab=True
+    print("list_of_states:", list_of_states)
+    print(list_of_states[0])
+    print(list_of_states[0].determinants)
+    print(list_of_states[0].configurations)
+
+    for state in list_of_states:
+        if len(state.determinants) == 0:
+            print("WARNING!!! No determinant output found.")
+            print("Must be because CFG and det is the same. Using CFG info ")
+            print("WARNING!!!")
+            print("state.configurations : ", state.configurations)
+            for cfg in state.configurations.items():
+                bla = cfg[0].replace('[','').replace(']','').replace('CFG','')
+                det = bla.replace(str(2),str(3))
+                det2 = [i for i in det]
+
+                det_tuple = tuple(det2)
+                coeff = cfg[1]
+                state.determinants[det_tuple] = coeff
+            print("state.determinants: ", state.determinants)
     return list_of_states
 
 ########################
@@ -976,10 +992,10 @@ def PhotoElectronSpectrum(theory=None, fragment=None, InitialState_charge=None, 
                     theory.orcablocks=theory.orcablocks.replace(line,'')
             theory.orcablocks = theory.orcablocks.replace('\n\n','\n')
 
-            #Add nel,norb and nroots lines back in.
-            theory.orcablocks = theory.orcablocks.replace('%casscf', '%casscf\n' + "nel {}\n".format(CAS_Initial[0]) +
+            #Add nel,norb and nroots lines back in. Also determinant printing option
+            theory.orcablocks = theory.orcablocks.replace('%casscf', '%casscf\n' + "printwf det\nci TPrintwf 1e-16 end\n" + "nel {}\n".format(CAS_Initial[0]) +
                                                           "norb {}\n".format(
-                                                              CAS_Initial[1]) + "nroots {}\n".format(numionstates))
+                                                              CAS_Initial[1]) + "nroots {}\n".format(1))
             theory.orcablocks = theory.orcablocks.replace('\n\n','\n')
             theory.orcablocks = theory.orcablocks.replace('\n\n','\n')
 
@@ -1046,6 +1062,13 @@ def PhotoElectronSpectrum(theory=None, fragment=None, InitialState_charge=None, 
         # Initial state orbitals for MO-DOSplot
         if CAS is True:
             stateI.hftyp='CASSCF'
+
+            #CASSCF wavefunction interpreted as restricted
+            stateI.restricted = True
+            for fstate in Finalstates:
+                fstate.restricted = True
+
+
         else:
             stateI.occorbs_alpha, stateI.occorbs_beta, stateI.hftyp = orbitalgrab(theory.inputfilename+'.out')
             print("stateI.occorbs_alpha:", stateI.occorbs_alpha)
@@ -1106,10 +1129,18 @@ def PhotoElectronSpectrum(theory=None, fragment=None, InitialState_charge=None, 
             #Getting state-energies of all states for each spin multiplicity (state-averaged calculation)
             fstates_dict = casscf_state_energies_grab("orca-input.out")
             print("fstates_dict: ", fstates_dict)
-            #fstate.energy = scfenergygrab("orca-input.out")
 
+            # Saveing GBW and CIS file
+            shutil.copyfile(theory.inputfilename + '.gbw', './' + 'Final_State' + '.gbw')
+            shutil.copyfile(theory.inputfilename + '.out', './' + 'Final_State' + '.out')
+            shutil.copyfile(theory.inputfilename + '.inp', './' + 'Final_State' + '.inp')
 
+            #Each fstate linked with same GBW file and outfile
+            for fstate in Finalstates:
+                fstate.gbwfile = "Final_State" + ".gbw"
+                fstate.outfile = "Final_State" + ".out"
 
+            #TODO: Saving files for density Cube file creation for CASSCF
 
         else:
             #TDDFT-option SCF+TDDFT for each spin multiplicity
@@ -1180,59 +1211,77 @@ def PhotoElectronSpectrum(theory=None, fragment=None, InitialState_charge=None, 
                         os.rename(theory.inputfilename + '.scfr', 'Final_State_mult' + str(fstate.mult) + '.scfr')
                         shutil.copyfile(theory.inputfilename + '.spindens.cube', './' + 'Final_State_mult' + str(fstate.mult) + '.spindens.cube')
                     os.chdir('..')
-
+            blankline()
+            blankline()
+            print("All SCF and TDDFT calculations done (unless Densities=All)!")
     else:
         print("Theory not supported for PhotoElectronSpectrum")
         exit(1)
 
+    blankline()
+    blankline()
 
-    blankline()
-    blankline()
-    print("All SCF and TDDFT calculations done (unless Densities=All)!")
-    blankline()
-    blankline()
-    FinalIPs = []
-    Finalionstates = []
-    FinalTDtransitionenergies =[]
-    print(bcolors.OKBLUE,"Initial State SCF energy:", stateI.energy, "au",bcolors.ENDC)
-    print("")
-    for fstate in Finalstates:
-        print("---------------------------------------------------------------------------")
-        print("Now going through SCF energy and TDDFT transitions for FinalState mult: ", fstate.mult)
-        # 1st vertical IP via deltaSCF
-        GSIP=(fstate.energy-stateI.energy)*constants.hartoeV
-        fstate.GSIP=GSIP
-        print(bcolors.OKBLUE,"Initial Final State SCF energy:", fstate.energy, "au", bcolors.ENDC)
-        print(bcolors.OKBLUE,"1st vertical IP (delta-SCF):", fstate.GSIP,bcolors.ENDC)
-        print("")
-        # TDDFT states
-        print(bcolors.OKBLUE, "TDDFT transition energies (eV) for FinalState (mult: {}) : {}\n".format(fstate.mult, fstate.TDtransitionenergies), bcolors.ENDC, )
+    if CAS is True:
+        FinalIPs = []
+        Finalionstates = []
+        FinalTDtransitionenergies =[]
+        print(bcolors.OKBLUE,"Initial State SCF energy:", stateI.energy, "au",bcolors.ENDC)
+        print(bcolors.OKBLUE,"Final State SCF energies:", fstates_dict, bcolors.ENDC)
+        for fstate in Finalstates:
+            fstate.ionstates = fstates_dict[fstate.mult]
+            for ionstate in fstate.ionstates:
+                fstate.IPs.append((ionstate-stateI.energy)*constants.hartoeV)
+            FinalIPs = FinalIPs + fstate.IPs
+            Finalionstates = Finalionstates + fstate.ionstates
 
-        # Adding GS-IP to IP-list and GS ion to ionstate
-        fstate.IPs.append(fstate.GSIP)
-        fstate.ionstates.append(fstate.energy)
-        for e in fstate.TDtransitionenergies:
-            fstate.ionstates.append(e / constants.hartoeV + fstate.energy)
-            fstate.IPs.append((e / constants.hartoeV + fstate.energy - stateI.energy) * constants.hartoeV)
+        #Dummy assignment
+        no_tda = True
+
+    else:
+
+        FinalIPs = []
+        Finalionstates = []
+        FinalTDtransitionenergies =[]
+        print(bcolors.OKBLUE,"Initial State SCF energy:", stateI.energy, "au",bcolors.ENDC)
         print("")
-        print(bcolors.OKBLUE, "TDDFT-derived IPs (eV), delta-SCF IP plus TDDFT transition energies:\n", bcolors.ENDC, fstate.IPs)
-        print(bcolors.OKBLUE, "Ion-state energies (au):\n", bcolors.ENDC, fstate.ionstates)
-        print("")
-        FinalIPs = FinalIPs + fstate.IPs
-        Finalionstates = Finalionstates + fstate.ionstates
-        FinalTDtransitionenergies = FinalTDtransitionenergies + fstate.TDtransitionenergies
+        for fstate in Finalstates:
+            print("---------------------------------------------------------------------------")
+            print("Now going through SCF energy and TDDFT transitions for FinalState mult: ", fstate.mult)
+            # 1st vertical IP via deltaSCF
+            GSIP=(fstate.energy-stateI.energy)*constants.hartoeV
+            fstate.GSIP=GSIP
+            print(bcolors.OKBLUE,"Initial Final State SCF energy:", fstate.energy, "au", bcolors.ENDC)
+            print(bcolors.OKBLUE,"1st vertical IP (delta-SCF):", fstate.GSIP,bcolors.ENDC)
+            print("")
+            # TDDFT states
+            print(bcolors.OKBLUE, "TDDFT transition energies (eV) for FinalState (mult: {}) : {}\n".format(fstate.mult, fstate.TDtransitionenergies), bcolors.ENDC, )
+
+            # Adding GS-IP to IP-list and GS ion to ionstate
+            fstate.IPs.append(fstate.GSIP)
+            fstate.ionstates.append(fstate.energy)
+            for e in fstate.TDtransitionenergies:
+                fstate.ionstates.append(e / constants.hartoeV + fstate.energy)
+                fstate.IPs.append((e / constants.hartoeV + fstate.energy - stateI.energy) * constants.hartoeV)
+            print("")
+            print(bcolors.OKBLUE, "TDDFT-derived IPs (eV), delta-SCF IP plus TDDFT transition energies:\n", bcolors.ENDC, fstate.IPs)
+            print(bcolors.OKBLUE, "Ion-state energies (au):\n", bcolors.ENDC, fstate.ionstates)
+            print("")
+            FinalIPs = FinalIPs + fstate.IPs
+            Finalionstates = Finalionstates + fstate.ionstates
+            FinalTDtransitionenergies = FinalTDtransitionenergies + fstate.TDtransitionenergies
 
     blankline()
     blankline()
     print("All combined Final IPs:", FinalIPs)
     blankline()
     print("All combined Ion-state energies (au):", Finalionstates)
-    #MO IP spectrum:
-    stk_alpha,stk_beta=modosplot(stateI.occorbs_alpha,stateI.occorbs_beta,stateI.hftyp)
-    moips=sorted(stk_alpha+stk_beta)
-    print(bcolors.OKBLUE,"MO IPs (negative of MO energies of State I):", bcolors.ENDC)
-    print(moips)
-    print("")
+    if CAS is not True:
+        #MO IP spectrum:
+        stk_alpha,stk_beta=modosplot(stateI.occorbs_alpha,stateI.occorbs_beta,stateI.hftyp)
+        moips=sorted(stk_alpha+stk_beta)
+        print(bcolors.OKBLUE,"MO IPs (negative of MO energies of State I):", bcolors.ENDC)
+        print(moips)
+        print("")
 
 
 
@@ -1260,10 +1309,16 @@ def PhotoElectronSpectrum(theory=None, fragment=None, InitialState_charge=None, 
         if os.path.isfile('./mos_init') == True:
             print(bcolors.WARNING, "mos_init file already exists in dir! Using (is this what you want?!)", bcolors.ENDC)
         else:
+            print("stateI.gbwfile: ", stateI.gbwfile)
+            print("stateI.restricted :", stateI.restricted)
+            print("frozencore: ", frozencore)
             mos_init = get_MO_from_gbw(stateI.gbwfile, stateI.restricted, frozencore)
             writestringtofile(mos_init, "mos_init")
 
         for fstate in Finalstates:
+            print("here")
+            print("fstate.restricted:", fstate.restricted)
+            print("fstate.gbwfile:", fstate.gbwfile)
             mos_final = get_MO_from_gbw(fstate.gbwfile, fstate.restricted, frozencore)
             writestringtofile(mos_final, "mos_final-mult"+str(fstate.mult))
             #os.rename("mos_final","mos_final-mult"+str(fstate.mult))
@@ -1282,23 +1337,47 @@ def PhotoElectronSpectrum(theory=None, fragment=None, InitialState_charge=None, 
         # Threshold for WF. SHARC set it to 2.0
         wfthres = 2.0
 
-        # Final state. Create detfiles
-        for fstate in Finalstates:
-            # mults = [stateFmult]
-            mults = [fstate.mult]
-            det_final = get_dets_from_cis(fstate.outfile, fstate.cisfile, fstate.restricted, mults, fstate.charge, fstate.mult,
-                                          totnuccharge, statestoextract, statestoskip, no_tda, frozencore, wfthres)
-            # Printing to file
-            for blockname, string in det_final.items():
-                writestringtofile(string, "dets_final_mult"+str(fstate.mult))
+        if CAS is True:
+            #CASSCF: GETTING GETERMINANTS FROM DETERMINANT-PRINTING OPTION in OUTPUTFILE
+
+            #Initial
+            init_state = grab_dets_from_CASSCF_output(stateI.outfile)
+            print("init_state:", init_state)
+            init_state_dict = [i.determinants for i in init_state]
+            print("init_state_dict:", init_state_dict)
+            #det_init_bla = format_ci_vectors(init_state_dict)
+            #print("det_init_bla : ", det_init_bla)
+            strings = {}
+            strings["dets." + str(Initialstate_mult)] = format_ci_vectors(init_state_dict)
+            det_init = strings
+            print("det_init:", det_init)
+            exit()
+
+            #Final state. Just need to point to the one outputfile
+            final_states = grab_dets_from_CASSCF_output(Finalstates[0].outfile)
+            final_states_dict = [i.determinants for i in final_states]
+            print("final_states_dict:", final_states_dict)
+            det_final = format_ci_vectors(final_states_dict)
+            print("det_final : ", det_final)
+        else:
+            #TDDFT: GETTING DETERMINANTS FROM CIS FILE
+            # Final state. Create detfiles
+            for fstate in Finalstates:
+                # mults = [stateFmult]
+                mults = [fstate.mult]
+                det_final = get_dets_from_cis(fstate.outfile, fstate.cisfile, fstate.restricted, mults, fstate.charge, fstate.mult,
+                                              totnuccharge, statestoextract, statestoskip, no_tda, frozencore, wfthres)
+                # Printing to file
+                for blockname, string in det_final.items():
+                    writestringtofile(string, "dets_final_mult"+str(fstate.mult))
 
 
-        # Now doing initial state. Redefine necessary here.
-        #det_init = get_dets_from_cis("Init_State1.out", "dummy", restricted_I, mults, stateIcharge, stateImult, totnuccharge,
-        #                             statestoextract, statestoskip, no_tda, frozencore, wfthres)
-        # RB simplification. Separate function for getting determinant-string for Initial State where only one.
-        det_init = get_dets_from_single(stateI.outfile, stateI.restricted, stateI.charge, stateI.mult, totnuccharge, frozencore)
-
+            # Now doing initial state. Redefine necessary here.
+            #det_init = get_dets_from_cis("Init_State1.out", "dummy", restricted_I, mults, stateIcharge, stateImult, totnuccharge,
+            #                             statestoextract, statestoskip, no_tda, frozencore, wfthres)
+            # RB simplification. Separate function for getting determinant-string for Initial State where only one.
+            det_init = get_dets_from_single(stateI.outfile, stateI.restricted, stateI.charge, stateI.mult, totnuccharge, frozencore)
+            print("det_init: ", det_init)
         # Printing to file
         for blockname, string in det_init.items():
             writestringtofile(string, "dets_init")
