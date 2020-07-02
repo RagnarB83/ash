@@ -722,7 +722,7 @@ def scfenergygrab(file):
                 Energy=float(line.split()[-4])
     return Energy
 
-#Grabbing first root energy
+#CASSCF: Grabbing first root energy
 def casscfenergygrab(file):
     grab=False
     string='STATE   0 MULT'
@@ -733,6 +733,27 @@ def casscfenergygrab(file):
             if 'CAS-SCF STATES FOR BLOCK' in line:
                 grab=True
     return Energy
+
+#CASSCF: Grabbing all root energies
+def casscf_state_energies_grab(file):
+    grab=False
+    mult_dict={}
+    state_energies=[];Energy=0.0
+    string='STATE   0 MULT'
+    with open(file) as f:
+        for line in f:
+            if string in line:
+                Energy=float(line.split()[5])
+                state_energies.append(Energy)
+                if len(state_energies) == mult:
+                    mult_dict[mult] = state_energies
+            if 'CAS-SCF STATES FOR BLOCK' in line:
+                state_energies=[];Energy=0.0
+                mult=int(line.split()[7])
+                roots=int(line.split()[9])
+                grab=True
+    return mult_dict
+
 
 def tddftgrab(file):
     tddftstates=[]
@@ -998,6 +1019,7 @@ def PhotoElectronSpectrum(theory=None, fragment=None, InitialState_charge=None, 
         if CAS is True:
             print("here")
             stateI.energy=casscfenergygrab("orca-input.out")
+            print("stateI.energy: ", stateI.energy)
         else:
             stateI.energy=scfenergygrab("orca-input.out")
 
@@ -1011,18 +1033,21 @@ def PhotoElectronSpectrum(theory=None, fragment=None, InitialState_charge=None, 
         stateI.outfile="Init_State"+".out"
 
         # Initial state orbitals for MO-DOSplot
-        stateI.occorbs_alpha, stateI.occorbs_beta, stateI.hftyp = orbitalgrab(theory.inputfilename+'.out')
-        print("stateI.occorbs_alpha:", stateI.occorbs_alpha)
-        print("stateI.hftyp:", stateI.hftyp)
-
-        # need to specify whether Initial/Final states are restricted or not.
-        if stateI.hftyp == "UHF":
-            stateI.restricted = False
-        elif stateI.hftyp == "RHF":
-            stateI.restricted = True
+        if CAS is True:
+            stateI.hftyp='CASSCF'
         else:
-            print("hmmm")
-            exit()
+            stateI.occorbs_alpha, stateI.occorbs_beta, stateI.hftyp = orbitalgrab(theory.inputfilename+'.out')
+            print("stateI.occorbs_alpha:", stateI.occorbs_alpha)
+            print("stateI.hftyp:", stateI.hftyp)
+
+            # need to specify whether Initial/Final states are restricted or not.
+            if stateI.hftyp == "UHF":
+                stateI.restricted = False
+            elif stateI.hftyp == "RHF":
+                stateI.restricted = True
+            else:
+                print("hmmm")
+                exit()
 
 
         #Final-state  calc. TDDFT or CASSCF
@@ -1048,7 +1073,22 @@ def PhotoElectronSpectrum(theory=None, fragment=None, InitialState_charge=None, 
             theory.orcablocks = theory.orcablocks.replace('\n\n','\n')
             theory.orcablocks = theory.orcablocks.replace('\n\n','\n')
 
-            print(bcolors.OKGREEN, "Calculating Final State CASSCF Spin Multiplicity: ", fstate.mult, bcolors.ENDC)
+            print(bcolors.OKGREEN, "Calculating Final State CASSCF Spin Multiplicities: ", [f.mult for f in Finalstates], bcolors.ENDC)
+            theory.charge = fstate.charge
+            theory.mult = fstate.mult
+            if initialorbitalfiles is not None:
+                print("initialorbitalfiles keyword provided.")
+                print("Will use file {} as guess GBW file for this Final state.".format(initialorbitalfiles[findex + 1]))
+                shutil.copyfile(initialorbitalfiles[findex + 1], theory.inputfilename + '.gbw')
+
+            Singlepoint(fragment=fragment, theory=theory)
+            #Getting state-energies of all states for each spin multiplicity (state-averaged calculation)
+            fstates_dict = casscf_state_energies_grab("orca-input.out")
+            print("fstates_dict: ", fstates_dict)
+            #fstate.energy = scfenergygrab("orca-input.out")
+
+
+
 
         else:
             #TDDFT-option SCF+TDDFT for each spin multiplicity
