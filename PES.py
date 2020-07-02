@@ -939,25 +939,14 @@ def PhotoElectronSpectrum(theory=None, fragment=None, InitialState_charge=None, 
                     theory.orcablocks=theory.orcablocks.replace(line,'')
                 if 'nroots' in line:
                     theory.orcablocks=theory.orcablocks.replace(line,'')
-            #theory.orcablocks = theory.orcablocks.replace('\n\n','\n')
-            print("theory.orcablocks: ", theory.orcablocks)
+            theory.orcablocks = theory.orcablocks.replace('\n\n','\n')
             #Add nel,norb and nroots lines back in.
             theory.orcablocks = theory.orcablocks.replace('%casscf', '%casscf\n' + "nel {}\n".format(CAS_Initial[0]) +
                                                           "norb {}\n".format(
                                                               CAS_Initial[1]) + "nroots {}\n".format(numionstates))
             theory.orcablocks = theory.orcablocks.replace('\n\n','\n')
             theory.orcablocks = theory.orcablocks.replace('\n\n','\n')
-            print("theory.orcablocks: ", theory.orcablocks)
 
-            #add=False
-            #for line in theory.orcablocks.split('\n'):
-            #    if add is True:
-            #        print("add is true")
-            #        theory.orcablocks=theory.orcablocks.replace(line,line+"nel {}\n".format(CAS_Initial[0])+"norb {}\n".format(CAS_Initial[1])+"nroots {}\n".format(numionstates))
-            #        break
-            #    if '%casscf' in line:
-            #        print("here add true")
-            #        add=True
 
         # For orbital analysis
         if 'NORMALPRINT' not in theory.orcasimpleinput.upper():
@@ -1046,19 +1035,14 @@ def PhotoElectronSpectrum(theory=None, fragment=None, InitialState_charge=None, 
                     theory.orcablocks=theory.orcablocks.replace(line,'')
                 if 'nroots' in line:
                     theory.orcablocks=theory.orcablocks.replace(line,'')
-            add=False
-            for line in theory.orcablocks.split('\n'):
-                if add is True:
-                    print("add is true")
-                    theory.orcablocks=theory.orcablocks.replace(line,line+"nel {}\n".format(CAS_Final[0])+"norb {}\n".format(CAS_Final[1])+"nroots {}\n".format(numionstates))
-                    break
-                if '%casscf' in line:
-                    print("here add truee")
-                    add=True
+            theory.orcablocks = theory.orcablocks.replace('\n\n','\n')
+            #Add nel,norb and nroots lines back in.
+            theory.orcablocks = theory.orcablocks.replace('%casscf', '%casscf\n' + "nel {}\n".format(CAS_Final[0]) +
+                                                          "norb {}\n".format(
+                                                              CAS_Final[1]) + "nroots {}\n".format(numionstates))
+            theory.orcablocks = theory.orcablocks.replace('\n\n','\n')
+            theory.orcablocks = theory.orcablocks.replace('\n\n','\n')
 
-            #theory.orcablocks.replace(line, "nel {}\n".format(CAS_Final[0]))
-            #theory.orcablocks.replace(line, "norb {}\n".format(CAS_Final[1]))
-            #theory.orcablocks.replace(line, "nroots {}\n".format(numionstates))
             print(bcolors.OKGREEN, "Calculating Final State CASSCF Spin Multiplicity: ", fstate.mult, bcolors.ENDC)
 
         else:
