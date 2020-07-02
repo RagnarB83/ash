@@ -742,12 +742,13 @@ def casscf_state_energies_grab(file):
     string='STATE   0 MULT'
     with open(file) as f:
         for line in f:
-            if string in line:
+            if grab is True and string in line:
                 Energy=float(line.split()[5])
                 state_energies.append(Energy)
                 if len(state_energies) == mult:
                     mult_dict[mult] = state_energies
             if 'CAS-SCF STATES FOR BLOCK' in line:
+                #New mult block. Resetting state-energies.
                 state_energies=[];Energy=0.0
                 mult=int(line.split()[7])
                 roots=int(line.split()[9])
