@@ -939,13 +939,13 @@ def PhotoElectronSpectrum(theory=None, fragment=None, InitialState_charge=None, 
                     theory.orcablocks=theory.orcablocks.replace(line,'')
                 if 'nroots' in line:
                     theory.orcablocks=theory.orcablocks.replace(line,'')
-            theory.orcablocks = theory.orcablocks.replace('\n\n','\n')
+
             print("theory.orcablocks: ", theory.orcablocks)
             #Add nel,norb and nroots lines back in.
             theory.orcablocks = theory.orcablocks.replace('%casscf', '%casscf\n' + "nel {}\n".format(CAS_Initial[0]) +
                                                           "norb {}\n".format(
                                                               CAS_Initial[1]) + "nroots {}\n".format(numionstates))
-
+            theory.orcablocks = theory.orcablocks.replace('\n\n','\n')
             print("theory.orcablocks: ", theory.orcablocks)
 
             #add=False
