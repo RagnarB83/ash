@@ -825,13 +825,17 @@ def grab_dets_from_CASSCF_output(file):
     with open(file) as f:
         for line in f:
             #Getting orbital ranges
+            # Internal (doubly occ)and external orbitals (empty)
             if grabrange is True:
+
                 if 'Internal' in line:
                     internal=int(line.split()[-2])
+                    internal_tuple = tuple([3] * internal)
                 if 'Active' in line:
                     active=int(line.split()[-2])
                 if 'External' in line:
                     external=int(line.split()[-2])
+                    external_tuple = tuple([0] * external)
             if 'Determined orbital ranges:' in line:
                 grabrange=True
             if 'Number of rotation parameters' in line:
@@ -840,6 +844,7 @@ def grab_dets_from_CASSCF_output(file):
             if 'DENSITY MATRIX' in line:
                 detgrab=False
             if detgrab is True:
+
                 if '[' in line and 'CFG' not in line:
                     det = line.split()[0]
                     #print("det:", det)
@@ -857,10 +862,6 @@ def grab_dets_from_CASSCF_output(file):
                         elif j == 'd':
                             detlist2.append(2)
                     #print("detlist2:", detlist2)
-
-                    #Internal (doubly occ)and external orbitals (empty)
-                    internal_tuple=tuple([3]*internal)
-                    external_tuple=tuple([0]*external)
                     #combining
                     det_tuple=internal_tuple+tuple(detlist2)+external_tuple
                     print("det_tuple : ", det_tuple)
@@ -894,8 +895,8 @@ def grab_dets_from_CASSCF_output(file):
                 bla = cfg[0].replace('[','').replace(']','').replace('CFG','')
                 det = bla.replace(str(2),str(3))
                 det2 = [int(i) for i in det]
-
-                det_tuple = tuple(det2)
+                #det_tuple = tuple(det2)
+                det_tuple = internal_tuple + tuple(det2) + external_tuple
                 coeff = cfg[1]
                 state.determinants[det_tuple] = coeff
             print("state.determinants: ", state.determinants)
