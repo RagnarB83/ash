@@ -1056,6 +1056,8 @@ def PhotoElectronSpectrum(theory=None, fragment=None, InitialState_charge=None, 
         if CAS is True:
             print("Modifying CASSCF block for final state, CAS({},{})".format(CAS_Final[0],CAS_Final[1]))
             print("{} electrons in {} orbitals".format(CAS_Final[0],CAS_Final[0]))
+            #Making sure multiplicties are sorted in ascending order and creating comma-sep string
+            CAS_mults=','.join(str(x) for x in sorted(mults))
 
             #Removing nel/norb/nroots lines
             for line in theory.orcablocks.split('\n'):
@@ -1065,23 +1067,30 @@ def PhotoElectronSpectrum(theory=None, fragment=None, InitialState_charge=None, 
                     theory.orcablocks=theory.orcablocks.replace(line,'')
                 if 'nroots' in line:
                     theory.orcablocks=theory.orcablocks.replace(line,'')
+                if 'mult' in line:
+                    theory.orcablocks=theory.orcablocks.replace(line,'')
             theory.orcablocks = theory.orcablocks.replace('\n\n','\n')
-            #Add nel,norb and nroots lines back in.
+
+            #Add nel,norb and nroots lines back in. And both spin multiplicities.
+
             theory.orcablocks = theory.orcablocks.replace('%casscf', '%casscf\n' + "nel {}\n".format(CAS_Final[0]) +
                                                           "norb {}\n".format(
-                                                              CAS_Final[1]) + "nroots {}\n".format(numionstates))
+                                                              CAS_Final[1]) + "nroots {}\n".format(numionstates) + "mult {}\n".format(CAS_mults))
             theory.orcablocks = theory.orcablocks.replace('\n\n','\n')
             theory.orcablocks = theory.orcablocks.replace('\n\n','\n')
 
             print(bcolors.OKGREEN, "Calculating Final State CASSCF Spin Multiplicities: ", [f.mult for f in Finalstates], bcolors.ENDC)
-            theory.charge = fstate.charge
-            theory.mult = fstate.mult
+            theory.charge = Finalstates[0].charge
+
+
             if initialorbitalfiles is not None:
+                print("not tested for CASSCF...")
                 print("initialorbitalfiles keyword provided.")
                 print("Will use file {} as guess GBW file for this Final state.".format(initialorbitalfiles[findex + 1]))
                 shutil.copyfile(initialorbitalfiles[findex + 1], theory.inputfilename + '.gbw')
 
             Singlepoint(fragment=fragment, theory=theory)
+
             #Getting state-energies of all states for each spin multiplicity (state-averaged calculation)
             fstates_dict = casscf_state_energies_grab("orca-input.out")
             print("fstates_dict: ", fstates_dict)
