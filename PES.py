@@ -312,7 +312,7 @@ def get_dets_from_single(logfile,restr,gscharge,gsmult,totnuccharge,frozencore):
     eigenvectors[gsmult].append( {key:1.0} )
     strings={}
     print("Final (single-det case) eigenvectors:", eigenvectors)
-    print("format_ci_vectors(eigenvectors[gsmult] :", format_ci_vectors(eigenvectors[gsmult])
+    print("format_ci_vectors(eigenvectors[gsmult] :", format_ci_vectors(eigenvectors[gsmult]))
     strings["dets."+str(gsmult)] = format_ci_vectors(eigenvectors[gsmult])
     print("strings: ", strings)
     return strings
