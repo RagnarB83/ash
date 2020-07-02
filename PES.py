@@ -736,6 +736,7 @@ def casscfenergygrab(file):
 
 #CASSCF: Grabbing all root energies
 def casscf_state_energies_grab(file):
+    Finished=False
     grab=False
     mult_dict={}
     state_energies=[];Energy=0.0
@@ -747,12 +748,14 @@ def casscf_state_energies_grab(file):
                 state_energies.append(Energy)
                 if len(state_energies) == mult:
                     mult_dict[mult] = state_energies
-            if 'CAS-SCF STATES FOR BLOCK' in line:
+            if Finished is True and 'CAS-SCF STATES FOR BLOCK' in line:
                 #New mult block. Resetting state-energies.
                 state_energies=[];Energy=0.0
                 mult=int(line.split()[7])
                 roots=int(line.split()[9])
                 grab=True
+            if 'Final CASSCF energy' in line:
+                Finished=True
     return mult_dict
 
 
