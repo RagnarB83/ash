@@ -1691,7 +1691,7 @@ def Read_old_results():
 
 
 def plot_PES_Spectrum(IPs=None, dysonnorms=None, mos_alpha=None, mos_beta=None, plotname='PES-plot',
-                          start=None, finish=None, broadening=0.1, points=10000, hftyp_I=None):
+                          start=None, finish=None, broadening=0.1, points=10000, hftyp_I=None, MOPlot=False):
     if IPs is None or dysonnorms is None:
         print("plot_PES_Spectrum requires IPs and dysonnorms variables")
         exit(1)
@@ -1748,40 +1748,41 @@ def plot_PES_Spectrum(IPs=None, dysonnorms=None, mos_alpha=None, mos_beta=None, 
                 occDOS_beta += occdospeak
 
         # Write dat/stk files for MO-DOS
-        datfile = open('MO-DOSPLOT' + '.dat', 'w')
-        stkfile_a = open('MO-DOSPLOT' + '_a.stk', 'w')
-        if hftyp_I == "UHF":
-            stkfile_b = open('MO-DOSPLOT' + '_b.stk', 'w')
-
-        for i in range(0, len(x)):
-            datfile.write(str(x[i]) + " ")
-            datfile.write(str(occDOS_alpha[i]) + " \n")
+        if MOPlot is True:
+            datfile = open('MO-DOSPLOT' + '.dat', 'w')
+            stkfile_a = open('MO-DOSPLOT' + '_a.stk', 'w')
             if hftyp_I == "UHF":
-                datfile.write(str(occDOS_beta[i]) + "\n")
-        datfile.close()
-        # Creating stk file for alpha. Only including sticks for plotted region
-        stk_alpha2 = []
-        stk_alpha2height = []
-        for i in mos_alpha:
-            if i > x[-1]:
-                # print("i is", i)
-                continue
-            else:
-                stkfile_a.write(str(i) + " " + str(stkheight) + "\n")
-                stk_alpha2.append(i)
-                stk_alpha2height.append(stkheight)
-        stkfile_a.close()
-        stk_beta2 = []
-        stk_beta2height = []
-        if hftyp_I == "UHF":
-            for i in mos_beta:
+                stkfile_b = open('MO-DOSPLOT' + '_b.stk', 'w')
+
+            for i in range(0, len(x)):
+                datfile.write(str(x[i]) + " ")
+                datfile.write(str(occDOS_alpha[i]) + " \n")
+                if hftyp_I == "UHF":
+                    datfile.write(str(occDOS_beta[i]) + "\n")
+            datfile.close()
+            # Creating stk file for alpha. Only including sticks for plotted region
+            stk_alpha2 = []
+            stk_alpha2height = []
+            for i in mos_alpha:
                 if i > x[-1]:
+                    # print("i is", i)
                     continue
                 else:
-                    stkfile_b.write(str(i) + " " + str(stkheight) + "\n")
-                    stk_beta2.append(i)
-                    stk_beta2height.append(stkheight)
-            stkfile_b.close()
+                    stkfile_a.write(str(i) + " " + str(stkheight) + "\n")
+                    stk_alpha2.append(i)
+                    stk_alpha2height.append(stkheight)
+            stkfile_a.close()
+            stk_beta2 = []
+            stk_beta2height = []
+            if hftyp_I == "UHF":
+                for i in mos_beta:
+                    if i > x[-1]:
+                        continue
+                    else:
+                        stkfile_b.write(str(i) + " " + str(stkheight) + "\n")
+                        stk_beta2.append(i)
+                        stk_beta2height.append(stkheight)
+                stkfile_b.close()
 
     ######################
     # TDDFT states DOS
