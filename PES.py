@@ -929,7 +929,7 @@ def PhotoElectronSpectrum(theory=None, fragment=None, InitialState_charge=None, 
         if CAS is True:
             print("Modifying CASSCF block for initial state, CAS({},{})".format(CAS_Initial[0],CAS_Initial[1]))
             print("{} electrons in {} orbitals".format(CAS_Initial[0],CAS_Initial[1]))
-
+            print("theory.orcablocks: ", theory.orcablocks)
             #Removing nel/norb/nroots lines
             for line in theory.orcablocks.split('\n'):
                 if 'nel' in line:
@@ -938,15 +938,23 @@ def PhotoElectronSpectrum(theory=None, fragment=None, InitialState_charge=None, 
                     theory.orcablocks=theory.orcablocks.replace(line,'')
                 if 'nroots' in line:
                     theory.orcablocks=theory.orcablocks.replace(line,'')
-            add=False
-            for line in theory.orcablocks.split('\n'):
-                if add is True:
-                    print("add is true")
-                    theory.orcablocks=theory.orcablocks.replace(line,line+"nel {}\n".format(CAS_Initial[0])+"norb {}\n".format(CAS_Initial[1])+"nroots {}\n".format(numionstates))
-                    break
-                if '%casscf' in line:
-                    print("here add true")
-                    add=True
+
+            print("theory.orcablocks: ", theory.orcablocks)
+            theory.orcablocks = theory.orcablocks.replace('%casscf', '%casscf' + "nel {}\n".format(CAS_Initial[0]) +
+                                                          "norb {}\n".format(
+                                                              CAS_Initial[1]) + "nroots {}\n".format(numionstates))
+
+            print("theory.orcablocks: ", theory.orcablocks)
+
+            #add=False
+            #for line in theory.orcablocks.split('\n'):
+            #    if add is True:
+            #        print("add is true")
+            #        theory.orcablocks=theory.orcablocks.replace(line,line+"nel {}\n".format(CAS_Initial[0])+"norb {}\n".format(CAS_Initial[1])+"nroots {}\n".format(numionstates))
+            #        break
+            #    if '%casscf' in line:
+            #        print("here add true")
+            #        add=True
 
         # For orbital analysis
         if 'NORMALPRINT' not in theory.orcasimpleinput.upper():
