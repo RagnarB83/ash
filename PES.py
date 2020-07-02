@@ -1335,7 +1335,9 @@ def PhotoElectronSpectrum(theory=None, fragment=None, InitialState_charge=None, 
         print(bcolors.OKBLUE,"MO IPs (negative of MO energies of State I):", bcolors.ENDC)
         print(moips)
         print("")
-
+    else:
+        stk_alpha=[]
+        stk_beta=[]
 
 
 
