@@ -930,7 +930,8 @@ def PhotoElectronSpectrum(theory=None, fragment=None, InitialState_charge=None, 
             print("Modifying CASSCF block for initial state, CAS({},{})".format(CAS_Initial[0],CAS_Initial[1]))
             print("{} electrons in {} orbitals".format(CAS_Initial[0],CAS_Initial[1]))
             print("theory.orcablocks: ", theory.orcablocks)
-            #Removing nel/norb/nroots lines
+
+            #Removing nel/norb/nroots lines if user added
             for line in theory.orcablocks.split('\n'):
                 if 'nel' in line:
                     theory.orcablocks=theory.orcablocks.replace(line,'')
@@ -938,8 +939,9 @@ def PhotoElectronSpectrum(theory=None, fragment=None, InitialState_charge=None, 
                     theory.orcablocks=theory.orcablocks.replace(line,'')
                 if 'nroots' in line:
                     theory.orcablocks=theory.orcablocks.replace(line,'')
-
+            theory.orcablocks = theory.orcablocks.replace('\n\n')
             print("theory.orcablocks: ", theory.orcablocks)
+            #Add nel,norb and nroots lines back in.
             theory.orcablocks = theory.orcablocks.replace('%casscf', '%casscf\n' + "nel {}\n".format(CAS_Initial[0]) +
                                                           "norb {}\n".format(
                                                               CAS_Initial[1]) + "nroots {}\n".format(numionstates))
