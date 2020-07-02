@@ -793,7 +793,8 @@ def Gaussian(x, mu, strength, sigma):
 def grab_dets_from_CASSCF_output(file):
 
     class state_dets():
-        def __init__(self, root,energy):
+        def __init__(self, root,energy,mult):
+            self.mult = mult
             self.root = root
             self.energy = energy
             self.determinants = {}
@@ -832,9 +833,10 @@ def grab_dets_from_CASSCF_output(file):
                 if 'ROOT' in line:
                     root=int(line.split()[1][0])
                     energy = float(line.split()[3])
-                    state = state_dets(root,energy)
+                    state = state_dets(root,energy,mult)
                     list_of_states.append(state)
-
+            if 'CAS-SCF STATES FOR BLOCK' in line:
+                mult =int(line.split()[6])
             if '  Extended CI Printing (values > TPrintWF)' in line:
                 detgrab=True
     print("list_of_states:", list_of_states)
@@ -851,13 +853,19 @@ def grab_dets_from_CASSCF_output(file):
             for cfg in state.configurations.items():
                 bla = cfg[0].replace('[','').replace(']','').replace('CFG','')
                 det = bla.replace(str(2),str(3))
-                det2 = [i for i in det]
+                det2 = [int(i) for i in det]
 
                 det_tuple = tuple(det2)
                 coeff = cfg[1]
                 state.determinants[det_tuple] = coeff
             print("state.determinants: ", state.determinants)
-    return list_of_states
+
+    print("list_of_states:", list_of_states)
+    #Return a dictionary
+    print("Warning. Currently only working for single mult")
+    final = { mult : [state.determinants for state in list_of_states]}
+    print("final :", final)
+    return final
 
 ########################
 # MAIN program
@@ -1343,22 +1351,32 @@ def PhotoElectronSpectrum(theory=None, fragment=None, InitialState_charge=None, 
             #Initial
             init_state = grab_dets_from_CASSCF_output(stateI.outfile)
             print("init_state:", init_state)
-            init_state_dict = [i.determinants for i in init_state]
-            print("init_state_dict:", init_state_dict)
-            #det_init_bla = format_ci_vectors(init_state_dict)
-            #print("det_init_bla : ", det_init_bla)
-            strings = {}
-            strings["dets." + str(Initialstate_mult)] = format_ci_vectors(init_state_dict)
-            det_init = strings
+            #init_state_dict = [i.determinants for i in init_state]
+            #init_state_dict2 = {Initialstate_mult : init_state_dict}
+            #print("init_state_dict:", init_state_dict)
+            #print("init_state_dict2:", init_state_dict2)
+            det_init = format_ci_vectors(init_state[Initialstate_mult])
             print("det_init:", det_init)
-            exit()
+            # Printing to file
+            writestringtofile(det_init, "dets_init")
 
             #Final state. Just need to point to the one outputfile
             final_states = grab_dets_from_CASSCF_output(Finalstates[0].outfile)
-            final_states_dict = [i.determinants for i in final_states]
-            print("final_states_dict:", final_states_dict)
-            det_final = format_ci_vectors(final_states_dict)
-            print("det_final : ", det_final)
+            print("final_states:", final_states)
+            #final_states_dict = [i.determinants for i in final_states]
+            #print("final_states_dict:", final_states_dict)
+            #final_states_dict2 = {Initialstate_mult : final_states_dict}
+            #print("final_states_dict2:", final_states_dict2)
+            for fstate in Finalstates:
+                print("fstate: ", fstate)
+                print("fstate.mult :", fstate.mult)
+                det_final = format_ci_vectors(final_states[fstate.mult])
+                print("det_final : ", det_final)
+                # Printing to file
+                writestringtofile(det_final, "dets_final_mult" + str(fstate.mult))
+
+
+
         else:
             #TDDFT: GETTING DETERMINANTS FROM CIS FILE
             # Final state. Create detfiles
@@ -1378,9 +1396,9 @@ def PhotoElectronSpectrum(theory=None, fragment=None, InitialState_charge=None, 
             # RB simplification. Separate function for getting determinant-string for Initial State where only one.
             det_init = get_dets_from_single(stateI.outfile, stateI.restricted, stateI.charge, stateI.mult, totnuccharge, frozencore)
             print("det_init: ", det_init)
-        # Printing to file
-        for blockname, string in det_init.items():
-            writestringtofile(string, "dets_init")
+            # Printing to file
+            for blockname, string in det_init.items():
+                writestringtofile(string, "dets_init")
 
         print(bcolors.OKGREEN, "AO matrix, MO coefficients and excited state determinants have been written to files:",
               bcolors.ENDC)
