@@ -940,7 +940,7 @@ def PhotoElectronSpectrum(theory=None, fragment=None, InitialState_charge=None, 
                     theory.orcablocks=theory.orcablocks.replace(line,'')
 
             print("theory.orcablocks: ", theory.orcablocks)
-            theory.orcablocks = theory.orcablocks.replace('%casscf', '%casscf' + "nel {}\n".format(CAS_Initial[0]) +
+            theory.orcablocks = theory.orcablocks.replace('%casscf', '%casscf\n' + "nel {}\n".format(CAS_Initial[0]) +
                                                           "norb {}\n".format(
                                                               CAS_Initial[1]) + "nroots {}\n".format(numionstates))
 
