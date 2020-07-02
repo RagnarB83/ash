@@ -901,11 +901,14 @@ def PhotoElectronSpectrum(theory=None, fragment=None, InitialState_charge=None, 
 
 
     if type(Ionizedstate_mult) is int:
+
         stateF1 = MolState(charge=Ionizedstate_charge, mult=Ionizedstate_mult)
         MultipleSpinStates = False
         Finalstates=[stateF1]
         print(bcolors.OKBLUE, "StateF_1: Charge=", Finalstates[0].charge, "Multiplicity", Finalstates[0].mult,
           bcolors.ENDC)
+        #Changing to list for future
+        Ionizedstate_mult=[Ionizedstate_mult]
     #Case list provided for ionized state. Could mean multiple spin states: e.g.  Ionizedstate_mult=[5,7]
     elif type(Ionizedstate_mult) is list:
 
