@@ -589,12 +589,12 @@ def format_ci_vectors(ci_vectors):
     return string
 
 #Run wfoverlap program
-def run_wfoverlap(wfoverlapinput,path_wfoverlap):
+def run_wfoverlap(wfoverlapinput,path_wfoverlap,memory):
     wfoverlapfilefile = open('wfovl.inp', 'w')
     for l in wfoverlapinput:
         wfoverlapfilefile.write(l)
     wfoverlapfilefile.close()
-    wfcommand='%s -m 2000 -f wfovl.inp' % (path_wfoverlap)
+    wfcommand="{} -m {} -f wfovl.inp".format(path_wfoverlap,memory)
     print("Running wfoverlap program:")
     print("may take a while...")
     print(wfcommand)
@@ -913,16 +913,19 @@ def grab_dets_from_CASSCF_output(file):
 ########################
 
 # Calculate PES spectra using the Dyson orbital approach.
-
+# Memory for WFoverlap in MB. Hardcoded
 def PhotoElectronSpectrum(theory=None, fragment=None, InitialState_charge=None, Initialstate_mult=None,
                           Ionizedstate_charge=None, Ionizedstate_mult=None, numionstates=50, path_wfoverlap=None, tda=True,
                           brokensym=False, HSmult=None, atomstoflip=None, initialorbitalfiles=None, Densities='SCF', densgridvalue=100,
-                          CAS=False, CAS_Initial=None, CAS_Final = None):
+                          CAS=False, CAS_Initial=None, CAS_Final = None, memory=20000):
     blankline()
     print(bcolors.OKGREEN,"-------------------------------------------------------------------",bcolors.ENDC)
     print(bcolors.OKGREEN,"PhotoElectronSpectrum: Calculating PES spectra via TDDFT and Dyson-norm approach",bcolors.ENDC)
     print(bcolors.OKGREEN,"-------------------------------------------------------------------",bcolors.ENDC)
     blankline()
+
+
+
     if InitialState_charge is None or Initialstate_mult is None or Ionizedstate_charge is None or Ionizedstate_mult is None:
         print("Provide charge and spin multiplicity of initial and ionized state: InitialState_charge, InitialState_mult, Ionizedstate_charge,Ionizedstate_mult ")
         exit(1)
@@ -1490,7 +1493,7 @@ def PhotoElectronSpectrum(theory=None, fragment=None, InitialState_charge=None, 
             wfoverlapinput = wfoverlapinput.replace("dets_final", "dets_final_mult"+str(fstate.mult))
             wfoverlapinput = wfoverlapinput.replace("mos_final", "mos_final-mult"+str(fstate.mult))
 
-            run_wfoverlap(wfoverlapinput,path_wfoverlap)
+            run_wfoverlap(wfoverlapinput,path_wfoverlap,memory)
 
             #This grabs Dyson norms from wfovl.out file
             dysonnorms=grabDysonnorms()
