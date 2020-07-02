@@ -724,11 +724,14 @@ def scfenergygrab(file):
 
 #Grabbing first root energy
 def casscfenergygrab(file):
-    string='ROOT   0:  E='
+    grab=False
+    string='STATE   0 MULT'
     with open(file) as f:
         for line in f:
             if string in line:
-                Energy=float(line.split()[-2])
+                Energy=float(line.split()[5])
+            if 'CAS-SCF STATES FOR BLOCK' in line:
+                grab=True
     return Energy
 
 def tddftgrab(file):
@@ -940,6 +943,7 @@ def PhotoElectronSpectrum(theory=None, fragment=None, InitialState_charge=None, 
                 if 'nroots' in line:
                     theory.orcablocks=theory.orcablocks.replace(line,'')
             theory.orcablocks = theory.orcablocks.replace('\n\n','\n')
+
             #Add nel,norb and nroots lines back in.
             theory.orcablocks = theory.orcablocks.replace('%casscf', '%casscf\n' + "nel {}\n".format(CAS_Initial[0]) +
                                                           "norb {}\n".format(
@@ -992,6 +996,7 @@ def PhotoElectronSpectrum(theory=None, fragment=None, InitialState_charge=None, 
             os.chdir('..')
         #Note: Using SCF energy and not Final Single Point energy (does not work for TDDFT)
         if CAS is True:
+            print("here")
             stateI.energy=casscfenergygrab("orca-input.out")
         else:
             stateI.energy=scfenergygrab("orca-input.out")
