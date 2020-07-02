@@ -907,8 +907,6 @@ def PhotoElectronSpectrum(theory=None, fragment=None, InitialState_charge=None, 
         Finalstates=[stateF1]
         print(bcolors.OKBLUE, "StateF_1: Charge=", Finalstates[0].charge, "Multiplicity", Finalstates[0].mult,
           bcolors.ENDC)
-        #Changing to list for future
-        Ionizedstate_mult=[Ionizedstate_mult]
     #Case list provided for ionized state. Could mean multiple spin states: e.g.  Ionizedstate_mult=[5,7]
     elif type(Ionizedstate_mult) is list:
 
@@ -1060,8 +1058,8 @@ def PhotoElectronSpectrum(theory=None, fragment=None, InitialState_charge=None, 
             print("Modifying CASSCF block for final state, CAS({},{})".format(CAS_Final[0],CAS_Final[1]))
             print("{} electrons in {} orbitals".format(CAS_Final[0],CAS_Final[0]))
             #Making sure multiplicties are sorted in ascending order and creating comma-sep string
-            CAS_mults=','.join(str(x) for x in sorted(Ionizedstate_mult))
-
+            CAS_mults=','.join(str(x) for x in sorted([f.mult for f in Finalstates]))
+            print("CAS_mults:", CAS_mults)
             #Removing nel/norb/nroots lines
             for line in theory.orcablocks.split('\n'):
                 if 'nel' in line:
@@ -1084,7 +1082,8 @@ def PhotoElectronSpectrum(theory=None, fragment=None, InitialState_charge=None, 
 
             print(bcolors.OKGREEN, "Calculating Final State CASSCF Spin Multiplicities: ", [f.mult for f in Finalstates], bcolors.ENDC)
             theory.charge = Finalstates[0].charge
-
+            #Changing to first Finalstate-mult just to satisfy ORCA.
+            theory.mult = Finalstates[0].mult
 
             if initialorbitalfiles is not None:
                 print("not tested for CASSCF...")
