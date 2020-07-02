@@ -760,6 +760,25 @@ def casscf_state_energies_grab(file):
                 Finished=True
     return mult_dict
 
+#CASSCF: Grab orbital ranges
+def casscf_orbitalranges_grab(file):
+    grab=False
+    with open(file) as f:
+        for line in f:
+            if grab is True:
+                if 'Internal' in line:
+                    internal=int(line.split()[-2])
+                if 'Active' in line:
+                    active=int(line.split()[-2])
+                if 'External' in line:
+                    external=int(line.split()[-2])
+            if 'Determined orbital ranges:' in line:
+                grab=True
+            if 'Number of rotation parameters' in line:
+                grab=False
+
+    return internal,active,external
+
 
 def tddftgrab(file):
     tddftstates=[]
@@ -790,6 +809,7 @@ def Gaussian(x, mu, strength, sigma):
 
 
 #Grab determinants from CASSCF-ORCA output with option PrintWF det
+
 def grab_dets_from_CASSCF_output(file):
 
     class state_dets():
@@ -801,8 +821,22 @@ def grab_dets_from_CASSCF_output(file):
             self.configurations = {}
     list_of_states=[]
     detgrab=False
+    grabrange=False
     with open(file) as f:
         for line in f:
+            #Getting orbital ranges
+            if grabrange is True:
+                if 'Internal' in line:
+                    internal=int(line.split()[-2])
+                if 'Active' in line:
+                    active=int(line.split()[-2])
+                if 'External' in line:
+                    external=int(line.split()[-2])
+            if 'Determined orbital ranges:' in line:
+                grabrange=True
+            if 'Number of rotation parameters' in line:
+                grabrange=False
+
             if 'DENSITY MATRIX' in line:
                 detgrab=False
             if detgrab is True:
@@ -823,7 +857,13 @@ def grab_dets_from_CASSCF_output(file):
                         elif j == 'd':
                             detlist2.append(2)
                     #print("detlist2:", detlist2)
-                    det_tuple=tuple(detlist2)
+
+                    #Internal (doubly occ)and external orbitals (empty)
+                    internal_tuple=tuple([3]*internal)
+                    external_tuple=tuple([0]*external)
+                    #combining
+                    det_tuple=internal_tuple+tuple(detlist2)+external_tuple
+                    print("det_tuple : ", det_tuple)
                     coeff = float(line.split()[-1])
                     state.determinants[det_tuple] = coeff
                 if '[' in line and 'CFG' in line:
@@ -1055,6 +1095,10 @@ def PhotoElectronSpectrum(theory=None, fragment=None, InitialState_charge=None, 
             print("here")
             stateI.energy=casscfenergygrab("orca-input.out")
             print("stateI.energy: ", stateI.energy)
+
+            #Get orbital ranges (stateI is sufficient)
+            internal_orbs,active_orbs,external_orbs = casscf_orbitalranges_grab("orca-input.out")
+
         else:
             stateI.energy=scfenergygrab("orca-input.out")
 
@@ -1347,7 +1391,7 @@ def PhotoElectronSpectrum(theory=None, fragment=None, InitialState_charge=None, 
 
         if CAS is True:
             #CASSCF: GETTING GETERMINANTS FROM DETERMINANT-PRINTING OPTION in OUTPUTFILE
-
+            #Combining with internal and external orbitals: internal_orbs,active_orbs,external_orbs
             #Initial
             init_state = grab_dets_from_CASSCF_output(stateI.outfile)
             print("init_state:", init_state)
