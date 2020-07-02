@@ -864,7 +864,7 @@ def grab_dets_from_CASSCF_output(file):
                     #print("detlist2:", detlist2)
                     #combining
                     det_tuple=internal_tuple+tuple(detlist2)+external_tuple
-                    print("det_tuple : ", det_tuple)
+                    #print("det_tuple : ", det_tuple)
                     coeff = float(line.split()[-1])
                     state.determinants[det_tuple] = coeff
                 if '[' in line and 'CFG' in line:
@@ -880,10 +880,10 @@ def grab_dets_from_CASSCF_output(file):
                 mult =int(line.split()[6])
             if '  Extended CI Printing (values > TPrintWF)' in line:
                 detgrab=True
-    print("list_of_states:", list_of_states)
-    print(list_of_states[0])
-    print(list_of_states[0].determinants)
-    print(list_of_states[0].configurations)
+    #print("list_of_states:", list_of_states)
+    #print(list_of_states[0])
+    #print(list_of_states[0].determinants)
+    #print(list_of_states[0].configurations)
 
     for state in list_of_states:
         if len(state.determinants) == 0:
@@ -901,11 +901,11 @@ def grab_dets_from_CASSCF_output(file):
                 state.determinants[det_tuple] = coeff
             print("state.determinants: ", state.determinants)
 
-    print("list_of_states:", list_of_states)
+    #print("list_of_states:", list_of_states)
     #Return a dictionary
     print("Warning. Currently only working for single mult")
     final = { mult : [state.determinants for state in list_of_states]}
-    print("final :", final)
+    #print("final :", final)
     return final
 
 ########################
