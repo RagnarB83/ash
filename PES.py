@@ -1057,7 +1057,7 @@ def PhotoElectronSpectrum(theory=None, fragment=None, InitialState_charge=None, 
             print("Modifying CASSCF block for final state, CAS({},{})".format(CAS_Final[0],CAS_Final[1]))
             print("{} electrons in {} orbitals".format(CAS_Final[0],CAS_Final[0]))
             #Making sure multiplicties are sorted in ascending order and creating comma-sep string
-            CAS_mults=','.join(str(x) for x in sorted(mults))
+            CAS_mults=','.join(str(x) for x in sorted(Ionizedstate_mult))
 
             #Removing nel/norb/nroots lines
             for line in theory.orcablocks.split('\n'):
