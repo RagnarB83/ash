@@ -746,6 +746,8 @@ def casscf_state_energies_grab(file):
     string='STATE '
     with open(file) as f:
         for line in f:
+            if 'SA-CASSCF TRANSITION ENERGIES' in line:
+                grab=False
             if grab is True and string in line:
                 print("line: ", line)
                 Energy=float(line.split()[5])
