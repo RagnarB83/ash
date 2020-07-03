@@ -759,7 +759,8 @@ def casscf_state_energies_grab(file):
                 #New mult block. Resetting state-energies.
                 state_energies=[];Energy=0.0
                 mult=int(line.split()[6])
-                roots=int(line.split()[8])
+                #roots=int(line.split()[8])
+                roots=int(line.split()[7:9][-1].replace('NROOTS=',''))
                 grab=True
             if 'Final CASSCF energy' in line:
                 Finished=True
