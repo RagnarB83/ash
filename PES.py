@@ -936,7 +936,8 @@ def grab_dets_from_CASSCF_output(file):
 
     #print("list_of_states:", list_of_states)
 
-    mults = list(set([state.mults for state in list_of_states]))
+    mults = list(set([state.mult for state in list_of_states]))
+    print("mults : ", mults)
     #Return a dictionary
 
     for mult in mults:
