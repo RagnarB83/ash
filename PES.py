@@ -892,7 +892,7 @@ def grab_dets_from_CASSCF_output(file):
                         state.determinants[det_tuple] = coeff
 
 
-                if 'ROOT' in line:
+                if 'ROOT ' in line:
                     print("line:", line)
                     root=int(line.split()[1][0])
                     energy = float(line.split()[3])
