@@ -743,7 +743,7 @@ def casscf_state_energies_grab(file):
     grab=False
     mult_dict={}
     state_energies=[];Energy=0.0
-    string='STATE'
+    string='STATE '
     with open(file) as f:
         for line in f:
             if grab is True and string in line:
