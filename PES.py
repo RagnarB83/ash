@@ -1331,9 +1331,9 @@ def PhotoElectronSpectrum(theory=None, fragment=None, InitialState_charge=None, 
     blankline()
     print("All combined Ion-state energies (au):", Finalionstates)
 
-   if noDyson is True:
-       print("NoDyson is True. Exiting...")
-       exit()
+    if noDyson is True:
+        print("NoDyson is True. Exiting...")
+        exit()
 
 
     if CAS is not True:
