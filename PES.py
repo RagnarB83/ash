@@ -598,7 +598,7 @@ def run_wfoverlap(wfoverlapinput,path_wfoverlap,memory):
     print("Running wfoverlap program:")
     print("may take a while...")
     print(wfcommand)
-    print("OMP num threads : ", os.environ["OMP_NUM_THREADS"])
+    print("OMP num threads available to WFoverlap: ", os.environ["OMP_NUM_THREADS"])
     try:
         proc=sp.Popen(wfcommand,shell=True,stdout=sp.PIPE,stderr=sp.PIPE)
         wfoverlapout=proc.communicate()
@@ -872,6 +872,20 @@ def grab_dets_from_CASSCF_output(file):
                     cfg = line.split()[0]
                     coeff = float(line.split()[-1])
                     state.configurations[cfg] = coeff
+
+                    #CASE: CFG contains only 2 and 0s. That means a situation where CFG and Det is same thing
+                    # But det info is not printed so we need to add it
+                    if '1' not in line:
+                        print("Found CFG without Det info. Adding to determinants")
+
+                        bla = cfg[0].replace('[','').replace(']','').replace('CFG','')
+                        det = bla.replace(str(2),str(3))
+                        det2 = [int(i) for i in det]
+                        det_tuple = internal_tuple + tuple(det2) + external_tuple
+                        print("det_tuple: ", det_tuple)
+                        state.determinants[det_tuple] = coeff
+
+
                 if 'ROOT' in line:
                     root=int(line.split()[1][0])
                     energy = float(line.split()[3])
@@ -924,7 +938,7 @@ def PhotoElectronSpectrum(theory=None, fragment=None, InitialState_charge=None, 
     print(bcolors.OKGREEN,"PhotoElectronSpectrum: Calculating PES spectra via TDDFT and Dyson-norm approach",bcolors.ENDC)
     print(bcolors.OKGREEN,"-------------------------------------------------------------------",bcolors.ENDC)
     blankline()
-    print("Numcores used for QM-theory and WFoverlap: ", numcores)
+    print("Numcores used for WFoverlap: ", numcores)
     os.environ["OMP_NUM_THREADS"] = str(numcores)
     print("OMP_NUM_THREADS : ", os.environ["OMP_NUM_THREADS"])
 
