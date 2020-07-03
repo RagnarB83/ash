@@ -755,6 +755,7 @@ def casscf_state_energies_grab(file):
                 if len(state_energies) == roots:
                     mult_dict[mult] = state_energies
             if Finished is True and 'CAS-SCF STATES FOR BLOCK' in line:
+                print("line :", lines)
                 #New mult block. Resetting state-energies.
                 state_energies=[];Energy=0.0
                 mult=int(line.split()[6])
