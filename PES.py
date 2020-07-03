@@ -938,10 +938,10 @@ def grab_dets_from_CASSCF_output(file):
 
     mults = list(set([state.mult for state in list_of_states]))
     print("mults : ", mults)
-    #Return a dictionary
-
+    #Return a dictionary with all mults and all states
+    final = {}
     for mult in mults:
-        final = { mult : [state.determinants for state in list_of_states if state.mult == mult ]}
+        final[mult] = [state.determinants for state in list_of_states if state.mult == mult ]
     print("final :", final)
     return final
 
