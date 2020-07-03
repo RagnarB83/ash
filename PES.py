@@ -875,10 +875,11 @@ def grab_dets_from_CASSCF_output(file):
 
                     #CASE: CFG contains only 2 and 0s. That means a situation where CFG and Det is same thing
                     # But det info is not printed so we need to add it
-                    if '1' not in line:
+                    if '1' not in cfg:
+                        print("cfg : ", cfg)
                         print("Found CFG without Det info. Adding to determinants")
                         print("line:", line)
-                        bla = cfg[0].replace('[','').replace(']','').replace('CFG','')
+                        bla = cfg.replace('[','').replace(']','').replace('CFG','')
                         print("bla:", bla)
                         det = bla.replace(str(2),str(3))
                         print("det:", det)
