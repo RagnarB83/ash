@@ -906,7 +906,9 @@ def grab_dets_from_CASSCF_output(file):
     #print(list_of_states[0].determinants)
     #print(list_of_states[0].configurations)
 
-    for state in list_of_states:
+    for n,state in enumerate(list_of_states):
+        print("------------------------")
+        print("This is state {}  with mult {} and energy {} and root {}".format(n,state.mult, state.energy, state.root))
         print("length of state CFGs :", len(state.configurations))
         print("length of state determinants :", len(state.determinants))
         if len(state.determinants) == 0:
@@ -1441,6 +1443,7 @@ def PhotoElectronSpectrum(theory=None, fragment=None, InitialState_charge=None, 
             #CASSCF: GETTING GETERMINANTS FROM DETERMINANT-PRINTING OPTION in OUTPUTFILE
             #Combining with internal and external orbitals: internal_orbs,active_orbs,external_orbs
             #Initial
+            print("Grabbing determinants from Initial State output")
             init_state = grab_dets_from_CASSCF_output(stateI.outfile)
             #print("init_state:", init_state)
             #init_state_dict = [i.determinants for i in init_state]
@@ -1451,8 +1454,9 @@ def PhotoElectronSpectrum(theory=None, fragment=None, InitialState_charge=None, 
             #print("det_init:", det_init)
             # Printing to file
             writestringtofile(det_init, "dets_init")
-
+            print("")
             #Final state. Just need to point to the one outputfile
+            print("Grabbing determinants from Final State output")
             final_states = grab_dets_from_CASSCF_output(Finalstates[0].outfile)
             #print("final_states:", final_states)
             #final_states_dict = [i.determinants for i in final_states]
