@@ -904,6 +904,8 @@ def grab_dets_from_CASSCF_output(file):
     #print(list_of_states[0].configurations)
 
     for state in list_of_states:
+        print("length of state CFGs :", len(state.configurations))
+        print("length of state determinants :", len(state.determinants))
         if len(state.determinants) == 0:
             print("WARNING!!! No determinant output found.")
             print("Must be because CFG and det is the same. Using CFG info ")
