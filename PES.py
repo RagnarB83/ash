@@ -904,11 +904,14 @@ def grab_dets_from_CASSCF_output(file):
                 mult =int(line.split()[6])
             if '  Extended CI Printing (values > TPrintWF)' in line:
                 detgrab=True
+
     #print("list_of_states:", list_of_states)
     #print(list_of_states[0])
     #print(list_of_states[0].determinants)
     #print(list_of_states[0].configurations)
 
+
+    #Going through
     for n,state in enumerate(list_of_states):
         print("------------------------")
         print("This is state {}  with mult {} and energy {} and root {}".format(n,state.mult, state.energy, state.root))
@@ -916,6 +919,8 @@ def grab_dets_from_CASSCF_output(file):
         print("length of state determinants :", len(state.determinants))
         if len(state.determinants) == 0:
             print("WARNING!!! No determinant output found.")
+            print("THIS should go away. Disabling for now...")
+            exit()
             print("Must be because CFG and det is the same. Using CFG info ")
             print("WARNING!!!")
             print("state.configurations : ", state.configurations)
@@ -930,10 +935,13 @@ def grab_dets_from_CASSCF_output(file):
             print("state.determinants: ", state.determinants)
 
     #print("list_of_states:", list_of_states)
+
+    mults = list(set([state.mults for state in list_of_states]))
     #Return a dictionary
-    print("Warning. Currently only working for single mult")
-    final = { mult : [state.determinants for state in list_of_states]}
-    #print("final :", final)
+
+    for mult in mults:
+        final = { mult : [state.determinants for state in list_of_states if state.mult == mult ]}
+    print("final :", final)
     return final
 
 ########################
