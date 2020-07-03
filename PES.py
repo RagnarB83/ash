@@ -845,6 +845,8 @@ def grab_dets_from_CASSCF_output(file):
             if 'Number of rotation parameters' in line:
                 grabrange=False
 
+            if 'SA-CASSCF TRANSITION ENERGIES' in line:
+                detgrab=False
             if 'DENSITY MATRIX' in line:
                 detgrab=False
             if detgrab is True:
