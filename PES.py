@@ -747,6 +747,7 @@ def casscf_state_energies_grab(file):
     with open(file) as f:
         for line in f:
             if grab is True and string in line:
+                print("line: ", line)
                 Energy=float(line.split()[5])
                 state_energies.append(Energy)
                 if len(state_energies) == roots:
