@@ -598,6 +598,7 @@ def run_wfoverlap(wfoverlapinput,path_wfoverlap,memory):
     print("Running wfoverlap program:")
     print("may take a while...")
     print(wfcommand)
+    print("OMP num threads : ", os.environ["OMP_NUM_THREADS"])
     try:
         proc=sp.Popen(wfcommand,shell=True,stdout=sp.PIPE,stderr=sp.PIPE)
         wfoverlapout=proc.communicate()
@@ -925,6 +926,13 @@ def PhotoElectronSpectrum(theory=None, fragment=None, InitialState_charge=None, 
     blankline()
     print("Numcores used for QM-theory and WFoverlap: ", numcores)
     os.environ["OMP_NUM_THREADS"] = str(numcores)
+    print("OMP_NUM_THREADS : ", os.environ["OMP_NUM_THREADS"])
+
+    if CAS is True:
+        print("CASSCF option active!")
+        if CASCI is True:
+            print("CASCI option on! Initial state will be don with CASSCF while Final ionized states will do CAS-CI")
+
 
 
     if InitialState_charge is None or Initialstate_mult is None or Ionizedstate_charge is None or Ionizedstate_mult is None:
@@ -1172,6 +1180,7 @@ def PhotoElectronSpectrum(theory=None, fragment=None, InitialState_charge=None, 
 
             #CAS-CI option for Ionized FInalstate. CASSCF orb-opt done on Initial state but then CAS-CI using Init-state orbs on Final-states
             if CASCI is True:
+                print("CASCI option on! Final ionized states performed at CAS-CI level using Initial-state orbitals.")
                 theory.orcasimpleinput = theory.orcasimpleinput + ' noiter'
 
 
