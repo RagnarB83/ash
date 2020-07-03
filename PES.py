@@ -883,16 +883,16 @@ def grab_dets_from_CASSCF_output(file):
                     #CASE: CFG contains only 2 and 0s. That means a situation where CFG and Det is same thing
                     # But det info is not printed so we need to add it
                     if '1' not in cfg:
-                        print("cfg : ", cfg)
+                        #print("cfg : ", cfg)
                         print("Found CFG without Det info. Adding to determinants")
-                        print("line:", line)
+                        #print("line:", line)
                         bla = cfg.replace('[','').replace(']','').replace('CFG','')
-                        print("bla:", bla)
+                        #print("bla:", bla)
                         det = bla.replace(str(2),str(3))
-                        print("det:", det)
+                        #print("det:", det)
                         det2 = [int(i) for i in det]
                         det_tuple = internal_tuple + tuple(det2) + external_tuple
-                        print("det_tuple: ", det_tuple)
+                        #print("det_tuple: ", det_tuple)
                         state.determinants[det_tuple] = coeff
 
 
@@ -934,17 +934,16 @@ def grab_dets_from_CASSCF_output(file):
                 det_tuple = internal_tuple + tuple(det2) + external_tuple
                 coeff = cfg[1]
                 state.determinants[det_tuple] = coeff
-            print("state.determinants: ", state.determinants)
+            #print("state.determinants: ", state.determinants)
 
     #print("list_of_states:", list_of_states)
 
     mults = list(set([state.mult for state in list_of_states]))
-    print("mults : ", mults)
     #Return a dictionary with all mults and all states
     final = {}
     for mult in mults:
         final[mult] = [state.determinants for state in list_of_states if state.mult == mult ]
-    print("final :", final)
+    #print("final :", final)
     return final
 
 ########################
