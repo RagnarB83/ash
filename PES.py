@@ -893,6 +893,7 @@ def grab_dets_from_CASSCF_output(file):
 
 
                 if 'ROOT' in line:
+                    print("line:", line)
                     root=int(line.split()[1][0])
                     energy = float(line.split()[3])
                     state = state_dets(root,energy,mult)
