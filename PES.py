@@ -917,7 +917,7 @@ def grab_dets_from_CASSCF_output(file):
 def PhotoElectronSpectrum(theory=None, fragment=None, InitialState_charge=None, Initialstate_mult=None,
                           Ionizedstate_charge=None, Ionizedstate_mult=None, numionstates=50, path_wfoverlap=None, tda=True,
                           brokensym=False, HSmult=None, atomstoflip=None, initialorbitalfiles=None, Densities='SCF', densgridvalue=100,
-                          CAS=False, CAS_Initial=None, CAS_Final = None, memory=20000, numcores=1, noDyson=False):
+                          CAS=False, CAS_Initial=None, CAS_Final = None, memory=20000, numcores=1, noDyson=False, CASCI=False):
     blankline()
     print(bcolors.OKGREEN,"-------------------------------------------------------------------",bcolors.ENDC)
     print(bcolors.OKGREEN,"PhotoElectronSpectrum: Calculating PES spectra via TDDFT and Dyson-norm approach",bcolors.ENDC)
@@ -1170,6 +1170,12 @@ def PhotoElectronSpectrum(theory=None, fragment=None, InitialState_charge=None, 
             theory.orcablocks = theory.orcablocks.replace('\n\n','\n')
             theory.orcablocks = theory.orcablocks.replace('\n\n','\n')
 
+            #CAS-CI option for Ionized FInalstate. CASSCF orb-opt done on Initial state but then CAS-CI using Init-state orbs on Final-states
+            if CASCI is True:
+                theory.orcasimpleinput = theory.orcasimpleinput + ' noiter'
+
+
+
             print(bcolors.OKGREEN, "Calculating Final State CASSCF Spin Multiplicities: ", [f.mult for f in Finalstates], bcolors.ENDC)
             theory.charge = Finalstates[0].charge
             #Changing to first Finalstate-mult just to satisfy ORCA.
@@ -1405,28 +1411,28 @@ def PhotoElectronSpectrum(theory=None, fragment=None, InitialState_charge=None, 
             #Combining with internal and external orbitals: internal_orbs,active_orbs,external_orbs
             #Initial
             init_state = grab_dets_from_CASSCF_output(stateI.outfile)
-            print("init_state:", init_state)
+            #print("init_state:", init_state)
             #init_state_dict = [i.determinants for i in init_state]
             #init_state_dict2 = {Initialstate_mult : init_state_dict}
             #print("init_state_dict:", init_state_dict)
             #print("init_state_dict2:", init_state_dict2)
             det_init = format_ci_vectors(init_state[Initialstate_mult])
-            print("det_init:", det_init)
+            #print("det_init:", det_init)
             # Printing to file
             writestringtofile(det_init, "dets_init")
 
             #Final state. Just need to point to the one outputfile
             final_states = grab_dets_from_CASSCF_output(Finalstates[0].outfile)
-            print("final_states:", final_states)
+            #print("final_states:", final_states)
             #final_states_dict = [i.determinants for i in final_states]
             #print("final_states_dict:", final_states_dict)
             #final_states_dict2 = {Initialstate_mult : final_states_dict}
             #print("final_states_dict2:", final_states_dict2)
             for fstate in Finalstates:
-                print("fstate: ", fstate)
-                print("fstate.mult :", fstate.mult)
+                #print("fstate: ", fstate)
+                #print("fstate.mult :", fstate.mult)
                 det_final = format_ci_vectors(final_states[fstate.mult])
-                print("det_final : ", det_final)
+                #print("det_final : ", det_final)
                 # Printing to file
                 writestringtofile(det_final, "dets_final_mult" + str(fstate.mult))
 
