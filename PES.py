@@ -917,7 +917,7 @@ def grab_dets_from_CASSCF_output(file):
 def PhotoElectronSpectrum(theory=None, fragment=None, InitialState_charge=None, Initialstate_mult=None,
                           Ionizedstate_charge=None, Ionizedstate_mult=None, numionstates=50, path_wfoverlap=None, tda=True,
                           brokensym=False, HSmult=None, atomstoflip=None, initialorbitalfiles=None, Densities='SCF', densgridvalue=100,
-                          CAS=False, CAS_Initial=None, CAS_Final = None, memory=20000, numcores=1):
+                          CAS=False, CAS_Initial=None, CAS_Final = None, memory=20000, numcores=1, noDyson=False):
     blankline()
     print(bcolors.OKGREEN,"-------------------------------------------------------------------",bcolors.ENDC)
     print(bcolors.OKGREEN,"PhotoElectronSpectrum: Calculating PES spectra via TDDFT and Dyson-norm approach",bcolors.ENDC)
@@ -1291,8 +1291,6 @@ def PhotoElectronSpectrum(theory=None, fragment=None, InitialState_charge=None, 
             FinalIPs = FinalIPs + fstate.IPs
             Finalionstates = Finalionstates + fstate.ionstates
 
-        #Dummy assignment
-        no_tda = True
 
     else:
 
@@ -1332,6 +1330,12 @@ def PhotoElectronSpectrum(theory=None, fragment=None, InitialState_charge=None, 
     print("All combined Final IPs:", FinalIPs)
     blankline()
     print("All combined Ion-state energies (au):", Finalionstates)
+
+   if noDyson is True:
+       print("NoDyson is True. Exiting...")
+       exit()
+
+
     if CAS is not True:
         #MO IP spectrum:
         stk_alpha,stk_beta=modosplot(stateI.occorbs_alpha,stateI.occorbs_beta,stateI.hftyp)
