@@ -877,9 +877,11 @@ def grab_dets_from_CASSCF_output(file):
                     # But det info is not printed so we need to add it
                     if '1' not in line:
                         print("Found CFG without Det info. Adding to determinants")
-
+                        print("line:", line)
                         bla = cfg[0].replace('[','').replace(']','').replace('CFG','')
+                        print("bla:", bla)
                         det = bla.replace(str(2),str(3))
+                        print("det:", det)
                         det2 = [int(i) for i in det]
                         det_tuple = internal_tuple + tuple(det2) + external_tuple
                         print("det_tuple: ", det_tuple)
