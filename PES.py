@@ -65,8 +65,8 @@ def writestringtofile(string,file):
 
 #Get Atomic overlap matrix from GBW file
 #From SHARC
-def saveAOmatrix(file):
-    NAO,Smat=get_smat_from_gbw(file)
+def saveAOmatrix(file, orcadir=None):
+    NAO,Smat=get_smat_from_gbw(file, orcadir=orcadir)
     string='%i %i\n' % (NAO,NAO)
     for irow in range(NAO):
         for icol in range(NAO):
@@ -77,13 +77,13 @@ def saveAOmatrix(file):
         ofile.write(string)
 
 #Get smat from GBW. Converted to Python3 From Python2 function in SHARC
-def get_smat_from_gbw(file1, file2=''):
+def get_smat_from_gbw(file1, file2='', orcadir=None):
 
     if not file2:
       file2=file1
 
     # run orca_fragovl
-    string='orca_fragovl %s %s' % (file1,file2)
+    string=orcadir+'/orca_fragovl %s %s' % (file1,file2)
     try:
       proc=sp.Popen(string,shell=True,stdout=sp.PIPE,stderr=sp.PIPE)
     except OSError:
@@ -1417,7 +1417,7 @@ def PhotoElectronSpectrum(theory=None, fragment=None, InitialState_charge=None, 
           bcolors.ENDC)
         print("")
         # Get AO matrix from init state calculation
-        saveAOmatrix(stateI.gbwfile)
+        saveAOmatrix(stateI.gbwfile, orcadir=theory.orcadir)
         # Specify frozencore or not.
         frozencore = 0
 
