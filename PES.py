@@ -1207,11 +1207,12 @@ def PhotoElectronSpectrum(theory=None, fragment=None, InitialState_charge=None, 
                     theory.orcablocks=theory.orcablocks.replace(line,'')
             theory.orcablocks = theory.orcablocks.replace('\n\n','\n')
 
-            #Add nel,norb and nroots lines back in. And both spin multiplicities.
-
+            #Add nel,norb and nroots lines back in.
+            # And both spin multiplicities. Nroots for each
+            numionstates_string = ','.join(str(numionstates) for x in CAS_mults)
             theory.orcablocks = theory.orcablocks.replace('%casscf', '%casscf\n' + "nel {}\n".format(CAS_Final[0]) +
                                                           "norb {}\n".format(
-                                                              CAS_Final[1]) + "nroots {}\n".format(numionstates) + "mult {}\n".format(CAS_mults))
+                                                              CAS_Final[1]) + "nroots {}\n".format(numionstates_string) + "mult {}\n".format(CAS_mults))
             theory.orcablocks = theory.orcablocks.replace('\n\n','\n')
             theory.orcablocks = theory.orcablocks.replace('\n\n','\n')
 
