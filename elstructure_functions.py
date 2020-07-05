@@ -833,7 +833,35 @@ def DDEC_to_LJparameters(elems, molmoms, voldict):
     return "something"
 
 
-#Extrapolation function for 2-point extrapolations
+#Extrapolation function for 3-point SCF in W1 theory
+# Note. Reading list backwards
+def Extrapolation_W1_SCF(E):
+    #extrapolation formula from W1 theory.
+    # Extrapolating SCF using A+B.C^l is quite easy using
+    #ESCF,infinity=E[4]-(E[4]-E[3])**2/(E[4]-2*E[3]+E[2])
+    #SCF_CBS = E[2]-(E[2]-E[1])**2/(E[0]-2*E[1]+E[0])
+    SCF_CBS = E[-1]-(E[-1]-E[-2])**2/(E[-3]-2*E[-2]+E[-3])
+    return SCF_CBS
+
+# Extrapolation function for 2-point CCSD-correlation in W1 theory
+# Note. Reading list backwards
+def Extrapolation_W1_CCSD(E):
+    #Extrapolating the CCSD correlation contrib.to A+B/l^3 is also quite easy
+    #EcorrCCSD,infinity=E[4]+(E[4]-E[3])/((4/3)**3.22 - 1)
+    #CCSDcorr_CBS = E[2]+(E[2]-E[1])/((4/3)**3.22 - 1)
+    CCSDcorr_CBS = E[-1]+(E[-1]-E[-2])/((4/3)**3.22 - 1)
+    return CCSDcorr_CBS
+
+# Extrapolation function for 2-point triples-correlation in W1 theory
+# Note. Reading list backwards
+def Extrapolation_W1_triples(E):
+    #Extrapolation the (T) contribution, finally (mind the different l values):
+    #E(T),infinity=E[3]+(E[3]-E[2])/((3/2)**3.22 - 1)
+    #triples_CBS = E[1]+(E[1]-E[0])/((3/2)**3.22 - 1)
+    triples_CBS = E[-1]+(E[-1]-E[-2])/((3/2)**3.22 - 1)
+    return triples_CBS
+
+#Extrapolation function for general 2-point extrapolations
 def Extrapolation_twopoint(scf_energies, corr_energies, cardinals, basis_family):
     """
     :param scf_energies: list of SCF energies
