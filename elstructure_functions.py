@@ -946,7 +946,7 @@ def W1theory_SP(fragment=None, charge=None, orcadir=None, mult=None, stabilityan
 
     #Reducing numcores if few electrons. Currently just doing nuccharge
     if fragment.nuccharge < numcores:
-        print("nuccharge :", nuccharge)
+        print("fragment.nuccharge :", fragment.nuccharge)
         print("Setting numcores to 1")
         numcores=1
 
