@@ -935,7 +935,7 @@ atom_spinorbitsplittings = {'H': 0.000, 'B': -10.17, 'C' : -29.58, 'N' : 0.00, '
 
 
 
-def W1theory_SP(fragment=None, charge=None, orcadir=None, mult=None, stabilityanalysis=False, numcores=1):
+def W1theory_SP(fragment=None, charge=None, orcadir=None, mult=None, stabilityanalysis=False, numcores=1, memory=5000):
     """
     Single-point W1 theory workflow. Not doing opt and freq step here.
     Differences: Basis sets may not be the same if 2nd-row element. CHECK THIS for future.
@@ -974,10 +974,11 @@ def W1theory_SP(fragment=None, charge=None, orcadir=None, mult=None, stabilityan
     #Block input for SCF/MDCI block options.
     #TODO: Add Stability analysis option  here later
     blocks="""
+    %maxcore {}
     %scf
     maxiter 200
     end
-    """
+    """.format(memory)
 
     ############################################################
     #Frozen-core calcs
