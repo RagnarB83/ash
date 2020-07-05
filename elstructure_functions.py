@@ -833,14 +833,25 @@ def DDEC_to_LJparameters(elems, molmoms, voldict):
     return "something"
 
 
-#Extrapolation function for 3-point SCF in W1 theory
+#Extrapolation function for old-style 3-point SCF in W1 theory
 # Note. Reading list backwards
-def Extrapolation_W1_SCF(E):
+def Extrapolation_W1_SCF_3point(E):
     #extrapolation formula from W1 theory.
     # Extrapolating SCF using A+B.C^l is quite easy using
     #ESCF,infinity=E[4]-(E[4]-E[3])**2/(E[4]-2*E[3]+E[2])
     #SCF_CBS = E[2]-(E[2]-E[1])**2/(E[0]-2*E[1]+E[0])
     SCF_CBS = E[-1]-(E[-1]-E[-2])**2/(E[-3]-2*E[-2]+E[-3])
+    return SCF_CBS
+
+#Extrapolation function for new-style 2-point SCF in W1 theory
+# Note. Reading list backwards
+#https://www.cup.uni-muenchen.de/oc/zipse/teaching/computational-chemistry-2/topics/overview-of-weizmann-theories/weizmann-1-theory/
+def Extrapolation_W1_SCF_2point(E):
+    #extrapolation formula from W1 theory.
+    # Extrapolating SCF using A+B.C^l is quite easy using
+    #ESCF,infinity=E[4]-(E[4]-E[3])**2/(E[4]-2*E[3]+E[2])
+    #SCF_CBS = E[2]-(E[2]-E[1])**2/(E[0]-2*E[1]+E[0])
+    SCF_CBS = E[-1]+(E[-1]-E[-2])/((4/3)**5 - 1)
     return SCF_CBS
 
 # Extrapolation function for 2-point CCSD-correlation in W1 theory
@@ -915,3 +926,83 @@ def Extrapolation_twopoint(scf_energies, corr_energies, cardinals, basis_family)
     print("Total Extrapolated value is", SCFextrap+corrextrap)
 
     return SCFextrap, corrextrap
+
+
+# Single-point W1 theory workflow.
+# Skipping opt and freq step
+# Scalar-relativistic done differently
+def W1theory_SP(fragment=None, charge=None, mult=None, stabilityanalysis=False):
+
+    #Stability analysis option add here
+    blocks="""
+    %scf
+    maxiter 200
+    end
+    """
+
+    #Frozen-core calcs
+    ccsdt_dz_line="! CCSD(T) aug-cc-pVDZ tightscf "
+    ccsdt_tz_line="! CCSD(T) aug-cc-pVTZ tightscf "
+    ccsd_qz_line="! CCSD aug-cc-pVQZ tightscf "
+
+    ccsdt_dz = ORCATheory(orcadir=orcadir, orcasimpleinput=ccsdt_dz_line, orcablocks=blocks, nprocs=numcores, charge=charge, mult=mult)
+    ccsdt_tz = ORCATheory(orcadir=orcadir, orcasimpleinput=ccsdt_tz_line, orcablocks=blocks, nprocs=numcores, charge=charge, mult=mult)
+    ccsd_qz = ORCATheory(orcadir=orcadir, orcasimpleinput=ccsd_qz_line, orcablocks=blocks, nprocs=numcores, charge=charge, mult=mult)
+
+    Singlepoint(fragment=fragment, theory=ccsdt_dz)
+    CCSDT_DZ_dict = grab_HF_and_corr_energies('orca-input.out')
+    print("CCSDT_DZ_dict:", CCSDT_DZ_dict)
+
+    Singlepoint(fragment=fragmeent, theory=ccsdt_tz)
+    CCSDT_TZ_dict = grab_HF_and_corr_energies('orca-input.out')
+    print("CCSDT_TZ_dict:", CCSDT_TZ_dict)
+
+    Singlepoint(fragment=fragment, theory=ccsd_qz)
+    CCSD_QZ_dict = grab_HF_and_corr_energies('orca-input.out')
+    print("CCSD_QZ_dict:", CCSD_QZ_dict)
+
+    #List of all SCF energies (DZ,TZ,QZ), all CCSD-corr energies (DZ,TZ,QZ) and all (T) corr energies (DZ,TZ)
+    scf_energies = [CCSDT_DZ_dict['HF'], CCSDT_TZ_dict['HF'], CCSD_QZ_dict['HF']]
+    ccsdcorr_energies = [CCSDT_DZ_dict['CCSD_corr'], CCSDT_TZ_dict['CCSD_corr'], CCSD_QZ_dict['CCSD_corr']]
+    triplescorr_energies = [CCSDT_DZ_dict['CCSD(T)_corr'], CCSDT_TZ_dict['CCSD(T)_corr']]
+
+    print("")
+    print("scf_energies :", scf_energies)
+    print("ccsdcorr_energies :", ccsdcorr_energies)
+    print("triplescorr_energies :", triplescorr_energies)
+
+    #Extrapolation according to W1 theory
+    E_SCF_CBS = Extrapolation_W1_SCF(scf_energies) #3-point extrapolation
+    E_CCSDcorr_CBS = Extrapolation_W1_CCSD(ccsdcorr_energies) #2-point extrapolation
+    E_triplescorr_CBS = Extrapolation_W1_triples(triplescorr_energies) #2-point extrapolation
+
+    print("E_SCF_CBS:", E_SCF_CBS)
+    print("E_CCSDcorr_CBS:", E_CCSDcorr_CBS)
+    print("E_triplescorr_CBS:", E_triplescorr_CBS)
+
+
+    #Core-correlation + scalar relativistic at same time
+    #NOTE: MTSmall not yet implemented
+    ccsdt_mtsmall_NoFC_line="! CCSD(T) DKH W1-mtsmall  tightscf nofrozencore"
+    ccsdt_mtsmall_FC_line="! CCSD(T) W1-mtsmall tightscf "
+
+    ccsdt_mtsmall_NoFC = ORCATheory(orcadir=orcadir, orcasimpleinput=ccsdt_mtsmall_NoFC_line, orcablocks=blocks, nprocs=numcores, charge=charge, mult=mult)
+    ccsdt_mtsmall_FC = ORCATheory(orcadir=orcadir, orcasimpleinput=ccsdt_mtsmall_FC_line, orcablocks=blocks, nprocs=numcores, charge=charge, mult=mult)
+
+    energy_ccsdt_mtsmall_nofc = Singlepoint(fragment=fragment, theory=ccsdt_mtsmall_NoFC)
+    energy_ccsdt_mtsmall_fc = Singlepoint(fragment=fragment, theory=ccsdt_mtsmall_FC)
+
+    #Core-correlation is total energy difference between NoFC-DKH and FC-norel
+    corecorr_and_SR = energy_ccsdt_mtsmall_nofc - energy_ccsdt_mtsmall_fc
+    print("corecorr_and_SR:", corecorr_and_SR)
+
+    #Spin-orbit
+    if fragment.numatoms == 1:
+        print("Fragment is an atom. Looking up atomic spin-orbit splitting value")
+        spinorbitcorrection = 0.0 #TO FIX
+    else :
+        spinorbitcorrection = 0.0
+
+
+    #Final
+    E_total = E_SCF_CBS + E_CCSDcorr_CBS + E_triplescorr_CBS +corecorr_and_SR + spinorbit + spinorbitcorrection
