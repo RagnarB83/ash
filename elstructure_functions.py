@@ -929,6 +929,13 @@ def Extrapolation_twopoint(scf_energies, corr_energies, cardinals, basis_family)
     return SCFextrap, corrextrap
 
 
+#Based on https://webhome.weizmann.ac.il/home/comartin/w1/so.txt
+#Currently only including neutral atoms
+#Data in cm-1
+atom_spinorbitsplittings = {'H': 0.000, 'B': -10.17, 'C' : -29.58, 'N' : 0.00, 'O' : -77.97, 'F' : -134.70,
+                      'Al' : -74.71, 'Si' : -149.68, 'P' : 0.00, 'S' : -195.77, 'Cl' : -294.12}
+
+
 # Single-point W1 theory workflow.
 # Skipping opt and freq step
 # Scalar-relativistic done differently
@@ -980,7 +987,7 @@ def W1theory_SP(fragment=None, charge=None, orcadir=None, mult=None, stabilityan
     #Choice: old 3-point formula or new 2-point formula. Need to check which is recommended nowadays
     E_SCF_CBS = Extrapolation_W1_SCF_3point(scf_energies) #3-point extrapolation
     #E_SCF_CBS = Extrapolation_W1_SCF_2point(scf_energies) #2-point extrapolation
-    
+
     E_CCSDcorr_CBS = Extrapolation_W1_CCSD(ccsdcorr_energies) #2-point extrapolation
     E_triplescorr_CBS = Extrapolation_W1_triples(triplescorr_energies) #2-point extrapolation
 
@@ -1004,13 +1011,15 @@ def W1theory_SP(fragment=None, charge=None, orcadir=None, mult=None, stabilityan
     corecorr_and_SR = energy_ccsdt_mtsmall_nofc - energy_ccsdt_mtsmall_fc
     print("corecorr_and_SR:", corecorr_and_SR)
 
-    #Spin-orbit
+    #Spin-orbit correction for atoms.
     if fragment.numatoms == 1:
         print("Fragment is an atom. Looking up atomic spin-orbit splitting value")
-        spinorbitcorrection = 0.0 #TO FIX
+        print("fragment elems", fragment.elems)
+        spinorbitcorrection = atom_spinorbitsplittings[fragment.elems[0]]
     else :
         spinorbitcorrection = 0.0
 
+    print("spinorbitcorrection:", spinorbitcorrection)
 
     #Final
-    E_total = E_SCF_CBS + E_CCSDcorr_CBS + E_triplescorr_CBS +corecorr_and_SR + spinorbit + spinorbitcorrection
+    E_total = E_SCF_CBS + E_CCSDcorr_CBS + E_triplescorr_CBS +corecorr_and_SR  + spinorbitcorrection
