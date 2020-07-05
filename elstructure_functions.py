@@ -841,7 +841,7 @@ def Extrapolation_W1_SCF_3point(E):
     # Extrapolating SCF using A+B.C^l is quite easy using
     #ESCF,infinity=E[4]-(E[4]-E[3])**2/(E[4]-2*E[3]+E[2])
     #SCF_CBS = E[2]-(E[2]-E[1])**2/(E[0]-2*E[1]+E[0])
-    SCF_CBS = E[-1]-(E[-1]-E[-2])**2/(E[-3]-2*E[-2]+E[-3])
+    SCF_CBS = E[-1]-(E[-1]-E[-2])**2/(E[-1]-2*E[-2]+E[-3])
     return SCF_CBS
 
 #Extrapolation function for new-style 2-point SCF in W1 theory
