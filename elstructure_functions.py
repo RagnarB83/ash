@@ -929,27 +929,31 @@ def Extrapolation_twopoint(scf_energies, corr_energies, cardinals, basis_family)
     return SCFextrap, corrextrap
 
 
-#Based on https://webhome.weizmann.ac.il/home/comartin/w1/so.txt
-#Currently only including neutral atoms
-#Data in cm-1
+#Currently only including neutral atoms. Data in cm-1 from : https://webhome.weizmann.ac.il/home/comartin/w1/so.txt
 atom_spinorbitsplittings = {'H': 0.000, 'B': -10.17, 'C' : -29.58, 'N' : 0.00, 'O' : -77.97, 'F' : -134.70,
                       'Al' : -74.71, 'Si' : -149.68, 'P' : 0.00, 'S' : -195.77, 'Cl' : -294.12}
 
 
-# Single-point W1 theory workflow.
-# Skipping opt and freq step
-# Scalar-relativistic done differently
-#Based on :
-#https://webhome.weizmann.ac.il/home/comartin/w1/example.txt
-#https://www.cup.uni-muenchen.de/oc/zipse/teaching/computational-chemistry-2/topics/overview-of-weizmann-theories/weizmann-1-theory/
-def W1theory_SP(fragment=None, charge=None, orcadir=None, mult=None, stabilityanalysis=False, numcores=1):
 
-    #Reducing numcores if few electrons. Currently just doing nuccharge
+def W1theory_SP(fragment=None, charge=None, orcadir=None, mult=None, stabilityanalysis=False, numcores=1):
+    """
+    Single-point W1 theory workflow. Not doing opt and freq step here.
+    Differences: Basis sets may not be the same if 2nd-row element. CHECK THIS for future.
+    Scalar-relativistic step done via DKH. Same as modern W1 implementation.
+    Based on :
+    https://webhome.weizmann.ac.il/home/comartin/w1/example.txt
+    https://www.cup.uni-muenchen.de/oc/zipse/teaching/computational-chemistry-2/topics/overview-of-weizmann-theories/weizmann-1-theory/
+
+    :param fragment:
+    :param charge:
+    :param orcadir:
+    :param mult:
+    :param stabilityanalysis:
+    :param numcores:
+    :return:
+    """
+
     numelectrons = fragment.nuccharge - charge
-    if numelectrons < numcores:
-        print("Number of electrons in fragment:", numelectrons)
-        print("Setting numcores to 1")
-        numcores=1
 
     #if 1-electron species like Hydrogen atom then we either need to code special HF-based procedure or just hardcode values
     #Currently hardcoding H-atom case. Replace with proper extrapolated value later.
@@ -961,16 +965,23 @@ def W1theory_SP(fragment=None, charge=None, orcadir=None, mult=None, stabilityan
         emptydict = {}
         return W1_total, emptydict
 
+    #Reducing numcores if fewer electrons than numcores.
+    if numelectrons < numcores:
+        print("Number of electrons in fragment:", numelectrons)
+        print("Setting numcores to 1")
+        numcores=1
 
-
-    #Stability analysis option add here
+    #Block input for SCF/MDCI block options.
+    #TODO: Add Stability analysis option  here later
     blocks="""
     %scf
     maxiter 200
     end
     """
 
+    ############################################################
     #Frozen-core calcs
+    ############################################################
     ccsdt_dz_line="! CCSD(T) aug-cc-pVDZ tightscf "
     ccsdt_tz_line="! CCSD(T) aug-cc-pVTZ tightscf "
     ccsd_qz_line="! CCSD aug-cc-pVQZ tightscf "
@@ -1001,9 +1012,8 @@ def W1theory_SP(fragment=None, charge=None, orcadir=None, mult=None, stabilityan
     print("ccsdcorr_energies :", ccsdcorr_energies)
     print("triplescorr_energies :", triplescorr_energies)
 
-    #Extrapolation according to W1 theory
-
-    #Choice: old 3-point formula or new 2-point formula. Need to check which is recommended nowadays
+    #Extrapolations
+    #Choice for SCF: old 3-point formula or new 2-point formula. Need to check which is recommended nowadays
     E_SCF_CBS = Extrapolation_W1_SCF_3point(scf_energies) #3-point extrapolation
     #E_SCF_CBS = Extrapolation_W1_SCF_2point(scf_energies) #2-point extrapolation
 
@@ -1014,9 +1024,9 @@ def W1theory_SP(fragment=None, charge=None, orcadir=None, mult=None, stabilityan
     print("E_CCSDcorr_CBS:", E_CCSDcorr_CBS)
     print("E_triplescorr_CBS:", E_triplescorr_CBS)
 
-
-    #Core-correlation + scalar relativistic at same time
-    #NOTE: MTSmall not yet implemented
+    ############################################################
+    #Core-correlation + scalar relativistic as joint correction
+    ############################################################
     ccsdt_mtsmall_NoFC_line="! CCSD(T) DKH W1-mtsmall  tightscf nofrozencore"
     ccsdt_mtsmall_FC_line="! CCSD(T) W1-mtsmall tightscf "
 
@@ -1030,17 +1040,20 @@ def W1theory_SP(fragment=None, charge=None, orcadir=None, mult=None, stabilityan
     E_corecorr_and_SR = energy_ccsdt_mtsmall_nofc - energy_ccsdt_mtsmall_fc
     print("E_corecorr_and_SR:", E_corecorr_and_SR)
 
+    ############################################################
     #Spin-orbit correction for atoms.
+    ############################################################
     if fragment.numatoms == 1:
         print("Fragment is an atom. Looking up atomic spin-orbit splitting value")
-        print("fragment elems", fragment.elems)
         E_SO = atom_spinorbitsplittings[fragment.elems[0]] / constants.hartocm
     else :
         E_SO = 0.0
 
     print("Spin-orbit correction (E_SO):", E_SO)
 
-    #Final result
+    ############################################################
+    #FINAL RESULT
+    ############################################################
     print("")
     print("")
     W1_total = E_SCF_CBS + E_CCSDcorr_CBS + E_triplescorr_CBS +E_corecorr_and_SR  + E_SO
@@ -1058,8 +1071,9 @@ def W1theory_SP(fragment=None, charge=None, orcadir=None, mult=None, stabilityan
              'E_corecorr_and_SR' : E_corecorr_and_SR, 'E_SO' : E_SO}
 
 
-    #Cleanup GBW file. Full cleanup ?? Future: Keep output files for each step
+    #Cleanup GBW file. Full cleanup ??
+    # TODO: Keep output files for each step
     os.remove('orca-input.gbw')
 
-    #return final energy and dictionary of energy components
+    #return final energy and also dictionary with energy components
     return W1_total, E_dict
