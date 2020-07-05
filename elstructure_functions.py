@@ -985,8 +985,7 @@ def W1theory_SP(fragment=None, charge=None, orcadir=None, mult=None, stabilityan
         W1_total = -0.500000
         print("Using hardcoded value: ", W1_total)
         E_dict = {'Total_E': W1_total, 'E_SCF_CBS': W1_total, 'E_CCSDcorr_CBS': 0.0,
-                  'E_triplescorr_CBS': 0.0,
-                  'E_corecorr_and_SR': 0.0, 'E_SO': 0.0}
+                  'E_triplescorr_CBS': 0.0, 'E_corecorr_and_SR': 0.0, 'E_SO': 0.0}
         return W1_total, E_dict
 
     #Reducing numcores if fewer active electron pairs than numcores.
@@ -1149,10 +1148,11 @@ def DLPNO_W1theory_SP(fragment=None, charge=None, orcadir=None, mult=None, stabi
     if numelectrons == 1:
         print("Number of electrons is 1")
         print("Assuming hydrogen atom and skipping calculation")
-        print("Using hardcoded value: -0.500000")
         W1_total = -0.500000
-        emptydict = {}
-        return W1_total, emptydict
+        print("Using hardcoded value: ", W1_total)
+        E_dict = {'Total_E': W1_total, 'E_SCF_CBS': W1_total, 'E_CCSDcorr_CBS': 0.0,
+                  'E_triplescorr_CBS': 0.0, 'E_corecorr_and_SR': 0.0, 'E_SO': 0.0}
+        return W1_total, E_dict
 
     #Reducing numcores if fewer active electron pairs than numcores.
     core_electrons = num_core_electrons(fragment)
