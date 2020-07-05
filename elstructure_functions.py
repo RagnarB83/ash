@@ -973,7 +973,7 @@ def W1theory_SP(fragment=None, charge=None, orcadir=None, mult=None, stabilityan
     :param numcores:
     :return:
     """
-    calc_label = "Frag" + fragment.formula + "_" + fragment.charge "_"
+    calc_label = "Frag" + fragment.formula + "_" + fragment.charge + "_"
     print("calc_label: ", calc_label)
     numelectrons = int(fragment.nuccharge - charge)
 
@@ -1137,7 +1137,7 @@ def DLPNO_W1theory_SP(fragment=None, charge=None, orcadir=None, mult=None, stabi
     :param numcores:
     :return:
     """
-    calc_label = "Frag" + fragment.formula + "_" + fragment.charge "_"
+    calc_label = "Frag" + fragment.formula + "_" + fragment.charge + "_"
     print("calc_label: ", calc_label)
 
     numelectrons = int(fragment.nuccharge - charge)
