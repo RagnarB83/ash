@@ -935,6 +935,10 @@ atom_spinorbitsplittings = {'H': 0.000, 'B': -10.17, 'C' : -29.58, 'N' : 0.00, '
 
 
 
+#Note: Inner-shell correlation information: https://webhome.weizmann.ac.il/home/comartin/preprints/w1/node6.html
+# Idea: Instead of CCSD(T), try out CEPA or pCCSD as alternative method. Hopefully as accurate as CCSD(T).
+# Or DLPNO-CCSD(T) with LoosePNO ?
+
 def W1theory_SP(fragment=None, charge=None, orcadir=None, mult=None, stabilityanalysis=False, numcores=1, memory=5000):
     """
     Single-point W1 theory workflow. Not doing opt and freq step here.
@@ -980,12 +984,21 @@ def W1theory_SP(fragment=None, charge=None, orcadir=None, mult=None, stabilityan
     end
     """.format(memory)
 
+    #Whether to use diffuse basis set or not in calculations
+    #Note: this may fuck up basis set extrapolation
+    if noaug is True:
+        prefix=''
+    else:
+        prefix='aug-'
+
+
+
     ############################################################
     #Frozen-core calcs
     ############################################################
-    ccsdt_dz_line="! CCSD(T) aug-cc-pVDZ tightscf "
-    ccsdt_tz_line="! CCSD(T) aug-cc-pVTZ tightscf "
-    ccsd_qz_line="! CCSD aug-cc-pVQZ tightscf "
+    ccsdt_dz_line="! CCSD(T) {}cc-pVDZ tightscf ".format(prefix)
+    ccsdt_tz_line="! CCSD(T) {}cc-pVTZ tightscf ".format(prefix)
+    ccsd_qz_line="! CCSD {}cc-pVQZ tightscf ".format(prefix)
 
     ccsdt_dz = ash.ORCATheory(orcadir=orcadir, orcasimpleinput=ccsdt_dz_line, orcablocks=blocks, nprocs=numcores, charge=charge, mult=mult)
     ccsdt_tz = ash.ORCATheory(orcadir=orcadir, orcasimpleinput=ccsdt_tz_line, orcablocks=blocks, nprocs=numcores, charge=charge, mult=mult)
@@ -993,14 +1006,17 @@ def W1theory_SP(fragment=None, charge=None, orcadir=None, mult=None, stabilityan
 
     ash.Singlepoint(fragment=fragment, theory=ccsdt_dz)
     CCSDT_DZ_dict = grab_HF_and_corr_energies('orca-input.out')
+    shutil.copyfile('orca-input.out', './' + 'CCSDT_DZ' + '.out')
     print("CCSDT_DZ_dict:", CCSDT_DZ_dict)
 
     ash.Singlepoint(fragment=fragment, theory=ccsdt_tz)
     CCSDT_TZ_dict = grab_HF_and_corr_energies('orca-input.out')
+    shutil.copyfile('orca-input.out', './' + 'CCSDT_TZ' + '.out')
     print("CCSDT_TZ_dict:", CCSDT_TZ_dict)
 
     ash.Singlepoint(fragment=fragment, theory=ccsd_qz)
     CCSD_QZ_dict = grab_HF_and_corr_energies('orca-input.out')
+    shutil.copyfile('orca-input.out', './' + 'CCSD_QZ' + '.out')
     print("CCSD_QZ_dict:", CCSD_QZ_dict)
 
     #List of all SCF energies (DZ,TZ,QZ), all CCSD-corr energies (DZ,TZ,QZ) and all (T) corr energies (DZ,TZ)
@@ -1035,7 +1051,9 @@ def W1theory_SP(fragment=None, charge=None, orcadir=None, mult=None, stabilityan
     ccsdt_mtsmall_FC = ash.ORCATheory(orcadir=orcadir, orcasimpleinput=ccsdt_mtsmall_FC_line, orcablocks=blocks, nprocs=numcores, charge=charge, mult=mult)
 
     energy_ccsdt_mtsmall_nofc = ash.Singlepoint(fragment=fragment, theory=ccsdt_mtsmall_NoFC)
+    shutil.copyfile('orca-input.out', './' + 'CCSDT_MTsmall_NoFC_DKH' + '.out')
     energy_ccsdt_mtsmall_fc = ash.Singlepoint(fragment=fragment, theory=ccsdt_mtsmall_FC)
+    shutil.copyfile('orca-input.out', './' + 'CCSDT_MTsmall_FC_noDKH' + '.out')
 
     #Core-correlation is total energy difference between NoFC-DKH and FC-norel
     E_corecorr_and_SR = energy_ccsdt_mtsmall_nofc - energy_ccsdt_mtsmall_fc
