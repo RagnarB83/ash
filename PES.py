@@ -968,7 +968,7 @@ def PhotoElectronSpectrum(theory=None, fragment=None, InitialState_charge=None, 
     if CAS is True:
         print("CASSCF option active!")
         if CASCI is True:
-            print("CASCI option on! Initial state will be don with CASSCF while Final ionized states will do CAS-CI")
+            print("CASCI option on! Initial state will be done with CASSCF while Final ionized states will do CAS-CI")
 
 
 
@@ -1078,7 +1078,6 @@ def PhotoElectronSpectrum(theory=None, fragment=None, InitialState_charge=None, 
         if CAS is True:
             print("Modifying CASSCF block for initial state, CAS({},{})".format(CAS_Initial[0],CAS_Initial[1]))
             print("{} electrons in {} orbitals".format(CAS_Initial[0],CAS_Initial[1]))
-            print("theory.orcablocks: ", theory.orcablocks)
 
             #Removing nel/norb/nroots lines if user added
             for line in theory.orcablocks.split('\n'):
