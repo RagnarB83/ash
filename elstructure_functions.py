@@ -984,14 +984,16 @@ def W1theory_SP(fragment=None, charge=None, orcadir=None, mult=None, stabilityan
         print("Assuming hydrogen atom and skipping calculation")
         W1_total = -0.500000
         print("Using hardcoded value: ", W1_total)
-        emptydict = {}
-        return W1_total, emptydict
+        E_dict = {'Total_E': W1_total, 'E_SCF_CBS': W1_total, 'E_CCSDcorr_CBS': 0.0,
+                  'E_triplescorr_CBS': 0.0,
+                  'E_corecorr_and_SR': 0.0, 'E_SO': 0.0}
+        return W1_total, E_dict
 
     #Reducing numcores if fewer active electron pairs than numcores.
     core_electrons = num_core_electrons(fragment)
     print("core_electrons:", core_electrons)
     valence_electrons = (numelectrons - core_electrons)
-    electronpairs = valence_electrons / 2
+    electronpairs = int(valence_electrons / 2)
     if electronpairs  < numcores:
         print("Number of electrons in fragment:", numelectrons)
         print("Number of valence electrons :", valence_electrons )
@@ -1156,7 +1158,7 @@ def DLPNO_W1theory_SP(fragment=None, charge=None, orcadir=None, mult=None, stabi
     core_electrons = num_core_electrons(fragment)
     print("core_electrons:", core_electrons)
     valence_electrons = (numelectrons - core_electrons)
-    electronpairs = valence_electrons / 2
+    electronpairs = int(valence_electrons / 2)
     if electronpairs  < numcores:
         print("Number of electrons in fragment:", numelectrons)
         print("Number of valence electrons :", valence_electrons )
