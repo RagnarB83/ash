@@ -191,20 +191,21 @@ def Singlepoint(fragment=None, theory=None, Grad=False):
     :type Grad: Boolean.
     '''
     if fragment is None or theory is None:
-        print("Singlepoint requires a fragment and a theory object")
+        print(BC.FAIL,"Singlepoint requires a fragment and a theory object",BC.END)
+        exit(1)
 
     coords=fragment.coords
     elems=fragment.elems
 
     # Run a single-point energy job
     if Grad ==True:
-        print("Doing single-point Energy+Gradient job")
+        print(BC.WARNING,"Doing single-point Energy+Gradient job"BC.END)
         # An Energy+Gradient calculation where we change the number of cores to 12
         energy,gradient= theory.run(current_coords=coords, elems=elems, Grad=True)
         print("Energy: ", energy)
         return energy,gradient
     else:
-        print("Doing single-point Energy job")
+        print(BC.WARNING,"Doing single-point Energy job",BC.END)
         energy = theory.run(current_coords=coords, elems=elems)
         print("Energy: ", energy)
 
