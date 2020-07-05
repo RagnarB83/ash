@@ -2723,6 +2723,10 @@ class Fragment:
         #Printlevel
         self.printlevel=printlevel
 
+        #New. Charge and mult attribute of fragment. Useful for workflows
+        self.charge = None
+        self.mult = None
+
         if self.printlevel >= 2:
             print("Defining new ASH fragment object")
         self.energy = None
