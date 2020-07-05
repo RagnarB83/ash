@@ -944,6 +944,13 @@ atom_spinorbitsplittings = {'H': 0.000, 'B': -10.17, 'C' : -29.58, 'N' : 0.00, '
 #https://www.cup.uni-muenchen.de/oc/zipse/teaching/computational-chemistry-2/topics/overview-of-weizmann-theories/weizmann-1-theory/
 def W1theory_SP(fragment=None, charge=None, orcadir=None, mult=None, stabilityanalysis=False, numcores=1):
 
+    #Reducing numcores if few electrons. Currently just doing nuccharge
+    if fragment.nuccharge < numcores:
+        print("nuccharge :", nuccharge)
+        print("Setting numcores to 1")
+        numcores=1
+
+
     #Stability analysis option add here
     blocks="""
     %scf
