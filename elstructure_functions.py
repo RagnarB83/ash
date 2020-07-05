@@ -974,25 +974,26 @@ def W1theory_SP(fragment=None, charge=None, orcadir=None, mult=None, stabilityan
     :return:
     """
 
-    numelectrons = fragment.nuccharge - charge
+    numelectrons = int(fragment.nuccharge - charge)
 
     #if 1-electron species like Hydrogen atom then we either need to code special HF-based procedure or just hardcode values
     #Currently hardcoding H-atom case. Replace with proper extrapolated value later.
     if numelectrons == 1:
         print("Number of electrons is 1")
         print("Assuming hydrogen atom and skipping calculation")
-        print("Using hardcoded value: -0.500000")
         W1_total = -0.500000
+        print("Using hardcoded value: ", W1_total)
         emptydict = {}
         return W1_total, emptydict
 
     #Reducing numcores if fewer active electron pairs than numcores.
-    coreelectrons = num_core_electrons(fragment)
-    print("coreelectrons:", coreelectrons)
-    electronpairs = (numelectrons - coreelectrons)/2
-    print("electronpairs:", electronpairs)
+    core_electrons = num_core_electrons(fragment)
+    print("core_electrons:", core_electrons)
+    valence_electrons = (numelectrons - core_electrons)
+    electronpairs = valence_electrons / 2
     if electronpairs  < numcores:
         print("Number of electrons in fragment:", numelectrons)
+        print("Number of valence electrons :", valence_electrons )
         print("Number of valence electron pairs :", electronpairs )
         print("Setting numcores to number of electron pairs")
         numcores=electronpairs
