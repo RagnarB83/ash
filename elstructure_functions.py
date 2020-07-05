@@ -932,6 +932,9 @@ def Extrapolation_twopoint(scf_energies, corr_energies, cardinals, basis_family)
 # Single-point W1 theory workflow.
 # Skipping opt and freq step
 # Scalar-relativistic done differently
+#Based on :
+#https://webhome.weizmann.ac.il/home/comartin/w1/example.txt
+#https://www.cup.uni-muenchen.de/oc/zipse/teaching/computational-chemistry-2/topics/overview-of-weizmann-theories/weizmann-1-theory/
 def W1theory_SP(fragment=None, charge=None, orcadir=None, mult=None, stabilityanalysis=False, numcores=1):
 
     #Stability analysis option add here
@@ -973,7 +976,11 @@ def W1theory_SP(fragment=None, charge=None, orcadir=None, mult=None, stabilityan
     print("triplescorr_energies :", triplescorr_energies)
 
     #Extrapolation according to W1 theory
-    E_SCF_CBS = Extrapolation_W1_SCF(scf_energies) #3-point extrapolation
+
+    #Choice: old 3-point formula or new 2-point formula. Need to check which is recommended nowadays
+    E_SCF_CBS = Extrapolation_W1_SCF_3point(scf_energies) #3-point extrapolation
+    #E_SCF_CBS = Extrapolation_W1_SCF_2point(scf_energies) #2-point extrapolation
+    
     E_CCSDcorr_CBS = Extrapolation_W1_CCSD(ccsdcorr_energies) #2-point extrapolation
     E_triplescorr_CBS = Extrapolation_W1_triples(triplescorr_energies) #2-point extrapolation
 
