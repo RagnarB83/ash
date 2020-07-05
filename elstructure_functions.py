@@ -956,7 +956,7 @@ def num_core_electrons(fragment):
 # Idea: Instead of CCSD(T), try out CEPA or pCCSD as alternative method. Hopefully as accurate as CCSD(T).
 # Or DLPNO-CCSD(T) with LoosePNO ?
 
-def W1theory_SP(fragment=None, charge=None, orcadir=None, mult=None, stabilityanalysis=False, numcores=1, memory=5000):
+def W1theory_SP(fragment=None, charge=None, orcadir=None, mult=None, stabilityanalysis=False, numcores=1, memory=5000, HFreference=None):
     """
     Single-point W1 theory workflow. Not doing opt and freq step here.
     Differences: Basis sets may not be the same if 2nd-row element. CHECK THIS for future.
@@ -1012,27 +1012,33 @@ def W1theory_SP(fragment=None, charge=None, orcadir=None, mult=None, stabilityan
     end
     """.format(memory)
 
+    #HF reference to use
+    #If UHF then UHF will be enforced, also for closed-shell. unncessarily expensive
+    if HFreference == 'UHF':
+        print("HF reference = UHF chosen. Will enforce UHF (also for closed-shell)")
+        hfkeyword='UHF'
+    #ROHF option in ORCA requires dual-job. to be finished.
+    elif HFreference == 'ROHF':
+        print("ROHF reference is not yet available")
+        exit()
+    #QRO option is similar to ROHF. Recommended
+    elif HFreference == 'QRO':
+        print("HF reference = QRO chosen. Will use QROs for open-shell species)")
+        hfkeyword='UNO'
+    else:
+        print("No HF reference chosen. Will use RHF for closed-shell and UHF for open-shell")
+        hfkeyword=''
 
     ############################################################
     #Frozen-core calcs
     ############################################################
     #Special basis for H.
     # TODO: Add special basis for 2nd row block: Al-Ar
-    ccsdt_dz_line="! CCSD(T) W1-DZ tightscf "
-    #ccsdt_dz_block="""%basis
-    #newgto H \"cc-pVDZ\" end
-    #end
-    #"""
-    ccsdt_tz_line="! CCSD(T) W1-TZ tightscf "
-    #ccsdt_tz_block="""%basis
-    #newgto H \"cc-pVTZ\" end
-    #end
-    #"""
-    ccsd_qz_line="! CCSD W1-QZ tightscf "
-    #ccsd_qz_block="""%basis
-    #newgto H \"cc-pVQZ\" end
-    #end
-    #"""
+    ccsdt_dz_line="! CCSD(T) W1-DZ tightscf " + hfkeyword
+
+    ccsdt_tz_line="! CCSD(T) W1-TZ tightscf " + hfkeyword
+
+    ccsd_qz_line="! CCSD W1-QZ tightscf " + hfkeyword
 
     ccsdt_dz = ash.ORCATheory(orcadir=orcadir, orcasimpleinput=ccsdt_dz_line, orcablocks=blocks, nprocs=numcores, charge=charge, mult=mult)
     ccsdt_tz = ash.ORCATheory(orcadir=orcadir, orcasimpleinput=ccsdt_tz_line, orcablocks=blocks, nprocs=numcores, charge=charge, mult=mult)
@@ -1078,8 +1084,8 @@ def W1theory_SP(fragment=None, charge=None, orcadir=None, mult=None, stabilityan
     ############################################################
     #Core-correlation + scalar relativistic as joint correction
     ############################################################
-    ccsdt_mtsmall_NoFC_line="! CCSD(T) DKH W1-mtsmall  tightscf nofrozencore"
-    ccsdt_mtsmall_FC_line="! CCSD(T) W1-mtsmall tightscf "
+    ccsdt_mtsmall_NoFC_line="! CCSD(T) DKH W1-mtsmall  tightscf nofrozencore " + hfkeyword
+    ccsdt_mtsmall_FC_line="! CCSD(T) W1-mtsmall tightscf " + hfkeyword
 
     ccsdt_mtsmall_NoFC = ash.ORCATheory(orcadir=orcadir, orcasimpleinput=ccsdt_mtsmall_NoFC_line, orcablocks=blocks, nprocs=numcores, charge=charge, mult=mult)
     ccsdt_mtsmall_FC = ash.ORCATheory(orcadir=orcadir, orcasimpleinput=ccsdt_mtsmall_FC_line, orcablocks=blocks, nprocs=numcores, charge=charge, mult=mult)
