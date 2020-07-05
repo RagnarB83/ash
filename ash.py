@@ -3419,5 +3419,5 @@ def ReactionEnergy(stoichiometry=None, list_of_fragments=None, list_of_energies=
             if stoich > 0:
                 product_energy=product_energy+list_of_fragments[i].energy*abs(stoich)
         reaction_energy=(product_energy-reactant_energy)*conversionfactor[unit]
-        print(,BC.BOLD, "Reaction_energy({}): {} {}".format(label,BC.OKGREEN,reaction_energy, unit), BC.END)
+        print(BC.BOLD, "Reaction_energy({}): {} {}".format(label,BC.OKGREEN,reaction_energy, unit), BC.END)
     return reaction_energy
