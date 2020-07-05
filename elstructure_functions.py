@@ -933,6 +933,10 @@ def Extrapolation_twopoint(scf_energies, corr_energies, cardinals, basis_family)
 atom_spinorbitsplittings = {'H': 0.000, 'B': -10.17, 'C' : -29.58, 'N' : 0.00, 'O' : -77.97, 'F' : -134.70,
                       'Al' : -74.71, 'Si' : -149.68, 'P' : 0.00, 'S' : -195.77, 'Cl' : -294.12}
 
+#Core electrons for elements in ORCA
+#TO be finished. Also nee
+atom_core_electrons = {'H': 0, 'He' : 0, 'Li' : 0, 'Be' : 0, 'B': 2, 'C' : 2, 'N' : 2, 'O' : 2, 'F' : 2, 'Ne' : 2,
+                      'Na' : 2, 'Mg' : 2, 'Al' : 10, 'Si' : 10, 'P' : 10, 'S' : 10, 'Cl' : 10, 'Ar' : 10}
 
 
 #Note: Inner-shell correlation information: https://webhome.weizmann.ac.il/home/comartin/preprints/w1/node6.html
@@ -969,8 +973,12 @@ def W1theory_SP(fragment=None, charge=None, orcadir=None, mult=None, stabilityan
         emptydict = {}
         return W1_total, emptydict
 
-    #Reducing numcores if fewer electrons than numcores.
-    if numelectrons < numcores:
+    #Reducing numcores if fewer non-frozenelectrons than numcores.
+    if fragment.numatoms == 1:
+        core_electrons = atom_core_electrons[fragment.elems[0]]
+    else:
+        core_electrons = 0
+    if numelectrons - core_electrons < numcores:
         print("Number of electrons in fragment:", numelectrons)
         print("Setting numcores to 1")
         numcores=1
