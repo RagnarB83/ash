@@ -974,6 +974,8 @@ def W1theory_SP(fragment=None, charge=None, orcadir=None, mult=None, stabilityan
         return W1_total, emptydict
 
     #Reducing numcores if fewer non-frozenelectrons than numcores.
+    #Only counting core_electrons if atom. To be done better
+    #Should contain total number of valence electron pairs for whole formula and then compare that number to numcores.
     if fragment.numatoms == 1:
         core_electrons = atom_core_electrons[fragment.elems[0]]
     else:
