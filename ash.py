@@ -199,7 +199,7 @@ def Singlepoint(fragment=None, theory=None, Grad=False):
 
     # Run a single-point energy job
     if Grad ==True:
-        print(BC.WARNING,"Doing single-point Energy+Gradient job"BC.END)
+        print(BC.WARNING,"Doing single-point Energy+Gradient job",BC.END)
         # An Energy+Gradient calculation where we change the number of cores to 12
         energy,gradient= theory.run(current_coords=coords, elems=elems, Grad=True)
         print("Energy: ", energy)
