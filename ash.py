@@ -2719,13 +2719,13 @@ class CFourTheory:
 # Fragment class
 class Fragment:
     def __init__(self, coordsstring=None, fragfile=None, xyzfile=None, pdbfile=None, coords=None, elems=None, connectivity=None,
-                 atomcharges=None, atomtypes=None, conncalc=True, scale=None, tol=None, printlevel=2):
+                 atomcharges=None, atomtypes=None, conncalc=True, scale=None, tol=None, printlevel=2, charge=None, mult=None):
         #Printlevel
         self.printlevel=printlevel
 
         #New. Charge and mult attribute of fragment. Useful for workflows
-        self.charge = None
-        self.mult = None
+        self.charge = charge
+        self.mult = mult
 
         if self.printlevel >= 2:
             print("Defining new ASH fragment object")
