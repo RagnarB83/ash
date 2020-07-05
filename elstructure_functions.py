@@ -1018,25 +1018,25 @@ def W1theory_SP(fragment=None, charge=None, orcadir=None, mult=None, stabilityan
     ############################################################
     #Special basis for H.
     # TODO: Add special basis for 2nd row block: Al-Ar
-    ccsdt_dz_line="! CCSD(T) aug-cc-pVDZ tightscf "
-    ccsdt_dz_block="""%basis
-newgto H \"cc-pVDZ\" end
-end
-"""
-    ccsdt_tz_line="! CCSD(T) aug-cc-pVTZ tightscf "
-    ccsdt_tz_block="""%basis
-newgto H \"cc-pVTZ\" end
-end
-"""
-    ccsd_qz_line="! CCSD aug-cc-pVQZ tightscf "
-    ccsd_qz_block="""%basis
-newgto H \"cc-pVQZ\" end
-end
-"""
+    ccsdt_dz_line="! CCSD(T) W1-DZ tightscf "
+    #ccsdt_dz_block="""%basis
+    #newgto H \"cc-pVDZ\" end
+    #end
+    #"""
+    ccsdt_tz_line="! CCSD(T) W1-TZ tightscf "
+    #ccsdt_tz_block="""%basis
+    #newgto H \"cc-pVTZ\" end
+    #end
+    #"""
+    ccsd_qz_line="! CCSD W1-QZ tightscf "
+    #ccsd_qz_block="""%basis
+    #newgto H \"cc-pVQZ\" end
+    #end
+    #"""
 
-    ccsdt_dz = ash.ORCATheory(orcadir=orcadir, orcasimpleinput=ccsdt_dz_line, orcablocks=blocks+ccsdt_dz_block, nprocs=numcores, charge=charge, mult=mult)
-    ccsdt_tz = ash.ORCATheory(orcadir=orcadir, orcasimpleinput=ccsdt_tz_line, orcablocks=blocks+ccsdt_tz_block, nprocs=numcores, charge=charge, mult=mult)
-    ccsd_qz = ash.ORCATheory(orcadir=orcadir, orcasimpleinput=ccsd_qz_line, orcablocks=blocks+ccsd_qz_block, nprocs=numcores, charge=charge, mult=mult)
+    ccsdt_dz = ash.ORCATheory(orcadir=orcadir, orcasimpleinput=ccsdt_dz_line, orcablocks=blocks, nprocs=numcores, charge=charge, mult=mult)
+    ccsdt_tz = ash.ORCATheory(orcadir=orcadir, orcasimpleinput=ccsdt_tz_line, orcablocks=blocks, nprocs=numcores, charge=charge, mult=mult)
+    ccsd_qz = ash.ORCATheory(orcadir=orcadir, orcasimpleinput=ccsd_qz_line, orcablocks=blocks, nprocs=numcores, charge=charge, mult=mult)
 
     ash.Singlepoint(fragment=fragment, theory=ccsdt_dz)
     CCSDT_DZ_dict = grab_HF_and_corr_energies('orca-input.out')
