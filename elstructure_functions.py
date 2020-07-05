@@ -945,10 +945,22 @@ atom_spinorbitsplittings = {'H': 0.000, 'B': -10.17, 'C' : -29.58, 'N' : 0.00, '
 def W1theory_SP(fragment=None, charge=None, orcadir=None, mult=None, stabilityanalysis=False, numcores=1):
 
     #Reducing numcores if few electrons. Currently just doing nuccharge
-    if fragment.nuccharge < numcores:
-        print("fragment.nuccharge :", fragment.nuccharge)
+    numelectrons = fragment.nuccharge - charge
+    if numelectrons < numcores:
+        print("Number of electrons in fragment:", numelectrons)
         print("Setting numcores to 1")
         numcores=1
+
+    #if 1-electron species like Hydrogen atom then we either need to code special HF-based procedure or just hardcode values
+    #Currently hardcoding H-atom case. Replace with proper extrapolated value later.
+    if numelectrons == 1:
+        print("Number of electrons is 1")
+        print("Assuming hydrogen atom and skipping calculation")
+        print("Using hardcoded value: -0.500000")
+        W1_total = -0.500000
+        emptydict = {}
+        return W1_total, emptydict
+
 
 
     #Stability analysis option add here
