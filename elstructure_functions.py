@@ -973,8 +973,11 @@ def W1theory_SP(fragment=None, charge=None, orcadir=None, mult=None, stabilityan
     :param numcores:
     :return:
     """
+    print("-----------------------------")
+    print("W1theory_SP PROTOCOL")
+    print("-----------------------------")
     calc_label = "Frag" + str(fragment.formula) + "_" + str(fragment.charge) + "_"
-    print("calc_label: ", calc_label)
+    print("Calculation label: ", calc_label)
     numelectrons = int(fragment.nuccharge - charge)
 
     #if 1-electron species like Hydrogen atom then we either need to code special HF-based procedure or just hardcode values
@@ -1127,7 +1130,7 @@ def DLPNO_W1theory_SP(fragment=None, charge=None, orcadir=None, mult=None, stabi
     """
     WORK IN PROGRESS
     DLPNO-version of W1 theory workflow. Not doing opt and freq step here.
-    Differences: Basis sets may not be the same if 2nd-row element. CHECK THIS for future.
+    Differences: Basis sets are not exactly the same. Check H and 2nd-row elements. CHECK THIS for future.
     Scalar-relativistic step done via DKH. Same as modern W1 implementation.
 
     :param fragment:
@@ -1138,8 +1141,11 @@ def DLPNO_W1theory_SP(fragment=None, charge=None, orcadir=None, mult=None, stabi
     :param numcores:
     :return:
     """
+    print("-----------------------------")
+    print("DLPNO_W1theory_SP PROTOCOL")
+    print("-----------------------------")
     calc_label = "Frag" + str(fragment.formula) + "_" + str(fragment.charge) + "_"
-    print("calc_label: ", calc_label)
+    print("Calculation label: ", calc_label)
 
     numelectrons = int(fragment.nuccharge - charge)
 
