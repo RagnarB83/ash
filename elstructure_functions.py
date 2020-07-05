@@ -931,7 +931,7 @@ def Extrapolation_twopoint(scf_energies, corr_energies, cardinals, basis_family)
 # Single-point W1 theory workflow.
 # Skipping opt and freq step
 # Scalar-relativistic done differently
-def W1theory_SP(fragment=None, charge=None, mult=None, stabilityanalysis=False):
+def W1theory_SP(fragment=None, charge=None, mult=None, stabilityanalysis=False, numcores=1):
 
     #Stability analysis option add here
     blocks="""
