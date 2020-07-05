@@ -997,7 +997,7 @@ def W1theory_SP(fragment=None, charge=None, orcadir=None, mult=None, stabilityan
         print("Number of valence electrons :", valence_electrons )
         print("Number of valence electron pairs :", electronpairs )
         print("Setting numcores to number of electron pairs")
-        numcores=electronpairs
+        numcores=int(electronpairs)
 
     #Block input for SCF/MDCI block options.
     #TODO: Add Stability analysis option  here later
@@ -1162,7 +1162,7 @@ def DLPNO_W1theory_SP(fragment=None, charge=None, orcadir=None, mult=None, stabi
         print("Number of valence electrons :", valence_electrons )
         print("Number of valence electron pairs :", electronpairs )
         print("Setting numcores to number of electron pairs")
-        numcores=electronpairs
+        numcores=int(electronpairs)
 
     #Block input for SCF/MDCI block options.
     #Disabling FullLMP2 guess in general as not available for open-shell
