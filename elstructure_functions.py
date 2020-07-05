@@ -956,7 +956,7 @@ def num_core_electrons(fragment):
 # Idea: Instead of CCSD(T), try out CEPA or pCCSD as alternative method. Hopefully as accurate as CCSD(T).
 # Or DLPNO-CCSD(T) with LoosePNO ?
 
-def W1theory_SP(fragment=None, charge=None, orcadir=None, mult=None, stabilityanalysis=False, numcores=1, memory=5000, noaug=False):
+def W1theory_SP(fragment=None, charge=None, orcadir=None, mult=None, stabilityanalysis=False, numcores=1, memory=5000):
     """
     Single-point W1 theory workflow. Not doing opt and freq step here.
     Differences: Basis sets may not be the same if 2nd-row element. CHECK THIS for future.
@@ -1012,25 +1012,28 @@ def W1theory_SP(fragment=None, charge=None, orcadir=None, mult=None, stabilityan
     end
     """.format(memory)
 
-    #Whether to use diffuse basis set or not in calculations
-    #Note: this may fuck up basis set extrapolation
-    if noaug is True:
-        prefix=''
-    else:
-        prefix='aug-'
-
-
 
     ############################################################
     #Frozen-core calcs
     ############################################################
-    ccsdt_dz_line="! CCSD(T) {}cc-pVDZ tightscf ".format(prefix)
-    ccsdt_tz_line="! CCSD(T) {}cc-pVTZ tightscf ".format(prefix)
-    ccsd_qz_line="! CCSD {}cc-pVQZ tightscf ".format(prefix)
+    #Special basis for H.
+    # TODO: Add special basis for 2nd row block: Al-Ar
+    ccsdt_dz_line="! CCSD(T) aug-cc-pVDZ tightscf "
+    ccsdt_dz_block="""%basis
+    newgto H \"cc-pVDZ\" end
+    """
+    ccsdt_tz_line="! CCSD(T) aug-cc-pVTZ tightscf "
+    ccsdt_tz_block="""%basis
+    newgto H \"cc-pVTZ\" end
+    """
+    ccsd_qz_line="! CCSD aug-cc-pVQZ tightscf "
+    ccsd_qz_block="""%basis
+    newgto H \"cc-pVQZ\" end
+    """
 
-    ccsdt_dz = ash.ORCATheory(orcadir=orcadir, orcasimpleinput=ccsdt_dz_line, orcablocks=blocks, nprocs=numcores, charge=charge, mult=mult)
-    ccsdt_tz = ash.ORCATheory(orcadir=orcadir, orcasimpleinput=ccsdt_tz_line, orcablocks=blocks, nprocs=numcores, charge=charge, mult=mult)
-    ccsd_qz = ash.ORCATheory(orcadir=orcadir, orcasimpleinput=ccsd_qz_line, orcablocks=blocks, nprocs=numcores, charge=charge, mult=mult)
+    ccsdt_dz = ash.ORCATheory(orcadir=orcadir, orcasimpleinput=ccsdt_dz_line, orcablocks=blocks+ccsdt_dz_block, nprocs=numcores, charge=charge, mult=mult)
+    ccsdt_tz = ash.ORCATheory(orcadir=orcadir, orcasimpleinput=ccsdt_tz_line, orcablocks=blocks+ccsdt_tz_block, nprocs=numcores, charge=charge, mult=mult)
+    ccsd_qz = ash.ORCATheory(orcadir=orcadir, orcasimpleinput=ccsd_qz_line, orcablocks=blocks+ccsd_qz_block, nprocs=numcores, charge=charge, mult=mult)
 
     ash.Singlepoint(fragment=fragment, theory=ccsdt_dz)
     CCSDT_DZ_dict = grab_HF_and_corr_energies('orca-input.out')
