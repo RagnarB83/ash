@@ -7,6 +7,7 @@ import subprocess as sp
 import shutil
 import constants
 import math
+from functions_ORCA import grab_HF_and_corr_energies
 
 #CM5. from https://github.com/patrickmelix/CM5-calculator/blob/master/cm5calculator.py
 
@@ -949,15 +950,15 @@ def W1theory_SP(fragment=None, charge=None, orcadir=None, mult=None, stabilityan
     ccsdt_tz = ash.ORCATheory(orcadir=orcadir, orcasimpleinput=ccsdt_tz_line, orcablocks=blocks, nprocs=numcores, charge=charge, mult=mult)
     ccsd_qz = ash.ORCATheory(orcadir=orcadir, orcasimpleinput=ccsd_qz_line, orcablocks=blocks, nprocs=numcores, charge=charge, mult=mult)
 
-    Singlepoint(fragment=fragment, theory=ccsdt_dz)
+    ash.Singlepoint(fragment=fragment, theory=ccsdt_dz)
     CCSDT_DZ_dict = grab_HF_and_corr_energies('orca-input.out')
     print("CCSDT_DZ_dict:", CCSDT_DZ_dict)
 
-    Singlepoint(fragment=fragmeent, theory=ccsdt_tz)
+    ash.Singlepoint(fragment=fragmeent, theory=ccsdt_tz)
     CCSDT_TZ_dict = grab_HF_and_corr_energies('orca-input.out')
     print("CCSDT_TZ_dict:", CCSDT_TZ_dict)
 
-    Singlepoint(fragment=fragment, theory=ccsd_qz)
+    ash.Singlepoint(fragment=fragment, theory=ccsd_qz)
     CCSD_QZ_dict = grab_HF_and_corr_energies('orca-input.out')
     print("CCSD_QZ_dict:", CCSD_QZ_dict)
 
@@ -989,8 +990,8 @@ def W1theory_SP(fragment=None, charge=None, orcadir=None, mult=None, stabilityan
     ccsdt_mtsmall_NoFC = ash.ORCATheory(orcadir=orcadir, orcasimpleinput=ccsdt_mtsmall_NoFC_line, orcablocks=blocks, nprocs=numcores, charge=charge, mult=mult)
     ccsdt_mtsmall_FC = ash.ORCATheory(orcadir=orcadir, orcasimpleinput=ccsdt_mtsmall_FC_line, orcablocks=blocks, nprocs=numcores, charge=charge, mult=mult)
 
-    energy_ccsdt_mtsmall_nofc = Singlepoint(fragment=fragment, theory=ccsdt_mtsmall_NoFC)
-    energy_ccsdt_mtsmall_fc = Singlepoint(fragment=fragment, theory=ccsdt_mtsmall_FC)
+    energy_ccsdt_mtsmall_nofc = ash.Singlepoint(fragment=fragment, theory=ccsdt_mtsmall_NoFC)
+    energy_ccsdt_mtsmall_fc = ash.Singlepoint(fragment=fragment, theory=ccsdt_mtsmall_FC)
 
     #Core-correlation is total energy difference between NoFC-DKH and FC-norel
     corecorr_and_SR = energy_ccsdt_mtsmall_nofc - energy_ccsdt_mtsmall_fc
