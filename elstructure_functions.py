@@ -956,7 +956,7 @@ def num_core_electrons(fragment):
 # Idea: Instead of CCSD(T), try out CEPA or pCCSD as alternative method. Hopefully as accurate as CCSD(T).
 # Or DLPNO-CCSD(T) with LoosePNO ?
 
-def W1theory_SP(fragment=None, charge=None, orcadir=None, mult=None, stabilityanalysis=False, numcores=1, memory=5000):
+def W1theory_SP(fragment=None, charge=None, orcadir=None, mult=None, stabilityanalysis=False, numcores=1, memory=5000, noaug=False):
     """
     Single-point W1 theory workflow. Not doing opt and freq step here.
     Differences: Basis sets may not be the same if 2nd-row element. CHECK THIS for future.
