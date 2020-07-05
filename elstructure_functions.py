@@ -954,7 +954,7 @@ def W1theory_SP(fragment=None, charge=None, orcadir=None, mult=None, stabilityan
     CCSDT_DZ_dict = grab_HF_and_corr_energies('orca-input.out')
     print("CCSDT_DZ_dict:", CCSDT_DZ_dict)
 
-    ash.Singlepoint(fragment=fragmeent, theory=ccsdt_tz)
+    ash.Singlepoint(fragment=fragment, theory=ccsdt_tz)
     CCSDT_TZ_dict = grab_HF_and_corr_energies('orca-input.out')
     print("CCSDT_TZ_dict:", CCSDT_TZ_dict)
 
