@@ -934,10 +934,23 @@ atom_spinorbitsplittings = {'H': 0.000, 'B': -10.17, 'C' : -29.58, 'N' : 0.00, '
                       'Al' : -74.71, 'Si' : -149.68, 'P' : 0.00, 'S' : -195.77, 'Cl' : -294.12}
 
 #Core electrons for elements in ORCA
-#TO be finished. Also nee
 atom_core_electrons = {'H': 0, 'He' : 0, 'Li' : 0, 'Be' : 0, 'B': 2, 'C' : 2, 'N' : 2, 'O' : 2, 'F' : 2, 'Ne' : 2,
-                      'Na' : 2, 'Mg' : 2, 'Al' : 10, 'Si' : 10, 'P' : 10, 'S' : 10, 'Cl' : 10, 'Ar' : 10}
+                      'Na' : 2, 'Mg' : 2, 'Al' : 10, 'Si' : 10, 'P' : 10, 'S' : 10, 'Cl' : 10, 'Ar' : 10,
+                       'K' : 10, 'Ca' : 10, 'Sc' : 10, 'Ti' : 10, 'V' : 10, 'Cr' : 10, 'Mn' : 10, 'Fe' : 10, 'Co' : 10,
+                       'Ni' : 10, 'Cu' : 10, 'Zn' : 10, 'Ga' : 18, 'Ge' : 18, 'As' : 18, 'Se' : 18, 'Br' : 18, 'Kr' : 18,
+                       'Rb' : 18, 'Sr' : 18, 'Y' : 28, 'Zr' : 28, 'Nb' : 28, 'Mo' : 28, 'Tc' : 28, 'Ru' : 28, 'Rh' : 28,
+                       'Pd' : 28, 'Ag' : 28, 'Cd' : 28, 'In' : 36, 'Sn' : 36, 'Sb' : 36, 'Te' : 36, 'I' : 36, 'Xe' : 36,
+                       'Cs' : 36, 'Ba' : 36, 'Lu' : 46, 'Hf' : 46, 'Ta' : 46, 'w' : 46, 'Re' : 46, 'Os' : 46, 'Ir' : 46,
+                       'Pt' : 46, 'Au' : 46, 'Hg' : 46, 'Tl' : 68, 'Pb' : 68, 'Bi' : 68, 'Po' : 68, 'At' : 68, 'Rn' : 68}
 
+
+def num_core_electrons(fragment):
+    sum=0
+    formula_list = molformulatolist(fragment.formula)
+    for i in formula_list:
+        els = atom_core_electrons[i]
+        sum+=els
+    return sum
 
 #Note: Inner-shell correlation information: https://webhome.weizmann.ac.il/home/comartin/preprints/w1/node6.html
 # Idea: Instead of CCSD(T), try out CEPA or pCCSD as alternative method. Hopefully as accurate as CCSD(T).
@@ -976,14 +989,15 @@ def W1theory_SP(fragment=None, charge=None, orcadir=None, mult=None, stabilityan
     #Reducing numcores if fewer non-frozenelectrons than numcores.
     #Only counting core_electrons if atom. To be done better
     #Should contain total number of valence electron pairs for whole formula and then compare that number to numcores.
-    if fragment.numatoms == 1:
-        core_electrons = atom_core_electrons[fragment.elems[0]]
-    else:
-        core_electrons = 0
-    if numelectrons - core_electrons < numcores:
+    coreelectrons = num_core_electrons(fragment)
+    print("coreelectrons:", coreelectrons)
+    electronpairs = (numelectrons - coreelectrons)/2
+    print("electronpairs:", electronpairs)
+    if electronpairs  < numcores:
         print("Number of electrons in fragment:", numelectrons)
-        print("Setting numcores to 1")
-        numcores=1
+        print("Number of valence electron pairs :", electronpairs )
+        print("Setting numcores to number of electron pairs")
+        numcores=electronpairs
 
     #Block input for SCF/MDCI block options.
     #TODO: Add Stability analysis option  here later

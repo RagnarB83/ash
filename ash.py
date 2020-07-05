@@ -2736,6 +2736,7 @@ class Fragment:
         self.atomcharges = []
         self.atomtypes = []
         self.Centralmainfrag = []
+        self.formula = None
         if atomcharges is not None:
             self.atomcharges=atomcharges
         if atomtypes is not None:
@@ -2779,6 +2780,10 @@ class Fragment:
         self.allatoms = self.atomlist
         self.mass = totmasslist(self.elems)
         self.list_of_masses = list_of_masses(self.elems)
+
+        #Elemental formula
+        self.formula = elemlisttoformula(self.elems)
+
     #Add coordinates from geometry string. Will replace.
     #Todo: Needs more work as elems and coords may be lists or numpy arrays
     def add_coords_from_string(self, coordsstring, scale=None, tol=None):
@@ -3001,6 +3006,7 @@ class Fragment:
         with open(filename, 'w') as outfile:
             outfile.write("Fragment: \n")
             outfile.write("Num atoms: {}\n".format(self.numatoms))
+            outfile.write("Formula: {}\n".format(self.formula))
             outfile.write("Energy: {}\n".format(self.energy))
             outfile.write("\n")
             outfile.write(" Index    Atom         x                  y                  z               charge        fragment-type        atom-type\n")
