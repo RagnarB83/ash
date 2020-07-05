@@ -1022,7 +1022,8 @@ def W1theory_SP(fragment=None, charge=None, orcadir=None, mult=None, stabilityan
     print("Spin-orbit correction (E_SO):", E_SO)
 
     #Final result
-
+    print("")
+    print("")
     W1_total = E_SCF_CBS + E_CCSDcorr_CBS + E_triplescorr_CBS +E_corecorr_and_SR  + E_SO
     print("Final W1 energy :", W1_total, "Eh")
     print("")

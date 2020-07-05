@@ -180,6 +180,7 @@ def displacement_QMMMrun(arglist):
 #Single-point energy function
 #Should be used by user instead of run.
 def Singlepoint(fragment=None, theory=None, Grad=False):
+    print("")
     '''
     The Singlepoint function carries out a single-point energy calculation
     :param fragment:
