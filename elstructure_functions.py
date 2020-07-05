@@ -1021,7 +1021,7 @@ def W1theory_SP(fragment=None, charge=None, orcadir=None, mult=None, stabilityan
     elif HFreference == 'ROHF':
         print("ROHF reference is not yet available")
         exit()
-    #QRO option is similar to ROHF. Recommended
+    #QRO option is similar to ROHF. Recommended. Same as used by ORCA in DLPNO-CC.
     elif HFreference == 'QRO':
         print("HF reference = QRO chosen. Will use QROs for open-shell species)")
         hfkeyword='UNO'
@@ -1141,8 +1141,8 @@ def W1theory_SP(fragment=None, charge=None, orcadir=None, mult=None, stabilityan
 def DLPNO_W1theory_SP(fragment=None, charge=None, orcadir=None, mult=None, stabilityanalysis=False, numcores=1, memory=5000, noaug=False):
     """
     WORK IN PROGRESS
-    DLPNO-version of W1 theory workflow. Not doing opt and freq step here.
-    Differences: Basis sets are not exactly the same. Check H and 2nd-row elements. CHECK THIS for future.
+    DLPNO-version of single-point W1 theory workflow.
+    Differences: DLPNO-CC enforces QRO reference (similar to ROHF)
     Scalar-relativistic step done via DKH. Same as modern W1 implementation.
 
     :param fragment:
@@ -1200,10 +1200,10 @@ def DLPNO_W1theory_SP(fragment=None, charge=None, orcadir=None, mult=None, stabi
 
     #Whether to use diffuse basis set or not
     #Note: this may fuck up basis set extrapolation
-    if noaug is True:
-        prefix=''
-    else:
-        prefix='aug-'
+    #if noaug is True:
+    #    prefix=''
+    #else:
+    #    prefix='aug-'
 
     #Auxiliary basis set. One big one
     auxbasis='cc-pV5Z/C'
@@ -1211,9 +1211,13 @@ def DLPNO_W1theory_SP(fragment=None, charge=None, orcadir=None, mult=None, stabi
     ############################################################
     #Frozen-core calcs
     ############################################################
-    ccsdt_dz_line="! DLPNO-CCSD(T) {}cc-pVDZ {} tightscf ".format(prefix,auxbasis)
-    ccsdt_tz_line="! DLPNO-CCSD(T) {}cc-pVTZ {} tightscf ".format(prefix,auxbasis)
-    ccsd_qz_line="! DLPNO-CCSD {}cc-pVQZ {} tightscf ".format(prefix,auxbasis)
+    #ccsdt_dz_line="! DLPNO-CCSD(T) {}cc-pVDZ {} tightscf ".format(prefix,auxbasis)
+    #ccsdt_tz_line="! DLPNO-CCSD(T) {}cc-pVTZ {} tightscf ".format(prefix,auxbasis)
+    #ccsd_qz_line="! DLPNO-CCSD {}cc-pVQZ {} tightscf ".format(prefix,auxbasis)
+    ccsdt_dz_line="! DLPNO-CCSD(T) W1-DZ {} tightscf ".format(auxbasis)
+    ccsdt_tz_line="! DLPNO-CCSD(T) W1-TZ {} tightscf ".format(auxbasis)
+    ccsd_qz_line="! DLPNO-CCSD     W1-QZ {} tightscf ".format(auxbasis)
+
 
     ccsdt_dz = ash.ORCATheory(orcadir=orcadir, orcasimpleinput=ccsdt_dz_line, orcablocks=blocks, nprocs=numcores, charge=charge, mult=mult)
     ccsdt_tz = ash.ORCATheory(orcadir=orcadir, orcasimpleinput=ccsdt_tz_line, orcablocks=blocks, nprocs=numcores, charge=charge, mult=mult)
