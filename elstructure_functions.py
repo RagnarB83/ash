@@ -1008,18 +1008,28 @@ def W1theory_SP(fragment=None, charge=None, orcadir=None, mult=None, stabilityan
     energy_ccsdt_mtsmall_fc = ash.Singlepoint(fragment=fragment, theory=ccsdt_mtsmall_FC)
 
     #Core-correlation is total energy difference between NoFC-DKH and FC-norel
-    corecorr_and_SR = energy_ccsdt_mtsmall_nofc - energy_ccsdt_mtsmall_fc
-    print("corecorr_and_SR:", corecorr_and_SR)
+    E_corecorr_and_SR = energy_ccsdt_mtsmall_nofc - energy_ccsdt_mtsmall_fc
+    print("E_corecorr_and_SR:", E_corecorr_and_SR)
 
     #Spin-orbit correction for atoms.
     if fragment.numatoms == 1:
         print("Fragment is an atom. Looking up atomic spin-orbit splitting value")
         print("fragment elems", fragment.elems)
-        spinorbitcorrection = atom_spinorbitsplittings[fragment.elems[0]]
+        E_SO = atom_spinorbitsplittings[fragment.elems[0]] / constants.hartocm
     else :
-        spinorbitcorrection = 0.0
+        E_SO = 0.0
 
-    print("spinorbitcorrection:", spinorbitcorrection)
+    print("Spin-orbit correction (E_SO):", E_SO)
 
-    #Final
-    E_total = E_SCF_CBS + E_CCSDcorr_CBS + E_triplescorr_CBS +corecorr_and_SR  + spinorbitcorrection
+    #Final result
+
+    W1_total = E_SCF_CBS + E_CCSDcorr_CBS + E_triplescorr_CBS +E_corecorr_and_SR  + E_SO
+    print("Final W1 energy :", W1_total, "Eh")
+    print("")
+    print("Contributions:")
+    print("--------------")
+    print("E_SCF_CBS : ", E_SCF_CBS)
+    print("E_CCSDcorr_CBS : ", E_CCSDcorr_CBS)
+    print("E_triplescorr_CBS : ", E_triplescorr_CBS)
+    print("E_corecorr_and_SR : ", E_corecorr_and_SR)
+    print("E_SO : ", E_SO)
