@@ -946,7 +946,7 @@ atom_core_electrons = {'H': 0, 'He' : 0, 'Li' : 0, 'Be' : 0, 'B': 2, 'C' : 2, 'N
 
 def num_core_electrons(fragment):
     sum=0
-    formula_list = molformulatolist(fragment.formula)
+    formula_list = functions_coords.molformulatolist(fragment.formula)
     for i in formula_list:
         els = atom_core_electrons[i]
         sum+=els
