@@ -1034,3 +1034,9 @@ def W1theory_SP(fragment=None, charge=None, orcadir=None, mult=None, stabilityan
     print("E_triplescorr_CBS : ", E_triplescorr_CBS)
     print("E_corecorr_and_SR : ", E_corecorr_and_SR)
     print("E_SO : ", E_SO)
+
+    E_dict = {'Total_E' : W1_total, 'E_SCF_CBS' : E_SCF_CBS, 'E_CCSDcorr_CBS' : E_CCSDcorr_CBS, 'E_triplescorr_CBS' : E_triplescorr_CBS,
+             'E_corecorr_and_SR' : E_corecorr_and_SR, 'E_SO' : E_SO}
+
+    #return final energy and dictionary of energy components
+    return W1_total, E_dict
