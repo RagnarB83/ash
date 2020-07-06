@@ -1138,7 +1138,7 @@ def W1theory_SP(fragment=None, charge=None, orcadir=None, mult=None, stabilityan
     return W1_total, E_dict
 
 #DLPNO-test
-def DLPNO_W1theory_SP(fragment=None, charge=None, orcadir=None, mult=None, stabilityanalysis=False, numcores=1, memory=5000, noaug=False):
+def DLPNO_W1theory_SP(fragment=None, charge=None, orcadir=None, mult=None, stabilityanalysis=False, numcores=1, memory=5000, pnosetting='NormalPNO'):
     """
     WORK IN PROGRESS
     DLPNO-version of single-point W1 theory workflow.
@@ -1214,9 +1214,9 @@ def DLPNO_W1theory_SP(fragment=None, charge=None, orcadir=None, mult=None, stabi
     #ccsdt_dz_line="! DLPNO-CCSD(T) {}cc-pVDZ {} tightscf ".format(prefix,auxbasis)
     #ccsdt_tz_line="! DLPNO-CCSD(T) {}cc-pVTZ {} tightscf ".format(prefix,auxbasis)
     #ccsd_qz_line="! DLPNO-CCSD {}cc-pVQZ {} tightscf ".format(prefix,auxbasis)
-    ccsdt_dz_line="! DLPNO-CCSD(T) W1-DZ {} tightscf ".format(auxbasis)
-    ccsdt_tz_line="! DLPNO-CCSD(T) W1-TZ {} tightscf ".format(auxbasis)
-    ccsd_qz_line="! DLPNO-CCSD     W1-QZ {} tightscf ".format(auxbasis)
+    ccsdt_dz_line="! DLPNO-CCSD(T) W1-DZ {} tightscf {}".format(auxbasis, pnosetting)
+    ccsdt_tz_line="! DLPNO-CCSD(T) W1-TZ {} tightscf {}".format(auxbasis, pnosetting)
+    ccsd_qz_line="! DLPNO-CCSD     W1-QZ {} tightscf {}".format(auxbasis, pnosetting)
 
 
     ccsdt_dz = ash.ORCATheory(orcadir=orcadir, orcasimpleinput=ccsdt_dz_line, orcablocks=blocks, nprocs=numcores, charge=charge, mult=mult)
@@ -1263,8 +1263,8 @@ def DLPNO_W1theory_SP(fragment=None, charge=None, orcadir=None, mult=None, stabi
     ############################################################
     #Core-correlation + scalar relativistic as joint correction
     ############################################################
-    ccsdt_mtsmall_NoFC_line="! DLPNO-CCSD(T) DKH W1-mtsmall  {} tightscf nofrozencore".format(auxbasis)
-    ccsdt_mtsmall_FC_line="! DLPNO-CCSD(T) W1-mtsmall {}  tightscf ".format(auxbasis)
+    ccsdt_mtsmall_NoFC_line="! DLPNO-CCSD(T) DKH W1-mtsmall  {} tightscf nofrozencore {}".format(auxbasis, pnosetting)
+    ccsdt_mtsmall_FC_line="! DLPNO-CCSD(T) W1-mtsmall {}  tightscf {}".format(auxbasis, pnosetting)
 
     ccsdt_mtsmall_NoFC = ash.ORCATheory(orcadir=orcadir, orcasimpleinput=ccsdt_mtsmall_NoFC_line, orcablocks=blocks, nprocs=numcores, charge=charge, mult=mult)
     ccsdt_mtsmall_FC = ash.ORCATheory(orcadir=orcadir, orcasimpleinput=ccsdt_mtsmall_FC_line, orcablocks=blocks, nprocs=numcores, charge=charge, mult=mult)
