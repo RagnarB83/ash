@@ -1138,20 +1138,21 @@ def W1theory_SP(fragment=None, charge=None, orcadir=None, mult=None, stabilityan
     return W1_total, E_dict
 
 #DLPNO-test
-def DLPNO_W1theory_SP(fragment=None, charge=None, orcadir=None, mult=None, stabilityanalysis=False, numcores=1, memory=5000, pnosetting='NormalPNO'):
+def DLPNO_W1theory_SP(fragment=None, charge=None, orcadir=None, mult=None, stabilityanalysis=False, numcores=1, memory=5000, pnosetting='NormalPNO', T1=True):
     """
     WORK IN PROGRESS
     DLPNO-version of single-point W1 theory workflow.
-    Differences: DLPNO-CC enforces QRO reference (similar to ROHF)
-    Scalar-relativistic step done via DKH. Same as modern W1 implementation.
+    Differences: DLPNO-CC enforces QRO reference (similar to ROHF). No other reference possible.
 
-    :param fragment:
-    :param charge:
-    :param orcadir:
-    :param mult:
-    :param stabilityanalysis:
-    :param numcores:
-    :return:
+    :param fragment: ASH fragment
+    :param charge: Charge of fragment (to be replaced)?
+    :param orcadir: ORCA directory
+    :param mult: Multiplicity of fragment (to be replaced)?
+    :param stabilityanalysis: stability analysis on or off . Not currently active
+    :param numcores: number of corese
+    :param memory: Memory in MB
+    :param pnosetting: ORCA keyword: NormalPNO, LoosePNO, TightPNO
+    :return: energy and dictionary with energy-components
     """
     print("-----------------------------")
     print("DLPNO_W1theory_SP PROTOCOL")
@@ -1208,14 +1209,21 @@ def DLPNO_W1theory_SP(fragment=None, charge=None, orcadir=None, mult=None, stabi
     #Auxiliary basis set. One big one
     auxbasis='cc-pV5Z/C'
 
+    #Whether to use iterative triples or not. Default: regular DLPNO-CCSD(T)
+    if T1 is True:
+        ccsdtkeyword='DLPNO-CCSDT(1)'
+    else:
+        ccsdtkeyword='DLPNO-CCSDT()'
+
+
     ############################################################
     #Frozen-core calcs
     ############################################################
     #ccsdt_dz_line="! DLPNO-CCSD(T) {}cc-pVDZ {} tightscf ".format(prefix,auxbasis)
     #ccsdt_tz_line="! DLPNO-CCSD(T) {}cc-pVTZ {} tightscf ".format(prefix,auxbasis)
     #ccsd_qz_line="! DLPNO-CCSD {}cc-pVQZ {} tightscf ".format(prefix,auxbasis)
-    ccsdt_dz_line="! DLPNO-CCSD(T) W1-DZ {} tightscf {}".format(auxbasis, pnosetting)
-    ccsdt_tz_line="! DLPNO-CCSD(T) W1-TZ {} tightscf {}".format(auxbasis, pnosetting)
+    ccsdt_dz_line="! {} W1-DZ {} tightscf {}".format(ccsdtkeyword, auxbasis, pnosetting)
+    ccsdt_tz_line="! {} W1-TZ {} tightscf {}".format(ccsdtkeyword, auxbasis, pnosetting)
     ccsd_qz_line="! DLPNO-CCSD     W1-QZ {} tightscf {}".format(auxbasis, pnosetting)
 
 
@@ -1263,8 +1271,8 @@ def DLPNO_W1theory_SP(fragment=None, charge=None, orcadir=None, mult=None, stabi
     ############################################################
     #Core-correlation + scalar relativistic as joint correction
     ############################################################
-    ccsdt_mtsmall_NoFC_line="! DLPNO-CCSD(T) DKH W1-mtsmall  {} tightscf nofrozencore {}".format(auxbasis, pnosetting)
-    ccsdt_mtsmall_FC_line="! DLPNO-CCSD(T) W1-mtsmall {}  tightscf {}".format(auxbasis, pnosetting)
+    ccsdt_mtsmall_NoFC_line="! {} DKH W1-mtsmall  {} tightscf nofrozencore {}".format(ccsdtkeyword, auxbasis, pnosetting)
+    ccsdt_mtsmall_FC_line="! {} W1-mtsmall {}  tightscf {}".format(ccsdtkeyword, auxbasis, pnosetting)
 
     ccsdt_mtsmall_NoFC = ash.ORCATheory(orcadir=orcadir, orcasimpleinput=ccsdt_mtsmall_NoFC_line, orcablocks=blocks, nprocs=numcores, charge=charge, mult=mult)
     ccsdt_mtsmall_FC = ash.ORCATheory(orcadir=orcadir, orcasimpleinput=ccsdt_mtsmall_FC_line, orcablocks=blocks, nprocs=numcores, charge=charge, mult=mult)

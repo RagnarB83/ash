@@ -205,7 +205,7 @@ def Singlepoint(fragment=None, theory=None, Grad=False):
         print("Energy: ", energy)
         return energy,gradient
     else:
-        print(BC.WARNING,"Doing single-point Energy job",BC.END)
+        print(BC.WARNING,"Doing single-point Energy job on fragment : ", fragment.formula, BC.END)
         energy = theory.run(current_coords=coords, elems=elems)
         print("Energy: ", energy)
 
