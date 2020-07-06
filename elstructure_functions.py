@@ -1211,12 +1211,12 @@ def DLPNO_W1theory_SP(fragment=None, charge=None, orcadir=None, mult=None, stabi
 
     #Whether to use iterative triples or not. Default: regular DLPNO-CCSD(T)
     if T1 is True:
-        ccsdtkeyword='DLPNO-CCSDT(1)'
+        ccsdtkeyword='DLPNO-CCSD(T1)'
     else:
         ccsdtkeyword='DLPNO-CCSDT()'
 
 
-    ############################################################
+    ############################################################s
     #Frozen-core calcs
     ############################################################
     #ccsdt_dz_line="! DLPNO-CCSD(T) {}cc-pVDZ {} tightscf ".format(prefix,auxbasis)
