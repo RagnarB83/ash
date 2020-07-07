@@ -1114,7 +1114,7 @@ def PhotoElectronSpectrum(theory=None, fragment=None, InitialState_charge=None, 
                     theory.orcablocks=theory.orcablocks.replace(line,'')
             theory.orcablocks = theory.orcablocks.replace('\n\n','\n')
 
-            theory.orcablocks = theory.orcablocks.replace('%mrci', '%mrci\n' + "printwf det\nTPrintwf 1e-16 end\n" +
+            theory.orcablocks = theory.orcablocks.replace('%mrci', '%mrci\n' + "printwf det\nTPrintwf 1e-16\n" +
                                                           "newblock 1 *\n refs cas({},{}) end\n".format(MRCI_Initial[0],MRCI_Initial[1])
                                                                     + "nroots {}\nend\n".format(1))
             theory.orcablocks = theory.orcablocks.replace('\n\n','\n')
@@ -1255,7 +1255,7 @@ def PhotoElectronSpectrum(theory=None, fragment=None, InitialState_charge=None, 
                 theory.orcablocks = theory.orcablocks.replace('\n\n', '\n')
 
                 theory.orcablocks = theory.orcablocks.replace('%mrci',
-                                                              '%mrci\n' + "printwf det\nTPrintwf 1e-16 end\n" +
+                                                              '%mrci\n' + "printwf det\nTPrintwf 1e-16\n" +
                                                               "newblock 1 *\n refs cas({},{}) end\n".format(MRCI_Final[0],
                                                                                                         MRCI_Final[1])
                                                               + "nroots {}\n".format(numionstates_string)+"mult {}\nend\n".format(MRCI_mults))
