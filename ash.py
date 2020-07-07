@@ -2773,8 +2773,7 @@ class Fragment:
     def update_attributes(self):
         self.nuccharge = nucchargelist(self.elems)
         self.numatoms = len(self.coords)
-        if self.printlevel >= 2:
-            print("Fragment numatoms:", self.numatoms)
+
         self.atomlist = list(range(0, self.numatoms))
         #Unnecessary alias ? Todo: Delete
         self.allatoms = self.atomlist
@@ -2785,6 +2784,11 @@ class Fragment:
         self.formula = elemlisttoformula(self.elems)
         #Pretty formula without 1
         self.prettyformula = self.formula.replace('1','')
+
+        if self.printlevel >= 2:
+            print("Fragment numatoms:", self.numatoms)
+            print("Formula : ", self.prettyformula)
+
     #Add coordinates from geometry string. Will replace.
     #Todo: Needs more work as elems and coords may be lists or numpy arrays
     def add_coords_from_string(self, coordsstring, scale=None, tol=None):
