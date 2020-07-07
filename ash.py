@@ -3421,3 +3421,5 @@ def ReactionEnergy(stoichiometry=None, list_of_fragments=None, list_of_energies=
         reaction_energy=(product_energy-reactant_energy)*conversionfactor[unit]
         print(BC.BOLD, "Reaction_energy({}): {} {}".format(label,BC.OKGREEN,reaction_energy, unit), BC.END)
     return reaction_energy
+
+

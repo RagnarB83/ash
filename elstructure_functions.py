@@ -1323,3 +1323,51 @@ def DLPNO_W1theory_SP(fragment=None, charge=None, orcadir=None, mult=None, stabi
 
     #return final energy and also dictionary with energy components
     return W1_total, E_dict
+
+#Thermochemistry protocol. Take list of fragments, stoichiometry, etc
+#Requires orcadir, inputline for geo-opt. ORCA-bssed
+#Make more general. Not sure. ORCA makes most sense for geo-opt and HL theory
+def thermochemprotocol(fraglist=None, stoichiometry=None, orcadir=None, numcores=None, Opt_protocol_inputline=None, Opt_protocol_blocks=None):
+    if Opt_protocol_blocks is None:
+        Opt_protocol_blocks=""
+
+    #DFT Opt+Freq  and Single-point W1 workflow
+    FinalEnergies = []; list_of_dicts = []; ZPVE_Energies=[]
+    for species in fraglist:
+        #Only Opt+Freq for molecules, not atoms
+        if species.numatoms != 1:
+            #DFT-opt
+            ORCAcalc = ORCATheory(orcadir=orcadir, charge=species.charge, mult=species.mult,
+                orcasimpleinput=Opt_protocol_inputline, orcablocks="", nprocs=numcores)
+            geomeTRICOptimizer(theory=ORCAcalc,fragment=species)
+            #DFT-FREQ
+            thermochem = NumFreq(fragment=species, theory=ORCAcalc, npoint=2, runmode='serial')
+            ZPVE = thermochem['ZPVE']
+        else:
+            #Setting ZPVE to 0.0.
+            ZPVE=0.0
+        #Single-point W1
+        FinalE, W1dict = W1theory_SP(fragment=species, charge=species.charge,
+                        mult=species.mult, orcadir=orcadir, numcores=numcores, HFreference='QRO')
+        FinalEnergies.append(FinalE+ZPVE); list_of_dicts.append(W1dict)
+        ZPVE_Energies.append(ZPVE)
+
+    #Reaction Energy via list of total energies:
+    scf_parts=[dict['E_SCF_CBS'] for dict in list_of_dicts]
+    ccsd_parts=[dict['E_CCSDcorr_CBS'] for dict in list_of_dicts]
+    triples_parts=[dict['E_triplescorr_CBS'] for dict in list_of_dicts]
+    CV_SR_parts=[dict['E_corecorr_and_SR'] for dict in list_of_dicts]
+    SO_parts=[dict['E_SO'] for dict in list_of_dicts]
+
+    #Reaction Energy of total energiese and also different contributions
+    print("")
+    ReactionEnergy(stoichiometry=stoichiometry, list_of_fragments=fraglist, list_of_energies=scf_parts, unit='kcalpermol', label='ΔSCF')
+    ReactionEnergy(stoichiometry=stoichiometry, list_of_fragments=fraglist, list_of_energies=ccsd_parts, unit='kcalpermol', label='ΔCCSD')
+    ReactionEnergy(stoichiometry=stoichiometry, list_of_fragments=fraglist, list_of_energies=triples_parts, unit='kcalpermol', label='Δ(T)')
+    ReactionEnergy(stoichiometry=stoichiometry, list_of_fragments=fraglist, list_of_energies=CV_SR_parts, unit='kcalpermol', label='ΔCV+SR')
+    ReactionEnergy(stoichiometry=stoichiometry, list_of_fragments=fraglist, list_of_energies=SO_parts, unit='kcalpermol', label='ΔSO')
+    ReactionEnergy(stoichiometry=stoichiometry, list_of_fragments=fraglist, list_of_energies=ZPVE_Energies, unit='kcalpermol', label='ΔZPVE')
+    print("----------------------------------------------")
+    ReactionEnergy(stoichiometry=stoichiometry, list_of_fragments=fraglist, list_of_energies=FinalEnergies, unit='kcalpermol', label='Total ΔE')
+
+    print_time_rel(settings_ash.init_time,modulename='Entire thermochemprotocol')
