@@ -31,6 +31,7 @@ def geomeTRICOptimizer(theory=None,fragment=None, coordsystem='tric', frozenatom
     except:
         pass
     blankline()
+    print(BC.WARNING, "Doing geometry optimization on fragment : ", fragment.prettyformula., BC.END)
     print("Launching geomeTRIC optimization module")
     print("Coordinate system: ", coordsystem)
     print("Max iterations: ", maxiter)
