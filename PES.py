@@ -955,7 +955,7 @@ def grab_dets_from_CASSCF_output(file):
 def PhotoElectronSpectrum(theory=None, fragment=None, InitialState_charge=None, Initialstate_mult=None,
                           Ionizedstate_charge=None, Ionizedstate_mult=None, numionstates=50, path_wfoverlap=None, tda=True,
                           brokensym=False, HSmult=None, atomstoflip=None, initialorbitalfiles=None, Densities='SCF', densgridvalue=100,
-                          CAS=False, CAS_Initial=None, CAS_Final = None, memory=20000, numcores=1, noDyson=False, CASCI=False):
+                          CAS=False, CAS_Initial=None, CAS_Final = None, memory=20000, numcores=1, noDyson=False, CASCI=False, MRCI=False):
     blankline()
     print(bcolors.OKGREEN,"-------------------------------------------------------------------",bcolors.ENDC)
     print(bcolors.OKGREEN,"PhotoElectronSpectrum: Calculating PES spectra via TDDFT and Dyson-norm approach",bcolors.ENDC)
@@ -965,11 +965,15 @@ def PhotoElectronSpectrum(theory=None, fragment=None, InitialState_charge=None, 
     os.environ["OMP_NUM_THREADS"] = str(numcores)
     print("OMP_NUM_THREADS : ", os.environ["OMP_NUM_THREADS"])
 
+    if CAS is True and MRCI is True:
+        print("Both CAS and MRCI can not both be True!")
+        print("You must previously optimize orbitals (e.g. with CASSCF) and feed into MRCI")
+        exit(1)
+
     if CAS is True:
         print("CASSCF option active!")
         if CASCI is True:
             print("CASCI option on! Initial state will be done with CASSCF while Final ionized states will do CAS-CI")
-
 
 
     if InitialState_charge is None or Initialstate_mult is None or Ionizedstate_charge is None or Ionizedstate_mult is None:
@@ -1061,7 +1065,7 @@ def PhotoElectronSpectrum(theory=None, fragment=None, InitialState_charge=None, 
 
     print("")
     print(bcolors.OKBLUE,"Calculated ion states:", numionstates, bcolors.ENDC)
-    if CAS is False:
+    if CAS is False or MRCI is False:
         print(bcolors.OKBLUE,"TDDFT-calculated ion states:", numionstates-1, bcolors.ENDC)
     print("")
 
@@ -1093,6 +1097,25 @@ def PhotoElectronSpectrum(theory=None, fragment=None, InitialState_charge=None, 
             theory.orcablocks = theory.orcablocks.replace('%casscf', '%casscf\n' + "printwf det\nci TPrintwf 1e-16 end\n" + "nel {}\n".format(CAS_Initial[0]) +
                                                           "norb {}\n".format(
                                                               CAS_Initial[1]) + "nroots {}\n".format(1))
+            theory.orcablocks = theory.orcablocks.replace('\n\n','\n')
+            theory.orcablocks = theory.orcablocks.replace('\n\n','\n')
+        if MRCI is True:
+            print("Modifying MRCI block for initial state, CAS({},{})".format(MRCI_Initial[0],MRCI_Initial[1]))
+            print("{} electrons in {} orbitals".format(MRCI_Initial[0],MRCI_Initial[1]))
+
+            #Removing nel/norb/nroots lines if user added
+            for line in theory.orcablocks.split('\n'):
+                if 'nel' in line:
+                    theory.orcablocks=theory.orcablocks.replace(line,'')
+                if 'norb' in line:
+                    theory.orcablocks=theory.orcablocks.replace(line,'')
+                if 'nroots' in line:
+                    theory.orcablocks=theory.orcablocks.replace(line,'')
+            theory.orcablocks = theory.orcablocks.replace('\n\n','\n')
+
+            theory.orcablocks = theory.orcablocks.replace('%mrci', '%mrci\n' + "printwf det\nci TPrintwf 1e-16 end\n" +
+                                                          "newblock 1 *\n refs cas({},{})\n".format(MRCI_Initial[0],MRCI_Initial[1])
+                                                                    + "nroots {}\n".format(1))
             theory.orcablocks = theory.orcablocks.replace('\n\n','\n')
             theory.orcablocks = theory.orcablocks.replace('\n\n','\n')
 
@@ -1161,7 +1184,7 @@ def PhotoElectronSpectrum(theory=None, fragment=None, InitialState_charge=None, 
         stateI.outfile="Init_State"+".out"
 
         # Initial state orbitals for MO-DOSplot
-        if CAS is True:
+        if CAS is True or MRCI is True:
             stateI.hftyp='CASSCF'
 
             #CASSCF wavefunction interpreted as restricted
@@ -1214,6 +1237,30 @@ def PhotoElectronSpectrum(theory=None, fragment=None, InitialState_charge=None, 
                                                               CAS_Final[1]) + "nroots {}\n".format(numionstates_string) + "mult {}\n".format(CAS_mults))
             theory.orcablocks = theory.orcablocks.replace('\n\n','\n')
             theory.orcablocks = theory.orcablocks.replace('\n\n','\n')
+            if MRCI is True:
+                print("Modifying MRCI block for Final state, MRCI({},{})".format(MRCI_Initial[0], MRCI_Initial[1]))
+                print("{} electrons in {} orbitals".format(MRCI_Initial[0], MRCI_Initial[1]))
+                # Making sure multiplicties are sorted in ascending order and creating comma-sep string
+                MRCI_mults = ','.join(str(x) for x in sorted([f.mult for f in Finalstates]))
+                print("MRCI_mults:", MRCI_mults)
+                # Removing nel/norb/nroots lines if user added
+                for line in theory.orcablocks.split('\n'):
+                    if 'nel' in line:
+                        theory.orcablocks = theory.orcablocks.replace(line, '')
+                    if 'norb' in line:
+                        theory.orcablocks = theory.orcablocks.replace(line, '')
+                    if 'nroots' in line:
+                        theory.orcablocks = theory.orcablocks.replace(line, '')
+                theory.orcablocks = theory.orcablocks.replace('\n\n', '\n')
+
+                theory.orcablocks = theory.orcablocks.replace('%mrci',
+                                                              '%mrci\n' + "printwf det\nci TPrintwf 1e-16 end\n" +
+                                                              "newblock 1 *\n refs cas({},{})\n".format(MRCI_Final[0],
+                                                                                                        MRCI_Final[1])
+                                                              + "nroots {}\n".format(numionstates_string)+"mult {}\n".format(MRCI_mults))
+                theory.orcablocks = theory.orcablocks.replace('\n\n', '\n')
+                theory.orcablocks = theory.orcablocks.replace('\n\n', '\n')
+
 
             #CAS-CI option for Ionized FInalstate. CASSCF orb-opt done on Initial state but then CAS-CI using Init-state orbs on Final-states
             if CASCI is True:
