@@ -1214,7 +1214,7 @@ def DLPNO_W1theory_SP(fragment=None, charge=None, orcadir=None, mult=None, stabi
     if T1 is True:
         ccsdtkeyword='DLPNO-CCSD(T1)'
     else:
-        ccsdtkeyword='DLPNO-CCSDT()'
+        ccsdtkeyword='DLPNO-CCSD(T)'
 
 
     ############################################################s
