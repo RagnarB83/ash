@@ -8,6 +8,7 @@ import shutil
 import constants
 import math
 from functions_ORCA import grab_HF_and_corr_energies
+from interface_geometric import *
 
 #CM5. from https://github.com/patrickmelix/CM5-calculator/blob/master/cm5calculator.py
 
@@ -1337,11 +1338,11 @@ def thermochemprotocol(fraglist=None, stoichiometry=None, orcadir=None, numcores
         #Only Opt+Freq for molecules, not atoms
         if species.numatoms != 1:
             #DFT-opt
-            ORCAcalc = ORCATheory(orcadir=orcadir, charge=species.charge, mult=species.mult,
+            ORCAcalc = ash.ORCATheory(orcadir=orcadir, charge=species.charge, mult=species.mult,
                 orcasimpleinput=Opt_protocol_inputline, orcablocks="", nprocs=numcores)
             geomeTRICOptimizer(theory=ORCAcalc,fragment=species)
             #DFT-FREQ
-            thermochem = NumFreq(fragment=species, theory=ORCAcalc, npoint=2, runmode='serial')
+            thermochem = ash.NumFreq(fragment=species, theory=ORCAcalc, npoint=2, runmode='serial')
             ZPVE = thermochem['ZPVE']
         else:
             #Setting ZPVE to 0.0.
