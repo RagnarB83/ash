@@ -1379,4 +1379,4 @@ def thermochemprotocol(SPprotocol=None, fraglist=None, stoichiometry=None, orcad
     print("----------------------------------------------")
     ash.ReactionEnergy(stoichiometry=stoichiometry, list_of_fragments=fraglist, list_of_energies=FinalEnergies, unit='kcalpermol', label='Total ΔE')
 
-    print_time_rel(settings_ash.init_time,modulename='Entire thermochemprotocol')
+    ash.print_time_rel(settings_ash.init_time,modulename='Entire thermochemprotocol')
