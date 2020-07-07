@@ -1328,7 +1328,8 @@ def DLPNO_W1theory_SP(fragment=None, charge=None, orcadir=None, mult=None, stabi
 #Thermochemistry protocol. Take list of fragments, stoichiometry, etc
 #Requires orcadir, inputline for geo-opt. ORCA-bssed
 #Make more general. Not sure. ORCA makes most sense for geo-opt and HL theory
-def thermochemprotocol(SPprotocol=None, fraglist=None, stoichiometry=None, orcadir=None, numcores=None, Opt_protocol_inputline=None, Opt_protocol_blocks=None):
+def thermochemprotocol(SPprotocol=None, fraglist=None, stoichiometry=None, orcadir=None, numcores=None,
+                       Opt_protocol_inputline=None, Opt_protocol_blocks=None, pnosetting='NormalPNO'):
     if Opt_protocol_blocks is None:
         Opt_protocol_blocks=""
 
@@ -1353,7 +1354,7 @@ def thermochemprotocol(SPprotocol=None, fraglist=None, stoichiometry=None, orcad
                         mult=species.mult, orcadir=orcadir, numcores=numcores, HFreference='QRO')
         elif SPprotocol == 'DLPNO-W1':
             FinalE, componentsdict = DLPNO_W1theory_SP(fragment=species, charge=species.charge,
-                        mult=species.mult, orcadir=orcadir, numcores=numcores, memory=5000, pnosetting='NormalPNO', T1=False)
+                        mult=species.mult, orcadir=orcadir, numcores=numcores, memory=5000, pnosetting=pnosetting, T1=False)
         else:
             print("Unknown SPprotocol")
             exit()
