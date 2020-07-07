@@ -205,7 +205,7 @@ def Singlepoint(fragment=None, theory=None, Grad=False):
         print("Energy: ", energy)
         return energy,gradient
     else:
-        print(BC.WARNING,"Doing single-point Energy job on fragment : ", fragment.formula, BC.END)
+        print(BC.WARNING,"Doing single-point Energy job on fragment : ", fragment.prettyformula., BC.END)
         energy = theory.run(current_coords=coords, elems=elems)
         print("Energy: ", energy)
 
@@ -2783,7 +2783,8 @@ class Fragment:
 
         #Elemental formula
         self.formula = elemlisttoformula(self.elems)
-
+        #Pretty formula without 1
+        self.prettyformula = self.formula.replace('1','')
     #Add coordinates from geometry string. Will replace.
     #Todo: Needs more work as elems and coords may be lists or numpy arrays
     def add_coords_from_string(self, coordsstring, scale=None, tol=None):
