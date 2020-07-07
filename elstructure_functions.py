@@ -1328,7 +1328,7 @@ def DLPNO_W1theory_SP(fragment=None, charge=None, orcadir=None, mult=None, stabi
 #Thermochemistry protocol. Take list of fragments, stoichiometry, etc
 #Requires orcadir, inputline for geo-opt. ORCA-bssed
 #Make more general. Not sure. ORCA makes most sense for geo-opt and HL theory
-def thermochemprotocol(fraglist=None, stoichiometry=None, orcadir=None, numcores=None, Opt_protocol_inputline=None, Opt_protocol_blocks=None):
+def thermochemprotocol(SPprotocol=None, fraglist=None, stoichiometry=None, orcadir=None, numcores=None, Opt_protocol_inputline=None, Opt_protocol_blocks=None):
     if Opt_protocol_blocks is None:
         Opt_protocol_blocks=""
 
@@ -1339,7 +1339,7 @@ def thermochemprotocol(fraglist=None, stoichiometry=None, orcadir=None, numcores
         if species.numatoms != 1:
             #DFT-opt
             ORCAcalc = ash.ORCATheory(orcadir=orcadir, charge=species.charge, mult=species.mult,
-                orcasimpleinput=Opt_protocol_inputline, orcablocks="", nprocs=numcores)
+                orcasimpleinput=Opt_protocol_inputline, orcablocks=Opt_protocol_blocks, nprocs=numcores)
             geomeTRICOptimizer(theory=ORCAcalc,fragment=species)
             #DFT-FREQ
             thermochem = ash.NumFreq(fragment=species, theory=ORCAcalc, npoint=2, runmode='serial')
@@ -1348,10 +1348,18 @@ def thermochemprotocol(fraglist=None, stoichiometry=None, orcadir=None, numcores
             #Setting ZPVE to 0.0.
             ZPVE=0.0
         #Single-point W1
-        FinalE, W1dict = W1theory_SP(fragment=species, charge=species.charge,
+        if SPprotocol == 'W1':
+            FinalE, componentsdict = W1theory_SP(fragment=species, charge=species.charge,
                         mult=species.mult, orcadir=orcadir, numcores=numcores, HFreference='QRO')
-        FinalEnergies.append(FinalE+ZPVE); list_of_dicts.append(W1dict)
+        elif SPprotocol == 'DLPNO-W1':
+            FinalE, componentsdict = DLPNO_W1theory_SP(fragment=species, charge=species.charge,
+                        mult=species.mult, orcadir=orcadir, numcores=numcores, memory=5000, pnosetting='NormalPNO', T1=False)
+        else:
+            print("Unknown SPprotocol")
+            exit()
+        FinalEnergies.append(FinalE+ZPVE); list_of_dicts.append(componentsdict)
         ZPVE_Energies.append(ZPVE)
+
 
     #Reaction Energy via list of total energies:
     scf_parts=[dict['E_SCF_CBS'] for dict in list_of_dicts]
