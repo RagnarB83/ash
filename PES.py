@@ -1332,8 +1332,7 @@ def PhotoElectronSpectrum(theory=None, fragment=None, InitialState_charge=None, 
             for mult in [f.mult for f in Finalstates]:
                 newblockstring = newblockstring + "newblock {} *\n".format(mult)+"refs cas({},{}) end\n".format(stateI.mult,MRCI_Final[0],MRCI_Final[1] )
 
-
-            theory.orcablocks = theory.orcablocks.replace('%mrci', '%mrci\n' + newblockstring + "nroots {}\n".format(numionstates_string)+"end")
+            theory.orcablocks = theory.orcablocks.replace('%mrci', '%mrci\n' + newblockstring + "nroots {}\n".format(numionstates_string))
             theory.orcablocks = theory.orcablocks.replace('\n\n', '\n')
             theory.orcablocks = theory.orcablocks.replace('\n\n', '\n')
 
