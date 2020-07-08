@@ -1148,7 +1148,7 @@ def PhotoElectronSpectrum(theory=None, fragment=None, InitialState_charge=None, 
             theory.orcablocks = theory.orcablocks.replace('\n\n','\n')
 
             theory.orcablocks = theory.orcablocks.replace('%mrci', '%mrci\n' + "printwf det\nTPrintwf 1e-16\n" +
-                                                          "newblock 1 *\n refs cas({},{}) end\n".format(MRCI_Initial[0],MRCI_Initial[1])
+                                                          "newblock {} *\n refs cas({},{}) end\n".format(stateI.mult,MRCI_Initial[0],MRCI_Initial[1])
                                                                     + "nroots {}\nend\n".format(1))
             theory.orcablocks = theory.orcablocks.replace('\n\n','\n')
             theory.orcablocks = theory.orcablocks.replace('\n\n','\n')
@@ -1315,19 +1315,25 @@ def PhotoElectronSpectrum(theory=None, fragment=None, InitialState_charge=None, 
             numionstates_string = ','.join(str(numionstates) for x in [f.mult for f in Finalstates])
             # Removing nel/norb/nroots lines if user added
             for line in theory.orcablocks.split('\n'):
-                if 'nel' in line:
-                    theory.orcablocks = theory.orcablocks.replace(line, '')
-                if 'norb' in line:
-                    theory.orcablocks = theory.orcablocks.replace(line, '')
                 if 'nroots' in line:
+                    theory.orcablocks = theory.orcablocks.replace(line, '')
+                if 'newblock' in line:
+                    theory.orcablocks = theory.orcablocks.replace(line, '')
+                if 'refs' in line:
+                    theory.orcablocks = theory.orcablocks.replace(line, '')
+                if 'mult' in line:
+                    theory.orcablocks = theory.orcablocks.replace(line, '')
+                if 'refs' in line:
                     theory.orcablocks = theory.orcablocks.replace(line, '')
             theory.orcablocks = theory.orcablocks.replace('\n\n', '\n')
 
-            theory.orcablocks = theory.orcablocks.replace('%mrci',
-                                                          '%mrci\n' + "printwf det\nTPrintwf 1e-16\n" +
-                                                          "newblock 1 *\n refs cas({},{}) end\n".format(MRCI_Final[0],
-                                                                                                    MRCI_Final[1])
-                                                          + "nroots {}\n".format(numionstates_string)+"mult {}\nend\n".format(MRCI_mults))
+            #Creating newblock blocks for each multiplicity
+            newblockstring=""
+            for mult in [f.mult for f in Finalstates]:
+                newblockstring = newblockstring + "newblock {}\n".format(mult)+"refs cas({},{}) end\n".format(stateI.mult,MRCI_Final[0],MRCI_Final[1] )+"end"
+
+
+            theory.orcablocks = theory.orcablocks.replace('%mrci', '%mrci\n' + newblockstring + "nroots {}\n".format(numionstates_string))
             theory.orcablocks = theory.orcablocks.replace('\n\n', '\n')
             theory.orcablocks = theory.orcablocks.replace('\n\n', '\n')
 
