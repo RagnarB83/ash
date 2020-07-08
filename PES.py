@@ -1312,6 +1312,7 @@ def PhotoElectronSpectrum(theory=None, fragment=None, InitialState_charge=None, 
             # Making sure multiplicties are sorted in ascending order and creating comma-sep string
             MRCI_mults = ','.join(str(x) for x in sorted([f.mult for f in Finalstates]))
             print("MRCI_mults:", MRCI_mults)
+            numionstates_string = ','.join(str(numionstates) for x in [f.mult for f in Finalstates])
             # Removing nel/norb/nroots lines if user added
             for line in theory.orcablocks.split('\n'):
                 if 'nel' in line:
