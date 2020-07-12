@@ -327,6 +327,12 @@ def Singlepoint_parallel(fragments=None, theories=None, numcores=None):
         print("results : ", results)
         print("Calculations are done")
 
+    #Convert list of tuples into dict
+    energy_dict = {result[0]: result[1] for results in results}
+    print("energy_dict:", energy_dict)
+
+
+    return energy_dict
 
 
 #Numerical frequencies function
