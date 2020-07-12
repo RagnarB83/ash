@@ -253,7 +253,6 @@ def Singlepoint(fragment=None, theory=None, Grad=False, *args):
 
 
 #Stripped down version of Singlepoint function for Singlepoint_parallel
-#Necessary because of Pool-Map. TODO: Figure out how to avoid this
 def Single_par(list):
 
     theory=list[0]
@@ -261,9 +260,9 @@ def Single_par(list):
     label=list[2]
 
     if label is None:
-        import random
-        import string
-        label=get_random_string(8)
+        print("No label provided to fragment or theory objects. This is required to distinguish between calculations ")
+        print("Exiting...")
+        exit(1)
 
 
     coords = fragment.coords
@@ -309,7 +308,6 @@ def Singlepoint_parallel(fragments=None, theories=None, numcores=None):
         theory = theories[0]
         results = pool.map(Single_par, [[theory,fragment, fragment.label] for fragment in fragments])
         pool.close()
-        print("results : ", results)
         print("Calculations are done")
     # Case: Multiple theories, 1 fragment
     elif len(fragments) == 1:
@@ -317,7 +315,6 @@ def Singlepoint_parallel(fragments=None, theories=None, numcores=None):
         fragment = fragments[0]
         results = pool.map(Single_par, [[theory,fragment, theory.label] for theory in theories])
         pool.close()
-        print("results : ", results)
         print("Calculations are done")
     else:
         print("multiple")
