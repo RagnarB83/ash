@@ -328,7 +328,7 @@ def Singlepoint_parallel(fragments=None, theories=None, numcores=None):
         print("Calculations are done")
 
     #Convert list of tuples into dict
-    energy_dict = {result[0]: result[1] for results in results}
+    energy_dict = {result[0]: result[1] for result in results}
     print("energy_dict:", energy_dict)
 
 
