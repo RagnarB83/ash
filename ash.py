@@ -270,7 +270,8 @@ def Single_par(list):
     elems = fragment.elems
     print(BC.WARNING, "Doing single-point Energy job on fragment : ", fragment.prettyformula, BC.END)
     #Creating separate inputfilename using label
-    energy = theory.run(current_coords=coords, elems=elems, inputfilename=label)
+    theory.inputfilename=label
+    energy = theory.run(current_coords=coords, elems=elems)
     print("Energy: ", energy)
     # Now adding total energy to fragment
     fragment.energy = energy
