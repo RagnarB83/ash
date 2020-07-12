@@ -320,7 +320,7 @@ def Singlepoint_parallel(fragments=None, theories=None, numcores=None):
         # Use theory label if available, else use RANDOM. Used to rename ORCA inputfiles
         if theory.label is not None:
             label=theory.label
-        else
+        else:
             import random
             import string
             label=get_random_string(8)
