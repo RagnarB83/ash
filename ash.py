@@ -304,7 +304,7 @@ def Singlepoint_parallel(fragments=None, theories=None, numcores=None):
         # Use fragment label if available, else use formula,charge and mult. Used to rename ORCA inputfiles
         if fragment.label is not None:
             label=fragment.label
-        else
+        else:
             label=fragment.prettyformula+'c'+fragment.charge+'m'+fragment.mult
 
         results = pool.map(Single_par, [[theory,fragment, label] for fragment in fragments])
