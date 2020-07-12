@@ -258,10 +258,12 @@ def Single_par(list):
 
     theory=list[0]
     fragment=list[1]
+    label=list[2]
     coords = fragment.coords
     elems = fragment.elems
     print(BC.WARNING, "Doing single-point Energy job on fragment : ", fragment.prettyformula, BC.END)
-    energy = theory.run(current_coords=coords, elems=elems)
+    #Creating separate inputfilename using label
+    energy = theory.run(current_coords=coords, elems=elems, inputfilename=label)
     print("Energy: ", energy)
     # Now adding total energy to fragment
     fragment.energy = energy
@@ -292,13 +294,20 @@ def Singlepoint_parallel(fragments=None, theories=None, numcores=None):
 
     pool = mp.Pool(numcores)
     # Singlepoint(fragment=None, theory=None, Grad=False)
-    #Case: 1 theory, multiple fragment
+    #Case: 1 theory, multiple fragments
     if len(theories) == 1:
         print("Theory 1")
         theory = theories[0]
         print("theory : ", theory)
         print("fragments : ", fragments)
-        results = pool.map(Single_par, [[theory,fragment] for fragment in fragments])
+
+        # Use fragment label if available, else use formula,charge and mult. Used to rename ORCA inputfiles
+        if fragment.label is not None:
+            label=fragment.label
+        else
+            label=fragment.prettyformula+'c'+fragment.charge+'m'+fragment.mult
+
+        results = pool.map(Single_par, [[theory,fragment, label] for fragment in fragments])
         print("results : ", results)
         pool.close()
         print("results : ", results)
@@ -307,13 +316,22 @@ def Singlepoint_parallel(fragments=None, theories=None, numcores=None):
     elif len(fragments) == 1:
         print("Fragment 1")
         fragment = fragments[0]
-        results = pool.map(Single_par, [[theory,fragment] for theory in theories])
+
+        # Use theory label if available, else use RANDOM. Used to rename ORCA inputfiles
+        if theory.label is not None:
+            label=theory.label
+        else
+            import random
+            import string
+            label=get_random_string(8)
+
+        results = pool.map(Single_par, [[theory,fragment, label] for fragment in fragments])
         pool.close()
         print("Calculations are done")
     else:
         print("multiple")
         fragment = fragments[0]
-        results = pool.map(Single_par, [[theory,fragment] for theory,fragment in zip(theories,fragments)])
+        results = pool.map(Single_par, [[theory,fragment,label] for theory,fragment in zip(theories,fragments)])
         pool.close()
         print("Calculations are done")
 
@@ -2007,7 +2025,10 @@ class QMMMTheory:
 #ORCA Theory object. Fragment object is optional. Only used for single-points.
 class ORCATheory:
     def __init__(self, orcadir, fragment=None, charge='', mult='', orcasimpleinput='', printlevel=2,
-                 orcablocks='', extraline='', brokensym=None, HSmult=None, atomstoflip=None, nprocs=1):
+                 orcablocks='', extraline='', brokensym=None, HSmult=None, atomstoflip=None, nprocs=1, label=None):
+
+        #Label to distinguish different ORCA objects
+        self.label=label
 
         #Create inputfile with generic name
         self.inputfilename="orca-input"
@@ -2823,7 +2844,10 @@ class CFourTheory:
 # Fragment class
 class Fragment:
     def __init__(self, coordsstring=None, fragfile=None, xyzfile=None, pdbfile=None, coords=None, elems=None, connectivity=None,
-                 atomcharges=None, atomtypes=None, conncalc=True, scale=None, tol=None, printlevel=2, charge=None, mult=None):
+                 atomcharges=None, atomtypes=None, conncalc=True, scale=None, tol=None, printlevel=2, charge=None, mult=None, label=None):
+        #Label for fragment (string). Useful for distinguishing different ones
+        self.label=label
+
         #Printlevel
         self.printlevel=printlevel
 
