@@ -275,7 +275,8 @@ def Single_par(list):
     print("Energy: ", energy)
     # Now adding total energy to fragment
     fragment.energy = energy
-    return energy
+    return (label,energy)
+
 #PARALLEL Single-point energy function
 #will run over fragments, over theories or both
 def Singlepoint_parallel(fragments=None, theories=None, numcores=None):
@@ -304,30 +305,26 @@ def Singlepoint_parallel(fragments=None, theories=None, numcores=None):
     # Singlepoint(fragment=None, theory=None, Grad=False)
     #Case: 1 theory, multiple fragments
     if len(theories) == 1:
-        print("Theory 1")
+        print("Case: Multiple fragments but one theory")
         theory = theories[0]
-        print("theory : ", theory)
-        print("fragments : ", fragments)
-
-
         results = pool.map(Single_par, [[theory,fragment, fragment.label] for fragment in fragments])
-        print("results : ", results)
         pool.close()
         print("results : ", results)
         print("Calculations are done")
     # Case: Multiple theories, 1 fragment
     elif len(fragments) == 1:
-        print("Fragment 1")
+        print("Case: Multiple theories but one fragment")
         fragment = fragments[0]
-
         results = pool.map(Single_par, [[theory,fragment, theory.label] for theory in theories])
         pool.close()
+        print("results : ", results)
         print("Calculations are done")
     else:
         print("multiple")
         fragment = fragments[0]
         results = pool.map(Single_par, [[theory,fragment,label] for theory,fragment in zip(theories,fragments)])
         pool.close()
+        print("results : ", results)
         print("Calculations are done")
 
 
