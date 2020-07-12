@@ -251,6 +251,20 @@ def Singlepoint(fragment=None, theory=None, Grad=False, *args):
 
         return energy
 
+
+#Stripped down version of Singlepoint function for Singlepoint_parallel
+#Necessary because of Pool-Map. TODO: Figure out how to avoid this
+def Single_par(list):
+    fragment=list[0]
+    theory=list[1]
+    coords = fragment.coords
+    elems = fragment.elems
+    print(BC.WARNING, "Doing single-point Energy job on fragment : ", fragment.prettyformula, BC.END)
+    energy = theory.run(current_coords=coords, elems=elems)
+    print("Energy: ", energy)
+    # Now adding total energy to fragment
+    fragment.energy = energy
+    return energy
 #PARALLEL Single-point energy function
 #will run over fragments, over theories or both
 def Singlepoint_parallel(fragments=None, theories=None, numcores=None):
@@ -268,20 +282,6 @@ def Singlepoint_parallel(fragments=None, theories=None, numcores=None):
         print(BC.FAIL,"Singlepoint_parallel requires a fragment and a theory object and a numcores values",BC.END)
         exit(1)
 
-    #Stripped down version of Singlepoint function
-    #Necessary because of Pool-Map. TODO: Figure out how to avoid this
-    def Single(list):
-        fragment=list[0]
-        theory=list[1]
-        coords = fragment.coords
-        elems = fragment.elems
-        print(BC.WARNING, "Doing single-point Energy job on fragment : ", fragment.prettyformula, BC.END)
-        energy = theory.run(current_coords=coords, elems=elems)
-        print("Energy: ", energy)
-        # Now adding total energy to fragment
-        fragment.energy = energy
-        return energy
-
     blankline()
     print("Singlepoint_parallel function")
     print("Number of CPU cores availale: ", numcores)
@@ -297,7 +297,7 @@ def Singlepoint_parallel(fragments=None, theories=None, numcores=None):
         theory = theories[0]
         print("theory : ", theory)
         print("fragments : ", fragments)
-        results = pool.map(Single, [[theory,fragment] for fragment in fragments])
+        results = pool.map(Single_par, [[theory,fragment] for fragment in fragments])
         print("results : ", results)
         pool.close()
         print("results : ", results)
@@ -306,13 +306,13 @@ def Singlepoint_parallel(fragments=None, theories=None, numcores=None):
     elif len(fragments) == 1:
         print("Fragment 1")
         fragment = fragments[0]
-        results = pool.map(Single, [[theory,fragment] for theory in theories])
+        results = pool.map(Single_par, [[theory,fragment] for theory in theories])
         pool.close()
         print("Calculations are done")
     else:
         print("multiple")
         fragment = fragments[0]
-        results = pool.map(Single, [[theory,fragment] for theory,fragment in zip(theories,fragments)])
+        results = pool.map(Single_par, [[theory,fragment] for theory,fragment in zip(theories,fragments)])
         pool.close()
         print("Calculations are done")
 
