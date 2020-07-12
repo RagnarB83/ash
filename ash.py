@@ -259,6 +259,13 @@ def Single_par(list):
     theory=list[0]
     fragment=list[1]
     label=list[2]
+
+    if label is None:
+        import random
+        import string
+        label=get_random_string(8)
+
+
     coords = fragment.coords
     elems = fragment.elems
     print(BC.WARNING, "Doing single-point Energy job on fragment : ", fragment.prettyformula, BC.END)
@@ -301,13 +308,8 @@ def Singlepoint_parallel(fragments=None, theories=None, numcores=None):
         print("theory : ", theory)
         print("fragments : ", fragments)
 
-        # Use fragment label if available, else use formula,charge and mult. Used to rename ORCA inputfiles
-        if fragment.label is not None:
-            label=fragment.label
-        else:
-            label=fragment.prettyformula+'c'+fragment.charge+'m'+fragment.mult
 
-        results = pool.map(Single_par, [[theory,fragment, label] for fragment in fragments])
+        results = pool.map(Single_par, [[theory,fragment, fragment.label] for fragment in fragments])
         print("results : ", results)
         pool.close()
         print("results : ", results)
@@ -317,15 +319,7 @@ def Singlepoint_parallel(fragments=None, theories=None, numcores=None):
         print("Fragment 1")
         fragment = fragments[0]
 
-        # Use theory label if available, else use RANDOM. Used to rename ORCA inputfiles
-        if theory.label is not None:
-            label=theory.label
-        else:
-            import random
-            import string
-            label=get_random_string(8)
-
-        results = pool.map(Single_par, [[theory,fragment, label] for fragment in fragments])
+        results = pool.map(Single_par, [[theory,fragment, label] for theory in theories])
         pool.close()
         print("Calculations are done")
     else:
