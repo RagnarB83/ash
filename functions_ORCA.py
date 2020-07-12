@@ -141,6 +141,39 @@ def scfenergygrab(file):
                 Energy=float(line.split()[-4])
     return Energy
 
+#Get reference energy and correlation energy from a single post-HF calculation
+def grab_HF_and_corr_energies(file, DLPNO=False):
+    edict = {}
+    with open(file) as f:
+        for line in f:
+            #Reference energy found in CC output. To be made more general. Works for CC and DLPNO-CC
+            #if 'Reference energy                           ...' in line:
+            if 'E(0)                                       ...' in line:
+                HF_energy=float(line.split()[-1])
+                edict['HF'] = HF_energy
+            if DLPNO is True:
+                if 'E(CORR)(corrected)                         ...' in line:
+                    CCSDcorr_energy=float(line.split()[-1])
+                    edict['CCSD_corr'] = CCSDcorr_energy
+            else:
+                if 'E(CORR)                                    ...' in line:
+                    CCSDcorr_energy=float(line.split()[-1])
+                    edict['CCSD_corr'] = CCSDcorr_energy
+            if DLPNO is True:
+                if 'Triples Correction (T)                     ...' in line:
+                    CCSDTcorr_energy=float(line.split()[-1])
+                    edict['CCSD(T)_corr'] = CCSDTcorr_energy
+            else:
+                if 'Scaled triples correction (T)              ...' in line:
+                    CCSDTcorr_energy=float(line.split()[-1])
+                    edict['CCSD(T)_corr'] = CCSDTcorr_energy
+            if 'T1 diagnostic                              ...' in line:
+                T1diag = float(line.split()[-1])
+                edict['T1diag'] = T1diag
+    return edict
+
+
+
 #Grab TDDFT states from ORCA output
 def tddftgrab(file):
     tddft=True

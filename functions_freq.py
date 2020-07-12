@@ -400,6 +400,17 @@ def thermochemcalc(vfreq,hessatoms,fragment, multiplicity, temp=298.18,pressure=
     print("{} {} {} {}".format("Total vibrational energy (", temp, "K) :", vibenergy))
     print("{} {} {} {}".format("Vibrational energy correction (", temp, "K) :", vibenergycorr))
 
+
+    thermochemcalc = {}
+    thermochemcalc['frequencies'] = freqs
+    thermochemcalc['ZPVE'] = zpve
+    thermochemcalc['transenergy'] = transenergy
+    thermochemcalc['rotenergy'] = rotenergy
+    thermochemcalc['vibenergy'] = vibenergy
+    thermochemcalc['vibenergycorr'] = vibenergycorr
+
+    return thermochemcalc
+
 #From Hess-tool.py: Copied 13 May 2020
 #Print dummy ORCA outputfile using coordinates and normal modes. Used for visualization of modes in Chemcraft
 def printdummyORCAfile(elems,coords,vfreq,evectors,nmodes,hessfile):

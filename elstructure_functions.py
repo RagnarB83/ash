@@ -6,6 +6,9 @@ import ash
 import subprocess as sp
 import shutil
 import constants
+import math
+from functions_ORCA import grab_HF_and_corr_energies
+from interface_geometric import *
 
 #CM5. from https://github.com/patrickmelix/CM5-calculator/blob/master/cm5calculator.py
 

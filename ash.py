@@ -92,6 +92,43 @@ def print_ash_header():
                                          
     """
 
+    ascii_tree="""                         ╓                                  ▄                  
+                  [      ▓          ▒     ╒                  ▓                  
+                  ╙█     ▓▓         ▓  -µ ╙▄        ¬       ▓▀  ,▄▄▄▄           
+               ▌∩   ▀█▓▌▄▄▓▓▓▄,  ▀▄▓▌    ▓  ▀█      ▌   █ ╓▓Γ ▄▓▀¬      ⌐       
+              ╓Γ╘     % ╙▀▀▀▀▀▓▓▄  ▓▓   █▓,╒  ▀▓   ▓▌ Æ▀▓▓▓ ▄▓▓¬ .     ▌        
+              ▓  ^█    ▌  ▄    ▀▓▓ ▓▓m ▐▓ ▓▓  ▐▌▓▌▓▀   Å▓▓▓▓▀     ▐   ▐▓    ▄   
+            ╘▓▌ \  ▀▓▄▐▓ ▐▓     ▀▓▓▓▓m ▓▌▄▓▓█ ▓┘ ▓▓ ▄█▀▀▓▓▄   ▐▓  ▐▄  j▓   ▓    
+          █  ╙▓  ╙▀▄▄▀▓▓µ ▓   ▄▄▀▀▓▓▓ ▓▓▓Σ▄▓▓▓Γ  ▓▓▓▀ █▓▀^▓  ▄▓   ▓   ▐▓  █     
+        ▌  ▀▀█,▓▓  ▄╙▀▓▓▓▄▓▌▄▓▌   ▓▓  ▓▓▓▀▓▓▓▓▓  ▓▓▓▓▓▀ ╞ ▓▄▓▀ ╓─ ▓▄ ,▓█▀▀ .▀   
+        ▐▄    ▀▓▓  ▓   ▓▓▓▓▓Γ╙▓▄  ▓▓▓▓▓▌▓▓▀▓Γ ▓▓▄▓▓▓▀  ▄ ▓▓▀  ▀   ▐▓▄▓▀   ▄▓    
+   ╓┴▀███▓▓▓▄   ▓▓▓    █▓▓▓ ║ ¬▓▓▓▓▓▓▓▓▀  ▓▌  ▐▓▓▓▓  ▄▓▓▓▀  ▄▓██▀▀  ▓▓▄▓█▀Γ     
+           ╙▀▓▓▓▓▓▓     ▓▓▓  █▄  ▀▓▓▓▓▓  j▓▄  ▓▓▓▓▓▓▓▓▀   █▓▓▀   ▄▓▓▓▀▐         
+          ,▄µ  ▀▓▓▓▓▓▄  ▓▓▓   ▓▓▄▓▓▀▓▓▓▓▓▓▓  ▄▓▓▓▓▓▓▓▓▓▓▓▓▀  ▄▓▓▀▀¬          )  
+    ▄▓█▀▀▀▀▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▄  ²▓▓▓    ▀▓▓▓▓ ▄▓▓▓▓▓▓▀▀▀¬   ▄▓▓▀¬ ▄Φ` ▄`       ▓  
+  Σ▀Σ  ▄██▀▀Σ     ¬▀▓▓▓▓▓▓▓▓  j▓▓▌     ▐▓▓▓▓▓▓▓▓▀       .▓▓▀  ▄▓  ▄▓Γ   ▄▄▄▀▀   
+     ╒▓      ⌐        ▀▓▓▓▓▓▄,▓▓▓▓▓▓▓▓▄ ▓▓▓▓▓▓▓▓▓▄,     ▓▓▓▄▄▓▓▓█▀▀  ▓▓▀¬       
+     ╙⌐       ▄         ▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▐▀▓▓▓▓▓▓▓▓▓▓▓▓▀▀▓▓▓▓▓▓▓▀          
+          ▄█▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▀▀¬  ▐▀▓▓▓▓▓▓▓▓▓        ¬             ▐▀▀▄     ╓┘  
+       ▄▀▀▐▓▓▀▐  ¬*▐▀▀▀▀,¬           ▓▓▓▓▓▓▓                            ¬▐▀▀    
+     ╒Γ   ▐▓                         ▓▓▓▓▓▓▓                                    
+     Γ    ╫                          ▓▓▓▓▓▓▓                                    
+           .                         ▓▓▓▓▓▓▓                                    
+                                    ▓▓▓▓▓▓▓▓▄                                   
+                                   ▓▓▓▓▓▓▓▓▓▓▄                                  
+                     ╓**¥▄▄     ,▓▓▓▓▓▓▓▓▓▓▓▓▓▄                                 
+             x▄▄▄▄4Γ      ▓▓▓▓▓▓▓▀▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▄▄▌▌▄▄▄                       
+                ,▄æ∞═,▄█▓▀▀▐¬▐▀▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▄ ▐▀▓▓▓▓▓▀▀▀▀Σ╙           
+         ╙Φ¥¥▀▀▀    ╒▓   ▄▓█▀▀▓▓▓▓▓▓▓▓▀  ▓▓▓▓▓▓ ▀▓▓▄▄▐▀▀▀▀▀▐▐▀██                
+                    ▓▌▄▓▓▀  ▓▓▓▓▓▀▀▓▓     ▓▓ ▓▓▓   ▐▀▀█▓▓▌¥4▀▀▀▀▓▓▄             
+               `ΓΦ▀▓▀▐   ▄▄▓▓ ▓▓  ▐▌▓     ▓▓▓ ▓▀▀▓▄     ,▓▓      ▀▀▀▀▀          
+                 ▄▀,  ▄█▀▀ ▓¬ ▓τ  ▓ ▐▓   ▓  ▓  ¥ ▓        ▀▌                    
+               ^    ▓▀    █  ▓▀ ▄█¬ ▐▓  ▌   Γ   ▐▓τ*       ▀█▄                  
+                   ▓   /Γ ƒ▀ⁿ  █    ▓   Γ      ╓▀▐⌐          ¬▀²                
+                   ▓      \    ▀    ╙µ  ⌡                                       
+                                .    └                                          
+                                                                                
+"""
 
 
     print(BC.OKGREEN,"----------------------------------------------------------------------------------",BC.END)
@@ -178,23 +215,34 @@ def displacement_QMMMrun(arglist):
     return [label, energy, gradient]
 
 #Single-point energy function
-#Should be used by user instead of run.
-def Singlepoint(fragment=None, theory=None, Grad=False):
+# *args is used by parallel version
+def Singlepoint(fragment=None, theory=None, Grad=False, *args):
+    print("")
+    '''
+    The Singlepoint function carries out a single-point energy calculation
+    :param fragment:
+    :type fragment: ASH object of class Fragment
+    :param theory:
+    :type theory: ASH theory object
+    :param Grad: whether to do Gradient or not.
+    :type Grad: Boolean.
+    '''
     if fragment is None or theory is None:
-        print("Singlepoint requires a fragment and a theory object")
+        print(BC.FAIL,"Singlepoint requires a fragment and a theory object",BC.END)
+        exit(1)
 
     coords=fragment.coords
     elems=fragment.elems
 
     # Run a single-point energy job
     if Grad ==True:
-        print("Doing single-point Energy+Gradient job")
+        print(BC.WARNING,"Doing single-point Energy+Gradient job on fragment : ", fragment.prettyformula, BC.END)
         # An Energy+Gradient calculation where we change the number of cores to 12
         energy,gradient= theory.run(current_coords=coords, elems=elems, Grad=True)
         print("Energy: ", energy)
         return energy,gradient
     else:
-        print("Doing single-point Energy job")
+        print(BC.WARNING,"Doing single-point Energy job on fragment : ", fragment.prettyformula, BC.END)
         energy = theory.run(current_coords=coords, elems=elems)
         print("Energy: ", energy)
 
@@ -202,6 +250,86 @@ def Singlepoint(fragment=None, theory=None, Grad=False):
         fragment.energy=energy
 
         return energy
+
+
+#Stripped down version of Singlepoint function for Singlepoint_parallel
+def Single_par(list):
+
+    theory=list[0]
+    fragment=list[1]
+    label=list[2]
+
+    if label is None:
+        print("No label provided to fragment or theory objects. This is required to distinguish between calculations ")
+        print("Exiting...")
+        exit(1)
+
+
+    coords = fragment.coords
+    elems = fragment.elems
+    print(BC.WARNING, "Doing single-point Energy job on fragment : ", fragment.prettyformula, BC.END)
+    #Creating separate inputfilename using label
+    theory.inputfilename=label
+    energy = theory.run(current_coords=coords, elems=elems)
+    print("Energy: ", energy)
+    # Now adding total energy to fragment
+    fragment.energy = energy
+    return (label,energy)
+
+#PARALLEL Single-point energy function
+#will run over fragments, over theories or both
+def Singlepoint_parallel(fragments=None, theories=None, numcores=None):
+    print("")
+    '''
+    The Singlepoint_parallel function carries multiple single-point calculations in a parallel fashion
+    :param fragments:
+    :type list: list of ASH objects of class Fragment
+    :param theories:
+    :type list: list of ASH theory objects
+    :param Grad: whether to do Gradient or not.
+    :type Grad: Boolean.
+    '''
+    if fragments is None or theories is None or numcores is None:
+        print(BC.FAIL,"Singlepoint_parallel requires a fragment and a theory object and a numcores values",BC.END)
+        exit(1)
+
+    blankline()
+    print("Singlepoint_parallel function")
+    print("Number of CPU cores availale: ", numcores)
+    print("Number of fragments:", len(fragments))
+    print("Number of theories:", len(theories))
+    print("Running single-point calculations in parallel")
+
+    pool = mp.Pool(numcores)
+    # Singlepoint(fragment=None, theory=None, Grad=False)
+    #Case: 1 theory, multiple fragments
+    if len(theories) == 1:
+        print("Case: Multiple fragments but one theory")
+        theory = theories[0]
+        results = pool.map(Single_par, [[theory,fragment, fragment.label] for fragment in fragments])
+        pool.close()
+        print("Calculations are done")
+    # Case: Multiple theories, 1 fragment
+    elif len(fragments) == 1:
+        print("Case: Multiple theories but one fragment")
+        fragment = fragments[0]
+        results = pool.map(Single_par, [[theory,fragment, theory.label] for theory in theories])
+        pool.close()
+        print("Calculations are done")
+    else:
+        print("multiple")
+        fragment = fragments[0]
+        results = pool.map(Single_par, [[theory,fragment,label] for theory,fragment in zip(theories,fragments)])
+        pool.close()
+        print("results : ", results)
+        print("Calculations are done")
+
+    #Convert list of tuples into dict
+    energy_dict = {result[0]: result[1] for result in results}
+    print("energy_dict:", energy_dict)
+
+
+    return energy_dict
 
 
 #Numerical frequencies function
@@ -523,13 +651,11 @@ def NumFreq(fragment=None, theory=None, npoint=1, displacement=0.0005, hessatoms
 
     #Diagonalize mass-weighted Hessian
     # Get partial matrix by deleting atoms not present in list.
-    print("x elems:", elems)
     hesselems = get_partial_list(allatoms, hessatoms, elems)
     hessmasses = get_partial_list(allatoms, hessatoms, fragment.list_of_masses)
     hesscoords = [fragment.coords[i] for i in hessatoms]
     print("Elements:", hesselems)
     print("Masses used:", hessmasses)
-    print("hesscoords:", hesscoords)
     #Todo: Note. elems is redefined here. Not ideal
     frequencies, nmodes, numatoms, elems, evectors, atomlist, masses = diagonalizeHessian(hessian,hessmasses,hesselems)
     #frequencies=diagonalizeHessian(hessian,hessmasses,hesselems)[0]
@@ -548,9 +674,9 @@ def NumFreq(fragment=None, theory=None, npoint=1, displacement=0.0005, hessatoms
 
     #Print out thermochemistry
     if theory.__class__.__name__ == "QMMMTheory":
-        thermochemcalc(frequencies,hessatoms, fragment, theory.qm_theory.mult, temp=298.18,pressure=1)
+        Thermochemistry = thermochemcalc(frequencies,hessatoms, fragment, theory.qm_theory.mult, temp=298.18,pressure=1)
     else:
-        thermochemcalc(frequencies,hessatoms, fragment, theory.mult, temp=298.18,pressure=1)
+        Thermochemistry = thermochemcalc(frequencies,hessatoms, fragment, theory.mult, temp=298.18,pressure=1)
 
 
     #Write Hessian to file
@@ -571,17 +697,13 @@ def NumFreq(fragment=None, theory=None, npoint=1, displacement=0.0005, hessatoms
     print("Wrote dummy ORCA outputfile with frequencies and normal modes: orcahessfile.hess_dummy.out")
     print("Can be used for visualization")
 
-
-
-
-
-
-
-
-
     #TODO: https://pages.mtu.edu/~msgocken/ma5630spring2003/lectures/diff/diff/node6.html
     blankline()
     print(BC.WARNING, BC.BOLD, "------------NUMERICAL FREQUENCIES END-------------", BC.END)
+
+    #Thermochemistry object. Should contain frequencies, zero-point energy, enthalpycorr, gibbscorr, etc.
+
+    return Thermochemistry
 
 #Molecular dynamics class
 class MolecularDynamics:
@@ -1898,7 +2020,10 @@ class QMMMTheory:
 #ORCA Theory object. Fragment object is optional. Only used for single-points.
 class ORCATheory:
     def __init__(self, orcadir, fragment=None, charge='', mult='', orcasimpleinput='', printlevel=2,
-                 orcablocks='', extraline='', brokensym=None, HSmult=None, atomstoflip=None, nprocs=1):
+                 orcablocks='', extraline='', brokensym=None, HSmult=None, atomstoflip=None, nprocs=1, label=None):
+
+        #Label to distinguish different ORCA objects
+        self.label=label
 
         #Create inputfile with generic name
         self.inputfilename="orca-input"
@@ -1937,6 +2062,7 @@ class ORCATheory:
             exit(1)
         self.atomstoflip=atomstoflip
         if self.printlevel >=2:
+            print("")
             print("Creating ORCA object")
             #if molcrys then there is not charge and mult available
             #print("Charge: {} Mult: {}".format(self.charge,self.mult))
@@ -2633,14 +2759,96 @@ class PySCFTheory:
             return self.energy
 
 
+#CFour Theory object. Fragment object is optional. Used??
+class CFourTheory:
+    def __init__(self, fragment=None, charge=None, mult=None, printlevel=2, cfourbasis=None, cfourmethod=None,
+                cfourmemory=3100, nprocs=1):
+
+        #Printlevel
+        self.printlevel=printlevel
+
+        self.charge=charge
+        self.mult=mult
+        self.cfourbasis=cfourbasis
+        self.cfourmethod=cfourmethod
+        self.cfourmemory=cfourmemory
+        self.nprocs=nprocs
+
+    # Run function. Takes coords, elems etc. arguments and computes E or E+G.
+    def run(self, current_coords=None, current_MM_coords=None, MMcharges=None, qm_elems=None,
+            mm_elems=None, elems=None, Grad=False, PC=False, nprocs=None, restart=False):
+
+        if nprocs == None:
+            nprocs = self.nprocs
+
+        print(BC.OKBLUE, BC.BOLD, "------------RUNNING CFOUR INTERFACE-------------", BC.END)
+
+
+        # Coords provided to run or else taken from initialization.
+        # if len(current_coords) != 0:
+        if current_coords is not None:
+            pass
+        else:
+            current_coords = self.coords
+
+        # What elemlist to use. If qm_elems provided then QM/MM job, otherwise use elems list or self.elems
+        if qm_elems is None:
+            if elems is None:
+                qm_elems = self.elems
+            else:
+                qm_elems = elems
+
+
+        def write_cfour_input(method,basis,reference,charge,mult,frozencore,memory):
+            with open("ZMAT", 'w') as inpfile:
+                inpfile.write('ASH-created inputfile\n')
+                for el,c in zip(elems,qm_elems):
+                    inpfile.write('{} {} {} {}\n'.format(el,c[0],c[1],c[2]))
+                inpfile.write('\n')
+                inpfile.write('*CFOUR(CALC={},BASIS={},COORD=CARTESIAN,REF={},CHARGE={},MULT={},FROZEN_CORE={},GEO_MAXCYC=1,MEM_UNIT=MB,MEMORY={})\n'.format(
+                    method,basis,reference,charge,mult,frozencore,memory))
+
+        def run_cfour(cfourdir):
+            fdg="dsgfs"
+
+
+        #Grab energy and gradient
+        #TODO: No qm/MM yet. need to check if possible in CFour
+        if Grad==True:
+
+            write_cfour_input(self.method,self.basis,self.reference,self.charge,self.mult,self.frozen_core,self.memory)
+            run_cfour(self.cfourdir)
+            self.energy = 0.0
+            #self.gradient = X
+        else:
+            write_cfour_input(self.method,self.basis,self.reference,self.charge,self.mult,self.frozen_core,self.memory)
+            run_cfour(self.cfourdir)
+            self.energy = 0.0
+
+        #TODO: write in error handling here
+        print(BC.OKBLUE, BC.BOLD, "------------ENDING CFOUR INTERFACE-------------", BC.END)
+        if Grad == True:
+            print("Single-point CFour energy:", self.energy)
+            return self.energy, self.gradient
+        else:
+            print("Single-point CFour energy:", self.energy)
+            return self.energy
+
 
 
 # Fragment class
 class Fragment:
     def __init__(self, coordsstring=None, fragfile=None, xyzfile=None, pdbfile=None, coords=None, elems=None, connectivity=None,
-                 atomcharges=None, atomtypes=None, conncalc=True, scale=None, tol=None, printlevel=2):
+                 atomcharges=None, atomtypes=None, conncalc=True, scale=None, tol=None, printlevel=2, charge=None, mult=None, label=None):
+        #Label for fragment (string). Useful for distinguishing different ones
+        self.label=label
+
         #Printlevel
         self.printlevel=printlevel
+
+        #New. Charge and mult attribute of fragment. Useful for workflows
+        self.charge = charge
+        self.mult = mult
 
         if self.printlevel >= 2:
             print("Defining new ASH fragment object")
@@ -2651,6 +2859,7 @@ class Fragment:
         self.atomcharges = []
         self.atomtypes = []
         self.Centralmainfrag = []
+        self.formula = None
         if atomcharges is not None:
             self.atomcharges=atomcharges
         if atomtypes is not None:
@@ -2687,13 +2896,22 @@ class Fragment:
     def update_attributes(self):
         self.nuccharge = nucchargelist(self.elems)
         self.numatoms = len(self.coords)
-        if self.printlevel >= 2:
-            print("Fragment numatoms:", self.numatoms)
+
         self.atomlist = list(range(0, self.numatoms))
         #Unnecessary alias ? Todo: Delete
         self.allatoms = self.atomlist
         self.mass = totmasslist(self.elems)
         self.list_of_masses = list_of_masses(self.elems)
+
+        #Elemental formula
+        self.formula = elemlisttoformula(self.elems)
+        #Pretty formula without 1
+        self.prettyformula = self.formula.replace('1','')
+
+        if self.printlevel >= 2:
+            print("Fragment numatoms:", self.numatoms)
+            print("Formula : ", self.prettyformula)
+
     #Add coordinates from geometry string. Will replace.
     #Todo: Needs more work as elems and coords may be lists or numpy arrays
     def add_coords_from_string(self, coordsstring, scale=None, tol=None):
@@ -2916,6 +3134,7 @@ class Fragment:
         with open(filename, 'w') as outfile:
             outfile.write("Fragment: \n")
             outfile.write("Num atoms: {}\n".format(self.numatoms))
+            outfile.write("Formula: {}\n".format(self.formula))
             outfile.write("Energy: {}\n".format(self.energy))
             outfile.write("\n")
             outfile.write(" Index    Atom         x                  y                  z               charge        fragment-type        atom-type\n")
@@ -3297,11 +3516,11 @@ def MMforcefield_read(file):
     return MM_forcefield
 
 #Better place for this?
-def ReactionEnergy(stoichiometry=None, list_of_fragments=None, list_of_energies=None, unit='kcalpermol'):
+def ReactionEnergy(stoichiometry=None, list_of_fragments=None, list_of_energies=None, unit='kcalpermol', label=None):
     conversionfactor = { 'kcalpermol' : 627.50946900, 'kJpermol' : 2625.499638, 'eV' : 27.211386245988, 'cm-1' : 219474.6313702 }
-    print("")
-    print(BC.OKBLUE,BC.BOLD, "ReactionEnergy function. Unit:", unit, BC.END)
-    print("")
+    if label is None:
+        label=''
+    #print(BC.OKBLUE,BC.BOLD, "ReactionEnergy function. Unit:", unit, BC.END)
     reactant_energy=0.0 #hartree
     product_energy=0.0 #hartree
     if stoichiometry is None:
@@ -3310,15 +3529,14 @@ def ReactionEnergy(stoichiometry=None, list_of_fragments=None, list_of_energies=
 
     #List of energies option
     if list_of_energies is not None:
-        print("List of total energies provided (Eh units assumed).")
-        print("")
+        #print("List of total energies provided (Eh units assumed).")
         for i,stoich in enumerate(stoichiometry):
             if stoich < 0:
                 reactant_energy=reactant_energy+list_of_energies[i]*abs(stoich)
             if stoich > 0:
                 product_energy=product_energy+list_of_energies[i]*abs(stoich)
         reaction_energy=(product_energy-reactant_energy)*conversionfactor[unit]
-        print(BC.OKGREEN,BC.BOLD, "Reaction_energy:", reaction_energy, unit, BC.END)
+        print(BC.BOLD, "Reaction_energy({}): {} {}".format(label,BC.OKGREEN,reaction_energy, unit), BC.END)
     else:
         print("No list of total energies provided. Using internal energy of each fragment instead.")
         print("")
@@ -3328,5 +3546,7 @@ def ReactionEnergy(stoichiometry=None, list_of_fragments=None, list_of_energies=
             if stoich > 0:
                 product_energy=product_energy+list_of_fragments[i].energy*abs(stoich)
         reaction_energy=(product_energy-reactant_energy)*conversionfactor[unit]
-        print(BC.OKGREEN,BC.BOLD, "Reaction_energy:", reaction_energy, unit, BC.END)
+        print(BC.BOLD, "Reaction_energy({}): {} {}".format(label,BC.OKGREEN,reaction_energy, unit), BC.END)
     return reaction_energy
+
+

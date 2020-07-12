@@ -31,6 +31,7 @@ def geomeTRICOptimizer(theory=None,fragment=None, coordsystem='tric', frozenatom
     except:
         pass
     blankline()
+    print(BC.WARNING, "Doing geometry optimization on fragment : ", fragment.prettyformula, BC.END)
     print("Launching geomeTRIC optimization module")
     print("Coordinate system: ", coordsystem)
     print("Max iterations: ", maxiter)
@@ -96,6 +97,11 @@ def geomeTRICOptimizer(theory=None,fragment=None, coordsystem='tric', frozenatom
                         curr_c, currcoords = currcoords[0], currcoords[1:]
                         full_coords[i] = curr_c
                 self.full_current_coords=full_coords
+
+                #Write out fragment with updated coordinates for the purpose of doing restart
+
+                fragment.replace_coords(fragment.elems, self.full_current_coords, conn=False)
+                fragment.print_system(filename='Fragment-currentgeo.ygg')
 
                 #PRINTING ACTIVE GEOMETRY IN EACH GEOMETRIC ITERATION
                 print("Current geometry (Å) in step {} (active region)".format(self.iteration_count))
