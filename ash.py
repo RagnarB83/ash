@@ -255,8 +255,9 @@ def Singlepoint(fragment=None, theory=None, Grad=False, *args):
 #Stripped down version of Singlepoint function for Singlepoint_parallel
 #Necessary because of Pool-Map. TODO: Figure out how to avoid this
 def Single_par(list):
-    fragment=list[0]
-    theory=list[1]
+
+    theory=list[0]
+    fragment=list[1]
     coords = fragment.coords
     elems = fragment.elems
     print(BC.WARNING, "Doing single-point Energy job on fragment : ", fragment.prettyformula, BC.END)
