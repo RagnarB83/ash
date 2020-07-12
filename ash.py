@@ -295,8 +295,12 @@ def Singlepoint_parallel(fragments=None, theories=None, numcores=None):
     if len(theories) == 1:
         print("Theory 1")
         theory = theories[0]
+        print("theory : ", theory)
+        print("fragments : ", fragments)
         results = pool.map(Single, [[theory,fragment] for fragment in fragments])
+        print("results : ", results)
         pool.close()
+        print("results : ", results)
         print("Calculations are done")
     # Case: Multiple theories, 1 fragment
     elif len(fragments) == 1:
