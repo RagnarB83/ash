@@ -319,7 +319,7 @@ def Singlepoint_parallel(fragments=None, theories=None, numcores=None):
         print("Fragment 1")
         fragment = fragments[0]
 
-        results = pool.map(Single_par, [[theory,fragment, label] for theory in theories])
+        results = pool.map(Single_par, [[theory,fragment, theory.label] for theory in theories])
         pool.close()
         print("Calculations are done")
     else:
