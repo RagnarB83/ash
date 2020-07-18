@@ -142,7 +142,6 @@ def LennardJones(coords, epsij, sigmaij, connectivity=None, qmatoms=None):
                     #TODO: Equation needs to be double-checked for correctness. L4.pdf equation ambiguous
                     #Check this: http://people.virginia.edu/~lz2n/mse627/notes/Potentials.pdf
                     LJgrad_const=(24*epsij[i,j]*((sigmaij[i,j]/pairdistance)**6-2*(sigmaij[i,j]/pairdistance)**12))*(1/(pairdistance**2))
-                    print("LJgrad_const:", LJgrad_const)
                     gr=np.array([(coords[i][0] - coords[j][0])*LJgrad_const, (coords[i][1] - coords[j][1])*LJgrad_const,
                                      (coords[i][2] - coords[j][2])*LJgrad_const])
                     #print("gr:", gr)
