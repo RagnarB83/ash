@@ -48,7 +48,7 @@ function LJcoulombchargev1a(charges, coords, epsij, sigmaij, connectivity=nothin
     end
     E = coulenergy + V_LJ
     #G = coulgradient
-    return E,coulgradient
+    return E, coulgradient, V_LJ, coulenergy
 end
 
 
