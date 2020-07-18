@@ -9,6 +9,7 @@ module Juliafunctions
 function LJcoulombchargev1a(charges, coords, epsij, sigmaij, connectivity=nothing)
     """LJ + Coulomb function"""
     ang2bohr = 1.88972612546
+	hartokcal = 627.50946900
     coords_b=coords*ang2bohr
     num=length(charges)
     #Pre-compute Euclidean distance array
@@ -21,9 +22,9 @@ function LJcoulombchargev1a(charges, coords, epsij, sigmaij, connectivity=nothin
     coulgradient = zeros(size(coords_b)[1], 3)
     for j=1:num
         for i=j+1:num
-			println ("i is $i and j is $j")
-            sigma=sigmaij[i,j]
-            eps=epsij[i,j]
+			println("i is $i and j is $j")
+            sigma=sigmaij[j,i]
+            eps=epsij[j,i]
 			println("sigma", sigma)
 			println("eps:", eps)
             #d=dists[i,j]
@@ -51,7 +52,7 @@ function LJcoulombchargev1a(charges, coords, epsij, sigmaij, connectivity=nothin
             coulgradient[i,3] -=  Gij_z
         end
     end
-    E = coulenergy + V_LJ
+    E = coulenergy + V_LJ/hartokcal
     #G = coulgradient
     return E, coulgradient, V_LJ, coulenergy
 end
