@@ -1403,8 +1403,21 @@ class NonBondedTheory:
         elif self.codeversion=='julia':
             if self.printlevel >= 2:
                 print("Using fast Julia version, v1")
-                # Defining Julia Module
-                Main.include(ashpath + "/functions_julia.jl")
+            ashpath = os.path.dirname(ash.__file__)
+            # Necessary for statically linked libpython
+            try:
+                from julia.api import Julia
+                # Does not work
+                # jl = Julia(depwarn=False)
+                from julia import Main
+            except:
+                print("Problem importing Pyjulia (import julia)")
+                print("Make sure Julia is installed and PyJulia module available")
+                print("Also, are you using python-jl ?")
+                print("Alternatively, use pairarrayversion='py' argument to NonBondedTheory to use slower Python version for array creation")
+                exit(9)
+            # Defining Julia Module
+            Main.include(ashpath + "/functions_julia.jl")
             self.MMEnergy, self.MMGradient, self.LJenergy, self.Coulombchargeenergy =\
                 LJcoulombchargev1a(charges, full_coords, self.epsij, self.sigmaij, charges, connectivity=connectivity)
 
