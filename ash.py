@@ -1403,6 +1403,8 @@ class NonBondedTheory:
         elif self.codeversion=='julia':
             if self.printlevel >= 2:
                 print("Using fast Julia version, v1")
+                # Defining Julia Module
+                Main.include(ashpath + "/functions_julia.jl")
             self.MMEnergy, self.MMGradient, self.LJenergy, self.Coulombchargeenergy =\
                 LJcoulombchargev1a(charges, full_coords, self.epsij, self.sigmaij, charges, connectivity=connectivity)
 
