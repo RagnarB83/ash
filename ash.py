@@ -92,6 +92,18 @@ def print_ash_header():
                                          
     """
 
+    ascii_banner_center = """
+                            ▄████████    ▄████████    ▄█    █▄    
+                           ███    ███   ███    ███   ███    ███   
+                           ███    ███   ███    █▀    ███    ███   
+                           ███    ███   ███         ▄███▄▄▄▄███▄▄ 
+                         ▀███████████ ▀███████████ ▀▀███▀▀▀▀███▀  
+                           ███    ███          ███   ███    ███   
+                           ███    ███    ▄█    ███   ███    ███   
+                           ███    █▀   ▄████████▀    ███    █▀    
+                                         
+    """
+
     ascii_tree = """                                                                               
                       [      ▓          ▒     ╒                  ▓                  
                       ╙█     ▓▓         ▓  -µ ╙▄        ¬       ▓▀             
@@ -135,7 +147,7 @@ def print_ash_header():
     print(BC.OKGREEN,"----------------------------------------------------------------------------------",BC.END)
     #print(BC.OKBLUE,ascii_banner3,BC.END)
     #print(BC.OKBLUE,ascii_banner2,BC.END)
-    print(BC.OKGREEN,ascii_banner,BC.END)
+    print(BC.OKGREEN,ascii_banner_center,BC.END)
     print(BC.OKGREEN,ascii_tree,BC.END)
     print(BC.WARNING,BC.BOLD,"ASH version", programversion,BC.END)
     print(BC.WARNING, "Git commit version: ", git_commit_number, BC.END)
@@ -1335,7 +1347,7 @@ class NonBondedTheory:
         self.LJgradient=[]
 
 
-        #Slow Python version or fast Fortran version
+        #Slow Python version
         if self.codeversion=='py':
             if self.printlevel >= 2:
                 print("Using slow Python MM code")
@@ -1388,6 +1400,11 @@ class NonBondedTheory:
                 print("Fortran library LJCoulombv2 not found! Make sure you have run the installation script.")
             self.MMEnergy, self.MMGradient, self.LJenergy, self.Coulombchargeenergy =\
                 LJCoulombv2(full_coords, self.epsij, self.sigmaij, charges, connectivity=connectivity)
+        elif self.codeversion=='julia':
+            if self.printlevel >= 2:
+                print("Using fast Julia version, v1")
+            self.MMEnergy, self.MMGradient, self.LJenergy, self.Coulombchargeenergy =\
+                LJcoulombchargev1a(charges, full_coords, self.epsij, self.sigmaij, charges, connectivity=connectivity)
 
         else:
             print("Unknown version of MM code")

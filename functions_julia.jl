@@ -4,17 +4,55 @@ __precompile__()
 module Juliafunctions
 #using PyCall
 
-function hellofromjulia()
-    println("Hello from Julia")
+
+#Untested
+function LJcoulombchargev1a(charges, coords, epsij, sigmaij, connectivity=nothing)
+    """LJ + Coulomb function"""
+    ang2bohr = 1.88972612546
+    coords_b=coords*ang2bohr
+    num=length(charges)
+    #Pre-compute Euclidean distance array
+    #Does not save time when we need to other r quantities
+    #@time dists=distance(coords_b,coords_b)
+    coulenergy=0.0
+    V_LJ=0.0
+    coulgradient = zeros(size(coords_b)[1], 3)
+    for j=1:num
+        for i=j+1:num
+            sigma=sigmaij[i,j]
+            eps=epsij[i,j]
+            #d=dists[i,j]
+            #Arrays are surprisingly slow.
+            rij_x = coords_b[j,1] - coords_b[i,1]
+            rij_y = coords_b[j,2] - coords_b[i,2]
+            rij_z = coords_b[j,3] - coords_b[i,3]
+            r = rij_x*rij_x+rij_y*rij_y+rij_z*rij_z
+            d = sqrt(r)
+            ri=1/r
+            ri3=ri*ri*ri
+            coulenergy+=charges[i]*charges[j]/(d)
+            d_ang = d / ang2bohr
+            V_LJ+=4*eps*((sigma/d_ang)^12-(sigma/d_ang)^6)
+            LJgrad_const=(24*eps*((sigma/d_ang)^6-2*(sigma/d_ang)^12))*(1/(d_ang^2))
+            Gij_x=-1*charges[i]*charges[j]*sqrt(ri3)*rij_x*LJgrad_const
+            Gij_y=-1*charges[i]*charges[j]*sqrt(ri3)*rij_y*LJgrad_const
+            Gij_z=-1*charges[i]*charges[j]*sqrt(ri3)*rij_z*LJgrad_const
+
+            coulgradient[j,1] +=  Gij_x
+            coulgradient[j,2] +=  Gij_y
+            coulgradient[j,3] +=  Gij_z
+            coulgradient[i,1] -=  Gij_x
+            coulgradient[i,2] -=  Gij_y
+            coulgradient[i,3] -=  Gij_z
+        end
+    end
+    E = coulenergy + V_LJ
+    #G = coulgradient
+    return E,coulgradient
 end
 
-#Dummy function
-function juliatest(list)
-println("Inside juliatest")
-println("list is : $list")
-var=5.4
-return var
-end
+
+
 
 #TODO functions:
 #Rewrite connectivity in Julia here
