@@ -16,11 +16,15 @@ function LJcoulombchargev1a(charges, coords, epsij, sigmaij, connectivity=nothin
     #@time dists=distance(coords_b,coords_b)
     coulenergy=0.0
     V_LJ=0.0
+	println("sigmaij : ", sigmaij)
+	println("epsij : ", epsij)
     coulgradient = zeros(size(coords_b)[1], 3)
     for j=1:num
         for i=j+1:num
             sigma=sigmaij[i,j]
             eps=epsij[i,j]
+			print("sigma", sigma)
+			print("eps:", eps)
             #d=dists[i,j]
             #Arrays are surprisingly slow.
             rij_x = coords_b[j,1] - coords_b[i,1]
