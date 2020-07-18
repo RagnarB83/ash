@@ -1419,7 +1419,7 @@ class NonBondedTheory:
             # Defining Julia Module
             Main.include(ashpath + "/functions_julia.jl")
             self.MMEnergy, self.MMGradient, self.LJenergy, self.Coulombchargeenergy =\
-                Main.Juliafunctions.LJcoulombchargev1a(charges, full_coords, self.epsij, self.sigmaij, connectivity=connectivity)
+                Main.Juliafunctions.LJcoulombchargev1a(charges, full_coords, self.epsij, self.sigmaij, connectivity)
 
         else:
             print("Unknown version of MM code")
