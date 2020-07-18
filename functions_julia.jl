@@ -7,22 +7,19 @@ module Juliafunctions
 
 #Untested
 function LJcoulombchargev1a(charges, coords, epsij, sigmaij, connectivity=nothing)
-    """LJ + Coulomb function"""
+    """Fast LJ + Coulomb function"""
     ang2bohr = 1.88972612546
 	bohr2ang = 0.52917721067
 	hartokcal = 627.50946900
-    @time coords_b=coords*ang2bohr
+	coords_b=coords*ang2bohr
     num=length(charges)
     VC=0.0
     VLJ=0.0
-	kLJ=0.0
-	kC=0.0
-    @time gradient = zeros(size(coords_b)[1], 3)
+    gradient = zeros(size(coords_b)[1], 3)
     for j=1:num
         for i=j+1:num
             sigma=sigmaij[j,i]
             eps=epsij[j,i]
-            #Arrays are surprisingly slow.
             rij_x = coords_b[i,1] - coords_b[j,1]
             rij_y = coords_b[i,2] - coords_b[j,2]
             rij_z = coords_b[i,3] - coords_b[j,3]
