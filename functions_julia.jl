@@ -9,6 +9,7 @@ module Juliafunctions
 function LJcoulombchargev1a(charges, coords, epsij, sigmaij, connectivity=nothing)
     """LJ + Coulomb function"""
     ang2bohr = 1.88972612546
+	bohr2ang = 0.52917721067
 	hartokcal = 627.50946900
     coords_b=coords*ang2bohr
     num=length(charges)
@@ -16,7 +17,8 @@ function LJcoulombchargev1a(charges, coords, epsij, sigmaij, connectivity=nothin
     #Does not save time when we need to other r quantities
     #@time dists=distance(coords_b,coords_b)
     coulenergy=0.0
-    V_LJ=0.0
+    VLJ=0.0
+	kLJ=0.0
 	println("sigmaij : ", sigmaij)
 	println("epsij : ", epsij)
     coulgradient = zeros(size(coords_b)[1], 3)
@@ -38,11 +40,26 @@ function LJcoulombchargev1a(charges, coords, epsij, sigmaij, connectivity=nothin
             ri3=ri*ri*ri
             coulenergy+=charges[i]*charges[j]/(d)
             d_ang = d / ang2bohr
-            V_LJ+=4*eps*((sigma/d_ang)^12-(sigma/d_ang)^6)
-            LJgrad_const=(24*eps*((sigma/d_ang)^6-2*(sigma/d_ang)^12))*(1/(d_ang^2))
-            Gij_x=-1*charges[i]*charges[j]*sqrt(ri3)*rij_x*LJgrad_const
-            Gij_y=-1*charges[i]*charges[j]*sqrt(ri3)*rij_y*LJgrad_const
-            Gij_z=-1*charges[i]*charges[j]*sqrt(ri3)*rij_z*LJgrad_const
+            VLJ+=4*eps*((sigma/d_ang)^12-(sigma/d_ang)^6)
+            kLJ=-1*(1/hartokcal) * ((24*eps*((sigma/d_ang)^6-2*(sigma/d_ang)^12))*(1/(d_ang^2)))
+
+			 #* (1/hartokcal) / ang2bohr
+			 #!slightly odd unitconversion done here in end
+        	#Gij=(kLJ+kC)*rij*bohr2ang
+        	#Grad(i,:) = Grad(i,:) + Gij
+
+        	kC=charges[i]*charges[j]*sqrt(ri3)*bohr2ang
+        	#LJenergy=LJenergy+(1/har2kcal)*epsij(i,j)*4. * ((d/sigmaij(i,j))**(-12) - (d/sigmaij(i,j))**(-6))
+        	#kLJ=-1*(1/har2kcal) * (24*epsij(i,j)*((sigmaij(i,j)/d)**6-2*(sigmaij(i,j)/d)**12))*(1/(d**2))
+        	#!slightly odd unitconversion done here in end
+        	#Gij=(kLJ+kC)*rij*bohr2ang
+        	#Grad(i,:) = Grad(i,:) + Gij
+        	#Grad(j,:) = Grad(j,:) - Gij
+
+
+            Gij_x=(kC+kLJ)*rij_x*bohr2ang
+            Gij_y=(kC+kLJ)*rij_y*bohr2ang
+            Gij_z=(kC+kLJ)*rij_z*bohr2ang
 
             coulgradient[j,1] +=  Gij_x
             coulgradient[j,2] +=  Gij_y
@@ -52,9 +69,11 @@ function LJcoulombchargev1a(charges, coords, epsij, sigmaij, connectivity=nothin
             coulgradient[i,3] -=  Gij_z
         end
     end
-    E = coulenergy + V_LJ/hartokcal
+    E = coulenergy + VLJ/hartokcal
+	println("coulgradient:", coulgradient)
+	println("coulgradient mult:", coulgradient* (1/hartokcal) / ang2bohr)
     #G = coulgradient
-    return E, coulgradient, V_LJ/hartokcal, coulenergy
+    return E, coulgradient, VLJ/hartokcal, coulenergy
 end
 
 
