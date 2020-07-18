@@ -31,24 +31,26 @@ function LJcoulombchargev1a(charges, coords, epsij, sigmaij, connectivity=nothin
 			println("eps:", eps)
             #d=dists[i,j]
             #Arrays are surprisingly slow.
-            rij_x = coords_b[j,1] - coords_b[i,1]
-            rij_y = coords_b[j,2] - coords_b[i,2]
-            rij_z = coords_b[j,3] - coords_b[i,3]
+            rij_x = coords_b[i,1] - coords_b[j,1]
+            rij_y = coords_b[i,2] - coords_b[j,2]
+            rij_z = coords_b[i,3] - coords_b[j,3]
             r = rij_x*rij_x+rij_y*rij_y+rij_z*rij_z
             d = sqrt(r)
+			d_ang = d / ang2bohr
             ri=1/r
             ri3=ri*ri*ri
             coulenergy+=charges[i]*charges[j]/(d)
-            d_ang = d / ang2bohr
             VLJ+=4*eps*((sigma/d_ang)^12-(sigma/d_ang)^6)
-            kLJ=-1*(1/hartokcal) * ((24*eps*((sigma/d_ang)^6-2*(sigma/d_ang)^12))*(1/(d_ang^2)))
+
+			kC=charges[i]*charges[j]*sqrt(ri3)
+            kLJ=-1*(1/hartokcal) * ((24*eps*((sigma/d)^6-2*(sigma/d)^12))*(1/(d^2)))
 
 			 #* (1/hartokcal) / ang2bohr
 			 #!slightly odd unitconversion done here in end
         	#Gij=(kLJ+kC)*rij*bohr2ang
         	#Grad(i,:) = Grad(i,:) + Gij
 
-        	kC=charges[i]*charges[j]*sqrt(ri3)*bohr2ang
+
         	#LJenergy=LJenergy+(1/har2kcal)*epsij(i,j)*4. * ((d/sigmaij(i,j))**(-12) - (d/sigmaij(i,j))**(-6))
         	#kLJ=-1*(1/har2kcal) * (24*epsij(i,j)*((sigmaij(i,j)/d)**6-2*(sigmaij(i,j)/d)**12))*(1/(d**2))
         	#!slightly odd unitconversion done here in end
@@ -57,9 +59,9 @@ function LJcoulombchargev1a(charges, coords, epsij, sigmaij, connectivity=nothin
         	#Grad(j,:) = Grad(j,:) - Gij
 
 
-            Gij_x=(kC+kLJ)*rij_x*bohr2ang
-            Gij_y=(kC+kLJ)*rij_y*bohr2ang
-            Gij_z=(kC+kLJ)*rij_z*bohr2ang
+            Gij_x=(kLJ+kC)*rij_x
+            Gij_y=(kLJ+kC)*rij_y
+            Gij_z=(kLJ+kC)*rij_z
 
             coulgradient[j,1] +=  Gij_x
             coulgradient[j,2] +=  Gij_y
