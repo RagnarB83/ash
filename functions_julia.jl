@@ -11,25 +11,17 @@ function LJcoulombchargev1a(charges, coords, epsij, sigmaij, connectivity=nothin
     ang2bohr = 1.88972612546
 	bohr2ang = 0.52917721067
 	hartokcal = 627.50946900
-    coords_b=coords*ang2bohr
+    @time coords_b=coords*ang2bohr
     num=length(charges)
-    #Pre-compute Euclidean distance array
-    #Does not save time when we need to other r quantities
-    #@time dists=distance(coords_b,coords_b)
-    coulenergy=0.0
+    VC=0.0
     VLJ=0.0
 	kLJ=0.0
-	println("sigmaij : ", sigmaij)
-	println("epsij : ", epsij)
-    coulgradient = zeros(size(coords_b)[1], 3)
+	kC=0.0
+    gradient = zeros(size(coords_b)[1], 3)
     for j=1:num
         for i=j+1:num
-			println("i is $i and j is $j")
             sigma=sigmaij[j,i]
             eps=epsij[j,i]
-			println("sigma", sigma)
-			println("eps:", eps)
-            #d=dists[i,j]
             #Arrays are surprisingly slow.
             rij_x = coords_b[i,1] - coords_b[j,1]
             rij_y = coords_b[i,2] - coords_b[j,2]
@@ -39,43 +31,25 @@ function LJcoulombchargev1a(charges, coords, epsij, sigmaij, connectivity=nothin
 			d_ang = d / ang2bohr
             ri=1/r
             ri3=ri*ri*ri
-            coulenergy+=charges[i]*charges[j]/(d)
+            VC+=charges[i]*charges[j]/(d)
             VLJ+=4*eps*((sigma/d_ang)^12-(sigma/d_ang)^6)
 
 			kC=charges[i]*charges[j]*sqrt(ri3)
-            kLJ=-1*(1/hartokcal) * ((24*eps*((sigma/d)^6-2*(sigma/d)^12))*(1/(d^2)))
-
-			 #* (1/hartokcal) / ang2bohr
-			 #!slightly odd unitconversion done here in end
-        	#Gij=(kLJ+kC)*rij*bohr2ang
-        	#Grad(i,:) = Grad(i,:) + Gij
-
-
-        	#LJenergy=LJenergy+(1/har2kcal)*epsij(i,j)*4. * ((d/sigmaij(i,j))**(-12) - (d/sigmaij(i,j))**(-6))
-        	#kLJ=-1*(1/har2kcal) * (24*epsij(i,j)*((sigmaij(i,j)/d)**6-2*(sigmaij(i,j)/d)**12))*(1/(d**2))
-        	#!slightly odd unitconversion done here in end
-        	#Gij=(kLJ+kC)*rij*bohr2ang
-        	#Grad(i,:) = Grad(i,:) + Gij
-        	#Grad(j,:) = Grad(j,:) - Gij
-
-
+            kLJ=-1*(1/hartokcal)*bohr2ang*bohr2ang*((24*eps*((sigma/d_ang)^6-2*(sigma/d_ang)^12))*(1/(d_ang^2)))
             Gij_x=(kLJ+kC)*rij_x
             Gij_y=(kLJ+kC)*rij_y
             Gij_z=(kLJ+kC)*rij_z
 
-            coulgradient[j,1] +=  Gij_x
-            coulgradient[j,2] +=  Gij_y
-            coulgradient[j,3] +=  Gij_z
-            coulgradient[i,1] -=  Gij_x
-            coulgradient[i,2] -=  Gij_y
-            coulgradient[i,3] -=  Gij_z
+            gradient[j,1] +=  Gij_x
+            gradient[j,2] +=  Gij_y
+            gradient[j,3] +=  Gij_z
+            gradient[i,1] -=  Gij_x
+            gradient[i,2] -=  Gij_y
+            gradient[i,3] -=  Gij_z
         end
     end
-    E = coulenergy + VLJ/hartokcal
-	println("coulgradient:", coulgradient)
-	println("coulgradient mult:", coulgradient* (1/hartokcal) / ang2bohr)
-    #G = coulgradient
-    return E, coulgradient, VLJ/hartokcal, coulenergy
+    E = VC + VLJ/hartokcal
+    return E, gradient, VLJ/hartokcal, VC
 end
 
 
