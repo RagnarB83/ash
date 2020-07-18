@@ -1324,8 +1324,10 @@ class NonBondedTheory:
         #Todo: if actatoms have been defined this will be skipped in pairlist creation
         #if frozenatoms passed frozen-frozen interactions will be skipped
         if np.count_nonzero(self.sigmaij) == 0:
+            print("Calling LJ pairpot calc")
             self.calculate_LJ_pairpotentials(qmatoms=qmatoms,actatoms=actatoms)
-
+        else:
+            print("LJ pairpot arrays exist...")
         if len(self.LJpairpotentials) > 0:
             LJ=True
 
@@ -1408,6 +1410,7 @@ class NonBondedTheory:
                 print("Using fast Julia version, v1")
             ashpath = os.path.dirname(ash.__file__)
             # Necessary for statically linked libpython
+            print_time_rel(CheckpointTime, modulename="from run to before import julia")
             try:
                 from julia.api import Julia
                 # Does not work
@@ -1420,7 +1423,9 @@ class NonBondedTheory:
                 print("Alternatively, use pairarrayversion='py' argument to NonBondedTheory to use slower Python version for array creation")
                 exit(9)
             # Defining Julia Module
+            print_time_rel(CheckpointTime, modulename="from run to after import julia")
             Main.include(ashpath + "/functions_julia.jl")
+            print_time_rel(CheckpointTime, modulename="from run to just before calling ")
             self.MMEnergy, self.MMGradient, self.LJenergy, self.Coulombchargeenergy =\
                 Main.Juliafunctions.LJcoulombchargev1a(charges, full_coords, self.epsij, self.sigmaij, connectivity)
             print_time_rel(CheckpointTime, modulename="from run to done julia")
