@@ -1074,7 +1074,7 @@ class OpenMMTheory:
 # Simple nonbonded MM theory. Charges and LJ-potentials
 class NonBondedTheory:
     def __init__(self, atomtypes=None, forcefield=None, charges = None, LJcombrule='geometric',
-                 codeversion='f2py', pairarrayversion='julia', printlevel=2):
+                 codeversion='julia', pairarrayversion='julia', printlevel=2):
 
         #Printlevel
         self.printlevel=printlevel
