@@ -8,17 +8,17 @@ module Juliafunctions
 #Untested
 function LJcoulombchargev1a(charges, coords, epsij, sigmaij, connectivity=nothing)
     """LJ + Coulomb function"""
-    ang2bohr = 1.88972612546
-	bohr2ang = 0.52917721067
-	hartokcal = 627.50946900
+    const ang2bohr = 1.88972612546
+	const bohr2ang = 0.52917721067
+	const hartokcal = 627.50946900
     @time coords_b=coords*ang2bohr
-    num=length(charges)
+    const num=length(charges)
     VC=0.0
     VLJ=0.0
 	kLJ=0.0
 	kC=0.0
     @time gradient = zeros(size(coords_b)[1], 3)
-    @time for j=1:num
+    for j=1:num
         for i=j+1:num
             sigma=sigmaij[j,i]
             eps=epsij[j,i]
