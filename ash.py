@@ -1313,6 +1313,8 @@ class NonBondedTheory:
     def run(self, full_coords=None, mm_coords=None, charges=None, connectivity=None,
             Coulomb=True, Grad=True, qmatoms=None, actatoms=None, frozenatoms=None):
 
+        CheckpointTime = time.time()
+
         #If qmatoms list provided to run (probably by QM/MM object) then we are doing QM/MM
         #QM-QM pairs will be skipped in LJ
 
@@ -1346,7 +1348,7 @@ class NonBondedTheory:
         self.Coulombchargegradient=[]
         self.LJgradient=[]
 
-
+        print_time_rel(CheckpointTime, modulename="from run beginning to stuff")
         #Slow Python version
         if self.codeversion=='py':
             if self.printlevel >= 2:
@@ -1368,7 +1370,7 @@ class NonBondedTheory:
                 #print("Lennard-Jones Energy (au):", self.LJenergy)
                 #print("Lennard-Jones Energy (kcal/mol):", self.LJenergy*constants.harkcal)
             self.MMEnergy = self.Coulombchargeenergy+self.LJenergy
-
+            print_time_rel(CheckpointTime, modulename="from run to done")
             if Grad==True:
                 self.MMGradient = self.Coulombchargegradient+self.LJgradient
         #Combined Coulomb+LJ Python version. Slow
@@ -1389,6 +1391,7 @@ class NonBondedTheory:
                 print("Fortran library LJCoulombv1 not found! Make sure you have run the installation script.")
             self.MMEnergy, self.MMGradient, self.LJenergy, self.Coulombchargeenergy =\
                 LJCoulomb(full_coords, self.epsij, self.sigmaij, charges, connectivity=connectivity)
+            print_time_rel(CheckpointTime, modulename="from run to done f2py")
         elif self.codeversion=='f2pyv2':
             if self.printlevel >= 2:
                 print("Using fast Fortran F2Py MM code v2")
@@ -1420,7 +1423,7 @@ class NonBondedTheory:
             Main.include(ashpath + "/functions_julia.jl")
             self.MMEnergy, self.MMGradient, self.LJenergy, self.Coulombchargeenergy =\
                 Main.Juliafunctions.LJcoulombchargev1a(charges, full_coords, self.epsij, self.sigmaij, connectivity)
-
+            print_time_rel(CheckpointTime, modulename="from run to done julia")
         else:
             print("Unknown version of MM code")
             exit(1)
