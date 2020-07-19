@@ -3,7 +3,6 @@ from functions_coords import *
 from functions_general import *
 from functions_ORCA import *
 from functions_optimization import *
-import settings_molcrys
 from functions_molcrys import *
 from ash import *
 import time
@@ -179,9 +178,6 @@ def molcrys(cif_file=None, xtl_file=None, fragmentobjects=[], theory=None, numco
     print("Cluster size: ", Cluster.numatoms, "atoms")
 
 
-    #We have stopped using settings_molcrys
-    #Cluster.calc_connectivity(scale=settings_molcrys.scale, tol=settings_molcrys.tol)
-    #print_time_rel_and_tot(currtime, origtime, modulename='Cluster.calc_connectivity')
     currtime=time.time()
     # Going through found frags and identify mainfrags and counterfrags
     for frag in Cluster.connectivity:
