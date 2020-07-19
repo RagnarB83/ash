@@ -1,8 +1,5 @@
 #Module for calculating PhotoElectron/PhotoIonization Spectra
-
-#Todo: Does not work for open-shell yet
-
-#####################################3
+#####################################
 
 import glob
 import numpy as np
@@ -26,6 +23,10 @@ eldict={'H':1,'He':2,'Li':3,'Be':4,'B':5,'C':6,'N':7,'O':8,'F':9,'Ne':10,'Na':11
 
 #Cleanup function. Delete MO-files, det files, etc.
 def cleanup():
+    """
+    Cleanup function for PES calculations. Deletes result and temporary files
+    :return:
+    """
     files=['AO_overl', 'dets_final', 'dets_init', 'memlog', 'wfovl.inp', 'wfovl.out', 'mos_final', 'mos_init']
     print("Cleaning up files: ", files)
     for file in files:
@@ -33,19 +34,6 @@ def cleanup():
             os.remove(file)
         except:
             pass
-
-#Calculate nuclear charge from XYZ-file
-def nuccharge(file):
-    el=[]
-    with open(file) as f:
-        for count,line in enumerate(f):
-            if count >1:
-                el.append(line.split()[0])
-    totnuccharge=0
-    for e in el:
-        atcharge=eldict[e]
-        totnuccharge+=atcharge
-    return totnuccharge
 
 #Readfile function
 def readfile(filename):

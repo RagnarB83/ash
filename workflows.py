@@ -10,65 +10,80 @@ import math
 from functions_ORCA import grab_HF_and_corr_energies
 from interface_geometric import *
 
-#Various workflows
+#Various workflows and associated sub-functions
 #Primarily thermochemistry
 
-#Extrapolation function for old-style 3-point SCF in W1 theory
-# Note. Reading list backwards
+#Spin-orbit splittings:
+#Currently only including neutral atoms. Data in cm-1 from : https://webhome.weizmann.ac.il/home/comartin/w1/so.txt
+atom_spinorbitsplittings = {'H': 0.000, 'B': -10.17, 'C' : -29.58, 'N' : 0.00, 'O' : -77.97, 'F' : -134.70,
+                      'Al' : -74.71, 'Si' : -149.68, 'P' : 0.00, 'S' : -195.77, 'Cl' : -294.12}
+
+#Core electrons for elements in ORCA
+atom_core_electrons = {'H': 0, 'He' : 0, 'Li' : 0, 'Be' : 0, 'B': 2, 'C' : 2, 'N' : 2, 'O' : 2, 'F' : 2, 'Ne' : 2,
+                      'Na' : 2, 'Mg' : 2, 'Al' : 10, 'Si' : 10, 'P' : 10, 'S' : 10, 'Cl' : 10, 'Ar' : 10,
+                       'K' : 10, 'Ca' : 10, 'Sc' : 10, 'Ti' : 10, 'V' : 10, 'Cr' : 10, 'Mn' : 10, 'Fe' : 10, 'Co' : 10,
+                       'Ni' : 10, 'Cu' : 10, 'Zn' : 10, 'Ga' : 18, 'Ge' : 18, 'As' : 18, 'Se' : 18, 'Br' : 18, 'Kr' : 18,
+                       'Rb' : 18, 'Sr' : 18, 'Y' : 28, 'Zr' : 28, 'Nb' : 28, 'Mo' : 28, 'Tc' : 28, 'Ru' : 28, 'Rh' : 28,
+                       'Pd' : 28, 'Ag' : 28, 'Cd' : 28, 'In' : 36, 'Sn' : 36, 'Sb' : 36, 'Te' : 36, 'I' : 36, 'Xe' : 36,
+                       'Cs' : 36, 'Ba' : 36, 'Lu' : 46, 'Hf' : 46, 'Ta' : 46, 'w' : 46, 'Re' : 46, 'Os' : 46, 'Ir' : 46,
+                       'Pt' : 46, 'Au' : 46, 'Hg' : 46, 'Tl' : 68, 'Pb' : 68, 'Bi' : 68, 'Po' : 68, 'At' : 68, 'Rn' : 68}
+
 def Extrapolation_W1_SCF_3point(E):
-    #extrapolation formula from W1 theory.
-    # Extrapolating SCF using A+B.C^l is quite easy using
-    #ESCF,infinity=E[4]-(E[4]-E[3])**2/(E[4]-2*E[3]+E[2])
-    #SCF_CBS = E[2]-(E[2]-E[1])**2/(E[0]-2*E[1]+E[0])
+    """
+    Extrapolation function for old-style 3-point SCF in W1 theory
+    :param E: list of HF energies (floats)
+    :return:
+    Note: Reading list backwards
+    """
     SCF_CBS = E[-1]-(E[-1]-E[-2])**2/(E[-1]-2*E[-2]+E[-3])
     return SCF_CBS
 
-#Extrapolation function for new-style 2-point SCF in W1 theory
-# Note. Reading list backwards
+
 #https://www.cup.uni-muenchen.de/oc/zipse/teaching/computational-chemistry-2/topics/overview-of-weizmann-theories/weizmann-1-theory/
 def Extrapolation_W1_SCF_2point(E):
-    #extrapolation formula from W1 theory.
-    # Extrapolating SCF using A+B.C^l is quite easy using
-    #ESCF,infinity=E[4]-(E[4]-E[3])**2/(E[4]-2*E[3]+E[2])
-    #SCF_CBS = E[2]-(E[2]-E[1])**2/(E[0]-2*E[1]+E[0])
+    """
+    Extrapolation function for new-style 2-point SCF in W1 theory
+    :param E: list of HF energies (floats)
+    :return:
+    Note: Reading list backwards
+    """
     SCF_CBS = E[-1]+(E[-1]-E[-2])/((4/3)**5 - 1)
     return SCF_CBS
 
-# Extrapolation function for 2-point CCSD-correlation in W1 theory
-# Note. Reading list backwards
 def Extrapolation_W1_CCSD(E):
-    #Extrapolating the CCSD correlation contrib.to A+B/l^3 is also quite easy
-    #EcorrCCSD,infinity=E[4]+(E[4]-E[3])/((4/3)**3.22 - 1)
-    #CCSDcorr_CBS = E[2]+(E[2]-E[1])/((4/3)**3.22 - 1)
+    """
+    Extrapolation function (A+B/l^3) for 2-point CCSD in W1 theory
+    :param E: list of CCSD energies (floats)
+    :return:
+    Note: Reading list backwards
+    """
     CCSDcorr_CBS = E[-1]+(E[-1]-E[-2])/((4/3)**3.22 - 1)
     return CCSDcorr_CBS
 
-# Extrapolation function for 2-point triples-correlation in W1 theory
-# Note. Reading list backwards
 def Extrapolation_W1_triples(E):
-    #Extrapolation the (T) contribution, finally (mind the different l values):
-    #E(T),infinity=E[3]+(E[3]-E[2])/((3/2)**3.22 - 1)
-    #triples_CBS = E[1]+(E[1]-E[0])/((3/2)**3.22 - 1)
+    """
+    Extrapolation function  for 2-point (T) in W1 theory
+    :param E: list of triples correlation energies (floats)
+    :return:
+    Note: Reading list backwards
+    """
     triples_CBS = E[-1]+(E[-1]-E[-2])/((3/2)**3.22 - 1)
     return triples_CBS
 
-#Extrapolation function for general 2-point extrapolations
 def Extrapolation_twopoint(scf_energies, corr_energies, cardinals, basis_family):
     """
+    Extrapolation function for general 2-point extrapolations
     :param scf_energies: list of SCF energies
     :param corr_energies: list of correlation energies
     :param cardinals: list of basis-cardinal numbers
     :param basis_family: string (e.g. cc, def2, aug-cc)
     :return: extrapolated SCF energy and correlation energy
     """
-    #Dictionary of extrapolation parameters.
-    # Key: Basisfamilyandcardinals Value: list: [alpha, beta]
+    #Dictionary of extrapolation parameters. Key: Basisfamilyandcardinals Value: list: [alpha, beta]
     extrapolation_parameters_dict = { 'cc_23' : [4.42, 2.460], 'aug-cc_23' : [4.30, 2.510], 'cc_34' : [5.46, 3.050], 'aug-cc_34' : [5.790, 3.050],
     'def2_23' : [10.390,2.4], 'def2_34' : [7.880,2.970], 'pc_23' : [7.02, 2.01], 'pc_34': [9.78, 4.09]}
 
     #NOTE: pc-n family uses different numbering. pc-1 is DZ(cardinal 2), pc-2 is TZ(cardinal 3), pc-4 is QZ(cardinal 4).
-
-
     if basis_family=='cc' and all(x in cardinals for x in [2, 3]):
         extrap_dict_key='cc_23'
     elif basis_family=='aug-cc' and all(x in cardinals for x in [2, 3]):
@@ -107,22 +122,6 @@ def Extrapolation_twopoint(scf_energies, corr_energies, cardinals, basis_family)
 
     return SCFextrap, corrextrap
 
-
-#Currently only including neutral atoms. Data in cm-1 from : https://webhome.weizmann.ac.il/home/comartin/w1/so.txt
-atom_spinorbitsplittings = {'H': 0.000, 'B': -10.17, 'C' : -29.58, 'N' : 0.00, 'O' : -77.97, 'F' : -134.70,
-                      'Al' : -74.71, 'Si' : -149.68, 'P' : 0.00, 'S' : -195.77, 'Cl' : -294.12}
-
-#Core electrons for elements in ORCA
-atom_core_electrons = {'H': 0, 'He' : 0, 'Li' : 0, 'Be' : 0, 'B': 2, 'C' : 2, 'N' : 2, 'O' : 2, 'F' : 2, 'Ne' : 2,
-                      'Na' : 2, 'Mg' : 2, 'Al' : 10, 'Si' : 10, 'P' : 10, 'S' : 10, 'Cl' : 10, 'Ar' : 10,
-                       'K' : 10, 'Ca' : 10, 'Sc' : 10, 'Ti' : 10, 'V' : 10, 'Cr' : 10, 'Mn' : 10, 'Fe' : 10, 'Co' : 10,
-                       'Ni' : 10, 'Cu' : 10, 'Zn' : 10, 'Ga' : 18, 'Ge' : 18, 'As' : 18, 'Se' : 18, 'Br' : 18, 'Kr' : 18,
-                       'Rb' : 18, 'Sr' : 18, 'Y' : 28, 'Zr' : 28, 'Nb' : 28, 'Mo' : 28, 'Tc' : 28, 'Ru' : 28, 'Rh' : 28,
-                       'Pd' : 28, 'Ag' : 28, 'Cd' : 28, 'In' : 36, 'Sn' : 36, 'Sb' : 36, 'Te' : 36, 'I' : 36, 'Xe' : 36,
-                       'Cs' : 36, 'Ba' : 36, 'Lu' : 46, 'Hf' : 46, 'Ta' : 46, 'w' : 46, 'Re' : 46, 'Os' : 46, 'Ir' : 46,
-                       'Pt' : 46, 'Au' : 46, 'Hg' : 46, 'Tl' : 68, 'Pb' : 68, 'Bi' : 68, 'Po' : 68, 'At' : 68, 'Rn' : 68}
-
-
 def num_core_electrons(fragment):
     sum=0
     formula_list = functions_coords.molformulatolist(fragment.formula)
@@ -137,20 +136,22 @@ def num_core_electrons(fragment):
 
 def W1theory_SP(fragment=None, charge=None, orcadir=None, mult=None, stabilityanalysis=False, numcores=1, memory=5000, HFreference=None):
     """
-    Single-point W1 theory workflow. Not doing opt and freq step here.
-    Differences: Basis sets may not be the same if 2nd-row element. CHECK THIS for future.
+    Single-point W1 theory workflow.
+    Differences: Basis sets may not be the same if 2nd-row element. TO BE CHECKED
     Scalar-relativistic step done via DKH. Same as modern W1 implementation.
-    HF reference is important. UHF is not recommended. QRO gives very similar results to ROHF.
+    HF reference is important. UHF is not recommended. QRO gives very similar results to ROHF. To be set as default?
     Based on :
     https://webhome.weizmann.ac.il/home/comartin/w1/example.txt
     https://www.cup.uni-muenchen.de/oc/zipse/teaching/computational-chemistry-2/topics/overview-of-weizmann-theories/weizmann-1-theory/
 
-    :param fragment:
-    :param charge:
-    :param orcadir:
-    :param mult:
-    :param stabilityanalysis:
-    :param numcores:
+    :param fragment: ASH fragment object
+    :param charge: integer
+    :param orcadir: string (path to ORCA)
+    :param mult: integer (spin multiplicity)
+    :param stabilityanalysis: boolean (currently not active)
+    :param numcores: integer
+    :param memory: integer (in MB)
+    :param HFreference: string (UHF, QRO, ROHF)
     :return:
     """
     print("-----------------------------")
@@ -214,6 +215,7 @@ def W1theory_SP(fragment=None, charge=None, orcadir=None, mult=None, stabilityan
     ############################################################
     #Special basis for H.
     # TODO: Add special basis for 2nd row block: Al-Ar
+    # Or does ORCA W1-DZ choose this?
     ccsdt_dz_line="! CCSD(T) W1-DZ tightscf " + hfkeyword
 
     ccsdt_tz_line="! CCSD(T) W1-TZ tightscf " + hfkeyword
@@ -330,10 +332,11 @@ def DLPNO_W1theory_SP(fragment=None, charge=None, orcadir=None, mult=None, stabi
     :param orcadir: ORCA directory
     :param mult: Multiplicity of fragment (to be replaced)?
     :param stabilityanalysis: stability analysis on or off . Not currently active
-    :param numcores: number of corese
+    :param numcores: number of cores
     :param memory: Memory in MB
-    :param scfsetting: ORCA keyword
+    :param scfsetting: ORCA keyword (e.g. NormalSCF, TightSCF, VeryTightSCF)
     :param pnosetting: ORCA keyword: NormalPNO, LoosePNO, TightPNO
+    ;param T1: Boolean (whether to do expensive iterative triples or not)
     :return: energy and dictionary with energy-components
     """
     print("-----------------------------")
