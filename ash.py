@@ -18,6 +18,7 @@ from functions_optimization import *
 from interface_geometric import geomeTRICOptimizer
 import shutil
 import subprocess as sp
+import elstructure_functions
 
 debugflag=False
 

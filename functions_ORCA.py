@@ -2,7 +2,7 @@ import subprocess as sp
 from functions_solv import *
 from functions_coords import *
 from functions_general import *
-from elstructure_functions import *
+import elstructure_functions
 import settings_solvation
 import constants
 import multiprocessing as mp
@@ -730,7 +730,7 @@ def grabatomcharges_ORCA(chargemodel,outputfile):
                     grab=True
         print("Hirshfeld charges :", charges)
         atomicnumbers=elemstonuccharges(elems)
-        charges = calc_cm5(atomicnumbers, coords, charges)
+        charges = elstructure_functions.calc_cm5(atomicnumbers, coords, charges)
         print("CM5 charges :", list(charges))
     elif chargemodel == "Mulliken":
         with open(outputfile) as ofile:
