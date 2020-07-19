@@ -1302,8 +1302,10 @@ class NonBondedTheory:
             exit()
 
         if self.printlevel >= 2:
-            print("self.sigmaij ({}) : {}".format(len(self.sigmaij), self.sigmaij))
-            print("self.epsij ({}) : {}".format(len(self.epsij), self.epsij))
+            #print("self.sigmaij ({}) : {}".format(len(self.sigmaij), self.sigmaij))
+            #print("self.epsij ({}) : {}".format(len(self.epsij), self.epsij))
+            print("sigmaij size: {}".format(len(self.sigmaij)))
+            print("epsij size: {}".format(len(self.epsij)))
         print_time_rel(CheckpointTime, modulename="pairpot arrays")
 
     def update_charges(self,charges):
@@ -1415,8 +1417,6 @@ class NonBondedTheory:
             print_time_rel(CheckpointTime, modulename="from run to before import julia")
             try:
                 from julia.api import Julia
-                # Does not work
-                # jl = Julia(depwarn=False)
                 from julia import Main
             except:
                 print("Problem importing Pyjulia (import julia)")
