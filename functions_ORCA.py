@@ -46,6 +46,7 @@ def run_orca_SP(list):
 
 # Run ORCA single-point job using ORCA parallelization. Will add pal-block if nprocs >1.
 # Takes possible Grad boolean argument.
+@timefn
 def run_orca_SP_ORCApar(orcadir, inpfile, nprocs=1):
     #if Grad==True:
     #    with open(inpfile) as ifile:
@@ -600,6 +601,7 @@ def create_orca_input_pc(name,elems,coords,orcasimpleinput,orcablockinput,charge
 #Create simple ORCA inputfile from elems,coords, input, charge, mult,pointcharges
 #Allows for extraline that could be another '!' line or block-inputline.
 #Used by ASH
+@timefn
 def create_orca_input_plain(name,elems,coords,orcasimpleinput,orcablockinput,charge,mult, Grad=False, extraline='',
                             HSmult=None, atomstoflip=None):
     with open(name+'.inp', 'w') as orcafile:

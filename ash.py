@@ -229,7 +229,8 @@ def displacement_QMMMrun(arglist):
 
 #Single-point energy function
 # *args is used by parallel version
-def Singlepoint(fragment=None, theory=None, Grad=False, *args):
+@timefn
+def Singlepoint(fragment=None, theory=None, Grad=False):
     print("")
     '''
     The Singlepoint function carries out a single-point energy calculation
@@ -256,6 +257,7 @@ def Singlepoint(fragment=None, theory=None, Grad=False, *args):
         return energy,gradient
     else:
         print(BC.WARNING,"Doing single-point Energy job on fragment : ", fragment.prettyformula, BC.END)
+
         energy = theory.run(current_coords=coords, elems=elems)
         print("Energy: ", energy)
 
@@ -2059,6 +2061,7 @@ class QMMMTheory:
 
 
 #ORCA Theory object. Fragment object is optional. Only used for single-points.
+
 class ORCATheory:
     def __init__(self, orcadir, fragment=None, charge='', mult='', orcasimpleinput='', printlevel=2,
                  orcablocks='', extraline='', brokensym=None, HSmult=None, atomstoflip=None, nprocs=1, label=None):
@@ -2133,6 +2136,7 @@ class ORCATheory:
         except:
             pass
     #Run function. Takes coords, elems etc. arguments and computes E or E+G.
+    @timefn
     def run(self, current_coords=None, current_MM_coords=None, MMcharges=None, qm_elems=None,
             mm_elems=None, elems=None, Grad=False, PC=False, nprocs=None ):
         print(BC.OKBLUE,BC.BOLD, "------------RUNNING ORCA INTERFACE-------------", BC.END)
@@ -2880,11 +2884,12 @@ class CFourTheory:
 # Fragment class
 class Fragment:
     def __init__(self, coordsstring=None, fragfile=None, xyzfile=None, pdbfile=None, coords=None, elems=None, connectivity=None,
-                 atomcharges=None, atomtypes=None, conncalc=True, scale=None, tol=None, printlevel=2, charge=None, mult=None, label=None):
-        #Label for fragment (string). Useful for distinguishing different ones
+                 atomcharges=None, atomtypes=None, conncalc=True, scale=None, tol=None, printlevel=2, charge=None,
+                 mult=None, label=None, readchargemult=False):
+        #Label for fragment (string). Useful for distinguishing different fragments
         self.label=label
 
-        #Printlevel
+        #Printlevel. Default: 2 (slightly verbose)
         self.printlevel=printlevel
 
         #New. Charge and mult attribute of fragment. Useful for workflows
@@ -2929,7 +2934,7 @@ class Fragment:
             self.add_coords_from_string(coordsstring, scale=scale, tol=tol)
         #If xyzfile argument, run read_xyzfile
         elif xyzfile is not None:
-            self.read_xyzfile(xyzfile)
+            self.read_xyzfile(xyzfile, readchargemult=readchargemult)
         elif pdbfile is not None:
             self.read_pdbfile(pdbfile, conncalc=conncalc)
         elif fragfile is not None:
@@ -3057,14 +3062,18 @@ class Fragment:
         if conncalc is True:
             self.calc_connectivity(scale=scale, tol=tol)
     #Read XYZ file
-    def read_xyzfile(self,filename, scale=None, tol=None):
+    def read_xyzfile(self,filename, scale=None, tol=None, readchargemult=False):
         if self.printlevel >= 2:
             print("Reading coordinates from XYZfile {} into fragment".format(filename))
         with open(filename) as f:
             for count,line in enumerate(f):
                 if count == 0:
                     self.numatoms=int(line.split()[0])
-                if count > 1:
+                elif count == 1:
+                    if readchargemult is True:
+                        charge=int(line.split()[0])
+                        mult=int(line.split()[1])
+                elif count > 1:
                     if len(line) > 3:
                         self.elems.append(line.split()[0])
                         self.coords.append([float(line.split()[1]), float(line.split()[2]), float(line.split()[3])])
