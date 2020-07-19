@@ -229,7 +229,7 @@ def displacement_QMMMrun(arglist):
 
 #Single-point energy function
 # *args is used by parallel version
-@timefn
+
 def Singlepoint(fragment=None, theory=None, Grad=False):
     print("")
     '''
@@ -2136,7 +2136,6 @@ class ORCATheory:
         except:
             pass
     #Run function. Takes coords, elems etc. arguments and computes E or E+G.
-    @timefn
     def run(self, current_coords=None, current_MM_coords=None, MMcharges=None, qm_elems=None,
             mm_elems=None, elems=None, Grad=False, PC=False, nprocs=None ):
         print(BC.OKBLUE,BC.BOLD, "------------RUNNING ORCA INTERFACE-------------", BC.END)
