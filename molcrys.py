@@ -360,7 +360,7 @@ def molcrys(cif_file=None, xtl_file=None, fragmentobjects=[], theory=None, numco
         RMSD_charges=rmsd_list(fragmentobjects[0].all_atomcharges[-1],fragmentobjects[0].all_atomcharges[-2])
         print(BC.OKBLUE,"RMSD of charges: {:6.3f} in SP iteration {:6}:".format(RMSD_charges, SPLoopNum),BC.END)
         if RMSD_charges < RMSD_SP_threshold:
-            print("RMSD less than threshold: {}".format(RMSD_charges,RMSD_SP_threshold))
+            print("RMSD: {} is less than threshold: {}".format(RMSD_charges,RMSD_SP_threshold))
             print(BC.OKMAGENTA,"Charges converged in SP iteration {}! SP LOOP over!".format(SPLoopNum),BC.END)
             break
         print(BC.WARNING,"Not converged in iteration {}. Continuing SP loop".format(SPLoopNum),BC.END)
