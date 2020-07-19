@@ -5,6 +5,7 @@ from functions_ORCA import *
 from functions_optimization import *
 from functions_molcrys import *
 from ash import *
+from elstructure_functions import *
 import time
 import shutil
 origtime=time.time()
