@@ -1428,7 +1428,7 @@ class NonBondedTheory:
             Main.include(ashpath + "/functions_julia.jl")
             print_time_rel(CheckpointTime, modulename="from run to just before calling ")
             self.MMEnergy, self.MMGradient, self.LJenergy, self.Coulombchargeenergy =\
-                Main.Juliafunctions.LJcoulombchargev1a(charges, full_coords, self.epsij, self.sigmaij, connectivity)
+                Main.Juliafunctions.LJcoulombchargev1c(charges, full_coords, self.epsij, self.sigmaij, connectivity)
             print_time_rel(CheckpointTime, modulename="from run to done julia")
         else:
             print("Unknown version of MM code")
