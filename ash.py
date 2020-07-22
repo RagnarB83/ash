@@ -1388,12 +1388,10 @@ class NonBondedTheory:
                                                           connectivity=connectivity)
         elif self.codeversion=='f2py':
             if self.printlevel >= 2:
-                print("Using fast Fortran F2Py MM code")
+                print("Using Fortran F2Py MM code")
             try:
                 #print(os.environ.get("LD_LIBRARY_PATH"))
                 import LJCoulombv1
-                #print(LJCoulombv1.__doc__)
-                #print("----------")
             except:
                 print("Fortran library LJCoulombv1 not found! Make sure you have run the installation script.")
             self.MMEnergy, self.MMGradient, self.LJenergy, self.Coulombchargeenergy =\

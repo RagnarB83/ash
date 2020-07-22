@@ -6,11 +6,11 @@ import os
 import shutil
 import ash
 import time
-#########################
+########################
 # Interface to geomeTRIC Optimization Library
 ########################
 
-'''Wrapper function around geomTRIC code. Take theory and fragment info from Yggdrasill
+'''Wrapper function around geomeTRIC code. Take theory and fragment info from ASH
 Supports frozen atoms and bond constraints in native code. Use frozenatoms and bondconstraints for this.
 New feature: Active Region for huge systems. Use ActiveRegion=True and provide actatoms list.
 Active-atom coords (e.g. only QM region) are only provided to geomeTRIC during optimization while rest is frozen.

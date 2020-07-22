@@ -44,7 +44,7 @@ def diagonalizeHessian(hessian, masses, elems):
     return vfreqs,nmodes,numatoms,elems,evectors,atomlist,masses
 
 
-#Massweight Hessian
+# Massweight Hessian
 def massweight(matrix,masses,numatoms):
     mass_mat = np.zeros( (3*numatoms,3*numatoms), dtype = float )
     molwt = [ masses[int(i)] for i in range(numatoms) for j in range(3) ]
@@ -53,7 +53,7 @@ def massweight(matrix,masses,numatoms):
     mwhessian = np.dot((np.dot(mass_mat,matrix)),mass_mat)
     return mwhessian,mass_mat
 
-#Calculate frequencies from eigenvalus
+# Calculate frequencies from eigenvalus
 def calcfreq(evalues):
     hartree2j = constants.hartree2j
     bohr2m = constants.bohr2m
