@@ -3088,10 +3088,7 @@ class Fragment:
         subelems=[self.elems[i] for i in atoms]
         return subcoords,subelems
     #Calculate connectivity (list of lists) of coords
-    def calc_connectivity(self, conndepth=99, scale=None, tol=None ):
-        if self.printlevel >= 2:
-            print("Calculating connectivity of fragment...")
-
+    def calc_connectivity(self, conndepth=99, scale=None, tol=None, codeversion='julia' ):
         if len(self.coords) > 10000:
             if self.printlevel >= 2:
                 print("Atom number > 10K. Connectivity calculation could take a while")
@@ -3111,20 +3108,41 @@ class Fragment:
         else:
             if self.printlevel >= 2:
                 print("Using scale: {} and tol: {} ".format(scale, tol))
+
         # Calculate connectivity by looping over all atoms
-        found_atoms = []
-        fraglist = []
-        count = 0
-        #Todo: replace by Fortran code? Pretty slow for 10K atoms
         timestampA=time.time()
-        for atom in range(0, len(self.elems)):
-            if atom not in found_atoms:
-                count += 1
-                members = get_molecule_members_loop_np2(self.coords, self.elems, conndepth, scale,
-                                                        tol, atomindex=atom)
-                if members not in fraglist:
-                    fraglist.append(members)
-                    found_atoms += members
+        if codeversion=='py':
+            print("Calculating connectivity of fragment using py")
+            timestampB = time.time()
+            fraglist = calc_conn_py(self.coords, self.elems, conndepth, scale, tol)
+            print_time_rel(timestampB, modulename='calc connectivity py')
+        elif codeversion=='julia':
+            print("Calculating connectivity of fragment using julia")
+            # Import Julia
+            try:
+                from julia.api import Julia
+                from julia import Main
+                # Defining Julia Module
+                ashpath = os.path.dirname(ash.__file__)
+                Main.include(ashpath + "/functions_julia.jl")
+                timestampB = time.time()
+                fraglist_temp = Main.Juliafunctions.calc_connectivity(self.coords, self.elems, conndepth, scale, tol,
+                                                                      eldict_covrad)
+                fraglist = []
+                #Convertin from numpy to list of lists
+                for sublist in fraglist_temp:
+                    fraglist.append(list(sublist))
+                print_time_rel(timestampB, modulename='calc connectivity julia')
+
+            except:
+                print("Problem importing Pyjulia (import julia)")
+                print("Make sure Julia is installed and PyJulia module available")
+                print("Also, are you using python-jl ?")
+                print("")
+                print("Using Python version instead (slow for large systems)")
+                fraglist = calc_conn_py(self.coords, self.elems, conndepth, scale, tol)
+
+
         if self.printlevel >= 2:
             print_time_rel(timestampA, modulename='calc connectivity1')
         #flat_fraglist = [item for sublist in fraglist for item in sublist]
@@ -3134,7 +3152,7 @@ class Fragment:
         for l in self.connectivity:
             conn_number_sum+=len(l)
         if self.numatoms != conn_number_sum:
-            print("Connectivity problem")
+            print(BC.FAIL,"Connectivity problem", BC.END)
             exit()
         self.connected_atoms_number=conn_number_sum
 

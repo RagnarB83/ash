@@ -2,7 +2,102 @@
 __precompile__()
 
 module Juliafunctions
+using Profile
 #using PyCall
+
+#Distance for 2D arrays of coords
+function distance_array(x::Array{Float64, 2}, y::Array{Float64, 2})
+    nx = size(x, 1)
+    ny = size(y, 1)
+    r=zeros(nx,ny)
+
+        for j = 1:ny
+            @fastmath for i = 1:nx
+                @inbounds dx = y[j, 1] - x[i, 1]
+                @inbounds dy = y[j, 2] - x[i, 2]
+                @inbounds dz = y[j, 3] - x[i, 3]
+                rSq = dx*dx + dy*dy + dz*dz
+                @inbounds r[i, j] = sqrt(rSq)
+            end
+        end
+    return r
+end
+
+#Connectivity entirely via Julia
+function calc_connectivity(coords,elems,conndepth,scale, tol,eldict_covrad)
+	print("here")
+    # Calculate connectivity by looping over all atoms
+	found_atoms = Int64[]
+	#List of lists
+	fraglist = Array{Int64}[]
+	#println(typeof(fraglist))
+    #Looping over atoms
+	for atom in 1:length(elems)
+		if length(found_atoms) == length(elems)
+			println("exiting because all atoms accounted for")
+			return fraglist
+		end
+		if atom-1 ∉ found_atoms
+			members = get_molecule_members_julia(coords, elems, conndepth, scale, tol, eldict_covrad, atomindex=atom-1)
+			if members ∉ fraglist
+				push!(fraglist,members)
+				found_atoms = [found_atoms;members]
+			end
+		end
+	end
+	return fraglist
+end
+#Distance between atom i and j in coords
+function distance(coords::Array{Float64,2},i::Int64,j::Int64)
+			@fastmath @inbounds rij_x = coords[i,1] - coords[j,1]
+            @fastmath @inbounds rij_y = coords[i,2] - coords[j,2]
+            @fastmath @inbounds rij_z = coords[i,3] - coords[j,3]
+            @fastmath r = rij_x*rij_x+rij_y*rij_y+rij_z*rij_z
+            @fastmath dist = sqrt(r)
+			return dist
+end
+function get_connected_atoms_julia(coords::Array{Float64,2}, elems::Array{String,1},
+    eldict_covrad_jul::Dict{String,Float64},scale::Float64,tol::Float64, atomindex::Int64)
+    connatoms = Int64[]
+    @inbounds elem_ref=elems[atomindex+1]
+    @inbounds for i=1:length(elems)
+			@inbounds dist = distance(coords,i,atomindex+1)
+			@fastmath @inbounds rad_dist = scale*(eldict_covrad_jul[elems[i]]+eldict_covrad_jul[elem_ref]) + tol
+        	if dist < rad_dist
+            	@inbounds @fastmath push!(connatoms, i-1)
+			end
+	end
+#TODO: remove atomindex from connatoms??
+    return connatoms
+end
+
+function get_molecule_members_julia(coords, elems, loopnumber, scale, tol, eldict_covrad ; atomindex=nothing, membs=nothing)
+	eldict_covrad_jul=convert(Dict{String,Float64}, eldict_covrad)
+   if membs == nothing
+		membs = Int64[]
+		push!(membs, atomindex+1)
+		membs = get_connected_atoms_julia(coords, elems, eldict_covrad_jul, scale, tol, atomindex)
+	end
+	finalmembs = membs
+	for i in 1:loopnumber
+		# Get list of lists of connatoms for each member
+		newmembers = Int64[]
+		for k in membs
+			bla = get_connected_atoms_julia(coords, elems, eldict_covrad_jul, scale, tol, k)
+			newmembers = [newmembers;bla]
+		end
+		# Get a unique flat list
+		trimmed_flat = sort(unique(newmembers))
+		# Check if new atoms not previously found
+		membs = setdiff(trimmed_flat, finalmembs)
+		if length(membs) == 0
+			return finalmembs
+		end
+		finalmembs = [finalmembs;membs]
+		finalmembs = sort(unique(finalmembs))
+	end
+	return finalmembs
+end
 
 #Lennard-Jones+Coulomb function.
 #Tested. Faster than gcc-compiled Fortran function (LJCoulombv1.f90)
@@ -179,62 +274,7 @@ function pairpot_active(numatoms,atomtypes,LJpydict,qmatoms,actatoms)
 	return sigmaij,epsij
 	end
 
-#Distance for 2D arrays of coords
-function distance(x::Array{Float64, 2}, y::Array{Float64, 2})
-    nx = size(x, 1)
-    ny = size(y, 1)
-    r=zeros(nx,ny)
-        for j = 1:ny
-            @fastmath for i = 1:nx
-                @inbounds dx = y[j, 1] - x[i, 1]
-                @inbounds dy = y[j, 2] - x[i, 2]
-                @inbounds dz = y[j, 3] - x[i, 3]
-                rSq = dx*dx + dy*dy + dz*dz
-                @inbounds r[i, j] = sqrt(rSq)
-            end
-        end
-    return r
-end
 
-#function get_connected_atoms_julia(coords, elems,eldict_covrad, scale,tol, atomindex):
-#    eldict_covrad_jul=convert(Dict{String,Float64}, eldict_covrad)
-#    connatoms = Array(Int, 0)
-#    coords_ref=coords[atomindex]
-#    elem_ref=elems[atomindex]
-
-#    for (i,c) in enumerate(coords)
-#        if distance(coords_ref,c) < scale*(eldict_covrad_jul[elems[i]]+eldict_covrad_jul[elem_ref]) + tol
-#            push!(connatoms, i)
-#TODO: remove atomindex from connatoms
-#    return connatoms
-#end
-
-
-#Python-ish version
-#function get_connected_atoms_julia_vector(coords, elems,eldict_covrad, scale,tol, atomindex)
-#    eldict_covrad_jul=convert(Dict{String,Float64}, eldict_covrad)
-
-    #Pre-compute Euclidean distance array
-#    dists=distance(coords,coords)
-
-    #Getting all thresholds as list via list comprehension.
-#    el_covrad_ref=eldict_covrad[elems[atomindex]]
-    # TODO: Slowest part but hard to make faster
-#    thresholds=np.array([eldict_covrad[elems[i]] for i in range(len(elems))])
-    #Numpy addition and multiplication done on whole array
-#    thresholds=thresholds+el_covrad_ref
-#    thresholds=thresholds*scale
-#    thresholds=thresholds+tol
-    #Old slow way
-    #thresholds=np.array([threshold_conn(elems[i], elem_ref,scale,tol) for i in range(len(elems))])
-    #Getting difference of distances and thresholds
-#    diff=distances-thresholds
-
-#    connatoms = []
-    #Getting connatoms by finding indices of diff with negative values (i.e. where distance is smaller than threshold)
-#    connatoms=np.where(diff<0)[0].tolist()
-#    return connatoms
-#end
 
 
 

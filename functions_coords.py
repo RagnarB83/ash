@@ -7,6 +7,7 @@ import constants
 #from math import pow
 import copy
 import math
+import ash
 sqrt = math.sqrt
 pow = math.pow
 #Elements and atom numbers
@@ -136,6 +137,18 @@ def threshold_conn(elA,elB,scale,tol):
     #print(crad)
     #return scale*(crad[0]+crad[1]) + tol
 
+#Connectivity function (called by Fragment object)
+def calc_conn_py(coords, elems, conndepth, scale, tol):
+    found_atoms = []
+    fraglist = []
+    for atom in range(0, len(elems)):
+        if atom not in found_atoms:
+            members = get_molecule_members_loop_np2(coords, elems, conndepth, scale, tol, atomindex=atom)
+            if members not in fraglist:
+                fraglist.append(members)
+                found_atoms += members
+    return fraglist
+
 #Get connected atoms to chosen atom index based on threshold
 #Uses slow for-loop structure with distance-function call
 #Don't use
@@ -170,6 +183,8 @@ def dummy_mat(mat_v, mat_u):
 #https://semantive.com/pl/blog/high-performance-computation-in-python-numpy/
 #Avoiding for loops
 def get_connected_atoms_np(coords, elems,scale,tol, atomindex):
+    #print("inside get conn atoms np")
+    #print("atomindex:", atomindex)
     connatoms = []
     #Creating np array of the coords to compare
     compcoords = np.tile(coords[atomindex], (len(coords), 1))
@@ -194,6 +209,7 @@ def get_connected_atoms_np(coords, elems,scale,tol, atomindex):
     diff=distances-thresholds
     #Getting connatoms by finding indices of diff with negative values (i.e. where distance is smaller than threshold)
     connatoms=np.where(diff<0)[0].tolist()
+    #print("connatoms ", connatoms)
     return connatoms
 
 
@@ -218,25 +234,51 @@ def get_molecule_members_loop_np(coords, elems, loopnumber,scale,tol, atomindex=
 
 #Numpy clever loop test.
 #Version 2 never goes through same atom
+
+#@timefn
 def get_molecule_members_loop_np2(coords, elems, loopnumber, scale, tol, atomindex=None, membs=None):
     if membs is None:
         membs = []
         membs.append(atomindex)
+        timestampA = time.time()
         membs = get_connected_atoms_np(coords, elems, scale,tol, atomindex)
+        #print("membs:", membs)
+        #ash.print_time_rel(timestampA, modulename='membs first py')
+
     finalmembs=membs
     for i in range(loopnumber):
         #Get list of lists of connatoms for each member
         newmembers=[get_connected_atoms_np(coords, elems, scale,tol, k) for k in membs]
+        #print("newmembers:", newmembers)
+        #exit()
         #Get a unique flat list
         trimmed_flat=np.unique([item for sublist in newmembers for item in sublist]).tolist()
+        #print("trimmed_flat:", trimmed_flat)
+        #print("finalmembs ", finalmembs)
+
         #Check if new atoms not previously found
         membs = listdiff(trimmed_flat, finalmembs)
+        #print("membs:", membs)
+        #exit()
         #Exit loop if nothing new found
         if len(membs) == 0:
+            #print("exiting...")
+            #exit()
             return finalmembs
+        #print("type of membs:", type(membs))
+        #print("type of finalmembs:", type(finalmembs))
         finalmembs+=membs
+        #print("finalmembs ", finalmembs)
         finalmembs=np.unique(finalmembs).tolist()
+        #print("finalmembs ", finalmembs)
+        #exit()
+        #print("finalmembs:", finalmembs)
+        #print("----------")
+        #ash.print_time_rel(timestampA, modulename='finalmembs  py')
+        #exit()
     return finalmembs
+
+
 
 #Get molecule members by running get_connected_atoms function on expanding member list
 #Uses loopnumber for when to stop searching.

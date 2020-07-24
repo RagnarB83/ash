@@ -1,3 +1,62 @@
+# Numpy clever loop test with Julia
+@timefn
+def bget_molecule_members_loop_np2_jul(coords, elems, loopnumber, scale, tol, atomindex=None, membs=None):
+    if membs is None:
+        membs = []
+        membs.append(atomindex)
+        # print("membs:", membs)
+        # get_connected_atoms_julia(coords, elems,eldict_covrad, scale,tol, atomindex)
+        # print("eldict_covrad:", eldict_covrad)
+        # print(type(coords))
+        # print(type(elems))
+        # print(type(eldict_covrad))
+        # print(type(scale))
+        # print(type(tol))
+        # print(type(atomindex))
+        timestampA = time.time()
+        membs = list(Main.Juliafunctions.get_connected_atoms_julia(coords, elems, eldict_covrad, scale, tol, atomindex))
+
+        # exit()
+        # print("membs:", membs)
+
+    finalmembs = membs
+    for i in range(loopnumber):
+        # print("loop i:", i)
+        # Get list of lists of connatoms for each member
+        newmembers = [Main.Juliafunctions.get_connected_atoms_julia(coords, elems, eldict_covrad, scale, tol, k) for k
+                      in membs]
+        # print("newmembers:", newmembers)
+        # print(type(newmembers))
+        # PROBLEM: Julia returns newmembers as list of numpy arrays
+        # exit()
+        # Get a unique flat list
+        trimmed_flat = np.unique([item for sublist in newmembers for item in sublist]).tolist()
+        # print("trimmed_flat:", trimmed_flat)
+        # print("finalmembs ", finalmembs)
+        # exit()
+        # Check if new atoms not previously found
+        membs = listdiff(trimmed_flat, finalmembs)
+        # print("membs ", membs)
+        # Exit loop if nothing new found
+        if len(membs) == 0:
+            # print("exiting")
+            return finalmembs
+        # print("type of membs:", type(membs))
+        # print("type of finalmembs:", type(finalmembs))
+        finalmembs += membs
+        # print("finalmembs ", finalmembs)
+        finalmembs = np.unique(finalmembs).tolist()
+        # print("finalmembs ", finalmembs)
+        # exit()
+        # print("finalmembs:", finalmembs)
+        # print_time_rel(timestampA, modulename='finalmembs  julia')
+        # exit()
+    return finalmembs
+
+
+
+
+
 Part of Fragment class
 def calc_connectivity(self, conndepth=99, scale=None, tol=None):
     self.atomlist = list(range(0, self.numatoms))
