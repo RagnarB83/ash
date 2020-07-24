@@ -25,7 +25,6 @@ end
 
 #Connectivity entirely via Julia
 function calc_connectivity(coords,elems,conndepth,scale, tol,eldict_covrad)
-	print("here")
     # Calculate connectivity by looping over all atoms
 	found_atoms = Int64[]
 	#List of lists
@@ -76,6 +75,7 @@ function get_molecule_members_julia(coords, elems, loopnumber, scale, tol, eldic
    if membs == nothing
 		membs = Int64[]
 		push!(membs, atomindex+1)
+		print("here 1")
 		membs = get_connected_atoms_julia(coords, elems, eldict_covrad_jul, scale, tol, atomindex)
 	end
 	finalmembs = membs
@@ -83,6 +83,7 @@ function get_molecule_members_julia(coords, elems, loopnumber, scale, tol, eldic
 		# Get list of lists of connatoms for each member
 		newmembers = Int64[]
 		for k in membs
+				print("here 2")
 			bla = get_connected_atoms_julia(coords, elems, eldict_covrad_jul, scale, tol, k)
 			newmembers = [newmembers;bla]
 		end
