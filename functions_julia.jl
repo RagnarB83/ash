@@ -75,8 +75,15 @@ function get_molecule_members_julia(coords, elems, loopnumber, scale, tol, eldic
    if membs == nothing
 		membs = Int64[]
 		push!(membs, atomindex+1)
-		print("here 1")
+		println("here 1")
+		println("membs: $membs")
+		println(type(membs))
+		println("scale: $scale")
+		println("tol: $tol")
+		println("atomindex: $atomindex")
+		println("eldict_covrad_jul:", eldict_covrad_jul)
 		membs = get_connected_atoms_julia(coords, elems, eldict_covrad_jul, scale, tol, atomindex)
+		println("membs: $membs")
 	end
 	finalmembs = membs
 	for i in 1:loopnumber
