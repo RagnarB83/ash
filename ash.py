@@ -1109,6 +1109,7 @@ class NonBondedTheory:
         #Initializing sigmaij and epsij arrays. Will be filled by calculate_LJ_pairpotentials
         self.sigmaij=np.zeros((self.numatoms, self.numatoms))
         self.epsij=np.zeros((self.numatoms, self.numatoms))
+        self.pairarrays_assigned = False
 
     #Todo: Need to make active-region version of pyarray version here.
     def calculate_LJ_pairpotentials(self, qmatoms=None, actatoms=None, frozenatoms=None):
@@ -1308,6 +1309,7 @@ class NonBondedTheory:
             print("sigmaij size: {}".format(len(self.sigmaij)))
             print("epsij size: {}".format(len(self.epsij)))
         print_time_rel(CheckpointTime, modulename="pairpot arrays")
+        self.pairarrays_assigned = True
 
     def update_charges(self,charges):
         print("Updating charges.")
@@ -1328,7 +1330,7 @@ class NonBondedTheory:
         #This sets self.sigmaij and self.epsij and also self.LJpairpotentials
         #Todo: if actatoms have been defined this will be skipped in pairlist creation
         #if frozenatoms passed frozen-frozen interactions will be skipped
-        if np.count_nonzero(self.sigmaij) == 0:
+        if self.pairarrays_assigned is False:
             print("Calling LJ pairpot calc")
             print_time_rel(CheckpointTime, modulename="from run beginning to LJ pairpot calc call")
             self.calculate_LJ_pairpotentials(qmatoms=qmatoms,actatoms=actatoms)
@@ -1336,6 +1338,7 @@ class NonBondedTheory:
             print("LJ pairpot arrays exist...")
             print_time_rel(CheckpointTime, modulename="from run beginning to LJ pairpot calc call")
         print_time_rel(CheckpointTime, modulename="from run beginning to after LJ pairpot calc call")
+
         if len(self.LJpairpotentials) > 0:
             LJ=True
         print_time_rel(CheckpointTime, modulename="from run beginning to stuff1b")
