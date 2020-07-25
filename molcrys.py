@@ -174,12 +174,11 @@ def molcrys(cif_file=None, xtl_file=None, fragmentobjects=[], theory=None, numco
     blankline()
     print("Creating new Cluster fragment:")
     Cluster=Fragment(elems=cluster_elems, coords=cluster_coords, scale=chosenscale, tol=chosentol)
-
+    print_time_rel_and_tot(currtime, origtime, modulename='create Cluster fragment')
+    currtime=time.time()
     Cluster.print_system("Cluster-first.ygg")
     print("Cluster size: ", Cluster.numatoms, "atoms")
-
-
-    print_time_rel_and_tot(currtime, origtime, modulename='create Cluster fragment')
+    print_time_rel_and_tot(currtime, origtime, modulename='print Cluster system')
     currtime=time.time()
     # Going through found frags and identify mainfrags and counterfrags
     for frag in Cluster.connectivity:
