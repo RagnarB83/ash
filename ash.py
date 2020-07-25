@@ -3127,8 +3127,6 @@ class Fragment:
                 # Defining Julia Module
                 ashpath = os.path.dirname(ash.__file__)
                 Main.include(ashpath + "/functions_julia.jl")
-
-
             except:
                 print(BC.FAIL,"Problem importing Pyjulia (import julia)", BC.END)
                 print("Make sure Julia is installed and PyJulia module available")
@@ -3138,7 +3136,7 @@ class Fragment:
                 fraglist = calc_conn_py(self.coords, self.elems, conndepth, scale, tol)
 
             timestampB = time.time()
-            fraglist_temp = Main.Juliafunctions.calc_connectivity(self.coords, self.elems, conndepth, scale, tol,
+            fraglist_temp = Main.Juliafunctions.calc_connectivity2(self.coords, self.elems, conndepth, scale, tol,
                                                                   eldict_covrad)
             fraglist = []
             #Convertin from numpy to list of lists

@@ -46,6 +46,33 @@ function calc_connectivity(coords,elems,conndepth,scale, tol,eldict_covrad)
 	end
 	return fraglist
 end
+
+#Connectivity entirely via Julia
+function calc_connectivity2(coords,elems,conndepth,scale, tol,eldict_covrad)
+	atomlist=[1:length(elems);]
+	return calc_fraglist_for_atoms(atomlist,coords, elems, conndepth, scale, tol,eldict_covrad)
+end
+
+#Get fraglist for list of atoms (molcrys)
+#Todo: Combine this and calc_connectivity above
+function calc_fraglist_for_atoms(atomlist,coords, elems, conndepth, scale, tol,eldict_covrad)
+	found_atoms = Int64[]
+	#List of lists
+	fraglist = Array{Int64}[]
+	for atom in atomlist
+		if atom-1 ∉ found_atoms
+			members = get_molecule_members_julia(coords, elems, conndepth, scale, tol, eldict_covrad, atomindex=atom-1)
+			if members ∉ fraglist
+				push!(fraglist,members)
+				found_atoms = [found_atoms;members]
+			end
+		end
+	end
+	return fraglist
+end
+
+
+
 #Distance between atom i and j in coords
 function distance(coords::Array{Float64,2},i::Int64,j::Int64)
 			@fastmath @inbounds rij_x = coords[i,1] - coords[j,1]

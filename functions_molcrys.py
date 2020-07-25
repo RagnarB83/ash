@@ -800,19 +800,16 @@ def remove_partial_fragments(coords,elems,sphereradius,fragmentobjects, scale=No
     if julia is True:
         print("using julia for finding surface atoms")
         try:
-        # Import Julia
+            # Import Julia
             from julia.api import Julia
             from julia import Main
             ashpath = os.path.dirname(ash.__file__)
             Main.include(ashpath + "/functions_julia.jl")
-            for surfaceatom in surfaceatoms:
-                if surfaceatom not in found_atoms:
-                    count += 1
-                    members = list(Main.Juliafunctions.get_molecule_members_julia(coords, elems, 99, scale, tol, eldict_covrad,
-                                                                     atomindex=surfaceatom))
-                    if members not in fraglist:
-                        fraglist.append(members)
-                        found_atoms += members
+            #Get list of fragments for all surfaceatoms
+            fraglist_temp = Main.Juliafunctions.calc_fraglist_for_atoms(surfaceatoms,coords, elems, 99, scale, tol,eldict_covrad)
+            # Converting from numpy to list of lists
+            for sublist in fraglist_temp:
+                fraglist.append(list(sublist))
         except:
             print(BC.FAIL, "Problem importing Pyjulia (import julia)", BC.END)
             print("Make sure Julia is installed and PyJulia module available")
