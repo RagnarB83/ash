@@ -1,3 +1,48 @@
+#Distance for 2D arrays of coords
+#Probably won't be used much. Slower than
+function distance_array(x::Array{Float64, 2}, y::Array{Float64, 2})
+    nx = size(x, 1)
+    ny = size(y, 1)
+    r=zeros(nx,ny)
+
+        for j = 1:ny
+            @fastmath for i = 1:nx
+                @inbounds dx = y[j, 1] - x[i, 1]
+                @inbounds dy = y[j, 2] - x[i, 2]
+                @inbounds dz = y[j, 3] - x[i, 3]
+                rSq = dx*dx + dy*dy + dz*dz
+                @inbounds r[i, j] = sqrt(rSq)
+            end
+        end
+    return r
+end
+
+
+#Connectivity entirely via Julia
+#Old: Delete
+function old_calc_connectivity(coords,elems,conndepth,scale, tol,eldict_covrad)
+    # Calculate connectivity by looping over all atoms
+	found_atoms = Int64[]
+	#List of lists
+	fraglist = Array{Int64}[]
+	#println(typeof(fraglist))
+    #Looping over atoms
+	for atom in 1:length(elems)
+		if length(found_atoms) == length(elems)
+			println("All atoms accounted for. Exiting...")
+			return fraglist
+		end
+		if atom-1 ∉ found_atoms
+			members = get_molecule_members_julia(coords, elems, conndepth, scale, tol, eldict_covrad, atomindex=atom-1)
+			if members ∉ fraglist
+				push!(fraglist,members)
+				found_atoms = [found_atoms;members]
+			end
+		end
+	end
+	return fraglist
+end
+
 # Numpy clever loop test with Julia
 @timefn
 def bget_molecule_members_loop_np2_jul(coords, elems, loopnumber, scale, tol, atomindex=None, membs=None):

@@ -5,48 +5,6 @@ module Juliafunctions
 using Profile
 #using PyCall
 
-#Distance for 2D arrays of coords
-function distance_array(x::Array{Float64, 2}, y::Array{Float64, 2})
-    nx = size(x, 1)
-    ny = size(y, 1)
-    r=zeros(nx,ny)
-
-        for j = 1:ny
-            @fastmath for i = 1:nx
-                @inbounds dx = y[j, 1] - x[i, 1]
-                @inbounds dy = y[j, 2] - x[i, 2]
-                @inbounds dz = y[j, 3] - x[i, 3]
-                rSq = dx*dx + dy*dy + dz*dz
-                @inbounds r[i, j] = sqrt(rSq)
-            end
-        end
-    return r
-end
-
-#Connectivity entirely via Julia
-#Old: Delete
-function old_calc_connectivity(coords,elems,conndepth,scale, tol,eldict_covrad)
-    # Calculate connectivity by looping over all atoms
-	found_atoms = Int64[]
-	#List of lists
-	fraglist = Array{Int64}[]
-	#println(typeof(fraglist))
-    #Looping over atoms
-	for atom in 1:length(elems)
-		if length(found_atoms) == length(elems)
-			println("All atoms accounted for. Exiting...")
-			return fraglist
-		end
-		if atom-1 ∉ found_atoms
-			members = get_molecule_members_julia(coords, elems, conndepth, scale, tol, eldict_covrad, atomindex=atom-1)
-			if members ∉ fraglist
-				push!(fraglist,members)
-				found_atoms = [found_atoms;members]
-			end
-		end
-	end
-	return fraglist
-end
 
 #Connectivity (fraglists) for whole fragment
 function calc_connectivity(coords,elems,conndepth,scale, tol,eldict_covrad)
@@ -57,12 +15,13 @@ end
 
 #Get fraglist for list of atoms (called by molcrys directly). Using 0-based indexing until get_conn_atoms
 function calc_fraglist_for_atoms(atomlist,coords, elems, conndepth, scale, tol,eldict_covrad)
+	eldict_covrad_jul=convert(Dict{String,Float64}, eldict_covrad)
 	found_atoms = Int64[]
 	#List of lists
 	fraglist = Array{Int64}[]
 	for atom in atomlist
 		if atom ∉ found_atoms
-			members = get_molecule_members_julia(coords, elems, conndepth, scale, tol, eldict_covrad, atomindex=atom)
+			members = get_molecule_members_julia(coords, elems, conndepth, scale, tol, eldict_covrad_jul, atom)
 			if members ∉ fraglist
 				push!(fraglist,members)
 				found_atoms = [found_atoms;members]
@@ -71,8 +30,6 @@ function calc_fraglist_for_atoms(atomlist,coords, elems, conndepth, scale, tol,e
 	end
 	return fraglist
 end
-
-
 
 #Distance between atom i and j in coords
 function distance(coords::Array{Float64,2},i::Int64,j::Int64)
@@ -83,6 +40,19 @@ function distance(coords::Array{Float64,2},i::Int64,j::Int64)
             @fastmath dist = sqrt(r)
 			return dist
 end
+
+#Distance between atom i and j in coords
+#Using view instead. Seems to be slower
+function distance_view(coords::Array{Float64,2},i::Int64,j::Int64)
+			@fastmath @inbounds rij_x = view(coords,i,1)[1] - view(coords,j,1)[1]
+            @fastmath @inbounds rij_y = view(coords,i,2)[1] - view(coords,j,2)[1]
+            @fastmath @inbounds rij_z = view(coords,i,3)[1] - view(coords,j,3)[1]
+            @fastmath r = rij_x*rij_x+rij_y*rij_y+rij_z*rij_z
+            @fastmath dist = sqrt(r)
+			return dist
+end
+
+
 #Here accessing Julia arrays. Switching from 0-based to 1-based indexing here
 function get_connected_atoms_julia(coords::Array{Float64,2}, elems::Array{String,1},
     eldict_covrad_jul::Dict{String,Float64},scale::Float64,tol::Float64, atomindex::Int64)
@@ -98,13 +68,13 @@ function get_connected_atoms_julia(coords::Array{Float64,2}, elems::Array{String
     return connatoms
 end
 
-function get_molecule_members_julia(coords, elems, loopnumber, scale, tol, eldict_covrad ; atomindex=nothing, membs=nothing)
-    eldict_covrad_jul=convert(Dict{String,Float64}, eldict_covrad)
-   if membs == nothing
-		membs = Int64[]
-		#push!(membs, atomindex+1)
-		membs = get_connected_atoms_julia(coords, elems, eldict_covrad_jul, scale, tol, atomindex)
-	end
+#get_molecule_members_julia now wants eldict_covrad_dict to be a Julia object from beginning
+#Means we need a wrapper for Python to call directly (like calc_fraglist_for_atoms) to convert dictionary
+#Does not help with speed it seems though.
+function get_molecule_members_julia(coords, elems, loopnumber, scale, tol, eldict_covrad_jul, atomindex)
+    #eldict_covrad_jul=convert(Dict{String,Float64}, eldict_covrad)
+	membs = Int64[]
+	membs = get_connected_atoms_julia(coords, elems, eldict_covrad_jul, scale, tol, atomindex)
 	finalmembs = membs
 	for i in 1:loopnumber
 		# Get list of lists of connatoms for each member
