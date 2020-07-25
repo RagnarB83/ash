@@ -179,6 +179,7 @@ def molcrys(cif_file=None, xtl_file=None, fragmentobjects=[], theory=None, numco
     print("Cluster size: ", Cluster.numatoms, "atoms")
 
 
+    print_time_rel_and_tot(currtime, origtime, modulename='create Cluster fragment')
     currtime=time.time()
     # Going through found frags and identify mainfrags and counterfrags
     for frag in Cluster.connectivity:
@@ -189,6 +190,8 @@ def molcrys(cif_file=None, xtl_file=None, fragmentobjects=[], theory=None, numco
                 fragmentobject.add_clusterfraglist(frag)
 
     printdebug(fragmentobjects[0].clusterfraglist)
+    print_time_rel_and_tot(currtime, origtime, modulename='fragment identification')
+    currtime=time.time()
     #TODO: Reorder cluster with reflections also
 
     #Reorder fraglists in each fragmenttype via Hungarian algorithm.
@@ -198,14 +201,16 @@ def molcrys(cif_file=None, xtl_file=None, fragmentobjects=[], theory=None, numco
         reordercluster(Cluster,fragmentobject)
         printdebug(fragmentobject.clusterfraglist)
         fragmentobject.print_infofile(str(fragmentobject.Name)+'.info')
-
+    print_time_rel_and_tot(currtime, origtime, modulename='reorder fraglists')
+    currtime=time.time()
     #TODO: after removing partial fragments and getting connectivity etc. Would be good to make MM cluster neutral
 
     #Add fragmentobject-info to Cluster fragment
     Cluster.add_fragment_type_info(fragmentobjects)
     #Cluster is now almost complete, only charges missing. Print info to file
     print(Cluster.print_system("Cluster-info-nocharges.ygg"))
-
+    print_time_rel_and_tot(currtime, origtime, modulename='Cluster fragtime')
+    currtime=time.time()
     # Create dirs to keep track of various files before QM calculations begin
     try:
         os.mkdir('SPloop-files')
