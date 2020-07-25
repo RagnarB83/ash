@@ -33,7 +33,7 @@ function calc_connectivity(coords,elems,conndepth,scale, tol,eldict_covrad)
     #Looping over atoms
 	for atom in 1:length(elems)
 		if length(found_atoms) == length(elems)
-			println("exiting because all atoms accounted for")
+			println("All atoms accounted for. Exiting...")
 			return fraglist
 		end
 		if atom-1 ∉ found_atoms
@@ -75,24 +75,13 @@ function get_molecule_members_julia(coords, elems, loopnumber, scale, tol, eldic
    if membs == nothing
 		membs = Int64[]
 		push!(membs, atomindex+1)
-		println("here 1")
-		println("coords: first", coords[1])
-		println("coords type ", typeof(coords))
-		println("membs: $membs")
-		println(typeof(membs))
-		println("scale: $scale")
-		println("tol: $tol")
-		println("atomindex: $atomindex")
-		println("eldict_covrad_jul:", eldict_covrad_jul)
 		membs = get_connected_atoms_julia(coords, elems, eldict_covrad_jul, scale, tol, atomindex)
-		println("membs: $membs")
 	end
 	finalmembs = membs
 	for i in 1:loopnumber
 		# Get list of lists of connatoms for each member
 		newmembers = Int64[]
 		for k in membs
-				print("here 2")
 			bla = get_connected_atoms_julia(coords, elems, eldict_covrad_jul, scale, tol, k)
 			newmembers = [newmembers;bla]
 		end
