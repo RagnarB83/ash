@@ -50,11 +50,12 @@ end
 
 #Connectivity (fraglists) for whole fragment
 function calc_connectivity(coords,elems,conndepth,scale, tol,eldict_covrad)
+	#0-index based atomlist
 	atomlist=[0:length(elems)-1;]
 	return calc_fraglist_for_atoms(atomlist,coords, elems, conndepth, scale, tol,eldict_covrad)
 end
 
-#Get fraglist for list of atoms (called by molcrys directly)
+#Get fraglist for list of atoms (called by molcrys directly). Using 0-based indexing until get_conn_atoms
 function calc_fraglist_for_atoms(atomlist,coords, elems, conndepth, scale, tol,eldict_covrad)
 	found_atoms = Int64[]
 	#List of lists
@@ -86,8 +87,7 @@ end
 function get_connected_atoms_julia(coords::Array{Float64,2}, elems::Array{String,1},
     eldict_covrad_jul::Dict{String,Float64},scale::Float64,tol::Float64, atomindex::Int64)
     connatoms = Int64[]
-	elem_ref=elems[atomindex+1]
-    #@inbounds elem_ref=elems[atomindex+1]
+    @inbounds elem_ref=elems[atomindex+1]
     @inbounds for i=1:length(elems)
 			@inbounds dist = distance(coords,i,atomindex+1)
 			@fastmath @inbounds rad_dist = scale*(eldict_covrad_jul[elems[i]]+eldict_covrad_jul[elem_ref]) + tol
