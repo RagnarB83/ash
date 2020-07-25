@@ -2,7 +2,7 @@
 __precompile__()
 
 module Juliafunctions
-using Profile
+#using Profile
 #using PyCall
 
 
@@ -188,7 +188,8 @@ function LJcoulombchargev1c(charges, coords, epsij, sigmaij, connectivity=nothin
 end
 
 #Lennard-Jones+Coulomb function.
-#Testing view slices. Not faster
+#Testing view slices.
+#Not faster it seems. To be deleted...
 function LJcoulombchargev1d(charges, coords, epsij, sigmaij, connectivity=nothing)
     """LJ + Coulomb function"""
     ang2bohr = 1.88972612546

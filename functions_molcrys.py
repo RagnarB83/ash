@@ -944,6 +944,8 @@ def pointchargeupdate(fragment,fragmenttype,chargelist):
 def gasfragcalc_ORCA(fragmentobjects,Cluster,chargemodel,orcadir,orcasimpleinput,orcablocks,NUMPROC,
                      brokensym=None, HSmult=None, atomstoflip=None):
     blankline()
+    origtime=time.time()
+    currtime=time.time()
     print(BC.OKBLUE, BC.BOLD, "Now calculating atom charges for each fragment type in cluster", BC.END)
     #print(BC.OKBLUE, BC.BOLD, "Frag_Define: Defining fragments of unit cell", BC.END)
     for id, fragmentobject in enumerate(fragmentobjects):
@@ -994,7 +996,8 @@ def gasfragcalc_ORCA(fragmentobjects,Cluster,chargemodel,orcadir,orcasimpleinput
         else:
             #Grab atomic charges for fragment.
             atomcharges=grabatomcharges_ORCA(chargemodel,ORCASPcalculation.inputfilename+'.out')
-
+            print_time_rel_and_tot(currtime, origtime, module='grabatomcharges')
+            currtime = time.time()
 
         print("Elements:", gasfrag.elems)
         print("Gasloop atomcharges:", atomcharges)
@@ -1002,17 +1005,24 @@ def gasfragcalc_ORCA(fragmentobjects,Cluster,chargemodel,orcadir,orcasimpleinput
 
         #Updating charges inside mainfrag/counterfrag object
         fragmentobject.add_charges(atomcharges)
+        print_time_rel_and_tot(currtime, origtime, module='fragmentobject add charges')
+        currtime = time.time()
         #Assign pointcharges to each atom of MM cluster.
         pointchargeupdate(Cluster,fragmentobject,atomcharges)
+        print_time_rel_and_tot(currtime, origtime, module='pointchargeupdate')
+        currtime = time.time()
         #Keep backup of ORCA outputfile and GBW file
         shutil.copy(ORCASPcalculation.inputfilename + '.out', fragmentobject.Name + '.out')
         shutil.copyfile(ORCASPcalculation.inputfilename + '.out', './SPloop-files/'+fragmentobject.Name+'-Gascalc' + '.out')
         shutil.copyfile(ORCASPcalculation.inputfilename + '.gbw', './SPloop-files/'+fragmentobject.Name+'-Gascalc' + '.gbw')
         if id ==0:
             shutil.copy(ORCASPcalculation.inputfilename + '.gbw', 'lastorbitals.gbw')
-
+        print_time_rel_and_tot(currtime, origtime, module='shutil stuff')
+        currtime = time.time()
         #Clean up ORCA job.
         ORCASPcalculation.cleanup()
+        print_time_rel_and_tot(currtime, origtime, module='orca cleanup')
+        currtime = time.time()
         blankline()
 
 #Calculate atomic charges for each fragment of Cluster. Assign charges to Cluster object via pointchargeupdate
