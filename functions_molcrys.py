@@ -762,7 +762,7 @@ def create_MMcluster(orthogcoords,elems,cell_vectors,sphereradius):
     return extended_coords,extended_elems
 
 #Remove partial fragments of MM cluster
-def remove_partial_fragments(coords,elems,sphereradius,fragmentobjects, scale=None, tol=None):
+def remove_partial_fragments(coords,elems,sphereradius,fragmentobjects, scale=None, tol=None, julia=True):
 
     if scale is None:
         scale=settings_ash.scale
@@ -787,20 +787,44 @@ def remove_partial_fragments(coords,elems,sphereradius,fragmentobjects, scale=No
     count=0
     found_atoms=[]
     fraglist=[]
-    for surfaceatom in surfaceatoms:
-        if surfaceatom not in found_atoms:
-            count+=1
-            #counted.append(surfaceatom)
-            #cProfile.run('get_molecule_members_loop_np(coords, elems, 99, settings_molcrys.scale, settings_ash.tol,atomindex=surfaceatom)')
-            #exit()
-            #surfaceatom=0
-            members=get_molecule_members_loop_np2(coords, elems, 99, scale, tol,atomindex=surfaceatom)
-            #print_time_rel_and_tot(currtime, origtime)
-            #currtime = time.time()
-            #exit()
-            if members not in fraglist:
-                fraglist.append(members)
-                found_atoms+=members
+
+    if julia is True:
+        print("using julia for finding surface atoms")
+        try:
+        # Import Julia
+            from julia.api import Julia
+            from julia import Main
+            ashpath = os.path.dirname(ash.__file__)
+            Main.include(ashpath + "/functions_julia.jl")
+            for surfaceatom in surfaceatoms:
+                if surfaceatom not in found_atoms:
+                    count += 1
+                    members = list(Main.Juliafunctions.get_molecule_members_julia(coords, elems, 99, scale, tol, eldict_covrad,
+                                                                     atomindex=surfaceatom))
+                    if members not in fraglist:
+                        fraglist.append(members)
+                        found_atoms += members
+        except:
+            print(BC.FAIL, "Problem importing Pyjulia (import julia)", BC.END)
+            print("Make sure Julia is installed and PyJulia module available")
+            print("Also, are you using python-jl ?")
+            print("")
+            print(BC.FAIL, "Using Python version instead (slow for large systems)", BC.END)
+            for surfaceatom in surfaceatoms:
+                if surfaceatom not in found_atoms:
+                    count += 1
+                    members = get_molecule_members_loop_np2(coords, elems, 99, scale, tol, atomindex=surfaceatom)
+                    if members not in fraglist:
+                        fraglist.append(members)
+                        found_atoms += members
+    else:
+        for surfaceatom in surfaceatoms:
+            if surfaceatom not in found_atoms:
+                count+=1
+                members=get_molecule_members_loop_np2(coords, elems, 99, scale, tol,atomindex=surfaceatom)
+                if members not in fraglist:
+                    fraglist.append(members)
+                    found_atoms+=members
 
     #with open('fraglist', 'w') as gfile:
     #    gfile.write('fraglist: {}'.format(fraglist))
@@ -834,13 +858,7 @@ def remove_partial_fragments(coords,elems,sphereradius,fragmentobjects, scale=No
         else:
             deletionlist+=frag
 
-    #print("deletionlist({}(: {}".format(len(deletionlist),deletionlist))
-    #with open('deletionlist', 'w') as dfile:
-    #    dfile.write('deletionlist: {}'.format(deletionlist))
     deletionlist=np.unique(deletionlist).tolist()
-    #print("Sorted deletionlist({}(: {}".format(len(deletionlist),deletionlist))
-    #with open('sdeletionlist', 'w') as sdfile:
-    #    sdfile.write('sorted deletionlist: {}'.format(deletionlist))
     #Deleting atoms in deletion list in reverse
     coords=np.delete(coords, list(reversed(deletionlist)), 0)
     for d in reversed(deletionlist):

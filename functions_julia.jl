@@ -66,7 +66,6 @@ function get_connected_atoms_julia(coords::Array{Float64,2}, elems::Array{String
             	@inbounds @fastmath push!(connatoms, i-1)
 			end
 	end
-#TODO: remove atomindex from connatoms??
     return connatoms
 end
 
@@ -82,8 +81,8 @@ function get_molecule_members_julia(coords, elems, loopnumber, scale, tol, eldic
 		# Get list of lists of connatoms for each member
 		newmembers = Int64[]
 		for k in membs
-			bla = get_connected_atoms_julia(coords, elems, eldict_covrad_jul, scale, tol, k)
-			newmembers = [newmembers;bla]
+			new = get_connected_atoms_julia(coords, elems, eldict_covrad_jul, scale, tol, k)
+			newmembers = [newmembers;new]
 		end
 		# Get a unique flat list
 		trimmed_flat = sort(unique(newmembers))
@@ -189,11 +188,6 @@ function LJcoulombchargev1c(charges, coords, epsij, sigmaij, connectivity=nothin
     return E, gradient, VLJ/hartokcal, VC
 end
 
-
-
-#TODO functions:
-#Rewrite connectivity in Julia here
-#Maybe some molcrys cluster-create,delete steps??
 
 #Calculate the sigmaij and epsij arrays
 #Key things for speed:
