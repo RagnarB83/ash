@@ -810,7 +810,7 @@ def remove_partial_fragments(coords,elems,sphereradius,fragmentobjects, scale=No
             print("Make sure Julia is installed and PyJulia module available")
             print("Also, are you using python-jl ?")
             print("")
-            print(BC.FAIL, "Using Python version instead (slow for large systems)", BC.END)
+            print(BC.FAIL, "Using py version instead (slow for large systems)", BC.END)
             for surfaceatom in surfaceatoms:
                 if surfaceatom not in found_atoms:
                     count += 1
@@ -819,6 +819,7 @@ def remove_partial_fragments(coords,elems,sphereradius,fragmentobjects, scale=No
                         fraglist.append(members)
                         found_atoms += members
     else:
+        print("using py for finding surface atoms")
         for surfaceatom in surfaceatoms:
             if surfaceatom not in found_atoms:
                 count+=1
@@ -828,14 +829,16 @@ def remove_partial_fragments(coords,elems,sphereradius,fragmentobjects, scale=No
                     found_atoms+=members
     #with open('fraglist', 'w') as gfile:
     #    gfile.write('fraglist: {}'.format(fraglist))
+
+
     flat_fraglist = [item for sublist in fraglist for item in sublist]
     #Todo: remove?
     with open('foundatoms', 'w') as ffile:
         ffile.write('found_atoms: {}'.format(found_atoms))
-    print("len(found_atoms)", len(found_atoms))
-    print("len(flat_fraglist)", len(flat_fraglist))
-    print("final counted atoms:", count)
-
+    #print("len(found_atoms)", len(found_atoms))
+    #print("len(flat_fraglist)", len(flat_fraglist))
+    #print("final counted atoms:", count)
+    #exit()
     #Going through found frags. If nuccharge of frag does not match known nuccharge it goes to deletionlist
     nuccharges=[fragmentobject.Nuccharge for fragmentobject in fragmentobjects]
     #18June 2020 update. Adding masses as another discriminator.

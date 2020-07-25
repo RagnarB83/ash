@@ -50,7 +50,7 @@ end
 
 #Connectivity (fraglists) for whole fragment
 function calc_connectivity(coords,elems,conndepth,scale, tol,eldict_covrad)
-	atomlist=[1:length(elems);]
+	atomlist=[0:length(elems)-1;]
 	return calc_fraglist_for_atoms(atomlist,coords, elems, conndepth, scale, tol,eldict_covrad)
 end
 
@@ -60,8 +60,8 @@ function calc_fraglist_for_atoms(atomlist,coords, elems, conndepth, scale, tol,e
 	#List of lists
 	fraglist = Array{Int64}[]
 	for atom in atomlist
-		if atom-1 ∉ found_atoms
-			members = get_molecule_members_julia(coords, elems, conndepth, scale, tol, eldict_covrad, atomindex=atom-1)
+		if atom ∉ found_atoms
+			members = get_molecule_members_julia(coords, elems, conndepth, scale, tol, eldict_covrad, atomindex=atom)
 			if members ∉ fraglist
 				push!(fraglist,members)
 				found_atoms = [found_atoms;members]
@@ -82,10 +82,12 @@ function distance(coords::Array{Float64,2},i::Int64,j::Int64)
             @fastmath dist = sqrt(r)
 			return dist
 end
+#Here accessing Julia arrays. Switching from 0-based to 1-based indexing here
 function get_connected_atoms_julia(coords::Array{Float64,2}, elems::Array{String,1},
     eldict_covrad_jul::Dict{String,Float64},scale::Float64,tol::Float64, atomindex::Int64)
     connatoms = Int64[]
-    @inbounds elem_ref=elems[atomindex+1]
+	elem_ref=elems[atomindex+1]
+    #@inbounds elem_ref=elems[atomindex+1]
     @inbounds for i=1:length(elems)
 			@inbounds dist = distance(coords,i,atomindex+1)
 			@fastmath @inbounds rad_dist = scale*(eldict_covrad_jul[elems[i]]+eldict_covrad_jul[elem_ref]) + tol
@@ -97,10 +99,10 @@ function get_connected_atoms_julia(coords::Array{Float64,2}, elems::Array{String
 end
 
 function get_molecule_members_julia(coords, elems, loopnumber, scale, tol, eldict_covrad ; atomindex=nothing, membs=nothing)
-	eldict_covrad_jul=convert(Dict{String,Float64}, eldict_covrad)
+    eldict_covrad_jul=convert(Dict{String,Float64}, eldict_covrad)
    if membs == nothing
 		membs = Int64[]
-		push!(membs, atomindex+1)
+		#push!(membs, atomindex+1)
 		membs = get_connected_atoms_julia(coords, elems, eldict_covrad_jul, scale, tol, atomindex)
 	end
 	finalmembs = membs
