@@ -3136,7 +3136,7 @@ class Fragment:
                 fraglist = calc_conn_py(self.coords, self.elems, conndepth, scale, tol)
 
             timestampB = time.time()
-            fraglist_temp = Main.Juliafunctions.calc_connectivity2(self.coords, self.elems, conndepth, scale, tol,
+            fraglist_temp = Main.Juliafunctions.calc_connectivity(self.coords, self.elems, conndepth, scale, tol,
                                                                   eldict_covrad)
             fraglist = []
             #Convertin from numpy to list of lists

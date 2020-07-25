@@ -24,7 +24,8 @@ function distance_array(x::Array{Float64, 2}, y::Array{Float64, 2})
 end
 
 #Connectivity entirely via Julia
-function calc_connectivity(coords,elems,conndepth,scale, tol,eldict_covrad)
+#Old: Delete
+function old_calc_connectivity(coords,elems,conndepth,scale, tol,eldict_covrad)
     # Calculate connectivity by looping over all atoms
 	found_atoms = Int64[]
 	#List of lists
@@ -47,14 +48,13 @@ function calc_connectivity(coords,elems,conndepth,scale, tol,eldict_covrad)
 	return fraglist
 end
 
-#Connectivity entirely via Julia
-function calc_connectivity2(coords,elems,conndepth,scale, tol,eldict_covrad)
+#Connectivity (fraglists) for whole fragment
+function calc_connectivity(coords,elems,conndepth,scale, tol,eldict_covrad)
 	atomlist=[1:length(elems);]
 	return calc_fraglist_for_atoms(atomlist,coords, elems, conndepth, scale, tol,eldict_covrad)
 end
 
-#Get fraglist for list of atoms (molcrys)
-#Todo: Combine this and calc_connectivity above
+#Get fraglist for list of atoms (called by molcrys directly)
 function calc_fraglist_for_atoms(atomlist,coords, elems, conndepth, scale, tol,eldict_covrad)
 	found_atoms = Int64[]
 	#List of lists

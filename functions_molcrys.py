@@ -769,7 +769,6 @@ def create_MMcluster(orthogcoords,elems,cell_vectors,sphereradius):
 
 #Remove partial fragments of MM cluster
 def remove_partial_fragments(coords,elems,sphereradius,fragmentobjects, scale=None, tol=None, julia=True):
-    timeA=time.time()
     if scale is None:
         scale=settings_ash.scale
     if tol is None:
@@ -779,16 +778,13 @@ def remove_partial_fragments(coords,elems,sphereradius,fragmentobjects, scale=No
     #Finding surfaceatoms
     origin=np.array([0.0,0.0,0.0])
     comparecoords = np.tile(origin, (len(coords), 1))
-    print_time_rel(timeA, modulename='comparecoords')
     distances = einsum_mat(coords, comparecoords)
-    print_time_rel(timeA, modulename='distances')
     #ForFe2dimer: good values: 4.5 (5.8min), 5 (6min),6 (6.5min), 10(9.2Min)
     #Bad: 4 (5.4 min)
     thickness=5.0
     radius=sphereradius-thickness
     surfaceatoms=np.where(distances>radius)[0].tolist()
     print("Found {} surfaceatoms for outer shell of {} Å".format(len(surfaceatoms),thickness))
-    print_time_rel(timeA, modulename='surfaceatoms')
     #Todo: remove?
     #with open('surfaceatoms', 'w') as sfile:
     #    sfile.write('Surfaceatoms: {}'.format(surfaceatoms))
@@ -796,7 +792,6 @@ def remove_partial_fragments(coords,elems,sphereradius,fragmentobjects, scale=No
     count=0
     found_atoms=[]
     fraglist=[]
-    print_time_rel(timeA, modulename='bla')
     if julia is True:
         print("using julia for finding surface atoms")
         try:
@@ -831,11 +826,9 @@ def remove_partial_fragments(coords,elems,sphereradius,fragmentobjects, scale=No
                 if members not in fraglist:
                     fraglist.append(members)
                     found_atoms+=members
-    print_time_rel(timeA, modulename='members')
     #with open('fraglist', 'w') as gfile:
     #    gfile.write('fraglist: {}'.format(fraglist))
     flat_fraglist = [item for sublist in fraglist for item in sublist]
-    print_time_rel(timeA, modulename='flat fraglist')
     #Todo: remove?
     with open('foundatoms', 'w') as ffile:
         ffile.write('found_atoms: {}'.format(found_atoms))
@@ -848,7 +841,6 @@ def remove_partial_fragments(coords,elems,sphereradius,fragmentobjects, scale=No
     #18June 2020 update. Adding masses as another discriminator.
     masses=[fragmentobject.mass for fragmentobject in fragmentobjects]
     deletionlist=[]
-    print_time_rel(timeA, modulename='before dellist')
     for frag in fraglist:
         el_list = [elems[i] for i in frag]
         ncharge = nucchargelist(el_list)
@@ -865,14 +857,11 @@ def remove_partial_fragments(coords,elems,sphereradius,fragmentobjects, scale=No
                 deletionlist += frag
         else:
             deletionlist+=frag
-    print_time_rel(timeA, modulename='after dellist')
     deletionlist=np.unique(deletionlist).tolist()
-    print_time_rel(timeA, modulename='after unique dellist')
     #Deleting atoms in deletion list in reverse
     coords=np.delete(coords, list(reversed(deletionlist)), 0)
     for d in reversed(deletionlist):
         del elems[d]
-    print_time_rel(timeA, modulename='end')
     return coords,elems
 
 #Updating pointcharges of fragment
