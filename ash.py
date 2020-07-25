@@ -1321,31 +1321,25 @@ class NonBondedTheory:
             Coulomb=True, Grad=True, qmatoms=None, actatoms=None, frozenatoms=None):
 
         CheckpointTime = time.time()
-        print_time_rel(CheckpointTime, modulename="run beginning")
         #If qmatoms list provided to run (probably by QM/MM object) then we are doing QM/MM
         #QM-QM pairs will be skipped in LJ
 
-        #Testing if self.sigmaij array has been assigned or not. If not calling calculate_LJ_pairpotentials
+        #Testing if arrays assigned or not. If not calling calculate_LJ_pairpotentials
         #Passing qmatoms over so pairs can be skipped
         #This sets self.sigmaij and self.epsij and also self.LJpairpotentials
         #Todo: if actatoms have been defined this will be skipped in pairlist creation
         #if frozenatoms passed frozen-frozen interactions will be skipped
         if self.pairarrays_assigned is False:
             print("Calling LJ pairpot calc")
-            print_time_rel(CheckpointTime, modulename="from run beginning to LJ pairpot calc call")
             self.calculate_LJ_pairpotentials(qmatoms=qmatoms,actatoms=actatoms)
         else:
             print("LJ pairpot arrays exist...")
-            print_time_rel(CheckpointTime, modulename="from run beginning to LJ pairpot calc call")
-        print_time_rel(CheckpointTime, modulename="from run beginning to after LJ pairpot calc call")
 
         if len(self.LJpairpotentials) > 0:
             LJ=True
-        print_time_rel(CheckpointTime, modulename="from run beginning to stuff1b")
         #If charges not provided to run function. Use object charges
         if charges == None:
             charges=self.atom_charges
-        print_time_rel(CheckpointTime, modulename="from run beginning to stuff2")
         #If coords not provided to run function. Use object coords
         #HMM. I guess we are not keeping coords as part of MMtheory?
         #if len(full_cords)==0:
@@ -1361,7 +1355,6 @@ class NonBondedTheory:
         self.Coulombchargegradient=[]
         self.LJgradient=[]
 
-        print_time_rel(CheckpointTime, modulename="from run beginning to stuff3")
         #Slow Python version
         if self.codeversion=='py':
             if self.printlevel >= 2:
@@ -1383,7 +1376,6 @@ class NonBondedTheory:
                 #print("Lennard-Jones Energy (au):", self.LJenergy)
                 #print("Lennard-Jones Energy (kcal/mol):", self.LJenergy*constants.harkcal)
             self.MMEnergy = self.Coulombchargeenergy+self.LJenergy
-            print_time_rel(CheckpointTime, modulename="from run to done")
             if Grad==True:
                 self.MMGradient = self.Coulombchargegradient+self.LJgradient
         #Combined Coulomb+LJ Python version. Slow
@@ -1402,7 +1394,6 @@ class NonBondedTheory:
                 print("Fortran library LJCoulombv1 not found! Make sure you have run the installation script.")
             self.MMEnergy, self.MMGradient, self.LJenergy, self.Coulombchargeenergy =\
                 LJCoulomb(full_coords, self.epsij, self.sigmaij, charges, connectivity=connectivity)
-            print_time_rel(CheckpointTime, modulename="from run to done f2py")
         elif self.codeversion=='f2pyv2':
             if self.printlevel >= 2:
                 print("Using fast Fortran F2Py MM code v2")
@@ -1419,7 +1410,6 @@ class NonBondedTheory:
                 print("Using fast Julia version, v1")
             ashpath = os.path.dirname(ash.__file__)
             # Necessary for statically linked libpython
-            print_time_rel(CheckpointTime, modulename="from run to before import julia")
             try:
                 from julia.api import Julia
                 from julia import Main
@@ -1430,7 +1420,6 @@ class NonBondedTheory:
                 print("Alternatively, use pairarrayversion='py' argument to NonBondedTheory to use slower Python version for array creation")
                 exit(9)
             # Defining Julia Module
-            print_time_rel(CheckpointTime, modulename="from run to after import julia")
             Main.include(ashpath + "/functions_julia.jl")
             print_time_rel(CheckpointTime, modulename="from run to just before calling ")
             self.MMEnergy, self.MMGradient, self.LJenergy, self.Coulombchargeenergy =\
