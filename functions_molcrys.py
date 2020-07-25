@@ -996,7 +996,7 @@ def gasfragcalc_ORCA(fragmentobjects,Cluster,chargemodel,orcadir,orcasimpleinput
         else:
             #Grab atomic charges for fragment.
             atomcharges=grabatomcharges_ORCA(chargemodel,ORCASPcalculation.inputfilename+'.out')
-            print_time_rel_and_tot(currtime, origtime, module='grabatomcharges')
+            print_time_rel_and_tot(currtime, origtime, modulename='grabatomcharges')
             currtime = time.time()
 
         print("Elements:", gasfrag.elems)
@@ -1005,11 +1005,11 @@ def gasfragcalc_ORCA(fragmentobjects,Cluster,chargemodel,orcadir,orcasimpleinput
 
         #Updating charges inside mainfrag/counterfrag object
         fragmentobject.add_charges(atomcharges)
-        print_time_rel_and_tot(currtime, origtime, module='fragmentobject add charges')
+        print_time_rel_and_tot(currtime, origtime, modulename='fragmentobject add charges')
         currtime = time.time()
         #Assign pointcharges to each atom of MM cluster.
         pointchargeupdate(Cluster,fragmentobject,atomcharges)
-        print_time_rel_and_tot(currtime, origtime, module='pointchargeupdate')
+        print_time_rel_and_tot(currtime, origtime, modulename='pointchargeupdate')
         currtime = time.time()
         #Keep backup of ORCA outputfile and GBW file
         shutil.copy(ORCASPcalculation.inputfilename + '.out', fragmentobject.Name + '.out')
@@ -1017,11 +1017,11 @@ def gasfragcalc_ORCA(fragmentobjects,Cluster,chargemodel,orcadir,orcasimpleinput
         shutil.copyfile(ORCASPcalculation.inputfilename + '.gbw', './SPloop-files/'+fragmentobject.Name+'-Gascalc' + '.gbw')
         if id ==0:
             shutil.copy(ORCASPcalculation.inputfilename + '.gbw', 'lastorbitals.gbw')
-        print_time_rel_and_tot(currtime, origtime, module='shutil stuff')
+        print_time_rel_and_tot(currtime, origtime, modulename='shutil stuff')
         currtime = time.time()
         #Clean up ORCA job.
         ORCASPcalculation.cleanup()
-        print_time_rel_and_tot(currtime, origtime, module='orca cleanup')
+        print_time_rel_and_tot(currtime, origtime, modulename='orca cleanup')
         currtime = time.time()
         blankline()
 
