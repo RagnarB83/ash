@@ -207,9 +207,11 @@ def molcrys(cif_file=None, xtl_file=None, fragmentobjects=[], theory=None, numco
 
     #Add fragmentobject-info to Cluster fragment
     Cluster.add_fragment_type_info(fragmentobjects)
+    print_time_rel_and_tot(currtime, origtime, modulename='Cluster fragment type info')
+    currtime=time.time()
     #Cluster is now almost complete, only charges missing. Print info to file
     print(Cluster.print_system("Cluster-info-nocharges.ygg"))
-    print_time_rel_and_tot(currtime, origtime, modulename='Cluster fragtime')
+    print_time_rel_and_tot(currtime, origtime, modulename='Cluster print system')
     currtime=time.time()
     # Create dirs to keep track of various files before QM calculations begin
     try:
