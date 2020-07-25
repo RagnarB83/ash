@@ -937,9 +937,10 @@ def gasfragcalc_ORCA(fragmentobjects,Cluster,chargemodel,orcadir,orcasimpleinput
         atomlist=fragmentobject.clusterfraglist[0]
         fragcoords,fragelems=Cluster.get_coords_for_atoms(atomlist)
         write_xyzfile(fragelems, fragcoords, "fragment")
+        print("fragcoords:", fragcoords)
         gasfrag=Fragment(coords=fragcoords,elems=fragelems)
 
-        #print("Defined gasfrag:", gasfrag)
+        print("Defined gasfrag:", gasfrag)
         #print(gasfrag.__dict__)
         #Creating ORCA theory object with fragment
 

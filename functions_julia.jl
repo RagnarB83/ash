@@ -76,8 +76,10 @@ function get_molecule_members_julia(coords, elems, loopnumber, scale, tol, eldic
 		membs = Int64[]
 		push!(membs, atomindex+1)
 		println("here 1")
+		println("coords: first", coords[1])
+		println("coords type ", typeof(coords))
 		println("membs: $membs")
-		println(type(membs))
+		println(typeof(membs))
 		println("scale: $scale")
 		println("tol: $tol")
 		println("atomindex: $atomindex")

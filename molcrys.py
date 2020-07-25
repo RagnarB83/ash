@@ -194,7 +194,7 @@ def molcrys(cif_file=None, xtl_file=None, fragmentobjects=[], theory=None, numco
     #Reorder fraglists in each fragmenttype via Hungarian algorithm.
     # Ordered fraglists can then easily be used in pointchargeupdating
     for fragmentobject in fragmentobjects:
-        print("Redordering fragment object: ", fragmentobject.Name)
+        print("Reordering fragment object: ", fragmentobject.Name)
         reordercluster(Cluster,fragmentobject)
         printdebug(fragmentobject.clusterfraglist)
         fragmentobject.print_infofile(str(fragmentobject.Name)+'.info')

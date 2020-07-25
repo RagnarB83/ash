@@ -2916,7 +2916,8 @@ class Fragment:
         #Here either providing coords, elems as lists. Possibly reading connectivity also
         if coords is not None:
             #self.add_coords(coords,elems,conn=conncalc)
-            self.coords=coords
+            #Adding coords as list of lists. Possible conversion from numpy array below.
+            self.coords=[list(i) for i in coords]
             self.elems=elems
             self.update_attributes()
             #If connectivity passed
@@ -2977,7 +2978,8 @@ class Fragment:
         if self.printlevel >= 2:
             print("Replacing coordinates in fragment.")
         self.elems=elems
-        self.coords=coords
+        # Adding coords as list of lists. Possible conversion from numpy array below.
+        self.coords = [list(i) for i in coords]
         self.update_attributes()
         if conn==True:
             self.calc_connectivity(scale=scale, tol=tol)
