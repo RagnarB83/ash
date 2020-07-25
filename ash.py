@@ -1317,9 +1317,13 @@ class NonBondedTheory:
         #print("Charges are now:", charges)
         print("Sum of charges:", sum(charges))
     #Provide specific coordinates (MM region) and charges (MM region) upon run
-    def run(self, full_coords=None, mm_coords=None, charges=None, connectivity=None,
+    # current_coords is now used for full_coords
+    def run(self, current_coords=None, elems=None, mm_coords=None, charges=None, connectivity=None,
             Coulomb=True, Grad=True, qmatoms=None, actatoms=None, frozenatoms=None):
 
+        if current_coords is None:
+            print("No current_coords argument. Exiting...")
+            exit()
         CheckpointTime = time.time()
         #If qmatoms list provided to run (probably by QM/MM object) then we are doing QM/MM
         #QM-QM pairs will be skipped in LJ
@@ -1340,6 +1344,7 @@ class NonBondedTheory:
         #If charges not provided to run function. Use object charges
         if charges == None:
             charges=self.atom_charges
+
         #If coords not provided to run function. Use object coords
         #HMM. I guess we are not keeping coords as part of MMtheory?
         #if len(full_cords)==0:
@@ -1361,7 +1366,7 @@ class NonBondedTheory:
                 print("Using slow Python MM code")
             #Sending full coords and charges over. QM charges are set to 0.
             if Coulomb==True:
-                self.Coulombchargeenergy, self.Coulombchargegradient  = coulombcharge(charges, full_coords)
+                self.Coulombchargeenergy, self.Coulombchargegradient  = coulombcharge(charges, current_coords)
                 if self.printlevel >= 2:
                     print("Coulomb Energy (au):", self.Coulombchargeenergy)
                     print("Coulomb Energy (kcal/mol):", self.Coulombchargeenergy * constants.harkcal)
@@ -1372,7 +1377,7 @@ class NonBondedTheory:
             if LJ==True:
                 #LennardJones(coords, epsij, sigmaij, connectivity=[], qmatoms=[])
                 #self.LJenergy,self.LJgradient = LennardJones(full_coords,self.atomtypes, self.LJpairpotentials, connectivity=connectivity)
-                self.LJenergy,self.LJgradient = LennardJones(full_coords,self.epsij,self.sigmaij)
+                self.LJenergy,self.LJgradient = LennardJones(current_coords,self.epsij,self.sigmaij)
                 #print("Lennard-Jones Energy (au):", self.LJenergy)
                 #print("Lennard-Jones Energy (kcal/mol):", self.LJenergy*constants.harkcal)
             self.MMEnergy = self.Coulombchargeenergy+self.LJenergy
@@ -1382,7 +1387,7 @@ class NonBondedTheory:
         elif self.codeversion=='py_comb':
             print("not active")
             exit()
-            self.MMenergy, self.MMgradient = LJCoulpy(full_coords, self.atomtypes, charges, self.LJpairpotentials,
+            self.MMenergy, self.MMgradient = LJCoulpy(current_coords, self.atomtypes, charges, self.LJpairpotentials,
                                                           connectivity=connectivity)
         elif self.codeversion=='f2py':
             if self.printlevel >= 2:
@@ -1393,7 +1398,7 @@ class NonBondedTheory:
             except:
                 print("Fortran library LJCoulombv1 not found! Make sure you have run the installation script.")
             self.MMEnergy, self.MMGradient, self.LJenergy, self.Coulombchargeenergy =\
-                LJCoulomb(full_coords, self.epsij, self.sigmaij, charges, connectivity=connectivity)
+                LJCoulomb(current_coords, self.epsij, self.sigmaij, charges, connectivity=connectivity)
         elif self.codeversion=='f2pyv2':
             if self.printlevel >= 2:
                 print("Using fast Fortran F2Py MM code v2")
@@ -1404,7 +1409,7 @@ class NonBondedTheory:
             except:
                 print("Fortran library LJCoulombv2 not found! Make sure you have run the installation script.")
             self.MMEnergy, self.MMGradient, self.LJenergy, self.Coulombchargeenergy =\
-                LJCoulombv2(full_coords, self.epsij, self.sigmaij, charges, connectivity=connectivity)
+                LJCoulombv2(current_coords, self.epsij, self.sigmaij, charges, connectivity=connectivity)
         elif self.codeversion=='julia':
             if self.printlevel >= 2:
                 print("Using fast Julia version, v1")
@@ -1423,7 +1428,7 @@ class NonBondedTheory:
             Main.include(ashpath + "/functions_julia.jl")
             print_time_rel(CheckpointTime, modulename="from run to just before calling ")
             self.MMEnergy, self.MMGradient, self.LJenergy, self.Coulombchargeenergy =\
-                Main.Juliafunctions.LJcoulombchargev1c(charges, full_coords, self.epsij, self.sigmaij, connectivity)
+                Main.Juliafunctions.LJcoulombchargev1c(charges, current_coords, self.epsij, self.sigmaij, connectivity)
             print_time_rel(CheckpointTime, modulename="from run to done julia")
         else:
             print("Unknown version of MM code")
@@ -1983,7 +1988,7 @@ class QMMMTheory:
                 printdebug("Charges for full system is: ", self.charges)
                 print("Passing QM atoms to MMtheory run so that QM-QM pairs are skipped in pairlist")
                 print("Passing active atoms to MMtheory run so that frozen pairs are skipped in pairlist")
-            self.MMEnergy, self.MMGradient= self.mm_theory.run(full_coords=current_coords, mm_coords=self.mmcoords,
+            self.MMEnergy, self.MMGradient= self.mm_theory.run(current_coords=current_coords, mm_coords=self.mmcoords,
                                                                charges=self.charges, connectivity=self.connectivity,
                                                                qmatoms=self.qmatoms, actatoms=self.actatoms)
             #self.MMEnergy=self.mm_theory.MMEnergy

@@ -141,7 +141,7 @@ function LJcoulombchargev1a(charges, coords, epsij, sigmaij, connectivity=nothin
 end
 
 #Lennard-Jones+Coulomb function.
-#Tested. Marginally than v1a
+#Tested. Marginally better than v1a
 function LJcoulombchargev1c(charges, coords, epsij, sigmaij, connectivity=nothing)
     """LJ + Coulomb function"""
     ang2bohr = 1.88972612546
@@ -161,6 +161,53 @@ function LJcoulombchargev1c(charges, coords, epsij, sigmaij, connectivity=nothin
             @inbounds rij_x = coords_b[i,1] - coords_b[j,1]
             @inbounds rij_y = coords_b[i,2] - coords_b[j,2]
             @inbounds rij_z = coords_b[i,3] - coords_b[j,3]
+            @fastmath r = rij_x*rij_x+rij_y*rij_y+rij_z*rij_z
+            @fastmath d = sqrt(r)
+            @fastmath d_ang = d / ang2bohr
+            @fastmath ri=1/r
+            @fastmath ri3=ri*ri*ri
+            @inbounds @fastmath VC += charges[i] * charges[j] / (d)
+            @inbounds @fastmath VLJ += 4.0 * eps * ((sigma / d_ang)^12 - (sigma / d_ang)^6 )
+            @inbounds @fastmath kC=charges[i]*charges[j]*sqrt(ri3)
+            @inbounds @fastmath kLJ=constant*((24*eps*((sigma/d_ang)^6-2*(sigma/d_ang)^12))*(1/(d_ang^2)))
+            @fastmath k=kLJ+kC
+            @fastmath Gij_x=k*rij_x
+            @fastmath Gij_y=k*rij_y
+            @fastmath Gij_z=k*rij_z
+
+            gradient[j,1] +=  Gij_x
+            gradient[j,2] +=  Gij_y
+            gradient[j,3] +=  Gij_z
+            gradient[i,1] -=  Gij_x
+            gradient[i,2] -=  Gij_y
+            gradient[i,3] -=  Gij_z
+        end
+    end
+    E = VC + VLJ/hartokcal
+    return E, gradient, VLJ/hartokcal, VC
+end
+
+#Lennard-Jones+Coulomb function.
+#Testing view slices. Not faster
+function LJcoulombchargev1d(charges, coords, epsij, sigmaij, connectivity=nothing)
+    """LJ + Coulomb function"""
+    ang2bohr = 1.88972612546
+    bohr2ang = 0.52917721067
+    hartokcal = 627.50946900
+    coords_b=coords*ang2bohr
+    num=length(charges)
+    VC=0.0
+    VLJ=0.0
+    gradient = zeros(size(coords_b)[1], 3)
+    constant=-1*(1/hartokcal)*bohr2ang*bohr2ang
+
+    @inbounds for j in 1:num
+        for i in j+1:num
+            @inbounds sigma=view(sigmaij,j,i)[1]
+            @inbounds eps=view(epsij,j,i)[1]
+            @inbounds rij_x = view(coords_b,i,1)[1] - view(coords_b,j,1)[1]
+            @inbounds rij_y = view(coords_b,i,2)[1] - view(coords_b,j,2)[1]
+            @inbounds rij_z = view(coords_b,i,3)[1] - view(coords_b,j,3)[1]
             @fastmath r = rij_x*rij_x+rij_y*rij_y+rij_z*rij_z
             @fastmath d = sqrt(r)
             @fastmath d_ang = d / ang2bohr
