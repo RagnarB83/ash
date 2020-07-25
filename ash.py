@@ -1319,7 +1319,7 @@ class NonBondedTheory:
             Coulomb=True, Grad=True, qmatoms=None, actatoms=None, frozenatoms=None):
 
         CheckpointTime = time.time()
-
+        print_time_rel(CheckpointTime, modulename="run beginning")
         #If qmatoms list provided to run (probably by QM/MM object) then we are doing QM/MM
         #QM-QM pairs will be skipped in LJ
 
@@ -1330,16 +1330,19 @@ class NonBondedTheory:
         #if frozenatoms passed frozen-frozen interactions will be skipped
         if np.count_nonzero(self.sigmaij) == 0:
             print("Calling LJ pairpot calc")
+            print_time_rel(CheckpointTime, modulename="from run beginning to LJ pairpot calc call")
             self.calculate_LJ_pairpotentials(qmatoms=qmatoms,actatoms=actatoms)
         else:
             print("LJ pairpot arrays exist...")
+            print_time_rel(CheckpointTime, modulename="from run beginning to LJ pairpot calc call")
+        print_time_rel(CheckpointTime, modulename="from run beginning to after LJ pairpot calc call")
         if len(self.LJpairpotentials) > 0:
             LJ=True
-
+        print_time_rel(CheckpointTime, modulename="from run beginning to stuff1b")
         #If charges not provided to run function. Use object charges
         if charges == None:
             charges=self.atom_charges
-
+        print_time_rel(CheckpointTime, modulename="from run beginning to stuff2")
         #If coords not provided to run function. Use object coords
         #HMM. I guess we are not keeping coords as part of MMtheory?
         #if len(full_cords)==0:
@@ -1355,7 +1358,7 @@ class NonBondedTheory:
         self.Coulombchargegradient=[]
         self.LJgradient=[]
 
-        print_time_rel(CheckpointTime, modulename="from run beginning to stuff")
+        print_time_rel(CheckpointTime, modulename="from run beginning to stuff3")
         #Slow Python version
         if self.codeversion=='py':
             if self.printlevel >= 2:
