@@ -965,6 +965,8 @@ def gasfragcalc_ORCA(fragmentobjects,Cluster,chargemodel,orcadir,orcasimpleinput
         #print(gasfrag.__dict__)
         #Creating ORCA theory object with fragment
 
+        print_time_rel_and_tot(currtime, origtime, modulename='prep stuff')
+        currtime = time.time()
         #Assuming mainfrag is fragmentobject 0 and only mainfrag can be Broken-symmetry
         if id == 0:
             if brokensym==True:
@@ -983,7 +985,8 @@ def gasfragcalc_ORCA(fragmentobjects,Cluster,chargemodel,orcadir,orcasimpleinput
         #print(ORCASPcalculation.__dict__)
         #Run ORCA calculation with charge-model info
         ORCASPcalculation.run(nprocs=NUMPROC)
-
+        print_time_rel_and_tot(currtime, origtime, modulename='orca run')
+        currtime = time.time()
 
         if chargemodel == 'DDEC3' or chargemodel == 'DDEC6':
             #Calling DDEC_calc (calls chargemol)
