@@ -2944,20 +2944,25 @@ class Fragment:
         elif fragfile is not None:
             self.read_fragment_from_file(fragfile)
     def update_attributes(self):
-        self.nuccharge = nucchargelist(self.elems)
-        self.numatoms = len(self.coords)
 
+        self.nuccharge = nucchargelist(self.elems)
+        print_time_rel(timestampA, modulename='nucchargelist')
+        self.numatoms = len(self.coords)
+        print_time_rel(timestampA, modulename='numatoms')
         self.atomlist = list(range(0, self.numatoms))
+        print_time_rel(timestampA, modulename='atomlst')
         #Unnecessary alias ? Todo: Delete
         self.allatoms = self.atomlist
         self.mass = totmasslist(self.elems)
+        print_time_rel(timestampA, modulename='totmasslist')
         self.list_of_masses = list_of_masses(self.elems)
-
+        print_time_rel(timestampA, modulename='list of masses')
         #Elemental formula
         self.formula = elemlisttoformula(self.elems)
+        print_time_rel(timestampA, modulename='elemlisttoformula')
         #Pretty formula without 1
         self.prettyformula = self.formula.replace('1','')
-
+        print_time_rel(timestampA, modulename='prettyformula')
         if self.printlevel >= 2:
             print("Fragment numatoms:", self.numatoms)
             print("Formula : ", self.prettyformula)
