@@ -2944,7 +2944,7 @@ class Fragment:
         elif fragfile is not None:
             self.read_fragment_from_file(fragfile)
     def update_attributes(self):
-
+        timestampA = time.time()
         self.nuccharge = nucchargelist(self.elems)
         print_time_rel(timestampA, modulename='nucchargelist')
         self.numatoms = len(self.coords)
