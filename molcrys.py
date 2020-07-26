@@ -314,7 +314,8 @@ def molcrys(cif_file=None, xtl_file=None, fragmentobjects=[], theory=None, numco
 
     blankline()
 
-
+    print_time_rel_and_tot(currtime, origtime, modulename="stuff before SP-loop")
+    currtime=time.time()
     #SP-LOOP FOR MAINFRAG
     for SPLoopNum in range(0,SPLoopMaxIter):
         blankline()
@@ -376,7 +377,8 @@ def molcrys(cif_file=None, xtl_file=None, fragmentobjects=[], theory=None, numco
 
     print(BC.OKMAGENTA,"Molcrys Charge-Iteration done!",BC.END)
     print("")
-
+    print_time_rel_and_tot(currtime, origtime, modulename="SP iteration done")
+    currtime=time.time()
     #Now that charges are converged (for mainfrag and counterfrags ???).
     #Now derive LJ parameters ?? Important for DDEC-LJ derivation
     #Defining atomtypes in Cluster fragment for LJ interaction
@@ -438,9 +440,11 @@ def molcrys(cif_file=None, xtl_file=None, fragmentobjects=[], theory=None, numco
     else:
         print("Undefined shortrangemodel")
         exit()
-
+    print_time_rel_and_tot(currtime, origtime, modulename="LJ stuff done")
+    currtime=time.time()
     Cluster.update_atomtypes(atomtypelist)
-
+    print_time_rel_and_tot(currtime, origtime, modulename="update atomtypes")
+    currtime=time.time()
 
     #Adding Centralmainfrag to Cluster
     Cluster.add_centralfraginfo(Centralmainfrag)
@@ -450,7 +454,8 @@ def molcrys(cif_file=None, xtl_file=None, fragmentobjects=[], theory=None, numco
 
     #Cleanup
     #QMMM_SP_calculation.qm_theory.cleanup()
-
+    print_time_rel_and_tot(currtime, origtime, modulename="final stuff")
+    currtime=time.time()
 
     return Cluster
 
