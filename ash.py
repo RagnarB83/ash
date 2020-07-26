@@ -2884,6 +2884,7 @@ class Fragment:
     def __init__(self, coordsstring=None, fragfile=None, xyzfile=None, pdbfile=None, coords=None, elems=None, connectivity=None,
                  atomcharges=None, atomtypes=None, conncalc=True, scale=None, tol=None, printlevel=2, charge=None,
                  mult=None, label=None, readchargemult=False):
+        timestampA=time.time()
         #Label for fragment (string). Useful for distinguishing different fragments
         self.label=label
 
@@ -2912,14 +2913,18 @@ class Fragment:
         # Something perhaps only used by molcrys but defined here. Needed for print_system
         # Todo: revisit this
         self.fragmenttype_labels=[]
-
+        print_time_rel(timestampA, modulename='in frag. prep'
         #Here either providing coords, elems as lists. Possibly reading connectivity also
         if coords is not None:
             #self.add_coords(coords,elems,conn=conncalc)
             #Adding coords as list of lists. Possible conversion from numpy array below.
+            print_time_rel(timestampB, modulename='starting coords'
             self.coords=[list(i) for i in coords]
+            print_time_rel(timestampA, modulename='coords done'
             self.elems=elems
+            print_time_rel(timestampA, modulename='starting update attributes'
             self.update_attributes()
+            print_time_rel(timestampA, modulename='update attributes done'
             #If connectivity passed
             if connectivity is not None:
                 conncalc=False
@@ -2927,7 +2932,7 @@ class Fragment:
             #If connectivity requested (default for new frags)
             if conncalc==True:
                 self.calc_connectivity(scale=scale, tol=tol)
-
+            print_time_rel(timestampA, modulename='conn done'
         #If coordsstring given, read elems and coords from it
         elif coordsstring is not None:
             self.add_coords_from_string(coordsstring, scale=scale, tol=tol)
