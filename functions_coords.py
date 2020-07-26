@@ -342,12 +342,16 @@ def create_coords_string(elems,coords):
 
 #Takes list of elements and gives formula
 def elemlisttoformula(list):
+    timestampA=time.time()
+    ash.print_time_rel(timestampA, modulename='elemlisttoformula begin')
     dict = {i: list.count(i) for i in list}
+    ash.print_time_rel(timestampA, modulename='dict done')
     formula=""
     for item in dict.items():
         el=item[0];count=item[1]
-        string=el+str(count)
-        formula=formula+string
+        #string=el+str(count)
+        formula=formula+el+str(count)
+    ash.print_time_rel(timestampA, modulename='for loop done')
     return formula
 
 #From molecular formula (string, e.g. "FeCl4") to list of atoms

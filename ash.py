@@ -2918,11 +2918,8 @@ class Fragment:
         if coords is not None:
             #self.add_coords(coords,elems,conn=conncalc)
             #Adding coords as list of lists. Possible conversion from numpy array below.
-            print_time_rel(timestampA, modulename='starting coords')
             self.coords=[list(i) for i in coords]
-            print_time_rel(timestampA, modulename='coords done')
             self.elems=elems
-            print_time_rel(timestampA, modulename='starting update attributes')
             self.update_attributes()
             print_time_rel(timestampA, modulename='update attributes done')
             #If connectivity passed
@@ -2946,23 +2943,18 @@ class Fragment:
     def update_attributes(self):
         timestampA = time.time()
         self.nuccharge = nucchargelist(self.elems)
-        print_time_rel(timestampA, modulename='nucchargelist')
         self.numatoms = len(self.coords)
-        print_time_rel(timestampA, modulename='numatoms')
         self.atomlist = list(range(0, self.numatoms))
-        print_time_rel(timestampA, modulename='atomlst')
         #Unnecessary alias ? Todo: Delete
         self.allatoms = self.atomlist
         self.mass = totmasslist(self.elems)
-        print_time_rel(timestampA, modulename='totmasslist')
         self.list_of_masses = list_of_masses(self.elems)
-        print_time_rel(timestampA, modulename='list of masses')
         #Elemental formula
         self.formula = elemlisttoformula(self.elems)
         print_time_rel(timestampA, modulename='elemlisttoformula')
         #Pretty formula without 1
         self.prettyformula = self.formula.replace('1','')
-        print_time_rel(timestampA, modulename='prettyformula')
+
         if self.printlevel >= 2:
             print("Fragment numatoms:", self.numatoms)
             print("Formula : ", self.prettyformula)
