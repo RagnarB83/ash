@@ -2884,7 +2884,6 @@ class Fragment:
     def __init__(self, coordsstring=None, fragfile=None, xyzfile=None, pdbfile=None, coords=None, elems=None, connectivity=None,
                  atomcharges=None, atomtypes=None, conncalc=True, scale=None, tol=None, printlevel=2, charge=None,
                  mult=None, label=None, readchargemult=False):
-        timestampA=time.time()
         #Label for fragment (string). Useful for distinguishing different fragments
         self.label=label
 
@@ -2913,7 +2912,6 @@ class Fragment:
         # Something perhaps only used by molcrys but defined here. Needed for print_system
         # Todo: revisit this
         self.fragmenttype_labels=[]
-        print_time_rel(timestampA, modulename='in frag. prep')
         #Here either providing coords, elems as lists. Possibly reading connectivity also
         if coords is not None:
             #self.add_coords(coords,elems,conn=conncalc)
@@ -2921,7 +2919,6 @@ class Fragment:
             self.coords=[list(i) for i in coords]
             self.elems=elems
             self.update_attributes()
-            print_time_rel(timestampA, modulename='update attributes done')
             #If connectivity passed
             if connectivity is not None:
                 conncalc=False
@@ -2929,7 +2926,6 @@ class Fragment:
             #If connectivity requested (default for new frags)
             if conncalc==True:
                 self.calc_connectivity(scale=scale, tol=tol)
-            print_time_rel(timestampA, modulename='conn done')
         #If coordsstring given, read elems and coords from it
         elif coordsstring is not None:
             self.add_coords_from_string(coordsstring, scale=scale, tol=tol)
@@ -2941,7 +2937,6 @@ class Fragment:
         elif fragfile is not None:
             self.read_fragment_from_file(fragfile)
     def update_attributes(self):
-        timestampA = time.time()
         self.nuccharge = nucchargelist(self.elems)
         self.numatoms = len(self.coords)
         self.atomlist = list(range(0, self.numatoms))
@@ -2951,7 +2946,6 @@ class Fragment:
         self.list_of_masses = list_of_masses(self.elems)
         #Elemental formula
         self.formula = elemlisttoformula(self.elems)
-        print_time_rel(timestampA, modulename='elemlisttoformula')
         #Pretty formula without 1
         self.prettyformula = self.formula.replace('1','')
 
@@ -3147,7 +3141,7 @@ class Fragment:
             print_time_rel(timestampB, modulename='calc connectivity julia')
 
         if self.printlevel >= 2:
-            print_time_rel(timestampA, modulename='calc connectivity1')
+            print_time_rel(timestampA, modulename='calc connectivity full')
         #flat_fraglist = [item for sublist in fraglist for item in sublist]
         self.connectivity=fraglist
         #Calculate number of atoms in connectivity list of lists
@@ -3164,13 +3158,37 @@ class Fragment:
     def update_atomtypes(self, types):
         self.atomtypes = types
     #Adding fragment-type info (used by molcrys, identifies whether atom is mainfrag, counterfrag1 etc.)
-    def add_fragment_type_info(self,fragmentobjects):
+    def old_add_fragment_type_info(self,fragmentobjects):
         # Create list of fragment-type label-list
         self.fragmenttype_labels = []
         for i in self.atomlist:
             for count,fobject in enumerate(fragmentobjects):
                 if i in fobject.flat_clusterfraglist:
                     self.fragmenttype_labels.append(count)
+    #Adding fragment-type info (used by molcrys, identifies whether atom is mainfrag, counterfrag1 etc.)
+    def add_fragment_type_info(self,fragmentobjects):
+        # Create list of fragment-type label-list
+        self.fragmenttype_labels = []
+        #Alternative using argsort
+        #combine all flattened cluster_fraglist
+        #https://stackoverflow.com/questions/14807689/python-list-comprehension-to-join-list-of-lists
+        #print("fragmentobjects :", fragmentobjects)
+        #print("fragmentobjects[0] :", fragmentobjects[0])
+        #print("fragmentobjects[0].flat_clusterfraglist :", fragmentobjects[0].flat_clusterfraglist)
+        combined_flat_clusterfraglist = []
+        combined_flat_labels = []
+        for fragindex,frago in enumerate(fragmentobjects):
+            combined_flat_clusterfraglist.extend(frago.flat_clusterfraglist)
+            combined_flat_labels.extend([fragindex]*len(frago.flat_clusterfraglist))
+        #combined_flat_clusterfraglist = [frago.flat_clusterfraglist for frago in fragmentobjects]
+        print("combined_flat_clusterfraglist :", combined_flat_clusterfraglist)
+        print("combined_flat_labels :", combined_flat_labels)
+        #exit()
+        sortindices = np.argsort(combined_flat_clusterfraglist)
+        #labellist contains unsorted list of labels
+        self.fragmenttype_labels =  [combined_flat_labels[i] for i in sortindices]
+        print("self.fragmenttype_labels :", self.fragmenttype_labels)
+        #exit()
     #Molcrys option:
     def add_centralfraginfo(self,list):
         self.Centralmainfrag = list

@@ -342,11 +342,8 @@ def create_coords_string(elems,coords):
 
 #Takes list of elements and gives formula
 def elemlisttoformula(list):
-    timestampA=time.time()
-    ash.print_time_rel(timestampA, modulename='elemlisttoformula begin')
-    #This dict comprehension is slow
+    #This dict comprehension was slow for large systems. Using set to reduce iterations
     dict = {i: list.count(i) for i in set(list)}
-    ash.print_time_rel(timestampA, modulename='dict done')
     formula=""
     for item in dict.items():
         el=item[0];count=item[1]
