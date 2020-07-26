@@ -205,7 +205,10 @@ def molcrys(cif_file=None, xtl_file=None, fragmentobjects=[], theory=None, numco
     #TODO: after removing partial fragments and getting connectivity etc. Would be good to make MM cluster neutral
 
     #Add fragmentobject-info to Cluster fragment
+    #Old slow code:
+    #Cluster.old_add_fragment_type_info(fragmentobjects)
     Cluster.add_fragment_type_info(fragmentobjects)
+
     print_time_rel_and_tot(currtime, origtime, modulename='Cluster fragment type info')
     currtime=time.time()
     #Cluster is now almost complete, only charges missing. Print info to file

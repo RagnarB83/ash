@@ -3158,6 +3158,7 @@ class Fragment:
     def update_atomtypes(self, types):
         self.atomtypes = types
     #Adding fragment-type info (used by molcrys, identifies whether atom is mainfrag, counterfrag1 etc.)
+    #Old slow version below. To be deleted
     def old_add_fragment_type_info(self,fragmentobjects):
         # Create list of fragment-type label-list
         self.fragmenttype_labels = []
@@ -3166,26 +3167,20 @@ class Fragment:
                 if i in fobject.flat_clusterfraglist:
                     self.fragmenttype_labels.append(count)
     #Adding fragment-type info (used by molcrys, identifies whether atom is mainfrag, counterfrag1 etc.)
+    #This one is fast
     def add_fragment_type_info(self,fragmentobjects):
         # Create list of fragment-type label-list
-        self.fragmenttype_labels = []
-        #Alternative using argsort
-        #combine all flattened cluster_fraglist
-        #https://stackoverflow.com/questions/14807689/python-list-comprehension-to-join-list-of-lists
-        #print("fragmentobjects :", fragmentobjects)
-        #print("fragmentobjects[0] :", fragmentobjects[0])
-        #print("fragmentobjects[0].flat_clusterfraglist :", fragmentobjects[0].flat_clusterfraglist)
         combined_flat_clusterfraglist = []
         combined_flat_labels = []
+        #Going through objects, getting flat atomlists for each object and combine (combined_flat_clusterfraglist)
+        #Also create list of labels (using fragindex) for each atom
         for fragindex,frago in enumerate(fragmentobjects):
             combined_flat_clusterfraglist.extend(frago.flat_clusterfraglist)
             combined_flat_labels.extend([fragindex]*len(frago.flat_clusterfraglist))
-        #combined_flat_clusterfraglist = [frago.flat_clusterfraglist for frago in fragmentobjects]
-        print("combined_flat_clusterfraglist :", combined_flat_clusterfraglist)
-        print("combined_flat_labels :", combined_flat_labels)
-        #exit()
+        #Getting indices required to sort atomindices in ascending order
         sortindices = np.argsort(combined_flat_clusterfraglist)
         #labellist contains unsorted list of labels
+        #Now ordering the labels according to the sort indices
         self.fragmenttype_labels =  [combined_flat_labels[i] for i in sortindices]
         print("self.fragmenttype_labels :", self.fragmenttype_labels)
         #exit()
