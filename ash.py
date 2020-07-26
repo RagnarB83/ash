@@ -3182,8 +3182,7 @@ class Fragment:
         #labellist contains unsorted list of labels
         #Now ordering the labels according to the sort indices
         self.fragmenttype_labels =  [combined_flat_labels[i] for i in sortindices]
-        print("self.fragmenttype_labels :", self.fragmenttype_labels)
-        #exit()
+
     #Molcrys option:
     def add_centralfraginfo(self,list):
         self.Centralmainfrag = list
