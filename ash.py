@@ -2918,7 +2918,7 @@ class Fragment:
         if coords is not None:
             #self.add_coords(coords,elems,conn=conncalc)
             #Adding coords as list of lists. Possible conversion from numpy array below.
-            print_time_rel(timestampB, modulename='starting coords')
+            print_time_rel(timestampA, modulename='starting coords')
             self.coords=[list(i) for i in coords]
             print_time_rel(timestampA, modulename='coords done')
             self.elems=elems
