@@ -768,7 +768,7 @@ def create_MMcluster(orthogcoords,elems,cell_vectors,sphereradius):
     return extended_coords,extended_elems
 
 #Remove partial fragments of MM cluster
-def remove_partial_fragments(coords,elems,sphereradius,fragmentobjects, scale=None, tol=None, codeversion='py'):
+def remove_partial_fragments(coords,elems,sphereradius,fragmentobjects, scale=None, tol=None, codeversion='julia'):
     if scale is None:
         scale=settings_ash.scale
     if tol is None:
