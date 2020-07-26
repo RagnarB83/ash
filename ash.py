@@ -1077,7 +1077,7 @@ class OpenMMTheory:
 # Simple nonbonded MM theory. Charges and LJ-potentials
 class NonBondedTheory:
     def __init__(self, atomtypes=None, forcefield=None, charges = None, LJcombrule='geometric',
-                 codeversion='julia', pairarrayversion='julia', printlevel=2):
+                 codeversion='py', pairarrayversion='py', printlevel=2):
 
         #Printlevel
         self.printlevel=printlevel
@@ -3086,7 +3086,7 @@ class Fragment:
         subelems=[self.elems[i] for i in atoms]
         return subcoords,subelems
     #Calculate connectivity (list of lists) of coords
-    def calc_connectivity(self, conndepth=99, scale=None, tol=None, codeversion='julia' ):
+    def calc_connectivity(self, conndepth=99, scale=None, tol=None, codeversion='py' ):
         if len(self.coords) > 10000:
             if self.printlevel >= 2:
                 print("Atom number > 10K. Connectivity calculation could take a while")

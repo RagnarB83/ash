@@ -768,7 +768,7 @@ def create_MMcluster(orthogcoords,elems,cell_vectors,sphereradius):
     return extended_coords,extended_elems
 
 #Remove partial fragments of MM cluster
-def remove_partial_fragments(coords,elems,sphereradius,fragmentobjects, scale=None, tol=None, julia=True):
+def remove_partial_fragments(coords,elems,sphereradius,fragmentobjects, scale=None, tol=None, codeversion='py'):
     if scale is None:
         scale=settings_ash.scale
     if tol is None:
@@ -792,7 +792,7 @@ def remove_partial_fragments(coords,elems,sphereradius,fragmentobjects, scale=No
     count=0
     found_atoms=[]
     fraglist=[]
-    if julia is True:
+    if codeversion=='julia':
         print("using julia for finding surface atoms")
         try:
             # Import Julia
@@ -818,7 +818,7 @@ def remove_partial_fragments(coords,elems,sphereradius,fragmentobjects, scale=No
                     if members not in fraglist:
                         fraglist.append(members)
                         found_atoms += members
-    else:
+    elif codeversion == 'py':
         print("using py for finding surface atoms")
         for surfaceatom in surfaceatoms:
             if surfaceatom not in found_atoms:
