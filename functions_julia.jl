@@ -10,7 +10,8 @@ using Distances
 # We are not utilizing Julia column-major much. Latter supposedly better
 #Tried for connectivity, no difference
 # Try maybe also for Lennard_jones? Pairpot arrays??
-
+# Read more:
+# https://julialang.org/blog/2013/09/fast-numeric/
 
 
 #Connectivity (fraglists) for whole fragment

@@ -3123,6 +3123,15 @@ class Fragment:
                 # Defining Julia Module
                 ashpath = os.path.dirname(ash.__file__)
                 Main.include(ashpath + "/functions_julia.jl")
+
+                timestampB = time.time()
+                fraglist_temp = Main.Juliafunctions.calc_connectivity(self.coords, self.elems, conndepth, scale, tol,
+                                                                      eldict_covrad)
+                fraglist = []
+                # Convertin from numpy to list of lists
+                for sublist in fraglist_temp:
+                    fraglist.append(list(sublist))
+                print_time_rel(timestampB, modulename='calc connectivity julia')
             except:
                 print(BC.FAIL,"Problem importing Pyjulia (import julia)", BC.END)
                 print("Make sure Julia is installed and PyJulia module available")
@@ -3131,14 +3140,7 @@ class Fragment:
                 print(BC.FAIL,"Using Python version instead (slow for large systems)", BC.END)
                 fraglist = calc_conn_py(self.coords, self.elems, conndepth, scale, tol)
 
-            timestampB = time.time()
-            fraglist_temp = Main.Juliafunctions.calc_connectivity(self.coords, self.elems, conndepth, scale, tol,
-                                                                  eldict_covrad)
-            fraglist = []
-            #Convertin from numpy to list of lists
-            for sublist in fraglist_temp:
-                fraglist.append(list(sublist))
-            print_time_rel(timestampB, modulename='calc connectivity julia')
+
 
         if self.printlevel >= 2:
             print_time_rel(timestampA, modulename='calc connectivity full')
