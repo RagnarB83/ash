@@ -4,10 +4,18 @@ __precompile__()
 module Juliafunctions
 #using Profile
 #using PyCall
+using Distances
+
+#TODO:
+# We are not utilizing Julia column-major much. Latter supposedly better
+#Tried for connectivity, no difference
+# Try maybe also for Lennard_jones? Pairpot arrays??
+
 
 
 #Connectivity (fraglists) for whole fragment
 function calc_connectivity(coords,elems,conndepth,scale, tol,eldict_covrad)
+	println("Inside calc_connectivity (julia)")
 	#0-index based atomlist
 	atomlist=[0:length(elems)-1;]
 	return calc_fraglist_for_atoms(atomlist,coords, elems, conndepth, scale, tol,eldict_covrad)
@@ -31,6 +39,8 @@ function calc_fraglist_for_atoms(atomlist,coords, elems, conndepth, scale, tol,e
 	return fraglist
 end
 
+
+
 #Distance between atom i and j in coords
 function distance(coords::Array{Float64,2},i::Int64,j::Int64)
 			@fastmath @inbounds rij_x = coords[i,1] - coords[j,1]
@@ -50,22 +60,6 @@ function distance_view(coords::Array{Float64,2},i::Int64,j::Int64)
             @fastmath r = rij_x*rij_x+rij_y*rij_y+rij_z*rij_z
             @fastmath dist = sqrt(r)
 			return dist
-end
-
-
-#Here accessing Julia arrays. Switching from 0-based to 1-based indexing here
-function get_connected_atoms_julia(coords::Array{Float64,2}, elems::Array{String,1},
-    eldict_covrad_jul::Dict{String,Float64},scale::Float64,tol::Float64, atomindex::Int64)
-    connatoms = Int64[]
-    @inbounds elem_ref=elems[atomindex+1]
-    @inbounds for i=1:length(elems)
-			@inbounds dist = distance(coords,i,atomindex+1)
-			@fastmath @inbounds rad_dist = scale*(eldict_covrad_jul[elems[i]]+eldict_covrad_jul[elem_ref]) + tol
-        	if dist < rad_dist
-            	@inbounds @fastmath push!(connatoms, i-1)
-			end
-	end
-    return connatoms
 end
 
 #get_molecule_members_julia now wants eldict_covrad_dict to be a Julia object from beginning
@@ -95,6 +89,25 @@ function get_molecule_members_julia(coords, elems, loopnumber, scale, tol, eldic
 	end
 	return finalmembs
 end
+
+#Here accessing Julia arrays. Switching from 0-based to 1-based indexing here
+function get_connected_atoms_julia(coords::Array{Float64,2}, elems::Array{String,1},
+    eldict_covrad_jul::Dict{String,Float64},scale::Float64,tol::Float64, atomindex::Int64)
+    connatoms = Int64[]
+    @inbounds elem_ref=elems[atomindex+1]
+    @inbounds for i=1:length(elems)
+			@inbounds dist = distance(coords,i,atomindex+1)
+			#dist = euclidean(coords[i],coords[atomindex+1])
+			#dist = euclidean(view(coords,i,:),view(coords,atomindex+1,:))
+			@fastmath @inbounds rad_dist = scale*(eldict_covrad_jul[elems[i]]+eldict_covrad_jul[elem_ref]) + tol
+        	if dist < rad_dist
+            	@inbounds @fastmath push!(connatoms, i-1)
+			end
+	end
+    return connatoms
+end
+
+
 
 #Lennard-Jones+Coulomb function.
 #Tested. Faster than gcc-compiled Fortran function (LJCoulombv1.f90)
@@ -313,8 +326,6 @@ function pairpot_active(numatoms,atomtypes,LJpydict,qmatoms,actatoms)
 	end
 	return sigmaij,epsij
 	end
-
-
 
 
 
