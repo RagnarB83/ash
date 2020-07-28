@@ -1830,6 +1830,26 @@ class QMMMTheory:
             linkatom=False
             if linkatom==True:
                 print("Adding link atoms...")
+
+                #Option 1
+                # For each QM atom, do a get_conn_atoms, for those atoms, check if atoms are in qmatoms,
+                # if not, then we have found an MM-boundary atom
+                qm_mm_boundary_dict = {}
+                for qmatom in self.qmatoms:
+                    print("QM atom is : ", qmatom)
+                    connatoms = get_connected_atoms(self.coords, self.elems, fragment.scale, fragment.tol, qmatoms)
+                    print("connatoms : ", connatoms)
+                    #Find connected atoms that are not in QM-atoms
+                    boundaryatom = listdiff(connatoms, qmatoms)
+                    if len(boundaryatom) > 1:
+                        print("boundaryatom : ", boundaryatom)
+                        print("Problem. Found more than 1 boundaryatom for QM-atom {} . This is not allowed".format(qmatoms))
+                        exit()
+                    #Adding to dict
+                    qm_mm_boundary_dict[qmatom] = boundaryatom
+
+
+                # Option 2: Take each QM atom in qmatoms list and go through previously calculated connectivity.
                 #Link atoms. In an additive scheme we would always have link atoms, regardless of mechanical/electrostatic coupling
                 #Charge-shifting would be part of Elstat below
 
@@ -3027,27 +3047,31 @@ class Fragment:
 
         #TODO: Check. Are there different PDB formats?
         #used this: https://cupnet.net/pdb-format/
-        with open(filename) as f:
-            for line in f:
-                if 'ATOM' in line:
-                    atomindex.append(float(line[6:11].replace(' ','')))
-                    atom_name.append(line[12:16].replace(' ',''))
-                    residname.append(line[17:20].replace(' ',''))
-                    residuelist.append(line[22:26].replace(' ',''))
-                    coords_x=float(line[30:38].replace(' ',''))
-                    coords_y=float(line[38:46].replace(' ',''))
-                    coords_z=float(line[46:54].replace(' ',''))
-                    self.coords.append([coords_x,coords_y,coords_z])
-                    elem=line[76:78].replace(' ','')
-                    if len(elem) != 0:
-                        elemcol.append(elem)
-                    #self.coords.append([float(line.split()[6]), float(line.split()[7]), float(line.split()[8])])
-                    #elemcol.append(line.split()[-1])
-                    #residuelist.append(line.split()[3])
-                    #atom_name.append(line.split()[3])
-                if 'HETATM' in line:
-                    print("HETATM line in file found. Please rename to ATOM")
-                    exit()
+        try:
+            with open(filename) as f:
+                for line in f:
+                    if 'ATOM' in line:
+                        atomindex.append(float(line[6:11].replace(' ','')))
+                        atom_name.append(line[12:16].replace(' ',''))
+                        residname.append(line[17:20].replace(' ',''))
+                        residuelist.append(line[22:26].replace(' ',''))
+                        coords_x=float(line[30:38].replace(' ',''))
+                        coords_y=float(line[38:46].replace(' ',''))
+                        coords_z=float(line[46:54].replace(' ',''))
+                        self.coords.append([coords_x,coords_y,coords_z])
+                        elem=line[76:78].replace(' ','')
+                        if len(elem) != 0:
+                            elemcol.append(elem)
+                        #self.coords.append([float(line.split()[6]), float(line.split()[7]), float(line.split()[8])])
+                        #elemcol.append(line.split()[-1])
+                        #residuelist.append(line.split()[3])
+                        #atom_name.append(line.split()[3])
+                    if 'HETATM' in line:
+                        print("HETATM line in file found. Please rename to ATOM")
+                        exit()
+        except FileNotFoundError:
+            print("File {} does not exist!".format(filename))
+            exit()
         if len(elemcol) != len(self.coords):
             print("did not find same number of elements as coordinates")
             print("Need to define elements in some other way")
@@ -3106,6 +3130,10 @@ class Fragment:
         else:
             if self.printlevel >= 2:
                 print("Using scale: {} and tol: {} ".format(scale, tol))
+
+        #Setting scale and tol as part of object for future usage (e.g. QM/MM link atoms)
+        self.scale = scale
+        self.tol = tol
 
         # Calculate connectivity by looping over all atoms
         timestampA=time.time()

@@ -717,13 +717,15 @@ def scfenergygrab(file):
 def casscfenergygrab(file):
     grab=False
     string='STATE   0 MULT'
+    string2='ROOT   0:'
     with open(file) as f:
         for line in f:
-            if string in line:
-                Energy=float(line.split()[5])
+            if string in line or string2 in line:
+                #Changing from 5 to -2
+                Energy=float(line.split()[-2])
+                return Energy
             if 'CAS-SCF STATES FOR BLOCK' in line:
                 grab=True
-    return Energy
 
 #CASSCF: Grabbing all root energies
 def casscf_state_energies_grab(file):
@@ -732,14 +734,27 @@ def casscf_state_energies_grab(file):
     mult_dict={}
     state_energies=[];Energy=0.0
     string='STATE '
+    string2='ROOT '
     with open(file) as f:
         for line in f:
             if 'SA-CASSCF TRANSITION ENERGIES' in line:
                 grab=False
+            if 'Spin-Determinant CI Printing' in line:
+                grab=False
             if grab is True and string in line:
-                print("line: ", line)
+                print("Xline: ", line)
                 Energy=float(line.split()[5])
+                print("Energy :", Energy)
                 state_energies.append(Energy)
+                print("state_energies :", state_energies)
+                if len(state_energies) == roots:
+                    mult_dict[mult] = state_energies
+            if grab is True and string2 in line:
+                print("Yline: ", line)
+                Energy=float(line.split()[3])
+                print("Energy :", Energy)
+                state_energies.append(Energy)
+                print("state_energies :", state_energies)
                 if len(state_energies) == roots:
                     mult_dict[mult] = state_energies
             if Finished is True and 'CAS-SCF STATES FOR BLOCK' in line:
@@ -747,8 +762,10 @@ def casscf_state_energies_grab(file):
                 #New mult block. Resetting state-energies.
                 state_energies=[];Energy=0.0
                 mult=int(line.split()[6])
+                print("mult : ", mult)
                 #roots=int(line.split()[8])
                 roots=int(line.split()[7:9][-1].replace('NROOTS=',''))
+                print("roots :", roots)
                 grab=True
             if 'Final CASSCF energy' in line:
                 Finished=True
@@ -926,16 +943,23 @@ def grab_dets_from_CASSCF_output(file):
                         #print("det_tuple: ", det_tuple)
                         state.determinants[det_tuple] = coeff
 
-
                 if 'ROOT ' in line:
                     print("line:", line)
                     root=int(line.split()[1][0])
                     energy = float(line.split()[3])
-                    state = state_dets(root,energy,mult)
+                    state = state_dets(root, energy, mult)
                     list_of_states.append(state)
             if 'CAS-SCF STATES FOR BLOCK' in line:
+                print("CAS LINE: ", line)
                 mult =int(line.split()[6])
+                print("Setting mult to: ", mult)
+                detgrab = False
+                print("Det grab set to False")
             if '  Extended CI Printing (values > TPrintWF)' in line:
+                print("Det grab set to True")
+                detgrab=True
+            if '  Spin-Determinant CI Printing' in line:
+                print("Det grab set to True")
                 detgrab=True
 
     #print("list_of_states:", list_of_states)
@@ -990,6 +1014,7 @@ def grab_dets_from_MRCI_output(file):
             self.energy = energy
             self.determinants = {}
             self.configurations = {}
+            self.ciblock = None
     list_of_states=[]
     detgrab=False
     grabrange=False
@@ -1014,8 +1039,26 @@ def grab_dets_from_MRCI_output(file):
 
             if 'SA-CASSCF TRANSITION ENERGIES' in line:
                 detgrab=False
-            if 'DENSITY MATRIX' in line:
+            if 'DENSITY MATRIX' in line or 'DENSITY GENERATION' in line:
+                print("here. density line. Setting detgrab to false")
                 detgrab=False
+            if 'TRANSITION ENERGIES' in line:
+                detgrab=False
+                print("here. transitio energies line. Setting detgrab to false")
+            #Determining CI BLOCK
+            #if 'CI BLOCK' in line:
+
+
+            #What block we are reading through
+            if '          CI-BLOCK' in line:
+                #Setting detgrab to False for each new CI-block. Prevents us from grabbing State-lines for Reference-space CI
+                detgrab = False
+                ciblock = int(line.split()[-2])
+                print("Inside CI Block : ", ciblock)
+            if 'Building a CAS' in line:
+                #Setting mult here. mult will be used when creating state
+                mult = int(line.split()[-1])
+
             if detgrab is True:
 
                 if '[' in line and 'CFG' not in line:
@@ -1062,16 +1105,18 @@ def grab_dets_from_MRCI_output(file):
                         #print("det_tuple: ", det_tuple)
                         state.determinants[det_tuple] = coeff
 
-
+                #Now creating state. Taking energy, root and mult (found earlier in beginning of CI block).
                 if 'STATE' in line:
+                    print("STATE in line. Creating state")
                     print("line:", line)
                     root=int(line.split()[1].replace(':',''))
                     print("root:", root)
                     energy = float(line.split()[3])
                     state = state_dets(root,energy,mult)
                     list_of_states.append(state)
-            if 'CAS-SCF STATES FOR BLOCK' in line:
-                mult =int(line.split()[6])
+            #if 'CAS-SCF STATES FOR BLOCK' in line:
+            #    mult =int(line.split()[6])
+            #Now PT2-selection and CI-problem is solved. Final states coming next.
             if 'Davidson type correction:' in line:
                 detgrab=True
 
@@ -1082,11 +1127,18 @@ def grab_dets_from_MRCI_output(file):
 
 
     #Going through
+    print("list_of_states: ", list_of_states)
+    print("list_of_states[0]", list_of_states[0])
+    print("list_of_states[0].__dict__", list_of_states[0].__dict__)
+    #exit()
     for n,state in enumerate(list_of_states):
         print("------------------------")
         print("This is state {}  with mult {} and energy {} and root {}".format(n,state.mult, state.energy, state.root))
         print("length of state CFGs :", len(state.configurations))
         print("length of state determinants :", len(state.determinants))
+        print("state.configurations : ", state.configurations)
+        print("state.determinants : ", state.determinants)
+        exit()
         if len(state.determinants) == 0:
             print("WARNING!!! No determinant output found.")
             print("THIS should go away. Disabling for now...")
@@ -1522,10 +1574,8 @@ def PhotoElectronSpectrum(theory=None, fragment=None, InitialState_charge=None, 
 
             Singlepoint(fragment=fragment, theory=theory)
 
-            #Getting state-energies of all states for each spin multiplicity (state-averaged calculation)
+            #Getting state-energies of all states for each spin multiplicity
             fstates_dict = mrci_state_energies_grab("orca-input.out")
-            print("fstates_dict: ", fstates_dict)
-
             # Saveing GBW and CIS file
             shutil.copyfile(theory.inputfilename + '.gbw', './' + 'Final_State' + '.gbw')
             shutil.copyfile(theory.inputfilename + '.out', './' + 'Final_State' + '.out')
@@ -1743,7 +1793,7 @@ def PhotoElectronSpectrum(theory=None, fragment=None, InitialState_charge=None, 
             #Initial
             print("Grabbing determinants from Initial State output")
             init_state = grab_dets_from_CASSCF_output(stateI.outfile)
-            #print("init_state:", init_state)
+            print("init_state:", init_state)
             #init_state_dict = [i.determinants for i in init_state]
             #init_state_dict2 = {Initialstate_mult : init_state_dict}
             #print("init_state_dict:", init_state_dict)
@@ -1772,22 +1822,21 @@ def PhotoElectronSpectrum(theory=None, fragment=None, InitialState_charge=None, 
 
             print("Grabbing determinants from Initial State output")
             init_state = grab_dets_from_MRCI_output(stateI.outfile)
-
+            print("RB here")
             det_init = format_ci_vectors(init_state[Initialstate_mult])
 
             writestringtofile(det_init, "dets_init")
 
             print("Grabbing determinants from Final State output")
             final_states = grab_dets_from_MRCI_output(Finalstates[0].outfile)
-
+            print("hhere")
             for fstate in Finalstates:
-                #print("fstate: ", fstate)
-                #print("fstate.mult :", fstate.mult)
+                print("fstate: ", fstate)
+                print("fstate.mult :", fstate.mult)
                 det_final = format_ci_vectors(final_states[fstate.mult])
                 #print("det_final : ", det_final)
                 # Printing to file
                 writestringtofile(det_final, "dets_final_mult" + str(fstate.mult))
-
         else:
             #TDDFT: GETTING DETERMINANTS FROM CIS FILE
             # Final state. Create detfiles
@@ -1814,7 +1863,7 @@ def PhotoElectronSpectrum(theory=None, fragment=None, InitialState_charge=None, 
         print(bcolors.OKGREEN, "AO matrix, MO coefficients and excited state determinants have been written to files:",
               bcolors.ENDC)
         # TODO
-        print(bcolors.OKGREEN, "AO_overl, mos_init, mos_final, dets.1, dets.2", bcolors.ENDC)
+        print(bcolors.OKGREEN, "AO_overl, mos_init, mos_final, dets_final_multX", bcolors.ENDC)
 
         finaldysonnorms = []
         for fstate in Finalstates:

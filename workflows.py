@@ -60,6 +60,16 @@ def Extrapolation_W1_CCSD(E):
     CCSDcorr_CBS = E[-1]+(E[-1]-E[-2])/((4/3)**3.22 - 1)
     return CCSDcorr_CBS
 
+def Extrapolation_W2_CCSD(E):
+    """
+    Extrapolation function (A+B/l^3) for 2-point CCSD in W2 theory
+    :param E: list of CCSD energies (floats)
+    :return:
+    Note: Reading list backwards
+    """
+    CCSDcorr_CBS = E[-1]+(E[-1]-E[-2])/((5/4)**3 - 1)
+    return CCSDcorr_CBS
+
 def Extrapolation_W1_triples(E):
     """
     Extrapolation function  for 2-point (T) in W1 theory
@@ -68,6 +78,16 @@ def Extrapolation_W1_triples(E):
     Note: Reading list backwards
     """
     triples_CBS = E[-1]+(E[-1]-E[-2])/((3/2)**3.22 - 1)
+    return triples_CBS
+
+def Extrapolation_W2_triples(E):
+    """
+    Extrapolation function  for 2-point (T) in W2 theory
+    :param E: list of triples correlation energies (floats)
+    :return:
+    Note: Reading list backwards
+    """
+    triples_CBS = E[-1]+(E[-1]-E[-2])/((4/3)**3 - 1)
     return triples_CBS
 
 def Extrapolation_twopoint(scf_energies, corr_energies, cardinals, basis_family):
@@ -508,6 +528,201 @@ def DLPNO_W1theory_SP(fragment=None, charge=None, orcadir=None, mult=None, stabi
 
     #return final energy and also dictionary with energy components
     return W1_total, E_dict
+
+def DLPNO_W2theory_SP(fragment=None, charge=None, orcadir=None, mult=None, stabilityanalysis=False, numcores=1,
+                      memory=5000, pnosetting='NormalPNO', T1=False, scfsetting='TightSCF'):
+    """
+    WORK IN PROGRESS
+    DLPNO-version of single-point W2 theory workflow.
+    Differences: DLPNO-CC enforces QRO reference (similar to ROHF). No other reference possible.
+
+    :param fragment: ASH fragment
+    :param charge: Charge of fragment (to be replaced)?
+    :param orcadir: ORCA directory
+    :param mult: Multiplicity of fragment (to be replaced)?
+    :param stabilityanalysis: stability analysis on or off . Not currently active
+    :param numcores: number of cores
+    :param memory: Memory in MB
+    :param scfsetting: ORCA keyword (e.g. NormalSCF, TightSCF, VeryTightSCF)
+    :param pnosetting: ORCA keyword: NormalPNO, LoosePNO, TightPNO
+    ;param T1: Boolean (whether to do expensive iterative triples or not)
+    :return: energy and dictionary with energy-components
+    """
+    print("-----------------------------")
+    print("DLPNO_W2theory_SP PROTOCOL")
+    print("-----------------------------")
+    calc_label = "Frag" + str(fragment.formula) + "_" + str(fragment.charge) + "_"
+    print("Calculation label: ", calc_label)
+
+    numelectrons = int(fragment.nuccharge - charge)
+
+    #if 1-electron species like Hydrogen atom then we either need to code special HF-based procedure or just hardcode values
+    #Currently hardcoding H-atom case. Replace with proper extrapolated value later.
+    if numelectrons == 1:
+        print("Number of electrons is 1")
+        print("Assuming hydrogen atom and skipping calculation")
+        W2_total = -0.500000
+        print("Using hardcoded value: ", W2_total)
+        E_dict = {'Total_E': W2_total, 'E_SCF_CBS': W2_total, 'E_CCSDcorr_CBS': 0.0,
+                  'E_triplescorr_CBS': 0.0, 'E_corecorr_and_SR': 0.0, 'E_SO': 0.0}
+        return W1_total, E_dict
+
+    #Reducing numcores if fewer active electron pairs than numcores.
+    core_electrons = num_core_electrons(fragment)
+    print("core_electrons:", core_electrons)
+    valence_electrons = (numelectrons - core_electrons)
+    electronpairs = int(valence_electrons / 2)
+    if electronpairs  < numcores:
+        print("Number of electrons in fragment:", numelectrons)
+        print("Number of valence electrons :", valence_electrons )
+        print("Number of valence electron pairs :", electronpairs )
+        print("Setting numcores to number of electron pairs")
+        numcores=int(electronpairs)
+
+    #Block input for SCF/MDCI block options.
+    #Disabling FullLMP2 guess in general as not available for open-shell
+    #TODO: Add Stability analysis option  here later
+    blocks="""
+    %maxcore {}
+    %scf
+    maxiter 200
+    end
+    %mdci
+    UseFullLMP2Guess false
+    end
+
+    """.format(memory)
+
+    #Whether to use diffuse basis set or not
+    #Note: this may fuck up basis set extrapolation
+    #if noaug is True:
+    #    prefix=''
+    #else:
+    #    prefix='aug-'
+
+    #Auxiliary basis set. One big one
+    #Todo: check whether it should be bigger
+    auxbasis='cc-pV5Z/C'
+
+    #Whether to use iterative triples or not. Default: regular DLPNO-CCSD(T)
+    if T1 is True:
+        ccsdtkeyword='DLPNO-CCSD(T1)'
+    else:
+        ccsdtkeyword='DLPNO-CCSD(T)'
+
+
+    ############################################################s
+    #Frozen-core calcs
+    ############################################################
+    #ccsdt_dz_line="! DLPNO-CCSD(T) {}cc-pVDZ {} tightscf ".format(prefix,auxbasis)
+    #ccsdt_tz_line="! DLPNO-CCSD(T) {}cc-pVTZ {} tightscf ".format(prefix,auxbasis)
+    #ccsd_qz_line="! DLPNO-CCSD {}cc-pVQZ {} tightscf ".format(prefix,auxbasis)
+    ccsdt_tz_line="! {} W1-TZ {} {} {}".format(ccsdtkeyword, auxbasis, pnosetting, scfsetting)
+    ccsdt_qz_line="! {} W1-QZ {} {} {}".format(ccsdtkeyword, auxbasis, pnosetting, scfsetting)
+    ccsd_5z_line="! DLPNO-CCSD  haV5Z(+d) {} {} {}".format(auxbasis, pnosetting, scfsetting)
+
+    print("Need to check better if correct basis set.")
+
+    #Defining W2 5Z basis
+    #quintblocks = blocks + """%basis newgto H "cc-pV5Z" end
+    #"""
+
+    ccsdt_tz = ash.ORCATheory(orcadir=orcadir, orcasimpleinput=ccsdt_tz_line, orcablocks=blocks, nprocs=numcores, charge=charge, mult=mult)
+    ccsdt_qz = ash.ORCATheory(orcadir=orcadir, orcasimpleinput=ccsdt_qz_line, orcablocks=blocks, nprocs=numcores, charge=charge, mult=mult)
+    ccsd_5z = ash.ORCATheory(orcadir=orcadir, orcasimpleinput=ccsd_5z_line, orcablocks=blocks, nprocs=numcores, charge=charge, mult=mult)
+
+    ash.Singlepoint(fragment=fragment, theory=ccsdt_tz)
+    CCSDT_TZ_dict = grab_HF_and_corr_energies('orca-input.out', DLPNO=True)
+    shutil.copyfile('orca-input.out', './' + calc_label + 'CCSDT_TZ' + '.out')
+    print("CCSDT_TZ_dict:", CCSDT_TZ_dict)
+
+    ash.Singlepoint(fragment=fragment, theory=ccsdt_qz)
+    CCSDT_QZ_dict = grab_HF_and_corr_energies('orca-input.out', DLPNO=True)
+    shutil.copyfile('orca-input.out', './' + calc_label + 'CCSDT_QZ' + '.out')
+    print("CCSDT_QZ_dict:", CCSDT_QZ_dict)
+
+    ash.Singlepoint(fragment=fragment, theory=ccsd_5z)
+    CCSD_5Z_dict = grab_HF_and_corr_energies('orca-input.out', DLPNO=True)
+    shutil.copyfile('orca-input.out', './' + calc_label + 'CCSD_5Z' + '.out')
+    print("CCSD_5Z_dict:", CCSD_5Z_dict)
+
+    #List of all SCF energies (TZ,QZ,5Z), all CCSD-corr energies (TZ,QZ,5Z) and all (T) corr energies (TZ,qZ)
+    scf_energies = [CCSDT_TZ_dict['HF'], CCSDT_QZ_dict['HF'], CCSD_5Z_dict['HF']]
+    ccsdcorr_energies = [CCSDT_TZ_dict['CCSD_corr'], CCSDT_QZ_dict['CCSD_corr'], CCSD_5Z_dict['CCSD_corr']]
+    triplescorr_energies = [CCSDT_TZ_dict['CCSD(T)_corr'], CCSDT_QZ_dict['CCSD(T)_corr']]
+
+    print("")
+    print("scf_energies :", scf_energies)
+    print("ccsdcorr_energies :", ccsdcorr_energies)
+    print("triplescorr_energies :", triplescorr_energies)
+
+    #Extrapolations
+    #Choice for SCF: old 3-point formula or new 2-point formula. Need to check which is recommended nowadays
+    E_SCF_CBS = Extrapolation_W1_SCF_3point(scf_energies) #3-point extrapolation
+    #E_SCF_CBS = Extrapolation_W1_SCF_2point(scf_energies) #2-point extrapolation
+
+    E_CCSDcorr_CBS = Extrapolation_W2_CCSD(ccsdcorr_energies) #2-point extrapolation
+    E_triplescorr_CBS = Extrapolation_W2_triples(triplescorr_energies) #2-point extrapolation
+
+    print("E_SCF_CBS:", E_SCF_CBS)
+    print("E_CCSDcorr_CBS:", E_CCSDcorr_CBS)
+    print("E_triplescorr_CBS:", E_triplescorr_CBS)
+
+    ############################################################
+    #Core-correlation + scalar relativistic as joint correction
+    ############################################################
+    ccsdt_mtsmall_NoFC_line="! {} DKH W1-mtsmall  {} {} nofrozencore {}".format(ccsdtkeyword, auxbasis, pnosetting, scfsetting)
+    ccsdt_mtsmall_FC_line="! {} W1-mtsmall {}  {} {}".format(ccsdtkeyword, auxbasis, pnosetting, scfsetting)
+
+    ccsdt_mtsmall_NoFC = ash.ORCATheory(orcadir=orcadir, orcasimpleinput=ccsdt_mtsmall_NoFC_line, orcablocks=blocks, nprocs=numcores, charge=charge, mult=mult)
+    ccsdt_mtsmall_FC = ash.ORCATheory(orcadir=orcadir, orcasimpleinput=ccsdt_mtsmall_FC_line, orcablocks=blocks, nprocs=numcores, charge=charge, mult=mult)
+
+    energy_ccsdt_mtsmall_nofc = ash.Singlepoint(fragment=fragment, theory=ccsdt_mtsmall_NoFC)
+    shutil.copyfile('orca-input.out', './'+ calc_label + 'CCSDT_MTsmall_NoFC_DKH' + '.out')
+    energy_ccsdt_mtsmall_fc = ash.Singlepoint(fragment=fragment, theory=ccsdt_mtsmall_FC)
+    shutil.copyfile('orca-input.out', './' + calc_label + 'CCSDT_MTsmall_FC_noDKH' + '.out')
+
+    #Core-correlation is total energy difference between NoFC-DKH and FC-norel
+    E_corecorr_and_SR = energy_ccsdt_mtsmall_nofc - energy_ccsdt_mtsmall_fc
+    print("E_corecorr_and_SR:", E_corecorr_and_SR)
+
+    ############################################################
+    #Spin-orbit correction for atoms.
+    ############################################################
+    if fragment.numatoms == 1:
+        print("Fragment is an atom. Looking up atomic spin-orbit splitting value")
+        E_SO = atom_spinorbitsplittings[fragment.elems[0]] / constants.hartocm
+    else :
+        E_SO = 0.0
+
+    print("Spin-orbit correction (E_SO):", E_SO)
+
+    ############################################################
+    #FINAL RESULT
+    ############################################################
+    print("")
+    print("")
+    W2_total = E_SCF_CBS + E_CCSDcorr_CBS + E_triplescorr_CBS +E_corecorr_and_SR  + E_SO
+    print("Final W2 energy :", W2_total, "Eh")
+    print("")
+    print("Contributions:")
+    print("--------------")
+    print("E_SCF_CBS : ", E_SCF_CBS)
+    print("E_CCSDcorr_CBS : ", E_CCSDcorr_CBS)
+    print("E_triplescorr_CBS : ", E_triplescorr_CBS)
+    print("E_corecorr_and_SR : ", E_corecorr_and_SR)
+    print("E_SO : ", E_SO)
+
+    E_dict = {'Total_E' : W2_total, 'E_SCF_CBS' : E_SCF_CBS, 'E_CCSDcorr_CBS' : E_CCSDcorr_CBS, 'E_triplescorr_CBS' : E_triplescorr_CBS,
+             'E_corecorr_and_SR' : E_corecorr_and_SR, 'E_SO' : E_SO}
+
+
+    #Cleanup GBW file. Full cleanup ??
+    # TODO: Keep output files for each step
+    os.remove('orca-input.gbw')
+
+    #return final energy and also dictionary with energy components
+    return W2_total, E_dict
 
 #Thermochemistry protocol. Take list of fragments, stoichiometry, etc
 #Requires orcadir, inputline for geo-opt. ORCA-bssed

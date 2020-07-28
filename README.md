@@ -71,7 +71,7 @@ geomeTRICOptimizer(ORCAcalc,HF_frag)
     - Flexible definition of charges and Lennard-Jones potentials. Either via forcefield inputfile or 
     in script.
     - Both energy and gradient available.
-    - Slow Python version and fast Fortran version available (almost ready).
+    - Fast MM via Julia.
     - Limitation: No bonded MM yet.
 - **Geometry optimization with multiple optimizers**
      - Knarr, Python LBFGS-optimizer in Cartesian coordinates (credit: Vilhjálmur Ásgeirsson). 
