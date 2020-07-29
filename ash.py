@@ -19,6 +19,7 @@ from interface_geometric import geomeTRICOptimizer
 import shutil
 import subprocess as sp
 import elstructure_functions
+from workflows import *
 
 debugflag=False
 
@@ -1716,7 +1717,7 @@ class PolEmbedTheory:
 #TODO NOTE: If we add init arguments, remember to update Numfreq QMMM option as it depends on the keywords
 class QMMMTheory:
     def __init__(self, qm_theory="", qmatoms="", fragment='', mm_theory="" , charges=None,
-                 embedding="Elstat", printlevel=2, nprocs=None, actatoms=None, frozenatoms=None):
+                 embedding="Elstat", printlevel=2, nprocs=None, actatoms=None, frozenatoms=None, linkatom=False):
 
         print(BC.WARNING,BC.BOLD,"------------Defining QM/MM object-------------", BC.END)
 
@@ -1783,6 +1784,7 @@ class QMMMTheory:
             exit(1)
 
         self.QMChargesZeroed=False
+        self.linkatom=linkatom
 
         #Theory level definitions
         self.printlevel=printlevel
@@ -1825,10 +1827,13 @@ class QMMMTheory:
             if self.mm_theory_name == "OpenMMTheory":
                 print("Now adding exceptions for frozen atoms")
                 if len(self.frozenatoms) > 0:
-                    mm_theory.addexceptions(self.frozenatoms)
+                    print("Here adding exceptions")
 
-            linkatom=False
-            if linkatom==True:
+                    #Disabling for now, since so bloody slow. Need to speed up
+                    #mm_theory.addexceptions(self.frozenatoms)
+
+            #linkatom=False
+            if self.linkatom==True:
                 print("Adding link atoms...")
 
                 #Option 1
@@ -1836,19 +1841,27 @@ class QMMMTheory:
                 # if not, then we have found an MM-boundary atom
                 qm_mm_boundary_dict = {}
                 for qmatom in self.qmatoms:
-                    print("QM atom is : ", qmatom)
-                    connatoms = get_connected_atoms(self.coords, self.elems, fragment.scale, fragment.tol, qmatoms)
-                    print("connatoms : ", connatoms)
+                    #print("QM atom is : ", qmatom)
+                    #THink about where scale and tol comes from
+                    scale = settings_ash.scale
+                    tol = settings_ash.tol
+                    connatoms = get_connected_atoms(self.coords, self.elems, scale, tol, qmatom)
+                    #print("connatoms : ", connatoms)
                     #Find connected atoms that are not in QM-atoms
                     boundaryatom = listdiff(connatoms, qmatoms)
                     if len(boundaryatom) > 1:
                         print("boundaryatom : ", boundaryatom)
                         print("Problem. Found more than 1 boundaryatom for QM-atom {} . This is not allowed".format(qmatoms))
                         exit()
-                    #Adding to dict
-                    qm_mm_boundary_dict[qmatom] = boundaryatom
+                    elif len(boundaryatom) == 1:
+                        #Adding to dict
+                        qm_mm_boundary_dict[qmatom] = boundaryatom[0]
+
+                print("qm_mm_boundary_dict :", qm_mm_boundary_dict)
+                # Get coordinates for QMX and MMX pair. Create new L coordinate that has a modified distance to QMX
 
 
+                exit()
                 # Option 2: Take each QM atom in qmatoms list and go through previously calculated connectivity.
                 #Link atoms. In an additive scheme we would always have link atoms, regardless of mechanical/electrostatic coupling
                 #Charge-shifting would be part of Elstat below
@@ -2901,7 +2914,7 @@ class CFourTheory:
 
 # Fragment class
 class Fragment:
-    def __init__(self, coordsstring=None, fragfile=None, xyzfile=None, pdbfile=None, coords=None, elems=None, connectivity=None,
+    def __init__(self, coordsstring=None, fragfile=None, xyzfile=None, pdbfile=None, chemshellfile=None, coords=None, elems=None, connectivity=None,
                  atomcharges=None, atomtypes=None, conncalc=True, scale=None, tol=None, printlevel=2, charge=None,
                  mult=None, label=None, readchargemult=False):
         #Label for fragment (string). Useful for distinguishing different fragments
@@ -2954,6 +2967,8 @@ class Fragment:
             self.read_xyzfile(xyzfile, readchargemult=readchargemult)
         elif pdbfile is not None:
             self.read_pdbfile(pdbfile, conncalc=conncalc)
+        elif chemshellfile is not None:
+            self.read_chemshellfile(chemshellfile, conncalc=conncalc)
         elif fragfile is not None:
             self.read_fragment_from_file(fragfile)
     def update_attributes(self):
@@ -3033,6 +3048,28 @@ class Fragment:
     def read_charmmfile(self,filename,conncalc=False):
         #Todo: finish
         pass
+    def read_chemshellfile(self,filename,conncalc=False, scale=None, tol=None):
+        #Read Chemshell fragment file (.c ending)
+        if self.printlevel >= 2:
+            print("Reading coordinates from Chemshell file \"{}\" into fragment".format(filename))
+        try:
+            elems, coords = read_fragfile_xyz(filename)
+        except FileNotFoundError:
+            print("File {} not found".format(filename))
+            exit()
+        self.coords = coords
+        self.elems = elems
+
+
+        self.update_attributes()
+        if conncalc is True:
+            self.calc_connectivity(scale=scale, tol=tol)
+        else:
+            # Read connectivity list
+            print("reading conn from file")
+            print("this is not ready")
+        #exit()
+
     #Read PDB file
     def read_pdbfile(self,filename,conncalc=True, scale=None, tol=None):
         if self.printlevel >= 2:
@@ -3123,7 +3160,7 @@ class Fragment:
                     print("Using global scale and tol parameters from settings_ash. Scale: {} Tol: {} ".format(scale, tol ))
 
             except:
-                scale = 1
+                scale = 1.0
                 tol = 0.1
                 if self.printlevel >= 2:
                     print("Exception: Using hard-coded scale and tol parameters. Scale: {} Tol: {} ".format(scale, tol ))
@@ -3156,7 +3193,7 @@ class Fragment:
                 fraglist_temp = Main.Juliafunctions.calc_connectivity(self.coords, self.elems, conndepth, scale, tol,
                                                                       eldict_covrad)
                 fraglist = []
-                # Convertin from numpy to list of lists
+                # Converting from numpy to list of lists
                 for sublist in fraglist_temp:
                     fraglist.append(list(sublist))
                 print_time_rel(timestampB, modulename='calc connectivity julia')

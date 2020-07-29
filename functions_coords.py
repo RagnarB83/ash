@@ -524,6 +524,26 @@ def split_multimolxyzfile(file, writexyz=False):
     return all_elems,all_coords, all_titles
 
 
+#Read Tcl-Chemshell fragment file and grab elems and coords. Coordinates converted from Bohr to Angstrom
+#Taken from functions_solv
+def read_fragfile_xyz(fragfile):
+    #removing extension from fragfile name if present and then adding back.
+    pathtofragfile=fragfile.split('.')[0]+'.c'
+    coords=[]
+    elems=[]
+    #TODO: Change elems and coords to numpy array instead
+    grabcoords=False
+    with open(pathtofragfile) as ffile:
+        for line in ffile:
+            if 'block = connectivity' in line:
+                grabcoords=False
+            if grabcoords==True:
+                coords.append([float(i)*constants.bohr2ang for i in line.split()[1:]])
+                elems.append(line.split()[0])
+            if 'block = coordinates records ' in line:
+                #numatoms=int(line.split()[-1])
+                grabcoords=True
+    return elems,coords
 
 
 
