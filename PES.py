@@ -1067,6 +1067,7 @@ def grab_dets_from_MRCI_output(file):
                 #Here reading CFG line. Grabbing configuration
                 #Also
                 if '[' in line and 'CFG' in line:
+                    print("-----------------------")
                     print("line:", line)
                     cfg = line.split()[-1]
                     coeff = float(line.split()[0])
@@ -1112,7 +1113,7 @@ def grab_dets_from_MRCI_output(file):
                     #print("det:", det)
                     detlist=[i for i in det.replace('[','').replace(']','')]
                     detlist2=[]
-                    print("detlist:", detlist)
+                    #print("detlist:", detlist)
                     #Sticking with labelling: 3: doubly occ, 0: empty, 1 for up-alpha, 2 for down-beta
                     for j in detlist:
                         if j == '2':
@@ -1128,9 +1129,9 @@ def grab_dets_from_MRCI_output(file):
                     det_tuple=internal_tuple+tuple(detlist2)+external_tuple
                     print("det_tuple : ", det_tuple)
                     coeff = float(line.split()[-1])
-                    print("coeff : ", coeff)
+                    #print("coeff : ", coeff)
                     state.determinants[det_tuple] = coeff
-                    print("state.determinants :", state.determinants)
+                    #print("state.determinants :", state.determinants)
                     
 
 
