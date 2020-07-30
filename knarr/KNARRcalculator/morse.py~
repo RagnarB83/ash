@@ -1,0 +1,97 @@
+import numpy as np
+
+
+from math import exp, sqrt
+
+from ase.calculators.calculator import Calculator
+
+class MorsePotential(Calculator):
+    """Morse potential.
+
+    Default values chosen to be similar as Lennard-Jones.
+    """
+
+    implemented_properties = ['energy', 'forces']
+    default_parameters = {'epsilon': 0.7102,
+                          'rho0': 1.6047,
+                          'r0': 2.897}
+    #default parameters epsilon=1.0 rho0=6.0 r0=1.0
+    
+    nolabel = True
+
+    def __init__(self, **kwargs):
+        Calculator.__init__(self, **kwargs)
+
+    def calculate(self, atoms=None, properties=['energy'],
+                  system_changes=['positions', 'numbers', 'cell',
+                                  'pbc', 'charges', 'magmoms']):
+        
+        Calculator.calculate(self, atoms, properties, system_changes)
+        #epsilon = self.parameters.epsilon
+        #rho0 = self.parameters.rho0
+        #r0 = self.parameters.r0
+        #positions = self.atoms.get_positions()
+        #energy = 0.0
+        #forces = np.zeros((len(self.atoms), 3))
+        #preF = 2 * epsilon * rho0 / r0
+        #for i1, p1 in enumerate(positions):
+        #    for i2, p2 in enumerate(positions[:i1]):
+        #        diff = p2 - p1
+        #        r = sqrt(np.dot(diff, diff))
+        #        expf = exp(rho0 * (1.0 - r / r0))
+        #        energy += epsilon * expf * (expf - 2)
+        #        F = preF * expf * (expf - 1) * diff / r
+        #        forces[i1] -= F
+        #        forces[i2] += F
+
+
+        #print('+1')
+        f = open("forcecalls.dat","a")
+        ndim = len(self.atoms)*3
+        box = self.atoms.get_cell().copy()
+        Rnew = self.atoms.get_positions().copy()
+        Rnew = np.reshape(Rnew, (ndim,1))
+
+        De = self.parameters.epsilon
+        a = self.parameters.rho0
+        re = self.parameters.r0
+        
+        cutoff = 10000.0
+        diffR=0.0
+        diffRX=0.0
+        diffRY=0.0
+        diffRZ=0.0
+        E = 0.0
+        F = np.zeros(shape=(ndim,1))
+        for i in range(0,ndim/3):
+            for j in range(i+1,ndim/3):
+                diffRX = Rnew[3*i]  - Rnew[3*j]
+                diffRY = Rnew[3*i+1]-  Rnew[3*j+1]
+                diffRZ = Rnew[3*i+2]-  Rnew[3*j+2]
+                diffRX = diffRX - box[0,0]*np.floor(diffRX/box[0,0]+0.5)
+                diffRY = diffRY - box[1,1]*np.floor(diffRY/box[1,1]+0.5)
+                diffRZ = diffRZ - box[2,2]*np.floor(diffRZ/box[2,2]+0.5)
+                diffR = np.sqrt(diffRX*diffRX+diffRY*diffRY+diffRZ*diffRZ);
+                #expression for energy and force
+            
+                d=1.0-np.exp(-a*(diffR-re))
+                energy=De*d*d-De
+                force= 2.0*De*d*(d-1.0)*a
+                E = E + energy
+                F[ 3*i ]+=force*diffRX/diffR
+                F[3*i+1]+=force*diffRY/diffR
+                F[3*i+2]+=force*diffRZ/diffR
+                F[ 3*j ]-=force*diffRX/diffR
+                F[3*j+1]-=force*diffRY/diffR
+                F[3*j+2]-=force*diffRZ/diffR
+                    
+
+                    
+
+        #ADLAGA F ad forces
+        forces = np.reshape(F,(ndim/3, 3))
+        f.write("1\n")
+        self.results['energy'] = E
+        self.results['forces'] = forces
+        f.close()
+

@@ -1,0 +1,7 @@
+Taken from: https://codereview.stackexchange.com/questions/52218/possible-optimizations-for-calculating-squared-euclidean-distance
+
+Need to compile on Linux probably and then learn how to use it
+
+Here: https://realpython.com/build-python-c-extension-module/
+
+python3 setup.py install

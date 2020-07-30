@@ -246,10 +246,8 @@ def Singlepoint(fragment=None, theory=None, Grad=False):
     if fragment is None or theory is None:
         print(BC.FAIL,"Singlepoint requires a fragment and a theory object",BC.END)
         exit(1)
-
     coords=fragment.coords
     elems=fragment.elems
-    
     # Run a single-point energy job
     if Grad ==True:
         print(BC.WARNING,"Doing single-point Energy+Gradient job on fragment : ", fragment.prettyformula, BC.END)
@@ -1483,6 +1481,7 @@ class PolEmbedTheory:
             self.mmatoms = []
         else:
             self.mmatoms=mmatoms
+
         #If fragment object has been defined
         if fragment is not None:
             self.fragment=fragment

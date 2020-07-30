@@ -930,18 +930,19 @@ def grab_dets_from_CASSCF_output(file):
 
                     #CASE: CFG contains only 2 and 0s. That means a situation where CFG and Det is same thing
                     # But det info is not printed so we need to add it
-                    if '1' not in cfg:
-                        #print("cfg : ", cfg)
-                        print("Found CFG without Det info. Adding to determinants")
-                        #print("line:", line)
-                        bla = cfg.replace('[','').replace(']','').replace('CFG','')
-                        #print("bla:", bla)
-                        det = bla.replace(str(2),str(3))
-                        #print("det:", det)
-                        det2 = [int(i) for i in det]
-                        det_tuple = internal_tuple + tuple(det2) + external_tuple
-                        #print("det_tuple: ", det_tuple)
-                        state.determinants[det_tuple] = coeff
+                    #Removed after Vijay update
+                    #if '1' not in cfg:
+                    #    #print("cfg : ", cfg)
+                    #    print("Found CFG without Det info. Adding to determinants")
+                    #    #print("line:", line)
+                    #    bla = cfg.replace('[','').replace(']','').replace('CFG','')
+                    #    #print("bla:", bla)
+                    #    det = bla.replace(str(2),str(3))
+                    #    #print("det:", det)
+                    #    det2 = [int(i) for i in det]
+                    #    det_tuple = internal_tuple + tuple(det2) + external_tuple
+                    #    #print("det_tuple: ", det_tuple)
+                    #    state.determinants[det_tuple] = coeff
 
                 if 'ROOT ' in line:
                     print("line:", line)
@@ -1020,6 +1021,8 @@ def grab_dets_from_MRCI_output(file):
     grabrange=False
     with open(file) as f:
         for line in f:
+            if 'Program Version 4.2.1 -  RELEASE' in line:
+                sys.exit('MRCI-determinant read will not work for ORCA 4.2.1 and older!')
             #Getting orbital ranges
             # Internal (doubly occ)and external orbitals (empty)
             if grabrange is True:
@@ -1092,18 +1095,19 @@ def grab_dets_from_MRCI_output(file):
 
                     #CASE: CFG contains only 2 and 0s. That means a situation where CFG and Det is same thing
                     # But det info is not printed so we need to add it
-                    if '1' not in cfg:
-                        print("cfg : ", cfg)
-                        print("Found CFG without Det info. Adding to determinants")
-                        print("line:", line)
-                        bla = cfg.replace('[','').replace(']','').replace('CFG','')
-                        print("bla:", bla)
-                        det = bla.replace(str(2),str(3))
-                        print("det:", det)
-                        det2 = [int(i) for i in det]
-                        det_tuple = internal_tuple + tuple(det2) + external_tuple
-                        #print("det_tuple: ", det_tuple)
-                        state.determinants[det_tuple] = coeff
+                    #DISABLING after Vijay update
+                    #if '1' not in cfg:
+                    #    print("cfg : ", cfg)
+                    #    print("Found CFG without Det info. Adding to determinants")
+                    #    print("line:", line)
+                    #    bla = cfg.replace('[','').replace(']','').replace('CFG','')
+                    #    print("bla:", bla)
+                    #    det = bla.replace(str(2),str(3))
+                    #    print("det:", det)
+                    #    det2 = [int(i) for i in det]
+                    #    det_tuple = internal_tuple + tuple(det2) + external_tuple
+                    #    #print("det_tuple: ", det_tuple)
+                    #    state.determinants[det_tuple] = coeff
 
                 #Now creating state. Taking energy, root and mult (found earlier in beginning of CI block).
                 if 'STATE' in line:
@@ -1327,7 +1331,7 @@ def PhotoElectronSpectrum(theory=None, fragment=None, InitialState_charge=None, 
         if MRCI is True:
             print("Modifying MRCI block for initial state, CAS({},{})".format(MRCI_Initial[0],MRCI_Initial[1]))
             print("{} electrons in {} orbitals".format(MRCI_Initial[0],MRCI_Initial[1]))
-
+            print("WARNING: MRCI determinant-printing read will only work for ORCA-current or ORCA 5.0, not older ORCA versions like ORCA 4.2")
             #Removing nel/norb/nroots lines if user added
             for line in theory.orcablocks.split('\n'):
                 if 'nel' in line:

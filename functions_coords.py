@@ -981,3 +981,33 @@ def distance_between_atoms(fragment=None, atom1=None, atom2=None):
     atom2_coords=fragment.coords[atom2]
     dist=distance(atom1_coords,atom2_coords)
     return dist
+
+#Get linkatom positions for a list of qmatoms and the current set of coordinate
+# Using linkatom distance of 1.0 Å for now as default. Makes sense for C-H link atoms. Check what Chemshell does
+def get_linkatom_positions(qmatoms, coords, elems, scale, tol, linkatom_distance=1.0):
+    # For each QM atom, do a get_conn_atoms, for those atoms, check if atoms are in qmatoms,
+    # if not, then we have found an MM-boundary atom
+    qm_mm_boundary_dict = {}
+    for qmatom in qmatoms:
+        connatoms = get_connected_atoms(coords, elems, scale, tol, qmatom)
+        # Find connected atoms that are not in QM-atoms
+        boundaryatom = listdiff(connatoms, qmatoms)
+        if len(boundaryatom) > 1:
+            print("Boundaryatom : ", boundaryatom)
+            print("Problem. Found more than 1 boundaryatom for QM-atom {} . This is not allowed".format(qmatoms))
+            exit()
+        elif len(boundaryatom) == 1:
+            # Adding to dict
+            qm_mm_boundary_dict[qmatom] = boundaryatom[0]
+
+    # print("qm_mm_boundary_dict :", qm_mm_boundary_dict)
+    # Get coordinates for QMX and MMX pair. Create new L coordinate that has a modified distance to QMX
+    linkatoms_dict = {}
+    for dict_item in qm_mm_boundary_dict.items():
+        qmatom_coords = np.array(coords[dict_item[0]])
+        mmatom_coords = np.array(coords[dict_item[1]])
+
+        linkatom_coords = qmatom_coords + (mmatom_coords - qmatom_coords) * (
+                    linkatom_distance / distance(qmatom_coords, mmatom_coords))
+        linkatoms_dict[(dict_item[0], dict_item[1])] = linkatom_coords
+    return linkatoms_dict

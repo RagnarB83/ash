@@ -1,0 +1,82 @@
+import KNARRsettings
+from henkelman import HenkelmanWorker
+import numpy as np
+import math
+
+def HenkelmanGaussBoosted2D(calculator, atoms, list_to_compute=[]):
+    ndim = atoms.GetNDimIm()
+    nim = atoms.GetNim()
+    rxyz = atoms.GetCoords()
+
+    energy = np.zeros(shape=(nim, 1))
+    forces = np.zeros(shape=(nim * ndim, 1))
+    counter = 0
+    if list_to_compute is None:
+        for i in range(atoms.GetNim()):
+            ftmp, etmp = HenkelmanGaussBoosted2DWorker(rxyz[i * ndim:(i + 1) * ndim])
+
+            energy[i] = etmp
+            forces[i * ndim:(i + 1) * ndim] = ftmp
+
+            counter += 1
+    else:
+        for i, val in enumerate(list_to_compute):
+            ftmp, etmp = HenkelmanGaussBoosted2DWorker(rxyz[val * ndim:(val + 1) * ndim])
+
+            energy[val] = etmp
+            forces[val * ndim:(val + 1) * ndim] = ftmp
+
+            counter += 1
+    atoms.AddFC(counter)
+    atoms.SetForces(forces)
+    atoms.SetEnergy(energy)
+
+    return None
+
+def gauss(r, alfa=12.0, A=1.0, B=-0.05):
+    x,y = [],[]
+    x0 = []
+    for i in range(0,len(r),3):
+        x.append(float(r[i]))
+        x0.append(math.floor(r[i])+0.5)
+        y.append(float(r[i+1]))
+        
+
+    y0 = 0.1013
+    sum_of_squares = 0.0
+    for i in range(len(x)):
+        sum_of_squares += (x[i]-x0[i])**2 + (y[i]-y0)**2
+
+        
+
+    energy = A*(np.exp(-alfa*sum_of_squares)) + B
+    try:
+        energy <= 2 # energy can not exceed
+    except:
+        raise RuntimeError("Energy of gauss exceeded the saddle point")
+    
+    F = np.zeros(shape=(len(x)*3,1))
+
+    for i in range(0,len(x),3):
+        F[i]=(-2.0*A*alfa*(x0[i]-x[i])*np.exp(-alfa*sum_of_squares))
+        F[i+1]=(-2.0*A*alfa*(y0-y[i])*np.exp(-alfa*sum_of_squares))
+        F[i+2]=0.0
+        
+    return F,energy
+
+
+
+def HenkelmanGaussBoosted2DWorker(r):
+    KNARRsettings.boost_time = 1.0
+    KNARRsettings.boosted = False
+    F,E = HenkelmanWorker(r)
+    # assign alfa A B
+    #Fg, Eg = gauss(r, alfa, A, B)
+    Fg, Eg = gauss(r)
+    if Eg > 0:
+        F += Fg
+        V = Eg + E
+        KNARRsettings.boosted = True
+        KNARRsettings.boost_time = np.exp( (V-E) / 0.2) # TEMP HARD CODED
+    
+    return F,E

@@ -3,7 +3,7 @@ import settings_ash
 settings_ash.init() #initialize
 
 #Test settings
-path= "//Yggdrasill-testdir"
+path= "/Users/bjornssonsu/ASH-tests/simple"
 os.chdir(path)
 
 exit()
