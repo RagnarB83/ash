@@ -1084,9 +1084,12 @@ def grab_dets_from_MRCI_output(file):
                     print("detlist2:", detlist2)
                     #combining
                     det_tuple=internal_tuple+tuple(detlist2)+external_tuple
-                    #print("det_tuple : ", det_tuple)
+                    print("det_tuple : ", det_tuple)
                     coeff = float(line.split()[-1])
+                    print("coeff : ", coeff)
                     state.determinants[det_tuple] = coeff
+                    print("state.determinants :", state.determinants)
+                    
                 if '[' in line and 'CFG' in line:
                     print("line:", line)
                     cfg = line.split()[-1]
@@ -1142,7 +1145,6 @@ def grab_dets_from_MRCI_output(file):
         print("length of state determinants :", len(state.determinants))
         print("state.configurations : ", state.configurations)
         print("state.determinants : ", state.determinants)
-        exit()
         if len(state.determinants) == 0:
             print("WARNING!!! No determinant output found.")
             print("THIS should go away. Disabling for now...")
