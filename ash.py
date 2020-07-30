@@ -249,7 +249,7 @@ def Singlepoint(fragment=None, theory=None, Grad=False):
 
     coords=fragment.coords
     elems=fragment.elems
-
+    
     # Run a single-point energy job
     if Grad ==True:
         print(BC.WARNING,"Doing single-point Energy+Gradient job on fragment : ", fragment.prettyformula, BC.END)
@@ -1483,7 +1483,6 @@ class PolEmbedTheory:
             self.mmatoms = []
         else:
             self.mmatoms=mmatoms
-
         #If fragment object has been defined
         if fragment is not None:
             self.fragment=fragment
@@ -1834,35 +1833,15 @@ class QMMMTheory:
 
             #linkatom=False
             if self.linkatom==True:
-                print("Adding link atoms...")
-
-                #Option 1
-                # For each QM atom, do a get_conn_atoms, for those atoms, check if atoms are in qmatoms,
-                # if not, then we have found an MM-boundary atom
-                qm_mm_boundary_dict = {}
-                for qmatom in self.qmatoms:
-                    #print("QM atom is : ", qmatom)
-                    #THink about where scale and tol comes from
-                    scale = settings_ash.scale
-                    tol = settings_ash.tol
-                    connatoms = get_connected_atoms(self.coords, self.elems, scale, tol, qmatom)
-                    #print("connatoms : ", connatoms)
-                    #Find connected atoms that are not in QM-atoms
-                    boundaryatom = listdiff(connatoms, qmatoms)
-                    if len(boundaryatom) > 1:
-                        print("boundaryatom : ", boundaryatom)
-                        print("Problem. Found more than 1 boundaryatom for QM-atom {} . This is not allowed".format(qmatoms))
-                        exit()
-                    elif len(boundaryatom) == 1:
-                        #Adding to dict
-                        qm_mm_boundary_dict[qmatom] = boundaryatom[0]
-
-                print("qm_mm_boundary_dict :", qm_mm_boundary_dict)
-                # Get coordinates for QMX and MMX pair. Create new L coordinate that has a modified distance to QMX
-
-
+                print("Dealing with link atoms...")
+                # THink about where scale and tol comes from. Here using global settings
+                linkatoms_dict = get_linkatom_positions(self.qmatoms, self.coords, self.elems, settings_ash.scale, settings_ash.tol)
+                print("linkatoms_dict : ", linkatoms_dict)
                 exit()
-                # Option 2: Take each QM atom in qmatoms list and go through previously calculated connectivity.
+                # This probably should be part of Run rather than here since the linkatom coordinates will change according to changing
+                # QM and MM atom positions
+
+
                 #Link atoms. In an additive scheme we would always have link atoms, regardless of mechanical/electrostatic coupling
                 #Charge-shifting would be part of Elstat below
 
