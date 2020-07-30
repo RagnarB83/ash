@@ -1064,6 +1064,48 @@ def grab_dets_from_MRCI_output(file):
 
             if detgrab is True:
 
+                #Here reading CFG line. Grabbing configuration
+                #Also
+                if '[' in line and 'CFG' in line:
+                    print("line:", line)
+                    cfg = line.split()[-1]
+                    coeff = float(line.split()[0])
+                    state.configurations[cfg] = coeff
+                    if 'h---h---' in line and line.count('p')==0:
+                        #CAS excitation
+                        print("Assignment: 0 HOLE  0 PARTICLE")
+                    elif 'h---h---' in line and line.count('p')==1:
+                        #0-hole 1-particle
+                        print("Assignment: 0 HOLE  1 PARTICLE")
+                        #particle_index = int(find_between(string3,']p','\n'))
+                    elif 'h---h---' in line and line.count('p')==2:
+                        #0-hole 1-particle
+                        print("Assignment: 0 HOLE  2 PARTICLE")
+                        #particle_index = int(find_between(string3,']p','\n'))              
+                    elif 'h---h ' in line and line.count('p')==0:
+                        #1-hole 0-particle
+                        print("Assignment: 1 HOLE  0 PARTICLE")                             
+                        #hole_index=int(find_between(string,'h---h','[').strip())
+                    elif 'h---h ' in line and line.count('p')==1:
+                        #1-hole 1-particle
+                        print("Assignment: 1 HOLE  1 PARTICLE")
+                    elif 'h---h ' in line and line.count('p')==2:
+                        #1-hole 2-particle
+                        print("Assignment: 1 HOLE  2 PARTICLE")                        
+                    elif 'CFG h ' in line and line.count('p')==0:
+                        # 2-hole 2-particle
+                        print("Assignment: 2 HOLE  0 PARTICLE")
+                        #hole_indices=[int(i) for i in find_between(string2,'CFG h','[').replace('h','').split()]
+                    elif 'CFG h ' in line and line.count('p')==1:
+                        # 2-hole 1-particle
+                        print("Assignment: 2 HOLE  1 PARTICLE")
+                    elif 'CFG h ' in line and line.count('p')==2:
+                        # 2-hole 2-particle
+                        print("Assignment: 2 HOLE  2 PARTICLE")                                                    
+                    else:
+                        print("weird.exiting")
+                        exit()    
+                        
                 if '[' in line and 'CFG' not in line:
                     print("line:", line)
                     det = line.split()[0]
@@ -1090,11 +1132,7 @@ def grab_dets_from_MRCI_output(file):
                     state.determinants[det_tuple] = coeff
                     print("state.determinants :", state.determinants)
                     
-                if '[' in line and 'CFG' in line:
-                    print("line:", line)
-                    cfg = line.split()[-1]
-                    coeff = float(line.split()[0])
-                    state.configurations[cfg] = coeff
+
 
                     #CASE: CFG contains only 2 and 0s. That means a situation where CFG and Det is same thing
                     # But det info is not printed so we need to add it

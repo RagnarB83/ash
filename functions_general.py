@@ -81,6 +81,11 @@ def readlinesfile(filename):
     exit(12)
   return out
 
+#Find substring of string between left and right parts
+def find_between(s, start, end):
+  return (s.split(start))[1].split(end)[0]
+
+
 #Read list of integers from file. Output list of integers. Ignores blanklines, return chars, non-int characters
 #offset option: shifts integers by a value (e.g. 1 or -1)
 def read_intlist_from_file(file,offset=0):
