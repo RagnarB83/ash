@@ -641,7 +641,7 @@ def DLPNO_F12_SP(fragment=None, charge=None, orcadir=None, mult=None, stabilitya
     #Frozen-core F12 calcs
     ############################################################
 
-    ccsdt_f12_line="! {} cc-pV{}-F12 cc-pVDZ-F12-CABS {} {} {}".format(ccsdtkeyword, F12level, auxbasis, pnosetting, scfsetting)
+    ccsdt_f12_line="! {} cc-pV{}-F12 cc-pV{}-F12-CABS {} {} {}".format(ccsdtkeyword, F12level, F12level,auxbasis, pnosetting, scfsetting)
 
 
     ccsdt_f12 = ash.ORCATheory(orcadir=orcadir, orcasimpleinput=ccsdt_f12_line, orcablocks=blocks, nprocs=numcores, charge=charge, mult=mult)
@@ -926,7 +926,7 @@ def DLPNO_W2theory_SP(fragment=None, charge=None, orcadir=None, mult=None, stabi
 #Requires orcadir, inputline for geo-opt. ORCA-bssed
 #Make more general. Not sure. ORCA makes most sense for geo-opt and HL theory
 def thermochemprotocol(SPprotocol=None, fraglist=None, stoichiometry=None, orcadir=None, numcores=None,
-                       Opt_protocol_inputline=None, Opt_protocol_blocks=None, pnosetting='NormalPNO'):
+                       Opt_protocol_inputline=None, Opt_protocol_blocks=None, pnosetting='NormalPNO', F12level='DZ'):
     if Opt_protocol_blocks is None:
         Opt_protocol_blocks=""
 
@@ -952,8 +952,11 @@ def thermochemprotocol(SPprotocol=None, fraglist=None, stoichiometry=None, orcad
         elif SPprotocol == 'DLPNO-W1':
             FinalE, componentsdict = DLPNO_W1theory_SP(fragment=species, charge=species.charge,
                         mult=species.mult, orcadir=orcadir, numcores=numcores, memory=5000, pnosetting=pnosetting, T1=False)
+        elif SPprotocol == 'DLPNO-F12':
+            FinalE, componentsdict = DLPNO_F12_SP(fragment=species, charge=species.charge,
+                        mult=species.mult, orcadir=orcadir, numcores=numcores, memory=5000, pnosetting=pnosetting, T1=False, F12level=F12level)            
         else:
-            print("Unknown SPprotocol")
+            print("Unknown Singlepoint protocol")
             exit()
         FinalEnergies.append(FinalE+ZPVE); list_of_dicts.append(componentsdict)
         ZPVE_Energies.append(ZPVE)
