@@ -351,6 +351,7 @@ def Singlepoint_parallel(fragments=None, theories=None, numcores=None):
 def NumFreq(fragment=None, theory=None, npoint=1, displacement=0.0005, hessatoms=None, numcores=1, runmode='serial'):
     
     print(BC.WARNING, BC.BOLD, "------------NUMERICAL FREQUENCIES-------------", BC.END)
+    os.remove('Numfreq_dir')
     os.mkdir('Numfreq_dir')
     os.chdir('Numfreq_dir')
     print("Creating separate directory for displacement calculations: Numfreq_dir ")
