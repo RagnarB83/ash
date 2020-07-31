@@ -648,7 +648,7 @@ def DLPNO_F12_SP(fragment=None, charge=None, orcadir=None, mult=None, stabilitya
 
     ash.Singlepoint(fragment=fragment, theory=ccsdt_f12)
     CCSDT_F12_dict = grab_HF_and_corr_energies('orca-input.out', DLPNO=True)
-    shutil.copyfile('orca-input.out', './' + calc_label + 'CCSDT_DZ' + '.out')
+    shutil.copyfile('orca-input.out', './' + calc_label + 'CCSDT_F12' + '.out')
     print("CCSDT_F12_dict:", CCSDT_F12_dict)
 
     #List of all SCF energies (DZ,TZ,QZ), all CCSD-corr energies (DZ,TZ,QZ) and all (T) corr energies (DZ,TZ)
@@ -671,8 +671,8 @@ def DLPNO_F12_SP(fragment=None, charge=None, orcadir=None, mult=None, stabilitya
     # Done regularly, not F12
     ############################################################
     print("Doing CV+SR at normal non-F12 level for now")
-    ccsdt_mtsmall_NoFC_line="! DLPNO-CCSD(T) DKH W1-mtsmall  {} {} nofrozencore {}".format(ccsdtkeyword, auxbasis, pnosetting, scfsetting)
-    ccsdt_mtsmall_FC_line="! DLPNO-CCSD(T) W1-mtsmall {}  {} {}".format(ccsdtkeyword, auxbasis, pnosetting, scfsetting)
+    ccsdt_mtsmall_NoFC_line="! DLPNO-CCSD(T) DKH W1-mtsmall  {} {} nofrozencore {}".format(auxbasis, pnosetting, scfsetting)
+    ccsdt_mtsmall_FC_line="! DLPNO-CCSD(T) W1-mtsmall {}  {} {}".format(auxbasis, pnosetting, scfsetting)
 
     ccsdt_mtsmall_NoFC = ash.ORCATheory(orcadir=orcadir, orcasimpleinput=ccsdt_mtsmall_NoFC_line, orcablocks=blocks, nprocs=numcores, charge=charge, mult=mult)
     ccsdt_mtsmall_FC = ash.ORCATheory(orcadir=orcadir, orcasimpleinput=ccsdt_mtsmall_FC_line, orcablocks=blocks, nprocs=numcores, charge=charge, mult=mult)
