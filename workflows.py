@@ -177,6 +177,12 @@ def W1theory_SP(fragment=None, charge=None, orcadir=None, mult=None, stabilityan
     print("-----------------------------")
     print("W1theory_SP PROTOCOL")
     print("-----------------------------")
+    print("Settings:")
+    print("Number of cores: ", numcores)
+    print("Maxcore setting: ", memory, "MB")
+    print("")
+    print("HFreference : ", HFreference)
+    print("")
     calc_label = "Frag" + str(fragment.formula) + "_" + str(fragment.charge) + "_"
     print("Calculation label: ", calc_label)
     numelectrons = int(fragment.nuccharge - charge)
@@ -362,6 +368,14 @@ def DLPNO_W1theory_SP(fragment=None, charge=None, orcadir=None, mult=None, stabi
     print("-----------------------------")
     print("DLPNO_W1theory_SP PROTOCOL")
     print("-----------------------------")
+    print("Settings:")
+    print("Number of cores: ", numcores)
+    print("Maxcore setting: ", memory, "MB")
+    print("")
+    print("PNO setting: ", pnosetting)
+    print("T1 : ", T1)
+    print("SCF setting: ", scfsetting)
+    print("")
     calc_label = "Frag" + str(fragment.formula) + "_" + str(fragment.charge) + "_"
     print("Calculation label: ", calc_label)
 
@@ -532,7 +546,7 @@ def DLPNO_W1theory_SP(fragment=None, charge=None, orcadir=None, mult=None, stabi
 #DLPNO-F12
 #Test: DLPNO-CCSD(T)-F12 protocol including CV+SR
 def DLPNO_F12_SP(fragment=None, charge=None, orcadir=None, mult=None, stabilityanalysis=False, numcores=1,
-                      memory=5000, pnosetting='NormalPNO', T1=False, scfsetting='TightSCF'):
+                      memory=5000, pnosetting='NormalPNO', T1=False, scfsetting='TightSCF', F12level='DZ'):
     """
     WORK IN PROGRESS
     DLPNO-CCSD(T)-F12 version of single-point W1-ish workflow.
@@ -552,6 +566,15 @@ def DLPNO_F12_SP(fragment=None, charge=None, orcadir=None, mult=None, stabilitya
     print("-----------------------------")
     print("DLPNO_F12_SP PROTOCOL")
     print("-----------------------------")
+    print("Settings:")
+    print("Number of cores: ", numcores)
+    print("Maxcore setting: ", memory, "MB")
+    print("")
+    print("PNO setting: ", pnosetting)
+    print("T1 : ", T1)
+    print("SCF setting: ", scfsetting)
+    print("F12 basis level : ", F12level)
+    print("")
     calc_label = "Frag" + str(fragment.formula) + "_" + str(fragment.charge) + "_"
     print("Calculation label: ", calc_label)
 
@@ -615,10 +638,10 @@ def DLPNO_F12_SP(fragment=None, charge=None, orcadir=None, mult=None, stabilitya
 
 
     ############################################################s
-    #Frozen-core calcs
+    #Frozen-core F12 calcs
     ############################################################
 
-    ccsdt_f12_line="! {} cc-pVDZ-F12 cc-pVDZ-F12-CABS {} {} {}".format(ccsdtkeyword, auxbasis, pnosetting, scfsetting)
+    ccsdt_f12_line="! {} cc-pV{}-F12 cc-pVDZ-F12-CABS {} {} {}".format(ccsdtkeyword, F12level, auxbasis, pnosetting, scfsetting)
 
 
     ccsdt_f12 = ash.ORCATheory(orcadir=orcadir, orcasimpleinput=ccsdt_f12_line, orcablocks=blocks, nprocs=numcores, charge=charge, mult=mult)
