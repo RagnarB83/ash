@@ -1077,7 +1077,7 @@ def grab_dets_from_MRCI_output(file):
                         #CAS excitation
                         print("Assignment: 0 HOLE  0 PARTICLE")
                         hole_indices=[]
-                        particles_indices=[]
+                        particle_indices=[]
                         print("hole_indices:", hole_indices)                         
                         print("particle_indices:", particle_indices)    
                     elif 'h---h---' in line and line.count('p')==1:
@@ -1085,19 +1085,19 @@ def grab_dets_from_MRCI_output(file):
                         hole_indices=[]
                         print("Assignment: 0 HOLE  1 PARTICLE")
                         particle_index = int(find_between(line,']p','\n'))
-                        particles_indices.append(particle_index)
+                        particle_indices.append(particle_index)
                         print("hole_indices:", hole_indices) 
                         print("particle_indices:", particle_indices)    
                     elif 'h---h---' in line and line.count('p')==2:
                         #0-hole 2-particle
                         hole_indices=[]
                         print("Assignment: 0 HOLE  2 PARTICLE")
-                        particles_indices = [int(i) for i in find_between(line,']p','\n').replace('p','').split()]
+                        particle_indices = [int(i) for i in find_between(line,']p','\n').replace('p','').split()]
                         print("hole_indices:", hole_indices) 
                         print("particle_indices:", particle_indices)                
                     elif 'h---h ' in line and line.count('p')==0:
                         #1-hole 0-particle
-                        particles_indices=[]
+                        particle_indices=[]
                         print("Assignment: 1 HOLE  0 PARTICLE")                             
                         hole_index=int(find_between(string,'h---h','[').strip())
                         hole_indices.append(hole_index)
@@ -1109,7 +1109,7 @@ def grab_dets_from_MRCI_output(file):
                         hole_index=int(find_between(string,'h---h','[').strip())
                         hole_indices.append(hole_index)
                         particle_index = int(find_between(line,']p','\n'))
-                        particles_indices.append(particle_index)                         
+                        particle_indices.append(particle_index)                         
                         print("hole_indices:", hole_indices) 
                         print("particle_indices:", particle_indices)  
                     elif 'h---h ' in line and line.count('p')==2:
@@ -1117,14 +1117,14 @@ def grab_dets_from_MRCI_output(file):
                         print("Assignment: 1 HOLE  2 PARTICLE")
                         hole_index=int(find_between(string,'h---h','[').strip())
                         hole_indices.append(hole_index)
-                        particles_indices = [int(i) for i in find_between(line,']p','\n').replace('p','').split()]
+                        particle_indices = [int(i) for i in find_between(line,']p','\n').replace('p','').split()]
                         print("hole_indices:", hole_indices) 
                         print("particle_indices:", particle_indices)
                     elif 'CFG h ' in line and line.count('p')==0:
                         # 2-hole 0-particle
                         print("Assignment: 2 HOLE  0 PARTICLE")
                         hole_indices=[int(i) for i in find_between(line,'CFG h','[').replace('h','').split()]
-                        particles_indices=[]
+                        particle_indices=[]
                         print("hole_indices:", hole_indices) 
                         print("particle_indices:", particle_indices)
                     elif 'CFG h ' in line and line.count('p')==1:
@@ -1132,14 +1132,14 @@ def grab_dets_from_MRCI_output(file):
                         print("Assignment: 2 HOLE  1 PARTICLE")
                         hole_indices=[int(i) for i in find_between(line,'CFG h','[').replace('h','').split()]
                         particle_index = int(find_between(line,']p','\n'))
-                        particles_indices.append(particle_index)   
+                        particle_indices.append(particle_index)   
                         print("hole_indices:", hole_indices) 
                         print("particle_indices:", particle_indices)
                     elif 'CFG h ' in line and line.count('p')==2:
                         # 2-hole 2-particle
                         print("Assignment: 2 HOLE  2 PARTICLE")
                         hole_indices=[int(i) for i in find_between(line,'CFG h','[').replace('h','').split()]
-                        particles_indices = [int(i) for i in find_between(line,']p','\n').replace('p','').split()]
+                        particle_indices = [int(i) for i in find_between(line,']p','\n').replace('p','').split()]
                         print("hole_indices:", hole_indices) 
                         print("particle_indices:", particle_indices)                                                    
                     else:
