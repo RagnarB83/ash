@@ -647,7 +647,7 @@ def DLPNO_F12_SP(fragment=None, charge=None, orcadir=None, mult=None, stabilitya
     ccsdt_f12 = ash.ORCATheory(orcadir=orcadir, orcasimpleinput=ccsdt_f12_line, orcablocks=blocks, nprocs=numcores, charge=charge, mult=mult)
 
     ash.Singlepoint(fragment=fragment, theory=ccsdt_f12)
-    CCSDT_F12_dict = grab_HF_and_corr_energies('orca-input.out', DLPNO=True)
+    CCSDT_F12_dict = grab_HF_and_corr_energies('orca-input.out', DLPNO=True,T1=True)
     shutil.copyfile('orca-input.out', './' + calc_label + 'CCSDT_F12' + '.out')
     print("CCSDT_F12_dict:", CCSDT_F12_dict)
 
