@@ -350,10 +350,10 @@ def Singlepoint_parallel(fragments=None, theories=None, numcores=None):
 #Numerical frequencies function
 def NumFreq(fragment=None, theory=None, npoint=1, displacement=0.0005, hessatoms=None, numcores=1, runmode='serial'):
     
+    print(BC.WARNING, BC.BOLD, "------------NUMERICAL FREQUENCIES-------------", BC.END)
     os.mkdir('Numfreq_dir')
     os.chdir('Numfreq_dir')
-    
-    print(BC.WARNING, BC.BOLD, "------------NUMERICAL FREQUENCIES-------------", BC.END)
+    print("Creating separate directory for displacement calculations: Numfreq_dir ")
     if fragment is None or theory is None:
         print("NumFreq requires a fragment and a theory object")
 
@@ -721,7 +721,9 @@ def NumFreq(fragment=None, theory=None, npoint=1, displacement=0.0005, hessatoms
     print(BC.WARNING, BC.BOLD, "------------NUMERICAL FREQUENCIES END-------------", BC.END)
 
     #Thermochemistry object. Should contain frequencies, zero-point energy, enthalpycorr, gibbscorr, etc.
-
+    
+    #Return to ..
+    os.chdir('..')
     return Thermochemistry
 
 #Molecular dynamics class
