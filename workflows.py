@@ -671,8 +671,8 @@ def DLPNO_F12_SP(fragment=None, charge=None, orcadir=None, mult=None, stabilitya
     # Done regularly, not F12
     ############################################################
     print("Doing CV+SR at normal non-F12 level for now")
-    ccsdt_mtsmall_NoFC_line="! {} DKH W1-mtsmall  {} {} nofrozencore {}".format(ccsdtkeyword, auxbasis, pnosetting, scfsetting)
-    ccsdt_mtsmall_FC_line="! {} W1-mtsmall {}  {} {}".format(ccsdtkeyword, auxbasis, pnosetting, scfsetting)
+    ccsdt_mtsmall_NoFC_line="! DLPNO-CCSD(T) DKH W1-mtsmall  {} {} nofrozencore {}".format(ccsdtkeyword, auxbasis, pnosetting, scfsetting)
+    ccsdt_mtsmall_FC_line="! DLPNO-CCSD(T) W1-mtsmall {}  {} {}".format(ccsdtkeyword, auxbasis, pnosetting, scfsetting)
 
     ccsdt_mtsmall_NoFC = ash.ORCATheory(orcadir=orcadir, orcasimpleinput=ccsdt_mtsmall_NoFC_line, orcablocks=blocks, nprocs=numcores, charge=charge, mult=mult)
     ccsdt_mtsmall_FC = ash.ORCATheory(orcadir=orcadir, orcasimpleinput=ccsdt_mtsmall_FC_line, orcablocks=blocks, nprocs=numcores, charge=charge, mult=mult)
@@ -930,7 +930,7 @@ def thermochemprotocol(SPprotocol=None, fraglist=None, stoichiometry=None, orcad
     if Opt_protocol_blocks is None:
         Opt_protocol_blocks=""
 
-    #DFT Opt+Freq  and Single-point W1 workflow
+    #DFT Opt+Freq  and Single-point High-level workflow
     FinalEnergies = []; list_of_dicts = []; ZPVE_Energies=[]
     for species in fraglist:
         #Only Opt+Freq for molecules, not atoms
