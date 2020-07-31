@@ -1099,14 +1099,14 @@ def grab_dets_from_MRCI_output(file):
                         #1-hole 0-particle
                         particle_indices=[]
                         print("Assignment: 1 HOLE  0 PARTICLE")                             
-                        hole_index=int(find_between(string,'h---h','[').strip())
+                        hole_index=int(find_between(line,'h---h','[').strip())
                         hole_indices.append(hole_index)
                         print("hole_indices:", hole_indices) 
                         print("particle_indices:", particle_indices)  
                     elif 'h---h ' in line and line.count('p')==1:
                         #1-hole 1-particle
                         print("Assignment: 1 HOLE  1 PARTICLE")
-                        hole_index=int(find_between(string,'h---h','[').strip())
+                        hole_index=int(find_between(line,'h---h','[').strip())
                         hole_indices.append(hole_index)
                         particle_index = int(find_between(line,']p','\n'))
                         particle_indices.append(particle_index)                         
@@ -1115,7 +1115,7 @@ def grab_dets_from_MRCI_output(file):
                     elif 'h---h ' in line and line.count('p')==2:
                         #1-hole 2-particle
                         print("Assignment: 1 HOLE  2 PARTICLE")
-                        hole_index=int(find_between(string,'h---h','[').strip())
+                        hole_index=int(find_between(line,'h---h','[').strip())
                         hole_indices.append(hole_index)
                         particle_indices = [int(i) for i in find_between(line,']p','\n').replace('p','').split()]
                         print("hole_indices:", hole_indices) 
