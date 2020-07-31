@@ -1067,44 +1067,83 @@ def grab_dets_from_MRCI_output(file):
                 #Here reading CFG line. Grabbing configuration
                 #Also
                 if '[' in line and 'CFG' in line:
-                    print("-----------------------")
+                    print("--------------------------------------------------")
                     print("line:", line)
                     cfg = line.split()[-1]
                     coeff = float(line.split()[0])
                     state.configurations[cfg] = coeff
+                    #Reading CFG line and determining hole/particle excitations outside active space
                     if 'h---h---' in line and line.count('p')==0:
                         #CAS excitation
                         print("Assignment: 0 HOLE  0 PARTICLE")
+                        hole_indices=[]
+                        particles_indices=[]
+                        print("hole_indices:", hole_indices)                         
+                        print("particle_indices:", particle_indices)    
                     elif 'h---h---' in line and line.count('p')==1:
                         #0-hole 1-particle
+                        hole_indices=[]
                         print("Assignment: 0 HOLE  1 PARTICLE")
-                        #particle_index = int(find_between(string3,']p','\n'))
+                        particle_index = int(find_between(line,']p','\n'))
+                        particles_indices.append(particle_index)
+                        print("hole_indices:", hole_indices) 
+                        print("particle_indices:", particle_indices)    
                     elif 'h---h---' in line and line.count('p')==2:
-                        #0-hole 1-particle
+                        #0-hole 2-particle
+                        hole_indices=[]
                         print("Assignment: 0 HOLE  2 PARTICLE")
-                        #particle_index = int(find_between(string3,']p','\n'))              
+                        particles_indices = [int(i) for i in find_between(line,']p','\n').replace('p','').split()]
+                        print("hole_indices:", hole_indices) 
+                        print("particle_indices:", particle_indices)                
                     elif 'h---h ' in line and line.count('p')==0:
                         #1-hole 0-particle
+                        particles_indices=[]
                         print("Assignment: 1 HOLE  0 PARTICLE")                             
-                        #hole_index=int(find_between(string,'h---h','[').strip())
+                        hole_index=int(find_between(string,'h---h','[').strip())
+                        hole_indices.append(hole_index)
+                        print("hole_indices:", hole_indices) 
+                        print("particle_indices:", particle_indices)  
                     elif 'h---h ' in line and line.count('p')==1:
                         #1-hole 1-particle
                         print("Assignment: 1 HOLE  1 PARTICLE")
+                        hole_index=int(find_between(string,'h---h','[').strip())
+                        hole_indices.append(hole_index)
+                        particle_index = int(find_between(line,']p','\n'))
+                        particles_indices.append(particle_index)                         
+                        print("hole_indices:", hole_indices) 
+                        print("particle_indices:", particle_indices)  
                     elif 'h---h ' in line and line.count('p')==2:
                         #1-hole 2-particle
-                        print("Assignment: 1 HOLE  2 PARTICLE")                        
+                        print("Assignment: 1 HOLE  2 PARTICLE")
+                        hole_index=int(find_between(string,'h---h','[').strip())
+                        hole_indices.append(hole_index)
+                        particles_indices = [int(i) for i in find_between(line,']p','\n').replace('p','').split()]
+                        print("hole_indices:", hole_indices) 
+                        print("particle_indices:", particle_indices)
                     elif 'CFG h ' in line and line.count('p')==0:
-                        # 2-hole 2-particle
+                        # 2-hole 0-particle
                         print("Assignment: 2 HOLE  0 PARTICLE")
-                        #hole_indices=[int(i) for i in find_between(string2,'CFG h','[').replace('h','').split()]
+                        hole_indices=[int(i) for i in find_between(line,'CFG h','[').replace('h','').split()]
+                        particles_indices=[]
+                        print("hole_indices:", hole_indices) 
+                        print("particle_indices:", particle_indices)
                     elif 'CFG h ' in line and line.count('p')==1:
                         # 2-hole 1-particle
                         print("Assignment: 2 HOLE  1 PARTICLE")
+                        hole_indices=[int(i) for i in find_between(line,'CFG h','[').replace('h','').split()]
+                        particle_index = int(find_between(line,']p','\n'))
+                        particles_indices.append(particle_index)   
+                        print("hole_indices:", hole_indices) 
+                        print("particle_indices:", particle_indices)
                     elif 'CFG h ' in line and line.count('p')==2:
                         # 2-hole 2-particle
-                        print("Assignment: 2 HOLE  2 PARTICLE")                                                    
+                        print("Assignment: 2 HOLE  2 PARTICLE")
+                        hole_indices=[int(i) for i in find_between(line,'CFG h','[').replace('h','').split()]
+                        particles_indices = [int(i) for i in find_between(line,']p','\n').replace('p','').split()]
+                        print("hole_indices:", hole_indices) 
+                        print("particle_indices:", particle_indices)                                                    
                     else:
-                        print("weird.exiting")
+                        print("Bad line. exiting")
                         exit()    
                         
                 if '[' in line and 'CFG' not in line:
