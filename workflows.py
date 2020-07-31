@@ -529,6 +529,179 @@ def DLPNO_W1theory_SP(fragment=None, charge=None, orcadir=None, mult=None, stabi
     #return final energy and also dictionary with energy components
     return W1_total, E_dict
 
+#DLPNO-F12
+#Test: DLPNO-CCSD(T)-F12 protocol including CV+SR
+def DLPNO_F12_SP(fragment=None, charge=None, orcadir=None, mult=None, stabilityanalysis=False, numcores=1,
+                      memory=5000, pnosetting='NormalPNO', T1=False, scfsetting='TightSCF'):
+    """
+    WORK IN PROGRESS
+    DLPNO-CCSD(T)-F12 version of single-point W1-ish workflow.
+
+    :param fragment: ASH fragment
+    :param charge: Charge of fragment (to be replaced)?
+    :param orcadir: ORCA directory
+    :param mult: Multiplicity of fragment (to be replaced)?
+    :param stabilityanalysis: stability analysis on or off . Not currently active
+    :param numcores: number of cores
+    :param memory: Memory in MB
+    :param scfsetting: ORCA keyword (e.g. NormalSCF, TightSCF, VeryTightSCF)
+    :param pnosetting: ORCA keyword: NormalPNO, LoosePNO, TightPNO
+    ;param T1: Boolean (whether to do expensive iterative triples or not)
+    :return: energy and dictionary with energy-components
+    """
+    print("-----------------------------")
+    print("DLPNO_F12_SP PROTOCOL")
+    print("-----------------------------")
+    calc_label = "Frag" + str(fragment.formula) + "_" + str(fragment.charge) + "_"
+    print("Calculation label: ", calc_label)
+
+    numelectrons = int(fragment.nuccharge - charge)
+
+    #if 1-electron species like Hydrogen atom then we either need to code special HF-based procedure or just hardcode values
+    #Currently hardcoding H-atom case. Replace with proper extrapolated value later.
+    if numelectrons == 1:
+        print("Number of electrons is 1")
+        print("Assuming hydrogen atom and skipping calculation")
+        E_total = -0.500000
+        print("Using hardcoded value: ", E_total)
+        E_dict = {'Total_E': E_total, 'E_SCF_CBS': E_total, 'E_CCSDcorr_CBS': 0.0,
+                  'E_triplescorr_CBS': 0.0, 'E_corecorr_and_SR': 0.0, 'E_SO': 0.0}
+        return E_total, E_dict
+
+    #Reducing numcores if fewer active electron pairs than numcores.
+    core_electrons = num_core_electrons(fragment)
+    print("core_electrons:", core_electrons)
+    valence_electrons = (numelectrons - core_electrons)
+    electronpairs = int(valence_electrons / 2)
+    if electronpairs  < numcores:
+        print("Number of electrons in fragment:", numelectrons)
+        print("Number of valence electrons :", valence_electrons )
+        print("Number of valence electron pairs :", electronpairs )
+        print("Setting numcores to number of electron pairs")
+        numcores=int(electronpairs)
+
+    #Block input for SCF/MDCI block options.
+    #Disabling FullLMP2 guess in general as not available for open-shell
+    #TODO: Add Stability analysis option  here later
+    blocks="""
+    %maxcore {}
+    %scf
+    maxiter 200
+    end
+    %mdci
+    UseFullLMP2Guess false
+    end
+
+    """.format(memory)
+
+    #Whether to use diffuse basis set or not
+    #Note: this may fuck up basis set extrapolation
+    #if noaug is True:
+    #    prefix=''
+    #else:
+    #    prefix='aug-'
+
+    #Auxiliary basis set. One big one
+    auxbasis='cc-pV5Z/C'
+
+    #Whether to use iterative triples or not. Default: regular DLPNO-CCSD(T)
+    if T1 is True:
+        
+        print("test...")
+        exit()
+        ccsdtkeyword='DLPNO-CCSD(T1)'
+    else:
+        ccsdtkeyword='DLPNO-CCSD(T)-F12'
+
+
+    ############################################################s
+    #Frozen-core calcs
+    ############################################################
+
+    ccsdt_f12_line="! {} cc-pVDZ-F12 cc-pVDZ-F12-CABS {} {} {}".format(ccsdtkeyword, auxbasis, pnosetting, scfsetting)
+
+
+    ccsdt_f12 = ash.ORCATheory(orcadir=orcadir, orcasimpleinput=ccsdt_f12_line, orcablocks=blocks, nprocs=numcores, charge=charge, mult=mult)
+
+    ash.Singlepoint(fragment=fragment, theory=ccsdt_f12)
+    CCSDT_F12_dict = grab_HF_and_corr_energies('orca-input.out', DLPNO=True)
+    shutil.copyfile('orca-input.out', './' + calc_label + 'CCSDT_DZ' + '.out')
+    print("CCSDT_F12_dict:", CCSDT_F12_dict)
+
+    #List of all SCF energies (DZ,TZ,QZ), all CCSD-corr energies (DZ,TZ,QZ) and all (T) corr energies (DZ,TZ)
+    scf_energies = [CCSDT_F12_dict['HF']]
+    ccsdcorr_energies = [CCSDT_F12_dict['CCSD_corr']]
+    triplescorr_energies = [CCSDT_F12_dict['CCSD(T)_corr']]
+
+    print("")
+    print("scf_energies :", scf_energies)
+    print("ccsdcorr_energies :", ccsdcorr_energies)
+    print("triplescorr_energies :", triplescorr_energies)
+
+    #Final F12 energis
+    E_SCF_CBS=scf_energies[0]
+    E_CCSDcorr_CBS=ccsdcorr_energies[0]
+    E_triplescorr_CBS=triplescorr_energies[0]
+
+    ############################################################
+    #Core-correlation + scalar relativistic as joint correction
+    # Done regularly, not F12
+    ############################################################
+    print("Doing CV+SR at normal non-F12 level for now")
+    ccsdt_mtsmall_NoFC_line="! {} DKH W1-mtsmall  {} {} nofrozencore {}".format(ccsdtkeyword, auxbasis, pnosetting, scfsetting)
+    ccsdt_mtsmall_FC_line="! {} W1-mtsmall {}  {} {}".format(ccsdtkeyword, auxbasis, pnosetting, scfsetting)
+
+    ccsdt_mtsmall_NoFC = ash.ORCATheory(orcadir=orcadir, orcasimpleinput=ccsdt_mtsmall_NoFC_line, orcablocks=blocks, nprocs=numcores, charge=charge, mult=mult)
+    ccsdt_mtsmall_FC = ash.ORCATheory(orcadir=orcadir, orcasimpleinput=ccsdt_mtsmall_FC_line, orcablocks=blocks, nprocs=numcores, charge=charge, mult=mult)
+
+    energy_ccsdt_mtsmall_nofc = ash.Singlepoint(fragment=fragment, theory=ccsdt_mtsmall_NoFC)
+    shutil.copyfile('orca-input.out', './'+ calc_label + 'CCSDT_MTsmall_NoFC_DKH' + '.out')
+    energy_ccsdt_mtsmall_fc = ash.Singlepoint(fragment=fragment, theory=ccsdt_mtsmall_FC)
+    shutil.copyfile('orca-input.out', './' + calc_label + 'CCSDT_MTsmall_FC_noDKH' + '.out')
+
+    #Core-correlation is total energy difference between NoFC-DKH and FC-norel
+    E_corecorr_and_SR = energy_ccsdt_mtsmall_nofc - energy_ccsdt_mtsmall_fc
+    print("E_corecorr_and_SR:", E_corecorr_and_SR)
+
+    ############################################################
+    #Spin-orbit correction for atoms.
+    ############################################################
+    if fragment.numatoms == 1:
+        print("Fragment is an atom. Looking up atomic spin-orbit splitting value")
+        E_SO = atom_spinorbitsplittings[fragment.elems[0]] / constants.hartocm
+    else :
+        E_SO = 0.0
+
+    print("Spin-orbit correction (E_SO):", E_SO)
+
+    ############################################################
+    #FINAL RESULT
+    ############################################################
+    print("")
+    print("")
+    E_total = E_SCF_CBS + E_CCSDcorr_CBS + E_triplescorr_CBS +E_corecorr_and_SR  + E_SO
+    print("Final DLPNO-CCSD(T)-F12 energy :", E_total, "Eh")
+    print("")
+    print("Contributions:")
+    print("--------------")
+    print("E_SCF_CBS : ", E_SCF_CBS)
+    print("E_CCSDcorr_CBS : ", E_CCSDcorr_CBS)
+    print("E_triplescorr_CBS : ", E_triplescorr_CBS)
+    print("E_corecorr_and_SR : ", E_corecorr_and_SR)
+    print("E_SO : ", E_SO)
+
+    E_dict = {'Total_E' : E_total, 'E_SCF_CBS' : E_SCF_CBS, 'E_CCSDcorr_CBS' : E_CCSDcorr_CBS, 'E_triplescorr_CBS' : E_triplescorr_CBS,
+             'E_corecorr_and_SR' : E_corecorr_and_SR, 'E_SO' : E_SO}
+
+
+    #Cleanup GBW file. Full cleanup ??
+    # TODO: Keep output files for each step
+    os.remove('orca-input.gbw')
+
+    #return final energy and also dictionary with energy components
+    return E_total, E_dict
+
+
 def DLPNO_W2theory_SP(fragment=None, charge=None, orcadir=None, mult=None, stabilityanalysis=False, numcores=1,
                       memory=5000, pnosetting='NormalPNO', T1=False, scfsetting='TightSCF'):
     """
@@ -551,6 +724,8 @@ def DLPNO_W2theory_SP(fragment=None, charge=None, orcadir=None, mult=None, stabi
     print("-----------------------------")
     print("DLPNO_W2theory_SP PROTOCOL")
     print("-----------------------------")
+    print("Not active yet")
+    exit()
     calc_label = "Frag" + str(fragment.formula) + "_" + str(fragment.charge) + "_"
     print("Calculation label: ", calc_label)
 

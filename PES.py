@@ -1166,6 +1166,13 @@ def grab_dets_from_MRCI_output(file):
                         elif j == 'd':
                             detlist2.append(2)
                     print("detlist2:", detlist2)
+                    #Modifying internal_tuple for possible holes
+                    print("internal_tuple :", internal_tuple)
+                    #TODO
+                    #Modifying external_tuple for possible particles
+                    #TODO                    
+                    print("external_tuple :", external_tuple)
+                    
                     #combining
                     det_tuple=internal_tuple+tuple(detlist2)+external_tuple
                     print("det_tuple : ", det_tuple)
