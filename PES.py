@@ -1067,6 +1067,8 @@ def grab_dets_from_MRCI_output(file):
                 #Here reading CFG line. Grabbing configuration
                 #Also
                 if '[' in line and 'CFG' in line:
+                    hole_indices=[]
+                    particle_indices=[]
                     print("--------------------------------------------------")
                     print("line:", line)
                     cfg = line.split()[-1]
