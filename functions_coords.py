@@ -1007,7 +1007,6 @@ def get_linkatom_positions(qmatoms, coords, elems, scale, tol, linkatom_distance
         qmatom_coords = np.array(coords[dict_item[0]])
         mmatom_coords = np.array(coords[dict_item[1]])
 
-        linkatom_coords = qmatom_coords + (mmatom_coords - qmatom_coords) * (
-                    linkatom_distance / distance(qmatom_coords, mmatom_coords))
+        linkatom_coords = qmatom_coords + (mmatom_coords - qmatom_coords) * (linkatom_distance / distance(qmatom_coords, mmatom_coords))
         linkatoms_dict[(dict_item[0], dict_item[1])] = linkatom_coords
     return linkatoms_dict
