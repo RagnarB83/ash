@@ -1848,8 +1848,7 @@ class QMMMTheory:
                 self.linkatoms=False
             
             
-            print("boundaryatoms:", boundaryatoms)
-            print("Dealing with link atoms...")
+            print("Boundaryatoms (QM:MM pairs):", boundaryatoms)
             
             # THink about where scale and tol comes from. Here using global settings
             
@@ -1915,13 +1914,14 @@ class QMMMTheory:
         self.mmcoords=[current_coords[i] for i in self.mmatoms]
         
         #TODO LINKATOMS
-        #1. Get linkatoms coordinatese
-        linkatoms_dict = get_linkatom_positions(self.qmatoms, current_coords, elems, settings_ash.scale, settings_ash.tol)
-        print("linkatoms_dict : ", linkatoms_dict)
-        #2. Add linkatom coordinates to qmcoords???
-        
-        
-        exit()
+        #1. Get linkatoms coordinates
+        if self.linkatoms==True:
+            linkatoms_dict = get_linkatom_positions(self.qmatoms, current_coords, elems, settings_ash.scale, settings_ash.tol)
+            print("linkatoms_dict : ", linkatoms_dict)
+            #2. Add linkatom coordinates to qmcoords???
+            
+            print("exiting...")
+            exit()
         # This probably should be part of Run rather than here since the linkatom coordinates will change according to changing
         # QM and MM atom positions
 
@@ -3114,7 +3114,9 @@ class Fragment:
                         self.coords.append([coords_x,coords_y,coords_z])
                         elem=line[76:78].replace(' ','')
                         if len(elem) != 0:
-                            elemcol.append(elem)
+                            if len(elem)==2:
+                                #Making sure second elem letter is lowercase
+                                elemcol.append(elem[0]+elem[1].lower())
                         #self.coords.append([float(line.split()[6]), float(line.split()[7]), float(line.split()[8])])
                         #elemcol.append(line.split()[-1])
                         #residuelist.append(line.split()[3])
