@@ -3117,6 +3117,8 @@ class Fragment:
                             if len(elem)==2:
                                 #Making sure second elem letter is lowercase
                                 elemcol.append(elem[0]+elem[1].lower())
+                            else:
+                                elemcol.append(elem)    
                         #self.coords.append([float(line.split()[6]), float(line.split()[7]), float(line.split()[8])])
                         #elemcol.append(line.split()[-1])
                         #residuelist.append(line.split()[3])
@@ -3128,6 +3130,8 @@ class Fragment:
             print("File {} does not exist!".format(filename))
             exit()
         if len(elemcol) != len(self.coords):
+            print("len coords", len(self.coords))
+            print("len elemcol", len(elemcol))            
             print("did not find same number of elements as coordinates")
             print("Need to define elements in some other way")
             exit()
