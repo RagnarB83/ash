@@ -1722,7 +1722,7 @@ class PolEmbedTheory:
 #TODO NOTE: If we add init arguments, remember to update Numfreq QMMM option as it depends on the keywords
 class QMMMTheory:
     def __init__(self, qm_theory="", qmatoms="", fragment='', mm_theory="" , charges=None,
-                 embedding="Elstat", printlevel=2, nprocs=None, actatoms=None, frozenatoms=None, linkatom=False):
+                 embedding="Elstat", printlevel=2, nprocs=None, actatoms=None, frozenatoms=None):
 
         print(BC.WARNING,BC.BOLD,"------------Defining QM/MM object-------------", BC.END)
 
@@ -1789,7 +1789,6 @@ class QMMMTheory:
             exit(1)
 
         self.QMChargesZeroed=False
-        self.linkatom=linkatom
 
         #Theory level definitions
         self.printlevel=printlevel
@@ -1837,25 +1836,23 @@ class QMMMTheory:
                     #Disabling for now, since so bloody slow. Need to speed up
                     #mm_theory.addexceptions(self.frozenatoms)
 
-            #linkatom=False
-            if self.linkatom==True:
-                print("Dealing with link atoms...")
-                # THink about where scale and tol comes from. Here using global settings
-                linkatoms_dict = get_linkatom_positions(self.qmatoms, self.coords, self.elems, settings_ash.scale, settings_ash.tol)
-                print("linkatoms_dict : ", linkatoms_dict)
-                exit()
-                # This probably should be part of Run rather than here since the linkatom coordinates will change according to changing
-                # QM and MM atom positions
 
-
-                #Link atoms. In an additive scheme we would always have link atoms, regardless of mechanical/electrostatic coupling
-                #Charge-shifting would be part of Elstat below
-
-                #Protocol:
-                #1. Recognize QM-MM boundary. Connectivity?? Get QM1 and MM1 coords pairs
-                #2. For QM-region coords, add linkatom at MM1 position initially. Then adjust distance
-                #3. Modify charges of MM atoms according to Chemshell scheme. Update both OpenMM and self.charges
-
+            #Check if we need linkatoms by getting boundary atoms dict:
+            boundaryatoms = get_boundary_atoms(qmatoms, self.coords, self.elems, settings_ash.scale, settings_ash.tol)
+            
+            if len(boundaryatoms) >0:
+                print("Found covalent QM-MM boundary. Linkatoms option set to True")
+                self.linkatoms=True
+            else:
+                print("No covalent QM-MM boundary. Linkatoms option set to False")
+                self.linkatoms=False
+            
+            
+            print("boundaryatoms:", boundaryatoms)
+            print("Dealing with link atoms...")
+            
+            # THink about where scale and tol comes from. Here using global settings
+            
 
             if self.embedding=="Elstat":
                 #Setting QM charges to 0 since electrostatic embedding
@@ -1916,6 +1913,32 @@ class QMMMTheory:
         #TODO: Should we use different name for updated QMcoords and MMcoords here??
         self.qmcoords=[current_coords[i] for i in self.qmatoms]
         self.mmcoords=[current_coords[i] for i in self.mmatoms]
+        
+        #TODO LINKATOMS
+        #1. Get linkatoms coordinatese
+        linkatoms_dict = get_linkatom_positions(self.qmatoms, current_coords, elems, settings_ash.scale, settings_ash.tol)
+        print("linkatoms_dict : ", linkatoms_dict)
+        #2. Add linkatom coordinates to qmcoords???
+        
+        
+        exit()
+        # This probably should be part of Run rather than here since the linkatom coordinates will change according to changing
+        # QM and MM atom positions
+
+
+        #Link atoms. In an additive scheme we would always have link atoms, regardless of mechanical/electrostatic coupling
+        #Charge-shifting would be part of Elstat below
+
+        #Protocol:
+        #1. Recognize QM-MM boundary. Connectivity?? Get QM1 and MM1 coords pairs
+        #2. For QM-region coords, add linkatom at MM1 position initially. Then adjust distance
+        #3. Modify charges of MM atoms according to Chemshell scheme. Update both OpenMM and self.charges
+        
+        
+        
+        
+        
+        
         if self.qm_theory_name=="ORCATheory":
             #Calling ORCA theory, providing current QM and MM coordinates.
             if Grad==True:
@@ -2042,6 +2065,14 @@ class QMMMTheory:
         #Final QM/MM gradient. Combine QM gradient, MM gradient and PC-gradient (elstat MM gradient from QM code).
         #First combining QM and PC gradient to one.
         if Grad == True:
+            
+            #TODO: Deal with linkatom gradient here.
+            # Add contribution to QM1 and MM1 contribution???
+            
+            
+            
+            
+            
             self.QM_PC_Gradient = np.zeros((len(self.allatoms), 3))
             qmcount=0;pccount=0
             for i in self.allatoms:

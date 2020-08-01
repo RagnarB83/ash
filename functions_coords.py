@@ -982,9 +982,9 @@ def distance_between_atoms(fragment=None, atom1=None, atom2=None):
     dist=distance(atom1_coords,atom2_coords)
     return dist
 
-#Get linkatom positions for a list of qmatoms and the current set of coordinate
-# Using linkatom distance of 1.0 Å for now as default. Makes sense for C-H link atoms. Check what Chemshell does
-def get_linkatom_positions(qmatoms, coords, elems, scale, tol, linkatom_distance=1.0):
+
+
+def get_boundary_atoms(qmatoms, coords, elems, scale, tol):
     # For each QM atom, do a get_conn_atoms, for those atoms, check if atoms are in qmatoms,
     # if not, then we have found an MM-boundary atom
     qm_mm_boundary_dict = {}
@@ -999,8 +999,17 @@ def get_linkatom_positions(qmatoms, coords, elems, scale, tol, linkatom_distance
         elif len(boundaryatom) == 1:
             # Adding to dict
             qm_mm_boundary_dict[qmatom] = boundaryatom[0]
+    return qm_mm_boundary_dict
 
-    # print("qm_mm_boundary_dict :", qm_mm_boundary_dict)
+#Get linkatom positions for a list of qmatoms and the current set of coordinates
+# Using linkatom distance of 1.0 Å for now as default. Makes sense for C-H link atoms. Check what Chemshell does
+def get_linkatom_positions(qmatoms, coords, elems, scale, tol, linkatom_distance=1.0):
+    
+    #Get boundary atoms
+    #TODO: Should we always call get_boundary_atoms or we should use previously defined dict??
+    qm_mm_boundary_dict = get_boundary_atoms(qmatoms, coords, elems, scale, tol)
+    print("qm_mm_boundary_dict :", qm_mm_boundary_dict)
+    
     # Get coordinates for QMX and MMX pair. Create new L coordinate that has a modified distance to QMX
     linkatoms_dict = {}
     for dict_item in qm_mm_boundary_dict.items():
