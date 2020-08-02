@@ -665,12 +665,12 @@ def DLPNO_W1F12theory_SP(fragment=None, charge=None, orcadir=None, mult=None, st
     #Special basis for H.
 
     #F12-calculations for SCF and CCSD contributions
-    ccsdf12_dz_line="! DLPNO-CCSD-F12 cc-pVDZ-F12 cc-pVDZ-F12-CABS tightscf " + auxbasis
-    ccsdf12_tz_line="! DLPNO-CCSD-F12 cc-pVTZ-F12 cc-pVTZ-F12-CABS tightscf " + auxbasis
+    ccsdf12_dz_line="! DLPNO-CCSD-F12 cc-pVDZ-F12 cc-pVDZ-F12-CABS tightscf {} {} {}".format(auxbasis,pnosetting,scfsetting)
+    ccsdf12_tz_line="! DLPNO-CCSD-F12 cc-pVTZ-F12 cc-pVTZ-F12-CABS tightscf {} {} {}".format(auxbasis,pnosetting,scfsetting)
 
     #Regular triples
-    ccsdt_dz_line="! DLPNO-CCSD(T) W1-DZ tightscf " + auxbasis
-    ccsdt_tz_line="! DLPNO-CCSD(T) W1-TZ tightscf " + auxbasis
+    ccsdt_dz_line="! DLPNO-CCSD(T) W1-DZ tightscf {} {} {}".format(auxbasis,pnosetting,scfsetting)
+    ccsdt_tz_line="! DLPNO-CCSD(T) W1-TZ tightscf {} {} {}".format(auxbasis,pnosetting,scfsetting)
 
     #F12
     ccsdf12_dz = ash.ORCATheory(orcadir=orcadir, orcasimpleinput=ccsdf12_dz_line, orcablocks=blocks, nprocs=numcores, charge=charge, mult=mult)
@@ -727,8 +727,8 @@ def DLPNO_W1F12theory_SP(fragment=None, charge=None, orcadir=None, mult=None, st
     ############################################################
     #Core-correlation + scalar relativistic as joint correction
     ############################################################
-    ccsdt_mtsmall_NoFC_line="! DLPNO-CCSD(T) DKH W1-mtsmall  tightscf nofrozencore " + auxbasis
-    ccsdt_mtsmall_FC_line="! DLPNO-CCSD(T) W1-mtsmall tightscf " + auxbasis
+    ccsdt_mtsmall_NoFC_line="! DLPNO-CCSD(T) DKH W1-mtsmall  tightscf nofrozencore {} {} {}".format(auxbasis,pnosetting,scfsetting)
+    ccsdt_mtsmall_FC_line="! DLPNO-CCSD(T) W1-mtsmall tightscf {} {} {}".format(auxbasis,pnosetting,scfsetting)
 
     ccsdt_mtsmall_NoFC = ash.ORCATheory(orcadir=orcadir, orcasimpleinput=ccsdt_mtsmall_NoFC_line, orcablocks=blocks, nprocs=numcores, charge=charge, mult=mult)
     ccsdt_mtsmall_FC = ash.ORCATheory(orcadir=orcadir, orcasimpleinput=ccsdt_mtsmall_FC_line, orcablocks=blocks, nprocs=numcores, charge=charge, mult=mult)
