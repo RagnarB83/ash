@@ -682,23 +682,23 @@ def DLPNO_W1F12theory_SP(fragment=None, charge=None, orcadir=None, mult=None, st
     
     
     ash.Singlepoint(fragment=fragment, theory=ccsdf12_dz)
-    CCSDF12_DZ_dict = grab_HF_and_corr_energies('orca-input.out', F12=True)
+    CCSDF12_DZ_dict = grab_HF_and_corr_energies('orca-input.out', F12=True, DLPNO=True)
     shutil.copyfile('orca-input.out', './' + calc_label + 'CCSDF12_DZ' + '.out')
     print("CCSDF12_DZ_dict:", CCSDF12_DZ_dict)
 
     ash.Singlepoint(fragment=fragment, theory=ccsdf12_tz)
-    CCSDF12_TZ_dict = grab_HF_and_corr_energies('orca-input.out', F12=True)
+    CCSDF12_TZ_dict = grab_HF_and_corr_energies('orca-input.out', F12=True, DLPNO=True)
     shutil.copyfile('orca-input.out', './' + calc_label + 'CCSDF12_TZ' + '.out')
     print("CCSDF12_TZ_dict:", CCSDF12_TZ_dict)
 
     #Regular CCSD(T)
     ash.Singlepoint(fragment=fragment, theory=ccsdt_dz)
-    CCSDT_DZ_dict = grab_HF_and_corr_energies('orca-input.out', F12=False)
+    CCSDT_DZ_dict = grab_HF_and_corr_energies('orca-input.out', F12=False, DLPNO=True)
     shutil.copyfile('orca-input.out', './' + calc_label + 'CCSDT_DZ' + '.out')
     print("CCSDT_DZ_dict:", CCSDT_DZ_dict)
 
     ash.Singlepoint(fragment=fragment, theory=ccsdt_tz)
-    CCSDT_TZ_dict = grab_HF_and_corr_energies('orca-input.out', F12=False)
+    CCSDT_TZ_dict = grab_HF_and_corr_energies('orca-input.out', F12=False, DLPNO=True)
     shutil.copyfile('orca-input.out', './' + calc_label + 'CCSDT_TZ' + '.out')
     print("CCSDT_TZ_dict:", CCSDT_TZ_dict)
 
