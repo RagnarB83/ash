@@ -1838,17 +1838,18 @@ class QMMMTheory:
 
 
             #Check if we need linkatoms by getting boundary atoms dict:
-            boundaryatoms = get_boundary_atoms(qmatoms, self.coords, self.elems, settings_ash.scale, settings_ash.tol)
+            self.boundaryatoms = get_boundary_atoms(qmatoms, self.coords, self.elems, settings_ash.scale, settings_ash.tol)
             
             if len(boundaryatoms) >0:
                 print("Found covalent QM-MM boundary. Linkatoms option set to True")
+                print("Boundaryatoms (QM:MM pairs):", boundaryatoms)
                 self.linkatoms=True
             else:
                 print("No covalent QM-MM boundary. Linkatoms option set to False")
                 self.linkatoms=False
             
             
-            print("Boundaryatoms (QM:MM pairs):", boundaryatoms)
+
             
             # THink about where scale and tol comes from. Here using global settings
             
@@ -1916,9 +1917,18 @@ class QMMMTheory:
         #TODO LINKATOMS
         #1. Get linkatoms coordinates
         if self.linkatoms==True:
-            linkatoms_dict = get_linkatom_positions(self.qmatoms, current_coords, elems, settings_ash.scale, settings_ash.tol)
+            linkatoms_dict = get_linkatom_positions(self.boundaryatoms,self.qmatoms, current_coords, self.elems)
             print("linkatoms_dict : ", linkatoms_dict)
             #2. Add linkatom coordinates to qmcoords???
+            print("Adding linkatom positions to QM coords")
+            
+            #Sort by QM atoms:
+            for bla in sorted(linkatoms_dict.keys):
+                print(bla)
+                self.qmcoords = self.qmcoords +  linkatoms_dict[bla]
+            
+            #TODO: Modify qm_elems list. Use self.qmelems or separate qmelems ?
+            
             
             print("exiting...")
             exit()
