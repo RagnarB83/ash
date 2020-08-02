@@ -1208,7 +1208,7 @@ def thermochemprotocol(SPprotocol=None, fraglist=None, stoichiometry=None, orcad
         elif SPprotocol == 'DLPNO-F12':
             FinalE, componentsdict = DLPNO_F12_SP(fragment=species, charge=species.charge,
                         mult=species.mult, orcadir=orcadir, numcores=numcores, memory=5000, pnosetting=pnosetting, T1=False, F12level=F12level)
-        elif SPprotocol == 'W1-F12:
+        elif SPprotocol == 'W1-F12':
             FinalE, componentsdict = W1F12theory_SP(fragment=species, charge=species.charge,
                         mult=species.mult, orcadir=orcadir, numcores=numcores, memory=5000, HFreference='QRO')
         elif SPprotocol == 'DLPNO-W1-F12:
