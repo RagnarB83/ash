@@ -511,8 +511,8 @@ def W1F12theory_SP(fragment=None, charge=None, orcadir=None, mult=None, stabilit
 
 
     #List of all SCF energies (F12DZ,F12TZ), all CCSD-corr energies (F12DZ,F12TZ) and all (T) corr energies (DZ,TZ)
-    scf_energies = [CCSDF12_DZ_dict['HF'], CCSDF12_TZ_dict['HF']
-    ccsdcorr_energies = [CCSDF12_DZ_dict['CCSD_corr'], CCSDF12_TZ_dict['CCSD_corr']
+    scf_energies = [CCSDF12_DZ_dict['HF'], CCSDF12_TZ_dict['HF']]
+    ccsdcorr_energies = [CCSDF12_DZ_dict['CCSD_corr'], CCSDF12_TZ_dict['CCSD_corr']]
     triplescorr_energies = [CCSDT_DZ_dict['CCSD(T)_corr'], CCSDT_TZ_dict['CCSD(T)_corr']]
 
     print("")
