@@ -1721,7 +1721,7 @@ class PolEmbedTheory:
 #Required at init: qm_theory and qmatoms. Fragment not. Can come later
 #TODO NOTE: If we add init arguments, remember to update Numfreq QMMM option as it depends on the keywords
 class QMMMTheory:
-    def __init__(self, qm_theory="", qmatoms="", fragment='', mm_theory="" , charges=None,
+    def __init__(self, qm_theory=None, qmatoms=None, fragment=None, mm_theory=None , charges=None,
                  embedding="Elstat", printlevel=2, nprocs=None, actatoms=None, frozenatoms=None):
 
         print(BC.WARNING,BC.BOLD,"------------Defining QM/MM object-------------", BC.END)
@@ -1734,7 +1734,7 @@ class QMMMTheory:
 
         #If fragment object has been defined
         #This probably needs to be always true
-        if fragment != '':
+        if fragment is not None:
             self.fragment=fragment
             self.coords=fragment.coords
             self.elems=fragment.elems
@@ -1767,10 +1767,13 @@ class QMMMTheory:
 
             #Coords and elems lists.
             #Coords may change by run command
-            self.qmcoords=[self.coords[i] for i in self.qmatoms]
-            self.qmelems=[self.elems[i] for i in self.qmatoms]
-            self.mmcoords=[self.coords[i] for i in self.mmatoms]
-            self.mmelems=[self.elems[i] for i in self.mmatoms]
+            #Qmelems may change if link atoms
+            #Don't think it makes sense to define here. Disabling:
+            #self.qmcoords=[self.coords[i] for i in self.qmatoms]
+            #self.mmcoords=[self.coords[i] for i in self.mmatoms]
+            #self.qmelems=[self.elems[i] for i in self.qmatoms]
+            #self.mmelems=[self.elems[i] for i in self.mmatoms]
+            
             #print("List of all atoms:", self.allatoms)
             print("QM region ({} atoms): {}".format(len(self.qmatoms),self.qmatoms))
             print("MM region ({} atoms)".format(len(self.mmatoms)))
@@ -1825,7 +1828,7 @@ class QMMMTheory:
 
 
         #If MM THEORY (not just pointcharges)
-        if mm_theory != "":
+        if mm_theory is not None:
             #Add possible exception for QM-QM atoms here.
             #Maybe easier to just just set charges to 0. LJ for QM-QM still needs to be done by MM code
             if self.mm_theory_name == "OpenMMTheory":
@@ -1838,11 +1841,12 @@ class QMMMTheory:
 
 
             #Check if we need linkatoms by getting boundary atoms dict:
+            blankline()
             self.boundaryatoms = get_boundary_atoms(qmatoms, self.coords, self.elems, settings_ash.scale, settings_ash.tol)
             
-            if len(boundaryatoms) >0:
+            if len(self.boundaryatoms) >0:
                 print("Found covalent QM-MM boundary. Linkatoms option set to True")
-                print("Boundaryatoms (QM:MM pairs):", boundaryatoms)
+                print("Boundaryatoms (QM:MM pairs):", self.boundaryatoms)
                 self.linkatoms=True
             else:
                 print("No covalent QM-MM boundary. Linkatoms option set to False")
@@ -1893,6 +1897,7 @@ class QMMMTheory:
             print(BC.WARNING, BC.BOLD, "------------RUNNING QM/MM MODULE-------------", BC.END)
             print("QM Module:", self.qm_theory_name)
             print("MM Module:", self.mm_theory_name)
+
         #If no coords provided to run (from Optimizer or NumFreq or MD) then use coords associated with object.
         #if len(current_coords) != 0:
         if current_coords is not None:
@@ -1914,7 +1919,10 @@ class QMMMTheory:
         self.qmcoords=[current_coords[i] for i in self.qmatoms]
         self.mmcoords=[current_coords[i] for i in self.mmatoms]
         
-        #TODO LINKATOMS
+        self.qmelems=[self.elems[i] for i in self.qmatoms]
+        self.mmelems=[self.elems[i] for i in self.mmatoms]
+            
+        #LINKATOMS
         #1. Get linkatoms coordinates
         if self.linkatoms==True:
             linkatoms_dict = get_linkatom_positions(self.boundaryatoms,self.qmatoms, current_coords, self.elems)
@@ -1923,19 +1931,26 @@ class QMMMTheory:
             print("Adding linkatom positions to QM coords")
             
             #Sort by QM atoms:
-            for bla in sorted(linkatoms_dict.keys):
-                print(bla)
-                self.qmcoords = self.qmcoords +  linkatoms_dict[bla]
-            
+            print("linkatoms_dict :", linkatoms_dict)
+            print("linkatoms_dict.keys :", linkatoms_dict.keys())
+            print("linkatoms_dict.keys :", linkatoms_dict.items)
+            for pair in sorted(linkatoms_dict.keys()):
+                print("Pair :", pair)
+                self.qmcoords.append(linkatoms_dict[pair])
+                print("self.qmcoords :", self.qmcoords)
+                print(len(self.qmcoords))
+                #exit()
             #TODO: Modify qm_elems list. Use self.qmelems or separate qmelems ?
-            
-            
-            print("exiting...")
-            exit()
-        # This probably should be part of Run rather than here since the linkatom coordinates will change according to changing
-        # QM and MM atom positions
-
-
+            #TODO: Should we do this at object creation instead?
+            current_qmelems=self.qmelems + ['H']*len(linkatoms_dict)
+            print("")
+            print("current_qmelems :", current_qmelems)
+            print(len(current_qmelems))
+        else:
+            #If no linkatoms then use original self.qmelems
+            current_qmelems = self.qmelems
+       
+       
         #Link atoms. In an additive scheme we would always have link atoms, regardless of mechanical/electrostatic coupling
         #Charge-shifting would be part of Elstat below
 
@@ -1945,9 +1960,7 @@ class QMMMTheory:
         #3. Modify charges of MM atoms according to Chemshell scheme. Update both OpenMM and self.charges
         
         
-        
-        
-        
+        print_time_rel(CheckpointTime, modulename='QM/MM run prep')
         
         if self.qm_theory_name=="ORCATheory":
             #Calling ORCA theory, providing current QM and MM coordinates.
@@ -1956,16 +1969,16 @@ class QMMMTheory:
                     self.QMEnergy, self.QMgradient, self.PCgradient = self.qm_theory.run(current_coords=self.qmcoords,
                                                                                          current_MM_coords=self.mmcoords,
                                                                                          MMcharges=self.mmcharges,
-                                                                                         qm_elems=self.qmelems, mm_elems=self.mmelems,
+                                                                                         qm_elems=current_qmelems, mm_elems=self.mmelems,
                                                                                          Grad=True, PC=True, nprocs=nprocs)
                 else:
                     self.QMEnergy, self.QMgradient = self.qm_theory.run(current_coords=self.qmcoords,
                                                       current_MM_coords=self.mmcoords, MMcharges=self.mmcharges,
-                                                      qm_elems=self.qmelems, mm_elems=self.mmelems, Grad=True, PC=False, nprocs=nprocs)
+                                                      qm_elems=current_qmelems, mm_elems=self.mmelems, Grad=True, PC=False, nprocs=nprocs)
             else:
                 self.QMEnergy = self.qm_theory.run(current_coords=self.qmcoords,
                                                       current_MM_coords=self.mmcoords, MMcharges=self.mmcharges,
-                                                      qm_elems=self.qmelems, mm_elems=self.mmelems, Grad=False, PC=PC, nprocs=nprocs)
+                                                      qm_elems=current_qmelems, mm_elems=self.mmelems, Grad=False, PC=PC, nprocs=nprocs)
         elif self.qm_theory_name == "Psi4Theory":
             #Calling Psi4 theory, providing current QM and MM coordinates.
             if Grad==True:
@@ -1976,7 +1989,7 @@ class QMMMTheory:
                     self.QMEnergy, self.QMgradient = self.qm_theory.run(current_coords=self.qmcoords,
                                                                                          current_MM_coords=self.mmcoords,
                                                                                          MMcharges=self.mmcharges,
-                                                                                         qm_elems=self.qmelems, mm_elems=self.mmelems,
+                                                                                         qm_elems=current_qmelems, mm_elems=self.mmelems,
                                                                                          Grad=True, PC=True, nprocs=nprocs)
                     #Creating zero-gradient array
                     self.PCgradient = np.zeros((len(self.mmatoms), 3))
@@ -1985,14 +1998,14 @@ class QMMMTheory:
                     exit()
                     self.QMEnergy, self.QMgradient = self.qm_theory.run(current_coords=self.qmcoords,
                                                       current_MM_coords=self.mmcoords, MMcharges=self.mmcharges,
-                                                      qm_elems=self.qmelems, mm_elems=self.mmelems, Grad=True, PC=False, nprocs=nprocs)
+                                                      qm_elems=current_qmelems, mm_elems=self.mmelems, Grad=True, PC=False, nprocs=nprocs)
             else:
                 print("grad false.")
                 if PC == True:
                     print("PC embed true. not ready")
                     self.QMEnergy = self.qm_theory.run(current_coords=self.qmcoords,
                                                       current_MM_coords=self.mmcoords, MMcharges=self.mmcharges,
-                                                      qm_elems=self.qmelems, mm_elems=self.mmelems, Grad=False, PC=PC, nprocs=nprocs)
+                                                      qm_elems=current_qmelems, mm_elems=self.mmelems, Grad=False, PC=PC, nprocs=nprocs)
                 else:
                     print("mech true", not ready)
                     exit()
@@ -2005,16 +2018,16 @@ class QMMMTheory:
                     self.QMEnergy, self.QMgradient, self.PCgradient = self.qm_theory.run(current_coords=self.qmcoords,
                                                                                          current_MM_coords=self.mmcoords,
                                                                                          MMcharges=self.mmcharges,
-                                                                                         qm_elems=self.qmelems, mm_elems=self.mmelems,
+                                                                                         qm_elems=current_qmelems, mm_elems=self.mmelems,
                                                                                          Grad=True, PC=True, nprocs=nprocs)
                 else:
                     self.QMEnergy, self.QMgradient = self.qm_theory.run(current_coords=self.qmcoords,
                                                       current_MM_coords=self.mmcoords, MMcharges=self.mmcharges,
-                                                      qm_elems=self.qmelems, mm_elems=self.mmelems, Grad=True, PC=False, nprocs=nprocs)
+                                                      qm_elems=current_qmelems, mm_elems=self.mmelems, Grad=True, PC=False, nprocs=nprocs)
             else:
                 self.QMEnergy = self.qm_theory.run(current_coords=self.qmcoords,
                                                       current_MM_coords=self.mmcoords, MMcharges=self.mmcharges,
-                                                      qm_elems=self.qmelems, mm_elems=self.mmelems, Grad=False, PC=PC, nprocs=nprocs)
+                                                      qm_elems=current_qmelems, mm_elems=self.mmelems, Grad=False, PC=PC, nprocs=nprocs)
 
 
         elif self.qm_theory_name == "DaltonTheory":
