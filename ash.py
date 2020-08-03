@@ -1860,8 +1860,10 @@ class QMMMTheory:
             
 
             if self.embedding=="Elstat":
+                #Change charges
                 #Setting QM charges to 0 since electrostatic embedding
-                self.ZeroQMCharges()
+                #and Charge-shift QM-MM boundary
+                self.ZeroQMChargesandShift(self.boundaryatoms)
                 print("Charges of QM atoms set to 0 (since Electrostatic Embedding):")
                 if self.printlevel > 2:
                     for i in self.allatoms:
@@ -1878,16 +1880,45 @@ class QMMMTheory:
         self.mmcharges=[self.charges[i] for i in self.mmatoms]
         #print("self.mmcharges:", self.mmcharges)
 
-    # Set QMcharges to Zero
-    def ZeroQMCharges(self):
-        newcharges = []
+    # Set QMcharges to Zero and also shift charges at boundary
+    def ZeroQMChargesandShift(self,boundarydict):
+        print("Setting QM charges to Zero and shifting charges at QM-MM boundary.")
+        # if boundarydict is not empty we need to zero MM1 charge and distribute charge from MM1 atom to MM2,MM3,MM4
+        #Creating dictionary for each MM1 atom and its connected atoms: MM2-4
+        MMatomdict={}
+        for (QM1atom,MM1atom) in boundarydict.items():
+            #print("QM1atom :", QM1atom)
+            #print("MM1atom : ", MM1atom)
+            #MM1atoms.append(MM1atom)
+            connatoms = get_connected_atoms(self.coords, self.elems, settings_ash.scale, settings_ash.tol, MM1atom)
+            #Deleting QM-atom from connatoms list
+            connatoms.remove(QM1atom)
+            #print("MM atoms connected to MM1: ", connatoms)
+            MMatomdict[MM1atom] = connatoms
+        print("")
+        print("MM boundary (MM1:MMx pairs):", MMatomdict)
+        
+        #Looping over charges and setting QM/MM1 atoms to zero and shifting charge to neighbouring atoms
         for i, c in enumerate(self.charges):
-            if i in self.mmatoms:
-                newcharges.append(c)
-            else:
-                newcharges.append(0.0)
-        # Todo: use self.charges or use newcharges. Since done temporarily??
-        self.charges = newcharges
+
+            #If MMatom at boundary, set charge to 0
+            if i in MMatomdict.keys():
+                MM1charge = self.charges[i]
+                print("MM1atom charge: ", MM1charge)
+                self.charges[i] = 0.0
+                MM1charge_fract = MM1charge / len(MMatomdict[i])
+                for MMx in MMatomdict[i]:
+                    print("MMx : ", MMx)
+                    print("Old charge : ", self.charges[MMx])
+                    self.charges[MMx] += MM1charge_fract
+                    print("New charge : ", self.charges[MMx])  
+            #Setting QMatom charge to 0
+            elif i in self.qmatoms:
+                self.charges[i] = 0.0
+            #If regular MM atom, no change
+            elif i in self.mmatoms:
+                pass
+                
         # Todo: make sure this works for OpenMM and for NonBOndedTheory
         # Updating charges in MM object
         self.mm_theory.update_charges(self.charges)
