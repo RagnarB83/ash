@@ -466,14 +466,17 @@ def W1F12theory_SP(fragment=None, charge=None, orcadir=None, mult=None, stabilit
         print("No HF reference chosen. Will use RHF for closed-shell and UHF for open-shell")
         hfkeyword=''
 
+    #Auxiliary basis set. One big one
+    auxbasis='cc-pV5Z/C'
+
     ############################################################
     #Frozen-core calcs
     ############################################################
     #Special basis for H.
 
     #F12-calculations for SCF and CCSD
-    ccsdf12_dz_line="! CCSD-F12/RI cc-pVDZ-F12 cc-pVDZ-F12-CABS tightscf " + hfkeyword
-    ccsdf12_tz_line="! CCSD-F12/RI cc-pVTZ-F12 cc-pVTZ-F12-CABS tightscf " + hfkeyword
+    ccsdf12_dz_line="! CCSD-F12/RI cc-pVDZ-F12 cc-pVDZ-F12-CABS tightscf {} {} ".format(auxbasis,hfkeyword)
+    ccsdf12_tz_line="! CCSD-F12/RI cc-pVTZ-F12 cc-pVTZ-F12-CABS tightscf {} {} ".format(auxbasis,hfkeyword)
 
     #Regular triples
     ccsdt_dz_line="! CCSD(T) W1-DZ tightscf " + hfkeyword

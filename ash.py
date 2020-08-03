@@ -1065,6 +1065,7 @@ class OpenMMTheory:
                 chargelist.append(charge)
         self.charges=chargelist
         return chargelist
+    #Updating charges in OpenMM object. Used to set QM charges to 0 for example
     def update_charges(self,charges):
         print("Updating charges in OpenMM object.")
         #Check that force-particles and charges are same number
@@ -2064,7 +2065,7 @@ class QMMMTheory:
                 print("Running OpenMM theory as part of QM/MM.")
             if self.QMChargesZeroed==True:
                 if self.printlevel >= 2:
-                    print("Using MM on full system. Charges for QM region {} have to be set to zero ".format(self.qmatoms))
+                    print("Using MM on full system. Charges for QM region {} have been set to zero ".format(self.qmatoms))
             else:
                 print("QMCharges have not been zeroed")
                 exit(1)
