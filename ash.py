@@ -1865,7 +1865,7 @@ class QMMMTheory:
                 #and Charge-shift QM-MM boundary
                 self.ZeroQMChargesandShift(self.boundaryatoms)
                 print("Charges of QM atoms set to 0 (since Electrostatic Embedding):")
-                if self.printlevel > 2:
+                if self.printlevel > 3:
                     for i in self.allatoms:
                         if i in qmatoms:
                             print("QM atom {} ({}) charge: {}".format(i, self.elems[i], self.charges[i]))
@@ -1880,20 +1880,16 @@ class QMMMTheory:
         self.mmcharges=[self.charges[i] for i in self.mmatoms]
         #print("self.mmcharges:", self.mmcharges)
 
-    # Set QMcharges to Zero and also shift charges at boundary
+    # Set QMcharges to Zero and  shift charges at boundary
     def ZeroQMChargesandShift(self,boundarydict):
         print("Setting QM charges to Zero and shifting charges at QM-MM boundary.")
         # if boundarydict is not empty we need to zero MM1 charge and distribute charge from MM1 atom to MM2,MM3,MM4
         #Creating dictionary for each MM1 atom and its connected atoms: MM2-4
         MMatomdict={}
         for (QM1atom,MM1atom) in boundarydict.items():
-            #print("QM1atom :", QM1atom)
-            #print("MM1atom : ", MM1atom)
-            #MM1atoms.append(MM1atom)
             connatoms = get_connected_atoms(self.coords, self.elems, settings_ash.scale, settings_ash.tol, MM1atom)
             #Deleting QM-atom from connatoms list
             connatoms.remove(QM1atom)
-            #print("MM atoms connected to MM1: ", connatoms)
             MMatomdict[MM1atom] = connatoms
         print("")
         print("MM boundary (MM1:MMx pairs):", MMatomdict)
@@ -1904,14 +1900,14 @@ class QMMMTheory:
             #If MMatom at boundary, set charge to 0
             if i in MMatomdict.keys():
                 MM1charge = self.charges[i]
-                print("MM1atom charge: ", MM1charge)
+                #print("MM1atom charge: ", MM1charge)
                 self.charges[i] = 0.0
                 MM1charge_fract = MM1charge / len(MMatomdict[i])
                 for MMx in MMatomdict[i]:
-                    print("MMx : ", MMx)
-                    print("Old charge : ", self.charges[MMx])
+                    #print("MMx : ", MMx)
+                    #print("Old charge : ", self.charges[MMx])
                     self.charges[MMx] += MM1charge_fract
-                    print("New charge : ", self.charges[MMx])  
+                    #print("New charge : ", self.charges[MMx])  
             #Setting QMatom charge to 0
             elif i in self.qmatoms:
                 self.charges[i] = 0.0
@@ -1958,25 +1954,22 @@ class QMMMTheory:
         #1. Get linkatoms coordinates
         if self.linkatoms==True:
             linkatoms_dict = get_linkatom_positions(self.boundaryatoms,self.qmatoms, current_coords, self.elems)
-            print("linkatoms_dict : ", linkatoms_dict)
             #2. Add linkatom coordinates to qmcoords???
             print("Adding linkatom positions to QM coords")
             
             #Sort by QM atoms:
-            print("linkatoms_dict :", linkatoms_dict)
             print("linkatoms_dict.keys :", linkatoms_dict.keys())
-            print("linkatoms_dict.keys :", linkatoms_dict.items)
             for pair in sorted(linkatoms_dict.keys()):
-                print("Pair :", pair)
+                #print("Pair :", pair)
                 self.qmcoords.append(linkatoms_dict[pair])
-                print("self.qmcoords :", self.qmcoords)
-                print(len(self.qmcoords))
+                #print("self.qmcoords :", self.qmcoords)
+                #print(len(self.qmcoords))
                 #exit()
             #TODO: Modify qm_elems list. Use self.qmelems or separate qmelems ?
             #TODO: Should we do this at object creation instead?
             current_qmelems=self.qmelems + ['H']*len(linkatoms_dict)
             print("")
-            print("current_qmelems :", current_qmelems)
+            #print("current_qmelems :", current_qmelems)
             print(len(current_qmelems))
         else:
             #If no linkatoms then use original self.qmelems

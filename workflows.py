@@ -668,39 +668,39 @@ def DLPNO_W1F12theory_SP(fragment=None, charge=None, orcadir=None, mult=None, st
     #Special basis for H.
 
     #F12-calculations for SCF and CCSD contributions
-    #ccsdf12_dz_line="! DLPNO-CCSD-F12 cc-pVDZ-F12 cc-pVDZ-F12-CABS  {} {} {}".format(auxbasis,pnosetting,scfsetting)
-    #ccsdf12_tz_line="! DLPNO-CCSD-F12 cc-pVTZ-F12 cc-pVTZ-F12-CABS  {} {} {}".format(auxbasis,pnosetting,scfsetting)
+    ccsdf12_dz_line="! DLPNO-CCSD-F12 cc-pVDZ-F12 cc-pVDZ-F12-CABS  {} {} {}".format(auxbasis,pnosetting,scfsetting)
+    ccsdf12_tz_line="! DLPNO-CCSD-F12 cc-pVTZ-F12 cc-pVTZ-F12-CABS  {} {} {}".format(auxbasis,pnosetting,scfsetting)
     #TODO: Testing QZ CCSD step
-    ccsdf12_qz_line="! DLPNO-CCSD-F12 cc-pVQZ-F12 cc-pVQZ-F12-CABS  {} {} {}".format(auxbasis,pnosetting,scfsetting)
+    #ccsdf12_qz_line="! DLPNO-CCSD-F12 cc-pVQZ-F12 cc-pVQZ-F12-CABS  {} {} {}".format(auxbasis,pnosetting,scfsetting)
     
     #Regular triples
     ccsdt_dz_line="! DLPNO-CCSD(T) W1-DZ  {} {} {}".format(auxbasis,pnosetting,scfsetting)
     ccsdt_tz_line="! DLPNO-CCSD(T) W1-TZ  {} {} {}".format(auxbasis,pnosetting,scfsetting)
 
     #F12
-    #ccsdf12_dz = ash.ORCATheory(orcadir=orcadir, orcasimpleinput=ccsdf12_dz_line, orcablocks=blocks, nprocs=numcores, charge=charge, mult=mult)
-    #ccsdf12_tz = ash.ORCATheory(orcadir=orcadir, orcasimpleinput=ccsdf12_tz_line, orcablocks=blocks, nprocs=numcores, charge=charge, mult=mult)
-    ccsdf12_qz = ash.ORCATheory(orcadir=orcadir, orcasimpleinput=ccsdf12_qz_line, orcablocks=blocks, nprocs=numcores, charge=charge, mult=mult)
+    ccsdf12_dz = ash.ORCATheory(orcadir=orcadir, orcasimpleinput=ccsdf12_dz_line, orcablocks=blocks, nprocs=numcores, charge=charge, mult=mult)
+    ccsdf12_tz = ash.ORCATheory(orcadir=orcadir, orcasimpleinput=ccsdf12_tz_line, orcablocks=blocks, nprocs=numcores, charge=charge, mult=mult)
+    #ccsdf12_qz = ash.ORCATheory(orcadir=orcadir, orcasimpleinput=ccsdf12_qz_line, orcablocks=blocks, nprocs=numcores, charge=charge, mult=mult)
     
     #Regular
     ccsdt_dz = ash.ORCATheory(orcadir=orcadir, orcasimpleinput=ccsdt_dz_line, orcablocks=blocks, nprocs=numcores, charge=charge, mult=mult)
     ccsdt_tz = ash.ORCATheory(orcadir=orcadir, orcasimpleinput=ccsdt_tz_line, orcablocks=blocks, nprocs=numcores, charge=charge, mult=mult)    
     
     
-    #ash.Singlepoint(fragment=fragment, theory=ccsdf12_dz)
-    #CCSDF12_DZ_dict = grab_HF_and_corr_energies('orca-input.out', F12=True, DLPNO=True)
-    #shutil.copyfile('orca-input.out', './' + calc_label + 'CCSDF12_DZ' + '.out')
-    #print("CCSDF12_DZ_dict:", CCSDF12_DZ_dict)
+    ash.Singlepoint(fragment=fragment, theory=ccsdf12_dz)
+    CCSDF12_DZ_dict = grab_HF_and_corr_energies('orca-input.out', F12=True, DLPNO=True)
+    shutil.copyfile('orca-input.out', './' + calc_label + 'CCSDF12_DZ' + '.out')
+    print("CCSDF12_DZ_dict:", CCSDF12_DZ_dict)
 
-    #ash.Singlepoint(fragment=fragment, theory=ccsdf12_tz)
-    #CCSDF12_TZ_dict = grab_HF_and_corr_energies('orca-input.out', F12=True, DLPNO=True)
-    #shutil.copyfile('orca-input.out', './' + calc_label + 'CCSDF12_TZ' + '.out')
-    #print("CCSDF12_TZ_dict:", CCSDF12_TZ_dict)
+    ash.Singlepoint(fragment=fragment, theory=ccsdf12_tz)
+    CCSDF12_TZ_dict = grab_HF_and_corr_energies('orca-input.out', F12=True, DLPNO=True)
+    shutil.copyfile('orca-input.out', './' + calc_label + 'CCSDF12_TZ' + '.out')
+    print("CCSDF12_TZ_dict:", CCSDF12_TZ_dict)
 
-    ash.Singlepoint(fragment=fragment, theory=ccsdf12_qz)
-    CCSDF12_QZ_dict = grab_HF_and_corr_energies('orca-input.out', F12=True, DLPNO=True)
-    shutil.copyfile('orca-input.out', './' + calc_label + 'CCSDF12_QZ' + '.out')
-    print("CCSDF12_QZ_dict:", CCSDF12_QZ_dict)
+    #ash.Singlepoint(fragment=fragment, theory=ccsdf12_qz)
+    #CCSDF12_QZ_dict = grab_HF_and_corr_energies('orca-input.out', F12=True, DLPNO=True)
+    #shutil.copyfile('orca-input.out', './' + calc_label + 'CCSDF12_QZ' + '.out')
+    #print("CCSDF12_QZ_dict:", CCSDF12_QZ_dict)
 
     #Regular CCSD(T)
     ash.Singlepoint(fragment=fragment, theory=ccsdt_dz)
@@ -715,12 +715,12 @@ def DLPNO_W1F12theory_SP(fragment=None, charge=None, orcadir=None, mult=None, st
 
 
     #List of all SCF energies (F12DZ,F12TZ), all CCSD-corr energies (F12DZ,F12TZ) and all (T) corr energies (DZ,TZ)
-    #scf_energies = [CCSDF12_DZ_dict['HF'], CCSDF12_TZ_dict['HF']]
-    #ccsdcorr_energies = [CCSDF12_DZ_dict['CCSD_corr'], CCSDF12_TZ_dict['CCSD_corr']]
-    #triplescorr_energies = [CCSDT_DZ_dict['CCSD(T)_corr'], CCSDT_TZ_dict['CCSD(T)_corr']]
-    scf_energies = [CCSDF12_QZ_dict['HF']]
-    ccsdcorr_energies = [CCSDF12_QZ_dict['CCSD_corr']]
+    scf_energies = [CCSDF12_DZ_dict['HF'], CCSDF12_TZ_dict['HF']]
+    ccsdcorr_energies = [CCSDF12_DZ_dict['CCSD_corr'], CCSDF12_TZ_dict['CCSD_corr']]
     triplescorr_energies = [CCSDT_DZ_dict['CCSD(T)_corr'], CCSDT_TZ_dict['CCSD(T)_corr']]
+    #scf_energies = [CCSDF12_QZ_dict['HF']]
+    #ccsdcorr_energies = [CCSDF12_QZ_dict['CCSD_corr']]
+    #triplescorr_energies = [CCSDT_DZ_dict['CCSD(T)_corr'], CCSDT_TZ_dict['CCSD(T)_corr']]
 
     print("")
     print("scf_energies :", scf_energies)
@@ -729,10 +729,10 @@ def DLPNO_W1F12theory_SP(fragment=None, charge=None, orcadir=None, mult=None, st
 
     #Extrapolations
     #2-point SCF extrapolation of modified HF energies
-    #E_SCF_CBS = Extrapolation_W1F12_SCF_2point(scf_energies) #2-point extrapolation
-    #E_CCSDcorr_CBS = Extrapolation_W1F12_CCSD(ccsdcorr_energies) #2-point extrapolation
-    E_SCF_CBS = scf_energies[0]
-    E_CCSDcorr_CBS = ccsdcorr_energies[0]
+    E_SCF_CBS = Extrapolation_W1F12_SCF_2point(scf_energies) #2-point extrapolation
+    E_CCSDcorr_CBS = Extrapolation_W1F12_CCSD(ccsdcorr_energies) #2-point extrapolation
+    #E_SCF_CBS = scf_energies[0]
+    #E_CCSDcorr_CBS = ccsdcorr_energies[0]
     E_triplescorr_CBS = Extrapolation_W1F12_triples(triplescorr_energies) #2-point extrapolation
 
     print("E_SCF_CBS:", E_SCF_CBS)
