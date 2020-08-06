@@ -839,7 +839,6 @@ class OpenMMTheory:
             
         #Periodic or not
         self.Periodic = periodic
-        self.periodic_cell_dimensions = periodic_cell_dimensions
 
         self.unit=simtk.unit
         self.Vec3=simtk.openmm.Vec3
@@ -869,8 +868,13 @@ class OpenMMTheory:
             #Periodic
             if self.Periodic is True:
                 print("System is periodic")
+                self.periodic_cell_dimensions = periodic_cell_dimensions
+                self.a = periodic_cell_dimensions[0] * self.unit.angstroms
+                self.b = periodic_cell_dimensions[1] * self.unit.angstroms
+                self.c = periodic_cell_dimensions[2] * self.unit.angstroms
+                
                 #Parameters here are based on OpenMM DHFR example
-                self.psf.setBox(periodic_cell_dimensions[0], periodic_cell_dimensions[1], periodic_cell_dimensions[2])
+                self.psf.setBox(self.a, self.b, self.c)
                 self.system = self.psf.createSystem(self.params, nonbondedMethod=simtk.openmm.app.PME,
                                                 nonbondedCutoff=12 * self.unit.angstroms, switchDistance=10*self.unit.angstroms)
                 
