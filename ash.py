@@ -1096,7 +1096,8 @@ class OpenMMTheory:
 
         pmdparm = self.parmed.load_file(os.path.join('.',self.psffile))
         pmdparm.positions = pos
-        pmdparm.box = [self.periodic_cell_dimensions/u.angstroms, self.periodic_cell_dimensions/u.angstroms, self.periodic_cell_dimensions/u.angstroms, 90, 90, 90]
+        pmdparm.box = [self.periodic_cell_dimensions/self.unit.angstroms, self.periodic_cell_dimensions/self.unit.angstroms, 
+                       self.periodic_cell_dimensions/self.unit.angstroms, 90, 90, 90]
         print("a/u.angstroms: ", a/u.angstroms)
         
         print("pmdparm:", pmdparm)
