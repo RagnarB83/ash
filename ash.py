@@ -871,7 +871,7 @@ class OpenMMTheory:
                 print("System is periodic")
                 self.psf.setBox(periodic_cell_dimensions[0], periodic_cell_dimensions[1], periodic_cell_dimensions[2])
                 self.system = self.psf.createSystem(self.params, nonbondedMethod=simtk.openmm.app.PME,
-                                                nonbondedCutoff=12 * self.unit.nanometer, switchDistance=10*self.unit.angstroms)
+                                                nonbondedCutoff=12 * self.unit.angstroms, switchDistance=10*self.unit.angstroms)
             #Non-Periodic
             else:
                 print("System is non-periodic")
