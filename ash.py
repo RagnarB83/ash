@@ -808,7 +808,7 @@ class OpenMMTheory:
                  CHARMMfiles=False, psffile=None, charmmtopfile=None, charmmprmfile=None,
                  GROMACSfiles=False, gromacstopfile=None, grofile=None, gromacstopdir=None,
                  Amberfiles=False, amberprmtopfile=None, printlevel=2, nprocs=1,
-                 xmlfile=None):
+                 xmlfile=None, periodic=False, periodic_cell_dimensions=None):
 
         print("Setting OpenMM CPU Threads to: ", nprocs)
         print("TODO: confirm parallelization")
@@ -837,7 +837,9 @@ class OpenMMTheory:
         except ImportError:
             raise ImportError("Parmed required")
             
-
+        #Periodic or not
+        self.Periodic = periodic
+        #self.periodic_cell_dimensions = periodic_cell_dimensions
 
         self.unit=simtk.unit
         self.Vec3=simtk.openmm.Vec3
@@ -863,8 +865,17 @@ class OpenMMTheory:
             #self.forcefield = self.psf
             self.topology = self.psf.topology
             # Create an OpenMM system by calling createSystem on psf
-            self.system = self.psf.createSystem(self.params, nonbondedMethod=simtk.openmm.app.NoCutoff,
-                                                nonbondedCutoff=1 * simtk.openmm.unit.nanometer)
+
+            #Periodic
+            if self.Periodic is True:
+                self.psf.setBox(periodic_cell_dimensions[0], periodic_cell_dimensions[1], periodic_cell_dimensions[2])
+                self.system = self.psf.createSystem(self.params, nonbondedMethod=simtk.openmm.app.PME,
+                                                nonbondedCutoff=12 * self.unit.nanometer, switchDistance=10*self.unit.angstroms)
+            #Non-Periodic
+            else:
+                self.system = self.psf.createSystem(self.params, nonbondedMethod=simtk.openmm.app.NoCutoff,
+                                                    nonbondedCutoff=12 * simtk.openmm.unit.nanometer)
+            
         elif GROMACSfiles is True:
             print("Warning: Gromacs-file interface not tested")
             #Reading grofile, not for coordinates but for periodic vectors
