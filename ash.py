@@ -1095,6 +1095,10 @@ class OpenMMTheory:
         
 
         pmdparm = self.parmed.load_file(os.path.join('.',self.psffile))
+        pmdparm.positions = pos
+        pmdparm.box = [a/u.angstroms, b/u.angstroms, c/u.angstroms, 90, 90, 90]
+        print("a/u.angstroms: ", a/u.angstroms)
+        
         print("pmdparm:", pmdparm)
         print_time_rel(timeA, modulename="parmed load file")
         timeA = time.time()
