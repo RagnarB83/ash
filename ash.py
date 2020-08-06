@@ -839,7 +839,7 @@ class OpenMMTheory:
             
         #Periodic or not
         self.Periodic = periodic
-        #self.periodic_cell_dimensions = periodic_cell_dimensions
+        self.periodic_cell_dimensions = periodic_cell_dimensions
 
         self.unit=simtk.unit
         self.Vec3=simtk.openmm.Vec3
@@ -1096,7 +1096,7 @@ class OpenMMTheory:
 
         pmdparm = self.parmed.load_file(os.path.join('.',self.psffile))
         pmdparm.positions = pos
-        pmdparm.box = [a/u.angstroms, b/u.angstroms, c/u.angstroms, 90, 90, 90]
+        pmdparm.box = [self.periodic_cell_dimensions/u.angstroms, self.periodic_cell_dimensions/u.angstroms, self.periodic_cell_dimensions/u.angstroms, 90, 90, 90]
         print("a/u.angstroms: ", a/u.angstroms)
         
         print("pmdparm:", pmdparm)
