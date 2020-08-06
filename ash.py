@@ -832,6 +832,12 @@ class OpenMMTheory:
             raise ImportError(
                 "OpenMM requires installing the OpenMM package. Try: conda install -c omnia openmm  \
                 Also see http://docs.openmm.org/latest/userguide/application.html")
+        try:
+            import parmed as pmd
+        except ImportError:
+            raise ImportError("Parmed required")
+            
+
 
         self.unit=simtk.unit
         self.Vec3=simtk.openmm.Vec3
@@ -850,6 +856,7 @@ class OpenMMTheory:
         if CHARMMfiles is True:
             print("Reading CHARMM files")
             # Load CHARMM PSF files. Both CHARMM-style and XPLOR allowed I believe. Todo: Check
+            self.psffile=psffile
             self.psf = simtk.openmm.app.CharmmPsfFile(psffile)
             self.params = simtk.openmm.app.CharmmParameterSet(charmmtopfile, charmmprmfile)
             # self.pdb = simtk.openmm.app.PDBFile(pdbfile) probably not reading coordinates here
@@ -1053,8 +1060,54 @@ class OpenMMTheory:
         timeA = time.time()
 
         #Todo: Check units
-        print("self.energy:", self.energy)
-        print("self.gradient:", self.gradient)
+        print("OpenMM Energy:", self.energy)
+        
+        
+        pmdparm = pmd.load_file(os.path.join('.',self.psffile))
+        
+        omm_e = pmd.openmm.energy_decomposition_system(pmdparm, self.system)
+        
+        #Print energy contributions table
+        #if 'CMAPs' in charmm_energy_components:
+        force_terms = ['Bond', 'Angle', 'Urey-Bradley', 'Dihedrals', 'Impropers', 'CMAP', 'Nonbonded']
+        #else:
+        #    force_terms = ['Bond', 'Angle', 'Urey-Bradley', 'Dihedrals', 'Impropers', 'Nonbonded']
+        
+        
+        # Attach proper units
+        for (index, (name, e)) in enumerate(omm_e):
+            omm_e[index] = (name, e * self.unit.kilocalories_per_mole)
+
+        # OpenMM energy
+        openmm_energy = dict()
+        openmm_energy['Bond'] = omm_e[0][1]
+        openmm_energy['Angle'] = omm_e[1][1]
+        openmm_energy['Urey-Bradley'] = omm_e[2][1]
+        openmm_energy['Dihedrals'] = omm_e[3][1]
+        openmm_energy['Impropers'] = omm_e[4][1]
+        if 'CMAP' in force_terms:
+            openmm_energy['CMAP'] = omm_e[5][1]
+        openmm_energy['Nonbonded'] = omm_e[6][1] + omm_e[7][1]
+        openmm_energy['Total'] = 0.0 * self.unit.kilojoules_per_mole
+        for term in force_terms:
+            openmm_energy['Total'] += openmm_energy[term]
+
+        print('OpenMM Energy is %s' % omm_e)
+        
+                
+        print('Output in kJ/mol and kcal/mol')
+        print('%-20s | %-15s | %-15s' % ('Component', 'kJ/mol', 'kcal/mol'))
+        print('-'*56)
+        for name in force_terms:
+            print('%-20s | %15.2f |%15.2f' % (name, openmm_energy[name] / self.unit.kilojoules_per_mole, openmm_energy[name] / self.unit.kilocalorie_per_mole))
+        print('-'*56)
+        print('%-20s | %15.2f %s' % ('Total', openmm_energy['Total'] / self.unit.kilojoules_per_mole, "kJ/mol"))
+        print('%-20s | %15.2f %s'  % ('Total', openmm_energy['Total'] / self.unit.kilocalorie_per_mole, "kcal/mol"))
+        print('-'*56)
+        
+        
+        
+        #print("self.gradient:", self.gradient)
 
         print(BC.OKBLUE, BC.BOLD, "------------ENDING OPENMM INTERFACE-------------", BC.END)
         return self.energy, self.gradient
