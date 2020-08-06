@@ -864,7 +864,9 @@ class OpenMMTheory:
             #self.forcefield = self.psf
             self.topology = self.psf.topology
             # Create an OpenMM system by calling createSystem on psf
-
+            
+            #Used for energy decomposition
+            self.pmdparm = self.parmed.load_file(os.path.join('.',self.psffile))
             #Periodic
             if self.Periodic is True:
                 print("System is periodic")
@@ -875,9 +877,13 @@ class OpenMMTheory:
                 
                 #Parameters here are based on OpenMM DHFR example
                 self.psf.setBox(self.a, self.b, self.c)
+                
+                #TODO. Get angles from input later
+                self.pmdparm.box = [self.a/self.unit.angstroms, self.b/self.unit.angstroms, self.c/self.unit.angstroms, 90, 90, 90]
+                
                 self.system = self.psf.createSystem(self.params, nonbondedMethod=simtk.openmm.app.PME,
                                                 nonbondedCutoff=12 * self.unit.angstroms, switchDistance=10*self.unit.angstroms)
-                
+                print("self.system.getForces() :", self.system.getForces())
                 for force in self.system.getForces():
                     if isinstance(force, simtk.openmm.CustomNonbondedForce):
                         print('CustomNonbondedForce: %s' % force.getUseSwitchingFunction())
@@ -889,6 +895,11 @@ class OpenMMTheory:
                         force.setUseDispersionCorrection(False)
                         force.setPMEParameters(1.0/0.34, periodic_cell_dimensions[3], periodic_cell_dimensions[4], periodic_cell_dimensions[5]) 
                         # NOTE: These are hard-coded!
+
+
+        
+                
+                
                 
             #Non-Periodic
             else:
@@ -1082,8 +1093,6 @@ class OpenMMTheory:
         print_time_rel(timeA, modulename="state")
         timeA = time.time()
         print("doing energy")
-        energykjmol = state.getPotentialEnergy().value_in_unit(self.unit.kilojoule_per_mole)
-        energykcalmol = state.getPotentialEnergy().value_in_unit(self.unit.kilocalorie_per_mole)
         self.energy = state.getPotentialEnergy().value_in_unit(self.unit.kilojoule_per_mole) / eqcgmx
         print_time_rel(timeA, modulename="energy")
         timeA = time.time()
@@ -1094,34 +1103,25 @@ class OpenMMTheory:
 
         #Todo: Check units
         print("OpenMM Energy:", self.energy)
-        print("Energy (kJ/mol):", energykjmol)
-        print("Energy (kcal/mol):", energykcalmol)
         
-
-        pmdparm = self.parmed.load_file(os.path.join('.',self.psffile))
-        pmdparm.positions = pos
-        if self.Periodic is True:
-            #TODO. Get angles from input later
-            pmdparm.box = [self.a/self.unit.angstroms, self.b/self.unit.angstroms, self.c/self.unit.angstroms, 90, 90, 90]
-        
-        print("pmdparm:", pmdparm)
-        print_time_rel(timeA, modulename="parmed load file")
+        self.pmdparm.positions = pos
+        print("self.pmdparm:", self.pmdparm)
+        print_time_rel(timeA, modulename="parmed pos")
         timeA = time.time()
         omm_e = self.parmed.openmm.energy_decomposition_system(pmdparm, self.system)
         print_time_rel(timeA, modulename="parmed energy decomp")
         timeA = time.time()
-        #Print energy contributions table
+        
         #if 'CMAPs' in charmm_energy_components:
         force_terms = ['Bond', 'Angle', 'Urey-Bradley', 'Dihedrals', 'Impropers', 'CMAP', 'Nonbonded']
         #else:
         #    force_terms = ['Bond', 'Angle', 'Urey-Bradley', 'Dihedrals', 'Impropers', 'Nonbonded']
         
-        
         # Attach proper units
         for (index, (name, e)) in enumerate(omm_e):
             omm_e[index] = (name, e * self.unit.kilocalories_per_mole)
 
-        # OpenMM energy
+        # OpenMM energy components
         openmm_energy = dict()
         openmm_energy['Bond'] = omm_e[0][1]
         openmm_energy['Angle'] = omm_e[1][1]
@@ -1135,10 +1135,9 @@ class OpenMMTheory:
         for term in force_terms:
             openmm_energy['Total'] += openmm_energy[term]
 
-        print('OpenMM Energy is %s' % omm_e)
+        #print('OpenMM Energy is %s' % omm_e)
         
-                
-        print('Output in kJ/mol and kcal/mol')
+        #Print table       
         print('%-20s | %-15s | %-15s' % ('Component', 'kJ/mol', 'kcal/mol'))
         print('-'*56)
         for name in force_terms:
@@ -1154,6 +1153,8 @@ class OpenMMTheory:
 
         print(BC.OKBLUE, BC.BOLD, "------------ENDING OPENMM INTERFACE-------------", BC.END)
         return self.energy, self.gradient
+    
+    
     def getatomcharges(self):
         chargelist = []
         for i in range( self.nonbonded_force.getNumParticles() ):
