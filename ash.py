@@ -1100,9 +1100,10 @@ class OpenMMTheory:
 
         pmdparm = self.parmed.load_file(os.path.join('.',self.psffile))
         pmdparm.positions = pos
-        pmdparm.box = [self.periodic_cell_dimensions/self.unit.angstroms, self.periodic_cell_dimensions/self.unit.angstroms, 
-                       self.periodic_cell_dimensions/self.unit.angstroms, 90, 90, 90]
-        print("a/u.angstroms: ", a/u.angstroms)
+        if self.Periodic is True:
+            #TODO. Get angles from input later
+            pmdparm.box = [self.a/self.unit.angstroms, self.b/self.unit.angstroms, self.c/self.unit.angstroms, 90, 90, 90]
+            print("a/u.angstroms: ", a/u.angstroms)
         
         print("pmdparm:", pmdparm)
         print_time_rel(timeA, modulename="parmed load file")
