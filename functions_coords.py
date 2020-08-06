@@ -1002,8 +1002,8 @@ def get_boundary_atoms(qmatoms, coords, elems, scale, tol):
     return qm_mm_boundary_dict
 
 #Get linkatom positions for a list of qmatoms and the current set of coordinates
-# Using linkatom distance of 1.0 Å for now as default. Makes sense for C-H link atoms. Check what Chemshell does
-def get_linkatom_positions(qm_mm_boundary_dict,qmatoms, coords, elems, linkatom_distance=1.0):
+# Using linkatom distance of 1.08999 Å for now as default. Makes sense for C-H link atoms. Check what Chemshell does
+def get_linkatom_positions(qm_mm_boundary_dict,qmatoms, coords, elems, linkatom_distance=1.09):
     
     #Get boundary atoms
     #TODO: Should we always call get_boundary_atoms or we should use previously defined dict??

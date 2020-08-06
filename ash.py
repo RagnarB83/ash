@@ -996,7 +996,8 @@ class OpenMMTheory:
         print_time_rel(timeA, modulename="add exception")
     #Run: coords or framents can be given (usually coords). qmatoms in order to avoid QM-QM interactions (TODO)
     #Probably best to do QM-QM exclusions etc. in a separate function though as we want run to be as simple as possible
-    def run(self, coords=None, fragment=None):
+    #qmatoms list provided for generality of MM objects. Not used here for now
+    def run(self, coords=None, fragment=None, qmatoms=None):
         timeA = time.time()
         print(BC.OKBLUE, BC.BOLD, "------------RUNNING OPENMM INTERFACE-------------", BC.END)
         #If no coords given to run then a single-point job probably (not part of Optimizer or MD which would supply coords).
@@ -1765,15 +1766,6 @@ class QMMMTheory:
             else:
                 print("active_atoms and frozen_atoms can not be both defined")
                 exit(1)
-
-            #Coords and elems lists.
-            #Coords may change by run command
-            #Qmelems may change if link atoms
-            #Don't think it makes sense to define here. Disabling:
-            #self.qmcoords=[self.coords[i] for i in self.qmatoms]
-            #self.mmcoords=[self.coords[i] for i in self.mmatoms]
-            #self.qmelems=[self.elems[i] for i in self.qmatoms]
-            #self.mmelems=[self.elems[i] for i in self.mmatoms]
             
             #print("List of all atoms:", self.allatoms)
             print("QM region ({} atoms): {}".format(len(self.qmatoms),self.qmatoms))
@@ -1792,6 +1784,7 @@ class QMMMTheory:
             print("Fragment has not been defined for QM/MM. Exiting")
             exit(1)
 
+        #Flag to check whether QMCharges have been zeroed in self.charges_mod list
         self.QMChargesZeroed=False
 
         #Theory level definitions
@@ -1826,7 +1819,11 @@ class QMMMTheory:
                 exit(1)
         else:
             self.charges=charges
-
+        
+        #Self.charges are original charges that are defined above,
+        #Charges that will be modified (charge-shifting, QMzeroed etc.) are:
+        #TODO: Option. Separate charge-lists for QM-code and MM-code ??
+        self.charges_mod = copy.copy(self.charges)
 
         #If MM THEORY (not just pointcharges)
         if mm_theory is not None:
@@ -1835,7 +1832,7 @@ class QMMMTheory:
             if self.mm_theory_name == "OpenMMTheory":
                 print("Now adding exceptions for frozen atoms")
                 if len(self.frozenatoms) > 0:
-                    print("Here adding exceptions")
+                    print("Here adding exceptions for OpenMM")
 
                     #Disabling for now, since so bloody slow. Need to speed up
                     #mm_theory.addexceptions(self.frozenatoms)
@@ -1849,76 +1846,156 @@ class QMMMTheory:
                 print("Found covalent QM-MM boundary. Linkatoms option set to True")
                 print("Boundaryatoms (QM:MM pairs):", self.boundaryatoms)
                 self.linkatoms=True
+                
+                #Get MM boundary information. Stored as self.MMboundarydict
+                self.get_MMboundary()
             else:
                 print("No covalent QM-MM boundary. Linkatoms option set to False")
                 self.linkatoms=False
             
-            
-
-            
-            # THink about where scale and tol comes from. Here using global settings
-            
 
             if self.embedding=="Elstat":
                 #Change charges
+                # Keeping self.charges as originally defined.
+                
+
+                #TODO: Charges that MM code sees. Will be modified. NECESSARY???????????????????
+                #self.charges_mmcode = copy.copy(self.charges)
+                
                 #Setting QM charges to 0 since electrostatic embedding
                 #and Charge-shift QM-MM boundary
-                self.ZeroQMChargesandShift(self.boundaryatoms)
+                
+                #Zero QM charges
+                #TODO: DO here or inside run instead?? Needed for MM code.
+                self.ZeroQMCharges() #Modifies self.charges_mod
+                
+                
+                # Todo: make sure this works for OpenMM and for NonBondedTheory
+                # Updating charges in MM object
+                self.mm_theory.update_charges(self.charges_mod)
+                
+                
                 print("Charges of QM atoms set to 0 (since Electrostatic Embedding):")
                 if self.printlevel > 3:
                     for i in self.allatoms:
                         if i in qmatoms:
-                            print("QM atom {} ({}) charge: {}".format(i, self.elems[i], self.charges[i]))
+                            print("QM atom {} ({}) charge: {}".format(i, self.elems[i], self.charges_mod[i]))
                         else:
-                            print("MM atom {} ({}) charge: {}".format(i, self.elems[i], self.charges[i]))
+                            print("MM atom {} ({}) charge: {}".format(i, self.elems[i], self.charges_mod[i]))
                 blankline()
 
-        #QM and MM charges are defined even though an MMtheory may not be present
-        # Charges defined for regions
-        self.qmcharges = [self.charges[i] for i in self.qmatoms]
-        print("QM-region charges:", self.qmcharges)
-        self.mmcharges=[self.charges[i] for i in self.mmatoms]
-        #print("self.mmcharges:", self.mmcharges)
 
-    # Set QMcharges to Zero and  shift charges at boundary
-    def ZeroQMChargesandShift(self,boundarydict):
-        print("Setting QM charges to Zero and shifting charges at QM-MM boundary.")
+    #From QM1:MM1 boundary dict, get MM1:MMx boundary dict (atoms connected to MM1)
+    def get_MMboundary(self):
         # if boundarydict is not empty we need to zero MM1 charge and distribute charge from MM1 atom to MM2,MM3,MM4
         #Creating dictionary for each MM1 atom and its connected atoms: MM2-4
-        MMatomdict={}
-        for (QM1atom,MM1atom) in boundarydict.items():
+        self.MMboundarydict={}
+        for (QM1atom,MM1atom) in self.boundaryatoms.items():
             connatoms = get_connected_atoms(self.coords, self.elems, settings_ash.scale, settings_ash.tol, MM1atom)
             #Deleting QM-atom from connatoms list
             connatoms.remove(QM1atom)
-            MMatomdict[MM1atom] = connatoms
+            self.MMboundarydict[MM1atom] = connatoms
         print("")
-        print("MM boundary (MM1:MMx pairs):", MMatomdict)
-        
+        print("MM boundary (MM1:MMx pairs):", self.MMboundarydict)
+                
+    # Set QMcharges to Zero and shift charges at boundary
+    #TODO: Add both L2 scheme (delete whole charge-group of M1) and charge-shifting scheme (shift charges to Mx atoms and add dipoles for each Mx atom)
+    
+    def ZeroQMCharges(self):
+        print("Setting QM charges to Zero")
         #Looping over charges and setting QM/MM1 atoms to zero and shifting charge to neighbouring atoms
-        for i, c in enumerate(self.charges):
+        for i, c in enumerate(self.charges_mod):
+            #Setting QMatom charge to 0
+            if i in self.qmatoms:
+                self.charges_mod[i] = 0.0
+                
+        self.QMChargesZeroed = True
+    def ShiftMMCharges(self):
+        print("Shifting MM charges at QM-MM boundary.")
 
-            #If MMatom at boundary, set charge to 0
-            if i in MMatomdict.keys():
+        #Looping over charges and setting QM/MM1 atoms to zero and shifting charge to neighbouring atoms
+        for i, c in enumerate(self.charges_mod):
+
+            #If index corresponds to MMatom at boundary, set charge to 0 (charge-shifting
+            if i in self.MMboundarydict.keys():
                 MM1charge = self.charges[i]
                 #print("MM1atom charge: ", MM1charge)
-                self.charges[i] = 0.0
-                MM1charge_fract = MM1charge / len(MMatomdict[i])
-                for MMx in MMatomdict[i]:
+                self.charges_mod[i] = 0.0
+                #MM1 charge fraction to be divided onto the other MM atoms
+                MM1charge_fract = MM1charge / len(self.MMboundarydict[i])
+                #print("MM1charge_fract :", MM1charge_fract)
+
+                #TODO: Should charges be updated for MM program also ?
+                #Putting the fractional charge on each MM2 atom
+                for MMx in self.MMboundarydict[i]:
                     #print("MMx : ", MMx)
-                    #print("Old charge : ", self.charges[MMx])
-                    self.charges[MMx] += MM1charge_fract
-                    #print("New charge : ", self.charges[MMx])  
-            #Setting QMatom charge to 0
-            elif i in self.qmatoms:
-                self.charges[i] = 0.0
-            #If regular MM atom, no change
-            elif i in self.mmatoms:
-                pass
+                    #print("Old charge : ", self.charges_mod[MMx])
+                    self.charges_mod[MMx] += MM1charge_fract
+                    #print("New charge : ", self.charges_mod[MMx])
+                    #exit()
                 
-        # Todo: make sure this works for OpenMM and for NonBOndedTheory
-        # Updating charges in MM object
-        self.mm_theory.update_charges(self.charges)
-        self.QMChargesZeroed = True
+    #Create dipole charge (twice) for each MM2 atom that gets fraction of MM1 charge
+    def get_dipole_charge(self,delq,direction,mm1index,mm2index):
+        #Distance between MM1 and MM2
+        MM_distance = distance_between_atoms(fragment=self.fragment, atom1=mm1index, atom2=mm2index)
+        #Coordinates
+        mm1coords=np.array(self.fragment.coords[mm1index])
+        mm2coords=np.array(self.fragment.coords[mm2index])
+        
+        SHIFT=0.15
+        #Normalize vector
+        def vnorm(p1):
+            r = math.sqrt((p1[0]*p1[0])+(p1[1]*p1[1])+(p1[2]*p1[2]))
+            v1=np.array([p1[0] / r, p1[1] / r, p1[2] /r])
+            return v1
+        diffvector=mm2coords-mm1coords
+        normdiffvector=vnorm(diffvector)
+        
+        #Dipole
+        d = delq*2.5
+        #Charge (abs value)
+        q0 = 0.5 * d / SHIFT
+        #print("q0 : ", q0)
+        #Actual shift
+        #print("direction : ", direction)
+        shift = direction * SHIFT * ( MM_distance / 2.5 )
+        #print("shift : ", shift)
+        #Position
+        #print("normdiffvector :", normdiffvector)
+        #print(normdiffvector*shift)
+        pos = mm2coords+np.array((shift*normdiffvector))
+        #print("pos :", pos)
+        #Returning charge with sign based on direction and position
+        #Return coords as regular list
+        return -q0*direction,list(pos)
+    def SetDipoleCharges(self):
+        print("Adding extra charges to preserve dipole moment for charge-shifting")
+        #Adding 2 dipole pointcharges for each MM2 atom
+        self.dipole_charges = []
+        self.dipole_coords = []
+        #print("self.MMboundarydict : ", self.MMboundarydict)
+        for MM1,MMx in self.MMboundarydict.items():
+            #print("MM1 :", MM1)
+            #print("MMx : ", MMx)
+            #Getting original MM1 charge (before set to 0)
+            MM1charge = self.charges[MM1]
+            #print("MM1atom charge: ", MM1charge)
+            MM1charge_fract=MM1charge/len(MMx)
+            #print("MM1charge_fract:", MM1charge_fract)
+            
+            for MM in MMx:
+                #print("MM :", MM)
+                q_d1, pos_d1 = self.get_dipole_charge(MM1charge_fract,1,MM1,MM)
+                #print("q_d1: ", q_d1)
+                #print("pos_d1: ", pos_d1)
+                q_d2, pos_d2 = self.get_dipole_charge(MM1charge_fract,-1,MM1,MM)
+                #print("q_d2: ", q_d2)
+                #print("pos_d2: ", pos_d2)
+                self.dipole_charges.append(q_d1)
+                self.dipole_charges.append(q_d2)
+                self.dipole_coords.append(pos_d1)
+                self.dipole_coords.append(pos_d2)
+    
     def run(self, current_coords=None, elems=None, Grad=False, nprocs=None):
         CheckpointTime = time.time()
         if self.printlevel >= 2:
@@ -1943,13 +2020,17 @@ class QMMMTheory:
         if self.printlevel >= 2:
             print("Running QM/MM object with {} cores available".format(nprocs))
         #Updating QM coords and MM coords.
+        
         #TODO: Should we use different name for updated QMcoords and MMcoords here??
         self.qmcoords=[current_coords[i] for i in self.qmatoms]
         self.mmcoords=[current_coords[i] for i in self.mmatoms]
         
         self.qmelems=[self.elems[i] for i in self.qmatoms]
         self.mmelems=[self.elems[i] for i in self.mmatoms]
-            
+        
+        
+
+        
         #LINKATOMS
         #1. Get linkatoms coordinates
         if self.linkatoms==True:
@@ -1971,19 +2052,41 @@ class QMMMTheory:
             print("")
             #print("current_qmelems :", current_qmelems)
             print(len(current_qmelems))
+            
+            #Charge-shifting + Dipole thing
+            
+            #Do Charge-shifting. MM1 charge distributed to MM2 atoms
+            self.ShiftMMCharges() # Modifies self.charges_mod
+            
+            #TODO: Code alternative to Charge-shifting: L2 scheme which deletes whole charge-group that MM1 belongs to
+            
+            
+            
+            #MMcharges defined after all modifications to self.charges_mod have been done.
+            #TODO: Differentiate more clearly between MM charges that MM code sees and what QM code sees.
+            self.mmcharges=[self.charges_mod[i] for i in self.mmatoms]
+            
+            
+            #Set 
+            self.SetDipoleCharges() #Creates self.dipole_charges and self.dipole_coords
+
+            #Adding dipole charge coords to MM coords (given to QM code)
+            self.mmcoords=self.mmcoords+self.dipole_coords
+            
+            #Adding dipole charges to MM charges list (given to QM code)
+            #TODO: Rename as pcharges list so as not to confuse with what MM code sees??
+            self.mmcharges=self.mmcharges+self.dipole_charges
+            
+            print(len(self.mmcharges))
+            print(len(self.mmcoords))
         else:
             #If no linkatoms then use original self.qmelems
             current_qmelems = self.qmelems
+            self.mmcharges=[self.charges_mod[i] for i in self.mmatoms]
        
        
-        #Link atoms. In an additive scheme we would always have link atoms, regardless of mechanical/electrostatic coupling
-        #Charge-shifting would be part of Elstat below
 
-        #Protocol:
-        #1. Recognize QM-MM boundary. Connectivity?? Get QM1 and MM1 coords pairs
-        #2. For QM-region coords, add linkatom at MM1 position initially. Then adjust distance
-        #3. Modify charges of MM atoms according to Chemshell scheme. Update both OpenMM and self.charges
-        
+       
         
         print_time_rel(CheckpointTime, modulename='QM/MM run prep')
         
@@ -2262,7 +2365,7 @@ class ORCATheory:
         print("Charge: {}  Mult: {}".format(self.charge, self.mult))
         if PC==True:
             print("Pointcharge embedding is on!")
-            create_orca_pcfile(self.inputfilename, mm_elems, current_MM_coords, MMcharges)
+            create_orca_pcfile(self.inputfilename, current_MM_coords, MMcharges)
             if self.brokensym==True:
                 print("Brokensymmetry SpinFlipping on! HSmult: {}.".format(self.HSmult))
                 for flipatom in self.atomstoflip:
@@ -3028,7 +3131,7 @@ class Fragment:
             self.add_coords_from_string(coordsstring, scale=scale, tol=tol)
         #If xyzfile argument, run read_xyzfile
         elif xyzfile is not None:
-            self.read_xyzfile(xyzfile, readchargemult=readchargemult)
+            self.read_xyzfile(xyzfile, readchargemult=readchargemult,conncalc=conncalc)
         elif pdbfile is not None:
             self.read_pdbfile(pdbfile, conncalc=conncalc)
         elif chemshellfile is not None:
@@ -3112,7 +3215,7 @@ class Fragment:
     def read_charmmfile(self,filename,conncalc=False):
         #Todo: finish
         pass
-    def read_chemshellfile(self,filename,conncalc=False, scale=None, tol=None):
+    def read_chemshellfile(self,filename,conncalc=False, scale=None, tol=None, conncalc=True):
         #Read Chemshell fragment file (.c ending)
         if self.printlevel >= 2:
             print("Reading coordinates from Chemshell file \"{}\" into fragment".format(filename))
@@ -3123,7 +3226,6 @@ class Fragment:
             exit()
         self.coords = coords
         self.elems = elems
-
 
         self.update_attributes()
         if conncalc is True:
@@ -3189,9 +3291,10 @@ class Fragment:
         if conncalc is True:
             self.calc_connectivity(scale=scale, tol=tol)
     #Read XYZ file
-    def read_xyzfile(self,filename, scale=None, tol=None, readchargemult=False):
+    def read_xyzfile(self,filename, scale=None, tol=None, readchargemult=False,conncalc=True):
         if self.printlevel >= 2:
             print("Reading coordinates from XYZfile {} into fragment".format(filename))
+            
         with open(filename) as f:
             for count,line in enumerate(f):
                 if count == 0:
@@ -3208,7 +3311,8 @@ class Fragment:
             print("Number of atoms in header not equal to number of coordinate-lines. Check XYZ file!")
             exit()
         self.update_attributes()
-        self.calc_connectivity(scale=scale, tol=tol)
+        if conncalc is True:
+            self.calc_connectivity(scale=scale, tol=tol)
     def set_energy(self,energy):
         self.energy=float(energy)
     # Get coordinates for specific atoms (from list of atom indices)

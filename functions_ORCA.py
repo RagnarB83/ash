@@ -650,9 +650,9 @@ def create_orca_input_plain(name,elems,coords,orcasimpleinput,orcablockinput,cha
 
 # Create ORCA pointcharge file based on provided list of elems and coords (MM region elems and coords)
 # and list of point charges of MM atoms
-def create_orca_pcfile(name,elems,coords,listofcharges):
+def create_orca_pcfile(name,coords,listofcharges):
     with open(name+'.pc', 'w') as pcfile:
-        pcfile.write(str(len(elems))+'\n')
+        pcfile.write(str(len(listofcharges))+'\n')
         for p,c in zip(listofcharges,coords):
             line = "{} {} {} {}".format(p, c[0], c[1], c[2])
             pcfile.write(line+'\n')
