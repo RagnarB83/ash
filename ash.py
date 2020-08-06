@@ -3215,7 +3215,7 @@ class Fragment:
     def read_charmmfile(self,filename,conncalc=False):
         #Todo: finish
         pass
-    def read_chemshellfile(self,filename,conncalc=False, scale=None, tol=None, conncalc=True):
+    def read_chemshellfile(self,filename,conncalc=False, scale=None, tol=None):
         #Read Chemshell fragment file (.c ending)
         if self.printlevel >= 2:
             print("Reading coordinates from Chemshell file \"{}\" into fragment".format(filename))
