@@ -868,11 +868,13 @@ class OpenMMTheory:
 
             #Periodic
             if self.Periodic is True:
+                print("System is periodic")
                 self.psf.setBox(periodic_cell_dimensions[0], periodic_cell_dimensions[1], periodic_cell_dimensions[2])
                 self.system = self.psf.createSystem(self.params, nonbondedMethod=simtk.openmm.app.PME,
                                                 nonbondedCutoff=12 * self.unit.nanometer, switchDistance=10*self.unit.angstroms)
             #Non-Periodic
             else:
+                print("System is non-periodic")
                 self.system = self.psf.createSystem(self.params, nonbondedMethod=simtk.openmm.app.NoCutoff,
                                                     nonbondedCutoff=12 * simtk.openmm.unit.nanometer)
             
@@ -1074,8 +1076,8 @@ class OpenMMTheory:
 
         #Todo: Check units
         print("OpenMM Energy:", self.energy)
-        print("Energy (kJ/mol):", self.energykjmol)
-        print("Energy (kcal/mol):", self.energykcalmol)
+        print("Energy (kJ/mol):", energykjmol)
+        print("Energy (kcal/mol):", energykcalmol)
         
 
         pmdparm = self.parmed.load_file(os.path.join('.',self.psffile))
