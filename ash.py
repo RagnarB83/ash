@@ -1049,22 +1049,22 @@ class OpenMMTheory:
         #Then try if fragment object was supplied.
         #Otherwise internal coords if they exist
         print("if stuff")
-        if coords is None:
+        if current_coords is None:
             if fragment is None:
                 if len(self.coords) != 0:
                     print("Using internal coordinates (from OpenMM object)")
-                    coords=self.coords
+                    current_coords=self.coords
                 else:
                     print("Found no coordinates!")
                     exit(1)
             else:
-                coords=fragment.coords
+                current_coords=fragment.coords
 
         print_time_rel(timeA, modulename="if stuff")
         timeA = time.time()
         #Making sure coords is np array and not list-of-lists
         print("doing coords array")
-        coords=np.array(coords)
+        current_coords=np.array(current_coords)
         print_time_rel(timeA, modulename="coords array")
         timeA = time.time()
         ##  unit conversion for energy
@@ -1077,7 +1077,7 @@ class OpenMMTheory:
         #pos = [Vec3(coords[:,0]/10,coords[:,1]/10,coords[:,2]/10)] * u.nanometer
         #Todo: Check speed on this
         print("doing pos")
-        pos = [self.Vec3(coords[i, 0] / 10, coords[i, 1] / 10, coords[i, 2] / 10) for i in range(len(coords))] * self.unit.nanometer
+        pos = [self.Vec3(current_coords[i, 0] / 10, current_coords[i, 1] / 10, current_coords[i, 2] / 10) for i in range(len(current_coords))] * self.unit.nanometer
         print_time_rel(timeA, modulename="pos create")
         timeA = time.time()
         self.simulation.context.setPositions(pos)
