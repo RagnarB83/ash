@@ -1051,6 +1051,8 @@ class OpenMMTheory:
         print_time_rel(timeA, modulename="state")
         timeA = time.time()
         print("doing energy")
+        energykjmol = state.getPotentialEnergy().value_in_unit(self.unit.kilojoule_per_mole)
+        energykcalmol = state.getPotentialEnergy().value_in_unit(self.unit.kilocalorie_per_mole)
         self.energy = state.getPotentialEnergy().value_in_unit(self.unit.kilojoule_per_mole) / eqcgmx
         print_time_rel(timeA, modulename="energy")
         timeA = time.time()
@@ -1061,9 +1063,12 @@ class OpenMMTheory:
 
         #Todo: Check units
         print("OpenMM Energy:", self.energy)
+        print("Energy (kJ/mol):", self.energykjmol)
+        print("Energy (kcal/mol):", self.energykcalmol)
         
 
         pmdparm = self.parmed.load_file(os.path.join('.',self.psffile))
+        print("pmdparm:", pmdparm)
         print_time_rel(timeA, modulename="parmed load file")
         timeA = time.time()
         omm_e = self.parmed.openmm.energy_decomposition_system(pmdparm, self.system)
