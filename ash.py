@@ -1042,7 +1042,7 @@ class OpenMMTheory:
     #Run: coords or framents can be given (usually coords). qmatoms in order to avoid QM-QM interactions (TODO)
     #Probably best to do QM-QM exclusions etc. in a separate function though as we want run to be as simple as possible
     #qmatoms list provided for generality of MM objects. Not used here for now
-    def run(self, coords=None, fragment=None, qmatoms=None):
+    def run(self, current_coords=None, fragment=None, qmatoms=None):
         timeA = time.time()
         print(BC.OKBLUE, BC.BOLD, "------------RUNNING OPENMM INTERFACE-------------", BC.END)
         #If no coords given to run then a single-point job probably (not part of Optimizer or MD which would supply coords).
