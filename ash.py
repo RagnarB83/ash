@@ -869,14 +869,28 @@ class OpenMMTheory:
             #Periodic
             if self.Periodic is True:
                 print("System is periodic")
+                #Parameters here are based on OpenMM DHFR example
                 self.psf.setBox(periodic_cell_dimensions[0], periodic_cell_dimensions[1], periodic_cell_dimensions[2])
                 self.system = self.psf.createSystem(self.params, nonbondedMethod=simtk.openmm.app.PME,
                                                 nonbondedCutoff=12 * self.unit.angstroms, switchDistance=10*self.unit.angstroms)
+                
+                for force in self.system.getForces():
+                    if isinstance(force, simtk.openmm.CustomNonbondedForce):
+                        print('CustomNonbondedForce: %s' % force.getUseSwitchingFunction())
+                        print('LRC? %s' % force.getUseLongRangeCorrection())
+                        force.setUseLongRangeCorrection(False)
+                    elif isinstance(force, simtk.openmm.NonbondedForce):
+                        print('NonbondedForce: %s' % force.getUseSwitchingFunction())
+                        print('LRC? %s' % force.getUseDispersionCorrection())
+                        force.setUseDispersionCorrection(False)
+                        force.setPMEParameters(1.0/0.34, periodic_cell_dimensions[3], periodic_cell_dimensions[4], periodic_cell_dimensions[5]) 
+                        # NOTE: These are hard-coded!
+                
             #Non-Periodic
             else:
                 print("System is non-periodic")
                 self.system = self.psf.createSystem(self.params, nonbondedMethod=simtk.openmm.app.NoCutoff,
-                                                    nonbondedCutoff=12 * simtk.openmm.unit.nanometer)
+                                                    nonbondedCutoff=1 * simtk.openmm.unit.nanometer)
             
         elif GROMACSfiles is True:
             print("Warning: Gromacs-file interface not tested")
