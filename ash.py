@@ -895,17 +895,12 @@ class OpenMMTheory:
                         force.setUseDispersionCorrection(False)
                         force.setPMEParameters(1.0/0.34, periodic_cell_dimensions[3], periodic_cell_dimensions[4], periodic_cell_dimensions[5]) 
                         # NOTE: These are hard-coded!
-
-
-        
-                
-                
                 
             #Non-Periodic
             else:
                 print("System is non-periodic")
                 self.system = self.psf.createSystem(self.params, nonbondedMethod=simtk.openmm.app.NoCutoff,
-                                                    nonbondedCutoff=1 * simtk.openmm.unit.nanometer)
+                                                    nonbondedCutoff=1000 * simtk.openmm.unit.angstroms)
             
         elif GROMACSfiles is True:
             print("Warning: Gromacs-file interface not tested")
@@ -1102,10 +1097,10 @@ class OpenMMTheory:
         timeA = time.time()
 
         #Todo: Check units
-        print("OpenMM Energy:", self.energy)
+        print("OpenMM Energy:", self.energy, "Eh")
         
         self.pmdparm.positions = pos
-        print("self.pmdparm:", self.pmdparm)
+        
         print_time_rel(timeA, modulename="parmed pos")
         timeA = time.time()
         omm_e = self.parmed.openmm.energy_decomposition_system(self.pmdparm, self.system)
@@ -1148,7 +1143,8 @@ class OpenMMTheory:
         print('-'*56)
         
         
-        
+        print_time_rel(timeA, modulename="print table")
+        timeA = time.time()
         #print("self.gradient:", self.gradient)
 
         print(BC.OKBLUE, BC.BOLD, "------------ENDING OPENMM INTERFACE-------------", BC.END)
