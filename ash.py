@@ -833,7 +833,7 @@ class OpenMMTheory:
                 "OpenMM requires installing the OpenMM package. Try: conda install -c omnia openmm  \
                 Also see http://docs.openmm.org/latest/userguide/application.html")
         try:
-            import parmed as pmd
+            import parmed
         except ImportError:
             raise ImportError("Parmed required")
             
@@ -841,7 +841,7 @@ class OpenMMTheory:
 
         self.unit=simtk.unit
         self.Vec3=simtk.openmm.Vec3
-
+        self.parmed=parmed
 
 
         #TODO: Should we keep this? Probably not. Coordinates would be handled by ASH.
@@ -1062,11 +1062,13 @@ class OpenMMTheory:
         #Todo: Check units
         print("OpenMM Energy:", self.energy)
         
-        
-        pmdparm = pmd.load_file(os.path.join('.',self.psffile))
-        
-        omm_e = pmd.openmm.energy_decomposition_system(pmdparm, self.system)
-        
+
+        pmdparm = self.parmed.load_file(os.path.join('.',self.psffile))
+        print_time_rel(timeA, modulename="parmed load file")
+        timeA = time.time()
+        omm_e = self.parmed.openmm.energy_decomposition_system(pmdparm, self.system)
+        print_time_rel(timeA, modulename="parmed energy decomp")
+        timeA = time.time()
         #Print energy contributions table
         #if 'CMAPs' in charmm_energy_components:
         force_terms = ['Bond', 'Angle', 'Urey-Bradley', 'Dihedrals', 'Impropers', 'CMAP', 'Nonbonded']
