@@ -911,6 +911,7 @@ class OpenMMTheory:
         self.allatoms=list(range(0,self.numatoms))
         if active_atoms is None and frozen_atoms is None:
             print("All {} atoms active, no atoms frozen".format(len(self.allatoms)))
+            self.frozen_atoms = []
         elif active_atoms is not None and frozen_atoms is None:
             self.active_atoms=active_atoms
             self.frozen_atoms=listdiff(self.allatoms,self.active_atoms)
