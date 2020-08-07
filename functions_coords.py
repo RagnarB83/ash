@@ -497,7 +497,6 @@ def split_multimolxyzfile(file, writexyz=False):
     elems = []
     with open(file) as f:
         for index, line in enumerate(f):
-            print(line)
             if index == 0:
                 numatoms = line.split()[0]
             if coordgrab == True:
@@ -510,20 +509,18 @@ def split_multimolxyzfile(file, writexyz=False):
                     all_elems.append(elems)
                     if writexyz is True:
                         #Alternative option: write each conformer/molecule to disk as XYZfile
-                        write_xyzfile(elems, coords, "conformer"+str(molcounter))
+                        write_xyzfile(elems, coords, "molecule"+str(molcounter))
                     coords = []
                     elems = []
-                coordgrab=False
             if titlegrab is True:
                 all_titles.append(line.split()[-1])
                 titlegrab=False
                 coordgrab = True
             if line.split()[0] == str(numatoms):
-                print("here")
-                print(line)
                 # print("coords is", len(coords))
                 molcounter += 1
                 titlegrab=True
+                coordgrab=False
 
     return all_elems,all_coords, all_titles
 
