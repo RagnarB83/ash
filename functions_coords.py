@@ -497,9 +497,6 @@ def split_multimolxyzfile(file, writexyz=False):
     elems = []
     with open(file) as f:
         for index, line in enumerate(f):
-            if titlegrab is True:
-                all_titles.append(line.split()[-1])
-                titlegrab=False
             if index == 0:
                 numatoms = line.split()[0]
             if coordgrab == True:
@@ -515,9 +512,14 @@ def split_multimolxyzfile(file, writexyz=False):
                         write_xyzfile(elems, coords, "conformer"+str(molcounter))
                     coords = []
                     elems = []
-            if line.split()[0] == str(numatoms):
-                # print("coords is", len(coords))
+            if titlegrab is True:
+                all_titles.append(line.split()[-1])
+                titlegrab=False
                 coordgrab = True
+            if line.split()[0] == str(numatoms):
+                print("here")
+                print(line)
+                # print("coords is", len(coords))
                 molcounter += 1
                 titlegrab=True
 
