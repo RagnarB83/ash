@@ -792,7 +792,7 @@ def grabatomcharges_ORCA(chargemodel,outputfile):
 
 # Wrapper around interactive orca_plot
 # Todo: add TDDFT difference density, natural orbitals, MDCI spin density?
-def run_orca_plot(orcadir, filename, option, gridvalue=40,densityfilename=None):
+def run_orca_plot(orcadir, filename, option, gridvalue=40,densityfilename=None, mo_operator=0, mo_number=None):
     # Always creating Cube file (5,7 option)
     #Always setting grid (4,gridvalue option)
     #Always choosing a plot (2,X) option:
@@ -810,8 +810,11 @@ def run_orca_plot(orcadir, filename, option, gridvalue=40,densityfilename=None):
     else:
         plottype = 1
     if option=='density' or option=='spindensity' or option=='mo':
+         p = sp.run([orcadir + '/orca_plot', filename, '-i'], stdout=sp.PIPE,
+                       input='5\n7\n4\n{}\n1\n{}\ny\n10\n11\n\n'.format(gridvalue, plottype), encoding='ascii')       
+    elif option=='mo':
         p = sp.run([orcadir + '/orca_plot', filename, '-i'], stdout=sp.PIPE,
-                       input='5\n7\n4\n{}\n1\n{}\ny\n10\n11\n\n'.format(gridvalue, plottype), encoding='ascii')
+                       input='5\n7\n4\n{}\n1\n{}\n3\n{}\n2\n{}\n10\n11\n\n'.format(gridvalue, plottype,mo_operator,mo_number), encoding='ascii')
     #If plotting CIS/TDDFT density then we tell orca_plot explicity.
     elif option == 'cisdensity' or option == 'cisspindensity':
         p = sp.run([orcadir + '/orca_plot', filename, '-i'], stdout=sp.PIPE,
