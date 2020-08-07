@@ -1019,3 +1019,21 @@ def get_linkatom_positions(qm_mm_boundary_dict,qmatoms, coords, elems, linkatom_
         linkatom_coords = list(qmatom_coords + (mmatom_coords - qmatom_coords) * (linkatom_distance / distance(qmatom_coords, mmatom_coords)))
         linkatoms_dict[(dict_item[0], dict_item[1])] = linkatom_coords
     return linkatoms_dict
+
+
+
+
+#Grabbing molecules from multi-XYZ trajectory file (can be MD-file, optimization traj, nebpath traj etc).
+#Creating ASH fragments for each conformer
+def get_molecules_from_trajectory(file):
+    print("")
+    print("Now finding molecules in multi-XYZ trajectory file and creating ASH fragments...")
+    list_of_molecules=[]
+    all_elems, all_coords, all_titles = split_multimolxyzfile(file,writexyz=True)
+    print("Found {} molecules in file".format(len(all_elems)))
+    
+    for els,cs in zip(all_elems,all_coords):
+        conf = ash.Fragment(elems=els, coords=cs)
+        list_of_molecules.append(conf)
+
+    return list_of_molecules
