@@ -1984,7 +1984,7 @@ class QMMMTheory:
                 print("Now adding exceptions for frozen atoms")
                 if len(self.frozenatoms) > 0:
                     print("Here adding exceptions for OpenMM")
-
+                    print("Num frozen atoms: ", len(self.frozenatoms))
                     #Disabling for now, since so bloody slow. Need to speed up
                     mm_theory.addexceptions(self.frozenatoms)
 
