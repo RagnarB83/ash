@@ -1822,6 +1822,9 @@ class QMMMTheory:
 
         print(BC.WARNING,BC.BOLD,"------------Defining QM/MM object-------------", BC.END)
 
+        #Linkatoms False by default. Later checked.
+        self.linkatoms=False
+
         #Setting nprocs of object
         if nprocs==None:
             self.nprocs=1

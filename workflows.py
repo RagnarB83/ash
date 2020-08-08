@@ -994,6 +994,9 @@ def DLPNO_W1theory_SP(fragment=None, charge=None, orcadir=None, mult=None, stabi
     #return final energy and also dictionary with energy components
     return W1_total, E_dict
 
+
+
+
 #DLPNO-F12
 #Test: DLPNO-CCSD(T)-F12 protocol including CV+SR
 def DLPNO_F12_SP(fragment=None, charge=None, orcadir=None, mult=None, stabilityanalysis=False, numcores=1,
