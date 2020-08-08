@@ -1104,6 +1104,7 @@ class OpenMMTheory:
         print_time_rel(timeA, modulename="parmed pos")
         timeA = time.time()
         omm_e = self.parmed.openmm.energy_decomposition_system(self.pmdparm, self.system)
+        print("omm_e:", omm_e)
         print_time_rel(timeA, modulename="parmed energy decomp")
         timeA = time.time()
         
