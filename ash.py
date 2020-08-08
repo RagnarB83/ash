@@ -1986,7 +1986,7 @@ class QMMMTheory:
                     print("Here adding exceptions for OpenMM")
 
                     #Disabling for now, since so bloody slow. Need to speed up
-                    #mm_theory.addexceptions(self.frozenatoms)
+                    mm_theory.addexceptions(self.frozenatoms)
 
 
             #Check if we need linkatoms by getting boundary atoms dict:
