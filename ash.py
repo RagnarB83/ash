@@ -837,17 +837,13 @@ class OpenMMTheory:
             raise ImportError(
                 "OpenMM requires installing the OpenMM package. Try: conda install -c omnia openmm  \
                 Also see http://docs.openmm.org/latest/userguide/application.html")
-        try:
-            import parmed
-        except ImportError:
-            raise ImportError("Parmed required")
+
             
         #Periodic or not
         self.Periodic = periodic
 
         self.unit=simtk.unit
         self.Vec3=simtk.openmm.Vec3
-        self.parmed=parmed
 
 
         #TODO: Should we keep this? Probably not. Coordinates would be handled by ASH.
@@ -871,8 +867,6 @@ class OpenMMTheory:
             self.topology = self.psf.topology
             # Create an OpenMM system by calling createSystem on psf
             
-            #Used for energy decomposition
-            self.pmdparm = self.parmed.load_file(os.path.join('.',self.psffile))
             #Periodic
             if self.Periodic is True:
                 print("System is periodic")
@@ -883,9 +877,6 @@ class OpenMMTheory:
                 
                 #Parameters here are based on OpenMM DHFR example
                 self.psf.setBox(self.a, self.b, self.c)
-                
-                #TODO. Get angles from input later
-                self.pmdparm.box = [self.a/self.unit.angstroms, self.b/self.unit.angstroms, self.c/self.unit.angstroms, 90, 90, 90]
                 
                 self.system = self.psf.createSystem(self.params, nonbondedMethod=simtk.openmm.app.PME,
                                                 nonbondedCutoff=12 * self.unit.angstroms, switchDistance=10*self.unit.angstroms)
@@ -1133,7 +1124,6 @@ class OpenMMTheory:
         print('-'*56)
         for name in force_terms:
             print('%-20s | %15.2f | %15.2f' % (name, openmm_energy[name] / self.unit.kilojoules_per_mole, openmm_energy[name] / self.unit.kilocalorie_per_mole))
-        print('-'*56)
         #If otherforce. For Amber and otherforcefields we would have to clean up this later
         for otherforce in [i for i in openmm_energy.keys() if 'Otherforce' in i]:
             print('%-20s | %15.2f | %15.2f' % (name, openmm_energy[otherforce] / self.unit.kilojoules_per_mole, openmm_energy[otherforce] / self.unit.kilocalorie_per_mole))
@@ -2360,7 +2350,7 @@ class QMMMTheory:
             printdebug("Charges for full system is: ", self.charges)
             #Todo: Need to make sure OpenMM skips QM-QM Lj interaction => Exclude
             #Todo: Need to have OpenMM skip frozen region interaction for speed  => => Exclude
-            self.MMEnergy, self.MMGradient= self.mm_theory.run(coords=current_coords, qmatoms=self.qmatoms)
+            self.MMEnergy, self.MMGradient= self.mm_theory.run(current_coords=current_coords, qmatoms=self.qmatoms)
         else:
             self.MMEnergy=0
         print_time_rel(CheckpointTime, modulename='MM step')
