@@ -1,9 +1,12 @@
 #Conversion factors
 
 #hartree conversions
-harkcal = 627.50946900
+#harkcal = 627.50946900
+#harkcal = 627.5096080305927
+harkcal = 627.5094740631
 hartocm = 219474.6313702
-hartokj = 2625.499638
+#hartokj = 2625.5002
+hartokj =  2625.4996394799
 hartree2j = 4.3597438e-18
 hartoeV = 27.211386245988
 

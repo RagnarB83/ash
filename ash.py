@@ -803,6 +803,11 @@ def print_time_rel_and_tot_color(timestampA,timestampB, modulename=''):
 #GROMACSfiles:
 # Need gromacstopfile and grofile (contains periodic information along with coordinates) and gromacstopdir location (topology)
 
+#Dependencies:
+#OpenMM. Install via conda: conda install -c omnia openmm
+#
+
+
 class OpenMMTheory:
     def __init__(self, pdbfile=None, platform='CPU', active_atoms=None, frozen_atoms=None,
                  CHARMMfiles=False, psffile=None, charmmtopfile=None, charmmprmfile=None,
@@ -851,10 +856,11 @@ class OpenMMTheory:
         print_time_rel(timeA, modulename="prep")
         timeA = time.time()
 
-
+        self.Forcefield=None
         #What type of forcefield files to read. Reads in different way.
         # #Always creates object we call self.forcefield that contains topology attribute
         if CHARMMfiles is True:
+            self.Forcefield='CHARMM'
             print("Reading CHARMM files")
             # Load CHARMM PSF files. Both CHARMM-style and XPLOR allowed I believe. Todo: Check
             self.psffile=psffile
@@ -914,6 +920,7 @@ class OpenMMTheory:
             self.system = self.grotop.createSystem(nonbondedMethod=simtk.openmm.app.NoCutoff,
                                                 nonbondedCutoff=1 * simtk.openmm.unit.nanometer)
         elif Amberfiles is True:
+            self.Forcefield='Amber'
             print("Warning: Amber-file interface not tested")
             #Note: Only new-style Amber7 prmtop files work
             self.prmtop = simtk.openmm.app.AmberPrmtopFile(amberprmtopfile)
@@ -1003,6 +1010,13 @@ class OpenMMTheory:
         print("Constraints:", self.system.getNumConstraints())
         print_time_rel(timeA, modulename="constraint fix")
         timeA = time.time()
+        
+        
+        
+        self.forcegroupify()
+        print_time_rel(timeA, modulename="forcegroupify")
+        timeA = time.time()
+        
         #Dummy integrator
         self.integrator = simtk.openmm.LangevinIntegrator(300 * simtk.openmm.unit.kelvin,  # Temperature of head bath
                                         1 / simtk.openmm.unit.picosecond,  # Friction coefficient
@@ -1015,8 +1029,12 @@ class OpenMMTheory:
                                                                  self.platform)
 
 
+
+
         print_time_rel(timeA, modulename="simulation setup")
         timeA = time.time()
+        
+
 
     #This removes interactions between particles (e.g. QM-QM or frozen-frozen pairs)
     # list of atom indices for which we will remove all pairs
@@ -1042,7 +1060,93 @@ class OpenMMTheory:
     #Run: coords or framents can be given (usually coords). qmatoms in order to avoid QM-QM interactions (TODO)
     #Probably best to do QM-QM exclusions etc. in a separate function though as we want run to be as simple as possible
     #qmatoms list provided for generality of MM objects. Not used here for now
-    def run(self, current_coords=None, elems=None, Grad=True, fragment=None, qmatoms=None):
+    
+    
+    #Functions for energy compositions
+    def forcegroupify(self):
+        self.forcegroups = {}
+        for i in range(self.system.getNumForces()):
+            force = self.system.getForce(i)
+            force.setForceGroup(i)
+            self.forcegroups[force] = i
+
+    def getEnergyDecomposition(self,context, forcegroups):
+        energies = {}
+        for f, i in forcegroups.items():
+            energies[f] = context.getState(getEnergy=True, groups=2**i).getPotentialEnergy()
+        return energies
+    
+    def printEnergyDecomposition(self):
+        timeA=time.time()
+        #Energy composition
+        #TODO: Calling this is expensive. Only do for cases: a) single-point b) First energy-step in optimization and last energy-step
+        # OpenMM energy components
+        openmm_energy = dict()
+        energycomp = self.getEnergyDecomposition(self.simulation.context, self.forcegroups)
+        bondterm_set=False
+        extrafcount=0
+        #This currently assumes CHARMM36 components, More to be added
+        for comp in energycomp.items():
+            if 'HarmonicBondForce' in str(type(comp[0])):
+                #Not sure if this works in general.
+                if bondterm_set is False:
+                    openmm_energy['Bond'] = comp[1]
+                    bondterm_set=True
+                else:
+                    openmm_energy['Urey-Bradley'] = comp[1]
+            elif 'HarmonicAngleForce' in str(type(comp[0])):
+                openmm_energy['Angle'] = comp[1]
+            elif 'PeriodicTorsionForce' in str(type(comp[0])):
+                openmm_energy['Dihedrals'] = comp[1]
+            elif 'CustomTorsionForce' in str(type(comp[0])):
+                openmm_energy['Impropers'] = comp[1]
+            elif 'CMAPTorsionForce' in str(type(comp[0])):
+                openmm_energy['CMAP'] = comp[1]
+            elif 'NonbondedForce' in str(type(comp[0])):
+                openmm_energy['Nonbonded'] = comp[1]
+            elif 'CMMotionRemover' in str(type(comp[0])):
+                openmm_energy['CMM'] = comp[1]
+            else:
+                extrafcount+=1
+                openmm_energy['Otherforce'+str(extrafcount)] = comp[1]
+                
+        
+        print_time_rel(timeA, modulename="energy composition")
+        timeA = time.time()
+        
+        #The force terms to print in table.
+        #TODO: To be extended
+        if self.Forcefield == 'CHARMM':
+            force_terms = ['Bond', 'Angle', 'Urey-Bradley', 'Dihedrals', 'Impropers', 'CMAP', 'Nonbonded']
+        else:
+            #Modify...
+            force_terms = ['Bond', 'Angle', 'Urey-Bradley', 'Dihedrals', 'Impropers', 'CMAP', 'Nonbonded']
+
+        #Sum all defined force-terms
+        openmm_energy['Sumcomponents'] = 0.0 * self.unit.kilojoules_per_mole
+        for term in force_terms:
+            openmm_energy['Sumcomponents'] += openmm_energy[term]
+            
+            
+        #Print energy table       
+        print('%-20s | %-15s | %-15s' % ('Component', 'kJ/mol', 'kcal/mol'))
+        print('-'*56)
+        for name in force_terms:
+            print('%-20s | %15.2f | %15.2f' % (name, openmm_energy[name] / self.unit.kilojoules_per_mole, openmm_energy[name] / self.unit.kilocalorie_per_mole))
+        print('-'*56)
+        #If otherforce. For Amber and otherforcefields we would have to clean up this later
+        for otherforce in [i for i in openmm_energy.keys() if 'Otherforce' in i]:
+            print('%-20s | %15.2f | %15.2f' % (name, openmm_energy[otherforce] / self.unit.kilojoules_per_mole, openmm_energy[otherforce] / self.unit.kilocalorie_per_mole))
+        print('-'*56)
+        print('%-20s | %15.2f | %15.2f' % ('Sumcomponents', openmm_energy['Sumcomponents'] / self.unit.kilojoules_per_mole, openmm_energy['Sumcomponents'] / self.unit.kilocalorie_per_mole))
+        print('%-20s | %15.2f | %15.2f' % ('Full', self.energy * constants.hartokj , self.energy * constants.harkcal))
+        
+        print("")
+        print("")
+        print_time_rel(timeA, modulename="print table")
+        timeA = time.time()
+    
+    def run(self, current_coords=None, elems=None, Grad=True, fragment=None, qmatoms=None, print_energy_components=True):
         timeA = time.time()
         print(BC.OKBLUE, BC.BOLD, "------------RUNNING OPENMM INTERFACE-------------", BC.END)
         #If no coords given to run then a single-point job probably (not part of Optimizer or MD which would supply coords).
@@ -1068,8 +1172,9 @@ class OpenMMTheory:
         print_time_rel(timeA, modulename="coords array")
         timeA = time.time()
         ##  unit conversion for energy
-        eqcgmx = 2625.5002
+        #eqcgmx = 2625.5002
         ## unit conversion for force
+        #TODO: Check this.
         fqcgmx = -49621.9
         #pos = [Vec3(a / 10, b / 10, c / 10)] * u.nanometer
 
@@ -1088,7 +1193,7 @@ class OpenMMTheory:
         print_time_rel(timeA, modulename="state")
         timeA = time.time()
         print("doing energy")
-        self.energy = state.getPotentialEnergy().value_in_unit(self.unit.kilojoule_per_mole) / eqcgmx
+        self.energy = state.getPotentialEnergy().value_in_unit(self.unit.kilojoule_per_mole) / constants.hartokj
         print_time_rel(timeA, modulename="energy")
         timeA = time.time()
         print("doing gradient")
@@ -1099,53 +1204,11 @@ class OpenMMTheory:
         #Todo: Check units
         print("OpenMM Energy:", self.energy, "Eh")
         
-        self.pmdparm.positions = pos
         
-        print_time_rel(timeA, modulename="parmed pos")
-        timeA = time.time()
-        omm_e = self.parmed.openmm.energy_decomposition_system(self.pmdparm, self.system)
-        print("omm_e:", omm_e)
-        print_time_rel(timeA, modulename="parmed energy decomp")
-        timeA = time.time()
+        if print_energy_components is True:
+            self.printEnergyDecomposition()
         
-        #if 'CMAPs' in charmm_energy_components:
-        force_terms = ['Bond', 'Angle', 'Urey-Bradley', 'Dihedrals', 'Impropers', 'CMAP', 'Nonbonded']
-        #else:
-        #    force_terms = ['Bond', 'Angle', 'Urey-Bradley', 'Dihedrals', 'Impropers', 'Nonbonded']
-        
-        # Attach proper units
-        for (index, (name, e)) in enumerate(omm_e):
-            omm_e[index] = (name, e * self.unit.kilocalories_per_mole)
-
-        # OpenMM energy components
-        openmm_energy = dict()
-        openmm_energy['Bond'] = omm_e[0][1]
-        openmm_energy['Angle'] = omm_e[1][1]
-        openmm_energy['Urey-Bradley'] = omm_e[2][1]
-        openmm_energy['Dihedrals'] = omm_e[3][1]
-        openmm_energy['Impropers'] = omm_e[4][1]
-        if 'CMAP' in force_terms:
-            openmm_energy['CMAP'] = omm_e[5][1]
-        openmm_energy['Nonbonded'] = omm_e[6][1] + omm_e[7][1]
-        openmm_energy['Total'] = 0.0 * self.unit.kilojoules_per_mole
-        for term in force_terms:
-            openmm_energy['Total'] += openmm_energy[term]
-
-        #print('OpenMM Energy is %s' % omm_e)
-        
-        #Print table       
-        print('%-20s | %-15s | %-15s' % ('Component', 'kJ/mol', 'kcal/mol'))
-        print('-'*56)
-        for name in force_terms:
-            print('%-20s | %15.2f | %15.2f' % (name, openmm_energy[name] / self.unit.kilojoules_per_mole, openmm_energy[name] / self.unit.kilocalorie_per_mole))
-        print('-'*56)
-        print('%-20s | %15.2f | %15.2f' % ('Total', openmm_energy['Total'] / self.unit.kilojoules_per_mole, openmm_energy['Total'] / self.unit.kilocalorie_per_mole))
-        #print('%-20s | %15.2f %s'  % ('Total', openmm_energy['Total'] / self.unit.kilocalorie_per_mole, "kcal/mol"))
-        print('-'*56)
-        
-        
-        print_time_rel(timeA, modulename="print table")
-        timeA = time.time()
+        print("self.energy : ", self.energy, "Eh")
         #print("self.gradient:", self.gradient)
 
         print(BC.OKBLUE, BC.BOLD, "------------ENDING OPENMM INTERFACE-------------", BC.END)
