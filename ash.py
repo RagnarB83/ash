@@ -814,20 +814,8 @@ class OpenMMTheory:
                  GROMACSfiles=False, gromacstopfile=None, grofile=None, gromacstopdir=None,
                  Amberfiles=False, amberprmtopfile=None, printlevel=2, nprocs=1,
                  xmlfile=None, periodic=False, periodic_cell_dimensions=None):
-
-        print("Setting OpenMM CPU Threads to: ", nprocs)
-        print("TODO: confirm parallelization")
-        os.environ["OPENMM_CPU_THREADS"] = str(nprocs)
-
-        #Printlevel
-        self.printlevel=printlevel
-
-        print(BC.WARNING, BC.BOLD, "------------Defining OpenMM object-------------", BC.END)
+        
         timeA = time.time()
-        self.coords=[]
-        self.charges=[]
-        self.platform_choice=platform
-
         # OPEN MM load
         try:
             import simtk.openmm.app
@@ -838,10 +826,25 @@ class OpenMMTheory:
                 "OpenMM requires installing the OpenMM package. Try: conda install -c omnia openmm  \
                 Also see http://docs.openmm.org/latest/userguide/application.html")
 
-            
-        #Periodic or not
+        print(BC.WARNING, BC.BOLD, "------------Defining OpenMM object-------------", BC.END)
+        #Printlevel
+        self.printlevel=printlevel
+
+        #Parallelization
+        print("Setting OpenMM CPU Threads to: ", nprocs)
+        print("TODO: confirm parallelization")
+        os.environ["OPENMM_CPU_THREADS"] = str(nprocs)
+
+        
+        #Initializing
+        self.coords=[]
+        self.charges=[]
         self.Periodic = periodic
 
+            
+        #OpenMM things
+
+        self.platform_choice=platform
         self.unit=simtk.unit
         self.Vec3=simtk.openmm.Vec3
 
@@ -855,6 +858,9 @@ class OpenMMTheory:
         self.Forcefield=None
         #What type of forcefield files to read. Reads in different way.
         # #Always creates object we call self.forcefield that contains topology attribute
+        
+        
+        
         if CHARMMfiles is True:
             self.Forcefield='CHARMM'
             print("Reading CHARMM files")
@@ -865,11 +871,15 @@ class OpenMMTheory:
             # self.pdb = simtk.openmm.app.PDBFile(pdbfile) probably not reading coordinates here
             #self.forcefield = self.psf
             self.topology = self.psf.topology
+            
+            #Setting active and frozen variables once topology is in place
+            self.set_active_and_frozen_regions(active_atoms=active_atoms, frozen_atoms=frozen_atoms)
+            
             # Create an OpenMM system by calling createSystem on psf
             
             #Periodic
             if self.Periodic is True:
-                print("System is periodic")
+                print("System is periodic (only for pure MM")
                 self.periodic_cell_dimensions = periodic_cell_dimensions
                 self.a = periodic_cell_dimensions[0] * self.unit.angstroms
                 self.b = periodic_cell_dimensions[1] * self.unit.angstroms
@@ -896,9 +906,104 @@ class OpenMMTheory:
             #Non-Periodic
             else:
                 print("System is non-periodic")
+                
+                #For frozen systems we use Customforce in order to specify interaction groups
+                if len(self.frozen_atoms) > 0:
+                    
+                    #Two possible ways.
+                    #https://github.com/openmm/openmm/issues/2698
+                    #1. Use CustomNonbondedForce  with interaction groups. Could be slow
+                    #2. CustomNonbondedForce but with scaling
+                    
+                    #Way
+                    def create_cnb(original_nbforce):
+                        """Creates a CustomNonbondedForce object that recapitulates the function
+                        of the original nonbonded force"""
+                        #Next, create a CustomNonbondedForce with LJ and Coulomb terms
+                        ONE_4PI_EPS0 = 138.935456
+                        #TODO: Not sure whether sqrt should be present or not in epsilon???
+                        energy_expression  = "4*epsilon*((sigma/r)^12 - (sigma/r)^6) + ONE_4PI_EPS0*chargeprod/r;"
+                        energy_expression += "epsilon = sqrt(epsilon1*epsilon2);"
+                        energy_expression += "sigma = 0.5*(sigma1+sigma2);"
+                        energy_expression += "ONE_4PI_EPS0 = {:f};".format(ONE_4PI_EPS0)  # already in OpenMM units
+                        energy_expression += "chargeprod = charge1*charge2;"
+                        custom_nonbonded_force = simtk.openmm.CustomNonbondedForce(energy_expression)
+                        custom_nonbonded_force.addPerParticleParameter('charge')
+                        custom_nonbonded_force.addPerParticleParameter('sigma')
+                        custom_nonbonded_force.addPerParticleParameter('epsilon')
+                        # Configure force
+                        custom_nonbonded_force.setNonbondedMethod(simtk.openmm.CustomNonbondedForce.NoCutoff)
+                        #custom_nonbonded_force.setCutoffDistance(1*simtk.openmm.unit.nanometer)
+                        custom_nonbonded_force.setUseLongRangeCorrection(False)
+                        #custom_nonbonded_force.setUseSwitchingFunction(True)
+                        #custom_nonbonded_force.setSwitchingDistance(cutoff_distance - 1.0*simtk.openmmunit.angstroms)
+                        
+                        
+                        print('adding particles to custom force')
+                        for index in range(self.system.getNumParticles()):
+                            [charge, sigma, epsilon] = original_nbforce.getParticleParameters(index)
+                            custom_nonbonded_force.addParticle([charge, sigma, epsilon])
+
+                        return custom_nonbonded_force
+                    
+                    
+                    #myCustomNBForce= simtk.openmm.CustomNonbondedForce("4*epsilon*((sigma/r)^12-(sigma/r)^6); sigma=0.5*(sigma1+sigma2); epsilon=sqrt(epsilon1*epsilon2)")
+                    #myCustomNBForce.setNonbondedMethod(simtk.openmm.app.NoCutoff)
+                    #myCustomNBForce.setCutoffDistance(1000*simtk.openmm.unit.angstroms)
+                    #Frozen-Act interaction
+                    #myCustomNBForce.addInteractionGroup(self.frozen_atoms,self.active_atoms)
+                    #Act-Act interaction
+                    #myCustomNBForce.addInteractionGroup(self.active_atoms,self.active_atoms)
+                
+
                 self.system = self.psf.createSystem(self.params, nonbondedMethod=simtk.openmm.app.NoCutoff,
                                                     nonbondedCutoff=1000 * simtk.openmm.unit.angstroms)
-            
+                
+                #All original unmodified forces
+                forces = { force.__class__.__name__ : force for force in self.system.getForces() }
+                
+                # Get charges from OpenMM object into self.charges
+                self.getatomcharges(forces['NonbondedForce'])
+                
+                hbforce = forces['HarmonicBondForce']
+                #Case QM/MM. Delete bonded terms in QM-region
+                
+                #https://github.com/openmm/openmm/issues/2792
+                #for i in range(hbforce.getNumBonds()):
+                #    p1, p2, length, k = hbforce.getBondParameters(i)
+                #    exclude = (p1 in atoms or p2 in atoms)
+                #    hbforce.setBondParameters(i, p1, p2, length, 0 if exclude else bond_k[i])
+                 #   hbforce.updateParametersInContext(context)
+                
+                
+                nbforce = forces['NonbondedForce']
+                custom_nonbonded_force = create_cnb(nbforce)
+                
+                
+                #Frozen-Act interaction
+                custom_nonbonded_force.addInteractionGroup(self.frozen_atoms,self.active_atoms)
+                #Act-Act interaction
+                custom_nonbonded_force.addInteractionGroup(self.active_atoms,self.active_atoms)
+                
+                #Update system with new force and delete old force
+                self.system.addForce(custom_nonbonded_force) 
+                 #TODO: Check. Is NonbondedForce always number 6???
+                self.system.removeForce(6)
+                print("self.system.getForces() :", self.system.getForces())
+
+                            
+                #Define force object here, for possible modification of charges (QM/MM)
+                forces = {self.system.getForce(index).__class__.__name__:
+                            self.system.getForce(index) for index in range(self.system.getNumForces())}
+                
+                
+                print("self.system.getForces() :", self.system.getForces())
+                print("forces:", forces)
+                
+                #This nonbonded force variable can point to regular default OpenMM Nonbondedforce or CustomNonBondedForce.
+                self.nonbonded_force = forces['CustomNonbondedForce']
+                print("self.nonbonded_force:", self.nonbonded_force)
+
         elif GROMACSfiles is True:
             print("Warning: Gromacs-file interface not tested")
             #Reading grofile, not for coordinates but for periodic vectors
@@ -910,6 +1015,9 @@ class OpenMMTheory:
             # Create an OpenMM system by calling createSystem on grotop
             self.system = self.grotop.createSystem(nonbondedMethod=simtk.openmm.app.NoCutoff,
                                                 nonbondedCutoff=1 * simtk.openmm.unit.nanometer)
+            
+            forces = {self.system.getForce(index).__class__.__name__: self.system.getForce(index) for index in range(self.system.getNumForces())}
+            self.nonbonded_force = forces['NonbondedForce']
         elif Amberfiles is True:
             self.Forcefield='Amber'
             print("Warning: Amber-file interface not tested")
@@ -921,6 +1029,9 @@ class OpenMMTheory:
             # Create an OpenMM system by calling createSystem on prmtop
             self.system = self.prmtop.createSystem(nonbondedMethod=simtk.openmm.app.NoCutoff,
                                                 nonbondedCutoff=1 * simtk.openmm.unit.nanometer)
+            
+            forces = {self.system.getForce(index).__class__.__name__: self.system.getForce(index) for index in range(self.system.getNumForces())}
+            self.nonbonded_force = forces['NonbondedForce']
         else:
             print("Reading OpenMM XML forcefield file and PDB file")
             #This would be regular OpenMM Forcefield definition requiring XML file
@@ -932,40 +1043,20 @@ class OpenMMTheory:
             self.forcefield = simtk.openmm.app.ForceField(xmlfile)
             self.system = self.forcefield.createSystem(nonbondedMethod=simtk.openmm.app.NoCutoff,
                                                 nonbondedCutoff=1 * simtk.openmm.unit.nanometer)
-
-        #Define force object here, for possible modification of charges (QM/MM)
-        forces = {self.system.getForce(index).__class__.__name__:
-                      self.system.getForce(index) for index in range(self.system.getNumForces())}
-        self.nonbonded_force = forces['NonbondedForce']
+            
+            forces = {self.system.getForce(index).__class__.__name__: self.system.getForce(index) for index in range(self.system.getNumForces())}
+            self.nonbonded_force = forces['NonbondedForce']
 
 
-        # Get charges from OpenMM object into self.charges
-        self.getatomcharges()
+
+
+
 
 
         print_time_rel(timeA, modulename="system create")
         timeA = time.time()
         #constraints=simtk.openmm.app.HBonds, AllBonds, HAngles
 
-        #FROZEN AND ACTIVE ATOMS
-        self.numatoms=int(self.psf.topology.getNumAtoms())
-        print("self.numatoms:", self.numatoms)
-        self.allatoms=list(range(0,self.numatoms))
-        if active_atoms is None and frozen_atoms is None:
-            print("All {} atoms active, no atoms frozen".format(len(self.allatoms)))
-            self.frozen_atoms = []
-        elif active_atoms is not None and frozen_atoms is None:
-            self.active_atoms=active_atoms
-            self.frozen_atoms=listdiff(self.allatoms,self.active_atoms)
-            print("{} active atoms, {} frozen atoms".format(len(self.active_atoms),len(self.frozen_atoms)))
-            #listdiff
-        elif frozen_atoms is not None and active_atoms is None:
-            self.frozen_atoms = frozen_atoms
-            self.active_atoms = listdiff(self.allatoms, self.frozen_atoms)
-            print("{} active atoms, {} frozen atoms".format(len(self.active_atoms),len(self.frozen_atoms)))
-        else:
-            print("active_atoms and frozen_atoms can not be both defined")
-            exit(1)
 
         # Remove Frozen-Frozen interactions
         #Todo: Will be requested by QMMM object so unnecessary unless during pure MM??
@@ -1027,6 +1118,27 @@ class OpenMMTheory:
         
 
 
+
+    def set_active_and_frozen_regions(self, active_atoms=None, frozen_atoms=None):
+        #FROZEN AND ACTIVE ATOMS
+        self.numatoms=int(self.psf.topology.getNumAtoms())
+        print("self.numatoms:", self.numatoms)
+        self.allatoms=list(range(0,self.numatoms))
+        if active_atoms is None and frozen_atoms is None:
+            print("All {} atoms active, no atoms frozen".format(len(self.allatoms)))
+            self.frozen_atoms = []
+        elif active_atoms is not None and frozen_atoms is None:
+            self.active_atoms=active_atoms
+            self.frozen_atoms=listdiff(self.allatoms,self.active_atoms)
+            print("{} active atoms, {} frozen atoms".format(len(self.active_atoms),len(self.frozen_atoms)))
+            #listdiff
+        elif frozen_atoms is not None and active_atoms is None:
+            self.frozen_atoms = frozen_atoms
+            self.active_atoms = listdiff(self.allatoms, self.frozen_atoms)
+            print("{} active atoms, {} frozen atoms".format(len(self.active_atoms),len(self.frozen_atoms)))
+        else:
+            print("active_atoms and frozen_atoms can not be both defined")
+            exit(1)
     #This removes interactions between particles (e.g. QM-QM or frozen-frozen pairs)
     # list of atom indices for which we will remove all pairs
 
@@ -1204,11 +1316,11 @@ class OpenMMTheory:
         print(BC.OKBLUE, BC.BOLD, "------------ENDING OPENMM INTERFACE-------------", BC.END)
         return self.energy, self.gradient
     
-    
-    def getatomcharges(self):
+    #Get list of charges from chosen force object (usually original nonbonded force object)
+    def getatomcharges(self,force):
         chargelist = []
-        for i in range( self.nonbonded_force.getNumParticles() ):
-            charge = self.nonbonded_force.getParticleParameters( i )[0]
+        for i in range( force.getNumParticles() ):
+            charge = force.getParticleParameters( i )[0]
             if isinstance(charge, self.unit.Quantity):
                 charge = charge / self.unit.elementary_charge
                 chargelist.append(charge)
@@ -1965,11 +2077,18 @@ class QMMMTheory:
                 print("Getting system charges from NonBondedTheory object")
                 #Todo: normalize charges vs atom_charges
                 self.charges=mm_theory.atom_charges
+                        
             else:
                 print("Unrecognized MM theory for QMMMTheory")
                 exit(1)
         else:
             self.charges=charges
+        
+        if len(self.charges) == 0:
+            print("No charges present in QM/MM object. Exiting...")
+            exit()
+        
+        
         
         #Self.charges are original charges that are defined above,
         #Charges that will be modified (charge-shifting, QMzeroed etc.) are:
@@ -1986,7 +2105,7 @@ class QMMMTheory:
                     print("Here adding exceptions for OpenMM")
                     print("Num frozen atoms: ", len(self.frozenatoms))
                     #Disabling for now, since so bloody slow. Need to speed up
-                    mm_theory.addexceptions(self.frozenatoms)
+                    #mm_theory.addexceptions(self.frozenatoms)
 
 
             #Check if we need linkatoms by getting boundary atoms dict:
@@ -2008,7 +2127,7 @@ class QMMMTheory:
             if self.embedding=="Elstat":
                 #Change charges
                 # Keeping self.charges as originally defined.
-                
+                print("length of self.charges_mod :", len(self.charges_mod))
 
                 #TODO: Charges that MM code sees. Will be modified. NECESSARY???????????????????
                 #self.charges_mmcode = copy.copy(self.charges)
@@ -2019,7 +2138,7 @@ class QMMMTheory:
                 #Zero QM charges
                 #TODO: DO here or inside run instead?? Needed for MM code.
                 self.ZeroQMCharges() #Modifies self.charges_mod
-                
+                print("length of self.charges_mod :", len(self.charges_mod))
                 
                 # Todo: make sure this works for OpenMM and for NonBondedTheory
                 # Updating charges in MM object

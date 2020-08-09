@@ -586,6 +586,7 @@ def run_wfoverlap(wfoverlapinput,path_wfoverlap,memory):
     print("Running wfoverlap program:")
     print("may take a while...")
     print(wfcommand)
+    print("Using memory: {} MB".format(memory))
     print("OMP num threads available to WFoverlap: ", os.environ["OMP_NUM_THREADS"])
     try:
         proc=sp.Popen(wfcommand,shell=True,stdout=sp.PIPE,stderr=sp.PIPE)
@@ -1270,7 +1271,7 @@ def grab_dets_from_MRCI_output(file):
 def PhotoElectronSpectrum(theory=None, fragment=None, InitialState_charge=None, Initialstate_mult=None,
                           Ionizedstate_charge=None, Ionizedstate_mult=None, numionstates=50, path_wfoverlap=None, tda=True,
                           brokensym=False, HSmult=None, atomstoflip=None, initialorbitalfiles=None, Densities='SCF', densgridvalue=100,
-                          CAS=False, CAS_Initial=None, CAS_Final = None, memory=20000, numcores=1, noDyson=False, CASCI=False, MRCI=False,
+                          CAS=False, CAS_Initial=None, CAS_Final = None, memory=40000, numcores=1, noDyson=False, CASCI=False, MRCI=False,
                           MRCI_Initial=None, MRCI_Final = None):
     blankline()
     print(bcolors.OKGREEN,"-------------------------------------------------------------------",bcolors.ENDC)
