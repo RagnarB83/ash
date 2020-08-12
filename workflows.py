@@ -83,9 +83,9 @@ def get_reaction_string(filenames, stoichiometry):
 def run_benchmark(set=None, theory=None, workflow=None, orcadir=None):
     print("")
     print("")
-    print(BC.WARNING,"="*30,BC.end)
+    print(BC.WARNING,"="*30,BC.END)
     print(BC.WARNING,"BENCHMARKING FUNCTION",BC.END)
-    print(BC.WARNING,"="*30,BC.end)
+    print(BC.WARNING,"="*30,BC.END)
     print("Dataset: ", set)
     ashpath = os.path.dirname(ash.__file__)
     benchmarksetpath=ashpath+"/databases/Benchmarking-sets/"+set+"/data/"
