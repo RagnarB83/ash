@@ -19,4 +19,4 @@
 16  p-cyanophenol-red-gas    p-cyanophenol-ox-gas   -1   1  9.01
 17  dimethylsulfide-red-gas  dimethylsulfide-ox-gas -1   1  8.69
 18  dimethyldisulfide-red-gas    dimethyldisulfide-ox-gas   -1   1  8.18
-19  thioanisole-re-gas  thioanisole-ox-gas -1   1  7.92
+19  thioanisole-red-gas  thioanisole-ox-gas -1   1  7.92
