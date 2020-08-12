@@ -143,9 +143,9 @@ def run_benchmark(set=None, theory=None, workflow=None, orcadir=None):
         reaction.calcenergy=reaction_energy
         errors.append(error)
     print("")
-    print("="*70)
-    print("FINAL RESULTS FOR TESTSET: ", set)
-    print("="*70)
+    print(BC.WARNING,"="*70, BC.END)
+    print(BC.WARNING,"FINAL RESULTS FOR TESTSET: ", BC.OKBLUE, set, BC.END)
+    print(BC.WARNING,"="*70, BC.END)
     print("Unit:", unit)
     print("")
     abserrors = [abs(i) for i in errors]
