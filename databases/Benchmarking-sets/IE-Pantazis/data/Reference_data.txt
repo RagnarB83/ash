@@ -1,0 +1,22 @@
+#TESTSET_INFO Numentries: 24
+#TESTSET_INFO Unit: eV
+#Data from Isegawa et al. with updates from Sterling et al
+1   Aniline-red-gas Aniline-ox-gas -1   1  7.72
+2   p-methoxyaniline-red-gas p-methoxyaniline-ox-gas    -1   1  7.12
+3   p-methylaniline-red-gas  p-methylaniline-ox-gas -1   1  7.46
+4   p-chloroaniline-red-gas  p-chloroaniline-ox-gas -1   1  7.74
+5   n-methylaniline-red-gas  n-methylaniline-ox-gas -1   1  7.42
+6   dimethylamine-red-gas    dimethylamine-ox-gas   -1   1  8.24
+7   diethylamine-red-gas diethylamine-ox-gas    -1   1  8.01
+8   pyrrolidine-red-gas  pyrrolidine-ox-gas -1   1  8.00
+9   piperidine-red-gas   piperidine-ox-gas  -1   1  8.20
+10  anisole-red-gas  anisole-ox-gas -1   1  8.20
+11  indole-red-gas   indole-ox-gas  -1   1  7.76
+12  phenol-red-gas   phenol-ox-gas  -1   1  8.5082
+13  p-methoxyphenol-red-gas  p-methoxyphenol-ox-gas -1   1  7.71
+14  p-methylphenol-red-gas   p-methylphenol-ox-gas  -1   1  8.17
+15  p-chlorophenol-red-gas   p-chlorophenol-ox-gas  -1   1  8.44
+16  p-cyanophenol-red-gas    p-cyanophenol-ox-gas   -1   1  9.01
+17  dimethylsulfide-red-gas  dimethylsulfide-ox-gas -1   1  8.69
+18  dimethyldisulfide-red-gas    dimethyldisulfide-ox-gas   -1   1  8.18
+19  thioanisole-re-gas  thioanisole-ox-gas -1   1  7.92

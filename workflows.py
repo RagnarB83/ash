@@ -13,6 +13,170 @@ from interface_geometric import *
 #Various workflows and associated sub-functions
 #Primarily thermochemistry
 
+#Reaction class. Used for benchmarking
+class Reaction:
+    def __init__(self, index, filenames, stoichiometry, refenergy, unit):
+        self.index = index
+        self.filenames = filenames
+        self.stoichiometry = stoichiometry
+        #Reference reaction energies
+        self.refenergy = refenergy
+        self.unit =unit
+        #Calculated reaction energy
+        self.calcenergy = None
+        self.error = None
+        #List of total energies of each species
+        self.totalenergies = []
+        #List of molecular formulas
+        self.formulas= None
+
+#Read benchmark-set reference file ("Reference_data") inside indicated directory 
+def read_referencedata_file(benchmarksetpath):
+    #Open file and get database info as dict
+    database_dict={}
+    count=0
+    with open(benchmarksetpath+"Reference_data.txt") as ref_file:
+        for line in ref_file:
+            if '#TESTSET_INFO' in line:
+                if 'Unit' in line:
+                    unit=line.split()[-1]
+                if 'Numentries' in line:
+                    numentries=int(line.split()[-1])
+            if '#' not in line:
+                count+=1
+                filenames=[]
+                stoichiometry=[]
+                #Getting index (first line)
+                # Next entries are either strings (filename) or stoichiometry-indices (integers). 
+                # Check if integer or float, if neither then assume filename string
+                for i,word in enumerate(line.split()):
+                    if i == 0:
+                        index=int(word)
+                    elif isint(word):
+                        stoichiometry.append(int(word))
+                    elif isfloat(word):
+                        refenergy=float(line.split()[-1])
+                    else:
+                        filenames.append(word)
+                #New reaction
+                newreaction = Reaction(index, filenames, stoichiometry, refenergy, unit)
+                #print("New reaction: ", newreaction.__dict__)
+                #Add to dict.
+                database_dict[index] = newreaction
+        if count != index or count != numentries:
+            print("Reaction lines does not match indices or number of entries in header. Mistake in file?!")
+            exit()
+    return database_dict
+
+#Get pretty reaction string from molecule-filenames and stoichiometry
+def get_reaction_string(filenames, stoichiometry):
+    string =""
+    #Index when sign changes from reactant to product
+    index=stoichiometry.index(1)
+    for i,file in enumerate(filenames):
+        if i == index:
+            #=>→ 
+            string+=" ⟶   "
+        string+=file
+    return string
+
+def run_benchmark(set=None, theory=None, workflow=None, orcadir=None):
+    print("")
+    print("")
+    print("="*30)
+    print("BENCHMARKING FUNCTION")
+    print("="*30)
+    print("Dataset: ", set)
+    ashpath = os.path.dirname(ash.__file__)
+    benchmarksetpath=ashpath+"/databases/Benchmarking-sets/"+set+"/data/"
+    #Read reference data and define reactions
+    print("")
+    database_dict = read_referencedata_file(benchmarksetpath)
+    print("")
+    #Always same unit
+    unit=database_dict[1].unit
+    try:
+        os.mkdir("benchmarks_calcs")
+    except FileExistsError:
+        pass
+    os.chdir("benchmarks_calcs")
+    
+    errors=[]
+    for reactionindex in database_dict:
+        reaction=database_dict[reactionindex]
+        
+        #TODO: Get longest reaction string here to make sure final is good
+        #reactionstring=get_reaction_string(reaction.filenames, reaction.stoichiometry)
+        
+        print("")
+        print("-"*70)
+        print(BC.WARNING,"Reaction {} : {} {} ".format(reactionindex, BC.OKBLUE, reaction.filenames),BC.END)
+        print(BC.WARNING,"Stoichiometry:", BC.OKBLUE,reaction.stoichiometry,BC.END)
+        print(BC.WARNING,"Reference energy:", BC.OKBLUE,reaction.refenergy, unit, BC.END)
+        print("-"*70)
+
+        #Reading XYZ file and grabbing charge and multiplicity
+        energies=[]
+        for file in reaction.filenames:
+            frag = ash.Fragment(xyzfile=benchmarksetpath+file+'.xyz', readchargemult=True, conncalc=False)
+            # Setting charge and mult for theory
+            if theory is not None:
+                theory.charge=frag.charge
+                theory.mult=frag.mult
+                energy = ash.Singlepoint(fragment=frag, theory=theory)
+                reaction.totalenergies.append(energy)
+                shutil.copyfile('orca-input.out', './' + file  + '.out')
+                theory.cleanup()
+                print("")
+            elif workflow is not None:
+                if orcadir is None:
+                    print("Please provide orcadir variable to run_benchmark_set")
+                    exit()
+                energy = workflow(fragment=frag, charge=frag.charge, mult=frag.mult, orcadir=orcadir)
+                reaction.totalenergies.append(energy)
+            #List of all energies
+            energies.append(energy)
+        print("")
+        reaction_energy, error = ash.ReactionEnergy(stoichiometry=reaction.stoichiometry, list_of_energies=energies, unit='eV', label=reactionindex, 
+                                                    reference=reaction.refenergy)
+        reaction.error=error
+        reaction.calcenergy=reaction_energy
+        errors.append(error)
+    print("")
+    print("="*70)
+    print("FINAL RESULTS FOR TESTSET: ", set)
+    print("="*70)
+    print("Unit:", unit)
+    print("")
+    abserrors = [abs(i) for i in errors]
+    MAE=sum(abserrors)/len(abserrors)
+    ME=sum(errors)/len(errors)
+    MaxError=max(errors, key=abs)
+    RMSE=math.sqrt(sum([i**2 for i in errors])/len(errors))
+    
+    #Print nice table
+    print(BC.WARNING, "{:10s} {:40s}  {:13s} {:13s} {:13s}".format("Index", "Reaction", "Ref.", "Calc.", "Error"), BC.END)
+    print("-"*100)
+    for rindex in database_dict:
+        r=database_dict[rindex]
+        if r.error == MaxError:
+            colorcode=BC.FAIL
+        else:
+            colorcode=BC.END
+        reactionstring=get_reaction_string(r.filenames, r.stoichiometry)
+        #print(" {:<10} {:<40s}  {:<13.4f} {:<13.4f}{} {:<13.4f}{}".format(rindex, ' '.join(r.filenames), r.refenergy, r.calcenergy, colorcode, r.error,BC.END))
+        print(" {:<10} {:<40s}  {:<13.4f} {:<13.4f}{} {:<13.4f}{}".format(rindex, reactionstring, r.refenergy, r.calcenergy, colorcode, r.error,BC.END))
+    #print("".format())
+    #print("")
+    print("-"*100)
+    print("{:<10s} {:13.4f} {:<10s} ".format("MAE", MAE, unit))
+    print("{:<10s} {:13.4f} {:<10s} ".format("ME", ME, unit))
+    print("{:<10s} {:13.4f} {:<10s} ".format("RMSE", RMSE, unit))
+    print("{:<10s} {:13.4f} {:<10s} ".format("MaxError", MaxError, unit))
+
+
+
+
 #Spin-orbit splittings:
 #Currently only including neutral atoms. Data in cm-1 from : https://webhome.weizmann.ac.il/home/comartin/w1/so.txt
 atom_spinorbitsplittings = {'H': 0.000, 'B': -10.17, 'C' : -29.58, 'N' : 0.00, 'O' : -77.97, 'F' : -134.70,
@@ -475,7 +639,7 @@ def W1F12theory_SP(fragment=None, charge=None, orcadir=None, mult=None, stabilit
     #Special basis for H.
 
     #F12-calculations for SCF and CCSD
-    ccsdf12_dz_line="! CCSD-F12/RI cc-pVDZ-F12 cc-pVDZ-F12-CABS tightscf {} {} ".format(auxbasis,hfkeyword)
+    ccsdf12_dz_line="! CCSD(T)-F12/RI cc-pVDZ-F12 cc-pVDZ-F12-CABS tightscf {} {} ".format(auxbasis,hfkeyword)
     ccsdf12_tz_line="! CCSD-F12/RI cc-pVTZ-F12 cc-pVTZ-F12-CABS tightscf {} {} ".format(auxbasis,hfkeyword)
 
     #Regular triples
@@ -827,6 +991,7 @@ def DLPNO_W1theory_SP(fragment=None, charge=None, orcadir=None, mult=None, stabi
     print("T1 : ", T1)
     print("SCF setting: ", scfsetting)
     print("")
+    print("fragment:", fragment)
     calc_label = "Frag" + str(fragment.formula) + "_" + str(fragment.charge) + "_"
     print("Calculation label: ", calc_label)
 

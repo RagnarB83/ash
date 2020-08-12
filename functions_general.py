@@ -70,6 +70,15 @@ def isint(s):
     except ValueError:
         return False
 
+#Is variable a float
+def isfloat(s):
+    try:
+        float(s)
+        return True
+    except ValueError:
+        return False
+
+
 #Read lines of file by slurping.
 def readlinesfile(filename):
   try:

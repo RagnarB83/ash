@@ -3365,7 +3365,7 @@ class Fragment:
         self.mult = mult
 
         if self.printlevel >= 2:
-            print("Defining new ASH fragment object")
+            print("New ASH fragment object")
         self.energy = None
         self.elems=[]
         self.coords=[]
@@ -3422,8 +3422,7 @@ class Fragment:
         self.prettyformula = self.formula.replace('1','')
 
         if self.printlevel >= 2:
-            print("Fragment numatoms:", self.numatoms)
-            print("Formula : ", self.prettyformula)
+            print("Fragment numatoms: {} Formula: {}".format(self.numatoms,self.prettyformula))
 
     #Add coordinates from geometry string. Will replace.
     #Todo: Needs more work as elems and coords may be lists or numpy arrays
@@ -3564,15 +3563,14 @@ class Fragment:
     def read_xyzfile(self,filename, scale=None, tol=None, readchargemult=False,conncalc=True):
         if self.printlevel >= 2:
             print("Reading coordinates from XYZfile {} into fragment".format(filename))
-            
         with open(filename) as f:
             for count,line in enumerate(f):
                 if count == 0:
                     self.numatoms=int(line.split()[0])
                 elif count == 1:
                     if readchargemult is True:
-                        charge=int(line.split()[0])
-                        mult=int(line.split()[1])
+                        self.charge=int(line.split()[0])
+                        self.mult=int(line.split()[1])
                 elif count > 1:
                     if len(line) > 3:
                         self.elems.append(line.split()[0])
@@ -4108,7 +4106,7 @@ def MMforcefield_read(file):
     return MM_forcefield
 
 #Better place for this?
-def ReactionEnergy(stoichiometry=None, list_of_fragments=None, list_of_energies=None, unit='kcalpermol', label=None):
+def ReactionEnergy(stoichiometry=None, list_of_fragments=None, list_of_energies=None, unit='kcalpermol', label=None, reference=None):
     conversionfactor = { 'kcalpermol' : 627.50946900, 'kJpermol' : 2625.499638, 'eV' : 27.211386245988, 'cm-1' : 219474.6313702 }
     if label is None:
         label=''
@@ -4128,7 +4126,11 @@ def ReactionEnergy(stoichiometry=None, list_of_fragments=None, list_of_energies=
             if stoich > 0:
                 product_energy=product_energy+list_of_energies[i]*abs(stoich)
         reaction_energy=(product_energy-reactant_energy)*conversionfactor[unit]
-        print(BC.BOLD, "Reaction_energy({}): {} {}".format(label,BC.OKGREEN,reaction_energy, unit), BC.END)
+        if reference is None:
+            print(BC.BOLD, "Reaction_energy({}): {} {}".format(label,BC.OKGREEN,reaction_energy, unit), BC.END)
+        else:
+            error=reaction_energy-reference
+            print(BC.BOLD, "Reaction_energy({}): {} {} {} (Error: {}) {}".format(label,BC.OKGREEN,reaction_energy, unit, error, BC.END))
     else:
         print("No list of total energies provided. Using internal energy of each fragment instead.")
         print("")
@@ -4138,7 +4140,11 @@ def ReactionEnergy(stoichiometry=None, list_of_fragments=None, list_of_energies=
             if stoich > 0:
                 product_energy=product_energy+list_of_fragments[i].energy*abs(stoich)
         reaction_energy=(product_energy-reactant_energy)*conversionfactor[unit]
-        print(BC.BOLD, "Reaction_energy({}): {} {}".format(label,BC.OKGREEN,reaction_energy, unit), BC.END)
-    return reaction_energy
+        if reference is None:
+            print(BC.BOLD, "Reaction_energy({}): {} {}".format(label,BC.OKGREEN,reaction_energy, unit), BC.END)
+        else:
+            error=reaction_energy-reference
+            print(BC.BOLD, "Reaction_energy({}): {} {} {} (Error: {})".format(label,BC.OKGREEN,reaction_energy, unit, error, BC.END))
+    return reaction_energy, error
 
 

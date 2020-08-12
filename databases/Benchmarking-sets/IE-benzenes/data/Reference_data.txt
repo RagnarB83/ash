@@ -1,0 +1,9 @@
+#TESTSET_INFO
+#TESTSET_INFO Numentries: 5
+#TESTSET_INFO Unit: eV
+#X-benzenes. Geometries: B3LYP-D3/def2-TZVP
+1 fluorobenzene-neut fluorobenzene-ox -1 1 9.2032
+2 benzene-neut benzene-ox -1 1 9.24378
+3 chlorobenzene-neut chlorobenzene-ox -1 1 9.0728
+4 bromobenzene-neut bromobenzene-ox -1 1 8.9975
+5 iodobenzene-neut iodobenzene-ox -1 1 8.7580

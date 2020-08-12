@@ -1,0 +1,8 @@
+This is a benchmarking test set of ionization energies.
+Combination of Isegawa-Pantazis testset and others.
+XYZ-files from Isegawa are DFT-optimized with TPSS/def2-TZVP(-f)
+XYZ-files for X-benzenes are DFT-optimized (RB) with B3LYP-D3/def2-TZVP.
+TODO: Reoptimize everything with a consistent level of theory. wB97M-D3BJ/def2-TZVP ??
+
+Reference data are inside file of test set. Uses updated reference data from Sterling, Bjornsson et al. See SI
+
