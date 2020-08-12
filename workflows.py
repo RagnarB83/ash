@@ -155,7 +155,7 @@ def run_benchmark(set=None, theory=None, workflow=None, orcadir=None):
     RMSE=math.sqrt(sum([i**2 for i in errors])/len(errors))
     
     #Print nice table
-    print(BC.WARNING, "{:10s} {:40s}  {:13s} {:13s} {:13s}".format("Index", "Reaction", "Ref.", "Calc.", "Error"), BC.END)
+    print(BC.WARNING, "{:10s} {:55s}  {:13s} {:13s} {:13s}".format("Index", "Reaction", "Ref.", "Calc.", "Error"), BC.END)
     print("-"*100)
     for rindex in database_dict:
         r=database_dict[rindex]
