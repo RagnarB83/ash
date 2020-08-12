@@ -1,4 +1,4 @@
-#TESTSET_INFO Numentries: 24
+#TESTSET_INFO Numentries: 19
 #TESTSET_INFO Unit: eV
 #Data from Isegawa et al. with updates from Sterling et al
 1   Aniline-red-gas Aniline-ox-gas -1   1  7.72

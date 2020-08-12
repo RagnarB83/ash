@@ -63,6 +63,9 @@ def read_referencedata_file(benchmarksetpath):
                 #print("New reaction: ", newreaction.__dict__)
                 #Add to dict.
                 database_dict[index] = newreaction
+        print("count:", count)
+        print("index:", index)
+        print("numentries:", numentries)
         if count != index or count != numentries:
             print("Reaction lines does not match indices or number of entries in header. Mistake in file?!")
             exit()
