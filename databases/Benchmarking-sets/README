@@ -13,6 +13,8 @@ Example:
         => etc.
         => Reference_data.txt
 
+#IMPORTANT: Each XYZ-file should contain the charge and multiplicity in the title-line (2nd header-line of XYZ file format)
+
 
 The Reference_data.txt contains information about the reactions in the following format
 - The #TESTSET_INFO lines contain information on the number of reactions and the unit for the reference data.
@@ -22,8 +24,9 @@ The Reference_data.txt contains information about the reactions in the following
   while the integers indicate the stoichiometry of the reaction (negative number: reactant, positive number: product).
   The last floating point number is always the reference value (e.g. experimental value) in the unit indicated in the #TESTSET_INFO line. 
 
+#############################
 Reference_data.txt Example :
-
+############################
 #TESTSET_INFO Numentries: 5
 #TESTSET_INFO Unit: eV
 #X-benzenes. Geometries: B3LYP-D3/def2-TZVP
