@@ -155,7 +155,7 @@ def run_benchmark(set=None, theory=None, workflow=None, orcadir=None):
     RMSE=math.sqrt(sum([i**2 for i in errors])/len(errors))
     
     #Print nice table
-    print(BC.WARNING, "{:10s} {:55s}  {:13s} {:13s} {:13s}".format("Index", "Reaction", "Ref.", "Calc.", "Error"), BC.END)
+    print(BC.WARNING, "{:7s} {:55s}  {:13s} {:13s} {:13s}".format("Index", "Reaction", "Ref.", "Calc.", "Error"), BC.END)
     print("-"*110)
     for rindex in database_dict:
         r=database_dict[rindex]
@@ -165,14 +165,14 @@ def run_benchmark(set=None, theory=None, workflow=None, orcadir=None):
             colorcode=BC.END
         reactionstring=get_reaction_string(r.filenames, r.stoichiometry)
         #print(" {:<10} {:<40s}  {:<13.4f} {:<13.4f}{} {:<13.4f}{}".format(rindex, ' '.join(r.filenames), r.refenergy, r.calcenergy, colorcode, r.error,BC.END))
-        print(" {:<10} {:<40s}  {:<13.4f} {:<13.4f}{} {:<13.4f}{}".format(rindex, reactionstring, r.refenergy, r.calcenergy, colorcode, r.error,BC.END))
+        print(" {:<7} {:<55s}  {:<13.4f} {:<13.4f}{} {:<13.4f}{}".format(rindex, reactionstring, r.refenergy, r.calcenergy, colorcode, r.error,BC.END))
     #print("".format())
     #print("")
     print("-"*110)
-    print("{:<10s} {:13.4f} {:<10s} ".format("MAE", MAE, unit))
-    print("{:<10s} {:13.4f} {:<10s} ".format("ME", ME, unit))
-    print("{:<10s} {:13.4f} {:<10s} ".format("RMSE", RMSE, unit))
-    print("{:<10s} {:13.4f} {:<10s} ".format("MaxError", MaxError, unit))
+    print(" {:<10s} {:13.4f} {:<10s} ".format("MAE", MAE, unit))
+    print(" {:<10s} {:13.4f} {:<10s} ".format("ME", ME, unit))
+    print(" {:<10s} {:13.4f} {:<10s} ".format("RMSE", RMSE, unit))
+    print(" {:<10s} {:13.4f} {:<10s} ".format("MaxError", MaxError, unit))
 
 
 
