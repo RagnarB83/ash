@@ -80,13 +80,15 @@ def get_reaction_string(filenames, stoichiometry):
         string+=file
     return string
 
-def run_benchmark(set=None, theory=None, workflow=None, orcadir=None, numcores=None):
+#Reuseorbs. Reuse orbitals within same reaction. This only makes sense if reaction contains very similar geometries (e.g. IE/EA reaction)
+def run_benchmark(set=None, theory=None, workflow=None, orcadir=None, numcores=None, reuseorbs=False):
     print("")
     print("")
     print(BC.WARNING,"="*30,BC.END)
     print(BC.WARNING,"BENCHMARKING FUNCTION",BC.END)
     print(BC.WARNING,"="*30,BC.END)
     print("Dataset: ", set)
+    print("Reuse orbitals option: ", reuseorbs)
     ashpath = os.path.dirname(ash.__file__)
     benchmarksetpath=ashpath+"/databases/Benchmarking-sets/"+set+"/data/"
     #Read reference data and define reactions
@@ -126,7 +128,11 @@ def run_benchmark(set=None, theory=None, workflow=None, orcadir=None, numcores=N
                 energy = ash.Singlepoint(fragment=frag, theory=theory)
                 reaction.totalenergies.append(energy)
                 shutil.copyfile('orca-input.out', './' + file  + '.out')
-                theory.cleanup()
+                
+                #If reuseorbs False (default) then delete ORCA files in each step
+                #If True, keep file, including orca-input.gbw which enables Autostart
+                if reuseorbs is False:
+                    theory.cleanup()
                 print("")
             elif workflow is not None:
                 if orcadir is None:
@@ -143,6 +149,9 @@ def run_benchmark(set=None, theory=None, workflow=None, orcadir=None, numcores=N
         reaction.error=error
         reaction.calcenergy=reaction_energy
         errors.append(error)
+        #Cleanup after reaction is done
+        theory.cleanup()
+        
     print("")
     print(BC.WARNING,"="*70, BC.END)
     print(BC.WARNING,"FINAL RESULTS FOR TESTSET: ", BC.OKBLUE, set, BC.END)
