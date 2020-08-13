@@ -26,8 +26,6 @@ debugflag=False
 import sys
 import inspect
 
-
-
 #Useful function to measure size of object:
 #https://goshippo.com/blog/measure-real-size-any-python-object/
 #https://github.com/bosswissam/pysize/blob/master/pysize.py

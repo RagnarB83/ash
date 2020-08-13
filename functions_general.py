@@ -1,16 +1,22 @@
-#ANSI colors: http://jafrog.com/2013/11/23/colors-in-terminal.html
-class BC:
-    HEADER = '\033[95m'
-    OKBLUE = '\033[94m'
-    OKGREEN = '\033[92m'
-    OKMAGENTA= '\033[95m'
-    OKRED= '\033[31m'
-    WARNING = '\033[93m'
-    FAIL = '\033[91m'
-    END = '\033[0m'
-    BOLD = '\033[1m'
-    UNDERLINE = '\033[4m'
+import settings_ash
 
+#ANSI colors: http://jafrog.com/2013/11/23/colors-in-terminal.html
+if settings_ash.use_ANSI_color is True:
+    class BC:
+        HEADER = '\033[95m'
+        OKBLUE = '\033[94m'
+        OKGREEN = '\033[92m'
+        OKMAGENTA= '\033[95m'
+        OKRED= '\033[31m'
+        WARNING = '\033[93m'
+        FAIL = '\033[91m'
+        END = '\033[0m'
+        BOLD = '\033[1m'
+        UNDERLINE = '\033[4m'
+else:
+    class BC:
+        HEADER = ''; OKBLUE = ''; OKGREEN = ''; OKMAGENTA= ''; OKRED= ''; WARNING = ''; FAIL = ''; END = ''; BOLD = ''; UNDERLINE = ''
+        
 import numpy as np
 import time
 from functools import wraps
