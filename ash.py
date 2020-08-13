@@ -4122,6 +4122,9 @@ def ReactionEnergy(stoichiometry=None, list_of_fragments=None, list_of_energies=
         #print("List of total energies provided (Eh units assumed).")
         for i,stoich in enumerate(stoichiometry):
             if stoich < 0:
+                print("reactant_energy:", reactant_energy)
+                print("list_of_energies[i]:", list_of_energies[i])
+                print("abs(stoich):", abs(stoich))
                 reactant_energy=reactant_energy+list_of_energies[i]*abs(stoich)
             if stoich > 0:
                 product_energy=product_energy+list_of_energies[i]*abs(stoich)
