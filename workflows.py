@@ -80,7 +80,7 @@ def get_reaction_string(filenames, stoichiometry):
         string+=file
     return string
 
-def run_benchmark(set=None, theory=None, workflow=None, orcadir=None):
+def run_benchmark(set=None, theory=None, workflow=None, orcadir=None, numcores=None):
     print("")
     print("")
     print(BC.WARNING,"="*30,BC.END)
@@ -132,7 +132,7 @@ def run_benchmark(set=None, theory=None, workflow=None, orcadir=None):
                 if orcadir is None:
                     print("Please provide orcadir variable to run_benchmark_set")
                     exit()
-                energy = workflow(fragment=frag, charge=frag.charge, mult=frag.mult, orcadir=orcadir)
+                energy = workflow(fragment=frag, charge=frag.charge, mult=frag.mult, orcadir=orcadir, numcores=numcores)
                 reaction.totalenergies.append(energy)
             #List of all energies
             energies.append(energy)
