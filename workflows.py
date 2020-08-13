@@ -136,6 +136,7 @@ def run_benchmark(set=None, theory=None, workflow=None, orcadir=None, numcores=N
                 reaction.totalenergies.append(energy)
             #List of all energies
             energies.append(energy)
+            print("energies:", energies)
         print("")
         reaction_energy, error = ash.ReactionEnergy(stoichiometry=reaction.stoichiometry, list_of_energies=energies, unit='eV', label=reactionindex, 
                                                     reference=reaction.refenergy)
