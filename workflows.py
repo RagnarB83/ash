@@ -15,7 +15,7 @@ from interface_geometric import *
 
 #Reaction class. Used for benchmarking
 class Reaction:
-    def __init__(self, index, filenames, stoichiometry, refenergy, unit):
+    def __init__(self, index, filenames, stoichiometry, refenergy, unit, correction=0.0):
         self.index = index
         self.filenames = filenames
         self.stoichiometry = stoichiometry
@@ -24,17 +24,35 @@ class Reaction:
         self.unit =unit
         #Calculated reaction energy
         self.calcenergy = None
-        self.error = None
         #List of total energies of each species
         self.totalenergies = []
         #List of molecular formulas
         self.formulas= None
+        # Correction to energy: e.g. ZPE. If not provided then 0.0
+        self.correction = correction
+        #Corrected energy and corrected error
+        self.calcenergy_corrected = None
+        self.error = None
 
 #Read benchmark-set reference file ("Reference_data") inside indicated directory 
 def read_referencedata_file(benchmarksetpath):
     #Open file and get database info as dict
     database_dict={}
+    corrections=False
     count=0
+    
+    #with open(benchmarksetpath+"Reference_data.txt") as ref_file:
+    if os.path.isfile(benchmarksetpath+'corrections.txt') is True:
+        print("Found corrections.txt file. Grabbing corrections")
+        corrections=True
+        corrections_dict={}
+        with open(benchmarksetpath+'corrections.txt') as correction_file:
+            for line in correction_file:
+                if '#' not in line:
+                    rindex=int(line.split()[0])
+                    corr = float(line.split()[1])
+                    corrections_dict[rindex] = corr
+    
     with open(benchmarksetpath+"Reference_data.txt") as ref_file:
         for line in ref_file:
             if '#TESTSET_INFO' in line:
@@ -59,7 +77,12 @@ def read_referencedata_file(benchmarksetpath):
                     else:
                         filenames.append(word)
                 #New reaction
-                newreaction = Reaction(index, filenames, stoichiometry, refenergy, unit)
+                if corrections is True:
+                    newreaction = Reaction(index, filenames, stoichiometry, refenergy, unit, correction=corrections_dict[index])                    
+                else:
+                    newreaction = Reaction(index, filenames, stoichiometry, refenergy, unit)
+                
+                
                 #print("New reaction: ", newreaction.__dict__)
                 #Add to dict.
                 database_dict[index] = newreaction
@@ -80,8 +103,9 @@ def get_reaction_string(filenames, stoichiometry):
         string+=file
     return string
 
-#Reuseorbs. Reuse orbitals within same reaction. This only makes sense if reaction contains very similar geometries (e.g. IE/EA reaction)
-def run_benchmark(set=None, theory=None, workflow=None, orcadir=None, numcores=None, reuseorbs=False):
+#run_benchmark
+#Reuseorbs option: Reuse orbitals within same reaction. This only makes sense if reaction contains very similar geometries (e.g. IE/EA reaction)
+def run_benchmark(set=None, theory=None, workflow=None, orcadir=None, numcores=None, reuseorbs=False, corrections=None):
     print("")
     print("")
     print(BC.WARNING,"="*30,BC.END)
@@ -95,6 +119,14 @@ def run_benchmark(set=None, theory=None, workflow=None, orcadir=None, numcores=N
     print("")
     database_dict = read_referencedata_file(benchmarksetpath)
     print("")
+    #One way of providing corrections: give list of floats
+    if corrections is not None:
+        print("Corrections provided as input: ", corrections)
+        assert len(corrections) == len(database_dict), "Length of list corrections not matching length of test set"
+        for i,corr in corrections:
+            database_dict[i].correction = corr 
+    
+    
     #Always same unit
     unit=database_dict[1].unit
     try:
@@ -106,7 +138,6 @@ def run_benchmark(set=None, theory=None, workflow=None, orcadir=None, numcores=N
     errors=[]
     for reactionindex in database_dict:
         reaction=database_dict[reactionindex]
-        
         #TODO: Get longest reaction string here to make sure final is good
         #reactionstring=get_reaction_string(reaction.filenames, reaction.stoichiometry)
         
@@ -138,17 +169,17 @@ def run_benchmark(set=None, theory=None, workflow=None, orcadir=None, numcores=N
                 if orcadir is None:
                     print("Please provide orcadir variable to run_benchmark_set")
                     exit()
-                energy = workflow(fragment=frag, charge=frag.charge, mult=frag.mult, orcadir=orcadir, numcores=numcores)
+                energy, energydict = workflow(fragment=frag, charge=frag.charge, mult=frag.mult, orcadir=orcadir, numcores=numcores)
                 reaction.totalenergies.append(energy)
             #List of all energies
             energies.append(energy)
-            print("energies:", energies)
         print("")
         reaction_energy, error = ash.ReactionEnergy(stoichiometry=reaction.stoichiometry, list_of_energies=energies, unit='eV', label=reactionindex, 
                                                     reference=reaction.refenergy)
-        reaction.error=error
-        reaction.calcenergy=reaction_energy
-        errors.append(error)
+        reaction.calcenergy = reaction_energy
+        reaction.calcenergy_corrected = reaction_energy + reaction.correction
+        #Adding error with correction
+        reaction.error = error + reaction.correction
         #Cleanup after reaction is done
         theory.cleanup()
         
@@ -157,7 +188,9 @@ def run_benchmark(set=None, theory=None, workflow=None, orcadir=None, numcores=N
     print(BC.WARNING,"FINAL RESULTS FOR TESTSET: ", BC.OKBLUE, set, BC.END)
     print(BC.WARNING,"="*70, BC.END)
     print("Unit:", unit)
-    print("")
+    
+    #Calculating errors (have been corrected)
+    errors = [database_dict[r].error for r in database_dict]
     abserrors = [abs(i) for i in errors]
     MAE=sum(abserrors)/len(abserrors)
     ME=sum(errors)/len(errors)
@@ -165,8 +198,8 @@ def run_benchmark(set=None, theory=None, workflow=None, orcadir=None, numcores=N
     RMSE=math.sqrt(sum([i**2 for i in errors])/len(errors))
     
     #Print nice table
-    print(BC.WARNING, "{:7s} {:55s}  {:13s} {:13s} {:13s}".format("Index", "Reaction", "Ref.", "Calc.", "Error"), BC.END)
-    print("-"*110)
+    print(BC.WARNING, "{:7s} {:55s}  {:13s} {:13s} {:13s}   {:17s}".format("Index", "Reaction", "Ref.", "Calc.", "Calc.+corr.", "Error"), BC.END)
+    print("-"*120)
     for rindex in database_dict:
         r=database_dict[rindex]
         if r.error == MaxError:
@@ -175,10 +208,8 @@ def run_benchmark(set=None, theory=None, workflow=None, orcadir=None, numcores=N
             colorcode=BC.END
         reactionstring=get_reaction_string(r.filenames, r.stoichiometry)
         #print(" {:<10} {:<40s}  {:<13.4f} {:<13.4f}{} {:<13.4f}{}".format(rindex, ' '.join(r.filenames), r.refenergy, r.calcenergy, colorcode, r.error,BC.END))
-        print(" {:<7} {:<55s}  {:<13.4f} {:<13.4f}{} {:<13.4f}{}".format(rindex, reactionstring, r.refenergy, r.calcenergy, colorcode, r.error,BC.END))
-    #print("".format())
-    #print("")
-    print("-"*110)
+        print(" {:<7} {:<55s}  {:<13.4f} {:<13.4f} {:<13.4f}{} {:>8.4f}{}".format(rindex, reactionstring, r.refenergy, r.calcenergy, r.calcenergy_corrected, colorcode, r.error,BC.END))
+    print("-"*120)
     print(" {:<10s} {:13.4f} {:<10s} ".format("MAE", MAE, unit))
     print(" {:<10s} {:13.4f} {:<10s} ".format("ME", ME, unit))
     print(" {:<10s} {:13.4f} {:<10s} ".format("RMSE", RMSE, unit))
