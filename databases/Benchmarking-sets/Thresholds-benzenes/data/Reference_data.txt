@@ -1,0 +1,7 @@
+#TESTSET_INFO
+#TESTSET_INFO Numentries: 3
+#TESTSET_INFO Unit: eV
+#X-benzenes. Geometries: B3LYP-D3/def2-TZVP
+1 chlorobenzene-neut phenyl_cation cl -1 1 1 12.454
+2 bromobenzene-neut phenyl_cation br -1 1 1 11.810
+3 iodobenzene-neut phenyl_cation i -1 1 1 11.140

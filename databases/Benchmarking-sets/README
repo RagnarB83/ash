@@ -12,6 +12,7 @@ Example:
         => benzene-ox.xyz
         => etc.
         => Reference_data.txt
+        => corrections.txt (optional file)
 
 #IMPORTANT: Each XYZ-file should contain the charge and multiplicity in the title-line (2nd header-line of XYZ file format)
 
@@ -23,6 +24,9 @@ The Reference_data.txt contains information about the reactions in the following
 - Each numbered line defines a reaction. The ASCII-string words in the line point to XYZ-files in the same dir
   while the integers indicate the stoichiometry of the reaction (negative number: reactant, positive number: product).
   The last floating point number is always the reference value (e.g. experimental value) in the unit indicated in the #TESTSET_INFO line. 
+
+If the corrections.txt file is present inside data dir (this is optional) then the additive corrections per reactions will be read.
+This correction can e.g. be ZPE, total enthalpy-correction, total free-energy correction etc. Always per reaction
 
 #############################
 Reference_data.txt Example :
@@ -36,4 +40,17 @@ Reference_data.txt Example :
 4 bromobenzene-neut bromobenzene-ox -1 1 8.9975
 5 iodobenzene-neut iodobenzene-ox -1 1 8.7580
 
+
+corrections.txt Example
+##################
+#TESTSET_INFO
+#TESTSET_INFO Numentries: 5
+#TESTSET_INFO Unit: eV
+#TESTSET_INFO Type: ZPE
+# ZPE corrections per reaction to be added to calculated reaction energies
+1 0.012
+2 0.013
+3 0.009
+4 0.010
+5 0.010
 
