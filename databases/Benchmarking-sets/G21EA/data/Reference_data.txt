@@ -1,0 +1,28 @@
+#TESTSET_INFO
+#TESTSET_INFO Numentries: 25
+#TESTSET_INFO Unit: kcalpermol
+1   EA_c    EA_c-   1   -1  29.2
+2   EA_o    EA_o-   1   -1  33.7
+3   EA_f    EA_f-   1   -1  78.4
+4   EA_si   EA_si-  1   -1  32.1
+5   EA_p    EA_p-   1   -1  17.3
+6   EA_s    EA_s-   1   -1  48.0
+7   EA_cl   EA_cl-  1   -1  83.5
+8   EA_8n   EA_8    1   -1  27.9
+9   EA_9n   EA_9    1   -1  13.4
+10  EA_10n  EA_10   1   -1  1.2
+11  EA_11n  EA_11   1   -1  8.3
+12  EA_12n  EA_12   1   -1  16.8
+13  EA_13n  EA_13   1   -1  41.7
+14  EA_14n  EA_14   1   -1  29.3
+15  EA_15n  EA_15   1   -1  25.1
+16  EA_16n  EA_16   1   -1  31.4
+17  EA_17n  EA_17   1   -1  23.5
+18  EA_18n  EA_18   1   -1  28.8
+19  EA_19n  EA_19   1   -1  54.2
+20  EA_20n  EA_20   1   -1  9.5
+21  EA_21n  EA_21   1   -1  -0.2
+22  EA_22n  EA_22   1   -1  89.5
+23  EA_23n  EA_23   1   -1  24.9
+24  EA_24n  EA_24   1   -1  38.0
+25  EA_25n  EA_25   1   -1  54.7

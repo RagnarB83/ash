@@ -1,0 +1,44 @@
+#TESTSET_INFO
+#TESTSET_INFO Numentries: 41
+#TESTSET_INFO Unit: kcalpermol
+1    ED01    CO  PR01       -1  -1  1       -43.1
+2    ED02    CO  PR02       -1  -1  1       -46.6
+3    ED03   CO  PR03        -1  -1  1       -27.6
+4    ED04    CO  PR04       -1  -1  1       -62.5
+5    ED05    CO  PR05       -1  -1  1       3.7
+6    ED01    H2  PR06       -1  -1  1       -23.2
+7    ED07    H2  PR07       -1  -1  1       -16.2
+8    ED08    H2  PR08       -1  -1  1       -17.2
+9    ED09    H2  PR09       -1  -1  1       -18.7
+10   ED10   C3H8    PR10        -1  -1  1       -22.6
+11   ED11   C2H6    PR11        -1  -1  1       27
+12   ED01   C2H4    PR12        -1  -1  1       -29.8
+13   ED13   C2H4    PR13        -1  -1  1       -43.2
+14   ED14   COD PR14        -1  -1  1       -52
+15   ED15   CO2 PR15        -1  -1  1       -4.1
+16   ED16a  ED16b   PR16        -1  -1  1       -39.8
+17   ED17   MeOH    PR17        -1  -1  1       -16.1
+18   ED18   MeI PR18        -1  -1  1       -34.2
+19   ED18   AcI PR19        -1  -1  1       -40.1
+20   ED18   AcCl    PR20        -1  -1  1       -30.2
+21   ED21   MeI PR21        -1  -1  1       -15.1
+22   ED22   I2  PR22        -1  -1  1       -35.9
+23   ED18   I2  PR23        -1  -1  1       -55
+24   ED24    PCy3   PR24        -1  -1  1       -41.6
+25   ED25    PCy3   PR25        -1  -1  1       -45.9
+26   ED26    PMe3   PR26    COD -1  -2  1   1   -36.4
+27   ED26    ED27   PR27    COD -1  -1  1   1   -21.8
+28   ED26    ED28   PR28    COD -1  -1  1   1   -36.3
+29   ED29    ED28   PR29    COD -1  -1  1   1   -28.3
+30   ED29    ED30   PR30    COD -1  -1  1   1   -14.9
+31   ED29    ED31   PR31    COD -1  -1  1   1   -29.9
+32   ED32    COD    PR32    C2H4    -1  -1  1   2   -1.8
+33   ED33    PhOH   PR33    C2H4    -1  -1  1   1   -10.7
+34   ED33   PhSH    PR34    C2H4    -1  -1  1   1   -25.6
+35   ED33   PhSeH   PR35    C2H4    -1  -1  1   1   -30.9
+36   ED36   I2  PR36    C2H4    -1  -1  1   1   -39.8
+37   ED37   MeCN    PR37    Bz  -1  -3  1   1   -14
+38   ED37   PMe3    PR38    Bz  -1  -3  1   1   -64.4
+39   ED39   PR39            -2  1           -63.9
+40   ED40a  ED40b   PR40        -1  -1  1       -65.8
+41   EDPR41 PR41            -1  1           -3.2

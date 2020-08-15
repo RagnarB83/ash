@@ -1,0 +1,4 @@
+#TESTSET_INFO
+#TESTSET_INFO Numentries: 1
+#TESTSET_INFO Unit: kcalpermol
+1    ED01    CO  PR01       -1  -1  1       -43.1

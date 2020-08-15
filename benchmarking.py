@@ -172,6 +172,7 @@ def run_benchmark(set=None, theory=None, workflow=None, orcadir=None, numcores=N
             frag = ash.Fragment(xyzfile=benchmarksetpath+file+'.xyz', readchargemult=True, conncalc=False)
             # Setting charge and mult for theory
             if theory is not None:
+                print("theory:", theory)
                 theory.charge=frag.charge
                 theory.mult=frag.mult
                 energy = ash.Singlepoint(fragment=frag, theory=theory)
@@ -201,7 +202,8 @@ def run_benchmark(set=None, theory=None, workflow=None, orcadir=None, numcores=N
         #Adding error with correction
         reaction.error = error + reaction.correction
         #Cleanup after reaction is done
-        theory.cleanup()
+        if theory is not None:
+            theory.cleanup()
         
     print("")
     print(BC.WARNING,"="*70, BC.END)
