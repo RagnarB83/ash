@@ -1,6 +1,6 @@
 #TESTSET_INFO
 #TESTSET_INFO Numentries: 22
-#TESTSET_INFO Unit: kcalpermol
+#TESTSET_INFO Unit: kcal/mol
 1   s01  s01a     -1  2       3.17
 2   s02  s02a     -1  2       5.02
 3   s03  s03a     -1  2       18.80

@@ -1,6 +1,6 @@
 #TESTSET_INFO
 #TESTSET_INFO Numentries: 41
-#TESTSET_INFO Unit: kcalpermol
+#TESTSET_INFO Unit: kcal/mol
 1    ED01    CO  PR01       -1  -1  1       -43.1
 2    ED02    CO  PR02       -1  -1  1       -46.6
 3    ED03   CO  PR03        -1  -1  1       -27.6

@@ -1,6 +1,6 @@
 #TESTSET_INFO
 #TESTSET_INFO Numentries: 36
-#TESTSET_INFO Unit: kcalpermol
+#TESTSET_INFO Unit: kcal/mol
 1   h       -1      314.9
 2   li+ li  1   -1  123.3
 3   be+ be  1   -1  214.9

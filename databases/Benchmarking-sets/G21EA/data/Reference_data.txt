@@ -1,6 +1,6 @@
 #TESTSET_INFO
 #TESTSET_INFO Numentries: 25
-#TESTSET_INFO Unit: kcalpermol
+#TESTSET_INFO Unit: kcal/mol
 1   EA_c    EA_c-   1   -1  29.2
 2   EA_o    EA_o-   1   -1  33.7
 3   EA_f    EA_f-   1   -1  78.4
