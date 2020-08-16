@@ -1,14 +1,14 @@
 #TESTSET_INFO
-#TESTSET_INFO Numentries: 11
-#TESTSET_INFO Unit: kcalpermol
+#TESTSET_INFO Numentries: 3
+#TESTSET_INFO Unit: kcal/mol
 1   he  he+ he2+    1   1   -1  57.44
 2   nh3 nh3+    nh32+   1   1   -1  35.34
 3   h2o h2o+    h2o2+   1   1   -1  37.25
-4   but+    ethyl   ethyl+  -1  1   1   35.28
-5   ch3 acetyl  aceton+ 1   1   -1  22.57
-6   clclf   clfcl       1   -1      -1.01
-7   c2h4    f2  c2h4_f2 1   1   -1  1.08
-8   li  bz  bz_li   1   1   -1  9.50
-9   nh3 clf nh3_clf 1   1   -1  10.50
-10  mgo na  naomg   1   1   -1  69.56
-11  li  f2  li_f2   1   1   -1  94.36
+#4   but+    ethyl   ethyl+  -1  1   1   35.28
+#5   ch3 acetyl  aceton+ 1   1   -1  22.57
+#6   clclf   clfcl       1   -1      -1.01
+#7   c2h4    f2  c2h4_f2 1   1   -1  1.08
+#8   li  bz  bz_li   1   1   -1  9.50
+#9   nh3 clf nh3_clf 1   1   -1  10.50
+#10  mgo na  naomg   1   1   -1  69.56
+#11  li  f2  li_f2   1   1   -1  94.36

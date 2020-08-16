@@ -85,16 +85,31 @@ def read_referencedata_file(benchmarksetpath):
             exit()
     return database_dict
 
+#Compare sign of two numbers. Return True if same sign, return False if opposite sign
+def is_same_sign(a,b):
+    if a*b <0:
+        return False
+    elif a*b >0:
+        return True
+    
 #Get pretty reaction string from molecule-filenames and stoichiometry
 def get_reaction_string(filenames, stoichiometry):
     string =""
-    #Index when sign changes from reactant to product
-    index=stoichiometry.index(1)
+    #First index in stoichiometry
+    firstindex=stoichiometry[0]
+    #Check index for sign change from reactant to product or vice versa
     for i,file in enumerate(filenames):
-        if i == index:
-            #=>→ 
-            string+=" ⟶   "
-        string+=file
+        currindex=stoichiometry[i]
+        #Sign changed => First right-hand side case
+        if is_same_sign(firstindex,currindex) is False:
+            string+=" ⟶   " + file
+        else:
+            #First reactant
+            if i == 0:
+                string=file
+            #Everything else
+            else:
+                string+=" + " + file
     return string
 
 #run_benchmark
@@ -132,7 +147,7 @@ def run_benchmark(set=None, theory=None, workflow=None, orcadir=None, numcores=N
             database_dict[i+1].correction = corr
     
     
-    #Always same unit
+    #Always same unit so taking first case
     unit=database_dict[1].unit
     try:
         os.mkdir("benchmarks_calcs")
@@ -172,7 +187,6 @@ def run_benchmark(set=None, theory=None, workflow=None, orcadir=None, numcores=N
             frag = ash.Fragment(xyzfile=benchmarksetpath+file+'.xyz', readchargemult=True, conncalc=False)
             # Setting charge and mult for theory
             if theory is not None:
-                print("theory:", theory)
                 theory.charge=frag.charge
                 theory.mult=frag.mult
                 energy = ash.Singlepoint(fragment=frag, theory=theory)
@@ -195,7 +209,7 @@ def run_benchmark(set=None, theory=None, workflow=None, orcadir=None, numcores=N
             #List of all energies
             energies.append(energy)
         print("")
-        reaction_energy, error = ash.ReactionEnergy(stoichiometry=reaction.stoichiometry, list_of_energies=energies, unit='eV', label=reactionindex, 
+        reaction_energy, error = ash.ReactionEnergy(stoichiometry=reaction.stoichiometry, list_of_energies=energies, unit=unit, label=reactionindex, 
                                                     reference=reaction.refenergy)
         reaction.calcenergy = reaction_energy
         reaction.calcenergy_corrected = reaction_energy + reaction.correction
