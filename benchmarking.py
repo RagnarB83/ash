@@ -95,13 +95,19 @@ def is_same_sign(a,b):
 #Get pretty reaction string from molecule-filenames and stoichiometry
 def get_reaction_string(filenames, stoichiometry):
     string =""
-    #First index in stoichiometry
-    firstindex=stoichiometry[0]
+    
     #Check index for sign change from reactant to product or vice versa
     for i,file in enumerate(filenames):
+        #Current index
         currindex=stoichiometry[i]
+        #Index before (if available)
+        if i >0 :
+            beforeindex=stoichiometry[i-1]
+        else:
+            beforeindex=stoichiometry[i]
+        
         #Sign changed => First right-hand side case
-        if is_same_sign(firstindex,currindex) is False:
+        if is_same_sign(firstindex,beforeindex) is False:
             string+=" ⟶   " + file
         else:
             #First reactant
