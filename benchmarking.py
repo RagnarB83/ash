@@ -201,7 +201,8 @@ def run_benchmark(set=None, theory=None, workflow=None, orcadir=None, numcores=N
         reaction.calcenergy_corrected = reaction_energy + reaction.correction
         #Adding error with correction
         reaction.error = error + reaction.correction
-        #Cleanup after reaction is done
+        
+        #Cleanup after reaction is done. Theory only.
         if theory is not None:
             theory.cleanup()
         
