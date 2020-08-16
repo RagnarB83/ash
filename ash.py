@@ -4107,7 +4107,7 @@ def MMforcefield_read(file):
 #Better place for this?
 def ReactionEnergy(stoichiometry=None, list_of_fragments=None, list_of_energies=None, unit='kcal/mol', label=None, reference=None):
     conversionfactor = { 'kcal/mol' : 627.50946900, 'kcalpermol' : 627.50946900, 'kJ/mol' : 2625.499638, 'kJpermol' : 2625.499638, 
-                        eV' : 27.211386245988, 'cm-1' : 219474.6313702 }
+                        'eV' : 27.211386245988, 'cm-1' : 219474.6313702 }
     if label is None:
         label=''
     #print(BC.OKBLUE,BC.BOLD, "ReactionEnergy function. Unit:", unit, BC.END)
