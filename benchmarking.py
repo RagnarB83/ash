@@ -107,7 +107,7 @@ def get_reaction_string(filenames, stoichiometry):
             beforeindex=stoichiometry[i]
         
         #Sign changed => First right-hand side case
-        if is_same_sign(firstindex,beforeindex) is False:
+        if is_same_sign(currindex,beforeindex) is False:
             string+=" ⟶   " + file
         else:
             #First reactant
