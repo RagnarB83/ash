@@ -118,6 +118,19 @@ def get_reaction_string(filenames, stoichiometry):
                 string+=" + " + file
     return string
 
+
+#Benchmarking for structures
+# Use geometric optimizer always or have choice?
+# Compare RMSDs and also bond lengths?
+# Make automatic important bond-lengths choose function? 
+# E.g. always include bond lengths for transition metal (via get_conn_atoms), always all metal-metal distances
+#If no metal present then do all C-C, C-N, C-O, C-X bonds
+# Use both for benchmark and also for end of optimizations
+def run_geobenchmark(set=None, theory=None, orcadir=None, numcores=None):
+    print("not ready")
+
+
+
 #run_benchmark
 #Reuseorbs option: Reuse orbitals within same reaction. This only makes sense if reaction contains very similar geometries (e.g. IE/EA reaction)
 def run_benchmark(set=None, theory=None, workflow=None, orcadir=None, numcores=None, reuseorbs=False, corrections=None):

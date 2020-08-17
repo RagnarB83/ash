@@ -25,6 +25,9 @@ The Reference_data.txt contains information about the reactions in the following
   while the integers indicate the stoichiometry of the reaction (negative number: reactant, positive number: product).
   The last floating point number is always the reference value (e.g. experimental value) in the unit indicated in the #TESTSET_INFO line. 
 
+#IMPORTANT: species/file-names have to contain an alphabetic character (not only integer)
+#IMPORTANT: The reference value has to be a floating point, not an integer (add .0 to number)
+
 If the corrections.txt file is present inside data dir (this is optional) then the additive corrections per reactions will be read.
 This correction can e.g. be ZPE, total enthalpy-correction, total free-energy correction etc. Always per reaction
 
