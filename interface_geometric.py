@@ -11,15 +11,20 @@ import time
 ########################
 
 '''Wrapper function around geomeTRIC code. Take theory and fragment info from ASH
-Supports frozen atoms and bond constraints in native code. Use frozenatoms and bondconstraints for this.
+Supports frozen atoms and bond/angle/dihedral constraints in native code. Use frozenatoms and bondconstraints etc. for this.
 New feature: Active Region for huge systems. Use ActiveRegion=True and provide actatoms list.
 Active-atom coords (e.g. only QM region) are only provided to geomeTRIC during optimization while rest is frozen.
 Needed as discussed here: https://github.com/leeping/geomeTRIC/commit/584869707aca1dbeabab6fe873fdf139d384ca66#diff-2af7dd72b77dac63cea64c052a549fe0
 '''
-# TODO: Get other constraints (angle-constraints etc.) working.
+
 # Todo: Add optional print-coords in each step option. Maybe only print QM-coords (if QM/MM).
-def geomeTRICOptimizer(theory=None,fragment=None, coordsystem='tric', frozenatoms=[], bondconstraints=[],
-                       maxiter=50, ActiveRegion=False, actatoms=[]):
+# https://github.com/leeping/geomeTRIC/blob/master/examples/constraints.txt
+# bond,angle and dihedral constraints work. If only atom indices provided and constrainvalue is False then constraint at current position
+# If constrainvalue=True then last entry should be value of constraint
+#TODO: Add scan feature also??
+def geomeTRICOptimizer(theory=None,fragment=None, coordsystem='tric', frozenatoms=[], bondconstraints=None, 
+                       angleconstraints=None, dihedralconstraints=None, constraintsfile=None, constrainvalue=False,
+                       maxiter=50, ActiveRegion=False, actatoms=[], convergence_setting=None):
     try:
         os.remove('geometric_OPTtraj.log')
         os.remove('geometric_OPTtraj.xyz')
@@ -30,6 +35,14 @@ def geomeTRICOptimizer(theory=None,fragment=None, coordsystem='tric', frozenatom
         os.remove('dummyprefix.log')
     except:
         pass
+    
+    #Delete constraintsfile unless asked for
+    if constraintsfile is None:
+        try:
+            os.remove('constraints.txt')
+        except:
+            pass
+    
     blankline()
     print(BC.WARNING, "Doing geometry optimization on fragment : ", fragment.prettyformula, BC.END)
     print("Launching geomeTRIC optimization module")
@@ -81,6 +94,7 @@ def geomeTRICOptimizer(theory=None,fragment=None, coordsystem='tric', frozenatom
         def clearCalcs(self):
             print("ClearCalcs option chosen by geomeTRIC. Not sure why")
         def calc(self,coords,tmp):
+            print("Convergence criteria:", conv_criteria)
             blankline()
             #Updating coords in object
             #Need to combine with rest of full-syme coords
@@ -136,10 +150,22 @@ def geomeTRICOptimizer(theory=None,fragment=None, coordsystem='tric', frozenatom
                 return {'energy': E, 'gradient': Grad.flatten()}
 
 
+
     class geomeTRICArgsObject:
-        def __init__(self,eng,constraints, coordsys, maxiter):
+        def __init__(self,eng,constraints, coordsys, maxiter, conv_criteria):
             self.coordsys=coordsys
             self.maxiter=maxiter
+
+            #self.convergence_criteria=conv_criteria
+            #self.converge=conv_criteria
+            #Setting these to be part of kwargs that geometric reads
+            self.convergence_energy = conv_criteria['convergence_energy']
+            self.convergence_grms = conv_criteria['convergence_grms']
+            self.convergence_gmax = conv_criteria['convergence_gmax']
+            self.convergence_drms = conv_criteria['convergence_drms']
+            self.convergence_dmax = conv_criteria['convergence_dmax']
+            
+            
             self.prefix='geometric_OPTtraj'
             self.input='dummyinputname'
             self.constraints=constraints
@@ -151,31 +177,100 @@ def geomeTRICOptimizer(theory=None,fragment=None, coordsystem='tric', frozenatom
 
     #Define constraints provided. Write constraints.txt file
     #Frozen atom option. Only for small systems. Not QM/MM etc.
+    constraints=None
     if len(frozenatoms) > 0 :
         print("Writing frozen atom constraints")
         constraints='constraints.txt'
-        with open("constraints.txt", 'w') as confile:
+        with open("constraints.txt", 'a') as confile:
             confile.write('$freeze\n')
             for frozat in frozenatoms:
                 #Changing from zero-indexing (Yggdrasill) to 1-indexing (geomeTRIC)
                 frozenatomindex=frozat+1
                 confile.write('xyz {}\n'.format(frozenatomindex))
     #Bond constraints
-    elif len(bondconstraints) > 0 :
+    if bondconstraints is not None :
         constraints='constraints.txt'
-        with open("constraints.txt", 'w') as confile:
-            confile.write('$freeze\n')
+        with open("constraints.txt", 'a') as confile:
+            if constrainvalue is True:
+                confile.write('$set\n')            
+            else:
+                confile.write('$freeze\n')
             for bondpair in bondconstraints:
-                #Changing from zero-indexing (ASG) to 1-indexing (geomeTRIC)
+                #Changing from zero-indexing (ASH) to 1-indexing (geomeTRIC)
                 print("bondpair", bondpair)
-                confile.write('distance {} {}\n'.format(bondpair[0]+1,bondpair[1]+1))
+                if constrainvalue is True:
+                    confile.write('distance {} {} {}\n'.format(bondpair[0]+1,bondpair[1]+1, bondpair[2] ))                    
+                else:    
+                    confile.write('distance {} {}\n'.format(bondpair[0]+1,bondpair[1]+1))
+    #Angle constraints
+    if angleconstraints is not None :
+        constraints='constraints.txt'
+        with open("constraints.txt", 'a') as confile:
+            if constrainvalue is True:
+                confile.write('$set\n')            
+            else:
+                confile.write('$freeze\n')
+            for angleentry in angleconstraints:
+                #Changing from zero-indexing (ASH) to 1-indexing (geomeTRIC)
+                print("angleentry", angleentry)
+                if constrainvalue is True:
+                    confile.write('angle {} {} {} {}\n'.format(angleentry[0]+1,angleentry[1]+1,angleentry[2]+1,angleentry[3] ))
+                else:
+                    confile.write('angle {} {} {}\n'.format(angleentry[0]+1,angleentry[1]+1,angleentry[2]+1))
+    if dihedralconstraints is not None:
+        constraints='constraints.txt'
+        with open("constraints.txt", 'a') as confile:
+            if constrainvalue is True:
+                confile.write('$set\n')            
+            else:
+                confile.write('$freeze\n')
+            for dihedralentry in dihedralconstraints:
+                #Changing from zero-indexing (ASH) to 1-indexing (geomeTRIC)
+                print("dihedralentry", dihedralentry)
+                if constrainvalue is True:
+                    confile.write('dihedral {} {} {} {} {}\n'.format(dihedralentry[0]+1,dihedralentry[1]+1,dihedralentry[2]+1,dihedralentry[3]+1, dihedralentry[4] ))
+                else:
+                    confile.write('dihedral {} {} {} {}\n'.format(dihedralentry[0]+1,dihedralentry[1]+1,dihedralentry[2]+1,dihedralentry[3]+1))
+    if constraintsfile is not None:
+        constraints=constraintsfile
+
+    #Dealing with convergence criteria
+    if convergence_setting is None or convergence_setting == 'ORCA':
+        #default
+        conv_criteria = {'convergence_energy' : 5e-6, 'convergence_grms' : 1e-4, 'convergence_gmax' : 3.0e-4, 'convergence_drms' : 2.0e-3, 
+                     'convergence_dmax' : 4.0e-3 }
+    elif convergence_setting == 'Chemshell':
+        conv_criteria = {'convergence_energy' : 1e-6, 'convergence_grms' : 3e-4, 'convergence_gmax' : 4.5e-4, 'convergence_drms' : 1.2e-3, 
+                        'convergence_dmax' : 1.8e-3 }
+    elif convergence_setting == 'ORCA_TIGHT':
+        conv_criteria = {'convergence_energy' : 1e-6, 'convergence_grms' : 3e-5, 'convergence_gmax' : 1.0e-4, 'convergence_drms' : 6.0e-4, 
+                     'convergence_dmax' : 1.0e-3 }
+    elif convergence_setting == 'GAU':
+        conv_criteria = {'convergence_energy' : 1e-6, 'convergence_grms' : 3e-4, 'convergence_gmax' : 4.5e-4, 'convergence_drms' : 1.2e-3, 
+                     'convergence_dmax' : 1.8e-3 }
+    elif convergence_setting == 'GAU_TIGHT':
+        conv_criteria = {'convergence_energy' : 1e-6, 'convergence_grms' : 1e-5, 'convergence_gmax' : 1.5e-5, 'convergence_drms' : 4.0e-5, 
+                        'convergence_dmax' : 6e-5 }
+    elif convergence_setting == 'GAU_VERYTIGHT':
+        conv_criteria = {'convergence_energy' : 1e-6, 'convergence_grms' : 1e-6, 'convergence_gmax' : 2e-6, 'convergence_drms' : 4.0e-6, 
+                        'convergence_dmax' : 6e-6 }        
+    elif convergence_setting == 'SuperLoose':
+                conv_criteria = { 'convergence_energy' : 1e-1, 'convergence_grms' : 1e-1, 'convergence_gmax' : 1e-1, 'convergence_drms' : 1e-1, 
+                     'convergence_dmax' : 1e-1 }
     else:
-        constraints=None
+        print("Unknown convergence setting. Exiting...")
+        exit(1)
+
+    print("convergence_setting:", convergence_setting)
+    print("conv_criteria:", conv_criteria)
+
+
+
 
     #Defining Yggdrasill engine object containing geometry and theory. ActiveRegion boolean passed.
     ashengine = Yggdrasillengineclass(mol_geometric_frag,theory, ActiveRegion=ActiveRegion, actatoms=actatoms)
     #Defining args object, containing engine object
-    args=geomeTRICArgsObject(ashengine,constraints,coordsys=coordsystem, maxiter=maxiter)
+    args=geomeTRICArgsObject(ashengine,constraints,coordsys=coordsystem, maxiter=maxiter, conv_criteria=conv_criteria)
 
     #Starting geomeTRIC
     geometric.optimize.run_optimizer(**vars(args))
@@ -202,3 +297,4 @@ def geomeTRICOptimizer(theory=None,fragment=None, coordsystem='tric', frozenatom
     print("TO BE ADDED HERE: Internal coordinate table (bond-lengths etc.) for optimized geometry")
 
     blankline()
+    return ashengine.energy
