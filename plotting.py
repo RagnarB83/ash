@@ -13,10 +13,12 @@ def Gaussian(x, mu, strength, sigma):
 
 #contourplot
 #Input: dictionary of (X,Y): energy   entries 
-def contourplot(surfacedictionary, label='Label',finalunit=None, interpolation=None):
+#Good colormaps: viridis, viridis_r, inferno, inferno_r, plasma, plasma_r, magma, magma_r
+# Less recommended: jet, jet_r
+def contourplot(surfacedictionary, label='Label',x_axislabel='Coord', y_axislabel='Coord', finalunit=None, interpolation='Cubic', interpolparameter=10, colormap='inferno_r'):
+    
     conversionfactor = { 'kcal/mol' : 627.50946900, 'kcalpermol' : 627.50946900, 'kJ/mol' : 2625.499638, 'kJpermol' : 2625.499638, 
                         'eV' : 27.211386245988, 'cm-1' : 219474.6313702 }
-    
     e=[]
     coords=[]
     x_c=[]
@@ -64,17 +66,20 @@ def contourplot(surfacedictionary, label='Label',finalunit=None, interpolation=N
             from scipy.ndimage import zoom
         except:
             print("Problem importing scipy.ndimage. Make sure scipy is installed.")
-            exit()
-        #Calculate smooth data
-        pw = 10 #power of the smooth
+            print("Cubic interpolation not possible. Switching off")
+            interpolation=None
+    if interpolation == 'Cubic':
+        print("Using cubic power:", interpolparameter)
+        #Cubic interpolation. Default power is 10 (should be generally good)
+        pw = interpolparameter #power of the smoothing function
         X = zoom(X, pw)
         Y = zoom(Y, pw)
         Z = zoom(Z, pw)
     
-    cp=plt.contourf(X, Y, Z, 50, alpha=.75, cmap='viridis')
+    cp=plt.contourf(X, Y, Z, 50, alpha=.75, cmap=colormap)
     C = plt.contour(X, Y, Z, 50, colors='black')
     plt.colorbar(cp)
-    plt.xlabel('Coord X')
-    plt.ylabel('Coord Y')
+    plt.xlabel(x_axislabel)
+    plt.ylabel(y_axislabel)
     plt.savefig('Surface{}.png'.format(label), format='png', dpi=200)
     print("Created PNG file: Surface{}.png".format(label))
