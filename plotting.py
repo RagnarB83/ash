@@ -1,5 +1,8 @@
 import numpy as np
-import matplotlib.pyplot as plt
+
+import matplotlib
+matplotlib.use('Agg')
+import matplotlib.pyplot as plt 
 
 def Gaussian(x, mu, strength, sigma):
     "Produces a Gaussian curve"
@@ -15,7 +18,8 @@ def Gaussian(x, mu, strength, sigma):
 #Input: dictionary of (X,Y): energy   entries 
 #Good colormaps: viridis, viridis_r, inferno, inferno_r, plasma, plasma_r, magma, magma_r
 # Less recommended: jet, jet_r
-def contourplot(surfacedictionary, label='Label',x_axislabel='Coord', y_axislabel='Coord', finalunit=None, interpolation='Cubic', interpolparameter=10, colormap='inferno_r'):
+def contourplot(surfacedictionary, label='Label',x_axislabel='Coord', y_axislabel='Coord', finalunit=None, interpolation='Cubic', 
+                interpolparameter=10, colormap='inferno_r', dpi=200, imageformat='png'):
     
     conversionfactor = { 'kcal/mol' : 627.50946900, 'kcalpermol' : 627.50946900, 'kJ/mol' : 2625.499638, 'kJpermol' : 2625.499638, 
                         'eV' : 27.211386245988, 'cm-1' : 219474.6313702 }
@@ -81,5 +85,5 @@ def contourplot(surfacedictionary, label='Label',x_axislabel='Coord', y_axislabe
     plt.colorbar(cp)
     plt.xlabel(x_axislabel)
     plt.ylabel(y_axislabel)
-    plt.savefig('Surface{}.png'.format(label), format='png', dpi=200)
+    plt.savefig('Surface{}.png'.format(label), format=imageformat, dpi=dpi)
     print("Created PNG file: Surface{}.png".format(label))
