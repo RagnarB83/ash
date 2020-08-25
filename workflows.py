@@ -1497,7 +1497,10 @@ def write_surfacedict_to_file(dict,file="surface_results.txt",dimension=None):
 #RC_type='angle'
 #RC_indices==[0,1]  [0,2]???????
 #RC_indices=[1,0,2]
-def calc_surface(frag=None, theory=None, type='Unrelaxed', resultfile='surface_results.txt', **kwargs):
+def calc_surface(fragment=None, theory=None, type='Unrelaxed', resultfile='surface_results.txt', runmode='serial', **kwargs):
+    
+    #runmode: serial or parallel. TODO: Parallel
+    
     
     print("kwargs:", kwargs)
     #Read dict from file. If file exists, read entries, if not, return empty dict
@@ -1505,34 +1508,48 @@ def calc_surface(frag=None, theory=None, type='Unrelaxed', resultfile='surface_r
     print("Initial surfacedictionary :", surfacedictionary)
     
     #Choosing reaction coordinates
-    
-    if RC1_range in kwargs:
+    if 'RC1_range' in kwargs:
         RC1_range=kwargs['RC1_range']
         RC1_type=kwargs['RC1_type']
         RC1_indices=kwargs['RC1_indices']
-    if RC2_range in kwargs:
+        #Checking if list of lists. If so then we apply multiple constraints for this reaction coordinate (e.g. symmetric bonds)
+        #Here making list of list in case only a single list was provided
+        if any(isinstance(el, list) for el in RC1_indices) is False:
+            RC1_indices=[RC1_indices]
+        print("RC1_indices:", RC1_indices)
+    if 'RC2_range' in kwargs:
         dimension=2
         RC2_range=kwargs['RC2_range']
         RC2_type=kwargs['RC2_type']
         RC2_indices=kwargs['RC2_indices']
-        
-        
+        if any(isinstance(el, list) for el in RC2_indices) is False:
+            RC2_indices=[RC2_indices]
+        print("RC2_indices:", RC2_indices)
     else:
         dimension=1
-    
+        
     #Setting constraints once values are known
     def set_constraints(dimension=None,RCvalue1=None, RCvalue2=None):
         allconstraints = {}
         # Defining all constraints as dict to be passed to geometric
         if dimension == 2:
-            allconstraints[RC2_type] = [RC2_indices+RCvalue2]
-            allconstraints[RC1_type] = [RC1_indices+RCvalue1]
+            RC2=[]
+            RC1=[]
+            for RC2_indexlist in RC2_indices:
+                RC2.append(RC2_indexlist+[RCvalue2])
+            allconstraints[RC2_type] = RC2
+            for RC1_indexlist in RC1_indices:
+                RC1.append(RC1_indexlist+[RCvalue1])
+            allconstraints[RC1_type] = RC1
         elif dimension == 1:
-            allconstraints[RC1_type] = [RC1_indices+RCvalue1]
+            RC1=[]
+            for RC1_indexlist in RC1_indices:
+                RC1.append(RC1_indexlist+[RCvalue1])
+            allconstraints[RC1_type] = RC1
         return allconstraints
     
     if type=='Unrelaxed':
-        zerotheory = ZeroTheory()
+        zerotheory = ash.ZeroTheory()
         print("Initial surfacedictionary :", surfacedictionary)
         if dimension == 2:
             for RCvalue1 in list(frange(RC1_range[0],RC1_range[1],RC1_range[2])):
@@ -1541,13 +1558,13 @@ def calc_surface(frag=None, theory=None, type='Unrelaxed', resultfile='surface_r
                     print("RCvalue1: {} RCvalue2: {}".format(RCvalue1,RCvalue2))
                     
                     if (RCvalue1,RCvalue2) not in surfacedictionary:
-                        #Running zero-theory with optimizer just to set geometry
+                        #Now setting constraints
                         allconstraints = set_constraints(dimension=2, RCvalue1=RCvalue1, RCvalue2=RCvalue2)
                         print("allconstraints:", allconstraints)
-                        exit()
-                        geomeTRICOptimizer(fragment=frag, theory=zerotheory, coordsystem='dlc', constraints=allconstraints, constrainvalue=True)
+                        #Running zero-theory with optimizer just to set geometry
+                        geomeTRICOptimizer(fragment=fragment, theory=zerotheory, coordsystem='dlc', constraints=allconstraints, constrainvalue=True)
                         #Single-point ORCA calculation on adjusted geometry
-                        energy = Singlepoint(fragment=frag, theory=theory)
+                        energy = ash.Singlepoint(fragment=fragment, theory=theory)
                         surfacedictionary[(RCvalue1,RCvalue2)] = energy
                         #Writing dictionary to file
                         write_surfacedict_to_file(surfacedictionary,"surface_results.txt", dimension=2)
