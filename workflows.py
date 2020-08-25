@@ -1443,3 +1443,121 @@ def thermochemprotocol(SPprotocol=None, fraglist=None, stoichiometry=None, orcad
     ash.ReactionEnergy(stoichiometry=stoichiometry, list_of_fragments=fraglist, list_of_energies=FinalEnergies, unit='kcalpermol', label='Total ΔE')
 
     ash.print_time_rel(settings_ash.init_time,modulename='Entire thermochemprotocol')
+    
+    
+    
+    
+    
+
+#Functions to read and write energy-surface dictionary in simple format.
+#Format: space-separated columns
+# 1D: coordinate energy   e.g.    -180.0 -201.434343
+# 2D: coordinate1 coordinate2 energy   e.g. e.g.   2.201 -180.0 -201.434343
+#Output: dictionary: (tuple) : float   
+# 1D: (coordinate1) : energy
+# 2D: (coordinate1,coordinate2) : energy
+#TODO: Make more general
+def read_surfacedict_from_file(file, dimension=None):
+    dict = {}
+    #If no file then return empty dict
+    if os.path.isfile(file) is False:
+        return dict
+    with open(file) as f:
+        for line in f:
+            if len(line) > 1:
+                if dimension==1:
+                    key=float(line.split()[0])
+                    val=float(line.split()[1])
+                    dict[(key)]=val
+                elif dimension==2:
+                    print(line)
+                    key1=float(line.split()[0])
+                    key2=float(line.split()[1])
+                    val=float(line.split()[2])                    
+                dict[(key1,key2)]=val
+    return dict
+
+def write_surfacedict_to_file(dict,file="surface_results.txt",dimension=None):
+    with open(file, 'w') as f:
+        for d in dict.items():
+            if dimension==1:
+                x=d[0][0]
+                e=d[1]
+                f.write(str(x)+" "+str(e)+'\n')
+            elif dimension==2:
+                x=d[0][0]
+                y=d[0][1]
+                e=d[1]
+                f.write(str(x)+" "+str(y)+" "+str(e)+'\n')
+
+#Bondcoordinate_indices=[0,1], Anglecoordinate_indices=[0,1,2], Dihedralcoordinate_indices=[0,1,2,3]
+#RC1_range=[2.0,2.2,0.01]
+#RC2_range=[180,110,-10.0]
+#RC_type='bond'
+#RC_type='angle'
+#RC_indices==[0,1]  [0,2]???????
+#RC_indices=[1,0,2]
+def calc_surface(frag=None, theory=None, type='Unrelaxed', resultfile='surface_results.txt', **kwargs):
+    
+    print("kwargs:", kwargs)
+    #Read dict from file. If file exists, read entries, if not, return empty dict
+    surfacedictionary = read_surfacedict_from_file(resultfile, dimension=2)
+    print("Initial surfacedictionary :", surfacedictionary)
+    
+    #Choosing reaction coordinates
+    
+    if RC1_range in kwargs:
+        RC1_range=kwargs['RC1_range']
+        RC1_type=kwargs['RC1_type']
+        RC1_indices=kwargs['RC1_indices']
+    if RC2_range in kwargs:
+        dimension=2
+        RC2_range=kwargs['RC2_range']
+        RC2_type=kwargs['RC2_type']
+        RC2_indices=kwargs['RC2_indices']
+        
+        
+    else:
+        dimension=1
+    
+    #Setting constraints once values are known
+    def set_constraints(dimension=None,RCvalue1=None, RCvalue2=None):
+        allconstraints = {}
+        # Defining all constraints as dict to be passed to geometric
+        if dimension == 2:
+            allconstraints[RC2_type] = [RC2_indices+RCvalue2]
+            allconstraints[RC1_type] = [RC1_indices+RCvalue1]
+        elif dimension == 1:
+            allconstraints[RC1_type] = [RC1_indices+RCvalue1]
+        return allconstraints
+    
+    if type=='Unrelaxed':
+        zerotheory = ZeroTheory()
+        print("Initial surfacedictionary :", surfacedictionary)
+        if dimension == 2:
+            for RCvalue1 in list(frange(RC1_range[0],RC1_range[1],RC1_range[2])):
+                for RCvalue2 in list(frange(RC2_range[0],RC2_range[1],RC2_range[2])):
+                    print("=======================================")
+                    print("RCvalue1: {} RCvalue2: {}".format(RCvalue1,RCvalue2))
+                    
+                    if (RCvalue1,RCvalue2) not in surfacedictionary:
+                        #Running zero-theory with optimizer just to set geometry
+                        allconstraints = set_constraints(dimension=2, RCvalue1=RCvalue1, RCvalue2=RCvalue2)
+                        print("allconstraints:", allconstraints)
+                        exit()
+                        geomeTRICOptimizer(fragment=frag, theory=zerotheory, coordsystem='dlc', constraints=allconstraints, constrainvalue=True)
+                        #Single-point ORCA calculation on adjusted geometry
+                        energy = Singlepoint(fragment=frag, theory=theory)
+                        surfacedictionary[(RCvalue1,RCvalue2)] = energy
+                        #Writing dictionary to file
+                        write_surfacedict_to_file(surfacedictionary,"surface_results.txt", dimension=2)
+                        print("surfacedictionary:", surfacedictionary)
+                    else:
+                        print("BOND, ANGLE in dict already. Skipping.")
+        elif dimension == 1:
+            print("to be done")
+            exit()
+    elif type=='Relaxed':
+    	print("not ready")
+    	exit()
+    return surfacedictionary

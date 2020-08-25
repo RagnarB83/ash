@@ -12,7 +12,7 @@ def Gaussian(x, mu, strength, sigma):
 
 
 #contourplot
-#Takes dictionary of (X,Y): energy entries
+#Input: dictionary of (X,Y): energy   entries 
 def contourplot(surfacedictionary, label='Label',finalunit=None):
     conversionfactor = { 'kcal/mol' : 627.50946900, 'kcalpermol' : 627.50946900, 'kJ/mol' : 2625.499638, 'kJpermol' : 2625.499638, 
                         'eV' : 27.211386245988, 'cm-1' : 219474.6313702 }

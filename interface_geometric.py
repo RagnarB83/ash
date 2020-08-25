@@ -22,8 +22,7 @@ Needed as discussed here: https://github.com/leeping/geomeTRIC/commit/584869707a
 # bond,angle and dihedral constraints work. If only atom indices provided and constrainvalue is False then constraint at current position
 # If constrainvalue=True then last entry should be value of constraint
 #TODO: Add scan feature also??
-def geomeTRICOptimizer(theory=None,fragment=None, coordsystem='tric', frozenatoms=[], bondconstraints=None, 
-                       angleconstraints=None, dihedralconstraints=None, constraintsfile=None, constrainvalue=False,
+def geomeTRICOptimizer(theory=None,fragment=None, coordsystem='tric', frozenatoms=[], constraintsinputfile=None, constraints=None, constrainvalue=False,
                        maxiter=50, ActiveRegion=False, actatoms=[], convergence_setting=None):
     try:
         os.remove('geometric_OPTtraj.log')
@@ -37,11 +36,25 @@ def geomeTRICOptimizer(theory=None,fragment=None, coordsystem='tric', frozenatom
         pass
     
     #Delete constraintsfile unless asked for
-    if constraintsfile is None:
+    if constraintsinputfile is None:
         try:
             os.remove('constraints.txt')
         except:
             pass
+    #Getting individual constraints from constraints dict
+    if constraints is not None:
+        try:
+            bondconstraints = constraints['bond']
+        except:
+            bondconstraints = None
+        try:
+            angleconstraints = constraints['angle']
+        except:
+            angleconstraints = None
+        try:
+            dihedralconstraints = constraints['dihedral']
+        except:
+            dihedralconstraints = None
     
     blankline()
     print(BC.WARNING, "Doing geometry optimization on fragment : ", fragment.prettyformula, BC.END)
@@ -49,7 +62,7 @@ def geomeTRICOptimizer(theory=None,fragment=None, coordsystem='tric', frozenatom
     print("Coordinate system: ", coordsystem)
     print("Max iterations: ", maxiter)
     #print("Frozen atoms: ", frozenatoms)
-    print("Bond constraints: ", bondconstraints)
+    print("Constraints: ", constraints)
     if fragment==None:
         print("geomeTRIC requires fragment object")
         exit()
@@ -152,7 +165,7 @@ def geomeTRICOptimizer(theory=None,fragment=None, coordsystem='tric', frozenatom
 
 
     class geomeTRICArgsObject:
-        def __init__(self,eng,constraints, coordsys, maxiter, conv_criteria):
+        def __init__(self,eng,constraintsfile, coordsys, maxiter, conv_criteria):
             self.coordsys=coordsys
             self.maxiter=maxiter
 
@@ -168,7 +181,7 @@ def geomeTRICOptimizer(theory=None,fragment=None, coordsystem='tric', frozenatom
             
             self.prefix='geometric_OPTtraj'
             self.input='dummyinputname'
-            self.constraints=constraints
+            self.constraintsfile=constraintsfile
             #Created log.ini file here. Missing from pip installation for some reason?
             #Storing log.ini in ash dir
             path = os.path.dirname(ash.__file__)
@@ -177,10 +190,10 @@ def geomeTRICOptimizer(theory=None,fragment=None, coordsystem='tric', frozenatom
 
     #Define constraints provided. Write constraints.txt file
     #Frozen atom option. Only for small systems. Not QM/MM etc.
-    constraints=None
+    constraintsfile=None
     if len(frozenatoms) > 0 :
         print("Writing frozen atom constraints")
-        constraints='constraints.txt'
+        constraintsfile='constraints.txt'
         with open("constraints.txt", 'a') as confile:
             confile.write('$freeze\n')
             for frozat in frozenatoms:
@@ -189,7 +202,7 @@ def geomeTRICOptimizer(theory=None,fragment=None, coordsystem='tric', frozenatom
                 confile.write('xyz {}\n'.format(frozenatomindex))
     #Bond constraints
     if bondconstraints is not None :
-        constraints='constraints.txt'
+        constraintsfile='constraints.txt'
         with open("constraints.txt", 'a') as confile:
             if constrainvalue is True:
                 confile.write('$set\n')            
@@ -204,7 +217,7 @@ def geomeTRICOptimizer(theory=None,fragment=None, coordsystem='tric', frozenatom
                     confile.write('distance {} {}\n'.format(bondpair[0]+1,bondpair[1]+1))
     #Angle constraints
     if angleconstraints is not None :
-        constraints='constraints.txt'
+        constraintsfile='constraints.txt'
         with open("constraints.txt", 'a') as confile:
             if constrainvalue is True:
                 confile.write('$set\n')            
@@ -218,7 +231,7 @@ def geomeTRICOptimizer(theory=None,fragment=None, coordsystem='tric', frozenatom
                 else:
                     confile.write('angle {} {} {}\n'.format(angleentry[0]+1,angleentry[1]+1,angleentry[2]+1))
     if dihedralconstraints is not None:
-        constraints='constraints.txt'
+        constraintsfile='constraints.txt'
         with open("constraints.txt", 'a') as confile:
             if constrainvalue is True:
                 confile.write('$set\n')            
@@ -231,8 +244,8 @@ def geomeTRICOptimizer(theory=None,fragment=None, coordsystem='tric', frozenatom
                     confile.write('dihedral {} {} {} {} {}\n'.format(dihedralentry[0]+1,dihedralentry[1]+1,dihedralentry[2]+1,dihedralentry[3]+1, dihedralentry[4] ))
                 else:
                     confile.write('dihedral {} {} {} {}\n'.format(dihedralentry[0]+1,dihedralentry[1]+1,dihedralentry[2]+1,dihedralentry[3]+1))
-    if constraintsfile is not None:
-        constraints=constraintsfile
+    if constraintsinputfile is not None:
+        constraintsfile=constraintsinputfile
 
     #Dealing with convergence criteria
     if convergence_setting is None or convergence_setting == 'ORCA':
@@ -270,7 +283,7 @@ def geomeTRICOptimizer(theory=None,fragment=None, coordsystem='tric', frozenatom
     #Defining Yggdrasill engine object containing geometry and theory. ActiveRegion boolean passed.
     ashengine = Yggdrasillengineclass(mol_geometric_frag,theory, ActiveRegion=ActiveRegion, actatoms=actatoms)
     #Defining args object, containing engine object
-    args=geomeTRICArgsObject(ashengine,constraints,coordsys=coordsystem, maxiter=maxiter, conv_criteria=conv_criteria)
+    args=geomeTRICArgsObject(ashengine,constraintsfile,coordsys=coordsystem, maxiter=maxiter, conv_criteria=conv_criteria)
 
     #Starting geomeTRIC
     geometric.optimize.run_optimizer(**vars(args))
