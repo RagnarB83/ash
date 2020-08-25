@@ -181,7 +181,7 @@ def geomeTRICOptimizer(theory=None,fragment=None, coordsystem='tric', frozenatom
             
             self.prefix='geometric_OPTtraj'
             self.input='dummyinputname'
-            self.constraintsfile=constraintsfile
+            self.constraints=constraintsfile
             #Created log.ini file here. Missing from pip installation for some reason?
             #Storing log.ini in ash dir
             path = os.path.dirname(ash.__file__)

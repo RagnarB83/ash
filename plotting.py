@@ -13,7 +13,7 @@ def Gaussian(x, mu, strength, sigma):
 
 #contourplot
 #Input: dictionary of (X,Y): energy   entries 
-def contourplot(surfacedictionary, label='Label',finalunit=None):
+def contourplot(surfacedictionary, label='Label',finalunit=None, interpolation=None):
     conversionfactor = { 'kcal/mol' : 627.50946900, 'kcalpermol' : 627.50946900, 'kJ/mol' : 2625.499638, 'kJpermol' : 2625.499638, 
                         'eV' : 27.211386245988, 'cm-1' : 219474.6313702 }
     
@@ -54,8 +54,25 @@ def contourplot(surfacedictionary, label='Label',finalunit=None):
 
     #Now we create contour plot
     X, Y = np.meshgrid(x, y)
-    cp=plt.contourf(X, Y, rele_new, 50, alpha=.75, cmap='viridis')
-    C = plt.contour(X, Y, rele_new, 50, colors='black')
+    Z = rele_new
+    
+    
+    print("interpolation:", interpolation)
+    if interpolation is not None:
+        print("Using cubic interpolation")
+        try:
+            from scipy.ndimage import zoom
+        except:
+            print("Problem importing scipy.ndimage. Make sure scipy is installed.")
+            exit()
+        #Calculate smooth data
+        pw = 10 #power of the smooth
+        X = zoom(X, pw)
+        Y = zoom(Y, pw)
+        Z = zoom(Z, pw)
+    
+    cp=plt.contourf(X, Y, Z, 50, alpha=.75, cmap='viridis')
+    C = plt.contour(X, Y, Z, 50, colors='black')
     plt.colorbar(cp)
     plt.xlabel('Coord X')
     plt.ylabel('Coord Y')

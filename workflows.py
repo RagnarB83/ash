@@ -1570,11 +1570,62 @@ def calc_surface(fragment=None, theory=None, type='Unrelaxed', resultfile='surfa
                         write_surfacedict_to_file(surfacedictionary,"surface_results.txt", dimension=2)
                         print("surfacedictionary:", surfacedictionary)
                     else:
-                        print("BOND, ANGLE in dict already. Skipping.")
+                        print("RC1, RC2 values in dict already. Skipping.")
         elif dimension == 1:
-            print("to be done")
-            exit()
+            for RCvalue1 in list(frange(RC1_range[0],RC1_range[1],RC1_range[2])):
+                print("=======================================")
+                print("RCvalue1: {}".format(RCvalue1))
+                
+                if (RCvalue1) not in surfacedictionary:
+                    #Now setting constraints
+                    allconstraints = set_constraints(dimension=1, RCvalue1=RCvalue1)
+                    print("allconstraints:", allconstraints)
+                    #Running zero-theory with optimizer just to set geometry
+                    geomeTRICOptimizer(fragment=fragment, theory=zerotheory, coordsystem='dlc', constraints=allconstraints, constrainvalue=True)
+                    #Single-point ORCA calculation on adjusted geometry
+                    energy = ash.Singlepoint(fragment=fragment, theory=theory)
+                    surfacedictionary[(RCvalue1)] = energy
+                    #Writing dictionary to file
+                    write_surfacedict_to_file(surfacedictionary,"surface_results.txt", dimension=1)
+                    print("surfacedictionary:", surfacedictionary)
+                else:
+                    print("RC1 value in dict already. Skipping.")
     elif type=='Relaxed':
-    	print("not ready")
-    	exit()
+        zerotheory = ash.ZeroTheory()
+        print("Initial surfacedictionary :", surfacedictionary)
+        if dimension == 2:
+            for RCvalue1 in list(frange(RC1_range[0],RC1_range[1],RC1_range[2])):
+                for RCvalue2 in list(frange(RC2_range[0],RC2_range[1],RC2_range[2])):
+                    print("=======================================")
+                    print("RCvalue1: {} RCvalue2: {}".format(RCvalue1,RCvalue2))
+                    
+                    if (RCvalue1,RCvalue2) not in surfacedictionary:
+                        #Now setting constraints
+                        allconstraints = set_constraints(dimension=2, RCvalue1=RCvalue1, RCvalue2=RCvalue2)
+                        print("allconstraints:", allconstraints)
+                        #Running 
+                        energy = geomeTRICOptimizer(fragment=fragment, theory=theory, coordsystem='dlc', constraints=allconstraints, constrainvalue=True)
+                        surfacedictionary[(RCvalue1,RCvalue2)] = energy
+                        #Writing dictionary to file
+                        write_surfacedict_to_file(surfacedictionary,"surface_results.txt", dimension=2)
+                        print("surfacedictionary:", surfacedictionary)
+                    else:
+                        print("RC1, RC2 values in dict already. Skipping.")
+        elif dimension == 1:
+            for RCvalue1 in list(frange(RC1_range[0],RC1_range[1],RC1_range[2])):
+                print("=======================================")
+                print("RCvalue1: {}".format(RCvalue1))
+                
+                if (RCvalue1) not in surfacedictionary:
+                    #Now setting constraints
+                    allconstraints = set_constraints(dimension=1, RCvalue1=RCvalue1)
+                    print("allconstraints:", allconstraints)
+                    #Running zero-theory with optimizer just to set geometry
+                    energy = geomeTRICOptimizer(fragment=fragment, theory=theory, coordsystem='dlc', constraints=allconstraints, constrainvalue=True)
+                    surfacedictionary[(RCvalue1)] = energy
+                    #Writing dictionary to file
+                    write_surfacedict_to_file(surfacedictionary,"surface_results.txt", dimension=1)
+                    print("surfacedictionary:", surfacedictionary)
+                else:
+                    print("RC1 value in dict already. Skipping.")
     return surfacedictionary
