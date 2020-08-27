@@ -1466,6 +1466,8 @@ def read_surfacedict_from_file(file, dimension=None):
         for line in f:
             if len(line) > 1:
                 if dimension==1:
+                    print("line:", line)
+                    print(line.split())
                     key=float(line.split()[0])
                     val=float(line.split()[1])
                     dict[(key)]=val
@@ -1474,14 +1476,15 @@ def read_surfacedict_from_file(file, dimension=None):
                     key1=float(line.split()[0])
                     key2=float(line.split()[1])
                     val=float(line.split()[2])                    
-                dict[(key1,key2)]=val
+                    dict[(key1,key2)]=val
     return dict
 
 def write_surfacedict_to_file(dict,file="surface_results.txt",dimension=None):
     with open(file, 'w') as f:
         for d in dict.items():
             if dimension==1:
-                x=d[0][0]
+                print("d:", d)
+                x=d[0]
                 e=d[1]
                 f.write(str(x)+" "+str(e)+'\n')
             elif dimension==2:
@@ -1490,24 +1493,12 @@ def write_surfacedict_to_file(dict,file="surface_results.txt",dimension=None):
                 e=d[1]
                 f.write(str(x)+" "+str(y)+" "+str(e)+'\n')
 
-#Bondcoordinate_indices=[0,1], Anglecoordinate_indices=[0,1,2], Dihedralcoordinate_indices=[0,1,2,3]
-#RC1_range=[2.0,2.2,0.01]
-#RC2_range=[180,110,-10.0]
-#RC_type='bond'
-#RC_type='angle'
-#RC_indices==[0,1]  [0,2]???????
-#RC_indices=[1,0,2]
-def calc_surface(fragment=None, theory=None, type='Unrelaxed', resultfile='surface_results.txt', runmode='serial', coordsystem='dlc', **kwargs):
+#Calculate 1D or 2D surface, either relaxed or unrelaxed.
+#TODO: Delete
+# TODO: Parallel
+def calc_surface(fragment=None, theory=None, type='Unrelaxed', resultfile='surface_results.txt', runmode='serial', coordsystem='dlc', **kwargs):    
     
-    #runmode: serial or parallel. TODO: Parallel
-    
-    
-    print("kwargs:", kwargs)
-    #Read dict from file. If file exists, read entries, if not, return empty dict
-    surfacedictionary = read_surfacedict_from_file(resultfile, dimension=2)
-    print("Initial surfacedictionary :", surfacedictionary)
-    
-    #Choosing reaction coordinates
+    #Getting reaction coordinates and checking if 1D or 2D
     if 'RC1_range' in kwargs:
         RC1_range=kwargs['RC1_range']
         RC1_type=kwargs['RC1_type']
@@ -1527,7 +1518,12 @@ def calc_surface(fragment=None, theory=None, type='Unrelaxed', resultfile='surfa
         print("RC2_indices:", RC2_indices)
     else:
         dimension=1
-        
+    
+    #Read dict from file. If file exists, read entries, if not, return empty dict
+    surfacedictionary = read_surfacedict_from_file(resultfile, dimension=dimension)
+    print("Initial surfacedictionary :", surfacedictionary)
+    
+    
     #Setting constraints once values are known
     def set_constraints(dimension=None,RCvalue1=None, RCvalue2=None):
         allconstraints = {}
@@ -1547,6 +1543,8 @@ def calc_surface(fragment=None, theory=None, type='Unrelaxed', resultfile='surfa
             allconstraints[RC1_type] = allconstraints[RC1_type] + RC1
         elif dimension == 1:
             RC1=[]
+            #Creating empty lists for each RC type (Note: could be the same)
+            allconstraints[RC1_type] = []
             for RC1_indexlist in RC1_indices:
                 RC1.append(RC1_indexlist+[RCvalue1])
             allconstraints[RC1_type] = allconstraints[RC1_type] + RC1

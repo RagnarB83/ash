@@ -14,6 +14,39 @@ def Gaussian(x, mu, strength, sigma):
     return bandshape
 
 
+
+
+
+
+#reactionprofile_plot
+#Input: dictionary of (X,Y): energy   entries 
+def reactionprofile_plot(surfacedictionary, finalunit=None,label='Label', x_axislabel='Coord', dpi=200, imageformat='png'):
+    conversionfactor = { 'kcal/mol' : 627.50946900, 'kcalpermol' : 627.50946900, 'kJ/mol' : 2625.499638, 'kJpermol' : 2625.499638, 
+                        'eV' : 27.211386245988, 'cm-1' : 219474.6313702 }
+    e=[]
+    coords=[]
+    for i in surfacedictionary:
+        coords.append(i)
+        e.append(surfacedictionary[i])
+    
+    #List of energies and relenergies here
+    refenergy=float(min(e))
+    rele=[]
+    for numb in e:
+        rele.append((numb-refenergy)*conversionfactor[finalunit])
+
+    pointsize=40
+    plt.scatter(coords, rele, color='blue', marker = 'o',  s=pointsize, linewidth=2 )
+    plt.plot(coords, rele, linestyle='-', color='blue', linewidth=1)
+
+    plt.title(label)
+    plt.xlabel(x_axislabel)
+    plt.ylabel('Energy ({})'.format(finalunit))
+    plt.savefig('Plot{}.png'.format(label), format=imageformat, dpi=dpi)
+    print("Created PNG file: Plot{}.png".format(label))
+
+
+
 #contourplot
 #Input: dictionary of (X,Y): energy   entries 
 #Good colormaps: viridis, viridis_r, inferno, inferno_r, plasma, plasma_r, magma, magma_r
