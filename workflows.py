@@ -1498,7 +1498,9 @@ def write_surfacedict_to_file(dict,file="surface_results.txt",dimension=None):
 #Calculate 1D or 2D surface, either relaxed or unrelaxed.
 # TODO: Parallelize surfacepoint calculations
 def calc_surface(fragment=None, theory=None, type='Unrelaxed', resultfile='surface_results.txt', runmode='serial', coordsystem='dlc', **kwargs):    
-    
+    print("="*50)
+    print("CALC_SURFACE FUNCTION")
+    print("="*50)
     #Getting reaction coordinates and checking if 1D or 2D
     if 'RC1_range' in kwargs:
         RC1_range=kwargs['RC1_range']
@@ -1519,6 +1521,15 @@ def calc_surface(fragment=None, theory=None, type='Unrelaxed', resultfile='surfa
         print("RC2_indices:", RC2_indices)
     else:
         dimension=1
+    
+    #Calc number of surfacepoints
+    if dimension==2:
+        range2=math.ceil((RC2_range[0]-RC2_range[1])/RC2_range[2])
+        #print("range2", range2)
+        range1=math.ceil((RC1_range[0]-RC1_range[1])/RC1_range[2])
+        totalnumpoints=range2*range1
+        #print("range1", range1)
+        print("Number of surfacepoints to calculate ", totalnumpoints)
     
     #Read dict from file. If file exists, read entries, if not, return empty dict
     surfacedictionary = read_surfacedict_from_file(resultfile, dimension=dimension)
@@ -1551,14 +1562,19 @@ def calc_surface(fragment=None, theory=None, type='Unrelaxed', resultfile='surfa
             allconstraints[RC1_type] = allconstraints[RC1_type] + RC1
         return allconstraints
     
+    pointcount=0
+    
     if type=='Unrelaxed':
         zerotheory = ash.ZeroTheory()
         print("Initial surfacedictionary :", surfacedictionary)
         if dimension == 2:
             for RCvalue1 in list(frange(RC1_range[0],RC1_range[1],RC1_range[2])):
                 for RCvalue2 in list(frange(RC2_range[0],RC2_range[1],RC2_range[2])):
+                    pointcount+=1
                     print("=======================================")
+                    print("Surfacepoint: {} / {}".format(pointcount,totalnumpoints))
                     print("RCvalue1: {} RCvalue2: {}".format(RCvalue1,RCvalue2))
+                    print("=======================================")
                     
                     if (RCvalue1,RCvalue2) not in surfacedictionary:
                         #Now setting constraints
@@ -1577,8 +1593,11 @@ def calc_surface(fragment=None, theory=None, type='Unrelaxed', resultfile='surfa
                 print("surfacedictionary:", surfacedictionary)
         elif dimension == 1:
             for RCvalue1 in list(frange(RC1_range[0],RC1_range[1],RC1_range[2])):
+                pointcount+=1
                 print("=======================================")
+                print("Surfacepoint: {} / {}".format(pointcount,totalnumpoints))
                 print("RCvalue1: {}".format(RCvalue1))
+                print("=======================================")
                 
                 if (RCvalue1) not in surfacedictionary:
                     #Now setting constraints
@@ -1600,9 +1619,11 @@ def calc_surface(fragment=None, theory=None, type='Unrelaxed', resultfile='surfa
         if dimension == 2:
             for RCvalue1 in list(frange(RC1_range[0],RC1_range[1],RC1_range[2])):
                 for RCvalue2 in list(frange(RC2_range[0],RC2_range[1],RC2_range[2])):
+                    pointcount+=1
                     print("=======================================")
+                    print("Surfacepoint: {} / {}".format(pointcount,totalnumpoints))
                     print("RCvalue1: {} RCvalue2: {}".format(RCvalue1,RCvalue2))
-                    
+                    print("=======================================")
                     if (RCvalue1,RCvalue2) not in surfacedictionary:
                         #Now setting constraints
                         allconstraints = set_constraints(dimension=2, RCvalue1=RCvalue1, RCvalue2=RCvalue2)
@@ -1618,8 +1639,11 @@ def calc_surface(fragment=None, theory=None, type='Unrelaxed', resultfile='surfa
                 print("surfacedictionary:", surfacedictionary)
         elif dimension == 1:
             for RCvalue1 in list(frange(RC1_range[0],RC1_range[1],RC1_range[2])):
+                pointcount+=1
                 print("=======================================")
+                print("Surfacepoint: {} / {}".format(pointcount,totalnumpoints))
                 print("RCvalue1: {}".format(RCvalue1))
+                print("=======================================")
                 
                 if (RCvalue1) not in surfacedictionary:
                     #Now setting constraints
