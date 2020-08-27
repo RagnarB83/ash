@@ -1541,15 +1541,15 @@ def calc_surface(fragment=None, theory=None, type='Unrelaxed', resultfile='surfa
             
             for RC2_indexlist in RC2_indices:
                 RC2.append(RC2_indexlist+[RCvalue2])
-            allconstraints[RC2_type].append(RC2)
+            allconstraints[RC2_type] = allconstraints[RC2_type] + RC2
             for RC1_indexlist in RC1_indices:
                 RC1.append(RC1_indexlist+[RCvalue1])
-            allconstraints[RC1_type].append(RC1)
+            allconstraints[RC1_type] = allconstraints[RC1_type] + RC1
         elif dimension == 1:
             RC1=[]
             for RC1_indexlist in RC1_indices:
                 RC1.append(RC1_indexlist+[RCvalue1])
-            allconstraints[RC1_type].append(RC1)
+            allconstraints[RC1_type] = allconstraints[RC1_type] + RC1
         return allconstraints
     
     if type=='Unrelaxed':
