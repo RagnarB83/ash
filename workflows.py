@@ -1572,9 +1572,10 @@ def calc_surface(fragment=None, theory=None, type='Unrelaxed', resultfile='surfa
                         surfacedictionary[(RCvalue1,RCvalue2)] = energy
                         #Writing dictionary to file
                         write_surfacedict_to_file(surfacedictionary,"surface_results.txt", dimension=2)
-                print("surfacedictionary:", surfacedictionary)
+
                     else:
                         print("RC1, RC2 values in dict already. Skipping.")
+                print("surfacedictionary:", surfacedictionary)
         elif dimension == 1:
             for RCvalue1 in list(frange(RC1_range[0],RC1_range[1],RC1_range[2])):
                 print("=======================================")
@@ -1612,9 +1613,10 @@ def calc_surface(fragment=None, theory=None, type='Unrelaxed', resultfile='surfa
                         surfacedictionary[(RCvalue1,RCvalue2)] = energy
                         #Writing dictionary to file
                         write_surfacedict_to_file(surfacedictionary,"surface_results.txt", dimension=2)
-                print("surfacedictionary:", surfacedictionary)
+
                     else:
                         print("RC1, RC2 values in dict already. Skipping.")
+                print("surfacedictionary:", surfacedictionary)
         elif dimension == 1:
             for RCvalue1 in list(frange(RC1_range[0],RC1_range[1],RC1_range[2])):
                 print("=======================================")
