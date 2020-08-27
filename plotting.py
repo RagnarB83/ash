@@ -52,7 +52,7 @@ def reactionprofile_plot(surfacedictionary, finalunit=None,label='Label', x_axis
 #Good colormaps: viridis, viridis_r, inferno, inferno_r, plasma, plasma_r, magma, magma_r
 # Less recommended: jet, jet_r
 def contourplot(surfacedictionary, label='Label',x_axislabel='Coord', y_axislabel='Coord', finalunit=None, interpolation='Cubic', 
-                interpolparameter=9, colormap='inferno_r', dpi=200, imageformat='png'):
+                interpolparameter=10, colormap='inferno_r', dpi=200, imageformat='png'):
     
     conversionfactor = { 'kcal/mol' : 627.50946900, 'kcalpermol' : 627.50946900, 'kJ/mol' : 2625.499638, 'kJpermol' : 2625.499638, 
                         'eV' : 27.211386245988, 'cm-1' : 219474.6313702 }
@@ -121,25 +121,21 @@ def contourplot(surfacedictionary, label='Label',x_axislabel='Coord', y_axislabe
         print("Using cubic power:", interpolparameter)
         #Cubic interpolation. Default power is 10 (should be generally good)
         pw = interpolparameter #power of the smoothing function
-        X = zoom(X, pw)
+        #print(X)
+        X = zoom(X, pw, mode='nearest')
 
-        
+        #print(X[0])
         if X[0][-1] == 0.0:
+            print(X[0])
             #Zero value sometimes when cubic power is 10 or larger?
+            #Related to bug or ill-defined behaviour of zoom. mode='nearest' seems to solve issue
+            #Probably related to what happens when interpolated value is right on edge of range. If it falls right on then a zero may get added.
+            # mode='nearest' seems to give the value instead
             print("problem. zero value exiting")
             exit()
             
-        Y = zoom(Y, pw)
-        
-        #This seems to fail for large list of lists. Need to maybe convert to a large ndarray first and then back??
-        #TODO. FIXX!!!!!!!!!
-        #print(Z)
-        #print("here")
-        #Zn = np.vstack(Z)
-        Z = zoom(Z, pw)
-
-    #print("X:", X)
-    #print("X[0]", X[0])
+        Y = zoom(Y, pw, mode='nearest')
+        Z = zoom(Z, pw, mode='nearest')
 
     cp=plt.contourf(X, Y, Z, 50, alpha=.75, cmap=colormap)
     C = plt.contour(X, Y, Z, 50, colors='black')
