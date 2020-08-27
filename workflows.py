@@ -1497,7 +1497,7 @@ def write_surfacedict_to_file(dict,file="surface_results.txt",dimension=None):
 #RC_type='angle'
 #RC_indices==[0,1]  [0,2]???????
 #RC_indices=[1,0,2]
-def calc_surface(fragment=None, theory=None, type='Unrelaxed', resultfile='surface_results.txt', runmode='serial', **kwargs):
+def calc_surface(fragment=None, theory=None, type='Unrelaxed', resultfile='surface_results.txt', runmode='serial', coordsystem='dlc', **kwargs):
     
     #runmode: serial or parallel. TODO: Parallel
     
@@ -1566,7 +1566,7 @@ def calc_surface(fragment=None, theory=None, type='Unrelaxed', resultfile='surfa
                         allconstraints = set_constraints(dimension=2, RCvalue1=RCvalue1, RCvalue2=RCvalue2)
                         print("allconstraints:", allconstraints)
                         #Running zero-theory with optimizer just to set geometry
-                        geomeTRICOptimizer(fragment=fragment, theory=zerotheory, coordsystem='dlc', constraints=allconstraints, constrainvalue=True)
+                        geomeTRICOptimizer(fragment=fragment, theory=zerotheory, coordsystem=coordsystem, constraints=allconstraints, constrainvalue=True)
                         #Single-point ORCA calculation on adjusted geometry
                         energy = ash.Singlepoint(fragment=fragment, theory=theory)
                         surfacedictionary[(RCvalue1,RCvalue2)] = energy
@@ -1586,7 +1586,7 @@ def calc_surface(fragment=None, theory=None, type='Unrelaxed', resultfile='surfa
                     allconstraints = set_constraints(dimension=1, RCvalue1=RCvalue1)
                     print("allconstraints:", allconstraints)
                     #Running zero-theory with optimizer just to set geometry
-                    geomeTRICOptimizer(fragment=fragment, theory=zerotheory, coordsystem='dlc', constraints=allconstraints, constrainvalue=True)
+                    geomeTRICOptimizer(fragment=fragment, theory=zerotheory, coordsystem=coordsystem, constraints=allconstraints, constrainvalue=True)
                     #Single-point ORCA calculation on adjusted geometry
                     energy = ash.Singlepoint(fragment=fragment, theory=theory)
                     surfacedictionary[(RCvalue1)] = energy
@@ -1609,7 +1609,7 @@ def calc_surface(fragment=None, theory=None, type='Unrelaxed', resultfile='surfa
                         allconstraints = set_constraints(dimension=2, RCvalue1=RCvalue1, RCvalue2=RCvalue2)
                         print("allconstraints:", allconstraints)
                         #Running 
-                        energy = geomeTRICOptimizer(fragment=fragment, theory=theory, coordsystem='dlc', constraints=allconstraints, constrainvalue=True)
+                        energy = geomeTRICOptimizer(fragment=fragment, theory=theory, coordsystem=coordsystem, constraints=allconstraints, constrainvalue=True)
                         surfacedictionary[(RCvalue1,RCvalue2)] = energy
                         #Writing dictionary to file
                         write_surfacedict_to_file(surfacedictionary,"surface_results.txt", dimension=2)
@@ -1627,7 +1627,7 @@ def calc_surface(fragment=None, theory=None, type='Unrelaxed', resultfile='surfa
                     allconstraints = set_constraints(dimension=1, RCvalue1=RCvalue1)
                     print("allconstraints:", allconstraints)
                     #Running zero-theory with optimizer just to set geometry
-                    energy = geomeTRICOptimizer(fragment=fragment, theory=theory, coordsystem='dlc', constraints=allconstraints, constrainvalue=True)
+                    energy = geomeTRICOptimizer(fragment=fragment, theory=theory, coordsystem=coordsystem, constraints=allconstraints, constrainvalue=True)
                     surfacedictionary[(RCvalue1)] = energy
                     #Writing dictionary to file
                     write_surfacedict_to_file(surfacedictionary,"surface_results.txt", dimension=1)
