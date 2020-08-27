@@ -52,7 +52,7 @@ def reactionprofile_plot(surfacedictionary, finalunit=None,label='Label', x_axis
 #Good colormaps: viridis, viridis_r, inferno, inferno_r, plasma, plasma_r, magma, magma_r
 # Less recommended: jet, jet_r
 def contourplot(surfacedictionary, label='Label',x_axislabel='Coord', y_axislabel='Coord', finalunit=None, interpolation='Cubic', 
-                interpolparameter=10, colormap='inferno_r', dpi=200, imageformat='png'):
+                interpolparameter=9, colormap='inferno_r', dpi=200, imageformat='png'):
     
     conversionfactor = { 'kcal/mol' : 627.50946900, 'kcalpermol' : 627.50946900, 'kJ/mol' : 2625.499638, 'kJpermol' : 2625.499638, 
                         'eV' : 27.211386245988, 'cm-1' : 219474.6313702 }
@@ -80,21 +80,33 @@ def contourplot(surfacedictionary, label='Label',x_axislabel='Coord', y_axislabe
     st=[]
     for ind in range(0,len(x_c)):
         st.append((x_c[ind], y_c[ind], rele[ind]))
+
     rele_new=[]
     curr=[]
+
     for yitem in y:
         for xitem in x:
             for nz in range(0,len(st)):
-                if xitem in st[nz] and yitem in st[nz]:
+                #print("nz is {} an st[nz] is {}".format(nz,st[nz]))
+                if (xitem,yitem) == st[nz][0:2]:
+                #if xitem in st[nz][0:2] and yitem in st[nz][0:2]:
+                    #print("if true. Adding st[nz] : {} to curr".format(st[nz]))
                     curr.append(st[nz][2])
-                    energy=st[nz][2]
+                    #print("Here xitem is {} and yitem is {}".format(xitem,yitem))
+                    #print("Here: curr is:", curr)
+                    #print("Here: len curr is:", len(curr))
+                    #exit()
+                    #energy=st[nz][2]
         rele_new.append(curr)
+        #print("rele_new:", rele_new)
         curr=[]
 
+
     #Now we create contour plot
+
     X, Y = np.meshgrid(x, y)
+
     Z = rele_new
-    
     
     print("interpolation:", interpolation)
     if interpolation is not None:
@@ -110,9 +122,25 @@ def contourplot(surfacedictionary, label='Label',x_axislabel='Coord', y_axislabe
         #Cubic interpolation. Default power is 10 (should be generally good)
         pw = interpolparameter #power of the smoothing function
         X = zoom(X, pw)
+
+        
+        if X[0][-1] == 0.0:
+            #Zero value sometimes when cubic power is 10 or larger?
+            print("problem. zero value exiting")
+            exit()
+            
         Y = zoom(Y, pw)
+        
+        #This seems to fail for large list of lists. Need to maybe convert to a large ndarray first and then back??
+        #TODO. FIXX!!!!!!!!!
+        #print(Z)
+        #print("here")
+        #Zn = np.vstack(Z)
         Z = zoom(Z, pw)
-    
+
+    #print("X:", X)
+    #print("X[0]", X[0])
+
     cp=plt.contourf(X, Y, Z, 50, alpha=.75, cmap=colormap)
     C = plt.contour(X, Y, Z, 50, colors='black')
     plt.colorbar(cp)

@@ -1458,9 +1458,11 @@ def thermochemprotocol(SPprotocol=None, fraglist=None, stoichiometry=None, orcad
 # 2D: (coordinate1,coordinate2) : energy
 #TODO: Make more general
 def read_surfacedict_from_file(file, dimension=None):
+    print("Attempting to read old results file...")
     dict = {}
     #If no file then return empty dict
     if os.path.isfile(file) is False:
+        print("No file found.")
         return dict
     with open(file) as f:
         for line in f:
@@ -1494,8 +1496,7 @@ def write_surfacedict_to_file(dict,file="surface_results.txt",dimension=None):
                 f.write(str(x)+" "+str(y)+" "+str(e)+'\n')
 
 #Calculate 1D or 2D surface, either relaxed or unrelaxed.
-#TODO: Delete
-# TODO: Parallel
+# TODO: Parallelize surfacepoint calculations
 def calc_surface(fragment=None, theory=None, type='Unrelaxed', resultfile='surface_results.txt', runmode='serial', coordsystem='dlc', **kwargs):    
     
     #Getting reaction coordinates and checking if 1D or 2D
