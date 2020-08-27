@@ -1535,17 +1535,21 @@ def calc_surface(fragment=None, theory=None, type='Unrelaxed', resultfile='surfa
         if dimension == 2:
             RC2=[]
             RC1=[]
+            #Creating empty lists for each RC type (Note: could be the same)
+            allconstraints[RC1_type] = []
+            allconstraints[RC2_type] = []
+            
             for RC2_indexlist in RC2_indices:
                 RC2.append(RC2_indexlist+[RCvalue2])
-            allconstraints[RC2_type] = RC2
+            allconstraints[RC2_type].append(RC2)
             for RC1_indexlist in RC1_indices:
                 RC1.append(RC1_indexlist+[RCvalue1])
-            allconstraints[RC1_type] = RC1
+            allconstraints[RC1_type].append(RC1)
         elif dimension == 1:
             RC1=[]
             for RC1_indexlist in RC1_indices:
                 RC1.append(RC1_indexlist+[RCvalue1])
-            allconstraints[RC1_type] = RC1
+            allconstraints[RC1_type].append(RC1)
         return allconstraints
     
     if type=='Unrelaxed':
@@ -1568,7 +1572,7 @@ def calc_surface(fragment=None, theory=None, type='Unrelaxed', resultfile='surfa
                         surfacedictionary[(RCvalue1,RCvalue2)] = energy
                         #Writing dictionary to file
                         write_surfacedict_to_file(surfacedictionary,"surface_results.txt", dimension=2)
-                        print("surfacedictionary:", surfacedictionary)
+                print("surfacedictionary:", surfacedictionary)
                     else:
                         print("RC1, RC2 values in dict already. Skipping.")
         elif dimension == 1:
@@ -1608,7 +1612,7 @@ def calc_surface(fragment=None, theory=None, type='Unrelaxed', resultfile='surfa
                         surfacedictionary[(RCvalue1,RCvalue2)] = energy
                         #Writing dictionary to file
                         write_surfacedict_to_file(surfacedictionary,"surface_results.txt", dimension=2)
-                        print("surfacedictionary:", surfacedictionary)
+                print("surfacedictionary:", surfacedictionary)
                     else:
                         print("RC1, RC2 values in dict already. Skipping.")
         elif dimension == 1:
