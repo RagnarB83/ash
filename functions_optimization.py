@@ -47,10 +47,8 @@ def write_xyz_trajectory(file, coords, elems, titleline):
 # https://wiki.fysik.dtu.dk/ase/_modules/ase/optimize/gpmin/gpmin.html#GPMin
 # Interface DL-FIND (internal coords, HDLC etc.): https://www.chemshell.org/dl-find
 
-
-
-#Yggdrasill Cartesian Optimizer function for basic usage
-def Optimizer(fragment=None, theory='', optimizer='', maxiter=50, frozen_atoms=None, RMSGtolerance=0.0001, MaxGtolerance=0.0003):
+#ASH Cartesian Optimizer function for basic usage
+def SimpleOpt(fragment=None, theory='', optimizer='', maxiter=50, frozen_atoms=None, RMSGtolerance=0.0001, MaxGtolerance=0.0003):
     if fragment is not None:
         pass
     else:
@@ -256,18 +254,6 @@ def Optimizer(fragment=None, theory='', optimizer='', maxiter=50, frozen_atoms=N
         blankline()
         print_time_rel_and_tot(CheckpointTime, beginTime, 'Opt Step')
     print(BC.FAIL,"Optimization did not converge in {} iteration".format(maxiter),BC.END)
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 
