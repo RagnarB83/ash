@@ -2041,7 +2041,10 @@ def DLPNO_CC_CBS_SP(cardinals = "2/3", basisfamily="def2", fragment=None, charge
 #Provide crest/xtb info, MLtheory object (e.g. ORCA), HLtheory object (e.g. ORCA)
 def confsampler_protocol(fragment=None, crestdir=None, xtbmethod='GFN2-xTB', MLtheory=None, 
                          HLtheory=None, orcadir=None, numcores=1, charge=None, mult=None):
-
+    print("="*50)
+    print("CONFSAMPLER FUNCTION")
+    print("="*50)
+    
     #1. Calling crest
     #call_crest(fragment=molecule, xtbmethod='GFN2-xTB', crestdir=crestdir, charge=charge, mult=mult, solvent='H2O', energywindow=6 )
     call_crest(fragment=fragment, xtbmethod=xtbmethod, crestdir=crestdir, charge=charge, mult=mult, numcores=numcores)
@@ -2076,7 +2079,7 @@ def confsampler_protocol(fragment=None, crestdir=None, xtbmethod='GFN2-xTB', MLt
     for index,conformer in enumerate(list_conformer_frags):
         print("")
         print("Performing High-level calculation for ML-optimized Conformer ", index)
-        HLenergy = Singlepoint(theory=HLTheory, fragment=conformer)
+        HLenergy = ash.Singlepoint(theory=HLTheory, fragment=conformer)
         HL_energies.append(HLenergy)
 
 
