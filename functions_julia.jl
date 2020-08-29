@@ -16,7 +16,6 @@ using Distances
 
 #Connectivity (fraglists) for whole fragment
 function calc_connectivity(coords,elems,conndepth,scale, tol,eldict_covrad)
-	println("Inside calc_connectivity (julia)")
 	#0-index based atomlist
 	atomlist=[0:length(elems)-1;]
 	return calc_fraglist_for_atoms(atomlist,coords, elems, conndepth, scale, tol,eldict_covrad)

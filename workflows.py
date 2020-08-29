@@ -9,6 +9,7 @@ import constants
 import math
 from functions_ORCA import grab_HF_and_corr_energies
 from interface_geometric import *
+from interface_crest import *
 
 #Various workflows and associated sub-functions
 
@@ -1609,7 +1610,7 @@ def write_surfacedict_to_file(dict,file="surface_results.txt",dimension=None):
 
 #Calculate 1D or 2D surface, either relaxed or unrelaxed.
 # TODO: Parallelize surfacepoint calculations
-def calc_surface(fragment=None, theory=None, type='Unrelaxed', resultfile='surface_results.txt', 
+def calc_surface(fragment=None, theory=None, workflow=None, type='Unrelaxed', resultfile='surface_results.txt', 
                  runmode='serial', coordsystem='dlc', **kwargs):    
     print("="*50)
     print("CALC_SURFACE FUNCTION")
@@ -1751,7 +1752,10 @@ def calc_surface(fragment=None, theory=None, type='Unrelaxed', resultfile='surfa
                             #Running zero-theory with optimizer just to set geometry
                             geomeTRICOptimizer(fragment=fragment, theory=zerotheory, coordsystem=coordsystem, constraints=allconstraints, constrainvalue=True)
                             #Single-point ORCA calculation on adjusted geometry
-                            energy = ash.Singlepoint(fragment=fragment, theory=theory)
+                            if theory is not None:
+                                energy = ash.Singlepoint(fragment=fragment, theory=theory)
+                            elif workflow is not None:
+                                
                             surfacedictionary[(RCvalue1,RCvalue2)] = energy
                             #Writing dictionary to file
                             write_surfacedict_to_file(surfacedictionary,"surface_results.txt", dimension=2)
@@ -2035,3 +2039,79 @@ def DLPNO_CC_CBS_SP(cardinals = "2/3", basisfamily="def2", fragment=None, charge
 
     #return final energy and also dictionary with energy components
     return E_total, E_dict
+
+#Provide crest/xtb info, MLtheory object (e.g. ORCA), HLtheory object (e.g. ORCA)
+def confsampler_protocol(fragment=None, crestdir=None, xtbmethod='GFN2-xTB', MLtheory=None, 
+                         HLtheory=None, orcadir=None, numcores=1, charge=None, mult=None):
+
+    #1. Calling crest
+    #call_crest(fragment=molecule, xtbmethod='GFN2-xTB', crestdir=crestdir, charge=charge, mult=mult, solvent='H2O', energywindow=6 )
+    call_crest(fragment=fragment, xtbmethod=xtbmethod, crestdir=crestdir, charge=charge, mult=mult, numcores=numcores)
+
+    #2. Grab low-lying conformers from crest_conformers.xyz as list of ASH fragments.
+    list_conformer_frags, xtb_energies = get_crest_conformers()
+
+    print("list_conformer_frags:", list_conformer_frags)
+    print("")
+    print("Crest Conformer Searches done. Found {} conformers".format(len(xtb_energies)))
+    print("xTB energies: ", xtb_energies)
+
+    #3. Run ML (e.g. DFT) geometry optimizations for each crest-conformer
+
+    ML_energies=[]
+    print("")
+    for index,conformer in enumerate(list_conformer_frags):
+        print("")
+        print("Performing ML Geometry Optimization for Conformer ", index)
+        geomeTRICOptimizer(fragment=conformer, theory=MLtheory, coordsystem='tric')
+        ML_energies.append(conformer.energy)
+        #Saving ASH fragment and XYZ file for each ML-optimized conformer
+        os.rename('Fragment-optimized.ygg', 'Conformer{}_ML.ygg'.format(index))
+        os.rename('Fragment-optimized.xyz', 'Conformer{}_ML.xyz'.format(index))
+
+    print("")
+    print("ML Geometry Optimization done")
+    print("ML_energies: ", ML_energies)
+
+    #4.Run high-level thery. Provide HLtheory object (typically ORCATheory)
+    HL_energies=[]
+    for index,conformer in enumerate(list_conformer_frags):
+        print("")
+        print("Performing High-level calculation for ML-optimized Conformer ", index)
+        HLenergy = Singlepoint(theory=HLTheory, fragment=conformer)
+        HL_energies.append(HLenergy)
+
+
+    print("")
+    print("=================")
+    print("FINAL RESULTS")
+    print("=================")
+
+    #Printing total energies
+    print("")
+    print(" Conformer   xTB-energy    ML-energy    HL-energy (Eh)")
+    print("----------------------------------------------------------------")
+
+    min_xtbenergy=min(xtb_energies)
+    min_MLenergy=min(ML_energies)
+    min_HLenergy=min(HL_energies)
+
+    for index,(xtb_en,ML_en,HL_en) in enumerate(zip(xtb_energies,ML_energies, HL_energies)):
+        print("{:10} {:13.10f} {:13.10f} {:13.10f}".format(index,xtb_en, ML_en, HL_en))
+
+    print("")
+    #Printing relative energies
+    min_xtbenergy=min(xtb_energies)
+    min_MLenergy=min(ML_energies)
+    min_HLenergy=min(HL_energies)
+    harkcal = 627.50946900
+    print(" Conformer   xTB-energy    ML-energy    HL-energy (kcal/mol)")
+    print("----------------------------------------------------------------")
+    for index,(xtb_en,ML_en,HL_en) in enumerate(zip(xtb_energies,ML_energies, HL_energies)):
+        rel_xtb=(xtb_en-min_xtbenergy)*harkcal
+        rel_ML=(ML_en-min_MLenergy)*harkcal
+        rel_HL=(HL_en-min_HLenergy)*harkcal
+        print("{:10} {:13.10f} {:13.10f} {:13.10f}".format(index,rel_xtb, rel_ML, rel_HL))
+
+    print("")
+    print("Workflow done!")
