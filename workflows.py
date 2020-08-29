@@ -1754,8 +1754,6 @@ def calc_surface(fragment=None, theory=None, workflow=None, type='Unrelaxed', re
                             #Single-point ORCA calculation on adjusted geometry
                             if theory is not None:
                                 energy = ash.Singlepoint(fragment=fragment, theory=theory)
-                            elif workflow is not None:
-                                
                             surfacedictionary[(RCvalue1,RCvalue2)] = energy
                             #Writing dictionary to file
                             write_surfacedict_to_file(surfacedictionary,"surface_results.txt", dimension=2)
