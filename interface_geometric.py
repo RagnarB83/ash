@@ -9,21 +9,22 @@ import time
 ########################
 # Interface to geomeTRIC Optimization Library
 ########################
-
-'''Wrapper function around geomeTRIC code. Take theory and fragment info from ASH
-Supports frozen atoms and bond/angle/dihedral constraints in native code. Use frozenatoms and bondconstraints etc. for this.
-New feature: Active Region for huge systems. Use ActiveRegion=True and provide actatoms list.
-Active-atom coords (e.g. only QM region) are only provided to geomeTRIC during optimization while rest is frozen.
-Needed as discussed here: https://github.com/leeping/geomeTRIC/commit/584869707aca1dbeabab6fe873fdf139d384ca66#diff-2af7dd72b77dac63cea64c052a549fe0
-'''
-
 # Todo: Add optional print-coords in each step option. Maybe only print QM-coords (if QM/MM).
 # https://github.com/leeping/geomeTRIC/blob/master/examples/constraints.txt
 # bond,angle and dihedral constraints work. If only atom indices provided and constrainvalue is False then constraint at current position
 # If constrainvalue=True then last entry should be value of constraint
-#TODO: Add scan feature also??
-def geomeTRICOptimizer(theory=None,fragment=None, coordsystem='tric', frozenatoms=[], constraintsinputfile=None, constraints=None, constrainvalue=False,
-                       maxiter=50, ActiveRegion=False, actatoms=[], convergence_setting=None):
+
+
+def geomeTRICOptimizer(theory=None,fragment=None, coordsystem='tric', frozenatoms=[], constraintsinputfile=None, constraints=None, 
+                       constrainvalue=False, maxiter=50, ActiveRegion=False, actatoms=[], convergence_setting=None):
+    """
+    Wrapper function around geomeTRIC code. Take theory and fragment info from ASH
+    Supports frozen atoms and bond/angle/dihedral constraints in native code. Use frozenatoms and bondconstraints etc. for this.
+    New feature: Active Region for huge systems. Use ActiveRegion=True and provide actatoms list.
+    Active-atom coords (e.g. only QM region) are only provided to geomeTRIC during optimization while rest is frozen.
+    Needed as discussed here: https://github.com/leeping/geomeTRIC/commit/584869707aca1dbeabab6fe873fdf139d384ca66#diff-2af7dd72b77dac63cea64c052a549fe0
+    """
+    
     try:
         os.remove('geometric_OPTtraj.log')
         os.remove('geometric_OPTtraj.xyz')
@@ -293,9 +294,9 @@ def geomeTRICOptimizer(theory=None,fragment=None, coordsystem='tric', frozenatom
     geometric.optimize.run_optimizer(**vars(args))
     time.sleep(1)
     blankline()
-    #print("geomeTRIC Geometry optimization converged in {} steps!".format(geometric.iteration))
     print("geomeTRIC Geometry optimization converged in {} steps!".format(ashengine.iteration_count))
     blankline()
+
 
     #Updating energy and coordinates of ASH fragment before ending
     fragment.set_energy(ashengine.energy)
@@ -303,6 +304,7 @@ def geomeTRICOptimizer(theory=None,fragment=None, coordsystem='tric', frozenatom
     #
     #print("fragment.elems: ", fragment.elems)
     #print("ashengine.full_current_coords : ", ashengine.full_current_coords)
+    #Replacing coordinates in fragment
     fragment.replace_coords(fragment.elems,ashengine.full_current_coords, conn=False)
     
     #Writing out fragment file and XYZ file
@@ -314,4 +316,5 @@ def geomeTRICOptimizer(theory=None,fragment=None, coordsystem='tric', frozenatom
     print("TO BE ADDED HERE: Internal coordinate table (bond-lengths etc.) for optimized geometry")
 
     blankline()
+    #Now returning final energy
     return ashengine.energy

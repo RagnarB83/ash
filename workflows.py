@@ -1483,24 +1483,24 @@ def DLPNO_W2theory_SP(fragment=None, charge=None, orcadir=None, mult=None, stabi
     return W2_total, E_dict
 
 #Thermochemistry protocol. Take list of fragments, stoichiometry, etc
-#Requires orcadir, inputline for geo-opt. ORCA-bssed
+#Requires orcadir, and theory level, typically an ORCATheory object
 #Make more general. Not sure. ORCA makes most sense for geo-opt and HL theory
-def thermochemprotocol(SPprotocol=None, fraglist=None, stoichiometry=None, orcadir=None, numcores=None,
-                       Opt_protocol_inputline=None, Opt_protocol_blocks=None, pnosetting='NormalPNO', F12level='DZ'):
-    if Opt_protocol_blocks is None:
-        Opt_protocol_blocks=""
+def thermochemprotocol( Opt_theory=None, SPprotocol=None, fraglist=None, stoichiometry=None, orcadir=None, numcores=None,
+                       pnosetting='NormalPNO', F12level='DZ'):
 
+    
     #DFT Opt+Freq  and Single-point High-level workflow
     FinalEnergies = []; list_of_dicts = []; ZPVE_Energies=[]
     for species in fraglist:
         #Only Opt+Freq for molecules, not atoms
         if species.numatoms != 1:
             #DFT-opt
-            ORCAcalc = ash.ORCATheory(orcadir=orcadir, charge=species.charge, mult=species.mult,
-                orcasimpleinput=Opt_protocol_inputline, orcablocks=Opt_protocol_blocks, nprocs=numcores)
-            geomeTRICOptimizer(theory=ORCAcalc,fragment=species)
+            #ORCAcalc = ash.ORCATheory(orcadir=orcadir, charge=species.charge, mult=species.mult,
+            #    orcasimpleinput=Opt_protocol_inputline, orcablocks=Opt_protocol_blocks, nprocs=numcores)
+            #TODO: Check if this works in general. At least for ORCA.
+            geomeTRICOptimizer(theory=Opt_theory,fragment=species)
             #DFT-FREQ
-            thermochem = ash.NumFreq(fragment=species, theory=ORCAcalc, npoint=2, runmode='serial')
+            thermochem = ash.NumFreq(fragment=species, theory=Opt_theory, npoint=2, runmode='serial')
             ZPVE = thermochem['ZPVE']
         else:
             #Setting ZPVE to 0.0.
@@ -1521,9 +1521,10 @@ def thermochemprotocol(SPprotocol=None, fraglist=None, stoichiometry=None, orcad
         elif SPprotocol == 'DLPNO-W1-F12':
             FinalE, componentsdict = DLPNO_W1F12theory_SP(fragment=species, charge=species.charge,
                         mult=species.mult, orcadir=orcadir, numcores=numcores, memory=5000, pnosetting=pnosetting)
-        #elif SPprotocol == 'DLPNO_CC_CBS':
-        #    FinalE, componentsdict = DLPNO_CC_CBS_SP(fragment=species, charge=species.charge,
-        #                mult=species.mult, orcadir=orcadir, numcores=numcores, memory=5000, pnosetting=pnosetting)
+        elif SPprotocol == 'DLPNO_CC_CBS':
+            #TODO: Allow changing basisfamily and cardinals here?? Or should we stick with mostly simple non-changeable protocols here?
+            FinalE, componentsdict = DLPNO_CC_CBS_SP(fragment=species, charge=species.charge,
+                        mult=species.mult, orcadir=orcadir, numcores=numcores, memory=5000, pnosetting=pnosetting)
         else:
             print("Unknown Singlepoint protocol")
             exit()
@@ -2003,32 +2004,11 @@ def DLPNO_CC_CBS_SP(cardinals = "2/3", basisfamily="def2", fragment=None, charge
     #Core-correlation + scalar relativistic as joint correction
     ############################################################
     #DISABLED FOR NOW
-    #ccsdt_mtsmall_NoFC_line="! {} DKH W1-mtsmall  {} {} nofrozencore {}".format(ccsdtkeyword, auxbasis, pnosetting, scfsetting)
-    #ccsdt_mtsmall_FC_line="! {} W1-mtsmall {}  {} {}".format(ccsdtkeyword, auxbasis, pnosetting, scfsetting)
-
-    #ccsdt_mtsmall_NoFC = ash.ORCATheory(orcadir=orcadir, orcasimpleinput=ccsdt_mtsmall_NoFC_line, orcablocks=blocks, nprocs=numcores, charge=charge, mult=mult)
-    #ccsdt_mtsmall_FC = ash.ORCATheory(orcadir=orcadir, orcasimpleinput=ccsdt_mtsmall_FC_line, orcablocks=blocks, nprocs=numcores, charge=charge, mult=mult)
-
-    ##energy_ccsdt_mtsmall_nofc = ash.Singlepoint(fragment=fragment, theory=ccsdt_mtsmall_NoFC)
-    #shutil.copyfile('orca-input.out', './'+ calc_label + 'CCSDT_MTsmall_NoFC_DKH' + '.out')
-    #energy_ccsdt_mtsmall_fc = ash.Singlepoint(fragment=fragment, theory=ccsdt_mtsmall_FC)
-    #shutil.copyfile('orca-input.out', './' + calc_label + 'CCSDT_MTsmall_FC_noDKH' + '.out')
-
-    #Core-correlation is total energy difference between NoFC-DKH and FC-norel
-    #E_corecorr_and_SR = energy_ccsdt_mtsmall_nofc - energy_ccsdt_mtsmall_fc
-    #print("E_corecorr_and_SR:", E_corecorr_and_SR)
 
     ############################################################
     #Spin-orbit correction for atoms.
     ############################################################
-    #if fragment.numatoms == 1:
-    #    print("Fragment is an atom. Looking up atomic spin-orbit splitting value")
-    #    E_SO = atom_spinorbitsplittings[fragment.elems[0]] / constants.hartocm
-    #else :
-     #   E_SO = 0.0
-    #
-    #print("Spin-orbit correction (E_SO):", E_SO)
-
+    #DISABLED FOR NOW
     ############################################################
     #FINAL RESULT
     ############################################################
