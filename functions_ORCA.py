@@ -56,10 +56,11 @@ def run_orca_SP_ORCApar(orcadir, inpfile, nprocs=1):
         palstring='% pal nprocs {} end'.format(nprocs)
         with open(inpfile) as ifile:
             insert_line_into_file(inpfile, '!', palstring, Once=True )
-    basename = inpfile.split('.')[0]
+    #basename = inpfile.split('.')[0]
+    basename = inpfile.replace('.inp','')
     with open(basename+'.out', 'w') as ofile:
-        process = sp.run([orcadir + '/orca', basename+'.inp'], check=True, stdout=ofile, stderr=ofile, universal_newlines=True)
-
+        #process = sp.run([orcadir + '/orca', basename+'.inp'], check=True, stdout=ofile, stderr=ofile, universal_newlines=True)
+        process = sp.run([orcadir + '/orca', inpfile], check=True, stdout=ofile, stderr=ofile, universal_newlines=True)
 
 #Check if ORCA finished.
 #Todo: Use reverse-read instead to speed up?

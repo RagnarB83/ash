@@ -268,7 +268,6 @@ def Singlepoint(fragment=None, theory=None, Grad=False):
 
 #Stripped down version of Singlepoint function for Singlepoint_parallel
 def Single_par(list):
-
     theory=list[0]
     fragment=list[1]
     label=list[2]
@@ -284,7 +283,10 @@ def Single_par(list):
     print(BC.WARNING, "Doing single-point Energy job on fragment : ", fragment.prettyformula, BC.END)
     #Creating separate inputfilename using label
     theory.inputfilename=label
+    print("label:", label)
+
     energy = theory.run(current_coords=coords, elems=elems)
+    exit()
     print("Energy: ", energy)
     # Now adding total energy to fragment
     fragment.energy = energy
@@ -295,7 +297,7 @@ def Single_par(list):
 def Singlepoint_parallel(fragments=None, theories=None, numcores=None):
     print("")
     '''
-    The Singlepoint_parallel function carries multiple single-point calculations in a parallel fashion
+    The Singlepoint_parallel function carries out multiple single-point calculations in a parallel fashion
     :param fragments:
     :type list: list of ASH objects of class Fragment
     :param theories:
@@ -309,7 +311,7 @@ def Singlepoint_parallel(fragments=None, theories=None, numcores=None):
 
     blankline()
     print("Singlepoint_parallel function")
-    print("Number of CPU cores availale: ", numcores)
+    print("Number of CPU cores available: ", numcores)
     print("Number of fragments:", len(fragments))
     print("Number of theories:", len(theories))
     print("Running single-point calculations in parallel")
@@ -2688,6 +2690,7 @@ class ORCATheory:
         outfile=self.inputfilename+'.out'
         engradfile=self.inputfilename+'.engrad'
         pcgradfile=self.inputfilename+'.pcgrad'
+        print("outfile :", outfile)
         if checkORCAfinished(outfile) == True:
             self.energy=ORCAfinalenergygrab(outfile)
 

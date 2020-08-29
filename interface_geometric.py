@@ -210,7 +210,7 @@ def geomeTRICOptimizer(theory=None,fragment=None, coordsystem='tric', frozenatom
                 confile.write('$freeze\n')
             for bondpair in bondconstraints:
                 #Changing from zero-indexing (ASH) to 1-indexing (geomeTRIC)
-                print("bondpair", bondpair)
+                #print("bondpair", bondpair)
                 if constrainvalue is True:
                     confile.write('distance {} {} {}\n'.format(bondpair[0]+1,bondpair[1]+1, bondpair[2] ))                    
                 else:    
@@ -225,7 +225,7 @@ def geomeTRICOptimizer(theory=None,fragment=None, coordsystem='tric', frozenatom
                 confile.write('$freeze\n')
             for angleentry in angleconstraints:
                 #Changing from zero-indexing (ASH) to 1-indexing (geomeTRIC)
-                print("angleentry", angleentry)
+                #print("angleentry", angleentry)
                 if constrainvalue is True:
                     confile.write('angle {} {} {} {}\n'.format(angleentry[0]+1,angleentry[1]+1,angleentry[2]+1,angleentry[3] ))
                 else:
@@ -239,7 +239,7 @@ def geomeTRICOptimizer(theory=None,fragment=None, coordsystem='tric', frozenatom
                 confile.write('$freeze\n')
             for dihedralentry in dihedralconstraints:
                 #Changing from zero-indexing (ASH) to 1-indexing (geomeTRIC)
-                print("dihedralentry", dihedralentry)
+                #print("dihedralentry", dihedralentry)
                 if constrainvalue is True:
                     confile.write('dihedral {} {} {} {} {}\n'.format(dihedralentry[0]+1,dihedralentry[1]+1,dihedralentry[2]+1,dihedralentry[3]+1, dihedralentry[4] ))
                 else:

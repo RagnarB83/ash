@@ -256,7 +256,8 @@ def W1theory_SP(fragment=None, charge=None, orcadir=None, mult=None, stabilityan
     maxiter 200
     end
     """.format(memory)
-
+    if stabilityanalysis is True:
+        blocks = blocks + "%scf stabperform true end"
     #HF reference to use
     #If UHF then UHF will be enforced, also for closed-shell. unncessarily expensive
     if HFreference == 'UHF':
@@ -449,7 +450,8 @@ def W1F12theory_SP(fragment=None, charge=None, orcadir=None, mult=None, stabilit
     maxiter 200
     end
     """.format(memory)
-
+    if stabilityanalysis is True:
+        blocks = blocks + "%scf stabperform true end"
     #HF reference to use
     #If UHF then UHF will be enforced, also for closed-shell. unncessarily expensive
     if HFreference == 'UHF':
@@ -659,7 +661,8 @@ def DLPNO_W1F12theory_SP(fragment=None, charge=None, orcadir=None, mult=None, st
     maxiter 200
     end
     """.format(memory)
-
+    if stabilityanalysis is True:
+        blocks = blocks + "%scf stabperform true end"
     #Auxiliary basis set. One big one
     auxbasis='cc-pV5Z/C'
 
@@ -870,7 +873,8 @@ def DLPNO_W1theory_SP(fragment=None, charge=None, orcadir=None, mult=None, stabi
     end
 
     """.format(memory)
-
+    if stabilityanalysis is True:
+        blocks = blocks + "%scf stabperform true end"
     #Whether to use diffuse basis set or not
     #Note: this may fuck up basis set extrapolation
     #if noaug is True:
@@ -1072,7 +1076,8 @@ def DLPNO_F12_SP(fragment=None, charge=None, orcadir=None, mult=None, stabilitya
     end
 
     """.format(memory)
-
+    if stabilityanalysis is True:
+        blocks = blocks + "%scf stabperform true end"
     #Whether to use diffuse basis set or not
     #Note: this may fuck up basis set extrapolation
     #if noaug is True:
@@ -1246,7 +1251,8 @@ def DLPNO_W2theory_SP(fragment=None, charge=None, orcadir=None, mult=None, stabi
     end
 
     """.format(memory)
-
+    if stabilityanalysis is True:
+        blocks = blocks + "%scf stabperform true end"
     #Whether to use diffuse basis set or not
     #Note: this may fuck up basis set extrapolation
     #if noaug is True:
@@ -1497,10 +1503,13 @@ def write_surfacedict_to_file(dict,file="surface_results.txt",dimension=None):
 
 #Calculate 1D or 2D surface, either relaxed or unrelaxed.
 # TODO: Parallelize surfacepoint calculations
-def calc_surface(fragment=None, theory=None, type='Unrelaxed', resultfile='surface_results.txt', runmode='serial', coordsystem='dlc', **kwargs):    
+def calc_surface(fragment=None, theory=None, type='Unrelaxed', resultfile='surface_results.txt', 
+                 runmode='serial', coordsystem='dlc', **kwargs):    
     print("="*50)
     print("CALC_SURFACE FUNCTION")
     print("="*50)
+    if 'numcores' in kwargs:
+        numcores = kwargs['numcores']
     #Getting reaction coordinates and checking if 1D or 2D
     if 'RC1_range' in kwargs:
         RC1_range=kwargs['RC1_range']
@@ -1530,6 +1539,10 @@ def calc_surface(fragment=None, theory=None, type='Unrelaxed', resultfile='surfa
         totalnumpoints=range2*range1
         #print("range1", range1)
         print("Number of surfacepoints to calculate ", totalnumpoints)
+    elif dimension==1:
+        totalnumpoints=math.ceil((RC1_range[0]-RC1_range[1])/RC1_range[2])
+        print("Number of surfacepoints to calculate ", totalnumpoints)
+    
     
     #Read dict from file. If file exists, read entries, if not, return empty dict
     surfacedictionary = read_surfacedict_from_file(resultfile, dimension=dimension)
@@ -1564,97 +1577,357 @@ def calc_surface(fragment=None, theory=None, type='Unrelaxed', resultfile='surfa
     
     pointcount=0
     
-    if type=='Unrelaxed':
-        zerotheory = ash.ZeroTheory()
-        print("Initial surfacedictionary :", surfacedictionary)
-        if dimension == 2:
-            for RCvalue1 in list(frange(RC1_range[0],RC1_range[1],RC1_range[2])):
-                for RCvalue2 in list(frange(RC2_range[0],RC2_range[1],RC2_range[2])):
+    #PARALLEL CALCULATION
+    if runmode=='parallel':
+        print("Parallel runmode.")
+        surfacepointfragments={}
+        if type=='Unrelaxed':
+            if dimension == 2:
+                zerotheory = ash.ZeroTheory()
+                for RCvalue1 in list(frange(RC1_range[0],RC1_range[1],RC1_range[2])):
+                    for RCvalue2 in list(frange(RC2_range[0],RC2_range[1],RC2_range[2])):
+                        pointcount+=1
+                        print("=======================================")
+                        print("Surfacepoint: {} / {}".format(pointcount,totalnumpoints))
+                        print("RCvalue1: {} RCvalue2: {}".format(RCvalue1,RCvalue2))
+                        print("=======================================")
+                        if (RCvalue1,RCvalue2) not in surfacedictionary:
+                            #Now setting constraints
+                            allconstraints = set_constraints(dimension=2, RCvalue1=RCvalue1, RCvalue2=RCvalue2)
+                            print("allconstraints:", allconstraints)
+                            #Running zero-theory with optimizer just to set geometry
+                            geomeTRICOptimizer(fragment=fragment, theory=zerotheory, coordsystem=coordsystem, constraints=allconstraints, constrainvalue=True)
+                            #Shallow copy of fragment
+                            newfrag = copy.copy(fragment)
+                            newfrag.label = str(RCvalue1)+"_"+str(RCvalue1)
+                            surfacepointfragments[(RCvalue1,RCvalue2)] = newfrag
+                            #Single-point ORCA calculation on adjusted geometry
+                            #energy = ash.Singlepoint(fragment=fragment, theory=theory)
+                print("surfacepointfragments:", surfacepointfragments)
+                #TODO: sort this list??
+                surfacepointfragments_lists = list(surfacepointfragments.values())
+                print("surfacepointfragments_lists: ", surfacepointfragments_lists)
+                results = ash.Singlepoint_parallel(fragments=surfacepointfragments_lists, theories=[theory], numcores=numcores)
+                print("Parallel calculation done!")
+                print("results:", results)
+                
+                #Gathering results in dictionary
+                for energy,coord in zip(results,surfacepointfragments_lists):
+                    print("Coord : {}  Energy: {}".format(coord,energy))
+                    surfacedictionary[coord] = energy
+                    print("surfacedictionary:", surfacedictionary)
+                    print("len surfacedictionary:", len(surfacedictionary))
+                    print("totalnumpoints:", totalnumpoints)
+                    if len(surfacedictionary) != totalnumpoints:
+                        print("Dictionary not complete!")
+                        print("len surfacedictionary:", len(surfacedictionary))
+                        print("totalnumpoints:", totalnumpoints)
+                
+        exit()
+    #SERIAL CALCULATION
+    elif runmode=='serial':
+        print("Serial runmode")
+        if type=='Unrelaxed':
+            zerotheory = ash.ZeroTheory()
+            if dimension == 2:
+                for RCvalue1 in list(frange(RC1_range[0],RC1_range[1],RC1_range[2])):
+                    for RCvalue2 in list(frange(RC2_range[0],RC2_range[1],RC2_range[2])):
+                        pointcount+=1
+                        print("=======================================")
+                        print("Surfacepoint: {} / {}".format(pointcount,totalnumpoints))
+                        print("RCvalue1: {} RCvalue2: {}".format(RCvalue1,RCvalue2))
+                        print("=======================================")
+                        
+                        if (RCvalue1,RCvalue2) not in surfacedictionary:
+                            #Now setting constraints
+                            allconstraints = set_constraints(dimension=2, RCvalue1=RCvalue1, RCvalue2=RCvalue2)
+                            print("allconstraints:", allconstraints)
+                            #Running zero-theory with optimizer just to set geometry
+                            geomeTRICOptimizer(fragment=fragment, theory=zerotheory, coordsystem=coordsystem, constraints=allconstraints, constrainvalue=True)
+                            #Single-point ORCA calculation on adjusted geometry
+                            energy = ash.Singlepoint(fragment=fragment, theory=theory)
+                            surfacedictionary[(RCvalue1,RCvalue2)] = energy
+                            #Writing dictionary to file
+                            write_surfacedict_to_file(surfacedictionary,"surface_results.txt", dimension=2)
+
+                        else:
+                            print("RC1, RC2 values in dict already. Skipping.")
+                    print("surfacedictionary:", surfacedictionary)
+            elif dimension == 1:
+                for RCvalue1 in list(frange(RC1_range[0],RC1_range[1],RC1_range[2])):
                     pointcount+=1
                     print("=======================================")
                     print("Surfacepoint: {} / {}".format(pointcount,totalnumpoints))
-                    print("RCvalue1: {} RCvalue2: {}".format(RCvalue1,RCvalue2))
+                    print("RCvalue1: {}".format(RCvalue1))
                     print("=======================================")
                     
-                    if (RCvalue1,RCvalue2) not in surfacedictionary:
+                    if (RCvalue1) not in surfacedictionary:
                         #Now setting constraints
-                        allconstraints = set_constraints(dimension=2, RCvalue1=RCvalue1, RCvalue2=RCvalue2)
+                        allconstraints = set_constraints(dimension=1, RCvalue1=RCvalue1)
                         print("allconstraints:", allconstraints)
                         #Running zero-theory with optimizer just to set geometry
                         geomeTRICOptimizer(fragment=fragment, theory=zerotheory, coordsystem=coordsystem, constraints=allconstraints, constrainvalue=True)
                         #Single-point ORCA calculation on adjusted geometry
                         energy = ash.Singlepoint(fragment=fragment, theory=theory)
-                        surfacedictionary[(RCvalue1,RCvalue2)] = energy
+                        surfacedictionary[(RCvalue1)] = energy
                         #Writing dictionary to file
-                        write_surfacedict_to_file(surfacedictionary,"surface_results.txt", dimension=2)
-
+                        write_surfacedict_to_file(surfacedictionary,"surface_results.txt", dimension=1)
+                        print("surfacedictionary:", surfacedictionary)
                     else:
-                        print("RC1, RC2 values in dict already. Skipping.")
-                print("surfacedictionary:", surfacedictionary)
-        elif dimension == 1:
-            for RCvalue1 in list(frange(RC1_range[0],RC1_range[1],RC1_range[2])):
-                pointcount+=1
-                print("=======================================")
-                print("Surfacepoint: {} / {}".format(pointcount,totalnumpoints))
-                print("RCvalue1: {}".format(RCvalue1))
-                print("=======================================")
-                
-                if (RCvalue1) not in surfacedictionary:
-                    #Now setting constraints
-                    allconstraints = set_constraints(dimension=1, RCvalue1=RCvalue1)
-                    print("allconstraints:", allconstraints)
-                    #Running zero-theory with optimizer just to set geometry
-                    geomeTRICOptimizer(fragment=fragment, theory=zerotheory, coordsystem=coordsystem, constraints=allconstraints, constrainvalue=True)
-                    #Single-point ORCA calculation on adjusted geometry
-                    energy = ash.Singlepoint(fragment=fragment, theory=theory)
-                    surfacedictionary[(RCvalue1)] = energy
-                    #Writing dictionary to file
-                    write_surfacedict_to_file(surfacedictionary,"surface_results.txt", dimension=1)
+                        print("RC1 value in dict already. Skipping.")
+        elif type=='Relaxed':
+            zerotheory = ash.ZeroTheory()
+            if dimension == 2:
+                for RCvalue1 in list(frange(RC1_range[0],RC1_range[1],RC1_range[2])):
+                    for RCvalue2 in list(frange(RC2_range[0],RC2_range[1],RC2_range[2])):
+                        pointcount+=1
+                        print("=======================================")
+                        print("Surfacepoint: {} / {}".format(pointcount,totalnumpoints))
+                        print("RCvalue1: {} RCvalue2: {}".format(RCvalue1,RCvalue2))
+                        print("=======================================")
+                        if (RCvalue1,RCvalue2) not in surfacedictionary:
+                            #Now setting constraints
+                            allconstraints = set_constraints(dimension=2, RCvalue1=RCvalue1, RCvalue2=RCvalue2)
+                            print("allconstraints:", allconstraints)
+                            #Running 
+                            energy = geomeTRICOptimizer(fragment=fragment, theory=theory, coordsystem=coordsystem, constraints=allconstraints, constrainvalue=True)
+                            surfacedictionary[(RCvalue1,RCvalue2)] = energy
+                            #Writing dictionary to file
+                            write_surfacedict_to_file(surfacedictionary,"surface_results.txt", dimension=2)
+
+                        else:
+                            print("RC1, RC2 values in dict already. Skipping.")
                     print("surfacedictionary:", surfacedictionary)
-                else:
-                    print("RC1 value in dict already. Skipping.")
-    elif type=='Relaxed':
-        zerotheory = ash.ZeroTheory()
-        print("Initial surfacedictionary :", surfacedictionary)
-        if dimension == 2:
-            for RCvalue1 in list(frange(RC1_range[0],RC1_range[1],RC1_range[2])):
-                for RCvalue2 in list(frange(RC2_range[0],RC2_range[1],RC2_range[2])):
+            elif dimension == 1:
+                for RCvalue1 in list(frange(RC1_range[0],RC1_range[1],RC1_range[2])):
                     pointcount+=1
                     print("=======================================")
                     print("Surfacepoint: {} / {}".format(pointcount,totalnumpoints))
-                    print("RCvalue1: {} RCvalue2: {}".format(RCvalue1,RCvalue2))
+                    print("RCvalue1: {}".format(RCvalue1))
                     print("=======================================")
-                    if (RCvalue1,RCvalue2) not in surfacedictionary:
+                    
+                    if (RCvalue1) not in surfacedictionary:
                         #Now setting constraints
-                        allconstraints = set_constraints(dimension=2, RCvalue1=RCvalue1, RCvalue2=RCvalue2)
+                        allconstraints = set_constraints(dimension=1, RCvalue1=RCvalue1)
                         print("allconstraints:", allconstraints)
-                        #Running 
+                        #Running zero-theory with optimizer just to set geometry
                         energy = geomeTRICOptimizer(fragment=fragment, theory=theory, coordsystem=coordsystem, constraints=allconstraints, constrainvalue=True)
-                        surfacedictionary[(RCvalue1,RCvalue2)] = energy
+                        surfacedictionary[(RCvalue1)] = energy
                         #Writing dictionary to file
-                        write_surfacedict_to_file(surfacedictionary,"surface_results.txt", dimension=2)
-
+                        write_surfacedict_to_file(surfacedictionary,"surface_results.txt", dimension=1)
+                        print("surfacedictionary:", surfacedictionary)
                     else:
-                        print("RC1, RC2 values in dict already. Skipping.")
-                print("surfacedictionary:", surfacedictionary)
-        elif dimension == 1:
-            for RCvalue1 in list(frange(RC1_range[0],RC1_range[1],RC1_range[2])):
-                pointcount+=1
-                print("=======================================")
-                print("Surfacepoint: {} / {}".format(pointcount,totalnumpoints))
-                print("RCvalue1: {}".format(RCvalue1))
-                print("=======================================")
-                
-                if (RCvalue1) not in surfacedictionary:
-                    #Now setting constraints
-                    allconstraints = set_constraints(dimension=1, RCvalue1=RCvalue1)
-                    print("allconstraints:", allconstraints)
-                    #Running zero-theory with optimizer just to set geometry
-                    energy = geomeTRICOptimizer(fragment=fragment, theory=theory, coordsystem=coordsystem, constraints=allconstraints, constrainvalue=True)
-                    surfacedictionary[(RCvalue1)] = energy
-                    #Writing dictionary to file
-                    write_surfacedict_to_file(surfacedictionary,"surface_results.txt", dimension=1)
-                    print("surfacedictionary:", surfacedictionary)
-                else:
-                    print("RC1 value in dict already. Skipping.")
+                        print("RC1 value in dict already. Skipping.")
     return surfacedictionary
+
+
+
+#DLPNO-test CBS protocol. Simple. No core-correlation, scalar relativistic or spin-orbit coupling for now
+def DLPNO_CC_CBS_SP(cardinals = "2/3", basisfamily="def2", fragment=None, charge=None, orcadir=None, mult=None, stabilityanalysis=False, numcores=1,
+                      memory=5000, pnosetting='NormalPNO', T1=False, scfsetting='TightSCF'):
+    """
+    WORK IN PROGRESS
+    DLPNO-CCSD(T)/CBS frozencore workflow
+
+    :param fragment: ASH fragment
+    :param charge: Charge of fragment (to be replaced)?
+    :param orcadir: ORCA directory
+    :param mult: Multiplicity of fragment (to be replaced)?
+    :param stabilityanalysis: stability analysis on or off.
+    :param numcores: number of cores
+    :param memory: Memory in MB
+    :param scfsetting: ORCA keyword (e.g. NormalSCF, TightSCF, VeryTightSCF)
+    :param pnosetting: ORCA keyword: NormalPNO, LoosePNO, TightPNO
+    ;param T1: Boolean (whether to do expensive iterative triples or not)
+    :return: energy and dictionary with energy-components
+    """
+    print("-----------------------------")
+    print("DLPNO_CC_CBS_SP PROTOCOL")
+    print("-----------------------------")
+    print("Settings:")
+    print("Cardinals chosen:", cardinals)
+    print("Basis set family chosen:", basisfamily)
+    print("Number of cores: ", numcores)
+    print("Maxcore setting: ", memory, "MB")
+    print("")
+    print("PNO setting: ", pnosetting)
+    print("T1 : ", T1)
+    print("SCF setting: ", scfsetting)
+    print("")
+    print("fragment:", fragment)
+    calc_label = "Frag" + str(fragment.formula) + "_" + str(fragment.charge) + "_"
+    print("Calculation label: ", calc_label)
+
+    numelectrons = int(fragment.nuccharge - charge)
+
+    #if 1-electron species like Hydrogen atom then we either need to code special HF-based procedure or just hardcode values
+    #Currently hardcoding H-atom case. Replace with proper extrapolated value later.
+    if numelectrons == 1:
+        print("Number of electrons is 1")
+        print("Assuming hydrogen atom and skipping calculation")
+        W1_total = -0.500000
+        print("Using hardcoded value: ", W1_total)
+        E_dict = {'Total_E': W1_total, 'E_SCF_CBS': W1_total, 'E_CCSDcorr_CBS': 0.0,
+                  'E_triplescorr_CBS': 0.0, 'E_corecorr_and_SR': 0.0, 'E_SO': 0.0}
+        return W1_total, E_dict
+
+    #Reducing numcores if fewer active electron pairs than numcores.
+    core_electrons = num_core_electrons(fragment)
+    print("core_electrons:", core_electrons)
+    valence_electrons = (numelectrons - core_electrons)
+    electronpairs = int(valence_electrons / 2)
+    if electronpairs  < numcores:
+        print("Number of electrons in fragment:", numelectrons)
+        print("Number of valence electrons :", valence_electrons )
+        print("Number of valence electron pairs :", electronpairs )
+        print("Setting numcores to number of electron pairs")
+        numcores=int(electronpairs)
+
+    #Block input for SCF/MDCI block options.
+    #Disabling FullLMP2 guess in general as not available for open-shell
+    #TODO: Add Stability analysis option  here later
+    blocks="""
+    %maxcore {}
+    %scf
+    maxiter 200
+    end
+    %mdci
+    UseFullLMP2Guess false
+    end
+    """.format(memory)
+    if stabilityanalysis is True:
+        blocks = blocks + "%scf stabperform true end"
+
+
+    #Whether to use diffuse basis set or not
+    #Note: this may fuck up basis set extrapolation
+    #if noaug is True:
+    #    prefix=''
+    #else:
+    #    prefix='aug-'
+
+    #Auxiliary basis set. One big one
+    auxbasis='cc-pV5Z/C'
+
+    #Whether to use iterative triples or not. Default: regular DLPNO-CCSD(T)
+    if T1 is True:
+        ccsdtkeyword='DLPNO-CCSD(T1)'
+    else:
+        ccsdtkeyword='DLPNO-CCSD(T)'
+
+
+    ############################################################s
+    #Frozen-core calcs
+    ############################################################
+    #ccsdt_dz_line="! DLPNO-CCSD(T) {}cc-pVDZ {} tightscf ".format(prefix,auxbasis)
+    #ccsdt_tz_line="! DLPNO-CCSD(T) {}cc-pVTZ {} tightscf ".format(prefix,auxbasis)
+    #ccsd_qz_line="! DLPNO-CCSD {}cc-pVQZ {} tightscf ".format(prefix,auxbasis)
+    #TODO: Choose between DZ/TZ and TZ/QZ extrapolations here
+    if cardinals == "2/3" and basisfamily=="def2":
+        ccsdt_1_line="! {} def2-SVP {} {} {}".format(ccsdtkeyword, auxbasis, pnosetting, scfsetting)
+        ccsdt_2_line="! {} def2-TZVPP {} {} {}".format(ccsdtkeyword, auxbasis, pnosetting, scfsetting)
+    elif cardinals == "3/4" and basisfamily=="def2":
+        ccsdt_1_line="! {} def2-TZVPP {} {} {}".format(ccsdtkeyword, auxbasis, pnosetting, scfsetting)
+        ccsdt_2_line="! {} def2-QZVPP {} {} {}".format(ccsdtkeyword, auxbasis, pnosetting, scfsetting)
+    elif cardinals == "2/3" and basisfamily=="cc":
+        ccsdt_1_line="! {} cc-pVDZ {} {} {}".format(ccsdtkeyword, auxbasis, pnosetting, scfsetting)
+        ccsdt_2_line="! {} cc-pVTZ {} {} {}".format(ccsdtkeyword, auxbasis, pnosetting, scfsetting)
+    elif cardinals == "3/4" and basisfamily=="cc":
+        ccsdt_1_line="! {} cc-pVTZ {} {} {}".format(ccsdtkeyword, auxbasis, pnosetting, scfsetting)
+        ccsdt_2_line="! {} cc-pVQZ {} {} {}".format(ccsdtkeyword, auxbasis, pnosetting, scfsetting)
+    elif cardinals == "2/3" and basisfamily=="aug-cc":
+        ccsdt_1_line="! {} aug-cc-pVDZ {} {} {}".format(ccsdtkeyword, auxbasis, pnosetting, scfsetting)
+        ccsdt_2_line="! {} aug-cc-pVTZ {} {} {}".format(ccsdtkeyword, auxbasis, pnosetting, scfsetting)
+    elif cardinals == "3/4" and basisfamily=="aug-cc":
+        ccsdt_1_line="! {} aug-cc-pVTZ {} {} {}".format(ccsdtkeyword, auxbasis, pnosetting, scfsetting)
+        ccsdt_2_line="! {} aug-cc-pVQZ {} {} {}".format(ccsdtkeyword, auxbasis, pnosetting, scfsetting)
+        
+        
+    ccsdt_1 = ash.ORCATheory(orcadir=orcadir, orcasimpleinput=ccsdt_1_line, orcablocks=blocks, nprocs=numcores, charge=charge, mult=mult)
+    ccsdt_2 = ash.ORCATheory(orcadir=orcadir, orcasimpleinput=ccsdt_2_line, orcablocks=blocks, nprocs=numcores, charge=charge, mult=mult)
+
+    ash.Singlepoint(fragment=fragment, theory=ccsdt_1)
+    CCSDT_1_dict = grab_HF_and_corr_energies('orca-input.out', DLPNO=True)
+    shutil.copyfile('orca-input.out', './' + calc_label + 'CCSDT_1' + '.out')
+    print("CCSDT_1_dict:", CCSDT_1_dict)
+
+    ash.Singlepoint(fragment=fragment, theory=ccsdt_2)
+    CCSDT_2_dict = grab_HF_and_corr_energies('orca-input.out', DLPNO=True)
+    shutil.copyfile('orca-input.out', './' + calc_label + 'CCSDT_2' + '.out')
+    print("CCSDT_2_dict:", CCSDT_2_dict)
+
+
+    #List of all SCF energies (DZ,TZ,QZ), all CCSD-corr energies (DZ,TZ,QZ) and all (T) corr energies (DZ,TZ)
+    scf_energies = [CCSDT_1_dict['HF'], CCSDT_2_dict['HF']]
+    ccsdcorr_energies = [CCSDT_1_dict['CCSD_corr'], CCSDT_2_dict['CCSD_corr']]
+    triplescorr_energies = [CCSDT_1_dict['CCSD(T)_corr'], CCSDT_2_dict['CCSD(T)_corr']]
+
+    #Here combining corr energies in a silly way
+    corr_energies = list(np.array(ccsdcorr_energies)+np.array(triplescorr_energies))
+
+    print("")
+    print("scf_energies :", scf_energies)
+    print("ccsdcorr_energies :", ccsdcorr_energies)
+    print("triplescorr_energies :", triplescorr_energies)
+    print("corr_energies :", corr_energies)
+    
+    #Extrapolations
+
+    E_SCF_CBS, E_corr_CBS = Extrapolation_twopoint(scf_energies, corr_energies, [2,3], 'def2') #3-point extrapolation
+
+    print("E_SCF_CBS:", E_SCF_CBS)
+    print("E_corr_CBS:", E_corr_CBS)
+
+    ############################################################
+    #Core-correlation + scalar relativistic as joint correction
+    ############################################################
+    #DISABLED FOR NOW
+    #ccsdt_mtsmall_NoFC_line="! {} DKH W1-mtsmall  {} {} nofrozencore {}".format(ccsdtkeyword, auxbasis, pnosetting, scfsetting)
+    #ccsdt_mtsmall_FC_line="! {} W1-mtsmall {}  {} {}".format(ccsdtkeyword, auxbasis, pnosetting, scfsetting)
+
+    #ccsdt_mtsmall_NoFC = ash.ORCATheory(orcadir=orcadir, orcasimpleinput=ccsdt_mtsmall_NoFC_line, orcablocks=blocks, nprocs=numcores, charge=charge, mult=mult)
+    #ccsdt_mtsmall_FC = ash.ORCATheory(orcadir=orcadir, orcasimpleinput=ccsdt_mtsmall_FC_line, orcablocks=blocks, nprocs=numcores, charge=charge, mult=mult)
+
+    ##energy_ccsdt_mtsmall_nofc = ash.Singlepoint(fragment=fragment, theory=ccsdt_mtsmall_NoFC)
+    #shutil.copyfile('orca-input.out', './'+ calc_label + 'CCSDT_MTsmall_NoFC_DKH' + '.out')
+    #energy_ccsdt_mtsmall_fc = ash.Singlepoint(fragment=fragment, theory=ccsdt_mtsmall_FC)
+    #shutil.copyfile('orca-input.out', './' + calc_label + 'CCSDT_MTsmall_FC_noDKH' + '.out')
+
+    #Core-correlation is total energy difference between NoFC-DKH and FC-norel
+    #E_corecorr_and_SR = energy_ccsdt_mtsmall_nofc - energy_ccsdt_mtsmall_fc
+    #print("E_corecorr_and_SR:", E_corecorr_and_SR)
+
+    ############################################################
+    #Spin-orbit correction for atoms.
+    ############################################################
+    #if fragment.numatoms == 1:
+    #    print("Fragment is an atom. Looking up atomic spin-orbit splitting value")
+    #    E_SO = atom_spinorbitsplittings[fragment.elems[0]] / constants.hartocm
+    #else :
+     #   E_SO = 0.0
+    #
+    #print("Spin-orbit correction (E_SO):", E_SO)
+
+    ############################################################
+    #FINAL RESULT
+    ############################################################
+    print("")
+    print("")
+    E_total = E_SCF_CBS + E_corr_CBS 
+    print("Final DLPNO-CCSD(T)/CBS energy :", E_total, "Eh")
+    print("")
+    print("Contributions:")
+    print("--------------")
+    print("E_SCF_CBS : ", E_SCF_CBS)
+    print("E_corr_CBS : ", E_corr_CBS)
+
+    #E_dict = {'Total_E' : E_total, 'E_SCF_CBS' : E_SCF_CBS, 'E_CCSDcorr_CBS' : E_CCSDcorr_CBS, 'E_triplescorr_CBS' : E_triplescorr_CBS,
+    #         'E_corecorr_and_SR' : E_corecorr_and_SR, 'E_SO' : E_SO, 'E_corr_CBS' : E_corr_CBS}
+
+
+    #Cleanup GBW file. Full cleanup ??
+    # TODO: Keep output files for each step
+    os.remove('orca-input.gbw')
+
+    #return final energy and also dictionary with energy components
+    return E_total
