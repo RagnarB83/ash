@@ -55,6 +55,10 @@ def geomeTRICOptimizer(theory=None,fragment=None, coordsystem='tric', frozenatom
             dihedralconstraints = constraints['dihedral']
         except:
             dihedralconstraints = None
+    else:
+        bondconstraints=None
+        angleconstraints=None
+        dihedralconstraints=None
     
     blankline()
     print(BC.WARNING, "Doing geometry optimization on fragment : ", fragment.prettyformula, BC.END)
