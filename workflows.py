@@ -192,7 +192,8 @@ def num_core_electrons(fragment):
 # Idea: Instead of CCSD(T), try out CEPA or pCCSD as alternative method. Hopefully as accurate as CCSD(T).
 # Or DLPNO-CCSD(T) with LoosePNO ?
 
-def W1theory_SP(fragment=None, charge=None, orcadir=None, mult=None, stabilityanalysis=False, numcores=1, memory=5000, HFreference='QRO'):
+def W1theory_SP(fragment=None, charge=None, orcadir=None, mult=None, stabilityanalysis=False, scfsetting='TightSCF', numcores=1, 
+                memory=5000, HFreference='QRO', **kwargs):
     """
     Single-point W1 theory workflow.
     Differences: Basis sets may not be the same if 2nd-row element. TO BE CHECKED
@@ -212,6 +213,20 @@ def W1theory_SP(fragment=None, charge=None, orcadir=None, mult=None, stabilityan
     :param HFreference: string (UHF, QRO, ROHF)
     :return:
     """
+    # If run_benchmark or other passed workflow_args then use them instead
+    if 'workflow_args' in kwargs:
+        print("Workflow args passed")
+        workflow_args=kwargs['workflow_args']      
+        if 'stabilityanalysis' in workflow_args:
+            stabilityanalysis=workflow_args['stabilityanalysis']
+        if 'scfsetting' in workflow_args:
+            scfsetting=workflow_args['scfsetting']
+        if 'memory' in workflow_args:
+            memory=workflow_args['memory']
+        if 'HFreference' in workflow_args:
+            HFreference=workflow_args['HFreference']
+    
+    
     print("-----------------------------")
     print("W1theory_SP PROTOCOL")
     print("-----------------------------")
@@ -281,11 +296,11 @@ def W1theory_SP(fragment=None, charge=None, orcadir=None, mult=None, stabilityan
     #Special basis for H.
     # TODO: Add special basis for 2nd row block: Al-Ar
     # Or does ORCA W1-DZ choose this?
-    ccsdt_dz_line="! CCSD(T) W1-DZ tightscf " + hfkeyword
+    ccsdt_dz_line="! CCSD(T) W1-DZ {}".format(scfsetting) + hfkeyword
 
-    ccsdt_tz_line="! CCSD(T) W1-TZ tightscf " + hfkeyword
+    ccsdt_tz_line="! CCSD(T) W1-TZ {}".format(scfsetting) + hfkeyword
 
-    ccsd_qz_line="! CCSD W1-QZ tightscf " + hfkeyword
+    ccsd_qz_line="! CCSD W1-QZ {}".format(scfsetting) + hfkeyword
 
     ccsdt_dz = ash.ORCATheory(orcadir=orcadir, orcasimpleinput=ccsdt_dz_line, orcablocks=blocks, nprocs=numcores, charge=charge, mult=mult)
     ccsdt_tz = ash.ORCATheory(orcadir=orcadir, orcasimpleinput=ccsdt_tz_line, orcablocks=blocks, nprocs=numcores, charge=charge, mult=mult)
@@ -331,8 +346,8 @@ def W1theory_SP(fragment=None, charge=None, orcadir=None, mult=None, stabilityan
     ############################################################
     #Core-correlation + scalar relativistic as joint correction
     ############################################################
-    ccsdt_mtsmall_NoFC_line="! CCSD(T) DKH W1-mtsmall  tightscf nofrozencore " + hfkeyword
-    ccsdt_mtsmall_FC_line="! CCSD(T) W1-mtsmall tightscf " + hfkeyword
+    ccsdt_mtsmall_NoFC_line="! CCSD(T) DKH W1-mtsmall  {} nofrozencore {}".format(scfsetting,hfkeyword)
+    ccsdt_mtsmall_FC_line="! CCSD(T) W1-mtsmall {} {} ".format(scfsetting,hfkeyword)
 
     ccsdt_mtsmall_NoFC = ash.ORCATheory(orcadir=orcadir, orcasimpleinput=ccsdt_mtsmall_NoFC_line, orcablocks=blocks, nprocs=numcores, charge=charge, mult=mult)
     ccsdt_mtsmall_FC = ash.ORCATheory(orcadir=orcadir, orcasimpleinput=ccsdt_mtsmall_FC_line, orcablocks=blocks, nprocs=numcores, charge=charge, mult=mult)
@@ -385,7 +400,8 @@ def W1theory_SP(fragment=None, charge=None, orcadir=None, mult=None, stabilityan
     return W1_total, E_dict
 
 
-def W1F12theory_SP(fragment=None, charge=None, orcadir=None, mult=None, stabilityanalysis=False, numcores=1, memory=5000, HFreference='QRO'):
+def W1F12theory_SP(fragment=None, charge=None, orcadir=None, mult=None, stabilityanalysis=False, numcores=1, scfsetting='TightSCF', 
+                   memory=5000, HFreference='QRO', **kwargs):
     """
     Single-point W1-F12 theory workflow.
     Differences: TBD
@@ -406,6 +422,22 @@ def W1F12theory_SP(fragment=None, charge=None, orcadir=None, mult=None, stabilit
     :param HFreference: string (UHF, QRO, ROHF)
     :return:
     """
+    
+    # If run_benchmark or other passed workflow_args then use them instead
+    if 'workflow_args' in kwargs:
+        print("Workflow args passed")
+        workflow_args=kwargs['workflow_args']      
+        if 'stabilityanalysis' in workflow_args:
+            stabilityanalysis=workflow_args['stabilityanalysis']
+        if 'T1' in workflow_args:
+            T1=workflow_args['T1']
+        if 'scfsetting' in workflow_args:
+            scfsetting=workflow_args['scfsetting']
+        if 'memory' in workflow_args:
+            memory=workflow_args['memory']
+        if 'HFreference' in workflow_args:
+            HFreference=workflow_args['HFreference']
+
     print("-----------------------------")
     print("W1-F12 theory_SP PROTOCOL")
     print("-----------------------------")
@@ -452,6 +484,7 @@ def W1F12theory_SP(fragment=None, charge=None, orcadir=None, mult=None, stabilit
     """.format(memory)
     if stabilityanalysis is True:
         blocks = blocks + "%scf stabperform true end"
+        
     #HF reference to use
     #If UHF then UHF will be enforced, also for closed-shell. unncessarily expensive
     if HFreference == 'UHF':
@@ -478,12 +511,12 @@ def W1F12theory_SP(fragment=None, charge=None, orcadir=None, mult=None, stabilit
     #Special basis for H.
 
     #F12-calculations for SCF and CCSD
-    ccsdf12_dz_line="! CCSD(T)-F12/RI cc-pVDZ-F12 cc-pVDZ-F12-CABS tightscf {} {} ".format(auxbasis,hfkeyword)
-    ccsdf12_tz_line="! CCSD-F12/RI cc-pVTZ-F12 cc-pVTZ-F12-CABS tightscf {} {} ".format(auxbasis,hfkeyword)
+    ccsdf12_dz_line="! CCSD(T)-F12/RI cc-pVDZ-F12 cc-pVDZ-F12-CABS {} {} {} ".format(scfsetting,auxbasis,hfkeyword)
+    ccsdf12_tz_line="! CCSD-F12/RI cc-pVTZ-F12 cc-pVTZ-F12-CABS {} {} {} ".format(scfsetting,auxbasis,hfkeyword)
 
     #Regular triples
-    ccsdt_dz_line="! CCSD(T) W1-DZ tightscf " + hfkeyword
-    ccsdt_tz_line="! CCSD(T) W1-TZ tightscf " + hfkeyword
+    ccsdt_dz_line="! CCSD(T) W1-DZ tightscf {} ".format(hfkeyword)
+    ccsdt_tz_line="! CCSD(T) W1-TZ tightscf {} ".format(hfkeyword)
 
     #F12
     ccsdf12_dz = ash.ORCATheory(orcadir=orcadir, orcasimpleinput=ccsdf12_dz_line, orcablocks=blocks, nprocs=numcores, charge=charge, mult=mult)
@@ -595,7 +628,7 @@ def W1F12theory_SP(fragment=None, charge=None, orcadir=None, mult=None, stabilit
 
 
 def DLPNO_W1F12theory_SP(fragment=None, charge=None, orcadir=None, mult=None, stabilityanalysis=False, 
-                         numcores=1, memory=5000, pnosetting='NormalPNO', scfsetting='TightSCF'):
+                         numcores=1, memory=5000, pnosetting='NormalPNO', scfsetting='TightSCF', **kwargs):
     """
     Single-point DLPNO W1-F12 theory workflow.
     Differences: TBD
@@ -617,6 +650,20 @@ def DLPNO_W1F12theory_SP(fragment=None, charge=None, orcadir=None, mult=None, st
     :param HFreference: string (UHF, QRO, ROHF)
     :return:
     """
+
+    # If run_benchmark or other passed workflow_args then use them instead
+    if 'workflow_args' in kwargs:
+        print("Workflow args passed")
+        workflow_args=kwargs['workflow_args']      
+        if 'stabilityanalysis' in workflow_args:
+            stabilityanalysis=workflow_args['stabilityanalysis']
+        if 'pnosetting' in workflow_args:
+            pnosetting=workflow_args['pnosetting']
+        if 'scfsetting' in workflow_args:
+            scfsetting=workflow_args['scfsetting']
+        if 'memory' in workflow_args:
+            memory=workflow_args['memory']
+
     print("-----------------------------")
     print("DLPNO-W1-F12 theory_SP PROTOCOL")
     print("-----------------------------")
@@ -802,7 +849,7 @@ def DLPNO_W1F12theory_SP(fragment=None, charge=None, orcadir=None, mult=None, st
 
 #DLPNO-test
 def DLPNO_W1theory_SP(fragment=None, charge=None, orcadir=None, mult=None, stabilityanalysis=False, numcores=1,
-                      memory=5000, pnosetting='NormalPNO', T1=False, scfsetting='TightSCF'):
+                      memory=5000, pnosetting='NormalPNO', T1=False, scfsetting='TightSCF', **kwargs):
     """
     WORK IN PROGRESS
     DLPNO-version of single-point W1 theory workflow.
@@ -820,6 +867,22 @@ def DLPNO_W1theory_SP(fragment=None, charge=None, orcadir=None, mult=None, stabi
     ;param T1: Boolean (whether to do expensive iterative triples or not)
     :return: energy and dictionary with energy-components
     """
+    
+    # If run_benchmark or other passed workflow_args then use them instead
+    if 'workflow_args' in kwargs:
+        print("Workflow args passed")
+        workflow_args=kwargs['workflow_args']      
+        if 'stabilityanalysis' in workflow_args:
+            stabilityanalysis=workflow_args['stabilityanalysis']
+        if 'pnosetting' in workflow_args:
+            pnosetting=workflow_args['pnosetting']
+        if 'T1' in workflow_args:
+            T1=workflow_args['T1']
+        if 'scfsetting' in workflow_args:
+            scfsetting=workflow_args['scfsetting']
+        if 'memory' in workflow_args:
+            memory=workflow_args['memory']
+    
     print("-----------------------------")
     print("DLPNO_W1theory_SP PROTOCOL")
     print("-----------------------------")
@@ -1006,7 +1069,7 @@ def DLPNO_W1theory_SP(fragment=None, charge=None, orcadir=None, mult=None, stabi
 #DLPNO-F12
 #Test: DLPNO-CCSD(T)-F12 protocol including CV+SR
 def DLPNO_F12_SP(fragment=None, charge=None, orcadir=None, mult=None, stabilityanalysis=False, numcores=1,
-                      memory=5000, pnosetting='NormalPNO', T1=False, scfsetting='TightSCF', F12level='DZ'):
+                      memory=5000, pnosetting='NormalPNO', T1=False, scfsetting='TightSCF', F12level='DZ', **kwargs):
     """
     WORK IN PROGRESS
     DLPNO-CCSD(T)-F12 version of single-point W1-ish workflow.
@@ -1023,6 +1086,24 @@ def DLPNO_F12_SP(fragment=None, charge=None, orcadir=None, mult=None, stabilitya
     ;param T1: Boolean (whether to do expensive iterative triples or not)
     :return: energy and dictionary with energy-components
     """
+    
+    # If run_benchmark or other passed workflow_args then use them instead
+    if 'workflow_args' in kwargs:
+        print("Workflow args passed")
+        workflow_args=kwargs['workflow_args']      
+        if 'stabilityanalysis' in workflow_args:
+            stabilityanalysis=workflow_args['stabilityanalysis']
+        if 'pnosetting' in workflow_args:
+            pnosetting=workflow_args['pnosetting']
+        if 'T1' in workflow_args:
+            T1=workflow_args['T1']
+        if 'scfsetting' in workflow_args:
+            scfsetting=workflow_args['scfsetting']
+        if 'memory' in workflow_args:
+            memory=workflow_args['memory']
+        if 'F12level' in workflow_args:
+            F12level=workflow_args['F12level']
+
     print("-----------------------------")
     print("DLPNO_F12_SP PROTOCOL")
     print("-----------------------------")
@@ -1187,7 +1268,7 @@ def DLPNO_F12_SP(fragment=None, charge=None, orcadir=None, mult=None, stabilitya
 
 
 def DLPNO_W2theory_SP(fragment=None, charge=None, orcadir=None, mult=None, stabilityanalysis=False, numcores=1,
-                      memory=5000, pnosetting='NormalPNO', T1=False, scfsetting='TightSCF'):
+                      memory=5000, pnosetting='NormalPNO', T1=False, scfsetting='TightSCF', **kwargs):
     """
     WORK IN PROGRESS
     DLPNO-version of single-point W2 theory workflow.
@@ -1205,6 +1286,23 @@ def DLPNO_W2theory_SP(fragment=None, charge=None, orcadir=None, mult=None, stabi
     ;param T1: Boolean (whether to do expensive iterative triples or not)
     :return: energy and dictionary with energy-components
     """
+    
+    # If run_benchmark or other passed workflow_args then use them instead
+    if 'workflow_args' in kwargs:
+        print("Workflow args passed")
+        workflow_args=kwargs['workflow_args']      
+        if 'stabilityanalysis' in workflow_args:
+            stabilityanalysis=workflow_args['stabilityanalysis']
+        if 'pnosetting' in workflow_args:
+            pnosetting=workflow_args['pnosetting']
+        if 'T1' in workflow_args:
+            T1=workflow_args['T1']
+        if 'scfsetting' in workflow_args:
+            scfsetting=workflow_args['scfsetting']
+        if 'memory' in workflow_args:
+            memory=workflow_args['memory']
+    
+    
     print("-----------------------------")
     print("DLPNO_W2theory_SP PROTOCOL")
     print("-----------------------------")
@@ -1423,6 +1521,9 @@ def thermochemprotocol(SPprotocol=None, fraglist=None, stoichiometry=None, orcad
         elif SPprotocol == 'DLPNO-W1-F12':
             FinalE, componentsdict = DLPNO_W1F12theory_SP(fragment=species, charge=species.charge,
                         mult=species.mult, orcadir=orcadir, numcores=numcores, memory=5000, pnosetting=pnosetting)
+        #elif SPprotocol == 'DLPNO_CC_CBS':
+        #    FinalE, componentsdict = DLPNO_CC_CBS_SP(fragment=species, charge=species.charge,
+        #                mult=species.mult, orcadir=orcadir, numcores=numcores, memory=5000, pnosetting=pnosetting)
         else:
             print("Unknown Singlepoint protocol")
             exit()
@@ -1724,7 +1825,7 @@ def calc_surface(fragment=None, theory=None, type='Unrelaxed', resultfile='surfa
 
 #DLPNO-test CBS protocol. Simple. No core-correlation, scalar relativistic or spin-orbit coupling for now
 def DLPNO_CC_CBS_SP(cardinals = "2/3", basisfamily="def2", fragment=None, charge=None, orcadir=None, mult=None, stabilityanalysis=False, numcores=1,
-                      memory=5000, pnosetting='NormalPNO', T1=False, scfsetting='TightSCF'):
+                      memory=5000, pnosetting='NormalPNO', T1=False, scfsetting='TightSCF', **kwargs):
     """
     WORK IN PROGRESS
     DLPNO-CCSD(T)/CBS frozencore workflow
@@ -1741,6 +1842,25 @@ def DLPNO_CC_CBS_SP(cardinals = "2/3", basisfamily="def2", fragment=None, charge
     ;param T1: Boolean (whether to do expensive iterative triples or not)
     :return: energy and dictionary with energy-components
     """
+    # If run_benchmark or other passed workflow_args then use them instead
+    if 'workflow_args' in kwargs:
+        print("Workflow args passed")
+        workflow_args=kwargs['workflow_args']
+        if 'cardinals' in workflow_args:
+            cardinals=workflow_args['cardinals']
+        if 'basisfamily' in workflow_args:
+            basisfamily=workflow_args['basisfamily']        
+        if 'stabilityanalysis' in workflow_args:
+            stabilityanalysis=workflow_args['stabilityanalysis']
+        if 'pnosetting' in workflow_args:
+            pnosetting=workflow_args['pnosetting']
+        if 'T1' in workflow_args:
+            T1=workflow_args['T1']
+        if 'scfsetting' in workflow_args:
+            scfsetting=workflow_args['scfsetting']
+        if 'memory' in workflow_args:
+            memory=workflow_args['memory']
+    
     print("-----------------------------")
     print("DLPNO_CC_CBS_SP PROTOCOL")
     print("-----------------------------")
@@ -1753,6 +1873,7 @@ def DLPNO_CC_CBS_SP(cardinals = "2/3", basisfamily="def2", fragment=None, charge
     print("PNO setting: ", pnosetting)
     print("T1 : ", T1)
     print("SCF setting: ", scfsetting)
+    print("Stability analysis:", stabilityanalysis)
     print("")
     print("fragment:", fragment)
     calc_label = "Frag" + str(fragment.formula) + "_" + str(fragment.charge) + "_"
@@ -1921,8 +2042,7 @@ def DLPNO_CC_CBS_SP(cardinals = "2/3", basisfamily="def2", fragment=None, charge
     print("E_SCF_CBS : ", E_SCF_CBS)
     print("E_corr_CBS : ", E_corr_CBS)
 
-    #E_dict = {'Total_E' : E_total, 'E_SCF_CBS' : E_SCF_CBS, 'E_CCSDcorr_CBS' : E_CCSDcorr_CBS, 'E_triplescorr_CBS' : E_triplescorr_CBS,
-    #         'E_corecorr_and_SR' : E_corecorr_and_SR, 'E_SO' : E_SO, 'E_corr_CBS' : E_corr_CBS}
+    E_dict = {'Total_E' : E_total, 'E_SCF_CBS' : E_SCF_CBS, 'E_CCSDcorr_CBS' : E_CCSDcorr_CBS, 'E_triplescorr_CBS' : E_triplescorr_CBS, 'E_corr_CBS' : E_corr_CBS}
 
 
     #Cleanup GBW file. Full cleanup ??
@@ -1930,4 +2050,4 @@ def DLPNO_CC_CBS_SP(cardinals = "2/3", basisfamily="def2", fragment=None, charge
     os.remove('orca-input.gbw')
 
     #return final energy and also dictionary with energy components
-    return E_total
+    return E_total, E_dict

@@ -133,7 +133,7 @@ def run_geobenchmark(set=None, theory=None, orcadir=None, numcores=None):
 
 #run_benchmark
 #Reuseorbs option: Reuse orbitals within same reaction. This only makes sense if reaction contains very similar geometries (e.g. IE/EA reaction)
-def run_benchmark(set=None, theory=None, workflow=None, orcadir=None, numcores=None, reuseorbs=False, corrections=None):
+def run_benchmark(set=None, theory=None, workflow=None, orcadir=None, numcores=None, reuseorbs=False, corrections=None, workflow_args=None):
     """[summary]
 
     Args:
@@ -222,7 +222,7 @@ def run_benchmark(set=None, theory=None, workflow=None, orcadir=None, numcores=N
                 if orcadir is None:
                     print("Please provide orcadir variable to run_benchmark_set")
                     exit()
-                energy, energydict = workflow(fragment=frag, charge=frag.charge, mult=frag.mult, orcadir=orcadir, numcores=numcores)
+                energy, energydict = workflow(fragment=frag, charge=frag.charge, mult=frag.mult, orcadir=orcadir, numcores=numcores, workflow_args=workflow_args)
                 all_calc_energies[file] = energy
                 reaction.totalenergies.append(energy)
             #List of all energies
