@@ -249,13 +249,13 @@ def Singlepoint(fragment=None, theory=None, Grad=False):
     elems=fragment.elems
     # Run a single-point energy job
     if Grad ==True:
-        print(BC.WARNING,"Doing single-point Energy+Gradient job on fragment : ", fragment.prettyformula, BC.END)
+        print(BC.WARNING,"Doing single-point Energy+Gradient job on fragment. Formula: {} Label: {} ".format(fragment.prettyformula,fragment.label), BC.END)
         # An Energy+Gradient calculation where we change the number of cores to 12
         energy,gradient= theory.run(current_coords=coords, elems=elems, Grad=True)
         print("Energy: ", energy)
         return energy,gradient
     else:
-        print(BC.WARNING,"Doing single-point Energy job on fragment : ", fragment.prettyformula, BC.END)
+        print(BC.WARNING,"Doing single-point Energy job on fragment. Formula: {} Label: {} ".format(fragment.prettyformula,fragment.label), BC.END)
 
         energy = theory.run(current_coords=coords, elems=elems)
         print("Energy: ", energy)
@@ -280,7 +280,7 @@ def Single_par(list):
 
     coords = fragment.coords
     elems = fragment.elems
-    print(BC.WARNING, "Doing single-point Energy job on fragment : ", fragment.prettyformula, BC.END)
+    print(BC.WARNING,"Doing single-point Energy job on fragment. Formula: {} Label: {} ".format(fragment.prettyformula,fragment.label), BC.END)
     #Creating separate inputfilename using label
     theory.inputfilename=label
     print("label:", label)
@@ -2690,7 +2690,6 @@ class ORCATheory:
         outfile=self.inputfilename+'.out'
         engradfile=self.inputfilename+'.engrad'
         pcgradfile=self.inputfilename+'.pcgrad'
-        print("outfile :", outfile)
         if checkORCAfinished(outfile) == True:
             self.energy=ORCAfinalenergygrab(outfile)
 
@@ -4216,6 +4215,7 @@ def ReactionEnergy(stoichiometry=None, list_of_fragments=None, list_of_energies=
                 product_energy=product_energy+list_of_energies[i]*abs(stoich)
         reaction_energy=(product_energy-reactant_energy)*conversionfactor[unit]
         if reference is None:
+            error=None
             print(BC.BOLD, "Reaction_energy({}): {} {}".format(label,BC.OKGREEN,reaction_energy, unit), BC.END)
         else:
             error=reaction_energy-reference
@@ -4230,6 +4230,7 @@ def ReactionEnergy(stoichiometry=None, list_of_fragments=None, list_of_energies=
                 product_energy=product_energy+list_of_fragments[i].energy*abs(stoich)
         reaction_energy=(product_energy-reactant_energy)*conversionfactor[unit]
         if reference is None:
+            error=None
             print(BC.BOLD, "Reaction_energy({}): {} {}".format(label,BC.OKGREEN,reaction_energy, unit), BC.END)
         else:
             error=reaction_energy-reference

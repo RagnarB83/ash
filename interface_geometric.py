@@ -62,7 +62,7 @@ def geomeTRICOptimizer(theory=None,fragment=None, coordsystem='tric', frozenatom
         dihedralconstraints=None
     
     blankline()
-    print(BC.WARNING, "Doing geometry optimization on fragment : ", fragment.prettyformula, BC.END)
+    print(BC.WARNING, "Doing geometry optimization on fragment. Formula: {} Label: {} ".format(fragment.prettyformula,fragment.label), BC.END)
     print("Launching geomeTRIC optimization module")
     print("Coordinate system: ", coordsystem)
     print("Max iterations: ", maxiter)
