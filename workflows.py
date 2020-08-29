@@ -1485,7 +1485,7 @@ def DLPNO_W2theory_SP(fragment=None, charge=None, orcadir=None, mult=None, stabi
 #Thermochemistry protocol. Take list of fragments, stoichiometry, etc
 #Requires orcadir, and theory level, typically an ORCATheory object
 #Make more general. Not sure. ORCA makes most sense for geo-opt and HL theory
-def thermochemprotocol( Opt_theory=None, SPprotocol=None, fraglist=None, stoichiometry=None, orcadir=None, numcores=None,
+def thermochemprotocol(Opt_theory=None, SPprotocol=None, fraglist=None, stoichiometry=None, orcadir=None, numcores=None,
                        pnosetting='NormalPNO', F12level='DZ'):
 
     
@@ -1498,6 +1498,10 @@ def thermochemprotocol( Opt_theory=None, SPprotocol=None, fraglist=None, stoichi
             #ORCAcalc = ash.ORCATheory(orcadir=orcadir, charge=species.charge, mult=species.mult,
             #    orcasimpleinput=Opt_protocol_inputline, orcablocks=Opt_protocol_blocks, nprocs=numcores)
             #TODO: Check if this works in general. At least for ORCA.
+            
+            #Adding charge and mult to theory object, taken from each fragment object
+            Opt_theory.charge = species.charge
+            Opt_theory.mult = species.mult
             geomeTRICOptimizer(theory=Opt_theory,fragment=species)
             #DFT-FREQ
             thermochem = ash.NumFreq(fragment=species, theory=Opt_theory, npoint=2, runmode='serial')
