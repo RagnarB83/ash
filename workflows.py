@@ -1716,6 +1716,11 @@ def calc_surface(fragment=None, theory=None, workflow=None, type='Unrelaxed', re
     
     pointcount=0
     
+    #Create directory to keep track of surface XYZ files
+    os.mkdir('surface_xyzfiles') 
+    
+    
+    
     #PARALLEL CALCULATION
     if runmode=='parallel':
         print("Parallel runmode.")
@@ -1787,7 +1792,7 @@ def calc_surface(fragment=None, theory=None, workflow=None, type='Unrelaxed', re
                             #Write geometry to disk
                             fragment.write_xyzfile(xyzfilename="RC1_"+str(RCvalue1)+"-RC2_"+str(RCvalue2)+".xyz")
                             fragment.print_system(filename="RC1_"+str(RCvalue1)+"-RC2_"+str(RCvalue2)+".ygg")
-                            
+                            shutil.move("RC1_"+str(RCvalue1)+"-RC2_"+str(RCvalue2)+".xyz", "surface_xyzfiles/RC1_"+str(RCvalue1)+"-RC2_"+str(RCvalue2)+".xyz")
                             #Single-point ORCA calculation on adjusted geometry
                             if theory is not None:
                                 energy = ash.Singlepoint(fragment=fragment, theory=theory)
@@ -1816,7 +1821,7 @@ def calc_surface(fragment=None, theory=None, workflow=None, type='Unrelaxed', re
                         #Write geometry to disk
                         fragment.write_xyzfile(xyzfilename="RC1_"+str(RCvalue1)+".xyz")
                         fragment.print_system(filename="RC1_"+str(RCvalue1)+".ygg")
-                        
+                        shutil.move("RC1_"+str(RCvalue1)+".xyz", "surface_xyzfiles/"+"RC1_"+str(RCvalue1)+".xyz")
                         #Single-point ORCA calculation on adjusted geometry
                         energy = ash.Singlepoint(fragment=fragment, theory=theory)
                         surfacedictionary[(RCvalue1)] = energy
@@ -1848,6 +1853,7 @@ def calc_surface(fragment=None, theory=None, workflow=None, type='Unrelaxed', re
                             #Write geometry to disk
                             fragment.write_xyzfile(xyzfilename="RC1_"+str(RCvalue1)+"-RC2_"+str(RCvalue2)+".xyz")
                             fragment.print_system(filename="RC1_"+str(RCvalue1)+"-RC2_"+str(RCvalue2)+".ygg")
+                            shutil.move("RC1_"+str(RCvalue1)+"-RC2_"+str(RCvalue2)+".xyz", "surface_xyzfiles/RC1_"+str(RCvalue1)+"-RC2_"+str(RCvalue2)+".xyz")
 
                         else:
                             print("RC1, RC2 values in dict already. Skipping.")
@@ -1874,7 +1880,7 @@ def calc_surface(fragment=None, theory=None, workflow=None, type='Unrelaxed', re
                         #Write geometry to disk
                         fragment.write_xyzfile(xyzfilename="RC1_"+str(RCvalue1)+".xyz")
                         fragment.print_system(filename="RC1_"+str(RCvalue1)+".ygg")
-                        
+                        shutil.move("RC1_"+str(RCvalue1)+".xyz", "surface_xyzfiles/"+"RC1_"+str(RCvalue1)+".xyz")
                     else:
                         print("RC1 value in dict already. Skipping.")
     return surfacedictionary
