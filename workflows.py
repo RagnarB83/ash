@@ -1879,6 +1879,47 @@ def calc_surface(fragment=None, theory=None, workflow=None, type='Unrelaxed', re
                         print("RC1 value in dict already. Skipping.")
     return surfacedictionary
 
+# Calculate surface from XYZ-file collection. Single-point only for now
+def calc_surface_fromXYZ(xyzdir=None, theory=None, dimension=None, resultfile=None ):
+    
+    print("="*50)
+    print("CALC_SURFACE_FROMXYZ FUNCTION")
+    print("="*50)
+    print("XYZdir:", xyzdir)
+    print("Theory:", theory)
+    print("Dimension:", dimension)
+    print("Resultfile:", resultfile)
+    print("")
+    #Read dict from file. If file exists, read entries, if not, return empty dict
+    surfacedictionary = read_surfacedict_from_file(resultfile, dimension=dimension)
+    print("Initial surfacedictionary :", surfacedictionary)
+
+    #Looping over XYZ files
+    for file in glob.glob(xyzdir+'/*.xyz'):
+        relfile=os.path.basename(file)
+        #Getting RC values from XYZ filename e.g. RC1_2.0-RC2_180.0.xyz
+        RCvalue1=float(relfile.split('-')[0][4:])
+        RCvalue2=float(relfile.split('-')[1][4:].replace('.xyz',''))
+        print("XYZ-file: {}     RC1: {} RC2: {}".format(relfile,RCvalue1,RCvalue2))
+        if (RCvalue1,RCvalue2) not in surfacedictionary:
+            mol=ash.Fragment(xyzfile=file)
+            energy = ash.Singlepoint(theory=theory, fragment=mol)
+            print("Energy of file {} : {} Eh".format(relfile, energy))
+            theory.cleanup()
+            surfacedictionary[(RCvalue1,RCvalue2)] = energy
+            #Writing dictionary to file
+            write_surfacedict_to_file(surfacedictionary,"surface_results.txt", dimension=1)
+            print("surfacedictionary:", surfacedictionary)
+            print("")
+        else:
+            print("RC1, RC2 values in dict already. Skipping.")
+
+    return surfacedictionary
+
+
+
+
+
 
 
 #DLPNO-test CBS protocol. Simple. No core-correlation, scalar relativistic or spin-orbit coupling for now
