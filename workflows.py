@@ -194,7 +194,7 @@ def num_core_electrons(fragment):
 # Or DLPNO-CCSD(T) with LoosePNO ?
 
 def W1theory_SP(fragment=None, charge=None, orcadir=None, mult=None, stabilityanalysis=False, scfsetting='TightSCF', numcores=1, 
-                memory=5000, HFreference='QRO', **kwargs):
+                memory=5000, HFreference='QRO',extrainputkeyword='', extrablocks='', **kwargs):
     """
     Single-point W1 theory workflow.
     Differences: Basis sets may not be the same if 2nd-row element. TO BE CHECKED
@@ -226,7 +226,10 @@ def W1theory_SP(fragment=None, charge=None, orcadir=None, mult=None, stabilityan
             memory=workflow_args['memory']
         if 'HFreference' in workflow_args:
             HFreference=workflow_args['HFreference']
-    
+        if 'extrainputkeyword' in workflow_args:
+            extrainputkeyword=workflow_args['extrainputkeyword']
+        if 'extrablocks' in workflow_args:
+            extrablocks=workflow_args['extrablocks']    
     
     print("-----------------------------")
     print("W1theory_SP PROTOCOL")
@@ -265,15 +268,22 @@ def W1theory_SP(fragment=None, charge=None, orcadir=None, mult=None, stabilityan
         numcores=int(electronpairs)
 
     #Block input for SCF/MDCI block options.
-    #TODO: Add Stability analysis option  here later
+    #Disabling FullLMP2 guess in general as not available for open-shell
+    #Adding memory and extrablocks.
     blocks="""
-    %maxcore {}
-    %scf
-    maxiter 200
-    end
-    """.format(memory)
+%maxcore {}
+%scf
+maxiter 1200
+end
+%mdci
+maxiter 150
+end
+{}
+
+""".format(memory,extrablocks)
     if stabilityanalysis is True:
         blocks = blocks + "%scf stabperform true end"
+        
     #HF reference to use
     #If UHF then UHF will be enforced, also for closed-shell. unncessarily expensive
     if HFreference == 'UHF':
@@ -297,11 +307,11 @@ def W1theory_SP(fragment=None, charge=None, orcadir=None, mult=None, stabilityan
     #Special basis for H.
     # TODO: Add special basis for 2nd row block: Al-Ar
     # Or does ORCA W1-DZ choose this?
-    ccsdt_dz_line="! CCSD(T) W1-DZ {}".format(scfsetting) + hfkeyword
+    ccsdt_dz_line="! CCSD(T) W1-DZ {} {} {}".format(scfsetting,hfkeyword,extrainputkeyword)
 
-    ccsdt_tz_line="! CCSD(T) W1-TZ {}".format(scfsetting) + hfkeyword
+    ccsdt_tz_line="! CCSD(T) W1-TZ {} {} {}".format(scfsetting,hfkeyword,extrainputkeyword)
 
-    ccsd_qz_line="! CCSD W1-QZ {}".format(scfsetting) + hfkeyword
+    ccsd_qz_line="! CCSD W1-QZ {} {} {}".format(scfsetting,hfkeyword,extrainputkeyword)
 
     ccsdt_dz = ash.ORCATheory(orcadir=orcadir, orcasimpleinput=ccsdt_dz_line, orcablocks=blocks, nprocs=numcores, charge=charge, mult=mult)
     ccsdt_tz = ash.ORCATheory(orcadir=orcadir, orcasimpleinput=ccsdt_tz_line, orcablocks=blocks, nprocs=numcores, charge=charge, mult=mult)
@@ -347,8 +357,8 @@ def W1theory_SP(fragment=None, charge=None, orcadir=None, mult=None, stabilityan
     ############################################################
     #Core-correlation + scalar relativistic as joint correction
     ############################################################
-    ccsdt_mtsmall_NoFC_line="! CCSD(T) DKH W1-mtsmall  {} nofrozencore {}".format(scfsetting,hfkeyword)
-    ccsdt_mtsmall_FC_line="! CCSD(T) W1-mtsmall {} {} ".format(scfsetting,hfkeyword)
+    ccsdt_mtsmall_NoFC_line="! CCSD(T) DKH W1-mtsmall  {} nofrozencore {} {}".format(scfsetting,hfkeyword,extrainputkeyword)
+    ccsdt_mtsmall_FC_line="! CCSD(T) W1-mtsmall {} {} {}".format(scfsetting,hfkeyword,extrainputkeyword)
 
     ccsdt_mtsmall_NoFC = ash.ORCATheory(orcadir=orcadir, orcasimpleinput=ccsdt_mtsmall_NoFC_line, orcablocks=blocks, nprocs=numcores, charge=charge, mult=mult)
     ccsdt_mtsmall_FC = ash.ORCATheory(orcadir=orcadir, orcasimpleinput=ccsdt_mtsmall_FC_line, orcablocks=blocks, nprocs=numcores, charge=charge, mult=mult)
@@ -402,7 +412,7 @@ def W1theory_SP(fragment=None, charge=None, orcadir=None, mult=None, stabilityan
 
 
 def W1F12theory_SP(fragment=None, charge=None, orcadir=None, mult=None, stabilityanalysis=False, numcores=1, scfsetting='TightSCF', 
-                   memory=5000, HFreference='QRO', **kwargs):
+                   memory=5000, HFreference='QRO',extrainputkeyword='', extrablocks='', **kwargs):
     """
     Single-point W1-F12 theory workflow.
     Differences: TBD
@@ -438,7 +448,11 @@ def W1F12theory_SP(fragment=None, charge=None, orcadir=None, mult=None, stabilit
             memory=workflow_args['memory']
         if 'HFreference' in workflow_args:
             HFreference=workflow_args['HFreference']
-
+        if 'extrainputkeyword' in workflow_args:
+            extrainputkeyword=workflow_args['extrainputkeyword']
+        if 'extrablocks' in workflow_args:
+            extrablocks=workflow_args['extrablocks']
+            
     print("-----------------------------")
     print("W1-F12 theory_SP PROTOCOL")
     print("-----------------------------")
@@ -476,13 +490,19 @@ def W1F12theory_SP(fragment=None, charge=None, orcadir=None, mult=None, stabilit
         numcores=int(electronpairs)
 
     #Block input for SCF/MDCI block options.
-    #TODO: Add Stability analysis option  here later
+    #Disabling FullLMP2 guess in general as not available for open-shell
+    #Adding memory and extrablocks.
     blocks="""
-    %maxcore {}
-    %scf
-    maxiter 200
-    end
-    """.format(memory)
+%maxcore {}
+%scf
+maxiter 1200
+end
+%mdci
+maxiter 150
+end
+{}
+
+""".format(memory,extrablocks)
     if stabilityanalysis is True:
         blocks = blocks + "%scf stabperform true end"
         
@@ -512,12 +532,12 @@ def W1F12theory_SP(fragment=None, charge=None, orcadir=None, mult=None, stabilit
     #Special basis for H.
 
     #F12-calculations for SCF and CCSD
-    ccsdf12_dz_line="! CCSD(T)-F12/RI cc-pVDZ-F12 cc-pVDZ-F12-CABS {} {} {} ".format(scfsetting,auxbasis,hfkeyword)
-    ccsdf12_tz_line="! CCSD-F12/RI cc-pVTZ-F12 cc-pVTZ-F12-CABS {} {} {} ".format(scfsetting,auxbasis,hfkeyword)
+    ccsdf12_dz_line="! CCSD(T)-F12/RI cc-pVDZ-F12 cc-pVDZ-F12-CABS {} {} {} {}".format(scfsetting,auxbasis,hfkeyword,extrainputkeyword)
+    ccsdf12_tz_line="! CCSD-F12/RI cc-pVTZ-F12 cc-pVTZ-F12-CABS {} {} {} {}".format(scfsetting,auxbasis,hfkeyword,extrainputkeyword)
 
     #Regular triples
-    ccsdt_dz_line="! CCSD(T) W1-DZ tightscf {} ".format(hfkeyword)
-    ccsdt_tz_line="! CCSD(T) W1-TZ tightscf {} ".format(hfkeyword)
+    ccsdt_dz_line="! CCSD(T) W1-DZ tightscf {} {} ".format(hfkeyword,extrainputkeyword)
+    ccsdt_tz_line="! CCSD(T) W1-TZ tightscf {} {} ".format(hfkeyword,extrainputkeyword)
 
     #F12
     ccsdf12_dz = ash.ORCATheory(orcadir=orcadir, orcasimpleinput=ccsdf12_dz_line, orcablocks=blocks, nprocs=numcores, charge=charge, mult=mult)
@@ -574,8 +594,8 @@ def W1F12theory_SP(fragment=None, charge=None, orcadir=None, mult=None, stabilit
     ############################################################
     #Core-correlation + scalar relativistic as joint correction
     ############################################################
-    ccsdt_mtsmall_NoFC_line="! CCSD(T) DKH W1-mtsmall  tightscf nofrozencore " + hfkeyword
-    ccsdt_mtsmall_FC_line="! CCSD(T) W1-mtsmall tightscf " + hfkeyword
+    ccsdt_mtsmall_NoFC_line="! CCSD(T) DKH W1-mtsmall  tightscf nofrozencore {} {}".format(hfkeyword,extrainputkeyword)
+    ccsdt_mtsmall_FC_line="! CCSD(T) W1-mtsmall tightscf {} {}".format(hfkeyword,extrainputkeyword)
 
     ccsdt_mtsmall_NoFC = ash.ORCATheory(orcadir=orcadir, orcasimpleinput=ccsdt_mtsmall_NoFC_line, orcablocks=blocks, nprocs=numcores, charge=charge, mult=mult)
     ccsdt_mtsmall_FC = ash.ORCATheory(orcadir=orcadir, orcasimpleinput=ccsdt_mtsmall_FC_line, orcablocks=blocks, nprocs=numcores, charge=charge, mult=mult)
@@ -629,7 +649,7 @@ def W1F12theory_SP(fragment=None, charge=None, orcadir=None, mult=None, stabilit
 
 
 def DLPNO_W1F12theory_SP(fragment=None, charge=None, orcadir=None, mult=None, stabilityanalysis=False, 
-                         numcores=1, memory=5000, pnosetting='NormalPNO', scfsetting='TightSCF', **kwargs):
+                         numcores=1, memory=5000, pnosetting='NormalPNO', scfsetting='TightSCF',extrainputkeyword='', extrablocks='', **kwargs):
     """
     Single-point DLPNO W1-F12 theory workflow.
     Differences: TBD
@@ -664,7 +684,11 @@ def DLPNO_W1F12theory_SP(fragment=None, charge=None, orcadir=None, mult=None, st
             scfsetting=workflow_args['scfsetting']
         if 'memory' in workflow_args:
             memory=workflow_args['memory']
-
+        if 'extrainputkeyword' in workflow_args:
+            extrainputkeyword=workflow_args['extrainputkeyword']
+        if 'extrablocks' in workflow_args:
+            extrablocks=workflow_args['extrablocks']
+            
     print("-----------------------------")
     print("DLPNO-W1-F12 theory_SP PROTOCOL")
     print("-----------------------------")
@@ -702,15 +726,23 @@ def DLPNO_W1F12theory_SP(fragment=None, charge=None, orcadir=None, mult=None, st
         numcores=int(electronpairs)
 
     #Block input for SCF/MDCI block options.
-    #TODO: Add Stability analysis option  here later
+    #Disabling FullLMP2 guess in general as not available for open-shell
+    #Adding memory and extrablocks.
     blocks="""
-    %maxcore {}
-    %scf
-    maxiter 200
-    end
-    """.format(memory)
+%maxcore {}
+%scf
+maxiter 1200
+end
+%mdci
+UseFullLMP2Guess false
+maxiter 150
+end
+{}
+
+""".format(memory,extrablocks)
     if stabilityanalysis is True:
         blocks = blocks + "%scf stabperform true end"
+        
     #Auxiliary basis set. One big one
     auxbasis='cc-pV5Z/C'
 
@@ -720,14 +752,14 @@ def DLPNO_W1F12theory_SP(fragment=None, charge=None, orcadir=None, mult=None, st
     #Special basis for H.
 
     #F12-calculations for SCF and CCSD contributions
-    ccsdf12_dz_line="! DLPNO-CCSD-F12 cc-pVDZ-F12 cc-pVDZ-F12-CABS  {} {} {}".format(auxbasis,pnosetting,scfsetting)
-    ccsdf12_tz_line="! DLPNO-CCSD-F12 cc-pVTZ-F12 cc-pVTZ-F12-CABS  {} {} {}".format(auxbasis,pnosetting,scfsetting)
+    ccsdf12_dz_line="! DLPNO-CCSD-F12 cc-pVDZ-F12 cc-pVDZ-F12-CABS  {} {} {} {}".format(auxbasis,pnosetting,scfsetting,extrainputkeyword)
+    ccsdf12_tz_line="! DLPNO-CCSD-F12 cc-pVTZ-F12 cc-pVTZ-F12-CABS  {} {} {} {}".format(auxbasis,pnosetting,scfsetting,extrainputkeyword)
     #TODO: Testing QZ CCSD step
     #ccsdf12_qz_line="! DLPNO-CCSD-F12 cc-pVQZ-F12 cc-pVQZ-F12-CABS  {} {} {}".format(auxbasis,pnosetting,scfsetting)
     
     #Regular triples
-    ccsdt_dz_line="! DLPNO-CCSD(T) W1-DZ  {} {} {}".format(auxbasis,pnosetting,scfsetting)
-    ccsdt_tz_line="! DLPNO-CCSD(T) W1-TZ  {} {} {}".format(auxbasis,pnosetting,scfsetting)
+    ccsdt_dz_line="! DLPNO-CCSD(T) W1-DZ  {} {} {} {}".format(auxbasis,pnosetting,scfsetting,extrainputkeyword)
+    ccsdt_tz_line="! DLPNO-CCSD(T) W1-TZ  {} {} {} {}".format(auxbasis,pnosetting,scfsetting,extrainputkeyword)
 
     #F12
     ccsdf12_dz = ash.ORCATheory(orcadir=orcadir, orcasimpleinput=ccsdf12_dz_line, orcablocks=blocks, nprocs=numcores, charge=charge, mult=mult)
@@ -794,8 +826,8 @@ def DLPNO_W1F12theory_SP(fragment=None, charge=None, orcadir=None, mult=None, st
     ############################################################
     #Core-correlation + scalar relativistic as joint correction
     ############################################################
-    ccsdt_mtsmall_NoFC_line="! DLPNO-CCSD(T) DKH W1-mtsmall   nofrozencore {} {} {}".format(auxbasis,pnosetting,scfsetting)
-    ccsdt_mtsmall_FC_line="! DLPNO-CCSD(T) W1-mtsmall  {} {} {}".format(auxbasis,pnosetting,scfsetting)
+    ccsdt_mtsmall_NoFC_line="! DLPNO-CCSD(T) DKH W1-mtsmall   nofrozencore {} {} {} {}".format(auxbasis,pnosetting,scfsetting,extrainputkeyword)
+    ccsdt_mtsmall_FC_line="! DLPNO-CCSD(T) W1-mtsmall  {} {} {} {}".format(auxbasis,pnosetting,scfsetting,extrainputkeyword)
 
     ccsdt_mtsmall_NoFC = ash.ORCATheory(orcadir=orcadir, orcasimpleinput=ccsdt_mtsmall_NoFC_line, orcablocks=blocks, nprocs=numcores, charge=charge, mult=mult)
     ccsdt_mtsmall_FC = ash.ORCATheory(orcadir=orcadir, orcasimpleinput=ccsdt_mtsmall_FC_line, orcablocks=blocks, nprocs=numcores, charge=charge, mult=mult)
@@ -850,7 +882,7 @@ def DLPNO_W1F12theory_SP(fragment=None, charge=None, orcadir=None, mult=None, st
 
 #DLPNO-test
 def DLPNO_W1theory_SP(fragment=None, charge=None, orcadir=None, mult=None, stabilityanalysis=False, numcores=1,
-                      memory=5000, pnosetting='NormalPNO', T1=False, scfsetting='TightSCF', **kwargs):
+                      memory=5000, pnosetting='NormalPNO', T1=False, scfsetting='TightSCF',extrainputkeyword='', extrablocks='', **kwargs):
     """
     WORK IN PROGRESS
     DLPNO-version of single-point W1 theory workflow.
@@ -883,7 +915,11 @@ def DLPNO_W1theory_SP(fragment=None, charge=None, orcadir=None, mult=None, stabi
             scfsetting=workflow_args['scfsetting']
         if 'memory' in workflow_args:
             memory=workflow_args['memory']
-    
+        if 'extrainputkeyword' in workflow_args:
+            extrainputkeyword=workflow_args['extrainputkeyword']
+        if 'extrablocks' in workflow_args:
+            extrablocks=workflow_args['extrablocks']
+                
     print("-----------------------------")
     print("DLPNO_W1theory_SP PROTOCOL")
     print("-----------------------------")
@@ -926,25 +962,21 @@ def DLPNO_W1theory_SP(fragment=None, charge=None, orcadir=None, mult=None, stabi
 
     #Block input for SCF/MDCI block options.
     #Disabling FullLMP2 guess in general as not available for open-shell
-    #TODO: Add Stability analysis option  here later
+    #Adding memory and extrablocks.
     blocks="""
-    %maxcore {}
-    %scf
-    maxiter 200
-    end
-    %mdci
-    UseFullLMP2Guess false
-    end
+%maxcore {}
+%scf
+maxiter 1200
+end
+%mdci
+UseFullLMP2Guess false
+maxiter 150
+end
+{}
 
-    """.format(memory)
+""".format(memory,extrablocks)
     if stabilityanalysis is True:
         blocks = blocks + "%scf stabperform true end"
-    #Whether to use diffuse basis set or not
-    #Note: this may fuck up basis set extrapolation
-    #if noaug is True:
-    #    prefix=''
-    #else:
-    #    prefix='aug-'
 
     #Auxiliary basis set. One big one
     auxbasis='cc-pV5Z/C'
@@ -962,9 +994,9 @@ def DLPNO_W1theory_SP(fragment=None, charge=None, orcadir=None, mult=None, stabi
     #ccsdt_dz_line="! DLPNO-CCSD(T) {}cc-pVDZ {} tightscf ".format(prefix,auxbasis)
     #ccsdt_tz_line="! DLPNO-CCSD(T) {}cc-pVTZ {} tightscf ".format(prefix,auxbasis)
     #ccsd_qz_line="! DLPNO-CCSD {}cc-pVQZ {} tightscf ".format(prefix,auxbasis)
-    ccsdt_dz_line="! {} W1-DZ {} {} {}".format(ccsdtkeyword, auxbasis, pnosetting, scfsetting)
-    ccsdt_tz_line="! {} W1-TZ {} {} {}".format(ccsdtkeyword, auxbasis, pnosetting, scfsetting)
-    ccsd_qz_line="! DLPNO-CCSD     W1-QZ {} {} {}".format(auxbasis, pnosetting, scfsetting)
+    ccsdt_dz_line="! {} W1-DZ {} {} {} {}".format(ccsdtkeyword, auxbasis, pnosetting, scfsetting,extrainputkeyword)
+    ccsdt_tz_line="! {} W1-TZ {} {} {} {}".format(ccsdtkeyword, auxbasis, pnosetting, scfsetting,extrainputkeyword)
+    ccsd_qz_line="! DLPNO-CCSD     W1-QZ {} {} {} {}".format(auxbasis, pnosetting, scfsetting,extrainputkeyword)
 
 
     ccsdt_dz = ash.ORCATheory(orcadir=orcadir, orcasimpleinput=ccsdt_dz_line, orcablocks=blocks, nprocs=numcores, charge=charge, mult=mult)
@@ -1011,8 +1043,8 @@ def DLPNO_W1theory_SP(fragment=None, charge=None, orcadir=None, mult=None, stabi
     ############################################################
     #Core-correlation + scalar relativistic as joint correction
     ############################################################
-    ccsdt_mtsmall_NoFC_line="! {} DKH W1-mtsmall  {} {} nofrozencore {}".format(ccsdtkeyword, auxbasis, pnosetting, scfsetting)
-    ccsdt_mtsmall_FC_line="! {} W1-mtsmall {}  {} {}".format(ccsdtkeyword, auxbasis, pnosetting, scfsetting)
+    ccsdt_mtsmall_NoFC_line="! {} DKH W1-mtsmall  {} {} nofrozencore {} {}".format(ccsdtkeyword, auxbasis, pnosetting, scfsetting,extrainputkeyword)
+    ccsdt_mtsmall_FC_line="! {} W1-mtsmall {}  {} {} {}".format(ccsdtkeyword, auxbasis, pnosetting, scfsetting,extrainputkeyword)
 
     ccsdt_mtsmall_NoFC = ash.ORCATheory(orcadir=orcadir, orcasimpleinput=ccsdt_mtsmall_NoFC_line, orcablocks=blocks, nprocs=numcores, charge=charge, mult=mult)
     ccsdt_mtsmall_FC = ash.ORCATheory(orcadir=orcadir, orcasimpleinput=ccsdt_mtsmall_FC_line, orcablocks=blocks, nprocs=numcores, charge=charge, mult=mult)
@@ -1070,7 +1102,7 @@ def DLPNO_W1theory_SP(fragment=None, charge=None, orcadir=None, mult=None, stabi
 #DLPNO-F12
 #Test: DLPNO-CCSD(T)-F12 protocol including CV+SR
 def DLPNO_F12_SP(fragment=None, charge=None, orcadir=None, mult=None, stabilityanalysis=False, numcores=1,
-                      memory=5000, pnosetting='NormalPNO', T1=False, scfsetting='TightSCF', F12level='DZ', **kwargs):
+                      memory=5000, pnosetting='NormalPNO', T1=False, scfsetting='TightSCF', F12level='DZ',extrainputkeyword='', extrablocks='', **kwargs):
     """
     WORK IN PROGRESS
     DLPNO-CCSD(T)-F12 version of single-point W1-ish workflow.
@@ -1104,7 +1136,11 @@ def DLPNO_F12_SP(fragment=None, charge=None, orcadir=None, mult=None, stabilitya
             memory=workflow_args['memory']
         if 'F12level' in workflow_args:
             F12level=workflow_args['F12level']
-
+        if 'extrainputkeyword' in workflow_args:
+            extrainputkeyword=workflow_args['extrainputkeyword']
+        if 'extrablocks' in workflow_args:
+            extrablocks=workflow_args['extrablocks']
+            
     print("-----------------------------")
     print("DLPNO_F12_SP PROTOCOL")
     print("-----------------------------")
@@ -1147,25 +1183,21 @@ def DLPNO_F12_SP(fragment=None, charge=None, orcadir=None, mult=None, stabilitya
 
     #Block input for SCF/MDCI block options.
     #Disabling FullLMP2 guess in general as not available for open-shell
-    #TODO: Add Stability analysis option  here later
+    #Adding memory and extrablocks.
     blocks="""
-    %maxcore {}
-    %scf
-    maxiter 200
-    end
-    %mdci
-    UseFullLMP2Guess false
-    end
+%maxcore {}
+%scf
+maxiter 1200
+end
+%mdci
+UseFullLMP2Guess false
+maxiter 150
+end
+{}
 
-    """.format(memory)
+""".format(memory,extrablocks)
     if stabilityanalysis is True:
         blocks = blocks + "%scf stabperform true end"
-    #Whether to use diffuse basis set or not
-    #Note: this may fuck up basis set extrapolation
-    #if noaug is True:
-    #    prefix=''
-    #else:
-    #    prefix='aug-'
 
     #Auxiliary basis set. One big one
     auxbasis='cc-pV5Z/C'
@@ -1184,7 +1216,7 @@ def DLPNO_F12_SP(fragment=None, charge=None, orcadir=None, mult=None, stabilitya
     #Frozen-core F12 calcs
     ############################################################
 
-    ccsdt_f12_line="! {} cc-pV{}-F12 cc-pV{}-F12-CABS {} {} {}".format(ccsdtkeyword, F12level, F12level,auxbasis, pnosetting, scfsetting)
+    ccsdt_f12_line="! {} cc-pV{}-F12 cc-pV{}-F12-CABS {} {} {} {}".format(ccsdtkeyword, F12level, F12level,auxbasis, pnosetting, scfsetting,extrainputkeyword)
 
 
     ccsdt_f12 = ash.ORCATheory(orcadir=orcadir, orcasimpleinput=ccsdt_f12_line, orcablocks=blocks, nprocs=numcores, charge=charge, mult=mult)
@@ -1214,8 +1246,8 @@ def DLPNO_F12_SP(fragment=None, charge=None, orcadir=None, mult=None, stabilitya
     # Done regularly, not F12
     ############################################################
     print("Doing CV+SR at normal non-F12 level for now")
-    ccsdt_mtsmall_NoFC_line="! DLPNO-CCSD(T) DKH W1-mtsmall  {} {} nofrozencore {}".format(auxbasis, pnosetting, scfsetting)
-    ccsdt_mtsmall_FC_line="! DLPNO-CCSD(T) W1-mtsmall {}  {} {}".format(auxbasis, pnosetting, scfsetting)
+    ccsdt_mtsmall_NoFC_line="! DLPNO-CCSD(T) DKH W1-mtsmall  {} {} nofrozencore {} {}".format(auxbasis, pnosetting, scfsetting,extrainputkeyword)
+    ccsdt_mtsmall_FC_line="! DLPNO-CCSD(T) W1-mtsmall {}  {} {} {}".format(auxbasis, pnosetting, scfsetting,extrainputkeyword)
 
     ccsdt_mtsmall_NoFC = ash.ORCATheory(orcadir=orcadir, orcasimpleinput=ccsdt_mtsmall_NoFC_line, orcablocks=blocks, nprocs=numcores, charge=charge, mult=mult)
     ccsdt_mtsmall_FC = ash.ORCATheory(orcadir=orcadir, orcasimpleinput=ccsdt_mtsmall_FC_line, orcablocks=blocks, nprocs=numcores, charge=charge, mult=mult)
@@ -1269,7 +1301,7 @@ def DLPNO_F12_SP(fragment=None, charge=None, orcadir=None, mult=None, stabilitya
 
 
 def DLPNO_W2theory_SP(fragment=None, charge=None, orcadir=None, mult=None, stabilityanalysis=False, numcores=1,
-                      memory=5000, pnosetting='NormalPNO', T1=False, scfsetting='TightSCF', **kwargs):
+                      memory=5000, pnosetting='NormalPNO', T1=False, scfsetting='TightSCF',extrainputkeyword='', extrablocks='', **kwargs):
     """
     WORK IN PROGRESS
     DLPNO-version of single-point W2 theory workflow.
@@ -1302,7 +1334,10 @@ def DLPNO_W2theory_SP(fragment=None, charge=None, orcadir=None, mult=None, stabi
             scfsetting=workflow_args['scfsetting']
         if 'memory' in workflow_args:
             memory=workflow_args['memory']
-    
+        if 'extrainputkeyword' in workflow_args:
+            extrainputkeyword=workflow_args['extrainputkeyword']
+        if 'extrablocks' in workflow_args:
+            extrablocks=workflow_args['extrablocks']    
     
     print("-----------------------------")
     print("DLPNO_W2theory_SP PROTOCOL")
@@ -1339,25 +1374,22 @@ def DLPNO_W2theory_SP(fragment=None, charge=None, orcadir=None, mult=None, stabi
 
     #Block input for SCF/MDCI block options.
     #Disabling FullLMP2 guess in general as not available for open-shell
-    #TODO: Add Stability analysis option  here later
+    #Adding memory and extrablocks.
     blocks="""
-    %maxcore {}
-    %scf
-    maxiter 200
-    end
-    %mdci
-    UseFullLMP2Guess false
-    end
+%maxcore {}
+%scf
+maxiter 1200
+end
+%mdci
+UseFullLMP2Guess false
+maxiter 150
+end
+{}
 
-    """.format(memory)
+""".format(memory,extrablocks)
     if stabilityanalysis is True:
         blocks = blocks + "%scf stabperform true end"
-    #Whether to use diffuse basis set or not
-    #Note: this may fuck up basis set extrapolation
-    #if noaug is True:
-    #    prefix=''
-    #else:
-    #    prefix='aug-'
+        
 
     #Auxiliary basis set. One big one
     #Todo: check whether it should be bigger
@@ -1376,9 +1408,9 @@ def DLPNO_W2theory_SP(fragment=None, charge=None, orcadir=None, mult=None, stabi
     #ccsdt_dz_line="! DLPNO-CCSD(T) {}cc-pVDZ {} tightscf ".format(prefix,auxbasis)
     #ccsdt_tz_line="! DLPNO-CCSD(T) {}cc-pVTZ {} tightscf ".format(prefix,auxbasis)
     #ccsd_qz_line="! DLPNO-CCSD {}cc-pVQZ {} tightscf ".format(prefix,auxbasis)
-    ccsdt_tz_line="! {} W1-TZ {} {} {}".format(ccsdtkeyword, auxbasis, pnosetting, scfsetting)
-    ccsdt_qz_line="! {} W1-QZ {} {} {}".format(ccsdtkeyword, auxbasis, pnosetting, scfsetting)
-    ccsd_5z_line="! DLPNO-CCSD  haV5Z(+d) {} {} {}".format(auxbasis, pnosetting, scfsetting)
+    ccsdt_tz_line="! {} W1-TZ {} {} {} {}".format(ccsdtkeyword, auxbasis, pnosetting, scfsetting,extrainputkeyword)
+    ccsdt_qz_line="! {} W1-QZ {} {} {} {}".format(ccsdtkeyword, auxbasis, pnosetting, scfsetting,extrainputkeyword)
+    ccsd_5z_line="! DLPNO-CCSD  haV5Z(+d) {} {} {} {}".format(auxbasis, pnosetting, scfsetting,extrainputkeyword)
 
     print("Need to check better if correct basis set.")
 
@@ -1430,8 +1462,8 @@ def DLPNO_W2theory_SP(fragment=None, charge=None, orcadir=None, mult=None, stabi
     ############################################################
     #Core-correlation + scalar relativistic as joint correction
     ############################################################
-    ccsdt_mtsmall_NoFC_line="! {} DKH W1-mtsmall  {} {} nofrozencore {}".format(ccsdtkeyword, auxbasis, pnosetting, scfsetting)
-    ccsdt_mtsmall_FC_line="! {} W1-mtsmall {}  {} {}".format(ccsdtkeyword, auxbasis, pnosetting, scfsetting)
+    ccsdt_mtsmall_NoFC_line="! {} DKH W1-mtsmall  {} {} nofrozencore {} {}".format(ccsdtkeyword, auxbasis, pnosetting, scfsetting,extrainputkeyword)
+    ccsdt_mtsmall_FC_line="! {} W1-mtsmall {}  {} {} {}".format(ccsdtkeyword, auxbasis, pnosetting, scfsetting,extrainputkeyword)
 
     ccsdt_mtsmall_NoFC = ash.ORCATheory(orcadir=orcadir, orcasimpleinput=ccsdt_mtsmall_NoFC_line, orcablocks=blocks, nprocs=numcores, charge=charge, mult=mult)
     ccsdt_mtsmall_FC = ash.ORCATheory(orcadir=orcadir, orcasimpleinput=ccsdt_mtsmall_FC_line, orcablocks=blocks, nprocs=numcores, charge=charge, mult=mult)
@@ -1832,7 +1864,7 @@ def calc_surface(fragment=None, theory=None, workflow=None, type='Unrelaxed', re
 
 #DLPNO-test CBS protocol. Simple. No core-correlation, scalar relativistic or spin-orbit coupling for now
 def DLPNO_CC_CBS_SP(cardinals = "2/3", basisfamily="def2", fragment=None, charge=None, orcadir=None, mult=None, stabilityanalysis=False, numcores=1,
-                      memory=5000, pnosetting='NormalPNO', T1=False, scfsetting='TightSCF', **kwargs):
+                      memory=5000, pnosetting='NormalPNO', T1=False, scfsetting='TightSCF', extrainputkeyword='', extrablocks='', **kwargs):
     """
     WORK IN PROGRESS
     DLPNO-CCSD(T)/CBS frozencore workflow
@@ -1867,7 +1899,11 @@ def DLPNO_CC_CBS_SP(cardinals = "2/3", basisfamily="def2", fragment=None, charge
             scfsetting=workflow_args['scfsetting']
         if 'memory' in workflow_args:
             memory=workflow_args['memory']
-    
+        if 'extrainputkeyword' in workflow_args:
+            extrainputkeyword=workflow_args['extrainputkeyword']
+        if 'extrablocks' in workflow_args:
+            extrablocks=workflow_args['extrablocks']
+
     print("-----------------------------")
     print("DLPNO_CC_CBS_SP PROTOCOL")
     print("-----------------------------")
@@ -1893,8 +1929,8 @@ def DLPNO_CC_CBS_SP(cardinals = "2/3", basisfamily="def2", fragment=None, charge
     if numelectrons == 1:
         print("Number of electrons is 1")
         print("Assuming hydrogen atom and skipping calculation")
-        W1_total = -0.500000
-        print("Using hardcoded value: ", W1_total)
+        E_total = -0.500000
+        print("Using hardcoded value: ", E_total)
         E_dict = {'Total_E': W1_total, 'E_SCF_CBS': W1_total, 'E_CCSDcorr_CBS': 0.0,
                   'E_triplescorr_CBS': 0.0, 'E_corecorr_and_SR': 0.0, 'E_SO': 0.0}
         return W1_total, E_dict
@@ -1913,26 +1949,21 @@ def DLPNO_CC_CBS_SP(cardinals = "2/3", basisfamily="def2", fragment=None, charge
 
     #Block input for SCF/MDCI block options.
     #Disabling FullLMP2 guess in general as not available for open-shell
-    #TODO: Add Stability analysis option  here later
+    #Adding memory and extrablocks.
     blocks="""
-    %maxcore {}
-    %scf
-    maxiter 200
-    end
-    %mdci
-    UseFullLMP2Guess false
-    end
-    """.format(memory)
+%maxcore {}
+%scf
+maxiter 1200
+end
+%mdci
+UseFullLMP2Guess false
+maxiter 150
+end
+{}
+
+""".format(memory,extrablocks)
     if stabilityanalysis is True:
         blocks = blocks + "%scf stabperform true end"
-
-
-    #Whether to use diffuse basis set or not
-    #Note: this may fuck up basis set extrapolation
-    #if noaug is True:
-    #    prefix=''
-    #else:
-    #    prefix='aug-'
 
     #Auxiliary basis set. One big one
     auxbasis='cc-pV5Z/C'
@@ -1945,35 +1976,32 @@ def DLPNO_CC_CBS_SP(cardinals = "2/3", basisfamily="def2", fragment=None, charge
 
 
     ############################################################s
-    #Frozen-core calcs
+    #Frozen-core DLPNO-CCSD(T) calculations defined here
     ############################################################
-    #ccsdt_dz_line="! DLPNO-CCSD(T) {}cc-pVDZ {} tightscf ".format(prefix,auxbasis)
-    #ccsdt_tz_line="! DLPNO-CCSD(T) {}cc-pVTZ {} tightscf ".format(prefix,auxbasis)
-    #ccsd_qz_line="! DLPNO-CCSD {}cc-pVQZ {} tightscf ".format(prefix,auxbasis)
-    #TODO: Choose between DZ/TZ and TZ/QZ extrapolations here
     if cardinals == "2/3" and basisfamily=="def2":
-        ccsdt_1_line="! {} def2-SVP {} {} {}".format(ccsdtkeyword, auxbasis, pnosetting, scfsetting)
-        ccsdt_2_line="! {} def2-TZVPP {} {} {}".format(ccsdtkeyword, auxbasis, pnosetting, scfsetting)
+        ccsdt_1_line="! {} def2-SVP {} {} {} {}".format(ccsdtkeyword, auxbasis, pnosetting, scfsetting,extrainputkeyword)
+        ccsdt_2_line="! {} def2-TZVPP {} {} {} {}".format(ccsdtkeyword, auxbasis, pnosetting, scfsetting,extrainputkeyword)
     elif cardinals == "3/4" and basisfamily=="def2":
-        ccsdt_1_line="! {} def2-TZVPP {} {} {}".format(ccsdtkeyword, auxbasis, pnosetting, scfsetting)
-        ccsdt_2_line="! {} def2-QZVPP {} {} {}".format(ccsdtkeyword, auxbasis, pnosetting, scfsetting)
+        ccsdt_1_line="! {} def2-TZVPP {} {} {} {}".format(ccsdtkeyword, auxbasis, pnosetting, scfsetting,extrainputkeyword)
+        ccsdt_2_line="! {} def2-QZVPP {} {} {} {}".format(ccsdtkeyword, auxbasis, pnosetting, scfsetting,extrainputkeyword)
     elif cardinals == "2/3" and basisfamily=="cc":
-        ccsdt_1_line="! {} cc-pVDZ {} {} {}".format(ccsdtkeyword, auxbasis, pnosetting, scfsetting)
-        ccsdt_2_line="! {} cc-pVTZ {} {} {}".format(ccsdtkeyword, auxbasis, pnosetting, scfsetting)
+        ccsdt_1_line="! {} cc-pVDZ {} {} {} {}".format(ccsdtkeyword, auxbasis, pnosetting, scfsetting,extrainputkeyword)
+        ccsdt_2_line="! {} cc-pVTZ {} {} {} {}".format(ccsdtkeyword, auxbasis, pnosetting, scfsetting,extrainputkeyword)
     elif cardinals == "3/4" and basisfamily=="cc":
-        ccsdt_1_line="! {} cc-pVTZ {} {} {}".format(ccsdtkeyword, auxbasis, pnosetting, scfsetting)
-        ccsdt_2_line="! {} cc-pVQZ {} {} {}".format(ccsdtkeyword, auxbasis, pnosetting, scfsetting)
+        ccsdt_1_line="! {} cc-pVTZ {} {} {} {}".format(ccsdtkeyword, auxbasis, pnosetting, scfsetting,extrainputkeyword)
+        ccsdt_2_line="! {} cc-pVQZ {} {} {} {}".format(ccsdtkeyword, auxbasis, pnosetting, scfsetting,extrainputkeyword)
     elif cardinals == "2/3" and basisfamily=="aug-cc":
-        ccsdt_1_line="! {} aug-cc-pVDZ {} {} {}".format(ccsdtkeyword, auxbasis, pnosetting, scfsetting)
-        ccsdt_2_line="! {} aug-cc-pVTZ {} {} {}".format(ccsdtkeyword, auxbasis, pnosetting, scfsetting)
+        ccsdt_1_line="! {} aug-cc-pVDZ {} {} {} {}".format(ccsdtkeyword, auxbasis, pnosetting, scfsetting,extrainputkeyword)
+        ccsdt_2_line="! {} aug-cc-pVTZ {} {} {} {}".format(ccsdtkeyword, auxbasis, pnosetting, scfsetting,extrainputkeyword)
     elif cardinals == "3/4" and basisfamily=="aug-cc":
-        ccsdt_1_line="! {} aug-cc-pVTZ {} {} {}".format(ccsdtkeyword, auxbasis, pnosetting, scfsetting)
-        ccsdt_2_line="! {} aug-cc-pVQZ {} {} {}".format(ccsdtkeyword, auxbasis, pnosetting, scfsetting)
+        ccsdt_1_line="! {} aug-cc-pVTZ {} {} {} {}".format(ccsdtkeyword, auxbasis, pnosetting, scfsetting,extrainputkeyword)
+        ccsdt_2_line="! {} aug-cc-pVQZ {} {} {} {}".format(ccsdtkeyword, auxbasis, pnosetting, scfsetting,extrainputkeyword)
         
-        
+    #Defining two theory objects for each basis set
     ccsdt_1 = ash.ORCATheory(orcadir=orcadir, orcasimpleinput=ccsdt_1_line, orcablocks=blocks, nprocs=numcores, charge=charge, mult=mult)
     ccsdt_2 = ash.ORCATheory(orcadir=orcadir, orcasimpleinput=ccsdt_2_line, orcablocks=blocks, nprocs=numcores, charge=charge, mult=mult)
 
+    #Running both theories
     ash.Singlepoint(fragment=fragment, theory=ccsdt_1)
     CCSDT_1_dict = grab_HF_and_corr_energies('orca-input.out', DLPNO=True)
     shutil.copyfile('orca-input.out', './' + calc_label + 'CCSDT_1' + '.out')
