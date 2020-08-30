@@ -1658,7 +1658,10 @@ def calc_surface(fragment=None, theory=None, workflow=None, type='Unrelaxed', re
         #Here making list of list in case only a single list was provided
         if any(isinstance(el, list) for el in RC1_indices) is False:
             RC1_indices=[RC1_indices]
+        print("RC1_type:", RC1_type)
         print("RC1_indices:", RC1_indices)
+        print("RC1_range:", RC1_range)
+        
     if 'RC2_range' in kwargs:
         dimension=2
         RC2_range=kwargs['RC2_range']
@@ -1666,7 +1669,9 @@ def calc_surface(fragment=None, theory=None, workflow=None, type='Unrelaxed', re
         RC2_indices=kwargs['RC2_indices']
         if any(isinstance(el, list) for el in RC2_indices) is False:
             RC2_indices=[RC2_indices]
+        print("RC2_type:", RC2_type)
         print("RC2_indices:", RC2_indices)
+        print("RC2_range:", RC2_range)
     else:
         dimension=1
     
@@ -1818,7 +1823,7 @@ def calc_surface(fragment=None, theory=None, workflow=None, type='Unrelaxed', re
                         #Running zero-theory with optimizer just to set geometry
                         geomeTRICOptimizer(fragment=fragment, theory=zerotheory, coordsystem=coordsystem, constraints=allconstraints, constrainvalue=True)
                         
-                        #Write geometry to disk
+                        #Write geometry to disk: RC1_2.02.xyz
                         fragment.write_xyzfile(xyzfilename="RC1_"+str(RCvalue1)+".xyz")
                         fragment.print_system(filename="RC1_"+str(RCvalue1)+".ygg")
                         shutil.move("RC1_"+str(RCvalue1)+".xyz", "surface_xyzfiles/"+"RC1_"+str(RCvalue1)+".xyz")
@@ -1904,21 +1909,38 @@ def calc_surface_fromXYZ(xyzdir=None, theory=None, dimension=None, resultfile=No
     for file in glob.glob(xyzdir+'/*.xyz'):
         relfile=os.path.basename(file)
         #Getting RC values from XYZ filename e.g. RC1_2.0-RC2_180.0.xyz
-        RCvalue1=float(relfile.split('-')[0][4:])
-        RCvalue2=float(relfile.split('-')[1][4:].replace('.xyz',''))
-        print("XYZ-file: {}     RC1: {} RC2: {}".format(relfile,RCvalue1,RCvalue2))
-        if (RCvalue1,RCvalue2) not in surfacedictionary:
-            mol=ash.Fragment(xyzfile=file)
-            energy = ash.Singlepoint(theory=theory, fragment=mol)
-            print("Energy of file {} : {} Eh".format(relfile, energy))
-            theory.cleanup()
-            surfacedictionary[(RCvalue1,RCvalue2)] = energy
-            #Writing dictionary to file
-            write_surfacedict_to_file(surfacedictionary,"surface_results.txt", dimension=1)
-            print("surfacedictionary:", surfacedictionary)
-            print("")
-        else:
-            print("RC1, RC2 values in dict already. Skipping.")
+        if dimension == 2:
+            RCvalue1=float(relfile.split('-')[0][4:])
+            RCvalue2=float(relfile.split('-')[1][4:].replace('.xyz',''))
+            print("XYZ-file: {}     RC1: {} RC2: {}".format(relfile,RCvalue1,RCvalue2))
+            if (RCvalue1,RCvalue2) not in surfacedictionary:
+                mol=ash.Fragment(xyzfile=file)
+                energy = ash.Singlepoint(theory=theory, fragment=mol)
+                print("Energy of file {} : {} Eh".format(relfile, energy))
+                theory.cleanup()
+                surfacedictionary[(RCvalue1,RCvalue2)] = energy
+                #Writing dictionary to file
+                write_surfacedict_to_file(surfacedictionary,"surface_results.txt", dimension=2)
+                print("surfacedictionary:", surfacedictionary)
+                print("")
+            else:
+                print("RC1 and RC2 values in dict already. Skipping.")
+        elif dimension == 1:
+            #RC1_2.02.xyz
+            RCvalue1=float(relfile.replace('.xyz','').replace('RC1_',''))
+            print("XYZ-file: {}     RC1: {} ".format(relfile,RCvalue1))
+            if (RCvalue1) not in surfacedictionary:
+                mol=ash.Fragment(xyzfile=file)
+                energy = ash.Singlepoint(theory=theory, fragment=mol)
+                print("Energy of file {} : {} Eh".format(relfile, energy))
+                theory.cleanup()
+                surfacedictionary[(RCvalue1)] = energy
+                #Writing dictionary to file
+                write_surfacedict_to_file(surfacedictionary,"surface_results.txt", dimension=1)
+                print("surfacedictionary:", surfacedictionary)
+                print("")            
+            else:
+                print("RC1 value in dict already. Skipping.")
 
     return surfacedictionary
 
