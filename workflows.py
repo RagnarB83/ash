@@ -2144,7 +2144,7 @@ end
     print("E_SCF_CBS : ", E_SCF_CBS)
     print("E_corr_CBS : ", E_corr_CBS)
 
-    E_dict = {'Total_E' : E_total, 'E_SCF_CBS' : E_SCF_CBS, 'E_CCSDcorr_CBS' : E_CCSDcorr_CBS, 'E_triplescorr_CBS' : E_triplescorr_CBS, 'E_corr_CBS' : E_corr_CBS}
+    E_dict = {'Total_E' : E_total, 'E_SCF_CBS' : E_SCF_CBS, 'E_corr_CBS' : E_corr_CBS}
 
 
     #Cleanup GBW file. Full cleanup ??
