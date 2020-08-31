@@ -1814,7 +1814,7 @@ def PhotoElectronSpectrum(theory=None, fragment=None, InitialState_charge=None, 
 
     if noDyson is True:
         print("NoDyson is True. Exiting...")
-        exit()
+        return
 
 
     if CAS is not True:
