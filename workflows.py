@@ -1678,10 +1678,10 @@ def calc_surface(fragment=None, theory=None, workflow=None, type='Unrelaxed', re
     #Calc number of surfacepoints
     if dimension==2:
         range2=math.ceil((RC2_range[0]-RC2_range[1])/RC2_range[2])
-        #print("range2", range2)
+        print("range2", range2)
         range1=math.ceil((RC1_range[0]-RC1_range[1])/RC1_range[2])
         totalnumpoints=range2*range1
-        #print("range1", range1)
+        print("range1", range1)
         print("Number of surfacepoints to calculate ", totalnumpoints)
     elif dimension==1:
         totalnumpoints=math.ceil((RC1_range[0]-RC1_range[1])/RC1_range[2])
@@ -1914,10 +1914,10 @@ def calc_surface_fromXYZ(xyzdir=None, theory=None, dimension=None, resultfile=No
             RCvalue1=float(relfile.split('-')[0][4:])
             RCvalue2=float(relfile.split('-')[1][4:].replace('.xyz',''))
 
-            print("=======================================")
+            print("=======================================================")
             print("Surfacepoint: {} / {}".format(count+1,totalnumpoints))
             print("XYZ-file: {}     RC1: {}   RC2: {}".format(relfile,RCvalue1,RCvalue2))
-            print("=======================================")
+            print("=======================================================")
             
             
             if (RCvalue1,RCvalue2) not in surfacedictionary:
