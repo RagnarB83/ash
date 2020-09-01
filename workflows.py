@@ -1917,7 +1917,7 @@ def calc_surface_fromXYZ(xyzdir=None, theory=None, dimension=None, resultfile=No
                 mol=ash.Fragment(xyzfile=file)
                 energy = ash.Singlepoint(theory=theory, fragment=mol)
                 print("Energy of file {} : {} Eh".format(relfile, energy))
-                theory.cleanup()
+                #theory.cleanup()
                 surfacedictionary[(RCvalue1,RCvalue2)] = energy
                 #Writing dictionary to file
                 write_surfacedict_to_file(surfacedictionary,"surface_results.txt", dimension=2)
@@ -1933,7 +1933,7 @@ def calc_surface_fromXYZ(xyzdir=None, theory=None, dimension=None, resultfile=No
                 mol=ash.Fragment(xyzfile=file)
                 energy = ash.Singlepoint(theory=theory, fragment=mol)
                 print("Energy of file {} : {} Eh".format(relfile, energy))
-                theory.cleanup()
+                #theory.cleanup()
                 surfacedictionary[(RCvalue1)] = energy
                 #Writing dictionary to file
                 write_surfacedict_to_file(surfacedictionary,"surface_results.txt", dimension=1)
