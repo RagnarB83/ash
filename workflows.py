@@ -1906,13 +1906,20 @@ def calc_surface_fromXYZ(xyzdir=None, theory=None, dimension=None, resultfile=No
     print("Initial surfacedictionary :", surfacedictionary)
 
     #Looping over XYZ files
-    for file in glob.glob(xyzdir+'/*.xyz'):
+    totalnumpoints=len(glob.glob(xyzdir+'/*.xyz'))
+    for count,file in enumerate(glob.glob(xyzdir+'/*.xyz')):
         relfile=os.path.basename(file)
         #Getting RC values from XYZ filename e.g. RC1_2.0-RC2_180.0.xyz
         if dimension == 2:
             RCvalue1=float(relfile.split('-')[0][4:])
             RCvalue2=float(relfile.split('-')[1][4:].replace('.xyz',''))
-            print("XYZ-file: {}     RC1: {} RC2: {}".format(relfile,RCvalue1,RCvalue2))
+
+            print("=======================================")
+            print("Surfacepoint: {} / {}".format(count+1,totalnumpoints))
+            print("XYZ-file: {}     RC1: {}   RC2: {}".format(relfile,RCvalue1,RCvalue2))
+            print("=======================================")
+            
+            
             if (RCvalue1,RCvalue2) not in surfacedictionary:
                 mol=ash.Fragment(xyzfile=file)
                 energy = ash.Singlepoint(theory=theory, fragment=mol)
