@@ -1677,14 +1677,14 @@ def calc_surface(fragment=None, theory=None, workflow=None, type='Unrelaxed', re
     
     #Calc number of surfacepoints
     if dimension==2:
-        range2=math.ceil((RC2_range[0]-RC2_range[1])/RC2_range[2])
-        print("range2", range2)
-        range1=math.ceil((RC1_range[0]-RC1_range[1])/RC1_range[2])
+        range2=math.ceil(abs((RC2_range[0]-RC2_range[1])/RC2_range[2]))
+        #print("range2", range2)
+        range1=math.ceil(abs((RC1_range[0]-RC1_range[1])/RC1_range[2]))
         totalnumpoints=range2*range1
-        print("range1", range1)
+        #print("range1", range1)
         print("Number of surfacepoints to calculate ", totalnumpoints)
     elif dimension==1:
-        totalnumpoints=math.ceil((RC1_range[0]-RC1_range[1])/RC1_range[2])
+        totalnumpoints=math.ceil(abs((RC1_range[0]-RC1_range[1])/RC1_range[2]))
         print("Number of surfacepoints to calculate ", totalnumpoints)
     
     
