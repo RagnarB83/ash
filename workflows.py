@@ -1694,6 +1694,10 @@ def calc_surface(fragment=None, theory=None, workflow=None, type='Unrelaxed', re
     
     #Setting constraints once values are known
     #Add extraconstraints if provided
+    
+    #TODO: Only works if RC constraints do not overwrite the extraconstraints. Need to fix
+    
+    
     def set_constraints(dimension=None,RCvalue1=None, RCvalue2=None, extraconstraints=None):
         if extraconstraints is not None:
             allconstraints = extraconstraints
@@ -1704,8 +1708,10 @@ def calc_surface(fragment=None, theory=None, workflow=None, type='Unrelaxed', re
             RC2=[]
             RC1=[]
             #Creating empty lists for each RC type (Note: could be the same)
-            allconstraints[RC1_type] = []
-            allconstraints[RC2_type] = []
+            if RC1_type not in allconstraints:
+                allconstraints[RC1_type] = []
+            if RC2_type not in allconstraints:
+                allconstraints[RC2_type] = []
             
             for RC2_indexlist in RC2_indices:
                 RC2.append(RC2_indexlist+[RCvalue2])
@@ -1716,7 +1722,8 @@ def calc_surface(fragment=None, theory=None, workflow=None, type='Unrelaxed', re
         elif dimension == 1:
             RC1=[]
             #Creating empty lists for each RC type (Note: could be the same)
-            allconstraints[RC1_type] = []
+            if RC1_type not in allconstraints:
+                allconstraints[RC1_type] = []
             for RC1_indexlist in RC1_indices:
                 RC1.append(RC1_indexlist+[RCvalue1])
             allconstraints[RC1_type] = allconstraints[RC1_type] + RC1
