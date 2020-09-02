@@ -49,10 +49,11 @@ def reactionprofile_plot(surfacedictionary, finalunit=None,label='Label', x_axis
 
 #contourplot
 #Input: dictionary of (X,Y): energy   entries 
+# Can also be other property than energy. Use RelativeEnergy=False
 #Good colormaps: viridis, viridis_r, inferno, inferno_r, plasma, plasma_r, magma, magma_r
 # Less recommended: jet, jet_r
 def contourplot(surfacedictionary, label='Label',x_axislabel='Coord', y_axislabel='Coord', finalunit=None, interpolation='Cubic', 
-                interpolparameter=10, colormap='inferno_r', dpi=200, imageformat='png'):
+                interpolparameter=10, colormap='inferno_r', dpi=200, imageformat='png', RelativeEnergy=True):
     
     conversionfactor = { 'kcal/mol' : 627.50946900, 'kcalpermol' : 627.50946900, 'kJ/mol' : 2625.499638, 'kJpermol' : 2625.499638, 
                         'eV' : 27.211386245988, 'cm-1' : 219474.6313702 }
@@ -70,44 +71,51 @@ def contourplot(surfacedictionary, label='Label',x_axislabel='Coord', y_axislabe
     x = sorted(set(x_c))
     y = sorted(set(y_c))
 
-    #List of energies and relenergies here
-    refenergy=float(min(e))
-    rele=[]
-    for numb in e:
-        rele.append((numb-refenergy)*conversionfactor[finalunit])
+    #Creating relative-energy array here. Unmodified property is used if False
+    if RelativeEnergy is True:
+        refenergy=float(min(e))
+        rele=[]
+        for numb in e:
+            rele.append((numb-refenergy)*conversionfactor[finalunit])
 
-    #Creating structured array
-    st=[]
-    for ind in range(0,len(x_c)):
-        st.append((x_c[ind], y_c[ind], rele[ind]))
+        #Creating structured array
+        st=[]
+        for ind in range(0,len(x_c)):
+            st.append((x_c[ind], y_c[ind], rele[ind]))
 
-    rele_new=[]
-    curr=[]
-
-    for yitem in y:
-        for xitem in x:
-            for nz in range(0,len(st)):
-                #print("nz is {} an st[nz] is {}".format(nz,st[nz]))
-                if (xitem,yitem) == st[nz][0:2]:
-                #if xitem in st[nz][0:2] and yitem in st[nz][0:2]:
-                    #print("if true. Adding st[nz] : {} to curr".format(st[nz]))
-                    curr.append(st[nz][2])
-                    #print("Here xitem is {} and yitem is {}".format(xitem,yitem))
-                    #print("Here: curr is:", curr)
-                    #print("Here: len curr is:", len(curr))
-                    #exit()
-                    #energy=st[nz][2]
-        rele_new.append(curr)
-        #print("rele_new:", rele_new)
+        rele_new=[]
         curr=[]
 
+        for yitem in y:
+            for xitem in x:
+                for nz in range(0,len(st)):
+                    if (xitem,yitem) == st[nz][0:2]:
+                        curr.append(st[nz][2])
+            rele_new.append(curr)
+            curr=[]
+        Z = rele_new
+    else:
+        #Creating structured array
+        st=[]
+        for ind in range(0,len(x_c)):
+            st.append((x_c[ind], y_c[ind], e[ind]))
+
+        e_new=[]
+        curr=[]
+        for yitem in y:
+            for xitem in x:
+                for nz in range(0,len(st)):
+                    if (xitem,yitem) == st[nz][0:2]:
+                        curr.append(st[nz][2])
+            e_new.append(curr)
+            curr=[]
+        Z = e_new
 
     #Now we create contour plot
 
     X, Y = np.meshgrid(x, y)
 
-    Z = rele_new
-    
+
     print("interpolation:", interpolation)
     if interpolation is not None:
         print("Using cubic interpolation")
