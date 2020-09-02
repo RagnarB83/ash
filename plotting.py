@@ -144,7 +144,12 @@ def contourplot(surfacedictionary, label='Label',x_axislabel='Coord', y_axislabe
             
         Y = zoom(Y, pw, mode='nearest')
         Z = zoom(Z, pw, mode='nearest')
-
+    print("X:", X)
+    print("Y:", Y)
+    print("Z:", Z)
+    print("len X:", len(X))
+    print("len Y:", len(Y))
+    print("len Z:", len(Z))
     cp=plt.contourf(X, Y, Z, 50, alpha=.75, cmap=colormap)
     C = plt.contour(X, Y, Z, 50, colors='black')
     plt.colorbar(cp)
