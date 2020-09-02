@@ -1940,7 +1940,7 @@ def calc_surface_fromXYZ(xyzdir=None, theory=None, dimension=None, resultfile=No
                 #Writing dictionary to file
                 write_surfacedict_to_file(surfacedictionary,"surface_results.txt", dimension=2)
                 print("surfacedictionary:", surfacedictionary)
-                calc_rotational_constants(fragment)
+                calc_rotational_constants(mol)
                 print("")
             else:
                 print("RC1 and RC2 values in dict already. Skipping.")
@@ -1957,7 +1957,7 @@ def calc_surface_fromXYZ(xyzdir=None, theory=None, dimension=None, resultfile=No
                 #Writing dictionary to file
                 write_surfacedict_to_file(surfacedictionary,"surface_results.txt", dimension=1)
                 print("surfacedictionary:", surfacedictionary)
-                calc_rotational_constants(fragment)
+                calc_rotational_constants(mol)
                 print("")            
             else:
                 print("RC1 value in dict already. Skipping.")
