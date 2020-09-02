@@ -45,7 +45,7 @@ def reactionprofile_plot(surfacedictionary, finalunit='',label='Label', x_axisla
 
     plt.title(label)
     plt.xlabel(x_axislabel)
-    plt.ylabel('{} ({})'.format(str(y_axislabel,finalunit)))
+    plt.ylabel('{} ({})'.format(y_axislabel,finalunit))
     plt.savefig('Plot{}.png'.format(label), format=imageformat, dpi=dpi)
     print("Created PNG file: Plot{}.png".format(label))
 
