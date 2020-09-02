@@ -20,7 +20,7 @@ def Gaussian(x, mu, strength, sigma):
 
 #reactionprofile_plot
 #Input: dictionary of (X,Y): energy   entries 
-def reactionprofile_plot(surfacedictionary, finalunit=None,label='Label', x_axislabel='Coord', dpi=200, imageformat='png', RelativeEnergy=True):
+def reactionprofile_plot(surfacedictionary, finalunit='',label='Label', x_axislabel='Coord', y_axislabel='Energy', dpi=200, imageformat='png', RelativeEnergy=True):
     conversionfactor = { 'kcal/mol' : 627.50946900, 'kcalpermol' : 627.50946900, 'kJ/mol' : 2625.499638, 'kJpermol' : 2625.499638, 
                         'eV' : 27.211386245988, 'cm-1' : 219474.6313702 }
     e=[]
@@ -45,7 +45,7 @@ def reactionprofile_plot(surfacedictionary, finalunit=None,label='Label', x_axis
 
     plt.title(label)
     plt.xlabel(x_axislabel)
-    plt.ylabel('Energy ({})'.format(str(finalunit)))
+    plt.ylabel('{} ({})'.format(str(y_axislabel,finalunit)))
     plt.savefig('Plot{}.png'.format(label), format=imageformat, dpi=dpi)
     print("Created PNG file: Plot{}.png".format(label))
 
