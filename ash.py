@@ -3893,7 +3893,7 @@ class xTBTheory:
         self.printlevel=printlevel
 
         if xtbmethod is None:
-            print("xTBTheory requires xtbnmethod keyword to be set")
+            print("xTBTheory requires xtbmethod keyword to be set")
             exit(1)
 
         self.nprocs=nprocs
