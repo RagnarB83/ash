@@ -1699,37 +1699,37 @@ def calc_surface(fragment=None, theory=None, workflow=None, type='Unrelaxed', re
     
     
     def set_constraints(dimension=None,RCvalue1=None, RCvalue2=None, extraconstraints=None):
-        allconstraints = {}
-        print("Inside set_constraints. allconstraints: ", allconstraints)
+        allcon = {}
+        print("Inside set_constraints. allcon: ", allcon)
         if extraconstraints is not None:
-            allconstraints = extraconstraints
+            allcon = extraconstraints
         else:
-            allconstraints = {}
+            allcon = {}
         # Defining all constraints as dict to be passed to geometric
         if dimension == 2:
             RC2=[]
             RC1=[]
             #Creating empty lists for each RC type (Note: could be the same)
-            if RC1_type not in allconstraints:
-                allconstraints[RC1_type] = []
-            if RC2_type not in allconstraints:
-                allconstraints[RC2_type] = []
+            if RC1_type not in allcon:
+                allcon[RC1_type] = []
+            if RC2_type not in allcon:
+                allcon[RC2_type] = []
             
             for RC2_indexlist in RC2_indices:
                 RC2.append(RC2_indexlist+[RCvalue2])
-            allconstraints[RC2_type] = allconstraints[RC2_type] + RC2
+            allcon[RC2_type] = allcon[RC2_type] + RC2
             for RC1_indexlist in RC1_indices:
                 RC1.append(RC1_indexlist+[RCvalue1])
-            allconstraints[RC1_type] = allconstraints[RC1_type] + RC1
+            allcon[RC1_type] = allcon[RC1_type] + RC1
         elif dimension == 1:
             RC1=[]
             #Creating empty lists for each RC type (Note: could be the same)
-            if RC1_type not in allconstraints:
-                allconstraints[RC1_type] = []
+            if RC1_type not in allcon:
+                allcon[RC1_type] = []
             for RC1_indexlist in RC1_indices:
                 RC1.append(RC1_indexlist+[RCvalue1])
-            allconstraints[RC1_type] = allconstraints[RC1_type] + RC1
-        return allconstraints
+            allcon[RC1_type] = allcon[RC1_type] + RC1
+        return allcon
     
     pointcount=0
     
