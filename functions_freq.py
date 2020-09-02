@@ -687,13 +687,15 @@ def calc_rotational_constants(frag):
 
     #Converting from moments of inertia in amu A^2 to rotational constants in Ghz.
     #COnversion factor from http://openmopac.net/manual/thermochemistry.html
-    rot_constants=[];rot_constants_cm=[]
+    rot_constants=[]
     for inertval in rinertia:
         #Only calculating constant if moment of inertia value not zero
         if inertval != 0.0:
-            rot_constants.append(5.053791E5/(inertval*1000))
-            rot_constants_cm.append(16.85763/(5.053791E5/(inertval*1000)))
-
+            rot_ghz=5.053791E5/(inertval*1000)
+            rot_constants.append(rot_ghz)
+    
+    rot_constants_cm = [i*constants.GHztocm for i in rot_constants]
+    
     print("Moments of inertia (amu A^2 ):", rinertia)
     print("Rotational constants (GHz):", rot_constants)
     print("Rotational constants (cm-1):", rot_constants_cm)

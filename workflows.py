@@ -1630,7 +1630,6 @@ def write_surfacedict_to_file(dict,file="surface_results.txt",dimension=None):
     with open(file, 'w') as f:
         for d in dict.items():
             if dimension==1:
-                print("d:", d)
                 x=d[0]
                 e=d[1]
                 f.write(str(x)+" "+str(e)+'\n')
