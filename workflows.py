@@ -1804,7 +1804,7 @@ def calc_surface(fragment=None, theory=None, workflow=None, type='Unrelaxed', re
                             surfacedictionary[(RCvalue1,RCvalue2)] = energy
                             #Writing dictionary to file
                             write_surfacedict_to_file(surfacedictionary,"surface_results.txt", dimension=2)
-
+                            calc_rotational_constants(fragment)
                         else:
                             print("RC1, RC2 values in dict already. Skipping.")
                     print("surfacedictionary:", surfacedictionary)
@@ -1833,6 +1833,7 @@ def calc_surface(fragment=None, theory=None, workflow=None, type='Unrelaxed', re
                         #Writing dictionary to file
                         write_surfacedict_to_file(surfacedictionary,"surface_results.txt", dimension=1)
                         print("surfacedictionary:", surfacedictionary)
+                        calc_rotational_constants(fragment)
                     else:
                         print("RC1 value in dict already. Skipping.")
         elif type=='Relaxed':
@@ -1854,7 +1855,7 @@ def calc_surface(fragment=None, theory=None, workflow=None, type='Unrelaxed', re
                             surfacedictionary[(RCvalue1,RCvalue2)] = energy
                             #Writing dictionary to file
                             write_surfacedict_to_file(surfacedictionary,"surface_results.txt", dimension=2)
-                            
+                            calc_rotational_constants(fragment)
                             #Write geometry to disk
                             fragment.write_xyzfile(xyzfilename="RC1_"+str(RCvalue1)+"-RC2_"+str(RCvalue2)+".xyz")
                             fragment.print_system(filename="RC1_"+str(RCvalue1)+"-RC2_"+str(RCvalue2)+".ygg")
@@ -1881,7 +1882,7 @@ def calc_surface(fragment=None, theory=None, workflow=None, type='Unrelaxed', re
                         #Writing dictionary to file
                         write_surfacedict_to_file(surfacedictionary,"surface_results.txt", dimension=1)
                         print("surfacedictionary:", surfacedictionary)
-                        
+                        calc_rotational_constants(fragment)
                         #Write geometry to disk
                         fragment.write_xyzfile(xyzfilename="RC1_"+str(RCvalue1)+".xyz")
                         fragment.print_system(filename="RC1_"+str(RCvalue1)+".ygg")
@@ -1929,6 +1930,7 @@ def calc_surface_fromXYZ(xyzdir=None, theory=None, dimension=None, resultfile=No
                 #Writing dictionary to file
                 write_surfacedict_to_file(surfacedictionary,"surface_results.txt", dimension=2)
                 print("surfacedictionary:", surfacedictionary)
+                calc_rotational_constants(fragment)
                 print("")
             else:
                 print("RC1 and RC2 values in dict already. Skipping.")
@@ -1945,6 +1947,7 @@ def calc_surface_fromXYZ(xyzdir=None, theory=None, dimension=None, resultfile=No
                 #Writing dictionary to file
                 write_surfacedict_to_file(surfacedictionary,"surface_results.txt", dimension=1)
                 print("surfacedictionary:", surfacedictionary)
+                calc_rotational_constants(fragment)
                 print("")            
             else:
                 print("RC1 value in dict already. Skipping.")
