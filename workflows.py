@@ -1701,12 +1701,15 @@ def calc_surface(fragment=None, theory=None, workflow=None, type='Unrelaxed', re
     def set_constraints(dimension=None,RCvalue1=None, RCvalue2=None, extraconstraints=None):
         allcon = {}
         print("Inside set_constraints. allcon: ", allcon)
+        print("extraconstraints:", extraconstraints)
         if extraconstraints is not None:
             allcon = extraconstraints
         else:
             allcon = {}
         # Defining all constraints as dict to be passed to geometric
         if dimension == 2:
+            print("y. allcon:", allcon)
+            print("RC2_indices:", RC2_indices)
             RC2=[]
             RC1=[]
             #Creating empty lists for each RC type (Note: could be the same)
@@ -1714,13 +1717,16 @@ def calc_surface(fragment=None, theory=None, workflow=None, type='Unrelaxed', re
                 allcon[RC1_type] = []
             if RC2_type not in allcon:
                 allcon[RC2_type] = []
-            
+            print("z. allcon:", allcon)
             for RC2_indexlist in RC2_indices:
                 RC2.append(RC2_indexlist+[RCvalue2])
+            print("z2. allcon:", allcon)
             allcon[RC2_type] = allcon[RC2_type] + RC2
             for RC1_indexlist in RC1_indices:
                 RC1.append(RC1_indexlist+[RCvalue1])
+            print("z3. allcon:", allcon)
             allcon[RC1_type] = allcon[RC1_type] + RC1
+            print("z. allcon:", allcon)
         elif dimension == 1:
             RC1=[]
             #Creating empty lists for each RC type (Note: could be the same)
