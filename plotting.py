@@ -71,7 +71,6 @@ def contourplot(surfacedictionary, label='Label',x_axislabel='Coord', y_axislabe
     x = sorted(set(x_c))
     y = sorted(set(y_c))
 
-    print("e:", e)
     #Creating relative-energy array here. Unmodified property is used if False
     if RelativeEnergy is True:
         refenergy=float(min(e))
@@ -111,8 +110,6 @@ def contourplot(surfacedictionary, label='Label',x_axislabel='Coord', y_axislabe
             e_new.append(curr)
             curr=[]
         Z = e_new
-    print("Z:", Z)
-    print("len Z:", len(Z))
     #Now we create contour plot
 
     X, Y = np.meshgrid(x, y)
@@ -146,12 +143,6 @@ def contourplot(surfacedictionary, label='Label',x_axislabel='Coord', y_axislabe
             
         Y = zoom(Y, pw, mode='nearest')
         Z = zoom(Z, pw, mode='nearest')
-    print("X:", X)
-    print("Y:", Y)
-    print("Z:", Z)
-    print("len X:", len(X))
-    print("len Y:", len(Y))
-    print("len Z:", len(Z))
     cp=plt.contourf(X, Y, Z, 50, alpha=.75, cmap=colormap)
     C = plt.contour(X, Y, Z, 50, colors='black')
     plt.colorbar(cp)
