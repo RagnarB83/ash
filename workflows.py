@@ -1703,7 +1703,7 @@ def calc_surface(fragment=None, theory=None, workflow=None, type='Unrelaxed', re
         print("Inside set_constraints. allcon: ", allcon)
         print("extraconstraints:", extraconstraints)
         if extraconstraints is not None:
-            allcon = extraconstraints
+            allcon = copy.copy(extraconstraints)
         else:
             allcon = {}
         # Defining all constraints as dict to be passed to geometric
