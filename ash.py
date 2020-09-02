@@ -3505,7 +3505,7 @@ class Fragment:
         self.prettyformula = self.formula.replace('1','')
 
         if self.printlevel >= 2:
-            print("Fragment numatoms: {} Formula: {}".format(self.numatoms,self.prettyformula))
+            print("Fragment numatoms: {} Formula: {}  Label: {}".format(self.numatoms,self.prettyformula,self.label))
 
     #Add coordinates from geometry string. Will replace.
     #Todo: Needs more work as elems and coords may be lists or numpy arrays

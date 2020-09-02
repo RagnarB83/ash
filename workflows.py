@@ -1642,7 +1642,7 @@ def write_surfacedict_to_file(dict,file="surface_results.txt",dimension=None):
 #Calculate 1D or 2D surface, either relaxed or unrelaxed.
 # TODO: Parallelize surfacepoint calculations
 def calc_surface(fragment=None, theory=None, workflow=None, type='Unrelaxed', resultfile='surface_results.txt', 
-                 runmode='serial', coordsystem='dlc', maxiter=50, **kwargs):    
+                 runmode='serial', coordsystem='dlc', maxiter=50, extraconstraints=None, **kwargs):    
     print("="*50)
     print("CALC_SURFACE FUNCTION")
     print("="*50)
@@ -1693,8 +1693,12 @@ def calc_surface(fragment=None, theory=None, workflow=None, type='Unrelaxed', re
     
     
     #Setting constraints once values are known
-    def set_constraints(dimension=None,RCvalue1=None, RCvalue2=None):
-        allconstraints = {}
+    #Add extraconstraints if provided
+    def set_constraints(dimension=None,RCvalue1=None, RCvalue2=None, extraconstraints=None):
+        if extraconstraints is not None:
+            allconstraints = {extraconstraints}
+        else:
+            allconstraints = {}
         # Defining all constraints as dict to be passed to geometric
         if dimension == 2:
             RC2=[]
@@ -1741,7 +1745,7 @@ def calc_surface(fragment=None, theory=None, workflow=None, type='Unrelaxed', re
                         print("=======================================")
                         if (RCvalue1,RCvalue2) not in surfacedictionary:
                             #Now setting constraints
-                            allconstraints = set_constraints(dimension=2, RCvalue1=RCvalue1, RCvalue2=RCvalue2)
+                            allconstraints = set_constraints(dimension=2, RCvalue1=RCvalue1, RCvalue2=RCvalue2, extraconstraints=extraconstraints)
                             print("allconstraints:", allconstraints)
                             #Running zero-theory with optimizer just to set geometry
                             geomeTRICOptimizer(fragment=fragment, theory=zerotheory, maxiter=maxiter, coordsystem=coordsystem, constraints=allconstraints, constrainvalue=True)
@@ -1788,7 +1792,7 @@ def calc_surface(fragment=None, theory=None, workflow=None, type='Unrelaxed', re
                         
                         if (RCvalue1,RCvalue2) not in surfacedictionary:
                             #Now setting constraints
-                            allconstraints = set_constraints(dimension=2, RCvalue1=RCvalue1, RCvalue2=RCvalue2)
+                            allconstraints = set_constraints(dimension=2, RCvalue1=RCvalue1, RCvalue2=RCvalue2, extraconstraints=extraconstraints)
                             print("allconstraints:", allconstraints)
                             #Running zero-theory with optimizer just to set geometry
                             geomeTRICOptimizer(fragment=fragment, theory=zerotheory, maxiter=maxiter, coordsystem=coordsystem, constraints=allconstraints, constrainvalue=True)
@@ -1817,7 +1821,7 @@ def calc_surface(fragment=None, theory=None, workflow=None, type='Unrelaxed', re
                     
                     if (RCvalue1) not in surfacedictionary:
                         #Now setting constraints
-                        allconstraints = set_constraints(dimension=1, RCvalue1=RCvalue1)
+                        allconstraints = set_constraints(dimension=1, RCvalue1=RCvalue1, extraconstraints=extraconstraints)
                         print("allconstraints:", allconstraints)
                         #Running zero-theory with optimizer just to set geometry
                         geomeTRICOptimizer(fragment=fragment, theory=zerotheory, maxiter=maxiter, coordsystem=coordsystem, constraints=allconstraints, constrainvalue=True)
@@ -1847,7 +1851,7 @@ def calc_surface(fragment=None, theory=None, workflow=None, type='Unrelaxed', re
                         print("=======================================")
                         if (RCvalue1,RCvalue2) not in surfacedictionary:
                             #Now setting constraints
-                            allconstraints = set_constraints(dimension=2, RCvalue1=RCvalue1, RCvalue2=RCvalue2)
+                            allconstraints = set_constraints(dimension=2, RCvalue1=RCvalue1, RCvalue2=RCvalue2, extraconstraints=extraconstraints)
                             print("allconstraints:", allconstraints)
                             #Running 
                             energy = geomeTRICOptimizer(fragment=fragment, theory=theory, maxiter=maxiter, coordsystem=coordsystem, constraints=allconstraints, constrainvalue=True)
@@ -1873,7 +1877,7 @@ def calc_surface(fragment=None, theory=None, workflow=None, type='Unrelaxed', re
                     
                     if (RCvalue1) not in surfacedictionary:
                         #Now setting constraints
-                        allconstraints = set_constraints(dimension=1, RCvalue1=RCvalue1)
+                        allconstraints = set_constraints(dimension=1, RCvalue1=RCvalue1, extraconstraints=extraconstraints)
                         print("allconstraints:", allconstraints)
                         #Running zero-theory with optimizer just to set geometry
                         energy = geomeTRICOptimizer(fragment=fragment, theory=theory, maxiter=maxiter, coordsystem=coordsystem, constraints=allconstraints, constrainvalue=True)
