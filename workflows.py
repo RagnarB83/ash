@@ -1699,6 +1699,8 @@ def calc_surface(fragment=None, theory=None, workflow=None, type='Unrelaxed', re
     
     
     def set_constraints(dimension=None,RCvalue1=None, RCvalue2=None, extraconstraints=None):
+        allconstraints = {}
+        print("Inside set_constraints. allconstraints: ", allconstraints)
         if extraconstraints is not None:
             allconstraints = extraconstraints
         else:
