@@ -1696,7 +1696,7 @@ def calc_surface(fragment=None, theory=None, workflow=None, type='Unrelaxed', re
     #Add extraconstraints if provided
     def set_constraints(dimension=None,RCvalue1=None, RCvalue2=None, extraconstraints=None):
         if extraconstraints is not None:
-            allconstraints = {extraconstraints}
+            allconstraints = extraconstraints
         else:
             allconstraints = {}
         # Defining all constraints as dict to be passed to geometric
