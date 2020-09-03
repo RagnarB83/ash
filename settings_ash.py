@@ -1,5 +1,8 @@
+import os
 import ash
 import time
+import configparser
+parser = configparser.ConfigParser()
 
 #Defining some ASH settings here
 
@@ -11,20 +14,32 @@ scale = 1.0
 tol = 0.1
 conndepth = 10
 
+#Path to codes can be defined here (incompatible with git pull though. If regularly updating code via git, use configuration file below instead)
+#orcadir='/path/to/orca'
+#xtbdir='/path/to/xtbdir'
+
+#Read additional user configuration file if present. Should be present inside ASH source-code dir. TODO: Move to ~ instead?
+#Introduced to bypass git conflicts of settings_ash.py
+#Format of file ash_user_settings.ini:
+#[Settings]
+#orcadir = /Applications/orca_4.2.1
+
+file = "ash_user_settings.ini"
+ashpath = os.path.dirname(ash.__file__)
+parser.read(ashpath+"/"+file)
+try:
+    orcadir = parser.get("Settings","orcadir")
+except:
+    pass
+
+
 #Init function to print header and set time
 def init():
     #Comment out to skip printing of header
     ash.print_ash_header()
-    #global scale
-    #global tol
-    #global conndepth
 
-    # Changing Scale, Tol, connectivity-recursivedepth
-    # Scale=1.0, tol=0.1 and conndepth=10 should be good
-    #scale = 1.0
-    #tol = 0.1
-    #conndepth = 10
 
+    
     #Initializes time
     global init_time
     init_time=time.time()

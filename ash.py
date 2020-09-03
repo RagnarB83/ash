@@ -2541,8 +2541,15 @@ class QMMMTheory:
 #ORCA Theory object. Fragment object is optional. Only used for single-points.
 
 class ORCATheory:
-    def __init__(self, orcadir, fragment=None, charge='', mult='', orcasimpleinput='', printlevel=2,
+    def __init__(self, orcadir=None, fragment=None, charge='', mult='', orcasimpleinput='', printlevel=2,
                  orcablocks='', extraline='', brokensym=None, HSmult=None, atomstoflip=None, nprocs=1, label=None):
+
+        if orcadir is None:
+            print("No orcadir argument passed to ORCATheory. Attempting to use settings_ash variable")
+            self.orcadir=settings_ash.orcadir
+        else:
+            self.orcadir = orcadir
+        print("ORCA dir:", self.orcadir)
 
         #Label to distinguish different ORCA objects
         self.label=label
@@ -2553,9 +2560,9 @@ class ORCATheory:
         #Using orcadir to set LD_LIBRARY_PATH
         old = os.environ.get("LD_LIBRARY_PATH")
         if old:
-            os.environ["LD_LIBRARY_PATH"] = orcadir + ":" + old
+            os.environ["LD_LIBRARY_PATH"] = self.orcadir + ":" + old
         else:
-            os.environ["LD_LIBRARY_PATH"] = orcadir
+            os.environ["LD_LIBRARY_PATH"] = self.orcadir
         #os.environ['LD_LIBRARY_PATH'] = orcadir + ':$LD_LIBRARY_PATH'
 
         #Printlevel
@@ -2564,7 +2571,7 @@ class ORCATheory:
         #Setting nprocs of object
         self.nprocs=nprocs
 
-        self.orcadir = orcadir
+
         if fragment != None:
             self.fragment=fragment
             self.coords=fragment.coords
