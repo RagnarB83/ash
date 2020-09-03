@@ -3673,10 +3673,14 @@ class Fragment:
         return subcoords,subelems
     #Calculate connectivity (list of lists) of coords
     def calc_connectivity(self, conndepth=99, scale=None, tol=None, codeversion='julia' ):
-        if len(self.coords) > 10000:
+        #Using py version if molecule is small. Otherwise Julia by default
+        if len(self.coords) < 100:
+            codeversion='py'
+        elif len(self.coords) > 10000:
             if self.printlevel >= 2:
                 print("Atom number > 10K. Connectivity calculation could take a while")
 
+        
         if scale == None:
             try:
                 scale = settings_ash.scale
@@ -3699,6 +3703,8 @@ class Fragment:
 
         # Calculate connectivity by looping over all atoms
         timestampA=time.time()
+        
+        
         if codeversion=='py':
             print("Calculating connectivity of fragment using py")
             timestampB = time.time()
@@ -3724,9 +3730,7 @@ class Fragment:
                 print_time_rel(timestampB, modulename='calc connectivity julia')
             except:
                 print(BC.FAIL,"Problem importing Pyjulia (import julia)", BC.END)
-                print("Make sure Julia is installed and PyJulia module available")
-                print("Also, are you using python-jl ?")
-                print("")
+                print("Make sure Julia is installed and PyJulia module available, and that you are using python-jl")
                 print(BC.FAIL,"Using Python version instead (slow for large systems)", BC.END)
                 fraglist = calc_conn_py(self.coords, self.elems, conndepth, scale, tol)
 

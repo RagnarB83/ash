@@ -1602,6 +1602,8 @@ def thermochemprotocol(Opt_theory=None, SPprotocol=None, fraglist=None, stoichio
 # 1D: (coordinate1) : energy
 # 2D: (coordinate1,coordinate2) : energy
 #TODO: Make more general
+#TODO: Replace with Json read/write instead??
+#Example: https://stackoverflow.com/questions/47568211/how-to-read-and-write-dictionaries-to-external-files-in-python
 def read_surfacedict_from_file(file, dimension=None):
     print("Attempting to read old results file...")
     dict = {}
