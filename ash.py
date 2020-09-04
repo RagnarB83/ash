@@ -18,13 +18,14 @@ from functions_optimization import *
 from interface_geometric import geomeTRICOptimizer
 import shutil
 import subprocess as sp
+import elstructure_functions
+from workflows import *
+from benchmarking import *
 
 debugflag=False
 
 import sys
 import inspect
-
-
 
 #Useful function to measure size of object:
 #https://goshippo.com/blog/measure-real-size-any-python-object/
@@ -92,10 +93,21 @@ def print_ash_header():
                                          
     """
 
-    ascii_tree="""                         ╓                                  ▄                  
+    ascii_banner_center = """
+                            ▄████████    ▄████████    ▄█    █▄    
+                           ███    ███   ███    ███   ███    ███   
+                           ███    ███   ███    █▀    ███    ███   
+                           ███    ███   ███         ▄███▄▄▄▄███▄▄ 
+                         ▀███████████ ▀███████████ ▀▀███▀▀▀▀███▀  
+                           ███    ███          ███   ███    ███   
+                           ███    ███    ▄█    ███   ███    ███   
+                           ███    █▀   ▄████████▀    ███    █▀    
+                                         
+    """
+    ascii_tree = """                                                                               
                   [      ▓          ▒     ╒                  ▓                  
-                  ╙█     ▓▓         ▓  -µ ╙▄        ¬       ▓▀  ,▄▄▄▄           
-               ▌∩   ▀█▓▌▄▄▓▓▓▄,  ▀▄▓▌    ▓  ▀█      ▌   █ ╓▓Γ ▄▓▀¬      ⌐       
+                  ╙█     ▓▓         ▓  -µ ╙▄        ¬       ▓▀             
+               ▌∩   ▀█▓▌▄▄▓▓▓▄,  ▀▄▓▌    ▓  ▀█      ▌   █ ╓▓Γ ▄▓▀¬              
               ╓Γ╘     % ╙▀▀▀▀▀▓▓▄  ▓▓   █▓,╒  ▀▓   ▓▌ Æ▀▓▓▓ ▄▓▓¬ .     ▌        
               ▓  ^█    ▌  ▄    ▀▓▓ ▓▓m ▐▓ ▓▓  ▐▌▓▌▓▀   Å▓▓▓▓▀     ▐   ▐▓    ▄   
             ╘▓▌ \  ▀▓▄▐▓ ▐▓     ▀▓▓▓▓m ▓▌▄▓▓█ ▓┘ ▓▓ ▄█▀▀▓▓▄   ▐▓  ▐▄  j▓   ▓    
@@ -104,38 +116,36 @@ def print_ash_header():
         ▐▄    ▀▓▓  ▓   ▓▓▓▓▓Γ╙▓▄  ▓▓▓▓▓▌▓▓▀▓Γ ▓▓▄▓▓▓▀  ▄ ▓▓▀  ▀   ▐▓▄▓▀   ▄▓    
    ╓┴▀███▓▓▓▄   ▓▓▓    █▓▓▓ ║ ¬▓▓▓▓▓▓▓▓▀  ▓▌  ▐▓▓▓▓  ▄▓▓▓▀  ▄▓██▀▀  ▓▓▄▓█▀Γ     
            ╙▀▓▓▓▓▓▓     ▓▓▓  █▄  ▀▓▓▓▓▓  j▓▄  ▓▓▓▓▓▓▓▓▀   █▓▓▀   ▄▓▓▓▀▐         
-          ,▄µ  ▀▓▓▓▓▓▄  ▓▓▓   ▓▓▄▓▓▀▓▓▓▓▓▓▓  ▄▓▓▓▓▓▓▓▓▓▓▓▓▀  ▄▓▓▀▀¬          )  
+          ,▄µ  ▀▓▓▓▓▓▄  ▓▓▓   ▓▓▄▓▓▀▓▓▓▓▓▓▓  ▄▓▓▓▓▓▓▓▓▓▓▓▓▀  ▄▓▓▀▀¬             
     ▄▓█▀▀▀▀▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▄  ²▓▓▓    ▀▓▓▓▓ ▄▓▓▓▓▓▓▀▀▀¬   ▄▓▓▀¬ ▄Φ` ▄`       ▓  
   Σ▀Σ  ▄██▀▀Σ     ¬▀▓▓▓▓▓▓▓▓  j▓▓▌     ▐▓▓▓▓▓▓▓▓▀       .▓▓▀  ▄▓  ▄▓Γ   ▄▄▄▀▀   
-     ╒▓      ⌐        ▀▓▓▓▓▓▄,▓▓▓▓▓▓▓▓▄ ▓▓▓▓▓▓▓▓▓▄,     ▓▓▓▄▄▓▓▓█▀▀  ▓▓▀¬       
+     ╒▓               ▀▓▓▓▓▓▄,▓▓▓▓▓▓▓▓▄ ▓▓▓▓▓▓▓▓▓▄,     ▓▓▓▄▄▓▓▓█▀▀  ▓▓▀¬       
      ╙⌐       ▄         ▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▐▀▓▓▓▓▓▓▓▓▓▓▓▓▀▀▓▓▓▓▓▓▓▀          
-          ▄█▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▀▀¬  ▐▀▓▓▓▓▓▓▓▓▓        ¬             ▐▀▀▄     ╓┘  
-       ▄▀▀▐▓▓▀▐  ¬*▐▀▀▀▀,¬           ▓▓▓▓▓▓▓                            ¬▐▀▀    
+          ▄█▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▀▀¬  ▐▀▓▓▓▓▓▓▓▓▓                      ▐▀▀▄         
+       ▄▀▀▐▓▓▀▐  ¬*▐▀▀▀▀             ▓▓▓▓▓▓▓                                 
      ╒Γ   ▐▓                         ▓▓▓▓▓▓▓                                    
      Γ    ╫                          ▓▓▓▓▓▓▓                                    
-           .                         ▓▓▓▓▓▓▓                                    
+                                     ▓▓▓▓▓▓▓                                    
                                     ▓▓▓▓▓▓▓▓▄                                   
                                    ▓▓▓▓▓▓▓▓▓▓▄                                  
-                     ╓**¥▄▄     ,▓▓▓▓▓▓▓▓▓▓▓▓▓▄                                 
-             x▄▄▄▄4Γ      ▓▓▓▓▓▓▓▀▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▄▄▌▌▄▄▄                       
-                ,▄æ∞═,▄█▓▀▀▐¬▐▀▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▄ ▐▀▓▓▓▓▓▀▀▀▀Σ╙           
-         ╙Φ¥¥▀▀▀    ╒▓   ▄▓█▀▀▓▓▓▓▓▓▓▓▀  ▓▓▓▓▓▓ ▀▓▓▄▄▐▀▀▀▀▀▐▐▀██                
+                                ,▓▓▓▓▓▓▓▓▓▓▓▓▓▄                                 
+                          ▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▄▄▌▌▄▄▄                       
+                ,▄æ∞▄▄▄█▓▀▀▐¬▐▀▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▄ ▐▀▓▓▓▓▓▀▀▀▀Σ╙           
+         ╙Φ¥¥▀▀▀▀   ╒▓   ▄▓█▀▀▓▓▓▓▓▓▓▓▀  ▓▓▓▓▓▓ ▀▓▓▄▄▐▀▀▀▀▀▐▐▀██                
                     ▓▌▄▓▓▀  ▓▓▓▓▓▀▀▓▓     ▓▓ ▓▓▓   ▐▀▀█▓▓▌¥4▀▀▀▀▓▓▄             
                `ΓΦ▀▓▀▐   ▄▄▓▓ ▓▓  ▐▌▓     ▓▓▓ ▓▀▀▓▄     ,▓▓      ▀▀▀▀▀          
                  ▄▀,  ▄█▀▀ ▓¬ ▓τ  ▓ ▐▓   ▓  ▓  ¥ ▓        ▀▌                    
                ^    ▓▀    █  ▓▀ ▄█¬ ▐▓  ▌   Γ   ▐▓τ*       ▀█▄                  
                    ▓   /Γ ƒ▀ⁿ  █    ▓   Γ      ╓▀▐⌐          ¬▀²                
                    ▓      \    ▀    ╙µ  ⌡                                       
-                                .    └                                          
-                                                                                
-"""
-
-
+                                     └                                                                                                                      
+    """
     print(BC.OKGREEN,"----------------------------------------------------------------------------------",BC.END)
     print(BC.OKGREEN,"----------------------------------------------------------------------------------",BC.END)
     #print(BC.OKBLUE,ascii_banner3,BC.END)
     #print(BC.OKBLUE,ascii_banner2,BC.END)
-    print(BC.OKGREEN,ascii_banner,BC.END)
+    print(BC.OKGREEN,ascii_banner_center,BC.END)
+    print(BC.OKGREEN,ascii_tree,BC.END)
     print(BC.WARNING,BC.BOLD,"ASH version", programversion,BC.END)
     print(BC.WARNING, "Git commit version: ", git_commit_number, BC.END)
     print(BC.WARNING,"A COMPCHEM AND QM/MM ENVIRONMENT", BC.END)
@@ -216,7 +226,8 @@ def displacement_QMMMrun(arglist):
 
 #Single-point energy function
 # *args is used by parallel version
-def Singlepoint(fragment=None, theory=None, Grad=False, *args):
+
+def Singlepoint(fragment=None, theory=None, Grad=False):
     print("")
     '''
     The Singlepoint function carries out a single-point energy calculation
@@ -230,19 +241,18 @@ def Singlepoint(fragment=None, theory=None, Grad=False, *args):
     if fragment is None or theory is None:
         print(BC.FAIL,"Singlepoint requires a fragment and a theory object",BC.END)
         exit(1)
-
     coords=fragment.coords
     elems=fragment.elems
-
     # Run a single-point energy job
     if Grad ==True:
-        print(BC.WARNING,"Doing single-point Energy+Gradient job on fragment : ", fragment.prettyformula, BC.END)
+        print(BC.WARNING,"Doing single-point Energy+Gradient job on fragment. Formula: {} Label: {} ".format(fragment.prettyformula,fragment.label), BC.END)
         # An Energy+Gradient calculation where we change the number of cores to 12
         energy,gradient= theory.run(current_coords=coords, elems=elems, Grad=True)
         print("Energy: ", energy)
         return energy,gradient
     else:
-        print(BC.WARNING,"Doing single-point Energy job on fragment : ", fragment.prettyformula, BC.END)
+        print(BC.WARNING,"Doing single-point Energy job on fragment. Formula: {} Label: {} ".format(fragment.prettyformula,fragment.label), BC.END)
+
         energy = theory.run(current_coords=coords, elems=elems)
         print("Energy: ", energy)
 
@@ -254,7 +264,6 @@ def Singlepoint(fragment=None, theory=None, Grad=False, *args):
 
 #Stripped down version of Singlepoint function for Singlepoint_parallel
 def Single_par(list):
-
     theory=list[0]
     fragment=list[1]
     label=list[2]
@@ -267,10 +276,13 @@ def Single_par(list):
 
     coords = fragment.coords
     elems = fragment.elems
-    print(BC.WARNING, "Doing single-point Energy job on fragment : ", fragment.prettyformula, BC.END)
+    print(BC.WARNING,"Doing single-point Energy job on fragment. Formula: {} Label: {} ".format(fragment.prettyformula,fragment.label), BC.END)
     #Creating separate inputfilename using label
     theory.inputfilename=label
+    print("label:", label)
+
     energy = theory.run(current_coords=coords, elems=elems)
+    exit()
     print("Energy: ", energy)
     # Now adding total energy to fragment
     fragment.energy = energy
@@ -281,7 +293,7 @@ def Single_par(list):
 def Singlepoint_parallel(fragments=None, theories=None, numcores=None):
     print("")
     '''
-    The Singlepoint_parallel function carries multiple single-point calculations in a parallel fashion
+    The Singlepoint_parallel function carries out multiple single-point calculations in a parallel fashion
     :param fragments:
     :type list: list of ASH objects of class Fragment
     :param theories:
@@ -295,7 +307,7 @@ def Singlepoint_parallel(fragments=None, theories=None, numcores=None):
 
     blankline()
     print("Singlepoint_parallel function")
-    print("Number of CPU cores availale: ", numcores)
+    print("Number of CPU cores available: ", numcores)
     print("Number of fragments:", len(fragments))
     print("Number of theories:", len(theories))
     print("Running single-point calculations in parallel")
@@ -317,12 +329,12 @@ def Singlepoint_parallel(fragments=None, theories=None, numcores=None):
         pool.close()
         print("Calculations are done")
     else:
-        print("multiple")
-        fragment = fragments[0]
-        results = pool.map(Single_par, [[theory,fragment,label] for theory,fragment in zip(theories,fragments)])
-        pool.close()
-        print("results : ", results)
-        print("Calculations are done")
+        print("Multiple theories and multiple fragments provided.")
+        print("This is not supported. Exiting...")
+        #fragment = fragments[0]
+        #results = pool.map(Single_par, [[theory,fragment,label] for theory,fragment in zip(theories,fragments)])
+        #pool.close()
+
 
     #Convert list of tuples into dict
     energy_dict = {result[0]: result[1] for result in results}
@@ -334,7 +346,12 @@ def Singlepoint_parallel(fragments=None, theories=None, numcores=None):
 
 #Numerical frequencies function
 def NumFreq(fragment=None, theory=None, npoint=1, displacement=0.0005, hessatoms=None, numcores=1, runmode='serial'):
+    
     print(BC.WARNING, BC.BOLD, "------------NUMERICAL FREQUENCIES-------------", BC.END)
+    shutil.rmtree('Numfreq_dir', ignore_errors=True)
+    os.mkdir('Numfreq_dir')
+    os.chdir('Numfreq_dir')
+    print("Creating separate directory for displacement calculations: Numfreq_dir ")
     if fragment is None or theory is None:
         print("NumFreq requires a fragment and a theory object")
 
@@ -702,7 +719,9 @@ def NumFreq(fragment=None, theory=None, npoint=1, displacement=0.0005, hessatoms
     print(BC.WARNING, BC.BOLD, "------------NUMERICAL FREQUENCIES END-------------", BC.END)
 
     #Thermochemistry object. Should contain frequencies, zero-point energy, enthalpycorr, gibbscorr, etc.
-
+    
+    #Return to ..
+    os.chdir('..')
     return Thermochemistry
 
 #Molecular dynamics class
@@ -761,10 +780,22 @@ def print_time_rel_and_tot_color(timestampA,timestampB, modulename=''):
 # Dummy QM theory template
 #class Theory:
 #    def __init__(self, charge, mult, printlevel=None):
-#        #Atom types
-#    pass
 #    def run(self):
 #        pass
+
+# Dummy QM theory template
+
+
+
+# Theory object that always gives zero energy and zero gradient. Useful for setting constraints
+class ZeroTheory:
+    def __init__(self, fragment=None, charge=None, mult=None, printlevel=None, nprocs=1, label=None):
+        pass
+    def run(self, current_coords=None, elems=None, Grad=False, PC=False, nprocs=None ):
+        self.energy = 0.0
+        #Numpy object
+        self.gradient = np.zeros((len(elems), 3))
+        return self.energy,self.gradient
 
 
 
@@ -781,26 +812,19 @@ def print_time_rel_and_tot_color(timestampA,timestampB, modulename=''):
 #GROMACSfiles:
 # Need gromacstopfile and grofile (contains periodic information along with coordinates) and gromacstopdir location (topology)
 
+#Dependencies:
+#OpenMM. Install via conda: conda install -c omnia openmm
+#
+
+
 class OpenMMTheory:
     def __init__(self, pdbfile=None, platform='CPU', active_atoms=None, frozen_atoms=None,
                  CHARMMfiles=False, psffile=None, charmmtopfile=None, charmmprmfile=None,
                  GROMACSfiles=False, gromacstopfile=None, grofile=None, gromacstopdir=None,
                  Amberfiles=False, amberprmtopfile=None, printlevel=2, nprocs=1,
-                 xmlfile=None):
-
-        print("Setting OpenMM CPU Threads to: ", nprocs)
-        print("TODO: confirm parallelization")
-        os.environ["OPENMM_CPU_THREADS"] = str(nprocs)
-
-        #Printlevel
-        self.printlevel=printlevel
-
-        print(BC.WARNING, BC.BOLD, "------------Defining OpenMM object-------------", BC.END)
+                 xmlfile=None, periodic=False, periodic_cell_dimensions=None):
+        
         timeA = time.time()
-        self.coords=[]
-        self.charges=[]
-        self.platform_choice=platform
-
         # OPEN MM load
         try:
             import simtk.openmm.app
@@ -811,9 +835,27 @@ class OpenMMTheory:
                 "OpenMM requires installing the OpenMM package. Try: conda install -c omnia openmm  \
                 Also see http://docs.openmm.org/latest/userguide/application.html")
 
+        print(BC.WARNING, BC.BOLD, "------------Defining OpenMM object-------------", BC.END)
+        #Printlevel
+        self.printlevel=printlevel
+
+        #Parallelization
+        print("Setting OpenMM CPU Threads to: ", nprocs)
+        print("TODO: confirm parallelization")
+        os.environ["OPENMM_CPU_THREADS"] = str(nprocs)
+
+        
+        #Initializing
+        self.coords=[]
+        self.charges=[]
+        self.Periodic = periodic
+
+            
+        #OpenMM things
+
+        self.platform_choice=platform
         self.unit=simtk.unit
         self.Vec3=simtk.openmm.Vec3
-
 
 
         #TODO: Should we keep this? Probably not. Coordinates would be handled by ASH.
@@ -822,20 +864,155 @@ class OpenMMTheory:
         print_time_rel(timeA, modulename="prep")
         timeA = time.time()
 
-
+        self.Forcefield=None
         #What type of forcefield files to read. Reads in different way.
         # #Always creates object we call self.forcefield that contains topology attribute
+        
+        
+        
         if CHARMMfiles is True:
+            self.Forcefield='CHARMM'
             print("Reading CHARMM files")
             # Load CHARMM PSF files. Both CHARMM-style and XPLOR allowed I believe. Todo: Check
+            self.psffile=psffile
             self.psf = simtk.openmm.app.CharmmPsfFile(psffile)
             self.params = simtk.openmm.app.CharmmParameterSet(charmmtopfile, charmmprmfile)
             # self.pdb = simtk.openmm.app.PDBFile(pdbfile) probably not reading coordinates here
             #self.forcefield = self.psf
             self.topology = self.psf.topology
+            
+            #Setting active and frozen variables once topology is in place
+            self.set_active_and_frozen_regions(active_atoms=active_atoms, frozen_atoms=frozen_atoms)
+            
             # Create an OpenMM system by calling createSystem on psf
-            self.system = self.psf.createSystem(self.params, nonbondedMethod=simtk.openmm.app.NoCutoff,
-                                                nonbondedCutoff=1 * simtk.openmm.unit.nanometer)
+            
+            #Periodic
+            if self.Periodic is True:
+                print("System is periodic (only for pure MM")
+                self.periodic_cell_dimensions = periodic_cell_dimensions
+                self.a = periodic_cell_dimensions[0] * self.unit.angstroms
+                self.b = periodic_cell_dimensions[1] * self.unit.angstroms
+                self.c = periodic_cell_dimensions[2] * self.unit.angstroms
+                
+                #Parameters here are based on OpenMM DHFR example
+                self.psf.setBox(self.a, self.b, self.c)
+                
+                self.system = self.psf.createSystem(self.params, nonbondedMethod=simtk.openmm.app.PME,
+                                                nonbondedCutoff=12 * self.unit.angstroms, switchDistance=10*self.unit.angstroms)
+                print("self.system.getForces() :", self.system.getForces())
+                for force in self.system.getForces():
+                    if isinstance(force, simtk.openmm.CustomNonbondedForce):
+                        print('CustomNonbondedForce: %s' % force.getUseSwitchingFunction())
+                        print('LRC? %s' % force.getUseLongRangeCorrection())
+                        force.setUseLongRangeCorrection(False)
+                    elif isinstance(force, simtk.openmm.NonbondedForce):
+                        print('NonbondedForce: %s' % force.getUseSwitchingFunction())
+                        print('LRC? %s' % force.getUseDispersionCorrection())
+                        force.setUseDispersionCorrection(False)
+                        force.setPMEParameters(1.0/0.34, periodic_cell_dimensions[3], periodic_cell_dimensions[4], periodic_cell_dimensions[5]) 
+                        # NOTE: These are hard-coded!
+                
+            #Non-Periodic
+            else:
+                print("System is non-periodic")
+                
+                #For frozen systems we use Customforce in order to specify interaction groups
+                if len(self.frozen_atoms) > 0:
+                    
+                    #Two possible ways.
+                    #https://github.com/openmm/openmm/issues/2698
+                    #1. Use CustomNonbondedForce  with interaction groups. Could be slow
+                    #2. CustomNonbondedForce but with scaling
+                    
+                    #Way
+                    def create_cnb(original_nbforce):
+                        """Creates a CustomNonbondedForce object that recapitulates the function
+                        of the original nonbonded force"""
+                        #Next, create a CustomNonbondedForce with LJ and Coulomb terms
+                        ONE_4PI_EPS0 = 138.935456
+                        #TODO: Not sure whether sqrt should be present or not in epsilon???
+                        energy_expression  = "4*epsilon*((sigma/r)^12 - (sigma/r)^6) + ONE_4PI_EPS0*chargeprod/r;"
+                        energy_expression += "epsilon = sqrt(epsilon1*epsilon2);"
+                        energy_expression += "sigma = 0.5*(sigma1+sigma2);"
+                        energy_expression += "ONE_4PI_EPS0 = {:f};".format(ONE_4PI_EPS0)  # already in OpenMM units
+                        energy_expression += "chargeprod = charge1*charge2;"
+                        custom_nonbonded_force = simtk.openmm.CustomNonbondedForce(energy_expression)
+                        custom_nonbonded_force.addPerParticleParameter('charge')
+                        custom_nonbonded_force.addPerParticleParameter('sigma')
+                        custom_nonbonded_force.addPerParticleParameter('epsilon')
+                        # Configure force
+                        custom_nonbonded_force.setNonbondedMethod(simtk.openmm.CustomNonbondedForce.NoCutoff)
+                        #custom_nonbonded_force.setCutoffDistance(1*simtk.openmm.unit.nanometer)
+                        custom_nonbonded_force.setUseLongRangeCorrection(False)
+                        #custom_nonbonded_force.setUseSwitchingFunction(True)
+                        #custom_nonbonded_force.setSwitchingDistance(cutoff_distance - 1.0*simtk.openmmunit.angstroms)
+                        
+                        
+                        print('adding particles to custom force')
+                        for index in range(self.system.getNumParticles()):
+                            [charge, sigma, epsilon] = original_nbforce.getParticleParameters(index)
+                            custom_nonbonded_force.addParticle([charge, sigma, epsilon])
+
+                        return custom_nonbonded_force
+                    
+                    
+                    #myCustomNBForce= simtk.openmm.CustomNonbondedForce("4*epsilon*((sigma/r)^12-(sigma/r)^6); sigma=0.5*(sigma1+sigma2); epsilon=sqrt(epsilon1*epsilon2)")
+                    #myCustomNBForce.setNonbondedMethod(simtk.openmm.app.NoCutoff)
+                    #myCustomNBForce.setCutoffDistance(1000*simtk.openmm.unit.angstroms)
+                    #Frozen-Act interaction
+                    #myCustomNBForce.addInteractionGroup(self.frozen_atoms,self.active_atoms)
+                    #Act-Act interaction
+                    #myCustomNBForce.addInteractionGroup(self.active_atoms,self.active_atoms)
+                
+
+                self.system = self.psf.createSystem(self.params, nonbondedMethod=simtk.openmm.app.NoCutoff,
+                                                    nonbondedCutoff=1000 * simtk.openmm.unit.angstroms)
+                
+                #All original unmodified forces
+                forces = { force.__class__.__name__ : force for force in self.system.getForces() }
+                
+                # Get charges from OpenMM object into self.charges
+                self.getatomcharges(forces['NonbondedForce'])
+                
+                hbforce = forces['HarmonicBondForce']
+                #Case QM/MM. Delete bonded terms in QM-region
+                
+                #https://github.com/openmm/openmm/issues/2792
+                #for i in range(hbforce.getNumBonds()):
+                #    p1, p2, length, k = hbforce.getBondParameters(i)
+                #    exclude = (p1 in atoms or p2 in atoms)
+                #    hbforce.setBondParameters(i, p1, p2, length, 0 if exclude else bond_k[i])
+                 #   hbforce.updateParametersInContext(context)
+                
+                
+                nbforce = forces['NonbondedForce']
+                custom_nonbonded_force = create_cnb(nbforce)
+                
+                
+                #Frozen-Act interaction
+                custom_nonbonded_force.addInteractionGroup(self.frozen_atoms,self.active_atoms)
+                #Act-Act interaction
+                custom_nonbonded_force.addInteractionGroup(self.active_atoms,self.active_atoms)
+                
+                #Update system with new force and delete old force
+                self.system.addForce(custom_nonbonded_force) 
+                 #TODO: Check. Is NonbondedForce always number 6???
+                self.system.removeForce(6)
+                print("self.system.getForces() :", self.system.getForces())
+
+                            
+                #Define force object here, for possible modification of charges (QM/MM)
+                forces = {self.system.getForce(index).__class__.__name__:
+                            self.system.getForce(index) for index in range(self.system.getNumForces())}
+                
+                
+                print("self.system.getForces() :", self.system.getForces())
+                print("forces:", forces)
+                
+                #This nonbonded force variable can point to regular default OpenMM Nonbondedforce or CustomNonBondedForce.
+                self.nonbonded_force = forces['CustomNonbondedForce']
+                print("self.nonbonded_force:", self.nonbonded_force)
+
         elif GROMACSfiles is True:
             print("Warning: Gromacs-file interface not tested")
             #Reading grofile, not for coordinates but for periodic vectors
@@ -847,7 +1024,11 @@ class OpenMMTheory:
             # Create an OpenMM system by calling createSystem on grotop
             self.system = self.grotop.createSystem(nonbondedMethod=simtk.openmm.app.NoCutoff,
                                                 nonbondedCutoff=1 * simtk.openmm.unit.nanometer)
+            
+            forces = {self.system.getForce(index).__class__.__name__: self.system.getForce(index) for index in range(self.system.getNumForces())}
+            self.nonbonded_force = forces['NonbondedForce']
         elif Amberfiles is True:
+            self.Forcefield='Amber'
             print("Warning: Amber-file interface not tested")
             #Note: Only new-style Amber7 prmtop files work
             self.prmtop = simtk.openmm.app.AmberPrmtopFile(amberprmtopfile)
@@ -857,6 +1038,9 @@ class OpenMMTheory:
             # Create an OpenMM system by calling createSystem on prmtop
             self.system = self.prmtop.createSystem(nonbondedMethod=simtk.openmm.app.NoCutoff,
                                                 nonbondedCutoff=1 * simtk.openmm.unit.nanometer)
+            
+            forces = {self.system.getForce(index).__class__.__name__: self.system.getForce(index) for index in range(self.system.getNumForces())}
+            self.nonbonded_force = forces['NonbondedForce']
         else:
             print("Reading OpenMM XML forcefield file and PDB file")
             #This would be regular OpenMM Forcefield definition requiring XML file
@@ -868,39 +1052,20 @@ class OpenMMTheory:
             self.forcefield = simtk.openmm.app.ForceField(xmlfile)
             self.system = self.forcefield.createSystem(nonbondedMethod=simtk.openmm.app.NoCutoff,
                                                 nonbondedCutoff=1 * simtk.openmm.unit.nanometer)
-
-        #Define force object here, for possible modification of charges (QM/MM)
-        forces = {self.system.getForce(index).__class__.__name__:
-                      self.system.getForce(index) for index in range(self.system.getNumForces())}
-        self.nonbonded_force = forces['NonbondedForce']
+            
+            forces = {self.system.getForce(index).__class__.__name__: self.system.getForce(index) for index in range(self.system.getNumForces())}
+            self.nonbonded_force = forces['NonbondedForce']
 
 
-        # Get charges from OpenMM object into self.charges
-        self.getatomcharges()
+
+
+
 
 
         print_time_rel(timeA, modulename="system create")
         timeA = time.time()
         #constraints=simtk.openmm.app.HBonds, AllBonds, HAngles
 
-        #FROZEN AND ACTIVE ATOMS
-        self.numatoms=int(self.psf.topology.getNumAtoms())
-        print("self.numatoms:", self.numatoms)
-        self.allatoms=list(range(0,self.numatoms))
-        if active_atoms is None and frozen_atoms is None:
-            print("All {} atoms active, no atoms frozen".format(len(self.allatoms)))
-        elif active_atoms is not None and frozen_atoms is None:
-            self.active_atoms=active_atoms
-            self.frozen_atoms=listdiff(self.allatoms,self.active_atoms)
-            print("{} active atoms, {} frozen atoms".format(len(self.active_atoms),len(self.frozen_atoms)))
-            #listdiff
-        elif frozen_atoms is not None and active_atoms is None:
-            self.frozen_atoms = frozen_atoms
-            self.active_atoms = listdiff(self.allatoms, self.frozen_atoms)
-            print("{} active atoms, {} frozen atoms".format(len(self.active_atoms),len(self.frozen_atoms)))
-        else:
-            print("active_atoms and frozen_atoms can not be both defined")
-            exit(1)
 
         # Remove Frozen-Frozen interactions
         #Todo: Will be requested by QMMM object so unnecessary unless during pure MM??
@@ -936,6 +1101,13 @@ class OpenMMTheory:
         print("Constraints:", self.system.getNumConstraints())
         print_time_rel(timeA, modulename="constraint fix")
         timeA = time.time()
+        
+        
+        
+        self.forcegroupify()
+        print_time_rel(timeA, modulename="forcegroupify")
+        timeA = time.time()
+        
         #Dummy integrator
         self.integrator = simtk.openmm.LangevinIntegrator(300 * simtk.openmm.unit.kelvin,  # Temperature of head bath
                                         1 / simtk.openmm.unit.picosecond,  # Friction coefficient
@@ -948,9 +1120,34 @@ class OpenMMTheory:
                                                                  self.platform)
 
 
+
+
         print_time_rel(timeA, modulename="simulation setup")
         timeA = time.time()
+        
 
+
+
+    def set_active_and_frozen_regions(self, active_atoms=None, frozen_atoms=None):
+        #FROZEN AND ACTIVE ATOMS
+        self.numatoms=int(self.psf.topology.getNumAtoms())
+        print("self.numatoms:", self.numatoms)
+        self.allatoms=list(range(0,self.numatoms))
+        if active_atoms is None and frozen_atoms is None:
+            print("All {} atoms active, no atoms frozen".format(len(self.allatoms)))
+            self.frozen_atoms = []
+        elif active_atoms is not None and frozen_atoms is None:
+            self.active_atoms=active_atoms
+            self.frozen_atoms=listdiff(self.allatoms,self.active_atoms)
+            print("{} active atoms, {} frozen atoms".format(len(self.active_atoms),len(self.frozen_atoms)))
+            #listdiff
+        elif frozen_atoms is not None and active_atoms is None:
+            self.frozen_atoms = frozen_atoms
+            self.active_atoms = listdiff(self.allatoms, self.frozen_atoms)
+            print("{} active atoms, {} frozen atoms".format(len(self.active_atoms),len(self.frozen_atoms)))
+        else:
+            print("active_atoms and frozen_atoms can not be both defined")
+            exit(1)
     #This removes interactions between particles (e.g. QM-QM or frozen-frozen pairs)
     # list of atom indices for which we will remove all pairs
 
@@ -974,34 +1171,121 @@ class OpenMMTheory:
         print_time_rel(timeA, modulename="add exception")
     #Run: coords or framents can be given (usually coords). qmatoms in order to avoid QM-QM interactions (TODO)
     #Probably best to do QM-QM exclusions etc. in a separate function though as we want run to be as simple as possible
-    def run(self, coords=None, fragment=None):
+    #qmatoms list provided for generality of MM objects. Not used here for now
+    
+    
+    #Functions for energy compositions
+    def forcegroupify(self):
+        self.forcegroups = {}
+        for i in range(self.system.getNumForces()):
+            force = self.system.getForce(i)
+            force.setForceGroup(i)
+            self.forcegroups[force] = i
+
+    def getEnergyDecomposition(self,context, forcegroups):
+        energies = {}
+        for f, i in forcegroups.items():
+            energies[f] = context.getState(getEnergy=True, groups=2**i).getPotentialEnergy()
+        return energies
+    
+    def printEnergyDecomposition(self):
+        timeA=time.time()
+        #Energy composition
+        #TODO: Calling this is expensive. Only do for cases: a) single-point b) First energy-step in optimization and last energy-step
+        # OpenMM energy components
+        openmm_energy = dict()
+        energycomp = self.getEnergyDecomposition(self.simulation.context, self.forcegroups)
+        bondterm_set=False
+        extrafcount=0
+        #This currently assumes CHARMM36 components, More to be added
+        for comp in energycomp.items():
+            if 'HarmonicBondForce' in str(type(comp[0])):
+                #Not sure if this works in general.
+                if bondterm_set is False:
+                    openmm_energy['Bond'] = comp[1]
+                    bondterm_set=True
+                else:
+                    openmm_energy['Urey-Bradley'] = comp[1]
+            elif 'HarmonicAngleForce' in str(type(comp[0])):
+                openmm_energy['Angle'] = comp[1]
+            elif 'PeriodicTorsionForce' in str(type(comp[0])):
+                openmm_energy['Dihedrals'] = comp[1]
+            elif 'CustomTorsionForce' in str(type(comp[0])):
+                openmm_energy['Impropers'] = comp[1]
+            elif 'CMAPTorsionForce' in str(type(comp[0])):
+                openmm_energy['CMAP'] = comp[1]
+            elif 'NonbondedForce' in str(type(comp[0])):
+                openmm_energy['Nonbonded'] = comp[1]
+            elif 'CMMotionRemover' in str(type(comp[0])):
+                openmm_energy['CMM'] = comp[1]
+            else:
+                extrafcount+=1
+                openmm_energy['Otherforce'+str(extrafcount)] = comp[1]
+                
+        
+        print_time_rel(timeA, modulename="energy composition")
+        timeA = time.time()
+        
+        #The force terms to print in table.
+        #TODO: To be extended
+        if self.Forcefield == 'CHARMM':
+            force_terms = ['Bond', 'Angle', 'Urey-Bradley', 'Dihedrals', 'Impropers', 'CMAP', 'Nonbonded']
+        else:
+            #Modify...
+            force_terms = ['Bond', 'Angle', 'Urey-Bradley', 'Dihedrals', 'Impropers', 'CMAP', 'Nonbonded']
+
+        #Sum all defined force-terms
+        openmm_energy['Sumcomponents'] = 0.0 * self.unit.kilojoules_per_mole
+        for term in force_terms:
+            openmm_energy['Sumcomponents'] += openmm_energy[term]
+            
+            
+        #Print energy table       
+        print('%-20s | %-15s | %-15s' % ('Component', 'kJ/mol', 'kcal/mol'))
+        print('-'*56)
+        for name in force_terms:
+            print('%-20s | %15.2f | %15.2f' % (name, openmm_energy[name] / self.unit.kilojoules_per_mole, openmm_energy[name] / self.unit.kilocalorie_per_mole))
+        #If otherforce. For Amber and otherforcefields we would have to clean up this later
+        for otherforce in [i for i in openmm_energy.keys() if 'Otherforce' in i]:
+            print('%-20s | %15.2f | %15.2f' % (name, openmm_energy[otherforce] / self.unit.kilojoules_per_mole, openmm_energy[otherforce] / self.unit.kilocalorie_per_mole))
+        print('-'*56)
+        print('%-20s | %15.2f | %15.2f' % ('Sumcomponents', openmm_energy['Sumcomponents'] / self.unit.kilojoules_per_mole, openmm_energy['Sumcomponents'] / self.unit.kilocalorie_per_mole))
+        print('%-20s | %15.2f | %15.2f' % ('Full', self.energy * constants.hartokj , self.energy * constants.harkcal))
+        
+        print("")
+        print("")
+        print_time_rel(timeA, modulename="print table")
+        timeA = time.time()
+    
+    def run(self, current_coords=None, elems=None, Grad=True, fragment=None, qmatoms=None, print_energy_components=True):
         timeA = time.time()
         print(BC.OKBLUE, BC.BOLD, "------------RUNNING OPENMM INTERFACE-------------", BC.END)
         #If no coords given to run then a single-point job probably (not part of Optimizer or MD which would supply coords).
         #Then try if fragment object was supplied.
         #Otherwise internal coords if they exist
         print("if stuff")
-        if coords is None:
+        if current_coords is None:
             if fragment is None:
                 if len(self.coords) != 0:
                     print("Using internal coordinates (from OpenMM object)")
-                    coords=self.coords
+                    current_coords=self.coords
                 else:
                     print("Found no coordinates!")
                     exit(1)
             else:
-                coords=fragment.coords
+                current_coords=fragment.coords
 
         print_time_rel(timeA, modulename="if stuff")
         timeA = time.time()
         #Making sure coords is np array and not list-of-lists
         print("doing coords array")
-        coords=np.array(coords)
+        current_coords=np.array(current_coords)
         print_time_rel(timeA, modulename="coords array")
         timeA = time.time()
         ##  unit conversion for energy
-        eqcgmx = 2625.5002
+        #eqcgmx = 2625.5002
         ## unit conversion for force
+        #TODO: Check this.
         fqcgmx = -49621.9
         #pos = [Vec3(a / 10, b / 10, c / 10)] * u.nanometer
 
@@ -1009,7 +1293,7 @@ class OpenMMTheory:
         #pos = [Vec3(coords[:,0]/10,coords[:,1]/10,coords[:,2]/10)] * u.nanometer
         #Todo: Check speed on this
         print("doing pos")
-        pos = [self.Vec3(coords[i, 0] / 10, coords[i, 1] / 10, coords[i, 2] / 10) for i in range(len(coords))] * self.unit.nanometer
+        pos = [self.Vec3(current_coords[i, 0] / 10, current_coords[i, 1] / 10, current_coords[i, 2] / 10) for i in range(len(current_coords))] * self.unit.nanometer
         print_time_rel(timeA, modulename="pos create")
         timeA = time.time()
         self.simulation.context.setPositions(pos)
@@ -1020,7 +1304,7 @@ class OpenMMTheory:
         print_time_rel(timeA, modulename="state")
         timeA = time.time()
         print("doing energy")
-        self.energy = state.getPotentialEnergy().value_in_unit(self.unit.kilojoule_per_mole) / eqcgmx
+        self.energy = state.getPotentialEnergy().value_in_unit(self.unit.kilojoule_per_mole) / constants.hartokj
         print_time_rel(timeA, modulename="energy")
         timeA = time.time()
         print("doing gradient")
@@ -1029,20 +1313,29 @@ class OpenMMTheory:
         timeA = time.time()
 
         #Todo: Check units
-        print("self.energy:", self.energy)
-        print("self.gradient:", self.gradient)
+        print("OpenMM Energy:", self.energy, "Eh")
+        
+        
+        if print_energy_components is True:
+            self.printEnergyDecomposition()
+        
+        print("self.energy : ", self.energy, "Eh")
+        #print("self.gradient:", self.gradient)
 
         print(BC.OKBLUE, BC.BOLD, "------------ENDING OPENMM INTERFACE-------------", BC.END)
         return self.energy, self.gradient
-    def getatomcharges(self):
+    
+    #Get list of charges from chosen force object (usually original nonbonded force object)
+    def getatomcharges(self,force):
         chargelist = []
-        for i in range( self.nonbonded_force.getNumParticles() ):
-            charge = self.nonbonded_force.getParticleParameters( i )[0]
+        for i in range( force.getNumParticles() ):
+            charge = force.getParticleParameters( i )[0]
             if isinstance(charge, self.unit.Quantity):
                 charge = charge / self.unit.elementary_charge
                 chargelist.append(charge)
         self.charges=chargelist
         return chargelist
+    #Updating charges in OpenMM object. Used to set QM charges to 0 for example
     def update_charges(self,charges):
         print("Updating charges in OpenMM object.")
         #Check that force-particles and charges are same number
@@ -1061,7 +1354,7 @@ class OpenMMTheory:
 # Simple nonbonded MM theory. Charges and LJ-potentials
 class NonBondedTheory:
     def __init__(self, atomtypes=None, forcefield=None, charges = None, LJcombrule='geometric',
-                 codeversion='f2py', pairarrayversion='julia', printlevel=2):
+                 codeversion='julia', pairarrayversion='julia', printlevel=2):
 
         #Printlevel
         self.printlevel=printlevel
@@ -1093,6 +1386,7 @@ class NonBondedTheory:
         #Initializing sigmaij and epsij arrays. Will be filled by calculate_LJ_pairpotentials
         self.sigmaij=np.zeros((self.numatoms, self.numatoms))
         self.epsij=np.zeros((self.numatoms, self.numatoms))
+        self.pairarrays_assigned = False
 
     #Todo: Need to make active-region version of pyarray version here.
     def calculate_LJ_pairpotentials(self, qmatoms=None, actatoms=None, frozenatoms=None):
@@ -1287,9 +1581,12 @@ class NonBondedTheory:
             exit()
 
         if self.printlevel >= 2:
-            print("self.sigmaij ({}) : {}".format(len(self.sigmaij), self.sigmaij))
-            print("self.epsij ({}) : {}".format(len(self.epsij), self.epsij))
+            #print("self.sigmaij ({}) : {}".format(len(self.sigmaij), self.sigmaij))
+            #print("self.epsij ({}) : {}".format(len(self.epsij), self.epsij))
+            print("sigmaij size: {}".format(len(self.sigmaij)))
+            print("epsij size: {}".format(len(self.epsij)))
         print_time_rel(CheckpointTime, modulename="pairpot arrays")
+        self.pairarrays_assigned = True
 
     def update_charges(self,charges):
         print("Updating charges.")
@@ -1297,23 +1594,30 @@ class NonBondedTheory:
         #print("Charges are now:", charges)
         print("Sum of charges:", sum(charges))
     #Provide specific coordinates (MM region) and charges (MM region) upon run
-    def run(self, full_coords=None, mm_coords=None, charges=None, connectivity=None,
+    # current_coords is now used for full_coords
+    def run(self, current_coords=None, elems=None, mm_coords=None, charges=None, connectivity=None,
             Coulomb=True, Grad=True, qmatoms=None, actatoms=None, frozenatoms=None):
 
+        if current_coords is None:
+            print("No current_coords argument. Exiting...")
+            exit()
+        CheckpointTime = time.time()
         #If qmatoms list provided to run (probably by QM/MM object) then we are doing QM/MM
         #QM-QM pairs will be skipped in LJ
 
-        #Testing if self.sigmaij array has been assigned or not. If not calling calculate_LJ_pairpotentials
+        #Testing if arrays assigned or not. If not calling calculate_LJ_pairpotentials
         #Passing qmatoms over so pairs can be skipped
         #This sets self.sigmaij and self.epsij and also self.LJpairpotentials
         #Todo: if actatoms have been defined this will be skipped in pairlist creation
         #if frozenatoms passed frozen-frozen interactions will be skipped
-        if np.count_nonzero(self.sigmaij) == 0:
+        if self.pairarrays_assigned is False:
+            print("Calling LJ pairpot calc")
             self.calculate_LJ_pairpotentials(qmatoms=qmatoms,actatoms=actatoms)
+        else:
+            print("LJ pairpot arrays exist...")
 
         if len(self.LJpairpotentials) > 0:
             LJ=True
-
         #If charges not provided to run function. Use object charges
         if charges == None:
             charges=self.atom_charges
@@ -1333,14 +1637,13 @@ class NonBondedTheory:
         self.Coulombchargegradient=[]
         self.LJgradient=[]
 
-
-        #Slow Python version or fast Fortran version
+        #Slow Python version
         if self.codeversion=='py':
             if self.printlevel >= 2:
                 print("Using slow Python MM code")
             #Sending full coords and charges over. QM charges are set to 0.
             if Coulomb==True:
-                self.Coulombchargeenergy, self.Coulombchargegradient  = coulombcharge(charges, full_coords)
+                self.Coulombchargeenergy, self.Coulombchargegradient  = coulombcharge(charges, current_coords)
                 if self.printlevel >= 2:
                     print("Coulomb Energy (au):", self.Coulombchargeenergy)
                     print("Coulomb Energy (kcal/mol):", self.Coulombchargeenergy * constants.harkcal)
@@ -1351,31 +1654,28 @@ class NonBondedTheory:
             if LJ==True:
                 #LennardJones(coords, epsij, sigmaij, connectivity=[], qmatoms=[])
                 #self.LJenergy,self.LJgradient = LennardJones(full_coords,self.atomtypes, self.LJpairpotentials, connectivity=connectivity)
-                self.LJenergy,self.LJgradient = LennardJones(full_coords,self.epsij,self.sigmaij)
+                self.LJenergy,self.LJgradient = LennardJones(current_coords,self.epsij,self.sigmaij)
                 #print("Lennard-Jones Energy (au):", self.LJenergy)
                 #print("Lennard-Jones Energy (kcal/mol):", self.LJenergy*constants.harkcal)
             self.MMEnergy = self.Coulombchargeenergy+self.LJenergy
-
             if Grad==True:
                 self.MMGradient = self.Coulombchargegradient+self.LJgradient
         #Combined Coulomb+LJ Python version. Slow
         elif self.codeversion=='py_comb':
             print("not active")
             exit()
-            self.MMenergy, self.MMgradient = LJCoulpy(full_coords, self.atomtypes, charges, self.LJpairpotentials,
+            self.MMenergy, self.MMgradient = LJCoulpy(current_coords, self.atomtypes, charges, self.LJpairpotentials,
                                                           connectivity=connectivity)
         elif self.codeversion=='f2py':
             if self.printlevel >= 2:
-                print("Using fast Fortran F2Py MM code")
+                print("Using Fortran F2Py MM code")
             try:
                 #print(os.environ.get("LD_LIBRARY_PATH"))
                 import LJCoulombv1
-                #print(LJCoulombv1.__doc__)
-                #print("----------")
             except:
                 print("Fortran library LJCoulombv1 not found! Make sure you have run the installation script.")
             self.MMEnergy, self.MMGradient, self.LJenergy, self.Coulombchargeenergy =\
-                LJCoulomb(full_coords, self.epsij, self.sigmaij, charges, connectivity=connectivity)
+                LJCoulomb(current_coords, self.epsij, self.sigmaij, charges, connectivity=connectivity)
         elif self.codeversion=='f2pyv2':
             if self.printlevel >= 2:
                 print("Using fast Fortran F2Py MM code v2")
@@ -1386,8 +1686,27 @@ class NonBondedTheory:
             except:
                 print("Fortran library LJCoulombv2 not found! Make sure you have run the installation script.")
             self.MMEnergy, self.MMGradient, self.LJenergy, self.Coulombchargeenergy =\
-                LJCoulombv2(full_coords, self.epsij, self.sigmaij, charges, connectivity=connectivity)
-
+                LJCoulombv2(current_coords, self.epsij, self.sigmaij, charges, connectivity=connectivity)
+        elif self.codeversion=='julia':
+            if self.printlevel >= 2:
+                print("Using fast Julia version, v1")
+            ashpath = os.path.dirname(ash.__file__)
+            # Necessary for statically linked libpython
+            try:
+                from julia.api import Julia
+                from julia import Main
+            except:
+                print("Problem importing Pyjulia (import julia)")
+                print("Make sure Julia is installed and PyJulia module available")
+                print("Also, are you using python-jl ?")
+                print("Alternatively, use pairarrayversion='py' argument to NonBondedTheory to use slower Python version for array creation")
+                exit(9)
+            # Defining Julia Module
+            Main.include(ashpath + "/functions_julia.jl")
+            print_time_rel(CheckpointTime, modulename="from run to just before calling ")
+            self.MMEnergy, self.MMGradient, self.LJenergy, self.Coulombchargeenergy =\
+                Main.Juliafunctions.LJcoulombchargev1c(charges, current_coords, self.epsij, self.sigmaij, connectivity)
+            print_time_rel(CheckpointTime, modulename="from run to done julia")
         else:
             print("Unknown version of MM code")
             exit(1)
@@ -1673,10 +1992,13 @@ class PolEmbedTheory:
 #Required at init: qm_theory and qmatoms. Fragment not. Can come later
 #TODO NOTE: If we add init arguments, remember to update Numfreq QMMM option as it depends on the keywords
 class QMMMTheory:
-    def __init__(self, qm_theory="", qmatoms="", fragment='', mm_theory="" , charges=None,
+    def __init__(self, qm_theory=None, qmatoms=None, fragment=None, mm_theory=None , charges=None,
                  embedding="Elstat", printlevel=2, nprocs=None, actatoms=None, frozenatoms=None):
 
         print(BC.WARNING,BC.BOLD,"------------Defining QM/MM object-------------", BC.END)
+
+        #Linkatoms False by default. Later checked.
+        self.linkatoms=False
 
         #Setting nprocs of object
         if nprocs==None:
@@ -1686,7 +2008,7 @@ class QMMMTheory:
 
         #If fragment object has been defined
         #This probably needs to be always true
-        if fragment != '':
+        if fragment is not None:
             self.fragment=fragment
             self.coords=fragment.coords
             self.elems=fragment.elems
@@ -1716,13 +2038,7 @@ class QMMMTheory:
             else:
                 print("active_atoms and frozen_atoms can not be both defined")
                 exit(1)
-
-            #Coords and elems lists.
-            #Coords may change by run command
-            self.qmcoords=[self.coords[i] for i in self.qmatoms]
-            self.qmelems=[self.elems[i] for i in self.qmatoms]
-            self.mmcoords=[self.coords[i] for i in self.mmatoms]
-            self.mmelems=[self.elems[i] for i in self.mmatoms]
+            
             #print("List of all atoms:", self.allatoms)
             print("QM region ({} atoms): {}".format(len(self.qmatoms),self.qmatoms))
             print("MM region ({} atoms)".format(len(self.mmatoms)))
@@ -1740,6 +2056,7 @@ class QMMMTheory:
             print("Fragment has not been defined for QM/MM. Exiting")
             exit(1)
 
+        #Flag to check whether QMCharges have been zeroed in self.charges_mod list
         self.QMChargesZeroed=False
 
         #Theory level definitions
@@ -1769,73 +2086,202 @@ class QMMMTheory:
                 print("Getting system charges from NonBondedTheory object")
                 #Todo: normalize charges vs atom_charges
                 self.charges=mm_theory.atom_charges
+                        
             else:
                 print("Unrecognized MM theory for QMMMTheory")
                 exit(1)
         else:
             self.charges=charges
-
+        
+        if len(self.charges) == 0:
+            print("No charges present in QM/MM object. Exiting...")
+            exit()
+        
+        
+        
+        #Self.charges are original charges that are defined above,
+        #Charges that will be modified (charge-shifting, QMzeroed etc.) are:
+        #TODO: Option. Separate charge-lists for QM-code and MM-code ??
+        self.charges_mod = copy.copy(self.charges)
 
         #If MM THEORY (not just pointcharges)
-        if mm_theory != "":
+        if mm_theory is not None:
             #Add possible exception for QM-QM atoms here.
             #Maybe easier to just just set charges to 0. LJ for QM-QM still needs to be done by MM code
             if self.mm_theory_name == "OpenMMTheory":
                 print("Now adding exceptions for frozen atoms")
                 if len(self.frozenatoms) > 0:
-                    mm_theory.addexceptions(self.frozenatoms)
+                    print("Here adding exceptions for OpenMM")
+                    print("Num frozen atoms: ", len(self.frozenatoms))
+                    #Disabling for now, since so bloody slow. Need to speed up
+                    #mm_theory.addexceptions(self.frozenatoms)
 
-            linkatom=False
-            if linkatom==True:
-                print("Adding link atoms...")
-                #Link atoms. In an additive scheme we would always have link atoms, regardless of mechanical/electrostatic coupling
-                #Charge-shifting would be part of Elstat below
 
-                #Protocol:
-                #1. Recognize QM-MM boundary. Connectivity?? Get QM1 and MM1 coords pairs
-                #2. For QM-region coords, add linkatom at MM1 position initially. Then adjust distance
-                #3. Modify charges of MM atoms according to Chemshell scheme. Update both OpenMM and self.charges
-
+            #Check if we need linkatoms by getting boundary atoms dict:
+            blankline()
+            self.boundaryatoms = get_boundary_atoms(qmatoms, self.coords, self.elems, settings_ash.scale, settings_ash.tol)
+            
+            if len(self.boundaryatoms) >0:
+                print("Found covalent QM-MM boundary. Linkatoms option set to True")
+                print("Boundaryatoms (QM:MM pairs):", self.boundaryatoms)
+                self.linkatoms=True
+                
+                #Get MM boundary information. Stored as self.MMboundarydict
+                self.get_MMboundary()
+            else:
+                print("No covalent QM-MM boundary. Linkatoms option set to False")
+                self.linkatoms=False
+            
 
             if self.embedding=="Elstat":
+                #Change charges
+                # Keeping self.charges as originally defined.
+                print("length of self.charges_mod :", len(self.charges_mod))
+
+                #TODO: Charges that MM code sees. Will be modified. NECESSARY???????????????????
+                #self.charges_mmcode = copy.copy(self.charges)
+                
                 #Setting QM charges to 0 since electrostatic embedding
-                self.ZeroQMCharges()
+                #and Charge-shift QM-MM boundary
+                
+                #Zero QM charges
+                #TODO: DO here or inside run instead?? Needed for MM code.
+                self.ZeroQMCharges() #Modifies self.charges_mod
+                print("length of self.charges_mod :", len(self.charges_mod))
+                
+                # Todo: make sure this works for OpenMM and for NonBondedTheory
+                # Updating charges in MM object
+                self.mm_theory.update_charges(self.charges_mod)
+                
+                
                 print("Charges of QM atoms set to 0 (since Electrostatic Embedding):")
-                if self.printlevel > 2:
+                if self.printlevel > 3:
                     for i in self.allatoms:
                         if i in qmatoms:
-                            print("QM atom {} ({}) charge: {}".format(i, self.elems[i], self.charges[i]))
+                            print("QM atom {} ({}) charge: {}".format(i, self.elems[i], self.charges_mod[i]))
                         else:
-                            print("MM atom {} ({}) charge: {}".format(i, self.elems[i], self.charges[i]))
+                            print("MM atom {} ({}) charge: {}".format(i, self.elems[i], self.charges_mod[i]))
                 blankline()
 
-        #QM and MM charges are defined even though an MMtheory may not be present
-        # Charges defined for regions
-        self.qmcharges = [self.charges[i] for i in self.qmatoms]
-        print("QM-region charges:", self.qmcharges)
-        self.mmcharges=[self.charges[i] for i in self.mmatoms]
-        #print("self.mmcharges:", self.mmcharges)
 
-    # Set QMcharges to Zero
+    #From QM1:MM1 boundary dict, get MM1:MMx boundary dict (atoms connected to MM1)
+    def get_MMboundary(self):
+        # if boundarydict is not empty we need to zero MM1 charge and distribute charge from MM1 atom to MM2,MM3,MM4
+        #Creating dictionary for each MM1 atom and its connected atoms: MM2-4
+        self.MMboundarydict={}
+        for (QM1atom,MM1atom) in self.boundaryatoms.items():
+            connatoms = get_connected_atoms(self.coords, self.elems, settings_ash.scale, settings_ash.tol, MM1atom)
+            #Deleting QM-atom from connatoms list
+            connatoms.remove(QM1atom)
+            self.MMboundarydict[MM1atom] = connatoms
+        print("")
+        print("MM boundary (MM1:MMx pairs):", self.MMboundarydict)
+                
+    # Set QMcharges to Zero and shift charges at boundary
+    #TODO: Add both L2 scheme (delete whole charge-group of M1) and charge-shifting scheme (shift charges to Mx atoms and add dipoles for each Mx atom)
+    
     def ZeroQMCharges(self):
-        newcharges = []
-        for i, c in enumerate(self.charges):
-            if i in self.mmatoms:
-                newcharges.append(c)
-            else:
-                newcharges.append(0.0)
-        # Todo: use self.charges or use newcharges. Since done temporarily??
-        self.charges = newcharges
-        # Todo: make sure this works for OpenMM and for NonBOndedTheory
-        # Updating charges in MM object
-        self.mm_theory.update_charges(self.charges)
+        print("Setting QM charges to Zero")
+        #Looping over charges and setting QM/MM1 atoms to zero and shifting charge to neighbouring atoms
+        for i, c in enumerate(self.charges_mod):
+            #Setting QMatom charge to 0
+            if i in self.qmatoms:
+                self.charges_mod[i] = 0.0
+                
         self.QMChargesZeroed = True
+    def ShiftMMCharges(self):
+        print("Shifting MM charges at QM-MM boundary.")
+
+        #Looping over charges and setting QM/MM1 atoms to zero and shifting charge to neighbouring atoms
+        for i, c in enumerate(self.charges_mod):
+
+            #If index corresponds to MMatom at boundary, set charge to 0 (charge-shifting
+            if i in self.MMboundarydict.keys():
+                MM1charge = self.charges[i]
+                #print("MM1atom charge: ", MM1charge)
+                self.charges_mod[i] = 0.0
+                #MM1 charge fraction to be divided onto the other MM atoms
+                MM1charge_fract = MM1charge / len(self.MMboundarydict[i])
+                #print("MM1charge_fract :", MM1charge_fract)
+
+                #TODO: Should charges be updated for MM program also ?
+                #Putting the fractional charge on each MM2 atom
+                for MMx in self.MMboundarydict[i]:
+                    #print("MMx : ", MMx)
+                    #print("Old charge : ", self.charges_mod[MMx])
+                    self.charges_mod[MMx] += MM1charge_fract
+                    #print("New charge : ", self.charges_mod[MMx])
+                    #exit()
+                
+    #Create dipole charge (twice) for each MM2 atom that gets fraction of MM1 charge
+    def get_dipole_charge(self,delq,direction,mm1index,mm2index):
+        #Distance between MM1 and MM2
+        MM_distance = distance_between_atoms(fragment=self.fragment, atom1=mm1index, atom2=mm2index)
+        #Coordinates
+        mm1coords=np.array(self.fragment.coords[mm1index])
+        mm2coords=np.array(self.fragment.coords[mm2index])
+        
+        SHIFT=0.15
+        #Normalize vector
+        def vnorm(p1):
+            r = math.sqrt((p1[0]*p1[0])+(p1[1]*p1[1])+(p1[2]*p1[2]))
+            v1=np.array([p1[0] / r, p1[1] / r, p1[2] /r])
+            return v1
+        diffvector=mm2coords-mm1coords
+        normdiffvector=vnorm(diffvector)
+        
+        #Dipole
+        d = delq*2.5
+        #Charge (abs value)
+        q0 = 0.5 * d / SHIFT
+        #print("q0 : ", q0)
+        #Actual shift
+        #print("direction : ", direction)
+        shift = direction * SHIFT * ( MM_distance / 2.5 )
+        #print("shift : ", shift)
+        #Position
+        #print("normdiffvector :", normdiffvector)
+        #print(normdiffvector*shift)
+        pos = mm2coords+np.array((shift*normdiffvector))
+        #print("pos :", pos)
+        #Returning charge with sign based on direction and position
+        #Return coords as regular list
+        return -q0*direction,list(pos)
+    def SetDipoleCharges(self):
+        print("Adding extra charges to preserve dipole moment for charge-shifting")
+        #Adding 2 dipole pointcharges for each MM2 atom
+        self.dipole_charges = []
+        self.dipole_coords = []
+        #print("self.MMboundarydict : ", self.MMboundarydict)
+        for MM1,MMx in self.MMboundarydict.items():
+            #print("MM1 :", MM1)
+            #print("MMx : ", MMx)
+            #Getting original MM1 charge (before set to 0)
+            MM1charge = self.charges[MM1]
+            #print("MM1atom charge: ", MM1charge)
+            MM1charge_fract=MM1charge/len(MMx)
+            #print("MM1charge_fract:", MM1charge_fract)
+            
+            for MM in MMx:
+                #print("MM :", MM)
+                q_d1, pos_d1 = self.get_dipole_charge(MM1charge_fract,1,MM1,MM)
+                #print("q_d1: ", q_d1)
+                #print("pos_d1: ", pos_d1)
+                q_d2, pos_d2 = self.get_dipole_charge(MM1charge_fract,-1,MM1,MM)
+                #print("q_d2: ", q_d2)
+                #print("pos_d2: ", pos_d2)
+                self.dipole_charges.append(q_d1)
+                self.dipole_charges.append(q_d2)
+                self.dipole_coords.append(pos_d1)
+                self.dipole_coords.append(pos_d2)
+    
     def run(self, current_coords=None, elems=None, Grad=False, nprocs=None):
         CheckpointTime = time.time()
         if self.printlevel >= 2:
             print(BC.WARNING, BC.BOLD, "------------RUNNING QM/MM MODULE-------------", BC.END)
             print("QM Module:", self.qm_theory_name)
             print("MM Module:", self.mm_theory_name)
+
         #If no coords provided to run (from Optimizer or NumFreq or MD) then use coords associated with object.
         #if len(current_coords) != 0:
         if current_coords is not None:
@@ -1853,9 +2299,76 @@ class QMMMTheory:
         if self.printlevel >= 2:
             print("Running QM/MM object with {} cores available".format(nprocs))
         #Updating QM coords and MM coords.
+        
         #TODO: Should we use different name for updated QMcoords and MMcoords here??
         self.qmcoords=[current_coords[i] for i in self.qmatoms]
         self.mmcoords=[current_coords[i] for i in self.mmatoms]
+        
+        self.qmelems=[self.elems[i] for i in self.qmatoms]
+        self.mmelems=[self.elems[i] for i in self.mmatoms]
+        
+        
+
+        
+        #LINKATOMS
+        #1. Get linkatoms coordinates
+        if self.linkatoms==True:
+            linkatoms_dict = get_linkatom_positions(self.boundaryatoms,self.qmatoms, current_coords, self.elems)
+            #2. Add linkatom coordinates to qmcoords???
+            print("Adding linkatom positions to QM coords")
+            
+            #Sort by QM atoms:
+            print("linkatoms_dict.keys :", linkatoms_dict.keys())
+            for pair in sorted(linkatoms_dict.keys()):
+                #print("Pair :", pair)
+                self.qmcoords.append(linkatoms_dict[pair])
+                #print("self.qmcoords :", self.qmcoords)
+                #print(len(self.qmcoords))
+                #exit()
+            #TODO: Modify qm_elems list. Use self.qmelems or separate qmelems ?
+            #TODO: Should we do this at object creation instead?
+            current_qmelems=self.qmelems + ['H']*len(linkatoms_dict)
+            print("")
+            #print("current_qmelems :", current_qmelems)
+            print(len(current_qmelems))
+            
+            #Charge-shifting + Dipole thing
+            
+            #Do Charge-shifting. MM1 charge distributed to MM2 atoms
+            self.ShiftMMCharges() # Modifies self.charges_mod
+            
+            #TODO: Code alternative to Charge-shifting: L2 scheme which deletes whole charge-group that MM1 belongs to
+            
+            
+            
+            #MMcharges defined after all modifications to self.charges_mod have been done.
+            #TODO: Differentiate more clearly between MM charges that MM code sees and what QM code sees.
+            self.mmcharges=[self.charges_mod[i] for i in self.mmatoms]
+            
+            
+            #Set 
+            self.SetDipoleCharges() #Creates self.dipole_charges and self.dipole_coords
+
+            #Adding dipole charge coords to MM coords (given to QM code)
+            self.mmcoords=self.mmcoords+self.dipole_coords
+            
+            #Adding dipole charges to MM charges list (given to QM code)
+            #TODO: Rename as pcharges list so as not to confuse with what MM code sees??
+            self.mmcharges=self.mmcharges+self.dipole_charges
+            
+            print(len(self.mmcharges))
+            print(len(self.mmcoords))
+        else:
+            #If no linkatoms then use original self.qmelems
+            current_qmelems = self.qmelems
+            self.mmcharges=[self.charges_mod[i] for i in self.mmatoms]
+       
+       
+
+       
+        
+        print_time_rel(CheckpointTime, modulename='QM/MM run prep')
+        
         if self.qm_theory_name=="ORCATheory":
             #Calling ORCA theory, providing current QM and MM coordinates.
             if Grad==True:
@@ -1863,16 +2376,16 @@ class QMMMTheory:
                     self.QMEnergy, self.QMgradient, self.PCgradient = self.qm_theory.run(current_coords=self.qmcoords,
                                                                                          current_MM_coords=self.mmcoords,
                                                                                          MMcharges=self.mmcharges,
-                                                                                         qm_elems=self.qmelems, mm_elems=self.mmelems,
+                                                                                         qm_elems=current_qmelems, mm_elems=self.mmelems,
                                                                                          Grad=True, PC=True, nprocs=nprocs)
                 else:
                     self.QMEnergy, self.QMgradient = self.qm_theory.run(current_coords=self.qmcoords,
                                                       current_MM_coords=self.mmcoords, MMcharges=self.mmcharges,
-                                                      qm_elems=self.qmelems, mm_elems=self.mmelems, Grad=True, PC=False, nprocs=nprocs)
+                                                      qm_elems=current_qmelems, mm_elems=self.mmelems, Grad=True, PC=False, nprocs=nprocs)
             else:
                 self.QMEnergy = self.qm_theory.run(current_coords=self.qmcoords,
                                                       current_MM_coords=self.mmcoords, MMcharges=self.mmcharges,
-                                                      qm_elems=self.qmelems, mm_elems=self.mmelems, Grad=False, PC=PC, nprocs=nprocs)
+                                                      qm_elems=current_qmelems, mm_elems=self.mmelems, Grad=False, PC=PC, nprocs=nprocs)
         elif self.qm_theory_name == "Psi4Theory":
             #Calling Psi4 theory, providing current QM and MM coordinates.
             if Grad==True:
@@ -1883,7 +2396,7 @@ class QMMMTheory:
                     self.QMEnergy, self.QMgradient = self.qm_theory.run(current_coords=self.qmcoords,
                                                                                          current_MM_coords=self.mmcoords,
                                                                                          MMcharges=self.mmcharges,
-                                                                                         qm_elems=self.qmelems, mm_elems=self.mmelems,
+                                                                                         qm_elems=current_qmelems, mm_elems=self.mmelems,
                                                                                          Grad=True, PC=True, nprocs=nprocs)
                     #Creating zero-gradient array
                     self.PCgradient = np.zeros((len(self.mmatoms), 3))
@@ -1892,14 +2405,14 @@ class QMMMTheory:
                     exit()
                     self.QMEnergy, self.QMgradient = self.qm_theory.run(current_coords=self.qmcoords,
                                                       current_MM_coords=self.mmcoords, MMcharges=self.mmcharges,
-                                                      qm_elems=self.qmelems, mm_elems=self.mmelems, Grad=True, PC=False, nprocs=nprocs)
+                                                      qm_elems=current_qmelems, mm_elems=self.mmelems, Grad=True, PC=False, nprocs=nprocs)
             else:
                 print("grad false.")
                 if PC == True:
                     print("PC embed true. not ready")
                     self.QMEnergy = self.qm_theory.run(current_coords=self.qmcoords,
                                                       current_MM_coords=self.mmcoords, MMcharges=self.mmcharges,
-                                                      qm_elems=self.qmelems, mm_elems=self.mmelems, Grad=False, PC=PC, nprocs=nprocs)
+                                                      qm_elems=current_qmelems, mm_elems=self.mmelems, Grad=False, PC=PC, nprocs=nprocs)
                 else:
                     print("mech true", not ready)
                     exit()
@@ -1912,16 +2425,16 @@ class QMMMTheory:
                     self.QMEnergy, self.QMgradient, self.PCgradient = self.qm_theory.run(current_coords=self.qmcoords,
                                                                                          current_MM_coords=self.mmcoords,
                                                                                          MMcharges=self.mmcharges,
-                                                                                         qm_elems=self.qmelems, mm_elems=self.mmelems,
+                                                                                         qm_elems=current_qmelems, mm_elems=self.mmelems,
                                                                                          Grad=True, PC=True, nprocs=nprocs)
                 else:
                     self.QMEnergy, self.QMgradient = self.qm_theory.run(current_coords=self.qmcoords,
                                                       current_MM_coords=self.mmcoords, MMcharges=self.mmcharges,
-                                                      qm_elems=self.qmelems, mm_elems=self.mmelems, Grad=True, PC=False, nprocs=nprocs)
+                                                      qm_elems=current_qmelems, mm_elems=self.mmelems, Grad=True, PC=False, nprocs=nprocs)
             else:
                 self.QMEnergy = self.qm_theory.run(current_coords=self.qmcoords,
                                                       current_MM_coords=self.mmcoords, MMcharges=self.mmcharges,
-                                                      qm_elems=self.qmelems, mm_elems=self.mmelems, Grad=False, PC=PC, nprocs=nprocs)
+                                                      qm_elems=current_qmelems, mm_elems=self.mmelems, Grad=False, PC=PC, nprocs=nprocs)
 
 
         elif self.qm_theory_name == "DaltonTheory":
@@ -1946,7 +2459,7 @@ class QMMMTheory:
                 printdebug("Charges for full system is: ", self.charges)
                 print("Passing QM atoms to MMtheory run so that QM-QM pairs are skipped in pairlist")
                 print("Passing active atoms to MMtheory run so that frozen pairs are skipped in pairlist")
-            self.MMEnergy, self.MMGradient= self.mm_theory.run(full_coords=current_coords, mm_coords=self.mmcoords,
+            self.MMEnergy, self.MMGradient= self.mm_theory.run(current_coords=current_coords, mm_coords=self.mmcoords,
                                                                charges=self.charges, connectivity=self.connectivity,
                                                                qmatoms=self.qmatoms, actatoms=self.actatoms)
             #self.MMEnergy=self.mm_theory.MMEnergy
@@ -1958,14 +2471,14 @@ class QMMMTheory:
                 print("Running OpenMM theory as part of QM/MM.")
             if self.QMChargesZeroed==True:
                 if self.printlevel >= 2:
-                    print("Using MM on full system. Charges for QM region {} have to be set to zero ".format(self.qmatoms))
+                    print("Using MM on full system. Charges for QM region {} have been set to zero ".format(self.qmatoms))
             else:
                 print("QMCharges have not been zeroed")
                 exit(1)
             printdebug("Charges for full system is: ", self.charges)
             #Todo: Need to make sure OpenMM skips QM-QM Lj interaction => Exclude
             #Todo: Need to have OpenMM skip frozen region interaction for speed  => => Exclude
-            self.MMEnergy, self.MMGradient= self.mm_theory.run(coords=current_coords, qmatoms=self.qmatoms)
+            self.MMEnergy, self.MMGradient= self.mm_theory.run(current_coords=current_coords, qmatoms=self.qmatoms)
         else:
             self.MMEnergy=0
         print_time_rel(CheckpointTime, modulename='MM step')
@@ -1982,6 +2495,14 @@ class QMMMTheory:
         #Final QM/MM gradient. Combine QM gradient, MM gradient and PC-gradient (elstat MM gradient from QM code).
         #First combining QM and PC gradient to one.
         if Grad == True:
+            
+            #TODO: Deal with linkatom gradient here.
+            # Add contribution to QM1 and MM1 contribution???
+            
+            
+            
+            
+            
             self.QM_PC_Gradient = np.zeros((len(self.allatoms), 3))
             qmcount=0;pccount=0
             for i in self.allatoms:
@@ -2018,9 +2539,17 @@ class QMMMTheory:
 
 
 #ORCA Theory object. Fragment object is optional. Only used for single-points.
+
 class ORCATheory:
-    def __init__(self, orcadir, fragment=None, charge='', mult='', orcasimpleinput='', printlevel=2,
+    def __init__(self, orcadir=None, fragment=None, charge='', mult='', orcasimpleinput='', printlevel=2,
                  orcablocks='', extraline='', brokensym=None, HSmult=None, atomstoflip=None, nprocs=1, label=None):
+
+        if orcadir is None:
+            print("No orcadir argument passed to ORCATheory. Attempting to use settings_ash variable")
+            self.orcadir=settings_ash.orcadir
+        else:
+            self.orcadir = orcadir
+        print("ORCA dir:", self.orcadir)
 
         #Label to distinguish different ORCA objects
         self.label=label
@@ -2031,9 +2560,9 @@ class ORCATheory:
         #Using orcadir to set LD_LIBRARY_PATH
         old = os.environ.get("LD_LIBRARY_PATH")
         if old:
-            os.environ["LD_LIBRARY_PATH"] = orcadir + ":" + old
+            os.environ["LD_LIBRARY_PATH"] = self.orcadir + ":" + old
         else:
-            os.environ["LD_LIBRARY_PATH"] = orcadir
+            os.environ["LD_LIBRARY_PATH"] = self.orcadir
         #os.environ['LD_LIBRARY_PATH'] = orcadir + ':$LD_LIBRARY_PATH'
 
         #Printlevel
@@ -2042,7 +2571,7 @@ class ORCATheory:
         #Setting nprocs of object
         self.nprocs=nprocs
 
-        self.orcadir = orcadir
+
         if fragment != None:
             self.fragment=fragment
             self.coords=fragment.coords
@@ -2122,7 +2651,7 @@ class ORCATheory:
         print("Charge: {}  Mult: {}".format(self.charge, self.mult))
         if PC==True:
             print("Pointcharge embedding is on!")
-            create_orca_pcfile(self.inputfilename, mm_elems, current_MM_coords, MMcharges)
+            create_orca_pcfile(self.inputfilename, current_MM_coords, MMcharges)
             if self.brokensym==True:
                 print("Brokensymmetry SpinFlipping on! HSmult: {}.".format(self.HSmult))
                 for flipatom in self.atomstoflip:
@@ -2834,16 +3363,91 @@ class CFourTheory:
             print("Single-point CFour energy:", self.energy)
             return self.energy
 
+#MRCC Theory object. Fragment object is optional. Used??
+class MRCCTheory:
+    def __init__(self, fragment=None, charge=None, mult=None, printlevel=2, cfourbasis=None, cfourmethod=None,
+                mrccmemory=3100, nprocs=1):
+
+        #Printlevel
+        self.printlevel=printlevel
+
+        self.charge=charge
+        self.mult=mult
+        self.cfourbasis=cfourbasis
+        self.cfourmethod=cfourmethod
+        self.mrccmemory=mrccmemory
+        self.nprocs=nprocs
+
+    # Run function. Takes coords, elems etc. arguments and computes E or E+G.
+    def run(self, current_coords=None, current_MM_coords=None, MMcharges=None, qm_elems=None,
+            mm_elems=None, elems=None, Grad=False, PC=False, nprocs=None, restart=False):
+
+        if nprocs == None:
+            nprocs = self.nprocs
+
+        print(BC.OKBLUE, BC.BOLD, "------------RUNNING MRCC INTERFACE-------------", BC.END)
+
+
+        # Coords provided to run or else taken from initialization.
+        # if len(current_coords) != 0:
+        if current_coords is not None:
+            pass
+        else:
+            current_coords = self.coords
+
+        # What elemlist to use. If qm_elems provided then QM/MM job, otherwise use elems list or self.elems
+        if qm_elems is None:
+            if elems is None:
+                qm_elems = self.elems
+            else:
+                qm_elems = elems
+
+
+        def write_cfour_input(method,basis,reference,charge,mult,frozencore,memory):
+            with open("ZMAT", 'w') as inpfile:
+                inpfile.write('ASH-created inputfile\n')
+                for el,c in zip(elems,qm_elems):
+                    inpfile.write('{} {} {} {}\n'.format(el,c[0],c[1],c[2]))
+                inpfile.write('\n')
+                inpfile.write('*CFOUR(CALC={},BASIS={},COORD=CARTESIAN,REF={},CHARGE={},MULT={},FROZEN_CORE={},GEO_MAXCYC=1,MEM_UNIT=MB,MEMORY={})\n'.format(
+                    method,basis,reference,charge,mult,frozencore,memory))
+
+        def run_cfour(cfourdir):
+            fdg="dsgfs"
+
+
+            #Grab energy and gradient
+            #TODO: No qm/MM yet. need to check if possible in MRCC
+            if Grad==True:
+
+                write_cfour_input(self.method,self.basis,self.reference,self.charge,self.mult,self.frozen_core,self.memory)
+                run_cfour(self.cfourdir)
+                self.energy = 0.0
+                #self.gradient = X
+            else:
+                write_cfour_input(self.method,self.basis,self.reference,self.charge,self.mult,self.frozen_core,self.memory)
+                run_cfour(self.cfourdir)
+                self.energy = 0.0
+
+            #TODO: write in error handling here
+            print(BC.OKBLUE, BC.BOLD, "------------ENDING MRCC INTERFACE-------------", BC.END)
+            if Grad == True:
+                print("Single-point MRCC energy:", self.energy)
+                return self.energy, self.gradient
+            else:
+                print("Single-point MRCC energy:", self.energy)
+                return self.energy
 
 
 # Fragment class
 class Fragment:
-    def __init__(self, coordsstring=None, fragfile=None, xyzfile=None, pdbfile=None, coords=None, elems=None, connectivity=None,
-                 atomcharges=None, atomtypes=None, conncalc=True, scale=None, tol=None, printlevel=2, charge=None, mult=None, label=None):
-        #Label for fragment (string). Useful for distinguishing different ones
+    def __init__(self, coordsstring=None, fragfile=None, xyzfile=None, pdbfile=None, chemshellfile=None, coords=None, elems=None, connectivity=None,
+                 atomcharges=None, atomtypes=None, conncalc=True, scale=None, tol=None, printlevel=2, charge=None,
+                 mult=None, label=None, readchargemult=False):
+        #Label for fragment (string). Useful for distinguishing different fragments
         self.label=label
 
-        #Printlevel
+        #Printlevel. Default: 2 (slightly verbose)
         self.printlevel=printlevel
 
         #New. Charge and mult attribute of fragment. Useful for workflows
@@ -2851,7 +3455,7 @@ class Fragment:
         self.mult = mult
 
         if self.printlevel >= 2:
-            print("Defining new ASH fragment object")
+            print("New ASH fragment object")
         self.energy = None
         self.elems=[]
         self.coords=[]
@@ -2868,11 +3472,11 @@ class Fragment:
         # Something perhaps only used by molcrys but defined here. Needed for print_system
         # Todo: revisit this
         self.fragmenttype_labels=[]
-
         #Here either providing coords, elems as lists. Possibly reading connectivity also
         if coords is not None:
             #self.add_coords(coords,elems,conn=conncalc)
-            self.coords=coords
+            #Adding coords as list of lists. Possible conversion from numpy array below.
+            self.coords=[list(i) for i in coords]
             self.elems=elems
             self.update_attributes()
             #If connectivity passed
@@ -2882,35 +3486,33 @@ class Fragment:
             #If connectivity requested (default for new frags)
             if conncalc==True:
                 self.calc_connectivity(scale=scale, tol=tol)
-
         #If coordsstring given, read elems and coords from it
         elif coordsstring is not None:
             self.add_coords_from_string(coordsstring, scale=scale, tol=tol)
         #If xyzfile argument, run read_xyzfile
         elif xyzfile is not None:
-            self.read_xyzfile(xyzfile)
+            self.read_xyzfile(xyzfile, readchargemult=readchargemult,conncalc=conncalc)
         elif pdbfile is not None:
             self.read_pdbfile(pdbfile, conncalc=conncalc)
+        elif chemshellfile is not None:
+            self.read_chemshellfile(chemshellfile, conncalc=conncalc)
         elif fragfile is not None:
             self.read_fragment_from_file(fragfile)
     def update_attributes(self):
         self.nuccharge = nucchargelist(self.elems)
         self.numatoms = len(self.coords)
-
         self.atomlist = list(range(0, self.numatoms))
         #Unnecessary alias ? Todo: Delete
         self.allatoms = self.atomlist
         self.mass = totmasslist(self.elems)
         self.list_of_masses = list_of_masses(self.elems)
-
         #Elemental formula
         self.formula = elemlisttoformula(self.elems)
         #Pretty formula without 1
         self.prettyformula = self.formula.replace('1','')
 
         if self.printlevel >= 2:
-            print("Fragment numatoms:", self.numatoms)
-            print("Formula : ", self.prettyformula)
+            print("Fragment numatoms: {} Formula: {}  Label: {}".format(self.numatoms,self.prettyformula,self.label))
 
     #Add coordinates from geometry string. Will replace.
     #Todo: Needs more work as elems and coords may be lists or numpy arrays
@@ -2933,7 +3535,8 @@ class Fragment:
         if self.printlevel >= 2:
             print("Replacing coordinates in fragment.")
         self.elems=elems
-        self.coords=coords
+        # Adding coords as list of lists. Possible conversion from numpy array below.
+        self.coords = [list(i) for i in coords]
         self.update_attributes()
         if conn==True:
             self.calc_connectivity(scale=scale, tol=tol)
@@ -2971,6 +3574,27 @@ class Fragment:
     def read_charmmfile(self,filename,conncalc=False):
         #Todo: finish
         pass
+    def read_chemshellfile(self,filename,conncalc=False, scale=None, tol=None):
+        #Read Chemshell fragment file (.c ending)
+        if self.printlevel >= 2:
+            print("Reading coordinates from Chemshell file \"{}\" into fragment".format(filename))
+        try:
+            elems, coords = read_fragfile_xyz(filename)
+        except FileNotFoundError:
+            print("File {} not found".format(filename))
+            exit()
+        self.coords = coords
+        self.elems = elems
+
+        self.update_attributes()
+        if conncalc is True:
+            self.calc_connectivity(scale=scale, tol=tol)
+        else:
+            # Read connectivity list
+            print("reading conn from file")
+            print("this is not ready")
+        #exit()
+
     #Read PDB file
     def read_pdbfile(self,filename,conncalc=True, scale=None, tol=None):
         if self.printlevel >= 2:
@@ -2985,28 +3609,38 @@ class Fragment:
 
         #TODO: Check. Are there different PDB formats?
         #used this: https://cupnet.net/pdb-format/
-        with open(filename) as f:
-            for line in f:
-                if 'ATOM' in line:
-                    atomindex.append(float(line[6:11].replace(' ','')))
-                    atom_name.append(line[12:16].replace(' ',''))
-                    residname.append(line[17:20].replace(' ',''))
-                    residuelist.append(line[22:26].replace(' ',''))
-                    coords_x=float(line[30:38].replace(' ',''))
-                    coords_y=float(line[38:46].replace(' ',''))
-                    coords_z=float(line[46:54].replace(' ',''))
-                    self.coords.append([coords_x,coords_y,coords_z])
-                    elem=line[76:78].replace(' ','')
-                    if len(elem) != 0:
-                        elemcol.append(elem)
-                    #self.coords.append([float(line.split()[6]), float(line.split()[7]), float(line.split()[8])])
-                    #elemcol.append(line.split()[-1])
-                    #residuelist.append(line.split()[3])
-                    #atom_name.append(line.split()[3])
-                if 'HETATM' in line:
-                    print("HETATM line in file found. Please rename to ATOM")
-                    exit()
+        try:
+            with open(filename) as f:
+                for line in f:
+                    if 'ATOM' in line:
+                        atomindex.append(float(line[6:11].replace(' ','')))
+                        atom_name.append(line[12:16].replace(' ',''))
+                        residname.append(line[17:20].replace(' ',''))
+                        residuelist.append(line[22:26].replace(' ',''))
+                        coords_x=float(line[30:38].replace(' ',''))
+                        coords_y=float(line[38:46].replace(' ',''))
+                        coords_z=float(line[46:54].replace(' ',''))
+                        self.coords.append([coords_x,coords_y,coords_z])
+                        elem=line[76:78].replace(' ','')
+                        if len(elem) != 0:
+                            if len(elem)==2:
+                                #Making sure second elem letter is lowercase
+                                elemcol.append(elem[0]+elem[1].lower())
+                            else:
+                                elemcol.append(elem)    
+                        #self.coords.append([float(line.split()[6]), float(line.split()[7]), float(line.split()[8])])
+                        #elemcol.append(line.split()[-1])
+                        #residuelist.append(line.split()[3])
+                        #atom_name.append(line.split()[3])
+                    if 'HETATM' in line:
+                        print("HETATM line in file found. Please rename to ATOM")
+                        exit()
+        except FileNotFoundError:
+            print("File {} does not exist!".format(filename))
+            exit()
         if len(elemcol) != len(self.coords):
+            print("len coords", len(self.coords))
+            print("len elemcol", len(elemcol))            
             print("did not find same number of elements as coordinates")
             print("Need to define elements in some other way")
             exit()
@@ -3016,14 +3650,18 @@ class Fragment:
         if conncalc is True:
             self.calc_connectivity(scale=scale, tol=tol)
     #Read XYZ file
-    def read_xyzfile(self,filename, scale=None, tol=None):
+    def read_xyzfile(self,filename, scale=None, tol=None, readchargemult=False,conncalc=True):
         if self.printlevel >= 2:
             print("Reading coordinates from XYZfile {} into fragment".format(filename))
         with open(filename) as f:
             for count,line in enumerate(f):
                 if count == 0:
                     self.numatoms=int(line.split()[0])
-                if count > 1:
+                elif count == 1:
+                    if readchargemult is True:
+                        self.charge=int(line.split()[0])
+                        self.mult=int(line.split()[1])
+                elif count > 1:
                     if len(line) > 3:
                         self.elems.append(line.split()[0])
                         self.coords.append([float(line.split()[1]), float(line.split()[2]), float(line.split()[3])])
@@ -3031,7 +3669,8 @@ class Fragment:
             print("Number of atoms in header not equal to number of coordinate-lines. Check XYZ file!")
             exit()
         self.update_attributes()
-        self.calc_connectivity(scale=scale, tol=tol)
+        if conncalc is True:
+            self.calc_connectivity(scale=scale, tol=tol)
     def set_energy(self,energy):
         self.energy=float(energy)
     # Get coordinates for specific atoms (from list of atom indices)
@@ -3040,14 +3679,15 @@ class Fragment:
         subelems=[self.elems[i] for i in atoms]
         return subcoords,subelems
     #Calculate connectivity (list of lists) of coords
-    def calc_connectivity(self, conndepth=99, scale=None, tol=None ):
-        if self.printlevel >= 2:
-            print("Calculating connectivity of fragment...")
-
-        if len(self.coords) > 10000:
+    def calc_connectivity(self, conndepth=99, scale=None, tol=None, codeversion='julia' ):
+        #Using py version if molecule is small. Otherwise Julia by default
+        if len(self.coords) < 100:
+            codeversion='py'
+        elif len(self.coords) > 10000:
             if self.printlevel >= 2:
                 print("Atom number > 10K. Connectivity calculation could take a while")
 
+        
         if scale == None:
             try:
                 scale = settings_ash.scale
@@ -3056,29 +3696,55 @@ class Fragment:
                     print("Using global scale and tol parameters from settings_ash. Scale: {} Tol: {} ".format(scale, tol ))
 
             except:
-                scale = 1
+                scale = 1.0
                 tol = 0.1
                 if self.printlevel >= 2:
                     print("Exception: Using hard-coded scale and tol parameters. Scale: {} Tol: {} ".format(scale, tol ))
         else:
             if self.printlevel >= 2:
                 print("Using scale: {} and tol: {} ".format(scale, tol))
+
+        #Setting scale and tol as part of object for future usage (e.g. QM/MM link atoms)
+        self.scale = scale
+        self.tol = tol
+
         # Calculate connectivity by looping over all atoms
-        found_atoms = []
-        fraglist = []
-        count = 0
-        #Todo: replace by Fortran code? Pretty slow for 10K atoms
         timestampA=time.time()
-        for atom in range(0, len(self.elems)):
-            if atom not in found_atoms:
-                count += 1
-                members = get_molecule_members_loop_np2(self.coords, self.elems, conndepth, scale,
-                                                        tol, atomindex=atom)
-                if members not in fraglist:
-                    fraglist.append(members)
-                    found_atoms += members
+        
+        
+        if codeversion=='py':
+            print("Calculating connectivity of fragment using py")
+            timestampB = time.time()
+            fraglist = calc_conn_py(self.coords, self.elems, conndepth, scale, tol)
+            print_time_rel(timestampB, modulename='calc connectivity py')
+        elif codeversion=='julia':
+            print("Calculating connectivity of fragment using julia")
+            # Import Julia
+            try:
+                from julia.api import Julia
+                from julia import Main
+                # Defining Julia Module
+                ashpath = os.path.dirname(ash.__file__)
+                Main.include(ashpath + "/functions_julia.jl")
+
+                timestampB = time.time()
+                fraglist_temp = Main.Juliafunctions.calc_connectivity(self.coords, self.elems, conndepth, scale, tol,
+                                                                      eldict_covrad)
+                fraglist = []
+                # Converting from numpy to list of lists
+                for sublist in fraglist_temp:
+                    fraglist.append(list(sublist))
+                print_time_rel(timestampB, modulename='calc connectivity julia')
+            except:
+                print(BC.FAIL,"Problem importing Pyjulia (import julia)", BC.END)
+                print("Make sure Julia is installed and PyJulia module available, and that you are using python-jl")
+                print(BC.FAIL,"Using Python version instead (slow for large systems)", BC.END)
+                fraglist = calc_conn_py(self.coords, self.elems, conndepth, scale, tol)
+
+
+
         if self.printlevel >= 2:
-            print_time_rel(timestampA, modulename='calc connectivity1')
+            print_time_rel(timestampA, modulename='calc connectivity full')
         #flat_fraglist = [item for sublist in fraglist for item in sublist]
         self.connectivity=fraglist
         #Calculate number of atoms in connectivity list of lists
@@ -3086,7 +3752,7 @@ class Fragment:
         for l in self.connectivity:
             conn_number_sum+=len(l)
         if self.numatoms != conn_number_sum:
-            print("Connectivity problem")
+            print(BC.FAIL,"Connectivity problem", BC.END)
             exit()
         self.connected_atoms_number=conn_number_sum
 
@@ -3095,13 +3761,31 @@ class Fragment:
     def update_atomtypes(self, types):
         self.atomtypes = types
     #Adding fragment-type info (used by molcrys, identifies whether atom is mainfrag, counterfrag1 etc.)
-    def add_fragment_type_info(self,fragmentobjects):
+    #Old slow version below. To be deleted
+    def old_add_fragment_type_info(self,fragmentobjects):
         # Create list of fragment-type label-list
         self.fragmenttype_labels = []
         for i in self.atomlist:
             for count,fobject in enumerate(fragmentobjects):
                 if i in fobject.flat_clusterfraglist:
                     self.fragmenttype_labels.append(count)
+    #Adding fragment-type info (used by molcrys, identifies whether atom is mainfrag, counterfrag1 etc.)
+    #This one is fast
+    def add_fragment_type_info(self,fragmentobjects):
+        # Create list of fragment-type label-list
+        combined_flat_clusterfraglist = []
+        combined_flat_labels = []
+        #Going through objects, getting flat atomlists for each object and combine (combined_flat_clusterfraglist)
+        #Also create list of labels (using fragindex) for each atom
+        for fragindex,frago in enumerate(fragmentobjects):
+            combined_flat_clusterfraglist.extend(frago.flat_clusterfraglist)
+            combined_flat_labels.extend([fragindex]*len(frago.flat_clusterfraglist))
+        #Getting indices required to sort atomindices in ascending order
+        sortindices = np.argsort(combined_flat_clusterfraglist)
+        #labellist contains unsorted list of labels
+        #Now ordering the labels according to the sort indices
+        self.fragmenttype_labels =  [combined_flat_labels[i] for i in sortindices]
+
     #Molcrys option:
     def add_centralfraginfo(self,list):
         self.Centralmainfrag = list
@@ -3220,7 +3904,7 @@ class xTBTheory:
         self.printlevel=printlevel
 
         if xtbmethod is None:
-            print("xTBTheory requires xtbnmethod keyword to be set")
+            print("xTBTheory requires xtbmethod keyword to be set")
             exit(1)
 
         self.nprocs=nprocs
@@ -3516,8 +4200,9 @@ def MMforcefield_read(file):
     return MM_forcefield
 
 #Better place for this?
-def ReactionEnergy(stoichiometry=None, list_of_fragments=None, list_of_energies=None, unit='kcalpermol', label=None):
-    conversionfactor = { 'kcalpermol' : 627.50946900, 'kJpermol' : 2625.499638, 'eV' : 27.211386245988, 'cm-1' : 219474.6313702 }
+def ReactionEnergy(stoichiometry=None, list_of_fragments=None, list_of_energies=None, unit='kcal/mol', label=None, reference=None):
+    conversionfactor = { 'kcal/mol' : 627.50946900, 'kcalpermol' : 627.50946900, 'kJ/mol' : 2625.499638, 'kJpermol' : 2625.499638, 
+                        'eV' : 27.211386245988, 'cm-1' : 219474.6313702 }
     if label is None:
         label=''
     #print(BC.OKBLUE,BC.BOLD, "ReactionEnergy function. Unit:", unit, BC.END)
@@ -3536,7 +4221,12 @@ def ReactionEnergy(stoichiometry=None, list_of_fragments=None, list_of_energies=
             if stoich > 0:
                 product_energy=product_energy+list_of_energies[i]*abs(stoich)
         reaction_energy=(product_energy-reactant_energy)*conversionfactor[unit]
-        print(BC.BOLD, "Reaction_energy({}): {} {}".format(label,BC.OKGREEN,reaction_energy, unit), BC.END)
+        if reference is None:
+            error=None
+            print(BC.BOLD, "Reaction_energy({}): {} {}".format(label,BC.OKGREEN,reaction_energy, unit), BC.END)
+        else:
+            error=reaction_energy-reference
+            print(BC.BOLD, "Reaction_energy({}): {} {} {} (Error: {}) {}".format(label,BC.OKGREEN,reaction_energy, unit, error, BC.END))
     else:
         print("No list of total energies provided. Using internal energy of each fragment instead.")
         print("")
@@ -3546,7 +4236,12 @@ def ReactionEnergy(stoichiometry=None, list_of_fragments=None, list_of_energies=
             if stoich > 0:
                 product_energy=product_energy+list_of_fragments[i].energy*abs(stoich)
         reaction_energy=(product_energy-reactant_energy)*conversionfactor[unit]
-        print(BC.BOLD, "Reaction_energy({}): {} {}".format(label,BC.OKGREEN,reaction_energy, unit), BC.END)
-    return reaction_energy
+        if reference is None:
+            error=None
+            print(BC.BOLD, "Reaction_energy({}): {} {}".format(label,BC.OKGREEN,reaction_energy, unit), BC.END)
+        else:
+            error=reaction_energy-reference
+            print(BC.BOLD, "Reaction_energy({}): {} {} {} (Error: {})".format(label,BC.OKGREEN,reaction_energy, unit, error, BC.END))
+    return reaction_energy, error
 
 

@@ -1,8 +1,5 @@
 #Module for calculating PhotoElectron/PhotoIonization Spectra
-
-#Todo: Does not work for open-shell yet
-
-#####################################3
+#####################################
 
 import glob
 import numpy as np
@@ -26,6 +23,10 @@ eldict={'H':1,'He':2,'Li':3,'Be':4,'B':5,'C':6,'N':7,'O':8,'F':9,'Ne':10,'Na':11
 
 #Cleanup function. Delete MO-files, det files, etc.
 def cleanup():
+    """
+    Cleanup function for PES calculations. Deletes result and temporary files
+    :return:
+    """
     files=['AO_overl', 'dets_final', 'dets_init', 'memlog', 'wfovl.inp', 'wfovl.out', 'mos_final', 'mos_init']
     print("Cleaning up files: ", files)
     for file in files:
@@ -33,19 +34,6 @@ def cleanup():
             os.remove(file)
         except:
             pass
-
-#Calculate nuclear charge from XYZ-file
-def nuccharge(file):
-    el=[]
-    with open(file) as f:
-        for count,line in enumerate(f):
-            if count >1:
-                el.append(line.split()[0])
-    totnuccharge=0
-    for e in el:
-        atcharge=eldict[e]
-        totnuccharge+=atcharge
-    return totnuccharge
 
 #Readfile function
 def readfile(filename):
@@ -598,6 +586,7 @@ def run_wfoverlap(wfoverlapinput,path_wfoverlap,memory):
     print("Running wfoverlap program:")
     print("may take a while...")
     print(wfcommand)
+    print("Using memory: {} MB".format(memory))
     print("OMP num threads available to WFoverlap: ", os.environ["OMP_NUM_THREADS"])
     try:
         proc=sp.Popen(wfcommand,shell=True,stdout=sp.PIPE,stderr=sp.PIPE)
@@ -729,13 +718,15 @@ def scfenergygrab(file):
 def casscfenergygrab(file):
     grab=False
     string='STATE   0 MULT'
+    string2='ROOT   0:'
     with open(file) as f:
         for line in f:
-            if string in line:
-                Energy=float(line.split()[5])
+            if string in line or string2 in line:
+                #Changing from 5 to -2
+                Energy=float(line.split()[-2])
+                return Energy
             if 'CAS-SCF STATES FOR BLOCK' in line:
                 grab=True
-    return Energy
 
 #CASSCF: Grabbing all root energies
 def casscf_state_energies_grab(file):
@@ -744,14 +735,27 @@ def casscf_state_energies_grab(file):
     mult_dict={}
     state_energies=[];Energy=0.0
     string='STATE '
+    string2='ROOT '
     with open(file) as f:
         for line in f:
             if 'SA-CASSCF TRANSITION ENERGIES' in line:
                 grab=False
+            if 'Spin-Determinant CI Printing' in line:
+                grab=False
             if grab is True and string in line:
-                print("line: ", line)
+                print("Xline: ", line)
                 Energy=float(line.split()[5])
+                print("Energy :", Energy)
                 state_energies.append(Energy)
+                print("state_energies :", state_energies)
+                if len(state_energies) == roots:
+                    mult_dict[mult] = state_energies
+            if grab is True and string2 in line:
+                print("Yline: ", line)
+                Energy=float(line.split()[3])
+                print("Energy :", Energy)
+                state_energies.append(Energy)
+                print("state_energies :", state_energies)
                 if len(state_energies) == roots:
                     mult_dict[mult] = state_energies
             if Finished is True and 'CAS-SCF STATES FOR BLOCK' in line:
@@ -759,8 +763,10 @@ def casscf_state_energies_grab(file):
                 #New mult block. Resetting state-energies.
                 state_energies=[];Energy=0.0
                 mult=int(line.split()[6])
+                print("mult : ", mult)
                 #roots=int(line.split()[8])
                 roots=int(line.split()[7:9][-1].replace('NROOTS=',''))
+                print("roots :", roots)
                 grab=True
             if 'Final CASSCF energy' in line:
                 Finished=True
@@ -768,35 +774,46 @@ def casscf_state_energies_grab(file):
 
 #MRCI: Grabbing all root energies
 def mrci_state_energies_grab(file):
-
-    print("not ready yte")
-
-    exit()
-    Finished=False
     grab=False
+    blockgrab=False
+    grab_blockinfo=False
+    block_dict={}
     mult_dict={}
     state_energies=[];Energy=0.0
     string='STATE '
     with open(file) as f:
         for line in f:
-            if 'SA-CASSCF TRANSITION ENERGIES' in line:
-                grab=False
+            #Note. Grabbing block info from CASSCF output
+            if '<<<<<<<<<<<<<<<<<<INITIAL CI STATE CHECK>>>>>>>>>>>>>>>>>>' in line:
+                grab_blockinfo = True
+                continue
+            if grab_blockinfo is True:
+                if 'BLOCK' in line:
+                    blocknum = int(line.split()[1])
+                    mult = int(line.split()[3])
+                    roots = int(line.split()[5])
+                    block_dict[blocknum] = (mult,roots)
+                #Only reading 2 blocks (two multiplicities)
+                if len(block_dict) == 2:
+                    grab_blockinfo = False
+            #Grabbing actual MRCI state energies
             if grab is True and string in line:
-                print("line: ", line)
-                Energy=float(line.split()[5])
+                Energy=float(line.split()[3])
                 state_energies.append(Energy)
-                if len(state_energies) == roots:
-                    mult_dict[mult] = state_energies
-            if Finished is True and 'CAS-SCF STATES FOR BLOCK' in line:
-                print("line :", line)
-                #New mult block. Resetting state-energies.
-                state_energies=[];Energy=0.0
-                mult=int(line.split()[6])
-                #roots=int(line.split()[8])
-                roots=int(line.split()[7:9][-1].replace('NROOTS=',''))
-                grab=True
-            if 'Davidson type correc' in line:
-                Finished=True
+                if len(state_energies) == current_roots:
+                    mult_dict[currentmult] = state_energies
+                    state_energies=[]
+            #Gettin info about what block we are currently reading in the output
+            if '*              CI-BLOCK' in line:
+                blockgrab=True
+                currentblock=int(line.split()[-2])
+                currentmult=block_dict[currentblock][0]
+                current_roots = block_dict[currentblock][1]
+            if 'TRANSITION ENERGIES' in line:
+                grab = False
+            if blockgrab is True:
+                if 'Davidson type correc' in line:
+                    grab=True
     return mult_dict
 
 #CASSCF: Grab orbital ranges
@@ -848,7 +865,6 @@ def Gaussian(x, mu, strength, sigma):
 
 
 #Grab determinants from CASSCF-ORCA output with option PrintWF det
-
 def grab_dets_from_CASSCF_output(file):
 
     class state_dets():
@@ -915,29 +931,37 @@ def grab_dets_from_CASSCF_output(file):
 
                     #CASE: CFG contains only 2 and 0s. That means a situation where CFG and Det is same thing
                     # But det info is not printed so we need to add it
-                    if '1' not in cfg:
-                        #print("cfg : ", cfg)
-                        print("Found CFG without Det info. Adding to determinants")
-                        #print("line:", line)
-                        bla = cfg.replace('[','').replace(']','').replace('CFG','')
-                        #print("bla:", bla)
-                        det = bla.replace(str(2),str(3))
-                        #print("det:", det)
-                        det2 = [int(i) for i in det]
-                        det_tuple = internal_tuple + tuple(det2) + external_tuple
-                        #print("det_tuple: ", det_tuple)
-                        state.determinants[det_tuple] = coeff
-
+                    #Removed after Vijay update
+                    #if '1' not in cfg:
+                    #    #print("cfg : ", cfg)
+                    #    print("Found CFG without Det info. Adding to determinants")
+                    #    #print("line:", line)
+                    #    bla = cfg.replace('[','').replace(']','').replace('CFG','')
+                    #    #print("bla:", bla)
+                    #    det = bla.replace(str(2),str(3))
+                    #    #print("det:", det)
+                    #    det2 = [int(i) for i in det]
+                    #    det_tuple = internal_tuple + tuple(det2) + external_tuple
+                    #    #print("det_tuple: ", det_tuple)
+                    #    state.determinants[det_tuple] = coeff
 
                 if 'ROOT ' in line:
                     print("line:", line)
                     root=int(line.split()[1][0])
                     energy = float(line.split()[3])
-                    state = state_dets(root,energy,mult)
+                    state = state_dets(root, energy, mult)
                     list_of_states.append(state)
             if 'CAS-SCF STATES FOR BLOCK' in line:
+                print("CAS LINE: ", line)
                 mult =int(line.split()[6])
+                print("Setting mult to: ", mult)
+                detgrab = False
+                print("Det grab set to False")
             if '  Extended CI Printing (values > TPrintWF)' in line:
+                print("Det grab set to True")
+                detgrab=True
+            if '  Spin-Determinant CI Printing' in line:
+                print("Det grab set to True")
                 detgrab=True
 
     #print("list_of_states:", list_of_states)
@@ -979,6 +1003,265 @@ def grab_dets_from_CASSCF_output(file):
     #print("final :", final)
     return final
 
+
+
+#Grab determinants from MRCI-ORCA output with option PrintWF det
+def grab_dets_from_MRCI_output(file):
+
+
+    class state_dets():
+        def __init__(self, root,energy,mult):
+            self.mult = mult
+            self.root = root
+            self.energy = energy
+            self.determinants = {}
+            self.configurations = {}
+            self.ciblock = None
+    list_of_states=[]
+    detgrab=False
+    grabrange=False
+    with open(file) as f:
+        for line in f:
+            if 'Program Version 4.2.1 -  RELEASE' in line:
+                sys.exit('MRCI-determinant read will not work for ORCA 4.2.1 and older!')
+            #Getting orbital ranges
+            # Internal (doubly occ)and external orbitals (empty)
+            if grabrange is True:
+
+                if 'Internal' in line:
+                    internal=int(line.split()[-2])
+                    internal_tuple = tuple([3] * internal)
+                if 'Active' in line:
+                    active=int(line.split()[-2])
+                if 'External' in line:
+                    external=int(line.split()[-2])
+                    external_tuple = tuple([0] * external)
+            if 'Determined orbital ranges:' in line:
+                grabrange=True
+            if 'Number of rotation parameters' in line:
+                grabrange=False
+
+            if 'SA-CASSCF TRANSITION ENERGIES' in line:
+                detgrab=False
+            if 'DENSITY MATRIX' in line or 'DENSITY GENERATION' in line:
+                print("here. density line. Setting detgrab to false")
+                detgrab=False
+            if 'TRANSITION ENERGIES' in line:
+                detgrab=False
+                print("here. transitio energies line. Setting detgrab to false")
+            #Determining CI BLOCK
+            #if 'CI BLOCK' in line:
+
+
+            #What block we are reading through
+            if '          CI-BLOCK' in line:
+                #Setting detgrab to False for each new CI-block. Prevents us from grabbing State-lines for Reference-space CI
+                detgrab = False
+                ciblock = int(line.split()[-2])
+                print("Inside CI Block : ", ciblock)
+            if 'Building a CAS' in line:
+                #Setting mult here. mult will be used when creating state
+                mult = int(line.split()[-1])
+
+            if detgrab is True:
+
+                #Here reading CFG line. Grabbing configuration
+                #Also
+                if '[' in line and 'CFG' in line:
+                    hole_indices=[]
+                    particle_indices=[]
+                    print("--------------------------------------------------")
+                    print("line:", line)
+                    cfg = line.split()[-1]
+                    coeff = float(line.split()[0])
+                    state.configurations[cfg] = coeff
+                    #Reading CFG line and determining hole/particle excitations outside active space
+                    if 'h---h---' in line and line.count('p')==0:
+                        #CAS excitation
+                        print("Assignment: 0 HOLE  0 PARTICLE")
+                        hole_indices=[]
+                        particle_indices=[]
+                        print("hole_indices:", hole_indices)                         
+                        print("particle_indices:", particle_indices)    
+                    elif 'h---h---' in line and line.count('p')==1:
+                        #0-hole 1-particle
+                        hole_indices=[]
+                        print("Assignment: 0 HOLE  1 PARTICLE")
+                        particle_index = int(find_between(line,']p','\n'))
+                        particle_indices.append(particle_index)
+                        print("hole_indices:", hole_indices) 
+                        print("particle_indices:", particle_indices)    
+                    elif 'h---h---' in line and line.count('p')==2:
+                        #0-hole 2-particle
+                        hole_indices=[]
+                        print("Assignment: 0 HOLE  2 PARTICLE")
+                        particle_indices = [int(i) for i in find_between(line,']p','\n').replace('p','').split()]
+                        print("hole_indices:", hole_indices) 
+                        print("particle_indices:", particle_indices)                
+                    elif 'h---h ' in line and line.count('p')==0:
+                        #1-hole 0-particle
+                        particle_indices=[]
+                        print("Assignment: 1 HOLE  0 PARTICLE")                             
+                        hole_index=int(find_between(line,'h---h','[').strip())
+                        hole_indices.append(hole_index)
+                        print("hole_indices:", hole_indices) 
+                        print("particle_indices:", particle_indices)  
+                    elif 'h---h ' in line and line.count('p')==1:
+                        #1-hole 1-particle
+                        print("Assignment: 1 HOLE  1 PARTICLE")
+                        hole_index=int(find_between(line,'h---h','[').strip())
+                        hole_indices.append(hole_index)
+                        particle_index = int(find_between(line,']p','\n'))
+                        particle_indices.append(particle_index)                         
+                        print("hole_indices:", hole_indices) 
+                        print("particle_indices:", particle_indices)  
+                    elif 'h---h ' in line and line.count('p')==2:
+                        #1-hole 2-particle
+                        print("Assignment: 1 HOLE  2 PARTICLE")
+                        hole_index=int(find_between(line,'h---h','[').strip())
+                        hole_indices.append(hole_index)
+                        particle_indices = [int(i) for i in find_between(line,']p','\n').replace('p','').split()]
+                        print("hole_indices:", hole_indices) 
+                        print("particle_indices:", particle_indices)
+                    elif 'CFG h ' in line and line.count('p')==0:
+                        # 2-hole 0-particle
+                        print("Assignment: 2 HOLE  0 PARTICLE")
+                        hole_indices=[int(i) for i in find_between(line,'CFG h','[').replace('h','').split()]
+                        particle_indices=[]
+                        print("hole_indices:", hole_indices) 
+                        print("particle_indices:", particle_indices)
+                    elif 'CFG h ' in line and line.count('p')==1:
+                        # 2-hole 1-particle
+                        print("Assignment: 2 HOLE  1 PARTICLE")
+                        hole_indices=[int(i) for i in find_between(line,'CFG h','[').replace('h','').split()]
+                        particle_index = int(find_between(line,']p','\n'))
+                        particle_indices.append(particle_index)   
+                        print("hole_indices:", hole_indices) 
+                        print("particle_indices:", particle_indices)
+                    elif 'CFG h ' in line and line.count('p')==2:
+                        # 2-hole 2-particle
+                        print("Assignment: 2 HOLE  2 PARTICLE")
+                        hole_indices=[int(i) for i in find_between(line,'CFG h','[').replace('h','').split()]
+                        particle_indices = [int(i) for i in find_between(line,']p','\n').replace('p','').split()]
+                        print("hole_indices:", hole_indices) 
+                        print("particle_indices:", particle_indices)                                                    
+                    else:
+                        print("Bad line. exiting")
+                        exit()    
+                        
+                if '[' in line and 'CFG' not in line:
+                    print("line:", line)
+                    det = line.split()[0]
+                    #print("det:", det)
+                    detlist=[i for i in det.replace('[','').replace(']','')]
+                    detlist2=[]
+                    #print("detlist:", detlist)
+                    #Sticking with labelling: 3: doubly occ, 0: empty, 1 for up-alpha, 2 for down-beta
+                    for j in detlist:
+                        if j == '2':
+                            detlist2.append(3)
+                        elif j == '0':
+                            detlist2.append(0)
+                        elif j == 'u':
+                            detlist2.append(1)
+                        elif j == 'd':
+                            detlist2.append(2)
+                    print("detlist2:", detlist2)
+                    #Modifying internal_tuple for possible holes
+                    print("internal_tuple :", internal_tuple)
+                    #TODO
+                    #Modifying external_tuple for possible particles
+                    #TODO                    
+                    print("external_tuple :", external_tuple)
+                    
+                    #combining
+                    det_tuple=internal_tuple+tuple(detlist2)+external_tuple
+                    print("det_tuple : ", det_tuple)
+                    coeff = float(line.split()[-1])
+                    #print("coeff : ", coeff)
+                    state.determinants[det_tuple] = coeff
+                    #print("state.determinants :", state.determinants)
+                    
+
+
+                    #CASE: CFG contains only 2 and 0s. That means a situation where CFG and Det is same thing
+                    # But det info is not printed so we need to add it
+                    #DISABLING after Vijay update
+                    #if '1' not in cfg:
+                    #    print("cfg : ", cfg)
+                    #    print("Found CFG without Det info. Adding to determinants")
+                    #    print("line:", line)
+                    #    bla = cfg.replace('[','').replace(']','').replace('CFG','')
+                    #    print("bla:", bla)
+                    #    det = bla.replace(str(2),str(3))
+                    #    print("det:", det)
+                    #    det2 = [int(i) for i in det]
+                    #    det_tuple = internal_tuple + tuple(det2) + external_tuple
+                    #    #print("det_tuple: ", det_tuple)
+                    #    state.determinants[det_tuple] = coeff
+
+                #Now creating state. Taking energy, root and mult (found earlier in beginning of CI block).
+                if 'STATE' in line:
+                    print("STATE in line. Creating state")
+                    print("line:", line)
+                    root=int(line.split()[1].replace(':',''))
+                    print("root:", root)
+                    energy = float(line.split()[3])
+                    state = state_dets(root,energy,mult)
+                    list_of_states.append(state)
+            #if 'CAS-SCF STATES FOR BLOCK' in line:
+            #    mult =int(line.split()[6])
+            #Now PT2-selection and CI-problem is solved. Final states coming next.
+            if 'Davidson type correction:' in line:
+                detgrab=True
+
+    #print("list_of_states:", list_of_states)
+    #print(list_of_states[0])
+    #print(list_of_states[0].determinants)
+    #print(list_of_states[0].configurations)
+
+
+    #Going through
+    print("list_of_states: ", list_of_states)
+    print("list_of_states[0]", list_of_states[0])
+    print("list_of_states[0].__dict__", list_of_states[0].__dict__)
+    #exit()
+    for n,state in enumerate(list_of_states):
+        print("------------------------")
+        print("This is state {}  with mult {} and energy {} and root {}".format(n,state.mult, state.energy, state.root))
+        print("length of state CFGs :", len(state.configurations))
+        print("length of state determinants :", len(state.determinants))
+        print("state.configurations : ", state.configurations)
+        print("state.determinants : ", state.determinants)
+        if len(state.determinants) == 0:
+            print("WARNING!!! No determinant output found.")
+            print("THIS should go away. Disabling for now...")
+            exit()
+            print("Must be because CFG and det is the same. Using CFG info ")
+            print("WARNING!!!")
+            print("state.configurations : ", state.configurations)
+            for cfg in state.configurations.items():
+                bla = cfg[0].replace('[','').replace(']','').replace('CFG','')
+                det = bla.replace(str(2),str(3))
+                det2 = [int(i) for i in det]
+                #det_tuple = tuple(det2)
+                det_tuple = internal_tuple + tuple(det2) + external_tuple
+                coeff = cfg[1]
+                state.determinants[det_tuple] = coeff
+            #print("state.determinants: ", state.determinants)
+
+    #print("list_of_states:", list_of_states)
+
+    mults = list(set([state.mult for state in list_of_states]))
+    #Return a dictionary with all mults and all states
+    final = {}
+    for mult in mults:
+        final[mult] = [state.determinants for state in list_of_states if state.mult == mult ]
+    #print("final :", final)
+    return final
+
+
+
 ########################
 # MAIN program
 ########################
@@ -988,7 +1271,7 @@ def grab_dets_from_CASSCF_output(file):
 def PhotoElectronSpectrum(theory=None, fragment=None, InitialState_charge=None, Initialstate_mult=None,
                           Ionizedstate_charge=None, Ionizedstate_mult=None, numionstates=50, path_wfoverlap=None, tda=True,
                           brokensym=False, HSmult=None, atomstoflip=None, initialorbitalfiles=None, Densities='SCF', densgridvalue=100,
-                          CAS=False, CAS_Initial=None, CAS_Final = None, memory=20000, numcores=1, noDyson=False, CASCI=False, MRCI=False,
+                          CAS=False, CAS_Initial=None, CAS_Final = None, memory=40000, numcores=1, noDyson=False, CASCI=False, MRCI=False,
                           MRCI_Initial=None, MRCI_Final = None):
     blankline()
     print(bcolors.OKGREEN,"-------------------------------------------------------------------",bcolors.ENDC)
@@ -1099,7 +1382,9 @@ def PhotoElectronSpectrum(theory=None, fragment=None, InitialState_charge=None, 
 
     print("")
     print(bcolors.OKBLUE,"Calculated ion states:", numionstates, bcolors.ENDC)
-    if CAS is False or MRCI is False:
+    print("CAS:", CAS)
+    print("MRCI:", MRCI)
+    if CAS is False and MRCI is False:
         print(bcolors.OKBLUE,"TDDFT-calculated ion states:", numionstates-1, bcolors.ENDC)
     print("")
 
@@ -1136,7 +1421,7 @@ def PhotoElectronSpectrum(theory=None, fragment=None, InitialState_charge=None, 
         if MRCI is True:
             print("Modifying MRCI block for initial state, CAS({},{})".format(MRCI_Initial[0],MRCI_Initial[1]))
             print("{} electrons in {} orbitals".format(MRCI_Initial[0],MRCI_Initial[1]))
-
+            print("WARNING: MRCI determinant-printing read will only work for ORCA-current or ORCA 5.0, not older ORCA versions like ORCA 4.2")
             #Removing nel/norb/nroots lines if user added
             for line in theory.orcablocks.split('\n'):
                 if 'nel' in line:
@@ -1145,10 +1430,23 @@ def PhotoElectronSpectrum(theory=None, fragment=None, InitialState_charge=None, 
                     theory.orcablocks=theory.orcablocks.replace(line,'')
                 if 'nroots' in line:
                     theory.orcablocks=theory.orcablocks.replace(line,'')
+                if 'maxiter' in line:
+                    theory.orcablocks=theory.orcablocks.replace(line,'')
             theory.orcablocks = theory.orcablocks.replace('\n\n','\n')
 
-            #Defining MRCI block from beginning
-            theory.orcablocks = "%mrci\n" + "printwf det\nTPrintwf 1e-16\n" + "newblock {} *\n refs cas({},{}) end\n".format(stateI.mult,MRCI_Initial[0],MRCI_Initial[1])+ "nroots {}\n end\n".format(1) + "end"
+            #USING CASSCF block to define reference
+            #Add nel,norb and nroots lines back in. Also determinant printing option
+            print("theory.orcablocks :", theory.orcablocks)
+            theory.orcablocks = theory.orcablocks.replace('%casscf', '%casscf\n'  + "nel {}\n".format(MRCI_Initial[0]) +
+                                                          "norb {}\n".format(MRCI_Initial[1]) + "nroots {}\n".format(1))
+            print("theory.orcablocks :", theory.orcablocks)
+            #Enforcing CAS-CI
+            if 'noiter' not in theory.orcasimpleinput.lower():
+                theory.orcasimpleinput = theory.orcasimpleinput + ' noiter '
+
+            #Defining simple MRCI block. States defined
+            theory.orcablocks = theory.orcablocks + "%mrci\n" + "printwf det\nTPrintwf 1e-16\n" + "end"
+            #theory.orcablocks = "%mrci\n" + "printwf det\nTPrintwf 1e-16\n" + "newblock {} *\n refs cas({},{}) end\n".format(stateI.mult,MRCI_Initial[0],MRCI_Initial[1])+ "nroots {}\n end\n".format(1) + "end"
             theory.orcablocks = theory.orcablocks.replace('\n\n','\n')
             theory.orcablocks = theory.orcablocks.replace('\n\n','\n')
 
@@ -1173,7 +1471,7 @@ def PhotoElectronSpectrum(theory=None, fragment=None, InitialState_charge=None, 
             print("Will use file {} as guess GBW file for Initial state".format(initialorbitalfiles[0]))
             shutil.copyfile(initialorbitalfiles[0], theory.inputfilename + '.gbw')
 
-        Singlepoint(fragment=fragment, theory=theory)
+        finalsinglepointenergy = Singlepoint(fragment=fragment, theory=theory)
 
         #Create Cube file of electron/spin density using orca_plot for INITIAL STATE
         if Densities == 'SCF' or Densities =='All':
@@ -1203,7 +1501,12 @@ def PhotoElectronSpectrum(theory=None, fragment=None, InitialState_charge=None, 
 
             #Get orbital ranges (stateI is sufficient)
             internal_orbs,active_orbs,external_orbs = casscf_orbitalranges_grab("orca-input.out")
+        elif MRCI is True:
+            stateI.energy=finalsinglepointenergy
+            print("stateI.energy: ", stateI.energy)
 
+            #Get orbital ranges (stateI is sufficient)
+            internal_orbs,active_orbs,external_orbs = casscf_orbitalranges_grab("orca-input.out")
         else:
             stateI.energy=scfenergygrab("orca-input.out")
 
@@ -1310,28 +1613,45 @@ def PhotoElectronSpectrum(theory=None, fragment=None, InitialState_charge=None, 
             print("{} electrons in {} orbitals".format(MRCI_Initial[0], MRCI_Initial[1]))
             # Making sure multiplicties are sorted in ascending order and creating comma-sep string
             MRCI_mults = ','.join(str(x) for x in sorted([f.mult for f in Finalstates]))
+
             print("MRCI_mults:", MRCI_mults)
             numionstates_string = ','.join(str(numionstates) for x in [f.mult for f in Finalstates])
+            print("numionstates_string:", numionstates_string)
             # Removing nel/norb/nroots lines if user added
+            #for line in theory.orcablocks.split('\n'):
+            #    if 'nroots' in line:
+            #        theory.orcablocks = theory.orcablocks.replace(line, '')
+            #    if 'newblock' in line:
+            #        theory.orcablocks = theory.orcablocks.replace(line, '')
+            #    if 'refs' in line:
+            #        theory.orcablocks = theory.orcablocks.replace(line, '')
+            #    if 'mult' in line:
+            #        theory.orcablocks = theory.orcablocks.replace(line, '')
+            #    if 'refs' in line:
+            #        theory.orcablocks = theory.orcablocks.replace(line, '')
             for line in theory.orcablocks.split('\n'):
+                if 'nel' in line:
+                    theory.orcablocks=theory.orcablocks.replace(line,'')
+                if 'norb' in line:
+                    theory.orcablocks=theory.orcablocks.replace(line,'')
                 if 'nroots' in line:
-                    theory.orcablocks = theory.orcablocks.replace(line, '')
-                if 'newblock' in line:
-                    theory.orcablocks = theory.orcablocks.replace(line, '')
-                if 'refs' in line:
-                    theory.orcablocks = theory.orcablocks.replace(line, '')
+                    theory.orcablocks=theory.orcablocks.replace(line,'')
                 if 'mult' in line:
-                    theory.orcablocks = theory.orcablocks.replace(line, '')
-                if 'refs' in line:
-                    theory.orcablocks = theory.orcablocks.replace(line, '')
-            theory.orcablocks = theory.orcablocks.replace('\n\n', '\n')
+                    theory.orcablocks=theory.orcablocks.replace(line,'')
+            theory.orcablocks = theory.orcablocks.replace('\n\n','\n')
+
+            #Add nel,norb and nroots lines back in.
+            # And both spin multiplicities. Nroots for each
+            numionstates_string = ','.join(str(numionstates) for x in [f.mult for f in Finalstates])
+            theory.orcablocks = theory.orcablocks.replace('%casscf', '%casscf\n' + "nel {}\n".format(MRCI_Final[0]) +
+                                                          "norb {}\n".format(
+                                                              MRCI_Final[1]) + "nroots {}\n".format(numionstates_string) + "mult {}\n".format(MRCI_mults))
 
             #Creating newblock blocks for each multiplicity
-            newblockstring=""
-            for mult in [f.mult for f in Finalstates]:
-                newblockstring = newblockstring + "  newblock {} *\n".format(mult)+"  refs cas({},{}) end\n".format(MRCI_Final[0],MRCI_Final[1] )+ "nroots {}\n".format(mult)+"end\n"
-
-            theory.orcablocks = "%mrci\n" + newblockstring + "printwf det\nTPrintwf 1e-16\nend"
+            #newblockstring=""
+            #for mult in [f.mult for f in Finalstates]:
+            #    newblockstring = newblockstring + "  newblock {} *\n".format(mult)+"  refs cas({},{}) end\n".format(MRCI_Final[0],MRCI_Final[1] )+ "nroots {}\n".format(mult)+"end\n"
+            #theory.orcablocks = theory.orcablocks + "%mrci\n" + "printwf det\nTPrintwf 1e-16\nend"
             theory.orcablocks = theory.orcablocks.replace('\n\n', '\n')
             theory.orcablocks = theory.orcablocks.replace('\n\n', '\n')
 
@@ -1348,10 +1668,8 @@ def PhotoElectronSpectrum(theory=None, fragment=None, InitialState_charge=None, 
 
             Singlepoint(fragment=fragment, theory=theory)
 
-            #Getting state-energies of all states for each spin multiplicity (state-averaged calculation)
+            #Getting state-energies of all states for each spin multiplicity
             fstates_dict = mrci_state_energies_grab("orca-input.out")
-            print("fstates_dict: ", fstates_dict)
-
             # Saveing GBW and CIS file
             shutil.copyfile(theory.inputfilename + '.gbw', './' + 'Final_State' + '.gbw')
             shutil.copyfile(theory.inputfilename + '.out', './' + 'Final_State' + '.out')
@@ -1443,7 +1761,7 @@ def PhotoElectronSpectrum(theory=None, fragment=None, InitialState_charge=None, 
     blankline()
     blankline()
 
-    if CAS is True:
+    if CAS is True or MRCI is True:
         FinalIPs = []
         Finalionstates = []
         FinalTDtransitionenergies =[]
@@ -1455,8 +1773,6 @@ def PhotoElectronSpectrum(theory=None, fragment=None, InitialState_charge=None, 
                 fstate.IPs.append((ionstate-stateI.energy)*constants.hartoeV)
             FinalIPs = FinalIPs + fstate.IPs
             Finalionstates = Finalionstates + fstate.ionstates
-
-
     else:
 
         FinalIPs = []
@@ -1498,7 +1814,7 @@ def PhotoElectronSpectrum(theory=None, fragment=None, InitialState_charge=None, 
 
     if noDyson is True:
         print("NoDyson is True. Exiting...")
-        exit()
+        return
 
 
     if CAS is not True:
@@ -1571,7 +1887,7 @@ def PhotoElectronSpectrum(theory=None, fragment=None, InitialState_charge=None, 
             #Initial
             print("Grabbing determinants from Initial State output")
             init_state = grab_dets_from_CASSCF_output(stateI.outfile)
-            #print("init_state:", init_state)
+            print("init_state:", init_state)
             #init_state_dict = [i.determinants for i in init_state]
             #init_state_dict2 = {Initialstate_mult : init_state_dict}
             #print("init_state_dict:", init_state_dict)
@@ -1596,9 +1912,25 @@ def PhotoElectronSpectrum(theory=None, fragment=None, InitialState_charge=None, 
                 #print("det_final : ", det_final)
                 # Printing to file
                 writestringtofile(det_final, "dets_final_mult" + str(fstate.mult))
+        elif MRCI is True:
 
+            print("Grabbing determinants from Initial State output")
+            init_state = grab_dets_from_MRCI_output(stateI.outfile)
+            print("RB here")
+            det_init = format_ci_vectors(init_state[Initialstate_mult])
 
+            writestringtofile(det_init, "dets_init")
 
+            print("Grabbing determinants from Final State output")
+            final_states = grab_dets_from_MRCI_output(Finalstates[0].outfile)
+            print("hhere")
+            for fstate in Finalstates:
+                print("fstate: ", fstate)
+                print("fstate.mult :", fstate.mult)
+                det_final = format_ci_vectors(final_states[fstate.mult])
+                #print("det_final : ", det_final)
+                # Printing to file
+                writestringtofile(det_final, "dets_final_mult" + str(fstate.mult))
         else:
             #TDDFT: GETTING DETERMINANTS FROM CIS FILE
             # Final state. Create detfiles
@@ -1625,7 +1957,7 @@ def PhotoElectronSpectrum(theory=None, fragment=None, InitialState_charge=None, 
         print(bcolors.OKGREEN, "AO matrix, MO coefficients and excited state determinants have been written to files:",
               bcolors.ENDC)
         # TODO
-        print(bcolors.OKGREEN, "AO_overl, mos_init, mos_final, dets.1, dets.2", bcolors.ENDC)
+        print(bcolors.OKGREEN, "AO_overl, mos_init, mos_final, dets_final_multX", bcolors.ENDC)
 
         finaldysonnorms = []
         for fstate in Finalstates:

@@ -7,6 +7,7 @@ import constants
 #from math import pow
 import copy
 import math
+import ash
 sqrt = math.sqrt
 pow = math.pow
 #Elements and atom numbers
@@ -136,6 +137,18 @@ def threshold_conn(elA,elB,scale,tol):
     #print(crad)
     #return scale*(crad[0]+crad[1]) + tol
 
+#Connectivity function (called by Fragment object)
+def calc_conn_py(coords, elems, conndepth, scale, tol):
+    found_atoms = []
+    fraglist = []
+    for atom in range(0, len(elems)):
+        if atom not in found_atoms:
+            members = get_molecule_members_loop_np2(coords, elems, conndepth, scale, tol, atomindex=atom)
+            if members not in fraglist:
+                fraglist.append(members)
+                found_atoms += members
+    return fraglist
+
 #Get connected atoms to chosen atom index based on threshold
 #Uses slow for-loop structure with distance-function call
 #Don't use
@@ -170,6 +183,8 @@ def dummy_mat(mat_v, mat_u):
 #https://semantive.com/pl/blog/high-performance-computation-in-python-numpy/
 #Avoiding for loops
 def get_connected_atoms_np(coords, elems,scale,tol, atomindex):
+    #print("inside get conn atoms np")
+    #print("atomindex:", atomindex)
     connatoms = []
     #Creating np array of the coords to compare
     compcoords = np.tile(coords[atomindex], (len(coords), 1))
@@ -194,6 +209,7 @@ def get_connected_atoms_np(coords, elems,scale,tol, atomindex):
     diff=distances-thresholds
     #Getting connatoms by finding indices of diff with negative values (i.e. where distance is smaller than threshold)
     connatoms=np.where(diff<0)[0].tolist()
+    #print("connatoms ", connatoms)
     return connatoms
 
 
@@ -218,25 +234,51 @@ def get_molecule_members_loop_np(coords, elems, loopnumber,scale,tol, atomindex=
 
 #Numpy clever loop test.
 #Version 2 never goes through same atom
+
+#@timefn
 def get_molecule_members_loop_np2(coords, elems, loopnumber, scale, tol, atomindex=None, membs=None):
     if membs is None:
         membs = []
         membs.append(atomindex)
+        timestampA = time.time()
         membs = get_connected_atoms_np(coords, elems, scale,tol, atomindex)
+        #print("membs:", membs)
+        #ash.print_time_rel(timestampA, modulename='membs first py')
+
     finalmembs=membs
     for i in range(loopnumber):
         #Get list of lists of connatoms for each member
         newmembers=[get_connected_atoms_np(coords, elems, scale,tol, k) for k in membs]
+        #print("newmembers:", newmembers)
+        #exit()
         #Get a unique flat list
         trimmed_flat=np.unique([item for sublist in newmembers for item in sublist]).tolist()
+        #print("trimmed_flat:", trimmed_flat)
+        #print("finalmembs ", finalmembs)
+
         #Check if new atoms not previously found
         membs = listdiff(trimmed_flat, finalmembs)
+        #print("membs:", membs)
+        #exit()
         #Exit loop if nothing new found
         if len(membs) == 0:
+            #print("exiting...")
+            #exit()
             return finalmembs
+        #print("type of membs:", type(membs))
+        #print("type of finalmembs:", type(finalmembs))
         finalmembs+=membs
+        #print("finalmembs ", finalmembs)
         finalmembs=np.unique(finalmembs).tolist()
+        #print("finalmembs ", finalmembs)
+        #exit()
+        #print("finalmembs:", finalmembs)
+        #print("----------")
+        #ash.print_time_rel(timestampA, modulename='finalmembs  py')
+        #exit()
     return finalmembs
+
+
 
 #Get molecule members by running get_connected_atoms function on expanding member list
 #Uses loopnumber for when to stop searching.
@@ -300,12 +342,13 @@ def create_coords_string(elems,coords):
 
 #Takes list of elements and gives formula
 def elemlisttoformula(list):
-    dict = {i: list.count(i) for i in list}
+    #This dict comprehension was slow for large systems. Using set to reduce iterations
+    dict = {i: list.count(i) for i in set(list)}
     formula=""
     for item in dict.items():
         el=item[0];count=item[1]
-        string=el+str(count)
-        formula=formula+string
+        #string=el+str(count)
+        formula=formula+el+str(count)
     return formula
 
 #From molecular formula (string, e.g. "FeCl4") to list of atoms
@@ -454,9 +497,6 @@ def split_multimolxyzfile(file, writexyz=False):
     elems = []
     with open(file) as f:
         for index, line in enumerate(f):
-            if titlegrab is True:
-                all_titles.append(line.split()[-1])
-                titlegrab=False
             if index == 0:
                 numatoms = line.split()[0]
             if coordgrab == True:
@@ -469,18 +509,42 @@ def split_multimolxyzfile(file, writexyz=False):
                     all_elems.append(elems)
                     if writexyz is True:
                         #Alternative option: write each conformer/molecule to disk as XYZfile
-                        write_xyzfile(elems, coords, "conformer"+str(molcounter))
+                        write_xyzfile(elems, coords, "molecule"+str(molcounter))
                     coords = []
                     elems = []
+            if titlegrab is True:
+                all_titles.append(line.split()[-1])
+                titlegrab=False
+                coordgrab = True
             if line.split()[0] == str(numatoms):
                 # print("coords is", len(coords))
-                coordgrab = True
                 molcounter += 1
                 titlegrab=True
+                coordgrab=False
 
     return all_elems,all_coords, all_titles
 
 
+#Read Tcl-Chemshell fragment file and grab elems and coords. Coordinates converted from Bohr to Angstrom
+#Taken from functions_solv
+def read_fragfile_xyz(fragfile):
+    #removing extension from fragfile name if present and then adding back.
+    pathtofragfile=fragfile.split('.')[0]+'.c'
+    coords=[]
+    elems=[]
+    #TODO: Change elems and coords to numpy array instead
+    grabcoords=False
+    with open(pathtofragfile) as ffile:
+        for line in ffile:
+            if 'block = connectivity' in line:
+                grabcoords=False
+            if grabcoords==True:
+                coords.append([float(i)*constants.bohr2ang for i in line.split()[1:]])
+                elems.append(line.split()[0])
+            if 'block = coordinates records ' in line:
+                #numatoms=int(line.split()[-1])
+                grabcoords=True
+    return elems,coords
 
 
 
@@ -918,3 +982,59 @@ def distance_between_atoms(fragment=None, atom1=None, atom2=None):
     atom2_coords=fragment.coords[atom2]
     dist=distance(atom1_coords,atom2_coords)
     return dist
+
+
+
+def get_boundary_atoms(qmatoms, coords, elems, scale, tol):
+    # For each QM atom, do a get_conn_atoms, for those atoms, check if atoms are in qmatoms,
+    # if not, then we have found an MM-boundary atom
+    qm_mm_boundary_dict = {}
+    for qmatom in qmatoms:
+        connatoms = get_connected_atoms(coords, elems, scale, tol, qmatom)
+        # Find connected atoms that are not in QM-atoms
+        boundaryatom = listdiff(connatoms, qmatoms)
+        if len(boundaryatom) > 1:
+            print("Boundaryatom : ", boundaryatom)
+            print("Problem. Found more than 1 boundaryatom for QM-atom {} . This is not allowed".format(qmatoms))
+            exit()
+        elif len(boundaryatom) == 1:
+            # Adding to dict
+            qm_mm_boundary_dict[qmatom] = boundaryatom[0]
+    return qm_mm_boundary_dict
+
+#Get linkatom positions for a list of qmatoms and the current set of coordinates
+# Using linkatom distance of 1.08999 Å for now as default. Makes sense for C-H link atoms. Check what Chemshell does
+def get_linkatom_positions(qm_mm_boundary_dict,qmatoms, coords, elems, linkatom_distance=1.09):
+    
+    #Get boundary atoms
+    #TODO: Should we always call get_boundary_atoms or we should use previously defined dict??
+    #qm_mm_boundary_dict = get_boundary_atoms(qmatoms, coords, elems, scale, tol)
+    #print("qm_mm_boundary_dict :", qm_mm_boundary_dict)
+    
+    # Get coordinates for QMX and MMX pair. Create new L coordinate that has a modified distance to QMX
+    linkatoms_dict = {}
+    for dict_item in qm_mm_boundary_dict.items():
+        qmatom_coords = np.array(coords[dict_item[0]])
+        mmatom_coords = np.array(coords[dict_item[1]])
+
+        linkatom_coords = list(qmatom_coords + (mmatom_coords - qmatom_coords) * (linkatom_distance / distance(qmatom_coords, mmatom_coords)))
+        linkatoms_dict[(dict_item[0], dict_item[1])] = linkatom_coords
+    return linkatoms_dict
+
+
+
+
+#Grabbing molecules from multi-XYZ trajectory file (can be MD-file, optimization traj, nebpath traj etc).
+#Creating ASH fragments for each conformer
+def get_molecules_from_trajectory(file):
+    print("")
+    print("Now finding molecules in multi-XYZ trajectory file and creating ASH fragments...")
+    list_of_molecules=[]
+    all_elems, all_coords, all_titles = split_multimolxyzfile(file,writexyz=True)
+    print("Found {} molecules in file".format(len(all_elems)))
+    
+    for els,cs in zip(all_elems,all_coords):
+        conf = ash.Fragment(elems=els, coords=cs)
+        list_of_molecules.append(conf)
+
+    return list_of_molecules

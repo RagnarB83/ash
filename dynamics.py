@@ -4,6 +4,14 @@
 
 #OPENMM dynamics. Using either OpenMM ASH object or QM/MM ASH object (contains OpenMM object)
 
+
+#Custom external force in OpenMM for QM: 
+#https://github.com/CCQC/janus/blob/d892d03a15c6668d98a7c504fb2ecaed7f3deb52/janus/mm_wrapper/openmm_wrapper.py
+
+
+
+
+
 def openMMdynamics(theory=None, fragment=None, steps=100, reportsteps=1000):
     if theory.__class__.__name__ == "QMMMTheory":
         try:

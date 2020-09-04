@@ -1,0 +1,59 @@
+Each directory in here is a separate benchmarking database for molecular reactions.
+Each directory, e.g. IE-benzenes should contain a README file and a directory called data.
+The README file should contain human-readable basic information about the dataset.
+The data directory should contain XYZ-files for the dataset and a file: "Reference_data.txt" that contains definitions about the reactions.
+
+Example:
+
+"IE-benzenes" data-set:
+    => README
+    => data
+        => benzene-neut.xyz
+        => benzene-ox.xyz
+        => etc.
+        => Reference_data.txt
+        => corrections.txt (optional file)
+
+#IMPORTANT: Each XYZ-file should contain the charge and multiplicity in the title-line (2nd header-line of XYZ file format)
+
+
+The Reference_data.txt contains information about the reactions in the following format
+- The #TESTSET_INFO lines contain information on the number of reactions and the unit for the reference data.
+  These special lines are read and parsed by ASH.
+- Other # lines are convenient comment-lines but are not read by ASH.
+- Each numbered line defines a reaction. The ASCII-string words in the line point to XYZ-files in the same dir
+  while the integers indicate the stoichiometry of the reaction (negative number: reactant, positive number: product).
+  The last floating point number is always the reference value (e.g. experimental value) in the unit indicated in the #TESTSET_INFO line. 
+
+#IMPORTANT: species/file-names have to contain an alphabetic character (not only integer)
+#IMPORTANT: The reference value has to be a floating point, not an integer (add .0 to number)
+
+If the corrections.txt file is present inside data dir (this is optional) then the additive corrections per reactions will be read.
+This correction can e.g. be ZPE, total enthalpy-correction, total free-energy correction etc. Always per reaction
+
+#############################
+Reference_data.txt Example :
+############################
+#TESTSET_INFO Numentries: 5
+#TESTSET_INFO Unit: eV
+#X-benzenes. Geometries: B3LYP-D3/def2-TZVP
+1 fluorobenzene-neut fluorobenzene-ox -1 1 9.2032
+2 benzene-neut benzene-ox -1 1 9.24378
+3 chlorobenzene-neut chlorobenzene-ox -1 1 9.0728
+4 bromobenzene-neut bromobenzene-ox -1 1 8.9975
+5 iodobenzene-neut iodobenzene-ox -1 1 8.7580
+
+
+corrections.txt Example
+##################
+#TESTSET_INFO
+#TESTSET_INFO Numentries: 5
+#TESTSET_INFO Unit: eV
+#TESTSET_INFO Type: ZPE
+# ZPE corrections per reaction to be added to calculated reaction energies
+1 0.012
+2 0.013
+3 0.009
+4 0.010
+5 0.010
+

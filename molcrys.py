@@ -3,9 +3,9 @@ from functions_coords import *
 from functions_general import *
 from functions_ORCA import *
 from functions_optimization import *
-import settings_molcrys
 from functions_molcrys import *
 from ash import *
+from elstructure_functions import *
 import time
 import shutil
 origtime=time.time()
@@ -174,14 +174,11 @@ def molcrys(cif_file=None, xtl_file=None, fragmentobjects=[], theory=None, numco
     blankline()
     print("Creating new Cluster fragment:")
     Cluster=Fragment(elems=cluster_elems, coords=cluster_coords, scale=chosenscale, tol=chosentol)
-
+    print_time_rel_and_tot(currtime, origtime, modulename='create Cluster fragment')
+    currtime=time.time()
     Cluster.print_system("Cluster-first.ygg")
     print("Cluster size: ", Cluster.numatoms, "atoms")
-
-
-    #We have stopped using settings_molcrys
-    #Cluster.calc_connectivity(scale=settings_molcrys.scale, tol=settings_molcrys.tol)
-    #print_time_rel_and_tot(currtime, origtime, modulename='Cluster.calc_connectivity')
+    print_time_rel_and_tot(currtime, origtime, modulename='print Cluster system')
     currtime=time.time()
     # Going through found frags and identify mainfrags and counterfrags
     for frag in Cluster.connectivity:
@@ -192,23 +189,32 @@ def molcrys(cif_file=None, xtl_file=None, fragmentobjects=[], theory=None, numco
                 fragmentobject.add_clusterfraglist(frag)
 
     printdebug(fragmentobjects[0].clusterfraglist)
+    print_time_rel_and_tot(currtime, origtime, modulename='fragment identification')
+    currtime=time.time()
     #TODO: Reorder cluster with reflections also
 
     #Reorder fraglists in each fragmenttype via Hungarian algorithm.
     # Ordered fraglists can then easily be used in pointchargeupdating
     for fragmentobject in fragmentobjects:
-        print("Redordering fragment object: ", fragmentobject.Name)
+        print("Reordering fragment object: ", fragmentobject.Name)
         reordercluster(Cluster,fragmentobject)
         printdebug(fragmentobject.clusterfraglist)
         fragmentobject.print_infofile(str(fragmentobject.Name)+'.info')
-
+    print_time_rel_and_tot(currtime, origtime, modulename='reorder fraglists')
+    currtime=time.time()
     #TODO: after removing partial fragments and getting connectivity etc. Would be good to make MM cluster neutral
 
     #Add fragmentobject-info to Cluster fragment
+    #Old slow code:
+    #Cluster.old_add_fragment_type_info(fragmentobjects)
     Cluster.add_fragment_type_info(fragmentobjects)
+
+    print_time_rel_and_tot(currtime, origtime, modulename='Cluster fragment type info')
+    currtime=time.time()
     #Cluster is now almost complete, only charges missing. Print info to file
     print(Cluster.print_system("Cluster-info-nocharges.ygg"))
-
+    print_time_rel_and_tot(currtime, origtime, modulename='Cluster print system')
+    currtime=time.time()
     # Create dirs to keep track of various files before QM calculations begin
     try:
         os.mkdir('SPloop-files')
@@ -308,7 +314,8 @@ def molcrys(cif_file=None, xtl_file=None, fragmentobjects=[], theory=None, numco
 
     blankline()
 
-
+    print_time_rel_and_tot(currtime, origtime, modulename="stuff before SP-loop")
+    currtime=time.time()
     #SP-LOOP FOR MAINFRAG
     for SPLoopNum in range(0,SPLoopMaxIter):
         blankline()
@@ -363,14 +370,15 @@ def molcrys(cif_file=None, xtl_file=None, fragmentobjects=[], theory=None, numco
         RMSD_charges=rmsd_list(fragmentobjects[0].all_atomcharges[-1],fragmentobjects[0].all_atomcharges[-2])
         print(BC.OKBLUE,"RMSD of charges: {:6.3f} in SP iteration {:6}:".format(RMSD_charges, SPLoopNum),BC.END)
         if RMSD_charges < RMSD_SP_threshold:
-            print("RMSD less than threshold: {}".format(RMSD_charges,RMSD_SP_threshold))
+            print("RMSD: {} is less than threshold: {}".format(RMSD_charges,RMSD_SP_threshold))
             print(BC.OKMAGENTA,"Charges converged in SP iteration {}! SP LOOP over!".format(SPLoopNum),BC.END)
             break
         print(BC.WARNING,"Not converged in iteration {}. Continuing SP loop".format(SPLoopNum),BC.END)
 
     print(BC.OKMAGENTA,"Molcrys Charge-Iteration done!",BC.END)
     print("")
-
+    print_time_rel_and_tot(currtime, origtime, modulename="SP iteration done")
+    currtime=time.time()
     #Now that charges are converged (for mainfrag and counterfrags ???).
     #Now derive LJ parameters ?? Important for DDEC-LJ derivation
     #Defining atomtypes in Cluster fragment for LJ interaction
@@ -432,9 +440,11 @@ def molcrys(cif_file=None, xtl_file=None, fragmentobjects=[], theory=None, numco
     else:
         print("Undefined shortrangemodel")
         exit()
-
+    print_time_rel_and_tot(currtime, origtime, modulename="LJ stuff done")
+    currtime=time.time()
     Cluster.update_atomtypes(atomtypelist)
-
+    print_time_rel_and_tot(currtime, origtime, modulename="update atomtypes")
+    currtime=time.time()
 
     #Adding Centralmainfrag to Cluster
     Cluster.add_centralfraginfo(Centralmainfrag)
@@ -444,7 +454,8 @@ def molcrys(cif_file=None, xtl_file=None, fragmentobjects=[], theory=None, numco
 
     #Cleanup
     #QMMM_SP_calculation.qm_theory.cleanup()
-
+    print_time_rel_and_tot(currtime, origtime, modulename="final stuff")
+    currtime=time.time()
 
     return Cluster
 

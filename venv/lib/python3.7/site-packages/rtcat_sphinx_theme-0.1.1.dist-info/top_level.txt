@@ -1,1 +1,0 @@
-rtcat_sphinx_theme

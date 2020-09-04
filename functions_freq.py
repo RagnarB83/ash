@@ -1,4 +1,5 @@
 from functions_general import listdiff, clean_number,blankline
+from functions_coords import elematomnumbers, atommasses
 import numpy as np
 import constants
 
@@ -44,7 +45,7 @@ def diagonalizeHessian(hessian, masses, elems):
     return vfreqs,nmodes,numatoms,elems,evectors,atomlist,masses
 
 
-#Massweight Hessian
+# Massweight Hessian
 def massweight(matrix,masses,numatoms):
     mass_mat = np.zeros( (3*numatoms,3*numatoms), dtype = float )
     molwt = [ masses[int(i)] for i in range(numatoms) for j in range(3) ]
@@ -53,7 +54,7 @@ def massweight(matrix,masses,numatoms):
     mwhessian = np.dot((np.dot(mass_mat,matrix)),mass_mat)
     return mwhessian,mass_mat
 
-#Calculate frequencies from eigenvalus
+# Calculate frequencies from eigenvalus
 def calcfreq(evalues):
     hartree2j = constants.hartree2j
     bohr2m = constants.bohr2m
@@ -354,8 +355,14 @@ def thermochemcalc(vfreq,hessatoms,fragment, multiplicity, temp=298.18,pressure=
     vibenergycorr=vibenergy-zpve
 
     #Moments of inertia and rotational part
+    #TODO: Finish.
+    #Now we have moments of inertia function
+    #center = get_center(elems,coords)
+    #rinertia = list(inertia(elems,coords,center))
 
 
+
+    ################################################################
     rotenergy=R_gasconst*temp
 
     #Translational part
@@ -625,3 +632,73 @@ IR SPECTRUM
 
     outfile.close()
     print("Created dummy ORCA outputfile: ", hessfile+'_dummy.out')
+    
+    
+
+#Center of mass, adapted from https://code.google.com/p/pistol/source/browse/trunk/Pistol/Thermo.py?r=4
+def get_center(elems,coords):
+    "compute center of mass"
+    xcom,ycom,zcom = 0,0,0
+    totmass = 0
+    for el,coord in zip(elems,coords):
+        mass = atommasses[elematomnumbers[el.lower()]-1]
+        xcom += float(mass)*float(coord[0])
+        ycom += float(mass)*float(coord[1])
+        zcom += float(mass)*float(coord[2])
+        totmass += float(mass)
+    xcom = xcom/totmass
+    ycom = ycom/totmass
+    zcom = zcom/totmass
+    return xcom,ycom,zcom
+
+def inertia(elems,coords,center):
+    xcom=center[0]
+    ycom=center[1]
+    zcom=center[2]
+    Ixx = 0.
+    Iyy = 0.
+    Izz = 0.
+    Ixy = 0.
+    Ixz = 0.
+    Iyz = 0.
+
+    for index,(el,coord) in enumerate(zip(elems,coords)):
+        mass = atommasses[elematomnumbers[el.lower()]-1]
+        x = coord[0] - xcom
+        y = coord[1] - ycom
+        z = coord[2] - zcom
+
+        Ixx += mass * (y**2. + z**2.)
+        Iyy += mass * (x**2. + z**2.)
+        Izz += mass * (x**2. + y**2.)
+        Ixy += mass * x * y
+        Ixz += mass * x * z
+        Iyz += mass * y * z
+
+    I_ = np.matrix([[ Ixx, -Ixy, -Ixz], [-Ixy,  Iyy, -Iyz], [-Ixz, -Iyz,  Izz]])
+    I = np.linalg.eigvals(I_)
+    return I
+    
+def calc_rotational_constants(frag):
+    coords=frag.coords
+    elems=frag.elems
+    center = get_center(elems,coords)
+    rinertia = list(inertia(elems,coords,center))
+
+    #Converting from moments of inertia in amu A^2 to rotational constants in Ghz.
+    #COnversion factor from http://openmopac.net/manual/thermochemistry.html
+    rot_constants=[]
+    for inertval in rinertia:
+        #Only calculating constant if moment of inertia value not zero
+        if inertval != 0.0:
+            rot_ghz=5.053791E5/(inertval*1000)
+            rot_constants.append(rot_ghz)
+    
+    rot_constants_cm = [i*constants.GHztocm for i in rot_constants]
+    
+    print("Moments of inertia (amu A^2 ):", rinertia)
+    print("Rotational constants (GHz):", rot_constants)
+    print("Rotational constants (cm-1):", rot_constants_cm)
+    print("Note: If moment of inertia is zero then rotational constant is infinite and not printed ")
+
+    return rot_constants_cm

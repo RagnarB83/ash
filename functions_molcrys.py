@@ -70,6 +70,12 @@ class Fragmenttype:
 
 
 
+def print_time_rel(timestampA,modulename=''):
+    secsA=time.time()-timestampA
+    minsA=secsA/60
+    print("-------------------------------------------------------------------")
+    print("Time to calculate step ({}): {:3.1f} seconds, {:3.1f} minutes.".format(modulename, secsA, minsA ))
+    print("-------------------------------------------------------------------")
 
 def print_time_rel_and_tot(timestampA,timestampB, modulename=''):
     secsA=time.time()-timestampA
@@ -762,8 +768,7 @@ def create_MMcluster(orthogcoords,elems,cell_vectors,sphereradius):
     return extended_coords,extended_elems
 
 #Remove partial fragments of MM cluster
-def remove_partial_fragments(coords,elems,sphereradius,fragmentobjects, scale=None, tol=None):
-
+def remove_partial_fragments(coords,elems,sphereradius,fragmentobjects, scale=None, tol=None, codeversion='julia'):
     if scale is None:
         scale=settings_ash.scale
     if tol is None:
@@ -787,31 +792,53 @@ def remove_partial_fragments(coords,elems,sphereradius,fragmentobjects, scale=No
     count=0
     found_atoms=[]
     fraglist=[]
-    for surfaceatom in surfaceatoms:
-        if surfaceatom not in found_atoms:
-            count+=1
-            #counted.append(surfaceatom)
-            #cProfile.run('get_molecule_members_loop_np(coords, elems, 99, settings_molcrys.scale, settings_ash.tol,atomindex=surfaceatom)')
-            #exit()
-            #surfaceatom=0
-            members=get_molecule_members_loop_np2(coords, elems, 99, scale, tol,atomindex=surfaceatom)
-            #print_time_rel_and_tot(currtime, origtime)
-            #currtime = time.time()
-            #exit()
-            if members not in fraglist:
-                fraglist.append(members)
-                found_atoms+=members
-
+    if codeversion=='julia':
+        print("using julia for finding surface atoms")
+        try:
+            # Import Julia
+            from julia.api import Julia
+            from julia import Main
+            ashpath = os.path.dirname(ash.__file__)
+            Main.include(ashpath + "/functions_julia.jl")
+            #Get list of fragments for all surfaceatoms
+            fraglist_temp = Main.Juliafunctions.calc_fraglist_for_atoms(surfaceatoms,coords, elems, 99, scale, tol,eldict_covrad)
+            # Converting from numpy to list of lists
+            for sublist in fraglist_temp:
+                fraglist.append(list(sublist))
+        except:
+            print(BC.FAIL, "Problem importing Pyjulia (import julia)", BC.END)
+            print("Make sure Julia is installed and PyJulia module available")
+            print("Also, are you using python-jl ?")
+            print("")
+            print(BC.FAIL, "Using py version instead (slow for large systems)", BC.END)
+            for surfaceatom in surfaceatoms:
+                if surfaceatom not in found_atoms:
+                    count += 1
+                    members = get_molecule_members_loop_np2(coords, elems, 99, scale, tol, atomindex=surfaceatom)
+                    if members not in fraglist:
+                        fraglist.append(members)
+                        found_atoms += members
+    elif codeversion == 'py':
+        print("using py for finding surface atoms")
+        for surfaceatom in surfaceatoms:
+            if surfaceatom not in found_atoms:
+                count+=1
+                members=get_molecule_members_loop_np2(coords, elems, 99, scale, tol,atomindex=surfaceatom)
+                if members not in fraglist:
+                    fraglist.append(members)
+                    found_atoms+=members
     #with open('fraglist', 'w') as gfile:
     #    gfile.write('fraglist: {}'.format(fraglist))
+
+
     flat_fraglist = [item for sublist in fraglist for item in sublist]
     #Todo: remove?
     with open('foundatoms', 'w') as ffile:
         ffile.write('found_atoms: {}'.format(found_atoms))
-    print("len(found_atoms)", len(found_atoms))
-    print("len(flat_fraglist)", len(flat_fraglist))
-    print("final counted atoms:", count)
-
+    #print("len(found_atoms)", len(found_atoms))
+    #print("len(flat_fraglist)", len(flat_fraglist))
+    #print("final counted atoms:", count)
+    #exit()
     #Going through found frags. If nuccharge of frag does not match known nuccharge it goes to deletionlist
     nuccharges=[fragmentobject.Nuccharge for fragmentobject in fragmentobjects]
     #18June 2020 update. Adding masses as another discriminator.
@@ -833,19 +860,11 @@ def remove_partial_fragments(coords,elems,sphereradius,fragmentobjects, scale=No
                 deletionlist += frag
         else:
             deletionlist+=frag
-
-    #print("deletionlist({}(: {}".format(len(deletionlist),deletionlist))
-    #with open('deletionlist', 'w') as dfile:
-    #    dfile.write('deletionlist: {}'.format(deletionlist))
     deletionlist=np.unique(deletionlist).tolist()
-    #print("Sorted deletionlist({}(: {}".format(len(deletionlist),deletionlist))
-    #with open('sdeletionlist', 'w') as sdfile:
-    #    sdfile.write('sorted deletionlist: {}'.format(deletionlist))
     #Deleting atoms in deletion list in reverse
     coords=np.delete(coords, list(reversed(deletionlist)), 0)
     for d in reversed(deletionlist):
         del elems[d]
-
     return coords,elems
 
 #Updating pointcharges of fragment
@@ -925,6 +944,8 @@ def pointchargeupdate(fragment,fragmenttype,chargelist):
 def gasfragcalc_ORCA(fragmentobjects,Cluster,chargemodel,orcadir,orcasimpleinput,orcablocks,NUMPROC,
                      brokensym=None, HSmult=None, atomstoflip=None):
     blankline()
+    origtime=time.time()
+    currtime=time.time()
     print(BC.OKBLUE, BC.BOLD, "Now calculating atom charges for each fragment type in cluster", BC.END)
     #print(BC.OKBLUE, BC.BOLD, "Frag_Define: Defining fragments of unit cell", BC.END)
     for id, fragmentobject in enumerate(fragmentobjects):
@@ -937,12 +958,15 @@ def gasfragcalc_ORCA(fragmentobjects,Cluster,chargemodel,orcadir,orcasimpleinput
         atomlist=fragmentobject.clusterfraglist[0]
         fragcoords,fragelems=Cluster.get_coords_for_atoms(atomlist)
         write_xyzfile(fragelems, fragcoords, "fragment")
+        print("fragcoords:", fragcoords)
         gasfrag=Fragment(coords=fragcoords,elems=fragelems)
 
-        #print("Defined gasfrag:", gasfrag)
+        print("Defined gasfrag:", gasfrag)
         #print(gasfrag.__dict__)
         #Creating ORCA theory object with fragment
 
+        print_time_rel_and_tot(currtime, origtime, modulename='prep stuff')
+        currtime = time.time()
         #Assuming mainfrag is fragmentobject 0 and only mainfrag can be Broken-symmetry
         if id == 0:
             if brokensym==True:
@@ -961,7 +985,8 @@ def gasfragcalc_ORCA(fragmentobjects,Cluster,chargemodel,orcadir,orcasimpleinput
         #print(ORCASPcalculation.__dict__)
         #Run ORCA calculation with charge-model info
         ORCASPcalculation.run(nprocs=NUMPROC)
-
+        print_time_rel_and_tot(currtime, origtime, modulename='orca run')
+        currtime = time.time()
 
         if chargemodel == 'DDEC3' or chargemodel == 'DDEC6':
             #Calling DDEC_calc (calls chargemol)
@@ -974,7 +999,8 @@ def gasfragcalc_ORCA(fragmentobjects,Cluster,chargemodel,orcadir,orcasimpleinput
         else:
             #Grab atomic charges for fragment.
             atomcharges=grabatomcharges_ORCA(chargemodel,ORCASPcalculation.inputfilename+'.out')
-
+            print_time_rel_and_tot(currtime, origtime, modulename='grabatomcharges')
+            currtime = time.time()
 
         print("Elements:", gasfrag.elems)
         print("Gasloop atomcharges:", atomcharges)
@@ -982,17 +1008,24 @@ def gasfragcalc_ORCA(fragmentobjects,Cluster,chargemodel,orcadir,orcasimpleinput
 
         #Updating charges inside mainfrag/counterfrag object
         fragmentobject.add_charges(atomcharges)
+        print_time_rel_and_tot(currtime, origtime, modulename='fragmentobject add charges')
+        currtime = time.time()
         #Assign pointcharges to each atom of MM cluster.
         pointchargeupdate(Cluster,fragmentobject,atomcharges)
+        print_time_rel_and_tot(currtime, origtime, modulename='pointchargeupdate')
+        currtime = time.time()
         #Keep backup of ORCA outputfile and GBW file
         shutil.copy(ORCASPcalculation.inputfilename + '.out', fragmentobject.Name + '.out')
         shutil.copyfile(ORCASPcalculation.inputfilename + '.out', './SPloop-files/'+fragmentobject.Name+'-Gascalc' + '.out')
         shutil.copyfile(ORCASPcalculation.inputfilename + '.gbw', './SPloop-files/'+fragmentobject.Name+'-Gascalc' + '.gbw')
         if id ==0:
             shutil.copy(ORCASPcalculation.inputfilename + '.gbw', 'lastorbitals.gbw')
-
+        print_time_rel_and_tot(currtime, origtime, modulename='shutil stuff')
+        currtime = time.time()
         #Clean up ORCA job.
         ORCASPcalculation.cleanup()
+        print_time_rel_and_tot(currtime, origtime, modulename='orca cleanup')
+        currtime = time.time()
         blankline()
 
 #Calculate atomic charges for each fragment of Cluster. Assign charges to Cluster object via pointchargeupdate

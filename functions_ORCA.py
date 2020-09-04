@@ -2,7 +2,7 @@ import subprocess as sp
 from functions_solv import *
 from functions_coords import *
 from functions_general import *
-from elstructure_functions import *
+import elstructure_functions
 import settings_solvation
 import constants
 import multiprocessing as mp
@@ -46,6 +46,7 @@ def run_orca_SP(list):
 
 # Run ORCA single-point job using ORCA parallelization. Will add pal-block if nprocs >1.
 # Takes possible Grad boolean argument.
+
 def run_orca_SP_ORCApar(orcadir, inpfile, nprocs=1):
     #if Grad==True:
     #    with open(inpfile) as ifile:
@@ -55,10 +56,11 @@ def run_orca_SP_ORCApar(orcadir, inpfile, nprocs=1):
         palstring='% pal nprocs {} end'.format(nprocs)
         with open(inpfile) as ifile:
             insert_line_into_file(inpfile, '!', palstring, Once=True )
-    basename = inpfile.split('.')[0]
+    #basename = inpfile.split('.')[0]
+    basename = inpfile.replace('.inp','')
     with open(basename+'.out', 'w') as ofile:
-        process = sp.run([orcadir + '/orca', basename+'.inp'], check=True, stdout=ofile, stderr=ofile, universal_newlines=True)
-
+        #process = sp.run([orcadir + '/orca', basename+'.inp'], check=True, stdout=ofile, stderr=ofile, universal_newlines=True)
+        process = sp.run([orcadir + '/orca', inpfile], check=True, stdout=ofile, stderr=ofile, universal_newlines=True)
 
 #Check if ORCA finished.
 #Todo: Use reverse-read instead to speed up?
@@ -142,23 +144,41 @@ def scfenergygrab(file):
     return Energy
 
 #Get reference energy and correlation energy from a single post-HF calculation
-def grab_HF_and_corr_energies(file, DLPNO=False):
+#Support regular CC, DLPNO-CC, CC-12, DLPNO-CC-F12
+#Note: CC-12 untested
+def grab_HF_and_corr_energies(file, DLPNO=False, F12=False):
     edict = {}
     with open(file) as f:
         for line in f:
             #Reference energy found in CC output. To be made more general. Works for CC and DLPNO-CC
             #if 'Reference energy                           ...' in line:
-            if 'E(0)                                       ...' in line:
-                HF_energy=float(line.split()[-1])
-                edict['HF'] = HF_energy
+            if F12 is True:
+                #F12 has a basis set correction for HF energy
+                if 'Corrected 0th order energy                 ...' in line:
+                    HF_energy=float(line.split()[-1])
+                    edict['HF'] = HF_energy             
+            else:    
+                if 'E(0)                                       ...' in line:
+                    HF_energy=float(line.split()[-1])
+                    edict['HF'] = HF_energy
             if DLPNO is True:
-                if 'E(CORR)(corrected)                         ...' in line:
-                    CCSDcorr_energy=float(line.split()[-1])
-                    edict['CCSD_corr'] = CCSDcorr_energy
+                if F12 is True:
+                    if 'Final F12 correlation energy               ...' in line:
+                        CCSDcorr_energy=float(line.split()[-1])
+                        edict['CCSD_corr'] = CCSDcorr_energy                    
+                else:    
+                    if 'E(CORR)(corrected)                         ...' in line:
+                        CCSDcorr_energy=float(line.split()[-1])
+                        edict['CCSD_corr'] = CCSDcorr_energy
             else:
-                if 'E(CORR)                                    ...' in line:
-                    CCSDcorr_energy=float(line.split()[-1])
-                    edict['CCSD_corr'] = CCSDcorr_energy
+                if F12 is True:
+                    if 'Final F12 correlation energy               ...' in line:
+                        CCSDcorr_energy=float(line.split()[-1])
+                        edict['CCSD_corr'] = CCSDcorr_energy
+                else:        
+                    if 'E(CORR)                                    ...' in line:
+                        CCSDcorr_energy=float(line.split()[-1])
+                        edict['CCSD_corr'] = CCSDcorr_energy
             if DLPNO is True:
                 if 'Triples Correction (T)                     ...' in line:
                     CCSDTcorr_energy=float(line.split()[-1])
@@ -600,6 +620,7 @@ def create_orca_input_pc(name,elems,coords,orcasimpleinput,orcablockinput,charge
 #Create simple ORCA inputfile from elems,coords, input, charge, mult,pointcharges
 #Allows for extraline that could be another '!' line or block-inputline.
 #Used by ASH
+
 def create_orca_input_plain(name,elems,coords,orcasimpleinput,orcablockinput,charge,mult, Grad=False, extraline='',
                             HSmult=None, atomstoflip=None):
     with open(name+'.inp', 'w') as orcafile:
@@ -628,11 +649,11 @@ def create_orca_input_plain(name,elems,coords,orcasimpleinput,orcablockinput,cha
             orcafile.write('{} {} {} {} \n'.format(el,c[0], c[1], c[2]))
         orcafile.write('*\n')
 
-#Create ORCA pointcharge file based on provided list of elems and coords (MM region elems and coords)
+# Create ORCA pointcharge file based on provided list of elems and coords (MM region elems and coords)
 # and list of point charges of MM atoms
-def create_orca_pcfile(name,elems,coords,listofcharges):
+def create_orca_pcfile(name,coords,listofcharges):
     with open(name+'.pc', 'w') as pcfile:
-        pcfile.write(str(len(elems))+'\n')
+        pcfile.write(str(len(listofcharges))+'\n')
         for p,c in zip(listofcharges,coords):
             line = "{} {} {} {}".format(p, c[0], c[1], c[2])
             pcfile.write(line+'\n')
@@ -728,7 +749,7 @@ def grabatomcharges_ORCA(chargemodel,outputfile):
                     grab=True
         print("Hirshfeld charges :", charges)
         atomicnumbers=elemstonuccharges(elems)
-        charges = calc_cm5(atomicnumbers, coords, charges)
+        charges = elstructure_functions.calc_cm5(atomicnumbers, coords, charges)
         print("CM5 charges :", list(charges))
     elif chargemodel == "Mulliken":
         with open(outputfile) as ofile:
@@ -772,7 +793,7 @@ def grabatomcharges_ORCA(chargemodel,outputfile):
 
 # Wrapper around interactive orca_plot
 # Todo: add TDDFT difference density, natural orbitals, MDCI spin density?
-def run_orca_plot(orcadir, filename, option, gridvalue=40,densityfilename=None):
+def run_orca_plot(orcadir, filename, option, gridvalue=40,densityfilename=None, mo_operator=0, mo_number=None):
     # Always creating Cube file (5,7 option)
     #Always setting grid (4,gridvalue option)
     #Always choosing a plot (2,X) option:
@@ -789,9 +810,12 @@ def run_orca_plot(orcadir, filename, option, gridvalue=40,densityfilename=None):
         plottype = 1
     else:
         plottype = 1
-    if option=='density' or option=='spindensity' or option=='mo':
+    if option=='density' or option=='spindensity':
+         p = sp.run([orcadir + '/orca_plot', filename, '-i'], stdout=sp.PIPE,
+                       input='5\n7\n4\n{}\n1\n{}\ny\n10\n11\n\n'.format(gridvalue, plottype), encoding='ascii')       
+    elif option=='mo':
         p = sp.run([orcadir + '/orca_plot', filename, '-i'], stdout=sp.PIPE,
-                       input='5\n7\n4\n{}\n1\n{}\ny\n10\n11\n\n'.format(gridvalue, plottype), encoding='ascii')
+                       input='5\n7\n4\n{}\n3\n{}\n2\n{}\n10\n11\n\n'.format(gridvalue,mo_operator,mo_number), encoding='ascii')
     #If plotting CIS/TDDFT density then we tell orca_plot explicity.
     elif option == 'cisdensity' or option == 'cisspindensity':
         p = sp.run([orcadir + '/orca_plot', filename, '-i'], stdout=sp.PIPE,
