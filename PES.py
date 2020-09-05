@@ -2088,6 +2088,9 @@ def PhotoElectronSpectrum(theory=None, fragment=None, InitialState_charge=None, 
             #Adding Keepdens and Engrad to do TDDFT gradient
             theory.orcasimpleinput=theory.orcasimpleinput+' KeepDens Engrad'
 
+            if '/C' not in theory.orcasimpleinput:
+                theory.orcasimpleinput = theory.orcasimpleinput + ' AutoAux'
+
             for findex, fstate in enumerate(Finalstates):
                 print(bcolors.OKGREEN, "Calculating Final State SCF + TDDFT DENSITY CALCULATION. Spin Multiplicity: ", fstate.mult, bcolors.ENDC)
                 theory.charge = fstate.charge
