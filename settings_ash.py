@@ -57,7 +57,7 @@ def init():
     
     #Print input script
     if print_input is True:
-        inputfilepath=inputfile= sys.path[0]+"/"+sys.argv[0]
+        inputfilepath=inputfile= os.getcwd()+"/"+sys.argv[0]
         print("Input script:", inputfilepath )
         print(ash.functions_general.BC.WARNING,"="*100)
         with open(inputfilepath) as x: f = x.readlines()
