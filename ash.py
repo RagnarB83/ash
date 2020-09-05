@@ -2545,11 +2545,10 @@ class ORCATheory:
                  orcablocks='', extraline='', brokensym=None, HSmult=None, atomstoflip=None, nprocs=1, label=None):
 
         if orcadir is None:
-            print("No orcadir argument passed to ORCATheory. Attempting to use settings_ash variable")
+            print("No orcadir argument passed to ORCATheory. Attempting to find orcadir variable inside settings_ash")
             self.orcadir=settings_ash.orcadir
         else:
             self.orcadir = orcadir
-        print("ORCA dir:", self.orcadir)
 
         #Label to distinguish different ORCA objects
         self.label=label
@@ -2593,6 +2592,7 @@ class ORCATheory:
         if self.printlevel >=2:
             print("")
             print("Creating ORCA object")
+            print("ORCA dir:", self.orcadir)
             #if molcrys then there is not charge and mult available
             #print("Charge: {} Mult: {}".format(self.charge,self.mult))
             print(self.orcasimpleinput)
