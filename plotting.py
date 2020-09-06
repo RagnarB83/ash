@@ -20,7 +20,10 @@ def Gaussian(x, mu, strength, sigma):
 
 #reactionprofile_plot
 #Input: dictionary of (X,Y): energy   entries 
-def reactionprofile_plot(surfacedictionary, finalunit='',label='Label', x_axislabel='Coord', y_axislabel='Energy', dpi=200, imageformat='png', RelativeEnergy=True):
+def reactionprofile_plot(surfacedictionary, finalunit='',label='Label', x_axislabel='Coord', y_axislabel='Energy', dpi=200, 
+                         imageformat='png', RelativeEnergy=True, pointsize=40, scatter_linewidth=2, line_linewidth=1, color='blue' ):
+    
+    
     conversionfactor = { 'kcal/mol' : 627.50946900, 'kcalpermol' : 627.50946900, 'kJ/mol' : 2625.499638, 'kJpermol' : 2625.499638, 
                         'eV' : 27.211386245988, 'cm-1' : 219474.6313702 }
     e=[]
@@ -39,9 +42,9 @@ def reactionprofile_plot(surfacedictionary, finalunit='',label='Label', x_axisla
     else:
         finalvalues=e
     
-    pointsize=40
-    plt.scatter(coords, finalvalues, color='blue', marker = 'o',  s=pointsize, linewidth=2 )
-    plt.plot(coords, finalvalues, linestyle='-', color='blue', linewidth=1)
+    
+    plt.scatter(coords, finalvalues, color=color, marker = 'o',  s=pointsize, linewidth=scatter_linewidth )
+    plt.plot(coords, finalvalues, linestyle='-', color=color, linewidth=line_linewidth)
 
     plt.title(label)
     plt.xlabel(x_axislabel)
@@ -57,7 +60,8 @@ def reactionprofile_plot(surfacedictionary, finalunit='',label='Label', x_axisla
 #Good colormaps: viridis, viridis_r, inferno, inferno_r, plasma, plasma_r, magma, magma_r
 # Less recommended: jet, jet_r
 def contourplot(surfacedictionary, label='Label',x_axislabel='Coord', y_axislabel='Coord', finalunit=None, interpolation='Cubic', 
-                interpolparameter=10, colormap='inferno_r', dpi=200, imageformat='png', RelativeEnergy=True):
+                interpolparameter=10, colormap='inferno_r', dpi=200, imageformat='png', RelativeEnergy=True, numcontourlines=50,
+                contour_alpha=0.75):
     
     conversionfactor = { 'kcal/mol' : 627.50946900, 'kcalpermol' : 627.50946900, 'kJ/mol' : 2625.499638, 'kJpermol' : 2625.499638, 
                         'eV' : 27.211386245988, 'cm-1' : 219474.6313702 }
@@ -147,8 +151,13 @@ def contourplot(surfacedictionary, label='Label',x_axislabel='Coord', y_axislabe
             
         Y = zoom(Y, pw, mode='nearest')
         Z = zoom(Z, pw, mode='nearest')
-    cp=plt.contourf(X, Y, Z, 50, alpha=.75, cmap=colormap)
-    C = plt.contour(X, Y, Z, 50, colors='black')
+    #Filled contours. 
+    cp=plt.contourf(X, Y, Z, numcontourlines, alpha=contour_alpha, cmap=colormap)
+    
+    #Contour lines. numcontourlines is 50 by default 
+    C = plt.contour(X, Y, Z, numcontourlines, colors='black')
+    
+    
     plt.colorbar(cp)
     plt.xlabel(x_axislabel)
     plt.ylabel(y_axislabel)

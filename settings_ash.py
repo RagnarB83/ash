@@ -10,7 +10,7 @@ parser = configparser.ConfigParser()
 #Whether to use ANSI color escape sequences in output or not.
 use_ANSI_color = True
 
-#Print inputfile or not
+#Print inputfile or not in beginning of job
 print_input=True
 
 #Global Connectivity settings
@@ -24,13 +24,13 @@ conndepth = 10
 
 #Read additional user configuration file if present. Should be present inside ASH source-code dir. TODO: Move to ~ instead?
 #Introduced to bypass git conflicts of settings_ash.py
+
 #Format of file ash_user_settings.ini:
 #[Settings]
 #orcadir = /Applications/orca_4.2.1
 
-file = "ash_user_settings.ini"
 ashpath = os.path.dirname(ash.__file__)
-parser.read(ashpath+"/"+file)
+parser.read(ashpath+"/"+"ash_user_settings.ini")
 try:
     orcadir = parser.get("Settings","orcadir")
 except:
