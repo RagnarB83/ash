@@ -2021,7 +2021,7 @@ def PhotoElectronSpectrum(theory=None, fragment=None, InitialState_charge=None, 
 
         #Print table with info
         print("-------------------------------------------------------------------------")
-        print("FINAL RESULTS for fragment(Label: {}  Formula: {})".format(fragment.label, fragment.prettyformula))
+        print("FINAL RESULTS for fragment (Label: {}  Formula: {})".format(fragment.label, fragment.prettyformula))
         print("-------------------------------------------------------------------------")
         print("Initial state:")
         print("{:>6} {:>7} {:^20} {:^5}".format("State no.", "Mult", "TotalE (Eh)", "State-type"))
