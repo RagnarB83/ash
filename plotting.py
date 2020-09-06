@@ -61,7 +61,7 @@ def reactionprofile_plot(surfacedictionary, finalunit='',label='Label', x_axisla
 # Less recommended: jet, jet_r
 def contourplot(surfacedictionary, label='Label',x_axislabel='Coord', y_axislabel='Coord', finalunit=None, interpolation='Cubic', 
                 interpolparameter=10, colormap='inferno_r', dpi=200, imageformat='png', RelativeEnergy=True, numcontourlines=50,
-                contour_alpha=0.75):
+                contour_alpha=0.75, contourline_color='black', clinelabels=True):
     
     conversionfactor = { 'kcal/mol' : 627.50946900, 'kcalpermol' : 627.50946900, 'kJ/mol' : 2625.499638, 'kJpermol' : 2625.499638, 
                         'eV' : 27.211386245988, 'cm-1' : 219474.6313702 }
@@ -79,9 +79,15 @@ def contourplot(surfacedictionary, label='Label',x_axislabel='Coord', y_axislabe
     x = sorted(set(x_c))
     y = sorted(set(y_c))
 
+    relsurfacedictionary={}
     #Creating relative-energy array here. Unmodified property is used if False
     if RelativeEnergy is True:
         refenergy=float(min(e))
+        relsurfacedictionary={}
+        for i in surfacedictionary:
+            relsurfacedictionary[(i[0],i[1])] = (surfacedictionary[i]-refenergy)*conversionfactor[finalunit]
+        print("relsurfacedictionary ({}): {}".format(finalunit,relsurfacedictionary))
+        
         rele=[]
         for numb in e:
             rele.append((numb-refenergy)*conversionfactor[finalunit])
@@ -123,7 +129,11 @@ def contourplot(surfacedictionary, label='Label',x_axislabel='Coord', y_axislabe
     X, Y = np.meshgrid(x, y)
 
 
-    print("interpolation:", interpolation)
+    print("Interpolation:", interpolation)
+    print("Number of contour lines:", numcontourlines)
+    print("Contourf alpha parameter:", contour_alpha)
+    print("Colormap:", colormap)
+    print("Contour line color:", contourline_color)
     if interpolation is not None:
         print("Using cubic interpolation")
         try:
@@ -152,13 +162,16 @@ def contourplot(surfacedictionary, label='Label',x_axislabel='Coord', y_axislabe
         Y = zoom(Y, pw, mode='nearest')
         Z = zoom(Z, pw, mode='nearest')
     #Filled contours. 
-    cp=plt.contourf(X, Y, Z, numcontourlines, alpha=contour_alpha, cmap=colormap)
+    contour_surface=plt.contourf(X, Y, Z, numcontourlines, alpha=contour_alpha, cmap=colormap)
     
     #Contour lines. numcontourlines is 50 by default 
-    C = plt.contour(X, Y, Z, numcontourlines, colors='black')
+    Clines = plt.contour(X, Y, Z, numcontourlines, colors=contourline_color)
     
+    # Contour-line labels
+    if clinelabels is True: 
+        plt.clabel(Clines, inline=True, fontsize=10)
     
-    plt.colorbar(cp)
+    plt.colorbar(contour_surface)
     plt.xlabel(x_axislabel)
     plt.ylabel(y_axislabel)
     plt.savefig('Surface{}.png'.format(label), format=imageformat, dpi=dpi)

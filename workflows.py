@@ -1615,13 +1615,10 @@ def read_surfacedict_from_file(file, dimension=None):
         for line in f:
             if len(line) > 1:
                 if dimension==1:
-                    print("line:", line)
-                    print(line.split())
                     key=float(line.split()[0])
                     val=float(line.split()[1])
                     dict[(key)]=val
                 elif dimension==2:
-                    print(line)
                     key1=float(line.split()[0])
                     key2=float(line.split()[1])
                     val=float(line.split()[2])                    
