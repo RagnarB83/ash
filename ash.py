@@ -3682,7 +3682,7 @@ class Fragment:
     def calc_connectivity(self, conndepth=99, scale=None, tol=None, codeversion='julia' ):
         #Using py version if molecule is small. Otherwise Julia by default
         if len(self.coords) < 100:
-            codeversion='julia'
+            codeversion='py'
         elif len(self.coords) > 10000:
             if self.printlevel >= 2:
                 print("Atom number > 10K. Connectivity calculation could take a while")
@@ -3723,17 +3723,13 @@ class Fragment:
             try:
                 from julia.api import Julia
                 from julia import Main
-                print("here")
                 # Defining Julia Module
                 ashpath = os.path.dirname(ash.__file__)
-                print("ashpath:", ashpath)
                 Main.include(ashpath + "/functions_julia.jl")
-                print("ss")
                 timestampB = time.time()
                 fraglist_temp = Main.Juliafunctions.calc_connectivity(self.coords, self.elems, conndepth, scale, tol,
                                                                       eldict_covrad)
                 fraglist = []
-                print("ssa")
                 # Converting from numpy to list of lists
                 for sublist in fraglist_temp:
                     fraglist.append(list(sublist))

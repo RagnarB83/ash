@@ -4,7 +4,7 @@ __precompile__()
 module Juliafunctions
 #using Profile
 #using PyCall
-#using Distances
+#using Distances. Note: Use of Distances requires it to be added via Pkg manager
 
 #TODO:
 # We are not utilizing Julia column-major much. Latter supposedly better
