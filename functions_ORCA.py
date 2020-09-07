@@ -288,6 +288,9 @@ def orbitalgrab(file):
                 occorbsgrab=True
     return bands_alpha, bands_beta, hftyp
 
+
+
+
 #Function to grab masses and elements from ORCA Hessian file
 def masselemgrab(hessfile):
     grab=False
@@ -404,6 +407,14 @@ def write_ORCA_Hessfile(hessian, coords, elems, masses, hessatoms,outputname):
     orcahessfile.close()
     print("")
     print("ORCA-style Hessian written to:", outputname )
+
+
+def read_ORCA_Hessian(hessfile):
+    hessian = Hessgrab(hessfile)
+    elems,coords = grabcoordsfromhessfile(hessfile)
+    masses, elems, numatoms = masselemgrab(hessfile)
+    
+    return hessian, elems, coords, masses
 
 #Function to grab Hessian from ORCA-Hessian file
 def Hessgrab(hessfile):
