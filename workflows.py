@@ -2089,8 +2089,8 @@ end
 
     #If heavy element then add special basis in block
     def special_element_basis(fragment,cardinal,basisfamily,blocks):
-        basis_dict = {('cc',2) : "cc-pVDZ-PP", ('aug-cc',2) : "aug-cc-pVDZ-PP", ('cc',3) : "cc-pVTZ-PP", ('aug-cc',3) : "aug-cc-pVDZ-PP", ('cc',4) : "cc-pVQZ-PP", ('aug-cc',4) : "aug-cc-pVQZ-PP"}
-        auxbasis_dict = {('cc',2) : "cc-pVDZ-PP/C", ('aug-cc',2) : "aug-cc-pVDZ-PP/C", ('cc',3) : "cc-pVTZ-PP/C", ('aug-cc',3) : "aug-cc-pVDZ-PP/C", ('cc',4) : "cc-pVQZ-PP/C", ('aug-cc',4) : "aug-cc-pVQZ-PP/C"}
+        basis_dict = {('cc',2) : "cc-pVDZ-PP", ('aug-cc',2) : "aug-cc-pVDZ-PP", ('cc',3) : "cc-pVTZ-PP", ('aug-cc',3) : "aug-cc-pVTZ-PP", ('cc',4) : "cc-pVQZ-PP", ('aug-cc',4) : "aug-cc-pVQZ-PP"}
+        auxbasis_dict = {('cc',2) : "cc-pVDZ-PP/C", ('aug-cc',2) : "aug-cc-pVDZ-PP/C", ('cc',3) : "cc-pVTZ-PP/C", ('aug-cc',3) : "aug-cc-pVTZ-PP/C", ('cc',4) : "cc-pVQZ-PP/C", ('aug-cc',4) : "aug-cc-pVQZ-PP/C"}
         print("fragment.elems:", fragment.elems)
         #exit()
         for element in fragment.elems:
