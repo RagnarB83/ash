@@ -140,7 +140,7 @@ def Extrapolation_twopoint(scf_energies, corr_energies, cardinals, basis_family)
     """
     #Dictionary of extrapolation parameters. Key: Basisfamilyandcardinals Value: list: [alpha, beta]
     extrapolation_parameters_dict = { 'cc_23' : [4.42, 2.460], 'aug-cc_23' : [4.30, 2.510], 'cc_34' : [5.46, 3.050], 'aug-cc_34' : [5.790, 3.050],
-    'def2_23' : [10.390,2.4], 'def2_34' : [7.880,2.970], 'pc_23' : [7.02, 2.01], 'pc_34': [9.78, 4.09]}
+    'def2_23' : [10.390,2.4], 'def2_34' : [7.880,2.970], 'pc_23' : [7.02, 2.01], 'pc_34': [9.78, 4.09],  'ma-def2_23' : [10.390,2.4], 'ma-def2_34' : [7.880,2.970]}
 
     #NOTE: pc-n family uses different numbering. pc-1 is DZ(cardinal 2), pc-2 is TZ(cardinal 3), pc-4 is QZ(cardinal 4).
     if basis_family=='cc' and all(x in cardinals for x in [2, 3]):
@@ -155,6 +155,12 @@ def Extrapolation_twopoint(scf_energies, corr_energies, cardinals, basis_family)
         extrap_dict_key='def2_23'
     elif basis_family=='def2' and all(x in cardinals for x in [3, 4]):
         extrap_dict_key='def2_34'
+    elif basis_family=='ma-def2' and all(x in cardinals for x in [2, 3]):
+        extrap_dict_key='ma-def2_23'
+        print("Warning. ma-def2 family. Using extrapolation parameters from def2 family. UNTESTED!")
+    elif basis_family=='ma-def2' and all(x in cardinals for x in [3, 4]):
+        extrap_dict_key='ma-def2_34'
+        print("Warning. ma-def2 family. Using extrapolation parameters from def2 family. UNTESTED!")
     elif basis_family=='pc' and all(x in cardinals for x in [2, 3]):
         extrap_dict_key='pc_23'
     elif basis_family=='pc' and all(x in cardinals for x in [3, 4]):
@@ -2110,12 +2116,15 @@ end
     if cardinals == "2/3" and basisfamily=="def2":
         ccsdt_1_line="! {} def2-SVP {} {} {} {}".format(ccsdtkeyword, auxbasis, pnosetting, scfsetting,extrainputkeyword)
         ccsdt_2_line="! {} def2-TZVPP {} {} {} {}".format(ccsdtkeyword, auxbasis, pnosetting, scfsetting,extrainputkeyword)
-        
-        blocks1=blocks
-        blocks2=blocks
     elif cardinals == "3/4" and basisfamily=="def2":
         ccsdt_1_line="! {} def2-TZVPP {} {} {} {}".format(ccsdtkeyword, auxbasis, pnosetting, scfsetting,extrainputkeyword)
-        ccsdt_2_line="! {} def2-QZVPP {} {} {} {}".format(ccsdtkeyword, auxbasis, pnosetting, scfsetting,extrainputkeyword)
+        ccsdt_2_line="! {} def2-QZVPP {} {} {} {}".format(ccsdtkeyword, auxbasis, pnosetting, scfsetting,extrainputkeyword)  
+    elif cardinals == "2/3" and basisfamily=="ma-def2":
+        ccsdt_1_line="! {} def2-SVP {} {} {} {}".format(ccsdtkeyword, auxbasis, pnosetting, scfsetting,extrainputkeyword)
+        ccsdt_2_line="! {} def2-TZVPP {} {} {} {}".format(ccsdtkeyword, auxbasis, pnosetting, scfsetting,extrainputkeyword)
+    elif cardinals == "3/4" and basisfamily=="ma-def2":
+        ccsdt_1_line="! {} ma-def2-TZVPP {} {} {} {}".format(ccsdtkeyword, auxbasis, pnosetting, scfsetting,extrainputkeyword)
+        ccsdt_2_line="! {} ma-def2-QZVPP {} {} {} {}".format(ccsdtkeyword, auxbasis, pnosetting, scfsetting,extrainputkeyword)
     elif cardinals == "2/3" and basisfamily=="cc":
         ccsdt_1_line="! {} cc-pVDZ {} {} {} {}".format(ccsdtkeyword, auxbasis, pnosetting, scfsetting,extrainputkeyword)
         ccsdt_2_line="! {} cc-pVTZ {} {} {} {}".format(ccsdtkeyword, auxbasis, pnosetting, scfsetting,extrainputkeyword)
@@ -2166,7 +2175,7 @@ end
     
     #Extrapolations
 
-    E_SCF_CBS, E_corr_CBS = Extrapolation_twopoint(scf_energies, corr_energies, [2,3], 'def2') #3-point extrapolation
+    E_SCF_CBS, E_corr_CBS = Extrapolation_twopoint(scf_energies, corr_energies, cardinals_list, basisfamily) #3-point extrapolation
 
     print("E_SCF_CBS:", E_SCF_CBS)
     print("E_corr_CBS:", E_corr_CBS)
