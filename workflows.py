@@ -2032,6 +2032,11 @@ def DLPNO_CC_CBS_SP(cardinals = "2/3", basisfamily="def2", fragment=None, charge
 
     numelectrons = int(fragment.nuccharge - charge)
 
+    #Cardinals list instead of string.
+    #TODO: get rid of string and use list as input
+    cardinals_list = [int(cardinals[0]),int(cardinals[2])]
+
+
     #if 1-electron species like Hydrogen atom then we either need to code special HF-based procedure or just hardcode values
     #Currently hardcoding H-atom case. Replace with proper extrapolated value later.
     if numelectrons == 1:
@@ -2082,6 +2087,22 @@ end
     else:
         ccsdtkeyword='DLPNO-CCSD(T)'
 
+    #If heavy element then add special basis in block
+    def special_element_basis(fragment,cardinal,basisfamily,blocks):
+        basis_dict = {('cc',2) : "cc-pVDZ-PP", ('aug-cc',2) : "aug-cc-pVDZ-PP", ('cc',3) : "cc-pVTZ-PP", ('aug-cc',3) : "aug-cc-pVDZ-PP", ('cc',4) : "cc-pVQZ-PP", ('aug-cc',4) : "aug-cc-pVQZ-PP"}
+        auxbasis_dict = {('cc',2) : "cc-pVDZ-PP/C", ('aug-cc',2) : "aug-cc-pVDZ-PP/C", ('cc',3) : "cc-pVTZ-PP/C", ('aug-cc',3) : "aug-cc-pVDZ-PP/C", ('cc',4) : "cc-pVQZ-PP/C", ('aug-cc',4) : "aug-cc-pVQZ-PP/C"}
+        print("fragment.elems:", fragment.elems)
+        #exit()
+        for element in fragment.elems:
+            print("element:", element)
+            #TODO: Add 3rd-row elements and more
+            if element in ['Y','Zr', 'Nb', 'Mo', 'Tc', 'Ru', 'Rh','Pd','Ag','Cd', 'In', 'Sn', 'Sb', 'Te', 'I', 'Xe']:
+                if 'cc' in basisfamily:
+                    specialbasis = basis_dict[(basisfamily,cardinal)]
+                    specialauxbasis = auxbasis_dict[(basisfamily,cardinal)]
+                    blocks = blocks + "\n%basis\n newgto {} \"{}\" end\n newecp {} \"SK-MCDHF-RSC\" end\nnewauxCGTO {} \"{}\" end \nend\n".format(element,specialbasis,element, element, specialauxbasis)
+        return blocks
+
 
     ############################################################s
     #Frozen-core DLPNO-CCSD(T) calculations defined here
@@ -2089,6 +2110,9 @@ end
     if cardinals == "2/3" and basisfamily=="def2":
         ccsdt_1_line="! {} def2-SVP {} {} {} {}".format(ccsdtkeyword, auxbasis, pnosetting, scfsetting,extrainputkeyword)
         ccsdt_2_line="! {} def2-TZVPP {} {} {} {}".format(ccsdtkeyword, auxbasis, pnosetting, scfsetting,extrainputkeyword)
+        
+        blocks1=blocks
+        blocks2=blocks
     elif cardinals == "3/4" and basisfamily=="def2":
         ccsdt_1_line="! {} def2-TZVPP {} {} {} {}".format(ccsdtkeyword, auxbasis, pnosetting, scfsetting,extrainputkeyword)
         ccsdt_2_line="! {} def2-QZVPP {} {} {} {}".format(ccsdtkeyword, auxbasis, pnosetting, scfsetting,extrainputkeyword)
@@ -2105,9 +2129,14 @@ end
         ccsdt_1_line="! {} aug-cc-pVTZ {} {} {} {}".format(ccsdtkeyword, auxbasis, pnosetting, scfsetting,extrainputkeyword)
         ccsdt_2_line="! {} aug-cc-pVQZ {} {} {} {}".format(ccsdtkeyword, auxbasis, pnosetting, scfsetting,extrainputkeyword)
         
+    #Adding special-ECP basis like cc-pVnZ-PP for heavy elements
+    blocks1 = special_element_basis(fragment,cardinals_list[0],basisfamily,blocks)
+    blocks2 = special_element_basis(fragment,cardinals_list[1],basisfamily,blocks)
+    
+    
     #Defining two theory objects for each basis set
-    ccsdt_1 = ash.ORCATheory(orcadir=orcadir, orcasimpleinput=ccsdt_1_line, orcablocks=blocks, nprocs=numcores, charge=charge, mult=mult)
-    ccsdt_2 = ash.ORCATheory(orcadir=orcadir, orcasimpleinput=ccsdt_2_line, orcablocks=blocks, nprocs=numcores, charge=charge, mult=mult)
+    ccsdt_1 = ash.ORCATheory(orcadir=orcadir, orcasimpleinput=ccsdt_1_line, orcablocks=blocks1, nprocs=numcores, charge=charge, mult=mult)
+    ccsdt_2 = ash.ORCATheory(orcadir=orcadir, orcasimpleinput=ccsdt_2_line, orcablocks=blocks2, nprocs=numcores, charge=charge, mult=mult)
 
     #Running both theories
     ash.Singlepoint(fragment=fragment, theory=ccsdt_1)

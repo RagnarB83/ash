@@ -774,8 +774,10 @@ def hungarian(A, B):
     Assume A and B are coordinates for atoms of SAME type only
     """
 
-    # should be kabasch here i think
+    # should be kabsch here i think
     #TODO: get rid of cdist and linear_sum_assignment
+    #Annoying scipy dependency. Also using scipy for interpolation in plotting, however
+    print("Importing scipy")
     from scipy.spatial.distance import cdist
     from scipy.optimize import linear_sum_assignment
     distances = cdist(A, B, 'euclidean')

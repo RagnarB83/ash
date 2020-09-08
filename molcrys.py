@@ -43,7 +43,7 @@ def molcrys(cif_file=None, xtl_file=None, fragmentobjects=[], theory=None, numco
         print("Reading CIF file:", cif_file)
         blankline()
         cell_length,cell_angles,atomlabels,elems,asymmcoords,symmops,cellunits=read_ciffile(cif_file)
-
+        print("asymmcoords length", len(asymmcoords))
         #Checking if cellunits is None or integer. If none then "_cell_formula_units" not in CIF-file and then unitcell should already be filled
         if cellunits is None:
             print("Unitcell is full (based on lack of cell_formula_units_Z line in CIF-file). Not applying symmetry operations")
@@ -52,6 +52,7 @@ def molcrys(cif_file=None, xtl_file=None, fragmentobjects=[], theory=None, numco
             # Create system coordinates for whole cell from asymmetric unit
             print("Filling up unitcell using symmetry operations")
             fullcellcoords, elems = fill_unitcell(cell_length, cell_angles, atomlabels, elems, asymmcoords, symmops)
+            print("Full-cell coords", len(fullcellcoords))
             numasymmunits = len(fullcellcoords) / len(asymmcoords)
             print("Number of fractional coordinates in asymmetric unit:", len(asymmcoords))
             print("Number of asymmetric units in whole cell:", int(numasymmunits))

@@ -22,7 +22,7 @@ import elstructure_functions
 from workflows import *
 from benchmarking import *
 
-debugflag=False
+debugflag=True
 
 import sys
 import inspect

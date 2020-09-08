@@ -44,6 +44,7 @@ try:
     orcadir = parser.get("Settings","orcadir")
     scale = float(parser.get("Settings","scale"))
     tol = float(parser.get("Settings","tol"))
+    #Handling Booleans
     use_ANSI_color = bool(distutils.util.strtobool(parser.get("Settings","use_ANSI_color")))
     print_input = bool(distutils.util.strtobool(parser.get("Settings","print_input")))
     print_logo = bool(distutils.util.strtobool(parser.get("Settings","print_logo")))

@@ -574,6 +574,9 @@ def read_ciffile(file):
                 if 'x' not in line:
                     symmopgrab_oldsyntax=False
                 else:
+                    #Removing number from beginning if present
+                    if line[0].isdigit():
+                        line=line[1:]
                     line2=line.replace("'","").replace(" ","").replace("\n","")
                     symmops.append(line2)
             if fractgrab == True:
@@ -638,6 +641,7 @@ def fill_unitcell(cell_length,cell_angles,atomlabels,elems,coords,symmops):
         op_x=i.split(',')[0].replace(",","")
         op_y=i.split(',')[1].replace(",","")
         op_z = i.split(',')[2].replace(",", "")
+        print("op_x: {} op_y: {} op_z: {}".format(op_x,op_y,op_z))
         #op_z=i.split(',')[2].replace(",","").replace(" ","").replace("\n","")
         if len(op_x)==1 and len(op_y)==1 and len(op_z)==1:
             for c in coords:
