@@ -2084,8 +2084,6 @@ end
     if stabilityanalysis is True:
         blocks = blocks + "%scf stabperform true end"
 
-    #Auxiliary basis set. One big one
-    auxbasis='cc-pV5Z/C'
 
     #Whether to use iterative triples or not. Default: regular DLPNO-CCSD(T)
     if T1 is True:
@@ -2114,27 +2112,43 @@ end
     #Frozen-core DLPNO-CCSD(T) calculations defined here
     ############################################################
     if cardinals == "2/3" and basisfamily=="def2":
+        #Auxiliary basis set.
+        auxbasis='def2-QZVPP/C'
         ccsdt_1_line="! {} def2-SVP {} {} {} {}".format(ccsdtkeyword, auxbasis, pnosetting, scfsetting,extrainputkeyword)
         ccsdt_2_line="! {} def2-TZVPP {} {} {} {}".format(ccsdtkeyword, auxbasis, pnosetting, scfsetting,extrainputkeyword)
     elif cardinals == "3/4" and basisfamily=="def2":
+        #Auxiliary basis set.
+        auxbasis='def2-QZVPP/C'
         ccsdt_1_line="! {} def2-TZVPP {} {} {} {}".format(ccsdtkeyword, auxbasis, pnosetting, scfsetting,extrainputkeyword)
         ccsdt_2_line="! {} def2-QZVPP {} {} {} {}".format(ccsdtkeyword, auxbasis, pnosetting, scfsetting,extrainputkeyword)  
     elif cardinals == "2/3" and basisfamily=="ma-def2":
+        #Auxiliary basis set.
+        auxbasis='def2-QZVPP/C'
         ccsdt_1_line="! {} def2-SVP {} {} {} {}".format(ccsdtkeyword, auxbasis, pnosetting, scfsetting,extrainputkeyword)
         ccsdt_2_line="! {} def2-TZVPP {} {} {} {}".format(ccsdtkeyword, auxbasis, pnosetting, scfsetting,extrainputkeyword)
     elif cardinals == "3/4" and basisfamily=="ma-def2":
+        #Auxiliary basis set.
+        auxbasis='def2-QZVPP/C'
         ccsdt_1_line="! {} ma-def2-TZVPP {} {} {} {}".format(ccsdtkeyword, auxbasis, pnosetting, scfsetting,extrainputkeyword)
         ccsdt_2_line="! {} ma-def2-QZVPP {} {} {} {}".format(ccsdtkeyword, auxbasis, pnosetting, scfsetting,extrainputkeyword)
     elif cardinals == "2/3" and basisfamily=="cc":
+        #Auxiliary basis set.
+        auxbasis='cc-pVQZ/C'
         ccsdt_1_line="! {} cc-pVDZ {} {} {} {}".format(ccsdtkeyword, auxbasis, pnosetting, scfsetting,extrainputkeyword)
         ccsdt_2_line="! {} cc-pVTZ {} {} {} {}".format(ccsdtkeyword, auxbasis, pnosetting, scfsetting,extrainputkeyword)
     elif cardinals == "3/4" and basisfamily=="cc":
+        #Auxiliary basis set.
+        auxbasis='cc-pV5Z/C'
         ccsdt_1_line="! {} cc-pVTZ {} {} {} {}".format(ccsdtkeyword, auxbasis, pnosetting, scfsetting,extrainputkeyword)
         ccsdt_2_line="! {} cc-pVQZ {} {} {} {}".format(ccsdtkeyword, auxbasis, pnosetting, scfsetting,extrainputkeyword)
     elif cardinals == "2/3" and basisfamily=="aug-cc":
+        #Auxiliary basis set.
+        auxbasis='aug-cc-pVQZ/C'
         ccsdt_1_line="! {} aug-cc-pVDZ {} {} {} {}".format(ccsdtkeyword, auxbasis, pnosetting, scfsetting,extrainputkeyword)
         ccsdt_2_line="! {} aug-cc-pVTZ {} {} {} {}".format(ccsdtkeyword, auxbasis, pnosetting, scfsetting,extrainputkeyword)
     elif cardinals == "3/4" and basisfamily=="aug-cc":
+        #Auxiliary basis set.
+        auxbasis='aug-cc-pV5Z/C'
         ccsdt_1_line="! {} aug-cc-pVTZ {} {} {} {}".format(ccsdtkeyword, auxbasis, pnosetting, scfsetting,extrainputkeyword)
         ccsdt_2_line="! {} aug-cc-pVQZ {} {} {} {}".format(ccsdtkeyword, auxbasis, pnosetting, scfsetting,extrainputkeyword)
         
