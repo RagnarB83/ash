@@ -723,7 +723,11 @@ def casscfenergygrab(file):
         for line in f:
             if string in line or string2 in line:
                 #Changing from 5 to -2
+                #CIPSI: 5 Regular CASSCF: -2  ?
+                #Pretty ugly. to be fixed. TODO
                 Energy=float(line.split()[-2])
+                if Energy == 0.0:
+                    Energy=float(line.split()[5])
                 return Energy
             if 'CAS-SCF STATES FOR BLOCK' in line:
                 grab=True
