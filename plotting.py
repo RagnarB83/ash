@@ -174,5 +174,5 @@ def contourplot(surfacedictionary, label='Label',x_axislabel='Coord', y_axislabe
     plt.colorbar(contour_surface)
     plt.xlabel(x_axislabel)
     plt.ylabel(y_axislabel)
-    plt.savefig('Surface{}.png'.format(label), format=imageformat, dpi=dpi)
-    print("Created PNG file: Surface{}.png".format(label))
+    plt.savefig('Surface{}.{}'.format(label,imageformat), format=imageformat, dpi=dpi)
+    print("Created PNG file: Surface{}.{}".format(label,imageformat))

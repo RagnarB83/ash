@@ -109,6 +109,7 @@ def molcrys(cif_file=None, xtl_file=None, fragmentobjects=[], theory=None, numco
         print("Using Scale : ", chosenscale)
         print("Will loop through tolerances:", test_tolerances)
         for chosentol in test_tolerances:
+            print("Current Scale", chosenscale)
             print("Current Tol: ", chosentol)
             checkflag = frag_define(orthogcoords,elems,cell_vectors,fragments=fragmentobjects, cell_angles=cell_angles, cell_length=cell_length,
                         scale=chosenscale, tol=chosentol)
@@ -125,6 +126,10 @@ def molcrys(cif_file=None, xtl_file=None, fragmentobjects=[], theory=None, numco
                 break
             else:
                 print(BC.FAIL,"Fragment assignment failed.", BC.WARNING,"Trying next Tol parameter.", BC.END)
+                #Setting found fragmentlists as empty. Otherwise trouble.
+                for fragobject in fragmentobjects:
+                    fragobject.fraglist=[]
+                    
         # If all test_tolerances failed.
         if checkflag == 1:
             print("Automatic connectivity failed. Make sure that the fragment definitions are correct, "

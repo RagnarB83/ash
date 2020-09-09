@@ -446,8 +446,6 @@ def W1F12theory_SP(fragment=None, charge=None, orcadir=None, mult=None, stabilit
         workflow_args=kwargs['workflow_args']      
         if 'stabilityanalysis' in workflow_args:
             stabilityanalysis=workflow_args['stabilityanalysis']
-        if 'T1' in workflow_args:
-            T1=workflow_args['T1']
         if 'scfsetting' in workflow_args:
             scfsetting=workflow_args['scfsetting']
         if 'memory' in workflow_args:
@@ -1364,7 +1362,7 @@ def DLPNO_W2theory_SP(fragment=None, charge=None, orcadir=None, mult=None, stabi
         print("Using hardcoded value: ", W2_total)
         E_dict = {'Total_E': W2_total, 'E_SCF_CBS': W2_total, 'E_CCSDcorr_CBS': 0.0,
                   'E_triplescorr_CBS': 0.0, 'E_corecorr_and_SR': 0.0, 'E_SO': 0.0}
-        return W1_total, E_dict
+        return W2_total, E_dict
 
     #Reducing numcores if fewer active electron pairs than numcores.
     core_electrons = num_core_electrons(fragment)
@@ -2050,9 +2048,9 @@ def DLPNO_CC_CBS_SP(cardinals = "2/3", basisfamily="def2", fragment=None, charge
         print("Assuming hydrogen atom and skipping calculation")
         E_total = -0.500000
         print("Using hardcoded value: ", E_total)
-        E_dict = {'Total_E': W1_total, 'E_SCF_CBS': W1_total, 'E_CCSDcorr_CBS': 0.0,
+        E_dict = {'Total_E': E_total, 'E_SCF_CBS': E_total, 'E_CCSDcorr_CBS': 0.0,
                   'E_triplescorr_CBS': 0.0, 'E_corecorr_and_SR': 0.0, 'E_SO': 0.0}
-        return W1_total, E_dict
+        return E_total, E_dict
 
     #Reducing numcores if fewer active electron pairs than numcores.
     core_electrons = num_core_electrons(fragment)
@@ -2091,7 +2089,7 @@ end
     else:
         ccsdtkeyword='DLPNO-CCSD(T)'
 
-    #If heavy element then add special basis in block
+    #If heavy element present and using cc/aug-cc basisfamily then add special PP-basis and ECP in block
     def special_element_basis(fragment,cardinal,basisfamily,blocks):
         basis_dict = {('cc',2) : "cc-pVDZ-PP", ('aug-cc',2) : "aug-cc-pVDZ-PP", ('cc',3) : "cc-pVTZ-PP", ('aug-cc',3) : "aug-cc-pVTZ-PP", ('cc',4) : "cc-pVQZ-PP", ('aug-cc',4) : "aug-cc-pVQZ-PP"}
         auxbasis_dict = {('cc',2) : "cc-pVDZ-PP/C", ('aug-cc',2) : "aug-cc-pVDZ-PP/C", ('cc',3) : "cc-pVTZ-PP/C", ('aug-cc',3) : "aug-cc-pVTZ-PP/C", ('cc',4) : "cc-pVQZ-PP/C", ('aug-cc',4) : "aug-cc-pVQZ-PP/C"}
@@ -2100,7 +2098,8 @@ end
         for element in fragment.elems:
             print("element:", element)
             #TODO: Add 3rd-row elements and more
-            if element in ['Y','Zr', 'Nb', 'Mo', 'Tc', 'Ru', 'Rh','Pd','Ag','Cd', 'In', 'Sn', 'Sb', 'Te', 'I', 'Xe']:
+            if element in ['Rb', 'Sr','Y','Zr', 'Nb', 'Mo', 'Tc', 'Ru', 'Rh','Pd','Ag','Cd', 'In', 'Sn', 'Sb', 'Te', 'I', 'Xe', 'Cs', 'Ba',
+                            'Hf', 'Ta', 'W', 'Re', 'Os', 'Ir', 'Pt', 'Au', 'Hg', 'Tl', 'Pb', 'Bi', 'Po', 'At', 'Rn']:
                 if 'cc' in basisfamily:
                     specialbasis = basis_dict[(basisfamily,cardinal)]
                     specialauxbasis = auxbasis_dict[(basisfamily,cardinal)]
@@ -2123,12 +2122,12 @@ end
         ccsdt_2_line="! {} def2-QZVPP {} {} {} {}".format(ccsdtkeyword, auxbasis, pnosetting, scfsetting,extrainputkeyword)  
     elif cardinals == "2/3" and basisfamily=="ma-def2":
         #Auxiliary basis set.
-        auxbasis='def2-QZVPP/C'
+        auxbasis='aug-cc-pVQZ/C'
         ccsdt_1_line="! {} def2-SVP {} {} {} {}".format(ccsdtkeyword, auxbasis, pnosetting, scfsetting,extrainputkeyword)
         ccsdt_2_line="! {} def2-TZVPP {} {} {} {}".format(ccsdtkeyword, auxbasis, pnosetting, scfsetting,extrainputkeyword)
     elif cardinals == "3/4" and basisfamily=="ma-def2":
         #Auxiliary basis set.
-        auxbasis='def2-QZVPP/C'
+        auxbasis='aug-cc-pVQZ/C'
         ccsdt_1_line="! {} ma-def2-TZVPP {} {} {} {}".format(ccsdtkeyword, auxbasis, pnosetting, scfsetting,extrainputkeyword)
         ccsdt_2_line="! {} ma-def2-QZVPP {} {} {} {}".format(ccsdtkeyword, auxbasis, pnosetting, scfsetting,extrainputkeyword)
     elif cardinals == "2/3" and basisfamily=="cc":
@@ -2152,7 +2151,7 @@ end
         ccsdt_1_line="! {} aug-cc-pVTZ {} {} {} {}".format(ccsdtkeyword, auxbasis, pnosetting, scfsetting,extrainputkeyword)
         ccsdt_2_line="! {} aug-cc-pVQZ {} {} {} {}".format(ccsdtkeyword, auxbasis, pnosetting, scfsetting,extrainputkeyword)
         
-    #Adding special-ECP basis like cc-pVnZ-PP for heavy elements
+    #Adding special-ECP basis like cc-pVnZ-PP for heavy elements if present
     blocks1 = special_element_basis(fragment,cardinals_list[0],basisfamily,blocks)
     blocks2 = special_element_basis(fragment,cardinals_list[1],basisfamily,blocks)
     
@@ -2267,7 +2266,7 @@ def confsampler_protocol(fragment=None, crestdir=None, xtbmethod='GFN2-xTB', MLt
     for index,conformer in enumerate(list_conformer_frags):
         print("")
         print("Performing High-level calculation for ML-optimized Conformer ", index)
-        HLenergy = ash.Singlepoint(theory=HLTheory, fragment=conformer)
+        HLenergy = ash.Singlepoint(theory=HLtheory, fragment=conformer)
         HL_energies.append(HLenergy)
 
 

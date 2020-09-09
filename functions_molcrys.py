@@ -157,6 +157,37 @@ def frag_define(orthogcoords,elems,cell_vectors,fragments,cell_angles=None, cell
     print("Systemlist length:", len(systemlist))
     unassigned = []
     unassigned_formulas = []
+    
+    #Function that checks whether fragment in cell/cluster is the same as defined by user. 
+    #Metrics: Nuclear charge, Mass, or both.
+    #TODO: Need to find even better metric. Something that takes connectivity into account?
+    def same_fragment(fragtype=None, nuccharge=None, mass=None, formula=None):
+        metric="nuccharge_and_mass"
+        printdebug("metric:", metric)
+        printdebug("fragtype dict:", fragtype.__dict__)
+
+        printdebug("----------")
+        printdebug("nuccharge: {} mass: {} formula: {}".format(nuccharge,mass,formula))
+        printdebug("---------")
+        if metric=="nuccharge_and_mass":
+            printdebug("Nuccharge and mass option!")
+            if nuccharge == fragtype.Nuccharge and abs(mass - fragtype.mass) <1.0 :
+                printdebug("ncharge {} is equal to fragment.Nuccharge {} ".format(nuccharge, fragtype.Nuccharge))
+                printdebug("mass {} is equal to fragtyp.mass {} ".format(mass, fragtype.mass))
+                return True
+        elif metric=="nuccharge":
+            printdebug("Nucharge option!!")
+            if nuccharge == fragtype.Nuccharge:
+                printdebug("ncharge {} is equal to fragment.Nuccharge {} ".format(nuccharge, fragtype.Nuccharge))
+                return True
+        elif metric=="mass":
+            printdebug("Mass option!")
+            if abs(mass - fragtype.mass) <0.1 :
+                printdebug("mass {} is equal to fragtyp.mass {} ".format(mass, fragtype.mass))
+                return True
+            
+    
+    
     for i in range(len(elems)):
 
         printdebug("i : ", i)
@@ -166,15 +197,18 @@ def frag_define(orthogcoords,elems,cell_vectors,fragments,cell_angles=None, cell
         #print("members:", members)
         el_list = [elems[i] for i in members]
         formula=elemlisttoformula(el_list)
-        printdebug("el_list:", el_list)
+        current_mass = totmasslist(el_list)
         ncharge = nucchargelist(el_list)
-        #print("Found el_list:", el_list)
+        printdebug("Current_mass:", current_mass)
+        printdebug("current formula:", formula)
+        printdebug("el_list:", el_list)
         printdebug("ncharge : ", ncharge)
         Assign_Flag=False
+
         for fragment in fragments:
             printdebug("fragment:", fragment)
-            if ncharge == fragment.Nuccharge:
-                printdebug("ncharge {} is equal to fragment.Nuccharge {} ".format(ncharge, fragment.Nuccharge))
+            #if ncharge == fragment.Nuccharge:
+            if same_fragment(fragtype=fragment, nuccharge=ncharge, mass=current_mass, formula=formula) is True:
                 Assign_Flag = True
                 printdebug("Assign_Flag is True!")
                 #Only adding members if not already added
@@ -218,14 +252,17 @@ def frag_define(orthogcoords,elems,cell_vectors,fragments,cell_angles=None, cell
         members = get_molecule_members_loop_np2(temp_extended_coords, temp_extended_elems, 99,
                                                 scale, tol, membs=m)
         el_list = [temp_extended_elems[i] for i in members]
+        current_mass = totmasslist(el_list)
         printdebug("members:", members)
         printdebug("el_list:", el_list)
+        printdebug("current_mass:", current_mass)
         formula = elemlisttoformula(el_list)
         print("formula:", formula)
         for fragment in fragments:
             printdebug("el_list:", el_list)
             ncharge = nucchargelist(el_list)
-            if ncharge == fragment.Nuccharge:
+            #if ncharge == fragment.Nuccharge:
+            if same_fragment(fragtype=fragment, nuccharge=ncharge, mass=current_mass, formula=formula) is True:
                 printdebug("Found match. ncharge is", ncharge)
                 if members not in fragment.fraglist:
                     printdebug("List not already there. Adding")
