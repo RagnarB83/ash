@@ -60,8 +60,8 @@ def reactionprofile_plot(surfacedictionary, finalunit='',label='Label', x_axisla
 #Good colormaps: viridis, viridis_r, inferno, inferno_r, plasma, plasma_r, magma, magma_r
 # Less recommended: jet, jet_r
 def contourplot(surfacedictionary, label='Label',x_axislabel='Coord', y_axislabel='Coord', finalunit=None, interpolation='Cubic', 
-                interpolparameter=10, colormap='inferno_r', dpi=200, imageformat='png', RelativeEnergy=True, numcontourlines=50,
-                contour_alpha=0.75, contourline_color='black', clinelabels=True):
+                interpolparameter=10, colormap='inferno_r', dpi=200, imageformat='png', RelativeEnergy=True, numcontourlines=500,
+                contour_alpha=0.75, contourline_color='black', clinelabels=False, contour_values=None):
     
     conversionfactor = { 'kcal/mol' : 627.50946900, 'kcalpermol' : 627.50946900, 'kJ/mol' : 2625.499638, 'kJpermol' : 2625.499638, 
                         'eV' : 27.211386245988, 'cm-1' : 219474.6313702 }
@@ -162,10 +162,18 @@ def contourplot(surfacedictionary, label='Label',x_axislabel='Coord', y_axislabe
         Y = zoom(Y, pw, mode='nearest')
         Z = zoom(Z, pw, mode='nearest')
     #Filled contours. 
+    print("Using {} numcontourlines for colormap".format(numcontourlines))
     contour_surface=plt.contourf(X, Y, Z, numcontourlines, alpha=contour_alpha, cmap=colormap)
     
     #Contour lines. numcontourlines is 50 by default 
-    Clines = plt.contour(X, Y, Z, numcontourlines, colors=contourline_color)
+    #Or if contourvalues provided then should be ascending list
+    if contour_values is not None:
+        print("Using set contour_values for contourlines:", contour_values)
+        Clines = plt.contour(X, Y, Z, contour_values, colors=contourline_color)
+    else:
+        #By default using value/10 as used for colormap
+        print("Using {} numcontourlines ".format(numcontourlines/10))
+        Clines = plt.contour(X, Y, Z, int(numcontourlines/10), colors=contourline_color)
     
     # Contour-line labels
     if clinelabels is True: 
