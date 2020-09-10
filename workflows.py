@@ -1645,7 +1645,7 @@ def write_surfacedict_to_file(dict,file="surface_results.txt",dimension=None):
 #Calculate 1D or 2D surface, either relaxed or unrelaxed.
 # TODO: Parallelize surfacepoint calculations
 def calc_surface(fragment=None, theory=None, workflow=None, type='Unrelaxed', resultfile='surface_results.txt', 
-                 runmode='serial', coordsystem='dlc', maxiter=50, extraconstraints=None, **kwargs):    
+                 runmode='serial', coordsystem='dlc', maxiter=50, extraconstraints=None, convergence_setting=None **kwargs):    
     print("="*50)
     print("CALC_SURFACE FUNCTION")
     print("="*50)
@@ -1758,7 +1758,7 @@ def calc_surface(fragment=None, theory=None, workflow=None, type='Unrelaxed', re
                             allconstraints = set_constraints(dimension=2, RCvalue1=RCvalue1, RCvalue2=RCvalue2, extraconstraints=extraconstraints)
                             print("allconstraints:", allconstraints)
                             #Running zero-theory with optimizer just to set geometry
-                            geomeTRICOptimizer(fragment=fragment, theory=zerotheory, maxiter=maxiter, coordsystem=coordsystem, constraints=allconstraints, constrainvalue=True)
+                            geomeTRICOptimizer(fragment=fragment, theory=zerotheory, maxiter=maxiter, coordsystem=coordsystem, constraints=allconstraints, constrainvalue=True, convergence_setting=convergence_setting)
                             #Shallow copy of fragment
                             newfrag = copy.copy(fragment)
                             newfrag.label = str(RCvalue1)+"_"+str(RCvalue1)
@@ -1806,7 +1806,7 @@ def calc_surface(fragment=None, theory=None, workflow=None, type='Unrelaxed', re
                             allconstraints = set_constraints(dimension=2, RCvalue1=RCvalue1, RCvalue2=RCvalue2, extraconstraints=extraconstraints)
                             print("x allconstraints:", allconstraints)
                             #Running zero-theory with optimizer just to set geometry
-                            geomeTRICOptimizer(fragment=fragment, theory=zerotheory, maxiter=maxiter, coordsystem=coordsystem, constraints=allconstraints, constrainvalue=True)
+                            geomeTRICOptimizer(fragment=fragment, theory=zerotheory, maxiter=maxiter, coordsystem=coordsystem, constraints=allconstraints, constrainvalue=True, convergence_setting=convergence_setting)
                             
                             #Write geometry to disk
                             fragment.write_xyzfile(xyzfilename="RC1_"+str(RCvalue1)+"-RC2_"+str(RCvalue2)+".xyz")
@@ -1835,7 +1835,7 @@ def calc_surface(fragment=None, theory=None, workflow=None, type='Unrelaxed', re
                         allconstraints = set_constraints(dimension=1, RCvalue1=RCvalue1, extraconstraints=extraconstraints)
                         print("allconstraints:", allconstraints)
                         #Running zero-theory with optimizer just to set geometry
-                        geomeTRICOptimizer(fragment=fragment, theory=zerotheory, maxiter=maxiter, coordsystem=coordsystem, constraints=allconstraints, constrainvalue=True)
+                        geomeTRICOptimizer(fragment=fragment, theory=zerotheory, maxiter=maxiter, coordsystem=coordsystem, constraints=allconstraints, constrainvalue=True, convergence_setting=convergence_setting)
                         
                         #Write geometry to disk: RC1_2.02.xyz
                         fragment.write_xyzfile(xyzfilename="RC1_"+str(RCvalue1)+".xyz")
@@ -1865,7 +1865,7 @@ def calc_surface(fragment=None, theory=None, workflow=None, type='Unrelaxed', re
                             allconstraints = set_constraints(dimension=2, RCvalue1=RCvalue1, RCvalue2=RCvalue2, extraconstraints=extraconstraints)
                             print("allconstraints:", allconstraints)
                             #Running 
-                            energy = geomeTRICOptimizer(fragment=fragment, theory=theory, maxiter=maxiter, coordsystem=coordsystem, constraints=allconstraints, constrainvalue=True)
+                            energy = geomeTRICOptimizer(fragment=fragment, theory=theory, maxiter=maxiter, coordsystem=coordsystem, constraints=allconstraints, constrainvalue=True, convergence_setting=convergence_setting)
                             surfacedictionary[(RCvalue1,RCvalue2)] = energy
                             #Writing dictionary to file
                             write_surfacedict_to_file(surfacedictionary,"surface_results.txt", dimension=2)
@@ -1891,7 +1891,7 @@ def calc_surface(fragment=None, theory=None, workflow=None, type='Unrelaxed', re
                         allconstraints = set_constraints(dimension=1, RCvalue1=RCvalue1, extraconstraints=extraconstraints)
                         print("allconstraints:", allconstraints)
                         #Running zero-theory with optimizer just to set geometry
-                        energy = geomeTRICOptimizer(fragment=fragment, theory=theory, maxiter=maxiter, coordsystem=coordsystem, constraints=allconstraints, constrainvalue=True)
+                        energy = geomeTRICOptimizer(fragment=fragment, theory=theory, maxiter=maxiter, coordsystem=coordsystem, constraints=allconstraints, constrainvalue=True, convergence_setting=convergence_setting)
                         surfacedictionary[(RCvalue1)] = energy
                         #Writing dictionary to file
                         write_surfacedict_to_file(surfacedictionary,"surface_results.txt", dimension=1)

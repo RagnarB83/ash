@@ -16,7 +16,7 @@ import time
 
 
 def geomeTRICOptimizer(theory=None,fragment=None, coordsystem='tric', frozenatoms=[], constraintsinputfile=None, constraints=None, 
-                       constrainvalue=False, maxiter=50, ActiveRegion=False, actatoms=[], convergence_setting=None):
+                       constrainvalue=False, maxiter=50, ActiveRegion=False, actatoms=[], convergence_setting=None, conv_criteria=None):
     """
     Wrapper function around geomeTRIC code. Take theory and fragment info from ASH
     Supports frozen atoms and bond/angle/dihedral constraints in native code. Use frozenatoms and bondconstraints etc. for this.
@@ -255,7 +255,8 @@ def geomeTRICOptimizer(theory=None,fragment=None, coordsystem='tric', frozenatom
     #Dealing with convergence criteria
     if convergence_setting is None or convergence_setting == 'ORCA':
         #default
-        conv_criteria = {'convergence_energy' : 5e-6, 'convergence_grms' : 1e-4, 'convergence_gmax' : 3.0e-4, 'convergence_drms' : 2.0e-3, 
+        if conv_criteria is None:
+            conv_criteria = {'convergence_energy' : 5e-6, 'convergence_grms' : 1e-4, 'convergence_gmax' : 3.0e-4, 'convergence_drms' : 2.0e-3, 
                      'convergence_dmax' : 4.0e-3 }
     elif convergence_setting == 'Chemshell':
         conv_criteria = {'convergence_energy' : 1e-6, 'convergence_grms' : 3e-4, 'convergence_gmax' : 4.5e-4, 'convergence_drms' : 1.2e-3, 
