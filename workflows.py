@@ -1645,7 +1645,7 @@ def write_surfacedict_to_file(dict,file="surface_results.txt",dimension=None):
 #Calculate 1D or 2D surface, either relaxed or unrelaxed.
 # TODO: Parallelize surfacepoint calculations
 def calc_surface(fragment=None, theory=None, workflow=None, type='Unrelaxed', resultfile='surface_results.txt', 
-                 runmode='serial', coordsystem='dlc', maxiter=50, extraconstraints=None, convergence_setting=None **kwargs):    
+                 runmode='serial', coordsystem='dlc', maxiter=50, extraconstraints=None, convergence_setting=None, **kwargs):    
     print("="*50)
     print("CALC_SURFACE FUNCTION")
     print("="*50)

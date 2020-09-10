@@ -714,39 +714,45 @@ def scfenergygrab(file):
                 Energy=float(line.split()[-4])
     return Energy
 
-#CASSCF: Grabbing first root energy
+#CASSCF: Grabbing first root energy. Simplified because of problem
 def casscfenergygrab(file):
-    grab=False
-    string='STATE   0 MULT'
-    string2='ROOT   0:'
+    #grab=False
+    string='Final CASSCF energy       :'
     with open(file) as f:
         for line in f:
-            if string in line or string2 in line:
+            if string in line:
+                Energy=float(line.split()[4])
+                return Energy
                 #Changing from 5 to -2
                 #CIPSI: 5 Regular CASSCF: -2  ?
                 #Pretty ugly. to be fixed. TODO
-                Energy=float(line.split()[-2])
-                if Energy == 0.0:
-                    Energy=float(line.split()[5])
-                return Energy
-            if 'CAS-SCF STATES FOR BLOCK' in line:
-                grab=True
+                #Energy=float(line.split()[-2])
+                #if Energy == 0.0:
+                #    Energy=float(line.split()[5])
+            #if 'CAS-SCF STATES FOR BLOCK' in line:
+            #    grab=True
 
 #CASSCF: Grabbing all root energies
+#Slightly tricky funciton because output differs for ICE-CASSCF and regular CASSCF.
+#Should be good now.
 def casscf_state_energies_grab(file):
     Finished=False
     grab=False
     mult_dict={}
     state_energies=[];Energy=0.0
-    string='STATE '
-    string2='ROOT '
+    #string='STATE '
+    #string2='ROOT '
     with open(file) as f:
         for line in f:
+            #Stop grabbing lines once we have reached end of table
             if 'SA-CASSCF TRANSITION ENERGIES' in line:
                 grab=False
             if 'Spin-Determinant CI Printing' in line:
                 grab=False
-            if grab is True and string in line:
+            if 'Extended CI Printing (values > TPrintWF)' in line:
+                grab=False
+            #Grabbing STATE lines
+            if grab is True and 'STATE ' in line:
                 print("Xline: ", line)
                 Energy=float(line.split()[5])
                 print("Energy :", Energy)
@@ -754,7 +760,8 @@ def casscf_state_energies_grab(file):
                 print("state_energies :", state_energies)
                 if len(state_energies) == roots:
                     mult_dict[mult] = state_energies
-            if grab is True and string2 in line:
+                    grab=False
+            if grab is True and 'ROOT ' in line:
                 print("Yline: ", line)
                 Energy=float(line.split()[3])
                 print("Energy :", Energy)
@@ -762,6 +769,7 @@ def casscf_state_energies_grab(file):
                 print("state_energies :", state_energies)
                 if len(state_energies) == roots:
                     mult_dict[mult] = state_energies
+                    grab=False
             if Finished is True and 'CAS-SCF STATES FOR BLOCK' in line:
                 print("line :", line)
                 #New mult block. Resetting state-energies.
@@ -772,6 +780,7 @@ def casscf_state_energies_grab(file):
                 roots=int(line.split()[7:9][-1].replace('NROOTS=',''))
                 print("roots :", roots)
                 grab=True
+            #Only grabbing lines once CASSCF calc has converged
             if 'Final CASSCF energy' in line:
                 Finished=True
     return mult_dict
@@ -1771,6 +1780,7 @@ def PhotoElectronSpectrum(theory=None, fragment=None, InitialState_charge=None, 
         FinalTDtransitionenergies =[]
         print(bcolors.OKBLUE,"Initial State SCF energy:", stateI.energy, "au",bcolors.ENDC)
         print(bcolors.OKBLUE,"Final State SCF energies:", fstates_dict, bcolors.ENDC)
+        
         for fstate in Finalstates:
             fstate.ionstates = fstates_dict[fstate.mult]
             for ionstate in fstate.ionstates:
