@@ -14,7 +14,6 @@ import time
 # bond,angle and dihedral constraints work. If only atom indices provided and constrainvalue is False then constraint at current position
 # If constrainvalue=True then last entry should be value of constraint
 
-
 def geomeTRICOptimizer(theory=None,fragment=None, coordsystem='tric', frozenatoms=[], constraintsinputfile=None, constraints=None, 
                        constrainvalue=False, maxiter=50, ActiveRegion=False, actatoms=[], convergence_setting=None, conv_criteria=None):
     """
