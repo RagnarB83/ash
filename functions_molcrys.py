@@ -119,6 +119,33 @@ def cell_extend_frag_withcenter(cellvectors, coords,elems):
             index+=1
     return extended, new_elems
 
+
+#Take extended_cell coordinates, check if clashing atoms with oldcell-coordinates
+#Delete clashing coordinates in extended part of extendecell coords. 
+def delete_clashing_atoms(extendedcell,oldcell,extendedelems,oldelems):
+    oldcell=np.array(oldcell)
+    #Number of decimals to compare
+    decimal=8
+    deletionlist=[]
+    #Going through extendecell-coordinates starting after last index of old-cell
+    for i in range(len(oldcell),len(extendedcell)):
+        #Find if extended cell coordinates are in old cell. Mark for deletion
+        result, = np.where(np.all( oldcell.round(decimals=decimal)== extendedcell[i].round(decimals=decimal), axis=1))
+        if result.size >0:
+            deletionlist.append(i)
+    
+    #Delete all rows in deletionlist and get final cell
+    newcell = np.delete(extendedcell,deletionlist,0)
+
+    #Get corresponding elements list
+    newelems=[]
+    for index,el in enumerate(extendedelems):
+        if index not in deletionlist:
+            newelems.append(el)
+        
+    assert len(newcell) == len(newelems), "something went wrong in delete_clashing_atoms"
+    return newcell,newelems
+
 #FRAGMENT DEFINE
 #Define fragment-identity of each atom in unit cell. Updates mainfrag and counterfrag objects
 #1. Goes through atom in cell and finds whole fragments and identifies fragment-type
@@ -126,6 +153,10 @@ def cell_extend_frag_withcenter(cellvectors, coords,elems):
 #3. Find all whole fragments of the atoms in original cell but capped with atoms from extended cell
 #4. For fragment-atoms outside original cell, find equivalent atoms in original cell.
 #TODO: Skip step1?
+
+#TODO. Problem. If atoms are precisely on the edge boundary (very symmetric crystals) then we get atoms on top of each other when we do : cell_extend_frag_withcenter
+# Like for CoCN6 and maybe FeCN6 crystals. SOlution?. Delete clashing atoms???
+
 def frag_define(orthogcoords,elems,cell_vectors,fragments,cell_angles=None, cell_length=None, scale=None, tol=None):
 
     if scale is None:
@@ -142,8 +173,22 @@ def frag_define(orthogcoords,elems,cell_vectors,fragments,cell_angles=None, cell
     # so that we have no dangling bonds for center unitcell
     print("Creating extended (3x3x3) unit cell for fragment identification")
     temp_extended_coords, temp_extended_elems = cell_extend_frag_withcenter(cell_vectors, orthogcoords, elems)
+    
+    print("len temp_extended_coords", len(temp_extended_coords))
+    print("len temp_extended_elems", len(temp_extended_elems))
+    
     # Write XYZ-file with orthogonal coordinates for 3x3xcell
-    write_xyzfile(temp_extended_elems, temp_extended_coords, "temp_cell_extended_coords")
+    write_xyzfile(temp_extended_elems, temp_extended_coords, "temp_cell_extended_coords-beforedel")
+    
+    #Delete duplicate entries. May happen if atoms are right on boundary
+    temp_extended_coords, temp_extended_elems = delete_clashing_atoms(temp_extended_coords,orthogcoords,temp_extended_elems,elems)
+
+    print("len temp_extended_coords", len(temp_extended_coords))
+    print("len temp_extended_elems", len(temp_extended_elems))
+    
+    # Write XYZ-file with orthogonal coordinates for 3x3xcell
+    write_xyzfile(temp_extended_elems, temp_extended_coords, "temp_cell_extended_coords-afterdel")
+    
     #write XTL file for 3x3x3 cell
     #Todo: fix.
     # Need to give write_xtl fractional coords for new cell. Requires o

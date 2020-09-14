@@ -85,6 +85,18 @@ def molcrys(cif_file=None, xtl_file=None, fragmentobjects=[], theory=None, numco
     #Write fractional coordinate XTL file of fullcell coordinates (for visualization in VESTA)
     write_xtl(cell_length,cell_angles,elems,fullcellcoords,"complete_unitcell.xtl")
 
+
+    #Make simpler super-cell for cases where molecule is not in cell
+    simple_supercell=True
+    if simple_supercell is True:
+        print("To be continued")
+        exit()
+        cell_extend_frag(cellvectors, coords,elems,[1,1,2])
+
+
+
+
+
     #Get orthogonal coordinates of cell
     orthogcoords=fract_to_orthogonal(cell_vectors,fullcellcoords)
     #Converting orthogcoords to numpy array for better performance
