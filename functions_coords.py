@@ -19,8 +19,10 @@ atommasses = [1.00794, 4.002602, 6.94, 9.0121831, 10.81, 12.01070, 14.00670, 15.
 #Used for connectivity
 eldict_covrad={'H':0.31, 'He':0.28, 'Li':1.28, 'Be':0.96, 'B':0.84, 'C':0.76, 'N':0.71, 'O':0.66, 'F':0.57, 'Ne':0.58, 'Na':1.66, 'Mg':1.41, 'Al':1.21, 'Si':1.11, 'P':1.07, 'S':1.05, 'Cl':1.02, 'Ar':1.06, 'K':2.03, 'Ca':1.76, 'Sc':1.70, 'Ti':1.6, 'V':1.53, 'Cr':1.39, 'Mn':1.61, 'Fe':1.52, 'Co':1.50, 'Ni':1.24, 'Cu':1.32, 'Zn':1.22, 'Ga':1.22, 'Ge':1.20, 'As':1.19, 'Se':1.20, 'Br':1.20, 'Kr':1.16, 'Rb':2.2, 'Sr':1.95, 'Y':1.9, 'Zr':1.75, 'Nb':1.64, 'Mo':1.54, 'Tc':1.47, 'Ru':1.46, 'Rh':1.42, 'Pd':1.39, 'Ag':1.45, 'Cd':1.44, 'In':1.42, 'Sn':1.39, 'Sb':1.39, 'Te':1.38, 'I':1.39, 'Xe':1.40,}
 
-#Modified radii for certain elements like Na,
-#eldict_covrad['Na']=0.00
+#Modified radii for certain elements like Na, K
+eldict_covrad['Na']=0.0001
+eldict_covrad['K']=0.0001
+
 #print(eldict_covrad)
 
 
@@ -151,7 +153,7 @@ def calc_conn_py(coords, elems, conndepth, scale, tol):
 
 #Get connected atoms to chosen atom index based on threshold
 #Uses slow for-loop structure with distance-function call
-#Don't use
+#Don't use unless system is small
 def get_connected_atoms(coords, elems,scale,tol,atomindex):
     connatoms=[]
     coords_ref=coords[atomindex]
@@ -990,9 +992,15 @@ def distance_between_atoms(fragment=None, atom1=None, atom2=None):
 def get_boundary_atoms(qmatoms, coords, elems, scale, tol):
     # For each QM atom, do a get_conn_atoms, for those atoms, check if atoms are in qmatoms,
     # if not, then we have found an MM-boundary atom
+    
+    #TODO: Note, there can can be problems here if either scale, tol is non-ideal value (should be set in inputfile)
+    #TODO: Or if eldict_covrad needs to be modified, also needs to be set in inputfile then.
+    
     qm_mm_boundary_dict = {}
     for qmatom in qmatoms:
+        #print("qmatom:", qmatom)
         connatoms = get_connected_atoms(coords, elems, scale, tol, qmatom)
+        #print("connatoms:", connatoms)
         # Find connected atoms that are not in QM-atoms
         boundaryatom = listdiff(connatoms, qmatoms)
         if len(boundaryatom) > 1:

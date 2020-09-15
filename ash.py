@@ -2308,7 +2308,6 @@ class QMMMTheory:
         self.mmelems=[self.elems[i] for i in self.mmatoms]
         
         
-
         
         #LINKATOMS
         #1. Get linkatoms coordinates
