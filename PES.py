@@ -2033,6 +2033,9 @@ def PhotoElectronSpectrum(theory=None, fragment=None, InitialState_charge=None, 
         print("")
         print("")
 
+
+        assert len(FinalIPs) == len(finaldysonnorms), "List of Dysonnorms not same size as list of IPs."
+
         #Print table with info
         print("-------------------------------------------------------------------------")
         print("FINAL RESULTS for fragment (Label: {}  Formula: {})".format(fragment.label, fragment.prettyformula))
@@ -2219,6 +2222,8 @@ def plot_PES_Spectrum(IPs=None, dysonnorms=None, mos_alpha=None, mos_beta=None, 
     if IPs is None or dysonnorms is None:
         print("plot_PES_Spectrum requires IPs and dysonnorms variables")
         exit(1)
+
+    assert len(IPs) == len(dysonnorms), "List of Dysonnorms not same size as list of IPs." 
 
     if mos_alpha is None:
         MOPlot=False

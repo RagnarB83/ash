@@ -517,6 +517,30 @@ def cell_extend_frag(cellvectors, coords,elems,cellextpars):
     printdebug("new_elems  num,", len(new_elems))
     return extended, new_elems
 
+
+#Simple super-cellexpansion
+#def simple_cell_extend_frag(cellvectors, coords,elems):
+#    permutations=[[0,0,0],[0,0,1]]
+#    numcells=2
+#    extended = np.zeros((len(coords) * numcells, 3))
+#    new_elems = []
+#    index = 0
+#    for perm in permutations:
+#        shift = cellvectors[0:3, 0:3] * perm
+#        shift = shift[:, 0] + shift[:, 1] + shift[:, 2]
+#        #print("Permutation:", perm, "shift:", shift)
+#        for d, el in zip(coords, elems):
+#            new_pos=d+shift
+#            extended[index] = new_pos
+#            new_elems.append(el)
+#            #print("extended[index]", extended[index])
+#            #print("extended[index+1]", extended[index+1])
+#            index+=1
+#    printdebug(extended)
+#    printdebug("extended coords num", len(extended))
+#    printdebug("new_elems  num,", len(new_elems))
+#    return extended, new_elems
+
 #Extend cell in all 3 directions.
 #Note: original cell is not in center
 #Loosely based on https://pymolwiki.org/index.php/Supercell
@@ -615,7 +639,7 @@ def read_ciffile(file):
     atomlabels=[]
     elems=[]
     firstcolumn=[]
-    secondcolumn=[]
+    secondcolumns=[]
     coords=[]
     symmops=[]
     newmol=False
@@ -670,11 +694,19 @@ def read_ciffile(file):
                     if 'loop' not in line:
                         atomlabels.append(line.split()[0])
                         #Disabling since not always elems in column
-                        secondcolumn.append(line.split()[1])
-                        x_coord=float(line.split()[2].split('(')[0])
-                        y_coord=float(line.split()[3].split('(')[0])
-                        z_coord=float(line.split()[4].split('(')[0])
-                        coords.append([x_coord, y_coord, z_coord])
+                        secondcol=line.split()[1]
+                        secondcolumns.append(secondcol)
+                        #If second-column is float then this is fract_x
+                        if isfloat(secondcol.split('(')[0]):
+                            x_coord=float(line.split()[1].split('(')[0])
+                            y_coord=float(line.split()[2].split('(')[0])
+                            z_coord=float(line.split()[3].split('(')[0])
+                            coords.append([x_coord, y_coord, z_coord])
+                        else:
+                            x_coord=float(line.split()[2].split('(')[0])
+                            y_coord=float(line.split()[3].split('(')[0])
+                            z_coord=float(line.split()[4].split('(')[0])
+                            coords.append([x_coord, y_coord, z_coord])
             if 'data_' in line:
                 newmol = True
             if '_atom_site_fract_z' in line:
@@ -695,19 +727,41 @@ def read_ciffile(file):
         print("Found correct elements in 1st column")
         elems=firstcolumn
     else:
-        if isElementList(secondcolumn):
+        if isElementList(secondcolumns):
             print("Found correct elements in 2nd column")
-            elems = secondcolumn
+            elems = secondcolumns
         else:
             print("Found no valid element list from CIF file in either 1st or 2nd column. Check CIF-file format")
             print("firstcolumn: ", firstcolumn)
-            print("secondcolumn: ", secondcolumn)
+            print("secondcolumns: ", secondcolumns)
             exit()
 
     print("Symmetry operations found in CIF:", symmops)
     print("coords : ", coords)
     return [cell_a, cell_b, cell_c],[cell_alpha, cell_beta, cell_gamma],atomlabels,elems,coords,symmops,cellunits
 
+
+#Shift fractional_coordinates by x,y,z amount
+def shift_fractcoords(coords,shift):
+    newcoords=[]
+    for coord in coords:
+        coord_x=coord[0]+shift[0]
+        coord_y=coord[1]+shift[1]
+        coord_z=coord[2]+shift[2]
+        if coord_x < 0:
+            coord_x=coord_x+1
+        if coord_y < 0:
+            coord_y=coord_y+1
+        if coord_z < 0:
+            coord_z=coord_z+1
+        if coord_x > 1:
+            coord_x=coord_x-1
+        if coord_y > 1:
+            coord_y=coord_y-1
+        if coord_z > 1:
+            coord_z=coord_z-1
+        newcoords.append([coord_x,coord_y,coord_z])
+    return newcoords
 #From cell parameters, fractional coordinates of asymmetric unit and symmetry operations
 #create fractional coordinates for atoms of whole cell
 def fill_unitcell(cell_length,cell_angles,atomlabels,elems,coords,symmops):

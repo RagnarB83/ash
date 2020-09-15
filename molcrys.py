@@ -13,7 +13,7 @@ currtime=time.time()
 
 
 def molcrys(cif_file=None, xtl_file=None, fragmentobjects=[], theory=None, numcores=None, chargemodel='',
-            clusterradius=None, shortrangemodel='UFF_modH', auto_connectivity=False):
+            clusterradius=None, shortrangemodel='UFF_modH', auto_connectivity=False, simple_supercell=False, shiftasymmunit=False):
 
     banner="""
     THE
@@ -43,6 +43,16 @@ def molcrys(cif_file=None, xtl_file=None, fragmentobjects=[], theory=None, numco
         print("Reading CIF file:", cif_file)
         blankline()
         cell_length,cell_angles,atomlabels,elems,asymmcoords,symmops,cellunits=read_ciffile(cif_file)
+        
+        #Shifting fractional coordinates to make sure we don't have atoms on edges
+        if shiftasymmunit is True:
+            print("Shifting asymmetric unit")
+            print("not ready")
+            exit()
+            shift=[-0.3,-0.3,-0.3]
+            asymmcoords=shift_fractcoords(asymmcoords,shift)
+
+        print("asymmcoords:", asymmcoords)
         print("asymmcoords length", len(asymmcoords))
         #Checking if cellunits is None or integer. If none then "_cell_formula_units" not in CIF-file and then unitcell should already be filled
         if cellunits is None:
@@ -53,6 +63,8 @@ def molcrys(cif_file=None, xtl_file=None, fragmentobjects=[], theory=None, numco
             print("Filling up unitcell using symmetry operations")
             fullcellcoords, elems = fill_unitcell(cell_length, cell_angles, atomlabels, elems, asymmcoords, symmops)
             print("Full-cell coords", len(fullcellcoords))
+            print("fullcellcoords", fullcellcoords)
+            print("elems:", elems)
             numasymmunits = len(fullcellcoords) / len(asymmcoords)
             print("Number of fractional coordinates in asymmetric unit:", len(asymmcoords))
             print("Number of asymmetric units in whole cell:", int(numasymmunits))
@@ -86,25 +98,41 @@ def molcrys(cif_file=None, xtl_file=None, fragmentobjects=[], theory=None, numco
     write_xtl(cell_length,cell_angles,elems,fullcellcoords,"complete_unitcell.xtl")
 
 
-    #Make simpler super-cell for cases where molecule is not in cell
-    simple_supercell=True
-    if simple_supercell is True:
-        print("To be continued")
-        exit()
-        cell_extend_frag(cellvectors, coords,elems,[1,1,2])
-
-
-
-
-
     #Get orthogonal coordinates of cell
     orthogcoords=fract_to_orthogonal(cell_vectors,fullcellcoords)
+    
     #Converting orthogcoords to numpy array for better performance
     orthogcoords=np.asarray(orthogcoords)
+
     write_xyzfile(elems,orthogcoords,"cell_orthog-original")
     #Change origin to centroid of coords
     orthogcoords=change_origin_to_centroid(orthogcoords)
     write_xyzfile(elems,orthogcoords,"cell_orthog-changedORIGIN")
+    
+    
+    #Make simpler super-cell for cases where molecule is not in cell
+    #TODO: Not sure if need this. 
+    #if simple_supercell is True:
+    #    print("Simple supercell is True")
+    #    #exit()return extended, new_elems
+    #    #cellextpars=[2,2,2]
+    #    print("before extension len coords", len(orthogcoords))
+    #    print(orthogcoords)
+    #    print("")
+    #    supercell_coords, supercell_elems = cell_extend_frag_withcenter(cell_vectors, orthogcoords,elems)
+    #    print("supercell_coords ({}):".format(len(supercell_coords),supercell_coords))
+    #    print("supercell_elems ({}) :".format(len(supercell_elems),supercell_elems))
+    #    #supercell_orthogcoords=fract_to_orthogonal([cell_vectors[0],cell_vectors[1],cell_vectors[2]*1],supercell_coords)
+    #    write_xyzfile(supercell_elems,supercell_coords,"supercell_coords")
+    #    
+    #    #DEFINING supercell as cell from now on 
+    #    orthogcoords=supercell_coords
+    #    elems=supercell_elems
+
+
+
+
+
     print("")
     #print_coordinates(elems, orthogcoords, title="Orthogonal coordinates")
     #print_coords_all(orthogcoords,elems)
