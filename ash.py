@@ -3868,9 +3868,11 @@ class Fragment:
                     coordgrab=True
                 if 'Centralmainfrag' in line:
                     l = line.lstrip('Centralmainfrag:')
-                    l = l.strip('[')
-                    l = l.strip(']')
-                    Centralmainfrag = [i for i in l.split(',')]
+                    l = l.replace('\n','')
+                    l = l.replace(' ','')
+                    l = l.replace('[','')
+                    l = l.replace(']','')
+                    Centralmainfrag = [int(i) for i in l.split(',')]
                 #Incredibly ugly but oh well
                 if 'connectivity:' in line:
                     l=line.lstrip('connectivity:')
