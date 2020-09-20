@@ -794,12 +794,20 @@ def mrci_state_energies_grab(file):
     mult_dict={}
     state_energies=[];Energy=0.0
     string='STATE '
+    prev_grabbed_blockinfo=False
     with open(file) as f:
         for line in f:
+            #print("line:", line)
+            #print("prev_grabbed_blockinfo:", prev_grabbed_blockinfo)
+            #print("grab_blockinfo:", grab_blockinfo)
             #Note. Grabbing block info from CASSCF output
             if '<<<<<<<<<<<<<<<<<<INITIAL CI STATE CHECK>>>>>>>>>>>>>>>>>>' in line:
-                grab_blockinfo = True
-                continue
+                if prev_grabbed_blockinfo is False:
+                    grab_blockinfo = True
+                    prev_grabbed_blockinfo=True
+                    continue
+                else:
+                    grab_blockinfo=False
             if grab_blockinfo is True:
                 if 'BLOCK' in line:
                     blocknum = int(line.split()[1])
@@ -807,6 +815,7 @@ def mrci_state_energies_grab(file):
                     roots = int(line.split()[5])
                     block_dict[blocknum] = (mult,roots)
                 #Only reading 2 blocks (two multiplicities)
+                #Unncessary?
                 if len(block_dict) == 2:
                     grab_blockinfo = False
             #Grabbing actual MRCI state energies
@@ -816,7 +825,7 @@ def mrci_state_energies_grab(file):
                 if len(state_energies) == current_roots:
                     mult_dict[currentmult] = state_energies
                     state_energies=[]
-            #Gettin info about what block we are currently reading in the output
+            #Getting info about what block we are currently reading in the output
             if '*              CI-BLOCK' in line:
                 blockgrab=True
                 currentblock=int(line.split()[-2])
