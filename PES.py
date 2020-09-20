@@ -1441,7 +1441,7 @@ def PhotoElectronSpectrum(theory=None, fragment=None, InitialState_charge=None, 
             #Add nel,norb and nroots lines back in. Also determinant printing option
             print("theory.orcablocks :", theory.orcablocks)
             
-            #If CASSCF block, trim and replace
+            #If CASSCF block present, trim and replace
             if '%casscf' in theory.orcablocks:
                             #Removing nel/norb/nroots lines if user added
                 for line in theory.orcablocks.split('\n'):
@@ -1453,12 +1453,11 @@ def PhotoElectronSpectrum(theory=None, fragment=None, InitialState_charge=None, 
                         theory.orcablocks=theory.orcablocks.replace(line,'')
                     if 'maxiter' in line:
                         theory.orcablocks=theory.orcablocks.replace(line,'')
-                
                 theory.orcablocks = theory.orcablocks.replace('\n\n','\n')    
                 theory.orcablocks = theory.orcablocks.replace('%casscf', '%casscf\n'  + "nel {}\n".format(MRCI_Initial[0]) +
                                                           "norb {}\n".format(MRCI_Initial[1]) + "nroots {}\n".format(1))
             else:
-                 theory.orcablocks= theory.orcablocks + '%casscf\n'  + "nel {}\n".format(MRCI_Initial[0]) + "norb {}\n".format(MRCI_Initial[1]) + "nroots {}\n".format(1)
+                 theory.orcablocks= theory.orcablocks + '%casscf\n'  + "nel {}\n".format(MRCI_Initial[0]) + "norb {}\n".format(MRCI_Initial[1]) + "nroots {}\nend\n".format(1)
             print("theory.orcablocks :", theory.orcablocks)
             #Enforcing CAS-CI
             if 'noiter' not in theory.orcasimpleinput.lower():
