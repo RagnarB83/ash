@@ -63,6 +63,7 @@ def contourplot(surfacedictionary, label='Label',x_axislabel='Coord', y_axislabe
                 interpolparameter=10, colormap='inferno_r', dpi=200, imageformat='png', RelativeEnergy=True, numcontourlines=500,
                 contour_alpha=0.75, contourline_color='black', clinelabels=False, contour_values=None):
     
+    #Relative energy conversion (if RelativeEnergy is True)
     conversionfactor = { 'kcal/mol' : 627.50946900, 'kcalpermol' : 627.50946900, 'kJ/mol' : 2625.499638, 'kJpermol' : 2625.499638, 
                         'eV' : 27.211386245988, 'cm-1' : 219474.6313702 }
     e=[]
@@ -116,11 +117,13 @@ def contourplot(surfacedictionary, label='Label',x_axislabel='Coord', y_axislabe
 
         e_new=[]
         curr=[]
+
         for yitem in y:
             for xitem in x:
                 for nz in range(0,len(st)):
                     if (xitem,yitem) == st[nz][0:2]:
                         curr.append(st[nz][2])
+
             e_new.append(curr)
             curr=[]
         Z = e_new
@@ -146,9 +149,7 @@ def contourplot(surfacedictionary, label='Label',x_axislabel='Coord', y_axislabe
         print("Using cubic power:", interpolparameter)
         #Cubic interpolation. Default power is 10 (should be generally good)
         pw = interpolparameter #power of the smoothing function
-        #print(X)
         X = zoom(X, pw, mode='nearest')
-
         #print(X[0])
         if X[0][-1] == 0.0:
             print(X[0])
@@ -163,6 +164,11 @@ def contourplot(surfacedictionary, label='Label',x_axislabel='Coord', y_axislabe
         Z = zoom(Z, pw, mode='nearest')
     #Filled contours. 
     print("Using {} numcontourlines for colormap".format(numcontourlines))
+    
+    #Clearing plt object in case previous plot
+    plt.clf()
+    
+    #Fille contourplot
     contour_surface=plt.contourf(X, Y, Z, numcontourlines, alpha=contour_alpha, cmap=colormap)
     
     #Contour lines. numcontourlines is 50 by default 

@@ -1288,7 +1288,7 @@ def PhotoElectronSpectrum(theory=None, fragment=None, InitialState_charge=None, 
                           MRCI_Initial=None, MRCI_Final = None):
     blankline()
     print(bcolors.OKGREEN,"-------------------------------------------------------------------",bcolors.ENDC)
-    print(bcolors.OKGREEN,"PhotoElectronSpectrum: Calculating PES spectra via TDDFT and Dyson-norm approach",bcolors.ENDC)
+    print(bcolors.OKGREEN,"PhotoElectronSpectrum: Calculating PES spectra via TDDFT/CAS/MRCI and Dyson-norm approach",bcolors.ENDC)
     print(bcolors.OKGREEN,"-------------------------------------------------------------------",bcolors.ENDC)
     blankline()
     print("Numcores used for WFoverlap: ", numcores)
@@ -1435,23 +1435,30 @@ def PhotoElectronSpectrum(theory=None, fragment=None, InitialState_charge=None, 
             print("Modifying MRCI block for initial state, CAS({},{})".format(MRCI_Initial[0],MRCI_Initial[1]))
             print("{} electrons in {} orbitals".format(MRCI_Initial[0],MRCI_Initial[1]))
             print("WARNING: MRCI determinant-printing read will only work for ORCA-current or ORCA 5.0, not older ORCA versions like ORCA 4.2")
-            #Removing nel/norb/nroots lines if user added
-            for line in theory.orcablocks.split('\n'):
-                if 'nel' in line:
-                    theory.orcablocks=theory.orcablocks.replace(line,'')
-                if 'norb' in line:
-                    theory.orcablocks=theory.orcablocks.replace(line,'')
-                if 'nroots' in line:
-                    theory.orcablocks=theory.orcablocks.replace(line,'')
-                if 'maxiter' in line:
-                    theory.orcablocks=theory.orcablocks.replace(line,'')
-            theory.orcablocks = theory.orcablocks.replace('\n\n','\n')
+
 
             #USING CASSCF block to define reference
             #Add nel,norb and nroots lines back in. Also determinant printing option
             print("theory.orcablocks :", theory.orcablocks)
-            theory.orcablocks = theory.orcablocks.replace('%casscf', '%casscf\n'  + "nel {}\n".format(MRCI_Initial[0]) +
+            
+            #If CASSCF block, trim and replace
+            if '%casscf' in theory.orcablocks:
+                            #Removing nel/norb/nroots lines if user added
+                for line in theory.orcablocks.split('\n'):
+                    if 'nel' in line:
+                        theory.orcablocks=theory.orcablocks.replace(line,'')
+                    if 'norb' in line:
+                        theory.orcablocks=theory.orcablocks.replace(line,'')
+                    if 'nroots' in line:
+                        theory.orcablocks=theory.orcablocks.replace(line,'')
+                    if 'maxiter' in line:
+                        theory.orcablocks=theory.orcablocks.replace(line,'')
+                
+                theory.orcablocks = theory.orcablocks.replace('\n\n','\n')    
+                theory.orcablocks = theory.orcablocks.replace('%casscf', '%casscf\n'  + "nel {}\n".format(MRCI_Initial[0]) +
                                                           "norb {}\n".format(MRCI_Initial[1]) + "nroots {}\n".format(1))
+            else:
+                 theory.orcablocks= theory.orcablocks + '%casscf\n'  + "nel {}\n".format(MRCI_Initial[0]) + "norb {}\n".format(MRCI_Initial[1]) + "nroots {}\n".format(1)
             print("theory.orcablocks :", theory.orcablocks)
             #Enforcing CAS-CI
             if 'noiter' not in theory.orcasimpleinput.lower():
