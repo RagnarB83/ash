@@ -1778,7 +1778,7 @@ def PhotoElectronSpectrum(theory=None, fragment=None, InitialState_charge=None, 
 
             #Adding MRCI+Q to simpleinputline
             #TODO: Remove as we may want another MRCI method
-            if 'MRCI+Q' in theory.orcasimpleinput:
+            if 'MRCI+Q' not in theory.orcasimpleinput:
                 theory.orcasimpleinput = theory.orcasimpleinput + ' MRCI+Q' 
 
         # For orbital analysis
