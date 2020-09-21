@@ -1042,10 +1042,14 @@ def grab_dets_from_MRCI_output(file):
     list_of_states=[]
     detgrab=False
     grabrange=False
+    dummycount=0
     with open(file) as f:
         for line in f:
             if 'Program Version 4.2.1 -  RELEASE' in line:
                 sys.exit('MRCI-determinant read will not work for ORCA 4.2.1 and older!')
+            if 'Total number of orbitals            ...' in line:
+                totorbitals=int(line.split()[-1])
+                print("totorbitals:", totorbitals)
             #Getting orbital ranges
             # Internal (doubly occ)and external orbitals (empty)
             if grabrange is True:
@@ -1058,6 +1062,9 @@ def grab_dets_from_MRCI_output(file):
                 if 'External' in line:
                     external=int(line.split()[-2])
                     external_tuple = tuple([0] * external)
+                    #First index of external list
+                    external_first=int(line.split()[1])
+                    
             if 'Determined orbital ranges:' in line:
                 grabrange=True
             if 'Number of rotation parameters' in line:
@@ -1090,13 +1097,16 @@ def grab_dets_from_MRCI_output(file):
                 #Here reading CFG line. Grabbing configuration
                 #Also
                 if '[' in line and 'CFG' in line:
+                    
                     hole_indices=[]
                     particle_indices=[]
-                    print("--------------------------------------------------")
+                    print("----------------------------------------------------------------------------------------")
                     print("line:", line)
                     cfg = line.split()[-1]
-                    coeff = float(line.split()[0])
-                    state.configurations[cfg] = coeff
+                    #This is the weight of this configuration, not CI coefficient
+                    weight = float(line.split()[0])
+                    print("weight:", weight)
+                    state.configurations[cfg] = weight
                     #Reading CFG line and determining hole/particle excitations outside active space
                     if 'h---h---' in line and line.count('p')==0:
                         #CAS excitation
@@ -1172,7 +1182,9 @@ def grab_dets_from_MRCI_output(file):
                         exit()    
                         
                 if '[' in line and 'CFG' not in line:
-                    print("line:", line)
+                    dummycount+=1
+                    print("dummycount:", dummycount)
+                    print("Determinant line:", line)
                     det = line.split()[0]
                     #print("det:", det)
                     detlist=[i for i in det.replace('[','').replace(']','')]
@@ -1189,21 +1201,303 @@ def grab_dets_from_MRCI_output(file):
                         elif j == 'd':
                             detlist2.append(2)
                     print("detlist2:", detlist2)
+                    
+                    
+                    
                     #Modifying internal_tuple for possible holes
                     print("internal_tuple :", internal_tuple)
-                    #TODO
-                    #Modifying external_tuple for possible particles
-                    #TODO                    
-                    print("external_tuple :", external_tuple)
-                    
+                    #CASE: 1 HOLES  0 PARTICLES:
+                    if len(hole_indices) == 1 and len(particle_indices) == 0:
+                        holeindex=hole_indices[0]
+                        print("Modifying internal_tuple")                        
+                        lst_internaltuple=list(internal_tuple)
+                        #Getting spinlabel of internal electron where hole was created from detlist (first index in bracket)
+                        spinlabelh1p0int=detlist2[0]
+                        lst_internaltuple[holeindex] = spinlabelh1p0int
+                        modinternal_tuple=tuple(lst_internaltuple)
+                        print("Mod internal_tuple :", modinternal_tuple)
+                        #Removing hole orb from detlist
+                        moddetlist2=detlist2[1:]
+                        print("Mod active tuple :", detlist2)
+                        #Unmodified external
+                        modexternal_tuple=external_tuple
+                    #CASE: 2 HOLES  0 PARTICLES:
+                    elif len(hole_indices) == 2 and len(particle_indices) == 0:
+                        moddetlist2=detlist2
+                        holeindex1=hole_indices[0]
+                        holeindex2=hole_indices[1]
+                        
+                        #SubCase: Double internal hole. Means no spin-label in bracket for this
+                        if holeindex1 == holeindex2:
+                            print("Same holeindex")
+                            lst_internaltuple=list(internal_tuple)
+                            lst_internaltuple[holeindex1] = 0
+                            print("lst_internaltuple:", lst_internaltuple)
+                            modinternal_tuple=tuple(lst_internaltuple)
+                            print("Mod internal_tuple :", modinternal_tuple)
+                            #No modification to detlist2 needed
+                        #Subcase: Not doubly internal hole.
+                        else:
+                            print("Not same holeindex")
+                            print("moddetlist2:", moddetlist2)
+                            spinlabelh2p0int_1=detlist2[0]
+                            spinlabelh2p0int_2=detlist2[1]
+                            lst_internaltuple=list(internal_tuple)
+                            lst_internaltuple[holeindex1] = spinlabelh2p0int_1
+                            lst_internaltuple[holeindex2] = spinlabelh2p0int_2
+                            print("lst_internaltuple:", lst_internaltuple)
+                            modinternal_tuple=tuple(lst_internaltuple)
+                            print("Mod internal_tuple :", modinternal_tuple)
+                            #Modification to detlist
+                            moddetlist2=detlist2[2:]
+                        #Unmodified external
+                        modexternal_tuple=external_tuple
+                    #CASE: 0 HOLE  1 PARTICLE:
+                    elif len(hole_indices) == 0 and len(particle_indices) == 1:
+                        particleindex1=particle_indices[0]
+                        #Particleposition in external list
+                        particleposition=particleindex1-external_first
+                        print("particleposition in external list:", particleposition)
+                        print("Modifying external")
+                        spinlabelh0p1ext=detlist2[-1]
+                        lst_externaltuple=list(external_tuple)
+                        lst_externaltuple[particleposition] = spinlabelh0p1ext
+                        modexternal_tuple=tuple(lst_externaltuple)
+                        print("Mod external tuple :", modexternal_tuple)
+                        #Removed particle spin from detlist
+                        moddetlist2=detlist2[:-1]
+                        
+                        #Unmodified internal
+                        modinternal_tuple=internal_tuple
+                    #CASE: 1 HOLE  1 PARTICLE:
+                    elif len(hole_indices) == 1 and len(particle_indices) == 1:
+                        holeindex=hole_indices[0]
+                        particleindex1=particle_indices[0]
+                        #Particleposition in external list
+                        particleposition=particleindex1-external_first
+                        
+                        #Modifying internal list
+                        spinlabelh1p1int=detlist2[0]
+                        lst_internaltuple=list(internal_tuple)
+                        lst_internaltuple[holeindex] = spinlabelh1p1int
+                        modinternal_tuple=tuple(lst_internaltuple)
+                        print("Mod internal_tuple :", modinternal_tuple)
+                        #Modifying external list
+                        spinlabelh1p1ext=detlist2[-1]
+                        lst_externaltuple=list(external_tuple)
+                        lst_externaltuple[particleposition] = spinlabelh1p1ext
+                        modexternal_tuple=tuple(lst_externaltuple)
+                        print("Mod external tuple :", modexternal_tuple)
+                        #Modifying detlist
+                        moddetlist2=detlist2[1:-1]
+                    #CASE: 0 HOLE  2 PARTICLES:                        
+                    elif len(hole_indices) == 0 and len(particle_indices) == 2:
+                        particleindex1=particle_indices[0]
+                        particleindex2=particle_indices[1]
+                        #Particleposition in external list
+                        particleposition1=particleindex1-external_first
+                        particleposition2=particleindex2-external_first                        
+                        #Modifying external list
+                        #SubCase: Double particle position. Means no spin-label in bracket for this
+                        if particleindex1 == particleindex2:
+                            print("Particle indices the same")
+                            lst_externaltuple=list(external_tuple)
+                            lst_externaltuple[particleposition1] = 3
+                            modexternal_tuple=tuple(lst_externaltuple)
+                            print("Mod external tuple :", modexternal_tuple)
+                            
+                            #Modifying active detlist
+                            moddetlist2=detlist2
+                            
+                        else:
+                            print("Particle indices NOT the same")
+                            spinlabelh0p2_1ext=detlist2[-2]
+                            spinlabelh0p2_2ext=detlist2[-1]
+                            lst_externaltuple=list(external_tuple)
+                            lst_externaltuple[particleposition1] = spinlabelh0p2_1ext
+                            lst_externaltuple[particleposition2] = spinlabelh0p2_2ext
+                            modexternal_tuple=tuple(lst_externaltuple)
+                            print("Mod external tuple :", modexternal_tuple)
+                            #Modifying active detlist
+                            moddetlist2=detlist2[:-2]                        
+                        
+                        #Unmodified internal
+                        modinternal_tuple=internal_tuple
+                        
+                        
+                    #CASE: 1 HOLE  2 PARTICLES:                        
+                    elif len(hole_indices) == 1 and len(particle_indices) == 2:
+                        #Grabbing immediately
+                        moddetlist2=detlist2
+                        holeindex=hole_indices[0]
+                        particleindex1=particle_indices[0]
+                        particleindex2=particle_indices[1]
+                        #Particleposition in external list
+                        particleposition1=particleindex1-external_first
+                        particleposition2=particleindex2-external_first
+                        
+                        #Modifying internal list
+                        spinlabelh1p2_1int=detlist2[0]
+                        lst_internaltuple=list(internal_tuple)
+                        lst_internaltuple[holeindex] = spinlabelh1p2_1int
+                        modinternal_tuple=tuple(lst_internaltuple)
+                        print("Mod internal_tuple :", modinternal_tuple)
+                        #Modifying active detlist for hole
+                        moddetlist2=moddetlist2[1:]
+                        
+                        #Modifying external list
+                        #SubCase: Double particle position. Means no spin-label in bracket for this
+                        if particleindex1 == particleindex2:
+                            print("Particle indices the same")
+                            lst_externaltuple=list(external_tuple)
+                            lst_externaltuple[particleposition1] = 3
+                            modexternal_tuple=tuple(lst_externaltuple)
+                            print("Mod external tuple :", modexternal_tuple)
+                            
+
+                            
+                        else:
+                            print("Particle indices NOT the same")
+                            spinlabelh1p2_1ext=detlist2[-2]
+                            spinlabelh1p2_2ext=detlist2[-1]
+                            lst_externaltuple=list(external_tuple)
+                            lst_externaltuple[particleposition1] = spinlabelh1p2_1ext
+                            lst_externaltuple[particleposition2] = spinlabelh1p2_2ext
+                            modexternal_tuple=tuple(lst_externaltuple)
+                            print("Mod external tuple :", modexternal_tuple)
+                            #Modifying active detlist
+                            moddetlist2=moddetlist2[:-2]
+                        
+
+                    #CASE: 2 HOLES  2 PARTICLES:                       
+                    elif len(hole_indices) == 2 and len(particle_indices) == 2:
+                        #Grab this immediately
+                        moddetlist2=detlist2
+                        holeindex1=hole_indices[0]
+                        holeindex2=hole_indices[1]
+                        particleindex1=particle_indices[0]
+                        particleindex2=particle_indices[1]
+                        #Particleposition in external list
+                        particleposition1=particleindex1-external_first
+                        particleposition2=particleindex2-external_first
+                        
+                        #Modifying internal list
+                        #SubCase: Double internal hole. Means no spin-label in bracket for this
+                        if holeindex1 == holeindex2:
+                            print("Same holeindex")
+                            spinlabelh2p2int=0
+                            lst_internaltuple=list(internal_tuple)
+                            lst_internaltuple[holeindex1] = spinlabelh2p2int
+                            print("lst_internaltuple:", lst_internaltuple)
+                            modinternal_tuple=tuple(lst_internaltuple)
+                            print("Mod internal_tuple :", modinternal_tuple)
+                            #No modification to detlist2 needed
+                        #Subcase: Not doubly internal hole.
+                        else:
+                            print("Not same holeindex")
+                            spinlabelh2p2_1int=detlist2[0]
+                            spinlabelh2p2_2int=detlist2[1]
+                            lst_internaltuple=list(internal_tuple)
+                            lst_internaltuple[holeindex1] = spinlabelh2p2_1int
+                            lst_internaltuple[holeindex2] = spinlabelh2p2_2int
+                            print("lst_internaltuple:", lst_internaltuple)
+                            modinternal_tuple=tuple(lst_internaltuple)
+                            print("Mod internal_tuple :", modinternal_tuple)
+                            #Modification to detlist
+                            moddetlist2=moddetlist2[2:]
+                        
+                        #Modifying external list
+                        #SubCase: Double particle position. Means no spin-label in bracket for this
+                        if particleindex1 == particleindex2:
+                            print("Particle indices the same")
+                            lst_externaltuple=list(external_tuple)
+                            lst_externaltuple[particleposition1] = 3
+                            modexternal_tuple=tuple(lst_externaltuple)
+                            print("Mod external tuple :", modexternal_tuple)
+                            #No modification to detlist2 needed
+                        else:
+                            print("Particle indices NOT the same")
+                            spinlabelh2p2_1ext=detlist2[-2]
+                            spinlabelh2p2_2ext=detlist2[-1]
+                            lst_externaltuple=list(external_tuple)
+                            lst_externaltuple[particleposition1] = spinlabelh2p2_1ext
+                            lst_externaltuple[particleposition2] = spinlabelh2p2_2ext
+                            modexternal_tuple=tuple(lst_externaltuple)
+                            print("Mod external tuple :", modexternal_tuple)
+                            #Modifying active detlist
+                            moddetlist2=moddetlist2[:-2]                        
+                        
+                        
+                    #CASE: 2 HOLE  1 PARTICLE:   
+                    elif len(hole_indices) == 2 and len(particle_indices) == 1:
+                        moddetlist2=detlist2
+                        holeindex1=hole_indices[0]
+                        holeindex2=hole_indices[1]
+                        particleindex1=particle_indices[0]
+                        #Particleposition in external list
+                        particleposition1=particleindex1-external_first
+                        
+                        #Modifying internal list
+                        #SubCase: Double internal hole. Means no spin-label in bracket for this
+                        if holeindex1 == holeindex2:
+                            print("Same holeindex")
+                            spinlabelh2p1int=0
+                            lst_internaltuple=list(internal_tuple)
+                            lst_internaltuple[holeindex1] = spinlabelh2p1int
+                            print("lst_internaltuple:", lst_internaltuple)
+                            modinternal_tuple=tuple(lst_internaltuple)
+                            print("Mod internal_tuple :", modinternal_tuple)
+                            #No modification to detlist2 needed
+                        #Subcase: Not doubly internal hole.
+                        else:
+                            print("Not same holeindex")
+                            spinlabelh2p1_1int=detlist2[0]
+                            spinlabelh2p1_2int=detlist2[1]
+                            lst_internaltuple=list(internal_tuple)
+                            lst_internaltuple[holeindex1] = spinlabelh2p1_1int
+                            lst_internaltuple[holeindex2] = spinlabelh2p1_2int
+                            print("lst_internaltuple:", lst_internaltuple)
+                            modinternal_tuple=tuple(lst_internaltuple)
+                            print("Mod internal_tuple :", modinternal_tuple)
+                            #Modification to detlist
+                            moddetlist2=moddetlist2[2:]
+
+                        #Modifying external
+                        lst_externaltuple=list(external_tuple)
+                        print("external_tuple:", external_tuple)
+                        spinlabelh2p1_1ext=detlist2[-1]
+                        lst_externaltuple[particleposition1] = spinlabelh2p1_1ext
+                        modexternal_tuple=tuple(lst_externaltuple)
+                        print("Mod external tuple :", modexternal_tuple)
+                        
+                        #Modifying detlist
+                        moddetlist2=moddetlist2[:-1]                        
+                        
+
+                    #CASE: NO HOLES, NO PARTICLES                     
+                    else:
+                        modinternal_tuple=internal_tuple
+                        modexternal_tuple=external_tuple
+                        moddetlist2=detlist2
+                        
                     #combining
-                    det_tuple=internal_tuple+tuple(detlist2)+external_tuple
-                    print("det_tuple : ", det_tuple)
+                    det_tuple=modinternal_tuple+tuple(moddetlist2)+modexternal_tuple
+                    print("det_tuple ({}): {}".format(len(det_tuple),det_tuple))
+                    
+                    assert len(det_tuple) == totorbitals, "Orbital tuple ({}) not matching total number of orbitals ({})".format(len(det_tuple),totorbitals)
+                    #if len(det_tuple) == 22:
+                    #    print("problem")
+                    #    exit()
+                    #if len(det_tuple) != totorbitals:
+                    #    print("XXXXXXXXX")
+                    
+                    #This is the CI coeffient
                     coeff = float(line.split()[-1])
-                    #print("coeff : ", coeff)
+                    print("coeff : ", coeff)
                     state.determinants[det_tuple] = coeff
                     #print("state.determinants :", state.determinants)
-                    
+                    if dummycount == 7416:
+                        exit()
 
 
                     #CASE: CFG contains only 2 and 0s. That means a situation where CFG and Det is same thing
@@ -1945,7 +2239,6 @@ def PhotoElectronSpectrum(theory=None, fragment=None, InitialState_charge=None, 
 
             print("Grabbing determinants from Initial State output")
             init_state = grab_dets_from_MRCI_output(stateI.outfile)
-            print("RB here")
             det_init = format_ci_vectors(init_state[Initialstate_mult])
 
             writestringtofile(det_init, "dets_init")

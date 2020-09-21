@@ -3,7 +3,6 @@ from functions_solv import *
 from functions_coords import *
 from functions_general import *
 import elstructure_functions
-import settings_solvation
 import constants
 import multiprocessing as mp
 
