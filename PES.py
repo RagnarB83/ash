@@ -1588,7 +1588,7 @@ def PhotoElectronSpectrum(theory=None, fragment=None, InitialState_charge=None, 
                           Ionizedstate_charge=None, Ionizedstate_mult=None, numionstates=50, path_wfoverlap=None, tda=True,
                           brokensym=False, HSmult=None, atomstoflip=None, initialorbitalfiles=None, Densities='SCF', densgridvalue=100,
                           CAS=False, CAS_Initial=None, CAS_Final = None, memory=40000, numcores=1, noDyson=False, CASCI=False, MRCI=False,
-                          MRCI_Initial=None, MRCI_Final = None):
+                          MRCI_Initial=None, MRCI_Final = None, tprintwfvalue=1e-16):
     blankline()
     print(bcolors.OKGREEN,"-------------------------------------------------------------------",bcolors.ENDC)
     print(bcolors.OKGREEN,"PhotoElectronSpectrum: Calculating PES spectra via TDDFT/CAS/MRCI and Dyson-norm approach",bcolors.ENDC)
@@ -1715,6 +1715,7 @@ def PhotoElectronSpectrum(theory=None, fragment=None, InitialState_charge=None, 
         theory.extraline=theory.extraline+"%method\n"+"frozencore FC_NONE\n"+"end\n"
 
         if CAS is True:
+            print("Using TprintWF value of ", tprintwfvalue)
             print("Modifying CASSCF block for initial state, CAS({},{})".format(CAS_Initial[0],CAS_Initial[1]))
             print("{} electrons in {} orbitals".format(CAS_Initial[0],CAS_Initial[1]))
 
@@ -1729,12 +1730,13 @@ def PhotoElectronSpectrum(theory=None, fragment=None, InitialState_charge=None, 
             theory.orcablocks = theory.orcablocks.replace('\n\n','\n')
 
             #Add nel,norb and nroots lines back in. Also determinant printing option
-            theory.orcablocks = theory.orcablocks.replace('%casscf', '%casscf\n' + "printwf det\nci TPrintwf 1e-16 end\n" + "nel {}\n".format(CAS_Initial[0]) +
+            theory.orcablocks = theory.orcablocks.replace('%casscf', '%casscf\n' + "printwf det\nci TPrintwf {} end\n".format(tprintwfvalue) + "nel {}\n".format(CAS_Initial[0]) +
                                                           "norb {}\n".format(
                                                               CAS_Initial[1]) + "nroots {}\n".format(1))
             theory.orcablocks = theory.orcablocks.replace('\n\n','\n')
             theory.orcablocks = theory.orcablocks.replace('\n\n','\n')
         if MRCI is True:
+            print("Using TprintWF value of ", tprintwfvalue)
             print("Modifying MRCI block for initial state, CAS({},{})".format(MRCI_Initial[0],MRCI_Initial[1]))
             print("{} electrons in {} orbitals".format(MRCI_Initial[0],MRCI_Initial[1]))
             print("WARNING: MRCI determinant-printing read will only work for ORCA-current or ORCA 5.0, not older ORCA versions like ORCA 4.2")
@@ -1767,11 +1769,15 @@ def PhotoElectronSpectrum(theory=None, fragment=None, InitialState_charge=None, 
                 theory.orcasimpleinput = theory.orcasimpleinput + ' noiter '
 
             #Defining simple MRCI block. States defined
-            theory.orcablocks = theory.orcablocks + "%mrci\n" + "printwf det\nTPrintwf 1e-16\n" + "end"
+            theory.orcablocks = theory.orcablocks + "%mrci\n" + "printwf det\nTPrintwf {}\n".format(tprintwfvalue) + "end"
             #theory.orcablocks = "%mrci\n" + "printwf det\nTPrintwf 1e-16\n" + "newblock {} *\n refs cas({},{}) end\n".format(stateI.mult,MRCI_Initial[0],MRCI_Initial[1])+ "nroots {}\n end\n".format(1) + "end"
             theory.orcablocks = theory.orcablocks.replace('\n\n','\n')
             theory.orcablocks = theory.orcablocks.replace('\n\n','\n')
 
+            #Adding MRCI+Q to simpleinputline
+            #TODO: Remove as we may want another MRCI method
+            if 'MRCI+Q' in theory.orcasimpleinput:
+                theory.orcasimpleinput = theory.orcasimpleinput + ' MRCI+Q' 
 
         # For orbital analysis
         if 'NORMALPRINT' not in theory.orcasimpleinput.upper():
