@@ -812,8 +812,9 @@ def mrci_state_energies_grab(file):
                 if 'BLOCK' in line:
                     blocknum = int(line.split()[1])
                     mult = int(line.split()[3])
-                    roots = int(line.split()[5])
+                    roots = int(line.split("=")[-1])
                     block_dict[blocknum] = (mult,roots)
+                    #print("block_dict:", block_dict)
                 #Only reading 2 blocks (two multiplicities)
                 #Unncessary?
                 if len(block_dict) == 2:
@@ -824,6 +825,7 @@ def mrci_state_energies_grab(file):
                 state_energies.append(Energy)
                 if len(state_energies) == current_roots:
                     mult_dict[currentmult] = state_energies
+                    #print("mult_dict:", mult_dict)
                     state_energies=[]
             #Getting info about what block we are currently reading in the output
             if '*              CI-BLOCK' in line:
