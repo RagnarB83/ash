@@ -1540,33 +1540,14 @@ def grab_dets_from_MRCI_output(file):
 
 
     #Going through
-    print("list_of_states: ", list_of_states)
-    print("list_of_states[0]", list_of_states[0])
-    print("list_of_states[0].__dict__", list_of_states[0].__dict__)
-    #exit()
-    for n,state in enumerate(list_of_states):
-        print("------------------------")
-        print("This is state {}  with mult {} and energy {} and root {}".format(n,state.mult, state.energy, state.root))
-        print("length of state CFGs :", len(state.configurations))
-        print("length of state determinants :", len(state.determinants))
-        print("state.configurations : ", state.configurations)
-        print("state.determinants : ", state.determinants)
-        if len(state.determinants) == 0:
-            print("WARNING!!! No determinant output found.")
-            print("THIS should go away. Disabling for now...")
-            exit()
-            print("Must be because CFG and det is the same. Using CFG info ")
-            print("WARNING!!!")
-            print("state.configurations : ", state.configurations)
-            for cfg in state.configurations.items():
-                bla = cfg[0].replace('[','').replace(']','').replace('CFG','')
-                det = bla.replace(str(2),str(3))
-                det2 = [int(i) for i in det]
-                #det_tuple = tuple(det2)
-                det_tuple = internal_tuple + tuple(det2) + external_tuple
-                coeff = cfg[1]
-                state.determinants[det_tuple] = coeff
-            #print("state.determinants: ", state.determinants)
+    #print("list_of_states[0].__dict__", list_of_states[0].__dict__)
+    #for n,state in enumerate(list_of_states):
+    #    print("------------------------")
+    #    print("This is state {}  with mult {} and energy {} and root {}".format(n,state.mult, state.energy, state.root))
+    #    print("length of state CFGs :", len(state.configurations))
+    #    print("length of state determinants :", len(state.determinants))
+    #    print("state.configurations : ", state.configurations)
+    #    print("state.determinants : ", state.determinants)
 
     #print("list_of_states:", list_of_states)
 
@@ -2253,7 +2234,6 @@ def PhotoElectronSpectrum(theory=None, fragment=None, InitialState_charge=None, 
 
             print("Grabbing determinants from Final State output")
             final_states = grab_dets_from_MRCI_output(Finalstates[0].outfile)
-            print("hhere")
             for fstate in Finalstates:
                 print("fstate: ", fstate)
                 print("fstate.mult :", fstate.mult)
