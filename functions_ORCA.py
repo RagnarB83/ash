@@ -832,3 +832,13 @@ def run_orca_plot(orcadir, filename, option, gridvalue=40,densityfilename=None, 
                        input='5\n7\n4\n{}\n1\n{}\nn\n{}\n10\n11\n\n'.format(gridvalue, plottype,densityfilename), encoding='ascii')
 
     #print(p.returncode)
+    
+#Grab IPs from an EOM-IP calculation
+def grabEOMIPs(file):
+    IPs=[]
+    with open(file) as f:
+        for line in f:
+            if 'IROOT' in line:
+                IP=float(line.split()[4])
+                IPs.append(IP)
+    return IPs

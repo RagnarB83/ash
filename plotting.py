@@ -1,8 +1,21 @@
 import numpy as np
-
 import matplotlib
+#from functions_general import *
 matplotlib.use('Agg')
 import matplotlib.pyplot as plt 
+
+#repeated here so that plotting can be stand-alone
+class BC:
+    HEADER = '\033[95m'
+    OKBLUE = '\033[94m'
+    OKGREEN = '\033[92m'
+    OKMAGENTA= '\033[95m'
+    OKRED= '\033[31m'
+    WARNING = '\033[93m'
+    FAIL = '\033[91m'
+    END = '\033[0m'
+    BOLD = '\033[1m'
+    UNDERLINE = '\033[4m'
 
 def Gaussian(x, mu, strength, sigma):
     "Produces a Gaussian curve"
@@ -12,10 +25,6 @@ def Gaussian(x, mu, strength, sigma):
     #bandshape = (strength / (sigma*np.sqrt(2*np.pi)))  * np.exp(-1*((x-mu))**2/(2*(sigma**2)))
     bandshape = (strength)  * np.exp(-1*((x-mu))**2/(2*(sigma**2)))
     return bandshape
-
-
-
-
 
 
 #reactionprofile_plot
@@ -190,3 +199,71 @@ def contourplot(surfacedictionary, label='Label',x_axislabel='Coord', y_axislabe
     plt.ylabel(y_axislabel)
     plt.savefig('Surface{}.{}'.format(label,imageformat), format=imageformat, dpi=dpi)
     print("Created PNG file: Surface{}.{}".format(label,imageformat))
+    
+    
+#plot_Spectrum reads stick-values (e.g. absorption energie or IPs) and intensities, broadens spectrum (writes out dat and stk files) and then creates image-file using Matplotlib.
+#TODO: Currently only Gaussian broadening. Add Lorentzian and Voight
+def plot_Spectrum(xvalues=None, yvalues=None, plotname='Spectrum', range=None, unit='eV', broadening=0.1, points=10000, imageformat='png', dpi=200):
+    if xvalues is None or yvalues is None:
+        print("plot_Spectrum requires xvalues and yvalues variables")
+        exit(1)
+
+    assert len(xvalues) == len(yvalues), "List of Dysonnorms not same size as list of IPs." 
+
+    start=range[0]
+    finish=range[1]
+
+    print("")
+    print(BC.OKGREEN,"-------------------------------------------------------------------",BC.END)
+    print(BC.OKGREEN,"plot_Spectrum: Plotting broadened spectrum",BC.END)
+    print(BC.OKGREEN,"-------------------------------------------------------------------",BC.END)
+    print("")
+    print("xvalues ({}): {}".format(len(xvalues),xvalues))
+    print("yvalues ({}): {}".format(len(yvalues),yvalues))
+
+
+    #########################
+    # Plot spectra.
+    ########################
+    print(BC.OKGREEN, "Plotting-range chosen:", start, "-", finish, unit, "with ", points, "points and ",
+            broadening, "{} broadening.".format(unit), BC.END)
+
+    # X-range
+    x = np.linspace(start, finish, points)
+    stkheight = 0.5
+    strength = 1.0
+
+    spectrum = 0
+    for peak, strength in zip(xvalues, yvalues):
+        broadenedpeak = Gaussian(x, peak, strength, broadening)
+        spectrum += broadenedpeak
+
+    #Save dat file
+    with open(plotname+".dat", 'w') as tdatfile:
+        for i,j in zip(x,spectrum):
+            tdatfile.write("{:13.10f} {:13.10f} \n".format(i,j))
+    #Save stk file
+    with open(plotname+".stk", 'w') as tstkfile:
+        for b,c in zip(xvalues,yvalues):
+            tstkfile.write("{:13.10f} {:13.10f} \n".format(b,c))
+
+    print("Wrote file:", plotname+".dat")
+    print("Wrote file:", plotname+".stk")
+    
+    ##################################
+    # Plot with Matplotlib
+    ####################################
+    import matplotlib.pyplot as plt
+    fig, ax = plt.subplots()
+
+    ax.plot(x, spectrum, 'C3', label=plotname)
+    ax.stem(xvalues, yvalues, label=plotname, markerfmt=' ', basefmt=' ', linefmt='C3-', use_line_collection=True)
+    plt.xlabel(unit)
+    plt.ylabel('Intensity')
+    #################################
+    plt.xlim(start, finish)
+    plt.legend(shadow=True, fontsize='small')
+    plt.savefig(plotname + '.'+imageformat, format=imageformat, dpi=dpi)
+    # plt.show()
+    print("Wrote file:", plotname+"."+imageformat)
+    print(BC.OKGREEN,"ALL DONE!", BC.END)

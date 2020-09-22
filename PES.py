@@ -1571,7 +1571,7 @@ def PhotoElectronSpectrum(theory=None, fragment=None, InitialState_charge=None, 
                           Ionizedstate_charge=None, Ionizedstate_mult=None, numionstates=50, path_wfoverlap=None, tda=True,
                           brokensym=False, HSmult=None, atomstoflip=None, initialorbitalfiles=None, Densities='SCF', densgridvalue=100,
                           CAS=False, CAS_Initial=None, CAS_Final = None, memory=40000, numcores=1, noDyson=False, CASCI=False, MRCI=False,
-                          MRCI_Initial=None, MRCI_Final = None, tprintwfvalue=1e-16):
+                          MRCI_Initial=None, MRCI_Final = None, tprintwfvalue=1e-16, MRCI_CASCI_Final=True):
     blankline()
     print(bcolors.OKGREEN,"-------------------------------------------------------------------",bcolors.ENDC)
     print(bcolors.OKGREEN,"PhotoElectronSpectrum: Calculating PES spectra via TDDFT/CAS/MRCI and Dyson-norm approach",bcolors.ENDC)
@@ -1590,6 +1590,12 @@ def PhotoElectronSpectrum(theory=None, fragment=None, InitialState_charge=None, 
         print("CASSCF option active!")
         if CASCI is True:
             print("CASCI option on! Initial state will be done with CASSCF while Final ionized states will do CAS-CI")
+
+    if MRCI is true:
+        print("MRCI option active!")
+        print("Will do CASSCF orbital optimization for initial-state, followed by MRCI")
+        if MRCI_CASCI_Final is True:
+            print("Will do CAS-CI reference (using initial-state orbitals) for final-states")
 
 
     if InitialState_charge is None or Initialstate_mult is None or Ionizedstate_charge is None or Ionizedstate_mult is None:
@@ -1748,8 +1754,8 @@ def PhotoElectronSpectrum(theory=None, fragment=None, InitialState_charge=None, 
                  theory.orcablocks= theory.orcablocks + '%casscf\n'  + "nel {}\n".format(MRCI_Initial[0]) + "norb {}\n".format(MRCI_Initial[1]) + "nroots {}\nend\n".format(1)
             print("theory.orcablocks :", theory.orcablocks)
             #Enforcing CAS-CI
-            if 'noiter' not in theory.orcasimpleinput.lower():
-                theory.orcasimpleinput = theory.orcasimpleinput + ' noiter '
+            #if 'noiter' not in theory.orcasimpleinput.lower():
+            #    theory.orcasimpleinput = theory.orcasimpleinput + ' noiter '
 
             #Defining simple MRCI block. States defined
             theory.orcablocks = theory.orcablocks + "%mrci\n" + "printwf det\nTPrintwf {}\n".format(tprintwfvalue) + "end"
@@ -1957,6 +1963,12 @@ def PhotoElectronSpectrum(theory=None, fragment=None, InitialState_charge=None, 
             theory.orcablocks = theory.orcablocks.replace('%casscf', '%casscf\n' + "nel {}\n".format(MRCI_Final[0]) +
                                                           "norb {}\n".format(
                                                               MRCI_Final[1]) + "nroots {}\n".format(numionstates_string) + "mult {}\n".format(MRCI_mults))
+
+            #In Final-state MRCI we would typically use the previous CASSCF-orbitals. Hence CAS-CI and noiter
+            if MRCI_CASCI_Final is True:
+                if 'noiter' not in theory.orcasimpleinput.lower():
+                    theory.orcasimpleinput = theory.orcasimpleinput + ' noiter '
+
 
             #Creating newblock blocks for each multiplicity
             #newblockstring=""
