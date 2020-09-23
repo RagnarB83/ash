@@ -2016,7 +2016,8 @@ class QMMMTheory:
 
             # Region definitions
             self.allatoms=list(range(0,len(self.elems)))
-            self.qmatoms = qmatoms
+            #Sorting qmatoms list
+            self.qmatoms = sorted(qmatoms)
             self.mmatoms=listdiff(self.allatoms,self.qmatoms)
 
             # FROZEN AND ACTIVE ATOMS
@@ -2027,12 +2028,13 @@ class QMMMTheory:
                 self.frozenatoms=[]
             elif actatoms is not None and frozenatoms is None:
                 print("Actatoms list passed to QM/MM object. Will skip all frozen interactions in MM.")
-                self.actatoms = actatoms
+                #Sorting actatoms list
+                self.actatoms = sorted(actatoms)
                 self.frozenatoms = listdiff(self.allatoms, self.actatoms)
                 print("{} active atoms, {} frozen atoms".format(len(self.actatoms), len(self.frozenatoms)))
             elif frozenatoms is not None and actatoms is None:
                 print("Frozenatoms list passed to QM/MM object. Will skip all frozen interactions in MM.")
-                self.frozenatoms = frozenatoms
+                self.frozenatoms = sorted(frozenatoms)
                 self.actatoms = listdiff(self.allatoms, self.frozenatoms)
                 print("{} active atoms, {} frozen atoms".format(len(self.actatoms), len(self.frozenatoms)))
             else:
@@ -2119,7 +2121,7 @@ class QMMMTheory:
 
             #Check if we need linkatoms by getting boundary atoms dict:
             blankline()
-            self.boundaryatoms = get_boundary_atoms(qmatoms, self.coords, self.elems, settings_ash.scale, settings_ash.tol)
+            self.boundaryatoms = get_boundary_atoms(self.qmatoms, self.coords, self.elems, settings_ash.scale, settings_ash.tol)
             
             if len(self.boundaryatoms) >0:
                 print("Found covalent QM-MM boundary. Linkatoms option set to True")
@@ -2157,7 +2159,7 @@ class QMMMTheory:
                 print("Charges of QM atoms set to 0 (since Electrostatic Embedding):")
                 if self.printlevel > 3:
                     for i in self.allatoms:
-                        if i in qmatoms:
+                        if i in self.qmatoms:
                             print("QM atom {} ({}) charge: {}".format(i, self.elems[i], self.charges_mod[i]))
                         else:
                             print("MM atom {} ({}) charge: {}".format(i, self.elems[i], self.charges_mod[i]))
@@ -3533,6 +3535,7 @@ class Fragment:
     def replace_coords(self, elems, coords, conn=False, scale=None, tol=None):
         if self.printlevel >= 2:
             print("Replacing coordinates in fragment.")
+        
         self.elems=elems
         # Adding coords as list of lists. Possible conversion from numpy array below.
         self.coords = [list(i) for i in coords]

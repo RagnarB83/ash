@@ -33,8 +33,13 @@ def timefn(fn):
         return result
     return measure_time
 
-
-
+#Check if list of integers is sorted or not.
+def is_integerlist_ordered(list):
+    list_s=sorted(list)
+    if list == list_s:
+        return True
+    else:
+        return False
 
 
 

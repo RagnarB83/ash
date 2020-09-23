@@ -35,6 +35,16 @@ def geomeTRICOptimizer(theory=None,fragment=None, coordsystem='tric', frozenatom
     except:
         pass
     
+    # TODO:
+
+    #NOTE: We are now sorting actatoms and qmatoms list both here and in QM/MM object
+    #: Alternatively we could sort the actatoms list and qmatoms list in QM/MM object before doing anything. Need to check carefully though....
+    #if is_integerlist_ordered(actatoms) is False:
+    #    print("Problem. Actatoms list is not sorted in ascending order. Please sort this list (and possibly qmatoms list also))")
+    #    exit()
+    
+    
+    
     #Delete constraintsfile unless asked for
     if constraintsinputfile is None:
         try:
@@ -80,9 +90,12 @@ def geomeTRICOptimizer(theory=None,fragment=None, coordsystem='tric', frozenatom
 
     #ActiveRegion option where geomeTRIC only sees the QM part that is being optimized
     if ActiveRegion == True:
+        #Sorting list, otherwise trouble
+        actatoms.sort()
         print("Active Region option Active. Passing only active-region coordinates to geomeTRIC.")
         print("Number of active atoms:", len(actatoms))
         actcoords, actelems = fragment.get_coords_for_atoms(actatoms)
+        
         #Writing act-region coords (only) of Yggdrasill fragment to disk as XYZ file and reading into geomeTRIC
         write_xyzfile(actelems, actcoords, 'initialxyzfiletric')
         mol_geometric_frag=geometric.molecule.Molecule("initialxyzfiletric.xyz")
@@ -128,9 +141,7 @@ def geomeTRICOptimizer(theory=None,fragment=None, coordsystem='tric', frozenatom
                         curr_c, currcoords = currcoords[0], currcoords[1:]
                         full_coords[i] = curr_c
                 self.full_current_coords=full_coords
-
                 #Write out fragment with updated coordinates for the purpose of doing restart
-
                 fragment.replace_coords(fragment.elems, self.full_current_coords, conn=False)
                 fragment.print_system(filename='Fragment-currentgeo.ygg')
 
