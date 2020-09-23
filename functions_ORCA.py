@@ -833,12 +833,29 @@ def run_orca_plot(orcadir, filename, option, gridvalue=40,densityfilename=None, 
 
     #print(p.returncode)
     
-#Grab IPs from an EOM-IP calculation
+#Grab IPs from an EOM-IP calculation and also largest singles amplitudes. Approximation to Dyson norm.
 def grabEOMIPs(file):
     IPs=[]
+    final_singles_amplitudes=[]
+    state_amplitudes=[]
+    stateflag=False
     with open(file) as f:
         for line in f:
             if 'IROOT' in line:
+                state_amplitudes=[]
                 IP=float(line.split()[4])
                 IPs.append(IP)
-    return IPs
+                stateflag=True
+            if stateflag is True:
+                if '-> x' in line:
+                    if line.count("->") == 1:
+                        amplitude=float(line.split()[0])
+                        state_amplitudes.append(amplitude)
+            if 'Percentage singles' in line:
+                #Find dominant singles
+                #print("state_amplitudes:", state_amplitudes)
+                largest=abs(max(state_amplitudes, key=abs))
+                final_singles_amplitudes.append(largest)
+                state_amplitudes=[]
+    assert len(IPs) == len(final_singles_amplitudes), "Something went wrong here"
+    return IPs, final_singles_amplitudes
