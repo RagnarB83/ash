@@ -2434,7 +2434,10 @@ def PhotoElectronSpectrum(theory=None, fragment=None, InitialState_charge=None, 
                 print(bcolors.OKBLUE,"Dyson norms ({}):".format(len(dysonnorms)),bcolors.ENDC)
                 print(dysonnorms)
                 if len(dysonnorms) == 0:
-                    print("List of Dyson norms is empty. Something went wrong. Exiting")
+                    print("List of Dyson norms is empty. Something went wrong with WfOverlap calculation.")
+                    print("Setting Dyson norms to zero and continuing.")
+                    dysonnorms=len(fstate.IPs)*[0.0]
+                    
                     exit()
                 print("")
                 finaldysonnorms=finaldysonnorms+dysonnorms
