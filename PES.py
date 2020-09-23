@@ -1568,7 +1568,7 @@ def grab_dets_from_MRCI_output(file):
 # Calculate PES spectra using the Dyson orbital approach.
 # Memory for WFoverlap in MB. Hardcoded
 def PhotoElectronSpectrum(theory=None, fragment=None, InitialState_charge=None, Initialstate_mult=None,
-                          Ionizedstate_charge=None, Ionizedstate_mult=None, numionstates=50, path_wfoverlap=None, tda=True,
+                          Ionizedstate_charge=None, Ionizedstate_mult=None, numionstates=None, path_wfoverlap=None, tda=True,
                           brokensym=False, HSmult=None, atomstoflip=None, initialorbitalfiles=None, Densities='SCF', densgridvalue=100,
                           CAS=False, CAS_Initial=None, CAS_Final = None, memory=40000, numcores=1, noDyson=False, CASCI=False, MRCI=False,
                           MRCI_Initial=None, MRCI_Final = None, tprintwfvalue=1e-16, MRCI_CASCI_Final=True):
@@ -1580,6 +1580,16 @@ def PhotoElectronSpectrum(theory=None, fragment=None, InitialState_charge=None, 
     print("Numcores used for WFoverlap: ", numcores)
     os.environ["OMP_NUM_THREADS"] = str(numcores)
     print("OMP_NUM_THREADS : ", os.environ["OMP_NUM_THREADS"])
+
+    #Numionstates can be number or list of numbers (states for each multiplicity for CAS/MRCI)
+    if isint(numionstates):
+        numionstates_A=numionstates
+    elif islist(numionstates):
+        #A,B: first and second multiplicity in Ionizedstate_mult
+        numionstates_A=numionstates[0]
+        numionstates_B=numionstates[1]
+        numionstates=numionstates_A+numionstates_B
+
 
     if CAS is True and MRCI is True:
         print("Both CAS and MRCI can not both be True!")
@@ -1623,7 +1633,7 @@ def PhotoElectronSpectrum(theory=None, fragment=None, InitialState_charge=None, 
     # new class for state (Initial, Final etc.) that may differ in charge or spin
     #Will contain energies, MOs, transition energies, IPs etc.
     class MolState:
-        def __init__(self,charge,mult):
+        def __init__(self,charge,mult,numionstates):
 
             self.charge=charge
             self.mult=mult
@@ -1637,7 +1647,10 @@ def PhotoElectronSpectrum(theory=None, fragment=None, InitialState_charge=None, 
             self.restricted=None
             self.GSIP=None
             self.IPs=[]
+            #Energy
             self.ionstates=[]
+            #Number of calculated states for each mult
+            self.numionstates=numionstates
             self.gbwfile=None
             self.outfile=None
             self.cisfile=None
@@ -1651,31 +1664,36 @@ def PhotoElectronSpectrum(theory=None, fragment=None, InitialState_charge=None, 
 
 
     if type(Ionizedstate_mult) is int:
-
-        stateF1 = MolState(charge=Ionizedstate_charge, mult=Ionizedstate_mult)
+        #Only one mult for ionized-state. Using numionstates
+        stateF1 = MolState(charge=Ionizedstate_charge, mult=Ionizedstate_mult,numionstates=numionstates)
         MultipleSpinStates = False
         Finalstates=[stateF1]
         print(bcolors.OKBLUE, "StateF_1: Charge=", Finalstates[0].charge, "Multiplicity", Finalstates[0].mult,
           bcolors.ENDC)
+        print(bcolors.OKBLUE, "StateF_1: Numionstates=", Finalstates[0].numionstates, bcolors.ENDC)        
     #Case list provided for ionized state. Could mean multiple spin states: e.g.  Ionizedstate_mult=[5,7]
     elif type(Ionizedstate_mult) is list:
 
         if len(Ionizedstate_mult) == 1:
             MultipleSpinStates = False
-            stateF1 = MolState(charge=Ionizedstate_charge, mult=Ionizedstate_mult[0])
+            #Only one mult for ionized-state. Using numionstates
+            stateF1 = MolState(charge=Ionizedstate_charge, mult=Ionizedstate_mult[0],numionstates=numionstates)
             Finalstates = [stateF1]
             print(bcolors.OKBLUE, "StateF_1: Charge=", Finalstates[0].charge, "Multiplicity", Finalstates[0].mult,
                   bcolors.ENDC)
+            print(bcolors.OKBLUE, "StateF_1: Numionstates=", numionstates_A, bcolors.ENDC)
         elif len(Ionizedstate_mult) == 2:
             MultipleSpinStates = True
-            stateF1 = MolState(charge=Ionizedstate_charge, mult=Ionizedstate_mult[0])
-            stateF2 = MolState(charge=Ionizedstate_charge, mult=Ionizedstate_mult[1])
+            stateF1 = MolState(charge=Ionizedstate_charge, mult=Ionizedstate_mult[0],numionstates=numionstates_A)
+            stateF2 = MolState(charge=Ionizedstate_charge, mult=Ionizedstate_mult[1],numionstates=numionstates_B)
             Finalstates = [stateF1,stateF2]
             print("Multiple spin states for Final State:")
             print(bcolors.OKBLUE, "StateF_1: Charge=", Finalstates[0].charge, "Multiplicity", Finalstates[0].mult,
                   bcolors.ENDC)
             print(bcolors.OKBLUE, "StateF_2: Charge=", Finalstates[1].charge, "Multiplicity", Finalstates[1].mult,
                   bcolors.ENDC)
+            print(bcolors.OKBLUE, "StateF_1: Numionstates=", Finalstates[0].numionstates, bcolors.ENDC)
+            print(bcolors.OKBLUE, "StateF_2: Numionstates=", Finalstates[1].numionstates, bcolors.ENDC)
         else:
             print("More than Two spin multiplicities are now allowed in Ionizedstate_mult argument")
             exit(1)
@@ -1686,12 +1704,12 @@ def PhotoElectronSpectrum(theory=None, fragment=None, InitialState_charge=None, 
 
 
     print("")
-    print(bcolors.OKBLUE,"Calculated ion states:", numionstates, bcolors.ENDC)
     print("CAS:", CAS)
     print("MRCI:", MRCI)
     if CAS is False and MRCI is False:
+        print("TDDFT option chosen:")
+        print(bcolors.OKBLUE,"Total ion states:", numionstates, bcolors.ENDC)
         print(bcolors.OKBLUE,"TDDFT-calculated ion states:", numionstates-1, bcolors.ENDC)
-    print("")
 
 
 
@@ -1884,7 +1902,8 @@ def PhotoElectronSpectrum(theory=None, fragment=None, InitialState_charge=None, 
 
             #Add nel,norb and nroots lines back in.
             # And both spin multiplicities. Nroots for each
-            numionstates_string = ','.join(str(numionstates) for x in [f.mult for f in Finalstates])
+            #numionstates_string = ','.join(str(numionstates) for x in [f.numionstates for f in Finalstates])
+            numionstates_string = ','.join(str(f.numionstates) for f in Finalstates)
             theory.orcablocks = theory.orcablocks.replace('%casscf', '%casscf\n' + "nel {}\n".format(CAS_Final[0]) +
                                                           "norb {}\n".format(
                                                               CAS_Final[1]) + "nroots {}\n".format(numionstates_string) + "mult {}\n".format(CAS_mults))
@@ -1932,20 +1951,6 @@ def PhotoElectronSpectrum(theory=None, fragment=None, InitialState_charge=None, 
             MRCI_mults = ','.join(str(x) for x in sorted([f.mult for f in Finalstates]))
 
             print("MRCI_mults:", MRCI_mults)
-            numionstates_string = ','.join(str(numionstates) for x in [f.mult for f in Finalstates])
-            print("numionstates_string:", numionstates_string)
-            # Removing nel/norb/nroots lines if user added
-            #for line in theory.orcablocks.split('\n'):
-            #    if 'nroots' in line:
-            #        theory.orcablocks = theory.orcablocks.replace(line, '')
-            #    if 'newblock' in line:
-            #        theory.orcablocks = theory.orcablocks.replace(line, '')
-            #    if 'refs' in line:
-            #        theory.orcablocks = theory.orcablocks.replace(line, '')
-            #    if 'mult' in line:
-            #        theory.orcablocks = theory.orcablocks.replace(line, '')
-            #    if 'refs' in line:
-            #        theory.orcablocks = theory.orcablocks.replace(line, '')
             for line in theory.orcablocks.split('\n'):
                 if 'nel' in line:
                     theory.orcablocks=theory.orcablocks.replace(line,'')
@@ -1959,7 +1964,9 @@ def PhotoElectronSpectrum(theory=None, fragment=None, InitialState_charge=None, 
 
             #Add nel,norb and nroots lines back in.
             # And both spin multiplicities. Nroots for each
-            numionstates_string = ','.join(str(numionstates) for x in [f.mult for f in Finalstates])
+            #numionstates_string = ','.join(str(numionstates) for x in [f.mult for f in Finalstates])
+            numionstates_string = ','.join(str(f.numionstates) for f in Finalstates)
+            print("numionstates_string:", numionstates_string)
             theory.orcablocks = theory.orcablocks.replace('%casscf', '%casscf\n' + "nel {}\n".format(MRCI_Final[0]) +
                                                           "norb {}\n".format(
                                                               MRCI_Final[1]) + "nroots {}\n".format(numionstates_string) + "mult {}\n".format(MRCI_mults))
@@ -2095,6 +2102,7 @@ def PhotoElectronSpectrum(theory=None, fragment=None, InitialState_charge=None, 
             fstate.ionstates = fstates_dict[fstate.mult]
             for ionstate in fstate.ionstates:
                 fstate.IPs.append((ionstate-stateI.energy)*constants.hartoeV)
+            print("Mult: {} IPs: {}".format(fstate.mult,fstate.IPs))
             FinalIPs = FinalIPs + fstate.IPs
             Finalionstates = Finalionstates + fstate.ionstates
     else:
@@ -2155,7 +2163,7 @@ def PhotoElectronSpectrum(theory=None, fragment=None, InitialState_charge=None, 
 
 
     ###########################################
-    # Dyson orbitals for TDDFT STATES
+    # Dyson orbitals for TDDFT STATES/CAS STATES/MRCI STATES
     ###########################################
     if theory.__class__.__name__ == "ORCATheory":
         # Todo: Need to preserve this one as it has been deleted
@@ -2194,6 +2202,7 @@ def PhotoElectronSpectrum(theory=None, fragment=None, InitialState_charge=None, 
         # Create determinant file for ionized TDDFT states
         # Needs Outputfile, CIS-file, restricted-option, XXX, GS multiplicity, number of ion states and states to skip
         # States per Initial and Final options
+        #TDDFT-only:
         statestoextract = [1, numionstates]
         statestoskip = [0, 0]
 
@@ -2353,13 +2362,14 @@ def PhotoElectronSpectrum(theory=None, fragment=None, InitialState_charge=None, 
         print("{:>6d} {:>7d} {:20.11f} {:>8}".format(0, stateI.mult, stateI.energy, "SCF"))
         print("")
         print("Final ionized states:")
-        if CAS is True:
+        if CAS is True or MRCI is True:
             stype='SCF'
             print("{:>6} {:>7} {:^20} {:8} {:10} {:>7}".format("State no.", "Mult", "TotalE (Eh)", "IE (eV)", "Dyson-norm", "State-type"))
             for i, (E, IE, dys) in enumerate(zip(Finalionstates,FinalIPs,finaldysonnorms)):
                 #Getting spinmult
                 if MultipleSpinStates is True:
-                    if i < numionstates:
+                    #Change test. what mult we are in.. TODO: Check this for correctness
+                    if i < Finalstates[0].numionstates:
                         spinmult=Finalstates[0].mult
                     else:
                         spinmult=Finalstates[1].mult
