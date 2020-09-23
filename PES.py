@@ -2446,7 +2446,8 @@ def PhotoElectronSpectrum(theory=None, fragment=None, InitialState_charge=None, 
             print(finaldysonnorms)
             print("")
     else:
-        print("WARNING: Dyson norms not calculated for IP-EOM-CCSD. Instead using dominant singles amplitudes as an approximation")
+        print("")
+        print(bcolors.WARNING,"WARNING: Dyson norms not calculated for IP-EOM-CCSD. Instead using dominant singles amplitudes as an approximation",bcolors.ENDC)
         print("Approximate Dyson norms: ", finaldysonnorms)
 
         assert len(FinalIPs) == len(finaldysonnorms), "List of Dysonnorms not same size as list of IPs."
