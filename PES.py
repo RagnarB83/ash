@@ -1656,7 +1656,7 @@ def PhotoElectronSpectrum(theory=None, fragment=None, InitialState_charge=None, 
             self.cisfile=None
 
     # Always just one StateI object with one charge and one spin multiplicity
-    stateI = MolState(charge=InitialState_charge, mult=Initialstate_mult)
+    stateI = MolState(charge=InitialState_charge, mult=Initialstate_mult,numionstates=1)
     print(bcolors.OKBLUE, "StateI: Charge=", stateI.charge, "Multiplicity", stateI.mult, bcolors.ENDC)
 
     if brokensym is True:
