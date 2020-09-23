@@ -102,6 +102,8 @@ def isint(s):
         return True
     except ValueError:
         return False
+    except TypeError:
+        return False
 
 #Is variable a float
 def isfloat(s):
