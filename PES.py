@@ -1601,7 +1601,7 @@ def PhotoElectronSpectrum(theory=None, fragment=None, InitialState_charge=None, 
         if CASCI is True:
             print("CASCI option on! Initial state will be done with CASSCF while Final ionized states will do CAS-CI")
 
-    if MRCI is true:
+    if MRCI is True:
         print("MRCI option active!")
         print("Will do CASSCF orbital optimization for initial-state, followed by MRCI")
         if MRCI_CASCI_Final is True:
