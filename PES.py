@@ -2646,7 +2646,7 @@ def Read_old_results():
 
 
 def plot_PES_Spectrum(IPs=None, dysonnorms=None, mos_alpha=None, mos_beta=None, plotname='PES-plot',
-                          start=None, finish=None, broadening=0.1, points=10000, hftyp_I=None, MOPlot=False):
+                          start=None, finish=None, broadening=0.1, points=10000, hftyp_I=None, MOPlot=False, matplotlib=True):
     if IPs is None or dysonnorms is None:
         print("plot_PES_Spectrum requires IPs and dysonnorms variables")
         exit(1)
@@ -2762,27 +2762,33 @@ def plot_PES_Spectrum(IPs=None, dysonnorms=None, mos_alpha=None, mos_beta=None, 
     ##################################
     # Plot with Matplotlib
     ####################################
-    import matplotlib.pyplot as plt
-    fig, ax = plt.subplots()
-    if MOPlot is True:
-        # MO-DOSPLOT for initial state. Here assuming MO energies of initial state to be good approximations for IPs
-        ax.plot(x, occDOS_alpha, 'C2', label='alphaMO')
-        ax.stem(stk_alpha2, stk_alpha2height, label='alphaMO', basefmt=" ", markerfmt=' ', linefmt='C2-', use_line_collection=True)
-        if hftyp_I == "UHF":
-            ax.plot(x, occDOS_beta, 'C2', label='betaMO')
-            ax.stem(stk_beta2, stk_beta2height, label='betaMO', basefmt=" ", markerfmt=' ', linefmt='C2-', use_line_collection=True)
+    if matplotlib is True:
+        print("Creating plot with Matplotlib")
+        import matplotlib
+        matplotlib.use('Agg')
+        import matplotlib.pyplot as plt
+        fig, ax = plt.subplots()
+        if MOPlot is True:
+            # MO-DOSPLOT for initial state. Here assuming MO energies of initial state to be good approximations for IPs
+            ax.plot(x, occDOS_alpha, 'C2', label='alphaMO')
+            ax.stem(stk_alpha2, stk_alpha2height, label='alphaMO', basefmt=" ", markerfmt=' ', linefmt='C2-', use_line_collection=True)
+            if hftyp_I == "UHF":
+                ax.plot(x, occDOS_beta, 'C2', label='betaMO')
+                ax.stem(stk_beta2, stk_beta2height, label='betaMO', basefmt=" ", markerfmt=' ', linefmt='C2-', use_line_collection=True)
 
 
-    ##############
-    # TDDFT-STATES
-    ###############
-    ax.plot(x, tddftDOS, 'C3', label='TDDFT')
-    ax.stem(IPs, dysonnorms, label='TDDFT', markerfmt=' ', basefmt=' ', linefmt='C3-', use_line_collection=True)
-    plt.xlabel('eV')
-    plt.ylabel('Intensity')
-    #################################
-    plt.xlim(start, finish)
-    plt.legend(shadow=True, fontsize='small')
-    plt.savefig(plotname + '.png', format='png', dpi=200)
-    # plt.show()
+        ##############
+        # TDDFT-STATES
+        ###############
+        ax.plot(x, tddftDOS, 'C3', label='TDDFT')
+        ax.stem(IPs, dysonnorms, label='TDDFT', markerfmt=' ', basefmt=' ', linefmt='C3-', use_line_collection=True)
+        plt.xlabel('eV')
+        plt.ylabel('Intensity')
+        #################################
+        plt.xlim(start, finish)
+        plt.legend(shadow=True, fontsize='small')
+        plt.savefig(plotname + '.png', format='png', dpi=200)
+        # plt.show()
+    else:
+        print("Skipped Matplotlib part.")
     print(BC.OKGREEN,"ALL DONE!", BC.END)

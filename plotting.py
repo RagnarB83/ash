@@ -203,7 +203,7 @@ def contourplot(surfacedictionary, label='Label',x_axislabel='Coord', y_axislabe
     
 #plot_Spectrum reads stick-values (e.g. absorption energie or IPs) and intensities, broadens spectrum (writes out dat and stk files) and then creates image-file using Matplotlib.
 #TODO: Currently only Gaussian broadening. Add Lorentzian and Voight
-def plot_Spectrum(xvalues=None, yvalues=None, plotname='Spectrum', range=None, unit='eV', broadening=0.1, points=10000, imageformat='png', dpi=200):
+def plot_Spectrum(xvalues=None, yvalues=None, plotname='Spectrum', range=None, unit='eV', broadening=0.1, points=10000, imageformat='png', dpi=200, matplotlib=True):
     if xvalues is None or yvalues is None:
         print("plot_Spectrum requires xvalues and yvalues variables")
         exit(1)
@@ -253,17 +253,21 @@ def plot_Spectrum(xvalues=None, yvalues=None, plotname='Spectrum', range=None, u
     ##################################
     # Plot with Matplotlib
     ####################################
-    import matplotlib.pyplot as plt
-    fig, ax = plt.subplots()
+    if matplotlib is True:
+        print("Creating plot with Matplotlib")
+        
+        fig, ax = plt.subplots()
 
-    ax.plot(x, spectrum, 'C3', label=plotname)
-    ax.stem(xvalues, yvalues, label=plotname, markerfmt=' ', basefmt=' ', linefmt='C3-', use_line_collection=True)
-    plt.xlabel(unit)
-    plt.ylabel('Intensity')
-    #################################
-    plt.xlim(start, finish)
-    plt.legend(shadow=True, fontsize='small')
-    plt.savefig(plotname + '.'+imageformat, format=imageformat, dpi=dpi)
-    # plt.show()
-    print("Wrote file:", plotname+"."+imageformat)
+        ax.plot(x, spectrum, 'C3', label=plotname)
+        ax.stem(xvalues, yvalues, label=plotname, markerfmt=' ', basefmt=' ', linefmt='C3-', use_line_collection=True)
+        plt.xlabel(unit)
+        plt.ylabel('Intensity')
+        #################################
+        plt.xlim(start, finish)
+        plt.legend(shadow=True, fontsize='small')
+        plt.savefig(plotname + '.'+imageformat, format=imageformat, dpi=dpi)
+        # plt.show()
+        print("Wrote file:", plotname+"."+imageformat)
+    else:
+        print("Skipped Matplotlib part.")
     print(BC.OKGREEN,"ALL DONE!", BC.END)
