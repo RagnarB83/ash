@@ -2601,19 +2601,19 @@ def PhotoElectronSpectrum(theory=None, fragment=None, InitialState_charge=None, 
             os.chdir('..')
 
 
-        #Writing stuff to file. Useful for separate plotting of IPs and Dysonnorms
-        print("")
-        print("Printing IPs, Dyson-norms, MOs to file: PES-Results.txt")
-        print("Can be read by PES.Read_old_results() function")
-        #Writing file in Configparser format for easy read-in below
-        with open("PES-Results.txt", 'w') as resultfile:
-            resultfile.write("[Results]\n")
-            resultfile.write("IPs : {}\n".format(FinalIPs))
-            resultfile.write("Dyson-norms : {}\n".format(finaldysonnorms))
-            resultfile.write("MOs_alpha : {}\n".format(stk_alpha))
-            resultfile.write("MOs_beta : {}\n".format(stk_beta))
+    #Writing stuff to file. Useful for separate plotting of IPs and Dysonnorms
+    print("")
+    print("Printing IPs, Dyson-norms, MOs to file: PES-Results.txt")
+    print("Can be read by PES.Read_old_results() function")
+    #Writing file in Configparser format for easy read-in below
+    with open("PES-Results.txt", 'w') as resultfile:
+        resultfile.write("[Results]\n")
+        resultfile.write("IPs : {}\n".format(FinalIPs))
+        resultfile.write("Dyson-norms : {}\n".format(finaldysonnorms))
+        resultfile.write("MOs_alpha : {}\n".format(stk_alpha))
+        resultfile.write("MOs_beta : {}\n".format(stk_beta))
 
-        return FinalIPs, finaldysonnorms, stk_alpha, stk_beta
+    return FinalIPs, finaldysonnorms, stk_alpha, stk_beta
 
 def Read_old_results():
     print("Reading file PES-Results.txt ...")

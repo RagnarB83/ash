@@ -208,7 +208,7 @@ def plot_Spectrum(xvalues=None, yvalues=None, plotname='Spectrum', range=None, u
         print("plot_Spectrum requires xvalues and yvalues variables")
         exit(1)
 
-    assert len(xvalues) == len(yvalues), "List of Dysonnorms not same size as list of IPs." 
+    assert len(xvalues) == len(yvalues), "List of yvalues not same size as list of xvalues." 
 
     start=range[0]
     finish=range[1]
