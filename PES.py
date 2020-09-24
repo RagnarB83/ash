@@ -2750,11 +2750,11 @@ def plot_PES_Spectrum(IPs=None, dysonnorms=None, mos_alpha=None, mos_beta=None, 
         tddftDOS += tddospeak
 
     #Save dat file
-    with open("TDDFT-DOS.dat", 'w') as tdatfile:
+    with open(plotname+"-DOS.dat", 'w') as tdatfile:
         for i,j in zip(x,tddftDOS):
             tdatfile.write("{:13.10f} {:13.10f} \n".format(i,j))
     #Save stk file
-    with open("TDDFT-DOS.stk", 'w') as tstkfile:
+    with open(plotname+"-DOS.stk", 'w') as tstkfile:
         for b,c in zip(IPs,dysonnorms):
             tstkfile.write("{:13.10f} {:13.10f} \n".format(b,c))
 
