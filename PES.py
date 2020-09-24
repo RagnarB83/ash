@@ -2465,7 +2465,7 @@ def PhotoElectronSpectrum(theory=None, fragment=None, InitialState_charge=None, 
     print("")
     print("Final ionized states:")
     if CAS is True or MRCI is True:
-        stype='SCF'
+        stype='CI'
         print("{:>6} {:>7} {:^20} {:8} {:10} {:>7}".format("State no.", "Mult", "TotalE (Eh)", "IE (eV)", "Dyson-norm", "State-type"))
         for i, (E, IE, dys) in enumerate(zip(Finalionstates,FinalIPs,finaldysonnorms)):
             #Getting spinmult
