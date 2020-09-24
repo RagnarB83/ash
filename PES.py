@@ -2452,83 +2452,83 @@ def PhotoElectronSpectrum(theory=None, fragment=None, InitialState_charge=None, 
 
         assert len(FinalIPs) == len(finaldysonnorms), "List of Dysonnorms not same size as list of IPs."
 
-        #Print table with info
-        print("-------------------------------------------------------------------------")
-        print("FINAL RESULTS for fragment (Label: {}  Formula: {})".format(fragment.label, fragment.prettyformula))
-        print("-------------------------------------------------------------------------")
-        print("Initial state:")
-        print("{:>6} {:>7} {:^20} {:^5}".format("State no.", "Mult", "TotalE (Eh)", "State-type"))
-        if EOM is True:
-            print("{:>6d} {:>7d} {:20.11f} {:>8}".format(0, stateI.mult, stateI.energy, "CCSD"))            
-        else:
-            print("{:>6d} {:>7d} {:20.11f} {:>8}".format(0, stateI.mult, stateI.energy, "SCF"))
-        print("")
-        print("Final ionized states:")
-        if CAS is True or MRCI is True:
-            stype='SCF'
-            print("{:>6} {:>7} {:^20} {:8} {:10} {:>7}".format("State no.", "Mult", "TotalE (Eh)", "IE (eV)", "Dyson-norm", "State-type"))
-            for i, (E, IE, dys) in enumerate(zip(Finalionstates,FinalIPs,finaldysonnorms)):
-                #Getting spinmult
+    #Print table with info
+    print("-------------------------------------------------------------------------")
+    print("FINAL RESULTS for fragment (Label: {}  Formula: {})".format(fragment.label, fragment.prettyformula))
+    print("-------------------------------------------------------------------------")
+    print("Initial state:")
+    print("{:>6} {:>7} {:^20} {:^5}".format("State no.", "Mult", "TotalE (Eh)", "State-type"))
+    if EOM is True:
+        print("{:>6d} {:>7d} {:20.11f} {:>8}".format(0, stateI.mult, stateI.energy, "CCSD"))            
+    else:
+        print("{:>6d} {:>7d} {:20.11f} {:>8}".format(0, stateI.mult, stateI.energy, "SCF"))
+    print("")
+    print("Final ionized states:")
+    if CAS is True or MRCI is True:
+        stype='SCF'
+        print("{:>6} {:>7} {:^20} {:8} {:10} {:>7}".format("State no.", "Mult", "TotalE (Eh)", "IE (eV)", "Dyson-norm", "State-type"))
+        for i, (E, IE, dys) in enumerate(zip(Finalionstates,FinalIPs,finaldysonnorms)):
+            #Getting spinmult
+            if MultipleSpinStates is True:
+                #Change test. what mult we are in.. TODO: Check this for correctness
+                if i < Finalstates[0].numionstates:
+                    spinmult=Finalstates[0].mult
+                else:
+                    spinmult=Finalstates[1].mult
+            else:
+                spinmult=stateF1.mult
+            print("{:>6d} {:>7d} {:20.11f} {:>10.3f} {:>10.5f} {:>10}".format(i, spinmult, E, IE, dys,stype))
+    elif EOM is True:
+        stype='EOM'
+        print("{:>6} {:>7} {:^20} {:8} {:10} {:>7}".format("State no.", "Mult", "TotalE (Eh)", "IE (eV)", "Dyson-norm", "State-type"))
+        for i, (E, IE, dys) in enumerate(zip(Finalionstates,FinalIPs,finaldysonnorms)):
+            #Getting spinmult
+            if MultipleSpinStates is True:
+                #Change test. what mult we are in.. TODO: Check this for correctness
+                if i < Finalstates[0].numionstates:
+                    spinmult=Finalstates[0].mult
+                else:
+                    spinmult=Finalstates[1].mult
+            else:
+                spinmult=stateF1.mult
+            print("{:>6d} {:>7d} {:20.11f} {:>10.3f} {:>10.5f} {:>10}".format(i, spinmult, E, IE, dys,stype))        
+    
+    else:
+        print("{:>6} {:>7} {:^20} {:8} {:10} {:>7} {:>15}".format("State no.", "Mult", "TotalE (Eh)", "IE (eV)", "Dyson-norm", "State-type", "TDDFT Exc.E. (eV)"))
+        for i, (E, IE, dys) in enumerate(zip(Finalionstates,FinalIPs,finaldysonnorms)):
+            #Getting type of state
+            if i == 0:
+                stype='SCF'
+            else:
+                if tda is True:
+                    stype = 'TDA'
+                else:
+                    stype = 'TDDFT'
                 if MultipleSpinStates is True:
-                    #Change test. what mult we are in.. TODO: Check this for correctness
-                    if i < Finalstates[0].numionstates:
-                        spinmult=Finalstates[0].mult
-                    else:
-                        spinmult=Finalstates[1].mult
+                    if i == numionstates:
+                        stype='SCF'
+            #Getting spinmult
+            if MultipleSpinStates is True:
+                if i < numionstates:
+                    spinmult=Finalstates[0].mult
                 else:
-                    spinmult=stateF1.mult
-                print("{:>6d} {:>7d} {:20.11f} {:>10.3f} {:>10.5f} {:>10}".format(i, spinmult, E, IE, dys,stype))
-        elif EOM is True:
-            stype='EOM'
-            print("{:>6} {:>7} {:^20} {:8} {:10} {:>7}".format("State no.", "Mult", "TotalE (Eh)", "IE (eV)", "Dyson-norm", "State-type"))
-            for i, (E, IE, dys) in enumerate(zip(Finalionstates,FinalIPs,finaldysonnorms)):
-                #Getting spinmult
-                if MultipleSpinStates is True:
-                    #Change test. what mult we are in.. TODO: Check this for correctness
-                    if i < Finalstates[0].numionstates:
-                        spinmult=Finalstates[0].mult
-                    else:
-                        spinmult=Finalstates[1].mult
+                    spinmult=Finalstates[1].mult
+            else:
+                spinmult=stateF1.mult
+            #Getting TDDFT transition energy
+            if stype == "TDA" or stype == "TDDFT":
+                if i < numionstates:
+                    TDtransenergy = Finalstates[0].TDtransitionenergies[i-1]
                 else:
-                    spinmult=stateF1.mult
-                print("{:>6d} {:>7d} {:20.11f} {:>10.3f} {:>10.5f} {:>10}".format(i, spinmult, E, IE, dys,stype))        
-        
-        else:
-            print("{:>6} {:>7} {:^20} {:8} {:10} {:>7} {:>15}".format("State no.", "Mult", "TotalE (Eh)", "IE (eV)", "Dyson-norm", "State-type", "TDDFT Exc.E. (eV)"))
-            for i, (E, IE, dys) in enumerate(zip(Finalionstates,FinalIPs,finaldysonnorms)):
-                #Getting type of state
-                if i == 0:
-                    stype='SCF'
-                else:
-                    if tda is True:
-                        stype = 'TDA'
-                    else:
-                        stype = 'TDDFT'
-                    if MultipleSpinStates is True:
-                        if i == numionstates:
-                            stype='SCF'
-                #Getting spinmult
-                if MultipleSpinStates is True:
-                    if i < numionstates:
-                        spinmult=Finalstates[0].mult
-                    else:
-                        spinmult=Finalstates[1].mult
-                else:
-                    spinmult=stateF1.mult
-                #Getting TDDFT transition energy
-                if stype == "TDA" or stype == "TDDFT":
-                    if i < numionstates:
-                        TDtransenergy = Finalstates[0].TDtransitionenergies[i-1]
-                    else:
-                        #print("i:", i)
-                        index=i-numionstates-1
-                        #print("index:", index)
-                        #print("Finalstates[1].TDtransitionenergies: ", Finalstates[1].TDtransitionenergies)
-                        TDtransenergy = Finalstates[1].TDtransitionenergies[index]
+                    #print("i:", i)
+                    index=i-numionstates-1
+                    #print("index:", index)
+                    #print("Finalstates[1].TDtransitionenergies: ", Finalstates[1].TDtransitionenergies)
+                    TDtransenergy = Finalstates[1].TDtransitionenergies[index]
 
-                else:
-                    TDtransenergy=0.0
-                print("{:>6d} {:>7d} {:20.11f} {:>10.3f} {:>10.5f} {:>10} {:>17.3f}".format(i, spinmult, E, IE, dys,stype, TDtransenergy))
+            else:
+                TDtransenergy=0.0
+            print("{:>6d} {:>7d} {:20.11f} {:>10.3f} {:>10.5f} {:>10} {:>17.3f}".format(i, spinmult, E, IE, dys,stype, TDtransenergy))
 
 
         #Here doing densities for each TDDFT-state. SCF-states already done.
