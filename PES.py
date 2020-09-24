@@ -2613,7 +2613,7 @@ def PhotoElectronSpectrum(theory=None, fragment=None, InitialState_charge=None, 
         resultfile.write("MOs_alpha : {}\n".format(stk_alpha))
         resultfile.write("MOs_beta : {}\n".format(stk_beta))
 
-    return FinalIPs, finaldysonnorms, stk_alpha, stk_beta
+    return FinalIPs, finaldysonnorms
 
 def Read_old_results():
     print("Reading file PES-Results.txt ...")
