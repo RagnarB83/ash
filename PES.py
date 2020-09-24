@@ -2180,11 +2180,13 @@ def PhotoElectronSpectrum(theory=None, fragment=None, InitialState_charge=None, 
         FinalIPs = []
         Finalionstates = []
         FinalTDtransitionenergies =[]
-        print(bcolors.OKBLUE,"Initial State SCF energy:", stateI.energy, "au",bcolors.ENDC)
-        print(bcolors.OKBLUE,"Final State SCF energies:", fstates_dict, bcolors.ENDC)
+        print(bcolors.OKBLUE,"Initial State energy:", stateI.energy, "au",bcolors.ENDC)
+        print(bcolors.OKBLUE,"Final State energies:", fstates_dict, bcolors.ENDC)
         
         for fstate in Finalstates:
             fstate.ionstates = fstates_dict[fstate.mult]
+            for ionstate in fstate.ionstates:
+                fstate.IPs.append((ionstate-stateI.energy)*constants.hartoeV)
             print("Mult: {} IPs: {}".format(fstate.mult,fstate.IPs))
             FinalIPs = FinalIPs + fstate.IPs
             Finalionstates = Finalionstates + fstate.ionstates
@@ -2437,8 +2439,6 @@ def PhotoElectronSpectrum(theory=None, fragment=None, InitialState_charge=None, 
                     print("List of Dyson norms is empty. Something went wrong with WfOverlap calculation.")
                     print("Setting Dyson norms to zero and continuing.")
                     dysonnorms=len(fstate.IPs)*[0.0]
-                    
-                    exit()
                 print("")
                 finaldysonnorms=finaldysonnorms+dysonnorms
             print("")
