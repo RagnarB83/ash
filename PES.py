@@ -1586,11 +1586,16 @@ def PhotoElectronSpectrum(theory=None, fragment=None, InitialState_charge=None, 
         numionstates_A=numionstates
         numionstates_B=numionstates
     elif islist(numionstates):
-        #A,B: first and second multiplicity in Ionizedstate_mult
-        numionstates_A=numionstates[0]
-        numionstates_B=numionstates[1]
-        numionstates=numionstates_A+numionstates_B
-
+        if len(numionstates)==2:
+            #A,B: first and second multiplicity in Ionizedstate_mult
+            numionstates_A=numionstates[0]
+            numionstates_B=numionstates[1]
+            numionstates=numionstates_A+numionstates_B
+        else:
+            #A,B: first and second multiplicity in Ionizedstate_mult
+            numionstates_A=numionstates[0]
+            numionstates=numionstates_A 
+                        
     if EOM is True:
         print("EOM is True. Will do EOM-IP-CCSD calculations to calculate IPs directly.")
 
