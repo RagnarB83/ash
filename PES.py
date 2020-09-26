@@ -1559,6 +1559,42 @@ def grab_dets_from_MRCI_output(file):
     #print("final :", final)
     return final
 
+#Find wrong determinant in file
+#Temporary function while MRCI printing is wrong. we just delete a determinant contribution
+
+def delete_wrong_det(file,reference_mult)
+    lines=[];wrongcount=0
+    with open(file) as f:
+        for count,line in enumerate(f):
+            if count== 0:
+                states=int(line.split()[0])
+                orbitals=int(line.split()[1])
+                determinants=int(line.split()[2])
+            if count > 0:
+                string=line.split()[0]
+                a_count=string.count("a")
+                b_count=string.count("b")
+                unpaired_els=a_count - b_count
+                mult=unpaired_els+1
+                #print("string:", string)
+                #print("a_count:", a_count)
+                #print("b_count:", b_count)
+                #print("unpaired_els:", unpaired_els)
+                #print("mult:", mult)
+                if mult != reference_mult:
+                    wrongcount+=1
+                    print("WRONG!!!! Skipping determinant")
+                    print("line skipped:", line)
+                else:
+                    lines.append(line)
+    determinants=determinants-wrongcount
+    file2="temp"
+    with open(file2,'w') as g:
+        g.write("{} {} {}\n".format(str(states),str(orbitals),str(determinants)))
+        for line in lines:
+            g.write(line)
+    shutil.copyfile("temp", './' + file)
+
 
 
 ########################
@@ -2358,8 +2394,13 @@ def PhotoElectronSpectrum(theory=None, fragment=None, InitialState_charge=None, 
 
                 writestringtofile(det_init, "dets_init")
 
+                #Checking if wrong determinant in file
+                delete_wrong_det("dets_init",stateI.mult)
+
+
                 print("Grabbing determinants from Final State output")
                 final_states = grab_dets_from_MRCI_output(Finalstates[0].outfile)
+                
                 for fstate in Finalstates:
                     print("fstate: ", fstate)
                     print("fstate.mult :", fstate.mult)
@@ -2367,6 +2408,10 @@ def PhotoElectronSpectrum(theory=None, fragment=None, InitialState_charge=None, 
                     #print("det_final : ", det_final)
                     # Printing to file
                     writestringtofile(det_final, "dets_final_mult" + str(fstate.mult))
+                    
+                    #Checking if wrong determinant in file and delete
+                    delete_wrong_det("dets_final_mult" + str(fstate.mult),fstate.mult)
+                    
             else:
                 #TDDFT: GETTING DETERMINANTS FROM CIS FILE
                 # Final state. Create detfiles
