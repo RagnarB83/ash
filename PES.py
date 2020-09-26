@@ -1562,7 +1562,7 @@ def grab_dets_from_MRCI_output(file):
 #Find wrong determinant in file
 #Temporary function while MRCI printing is wrong. we just delete a determinant contribution
 
-def delete_wrong_det(file,reference_mult)
+def delete_wrong_det(file,reference_mult):
     lines=[];wrongcount=0
     with open(file) as f:
         for count,line in enumerate(f):
