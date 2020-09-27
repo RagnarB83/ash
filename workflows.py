@@ -1798,6 +1798,7 @@ def calc_surface(fragment=None, theory=None, workflow=None, type='Unrelaxed', re
                         print("=======================================")
                         print("Surfacepoint: {} / {}".format(pointcount,totalnumpoints))
                         print("RCvalue1: {} RCvalue2: {}".format(RCvalue1,RCvalue2))
+                        print("Unrelaxed scan. Will use Zerotheory and geometric to set geometry.")
                         print("=======================================")
                         
                         if (RCvalue1,RCvalue2) not in surfacedictionary:
@@ -1815,6 +1816,7 @@ def calc_surface(fragment=None, theory=None, workflow=None, type='Unrelaxed', re
                             #Single-point ORCA calculation on adjusted geometry
                             if theory is not None:
                                 energy = ash.Singlepoint(fragment=fragment, theory=theory)
+                                print("RCvalue1: {} RCvalue2: {} Energy: {}".format(RCvalue1,RCvalue2, energy))
                             surfacedictionary[(RCvalue1,RCvalue2)] = energy
                             #Writing dictionary to file
                             write_surfacedict_to_file(surfacedictionary,"surface_results.txt", dimension=2)
@@ -1822,12 +1824,14 @@ def calc_surface(fragment=None, theory=None, workflow=None, type='Unrelaxed', re
                         else:
                             print("RC1, RC2 values in dict already. Skipping.")
                     print("surfacedictionary:", surfacedictionary)
+                    
             elif dimension == 1:
                 for RCvalue1 in list(frange(RC1_range[0],RC1_range[1],RC1_range[2])):
                     pointcount+=1
                     print("=======================================")
                     print("Surfacepoint: {} / {}".format(pointcount,totalnumpoints))
                     print("RCvalue1: {}".format(RCvalue1))
+                    print("Unrelaxed scan. Will use Zerotheory and geometric to set geometry.")
                     print("=======================================")
                     
                     if (RCvalue1) not in surfacedictionary:
@@ -1843,6 +1847,7 @@ def calc_surface(fragment=None, theory=None, workflow=None, type='Unrelaxed', re
                         shutil.move("RC1_"+str(RCvalue1)+".xyz", "surface_xyzfiles/"+"RC1_"+str(RCvalue1)+".xyz")
                         #Single-point ORCA calculation on adjusted geometry
                         energy = ash.Singlepoint(fragment=fragment, theory=theory)
+                        print("RCvalue1: {} RCvalue2: {} Energy: {}".format(RCvalue1,RCvalue2, energy))
                         surfacedictionary[(RCvalue1)] = energy
                         #Writing dictionary to file
                         write_surfacedict_to_file(surfacedictionary,"surface_results.txt", dimension=1)
@@ -1859,6 +1864,7 @@ def calc_surface(fragment=None, theory=None, workflow=None, type='Unrelaxed', re
                         print("=======================================")
                         print("Surfacepoint: {} / {}".format(pointcount,totalnumpoints))
                         print("RCvalue1: {} RCvalue2: {}".format(RCvalue1,RCvalue2))
+                        print("Relaxed scan. Will relax geometry using theory level with the included contraints.")
                         print("=======================================")
                         if (RCvalue1,RCvalue2) not in surfacedictionary:
                             #Now setting constraints
@@ -1866,6 +1872,7 @@ def calc_surface(fragment=None, theory=None, workflow=None, type='Unrelaxed', re
                             print("allconstraints:", allconstraints)
                             #Running 
                             energy = geomeTRICOptimizer(fragment=fragment, theory=theory, maxiter=maxiter, coordsystem=coordsystem, constraints=allconstraints, constrainvalue=True, convergence_setting=convergence_setting)
+                            print("RCvalue1: {} RCvalue2: {} Energy: {}".format(RCvalue1,RCvalue2, energy))
                             surfacedictionary[(RCvalue1,RCvalue2)] = energy
                             #Writing dictionary to file
                             write_surfacedict_to_file(surfacedictionary,"surface_results.txt", dimension=2)
@@ -1884,6 +1891,7 @@ def calc_surface(fragment=None, theory=None, workflow=None, type='Unrelaxed', re
                     print("=======================================")
                     print("Surfacepoint: {} / {}".format(pointcount,totalnumpoints))
                     print("RCvalue1: {}".format(RCvalue1))
+                    print("Relaxed scan. Will relax geometry using theory level with the included contraints.")
                     print("=======================================")
                     
                     if (RCvalue1) not in surfacedictionary:
@@ -1892,6 +1900,7 @@ def calc_surface(fragment=None, theory=None, workflow=None, type='Unrelaxed', re
                         print("allconstraints:", allconstraints)
                         #Running zero-theory with optimizer just to set geometry
                         energy = geomeTRICOptimizer(fragment=fragment, theory=theory, maxiter=maxiter, coordsystem=coordsystem, constraints=allconstraints, constrainvalue=True, convergence_setting=convergence_setting)
+                        print("RCvalue1: {} RCvalue2: {} Energy: {}".format(RCvalue1,RCvalue2, energy))
                         surfacedictionary[(RCvalue1)] = energy
                         #Writing dictionary to file
                         write_surfacedict_to_file(surfacedictionary,"surface_results.txt", dimension=1)
