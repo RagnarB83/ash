@@ -739,7 +739,7 @@ def casscfenergygrab(file):
             #    grab=True
 
 #CASSCF: Grabbing all root energies
-#Slightly tricky funciton because output differs for ICE-CASSCF and regular CASSCF.
+#Slightly tricky function because output differs for ICE-CASSCF and regular CASSCF.
 #Should be good now.
 def casscf_state_energies_grab(file):
     Finished=False
@@ -759,32 +759,23 @@ def casscf_state_energies_grab(file):
                 grab=False
             #Grabbing STATE lines
             if grab is True and 'STATE ' in line:
-                print("Xline: ", line)
                 Energy=float(line.split()[5])
-                print("Energy :", Energy)
                 state_energies.append(Energy)
-                print("state_energies :", state_energies)
                 if len(state_energies) == roots:
                     mult_dict[mult] = state_energies
                     grab=False
             if grab is True and 'ROOT ' in line:
-                print("Yline: ", line)
                 Energy=float(line.split()[3])
-                print("Energy :", Energy)
                 state_energies.append(Energy)
-                print("state_energies :", state_energies)
                 if len(state_energies) == roots:
                     mult_dict[mult] = state_energies
                     grab=False
             if Finished is True and 'CAS-SCF STATES FOR BLOCK' in line:
-                print("line :", line)
                 #New mult block. Resetting state-energies.
                 state_energies=[];Energy=0.0
                 mult=int(line.split()[6])
-                print("mult : ", mult)
                 #roots=int(line.split()[8])
                 roots=int(line.split()[7:9][-1].replace('NROOTS=',''))
-                print("roots :", roots)
                 grab=True
             #Only grabbing lines once CASSCF calc has converged
             if 'Final CASSCF energy' in line:
@@ -2317,10 +2308,7 @@ def PhotoElectronSpectrum(theory=None, fragment=None, InitialState_charge=None, 
             #gbwfile_init = glob.glob('Init_State.gbw')[0]
             # gbwfile_final = glob.glob('Final_State_mult.gbw')[0]
             # cisfile_final = glob.glob('Final_State_mult.cis')[0]
-            print(bcolors.OKGREEN, "Grabbing AO matrix, MO coefficients and excited states from ORCA GBW file and CIS file",
-            bcolors.ENDC)
-
-            print(bcolors.OKGREEN, "Grabbing AO matrix, MO coefficients and excited states from ORCA GBW file and CIS file",
+            print(bcolors.OKGREEN, "Grabbing AO matrix, MO coefficients and determinants from ORCA GBW file, CIS file (if TDDFT) or output (if CAS/MRCI)",
             bcolors.ENDC)
             print("")
             # Get AO matrix from init state calculation
