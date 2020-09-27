@@ -84,6 +84,11 @@ def get_smat_from_gbw(file1, file2='', orcadir=None):
     #exit()
     out=comm.split('\n')
 
+    #RBmod. Remove first lines (until MATRIX about to begin) as ORCA warnings can appear that change y-offset below
+    indexskip=out.index("FRAGMENT-FRAGMENT OVERLAP MATRIX")
+    out=out[indexskip:]
+
+
     # get size of matrix
     for line in reversed(out):
       #print line
@@ -100,7 +105,8 @@ def get_smat_from_gbw(file1, file2='', orcadir=None):
       for y in range(NAO):
         block=int(x/nblock)
         xoffset=x%nblock+1
-        yoffset=block*(NAO+1)+y+10
+        #RB. Last number changed from 10 to 3 due to line-skipping above
+        yoffset=block*(NAO+1)+y+3
         #Python3 issue with floats vs indices for block
         ao_ovl[x][y]=float( out[yoffset].split()[xoffset])
 
