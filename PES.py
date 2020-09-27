@@ -113,10 +113,10 @@ def get_smat_from_gbw(file1, file2='', orcadir=None):
     return NAO,ao_ovl
 
 #Get MO coefficients from GBW file. Converted to Python3 From Python2 function in SHARC
-def get_MO_from_gbw(filename,restr,frozencore):
+def get_MO_from_gbw(filename,restr,frozencore,orcadir):
 
     # run orca_fragovl
-    string='orca_fragovl %s %s' % (filename,filename)
+    string=orcadir+'orca_fragovl %s %s' % (filename,filename)
     try:
       proc=sp.Popen(string,shell=True,stdout=sp.PIPE,stderr=sp.PIPE)
     except OSError:
@@ -2323,14 +2323,14 @@ def PhotoElectronSpectrum(theory=None, fragment=None, InitialState_charge=None, 
                 print("stateI.gbwfile: ", stateI.gbwfile)
                 print("stateI.restricted :", stateI.restricted)
                 print("frozencore: ", frozencore)
-                mos_init = get_MO_from_gbw(stateI.gbwfile, stateI.restricted, frozencore)
+                mos_init = get_MO_from_gbw(stateI.gbwfile, stateI.restricted, frozencore,theory.orcadir)
                 writestringtofile(mos_init, "mos_init")
 
             for fstate in Finalstates:
                 print("here")
                 print("fstate.restricted:", fstate.restricted)
                 print("fstate.gbwfile:", fstate.gbwfile)
-                mos_final = get_MO_from_gbw(fstate.gbwfile, fstate.restricted, frozencore)
+                mos_final = get_MO_from_gbw(fstate.gbwfile, fstate.restricted, frozencore,theory.orcadir)
                 writestringtofile(mos_final, "mos_final-mult"+str(fstate.mult))
                 #os.rename("mos_final","mos_final-mult"+str(fstate.mult))
 
