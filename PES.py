@@ -116,7 +116,7 @@ def get_smat_from_gbw(file1, file2='', orcadir=None):
 def get_MO_from_gbw(filename,restr,frozencore,orcadir):
 
     # run orca_fragovl
-    string=orcadir+'orca_fragovl %s %s' % (filename,filename)
+    string=orcadir+'/orca_fragovl %s %s' % (filename,filename)
     try:
       proc=sp.Popen(string,shell=True,stdout=sp.PIPE,stderr=sp.PIPE)
     except OSError:
