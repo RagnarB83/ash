@@ -1820,7 +1820,11 @@ def PhotoElectronSpectrum(theory=None, fragment=None, InitialState_charge=None, 
             #    theory.orcasimpleinput = theory.orcasimpleinput + ' noiter '
 
             #Defining simple MRCI block. States defined
-            theory.orcablocks = theory.orcablocks + "%mrci\n" + "printwf det\nTPrintwf {}\n".format(tprintwfvalue) + "end"
+            if '%mrci' not in theory.orcablocks:
+                theory.orcablocks = theory.orcablocks + "%mrci\n" + "printwf det\nTPrintwf {}\n".format(tprintwfvalue) + "end"
+            else:
+                theory.orcablocks = theory.orcablocks.replace("%mrci\n","%mrci\n"+"printwf det\nTPrintwf {}\n".format(tprintwfvalue))
+            
             #theory.orcablocks = "%mrci\n" + "printwf det\nTPrintwf 1e-16\n" + "newblock {} *\n refs cas({},{}) end\n".format(stateI.mult,MRCI_Initial[0],MRCI_Initial[1])+ "nroots {}\n end\n".format(1) + "end"
             theory.orcablocks = theory.orcablocks.replace('\n\n','\n')
             theory.orcablocks = theory.orcablocks.replace('\n\n','\n')
