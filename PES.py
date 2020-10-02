@@ -842,7 +842,7 @@ def mrci_state_energies_grab(file,SORCI=False):
             if 'TRANSITION ENERGIES' in line:
                 grab = False
             if blockgrab is True:
-                if 'Davidson type correc' in line:
+                if 'Unselected CSF estimate:' in line:
                     grab=True
             if 'S O R C I (DDCI3-STEP)' in line:
                 final_part=True
@@ -1546,7 +1546,7 @@ def grab_dets_from_MRCI_output(file, SORCI=False):
             #Now PT2-selection and CI-problem is solved. Final states coming next.
             #Checking if final_part of MRCI output or not (e.g. if SORCI)
             if final_part is True:
-                if 'Davidson type correction:' in line:
+                if 'Unselected CSF estimate:' in line:
                     detgrab=True
             if 'S O R C I (DDCI3-STEP)' in line:
                 final_part=True
