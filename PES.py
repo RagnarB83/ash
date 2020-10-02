@@ -305,10 +305,9 @@ def get_dets_from_single(logfile,restr,gscharge,gsmult,totnuccharge,frozencore):
         key=tuple(occ_A[frozencore:]+occ_B[frozencore:])
     eigenvectors[gsmult].append( {key:1.0} )
     strings={}
-    print("Final (single-det case) eigenvectors:", eigenvectors)
-    print("format_ci_vectors(eigenvectors[gsmult] :", format_ci_vectors(eigenvectors[gsmult]))
+    #print("Final (single-det case) eigenvectors:", eigenvectors)
+    #print("format_ci_vectors(eigenvectors[gsmult] :", format_ci_vectors(eigenvectors[gsmult]))
     strings["dets."+str(gsmult)] = format_ci_vectors(eigenvectors[gsmult])
-    print("strings: ", strings)
     return strings
 
 
@@ -1808,12 +1807,17 @@ def PhotoElectronSpectrum(theory=None, fragment=None, InitialState_charge=None, 
             theory.orcablocks = theory.orcablocks.replace('\n\n','\n')
             theory.orcablocks = theory.orcablocks.replace('\n\n','\n')
         if MRCI is True:
+            
             print("Using TprintWF value of ", tprintwfvalue)
             print("Modifying MRCI block for initial state, CAS({},{})".format(MRCI_Initial[0],MRCI_Initial[1]))
             print("{} electrons in {} orbitals".format(MRCI_Initial[0],MRCI_Initial[1]))
             print("WARNING: MRCI determinant-printing read will only work for ORCA-current or ORCA 5.0, not older ORCA versions like ORCA 4.2")
-
-
+            if 'SORCI' in theory.orcasimpleinput:
+                SORCI=True
+                print("SORCI is True!")
+            else:
+                SORCI=False
+                print("SORCI is False!")
             #USING CASSCF block to define reference
             #Add nel,norb and nroots lines back in. Also determinant printing option
             print("theory.orcablocks :", theory.orcablocks)
@@ -2096,8 +2100,6 @@ def PhotoElectronSpectrum(theory=None, fragment=None, InitialState_charge=None, 
             print("Modifying MRCI block for Final state, MRCI({},{})".format(MRCI_Initial[0], MRCI_Initial[1]))
             print("{} electrons in {} orbitals".format(MRCI_Initial[0], MRCI_Initial[1]))
             
-            if 'SORCI' in theory.orcasimpleinput:
-                SORCI=True
             
             
             # Making sure multiplicties are sorted in ascending order and creating comma-sep string
@@ -2464,7 +2466,6 @@ def PhotoElectronSpectrum(theory=None, fragment=None, InitialState_charge=None, 
                 #                             statestoextract, statestoskip, no_tda, frozencore, wfthres)
                 # RB simplification. Separate function for getting determinant-string for Initial State where only one.
                 det_init = get_dets_from_single(stateI.outfile, stateI.restricted, stateI.charge, stateI.mult, totnuccharge, frozencore)
-                print("det_init: ", det_init)
                 # Printing to file
                 for blockname, string in det_init.items():
                     writestringtofile(string, "dets_init")
