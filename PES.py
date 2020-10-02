@@ -783,7 +783,15 @@ def casscf_state_energies_grab(file):
     return mult_dict
 
 #MRCI: Grabbing all root energies
-def mrci_state_energies_grab(file):
+#If SORCI then multiple MRCI output
+def mrci_state_energies_grab(file,SORCI=False):
+    
+    #If SORCI True then multiple MRCI output sections. we want last one
+    if SORCI is True:
+        final_part=False
+    else:
+        final_part=True
+    
     grab=False
     blockgrab=False
     grab_blockinfo=False
@@ -825,17 +833,21 @@ def mrci_state_energies_grab(file):
                     #print("mult_dict:", mult_dict)
                     state_energies=[]
             #Getting info about what block we are currently reading in the output
-            if '*              CI-BLOCK' in line:
-                blockgrab=True
-                currentblock=int(line.split()[-2])
-                currentmult=block_dict[currentblock][0]
-                current_roots = block_dict[currentblock][1]
+            if final_part is True:
+                if '*              CI-BLOCK' in line:
+                    blockgrab=True
+                    currentblock=int(line.split()[-2])
+                    currentmult=block_dict[currentblock][0]
+                    current_roots = block_dict[currentblock][1]
             if 'TRANSITION ENERGIES' in line:
                 grab = False
             if blockgrab is True:
                 if 'Davidson type correc' in line:
                     grab=True
+            if 'S O R C I (DDCI3-STEP)' in line:
+                final_part=True
     return mult_dict
+
 
 #CASSCF: Grab orbital ranges
 def casscf_orbitalranges_grab(file):
@@ -1027,8 +1039,13 @@ def grab_dets_from_CASSCF_output(file):
 
 
 #Grab determinants from MRCI-ORCA output with option PrintWF det
-def grab_dets_from_MRCI_output(file):
+def grab_dets_from_MRCI_output(file, SORCI=False):
 
+    #If SORCI True then multiple MRCI output sections. we want last one
+    if SORCI is True:
+        final_part=False
+    else:
+        final_part=True
 
     class state_dets():
         def __init__(self, root,energy,mult):
@@ -1527,8 +1544,12 @@ def grab_dets_from_MRCI_output(file):
             #if 'CAS-SCF STATES FOR BLOCK' in line:
             #    mult =int(line.split()[6])
             #Now PT2-selection and CI-problem is solved. Final states coming next.
-            if 'Davidson type correction:' in line:
-                detgrab=True
+            #Checking if final_part of MRCI output or not (e.g. if SORCI)
+            if final_part is True:
+                if 'Davidson type correction:' in line:
+                    detgrab=True
+            if 'S O R C I (DDCI3-STEP)' in line:
+                final_part=True
 
     #print("list_of_states:", list_of_states)
     #print(list_of_states[0])
@@ -2074,6 +2095,11 @@ def PhotoElectronSpectrum(theory=None, fragment=None, InitialState_charge=None, 
         elif MRCI is True:
             print("Modifying MRCI block for Final state, MRCI({},{})".format(MRCI_Initial[0], MRCI_Initial[1]))
             print("{} electrons in {} orbitals".format(MRCI_Initial[0], MRCI_Initial[1]))
+            
+            if 'SORCI' in theory.orcasimpleinput:
+                SORCI=True
+            
+            
             # Making sure multiplicties are sorted in ascending order and creating comma-sep string
             MRCI_mults = ','.join(str(x) for x in sorted([f.mult for f in Finalstates]))
 
@@ -2125,8 +2151,11 @@ def PhotoElectronSpectrum(theory=None, fragment=None, InitialState_charge=None, 
 
             Singlepoint(fragment=fragment, theory=theory)
 
-            #Getting state-energies of all states for each spin multiplicity
-            fstates_dict = mrci_state_energies_grab("orca-input.out")
+            #Getting state-energies of all states for each spin multiplicity. MRCI vs. SORCI
+            if SORCI is True:
+                fstates_dict = mrci_state_energies_grab("orca-input.out", SORCI=True)
+            else:
+                fstates_dict = mrci_state_energies_grab("orca-input.out")
             # Saveing GBW and CIS file
             shutil.copyfile(theory.inputfilename + '.gbw', './' + 'Final_State' + '.gbw')
             shutil.copyfile(theory.inputfilename + '.out', './' + 'Final_State' + '.out')
@@ -2387,7 +2416,11 @@ def PhotoElectronSpectrum(theory=None, fragment=None, InitialState_charge=None, 
             elif MRCI is True:
 
                 print("Grabbing determinants from Initial State output")
-                init_state = grab_dets_from_MRCI_output(stateI.outfile)
+                if SORCI is True:
+                    init_state = grab_dets_from_MRCI_output(stateI.outfile,SORCI=True)                    
+                else:
+                    init_state = grab_dets_from_MRCI_output(stateI.outfile)
+                
                 det_init = format_ci_vectors(init_state[Initialstate_mult])
 
                 writestringtofile(det_init, "dets_init")
@@ -2397,7 +2430,10 @@ def PhotoElectronSpectrum(theory=None, fragment=None, InitialState_charge=None, 
 
 
                 print("Grabbing determinants from Final State output")
-                final_states = grab_dets_from_MRCI_output(Finalstates[0].outfile)
+                if SORCI is True:
+                    final_states = grab_dets_from_MRCI_output(Finalstates[0].outfile,SORCI=True)                    
+                else:
+                    final_states = grab_dets_from_MRCI_output(Finalstates[0].outfile)
                 
                 for fstate in Finalstates:
                     print("fstate: ", fstate)
