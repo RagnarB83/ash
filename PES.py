@@ -2180,9 +2180,9 @@ def PhotoElectronSpectrum(theory=None, fragment=None, InitialState_charge=None, 
             if tda==False:
                 # Boolean for whether no_tda is on or not
                 no_tda = True
-                tddftstring="%tddft\n"+"tda false\n"+"nroots " + str(numionstates-1) + '\n'+"maxdim 15\n"+"end\n"+"\n"
+                tddftstring="%tddft\n"+"tda false\n"+"nroots " + str(numionstates-1) + '\n'+"maxdim 20\n"+"end\n"+"\n"
             else:
-                tddftstring="%tddft\n"+"tda true\n"+"nroots " + str(numionstates-1) + '\n'+"maxdim 15\n"+"end\n"+"\n"
+                tddftstring="%tddft\n"+"tda true\n"+"nroots " + str(numionstates-1) + '\n'+"maxdim 20\n"+"end\n"+"\n"
                 # Boolean for whether no_tda is on or not
                 no_tda = False
             theory.extraline=theory.extraline+tddftstring
@@ -2656,10 +2656,10 @@ def PhotoElectronSpectrum(theory=None, fragment=None, InitialState_charge=None, 
                         print("Not sure if Full-TDDFT density is available. TO BE CHECKED.")
                         no_tda = True
                         tddftstring = "%tddft\n" + "tda false\n" + "nroots " + str(
-                            numionstates - 1) + '\n' + "maxdim 15\n" + "Iroot {}\n".format(tddftstate) + "end\n" + "\n"
+                            numionstates - 1) + '\n' + "maxdim 20\n" + "Iroot {}\n".format(tddftstate) + "end\n" + "\n"
                     else:
                         tddftstring = "%tddft\n" + "tda true\n" + "nroots " + str(
-                            numionstates - 1) + '\n' + "maxdim 15\n" + "Iroot {}\n".format(tddftstate) + "end\n" + "\n"
+                            numionstates - 1) + '\n' + "maxdim 20\n" + "Iroot {}\n".format(tddftstate) + "end\n" + "\n"
                         # Boolean for whether no_tda is on or not
                         no_tda = False
                     theory.extraline = "%method\n"+"frozencore FC_NONE\n"+"end\n" + tddftstring
