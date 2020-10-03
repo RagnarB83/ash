@@ -1880,7 +1880,11 @@ def PhotoElectronSpectrum(theory=None, fragment=None, InitialState_charge=None, 
         if EOM is not True:
             print(bcolors.OKGREEN, "Calculating Initial State SCF.",bcolors.ENDC)
             finalsinglepointenergy = Singlepoint(fragment=fragment, theory=theory)
-
+            stability = check_stability_in_output("orca-input.out")
+            if stability is False:
+                print("PES: Unstable initial state. Exiting...")
+                exit()
+            
         #Create Cube file of electron/spin density using orca_plot for INITIAL STATE
         if Densities == 'SCF' or Densities =='All':
             os.chdir('Calculated_densities')
@@ -2195,6 +2199,12 @@ def PhotoElectronSpectrum(theory=None, fragment=None, InitialState_charge=None, 
 
 
                 Singlepoint(fragment=fragment, theory=theory)
+                stability = check_stability_in_output("orca-input.out")
+                if stability is False:
+                    print("PES: Unstable final state. Exiting...")
+                    exit()
+                
+                
                 fstate.energy = scfenergygrab("orca-input.out")
                 #Saveing GBW and CIS file
                 shutil.copyfile(theory.inputfilename + '.gbw', './' + 'Final_State_mult' + str(fstate.mult) + '.gbw')

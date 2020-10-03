@@ -842,6 +842,7 @@ def grabEOMIPs(file):
     with open(file) as f:
         for line in f:
             if 'IROOT' in line:
+                print("IROOT line:", line)
                 state_amplitudes=[]
                 IP=float(line.split()[4])
                 IPs.append(IP)
@@ -852,6 +853,8 @@ def grabEOMIPs(file):
                         amplitude=float(line.split()[0])
                         state_amplitudes.append(amplitude)
             if 'Percentage singles' in line:
+                print("line:",line)
+                print("state_amplitudes:", state_amplitudes)
                 #Find dominant singles
                 #print("state_amplitudes:", state_amplitudes)
                 largest=abs(max(state_amplitudes, key=abs))
@@ -859,3 +862,17 @@ def grabEOMIPs(file):
                 state_amplitudes=[]
     assert len(IPs) == len(final_singles_amplitudes), "Something went wrong here"
     return IPs, final_singles_amplitudes
+
+#Reading stability analysis from output. Returns true if stab-analysis good, otherwise falsee
+#If no stability analysis present in output, then also return true
+def check_stability_in_output(file):
+    with open(file) as f:
+        for line in f:
+            if 'Stability Analysis indicates a stable HF/KS wave function.' in line:
+                print("WF is stable")
+                return True
+            if 'Stability Analysis indicates an UNSTABLE HF/KS wave' in line:
+                print("ORCA output:", line)
+                print("ASH: WF is NOT stable. Check ORCA output for details. Quitting job...")
+                return False
+    return True
