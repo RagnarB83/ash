@@ -848,6 +848,7 @@ def grabEOMIPs(file):
                 IPs.append(IP)
                 stateflag=True
             if stateflag is True:
+                print("stateflag True")
                 if '-> x' in line:
                     if line.count("->") == 1:
                         amplitude=float(line.split()[0])
@@ -857,8 +858,13 @@ def grabEOMIPs(file):
                 print("state_amplitudes:", state_amplitudes)
                 #Find dominant singles
                 #print("state_amplitudes:", state_amplitudes)
-                largest=abs(max(state_amplitudes, key=abs))
-                final_singles_amplitudes.append(largest)
+                
+                #if no singles amplitude found then more complicated transition. set to 0.0
+                if len(state_amplitudes) >0:
+                    largest=abs(max(state_amplitudes, key=abs))
+                    final_singles_amplitudes.append(largest)
+                else:
+                    final_singles_amplitudes.append(0.0)
                 state_amplitudes=[]
     assert len(IPs) == len(final_singles_amplitudes), "Something went wrong here"
     return IPs, final_singles_amplitudes
