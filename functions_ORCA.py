@@ -842,20 +842,16 @@ def grabEOMIPs(file):
     with open(file) as f:
         for line in f:
             if 'IROOT' in line:
-                print("IROOT line:", line)
                 state_amplitudes=[]
                 IP=float(line.split()[4])
                 IPs.append(IP)
                 stateflag=True
             if stateflag is True:
-                print("stateflag True")
                 if '-> x' in line:
                     if line.count("->") == 1:
                         amplitude=float(line.split()[0])
                         state_amplitudes.append(amplitude)
             if 'Percentage singles' in line:
-                print("line:",line)
-                print("state_amplitudes:", state_amplitudes)
                 #Find dominant singles
                 #print("state_amplitudes:", state_amplitudes)
                 
