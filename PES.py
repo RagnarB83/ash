@@ -1624,7 +1624,7 @@ def PhotoElectronSpectrum(theory=None, fragment=None, InitialState_charge=None, 
                           Ionizedstate_charge=None, Ionizedstate_mult=None, numionstates=None, path_wfoverlap=None, tda=True,
                           brokensym=False, HSmult=None, atomstoflip=None, initialorbitalfiles=None, Densities='SCF', densgridvalue=100,
                           CAS=False, CAS_Initial=None, CAS_Final = None, memory=40000, numcores=1, noDyson=False, CASCI=False, MRCI=False,
-                          MRCI_Initial=None, MRCI_Final = None, tprintwfvalue=1e-6, MRCI_CASCI_Final=True, EOM=False):
+                          MRCI_Initial=None, MRCI_Final = None, tprintwfvalue=1e-6, MRCI_CASCI_Final=True, EOM=False, label=None):
     blankline()
     print(bcolors.OKGREEN,"-------------------------------------------------------------------",bcolors.ENDC)
     print(bcolors.OKGREEN,"PhotoElectronSpectrum: Calculating PES spectra via TDDFT/CAS/MRCI/EOM and Dyson-norm approach",bcolors.ENDC)
@@ -2549,7 +2549,7 @@ def PhotoElectronSpectrum(theory=None, fragment=None, InitialState_charge=None, 
 
     #Print table with info
     print("-------------------------------------------------------------------------")
-    print("FINAL RESULTS for fragment (Label: {}  Formula: {})".format(fragment.label, fragment.prettyformula))
+    print("FINAL RESULTS for fragment (CalcLabel: {} FragLabel: {}  Formula: {})".format(label,fragment.label, fragment.prettyformula))
     print("-------------------------------------------------------------------------")
     print("Initial state:")
     print("{:>6} {:>7} {:^20} {:^5}".format("State no.", "Mult", "TotalE (Eh)", "State-type"))
