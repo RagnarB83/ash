@@ -1624,7 +1624,7 @@ def PhotoElectronSpectrum(theory=None, fragment=None, InitialState_charge=None, 
                           Ionizedstate_charge=None, Ionizedstate_mult=None, numionstates=None, path_wfoverlap=None, tda=True,
                           brokensym=False, HSmult=None, atomstoflip=None, initialorbitalfiles=None, Densities='SCF', densgridvalue=100,
                           CAS=False, CAS_Initial=None, CAS_Final = None, memory=40000, numcores=1, noDyson=False, CASCI=False, MRCI=False,
-                          MRCI_Initial=None, MRCI_Final = None, tprintwfvalue=1e-6, MRCI_CASCI_Final=True, EOM=False, label=None):
+                          MRCI_Initial=None, MRCI_Final = None, tprintwfvalue=1e-6, MRCI_CASCI_Final=True, EOM=False, label=None, check_stability=True):
     blankline()
     print(bcolors.OKGREEN,"-------------------------------------------------------------------",bcolors.ENDC)
     print(bcolors.OKGREEN,"PhotoElectronSpectrum: Calculating PES spectra via TDDFT/CAS/MRCI/EOM and Dyson-norm approach",bcolors.ENDC)
@@ -1881,7 +1881,7 @@ def PhotoElectronSpectrum(theory=None, fragment=None, InitialState_charge=None, 
             print(bcolors.OKGREEN, "Calculating Initial State SCF.",bcolors.ENDC)
             finalsinglepointenergy = Singlepoint(fragment=fragment, theory=theory)
             stability = check_stability_in_output("orca-input.out")
-            if stability is False:
+            if stability is False and check_stability is True:
                 print("PES: Unstable initial state. Exiting...")
                 exit()
             
@@ -2200,7 +2200,7 @@ def PhotoElectronSpectrum(theory=None, fragment=None, InitialState_charge=None, 
 
                 Singlepoint(fragment=fragment, theory=theory)
                 stability = check_stability_in_output("orca-input.out")
-                if stability is False:
+                if stability is False and check_stability is True:
                     print("PES: Unstable final state. Exiting...")
                     exit()
                 

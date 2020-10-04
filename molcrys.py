@@ -12,7 +12,7 @@ origtime=time.time()
 currtime=time.time()
 
 
-def molcrys(cif_file=None, xtl_file=None, fragmentobjects=[], theory=None, numcores=None, chargemodel='',
+def molcrys(cif_file=None, xtl_file=None, xyz_file=[], cell_length=None, cell_angles=None, fragmentobjects=[], theory=None, numcores=None, chargemodel='',
             clusterradius=None, shortrangemodel='UFF_modH', auto_connectivity=False, simple_supercell=False, shiftasymmunit=False):
 
     banner="""
@@ -68,6 +68,20 @@ def molcrys(cif_file=None, xtl_file=None, fragmentobjects=[], theory=None, numco
             numasymmunits = len(fullcellcoords) / len(asymmcoords)
             print("Number of fractional coordinates in asymmetric unit:", len(asymmcoords))
             print("Number of asymmetric units in whole cell:", int(numasymmunits))
+
+        #cell_vectors=cellparamtovectors(cell_length,cell_angles)
+        print("Number of fractional coordinates in whole cell:", len(fullcellcoords))
+        #print_coordinates(elems, np.array(fullcellcoords), title="Fractional coordinates")
+        #print_coords_all(fullcellcoords,elems)
+        blankline()
+
+        #Write fractional coordinate XTL file of fullcell coordinates (for visualization in VESTA)
+        write_xtl(cell_length,cell_angles,elems,fullcellcoords,"complete_unitcell.xtl")
+
+
+        #Get orthogonal coordinates of cell
+        orthogcoords=fract_to_orthogonal(cell_vectors,fullcellcoords)
+
     elif xtl_file is not None:
         blankline()
         #Read XTL-file. Assuming full-cell coordinates presently
@@ -75,6 +89,34 @@ def molcrys(cif_file=None, xtl_file=None, fragmentobjects=[], theory=None, numco
         print("Reading XTL file:", xtl_file)
         blankline()
         cell_length,cell_angles,elems,fullcellcoords=read_xtlfile(xtl_file)
+        
+        #cell_vectors=cellparamtovectors(cell_length,cell_angles)
+        print("Number of fractional coordinates in whole cell:", len(fullcellcoords))
+        #print_coordinates(elems, np.array(fullcellcoords), title="Fractional coordinates")
+        #print_coords_all(fullcellcoords,elems)
+        blankline()
+
+        #Write fractional coordinate XTL file of fullcell coordinates (for visualization in VESTA)
+        write_xtl(cell_length,cell_angles,elems,fullcellcoords,"complete_unitcell.xtl")
+
+
+        #Get orthogonal coordinates of cell
+        orthogcoords=fract_to_orthogonal(cell_vectors,fullcellcoords)
+        
+    elif xyz_file is not None:
+        blankline()
+        #Read XYZ-file. Assuming file contains full-cell real-space coordinates 
+        print("Reading XYZ file (assuming real-space coordinates in Angstrom):", xyz_file)
+        #TODO: read xyz-file here
+        #Need to read cell_lengths and cell_angles also
+        if cell_length is None or cell_angles is None:
+            print("cell_length/cell_angles is not defined. This is needed for XYZ-file option.")
+            exit()
+        blankline()
+        
+        #TODO: think about what happens next
+        
+        exit()
     else:
         print("Neither CIF-file or XTL-file passed to molcrys. Exiting...")
         exit(1)
@@ -87,19 +129,6 @@ def molcrys(cif_file=None, xtl_file=None, fragmentobjects=[], theory=None, numco
     print("cell_vectors:", cell_vectors)
     #Used by cell_extend_frag_withcenter and frag_define
     #fract_to_orthogonal uses original so it is transposed back
-
-    #cell_vectors=cellparamtovectors(cell_length,cell_angles)
-    print("Number of fractional coordinates in whole cell:", len(fullcellcoords))
-    #print_coordinates(elems, np.array(fullcellcoords), title="Fractional coordinates")
-    #print_coords_all(fullcellcoords,elems)
-    blankline()
-
-    #Write fractional coordinate XTL file of fullcell coordinates (for visualization in VESTA)
-    write_xtl(cell_length,cell_angles,elems,fullcellcoords,"complete_unitcell.xtl")
-
-
-    #Get orthogonal coordinates of cell
-    orthogcoords=fract_to_orthogonal(cell_vectors,fullcellcoords)
     
     #Converting orthogcoords to numpy array for better performance
     orthogcoords=np.asarray(orthogcoords)
