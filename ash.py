@@ -1730,7 +1730,7 @@ class NonBondedTheory:
 #Peatoms: polarizable atoms. MMatoms: nonpolarizable atoms (e.g. TIP3P)
 class PolEmbedTheory:
     def __init__(self, fragment=None, qm_theory=None, qmatoms=None, peatoms=None, mmatoms=None, pot_create=True,
-                 potfilename='System', pot_option='', pyframe=False, PElabel_pyframe='MM'):
+                 potfilename='System', pot_option=None, pyframe=False, PElabel_pyframe='MM', daltondir=None):
         print(BC.WARNING,BC.BOLD,"------------Defining PolEmbedTheory object-------------", BC.END)
         self.pot_create=pot_create
         self.pyframe=pyframe
@@ -1745,6 +1745,12 @@ class PolEmbedTheory:
             print(BC.OKGREEN, "QM-theory:", self.qm_theory_name, "is supported in Polarizable Embedding", BC.END)
         else:
             print(BC.FAIL, "QM-theory:", self.qm_theory_name, "is  NOT supported in Polarizable Embedding", BC.END)
+
+        if self.pot_option=='LoProp':
+            if daltondir is None:
+                print("LoProp option chosen. This requires daltondir variable")
+                exit()
+
 
         # Region definitions
         if qmatoms is None:
@@ -1851,6 +1857,8 @@ class PolEmbedTheory:
 
                 elif self.pot_option=='LoProp':
                     print("Pot option: LoProp")
+                    os.environ['PATH'] = daltondir + ':$PATH'
+                    print("Current PATH is:", os.environ['PATH'])
                     #TODO: Create pot file from scratch. Requires LoProp and Dalton I guess
                     system = pyframe.MolecularSystem(input_file=file)
                     core = system.get_fragments_by_name(names=['QM'])
