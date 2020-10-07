@@ -2658,7 +2658,7 @@ class DaltonTheory:
                     if pe is True:
                         print("X here. pe True")
                         dalfile.write(".PEQM\n")
-                dalfile.write(substring)
+                dalfile.write(substring+'\n')
                 
             
                  
