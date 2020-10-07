@@ -1973,6 +1973,7 @@ class PolEmbedTheory:
             self.QMEnergy = self.qm_theory.run(current_coords=self.qmcoords, qm_elems=self.qmelems, Grad=False,
                                                nprocs=nprocs, pe=True, potfile=self.potfile, restart=restart)
         elif self.qm_theory_name == "DaltonTheory":
+            print("self.potfile:", self.potfile)
             self.QMEnergy, self.QMgrad = self.qm_theory.run(current_coords=self.qmcoords, qm_elems=self.qmelems, Grad=False,
                                                nprocs=nprocs, pe=True, potfile=self.potfile, restart=restart)
         elif self.qm_theory_name == "PySCFTheory":
@@ -2660,10 +2661,6 @@ class DaltonTheory:
                         print("X here. pe True")
                         dalfile.write(".PEQM\n")
                 
-                
-            
-                 
-        
         #Write the ugly MOLECULE.INP
         uniq_elems=set(qm_elems)
         
@@ -2680,8 +2677,11 @@ class DaltonTheory:
                 for el,coord in zip(qm_elems,current_coords):
                     if el == uniqel:
                         molfile.write('{}    {} {} {}\n'.format(el,coord[0],coord[1],coord[2]))
-        #POT
         
+        #POTENTIAL FILE
+        #Renaming potfile as POTENTIAL.INP
+        os.rename(potfile,'POTENTIAL.INP')
+        print("Rename potential file {} as POTENTIAL.INP".format(potfile))
         
         print("Charge: {}  Mult: {}".format(self.charge, self.mult))
         
