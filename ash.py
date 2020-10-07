@@ -2541,7 +2541,7 @@ class QMMMTheory:
 
 class DaltonTheory:
     def __init__(self, daltondir=None, fragment=None, charge=None, mult=None, printlevel=2, nprocs=1, pe=False, potfile='',
-                 label=None, method=None, response=None, dalton_input=None, basis_name=None):
+                 label=None, method=None, response=None, dalton_input=None, basis_name=None,basis_dir=None):
         if daltondir is None:
             print("No daltondir argument passed to DaltonTheory. Attempting to find daltondir variable inside settings_ash")
             self.daltondir=settings_ash.daltondir
@@ -2554,6 +2554,9 @@ class DaltonTheory:
         else:
             print("Please provide basis_name to DaltonTheory object")
             exit()
+
+        #Directory where basis sets are. If not defined, ASH will assume basis directory is one dir up
+        self.basis_dir=basis_dir
 
         #Used to write name in MOLECULE.INP. Not necessary?
         self.moleculename="None"
@@ -2659,9 +2662,10 @@ class DaltonTheory:
         
         print("Launching Dalton")
         print("daltondir:", self.daltondir)
-        print("Setting BASDIR:")
-        os.environ['BASDIR'] = self.daltondir+"/../basis"
-        print("BASDIR:", os.environ['BASDIR'])        
+        if self.basis_dir is not None:
+            print("No Dalton basis_dir provided. Attempting to set BASDIR:")
+            os.environ['BASDIR'] = self.daltondir+"/../basis"
+            print("BASDIR:", os.environ['BASDIR'])        
         def run_dalton_serial(daltondir):
             with open("DALTON.OUT", 'w') as ofile:
                 
