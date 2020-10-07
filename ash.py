@@ -1849,10 +1849,8 @@ class PolEmbedTheory:
                     self.potfile=self.potfilename+'.pot'
                     print("Created potfile: ", self.potfile)
 
-                else:
+                elif self.pot_option=='LoProp':
                     #TODO: Create pot file from scratch. Requires LoProp and Dalton I guess
-                    print("Only pot_option SEP or TIP3P possible right now")
-                    exit()
                     system = pyframe.MolecularSystem(input_file=file)
                     core = system.get_fragments_by_name(names=['QM'])
                     system.set_core_region(fragments=core, program='Dalton', basis='pcset-1')
@@ -1865,6 +1863,9 @@ class PolEmbedTheory:
                     project.write_core(system)
                     project.write_potential(system)
                     self.potfile=self.potfilename+'.pot'
+                else:
+                    print("Invalid option")
+                    exit()
                 #Copying pyframe-created potfile from dir:
                 shutil.copyfile(self.potfilename+'/' + self.potfilename+'.pot', './'+self.potfilename+'.pot')
 
@@ -2663,7 +2664,7 @@ class DaltonTheory:
         print("Launching Dalton")
         print("daltondir:", self.daltondir)
         if self.basis_dir is None:
-            print("No Dalton basis_dir provided. Attempting to set BASDIR:")
+            print("No Dalton basis_dir provided. Attempting to set BASDIR via daltondir:")
             os.environ['BASDIR'] = self.daltondir+"/../basis"
             print("BASDIR:", os.environ['BASDIR'])
         else:
