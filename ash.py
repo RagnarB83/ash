@@ -2626,8 +2626,9 @@ class DaltonTheory:
     def run(self, current_coords=None, qm_elems=None, Grad=False, nprocs=None, pe=None, potfile='', restart=False ):
         
         print(BC.OKBLUE,BC.BOLD, "------------RUNNING DALTON INTERFACE-------------", BC.END)
-        
+        print("pe:", pe)
         if pe is not None:
+            print("here. pe is ", pe)
             pe=self.pe
         
         print("pe: ", pe)
