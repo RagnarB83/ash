@@ -2568,6 +2568,9 @@ class DaltonTheory:
         #Setting nprocs of object
         self.nprocs=nprocs
         
+        #Setting energy to 0.0 for now
+        self.energy=0.0
+        
         #Optional linking of coords to theory object, not necessary. TODO: Delete
         if fragment != None:
             self.fragment=fragment
@@ -2578,7 +2581,7 @@ class DaltonTheory:
             self.charge=int(charge)
         if mult!=None:
             self.mult=int(mult)
-
+        print("Note: Dalton assumes mult=1 for even electrons and mult=2 for odd electrons.")
         if self.printlevel >=2:
             print("")
             print("Creating DaltonTheory object")
@@ -2641,7 +2644,7 @@ class DaltonTheory:
             molfile.write('{}\n'.format(self.basis_name))
             molfile.write('{}\n'.format(self.moleculename))
             molfile.write('------------------------\n')
-            molfile.write('AtomTypes={} NoSymmetry Angstrom\n'.format(len(uniq_elems)))
+            molfile.write('AtomTypes={} NoSymmetry Angstrom Charge={}\n'.format(len(uniq_elems),self.charge))
             for uniqel in uniq_elems:
                 nuccharge=float(elemstonuccharges([uniqel])[0])
                 num_elem=qm_elems.count(uniqel)
@@ -2656,8 +2659,26 @@ class DaltonTheory:
         
         print("Launching Dalton")
         
-        self.energy = 0.0
-        #Numpy object
+        def run_dalton_serial(daltondir):
+            with open("DALTON.OUT", 'w') as ofile:
+                print("daltondir:", daltondir)
+                process = sp.run([daltondir + '/dalton.x'], check=True, stdout=ofile, stderr=ofile, universal_newlines=True)
+            
+        
+        
+        run_dalton_serial(self.daltondir)
+        
+        #Grab final energy
+        #TODO: Support more than DFT energies
+        #ALSO: Grab excitation energies etc
+        with open("DALTON.OUT") as outfile:
+            for line in outfile:
+                if 'Final DFT energy:' in line:
+                    self.energy=float(line.split()[-1])
+        
+        if self.energy==0.0:
+            print("Problem. Energy not found in output: DALTON.OUT")
+            exit()
         self.gradient = np.zeros((5, 3))
         return self.energy,self.gradient
 
