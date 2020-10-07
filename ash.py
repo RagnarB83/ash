@@ -1850,7 +1850,7 @@ class PolEmbedTheory:
                     print("Created potfile: ", self.potfile)
 
                 elif self.pot_option=='LoProp':
-                    print("Pot option:", LoProp)
+                    print("Pot option: LoProp")
                     #TODO: Create pot file from scratch. Requires LoProp and Dalton I guess
                     system = pyframe.MolecularSystem(input_file=file)
                     core = system.get_fragments_by_name(names=['QM'])
