@@ -2651,7 +2651,7 @@ class DaltonTheory:
         #DALTON.INP
         print("Creating inputfile: DALTON.INP")
         with open("DALTON.INP",'w') as dalfile:
-            for substring in self.dalton_input:
+            for substring in self.dalton_input.split('\n'):
                 print("substring:", substring)
                 if 'DALTON' in substring:
                     print("dalton sub")
