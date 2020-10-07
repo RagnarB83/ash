@@ -2654,11 +2654,8 @@ class DaltonTheory:
         with open("DALTON.INP",'w') as dalfile:
             for substring in self.dalton_input.split('\n'):
                 dalfile.write(substring+'\n')
-                print("substring:", substring)
                 if 'DALTON' in substring:
-                    print("dalton sub")
                     if pe is True:
-                        print("X here. pe True")
                         dalfile.write(".PEQM\n")
                 
         #Write the ugly MOLECULE.INP
