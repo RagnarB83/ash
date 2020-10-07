@@ -2626,9 +2626,7 @@ class DaltonTheory:
     def run(self, current_coords=None, qm_elems=None, Grad=False, nprocs=None, pe=None, potfile='', restart=False ):
         
         print(BC.OKBLUE,BC.BOLD, "------------RUNNING DALTON INTERFACE-------------", BC.END)
-        print("pe:", pe)
         if pe is None:
-            print("here. pe is ", pe)
             pe=self.pe
         
         print("pe: ", pe)
@@ -2654,9 +2652,9 @@ class DaltonTheory:
         print("Creating inputfile: DALTON.INP")
         with open("DALTON.INP",'w') as dalfile:
             for substring in self.dalton_input:
-                if '**DALTON' in substring:
+                if 'DALTON' in substring:
                     if pe is True:
-                        print("here. pe True")
+                        print("X here. pe True")
                         dalfile.write(".PEQM\n")
                 dalfile.write(substring)
                 
