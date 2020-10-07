@@ -60,7 +60,7 @@ def get_size(obj, seen=None):
     return size
 
 
-#Debug print. Behaves like print bug reads global debug var first
+#Debug print. Behaves like print but reads global debug var first
 def printdebug(string,var=''):
     global debugflag
     if debugflag is True:
@@ -1795,13 +1795,16 @@ class PolEmbedTheory:
             rescount=0
             for i in self.allatoms:
                 if i in self.qmatoms:
+                    print("i : {} in qmatoms".format(i))
                     self.hybridatomlabels.append('QM')
                     self.residlabels.append(1)
                 elif i in self.peatoms:
+                    print("i : {} in peatoms".format(i))
                     self.hybridatomlabels.append(self.PElabel_pyframe)
                     self.residlabels.append(count)
                     rescount+=1
                 elif i in self.mmatoms:
+                    print("i : {} in mmatoms".format(i))
                     self.hybridatomlabels.append('WAT')
                     self.residlabels.append(count)
                     rescount+=1
@@ -1809,10 +1812,8 @@ class PolEmbedTheory:
                     count+=1
                     rescount=0
 
-        #print("self.hybridatomlabels:", self.hybridatomlabels)
-
-
-
+        print("self.hybridatomlabels:", self.hybridatomlabels)
+        print("self.residlabels:", self.residlabels)
         #Create Potential file here. Usually true.
         if self.pot_create==True:
             print("Potfile Creation is on!")
