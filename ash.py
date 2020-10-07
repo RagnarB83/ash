@@ -2658,17 +2658,15 @@ class DaltonTheory:
         print("Charge: {}  Mult: {}".format(self.charge, self.mult))
         
         print("Launching Dalton")
-        print("daltondir:", daltondir)
+        print("daltondir:", self.daltondir)
         print("Setting BASDIR:")
-        os.environ['BASDIR'] = daltondir+"../basis"
+        os.environ['BASDIR'] = self.daltondir+"../basis"
         print("BASDIR:", os.environ['BASDIR'])        
         def run_dalton_serial(daltondir):
             with open("DALTON.OUT", 'w') as ofile:
                 
                 process = sp.run([daltondir + '/dalton.x'], check=True, stdout=ofile, stderr=ofile, universal_newlines=True)
             
-        
-        
         run_dalton_serial(self.daltondir)
         
         #Grab final energy
