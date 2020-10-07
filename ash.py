@@ -2627,7 +2627,7 @@ class DaltonTheory:
         
         print(BC.OKBLUE,BC.BOLD, "------------RUNNING DALTON INTERFACE-------------", BC.END)
         print("pe:", pe)
-        if pe is not None:
+        if pe is None:
             print("here. pe is ", pe)
             pe=self.pe
         
