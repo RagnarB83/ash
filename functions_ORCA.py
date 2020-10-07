@@ -875,6 +875,6 @@ def check_stability_in_output(file):
                 return True
             if 'Stability Analysis indicates an UNSTABLE HF/KS wave' in line:
                 print("ORCA output:", line)
-                print("ASH: WF is NOT stable. Check ORCA output for details. Quitting job...")
+                print("ASH: WF is NOT stable. Check ORCA output for details.")
                 return False
     return True

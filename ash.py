@@ -1923,8 +1923,8 @@ class PolEmbedTheory:
                     print("Other pot options not yet available")
                     exit()
         else:
-            print("Pot creation is off for this object.")
-
+            print("Pot creation is off for this object. Assuming potfile has been provided")
+            self.potfile=potfilename+'.pot'
 
     def run(self, current_coords=None, elems=None, Grad=False, nprocs=1, potfile=None, restart=False):
         print(BC.WARNING, BC.BOLD, "------------RUNNING PolEmbedTheory MODULE-------------", BC.END)
@@ -1957,13 +1957,13 @@ class PolEmbedTheory:
 
             self.QMEnergy = self.qm_theory.run(current_coords=self.qmcoords, qm_elems=self.qmelems, Grad=False,
                                                nprocs=nprocs, pe=True, potfile=self.potfile, restart=restart)
-
+        elif self.qm_theory_name == "DaltonTheory":
+            self.QMEnergy, self.QMgrad = self.qm_theory.run(current_coords=self.qmcoords, qm_elems=self.qmelems, Grad=False,
+                                               nprocs=nprocs, pe=True, potfile=self.potfile, restart=restart)
         elif self.qm_theory_name == "PySCFTheory":
             print("not yet implemented with PolEmbed")
             exit()
-        elif self.qm_theory_name == "DaltonTheory":
-            print("not yet implemented")
-            exit()
+
         elif self.qm_theory_name == "ORCATheory":
             print("not available for ORCATheory")
             exit()
@@ -2538,6 +2538,128 @@ class QMMMTheory:
             return self.QM_MM_Energy
 
 
+
+class DaltonTheory:
+    def __init__(self, daltondir=None, fragment=None, charge=None, mult=None, printlevel=2, nprocs=1, pe=False, potfile='',
+                 label=None, method=None, response=None, dalton_input=None, basis_name=None):
+        if daltondir is None:
+            print("No daltondir argument passed to DaltonTheory. Attempting to find daltondir variable inside settings_ash")
+            self.daltondir=settings_ash.daltondir
+        else:
+            self.daltondir = daltondir
+
+        if basis_name is not None:
+            print("here")
+            self.basis_name=basis_name
+        else:
+            print("Please provide basis_name to DaltonTheory object")
+            exit()
+
+        #Used to write name in MOLECULE.INP. Not necessary?
+        self.moleculename="None"
+
+        #Dalton input as a multi-line string
+        self.dalton_input=dalton_input
+
+        #Label to distinguish different Dalton objects
+        self.label=label
+        #Printlevel
+        self.printlevel=printlevel
+        #Setting nprocs of object
+        self.nprocs=nprocs
+        
+        #Optional linking of coords to theory object, not necessary. TODO: Delete
+        if fragment != None:
+            self.fragment=fragment
+            self.coords=fragment.coords
+            self.elems=fragment.elems
+        #print("frag elems", self.fragment.elems)
+        if charge!=None:
+            self.charge=int(charge)
+        if mult!=None:
+            self.mult=int(mult)
+
+        if self.printlevel >=2:
+            print("")
+            print("Creating DaltonTheory object")
+            print("Dalton dir:", self.daltondir)
+    #Cleanup after run.
+    def cleanup(self):
+        print("Cleaning up old Dalton files")
+        list=[]
+        #list.append(self.inputfilename + '.gbw')
+        for file in list:
+            try:
+                os.remove(file)
+            except:
+                pass
+        # os.remove(self.inputfilename + '.out')
+        try:
+            for tmpfile in glob.glob("self.inputfilename*tmp"):
+                os.remove(tmpfile)
+        except:
+            pass
+    #Run function. Takes coords, elems etc. arguments and computes E or E+G.
+    def run(self, current_coords=None, qm_elems=None, Grad=False, nprocs=None, pe=False, potfile='', restart=False ):
+        
+        print(BC.OKBLUE,BC.BOLD, "------------RUNNING DALTON INTERFACE-------------", BC.END)
+        #Coords provided to run or else taken from initialization.
+        #if len(current_coords) != 0:
+        if current_coords is not None:
+            pass
+        else:
+            current_coords=self.coords
+
+        #What elemlist to use. If qm_elems provided then QM/MM job, otherwise use elems list or self.elems
+        if qm_elems is None:
+            if elems is None:
+                qm_elems=self.elems
+            else:
+                qm_elems = elems
+
+        if nprocs==None:
+            nprocs=self.nprocs
+        print("Running Dalton object with {} cores available".format(nprocs))
+
+        #DALTON.INP
+        print("Creating inputfile: DALTON.INP")
+        with open("DALTON.INP",'w') as dalfile:
+            for substring in self.dalton_input:
+                if '**DALTON' in substring:
+                    if self.pe is True:
+                        dalfile.write(".PEQM\n")
+                dalfile.write(substring)
+                
+            
+                 
+        
+        #Write the ugly MOLECULE.INP
+        uniq_elems=set(qm_elems)
+        
+        with open("MOLECULE.INP",'w') as molfile:
+            molfile.write('BASIS\n')
+            molfile.write('{}\n'.format(self.basis_name))
+            molfile.write('{}\n'.format(self.moleculename))
+            molfile.write('------------------------\n')
+            molfile.write('AtomTypes={} NoSymmetry Angstrom\n'.format(len(uniq_elems)))
+            for uniqel in uniq_elems:
+                nuccharge=float(elemstonuccharges([uniqel])[0])
+                num_elem=qm_elems.count(uniqel)
+                molfile.write('Charge={} Atoms={}\n'.format(nuccharge,num_elem))
+                for el,coord in zip(qm_elems,current_coords):
+                    if el == uniqel:
+                        molfile.write('{}    {} {} {}\n'.format(el,coord[0],coord[1],coord[2]))
+        #POT
+        
+        
+        print("Charge: {}  Mult: {}".format(self.charge, self.mult))
+        
+        print("Launching Dalton")
+        
+        self.energy = 0.0
+        #Numpy object
+        self.gradient = np.zeros((5, 3))
+        return self.energy,self.gradient
 
 #ORCA Theory object. Fragment object is optional. Only used for single-points.
 
