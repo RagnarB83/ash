@@ -2667,6 +2667,7 @@ class DaltonTheory:
             os.environ['BASDIR'] = self.daltondir+"/../basis"
             print("BASDIR:", os.environ['BASDIR'])
         else:
+            print("Using basis_dir:", self.basis_dir)
             os.environ['BASDIR'] = self.basis_dir
         def run_dalton_serial(daltondir):
             with open("DALTON.OUT", 'w') as ofile:
