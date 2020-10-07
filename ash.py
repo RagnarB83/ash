@@ -1850,14 +1850,17 @@ class PolEmbedTheory:
                     print("Created potfile: ", self.potfile)
 
                 elif self.pot_option=='LoProp':
+                    print("Pot option:", LoProp)
                     #TODO: Create pot file from scratch. Requires LoProp and Dalton I guess
                     system = pyframe.MolecularSystem(input_file=file)
                     core = system.get_fragments_by_name(names=['QM'])
                     system.set_core_region(fragments=core, program='Dalton', basis='pcset-1')
                     # solvent = system.get_fragments_by_distance(reference=core, distance=4.0)
                     solvent = system.get_fragments_by_name(names=[self.PElabel_pyframe])
-                    system.add_region(name='solvent', fragments=solvent, use_standard_potentials=True,
-                          standard_potential_model=self.pot_option)
+                    system.add_region(name='solvent', fragments=solvent, use_mfcc=True, use_multipoles=True, 
+                                      multipole_order=2, multipole_model='LoProp', multipole_method='DFT', multipole_xcfun='PBE0',
+                                      multipole_basis='loprop-6-31+G*', use_polarizabilities=True, polarizability_model='LoProp',
+                                      polarizability_method='DFT', polarizability_xcfun='PBE0', polarizability_basis='loprop-6-31+G*')
                     project = pyframe.Project()
                     project.create_embedding_potential(system)
                     project.write_core(system)
