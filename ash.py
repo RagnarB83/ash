@@ -1781,7 +1781,8 @@ class PolEmbedTheory:
             self.mmcoords=[self.coords[i] for i in self.mmatoms]
             self.mmelems=[self.elems[i] for i in self.mmatoms]
 
-            #print("List of all atoms:", self.allatoms)
+            print("List of all atoms:", self.allatoms)
+            print("System size:", len(self.allatoms))
             print("QM region size:", len(self.qmatoms))
             print("PE region size", len(self.peatoms))
             print("MM region size", len(self.mmatoms))
