@@ -1857,8 +1857,9 @@ class PolEmbedTheory:
 
                 elif self.pot_option=='LoProp':
                     print("Pot option: LoProp")
-                    os.environ['PATH'] = daltondir + ':'+os.environ['PATH']
-                    print("Current PATH is:", os.environ['PATH'])
+                    print("Note: dalton and loprop binaries need to be in shell PATH before running.")
+                    #os.environ['PATH'] = daltondir + ':'+os.environ['PATH']
+                    #print("Current PATH is:", os.environ['PATH'])
                     #TODO: Create pot file from scratch. Requires LoProp and Dalton I guess
                     system = pyframe.MolecularSystem(input_file=file)
                     core = system.get_fragments_by_name(names=['QM'])
@@ -1870,10 +1871,12 @@ class PolEmbedTheory:
                                       multipole_basis='loprop-6-31+G*', use_polarizabilities=True, polarizability_model='LoProp',
                                       polarizability_method='DFT', polarizability_xcfun='PBE0', polarizability_basis='loprop-6-31+G*')
                     project = pyframe.Project()
+                    print("Creating embedding potential")
                     project.create_embedding_potential(system)
                     project.write_core(system)
                     project.write_potential(system)
                     self.potfile=self.potfilename+'.pot'
+                    print("Created potfile (via Dalton and LoProp): ", self.potfile)
                 else:
                     print("Invalid option")
                     exit()
@@ -2586,6 +2589,8 @@ class DaltonTheory:
         #Setting energy to 0.0 for now
         self.energy=0.0
         
+        self.pe=pe
+        
         #Optional linking of coords to theory object, not necessary. TODO: Delete
         if fragment != None:
             self.fragment=fragment
@@ -2618,9 +2623,14 @@ class DaltonTheory:
         except:
             pass
     #Run function. Takes coords, elems etc. arguments and computes E or E+G.
-    def run(self, current_coords=None, qm_elems=None, Grad=False, nprocs=None, pe=False, potfile='', restart=False ):
+    def run(self, current_coords=None, qm_elems=None, Grad=False, nprocs=None, pe=None, potfile='', restart=False ):
         
         print(BC.OKBLUE,BC.BOLD, "------------RUNNING DALTON INTERFACE-------------", BC.END)
+        
+        if pe is not None:
+            pe=self.pe
+        
+        
         #Coords provided to run or else taken from initialization.
         #if len(current_coords) != 0:
         if current_coords is not None:
@@ -2644,7 +2654,7 @@ class DaltonTheory:
         with open("DALTON.INP",'w') as dalfile:
             for substring in self.dalton_input:
                 if '**DALTON' in substring:
-                    if self.pe is True:
+                    if pe is True:
                         dalfile.write(".PEQM\n")
                 dalfile.write(substring)
                 
