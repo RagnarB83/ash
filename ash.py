@@ -2662,7 +2662,7 @@ class DaltonTheory:
         
         print("Launching Dalton")
         print("daltondir:", self.daltondir)
-        if self.basis_dir is not None:
+        if self.basis_dir is None:
             print("No Dalton basis_dir provided. Attempting to set BASDIR:")
             os.environ['BASDIR'] = self.daltondir+"/../basis"
             print("BASDIR:", os.environ['BASDIR'])
