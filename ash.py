@@ -1857,8 +1857,8 @@ class PolEmbedTheory:
 
                 elif self.pot_option=='LoProp':
                     print("Pot option: LoProp")
-                    os.environ['PATH'] = daltondir + ':$PATH'
-                    print("Current PATH is:", os.environ['PATH'])
+                    #$os.environ['PATH'] = daltondir + ':$PATH'
+                    #print("Current PATH is:", os.environ['PATH'])
                     #TODO: Create pot file from scratch. Requires LoProp and Dalton I guess
                     system = pyframe.MolecularSystem(input_file=file)
                     core = system.get_fragments_by_name(names=['QM'])
