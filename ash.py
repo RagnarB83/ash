@@ -2630,7 +2630,7 @@ class DaltonTheory:
         if pe is not None:
             pe=self.pe
         
-        
+        print("pe: ", pe)
         #Coords provided to run or else taken from initialization.
         #if len(current_coords) != 0:
         if current_coords is not None:
@@ -2655,6 +2655,7 @@ class DaltonTheory:
             for substring in self.dalton_input:
                 if '**DALTON' in substring:
                     if pe is True:
+                        print("here. pe True")
                         dalfile.write(".PEQM\n")
                 dalfile.write(substring)
                 
