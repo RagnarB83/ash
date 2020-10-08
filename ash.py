@@ -3338,7 +3338,7 @@ class PySCFTheory:
             pass
     #Run function. Takes coords, elems etc. arguments and computes E or E+G.
     def run(self, current_coords=None, current_MM_coords=None, MMcharges=None, qm_elems=None,
-            mm_elems=None, elems=None, Grad=False, PC=False, nprocs=None, pe=False, potfile='', restart=False ):
+            mm_elems=None, elems=None, Grad=False, PC=False, nprocs=None, pe=False, potfile=None, restart=False ):
 
         if nprocs==None:
             nprocs=self.nprocs
@@ -3350,7 +3350,7 @@ class PySCFTheory:
         #If pe and potfile given as run argument
         if pe is not False:
             self.pe=pe
-        if potfile != '':
+        if potfile is not None:
             self.potfile=potfile
 
         #Coords provided to run or else taken from initialization.
@@ -3382,7 +3382,7 @@ class PySCFTheory:
         from pyscf.dft import xcfun
         if self.pe==True:
             import pyscf.solvent as solvent
-            from pyscf.solvent import pol_embed
+            #from pyscf.solvent import pol_embed
             import cppe
 
         #Defining mol object
@@ -3460,9 +3460,14 @@ class PySCFTheory:
         #Control printing here. TOdo: make variable
         mf.verbose = 4
 
-        #RUN ENERGY job
 
-        self.energy = mf.kernel()
+        mf.kernel()
+        #RUN ENERGY job
+        #if self.pe is True:
+        #    mf = solvent.PE(mf, self.potfile)
+        #    mf.run()
+        #else:
+        #    self.energy = mf.kernel()
 
         #if self.pe==True:
         #    print(mf._pol_embed.cppe_state.summary_string)
