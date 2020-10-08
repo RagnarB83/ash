@@ -3412,14 +3412,9 @@ class PySCFTheory:
                     exit()
             except:
                 exit()
-            #pe_options = cppe.PeOptions()
-            #pe_options.do_diis = True
-            #pe_options.potfile = self.potfile
-            #pe_options = { 'potfile' : self.potfile}
-            pe_options = { 'potfile' : "bla.pot"}
-            pe = pol_embed.PolEmbed(mol, pe_options)
+
             # TODO: Adapt to RKS vs. UKS etc.
-            mf = solvent.PE(scf.RKS(mol), pe)
+            mf = solvent.PE(scf.RKS(mol), self.potfile)
         else:
 
             if PC is True:
@@ -3445,10 +3440,6 @@ class PySCFTheory:
 
         #TODO: Restart settings for PySCF
 
-
-
-
-
         #Controlling OpenMP parallelization.
         lib.num_threads(nprocs)
 
@@ -3462,13 +3453,9 @@ class PySCFTheory:
         mf.verbose = 4
 
 
-        mf.kernel()
-        #RUN ENERGY job
-        #if self.pe is True:
-        #    mf = solvent.PE(mf, self.potfile)
-        #    mf.run()
-        #else:
-        #    self.energy = mf.kernel()
+
+        #RUN ENERGY job. mf object should have been wrapped by PE or PC here
+        mf.run()
 
         #if self.pe==True:
         #    print(mf._pol_embed.cppe_state.summary_string)
