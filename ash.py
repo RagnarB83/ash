@@ -3455,7 +3455,11 @@ class PySCFTheory:
 
 
         #RUN ENERGY job. mf object should have been wrapped by PE or PC here
-        self.energy = mf.run()
+        result = mf.run()
+        print("result:", result)
+        print("result dict", result.__dict__)
+        print("mf:", mf)
+        print("mf dict", mf.__dict__)       
         print("self.energy:", self.energy)
         #if self.pe==True:
         #    print(mf._pol_embed.cppe_state.summary_string)
