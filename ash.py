@@ -3464,8 +3464,8 @@ class PySCFTheory:
 
         self.energy = mf.kernel()
 
-        if self.pe==True:
-            print(mf._pol_embed.cppe_state.summary_string)
+        #if self.pe==True:
+        #    print(mf._pol_embed.cppe_state.summary_string)
 
         #Grab energy and gradient
         if Grad==True:
