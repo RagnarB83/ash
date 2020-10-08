@@ -2000,10 +2000,10 @@ class PolEmbedTheory:
                                                nprocs=nprocs, pe=True, potfile=self.potfile, restart=restart)
         elif self.qm_theory_name == "DaltonTheory":
             print("self.potfile:", self.potfile)
-            self.QMEnergy, self.QMgrad = self.qm_theory.run(current_coords=self.qmcoords, qm_elems=self.qmelems, Grad=False,
+            self.QMEnergy = self.qm_theory.run(current_coords=self.qmcoords, qm_elems=self.qmelems, Grad=False,
                                                nprocs=nprocs, pe=True, potfile=self.potfile, restart=restart)
         elif self.qm_theory_name == "PySCFTheory":
-            self.QMEnergy, self.QMgrad = self.qm_theory.run(current_coords=self.qmcoords, qm_elems=self.qmelems, Grad=False,
+            self.QMEnergy = self.qm_theory.run(current_coords=self.qmcoords, qm_elems=self.qmelems, Grad=False,
                                                nprocs=nprocs, pe=True, potfile=self.potfile, restart=restart)
 
         elif self.qm_theory_name == "ORCATheory":
@@ -2735,8 +2735,7 @@ class DaltonTheory:
         if self.energy==0.0:
             print("Problem. Energy not found in output: DALTON.OUT")
             exit()
-        self.gradient = np.zeros((5, 3))
-        return self.energy,self.gradient
+        return self.energy
 
 #ORCA Theory object. Fragment object is optional. Only used for single-points.
 
