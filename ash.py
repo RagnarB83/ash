@@ -3415,7 +3415,8 @@ class PySCFTheory:
             #pe_options = cppe.PeOptions()
             #pe_options.do_diis = True
             #pe_options.potfile = self.potfile
-            pe_options = { 'potfile' : self.potfile}
+            #pe_options = { 'potfile' : self.potfile}
+            pe_options = { 'potfile' : "bla.pot"}
             pe = pol_embed.PolEmbed(mol, pe_options)
             # TODO: Adapt to RKS vs. UKS etc.
             mf = solvent.PE(scf.RKS(mol), pe)
