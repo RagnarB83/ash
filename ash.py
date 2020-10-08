@@ -3412,9 +3412,10 @@ class PySCFTheory:
                     exit()
             except:
                 exit()
-            pe_options = cppe.PeOptions()
-            pe_options.do_diis = True
-            pe_options.potfile = self.potfile
+            #pe_options = cppe.PeOptions()
+            #pe_options.do_diis = True
+            #pe_options.potfile = self.potfile
+            pe_options = { 'do_diis' : True, 'potfile' : self.potfile}
             pe = pol_embed.PolEmbed(mol, pe_options)
             # TODO: Adapt to RKS vs. UKS etc.
             mf = solvent.PE(scf.RKS(mol), pe)
