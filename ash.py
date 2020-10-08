@@ -3382,7 +3382,7 @@ class PySCFTheory:
         from pyscf.dft import xcfun
         if self.pe==True:
             import pyscf.solvent as solvent
-            #from pyscf.solvent import pol_embed
+            from pyscf.solvent import pol_embed
             import cppe
 
         #Defining mol object
