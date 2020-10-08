@@ -1730,7 +1730,7 @@ class NonBondedTheory:
 #Peatoms: polarizable atoms. MMatoms: nonpolarizable atoms (e.g. TIP3P)
 class PolEmbedTheory:
     def __init__(self, fragment=None, qm_theory=None, qmatoms=None, peatoms=None, mmatoms=None, pot_create=True,
-                 potfilename='System', pot_option=None, pyframe=False, PElabel_pyframe='MM', daltondir=None):
+                 potfilename='System', pot_option=None, pyframe=False, PElabel_pyframe='MM', daltondir=None, pdbfile=None):
         print(BC.WARNING,BC.BOLD,"------------Defining PolEmbedTheory object-------------", BC.END)
         self.pot_create=pot_create
         self.pyframe=pyframe
@@ -1752,6 +1752,9 @@ class PolEmbedTheory:
                 exit()
 
 
+        if pdbfile is not None:
+            print("PDB file provided, will use residue information")
+
         # Region definitions
         if qmatoms is None:
             self.qmatoms = []
@@ -1762,6 +1765,7 @@ class PolEmbedTheory:
         else:
             self.peatoms=peatoms
         if mmatoms is None:
+            print("WARNING...mmatoms list is empty...")
             self.mmatoms = []
         else:
             self.mmatoms=mmatoms
@@ -1781,7 +1785,7 @@ class PolEmbedTheory:
             self.mmcoords=[self.coords[i] for i in self.mmatoms]
             self.mmelems=[self.elems[i] for i in self.mmatoms]
 
-            print("List of all atoms:", self.allatoms)
+            #print("List of all atoms:", self.allatoms)
             print("System size:", len(self.allatoms))
             print("QM region size:", len(self.qmatoms))
             print("PE region size", len(self.peatoms))
@@ -1790,6 +1794,7 @@ class PolEmbedTheory:
 
             #Creating list of QM, PE, MM labels used by reading residues in PDB-file
             #Also making residlist necessary
+            #TODO: This needs to be rewritten, only applies to water-solvent
             self.hybridatomlabels=[]
             self.residlabels=[]
             count=2
@@ -1805,7 +1810,7 @@ class PolEmbedTheory:
                     self.residlabels.append(count)
                     rescount+=1
                 elif i in self.mmatoms:
-                    print("i : {} in mmatoms".format(i))
+                    #print("i : {} in mmatoms".format(i))
                     self.hybridatomlabels.append('WAT')
                     self.residlabels.append(count)
                     rescount+=1
@@ -1827,8 +1832,10 @@ class PolEmbedTheory:
                     print("Pyframe not found. Install pyframe via pip (https://pypi.org/project/PyFraME):")
                     print("pip install pyframe")
                     exit(9)
-                write_pdbfile_dummy(self.elems, self.coords, self.potfilename, self.hybridatomlabels, self.residlabels)
-                file=self.potfilename+'.pdb'
+                #Create dummy pdb-file if PDB-file not provided
+                if pdbfile is None:
+                    write_pdbfile_dummy(self.elems, self.coords, self.potfilename, self.hybridatomlabels, self.residlabels)
+                    file=self.potfilename+'.pdb'
                 #Pyframe
                 if self.pot_option=='SEP':
                     print("Pot option: SEP")
@@ -1850,6 +1857,23 @@ class PolEmbedTheory:
                     system = pyframe.MolecularSystem(input_file=file)
                     solvent = system.get_fragments_by_name(names=['WAT'])
                     system.add_region(name='solvent', fragments=solvent, use_standard_potentials=True,
+                          standard_potential_model='TIP3P')
+                    project = pyframe.Project()
+                    project.create_embedding_potential(system)
+                    project.write_potential(system)
+                    self.potfile=self.potfilename+'.pot'
+                    print("Created potfile: ", self.potfile)
+                #RB. TEST. Protein system using standard potentials
+                elif self.pot_option=='Protein-SEP':
+                    file=pdbfile
+                    print("Pot option: Protein-SEP")
+                    exit()
+                    system = pyframe.MolecularSystem(input_file=file)
+                    Polregion = system.get_fragments_by_name(names=[self.PElabel_pyframe])
+                    NonPolregion = system.get_fragments_by_name(names=['WAT'])
+                    system.add_region(name='solventpol', fragments=solventPol, use_standard_potentials=True,
+                          standard_potential_model='SEP')
+                    system.add_region(name='solventnonpol', fragments=solventNonPol, use_standard_potentials=True,
                           standard_potential_model='TIP3P')
                     project = pyframe.Project()
                     project.create_embedding_potential(system)
@@ -1979,8 +2003,8 @@ class PolEmbedTheory:
             self.QMEnergy, self.QMgrad = self.qm_theory.run(current_coords=self.qmcoords, qm_elems=self.qmelems, Grad=False,
                                                nprocs=nprocs, pe=True, potfile=self.potfile, restart=restart)
         elif self.qm_theory_name == "PySCFTheory":
-            print("not yet implemented with PolEmbed")
-            exit()
+            self.QMEnergy, self.QMgrad = self.qm_theory.run(current_coords=self.qmcoords, qm_elems=self.qmelems, Grad=False,
+                                               nprocs=nprocs, pe=True, potfile=self.potfile, restart=restart)
 
         elif self.qm_theory_name == "ORCATheory":
             print("not available for ORCATheory")
@@ -3277,6 +3301,7 @@ class Psi4Theory:
 class PySCFTheory:
     def __init__(self, fragment='', charge='', mult='', printsetting='False', printlevel=2, pyscfbasis='', pyscffunctional='',
                  pe=False, potfile='', outputname='pyscf.out', pyscfmemory=3100, nprocs=1):
+
 
         #Printlevel
         self.printlevel=printlevel
