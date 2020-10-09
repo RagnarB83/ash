@@ -105,8 +105,21 @@ def isint(s):
     except TypeError:
         return False
 
-#Is variable a float
+#Is it possible to interpret string/number as float.
+#Note: integer variable/string can be interpreted. See also is_string_float_withdecimal below
 def isfloat(s):
+    try:
+        float(s)
+        return True
+    except ValueError:
+        return False
+
+#Is string a float with single decimal point
+def is_string_float_withdecimal(s):
+    #Checking if single . in string
+    if s.count('.') != 1:
+        return False
+    #Check if number can be interpreted as float
     try:
         float(s)
         return True

@@ -696,8 +696,9 @@ def read_ciffile(file):
                         #Disabling since not always elems in column
                         secondcol=line.split()[1]
                         secondcolumns.append(secondcol)
-                        #If second-column is float then this is fract_x
-                        if isfloat(secondcol.split('(')[0]):
+                        #If second-column is proper float then this is fract_x, else trying next
+                        if is_string_float_withdecimal(secondcol.split('(')[0]):
+                            print(secondcol.split('(')[0])
                             x_coord=float(line.split()[1].split('(')[0])
                             y_coord=float(line.split()[2].split('(')[0])
                             z_coord=float(line.split()[3].split('(')[0])
@@ -738,6 +739,7 @@ def read_ciffile(file):
 
     print("Symmetry operations found in CIF:", symmops)
     print("coords : ", coords)
+    exit()
     return [cell_a, cell_b, cell_c],[cell_alpha, cell_beta, cell_gamma],atomlabels,elems,coords,symmops,cellunits
 
 
