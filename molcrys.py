@@ -139,6 +139,8 @@ def molcrys(cif_file=None, xtl_file=None, xyz_file=None, cell_length=None, cell_
     #Converting orthogcoords to numpy array for better performance
     orthogcoords=np.asarray(orthogcoords)
 
+    print("orthogcoords:", orthogcoords)
+
     write_xyzfile(elems,orthogcoords,"cell_orthog-original")
     #Change origin to centroid of coords
     orthogcoords=change_origin_to_centroid(orthogcoords)
