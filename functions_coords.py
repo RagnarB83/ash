@@ -479,7 +479,7 @@ def write_xyzfile(elems,coords,name,printlevel=2):
         ofile.write(str(len(elems))+'\n')
         ofile.write("title"+'\n')
         for el,c in zip(elems,coords):
-            line="{:4} {:12.6f} {:12.6f} {:12.6f}".format(el,c[0], c[1], c[2])
+            line="{:4} {:16.12f} {:16.12f} {:16.12f}".format(el,c[0], c[1], c[2])
             ofile.write(line+'\n')
     if printlevel >= 2:
         print("Wrote XYZ file:", name+'.xyz')

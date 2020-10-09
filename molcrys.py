@@ -37,6 +37,9 @@ def molcrys(cif_file=None, xtl_file=None, xyz_file=None, cell_length=None, cell_
 
     origtime = time.time()
     currtime = time.time()
+    
+    
+    #INPUT-OPTION: CIF, XTL, XYZ
     if cif_file is not None:
         blankline()
         #Read CIF-file
@@ -121,7 +124,7 @@ def molcrys(cif_file=None, xtl_file=None, xyz_file=None, cell_length=None, cell_
         #TODO: think about what happens next
         
     else:
-        print("Neither CIF-file or XTL-file passed to molcrys. Exiting...")
+        print("Neither CIF-file, XTL-file or XYZ-file passed to molcrys. Exiting...")
         exit(1)
 
     print("Cell parameters: {} {} {} {} {} {}".format(cell_length[0],cell_length[1], cell_length[2] , cell_angles[0], cell_angles[1], cell_angles[2]))
@@ -246,9 +249,14 @@ def molcrys(cif_file=None, xtl_file=None, xyz_file=None, cell_length=None, cell_
             print(BC.FAIL,"After removing all partial fragments, the Cluster fragment is empty. Something went wrong. Exiting.", BC.END)
             exit(1)
     elif cluster_type == 'supercell':
+        #Super-cell instead of sphere. Advantage: If unitcell is well-behaved then we will have no dipole problem when we cut a sphere.
+        #Disadvantage, we could have partial fragment at boundary. 
+        #TODO: Check for partial fragments at boundary and clean up?? Adapt remove_partial_fragments ???
         print(BC.WARNING,"Warning. cluster_type = supercell is untested ",BC.END)
-        #TODO: Make supercell_expansion a keyword
         cluster_coords,cluster_elems = cell_extend_frag(cell_vectors, orthogcoords,elems,supercell_expansion)
+        
+        #TODO: Clean up partial fragments at boundary
+        
     else:
         print("unknown cluster_type")
         exit()
