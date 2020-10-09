@@ -243,7 +243,7 @@ def molcrys(cif_file=None, xtl_file=None, xyz_file=[], cell_length=None, cell_an
             print(BC.FAIL,"After removing all partial fragments, the Cluster fragment is empty. Something went wrong. Exiting.", BC.END)
             exit(1)
     elif cluster_type == 'supercell':
-        print("Warning. cluster_type = supercell is untested ")
+        print(BC.WARNING,"Warning. cluster_type = supercell is untested ",BC.END)
         #TODO: Make supercell_expansion a keyword
         cluster_coords,cluster_elems = cell_extend_frag(cell_vectors, orthogcoords,elems,supercell_expansion)
     else:
@@ -262,6 +262,7 @@ def molcrys(cif_file=None, xtl_file=None, xyz_file=[], cell_length=None, cell_an
     print_time_rel_and_tot(currtime, origtime, modulename='create Cluster fragment')
     currtime=time.time()
     Cluster.print_system("Cluster-first.ygg")
+    Cluster.write_xyzfile(xyzfilename="Cluster-first.xyz")
     print("Cluster size: ", Cluster.numatoms, "atoms")
     print_time_rel_and_tot(currtime, origtime, modulename='print Cluster system')
     currtime=time.time()
