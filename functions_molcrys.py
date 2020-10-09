@@ -739,7 +739,6 @@ def read_ciffile(file):
 
     print("Symmetry operations found in CIF:", symmops)
     print("coords : ", coords)
-    exit()
     return [cell_a, cell_b, cell_c],[cell_alpha, cell_beta, cell_gamma],atomlabels,elems,coords,symmops,cellunits
 
 
