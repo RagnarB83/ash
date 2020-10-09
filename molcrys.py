@@ -13,7 +13,7 @@ currtime=time.time()
 
 
 def molcrys(cif_file=None, xtl_file=None, xyz_file=[], cell_length=None, cell_angles=None, fragmentobjects=[], theory=None, numcores=None, chargemodel='',
-            clusterradius=None, shortrangemodel='UFF_modH', auto_connectivity=False, simple_supercell=False, shiftasymmunit=False):
+            clusterradius=None, shortrangemodel='UFF_modH', auto_connectivity=False, simple_supercell=False, shiftasymmunit=False, cluster_type='sphere'):
 
     banner="""
     THE
@@ -221,34 +221,45 @@ def molcrys(cif_file=None, xtl_file=None, xyz_file=[], cell_length=None, cell_an
     print_time_rel_and_tot(currtime, origtime, modulename='frag_define')
     currtime=time.time()
 
+
+
+    # CREATE SPHERE OR SUPERCELL!!
     #Reorder coordinates of cell based on Hungarian algorithm
     #TODO: Reorder so that all atoms in fragment have same internal order.
     #TODO: Also reorder so that unit cell is easy to understand.
     #TODO: First all mainfrags, then counterfrags ??
+    if cluster_type == 'sphere':
+        #Create MM cluster here already or later
+        cluster_coords,cluster_elems=create_MMcluster(orthogcoords,elems,cell_vectors,clusterradius)
+        print_time_rel_and_tot(currtime, origtime, modulename='create_MMcluster')
+        currtime=time.time()
 
-    #Create MM cluster here already or later
-    cluster_coords,cluster_elems=create_MMcluster(orthogcoords,elems,cell_vectors,clusterradius)
-    print_time_rel_and_tot(currtime, origtime, modulename='create_MMcluster')
-    currtime=time.time()
+        cluster_coords,cluster_elems=remove_partial_fragments(cluster_coords,cluster_elems,clusterradius,fragmentobjects, scale=chosenscale, tol=chosentol)
+        print_time_rel_and_tot(currtime, origtime, modulename='remove_partial_fragments')
+        currtime=time.time()
+        write_xyzfile(cluster_elems,cluster_coords,"cluster_coords")
 
-    #Removing partial fragments present in cluster
-    #import cProfile
-    #cProfile.run('remove_partial_fragments(cluster_coords,cluster_elems,sphereradius,fragmentobjects)')
+        if len(cluster_coords) == 0:
+            print(BC.FAIL,"After removing all partial fragments, the Cluster fragment is empty. Something went wrong. Exiting.", BC.END)
+            exit(1)
+    elif cluster_type == 'supercell':
+        print("Warning. cluster_type = supercell is untested ")
+        #TODO: Make supercell_expansion a keyword
+        supercell_expansion=[3,3,3]
+        cluster_coords,cluster_elems = cell_extend_frag(cell_vectors, orthogcoords,elems,supercell_expansion)
+    else:
+        print("unknown cluster_type")
+        exit()
 
-    cluster_coords,cluster_elems=remove_partial_fragments(cluster_coords,cluster_elems,clusterradius,fragmentobjects, scale=chosenscale, tol=chosentol)
-    print_time_rel_and_tot(currtime, origtime, modulename='remove_partial_fragments')
-    currtime=time.time()
-    write_xyzfile(cluster_elems,cluster_coords,"cluster_coords")
 
-    if len(cluster_coords) == 0:
-        print(BC.FAIL,"After removing all partial fragments, the Cluster fragment is empty. Something went wrong. Exiting.", BC.END)
-        exit(1)
 
 
     #Create ASH fragment object
     blankline()
     print("Creating new Cluster fragment:")
     Cluster=Fragment(elems=cluster_elems, coords=cluster_coords, scale=chosenscale, tol=chosentol)
+    
+    
     print_time_rel_and_tot(currtime, origtime, modulename='create Cluster fragment')
     currtime=time.time()
     Cluster.print_system("Cluster-first.ygg")
