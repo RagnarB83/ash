@@ -104,7 +104,7 @@ def molcrys(cif_file=None, xtl_file=None, xyz_file=None, cell_length=None, cell_
         orthogcoords=fract_to_orthogonal(cell_vectors,fullcellcoords)
         
     elif xyz_file is not None:
-        print("WARNING. UNTESTED OPTION!!")
+        print("WARNING. This option is not well tested. XYZ-file must contain all coordinates of cell.")
         blankline()
         #Read XYZ-file. Assuming file contains full-cell real-space coordinates 
         print("Reading XYZ file (assuming real-space coordinates in Angstrom):", xyz_file)
