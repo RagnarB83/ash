@@ -13,7 +13,7 @@ currtime=time.time()
 
 
 def molcrys(cif_file=None, xtl_file=None, xyz_file=[], cell_length=None, cell_angles=None, fragmentobjects=[], theory=None, numcores=None, chargemodel='',
-            clusterradius=None, shortrangemodel='UFF_modH', auto_connectivity=False, simple_supercell=False, shiftasymmunit=False, cluster_type='sphere'):
+            clusterradius=None, shortrangemodel='UFF_modH', auto_connectivity=False, simple_supercell=False, shiftasymmunit=False, cluster_type='sphere', supercell_expansion=[3,3,3]):
 
     banner="""
     THE
@@ -245,7 +245,6 @@ def molcrys(cif_file=None, xtl_file=None, xyz_file=[], cell_length=None, cell_an
     elif cluster_type == 'supercell':
         print("Warning. cluster_type = supercell is untested ")
         #TODO: Make supercell_expansion a keyword
-        supercell_expansion=[3,3,3]
         cluster_coords,cluster_elems = cell_extend_frag(cell_vectors, orthogcoords,elems,supercell_expansion)
     else:
         print("unknown cluster_type")
