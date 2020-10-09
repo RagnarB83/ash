@@ -69,7 +69,7 @@ def molcrys(cif_file=None, xtl_file=None, xyz_file=[], cell_length=None, cell_an
             print("Number of fractional coordinates in asymmetric unit:", len(asymmcoords))
             print("Number of asymmetric units in whole cell:", int(numasymmunits))
 
-        #cell_vectors=cellparamtovectors(cell_length,cell_angles)
+        cell_vectors=cellparamtovectors(cell_length,cell_angles)
         print("Number of fractional coordinates in whole cell:", len(fullcellcoords))
         #print_coordinates(elems, np.array(fullcellcoords), title="Fractional coordinates")
         #print_coords_all(fullcellcoords,elems)
@@ -90,7 +90,7 @@ def molcrys(cif_file=None, xtl_file=None, xyz_file=[], cell_length=None, cell_an
         blankline()
         cell_length,cell_angles,elems,fullcellcoords=read_xtlfile(xtl_file)
         
-        #cell_vectors=cellparamtovectors(cell_length,cell_angles)
+        cell_vectors=cellparamtovectors(cell_length,cell_angles)
         print("Number of fractional coordinates in whole cell:", len(fullcellcoords))
         #print_coordinates(elems, np.array(fullcellcoords), title="Fractional coordinates")
         #print_coords_all(fullcellcoords,elems)
