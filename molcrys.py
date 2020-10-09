@@ -12,7 +12,7 @@ origtime=time.time()
 currtime=time.time()
 
 
-def molcrys(cif_file=None, xtl_file=None, xyz_file=[], cell_length=None, cell_angles=None, fragmentobjects=[], theory=None, numcores=None, chargemodel='',
+def molcrys(cif_file=None, xtl_file=None, xyz_file=None, cell_length=None, cell_angles=None, fragmentobjects=[], theory=None, numcores=None, chargemodel='',
             clusterradius=None, shortrangemodel='UFF_modH', auto_connectivity=False, simple_supercell=False, shiftasymmunit=False, cluster_type='sphere', supercell_expansion=[3,3,3]):
 
     banner="""
@@ -104,9 +104,13 @@ def molcrys(cif_file=None, xtl_file=None, xyz_file=[], cell_length=None, cell_an
         orthogcoords=fract_to_orthogonal(cell_vectors,fullcellcoords)
         
     elif xyz_file is not None:
+        print("WARNING. UNTESTED OPTION!!")
         blankline()
         #Read XYZ-file. Assuming file contains full-cell real-space coordinates 
         print("Reading XYZ file (assuming real-space coordinates in Angstrom):", xyz_file)
+        elems,orthogcoords=read_xyzfile(xyz_file)
+        print("Read {} atoms from XYZ-files".format(len(orthogcoords)))
+        
         #TODO: read xyz-file here
         #Need to read cell_lengths and cell_angles also
         if cell_length is None or cell_angles is None:
@@ -116,7 +120,6 @@ def molcrys(cif_file=None, xtl_file=None, xyz_file=[], cell_length=None, cell_an
         
         #TODO: think about what happens next
         
-        exit()
     else:
         print("Neither CIF-file or XTL-file passed to molcrys. Exiting...")
         exit(1)
