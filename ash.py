@@ -38,7 +38,8 @@ try:
 except:
     print("Problem importing Pyjulia")
     print("Make sure Julia is installed, PyJulia within Python, Pycall within Julia, Julia packages have been installed and you are using python-jl")
-    exit(9)
+    print("Python routines will be used instead when possible")
+
 ashpath = os.path.dirname(ash.__file__)
 #Various Julia functions
 Main.include(ashpath + "/functions_julia.jl")
