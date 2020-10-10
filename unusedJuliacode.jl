@@ -151,35 +151,6 @@ end
 
 
 
-
-
-
-
-
-
-
-
-
-#Distance for 2D arrays of coords
-#Probably won't be used much. Slower than
-function distance_array(x::Array{Float64, 2}, y::Array{Float64, 2})
-    nx = size(x, 1)
-    ny = size(y, 1)
-    r=zeros(nx,ny)
-
-        for j = 1:ny
-            @fastmath for i = 1:nx
-                @inbounds dx = y[j, 1] - x[i, 1]
-                @inbounds dy = y[j, 2] - x[i, 2]
-                @inbounds dz = y[j, 3] - x[i, 3]
-                rSq = dx*dx + dy*dy + dz*dz
-                @inbounds r[i, j] = sqrt(rSq)
-            end
-        end
-    return r
-end
-
-
 #Connectivity entirely via Julia
 #Old: Delete
 function old_calc_connectivity(coords,elems,conndepth,scale, tol,eldict_covrad)
@@ -203,4 +174,38 @@ function old_calc_connectivity(coords,elems,conndepth,scale, tol,eldict_covrad)
 		end
 	end
 	return fraglist
+end
+
+#Compute distances between each pair of two arrays, mimics scipy.spatial.distance.cdist
+#This does col by col by first transposing
+#Slow compared to distance_array due to slicing.
+#Could be replaced by view but element-wise version in distance_array is probably best
+function distance_array_col(XA,XB)
+    XAt=permutedims(XA)
+    XBt=permutedims(XB)
+    distances=zeros(size(XA,1),size(XA,1))
+    @inbounds for i in 1:size(XA,1)
+        @inbounds for j in 1:size(XB,1)
+                #This slicing is really slow
+                @inbounds col_a = XAt[:,i]
+                @inbounds col_b = XBt[:,j]
+                 @inbounds dist = distance_two_vectors(col_a,col_b)
+                 @inbounds distances[i,j] = dist
+            end
+        end
+    return distances
+end
+#This does row by row. Same problem as col version
+function distance_array_row(XA,XB)
+    distances=zeros(size(XA,1),size(XA,1))
+    for i in 1:size(XA,1)
+        for j in 1:size(XB,1)
+                #This slicing is really slow
+                row_a=XA[i,:]
+                row_b=XB[j,:]
+                 @inbounds dist = distance_two_vectors(row_a,row_b)
+                 distances[i,j] = dist
+        end
+    end
+    return distances
 end

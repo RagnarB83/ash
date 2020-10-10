@@ -27,6 +27,23 @@ debugflag=False
 import sys
 import inspect
 
+
+#Julia dependency
+try:
+    print("Import PyJulia interface")
+    from julia.api import Julia
+    from julia import Main
+    #Hungarian package needs to be installed
+    from julia import Hungarian
+except:
+    print("Problem importing Pyjulia")
+    print("Make sure Julia is installed, PyJulia within Python, Pycall within Julia, Julia packages have been installed and you are using python-jl")
+    exit(9)
+ashpath = os.path.dirname(ash.__file__)
+#Various Julia functions
+Main.include(ashpath + "/functions_julia.jl")
+
+
 #Useful function to measure size of object:
 #https://goshippo.com/blog/measure-real-size-any-python-object/
 #https://github.com/bosswissam/pysize/blob/master/pysize.py
