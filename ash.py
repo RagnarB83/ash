@@ -35,14 +35,15 @@ try:
     from julia import Main
     #Hungarian package needs to be installed
     from julia import Hungarian
+    ashpath = os.path.dirname(ash.__file__)
+    #Various Julia functions
+    Main.include(ashpath + "/functions_julia.jl")
 except:
     print("Problem importing Pyjulia")
     print("Make sure Julia is installed, PyJulia within Python, Pycall within Julia, Julia packages have been installed and you are using python-jl")
     print("Python routines will be used instead when possible")
 
-ashpath = os.path.dirname(ash.__file__)
-#Various Julia functions
-Main.include(ashpath + "/functions_julia.jl")
+
 
 
 #Useful function to measure size of object:
