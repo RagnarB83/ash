@@ -29,6 +29,7 @@ import inspect
 
 
 #Julia dependency
+#Current behaviour: We try to import, if not possible then we continue
 try:
     print("Import PyJulia interface")
     from julia.api import Julia
@@ -1373,7 +1374,7 @@ class OpenMMTheory:
 # Simple nonbonded MM theory. Charges and LJ-potentials
 class NonBondedTheory:
     def __init__(self, atomtypes=None, forcefield=None, charges = None, LJcombrule='geometric',
-                 codeversion='julia', pairarrayversion='julia', printlevel=2):
+                 codeversion='julia', printlevel=2):
 
         #Printlevel
         self.printlevel=printlevel
@@ -1386,8 +1387,6 @@ class NonBondedTheory:
         #
         self.numatoms = len(self.atomtypes)
         self.LJcombrule=LJcombrule
-
-        self.pairarrayversion=pairarrayversion
 
         #Todo: Delete
         # If qmatoms list passed to Nonbonded theory then we are doing QM/MM
@@ -1539,31 +1538,19 @@ class NonBondedTheory:
         CheckpointTime = time.time()
         # See speed-tests at /home/bjornsson/pairpot-test
 
-        if self.pairarrayversion=="julia":
+        if self.codeversion=="julia":
             if self.printlevel >= 2:
                 print("Using PyJulia for fast sigmaij and epsij array creation")
-            ashpath = os.path.dirname(ash.__file__)
-
             # Necessary for statically linked libpython
-            #IF not doing python-jl
-            #from julia.api import Julia
-            #jl = Julia(compiled_modules=False)
-            #Possibly disables deprecated warning
-            #Julia(depwarn=True)
-            # Import Julia
             try:
                 from julia.api import Julia
-                #Does not work
-                #jl = Julia(depwarn=False)
                 from julia import Main
             except:
                 print("Problem importing Pyjulia (import julia)")
                 print("Make sure Julia is installed and PyJulia module available")
                 print("Also, are you using python-jl ?")
-                print("Alternatively, use pairarrayversion='py' argument to NonBondedTheory to use slower Python version for array creation")
+                print("Alternatively, use codeversion='py' argument to NonBondedTheory to use slower Python version for array creation")
                 exit(9)
-            # Defining Julia Module
-            Main.include(ashpath + "/functions_julia.jl")
 
 
             # Do pairpot array for whole system
@@ -1575,7 +1562,7 @@ class NonBondedTheory:
                 print("Calculating pairpotential array for active region only")
                 self.sigmaij, self.epsij = Main.Juliafunctions.pairpot_active(self.numatoms, self.atomtypes, self.LJpairpotdict, qmatoms, actatoms)
         # New for-loop for creating sigmaij and epsij arrays. Uses dict-lookup instead
-        elif self.pairarrayversion=="py":
+        elif self.codeversion=="py":
             if self.printlevel >= 2:
                 print("Using Python version for array creation")
                 print("Does not yet skip frozen-frozen atoms...to be fixed")
@@ -1596,7 +1583,7 @@ class NonBondedTheory:
                         self.sigmaij[i, j] = self.LJpairpotdict[(self.atomtypes[j], self.atomtypes[i])][0]
                         self.epsij[i, j] = self.LJpairpotdict[(self.atomtypes[j], self.atomtypes[i])][1]
         else:
-            print("unknown pairarrayversion")
+            print("unknown codeversion")
             exit()
 
         if self.printlevel >= 2:
@@ -1709,7 +1696,6 @@ class NonBondedTheory:
         elif self.codeversion=='julia':
             if self.printlevel >= 2:
                 print("Using fast Julia version, v1")
-            ashpath = os.path.dirname(ash.__file__)
             # Necessary for statically linked libpython
             try:
                 from julia.api import Julia
@@ -1718,10 +1704,8 @@ class NonBondedTheory:
                 print("Problem importing Pyjulia (import julia)")
                 print("Make sure Julia is installed and PyJulia module available")
                 print("Also, are you using python-jl ?")
-                print("Alternatively, use pairarrayversion='py' argument to NonBondedTheory to use slower Python version for array creation")
+                print("Alternatively, use codeversion='py' argument to NonBondedTheory to use slower Python version for array creation")
                 exit(9)
-            # Defining Julia Module
-            Main.include(ashpath + "/functions_julia.jl")
             print_time_rel(CheckpointTime, modulename="from run to just before calling ")
             self.MMEnergy, self.MMGradient, self.LJenergy, self.Coulombchargeenergy =\
                 Main.Juliafunctions.LJcoulombchargev1c(charges, current_coords, self.epsij, self.sigmaij, connectivity)
@@ -3939,9 +3923,6 @@ class Fragment:
             try:
                 from julia.api import Julia
                 from julia import Main
-                # Defining Julia Module
-                ashpath = os.path.dirname(ash.__file__)
-                Main.include(ashpath + "/functions_julia.jl")
                 timestampB = time.time()
                 fraglist_temp = Main.Juliafunctions.calc_connectivity(self.coords, self.elems, conndepth, scale, tol,
                                                                       eldict_covrad)

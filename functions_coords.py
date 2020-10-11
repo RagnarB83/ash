@@ -779,13 +779,17 @@ def scipy_hungarian(A,B):
 #PyJulia needs to have been imported before (ash.py)
 def hungarian(A, B):
     
-    #Calculating distances via Julia
-    distances =ash.Main.Juliafunctions.distance_array(A,B)
+    try:
+        #Calculating distances via Julia
+        distances =ash.Main.Juliafunctions.distance_array(A,B)
     
-    # Julian Hungarian call. Requires Hungarian package
-    assignment, cost = ash.Hungarian.hungarian(distances)
-    #Removing zeros and offsetting by 1 (Julia 1-indexing)
-    final_assignment=assignment[assignment != 0]-1
+        # Julian Hungarian call. Requires Hungarian package
+        assignment, cost = ash.Hungarian.hungarian(distances)
+        #Removing zeros and offsetting by 1 (Julia 1-indexing)
+        final_assignment=assignment[assignment != 0]-1
+    except:
+        print("Problem running Julia Hungarian function. Trying scipy instead")
+        final_assignment = scipy_hungarian(A,B)
     
     return final_assignment
 
