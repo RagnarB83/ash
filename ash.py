@@ -27,6 +27,26 @@ debugflag=False
 import sys
 import inspect
 
+
+#Julia dependency
+#Current behaviour: We try to import, if not possible then we continue
+try:
+    print("Import PyJulia interface")
+    from julia.api import Julia
+    from julia import Main
+    #Hungarian package needs to be installed
+    from julia import Hungarian
+    ashpath = os.path.dirname(ash.__file__)
+    #Various Julia functions
+    Main.include(ashpath + "/functions_julia.jl")
+except:
+    print("Problem importing Pyjulia")
+    print("Make sure Julia is installed, PyJulia within Python, Pycall within Julia, Julia packages have been installed and you are using python-jl")
+    print("Python routines will be used instead when possible")
+
+
+
+
 #Useful function to measure size of object:
 #https://goshippo.com/blog/measure-real-size-any-python-object/
 #https://github.com/bosswissam/pysize/blob/master/pysize.py
@@ -60,7 +80,7 @@ def get_size(obj, seen=None):
     return size
 
 
-#Debug print. Behaves like print bug reads global debug var first
+#Debug print. Behaves like print but reads global debug var first
 def printdebug(string,var=''):
     global debugflag
     if debugflag is True:
@@ -1354,7 +1374,7 @@ class OpenMMTheory:
 # Simple nonbonded MM theory. Charges and LJ-potentials
 class NonBondedTheory:
     def __init__(self, atomtypes=None, forcefield=None, charges = None, LJcombrule='geometric',
-                 codeversion='julia', pairarrayversion='julia', printlevel=2):
+                 codeversion='julia', printlevel=2):
 
         #Printlevel
         self.printlevel=printlevel
@@ -1367,8 +1387,6 @@ class NonBondedTheory:
         #
         self.numatoms = len(self.atomtypes)
         self.LJcombrule=LJcombrule
-
-        self.pairarrayversion=pairarrayversion
 
         #Todo: Delete
         # If qmatoms list passed to Nonbonded theory then we are doing QM/MM
@@ -1520,31 +1538,19 @@ class NonBondedTheory:
         CheckpointTime = time.time()
         # See speed-tests at /home/bjornsson/pairpot-test
 
-        if self.pairarrayversion=="julia":
+        if self.codeversion=="julia":
             if self.printlevel >= 2:
                 print("Using PyJulia for fast sigmaij and epsij array creation")
-            ashpath = os.path.dirname(ash.__file__)
-
             # Necessary for statically linked libpython
-            #IF not doing python-jl
-            #from julia.api import Julia
-            #jl = Julia(compiled_modules=False)
-            #Possibly disables deprecated warning
-            #Julia(depwarn=True)
-            # Import Julia
             try:
                 from julia.api import Julia
-                #Does not work
-                #jl = Julia(depwarn=False)
                 from julia import Main
             except:
                 print("Problem importing Pyjulia (import julia)")
                 print("Make sure Julia is installed and PyJulia module available")
                 print("Also, are you using python-jl ?")
-                print("Alternatively, use pairarrayversion='py' argument to NonBondedTheory to use slower Python version for array creation")
+                print("Alternatively, use codeversion='py' argument to NonBondedTheory to use slower Python version for array creation")
                 exit(9)
-            # Defining Julia Module
-            Main.include(ashpath + "/functions_julia.jl")
 
 
             # Do pairpot array for whole system
@@ -1556,7 +1562,7 @@ class NonBondedTheory:
                 print("Calculating pairpotential array for active region only")
                 self.sigmaij, self.epsij = Main.Juliafunctions.pairpot_active(self.numatoms, self.atomtypes, self.LJpairpotdict, qmatoms, actatoms)
         # New for-loop for creating sigmaij and epsij arrays. Uses dict-lookup instead
-        elif self.pairarrayversion=="py":
+        elif self.codeversion=="py":
             if self.printlevel >= 2:
                 print("Using Python version for array creation")
                 print("Does not yet skip frozen-frozen atoms...to be fixed")
@@ -1577,7 +1583,7 @@ class NonBondedTheory:
                         self.sigmaij[i, j] = self.LJpairpotdict[(self.atomtypes[j], self.atomtypes[i])][0]
                         self.epsij[i, j] = self.LJpairpotdict[(self.atomtypes[j], self.atomtypes[i])][1]
         else:
-            print("unknown pairarrayversion")
+            print("unknown codeversion")
             exit()
 
         if self.printlevel >= 2:
@@ -1690,7 +1696,6 @@ class NonBondedTheory:
         elif self.codeversion=='julia':
             if self.printlevel >= 2:
                 print("Using fast Julia version, v1")
-            ashpath = os.path.dirname(ash.__file__)
             # Necessary for statically linked libpython
             try:
                 from julia.api import Julia
@@ -1699,10 +1704,8 @@ class NonBondedTheory:
                 print("Problem importing Pyjulia (import julia)")
                 print("Make sure Julia is installed and PyJulia module available")
                 print("Also, are you using python-jl ?")
-                print("Alternatively, use pairarrayversion='py' argument to NonBondedTheory to use slower Python version for array creation")
+                print("Alternatively, use codeversion='py' argument to NonBondedTheory to use slower Python version for array creation")
                 exit(9)
-            # Defining Julia Module
-            Main.include(ashpath + "/functions_julia.jl")
             print_time_rel(CheckpointTime, modulename="from run to just before calling ")
             self.MMEnergy, self.MMGradient, self.LJenergy, self.Coulombchargeenergy =\
                 Main.Juliafunctions.LJcoulombchargev1c(charges, current_coords, self.epsij, self.sigmaij, connectivity)
@@ -1730,7 +1733,7 @@ class NonBondedTheory:
 #Peatoms: polarizable atoms. MMatoms: nonpolarizable atoms (e.g. TIP3P)
 class PolEmbedTheory:
     def __init__(self, fragment=None, qm_theory=None, qmatoms=None, peatoms=None, mmatoms=None, pot_create=True,
-                 potfilename='System', pot_option='', pyframe=False, PElabel_pyframe='MM'):
+                 potfilename='System', pot_option=None, pyframe=False, PElabel_pyframe='MM', daltondir=None, pdbfile=None):
         print(BC.WARNING,BC.BOLD,"------------Defining PolEmbedTheory object-------------", BC.END)
         self.pot_create=pot_create
         self.pyframe=pyframe
@@ -1746,6 +1749,15 @@ class PolEmbedTheory:
         else:
             print(BC.FAIL, "QM-theory:", self.qm_theory_name, "is  NOT supported in Polarizable Embedding", BC.END)
 
+        if self.pot_option=='LoProp':
+            if daltondir is None:
+                print("LoProp option chosen. This requires daltondir variable")
+                exit()
+
+
+        if pdbfile is not None:
+            print("PDB file provided, will use residue information")
+
         # Region definitions
         if qmatoms is None:
             self.qmatoms = []
@@ -1756,6 +1768,7 @@ class PolEmbedTheory:
         else:
             self.peatoms=peatoms
         if mmatoms is None:
+            print("WARNING...mmatoms list is empty...")
             self.mmatoms = []
         else:
             self.mmatoms=mmatoms
@@ -1776,6 +1789,7 @@ class PolEmbedTheory:
             self.mmelems=[self.elems[i] for i in self.mmatoms]
 
             #print("List of all atoms:", self.allatoms)
+            print("System size:", len(self.allatoms))
             print("QM region size:", len(self.qmatoms))
             print("PE region size", len(self.peatoms))
             print("MM region size", len(self.mmatoms))
@@ -1783,19 +1797,23 @@ class PolEmbedTheory:
 
             #Creating list of QM, PE, MM labels used by reading residues in PDB-file
             #Also making residlist necessary
+            #TODO: This needs to be rewritten, only applies to water-solvent
             self.hybridatomlabels=[]
             self.residlabels=[]
             count=2
             rescount=0
             for i in self.allatoms:
                 if i in self.qmatoms:
+                    print("i : {} in qmatoms".format(i))
                     self.hybridatomlabels.append('QM')
                     self.residlabels.append(1)
                 elif i in self.peatoms:
+                    print("i : {} in peatoms".format(i))
                     self.hybridatomlabels.append(self.PElabel_pyframe)
                     self.residlabels.append(count)
                     rescount+=1
                 elif i in self.mmatoms:
+                    #print("i : {} in mmatoms".format(i))
                     self.hybridatomlabels.append('WAT')
                     self.residlabels.append(count)
                     rescount+=1
@@ -1803,10 +1821,8 @@ class PolEmbedTheory:
                     count+=1
                     rescount=0
 
-        #print("self.hybridatomlabels:", self.hybridatomlabels)
-
-
-
+        print("self.hybridatomlabels:", self.hybridatomlabels)
+        print("self.residlabels:", self.residlabels)
         #Create Potential file here. Usually true.
         if self.pot_create==True:
             print("Potfile Creation is on!")
@@ -1819,8 +1835,10 @@ class PolEmbedTheory:
                     print("Pyframe not found. Install pyframe via pip (https://pypi.org/project/PyFraME):")
                     print("pip install pyframe")
                     exit(9)
-                write_pdbfile_dummy(self.elems, self.coords, self.potfilename, self.hybridatomlabels, self.residlabels)
-                file=self.potfilename+'.pdb'
+                #Create dummy pdb-file if PDB-file not provided
+                if pdbfile is None:
+                    write_pdbfile_dummy(self.elems, self.coords, self.potfilename, self.hybridatomlabels, self.residlabels)
+                    file=self.potfilename+'.pdb'
                 #Pyframe
                 if self.pot_option=='SEP':
                     print("Pot option: SEP")
@@ -1848,23 +1866,49 @@ class PolEmbedTheory:
                     project.write_potential(system)
                     self.potfile=self.potfilename+'.pot'
                     print("Created potfile: ", self.potfile)
-
-                else:
-                    #TODO: Create pot file from scratch. Requires LoProp and Dalton I guess
-                    print("Only pot_option SEP or TIP3P possible right now")
+                #RB. TEST. Protein system using standard potentials
+                elif self.pot_option=='Protein-SEP':
+                    file=pdbfile
+                    print("Pot option: Protein-SEP")
                     exit()
+                    system = pyframe.MolecularSystem(input_file=file)
+                    Polregion = system.get_fragments_by_name(names=[self.PElabel_pyframe])
+                    NonPolregion = system.get_fragments_by_name(names=['WAT'])
+                    system.add_region(name='solventpol', fragments=solventPol, use_standard_potentials=True,
+                          standard_potential_model='SEP')
+                    system.add_region(name='solventnonpol', fragments=solventNonPol, use_standard_potentials=True,
+                          standard_potential_model='TIP3P')
+                    project = pyframe.Project()
+                    project.create_embedding_potential(system)
+                    project.write_potential(system)
+                    self.potfile=self.potfilename+'.pot'
+                    print("Created potfile: ", self.potfile)
+
+                elif self.pot_option=='LoProp':
+                    print("Pot option: LoProp")
+                    print("Note: dalton and loprop binaries need to be in shell PATH before running.")
+                    #os.environ['PATH'] = daltondir + ':'+os.environ['PATH']
+                    #print("Current PATH is:", os.environ['PATH'])
+                    #TODO: Create pot file from scratch. Requires LoProp and Dalton I guess
                     system = pyframe.MolecularSystem(input_file=file)
                     core = system.get_fragments_by_name(names=['QM'])
                     system.set_core_region(fragments=core, program='Dalton', basis='pcset-1')
                     # solvent = system.get_fragments_by_distance(reference=core, distance=4.0)
                     solvent = system.get_fragments_by_name(names=[self.PElabel_pyframe])
-                    system.add_region(name='solvent', fragments=solvent, use_standard_potentials=True,
-                          standard_potential_model=self.pot_option)
+                    system.add_region(name='solvent', fragments=solvent, use_mfcc=True, use_multipoles=True, 
+                                      multipole_order=2, multipole_model='LoProp', multipole_method='DFT', multipole_xcfun='PBE0',
+                                      multipole_basis='loprop-6-31+G*', use_polarizabilities=True, polarizability_model='LoProp',
+                                      polarizability_method='DFT', polarizability_xcfun='PBE0', polarizability_basis='loprop-6-31+G*')
                     project = pyframe.Project()
+                    print("Creating embedding potential")
                     project.create_embedding_potential(system)
                     project.write_core(system)
                     project.write_potential(system)
                     self.potfile=self.potfilename+'.pot'
+                    print("Created potfile (via Dalton and LoProp): ", self.potfile)
+                else:
+                    print("Invalid option")
+                    exit()
                 #Copying pyframe-created potfile from dir:
                 shutil.copyfile(self.potfilename+'/' + self.potfilename+'.pot', './'+self.potfilename+'.pot')
 
@@ -1923,8 +1967,8 @@ class PolEmbedTheory:
                     print("Other pot options not yet available")
                     exit()
         else:
-            print("Pot creation is off for this object.")
-
+            print("Pot creation is off for this object. Assuming potfile has been provided")
+            self.potfile=potfilename+'.pot'
 
     def run(self, current_coords=None, elems=None, Grad=False, nprocs=1, potfile=None, restart=False):
         print(BC.WARNING, BC.BOLD, "------------RUNNING PolEmbedTheory MODULE-------------", BC.END)
@@ -1957,13 +2001,14 @@ class PolEmbedTheory:
 
             self.QMEnergy = self.qm_theory.run(current_coords=self.qmcoords, qm_elems=self.qmelems, Grad=False,
                                                nprocs=nprocs, pe=True, potfile=self.potfile, restart=restart)
-
-        elif self.qm_theory_name == "PySCFTheory":
-            print("not yet implemented with PolEmbed")
-            exit()
         elif self.qm_theory_name == "DaltonTheory":
-            print("not yet implemented")
-            exit()
+            print("self.potfile:", self.potfile)
+            self.QMEnergy = self.qm_theory.run(current_coords=self.qmcoords, qm_elems=self.qmelems, Grad=False,
+                                               nprocs=nprocs, pe=True, potfile=self.potfile, restart=restart)
+        elif self.qm_theory_name == "PySCFTheory":
+            self.QMEnergy = self.qm_theory.run(current_coords=self.qmcoords, qm_elems=self.qmelems, Grad=False,
+                                               nprocs=nprocs, pe=True, potfile=self.potfile, restart=restart)
+
         elif self.qm_theory_name == "ORCATheory":
             print("not available for ORCATheory")
             exit()
@@ -2016,7 +2061,8 @@ class QMMMTheory:
 
             # Region definitions
             self.allatoms=list(range(0,len(self.elems)))
-            self.qmatoms = qmatoms
+            #Sorting qmatoms list
+            self.qmatoms = sorted(qmatoms)
             self.mmatoms=listdiff(self.allatoms,self.qmatoms)
 
             # FROZEN AND ACTIVE ATOMS
@@ -2027,12 +2073,13 @@ class QMMMTheory:
                 self.frozenatoms=[]
             elif actatoms is not None and frozenatoms is None:
                 print("Actatoms list passed to QM/MM object. Will skip all frozen interactions in MM.")
-                self.actatoms = actatoms
+                #Sorting actatoms list
+                self.actatoms = sorted(actatoms)
                 self.frozenatoms = listdiff(self.allatoms, self.actatoms)
                 print("{} active atoms, {} frozen atoms".format(len(self.actatoms), len(self.frozenatoms)))
             elif frozenatoms is not None and actatoms is None:
                 print("Frozenatoms list passed to QM/MM object. Will skip all frozen interactions in MM.")
-                self.frozenatoms = frozenatoms
+                self.frozenatoms = sorted(frozenatoms)
                 self.actatoms = listdiff(self.allatoms, self.frozenatoms)
                 print("{} active atoms, {} frozen atoms".format(len(self.actatoms), len(self.frozenatoms)))
             else:
@@ -2119,7 +2166,7 @@ class QMMMTheory:
 
             #Check if we need linkatoms by getting boundary atoms dict:
             blankline()
-            self.boundaryatoms = get_boundary_atoms(qmatoms, self.coords, self.elems, settings_ash.scale, settings_ash.tol)
+            self.boundaryatoms = get_boundary_atoms(self.qmatoms, self.coords, self.elems, settings_ash.scale, settings_ash.tol)
             
             if len(self.boundaryatoms) >0:
                 print("Found covalent QM-MM boundary. Linkatoms option set to True")
@@ -2157,7 +2204,7 @@ class QMMMTheory:
                 print("Charges of QM atoms set to 0 (since Electrostatic Embedding):")
                 if self.printlevel > 3:
                     for i in self.allatoms:
-                        if i in qmatoms:
+                        if i in self.qmatoms:
                             print("QM atom {} ({}) charge: {}".format(i, self.elems[i], self.charges_mod[i]))
                         else:
                             print("MM atom {} ({}) charge: {}".format(i, self.elems[i], self.charges_mod[i]))
@@ -2308,7 +2355,6 @@ class QMMMTheory:
         self.mmelems=[self.elems[i] for i in self.mmatoms]
         
         
-
         
         #LINKATOMS
         #1. Get linkatoms coordinates
@@ -2538,6 +2584,162 @@ class QMMMTheory:
 
 
 
+class DaltonTheory:
+    def __init__(self, daltondir=None, fragment=None, charge=None, mult=None, printlevel=2, nprocs=1, pe=False, potfile='',
+                 label=None, method=None, response=None, dalton_input=None, basis_name=None,basis_dir=None):
+        if daltondir is None:
+            print("No daltondir argument passed to DaltonTheory. Attempting to find daltondir variable inside settings_ash")
+            self.daltondir=settings_ash.daltondir
+        else:
+            self.daltondir = daltondir
+
+        if basis_name is not None:
+            print("here")
+            self.basis_name=basis_name
+        else:
+            print("Please provide basis_name to DaltonTheory object")
+            exit()
+
+        #Directory where basis sets are. If not defined, ASH will assume basis directory is one dir up
+        self.basis_dir=basis_dir
+
+        #Used to write name in MOLECULE.INP. Not necessary?
+        self.moleculename="None"
+
+        #Dalton input as a multi-line string
+        self.dalton_input=dalton_input
+
+        #Label to distinguish different Dalton objects
+        self.label=label
+        #Printlevel
+        self.printlevel=printlevel
+        #Setting nprocs of object
+        self.nprocs=nprocs
+        
+        #Setting energy to 0.0 for now
+        self.energy=0.0
+        
+        self.pe=pe
+        
+        #Optional linking of coords to theory object, not necessary. TODO: Delete
+        if fragment != None:
+            self.fragment=fragment
+            self.coords=fragment.coords
+            self.elems=fragment.elems
+        #print("frag elems", self.fragment.elems)
+        if charge!=None:
+            self.charge=int(charge)
+        if mult!=None:
+            self.mult=int(mult)
+        print("Note: Dalton assumes mult=1 for even electrons and mult=2 for odd electrons.")
+        if self.printlevel >=2:
+            print("")
+            print("Creating DaltonTheory object")
+            print("Dalton dir:", self.daltondir)
+    #Cleanup after run.
+    def cleanup(self):
+        print("Cleaning up old Dalton files")
+        list=[]
+        #list.append(self.inputfilename + '.gbw')
+        for file in list:
+            try:
+                os.remove(file)
+            except:
+                pass
+        # os.remove(self.inputfilename + '.out')
+        try:
+            for tmpfile in glob.glob("self.inputfilename*tmp"):
+                os.remove(tmpfile)
+        except:
+            pass
+    #Run function. Takes coords, elems etc. arguments and computes E or E+G.
+    def run(self, current_coords=None, qm_elems=None, Grad=False, nprocs=None, pe=None, potfile='', restart=False ):
+        
+        print(BC.OKBLUE,BC.BOLD, "------------RUNNING DALTON INTERFACE-------------", BC.END)
+        if pe is None:
+            pe=self.pe
+        
+        print("pe: ", pe)
+        #Coords provided to run or else taken from initialization.
+        #if len(current_coords) != 0:
+        if current_coords is not None:
+            pass
+        else:
+            current_coords=self.coords
+
+        #What elemlist to use. If qm_elems provided then QM/MM job, otherwise use elems list or self.elems
+        if qm_elems is None:
+            if elems is None:
+                qm_elems=self.elems
+            else:
+                qm_elems = elems
+
+        if nprocs==None:
+            nprocs=self.nprocs
+        print("Running Dalton object with {} cores available".format(nprocs))
+
+        #DALTON.INP
+        print("Creating inputfile: DALTON.INP")
+        with open("DALTON.INP",'w') as dalfile:
+            for substring in self.dalton_input.split('\n'):
+                dalfile.write(substring+'\n')
+                if 'DALTON' in substring:
+                    if pe is True:
+                        dalfile.write(".PEQM\n")
+                
+        #Write the ugly MOLECULE.INP
+        uniq_elems=set(qm_elems)
+        
+        with open("MOLECULE.INP",'w') as molfile:
+            molfile.write('BASIS\n')
+            molfile.write('{}\n'.format(self.basis_name))
+            molfile.write('{}\n'.format(self.moleculename))
+            molfile.write('------------------------\n')
+            molfile.write('AtomTypes={} NoSymmetry Angstrom Charge={}\n'.format(len(uniq_elems),self.charge))
+            for uniqel in uniq_elems:
+                nuccharge=float(elemstonuccharges([uniqel])[0])
+                num_elem=qm_elems.count(uniqel)
+                molfile.write('Charge={} Atoms={}\n'.format(nuccharge,num_elem))
+                for el,coord in zip(qm_elems,current_coords):
+                    if el == uniqel:
+                        molfile.write('{}    {} {} {}\n'.format(el,coord[0],coord[1],coord[2]))
+        
+        #POTENTIAL FILE
+        #Renaming potfile as POTENTIAL.INP
+        os.rename(potfile,'POTENTIAL.INP')
+        print("Rename potential file {} as POTENTIAL.INP".format(potfile))
+        
+        print("Charge: {}  Mult: {}".format(self.charge, self.mult))
+        
+        print("Launching Dalton")
+        print("daltondir:", self.daltondir)
+        if self.basis_dir is None:
+            print("No Dalton basis_dir provided. Attempting to set BASDIR via daltondir:")
+            os.environ['BASDIR'] = self.daltondir+"/../basis"
+            print("BASDIR:", os.environ['BASDIR'])
+        else:
+            print("Using basis_dir:", self.basis_dir)
+            os.environ['BASDIR'] = self.basis_dir
+        def run_dalton_serial(daltondir):
+            with open("DALTON.OUT", 'w') as ofile:
+                
+                process = sp.run([daltondir + '/dalton.x'], check=True, stdout=ofile, stderr=ofile, universal_newlines=True)
+            
+        run_dalton_serial(self.daltondir)
+        
+        #Grab final energy
+        #TODO: Support more than DFT energies
+        #ALSO: Grab excitation energies etc
+        with open("DALTON.OUT") as outfile:
+            for line in outfile:
+                if 'Final DFT energy:' in line:
+                    self.energy=float(line.split()[-1])
+        
+        if self.energy==0.0:
+            print("Problem. Energy not found in output: DALTON.OUT")
+            exit()
+        return self.energy
+
 #ORCA Theory object. Fragment object is optional. Only used for single-points.
 
 class ORCATheory:
@@ -2545,11 +2747,10 @@ class ORCATheory:
                  orcablocks='', extraline='', brokensym=None, HSmult=None, atomstoflip=None, nprocs=1, label=None):
 
         if orcadir is None:
-            print("No orcadir argument passed to ORCATheory. Attempting to use settings_ash variable")
+            print("No orcadir argument passed to ORCATheory. Attempting to find orcadir variable inside settings_ash")
             self.orcadir=settings_ash.orcadir
         else:
             self.orcadir = orcadir
-        print("ORCA dir:", self.orcadir)
 
         #Label to distinguish different ORCA objects
         self.label=label
@@ -2593,6 +2794,7 @@ class ORCATheory:
         if self.printlevel >=2:
             print("")
             print("Creating ORCA object")
+            print("ORCA dir:", self.orcadir)
             #if molcrys then there is not charge and mult available
             #print("Charge: {} Mult: {}".format(self.charge,self.mult))
             print(self.orcasimpleinput)
@@ -3102,6 +3304,7 @@ class PySCFTheory:
     def __init__(self, fragment='', charge='', mult='', printsetting='False', printlevel=2, pyscfbasis='', pyscffunctional='',
                  pe=False, potfile='', outputname='pyscf.out', pyscfmemory=3100, nprocs=1):
 
+
         #Printlevel
         self.printlevel=printlevel
 
@@ -3137,7 +3340,7 @@ class PySCFTheory:
             pass
     #Run function. Takes coords, elems etc. arguments and computes E or E+G.
     def run(self, current_coords=None, current_MM_coords=None, MMcharges=None, qm_elems=None,
-            mm_elems=None, elems=None, Grad=False, PC=False, nprocs=None, pe=False, potfile='', restart=False ):
+            mm_elems=None, elems=None, Grad=False, PC=False, nprocs=None, pe=False, potfile=None, restart=False ):
 
         if nprocs==None:
             nprocs=self.nprocs
@@ -3149,7 +3352,7 @@ class PySCFTheory:
         #If pe and potfile given as run argument
         if pe is not False:
             self.pe=pe
-        if potfile != '':
+        if potfile is not None:
             self.potfile=potfile
 
         #Coords provided to run or else taken from initialization.
@@ -3211,12 +3414,9 @@ class PySCFTheory:
                     exit()
             except:
                 exit()
-            pe_options = cppe.PeOptions()
-            pe_options.do_diis = True
-            pe_options.potfile = self.potfile
-            pe = pol_embed.PolEmbed(mol, pe_options)
+
             # TODO: Adapt to RKS vs. UKS etc.
-            mf = solvent.PE(scf.RKS(mol), pe)
+            mf = solvent.PE(scf.RKS(mol), self.potfile)
         else:
 
             if PC is True:
@@ -3242,10 +3442,6 @@ class PySCFTheory:
 
         #TODO: Restart settings for PySCF
 
-
-
-
-
         #Controlling OpenMP parallelization.
         lib.num_threads(nprocs)
 
@@ -3258,12 +3454,15 @@ class PySCFTheory:
         #Control printing here. TOdo: make variable
         mf.verbose = 4
 
-        #RUN ENERGY job
 
-        self.energy = mf.kernel()
 
-        if self.pe==True:
-            print(mf._pol_embed.cppe_state.summary_string)
+        #RUN ENERGY job. mf object should have been wrapped by PE or PC here
+        result = mf.run()
+        self.energy = result.e_tot
+        print("SCF energy components:", result.scf_summary)
+        
+        #if self.pe==True:
+        #    print(mf._pol_embed.cppe_state.summary_string)
 
         #Grab energy and gradient
         if Grad==True:
@@ -3534,6 +3733,7 @@ class Fragment:
     def replace_coords(self, elems, coords, conn=False, scale=None, tol=None):
         if self.printlevel >= 2:
             print("Replacing coordinates in fragment.")
+        
         self.elems=elems
         # Adding coords as list of lists. Possible conversion from numpy array below.
         self.coords = [list(i) for i in coords]
@@ -3723,10 +3923,6 @@ class Fragment:
             try:
                 from julia.api import Julia
                 from julia import Main
-                # Defining Julia Module
-                ashpath = os.path.dirname(ash.__file__)
-                Main.include(ashpath + "/functions_julia.jl")
-
                 timestampB = time.time()
                 fraglist_temp = Main.Juliafunctions.calc_connectivity(self.coords, self.elems, conndepth, scale, tol,
                                                                       eldict_covrad)
@@ -3868,10 +4064,13 @@ class Fragment:
                 if '--------------------------' in line:
                     coordgrab=True
                 if 'Centralmainfrag' in line:
-                    l = line.lstrip('Centralmainfrag:')
-                    l = l.strip('[')
-                    l = l.strip(']')
-                    Centralmainfrag = [i for i in l.split(',')]
+                    if '[]' not in line:
+                        l = line.lstrip('Centralmainfrag:')
+                        l = l.replace('\n','')
+                        l = l.replace(' ','')
+                        l = l.replace('[','')
+                        l = l.replace(']','')
+                        Centralmainfrag = [int(i) for i in l.split(',')]
                 #Incredibly ugly but oh well
                 if 'connectivity:' in line:
                     l=line.lstrip('connectivity:')

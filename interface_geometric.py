@@ -14,9 +14,8 @@ import time
 # bond,angle and dihedral constraints work. If only atom indices provided and constrainvalue is False then constraint at current position
 # If constrainvalue=True then last entry should be value of constraint
 
-
 def geomeTRICOptimizer(theory=None,fragment=None, coordsystem='tric', frozenatoms=[], constraintsinputfile=None, constraints=None, 
-                       constrainvalue=False, maxiter=50, ActiveRegion=False, actatoms=[], convergence_setting=None):
+                       constrainvalue=False, maxiter=50, ActiveRegion=False, actatoms=[], convergence_setting=None, conv_criteria=None):
     """
     Wrapper function around geomeTRIC code. Take theory and fragment info from ASH
     Supports frozen atoms and bond/angle/dihedral constraints in native code. Use frozenatoms and bondconstraints etc. for this.
@@ -35,6 +34,16 @@ def geomeTRICOptimizer(theory=None,fragment=None, coordsystem='tric', frozenatom
         os.remove('dummyprefix.log')
     except:
         pass
+    
+    # TODO:
+
+    #NOTE: We are now sorting actatoms and qmatoms list both here and in QM/MM object
+    #: Alternatively we could sort the actatoms list and qmatoms list in QM/MM object before doing anything. Need to check carefully though....
+    #if is_integerlist_ordered(actatoms) is False:
+    #    print("Problem. Actatoms list is not sorted in ascending order. Please sort this list (and possibly qmatoms list also))")
+    #    exit()
+    
+    
     
     #Delete constraintsfile unless asked for
     if constraintsinputfile is None:
@@ -81,9 +90,12 @@ def geomeTRICOptimizer(theory=None,fragment=None, coordsystem='tric', frozenatom
 
     #ActiveRegion option where geomeTRIC only sees the QM part that is being optimized
     if ActiveRegion == True:
+        #Sorting list, otherwise trouble
+        actatoms.sort()
         print("Active Region option Active. Passing only active-region coordinates to geomeTRIC.")
         print("Number of active atoms:", len(actatoms))
         actcoords, actelems = fragment.get_coords_for_atoms(actatoms)
+        
         #Writing act-region coords (only) of Yggdrasill fragment to disk as XYZ file and reading into geomeTRIC
         write_xyzfile(actelems, actcoords, 'initialxyzfiletric')
         mol_geometric_frag=geometric.molecule.Molecule("initialxyzfiletric.xyz")
@@ -129,9 +141,7 @@ def geomeTRICOptimizer(theory=None,fragment=None, coordsystem='tric', frozenatom
                         curr_c, currcoords = currcoords[0], currcoords[1:]
                         full_coords[i] = curr_c
                 self.full_current_coords=full_coords
-
                 #Write out fragment with updated coordinates for the purpose of doing restart
-
                 fragment.replace_coords(fragment.elems, self.full_current_coords, conn=False)
                 fragment.print_system(filename='Fragment-currentgeo.ygg')
 
@@ -255,7 +265,8 @@ def geomeTRICOptimizer(theory=None,fragment=None, coordsystem='tric', frozenatom
     #Dealing with convergence criteria
     if convergence_setting is None or convergence_setting == 'ORCA':
         #default
-        conv_criteria = {'convergence_energy' : 5e-6, 'convergence_grms' : 1e-4, 'convergence_gmax' : 3.0e-4, 'convergence_drms' : 2.0e-3, 
+        if conv_criteria is None:
+            conv_criteria = {'convergence_energy' : 5e-6, 'convergence_grms' : 1e-4, 'convergence_gmax' : 3.0e-4, 'convergence_drms' : 2.0e-3, 
                      'convergence_dmax' : 4.0e-3 }
     elif convergence_setting == 'Chemshell':
         conv_criteria = {'convergence_energy' : 1e-6, 'convergence_grms' : 3e-4, 'convergence_gmax' : 4.5e-4, 'convergence_drms' : 1.2e-3, 

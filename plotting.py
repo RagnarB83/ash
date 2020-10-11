@@ -1,8 +1,21 @@
 import numpy as np
-
 import matplotlib
+#from functions_general import *
 matplotlib.use('Agg')
 import matplotlib.pyplot as plt 
+
+#repeated here so that plotting can be stand-alone
+class BC:
+    HEADER = '\033[95m'
+    OKBLUE = '\033[94m'
+    OKGREEN = '\033[92m'
+    OKMAGENTA= '\033[95m'
+    OKRED= '\033[31m'
+    WARNING = '\033[93m'
+    FAIL = '\033[91m'
+    END = '\033[0m'
+    BOLD = '\033[1m'
+    UNDERLINE = '\033[4m'
 
 def Gaussian(x, mu, strength, sigma):
     "Produces a Gaussian curve"
@@ -14,13 +27,12 @@ def Gaussian(x, mu, strength, sigma):
     return bandshape
 
 
-
-
-
-
 #reactionprofile_plot
 #Input: dictionary of (X,Y): energy   entries 
-def reactionprofile_plot(surfacedictionary, finalunit='',label='Label', x_axislabel='Coord', y_axislabel='Energy', dpi=200, imageformat='png', RelativeEnergy=True):
+def reactionprofile_plot(surfacedictionary, finalunit='',label='Label', x_axislabel='Coord', y_axislabel='Energy', dpi=200, 
+                         imageformat='png', RelativeEnergy=True, pointsize=40, scatter_linewidth=2, line_linewidth=1, color='blue' ):
+    
+    
     conversionfactor = { 'kcal/mol' : 627.50946900, 'kcalpermol' : 627.50946900, 'kJ/mol' : 2625.499638, 'kJpermol' : 2625.499638, 
                         'eV' : 27.211386245988, 'cm-1' : 219474.6313702 }
     e=[]
@@ -39,9 +51,9 @@ def reactionprofile_plot(surfacedictionary, finalunit='',label='Label', x_axisla
     else:
         finalvalues=e
     
-    pointsize=40
-    plt.scatter(coords, finalvalues, color='blue', marker = 'o',  s=pointsize, linewidth=2 )
-    plt.plot(coords, finalvalues, linestyle='-', color='blue', linewidth=1)
+    
+    plt.scatter(coords, finalvalues, color=color, marker = 'o',  s=pointsize, linewidth=scatter_linewidth )
+    plt.plot(coords, finalvalues, linestyle='-', color=color, linewidth=line_linewidth)
 
     plt.title(label)
     plt.xlabel(x_axislabel)
@@ -57,8 +69,10 @@ def reactionprofile_plot(surfacedictionary, finalunit='',label='Label', x_axisla
 #Good colormaps: viridis, viridis_r, inferno, inferno_r, plasma, plasma_r, magma, magma_r
 # Less recommended: jet, jet_r
 def contourplot(surfacedictionary, label='Label',x_axislabel='Coord', y_axislabel='Coord', finalunit=None, interpolation='Cubic', 
-                interpolparameter=10, colormap='inferno_r', dpi=200, imageformat='png', RelativeEnergy=True):
+                interpolparameter=10, colormap='inferno_r', dpi=200, imageformat='png', RelativeEnergy=True, numcontourlines=500,
+                contour_alpha=0.75, contourline_color='black', clinelabels=False, contour_values=None):
     
+    #Relative energy conversion (if RelativeEnergy is True)
     conversionfactor = { 'kcal/mol' : 627.50946900, 'kcalpermol' : 627.50946900, 'kJ/mol' : 2625.499638, 'kJpermol' : 2625.499638, 
                         'eV' : 27.211386245988, 'cm-1' : 219474.6313702 }
     e=[]
@@ -75,9 +89,15 @@ def contourplot(surfacedictionary, label='Label',x_axislabel='Coord', y_axislabe
     x = sorted(set(x_c))
     y = sorted(set(y_c))
 
+    relsurfacedictionary={}
     #Creating relative-energy array here. Unmodified property is used if False
     if RelativeEnergy is True:
         refenergy=float(min(e))
+        relsurfacedictionary={}
+        for i in surfacedictionary:
+            relsurfacedictionary[(i[0],i[1])] = (surfacedictionary[i]-refenergy)*conversionfactor[finalunit]
+        print("relsurfacedictionary ({}): {}".format(finalunit,relsurfacedictionary))
+        
         rele=[]
         for numb in e:
             rele.append((numb-refenergy)*conversionfactor[finalunit])
@@ -106,11 +126,13 @@ def contourplot(surfacedictionary, label='Label',x_axislabel='Coord', y_axislabe
 
         e_new=[]
         curr=[]
+
         for yitem in y:
             for xitem in x:
                 for nz in range(0,len(st)):
                     if (xitem,yitem) == st[nz][0:2]:
                         curr.append(st[nz][2])
+
             e_new.append(curr)
             curr=[]
         Z = e_new
@@ -119,7 +141,11 @@ def contourplot(surfacedictionary, label='Label',x_axislabel='Coord', y_axislabe
     X, Y = np.meshgrid(x, y)
 
 
-    print("interpolation:", interpolation)
+    print("Interpolation:", interpolation)
+    print("Number of contour lines:", numcontourlines)
+    print("Contourf alpha parameter:", contour_alpha)
+    print("Colormap:", colormap)
+    print("Contour line color:", contourline_color)
     if interpolation is not None:
         print("Using cubic interpolation")
         try:
@@ -132,9 +158,7 @@ def contourplot(surfacedictionary, label='Label',x_axislabel='Coord', y_axislabe
         print("Using cubic power:", interpolparameter)
         #Cubic interpolation. Default power is 10 (should be generally good)
         pw = interpolparameter #power of the smoothing function
-        #print(X)
         X = zoom(X, pw, mode='nearest')
-
         #print(X[0])
         if X[0][-1] == 0.0:
             print(X[0])
@@ -147,10 +171,103 @@ def contourplot(surfacedictionary, label='Label',x_axislabel='Coord', y_axislabe
             
         Y = zoom(Y, pw, mode='nearest')
         Z = zoom(Z, pw, mode='nearest')
-    cp=plt.contourf(X, Y, Z, 50, alpha=.75, cmap=colormap)
-    C = plt.contour(X, Y, Z, 50, colors='black')
-    plt.colorbar(cp)
+    #Filled contours. 
+    print("Using {} numcontourlines for colormap".format(numcontourlines))
+    
+    #Clearing plt object in case previous plot
+    plt.clf()
+    
+    #Fille contourplot
+    contour_surface=plt.contourf(X, Y, Z, numcontourlines, alpha=contour_alpha, cmap=colormap)
+    
+    #Contour lines. numcontourlines is 50 by default 
+    #Or if contourvalues provided then should be ascending list
+    if contour_values is not None:
+        print("Using set contour_values for contourlines:", contour_values)
+        Clines = plt.contour(X, Y, Z, contour_values, colors=contourline_color)
+    else:
+        #By default using value/10 as used for colormap
+        print("Using {} numcontourlines ".format(numcontourlines/10))
+        Clines = plt.contour(X, Y, Z, int(numcontourlines/10), colors=contourline_color)
+    
+    # Contour-line labels
+    if clinelabels is True: 
+        plt.clabel(Clines, inline=True, fontsize=10)
+    
+    plt.colorbar(contour_surface)
     plt.xlabel(x_axislabel)
     plt.ylabel(y_axislabel)
-    plt.savefig('Surface{}.png'.format(label), format=imageformat, dpi=dpi)
-    print("Created PNG file: Surface{}.png".format(label))
+    plt.savefig('Surface{}.{}'.format(label,imageformat), format=imageformat, dpi=dpi)
+    print("Created PNG file: Surface{}.{}".format(label,imageformat))
+    
+    
+#plot_Spectrum reads stick-values (e.g. absorption energie or IPs) and intensities, broadens spectrum (writes out dat and stk files) and then creates image-file using Matplotlib.
+#TODO: Currently only Gaussian broadening. Add Lorentzian and Voight
+def plot_Spectrum(xvalues=None, yvalues=None, plotname='Spectrum', range=None, unit='eV', broadening=0.1, points=10000, imageformat='png', dpi=200, matplotlib=True):
+    if xvalues is None or yvalues is None:
+        print("plot_Spectrum requires xvalues and yvalues variables")
+        exit(1)
+
+    assert len(xvalues) == len(yvalues), "List of yvalues not same size as list of xvalues." 
+
+    start=range[0]
+    finish=range[1]
+
+    print("")
+    print(BC.OKGREEN,"-------------------------------------------------------------------",BC.END)
+    print(BC.OKGREEN,"plot_Spectrum: Plotting broadened spectrum",BC.END)
+    print(BC.OKGREEN,"-------------------------------------------------------------------",BC.END)
+    print("")
+    print("xvalues ({}): {}".format(len(xvalues),xvalues))
+    print("yvalues ({}): {}".format(len(yvalues),yvalues))
+
+
+    #########################
+    # Plot spectra.
+    ########################
+    print(BC.OKGREEN, "Plotting-range chosen:", start, "-", finish, unit, "with ", points, "points and ",
+            broadening, "{} broadening.".format(unit), BC.END)
+
+    # X-range
+    x = np.linspace(start, finish, points)
+    stkheight = 0.5
+    strength = 1.0
+
+    spectrum = 0
+    for peak, strength in zip(xvalues, yvalues):
+        broadenedpeak = Gaussian(x, peak, strength, broadening)
+        spectrum += broadenedpeak
+
+    #Save dat file
+    with open(plotname+".dat", 'w') as tdatfile:
+        for i,j in zip(x,spectrum):
+            tdatfile.write("{:13.10f} {:13.10f} \n".format(i,j))
+    #Save stk file
+    with open(plotname+".stk", 'w') as tstkfile:
+        for b,c in zip(xvalues,yvalues):
+            tstkfile.write("{:13.10f} {:13.10f} \n".format(b,c))
+
+    print("Wrote file:", plotname+".dat")
+    print("Wrote file:", plotname+".stk")
+    
+    ##################################
+    # Plot with Matplotlib
+    ####################################
+    if matplotlib is True:
+        print("Creating plot with Matplotlib")
+        
+        fig, ax = plt.subplots()
+
+        ax.plot(x, spectrum, 'C3', label=plotname)
+        ax.stem(xvalues, yvalues, label=plotname, markerfmt=' ', basefmt=' ', linefmt='C3-', use_line_collection=True)
+        plt.xlabel(unit)
+        plt.ylabel('Intensity')
+        #################################
+        plt.xlim(start, finish)
+        plt.legend(shadow=True, fontsize='small')
+        plt.savefig(plotname + '.'+imageformat, format=imageformat, dpi=dpi)
+        # plt.show()
+        print("Wrote file:", plotname+"."+imageformat)
+    else:
+        print("Skipped Matplotlib part.")
+    print(BC.OKGREEN,"ALL DONE!", BC.END)

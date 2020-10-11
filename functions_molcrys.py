@@ -119,6 +119,33 @@ def cell_extend_frag_withcenter(cellvectors, coords,elems):
             index+=1
     return extended, new_elems
 
+
+#Take extended_cell coordinates, check if clashing atoms with oldcell-coordinates
+#Delete clashing coordinates in extended part of extendecell coords. 
+def delete_clashing_atoms(extendedcell,oldcell,extendedelems,oldelems):
+    oldcell=np.array(oldcell)
+    #Number of decimals to compare
+    decimal=8
+    deletionlist=[]
+    #Going through extendecell-coordinates starting after last index of old-cell
+    for i in range(len(oldcell),len(extendedcell)):
+        #Find if extended cell coordinates are in old cell. Mark for deletion
+        result, = np.where(np.all( oldcell.round(decimals=decimal)== extendedcell[i].round(decimals=decimal), axis=1))
+        if result.size >0:
+            deletionlist.append(i)
+    
+    #Delete all rows in deletionlist and get final cell
+    newcell = np.delete(extendedcell,deletionlist,0)
+
+    #Get corresponding elements list
+    newelems=[]
+    for index,el in enumerate(extendedelems):
+        if index not in deletionlist:
+            newelems.append(el)
+        
+    assert len(newcell) == len(newelems), "something went wrong in delete_clashing_atoms"
+    return newcell,newelems
+
 #FRAGMENT DEFINE
 #Define fragment-identity of each atom in unit cell. Updates mainfrag and counterfrag objects
 #1. Goes through atom in cell and finds whole fragments and identifies fragment-type
@@ -126,6 +153,10 @@ def cell_extend_frag_withcenter(cellvectors, coords,elems):
 #3. Find all whole fragments of the atoms in original cell but capped with atoms from extended cell
 #4. For fragment-atoms outside original cell, find equivalent atoms in original cell.
 #TODO: Skip step1?
+
+#TODO. Problem. If atoms are precisely on the edge boundary (very symmetric crystals) then we get atoms on top of each other when we do : cell_extend_frag_withcenter
+# Like for CoCN6 and maybe FeCN6 crystals. SOlution?. Delete clashing atoms???
+
 def frag_define(orthogcoords,elems,cell_vectors,fragments,cell_angles=None, cell_length=None, scale=None, tol=None):
 
     if scale is None:
@@ -142,8 +173,22 @@ def frag_define(orthogcoords,elems,cell_vectors,fragments,cell_angles=None, cell
     # so that we have no dangling bonds for center unitcell
     print("Creating extended (3x3x3) unit cell for fragment identification")
     temp_extended_coords, temp_extended_elems = cell_extend_frag_withcenter(cell_vectors, orthogcoords, elems)
+    
+    print("len temp_extended_coords", len(temp_extended_coords))
+    print("len temp_extended_elems", len(temp_extended_elems))
+    
     # Write XYZ-file with orthogonal coordinates for 3x3xcell
-    write_xyzfile(temp_extended_elems, temp_extended_coords, "temp_cell_extended_coords")
+    write_xyzfile(temp_extended_elems, temp_extended_coords, "temp_cell_extended_coords-beforedel")
+    
+    #Delete duplicate entries. May happen if atoms are right on boundary
+    temp_extended_coords, temp_extended_elems = delete_clashing_atoms(temp_extended_coords,orthogcoords,temp_extended_elems,elems)
+
+    print("len temp_extended_coords", len(temp_extended_coords))
+    print("len temp_extended_elems", len(temp_extended_elems))
+    
+    # Write XYZ-file with orthogonal coordinates for 3x3xcell
+    write_xyzfile(temp_extended_elems, temp_extended_coords, "temp_cell_extended_coords-afterdel")
+    
     #write XTL file for 3x3x3 cell
     #Todo: fix.
     # Need to give write_xtl fractional coords for new cell. Requires o
@@ -157,6 +202,37 @@ def frag_define(orthogcoords,elems,cell_vectors,fragments,cell_angles=None, cell
     print("Systemlist length:", len(systemlist))
     unassigned = []
     unassigned_formulas = []
+    
+    #Function that checks whether fragment in cell/cluster is the same as defined by user. 
+    #Metrics: Nuclear charge, Mass, or both.
+    #TODO: Need to find even better metric. Something that takes connectivity into account?
+    def same_fragment(fragtype=None, nuccharge=None, mass=None, formula=None):
+        metric="nuccharge_and_mass"
+        printdebug("metric:", metric)
+        printdebug("fragtype dict:", fragtype.__dict__)
+
+        printdebug("----------")
+        printdebug("nuccharge: {} mass: {} formula: {}".format(nuccharge,mass,formula))
+        printdebug("---------")
+        if metric=="nuccharge_and_mass":
+            printdebug("Nuccharge and mass option!")
+            if nuccharge == fragtype.Nuccharge and abs(mass - fragtype.mass) <1.0 :
+                printdebug("ncharge {} is equal to fragment.Nuccharge {} ".format(nuccharge, fragtype.Nuccharge))
+                printdebug("mass {} is equal to fragtyp.mass {} ".format(mass, fragtype.mass))
+                return True
+        elif metric=="nuccharge":
+            printdebug("Nucharge option!!")
+            if nuccharge == fragtype.Nuccharge:
+                printdebug("ncharge {} is equal to fragment.Nuccharge {} ".format(nuccharge, fragtype.Nuccharge))
+                return True
+        elif metric=="mass":
+            printdebug("Mass option!")
+            if abs(mass - fragtype.mass) <0.1 :
+                printdebug("mass {} is equal to fragtyp.mass {} ".format(mass, fragtype.mass))
+                return True
+            
+    
+    
     for i in range(len(elems)):
 
         printdebug("i : ", i)
@@ -166,15 +242,18 @@ def frag_define(orthogcoords,elems,cell_vectors,fragments,cell_angles=None, cell
         #print("members:", members)
         el_list = [elems[i] for i in members]
         formula=elemlisttoformula(el_list)
-        printdebug("el_list:", el_list)
+        current_mass = totmasslist(el_list)
         ncharge = nucchargelist(el_list)
-        #print("Found el_list:", el_list)
+        printdebug("Current_mass:", current_mass)
+        printdebug("current formula:", formula)
+        printdebug("el_list:", el_list)
         printdebug("ncharge : ", ncharge)
         Assign_Flag=False
+
         for fragment in fragments:
             printdebug("fragment:", fragment)
-            if ncharge == fragment.Nuccharge:
-                printdebug("ncharge {} is equal to fragment.Nuccharge {} ".format(ncharge, fragment.Nuccharge))
+            #if ncharge == fragment.Nuccharge:
+            if same_fragment(fragtype=fragment, nuccharge=ncharge, mass=current_mass, formula=formula) is True:
                 Assign_Flag = True
                 printdebug("Assign_Flag is True!")
                 #Only adding members if not already added
@@ -218,14 +297,17 @@ def frag_define(orthogcoords,elems,cell_vectors,fragments,cell_angles=None, cell
         members = get_molecule_members_loop_np2(temp_extended_coords, temp_extended_elems, 99,
                                                 scale, tol, membs=m)
         el_list = [temp_extended_elems[i] for i in members]
+        current_mass = totmasslist(el_list)
         printdebug("members:", members)
         printdebug("el_list:", el_list)
+        printdebug("current_mass:", current_mass)
         formula = elemlisttoformula(el_list)
         print("formula:", formula)
         for fragment in fragments:
             printdebug("el_list:", el_list)
             ncharge = nucchargelist(el_list)
-            if ncharge == fragment.Nuccharge:
+            #if ncharge == fragment.Nuccharge:
+            if same_fragment(fragtype=fragment, nuccharge=ncharge, mass=current_mass, formula=formula) is True:
                 printdebug("Found match. ncharge is", ncharge)
                 if members not in fragment.fraglist:
                     printdebug("List not already there. Adding")
@@ -435,6 +517,30 @@ def cell_extend_frag(cellvectors, coords,elems,cellextpars):
     printdebug("new_elems  num,", len(new_elems))
     return extended, new_elems
 
+
+#Simple super-cellexpansion
+#def simple_cell_extend_frag(cellvectors, coords,elems):
+#    permutations=[[0,0,0],[0,0,1]]
+#    numcells=2
+#    extended = np.zeros((len(coords) * numcells, 3))
+#    new_elems = []
+#    index = 0
+#    for perm in permutations:
+#        shift = cellvectors[0:3, 0:3] * perm
+#        shift = shift[:, 0] + shift[:, 1] + shift[:, 2]
+#        #print("Permutation:", perm, "shift:", shift)
+#        for d, el in zip(coords, elems):
+#            new_pos=d+shift
+#            extended[index] = new_pos
+#            new_elems.append(el)
+#            #print("extended[index]", extended[index])
+#            #print("extended[index+1]", extended[index+1])
+#            index+=1
+#    printdebug(extended)
+#    printdebug("extended coords num", len(extended))
+#    printdebug("new_elems  num,", len(new_elems))
+#    return extended, new_elems
+
 #Extend cell in all 3 directions.
 #Note: original cell is not in center
 #Loosely based on https://pymolwiki.org/index.php/Supercell
@@ -533,7 +639,7 @@ def read_ciffile(file):
     atomlabels=[]
     elems=[]
     firstcolumn=[]
-    secondcolumn=[]
+    secondcolumns=[]
     coords=[]
     symmops=[]
     newmol=False
@@ -574,6 +680,9 @@ def read_ciffile(file):
                 if 'x' not in line:
                     symmopgrab_oldsyntax=False
                 else:
+                    #Removing number from beginning if present
+                    if line[0].isdigit():
+                        line=line[1:]
                     line2=line.replace("'","").replace(" ","").replace("\n","")
                     symmops.append(line2)
             if fractgrab == True:
@@ -585,11 +694,20 @@ def read_ciffile(file):
                     if 'loop' not in line:
                         atomlabels.append(line.split()[0])
                         #Disabling since not always elems in column
-                        secondcolumn.append(line.split()[1])
-                        x_coord=float(line.split()[2].split('(')[0])
-                        y_coord=float(line.split()[3].split('(')[0])
-                        z_coord=float(line.split()[4].split('(')[0])
-                        coords.append([x_coord, y_coord, z_coord])
+                        secondcol=line.split()[1]
+                        secondcolumns.append(secondcol)
+                        #If second-column is proper float then this is fract_x, else trying next
+                        if is_string_float_withdecimal(secondcol.split('(')[0]):
+                            print(secondcol.split('(')[0])
+                            x_coord=float(line.split()[1].split('(')[0])
+                            y_coord=float(line.split()[2].split('(')[0])
+                            z_coord=float(line.split()[3].split('(')[0])
+                            coords.append([x_coord, y_coord, z_coord])
+                        else:
+                            x_coord=float(line.split()[2].split('(')[0])
+                            y_coord=float(line.split()[3].split('(')[0])
+                            z_coord=float(line.split()[4].split('(')[0])
+                            coords.append([x_coord, y_coord, z_coord])
             if 'data_' in line:
                 newmol = True
             if '_atom_site_fract_z' in line:
@@ -610,19 +728,41 @@ def read_ciffile(file):
         print("Found correct elements in 1st column")
         elems=firstcolumn
     else:
-        if isElementList(secondcolumn):
+        if isElementList(secondcolumns):
             print("Found correct elements in 2nd column")
-            elems = secondcolumn
+            elems = secondcolumns
         else:
             print("Found no valid element list from CIF file in either 1st or 2nd column. Check CIF-file format")
             print("firstcolumn: ", firstcolumn)
-            print("secondcolumn: ", secondcolumn)
+            print("secondcolumns: ", secondcolumns)
             exit()
 
     print("Symmetry operations found in CIF:", symmops)
     print("coords : ", coords)
     return [cell_a, cell_b, cell_c],[cell_alpha, cell_beta, cell_gamma],atomlabels,elems,coords,symmops,cellunits
 
+
+#Shift fractional_coordinates by x,y,z amount
+def shift_fractcoords(coords,shift):
+    newcoords=[]
+    for coord in coords:
+        coord_x=coord[0]+shift[0]
+        coord_y=coord[1]+shift[1]
+        coord_z=coord[2]+shift[2]
+        if coord_x < 0:
+            coord_x=coord_x+1
+        if coord_y < 0:
+            coord_y=coord_y+1
+        if coord_z < 0:
+            coord_z=coord_z+1
+        if coord_x > 1:
+            coord_x=coord_x-1
+        if coord_y > 1:
+            coord_y=coord_y-1
+        if coord_z > 1:
+            coord_z=coord_z-1
+        newcoords.append([coord_x,coord_y,coord_z])
+    return newcoords
 #From cell parameters, fractional coordinates of asymmetric unit and symmetry operations
 #create fractional coordinates for atoms of whole cell
 def fill_unitcell(cell_length,cell_angles,atomlabels,elems,coords,symmops):
@@ -638,6 +778,7 @@ def fill_unitcell(cell_length,cell_angles,atomlabels,elems,coords,symmops):
         op_x=i.split(',')[0].replace(",","")
         op_y=i.split(',')[1].replace(",","")
         op_z = i.split(',')[2].replace(",", "")
+        print("op_x: {} op_y: {} op_z: {}".format(op_x,op_y,op_z))
         #op_z=i.split(',')[2].replace(",","").replace(" ","").replace("\n","")
         if len(op_x)==1 and len(op_y)==1 and len(op_z)==1:
             for c in coords:

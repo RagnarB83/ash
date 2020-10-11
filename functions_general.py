@@ -37,7 +37,6 @@ def timefn(fn):
 
 
 
-
 # Give difference of two lists, sorted. List1: Bigger list
 def listdiff(list1, list2):
     diff = (list(set(list1) - set(list2)))
@@ -103,8 +102,11 @@ def isint(s):
         return True
     except ValueError:
         return False
+    except TypeError:
+        return False
 
-#Is variable a float
+#Is it possible to interpret string/number as float.
+#Note: integer variable/string can be interpreted. See also is_string_float_withdecimal below
 def isfloat(s):
     try:
         float(s)
@@ -112,6 +114,31 @@ def isfloat(s):
     except ValueError:
         return False
 
+#Is string a float with single decimal point
+def is_string_float_withdecimal(s):
+    #Checking if single . in string
+    if s.count('.') != 1:
+        return False
+    #Check if number can be interpreted as float
+    try:
+        float(s)
+        return True
+    except ValueError:
+        return False
+
+#Check if list of integers is sorted or not.
+def is_integerlist_ordered(list):
+    list_s=sorted(list)
+    if list == list_s:
+        return True
+    else:
+        return False
+    
+def islist(l):
+    if type(l) == list:
+        return True
+    else:
+        return False
 
 #Read lines of file by slurping.
 def readlinesfile(filename):

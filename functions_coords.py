@@ -10,6 +10,7 @@ import math
 import ash
 sqrt = math.sqrt
 pow = math.pow
+
 #Elements and atom numbers
 elematomnumbers = {'h':1, 'he': 2, 'li':3, 'be':4, 'b':5, 'c':6, 'n':7, 'o':8, 'f':9, 'ne':10, 'na':11, 'mg':12, 'al':13, 'si':14, 'p':15, 's':16, 'cl':17, 'ar':18, 'k':19, 'ca':20, 'sc':21, 'ti':22, 'v':23, 'cr':24, 'mn':25, 'fe':26, 'co':27, 'ni':28, 'cu':29, 'zn':30, 'ga':31, 'ge':32, 'as':33, 'se':34, 'br':35, 'kr':36, 'rb':37, 'sr':38, 'y':39, 'zr':40, 'nb':41, 'mo':42, 'tc':43, 'ru':44, 'rh':45, 'pd':46, 'ag':47, 'cd':48, 'in':49, 'sn':50, 'sb':51, 'te':52, 'i':53, 'xe':54, 'cs':55, 'ba':56, 'la':57, 'ce':58, 'pr':59, 'nd':60, 'pm':61, 'sm':62, 'eu':63, 'gd':64, 'tb':65, 'dy':66, 'ho':67, 'er':68, 'tm':69, 'yb':70, 'lu':71, 'hf':72, 'ta':73, 'w':74, 're':75, 'os':76, 'ir':77, 'pt':78, 'au':79, 'hg':80, 'tl':81, 'pb':82, 'bi':83, 'po':84, 'at':85, 'rn':86, 'fr':87, 'ra':88, 'ac':89, 'th':90, 'pa':91, 'u':92, 'np':93, 'pu':94, 'am':95, 'cm':96, 'bk':97, 'cf':98, 'es':99, 'fm':100, 'md':101, 'no':102, 'lr':103, 'rf':104, 'db':105, 'sg':106, 'bh':107, 'hs':108, 'mt':109, 'ds':110, 'rg':111, 'cn':112, 'nh':113, 'fl':114, 'mc':115, 'lv':116, 'ts':117, 'og':118}
 #Atom masses
@@ -19,8 +20,10 @@ atommasses = [1.00794, 4.002602, 6.94, 9.0121831, 10.81, 12.01070, 14.00670, 15.
 #Used for connectivity
 eldict_covrad={'H':0.31, 'He':0.28, 'Li':1.28, 'Be':0.96, 'B':0.84, 'C':0.76, 'N':0.71, 'O':0.66, 'F':0.57, 'Ne':0.58, 'Na':1.66, 'Mg':1.41, 'Al':1.21, 'Si':1.11, 'P':1.07, 'S':1.05, 'Cl':1.02, 'Ar':1.06, 'K':2.03, 'Ca':1.76, 'Sc':1.70, 'Ti':1.6, 'V':1.53, 'Cr':1.39, 'Mn':1.61, 'Fe':1.52, 'Co':1.50, 'Ni':1.24, 'Cu':1.32, 'Zn':1.22, 'Ga':1.22, 'Ge':1.20, 'As':1.19, 'Se':1.20, 'Br':1.20, 'Kr':1.16, 'Rb':2.2, 'Sr':1.95, 'Y':1.9, 'Zr':1.75, 'Nb':1.64, 'Mo':1.54, 'Tc':1.47, 'Ru':1.46, 'Rh':1.42, 'Pd':1.39, 'Ag':1.45, 'Cd':1.44, 'In':1.42, 'Sn':1.39, 'Sb':1.39, 'Te':1.38, 'I':1.39, 'Xe':1.40,}
 
-#Modified radii for certain elements like Na,
-#eldict_covrad['Na']=0.00
+#Modified radii for certain elements like Na, K
+eldict_covrad['Na']=0.0001
+eldict_covrad['K']=0.0001
+
 #print(eldict_covrad)
 
 
@@ -151,7 +154,7 @@ def calc_conn_py(coords, elems, conndepth, scale, tol):
 
 #Get connected atoms to chosen atom index based on threshold
 #Uses slow for-loop structure with distance-function call
-#Don't use
+#Don't use unless system is small
 def get_connected_atoms(coords, elems,scale,tol,atomindex):
     connatoms=[]
     coords_ref=coords[atomindex]
@@ -477,7 +480,7 @@ def write_xyzfile(elems,coords,name,printlevel=2):
         ofile.write(str(len(elems))+'\n')
         ofile.write("title"+'\n')
         for el,c in zip(elems,coords):
-            line="{:4} {:12.6f} {:12.6f} {:12.6f}".format(el,c[0], c[1], c[2])
+            line="{:4} {:16.12f} {:16.12f} {:16.12f}".format(el,c[0], c[1], c[2])
             ofile.write(line+'\n')
     if printlevel >= 2:
         print("Wrote XYZ file:", name+'.xyz')
@@ -754,9 +757,6 @@ def coord2xyz(inputfile):
 
 
 
-
-
-
 #Get partial list by deleting elements not present in provided list of indices.
 def get_partial_list(allatoms,partialatoms,list):
     otheratoms=listdiff(allatoms,partialatoms)
@@ -766,27 +766,35 @@ def get_partial_list(allatoms,partialatoms,list):
     return list
 
 
-
-def hungarian(A, B):
-    """
-    Hungarian reordering.
-
-    Assume A and B are coordinates for atoms of SAME type only
-    """
-
-    # should be kabasch here i think
-    #TODO: get rid of cdist and linear_sum_assignment
+#Old function that used scipy to do distances and Hungarian. 
+def scipy_hungarian(A,B):
     from scipy.spatial.distance import cdist
     from scipy.optimize import linear_sum_assignment
-    distances = cdist(A, B, 'euclidean')
+    
+    distances_cdist = cdist(A, B, 'euclidean')
+    indices_a, assignment = linear_sum_assignment(distances_cdist)
+    return assignment
 
-    # Perform Hungarian analysis on distance matrix between atoms of 1st
-    # structure and trial structure
-    indices_a, indices_b = linear_sum_assignment(distances)
-
-    return indices_b
+#Hungarian algorithm to reorder coordinates. Uses Julia to calculates distances between coordinate-arrays A and B and then Hungarian Julia package.
+#PyJulia needs to have been imported before (ash.py)
+def hungarian(A, B):
+    
+    try:
+        #Calculating distances via Julia
+        distances =ash.Main.Juliafunctions.distance_array(A,B)
+    
+        # Julian Hungarian call. Requires Hungarian package
+        assignment, cost = ash.Hungarian.hungarian(distances)
+        #Removing zeros and offsetting by 1 (Julia 1-indexing)
+        final_assignment=assignment[assignment != 0]-1
+    except:
+        print("Problem running Julia Hungarian function. Trying scipy instead")
+        final_assignment = scipy_hungarian(A,B)
+    
+    return final_assignment
 
 #Hungarian reorder algorithm
+#From RMSD
 def reorder_hungarian(p_atoms, q_atoms, p_coord, q_coord):
     """
     Re-orders the input atom list and xyz coordinates using the Hungarian
@@ -988,9 +996,15 @@ def distance_between_atoms(fragment=None, atom1=None, atom2=None):
 def get_boundary_atoms(qmatoms, coords, elems, scale, tol):
     # For each QM atom, do a get_conn_atoms, for those atoms, check if atoms are in qmatoms,
     # if not, then we have found an MM-boundary atom
+    
+    #TODO: Note, there can can be problems here if either scale, tol is non-ideal value (should be set in inputfile)
+    #TODO: Or if eldict_covrad needs to be modified, also needs to be set in inputfile then.
+    
     qm_mm_boundary_dict = {}
     for qmatom in qmatoms:
+        #print("qmatom:", qmatom)
         connatoms = get_connected_atoms(coords, elems, scale, tol, qmatom)
+        #print("connatoms:", connatoms)
         # Find connected atoms that are not in QM-atoms
         boundaryatom = listdiff(connatoms, qmatoms)
         if len(boundaryatom) > 1:

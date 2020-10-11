@@ -51,6 +51,7 @@ UFF_modH_dict={'H': [0.000, 0.000], 'He': [2.362, 0.056], 'Li': [2.451, 0.025], 
 
 
 #Fast LJ-Coulomb via Fortran and f2PY
+#Outdated, to be removed
 def LJCoulomb(coords,epsij, sigmaij, charges, connectivity=None):
     #print("Inside LJCoulomb")
     #Todo: Avoid calling import everytime in the future...
@@ -63,6 +64,7 @@ def LJCoulomb(coords,epsij, sigmaij, charges, connectivity=None):
     return penergy, grad, LJenergy, coulenergy
 
 #Fast LJ-Coulomb via Fortran and f2PY
+#Outdated, to be removed
 def LJCoulombv2(coords,epsij, sigmaij, charges, connectivity=None):
     #print("Inside LJCoulomb")
     #Todo: Avoid calling import everytime in the future...
@@ -76,6 +78,8 @@ def LJCoulombv2(coords,epsij, sigmaij, charges, connectivity=None):
     penergy, LJenergy, coulenergy, grad = LJCoulombv2.ljcoulegrad(coords, rc, epsij, sigmaij, charges, grad, dim=3, natom=numatoms)
     return penergy, grad, LJenergy, coulenergy
 
+#Slow Lennard-Jones function
+#Outdated.
 def LennardJones(coords, epsij, sigmaij, connectivity=None, qmatoms=None):
     print("Inside Python Lennard-Jones function")
     #print("qmatoms:", qmatoms)
@@ -105,53 +109,18 @@ def LennardJones(coords, epsij, sigmaij, connectivity=None, qmatoms=None):
             if i != j:
                 #Skipping identical pairs
                 if i < j:
-                    #Skipping if atom pair in qmatoms list. I.e. not calculate QM-QM LJ terms
-                    #if all(x in qmatoms for x in [i, j]) == True:
-                    #    print("Skipping QM-pair:", i,j)
-                    #    continue
-                    #for l in LJPairpotentials:
-                        #print("l:", l)
-                        #This checks if i-j pair exists in LJPairpotentials list:
-                    #    if set([atomtypes[i], atomtypes[j]]) == set([l[0],l[1]]):
-                        #if atomtypes[i] in l and atomtypes[j] in l:
-                            #print("COUNTING!!! unless...")
-                            #Now checking connectivity for whether we should calculate LJ energy for pair or not
-                            #Todo: This only makes sense in a QM/MM scheme with frozen MM?
-                    #        skip=False
-                    #        for conn in connectivity:
-                                #print("conn:", conn)
-                                #If i,j in same list
-                    #            if all(x in conn for x in [i, j]) == True:
-                                    #print("Atoms connected. skipping ")
-                    #                skip=True
-                    #                continue
-                    #if skip == False:
-                    #print("i : {}  and j : {}".format(i,j))
-                    #print("atomtype_i : {}  and atomtype_j : {}".format(atomtypes[i],atomtypes[j]))
-                    #sigma=l[2]
-                    #eps=l[3]
                     pairdistance = distance(coords[i], coords[j])
                     #print("sigma, eps, pairdistance", sigma,eps,pairdistance)
                     V_LJ=4*epsij[i,j]*((sigmaij[i,j]/pairdistance)**12-(sigmaij[i,j]/pairdistance)**6)
-                    #print("V_LJ: {} kcal/mol  V_LJ: {} au:".format(V_LJ,V_LJ/constants.harkcal))
                     energy+=V_LJ
-                    #print("energy: {} kcal/mol  energy: {} au:".format(energy, energy / constants.harkcal))
-                    #print("------------------------------")
                     #Typo in http://localscf.com/localscf.com/LJPotential.aspx.html ??
                     #Using http://www.courses.physics.helsinki.fi/fys/moldyn/lectures/L4.pdf
-                    #TODO: Equation needs to be double-checked for correctness. L4.pdf equation ambiguous
                     #Check this: http://people.virginia.edu/~lz2n/mse627/notes/Potentials.pdf
                     LJgrad_const=(24*epsij[i,j]*((sigmaij[i,j]/pairdistance)**6-2*(sigmaij[i,j]/pairdistance)**12))*(1/(pairdistance**2))
                     gr=np.array([(coords[i][0] - coords[j][0])*LJgrad_const, (coords[i][1] - coords[j][1])*LJgrad_const,
                                      (coords[i][2] - coords[j][2])*LJgrad_const])
-                    #print("gr:", gr)
                     gradient[i] += gr
                     gradient[j] -= gr
-                    #print("gradient[i]:", gradient[i])
-                    #print("gradient[j]:", gradient[j])
-                    #print("gradients in hartree/Bohr:")
-                    #print("gradient[i]:", gradient[i]* (1/constants.harkcal) / constants.ang2bohr)
-                    #print("gradient[j]:", gradient[j]* (1/constants.harkcal) / constants.ang2bohr)
     #Convert gradient from kcal/mol per Å to hartree/Bohr
     final_gradient=gradient * (1/constants.harkcal) / constants.ang2bohr
     print("LJ gradient (hartree/Bohr):", final_gradient)
@@ -164,9 +133,6 @@ def LennardJones(coords, epsij, sigmaij, connectivity=None, qmatoms=None):
 #TODO: Do we always calculate charge if atoms are connected? Need connectivity for CHARMM/Amber expressions
 #Coulomb energy and gradient in Bohrs
 def coulombcharge(charges, coords):
-    #print("MM charges:", charges)
-    #print("Num MM charges:", len(charges))
-    #print("Num coords:", len(coords))
     #Converting list to numpy array and converting to bohr
     coords_b=np.array(coords)*constants.ang2bohr
     #Coulomb energy

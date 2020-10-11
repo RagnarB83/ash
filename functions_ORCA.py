@@ -3,7 +3,6 @@ from functions_solv import *
 from functions_coords import *
 from functions_general import *
 import elstructure_functions
-import settings_solvation
 import constants
 import multiprocessing as mp
 
@@ -288,6 +287,9 @@ def orbitalgrab(file):
                 occorbsgrab=True
     return bands_alpha, bands_beta, hftyp
 
+
+
+
 #Function to grab masses and elements from ORCA Hessian file
 def masselemgrab(hessfile):
     grab=False
@@ -404,6 +406,14 @@ def write_ORCA_Hessfile(hessian, coords, elems, masses, hessatoms,outputname):
     orcahessfile.close()
     print("")
     print("ORCA-style Hessian written to:", outputname )
+
+
+def read_ORCA_Hessian(hessfile):
+    hessian = Hessgrab(hessfile)
+    elems,coords = grabcoordsfromhessfile(hessfile)
+    masses, elems, numatoms = masselemgrab(hessfile)
+    
+    return hessian, elems, coords, masses
 
 #Function to grab Hessian from ORCA-Hessian file
 def Hessgrab(hessfile):
@@ -822,3 +832,49 @@ def run_orca_plot(orcadir, filename, option, gridvalue=40,densityfilename=None, 
                        input='5\n7\n4\n{}\n1\n{}\nn\n{}\n10\n11\n\n'.format(gridvalue, plottype,densityfilename), encoding='ascii')
 
     #print(p.returncode)
+    
+#Grab IPs from an EOM-IP calculation and also largest singles amplitudes. Approximation to Dyson norm.
+def grabEOMIPs(file):
+    IPs=[]
+    final_singles_amplitudes=[]
+    state_amplitudes=[]
+    stateflag=False
+    with open(file) as f:
+        for line in f:
+            if 'IROOT' in line:
+                state_amplitudes=[]
+                IP=float(line.split()[4])
+                IPs.append(IP)
+                stateflag=True
+            if stateflag is True:
+                if '-> x' in line:
+                    if line.count("->") == 1:
+                        amplitude=float(line.split()[0])
+                        state_amplitudes.append(amplitude)
+            if 'Percentage singles' in line:
+                #Find dominant singles
+                #print("state_amplitudes:", state_amplitudes)
+                
+                #if no singles amplitude found then more complicated transition. set to 0.0
+                if len(state_amplitudes) >0:
+                    largest=abs(max(state_amplitudes, key=abs))
+                    final_singles_amplitudes.append(largest)
+                else:
+                    final_singles_amplitudes.append(0.0)
+                state_amplitudes=[]
+    assert len(IPs) == len(final_singles_amplitudes), "Something went wrong here"
+    return IPs, final_singles_amplitudes
+
+#Reading stability analysis from output. Returns true if stab-analysis good, otherwise falsee
+#If no stability analysis present in output, then also return true
+def check_stability_in_output(file):
+    with open(file) as f:
+        for line in f:
+            if 'Stability Analysis indicates a stable HF/KS wave function.' in line:
+                print("WF is stable")
+                return True
+            if 'Stability Analysis indicates an UNSTABLE HF/KS wave' in line:
+                print("ORCA output:", line)
+                print("ASH: WF is NOT stable. Check ORCA output for details.")
+                return False
+    return True

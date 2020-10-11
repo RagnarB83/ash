@@ -4,7 +4,7 @@ __precompile__()
 module Juliafunctions
 #using Profile
 #using PyCall
-using Distances
+#using Distances. Note: Use of Distances requires it to be added via Pkg manager
 
 #TODO:
 # We are not utilizing Julia column-major much. Latter supposedly better
@@ -39,9 +39,10 @@ function calc_fraglist_for_atoms(atomlist,coords, elems, conndepth, scale, tol,e
 	return fraglist
 end
 
+#Various distance functions
 
-
-#Distance between atom i and j in coords
+#Distance between atom i and j in nx3 coordinates array
+#Used by connectivity etc
 function distance(coords::Array{Float64,2},i::Int64,j::Int64)
 			@fastmath @inbounds rij_x = coords[i,1] - coords[j,1]
             @fastmath @inbounds rij_y = coords[i,2] - coords[j,2]
@@ -50,6 +51,36 @@ function distance(coords::Array{Float64,2},i::Int64,j::Int64)
             @fastmath dist = sqrt(r)
 			return dist
 end
+
+#Simple distance between two 1x3 vectors i.e. two 3D-Cartesian points. Mainly for convenience
+function distance_two_vectors(A::Array{Float64,1},B::Array{Float64,1})
+    @fastmath @inbounds rij_x = A[1] - B[1]
+    @fastmath @inbounds rij_y = A[2] - B[2]
+    @fastmath @inbounds rij_z = A[3] - B[3]
+    @fastmath r = rij_x*rij_x+rij_y*rij_y+rij_z*rij_z
+    @fastmath dist = sqrt(r)
+    return dist
+end
+
+
+#Distance for 2D arrays of coords. mimics scipy cdist. Convenient but not the fastest option
+function distance_array(x::Array{Float64, 2}, y::Array{Float64, 2})
+    nx = size(x, 1)
+    ny = size(y, 1)
+    r=zeros(nx,ny)
+
+        for j = 1:ny
+            @fastmath for i = 1:nx
+                @inbounds dx = y[j, 1] - x[i, 1]
+                @inbounds dy = y[j, 2] - x[i, 2]
+                @inbounds dz = y[j, 3] - x[i, 3]
+                rSq = dx*dx + dy*dy + dz*dz
+                @inbounds r[i, j] = sqrt(rSq)
+            end
+        end
+    return r
+end
+
 
 #Distance between atom i and j in coords
 #Using view instead. Seems to be slower
@@ -326,6 +357,7 @@ function pairpot_active(numatoms,atomtypes,LJpydict,qmatoms,actatoms)
 	end
 	return sigmaij,epsij
 	end
+
 
 
 
