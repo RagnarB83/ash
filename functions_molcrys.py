@@ -1009,7 +1009,7 @@ def remove_partial_fragments(coords,elems,sphereradius,fragmentobjects, scale=No
     return coords,elems
 
 #Updating pointcharges of fragment
-def reordercluster(fragment,fragmenttype,code_version='py'):
+def reordercluster(fragment,fragmenttype,code_version='julia'):
     print("Reordering Cluster fraglists")
     #print("fragment:", fragment)
     #print("fragmenttype:", fragmenttype)
@@ -1053,7 +1053,6 @@ def reordercluster(fragment,fragmenttype,code_version='py'):
         #print("fragmenttype.clusterfraglist:", fragmenttype.clusterfraglist)
         #print(fragmenttype.clusterfraglist[5])
         ash.print_time_rel(timestampA, modulename='reorder_cluster py')
-    exit()
 #Updating pointcharges of fragment
 def pointchargeupdate(fragment,fragmenttype,chargelist):
     #print("fragment:", fragment)

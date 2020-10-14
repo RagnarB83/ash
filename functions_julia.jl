@@ -9,7 +9,7 @@ using Hungarian
 #using Distances. Note: Use of Distances requires it to be added via Pkg manager
 
 #TODO:
-# We are not utilizing Julia column-major much. Latter supposedly better
+# We are not utilizing Julia column-major much.
 #Tried for connectivity, no difference
 # Try maybe also for Lennard_jones? Pairpot arrays??
 # Read more:
@@ -409,7 +409,7 @@ function reorder_hungarian_julia(p_atoms, q_atoms, p_coord, q_coord)
 end
 
 
-#Note: Called by Python-ASH. Assumed that index-conversion has been performed on fraglists
+#Note: Called by Python-ASH. Assumed that index-conversion has already been performed on fraglists
 #Note: Passing fragment as Python object is very slow
 #Using view for getting slices without copies
 function reorder_cluster_julia(elems,coords,fraglists)
