@@ -30,19 +30,22 @@ import inspect
 
 #Julia dependency
 #Current behaviour: We try to import, if not possible then we continue
-try:
-    print("Import PyJulia interface")
-    from julia.api import Julia
-    from julia import Main
-    #Hungarian package needs to be installed
-    from julia import Hungarian
-    ashpath = os.path.dirname(ash.__file__)
-    #Various Julia functions
-    Main.include(ashpath + "/functions_julia.jl")
-except:
-    print("Problem importing Pyjulia")
-    print("Make sure Julia is installed, PyJulia within Python, Pycall within Julia, Julia packages have been installed and you are using python-jl")
-    print("Python routines will be used instead when possible")
+load_julia = True
+if load_julia is True:
+    try:
+        print("Import PyJulia interface")
+        from julia.api import Julia
+        from julia import Main
+        #Hungarian package needs to be installed
+        from julia import Hungarian
+        ashpath = os.path.dirname(ash.__file__)
+        #Various Julia functions
+        print("Loading Julia functions")
+        Main.include(ashpath + "/functions_julia.jl")
+    except:
+        print("Problem importing Pyjulia")
+        print("Make sure Julia is installed, PyJulia within Python, Pycall within Julia, Julia packages have been installed and you are using python-jl")
+        print("Python routines will be used instead when possible")
 
 
 
@@ -1654,7 +1657,7 @@ class NonBondedTheory:
                     print("Coulomb Energy (au):", self.Coulombchargeenergy)
                     print("Coulomb Energy (kcal/mol):", self.Coulombchargeenergy * constants.harkcal)
                     print("")
-                    print("self.Coulombchargegradient:", self.Coulombchargegradient)
+                    #print("self.Coulombchargegradient:", self.Coulombchargegradient)
                 blankline()
             # NOTE: Lennard-Jones should  calculate both MM-MM and QM-MM LJ interactions. Full coords necessary.
             if LJ==True:
@@ -3940,7 +3943,8 @@ class Fragment:
 
 
         if self.printlevel >= 2:
-            print_time_rel(timestampA, modulename='calc connectivity full')
+            pass
+            #print_time_rel(timestampA, modulename='calc connectivity full')
         #flat_fraglist = [item for sublist in fraglist for item in sublist]
         self.connectivity=fraglist
         #Calculate number of atoms in connectivity list of lists

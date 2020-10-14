@@ -770,32 +770,54 @@ def get_partial_list(allatoms,partialatoms,list):
 def scipy_hungarian(A,B):
     from scipy.spatial.distance import cdist
     from scipy.optimize import linear_sum_assignment
-    
-    distances_cdist = cdist(A, B, 'euclidean')
-    indices_a, assignment = linear_sum_assignment(distances_cdist)
+    #timestampA = time.time()
+    distances = cdist(A, B, 'euclidean')
+    #print("distances:", distances)
+    #ash.print_time_rel(timestampA, modulename='scipy distances_cdist')
+    #timestampA = time.time()
+    indices_a, assignment = linear_sum_assignment(distances)
+    #print("indices_a:", indices_a)
+    #print("assignment:", assignment)
+    #ash.print_time_rel(timestampA, modulename='scipy linear sum assignment')
     return assignment
 
 #Hungarian algorithm to reorder coordinates. Uses Julia to calculates distances between coordinate-arrays A and B and then Hungarian Julia package.
 #PyJulia needs to have been imported before (ash.py)
-def hungarian(A, B):
-    
+def hungarian_julia(A, B):
+    from scipy.spatial.distance import cdist
+    from scipy.optimize import linear_sum_assignment
     try:
         #Calculating distances via Julia
-        distances =ash.Main.Juliafunctions.distance_array(A,B)
-    
+        #print("Here. Calling Julia distances")
+        #timestampA = time.time()
+        
+        #This one is SLOW!!! For rad30 Bf3hcn example it takes 23 seconds compare to 3.8 sec for scipy. 0.8 sec for scipy for both dist and hungarian
+        #distances =ash.Main.Juliafunctions.distance_array(A,B)
+        distances = cdist(A, B, 'euclidean')
+        #ash.print_time_rel(timestampA, modulename='julia distance array')
+        #timestampA = time.time()
         # Julian Hungarian call. Requires Hungarian package
         assignment, cost = ash.Hungarian.hungarian(distances)
+        
+        #ash.print_time_rel(timestampA, modulename='julia hungarian')
+        #timestampA = time.time()
         #Removing zeros and offsetting by 1 (Julia 1-indexing)
         final_assignment=assignment[assignment != 0]-1
+        
+        #final_assignment = scipy_hungarian(A,B)
+        
     except:
         print("Problem running Julia Hungarian function. Trying scipy instead")
+        
+        exit()
+        
         final_assignment = scipy_hungarian(A,B)
     
     return final_assignment
 
 #Hungarian reorder algorithm
 #From RMSD
-def reorder_hungarian(p_atoms, q_atoms, p_coord, q_coord):
+def reorder_hungarian_scipy(p_atoms, q_atoms, p_coord, q_coord):
     """
     Re-orders the input atom list and xyz coordinates using the Hungarian
     method (using optimized column results)
@@ -821,7 +843,7 @@ def reorder_hungarian(p_atoms, q_atoms, p_coord, q_coord):
 
     # Find unique atoms
     unique_atoms = np.unique(p_atoms)
-
+    #print("unique_atoms:", unique_atoms)
     # generate full view from q shape to fill in atom view on the fly
     view_reorder = np.zeros(q_atoms.shape, dtype=int)
     view_reorder -= 1
@@ -832,16 +854,69 @@ def reorder_hungarian(p_atoms, q_atoms, p_coord, q_coord):
 
         A_coord = p_coord[p_atom_idx]
         B_coord = q_coord[q_atom_idx]
+        #print("A_coord:", A_coord)
+        #print("B_coord:", B_coord)
 
-        view = hungarian(A_coord, B_coord)
+        view = scipy_hungarian(A_coord, B_coord)
+        view_reorder[p_atom_idx] = q_atom_idx[view]
+    #print("view_reorder:", view_reorder)
+    return view_reorder
+
+
+
+
+def reorder_hungarian_julia(p_atoms, q_atoms, p_coord, q_coord):
+    """
+    Re-orders the input atom list and xyz coordinates using the Hungarian
+    method (using optimized column results)
+
+    Parameters
+    ----------
+    p_atoms : array
+        (N,1) matrix, where N is points holding the atoms' names
+    p_atoms : array
+        (N,1) matrix, where N is points holding the atoms' names
+    p_coord : array
+        (N,D) matrix, where N is points and D is dimension
+    q_coord : array
+        (N,D) matrix, where N is points and D is dimension
+
+    Returns
+    -------
+    view_reorder : array
+             (N,1) matrix, reordered indexes of atom alignment based on the
+             coordinates of the atoms
+
+    """
+
+    # Find unique atoms
+    unique_atoms = np.unique(p_atoms)
+    print("unique_atoms:", unique_atoms)
+    # generate full view from q shape to fill in atom view on the fly
+    view_reorder = np.zeros(q_atoms.shape, dtype=int)
+    view_reorder -= 1
+    print("view_reorder:", view_reorder)
+    for atom in unique_atoms:
+        p_atom_idx, = np.where(p_atoms == atom)
+        q_atom_idx, = np.where(q_atoms == atom)
+
+        A_coord = p_coord[p_atom_idx]
+        B_coord = q_coord[q_atom_idx]
+
+        view = hungarian_julia(A_coord, B_coord)
         view_reorder[p_atom_idx] = q_atom_idx[view]
 
     return view_reorder
 
 
 
+
+
+
+
+
 def check_reflections(p_atoms, q_atoms, p_coord, q_coord,
-                      reorder_method=reorder_hungarian,
+                      reorder_method=reorder_hungarian_scipy,
                       rotation_method=kabsch_rmsd,
                       keep_stereo=False):
     """
