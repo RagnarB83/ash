@@ -4022,12 +4022,12 @@ class Fragment:
             outfile.write("Energy: {}\n".format(self.energy))
             outfile.write("\n")
             outfile.write(" Index    Atom         x                  y                  z               charge        fragment-type        atom-type\n")
-            outfile.write("----------------------------------------------------------------------------------------------------------------------\n")
+            outfile.write("---------------------------------------------------------------------------------------------------------------------------------\n")
             for at, el, coord, charge, label, atomtype in zip(self.atomlist, self.elems,self.coords,self.atomcharges, self.fragmenttype_labels, self.atomtypes):
                 line="{:>6} {:>6}  {:17.11f}  {:17.11f}  {:17.11f}  {:14.8f} {:12d} {:>21}\n".format(at, el,coord[0], coord[1], coord[2], charge, label, atomtype)
                 outfile.write(line)
             outfile.write(
-                "======================================================================================================================\n")
+                "===========================================================================================================================================\n")
             #outfile.write("elems: {}\n".format(self.elems))
             #outfile.write("coords: {}\n".format(self.coords))
             #outfile.write("list of masses: {}\n".format(self.list_of_masses))

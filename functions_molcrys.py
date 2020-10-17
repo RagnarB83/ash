@@ -1009,12 +1009,17 @@ def remove_partial_fragments(coords,elems,sphereradius,fragmentobjects, scale=No
     return coords,elems
 
 #Updating pointcharges of fragment
-def reordercluster(fragment,fragmenttype,code_version='julia'):
+def reordercluster(fragment,fragmenttype,code_version='py'):
     print("Reordering Cluster fraglists")
     #print("fragment:", fragment)
     #print("fragmenttype:", fragmenttype)
     fraglists=fragmenttype.clusterfraglist
-    #print(fraglists)
+    #fraglists=[[956, 964, 972, 980, 988, 1004, 7644]]
+    
+    
+    
+    print("Before reorder")
+    print(fraglists)
     #exit()
     if len(fraglists) == 0:
         print(BC.FAIL, "Fragment lists for fragment-type are empty. Makes no sense (too small cluster radius?!). Exiting...", BC.END)
@@ -1023,13 +1028,17 @@ def reordercluster(fragment,fragmenttype,code_version='julia'):
     timestampA=time.time()
     if code_version=='julia':
         print("Calling reorder_cluster_julia")
-        print(fragmenttype.clusterfraglist[5])
+        exit()
+        #print(fragmenttype.clusterfraglist[5])
         #Converting from 0-based to 1-based indexing before passing to Julia
         jul_fraglists=[[number+1 for number in group] for group in fraglists]
         new_jul_fraglists = Main.Juliafunctions.reorder_cluster_julia(fragment.elems,fragment.coords,jul_fraglists)
+        print("new_jul_fraglists:", new_jul_fraglists)
         #Converting back from 1-based indexing to 0-based indexing
         fragmenttype.clusterfraglist=[[number-1 for number in group] for group in new_jul_fraglists]
-        #print(fragmenttype.clusterfraglist[5])
+        #print("After. fragmenttype.clusterfraglist:", fragmenttype.clusterfraglist)
+        #print(fragmenttype.clusterfraglist[236])
+        exit()
         ash.print_time_rel(timestampA, modulename='reorder_cluster julia')
     elif code_version=='py':
         print("Calling reorder_cluster py")
@@ -1037,7 +1046,7 @@ def reordercluster(fragment,fragmenttype,code_version='julia'):
         elems_frag_ref = np.array([fragment.elems[i] for i in fraglists[0]])
         coords_frag_ref = np.array([fragment.coords[i] for i in fraglists[0]])
         for fragindex,frag in enumerate(fraglists):
-
+            #print("frag:", frag)
             if fragindex > 0:
                 elems_frag=np.array([fragment.elems[i] for i in frag])
                 coords_frag = np.array([fragment.coords[i] for i in frag])
@@ -1050,8 +1059,9 @@ def reordercluster(fragment,fragmenttype,code_version='julia'):
                 #print("neworderfrag:", neworderfrag)
                 fragmenttype.clusterfraglist[fragindex]=neworderfrag
 
-        #print("fragmenttype.clusterfraglist:", fragmenttype.clusterfraglist)
-        #print(fragmenttype.clusterfraglist[5])
+        #print("After. fragmenttype.clusterfraglist:", fragmenttype.clusterfraglist)
+        #exit()
+        #print(fragmenttype.clusterfraglist[236])
         ash.print_time_rel(timestampA, modulename='reorder_cluster py')
 #Updating pointcharges of fragment
 def pointchargeupdate(fragment,fragmenttype,chargelist):
