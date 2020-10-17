@@ -123,7 +123,7 @@ def LennardJones(coords, epsij, sigmaij, connectivity=None, qmatoms=None):
                     gradient[j] -= gr
     #Convert gradient from kcal/mol per Å to hartree/Bohr
     final_gradient=gradient * (1/constants.harkcal) / constants.ang2bohr
-    print("LJ gradient (hartree/Bohr):", final_gradient)
+    #print("LJ gradient (hartree/Bohr):", final_gradient)
     #Converg energy from kcal/mol to hartree
     final_energy=energy*(1/constants.harkcal)
     print("LJ energy (hartree)", final_energy)
@@ -249,7 +249,7 @@ def LJCoulpy(coords,atomtypes, charges, LJPairpotentials, connectivity=None):
                                 #print("gradient[j]:", gradient[j]* (1/constants.harkcal) / constants.ang2bohr)
     #Convert gradient from kcal/mol per Å to hartree/Bohr
     LJfinal_gradient=LJgradient * (1/constants.harkcal) / constants.ang2bohr
-    print("LJ gradient (hartree/Bohr):", LJfinal_gradient)
+    #print("LJ gradient (hartree/Bohr):", LJfinal_gradient)
     #Converg energy from kcal/mol to hartree
     LJfinal_energy=LJenergy*(1/constants.harkcal)
     print("LJ energy (hartree)", LJfinal_energy)

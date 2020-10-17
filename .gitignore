@@ -4,3 +4,10 @@
 /__pycache__
 ash_user_settings.ini
 TODO
+.idea
+.vscode
+ASH-testdir
+backup
+euclidean-c-test
+reorder-test
+.DS_Store

@@ -21,6 +21,15 @@ Requirements:
 We recommend Anaconda (https://www.anaconda.com/distribution/) for a good scientific Python distribution. 
 Contains Python3, Numpy, SciPy, Matplotlib.
 
+
+
+<div align=center>
+<script id="asciicast-MUrhNGhDx9mAjdqomBppIGWsI" src="https://asciinema.org/a/MUrhNGhDx9mAjdqomBppIGWsI.js" async></script>
+</div>
+
+
+
+
 Example:
 ```sh
 from ash import *

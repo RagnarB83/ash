@@ -2,12 +2,14 @@
 __precompile__()
 
 module Juliafunctions
+using Hungarian
 #using Profile
+#using BenchmarkTools
 #using PyCall
 #using Distances. Note: Use of Distances requires it to be added via Pkg manager
 
 #TODO:
-# We are not utilizing Julia column-major much. Latter supposedly better
+# We are not utilizing Julia column-major much.
 #Tried for connectivity, no difference
 # Try maybe also for Lennard_jones? Pairpot arrays??
 # Read more:
@@ -53,7 +55,7 @@ function distance(coords::Array{Float64,2},i::Int64,j::Int64)
 end
 
 #Simple distance between two 1x3 vectors i.e. two 3D-Cartesian points. Mainly for convenience
-function distance_two_vectors(A::Array{Float64,1},B::Array{Float64,1})
+function distance_two_vectors(A,B)
     @fastmath @inbounds rij_x = A[1] - B[1]
     @fastmath @inbounds rij_y = A[2] - B[2]
     @fastmath @inbounds rij_z = A[3] - B[3]
@@ -64,7 +66,8 @@ end
 
 
 #Distance for 2D arrays of coords. mimics scipy cdist. Convenient but not the fastest option
-function distance_array(x::Array{Float64, 2}, y::Array{Float64, 2})
+#function distance_array(x::Array{Float64, 2}, y::Array{Float64, 2})
+function distance_array(x, y)
     nx = size(x, 1)
     ny = size(y, 1)
     r=zeros(nx,ny)
@@ -357,6 +360,79 @@ function pairpot_active(numatoms,atomtypes,LJpydict,qmatoms,actatoms)
 	end
 	return sigmaij,epsij
 	end
+
+#Requires Hungarian package
+function hungarian_julia(A, B)
+    #Getting distance
+    #TODO: test if this could be bottleneck
+    distances = distance_array(A,B)
+    assignment, cost = Hungarian.hungarian(distances)
+    #Removing zeros
+    #NOTE: SInce 1.5 we have to add a dot
+    final_assignment=assignment[assignment .!= 0]
+    return final_assignment
+end
+
+
+#centroid of array of 3d coords
+function centroid(v)
+    return sum(v, dims=1)/size(v)[1]
+end
+
+
+
+#Reorder input atomlist and coordinates using Hungarian algorithm
+#No index conversion necessary
+function reorder_hungarian_julia(p_atoms, q_atoms, p_coord, q_coord)
+    p_cent = centroid(p_coord)
+    q_cent = centroid(q_coord)
+    p_coord .-= p_cent
+    q_coord .-= q_cent
+
+    # Find unique atoms
+    unique_atoms = unique(p_atoms)
+    # generate full view from q shape to fill in atom view on the fly
+    view_reorder = zeros(Int64,length(q_atoms))
+    view_reorder = view_reorder .-1
+
+    for atom in unique_atoms
+        p_atom_idx = findall(x->x==atom,p_atoms)
+        q_atom_idx = findall(x->x==atom,q_atoms)
+
+        A_coord = view(p_coord,p_atom_idx,:)
+        B_coord = view(q_coord,q_atom_idx,:)
+        
+        resultview = hungarian_julia(A_coord, B_coord)
+        view_reorder[p_atom_idx] = q_atom_idx[resultview]
+    end
+    return view_reorder
+end
+
+
+#Note: Called by Python-ASH. Assumed that index-conversion has already been performed on fraglists
+#Note: Passing fragment as Python object is very slow
+#Using view for getting slices without copies
+function reorder_cluster_julia(elems,coords,fraglists)
+    #Py->Julia index conversion in next lines
+    elems_frag_ref = [elems[i] for i in fraglists[1,:]]
+    coords_frag_ref = view(coords,fraglists[1,:],:)
+    for fragindex=2:size(fraglists,1)
+        frag=fraglists[fragindex,:]
+        #Py->Julia index conversion
+        elems_frag=[elems[i] for i in frag]
+        #Py->Julia index conversion
+        coords_frag = view(coords,fraglists[fragindex,:],:)
+        order = reorder_hungarian_julia(elems_frag_ref, elems_frag,coords_frag_ref, coords_frag,)
+        neworderfrag=[frag[i] for i in order]
+
+        #Modifying fraglist
+        fraglists[fragindex,:] = neworderfrag
+        #exit()
+    end
+    return fraglists
+end
+
+
 
 
 

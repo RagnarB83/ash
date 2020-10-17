@@ -2,6 +2,7 @@
 #Needs to be run just once
 using Pkg
 
+
 #Julia-Python interface: https://github.com/JuliaPy/PyCall.jl
 Pkg.add("PyCall")
 # Hungarian assignment. https://github.com/Gnimuc/Hungarian.jl
@@ -9,6 +10,9 @@ Pkg.add("Hungarian")
 #Distances package. https://github.com/JuliaStats/Distances.jl
 Pkg.add("Distances")
 
+#For Python-Julia to work properly one may have to set ENV_PYTHON below (path to python version) and then rebuild PyCall
+#ENV["PYTHON"] = "/Users/bjornssonsu/anaconda3/bin/python3"
+#Pkg.build("PyCall")
 
 # precompile dependencies
 #using PackageCompiler
