@@ -1,4 +1,5 @@
 from functions_general import *
+#import functions_molcrys
 import numpy as np
 #import settings_molcrys
 import settings_ash
@@ -768,14 +769,13 @@ def get_partial_list(allatoms,partialatoms,list):
 
 #Old function that used scipy to do distances and Hungarian. 
 def scipy_hungarian(A,B):
-    from scipy.spatial.distance import cdist
-    from scipy.optimize import linear_sum_assignment
+    import scipy
     #timestampA = time.time()
-    distances = cdist(A, B, 'euclidean')
+    distances = scipy.spatial.distance.cdist(A, B, 'euclidean')
     #print("distances:", distances)
     #ash.print_time_rel(timestampA, modulename='scipy distances_cdist')
     #timestampA = time.time()
-    indices_a, assignment = linear_sum_assignment(distances)
+    indices_a, assignment = scipy.optimize.linear_sum_assignment(distances)
     #print("indices_a:", indices_a)
     #print("assignment:", assignment)
     #ash.print_time_rel(timestampA, modulename='scipy linear sum assignment')

@@ -1019,7 +1019,7 @@ def reordercluster(fragment,fragmenttype,code_version='py'):
     
     
     print("Before reorder")
-    print(fraglists)
+    #print(fraglists)
     #exit()
     if len(fraglists) == 0:
         print(BC.FAIL, "Fragment lists for fragment-type are empty. Makes no sense (too small cluster radius?!). Exiting...", BC.END)
@@ -1042,6 +1042,9 @@ def reordercluster(fragment,fragmenttype,code_version='py'):
         ash.print_time_rel(timestampA, modulename='reorder_cluster julia')
     elif code_version=='py':
         print("Calling reorder_cluster py")
+        print("Importing scipy")
+        import scipy.spatial.distance
+        import scipy.optimize
         #print(fragmenttype.clusterfraglist[5])
         elems_frag_ref = np.array([fragment.elems[i] for i in fraglists[0]])
         coords_frag_ref = np.array([fragment.coords[i] for i in fraglists[0]])

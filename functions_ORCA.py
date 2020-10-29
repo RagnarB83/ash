@@ -74,8 +74,14 @@ def ORCAfinalenergygrab(file):
     with open(file) as f:
         for line in f:
             if 'FINAL SINGLE POINT ENERGY' in line:
-                Energy=float(line.split()[-1])
+                if "Wavefunction not fully converged!" in line:
+                    print("ORCA WF not fully converged!")
+                    print("Not using energy. Modify ORCA settings")
+                    exit()
+                else:
+                    Energy=float(line.split()[-1])
     return Energy
+
 
 #Grab gradient from ORCA engrad file
 def ORCAgradientgrab(engradfile):
