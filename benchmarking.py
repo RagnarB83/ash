@@ -167,6 +167,10 @@ def run_benchmark(set=None, theory=None, workflow=None, orcadir=None, numcores=N
             database_dict[i+1].correction = corr
     
     
+    if numcores is None:
+        numcores=theory.nprocs
+    
+    
     #Always same unit so taking first case
     unit=database_dict[1].unit
     try:

@@ -847,6 +847,8 @@ def num_core_electrons(fragment):
 
 #Check if electrons pairs in fragment are less than numcores. Reduce numcores if so.
 def check_cores_vs_electrons(fragment,numcores,charge):
+    print("numcores:", numcores)
+    print("charge:", charge)
     numelectrons = int(fragment.nuccharge - charge)
     #Reducing numcores if fewer active electron pairs than numcores.
     core_electrons = num_core_electrons(fragment)
