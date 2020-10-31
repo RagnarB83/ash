@@ -246,7 +246,7 @@ def W1theory_SP(fragment=None, charge=None, orcadir=None, mult=None, stabilityan
     
     numelectrons = int(fragment.nuccharge - charge)
     #Reduce numcores if required
-    numcores = check_cores_vs_electons(fragment,numcores)
+    numcores = check_cores_vs_electrons(fragment,numcores,charge)
     #if 1-electron species like Hydrogen atom then we either need to code special HF-based procedure or just hardcode values
     #Currently hardcoding H-atom case. Replace with proper extrapolated value later.
     if numelectrons == 1:
@@ -457,7 +457,7 @@ def W1F12theory_SP(fragment=None, charge=None, orcadir=None, mult=None, stabilit
     
     numelectrons = int(fragment.nuccharge - charge)
     #Reduce numcores if required
-    numcores = check_cores_vs_electons(fragment,numcores)
+    numcores = check_cores_vs_electrons(fragment,numcores,charge)
     
     #if 1-electron species like Hydrogen atom then we either need to code special HF-based procedure or just hardcode values
     #Currently hardcoding H-atom case. Replace with proper extrapolated value later.
@@ -684,7 +684,7 @@ def DLPNO_W1F12theory_SP(fragment=None, charge=None, orcadir=None, mult=None, st
     print("Calculation label: ", calc_label)
     numelectrons = int(fragment.nuccharge - charge)
     #Reduce numcores if required
-    numcores = check_cores_vs_electons(fragment,numcores)
+    numcores = check_cores_vs_electrons(fragment,numcores,charge)
 
     #if 1-electron species like Hydrogen atom then we either need to code special HF-based procedure or just hardcode values
     #Currently hardcoding H-atom case. Replace with proper extrapolated value later.
@@ -909,7 +909,8 @@ def DLPNO_W1theory_SP(fragment=None, charge=None, orcadir=None, mult=None, stabi
     print("Calculation label: ", calc_label)
 
     numelectrons = int(fragment.nuccharge - charge)
-    numcores = check_cores_vs_electons(fragment,numcores)
+    #Reduce cores if needed
+    numcores = check_cores_vs_electrons(fragment,numcores,charge)
     #if 1-electron species like Hydrogen atom then we either need to code special HF-based procedure or just hardcode values
     #Currently hardcoding H-atom case. Replace with proper extrapolated value later.
     if numelectrons == 1:
@@ -1118,7 +1119,8 @@ def DLPNO_F12_SP(fragment=None, charge=None, orcadir=None, mult=None, stabilitya
     print("Calculation label: ", calc_label)
 
     numelectrons = int(fragment.nuccharge - charge)
-    numcores = check_cores_vs_electons(fragment,numcores)
+    #Reduce cores if needed
+    numcores = check_cores_vs_electrons(fragment,numcores,charge)
 
     #if 1-electron species like Hydrogen atom then we either need to code special HF-based procedure or just hardcode values
     #Currently hardcoding H-atom case. Replace with proper extrapolated value later.
@@ -1299,7 +1301,7 @@ def DLPNO_W2theory_SP(fragment=None, charge=None, orcadir=None, mult=None, stabi
 
     numelectrons = int(fragment.nuccharge - charge)
     #Check if numcores should be reduced
-    numcores = check_cores_vs_electons(fragment,numcores)
+    numcores = check_cores_vs_electrons(fragment,numcores,charge)
     
     #if 1-electron species like Hydrogen atom then we either need to code special HF-based procedure or just hardcode values
     #Currently hardcoding H-atom case. Replace with proper extrapolated value later.
@@ -1983,7 +1985,7 @@ def DLPNO_CC_CBS_SP(cardinals = "2/3", basisfamily="def2", fragment=None, charge
 
     numelectrons = int(fragment.nuccharge - charge)
     #Reduce numcores if required
-    numcores = check_cores_vs_electons(fragment,numcores)
+    numcores = check_cores_vs_electrons(fragment,numcores,charge)
 
     #Cardinals list instead of string.
     #TODO: get rid of string and use list as input
