@@ -5,7 +5,7 @@ import functions_coords
 from functions_general import *
 import os
 import math
-
+from elstructure_functions import check_cores_vs_electons, num_core_electrons
 
 #Reaction class. Used for benchmarking
 class Reaction:
@@ -157,7 +157,8 @@ def run_benchmark(set=None, theory=None, workflow=None, orcadir=None, numcores=N
     #Read reference data and define reactions
     print("")
     database_dict = read_referencedata_file(benchmarksetpath)
-    print("")
+    print("Database: ", database_dict)
+    print("Number of reactions:", len(database_dict))
     #One way of providing corrections: give list of floats
     if corrections is not None:
         print("Corrections provided as input: ", corrections)
@@ -208,7 +209,14 @@ def run_benchmark(set=None, theory=None, workflow=None, orcadir=None, numcores=N
             if theory is not None:
                 theory.charge=frag.charge
                 theory.mult=frag.mult
+                
+                #Reducing numcores if few electrons, otherwise original value
+                theory.nprocs = check_cores_vs_electons(fragment,numcores)
+                
                 energy = ash.Singlepoint(fragment=frag, theory=theory)
+                
+                
+                
                 all_calc_energies[file] = energy
                 reaction.totalenergies.append(energy)
                 shutil.copyfile('orca-input.out', './' + file  + '.out')

@@ -10,6 +10,7 @@ import math
 from functions_ORCA import grab_HF_and_corr_energies
 from interface_geometric import *
 from interface_crest import *
+from elstructure_functions import check_cores_vs_electons, num_core_electrons
 
 #Various workflows and associated sub-functions
 
@@ -187,13 +188,7 @@ def Extrapolation_twopoint(scf_energies, corr_energies, cardinals, basis_family)
 
     return SCFextrap, corrextrap
 
-def num_core_electrons(fragment):
-    sum=0
-    formula_list = functions_coords.molformulatolist(fragment.formula)
-    for i in formula_list:
-        els = atom_core_electrons[i]
-        sum+=els
-    return sum
+
 
 #Note: Inner-shell correlation information: https://webhome.weizmann.ac.il/home/comartin/preprints/w1/node6.html
 # Idea: Instead of CCSD(T), try out CEPA or pCCSD as alternative method. Hopefully as accurate as CCSD(T).
@@ -248,8 +243,10 @@ def W1theory_SP(fragment=None, charge=None, orcadir=None, mult=None, stabilityan
     print("")
     calc_label = "Frag" + str(fragment.formula) + "_" + str(fragment.charge) + "_"
     print("Calculation label: ", calc_label)
+    
     numelectrons = int(fragment.nuccharge - charge)
-
+    #Reduce numcores if required
+    numcores = check_cores_vs_electons(fragment,numcores)
     #if 1-electron species like Hydrogen atom then we either need to code special HF-based procedure or just hardcode values
     #Currently hardcoding H-atom case. Replace with proper extrapolated value later.
     if numelectrons == 1:
@@ -261,17 +258,6 @@ def W1theory_SP(fragment=None, charge=None, orcadir=None, mult=None, stabilityan
                   'E_triplescorr_CBS': 0.0, 'E_corecorr_and_SR': 0.0, 'E_SO': 0.0}
         return W1_total, E_dict
 
-    #Reducing numcores if fewer active electron pairs than numcores.
-    core_electrons = num_core_electrons(fragment)
-    print("core_electrons:", core_electrons)
-    valence_electrons = (numelectrons - core_electrons)
-    electronpairs = int(valence_electrons / 2)
-    if electronpairs  < numcores:
-        print("Number of electrons in fragment:", numelectrons)
-        print("Number of valence electrons :", valence_electrons )
-        print("Number of valence electron pairs :", electronpairs )
-        print("Setting numcores to number of electron pairs")
-        numcores=int(electronpairs)
 
     #Block input for SCF/MDCI block options.
     #Disabling FullLMP2 guess in general as not available for open-shell
@@ -468,8 +454,11 @@ def W1F12theory_SP(fragment=None, charge=None, orcadir=None, mult=None, stabilit
     print("")
     calc_label = "Frag" + str(fragment.formula) + "_" + str(fragment.charge) + "_"
     print("Calculation label: ", calc_label)
+    
     numelectrons = int(fragment.nuccharge - charge)
-
+    #Reduce numcores if required
+    numcores = check_cores_vs_electons(fragment,numcores)
+    
     #if 1-electron species like Hydrogen atom then we either need to code special HF-based procedure or just hardcode values
     #Currently hardcoding H-atom case. Replace with proper extrapolated value later.
     if numelectrons == 1:
@@ -481,17 +470,6 @@ def W1F12theory_SP(fragment=None, charge=None, orcadir=None, mult=None, stabilit
                   'E_triplescorr_CBS': 0.0, 'E_corecorr_and_SR': 0.0, 'E_SO': 0.0}
         return W1_total, E_dict
 
-    #Reducing numcores if fewer active electron pairs than numcores.
-    core_electrons = num_core_electrons(fragment)
-    print("core_electrons:", core_electrons)
-    valence_electrons = (numelectrons - core_electrons)
-    electronpairs = int(valence_electrons / 2)
-    if electronpairs  < numcores:
-        print("Number of electrons in fragment:", numelectrons)
-        print("Number of valence electrons :", valence_electrons )
-        print("Number of valence electron pairs :", electronpairs )
-        print("Setting numcores to number of electron pairs")
-        numcores=int(electronpairs)
 
     #Block input for SCF/MDCI block options.
     #Disabling FullLMP2 guess in general as not available for open-shell
@@ -705,6 +683,8 @@ def DLPNO_W1F12theory_SP(fragment=None, charge=None, orcadir=None, mult=None, st
     calc_label = "Frag" + str(fragment.formula) + "_" + str(fragment.charge) + "_"
     print("Calculation label: ", calc_label)
     numelectrons = int(fragment.nuccharge - charge)
+    #Reduce numcores if required
+    numcores = check_cores_vs_electons(fragment,numcores)
 
     #if 1-electron species like Hydrogen atom then we either need to code special HF-based procedure or just hardcode values
     #Currently hardcoding H-atom case. Replace with proper extrapolated value later.
@@ -717,17 +697,6 @@ def DLPNO_W1F12theory_SP(fragment=None, charge=None, orcadir=None, mult=None, st
                   'E_triplescorr_CBS': 0.0, 'E_corecorr_and_SR': 0.0, 'E_SO': 0.0}
         return W1_total, E_dict
 
-    #Reducing numcores if fewer active electron pairs than numcores.
-    core_electrons = num_core_electrons(fragment)
-    print("core_electrons:", core_electrons)
-    valence_electrons = (numelectrons - core_electrons)
-    electronpairs = int(valence_electrons / 2)
-    if electronpairs  < numcores:
-        print("Number of electrons in fragment:", numelectrons)
-        print("Number of valence electrons :", valence_electrons )
-        print("Number of valence electron pairs :", electronpairs )
-        print("Setting numcores to number of electron pairs")
-        numcores=int(electronpairs)
 
     #Block input for SCF/MDCI block options.
     #Disabling FullLMP2 guess in general as not available for open-shell
@@ -940,7 +909,7 @@ def DLPNO_W1theory_SP(fragment=None, charge=None, orcadir=None, mult=None, stabi
     print("Calculation label: ", calc_label)
 
     numelectrons = int(fragment.nuccharge - charge)
-
+    numcores = check_cores_vs_electons(fragment,numcores)
     #if 1-electron species like Hydrogen atom then we either need to code special HF-based procedure or just hardcode values
     #Currently hardcoding H-atom case. Replace with proper extrapolated value later.
     if numelectrons == 1:
@@ -951,18 +920,6 @@ def DLPNO_W1theory_SP(fragment=None, charge=None, orcadir=None, mult=None, stabi
         E_dict = {'Total_E': W1_total, 'E_SCF_CBS': W1_total, 'E_CCSDcorr_CBS': 0.0,
                   'E_triplescorr_CBS': 0.0, 'E_corecorr_and_SR': 0.0, 'E_SO': 0.0}
         return W1_total, E_dict
-
-    #Reducing numcores if fewer active electron pairs than numcores.
-    core_electrons = num_core_electrons(fragment)
-    print("core_electrons:", core_electrons)
-    valence_electrons = (numelectrons - core_electrons)
-    electronpairs = int(valence_electrons / 2)
-    if electronpairs  < numcores:
-        print("Number of electrons in fragment:", numelectrons)
-        print("Number of valence electrons :", valence_electrons )
-        print("Number of valence electron pairs :", electronpairs )
-        print("Setting numcores to number of electron pairs")
-        numcores=int(electronpairs)
 
     #Block input for SCF/MDCI block options.
     #Disabling FullLMP2 guess in general as not available for open-shell
@@ -1161,6 +1118,7 @@ def DLPNO_F12_SP(fragment=None, charge=None, orcadir=None, mult=None, stabilitya
     print("Calculation label: ", calc_label)
 
     numelectrons = int(fragment.nuccharge - charge)
+    numcores = check_cores_vs_electons(fragment,numcores)
 
     #if 1-electron species like Hydrogen atom then we either need to code special HF-based procedure or just hardcode values
     #Currently hardcoding H-atom case. Replace with proper extrapolated value later.
@@ -1172,18 +1130,6 @@ def DLPNO_F12_SP(fragment=None, charge=None, orcadir=None, mult=None, stabilitya
         E_dict = {'Total_E': E_total, 'E_SCF_CBS': E_total, 'E_CCSDcorr_CBS': 0.0,
                   'E_triplescorr_CBS': 0.0, 'E_corecorr_and_SR': 0.0, 'E_SO': 0.0}
         return E_total, E_dict
-
-    #Reducing numcores if fewer active electron pairs than numcores.
-    core_electrons = num_core_electrons(fragment)
-    print("core_electrons:", core_electrons)
-    valence_electrons = (numelectrons - core_electrons)
-    electronpairs = int(valence_electrons / 2)
-    if electronpairs  < numcores:
-        print("Number of electrons in fragment:", numelectrons)
-        print("Number of valence electrons :", valence_electrons )
-        print("Number of valence electron pairs :", electronpairs )
-        print("Setting numcores to number of electron pairs")
-        numcores=int(electronpairs)
 
     #Block input for SCF/MDCI block options.
     #Disabling FullLMP2 guess in general as not available for open-shell
@@ -1352,7 +1298,9 @@ def DLPNO_W2theory_SP(fragment=None, charge=None, orcadir=None, mult=None, stabi
     print("Calculation label: ", calc_label)
 
     numelectrons = int(fragment.nuccharge - charge)
-
+    #Check if numcores should be reduced
+    numcores = check_cores_vs_electons(fragment,numcores)
+    
     #if 1-electron species like Hydrogen atom then we either need to code special HF-based procedure or just hardcode values
     #Currently hardcoding H-atom case. Replace with proper extrapolated value later.
     if numelectrons == 1:
@@ -1364,17 +1312,7 @@ def DLPNO_W2theory_SP(fragment=None, charge=None, orcadir=None, mult=None, stabi
                   'E_triplescorr_CBS': 0.0, 'E_corecorr_and_SR': 0.0, 'E_SO': 0.0}
         return W2_total, E_dict
 
-    #Reducing numcores if fewer active electron pairs than numcores.
-    core_electrons = num_core_electrons(fragment)
-    print("core_electrons:", core_electrons)
-    valence_electrons = (numelectrons - core_electrons)
-    electronpairs = int(valence_electrons / 2)
-    if electronpairs  < numcores:
-        print("Number of electrons in fragment:", numelectrons)
-        print("Number of valence electrons :", valence_electrons )
-        print("Number of valence electron pairs :", electronpairs )
-        print("Setting numcores to number of electron pairs")
-        numcores=int(electronpairs)
+
 
     #Block input for SCF/MDCI block options.
     #Disabling FullLMP2 guess in general as not available for open-shell
@@ -2044,6 +1982,8 @@ def DLPNO_CC_CBS_SP(cardinals = "2/3", basisfamily="def2", fragment=None, charge
     print("Calculation label: ", calc_label)
 
     numelectrons = int(fragment.nuccharge - charge)
+    #Reduce numcores if required
+    numcores = check_cores_vs_electons(fragment,numcores)
 
     #Cardinals list instead of string.
     #TODO: get rid of string and use list as input
@@ -2061,17 +2001,6 @@ def DLPNO_CC_CBS_SP(cardinals = "2/3", basisfamily="def2", fragment=None, charge
                   'E_triplescorr_CBS': 0.0, 'E_corecorr_and_SR': 0.0, 'E_SO': 0.0}
         return E_total, E_dict
 
-    #Reducing numcores if fewer active electron pairs than numcores.
-    core_electrons = num_core_electrons(fragment)
-    print("core_electrons:", core_electrons)
-    valence_electrons = (numelectrons - core_electrons)
-    electronpairs = int(valence_electrons / 2)
-    if electronpairs  < numcores:
-        print("Number of electrons in fragment:", numelectrons)
-        print("Number of valence electrons :", valence_electrons )
-        print("Number of valence electron pairs :", electronpairs )
-        print("Setting numcores to number of electron pairs")
-        numcores=int(electronpairs)
 
     #Block input for SCF/MDCI block options.
     #Disabling FullLMP2 guess in general as not available for open-shell

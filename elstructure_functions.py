@@ -834,3 +834,28 @@ def DDEC_to_LJparameters(elems, molmoms, voldict):
     print("r0list is", r0list)
 
     return "something"
+
+
+def num_core_electrons(fragment):
+    sum=0
+    formula_list = functions_coords.molformulatolist(fragment.formula)
+    for i in formula_list:
+        els = atom_core_electrons[i]
+        sum+=els
+    return sum
+
+#Check if electrons pairs in fragment are less than numcores. Reduce numcores if so.
+def check_cores_vs_electons(fragment,numcores):
+    numelectrons = int(fragment.nuccharge - charge)
+    #Reducing numcores if fewer active electron pairs than numcores.
+    core_electrons = num_core_electrons(fragment)
+    print("core_electrons:", core_electrons)
+    valence_electrons = (numelectrons - core_electrons)
+    electronpairs = int(valence_electrons / 2)
+    if electronpairs  < numcores:
+        print("Number of electrons in fragment:", numelectrons)
+        print("Number of valence electrons :", valence_electrons )
+        print("Number of valence electron pairs :", electronpairs )
+        print("Setting numcores to number of electron pairs")
+        return int(electronpairs)
+    return numcores
