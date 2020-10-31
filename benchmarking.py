@@ -5,7 +5,7 @@ import functions_coords
 from functions_general import *
 import os
 import math
-from elstructure_functions import check_cores_vs_electons, num_core_electrons
+from elstructure_functions import check_cores_vs_electrons, num_core_electrons
 
 #Reaction class. Used for benchmarking
 class Reaction:

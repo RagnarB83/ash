@@ -10,7 +10,7 @@ import math
 from functions_ORCA import grab_HF_and_corr_energies
 from interface_geometric import *
 from interface_crest import *
-from elstructure_functions import check_cores_vs_electons, num_core_electrons
+from elstructure_functions import check_cores_vs_electrons, num_core_electrons
 
 #Various workflows and associated sub-functions
 
