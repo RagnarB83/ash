@@ -211,7 +211,7 @@ def run_benchmark(set=None, theory=None, workflow=None, orcadir=None, numcores=N
                 theory.mult=frag.mult
                 
                 #Reducing numcores if few electrons, otherwise original value
-                theory.nprocs = check_cores_vs_electons(fragment,numcores)
+                theory.nprocs = check_cores_vs_electons(frag,numcores)
                 
                 energy = ash.Singlepoint(fragment=frag, theory=theory)
                 
