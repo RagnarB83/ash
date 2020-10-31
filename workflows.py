@@ -7,6 +7,7 @@ import subprocess as sp
 import shutil
 import constants
 import math
+import dictionaries_lists
 from functions_ORCA import grab_HF_and_corr_energies
 from interface_geometric import *
 from interface_crest import *
@@ -16,20 +17,9 @@ from elstructure_functions import check_cores_vs_electrons, num_core_electrons
 
 
 
-#Spin-orbit splittings:
-#Currently only including neutral atoms. Data in cm-1 from : https://webhome.weizmann.ac.il/home/comartin/w1/so.txt
-atom_spinorbitsplittings = {'H': 0.000, 'B': -10.17, 'C' : -29.58, 'N' : 0.00, 'O' : -77.97, 'F' : -134.70,
-                      'Al' : -74.71, 'Si' : -149.68, 'P' : 0.00, 'S' : -195.77, 'Cl' : -294.12}
 
-#Core electrons for elements in ORCA
-atom_core_electrons = {'H': 0, 'He' : 0, 'Li' : 0, 'Be' : 0, 'B': 2, 'C' : 2, 'N' : 2, 'O' : 2, 'F' : 2, 'Ne' : 2,
-                      'Na' : 2, 'Mg' : 2, 'Al' : 10, 'Si' : 10, 'P' : 10, 'S' : 10, 'Cl' : 10, 'Ar' : 10,
-                       'K' : 10, 'Ca' : 10, 'Sc' : 10, 'Ti' : 10, 'V' : 10, 'Cr' : 10, 'Mn' : 10, 'Fe' : 10, 'Co' : 10,
-                       'Ni' : 10, 'Cu' : 10, 'Zn' : 10, 'Ga' : 18, 'Ge' : 18, 'As' : 18, 'Se' : 18, 'Br' : 18, 'Kr' : 18,
-                       'Rb' : 18, 'Sr' : 18, 'Y' : 28, 'Zr' : 28, 'Nb' : 28, 'Mo' : 28, 'Tc' : 28, 'Ru' : 28, 'Rh' : 28,
-                       'Pd' : 28, 'Ag' : 28, 'Cd' : 28, 'In' : 36, 'Sn' : 36, 'Sb' : 36, 'Te' : 36, 'I' : 36, 'Xe' : 36,
-                       'Cs' : 36, 'Ba' : 36, 'Lu' : 46, 'Hf' : 46, 'Ta' : 46, 'w' : 46, 'Re' : 46, 'Os' : 46, 'Ir' : 46,
-                       'Pt' : 46, 'Au' : 46, 'Hg' : 46, 'Tl' : 68, 'Pb' : 68, 'Bi' : 68, 'Po' : 68, 'At' : 68, 'Rn' : 68}
+
+
 
 def Extrapolation_W1_SCF_3point(E):
     """
@@ -369,7 +359,7 @@ end
     ############################################################
     if fragment.numatoms == 1:
         print("Fragment is an atom. Looking up atomic spin-orbit splitting value")
-        E_SO = atom_spinorbitsplittings[fragment.elems[0]] / constants.hartocm
+        E_SO = dictionaries_lists.atom_spinorbitsplittings[fragment.elems[0]] / constants.hartocm
     else :
         E_SO = 0.0
 
@@ -596,7 +586,7 @@ end
     ############################################################
     if fragment.numatoms == 1:
         print("Fragment is an atom. Looking up atomic spin-orbit splitting value")
-        E_SO = atom_spinorbitsplittings[fragment.elems[0]] / constants.hartocm
+        E_SO = dictionaries_lists.atom_spinorbitsplittings[fragment.elems[0]] / constants.hartocm
     else :
         E_SO = 0.0
 
@@ -819,7 +809,7 @@ end
     ############################################################
     if fragment.numatoms == 1:
         print("Fragment is an atom. Looking up atomic spin-orbit splitting value")
-        E_SO = atom_spinorbitsplittings[fragment.elems[0]] / constants.hartocm
+        E_SO = dictionaries_lists.atom_spinorbitsplittings[fragment.elems[0]] / constants.hartocm
     else :
         E_SO = 0.0
 
@@ -1025,7 +1015,7 @@ end
     ############################################################
     if fragment.numatoms == 1:
         print("Fragment is an atom. Looking up atomic spin-orbit splitting value")
-        E_SO = atom_spinorbitsplittings[fragment.elems[0]] / constants.hartocm
+        E_SO = dictionaries_lists.atom_spinorbitsplittings[fragment.elems[0]] / constants.hartocm
     else :
         E_SO = 0.0
 
@@ -1218,7 +1208,7 @@ end
     ############################################################
     if fragment.numatoms == 1:
         print("Fragment is an atom. Looking up atomic spin-orbit splitting value")
-        E_SO = atom_spinorbitsplittings[fragment.elems[0]] / constants.hartocm
+        E_SO = dictionaries_lists.atom_spinorbitsplittings[fragment.elems[0]] / constants.hartocm
     else :
         E_SO = 0.0
 
@@ -1426,7 +1416,7 @@ end
     ############################################################
     if fragment.numatoms == 1:
         print("Fragment is an atom. Looking up atomic spin-orbit splitting value")
-        E_SO = atom_spinorbitsplittings[fragment.elems[0]] / constants.hartocm
+        E_SO = dictionaries_lists.atom_spinorbitsplittings[fragment.elems[0]] / constants.hartocm
     else :
         E_SO = 0.0
 

@@ -7,6 +7,7 @@ import subprocess as sp
 import shutil
 import constants
 import math
+import dictionaries_lists
 #from functions_ORCA import grab_HF_and_corr_energies
 from functions_ORCA import *
 from interface_geometric import *
@@ -840,7 +841,7 @@ def num_core_electrons(fragment):
     sum=0
     formula_list = functions_coords.molformulatolist(fragment.formula)
     for i in formula_list:
-        els = atom_core_electrons[i]
+        els = dictionaries_lists.atom_core_electrons[i]
         sum+=els
     return sum
 
