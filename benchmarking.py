@@ -166,7 +166,7 @@ def run_benchmark(set=None, theory=None, workflow=None, orcadir=None, numcores=N
         for i,corr in enumerate(corrections):
             database_dict[i+1].correction = corr
     
-    
+    #If no numcores then presumably present in theory object
     if numcores is None:
         numcores=theory.nprocs
     
