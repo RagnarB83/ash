@@ -105,6 +105,14 @@ def isint(s):
     except TypeError:
         return False
 
+#Is integer odd
+def isodd(n):
+    if (n % 2) == 0:
+        return False
+    else:
+        return True
+
+
 #Is it possible to interpret string/number as float.
 #Note: integer variable/string can be interpreted. See also is_string_float_withdecimal below
 def isfloat(s):

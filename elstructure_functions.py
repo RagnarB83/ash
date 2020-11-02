@@ -846,6 +846,7 @@ def num_core_electrons(fragment):
     return sum
 
 #Check if electrons pairs in fragment are less than numcores. Reduce numcores if so.
+#Using even number of electrons
 def check_cores_vs_electrons(fragment,numcores,charge):
     print("numcores:", numcores)
     print("charge:", charge)
@@ -859,6 +860,15 @@ def check_cores_vs_electrons(fragment,numcores,charge):
         print("Number of electrons in fragment:", numelectrons)
         print("Number of valence electrons :", valence_electrons )
         print("Number of valence electron pairs :", electronpairs )
-        print("Setting numcores to number of electron pairs")
-        return int(electronpairs)
+
+        if isodd(electronpairs):
+            if electronpairs > 1:
+                print("Setting numcores to: ", electronpairs-1)
+                return electronpairs-1
+            else:
+                print("Setting numcores to: ", electronpairs)
+                return electronpairs
+        else:
+            print("Setting numcores to:", electronpairs)
+            return int(electronpairs)
     return numcores
