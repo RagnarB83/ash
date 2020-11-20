@@ -72,18 +72,21 @@ def molcrys(cif_file=None, xtl_file=None, xyz_file=None, cell_length=None, cell_
             print("Number of fractional coordinates in asymmetric unit:", len(asymmcoords))
             print("Number of asymmetric units in whole cell:", int(numasymmunits))
 
-        cell_vectors=cellparamtovectors(cell_length,cell_angles)
+        #OLD, To delete
+        #cell_vectors=cellparamtovectors(cell_length,cell_angles)
         print("Number of fractional coordinates in whole cell:", len(fullcellcoords))
         #print_coordinates(elems, np.array(fullcellcoords), title="Fractional coordinates")
         #print_coords_all(fullcellcoords,elems)
+        
+        #Calculating cell vectors.
+        # Transposed cell vectors used here (otherwise nonsense for non-orthorhombic cells)
+        cell_vectors=np.transpose(cellbasis(cell_angles,cell_length))
+        print("cell_vectors:", cell_vectors)
+        #Get orthogonal coordinates of cell
+        orthogcoords=fract_to_orthogonal(cell_vectors,fullcellcoords)      
         blankline()
 
-        #Write fractional coordinate XTL file of fullcell coordinates (for visualization in VESTA)
-        write_xtl(cell_length,cell_angles,elems,fullcellcoords,"complete_unitcell.xtl")
 
-
-        #Get orthogonal coordinates of cell
-        orthogcoords=fract_to_orthogonal(cell_vectors,fullcellcoords)
 
     elif xtl_file is not None:
         blankline()
@@ -93,18 +96,18 @@ def molcrys(cif_file=None, xtl_file=None, xyz_file=None, cell_length=None, cell_
         blankline()
         cell_length,cell_angles,elems,fullcellcoords=read_xtlfile(xtl_file)
         
-        cell_vectors=cellparamtovectors(cell_length,cell_angles)
+        #cell_vectors=cellparamtovectors(cell_length,cell_angles)
+
         print("Number of fractional coordinates in whole cell:", len(fullcellcoords))
-        #print_coordinates(elems, np.array(fullcellcoords), title="Fractional coordinates")
-        #print_coords_all(fullcellcoords,elems)
+
+        #Calculating cell vectors.
+        # Transposed cell vectors used here (otherwise nonsense for non-orthorhombic cells)
+        cell_vectors=np.transpose(cellbasis(cell_angles,cell_length))
+        print("cell_vectors:", cell_vectors)
+        #Get orthogonal coordinates of cell
+        orthogcoords=fract_to_orthogonal(cell_vectors,fullcellcoords)      
         blankline()
 
-        #Write fractional coordinate XTL file of fullcell coordinates (for visualization in VESTA)
-        write_xtl(cell_length,cell_angles,elems,fullcellcoords,"complete_unitcell.xtl")
-
-
-        #Get orthogonal coordinates of cell
-        orthogcoords=fract_to_orthogonal(cell_vectors,fullcellcoords)
         
     elif xyz_file is not None:
         print("WARNING. This option is not well tested. XYZ-file must contain all coordinates of cell.")
@@ -114,31 +117,36 @@ def molcrys(cif_file=None, xtl_file=None, xyz_file=None, cell_length=None, cell_
         elems,orthogcoords=read_xyzfile(xyz_file)
         print("Read {} atoms from XYZ-files".format(len(orthogcoords)))
         
-        #TODO: read xyz-file here
         #Need to read cell_lengths and cell_angles also
         if cell_length is None or cell_angles is None:
             print("cell_length/cell_angles is not defined. This is needed for XYZ-file option.")
             exit()
         blankline()
         
-        #TODO: think about what happens next
+        #Calculating cell vectors.
+        # Transposed cell vectors used here (otherwise nonsense for non-orthorhombic cells)
+        cell_vectors=np.transpose(cellbasis(cell_angles,cell_length))
+        print("cell_vectors:", cell_vectors)
         
     else:
         print("Neither CIF-file, XTL-file or XYZ-file passed to molcrys. Exiting...")
         exit(1)
 
+
+
+    #Write fractional coordinate XTL file of fullcell coordinates (for visualization in VESTA)
+    write_xtl(cell_length,cell_angles,elems,fullcellcoords,"complete_unitcell.xtl")
+
+
+
     print("Cell parameters: {} {} {} {} {} {}".format(cell_length[0],cell_length[1], cell_length[2] , cell_angles[0], cell_angles[1], cell_angles[2]))
 
-    #Calculating cell vectors.
-    # Transposed cell vectors used here (otherwise nonsense for non-orthorhombic cells)
-    cell_vectors=np.transpose(cellbasis(cell_angles,cell_length))
-    print("cell_vectors:", cell_vectors)
+    
     #Used by cell_extend_frag_withcenter and frag_define
     #fract_to_orthogonal uses original so it is transposed back
     
     #Converting orthogcoords to numpy array for better performance
     orthogcoords=np.asarray(orthogcoords)
-
     print("orthogcoords:", orthogcoords)
 
     write_xyzfile(elems,orthogcoords,"cell_orthog-original")

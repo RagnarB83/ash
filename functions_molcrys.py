@@ -421,6 +421,8 @@ def cellbasis(angles, edges):
 #Convert cell parameters to cell vectors. Currently only works for orthorhombic, alpha=beta=gamme=90.0
 #TODO: Delete
 def cellparamtovectors(cell_length,cell_angles):
+    print("cell_length :", cell_length)
+    print("cell_angles :", cell_angles)
     if cell_angles[0] == cell_angles[1] and cell_angles[2] == cell_angles[0] and cell_angles[0] == 90.0:
         cell_vectors=[[cell_length[0], 0.0, 0.0], [0.0, cell_length[1], 0.0],[0.0, 0.0, cell_length[2]]]
     else:
@@ -880,8 +882,8 @@ def create_MMcluster(orthogcoords,elems,cell_vectors,sphereradius):
     print("Largest_cell_length: {} Å".format(largest_cell_length))
     #Simple equation to find out roughly how large the extended cell has to be to accommodate cluster-radius
     #Rounds up.
-    #Added extra cell
-    cell_expansion=math.ceil(sphereradius/largest_cell_length)+1
+    #Added extra cell. Nov 2020: Added another one because of XUQVAI.xtl
+    cell_expansion=math.ceil(sphereradius/largest_cell_length)+2
     print("Using cell expansion: [{},{},{}]".format(cell_expansion,cell_expansion,cell_expansion))
     extended_coords,extended_elems=cell_extend_frag(cell_vectors,orthogcoords,elems,[cell_expansion,cell_expansion,cell_expansion])
     #Write XYZ-file with orthogonal coordinates for cell

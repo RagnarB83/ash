@@ -530,7 +530,7 @@ def print_redox_output_state(state, solvsphere, orca_LL, orca_HL, snapshots, ave
     print("High-level reduction energy is : {} eV.".format(HLreductionenergy))
 
     if state == "AB":
-        print("SHE: 4.28 V")
+        print("SHE: {} V".format(constants.SHE))
         print("Final Redox Potential (vs. SHE) at HL-level: {}".format(-1*HLreductionenergy-constants.SHE))
 
     return

@@ -635,7 +635,6 @@ def create_orca_input_pc(name,elems,coords,orcasimpleinput,orcablockinput,charge
 
 #Create simple ORCA inputfile from elems,coords, input, charge, mult,pointcharges
 #Allows for extraline that could be another '!' line or block-inputline.
-#Used by ASH
 
 def create_orca_input_plain(name,elems,coords,orcasimpleinput,orcablockinput,charge,mult, Grad=False, extraline='',
                             HSmult=None, atomstoflip=None):
