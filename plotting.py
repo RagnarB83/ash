@@ -203,7 +203,7 @@ def contourplot(surfacedictionary, label='Label',x_axislabel='Coord', y_axislabe
     
 #plot_Spectrum reads stick-values (e.g. absorption energie or IPs) and intensities, broadens spectrum (writes out dat and stk files) and then creates image-file using Matplotlib.
 #TODO: Currently only Gaussian broadening. Add Lorentzian and Voight
-def plot_Spectrum(xvalues=None, yvalues=None, plotname='Spectrum', range=None, unit='eV', broadening=0.1, points=10000, imageformat='png', dpi=200, matplotlib=True):
+def plot_Spectrum(xvalues=None, yvalues=None, plotname='Spectrum', range=None, unit='eV', broadening=0.1, points=10000, imageformat='png', dpi=200, matplotlib=True, CSV=True):
     if xvalues is None or yvalues is None:
         print("plot_Spectrum requires xvalues and yvalues variables")
         exit(1)
@@ -241,11 +241,17 @@ def plot_Spectrum(xvalues=None, yvalues=None, plotname='Spectrum', range=None, u
     #Save dat file
     with open(plotname+".dat", 'w') as tdatfile:
         for i,j in zip(x,spectrum):
-            tdatfile.write("{:13.10f} {:13.10f} \n".format(i,j))
+            if CSV is True:
+                tdatfile.write("{:13.10f}, {:13.10f} \n".format(i,j))            
+            else:
+                tdatfile.write("{:13.10f} {:13.10f} \n".format(i,j))
     #Save stk file
     with open(plotname+".stk", 'w') as tstkfile:
         for b,c in zip(xvalues,yvalues):
-            tstkfile.write("{:13.10f} {:13.10f} \n".format(b,c))
+            if CSV is True:
+                tstkfile.write("{:13.10f}, {:13.10f} \n".format(b,c))                
+            else:
+                tstkfile.write("{:13.10f} {:13.10f} \n".format(b,c))
 
     print("Wrote file:", plotname+".dat")
     print("Wrote file:", plotname+".stk")
