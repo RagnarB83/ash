@@ -1851,9 +1851,9 @@ def PhotoElectronSpectrum(theory=None, fragment=None, InitialState_charge=None, 
             #    theory.orcasimpleinput = theory.orcasimpleinput + ' noiter '
             if MREOM is True:
                 if '%mdci' not in theory.orcablocks:
-                    theory.orcablocks = theory.orcablocks + "%mdci\nSTol 1e-7\nmaxiter 700\nDoSingularPT true\nend\n"
+                    theory.orcablocks = theory.orcablocks + "%mdci\nSTol 1e-7\nmaxiter 1700\nDoSingularPT true\nend\n"
                 else:
-                    theory.orcablocks = theory.orcablocks.replace("%mdci\n","%mdci\nSTol 1e-7\nmaxiter 700\nDoSingularPT true\nend\n")
+                    theory.orcablocks = theory.orcablocks.replace("%mdci\n","%mdci\nSTol 1e-7\nmaxiter 1700\nDoSingularPT true\nend\n")
                     
             #Defining simple MRCI block. States defined
             if '%mrci' not in theory.orcablocks:
