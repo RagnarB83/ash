@@ -1623,11 +1623,11 @@ def delete_wrong_det(file,reference_mult):
 def PhotoElectronSpectrum(theory=None, fragment=None, InitialState_charge=None, Initialstate_mult=None,
                           Ionizedstate_charge=None, Ionizedstate_mult=None, numionstates=None, path_wfoverlap=None, tda=True,
                           brokensym=False, HSmult=None, atomstoflip=None, initialorbitalfiles=None, Densities='SCF', densgridvalue=100,
-                          CAS=False, CAS_Initial=None, CAS_Final = None, memory=40000, numcores=1, noDyson=False, CASCI=False, MRCI=False,
+                          CAS=False, CAS_Initial=None, CAS_Final = None, memory=40000, numcores=1, noDyson=False, CASCI=False, MRCI=False, MREOM=False,
                           MRCI_Initial=None, MRCI_Final = None, tprintwfvalue=1e-6, MRCI_CASCI_Final=True, EOM=False, label=None, check_stability=True):
     blankline()
     print(bcolors.OKGREEN,"-------------------------------------------------------------------",bcolors.ENDC)
-    print(bcolors.OKGREEN,"PhotoElectronSpectrum: Calculating PES spectra via TDDFT/CAS/MRCI/EOM and Dyson-norm approach",bcolors.ENDC)
+    print(bcolors.OKGREEN,"PhotoElectronSpectrum: Calculating PES spectra via TDDFT/CAS/MRCI/EOM/MREOM and Dyson-norm approach",bcolors.ENDC)
     print(bcolors.OKGREEN,"-------------------------------------------------------------------",bcolors.ENDC)
     blankline()
     print("Numcores used for WFoverlap: ", numcores)
@@ -1652,6 +1652,10 @@ def PhotoElectronSpectrum(theory=None, fragment=None, InitialState_charge=None, 
     if EOM is True:
         print("EOM is True. Will do EOM-IP-CCSD calculations to calculate IPs directly.")
 
+    #Simplifies things. MREOM uses MRCI so let's use same logic.
+    if MREOM is True:
+        print("MREOM option. Setting MRCI to True.")
+        MRCI=True
 
     if CAS is True and MRCI is True:
         print("Both CAS and MRCI can not both be True!")
@@ -1663,9 +1667,10 @@ def PhotoElectronSpectrum(theory=None, fragment=None, InitialState_charge=None, 
         if CASCI is True:
             print("CASCI option on! Initial state will be done with CASSCF while Final ionized states will do CAS-CI")
 
+
     if MRCI is True:
-        print("MRCI option active!")
-        print("Will do CASSCF orbital optimization for initial-state, followed by MRCI")
+        print("MRCI/MREOM option active!")
+        print("Will do CASSCF orbital optimization for initial-state, followed by MRCI/MREOM")
         if MRCI_CASCI_Final is True:
             print("Will do CAS-CI reference (using initial-state orbitals) for final-states")
 
@@ -1768,6 +1773,7 @@ def PhotoElectronSpectrum(theory=None, fragment=None, InitialState_charge=None, 
     print("")
     print("CAS:", CAS)
     print("MRCI:", MRCI)
+    print("MREOM:", MREOM)
     print("EOM:", EOM)
     if CAS is False and MRCI is False and EOM is False:
         print("TDDFT option chosen:")
@@ -1843,7 +1849,12 @@ def PhotoElectronSpectrum(theory=None, fragment=None, InitialState_charge=None, 
             #Enforcing CAS-CI
             #if 'noiter' not in theory.orcasimpleinput.lower():
             #    theory.orcasimpleinput = theory.orcasimpleinput + ' noiter '
-
+            if MREOM is True:
+                if '%mdci' not in theory.orcablocks:
+                    theory.orcablocks = theory.orcablocks + "%mdci\nSTol 1e-7\nmaxiter 300\n DoSingularPT true\nend\n"
+                else:
+                    theory.orcablocks = theory.orcablocks.replace("%mdci\n","%mdci\nSTol 1e-7\nmaxiter 300\n DoSingularPT true\nend\n")
+                    
             #Defining simple MRCI block. States defined
             if '%mrci' not in theory.orcablocks:
                 theory.orcablocks = theory.orcablocks + "%mrci\n" + "printwf det\nTPrintwf {}\n".format(tprintwfvalue) + "end"
@@ -1854,10 +1865,16 @@ def PhotoElectronSpectrum(theory=None, fragment=None, InitialState_charge=None, 
             theory.orcablocks = theory.orcablocks.replace('\n\n','\n')
             theory.orcablocks = theory.orcablocks.replace('\n\n','\n')
 
-            #Adding MRCI+Q to simpleinputline
-            #TODO: Remove as we may want another MRCI method
-            if 'MRCI+Q' not in theory.orcasimpleinput:
-                theory.orcasimpleinput = theory.orcasimpleinput + ' MRCI+Q' 
+            #Adding MRCI+Q to simpleinputline unless MREOM
+            #TODO: Remove as we may want another MRCI method ?
+            if MREOM is True:
+                if 'MREOM' not in theory.orcasimpleinput:
+                    theory.orcasimpleinput = theory.orcasimpleinput + ' MR-EOM' 
+            else:
+                if 'MRCI+Q' not in theory.orcasimpleinput:
+                    theory.orcasimpleinput = theory.orcasimpleinput + ' MRCI+Q' 
+
+
 
         # For orbital analysis
         if 'NORMALPRINT' not in theory.orcasimpleinput.upper():
@@ -1913,7 +1930,7 @@ def PhotoElectronSpectrum(theory=None, fragment=None, InitialState_charge=None, 
 
             #Get orbital ranges (stateI is sufficient)
             internal_orbs,active_orbs,external_orbs = casscf_orbitalranges_grab("orca-input.out")
-        elif MRCI is True:
+        elif MRCI is True or MREOM is True:
             stateI.energy=finalsinglepointenergy
             print("stateI.energy: ", stateI.energy)
 
@@ -2100,9 +2117,9 @@ def PhotoElectronSpectrum(theory=None, fragment=None, InitialState_charge=None, 
 
             #TODO: Saving files for density Cube file creation for CASSCF
 
-        elif MRCI is True:
-            print("Modifying MRCI block for Final state, MRCI({},{})".format(MRCI_Initial[0], MRCI_Initial[1]))
-            print("{} electrons in {} orbitals".format(MRCI_Initial[0], MRCI_Initial[1]))
+        elif MRCI is True or MREOM is True:
+            print("Modifying MRCI block for Final state, MRCI({},{})".format(MRCI_Final[0], MRCI_Final[1]))
+            print("{} electrons in {} orbitals".format(MRCI_Final[0], MRCI_Final[1]))
             
             
             
@@ -2742,6 +2759,10 @@ def Read_old_results():
 
 def plot_PES_Spectrum(IPs=None, dysonnorms=None, mos_alpha=None, mos_beta=None, plotname='PES-plot',
                           start=None, finish=None, broadening=0.1, points=10000, hftyp_I=None, MOPlot=False, matplotlib=True):
+    
+    print("This is deprecated. To be removed...")
+    
+    
     if IPs is None or dysonnorms is None:
         print("plot_PES_Spectrum requires IPs and dysonnorms variables")
         exit(1)
