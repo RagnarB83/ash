@@ -954,28 +954,34 @@ def grab_dets_from_CASSCF_output(file):
                     #combining
                     det_tuple=internal_tuple+tuple(detlist2)+external_tuple
                     #print("det_tuple : ", det_tuple)
+                    #This is the CI coefficient of the determinant
                     coeff = float(line.split()[-1])
                     state.determinants[det_tuple] = coeff
                 if '[' in line and 'CFG' in line:
                     cfg = line.split()[0]
-                    coeff = float(line.split()[-1])
-                    state.configurations[cfg] = coeff
+                    #This is the weight (CI coefficient squared)
+                    weight = float(line.split()[-1])
+                    state.configurations[cfg] = weight
 
                     #CASE: CFG contains only 2 and 0s. That means a situation where CFG and Det is same thing
                     # But det info is not printed so we need to add it
                     #Removed after Vijay update
-                    #if '1' not in cfg:
-                    #    #print("cfg : ", cfg)
-                    #    print("Found CFG without Det info. Adding to determinants")
-                    #    #print("line:", line)
-                    #    bla = cfg.replace('[','').replace(']','').replace('CFG','')
-                    #    #print("bla:", bla)
-                    #    det = bla.replace(str(2),str(3))
-                    #    #print("det:", det)
-                    #    det2 = [int(i) for i in det]
-                    #    det_tuple = internal_tuple + tuple(det2) + external_tuple
-                    #    #print("det_tuple: ", det_tuple)
-                    #    state.determinants[det_tuple] = coeff
+                    #Added back in 29 Nov 2020 since still cases where det is not printed. Taking square of weight
+                    #Vijay probably only changed the MRCI behaviour not the CASSCF behaviour
+                    if '1' not in cfg:
+                        #print("cfg : ", cfg)
+                        print("WARNING: Found CFG with no SOMO.")
+                        print("WARNING: Det info is probably missing (not printed). Taking CFG and weight and converting to determinant")
+                        #print("line:", line)
+                        bla = cfg.replace('[','').replace(']','').replace('CFG','')
+                        #print("bla:", bla)
+                        det = bla.replace(str(2),str(3))
+                        #print("det:", det)
+                        det2 = [int(i) for i in det]
+                        det_tuple = internal_tuple + tuple(det2) + external_tuple
+                        #print("det_tuple: ", det_tuple)
+                        #Taking square-root
+                        state.determinants[det_tuple] = math.sqrt(weight)
 
                 if 'ROOT ' in line:
                     print("line:", line)
