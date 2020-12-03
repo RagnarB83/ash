@@ -741,6 +741,9 @@ def read_ciffile(file):
 
     print("Symmetry operations found in CIF:", symmops)
     print("coords : ", coords)
+    if len(coords) == 0:
+        print("Found zero coordinates in CIF-file: {}. Something wrong with file. Exiting...".format(file))
+        exit()
     return [cell_a, cell_b, cell_c],[cell_alpha, cell_beta, cell_gamma],atomlabels,elems,coords,symmops,cellunits
 
 

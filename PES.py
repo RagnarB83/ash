@@ -963,9 +963,8 @@ def grab_dets_from_CASSCF_output(file):
                     weight = float(line.split()[-1])
                     state.configurations[cfg] = weight
 
-                    #CASE: CFG contains only 2 and 0s. That means a situation where CFG and Det is same thing
-                    # But det info is not printed so we need to add it
-                    #Removed after Vijay update
+                    #CASE: CFG contains only 2 and 0s. That means a situation where Det info is not printed in CASSCF-module (but printed in MRCI)
+                    #Removed in July-ish 2020 after Vijay update
                     #Added back in 29 Nov 2020 since still cases where det is not printed. Taking square of weight
                     #Vijay probably only changed the MRCI behaviour not the CASSCF behaviour
                     if '1' not in cfg:
