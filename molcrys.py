@@ -13,7 +13,8 @@ currtime=time.time()
 
 
 def molcrys(cif_file=None, xtl_file=None, xyz_file=None, cell_length=None, cell_angles=None, fragmentobjects=[], theory=None, numcores=1, chargemodel='',
-            clusterradius=None, shortrangemodel='UFF_modH', auto_connectivity=False, simple_supercell=False, shiftasymmunit=False, cluster_type='sphere', supercell_expansion=[3,3,3]):
+            clusterradius=None, shortrangemodel='UFF_modH', LJHparameters=[0.0,0.0], auto_connectivity=False, simple_supercell=False, shiftasymmunit=False, cluster_type='sphere', 
+            supercell_expansion=[3,3,3]):
 
     banner="""
     THE
@@ -508,12 +509,17 @@ def molcrys(cif_file=None, xtl_file=None, xyz_file=None, cell_length=None, cell_
                 forcefile.write('LennardJones_i_R0 {}  {:12.6f}   {:12.6f}\n'.format(atomtype, UFFdict[atomtype_el][0],UFFdict[atomtype_el][1]))
     #Modified UFF forcefield with 0 parameter on H atom (avoids repulsion)
     elif shortrangemodel=='UFF_modH':
-        print("Using UFF forcefield with modified H-parameter (zero values for H element)")
+        print("Using UFF forcefield with modified H-parameter")
+        print("H parameters :", LJHparameters)
+        print("")
+        UFFdict_Hzero=copy.deepcopy(UFFdict)
+        UFFdict_Hzero['H'] = [LJHparameters[0], LJHparameters[1]]
+        
         #print("UFF parameters:", UFFdict)
         for fragmentobject in fragmentobjects:
             #fragmentobject.Elements
             for el in fragmentobject.Elements:
-                print("UFF parameter for {} :".format(el, UFF_modH_dict[el]))
+                print("UFF parameter for {} :".format(el, UFFdict_Hzero[el]))
 
         #Using UFF_ prefix before element
         atomtypelist=['UFF_'+i for i in Cluster.elems]
@@ -524,7 +530,7 @@ def molcrys(cif_file=None, xtl_file=None, xyz_file=None, cell_length=None, cell_
             for atomtype in atomtypelist_uniq:
                 #Getting just element-par for UFFdict lookup
                 atomtype_el=atomtype.replace('UFF_','')
-                forcefile.write('LennardJones_i_R0 {}  {:12.6f}   {:12.6f}\n'.format(atomtype, UFF_modH_dict[atomtype_el][0],UFF_modH_dict[atomtype_el][1]))
+                forcefile.write('LennardJones_i_R0 {}  {:12.6f}   {:12.6f}\n'.format(atomtype, UFFdict_Hzero[atomtype_el][0],UFFdict_Hzero[atomtype_el][1]))
     elif shortrangemodel=='DDEC3' or shortrangemodel=='DDEC6':
         print("Deriving DDEC Lennard-Jones parameters")
         print("DDEC model :", shortrangemodel)
