@@ -389,9 +389,10 @@ def frag_define(orthogcoords,elems,cell_vectors,fragments,cell_angles=None, cell
         def find_missing(lst):
             return [x for x in range(lst[0], lst[-1] + 1) if x not in lst]
 
-        if find_missing(all_flat) != []:
-            print("Missing number in sequence.")
-            print("Fragment definition incomplete")
+        if len(all_flat) > 0:
+            if find_missing(all_flat) != []:
+                print("Missing number in sequence.")
+                print("Fragment definition incomplete")
 
         return 1
     else:
@@ -649,6 +650,7 @@ def read_ciffile(file):
     symmopgrab=False
     symmopgrab_oldsyntax=False
     cellunits=None
+    atomsitecolumns=[]
     with open(file) as f:
         for line in f:
             if 'cell_formula_units_Z' in line:
@@ -692,26 +694,44 @@ def read_ciffile(file):
                 if len(line.replace(' ','')) < 2:
                     fractgrab=False
                     print("Found all coordinates")
+                elif '#' in line:
+                    fractfrab=False
+                    print("Found all coordinates")
                 elif '_atom_site' not in line:
                     if 'loop' not in line:
-                        atomlabels.append(line.split()[0])
+                        
+                        
+                        atomlabelcolumn=int(atomsitecolumns.index("_atom_site_label"))
+                        #Grabbing x,y,z columns
+                        xcolumn=int(atomsitecolumns.index("_atom_site_fract_x"))
+                        ycolumn=int(atomsitecolumns.index("_atom_site_fract_y"))
+                        zcolumn=int(atomsitecolumns.index("_atom_site_fract_z"))
+                        atomlabels.append(line.split()[atomlabelcolumn])
+                        x_coord=float(line.split()[xcolumn].split('(')[0])
+                        y_coord=float(line.split()[ycolumn].split('(')[0])
+                        z_coord=float(line.split()[zcolumn].split('(')[0])
+                        coords.append([x_coord, y_coord, z_coord])                        
+                        
+                        #Disabled since reading atomsitecolumns option should be more robust
                         #Disabling since not always elems in column
                         secondcol=line.split()[1]
                         secondcolumns.append(secondcol)
                         #If second-column is proper float then this is fract_x, else trying next
-                        if is_string_float_withdecimal(secondcol.split('(')[0]):
-                            print(secondcol.split('(')[0])
-                            x_coord=float(line.split()[1].split('(')[0])
-                            y_coord=float(line.split()[2].split('(')[0])
-                            z_coord=float(line.split()[3].split('(')[0])
-                            coords.append([x_coord, y_coord, z_coord])
-                        else:
-                            x_coord=float(line.split()[2].split('(')[0])
-                            y_coord=float(line.split()[3].split('(')[0])
-                            z_coord=float(line.split()[4].split('(')[0])
-                            coords.append([x_coord, y_coord, z_coord])
+                        #if is_string_float_withdecimal(secondcol.split('(')[0]):
+                        #    print(secondcol.split('(')[0])
+                         #   x_coord=float(line.split()[1].split('(')[0])
+                         #   y_coord=float(line.split()[2].split('(')[0])
+                         #   z_coord=float(line.split()[3].split('(')[0])
+                         #   coords.append([x_coord, y_coord, z_coord])
+                        #else:
+                        #    x_coord=float(line.split()[2].split('(')[0])
+                        #    y_coord=float(line.split()[3].split('(')[0])
+                        #    z_coord=float(line.split()[4].split('(')[0])
+                        #    coords.append([x_coord, y_coord, z_coord])
             if 'data_' in line:
                 newmol = True
+            if '_atom_site' in line:
+                atomsitecolumns.append(line.split()[0])
             if '_atom_site_fract_z' in line:
                 fractgrab=True
                 print("Grabbing coordinates")
@@ -719,6 +739,18 @@ def read_ciffile(file):
                 symmopgrab=True
             if '_symmetry_equiv_pos_as_xyz' in line:
                 symmopgrab_oldsyntax=True
+
+
+    #Checking if "_atom_site_symmetry_multiplicity" or "_atom_site_Wyckoff_symbol" in atom_site lines
+    #If so then we have more complicated symmettry, not coded yet.
+    #TODO: We should finish this at some point
+    if '_atom_site_symmetry_multiplicity' in atomsitecolumns or '_atom_site_site_symmetry_multiplicity' in atomsitecolumns:
+        print("Warning: site_symmetry_multiplicity information in file. May not be handled correctly. Check results...")
+    if '_atom_site_Wyckoff_symbol' in atomsitecolumns:
+        print("Wyckoff_symbols found in CIF-file. We do not handle this correctly. Exiting.")
+        print("Please use another format than CIF-file, e.g. XTL.")
+        exit()
+
 
     #Removing any numbers from atomlabels in order to get element information
     for atomlabel in atomlabels:
@@ -744,6 +776,7 @@ def read_ciffile(file):
     if len(coords) == 0:
         print("Found zero coordinates in CIF-file: {}. Something wrong with file. Exiting...".format(file))
         exit()
+    print("Cell parameters:", cell_a, cell_b, cell_c, cell_alpha, cell_beta, cell_gamma)
     return [cell_a, cell_b, cell_c],[cell_alpha, cell_beta, cell_gamma],atomlabels,elems,coords,symmops,cellunits
 
 
