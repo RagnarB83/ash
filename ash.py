@@ -1477,7 +1477,7 @@ class NonBondedTheory:
                         continue
                     if len(self.forcefield[at_j].LJparameters) == 0:
                         continue
-                    if self.printlevel >= 3:
+                    if self.printlevel >= 2:
                         print("LJ sigma_i {} for atomtype {}:".format(self.forcefield[at_i].LJparameters[0], at_i))
                         print("LJ sigma_j {} for atomtype {}:".format(self.forcefield[at_j].LJparameters[0], at_j))
                         print("LJ eps_i {} for atomtype {}:".format(self.forcefield[at_i].LJparameters[1], at_i))
@@ -1486,25 +1486,25 @@ class NonBondedTheory:
                     if combination_rule=='geometric':
                         sigma=math.sqrt(self.forcefield[at_i].LJparameters[0]*self.forcefield[at_j].LJparameters[0])
                         epsilon=math.sqrt(self.forcefield[at_i].LJparameters[1]*self.forcefield[at_j].LJparameters[1])
-                        if self.printlevel >=3:
+                        if self.printlevel >=2:
                             print("LJ sigma_ij : {} for atomtype-pair: {} {}".format(sigma,at_i, at_j))
                             print("LJ epsilon_ij : {} for atomtype-pair: {} {}".format(epsilon,at_i, at_j))
                             blankline()
                     elif combination_rule=='arithmetic':
-                        if self.printlevel >=3:
+                        if self.printlevel >=2:
                             print("Using arithmetic mean for LJ pair potentials")
                             print("NOTE: to be confirmed")
                         sigma=0.5*(self.forcefield[at_i].LJparameters[0]+self.forcefield[at_j].LJparameters[0])
                         epsilon=0.5-(self.forcefield[at_i].LJparameters[1]+self.forcefield[at_j].LJparameters[1])
                     elif combination_rule=='mixed_geosigma':
-                        if self.printlevel >=3:
+                        if self.printlevel >=2:
                             print("Using geometric mean for LJ sigma parameters")
                             print("Using arithmetic mean for LJ epsilon parameters")
                             print("NOTE: to be confirmed")
                         sigma=math.sqrt(self.forcefield[at_i].LJparameters[0]*self.forcefield[at_j].LJparameters[0])
                         epsilon=0.5-(self.forcefield[at_i].LJparameters[1]+self.forcefield[at_j].LJparameters[1])
                     elif combination_rule=='mixed_geoepsilon':
-                        if self.printlevel >=3:
+                        if self.printlevel >=2:
                             print("Using arithmetic mean for LJ sigma parameters")
                             print("Using geometric mean for LJ epsilon parameters")
                             print("NOTE: to be confirmed")
@@ -1523,7 +1523,7 @@ class NonBondedTheory:
                 if acount < bcount:
                     if set(pairpot_a) == set(pairpot_b):
                         del self.LJpairpotentials[bcount]
-        if self.printlevel >= 3:
+        if self.printlevel >= 2:
             print("Final LJ pair potentials (sigma_ij, epsilon_ij):\n", self.LJpairpotentials)
             print("New: LJ pair potentials as dict:")
             print("self.LJpairpotdict:", self.LJpairpotdict)
