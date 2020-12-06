@@ -22,6 +22,8 @@ class Fragmenttype:
         #Keeping track of molmoms, voldict in case of DDEC
         self.molmoms=[]
         self.voldict=None
+        self.r0list=[]
+        self.epsilonlist=[]
 
         #Current atom charges defined for fragment. Charges ordered according to something
         self.charges=[]
@@ -1202,6 +1204,11 @@ def gasfragcalc_ORCA(fragmentobjects,Cluster,chargemodel,orcadir,orcasimpleinput
 
         #Updating charges inside mainfrag/counterfrag object
         fragmentobject.add_charges(atomcharges)
+        
+        #Adding molmoms and voldict also
+        fragmentobject.molmoms=molmoms
+        fragmentobject.voldict=voldict
+        
         print_time_rel_and_tot(currtime, origtime, modulename='fragmentobject add charges')
         currtime = time.time()
         #Assign pointcharges to each atom of MM cluster.

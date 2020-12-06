@@ -487,6 +487,7 @@ def molcrys(cif_file=None, xtl_file=None, xyz_file=None, cell_length=None, cell_
     print("")
     print_time_rel_and_tot(currtime, origtime, modulename="SP iteration done")
     currtime=time.time()
+    
     #Now that charges are converged (for mainfrag and counterfrags ???).
     #Now derive LJ parameters ?? Important for DDEC-LJ derivation
     #Defining atomtypes in Cluster fragment for LJ interaction
@@ -535,11 +536,54 @@ def molcrys(cif_file=None, xtl_file=None, xyz_file=None, cell_length=None, cell_
         print("Deriving DDEC Lennard-Jones parameters")
         print("DDEC model :", shortrangemodel)
 
-        # for fragindex,fragmentobject in enumerate(fragmentobjects):
-        #    sfd=""
+        #Getting R0 and epsilon for mainfrag
+        #fragmentobjects[0].r0list, fragmentobjects[0].epsilonlist = DDEC_to_LJparameters(elems, molmoms, voldict)
 
-        # atomcharges, molmoms, voldict
-        DDEC_to_LJparameters(elems, molmoms, voldict)
+        #Getting R0 and epsilon for counterfrags
+        for fragmentobject in fragmentobjects:
+            print("fragmentobject Atoms:", fragmentobject.Atoms)
+            print("fragmentobject molmoms:", fragmentobject.molmoms)
+            print("fragmentobject voldict:", fragmentobject.voldict)
+            
+            #Getting R0 and epsilon for mainfrag
+            fragmentobject.r0list, fragmentobject.epsilonlist = DDEC_to_LJparameters(fragmentobject.Atoms, fragmentobject.molmoms, fragmentobject.voldict)
+
+            print("fragmentobject dict", fragmentobject.__dict__)
+            exit()
+
+        #Create atomtypelist to be added to Cluster object
+        atomtypelist = ""
+
+        print("Using {}-derived forcefield for all elements".format(shortrangemodel))
+        #for fragmentobject in fragmentobjects:
+        #    #fragmentobject.Elements
+        #    for el in fragmentobject.Elements:
+        #        print("UFF parameter for {} :".format(el, UFFdict[el]))
+
+
+        
+        
+        #atomtypelist=['UFF_'+i for i in Cluster.elems]
+        #atomtypelist_uniq = np.unique(atomtypelist).tolist()
+        #Create ASH forcefield file by looking up UFF parameters
+        with open('Cluster_forcefield.ff', 'w') as forcefile:
+            forcefile.write('#{} Lennard-Jones parameters \n'.format(shortrangemodel))
+            for atomtype in atomtypelist_uniq:
+                #Getting just element-par for UFFdict lookup
+                atomtype_el=atomtype.replace('UFF_','')
+                forcefile.write('LennardJones_i_R0 {}  {:12.6f}   {:12.6f}\n'.format(atomtype, UFFdict[atomtype_el][0],UFFdict[atomtype_el][1]))
+
+
+
+
+
+
+
+
+
+
+
+
 
     elif shortrangemodel=='manual':
         print("shortrangemodel option: manual")

@@ -492,12 +492,6 @@ def DDEC_calc(elems=None, theory=None, gbwfile=None, ncores=1, DDECmodel='DDEC3'
     # Set variable to 'DDEC3' or 'DDEC6'
     print("DDEC model:", DDECmodel)
 
-    # What oxygen LJ parameters to use in pair-pair parameters.
-    # Choices: TIP3P, Chargemol, Manual
-    H2Omodel = 'TIP3P'
-
-    print("DDEC calc")
-
     #bindir=glob.glob('*chargemol*')[0]
     #chargemolbinarydir=chargemoldir+bindir+'compiled_binaries'+'linux'
 
@@ -772,12 +766,22 @@ end"""
 
 #TODO: Not finished
 def DDEC_to_LJparameters(elems, molmoms, voldict):
+    
+    #voldict: Vfree. Computed using MP4SDQ/augQZ and chargemol in Jorgensenpaper
+    # Testing: Use free atom volumes calculated at same level of theory as molecule
+    
     #Rfree fit parameters. Jorgensen 2016 J. Chem. Theory Comput. 2016, 12, 2312−2323. H,C,N,O,F,S,Cl
     #Thes are free atomic radii. Seem to correspond mostly to vdW radii
     rfreedict = {'H':1.64, 'C':2.08, 'N':1.72, 'O':1.6, 'F':1.58, 'S':2.0, 'Cl':1.88}
 
     #C6 dictionary H-Kr. See MEDFF-horton-parcreate-for-chemshell.py for full periodic table.
+    #Bfree dict
     C6dictionary = {'H':6.5, 'He': 1.42, 'Li':1392, 'Be':227, 'B':99.5, 'C':46.6, 'N':24.2, 'O':15.6, 'F':9.52, 'Ne':6.20, 'Na':1518, 'Mg':626, 'Al':528, 'Si':305, 'P':185, 'S':134, 'Cl':94.6, 'Ar':64.2, 'K':3923, 'Ca':2163, 'Sc':1383, 'Ti':1044, 'V':832, 'Cr':602, 'Mn':552, 'Fe':482, 'Co':408, 'Ni':373, 'Cu':253, 'Zn':284, 'Ga':498, 'Ge':354, 'As':246, 'Se':210, 'Br':162, 'Kr':130}
+
+    print("Elems:", elems)
+    print("Molmoms:", molmoms)
+    print("voldict:", voldict)
+
 
     #Calculating A_i, B_i, epsilon, sigma, r0 parameters
     Blist=[]
@@ -807,11 +811,11 @@ def DDEC_to_LJparameters(elems, molmoms, voldict):
     print("sigmalist is", sigmalist)
     print("epsilonlist is", epsilonlist)
     print("r0list is", r0list)
-
-    print("Done. but scaling not complete")
-    exit()
-    #Accounting for polar H
+    
+    #Accounting for polar H. This could be set to zero as in Jorgensen paper
     if scale_polarH is True:
+        print("Scaling not implemented")
+        exit()
         for count,el in enumerate(elems):
             if el == 'H':
                 bla=""
@@ -824,8 +828,7 @@ def DDEC_to_LJparameters(elems, molmoms, voldict):
                     #hindex = 12
                     #Blist[indextofix] = ((Blist[indextofix]) ** (1 / 2) + nH * (Blist[hindex]) ** (1 / 2)) ** 2
 
-
-    print("After corrections:")
+    print("After possible scaling corrections:")
     print("")
     print("Single atom parameters:")
     print("Alist is", Alist)
@@ -834,7 +837,7 @@ def DDEC_to_LJparameters(elems, molmoms, voldict):
     print("epsilonlist is", epsilonlist)
     print("r0list is", r0list)
 
-    return "something"
+    return r0list, epsilonlist
 
 
 def num_core_electrons(fragment):
