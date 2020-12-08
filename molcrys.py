@@ -275,7 +275,8 @@ def molcrys(cif_file=None, xtl_file=None, xyz_file=None, cell_length=None, cell_
 
 
 
-    #Create ASH fragment object
+    #Create ASH fragment object from created cluster (spherical or super-cell)
+    ########################################
     blankline()
     print("Creating new Cluster fragment:")
     Cluster=Fragment(elems=cluster_elems, coords=cluster_coords, scale=chosenscale, tol=chosentol)
@@ -307,10 +308,16 @@ def molcrys(cif_file=None, xtl_file=None, xyz_file=None, cell_length=None, cell_
         print("Reordering fragment object: ", fragmentobject.Name)
         reordercluster(Cluster,fragmentobject)
         printdebug(fragmentobject.clusterfraglist)
+        
+        #Update element list in fragmentobject after reordering. Used later (DDEC)
+        fragcoords,fragelems=Cluster.get_coords_for_atoms(fragmentobject.clusterfraglist[0])
+        fragmentobject.Atoms=fragelems
         fragmentobject.print_infofile(str(fragmentobject.Name)+'.info')
     print_time_rel_and_tot(currtime, origtime, modulename='reorder fraglists')
     currtime=time.time()
     #TODO: after removing partial fragments and getting connectivity etc. Would be good to make MM cluster neutral
+
+
 
     #Add fragmentobject-info to Cluster fragment
     #Old slow code:
@@ -329,9 +336,13 @@ def molcrys(cif_file=None, xtl_file=None, xyz_file=None, cell_length=None, cell_
     except:
         shutil.rmtree('SPloop-files')
         os.mkdir('SPloop-files')
+    #########################################
 
 
+
+    ################################################
     # Calculate atom charges for each gas fragment. Updates atomcharges list inside Cluster fragment
+    ##################################
     if theory.__class__.__name__ == "ORCATheory":
 
 
@@ -436,6 +447,9 @@ def molcrys(cif_file=None, xtl_file=None, xyz_file=None, cell_length=None, cell_
                                              charges=Cluster.atomcharges, embedding='Elstat')
         QMMM_SP_calculation.run(nprocs=numcores)
 
+        #Keeping the GBWfile
+        mainfrag_gbwfile="last_mainfrag.gbw"
+        shutil.copy('orca-input.gbw', mainfrag_gbwfile)
 
         #Grab atomic charges for fragment.
         if theory.__class__.__name__ == "ORCATheory":
@@ -491,124 +505,14 @@ def molcrys(cif_file=None, xtl_file=None, xyz_file=None, cell_length=None, cell_
     #Now that charges are converged (for mainfrag and counterfrags ???).
     #Now derive LJ parameters ?? Important for DDEC-LJ derivation
     #Defining atomtypes in Cluster fragment for LJ interaction
-    if shortrangemodel=='UFF':
-        print("Using UFF forcefield for all elements")
-        for fragmentobject in fragmentobjects:
-            #fragmentobject.Elements
-            for el in fragmentobject.Elements:
-                print("UFF parameter for {} :".format(el, UFFdict[el]))
-
-        #Using UFF_ prefix before element
-        atomtypelist=['UFF_'+i for i in Cluster.elems]
-        atomtypelist_uniq = np.unique(atomtypelist).tolist()
-        #Create ASH forcefield file by looking up UFF parameters
-        with open('Cluster_forcefield.ff', 'w') as forcefile:
-            forcefile.write('#UFF Lennard-Jones parameters \n')
-            for atomtype in atomtypelist_uniq:
-                #Getting just element-par for UFFdict lookup
-                atomtype_el=atomtype.replace('UFF_','')
-                forcefile.write('LennardJones_i_R0 {}  {:12.6f}   {:12.6f}\n'.format(atomtype, UFFdict[atomtype_el][0],UFFdict[atomtype_el][1]))
-    #Modified UFF forcefield with 0 parameter on H atom (avoids repulsion)
-    elif shortrangemodel=='UFF_modH':
-        print("Using UFF forcefield with modified H-parameter")
-        print("H parameters :", LJHparameters)
-        print("")
-        UFFdict_Hzero=copy.deepcopy(UFFdict)
-        UFFdict_Hzero['H'] = [LJHparameters[0], LJHparameters[1]]
-        
-        #print("UFF parameters:", UFFdict)
-        for fragmentobject in fragmentobjects:
-            #fragmentobject.Elements
-            for el in fragmentobject.Elements:
-                print("UFF parameter for {} :".format(el, UFFdict_Hzero[el]))
-
-        #Using UFF_ prefix before element
-        atomtypelist=['UFF_'+i for i in Cluster.elems]
-        atomtypelist_uniq = np.unique(atomtypelist).tolist()
-        #Create ASH forcefield file by looking up UFF parameters
-        with open('Cluster_forcefield.ff', 'w') as forcefile:
-            forcefile.write('#UFF Lennard-Jones parameters \n')
-            for atomtype in atomtypelist_uniq:
-                #Getting just element-par for UFFdict lookup
-                atomtype_el=atomtype.replace('UFF_','')
-                forcefile.write('LennardJones_i_R0 {}  {:12.6f}   {:12.6f}\n'.format(atomtype, UFFdict_Hzero[atomtype_el][0],UFFdict_Hzero[atomtype_el][1]))
-    elif shortrangemodel=='DDEC3' or shortrangemodel=='DDEC6':
-        print("Deriving DDEC Lennard-Jones parameters")
-        print("DDEC model :", shortrangemodel)
-
-        #Getting R0 and epsilon for mainfrag
-        #fragmentobjects[0].r0list, fragmentobjects[0].epsilonlist = DDEC_to_LJparameters(elems, molmoms, voldict)
-
-        #Getting R0 and epsilon for counterfrags
-        for fragmentobject in fragmentobjects:
-            print("fragmentobject Atoms:", fragmentobject.Atoms)
-            print("fragmentobject molmoms:", fragmentobject.molmoms)
-            print("fragmentobject voldict:", fragmentobject.voldict)
+    choose_shortrangemodel(Cluster,shortrangemodel,fragmentobjects,QMtheory,mainfrag_gbwfile,numcores)
             
-            #Getting R0 and epsilon for mainfrag
-            fragmentobject.r0list, fragmentobject.epsilonlist = DDEC_to_LJparameters(fragmentobject.Atoms, fragmentobject.molmoms, fragmentobject.voldict)
-
-            print("fragmentobject dict", fragmentobject.__dict__)
-            exit()
-
-        #Create atomtypelist to be added to Cluster object
-        atomtypelist = ""
-
-        print("Using {}-derived forcefield for all elements".format(shortrangemodel))
-        #for fragmentobject in fragmentobjects:
-        #    #fragmentobject.Elements
-        #    for el in fragmentobject.Elements:
-        #        print("UFF parameter for {} :".format(el, UFFdict[el]))
-
-
-        
-        
-        #atomtypelist=['UFF_'+i for i in Cluster.elems]
-        #atomtypelist_uniq = np.unique(atomtypelist).tolist()
-        #Create ASH forcefield file by looking up UFF parameters
-        with open('Cluster_forcefield.ff', 'w') as forcefile:
-            forcefile.write('#{} Lennard-Jones parameters \n'.format(shortrangemodel))
-            for atomtype in atomtypelist_uniq:
-                #Getting just element-par for UFFdict lookup
-                atomtype_el=atomtype.replace('UFF_','')
-                forcefile.write('LennardJones_i_R0 {}  {:12.6f}   {:12.6f}\n'.format(atomtype, UFFdict[atomtype_el][0],UFFdict[atomtype_el][1]))
-
-
-
-
-
-
-
-
-
-
-
-
-
-    elif shortrangemodel=='manual':
-        print("shortrangemodel option: manual")
-        print("Using atomtypes for Cluster: MAN_X  where X is an element, e.g. MAN_O, MAN_C, MAN_H")
-        print("Will assume presence of ASH forcefield file called: Cluster_forcefield.ff")
-        print("Should contain Lennard-Jones entries for atomtypes MAN_X.")
-        print("File needs to be copied to scratch for geometry optimization job.")
-        #Using MAN prefix before element
-        atomtypelist=['MAN_'+i for i in Cluster.elems]
-
-    else:
-        print("Undefined shortrangemodel")
-        exit()
     print_time_rel_and_tot(currtime, origtime, modulename="LJ stuff done")
     currtime=time.time()
-    Cluster.update_atomtypes(atomtypelist)
-    print_time_rel_and_tot(currtime, origtime, modulename="update atomtypes")
-    currtime=time.time()
-
     #Adding Centralmainfrag to Cluster
     Cluster.add_centralfraginfo(Centralmainfrag)
-
     #Printing out Cluster fragment file
     Cluster.print_system('Cluster.ygg')
-
     #Cleanup
     #QMMM_SP_calculation.qm_theory.cleanup()
     print_time_rel_and_tot(currtime, origtime, modulename="final stuff")

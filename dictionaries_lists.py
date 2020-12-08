@@ -57,12 +57,18 @@ eldict_covrad_valel={1:['H',0.31,1],2:['He',0.28,2],3:['Li',1.28,1],4:['Be',0.96
 # Element class
 class Element:
     def __init__(self, name, atomicSymbol, C6, pol):
+        #Fine-structure constant (2018 CODATA recommended value)
+        FSC=0.0072973525693
+        Phi=FSC**(4/3)
         self.name = name
         self.atomicSymbol = atomicSymbol
         # Atom C6 parameter. Chu and Dalgarno
         self.C6 = C6
         #atom polarizability. Chu and Dalgarno
         self.pol = pol
+        #Atomic vdW radius based on the 2020 paper by Tkatchenko: https://arxiv.org/pdf/2007.02992.pdf
+        self.Rvdw_au = (self.pol/Phi)**(1/7)
+        self.Rvdw_ang = self.Rvdw_au * 0.52917721067
 
 #Element dictionary based on atomic number keys. Contains element name, element symbol, free atomic C6 parameter and atomic polarizability
 # Dictionary is also used later for other book-keeping (atomic r2,r3 and r4 parameters from computation)

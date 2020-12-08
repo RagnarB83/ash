@@ -1,6 +1,7 @@
 import numpy as np
 from functions_coords import *
 from functions_ORCA import *
+from elstructure_functions import *
 from ash import *
 import time
 
@@ -24,6 +25,7 @@ class Fragmenttype:
         self.voldict=None
         self.r0list=[]
         self.epsilonlist=[]
+        self.atomtypelist=[]
 
         #Current atom charges defined for fragment. Charges ordered according to something
         self.charges=[]
@@ -58,6 +60,9 @@ class Fragmenttype:
             outfile.write("\n")
             outfile.write("Molmoms: {} \n".format(self.molmoms))
             outfile.write("Voldicts: {} \n".format(self.voldict))
+            outfile.write("R0 list: {} \n".format(self.r0list))
+            outfile.write("Epsilon list: {} \n".format(self.epsilonlist))
+            outfile.write("Atomtype list: {} \n".format(self.atomtypelist))
             outfile.write("\n")
             for al in self.all_atomcharges:
                 outfile.write(' '.join([str(i) for i in al]))
@@ -1158,6 +1163,10 @@ def gasfragcalc_ORCA(fragmentobjects,Cluster,chargemodel,orcadir,orcasimpleinput
         gasfrag=Fragment(coords=fragcoords,elems=fragelems)
 
         print("Defined gasfrag:", gasfrag)
+        
+        
+        
+        
         #print(gasfrag.__dict__)
         #Creating ORCA theory object with fragment
 
@@ -1191,6 +1200,10 @@ def gasfragcalc_ORCA(fragmentobjects,Cluster,chargemodel,orcadir,orcasimpleinput
                                             calcdir="DDEC_fragment"+str(id), gbwfile="orca-input.gbw")
 
             print("atomcharges:", atomcharges)
+            
+            #Adding molmoms and voldict to fragmentobject
+            fragmentobject.molmoms=molmoms
+            fragmentobject.voldict=voldict
             #NOTE: We are not going to derive DDEC LJ parameters here but rather at end of SP loop.
         else:
             #Grab atomic charges for fragment.
@@ -1205,10 +1218,7 @@ def gasfragcalc_ORCA(fragmentobjects,Cluster,chargemodel,orcadir,orcasimpleinput
         #Updating charges inside mainfrag/counterfrag object
         fragmentobject.add_charges(atomcharges)
         
-        #Adding molmoms and voldict also
-        fragmentobject.molmoms=molmoms
-        fragmentobject.voldict=voldict
-        
+
         print_time_rel_and_tot(currtime, origtime, modulename='fragmentobject add charges')
         currtime = time.time()
         #Assign pointcharges to each atom of MM cluster.
@@ -1221,6 +1231,8 @@ def gasfragcalc_ORCA(fragmentobjects,Cluster,chargemodel,orcadir,orcasimpleinput
         shutil.copyfile(ORCASPcalculation.inputfilename + '.gbw', './SPloop-files/'+fragmentobject.Name+'-Gascalc' + '.gbw')
         if id ==0:
             shutil.copy(ORCASPcalculation.inputfilename + '.gbw', 'lastorbitals.gbw')
+        #Keeping copy of each fragment GBW file: fragment0.gbw, fragment1.gbw etc.
+        shutil.copy(ORCASPcalculation.inputfilename + '.gbw', 'fragment{}.gbw'.format(id))
         print_time_rel_and_tot(currtime, origtime, modulename='shutil stuff')
         currtime = time.time()
         #Clean up ORCA job.
@@ -1280,3 +1292,130 @@ def rmsd_list(listA,listB):
     for a, b in zip(listA, listB):
         sumsq += (a-b)**2.0
     return math.sqrt(sumsq/len(listA))
+
+
+
+def choose_shortrangemodel(Cluster,shortrangemodel,fragmentobjects,QMtheory,mainfrag_gbwfile,numcores):
+    if shortrangemodel=='UFF':
+        print("Using UFF forcefield for all elements")
+        for fragmentobject in fragmentobjects:
+            #fragmentobject.Elements
+            for el in fragmentobject.Elements:
+                print("UFF parameter for {} :".format(el, UFFdict[el]))
+
+        #Using UFF_ prefix before element
+        atomtypelist=['UFF_'+i for i in Cluster.elems]
+        atomtypelist_uniq = np.unique(atomtypelist).tolist()
+        #Adding atomtypes to Cluster object
+        Cluster.atomtypes=atomtypelist
+        #Create ASH forcefield file by looking up UFF parameters
+        with open('Cluster_forcefield.ff', 'w') as forcefile:
+            forcefile.write('#UFF Lennard-Jones parameters \n')
+            for atomtype in atomtypelist_uniq:
+                #Getting just element-par for UFFdict lookup
+                atomtype_el=atomtype.replace('UFF_','')
+                forcefile.write('LennardJones_i_R0 {}  {:12.6f}   {:12.6f}\n'.format(atomtype, UFFdict[atomtype_el][0],UFFdict[atomtype_el][1]))
+    #Modified UFF forcefield with 0 parameter on H atom (avoids repulsion)
+    elif shortrangemodel=='UFF_modH':
+        print("Using UFF forcefield with modified H-parameter")
+        print("H parameters :", LJHparameters)
+        print("")
+        UFFdict_Hzero=copy.deepcopy(UFFdict)
+        UFFdict_Hzero['H'] = [LJHparameters[0], LJHparameters[1]]
+        
+        #print("UFF parameters:", UFFdict)
+        for fragmentobject in fragmentobjects:
+            #fragmentobject.Elements
+            for el in fragmentobject.Elements:
+                print("UFF parameter for {} :".format(el, UFFdict_Hzero[el]))
+
+        #Using UFF_ prefix before element
+        atomtypelist=['UFF_'+i for i in Cluster.elems]
+        #Adding atomtypes to Cluster object
+        Cluster.atomtypes=atomtypelist
+        atomtypelist_uniq = np.unique(atomtypelist).tolist()
+        #Create ASH forcefield file by looking up UFF parameters
+        with open('Cluster_forcefield.ff', 'w') as forcefile:
+            forcefile.write('#UFF Lennard-Jones parameters \n')
+            for atomtype in atomtypelist_uniq:
+                #Getting just element-par for UFFdict lookup
+                atomtype_el=atomtype.replace('UFF_','')
+                forcefile.write('LennardJones_i_R0 {}  {:12.6f}   {:12.6f}\n'.format(atomtype, UFFdict_Hzero[atomtype_el][0],UFFdict_Hzero[atomtype_el][1]))
+    
+    elif shortrangemodel=='DDEC3' or shortrangemodel=='DDEC6':
+        print("Deriving DDEC Lennard-Jones parameters")
+        print("DDEC model :", shortrangemodel)
+
+        #Getting R0 and epsilon for mainfrag
+        #fragmentobjects[0].r0list, fragmentobjects[0].epsilonlist = DDEC_to_LJparameters(elems, molmoms, voldict)
+
+        #Getting R0 and epsilon for counterfrags
+        for fragindex,fragmentobject in enumerate(fragmentobjects):
+            print("Fragmentobject with fragindex: ", fragindex)
+            print("fragmentobject Atoms:", fragmentobject.Atoms)
+            print("fragmentobject molmoms:", fragmentobject.molmoms)
+            print("fragmentobject voldict:", fragmentobject.voldict)
+            
+            #If molmoms and voldict not already calculated (could be if chargemodel is DDEC)
+            if len(fragmentobject.molmoms) == 0:
+                print("No molmoms available. Calculating.")
+                #Using last mainfrag GBW-file (from SC-QM/MM)       
+                if fragindex==0:
+                    gbwfile=mainfrag_gbwfile
+                else:
+                    #Use GBWfile created by gasfragcalc_ORCA (non-polarized)
+                    gbwfile="fragment{}.gbw".format(fragindex)
+                
+                print("Using GBW file: ", gbwfile)
+                DDECcharges, fragmentobject.molmoms, fragmentobject.voldict = DDEC_calc(elems=fragmentobject.Atoms, theory=QMtheory,
+                                                        ncores=numcores, DDECmodel=shortrangemodel,
+                                                        molecule_spinmult=fragmentobject.Mult,
+                                                        calcdir="DDEC_LJcalc_fragment_{}".format(fragmentobject.Name), gbwfile=gbwfile)
+                print("DDECcharges:", DDECcharges)
+            #Getting R0 and epsilon
+            fragmentobject.r0list, fragmentobject.epsilonlist = DDEC_to_LJparameters(fragmentobject.Atoms, fragmentobject.molmoms, fragmentobject.voldict)
+            #Creating list of atomtypes for fragmenttype
+            fragmentobject.atomtypelist = ["DDEC_f{}_{}_{}".format(fragindex,el,m) for m,el in enumerate(fragmentobject.Atoms)]
+            print("fragmentobject.atomtypelist:", fragmentobject.atomtypelist)
+
+        #Create full atomtypelist to be added to Cluster object
+        atomtypelist = [item for frag in fragmentobjects for item in frag.atomtypelist]        
+        full_list=[None]*Cluster.numatoms
+        for fragmentobject in fragmentobjects:
+            for fraglist in fragmentobject.clusterfraglist:
+                for atomid,attype in zip(fraglist,atomtypelist):
+                    #print("atomid : {} and attype: {}".format(atomid,attype))
+                    full_list[atomid] = attype 
+        if None in full_list:
+            print("problem")
+            print(full_list)
+            exit()
+        Cluster.atomtypes=full_list
+
+            
+        print("Using {}-derived forcefield for all elements".format(shortrangemodel))
+        #atomtypelist_uniq = np.unique(atomtypelist).tolist()
+        #print("atomtypelist_uniq:", atomtypelist_uniq)
+        #Create ASH forcefield file by looking up UFF parameters
+        with open('Cluster_forcefield.ff', 'w') as forcefile:
+            forcefile.write('#{} Lennard-Jones parameters \n'.format(shortrangemodel))
+            #for atomtype in atomtypelist_uniq:
+            for fragmentobject in fragmentobjects:
+                for atomtype,r0,eps in zip(fragmentobject.atomtypelist,fragmentobject.r0list,fragmentobject.epsilonlist):
+                    forcefile.write('LennardJones_i_R0 {}  {:12.6f}   {:12.6f}\n'.format(atomtype, r0, eps))
+
+
+    elif shortrangemodel=='manual':
+        print("shortrangemodel option: manual")
+        print("Using atomtypes for Cluster: MAN_X  where X is an element, e.g. MAN_O, MAN_C, MAN_H")
+        print("Will assume presence of ASH forcefield file called: Cluster_forcefield.ff")
+        print("Should contain Lennard-Jones entries for atomtypes MAN_X.")
+        print("File needs to be copied to scratch for geometry optimization job.")
+        #Using MAN prefix before element
+        atomtypelist=['MAN_'+i for i in Cluster.elems]
+        
+        #Adding atomtypes to Cluster object
+        Cluster.atomtypes=atomtypelist
+    else:
+        print("Undefined shortrangemodel")
+        exit()

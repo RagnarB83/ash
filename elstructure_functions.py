@@ -448,7 +448,7 @@ def HOMOnumbercalc(file,charge,mult):
 #Uses Chargemol program
 # Uses ORCA to calculate densities of molecule and its free atoms. Uses orca_2mkl to create Molden file and molden2aim to create WFX file from Molden.
 # Wfx file is read into Chargemol program for DDEC analysis which radial moments used to compute C6 parameters and radii for Lennard-Jones equation.
-def DDEC_calc(elems=None, theory=None, gbwfile=None, ncores=1, DDECmodel='DDEC3', calcdir='DDEC', molecule_spinmult=None):
+def DDEC_calc(elems=None, theory=None, gbwfile=None, ncores=1, DDECmodel='DDEC3', calcdir='DDEC', molecule_spinmult=None, chargemolbinarydir=None):
     #Creating calcdir. Should not exist previously
     os.mkdir(calcdir)
     os.chdir(calcdir)
@@ -466,10 +466,14 @@ def DDEC_calc(elems=None, theory=None, gbwfile=None, ncores=1, DDECmodel='DDEC3'
         if 'chargemol' in p:
             print("Found chargemol in path line (this dir should contain the executables):", p)
             chargemolbinarydir=p
-
-
+    
+    if chargemolbinarydir is None:
+        print("chargemolbinarydir is not defined.")
+        print("Please provide path as argument to DDEC_calc or put the location inside the $PATH variable on your Unix/Linux OS.")
+        exit()
+    
     #Finding molden2aim in PATH:
-   # Below works if dir is in PATH
+    # Below works if MOLDEN2AIM dir is in PATH
     molden2aim="molden2aim.exe"
 
     #Defining Chargemoldir (main dir) as 3-up from binary dir
@@ -672,7 +676,6 @@ end"""
             for line in momfile:
                 if ' The computed Rcubed moments of the atoms' in line:
                     elmom=next(momfile).split()[0]
-                    print("2 elmom is", elmom)
                     voldict[el] = float(elmom)
 
         print("Element", el, "is done.")
@@ -764,24 +767,38 @@ end"""
     return ddeccharges, molmoms, voldict
 
 
-#TODO: Not finished
-def DDEC_to_LJparameters(elems, molmoms, voldict):
+
+
+#Tkatchenko
+#alpha_q_m = Phi*Rvdw^7
+#https://arxiv.org/pdf/2007.02992.pdf
+def Rvdwfree(polz):
+    #Fine-structure constant (2018 CODATA recommended value)
+    FSC=0.0072973525693
+    Phi=FSC**(4/3)
+    RvdW=(polz/Phi)**(1/7)
+    return RvdW
     
-    #voldict: Vfree. Computed using MP4SDQ/augQZ and chargemol in Jorgensenpaper
+
+
+
+
+
+
+#TODO: Not finished
+def DDEC_to_LJparameters(elems, molmoms, voldict, scale_polarH=False):
+    
+    #voldict: Vfree. Computed using MP4SDQ/augQZ and chargemol in Jorgensen paper
     # Testing: Use free atom volumes calculated at same level of theory as molecule
     
     #Rfree fit parameters. Jorgensen 2016 J. Chem. Theory Comput. 2016, 12, 2312−2323. H,C,N,O,F,S,Cl
-    #Thes are free atomic radii. Seem to correspond mostly to vdW radii
-    rfreedict = {'H':1.64, 'C':2.08, 'N':1.72, 'O':1.6, 'F':1.58, 'S':2.0, 'Cl':1.88}
-
-    #C6 dictionary H-Kr. See MEDFF-horton-parcreate-for-chemshell.py for full periodic table.
-    #Bfree dict
-    C6dictionary = {'H':6.5, 'He': 1.42, 'Li':1392, 'Be':227, 'B':99.5, 'C':46.6, 'N':24.2, 'O':15.6, 'F':9.52, 'Ne':6.20, 'Na':1518, 'Mg':626, 'Al':528, 'Si':305, 'P':185, 'S':134, 'Cl':94.6, 'Ar':64.2, 'K':3923, 'Ca':2163, 'Sc':1383, 'Ti':1044, 'V':832, 'Cr':602, 'Mn':552, 'Fe':482, 'Co':408, 'Ni':373, 'Cu':253, 'Zn':284, 'Ga':498, 'Ge':354, 'As':246, 'Se':210, 'Br':162, 'Kr':130}
-
+    #Thes are free atomic vdW radii
+    # In Jorgensen and Cole papers these are fit parameters : rfreedict = {'H':1.64, 'C':2.08, 'N':1.72, 'O':1.6, 'F':1.58, 'S':2.0, 'Cl':1.88}
+    # We are using atomic Rvdw derived directly from atomic polarizabilities
+    
     print("Elems:", elems)
     print("Molmoms:", molmoms)
     print("voldict:", voldict)
-
 
     #Calculating A_i, B_i, epsilon, sigma, r0 parameters
     Blist=[]
@@ -789,11 +806,14 @@ def DDEC_to_LJparameters(elems, molmoms, voldict):
     sigmalist=[]
     epsilonlist=[]
     r0list=[]
+    Radii_vdw_free=[]
     for count,el in enumerate(elems):
+        atmnumber=functions_coords.elematomnumbers[el.lower()]
+        Radii_vdw_free.append(dictionaries_lists.elems_C6_polz[atmnumber].Rvdw_ang)
         volratio=molmoms[count]/voldict[el]
-        C6inkcal=constants.harkcal*(C6dictionary[el]**(1/6)* constants.bohr2ang)**6
+        C6inkcal=constants.harkcal*(dictionaries_lists.elems_C6_polz[atmnumber].C6**(1/6)* constants.bohr2ang)**6
         B_i=C6inkcal*(volratio**2)
-        Raim_i=volratio**(1/3)*rfreedict[el]
+        Raim_i=volratio**(1/3)*dictionaries_lists.elems_C6_polz[atmnumber].Rvdw_ang
         A_i=0.5*B_i*(2*Raim_i)**6
         sigma=(A_i/B_i)**(1/6)
         r0=sigma*(2**(1/6))
@@ -806,6 +826,8 @@ def DDEC_to_LJparameters(elems, molmoms, voldict):
         r0list.append(r0)
 
     print("Before corrections:")
+    print("elems:", elems)
+    print("Radii_vdw_free:", Radii_vdw_free)
     print("Alist is", Alist)
     print("Blist is", Blist)
     print("sigmalist is", sigmalist)
@@ -814,7 +836,7 @@ def DDEC_to_LJparameters(elems, molmoms, voldict):
     
     #Accounting for polar H. This could be set to zero as in Jorgensen paper
     if scale_polarH is True:
-        print("Scaling not implemented")
+        print("Scaling not implemented yet")
         exit()
         for count,el in enumerate(elems):
             if el == 'H':
@@ -827,15 +849,6 @@ def DDEC_to_LJparameters(elems, molmoms, voldict):
                     #indextofix = 11
                     #hindex = 12
                     #Blist[indextofix] = ((Blist[indextofix]) ** (1 / 2) + nH * (Blist[hindex]) ** (1 / 2)) ** 2
-
-    print("After possible scaling corrections:")
-    print("")
-    print("Single atom parameters:")
-    print("Alist is", Alist)
-    print("Blist is", Blist)
-    print("sigmalist is", sigmalist)
-    print("epsilonlist is", epsilonlist)
-    print("r0list is", r0list)
 
     return r0list, epsilonlist
 

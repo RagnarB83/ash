@@ -37,7 +37,10 @@ if load_julia is True:
         from julia.api import Julia
         from julia import Main
         #Hungarian package needs to be installed
-        from julia import Hungarian
+        try:
+            from julia import Hungarian
+        except:
+            print("Problem loading Julia packages: Hungarian")
         ashpath = os.path.dirname(ash.__file__)
         #Various Julia functions
         print("Loading Julia functions")
