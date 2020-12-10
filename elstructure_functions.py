@@ -456,27 +456,49 @@ def DDEC_calc(elems=None, theory=None, gbwfile=None, ncores=1, DDECmodel='DDEC3'
     #Copying GBW file to current dir and label as molecule.gbw
     shutil.copyfile('../'+gbwfile, './' + 'molecule.gbw')
 
-    print("Warning: DDEC_calc requires chargemol-binary dir to be present in environment PATH variable.")
+
+    #Finding molden2aim in PATH:
+    # Should now be present in ASH
+    ashpath=os.path.dirname(ash.__file__)
+    molden2aim=ashpath+"/external/Molden2AIM/src/"+"molden2aim.exe"
+    if os.path.isfile(molden2aim) is False:
+        print("Did not find {}. Did you compile it ? ".format(molden2aim))
+        exit()
+    else:
+        print("Found molden2aim.exe: ", molden2aim)
+        
+    # Below works if MOLDEN2AIM dir is in PATH
     #molden2aim=None
+    #if molden2aimdir is not None:
+    #    if os.path.isfile(molden2aimdir+"/"+"molden2aim.exe") is True:
+    #        molden2aim=molden2aimdir+"/"+"molden2aim.exe"
+    #    else:
+     #       print("Found no molden2aim.exe in dir:", molden2aimdir)
+    #else:
+    #    print("molden2aimdir keyword not provided. Will search for Molden2aim binary in PATH")
+
+    print("Warning: DDEC_calc requires chargemol-binary dir to be present in environment PATH variable.")
 
     #Finding chargemoldir from PATH in os.path
     PATH=os.environ.get('PATH').split(':')
     print("PATH: ", PATH)
-    print("Searching for chargemol in PATH")
+    print("Searching for molden2aim and chargemol in PATH")
     for p in PATH:
         if 'chargemol' in p:
             print("Found chargemol in path line (this dir should contain the executables):", p)
             chargemolbinarydir=p
+        #if 'Molden2AIM' in p:
+        #    molden2aim="molden2aim.exe"
     
+    #Checking if we can proceed
     if chargemolbinarydir is None:
         print("chargemolbinarydir is not defined.")
         print("Please provide path as argument to DDEC_calc or put the location inside the $PATH variable on your Unix/Linux OS.")
         exit()
-    
-    #Finding molden2aim in PATH:
-    # Below works if MOLDEN2AIM dir is in PATH
-    #molden2aimpath="external/Molden2AIM/src/"
-    molden2aim="molden2aim.exe"
+    #if molden2aim is None:
+    #    print("Found no molden2aim.exe in PATH. Exiting...")
+    #    exit()
+
 
     #Defining Chargemoldir (main dir) as 3-up from binary dir
     var=os.path.split(chargemolbinarydir)[0]
