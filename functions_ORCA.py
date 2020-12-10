@@ -66,6 +66,10 @@ def run_orca_SP_ORCApar(orcadir, inpfile, nprocs=1):
 def checkORCAfinished(file):
     with open(file) as f:
         for line in f:
+            
+            if 'SCF CONVERGED AFTER' in line:
+                iter=line.split()[-3]
+                print("ORCA converged in {} iterations".format(iter))
             if 'TOTAL RUN TIME:' in line:
                 return True
 

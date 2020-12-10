@@ -1,5 +1,5 @@
 #TESTSET_INFO
-#TESTSET_INFO Numentries: 22
+#TESTSET_INFO Numentries: 7
 #TESTSET_INFO Unit: au
 #TESTSET_INFO Property: EFG
 # EFG Vzz component by converting experimental NQCC to EFG via known experimental quadrupole moment
@@ -10,4 +10,3 @@
 5 cohco4 -1.182
 6 cocono3  -0.356
 7 vcpco4 -0.39
-# include CuCl case??

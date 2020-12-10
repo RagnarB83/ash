@@ -1,0 +1,22 @@
+START dft
+
+geometry noautosym
+ O    0.  0.  0.
+ C    0.  0.  1.2
+end
+
+BASIS SPHERICAL
+ * library aug-cc-pvqz
+END
+
+dft
+ xc  pbe0
+end
+
+property
+ moldenfile 
+ molden_norm none
+end
+
+task scf property
+

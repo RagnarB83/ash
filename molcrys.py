@@ -463,7 +463,7 @@ def molcrys(cif_file=None, xtl_file=None, xyz_file=None, cell_length=None, cell_
                 print("elemlist_mainfrag: ", elemlist_mainfrag)
                 atomcharges, molmoms, voldict = DDEC_calc(elems=elemlist_mainfrag, theory=QMtheory,
                                                           ncores=numcores, DDECmodel=chargemodel,
-                                                          molecule_spinmult=fragmentobjects[0].Mult,
+                                                          molecule_spinmult=fragmentobjects[0].Mult, molecule_charge=fragmentobjects[0].Charge,
                                                           calcdir="DDEC_fragment_SPloop" + str(SPLoopNum), gbwfile="orca-input.gbw")
             else:
                 atomcharges = grabatomcharges_ORCA(chargemodel, QMtheory.inputfilename + '.out')

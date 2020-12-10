@@ -81,6 +81,9 @@ def read_referencedata_file(benchmarksetpath):
                 #Add to dict.
                 database_dict[index] = newreaction
         if count != index or count != numentries:
+            print("count:", count)
+            print("index:", index)
+            print("numentries:", numentries)
             print("Reaction lines does not match indices or number of entries in header. Mistake in file?!")
             exit()
     return database_dict
@@ -133,7 +136,7 @@ def run_geobenchmark(set=None, theory=None, orcadir=None, numcores=None):
 
 #run_benchmark
 #Reuseorbs option: Reuse orbitals within same reaction. This only makes sense if reaction contains very similar geometries (e.g. IE/EA reaction)
-def run_benchmark(set=None, theory=None, workflow=None, orcadir=None, numcores=None, reuseorbs=False, corrections=None, workflow_args=None):
+def run_benchmark(set=None, theory=None, property='energy', workflow=None, orcadir=None, numcores=None, reuseorbs=False, corrections=None, workflow_args=None):
     """[summary]
 
     Args:
@@ -181,71 +184,81 @@ def run_benchmark(set=None, theory=None, workflow=None, orcadir=None, numcores=N
     
     errors=[]
     
-    #Dictionary of energies of calculated fragments so that we don't have to calculate same fragment multiple times
-    all_calc_energies ={}
+    #Make function for each property ??
     
-    for reactionindex in database_dict:
-        reaction=database_dict[reactionindex]
-        #TODO: Get longest reaction string here to make sure final is good
-        #reactionstring=get_reaction_string(reaction.filenames, reaction.stoichiometry)
+    #TODO!!!!!!!!!!!!!
+    if property=='efg':
+        sffdf="dsff"
+    #TODO!!!!!!!!!!!!!
+    elif property=='NMR':
+        sdff="dfsf"
+    # REACTION ENERGY
+    elif property=='energy':
+        #Dictionary of energies of calculated fragments so that we don't have to calculate same fragment multiple times
+        all_calc_energies ={}
         
-        print("")
-        print("-"*70)
-        print(BC.WARNING,"Reaction {} : {} {} ".format(reactionindex, BC.OKBLUE, reaction.filenames),BC.END)
-        print(BC.WARNING,"Stoichiometry:", BC.OKBLUE,reaction.stoichiometry,BC.END)
-        print(BC.WARNING,"Reference energy:", BC.OKBLUE,reaction.refenergy, unit, BC.END)
-        print("-"*70)
+        for reactionindex in database_dict:
+            reaction=database_dict[reactionindex]
+            #TODO: Get longest reaction string here to make sure final is good
+            #reactionstring=get_reaction_string(reaction.filenames, reaction.stoichiometry)
+            
+            print("")
+            print("-"*70)
+            print(BC.WARNING,"Reaction {} : {} {} ".format(reactionindex, BC.OKBLUE, reaction.filenames),BC.END)
+            print(BC.WARNING,"Stoichiometry:", BC.OKBLUE,reaction.stoichiometry,BC.END)
+            print(BC.WARNING,"Reference energy:", BC.OKBLUE,reaction.refenergy, unit, BC.END)
+            print("-"*70)
 
-        #Reading XYZ file and grabbing charge and multiplicity
-        energies=[]
-        for file in reaction.filenames:
-            
-            #If previously calculated fragment, grab energy from all_calc_energies and skip
-            if file in all_calc_energies:
-                print("File {} already calculated. Skipping calculation".format(file))
-                energy = all_calc_energies[file]
-                reaction.totalenergies.append(energy)
+            #Reading XYZ file and grabbing charge and multiplicity
+            energies=[]
+            for file in reaction.filenames:
+                
+                #If previously calculated fragment, grab energy from all_calc_energies and skip
+                if file in all_calc_energies:
+                    print("File {} already calculated. Skipping calculation".format(file))
+                    energy = all_calc_energies[file]
+                    reaction.totalenergies.append(energy)
+                    energies.append(energy)
+                    continue
+                
+                frag = ash.Fragment(xyzfile=benchmarksetpath+file+'.xyz', readchargemult=True, conncalc=False)
+                # Setting charge and mult for theory
+                if theory is not None:
+                    theory.charge=frag.charge
+                    theory.mult=frag.mult
+                    
+                    #Reducing numcores if few electrons, otherwise original value
+                    theory.nprocs = check_cores_vs_electrons(frag,numcores,theory.charge)
+                    
+                    energy = ash.Singlepoint(fragment=frag, theory=theory)
+                    
+                    
+                    
+                    all_calc_energies[file] = energy
+                    reaction.totalenergies.append(energy)
+                    shutil.copyfile('orca-input.out', './' + file  + '.out')
+                    
+                    #If reuseorbs False (default) then delete ORCA files in each step
+                    #If True, keep file, including orca-input.gbw which enables Autostart
+                    if reuseorbs is False:
+                        theory.cleanup()
+                    print("")
+                elif workflow is not None:
+                    if orcadir is None:
+                        print("Please provide orcadir variable to run_benchmark_set")
+                        exit()
+                    energy, energydict = workflow(fragment=frag, charge=frag.charge, mult=frag.mult, orcadir=orcadir, numcores=numcores, workflow_args=workflow_args)
+                    all_calc_energies[file] = energy
+                    reaction.totalenergies.append(energy)
+                #List of all energies
                 energies.append(energy)
-                continue
-            
-            frag = ash.Fragment(xyzfile=benchmarksetpath+file+'.xyz', readchargemult=True, conncalc=False)
-            # Setting charge and mult for theory
-            if theory is not None:
-                theory.charge=frag.charge
-                theory.mult=frag.mult
-                
-                #Reducing numcores if few electrons, otherwise original value
-                theory.nprocs = check_cores_vs_electrons(frag,numcores,theory.charge)
-                
-                energy = ash.Singlepoint(fragment=frag, theory=theory)
-                
-                
-                
-                all_calc_energies[file] = energy
-                reaction.totalenergies.append(energy)
-                shutil.copyfile('orca-input.out', './' + file  + '.out')
-                
-                #If reuseorbs False (default) then delete ORCA files in each step
-                #If True, keep file, including orca-input.gbw which enables Autostart
-                if reuseorbs is False:
-                    theory.cleanup()
-                print("")
-            elif workflow is not None:
-                if orcadir is None:
-                    print("Please provide orcadir variable to run_benchmark_set")
-                    exit()
-                energy, energydict = workflow(fragment=frag, charge=frag.charge, mult=frag.mult, orcadir=orcadir, numcores=numcores, workflow_args=workflow_args)
-                all_calc_energies[file] = energy
-                reaction.totalenergies.append(energy)
-            #List of all energies
-            energies.append(energy)
-        print("")
-        reaction_energy, error = ash.ReactionEnergy(stoichiometry=reaction.stoichiometry, list_of_energies=energies, unit=unit, label=reactionindex, 
-                                                    reference=reaction.refenergy)
-        reaction.calcenergy = reaction_energy
-        reaction.calcenergy_corrected = reaction_energy + reaction.correction
-        #Adding error with correction
-        reaction.error = error + reaction.correction
+            print("")
+            reaction_energy, error = ash.ReactionEnergy(stoichiometry=reaction.stoichiometry, list_of_energies=energies, unit=unit, label=reactionindex, 
+                                                        reference=reaction.refenergy)
+            reaction.calcenergy = reaction_energy
+            reaction.calcenergy_corrected = reaction_energy + reaction.correction
+            #Adding error with correction
+            reaction.error = error + reaction.correction
         
         #Cleanup after reaction is done. Theory only.
         if theory is not None:

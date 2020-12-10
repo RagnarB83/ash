@@ -448,7 +448,8 @@ def HOMOnumbercalc(file,charge,mult):
 #Uses Chargemol program
 # Uses ORCA to calculate densities of molecule and its free atoms. Uses orca_2mkl to create Molden file and molden2aim to create WFX file from Molden.
 # Wfx file is read into Chargemol program for DDEC analysis which radial moments used to compute C6 parameters and radii for Lennard-Jones equation.
-def DDEC_calc(elems=None, theory=None, gbwfile=None, ncores=1, DDECmodel='DDEC3', calcdir='DDEC', molecule_spinmult=None, chargemolbinarydir=None):
+def DDEC_calc(elems=None, theory=None, gbwfile=None, ncores=1, DDECmodel='DDEC3', calcdir='DDEC', molecule_charge=None, 
+              molecule_spinmult=None, chargemolbinarydir=None):
     #Creating calcdir. Should not exist previously
     os.mkdir(calcdir)
     os.chdir(calcdir)
@@ -474,6 +475,7 @@ def DDEC_calc(elems=None, theory=None, gbwfile=None, ncores=1, DDECmodel='DDEC3'
     
     #Finding molden2aim in PATH:
     # Below works if MOLDEN2AIM dir is in PATH
+    #molden2aimpath="external/Molden2AIM/src/"
     molden2aim="molden2aim.exe"
 
     #Defining Chargemoldir (main dir) as 3-up from binary dir
@@ -689,7 +691,13 @@ end"""
     sp.call(['orca_2mkl', "molecule", '-molden'])
 
     #Write input for molden2aim
-    mol2aiminput=[' ',  "molecule"+'.molden.input', str(molecule_spinmult), 'Y', 'Y', 'N', 'N', ' ', ' ']
+    
+    if molecule_charge==0:
+        mol2aiminput=[' ',  "molecule"+'.molden.input', str(molecule_spinmult), ' ', ' ', ' ']
+    else:
+        #Charged system, will ask for charge
+        mol2aiminput=[' ',  "molecule"+'.molden.input', 'N', str(molecule_charge), str(molecule_spinmult), ' ', ' ', ' ']        
+        
     m2aimfile = open("mol2aim.inp", "w")
     for mline in mol2aiminput:
         m2aimfile.write(mline+'\n')
@@ -748,7 +756,6 @@ end"""
 
     grabcharge=False
     ddeccharges=[]
-    print("numatoms is", numatoms)
     with open(chargefile) as chfile:
         for line in chfile:
             if grabcharge==True:
@@ -808,17 +815,28 @@ def DDEC_to_LJparameters(elems, molmoms, voldict, scale_polarH=False):
     r0list=[]
     Radii_vdw_free=[]
     for count,el in enumerate(elems):
+        print("el :", el, "count:", count)
         atmnumber=functions_coords.elematomnumbers[el.lower()]
+        print("atmnumber:", atmnumber)
         Radii_vdw_free.append(dictionaries_lists.elems_C6_polz[atmnumber].Rvdw_ang)
+        print("Radii_vdw_free:", Radii_vdw_free)
         volratio=molmoms[count]/voldict[el]
+        print("volratio:", volratio)
         C6inkcal=constants.harkcal*(dictionaries_lists.elems_C6_polz[atmnumber].C6**(1/6)* constants.bohr2ang)**6
+        print("C6inkcal:", C6inkcal)
         B_i=C6inkcal*(volratio**2)
+        print("B_i:", B_i)
         Raim_i=volratio**(1/3)*dictionaries_lists.elems_C6_polz[atmnumber].Rvdw_ang
+        print("Raim_i:", Raim_i)
         A_i=0.5*B_i*(2*Raim_i)**6
+        print("A_i:", A_i)
         sigma=(A_i/B_i)**(1/6)
+        print("sigma :", sigma)
         r0=sigma*(2**(1/6))
+        print("r0:", r0)
         epsilon=(A_i/(4*sigma**12))
-
+        print("epsilon:", epsilon)
+        
         sigmalist.append(sigma)
         Blist.append(B_i)
         Alist.append(A_i)

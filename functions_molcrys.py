@@ -706,8 +706,6 @@ def read_ciffile(file):
                     print("Found all coordinates")
                 elif '_atom_site' not in line:
                     if 'loop' not in line:
-                        
-                        
                         atomlabelcolumn=int(atomsitecolumns.index("_atom_site_label"))
                         #Grabbing x,y,z columns
                         xcolumn=int(atomsitecolumns.index("_atom_site_fract_x"))
@@ -737,7 +735,7 @@ def read_ciffile(file):
                         #    coords.append([x_coord, y_coord, z_coord])
             if 'data_' in line:
                 newmol = True
-            if '_atom_site' in line:
+            if '_atom_site_' in line:
                 atomsitecolumns.append(line.split()[0])
             if '_atom_site_fract_z' in line:
                 fractgrab=True
@@ -1196,7 +1194,8 @@ def gasfragcalc_ORCA(fragmentobjects,Cluster,chargemodel,orcadir,orcasimpleinput
         if chargemodel == 'DDEC3' or chargemodel == 'DDEC6':
             #Calling DDEC_calc (calls chargemol)
             atomcharges, molmoms, voldict = DDEC_calc(elems=gasfrag.elems, theory=ORCASPcalculation,
-                                            ncores=NUMPROC, DDECmodel=chargemodel,molecule_spinmult=fragmentobject.Mult,
+                                            ncores=NUMPROC, DDECmodel=chargemodel, molecule_charge=fragmentobject.Charge,
+                                            molecule_spinmult=fragmentobject.Mult,
                                             calcdir="DDEC_fragment"+str(id), gbwfile="orca-input.gbw")
 
             print("atomcharges:", atomcharges)
@@ -1369,7 +1368,7 @@ def choose_shortrangemodel(Cluster,shortrangemodel,fragmentobjects,QMtheory,main
                 print("Using GBW file: ", gbwfile)
                 DDECcharges, fragmentobject.molmoms, fragmentobject.voldict = DDEC_calc(elems=fragmentobject.Atoms, theory=QMtheory,
                                                         ncores=numcores, DDECmodel=shortrangemodel,
-                                                        molecule_spinmult=fragmentobject.Mult,
+                                                        molecule_spinmult=fragmentobject.Mult, molecule_charge=fragmentobject.Charge,
                                                         calcdir="DDEC_LJcalc_fragment_{}".format(fragmentobject.Name), gbwfile=gbwfile)
                 print("DDECcharges:", DDECcharges)
             #Getting R0 and epsilon
