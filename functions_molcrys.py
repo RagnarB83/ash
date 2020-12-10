@@ -1294,7 +1294,7 @@ def rmsd_list(listA,listB):
 
 
 
-def choose_shortrangemodel(Cluster,shortrangemodel,fragmentobjects,QMtheory,mainfrag_gbwfile,numcores):
+def choose_shortrangemodel(Cluster,shortrangemodel,fragmentobjects,QMtheory,mainfrag_gbwfile,numcores,LJHparameters):
     if shortrangemodel=='UFF':
         print("Using UFF forcefield for all elements")
         for fragmentobject in fragmentobjects:
