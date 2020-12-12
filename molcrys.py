@@ -132,7 +132,9 @@ def molcrys(cif_file=None, xtl_file=None, xyz_file=None, cell_length=None, cell_
         
         #Calculating cell vectors.
         # Transposed cell vectors used here (otherwise nonsense for non-orthorhombic cells)
-        cell_vectors=np.transpose(cellbasis(cell_angles,cell_length))
+        #Not sure why transposing
+        #cell_vectors=np.transpose(cellbasis(cell_angles,cell_length))
+        cell_vectors=cellbasis(cell_angles,cell_length)
         print("cell_vectors:", cell_vectors)
         
     else:
