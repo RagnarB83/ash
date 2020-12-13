@@ -2943,34 +2943,43 @@ def potential_adjustor_DFT(theory=None, fragment=None, Initialstate_charge=None,
     theory.mult=Initialstate_mult
     E_N = Singlepoint(fragment=fragment, theory=theory)
     
-    #Orbitals
+    #Orbitals in eV
     occorbs_alpha, occorbs_beta, hftyp = orbitalgrab(theory.inputfilename+'.out')
-    print("occorbs_alpha: ", occorbs_alpha)
-    print("occorbs_beta: ", occorbs_beta)
+    print("occorbs_alpha (eV): ", occorbs_alpha)
+    print("occorbs_beta (eV): ", occorbs_beta)
     
     #Calculate ionized state (N-1)
     theory.charge = Ionizedstate_charge
     theory.mult = Ionizedstate_mult
     E_Nmin1 = Singlepoint(fragment=fragment, theory=theory)
     
-    #delta-SCF IP
+    #delta-SCF IP in eV
     print("")
     print("-"*60)
     print("")
-    deltaE=E_N-E_Nmin1
-    print("deltaE (IP) : {} Eh".format(deltaE))
+    deltaE=(E_N-E_Nmin1)*constants.hartoeV
+    print("deltaE (IP) : {} eV".format(deltaE))
     #deltaPA for HOMO
     HOMO_index=HOMOnumber(fragment.nuccharge,Initialstate_charge,Initialstate_mult)
     print("HOMO_index:", HOMO_index)
     eps_HOMO=occorbs_alpha[HOMO_index[0]]
-    print("eps_HOMO : {} Eh".format(eps_HOMO))
+    print("eps_HOMO : {} eV".format(eps_HOMO))
     deltaPA=deltaE-eps_HOMO
-    print("deltaPA : {} Eh".format(deltaPA))
+    print("deltaPA : {} eV".format(deltaPA))
     
     #Adjust alpha and beta orbital sets
     PA_occorbs_alpha=  [orb+deltaPA for orb in occorbs_alpha]
-    PA_orccorbs_beta = [orb+deltaPA for orb in occorbs_beta]
+    PA_occorbs_beta = [orb+deltaPA for orb in occorbs_beta]
     
-    print("PA_occorbs_alpha: ", PA_occorbs_alpha)
-    print("PA_orccorbs_beta: ", PA_orccorbs_beta)
+    print("PA_occorbs_alpha (eV): ", PA_occorbs_alpha)
+    print("PA_occorbs_beta (eV): ", PA_occorbs_beta)
     
+    #IPs in eV as -1 times orbital energies
+
+    PA_occorbs_alpha_IPs=[eig*-1 for eig in PA_occorbs_alpha]
+    PA_occorbs_beta_IPs=[eig*-1 for eig in PA_occorbs_beta]
+    print("PA_occorbs_alpha_IPs (eV):", PA_occorbs_alpha_IPs)
+    print("PA_occorbs_beta_IPs (eV):", PA_occorbs_beta_IPs)
+    
+    #Return negative KS eigenvalues
+    return PA_occorbs_alpha_IPs, PA_occorbs_beta_IPs
