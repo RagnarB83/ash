@@ -2749,7 +2749,7 @@ class DaltonTheory:
 #ORCA Theory object. Fragment object is optional. Only used for single-points.
 
 class ORCATheory:
-    def __init__(self, orcadir=None, fragment=None, charge='', mult='', orcasimpleinput='', printlevel=2,
+    def __init__(self, orcadir=None, fragment=None, charge=None, mult=None, orcasimpleinput='', printlevel=2,
                  orcablocks='', extraline='', brokensym=None, HSmult=None, atomstoflip=None, nprocs=1, label=None):
 
         if orcadir is None:
@@ -2784,10 +2784,14 @@ class ORCATheory:
             self.coords=fragment.coords
             self.elems=fragment.elems
         #print("frag elems", self.fragment.elems)
-        if charge!='':
+        if charge!=None:
             self.charge=int(charge)
-        if mult!='':
+        else:
+            self.charge=None
+        if mult!=None:
             self.mult=int(mult)
+        else:
+            self.charge=None
         self.orcasimpleinput=orcasimpleinput
         self.orcablocks=orcablocks
         self.extraline=extraline

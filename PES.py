@@ -650,6 +650,23 @@ def HOMOnumbercalc(file,charge,mult):
         HOMOnum_b=Doubocc+orcaoffset
     return int(HOMOnum_a),int(HOMOnum_b)
 
+#Calculate HOMO number (0-indexing) from nuclear charge and total charge
+def HOMOnumber(totnuccharge,charge,mult):
+    numel=totnuccharge-charge
+    HOMOnum_a="unset";HOMOnum_b="unset"
+    offset=-1
+    if mult == 1:
+        #RHF case. HOMO is numel/2 -1
+        HOMOnum_a=(numel/2)+offset
+        HOMOnum_b=(numel/2)+offset
+    elif mult > 1:
+        #UHF case.
+        numunpel=mult-1
+        Doubocc=(numel-numunpel)/2
+        HOMOnum_a=Doubocc+numunpel+offset
+        HOMOnum_b=Doubocc+offset
+    return int(HOMOnum_a),int(HOMOnum_b)
+
 def orbitalgrab(file):
     occorbsgrab=False
     virtorbsgrab=False
@@ -1623,7 +1640,7 @@ def delete_wrong_det(file,reference_mult):
 
 # Calculate PES spectra using the Dyson orbital approach.
 # Memory for WFoverlap in MB. Hardcoded
-def PhotoElectronSpectrum(theory=None, fragment=None, InitialState_charge=None, Initialstate_mult=None,
+def PhotoElectronSpectrum(theory=None, fragment=None, Initialstate_charge=None, Initialstate_mult=None,
                           Ionizedstate_charge=None, Ionizedstate_mult=None, numionstates=None, path_wfoverlap=None, tda=True,
                           brokensym=False, HSmult=None, atomstoflip=None, initialorbitalfiles=None, Densities='SCF', densgridvalue=100,
                           CAS=False, CAS_Initial=None, CAS_Final = None, memory=40000, numcores=1, noDyson=False, CASCI=False, MRCI=False, MREOM=False,
@@ -2911,3 +2928,49 @@ def plot_PES_Spectrum(IPs=None, dysonnorms=None, mos_alpha=None, mos_beta=None, 
     else:
         print("Skipped Matplotlib part.")
     print(BC.OKGREEN,"ALL DONE!", BC.END)
+
+
+#Potential adjusted KS-DFT according to Görling
+#Gives adjusted MO spectrum for initial state
+def potential_adjustor_DFT(theory=None, fragment=None, Initialstate_charge=None, Initialstate_mult=None,
+                          Ionizedstate_charge=None, Ionizedstate_mult=None):
+    
+    print("="*30)
+    print("Potential-adjustor DFT")
+    print("="*30)
+    #Calculate initial state with N electron (e.g. neutral)
+    theory.charge=Initialstate_charge
+    theory.mult=Initialstate_mult
+    E_N = Singlepoint(fragment=fragment, theory=theory)
+    
+    #Orbitals
+    occorbs_alpha, occorbs_beta, hftyp = orbitalgrab(theory.inputfilename+'.out')
+    print("occorbs_alpha: ", occorbs_alpha)
+    print("occorbs_beta: ", occorbs_beta)
+    
+    #Calculate ionized state (N-1)
+    theory.charge = Ionizedstate_charge
+    theory.mult = Ionizedstate_mult
+    E_Nmin1 = Singlepoint(fragment=fragment, theory=theory)
+    
+    #delta-SCF IP
+    print("")
+    print("-"*60)
+    print("")
+    deltaE=E_N-E_Nmin1
+    print("deltaE (IP) : {} Eh".format(deltaE))
+    #deltaPA for HOMO
+    HOMO_index=HOMOnumber(fragment.nuccharge,Initialstate_charge,Initialstate_mult)
+    print("HOMO_index:", HOMO_index)
+    eps_HOMO=occorbs_alpha[HOMO_index[0]]
+    print("eps_HOMO : {} Eh".format(eps_HOMO))
+    deltaPA=deltaE-eps_HOMO
+    print("deltaPA : {} Eh".format(deltaPA))
+    
+    #Adjust alpha and beta orbital sets
+    PA_occorbs_alpha=  [orb+deltaPA for orb in occorbs_alpha]
+    PA_orccorbs_beta = [orb+deltaPA for orb in occorbs_beta]
+    
+    print("PA_occorbs_alpha: ", PA_occorbs_alpha)
+    print("PA_orccorbs_beta: ", PA_orccorbs_beta)
+    
