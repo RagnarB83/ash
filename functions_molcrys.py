@@ -1357,9 +1357,12 @@ def choose_shortrangemodel(Cluster,shortrangemodel,fragmentobjects,QMtheory,main
             #If molmoms and voldict not already calculated (could be if chargemodel is DDEC)
             if len(fragmentobject.molmoms) == 0:
                 print("No molmoms available. Calculating.")
+                
                 #Using last mainfrag GBW-file (from SC-QM/MM)       
                 if fragindex==0:
-                    gbwfile=mainfrag_gbwfile
+                    #gbwfile=mainfrag_gbwfile
+                    #Trying to use gas fragment instead. Non-polarized electron density
+                    gbwfile="fragment{}.gbw".format(fragindex)
                 else:
                     #Use GBWfile created by gasfragcalc_ORCA (non-polarized)
                     gbwfile="fragment{}.gbw".format(fragindex)
