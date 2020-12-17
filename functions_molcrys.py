@@ -1362,6 +1362,7 @@ def choose_shortrangemodel(Cluster,shortrangemodel,fragmentobjects,QMtheory,main
                 if fragindex==0:
                     #gbwfile=mainfrag_gbwfile
                     #Trying to use gas fragment instead. Non-polarized electron density
+                    print("USING NONPOLARIZED DENSITY FOR MAINFRAG")
                     gbwfile="fragment{}.gbw".format(fragindex)
                 else:
                     #Use GBWfile created by gasfragcalc_ORCA (non-polarized)
