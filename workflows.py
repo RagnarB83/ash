@@ -13,13 +13,96 @@ from interface_geometric import *
 from interface_crest import *
 from elstructure_functions import check_cores_vs_electrons, num_core_electrons
 
-#Various workflows and associated sub-functions
+#Various workflows, extrapolations, composite methods and associated sub-functions
+
+#Bistoni PNO extrapolation: https://pubs.acs.org/doi/10.1021/acs.jctc.0c00344
+def PNO_extrapolation(E):
+    """ PNO extrapolation by Bistoni and coworkers
+    F is 1.5, good for both 5/6 and 6/7 extrapolations.
+    where 5/6 and 6/7 refers to the X/Y TcutPNO threshold (10^-X and 10^-Y).
+    Args:
+        E ([list]): list of 
+    """
+    F=1.5
+    E_C_PNO= E[0] + F*(E[1]-E[0])
+    return E_C_PNO
+
+
+# For theory object with DLPNO, do 2 calculations with different DLPNO thresholds and extrapolate
+def PNOExtrapolationStep(fragment=None, theory=None, pnoextrapolation=None, DLPNO=None, F12=None):
+
+    PNO_X=pnoextrapolation[0]
+    PNO_Y=pnoextrapolation[1]
+    
+    #Adding TCutPNO option X
+    #TightPNO options for other thresholds
+    mdciblockX="""
+    %mdci
+    TCutPNO 1e-{}
+    TCutPairs 1e-5
+    TCutDO 5e-3
+    TCutMKN 1e-3
+    end
+    
+    """.format(PNO_X)
+    #TCutPNO option Y
+    #TightPNO options for other thresholds
+    mdciblockY="""
+    %mdci
+    TCutPNO 1e-{}
+    TCutPairs 1e-5
+    TCutDO 5e-3
+    TCutMKN 1e-3
+    end
+    
+    """.format(PNO_Y)
+    #Add mdciblock to blocks of theory
+    PNOXblocks = theory.blocks + mdciblockX
+    PNOYblocks = theory.blocks + mdciblockY
+    
+    theory.blocks = PNOXblocks
+    
+    ash.Singlepoint(fragment=fragment, theory=theory)
+    resultdict_X = grab_HF_and_corr_energies('orca-input.out', DLPNO=DLPNO,F12=F12)
+    shutil.copyfile('orca-input.out', './' + calc_label + 'PNOX' + '.out')
+    print("resultdict_X:", resultdict_X)
+
+
+    
+    theory.blocks = PNOYblocks
+    ash.Singlepoint(fragment=fragment, theory=theory)
+    resultdict_Y = grab_HF_and_corr_energies('orca-input.out', DLPNO=DLPNO,F12=F12)
+    shutil.copyfile('orca-input.out', './' + calc_label + 'PNOY' + '.out')
+    print("resultdict_Y:", resultdict_Y)
+    
+    #Extrapolation to PNO limit
+
+    E_SCF_CBS = resultdict_Y['HF']
+    #Extrapolation CCSD part and (T) separately
+    # TODO: Is this correct??
+    E_corrCCSD_CBS = PNO_extrapolation([resultdict_X['CCSD_corr'],resultdict_Y['CCSD_corr']])
+    E_corrCCT_CBS = PNO_extrapolation([resultdict_X['CCSD(T)_corr'],resultdict_Y['CCSD(T)_corr']])
+    #Extrapolation of full correlation energy
+    E_corrCC_CBS = PNO_extrapolation([resultdict_X['full_corr'],resultdict_Y['full_corr']])
+
+    return E_SCF_CBS, E_corrCCSD_CBS, E_corrCCT_CBS, E_corrCC_CBS
 
 
 
 
 
 
+
+def FCI_extrapolation(E):
+    """Full-CI extrapolation by Goodson. Extrapolates SCF-energy, SD correlation, T correlation to Full-CI at given basis set.
+       Energies provided could be e.g. all at DZ level or alternatively at estimated CBS level
+
+    Args:
+        E (list): list of E_SCF, E_corr_CCSD, E_corr_T 
+    """
+    d1=E[0];d2=E[1];d3=E[2]
+    E_FCI=d1/(1-((d2/d1)/(1-(d3/d2))))
+    return E_FCI
 
 def Extrapolation_W1_SCF_3point(E):
     """
@@ -177,6 +260,99 @@ def Extrapolation_twopoint(scf_energies, corr_energies, cardinals, basis_family)
     print("Total Extrapolated value is", SCFextrap+corrextrap)
 
     return SCFextrap, corrextrap
+
+
+
+
+
+
+#Provide crest/xtb info, MLtheory object (e.g. ORCA), HLtheory object (e.g. ORCA)
+def confsampler_protocol(fragment=None, crestdir=None, xtbmethod='GFN2-xTB', MLtheory=None, 
+                         HLtheory=None, orcadir=None, numcores=1, charge=None, mult=None):
+    print("="*50)
+    print("CONFSAMPLER FUNCTION")
+    print("="*50)
+    
+    #1. Calling crest
+    #call_crest(fragment=molecule, xtbmethod='GFN2-xTB', crestdir=crestdir, charge=charge, mult=mult, solvent='H2O', energywindow=6 )
+    call_crest(fragment=fragment, xtbmethod=xtbmethod, crestdir=crestdir, charge=charge, mult=mult, numcores=numcores)
+
+    #2. Grab low-lying conformers from crest_conformers.xyz as list of ASH fragments.
+    list_conformer_frags, xtb_energies = get_crest_conformers()
+
+    print("list_conformer_frags:", list_conformer_frags)
+    print("")
+    print("Crest Conformer Searches done. Found {} conformers".format(len(xtb_energies)))
+    print("xTB energies: ", xtb_energies)
+
+    #3. Run ML (e.g. DFT) geometry optimizations for each crest-conformer
+
+    ML_energies=[]
+    print("")
+    for index,conformer in enumerate(list_conformer_frags):
+        print("")
+        print("Performing ML Geometry Optimization for Conformer ", index)
+        geomeTRICOptimizer(fragment=conformer, theory=MLtheory, coordsystem='tric')
+        ML_energies.append(conformer.energy)
+        #Saving ASH fragment and XYZ file for each ML-optimized conformer
+        os.rename('Fragment-optimized.ygg', 'Conformer{}_ML.ygg'.format(index))
+        os.rename('Fragment-optimized.xyz', 'Conformer{}_ML.xyz'.format(index))
+
+    print("")
+    print("ML Geometry Optimization done")
+    print("ML_energies: ", ML_energies)
+
+    #4.Run high-level thery. Provide HLtheory object (typically ORCATheory)
+    HL_energies=[]
+    for index,conformer in enumerate(list_conformer_frags):
+        print("")
+        print("Performing High-level calculation for ML-optimized Conformer ", index)
+        HLenergy = ash.Singlepoint(theory=HLtheory, fragment=conformer)
+        HL_energies.append(HLenergy)
+
+
+    print("")
+    print("=================")
+    print("FINAL RESULTS")
+    print("=================")
+
+    #Printing total energies
+    print("")
+    print(" Conformer   xTB-energy    ML-energy    HL-energy (Eh)")
+    print("----------------------------------------------------------------")
+
+    min_xtbenergy=min(xtb_energies)
+    min_MLenergy=min(ML_energies)
+    min_HLenergy=min(HL_energies)
+
+    for index,(xtb_en,ML_en,HL_en) in enumerate(zip(xtb_energies,ML_energies, HL_energies)):
+        print("{:10} {:13.10f} {:13.10f} {:13.10f}".format(index,xtb_en, ML_en, HL_en))
+
+    print("")
+    #Printing relative energies
+    min_xtbenergy=min(xtb_energies)
+    min_MLenergy=min(ML_energies)
+    min_HLenergy=min(HL_energies)
+    harkcal = 627.50946900
+    print(" Conformer   xTB-energy    ML-energy    HL-energy (kcal/mol)")
+    print("----------------------------------------------------------------")
+    for index,(xtb_en,ML_en,HL_en) in enumerate(zip(xtb_energies,ML_energies, HL_energies)):
+        rel_xtb=(xtb_en-min_xtbenergy)*harkcal
+        rel_ML=(ML_en-min_MLenergy)*harkcal
+        rel_HL=(HL_en-min_HLenergy)*harkcal
+        print("{:10} {:13.10f} {:13.10f} {:13.10f}".format(index,rel_xtb, rel_ML, rel_HL))
+
+    print("")
+    print("Workflow done!")
+    
+    
+
+
+
+
+
+
+
 
 
 
@@ -1054,7 +1230,7 @@ end
 #DLPNO-F12
 #Test: DLPNO-CCSD(T)-F12 protocol including CV+SR
 def DLPNO_F12_SP(fragment=None, charge=None, orcadir=None, mult=None, stabilityanalysis=False, numcores=1,
-                      memory=5000, pnosetting='NormalPNO', T1=False, scfsetting='TightSCF', F12level='DZ',extrainputkeyword='', extrablocks='', **kwargs):
+                      memory=5000, pnosetting='NormalPNO', T1=False, scfsetting='TightSCF', F12level='DZ', extrainputkeyword='', extrablocks='', **kwargs):
     """
     WORK IN PROGRESS
     DLPNO-CCSD(T)-F12 version of single-point W1-ish workflow.
@@ -1910,12 +2086,9 @@ def calc_surface_fromXYZ(xyzdir=None, theory=None, dimension=None, resultfile=No
 
 
 
-
-
-
 #DLPNO-test CBS protocol. Simple. No core-correlation, scalar relativistic or spin-orbit coupling for now
 def DLPNO_CC_CBS_SP(cardinals = "2/3", basisfamily="def2", fragment=None, charge=None, orcadir=None, mult=None, stabilityanalysis=False, numcores=1,
-                      memory=5000, pnosetting='NormalPNO', T1=False, scfsetting='TightSCF', extrainputkeyword='', extrablocks='', **kwargs):
+                      memory=5000, pnosetting='NormalPNO', pnoextrapolation=[5,6], T1=False, scfsetting='TightSCF', extrainputkeyword='', extrablocks='', **kwargs):
     """
     WORK IN PROGRESS
     DLPNO-CCSD(T)/CBS frozencore workflow
@@ -1928,7 +2101,7 @@ def DLPNO_CC_CBS_SP(cardinals = "2/3", basisfamily="def2", fragment=None, charge
     :param numcores: number of cores
     :param memory: Memory in MB
     :param scfsetting: ORCA keyword (e.g. NormalSCF, TightSCF, VeryTightSCF)
-    :param pnosetting: ORCA keyword: NormalPNO, LoosePNO, TightPNO
+    :param pnosetting: ORCA keyword: NormalPNO, LoosePNO, TightPNO or extrapolation
     ;param T1: Boolean (whether to do expensive iterative triples or not)
     :return: energy and dictionary with energy-components
     """
@@ -2089,26 +2262,35 @@ end
     #Defining two theory objects for each basis set
     ccsdt_1 = ash.ORCATheory(orcadir=orcadir, orcasimpleinput=ccsdt_1_line, orcablocks=blocks1, nprocs=numcores, charge=charge, mult=mult)
     ccsdt_2 = ash.ORCATheory(orcadir=orcadir, orcasimpleinput=ccsdt_2_line, orcablocks=blocks2, nprocs=numcores, charge=charge, mult=mult)
+    
+    
+    # EXTRAPOLATION TO PNO LIMIT BY 2 PNO calculations
+    if pnosetting=="extrapolation":
+        E_SCF_1, E_corrCCSD_1, E_corrCCT_1,E_corrCC_1 = PNOExtrapolationStep(fragment=fragment, theory=ccsdt_1, pnoextrapolation=pnoextrapolation, DLPNO=True, F12=False)
+        E_SCF_2, E_corrCCSD_2, E_corrCCT_2,E_corrCC_2 = PNOExtrapolationStep(fragment=fragment, theory=ccsdt_2, pnoextrapolation=pnoextrapolation, DLPNO=True, F12=False)
+        scf_energies = [E_SCF_1, E_SCF_2]
+        ccsdcorr_energies = [E_corrCCSD_1, E_corrCCSD_2]
+        triplescorr_energies = [E_corrCCT_1, E_corrCCT_2]
+        corr_energies = [E_corrCC_1, E_corrCC_2]
+    # OR REGULAR
+    else:
+        #Running both theories
+        ash.Singlepoint(fragment=fragment, theory=ccsdt_1)
+        CCSDT_1_dict = grab_HF_and_corr_energies('orca-input.out', DLPNO=True)
+        shutil.copyfile('orca-input.out', './' + calc_label + 'CCSDT_1' + '.out')
+        print("CCSDT_1_dict:", CCSDT_1_dict)
 
-    #Running both theories
-    ash.Singlepoint(fragment=fragment, theory=ccsdt_1)
-    CCSDT_1_dict = grab_HF_and_corr_energies('orca-input.out', DLPNO=True)
-    shutil.copyfile('orca-input.out', './' + calc_label + 'CCSDT_1' + '.out')
-    print("CCSDT_1_dict:", CCSDT_1_dict)
+        ash.Singlepoint(fragment=fragment, theory=ccsdt_2)
+        CCSDT_2_dict = grab_HF_and_corr_energies('orca-input.out', DLPNO=True)
+        shutil.copyfile('orca-input.out', './' + calc_label + 'CCSDT_2' + '.out')
+        print("CCSDT_2_dict:", CCSDT_2_dict)
 
-    ash.Singlepoint(fragment=fragment, theory=ccsdt_2)
-    CCSDT_2_dict = grab_HF_and_corr_energies('orca-input.out', DLPNO=True)
-    shutil.copyfile('orca-input.out', './' + calc_label + 'CCSDT_2' + '.out')
-    print("CCSDT_2_dict:", CCSDT_2_dict)
-
-
-    #List of all SCF energies (DZ,TZ,QZ), all CCSD-corr energies (DZ,TZ,QZ) and all (T) corr energies (DZ,TZ)
-    scf_energies = [CCSDT_1_dict['HF'], CCSDT_2_dict['HF']]
-    ccsdcorr_energies = [CCSDT_1_dict['CCSD_corr'], CCSDT_2_dict['CCSD_corr']]
-    triplescorr_energies = [CCSDT_1_dict['CCSD(T)_corr'], CCSDT_2_dict['CCSD(T)_corr']]
-
-    #Here combining corr energies in a silly way
-    corr_energies = list(np.array(ccsdcorr_energies)+np.array(triplescorr_energies))
+        #List of all SCF energies (DZ,TZ,QZ), all CCSD-corr energies (DZ,TZ,QZ) and all (T) corr energies (DZ,TZ)
+        scf_energies = [CCSDT_1_dict['HF'], CCSDT_2_dict['HF']]
+        ccsdcorr_energies = [CCSDT_1_dict['CCSD_corr'], CCSDT_2_dict['CCSD_corr']]
+        triplescorr_energies = [CCSDT_1_dict['CCSD(T)_corr'], CCSDT_2_dict['CCSD(T)_corr']]
+        #Here combining corr energies in a silly way
+        corr_energies = list(np.array(ccsdcorr_energies)+np.array(triplescorr_energies))
 
     print("")
     print("scf_energies :", scf_energies)
@@ -2155,81 +2337,471 @@ end
     #return final energy and also dictionary with energy components
     return E_total, E_dict
 
-#Provide crest/xtb info, MLtheory object (e.g. ORCA), HLtheory object (e.g. ORCA)
-def confsampler_protocol(fragment=None, crestdir=None, xtbmethod='GFN2-xTB', MLtheory=None, 
-                         HLtheory=None, orcadir=None, numcores=1, charge=None, mult=None):
-    print("="*50)
-    print("CONFSAMPLER FUNCTION")
-    print("="*50)
     
-    #1. Calling crest
-    #call_crest(fragment=molecule, xtbmethod='GFN2-xTB', crestdir=crestdir, charge=charge, mult=mult, solvent='H2O', energywindow=6 )
-    call_crest(fragment=fragment, xtbmethod=xtbmethod, crestdir=crestdir, charge=charge, mult=mult, numcores=numcores)
+    
+    
 
-    #2. Grab low-lying conformers from crest_conformers.xyz as list of ASH fragments.
-    list_conformer_frags, xtb_energies = get_crest_conformers()
+#FCI/CBS protocol. No core-correlation, scalar relativistic or spin-orbit coupling for now.
+# Extrapolates CC series to Full-CI and to CBS 
+def FCI_CBS_SP(cardinals = "2/3", basisfamily="def2", fragment=None, charge=None, orcadir=None, mult=None, stabilityanalysis=False, numcores=1,
+                      memory=5000, DLPNO=True, pnosetting='NormalPNO', F12=False, T1=False, scfsetting='TightSCF', extrainputkeyword='', extrablocks='', **kwargs):
+    """
+    WORK IN PROGRESS
+    FCI/CBS frozencore workflow
 
-    print("list_conformer_frags:", list_conformer_frags)
+    :param fragment: ASH fragment
+    :param charge: Charge of fragment (to be replaced)?
+    :param orcadir: ORCA directory
+    :param mult: Multiplicity of fragment (to be replaced)?
+    :param stabilityanalysis: stability analysis on or off.
+    :param numcores: number of cores
+    :param memory: Memory in MB
+    :param scfsetting: ORCA keyword (e.g. NormalSCF, TightSCF, VeryTightSCF)
+    :param pnosetting: ORCA keyword: NormalPNO, LoosePNO, TightPNO
+    ;param T1: Boolean (whether to do expensive iterative triples or not)
+    :return: energy and dictionary with energy-components
+    """
+    # If run_benchmark or other passed workflow_args then use them instead
+    if 'workflow_args' in kwargs:
+        print("Workflow args passed")
+        workflow_args=kwargs['workflow_args']
+        if 'cardinals' in workflow_args:
+            cardinals=workflow_args['cardinals']
+        if 'basisfamily' in workflow_args:
+            basisfamily=workflow_args['basisfamily']        
+        if 'stabilityanalysis' in workflow_args:
+            stabilityanalysis=workflow_args['stabilityanalysis']
+        if 'pnosetting' in workflow_args:
+            pnosetting=workflow_args['pnosetting']
+        if 'T1' in workflow_args:
+            T1=workflow_args['T1']
+        if 'scfsetting' in workflow_args:
+            scfsetting=workflow_args['scfsetting']
+        if 'memory' in workflow_args:
+            memory=workflow_args['memory']
+        if 'extrainputkeyword' in workflow_args:
+            extrainputkeyword=workflow_args['extrainputkeyword']
+        if 'extrablocks' in workflow_args:
+            extrablocks=workflow_args['extrablocks']
+
+    print("-----------------------------")
+    print("FCI_CBS_SP PROTOCOL")
+    print("-----------------------------")
+    print("Settings:")
+    print("Cardinals chosen:", cardinals)
+    print("Basis set family chosen:", basisfamily)
+    print("Number of cores: ", numcores)
+    print("Maxcore setting: ", memory, "MB")
     print("")
-    print("Crest Conformer Searches done. Found {} conformers".format(len(xtb_energies)))
-    print("xTB energies: ", xtb_energies)
-
-    #3. Run ML (e.g. DFT) geometry optimizations for each crest-conformer
-
-    ML_energies=[]
+    print("PNO setting: ", pnosetting)
+    print("T1 : ", T1)
+    print("SCF setting: ", scfsetting)
+    print("Stability analysis:", stabilityanalysis)
     print("")
-    for index,conformer in enumerate(list_conformer_frags):
-        print("")
-        print("Performing ML Geometry Optimization for Conformer ", index)
-        geomeTRICOptimizer(fragment=conformer, theory=MLtheory, coordsystem='tric')
-        ML_energies.append(conformer.energy)
-        #Saving ASH fragment and XYZ file for each ML-optimized conformer
-        os.rename('Fragment-optimized.ygg', 'Conformer{}_ML.ygg'.format(index))
-        os.rename('Fragment-optimized.xyz', 'Conformer{}_ML.xyz'.format(index))
+    print("fragment:", fragment)
+    calc_label = "Frag" + str(fragment.formula) + "_" + str(fragment.charge) + "_"
+    print("Calculation label: ", calc_label)
+
+    numelectrons = int(fragment.nuccharge - charge)
+    #Reduce numcores if required
+    numcores = check_cores_vs_electrons(fragment,numcores,charge)
+
+    #Cardinals list instead of string.
+    #TODO: get rid of string and use list as input
+    cardinals_list = [int(cardinals[0]),int(cardinals[2])]
+
+
+    #if 1-electron species like Hydrogen atom then we either need to code special HF-based procedure or just hardcode values
+    #Currently hardcoding H-atom case. Replace with proper extrapolated value later.
+    if numelectrons == 1:
+        print("Number of electrons is 1")
+        print("Assuming hydrogen atom and skipping calculation")
+        E_total = -0.500000
+        print("Using hardcoded value: ", E_total)
+        E_dict = {'Total_E': E_total, 'E_SCF_CBS': E_total, 'E_CCSDcorr_CBS': 0.0,
+                  'E_triplescorr_CBS': 0.0, 'E_corecorr_and_SR': 0.0, 'E_SO': 0.0}
+        return E_total, E_dict
+
+
+    #Block input for SCF/MDCI block options.
+    #Disabling FullLMP2 guess in general as not available for open-shell
+    #Adding memory and extrablocks.
+    blocks="""
+%maxcore {}
+%scf
+maxiter 1200
+end
+%mdci
+UseFullLMP2Guess false
+maxiter 150
+end
+{}
+
+""".format(memory,extrablocks)
+    if stabilityanalysis is True:
+        blocks = blocks + "%scf stabperform true end"
+
+
+    #Whether to use iterative triples or not. Default: regular DLPNO-CCSD(T)
+    if T1 is True:
+        ccsdtkeyword='DLPNO-CCSD(T1)'
+    else:
+        if DLPNO is True:
+            if F12 is True:
+                ccsdtkeyword='DLPNO-CCSD(T)-F12'                
+            else:
+                ccsdtkeyword='DLPNO-CCSD(T)'
+        else:
+            if F12 is True:
+                ccsdtkeyword='CCSD(T)-F12'
+            else:
+                ccsdtkeyword='CCSD(T)'
+            pnosetting=""
+    #If heavy element present and using cc/aug-cc basisfamily then add special PP-basis and ECP in block
+    def special_element_basis(fragment,cardinal,basisfamily,blocks):
+        basis_dict = {('cc',2) : "cc-pVDZ-PP", ('aug-cc',2) : "aug-cc-pVDZ-PP", ('cc',3) : "cc-pVTZ-PP", ('aug-cc',3) : "aug-cc-pVTZ-PP", ('cc',4) : "cc-pVQZ-PP", ('aug-cc',4) : "aug-cc-pVQZ-PP"}
+        auxbasis_dict = {('cc',2) : "cc-pVDZ-PP/C", ('aug-cc',2) : "aug-cc-pVDZ-PP/C", ('cc',3) : "cc-pVTZ-PP/C", ('aug-cc',3) : "aug-cc-pVTZ-PP/C", ('cc',4) : "cc-pVQZ-PP/C", ('aug-cc',4) : "aug-cc-pVQZ-PP/C"}
+        print("fragment.elems:", fragment.elems)
+        #exit()
+        for element in fragment.elems:
+            print("element:", element)
+            #TODO: Add 3rd-row elements and more
+            if element in ['Rb', 'Sr','Y','Zr', 'Nb', 'Mo', 'Tc', 'Ru', 'Rh','Pd','Ag','Cd', 'In', 'Sn', 'Sb', 'Te', 'I', 'Xe', 'Cs', 'Ba',
+                            'Hf', 'Ta', 'W', 'Re', 'Os', 'Ir', 'Pt', 'Au', 'Hg', 'Tl', 'Pb', 'Bi', 'Po', 'At', 'Rn']:
+                if 'cc' in basisfamily:
+                    specialbasis = basis_dict[(basisfamily,cardinal)]
+                    specialauxbasis = auxbasis_dict[(basisfamily,cardinal)]
+                    blocks = blocks + "\n%basis\n newgto {} \"{}\" end\n newecp {} \"SK-MCDHF-RSC\" end\nnewauxCGTO {} \"{}\" end \nend\n".format(element,specialbasis,element, element, specialauxbasis)
+        return blocks
+
+
+    ############################################################s
+    #Frozen-core DLPNO-CCSD(T) calculations defined here
+    ############################################################
+    if cardinals == "2/3" and basisfamily=="def2":
+        #Auxiliary basis set.
+        auxbasis='def2-QZVPP/C'
+        ccsdt_1_line="! {} def2-SVP {} {} {} {}".format(ccsdtkeyword, auxbasis, pnosetting, scfsetting,extrainputkeyword)
+        ccsdt_2_line="! {} def2-TZVPP {} {} {} {}".format(ccsdtkeyword, auxbasis, pnosetting, scfsetting,extrainputkeyword)
+    elif cardinals == "3/4" and basisfamily=="def2":
+        #Auxiliary basis set.
+        auxbasis='def2-QZVPP/C'
+        ccsdt_1_line="! {} def2-TZVPP {} {} {} {}".format(ccsdtkeyword, auxbasis, pnosetting, scfsetting,extrainputkeyword)
+        ccsdt_2_line="! {} def2-QZVPP {} {} {} {}".format(ccsdtkeyword, auxbasis, pnosetting, scfsetting,extrainputkeyword)  
+    elif cardinals == "2/3" and basisfamily=="ma-def2":
+        #Auxiliary basis set.
+        auxbasis='aug-cc-pVQZ/C'
+        ccsdt_1_line="! {} def2-SVP {} {} {} {}".format(ccsdtkeyword, auxbasis, pnosetting, scfsetting,extrainputkeyword)
+        ccsdt_2_line="! {} def2-TZVPP {} {} {} {}".format(ccsdtkeyword, auxbasis, pnosetting, scfsetting,extrainputkeyword)
+    elif cardinals == "3/4" and basisfamily=="ma-def2":
+        #Auxiliary basis set.
+        auxbasis='aug-cc-pVQZ/C'
+        ccsdt_1_line="! {} ma-def2-TZVPP {} {} {} {}".format(ccsdtkeyword, auxbasis, pnosetting, scfsetting,extrainputkeyword)
+        ccsdt_2_line="! {} ma-def2-QZVPP {} {} {} {}".format(ccsdtkeyword, auxbasis, pnosetting, scfsetting,extrainputkeyword)
+    elif cardinals == "2/3" and basisfamily=="cc":
+        #Auxiliary basis set.
+        auxbasis='cc-pVQZ/C'
+        ccsdt_1_line="! {} cc-pVDZ {} {} {} {}".format(ccsdtkeyword, auxbasis, pnosetting, scfsetting,extrainputkeyword)
+        ccsdt_2_line="! {} cc-pVTZ {} {} {} {}".format(ccsdtkeyword, auxbasis, pnosetting, scfsetting,extrainputkeyword)
+    elif cardinals == "3/4" and basisfamily=="cc":
+        #Auxiliary basis set.
+        auxbasis='cc-pV5Z/C'
+        ccsdt_1_line="! {} cc-pVTZ {} {} {} {}".format(ccsdtkeyword, auxbasis, pnosetting, scfsetting,extrainputkeyword)
+        ccsdt_2_line="! {} cc-pVQZ {} {} {} {}".format(ccsdtkeyword, auxbasis, pnosetting, scfsetting,extrainputkeyword)
+    elif cardinals == "2/3" and basisfamily=="aug-cc":
+        #Auxiliary basis set.
+        auxbasis='aug-cc-pVQZ/C'
+        ccsdt_1_line="! {} aug-cc-pVDZ {} {} {} {}".format(ccsdtkeyword, auxbasis, pnosetting, scfsetting,extrainputkeyword)
+        ccsdt_2_line="! {} aug-cc-pVTZ {} {} {} {}".format(ccsdtkeyword, auxbasis, pnosetting, scfsetting,extrainputkeyword)
+    elif cardinals == "3/4" and basisfamily=="aug-cc":
+        #Auxiliary basis set.
+        auxbasis='aug-cc-pV5Z/C'
+        ccsdt_1_line="! {} aug-cc-pVTZ {} {} {} {}".format(ccsdtkeyword, auxbasis, pnosetting, scfsetting,extrainputkeyword)
+        ccsdt_2_line="! {} aug-cc-pVQZ {} {} {} {}".format(ccsdtkeyword, auxbasis, pnosetting, scfsetting,extrainputkeyword)
+    elif cardinals == "4/5" and basisfamily=="cc":
+        #Auxiliary basis set.
+        auxbasis='cc-pV5Z/C'
+        ccsdt_1_line="! {} cc-pVQZ {} {} {} {}".format(ccsdtkeyword, auxbasis, pnosetting, scfsetting,extrainputkeyword)
+        ccsdt_2_line="! {} cc-pV5Z {} {} {} {}".format(ccsdtkeyword, auxbasis, pnosetting, scfsetting,extrainputkeyword)
+    elif cardinals == "4/5" and basisfamily=="aug-cc":
+        #Auxiliary basis set.
+        auxbasis='aug-cc-pV5Z/C'
+        ccsdt_1_line="! {} aug-cc-pVQZ {} {} {} {}".format(ccsdtkeyword, auxbasis, pnosetting, scfsetting,extrainputkeyword)
+        ccsdt_2_line="! {} aug-cc-pV5Z {} {} {} {}".format(ccsdtkeyword, auxbasis, pnosetting, scfsetting,extrainputkeyword)
+        #TODO Note: 4/5 cc/aug-cc basis sets are available but we need extrapolation parameters
+    
+    #Adding special-ECP basis like cc-pVnZ-PP for heavy elements if present
+    blocks1 = special_element_basis(fragment,cardinals_list[0],basisfamily,blocks)
+    blocks2 = special_element_basis(fragment,cardinals_list[1],basisfamily,blocks)
+    
+    
+    #Defining two theory objects for each basis set
+    ccsdt_1 = ash.ORCATheory(orcadir=orcadir, orcasimpleinput=ccsdt_1_line, orcablocks=blocks1, nprocs=numcores, charge=charge, mult=mult)
+    ccsdt_2 = ash.ORCATheory(orcadir=orcadir, orcasimpleinput=ccsdt_2_line, orcablocks=blocks2, nprocs=numcores, charge=charge, mult=mult)
+
+    #Running both theories
+    ash.Singlepoint(fragment=fragment, theory=ccsdt_1)
+    CCSDT_1_dict = grab_HF_and_corr_energies('orca-input.out', DLPNO=DLPNO)
+    shutil.copyfile('orca-input.out', './' + calc_label + 'CCSDT_1' + '.out')
+    print("CCSDT_1_dict:", CCSDT_1_dict)
+
+    ash.Singlepoint(fragment=fragment, theory=ccsdt_2)
+    CCSDT_2_dict = grab_HF_and_corr_energies('orca-input.out', DLPNO=DLPNO)
+    shutil.copyfile('orca-input.out', './' + calc_label + 'CCSDT_2' + '.out')
+    print("CCSDT_2_dict:", CCSDT_2_dict)
+
+
+    #List of all SCF energies (DZ,TZ,QZ), all CCSD-corr energies (DZ,TZ,QZ) and all (T) corr energies (DZ,TZ)
+    scf_energies = [CCSDT_1_dict['HF'], CCSDT_2_dict['HF']]
+    ccsdcorr_energies = [CCSDT_1_dict['CCSD_corr'], CCSDT_2_dict['CCSD_corr']]
+    triplescorr_energies = [CCSDT_1_dict['CCSD(T)_corr'], CCSDT_2_dict['CCSD(T)_corr']]
+
+    #Here combining corr energies in a silly way
+    corr_energies = list(np.array(ccsdcorr_energies)+np.array(triplescorr_energies))
 
     print("")
-    print("ML Geometry Optimization done")
-    print("ML_energies: ", ML_energies)
+    print("scf_energies :", scf_energies)
+    print("ccsdcorr_energies :", ccsdcorr_energies)
+    print("triplescorr_energies :", triplescorr_energies)
+    print("corr_energies :", corr_energies)
+    
+    #Extrapolations
+    # TODO: Extrapolation formula appropriate for separate CCSD and triples extraplation ?? Use W1 formulas instead?
+    E_SCF_CBS, E_corrCC_CBS = Extrapolation_twopoint(scf_energies, corr_energies, cardinals_list, basisfamily) #2-point extrapolation
+    E_SCF_CBS, E_corrCCSD_CBS = Extrapolation_twopoint(scf_energies, ccsdcorr_energies, cardinals_list, basisfamily) #2-point extrapolation
+    E_SCF_CBS, E_corrCCT_CBS = Extrapolation_twopoint(scf_energies, triplescorr_energies, cardinals_list, basisfamily) #2-point extrapolation
+    print("E_SCF_CBS:", E_SCF_CBS)
+    print("E_corrCC_CBS:", E_corrCC_CBS)
+    print("E_corrCCSD_CBS:", E_corrCCSD_CBS)
+    print("E_corrCCT_CBS:", E_corrCCT_CBS)
+    E_total_CC = E_SCF_CBS + E_corrCC_CBS
+    
+    
+    
+    ############################################################
+    #Core-correlation + scalar relativistic as joint correction
+    ############################################################
+    #DISABLED FOR NOW
 
-    #4.Run high-level thery. Provide HLtheory object (typically ORCATheory)
-    HL_energies=[]
-    for index,conformer in enumerate(list_conformer_frags):
-        print("")
-        print("Performing High-level calculation for ML-optimized Conformer ", index)
-        HLenergy = ash.Singlepoint(theory=HLtheory, fragment=conformer)
-        HL_energies.append(HLenergy)
-
-
+    ############################################################
+    #Spin-orbit correction for atoms.
+    ############################################################
+    #DISABLED FOR NOW
+    
+    ############################################################
+    #FCI extrapolation via Goodson
+    ############################################################
+    print("FCI extrapolation by Goodson in use")
+    #Here using CBS-values for SCF, CCSD-corr and (T)-corr.
+    E_FCI_CBS = FCI_extrapolation([E_SCF_CBS, E_corrCCSD_CBS, E_corrCCT_CBS])
+    
+    
+    ############################################################
+    #FINAL RESULT PRINTING
+    ############################################################
     print("")
-    print("=================")
-    print("FINAL RESULTS")
-    print("=================")
-
-    #Printing total energies
     print("")
-    print(" Conformer   xTB-energy    ML-energy    HL-energy (Eh)")
-    print("----------------------------------------------------------------")
 
-    min_xtbenergy=min(xtb_energies)
-    min_MLenergy=min(ML_energies)
-    min_HLenergy=min(HL_energies)
-
-    for index,(xtb_en,ML_en,HL_en) in enumerate(zip(xtb_energies,ML_energies, HL_energies)):
-        print("{:10} {:13.10f} {:13.10f} {:13.10f}".format(index,xtb_en, ML_en, HL_en))
-
+    print("Final FCI/CBS energy :", E_FCI_CBS, "Eh")
     print("")
-    #Printing relative energies
-    min_xtbenergy=min(xtb_energies)
-    min_MLenergy=min(ML_energies)
-    min_HLenergy=min(HL_energies)
-    harkcal = 627.50946900
-    print(" Conformer   xTB-energy    ML-energy    HL-energy (kcal/mol)")
-    print("----------------------------------------------------------------")
-    for index,(xtb_en,ML_en,HL_en) in enumerate(zip(xtb_energies,ML_energies, HL_energies)):
-        rel_xtb=(xtb_en-min_xtbenergy)*harkcal
-        rel_ML=(ML_en-min_MLenergy)*harkcal
-        rel_HL=(HL_en-min_HLenergy)*harkcal
-        print("{:10} {:13.10f} {:13.10f} {:13.10f}".format(index,rel_xtb, rel_ML, rel_HL))
+    print("Contributions:")
+    print("--------------")
+    print("E_SCF_CBS : ", E_SCF_CBS)
+    print("E_corrCC_CBS : ", E_corrCC_CBS)
+    print("CCSD(T)/CBS energy :", E_total_CC, "Eh")
+    print("FCI correction : ", E_FCI_CBS-E_total_CC, "Eh")
+    print("FCI correlation energy : ", E_FCI_CBS-E_SCF_CBS, "Eh")
+    E_dict = {'Total_E' : E_FCI_CBS, 'E_SCF_CBS' : E_SCF_CBS, 'E_corrCC_CBS' : E_corrCC_CBS, 'E_total_CC': E_total_CC}
 
+
+    #Cleanup GBW file. Full cleanup ??
+    # TODO: Keep output files for each step
+    os.remove('orca-input.gbw')
+
+    #return final energy and also dictionary with energy components
+    return E_FCI_CBS, E_dict
+
+
+
+
+
+
+
+
+  
+
+#FCI-F12 protocol. No core-correlation, scalar relativistic or spin-orbit coupling for now.
+# Extrapolates CC series to Full-CI and uses F12 to deal with basis set limit
+#Limitation: availability of F12 basis sets for H-Ar only.
+def FCI_F12(F12level='DZ', fragment=None, charge=None, orcadir=None, mult=None, stabilityanalysis=False, numcores=1,
+                      memory=5000, DLPNO=True, pnosetting='NormalPNO', pnoextrapolation=[5,6], scfsetting='TightSCF', extrainputkeyword='', extrablocks='', **kwargs):
+    """
+    WORK IN PROGRESS
+    FCI/CBS frozencore workflow
+
+    :param fragment: ASH fragment
+    :param charge: Charge of fragment (to be replaced)?
+    :param orcadir: ORCA directory
+    :param mult: Multiplicity of fragment (to be replaced)?
+    :param stabilityanalysis: stability analysis on or off.
+    :param numcores: number of cores
+    :param memory: Memory in MB
+    :param scfsetting: ORCA keyword (e.g. NormalSCF, TightSCF, VeryTightSCF)
+    :param pnosetting: ORCA keyword: NormalPNO, LoosePNO, TightPNO or extrapolation
+    :param pnoextrapolation: [5,6] or [6,7] for TCutPNO extrapolation
+    :return: energy and dictionary with energy-components
+    """
+    # If run_benchmark or other passed workflow_args then use them instead
+    if 'workflow_args' in kwargs:
+        print("Workflow args passed")
+        workflow_args=kwargs['workflow_args']      
+        if 'stabilityanalysis' in workflow_args:
+            stabilityanalysis=workflow_args['stabilityanalysis']
+        if 'pnosetting' in workflow_args:
+            pnosetting=workflow_args['pnosetting']
+        if 'F12level' in workflow_args:
+            F12level=workflow_args['F12level']
+        if 'scfsetting' in workflow_args:
+            scfsetting=workflow_args['scfsetting']
+        if 'memory' in workflow_args:
+            memory=workflow_args['memory']
+        if 'extrainputkeyword' in workflow_args:
+            extrainputkeyword=workflow_args['extrainputkeyword']
+        if 'extrablocks' in workflow_args:
+            extrablocks=workflow_args['extrablocks']
+
+    print("-----------------------------")
+    print("FCI_F12 PROTOCOL")
+    print("-----------------------------")
+    print("Settings:")
+    print("F12level :", F12level)
+    print("Number of cores: ", numcores)
+    print("Maxcore setting: ", memory, "MB")
     print("")
-    print("Workflow done!")
+    print("PNO setting: ", pnosetting)
+    print("SCF setting: ", scfsetting)
+    print("Stability analysis:", stabilityanalysis)
+    print("")
+    print("fragment:", fragment)
+    calc_label = "Frag" + str(fragment.formula) + "_" + str(fragment.charge) + "_"
+    print("Calculation label: ", calc_label)
+
+    numelectrons = int(fragment.nuccharge - charge)
+    #Reduce numcores if required
+    numcores = check_cores_vs_electrons(fragment,numcores,charge)
+
+    #if 1-electron species like Hydrogen atom then we either need to code special HF-based procedure or just hardcode values
+    #Currently hardcoding H-atom case. Replace with proper extrapolated value later.
+    if numelectrons == 1:
+        print("Number of electrons is 1")
+        print("Assuming hydrogen atom and skipping calculation")
+        E_total = -0.500000
+        print("Using hardcoded value: ", E_total)
+        E_dict = {'Total_E': E_total, 'E_SCF_CBS': E_total, 'E_CCSDcorr_CBS': 0.0,
+                  'E_triplescorr_CBS': 0.0, 'E_corecorr_and_SR': 0.0, 'E_SO': 0.0}
+        return E_total, E_dict
+
+
+    #Block input for SCF/MDCI block options.
+    #Disabling FullLMP2 guess in general as not available for open-shell
+    #Adding memory and extrablocks.
+    blocks="""
+%maxcore {}
+%scf
+maxiter 1200
+end
+%mdci
+UseFullLMP2Guess false
+maxiter 150
+end
+{}
+
+""".format(memory,extrablocks)
+    if stabilityanalysis is True:
+        blocks = blocks + "%scf stabperform true end"
+
+
+    #Whether to use iterative triples or not. Default: regular DLPNO-CCSD(T)
+    if DLPNO is True:
+        ccsdtkeyword='DLPNO-CCSD(T)-F12'
+    else:
+        ccsdtkeyword='CCSD(T)-F12/RI'
+        pnosetting=""
+
+
+    #Auxiliary basis set. One big one
+    auxbasis='cc-pV5Z/C'
+
+
+    ############################################################s
+    #Frozen-core F12 calcs
+    ############################################################
+
+    ccsdt_f12_line="! {} cc-pV{}-F12 cc-pV{}-F12-CABS {} {} {} {}".format(ccsdtkeyword, F12level, F12level,auxbasis, pnosetting, scfsetting,extrainputkeyword)
+    ccsdt_f12 = ash.ORCATheory(orcadir=orcadir, orcasimpleinput=ccsdt_f12_line, orcablocks=blocks, nprocs=numcores, charge=charge, mult=mult)
+
+    #PNO extrapolation or not
+    if pnosetting=="extrapolation":
+        E_SCF_CBS, E_corrCCSD_CBS, E_corrCCT_CBS,E_corrCC_CBS = PNOExtrapolationStep(fragment=fragment, theory=ccsdt_f12, pnoextrapolation=pnoextrapolation, DLPNO=True, F12=True)
+        
+    #Regular single-PNO-setting job
+    else:
+        ash.Singlepoint(fragment=fragment, theory=ccsdt_f12)
+        CCSDT_F12_dict = grab_HF_and_corr_energies('orca-input.out', DLPNO=DLPNO,F12=True)
+    
+        shutil.copyfile('orca-input.out', './' + calc_label + 'CCSDT_F12' + '.out')
+        print("CCSDT_F12_dict:", CCSDT_F12_dict)
+
+        #List of  SCF energy, CCSDcorr energy, (T)corr energy
+        E_SCF_CBS = CCSDT_F12_dict['HF']
+        E_corrCCSD_CBS = CCSDT_F12_dict['CCSD_corr']
+        E_corrCCT_CBS = CCSDT_F12_dict['CCSD(T)_corr']
+        E_corrCC_CBS = E_corrCCSD_CBS + E_corrCCT_CBS
+
+
+    E_total_CC = E_SCF_CBS + E_corrCC_CBS
+    
+    
+    
+    ############################################################
+    #Core-correlation + scalar relativistic as joint correction
+    ############################################################
+    #DISABLED FOR NOW
+    
+    ############################################################
+    #Spin-orbit correction for atoms.
+    ############################################################
+    #DISABLED FOR NOW
+    
+    ############################################################
+    #FCI extrapolation via Goodson
+    ############################################################
+    print("FCI extrapolation by Goodson in use")
+    #Here using CBS-values for SCF, CCSD-corr and (T)-corr.
+    E_FCI_CBS = FCI_extrapolation([E_SCF_CBS, E_corrCCSD_CBS, E_corrCCT_CBS])
+    
+    
+    ############################################################
+    #FINAL RESULT PRINTING
+    ############################################################
+    print("")
+    print("")
+
+    print("Final FCI/CBS energy :", E_FCI_CBS, "Eh")
+    print("")
+    print("Contributions:")
+    print("--------------")
+    print("E_SCF_CBS : ", E_SCF_CBS)
+    print("E_corrCC_CBS : ", E_corrCC_CBS)
+    print("CCSD(T)/CBS energy :", E_total_CC, "Eh")
+    print("FCI correction : ", E_FCI_CBS-E_total_CC, "Eh")
+    print("FCI correlation energy : ", E_FCI_CBS-E_SCF_CBS, "Eh")
+    E_dict = {'Total_E' : E_FCI_CBS, 'E_SCF_CBS' : E_SCF_CBS, 'E_corrCC_CBS' : E_corrCC_CBS, 'E_total_CC': E_total_CC}
+
+
+    #Cleanup GBW file. Full cleanup ??
+    # TODO: Keep output files for each step
+    os.remove('orca-input.gbw')
+
+    #return final energy and also dictionary with energy components
+    return E_FCI_CBS, E_dict

@@ -170,32 +170,42 @@ def grab_HF_and_corr_energies(file, DLPNO=False, F12=False):
                 if 'E(0)                                       ...' in line:
                     HF_energy=float(line.split()[-1])
                     edict['HF'] = HF_energy
+                    
+
             if DLPNO is True:
                 if F12 is True:
                     if 'Final F12 correlation energy               ...' in line:
                         CCSDcorr_energy=float(line.split()[-1])
-                        edict['CCSD_corr'] = CCSDcorr_energy                    
+                        edict['CCSD_corr'] = CCSDcorr_energy
+                        edict['full_corr'] = CCSDcorr_energy
                 else:    
                     if 'E(CORR)(corrected)                         ...' in line:
                         CCSDcorr_energy=float(line.split()[-1])
                         edict['CCSD_corr'] = CCSDcorr_energy
+                        edict['full_corr'] = CCSDcorr_energy
             else:
                 if F12 is True:
                     if 'Final F12 correlation energy               ...' in line:
                         CCSDcorr_energy=float(line.split()[-1])
                         edict['CCSD_corr'] = CCSDcorr_energy
+                        edict['full_corr'] = CCSDcorr_energy
                 else:        
                     if 'E(CORR)                                    ...' in line:
                         CCSDcorr_energy=float(line.split()[-1])
                         edict['CCSD_corr'] = CCSDcorr_energy
+                        edict['full_corr'] = CCSDcorr_energy
+                        
+
             if DLPNO is True:
                 if 'Triples Correction (T)                     ...' in line:
                     CCSDTcorr_energy=float(line.split()[-1])
                     edict['CCSD(T)_corr'] = CCSDTcorr_energy
+                    edict['full_corr'] = CCSDcorr_energy+CCSDTcorr_energy
             else:
                 if 'Scaled triples correction (T)              ...' in line:
                     CCSDTcorr_energy=float(line.split()[-1])
                     edict['CCSD(T)_corr'] = CCSDTcorr_energy
+                    edict['full_corr'] = CCSDcorr_energy+CCSDTcorr_energy
             if 'T1 diagnostic                              ...' in line:
                 T1diag = float(line.split()[-1])
                 edict['T1diag'] = T1diag
