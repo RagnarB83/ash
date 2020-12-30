@@ -2593,6 +2593,8 @@ end
     blocks1 = special_element_basis(fragment,cardinals[0],basisfamily,blocks)
     blocks2 = special_element_basis(fragment,cardinals[1],basisfamily,blocks)
     
+    #Check if we are using an ECP
+    ECPflag=isECP(blocks1)
     
     #Defining two theory objects for each basis set
     ccsdt_1 = ash.ORCATheory(orcadir=orcadir, orcasimpleinput=ccsdt_1_line, orcablocks=blocks1, nprocs=numcores, charge=charge, mult=mult)
@@ -2640,7 +2642,32 @@ end
     ############################################################
     #Core-correlation + scalar relativistic as joint correction
     ############################################################
-    #DISABLED FOR NOW
+    if CVSR is True:
+        print("")
+        print("Core-Valence Scalar Relativistic Correction is on!")
+        #TODO: We should only do CV if we are doing all-electron calculations. If we have heavy element then we have probably added an ECP (specialbasisfunction)
+        # Switch to doing only CV correction in that case ?
+        # TODO: Option if W1-mtsmall basis set is not available?
+        
+        if ECPflag is True:
+            print("ECPs present. Not doing ScalarRelativistic Correction. Switching to Core-Valence Correction only.")
+            cvbasis="W1-mtsmall"
+            reloption=" "
+            pnooption="NormalPNO"
+            print("Doing CVSR_Step with No Scalar Relativity and CV-basis: {} and PNO-option: {}".format(cvbasis,pnooption))
+            E_corecorr_and_SR = CV_Step(cvbasis,reloption,ccsdtkeyword,auxbasis,pnooption,scfsetting,extrainputkeyword,orcadir,blocks,numcores,charge,mult,fragment,calc_label)
+        else:
+            cvbasis="W1-mtsmall"
+            reloption="DKH"
+            pnooption="NormalPNO"
+            print("Doing CVSR_Step with Relativistic Option: {} and CV-basis: {} and PNO-option: {}".format(reloption,cvbasis,pnooption))
+            E_corecorr_and_SR = CVSR_Step(cvbasis,reloption,ccsdtkeyword,auxbasis,pnooption,scfsetting,extrainputkeyword,orcadir,blocks,numcores,charge,mult,fragment,calc_label)
+            
+        
+    else:
+        print("")
+        print("Core-Valence Scalar Relativistic Correction is off!")
+        E_corecorr_and_SR=0.0
 
     ############################################################
     #Spin-orbit correction for atoms.
@@ -2665,9 +2692,11 @@ end
     ############################################################
     #FINAL RESULT PRINTING
     ############################################################
-    
     #Combining E_FCI_CBS + SO + CV+SR
-    E_FINAL = E_FCI_CBS+E_SO
+    print("")
+    print("")
+    E_FINAL = E_FCI_CBS + E_SO + E_corecorr_and_SR
+
     print("")
     print("")
 
@@ -2681,7 +2710,8 @@ end
     print("FCI correction : ", E_FCI_CBS-E_total_CC, "Eh")
     print("FCI correlation energy : ", E_FCI_CBS-E_SCF_CBS, "Eh")
     print("Spin-orbit coupling : ", E_SO, "Eh")
-    E_dict = {'Total_E' : E_FINAL, 'E_FCI_CBS' : E_FCI_CBS, 'E_SCF_CBS' : E_SCF_CBS, 'E_corrCC_CBS' : E_corrCC_CBS, 'E_total_CC': E_total_CC, 'E_SO' : E_SO}
+    print("E_corecorr_and_SR : ", E_corecorr_and_SR, "Eh")
+    E_dict = {'Total_E' : E_FINAL, 'E_FCI_CBS' : E_FCI_CBS, 'E_SCF_CBS' : E_SCF_CBS, 'E_corrCC_CBS' : E_corrCC_CBS, 'E_total_CC': E_total_CC, 'E_SO' : E_SO, 'E_corecorr_and_SR' : E_corecorr_and_SR}
 
 
     #Cleanup GBW file. Full cleanup ??
@@ -2836,7 +2866,32 @@ end
     ############################################################
     #Core-correlation + scalar relativistic as joint correction
     ############################################################
-    #DISABLED FOR NOW
+    if CVSR is True:
+        print("")
+        print("Core-Valence Scalar Relativistic Correction is on!")
+        #TODO: We should only do CV if we are doing all-electron calculations. If we have heavy element then we have probably added an ECP (specialbasisfunction)
+        # Switch to doing only CV correction in that case ?
+        # TODO: Option if W1-mtsmall basis set is not available?
+        
+        if ECPflag is True:
+            print("ECPs present. Not doing ScalarRelativistic Correction. Switching to Core-Valence Correction only.")
+            cvbasis="W1-mtsmall"
+            reloption=" "
+            pnooption="NormalPNO"
+            print("Doing CVSR_Step with No Scalar Relativity and CV-basis: {} and PNO-option: {}".format(cvbasis,pnooption))
+            E_corecorr_and_SR = CV_Step(cvbasis,reloption,ccsdtkeyword,auxbasis,pnooption,scfsetting,extrainputkeyword,orcadir,blocks,numcores,charge,mult,fragment,calc_label)
+        else:
+            cvbasis="W1-mtsmall"
+            reloption="DKH"
+            pnooption="NormalPNO"
+            print("Doing CVSR_Step with Relativistic Option: {} and CV-basis: {} and PNO-option: {}".format(reloption,cvbasis,pnooption))
+            E_corecorr_and_SR = CVSR_Step(cvbasis,reloption,ccsdtkeyword,auxbasis,pnooption,scfsetting,extrainputkeyword,orcadir,blocks,numcores,charge,mult,fragment,calc_label)
+            
+        
+    else:
+        print("")
+        print("Core-Valence Scalar Relativistic Correction is off!")
+        E_corecorr_and_SR=0.0
     
     ############################################################
     #Spin-orbit correction for atoms.
@@ -2860,7 +2915,7 @@ end
     #FINAL RESULT PRINTING
     ############################################################
     #Combining E_FCI_CBS + SO + CV+SR
-    E_FINAL = E_FCI_CBS+E_SO
+    E_FINAL = E_FCI_CBS + E_SO + E_corecorr_and_SR
     print("")
     print("")
 
@@ -2874,7 +2929,8 @@ end
     print("FCI correction : ", E_FCI_CBS-E_total_CC, "Eh")
     print("FCI correlation energy : ", E_FCI_CBS-E_SCF_CBS, "Eh")
     print("Spin-orbit coupling : ", E_SO, "Eh")
-    E_dict = {'Total_E' : E_FINAL, 'E_FCI_CBS' : E_FCI_CBS, 'E_SCF_CBS' : E_SCF_CBS, 'E_corrCC_CBS' : E_corrCC_CBS, 'E_total_CC': E_total_CC, 'E_SO' : E_SO}
+    print("E_corecorr_and_SR : ", E_corecorr_and_SR, "Eh")
+    E_dict = {'Total_E' : E_FINAL, 'E_FCI_CBS' : E_FCI_CBS, 'E_SCF_CBS' : E_SCF_CBS, 'E_corrCC_CBS' : E_corrCC_CBS, 'E_total_CC': E_total_CC, 'E_SO' : E_SO, 'E_corecorr_and_SR' : E_corecorr_and_SR}
 
 
     #Cleanup GBW file. Full cleanup ??
