@@ -15,6 +15,30 @@ from elstructure_functions import check_cores_vs_electrons, num_core_electrons
 
 #Various workflows, extrapolations, composite methods and associated sub-functions
 
+
+
+#If heavy element present and using cc/aug-cc basisfamily then add special PP-basis and ECP in block
+def special_element_basis(fragment,cardinal,basisfamily,blocks):
+    basis_dict = {('cc',2) : "cc-pVDZ-PP", ('aug-cc',2) : "aug-cc-pVDZ-PP", ('cc',3) : "cc-pVTZ-PP", ('aug-cc',3) : "aug-cc-pVTZ-PP", ('cc',4) : "cc-pVQZ-PP", ('aug-cc',4) : "aug-cc-pVQZ-PP"}
+    auxbasis_dict = {('cc',2) : "cc-pVDZ-PP/C", ('aug-cc',2) : "aug-cc-pVDZ-PP/C", ('cc',3) : "cc-pVTZ-PP/C", ('aug-cc',3) : "aug-cc-pVTZ-PP/C", ('cc',4) : "cc-pVQZ-PP/C", ('aug-cc',4) : "aug-cc-pVQZ-PP/C"}
+    for element in fragment.elems:
+        if element in ['Rb', 'Sr','Y','Zr', 'Nb', 'Mo', 'Tc', 'Ru', 'Rh','Pd','Ag','Cd', 'In', 'Sn', 'Sb', 'Te', 'I', 'Xe', 'Cs', 'Ba',
+                        'Hf', 'Ta', 'W', 'Re', 'Os', 'Ir', 'Pt', 'Au', 'Hg', 'Tl', 'Pb', 'Bi', 'Po', 'At', 'Rn']:
+            if 'cc' in basisfamily:
+                specialbasis = basis_dict[(basisfamily,cardinal)]
+                specialauxbasis = auxbasis_dict[(basisfamily,cardinal)]
+                blocks = blocks + "\n%basis\n newgto {} \"{}\" end\n newecp {} \"SK-MCDHF-RSC\" end\nnewauxCGTO {} \"{}\" end \nend\n".format(element,specialbasis,element, element, specialauxbasis)
+    return blocks
+
+#Check if ECP-option was added by special_element_basis
+def isECP(blocks):
+    if 'newecp' in blocks:
+        print("ECP information was added for heavy element")
+        return True
+    else:
+        print("No ECP information was added")
+        return False
+
 #Bistoni PNO extrapolation: https://pubs.acs.org/doi/10.1021/acs.jctc.0c00344
 def PNO_extrapolation(E):
     """ PNO extrapolation by Bistoni and coworkers
@@ -92,6 +116,24 @@ def PNOExtrapolationStep(fragment=None, theory=None, pnoextrapolation=None, DLPN
     
     return E_SCF, E_corrCCSD_final, E_corrCCT_final, E_corrCC_final
 
+#Core-Valence ScalarRelativistic Step
+def CVSR_Step(cvbasis,reloption,ccsdtkeyword,auxbasis,pnooption,scfsetting,extrainputkeyword,orcadir,blocks,numcores,charge,mult,fragment,calc_label):
+    
+    ccsdt_mtsmall_NoFC_line="! {} {} {}   nofrozencore {} {} {} {}".format(ccsdtkeyword,reloption,cvbasis,auxbasis,pnooption,scfsetting,extrainputkeyword)
+    ccsdt_mtsmall_FC_line="! {} {}  {} {} {} {}".format(ccsdtkeyword,cvbasis,auxbasis,pnooption,scfsetting,extrainputkeyword)
+
+    ccsdt_mtsmall_NoFC = ash.ORCATheory(orcadir=orcadir, orcasimpleinput=ccsdt_mtsmall_NoFC_line, orcablocks=blocks, nprocs=numcores, charge=charge, mult=mult)
+    ccsdt_mtsmall_FC = ash.ORCATheory(orcadir=orcadir, orcasimpleinput=ccsdt_mtsmall_FC_line, orcablocks=blocks, nprocs=numcores, charge=charge, mult=mult)
+
+    energy_ccsdt_mtsmall_nofc = ash.Singlepoint(fragment=fragment, theory=ccsdt_mtsmall_NoFC)
+    shutil.copyfile('orca-input.out', './' + calc_label + 'CCSDT_MTsmall_NoFC_DKH' + '.out')
+    energy_ccsdt_mtsmall_fc = ash.Singlepoint(fragment=fragment, theory=ccsdt_mtsmall_FC)
+    shutil.copyfile('orca-input.out', './' + calc_label + 'CCSDT_MTsmall_FC_noDKH' + '.out')
+
+    #Core-correlation is total energy difference between NoFC-DKH and FC-norel
+    E_corecorr_and_SR = energy_ccsdt_mtsmall_nofc - energy_ccsdt_mtsmall_fc
+    print("E_corecorr_and_SR:", E_corecorr_and_SR)
+    return E_corecorr_and_SR
 
 
 
@@ -2092,7 +2134,7 @@ def calc_surface_fromXYZ(xyzdir=None, theory=None, dimension=None, resultfile=No
 
 
 #DLPNO-test CBS protocol. Simple. No core-correlation, scalar relativistic or spin-orbit coupling for now
-def DLPNO_CC_CBS_SP(cardinals = [2,3], basisfamily="def2", fragment=None, charge=None, orcadir=None, mult=None, stabilityanalysis=False, numcores=1,
+def DLPNO_CC_CBS_SP(cardinals = [2,3], basisfamily="def2", fragment=None, charge=None, orcadir=None, mult=None, stabilityanalysis=False, numcores=1, CVSR=False,
                       memory=5000, pnosetting='NormalPNO', pnoextrapolation=[5,6], T1=False, scfsetting='TightSCF', extrainputkeyword='', extrablocks='', **kwargs):
     """
     WORK IN PROGRESS
@@ -2107,6 +2149,7 @@ def DLPNO_CC_CBS_SP(cardinals = [2,3], basisfamily="def2", fragment=None, charge
     :param memory: Memory in MB
     :param scfsetting: ORCA keyword (e.g. NormalSCF, TightSCF, VeryTightSCF)
     :param pnosetting: ORCA keyword: NormalPNO, LoosePNO, TightPNO or extrapolation
+    :param pnoextrapolation: list. e.g. [5,6]
     ;param T1: Boolean (whether to do expensive iterative triples or not)
     :return: energy and dictionary with energy-components
     """
@@ -2143,9 +2186,12 @@ def DLPNO_CC_CBS_SP(cardinals = [2,3], basisfamily="def2", fragment=None, charge
     print("Maxcore setting: ", memory, "MB")
     print("")
     print("PNO setting: ", pnosetting)
+    if pnosetting == "extrapolation":
+        print("pnoextrapolation:", pnoextrapolation)
     print("T1 : ", T1)
     print("SCF setting: ", scfsetting)
     print("Stability analysis:", stabilityanalysis)
+    print("Core-Valence Scalar Relativistic correction (CVSR): ", CVSR)
     print("")
     print("fragment:", fragment)
     calc_label = "Frag" + str(fragment.formula) + "_" + str(fragment.charge) + "_"
@@ -2192,25 +2238,12 @@ end
         ccsdtkeyword='DLPNO-CCSD(T1)'
     else:
         ccsdtkeyword='DLPNO-CCSD(T)'
-    #PNO keyword in inputline or not
+        
+    #Add PNO keyword in simpleinputline or not (if extrapolation)
     if pnosetting != "extrapolation":
         pnokeyword=pnosetting
     else:
         pnokeyword=""
-
-    #If heavy element present and using cc/aug-cc basisfamily then add special PP-basis and ECP in block
-    def special_element_basis(fragment,cardinal,basisfamily,blocks):
-        basis_dict = {('cc',2) : "cc-pVDZ-PP", ('aug-cc',2) : "aug-cc-pVDZ-PP", ('cc',3) : "cc-pVTZ-PP", ('aug-cc',3) : "aug-cc-pVTZ-PP", ('cc',4) : "cc-pVQZ-PP", ('aug-cc',4) : "aug-cc-pVQZ-PP"}
-        auxbasis_dict = {('cc',2) : "cc-pVDZ-PP/C", ('aug-cc',2) : "aug-cc-pVDZ-PP/C", ('cc',3) : "cc-pVTZ-PP/C", ('aug-cc',3) : "aug-cc-pVTZ-PP/C", ('cc',4) : "cc-pVQZ-PP/C", ('aug-cc',4) : "aug-cc-pVQZ-PP/C"}
-        for element in fragment.elems:
-            #TODO: Add 3rd-row elements and more
-            if element in ['Rb', 'Sr','Y','Zr', 'Nb', 'Mo', 'Tc', 'Ru', 'Rh','Pd','Ag','Cd', 'In', 'Sn', 'Sb', 'Te', 'I', 'Xe', 'Cs', 'Ba',
-                            'Hf', 'Ta', 'W', 'Re', 'Os', 'Ir', 'Pt', 'Au', 'Hg', 'Tl', 'Pb', 'Bi', 'Po', 'At', 'Rn']:
-                if 'cc' in basisfamily:
-                    specialbasis = basis_dict[(basisfamily,cardinal)]
-                    specialauxbasis = auxbasis_dict[(basisfamily,cardinal)]
-                    blocks = blocks + "\n%basis\n newgto {} \"{}\" end\n newecp {} \"SK-MCDHF-RSC\" end\nnewauxCGTO {} \"{}\" end \nend\n".format(element,specialbasis,element, element, specialauxbasis)
-        return blocks
 
 
 
@@ -2263,6 +2296,9 @@ end
     blocks1 = special_element_basis(fragment,cardinals[0],basisfamily,blocks)
     blocks2 = special_element_basis(fragment,cardinals[1],basisfamily,blocks)
     
+    #Check if we are using an ECP
+    ECPflag=isECP(blocks1)
+    
     
     #Defining two theory objects for each basis set
     ccsdt_1 = ash.ORCATheory(orcadir=orcadir, orcasimpleinput=ccsdt_1_line, orcablocks=blocks1, nprocs=numcores, charge=charge, mult=mult)
@@ -2305,9 +2341,9 @@ end
     print("triplescorr_energies :", triplescorr_energies)
     print("corr_energies :", corr_energies)
     
-    #Extrapolations
+    #BASIS SET EXTRAPOLATION
 
-    E_SCF_CBS, E_corr_CBS = Extrapolation_twopoint(scf_energies, corr_energies, cardinals, basisfamily) #3-point extrapolation
+    E_SCF_CBS, E_corr_CBS = Extrapolation_twopoint(scf_energies, corr_energies, cardinals, basisfamily) #2-point extrapolation
 
     print("E_SCF_CBS:", E_SCF_CBS)
     print("E_corr_CBS:", E_corr_CBS)
@@ -2315,26 +2351,57 @@ end
     ############################################################
     #Core-correlation + scalar relativistic as joint correction
     ############################################################
-    #DISABLED FOR NOW
+    if CVSR is True:
+        print("Core-Valence Scalar Relativistic Correction is on!")
+        #TODO: We should only do CV if we are doing all-electron calculations. If we have heavy element then we have probably added an ECP (specialbasisfunction)
+        # Switch to doing only CV correction in that case ?
+        # TODO: Option if W1-mtsmall basis set is not available?
+        
+        if ECPflag is True:
+            print("ECPs present. Not doing ScalarRelativistic Correction. Switching to Core-Valence Correction only.")
+            cvbasis="W1-mtsmall"
+            reloption=" "
+            pnooption="NormalPNO"
+            print("Doing CVSR_Step with No Scalar Relativity and CV-basis: {} and PNO-option: {}".format(cvbasis,pnooption))
+            E_corecorr_and_SR = CV_Step(cvbasis,reloption,ccsdtkeyword,auxbasis,pnooption,scfsetting,extrainputkeyword,orcadir,blocks,numcores,charge,mult,fragment,calc_label)
+        else:
+            cvbasis="W1-mtsmall"
+            reloption="DKH"
+            pnooption="NormalPNO"
+            print("Doing CVSR_Step with Relativistic Option: {} and CV-basis: {} and PNO-option: {}".format(reloption,cvbasis,pnooption))
+            E_corecorr_and_SR = CVSR_Step(cvbasis,reloption,ccsdtkeyword,auxbasis,pnooption,scfsetting,extrainputkeyword,orcadir,blocks,numcores,charge,mult,fragment,calc_label)
+            
+        
+    else:
+        print("Core-Valence Scalar Relativistic Correction is off!")
+        E_corecorr_and_SR=0.0
 
     ############################################################
     #Spin-orbit correction for atoms.
     ############################################################
-    #DISABLED FOR NOW
+    if fragment.numatoms == 1:
+        print("Fragment is an atom. Looking up atomic spin-orbit splitting value")
+        E_SO = dictionaries_lists.atom_spinorbitsplittings[fragment.elems[0]] / constants.hartocm
+        print("Spin-orbit correction (E_SO):", E_SO)
+    else :
+        print("No atomic spin-orbit coupling. Spin-orbit coupling energy set to zero.")
+        E_SO = 0.0
     ############################################################
     #FINAL RESULT
     ############################################################
+    #Combining E_SCF_CBS, E_corr_CBS + SO + CV+SR
     print("")
     print("")
-    E_total = E_SCF_CBS + E_corr_CBS 
-    print("Final DLPNO-CCSD(T)/CBS energy :", E_total, "Eh")
+    E_FINAL = E_SCF_CBS + E_corr_CBS + E_SO+E_corecorr_and_SR
+    print("Final DLPNO-CCSD(T)/CBS energy :", E_FINAL, "Eh")
     print("")
     print("Contributions:")
     print("--------------")
     print("E_SCF_CBS : ", E_SCF_CBS)
     print("E_corr_CBS : ", E_corr_CBS)
-
-    E_dict = {'Total_E' : E_total, 'E_SCF_CBS' : E_SCF_CBS, 'E_corr_CBS' : E_corr_CBS}
+    print("Spin-orbit coupling : ", E_SO, "Eh")
+    print("E_corecorr_and_SR : ", E_corecorr_and_SR, "Eh")
+    E_dict = {'Total_E' : E_FINAL, 'E_SCF_CBS' : E_SCF_CBS, 'E_corr_CBS' : E_corr_CBS, 'E_SO' : E_SO, 'E_corecorr_and_SR' : E_corecorr_and_SR}
 
 
     #Cleanup GBW file. Full cleanup ??
@@ -2462,22 +2529,7 @@ end
             else:
                 ccsdtkeyword='CCSD(T)'
             pnosetting=""
-    #If heavy element present and using cc/aug-cc basisfamily then add special PP-basis and ECP in block
-    def special_element_basis(fragment,cardinal,basisfamily,blocks):
-        basis_dict = {('cc',2) : "cc-pVDZ-PP", ('aug-cc',2) : "aug-cc-pVDZ-PP", ('cc',3) : "cc-pVTZ-PP", ('aug-cc',3) : "aug-cc-pVTZ-PP", ('cc',4) : "cc-pVQZ-PP", ('aug-cc',4) : "aug-cc-pVQZ-PP"}
-        auxbasis_dict = {('cc',2) : "cc-pVDZ-PP/C", ('aug-cc',2) : "aug-cc-pVDZ-PP/C", ('cc',3) : "cc-pVTZ-PP/C", ('aug-cc',3) : "aug-cc-pVTZ-PP/C", ('cc',4) : "cc-pVQZ-PP/C", ('aug-cc',4) : "aug-cc-pVQZ-PP/C"}
-        print("fragment.elems:", fragment.elems)
-        #exit()
-        for element in fragment.elems:
-            print("element:", element)
-            #TODO: Add 3rd-row elements and more
-            if element in ['Rb', 'Sr','Y','Zr', 'Nb', 'Mo', 'Tc', 'Ru', 'Rh','Pd','Ag','Cd', 'In', 'Sn', 'Sb', 'Te', 'I', 'Xe', 'Cs', 'Ba',
-                            'Hf', 'Ta', 'W', 'Re', 'Os', 'Ir', 'Pt', 'Au', 'Hg', 'Tl', 'Pb', 'Bi', 'Po', 'At', 'Rn']:
-                if 'cc' in basisfamily:
-                    specialbasis = basis_dict[(basisfamily,cardinal)]
-                    specialauxbasis = auxbasis_dict[(basisfamily,cardinal)]
-                    blocks = blocks + "\n%basis\n newgto {} \"{}\" end\n newecp {} \"SK-MCDHF-RSC\" end\nnewauxCGTO {} \"{}\" end \nend\n".format(element,specialbasis,element, element, specialauxbasis)
-        return blocks
+
 
 
     ############################################################s
@@ -2591,7 +2643,14 @@ end
     ############################################################
     #Spin-orbit correction for atoms.
     ############################################################
-    #DISABLED FOR NOW
+    if fragment.numatoms == 1:
+        print("Fragment is an atom. Looking up atomic spin-orbit splitting value")
+        E_SO = dictionaries_lists.atom_spinorbitsplittings[fragment.elems[0]] / constants.hartocm
+        print("Spin-orbit correction (E_SO):", E_SO)
+    else :
+        print("No atomic spin-orbit coupling. Spin-orbit coupling energy set to zero.")
+        E_SO = 0.0
+
     
     ############################################################
     #FCI extrapolation via Goodson
@@ -2604,10 +2663,13 @@ end
     ############################################################
     #FINAL RESULT PRINTING
     ############################################################
+    
+    #Combining E_FCI_CBS + SO + CV+SR
+    E_FINAL = E_FCI_CBS+E_SO
     print("")
     print("")
 
-    print("Final FCI/CBS energy :", E_FCI_CBS, "Eh")
+    print("Final FCI/CBS energy :", E_FINAL, "Eh")
     print("")
     print("Contributions:")
     print("--------------")
@@ -2616,7 +2678,8 @@ end
     print("CCSD(T)/CBS energy :", E_total_CC, "Eh")
     print("FCI correction : ", E_FCI_CBS-E_total_CC, "Eh")
     print("FCI correlation energy : ", E_FCI_CBS-E_SCF_CBS, "Eh")
-    E_dict = {'Total_E' : E_FCI_CBS, 'E_SCF_CBS' : E_SCF_CBS, 'E_corrCC_CBS' : E_corrCC_CBS, 'E_total_CC': E_total_CC}
+    print("Spin-orbit coupling : ", E_SO, "Eh")
+    E_dict = {'Total_E' : E_FINAL, 'E_FCI_CBS' : E_FCI_CBS, 'E_SCF_CBS' : E_SCF_CBS, 'E_corrCC_CBS' : E_corrCC_CBS, 'E_total_CC': E_total_CC, 'E_SO' : E_SO}
 
 
     #Cleanup GBW file. Full cleanup ??
@@ -2776,7 +2839,13 @@ end
     ############################################################
     #Spin-orbit correction for atoms.
     ############################################################
-    #DISABLED FOR NOW
+    if fragment.numatoms == 1:
+        print("Fragment is an atom. Looking up atomic spin-orbit splitting value")
+        E_SO = dictionaries_lists.atom_spinorbitsplittings[fragment.elems[0]] / constants.hartocm
+        print("Spin-orbit correction (E_SO):", E_SO)
+    else :
+        print("No atomic spin-orbit coupling. Spin-orbit coupling energy set to zero.")
+        E_SO = 0.0
     
     ############################################################
     #FCI extrapolation via Goodson
@@ -2785,14 +2854,15 @@ end
     #Here using CBS-values for SCF, CCSD-corr and (T)-corr.
     E_FCI_CBS = FCI_extrapolation([E_SCF_CBS, E_corrCCSD_CBS, E_corrCCT_CBS])
     
-    
     ############################################################
     #FINAL RESULT PRINTING
     ############################################################
+    #Combining E_FCI_CBS + SO + CV+SR
+    E_FINAL = E_FCI_CBS+E_SO
     print("")
     print("")
 
-    print("Final FCI/CBS energy :", E_FCI_CBS, "Eh")
+    print("Final FCI/CBS energy :", E_FINAL, "Eh")
     print("")
     print("Contributions:")
     print("--------------")
@@ -2801,7 +2871,8 @@ end
     print("CCSD(T)/CBS energy :", E_total_CC, "Eh")
     print("FCI correction : ", E_FCI_CBS-E_total_CC, "Eh")
     print("FCI correlation energy : ", E_FCI_CBS-E_SCF_CBS, "Eh")
-    E_dict = {'Total_E' : E_FCI_CBS, 'E_SCF_CBS' : E_SCF_CBS, 'E_corrCC_CBS' : E_corrCC_CBS, 'E_total_CC': E_total_CC}
+    print("Spin-orbit coupling : ", E_SO, "Eh")
+    E_dict = {'Total_E' : E_FINAL, 'E_FCI_CBS' : E_FCI_CBS, 'E_SCF_CBS' : E_SCF_CBS, 'E_corrCC_CBS' : E_corrCC_CBS, 'E_total_CC': E_total_CC, 'E_SO' : E_SO}
 
 
     #Cleanup GBW file. Full cleanup ??
