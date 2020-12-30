@@ -31,6 +31,7 @@ def PNO_extrapolation(E):
 # For theory object with DLPNO, do 2 calculations with different DLPNO thresholds and extrapolate
 def PNOExtrapolationStep(fragment=None, theory=None, pnoextrapolation=None, DLPNO=None, F12=None):
 
+    print("Inside PNOExtrapolationStep")
     PNO_X=pnoextrapolation[0]
     PNO_Y=pnoextrapolation[1]
     
@@ -60,7 +61,7 @@ def PNOExtrapolationStep(fragment=None, theory=None, pnoextrapolation=None, DLPN
     PNOXblocks = theory.orcablocks + mdciblockX
     PNOYblocks = theory.orcablocks + mdciblockY
     
-    theory.blocks = PNOXblocks
+    theory.orcablocks = PNOXblocks
     
     ash.Singlepoint(fragment=fragment, theory=theory)
     resultdict_X = grab_HF_and_corr_energies('orca-input.out', DLPNO=DLPNO,F12=F12)
@@ -69,7 +70,7 @@ def PNOExtrapolationStep(fragment=None, theory=None, pnoextrapolation=None, DLPN
 
 
     
-    theory.blocks = PNOYblocks
+    theory.orcablocks = PNOYblocks
     ash.Singlepoint(fragment=fragment, theory=theory)
     resultdict_Y = grab_HF_and_corr_energies('orca-input.out', DLPNO=DLPNO,F12=F12)
     shutil.copyfile('orca-input.out', './' + calc_label + 'PNOY' + '.out')
@@ -2266,6 +2267,8 @@ end
     
     # EXTRAPOLATION TO PNO LIMIT BY 2 PNO calculations
     if pnosetting=="extrapolation":
+        print("PNO Extrapolation option chosen.")
+        print("Will run 2 jobs with PNO thresholds TCutPNO : 1e-{} and 1e-{}".format(pnoextrapolation[0],pnoextrapolation[1]))
         E_SCF_1, E_corrCCSD_1, E_corrCCT_1,E_corrCC_1 = PNOExtrapolationStep(fragment=fragment, theory=ccsdt_1, pnoextrapolation=pnoextrapolation, DLPNO=True, F12=False)
         E_SCF_2, E_corrCCSD_2, E_corrCCT_2,E_corrCC_2 = PNOExtrapolationStep(fragment=fragment, theory=ccsdt_2, pnoextrapolation=pnoextrapolation, DLPNO=True, F12=False)
         scf_energies = [E_SCF_1, E_SCF_2]
