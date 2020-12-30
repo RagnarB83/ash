@@ -1675,8 +1675,8 @@ end
 #Thermochemistry protocol. Take list of fragments, stoichiometry, etc
 #Requires orcadir, and theory level, typically an ORCATheory object
 #Make more general. Not sure. ORCA makes most sense for geo-opt and HL theory
-def thermochemprotocol(Opt_theory=None, SPprotocol=None, fraglist=None, stoichiometry=None, orcadir=None, numcores=None,
-                       pnosetting='NormalPNO', F12level='DZ'):
+def thermochemprotocol(Opt_theory=None, SPprotocol=None, fraglist=None, stoichiometry=None, orcadir=None, numcores=None, memory=5000,
+                       pnosetting='NormalPNO', F12level='DZ', workflow_args=None):
 
     
     #DFT Opt+Freq  and Single-point High-level workflow
@@ -1702,23 +1702,23 @@ def thermochemprotocol(Opt_theory=None, SPprotocol=None, fraglist=None, stoichio
         #Single-point W1
         if SPprotocol == 'W1':
             FinalE, componentsdict = W1theory_SP(fragment=species, charge=species.charge,
-                        mult=species.mult, orcadir=orcadir, numcores=numcores, HFreference='QRO')
+                        mult=species.mult, orcadir=orcadir, numcores=numcores, HFreference='QRO', workflow_args=workflow_args)
         elif SPprotocol == 'DLPNO-W1':
             FinalE, componentsdict = DLPNO_W1theory_SP(fragment=species, charge=species.charge,
-                        mult=species.mult, orcadir=orcadir, numcores=numcores, memory=5000, pnosetting=pnosetting, T1=False)
+                        mult=species.mult, orcadir=orcadir, numcores=numcores, memory=memory, pnosetting=pnosetting, T1=False, workflow_args=workflow_args)
         elif SPprotocol == 'DLPNO-F12':
             FinalE, componentsdict = DLPNO_F12_SP(fragment=species, charge=species.charge,
-                        mult=species.mult, orcadir=orcadir, numcores=numcores, memory=5000, pnosetting=pnosetting, T1=False, F12level=F12level)
+                        mult=species.mult, orcadir=orcadir, numcores=numcores, memory=memory, pnosetting=pnosetting, T1=False, F12level=F12level, workflow_args=workflow_args)
         elif SPprotocol == 'W1-F12':
             FinalE, componentsdict = W1F12theory_SP(fragment=species, charge=species.charge,
-                        mult=species.mult, orcadir=orcadir, numcores=numcores, memory=5000, HFreference='QRO')
+                        mult=species.mult, orcadir=orcadir, numcores=numcores, memory=memory, HFreference='QRO', workflow_args=workflow_args)
         elif SPprotocol == 'DLPNO-W1-F12':
             FinalE, componentsdict = DLPNO_W1F12theory_SP(fragment=species, charge=species.charge,
-                        mult=species.mult, orcadir=orcadir, numcores=numcores, memory=5000, pnosetting=pnosetting)
+                        mult=species.mult, orcadir=orcadir, numcores=numcores, memory=memory, pnosetting=pnosetting, workflow_args=workflow_args)
         elif SPprotocol == 'DLPNO_CC_CBS':
             #TODO: Allow changing basisfamily and cardinals here?? Or should we stick with mostly simple non-changeable protocols here?
             FinalE, componentsdict = DLPNO_CC_CBS_SP(fragment=species, charge=species.charge,
-                        mult=species.mult, orcadir=orcadir, numcores=numcores, memory=5000, pnosetting=pnosetting)
+                        mult=species.mult, orcadir=orcadir, numcores=numcores, memory=memory, pnosetting=pnosetting, workflow_args=workflow_args)
         else:
             print("Unknown Singlepoint protocol")
             exit()
@@ -1733,7 +1733,7 @@ def thermochemprotocol(Opt_theory=None, SPprotocol=None, fraglist=None, stoichio
     CV_SR_parts=[dict['E_corecorr_and_SR'] for dict in list_of_dicts]
     SO_parts=[dict['E_SO'] for dict in list_of_dicts]
 
-    #Reaction Energy of total energiese and also different contributions
+    #Reaction Energy of total energies and also different contributions
     print("")
     ash.ReactionEnergy(stoichiometry=stoichiometry, list_of_fragments=fraglist, list_of_energies=scf_parts, unit='kcalpermol', label='ΔSCF')
     ash.ReactionEnergy(stoichiometry=stoichiometry, list_of_fragments=fraglist, list_of_energies=ccsd_parts, unit='kcalpermol', label='ΔCCSD')
@@ -2165,6 +2165,10 @@ def DLPNO_CC_CBS_SP(cardinals = [2,3], basisfamily="def2", fragment=None, charge
             stabilityanalysis=workflow_args['stabilityanalysis']
         if 'pnosetting' in workflow_args:
             pnosetting=workflow_args['pnosetting']
+        if 'CVSR' in workflow_args:
+            CVSR=workflow_args['CVSR']
+        if 'pnoextrapolation' in workflow_args:
+            pnoextrapolation=workflow_args['pnoextrapolation']
         if 'T1' in workflow_args:
             T1=workflow_args['T1']
         if 'scfsetting' in workflow_args:
