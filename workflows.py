@@ -29,7 +29,7 @@ def PNO_extrapolation(E):
 
 
 # For theory object with DLPNO, do 2 calculations with different DLPNO thresholds and extrapolate
-def PNOExtrapolationStep(fragment=None, theory=None, pnoextrapolation=None, DLPNO=None, F12=None):
+def PNOExtrapolationStep(fragment=None, theory=None, pnoextrapolation=None, DLPNO=None, F12=None, calc_label=None):
 
     print("Inside PNOExtrapolationStep")
     PNO_X=pnoextrapolation[0]
@@ -65,7 +65,7 @@ def PNOExtrapolationStep(fragment=None, theory=None, pnoextrapolation=None, DLPN
     
     ash.Singlepoint(fragment=fragment, theory=theory)
     resultdict_X = grab_HF_and_corr_energies('orca-input.out', DLPNO=DLPNO,F12=F12)
-    shutil.copyfile('orca-input.out', './' + calc_label + 'PNOX' + '.out')
+    shutil.copyfile('orca-input.out', './' + calc_label + '_PNOX' + '.out')
     print("resultdict_X:", resultdict_X)
 
 
@@ -73,20 +73,24 @@ def PNOExtrapolationStep(fragment=None, theory=None, pnoextrapolation=None, DLPN
     theory.orcablocks = PNOYblocks
     ash.Singlepoint(fragment=fragment, theory=theory)
     resultdict_Y = grab_HF_and_corr_energies('orca-input.out', DLPNO=DLPNO,F12=F12)
-    shutil.copyfile('orca-input.out', './' + calc_label + 'PNOY' + '.out')
+    shutil.copyfile('orca-input.out', './' + calc_label + '_PNOY' + '.out')
     print("resultdict_Y:", resultdict_Y)
     
     #Extrapolation to PNO limit
 
-    E_SCF_CBS = resultdict_Y['HF']
+    E_SCF = resultdict_Y['HF']
     #Extrapolation CCSD part and (T) separately
     # TODO: Is this correct??
-    E_corrCCSD_CBS = PNO_extrapolation([resultdict_X['CCSD_corr'],resultdict_Y['CCSD_corr']])
-    E_corrCCT_CBS = PNO_extrapolation([resultdict_X['CCSD(T)_corr'],resultdict_Y['CCSD(T)_corr']])
+    E_corrCCSD_final = PNO_extrapolation([resultdict_X['CCSD_corr'],resultdict_Y['CCSD_corr']])
+    E_corrCCT_final = PNO_extrapolation([resultdict_X['CCSD(T)_corr'],resultdict_Y['CCSD(T)_corr']])
     #Extrapolation of full correlation energy
-    E_corrCC_CBS = PNO_extrapolation([resultdict_X['full_corr'],resultdict_Y['full_corr']])
+    E_corrCC_final = PNO_extrapolation([resultdict_X['full_corr'],resultdict_Y['full_corr']])
 
-    return E_SCF_CBS, E_corrCCSD_CBS, E_corrCCT_CBS, E_corrCC_CBS
+    print("PNO extrapolated CCSD correlation energy:", E_corrCCSD_final, "Eh")
+    print("PNO extrapolated triples correlation energy:", E_corrCCT_final, "Eh")
+    print("PNO extrapolated full correlation energy:", E_corrCC_final, "Eh")
+    
+    return E_SCF, E_corrCCSD_final, E_corrCCT_final, E_corrCC_final
 
 
 
@@ -2269,8 +2273,8 @@ end
     if pnosetting=="extrapolation":
         print("PNO Extrapolation option chosen.")
         print("Will run 2 jobs with PNO thresholds TCutPNO : 1e-{} and 1e-{}".format(pnoextrapolation[0],pnoextrapolation[1]))
-        E_SCF_1, E_corrCCSD_1, E_corrCCT_1,E_corrCC_1 = PNOExtrapolationStep(fragment=fragment, theory=ccsdt_1, pnoextrapolation=pnoextrapolation, DLPNO=True, F12=False)
-        E_SCF_2, E_corrCCSD_2, E_corrCCT_2,E_corrCC_2 = PNOExtrapolationStep(fragment=fragment, theory=ccsdt_2, pnoextrapolation=pnoextrapolation, DLPNO=True, F12=False)
+        E_SCF_1, E_corrCCSD_1, E_corrCCT_1,E_corrCC_1 = PNOExtrapolationStep(fragment=fragment, theory=ccsdt_1, pnoextrapolation=pnoextrapolation, DLPNO=True, F12=False, calc_label=calc_label)
+        E_SCF_2, E_corrCCSD_2, E_corrCCT_2,E_corrCC_2 = PNOExtrapolationStep(fragment=fragment, theory=ccsdt_2, pnoextrapolation=pnoextrapolation, DLPNO=True, F12=False, calc_label=calc_label)
         scf_energies = [E_SCF_1, E_SCF_2]
         ccsdcorr_energies = [E_corrCCSD_1, E_corrCCSD_2]
         triplescorr_energies = [E_corrCCT_1, E_corrCCT_2]
@@ -2743,7 +2747,7 @@ end
 
     #PNO extrapolation or not
     if pnosetting=="extrapolation":
-        E_SCF_CBS, E_corrCCSD_CBS, E_corrCCT_CBS,E_corrCC_CBS = PNOExtrapolationStep(fragment=fragment, theory=ccsdt_f12, pnoextrapolation=pnoextrapolation, DLPNO=True, F12=True)
+        E_SCF_CBS, E_corrCCSD_CBS, E_corrCCT_CBS,E_corrCC_CBS = PNOExtrapolationStep(fragment=fragment, theory=ccsdt_f12, pnoextrapolation=pnoextrapolation, DLPNO=True, F12=True, calc_label=calc_label)
         
     #Regular single-PNO-setting job
     else:
