@@ -2087,7 +2087,7 @@ def calc_surface_fromXYZ(xyzdir=None, theory=None, dimension=None, resultfile=No
 
 
 #DLPNO-test CBS protocol. Simple. No core-correlation, scalar relativistic or spin-orbit coupling for now
-def DLPNO_CC_CBS_SP(cardinals = "2/3", basisfamily="def2", fragment=None, charge=None, orcadir=None, mult=None, stabilityanalysis=False, numcores=1,
+def DLPNO_CC_CBS_SP(cardinals = [2,3], basisfamily="def2", fragment=None, charge=None, orcadir=None, mult=None, stabilityanalysis=False, numcores=1,
                       memory=5000, pnosetting='NormalPNO', pnoextrapolation=[5,6], T1=False, scfsetting='TightSCF', extrainputkeyword='', extrablocks='', **kwargs):
     """
     WORK IN PROGRESS
@@ -2150,10 +2150,6 @@ def DLPNO_CC_CBS_SP(cardinals = "2/3", basisfamily="def2", fragment=None, charge
     #Reduce numcores if required
     numcores = check_cores_vs_electrons(fragment,numcores,charge)
 
-    #Cardinals list instead of string.
-    #TODO: get rid of string and use list as input
-    cardinals_list = [int(cardinals[0]),int(cardinals[2])]
-
 
     #if 1-electron species like Hydrogen atom then we either need to code special HF-based procedure or just hardcode values
     #Currently hardcoding H-atom case. Replace with proper extrapolated value later.
@@ -2213,50 +2209,50 @@ end
     ############################################################s
     #Frozen-core DLPNO-CCSD(T) calculations defined here
     ############################################################
-    if cardinals == "2/3" and basisfamily=="def2":
+    if cardinals == [2,3] and basisfamily=="def2":
         #Auxiliary basis set.
         auxbasis='def2-QZVPP/C'
         ccsdt_1_line="! {} def2-SVP {} {} {} {}".format(ccsdtkeyword, auxbasis, pnosetting, scfsetting,extrainputkeyword)
         ccsdt_2_line="! {} def2-TZVPP {} {} {} {}".format(ccsdtkeyword, auxbasis, pnosetting, scfsetting,extrainputkeyword)
-    elif cardinals == "3/4" and basisfamily=="def2":
+    elif cardinals == [3,4] and basisfamily=="def2":
         #Auxiliary basis set.
         auxbasis='def2-QZVPP/C'
         ccsdt_1_line="! {} def2-TZVPP {} {} {} {}".format(ccsdtkeyword, auxbasis, pnosetting, scfsetting,extrainputkeyword)
         ccsdt_2_line="! {} def2-QZVPP {} {} {} {}".format(ccsdtkeyword, auxbasis, pnosetting, scfsetting,extrainputkeyword)  
-    elif cardinals == "2/3" and basisfamily=="ma-def2":
+    elif cardinals == [2,3] and basisfamily=="ma-def2":
         #Auxiliary basis set.
         auxbasis='aug-cc-pVQZ/C'
         ccsdt_1_line="! {} def2-SVP {} {} {} {}".format(ccsdtkeyword, auxbasis, pnosetting, scfsetting,extrainputkeyword)
         ccsdt_2_line="! {} def2-TZVPP {} {} {} {}".format(ccsdtkeyword, auxbasis, pnosetting, scfsetting,extrainputkeyword)
-    elif cardinals == "3/4" and basisfamily=="ma-def2":
+    elif cardinals == [3,4] and basisfamily=="ma-def2":
         #Auxiliary basis set.
         auxbasis='aug-cc-pVQZ/C'
         ccsdt_1_line="! {} ma-def2-TZVPP {} {} {} {}".format(ccsdtkeyword, auxbasis, pnosetting, scfsetting,extrainputkeyword)
         ccsdt_2_line="! {} ma-def2-QZVPP {} {} {} {}".format(ccsdtkeyword, auxbasis, pnosetting, scfsetting,extrainputkeyword)
-    elif cardinals == "2/3" and basisfamily=="cc":
+    elif cardinals == [2,3] and basisfamily=="cc":
         #Auxiliary basis set.
         auxbasis='cc-pVQZ/C'
         ccsdt_1_line="! {} cc-pVDZ {} {} {} {}".format(ccsdtkeyword, auxbasis, pnosetting, scfsetting,extrainputkeyword)
         ccsdt_2_line="! {} cc-pVTZ {} {} {} {}".format(ccsdtkeyword, auxbasis, pnosetting, scfsetting,extrainputkeyword)
-    elif cardinals == "3/4" and basisfamily=="cc":
+    elif cardinals == [3,4] and basisfamily=="cc":
         #Auxiliary basis set.
         auxbasis='cc-pV5Z/C'
         ccsdt_1_line="! {} cc-pVTZ {} {} {} {}".format(ccsdtkeyword, auxbasis, pnosetting, scfsetting,extrainputkeyword)
         ccsdt_2_line="! {} cc-pVQZ {} {} {} {}".format(ccsdtkeyword, auxbasis, pnosetting, scfsetting,extrainputkeyword)
-    elif cardinals == "2/3" and basisfamily=="aug-cc":
+    elif cardinals == [2,3] and basisfamily=="aug-cc":
         #Auxiliary basis set.
         auxbasis='aug-cc-pVQZ/C'
         ccsdt_1_line="! {} aug-cc-pVDZ {} {} {} {}".format(ccsdtkeyword, auxbasis, pnosetting, scfsetting,extrainputkeyword)
         ccsdt_2_line="! {} aug-cc-pVTZ {} {} {} {}".format(ccsdtkeyword, auxbasis, pnosetting, scfsetting,extrainputkeyword)
-    elif cardinals == "3/4" and basisfamily=="aug-cc":
+    elif cardinals == [3,4] and basisfamily=="aug-cc":
         #Auxiliary basis set.
         auxbasis='aug-cc-pV5Z/C'
         ccsdt_1_line="! {} aug-cc-pVTZ {} {} {} {}".format(ccsdtkeyword, auxbasis, pnosetting, scfsetting,extrainputkeyword)
         ccsdt_2_line="! {} aug-cc-pVQZ {} {} {} {}".format(ccsdtkeyword, auxbasis, pnosetting, scfsetting,extrainputkeyword)
         
     #Adding special-ECP basis like cc-pVnZ-PP for heavy elements if present
-    blocks1 = special_element_basis(fragment,cardinals_list[0],basisfamily,blocks)
-    blocks2 = special_element_basis(fragment,cardinals_list[1],basisfamily,blocks)
+    blocks1 = special_element_basis(fragment,cardinals[0],basisfamily,blocks)
+    blocks2 = special_element_basis(fragment,cardinals[1],basisfamily,blocks)
     
     
     #Defining two theory objects for each basis set
@@ -2300,7 +2296,7 @@ end
     
     #Extrapolations
 
-    E_SCF_CBS, E_corr_CBS = Extrapolation_twopoint(scf_energies, corr_energies, cardinals_list, basisfamily) #3-point extrapolation
+    E_SCF_CBS, E_corr_CBS = Extrapolation_twopoint(scf_energies, corr_energies, cardinals, basisfamily) #3-point extrapolation
 
     print("E_SCF_CBS:", E_SCF_CBS)
     print("E_corr_CBS:", E_corr_CBS)
@@ -2343,7 +2339,7 @@ end
 
 #FCI/CBS protocol. No core-correlation, scalar relativistic or spin-orbit coupling for now.
 # Extrapolates CC series to Full-CI and to CBS 
-def FCI_CBS_SP(cardinals = "2/3", basisfamily="def2", fragment=None, charge=None, orcadir=None, mult=None, stabilityanalysis=False, numcores=1,
+def FCI_CBS_SP(cardinals = [2,3], basisfamily="def2", fragment=None, charge=None, orcadir=None, mult=None, stabilityanalysis=False, numcores=1,
                       memory=5000, DLPNO=True, pnosetting='NormalPNO', F12=False, T1=False, scfsetting='TightSCF', extrainputkeyword='', extrablocks='', **kwargs):
     """
     WORK IN PROGRESS
@@ -2406,9 +2402,7 @@ def FCI_CBS_SP(cardinals = "2/3", basisfamily="def2", fragment=None, charge=None
     #Reduce numcores if required
     numcores = check_cores_vs_electrons(fragment,numcores,charge)
 
-    #Cardinals list instead of string.
-    #TODO: get rid of string and use list as input
-    cardinals_list = [int(cardinals[0]),int(cardinals[2])]
+
 
 
     #if 1-electron species like Hydrogen atom then we either need to code special HF-based procedure or just hardcode values
@@ -2478,52 +2472,52 @@ end
     ############################################################s
     #Frozen-core DLPNO-CCSD(T) calculations defined here
     ############################################################
-    if cardinals == "2/3" and basisfamily=="def2":
+    if cardinals == [2,3] and basisfamily=="def2":
         #Auxiliary basis set.
         auxbasis='def2-QZVPP/C'
         ccsdt_1_line="! {} def2-SVP {} {} {} {}".format(ccsdtkeyword, auxbasis, pnosetting, scfsetting,extrainputkeyword)
         ccsdt_2_line="! {} def2-TZVPP {} {} {} {}".format(ccsdtkeyword, auxbasis, pnosetting, scfsetting,extrainputkeyword)
-    elif cardinals == "3/4" and basisfamily=="def2":
+    elif cardinals == [3,4] and basisfamily=="def2":
         #Auxiliary basis set.
         auxbasis='def2-QZVPP/C'
         ccsdt_1_line="! {} def2-TZVPP {} {} {} {}".format(ccsdtkeyword, auxbasis, pnosetting, scfsetting,extrainputkeyword)
         ccsdt_2_line="! {} def2-QZVPP {} {} {} {}".format(ccsdtkeyword, auxbasis, pnosetting, scfsetting,extrainputkeyword)  
-    elif cardinals == "2/3" and basisfamily=="ma-def2":
+    elif cardinals == [2,3] and basisfamily=="ma-def2":
         #Auxiliary basis set.
         auxbasis='aug-cc-pVQZ/C'
         ccsdt_1_line="! {} def2-SVP {} {} {} {}".format(ccsdtkeyword, auxbasis, pnosetting, scfsetting,extrainputkeyword)
         ccsdt_2_line="! {} def2-TZVPP {} {} {} {}".format(ccsdtkeyword, auxbasis, pnosetting, scfsetting,extrainputkeyword)
-    elif cardinals == "3/4" and basisfamily=="ma-def2":
+    elif cardinals == [3,4] and basisfamily=="ma-def2":
         #Auxiliary basis set.
         auxbasis='aug-cc-pVQZ/C'
         ccsdt_1_line="! {} ma-def2-TZVPP {} {} {} {}".format(ccsdtkeyword, auxbasis, pnosetting, scfsetting,extrainputkeyword)
         ccsdt_2_line="! {} ma-def2-QZVPP {} {} {} {}".format(ccsdtkeyword, auxbasis, pnosetting, scfsetting,extrainputkeyword)
-    elif cardinals == "2/3" and basisfamily=="cc":
+    elif cardinals == [2,3] and basisfamily=="cc":
         #Auxiliary basis set.
         auxbasis='cc-pVQZ/C'
         ccsdt_1_line="! {} cc-pVDZ {} {} {} {}".format(ccsdtkeyword, auxbasis, pnosetting, scfsetting,extrainputkeyword)
         ccsdt_2_line="! {} cc-pVTZ {} {} {} {}".format(ccsdtkeyword, auxbasis, pnosetting, scfsetting,extrainputkeyword)
-    elif cardinals == "3/4" and basisfamily=="cc":
+    elif cardinals == [3,4] and basisfamily=="cc":
         #Auxiliary basis set.
         auxbasis='cc-pV5Z/C'
         ccsdt_1_line="! {} cc-pVTZ {} {} {} {}".format(ccsdtkeyword, auxbasis, pnosetting, scfsetting,extrainputkeyword)
         ccsdt_2_line="! {} cc-pVQZ {} {} {} {}".format(ccsdtkeyword, auxbasis, pnosetting, scfsetting,extrainputkeyword)
-    elif cardinals == "2/3" and basisfamily=="aug-cc":
+    elif cardinals == [2,3] and basisfamily=="aug-cc":
         #Auxiliary basis set.
         auxbasis='aug-cc-pVQZ/C'
         ccsdt_1_line="! {} aug-cc-pVDZ {} {} {} {}".format(ccsdtkeyword, auxbasis, pnosetting, scfsetting,extrainputkeyword)
         ccsdt_2_line="! {} aug-cc-pVTZ {} {} {} {}".format(ccsdtkeyword, auxbasis, pnosetting, scfsetting,extrainputkeyword)
-    elif cardinals == "3/4" and basisfamily=="aug-cc":
+    elif cardinals == [3,4] and basisfamily=="aug-cc":
         #Auxiliary basis set.
         auxbasis='aug-cc-pV5Z/C'
         ccsdt_1_line="! {} aug-cc-pVTZ {} {} {} {}".format(ccsdtkeyword, auxbasis, pnosetting, scfsetting,extrainputkeyword)
         ccsdt_2_line="! {} aug-cc-pVQZ {} {} {} {}".format(ccsdtkeyword, auxbasis, pnosetting, scfsetting,extrainputkeyword)
-    elif cardinals == "4/5" and basisfamily=="cc":
+    elif cardinals == [4,5] and basisfamily=="cc":
         #Auxiliary basis set.
         auxbasis='cc-pV5Z/C'
         ccsdt_1_line="! {} cc-pVQZ {} {} {} {}".format(ccsdtkeyword, auxbasis, pnosetting, scfsetting,extrainputkeyword)
         ccsdt_2_line="! {} cc-pV5Z {} {} {} {}".format(ccsdtkeyword, auxbasis, pnosetting, scfsetting,extrainputkeyword)
-    elif cardinals == "4/5" and basisfamily=="aug-cc":
+    elif cardinals == [4,5] and basisfamily=="aug-cc":
         #Auxiliary basis set.
         auxbasis='aug-cc-pV5Z/C'
         ccsdt_1_line="! {} aug-cc-pVQZ {} {} {} {}".format(ccsdtkeyword, auxbasis, pnosetting, scfsetting,extrainputkeyword)
@@ -2531,8 +2525,8 @@ end
         #TODO Note: 4/5 cc/aug-cc basis sets are available but we need extrapolation parameters
     
     #Adding special-ECP basis like cc-pVnZ-PP for heavy elements if present
-    blocks1 = special_element_basis(fragment,cardinals_list[0],basisfamily,blocks)
-    blocks2 = special_element_basis(fragment,cardinals_list[1],basisfamily,blocks)
+    blocks1 = special_element_basis(fragment,cardinals[0],basisfamily,blocks)
+    blocks2 = special_element_basis(fragment,cardinals[1],basisfamily,blocks)
     
     
     #Defining two theory objects for each basis set
@@ -2567,9 +2561,9 @@ end
     
     #Extrapolations
     # TODO: Extrapolation formula appropriate for separate CCSD and triples extraplation ?? Use W1 formulas instead?
-    E_SCF_CBS, E_corrCC_CBS = Extrapolation_twopoint(scf_energies, corr_energies, cardinals_list, basisfamily) #2-point extrapolation
-    E_SCF_CBS, E_corrCCSD_CBS = Extrapolation_twopoint(scf_energies, ccsdcorr_energies, cardinals_list, basisfamily) #2-point extrapolation
-    E_SCF_CBS, E_corrCCT_CBS = Extrapolation_twopoint(scf_energies, triplescorr_energies, cardinals_list, basisfamily) #2-point extrapolation
+    E_SCF_CBS, E_corrCC_CBS = Extrapolation_twopoint(scf_energies, corr_energies, cardinals, basisfamily) #2-point extrapolation
+    E_SCF_CBS, E_corrCCSD_CBS = Extrapolation_twopoint(scf_energies, ccsdcorr_energies, cardinals, basisfamily) #2-point extrapolation
+    E_SCF_CBS, E_corrCCT_CBS = Extrapolation_twopoint(scf_energies, triplescorr_energies, cardinals, basisfamily) #2-point extrapolation
     print("E_SCF_CBS:", E_SCF_CBS)
     print("E_corrCC_CBS:", E_corrCC_CBS)
     print("E_corrCCSD_CBS:", E_corrCCSD_CBS)
