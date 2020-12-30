@@ -2187,6 +2187,11 @@ end
         ccsdtkeyword='DLPNO-CCSD(T1)'
     else:
         ccsdtkeyword='DLPNO-CCSD(T)'
+    #PNO keyword in inputline or not
+    if pnosetting != "extrapolation":
+        pnokeyword=pnosetting
+    else:
+        pnokeyword=""
 
     #If heavy element present and using cc/aug-cc basisfamily then add special PP-basis and ECP in block
     def special_element_basis(fragment,cardinal,basisfamily,blocks):
@@ -2203,49 +2208,51 @@ end
         return blocks
 
 
+
+
     ############################################################s
     #Frozen-core DLPNO-CCSD(T) calculations defined here
     ############################################################
     if cardinals == [2,3] and basisfamily=="def2":
         #Auxiliary basis set.
         auxbasis='def2-QZVPP/C'
-        ccsdt_1_line="! {} def2-SVP {} {} {} {}".format(ccsdtkeyword, auxbasis, pnosetting, scfsetting,extrainputkeyword)
-        ccsdt_2_line="! {} def2-TZVPP {} {} {} {}".format(ccsdtkeyword, auxbasis, pnosetting, scfsetting,extrainputkeyword)
+        ccsdt_1_line="! {} def2-SVP {} {} {} {}".format(ccsdtkeyword, auxbasis, pnokeyword, scfsetting,extrainputkeyword)
+        ccsdt_2_line="! {} def2-TZVPP {} {} {} {}".format(ccsdtkeyword, auxbasis, pnokeyword, scfsetting,extrainputkeyword)
     elif cardinals == [3,4] and basisfamily=="def2":
         #Auxiliary basis set.
         auxbasis='def2-QZVPP/C'
-        ccsdt_1_line="! {} def2-TZVPP {} {} {} {}".format(ccsdtkeyword, auxbasis, pnosetting, scfsetting,extrainputkeyword)
-        ccsdt_2_line="! {} def2-QZVPP {} {} {} {}".format(ccsdtkeyword, auxbasis, pnosetting, scfsetting,extrainputkeyword)  
+        ccsdt_1_line="! {} def2-TZVPP {} {} {} {}".format(ccsdtkeyword, auxbasis, pnokeyword, scfsetting,extrainputkeyword)
+        ccsdt_2_line="! {} def2-QZVPP {} {} {} {}".format(ccsdtkeyword, auxbasis, pnokeyword, scfsetting,extrainputkeyword)  
     elif cardinals == [2,3] and basisfamily=="ma-def2":
         #Auxiliary basis set.
         auxbasis='aug-cc-pVQZ/C'
-        ccsdt_1_line="! {} def2-SVP {} {} {} {}".format(ccsdtkeyword, auxbasis, pnosetting, scfsetting,extrainputkeyword)
-        ccsdt_2_line="! {} def2-TZVPP {} {} {} {}".format(ccsdtkeyword, auxbasis, pnosetting, scfsetting,extrainputkeyword)
+        ccsdt_1_line="! {} def2-SVP {} {} {} {}".format(ccsdtkeyword, auxbasis, pnokeyword, scfsetting,extrainputkeyword)
+        ccsdt_2_line="! {} def2-TZVPP {} {} {} {}".format(ccsdtkeyword, auxbasis, pnokeyword, scfsetting,extrainputkeyword)
     elif cardinals == [3,4] and basisfamily=="ma-def2":
         #Auxiliary basis set.
         auxbasis='aug-cc-pVQZ/C'
-        ccsdt_1_line="! {} ma-def2-TZVPP {} {} {} {}".format(ccsdtkeyword, auxbasis, pnosetting, scfsetting,extrainputkeyword)
-        ccsdt_2_line="! {} ma-def2-QZVPP {} {} {} {}".format(ccsdtkeyword, auxbasis, pnosetting, scfsetting,extrainputkeyword)
+        ccsdt_1_line="! {} ma-def2-TZVPP {} {} {} {}".format(ccsdtkeyword, auxbasis, pnokeyword, scfsetting,extrainputkeyword)
+        ccsdt_2_line="! {} ma-def2-QZVPP {} {} {} {}".format(ccsdtkeyword, auxbasis, pnokeyword, scfsetting,extrainputkeyword)
     elif cardinals == [2,3] and basisfamily=="cc":
         #Auxiliary basis set.
         auxbasis='cc-pVQZ/C'
-        ccsdt_1_line="! {} cc-pVDZ {} {} {} {}".format(ccsdtkeyword, auxbasis, pnosetting, scfsetting,extrainputkeyword)
-        ccsdt_2_line="! {} cc-pVTZ {} {} {} {}".format(ccsdtkeyword, auxbasis, pnosetting, scfsetting,extrainputkeyword)
+        ccsdt_1_line="! {} cc-pVDZ {} {} {} {}".format(ccsdtkeyword, auxbasis, pnokeyword, scfsetting,extrainputkeyword)
+        ccsdt_2_line="! {} cc-pVTZ {} {} {} {}".format(ccsdtkeyword, auxbasis, pnokeyword, scfsetting,extrainputkeyword)
     elif cardinals == [3,4] and basisfamily=="cc":
         #Auxiliary basis set.
         auxbasis='cc-pV5Z/C'
-        ccsdt_1_line="! {} cc-pVTZ {} {} {} {}".format(ccsdtkeyword, auxbasis, pnosetting, scfsetting,extrainputkeyword)
-        ccsdt_2_line="! {} cc-pVQZ {} {} {} {}".format(ccsdtkeyword, auxbasis, pnosetting, scfsetting,extrainputkeyword)
+        ccsdt_1_line="! {} cc-pVTZ {} {} {} {}".format(ccsdtkeyword, auxbasis, pnokeyword, scfsetting,extrainputkeyword)
+        ccsdt_2_line="! {} cc-pVQZ {} {} {} {}".format(ccsdtkeyword, auxbasis, pnokeyword, scfsetting,extrainputkeyword)
     elif cardinals == [2,3] and basisfamily=="aug-cc":
         #Auxiliary basis set.
         auxbasis='aug-cc-pVQZ/C'
-        ccsdt_1_line="! {} aug-cc-pVDZ {} {} {} {}".format(ccsdtkeyword, auxbasis, pnosetting, scfsetting,extrainputkeyword)
-        ccsdt_2_line="! {} aug-cc-pVTZ {} {} {} {}".format(ccsdtkeyword, auxbasis, pnosetting, scfsetting,extrainputkeyword)
+        ccsdt_1_line="! {} aug-cc-pVDZ {} {} {} {}".format(ccsdtkeyword, auxbasis, pnokeyword, scfsetting,extrainputkeyword)
+        ccsdt_2_line="! {} aug-cc-pVTZ {} {} {} {}".format(ccsdtkeyword, auxbasis, pnokeyword, scfsetting,extrainputkeyword)
     elif cardinals == [3,4] and basisfamily=="aug-cc":
         #Auxiliary basis set.
         auxbasis='aug-cc-pV5Z/C'
-        ccsdt_1_line="! {} aug-cc-pVTZ {} {} {} {}".format(ccsdtkeyword, auxbasis, pnosetting, scfsetting,extrainputkeyword)
-        ccsdt_2_line="! {} aug-cc-pVQZ {} {} {} {}".format(ccsdtkeyword, auxbasis, pnosetting, scfsetting,extrainputkeyword)
+        ccsdt_1_line="! {} aug-cc-pVTZ {} {} {} {}".format(ccsdtkeyword, auxbasis, pnokeyword, scfsetting,extrainputkeyword)
+        ccsdt_2_line="! {} aug-cc-pVQZ {} {} {} {}".format(ccsdtkeyword, auxbasis, pnokeyword, scfsetting,extrainputkeyword)
         
     #Adding special-ECP basis like cc-pVnZ-PP for heavy elements if present
     blocks1 = special_element_basis(fragment,cardinals[0],basisfamily,blocks)
