@@ -57,8 +57,8 @@ def PNOExtrapolationStep(fragment=None, theory=None, pnoextrapolation=None, DLPN
     
     """.format(PNO_Y)
     #Add mdciblock to blocks of theory
-    PNOXblocks = theory.blocks + mdciblockX
-    PNOYblocks = theory.blocks + mdciblockY
+    PNOXblocks = theory.orcablocks + mdciblockX
+    PNOYblocks = theory.orcablocks + mdciblockY
     
     theory.blocks = PNOXblocks
     
@@ -2192,10 +2192,7 @@ end
     def special_element_basis(fragment,cardinal,basisfamily,blocks):
         basis_dict = {('cc',2) : "cc-pVDZ-PP", ('aug-cc',2) : "aug-cc-pVDZ-PP", ('cc',3) : "cc-pVTZ-PP", ('aug-cc',3) : "aug-cc-pVTZ-PP", ('cc',4) : "cc-pVQZ-PP", ('aug-cc',4) : "aug-cc-pVQZ-PP"}
         auxbasis_dict = {('cc',2) : "cc-pVDZ-PP/C", ('aug-cc',2) : "aug-cc-pVDZ-PP/C", ('cc',3) : "cc-pVTZ-PP/C", ('aug-cc',3) : "aug-cc-pVTZ-PP/C", ('cc',4) : "cc-pVQZ-PP/C", ('aug-cc',4) : "aug-cc-pVQZ-PP/C"}
-        print("fragment.elems:", fragment.elems)
-        #exit()
         for element in fragment.elems:
-            print("element:", element)
             #TODO: Add 3rd-row elements and more
             if element in ['Rb', 'Sr','Y','Zr', 'Nb', 'Mo', 'Tc', 'Ru', 'Rh','Pd','Ag','Cd', 'In', 'Sn', 'Sb', 'Te', 'I', 'Xe', 'Cs', 'Ba',
                             'Hf', 'Ta', 'W', 'Re', 'Os', 'Ir', 'Pt', 'Au', 'Hg', 'Tl', 'Pb', 'Bi', 'Po', 'At', 'Rn']:
