@@ -2352,6 +2352,7 @@ end
     #Core-correlation + scalar relativistic as joint correction
     ############################################################
     if CVSR is True:
+        print("")
         print("Core-Valence Scalar Relativistic Correction is on!")
         #TODO: We should only do CV if we are doing all-electron calculations. If we have heavy element then we have probably added an ECP (specialbasisfunction)
         # Switch to doing only CV correction in that case ?
@@ -2373,6 +2374,7 @@ end
             
         
     else:
+        print("")
         print("Core-Valence Scalar Relativistic Correction is off!")
         E_corecorr_and_SR=0.0
 
@@ -2409,7 +2411,7 @@ end
     os.remove('orca-input.gbw')
 
     #return final energy and also dictionary with energy components
-    return E_total, E_dict
+    return E_FINAL, E_dict
 
     
     
