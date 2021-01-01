@@ -370,6 +370,32 @@ def Singlepoint_parallel(fragments=None, theories=None, numcores=None):
     return energy_dict
 
 
+#Analytical frequencies function
+#Only works for ORCAtheory at the moment
+def AnFreq(fragment=None, theory=None, numcores=1):
+    print(BC.WARNING, BC.BOLD, "------------ANALYTICAL FREQUENCIES-------------", BC.END)
+    if theory.__class__.__name__ == "ORCATheory":
+        print("Requesting analytical Hessian calculation from ORCATheory")
+        print("")
+        #Do single-point ORCA Anfreq job
+        energy = theory.run(current_coords=fragment.coords, elems=fragment.elems, Hessian=True, nprocs=numcores)
+        #Grab Hessian
+        #Hessian = Hessgrab(theory.inputfilename+".hess")
+        #TODO: diagonalize it ourselves. Need to finish projection
+        
+        # For now, we grab frequencies from ORCA Hessian file
+        frequencies = ORCAfrequenciesgrab(theory.inputfilename+".hess")
+        
+        hessatoms=list(range(0,fragment.numatoms))
+        Thermochemistry = thermochemcalc(frequencies,hessatoms, fragment, theory.mult, temp=298.18,pressure=1)
+        
+        print(BC.WARNING, BC.BOLD, "------------ANALYTICAL FREQUENCIES END-------------", BC.END)
+        return Thermochemistry
+        
+    else:
+        print("Analytical frequencies not available for theory. Exiting.")
+        exit()
+
 #Numerical frequencies function
 def NumFreq(fragment=None, theory=None, npoint=1, displacement=0.0005, hessatoms=None, numcores=1, runmode='serial'):
     
@@ -2832,9 +2858,10 @@ class ORCATheory:
                 os.remove(tmpfile)
         except:
             pass
+    
     #Run function. Takes coords, elems etc. arguments and computes E or E+G.
     def run(self, current_coords=None, current_MM_coords=None, MMcharges=None, qm_elems=None,
-            mm_elems=None, elems=None, Grad=False, PC=False, nprocs=None ):
+            mm_elems=None, elems=None, Grad=False, Hessian=False, PC=False, nprocs=None ):
         print(BC.OKBLUE,BC.BOLD, "------------RUNNING ORCA INTERFACE-------------", BC.END)
         #Coords provided to run or else taken from initialization.
         #if len(current_coords) != 0:
@@ -2869,22 +2896,22 @@ class ORCATheory:
                 for flipatom in self.atomstoflip:
                     print("Flipping atom: {} {}".format(flipatom, qm_elems[flipatom]))
                 create_orca_input_pc(self.inputfilename, qm_elems, current_coords, self.orcasimpleinput, self.orcablocks,
-                                        self.charge, self.mult, extraline=self.extraline, HSmult=self.HSmult, Grad=Grad,
+                                        self.charge, self.mult, extraline=self.extraline, HSmult=self.HSmult, Grad=Grad, Hessian=Hessian,
                                      atomstoflip=self.atomstoflip)
             else:
                 create_orca_input_pc(self.inputfilename, qm_elems, current_coords, self.orcasimpleinput, self.orcablocks,
-                                        self.charge, self.mult, extraline=self.extraline, Grad=Grad)
+                                        self.charge, self.mult, extraline=self.extraline, Grad=Grad, Hessian=Hessian)
         else:
             if self.brokensym == True:
                 print("Brokensymmetry SpinFlipping on! HSmult: {}.".format(self.HSmult))
                 for flipatom in self.atomstoflip:
                     print("Flipping atom: {} {}".format(flipatom, qm_elems[flipatom]))
                 create_orca_input_plain(self.inputfilename, qm_elems, current_coords, self.orcasimpleinput,self.orcablocks,
-                                        self.charge,self.mult, extraline=self.extraline, HSmult=self.HSmult, Grad=Grad,
+                                        self.charge,self.mult, extraline=self.extraline, HSmult=self.HSmult, Grad=Grad, Hessian=Hessian,
                                      atomstoflip=self.atomstoflip)
             else:
                 create_orca_input_plain(self.inputfilename, qm_elems, current_coords, self.orcasimpleinput,self.orcablocks,
-                                        self.charge,self.mult, extraline=self.extraline, Grad=Grad)
+                                        self.charge,self.mult, extraline=self.extraline, Grad=Grad, Hessian=Hessian)
 
         #Run inputfile using ORCA parallelization. Take nprocs argument.
         #print(BC.OKGREEN, "------------Running ORCA calculation-------------", BC.END)

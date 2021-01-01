@@ -435,6 +435,22 @@ def read_ORCA_Hessian(hessfile):
     
     return hessian, elems, coords, masses
 
+
+#Grab frequencies from ORCA-Hessian file
+def ORCAfrequenciesgrab(hessfile):
+    freqs=[]
+    grab=False
+    with open(hessfile) as hfile:
+        for line in hfile:
+            if grab is True:
+                if len(line.split()) > 1:
+                    freqs.append(float(line.split()[-1]))
+            if '$vibrational_frequencies' in line:
+                grab=True
+            if '$normal_modes' in line:
+                grab=False
+    return freqs
+
 #Function to grab Hessian from ORCA-Hessian file
 def Hessgrab(hessfile):
     hesstake=False
@@ -630,6 +646,8 @@ def create_orca_input_pc(name,elems,coords,orcasimpleinput,orcablockinput,charge
             orcafile.write(extraline + '\n')
         if Grad == True:
             orcafile.write('! Engrad' + '\n')
+        if Hessian == True:
+            orcafile.write('! Freq' + '\n')
         orcafile.write('%pointcharges "{}"\n'.format(pcfile))
         orcafile.write(orcablockinput + '\n')
         if atomstoflip is not None:
@@ -650,7 +668,7 @@ def create_orca_input_pc(name,elems,coords,orcasimpleinput,orcablockinput,charge
 #Create simple ORCA inputfile from elems,coords, input, charge, mult,pointcharges
 #Allows for extraline that could be another '!' line or block-inputline.
 
-def create_orca_input_plain(name,elems,coords,orcasimpleinput,orcablockinput,charge,mult, Grad=False, extraline='',
+def create_orca_input_plain(name,elems,coords,orcasimpleinput,orcablockinput,charge,mult, Grad=False, Hessian=False, extraline='',
                             HSmult=None, atomstoflip=None):
     with open(name+'.inp', 'w') as orcafile:
         orcafile.write(orcasimpleinput+'\n')
@@ -658,6 +676,8 @@ def create_orca_input_plain(name,elems,coords,orcasimpleinput,orcablockinput,cha
             orcafile.write(extraline + '\n')
         if Grad == True:
             orcafile.write('! Engrad' + '\n')
+        if Hessian == True:
+            orcafile.write('! Freq' + '\n')
         orcafile.write(orcablockinput + '\n')
         if atomstoflip is not None:
             if type(atomstoflip) == int:

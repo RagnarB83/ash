@@ -1676,7 +1676,7 @@ end
 #Requires orcadir, and theory level, typically an ORCATheory object
 #Make more general. Not sure. ORCA makes most sense for geo-opt and HL theory
 def thermochemprotocol(Opt_theory=None, SPprotocol=None, fraglist=None, stoichiometry=None, orcadir=None, numcores=None, memory=5000,
-                       pnosetting='NormalPNO', F12level='DZ', workflow_args=None):
+                       pnosetting='NormalPNO', F12level='DZ', workflow_args=None, analyticHessian=False):
 
     
     #DFT Opt+Freq  and Single-point High-level workflow
@@ -1693,8 +1693,13 @@ def thermochemprotocol(Opt_theory=None, SPprotocol=None, fraglist=None, stoichio
             Opt_theory.charge = species.charge
             Opt_theory.mult = species.mult
             geomeTRICOptimizer(theory=Opt_theory,fragment=species)
+            
             #DFT-FREQ
-            thermochem = ash.NumFreq(fragment=species, theory=Opt_theory, npoint=2, runmode='serial')
+            if analyticHessian == True:
+                print("Calculating analytical Hessian via ORCA")
+                thermochem = ash.AnFreq(fragment=species, theory=Opt_theory, numcores=numcores)                
+            else:
+                thermochem = ash.NumFreq(fragment=species, theory=Opt_theory, npoint=2, runmode='serial')
             ZPVE = thermochem['ZPVE']
         else:
             #Setting ZPVE to 0.0.

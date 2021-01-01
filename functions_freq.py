@@ -1,6 +1,7 @@
 from functions_general import listdiff, clean_number,blankline
 from functions_coords import elematomnumbers, atommasses
 import numpy as np
+import math
 import constants
 
 #HESSIAN-related functions below
@@ -292,130 +293,220 @@ def comparenormalmodes(hessianA,hessianB,massesA,massesB):
 
 
 
-#list of frequencies and fragment object
-#TODO: Make sure distinction between initial coords and optimized coords?
-def thermochemcalc(vfreq,hessatoms,fragment, multiplicity, temp=298.18,pressure=1):
+#
+def thermochemcalc(vfreq,atoms,fragment, multiplicity, temp=298.18,pressure=1.0):
+    """[summary]
+
+    Args:
+        vfreq ([list]): list of vibrational frequencies in cm**-1
+        atoms ([type]): number of active atoms (contributing to Hessian) 
+        fragment ([type]): ASH fragment object
+        multiplicity ([type]): spin multiplicity
+        temp (float, optional): [description]. Defaults to 298.18.
+        pressure (float, optional): [description]. Defaults to 1.0.
+
+    Returns:
+        dictionary with thermochemistry properties
+    """
     blankline()
-    print("Printing thermochemistry")
-    if len(hessatoms) == 2:
+    print("Thermochemistry via rigid-rotor harmonic oscillator approximation")
+    if len(atoms) == 1:
+        print("System is an atom.")
+        moltype="atom"
+    elif len(atoms) == 2:
+        print("System is 2-atomic and thus linear")
+        moltype="linear"
         TRmodenum=5
     else:
+        #TODO: Need to detect linearity properly
+        print("System size N > 2, assumed to be nonlinear")
+        moltype="nonlinear"
         TRmodenum=6
+    
+    coords=fragment.coords
     elems=fragment.elems
     masses=fragment.list_of_masses
-    #Total atomlist from fragment object. Not hessatoms.
-    #atomlist=fragment.atomlist
-
-    #Some constants
-    joule_to_hartree=2.293712317E+17
-    c_cm_s=29979245800.00
-    #Planck's constant in Js
-    h_planck_Js=6.62607015000000E-34
-    h_planck_hartreeseconds=1.5198298716361000E-16
-
-    #0.5*h*c: 0.5 * h_planck_hartreeseconds*29979245800cm/s  hartree cm
-    halfhcfactor=2.27816766479806E-06
-    # R in hartree/K. Converted from 8.31446261815324000 J/Kmol
-    R_gasconst=3.16681161675373E-06
-    #Boltzmann's constant. Converted from 1.380649000E-23 J/K to hartree/K
-    k_b=3.16681161675373E-06
-
-
-    freqs=[]
-    vibtemps=[]
-    #Vibrational part
-    #print(vfreq)
-    for mode in range(0, 3 * len(hessatoms)):
-        #print(mode)
-        if mode < TRmodenum:
-            continue
-            #print("skipping TR mode with freq:", clean_number(vfreq[mode]) )
-        else:
-            vib = clean_number(vfreq[mode])
-            if np.iscomplex(vib):
-                print("Mode {} with frequency {} is imaginary. Skipping in thermochemistry".format(mode,vib))
-            else:
-                freqs.append(float(vib))
-                freq_Hz=vib*c_cm_s
-                vibtemp=(h_planck_hartreeseconds * freq_Hz) / k_b
-                vibtemps.append(vibtemp)
-
-
-    #print(vibtemps)
-
-    #Zero-point vibrational energy
-    zpve=sum([i*halfhcfactor for i in freqs])
-
-    #Thermal vibrational energy
-    sumb=0
-    for v in vibtemps:
-        #print(v*(0.5+(1/(np.exp((v/temp) - 1)))))
-        sumb=sumb+v*(0.5+(1/(np.exp((v/temp) - 1))))
-    vibenergy=sumb*R_gasconst
-    vibenergycorr=vibenergy-zpve
-
-    #Moments of inertia and rotational part
-    #TODO: Finish.
-    #Now we have moments of inertia function
-    #center = get_center(elems,coords)
-    #rinertia = list(inertia(elems,coords,center))
-
-
-
-    ################################################################
-    rotenergy=R_gasconst*temp
-
-    #Translational part
-    transenergy=1.5*R_gasconst*temp
-
-    #Mass stuff
     totalmass=sum(masses)
-    print("")
+    
+    ###################
+    #VIBRATIONAL PART
+    ###################
+    if moltype != "atom":
+        freqs=[]
+        vibtemps=[]
+        for mode in range(0, 3 * len(atoms)):
+            #print(mode)
+            if mode < TRmodenum:
+                continue
+                #print("skipping TR mode with freq:", clean_number(vfreq[mode]) )
+            else:
+                vib = clean_number(vfreq[mode])
+                if np.iscomplex(vib):
+                    print("Mode {} with frequency {} is imaginary. Skipping in thermochemistry".format(mode,vib))
+                else:
+                    freqs.append(float(vib))
+                    freq_Hz=vib*constants.c
+                    vibtemp=(constants.h_planck_hartreeseconds * freq_Hz) / constants.R_gasconst
+                    vibtemps.append(vibtemp)
 
-    ###############
-    # ENTROPY TERMS:
-    #
-    # https://github.com/eljost/thermoanalysis/blob/89b28941520fdeee1c96315b1900e124f094df49/thermoanalysis/thermo.py#L74
+        #Zero-point vibrational energy
+        zpve=sum([i*constants.halfhcfactor for i in freqs])
 
-    # Compare to this: https://github.com/eljost/thermoanalysis/blob/89b28941520fdeee1c96315b1900e124f094df49/thermoanalysis/thermo.py#L46
+        #Thermal vibrational energy
+        sumb=0.0
+        for v in vibtemps:
+            #print(v*(0.5+(1/(np.exp((v/temp) - 1)))))
+            sumb=sumb+v*(0.5+(1/(np.exp((v/temp) - 1))))
+        E_vib=sumb*constants.R_gasconst
+        vibenergycorr=E_vib-zpve
+
+        #Vibrational entropy via RRHO.
+        #TODO: Add Grimme QRRHO and otherss
+        S_vib=0.0
+        for vibtemp in vibtemps:
+            S_vib+=constants.R_gasconst*(vibtemp/temp)/(math.exp(vibtemp/temp) - 1) - constants.R_gasconst*math.log(1-math.exp(-1*vibtemp/temp))
+        TS_vib=S_vib*temp
+        
+    else:
+        zpve=0.0
+        E_vib=0.0
+        freqs=[]
+        vibenergycorr=0.0
+        TS_vib=0.0
+
+    ###################
+    #ROTATIONAL PART
+    ###################
+    if moltype != "atom":
+        # Moments of inertia (amu A^2 ), eigenvalues
+        center = get_center(elems,coords)
+        rinertia = list(inertia(elems,coords,center))
+        print("Moments of inertia (amu Å^2):", rinertia)
+        #Changing units to m and kg
+        I=np.array(rinertia)*constants.amu2kg*constants.ang2m**2
+
+        #Rotational temperatures
+        rot_temps_x=constants.h_planck**2 / (8*math.pi**2 * constants.k_b_JK * I[0])
+        rot_temps_y=constants.h_planck**2 / (8*math.pi**2 * constants.k_b_JK * I[1])
+        rot_temps_z=constants.h_planck**2 / (8*math.pi**2 * constants.k_b_JK * I[2])
+
+        #Rotational constants
+        rotconstants = calc_rotational_constants(fragment, printlevel=1)
+        
+        #Rotational energy and entropy
+        if moltype == "atom":
+            q_r=1.0
+            S_rot=0.0
+            E_rot=0.0
+        elif moltype == "linear":
+            #Symmetry number
+            sigma_r=1.0
+            q_r=(1/sigma_r)*(temp/(rot_temps_x))
+            S_rot=constants.R_gasconst*(math.log(q_r)+1.0)
+            E_rot=constants.R_gasconst*temp
+        else:
+            #Nonlinear case
+            #Symmetry number hardcoded. TODO: properly
+            sigma_r=2.0
+            q_r=(math.pi**(1/2) / sigma_r ) * (temp**(3/2)) / ((rot_temps_x*rot_temps_y*rot_temps_z)**(1/2))
+            S_rot=constants.R_gasconst*(math.log(q_r)+1.5)
+            E_rot=1.5*constants.R_gasconst*temp
+        TS_rot=temp*S_rot
+    else:
+        E_rot=0.0
+        TS_rot=0.0
+
+    ###################
+    #TRANSLATIONAL PART
+    ###################
+    E_trans=1.5*constants.R_gasconst*temp
+    
+    #R gas constant in kcal/molK
+    R_kcalpermolK=1.987E-3
+    #Conversion factor for formula.
+    #TODO: cleanup
+    factor=0.025607868
+    #Translation partition function and T*S_trans. Using kcal/mol
+    qtrans=(factor*temp**2.5*totalmass**1.5)/pressure
+    S_trans=R_kcalpermolK*(math.log(qtrans)+2.5)
+    
+    TS_trans=temp*S_trans/constants.harkcal #Energy term converted to Eh
+
+    #######################
     #Electronic entropy
-    #TODO: KBAU?
-    #S_el = KBAU * np.log(multiplicity)
+    #######################
+    q_el=multiplicity
+    S_el=constants.R_gasconst*math.log(q_el)
+    TS_el=temp*S_el
+
+    #######################
+    # Thermodynamic corrections
+    #######################
+    E_tot = E_vib + E_trans + E_rot
+    Hcorr = E_vib + E_trans + E_rot + constants.R_gasconst*temp
+    TS_tot = TS_el + TS_trans + TS_rot + TS_vib
+    Gcorr = Hcorr - TS_tot
 
 
-
-
+    #######################
+    #PRINTING
+    #######################
+    print("")
     print("Thermochemistry")
     print("--------------------")
     print("Temperature:", temp, "K")
     print("Pressure:", pressure, "atm")
     print("Total atomlist:", fragment.atomlist)
-    print("Hessian atomlist:", hessatoms)
+    print("Hessian atomlist:", atoms)
     print("Masses:", masses)
     print("Total mass:", totalmass)
     print("")
-    #  stuff
-    print("Moments of inertia:")
-    print("Rotational constants:")
+
+    if moltype != "atom":
+        print("Moments of inertia:", rinertia)
+        print("Rotational constants (cm-1):", rotconstants)
 
     print("")
     #Thermal corrections
     print("Energy corrections:")
     print("Zero-point vibrational energy:", zpve)
-    print("{} {} {} {}".format("Translational energy (", temp, "K) :", transenergy))
-    print("{} {} {} {}".format("Rotational energy (", temp, "K) :", rotenergy))
-    print("{} {} {} {}".format("Total vibrational energy (", temp, "K) :", vibenergy))
-    print("{} {} {} {}".format("Vibrational energy correction (", temp, "K) :", vibenergycorr))
-
-
+    print("{} {} {} {} {}".format("Translational energy (", temp, "K) :", E_trans, "Eh"))
+    print("{} {} {} {} {}".format("Rotational energy (", temp, "K) :", E_rot, "Eh"))
+    print("{} {} {} {} {}".format("Total vibrational energy (", temp, "K) :", E_vib, "Eh"))
+    print("{} {} {} {} {}".format("Vibrational energy correction (", temp, "K) :", vibenergycorr, "Eh"))
+    print("")
+    print("Entropy terms (TS):")
+    print("{} {} {} {} {}".format("Translational entropy (TS_trans) (", temp, "K) :", TS_trans, "Eh"))
+    print("{} {} {} {} {}".format("Rotational entropy (TS_rot) (", temp, "K) :", TS_rot, "Eh"))
+    print("{} {} {} {} {}".format("Vibrational entropy (TS_vib) (", temp, "K) :", TS_vib, "Eh"))
+    print("{} {} {} {} {}".format("Electronic entropy (TS_el) (", temp, "K) :", TS_el, "Eh"))
+    print("")
+    if moltype != "atom":
+        print("Note: symmetry number : {} used for rotational entropy".format(sigma_r))
+        print("")
+    print("Thermodynamic terms:")
+    print("{} {} {} {} {}".format("Enthalpy correction (Hcorr) (", temp, "K) :", Hcorr, "Eh"))
+    print("{} {} {} {} {}".format("Entropy correction (TS_tot) (", temp, "K) :", TS_tot, "Eh"))
+    print("{} {} {} {} {}".format("Gibbs free energy correction (Gcorr) (", temp, "K) :", Gcorr, "Eh"))
+    print("")
+    
+    #Dict with properties
     thermochemcalc = {}
     thermochemcalc['frequencies'] = freqs
     thermochemcalc['ZPVE'] = zpve
-    thermochemcalc['transenergy'] = transenergy
-    thermochemcalc['rotenergy'] = rotenergy
-    thermochemcalc['vibenergy'] = vibenergy
+    thermochemcalc['E_trans'] = E_trans
+    thermochemcalc['E_rot'] = E_rot
+    thermochemcalc['E_vib'] = E_vib
+    thermochemcalc['E_tot'] = E_tot
+    thermochemcalc['TS_trans'] = TS_trans
+    thermochemcalc['TS_rot'] = TS_rot
+    thermochemcalc['TS_vib'] = TS_vib
+    thermochemcalc['TS_el'] = TS_el
     thermochemcalc['vibenergycorr'] = vibenergycorr
-
+    thermochemcalc['Hcorr'] = Hcorr
+    thermochemcalc['Gcorr'] = Gcorr
+    thermochemcalc['TS_tot'] = TS_tot
+    
     return thermochemcalc
 
 #From Hess-tool.py: Copied 13 May 2020
@@ -679,7 +770,7 @@ def inertia(elems,coords,center):
     I = np.linalg.eigvals(I_)
     return I
     
-def calc_rotational_constants(frag):
+def calc_rotational_constants(frag, printlevel=2):
     coords=frag.coords
     elems=frag.elems
     center = get_center(elems,coords)
@@ -695,10 +786,10 @@ def calc_rotational_constants(frag):
             rot_constants.append(rot_ghz)
     
     rot_constants_cm = [i*constants.GHztocm for i in rot_constants]
-    
-    print("Moments of inertia (amu A^2 ):", rinertia)
-    print("Rotational constants (GHz):", rot_constants)
-    print("Rotational constants (cm-1):", rot_constants_cm)
-    print("Note: If moment of inertia is zero then rotational constant is infinite and not printed ")
+    if printlevel >= 2:
+        print("Moments of inertia (amu A^2 ):", rinertia)
+        print("Rotational constants (GHz):", rot_constants)
+        print("Rotational constants (cm-1):", rot_constants_cm)
+        sprint("Note: If moment of inertia is zero then rotational constant is infinite and not printed ")
 
     return rot_constants_cm
