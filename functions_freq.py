@@ -294,7 +294,7 @@ def comparenormalmodes(hessianA,hessianB,massesA,massesB):
 
 
 #
-def thermochemcalc(vfreq,atoms,fragment, multiplicity, temp=298.18,pressure=1.0):
+def thermochemcalc(vfreq,atoms,fragment, multiplicity, temp=298.15,pressure=1.0):
     """[summary]
 
     Args:
@@ -302,7 +302,7 @@ def thermochemcalc(vfreq,atoms,fragment, multiplicity, temp=298.18,pressure=1.0)
         atoms ([type]): number of active atoms (contributing to Hessian) 
         fragment ([type]): ASH fragment object
         multiplicity ([type]): spin multiplicity
-        temp (float, optional): [description]. Defaults to 298.18.
+        temp (float, optional): [description]. Defaults to 298.15.
         pressure (float, optional): [description]. Defaults to 1.0.
 
     Returns:

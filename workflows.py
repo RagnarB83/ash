@@ -407,7 +407,7 @@ def confsampler_protocol(fragment=None, crestdir=None, xtbmethod='GFN2-xTB', MLt
 # Idea: Instead of CCSD(T), try out CEPA or pCCSD as alternative method. Hopefully as accurate as CCSD(T).
 # Or DLPNO-CCSD(T) with LoosePNO ?
 
-def W1theory_SP(fragment=None, charge=None, orcadir=None, mult=None, stabilityanalysis=False, scfsetting='TightSCF', numcores=1, 
+def W1theory(fragment=None, charge=None, orcadir=None, mult=None, stabilityanalysis=False, scfsetting='TightSCF', numcores=1, 
                 memory=5000, HFreference='QRO',extrainputkeyword='', extrablocks='', **kwargs):
     """
     Single-point W1 theory workflow.
@@ -429,7 +429,7 @@ def W1theory_SP(fragment=None, charge=None, orcadir=None, mult=None, stabilityan
     :return:
     """
     # If run_benchmark or other passed workflow_args then use them instead
-    if 'workflow_args' in kwargs:
+    if 'workflow_args' in kwargs and kwargs['workflow_args'] is not None:
         print("Workflow args passed")
         workflow_args=kwargs['workflow_args']      
         if 'stabilityanalysis' in workflow_args:
@@ -446,7 +446,7 @@ def W1theory_SP(fragment=None, charge=None, orcadir=None, mult=None, stabilityan
             extrablocks=workflow_args['extrablocks']    
     
     print("-----------------------------")
-    print("W1theory_SP PROTOCOL")
+    print("W1theory PROTOCOL")
     print("-----------------------------")
     print("Settings:")
     print("Number of cores: ", numcores)
@@ -616,7 +616,7 @@ end
     return W1_total, E_dict
 
 
-def W1F12theory_SP(fragment=None, charge=None, orcadir=None, mult=None, stabilityanalysis=False, numcores=1, scfsetting='TightSCF', 
+def W1F12theory(fragment=None, charge=None, orcadir=None, mult=None, stabilityanalysis=False, numcores=1, scfsetting='TightSCF', 
                    memory=5000, HFreference='QRO',extrainputkeyword='', extrablocks='', **kwargs):
     """
     Single-point W1-F12 theory workflow.
@@ -640,7 +640,7 @@ def W1F12theory_SP(fragment=None, charge=None, orcadir=None, mult=None, stabilit
     """
     
     # If run_benchmark or other passed workflow_args then use them instead
-    if 'workflow_args' in kwargs:
+    if 'workflow_args' in kwargs and kwargs['workflow_args'] is not None:
         print("Workflow args passed")
         workflow_args=kwargs['workflow_args']      
         if 'stabilityanalysis' in workflow_args:
@@ -657,7 +657,7 @@ def W1F12theory_SP(fragment=None, charge=None, orcadir=None, mult=None, stabilit
             extrablocks=workflow_args['extrablocks']
             
     print("-----------------------------")
-    print("W1-F12 theory_SP PROTOCOL")
+    print("W1-F12 theory PROTOCOL")
     print("-----------------------------")
     print("Settings:")
     print("Number of cores: ", numcores)
@@ -843,7 +843,7 @@ end
     return W1F12_total, E_dict
 
 
-def DLPNO_W1F12theory_SP(fragment=None, charge=None, orcadir=None, mult=None, stabilityanalysis=False, 
+def DLPNO_W1F12theory(fragment=None, charge=None, orcadir=None, mult=None, stabilityanalysis=False, 
                          numcores=1, memory=5000, pnosetting='NormalPNO', scfsetting='TightSCF',extrainputkeyword='', extrablocks='', **kwargs):
     """
     Single-point DLPNO W1-F12 theory workflow.
@@ -868,7 +868,7 @@ def DLPNO_W1F12theory_SP(fragment=None, charge=None, orcadir=None, mult=None, st
     """
 
     # If run_benchmark or other passed workflow_args then use them instead
-    if 'workflow_args' in kwargs:
+    if 'workflow_args' in kwargs and kwargs['workflow_args'] is not None:
         print("Workflow args passed")
         workflow_args=kwargs['workflow_args']      
         if 'stabilityanalysis' in workflow_args:
@@ -885,7 +885,7 @@ def DLPNO_W1F12theory_SP(fragment=None, charge=None, orcadir=None, mult=None, st
             extrablocks=workflow_args['extrablocks']
             
     print("-----------------------------")
-    print("DLPNO-W1-F12 theory_SP PROTOCOL")
+    print("DLPNO-W1-F12 theory PROTOCOL")
     print("-----------------------------")
     print("Settings:")
     print("Number of cores: ", numcores)
@@ -1067,7 +1067,7 @@ end
 
 
 #DLPNO-test
-def DLPNO_W1theory_SP(fragment=None, charge=None, orcadir=None, mult=None, stabilityanalysis=False, numcores=1,
+def DLPNO_W1theory(fragment=None, charge=None, orcadir=None, mult=None, stabilityanalysis=False, numcores=1,
                       memory=5000, pnosetting='NormalPNO', T1=False, scfsetting='TightSCF',extrainputkeyword='', extrablocks='', **kwargs):
     """
     WORK IN PROGRESS
@@ -1088,7 +1088,7 @@ def DLPNO_W1theory_SP(fragment=None, charge=None, orcadir=None, mult=None, stabi
     """
     
     # If run_benchmark or other passed workflow_args then use them instead
-    if 'workflow_args' in kwargs:
+    if 'workflow_args' in kwargs and kwargs['workflow_args'] is not None:
         print("Workflow args passed")
         workflow_args=kwargs['workflow_args']      
         if 'stabilityanalysis' in workflow_args:
@@ -1107,7 +1107,7 @@ def DLPNO_W1theory_SP(fragment=None, charge=None, orcadir=None, mult=None, stabi
             extrablocks=workflow_args['extrablocks']
                 
     print("-----------------------------")
-    print("DLPNO_W1theory_SP PROTOCOL")
+    print("DLPNO_W1theory PROTOCOL")
     print("-----------------------------")
     print("Settings:")
     print("Number of cores: ", numcores)
@@ -1276,7 +1276,7 @@ end
 
 #DLPNO-F12
 #Test: DLPNO-CCSD(T)-F12 protocol including CV+SR
-def DLPNO_F12_SP(fragment=None, charge=None, orcadir=None, mult=None, stabilityanalysis=False, numcores=1,
+def DLPNO_F12(fragment=None, charge=None, orcadir=None, mult=None, stabilityanalysis=False, numcores=1,
                       memory=5000, pnosetting='NormalPNO', T1=False, scfsetting='TightSCF', F12level='DZ', extrainputkeyword='', extrablocks='', **kwargs):
     """
     WORK IN PROGRESS
@@ -1296,7 +1296,7 @@ def DLPNO_F12_SP(fragment=None, charge=None, orcadir=None, mult=None, stabilitya
     """
     
     # If run_benchmark or other passed workflow_args then use them instead
-    if 'workflow_args' in kwargs:
+    if 'workflow_args' in kwargs and kwargs['workflow_args'] is not None:
         print("Workflow args passed")
         workflow_args=kwargs['workflow_args']      
         if 'stabilityanalysis' in workflow_args:
@@ -1317,7 +1317,7 @@ def DLPNO_F12_SP(fragment=None, charge=None, orcadir=None, mult=None, stabilitya
             extrablocks=workflow_args['extrablocks']
             
     print("-----------------------------")
-    print("DLPNO_F12_SP PROTOCOL")
+    print("DLPNO_F12 PROTOCOL")
     print("-----------------------------")
     print("Settings:")
     print("Number of cores: ", numcores)
@@ -1465,7 +1465,7 @@ end
     return E_total, E_dict
 
 
-def DLPNO_W2theory_SP(fragment=None, charge=None, orcadir=None, mult=None, stabilityanalysis=False, numcores=1,
+def DLPNO_W2theory(fragment=None, charge=None, orcadir=None, mult=None, stabilityanalysis=False, numcores=1,
                       memory=5000, pnosetting='NormalPNO', T1=False, scfsetting='TightSCF',extrainputkeyword='', extrablocks='', **kwargs):
     """
     WORK IN PROGRESS
@@ -1486,7 +1486,7 @@ def DLPNO_W2theory_SP(fragment=None, charge=None, orcadir=None, mult=None, stabi
     """
     
     # If run_benchmark or other passed workflow_args then use them instead
-    if 'workflow_args' in kwargs:
+    if 'workflow_args' in kwargs and kwargs['workflow_args'] is not None:
         print("Workflow args passed")
         workflow_args=kwargs['workflow_args']      
         if 'stabilityanalysis' in workflow_args:
@@ -1505,7 +1505,7 @@ def DLPNO_W2theory_SP(fragment=None, charge=None, orcadir=None, mult=None, stabi
             extrablocks=workflow_args['extrablocks']    
     
     print("-----------------------------")
-    print("DLPNO_W2theory_SP PROTOCOL")
+    print("DLPNO_W2theory PROTOCOL")
     print("-----------------------------")
     print("Not active yet")
     exit()
@@ -1672,21 +1672,169 @@ end
     #return final energy and also dictionary with energy components
     return W2_total, E_dict
 
-#Thermochemistry protocol. Take list of fragments, stoichiometry, etc
-#Requires orcadir, and theory level, typically an ORCATheory object
-#Make more general. Not sure. ORCA makes most sense for geo-opt and HL theory
-def thermochemprotocol(Opt_theory=None, SPprotocol=None, fraglist=None, stoichiometry=None, orcadir=None, numcores=None, memory=5000,
-                       pnosetting='NormalPNO', F12level='DZ', workflow_args=None, analyticHessian=False):
-
-    
+# opt+freq+HL protocol for single species
+def thermochemprotocol_single(fragment=None, Opt_theory=None, SP_theory=None, orcadir=None, numcores=None, memory=5000,
+                       workflow_args=None, analyticHessian=True, temp=298.15, pressure=1.0):
+    print(BC.WARNING, BC.BOLD, "------------THERMOCHEM PROTOCOL (single-species)-------------", BC.END)
+    if fragment.charge == None:
+        print("1st. Fragment: {}".format(fragment.__dict__))
+        print("No charge/mult information present in fragment. Each fragment in provided fraglist must have charge/mult information defined.")
+        print("Example:")
+        print("fragment.charge= 0; fragment.mult=1")
+        print("Exiting...")
+        exit()
     #DFT Opt+Freq  and Single-point High-level workflow
-    FinalEnergies = []; list_of_dicts = []; ZPVE_Energies=[]
+    #Only Opt+Freq for molecules, not atoms
+    print("-------------------------------------------------------------------------")
+    print("THERMOCHEM PROTOCOL-single: Step 1. Geometry optimization")
+    print("-------------------------------------------------------------------------")
+    if fragment.numatoms != 1:
+        #DFT-opt
+        #Adding charge and mult to theory object, taken from each fragment object
+        Opt_theory.charge = fragment.charge
+        Opt_theory.mult = fragment.mult
+        geomeTRICOptimizer(theory=Opt_theory,fragment=fragment)
+        print("-------------------------------------------------------------------------")
+        print("THERMOCHEM PROTOCOL-single: Step 2. Frequency calculation")
+        print("-------------------------------------------------------------------------")
+        #DFT-FREQ
+        if analyticHessian == True:
+            thermochem = ash.AnFreq(fragment=fragment, theory=Opt_theory, numcores=numcores)                
+        else:
+            thermochem = ash.NumFreq(fragment=fragment, theory=Opt_theory, npoint=2, runmode='serial')
+    else:
+        #Setting thermoproperties for atom
+        thermochem = thermochemcalc([],atoms,fragment, fragment.mult, temp=temp,pressure=pressure)
+        
+    print("-------------------------------------------------------------------------")
+    print("THERMOCHEM PROTOCOL-single: Step 3. High-level single-point calculation")
+    print("-------------------------------------------------------------------------")
+    #Workflow (callable function) or ORCATheory object
+    print("SP_theory", SP_theory)
+    print(type(SP_theory))
+    print(callable(SP_theory))
+    print(callable(DLPNO_CC_CBS))
+    if callable(SP_theory) is True:
+        FinalE, componentsdict = SP_theory(fragment=fragment, charge=fragment.charge,
+                    mult=fragment.mult, orcadir=orcadir, numcores=numcores, memory=memory, workflow_args=workflow_args)
+    elif SP_theory.__class__.__name__ == "ORCATheory":
+        #Adding charge and mult to theory object, taken from each fragment object
+        SP_theory.charge = fragment.charge
+        SP_theory.mult = fragment.mult
+        FinalE = ash.Singlepoint(fragment=fragment, theory=SP_theory)
+        SP_theory.cleanup()
+        #TODO: Add SCF-energy and corr-energy to dict here. Need to grab. Can we make general?
+        componentsdict={}
+        #componentsdict = {'E_SCF_CBS' : scf_energy, 'E_corr_CBS' : corr_energy}
+    else:
+        print("Unknown Singlepoint protocol")
+        exit()
+    
+    return FinalE, componentsdict, thermochem
+
+
+#Thermochemistry protocol. Take list of fragments, stoichiometry, and 2 theory levels
+#Requires orcadir, and Opt_theory level (typically an ORCATheory object), SP_theory (either ORCATTheory or workflow.
+def thermochemprotocol_reaction(Opt_theory=None, SP_theory=None, fraglist=None, stoichiometry=None, orcadir=None, numcores=None, memory=5000,
+                       workflow_args=None, analyticHessian=True, temp=298.15, pressure=1.0):
+    print("")
+    print(BC.WARNING, BC.BOLD, "------------THERMOCHEM PROTOCOL-------------", BC.END)
+    print("")
+    print("Running thermochemprotocol function for fragment list:")
+    for i,frag in enumerate(fraglist):
+        print("Fragment {} Formula: {}  Label: {}".format(i,frag.prettyformula,frag.label))
+    print("Stoichiometry:", stoichiometry)
+    print("")
+    FinalEnergies_el = []; FinalEnergies_zpve = []; FinalEnthalpies = []; FinalFreeEnergies = []; list_of_dicts = []; ZPVE_Energies=[]
+    Hcorr_Energies = []; Gcorr_Energies = []
+    
+    #Looping over species in fraglist
+    for species in fraglist:
+        #Get energy and components for species
+        FinalE, componentsdict, thermochem = thermochemprotocol_single(fragment=species, Opt_theory=Opt_theory, SP_theory=SP_theory, orcadir=orcadir, numcores=numcores, memory=memory,
+                       workflow_args=workflow_args, analyticHessian=analyticHessian, temp=temp, pressure=pressure)
+        
+        ZPVE=thermochem['ZPVE']
+        Hcorr=thermochem['Hcorr']
+        Gcorr=thermochem['Gcorr']
+        
+        FinalEnergies_el.append(FinalE)
+        FinalEnergies_zpve.append(FinalE+ZPVE)
+        FinalEnthalpies.append(FinalE+Hcorr)
+        FinalFreeEnergies.append(FinalE+Gcorr)
+        list_of_dicts.append(componentsdict)
+        ZPVE_Energies.append(ZPVE)
+        Hcorr_Energies.append(Hcorr)
+        Gcorr_Energies.append(Gcorr)
+        
+    print("")
+    print("")
+    print("FINAL REACTION ENERGY:")
+    print("Enthalpy and Gibbs Energies for  T={} and P={}".format(temp,pressure))
+    print("----------------------------------------------")
+    ash.ReactionEnergy(stoichiometry=stoichiometry, list_of_fragments=fraglist, list_of_energies=FinalEnergies_el, unit='kcalpermol', label='Total ΔE_el')
+    ash.ReactionEnergy(stoichiometry=stoichiometry, list_of_fragments=fraglist, list_of_energies=FinalEnergies_zpve, unit='kcalpermol', label='Total Δ(E+ZPVE)')
+    ash.ReactionEnergy(stoichiometry=stoichiometry, list_of_fragments=fraglist, list_of_energies=FinalEnthalpies, unit='kcalpermol', label='Total ΔH')
+    ash.ReactionEnergy(stoichiometry=stoichiometry, list_of_fragments=fraglist, list_of_energies=FinalFreeEnergies, unit='kcalpermol', label='Total ΔG')
+    print("----------------------------------------------")
+    print("Individual contributions")
+    #Print individual contributions if available
+    #ZPVE, Hcorr, gcorr
+    ash.ReactionEnergy(stoichiometry=stoichiometry, list_of_fragments=fraglist, list_of_energies=ZPVE_Energies, unit='kcalpermol', label='ΔZPVE')
+    ash.ReactionEnergy(stoichiometry=stoichiometry, list_of_fragments=fraglist, list_of_energies=Hcorr_Energies, unit='kcalpermol', label='ΔHcorr')
+    ash.ReactionEnergy(stoichiometry=stoichiometry, list_of_fragments=fraglist, list_of_energies=Gcorr_Energies, unit='kcalpermol', label='ΔGcorr')
+    #Contributions to CCSD(T) energies
+    if 'E_SCF_CBS' in componentsdict:
+        scf_parts=[dict['E_SCF_CBS'] for dict in list_of_dicts]
+        ash.ReactionEnergy(stoichiometry=stoichiometry, list_of_fragments=fraglist, list_of_energies=scf_parts, unit='kcalpermol', label='ΔSCF')
+    if 'E_CCSDcorr_CBS' in componentsdict:
+        ccsd_parts=[dict['E_CCSDcorr_CBS'] for dict in list_of_dicts]
+        ash.ReactionEnergy(stoichiometry=stoichiometry, list_of_fragments=fraglist, list_of_energies=ccsd_parts, unit='kcalpermol', label='ΔCCSD')
+    if 'E_triplescorr_CBS' in componentsdict:
+        triples_parts=[dict['E_triplescorr_CBS'] for dict in list_of_dicts]
+        ash.ReactionEnergy(stoichiometry=stoichiometry, list_of_fragments=fraglist, list_of_energies=triples_parts, unit='kcalpermol', label='Δ(T)')
+    if 'E_corr_CBS' in componentsdict:
+        valencecorr_parts=[dict['E_corr_CBS'] for dict in list_of_dicts]
+        ash.ReactionEnergy(stoichiometry=stoichiometry, list_of_fragments=fraglist, list_of_energies=valencecorr_parts, unit='kcalpermol', label='ΔCCSD+Δ(T) corr')
+    if 'E_SO' in componentsdict:
+        SO_parts=[dict['E_SO'] for dict in list_of_dicts]
+        ash.ReactionEnergy(stoichiometry=stoichiometry, list_of_fragments=fraglist, list_of_energies=SO_parts, unit='kcalpermol', label='ΔSO')
+    if 'E_corecorr_and_SR' in componentsdict:
+        CV_SR_parts=[dict['E_corecorr_and_SR'] for dict in list_of_dicts]
+        ash.ReactionEnergy(stoichiometry=stoichiometry, list_of_fragments=fraglist, list_of_energies=CV_SR_parts, unit='kcalpermol', label='ΔCV+SR')
+    
+    print("")
+    print(BC.WARNING, BC.BOLD, "------------THERMOCHEM PROTOCOL END-------------", BC.END)
+    ash.print_time_rel(settings_ash.init_time,modulename='Entire thermochemprotocol')
+
+
+
+
+#Thermochemistry protocol. Take list of fragments, stoichiometry, and 2 theory levels
+#Requires orcadir, and Opt_theory level (typically an ORCATheory object), SP_theory (either ORCATTheory or workflow.
+#Old non-modularized code
+#TODO: DELETE, deprecated
+def old_thermochemprotocol(Opt_theory=None, SP_theory=None, fraglist=None, stoichiometry=None, orcadir=None, numcores=None, memory=5000,
+                       workflow_args=None, analyticHessian=True, temp=298.15, pressure=1.0):
+    print("")
+    print("inactive, to be deleted....")
+    exit()
+    print(BC.WARNING, BC.BOLD, "------------THERMOCHEM PROTOCOL-------------", BC.END)
+    print("")
+    if fraglist[0].charge == None:
+        print("1st. Fragment: {}".format(fraglist[0].__dict__))
+        print("No charge/mult information present in fragment. Each fragment in provided fraglist must have charge/mult information defined.")
+        print("Example:")
+        print("fragment.charge= 0; fragment.mult=1")
+        print("Exiting...")
+        exit()
+    #DFT Opt+Freq  and Single-point High-level workflow
+    FinalEnergies = []; FinalEnthalpies = []; FinalFreeEnergies = []; list_of_dicts = []; ZPVE_Energies=[]
+    Hcorr_Energies = []; Gcorr_Energies = []
     for species in fraglist:
         #Only Opt+Freq for molecules, not atoms
         if species.numatoms != 1:
             #DFT-opt
-            #ORCAcalc = ash.ORCATheory(orcadir=orcadir, charge=species.charge, mult=species.mult,
-            #    orcasimpleinput=Opt_protocol_inputline, orcablocks=Opt_protocol_blocks, nprocs=numcores)
             #TODO: Check if this works in general. At least for ORCA.
             
             #Adding charge and mult to theory object, taken from each fragment object
@@ -1696,59 +1844,79 @@ def thermochemprotocol(Opt_theory=None, SPprotocol=None, fraglist=None, stoichio
             
             #DFT-FREQ
             if analyticHessian == True:
-                print("Calculating analytical Hessian via ORCA")
                 thermochem = ash.AnFreq(fragment=species, theory=Opt_theory, numcores=numcores)                
             else:
                 thermochem = ash.NumFreq(fragment=species, theory=Opt_theory, npoint=2, runmode='serial')
             ZPVE = thermochem['ZPVE']
+            Hcorr = thermochem['Hcorr']
+            Gcorr = thermochem['Gcorr']
         else:
-            #Setting ZPVE to 0.0.
-            ZPVE=0.0
-        #Single-point W1
-        if SPprotocol == 'W1':
-            FinalE, componentsdict = W1theory_SP(fragment=species, charge=species.charge,
-                        mult=species.mult, orcadir=orcadir, numcores=numcores, HFreference='QRO', workflow_args=workflow_args)
-        elif SPprotocol == 'DLPNO-W1':
-            FinalE, componentsdict = DLPNO_W1theory_SP(fragment=species, charge=species.charge,
-                        mult=species.mult, orcadir=orcadir, numcores=numcores, memory=memory, pnosetting=pnosetting, T1=False, workflow_args=workflow_args)
-        elif SPprotocol == 'DLPNO-F12':
-            FinalE, componentsdict = DLPNO_F12_SP(fragment=species, charge=species.charge,
-                        mult=species.mult, orcadir=orcadir, numcores=numcores, memory=memory, pnosetting=pnosetting, T1=False, F12level=F12level, workflow_args=workflow_args)
-        elif SPprotocol == 'W1-F12':
-            FinalE, componentsdict = W1F12theory_SP(fragment=species, charge=species.charge,
-                        mult=species.mult, orcadir=orcadir, numcores=numcores, memory=memory, HFreference='QRO', workflow_args=workflow_args)
-        elif SPprotocol == 'DLPNO-W1-F12':
-            FinalE, componentsdict = DLPNO_W1F12theory_SP(fragment=species, charge=species.charge,
-                        mult=species.mult, orcadir=orcadir, numcores=numcores, memory=memory, pnosetting=pnosetting, workflow_args=workflow_args)
-        elif SPprotocol == 'DLPNO_CC_CBS':
-            #TODO: Allow changing basisfamily and cardinals here?? Or should we stick with mostly simple non-changeable protocols here?
-            FinalE, componentsdict = DLPNO_CC_CBS_SP(fragment=species, charge=species.charge,
-                        mult=species.mult, orcadir=orcadir, numcores=numcores, memory=memory, pnosetting=pnosetting, workflow_args=workflow_args)
+            #Setting thermoproperties for atom
+            thermochem = thermochemcalc([],atoms,species, species.mult, temp=temp,pressure=pressure)
+            ZPVE = thermochem['ZPVE']
+            Hcorr = thermochem['Hcorr']
+            Gcorr = thermochem['Gcorr']
+            
+        
+        #Workflow (callable function) or ORCATheory object
+        if callable(SP_theory) is True:
+            FinalE, componentsdict = DLPNO_CC_CBS(fragment=species, charge=species.charge,
+                        mult=species.mult, orcadir=orcadir, numcores=numcores, memory=memory, workflow_args=workflow_args)
+        elif SP_theory.__class__.__name__ == "ORCATheory":
+            #Adding charge and mult to theory object, taken from each fragment object
+            SP_theory.charge = species.charge
+            SP_theory.mult = species.mult
+            FinalE = ash.Singlepoint(fragment=species, theory=SP_theory)
+            SP_theory.cleanup()
+            #TODO: Add SCF-energy and corr-energy to dict here. Need to grab. Can we make general?
+            componentsdict={}
+            #componentsdict = {'E_SCF_CBS' : scf_energy, 'E_corr_CBS' : corr_energy}
         else:
             print("Unknown Singlepoint protocol")
             exit()
-        FinalEnergies.append(FinalE+ZPVE); list_of_dicts.append(componentsdict)
+        FinalEnergies.append(FinalE+ZPVE)
+        FinalEnthalpies.append(FinalE+Hcorr)
+        FinalFreeEnergies.append(FinalE+Gcorr)
+        list_of_dicts.append(componentsdict)
         ZPVE_Energies.append(ZPVE)
-
-
-    #Reaction Energy via list of total energies:
-    scf_parts=[dict['E_SCF_CBS'] for dict in list_of_dicts]
-    ccsd_parts=[dict['E_CCSDcorr_CBS'] for dict in list_of_dicts]
-    triples_parts=[dict['E_triplescorr_CBS'] for dict in list_of_dicts]
-    CV_SR_parts=[dict['E_corecorr_and_SR'] for dict in list_of_dicts]
-    SO_parts=[dict['E_SO'] for dict in list_of_dicts]
-
-    #Reaction Energy of total energies and also different contributions
+        Hcorr_Energies.append(Hcorr)
+        Gcorr_Energies.append(Gcorr)
     print("")
-    ash.ReactionEnergy(stoichiometry=stoichiometry, list_of_fragments=fraglist, list_of_energies=scf_parts, unit='kcalpermol', label='ΔSCF')
-    ash.ReactionEnergy(stoichiometry=stoichiometry, list_of_fragments=fraglist, list_of_energies=ccsd_parts, unit='kcalpermol', label='ΔCCSD')
-    ash.ReactionEnergy(stoichiometry=stoichiometry, list_of_fragments=fraglist, list_of_energies=triples_parts, unit='kcalpermol', label='Δ(T)')
-    ash.ReactionEnergy(stoichiometry=stoichiometry, list_of_fragments=fraglist, list_of_energies=CV_SR_parts, unit='kcalpermol', label='ΔCV+SR')
-    ash.ReactionEnergy(stoichiometry=stoichiometry, list_of_fragments=fraglist, list_of_energies=SO_parts, unit='kcalpermol', label='ΔSO')
-    ash.ReactionEnergy(stoichiometry=stoichiometry, list_of_fragments=fraglist, list_of_energies=ZPVE_Energies, unit='kcalpermol', label='ΔZPVE')
+    print("")
+    print("FINAL REACTION ENERGY:")
+    print("Enthalpy and Gibbs Energies for  T={} and P={}".format(temp,pressure))
     print("----------------------------------------------")
     ash.ReactionEnergy(stoichiometry=stoichiometry, list_of_fragments=fraglist, list_of_energies=FinalEnergies, unit='kcalpermol', label='Total ΔE')
-
+    ash.ReactionEnergy(stoichiometry=stoichiometry, list_of_fragments=fraglist, list_of_energies=FinalEnthalpies, unit='kcalpermol', label='Total ΔH')
+    ash.ReactionEnergy(stoichiometry=stoichiometry, list_of_fragments=fraglist, list_of_energies=FinalFreeEnergies, unit='kcalpermol', label='Total ΔG')
+    print("----------------------------------------------")
+    print("Individual contributions")
+    #Print individual contributions if available
+    #ZPVE
+    ash.ReactionEnergy(stoichiometry=stoichiometry, list_of_fragments=fraglist, list_of_energies=ZPVE_Energies, unit='kcalpermol', label='ΔZPVE')
+    ash.ReactionEnergy(stoichiometry=stoichiometry, list_of_fragments=fraglist, list_of_energies=Hcorr_Energies, unit='kcalpermol', label='ΔHcorr')
+    ash.ReactionEnergy(stoichiometry=stoichiometry, list_of_fragments=fraglist, list_of_energies=Gcorr_Energies, unit='kcalpermol', label='ΔGcorr')
+    if 'E_SCF_CBS' in componentsdict:
+        scf_parts=[dict['E_SCF_CBS'] for dict in list_of_dicts]
+        ash.ReactionEnergy(stoichiometry=stoichiometry, list_of_fragments=fraglist, list_of_energies=scf_parts, unit='kcalpermol', label='ΔSCF')
+    if 'E_CCSDcorr_CBS' in componentsdict:
+        ccsd_parts=[dict['E_CCSDcorr_CBS'] for dict in list_of_dicts]
+        ash.ReactionEnergy(stoichiometry=stoichiometry, list_of_fragments=fraglist, list_of_energies=ccsd_parts, unit='kcalpermol', label='ΔCCSD')
+    if 'E_triplescorr_CBS' in componentsdict:
+        triples_parts=[dict['E_triplescorr_CBS'] for dict in list_of_dicts]
+        ash.ReactionEnergy(stoichiometry=stoichiometry, list_of_fragments=fraglist, list_of_energies=triples_parts, unit='kcalpermol', label='Δ(T)')
+    if 'E_corr_CBS' in componentsdict:
+        valencecorr_parts=[dict['E_corr_CBS'] for dict in list_of_dicts]
+        ash.ReactionEnergy(stoichiometry=stoichiometry, list_of_fragments=fraglist, list_of_energies=valencecorr_parts, unit='kcalpermol', label='ΔCCSD+Δ(T) corr')
+    if 'E_SO' in componentsdict:
+        SO_parts=[dict['E_SO'] for dict in list_of_dicts]
+        ash.ReactionEnergy(stoichiometry=stoichiometry, list_of_fragments=fraglist, list_of_energies=SO_parts, unit='kcalpermol', label='ΔSO')
+    if 'E_corecorr_and_SR' in componentsdict:
+        CV_SR_parts=[dict['E_corecorr_and_SR'] for dict in list_of_dicts]
+        ash.ReactionEnergy(stoichiometry=stoichiometry, list_of_fragments=fraglist, list_of_energies=CV_SR_parts, unit='kcalpermol', label='ΔCV+SR')
+    
+    print("")
+    print(BC.WARNING, BC.BOLD, "------------THERMOCHEM PROTOCOL END-------------", BC.END)
     ash.print_time_rel(settings_ash.init_time,modulename='Entire thermochemprotocol')
     
     
@@ -2139,7 +2307,7 @@ def calc_surface_fromXYZ(xyzdir=None, theory=None, dimension=None, resultfile=No
 
 
 #DLPNO-test CBS protocol. Simple. No core-correlation, scalar relativistic or spin-orbit coupling for now
-def DLPNO_CC_CBS_SP(cardinals = [2,3], basisfamily="def2", fragment=None, charge=None, orcadir=None, mult=None, stabilityanalysis=False, numcores=1, CVSR=False,
+def DLPNO_CC_CBS(cardinals = [2,3], basisfamily="def2", fragment=None, charge=None, orcadir=None, mult=None, stabilityanalysis=False, numcores=1, CVSR=False,
                       memory=5000, pnosetting='NormalPNO', pnoextrapolation=[5,6], T1=False, scfsetting='TightSCF', extrainputkeyword='', extrablocks='', **kwargs):
     """
     WORK IN PROGRESS
@@ -2159,7 +2327,7 @@ def DLPNO_CC_CBS_SP(cardinals = [2,3], basisfamily="def2", fragment=None, charge
     :return: energy and dictionary with energy-components
     """
     # If run_benchmark or other passed workflow_args then use them instead
-    if 'workflow_args' in kwargs:
+    if 'workflow_args' in kwargs and kwargs['workflow_args'] is not None:
         print("Workflow args passed")
         workflow_args=kwargs['workflow_args']
         if 'cardinals' in workflow_args:
@@ -2186,7 +2354,7 @@ def DLPNO_CC_CBS_SP(cardinals = [2,3], basisfamily="def2", fragment=None, charge
             extrablocks=workflow_args['extrablocks']
 
     print("-----------------------------")
-    print("DLPNO_CC_CBS_SP PROTOCOL")
+    print("DLPNO_CC_CBS PROTOCOL")
     print("-----------------------------")
     print("Settings:")
     print("Cardinals chosen:", cardinals)
@@ -2428,7 +2596,7 @@ end
 
 #FCI/CBS protocol. No core-correlation, scalar relativistic or spin-orbit coupling for now.
 # Extrapolates CC series to Full-CI and to CBS 
-def FCI_CBS_SP(cardinals = [2,3], basisfamily="def2", fragment=None, charge=None, orcadir=None, mult=None, stabilityanalysis=False, numcores=1,
+def FCI_CBS(cardinals = [2,3], basisfamily="def2", fragment=None, charge=None, orcadir=None, mult=None, stabilityanalysis=False, numcores=1,
                       memory=5000, DLPNO=True, pnosetting='NormalPNO', F12=False, T1=False, scfsetting='TightSCF', extrainputkeyword='', extrablocks='', **kwargs):
     """
     WORK IN PROGRESS
@@ -2447,7 +2615,7 @@ def FCI_CBS_SP(cardinals = [2,3], basisfamily="def2", fragment=None, charge=None
     :return: energy and dictionary with energy-components
     """
     # If run_benchmark or other passed workflow_args then use them instead
-    if 'workflow_args' in kwargs:
+    if 'workflow_args' in kwargs and kwargs['workflow_args'] is not None:
         print("Workflow args passed")
         workflow_args=kwargs['workflow_args']
         if 'cardinals' in workflow_args:
@@ -2470,7 +2638,7 @@ def FCI_CBS_SP(cardinals = [2,3], basisfamily="def2", fragment=None, charge=None
             extrablocks=workflow_args['extrablocks']
 
     print("-----------------------------")
-    print("FCI_CBS_SP PROTOCOL")
+    print("FCI_CBS PROTOCOL")
     print("-----------------------------")
     print("Settings:")
     print("Cardinals chosen:", cardinals)
@@ -2761,7 +2929,7 @@ def FCI_F12(F12level='DZ', fragment=None, charge=None, orcadir=None, mult=None, 
     :return: energy and dictionary with energy-components
     """
     # If run_benchmark or other passed workflow_args then use them instead
-    if 'workflow_args' in kwargs:
+    if 'workflow_args' in kwargs and kwargs['workflow_args'] is not None:
         print("Workflow args passed")
         workflow_args=kwargs['workflow_args']      
         if 'stabilityanalysis' in workflow_args:

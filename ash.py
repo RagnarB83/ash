@@ -372,7 +372,7 @@ def Singlepoint_parallel(fragments=None, theories=None, numcores=None):
 
 #Analytical frequencies function
 #Only works for ORCAtheory at the moment
-def AnFreq(fragment=None, theory=None, numcores=1):
+def AnFreq(fragment=None, theory=None, numcores=1, temp=298.15, pressure=1.0):
     print(BC.WARNING, BC.BOLD, "------------ANALYTICAL FREQUENCIES-------------", BC.END)
     if theory.__class__.__name__ == "ORCATheory":
         print("Requesting analytical Hessian calculation from ORCATheory")
@@ -387,7 +387,7 @@ def AnFreq(fragment=None, theory=None, numcores=1):
         frequencies = ORCAfrequenciesgrab(theory.inputfilename+".hess")
         
         hessatoms=list(range(0,fragment.numatoms))
-        Thermochemistry = thermochemcalc(frequencies,hessatoms, fragment, theory.mult, temp=298.18,pressure=1)
+        Thermochemistry = thermochemcalc(frequencies,hessatoms, fragment, theory.mult, temp=temp,pressure=pressure)
         
         print(BC.WARNING, BC.BOLD, "------------ANALYTICAL FREQUENCIES END-------------", BC.END)
         return Thermochemistry
@@ -397,7 +397,7 @@ def AnFreq(fragment=None, theory=None, numcores=1):
         exit()
 
 #Numerical frequencies function
-def NumFreq(fragment=None, theory=None, npoint=1, displacement=0.0005, hessatoms=None, numcores=1, runmode='serial'):
+def NumFreq(fragment=None, theory=None, npoint=1, displacement=0.0005, hessatoms=None, numcores=1, runmode='serial', temp=298.15, pressure=1.0):
     
     print(BC.WARNING, BC.BOLD, "------------NUMERICAL FREQUENCIES-------------", BC.END)
     shutil.rmtree('Numfreq_dir', ignore_errors=True)
@@ -743,9 +743,9 @@ def NumFreq(fragment=None, theory=None, npoint=1, displacement=0.0005, hessatoms
 
     #Print out thermochemistry
     if theory.__class__.__name__ == "QMMMTheory":
-        Thermochemistry = thermochemcalc(frequencies,hessatoms, fragment, theory.qm_theory.mult, temp=298.18,pressure=1)
+        Thermochemistry = thermochemcalc(frequencies,hessatoms, fragment, theory.qm_theory.mult, temp=temp,pressure=pressure)
     else:
-        Thermochemistry = thermochemcalc(frequencies,hessatoms, fragment, theory.mult, temp=298.18,pressure=1)
+        Thermochemistry = thermochemcalc(frequencies,hessatoms, fragment, theory.mult, temp=temp,pressure=pressure)
 
 
     #Write Hessian to file
