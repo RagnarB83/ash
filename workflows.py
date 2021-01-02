@@ -1710,10 +1710,6 @@ def thermochemprotocol_single(fragment=None, Opt_theory=None, SP_theory=None, or
     print("THERMOCHEM PROTOCOL-single: Step 3. High-level single-point calculation")
     print("-------------------------------------------------------------------------")
     #Workflow (callable function) or ORCATheory object
-    print("SP_theory", SP_theory)
-    print(type(SP_theory))
-    print(callable(SP_theory))
-    print(callable(DLPNO_CC_CBS))
     if callable(SP_theory) is True:
         FinalE, componentsdict = SP_theory(fragment=fragment, charge=fragment.charge,
                     mult=fragment.mult, orcadir=orcadir, numcores=numcores, memory=memory, workflow_args=workflow_args)
@@ -1738,7 +1734,7 @@ def thermochemprotocol_single(fragment=None, Opt_theory=None, SP_theory=None, or
 def thermochemprotocol_reaction(Opt_theory=None, SP_theory=None, fraglist=None, stoichiometry=None, orcadir=None, numcores=None, memory=5000,
                        workflow_args=None, analyticHessian=True, temp=298.15, pressure=1.0):
     print("")
-    print(BC.WARNING, BC.BOLD, "------------THERMOCHEM PROTOCOL-------------", BC.END)
+    print(BC.WARNING, BC.BOLD, "------------THERMOCHEM PROTOCOL (reaction)-------------", BC.END)
     print("")
     print("Running thermochemprotocol function for fragment list:")
     for i,frag in enumerate(fraglist):
@@ -2307,7 +2303,7 @@ def calc_surface_fromXYZ(xyzdir=None, theory=None, dimension=None, resultfile=No
 
 
 #DLPNO-test CBS protocol. Simple. No core-correlation, scalar relativistic or spin-orbit coupling for now
-def DLPNO_CC_CBS(cardinals = [2,3], basisfamily="def2", fragment=None, charge=None, orcadir=None, mult=None, stabilityanalysis=False, numcores=1, CVSR=False,
+def DLPNO_CC_CBS(cardinals = [2,3], basisfamily="def2", fragment=None, charge=None, orcadir=None, mult=None, stabilityanalysis=False, numcores=1, CVSR=False, CVbasis="W1-mtsmall",
                       memory=5000, pnosetting='NormalPNO', pnoextrapolation=[5,6], T1=False, scfsetting='TightSCF', extrainputkeyword='', extrablocks='', **kwargs):
     """
     WORK IN PROGRESS
@@ -2333,7 +2329,9 @@ def DLPNO_CC_CBS(cardinals = [2,3], basisfamily="def2", fragment=None, charge=No
         if 'cardinals' in workflow_args:
             cardinals=workflow_args['cardinals']
         if 'basisfamily' in workflow_args:
-            basisfamily=workflow_args['basisfamily']        
+            basisfamily=workflow_args['basisfamily']
+        if 'CVbasis' in workflow-args:
+            CVbasis=workflow_args['CVbasis']
         if 'stabilityanalysis' in workflow_args:
             stabilityanalysis=workflow_args['stabilityanalysis']
         if 'pnosetting' in workflow_args:
@@ -2536,17 +2534,15 @@ end
         # TODO: Option if W1-mtsmall basis set is not available?
         
         if ECPflag is True:
-            print("ECPs present. Not doing ScalarRelativistic Correction. Switching to Core-Valence Correction only.")
-            cvbasis="W1-mtsmall"
+            print("ECPs present. Not doing ScalarRelativistic Correction. Switching to Core-Valence Correction only.")s
             reloption=" "
             pnooption="NormalPNO"
-            print("Doing CVSR_Step with No Scalar Relativity and CV-basis: {} and PNO-option: {}".format(cvbasis,pnooption))
+            print("Doing CVSR_Step with No Scalar Relativity and CV-basis: {} and PNO-option: {}".format(CVbasis,pnooption))
             E_corecorr_and_SR = CV_Step(cvbasis,reloption,ccsdtkeyword,auxbasis,pnooption,scfsetting,extrainputkeyword,orcadir,blocks,numcores,charge,mult,fragment,calc_label)
         else:
-            cvbasis="W1-mtsmall"
             reloption="DKH"
             pnooption="NormalPNO"
-            print("Doing CVSR_Step with Relativistic Option: {} and CV-basis: {} and PNO-option: {}".format(reloption,cvbasis,pnooption))
+            print("Doing CVSR_Step with Relativistic Option: {} and CV-basis: {} and PNO-option: {}".format(reloption,CVbasis,pnooption))
             E_corecorr_and_SR = CVSR_Step(cvbasis,reloption,ccsdtkeyword,auxbasis,pnooption,scfsetting,extrainputkeyword,orcadir,blocks,numcores,charge,mult,fragment,calc_label)
             
         

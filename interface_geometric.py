@@ -332,7 +332,7 @@ def geomeTRICOptimizer(theory=None,fragment=None, coordsystem='tric', frozenatom
 
     write_XYZ_for_atoms(fragment.coords, fragment.elems, actatoms, "Fragment-optimized_Active")
 
-    print("TO BE ADDED HERE: Internal coordinate table (bond-lengths etc.) for optimized geometry")
+    print_internal_coordinate_table(fragment)
 
     blankline()
     #Now returning final energy

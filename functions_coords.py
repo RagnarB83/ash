@@ -28,6 +28,36 @@ eldict_covrad['K']=0.0001
 #print(eldict_covrad)
 
 
+def print_internal_coordinate_table(fragment):
+    print('='*50)
+    print("Optimized internal coordinates")
+    print('='*50)
+    #Looping over connected fragments
+    bondpairs=[]
+    bondpairsdict={}
+    for conn_fragment in fragment.connectivity:
+        #Looping over atom indices in fragment
+        for atom in conn_fragment:
+            #print("atom:", atom)
+            connatoms = get_connected_atoms(fragment.coords, fragment.elems,settings_ash.scale,settings_ash.tol,atom)
+            #print("connatoms:", connatoms)
+            for conn_i in connatoms:
+                dist=distance_between_atoms(fragment=fragment, atom1=atom, atom2=conn_i)
+                #bondpairs.append([atom,conn_i,dist])
+                bondpairsdict[frozenset((atom,conn_i))] = dist
+    
+    #Using frozenset: https://stackoverflow.com/questions/46633065/multiples-keys-dictionary-where-key-order-doesnt-matter
+    #sort bondpairs list??
+    
+    #print bondpairs list
+    print("Bond lengths (Å):")
+    print('-'*38)
+    for key,val in bondpairsdict.items():
+        listkey=list(key)
+        elA=fragment.elems[listkey[0]]
+        elB=fragment.elems[listkey[1]]
+        print("Bond: {:8}{:4} - {:4}{:4} {:>6.3f}".format(listkey[0],elA,listkey[1],elB, val ))
+    print('='*50)
 #Function to check if string corresponds to an element symbol or not.
 #Compares in lowercase
 def isElement(string):
