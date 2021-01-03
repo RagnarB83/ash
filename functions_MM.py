@@ -256,11 +256,6 @@ def LJCoulpy(coords,atomtypes, charges, LJPairpotentials, connectivity=None):
                                 #print("gr:", gr)
                                 LJgradient[i] += gr
                                 LJgradient[j] -= gr
-                                #print("gradient[i]:", gradient[i])
-                                #print("gradient[j]:", gradient[j])
-                                #print("gradients in hartree/Bohr:")
-                                #print("gradient[i]:", gradient[i]* (1/constants.harkcal) / constants.ang2bohr)
-                                #print("gradient[j]:", gradient[j]* (1/constants.harkcal) / constants.ang2bohr)
     #Convert gradient from kcal/mol per Å to hartree/Bohr
     LJfinal_gradient=LJgradient * (1/constants.harkcal) / constants.ang2bohr
     #print("LJ gradient (hartree/Bohr):", LJfinal_gradient)

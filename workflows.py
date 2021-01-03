@@ -2534,7 +2534,7 @@ end
         # TODO: Option if W1-mtsmall basis set is not available?
         
         if ECPflag is True:
-            print("ECPs present. Not doing ScalarRelativistic Correction. Switching to Core-Valence Correction only.")s
+            print("ECPs present. Not doing ScalarRelativistic Correction. Switching to Core-Valence Correction only.")
             reloption=" "
             pnooption="NormalPNO"
             print("Doing CVSR_Step with No Scalar Relativity and CV-basis: {} and PNO-option: {}".format(CVbasis,pnooption))

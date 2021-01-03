@@ -853,7 +853,6 @@ class ZeroTheory:
 
 # Different MM theories
 
-
 #Todo: Also think whether we want do OpenMM simulations in case we have to make another object maybe
 #Amberfiles:
 # Needs just amberprmtopfile (new-style Amber7 format). Not inpcrd file, read into ASH fragment instead
@@ -1027,6 +1026,7 @@ class OpenMMTheory:
                 self.getatomcharges(forces['NonbondedForce'])
                 
                 hbforce = forces['HarmonicBondForce']
+                
                 #Case QM/MM. Delete bonded terms in QM-region
                 
                 #https://github.com/openmm/openmm/issues/2792

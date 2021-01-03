@@ -131,7 +131,7 @@ def get_reaction_string(filenames, stoichiometry):
 # Use both for benchmark and also for end of optimizations
 def run_geobenchmark(set=None, theory=None, orcadir=None, numcores=None):
     print("not ready")
-
+    exit()
 
 
 #run_benchmark
