@@ -638,7 +638,7 @@ def create_orca_inputVIEcomp_gas(name, name2, elems, coords, orcasimpleinput, or
 #Allows for extraline that could be another '!' line or block-inputline.
 #Used by Yggdrasill
 def create_orca_input_pc(name,elems,coords,orcasimpleinput,orcablockinput,charge,mult, Grad=False, extraline='',
-                         HSmult=None, atomstoflip=None):
+                         HSmult=None, atomstoflip=None, Hessian=False):
     pcfile=name+'.pc'
     with open(name+'.inp', 'w') as orcafile:
         orcafile.write(orcasimpleinput+'\n')

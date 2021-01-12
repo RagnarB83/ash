@@ -142,6 +142,46 @@ function get_connected_atoms_julia(coords::Array{Float64,2}, elems::Array{String
 end
 
 
+#Just Coulomb function. Adapted from LJcoulombchargev1c
+
+function coulombchargev1c(charges, coords)
+    """Coulomb function"""
+    ang2bohr = 1.88972612546
+    bohr2ang = 0.52917721067
+    hartokcal = 627.50946900
+    coords_b=coords*ang2bohr
+    num=length(charges)
+    VC=0.0
+    gradient = zeros(size(coords_b)[1], 3)
+    constant=-1*(1/hartokcal)*bohr2ang*bohr2ang
+
+    @inbounds for j in 1:num
+        for i in j+1:num
+            @inbounds rij_x = coords_b[i,1] - coords_b[j,1]
+            @inbounds rij_y = coords_b[i,2] - coords_b[j,2]
+            @inbounds rij_z = coords_b[i,3] - coords_b[j,3]
+            @fastmath r = rij_x*rij_x+rij_y*rij_y+rij_z*rij_z
+            @fastmath d = sqrt(r)
+            @fastmath d_ang = d / ang2bohr
+            @fastmath ri=1/r
+            @fastmath ri3=ri*ri*ri
+            @inbounds @fastmath VC += charges[i] * charges[j] / (d)
+            @inbounds @fastmath kC=charges[i]*charges[j]*sqrt(ri3)
+            @fastmath Gij_x=kC*rij_x
+            @fastmath Gij_y=kC*rij_y
+            @fastmath Gij_z=kC*rij_z
+
+            gradient[j,1] +=  Gij_x
+            gradient[j,2] +=  Gij_y
+            gradient[j,3] +=  Gij_z
+            gradient[i,1] -=  Gij_x
+            gradient[i,2] -=  Gij_y
+            gradient[i,3] -=  Gij_z
+        end
+    end
+    return VC, gradient
+end
+
 
 #Lennard-Jones+Coulomb function.
 #Tested. Faster than gcc-compiled Fortran function (LJCoulombv1.f90)

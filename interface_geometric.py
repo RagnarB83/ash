@@ -36,6 +36,7 @@ def geomeTRICOptimizer(theory=None,fragment=None, coordsystem='tric', frozenatom
     try:
         os.remove('geometric_OPTtraj.log')
         os.remove('geometric_OPTtraj.xyz')
+        os.remove('geometric_OPTtraj_Full.xyz')
         os.remove('constraints.txt')
         os.remove('initialxyzfiletric.xyz')
         shutil.rmtree('geometric_OPTtraj.tmp')

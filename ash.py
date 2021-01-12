@@ -873,7 +873,7 @@ class OpenMMTheory:
                  CHARMMfiles=False, psffile=None, charmmtopfile=None, charmmprmfile=None,
                  GROMACSfiles=False, gromacstopfile=None, grofile=None, gromacstopdir=None,
                  Amberfiles=False, amberprmtopfile=None, printlevel=2, nprocs=1,
-                 xmlfile=None, periodic=False, periodic_cell_dimensions=None):
+                 xmlfile=None, periodic=False, periodic_cell_dimensions=None, customnonbondedforce=False):
         
         timeA = time.time()
         # OPEN MM load
@@ -903,7 +903,9 @@ class OpenMMTheory:
 
             
         #OpenMM things
-
+        self.openmm=simtk.openmm
+        self.simulationclass=simtk.openmm.app.simulation.Simulation
+        self.langevinintegrator=simtk.openmm.LangevinIntegrator
         self.platform_choice=platform
         self.unit=simtk.unit
         self.Vec3=simtk.openmm.Vec3
@@ -918,9 +920,6 @@ class OpenMMTheory:
         self.Forcefield=None
         #What type of forcefield files to read. Reads in different way.
         # #Always creates object we call self.forcefield that contains topology attribute
-        
-        
-        
         if CHARMMfiles is True:
             self.Forcefield='CHARMM'
             print("Reading CHARMM files")
@@ -939,7 +938,7 @@ class OpenMMTheory:
             
             #Periodic
             if self.Periodic is True:
-                print("System is periodic (only for pure MM")
+                print("System is periodic")
                 self.periodic_cell_dimensions = periodic_cell_dimensions
                 self.a = periodic_cell_dimensions[0] * self.unit.angstroms
                 self.b = periodic_cell_dimensions[1] * self.unit.angstroms
@@ -950,8 +949,11 @@ class OpenMMTheory:
                 
                 self.system = self.psf.createSystem(self.params, nonbondedMethod=simtk.openmm.app.PME,
                                                 nonbondedCutoff=12 * self.unit.angstroms, switchDistance=10*self.unit.angstroms)
+                
+                #TODO: Customnonbonded force option here
+                
                 print("self.system.getForces() :", self.system.getForces())
-                for force in self.system.getForces():
+                for i,force in enumerate(self.system.getForces()):
                     if isinstance(force, simtk.openmm.CustomNonbondedForce):
                         print('CustomNonbondedForce: %s' % force.getUseSwitchingFunction())
                         print('LRC? %s' % force.getUseLongRangeCorrection())
@@ -961,51 +963,117 @@ class OpenMMTheory:
                         print('LRC? %s' % force.getUseDispersionCorrection())
                         force.setUseDispersionCorrection(False)
                         force.setPMEParameters(1.0/0.34, periodic_cell_dimensions[3], periodic_cell_dimensions[4], periodic_cell_dimensions[5]) 
+                        self.nonbonded_force=force
                         # NOTE: These are hard-coded!
+                        
+                #Set charges in OpenMMobject by taking from Force
+                print("Setting charges")
+                self.getatomcharges(self.nonbonded_force)
+                        
                 
             #Non-Periodic
             else:
                 print("System is non-periodic")
-                
                 #For frozen systems we use Customforce in order to specify interaction groups
-                if len(self.frozen_atoms) > 0:
+                #if len(self.frozen_atoms) > 0:
                     
                     #Two possible ways.
                     #https://github.com/openmm/openmm/issues/2698
                     #1. Use CustomNonbondedForce  with interaction groups. Could be slow
                     #2. CustomNonbondedForce but with scaling
+                
+                
+                #https://ahy3nz.github.io/posts/2019/30/openmm2/
+                #http://www.maccallumlab.org/news/2015/1/23/testing
+                
+                #Comes close to NonbondedForce results (after exclusions) but still not correct
+                #The issue is most likely that the 1-4 LJ interactions should not be excluded but rather scaled.
+                #See https://github.com/openmm/openmm/issues/1200
+                #https://github.com/openmm/openmm/issues/1696
+                #How to do:
+                #1. Keep nonbonded force for only those interactions and maybe also electrostatics?
+                #Mimic this??: https://github.com/openmm/openmm/blob/master/devtools/forcefield-scripts/processCharmmForceField.py
+                #Or do it via Parmed? Better supported for future??
+                #2. Go through the 1-4 interactions and not exclude but scale somehow manually. But maybe we can't do that in CustomNonbonded Force?
+                #Presumably not but maybe can add a special force object just for 1-4 interactions. We
+                def create_cnb(original_nbforce):
+                    """Creates a CustomNonbondedForce object that mimics the original nonbonded force
+                    and also a Custombondforce to handle 14 exceptions
+                    """
+                    #Next, create a CustomNonbondedForce with LJ and Coulomb terms
+                    ONE_4PI_EPS0 = 138.935456
+                    #ONE_4PI_EPS0=1.0
+                    #TODO: Not sure whether sqrt should be present or not in epsilon???
+                    energy_expression  = "4*epsilon*((sigma/r)^12 - (sigma/r)^6) + ONE_4PI_EPS0*chargeprod/r;"
+                    #sqrt ??
+                    energy_expression += "epsilon = sqrt(epsilon1*epsilon2);"
+                    energy_expression += "sigma = 0.5*(sigma1+sigma2);"
+                    energy_expression += "ONE_4PI_EPS0 = {:f};".format(ONE_4PI_EPS0)  # already in OpenMM units
+                    energy_expression += "chargeprod = charge1*charge2;"
+                    custom_nonbonded_force = simtk.openmm.CustomNonbondedForce(energy_expression)
+                    custom_nonbonded_force.addPerParticleParameter('charge')
+                    custom_nonbonded_force.addPerParticleParameter('sigma')
+                    custom_nonbonded_force.addPerParticleParameter('epsilon')
+                    # Configure force
+                    custom_nonbonded_force.setNonbondedMethod(simtk.openmm.CustomNonbondedForce.NoCutoff)
+                    #custom_nonbonded_force.setCutoffDistance(9999999999)
+                    custom_nonbonded_force.setUseLongRangeCorrection(False)
+                    #custom_nonbonded_force.setUseSwitchingFunction(True)
+                    #custom_nonbonded_force.setSwitchingDistance(99999)
+                    print('adding particles to custom force')
+                    for index in range(self.system.getNumParticles()):
+                        [charge, sigma, epsilon] = original_nbforce.getParticleParameters(index)
+                        custom_nonbonded_force.addParticle([charge, sigma, epsilon])
+                    #For CustomNonbondedForce we need (unlike NonbondedForce) to create exclusions that correspond to the automatic exceptions in NonbondedForce
+                    #These are interactions that are skipped for bonded atoms
+                    numexceptions = original_nbforce.getNumExceptions()
+                    print("numexceptions in original_nbforce: ", numexceptions)
                     
-                    #Way
-                    def create_cnb(original_nbforce):
-                        """Creates a CustomNonbondedForce object that recapitulates the function
-                        of the original nonbonded force"""
-                        #Next, create a CustomNonbondedForce with LJ and Coulomb terms
-                        ONE_4PI_EPS0 = 138.935456
-                        #TODO: Not sure whether sqrt should be present or not in epsilon???
-                        energy_expression  = "4*epsilon*((sigma/r)^12 - (sigma/r)^6) + ONE_4PI_EPS0*chargeprod/r;"
-                        energy_expression += "epsilon = sqrt(epsilon1*epsilon2);"
-                        energy_expression += "sigma = 0.5*(sigma1+sigma2);"
-                        energy_expression += "ONE_4PI_EPS0 = {:f};".format(ONE_4PI_EPS0)  # already in OpenMM units
-                        energy_expression += "chargeprod = charge1*charge2;"
-                        custom_nonbonded_force = simtk.openmm.CustomNonbondedForce(energy_expression)
-                        custom_nonbonded_force.addPerParticleParameter('charge')
-                        custom_nonbonded_force.addPerParticleParameter('sigma')
-                        custom_nonbonded_force.addPerParticleParameter('epsilon')
-                        # Configure force
-                        custom_nonbonded_force.setNonbondedMethod(simtk.openmm.CustomNonbondedForce.NoCutoff)
-                        #custom_nonbonded_force.setCutoffDistance(1*simtk.openmm.unit.nanometer)
-                        custom_nonbonded_force.setUseLongRangeCorrection(False)
-                        #custom_nonbonded_force.setUseSwitchingFunction(True)
-                        #custom_nonbonded_force.setSwitchingDistance(cutoff_distance - 1.0*simtk.openmmunit.angstroms)
-                        
-                        
-                        print('adding particles to custom force')
-                        for index in range(self.system.getNumParticles()):
-                            [charge, sigma, epsilon] = original_nbforce.getParticleParameters(index)
-                            custom_nonbonded_force.addParticle([charge, sigma, epsilon])
+                    #Turn exceptions from NonbondedForce into exclusions in CustombondedForce
+                    # except 1-4 which are not zeroed but are scaled. These are added to Custombondforce
+                    exceptions_14=[]
+                    numexclusions=0
+                    for i in range(0,numexceptions):
+                        #print("i:", i)
+                        #Get exception parameters (indices)
+                        p1,p2,charge,sigma,epsilon = original_nbforce.getExceptionParameters(i)
+                        #print("p1,p2,charge,sigma,epsilon:", p1,p2,charge,sigma,epsilon)
+                        #If 0.0 then these are CHARMM 1-2 and 1-3 interactions set to zero
+                        if charge._value==0.0 and epsilon._value==0.0:
+                            #print("Charge and epsilons are 0.0. Add proper exclusion")
+                            #Set corresponding exclusion in customnonbforce
+                            custom_nonbonded_force.addExclusion(p1,p2)
+                            numexclusions+=1
+                        else:
+                            #print("This is not an exclusion but a scaled interaction as it is is non-zero. Need to keep")
+                            exceptions_14.append([p1,p2,charge,sigma,epsilon])
+                            #[798, 801, Quantity(value=-0.0684, unit=elementary charge**2), Quantity(value=0.2708332103146632, unit=nanometer), Quantity(value=0.2672524882578271, unit=kilojoule/mole)]
+                    
+                    print("len exceptions_14", len(exceptions_14))
+                    #print("exceptions_14:", exceptions_14)
+                    print("numexclusions:", numexclusions)
+                    
+                    
+                    #Creating custombondforce to handle these special exceptions
+                    #Now defining pair parameters
+                    #https://github.com/openmm/openmm/issues/2698
+                    energy_expression  = "(4*epsilon*((sigma/r)^12 - (sigma/r)^6) + ONE_4PI_EPS0*chargeprod/r);"
+                    energy_expression += "ONE_4PI_EPS0 = {:f};".format(ONE_4PI_EPS0)  # already in OpenMM units
+                    custom_bond_force = self.openmm.CustomBondForce(energy_expression)
+                    custom_bond_force.addPerBondParameter('chargeprod')
+                    custom_bond_force.addPerBondParameter('sigma')
+                    custom_bond_force.addPerBondParameter('epsilon')
+                    
+                    for exception in exceptions_14:
+                        idx=exception[0];jdx=exception[1];c=exception[2];sig=exception[3];eps=exception[4]
+                        custom_bond_force.addBond(idx, jdx, [c, sig, eps])
+                    
+                    print('Number of defined 14 bonds in custom_bond_force:', custom_bond_force.getNumBonds())
+                    
+                    
+                    return custom_nonbonded_force,custom_bond_force
 
-                        return custom_nonbonded_force
-                    
+                #TODO: Look into: https://github.com/ParmEd/ParmEd/blob/7e411fd03c7db6977e450c2461e065004adab471/parmed/structure.py#L2554
                     
                     #myCustomNBForce= simtk.openmm.CustomNonbondedForce("4*epsilon*((sigma/r)^12-(sigma/r)^6); sigma=0.5*(sigma1+sigma2); epsilon=sqrt(epsilon1*epsilon2)")
                     #myCustomNBForce.setNonbondedMethod(simtk.openmm.app.NoCutoff)
@@ -1018,53 +1086,57 @@ class OpenMMTheory:
 
                 self.system = self.psf.createSystem(self.params, nonbondedMethod=simtk.openmm.app.NoCutoff,
                                                     nonbondedCutoff=1000 * simtk.openmm.unit.angstroms)
-                
-                #All original unmodified forces
-                forces = { force.__class__.__name__ : force for force in self.system.getForces() }
-                
+                print("system created")
+                print("Number of forces:", self.system.getNumForces())
+                print(self.system.getForces())
+                print("")                
+                print("")
+                #print("original forces: ", forces)
                 # Get charges from OpenMM object into self.charges
-                self.getatomcharges(forces['NonbondedForce'])
+                #self.getatomcharges(forces['NonbondedForce'])
+                self.getatomcharges(self.system.getForces()[6])
                 
-                hbforce = forces['HarmonicBondForce']
-                
-                #Case QM/MM. Delete bonded terms in QM-region
-                
-                #https://github.com/openmm/openmm/issues/2792
-                #for i in range(hbforce.getNumBonds()):
-                #    p1, p2, length, k = hbforce.getBondParameters(i)
-                #    exclude = (p1 in atoms or p2 in atoms)
-                #    hbforce.setBondParameters(i, p1, p2, length, 0 if exclude else bond_k[i])
-                 #   hbforce.updateParametersInContext(context)
-                
-                
-                nbforce = forces['NonbondedForce']
-                custom_nonbonded_force = create_cnb(nbforce)
-                
-                
-                #Frozen-Act interaction
-                custom_nonbonded_force.addInteractionGroup(self.frozen_atoms,self.active_atoms)
-                #Act-Act interaction
-                custom_nonbonded_force.addInteractionGroup(self.active_atoms,self.active_atoms)
-                
-                #Update system with new force and delete old force
-                self.system.addForce(custom_nonbonded_force) 
-                 #TODO: Check. Is NonbondedForce always number 6???
-                self.system.removeForce(6)
-                print("self.system.getForces() :", self.system.getForces())
 
+                #CASE CUSTOMNONBONDED FORCE
+                if customnonbondedforce is True:
+
+                    #Create CustomNonbonded force
+                    for i,force in enumerate(self.system.getForces()):
+                        if isinstance(force, self.openmm.NonbondedForce):
+                            custom_nonbonded_force,custom_bond_force = create_cnb(self.system.getForces()[i])
+                    print("1custom_nonbonded_force:", custom_nonbonded_force)
+                    print("num exclusions in customnonb:", custom_nonbonded_force.getNumExclusions())
+                    print("num 14 exceptions in custom_bond_force:", custom_bond_force.getNumBonds())
+                    
+                    #TODO: Deal with frozen regions. NOT YET DONE
+                    #Frozen-Act interaction
+                    #custom_nonbonded_force.addInteractionGroup(self.frozen_atoms,self.active_atoms)
+                    #Act-Act interaction
+                    #custom_nonbonded_force.addInteractionGroup(self.active_atoms,self.active_atoms)
+                    #print("2custom_nonbonded_force:", custom_nonbonded_force)
+                
+                    #Pointing self.nonbonded_force to CustomNonBondedForce instead of Nonbonded force
+                    self.nonbonded_force = custom_nonbonded_force
+                    print("self.nonbonded_force:", self.nonbonded_force)
+                    self.custom_bondforce = custom_bond_force
+                    
+                    #Update system with new forces and delete old force
+                    self.system.addForce(self.nonbonded_force) 
+                    self.system.addForce(self.custom_bondforce) 
+                    
+                    #Remove oldNonbondedForce
+                    for i,force in enumerate(self.system.getForces()):
+                        if isinstance(force, self.openmm.NonbondedForce):
+                            self.system.removeForce(i)
+
+                else:
+                    #Regular Nonbonded force
+                    self.nonbonded_force=self.system.getForce(6)
                             
-                #Define force object here, for possible modification of charges (QM/MM)
-                forces = {self.system.getForce(index).__class__.__name__:
-                            self.system.getForce(index) for index in range(self.system.getNumForces())}
-                
-                
-                print("self.system.getForces() :", self.system.getForces())
-                print("forces:", forces)
-                
-                #This nonbonded force variable can point to regular default OpenMM Nonbondedforce or CustomNonBondedForce.
-                self.nonbonded_force = forces['CustomNonbondedForce']
-                print("self.nonbonded_force:", self.nonbonded_force)
 
+                print("")
+                print("Number of forces:", self.system.getNumForces())
+                print(self.system.getForces())
         elif GROMACSfiles is True:
             print("Warning: Gromacs-file interface not tested")
             #Reading grofile, not for coordinates but for periodic vectors
@@ -1127,51 +1199,48 @@ class OpenMMTheory:
 
 
         #Modify particle masses in system object. For freezing atoms
-        for i in self.frozen_atoms:
-            self.system.setParticleMass(i, 0 * simtk.openmm.unit.dalton)
-        print_time_rel(timeA, modulename="frozen atom setup")
-        timeA = time.time()
+        #for i in self.frozen_atoms:
+        #    self.system.setParticleMass(i, 0 * simtk.openmm.unit.dalton)
+        #print_time_rel(timeA, modulename="frozen atom setup")
+        #timeA = time.time()
 
         #Modifying constraints after frozen-atom setting
-        print("Constraints:", self.system.getNumConstraints())
+        #print("Constraints:", self.system.getNumConstraints())
 
         #Finding defined constraints that involved frozen atoms. add to remove list
-        removelist=[]
-        for i in range(0,self.system.getNumConstraints()):
-            constraint=self.system.getConstraintParameters(i)
-            if constraint[0] in self.frozen_atoms or constraint[1] in self.frozen_atoms:
-                #self.system.removeConstraint(i)
-                removelist.append(i)
+        #removelist=[]
+        #for i in range(0,self.system.getNumConstraints()):
+        #    constraint=self.system.getConstraintParameters(i)
+        #    if constraint[0] in self.frozen_atoms or constraint[1] in self.frozen_atoms:
+        #        #self.system.removeConstraint(i)
+        #        removelist.append(i)
 
         #print("removelist:", removelist)
-        print("length removelist", len(removelist))
+        #print("length removelist", len(removelist))
         #Remove constraints
-        removelist.reverse()
-        for r in removelist:
-            self.system.removeConstraint(r)
+        #removelist.reverse()
+        #for r in removelist:
+        #    self.system.removeConstraint(r)
 
-        print("Constraints:", self.system.getNumConstraints())
-        print_time_rel(timeA, modulename="constraint fix")
+        #print("Constraints:", self.system.getNumConstraints())
+        #print_time_rel(timeA, modulename="constraint fix")
         timeA = time.time()
-        
-        
         
         self.forcegroupify()
         print_time_rel(timeA, modulename="forcegroupify")
         timeA = time.time()
         
         #Dummy integrator
-        self.integrator = simtk.openmm.LangevinIntegrator(300 * simtk.openmm.unit.kelvin,  # Temperature of head bath
-                                        1 / simtk.openmm.unit.picosecond,  # Friction coefficient
-                                        0.002 * simtk.openmm.unit.picoseconds)  # Time step
+        self.integrator = self.langevinintegrator(300 * self.unit.kelvin,  # Temperature of heat bath
+                                        1 / self.unit.picosecond,  # Friction coefficient
+                                        0.002 * self.unit.picoseconds)  # Time step
         print("self.platform_choice:", self.platform_choice)
         self.platform = simtk.openmm.Platform.getPlatformByName(self.platform_choice)
 
-
-        self.simulation = simtk.openmm.app.simulation.Simulation(self.topology, self.system, self.integrator,
-                                                                 self.platform)
-
-
+        #Defined first here. 
+        #NOTE: If self.system is modified then we have to remake self.simulation
+        #self.simulation = simtk.openmm.app.simulation.Simulation(self.topology, self.system, self.integrator,self.platform)
+        self.simulation = self.simulationclass(self.topology, self.system, self.integrator,self.platform)
 
 
         print_time_rel(timeA, modulename="simulation setup")
@@ -1203,23 +1272,44 @@ class OpenMMTheory:
     #This removes interactions between particles (e.g. QM-QM or frozen-frozen pairs)
     # list of atom indices for which we will remove all pairs
 
-    #Todo: Way too slow to do.
+    #Todo: Way too slow to do for all frozen atoms but works well for qmatoms list size
     # Alternative: Remove force interaction and then add in the interaction of active atoms to frozen atoms
     # should be reasonably fast
     # https://github.com/openmm/openmm/issues/2124
     #https://github.com/openmm/openmm/issues/1696
     def addexceptions(self,atomlist):
         import itertools
-        print("Removing i-j interactions for list :", len(atomlist), "atoms")
+        print("Add exceptions/exclusions. Removing i-j interactions for list :", len(atomlist), "atoms")
         timeA=time.time()
         #Has duplicates
         #[self.nonbonded_force.addException(i,j,0, 0, 0, replace=True) for i in atomlist for j in atomlist]
         #https://stackoverflow.com/questions/942543/operation-on-every-pair-of-element-in-a-list
-        [self.nonbonded_force.addException(i,j,0, 0, 0, replace=True) for i,j in itertools.combinations(atomlist, r=2)]
-
-        #for i in atomlist:
-        #    for j in atomlist:
-        #        self.nonbonded_force.addException(i,j,0, 0, 0, replace=True)
+        #[self.nonbonded_force.addException(i,j,0, 0, 0, replace=True) for i,j in itertools.combinations(atomlist, r=2)]
+        numexceptions=0
+        if isinstance(self.nonbonded_force, self.openmm.NonbondedForce):
+            print("Case Nonbondedforce. Adding Exception for ij pair")
+            for i in atomlist:
+                for j in atomlist:
+                    print("i,j : ", i,j)
+                    self.nonbonded_force.addException(i,j,0, 0, 0, replace=True)
+                    numexceptions+=1
+        elif isinstance(self.nonbonded_force, self.openmm.CustomNonbondedForce):
+            print("Case CustomNonbondedforce. Adding Exclusion for ij pair")
+            for i in atomlist:
+                for j in atomlist:
+                    print("i,j : ", i,j)
+                    self.nonbonded_force.addExclusion(i,j)
+                    numexceptions+=1
+        print("Number of exceptions/exclusions added: ", numexceptions)
+        
+        #Seems like updateParametersInContext does not reliably work here so we have to remake the simulation instead
+        #Might be bug (https://github.com/openmm/openmm/issues/2709). Revisit
+        #self.nonbonded_force.updateParametersInContext(self.simulation.context)
+        self.integrator = self.langevinintegrator(300 * self.unit.kelvin,  # Temperature of heat bath
+                                        1 / self.unit.picosecond,  # Friction coefficient
+                                        0.002 * self.unit.picoseconds)  # Time step
+        self.simulation = self.simulationclass(self.topology, self.system, self.integrator,self.platform)
+        
         print_time_rel(timeA, modulename="add exception")
     #Run: coords or framents can be given (usually coords). qmatoms in order to avoid QM-QM interactions (TODO)
     #Probably best to do QM-QM exclusions etc. in a separate function though as we want run to be as simple as possible
@@ -1229,11 +1319,15 @@ class OpenMMTheory:
     #Functions for energy compositions
     def forcegroupify(self):
         self.forcegroups = {}
+        print("inside forcegroupify")
+        print("self.system.getForces() ", self.system.getForces())
+        print("Number of forces:", self.system.getNumForces())
         for i in range(self.system.getNumForces()):
             force = self.system.getForce(i)
             force.setForceGroup(i)
             self.forcegroups[force] = i
-
+        print("self.forcegroups :", self.forcegroups)
+        #exit()
     def getEnergyDecomposition(self,context, forcegroups):
         energies = {}
         for f, i in forcegroups.items():
@@ -1243,14 +1337,20 @@ class OpenMMTheory:
     def printEnergyDecomposition(self):
         timeA=time.time()
         #Energy composition
-        #TODO: Calling this is expensive. Only do for cases: a) single-point b) First energy-step in optimization and last energy-step
+        #TODO: Calling this is expensive as the energy has to be recalculated.
+        # Only do for cases: a) single-point b) First energy-step in optimization and last energy-step
         # OpenMM energy components
         openmm_energy = dict()
         energycomp = self.getEnergyDecomposition(self.simulation.context, self.forcegroups)
+        print("energycomp: ", energycomp)
+        print("len energycomp", len(energycomp))
+        print("openmm_energy: ", openmm_energy)
+        print("")
         bondterm_set=False
         extrafcount=0
         #This currently assumes CHARMM36 components, More to be added
         for comp in energycomp.items():
+            #print("comp: ", comp)
             if 'HarmonicBondForce' in str(type(comp[0])):
                 #Not sure if this works in general.
                 if bondterm_set is False:
@@ -1261,6 +1361,7 @@ class OpenMMTheory:
             elif 'HarmonicAngleForce' in str(type(comp[0])):
                 openmm_energy['Angle'] = comp[1]
             elif 'PeriodicTorsionForce' in str(type(comp[0])):
+                #print("Here")
                 openmm_energy['Dihedrals'] = comp[1]
             elif 'CustomTorsionForce' in str(type(comp[0])):
                 openmm_energy['Impropers'] = comp[1]
@@ -1270,6 +1371,8 @@ class OpenMMTheory:
                 openmm_energy['Nonbonded'] = comp[1]
             elif 'CMMotionRemover' in str(type(comp[0])):
                 openmm_energy['CMM'] = comp[1]
+            elif 'CustomBondForce' in str(type(comp[0])):
+                openmm_energy['14-LJ'] = comp[1]
             else:
                 extrafcount+=1
                 openmm_energy['Otherforce'+str(extrafcount)] = comp[1]
@@ -1278,35 +1381,36 @@ class OpenMMTheory:
         print_time_rel(timeA, modulename="energy composition")
         timeA = time.time()
         
-        #The force terms to print in table.
-        #TODO: To be extended
-        if self.Forcefield == 'CHARMM':
-            force_terms = ['Bond', 'Angle', 'Urey-Bradley', 'Dihedrals', 'Impropers', 'CMAP', 'Nonbonded']
-        else:
-            #Modify...
-            force_terms = ['Bond', 'Angle', 'Urey-Bradley', 'Dihedrals', 'Impropers', 'CMAP', 'Nonbonded']
+        #The force terms to print in the ordered table.
+        # Deprecated. Better to print everything.
+        #Missing terms in force_terms will be printed separately
+        #if self.Forcefield == 'CHARMM':
+        #    force_terms = ['Bond', 'Angle', 'Urey-Bradley', 'Dihedrals', 'Impropers', 'CMAP', 'Nonbonded', '14-LJ']
+        #else:
+        #    #Modify...
+        #    force_terms = ['Bond', 'Angle', 'Urey-Bradley', 'Dihedrals', 'Impropers', 'CMAP', 'Nonbonded']
 
-        #Sum all defined force-terms
-        openmm_energy['Sumcomponents'] = 0.0 * self.unit.kilojoules_per_mole
-        for term in force_terms:
-            openmm_energy['Sumcomponents'] += openmm_energy[term]
-            
-            
+        #Sum all force-terms
+        sumofallcomponents=0.0
+        for val in openmm_energy.values():
+            sumofallcomponents+=val._value
+        
         #Print energy table       
         print('%-20s | %-15s | %-15s' % ('Component', 'kJ/mol', 'kcal/mol'))
         print('-'*56)
-        for name in force_terms:
+        #TODO: Figure out better sorting of terms
+        for name in sorted(openmm_energy):
             print('%-20s | %15.2f | %15.2f' % (name, openmm_energy[name] / self.unit.kilojoules_per_mole, openmm_energy[name] / self.unit.kilocalorie_per_mole))
-        #If otherforce. For Amber and otherforcefields we would have to clean up this later
-        for otherforce in [i for i in openmm_energy.keys() if 'Otherforce' in i]:
-            print('%-20s | %15.2f | %15.2f' % (name, openmm_energy[otherforce] / self.unit.kilojoules_per_mole, openmm_energy[otherforce] / self.unit.kilocalorie_per_mole))
         print('-'*56)
-        print('%-20s | %15.2f | %15.2f' % ('Sumcomponents', openmm_energy['Sumcomponents'] / self.unit.kilojoules_per_mole, openmm_energy['Sumcomponents'] / self.unit.kilocalorie_per_mole))
-        print('%-20s | %15.2f | %15.2f' % ('Full', self.energy * constants.hartokj , self.energy * constants.harkcal))
+        print('%-20s | %15.2f | %15.2f' % ('Sumcomponents', sumofallcomponents, sumofallcomponents / 4.184))
+        print("")
+        print('%-20s | %15.2f | %15.2f' % ('Total', self.energy * constants.hartokj , self.energy * constants.harkcal))
         
         print("")
         print("")
         print_time_rel(timeA, modulename="print table")
+        
+        
         timeA = time.time()
     
     def run(self, current_coords=None, elems=None, Grad=True, fragment=None, qmatoms=None, print_energy_components=True):
@@ -1338,9 +1442,13 @@ class OpenMMTheory:
         #eqcgmx = 2625.5002
         ## unit conversion for force
         #TODO: Check this.
-        fqcgmx = -49621.9
-        #pos = [Vec3(a / 10, b / 10, c / 10)] * u.nanometer
-
+        #fqcgmx = -49614.75258920567
+        #fqcgmx = -49621.9
+        #Convert from kj/(nm *mol) = kJ/(10*Ang*mol)
+        #factor=2625.5002/(10*1.88972612546)
+        #factor=-138.93548724479302
+        #Correct:
+        factor=-49614.752589207
 
         #pos = [Vec3(coords[:,0]/10,coords[:,1]/10,coords[:,2]/10)] * u.nanometer
         #Todo: Check speed on this
@@ -1360,18 +1468,22 @@ class OpenMMTheory:
         print_time_rel(timeA, modulename="energy")
         timeA = time.time()
         print("doing gradient")
-        self.gradient = state.getForces(asNumpy=True).flatten() / fqcgmx
+        #self.gradient = state.getForces(asNumpy=True)/factor
+        #print("self.gradient type:", type(self.gradient))
+        self.gradient = np.array(state.getForces(asNumpy=True)/factor)
+        print("self.gradient 0 :", self.gradient[0])
         print_time_rel(timeA, modulename="gradient")
         timeA = time.time()
 
         #Todo: Check units
         print("OpenMM Energy:", self.energy, "Eh")
-        
+        print("OpenMM Energy:", self.energy*constants.harkcal, "kcal/mol")
         
         if print_energy_components is True:
             self.printEnergyDecomposition()
         
         print("self.energy : ", self.energy, "Eh")
+        print("Energy:", self.energy*constants.harkcal, "kcal/mol")
         #print("self.gradient:", self.gradient)
 
         print(BC.OKBLUE, BC.BOLD, "------------ENDING OPENMM INTERFACE-------------", BC.END)
@@ -1388,20 +1500,211 @@ class OpenMMTheory:
         self.charges=chargelist
         return chargelist
     #Updating charges in OpenMM object. Used to set QM charges to 0 for example
-    def update_charges(self,charges):
+    #Taking list of atom-indices and list of charges (usually zero) and setting new charge
+    def update_charges(self,atomlist,atomcharges):
         print("Updating charges in OpenMM object.")
-        #Check that force-particles and charges are same number
-        print("self.nonbonded_force.getNumParticles():", self.nonbonded_force.getNumParticles())
-        print(len(charges))
-        print(self.nonbonded_force.getNumParticles())
-        assert self.nonbonded_force.getNumParticles() == len(charges)
+        assert len(atomlist) == len(atomcharges)
         newcharges=[]
-        for i,newcharge in enumerate(charges):
-            oldcharge, sigma, epsilon = self.nonbonded_force.getParticleParameters(i)
-            self.nonbonded_force.setParticleParameters(i, newcharge, sigma, epsilon)
-            newcharges.append(newcharge)
-        self.charges = newcharges
-        #print("OpenMMobject charges are now:", self.charges)
+        #print("atomlist:", atomlist)
+        for atomindex,newcharge in zip(atomlist,atomcharges):
+            #Updating big chargelist of OpenMM object.
+            #TODO: Is this actually used?
+            self.charges[atomindex]=newcharge
+            #print("atomindex: ", atomindex)
+            #print("newcharge: ",newcharge)
+            oldcharge, sigma, epsilon = self.nonbonded_force.getParticleParameters(atomindex)
+            #Different depending on type of NonbondedForce
+            if isinstance(self.nonbonded_force, self.openmm.CustomNonbondedForce):
+                self.nonbonded_force.setParticleParameters(atomindex, [newcharge,sigma,epsilon])
+                #bla1,bla2,bla3 = self.nonbonded_force.getParticleParameters(i)
+                #print("bla1,bla2,bla3", bla1,bla2,bla3)
+            elif isinstance(self.nonbonded_force, self.openmm.NonbondedForce):
+                self.nonbonded_force.setParticleParameters(atomindex, newcharge,sigma,epsilon)
+                #bla1,bla2,bla3 = self.nonbonded_force.getParticleParameters(atomindex)
+                #print("bla1,bla2,bla3", bla1,bla2,bla3)
+
+        #Instead of recreating simulation we can just update like this:
+        print("Updating simulation object for modified Nonbonded force")
+        self.nonbonded_force.updateParametersInContext(self.simulation.context)
+        
+    def modify_bonded_forces(self,atomlist):
+        print("Modifying bonded forces")
+        print("")
+        #This is typically used by QM/MM object to set bonded forces to zero for qmatoms (atomlist) 
+        #Mimicking: https://github.com/openmm/openmm/issues/2792
+        
+        numharmbondterms_removed=0
+        numharmangleterms_removed=0
+        numpertorsionterms_removed=0
+        numcustomtorsionterms_removed=0
+        numcmaptorsionterms_removed=0
+        numcmmotionterms_removed=0
+        numcustombondterms_removed=0
+        
+        for force in self.system.getForces():
+            if isinstance(force, self.openmm.HarmonicBondForce):
+                print("HarmonicBonded force")
+                print("There are {} HarmonicBond terms defined.".format(force.getNumBonds()))
+                print("")
+                #REVISIT: Neglecting QM1-MM1 interactions. i.e if one atom in bond-pair is QM we neglect
+                #CURRENT BEHAVIOUR. Keeping QM1-MM1 interaction but removing all QM-QM interactions
+                for i in range(force.getNumBonds()):
+                    #print("i:", i)
+                    p1, p2, length, k = force.getBondParameters(i)
+                    #print("p1: {} p2: {} length: {} k: {}".format(p1,p2,length,k))
+                    exclude = (p1 in atomlist and p2 in atomlist)
+                    #print("exclude:", exclude)
+                    if exclude is True:
+                        #print("exclude True")
+                        #print("atomlist:", atomlist)
+                        #print("i:", i)
+                        #print("Before p1: {} p2: {} length: {} k: {}".format(p1,p2,length,k))
+                        force.setBondParameters(i, p1, p2, length, 0)
+                        numharmbondterms_removed+=1
+                        #p1, p2, length, k = force.getBondParameters(i)
+                        #print("After p1: {} p2: {} length: {} k: {}".format(p1,p2,length,k))
+                        #exit()
+                print("Updating force")
+                force.updateParametersInContext(self.simulation.context)
+            elif isinstance(force, self.openmm.HarmonicAngleForce):
+                print("HarmonicAngle force")
+                print("There are {} HarmonicAngle terms defined.".format(force.getNumAngles()))
+                for i in range(force.getNumAngles()):
+                    p1, p2, p3, angle, k = force.getAngleParameters(i)
+                    #Are angle-atoms in atomlist? 
+                    presence=[i in atomlist for i in [p1,p2,p3]]
+                    #Excluding if 2 or 3 QM atoms. i.e. a QM2-QM1-MM1 or QM3-QM2-QM1 term
+                    if presence.count(True) >= 2:
+                        #print("presence.count(True):", presence.count(True))
+                        #print("exclude True")
+                        #print("atomlist:", atomlist)
+                        #print("i:", i)
+                        #print("Before p1: {} p2: {} p3: {} angle: {} k: {}".format(p1,p2,p3,angle,k))
+                        force.setAngleParameters(i, p1, p2, p3, angle, 0)
+                        numharmangleterms_removed+=1
+                        #p1, p2, p3, angle, k = force.getAngleParameters(i)
+                        #print("After p1: {} p2: {} p3: {} angle: {} k: {}".format(p1,p2,p3,angle,k))
+                print("Updating force")
+                force.updateParametersInContext(self.simulation.context)
+            elif isinstance(force, self.openmm.PeriodicTorsionForce):
+                print("PeriodicTorsionForce force")
+                print("There are {} PeriodicTorsionForce terms defined.".format(force.getNumTorsions()))
+                for i in range(force.getNumTorsions()):
+                    p1, p2, p3, p4, periodicity, phase, k = force.getTorsionParameters(i)
+                    #Are torsion-atoms in atomlist? 
+                    presence=[i in atomlist for i in [p1,p2,p3,p4]]
+                    #Excluding if 3 or 4 QM atoms. i.e. a QM3-QM2-QM1-MM1 or QM4-QM3-QM2-QM1 term
+                    #print("Before p1: {} p2: {} p3: {} p4: {} periodicity: {} phase: {} k: {}".format(p1,p2,p3,p4,periodicity, phase,k))
+                    if presence.count(True) >= 3:
+                        print("Found torsion in QM-region")
+                        #print("presence.count(True):", presence.count(True))
+                        #print("exclude True")
+                        #print("atomlist:", atomlist)
+                        #print("i:", i)
+                        #print("Before p1: {} p2: {} p3: {} p4: {} periodicity: {} phase: {} k: {}".format(p1,p2,p3,p4,periodicity, phase,k))
+                        force.setTorsionParameters(i, p1, p2, p3, p4, periodicity, phase, 0)
+                        numpertorsionterms_removed+=1
+                        p1, p2, p3, p4, periodicity, phase, k = force.getTorsionParameters(i)
+                        #print("After p1: {} p2: {} p3: {} p4: {} periodicity: {} phase: {} k: {}".format(p1,p2,p3,p4,periodicity, phase,k))
+                print("Updating force")
+                force.updateParametersInContext(self.simulation.context)
+            elif isinstance(force, self.openmm.CustomTorsionForce):
+                print("CustomTorsionForce force")
+                print("There are {} CustomTorsionForce terms defined.".format(force.getNumTorsions()))
+                for i in range(force.getNumTorsions()):
+                    p1, p2, p3, p4, pars = force.getTorsionParameters(i)
+                    #Are torsion-atoms in atomlist? 
+                    presence=[i in atomlist for i in [p1,p2,p3,p4]]
+                    #Excluding if 3 or 4 QM atoms. i.e. a QM3-QM2-QM1-MM1 or QM4-QM3-QM2-QM1 term
+                    #print("Before p1: {} p2: {} p3: {} p4: {} pars {}".format(p1,p2,p3,p4,pars))
+                    #print("pars:", pars)
+                    if presence.count(True) >= 3:
+                        print("Found torsion in QM-region")
+                        #print("presence.count(True):", presence.count(True))
+                        #print("exclude True")
+                        #print("atomlist:", atomlist)
+                        #print("i:", i)
+                        #print("Before p1: {} p2: {} p3: {} p4: {} pars {}".format(p1,p2,p3,p4,pars))
+                        force.setTorsionParameters(i, p1, p2, p3, p4, (0.0,0.0))
+                        numcustomtorsionterms_removed+=1
+                        #p1, p2, p3, p4, pars = force.getTorsionParameters(i)
+                        #print("After p1: {} p2: {} p3: {} p4: {} pars {}".format(p1,p2,p3,p4,pars))
+                print("Updating force")
+                force.updateParametersInContext(self.simulation.context)
+            elif isinstance(force, self.openmm.CMAPTorsionForce):
+                print("CMAPTorsionForce force")
+                print("There are {} CMAP terms defined.".format(force.getNumTorsions()))
+                for i in range(force.getNumTorsions()):
+                    p1, p2, p3, p4, a,b,c,d,e = force.getTorsionParameters(i)
+                    #Are torsion-atoms in atomlist? 
+                    presence=[i in atomlist for i in [p1,p2,p3,p4]]
+                    #Excluding if 3 or 4 QM atoms. i.e. a QM3-QM2-QM1-MM1 or QM4-QM3-QM2-QM1 term
+                    #print("Before p1: {} p2: {} p3: {} p4: {} pars {}".format(p1,p2,p3,p4,pars))
+                    if presence.count(True) >= 3:
+                        print("Found torsion in QM-region")
+                        #print("presence.count(True):", presence.count(True))
+                        #print("exclude True")
+                        #print("atomlist:", atomlist)
+                        #print("i:", i)
+                        #print("Before p1: {} p2: {} p3: {} p4: {} pars {}".format(p1,p2,p3,p4,pars))
+                        force.setTorsionParameters(i, p1, p2, p3, p4, (0.0,0.0))
+                        numcustomtorsionterms_removed+=1
+                        #p1, p2, p3, p4, pars = force.getTorsionParameters(i)
+                        #print("After p1: {} p2: {} p3: {} p4: {} pars {}".format(p1,p2,p3,p4,pars))
+                print("Updating force")
+                force.updateParametersInContext(self.simulation.context)
+            
+            elif isinstance(force, self.openmm.CustomBondForce):
+                print("CustomBondForce")
+                print("There are {} force terms defined.".format(force.getNumBonds()))
+                #Neglecting QM1-MM1 interactions. i.e if one atom in bond-pair is QM we neglect
+                for i in range(force.getNumBonds()):
+                    #print("i:", i)
+                    p1, p2, vars = force.getBondParameters(i)
+                    #print("p1: {} p2: {}".format(p1,p2))
+                    charge=vars[0];sigma=vars[1];epsilon=vars[2]
+                    #print("charge: {} sigma: {} epsilon: {}".format(charge,sigma,epsilon))
+                    exclude = (p1 in atomlist or p2 in atomlist)
+                    #print("exclude:", exclude)
+                    if exclude is True:
+                        #print("exclude True")
+                        #print("atomlist:", atomlist)
+                        #print("i:", i)
+                        #print("Before")
+                        #print("p1: {} p2: {}")
+                        #print("charge: {} sigma: {} epsilon: {}".format(charge,sigma,epsilon))
+                        force.setBondParameters(i, p1, p2, [0.0,0.0,0.0])
+                        numcustombondterms_removed+=1
+                        #p1, p2, vars = force.getBondParameters(i)
+                        #charge=vars[0];sigma=vars[1];epsilon=vars[2]
+                        #print("p1: {} p2: {}")
+                        #print("charge: {} sigma: {} epsilon: {}".format(charge,sigma,epsilon))
+                        #exit()
+                print("Updating force")
+                force.updateParametersInContext(self.simulation.context)
+            
+            elif isinstance(force, self.openmm.CMMotionRemover):
+                print("CMMotionRemover ")
+                print("nothing to be done")
+            elif isinstance(force, self.openmm.CustomNonbondedForce):
+                print("CustomNonbondedForce force")
+                print("nothing to be done")
+            elif isinstance(force, self.openmm.NonbondedForce):
+                print("NonbondedForce force")
+                print("nothing to be done")
+            else:
+                print("Other force: ", force)
+                print("nothing to be done")
+
+        print("")
+        print("Number of bonded terms removed:", )
+        print("Harmonic Bond terms:", numharmbondterms_removed)
+        print("Harmonic Angle terms:", numharmangleterms_removed)
+        print("Periodic Torsion terms:", numpertorsionterms_removed)
+        print("Custom Torsion terms:", numcustomtorsionterms_removed)
+        print("CMAP Torsion terms:", numcmaptorsionterms_removed)
+        print("CustomBond terms", numcustombondterms_removed)
+        print("")
 
 # Simple nonbonded MM theory. Charges and LJ-potentials
 class NonBondedTheory:
@@ -2093,6 +2396,7 @@ class QMMMTheory:
 
             # Region definitions
             self.allatoms=list(range(0,len(self.elems)))
+            print("All atoms in fragment:", len(self.allatoms))
             #Sorting qmatoms list
             self.qmatoms = sorted(qmatoms)
             self.mmatoms=listdiff(self.allatoms,self.qmatoms)
@@ -2135,7 +2439,7 @@ class QMMMTheory:
             print("Fragment has not been defined for QM/MM. Exiting")
             exit(1)
 
-        #Flag to check whether QMCharges have been zeroed in self.charges_mod list
+        #Flag to check whether QMCharges have been zeroed in self.charges_qmregionzeroed list
         self.QMChargesZeroed=False
 
         #Theory level definitions
@@ -2177,11 +2481,21 @@ class QMMMTheory:
             exit()
         
         
+        #CHARGES DEFINED FOR OBJECT:
+        #Self.charges are original charges that are defined above (on input, from OpenMM or from NonBondedTheory)
+        #self.charges_qmregionzeroed is self.charges but with 0-value for QM-atoms
+        #self.pointcharges are pointcharges that the QM-code will see (dipole-charges, no zero-valued charges etc)
+        #Length of self.charges: system size
+        #Length of self.charges_qmregionzeroed: system size
+        #Length of self.pointcharges: unknown. does not contain zero-valued charges (e.g. QM-atoms etc.), contains dipole-charges 
         
-        #Self.charges are original charges that are defined above,
-        #Charges that will be modified (charge-shifting, QMzeroed etc.) are:
-        #TODO: Option. Separate charge-lists for QM-code and MM-code ??
-        self.charges_mod = copy.copy(self.charges)
+        #self.charges_qmregionzeroed will have QM-charges zeroed (but not removed)
+        self.charges_qmregionzeroed = []
+        
+        #Self.pointcharges are pointcharges that the QM-program will see (but not the MM program)
+        # They have QM-atoms zeroed, zero-charges removed, dipole-charges added etc.
+        #Defined later
+        self.pointcharges = []
 
         #If MM THEORY (not just pointcharges)
         if mm_theory is not None:
@@ -2191,7 +2505,8 @@ class QMMMTheory:
                 print("Now adding exceptions for frozen atoms")
                 if len(self.frozenatoms) > 0:
                     print("Here adding exceptions for OpenMM")
-                    print("Num frozen atoms: ", len(self.frozenatoms))
+                    print("Frozen-atom exceptions currently inactive...")
+                    #print("Num frozen atoms: ", len(self.frozenatoms))
                     #Disabling for now, since so bloody slow. Need to speed up
                     #mm_theory.addexceptions(self.frozenatoms)
 
@@ -2213,33 +2528,44 @@ class QMMMTheory:
             
 
             if self.embedding=="Elstat":
+                
+                #Remove bonded interactions in MM part. Only in OpenMM. Assuming they were never defined in NonbondedTHeory
+                
+                if self.mm_theory_name == "OpenMMTheory":
+                    print("Removing bonded terms for QM-region in MMtheory")
+                    self.mm_theory.modify_bonded_forces(self.qmatoms)
+
+                    #NOTE: Temporary. Exceptions for nonbonded QM atoms. Will ignore QM-QM Coulomb and LJ interactions. Coulomb interactions are also set to zero elsewhere.
+                    print("Removing nonbonded terms for QM-region in MMtheory")
+                    self.mm_theory.addexceptions(self.qmatoms)
+                
+                
+                
                 #Change charges
                 # Keeping self.charges as originally defined.
-                print("length of self.charges_mod :", len(self.charges_mod))
-
-                #TODO: Charges that MM code sees. Will be modified. NECESSARY???????????????????
-                #self.charges_mmcode = copy.copy(self.charges)
+                print("length of self.charges_qmregionzeroed :", len(self.charges_qmregionzeroed))
                 
                 #Setting QM charges to 0 since electrostatic embedding
                 #and Charge-shift QM-MM boundary
                 
                 #Zero QM charges
                 #TODO: DO here or inside run instead?? Needed for MM code.
-                self.ZeroQMCharges() #Modifies self.charges_mod
-                print("length of self.charges_mod :", len(self.charges_mod))
+                self.ZeroQMCharges() #Modifies self.charges_qmregionzeroed
+                print("length of self.charges_qmregionzeroed :", len(self.charges_qmregionzeroed))
                 
                 # Todo: make sure this works for OpenMM and for NonBondedTheory
-                # Updating charges in MM object
-                self.mm_theory.update_charges(self.charges_mod)
+                # Updating charges in MM object. Using charges that have been zeroed for QM (no other modifications)
+                #Updated...
+                self.mm_theory.update_charges(self.qmatoms,[0.0 for i in self.qmatoms])
                 
                 
                 print("Charges of QM atoms set to 0 (since Electrostatic Embedding):")
                 if self.printlevel > 3:
                     for i in self.allatoms:
                         if i in self.qmatoms:
-                            print("QM atom {} ({}) charge: {}".format(i, self.elems[i], self.charges_mod[i]))
+                            print("QM atom {} ({}) charge: {}".format(i, self.elems[i], self.charges_qmregionzeroed[i]))
                         else:
-                            print("MM atom {} ({}) charge: {}".format(i, self.elems[i], self.charges_mod[i]))
+                            print("MM atom {} ({}) charge: {}".format(i, self.elems[i], self.charges_qmregionzeroed[i]))
                 blankline()
 
 
@@ -2261,24 +2587,32 @@ class QMMMTheory:
     
     def ZeroQMCharges(self):
         print("Setting QM charges to Zero")
-        #Looping over charges and setting QM/MM1 atoms to zero and shifting charge to neighbouring atoms
-        for i, c in enumerate(self.charges_mod):
+        #Looping over charges and setting QM atoms to zero
+        #1. Copy charges to charges_qmregionzeroed
+        self.charges_qmregionzeroed=copy.copy(self.charges)
+        #2. change charge for QM-atom
+        for i, c in enumerate(self.charges_qmregionzeroed):
             #Setting QMatom charge to 0
             if i in self.qmatoms:
-                self.charges_mod[i] = 0.0
-                
+                self.charges_qmregionzeroed[i] = 0.0
+        #3. Flag that this has been done
         self.QMChargesZeroed = True
     def ShiftMMCharges(self):
         print("Shifting MM charges at QM-MM boundary.")
-
+        print("len self.charges_qmregionzeroed: ", len(self.charges_qmregionzeroed))
+        print("len self.charges: ", len(self.charges))
+        
+        #Create self.pointcharges list
+        self.pointcharges=copy.copy(self.charges_qmregionzeroed)
+        
         #Looping over charges and setting QM/MM1 atoms to zero and shifting charge to neighbouring atoms
-        for i, c in enumerate(self.charges_mod):
+        for i, c in enumerate(self.pointcharges):
 
             #If index corresponds to MMatom at boundary, set charge to 0 (charge-shifting
             if i in self.MMboundarydict.keys():
                 MM1charge = self.charges[i]
                 #print("MM1atom charge: ", MM1charge)
-                self.charges_mod[i] = 0.0
+                self.pointcharges[i] = 0.0
                 #MM1 charge fraction to be divided onto the other MM atoms
                 MM1charge_fract = MM1charge / len(self.MMboundarydict[i])
                 #print("MM1charge_fract :", MM1charge_fract)
@@ -2287,9 +2621,9 @@ class QMMMTheory:
                 #Putting the fractional charge on each MM2 atom
                 for MMx in self.MMboundarydict[i]:
                     #print("MMx : ", MMx)
-                    #print("Old charge : ", self.charges_mod[MMx])
-                    self.charges_mod[MMx] += MM1charge_fract
-                    #print("New charge : ", self.charges_mod[MMx])
+                    #print("Old charge : ", self.charges_qmregionzeroed[MMx])
+                    self.pointcharges[MMx] += MM1charge_fract
+                    #print("New charge : ", self.charges_qmregionzeroed[MMx])
                     #exit()
                 
     #Create dipole charge (twice) for each MM2 atom that gets fraction of MM1 charge
@@ -2392,17 +2726,25 @@ class QMMMTheory:
         #1. Get linkatoms coordinates
         if self.linkatoms==True:
             linkatoms_dict = get_linkatom_positions(self.boundaryatoms,self.qmatoms, current_coords, self.elems)
+            print("linkatoms_dict:", linkatoms_dict)
             #2. Add linkatom coordinates to qmcoords???
             print("Adding linkatom positions to QM coords")
+            
+
+            linkatoms_indices=[]
             
             #Sort by QM atoms:
             print("linkatoms_dict.keys :", linkatoms_dict.keys())
             for pair in sorted(linkatoms_dict.keys()):
-                #print("Pair :", pair)
+                print("Pair :", pair)
                 self.qmcoords.append(linkatoms_dict[pair])
                 #print("self.qmcoords :", self.qmcoords)
                 #print(len(self.qmcoords))
                 #exit()
+                #Linkatom indices for book-keeping
+                linkatoms_indices.append(len(self.qmcoords)-1)
+                print("linkatoms_indices: ", linkatoms_indices)
+                
             #TODO: Modify qm_elems list. Use self.qmelems or separate qmelems ?
             #TODO: Should we do this at object creation instead?
             current_qmelems=self.qmelems + ['H']*len(linkatoms_dict)
@@ -2411,59 +2753,82 @@ class QMMMTheory:
             print(len(current_qmelems))
             
             #Charge-shifting + Dipole thing
-            
+            print("Doing charge-shifting...")
+            #print("Before: self.pointcharges are: ", self.pointcharges)
             #Do Charge-shifting. MM1 charge distributed to MM2 atoms
-            self.ShiftMMCharges() # Modifies self.charges_mod
+            
+            self.ShiftMMCharges() # Creates self.pointcharges
+            #print("After: self.pointcharges are: ", self.pointcharges)
+            print("len self.pointcharges: ", len(self.pointcharges))
             
             #TODO: Code alternative to Charge-shifting: L2 scheme which deletes whole charge-group that MM1 belongs to
             
-            
-            
-            #MMcharges defined after all modifications to self.charges_mod have been done.
-            #TODO: Differentiate more clearly between MM charges that MM code sees and what QM code sees.
-            self.mmcharges=[self.charges_mod[i] for i in self.mmatoms]
-            
-            
+            # Defining pointcharges as only containing MM atoms
+            self.pointcharges=[self.pointcharges[i] for i in self.mmatoms]
+            #print("After: self.pointcharges are: ", self.pointcharges)
+            print("len self.pointcharges: ", len(self.pointcharges))
             #Set 
             self.SetDipoleCharges() #Creates self.dipole_charges and self.dipole_coords
 
-            #Adding dipole charge coords to MM coords (given to QM code)
-            self.mmcoords=self.mmcoords+self.dipole_coords
+            #Adding dipole charge coords to MM coords (given to QM code) and defining pointchargecoords
+            print("Adding {} dipole charges to PC environment".format(len(self.dipole_charges)))
+            self.pointchargecoords=self.mmcoords+self.dipole_coords
             
             #Adding dipole charges to MM charges list (given to QM code)
             #TODO: Rename as pcharges list so as not to confuse with what MM code sees??
-            self.mmcharges=self.mmcharges+self.dipole_charges
-            
-            print(len(self.mmcharges))
-            print(len(self.mmcoords))
+            self.pointcharges=self.pointcharges+self.dipole_charges
+            print("len self.pointcharges after dipole addition: ", len(self.pointcharges))
+            print(len(self.pointcharges))
+            print(len(self.pointchargecoords))
         else:
             #If no linkatoms then use original self.qmelems
             current_qmelems = self.qmelems
-            self.mmcharges=[self.charges_mod[i] for i in self.mmatoms]
+            #If no linkatoms then self.pointcharges are just original charges with QM-region zeroed
+            self.pointcharges=[self.charges_qmregionzeroed[i] for i in self.mmatoms]
+            #If no linkatoms MM coordinates are the same
+            self.pointchargecoords=self.mmcoords
        
-       
-
-       
+        #TODO: Now we have updated MM-coordinates (if doing linkatoms, wtih dipolecharges etc) and updated mm-charges (more, due to dipolecharges if linkatoms)
+        # We also have MMcharges that have been set to zero due to QM/mm
+        # Choice: should we now delete charges that are zero or not. chemshell does
+        #TODO: do here or have QM-theory do it. probably best to do here (otherwise we have to write multiple QM interface routines)
         
+
+        #Removing zero-valued charges
+        #NOTE: Problem, if we remove zero-charges we lose our indexing as the charges removed could be anywhere
+        # NOTE: Test: Let's not remove them.
+        print("Number of charges :", len(self.pointcharges))
+        #print("Removing zero-valued charges")
+        #self.pointcharges, self.pointchargecoords = remove_zero_charges(self.pointcharges, self.pointchargecoords)
+        print("Number of charges :", len(self.pointcharges))
+        print("Number of charge coordinates :", len(self.pointchargecoords))
         print_time_rel(CheckpointTime, modulename='QM/MM run prep')
+        
+        #If no qmatoms then do MM-only
+        if len(self.qmatoms) == 0:
+            print("No qmatoms list provided. Setting QMtheory to None")
+            self.qm_theory_name="None"
+            self.QMenergy=0.0
+        
+        
         
         if self.qm_theory_name=="ORCATheory":
             #Calling ORCA theory, providing current QM and MM coordinates.
             if Grad==True:
                 if PC==True:
-                    self.QMEnergy, self.QMgradient, self.PCgradient = self.qm_theory.run(current_coords=self.qmcoords,
-                                                                                         current_MM_coords=self.mmcoords,
-                                                                                         MMcharges=self.mmcharges,
-                                                                                         qm_elems=current_qmelems, mm_elems=self.mmelems,
+                    self.QMenergy, self.QMgradient, self.PCgradient = self.qm_theory.run(current_coords=self.qmcoords,
+                                                                                         current_MM_coords=self.pointchargecoords,
+                                                                                         MMcharges=self.pointcharges,
+                                                                                         qm_elems=current_qmelems,
                                                                                          Grad=True, PC=True, nprocs=nprocs)
                 else:
-                    self.QMEnergy, self.QMgradient = self.qm_theory.run(current_coords=self.qmcoords,
-                                                      current_MM_coords=self.mmcoords, MMcharges=self.mmcharges,
-                                                      qm_elems=current_qmelems, mm_elems=self.mmelems, Grad=True, PC=False, nprocs=nprocs)
+                    self.QMenergy, self.QMgradient = self.qm_theory.run(current_coords=self.qmcoords,
+                                                      current_MM_coords=self.pointchargecoords, MMcharges=self.pointcharges,
+                                                      qm_elems=current_qmelems, Grad=True, PC=False, nprocs=nprocs)
             else:
-                self.QMEnergy = self.qm_theory.run(current_coords=self.qmcoords,
-                                                      current_MM_coords=self.mmcoords, MMcharges=self.mmcharges,
-                                                      qm_elems=current_qmelems, mm_elems=self.mmelems, Grad=False, PC=PC, nprocs=nprocs)
+                self.QMenergy = self.qm_theory.run(current_coords=self.qmcoords,
+                                                      current_MM_coords=self.pointchargecoords, MMcharges=self.pointcharges,
+                                                      qm_elems=current_qmelems, Grad=False, PC=PC, nprocs=nprocs)
         elif self.qm_theory_name == "Psi4Theory":
             #Calling Psi4 theory, providing current QM and MM coordinates.
             if Grad==True:
@@ -2471,26 +2836,26 @@ class QMMMTheory:
                     print(BC.WARNING, "Pointcharge gradient for Psi4 is not implemented.",BC.END)
                     print(BC.WARNING, "Warning: Only calculating QM-region contribution, skipping electrostatic-embedding gradient on pointcharges", BC.END)
                     print(BC.WARNING, "Only makes sense if MM region is frozen! ", BC.END)
-                    self.QMEnergy, self.QMgradient = self.qm_theory.run(current_coords=self.qmcoords,
-                                                                                         current_MM_coords=self.mmcoords,
-                                                                                         MMcharges=self.mmcharges,
-                                                                                         qm_elems=current_qmelems, mm_elems=self.mmelems,
+                    self.QMenergy, self.QMgradient = self.qm_theory.run(current_coords=self.qmcoords,
+                                                                                         current_MM_coords=self.pointchargecoords,
+                                                                                         MMcharges=self.pointcharges,
+                                                                                         qm_elems=current_qmelems,
                                                                                          Grad=True, PC=True, nprocs=nprocs)
                     #Creating zero-gradient array
                     self.PCgradient = np.zeros((len(self.mmatoms), 3))
                 else:
                     print("grad. mech embedding. not ready")
                     exit()
-                    self.QMEnergy, self.QMgradient = self.qm_theory.run(current_coords=self.qmcoords,
-                                                      current_MM_coords=self.mmcoords, MMcharges=self.mmcharges,
-                                                      qm_elems=current_qmelems, mm_elems=self.mmelems, Grad=True, PC=False, nprocs=nprocs)
+                    self.QMenergy, self.QMgradient = self.qm_theory.run(current_coords=self.qmcoords,
+                                                      current_MM_coords=self.pointchargecoords, MMcharges=self.pointcharges,
+                                                      qm_elems=current_qmelems, Grad=True, PC=False, nprocs=nprocs)
             else:
                 print("grad false.")
                 if PC == True:
                     print("PC embed true. not ready")
-                    self.QMEnergy = self.qm_theory.run(current_coords=self.qmcoords,
-                                                      current_MM_coords=self.mmcoords, MMcharges=self.mmcharges,
-                                                      qm_elems=current_qmelems, mm_elems=self.mmelems, Grad=False, PC=PC, nprocs=nprocs)
+                    self.QMenergy = self.qm_theory.run(current_coords=self.qmcoords,
+                                                      current_MM_coords=self.pointchargecoords, MMcharges=self.pointcharges,
+                                                      qm_elems=current_qmelems, Grad=False, PC=PC, nprocs=nprocs)
                 else:
                     print("mech true", not ready)
                     exit()
@@ -2500,19 +2865,19 @@ class QMMMTheory:
             #Calling xTB theory, providing current QM and MM coordinates.
             if Grad==True:
                 if PC==True:
-                    self.QMEnergy, self.QMgradient, self.PCgradient = self.qm_theory.run(current_coords=self.qmcoords,
-                                                                                         current_MM_coords=self.mmcoords,
-                                                                                         MMcharges=self.mmcharges,
-                                                                                         qm_elems=current_qmelems, mm_elems=self.mmelems,
+                    self.QMenergy, self.QMgradient, self.PCgradient = self.qm_theory.run(current_coords=self.qmcoords,
+                                                                                         current_MM_coords=self.pointchargecoords,
+                                                                                         MMcharges=self.pointcharges,
+                                                                                         qm_elems=current_qmelems,
                                                                                          Grad=True, PC=True, nprocs=nprocs)
                 else:
-                    self.QMEnergy, self.QMgradient = self.qm_theory.run(current_coords=self.qmcoords,
-                                                      current_MM_coords=self.mmcoords, MMcharges=self.mmcharges,
-                                                      qm_elems=current_qmelems, mm_elems=self.mmelems, Grad=True, PC=False, nprocs=nprocs)
+                    self.QMenergy, self.QMgradient = self.qm_theory.run(current_coords=self.qmcoords,
+                                                      current_MM_coords=self.pointchargecoords, MMcharges=self.pointcharges,
+                                                      qm_elems=current_qmelems, Grad=True, PC=False, nprocs=nprocs)
             else:
-                self.QMEnergy = self.qm_theory.run(current_coords=self.qmcoords,
-                                                      current_MM_coords=self.mmcoords, MMcharges=self.mmcharges,
-                                                      qm_elems=current_qmelems, mm_elems=self.mmelems, Grad=False, PC=PC, nprocs=nprocs)
+                self.QMenergy = self.qm_theory.run(current_coords=self.qmcoords,
+                                                      current_MM_coords=self.pointchargecoords, MMcharges=self.pointcharges,
+                                                      qm_elems=current_qmelems, Grad=False, PC=PC, nprocs=nprocs)
 
 
         elif self.qm_theory_name == "DaltonTheory":
@@ -2521,6 +2886,10 @@ class QMMMTheory:
         elif self.qm_theory_name == "NWChemtheory":
             print("not yet implemented")
             exit(1)
+        elif self.qm_theory_name == "None":
+             print("No QMtheory. Skipping QM calc")
+             self.QMEnergy=0.0
+             self.QMgradient=0.0
         else:
             print("invalid QM theory")
             exit(1)
@@ -2537,8 +2906,16 @@ class QMMMTheory:
                 printdebug("Charges for full system is: ", self.charges)
                 print("Passing QM atoms to MMtheory run so that QM-QM pairs are skipped in pairlist")
                 print("Passing active atoms to MMtheory run so that frozen pairs are skipped in pairlist")
-            self.MMEnergy, self.MMGradient= self.mm_theory.run(current_coords=current_coords, mm_coords=self.mmcoords,
-                                                               charges=self.charges, connectivity=self.connectivity,
+                assert len(self.mmcoords) == len(self.charges_qmregionzeroed)
+                
+                # NOTE: charges_qmregionzeroed has QM-charges zeroed (no other modifications)
+                
+                #NOTE: Using original MM coords here (not with linkatoms, dipole etc.). Also not with deleted zero-charges. 
+                #MM charges can be zero but we still want the LJ interaction0
+                #MM charges should have the QM-part zeroed though
+                
+            self.MMenergy, self.MMgradient= self.mm_theory.run(current_coords=current_coords, mm_coords=self.mmcoords,
+                                                               charges=self.charges_qmregionzeroed, connectivity=self.connectivity,
                                                                qmatoms=self.qmatoms, actatoms=self.actatoms)
             #self.MMEnergy=self.mm_theory.MMEnergy
             #if Grad==True:
@@ -2556,18 +2933,18 @@ class QMMMTheory:
             printdebug("Charges for full system is: ", self.charges)
             #Todo: Need to make sure OpenMM skips QM-QM Lj interaction => Exclude
             #Todo: Need to have OpenMM skip frozen region interaction for speed  => => Exclude
-            self.MMEnergy, self.MMGradient= self.mm_theory.run(current_coords=current_coords, qmatoms=self.qmatoms)
+            self.MMenergy, self.MMgradient= self.mm_theory.run(current_coords=current_coords, qmatoms=self.qmatoms)
         else:
-            self.MMEnergy=0
+            self.MMenergy=0
         print_time_rel(CheckpointTime, modulename='MM step')
         CheckpointTime = time.time()
         #Final QM/MM Energy
-        self.QM_MM_Energy= self.QMEnergy+self.MMEnergy
+        self.QM_MM_energy= self.QMenergy+self.MMenergy
         blankline()
         if self.printlevel >= 2:
-            print("{:<20} {:>20.12f}".format("QM energy: ",self.QMEnergy))
-            print("{:<20} {:>20.12f}".format("MM energy: ", self.MMEnergy))
-            print("{:<20} {:>20.12f}".format("QM/MM energy: ", self.QM_MM_Energy))
+            print("{:<20} {:>20.12f}".format("QM energy: ",self.QMenergy))
+            print("{:<20} {:>20.12f}".format("MM energy: ", self.MMenergy))
+            print("{:<20} {:>20.12f}".format("QM/MM energy: ", self.QM_MM_energy))
         blankline()
 
         #Final QM/MM gradient. Combine QM gradient, MM gradient and PC-gradient (elstat MM gradient from QM code).
@@ -2577,21 +2954,126 @@ class QMMMTheory:
             #TODO: Deal with linkatom gradient here.
             # Add contribution to QM1 and MM1 contribution???
             
+            if self.linkatoms==True:
+                #This projects the linkatom force onto the respective QM atom and MM atom
+                def linkatom_force_fix(Qcoord, Mcoord, Lcoord, Qgrad,Mgrad,Lgrad):
+                    #QM1-L and QM1-MM1 distances
+                    QLdistance=distance(Qcoord,Lcoord)
+                    print("QLdistance:", QLdistance)
+                    MQdistance=distance(Mcoord,Qcoord)
+                    print("MQdistance:", MQdistance)
+                    #B and C: a 3x3 arrays
+                    B=np.zeros([3,3])
+                    C=np.zeros([3,3])
+                    for i in range(0,2):
+                        for j in range(0,2):
+                            B[i,j]=-1*QLdistance*(Mcoord[i]-Qcoord[i])*(Mcoord[j]-Qcoord[j]) / (MQdistance*MQdistance*MQdistance)
+                    for i in range(0,2):
+                        B[i,i] = B[i,i] + QLdistance / MQdistance
+                    for i in range(0,2):
+                        for j in range(0,2):
+                            C[i,j]= -1 * B[i,j]
+                    for i in range(0,2):
+                        C[i,i] = C[i,i] + 1.0                
+                
+                    #QM atom gradient
+                    print("Qgrad:", Qgrad)
+                    print("Lgrad:", Lgrad)
+                    print("C: ", C)
+                    print("B:", B)
+                    #Multiply grad by C-diagonal
+                    Qgrad[0] = Qgrad[0]*C[0][0]
+                    Qgrad[1] = Qgrad[1]*C[1][1]
+                    Qgrad[2] = Qgrad[2]*C[2][2]
+                    
+                    print("Qgrad:", Qgrad)
+                    #MM atom gradient
+                    print("Mgrad:", Mgrad)
+                    Mgrad[0] = Mgrad[0]*B[0][0]
+                    Mgrad[1] = Mgrad[1]*B[1][1]
+                    Mgrad[2] = Mgrad[2]*B[2][2]                    
+                    print("Mgrad:", Mgrad)
+                    
+                    return Qgrad,Mgrad
+                
+                def fullindex_to_qmindex(fullindex,qmatoms):
+                    qmindex=qmatoms.index(fullindex)
+                    return qmindex
+                
+                print("here")
+                print("linkatoms_dict: ", linkatoms_dict)
+                print("linkatoms_indices: ", linkatoms_indices)
+                num_linkatoms=len(linkatoms_indices)
+                for pair in sorted(linkatoms_dict.keys()):
+                    print("pair: ", pair)
+                    linkatomindex=linkatoms_indices.pop(0)
+                    print("linkatomindex:", linkatomindex)
+                    Lgrad=self.QMgradient[linkatomindex]
+                    print("Lgrad:",Lgrad)
+                    Lcoord=linkatoms_dict[pair]
+                    print("Lcoord:", Lcoord)
+                    fullatomindex_qm=pair[0]
+                    print("fullatomindex_qm:", fullatomindex_qm)
+                    print("self.qmatoms:", self.qmatoms)
+                    qmatomindex=fullindex_to_qmindex(fullatomindex_qm,self.qmatoms)
+                    print("qmatomindex:", qmatomindex)
+                    fullatomindex_mm=pair[1]
+                    print("fullatomindex_mm:", fullatomindex_mm)
+                    Qcoord=self.qmcoords[qmatomindex]
+                    print("Qcoords: ", Qcoord)
+                    print("type self.QMGradient", type(self.QMgradient))
+                    Qgrad=self.QMgradient[qmatomindex]
+                    print("Qgrad:", Qgrad)
+                    
+                    print("length of self.MMgradient:", len(self.MMgradient))
+                    Mcoord=current_coords[fullatomindex_mm]
+                    print("Mcoord:", Mcoord)
+                    print("type self.MMgradient", type(self.MMgradient))
+                    print("fullatomindex_mm:", fullatomindex_mm)
+                    Mgrad=self.MMgradient[fullatomindex_mm]
+                    print("Mgrad: ", Mgrad)
+                    Qgrad,Mgrad= linkatom_force_fix(Qcoord, Mcoord, Lcoord, Qgrad,Mgrad,Lgrad)
+                    print("Qgrad: ", Qgrad)
+                    print("Mgrad: ", Mgrad)
+                    self.QMgradient[qmatomindex]=Qgrad
+                    self.MMgradient[fullatomindex_mm]=Mgrad
+                #Fix QMgradient by removing linkatom contributions (bottom)
+                #Redundant?
+                print("self.QMgradient:", self.QMgradient)
+                self.QMgradient=self.QMgradient[0:-num_linkatoms] #remove linkatoms
+                print("self.QMgradient:", self.QMgradient)
             
+            # QM_PC_gradient is system size. Combining QM part (after linkatom-contribution removed) and PC part into 
+            print("self.allatoms:", len(self.allatoms))
+            print("len(self.MMgradient) :", len(self.QMgradient))
+            print("len(self.MMgradient) :", len(self.MMgradient))
+            print("length self.PCgradient ", len(self.PCgradient))
+            print("len(self.dipole_charges): ", len(self.dipole_charges))
+            assert len(self.allatoms) == len(self.MMgradient)
             
+            assert len(self.QMgradient) + len(self.PCgradient) - len(self.dipole_charges)  == len(self.MMgradient)
             
-            
-            self.QM_PC_Gradient = np.zeros((len(self.allatoms), 3))
+            self.QM_PC_gradient = np.zeros((len(self.MMgradient), 3))
             qmcount=0;pccount=0
             for i in self.allatoms:
                 if i in self.qmatoms:
-                    self.QM_PC_Gradient[i]=self.QMgradient[qmcount]
+                    #QM-gradient. Linkatom gradients are skipped
+                    self.QM_PC_gradient[i]=self.QMgradient[qmcount]
                     qmcount+=1
                 else:
-                    self.QM_PC_Gradient[i] = self.PCgradient[pccount]
+                    #Pointcharge-gradient. Dipole-charge gradients are skipped (never reached)
+                    self.QM_PC_gradient[i] = self.PCgradient[pccount]
                     pccount += 1
+            
+            print("qmcount:", qmcount)
+            print("pccount:", pccount)
+            print("self.QM_PC_gradient len ", len(self.QM_PC_gradient))
+            assert qmcount == len(self.qmatoms)
+            assert pccount == len(self.mmatoms)
+            
             #Now assemble final QM/MM gradient
-            self.QM_MM_Gradient=self.QM_PC_Gradient+self.MMGradient
+            assert len(self.QM_PC_gradient) == len(self.MMgradient)
+            self.QM_MM_gradient=self.QM_PC_gradient+self.MMgradient
             #print_time_rel(CheckpointTime, modulename='QM/MM gradient combine')
             if self.printlevel >=3:
                 print("QM gradient (au/Bohr):")
@@ -2601,18 +3083,19 @@ class QMMMTheory:
                 print_coords_all(self.PCgradient, self.mmelems, self.mmatoms)
                 blankline()
                 print("QM+PC gradient (au/Bohr):")
-                print_coords_all(self.QM_PC_Gradient, self.elems, self.allatoms)
+                print_coords_all(self.QM_PC_gradient, self.elems, self.allatoms)
                 blankline()
                 print("MM gradient (au/Bohr):")
-                print_coords_all(self.MMGradient, self.elems, self.allatoms)
+                print_coords_all(self.MMgradient, self.elems, self.allatoms)
                 blankline()
                 print("Total QM/MM gradient (au/Bohr):")
-                print_coords_all(self.QM_MM_Gradient, self.elems,self.allatoms)
+                print("")
+                print_coords_all(self.QM_MM_gradient, self.elems,self.allatoms)
             if self.printlevel >= 2:
                 print(BC.WARNING,BC.BOLD,"------------ENDING QM/MM MODULE-------------",BC.END)
-            return self.QM_MM_Energy, self.QM_MM_Gradient
+            return self.QM_MM_energy, self.QM_MM_gradient
         else:
-            return self.QM_MM_Energy
+            return self.QM_MM_energy
 
 
 
@@ -2861,7 +3344,7 @@ class ORCATheory:
     
     #Run function. Takes coords, elems etc. arguments and computes E or E+G.
     def run(self, current_coords=None, current_MM_coords=None, MMcharges=None, qm_elems=None,
-            mm_elems=None, elems=None, Grad=False, Hessian=False, PC=False, nprocs=None ):
+            elems=None, Grad=False, Hessian=False, PC=False, nprocs=None ):
         print(BC.OKBLUE,BC.BOLD, "------------RUNNING ORCA INTERFACE-------------", BC.END)
         #Coords provided to run or else taken from initialization.
         #if len(current_coords) != 0:
@@ -3025,7 +3508,7 @@ class Psi4Theory:
             pass
     #Run function. Takes coords, elems etc. arguments and computes E or E+G.
     def run(self, current_coords=None, current_MM_coords=None, MMcharges=None, qm_elems=None,
-            mm_elems=None, elems=None, Grad=False, PC=False, nprocs=None, pe=False, potfile='', restart=False ):
+            elems=None, Grad=False, PC=False, nprocs=None, pe=False, potfile='', restart=False ):
 
         if nprocs==None:
             nprocs=self.nprocs
@@ -3377,7 +3860,7 @@ class PySCFTheory:
             pass
     #Run function. Takes coords, elems etc. arguments and computes E or E+G.
     def run(self, current_coords=None, current_MM_coords=None, MMcharges=None, qm_elems=None,
-            mm_elems=None, elems=None, Grad=False, PC=False, nprocs=None, pe=False, potfile=None, restart=False ):
+            elems=None, Grad=False, PC=False, nprocs=None, pe=False, potfile=None, restart=False ):
 
         if nprocs==None:
             nprocs=self.nprocs
@@ -3541,7 +4024,7 @@ class CFourTheory:
 
     # Run function. Takes coords, elems etc. arguments and computes E or E+G.
     def run(self, current_coords=None, current_MM_coords=None, MMcharges=None, qm_elems=None,
-            mm_elems=None, elems=None, Grad=False, PC=False, nprocs=None, restart=False):
+            elems=None, Grad=False, PC=False, nprocs=None, restart=False):
 
         if nprocs == None:
             nprocs = self.nprocs
@@ -3616,7 +4099,7 @@ class MRCCTheory:
 
     # Run function. Takes coords, elems etc. arguments and computes E or E+G.
     def run(self, current_coords=None, current_MM_coords=None, MMcharges=None, qm_elems=None,
-            mm_elems=None, elems=None, Grad=False, PC=False, nprocs=None, restart=False):
+            elems=None, Grad=False, PC=False, nprocs=None, restart=False):
 
         if nprocs == None:
             nprocs = self.nprocs
@@ -4199,7 +4682,7 @@ class xTBTheory:
         except:
             pass
     def run(self, current_coords=None, current_MM_coords=None, MMcharges=None, qm_elems=None,
-                mm_elems=None, elems=None, Grad=False, PC=False, nprocs=None):
+                elems=None, Grad=False, PC=False, nprocs=None):
         if MMcharges is None:
             MMcharges=[]
 

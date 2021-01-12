@@ -178,6 +178,19 @@ def read_intlist_from_file(file,offset=0):
     list.sort()
     return list
 
+#Read list of flaots from file. Output list of floats.
+#Works for single-line with numbers and multi-lines
+def read_floatlist_from_file(file):
+    list=[]
+    lines=readlinesfile(file)
+    for line in lines:
+        for l in line.split():
+            if isfloat(l):
+                list.append(float(l))
+    list.sort()
+    return list
+
+
 
 #Write a string to file simply
 def writestringtofile(string,file):

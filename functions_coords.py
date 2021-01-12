@@ -27,6 +27,17 @@ eldict_covrad['K']=0.0001
 
 #print(eldict_covrad)
 
+#Remove zero charges
+def remove_zero_charges(charges,coords):
+    newcharges=[]
+    newcoords=[]
+    assert len(charges) == len(coords)
+    for charge,coord in zip(charges,coords):
+        if charge != 0.0:
+            newcharges.append(charge)
+            newcoords.append(coord)
+    return newcharges,newcoords
+
 
 def print_internal_coordinate_table(fragment):
     print('='*50)
@@ -450,6 +461,7 @@ def read_xyzfile(filename):
     assert len(coords) == numatoms, "Number of coordinates does not match header line"
     assert len(coords) == len(elems), "Number of coordinates does not match elements."
     return elems,coords
+
 
 
 def set_coordinates(atoms, V, title="", decimals=8):
