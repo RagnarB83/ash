@@ -1290,14 +1290,14 @@ class OpenMMTheory:
             print("Case Nonbondedforce. Adding Exception for ij pair")
             for i in atomlist:
                 for j in atomlist:
-                    print("i,j : ", i,j)
+                    #print("i,j : ", i,j)
                     self.nonbonded_force.addException(i,j,0, 0, 0, replace=True)
                     numexceptions+=1
         elif isinstance(self.nonbonded_force, self.openmm.CustomNonbondedForce):
             print("Case CustomNonbondedforce. Adding Exclusion for ij pair")
             for i in atomlist:
                 for j in atomlist:
-                    print("i,j : ", i,j)
+                    #print("i,j : ", i,j)
                     self.nonbonded_force.addExclusion(i,j)
                     numexceptions+=1
         print("Number of exceptions/exclusions added: ", numexceptions)
@@ -3376,11 +3376,19 @@ class ORCATheory:
             create_orca_pcfile(self.inputfilename, current_MM_coords, MMcharges)
             if self.brokensym==True:
                 print("Brokensymmetry SpinFlipping on! HSmult: {}.".format(self.HSmult))
-                for flipatom in self.atomstoflip:
-                    print("Flipping atom: {} {}".format(flipatom, qm_elems[flipatom]))
+                print("qmatoms:", self.qmatoms)
+                
+                qmatomstoflip=[qmatoms.index(i) for i in self.atomstoflip]
+                print("qmatomstoflip:", qmatomstoflip)
+                
+                for flipatom,qmflipatom in zip(self.atomstoflip,qmatomstoflip):
+                    print("flipatom:", flipatom)
+                    print("qmflipatom:", qmflipatom)
+                    print("qm_elems:", qm_elems)
+                    print("Flipping atom: {} QMregionindex: {} and element: {}".format(flipatom, qmflipatom, qm_elems[qmflipatom]))
                 create_orca_input_pc(self.inputfilename, qm_elems, current_coords, self.orcasimpleinput, self.orcablocks,
                                         self.charge, self.mult, extraline=self.extraline, HSmult=self.HSmult, Grad=Grad, Hessian=Hessian,
-                                     atomstoflip=self.atomstoflip)
+                                     atomstoflip=self.qmatomstoflip)
             else:
                 create_orca_input_pc(self.inputfilename, qm_elems, current_coords, self.orcasimpleinput, self.orcablocks,
                                         self.charge, self.mult, extraline=self.extraline, Grad=Grad, Hessian=Hessian)
@@ -3388,6 +3396,7 @@ class ORCATheory:
             if self.brokensym == True:
                 print("Brokensymmetry SpinFlipping on! HSmult: {}.".format(self.HSmult))
                 for flipatom in self.atomstoflip:
+
                     print("Flipping atom: {} {}".format(flipatom, qm_elems[flipatom]))
                 create_orca_input_plain(self.inputfilename, qm_elems, current_coords, self.orcasimpleinput,self.orcablocks,
                                         self.charge,self.mult, extraline=self.extraline, HSmult=self.HSmult, Grad=Grad, Hessian=Hessian,
