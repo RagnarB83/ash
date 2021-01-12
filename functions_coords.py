@@ -1111,6 +1111,7 @@ def distance_between_atoms(fragment=None, atom1=None, atom2=None):
 
 
 def get_boundary_atoms(qmatoms, coords, elems, scale, tol):
+    print("qmatoms:", qmatoms)
     # For each QM atom, do a get_conn_atoms, for those atoms, check if atoms are in qmatoms,
     # if not, then we have found an MM-boundary atom
     
@@ -1131,6 +1132,7 @@ def get_boundary_atoms(qmatoms, coords, elems, scale, tol):
         elif len(boundaryatom) == 1:
             # Adding to dict
             qm_mm_boundary_dict[qmatom] = boundaryatom[0]
+    print("qm_mm_boundary_dict:", qm_mm_boundary_dict)
     return qm_mm_boundary_dict
 
 #Get linkatom positions for a list of qmatoms and the current set of coordinates
