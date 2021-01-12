@@ -842,6 +842,12 @@ def print_time_rel_and_tot_color(timestampA,timestampB, modulename=''):
 # Theory object that always gives zero energy and zero gradient. Useful for setting constraints
 class ZeroTheory:
     def __init__(self, fragment=None, charge=None, mult=None, printlevel=None, nprocs=1, label=None):
+        self.nprocs=nprocs
+        self.charge=charge
+        self.mult=mult
+        self.printlevel=printlevel
+        self.label=label
+        self.fragment=fragment
         pass
     def run(self, current_coords=None, elems=None, Grad=False, PC=False, nprocs=None ):
         self.energy = 0.0
@@ -2463,7 +2469,7 @@ class QMMMTheory:
         #Default 1 proc
         else:
             self.nprocs=1
-
+        print("QM/MM object selected to use {} cores".format(self.nprocs))
 
         #Embedding type: mechanical, electrostatic etc.
         self.embedding=embedding
