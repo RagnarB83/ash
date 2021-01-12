@@ -2455,7 +2455,7 @@ class QMMMTheory:
         #This will be when calling QMtheory and probably MMtheory
         
         #nproc-setting in QMMMTheory takes precedent
-        if nprocs is != 1:
+        if nprocs != 1:
             self.nprocs=nprocs
         #If QMtheory nprocs was set (and QMMMTHeory not)
         elif self.qm_theory.nprocs != 1:
