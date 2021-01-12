@@ -2446,6 +2446,10 @@ class QMMMTheory:
         self.printlevel=printlevel
         self.qm_theory=qm_theory
         self.qm_theory_name = self.qm_theory.__class__.__name__
+        
+        #Setting QM/MM qmatoms in QMtheory also (used for Spin-flipping currently)
+        self.qm_theory.qmatoms=self.qmatoms
+        
         self.mm_theory=mm_theory
         self.mm_theory_name = self.mm_theory.__class__.__name__
         if self.mm_theory_name == "str":
@@ -3310,6 +3314,11 @@ class ORCATheory:
             print(BC.FAIL,"Error: atomstoflip should be list of integers (e.g. [0] or [2,3,5]), not a single integer.", BC.END)
             exit(1)
         self.atomstoflip=atomstoflip
+        
+        # self.qmatoms need to be set for Flipspin to work for QM/MM job.
+        #Overwritten by QMMMtheory, used in Flip-spin
+        self.qmatoms=[]
+            
         if self.printlevel >=2:
             print("")
             print("Creating ORCA object")
@@ -3377,10 +3386,13 @@ class ORCATheory:
             if self.brokensym==True:
                 print("Brokensymmetry SpinFlipping on! HSmult: {}.".format(self.HSmult))
                 print("qmatoms:", self.qmatoms)
-                
-                qmatomstoflip=[qmatoms.index(i) for i in self.atomstoflip]
-                print("qmatomstoflip:", qmatomstoflip)
-                
+                #Getting QM-region indices
+                if len(self.qmatoms) != 0:
+                    qmatomstoflip=[self.qmatoms.index(i) for i in self.atomstoflip]
+                    print("qmatomstoflip:", qmatomstoflip)
+                else:
+                    qmatomstoflip=self.atomstoflip
+                    
                 for flipatom,qmflipatom in zip(self.atomstoflip,qmatomstoflip):
                     print("flipatom:", flipatom)
                     print("qmflipatom:", qmflipatom)
@@ -3388,7 +3400,7 @@ class ORCATheory:
                     print("Flipping atom: {} QMregionindex: {} and element: {}".format(flipatom, qmflipatom, qm_elems[qmflipatom]))
                 create_orca_input_pc(self.inputfilename, qm_elems, current_coords, self.orcasimpleinput, self.orcablocks,
                                         self.charge, self.mult, extraline=self.extraline, HSmult=self.HSmult, Grad=Grad, Hessian=Hessian,
-                                     atomstoflip=self.qmatomstoflip)
+                                     atomstoflip=qmatomstoflip)
             else:
                 create_orca_input_pc(self.inputfilename, qm_elems, current_coords, self.orcasimpleinput, self.orcablocks,
                                         self.charge, self.mult, extraline=self.extraline, Grad=Grad, Hessian=Hessian)
