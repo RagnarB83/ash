@@ -2910,10 +2910,10 @@ class QMMMTheory:
         elif self.qm_theory_name == "None":
             print("No QMtheory. Skipping QM calc")
             self.QMenergy=0.0
-            self.QMgradient=0.0
+            self.QMgradient=np.array([0.0 0.0 0.0])
         elif self.qm_theory_name == "ZeroTheory":
             self.QMenergy=0.0
-            self.QMgradient=0.0
+            self.QMgradient=np.array([0.0 0.0 0.0])
             self.linkatoms=False
             
         else:
@@ -3071,7 +3071,7 @@ class QMMMTheory:
             
             # QM_PC_gradient is system size. Combining QM part (after linkatom-contribution removed) and PC part into 
             print("self.allatoms:", len(self.allatoms))
-            print("len(self.MMgradient) :", len(self.QMgradient))
+            print("len(self.QMgradient) :", len(self.QMgradient))
             print("len(self.MMgradient) :", len(self.MMgradient))
             print("length self.PCgradient ", len(self.PCgradient))
             print("len(self.dipole_charges): ", len(self.dipole_charges))
