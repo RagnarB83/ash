@@ -2910,10 +2910,10 @@ class QMMMTheory:
         elif self.qm_theory_name == "None":
             print("No QMtheory. Skipping QM calc")
             self.QMenergy=0.0
-            self.QMgradient=np.array([0.0 0.0 0.0])
+            self.QMgradient=np.array([0.0, 0.0, 0.0])
         elif self.qm_theory_name == "ZeroTheory":
             self.QMenergy=0.0
-            self.QMgradient=np.array([0.0 0.0 0.0])
+            self.QMgradient=np.array([0.0, 0.0, 0.0])
             self.linkatoms=False
             
         else:
