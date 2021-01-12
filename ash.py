@@ -2534,8 +2534,6 @@ class QMMMTheory:
             blankline()
             self.boundaryatoms = get_boundary_atoms(self.qmatoms, self.coords, self.elems, settings_ash.scale, settings_ash.tol)
             
-            print("self.boundaryatoms:", self.boundaryatoms)
-            
             if len(self.boundaryatoms) >0:
                 print("Found covalent QM-MM boundary. Linkatoms option set to True")
                 print("Boundaryatoms (QM:MM pairs):", self.boundaryatoms)
@@ -2916,6 +2914,8 @@ class QMMMTheory:
         elif self.qm_theory_name == "ZeroTheory":
             self.QMenergy=0.0
             self.QMgradient=0.0
+            self.linkatoms=False
+            
         else:
             print("invalid QM theory")
             exit(1)
