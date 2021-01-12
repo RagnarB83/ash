@@ -2373,18 +2373,12 @@ class PolEmbedTheory:
 #TODO NOTE: If we add init arguments, remember to update Numfreq QMMM option as it depends on the keywords
 class QMMMTheory:
     def __init__(self, qm_theory=None, qmatoms=None, fragment=None, mm_theory=None , charges=None,
-                 embedding="Elstat", printlevel=2, nprocs=None, actatoms=None, frozenatoms=None):
+                 embedding="Elstat", printlevel=2, nprocs=1, actatoms=None, frozenatoms=None):
 
         print(BC.WARNING,BC.BOLD,"------------Defining QM/MM object-------------", BC.END)
 
         #Linkatoms False by default. Later checked.
         self.linkatoms=False
-
-        #Setting nprocs of object
-        if nprocs==None:
-            self.nprocs=1
-        else:
-            self.nprocs=nprocs
 
         #If fragment object has been defined
         #This probably needs to be always true
@@ -2456,6 +2450,21 @@ class QMMMTheory:
             self.mm_theory_name="None"
         print("QM-theory:", self.qm_theory_name)
         print("MM-theory:", self.mm_theory_name)
+        
+        #Setting nprocs of object.
+        #This will be when calling QMtheory and probably MMtheory
+        
+        #nproc-setting in QMMMTheory takes precedent
+        if nprocs is != 1:
+            self.nprocs=nprocs
+        #If QMtheory nprocs was set (and QMMMTHeory not)
+        elif self.qm_theory.nprocs != 1:
+            self.nprocs=self.qm_theory.nprocs
+        #Default 1 proc
+        else:
+            self.nprocs=1
+
+
         #Embedding type: mechanical, electrostatic etc.
         self.embedding=embedding
         print("Embedding:", self.embedding)
@@ -2692,7 +2701,7 @@ class QMMMTheory:
                 self.dipole_coords.append(pos_d1)
                 self.dipole_coords.append(pos_d2)
     
-    def run(self, current_coords=None, elems=None, Grad=False, nprocs=None):
+    def run(self, current_coords=None, elems=None, Grad=False, nprocs=1):
         CheckpointTime = time.time()
         if self.printlevel >= 2:
             print(BC.WARNING, BC.BOLD, "------------RUNNING QM/MM MODULE-------------", BC.END)
@@ -2710,9 +2719,11 @@ class QMMMTheory:
             PC=True
         else:
             PC=False
-
-        if nprocs==None:
+        
+        #If nprocs was set when calling .run then using, otherwise use self.nprocs
+        if nprocs==1:
             nprocs=self.nprocs
+        
         if self.printlevel >= 2:
             print("Running QM/MM object with {} cores available".format(nprocs))
         #Updating QM coords and MM coords.
@@ -3385,19 +3396,13 @@ class ORCATheory:
             create_orca_pcfile(self.inputfilename, current_MM_coords, MMcharges)
             if self.brokensym==True:
                 print("Brokensymmetry SpinFlipping on! HSmult: {}.".format(self.HSmult))
-                print("qmatoms:", self.qmatoms)
                 #Getting QM-region indices
                 if len(self.qmatoms) != 0:
                     qmatomstoflip=[self.qmatoms.index(i) for i in self.atomstoflip]
-                    print("qmatomstoflip:", qmatomstoflip)
                 else:
                     qmatomstoflip=self.atomstoflip
-                    
                 for flipatom,qmflipatom in zip(self.atomstoflip,qmatomstoflip):
-                    print("flipatom:", flipatom)
-                    print("qmflipatom:", qmflipatom)
-                    print("qm_elems:", qm_elems)
-                    print("Flipping atom: {} QMregionindex: {} and element: {}".format(flipatom, qmflipatom, qm_elems[qmflipatom]))
+                    print("Flipping atom: {} QMregionindex: {} Element: {}".format(flipatom, qmflipatom, qm_elems[qmflipatom]))
                 create_orca_input_pc(self.inputfilename, qm_elems, current_coords, self.orcasimpleinput, self.orcablocks,
                                         self.charge, self.mult, extraline=self.extraline, HSmult=self.HSmult, Grad=Grad, Hessian=Hessian,
                                      atomstoflip=qmatomstoflip)
@@ -3407,12 +3412,16 @@ class ORCATheory:
         else:
             if self.brokensym == True:
                 print("Brokensymmetry SpinFlipping on! HSmult: {}.".format(self.HSmult))
-                for flipatom in self.atomstoflip:
-
-                    print("Flipping atom: {} {}".format(flipatom, qm_elems[flipatom]))
+                #Getting QM-region indices
+                if len(self.qmatoms) != 0:
+                    qmatomstoflip=[self.qmatoms.index(i) for i in self.atomstoflip]
+                else:
+                    qmatomstoflip=self.atomstoflip
+                for flipatom,qmflipatom in zip(self.atomstoflip,qmatomstoflip):
+                    print("Flipping atom: {} QMregionindex: {} Element: {}".format(flipatom, qmflipatom, qm_elems[qmflipatom]))
                 create_orca_input_plain(self.inputfilename, qm_elems, current_coords, self.orcasimpleinput,self.orcablocks,
                                         self.charge,self.mult, extraline=self.extraline, HSmult=self.HSmult, Grad=Grad, Hessian=Hessian,
-                                     atomstoflip=self.atomstoflip)
+                                     atomstoflip=qmatomstoflip)
             else:
                 create_orca_input_plain(self.inputfilename, qm_elems, current_coords, self.orcasimpleinput,self.orcablocks,
                                         self.charge,self.mult, extraline=self.extraline, Grad=Grad, Hessian=Hessian)
