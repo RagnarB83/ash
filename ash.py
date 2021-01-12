@@ -2909,10 +2909,10 @@ class QMMMTheory:
             exit(1)
         elif self.qm_theory_name == "None":
             print("No QMtheory. Skipping QM calc")
-            self.QMEnergy=0.0
+            self.QMenergy=0.0
             self.QMgradient=0.0
         elif self.qm_theory_name == "ZeroTheory":
-            self.QMEnergy=0.0
+            self.QMenergy=0.0
             self.QMgradient=0.0
         else:
             print("invalid QM theory")
