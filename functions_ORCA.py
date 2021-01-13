@@ -638,8 +638,8 @@ def create_orca_inputVIEcomp_gas(name, name2, elems, coords, orcasimpleinput, or
 #Allows for extraline that could be another '!' line or block-inputline.
 def create_orca_input_pc(name,elems,coords,orcasimpleinput,orcablockinput,charge,mult, Grad=False, extraline='',
                          HSmult=None, atomstoflip=None, Hessian=False, extrabasisatoms=None, extrabasis=None):
-    #, extrabasisatoms=self.extrabasisatoms, extrabasis=self.extrabasis
-    
+    if extrabasisatoms is None:
+        extrabasisatoms=[]
     pcfile=name+'.pc'
     with open(name+'.inp', 'w') as orcafile:
         orcafile.write(orcasimpleinput+'\n')
@@ -675,6 +675,9 @@ def create_orca_input_pc(name,elems,coords,orcasimpleinput,orcablockinput,charge
 
 def create_orca_input_plain(name,elems,coords,orcasimpleinput,orcablockinput,charge,mult, Grad=False, Hessian=False, extraline='',
                             HSmult=None, atomstoflip=None, extrabasis=None, extrabasisatoms=None):
+    if extrabasisatoms is None:
+        extrabasisatoms=[]
+    
     with open(name+'.inp', 'w') as orcafile:
         orcafile.write(orcasimpleinput+'\n')
         if extraline != '':
