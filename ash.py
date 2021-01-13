@@ -2909,13 +2909,11 @@ class QMMMTheory:
             exit(1)
         elif self.qm_theory_name == "None":
             print("No QMtheory. Skipping QM calc")
-            self.QMenergy=0.0
+            self.QMenergy=0.0;self.linkatoms=False;self.PCgradient=np.array([0.0, 0.0, 0.0])
             self.QMgradient=np.array([0.0, 0.0, 0.0])
         elif self.qm_theory_name == "ZeroTheory":
-            self.QMenergy=0.0
+            self.QMenergy=0.0;self.linkatoms=False;self.PCgradient=np.array([0.0, 0.0, 0.0])
             self.QMgradient=np.array([0.0, 0.0, 0.0])
-            self.linkatoms=False
-            
         else:
             print("invalid QM theory")
             exit(1)
@@ -3075,8 +3073,8 @@ class QMMMTheory:
             print("len(self.MMgradient) :", len(self.MMgradient))
             print("length self.PCgradient ", len(self.PCgradient))
             print("len(self.dipole_charges): ", len(self.dipole_charges))
-            assert len(self.allatoms) == len(self.MMgradient)
             
+            assert len(self.allatoms) == len(self.MMgradient)
             assert len(self.QMgradient) + len(self.PCgradient) - len(self.dipole_charges)  == len(self.MMgradient)
             
             self.QM_PC_gradient = np.zeros((len(self.MMgradient), 3))
@@ -3284,7 +3282,7 @@ class DaltonTheory:
 #ORCA Theory object. Fragment object is optional. Only used for single-points.
 
 class ORCATheory:
-    def __init__(self, orcadir=None, fragment=None, charge=None, mult=None, orcasimpleinput='', printlevel=2,
+    def __init__(self, orcadir=None, fragment=None, charge=None, mult=None, orcasimpleinput='', printlevel=2, extrabasisatoms=None, extrabasis=None,
                  orcablocks='', extraline='', brokensym=None, HSmult=None, atomstoflip=None, nprocs=1, label=None):
 
         if orcadir is None:
@@ -3336,6 +3334,11 @@ class ORCATheory:
             print(BC.FAIL,"Error: atomstoflip should be list of integers (e.g. [0] or [2,3,5]), not a single integer.", BC.END)
             exit(1)
         self.atomstoflip=atomstoflip
+        
+        #Extrabasis
+        self.extrabasisatoms=extrabasisatoms
+        self.extrabasis=extrabasis
+        
         
         # self.qmatoms need to be set for Flipspin to work for QM/MM job.
         #Overwritten by QMMMtheory, used in Flip-spin
@@ -3391,6 +3394,16 @@ class ORCATheory:
             else:
                 qm_elems = elems
 
+        #If QM/MM then extrabasisatoms and atomstoflip have to be updated
+        if len(self.qmatoms) != 0:
+            #extrabasisatomindices if QM/MM
+            qmatoms_extrabasis=[self.qmatoms.index(i) for i in self.extrabasisatoms]
+            #new QM-region indices for atomstoflip if QM/MM
+            qmatomstoflip=[self.qmatoms.index(i) for i in self.atomstoflip]
+        else:
+            qmatomstoflip=self.atomstoflip
+            qmatoms_extrabasis=self.extrabasisatoms
+        
         if nprocs==None:
             nprocs=self.nprocs
         print("Running ORCA object with {} cores available".format(nprocs))
@@ -3402,40 +3415,34 @@ class ORCATheory:
         print(self.extraline)
         print(self.orcablocks)
         print("Charge: {}  Mult: {}".format(self.charge, self.mult))
+        #Printing extra options chosen:
+        if self.brokensym==True:
+            print("Brokensymmetry SpinFlipping on! HSmult: {}.".format(self.HSmult))
+            for flipatom,qmflipatom in zip(self.atomstoflip,qmatomstoflip):
+                print("Flipping atom: {} QMregionindex: {} Element: {}".format(flipatom, qmflipatom, qm_elems[qmflipatom]))
+        if self.extrabasis is not None:
+            print("Using extra basis ({}) on atoms : {}".format(self.extrabasis,qmatoms_extrabasis))
+
         if PC==True:
             print("Pointcharge embedding is on!")
             create_orca_pcfile(self.inputfilename, current_MM_coords, MMcharges)
-            if self.brokensym==True:
-                print("Brokensymmetry SpinFlipping on! HSmult: {}.".format(self.HSmult))
-                #Getting QM-region indices
-                if len(self.qmatoms) != 0:
-                    qmatomstoflip=[self.qmatoms.index(i) for i in self.atomstoflip]
-                else:
-                    qmatomstoflip=self.atomstoflip
-                for flipatom,qmflipatom in zip(self.atomstoflip,qmatomstoflip):
-                    print("Flipping atom: {} QMregionindex: {} Element: {}".format(flipatom, qmflipatom, qm_elems[qmflipatom]))
+            if self.brokensym == True:
                 create_orca_input_pc(self.inputfilename, qm_elems, current_coords, self.orcasimpleinput, self.orcablocks,
                                         self.charge, self.mult, extraline=self.extraline, HSmult=self.HSmult, Grad=Grad, Hessian=Hessian,
-                                     atomstoflip=qmatomstoflip)
+                                     atomstoflip=qmatomstoflip, extrabasisatoms=qmatoms_extrabasis, extrabasis=self.extrabasis)
             else:
                 create_orca_input_pc(self.inputfilename, qm_elems, current_coords, self.orcasimpleinput, self.orcablocks,
-                                        self.charge, self.mult, extraline=self.extraline, Grad=Grad, Hessian=Hessian)
+                                        self.charge, self.mult, extraline=self.extraline, Grad=Grad, Hessian=Hessian,
+                                        extrabasisatoms=qmatoms_extrabasis, extrabasis=self.extrabasis)
         else:
             if self.brokensym == True:
-                print("Brokensymmetry SpinFlipping on! HSmult: {}.".format(self.HSmult))
-                #Getting QM-region indices
-                if len(self.qmatoms) != 0:
-                    qmatomstoflip=[self.qmatoms.index(i) for i in self.atomstoflip]
-                else:
-                    qmatomstoflip=self.atomstoflip
-                for flipatom,qmflipatom in zip(self.atomstoflip,qmatomstoflip):
-                    print("Flipping atom: {} QMregionindex: {} Element: {}".format(flipatom, qmflipatom, qm_elems[qmflipatom]))
                 create_orca_input_plain(self.inputfilename, qm_elems, current_coords, self.orcasimpleinput,self.orcablocks,
                                         self.charge,self.mult, extraline=self.extraline, HSmult=self.HSmult, Grad=Grad, Hessian=Hessian,
-                                     atomstoflip=qmatomstoflip)
+                                     atomstoflip=qmatomstoflip, extrabasisatoms=qmatoms_extrabasis, extrabasis=self.extrabasis)
             else:
                 create_orca_input_plain(self.inputfilename, qm_elems, current_coords, self.orcasimpleinput,self.orcablocks,
-                                        self.charge,self.mult, extraline=self.extraline, Grad=Grad, Hessian=Hessian)
+                                        self.charge,self.mult, extraline=self.extraline, Grad=Grad, Hessian=Hessian,
+                                        extrabasisatoms=qmatoms_extrabasis, extrabasis=self.extrabasis)
 
         #Run inputfile using ORCA parallelization. Take nprocs argument.
         #print(BC.OKGREEN, "------------Running ORCA calculation-------------", BC.END)

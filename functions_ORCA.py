@@ -636,9 +636,10 @@ def create_orca_inputVIEcomp_gas(name, name2, elems, coords, orcasimpleinput, or
 
 #Create PC-embedded ORCA inputfile from elems,coords, input, charge, mult,pointcharges
 #Allows for extraline that could be another '!' line or block-inputline.
-#Used by Yggdrasill
 def create_orca_input_pc(name,elems,coords,orcasimpleinput,orcablockinput,charge,mult, Grad=False, extraline='',
-                         HSmult=None, atomstoflip=None, Hessian=False):
+                         HSmult=None, atomstoflip=None, Hessian=False, extrabasisatoms=None, extrabasis=None):
+    #, extrabasisatoms=self.extrabasisatoms, extrabasis=self.extrabasis
+    
     pcfile=name+'.pc'
     with open(name+'.inp', 'w') as orcafile:
         orcafile.write(orcasimpleinput+'\n')
@@ -661,15 +662,19 @@ def create_orca_input_pc(name,elems,coords,orcasimpleinput,orcablockinput,charge
             orcafile.write('*xyz {} {}\n'.format(charge,HSmult))
         else:
             orcafile.write('*xyz {} {}\n'.format(charge,mult))
-        for el,c in zip(elems,coords):
-            orcafile.write('{} {} {} {} \n'.format(el,c[0], c[1], c[2]))
+        #Writing coordinates. Adding extrabasis keyword for atom if option active
+        for i,(el,c) in enumerate(zip(elems,coords)):
+            if i in extrabasisatoms:
+                orcafile.write('{} {} {} {} newgto \"{}\" end\n'.format(el,c[0], c[1], c[2], extrabasis))                
+            else:
+                orcafile.write('{} {} {} {} \n'.format(el,c[0], c[1], c[2]))
         orcafile.write('*\n')
 
 #Create simple ORCA inputfile from elems,coords, input, charge, mult,pointcharges
 #Allows for extraline that could be another '!' line or block-inputline.
 
 def create_orca_input_plain(name,elems,coords,orcasimpleinput,orcablockinput,charge,mult, Grad=False, Hessian=False, extraline='',
-                            HSmult=None, atomstoflip=None):
+                            HSmult=None, atomstoflip=None, extrabasis=None, extrabasisatoms=None):
     with open(name+'.inp', 'w') as orcafile:
         orcafile.write(orcasimpleinput+'\n')
         if extraline != '':
@@ -694,8 +699,11 @@ def create_orca_input_plain(name,elems,coords,orcasimpleinput,orcablockinput,cha
         else:
             orcafile.write('*xyz {} {}\n'.format(charge,mult))
 
-        for el,c in zip(elems,coords):
-            orcafile.write('{} {} {} {} \n'.format(el,c[0], c[1], c[2]))
+        for i,(el,c) in enumerate(zip(elems,coords)):
+            if i in extrabasisatoms:
+                orcafile.write('{} {} {} {} newgto \"{}\" end\n'.format(el,c[0], c[1], c[2], extrabasis))                
+            else:
+                orcafile.write('{} {} {} {} \n'.format(el,c[0], c[1], c[2]))
         orcafile.write('*\n')
 
 # Create ORCA pointcharge file based on provided list of elems and coords (MM region elems and coords)
