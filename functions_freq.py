@@ -790,6 +790,6 @@ def calc_rotational_constants(frag, printlevel=2):
         print("Moments of inertia (amu A^2 ):", rinertia)
         print("Rotational constants (GHz):", rot_constants)
         print("Rotational constants (cm-1):", rot_constants_cm)
-        sprint("Note: If moment of inertia is zero then rotational constant is infinite and not printed ")
+        print("Note: If moment of inertia is zero then rotational constant is infinite and not printed ")
 
     return rot_constants_cm

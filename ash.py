@@ -3421,7 +3421,7 @@ class ORCATheory:
             for flipatom,qmflipatom in zip(self.atomstoflip,qmatomstoflip):
                 print("Flipping atom: {} QMregionindex: {} Element: {}".format(flipatom, qmflipatom, qm_elems[qmflipatom]))
         if self.extrabasis is not None:
-            print("Using extra basis ({}) on atoms : {}".format(self.extrabasis,qmatoms_extrabasis))
+            print("Using extra basis ({}) on QM-region indices : {}".format(self.extrabasis,qmatoms_extrabasis))
 
         if PC==True:
             print("Pointcharge embedding is on!")
