@@ -2322,7 +2322,9 @@ def calc_surface_fromXYZ(xyzdir=None, theory=None, dimension=None, resultfile=No
                     newsurfacepoint=Surfacepoint(RCvalue1,RCvalue2)
                     newsurfacepoint.xyzfile=xyzdir+'/'+relfile
                     #NOTE: Currently putting fragment into surfacepoint. Could also just point to xyzfile. Currently more memory-demanding
-                    newfrag=ash.Fragment(xyzfile=xyzdir+'/'+relfile, label="RC1"+str(RCvalue1)+"_RC2"+str(RCvalue2))
+                    #NOTE: Using tuple as a label for fragment
+                    newfrag=ash.Fragment(xyzfile=xyzdir+'/'+relfile, label=(RCvalue1,RCvalue2))
+                    #"RC1"+str(RCvalue1)+"_RC2"+str(RCvalue2)
                     newsurfacepoint.fragment=newfrag
                     list_of_surfacepoints.append(newsurfacepoint)
                     #surfacepointfragments[(RCvalue1,RCvalue2)] = newfrag
@@ -2336,37 +2338,29 @@ def calc_surface_fromXYZ(xyzdir=None, theory=None, dimension=None, resultfile=No
                     newsurfacepoint=Surfacepoint(RCvalue1)
                     newsurfacepoint.xyzfile=xyzdir+'/'+relfile
                     #NOTE: Currently putting fragment into surfacepoint. Could also just point to xyzfile. Currently more memory-demanding
-                    newfrag=ash.Fragment(xyzfile=xyzdir+'/'+relfile, label="RC1"+str(RCvalue1))
+                    #NOTE: Using tuple as a label for fragment
+                    newfrag=ash.Fragment(xyzfile=xyzdir+'/'+relfile, label=(RCvalue1))
                     newsurfacepoint.fragment=newfrag
                     list_of_surfacepoints.append(newsurfacepoint)
 
-        #This is an ordered list of fragments only. Same order as list_of_surfacepoints
+        #This is an ordered list of fragments only. Same order as list_of_surfacepoints, though does not matter since we use dicts
         #Used by ash.Singlepoint_parallel
         surfacepointfragments_lists=[point.fragment for point in list_of_surfacepoints]
-        #print("surfacepointfragments_lists:", surfacepointfragments_lists)
         
         if scantype=='Unrelaxed':
             results = ash.Singlepoint_parallel(fragments=surfacepointfragments_lists, theories=[theory], numcores=numcores)
             print("Parallel calculation done!")
-            print("results:", results)
             
-            #Gathering results in FINAL dictionary. Results-list and list_of_surfacepoints should be in same order
-            for energy,surfacepoint in zip(results,list_of_surfacepoints):
-                if dimension == 2:
-                    print("Surfacepoint: ", surfacepoint.RC1, surfacepoint.RC2)
-                    surfacedictionary[(surfacepoint.RC1,surfacepoint.RC2)] = energy
-                else:
-                    print("Surfacepoint: ", surfacepoint.RC1)
-                    surfacedictionary[(surfacepoint.RC1)] = energy
-                print("Energy: {}".format(energy))
-                
-                print("surfacedictionary:", surfacedictionary)
+            #Gathering results in FINAL dictionary.
+            for dictitem in results:
+                print("Surfacepoint: {} Energy: {}".format(dictitem, results[dictitem]))
+                surfacedictionary[dictitem] = results[dictitem]
+
+            print("surfacedictionary:", surfacedictionary)
+            if len(surfacedictionary) != totalnumpoints:
+                print("Dictionary not complete!")
                 print("len surfacedictionary:", len(surfacedictionary))
                 print("totalnumpoints:", totalnumpoints)
-                if len(surfacedictionary) != totalnumpoints:
-                    print("Dictionary not complete!")
-                    print("len surfacedictionary:", len(surfacedictionary))
-                    print("totalnumpoints:", totalnumpoints)
         elif scantype=='Relaxed':
             print("calc_surface_fromXYZ Relaxed option not possible in parallel mode yet. Exiting")
             exit()

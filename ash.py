@@ -292,8 +292,12 @@ def Singlepoint(fragment=None, theory=None, Grad=False):
 def Single_par(list):
     theory=list[0]
     fragment=list[1]
+    #Making label flexible
+    #label=''.join([str(i) for i in list[2]])
     label=list[2]
-
+    #Creating separate inputfilename using label
+    theory.inputfilename=''.join([str(i) for i in list[2]])
+    
     if label is None:
         print("No label provided to fragment or theory objects. This is required to distinguish between calculations ")
         print("Exiting...")
@@ -303,12 +307,9 @@ def Single_par(list):
     coords = fragment.coords
     elems = fragment.elems
     print(BC.WARNING,"Doing single-point Energy job on fragment. Formula: {} Label: {} ".format(fragment.prettyformula,fragment.label), BC.END)
-    #Creating separate inputfilename using label
-    theory.inputfilename=label
-    print("label:", label)
+
 
     energy = theory.run(current_coords=coords, elems=elems)
-    exit()
     print("Energy: ", energy)
     # Now adding total energy to fragment
     fragment.energy = energy
@@ -365,7 +366,6 @@ def Singlepoint_parallel(fragments=None, theories=None, numcores=None):
     #Convert list of tuples into dict
     energy_dict = {result[0]: result[1] for result in results}
     print("energy_dict:", energy_dict)
-
 
     return energy_dict
 
