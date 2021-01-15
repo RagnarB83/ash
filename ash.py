@@ -1935,9 +1935,11 @@ class NonBondedTheory:
         print_time_rel(CheckpointTime, modulename="pairpot arrays")
         self.pairarrays_assigned = True
 
-    def update_charges(self,charges):
+    def update_charges(self,atomlist,charges):
         print("Updating charges.")
-        self.atom_charges = charges
+        assert len(atomlist) == len(charges)
+        for atom,charge in zip(atomlist,charges):
+            self.atom_charges[atom] = charge
         #print("Charges are now:", charges)
         print("Sum of charges:", sum(charges))
     #Provide specific coordinates (MM region) and charges (MM region) upon run

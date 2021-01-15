@@ -2262,8 +2262,8 @@ def calc_surface(fragment=None, theory=None, workflow=None, scantype='Unrelaxed'
 # Calculate surface from XYZ-file collection.
 #Both unrelaxed (single-point) and relaxed (opt) is now possible
 # TODO: Finish parallelize surfacepoint calculations
-def calc_surface_fromXYZ(xyzdir=None, theory=None, dimension=None, resultfile=None, scantype='Unrelaxed',
-                         coordsystem='dlc', maxiter=50, extraconstraints=None, convergence_setting=None,
+def calc_surface_fromXYZ(xyzdir=None, theory=None, dimension=None, resultfile=None, scantype='Unrelaxed',runmode='serial',
+                         coordsystem='dlc', maxiter=50, extraconstraints=None, convergence_setting=None, numcores=None,
                          RC1_type=None, RC2_type=None, RC1_indices=None, RC2_indices=None):
     
     print("="*50)
@@ -2286,83 +2286,174 @@ def calc_surface_fromXYZ(xyzdir=None, theory=None, dimension=None, resultfile=No
         os.mkdir('surface_xyzfiles') 
 
 
-    #Looping over XYZ files
+    #Points
     totalnumpoints=len(glob.glob(xyzdir+'/*.xyz'))
-    for count,file in enumerate(glob.glob(xyzdir+'/*.xyz')):
-        relfile=os.path.basename(file)
-        #Getting RC values from XYZ filename e.g. RC1_2.0-RC2_180.0.xyz
-        if dimension == 2:
-            #Cleaner splitting.
-            #TODO: Should we use other symbol than "-" inbetween RC1 and RC2 values?
-            start="RC1_"; end="-RC2_"
-            RCvalue1=float(relfile.split(start)[1].split(end)[0])
-            RCvalue2=float(relfile.split(end)[1].split(".xyz")[0])
 
-            print("=======================================================")
-            print("Surfacepoint: {} / {}".format(count+1,totalnumpoints))
-            print("XYZ-file: {}     RC1: {}   RC2: {}".format(relfile,RCvalue1,RCvalue2))
-            print("=======================================================")
-            
-            
-            if (RCvalue1,RCvalue2) not in surfacedictionary:
-                mol=ash.Fragment(xyzfile=file)
-                if scantype=="Unrelaxed":
-                    energy = ash.Singlepoint(theory=theory, fragment=mol)
-                elif scantype=="Relaxed":
-                    #Now setting constraints
-                    allconstraints = set_constraints(dimension=2, RCvalue1=RCvalue1, RCvalue2=RCvalue2, extraconstraints=extraconstraints,
-                                                     RC1_type=RC1_type, RC2_type=RC2_type, RC1_indices=RC1_indices, RC2_indices=RC2_indices)
-                    print("allconstraints:", allconstraints)
-                    energy = geomeTRICOptimizer(fragment=mol, theory=theory, 
-                                                maxiter=maxiter, coordsystem=coordsystem, constraints=allconstraints, constrainvalue=True, 
-                                                convergence_setting=convergence_setting)
-                    #Write geometry to disk in dir : surface_xyzfiles
-                    fragment.write_xyzfile(xyzfilename="RC1_"+str(RCvalue1)+"-RC2_"+str(RCvalue2)+".xyz")
-                    fragment.print_system(filename="RC1_"+str(RCvalue1)+"-RC2_"+str(RCvalue2)+".ygg")
-                    shutil.move("RC1_"+str(RCvalue1)+"-RC2_"+str(RCvalue2)+".xyz", "surface_xyzfiles/RC1_"+str(RCvalue1)+"-RC2_"+str(RCvalue2)+".xyz")
+    #New Surfacepoint class to organize the data, at least for parallel mode
+    #Using list to collect the Surfacepoint objects
+    list_of_surfacepoints=[]
+    class Surfacepoint:
+        def __init__(self,RC1,RC2=None):
+            self.RC1=RC1
+            self.RC2=RC2
+            self.energy=0.0
+            self.xyzfile=None
+            self.fragment=None
+
+
+    ###########################
+    #PARALLEL CALCULATION
+    ##########################
+    if runmode=='parallel':
+        print("Parallel runmode.")
+        surfacepointfragments={}
+        #Looping over XYZ files to get coordinates
+        for count,file in enumerate(glob.glob(xyzdir+'/*.xyz')):
+            relfile=os.path.basename(file)
+            #Getting RC values from XYZ filename e.g. RC1_2.0-RC2_180.0.xyz
+            if dimension == 2:
+                #Cleaner splitting.
+                #TODO: Should we use other symbol than "-" inbetween RC1 and RC2 values?
+                start="RC1_"; end="-RC2_"
+                RCvalue1=float(relfile.split(start)[1].split(end)[0])
+                RCvalue2=float(relfile.split(end)[1].split(".xyz")[0])
+                if (RCvalue1,RCvalue2) not in surfacedictionary:
+                    #Creating new surfacepoint object
+                    newsurfacepoint=Surfacepoint(RCvalue1,RCvalue2)
+                    newsurfacepoint.xyzfile=xyzdir+'/'+relfile
+                    #NOTE: Currently putting fragment into surfacepoint. Could also just point to xyzfile. Currently more memory-demanding
+                    newfrag=ash.Fragment(xyzfile=xyzdir+'/'+relfile, label="RC1"+str(RCvalue1)+"_RC2"+str(RCvalue2))
+                    newsurfacepoint.fragment=newfrag
+                    list_of_surfacepoints.append(newsurfacepoint)
+                    #surfacepointfragments[(RCvalue1,RCvalue2)] = newfrag
                     
+            elif dimension == 1:
+                #RC1_2.02.xyz
+                RCvalue1=float(relfile.replace('.xyz','').replace('RC1_',''))
+                print("XYZ-file: {}     RC1: {} ".format(relfile,RCvalue1))
+                if (RCvalue1) not in surfacedictionary:
+                    #Creating new surfacepoint object
+                    newsurfacepoint=Surfacepoint(RCvalue1)
+                    newsurfacepoint.xyzfile=xyzdir+'/'+relfile
+                    #NOTE: Currently putting fragment into surfacepoint. Could also just point to xyzfile. Currently more memory-demanding
+                    newfrag=ash.Fragment(xyzfile=xyzdir+'/'+relfile, label="RC1"+str(RCvalue1))
+                    newsurfacepoint.fragment=newfrag
+                    list_of_surfacepoints.append(newsurfacepoint)
+
+        #This is an ordered list of fragments only. Same order as list_of_surfacepoints
+        #Used by ash.Singlepoint_parallel
+        surfacepointfragments_lists=[point.fragment for point in list_of_surfacepoints]
+        #print("surfacepointfragments_lists:", surfacepointfragments_lists)
+        
+        if scantype=='Unrelaxed':
+            results = ash.Singlepoint_parallel(fragments=surfacepointfragments_lists, theories=[theory], numcores=numcores)
+            print("Parallel calculation done!")
+            print("results:", results)
+            
+            #Gathering results in FINAL dictionary. Results-list and list_of_surfacepoints should be in same order
+            for energy,surfacepoint in zip(results,list_of_surfacepoints):
+                if dimension == 2:
+                    print("Surfacepoint: ", surfacepoint.RC1, surfacepoint.RC2)
+                    surfacedictionary[(surfacepoint.RC1,surfacepoint.RC2)] = energy
+                else:
+                    print("Surfacepoint: ", surfacepoint.RC1)
+                    surfacedictionary[(surfacepoint.RC1)] = energy
+                print("Energy: {}".format(energy))
                 
-                print("Energy of file {} : {} Eh".format(relfile, energy))
-                #theory.cleanup()
-                surfacedictionary[(RCvalue1,RCvalue2)] = energy
-                #Writing dictionary to file
-                write_surfacedict_to_file(surfacedictionary,"surface_results.txt", dimension=2)
                 print("surfacedictionary:", surfacedictionary)
-                calc_rotational_constants(mol)
-                print("")
-            else:
-                print("RC1 and RC2 values in dict already. Skipping.")
-        elif dimension == 1:
-            #RC1_2.02.xyz
-            RCvalue1=float(relfile.replace('.xyz','').replace('RC1_',''))
-            print("XYZ-file: {}     RC1: {} ".format(relfile,RCvalue1))
-            if (RCvalue1) not in surfacedictionary:
-                mol=ash.Fragment(xyzfile=file)
-                if scantype=="Unrelaxed":
-                    energy = ash.Singlepoint(theory=theory, fragment=mol)
-                elif scantype=="Relaxed":
-                    #Now setting constraints
-                    allconstraints = set_constraints(dimension=1, RCvalue1=RCvalue1, extraconstraints=extraconstraints,
-                                                     RC1_type=RC1_type, RC1_indices=RC1_indices)
-                    print("allconstraints:", allconstraints)
-                    energy = geomeTRICOptimizer(fragment=mol, theory=theory, 
-                                                maxiter=maxiter, coordsystem=coordsystem, constraints=allconstraints, constrainvalue=True, 
-                                                convergence_setting=convergence_setting)
-                    #Write geometry to disk in dir : surface_xyzfiles
-                    fragment.write_xyzfile(xyzfilename="RC1_"+str(RCvalue1)+".xyz")
-                    fragment.print_system(filename="RC1_"+str(RCvalue1)+".ygg")
-                    shutil.move("RC1_"+str(RCvalue1)+".xyz", "surface_xyzfiles/"+"RC1_"+str(RCvalue1)+".xyz")
+                print("len surfacedictionary:", len(surfacedictionary))
+                print("totalnumpoints:", totalnumpoints)
+                if len(surfacedictionary) != totalnumpoints:
+                    print("Dictionary not complete!")
+                    print("len surfacedictionary:", len(surfacedictionary))
+                    print("totalnumpoints:", totalnumpoints)
+        elif scantype=='Relaxed':
+            print("calc_surface_fromXYZ Relaxed option not possible in parallel mode yet. Exiting")
+            exit()
+        
+        
+        
+        
+    else:
+        ###########################
+        #SERIAL CALCULATION
+        ##########################
+        #Looping over XYZ files
+        for count,file in enumerate(glob.glob(xyzdir+'/*.xyz')):
+            relfile=os.path.basename(file)
+            #Getting RC values from XYZ filename e.g. RC1_2.0-RC2_180.0.xyz
+            if dimension == 2:
+                #Cleaner splitting.
+                #TODO: Should we use other symbol than "-" inbetween RC1 and RC2 values?
+                start="RC1_"; end="-RC2_"
+                RCvalue1=float(relfile.split(start)[1].split(end)[0])
+                RCvalue2=float(relfile.split(end)[1].split(".xyz")[0])
+
+                print("=======================================================")
+                print("Surfacepoint: {} / {}".format(count+1,totalnumpoints))
+                print("XYZ-file: {}     RC1: {}   RC2: {}".format(relfile,RCvalue1,RCvalue2))
+                print("=======================================================")
+                
+                
+                if (RCvalue1,RCvalue2) not in surfacedictionary:
+                    mol=ash.Fragment(xyzfile=file)
+                    if scantype=="Unrelaxed":
+                        energy = ash.Singlepoint(theory=theory, fragment=mol)
+                    elif scantype=="Relaxed":
+                        #Now setting constraints
+                        allconstraints = set_constraints(dimension=2, RCvalue1=RCvalue1, RCvalue2=RCvalue2, extraconstraints=extraconstraints,
+                                                        RC1_type=RC1_type, RC2_type=RC2_type, RC1_indices=RC1_indices, RC2_indices=RC2_indices)
+                        print("allconstraints:", allconstraints)
+                        energy = geomeTRICOptimizer(fragment=mol, theory=theory, 
+                                                    maxiter=maxiter, coordsystem=coordsystem, constraints=allconstraints, constrainvalue=True, 
+                                                    convergence_setting=convergence_setting)
+                        #Write geometry to disk in dir : surface_xyzfiles
+                        fragment.write_xyzfile(xyzfilename="RC1_"+str(RCvalue1)+"-RC2_"+str(RCvalue2)+".xyz")
+                        fragment.print_system(filename="RC1_"+str(RCvalue1)+"-RC2_"+str(RCvalue2)+".ygg")
+                        shutil.move("RC1_"+str(RCvalue1)+"-RC2_"+str(RCvalue2)+".xyz", "surface_xyzfiles/RC1_"+str(RCvalue1)+"-RC2_"+str(RCvalue2)+".xyz")
+                        
                     
-                print("Energy of file {} : {} Eh".format(relfile, energy))
-                #theory.cleanup()
-                surfacedictionary[(RCvalue1)] = energy
-                #Writing dictionary to file
-                write_surfacedict_to_file(surfacedictionary,"surface_results.txt", dimension=1)
-                print("surfacedictionary:", surfacedictionary)
-                calc_rotational_constants(mol)
-                print("")            
-            else:
-                print("RC1 value in dict already. Skipping.")
+                    print("Energy of file {} : {} Eh".format(relfile, energy))
+                    #theory.cleanup()
+                    surfacedictionary[(RCvalue1,RCvalue2)] = energy
+                    #Writing dictionary to file
+                    write_surfacedict_to_file(surfacedictionary,"surface_results.txt", dimension=2)
+                    print("surfacedictionary:", surfacedictionary)
+                    calc_rotational_constants(mol)
+                    print("")
+                else:
+                    print("RC1 and RC2 values in dict already. Skipping.")
+            elif dimension == 1:
+                #RC1_2.02.xyz
+                RCvalue1=float(relfile.replace('.xyz','').replace('RC1_',''))
+                print("XYZ-file: {}     RC1: {} ".format(relfile,RCvalue1))
+                if (RCvalue1) not in surfacedictionary:
+                    mol=ash.Fragment(xyzfile=file)
+                    if scantype=="Unrelaxed":
+                        energy = ash.Singlepoint(theory=theory, fragment=mol)
+                    elif scantype=="Relaxed":
+                        #Now setting constraints
+                        allconstraints = set_constraints(dimension=1, RCvalue1=RCvalue1, extraconstraints=extraconstraints,
+                                                        RC1_type=RC1_type, RC1_indices=RC1_indices)
+                        print("allconstraints:", allconstraints)
+                        energy = geomeTRICOptimizer(fragment=mol, theory=theory, 
+                                                    maxiter=maxiter, coordsystem=coordsystem, constraints=allconstraints, constrainvalue=True, 
+                                                    convergence_setting=convergence_setting)
+                        #Write geometry to disk in dir : surface_xyzfiles
+                        fragment.write_xyzfile(xyzfilename="RC1_"+str(RCvalue1)+".xyz")
+                        fragment.print_system(filename="RC1_"+str(RCvalue1)+".ygg")
+                        shutil.move("RC1_"+str(RCvalue1)+".xyz", "surface_xyzfiles/"+"RC1_"+str(RCvalue1)+".xyz")
+                        
+                    print("Energy of file {} : {} Eh".format(relfile, energy))
+                    #theory.cleanup()
+                    surfacedictionary[(RCvalue1)] = energy
+                    #Writing dictionary to file
+                    write_surfacedict_to_file(surfacedictionary,"surface_results.txt", dimension=1)
+                    print("surfacedictionary:", surfacedictionary)
+                    calc_rotational_constants(mol)
+                    print("")            
+                else:
+                    print("RC1 value in dict already. Skipping.")
 
     return surfacedictionary
 
