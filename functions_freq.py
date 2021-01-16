@@ -386,9 +386,10 @@ def thermochemcalc(vfreq,atoms,fragment, multiplicity, temp=298.15,pressure=1.0)
         I=np.array(rinertia)*constants.amu2kg*constants.ang2m**2
 
         #Rotational temperatures
-        rot_temps_x=constants.h_planck**2 / (8*math.pi**2 * constants.k_b_JK * I[0])
-        rot_temps_y=constants.h_planck**2 / (8*math.pi**2 * constants.k_b_JK * I[1])
-        rot_temps_z=constants.h_planck**2 / (8*math.pi**2 * constants.k_b_JK * I[2])
+        #k_b_JK or R_JK
+        rot_temps_x=constants.h_planck**2 / (8*math.pi**2 * constants.R_gasconst_JK * I[0])
+        rot_temps_y=constants.h_planck**2 / (8*math.pi**2 * constants.R_gasconst_JK * I[1])
+        rot_temps_z=constants.h_planck**2 / (8*math.pi**2 * constants.R_gasconst_JK * I[2])
 
         #Rotational constants
         rotconstants = calc_rotational_constants(fragment, printlevel=1)
