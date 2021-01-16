@@ -2567,12 +2567,8 @@ class QMMMTheory:
                     print("Removing nonbonded terms for QM-region in MMtheory")
                     self.mm_theory.addexceptions(self.qmatoms)
                 
-                
-                
                 #Change charges
                 # Keeping self.charges as originally defined.
-                print("length of self.charges_qmregionzeroed :", len(self.charges_qmregionzeroed))
-                
                 #Setting QM charges to 0 since electrostatic embedding
                 #and Charge-shift QM-MM boundary
                 
@@ -2595,7 +2591,11 @@ class QMMMTheory:
                         else:
                             print("MM atom {} ({}) charge: {}".format(i, self.elems[i], self.charges_qmregionzeroed[i]))
                 blankline()
-
+        else:
+            #Case: No actual MM theory but we still want to zero charges for QM elstate embedding calculation
+            #TODO: Remove option for no MM theory or keep this ??
+            self.ZeroQMCharges() #Modifies self.charges_qmregionzeroed
+            print("length of self.charges_qmregionzeroed :", len(self.charges_qmregionzeroed))
 
     #From QM1:MM1 boundary dict, get MM1:MMx boundary dict (atoms connected to MM1)
     def get_MMboundary(self):
@@ -2814,6 +2814,8 @@ class QMMMTheory:
             #If no linkatoms then use original self.qmelems
             current_qmelems = self.qmelems
             #If no linkatoms then self.pointcharges are just original charges with QM-region zeroed
+            print("self.mmatoms:", self.mmatoms)
+            print("self.charges_qmregionzeroed: ", self.charges_qmregionzeroed)
             self.pointcharges=[self.charges_qmregionzeroed[i] for i in self.mmatoms]
             #If no linkatoms MM coordinates are the same
             self.pointchargecoords=self.mmcoords
