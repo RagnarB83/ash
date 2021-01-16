@@ -3434,7 +3434,7 @@ class ORCATheory:
             print("Brokensymmetry SpinFlipping on! HSmult: {}.".format(self.HSmult))
             for flipatom,qmflipatom in zip(self.atomstoflip,qmatomstoflip):
                 print("Flipping atom: {} QMregionindex: {} Element: {}".format(flipatom, qmflipatom, qm_elems[qmflipatom]))
-        if self.extrabasis is not None:
+        if self.extrabasis != "":
             print("Using extra basis ({}) on QM-region indices : {}".format(self.extrabasis,qmatoms_extrabasis))
 
         if PC==True:
