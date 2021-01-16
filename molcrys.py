@@ -456,8 +456,9 @@ def molcrys(cif_file=None, xtl_file=None, xyz_file=None, cell_length=None, cell_
         QMMM_SP_calculation.run(nprocs=numcores)
 
         #Keeping the GBWfile
-        mainfrag_gbwfile="last_mainfrag.gbw"
-        shutil.copy('orca-input.gbw', mainfrag_gbwfile)
+        if theory.__class__.__name__ == "ORCATheory":
+            mainfrag_gbwfile="last_mainfrag.gbw"
+            shutil.copy('orca-input.gbw', mainfrag_gbwfile)
 
         #Grab atomic charges for fragment.
         if theory.__class__.__name__ == "ORCATheory":
