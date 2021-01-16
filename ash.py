@@ -307,7 +307,7 @@ def Single_par(list):
     coords = fragment.coords
     elems = fragment.elems
     print(BC.WARNING,"Doing single-point Energy job on fragment. Formula: {} Label: {} ".format(fragment.prettyformula,fragment.label), BC.END)
-    print("Process ID {} is running calculation with label: {}".format(mp.current_process(),label)
+    print("Process ID {} is running calculation with label: {}".format(mp.current_process(),label))
 
     energy = theory.run(current_coords=coords, elems=elems)
     print("Energy: ", energy)
