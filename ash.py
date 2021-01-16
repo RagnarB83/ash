@@ -307,7 +307,7 @@ def Single_par(list):
     coords = fragment.coords
     elems = fragment.elems
     print(BC.WARNING,"Doing single-point Energy job on fragment. Formula: {} Label: {} ".format(fragment.prettyformula,fragment.label), BC.END)
-    print("Process ID {} is running calculation with label: {}".format(mp.current_process(),label))
+    print("\n\nProcess ID {} is running calculation with label: {} \n\n".format(mp.current_process(),label))
 
     energy = theory.run(current_coords=coords, elems=elems)
     print("Energy: ", energy)
@@ -3333,16 +3333,23 @@ class ORCATheory:
         self.orcasimpleinput=orcasimpleinput
         self.orcablocks=orcablocks
         self.extraline=extraline
+        #BROKEN SYM OPTIONS
         self.brokensym=brokensym
         self.HSmult=HSmult
         if type(atomstoflip) is int:
             print(BC.FAIL,"Error: atomstoflip should be list of integers (e.g. [0] or [2,3,5]), not a single integer.", BC.END)
             exit(1)
-        self.atomstoflip=atomstoflip
-        
+        if atomstoflip != None:
+            self.atomstoflip=atomstoflip
+        else:
+            self.atomstoflip=[]
         #Extrabasis
-        self.extrabasisatoms=extrabasisatoms
-        self.extrabasis=extrabasis
+        if extrabasisatoms != None:
+            self.extrabasisatoms=extrabasisatoms
+            self.extrabasis=extrabasis
+        else:
+            self.extrabasisatoms=[]
+            self.extrabasis=""
         
         
         # self.qmatoms need to be set for Flipspin to work for QM/MM job.
@@ -3402,6 +3409,7 @@ class ORCATheory:
         #If QM/MM then extrabasisatoms and atomstoflip have to be updated
         if len(self.qmatoms) != 0:
             #extrabasisatomindices if QM/MM
+            print("self.qmatoms :", self.qmatoms)
             qmatoms_extrabasis=[self.qmatoms.index(i) for i in self.extrabasisatoms]
             #new QM-region indices for atomstoflip if QM/MM
             qmatomstoflip=[self.qmatoms.index(i) for i in self.atomstoflip]
