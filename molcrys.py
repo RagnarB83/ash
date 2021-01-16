@@ -516,7 +516,9 @@ def molcrys(cif_file=None, xtl_file=None, xyz_file=None, cell_length=None, cell_
     #Defining atomtypes in Cluster fragment for LJ interaction
     if theory.__class__.__name__ == "ORCATheory":
         choose_shortrangemodel(Cluster,shortrangemodel,fragmentobjects,QMtheory,mainfrag_gbwfile,numcores,LJHparameters)
-            
+    else:
+        choose_shortrangemodel(Cluster,shortrangemodel,fragmentobjects,QMtheory,"dummy",numcores,LJHparameters)
+
     print_time_rel_and_tot(currtime, origtime, modulename="LJ stuff done")
     currtime=time.time()
     #Adding Centralmainfrag to Cluster
