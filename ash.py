@@ -3285,7 +3285,7 @@ class DaltonTheory:
 
 class ORCATheory:
     def __init__(self, orcadir=None, fragment=None, charge=None, mult=None, orcasimpleinput='', printlevel=2, extrabasisatoms=None, extrabasis=None,
-                 orcablocks='', extraline='', brokensym=None, HSmult=None, atomstoflip=None, nprocs=1, label=None):
+                 orcablocks='', extraline='', brokensym=None, HSmult=None, atomstoflip=None, nprocs=1, label=None, moreadfile=None):
 
         if orcadir is None:
             print("No orcadir argument passed to ORCATheory. Attempting to find orcadir variable inside settings_ash")
@@ -3298,6 +3298,9 @@ class ORCATheory:
 
         #Create inputfile with generic name
         self.inputfilename="orca-input"
+
+        #MOREAD-file
+        self.moreadfile=moreadfile
 
         #Using orcadir to set LD_LIBRARY_PATH
         old = os.environ.get("LD_LIBRARY_PATH")
@@ -3430,20 +3433,20 @@ class ORCATheory:
             create_orca_pcfile(self.inputfilename, current_MM_coords, MMcharges)
             if self.brokensym == True:
                 create_orca_input_pc(self.inputfilename, qm_elems, current_coords, self.orcasimpleinput, self.orcablocks,
-                                        self.charge, self.mult, extraline=self.extraline, HSmult=self.HSmult, Grad=Grad, Hessian=Hessian,
+                                        self.charge, self.mult, extraline=self.extraline, HSmult=self.HSmult, Grad=Grad, Hessian=Hessian, moreadfile=self.moreadfile,
                                      atomstoflip=qmatomstoflip, extrabasisatoms=qmatoms_extrabasis, extrabasis=self.extrabasis)
             else:
                 create_orca_input_pc(self.inputfilename, qm_elems, current_coords, self.orcasimpleinput, self.orcablocks,
-                                        self.charge, self.mult, extraline=self.extraline, Grad=Grad, Hessian=Hessian,
+                                        self.charge, self.mult, extraline=self.extraline, Grad=Grad, Hessian=Hessian, moreadfile=self.moreadfile,
                                         extrabasisatoms=qmatoms_extrabasis, extrabasis=self.extrabasis)
         else:
             if self.brokensym == True:
                 create_orca_input_plain(self.inputfilename, qm_elems, current_coords, self.orcasimpleinput,self.orcablocks,
-                                        self.charge,self.mult, extraline=self.extraline, HSmult=self.HSmult, Grad=Grad, Hessian=Hessian,
+                                        self.charge,self.mult, extraline=self.extraline, HSmult=self.HSmult, Grad=Grad, Hessian=Hessian, moreadfile=self.moreadfile,
                                      atomstoflip=qmatomstoflip, extrabasisatoms=qmatoms_extrabasis, extrabasis=self.extrabasis)
             else:
                 create_orca_input_plain(self.inputfilename, qm_elems, current_coords, self.orcasimpleinput,self.orcablocks,
-                                        self.charge,self.mult, extraline=self.extraline, Grad=Grad, Hessian=Hessian,
+                                        self.charge,self.mult, extraline=self.extraline, Grad=Grad, Hessian=Hessian, moreadfile=self.moreadfile,
                                         extrabasisatoms=qmatoms_extrabasis, extrabasis=self.extrabasis)
 
         #Run inputfile using ORCA parallelization. Take nprocs argument.

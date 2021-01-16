@@ -637,7 +637,7 @@ def create_orca_inputVIEcomp_gas(name, name2, elems, coords, orcasimpleinput, or
 #Create PC-embedded ORCA inputfile from elems,coords, input, charge, mult,pointcharges
 #Allows for extraline that could be another '!' line or block-inputline.
 def create_orca_input_pc(name,elems,coords,orcasimpleinput,orcablockinput,charge,mult, Grad=False, extraline='',
-                         HSmult=None, atomstoflip=None, Hessian=False, extrabasisatoms=None, extrabasis=None):
+                         HSmult=None, atomstoflip=None, Hessian=False, extrabasisatoms=None, extrabasis=None, moreadfile=None):
     if extrabasisatoms is None:
         extrabasisatoms=[]
     pcfile=name+'.pc'
@@ -649,6 +649,9 @@ def create_orca_input_pc(name,elems,coords,orcasimpleinput,orcablockinput,charge
             orcafile.write('! Engrad' + '\n')
         if Hessian == True:
             orcafile.write('! Freq' + '\n')
+        if moreadfile is not None:
+            orcafile.write('! MOREAD' + '\n')
+            orcafile.write('%moinp \"{}\"'.format(moreadfile) + '\n')
         orcafile.write('%pointcharges "{}"\n'.format(pcfile))
         orcafile.write(orcablockinput + '\n')
         if atomstoflip is not None:
@@ -674,7 +677,7 @@ def create_orca_input_pc(name,elems,coords,orcasimpleinput,orcablockinput,charge
 #Allows for extraline that could be another '!' line or block-inputline.
 
 def create_orca_input_plain(name,elems,coords,orcasimpleinput,orcablockinput,charge,mult, Grad=False, Hessian=False, extraline='',
-                            HSmult=None, atomstoflip=None, extrabasis=None, extrabasisatoms=None):
+                            HSmult=None, atomstoflip=None, extrabasis=None, extrabasisatoms=None, moreadfile=None):
     if extrabasisatoms is None:
         extrabasisatoms=[]
     
@@ -686,6 +689,9 @@ def create_orca_input_plain(name,elems,coords,orcasimpleinput,orcablockinput,cha
             orcafile.write('! Engrad' + '\n')
         if Hessian == True:
             orcafile.write('! Freq' + '\n')
+        if moreadfile is not None:
+            orcafile.write('! MOREAD' + '\n')
+            orcafile.write('%moinp \"{}\"'.format(moreadfile) + '\n')
         orcafile.write(orcablockinput + '\n')
         if atomstoflip is not None:
             if type(atomstoflip) == int:
