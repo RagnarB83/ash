@@ -650,6 +650,7 @@ def create_orca_input_pc(name,elems,coords,orcasimpleinput,orcablockinput,charge
         if Hessian == True:
             orcafile.write('! Freq' + '\n')
         if moreadfile is not None:
+            print("MOREAD option active. Will read orbitals from file:", moreadfile)
             orcafile.write('! MOREAD' + '\n')
             orcafile.write('%moinp \"{}\"'.format(moreadfile) + '\n')
         orcafile.write('%pointcharges "{}"\n'.format(pcfile))
@@ -690,6 +691,7 @@ def create_orca_input_plain(name,elems,coords,orcasimpleinput,orcablockinput,cha
         if Hessian == True:
             orcafile.write('! Freq' + '\n')
         if moreadfile is not None:
+            print("MOREAD option active. Will read orbitals from file:", moreadfile)
             orcafile.write('! MOREAD' + '\n')
             orcafile.write('%moinp \"{}\"'.format(moreadfile) + '\n')
         orcafile.write(orcablockinput + '\n')
