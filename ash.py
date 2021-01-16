@@ -3071,15 +3071,14 @@ class QMMMTheory:
                 self.QMgradient=self.QMgradient[0:-num_linkatoms] #remove linkatoms
                 print("self.QMgradient:", self.QMgradient)
             
-            # QM_PC_gradient is system size. Combining QM part (after linkatom-contribution removed) and PC part into 
-            print("self.allatoms:", len(self.allatoms))
-            print("len(self.QMgradient) :", len(self.QMgradient))
-            print("len(self.MMgradient) :", len(self.MMgradient))
-            print("length self.PCgradient ", len(self.PCgradient))
-            print("len(self.dipole_charges): ", len(self.dipole_charges))
+                # QM_PC_gradient is system size. Combining QM part (after linkatom-contribution removed) and PC part into 
+                print("self.allatoms:", len(self.allatoms))
+                print("len(self.QMgradient) :", len(self.QMgradient))
+                print("len(self.MMgradient) :", len(self.MMgradient))
+                print("length self.PCgradient ", len(self.PCgradient))
             
-            assert len(self.allatoms) == len(self.MMgradient)
-            assert len(self.QMgradient) + len(self.PCgradient) - len(self.dipole_charges)  == len(self.MMgradient)
+                assert len(self.allatoms) == len(self.MMgradient)
+                assert len(self.QMgradient) + len(self.PCgradient) - len(self.dipole_charges)  == len(self.MMgradient)
             
             self.QM_PC_gradient = np.zeros((len(self.MMgradient), 3))
             qmcount=0;pccount=0
