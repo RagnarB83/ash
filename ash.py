@@ -1901,6 +1901,13 @@ class NonBondedTheory:
             else:
             #    #or only for active region
                 print("Calculating pairpotential array for active region only")
+                #pairpot_active(numatoms,atomtypes,LJpydict,qmatoms,actatoms)
+                print("self.numatoms", self.numatoms)
+                print("self.atomtypes", self.atomtypes)
+                print("self.LJpairpotdict", self.LJpairpotdict)
+                print("qmatoms", qmatoms)
+                print("actatoms", actatoms)
+                
                 self.sigmaij, self.epsij = Main.Juliafunctions.pairpot_active(self.numatoms, self.atomtypes, self.LJpairpotdict, qmatoms, actatoms)
         # New for-loop for creating sigmaij and epsij arrays. Uses dict-lookup instead
         elif self.codeversion=="py":
@@ -1942,9 +1949,9 @@ class NonBondedTheory:
             self.atom_charges[atom] = charge
         #print("Charges are now:", charges)
         print("Sum of charges:", sum(charges))
-    #Provide specific coordinates (MM region) and charges (MM region) upon run
-    # current_coords is now used for full_coords
-    def run(self, current_coords=None, elems=None, mm_coords=None, charges=None, connectivity=None,
+
+    # current_coords is now used for full_coords, charges for full coords
+    def run(self, current_coords=None, elems=None, charges=None, connectivity=None,
             Coulomb=True, Grad=True, qmatoms=None, actatoms=None, frozenatoms=None):
 
         if current_coords is None:
@@ -2932,21 +2939,16 @@ class QMMMTheory:
                 printdebug("Charges for full system is: ", self.charges)
                 print("Passing QM atoms to MMtheory run so that QM-QM pairs are skipped in pairlist")
                 print("Passing active atoms to MMtheory run so that frozen pairs are skipped in pairlist")
-                assert len(self.mmcoords) == len(self.charges_qmregionzeroed)
+            assert len(current_coords) == len(self.charges_qmregionzeroed)
                 
-                # NOTE: charges_qmregionzeroed has QM-charges zeroed (no other modifications)
+            # NOTE: charges_qmregionzeroed for full system but with QM-charges zeroed (no other modifications)
+            #NOTE: Using original system coords here (not with linkatoms, dipole etc.). Also not with deleted zero-charge coordinates. 
+            #charges list for full system, can be zeroed but we still want the LJ interaction
                 
-                #NOTE: Using original MM coords here (not with linkatoms, dipole etc.). Also not with deleted zero-charges. 
-                #MM charges can be zero but we still want the LJ interaction0
-                #MM charges should have the QM-part zeroed though
-                
-            self.MMenergy, self.MMgradient= self.mm_theory.run(current_coords=current_coords, mm_coords=self.mmcoords,
+            self.MMenergy, self.MMgradient= self.mm_theory.run(current_coords=current_coords,
                                                                charges=self.charges_qmregionzeroed, connectivity=self.connectivity,
                                                                qmatoms=self.qmatoms, actatoms=self.actatoms)
-            #self.MMEnergy=self.mm_theory.MMEnergy
-            #if Grad==True:
-            #    self.MMGrad = self.mm_theory.MMGrad
-            #    print("self.MMGrad:", self.MMGrad)
+
         elif self.mm_theory_name == "OpenMMTheory":
             if self.printlevel >= 2:
                 print("Running OpenMM theory as part of QM/MM.")
