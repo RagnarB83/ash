@@ -863,8 +863,10 @@ class OpenMMTheory:
         #Parallelization
         #Control by setting env variable: $OPENMM_CPU_THREADS in shell before running.
         #Don't think it's possible to change variable inside Python environment
-        print("OpenMM will use {} threads".format(os.environ["OPENMM_CPU_THREADS"]))
-        
+        if os.environ["OPENMM_CPU_THREADS"] is not None:
+            print("OpenMM will use {} threads according to environment variable: OPENMM_CPU_THREADS".format(os.environ["OPENMM_CPU_THREADS"]))
+        else:
+            print("OPENMM_CPU_THREADS environment variable not set. OpenMM will choose number of physical cores present.")
         #Whether to do energy composition of MM energy or not. Takes time. Can be turned off for MD runs
         self.do_energy_composition=do_energy_composition
         #Initializing
@@ -1389,7 +1391,6 @@ class OpenMMTheory:
         #If no coords given to run then a single-point job probably (not part of Optimizer or MD which would supply coords).
         #Then try if fragment object was supplied.
         #Otherwise internal coords if they exist
-        print("if stuff")
         if current_coords is None:
             if fragment is None:
                 if len(self.coords) != 0:
@@ -1401,13 +1402,7 @@ class OpenMMTheory:
             else:
                 current_coords=fragment.coords
 
-        print_time_rel(timeA, modulename="if stuff")
-        timeA = time.time()
         #Making sure coords is np array and not list-of-lists
-        print("doing coords array")
-        current_coords=np.array(current_coords)
-        print_time_rel(timeA, modulename="coords array")
-        timeA = time.time()
         ##  unit conversion for energy
         #eqcgmx = 2625.5002
         ## unit conversion for force
