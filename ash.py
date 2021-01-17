@@ -256,11 +256,12 @@ def Singlepoint(fragment=None, theory=None, Grad=False):
 def Single_par(list):
     theory=list[0]
     fragment=list[1]
-    #Making label flexible
-    #label=''.join([str(i) for i in list[2]])
+    #Making label flexible. Can be tuple but inputfilename is converted to string below
     label=list[2]
+    
     #Creating separate inputfilename using label
-    theory.inputfilename=''.join([str(i) for i in list[2]])
+    #Removing . in inputfilename as ORCA can get confused
+    theory.inputfilename=''.join([str(i) for i in list[2]]).replace('.','_')
     
     if label is None:
         print("No label provided to fragment or theory objects. This is required to distinguish between calculations ")
@@ -863,9 +864,9 @@ class OpenMMTheory:
         #Parallelization
         #Control by setting env variable: $OPENMM_CPU_THREADS in shell before running.
         #Don't think it's possible to change variable inside Python environment
-        if os.environ["OPENMM_CPU_THREADS"] is not None:
+        try:
             print("OpenMM will use {} threads according to environment variable: OPENMM_CPU_THREADS".format(os.environ["OPENMM_CPU_THREADS"]))
-        else:
+        except:
             print("OPENMM_CPU_THREADS environment variable not set. OpenMM will choose number of physical cores present.")
         #Whether to do energy composition of MM energy or not. Takes time. Can be turned off for MD runs
         self.do_energy_composition=do_energy_composition
