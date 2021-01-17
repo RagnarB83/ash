@@ -1,6 +1,4 @@
 # ASH - A GENERAL COMPCHEM AND QM/MM ENVIRONMENT
-
-#TODO: This is really too much import!!!! Reduce
 from constants import *
 from elstructure_functions import *
 import os
@@ -50,40 +48,6 @@ if load_julia is True:
         print("Make sure Julia is installed, PyJulia within Python, Pycall within Julia, Julia packages have been installed and you are using python-jl")
         print("Python routines will be used instead when possible")
 
-
-
-
-#Useful function to measure size of object:
-#https://goshippo.com/blog/measure-real-size-any-python-object/
-#https://github.com/bosswissam/pysize/blob/master/pysize.py
-def get_size(obj, seen=None):
-    """Recursively finds size of objects in bytes"""
-    size = sys.getsizeof(obj)
-    if seen is None:
-        seen = set()
-    obj_id = id(obj)
-    if obj_id in seen:
-        return 0
-    # Important mark as seen *before* entering recursion to gracefully handle
-    # self-referential objects
-    seen.add(obj_id)
-    if hasattr(obj, '__dict__'):
-        for cls in obj.__class__.__mro__:
-            if '__dict__' in cls.__dict__:
-                d = cls.__dict__['__dict__']
-                if inspect.isgetsetdescriptor(d) or inspect.ismemberdescriptor(d):
-                    size += get_size(obj.__dict__, seen)
-                break
-    if isinstance(obj, dict):
-        size += sum((get_size(v, seen) for v in obj.values()))
-        size += sum((get_size(k, seen) for k in obj.keys()))
-    elif hasattr(obj, '__iter__') and not isinstance(obj, (str, bytes, bytearray)):
-        size += sum((get_size(i, seen) for i in obj))
-
-    if hasattr(obj, '__slots__'):  # can have __slots__ with __dict__
-        size += sum(get_size(getattr(obj, s), seen) for s in obj.__slots__ if hasattr(obj, s))
-
-    return size
 
 
 #Debug print. Behaves like print but reads global debug var first
@@ -878,7 +842,7 @@ class OpenMMTheory:
     def __init__(self, pdbfile=None, platform='CPU', active_atoms=None, frozen_atoms=None,
                  CHARMMfiles=False, psffile=None, charmmtopfile=None, charmmprmfile=None,
                  GROMACSfiles=False, gromacstopfile=None, grofile=None, gromacstopdir=None,
-                 Amberfiles=False, amberprmtopfile=None, printlevel=2, nprocs=1,
+                 Amberfiles=False, amberprmtopfile=None, printlevel=2, do_energy_composition=True,
                  xmlfile=None, periodic=False, periodic_cell_dimensions=None, customnonbondedforce=False):
         
         timeA = time.time()
@@ -897,11 +861,12 @@ class OpenMMTheory:
         self.printlevel=printlevel
 
         #Parallelization
-        print("Setting OpenMM CPU Threads to: ", nprocs)
-        print("TODO: confirm parallelization")
-        os.environ["OPENMM_CPU_THREADS"] = str(nprocs)
-
+        #Control by setting env variable: $OPENMM_CPU_THREADS in shell before running.
+        #Don't think it's possible to change variable inside Python environment
+        print("OpenMM will use {} threads".format(os.environ["OPENMM_CPU_THREADS"]))
         
+        #Whether to do energy composition of MM energy or not. Takes time. Can be turned off for MD runs
+        self.do_energy_composition=do_energy_composition
         #Initializing
         self.coords=[]
         self.charges=[]
@@ -1240,7 +1205,6 @@ class OpenMMTheory:
         self.integrator = self.langevinintegrator(300 * self.unit.kelvin,  # Temperature of heat bath
                                         1 / self.unit.picosecond,  # Friction coefficient
                                         0.002 * self.unit.picoseconds)  # Time step
-        print("self.platform_choice:", self.platform_choice)
         self.platform = simtk.openmm.Platform.getPlatformByName(self.platform_choice)
 
         #Defined first here. 
@@ -1419,7 +1383,7 @@ class OpenMMTheory:
         
         timeA = time.time()
     
-    def run(self, current_coords=None, elems=None, Grad=True, fragment=None, qmatoms=None, print_energy_components=True):
+    def run(self, current_coords=None, elems=None, Grad=True, fragment=None, qmatoms=None):
         timeA = time.time()
         print(BC.OKBLUE, BC.BOLD, "------------RUNNING OPENMM INTERFACE-------------", BC.END)
         #If no coords given to run then a single-point job probably (not part of Optimizer or MD which would supply coords).
@@ -1458,34 +1422,24 @@ class OpenMMTheory:
 
         #pos = [Vec3(coords[:,0]/10,coords[:,1]/10,coords[:,2]/10)] * u.nanometer
         #Todo: Check speed on this
-        print("doing pos")
-        pos = [self.Vec3(current_coords[i, 0] / 10, current_coords[i, 1] / 10, current_coords[i, 2] / 10) for i in range(len(current_coords))] * self.unit.nanometer
-        print_time_rel(timeA, modulename="pos create")
+        print("Updating coordinates")
         timeA = time.time()
+        pos = [self.Vec3(current_coords[i, 0] / 10, current_coords[i, 1] / 10, current_coords[i, 2] / 10) for i in range(len(current_coords))] * self.unit.nanometer
         self.simulation.context.setPositions(pos)
         print_time_rel(timeA, modulename="context pos")
         timeA = time.time()
-        print("doing state")
+        print("Calculating MM state")
         state = self.simulation.context.getState(getEnergy=True, getForces=True)
         print_time_rel(timeA, modulename="state")
         timeA = time.time()
-        print("doing energy")
         self.energy = state.getPotentialEnergy().value_in_unit(self.unit.kilojoule_per_mole) / constants.hartokj
-        print_time_rel(timeA, modulename="energy")
-        timeA = time.time()
-        print("doing gradient")
-        #self.gradient = state.getForces(asNumpy=True)/factor
-        #print("self.gradient type:", type(self.gradient))
         self.gradient = np.array(state.getForces(asNumpy=True)/factor)
-        print("self.gradient 0 :", self.gradient[0])
-        print_time_rel(timeA, modulename="gradient")
-        timeA = time.time()
 
-        #Todo: Check units
         print("OpenMM Energy:", self.energy, "Eh")
         print("OpenMM Energy:", self.energy*constants.harkcal, "kcal/mol")
         
-        if print_energy_components is True:
+        #Do energy components or not. Can be turned off for e.g. MM MD simulation
+        if self.do_energy_composition is True:
             self.printEnergyDecomposition()
         
         print("self.energy : ", self.energy, "Eh")
