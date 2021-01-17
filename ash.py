@@ -1403,6 +1403,7 @@ class OpenMMTheory:
                 current_coords=fragment.coords
 
         #Making sure coords is np array and not list-of-lists
+        current_coords=np.array(current_coords)
         ##  unit conversion for energy
         #eqcgmx = 2625.5002
         ## unit conversion for force
