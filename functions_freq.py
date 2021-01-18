@@ -3,6 +3,7 @@ from functions_coords import elematomnumbers, atommasses
 import numpy as np
 import math
 import constants
+import ash
 
 #HESSIAN-related functions below
 
@@ -794,3 +795,74 @@ def calc_rotational_constants(frag, printlevel=2):
         print("Note: If moment of inertia is zero then rotational constant is infinite and not printed ")
 
     return rot_constants_cm
+
+
+def calc_model_Hessian_ORCA(fragment,model='Almloef'):
+    #Run ORCA dummy job to get Almloef/Lindh/Schlegel Hessian
+    orcasimple="! hf noiter opt"
+    orcablocks="""
+    %geom
+    maxiter 1
+    inhess {}
+    end
+""".format(model)
+    orcadummycalc=ash.ORCATheory(orcasimpleinput=orcasimple,orcablocks=orcablocks,charge=0,mult=1)
+    ash.Singlepoint(theory=orcadummycalc, fragment=fragment)
+    #Read orca-input.opt containing Hessian under hessian_approx
+    hesstake=False
+    j=0
+    #Different from orca.hess apparently
+    orcacoldim=6
+    shiftpar=0
+    lastchunk=False
+    grabsize=False
+    with open("orca-input.opt") as optfile:
+        for line in optfile:
+            if '$bmatrix' in line:
+                hesstake=False
+                continue
+            if hesstake==True and len(line.split()) == 2 and grabsize==True:
+                grabsize=False
+                hessdim=int(line.split()[0])
+
+                hessarray2d=np.zeros((hessdim, hessdim))
+            if hesstake==True and len(line.split()) == 6:
+                continue
+                #Headerline
+            if hesstake==True and lastchunk==True:
+                if len(line.split()) == hessdim - shiftpar +1:
+                    for i in range(0,hessdim - shiftpar):
+                        hessarray2d[j,i+shiftpar]=line.split()[i+1]
+                    j+=1
+            if hesstake==True and len(line.split()) == 7:
+                # Hessianline
+                for i in range(0, orcacoldim):
+                    hessarray2d[j, i + shiftpar] = line.split()[i + 1]
+                j += 1
+                if j == hessdim:
+                    shiftpar += orcacoldim
+                    j = 0
+                    if hessdim - shiftpar < orcacoldim:
+                        lastchunk = True
+            if '$hessian_approx' in line:
+                hesstake = True
+                grabsize = True
+    fragment.hessian=hessarray2d
+
+
+
+#Function to approximate large Hessian from smaller subsystem Hessian
+def approximate_full_Hessian_from_smaller(fragment_small,fragment_large,hessian_small,capping_atoms,restHessian='Almloef'):
+    #Capping atom Hessian indices are skipped
+    capping_atom_hessian_indices=[3*i+j for i in capping_atoms for j in [0,1,2]]
+    fragment_large.hessian=np.zeros((fragment_large.numatoms*3,fragment_large.numatoms*3))
+
+    #Fill up hessian_large with Almlöf approximation from ORCA  here?
+    calc_model_Hessian_ORCA(fragment_large,model=restHessian)
+
+    for i in range(len(hessian_small)):
+        for j in range(len(hessian_small)):
+            #Only modifying full-Hessian if not capping atom
+            if i not in capping_atom_hessian_indices or j not in capping_atom_hessian_indices:
+                fragment_large.hessian[i,j]=hessian_small[i,j]
+    return fragment_large.hessian

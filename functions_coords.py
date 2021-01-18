@@ -49,7 +49,7 @@ def print_internal_coordinate_table(fragment,actatoms=None):
         
         if len(actatoms) > 0:
             chosen_coords=[fragment.coords[i] for i in actatoms]
-            chosen_elems=[fragment.coords[i] for i in actatoms]
+            chosen_elems=[fragment.elems[i] for i in actatoms]
         else:
             chosen_coords=fragment.coords
             chosen_elems=fragment.elems

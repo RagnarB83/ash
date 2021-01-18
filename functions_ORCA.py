@@ -490,7 +490,7 @@ def Hessgrab(hessfile):
             if '$hessian' in line:
                 hesstake = True
                 grabsize = True
-            return hessarray2d
+        return hessarray2d
 
 
 

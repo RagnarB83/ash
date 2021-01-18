@@ -345,7 +345,10 @@ def AnFreq(fragment=None, theory=None, numcores=1, temp=298.15, pressure=1.0):
         #Do single-point ORCA Anfreq job
         energy = theory.run(current_coords=fragment.coords, elems=fragment.elems, Hessian=True, nprocs=numcores)
         #Grab Hessian
-        #Hessian = Hessgrab(theory.inputfilename+".hess")
+        hessian = Hessgrab(theory.inputfilename+".hess")
+        #Add Hessian to fragment
+        fragment.hessian=hessian
+        
         #TODO: diagonalize it ourselves. Need to finish projection
         
         # For now, we grab frequencies from ORCA Hessian file
@@ -712,6 +715,9 @@ def NumFreq(fragment=None, theory=None, npoint=1, displacement=0.0005, hessatoms
     else:
         Thermochemistry = thermochemcalc(frequencies,hessatoms, fragment, theory.mult, temp=temp,pressure=pressure)
 
+
+    #Add Hessian to fragment
+    fragment.hessian=hessian
 
     #Write Hessian to file
     with open("Hessian", 'w') as hfile:
@@ -3089,7 +3095,6 @@ class DaltonTheory:
             self.daltondir = daltondir
 
         if basis_name is not None:
-            print("here")
             self.basis_name=basis_name
         else:
             print("Please provide basis_name to DaltonTheory object")
@@ -4202,6 +4207,8 @@ class Fragment:
             self.atomcharges=atomcharges
         if atomtypes is not None:
             self.atomtypes=atomtypes
+        #Hessian. Can be added by Numfreq/Anfreq job
+        self.hessian=[]
 
         # Something perhaps only used by molcrys but defined here. Needed for print_system
         # Todo: revisit this
