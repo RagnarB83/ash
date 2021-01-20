@@ -53,8 +53,6 @@ def print_internal_coordinate_table(fragment,actatoms=None):
         else:
             chosen_coords=fragment.coords
             chosen_elems=fragment.elems
-
-        print("chosen_coords:", chosen_coords)
         
         conndepth=99
         scale=settings_ash.scale
