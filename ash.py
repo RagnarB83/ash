@@ -4624,8 +4624,11 @@ class Fragment:
                         y=x.strip(',[')
                         y=y.strip('[')
                         y=y.strip(']')
-                        list=[int(i) for i in y.split(',')]
-                        connectivity.append(list)
+                        try:
+                            connlist=[int(i) for i in y.split(',')]
+                        except:
+                            connlist=[]
+                        connectivity.append(connlist)
         self.elems=elems
         self.coords=coords
         self.atomcharges=atomcharges
