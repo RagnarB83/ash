@@ -890,7 +890,8 @@ def tddftgrab(file):
     with open(file) as f:
         for line in f:
             if 'STATE ' in line:
-                tddftstates.append(float(line.split()[5]))
+                if 'eV' in line:
+                    tddftstates.append(float(line.split()[5]))
     return tddftstates
 
 # MO-DOS PLOT
