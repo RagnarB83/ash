@@ -1695,8 +1695,8 @@ def PhotoElectronSpectrum(theory=None, fragment=None, Initialstate_charge=None, 
             print("Will do CAS-CI reference (using initial-state orbitals) for final-states")
 
 
-    if InitialState_charge is None or Initialstate_mult is None or Ionizedstate_charge is None or Ionizedstate_mult is None:
-        print("Provide charge and spin multiplicity of initial and ionized state: InitialState_charge, InitialState_mult, Ionizedstate_charge,Ionizedstate_mult ")
+    if Initialstate_charge is None or Initialstate_mult is None or Ionizedstate_charge is None or Ionizedstate_mult is None:
+        print("Provide charge and spin multiplicity of initial and ionized state: Initialstate_charge, Initialstate_mult, Ionizedstate_charge,Ionizedstate_mult ")
         exit(1)
 
     print("Densities option is: ", Densities, "(options are: SCF, All, None)")
@@ -1743,7 +1743,7 @@ def PhotoElectronSpectrum(theory=None, fragment=None, Initialstate_charge=None, 
             self.cisfile=None
 
     # Always just one StateI object with one charge and one spin multiplicity
-    stateI = MolState(charge=InitialState_charge, mult=Initialstate_mult,numionstates=1)
+    stateI = MolState(charge=Initialstate_charge, mult=Initialstate_mult,numionstates=1)
     print(bcolors.OKBLUE, "StateI: Charge=", stateI.charge, "Multiplicity", stateI.mult, bcolors.ENDC)
 
     if brokensym is True:
