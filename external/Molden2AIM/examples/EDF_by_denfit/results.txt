@@ -1,0 +1,73 @@
+
+
+ =========================================
+ ==========  Results of DenFit  ==========
+ =========================================
+
+
+ Type of functions:      4
+  Even-tempered universal Gaussian exponents
+  Alpha_i = 0.001 * 1.65^(i-1)
+          ~ exp[a + b * (i - 1)], a=-6.907755, b=0.500775
+ Reference:
+  M. Reiher and A. Wolf, J. Chem. Phys. 121, 10945 (2004).
+
+
+ Starting #S-Fun =      60
+
+ R0  =  0.16667D-02,  Rho0  = 0.64683428797000D+06
+
+ Integrated Ncore:    67.9977631708
+ Delete the first  21 redundant functions with min[dRho0]  = 0.24710153849593D+04
+ Redundant function found! Delete function- 39 with alpha = 0.10000000000000D-02
+ Redundant function found! Delete function- 38 with alpha = 0.16500000000000D-02
+ Redundant function found! Delete function- 37 with alpha = 0.27225000000000D-02
+ Redundant function found! Delete function- 36 with alpha = 0.44921250000000D-02
+ Redundant function found! Delete function- 35 with alpha = 0.74120062500000D-02
+ Redundant function found! Delete function- 34 with alpha = 0.12229810312500D-01
+ Redundant function found! Delete function- 33 with alpha = 0.20179187015625D-01
+ Redundant function found! Delete function- 32 with alpha = 0.33295658575781D-01
+ Redundant function found! Delete function- 31 with alpha = 0.54937836650039D-01
+
+ Fitting finished successfully with
+     Ncore(analytic) =   68.0000000000 and dRho0  = 0.16656801430118D+04
+
+
+ Final results:
+
+ Element=      73
+ Ncore  =      68
+ #S-Fun =      30
+
+                   Alpha             Coefficient
+
+    0.18381878031797E+06    0.56556859649690E+06
+    0.11140532140483E+06   -0.29192035175114E+06
+    0.67518376608988E+05    0.35922334594210E+06
+    0.40920228247872E+05   -0.71539098922451E+05
+    0.24800138332043E+05    0.16284181824038E+06
+    0.15030386867905E+05    0.11683205954136E+05
+    0.91093253744880E+04    0.76639474514726E+05
+    0.55208032572654E+04    0.16205139200697E+05
+    0.33459413680397E+04    0.24633746254181E+05
+    0.20278432533574E+04   -0.23681157856714E+04
+    0.12289959111257E+04    0.43063586361962E+03
+    0.74484600674283E+03   -0.76666991370152E+03
+    0.45142182226838E+03    0.68224420124322E+04
+    0.27358898319296E+03    0.39277688499730E+04
+    0.16581150496543E+03   -0.99770628416642E+03
+    0.10049182119117E+03   -0.14112541763455E+04
+    0.60904134055255E+02    0.18494572868126E+04
+    0.36911596397124E+02    0.48508903183865E+03
+    0.22370664483105E+02   -0.40902360378207E+03
+    0.13557978474609E+02    0.69654637186257E+02
+    0.82169566512784E+01    0.10492042805017E+03
+    0.49799737280475E+01    0.11773358423183E+02
+    0.30181658957864E+01    0.82493670494827E+00
+    0.18291914519917E+01    0.34728439729939E+01
+    0.11086008799950E+01    0.14513997551898E+01
+    0.67187932120909E+00    0.16645656482475E+00
+    0.40719958861157E+00    0.95757568415410E-02
+    0.24678762946156E+00   -0.47195179600405E-03
+    0.14956826027973E+00    0.22462921777080E-03
+    0.90647430472564E-01   -0.25225307819009E-04

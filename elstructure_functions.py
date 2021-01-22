@@ -7,6 +7,7 @@ import subprocess as sp
 import shutil
 import constants
 import math
+import dictionaries_lists
 #from functions_ORCA import grab_HF_and_corr_energies
 from functions_ORCA import *
 from interface_geometric import *
@@ -447,29 +448,57 @@ def HOMOnumbercalc(file,charge,mult):
 #Uses Chargemol program
 # Uses ORCA to calculate densities of molecule and its free atoms. Uses orca_2mkl to create Molden file and molden2aim to create WFX file from Molden.
 # Wfx file is read into Chargemol program for DDEC analysis which radial moments used to compute C6 parameters and radii for Lennard-Jones equation.
-def DDEC_calc(elems=None, theory=None, gbwfile=None, ncores=1, DDECmodel='DDEC3', calcdir='DDEC', molecule_spinmult=None):
+def DDEC_calc(elems=None, theory=None, gbwfile=None, ncores=1, DDECmodel='DDEC3', calcdir='DDEC', molecule_charge=None, 
+              molecule_spinmult=None, chargemolbinarydir=None):
     #Creating calcdir. Should not exist previously
     os.mkdir(calcdir)
     os.chdir(calcdir)
     #Copying GBW file to current dir and label as molecule.gbw
     shutil.copyfile('../'+gbwfile, './' + 'molecule.gbw')
 
-    print("Warning: DDEC_calc requires chargemol-binary dir to be present in environment PATH variable.")
+
+    #Finding molden2aim in PATH:
+    # Should now be present in ASH
+    ashpath=os.path.dirname(ash.__file__)
+    molden2aim=ashpath+"/external/Molden2AIM/src/"+"molden2aim.exe"
+    if os.path.isfile(molden2aim) is False:
+        print("Did not find {}. Did you compile it ? ".format(molden2aim))
+        exit()
+    else:
+        print("Found molden2aim.exe: ", molden2aim)
+        
+    # Below works if MOLDEN2AIM dir is in PATH
     #molden2aim=None
+    #if molden2aimdir is not None:
+    #    if os.path.isfile(molden2aimdir+"/"+"molden2aim.exe") is True:
+    #        molden2aim=molden2aimdir+"/"+"molden2aim.exe"
+    #    else:
+     #       print("Found no molden2aim.exe in dir:", molden2aimdir)
+    #else:
+    #    print("molden2aimdir keyword not provided. Will search for Molden2aim binary in PATH")
+
+    print("Warning: DDEC_calc requires chargemol-binary dir to be present in environment PATH variable.")
 
     #Finding chargemoldir from PATH in os.path
     PATH=os.environ.get('PATH').split(':')
     print("PATH: ", PATH)
-    print("Searching for chargemol in PATH")
+    print("Searching for molden2aim and chargemol in PATH")
     for p in PATH:
         if 'chargemol' in p:
             print("Found chargemol in path line (this dir should contain the executables):", p)
             chargemolbinarydir=p
+        #if 'Molden2AIM' in p:
+        #    molden2aim="molden2aim.exe"
+    
+    #Checking if we can proceed
+    if chargemolbinarydir is None:
+        print("chargemolbinarydir is not defined.")
+        print("Please provide path as argument to DDEC_calc or put the location inside the $PATH variable on your Unix/Linux OS.")
+        exit()
+    #if molden2aim is None:
+    #    print("Found no molden2aim.exe in PATH. Exiting...")
+    #    exit()
 
-
-    #Finding molden2aim in PATH:
-   # Below works if dir is in PATH
-    molden2aim="molden2aim.exe"
 
     #Defining Chargemoldir (main dir) as 3-up from binary dir
     var=os.path.split(chargemolbinarydir)[0]
@@ -490,12 +519,6 @@ def DDEC_calc(elems=None, theory=None, gbwfile=None, ncores=1, DDECmodel='DDEC3'
     # What DDEC charge model to use. Jorgensen paper uses DDEC3. DDEC6 is the newer recommended chargemodel
     # Set variable to 'DDEC3' or 'DDEC6'
     print("DDEC model:", DDECmodel)
-
-    # What oxygen LJ parameters to use in pair-pair parameters.
-    # Choices: TIP3P, Chargemol, Manual
-    H2Omodel = 'TIP3P'
-
-    print("DDEC calc")
 
     #bindir=glob.glob('*chargemol*')[0]
     #chargemolbinarydir=chargemoldir+bindir+'compiled_binaries'+'linux'
@@ -677,7 +700,6 @@ end"""
             for line in momfile:
                 if ' The computed Rcubed moments of the atoms' in line:
                     elmom=next(momfile).split()[0]
-                    print("2 elmom is", elmom)
                     voldict[el] = float(elmom)
 
         print("Element", el, "is done.")
@@ -691,7 +713,13 @@ end"""
     sp.call(['orca_2mkl', "molecule", '-molden'])
 
     #Write input for molden2aim
-    mol2aiminput=[' ',  "molecule"+'.molden.input', str(molecule_spinmult), 'Y', 'Y', 'N', 'N', ' ', ' ']
+    
+    if molecule_charge==0:
+        mol2aiminput=[' ',  "molecule"+'.molden.input', str(molecule_spinmult), ' ', ' ', ' ']
+    else:
+        #Charged system, will ask for charge
+        mol2aiminput=[' ',  "molecule"+'.molden.input', 'N', str(molecule_charge), str(molecule_spinmult), ' ', ' ', ' ']        
+        
     m2aimfile = open("mol2aim.inp", "w")
     for mline in mol2aiminput:
         m2aimfile.write(mline+'\n')
@@ -750,7 +778,6 @@ end"""
 
     grabcharge=False
     ddeccharges=[]
-    print("numatoms is", numatoms)
     with open(chargefile) as chfile:
         for line in chfile:
             if grabcharge==True:
@@ -769,14 +796,38 @@ end"""
     return ddeccharges, molmoms, voldict
 
 
-#TODO: Not finished
-def DDEC_to_LJparameters(elems, molmoms, voldict):
-    #Rfree fit parameters. Jorgensen 2016 J. Chem. Theory Comput. 2016, 12, 2312−2323. H,C,N,O,F,S,Cl
-    #Thes are free atomic radii. Seem to correspond mostly to vdW radii
-    rfreedict = {'H':1.64, 'C':2.08, 'N':1.72, 'O':1.6, 'F':1.58, 'S':2.0, 'Cl':1.88}
 
-    #C6 dictionary H-Kr. See MEDFF-horton-parcreate-for-chemshell.py for full periodic table.
-    C6dictionary = {'H':6.5, 'He': 1.42, 'Li':1392, 'Be':227, 'B':99.5, 'C':46.6, 'N':24.2, 'O':15.6, 'F':9.52, 'Ne':6.20, 'Na':1518, 'Mg':626, 'Al':528, 'Si':305, 'P':185, 'S':134, 'Cl':94.6, 'Ar':64.2, 'K':3923, 'Ca':2163, 'Sc':1383, 'Ti':1044, 'V':832, 'Cr':602, 'Mn':552, 'Fe':482, 'Co':408, 'Ni':373, 'Cu':253, 'Zn':284, 'Ga':498, 'Ge':354, 'As':246, 'Se':210, 'Br':162, 'Kr':130}
+
+#Tkatchenko
+#alpha_q_m = Phi*Rvdw^7
+#https://arxiv.org/pdf/2007.02992.pdf
+def Rvdwfree(polz):
+    #Fine-structure constant (2018 CODATA recommended value)
+    FSC=0.0072973525693
+    Phi=FSC**(4/3)
+    RvdW=(polz/Phi)**(1/7)
+    return RvdW
+    
+
+
+
+
+
+
+#TODO: Not finished
+def DDEC_to_LJparameters(elems, molmoms, voldict, scale_polarH=False):
+    
+    #voldict: Vfree. Computed using MP4SDQ/augQZ and chargemol in Jorgensen paper
+    # Testing: Use free atom volumes calculated at same level of theory as molecule
+    
+    #Rfree fit parameters. Jorgensen 2016 J. Chem. Theory Comput. 2016, 12, 2312−2323. H,C,N,O,F,S,Cl
+    #Thes are free atomic vdW radii
+    # In Jorgensen and Cole papers these are fit parameters : rfreedict = {'H':1.64, 'C':2.08, 'N':1.72, 'O':1.6, 'F':1.58, 'S':2.0, 'Cl':1.88}
+    # We are using atomic Rvdw derived directly from atomic polarizabilities
+    
+    print("Elems:", elems)
+    print("Molmoms:", molmoms)
+    print("voldict:", voldict)
 
     #Calculating A_i, B_i, epsilon, sigma, r0 parameters
     Blist=[]
@@ -784,16 +835,30 @@ def DDEC_to_LJparameters(elems, molmoms, voldict):
     sigmalist=[]
     epsilonlist=[]
     r0list=[]
+    Radii_vdw_free=[]
     for count,el in enumerate(elems):
+        print("el :", el, "count:", count)
+        atmnumber=functions_coords.elematomnumbers[el.lower()]
+        print("atmnumber:", atmnumber)
+        Radii_vdw_free.append(dictionaries_lists.elems_C6_polz[atmnumber].Rvdw_ang)
+        print("Radii_vdw_free:", Radii_vdw_free)
         volratio=molmoms[count]/voldict[el]
-        C6inkcal=constants.harkcal*(C6dictionary[el]**(1/6)* constants.bohr2ang)**6
+        print("volratio:", volratio)
+        C6inkcal=constants.harkcal*(dictionaries_lists.elems_C6_polz[atmnumber].C6**(1/6)* constants.bohr2ang)**6
+        print("C6inkcal:", C6inkcal)
         B_i=C6inkcal*(volratio**2)
-        Raim_i=volratio**(1/3)*rfreedict[el]
+        print("B_i:", B_i)
+        Raim_i=volratio**(1/3)*dictionaries_lists.elems_C6_polz[atmnumber].Rvdw_ang
+        print("Raim_i:", Raim_i)
         A_i=0.5*B_i*(2*Raim_i)**6
+        print("A_i:", A_i)
         sigma=(A_i/B_i)**(1/6)
+        print("sigma :", sigma)
         r0=sigma*(2**(1/6))
+        print("r0:", r0)
         epsilon=(A_i/(4*sigma**12))
-
+        print("epsilon:", epsilon)
+        
         sigmalist.append(sigma)
         Blist.append(B_i)
         Alist.append(A_i)
@@ -801,16 +866,18 @@ def DDEC_to_LJparameters(elems, molmoms, voldict):
         r0list.append(r0)
 
     print("Before corrections:")
+    print("elems:", elems)
+    print("Radii_vdw_free:", Radii_vdw_free)
     print("Alist is", Alist)
     print("Blist is", Blist)
     print("sigmalist is", sigmalist)
     print("epsilonlist is", epsilonlist)
     print("r0list is", r0list)
-
-    print("Done. but scaling not complete")
-    exit()
-    #Accounting for polar H
+    
+    #Accounting for polar H. This could be set to zero as in Jorgensen paper
     if scale_polarH is True:
+        print("Scaling not implemented yet")
+        exit()
         for count,el in enumerate(elems):
             if el == 'H':
                 bla=""
@@ -823,14 +890,41 @@ def DDEC_to_LJparameters(elems, molmoms, voldict):
                     #hindex = 12
                     #Blist[indextofix] = ((Blist[indextofix]) ** (1 / 2) + nH * (Blist[hindex]) ** (1 / 2)) ** 2
 
+    return r0list, epsilonlist
 
-    print("After corrections:")
-    print("")
-    print("Single atom parameters:")
-    print("Alist is", Alist)
-    print("Blist is", Blist)
-    print("sigmalist is", sigmalist)
-    print("epsilonlist is", epsilonlist)
-    print("r0list is", r0list)
 
-    return "something"
+def num_core_electrons(fragment):
+    sum=0
+    formula_list = functions_coords.molformulatolist(fragment.formula)
+    for i in formula_list:
+        els = dictionaries_lists.atom_core_electrons[i]
+        sum+=els
+    return sum
+
+#Check if electrons pairs in fragment are less than numcores. Reduce numcores if so.
+#Using even number of electrons
+def check_cores_vs_electrons(fragment,numcores,charge):
+    print("numcores:", numcores)
+    print("charge:", charge)
+    numelectrons = int(fragment.nuccharge - charge)
+    #Reducing numcores if fewer active electron pairs than numcores.
+    core_electrons = num_core_electrons(fragment)
+    print("core_electrons:", core_electrons)
+    valence_electrons = (numelectrons - core_electrons)
+    electronpairs = int(valence_electrons / 2)
+    if electronpairs  < numcores:
+        print("Number of electrons in fragment:", numelectrons)
+        print("Number of valence electrons :", valence_electrons )
+        print("Number of valence electron pairs :", electronpairs )
+
+        if isodd(electronpairs):
+            if electronpairs > 1:
+                print("Setting numcores to: ", electronpairs-1)
+                return electronpairs-1
+            else:
+                print("Setting numcores to: ", electronpairs)
+                return electronpairs
+        else:
+            print("Setting numcores to:", electronpairs)
+            return int(electronpairs)
+    return numcores

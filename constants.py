@@ -1,3 +1,4 @@
+
 #Conversion factors
 
 #hartree conversions
@@ -17,12 +18,19 @@ halfhcfactor = 2.27816766479806E-06
 
 #Planck's constant J*s
 h_planck = 6.62607015E-34
+#in Eh*s
+h_planck_hartreeseconds=1.5198298716361000E-16
 
 #Distance conversions
 bohr2ang = 0.52917721067
 ang2bohr = 1.88972612546
 bohr2m = 5.29177210903e-11
 amu2kg = 1.66053906660e-27
+ang2m=1e-10
+# R in hartree/K. Converted from 8.31446261815324000 J/Kmol
+R_gasconst=3.16681161675373E-06
+R_gasconst_JK=8.31446261815324
+k_b_JK=1.380649e-23
 
 # speed of light in cm/s
 c = 2.99792458e10

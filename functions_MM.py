@@ -25,7 +25,16 @@ UFFdict={'H': [2.886, 0.044], 'He': [2.362, 0.056], 'Li': [2.451, 0.025], 'Be': 
          'Cm': [3.326, 0.013], 'Bk': [3.339, 0.013], 'Cf': [3.313, 0.013], 'Es': [3.299, 0.012], 'Fm': [3.286, 0.012],
          'Md': [3.274, 0.011], 'No': [3.248, 0.011], 'Lr': [3.236, 0.011]}
 
+#CHARMM-GAAMP for small drug-like molecules
+#https://www.ncbi.nlm.nih.gov/pmc/articles/PMC5997559/#SD1
+#REST IS UFF
+#CHARMMXXXdict={'H': [2.886, 0.044],  'B': [4.083, 0.18],
+#         'C': [3.851, 0.105], 'N': [3.66, 0.069], 'O': [3.5, 0.06], 'F': [3.364, 0.05], 
+#         'Na': [2.983, 0.03], 'Mg': [3.021, 0.111], 'Al': [4.499, 0.505], 'Si': [4.295, 0.402], 'P': [4.147, 0.305],
+#         'S': [4.035, 0.274], 'Cl': [3.947, 0.227]}
+
 #Modified UFF dictionary with no LJ on H.
+#Deprecated. To be deleted.
 UFF_modH_dict={'H': [0.000, 0.000], 'He': [2.362, 0.056], 'Li': [2.451, 0.025], 'Be': [2.745, 0.085], 'B': [4.083, 0.18],
          'C': [3.851, 0.105], 'N': [3.66, 0.069], 'O': [3.5, 0.06], 'F': [3.364, 0.05], 'Ne': [3.243, 0.042],
          'Na': [2.983, 0.03], 'Mg': [3.021, 0.111], 'Al': [4.499, 0.505], 'Si': [4.295, 0.402], 'P': [4.147, 0.305],
@@ -47,6 +56,11 @@ UFF_modH_dict={'H': [0.000, 0.000], 'He': [2.362, 0.056], 'Li': [2.451, 0.025], 
          'Pa': [3.424, 0.022], 'U': [3.395, 0.022], 'Np': [3.424, 0.019], 'Pu': [3.424, 0.016], 'Am': [3.381, 0.014],
          'Cm': [3.326, 0.013], 'Bk': [3.339, 0.013], 'Cf': [3.313, 0.013], 'Es': [3.299, 0.012], 'Fm': [3.286, 0.012],
          'Md': [3.274, 0.011], 'No': [3.248, 0.011], 'Lr': [3.236, 0.011]}
+
+#Alternative H parameters:
+# Polar H on nitrogens  (https://www.ncbi.nlm.nih.gov/pmc/articles/PMC5997559/#SD1)
+# -0.01028 (eps)		0.59895 (Rmin  /2 ???)
+#  0.0046 (eps  ?)      0.224500  (Rmin/2 )
 
 
 
@@ -242,11 +256,6 @@ def LJCoulpy(coords,atomtypes, charges, LJPairpotentials, connectivity=None):
                                 #print("gr:", gr)
                                 LJgradient[i] += gr
                                 LJgradient[j] -= gr
-                                #print("gradient[i]:", gradient[i])
-                                #print("gradient[j]:", gradient[j])
-                                #print("gradients in hartree/Bohr:")
-                                #print("gradient[i]:", gradient[i]* (1/constants.harkcal) / constants.ang2bohr)
-                                #print("gradient[j]:", gradient[j]* (1/constants.harkcal) / constants.ang2bohr)
     #Convert gradient from kcal/mol per Å to hartree/Bohr
     LJfinal_gradient=LJgradient * (1/constants.harkcal) / constants.ang2bohr
     #print("LJ gradient (hartree/Bohr):", LJfinal_gradient)

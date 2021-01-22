@@ -105,6 +105,14 @@ def isint(s):
     except TypeError:
         return False
 
+#Is integer odd
+def isodd(n):
+    if (n % 2) == 0:
+        return False
+    else:
+        return True
+
+
 #Is it possible to interpret string/number as float.
 #Note: integer variable/string can be interpreted. See also is_string_float_withdecimal below
 def isfloat(s):
@@ -169,6 +177,19 @@ def read_intlist_from_file(file,offset=0):
                 list.append(int(l)+offset)
     list.sort()
     return list
+
+#Read list of flaots from file. Output list of floats.
+#Works for single-line with numbers and multi-lines
+def read_floatlist_from_file(file):
+    list=[]
+    lines=readlinesfile(file)
+    for line in lines:
+        for l in line.split():
+            if isfloat(l):
+                list.append(float(l))
+    list.sort()
+    return list
+
 
 
 #Write a string to file simply

@@ -650,6 +650,23 @@ def HOMOnumbercalc(file,charge,mult):
         HOMOnum_b=Doubocc+orcaoffset
     return int(HOMOnum_a),int(HOMOnum_b)
 
+#Calculate HOMO number (0-indexing) from nuclear charge and total charge
+def HOMOnumber(totnuccharge,charge,mult):
+    numel=totnuccharge-charge
+    HOMOnum_a="unset";HOMOnum_b="unset"
+    offset=-1
+    if mult == 1:
+        #RHF case. HOMO is numel/2 -1
+        HOMOnum_a=(numel/2)+offset
+        HOMOnum_b=(numel/2)+offset
+    elif mult > 1:
+        #UHF case.
+        numunpel=mult-1
+        Doubocc=(numel-numunpel)/2
+        HOMOnum_a=Doubocc+numunpel+offset
+        HOMOnum_b=Doubocc+offset
+    return int(HOMOnum_a),int(HOMOnum_b)
+
 def orbitalgrab(file):
     occorbsgrab=False
     virtorbsgrab=False
@@ -873,7 +890,8 @@ def tddftgrab(file):
     with open(file) as f:
         for line in f:
             if 'STATE ' in line:
-                tddftstates.append(float(line.split()[5]))
+                if 'eV' in line:
+                    tddftstates.append(float(line.split()[5]))
     return tddftstates
 
 # MO-DOS PLOT
@@ -954,28 +972,33 @@ def grab_dets_from_CASSCF_output(file):
                     #combining
                     det_tuple=internal_tuple+tuple(detlist2)+external_tuple
                     #print("det_tuple : ", det_tuple)
+                    #This is the CI coefficient of the determinant
                     coeff = float(line.split()[-1])
                     state.determinants[det_tuple] = coeff
                 if '[' in line and 'CFG' in line:
                     cfg = line.split()[0]
-                    coeff = float(line.split()[-1])
-                    state.configurations[cfg] = coeff
+                    #This is the weight (CI coefficient squared)
+                    weight = float(line.split()[-1])
+                    state.configurations[cfg] = weight
 
-                    #CASE: CFG contains only 2 and 0s. That means a situation where CFG and Det is same thing
-                    # But det info is not printed so we need to add it
-                    #Removed after Vijay update
-                    #if '1' not in cfg:
-                    #    #print("cfg : ", cfg)
-                    #    print("Found CFG without Det info. Adding to determinants")
-                    #    #print("line:", line)
-                    #    bla = cfg.replace('[','').replace(']','').replace('CFG','')
-                    #    #print("bla:", bla)
-                    #    det = bla.replace(str(2),str(3))
-                    #    #print("det:", det)
-                    #    det2 = [int(i) for i in det]
-                    #    det_tuple = internal_tuple + tuple(det2) + external_tuple
-                    #    #print("det_tuple: ", det_tuple)
-                    #    state.determinants[det_tuple] = coeff
+                    #CASE: CFG contains only 2 and 0s. That means a situation where Det info is not printed in CASSCF-module (but printed in MRCI)
+                    #Removed in July-ish 2020 after Vijay update
+                    #Added back in 29 Nov 2020 since still cases where det is not printed. Taking square of weight
+                    #Vijay probably only changed the MRCI behaviour not the CASSCF behaviour
+                    if '1' not in cfg:
+                        #print("cfg : ", cfg)
+                        print("WARNING: Found CFG with no SOMO.")
+                        print("WARNING: Det info is probably missing (not printed). Taking CFG and weight and converting to determinant")
+                        #print("line:", line)
+                        bla = cfg.replace('[','').replace(']','').replace('CFG','')
+                        #print("bla:", bla)
+                        det = bla.replace(str(2),str(3))
+                        #print("det:", det)
+                        det2 = [int(i) for i in det]
+                        det_tuple = internal_tuple + tuple(det2) + external_tuple
+                        #print("det_tuple: ", det_tuple)
+                        #Taking square-root
+                        state.determinants[det_tuple] = math.sqrt(weight)
 
                 if 'ROOT ' in line:
                     print("line:", line)
@@ -1010,8 +1033,6 @@ def grab_dets_from_CASSCF_output(file):
         print("length of state determinants :", len(state.determinants))
         if len(state.determinants) == 0:
             print("WARNING!!! No determinant output found.")
-            print("THIS should go away. Disabling for now...")
-            exit()
             print("Must be because CFG and det is the same. Using CFG info ")
             print("WARNING!!!")
             print("state.configurations : ", state.configurations)
@@ -1620,14 +1641,14 @@ def delete_wrong_det(file,reference_mult):
 
 # Calculate PES spectra using the Dyson orbital approach.
 # Memory for WFoverlap in MB. Hardcoded
-def PhotoElectronSpectrum(theory=None, fragment=None, InitialState_charge=None, Initialstate_mult=None,
+def PhotoElectronSpectrum(theory=None, fragment=None, Initialstate_charge=None, Initialstate_mult=None,
                           Ionizedstate_charge=None, Ionizedstate_mult=None, numionstates=None, path_wfoverlap=None, tda=True,
                           brokensym=False, HSmult=None, atomstoflip=None, initialorbitalfiles=None, Densities='SCF', densgridvalue=100,
-                          CAS=False, CAS_Initial=None, CAS_Final = None, memory=40000, numcores=1, noDyson=False, CASCI=False, MRCI=False,
+                          CAS=False, CAS_Initial=None, CAS_Final = None, memory=40000, numcores=1, noDyson=False, CASCI=False, MRCI=False, MREOM=False,
                           MRCI_Initial=None, MRCI_Final = None, tprintwfvalue=1e-6, MRCI_CASCI_Final=True, EOM=False, label=None, check_stability=True):
     blankline()
     print(bcolors.OKGREEN,"-------------------------------------------------------------------",bcolors.ENDC)
-    print(bcolors.OKGREEN,"PhotoElectronSpectrum: Calculating PES spectra via TDDFT/CAS/MRCI/EOM and Dyson-norm approach",bcolors.ENDC)
+    print(bcolors.OKGREEN,"PhotoElectronSpectrum: Calculating PES spectra via TDDFT/CAS/MRCI/EOM/MREOM and Dyson-norm approach",bcolors.ENDC)
     print(bcolors.OKGREEN,"-------------------------------------------------------------------",bcolors.ENDC)
     blankline()
     print("Numcores used for WFoverlap: ", numcores)
@@ -1652,6 +1673,10 @@ def PhotoElectronSpectrum(theory=None, fragment=None, InitialState_charge=None, 
     if EOM is True:
         print("EOM is True. Will do EOM-IP-CCSD calculations to calculate IPs directly.")
 
+    #Simplifies things. MREOM uses MRCI so let's use same logic.
+    if MREOM is True:
+        print("MREOM option. Setting MRCI to True.")
+        MRCI=True
 
     if CAS is True and MRCI is True:
         print("Both CAS and MRCI can not both be True!")
@@ -1663,15 +1688,16 @@ def PhotoElectronSpectrum(theory=None, fragment=None, InitialState_charge=None, 
         if CASCI is True:
             print("CASCI option on! Initial state will be done with CASSCF while Final ionized states will do CAS-CI")
 
+
     if MRCI is True:
-        print("MRCI option active!")
-        print("Will do CASSCF orbital optimization for initial-state, followed by MRCI")
+        print("MRCI/MREOM option active!")
+        print("Will do CASSCF orbital optimization for initial-state, followed by MRCI/MREOM")
         if MRCI_CASCI_Final is True:
             print("Will do CAS-CI reference (using initial-state orbitals) for final-states")
 
 
-    if InitialState_charge is None or Initialstate_mult is None or Ionizedstate_charge is None or Ionizedstate_mult is None:
-        print("Provide charge and spin multiplicity of initial and ionized state: InitialState_charge, InitialState_mult, Ionizedstate_charge,Ionizedstate_mult ")
+    if Initialstate_charge is None or Initialstate_mult is None or Ionizedstate_charge is None or Ionizedstate_mult is None:
+        print("Provide charge and spin multiplicity of initial and ionized state: Initialstate_charge, Initialstate_mult, Ionizedstate_charge,Ionizedstate_mult ")
         exit(1)
 
     print("Densities option is: ", Densities, "(options are: SCF, All, None)")
@@ -1718,7 +1744,7 @@ def PhotoElectronSpectrum(theory=None, fragment=None, InitialState_charge=None, 
             self.cisfile=None
 
     # Always just one StateI object with one charge and one spin multiplicity
-    stateI = MolState(charge=InitialState_charge, mult=Initialstate_mult,numionstates=1)
+    stateI = MolState(charge=Initialstate_charge, mult=Initialstate_mult,numionstates=1)
     print(bcolors.OKBLUE, "StateI: Charge=", stateI.charge, "Multiplicity", stateI.mult, bcolors.ENDC)
 
     if brokensym is True:
@@ -1768,6 +1794,7 @@ def PhotoElectronSpectrum(theory=None, fragment=None, InitialState_charge=None, 
     print("")
     print("CAS:", CAS)
     print("MRCI:", MRCI)
+    print("MREOM:", MREOM)
     print("EOM:", EOM)
     if CAS is False and MRCI is False and EOM is False:
         print("TDDFT option chosen:")
@@ -1843,7 +1870,12 @@ def PhotoElectronSpectrum(theory=None, fragment=None, InitialState_charge=None, 
             #Enforcing CAS-CI
             #if 'noiter' not in theory.orcasimpleinput.lower():
             #    theory.orcasimpleinput = theory.orcasimpleinput + ' noiter '
-
+            if MREOM is True:
+                if '%mdci' not in theory.orcablocks:
+                    theory.orcablocks = theory.orcablocks + "%mdci\nSTol 1e-7\nmaxiter 2700\nDoSingularPT true\nend\n"
+                else:
+                    theory.orcablocks = theory.orcablocks.replace("%mdci\n","%mdci\nSTol 1e-7\nmaxiter 2700\nDoSingularPT true\nend\n")
+                    
             #Defining simple MRCI block. States defined
             if '%mrci' not in theory.orcablocks:
                 theory.orcablocks = theory.orcablocks + "%mrci\n" + "printwf det\nTPrintwf {}\n".format(tprintwfvalue) + "end"
@@ -1854,10 +1886,16 @@ def PhotoElectronSpectrum(theory=None, fragment=None, InitialState_charge=None, 
             theory.orcablocks = theory.orcablocks.replace('\n\n','\n')
             theory.orcablocks = theory.orcablocks.replace('\n\n','\n')
 
-            #Adding MRCI+Q to simpleinputline
-            #TODO: Remove as we may want another MRCI method
-            if 'MRCI+Q' not in theory.orcasimpleinput:
-                theory.orcasimpleinput = theory.orcasimpleinput + ' MRCI+Q' 
+            #Adding MRCI+Q to simpleinputline unless MREOM
+            #TODO: Remove as we may want another MRCI method ?
+            if MREOM is True:
+                if 'MREOM' not in theory.orcasimpleinput:
+                    theory.orcasimpleinput = theory.orcasimpleinput + ' MR-EOM' 
+            else:
+                if 'MRCI+Q' not in theory.orcasimpleinput:
+                    theory.orcasimpleinput = theory.orcasimpleinput + ' MRCI+Q' 
+
+
 
         # For orbital analysis
         if 'NORMALPRINT' not in theory.orcasimpleinput.upper():
@@ -1913,7 +1951,7 @@ def PhotoElectronSpectrum(theory=None, fragment=None, InitialState_charge=None, 
 
             #Get orbital ranges (stateI is sufficient)
             internal_orbs,active_orbs,external_orbs = casscf_orbitalranges_grab("orca-input.out")
-        elif MRCI is True:
+        elif MRCI is True or MREOM is True:
             stateI.energy=finalsinglepointenergy
             print("stateI.energy: ", stateI.energy)
 
@@ -2100,9 +2138,9 @@ def PhotoElectronSpectrum(theory=None, fragment=None, InitialState_charge=None, 
 
             #TODO: Saving files for density Cube file creation for CASSCF
 
-        elif MRCI is True:
-            print("Modifying MRCI block for Final state, MRCI({},{})".format(MRCI_Initial[0], MRCI_Initial[1]))
-            print("{} electrons in {} orbitals".format(MRCI_Initial[0], MRCI_Initial[1]))
+        elif MRCI is True or MREOM is True:
+            print("Modifying MRCI block for Final state, MRCI({},{})".format(MRCI_Final[0], MRCI_Final[1]))
+            print("{} electrons in {} orbitals".format(MRCI_Final[0], MRCI_Final[1]))
             
             
             
@@ -2742,6 +2780,10 @@ def Read_old_results():
 
 def plot_PES_Spectrum(IPs=None, dysonnorms=None, mos_alpha=None, mos_beta=None, plotname='PES-plot',
                           start=None, finish=None, broadening=0.1, points=10000, hftyp_I=None, MOPlot=False, matplotlib=True):
+    
+    print("This is deprecated. To be removed...")
+    
+    
     if IPs is None or dysonnorms is None:
         print("plot_PES_Spectrum requires IPs and dysonnorms variables")
         exit(1)
@@ -2887,3 +2929,58 @@ def plot_PES_Spectrum(IPs=None, dysonnorms=None, mos_alpha=None, mos_beta=None, 
     else:
         print("Skipped Matplotlib part.")
     print(BC.OKGREEN,"ALL DONE!", BC.END)
+
+
+#Potential adjusted KS-DFT according to Görling
+#Gives adjusted MO spectrum for initial state
+def potential_adjustor_DFT(theory=None, fragment=None, Initialstate_charge=None, Initialstate_mult=None,
+                          Ionizedstate_charge=None, Ionizedstate_mult=None):
+    
+    print("="*30)
+    print("Potential-adjustor DFT")
+    print("="*30)
+    #Calculate initial state with N electron (e.g. neutral)
+    theory.charge=Initialstate_charge
+    theory.mult=Initialstate_mult
+    E_N = Singlepoint(fragment=fragment, theory=theory)
+    
+    #Orbitals in eV
+    occorbs_alpha, occorbs_beta, hftyp = orbitalgrab(theory.inputfilename+'.out')
+    print("occorbs_alpha (eV): ", occorbs_alpha)
+    print("occorbs_beta (eV): ", occorbs_beta)
+    
+    #Calculate ionized state (N-1)
+    theory.charge = Ionizedstate_charge
+    theory.mult = Ionizedstate_mult
+    E_Nmin1 = Singlepoint(fragment=fragment, theory=theory)
+    
+    #delta-SCF IP in eV
+    print("")
+    print("-"*60)
+    print("")
+    deltaE=(E_N-E_Nmin1)*constants.hartoeV
+    print("deltaE (IP) : {} eV".format(deltaE))
+    #deltaPA for HOMO
+    HOMO_index=HOMOnumber(fragment.nuccharge,Initialstate_charge,Initialstate_mult)
+    print("HOMO_index:", HOMO_index)
+    eps_HOMO=occorbs_alpha[HOMO_index[0]]
+    print("eps_HOMO : {} eV".format(eps_HOMO))
+    deltaPA=deltaE-eps_HOMO
+    print("deltaPA : {} eV".format(deltaPA))
+    
+    #Adjust alpha and beta orbital sets
+    PA_occorbs_alpha=  [orb+deltaPA for orb in occorbs_alpha]
+    PA_occorbs_beta = [orb+deltaPA for orb in occorbs_beta]
+    
+    print("PA_occorbs_alpha (eV): ", PA_occorbs_alpha)
+    print("PA_occorbs_beta (eV): ", PA_occorbs_beta)
+    
+    #IPs in eV as -1 times orbital energies
+
+    PA_occorbs_alpha_IPs=[eig*-1 for eig in PA_occorbs_alpha]
+    PA_occorbs_beta_IPs=[eig*-1 for eig in PA_occorbs_beta]
+    print("PA_occorbs_alpha_IPs (eV):", PA_occorbs_alpha_IPs)
+    print("PA_occorbs_beta_IPs (eV):", PA_occorbs_beta_IPs)
+    
+    #Return negative KS eigenvalues
+    return PA_occorbs_alpha_IPs, PA_occorbs_beta_IPs

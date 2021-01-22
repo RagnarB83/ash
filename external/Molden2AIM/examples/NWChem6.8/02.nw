@@ -1,0 +1,18 @@
+START test
+
+geometry
+ H    0.  0.  0.
+ F    0.  0.  0.9
+end
+
+BASIS
+ * library sto-3g
+END
+
+dft
+ molden
+end
+
+set molden:do_norm_janpa t
+task dft
+

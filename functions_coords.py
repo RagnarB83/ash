@@ -1,4 +1,5 @@
 from functions_general import *
+#import functions_molcrys
 import numpy as np
 #import settings_molcrys
 import settings_ash
@@ -10,6 +11,7 @@ import math
 import ash
 sqrt = math.sqrt
 pow = math.pow
+import ash
 
 #Elements and atom numbers
 elematomnumbers = {'h':1, 'he': 2, 'li':3, 'be':4, 'b':5, 'c':6, 'n':7, 'o':8, 'f':9, 'ne':10, 'na':11, 'mg':12, 'al':13, 'si':14, 'p':15, 's':16, 'cl':17, 'ar':18, 'k':19, 'ca':20, 'sc':21, 'ti':22, 'v':23, 'cr':24, 'mn':25, 'fe':26, 'co':27, 'ni':28, 'cu':29, 'zn':30, 'ga':31, 'ge':32, 'as':33, 'se':34, 'br':35, 'kr':36, 'rb':37, 'sr':38, 'y':39, 'zr':40, 'nb':41, 'mo':42, 'tc':43, 'ru':44, 'rh':45, 'pd':46, 'ag':47, 'cd':48, 'in':49, 'sn':50, 'sb':51, 'te':52, 'i':53, 'xe':54, 'cs':55, 'ba':56, 'la':57, 'ce':58, 'pr':59, 'nd':60, 'pm':61, 'sm':62, 'eu':63, 'gd':64, 'tb':65, 'dy':66, 'ho':67, 'er':68, 'tm':69, 'yb':70, 'lu':71, 'hf':72, 'ta':73, 'w':74, 're':75, 'os':76, 'ir':77, 'pt':78, 'au':79, 'hg':80, 'tl':81, 'pb':82, 'bi':83, 'po':84, 'at':85, 'rn':86, 'fr':87, 'ra':88, 'ac':89, 'th':90, 'pa':91, 'u':92, 'np':93, 'pu':94, 'am':95, 'cm':96, 'bk':97, 'cf':98, 'es':99, 'fm':100, 'md':101, 'no':102, 'lr':103, 'rf':104, 'db':105, 'sg':106, 'bh':107, 'hs':108, 'mt':109, 'ds':110, 'rg':111, 'cn':112, 'nh':113, 'fl':114, 'mc':115, 'lv':116, 'ts':117, 'og':118}
@@ -26,7 +28,75 @@ eldict_covrad['K']=0.0001
 
 #print(eldict_covrad)
 
+#Remove zero charges
+def remove_zero_charges(charges,coords):
+    newcharges=[]
+    newcoords=[]
+    assert len(charges) == len(coords)
+    for charge,coord in zip(charges,coords):
+        if charge != 0.0:
+            newcharges.append(charge)
+            newcoords.append(coord)
+    return newcharges,newcoords
 
+
+def print_internal_coordinate_table(fragment,actatoms=None):
+    
+    #If no connectivity in fragment then recalculate it for actatoms only
+    if len(fragment.connectivity) == 0:
+        if actatoms == None:
+            actatoms=[]
+        
+        if len(actatoms) > 0:
+            chosen_coords=[fragment.coords[i] for i in actatoms]
+            chosen_elems=[fragment.elems[i] for i in actatoms]
+        else:
+            chosen_coords=fragment.coords
+            chosen_elems=fragment.elems
+        
+        conndepth=99
+        scale=settings_ash.scale
+        tol=settings_ash.tol
+        try:
+            connectivity = ash.Main.Juliafunctions.calc_connectivity(chosen_coords, chosen_elems, conndepth, scale, tol, eldict_covrad)
+        except:
+            print("Problem importing Pyjulia (import julia). Trying py-version instead")
+            connectivity = calc_conn_py(chosen_coords, chosen_elems, conndepth, scale, tol)
+    else:
+        connectivity=fragment.connectivity
+    
+    
+    #Looping over connected fragments
+    bondpairs=[]
+    bondpairsdict={}
+    for conn_fragment in connectivity:
+        #Looping over atom indices in fragment
+        for atom in conn_fragment:
+            #print("atom:", atom)
+            connatoms = get_connected_atoms(fragment.coords, fragment.elems,settings_ash.scale,settings_ash.tol,atom)
+            #print("connatoms:", connatoms)
+            for conn_i in connatoms:
+                dist=distance_between_atoms(fragment=fragment, atom1=atom, atom2=conn_i)
+                #bondpairs.append([atom,conn_i,dist])
+                bondpairsdict[frozenset((atom,conn_i))] = dist
+    
+
+    print('='*50)
+    print("Optimized internal coordinates")
+    print('='*50)
+    
+    #Using frozenset: https://stackoverflow.com/questions/46633065/multiples-keys-dictionary-where-key-order-doesnt-matter
+    #sort bondpairs list??
+
+    #print bondpairs list
+    print("Bond lengths (Å):")
+    print('-'*38)
+    for key,val in bondpairsdict.items():
+        listkey=list(key)
+        elA=fragment.elems[listkey[0]]
+        elB=fragment.elems[listkey[1]]
+        print("Bond: {:8}{:4} - {:4}{:4} {:>6.3f}".format(listkey[0],elA,listkey[1],elB, val ))
+    print('='*50)
 #Function to check if string corresponds to an element symbol or not.
 #Compares in lowercase
 def isElement(string):
@@ -421,6 +491,7 @@ def read_xyzfile(filename):
     return elems,coords
 
 
+
 def set_coordinates(atoms, V, title="", decimals=8):
     """
     Print coordinates V with corresponding atoms to stdout in XYZ format.
@@ -768,14 +839,13 @@ def get_partial_list(allatoms,partialatoms,list):
 
 #Old function that used scipy to do distances and Hungarian. 
 def scipy_hungarian(A,B):
-    from scipy.spatial.distance import cdist
-    from scipy.optimize import linear_sum_assignment
+    import scipy
     #timestampA = time.time()
-    distances = cdist(A, B, 'euclidean')
+    distances = scipy.spatial.distance.cdist(A, B, 'euclidean')
     #print("distances:", distances)
     #ash.print_time_rel(timestampA, modulename='scipy distances_cdist')
     #timestampA = time.time()
-    indices_a, assignment = linear_sum_assignment(distances)
+    indices_a, assignment = scipy.optimize.linear_sum_assignment(distances)
     #print("indices_a:", indices_a)
     #print("assignment:", assignment)
     #ash.print_time_rel(timestampA, modulename='scipy linear sum assignment')
@@ -1069,6 +1139,7 @@ def distance_between_atoms(fragment=None, atom1=None, atom2=None):
 
 
 def get_boundary_atoms(qmatoms, coords, elems, scale, tol):
+    print("qmatoms:", qmatoms)
     # For each QM atom, do a get_conn_atoms, for those atoms, check if atoms are in qmatoms,
     # if not, then we have found an MM-boundary atom
     
@@ -1089,6 +1160,7 @@ def get_boundary_atoms(qmatoms, coords, elems, scale, tol):
         elif len(boundaryatom) == 1:
             # Adding to dict
             qm_mm_boundary_dict[qmatom] = boundaryatom[0]
+    print("qm_mm_boundary_dict:", qm_mm_boundary_dict)
     return qm_mm_boundary_dict
 
 #Get linkatom positions for a list of qmatoms and the current set of coordinates

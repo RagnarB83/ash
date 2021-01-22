@@ -66,6 +66,10 @@ def run_orca_SP_ORCApar(orcadir, inpfile, nprocs=1):
 def checkORCAfinished(file):
     with open(file) as f:
         for line in f:
+            
+            if 'SCF CONVERGED AFTER' in line:
+                iter=line.split()[-3]
+                print("ORCA converged in {} iterations".format(iter))
             if 'TOTAL RUN TIME:' in line:
                 return True
 
@@ -74,8 +78,14 @@ def ORCAfinalenergygrab(file):
     with open(file) as f:
         for line in f:
             if 'FINAL SINGLE POINT ENERGY' in line:
-                Energy=float(line.split()[-1])
+                if "Wavefunction not fully converged!" in line:
+                    print("ORCA WF not fully converged!")
+                    print("Not using energy. Modify ORCA settings")
+                    exit()
+                else:
+                    Energy=float(line.split()[-1])
     return Energy
+
 
 #Grab gradient from ORCA engrad file
 def ORCAgradientgrab(engradfile):
@@ -160,32 +170,42 @@ def grab_HF_and_corr_energies(file, DLPNO=False, F12=False):
                 if 'E(0)                                       ...' in line:
                     HF_energy=float(line.split()[-1])
                     edict['HF'] = HF_energy
+                    
+
             if DLPNO is True:
                 if F12 is True:
                     if 'Final F12 correlation energy               ...' in line:
                         CCSDcorr_energy=float(line.split()[-1])
-                        edict['CCSD_corr'] = CCSDcorr_energy                    
+                        edict['CCSD_corr'] = CCSDcorr_energy
+                        edict['full_corr'] = CCSDcorr_energy
                 else:    
                     if 'E(CORR)(corrected)                         ...' in line:
                         CCSDcorr_energy=float(line.split()[-1])
                         edict['CCSD_corr'] = CCSDcorr_energy
+                        edict['full_corr'] = CCSDcorr_energy
             else:
                 if F12 is True:
                     if 'Final F12 correlation energy               ...' in line:
                         CCSDcorr_energy=float(line.split()[-1])
                         edict['CCSD_corr'] = CCSDcorr_energy
+                        edict['full_corr'] = CCSDcorr_energy
                 else:        
                     if 'E(CORR)                                    ...' in line:
                         CCSDcorr_energy=float(line.split()[-1])
                         edict['CCSD_corr'] = CCSDcorr_energy
+                        edict['full_corr'] = CCSDcorr_energy
+                        
+
             if DLPNO is True:
                 if 'Triples Correction (T)                     ...' in line:
                     CCSDTcorr_energy=float(line.split()[-1])
                     edict['CCSD(T)_corr'] = CCSDTcorr_energy
+                    edict['full_corr'] = CCSDcorr_energy+CCSDTcorr_energy
             else:
                 if 'Scaled triples correction (T)              ...' in line:
                     CCSDTcorr_energy=float(line.split()[-1])
                     edict['CCSD(T)_corr'] = CCSDTcorr_energy
+                    edict['full_corr'] = CCSDcorr_energy+CCSDTcorr_energy
             if 'T1 diagnostic                              ...' in line:
                 T1diag = float(line.split()[-1])
                 edict['T1diag'] = T1diag
@@ -415,6 +435,22 @@ def read_ORCA_Hessian(hessfile):
     
     return hessian, elems, coords, masses
 
+
+#Grab frequencies from ORCA-Hessian file
+def ORCAfrequenciesgrab(hessfile):
+    freqs=[]
+    grab=False
+    with open(hessfile) as hfile:
+        for line in hfile:
+            if grab is True:
+                if len(line.split()) > 1:
+                    freqs.append(float(line.split()[-1]))
+            if '$vibrational_frequencies' in line:
+                grab=True
+            if '$normal_modes' in line:
+                grab=False
+    return freqs
+
 #Function to grab Hessian from ORCA-Hessian file
 def Hessgrab(hessfile):
     hesstake=False
@@ -454,7 +490,7 @@ def Hessgrab(hessfile):
             if '$hessian' in line:
                 hesstake = True
                 grabsize = True
-            return hessarray2d
+        return hessarray2d
 
 
 
@@ -600,9 +636,10 @@ def create_orca_inputVIEcomp_gas(name, name2, elems, coords, orcasimpleinput, or
 
 #Create PC-embedded ORCA inputfile from elems,coords, input, charge, mult,pointcharges
 #Allows for extraline that could be another '!' line or block-inputline.
-#Used by Yggdrasill
 def create_orca_input_pc(name,elems,coords,orcasimpleinput,orcablockinput,charge,mult, Grad=False, extraline='',
-                         HSmult=None, atomstoflip=None):
+                         HSmult=None, atomstoflip=None, Hessian=False, extrabasisatoms=None, extrabasis=None, moreadfile=None):
+    if extrabasisatoms is None:
+        extrabasisatoms=[]
     pcfile=name+'.pc'
     with open(name+'.inp', 'w') as orcafile:
         orcafile.write(orcasimpleinput+'\n')
@@ -610,6 +647,12 @@ def create_orca_input_pc(name,elems,coords,orcasimpleinput,orcablockinput,charge
             orcafile.write(extraline + '\n')
         if Grad == True:
             orcafile.write('! Engrad' + '\n')
+        if Hessian == True:
+            orcafile.write('! Freq' + '\n')
+        if moreadfile is not None:
+            print("MOREAD option active. Will read orbitals from file:", moreadfile)
+            orcafile.write('! MOREAD' + '\n')
+            orcafile.write('%moinp \"{}\"'.format(moreadfile) + '\n')
         orcafile.write('%pointcharges "{}"\n'.format(pcfile))
         orcafile.write(orcablockinput + '\n')
         if atomstoflip is not None:
@@ -623,22 +666,34 @@ def create_orca_input_pc(name,elems,coords,orcasimpleinput,orcablockinput,charge
             orcafile.write('*xyz {} {}\n'.format(charge,HSmult))
         else:
             orcafile.write('*xyz {} {}\n'.format(charge,mult))
-        for el,c in zip(elems,coords):
-            orcafile.write('{} {} {} {} \n'.format(el,c[0], c[1], c[2]))
+        #Writing coordinates. Adding extrabasis keyword for atom if option active
+        for i,(el,c) in enumerate(zip(elems,coords)):
+            if i in extrabasisatoms:
+                orcafile.write('{} {} {} {} newgto \"{}\" end\n'.format(el,c[0], c[1], c[2], extrabasis))                
+            else:
+                orcafile.write('{} {} {} {} \n'.format(el,c[0], c[1], c[2]))
         orcafile.write('*\n')
 
 #Create simple ORCA inputfile from elems,coords, input, charge, mult,pointcharges
 #Allows for extraline that could be another '!' line or block-inputline.
-#Used by ASH
 
-def create_orca_input_plain(name,elems,coords,orcasimpleinput,orcablockinput,charge,mult, Grad=False, extraline='',
-                            HSmult=None, atomstoflip=None):
+def create_orca_input_plain(name,elems,coords,orcasimpleinput,orcablockinput,charge,mult, Grad=False, Hessian=False, extraline='',
+                            HSmult=None, atomstoflip=None, extrabasis=None, extrabasisatoms=None, moreadfile=None):
+    if extrabasisatoms is None:
+        extrabasisatoms=[]
+    
     with open(name+'.inp', 'w') as orcafile:
         orcafile.write(orcasimpleinput+'\n')
         if extraline != '':
             orcafile.write(extraline + '\n')
         if Grad == True:
             orcafile.write('! Engrad' + '\n')
+        if Hessian == True:
+            orcafile.write('! Freq' + '\n')
+        if moreadfile is not None:
+            print("MOREAD option active. Will read orbitals from file:", moreadfile)
+            orcafile.write('! MOREAD' + '\n')
+            orcafile.write('%moinp \"{}\"'.format(moreadfile) + '\n')
         orcafile.write(orcablockinput + '\n')
         if atomstoflip is not None:
             if type(atomstoflip) == int:
@@ -655,8 +710,11 @@ def create_orca_input_plain(name,elems,coords,orcasimpleinput,orcablockinput,cha
         else:
             orcafile.write('*xyz {} {}\n'.format(charge,mult))
 
-        for el,c in zip(elems,coords):
-            orcafile.write('{} {} {} {} \n'.format(el,c[0], c[1], c[2]))
+        for i,(el,c) in enumerate(zip(elems,coords)):
+            if i in extrabasisatoms:
+                orcafile.write('{} {} {} {} newgto \"{}\" end\n'.format(el,c[0], c[1], c[2], extrabasis))                
+            else:
+                orcafile.write('{} {} {} {} \n'.format(el,c[0], c[1], c[2]))
         orcafile.write('*\n')
 
 # Create ORCA pointcharge file based on provided list of elems and coords (MM region elems and coords)

@@ -13,7 +13,8 @@ currtime=time.time()
 
 
 def molcrys(cif_file=None, xtl_file=None, xyz_file=None, cell_length=None, cell_angles=None, fragmentobjects=[], theory=None, numcores=1, chargemodel='',
-            clusterradius=None, shortrangemodel='UFF_modH', auto_connectivity=False, simple_supercell=False, shiftasymmunit=False, cluster_type='sphere', supercell_expansion=[3,3,3]):
+            clusterradius=None, shortrangemodel='UFF_modH', LJHparameters=[0.0,0.0], auto_connectivity=False, simple_supercell=False, shiftasymmunit=False, cluster_type='sphere', 
+            supercell_expansion=[3,3,3]):
 
     banner="""
     THE
@@ -72,18 +73,23 @@ def molcrys(cif_file=None, xtl_file=None, xyz_file=None, cell_length=None, cell_
             print("Number of fractional coordinates in asymmetric unit:", len(asymmcoords))
             print("Number of asymmetric units in whole cell:", int(numasymmunits))
 
-        cell_vectors=cellparamtovectors(cell_length,cell_angles)
+        #OLD, To delete
+        #cell_vectors=cellparamtovectors(cell_length,cell_angles)
         print("Number of fractional coordinates in whole cell:", len(fullcellcoords))
         #print_coordinates(elems, np.array(fullcellcoords), title="Fractional coordinates")
         #print_coords_all(fullcellcoords,elems)
+        
+        #Calculating cell vectors.
+        # Transposed cell vectors used here (otherwise nonsense for non-orthorhombic cells)
+        #Not sure why we were transposing here
+        #cell_vectors=np.transpose(cellbasis(cell_angles,cell_length))
+        cell_vectors=cellbasis(cell_angles,cell_length)
+        print("cell_vectors:", cell_vectors)
+        #Get orthogonal coordinates of cell
+        orthogcoords=fract_to_orthogonal(cell_vectors,fullcellcoords)      
         blankline()
 
-        #Write fractional coordinate XTL file of fullcell coordinates (for visualization in VESTA)
-        write_xtl(cell_length,cell_angles,elems,fullcellcoords,"complete_unitcell.xtl")
 
-
-        #Get orthogonal coordinates of cell
-        orthogcoords=fract_to_orthogonal(cell_vectors,fullcellcoords)
 
     elif xtl_file is not None:
         blankline()
@@ -93,18 +99,22 @@ def molcrys(cif_file=None, xtl_file=None, xyz_file=None, cell_length=None, cell_
         blankline()
         cell_length,cell_angles,elems,fullcellcoords=read_xtlfile(xtl_file)
         
-        cell_vectors=cellparamtovectors(cell_length,cell_angles)
+        #cell_vectors=cellparamtovectors(cell_length,cell_angles)
+
         print("Number of fractional coordinates in whole cell:", len(fullcellcoords))
-        #print_coordinates(elems, np.array(fullcellcoords), title="Fractional coordinates")
-        #print_coords_all(fullcellcoords,elems)
+
+        #Calculating cell vectors.
+        # Transposed cell vectors used here (otherwise nonsense for non-orthorhombic cells)
+        
+        #Not sure why we were transposing here. Bad for Ru-allyl
+        #cell_vectors=np.transpose(cellbasis(cell_angles,cell_length))
+        cell_vectors=cellbasis(cell_angles,cell_length)
+        
+        print("cell_vectors:", cell_vectors)
+        #Get orthogonal coordinates of cell
+        orthogcoords=fract_to_orthogonal(cell_vectors,fullcellcoords)      
         blankline()
 
-        #Write fractional coordinate XTL file of fullcell coordinates (for visualization in VESTA)
-        write_xtl(cell_length,cell_angles,elems,fullcellcoords,"complete_unitcell.xtl")
-
-
-        #Get orthogonal coordinates of cell
-        orthogcoords=fract_to_orthogonal(cell_vectors,fullcellcoords)
         
     elif xyz_file is not None:
         print("WARNING. This option is not well tested. XYZ-file must contain all coordinates of cell.")
@@ -114,31 +124,38 @@ def molcrys(cif_file=None, xtl_file=None, xyz_file=None, cell_length=None, cell_
         elems,orthogcoords=read_xyzfile(xyz_file)
         print("Read {} atoms from XYZ-files".format(len(orthogcoords)))
         
-        #TODO: read xyz-file here
         #Need to read cell_lengths and cell_angles also
         if cell_length is None or cell_angles is None:
             print("cell_length/cell_angles is not defined. This is needed for XYZ-file option.")
             exit()
         blankline()
         
-        #TODO: think about what happens next
+        #Calculating cell vectors.
+        # Transposed cell vectors used here (otherwise nonsense for non-orthorhombic cells)
+        #Not sure why transposing
+        #cell_vectors=np.transpose(cellbasis(cell_angles,cell_length))
+        cell_vectors=cellbasis(cell_angles,cell_length)
+        print("cell_vectors:", cell_vectors)
         
     else:
         print("Neither CIF-file, XTL-file or XYZ-file passed to molcrys. Exiting...")
         exit(1)
 
+
+
+    #Write fractional coordinate XTL file of fullcell coordinates (for visualization in VESTA)
+    write_xtl(cell_length,cell_angles,elems,fullcellcoords,"complete_unitcell.xtl")
+
+
+
     print("Cell parameters: {} {} {} {} {} {}".format(cell_length[0],cell_length[1], cell_length[2] , cell_angles[0], cell_angles[1], cell_angles[2]))
 
-    #Calculating cell vectors.
-    # Transposed cell vectors used here (otherwise nonsense for non-orthorhombic cells)
-    cell_vectors=np.transpose(cellbasis(cell_angles,cell_length))
-    print("cell_vectors:", cell_vectors)
+    
     #Used by cell_extend_frag_withcenter and frag_define
     #fract_to_orthogonal uses original so it is transposed back
     
     #Converting orthogcoords to numpy array for better performance
     orthogcoords=np.asarray(orthogcoords)
-
     print("orthogcoords:", orthogcoords)
 
     write_xyzfile(elems,orthogcoords,"cell_orthog-original")
@@ -266,7 +283,8 @@ def molcrys(cif_file=None, xtl_file=None, xyz_file=None, cell_length=None, cell_
 
 
 
-    #Create ASH fragment object
+    #Create ASH fragment object from created cluster (spherical or super-cell)
+    ########################################
     blankline()
     print("Creating new Cluster fragment:")
     Cluster=Fragment(elems=cluster_elems, coords=cluster_coords, scale=chosenscale, tol=chosentol)
@@ -298,10 +316,16 @@ def molcrys(cif_file=None, xtl_file=None, xyz_file=None, cell_length=None, cell_
         print("Reordering fragment object: ", fragmentobject.Name)
         reordercluster(Cluster,fragmentobject)
         printdebug(fragmentobject.clusterfraglist)
+        
+        #Update element list in fragmentobject after reordering. Used later (DDEC)
+        fragcoords,fragelems=Cluster.get_coords_for_atoms(fragmentobject.clusterfraglist[0])
+        fragmentobject.Atoms=fragelems
         fragmentobject.print_infofile(str(fragmentobject.Name)+'.info')
     print_time_rel_and_tot(currtime, origtime, modulename='reorder fraglists')
     currtime=time.time()
     #TODO: after removing partial fragments and getting connectivity etc. Would be good to make MM cluster neutral
+
+
 
     #Add fragmentobject-info to Cluster fragment
     #Old slow code:
@@ -320,9 +344,13 @@ def molcrys(cif_file=None, xtl_file=None, xyz_file=None, cell_length=None, cell_
     except:
         shutil.rmtree('SPloop-files')
         os.mkdir('SPloop-files')
+    #########################################
 
 
+
+    ################################################
     # Calculate atom charges for each gas fragment. Updates atomcharges list inside Cluster fragment
+    ##################################
     if theory.__class__.__name__ == "ORCATheory":
 
 
@@ -427,6 +455,10 @@ def molcrys(cif_file=None, xtl_file=None, xyz_file=None, cell_length=None, cell_
                                              charges=Cluster.atomcharges, embedding='Elstat')
         QMMM_SP_calculation.run(nprocs=numcores)
 
+        #Keeping the GBWfile
+        if theory.__class__.__name__ == "ORCATheory":
+            mainfrag_gbwfile="last_mainfrag.gbw"
+            shutil.copy('orca-input.gbw', mainfrag_gbwfile)
 
         #Grab atomic charges for fragment.
         if theory.__class__.__name__ == "ORCATheory":
@@ -440,7 +472,7 @@ def molcrys(cif_file=None, xtl_file=None, xyz_file=None, cell_length=None, cell_
                 print("elemlist_mainfrag: ", elemlist_mainfrag)
                 atomcharges, molmoms, voldict = DDEC_calc(elems=elemlist_mainfrag, theory=QMtheory,
                                                           ncores=numcores, DDECmodel=chargemodel,
-                                                          molecule_spinmult=fragmentobjects[0].Mult,
+                                                          molecule_spinmult=fragmentobjects[0].Mult, molecule_charge=fragmentobjects[0].Charge,
                                                           calcdir="DDEC_fragment_SPloop" + str(SPLoopNum), gbwfile="orca-input.gbw")
             else:
                 atomcharges = grabatomcharges_ORCA(chargemodel, QMtheory.inputfilename + '.out')
@@ -478,79 +510,21 @@ def molcrys(cif_file=None, xtl_file=None, xyz_file=None, cell_length=None, cell_
     print("")
     print_time_rel_and_tot(currtime, origtime, modulename="SP iteration done")
     currtime=time.time()
+    
     #Now that charges are converged (for mainfrag and counterfrags ???).
     #Now derive LJ parameters ?? Important for DDEC-LJ derivation
     #Defining atomtypes in Cluster fragment for LJ interaction
-    if shortrangemodel=='UFF':
-        print("Using UFF forcefield for all elements")
-        for fragmentobject in fragmentobjects:
-            #fragmentobject.Elements
-            for el in fragmentobject.Elements:
-                print("UFF parameter for {} :".format(el, UFFdict[el]))
-
-        #Using UFF_ prefix before element
-        atomtypelist=['UFF_'+i for i in Cluster.elems]
-        atomtypelist_uniq = np.unique(atomtypelist).tolist()
-        #Create ASH forcefield file by looking up UFF parameters
-        with open('Cluster_forcefield.ff', 'w') as forcefile:
-            forcefile.write('#UFF Lennard-Jones parameters \n')
-            for atomtype in atomtypelist_uniq:
-                #Getting just element-par for UFFdict lookup
-                atomtype_el=atomtype.replace('UFF_','')
-                forcefile.write('LennardJones_i_R0 {}  {:12.6f}   {:12.6f}\n'.format(atomtype, UFFdict[atomtype_el][0],UFFdict[atomtype_el][1]))
-    #Modified UFF forcefield with 0 parameter on H atom (avoids repulsion)
-    elif shortrangemodel=='UFF_modH':
-        print("Using UFF forcefield with modified H-parameter (zero values for H element)")
-        #print("UFF parameters:", UFFdict)
-        for fragmentobject in fragmentobjects:
-            #fragmentobject.Elements
-            for el in fragmentobject.Elements:
-                print("UFF parameter for {} :".format(el, UFF_modH_dict[el]))
-
-        #Using UFF_ prefix before element
-        atomtypelist=['UFF_'+i for i in Cluster.elems]
-        atomtypelist_uniq = np.unique(atomtypelist).tolist()
-        #Create ASH forcefield file by looking up UFF parameters
-        with open('Cluster_forcefield.ff', 'w') as forcefile:
-            forcefile.write('#UFF Lennard-Jones parameters \n')
-            for atomtype in atomtypelist_uniq:
-                #Getting just element-par for UFFdict lookup
-                atomtype_el=atomtype.replace('UFF_','')
-                forcefile.write('LennardJones_i_R0 {}  {:12.6f}   {:12.6f}\n'.format(atomtype, UFF_modH_dict[atomtype_el][0],UFF_modH_dict[atomtype_el][1]))
-    elif shortrangemodel=='DDEC3' or shortrangemodel=='DDEC6':
-        print("Deriving DDEC Lennard-Jones parameters")
-        print("DDEC model :", shortrangemodel)
-
-        # for fragindex,fragmentobject in enumerate(fragmentobjects):
-        #    sfd=""
-
-        # atomcharges, molmoms, voldict
-        DDEC_to_LJparameters(elems, molmoms, voldict)
-
-    elif shortrangemodel=='manual':
-        print("shortrangemodel option: manual")
-        print("Using atomtypes for Cluster: MAN_X  where X is an element, e.g. MAN_O, MAN_C, MAN_H")
-        print("Will assume presence of ASH forcefield file called: Cluster_forcefield.ff")
-        print("Should contain Lennard-Jones entries for atomtypes MAN_X.")
-        print("File needs to be copied to scratch for geometry optimization job.")
-        #Using MAN prefix before element
-        atomtypelist=['MAN_'+i for i in Cluster.elems]
-
+    if theory.__class__.__name__ == "ORCATheory":
+        choose_shortrangemodel(Cluster,shortrangemodel,fragmentobjects,QMtheory,mainfrag_gbwfile,numcores,LJHparameters)
     else:
-        print("Undefined shortrangemodel")
-        exit()
+        choose_shortrangemodel(Cluster,shortrangemodel,fragmentobjects,QMtheory,"dummy",numcores,LJHparameters)
+
     print_time_rel_and_tot(currtime, origtime, modulename="LJ stuff done")
     currtime=time.time()
-    Cluster.update_atomtypes(atomtypelist)
-    print_time_rel_and_tot(currtime, origtime, modulename="update atomtypes")
-    currtime=time.time()
-
     #Adding Centralmainfrag to Cluster
     Cluster.add_centralfraginfo(Centralmainfrag)
-
     #Printing out Cluster fragment file
     Cluster.print_system('Cluster.ygg')
-
     #Cleanup
     #QMMM_SP_calculation.qm_theory.cleanup()
     print_time_rel_and_tot(currtime, origtime, modulename="final stuff")

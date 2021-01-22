@@ -16,7 +16,7 @@ import settings_solvation
 import constants
 import statistics
 import shutil
-import yggdrasill
+import ash
 import multiprocessing as mp
 import glob
 
@@ -33,8 +33,8 @@ def solvshell ( orcadir='', NumCores='', calctype='', orcasimpleinput_LL='',
     # for both states in case of single trajectory. Plus one might want to do either VIE, VEA or SpinState change
     #Hence defining in original py inputfile makes sense
 
-    #Yggdrasill dir (needed for init function and print_header below). Todo: remove
-    programdir=os.path.dirname(yggdrasill.__file__)
+    #ASH dir (needed for init function and print_header below). Todo: remove
+    programdir=os.path.dirname(ash.__file__)
     programversion=0.1
     blankline()
     print_solvshell_header(programversion,programdir)
@@ -824,8 +824,8 @@ def LRPolsnapshotcalc(args):
     # Get elems and coords from each Chemshell frament file
     # Todo: Change to XYZ-file read-in instead (if snapfiles have been converted)
     elems, coords = read_fragfile_xyz(snapshot)
-    # create Yggdrasill fragment
-    snap_frag = yggdrasill.Fragment(elems=elems, coords=coords)
+    # create Ash fragment
+    snap_frag = ash.Fragment(elems=elems, coords=coords)
     # QM and PE regions
     solute_elems = [elems[i] for i in solvsphere.soluteatomsA]
     solute_coords = [coords[i] for i in solvsphere.soluteatomsA]
@@ -875,40 +875,40 @@ def LRPolsnapshotcalc(args):
         exit()
 
     # Define Psi4 QMregion
-    Psi4QMpart_A_LR1 = yggdrasill.Psi4Theory(charge=solvsphere.ChargeA, mult=solvsphere.MultA, label=snapshot+'A_LR1',
+    Psi4QMpart_A_LR1 = ash.Psi4Theory(charge=solvsphere.ChargeA, mult=solvsphere.MultA, label=snapshot+'A_LR1',
                                          psi4settings=psi4dict, outputname=snapshot+'A_LR1.out', psi4memory=psi4memory,
                                          psi4functional=psi4_functional, runmode=psi4runmode, printsetting=False)
-    Psi4QMpart_B_LR1 = yggdrasill.Psi4Theory(charge=solvsphere.ChargeB, mult=solvsphere.MultB, label=snapshot+'B_LR1',
+    Psi4QMpart_B_LR1 = ash.Psi4Theory(charge=solvsphere.ChargeB, mult=solvsphere.MultB, label=snapshot+'B_LR1',
                                          psi4settings=psi4dict, outputname=snapshot+'B_LR1.out', psi4memory=psi4memory,
                                          psi4functional=psi4_functional, runmode=psi4runmode, printsetting=False)
 
-    Psi4QMpart_A_LR2 = yggdrasill.Psi4Theory(charge=solvsphere.ChargeA, mult=solvsphere.MultA, label=snapshot+'A_LR2',
+    Psi4QMpart_A_LR2 = ash.Psi4Theory(charge=solvsphere.ChargeA, mult=solvsphere.MultA, label=snapshot+'A_LR2',
                                              psi4settings=psi4dict, outputname=snapshot + 'A_LR2.out', psi4memory=psi4memory,
                                             psi4functional = psi4_functional, runmode = psi4runmode, printsetting = False)
-    Psi4QMpart_B_LR2 = yggdrasill.Psi4Theory(charge=solvsphere.ChargeB, mult=solvsphere.MultB, label=snapshot+'B_LR2',
+    Psi4QMpart_B_LR2 = ash.Psi4Theory(charge=solvsphere.ChargeB, mult=solvsphere.MultB, label=snapshot+'B_LR2',
                                              psi4settings=psi4dict, outputname=snapshot + 'B_LR2.out', psi4memory=psi4memory,
                                             psi4functional = psi4_functional, runmode = psi4runmode, printsetting = False)
 
     # Create PolEmbed theory object. fragment always defined with it
-    PolEmbed_SP_A_LR1 = yggdrasill.PolEmbedTheory(fragment=snap_frag, qm_theory=Psi4QMpart_A_LR1,
+    PolEmbed_SP_A_LR1 = ash.PolEmbedTheory(fragment=snap_frag, qm_theory=Psi4QMpart_A_LR1,
                                                   qmatoms=qmatoms_LR1, peatoms=peatoms_LR1, mmatoms=mmatoms_LR1,
                                                   pot_option=pot_option, potfilename=snapshot+'System_LR1',
                                                   pyframe=True, pot_create=True, PElabel_pyframe=PElabel_pyframe)
 
     # Note: pot_create=False for B since the embedding potential is the same
-    PolEmbed_SP_B_LR1 = yggdrasill.PolEmbedTheory(fragment=snap_frag, qm_theory=Psi4QMpart_B_LR1,
+    PolEmbed_SP_B_LR1 = ash.PolEmbedTheory(fragment=snap_frag, qm_theory=Psi4QMpart_B_LR1,
                                                   qmatoms=qmatoms_LR1, peatoms=peatoms_LR1, mmatoms=mmatoms_LR1,
                                                   pot_option=pot_option, potfilename=snapshot+'System_LR1',
                                                   pyframe=True, pot_create=False, PElabel_pyframe=PElabel_pyframe)
 
     # Create PolEmbed theory object. fragment always defined with it
-    PolEmbed_SP_A_LR2 = yggdrasill.PolEmbedTheory(fragment=snap_frag, qm_theory=Psi4QMpart_A_LR2,
+    PolEmbed_SP_A_LR2 = ash.PolEmbedTheory(fragment=snap_frag, qm_theory=Psi4QMpart_A_LR2,
                                                   qmatoms=qmatoms_LR2, peatoms=peatoms_LR2, mmatoms=mmatoms_LR2,
                                                   pot_option=pot_option, potfilename=snapshot+'System_LR2',
                                                   pyframe=True, pot_create=True, PElabel_pyframe=PElabel_pyframe)
 
     # Note: pot_create=False for B since the embedding potential is the same
-    PolEmbed_SP_B_LR2 = yggdrasill.PolEmbedTheory(fragment=snap_frag, qm_theory=Psi4QMpart_B_LR2,
+    PolEmbed_SP_B_LR2 = ash.PolEmbedTheory(fragment=snap_frag, qm_theory=Psi4QMpart_B_LR2,
                                                   qmatoms=qmatoms_LR2, peatoms=peatoms_LR2, mmatoms=mmatoms_LR2,
                                                   pot_option=pot_option, potfilename=snapshot+'System_LR2',
                                                   pyframe=True, pot_create=False, PElabel_pyframe=PElabel_pyframe)

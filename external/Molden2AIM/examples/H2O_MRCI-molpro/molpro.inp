@@ -1,0 +1,28 @@
+***, MR-CI for H2O
+
+r=0.957 angstrom
+theta=104.6 degree
+
+geometry={
+O;
+H1,O,r;
+H2,O,r,H1,theta}
+
+basis=cc-pvdz
+
+{hf;wf,10,1;}
+
+{multi;
+occ,4,1,2;closed,2;frozen,1;
+wf,10,1,0;}
+
+{ci;
+occ,4,1,2;closed,2;core,1;
+wf,10,1,0;
+natorb,2352.2;dm,2352.2;
+}
+
+put,molden,molpro.mol;orb,2352.2;
+
+---
+

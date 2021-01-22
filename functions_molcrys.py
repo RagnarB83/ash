@@ -1,6 +1,7 @@
 import numpy as np
 from functions_coords import *
 from functions_ORCA import *
+from elstructure_functions import *
 from ash import *
 import time
 
@@ -22,6 +23,9 @@ class Fragmenttype:
         #Keeping track of molmoms, voldict in case of DDEC
         self.molmoms=[]
         self.voldict=None
+        self.r0list=[]
+        self.epsilonlist=[]
+        self.atomtypelist=[]
 
         #Current atom charges defined for fragment. Charges ordered according to something
         self.charges=[]
@@ -56,6 +60,9 @@ class Fragmenttype:
             outfile.write("\n")
             outfile.write("Molmoms: {} \n".format(self.molmoms))
             outfile.write("Voldicts: {} \n".format(self.voldict))
+            outfile.write("R0 list: {} \n".format(self.r0list))
+            outfile.write("Epsilon list: {} \n".format(self.epsilonlist))
+            outfile.write("Atomtype list: {} \n".format(self.atomtypelist))
             outfile.write("\n")
             for al in self.all_atomcharges:
                 outfile.write(' '.join([str(i) for i in al]))
@@ -389,9 +396,10 @@ def frag_define(orthogcoords,elems,cell_vectors,fragments,cell_angles=None, cell
         def find_missing(lst):
             return [x for x in range(lst[0], lst[-1] + 1) if x not in lst]
 
-        if find_missing(all_flat) != []:
-            print("Missing number in sequence.")
-            print("Fragment definition incomplete")
+        if len(all_flat) > 0:
+            if find_missing(all_flat) != []:
+                print("Missing number in sequence.")
+                print("Fragment definition incomplete")
 
         return 1
     else:
@@ -421,6 +429,8 @@ def cellbasis(angles, edges):
 #Convert cell parameters to cell vectors. Currently only works for orthorhombic, alpha=beta=gamme=90.0
 #TODO: Delete
 def cellparamtovectors(cell_length,cell_angles):
+    print("cell_length :", cell_length)
+    print("cell_angles :", cell_angles)
     if cell_angles[0] == cell_angles[1] and cell_angles[2] == cell_angles[0] and cell_angles[0] == 90.0:
         cell_vectors=[[cell_length[0], 0.0, 0.0], [0.0, cell_length[1], 0.0],[0.0, 0.0, cell_length[2]]]
     else:
@@ -647,6 +657,7 @@ def read_ciffile(file):
     symmopgrab=False
     symmopgrab_oldsyntax=False
     cellunits=None
+    atomsitecolumns=[]
     with open(file) as f:
         for line in f:
             if 'cell_formula_units_Z' in line:
@@ -690,26 +701,42 @@ def read_ciffile(file):
                 if len(line.replace(' ','')) < 2:
                     fractgrab=False
                     print("Found all coordinates")
+                elif '#' in line:
+                    fractfrab=False
+                    print("Found all coordinates")
                 elif '_atom_site' not in line:
                     if 'loop' not in line:
-                        atomlabels.append(line.split()[0])
+                        atomlabelcolumn=int(atomsitecolumns.index("_atom_site_label"))
+                        #Grabbing x,y,z columns
+                        xcolumn=int(atomsitecolumns.index("_atom_site_fract_x"))
+                        ycolumn=int(atomsitecolumns.index("_atom_site_fract_y"))
+                        zcolumn=int(atomsitecolumns.index("_atom_site_fract_z"))
+                        atomlabels.append(line.split()[atomlabelcolumn])
+                        x_coord=float(line.split()[xcolumn].split('(')[0])
+                        y_coord=float(line.split()[ycolumn].split('(')[0])
+                        z_coord=float(line.split()[zcolumn].split('(')[0])
+                        coords.append([x_coord, y_coord, z_coord])                        
+                        
+                        #Disabled since reading atomsitecolumns option should be more robust
                         #Disabling since not always elems in column
                         secondcol=line.split()[1]
                         secondcolumns.append(secondcol)
                         #If second-column is proper float then this is fract_x, else trying next
-                        if is_string_float_withdecimal(secondcol.split('(')[0]):
-                            print(secondcol.split('(')[0])
-                            x_coord=float(line.split()[1].split('(')[0])
-                            y_coord=float(line.split()[2].split('(')[0])
-                            z_coord=float(line.split()[3].split('(')[0])
-                            coords.append([x_coord, y_coord, z_coord])
-                        else:
-                            x_coord=float(line.split()[2].split('(')[0])
-                            y_coord=float(line.split()[3].split('(')[0])
-                            z_coord=float(line.split()[4].split('(')[0])
-                            coords.append([x_coord, y_coord, z_coord])
+                        #if is_string_float_withdecimal(secondcol.split('(')[0]):
+                        #    print(secondcol.split('(')[0])
+                         #   x_coord=float(line.split()[1].split('(')[0])
+                         #   y_coord=float(line.split()[2].split('(')[0])
+                         #   z_coord=float(line.split()[3].split('(')[0])
+                         #   coords.append([x_coord, y_coord, z_coord])
+                        #else:
+                        #    x_coord=float(line.split()[2].split('(')[0])
+                        #    y_coord=float(line.split()[3].split('(')[0])
+                        #    z_coord=float(line.split()[4].split('(')[0])
+                        #    coords.append([x_coord, y_coord, z_coord])
             if 'data_' in line:
                 newmol = True
+            if '_atom_site_' in line:
+                atomsitecolumns.append(line.split()[0])
             if '_atom_site_fract_z' in line:
                 fractgrab=True
                 print("Grabbing coordinates")
@@ -717,6 +744,18 @@ def read_ciffile(file):
                 symmopgrab=True
             if '_symmetry_equiv_pos_as_xyz' in line:
                 symmopgrab_oldsyntax=True
+
+
+    #Checking if "_atom_site_symmetry_multiplicity" or "_atom_site_Wyckoff_symbol" in atom_site lines
+    #If so then we have more complicated symmettry, not coded yet.
+    #TODO: We should finish this at some point
+    if '_atom_site_symmetry_multiplicity' in atomsitecolumns or '_atom_site_site_symmetry_multiplicity' in atomsitecolumns:
+        print("Warning: site_symmetry_multiplicity information in file. May not be handled correctly. Check results...")
+    if '_atom_site_Wyckoff_symbol' in atomsitecolumns:
+        print("Wyckoff_symbols found in CIF-file. We do not handle this correctly. Exiting.")
+        print("Please use another format than CIF-file, e.g. XTL.")
+        exit()
+
 
     #Removing any numbers from atomlabels in order to get element information
     for atomlabel in atomlabels:
@@ -739,6 +778,10 @@ def read_ciffile(file):
 
     print("Symmetry operations found in CIF:", symmops)
     print("coords : ", coords)
+    if len(coords) == 0:
+        print("Found zero coordinates in CIF-file: {}. Something wrong with file. Exiting...".format(file))
+        exit()
+    print("Cell parameters:", cell_a, cell_b, cell_c, cell_alpha, cell_beta, cell_gamma)
     return [cell_a, cell_b, cell_c],[cell_alpha, cell_beta, cell_gamma],atomlabels,elems,coords,symmops,cellunits
 
 
@@ -880,8 +923,8 @@ def create_MMcluster(orthogcoords,elems,cell_vectors,sphereradius):
     print("Largest_cell_length: {} Å".format(largest_cell_length))
     #Simple equation to find out roughly how large the extended cell has to be to accommodate cluster-radius
     #Rounds up.
-    #Added extra cell
-    cell_expansion=math.ceil(sphereradius/largest_cell_length)+1
+    #Added extra cell. Nov 2020: Added another one because of XUQVAI.xtl
+    cell_expansion=math.ceil(sphereradius/largest_cell_length)+2
     print("Using cell expansion: [{},{},{}]".format(cell_expansion,cell_expansion,cell_expansion))
     extended_coords,extended_elems=cell_extend_frag(cell_vectors,orthogcoords,elems,[cell_expansion,cell_expansion,cell_expansion])
     #Write XYZ-file with orthogonal coordinates for cell
@@ -1019,7 +1062,7 @@ def reordercluster(fragment,fragmenttype,code_version='py'):
     
     
     print("Before reorder")
-    print(fraglists)
+    #print(fraglists)
     #exit()
     if len(fraglists) == 0:
         print(BC.FAIL, "Fragment lists for fragment-type are empty. Makes no sense (too small cluster radius?!). Exiting...", BC.END)
@@ -1042,6 +1085,9 @@ def reordercluster(fragment,fragmenttype,code_version='py'):
         ash.print_time_rel(timestampA, modulename='reorder_cluster julia')
     elif code_version=='py':
         print("Calling reorder_cluster py")
+        print("Importing scipy")
+        import scipy.spatial.distance
+        import scipy.optimize
         #print(fragmenttype.clusterfraglist[5])
         elems_frag_ref = np.array([fragment.elems[i] for i in fraglists[0]])
         coords_frag_ref = np.array([fragment.coords[i] for i in fraglists[0]])
@@ -1111,10 +1157,13 @@ def gasfragcalc_ORCA(fragmentobjects,Cluster,chargemodel,orcadir,orcasimpleinput
         atomlist=fragmentobject.clusterfraglist[0]
         fragcoords,fragelems=Cluster.get_coords_for_atoms(atomlist)
         write_xyzfile(fragelems, fragcoords, "fragment")
-        print("fragcoords:", fragcoords)
         gasfrag=Fragment(coords=fragcoords,elems=fragelems)
 
         print("Defined gasfrag:", gasfrag)
+        
+        
+        
+        
         #print(gasfrag.__dict__)
         #Creating ORCA theory object with fragment
 
@@ -1144,10 +1193,15 @@ def gasfragcalc_ORCA(fragmentobjects,Cluster,chargemodel,orcadir,orcasimpleinput
         if chargemodel == 'DDEC3' or chargemodel == 'DDEC6':
             #Calling DDEC_calc (calls chargemol)
             atomcharges, molmoms, voldict = DDEC_calc(elems=gasfrag.elems, theory=ORCASPcalculation,
-                                            ncores=NUMPROC, DDECmodel=chargemodel,molecule_spinmult=fragmentobject.Mult,
+                                            ncores=NUMPROC, DDECmodel=chargemodel, molecule_charge=fragmentobject.Charge,
+                                            molecule_spinmult=fragmentobject.Mult,
                                             calcdir="DDEC_fragment"+str(id), gbwfile="orca-input.gbw")
 
             print("atomcharges:", atomcharges)
+            
+            #Adding molmoms and voldict to fragmentobject
+            fragmentobject.molmoms=molmoms
+            fragmentobject.voldict=voldict
             #NOTE: We are not going to derive DDEC LJ parameters here but rather at end of SP loop.
         else:
             #Grab atomic charges for fragment.
@@ -1161,6 +1215,8 @@ def gasfragcalc_ORCA(fragmentobjects,Cluster,chargemodel,orcadir,orcasimpleinput
 
         #Updating charges inside mainfrag/counterfrag object
         fragmentobject.add_charges(atomcharges)
+        
+
         print_time_rel_and_tot(currtime, origtime, modulename='fragmentobject add charges')
         currtime = time.time()
         #Assign pointcharges to each atom of MM cluster.
@@ -1173,6 +1229,8 @@ def gasfragcalc_ORCA(fragmentobjects,Cluster,chargemodel,orcadir,orcasimpleinput
         shutil.copyfile(ORCASPcalculation.inputfilename + '.gbw', './SPloop-files/'+fragmentobject.Name+'-Gascalc' + '.gbw')
         if id ==0:
             shutil.copy(ORCASPcalculation.inputfilename + '.gbw', 'lastorbitals.gbw')
+        #Keeping copy of each fragment GBW file: fragment0.gbw, fragment1.gbw etc.
+        shutil.copy(ORCASPcalculation.inputfilename + '.gbw', 'fragment{}.gbw'.format(id))
         print_time_rel_and_tot(currtime, origtime, modulename='shutil stuff')
         currtime = time.time()
         #Clean up ORCA job.
@@ -1232,3 +1290,134 @@ def rmsd_list(listA,listB):
     for a, b in zip(listA, listB):
         sumsq += (a-b)**2.0
     return math.sqrt(sumsq/len(listA))
+
+
+
+def choose_shortrangemodel(Cluster,shortrangemodel,fragmentobjects,QMtheory,mainfrag_gbwfile,numcores,LJHparameters):
+    if shortrangemodel=='UFF':
+        print("Using UFF forcefield for all elements")
+        for fragmentobject in fragmentobjects:
+            #fragmentobject.Elements
+            for el in fragmentobject.Elements:
+                print("UFF parameter for {} :".format(el, UFFdict[el]))
+
+        #Using UFF_ prefix before element
+        atomtypelist=['UFF_'+i for i in Cluster.elems]
+        atomtypelist_uniq = np.unique(atomtypelist).tolist()
+        #Adding atomtypes to Cluster object
+        Cluster.atomtypes=atomtypelist
+        #Create ASH forcefield file by looking up UFF parameters
+        with open('Cluster_forcefield.ff', 'w') as forcefile:
+            forcefile.write('#UFF Lennard-Jones parameters \n')
+            for atomtype in atomtypelist_uniq:
+                #Getting just element-par for UFFdict lookup
+                atomtype_el=atomtype.replace('UFF_','')
+                forcefile.write('LennardJones_i_R0 {}  {:12.6f}   {:12.6f}\n'.format(atomtype, UFFdict[atomtype_el][0],UFFdict[atomtype_el][1]))
+    #Modified UFF forcefield with 0 parameter on H atom (avoids repulsion)
+    elif shortrangemodel=='UFF_modH':
+        print("Using UFF forcefield with modified H-parameter")
+        print("H parameters :", LJHparameters)
+        print("")
+        UFFdict_Hzero=copy.deepcopy(UFFdict)
+        UFFdict_Hzero['H'] = [LJHparameters[0], LJHparameters[1]]
+        
+        #print("UFF parameters:", UFFdict)
+        for fragmentobject in fragmentobjects:
+            #fragmentobject.Elements
+            for el in fragmentobject.Elements:
+                print("UFF parameter for {} :".format(el, UFFdict_Hzero[el]))
+
+        #Using UFF_ prefix before element
+        atomtypelist=['UFF_'+i for i in Cluster.elems]
+        #Adding atomtypes to Cluster object
+        Cluster.atomtypes=atomtypelist
+        atomtypelist_uniq = np.unique(atomtypelist).tolist()
+        #Create ASH forcefield file by looking up UFF parameters
+        with open('Cluster_forcefield.ff', 'w') as forcefile:
+            forcefile.write('#UFF Lennard-Jones parameters \n')
+            for atomtype in atomtypelist_uniq:
+                #Getting just element-par for UFFdict lookup
+                atomtype_el=atomtype.replace('UFF_','')
+                forcefile.write('LennardJones_i_R0 {}  {:12.6f}   {:12.6f}\n'.format(atomtype, UFFdict_Hzero[atomtype_el][0],UFFdict_Hzero[atomtype_el][1]))
+    
+    elif shortrangemodel=='DDEC3' or shortrangemodel=='DDEC6':
+        print("Deriving DDEC Lennard-Jones parameters")
+        print("DDEC model :", shortrangemodel)
+
+        #Getting R0 and epsilon for mainfrag
+        #fragmentobjects[0].r0list, fragmentobjects[0].epsilonlist = DDEC_to_LJparameters(elems, molmoms, voldict)
+
+        #Getting R0 and epsilon for counterfrags
+        for fragindex,fragmentobject in enumerate(fragmentobjects):
+            print("Fragmentobject with fragindex: ", fragindex)
+            print("fragmentobject Atoms:", fragmentobject.Atoms)
+            print("fragmentobject molmoms:", fragmentobject.molmoms)
+            print("fragmentobject voldict:", fragmentobject.voldict)
+            
+            #If molmoms and voldict not already calculated (could be if chargemodel is DDEC)
+            if len(fragmentobject.molmoms) == 0:
+                print("No molmoms available. Calculating.")
+                
+                #Using last mainfrag GBW-file (from SC-QM/MM)       
+                if fragindex==0:
+                    #gbwfile=mainfrag_gbwfile
+                    #Trying to use gas fragment instead. Non-polarized electron density
+                    print("USING NONPOLARIZED DENSITY FOR MAINFRAG")
+                    gbwfile="fragment{}.gbw".format(fragindex)
+                else:
+                    #Use GBWfile created by gasfragcalc_ORCA (non-polarized)
+                    gbwfile="fragment{}.gbw".format(fragindex)
+                
+                print("Using GBW file: ", gbwfile)
+                DDECcharges, fragmentobject.molmoms, fragmentobject.voldict = DDEC_calc(elems=fragmentobject.Atoms, theory=QMtheory,
+                                                        ncores=numcores, DDECmodel=shortrangemodel,
+                                                        molecule_spinmult=fragmentobject.Mult, molecule_charge=fragmentobject.Charge,
+                                                        calcdir="DDEC_LJcalc_fragment_{}".format(fragmentobject.Name), gbwfile=gbwfile)
+                print("DDECcharges:", DDECcharges)
+            #Getting R0 and epsilon
+            fragmentobject.r0list, fragmentobject.epsilonlist = DDEC_to_LJparameters(fragmentobject.Atoms, fragmentobject.molmoms, fragmentobject.voldict)
+            #Creating list of atomtypes for fragmenttype
+            fragmentobject.atomtypelist = ["DDEC_f{}_{}_{}".format(fragindex,el,m) for m,el in enumerate(fragmentobject.Atoms)]
+            print("fragmentobject.atomtypelist:", fragmentobject.atomtypelist)
+
+        #Create full atomtypelist to be added to Cluster object
+        atomtypelist = [item for frag in fragmentobjects for item in frag.atomtypelist]        
+        full_list=[None]*Cluster.numatoms
+        for fragmentobject in fragmentobjects:
+            for fraglist in fragmentobject.clusterfraglist:
+                for atomid,attype in zip(fraglist,atomtypelist):
+                    #print("atomid : {} and attype: {}".format(atomid,attype))
+                    full_list[atomid] = attype 
+        if None in full_list:
+            print("problem")
+            print(full_list)
+            exit()
+        Cluster.atomtypes=full_list
+
+            
+        print("Using {}-derived forcefield for all elements".format(shortrangemodel))
+        #atomtypelist_uniq = np.unique(atomtypelist).tolist()
+        #print("atomtypelist_uniq:", atomtypelist_uniq)
+        #Create ASH forcefield file by looking up UFF parameters
+        with open('Cluster_forcefield.ff', 'w') as forcefile:
+            forcefile.write('#{} Lennard-Jones parameters \n'.format(shortrangemodel))
+            #for atomtype in atomtypelist_uniq:
+            for fragmentobject in fragmentobjects:
+                for atomtype,r0,eps in zip(fragmentobject.atomtypelist,fragmentobject.r0list,fragmentobject.epsilonlist):
+                    forcefile.write('LennardJones_i_R0 {}  {:12.6f}   {:12.6f}\n'.format(atomtype, r0, eps))
+
+
+    elif shortrangemodel=='manual':
+        print("shortrangemodel option: manual")
+        print("Using atomtypes for Cluster: MAN_X  where X is an element, e.g. MAN_O, MAN_C, MAN_H")
+        print("Will assume presence of ASH forcefield file called: Cluster_forcefield.ff")
+        print("Should contain Lennard-Jones entries for atomtypes MAN_X.")
+        print("File needs to be copied to scratch for geometry optimization job.")
+        #Using MAN prefix before element
+        atomtypelist=['MAN_'+i for i in Cluster.elems]
+        
+        #Adding atomtypes to Cluster object
+        Cluster.atomtypes=atomtypelist
+    else:
+        print("Undefined shortrangemodel")
+        exit()

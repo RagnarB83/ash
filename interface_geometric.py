@@ -14,7 +14,7 @@ import time
 # bond,angle and dihedral constraints work. If only atom indices provided and constrainvalue is False then constraint at current position
 # If constrainvalue=True then last entry should be value of constraint
 
-def geomeTRICOptimizer(theory=None,fragment=None, coordsystem='tric', frozenatoms=[], constraintsinputfile=None, constraints=None, 
+def geomeTRICOptimizer(theory=None,fragment=None, coordsystem='hdlc', frozenatoms=[], constraintsinputfile=None, constraints=None, 
                        constrainvalue=False, maxiter=50, ActiveRegion=False, actatoms=[], convergence_setting=None, conv_criteria=None):
     """
     Wrapper function around geomeTRIC code. Take theory and fragment info from ASH
@@ -23,10 +23,20 @@ def geomeTRICOptimizer(theory=None,fragment=None, coordsystem='tric', frozenatom
     Active-atom coords (e.g. only QM region) are only provided to geomeTRIC during optimization while rest is frozen.
     Needed as discussed here: https://github.com/leeping/geomeTRIC/commit/584869707aca1dbeabab6fe873fdf139d384ca66#diff-2af7dd72b77dac63cea64c052a549fe0
     """
-    
+
+    if fragment.numatoms == 1:
+        print("System has 1 atoms.")
+        print("Doing single-point energy calculation instead")
+        energy = Singlepoint(fragment=fragment, theory=theory)
+        return energy
+        #E = self.theory.run(current_coords=fragment.coords, elems=fragment.elems, Grad=False)
+
+
+
     try:
         os.remove('geometric_OPTtraj.log')
         os.remove('geometric_OPTtraj.xyz')
+        os.remove('geometric_OPTtraj_Full.xyz')
         os.remove('constraints.txt')
         os.remove('initialxyzfiletric.xyz')
         shutil.rmtree('geometric_OPTtraj.tmp')
@@ -35,7 +45,6 @@ def geomeTRICOptimizer(theory=None,fragment=None, coordsystem='tric', frozenatom
     except:
         pass
     
-    # TODO:
 
     #NOTE: We are now sorting actatoms and qmatoms list both here and in QM/MM object
     #: Alternatively we could sort the actatoms list and qmatoms list in QM/MM object before doing anything. Need to check carefully though....
@@ -96,16 +105,16 @@ def geomeTRICOptimizer(theory=None,fragment=None, coordsystem='tric', frozenatom
         print("Number of active atoms:", len(actatoms))
         actcoords, actelems = fragment.get_coords_for_atoms(actatoms)
         
-        #Writing act-region coords (only) of Yggdrasill fragment to disk as XYZ file and reading into geomeTRIC
+        #Writing act-region coords (only) of ASH fragment to disk as XYZ file and reading into geomeTRIC
         write_xyzfile(actelems, actcoords, 'initialxyzfiletric')
         mol_geometric_frag=geometric.molecule.Molecule("initialxyzfiletric.xyz")
     else:
-        #Write coordinates from Yggdrasill fragment to disk as XYZ-file and reading into geomeTRIC
+        #Write coordinates from ASH fragment to disk as XYZ-file and reading into geomeTRIC
         fragment.write_xyzfile("initialxyzfiletric.xyz")
         mol_geometric_frag=geometric.molecule.Molecule("initialxyzfiletric.xyz")
 
-    #Defining Yggdrasill engine class used to communicate with geomeTRIC
-    class Yggdrasillengineclass:
+    #Defining ASH engine class used to communicate with geomeTRIC
+    class ASHengineclass:
         def __init__(self,geometric_molf, theory, ActiveRegion=False, actatoms=None):
             #Defining M attribute of engine object as geomeTRIC Molecule object
             self.M=geometric_molf
@@ -147,7 +156,7 @@ def geomeTRICOptimizer(theory=None,fragment=None, coordsystem='tric', frozenatom
 
                 #PRINTING ACTIVE GEOMETRY IN EACH GEOMETRIC ITERATION
                 print("Current geometry (Å) in step {} (active region)".format(self.iteration_count))
-                print("---------------------------------------------------")
+                print("-------------------------------------------------")
                 print_coords_for_atoms(self.full_current_coords, fragment.elems, self.actatoms)
 
                 #Request Engrad calc for full system
@@ -212,7 +221,7 @@ def geomeTRICOptimizer(theory=None,fragment=None, coordsystem='tric', frozenatom
         with open("constraints.txt", 'a') as confile:
             confile.write('$freeze\n')
             for frozat in frozenatoms:
-                #Changing from zero-indexing (Yggdrasill) to 1-indexing (geomeTRIC)
+                #Changing from zero-indexing (ASH) to 1-indexing (geomeTRIC)
                 frozenatomindex=frozat+1
                 confile.write('xyz {}\n'.format(frozenatomindex))
     #Bond constraints
@@ -296,8 +305,8 @@ def geomeTRICOptimizer(theory=None,fragment=None, coordsystem='tric', frozenatom
 
 
 
-    #Defining Yggdrasill engine object containing geometry and theory. ActiveRegion boolean passed.
-    ashengine = Yggdrasillengineclass(mol_geometric_frag,theory, ActiveRegion=ActiveRegion, actatoms=actatoms)
+    #Defining ASHengineclass engine object containing geometry and theory. ActiveRegion boolean passed.
+    ashengine = ASHengineclass(mol_geometric_frag,theory, ActiveRegion=ActiveRegion, actatoms=actatoms)
     #Defining args object, containing engine object
     args=geomeTRICArgsObject(ashengine,constraintsfile,coordsys=coordsystem, maxiter=maxiter, conv_criteria=conv_criteria)
 
@@ -324,8 +333,11 @@ def geomeTRICOptimizer(theory=None,fragment=None, coordsystem='tric', frozenatom
 
     write_XYZ_for_atoms(fragment.coords, fragment.elems, actatoms, "Fragment-optimized_Active")
 
-    print("TO BE ADDED HERE: Internal coordinate table (bond-lengths etc.) for optimized geometry")
+    print_internal_coordinate_table(fragment,actatoms=actatoms)
 
     blankline()
     #Now returning final energy
+    #TODO: Return dictionary of energy, gradient, coordinates etc, coordinates along trajectory ??
+    
+    
     return ashengine.energy
