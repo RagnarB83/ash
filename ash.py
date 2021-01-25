@@ -254,7 +254,8 @@ def Singlepoint(fragment=None, theory=None, Grad=False):
 
 #Stripped down version of Singlepoint function for Singlepoint_parallel
 def Single_par(list):
-    theory=list[0]
+    #Creating new copy of theory to prevent Brokensym feature from being deactivated
+    theory=copy.deepcopy(list[0])
     fragment=list[1]
     #Making label flexible. Can be tuple but inputfilename is converted to string below
     label=list[2]
@@ -311,7 +312,7 @@ def Singlepoint_parallel(fragments=None, theories=None, numcores=None):
     if len(theories) == 1:
         print("Case: Multiple fragments but one theory")
         print("Making copy of theory object")
-        theory = copy.copy(theories[0])
+        theory = theories[0]
         results = pool.map(Single_par, [[theory,fragment, fragment.label] for fragment in fragments])
         pool.close()
         print("Calculations are done")
@@ -3249,9 +3250,8 @@ class SpinProjectionTheory:
     def __init__(self, fragment=None, theory1=None, theory2=None, charge=None, mult=None, printlevel=2, reuseorbs=True,
                  label=None, jobtype=None, localspins=None):
         print("Creating SpinProjectionTheory object. Jobtype: ", jobtype)
-        #Make copies of theory, otherwise problem when running parallel and Brokensym
-        self.theory1=copy.copy(theory1)
-        self.theory2=copy.copy(theory2)
+        self.theory1=theory1
+        self.theory2=theory2
         self.charge=charge
         self.mult=mult
         self.printlevel=printlevel
