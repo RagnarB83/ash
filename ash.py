@@ -3249,8 +3249,9 @@ class SpinProjectionTheory:
     def __init__(self, fragment=None, theory1=None, theory2=None, charge=None, mult=None, printlevel=2, reuseorbs=True,
                  label=None, jobtype=None, localspins=None):
         print("Creating SpinProjectionTheory object. Jobtype: ", jobtype)
-        self.theory1=theory1
-        self.theory2=theory2
+        #Make copies of theory, otherwise problem when running parallel and Brokensym
+        self.theory1=copy.copy(theory1)
+        self.theory2=copy.copy(theory2)
         self.charge=charge
         self.mult=mult
         self.printlevel=printlevel
