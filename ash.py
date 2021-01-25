@@ -261,8 +261,9 @@ def Single_par(list):
     
     #Creating separate inputfilename using label
     #Removing . in inputfilename as ORCA can get confused
+    #print("theory:", theory)
     theory.inputfilename=''.join([str(i) for i in list[2]]).replace('.','_')
-    
+    #print("theory.inputfilename:", theory.inputfilename)
     if label is None:
         print("No label provided to fragment or theory objects. This is required to distinguish between calculations ")
         print("Exiting...")
@@ -3240,8 +3241,109 @@ class DaltonTheory:
             exit()
         return self.energy
 
-#ORCA Theory object. Fragment object is optional. Only used for single-points.
 
+#SpinProjectionTheory. Combining energies from two theory levels to give spin-projected energy
+#Example: Noodleman, Yamaguchi spin projection
+class SpinProjectionTheory:
+    def __init__(self, fragment=None, theory1=None, theory2=None, charge=None, mult=None, printlevel=2, reuseorbs=True,
+                 label=None, jobtype=None, localspins=None):
+        print("Creating SpinProjectionTheory object. Jobtype: ", jobtype)
+        self.theory1=theory1
+        self.theory2=theory2
+        self.charge=charge
+        self.mult=mult
+        self.printlevel=printlevel
+        self.label=label
+        self.reuseorbs=reuseorbs
+        #This is an inputfilename that may be set externally (Singlepoint_par)
+        self.inputfilename="X"
+        
+        self.fragment=fragment
+        self.jobtype=jobtype
+        if self.jobtype == "Yamaguchi" or self.jobtype =="Noodleman":
+            if localspins == None:
+                print("Yamaguchi/Noodleman spin projection requires localspins keyword (list of local spins). Exiting.")
+                exit()
+            else:
+                self.Spin_A=localspins[0]
+                self.Spin_B=localspins[1]
+                self.Spin_HS=self.Spin_A+self.Spin_B
+                self.Spin_LS=abs(self.Spin_A-self.Spin_B)
+        else:
+            print("Unknown option")
+            exit()
+
+    
+    #Run function. Takes coords, elems etc. arguments and computes E or E+G.
+    def run(self, current_coords=None, elems=None, Grad=False, Hessian=False, PC=False, nprocs=None ):
+        print(BC.OKBLUE,BC.BOLD, "------------RUNNING SPINPROJECTIONTHEORY INTERFACE-------------", BC.END)
+
+        
+        #Changing inputfilename of theory1 and theory2. Must be done here
+        self.theory1.inputfilename=self.inputfilename+"spinprojtheory1"
+        self.theory2.inputfilename=self.inputfilename+"spinprojtheory2"
+        #theory2 will read MOs from theory1 by default
+        if self.reuseorbs is True:
+            self.theory2.moreadfile=self.theory1.inputfilename+".gbw"
+        
+        
+        energy1 = self.theory1.run(current_coords=current_coords, elems=elems, PC=PC, nprocs=nprocs, Grad=Grad)
+        energy2 = self.theory2.run(current_coords=current_coords, elems=elems, PC=PC, nprocs=nprocs, Grad=Grad)
+
+        if self.jobtype == "Yamaguchi":
+            print("Yamaguchi spin projection")
+            print("Assuming theory1 is High-spin state and theory2 is Broken-symmetry state.")
+            HSenergy=energy1
+            BSenergy=energy2 
+            HS_S2=grab_spin_expect_values_ORCA(self.theory1.inputfilename+'.out')
+            BS_S2=grab_spin_expect_values_ORCA(self.theory2.inputfilename+'.out')
+            
+            J=-1*(HSenergy-BSenergy)/(HS_S2-BS_S2)
+            J_kcal=J*constants.harkcal
+            J_cm=J*constants.hartocm
+            print("High-spin state (M_S = {}) energy: {}".format((self.theory1.mult-1)/2, HSenergy))
+            print("Broken-symmetry state (M_S = {}) energy: {}".format((self.theory2.mult-1)/2, BSenergy))
+            print("<S**2>(High-Spin):", HS_S2)
+            print("<S**2>(BS):", BS_S2)
+            print("J coupling constant: {} Eh".format(J))
+            print("J coupling constant: {} kcal/Mol".format(J_kcal))
+            print("J coupling constant: {} cm**-1".format(J_cm))
+            
+        elif self.jobtype == "Noodleman":
+            print("Noodleman spin projection")
+            print("Assuming theory1 is High-spin state and theory2 is Broken-symmetry state.")
+            HSenergy=energy1
+            BSenergy=energy2
+            smax=self.Spin_HS
+            J=-1*(HSenergy-BSenergy)/(smax)**2
+            J_kcal=J*constants.harkcal
+            J_cm=J*constants.hartocm
+            print("High-spin state (M_S = {}) energy: {}".format(smax, HSenergy))
+            print("Broken-symmetry state (M_S = {}) energy: {}".format((self.theory2.mult-1)/2, BSenergy))
+            print("Smax : ", smax)
+            print("J coupling constant: {} Eh".format(J))
+            print("J coupling constant: {} kcal/Mol".format(J_kcal))
+            print("J coupling constant: {} cm**-1".format(J_cm))
+
+        #Now  calculate new E of LS state from J
+        #Projected energy of low-spin state
+        #Lande formula: E(S) = -J[S(S+1)-SA(SA+1)-SB(SB+1)]
+        #Multiple of J for HS and LS states
+        Jspinmultiple_HS=self.Spin_HS*(self.Spin_HS+1)-self.Spin_A*(self.Spin_A+1)-self.Spin_B*(self.Spin_B+1)
+        Jspinmultiple_LS=self.Spin_LS*(self.Spin_LS+1)-self.Spin_A*(self.Spin_A+1)-self.Spin_B*(self.Spin_B+1)
+        #Energy difference between HS and LS in multiples of J
+        Jmultiple_HSLS=Jspinmultiple_HS-Jspinmultiple_LS
+        print("Jmultiple_HSLS:", Jmultiple_HSLS)
+        print("{}J : {}".format(Jmultiple_HSLS,Jmultiple_HSLS*J))
+        
+        #Final energy of LS state by using J-multiple and energy of HS state
+        E_proj=HSenergy+Jmultiple_HSLS*J
+        print("Projected energy of state S={} state : {}".format(self.Spin_LS,E_proj))
+        finalE=E_proj
+        
+        return finalE
+    
+#ORCA Theory object. Fragment object is optional. Only used for single-points.
 class ORCATheory:
     def __init__(self, orcadir=None, fragment=None, charge=None, mult=None, orcasimpleinput='', printlevel=2, extrabasisatoms=None, extrabasis=None,
                  orcablocks='', extraline='', brokensym=None, HSmult=None, atomstoflip=None, nprocs=1, label=None, moreadfile=None):

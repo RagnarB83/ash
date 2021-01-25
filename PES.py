@@ -1643,7 +1643,7 @@ def delete_wrong_det(file,reference_mult):
 # Memory for WFoverlap in MB. Hardcoded
 def PhotoElectronSpectrum(theory=None, fragment=None, Initialstate_charge=None, Initialstate_mult=None,
                           Ionizedstate_charge=None, Ionizedstate_mult=None, numionstates=None, path_wfoverlap=None, tda=True,
-                          brokensym=False, HSmult=None, atomstoflip=None, initialorbitalfiles=None, Densities='SCF', densgridvalue=100,
+                          brokensym=False, HSmult=None, atomstoflip=None, initialorbitalfiles=None, Densities='None', densgridvalue=100,
                           CAS=False, CAS_Initial=None, CAS_Final = None, memory=40000, numcores=1, noDyson=False, CASCI=False, MRCI=False, MREOM=False,
                           MRCI_Initial=None, MRCI_Final = None, tprintwfvalue=1e-6, MRCI_CASCI_Final=True, EOM=False, label=None, check_stability=True):
     blankline()

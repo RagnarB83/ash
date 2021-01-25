@@ -308,6 +308,15 @@ def orbitalgrab(file):
     return bands_alpha, bands_beta, hftyp
 
 
+#Grab <S**2> expectation values from outputfile
+def grab_spin_expect_values_ORCA(file):
+    S2value=None
+    with open(file) as f:
+        for line in f:
+            #Note: if flip-spin job(line appears twice), then we take the latter
+            if 'Expectation value of <S**2>' in line:
+                S2value=float(line.split()[-1])
+        return S2value
 
 
 #Function to grab masses and elements from ORCA Hessian file
