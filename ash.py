@@ -310,7 +310,8 @@ def Singlepoint_parallel(fragments=None, theories=None, numcores=None):
     #Case: 1 theory, multiple fragments
     if len(theories) == 1:
         print("Case: Multiple fragments but one theory")
-        theory = theories[0]
+        print("Making copy of theory object")
+        theory = copy.copy(theories[0])
         results = pool.map(Single_par, [[theory,fragment, fragment.label] for fragment in fragments])
         pool.close()
         print("Calculations are done")
