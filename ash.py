@@ -275,7 +275,7 @@ def Single_par(list):
     print(BC.WARNING,"Doing single-point Energy job on fragment. Formula: {} Label: {} ".format(fragment.prettyformula,fragment.label), BC.END)
     print("\n\nProcess ID {} is running calculation with label: {} \n\n".format(mp.current_process(),label))
 
-    energy = theory.run(current_coords=coords, elems=elems)
+    energy = theory.run(current_coords=coords, elems=elems, label=label)
     print("Energy: ", energy)
     # Now adding total energy to fragment
     fragment.energy = energy
@@ -3276,7 +3276,7 @@ class SpinProjectionTheory:
 
     
     #Run function. Takes coords, elems etc. arguments and computes E or E+G.
-    def run(self, current_coords=None, elems=None, Grad=False, Hessian=False, PC=False, nprocs=None ):
+    def run(self, current_coords=None, elems=None, Grad=False, Hessian=False, PC=False, nprocs=None, label=None ):
         print(BC.OKBLUE,BC.BOLD, "------------RUNNING SPINPROJECTIONTHEORY INTERFACE-------------", BC.END)
 
         
@@ -3339,7 +3339,7 @@ class SpinProjectionTheory:
         
         #Final energy of LS state by using J-multiple and energy of HS state
         E_proj=HSenergy+Jmultiple_HSLS*J
-        print("Projected energy of state S={} state : {}".format(self.Spin_LS,E_proj))
+        print("Projected energy of state S={} (label: {}) state : {}".format(self.Spin_LS,label,E_proj))
         finalE=E_proj
         
         return finalE
