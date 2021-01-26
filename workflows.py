@@ -2361,6 +2361,9 @@ def calc_surface_fromXYZ(xyzdir=None, theory=None, dimension=None, resultfile=No
                 print("Dictionary not complete!")
                 print("len surfacedictionary:", len(surfacedictionary))
                 print("totalnumpoints:", totalnumpoints)
+
+            #Write final surface to file
+            write_surfacedict_to_file(surfacedictionary,"surface_results.txt", dimension=dimension)
         elif scantype=='Relaxed':
             print("calc_surface_fromXYZ Relaxed option not possible in parallel mode yet. Exiting")
             exit()
