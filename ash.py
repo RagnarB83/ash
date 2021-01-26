@@ -254,7 +254,8 @@ def Singlepoint(fragment=None, theory=None, Grad=False):
 
 #Stripped down version of Singlepoint function for Singlepoint_parallel
 def Single_par(list):
-    #Creating new copy of theory to prevent Brokensym feature from being deactivated
+    #Creating new copy of theory to prevent Brokensym feature from being deactivated by each run
+    #NOTE: Alternatively we can add an if-statement inside orca.run
     theory=copy.deepcopy(list[0])
     fragment=list[1]
     #Making label flexible. Can be tuple but inputfilename is converted to string below
@@ -269,7 +270,6 @@ def Single_par(list):
         print("No label provided to fragment or theory objects. This is required to distinguish between calculations ")
         print("Exiting...")
         exit(1)
-
 
     coords = fragment.coords
     elems = fragment.elems
@@ -3288,40 +3288,40 @@ class SpinProjectionTheory:
         if self.reuseorbs is True:
             self.theory2.moreadfile=self.theory1.inputfilename+".gbw"
         
-        
-        energy1 = self.theory1.run(current_coords=current_coords, elems=elems, PC=PC, nprocs=nprocs, Grad=Grad)
-        energy2 = self.theory2.run(current_coords=current_coords, elems=elems, PC=PC, nprocs=nprocs, Grad=Grad)
+        HSenergy = self.theory1.run(current_coords=current_coords, elems=elems, PC=PC, nprocs=nprocs, Grad=Grad)
+        BSenergy = self.theory2.run(current_coords=current_coords, elems=elems, PC=PC, nprocs=nprocs, Grad=Grad)
 
+        HS_S2=grab_spin_expect_values_ORCA(self.theory1.inputfilename+'.out')
+        BS_S2=grab_spin_expect_values_ORCA(self.theory2.inputfilename+'.out')
+
+        print("Spin coupling analysis")
+        print("Spin Hamiltonian form: H= -2J*S_A*S_B")
+        print("Local spins are: S_A = {}  S_B = {}", localspins[0],localspins[1])
+        print("Assuming theory1 is High-spin state and theory2 is Broken-symmetry state.")
+        print("High-spin state (M_S = {}) energy: {}".format((self.theory1.mult-1)/2, HSenergy))
+        print("Broken-symmetry state (M_S = {}) energy: {}".format((self.theory2.mult-1)/2, BSenergy))
+        print("<S**2>(High-Spin):", HS_S2)
+        print("<S**2>(BS):", BS_S2)
+        if BSenergy < HSenergy:
+            print("System is ANTIFERROMAGNETIC")
+        else:
+            print("System is FERROMAGNETIC")
+        print("")
         if self.jobtype == "Yamaguchi":
             print("Yamaguchi spin projection")
-            print("Assuming theory1 is High-spin state and theory2 is Broken-symmetry state.")
-            HSenergy=energy1
-            BSenergy=energy2 
-            HS_S2=grab_spin_expect_values_ORCA(self.theory1.inputfilename+'.out')
-            BS_S2=grab_spin_expect_values_ORCA(self.theory2.inputfilename+'.out')
-            
             J=-1*(HSenergy-BSenergy)/(HS_S2-BS_S2)
             J_kcal=J*constants.harkcal
             J_cm=J*constants.hartocm
-            print("High-spin state (M_S = {}) energy: {}".format((self.theory1.mult-1)/2, HSenergy))
-            print("Broken-symmetry state (M_S = {}) energy: {}".format((self.theory2.mult-1)/2, BSenergy))
-            print("<S**2>(High-Spin):", HS_S2)
-            print("<S**2>(BS):", BS_S2)
             print("J coupling constant: {} Eh".format(J))
             print("J coupling constant: {} kcal/Mol".format(J_kcal))
             print("J coupling constant: {} cm**-1".format(J_cm))
             
         elif self.jobtype == "Noodleman":
             print("Noodleman spin projection")
-            print("Assuming theory1 is High-spin state and theory2 is Broken-symmetry state.")
-            HSenergy=energy1
-            BSenergy=energy2
             smax=self.Spin_HS
             J=-1*(HSenergy-BSenergy)/(smax)**2
             J_kcal=J*constants.harkcal
             J_cm=J*constants.hartocm
-            print("High-spin state (M_S = {}) energy: {}".format(smax, HSenergy))
-            print("Broken-symmetry state (M_S = {}) energy: {}".format((self.theory2.mult-1)/2, BSenergy))
             print("Smax : ", smax)
             print("J coupling constant: {} Eh".format(J))
             print("J coupling constant: {} kcal/Mol".format(J_kcal))
