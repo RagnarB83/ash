@@ -3453,7 +3453,7 @@ class ORCATheory:
     
     #Run function. Takes coords, elems etc. arguments and computes E or E+G.
     def run(self, current_coords=None, current_MM_coords=None, MMcharges=None, qm_elems=None,
-            elems=None, Grad=False, Hessian=False, PC=False, nprocs=None ):
+            elems=None, Grad=False, Hessian=False, PC=False, nprocs=None, label=None ):
         print(BC.OKBLUE,BC.BOLD, "------------RUNNING ORCA INTERFACE-------------", BC.END)
         #Coords provided to run or else taken from initialization.
         #if len(current_coords) != 0:
@@ -3483,6 +3483,7 @@ class ORCATheory:
         if nprocs==None:
             nprocs=self.nprocs
         print("Running ORCA object with {} cores available".format(nprocs))
+        print("Job label:", label)
 
 
         print("Creating inputfile:", self.inputfilename+'.inp')
