@@ -2348,7 +2348,7 @@ class PolEmbedTheory:
 #TODO NOTE: If we add init arguments, remember to update Numfreq QMMM option as it depends on the keywords
 class QMMMTheory:
     def __init__(self, qm_theory=None, qmatoms=None, fragment=None, mm_theory=None , charges=None,
-                 embedding="Elstat", printlevel=2, nprocs=1, actatoms=None, frozenatoms=None):
+                 embedding="Elstat", printlevel=2, nprocs=1, actatoms=None, frozenatoms=None, excludeboundaryatomlist=None):
 
         print(BC.WARNING,BC.BOLD,"------------Defining QM/MM object-------------", BC.END)
 
@@ -2501,7 +2501,7 @@ class QMMMTheory:
 
             #Check if we need linkatoms by getting boundary atoms dict:
             blankline()
-            self.boundaryatoms = get_boundary_atoms(self.qmatoms, self.coords, self.elems, settings_ash.scale, settings_ash.tol)
+            self.boundaryatoms = get_boundary_atoms(self.qmatoms, self.coords, self.elems, settings_ash.scale, settings_ash.tol, excludeboundaryatomlist=excludeboundaryatomlist)
             
             if len(self.boundaryatoms) >0:
                 print("Found covalent QM-MM boundary. Linkatoms option set to True")
@@ -3262,9 +3262,9 @@ class SpinProjectionTheory:
         
         self.fragment=fragment
         self.jobtype=jobtype
-        if self.jobtype == "Yamaguchi" or self.jobtype =="Noodleman":
+        if self.jobtype == "Yamaguchi" or self.jobtype =="Noodleman" or self.jobtype=="Bencini":
             if localspins == None:
-                print("Yamaguchi/Noodleman spin projection requires localspins keyword (list of local spins). Exiting.")
+                print("Yamaguchi/Noodleman/Bencini spin projection requires localspins keyword (list of local spins). Exiting.")
                 exit()
             else:
                 self.Spin_A=localspins[0]
@@ -3288,9 +3288,11 @@ class SpinProjectionTheory:
         if self.reuseorbs is True:
             self.theory2.moreadfile=self.theory1.inputfilename+".gbw"
         
+        #RUNNING both theories
         HSenergy = self.theory1.run(current_coords=current_coords, elems=elems, PC=PC, nprocs=nprocs, Grad=Grad)
         BSenergy = self.theory2.run(current_coords=current_coords, elems=elems, PC=PC, nprocs=nprocs, Grad=Grad)
 
+        #Grab S2 expectation values. Used by Yamaguchi
         HS_S2=grab_spin_expect_values_ORCA(self.theory1.inputfilename+'.out')
         BS_S2=grab_spin_expect_values_ORCA(self.theory2.inputfilename+'.out')
 
@@ -3307,25 +3309,16 @@ class SpinProjectionTheory:
         else:
             print("System is FERROMAGNETIC")
         print("")
+        
+        #Calculate J using the HS/BS energies and either spin-expectation values or total spin
         if self.jobtype == "Yamaguchi":
-            print("Yamaguchi spin projection")
-            J=-1*(HSenergy-BSenergy)/(HS_S2-BS_S2)
-            J_kcal=J*constants.harkcal
-            J_cm=J*constants.hartocm
-            print("J coupling constant: {} Eh".format(J))
-            print("J coupling constant: {} kcal/Mol".format(J_kcal))
-            print("J coupling constant: {} cm**-1".format(J_cm))
-            
+            J=Jcoupling_Yamaguchi(HSenergy,BSenergy,HS_S2,BS_S2)
+        #Strong-interaction limit (bond-formation)
+        elif self.jobtype == "Bencini":
+            J=Jcoupling_Bencini(HSenergy,BSenergy,self.Spin_HS)
+        #Weak-interaction limit (little overlap betwen orbitals)
         elif self.jobtype == "Noodleman":
-            print("Noodleman spin projection")
-            smax=self.Spin_HS
-            J=-1*(HSenergy-BSenergy)/(smax)**2
-            J_kcal=J*constants.harkcal
-            J_cm=J*constants.hartocm
-            print("Smax : ", smax)
-            print("J coupling constant: {} Eh".format(J))
-            print("J coupling constant: {} kcal/Mol".format(J_kcal))
-            print("J coupling constant: {} cm**-1".format(J_cm))
+            J=Jcoupling_Noodleman(HSenergy,BSenergy,self.Spin_HS)
 
         #Now  calculate new E of LS state from J
         #Projected energy of low-spin state
@@ -4438,8 +4431,8 @@ class Fragment:
             self.calc_connectivity(scale=scale, tol=tol)
         else:
             # Read connectivity list
-            print("reading conn from file")
-            print("this is not ready")
+            print("Not reading connectivity from file")
+            print("ignoring and continuing...")
         #exit()
 
     #Read PDB file

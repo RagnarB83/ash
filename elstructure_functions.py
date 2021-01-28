@@ -928,3 +928,36 @@ def check_cores_vs_electrons(fragment,numcores,charge):
             print("Setting numcores to:", electronpairs)
             return int(electronpairs)
     return numcores
+
+#Approximate J-coupling spin projection functions
+def Jcoupling_Yamaguchi(HSenergy,BSenergy,HS_S2,BS_S2):
+    print("Yamaguchi spin projection")
+    J=-1*(HSenergy-BSenergy)/(HS_S2-BS_S2)
+    J_kcal=J*constants.harkcal
+    J_cm=J*constants.hartocm
+    print("J coupling constant: {} Eh".format(J))
+    print("J coupling constant: {} kcal/Mol".format(J_kcal))
+    print("J coupling constant: {} cm**-1".format(J_cm))            
+    return J
+#Strong-interaction limit (bond-formation)
+def Jcoupling_Bencini(HSenergy,BSenergy,smax):
+    print("Bencini spin projection")
+    J=-1*(HSenergy-BSenergy)/(smax*(smax+1))
+    J_kcal=J*constants.harkcal
+    J_cm=J*constants.hartocm
+    print("Smax : ", smax)
+    print("J coupling constant: {} Eh".format(J))
+    print("J coupling constant: {} kcal/Mol".format(J_kcal))
+    print("J coupling constant: {} cm**-1".format(J_cm))
+    return J
+#Weak-interaction limit
+def Jcoupling_Noodleman(HSenergy,BSenergy,smax):
+    print("Noodleman spin projection")
+    J=-1*(HSenergy-BSenergy)/(smax)**2
+    J_kcal=J*constants.harkcal
+    J_cm=J*constants.hartocm
+    print("Smax : ", smax)
+    print("J coupling constant: {} Eh".format(J))
+    print("J coupling constant: {} kcal/Mol".format(J_kcal))
+    print("J coupling constant: {} cm**-1".format(J_cm))
+    return J

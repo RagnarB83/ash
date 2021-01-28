@@ -1138,8 +1138,13 @@ def distance_between_atoms(fragment=None, atom1=None, atom2=None):
 
 
 
-def get_boundary_atoms(qmatoms, coords, elems, scale, tol):
-    print("qmatoms:", qmatoms)
+def get_boundary_atoms(qmatoms, coords, elems, scale, tol, excludeboundaryatomlist=None):
+    print("Determining QM-MM boundary")
+    if excludeboundaryatomlist == None:
+        excludeboundaryatomlist=[]
+    
+    print("QM atoms:", qmatoms)
+    print("QM atoms to be excluded from boundary creation (excludeboundaryatomlist):", excludeboundaryatomlist)
     # For each QM atom, do a get_conn_atoms, for those atoms, check if atoms are in qmatoms,
     # if not, then we have found an MM-boundary atom
     
@@ -1149,15 +1154,32 @@ def get_boundary_atoms(qmatoms, coords, elems, scale, tol):
     qm_mm_boundary_dict = {}
     for qmatom in qmatoms:
         #print("qmatom:", qmatom)
+        #Option below to skip creating boundaryatom pair (and subsequent linkatoms) if atom index is flagged
+        #Applies to rare case where QM atom is bonded to MM atom but we don't want a linkatom.
+        #Example: bridging sulfide in Cys that connects to Fe4S4 and H-cluster.
+        if qmatom in excludeboundaryatomlist:
+            print("boundaryatom : {} in excludeboundaryatomlist: {}".format(boundaryatom,excludeboundaryatomlist))
+            print("Skipping QM-MM boundary...")
+            continue
+        
         connatoms = get_connected_atoms(coords, elems, scale, tol, qmatom)
         #print("connatoms:", connatoms)
         # Find connected atoms that are not in QM-atoms
         boundaryatom = listdiff(connatoms, qmatoms)
+        #print("boundaryatom:", boundaryatom)
+
         if len(boundaryatom) > 1:
             print("Boundaryatom : ", boundaryatom)
-            print("Problem. Found more than 1 boundaryatom for QM-atom {} . This is not allowed".format(qmatoms))
+            print(BC.FAIL,"Problem. Found more than 1 boundaryatom for QM-atom {} . This is not allowed".format(qmatoms),BC.END)
             exit()
         elif len(boundaryatom) == 1:
+
+            #Warn if QM-MM boundary is not a plain-vanilla C-C bond
+            if elems[qmatom] != "C" or elems[boundaryatom[0]] != "C":
+                print(BC.WARNING,"Warning: QM-MM boundary is not the ideal C-C scenario.",BC.END)
+                print(BC.WARNING,"QM-MM boundary: {}({}) - {}({})".format(elems[qmatom],qmatom,elems[boundaryatom[0]],boundaryatom[0]),BC.END)
+                print(BC.WARNING,"Make sure you know what you are doing. Continuing...",BC.END)
+
             # Adding to dict
             qm_mm_boundary_dict[qmatom] = boundaryatom[0]
     print("qm_mm_boundary_dict:", qm_mm_boundary_dict)
