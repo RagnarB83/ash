@@ -3298,7 +3298,7 @@ class SpinProjectionTheory:
 
         print("Spin coupling analysis")
         print("Spin Hamiltonian form: H= -2J*S_A*S_B")
-        print("Local spins are: S_A = {}  S_B = {}", localspins[0],localspins[1])
+        print("Local spins are: S_A = {}  S_B = {}", self.Spin_A,self.Spin_B)
         print("Assuming theory1 is High-spin state and theory2 is low-spin Broken-symmetry state.")
         print("High-spin state (M_S = {}) energy: {}".format((self.theory1.mult-1)/2, HSenergy))
         print("Broken-symmetry state (M_S = {}) energy: {}".format((self.theory2.mult-1)/2, BSenergy))
