@@ -1,5 +1,5 @@
 #Non-intrusive interface to Knarr
-#Assumes that Knarr directory exists inside Yggdrasill (for now at least)
+#Assumes that Knarr directory exists inside ASH (for now at least)
 
 from ash import *
 import numpy as np
@@ -29,7 +29,7 @@ import KNARRatom.atom
 #RB modified springconst from 10 to 5
 # Changed "IDPP_RMS_F": 0.005    and "IDPP_MAX_F": 0.01
 path_parameters = {"METHOD": "DOUBLE", "INTERPOLATION": "IDPP", "NIMAGES": 6,
-              "INSERT_CONFIG": None, "IDPP_MAX_ITER": 100,
+              "INSERT_CONFIG": None, "IDPP_MAX_ITER": 200,
               "IDPP_SPRINGCONST": 5.0, "IDPP_TIME_STEP": 0.01,
               "IDPP_MAX_MOVE": 0.1, "IDPP_MAX_F": 0.03, "IDPP_RMS_F": 0.005}
 
@@ -264,7 +264,8 @@ class KnarrCalculator:
 #Yggdrasill NEB function. Calls Knarr
 def NEB(reactant=None, product=None, theory=None, images=None, interpolation=None, CI=None, free_end=None,
         conv_type=None, tol_scale=None, tol_max_fci=None, tol_rms_fci=None, tol_max_f=None, tol_rms_f=None,
-        tol_turn_on_ci=None, ActiveRegion=False, actatoms=None, runmode='serial', printlevel=1):
+        tol_turn_on_ci=None, ActiveRegion=False, actatoms=None, runmode='serial', printlevel=1,
+        idpp_maxiter=None):
 
     if reactant==None or product==None or theory==None:
         print("You need to provide reactant and product fragment and a theory to NEB")
@@ -286,6 +287,8 @@ def NEB(reactant=None, product=None, theory=None, images=None, interpolation=Non
         path_parameters["NIMAGES"]=images
     if interpolation is not None:
         path_parameters["INTERPOLATION"]=interpolation
+    if idpp_maxiter is not None:
+        path_parameters["IDPP_MAX_ITER"] = idpp_maxiter
     if CI is not None:
         if CI is False:
             neb_settings["CLIMBING"]=False
@@ -305,6 +308,7 @@ def NEB(reactant=None, product=None, theory=None, images=None, interpolation=Non
         neb_settings["TOL_RMS_F"] = tol_rms_f
     if tol_turn_on_ci is not None:
         neb_settings["TOL_TURN_ON_CI"] = tol_turn_on_ci
+
 
     if ActiveRegion is True:
         print("Active Region feature active. Setting RMSD-alignment in NEB to false (required).")
