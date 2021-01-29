@@ -4,6 +4,55 @@ import sys
 from functions_general import read_intlist_from_file
 from functions_coords import read_xyzfile
 
+# Give difference of two lists, sorted. List1: Bigger list
+def listdiff(list1, list2):
+    diff = (list(set(list1) - set(list2)))
+    diff.sort()
+    return diff
+
+#Read list of integers from file. Output list of integers. Ignores blanklines, return chars, non-int characters
+#offset option: shifts integers by a value (e.g. 1 or -1)
+def read_intlist_from_file(file,offset=0):
+    list=[]
+    lines=readlinesfile(file)
+    for line in lines:
+        for l in line.split():
+            #Removing non-numeric part
+            l = ''.join(i for i in l if i.isdigit())
+            if isint(l):
+                list.append(int(l)+offset)
+    list.sort()
+    return list
+
+#Read XYZ file
+def read_xyzfile(filename):
+    #Will accept atom-numbers as well as symbols
+    elements = ['H', 'He', 'Li', 'Be', 'B', 'C', 'N', 'O', 'F', 'Ne', 'Na', 'Mg', 'Al', 'Si', 'P', 'S', 'Cl', 'Ar', 'K',
+            'Ca', 'Sc', 'Ti', 'V', 'Cr', 'Mn', 'Fe', 'Co', 'Ni', 'Cu', 'Zn', 'Ga', 'Ge', 'As', 'Se', 'Br', 'Kr', 'Rb',
+            'Sr', 'Y', 'Zr', 'Nb', 'Mo', 'Tc', 'Ru', 'Rh', 'Pd', 'Ag', 'Cd', 'In', 'Sn', 'Sb', 'Te', 'I', 'Xe', 'Cs',
+            'Ba', 'La', 'Ce', 'Pr', 'Nd', 'Pm', 'Sm', 'Eu', 'Gd', 'Tb', 'Dy', 'Ho', 'Er', 'Tm', 'Yb', 'Lu', 'Hf', 'Ta',
+            'W', 'Re', 'Os', 'Ir', 'Pt', 'Au', 'Hg', 'Tl', 'Pb', 'Bi', 'Po', 'At', 'Rn', 'Fr', 'Ra', 'Ac', 'Th', 'Pa',
+            'U', 'Np', 'Pu', 'Am', 'Cm', 'Bk', 'Cf', 'Es', 'Fm', 'Md', 'No', 'Lr']
+    print("Reading coordinates from XYZfile {} ".format(filename))
+    coords=[]
+    elems=[]
+    with open(filename) as f:
+        for count,line in enumerate(f):
+            if count == 0:
+                numatoms=int(line.split()[0])
+            if count > 1:
+                if len(line.strip()) > 0:
+                    if isint(line.split()[0]) is True:
+                        elems.append(elements[int(line.split()[0])-1])
+                    else:
+                        elems.append(line.split()[0])
+                    coords.append([float(line.split()[1]), float(line.split()[2]), float(line.split()[3])])
+    assert len(coords) == numatoms, "Number of coordinates does not match header line"
+    assert len(coords) == len(elems), "Number of coordinates does not match elements."
+    return elems,coords
+
+
+
 #Update Yggdrasill fragment after fragedit use and XYZ coord modification
 
 #Standalone fragment-update script for Yggdrasill
