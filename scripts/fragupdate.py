@@ -1,8 +1,8 @@
 #!/bin/env python3
 
 import sys
-from functions_general import read_intlist_from_file
-from functions_coords import read_xyzfile
+#from functions_general import read_intlist_from_file
+#from functions_coords import read_xyzfile
 
 # Give difference of two lists, sorted. List1: Bigger list
 def listdiff(list1, list2):

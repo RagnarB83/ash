@@ -2,7 +2,7 @@
 
 import sys
 #from functions_general import read_intlist_from_file
-from functions_coords import write_xyzfile
+#from functions_coords import write_xyzfile
 
 
 #Read list of integers from file. Output list of integers. Ignores blanklines, return chars, non-int characters
