@@ -1158,7 +1158,7 @@ def get_boundary_atoms(qmatoms, coords, elems, scale, tol, excludeboundaryatomli
         #Applies to rare case where QM atom is bonded to MM atom but we don't want a linkatom.
         #Example: bridging sulfide in Cys that connects to Fe4S4 and H-cluster.
         if qmatom in excludeboundaryatomlist:
-            print("boundaryatom : {} in excludeboundaryatomlist: {}".format(boundaryatom,excludeboundaryatomlist))
+            print("QMatom : {} in excludeboundaryatomlist: {}".format(qmatom,excludeboundaryatomlist))
             print("Skipping QM-MM boundary...")
             continue
         

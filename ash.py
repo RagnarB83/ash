@@ -4433,8 +4433,6 @@ class Fragment:
         else:
             # Read connectivity list
             print("Not reading connectivity from file")
-            print("ignoring and continuing...")
-        #exit()
 
     #Read PDB file
     def read_pdbfile(self,filename,conncalc=True, scale=None, tol=None):
