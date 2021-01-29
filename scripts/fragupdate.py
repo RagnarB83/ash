@@ -10,6 +10,17 @@ def listdiff(list1, list2):
     diff.sort()
     return diff
 
+#Read lines of file by slurping.
+def readlinesfile(filename):
+  try:
+    f=open(filename)
+    out=f.readlines()
+    f.close()
+  except IOError:
+    print('File %s does not exist!' % (filename))
+    exit(12)
+  return out
+
 #Read list of integers from file. Output list of integers. Ignores blanklines, return chars, non-int characters
 #offset option: shifts integers by a value (e.g. 1 or -1)
 def read_intlist_from_file(file,offset=0):
@@ -53,16 +64,16 @@ def read_xyzfile(filename):
 
 
 
-#Update Yggdrasill fragment after fragedit use and XYZ coord modification
+#Update ASH fragment after fragedit use and XYZ coord modification
 
-#Standalone fragment-update script for Yggdrasill
-#Reads in Yggdrasill fragment file and qmatoms and XYZ file and updates Yggdrasill fragment
+#Standalone fragment-update script for ASH
+#Reads in ASH fragment file and qmatoms and XYZ file and updates ASH fragment
 
 #Fragfile is always first argument
 try:
     fragfile=sys.argv[1]
 except:
-    print("Please provide an Yggdrasill fragment file as argument")
+    print("Please provide an ASH fragment file as argument")
     exit(1)
 #Try to process a qmatoms file if provided
 try:
@@ -86,13 +97,13 @@ elems=[]
 coords=[]
 fragfile_lines=[]
 
-#Read Yggdrasill fragfile
+#Read ASH fragfile
 with open(fragfile) as file:
     for line in file:
         fragfile_lines.append(line)
 
 
-#Write modified Yggdrasill fragfile
+#Write modified ASH fragfile
 coordline=False
 with open(fragfile, 'w') as newfile:
     for line in fragfile_lines:
