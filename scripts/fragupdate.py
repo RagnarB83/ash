@@ -21,6 +21,16 @@ def readlinesfile(filename):
     exit(12)
   return out
 
+#Is variable an integer
+def isint(s):
+    try:
+        int(s)
+        return True
+    except ValueError:
+        return False
+    except TypeError:
+        return False
+
 #Read list of integers from file. Output list of integers. Ignores blanklines, return chars, non-int characters
 #offset option: shifts integers by a value (e.g. 1 or -1)
 def read_intlist_from_file(file,offset=0):
