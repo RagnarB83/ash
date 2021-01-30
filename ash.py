@@ -4275,7 +4275,7 @@ class CFourTheory:
             with open("ZMAT", 'w') as inpfile:
                 inpfile.write('ASH-created inputfile\n')
                 for el,c in zip(qm_elems,current_coords):
-                    inpfile.write('{} {} {} {}\n'.format(el,c[0],c[1],c[2]))
+                    inpfile.write('{} {10.6f} {10.6f} {10.6f}\n'.format(el,c[0],c[1],c[2]))
                 inpfile.write('\n')
                 inpfile.write("""*CFOUR(CALC={},BASIS={},COORD=CARTESIAN,REF={},CHARGE={}\nMULT={},FROZEN_CORE={},MEM_UNIT={},MEMORY={}\n\
 GUESS={},PROP={},CC_PROG={},SCF_CONV={}\n\
@@ -4283,8 +4283,6 @@ LINEQ_CONV={},CC_MAXCYC={},SYMMETRY={},HFSTABILITY={},DERIV_LEVEL=1)\n\n""".form
                     self.method,self.basis,self.reference,self.charge,self.mult,self.frozen_core,self.memory_unit,self.memory,self.guessoption,self.propoption,
                     self.cc_prog,self.scf_conv,self.lineq_conv,self.cc_maxcyc,self.symmetry,self.stabilityanalysis))
                 for specbas in self.specialbasis.items():
-                    print("self.specialbasis:", self.specialbasis)
-                    print("specbas:", specbas)
                     inpfile.write("{}:{}\n".format(specbas[0],specbas[1]))
                 inpfile.write("\n")
             self.cfour_call()
@@ -4297,7 +4295,7 @@ LINEQ_CONV={},CC_MAXCYC={},SYMMETRY={},HFSTABILITY={},DERIV_LEVEL=1)\n\n""".form
                 for el,c in zip(qm_elems,current_coords):
                     print(el)
                     print(c)
-                    inpfile.write('{} {} {} {}\n'.format(el,c[0],c[1],c[2]))
+                    inpfile.write('{} {10.6f} {10.6f} {10.6f}\n'.format(el,c[0],c[1],c[2]))
                 inpfile.write('\n')
                 inpfile.write("""*CFOUR(CALC={},BASIS={},COORD=CARTESIAN,REF={},CHARGE={}\nMULT={},FROZEN_CORE={},MEM_UNIT={},MEMORY={}\n\
 GUESS={},PROP={},CC_PROG={},SCF_CONV={}\n\
@@ -4305,8 +4303,6 @@ LINEQ_CONV={},CC_MAXCYC={},SYMMETRY={},HFSTABILITY={})\n\n""".format(
                     self.method,self.basis,self.reference,self.charge,self.mult,self.frozen_core,self.memory_unit,self.memory,self.guessoption,self.propoption,
                     self.cc_prog,self.scf_conv,self.lineq_conv,self.cc_maxcyc,self.symmetry,self.stabilityanalysis))
                 for specbas in self.specialbasis.items():
-                    print("self.specialbasis:", self.specialbasis)
-                    print("specbas:", specbas)
                     inpfile.write("{}:{}\n".format(specbas[0],specbas[1]))
                 inpfile.write("\n")
             self.cfour_call()
