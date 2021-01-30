@@ -4285,7 +4285,7 @@ LINEQ_CONV={},CC_MAXCYC={},SYMMETRY={},HFSTABILITY={},DERIV_LEVEL=1)\n\n""".form
                 for specbas in self.specialbasis.items():
                     print("self.specialbasis:", self.specialbasis)
                     print("specbas:", specbas)
-                    inpfile.write("{}:{}\n".format(specbas[0],specbas[1]))
+                    inpfile.write("{}:{}\n\n".format(specbas[0],specbas[1]))
             self.cfour_call()
             self.energy=self.cfour_grabenergy()
             self.S2=self.cfour_grab_spinexpect()
@@ -4306,7 +4306,7 @@ LINEQ_CONV={},CC_MAXCYC={},SYMMETRY={},HFSTABILITY={})\n\n""".format(
                 for specbas in self.specialbasis.items():
                     print("self.specialbasis:", self.specialbasis)
                     print("specbas:", specbas)
-                    inpfile.write("{}:{}\n".format(specbas[0],specbas[1]))
+                    inpfile.write("{}:{}\n\n".format(specbas[0],specbas[1]))
             self.cfour_call()
             self.energy=self.cfour_grabenergy()
             self.S2=self.cfour_grab_spinexpect()
