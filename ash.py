@@ -4282,8 +4282,8 @@ GUESS={},PROP={},CC_PROG={},SCF_CONV={}\n\
 LINEQ_CONV={},CC_MAXCYC={},SYMMETRY={},HFSTABILITY={},DERIV_LEVEL=1)\n\n""".format(
                     self.method,self.basis,self.reference,self.charge,self.mult,self.frozen_core,self.memory_unit,self.memory,self.guessoption,self.propoption,
                     self.cc_prog,self.scf_conv,self.lineq_conv,self.cc_maxcyc,self.symmetry,self.stabilityanalysis))
-                for specbas in self.specialbasis.items():
-                    inpfile.write("{}:{}\n".format(specbas[0],specbas[1]))
+                for el in qm_elems:
+                    inpfile.write("{}:{}\n".format(el,specialbasis[el]))
                 inpfile.write("\n")
             self.cfour_call()
             self.energy=self.cfour_grabenergy()
@@ -4302,8 +4302,9 @@ GUESS={},PROP={},CC_PROG={},SCF_CONV={}\n\
 LINEQ_CONV={},CC_MAXCYC={},SYMMETRY={},HFSTABILITY={})\n\n""".format(
                     self.method,self.basis,self.reference,self.charge,self.mult,self.frozen_core,self.memory_unit,self.memory,self.guessoption,self.propoption,
                     self.cc_prog,self.scf_conv,self.lineq_conv,self.cc_maxcyc,self.symmetry,self.stabilityanalysis))
-                for specbas in self.specialbasis.items():
-                    inpfile.write("{}:{}\n".format(specbas[0],specbas[1]))
+                #for specbas in self.specialbasis.items():
+                for el in qm_elems:
+                    inpfile.write("{}:{}\n".format(el,specialbasis[el]))
                 inpfile.write("\n")
             self.cfour_call()
             self.energy=self.cfour_grabenergy()
