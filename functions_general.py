@@ -33,7 +33,14 @@ def timefn(fn):
         return result
     return measure_time
 
-
+#Grep-style function to find a line in file and return a list of words
+#TODO: Make more advanced
+def pygrep(string,file):
+    with open(file) as f:
+        for line in f:
+            if 'string' in line:
+                stringlist=line.split()
+                return stringlist
 
 
 
