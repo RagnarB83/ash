@@ -4129,7 +4129,7 @@ class PySCFTheory:
 #CFour Theory object. Fragment object is optional. Used??
 class CFourTheory:
     def __init__(self, cfourdir=None,fragment=None, charge=None, mult=None, printlevel=2, cfouroptions=None,nprocs=1,
-                 outputfilename='cfourjob'):
+                 outputfilename='cfourjob',specialbasis=None):
                  #basis=None, method=None, reference='RHF', frozen_core='ON',
                 #memory=3100, , guessoption='MOREAD',propoption='OFF',cc_prog='ECC',scf_conv=10,lineq_conv=10,
                 #cc_maxcyc=300,symmetry='OFF',stabilityanalysis='OFF'):
@@ -4140,7 +4140,7 @@ class CFourTheory:
         self.outputfilename=outputfilename
         
         #Default Cfour settings
-        self.basis='PVDZ'
+        self.basis='SPECIAL' #this is default and preferred
         self.method='CCSD(T)'
         self.memory=4
         self.memory_unit='GB'
@@ -4154,8 +4154,9 @@ class CFourTheory:
         self.cc_maxcyc=300
         self.symmetry='OFF'
         self.stabilityanalysis='OFF'
-        
+        self.specialbasis=[]
         #Overriding default
+        #self.basis='SPECIAL' is preferred (element-specific basis definitions) but can be overriden like this
         if 'BASIS' in cfouroptions: self.basis=cfouroptions['BASIS']
         if 'CALC' in cfouroptions: self.method=cfouroptions['CALC']
         if 'MEMORY' in cfouroptions: self.memory=cfouroptions['MEMORY']
@@ -4170,6 +4171,17 @@ class CFourTheory:
         if 'CC_MAXCYC' in cfouroptions: self.cc_maxcyc=cfouroptions['CC_MAXCYC']
         if 'SYMMETRY' in cfouroptions: self.symmetry=cfouroptions['SYMMETRY']
         if 'HFSTABILITY' in cfouroptions: self.stabilityanalysis=cfouroptions['HFSTABILITY']        
+        
+        #Gettin
+        if self.basis=='SPECIAL':
+            if specialbasis != None:
+                #Dictionary of element:basisname entries
+                self.specialbasis = specialbasis
+            else:
+                print("basis option is: SPECIAL but no specialbasis dictionary provide. Please provide this")
+                exit()
+        else:
+            self.specialbasis=[]
         
         if cfourdir == None:
             # Trying to find xcfour in path
@@ -4191,6 +4203,7 @@ class CFourTheory:
         with open(self.outputfilename+'.out', 'w') as ofile:
             process = sp.run([self.cfourdir + '/xcfour'], check=True, stdout=ofile, stderr=ofile, universal_newlines=True)
     def cfour_clean_full(self):
+        print("Cleaning up old Cfour files")
         files=['MOABCD', 'MOINTS', 'JOBARC', 'NEWMOS', 'BASINFO.DATA', 'den.dat', 'DIPOL', 'DPTDIPOL', 'DPTEFG', 'ERREX', 'EFG','FILES', 'GAMLAM', 'IIII', 'JAINDX',
                'NEWFOCK', 'NTOTAL', 'NATMOS', 'MOLDEN', 'MOLDEN_NAT', 'MOLECULE.INP', 'MOL', 'JMOLplot', 'OPTARC', 'THETA', 'VPOUT']
         for file in files:
@@ -4218,7 +4231,6 @@ class CFourTheory:
                     numatoms=int(line.split()[0])
                     gradient=np.zeros((numatoms,3))
                 if i>numatoms:
-                    print("line")
                     gradient[atomcount,0] = float(line.split()[1])
                     gradient[atomcount,1] = float(line.split()[2])
                     gradient[atomcount,2] = float(line.split()[3])
@@ -4269,7 +4281,8 @@ GUESS={},PROP={},CC_PROG={},SCF_CONV={}\n\
 LINEQ_CONV={},CC_MAXCYC={},SYMMETRY={},HFSTABILITY={},DERIV_LEVEL=1)\n\n""".format(
                     self.method,self.basis,self.reference,self.charge,self.mult,self.frozen_core,self.memory_unit,self.memory,self.guessoption,self.propoption,
                     self.cc_prog,self.scf_conv,self.lineq_conv,self.cc_maxcyc,self.symmetry,self.stabilityanalysis))
-                
+                for specbas in self.specialbasis:
+                    inpfile.write("{}:{}\n".format(specbas[0],specbas[1]))
             self.cfour_call()
             self.energy=self.cfour_grabenergy()
             self.S2=self.cfour_grab_spinexpect()
@@ -4287,6 +4300,8 @@ GUESS={},PROP={},CC_PROG={},SCF_CONV={}\n\
 LINEQ_CONV={},CC_MAXCYC={},SYMMETRY={},HFSTABILITY={})\n\n""".format(
                     self.method,self.basis,self.reference,self.charge,self.mult,self.frozen_core,self.memory_unit,self.memory,self.guessoption,self.propoption,
                     self.cc_prog,self.scf_conv,self.lineq_conv,self.cc_maxcyc,self.symmetry,self.stabilityanalysis))
+                for specbas in self.specialbasis:
+                    inpfile.write("{}:{}\n".format(specbas[0],specbas[1]))
             self.cfour_call()
             self.energy=self.cfour_grabenergy()
             self.S2=self.cfour_grab_spinexpect()
