@@ -4172,14 +4172,13 @@ class CFourTheory:
         if 'SYMMETRY' in cfouroptions: self.symmetry=cfouroptions['SYMMETRY']
         if 'HFSTABILITY' in cfouroptions: self.stabilityanalysis=cfouroptions['HFSTABILITY']        
         
-        #Gettin
-        print("self.basis:",self.basis)
+        #Getting special basis dict etc
         if self.basis=='SPECIAL':
             if specialbasis != None:
                 #Dictionary of element:basisname entries
                 self.specialbasis = specialbasis
             else:
-                print("basis option is: SPECIAL but no specialbasis dictionary provide. Please provide this")
+                print("basis option is: SPECIAL (default) but no specialbasis dictionary provided. Please provide this (specialbasis keyword).")
                 exit()
         else:
             self.specialbasis=[]
