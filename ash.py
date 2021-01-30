@@ -4182,6 +4182,11 @@ class CFourTheory:
                 exit()
         else:
             self.cfourdir = cfourdir
+        
+        #Clean-up of possible old Cfour files before beginning
+        #TODO: Skip cleanup of chosen files?
+        self.cfour_clean_full()
+        
     def cfour_call(self):
         with open(self.outputfilename+'.out', 'w') as ofile:
             process = sp.run([self.cfourdir + '/xcfour'], check=True, stdout=ofile, stderr=ofile, universal_newlines=True)
