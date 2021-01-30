@@ -4187,7 +4187,7 @@ class CFourTheory:
             process = sp.run([self.cfourdir + '/xcfour'], check=True, stdout=ofile, stderr=ofile, universal_newlines=True)
     def cfour_clean_full(self):
         files=['MOABCD', 'MOINTS', 'JOBARC', 'NEWMOS', 'BASINFO.DATA', 'den.dat', 'DIPOL', 'DPTDIPOL', 'DPTEFG', 'ERREX', 'EFG','FILES', 'GAMLAM', 'IIII', 'JAINDX',
-               'NEWFOCK', 'NTOTAL', 'MOLDEN', 'MOLDEN_NAT', 'MOLECULE.INP', 'MOL', 'JMOLplot', 'OPTARC', 'THETA', 'VPOUT']
+               'NEWFOCK', 'NTOTAL', 'NATMOS', 'MOLDEN', 'MOLDEN_NAT', 'MOLECULE.INP', 'MOL', 'JMOLplot', 'OPTARC', 'THETA', 'VPOUT']
         for file in files:
             try:
                 os.remove(file)
@@ -4286,15 +4286,13 @@ LINEQ_CONV={},CC_MAXCYC={},SYMMETRY={},HFSTABILITY={})\n\n""".format(
             self.energy=self.cfour_grabenergy()
             self.S2=self.cfour_grab_spinexpect()
 
-        #Clean-up. 
-        #Full cleanup (except OLDMOS)
+        #Full cleanup (except OLDMOS and GRD)
         self.cfour_clean_full()
 
-
-        #TODO: write in error handling here
         print(BC.OKBLUE, BC.BOLD, "------------ENDING CFOUR INTERFACE-------------", BC.END)
         if Grad == True:
             print("Single-point CFour energy:", self.energy)
+            print("Single-point CFour gradient:", self.gradient)
             return self.energy, self.gradient
         else:
             print("Single-point CFour energy:", self.energy)
