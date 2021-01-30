@@ -4185,13 +4185,23 @@ class CFourTheory:
     def cfour_call(self):
         with open(self.outputfilename+'.out', 'w') as ofile:
             process = sp.run([self.cfourdir + '/xcfour'], check=True, stdout=ofile, stderr=ofile, universal_newlines=True)
+    def cfour_clean_full(self):
+        files=['MOABCD', 'MOINTS', 'JOBARC', 'NEWMOS', 'BASINFO.DATA', 'den.dat', 'DIPOL', 'DPTDIPOL', 'DPTEFG', 'ERREX', 'EFG','FILES', 'GAMLAM', 'IIII', 'JAINDX',
+               'NEWFOCK', 'NTOTAL', 'MOLDEN', 'MOLDEN_NAT', 'MOLECULE.INP', 'MOL', 'JMOLplot', 'OPTARC', 'THETA', 'VPOUT']
+        for file in files:
+            os.remove(file)
+            
     def cfour_grabenergy(self):
         #Other things to possibly grab in future:
         #HF-SCF energy
         #CCSD correlation energy
         linetograb="The final electronic energy"
         energystringlist=pygrep(linetograb,self.outputfilename+'.out')
-        energy=float(energystringlist[-2])
+        try:
+            energy=float(energystringlist[-2])
+        except:
+            print("Problem reading energy from Cfour outputfile. Check:", self.outputfilename+'.out')
+            exit()
         return energy
     def cfour_grabgradient(self):
         atomcount=0
@@ -4269,6 +4279,11 @@ LINEQ_CONV={},CC_MAXCYC={},SYMMETRY={},HFSTABILITY={})\n\n""".format(
             self.cfour_call()
             self.energy=self.cfour_grabenergy()
             self.S2=self.cfour_grab_spinexpect()
+
+        #Clean-up. 
+        #Full cleanup (except OLDMOS)
+        self.cfour_clean_full()
+
 
         #TODO: write in error handling here
         print(BC.OKBLUE, BC.BOLD, "------------ENDING CFOUR INTERFACE-------------", BC.END)
