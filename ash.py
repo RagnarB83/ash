@@ -4189,8 +4189,10 @@ class CFourTheory:
         files=['MOABCD', 'MOINTS', 'JOBARC', 'NEWMOS', 'BASINFO.DATA', 'den.dat', 'DIPOL', 'DPTDIPOL', 'DPTEFG', 'ERREX', 'EFG','FILES', 'GAMLAM', 'IIII', 'JAINDX',
                'NEWFOCK', 'NTOTAL', 'MOLDEN', 'MOLDEN_NAT', 'MOLECULE.INP', 'MOL', 'JMOLplot', 'OPTARC', 'THETA', 'VPOUT']
         for file in files:
-            os.remove(file)
-            
+            try:
+                os.remove(file)
+            except:
+                pass
     def cfour_grabenergy(self):
         #Other things to possibly grab in future:
         #HF-SCF energy
