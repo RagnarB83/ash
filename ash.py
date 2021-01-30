@@ -4219,8 +4219,12 @@ class CFourTheory:
         return gradient    
     def cfour_grab_spinexpect(self):
         linetograb="Expectation value of <S**2>"
-        S2=float(pygrep(linetograb,self.outputfilename)[-1][0:-1])
-        
+        s2line=pygrep(linetograb,self.outputfilename+'.out')
+        try:
+            S2=float(s2line[-1][0:-1])
+        except:
+            S2=None
+        return S2
     # Run function. Takes coords, elems etc. arguments and computes E or E+G.
     def run(self, current_coords=None, current_MM_coords=None, MMcharges=None, qm_elems=None,
             elems=None, Grad=False, PC=False, nprocs=None, restart=False):
