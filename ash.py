@@ -4191,7 +4191,8 @@ class CFourTheory:
         #CCSD correlation energy
         
         linetograb="The final electronic energy"
-        energy=float(pygrep(linetograb,self.outputfilename+'.out')[-1])
+        energystringlist=pygrep(linetograb,self.outputfilename+'.out')
+        energy=float(energystringlist[-1])
         return energy
     def cfour_grabgradient(self):
         atomcount=0

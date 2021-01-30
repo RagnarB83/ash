@@ -38,7 +38,7 @@ def timefn(fn):
 def pygrep(string,file):
     with open(file) as f:
         for line in f:
-            if 'string' in line:
+            if string in line:
                 stringlist=line.split()
                 return stringlist
 
