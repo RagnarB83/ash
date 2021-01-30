@@ -4173,6 +4173,7 @@ class CFourTheory:
         if 'HFSTABILITY' in cfouroptions: self.stabilityanalysis=cfouroptions['HFSTABILITY']        
         
         #Gettin
+        print("self.basis:",self.basis)
         if self.basis=='SPECIAL':
             if specialbasis != None:
                 #Dictionary of element:basisname entries
@@ -4282,6 +4283,8 @@ LINEQ_CONV={},CC_MAXCYC={},SYMMETRY={},HFSTABILITY={},DERIV_LEVEL=1)\n\n""".form
                     self.method,self.basis,self.reference,self.charge,self.mult,self.frozen_core,self.memory_unit,self.memory,self.guessoption,self.propoption,
                     self.cc_prog,self.scf_conv,self.lineq_conv,self.cc_maxcyc,self.symmetry,self.stabilityanalysis))
                 for specbas in self.specialbasis:
+                    print("self.specialbasis:", self.specialbasis)
+                    print("specbas:", specbas)
                     inpfile.write("{}:{}\n".format(specbas[0],specbas[1]))
             self.cfour_call()
             self.energy=self.cfour_grabenergy()
