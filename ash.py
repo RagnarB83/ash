@@ -4274,7 +4274,7 @@ class CFourTheory:
             with open("ZMAT", 'w') as inpfile:
                 inpfile.write('ASH-created inputfile\n')
                 for el,c in zip(qm_elems,current_coords):
-                    inpfile.write('{:<4} {:<10.6f} {:<10.6f} {:<10.6f}\n'.format(el,c[0],c[1],c[2]))
+                    inpfile.write('{} {} {} {}\n'.format(el,c[0],c[1],c[2]))
                 inpfile.write('\n')
                 inpfile.write("""*CFOUR(CALC={},BASIS={},COORD=CARTESIAN,REF={},CHARGE={}\nMULT={},FROZEN_CORE={},MEM_UNIT={},MEMORY={}\n\
 GUESS={},PROP={},CC_PROG={},SCF_CONV={}\n\
@@ -4294,7 +4294,7 @@ LINEQ_CONV={},CC_MAXCYC={},SYMMETRY={},HFSTABILITY={},DERIV_LEVEL=1)\n\n""".form
                 for el,c in zip(qm_elems,current_coords):
                     print(el)
                     print(c)
-                    inpfile.write('{:<4} {:<10.6f} {:<10.6f} {:<10.6f}\n'.format(el,c[0],c[1],c[2]))
+                    inpfile.write('{} {} {} {}\n'.format(el,c[0],c[1],c[2]))
                 inpfile.write('\n')
                 inpfile.write("""*CFOUR(CALC={},BASIS={},COORD=CARTESIAN,REF={},CHARGE={}\nMULT={},FROZEN_CORE={},MEM_UNIT={},MEMORY={}\n\
 GUESS={},PROP={},CC_PROG={},SCF_CONV={}\n\
