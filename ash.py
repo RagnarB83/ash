@@ -3143,15 +3143,15 @@ class DaltonTheory:
     def cleanup(self):
         print("Cleaning up old Dalton files")
         list=[]
-        #list.append(self.inputfilename + '.gbw')
+        #list.append(self.filename + '.gbw')
         for file in list:
             try:
                 os.remove(file)
             except:
                 pass
-        # os.remove(self.inputfilename + '.out')
+        # os.remove(self.filename + '.out')
         try:
-            for tmpfile in glob.glob("self.inputfilename*tmp"):
+            for tmpfile in glob.glob("self.filename*tmp"):
                 os.remove(tmpfile)
         except:
             pass
@@ -3256,7 +3256,7 @@ class SpinProjectionTheory:
         self.label=label
         self.reuseorbs=reuseorbs
         #This is an inputfilename that may be set externally (Singlepoint_par)
-        self.inputfilename="X"
+        self.filename="X"
         
         self.jobtype=jobtype
         if self.jobtype == "Yamaguchi" or self.jobtype =="Noodleman" or self.jobtype=="Bencini":
@@ -3279,8 +3279,8 @@ class SpinProjectionTheory:
 
         
         #Changing inputfilename of theory1 and theory2. Must be done here
-        self.theory1.inputfilename=self.inputfilename+"spinprojtheory1"
-        self.theory2.inputfilename=self.inputfilename+"spinprojtheory2"
+        self.theory1.inputfilename=self.filename+"spinprojtheory1"
+        self.theory2.inputfilename=self.filename+"spinprojtheory2"
         #theory2 will read MOs from theory1 by default
         if self.reuseorbs is True:
             self.theory2.moreadfile=self.theory1.inputfilename+".gbw"
@@ -3361,7 +3361,7 @@ class ORCATheory:
         self.label=label
 
         #Create inputfile with generic name
-        self.inputfilename="orca-input"
+        self.filename="orca-input"
 
         #MOREAD-file
         self.moreadfile=moreadfile
@@ -3432,22 +3432,22 @@ class ORCATheory:
     def cleanup(self):
         print("Cleaning up old ORCA files")
         list=[]
-        list.append(self.inputfilename + '.gbw')
-        list.append(self.inputfilename + '.ges')
-        list.append(self.inputfilename + '.prop')
-        list.append(self.inputfilename + '.uco')
-        list.append(self.inputfilename + '_property.txt')
-        list.append(self.inputfilename + '.inp')
-        list.append(self.inputfilename + '.out')
-        list.append(self.inputfilename + '.engrad')
+        list.append(self.filename + '.gbw')
+        list.append(self.filename + '.ges')
+        list.append(self.filename + '.prop')
+        list.append(self.filename + '.uco')
+        list.append(self.filename + '_property.txt')
+        list.append(self.filename + '.inp')
+        list.append(self.filename + '.out')
+        list.append(self.filename + '.engrad')
         for file in list:
             try:
                 os.remove(file)
             except:
                 pass
-        # os.remove(self.inputfilename + '.out')
+        # os.remove(self.filename + '.out')
         try:
-            for tmpfile in glob.glob("self.inputfilename*tmp"):
+            for tmpfile in glob.glob("self.filename*tmp"):
                 os.remove(tmpfile)
         except:
             pass
@@ -3487,7 +3487,7 @@ class ORCATheory:
         print("Job label:", label)
 
 
-        print("Creating inputfile:", self.inputfilename+'.inp')
+        print("Creating inputfile:", self.filename+'.inp')
         print("ORCA input:")
         print(self.orcasimpleinput)
         print(self.extraline)
@@ -3503,22 +3503,22 @@ class ORCATheory:
 
         if PC==True:
             print("Pointcharge embedding is on!")
-            create_orca_pcfile(self.inputfilename, current_MM_coords, MMcharges)
+            create_orca_pcfile(self.filename, current_MM_coords, MMcharges)
             if self.brokensym == True:
-                create_orca_input_pc(self.inputfilename, qm_elems, current_coords, self.orcasimpleinput, self.orcablocks,
+                create_orca_input_pc(self.filename, qm_elems, current_coords, self.orcasimpleinput, self.orcablocks,
                                         self.charge, self.mult, extraline=self.extraline, HSmult=self.HSmult, Grad=Grad, Hessian=Hessian, moreadfile=self.moreadfile,
                                      atomstoflip=qmatomstoflip, extrabasisatoms=qmatoms_extrabasis, extrabasis=self.extrabasis)
             else:
-                create_orca_input_pc(self.inputfilename, qm_elems, current_coords, self.orcasimpleinput, self.orcablocks,
+                create_orca_input_pc(self.filename, qm_elems, current_coords, self.orcasimpleinput, self.orcablocks,
                                         self.charge, self.mult, extraline=self.extraline, Grad=Grad, Hessian=Hessian, moreadfile=self.moreadfile,
                                         extrabasisatoms=qmatoms_extrabasis, extrabasis=self.extrabasis)
         else:
             if self.brokensym == True:
-                create_orca_input_plain(self.inputfilename, qm_elems, current_coords, self.orcasimpleinput,self.orcablocks,
+                create_orca_input_plain(self.filename, qm_elems, current_coords, self.orcasimpleinput,self.orcablocks,
                                         self.charge,self.mult, extraline=self.extraline, HSmult=self.HSmult, Grad=Grad, Hessian=Hessian, moreadfile=self.moreadfile,
                                      atomstoflip=qmatomstoflip, extrabasisatoms=qmatoms_extrabasis, extrabasis=self.extrabasis)
             else:
-                create_orca_input_plain(self.inputfilename, qm_elems, current_coords, self.orcasimpleinput,self.orcablocks,
+                create_orca_input_plain(self.filename, qm_elems, current_coords, self.orcasimpleinput,self.orcablocks,
                                         self.charge,self.mult, extraline=self.extraline, Grad=Grad, Hessian=Hessian, moreadfile=self.moreadfile,
                                         extrabasisatoms=qmatoms_extrabasis, extrabasis=self.extrabasis)
 
@@ -3527,9 +3527,9 @@ class ORCATheory:
         print(BC.OKGREEN, "ORCA Calculation started.", BC.END)
         # Doing gradient or not. Disabling, doing above instead.
         #if Grad == True:
-        #    run_orca_SP_ORCApar(self.orcadir, self.inputfilename + '.inp', nprocs=nprocs, Grad=True)
+        #    run_orca_SP_ORCApar(self.orcadir, self.filename + '.inp', nprocs=nprocs, Grad=True)
         #else:
-        run_orca_SP_ORCApar(self.orcadir, self.inputfilename + '.inp', nprocs=nprocs)
+        run_orca_SP_ORCApar(self.orcadir, self.filename + '.inp', nprocs=nprocs)
         print(BC.OKGREEN, "ORCA Calculation done.", BC.END)
 
         #Now that we have possibly run a BS-DFT calculation, turning Brokensym off for future calcs (opt, restart, etc.)
@@ -3538,9 +3538,9 @@ class ORCATheory:
         self.brokensym=False
 
         #Check if finished. Grab energy and gradient
-        outfile=self.inputfilename+'.out'
-        engradfile=self.inputfilename+'.engrad'
-        pcgradfile=self.inputfilename+'.pcgrad'
+        outfile=self.filename+'.out'
+        engradfile=self.filename+'.engrad'
+        pcgradfile=self.filename+'.pcgrad'
         if checkORCAfinished(outfile) == True:
             self.energy=ORCAfinalenergygrab(outfile)
 
@@ -4136,7 +4136,7 @@ class PySCFTheory:
 #CFour Theory object. Fragment object is optional. Used??
 class CFourTheory:
     def __init__(self, cfourdir=None,fragment=None, charge=None, mult=None, printlevel=2, cfouroptions=None,nprocs=1,
-                 outputfilename='cfourjob',specialbasis=None):
+                 filename='cfourjob',specialbasis=None):
                  #basis=None, method=None, reference='RHF', frozen_core='ON',
                 #memory=3100, , guessoption='MOREAD',propoption='OFF',cc_prog='ECC',scf_conv=10,lineq_conv=10,
                 #cc_maxcyc=300,symmetry='OFF',stabilityanalysis='OFF'):
@@ -4144,7 +4144,7 @@ class CFourTheory:
         self.charge=charge
         self.mult=mult
         self.nprocs=nprocs
-        self.outputfilename=outputfilename
+        self.filename=filename
         
         #Default Cfour settings
         self.basis='SPECIAL' #this is default and preferred
@@ -4208,7 +4208,7 @@ class CFourTheory:
         self.cfour_clean_full()
         
     def cfour_call(self):
-        with open(self.outputfilename+'.out', 'w') as ofile:
+        with open(self.filename+'.out', 'w') as ofile:
             process = sp.run([self.cfourdir + '/xcfour'], check=True, stdout=ofile, stderr=ofile, universal_newlines=True)
     def cfour_clean_full(self):
         print("Cleaning up old Cfour files")
@@ -4224,11 +4224,11 @@ class CFourTheory:
         #HF-SCF energy
         #CCSD correlation energy
         linetograb="The final electronic energy"
-        energystringlist=pygrep(linetograb,self.outputfilename+'.out')
+        energystringlist=pygrep(linetograb,self.filename+'.out')
         try:
             energy=float(energystringlist[-2])
         except:
-            print("Problem reading energy from Cfour outputfile. Check:", self.outputfilename+'.out')
+            print("Problem reading energy from Cfour outputfile. Check:", self.filename+'.out')
             exit()
         return energy
     def cfour_grabgradient(self):
@@ -4246,7 +4246,7 @@ class CFourTheory:
         return gradient    
     def cfour_grab_spinexpect(self):
         linetograb="Expectation value of <S**2>"
-        s2line=pygrep(linetograb,self.outputfilename+'.out')
+        s2line=pygrep(linetograb,self.filename+'.out')
         try:
             S2=float(s2line[-1][0:-1])
         except:
