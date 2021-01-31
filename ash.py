@@ -264,7 +264,7 @@ def Single_par(list):
     #Creating separate inputfilename using label
     #Removing . in inputfilename as ORCA can get confused
     #print("theory:", theory)
-    theory.inputfilename=''.join([str(i) for i in list[2]]).replace('.','_')
+    theory.filename=''.join([str(i) for i in list[2]]).replace('.','_')
     #print("theory.inputfilename:", theory.inputfilename)
     if label is None:
         print("No label provided to fragment or theory objects. This is required to distinguish between calculations ")
@@ -348,14 +348,14 @@ def AnFreq(fragment=None, theory=None, numcores=1, temp=298.15, pressure=1.0):
         #Do single-point ORCA Anfreq job
         energy = theory.run(current_coords=fragment.coords, elems=fragment.elems, Hessian=True, nprocs=numcores)
         #Grab Hessian
-        hessian = Hessgrab(theory.inputfilename+".hess")
+        hessian = Hessgrab(theory.filename+".hess")
         #Add Hessian to fragment
         fragment.hessian=hessian
         
         #TODO: diagonalize it ourselves. Need to finish projection
         
         # For now, we grab frequencies from ORCA Hessian file
-        frequencies = ORCAfrequenciesgrab(theory.inputfilename+".hess")
+        frequencies = ORCAfrequenciesgrab(theory.filename+".hess")
         
         hessatoms=list(range(0,fragment.numatoms))
         Thermochemistry = thermochemcalc(frequencies,hessatoms, fragment, theory.mult, temp=temp,pressure=pressure)
@@ -3279,11 +3279,11 @@ class SpinProjectionTheory:
 
         
         #Changing inputfilename of theory1 and theory2. Must be done here
-        self.theory1.inputfilename=self.filename+"spinprojtheory1"
-        self.theory2.inputfilename=self.filename+"spinprojtheory2"
+        self.theory1.filename=self.filename+"spinprojtheory1"
+        self.theory2.filename=self.filename+"spinprojtheory2"
         #theory2 will read MOs from theory1 by default
         if self.reuseorbs is True:
-            self.theory2.moreadfile=self.theory1.inputfilename+".gbw"
+            self.theory2.moreadfile=self.theory1.filename+".gbw"
         
         #RUNNING both theories
         HSenergy = self.theory1.run(current_coords=current_coords, elems=elems, PC=PC, nprocs=nprocs, Grad=Grad)
@@ -3291,9 +3291,9 @@ class SpinProjectionTheory:
 
         #Grab S2 expectation values. Used by Yamaguchi
         if self.theory1.__class__.__name__ == "ORCATheory":
-            HS_S2=grab_spin_expect_values_ORCA(self.theory1.inputfilename+'.out')
+            HS_S2=grab_spin_expect_values_ORCA(self.theory1.filename+'.out')
         if self.theory2.__class__.__name__ == "ORCATheory":
-            BS_S2=grab_spin_expect_values_ORCA(self.theory2.inputfilename+'.out')
+            BS_S2=grab_spin_expect_values_ORCA(self.theory2.filename+'.out')
         if self.theory1.__class__.__name__ == "CFourTheory":
             print("here cfourtheroy")
             HS_S2=self.theory1.cfour_grab_spinexpect()
