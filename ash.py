@@ -3247,20 +3247,17 @@ class DaltonTheory:
 #SpinProjectionTheory. Combining energies from two theory levels to give spin-projected energy
 #Example: Noodleman, Yamaguchi spin projection
 class SpinProjectionTheory:
-    def __init__(self, fragment=None, theory1=None, theory2=None, charge=None, mult=None, printlevel=2, reuseorbs=True,
+    def __init__(self, theory1=None, theory2=None, printlevel=2, reuseorbs=True,
                  label=None, jobtype=None, localspins=None):
         print("Creating SpinProjectionTheory object. Jobtype: ", jobtype)
         self.theory1=theory1
         self.theory2=theory2
-        self.charge=charge
-        self.mult=mult
         self.printlevel=printlevel
         self.label=label
         self.reuseorbs=reuseorbs
         #This is an inputfilename that may be set externally (Singlepoint_par)
         self.inputfilename="X"
         
-        self.fragment=fragment
         self.jobtype=jobtype
         if self.jobtype == "Yamaguchi" or self.jobtype =="Noodleman" or self.jobtype=="Bencini":
             if localspins == None:
@@ -3290,12 +3287,19 @@ class SpinProjectionTheory:
         
         #RUNNING both theories
         HSenergy = self.theory1.run(current_coords=current_coords, elems=elems, PC=PC, nprocs=nprocs, Grad=Grad)
+        
+        print("here")
+        exit()
         BSenergy = self.theory2.run(current_coords=current_coords, elems=elems, PC=PC, nprocs=nprocs, Grad=Grad)
 
         #Grab S2 expectation values. Used by Yamaguchi
-        HS_S2=grab_spin_expect_values_ORCA(self.theory1.inputfilename+'.out')
-        BS_S2=grab_spin_expect_values_ORCA(self.theory2.inputfilename+'.out')
-
+        if theory.__class__.__name__ == "ORCATheory":
+            HS_S2=grab_spin_expect_values_ORCA(self.theory1.inputfilename+'.out')
+            BS_S2=grab_spin_expect_values_ORCA(self.theory2.inputfilename+'.out')
+        elif theory.__class__.__name__ == "CFourTheory":
+            print("here cfourtheroy")
+            exit()
+            
         print("Spin coupling analysis")
         print("Spin Hamiltonian form: H= -2J*S_A*S_B")
         print("Local spins are: S_A = {}  S_B = {}".format(self.Spin_A,self.Spin_B))
