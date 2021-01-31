@@ -3297,10 +3297,11 @@ class SpinProjectionTheory:
         if theory1.__class__.__name__ == "CFourTheory":
             print("here cfourtheroy")
             HS_S2=theory1.cfour_grab_spinexpect()
+            print("HS_S2:", HS_S2)
         if theory2.__class__.__name__ == "CFourTheory":
             print("here cfourtheroy")
             BS_S2=theory1.cfour_grab_spinexpect()
-            
+            print("BS_S2:", BS_S2)
         print("Spin coupling analysis")
         print("Spin Hamiltonian form: H= -2J*S_A*S_B")
         print("Local spins are: S_A = {}  S_B = {}".format(self.Spin_A,self.Spin_B))
