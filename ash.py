@@ -3287,9 +3287,6 @@ class SpinProjectionTheory:
         
         #RUNNING both theories
         HSenergy = self.theory1.run(current_coords=current_coords, elems=elems, PC=PC, nprocs=nprocs, Grad=Grad)
-        
-        print("here")
-        exit()
         BSenergy = self.theory2.run(current_coords=current_coords, elems=elems, PC=PC, nprocs=nprocs, Grad=Grad)
 
         #Grab S2 expectation values. Used by Yamaguchi
