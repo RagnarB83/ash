@@ -3290,18 +3290,19 @@ class SpinProjectionTheory:
         BSenergy = self.theory2.run(current_coords=current_coords, elems=elems, PC=PC, nprocs=nprocs, Grad=Grad)
 
         #Grab S2 expectation values. Used by Yamaguchi
-        if theory1.__class__.__name__ == "ORCATheory":
+        if self.theory1.__class__.__name__ == "ORCATheory":
             HS_S2=grab_spin_expect_values_ORCA(self.theory1.inputfilename+'.out')
-        if theory2.__class__.__name__ == "ORCATheory":
+        if self.theory2.__class__.__name__ == "ORCATheory":
             BS_S2=grab_spin_expect_values_ORCA(self.theory2.inputfilename+'.out')
-        if theory1.__class__.__name__ == "CFourTheory":
+        if self.theory1.__class__.__name__ == "CFourTheory":
             print("here cfourtheroy")
-            HS_S2=theory1.cfour_grab_spinexpect()
+            HS_S2=self.theory1.cfour_grab_spinexpect()
             print("HS_S2:", HS_S2)
-        if theory2.__class__.__name__ == "CFourTheory":
+        if self.theory2.__class__.__name__ == "CFourTheory":
             print("here cfourtheroy")
-            BS_S2=theory1.cfour_grab_spinexpect()
+            BS_S2=self.theory2.cfour_grab_spinexpect()
             print("BS_S2:", BS_S2)
+
         print("Spin coupling analysis")
         print("Spin Hamiltonian form: H= -2J*S_A*S_B")
         print("Local spins are: S_A = {}  S_B = {}".format(self.Spin_A,self.Spin_B))
