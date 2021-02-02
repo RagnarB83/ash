@@ -622,10 +622,21 @@ def read_fragfile_xyz(fragfile):
 
 
 #Write PDBfile proper
-def write_pdbfile(fragment,outputname="ASHfragment", atomnames=None, resnames=None,residlabels=None,segmentlabels=None):
+#Example,manual: write_pdbfile(frag, outputname="name", atomnames=openmmobject.atomnames, resnames=openmmobject.resnames, residlabels=openmmobject.resids,segmentlabels=openmmobject.segmentnames)
+#Example, simple: write_pdbfile(frag, outputname="name", openmmobject=objname)
+#Example, minimal: write_pdbfile(frag)
+def write_pdbfile(fragment,outputname="ASHfragment", openmmobject=None, atomnames=None, resnames=None,residlabels=None,segmentlabels=None):
     #Using ASH fragment
     elems=fragment.elems
     coords=fragment.coords
+    
+    #Can grab everything from OpenMMobject if provided
+    if openmmobject != None:
+        atomnames=openmmobject.atomnames
+        resnames=openmmobject.resnames
+        residlabels=openmmobject.resids
+        segmentlabels=openmmobject.segmentnames
+    
     
     #What to choose if keyword arguments not given
     if atomnames == None:
