@@ -621,8 +621,35 @@ def read_fragfile_xyz(fragfile):
     return elems,coords
 
 
+#Write PDBfile proper
+def write_pdbfile(fragment,outputname="ASHfragment", atomnames=None, resnames=None,residlabels=None,segmentlabels=None):
+    #Using ASH fragment
+    elems=fragment.elems
+    coords=fragment.coords
+    
+    #What to choose if keyword arguments not given
+    if atomnames == None:
+        #Elements instead. Means VMD will display atoms properly at least
+        atomnames=fragment.elems
+    if resnames == None:
+        resnames=fragment.numatoms*['DUM']
+    if residlabels == None:
+        residlabels=fragment.numatoms*[1]
+    #Note: choosing to make segment ID 3-letter-string (and then space)
+    if segmentlabels == None:
+        segmentlabels=fragment.numatoms*['SEG']
+    with open(outputname+'.pdb', 'w') as pfile:
+        for count,(atomname,c,resname,resid,seg,el) in enumerate(zip(atomnames,coords, resnames, residlabels,segmentlabels,elems)):
+            #Using string format from: cupnet.net/pdb-format/
+            line="{:6s}{:5d} {:^4s}{:1s}{:3s} {:1s}{:4d}{:1s}   {:8.3f}{:8.3f}{:8.3f}{:6.2f}{:6.2f}      {:4s}{:2s}".format(
+                'ATOM', count+1, atomname, '', resname, '', resid, '',    c[0], c[1], c[2], 1.0, 0.00, seg[0:3],el, '')
+            pfile.write(line+'\n')
+    print("Wrote PDB file:", outputname+'.pdb')
+
+
 
 #Write PDBfile (dummy version) for PyFrame
+#NOTE: Deprecated???
 def write_pdbfile_dummy(elems,coords,name, atomlabels,residlabels):
     with open(name+'.pdb', 'w') as pfile:
         resnames=atomlabels

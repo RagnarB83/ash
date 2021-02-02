@@ -47,7 +47,7 @@ if load_julia is True:
         print("Problem importing Pyjulia")
         print("Make sure Julia is installed, PyJulia within Python, Pycall within Julia, Julia packages have been installed and you are using python-jl")
         print("Python routines will be used instead when possible")
-
+        #TODO: We should here set a variable that would pick py version of routines instead
 
 
 #Debug print. Behaves like print but reads global debug var first
@@ -367,6 +367,43 @@ def AnFreq(fragment=None, theory=None, numcores=1, temp=298.15, pressure=1.0):
         print("Analytical frequencies not available for theory. Exiting.")
         exit()
 
+
+
+
+
+#Useful function to measure size of object:
+#https://goshippo.com/blog/measure-real-size-any-python-object/
+#https://github.com/bosswissam/pysize/blob/master/pysize.py
+def get_size(obj, seen=None):
+    """Recursively finds size of objects in bytes"""
+    size = sys.getsizeof(obj)
+    if seen is None:
+        seen = set()
+    obj_id = id(obj)
+    if obj_id in seen:
+        return 0
+    # Important mark as seen *before* entering recursion to gracefully handle
+    # self-referential objects
+    seen.add(obj_id)
+    if hasattr(obj, '__dict__'):
+        for cls in obj.__class__.__mro__:
+            if '__dict__' in cls.__dict__:
+                d = cls.__dict__['__dict__']
+                if inspect.isgetsetdescriptor(d) or inspect.ismemberdescriptor(d):
+                    size += get_size(obj.__dict__, seen)
+                break
+    if isinstance(obj, dict):
+        size += sum((get_size(v, seen) for v in obj.values()))
+        size += sum((get_size(k, seen) for k in obj.keys()))
+    elif hasattr(obj, '__iter__') and not isinstance(obj, (str, bytes, bytearray)):
+        size += sum((get_size(i, seen) for i in obj))
+
+    if hasattr(obj, '__slots__'):  # can have __slots__ with __dict__
+        size += sum(get_size(getattr(obj, s), seen) for s in obj.__slots__ if hasattr(obj, s))
+
+    return size
+
+
 #Numerical frequencies function
 def NumFreq(fragment=None, theory=None, npoint=1, displacement=0.0005, hessatoms=None, numcores=1, runmode='serial', temp=298.15, pressure=1.0):
     
@@ -535,67 +572,64 @@ def NumFreq(fragment=None, theory=None, npoint=1, displacement=0.0005, hessatoms
 
         #https://towardsdatascience.com/10x-faster-parallel-python-without-python-multiprocessing-e5017c93cce1
         if theory.__class__.__name__ == "QMMMTheory":
-            try:
-                import ray
-            except:
-                print("Parallel QM/MM Numerical Frequencies require the ray library.")
-                print("Please install ray : pip install ray")
-                exit(1)
             print("Numfreq with QMMMTheory")
-            ray.init(num_cpus = numcores)
-            #going to make QMMMTheory object a shared object that all workers can access
+            ray_library=False
+            
+            if ray_library == True:
+                try:
+                    import ray
+                    ray.init(num_cpus = numcores)
+                except:
+                    print("Parallel QM/MM Numerical Frequencies require the ray library.")
+                    print("Please install ray : pip install ray")
+                    exit(1)
+                #going to make QMMMTheory object a shared object that all workers can access
+                theory.mm_theory.calculate_LJ_pairpotentials(qmatoms=theory.qmatoms, actatoms=theory.actatoms)
+                print("theory.mm_theory sigmaij", theory.mm_theory.sigmaij)
+                theory_shared = ray.put(theory)
+                @ray.remote
+                def dispfunction_ray(label, filelabel, numcoresQM, theory_shared):
+                    print("inside dispfunction")
+                    print("label:", label)
+                    print("filelabel:", filelabel)
+                    print("theory_shared:", theory_shared)
+                    # print("theory_shared.qmatoms: ", theory_shared.qmatoms )
+                    print("xx")
+                    # Numcores can be used. We can launch ORCA-OpenMPI in parallel it seems.
+                    # Only makes sense if we have may more cores available than displacements
+                    print("a")
+                    elems, coords = read_xyzfile(filelabel + '.xyz')
+                    print("b")
+                    dispdir = label.replace(' ', '')
+                    os.mkdir(dispdir)
+                    os.chdir(dispdir)
+                    print("d")
+                    # shutil.move('../' + filelabel + '.xyz', './' + filelabel + '.xyz')
+                    # Read XYZ-file from file
+                    print("e")
 
+                    print("f")
+                    # Todo: Copy previous GBW file in here if ORCA, xtbrestart if xtb, etc.
+                    print("Running displacement: {}".format(label))
+                    energy, gradient = theory_shared.run(current_coords=coords, elems=elems, Grad=True, nprocs=numcoresQM)
+                    print("Energy: ", energy)
+                    os.chdir('..')
+                    # Delete dir?
+                    # os.remove(dispdir)
+                    return [label, energy, gradient]
+                result_ids = [dispfunction_ray.remote(label,filelabel,numcoresQM,theory_shared) for label,filelabel in
+                            zip(list_of_labels,list_of_filelabels)]
+                results = ray.get(result_ids)
+            else:
+            
+                #result_ids = [f.remote(df_id) for _ in range(4)]
 
-            theory.mm_theory.calculate_LJ_pairpotentials(qmatoms=theory.qmatoms, actatoms=theory.actatoms)
-            print("theory.mm_theory sigmaij", theory.mm_theory.sigmaij)
-            theory_shared = ray.put(theory)
-
-            @ray.remote
-            def dispfunction_ray(label, filelabel, numcoresQM, theory_shared):
-                print("inside dispfunction")
-                print("label:", label)
-                print("filelabel:", filelabel)
-                print("theory_shared:", theory_shared)
-                # print("theory_shared.qmatoms: ", theory_shared.qmatoms )
-                print("xx")
-                # Numcores can be used. We can launch ORCA-OpenMPI in parallel it seems.
-                # Only makes sense if we have may more cores available than displacements
-                print("a")
-                elems, coords = read_xyzfile(filelabel + '.xyz')
-                print("b")
-                dispdir = label.replace(' ', '')
-                os.mkdir(dispdir)
-                os.chdir(dispdir)
-                print("d")
-                # shutil.move('../' + filelabel + '.xyz', './' + filelabel + '.xyz')
-                # Read XYZ-file from file
-                print("e")
-
-                print("f")
-                # Todo: Copy previous GBW file in here if ORCA, xtbrestart if xtb, etc.
-                print("Running displacement: {}".format(label))
-                energy, gradient = theory_shared.run(current_coords=coords, elems=elems, Grad=True, nprocs=numcoresQM)
-                print("Energy: ", energy)
-                os.chdir('..')
-                # Delete dir?
-                # os.remove(dispdir)
-                return [label, energy, gradient]
-
-
-            result_ids = [dispfunction_ray.remote(label,filelabel,numcoresQM,theory_shared) for label,filelabel in
-                          zip(list_of_labels,list_of_filelabels)]
-
-            #result_ids = [f.remote(df_id) for _ in range(4)]
-
-            #results = pool.map(displacement_QMrun, [[geo, elems, numcoresQM, theory, label] for geo, label in
-            #                                        zip(list_of_displaced_geos, list_of_labels)])
-
-            results = ray.get(result_ids)
-
-            print(results)
-            #results = pool.map(displacement_QMMMrun, [[filelabel, numcoresQM, label, theory.fragment, theory.qm_theory, theory.mm_theory,
-            #                                        theory.actatoms, theory.qmatoms, theory.embedding, theory.charges, theory.printlevel,
-            #                                        theory.frozenatoms] for label,filelabel in zip(list_of_labels,list_of_filelabels)])
+                results = pool.map(displacement_QMrun, [[geo, elems, numcoresQM, theory, label] for geo, label in
+                                                        zip(list_of_displaced_geos, list_of_labels)])
+                print(results)
+                results = pool.map(displacement_QMMMrun, [[filelabel, numcoresQM, label, theory.fragment, theory.qm_theory, theory.mm_theory,
+                                                        theory.actatoms, theory.qmatoms, theory.embedding, theory.charges, theory.printlevel,
+                                                        theory.frozenatoms] for label,filelabel in zip(list_of_labels,list_of_filelabels)])
         #Passing QM theory directly
         else:
             results = pool.map(displacement_QMrun, [[geo, elems, numcoresQM, theory, label] for geo,label in zip(list_of_displaced_geos,list_of_labels)])
@@ -750,16 +784,85 @@ def NumFreq(fragment=None, theory=None, npoint=1, displacement=0.0005, hessatoms
     os.chdir('..')
     return Thermochemistry
 
-#Molecular dynamics class
-class MolecularDynamics:
-    def __init__(self, fragment, theory, ensemble, temperature):
-        self.fragment=fragment
-        self.theory=theory
+#Molecular dynamics
+#MD simulation object, created and used by MolecularDynamics function but not intended to be created by user
+class Simulation:
+    def __init__(self,ensemble=None,timestep=None,numsteps=None,set_temperature=None,thermostat=None,tau=None):
+        #Defined upon creation
         self.ensemble=ensemble
-        self.temperature=temperature
+        self.timestep=timestep
+        self.numsteps=numsteps
+        self.tau=tau
+        self.thermostat=thermostat
+        #Provide or get from fragment
+        self.elems=elems
+        #masslist, define here or get masses from fragment
+        self.masslist=[]
+        #Create from masslist ?
+        self.masses_array=[[]]
+        self.numatoms=len(self.elems)
+        
+        #Run variables, updated by internal run
+        self.currentstep=0
+        self.set_temperature=0.0
+        self.current_coords=np.zeros((self.numatoms,3))
+        self.current_velocities=np.zeros((self.numatoms,3))
+        self.current_accel=np.zeros((self.numatoms,3))
+        self.current_accel_t_plus_dt=np.zeros((self.numatoms,3))
+        self.current_temperature=0.0
+        self.potenergy=0.0
+        self.kinenergy=0.0
+        self.totenergy=0.0
     def run(self):
-        print("Molecular dynamics is not ready yet")
-        exit()
+        #Use or not??
+        fdsf="sdf"
+        
+        
+#Simple MD function
+def MolecularDynamics(fragment=None, theory=None, ensemble="NVE", timestep=1, numsteps=100, temperature=298.15, tau=500,
+    thermostat="berendsen", write_xyz_frequency=1, write_log_frequency=1, write_userfunction_frequency=100, MDtrajname="trajectory.xyz", 
+    initial_velocities="zero", debug=False):
+    print("Running MOLECULAR DYNAMICS module")
+
+    #Create simulation object that contains user-set parameters and also contains current simulation parameters
+    simobject=Simulation(ensemble=ensemble,timestep=timestep,numsteps=numsteps,set_temperature=298.15,thermostat=thermostat,tau=tau)
+
+    #Constants
+    #Defining multiples of dt for speed
+    dt=timestep
+    dt_2=0.5*dt
+    dt_4=0.5*dt_2
+    dt_8=0.5*dt_4
+    hartoeV=27.211386245988
+    bohr2ang = 0.52917721067
+    ang2bohr = 1.88972612546
+
+ 
+    ####################
+    #INITIALIZATION
+    ####################
+
+
+
+#Micro-iterative QM/MM Optimization
+#Wrapper around QM/MM run and geometric optimizer for performing microiterative QM/MM opt
+# I think this is easiest
+# Thiel: https://pubs.acs.org/doi/10.1021/ct600346p
+#Look into new: https://pubs.acs.org/doi/pdf/10.1021/acs.jctc.6b00547
+
+def microiter_QM_MM_OPT_v1(theory=None, fragment=None, chargemodel=None, qmregion=None, activeregion=None, bufferregion=None):
+    
+    #1. Calculate single-point QM/MM job and get charges. Maybe get gradient to judge convergence ?
+    energy=Singlepoint(theory=theory,fragment=fragment)
+    #grab charges
+    #update charges
+    #2. Change active region so that only MM atoms are in active region
+    conv_criteria="something"
+    sdf=geomeTRICOptimizer(theory=theory,fragment=fragment, coordsystem='hdlc', maxiter=50, ActiveRegion=False, actatoms=[], 
+                           convergence_setting=None, conv_criteria=conv_criteria)
+    #3. QM/MM single-point with new charges?
+    #3b. Or do geometric job until a certain threshold and then do MM again??
+    
 
 def print_time_rel(timestampA,modulename=''):
     secsA=time.time()-timestampA
@@ -883,7 +986,13 @@ class OpenMMTheory:
         self.coords=[]
         self.charges=[]
         self.Periodic = periodic
-
+        #Residue names,ids,segments,atomtypes of all atoms of systme.
+        # Grabbed below from PSF-file. Information used to write PDB-file
+        self.resnames=[]
+        self.resids=[]
+        self.segmentnames=[]
+        self.atomtypes=[]
+        self.atomnames=[]
             
         #OpenMM things
         self.openmm=simtk.openmm
@@ -909,6 +1018,17 @@ class OpenMMTheory:
             # Load CHARMM PSF files. Both CHARMM-style and XPLOR allowed I believe. Todo: Check
             self.psffile=psffile
             self.psf = simtk.openmm.app.CharmmPsfFile(psffile)
+            
+            #Grab resnames from psf-object
+            #Note: OpenMM uses 0-indexing
+            self.resnames=[self.psf.atom_list[i].residue.resname for i in range(0,len(self.psf.atom_list))]
+            self.resids=[self.psf.atom_list[i].residue.idx for i in range(0,len(self.psf.atom_list))]
+            self.segmentnames=[self.psf.atom_list[i].system for i in range(0,len(self.psf.atom_list))]
+            self.atomtypes=[self.psf.atom_list[i].attype for i in range(0,len(self.psf.atom_list))]
+            #TODO: Note: For atomnames it seems OpenMM converts atomnames to its own. Perhaps not useful
+            self.atomnames=[self.psf.atom_list[i].name for i in range(0,len(self.psf.atom_list))]
+
+
             self.params = simtk.openmm.app.CharmmParameterSet(charmmtopfile, charmmprmfile)
             # self.pdb = simtk.openmm.app.PDBFile(pdbfile) probably not reading coordinates here
             #self.forcefield = self.psf
@@ -3294,12 +3414,11 @@ class SpinProjectionTheory:
             HS_S2=grab_spin_expect_values_ORCA(self.theory1.filename+'.out')
         if self.theory2.__class__.__name__ == "ORCATheory":
             BS_S2=grab_spin_expect_values_ORCA(self.theory2.filename+'.out')
+        #ONly problem is if we grab S2 values in CCSD(T) job we get the (wrong?) CCSD(T) S2 values instead of CCSD S2 values (as used in paper by Stanton,Chan)
         if self.theory1.__class__.__name__ == "CFourTheory":
-            print("here cfourtheroy")
             HS_S2=self.theory1.cfour_grab_spinexpect()
             print("HS_S2:", HS_S2)
         if self.theory2.__class__.__name__ == "CFourTheory":
-            print("here cfourtheroy")
             BS_S2=self.theory2.cfour_grab_spinexpect()
             print("BS_S2:", BS_S2)
 
