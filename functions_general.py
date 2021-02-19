@@ -21,7 +21,9 @@ else:
     class BC:
         HEADER = ''; OKBLUE = ''; OKGREEN = ''; OKMAGENTA= ''; OKRED= ''; WARNING = ''; FAIL = ''; END = ''; BOLD = ''; UNDERLINE = ''
         
-#Get ranges of integers from list. Returns string of ranges. Used to communitcate with crest and xtbs
+#Get ranges of integers from list. Returns string of ranges. Used to communitcate with crest and xtb
+#example: input: [1,2,3,4,5,6,20,21,22,23,500,700,701,702,1000,1100,1101]
+#output: '1-6,20-23,500,700-702,1000,1100-1101'
 def int_ranges(nums):
     nums = sorted(set(nums))
     gaps = [[s, e] for s, e in zip(nums, nums[1:]) if s+1 < e]
