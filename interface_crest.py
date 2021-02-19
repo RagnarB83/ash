@@ -19,10 +19,10 @@ def call_crest(fragment=None, xtbmethod=None, crestdir=None,charge=None, mult=No
         print("Creating .xcontrol file for constraints")
         with open(".xcontrol","w") as constrainfile:
             constrainfile.write("$constrain\n")
-            constrainfile.write("atoms: {}\n".format(','.join(map(str, constrained_atoms))))
+            constrainfile.write("atoms: {}\n".format(','.join(map(str, constrained_crest))))
             constrainfile.write("force constant={}\n".format(forceconstant_constraint))
             constrainfile.write("$metadyn\n")
-            constrainfile.write("atoms: {}\n".format(','.join(map(str, unconstrained ))))
+            constrainfile.write("atoms: {}\n".format(','.join(map(str, unconstrained_crest ))))
             constrainfile.write("$end\n")
 
     #Create XYZ file from fragment (for generality)
