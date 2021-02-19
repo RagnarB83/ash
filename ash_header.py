@@ -1,4 +1,4 @@
-
+from functions_general import BC
 
 def print_ash_header():
     programversion = 0.1
