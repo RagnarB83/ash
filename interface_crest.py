@@ -14,6 +14,8 @@ def call_crest(fragment=None, xtbmethod=None, crestdir=None,charge=None, mult=No
     if constrained_atoms != None:
         allatoms=range(0,fragment.numatoms)
         unconstrained=listdiff(allatoms,constrained_atoms)
+        constrained_crest=[i+1 for i in constrained_atoms]
+        unconstrained_crest=[j+1 for j in unconstrained]
         print("Creating .xcontrol file for constraints")
         with open(".xcontrol","w") as constrainfile:
             constrainfile.write("$constrain\n")
