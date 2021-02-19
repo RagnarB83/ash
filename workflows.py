@@ -8,9 +8,9 @@ import shutil
 import constants
 import math
 import dictionaries_lists
+import interface_geometric
+import interface_crest
 from functions_ORCA import grab_HF_and_corr_energies
-from interface_geometric import *
-from interface_crest import *
 from elstructure_functions import check_cores_vs_electrons, num_core_electrons
 
 #Various workflows, extrapolations, composite methods and associated sub-functions
@@ -322,10 +322,10 @@ def confsampler_protocol(fragment=None, crestdir=None, xtbmethod='GFN2-xTB', MLt
     
     #1. Calling crest
     #call_crest(fragment=molecule, xtbmethod='GFN2-xTB', crestdir=crestdir, charge=charge, mult=mult, solvent='H2O', energywindow=6 )
-    call_crest(fragment=fragment, xtbmethod=xtbmethod, crestdir=crestdir, charge=charge, mult=mult, numcores=numcores)
+    interface_crest.call_crest(fragment=fragment, xtbmethod=xtbmethod, crestdir=crestdir, charge=charge, mult=mult, numcores=numcores)
 
     #2. Grab low-lying conformers from crest_conformers.xyz as list of ASH fragments.
-    list_conformer_frags, xtb_energies = get_crest_conformers()
+    list_conformer_frags, xtb_energies = interface_crest.get_crest_conformers()
 
     print("list_conformer_frags:", list_conformer_frags)
     print("")
@@ -339,7 +339,7 @@ def confsampler_protocol(fragment=None, crestdir=None, xtbmethod='GFN2-xTB', MLt
     for index,conformer in enumerate(list_conformer_frags):
         print("")
         print("Performing ML Geometry Optimization for Conformer ", index)
-        geomeTRICOptimizer(fragment=conformer, theory=MLtheory, coordsystem='tric')
+        interface_geometric.geomeTRICOptimizer(fragment=conformer, theory=MLtheory, coordsystem='tric')
         ML_energies.append(conformer.energy)
         #Saving ASH fragment and XYZ file for each ML-optimized conformer
         os.rename('Fragment-optimized.ygg', 'Conformer{}_ML.ygg'.format(index))
@@ -1693,7 +1693,7 @@ def thermochemprotocol_single(fragment=None, Opt_theory=None, SP_theory=None, or
         #Adding charge and mult to theory object, taken from each fragment object
         Opt_theory.charge = fragment.charge
         Opt_theory.mult = fragment.mult
-        geomeTRICOptimizer(theory=Opt_theory,fragment=fragment)
+        interface_geometric.geomeTRICOptimizer(theory=Opt_theory,fragment=fragment)
         print("-------------------------------------------------------------------------")
         print("THERMOCHEM PROTOCOL-single: Step 2. Frequency calculation")
         print("-------------------------------------------------------------------------")
@@ -1836,7 +1836,7 @@ def old_thermochemprotocol(Opt_theory=None, SP_theory=None, fraglist=None, stoic
             #Adding charge and mult to theory object, taken from each fragment object
             Opt_theory.charge = species.charge
             Opt_theory.mult = species.mult
-            geomeTRICOptimizer(theory=Opt_theory,fragment=species)
+            interface_geometric.geomeTRICOptimizer(theory=Opt_theory,fragment=species)
             
             #DFT-FREQ
             if analyticHessian == True:
@@ -2091,7 +2091,7 @@ def calc_surface(fragment=None, theory=None, workflow=None, scantype='Unrelaxed'
                                                              RC1_type=RC1_type, RC2_type=RC2_type, RC1_indices=RC1_indices, RC2_indices=RC2_indices)
                             print("allconstraints:", allconstraints)
                             #Running zero-theory with optimizer just to set geometry
-                            geomeTRICOptimizer(fragment=fragment, theory=zerotheory, maxiter=maxiter, coordsystem=coordsystem, constraints=allconstraints, constrainvalue=True, convergence_setting=convergence_setting)
+                            interface_geometric.geomeTRICOptimizer(fragment=fragment, theory=zerotheory, maxiter=maxiter, coordsystem=coordsystem, constraints=allconstraints, constrainvalue=True, convergence_setting=convergence_setting)
                             #Shallow copy of fragment
                             newfrag = copy.copy(fragment)
                             newfrag.label = str(RCvalue1)+"_"+str(RCvalue1)
@@ -2149,7 +2149,7 @@ def calc_surface(fragment=None, theory=None, workflow=None, scantype='Unrelaxed'
                                                              RC1_type=RC1_type, RC2_type=RC2_type, RC1_indices=RC1_indices, RC2_indices=RC2_indices)
                             print("x allconstraints:", allconstraints)
                             #Running zero-theory with optimizer just to set geometry
-                            geomeTRICOptimizer(fragment=fragment, theory=zerotheory, maxiter=maxiter, coordsystem=coordsystem, constraints=allconstraints, constrainvalue=True, convergence_setting=convergence_setting)
+                            interface_geometric.geomeTRICOptimizer(fragment=fragment, theory=zerotheory, maxiter=maxiter, coordsystem=coordsystem, constraints=allconstraints, constrainvalue=True, convergence_setting=convergence_setting)
                             
                             #Write geometry to disk
                             fragment.write_xyzfile(xyzfilename="RC1_"+str(RCvalue1)+"-RC2_"+str(RCvalue2)+".xyz")
@@ -2182,7 +2182,7 @@ def calc_surface(fragment=None, theory=None, workflow=None, scantype='Unrelaxed'
                                                          RC1_type=RC1_type, RC1_indices=RC1_indices)
                         print("allconstraints:", allconstraints)
                         #Running zero-theory with optimizer just to set geometry
-                        geomeTRICOptimizer(fragment=fragment, theory=zerotheory, maxiter=maxiter, coordsystem=coordsystem, constraints=allconstraints, constrainvalue=True, convergence_setting=convergence_setting)
+                        interface_geometric.geomeTRICOptimizer(fragment=fragment, theory=zerotheory, maxiter=maxiter, coordsystem=coordsystem, constraints=allconstraints, constrainvalue=True, convergence_setting=convergence_setting)
                         
                         #Write geometry to disk: RC1_2.02.xyz
                         fragment.write_xyzfile(xyzfilename="RC1_"+str(RCvalue1)+".xyz")
@@ -2215,7 +2215,7 @@ def calc_surface(fragment=None, theory=None, workflow=None, scantype='Unrelaxed'
                                                              RC1_type=RC1_type, RC2_type=RC2_type, RC1_indices=RC1_indices, RC2_indices=RC2_indices)
                             print("allconstraints:", allconstraints)
                             #Running 
-                            energy = geomeTRICOptimizer(fragment=fragment, theory=theory, maxiter=maxiter, coordsystem=coordsystem, constraints=allconstraints, constrainvalue=True, convergence_setting=convergence_setting)
+                            energy = interface_geometric.geomeTRICOptimizer(fragment=fragment, theory=theory, maxiter=maxiter, coordsystem=coordsystem, constraints=allconstraints, constrainvalue=True, convergence_setting=convergence_setting)
                             print("RCvalue1: {} RCvalue2: {} Energy: {}".format(RCvalue1,RCvalue2, energy))
                             surfacedictionary[(RCvalue1,RCvalue2)] = energy
                             #Writing dictionary to file
@@ -2244,7 +2244,7 @@ def calc_surface(fragment=None, theory=None, workflow=None, scantype='Unrelaxed'
                                                          RC1_type=RC1_type, RC1_indices=RC1_indices)
                         print("allconstraints:", allconstraints)
                         #Running zero-theory with optimizer just to set geometry
-                        energy = geomeTRICOptimizer(fragment=fragment, theory=theory, maxiter=maxiter, coordsystem=coordsystem, constraints=allconstraints, constrainvalue=True, convergence_setting=convergence_setting)
+                        energy = interface_geometric.geomeTRICOptimizer(fragment=fragment, theory=theory, maxiter=maxiter, coordsystem=coordsystem, constraints=allconstraints, constrainvalue=True, convergence_setting=convergence_setting)
                         print("RCvalue1: {} Energy: {}".format(RCvalue1, energy))
                         surfacedictionary[(RCvalue1)] = energy
                         #Writing dictionary to file
@@ -2401,7 +2401,7 @@ def calc_surface_fromXYZ(xyzdir=None, theory=None, dimension=None, resultfile=No
                         allconstraints = set_constraints(dimension=2, RCvalue1=RCvalue1, RCvalue2=RCvalue2, extraconstraints=extraconstraints,
                                                         RC1_type=RC1_type, RC2_type=RC2_type, RC1_indices=RC1_indices, RC2_indices=RC2_indices)
                         print("allconstraints:", allconstraints)
-                        energy = geomeTRICOptimizer(fragment=mol, theory=theory, 
+                        energy = interface_geometric.geomeTRICOptimizer(fragment=mol, theory=theory, 
                                                     maxiter=maxiter, coordsystem=coordsystem, constraints=allconstraints, constrainvalue=True, 
                                                     convergence_setting=convergence_setting)
                         #Write geometry to disk in dir : surface_xyzfiles
@@ -2433,7 +2433,7 @@ def calc_surface_fromXYZ(xyzdir=None, theory=None, dimension=None, resultfile=No
                         allconstraints = set_constraints(dimension=1, RCvalue1=RCvalue1, extraconstraints=extraconstraints,
                                                         RC1_type=RC1_type, RC1_indices=RC1_indices)
                         print("allconstraints:", allconstraints)
-                        energy = geomeTRICOptimizer(fragment=mol, theory=theory, 
+                        energy = interface_geometric.geomeTRICOptimizer(fragment=mol, theory=theory, 
                                                     maxiter=maxiter, coordsystem=coordsystem, constraints=allconstraints, constrainvalue=True, 
                                                     convergence_setting=convergence_setting)
                         #Write geometry to disk in dir : surface_xyzfiles

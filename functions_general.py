@@ -1,5 +1,8 @@
 import settings_ash
 import os
+import numpy as np
+import time
+from functools import wraps
 
 #ANSI colors: http://jafrog.com/2013/11/23/colors-in-terminal.html
 if settings_ash.use_ANSI_color is True:
@@ -18,10 +21,12 @@ else:
     class BC:
         HEADER = ''; OKBLUE = ''; OKGREEN = ''; OKMAGENTA= ''; OKRED= ''; WARNING = ''; FAIL = ''; END = ''; BOLD = ''; UNDERLINE = ''
         
-import numpy as np
-import time
-from functools import wraps
 
+#Debug print. Behaves like print but reads global debug var first
+def printdebug(string,var=''):
+    global debugflag
+    if debugflag is True:
+        print(BC.OKRED,string,var,BC.END)
 
 def timefn(fn):
     @wraps(fn)

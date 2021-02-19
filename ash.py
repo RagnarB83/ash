@@ -19,12 +19,11 @@ import subprocess as sp
 import elstructure_functions
 from workflows import *
 from benchmarking import *
-
-debugflag=False
-
 import sys
 import inspect
+from ash_header import print_ash_header
 
+debugflag=False
 
 #Julia dependency
 #Current behaviour: We try to import, if not possible then we continue
@@ -49,106 +48,13 @@ if load_julia is True:
         print("Python routines will be used instead when possible")
         #TODO: We should here set a variable that would pick py version of routines instead
 
-
-#Debug print. Behaves like print but reads global debug var first
-def printdebug(string,var=''):
-    global debugflag
-    if debugflag is True:
-        print(BC.OKRED,string,var,BC.END)
-
-
-def print_ash_header():
-    programversion = 0.1
-
-    #Getting commit version number from file VERSION (updated by yggpull) inside module dir
-    try:
-        with open(os.path.dirname(ash.__file__)+"/VERSION") as f:
-            git_commit_number = int(f.readline())
-    except:
-        git_commit_number="Unknown"
-
-    #http://asciiflow.com
-    #https://textik.com/#91d6380098664f89
-    #https://www.gridsagegames.com/rexpaint/
-
-    ascii_banner="""
-   ▄████████    ▄████████    ▄█    █▄    
-  ███    ███   ███    ███   ███    ███   
-  ███    ███   ███    █▀    ███    ███   
-  ███    ███   ███         ▄███▄▄▄▄███▄▄ 
-▀███████████ ▀███████████ ▀▀███▀▀▀▀███▀  
-  ███    ███          ███   ███    ███   
-  ███    ███    ▄█    ███   ███    ███   
-  ███    █▀   ▄████████▀    ███    █▀    
-                                         
-    """
-
-    ascii_banner_center = """
-                            ▄████████    ▄████████    ▄█    █▄    
-                           ███    ███   ███    ███   ███    ███   
-                           ███    ███   ███    █▀    ███    ███   
-                           ███    ███   ███         ▄███▄▄▄▄███▄▄ 
-                         ▀███████████ ▀███████████ ▀▀███▀▀▀▀███▀  
-                           ███    ███          ███   ███    ███   
-                           ███    ███    ▄█    ███   ███    ███   
-                           ███    █▀   ▄████████▀    ███    █▀    
-                                         
-    """
-    ascii_tree = """                                                                               
-                  [      ▓          ▒     ╒                  ▓                  
-                  ╙█     ▓▓         ▓  -µ ╙▄        ¬       ▓▀             
-               ▌∩   ▀█▓▌▄▄▓▓▓▄,  ▀▄▓▌    ▓  ▀█      ▌   █ ╓▓Γ ▄▓▀¬              
-              ╓Γ╘     % ╙▀▀▀▀▀▓▓▄  ▓▓   █▓,╒  ▀▓   ▓▌ Æ▀▓▓▓ ▄▓▓¬ .     ▌        
-              ▓  ^█    ▌  ▄    ▀▓▓ ▓▓m ▐▓ ▓▓  ▐▌▓▌▓▀   Å▓▓▓▓▀     ▐   ▐▓    ▄   
-            ╘▓▌ \  ▀▓▄▐▓ ▐▓     ▀▓▓▓▓m ▓▌▄▓▓█ ▓┘ ▓▓ ▄█▀▀▓▓▄   ▐▓  ▐▄  j▓   ▓    
-          █  ╙▓  ╙▀▄▄▀▓▓µ ▓   ▄▄▀▀▓▓▓ ▓▓▓Σ▄▓▓▓Γ  ▓▓▓▀ █▓▀^▓  ▄▓   ▓   ▐▓  █     
-        ▌  ▀▀█,▓▓  ▄╙▀▓▓▓▄▓▌▄▓▌   ▓▓  ▓▓▓▀▓▓▓▓▓  ▓▓▓▓▓▀ ╞ ▓▄▓▀ ╓─ ▓▄ ,▓█▀▀ .▀   
-        ▐▄    ▀▓▓  ▓   ▓▓▓▓▓Γ╙▓▄  ▓▓▓▓▓▌▓▓▀▓Γ ▓▓▄▓▓▓▀  ▄ ▓▓▀  ▀   ▐▓▄▓▀   ▄▓    
-   ╓┴▀███▓▓▓▄   ▓▓▓    █▓▓▓ ║ ¬▓▓▓▓▓▓▓▓▀  ▓▌  ▐▓▓▓▓  ▄▓▓▓▀  ▄▓██▀▀  ▓▓▄▓█▀Γ     
-           ╙▀▓▓▓▓▓▓     ▓▓▓  █▄  ▀▓▓▓▓▓  j▓▄  ▓▓▓▓▓▓▓▓▀   █▓▓▀   ▄▓▓▓▀▐         
-          ,▄µ  ▀▓▓▓▓▓▄  ▓▓▓   ▓▓▄▓▓▀▓▓▓▓▓▓▓  ▄▓▓▓▓▓▓▓▓▓▓▓▓▀  ▄▓▓▀▀¬             
-    ▄▓█▀▀▀▀▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▄  ²▓▓▓    ▀▓▓▓▓ ▄▓▓▓▓▓▓▀▀▀¬   ▄▓▓▀¬ ▄Φ` ▄`       ▓  
-  Σ▀Σ  ▄██▀▀Σ     ¬▀▓▓▓▓▓▓▓▓  j▓▓▌     ▐▓▓▓▓▓▓▓▓▀       .▓▓▀  ▄▓  ▄▓Γ   ▄▄▄▀▀   
-     ╒▓               ▀▓▓▓▓▓▄,▓▓▓▓▓▓▓▓▄ ▓▓▓▓▓▓▓▓▓▄,     ▓▓▓▄▄▓▓▓█▀▀  ▓▓▀¬       
-     ╙⌐       ▄         ▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▐▀▓▓▓▓▓▓▓▓▓▓▓▓▀▀▓▓▓▓▓▓▓▀          
-          ▄█▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▀▀¬  ▐▀▓▓▓▓▓▓▓▓▓                      ▐▀▀▄         
-       ▄▀▀▐▓▓▀▐  ¬*▐▀▀▀▀             ▓▓▓▓▓▓▓                                 
-     ╒Γ   ▐▓                         ▓▓▓▓▓▓▓                                    
-     Γ    ╫                          ▓▓▓▓▓▓▓                                    
-                                     ▓▓▓▓▓▓▓                                    
-                                    ▓▓▓▓▓▓▓▓▄                                   
-                                   ▓▓▓▓▓▓▓▓▓▓▄                                  
-                                ,▓▓▓▓▓▓▓▓▓▓▓▓▓▄                                 
-                          ▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▄▄▌▌▄▄▄                       
-                ,▄æ∞▄▄▄█▓▀▀▐¬▐▀▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▄ ▐▀▓▓▓▓▓▀▀▀▀Σ╙           
-         ╙Φ¥¥▀▀▀▀   ╒▓   ▄▓█▀▀▓▓▓▓▓▓▓▓▀  ▓▓▓▓▓▓ ▀▓▓▄▄▐▀▀▀▀▀▐▐▀██                
-                    ▓▌▄▓▓▀  ▓▓▓▓▓▀▀▓▓     ▓▓ ▓▓▓   ▐▀▀█▓▓▌¥4▀▀▀▀▓▓▄             
-               `ΓΦ▀▓▀▐   ▄▄▓▓ ▓▓  ▐▌▓     ▓▓▓ ▓▀▀▓▄     ,▓▓      ▀▀▀▀▀          
-                 ▄▀,  ▄█▀▀ ▓¬ ▓τ  ▓ ▐▓   ▓  ▓  ¥ ▓        ▀▌                    
-               ^    ▓▀    █  ▓▀ ▄█¬ ▐▓  ▌   Γ   ▐▓τ*       ▀█▄                  
-                   ▓   /Γ ƒ▀ⁿ  █    ▓   Γ      ╓▀▐⌐          ¬▀²                
-                   ▓      \    ▀    ╙µ  ⌡                                       
-                                     └                                                                                                                      
-    """
-    print(BC.OKGREEN,"----------------------------------------------------------------------------------",BC.END)
-    print(BC.OKGREEN,"----------------------------------------------------------------------------------",BC.END)
-    #print(BC.OKBLUE,ascii_banner3,BC.END)
-    #print(BC.OKBLUE,ascii_banner2,BC.END)
-    print(BC.OKGREEN,ascii_banner_center,BC.END)
-    print(BC.OKGREEN,ascii_tree,BC.END)
-    print(BC.WARNING,BC.BOLD,"ASH version", programversion,BC.END)
-    print(BC.WARNING, "Git commit version: ", git_commit_number, BC.END)
-    print(BC.WARNING,"A COMPCHEM AND QM/MM ENVIRONMENT", BC.END)
-    print(BC.OKGREEN,"----------------------------------------------------------------------------------",BC.END)
-    print(BC.OKGREEN,"----------------------------------------------------------------------------------",BC.END)
-
-#Functions to run each displacement in parallel NumFreq run. Have to be here.
+#Functions to run each displacement in parallel NumFreq run.
 #Simple QM object
 def displacement_QMrun(arglist):
     #print("arglist:", arglist)
     geo = arglist[0]
     elems = arglist[1]
-    #Numcores can be used. We can launch ORCA-OpenMPI in parallel it seems. Only makes sense if we have may more cores available than displacements
+    #We can launch ORCA-OpenMPI in parallel it seems. Only makes sense if we have may more cores available than displacements
     numcores = arglist[2]
     theory = arglist[3]
     label = arglist[4]
@@ -551,15 +457,15 @@ def NumFreq(fragment=None, theory=None, npoint=1, displacement=0.0005, hessatoms
         #results = pool.map(displacement_run2, [[filelabel, numcoresQM, theory, label] for label,filelabel in zip(list_of_labels,list_of_filelabels)])
 
         #Reducing size of theory object
-        print("size of theory:", get_size(theory))
-        print("size of theory.coords:", get_size(theory.coords))
-        print("size of coords:", get_size(coords))
+        #print("size of theory:", get_size(theory))
+        #print("size of theory.coords:", get_size(theory.coords))
+        #print("size of coords:", get_size(coords))
         theory.coords=[]
         theory.elems=[]
         theory.connectivity=[]
         print(theory)
         #print(theory.__dict__)
-        print("size of theory after del:", get_size(theory))
+        #print("size of theory after del:", get_size(theory))
 
         #QMMM_xtb = QMMMTheory(fragment=Saddlepoint, qm_theory=xtbcalc, mm_theory=MMpart, actatoms=Centralmainfrag,
         #                      qmatoms=Centralmainfrag, embedding='Elstat', nprocs=numcores)
@@ -573,9 +479,10 @@ def NumFreq(fragment=None, theory=None, npoint=1, displacement=0.0005, hessatoms
         #https://towardsdatascience.com/10x-faster-parallel-python-without-python-multiprocessing-e5017c93cce1
         if theory.__class__.__name__ == "QMMMTheory":
             print("Numfreq with QMMMTheory")
-            ray_library=False
+            ray_library=True
             
             if ray_library == True:
+                print("Ray parallelization is active")
                 try:
                     import ray
                     ray.init(num_cpus = numcores)
@@ -583,9 +490,12 @@ def NumFreq(fragment=None, theory=None, npoint=1, displacement=0.0005, hessatoms
                     print("Parallel QM/MM Numerical Frequencies require the ray library.")
                     print("Please install ray : pip install ray")
                     exit(1)
+                
+                if theory.mm_theory == "NonBondedTheory":
+                    #Do pairpotentials before we begin if NonBondedTheoyr
+                    theory.mm_theory.calculate_LJ_pairpotentials(qmatoms=theory.qmatoms, actatoms=theory.actatoms)
+                    print("theory.mm_theory sigmaij", theory.mm_theory.sigmaij)
                 #going to make QMMMTheory object a shared object that all workers can access
-                theory.mm_theory.calculate_LJ_pairpotentials(qmatoms=theory.qmatoms, actatoms=theory.actatoms)
-                print("theory.mm_theory sigmaij", theory.mm_theory.sigmaij)
                 theory_shared = ray.put(theory)
                 @ray.remote
                 def dispfunction_ray(label, filelabel, numcoresQM, theory_shared):
@@ -624,9 +534,9 @@ def NumFreq(fragment=None, theory=None, npoint=1, displacement=0.0005, hessatoms
             
                 #result_ids = [f.remote(df_id) for _ in range(4)]
 
-                results = pool.map(displacement_QMrun, [[geo, elems, numcoresQM, theory, label] for geo, label in
-                                                        zip(list_of_displaced_geos, list_of_labels)])
-                print(results)
+                #results = pool.map(displacement_QMrun, [[geo, elems, numcoresQM, theory, label] for geo, label in
+                #                                        zip(list_of_displaced_geos, list_of_labels)])
+                #print(results)
                 results = pool.map(displacement_QMMMrun, [[filelabel, numcoresQM, label, theory.fragment, theory.qm_theory, theory.mm_theory,
                                                         theory.actatoms, theory.qmatoms, theory.embedding, theory.charges, theory.printlevel,
                                                         theory.frozenatoms] for label,filelabel in zip(list_of_labels,list_of_filelabels)])
@@ -852,6 +762,7 @@ def MolecularDynamics(fragment=None, theory=None, ensemble="NVE", timestep=1, nu
 
 def microiter_QM_MM_OPT_v1(theory=None, fragment=None, chargemodel=None, qmregion=None, activeregion=None, bufferregion=None):
     
+    exit()
     #1. Calculate single-point QM/MM job and get charges. Maybe get gradient to judge convergence ?
     energy=Singlepoint(theory=theory,fragment=fragment)
     #grab charges
@@ -862,6 +773,68 @@ def microiter_QM_MM_OPT_v1(theory=None, fragment=None, chargemodel=None, qmregio
                            convergence_setting=None, conv_criteria=conv_criteria)
     #3. QM/MM single-point with new charges?
     #3b. Or do geometric job until a certain threshold and then do MM again??
+
+
+#frozen-density micro-iterative QM/MM
+def microiter_QM_MM_OPT_v2(theory=None, fragment=None, maxiter=500, qmregion=None, activeregion=None, bufferregion=None,xtbdir=None,xtbmethod='GFN2-xTB'):
+    sdf="dsds"
+    exit()
+#xtb instead of charges
+def microiter_QM_MM_OPT_v3(theory=None, fragment=None, maxiter=500, qmregion=None, activeregion=None, bufferregion=None,xtbdir=None,xtbmethod='GFN2-xTB'):
+    exit()
+    #Make copy of orig theory
+    orig_theory=copy.deepcopy(theory)
+    # TODO: If BS-spinflipping, use Hsmult instead of regular mul6
+    xtbtheory=xTBTheory(xtbdir=None, charge=theory.qm_theory.charge, mult=theory.qm_theory.mult, xtbmethod=xtbmethod, 
+                        runmode='inputfile', nprocs=1, printlevel=2)
+    ll_theory=copy.deepcopy(theory)
+    ll_theory.qm_theory=xtbtheory
+    #Convergence criteria
+    loose_conv_criteria = { 'convergence_energy' : 1e-1, 'convergence_grms' : 1e-1, 'convergence_gmax' : 1e-1, 'convergence_drms' : 1e-1, 
+                     'convergence_dmax' : 1e-1 }
+    final_conv_criteria = {'convergence_energy' : 1e-6, 'convergence_grms' : 3e-4, 'convergence_gmax' : 4.5e-4, 'convergence_drms' : 1.2e-3, 
+                        'convergence_dmax' : 1.8e-3 }
+
+    
+    #Remove QM-region from actregion, optimize everything else.
+    act_original=copy.deepcopy(act)
+    for i in qmatoms:
+        activeregion.remove(i)
+        
+        
+    for macroiteration in range(0,maxiter):
+        oldHLenergy=Hlenergy
+        print("oldHLenergy:", oldHLenergy)
+        #New Macro-iteration step
+        HLenergy,HLgrad=Singlepoint(theory=orig_theory,fragment=fragment,Grad=True)
+        print("HLenergy:", HLenergy)
+        #Check if HLgrad matches convergence critera for gradient?
+        if macroiteration > 0:
+            #Test step acceptance
+            if HLenergy > oldHLenergy:
+                #Reject step. Reduce step size, use old geo, not sure how
+                pass
+            if RMS_Hlgrad < final_conv_criteria['convergence_grms'] and MaxHLgrad < final_conv_criteria['convergence_gmax']:
+                print("Converged.")
+                return
+            #Make step using Hlgrad
+            
+        LLenergy,LLgrad=Singlepoint(theory=ll_theory,fragment=fragment,Grad=True)
+        #Compare gradient, calculate G0 correction
+
+        print("Now starting low-level theory QM/MM microtierative optimization")
+        print("activeregion:", activeregion)
+        print("ll_theory qm theory:", ll_theory.qm_theory)
+        bla=geomeTRICOptimizer(theory=ll_theory,fragment=fragment, coordsystem='hdlc', maxiter=200, ActiveRegion=True, actatoms=activeregion, 
+                            conv_criteria=loose_conv_criteria)
+        print("Now starting finallevel theory QM/MM microtierative optimization")
+        print("act_original:", act_original)
+        print("orig_theory qm theory:", orig_theory.qm_theory)
+        final=geomeTRICOptimizer(theory=orig_theory,fragment=fragment, coordsystem='hdlc', maxiter=200, ActiveRegion=True, actatoms=act_original, 
+                            conv_criteria=final_conv_criteria)
+        print("Micro-iterative QM/MM opt complete !")
+    return final
+    
     
 
 def print_time_rel(timestampA,modulename=''):
@@ -1027,14 +1000,14 @@ class OpenMMTheory:
             self.atomtypes=[self.psf.atom_list[i].attype for i in range(0,len(self.psf.atom_list))]
             #TODO: Note: For atomnames it seems OpenMM converts atomnames to its own. Perhaps not useful
             self.atomnames=[self.psf.atom_list[i].name for i in range(0,len(self.psf.atom_list))]
-
-
+            
             self.params = simtk.openmm.app.CharmmParameterSet(charmmtopfile, charmmprmfile)
             # self.pdb = simtk.openmm.app.PDBFile(pdbfile) probably not reading coordinates here
             #self.forcefield = self.psf
             self.topology = self.psf.topology
             
             #Setting active and frozen variables once topology is in place
+            #NOTE: Is this actually used?
             self.set_active_and_frozen_regions(active_atoms=active_atoms, frozen_atoms=frozen_atoms)
             
             # Create an OpenMM system by calling createSystem on psf

@@ -222,7 +222,8 @@ def tddftgrab(file):
             for line in file:
                 if tddftgrab==True:
                     if 'STATE' in line:
-                        tddftstates.append(float(line.split()[5]))
+                        if 'eV' in line:
+                            tddftstates.append(float(line.split()[5]))
                         tddftgrab=True
                 if 'the weight of the individual excitations' in line:
                     tddftgrab=True
@@ -252,7 +253,6 @@ def grabtrajenergies(filename):
     #    return energies
     return energies,stepvals
 
-#Grab alpha and beta orbital energies from ORCA SCF job
 def orbitalgrab(file):
     occorbsgrab=False
     virtorbsgrab=False

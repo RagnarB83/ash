@@ -1,19 +1,16 @@
 #Module for calculating PhotoElectron/PhotoIonization Spectra
 #####################################
-
 import glob
 import numpy as np
 import os
 import sys
 import subprocess as sp
 import struct
-#import functions_coords
-#from functions_coords import *
-from functions_ORCA import *
-from functions_general import *
-from ash import *
+import ash
 import constants
-from elstructure_functions import *
+from functions_ORCA import checkORCAfinished,scfenergygrab,tddftgrab,orbitalgrab,run_orca_plot,grabEOMIPs,check_stability_in_output
+from functions_general import writestringtofile
+from elstructure_functions import HOMOnumbercalc,modosplot,write_cube_diff,read_cube
 
 class bcolors:
     HEADER = '\033[95m' ; OKBLUE = '\033[94m'; OKGREEN = '\033[92m'; OKMAGENTA= '\033[95m'; WARNING = '\033[93m'; FAIL = '\033[91m'; ENDC = '\033[0m'; BOLD = '\033[1m'; UNDERLINE = '\033[4m'
@@ -22,7 +19,8 @@ eldict={'H':1,'He':2,'Li':3,'Be':4,'B':5,'C':6,'N':7,'O':8,'F':9,'Ne':10,'Na':11
 
 
 #Cleanup function. Delete MO-files, det files, etc.
-def cleanup():
+#NOTE: Unused at the moment
+def PEScleanup():
     """
     Cleanup function for PES calculations. Deletes result and temporary files
     :return:
@@ -45,11 +43,6 @@ def readfile(filename):
     print('File {} does not exist!'.format(filename))
     sys.exit(12)
   return out
-
-#Simple write long-string to file
-def writestringtofile(string,file):
-    with open(file, 'w') as f:
-        f.write(string)
 
 #Get Atomic overlap matrix from GBW file
 #From SHARC
@@ -274,7 +267,7 @@ def get_dets_from_single(logfile,restr,gscharge,gsmult,totnuccharge,frozencore):
           infos['NOB']=int(s[4])-int(s[3])+1
           infos['NVB']=int(s[7])-int(s[6])+1
 
-    if not 'NOA' in  infos:
+    if not 'NOA' in infos:
       charge=gscharge
       #charge=QMin['chargemap'][gsmult]
       nelec=float(totnuccharge-charge)
@@ -624,31 +617,6 @@ def grabDysonnorms():
             dysonorbitalgrab=True
     return dysonnorms
 
-#Calculate HOMO number from nuclear charge from XYZ-file and total charge
-def HOMOnumbercalc(file,charge,mult):
-    el=[]
-    with open(file) as f:
-        for count,line in enumerate(f):
-            if count >1:
-                el.append(line.split()[0])
-    totnuccharge=0
-    for e in el:
-        atcharge=eldict[e]
-        totnuccharge+=atcharge
-    numel=totnuccharge-charge
-    HOMOnum_a="unset";HOMOnum_b="unset"
-    orcaoffset=-1
-    if mult == 1:
-        #RHF case. HOMO is numel/2 -1
-        HOMOnum_a=(numel/2)+orcaoffset
-        HOMOnum_b=(numel/2)+orcaoffset
-    elif mult > 1:
-        #UHF case.
-        numunpel=mult-1
-        Doubocc=(numel-numunpel)/2
-        HOMOnum_a=Doubocc+numunpel+orcaoffset
-        HOMOnum_b=Doubocc+orcaoffset
-    return int(HOMOnum_a),int(HOMOnum_b)
 
 #Calculate HOMO number (0-indexing) from nuclear charge and total charge
 def HOMOnumber(totnuccharge,charge,mult):
@@ -667,74 +635,6 @@ def HOMOnumber(totnuccharge,charge,mult):
         HOMOnum_b=Doubocc+offset
     return int(HOMOnum_a),int(HOMOnum_b)
 
-def orbitalgrab(file):
-    occorbsgrab=False
-    virtorbsgrab=False
-    endocc="unset"
-    tddftgrab="unset"
-    tddft="unset"
-    bands_alpha=[]
-    bands_beta=[]
-    virtbands_a=[]
-    virtbands_b=[]
-    f=[]
-    virtf=[]
-    spinflag="unset"
-    hftyp="unset"
-
-    with open(file) as f:
-        for line in f:
-            if '%tddft' in line:
-                tddft="yes"
-            if 'Hartree-Fock type      HFTyp' in line:
-                hftyp=line.split()[4]
-                #if hftyp=="UHF":
-            if hftyp == "RHF":
-                spinflag="alpha"
-            if 'SPIN UP ORBITALS' in line:
-                spinflag="alpha"
-            if 'SPIN DOWN ORBITALS' in line:
-                spinflag="beta"
-            if occorbsgrab==True:
-                endocc=line.split()[1]
-                if endocc == "0.0000" :
-                    occorbsgrab=False
-                    virtorbsgrab=True
-                else:
-                    if spinflag=="alpha":
-                        bands_alpha.append(float(line.split()[3]))
-                    if spinflag=="beta":
-                        bands_beta.append(float(line.split()[3]))
-            if virtorbsgrab==True:
-                if '------------------' in line:
-                    break
-                if line == '\n':
-                    virtorbsgrab=False
-                    spinflag="unset"
-                    continue
-                if spinflag=="alpha":
-                    virtbands_a.append(float(line.split()[3]))
-                if spinflag=="beta":
-                    virtbands_b.append(float(line.split()[3]))
-                endvirt=line.split()[1]
-            if 'NO   OCC          E(Eh)            E(eV)' in line:
-                occorbsgrab=True
-    return bands_alpha, bands_beta, hftyp
-
-def checkORCAfinished(file):
-    with open(file) as f:
-        for line in f:
-            if 'TOTAL RUN TIME:' in line:
-                return True
-
-def scfenergygrab(file):
-    string='Total Energy       :'
-
-    with open(file) as f:
-        for line in f:
-            if string in line:
-                Energy=float(line.split()[-4])
-    return Energy
 
 #CASSCF: Grabbing first root energy. Simplified because of problem
 def casscfenergygrab(file):
@@ -883,30 +783,6 @@ def casscf_orbitalranges_grab(file):
                 grab=False
 
     return internal,active,external
-
-
-def tddftgrab(file):
-    tddftstates=[]
-    with open(file) as f:
-        for line in f:
-            if 'STATE ' in line:
-                if 'eV' in line:
-                    tddftstates.append(float(line.split()[5]))
-    return tddftstates
-
-# MO-DOS PLOT
-def modosplot(occorbs_alpha,occorbs_beta,hftyp):
-    #Defining sticks as -1 times MO energy (eV)
-    stk_alpha=[]
-    stk_beta=[]
-    for j in occorbs_alpha:
-        stk_alpha.append(-1*j)
-    if hftyp == "UHF":
-        for k in occorbs_beta:
-            stk_beta.append(-1*k)
-        stk_beta.sort()
-    stk_alpha.sort()
-    return stk_alpha,stk_beta
 
 def Gaussian(x, mu, strength, sigma):
     "Produces a Gaussian curve"
@@ -1917,7 +1793,7 @@ def PhotoElectronSpectrum(theory=None, fragment=None, Initialstate_charge=None, 
 
         if EOM is not True:
             print(bcolors.OKGREEN, "Calculating Initial State SCF.",bcolors.ENDC)
-            finalsinglepointenergy = Singlepoint(fragment=fragment, theory=theory)
+            finalsinglepointenergy = ash.Singlepoint(fragment=fragment, theory=theory)
             stability = check_stability_in_output("orca-input.out")
             if stability is False and check_stability is True:
                 print("PES: Unstable initial state. Exiting...")
@@ -2038,7 +1914,7 @@ def PhotoElectronSpectrum(theory=None, fragment=None, Initialstate_charge=None, 
                     print("Will use file {} as guess GBW file for this Final state.".format(initialorbitalfiles[findex + 1]))
                     shutil.copyfile(initialorbitalfiles[findex + 1], theory.inputfilename + '.gbw')
 
-                energy = Singlepoint(fragment=fragment, theory=theory)
+                energy = ash.Singlepoint(fragment=fragment, theory=theory)
                 stateI.energy= energy
 
 
@@ -2120,7 +1996,7 @@ def PhotoElectronSpectrum(theory=None, fragment=None, Initialstate_charge=None, 
                 print("Will use file {} as guess GBW file for this Final state.".format(initialorbitalfiles[findex + 1]))
                 shutil.copyfile(initialorbitalfiles[findex + 1], theory.inputfilename + '.gbw')
 
-            Singlepoint(fragment=fragment, theory=theory)
+            ash.Singlepoint(fragment=fragment, theory=theory)
 
             #Getting state-energies of all states for each spin multiplicity (state-averaged calculation)
             fstates_dict = casscf_state_energies_grab("orca-input.out")
@@ -2193,7 +2069,7 @@ def PhotoElectronSpectrum(theory=None, fragment=None, Initialstate_charge=None, 
                 print("Will use file {} as guess GBW file for this Final state.".format(initialorbitalfiles[findex + 1]))
                 shutil.copyfile(initialorbitalfiles[findex + 1], theory.inputfilename + '.gbw')
 
-            Singlepoint(fragment=fragment, theory=theory)
+            ash.Singlepoint(fragment=fragment, theory=theory)
 
             #Getting state-energies of all states for each spin multiplicity. MRCI vs. SORCI
             if SORCI is True:
@@ -2236,7 +2112,7 @@ def PhotoElectronSpectrum(theory=None, fragment=None, Initialstate_charge=None, 
                     shutil.copyfile(initialorbitalfiles[findex+1], theory.inputfilename + '.gbw')
 
 
-                Singlepoint(fragment=fragment, theory=theory)
+                ash.Singlepoint(fragment=fragment, theory=theory)
                 stability = check_stability_in_output("orca-input.out")
                 if stability is False and check_stability is True:
                     print("PES: Unstable final state. Exiting...")
@@ -2708,7 +2584,7 @@ def PhotoElectronSpectrum(theory=None, fragment=None, Initialstate_charge=None, 
                         theory.orcablocks=theory.orcablocks.replace("stabperform true", "stabperform false")
 
 
-                    Singlepoint(fragment=fragment, theory=theory)
+                    ash.Singlepoint(fragment=fragment, theory=theory)
                     # TDDFT state done. Renaming cisp and cisr files
                     os.rename('orca-input.cisp', 'Final_State_mult' + str(fstate.mult)+'TDDFTstate_'+str(tddftstate)+'.cisp')
                     os.rename('orca-input.cisr', 'Final_State_mult' + str(fstate.mult)+'TDDFTstate_'+str(tddftstate)+'.cisr')
@@ -2942,7 +2818,7 @@ def potential_adjustor_DFT(theory=None, fragment=None, Initialstate_charge=None,
     #Calculate initial state with N electron (e.g. neutral)
     theory.charge=Initialstate_charge
     theory.mult=Initialstate_mult
-    E_N = Singlepoint(fragment=fragment, theory=theory)
+    E_N = ash.Singlepoint(fragment=fragment, theory=theory)
     
     #Orbitals in eV
     occorbs_alpha, occorbs_beta, hftyp = orbitalgrab(theory.inputfilename+'.out')
@@ -2952,7 +2828,7 @@ def potential_adjustor_DFT(theory=None, fragment=None, Initialstate_charge=None,
     #Calculate ionized state (N-1)
     theory.charge = Ionizedstate_charge
     theory.mult = Ionizedstate_mult
-    E_Nmin1 = Singlepoint(fragment=fragment, theory=theory)
+    E_Nmin1 = ash.Singlepoint(fragment=fragment, theory=theory)
     
     #delta-SCF IP in eV
     print("")

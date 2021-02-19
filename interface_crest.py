@@ -3,11 +3,31 @@ from functions_coords import *
 import subprocess as sp
 from ash import *
 
+
 #Very simple crest interface
-def call_crest(fragment=None, xtbmethod=None, crestdir=None,charge=None, mult=None, solvent=None, energywindow=6, numcores=1):
+def call_crest(fragment=None, xtbmethod=None, crestdir=None,charge=None, mult=None, solvent=None, energywindow=6, numcores=1, 
+               constrained_atoms=None, forceconstant_constraint=0.5):
 
     os.mkdir('crest-calc')
     os.chdir('crest-calc')
+
+    #if fixed_atoms != None:
+    #    print("Creating .xcontrol file for fixed atoms")
+    #    with open(".xcontrol","w") as constrainfile:
+    #        constrainfile.write("$fix\n")
+    #        constrainfile.write("  atoms: {}\n".format(','.join(map(str, fixed_atoms))))
+    #        constrainfile.write("$end\n")
+    if constrained_atoms != None:
+        allatoms=range(0,fragment.numatoms)
+        unconstrained=listdiff(allatoms,constrained_atoms)
+        print("Creating .xcontrol file for constraints")
+        with open(".xcontrol","w") as constrainfile:
+            constrainfile.write("$constrain\n")
+            constrainfile.write("atoms: {}\n".format(','.join(map(str, constrained_atoms))))
+            constrainfile.write("force constant={}\n".format(forceconstant_constraint))
+            constrainfile.write("$metadyn\n")
+            constrainfile.write("atoms: {}\n".format(','.join(map(str, unconstrained ))))
+            constrainfile.write("$end\n")
 
     #Create XYZ file from fragment (for generality)
     fragment.write_xyzfile(xyzfilename="initial.xyz")

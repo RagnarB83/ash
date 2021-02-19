@@ -343,7 +343,7 @@ def create_density_from_orb (cubefile):
     return rlowx,dx,nx,orgx,rlowy,dy,ny,orgy,rlowz,dz,nz,orgz,alldensvalues,elems,molcoords_ang,numatoms,filebase
 
 
-def centroid_calc (rlowx,dx,nx,orgx,rlowy,dy,ny,orgy,rlowz,dz,nz,orgz,alldensvalues ):
+def centroid_calc(rlowx,dx,nx,orgx,rlowy,dy,ny,orgy,rlowz,dz,nz,orgz,alldensvalues ):
     #########################################################
     # Calculate centroid. Based on Multiwfn
     ############################################################
@@ -808,11 +808,6 @@ def Rvdwfree(polz):
     RvdW=(polz/Phi)**(1/7)
     return RvdW
     
-
-
-
-
-
 
 #TODO: Not finished
 def DDEC_to_LJparameters(elems, molmoms, voldict, scale_polarH=False):
