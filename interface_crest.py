@@ -11,12 +11,6 @@ def call_crest(fragment=None, xtbmethod=None, crestdir=None,charge=None, mult=No
     os.mkdir('crest-calc')
     os.chdir('crest-calc')
 
-    #if fixed_atoms != None:
-    #    print("Creating .xcontrol file for fixed atoms")
-    #    with open(".xcontrol","w") as constrainfile:
-    #        constrainfile.write("$fix\n")
-    #        constrainfile.write("  atoms: {}\n".format(','.join(map(str, fixed_atoms))))
-    #        constrainfile.write("$end\n")
     if constrained_atoms != None:
         allatoms=range(0,fragment.numatoms)
         unconstrained=listdiff(allatoms,constrained_atoms)
