@@ -1,5 +1,6 @@
 import os
 from functions_coords import *
+from functions_general import int_ranges
 import subprocess as sp
 from ash import *
 
@@ -14,15 +15,23 @@ def call_crest(fragment=None, xtbmethod=None, crestdir=None,charge=None, mult=No
     if constrained_atoms != None:
         allatoms=range(0,fragment.numatoms)
         unconstrained=listdiff(allatoms,constrained_atoms)
+                        
         constrained_crest=[i+1 for i in constrained_atoms]
         unconstrained_crest=[j+1 for j in unconstrained]
+        
+        #Get ranges. List of tuples
+        constrained_ranges=int_ranges(constrained_crest)
+        unconstrained_ranges=int_ranges(unconstrained_crest)
+        
+        
         print("Creating .xcontrol file for constraints")
         with open(".xcontrol","w") as constrainfile:
             constrainfile.write("$constrain\n")
-            constrainfile.write("atoms: {}\n".format(','.join(map(str, constrained_crest))))
+            #constrainfile.write("atoms: {}\n".format(','.join(map(str, constrained_ranges))))
+            constrainfile.write("atoms: {}\n".format(constrained_ranges))
             constrainfile.write("force constant={}\n".format(forceconstant_constraint))
             constrainfile.write("$metadyn\n")
-            constrainfile.write("atoms: {}\n".format(','.join(map(str, unconstrained_crest ))))
+            constrainfile.write("atoms: {}\n".format(unconstrained_ranges ))
             constrainfile.write("$end\n")
 
     #Create XYZ file from fragment (for generality)

@@ -21,6 +21,23 @@ else:
     class BC:
         HEADER = ''; OKBLUE = ''; OKGREEN = ''; OKMAGENTA= ''; OKRED= ''; WARNING = ''; FAIL = ''; END = ''; BOLD = ''; UNDERLINE = ''
         
+#Get ranges of integers from list. Returns string of ranges. Used to communitcate with crest and xtbs
+def int_ranges(nums):
+    nums = sorted(set(nums))
+    gaps = [[s, e] for s, e in zip(nums, nums[1:]) if s+1 < e]
+    edges = iter(nums[:1] + sum(gaps, []) + nums[-1:])
+    l_of_tuples=list(zip(edges, edges))
+
+    newstring=""
+    for i in l_of_tuples:
+        if i[0] != i[1]:
+            newstring+=str(i[0])+'-'+str(i[1])+','
+        else:
+            newstring+=str(i[0])+','
+    #remove final ,
+    newstring=newstring[0:-1]
+    return newstring
+
 
 #Debug print. Behaves like print but reads global debug var first
 def printdebug(string,var=''):
