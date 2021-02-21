@@ -1,10 +1,14 @@
-import constants
-import subprocess as sp
-import settings_solvation
-from functions_general import blankline,reverse_lines
 import os
 import sys
 import shutil
+import numpy as np
+import subprocess as sp
+
+import constants
+import settings_solvation
+from functions_general import blankline,reverse_lines
+import functions_coords
+
 
 #xTB functions: primarily for inputfile-based interface. Library-interfaces is in interface_xtb.py
 

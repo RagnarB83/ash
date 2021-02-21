@@ -1,4 +1,5 @@
 from functions_general import BC
+import functions_coords
 
 #PySCF Theory object. Fragment object is optional. Only used for single-points.
 #PySCF runmode: Library only
@@ -94,7 +95,7 @@ class PySCFTheory:
         mol = gto.Mole()
         #Not very verbose system printing
         mol.verbose = 3
-        coords_string=create_coords_string(qm_elems,current_coords)
+        coords_string=functions_coords.create_coords_string(qm_elems,current_coords)
         mol.atom = coords_string
         mol.symmetry = 1
         mol.charge = self.charge
