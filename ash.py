@@ -51,7 +51,7 @@ from module_polembed import PolEmbedTheory
 import functions_solv
 #Molcrys
 import module_molcrys
-from module_molcrys import *
+from module_molcrys import molcrys
 # Geometry optimization
 from functions_optimization import SimpleOpt,BernyOpt
 from interface_geometric import geomeTRICOptimizer
@@ -63,6 +63,8 @@ import module_benchmarking
 from module_benchmarking import run_benchmark
 #Other interfaces
 import interface_crest
+from interface_crest import call_crest
+
 
 
 #Julia dependency
@@ -91,7 +93,7 @@ if load_julia is True:
 #############################################################
 
 #Single-point energy function
-#NOTE: 
+#NOTE: Move?
 def Singlepoint(fragment=None, theory=None, Grad=False):
     print("")
     '''
@@ -125,8 +127,6 @@ def Singlepoint(fragment=None, theory=None, Grad=False):
         fragment.energy=energy
         return energy
 
-#Theory classes
-
 # Theory object that always gives zero energy and zero gradient. Useful for setting constraints
 class ZeroTheory:
     def __init__(self, fragment=None, charge=None, mult=None, printlevel=None, nprocs=1, label=None):
@@ -143,5 +143,5 @@ class ZeroTheory:
         self.gradient = np.zeros((len(elems), 3))
         return self.energy,self.gradient
 
-
+#
 settings_ash.init()
