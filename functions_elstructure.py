@@ -1,5 +1,5 @@
 import numpy as np
-import functions_coords
+import module_coords
 import os
 import glob
 import ash
@@ -70,7 +70,7 @@ _DNO = -0.0346
 def distance_matrix_from_coords(coords):
     distmatrix=[]
     for i in coords:
-        dist_row=[functions_coords.distance(i,j) for j in coords]
+        dist_row=[module_coords.distance(i,j) for j in coords]
         distmatrix.append(dist_row)
     return distmatrix
             
@@ -831,7 +831,7 @@ def DDEC_to_LJparameters(elems, molmoms, voldict, scale_polarH=False):
     Radii_vdw_free=[]
     for count,el in enumerate(elems):
         print("el :", el, "count:", count)
-        atmnumber=functions_coords.elematomnumbers[el.lower()]
+        atmnumber=module_coords.elematomnumbers[el.lower()]
         print("atmnumber:", atmnumber)
         Radii_vdw_free.append(dictionaries_lists.elems_C6_polz[atmnumber].Rvdw_ang)
         print("Radii_vdw_free:", Radii_vdw_free)
@@ -888,7 +888,7 @@ def DDEC_to_LJparameters(elems, molmoms, voldict, scale_polarH=False):
 
 def num_core_electrons(fragment):
     sum=0
-    formula_list = functions_coords.molformulatolist(fragment.formula)
+    formula_list = module_coords.molformulatolist(fragment.formula)
     for i in formula_list:
         els = dictionaries_lists.atom_core_electrons[i]
         sum+=els

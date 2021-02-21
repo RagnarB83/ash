@@ -2,7 +2,7 @@ import os
 import shutil
 
 from functions_general import BC,blankline
-import functions_coords
+import module_coords
 
 #Polarizable Embedding theory object.
 #Required at init: qm_theory and qmatoms, X, Y
@@ -114,7 +114,7 @@ class PolEmbedTheory:
                     exit(9)
                 #Create dummy pdb-file if PDB-file not provided
                 if pdbfile is None:
-                    functions_coords.write_pdbfile_dummy(self.elems, self.coords, self.potfilename, self.hybridatomlabels, self.residlabels)
+                    module_coords.write_pdbfile_dummy(self.elems, self.coords, self.potfilename, self.hybridatomlabels, self.residlabels)
                     file=self.potfilename+'.pdb'
                 #Pyframe
                 if self.pot_option=='SEP':

@@ -7,7 +7,7 @@ import subprocess as sp
 import constants
 import settings_solvation
 from functions_general import blankline,reverse_lines
-import functions_coords
+import module_coords
 
 
 #xTB functions: primarily for inputfile-based interface. Library-interfaces is in interface_xtb.py
@@ -131,7 +131,7 @@ class xTBTheory:
             num_mmatoms=len(MMcharges)
             self.cleanup()
             #Todo: xtbrestart possibly. needs to be optional
-            functions_coords.write_xyzfile(qm_elems, current_coords, inputfilename,printlevel=self.printlevel)
+            module_coords.write_xyzfile(qm_elems, current_coords, inputfilename,printlevel=self.printlevel)
 
             #Run inputfile. Take nprocs argument.
             if self.printlevel >= 2:
@@ -201,7 +201,7 @@ class xTBTheory:
             #Using the xtbobject previously defined
             num_qmatoms=len(current_coords)
             #num_mmatoms=len(MMcharges)
-            nuc_charges=np.array(functions_coords.elemstonuccharges(qm_elems), dtype=self.c_int)
+            nuc_charges=np.array(module_coords.elemstonuccharges(qm_elems), dtype=self.c_int)
 
             #Converting coords to numpy-array and then to Bohr.
             current_coords_bohr=np.array(current_coords)*constants.ang2bohr

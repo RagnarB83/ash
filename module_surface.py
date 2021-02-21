@@ -6,7 +6,7 @@ import ash
 from functions_general import frange
 import interface_geometric
 import shutil
-from functions_freq import calc_rotational_constants
+from module_freq import calc_rotational_constants
 
 #Calculate 1D or 2D surface, either relaxed or unrelaxed.
 # TODO: Finish parallelize surfacepoint calculations

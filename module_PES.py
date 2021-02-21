@@ -14,7 +14,7 @@ import constants
 import math
 from interface_ORCA import checkORCAfinished,scfenergygrab,tddftgrab,orbitalgrab,run_orca_plot,grabEOMIPs,check_stability_in_output
 from functions_general import writestringtofile,BC,blankline,isint
-from elstructure_functions import HOMOnumbercalc,modosplot,write_cube_diff,read_cube
+from functions_elstructureimport HOMOnumbercalc,modosplot,write_cube_diff,read_cube
 
 class bcolors:
     HEADER = '\033[95m' ; OKBLUE = '\033[94m'; OKGREEN = '\033[92m'; OKMAGENTA= '\033[95m'; WARNING = '\033[93m'; FAIL = '\033[91m'; ENDC = '\033[0m'; BOLD = '\033[1m'; UNDERLINE = '\033[4m'

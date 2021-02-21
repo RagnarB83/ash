@@ -1,6 +1,6 @@
 import numpy as np
 import constants
-from functions_coords import print_coords_all,print_coords_for_atoms,print_internal_coordinate_table,write_XYZ_for_atoms,write_xyzfile
+from module_coords import print_coords_all,print_coords_for_atoms,print_internal_coordinate_table,write_XYZ_for_atoms,write_xyzfile
 from functions_general import blankline,BC
 import os
 import shutil

@@ -1,10 +1,10 @@
 import numpy as np
 from functions_general import blankline,uniq,printdebug,print_time_rel_and_tot,print_time_rel,BC
-from functions_coords import elemlisttoformula,molformulatolist,nucchargelist,totmasslist,write_xyzfile,isElementList,einsum_mat,get_molecule_members_loop_np2,reorder,reorder_hungarian_scipy
+from module_coords import elemlisttoformula,molformulatolist,nucchargelist,totmasslist,write_xyzfile,isElementList,einsum_mat,get_molecule_members_loop_np2,reorder,reorder_hungarian_scipy
 import interface_ORCA
 from interface_xtb import grabatomcharges_xTB
-from functions_MM import UFFdict
-from elstructure_functions import DDEC_to_LJparameters,DDEC_calc
+from module_MM import UFFdict
+from functions_elstructureimport DDEC_to_LJparameters,DDEC_calc
 import ash
 import time
 import math

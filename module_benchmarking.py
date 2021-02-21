@@ -1,11 +1,11 @@
 import ash
 import shutil
 import numpy as np
-import functions_coords
+import module_coords
 from functions_general import isint,isfloat,is_same_sign,BC
 import os
 import math
-from elstructure_functions import check_cores_vs_electrons, num_core_electrons
+from functions_elstructureimport check_cores_vs_electrons, num_core_electrons
 
 #Reaction class. Used for benchmarking
 class Reaction:

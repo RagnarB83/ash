@@ -4,7 +4,7 @@ import glob
 
 import settings_ash
 from functions_general import BC
-import functions_coords
+import module_coords
 
 class DaltonTheory:
     def __init__(self, daltondir=None, fragment=None, charge=None, mult=None, printlevel=2, nprocs=1, pe=False, potfile='',
@@ -118,7 +118,7 @@ class DaltonTheory:
             molfile.write('------------------------\n')
             molfile.write('AtomTypes={} NoSymmetry Angstrom Charge={}\n'.format(len(uniq_elems),self.charge))
             for uniqel in uniq_elems:
-                nuccharge=float(functions_coords.elemstonuccharges([uniqel])[0])
+                nuccharge=float(module_coords.elemstonuccharges([uniqel])[0])
                 num_elem=qm_elems.count(uniqel)
                 molfile.write('Charge={} Atoms={}\n'.format(nuccharge,num_elem))
                 for el,coord in zip(qm_elems,current_coords):

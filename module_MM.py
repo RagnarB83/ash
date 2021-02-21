@@ -1,7 +1,7 @@
 import numpy as np
 import time
 
-from functions_coords import distance
+from module_coords import distance
 from functions_general import blankline,print_time_rel,BC
 import constants
 import ash

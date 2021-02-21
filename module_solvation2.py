@@ -4,13 +4,15 @@
 # For now only the snapshot-part. Will read snapshots from QM/MM MD Tcl-Chemshell run.
 import numpy as np
 import time
+
 beginTime = time.time()
 CheckpointTime = time.time()
 import os
 import sys
+
 import functions_solv
 from functions_general import blankline,BC,listdiff,print_time_rel_and_tot,print_line_with_mainheader,print_line_with_subheader1
-from functions_coords import read_fragfile_xyz
+from module_coords import read_fragfile_xyz
 from interface_ORCA import run_inputfiles_in_parallel,finalenergiesgrab,run_orca_SP_ORCApar
 import settings_solvation
 import constants
@@ -21,23 +23,24 @@ import multiprocessing as mp
 import glob
 
 
-def solvshell ( orcadir='', NumCores='', calctype='', orcasimpleinput_LL='',
+#NEW SOLVSHELL VERSION. PolEmbedding used from beginning
+def solvshell_v2 ( orcadir='', NumCores=None, calctype='', orcasimpleinput_LL='',
         orcablockinput_LL='', orcasimpleinput_HL='', orcablockinput_HL='',
         orcasimpleinput_SRPOL='', orcablockinput_SRPOL='', EOM='', BulkCorrection='',
         GasCorrection='', ShortRangePolarization='', SRPolShell='',
         LongRangePolarization='', PrintFinalOutput='', Testmode='', repsnapmethod='',
         repsnapnumber='', solvbasis='', chargeA='', multA='', chargeB='', multB='', psi4memory=3000,
-        psi4_functional='', psi4dict='', pot_option='', LRPolRegion1=0, LRPolRegion2=20, LRPolQMRegion=0, psi4runmode='psithon'):
+        psi4_functional='', psi4dict='', pot_option='', LRPolRegion=20, PolQMRegion=0, psi4runmode='psithon'):
 
     #While charge/mult info is read from md-variables.defs in case redox AB job, this info is not present
     # for both states in case of single trajectory. Plus one might want to do either VIE, VEA or SpinState change
     #Hence defining in original py inputfile makes sense
 
-    #ASH dir (needed for init function and print_header below). Todo: remove
+    #Yggdrasill dir (needed for init function and print_header below). Todo: remove
     programdir=os.path.dirname(ash.__file__)
     programversion=0.1
     blankline()
-    functions_solv.print_solvshell_header(programversion,programdir)
+    print_solvshell_header(programversion,programdir)
 
 
     calcdir=os.getcwd()
@@ -59,9 +62,8 @@ def solvshell ( orcadir='', NumCores='', calctype='', orcasimpleinput_LL='',
     print("solvbasis:", solvbasis)
     print("SRPolShell:", SRPolShell)
     print("LongRangePolarization:", LongRangePolarization)
-    print("LRPolRegion1:", LRPolRegion1)
-    print("LRPolRegion2:", LRPolRegion2)
-    print("LRPolQMRegion:", LRPolQMRegion)
+    print("LRPolRegion:", LRPolRegion)
+    print("PolQMRegion:", PolQMRegion)
     print("BulkCorrection:", BulkCorrection)
     print("GasCorrection:", GasCorrection)
     print("orcasimpleinput_HL:", orcasimpleinput_HL)
@@ -87,9 +89,9 @@ def solvshell ( orcadir='', NumCores='', calctype='', orcasimpleinput_LL='',
     #Create system object with information about the system (charge,mult of states A, B, forcefield, snapshotlist etc.)
     #Attributes: name, chargeA, multA, chargeB, multB, solutetypesA, solutetypesB, solventtypes, snapslist, snapshotsA, snapshotsB
     if calctype=="redox":
-        solvsphere=functions_solv.read_md_variables_fileAB(mdvarfile)
+        solvsphere=read_md_variables_fileAB(mdvarfile)
     elif calctype=="vie":
-        solvsphere=functions_solv.read_md_variables_fileA(mdvarfile)
+        solvsphere=read_md_variables_fileA(mdvarfile)
     else:
         print("unknown calctype for md-read")
         exit()
@@ -112,9 +114,9 @@ def solvshell ( orcadir='', NumCores='', calctype='', orcasimpleinput_LL='',
     #Temporary redefinition of lists for easier faster test runs
     if Testmode == True:
         if calctype=='redox':
-            solvsphere.snapslist, solvsphere.snapshotsA, solvsphere.snapshotsB, solvsphere.snapshots = functions_solv.TestModerunAB()
+            solvsphere.snapslist, solvsphere.snapshotsA, solvsphere.snapshotsB, solvsphere.snapshots = TestModerunAB()
         elif calctype=='vie':
-            solvsphere.snapslist, solvsphere.snapshotsA, solvsphere.snapshots = functions_solv.TestModerunA()
+            solvsphere.snapslist, solvsphere.snapshotsA, solvsphere.snapshots = TestModerunA()
 
     #Get solvent pointcharges for solvent-unit. e.g. [-0.8, 0.4, 0.4] for TIP3P, assuming [O, H, H] order
     # Later use dictionary or object or something for this
@@ -128,13 +130,13 @@ def solvshell ( orcadir='', NumCores='', calctype='', orcasimpleinput_LL='',
     else:
         print("Unknown solvent")
         solventunitcharges=[]
-        functions_solv.exit_solvshell()
+        exit_solvshell()
 
     blankline()
 
-    ###################################
-    # All snapshots: Low-Level Theory #
-    ###################################
+    ###################################################
+    # All snapshots: POLARIZED Low-Level Theory  PSI4 #
+    ###################################################
     print_line_with_mainheader("Low-level theory on All Snapshots")
     CheckpointTime = time.time()
     # cd to snaps dir, create separate dir for calculations and copy fragmentfiles to it.
@@ -147,58 +149,49 @@ def solvshell ( orcadir='', NumCores='', calctype='', orcasimpleinput_LL='',
     # Temp: Convert snapshots in Tcl-Chemshell fragment file format to xyz coords in Angstrom.
     #Future change: Have code spit out XYZ files instead of Chemshell fragment files
 
-    #Write ORCA inputfiles and pointchargesfiles for lowlevel theory
-    # Doing both redox states in each inputfile
+    # RUNNING POL PSI4 jobs in parallel
+    # Cores for Psi4. Only 1 since we are parallelizing over all snapshots
+    NumCoresPsi4 = 1
+    pool = mp.Pool(NumCores)
+    results = pool.map(Polsnapshotcalc, [[snapshot, solvsphere, psi4dict, psi4_functional, pot_option,
+                                            NumCoresPsi4, PolQMRegion, LRPolRegion, psi4memory, psi4runmode]
+                                           for snapshot in solvsphere.snapshots])
+    pool.close()
+    pool.join()
+    print("results:", results)
+    # Combining and making dicts
+    #AllsnapsABenergy, AsnapsABenergy, BsnapsABenergy=grab_energies_output_ORCA(snapshotinpfiles)
+    AsnapsABenergy = {}
+    BsnapsABenergy = {}
+    AllsnapsABenergy = {}
+    for r in results:
+        if 'snapA' in r[0]:
+            AsnapsABenergy[r[0]] = r[1]
+            #AsnapsABenergy.append(r[1])
+        elif 'snapB' in r[0]:
+            BsnapsABenergy[r[0]] = r[1]
+            #BsnapsABenergy.append(r[1])
+        if calctype == "redox":
+            AllsnapsABenergy[r[0]] = r[1]
+            #AllsnapsABenergy.append(r[1])
 
-
-    print("Creating inputfiles")
-    identifiername = '_LL'
-    solute_atoms=solvsphere.soluteatomsA
-    solvent_atoms=solvsphere.solventatoms
-    snapshotinpfiles = functions_solv.create_AB_inputfiles_ORCA(solute_atoms, solvent_atoms, solvsphere, solvsphere.snapshots,
-                                                      orcasimpleinput_LL, orcablockinput_LL, solventunitcharges, identifiername)
-    if calctype == "redox":
-        print("There are {} snapshots for A trajectory.".format(len(solvsphere.snapshotsA)))
-        print("There are {} snapshots for B trajectory.".format(len(solvsphere.snapshotsB)))
-    else:
-        print("There are {} snapshots for A trajectory.".format(len(solvsphere.snapshotsA)))
-
-    print("There are {} snapshots in total.".format(len(snapshotinpfiles)))
     blankline()
-    print_time_rel_and_tot(CheckpointTime, beginTime, 'LL-theory prep')
-    CheckpointTime = time.time()
-    #print("The following snapshot inputfiles will be run:\n", snapshotinpfiles)
-    blankline()
 
-    #RUN INPUT
-
-    print_line_with_subheader1("Running snapshot calculations at LL theory")
-    print(BC.WARNING,"LL-theory:", orcasimpleinput_LL,BC.END)
-    run_inputfiles_in_parallel(orcadir, snapshotinpfiles, NumCores)
-
-    #TODO: Clean up. Delete GBW files etc. Needed ??
-
-    ###################################
-    # GRAB OUTPUT #
-    ###################################
-    blankline()
-    AllsnapsABenergy, AsnapsABenergy, BsnapsABenergy=grab_energies_output_ORCA(snapshotinpfiles)
-    blankline()
     print("AllsnapsABenergy:", AllsnapsABenergy)
     print("AsnapsABenergy:", AsnapsABenergy)
     print("BsnapsABenergy:", BsnapsABenergy)
     blankline()
 
     #Average and stdevs of
-    ave_trajA = statistics.mean(list(AsnapsABenergy.values()))
-    stdev_trajA = statistics.stdev(list(AsnapsABenergy.values()))
+    ave_trajA = statistics.mean(AsnapsABenergy.values())
+    stdev_trajA = statistics.stdev(AsnapsABenergy.values())
     if calctype=="redox":
         # Averages and stdeviations over whole trajectory at LL theory
-        ave_trajAB = statistics.mean(list(AllsnapsABenergy.values()))
+        ave_trajAB = statistics.mean(AllsnapsABenergy.values())
         # stdev_trajAB = statistics.stdev(list(AllsnapsABenergy.values()))
         stdev_trajAB = 0.0
-        ave_trajB = statistics.mean(list(BsnapsABenergy.values()))
-        stdev_trajB = statistics.stdev(list(BsnapsABenergy.values()))
+        ave_trajB = statistics.mean(BsnapsABenergy.values())
+        stdev_trajB = statistics.stdev(BsnapsABenergy.values())
         print("TrajA average: {:3.3f} eV. Stdev: {:3.3f} eV.".format(ave_trajA, stdev_trajA))
         print("TrajB average: {:3.3f} eV. Stdev: {:3.3f} eV.".format(ave_trajB, stdev_trajB))
         print("A+B average: {:3.3f} eV. Stdev: {:3.3f} eV.".format(ave_trajAB, stdev_trajAB))
@@ -213,9 +206,9 @@ def solvshell ( orcadir='', NumCores='', calctype='', orcasimpleinput_LL='',
     print("Representative snapshot method:", repsnapmethod)
     print("Representative snapshot number:", repsnapnumber)
     #Creating dictionaries:
-    repsnapsA=functions_solv.repsnaplist(repsnapmethod, repsnapnumber, AsnapsABenergy)
+    repsnapsA=repsnaplist(repsnapmethod, repsnapnumber, AsnapsABenergy)
     if calctype=="redox":
-        repsnapsB=functions_solv.repsnaplist(repsnapmethod, repsnapnumber, BsnapsABenergy)
+        repsnapsB=repsnaplist(repsnapmethod, repsnapnumber, BsnapsABenergy)
     #Combined list of repsnaps
     print("Representative snapshots for each trajectory")
     blankline()
@@ -258,23 +251,13 @@ def solvshell ( orcadir='', NumCores='', calctype='', orcasimpleinput_LL='',
     blankline()
     print_time_rel_and_tot(CheckpointTime, beginTime,'All snaps')
     CheckpointTime = time.time()
-    # Clean up GBW files and other
-    gbwfiles = glob.glob('*.gbw')
-    fragfiles = glob.glob('*.c')
-    pcfiles = glob.glob('*.pc')
-    for gbwfile in gbwfiles:
-        os.remove(gbwfile)
-    for fragfile in fragfiles:
-        os.remove(fragfile)
-    for pcfile in pcfiles:
-        os.remove(pcfile)
     #Going up to snaps dir again
     os.chdir('..')
 
     if BulkCorrection==True:
         CheckpointTime = time.time()
         #############################################
-        # Representative snapshots: Bulk Correction #
+        # Representative snapshots: Bulk Correction. Done with ORCA ??TODO:  #
         #############################################
         print_line_with_mainheader("Bulk Correction on Representative Snapshots")
         os.mkdir('Bulk-LL')
@@ -292,7 +275,9 @@ def solvshell ( orcadir='', NumCores='', calctype='', orcasimpleinput_LL='',
         if calctype == "redox":
             print("repsnaplistB:", repsnaplistB)
         blankline()
-        bulkinpfiles = functions_solv.create_AB_inputfiles_ORCA(solute_atoms, solvent_atoms, solvsphere, totrepsnaps,
+        solute_atoms = solvsphere.soluteatomsA
+        solvent_atoms = solvsphere.solventatoms
+        bulkinpfiles = create_AB_inputfiles_ORCA(solute_atoms, solvent_atoms, solvsphere, totrepsnaps,
                                                          orcasimpleinput_LL, orcablockinput_LL, solventunitcharges, identifiername, None, bulkcorr)
 
         # RUN BULKCORRECTION INPUTFILES
@@ -402,7 +387,7 @@ def solvshell ( orcadir='', NumCores='', calctype='', orcasimpleinput_LL='',
         # PART 1
         #Create inputfiles of repsnapshots with increased QM regions
         identifiername='_SR_LL'
-        SRPolinpfiles = functions_solv.create_AB_inputfiles_ORCA(solute_atoms, solvent_atoms, solvsphere, totrepsnaps,
+        SRPolinpfiles = create_AB_inputfiles_ORCA(solute_atoms, solvent_atoms, solvsphere, totrepsnaps,
                                                          orcasimpleinput_SRPOL, orcablockinput_SRPOL, solventunitcharges,
                                                           identifiername, SRPolShell, False, solvbasis)
 
@@ -437,7 +422,7 @@ def solvshell ( orcadir='', NumCores='', calctype='', orcasimpleinput_LL='',
             print("orcasimpleinput_SRPOL is different")
             print("Need to recalculate repsnapshots at SRPOL level of theory using regular QM-region")
             identifiername = '_SR_LL_Region1'
-            SRPolinpfiles_Region1 = functions_solv.create_AB_inputfiles_ORCA(solute_atoms, solvent_atoms, solvsphere, totrepsnaps,
+            SRPolinpfiles_Region1 = create_AB_inputfiles_ORCA(solute_atoms, solvent_atoms, solvsphere, totrepsnaps,
                                                          orcasimpleinput_SRPOL, orcablockinput_SRPOL, solventunitcharges,
                                                           identifiername, None, False, solvbasis)
             #Run the inputfiles
@@ -681,10 +666,10 @@ def solvshell ( orcadir='', NumCores='', calctype='', orcasimpleinput_LL='',
             gaslist=gaslistA
         identifiername='_Gas_LL'
         #create_AB_inputfiles_onelist
-        gasinpfiles_LL = functions_solv.create_AB_inputfiles_ORCA(solute_atoms, [], solvsphere, gaslist,orcasimpleinput_LL,
+        gasinpfiles_LL = create_AB_inputfiles_ORCA(solute_atoms, [], solvsphere, gaslist,orcasimpleinput_LL,
                                                        orcablockinput_LL, solventunitcharges, identifiername)
         identifiername='_Gas_HL'
-        gasinpfiles_HL = functions_solv.create_AB_inputfiles_ORCA(solute_atoms, [], solvsphere, gaslist,orcasimpleinput_HL,
+        gasinpfiles_HL = create_AB_inputfiles_ORCA(solute_atoms, [], solvsphere, gaslist,orcasimpleinput_HL,
                                                        orcablockinput_HL, solventunitcharges, identifiername)
 
         print("Created inputfiles:")
@@ -755,17 +740,17 @@ def solvshell ( orcadir='', NumCores='', calctype='', orcasimpleinput_LL='',
             blankline()
             print_line_with_subheader1("Trajectory A")
 
-            functions_solv.print_redox_output_state("A", solvsphere, orcasimpleinput_LL, orcasimpleinput_HL, solvsphere.snapshotsA, ave_trajA, stdev_trajA,
+            print_redox_output_state("A", solvsphere, orcasimpleinput_LL, orcasimpleinput_HL, solvsphere.snapshotsA, ave_trajA, stdev_trajA,
                                      repsnap_ave_trajA, repsnap_stdev_trajA, repsnaplistA, Bulk_ave_trajA, Bulk_stdev_trajA, Bulkcorr_mean_A,
                                      SRPol_ave_trajA, SRPol_stdev_trajA, SRPolcorr_mean_A, LRPol_ave_trajA_Region1, LRPol_ave_trajA_Region2,
                                      LRPol_stdev_trajA_Region1, LRPol_stdev_trajA_Region2, LRPolcorr_mean_A, gasA_VIE_LL, gasA_VIE_HL)
             print_line_with_subheader1("Trajectory B")
-            functions_solv.print_redox_output_state("B", solvsphere, orcasimpleinput_LL, orcasimpleinput_HL, solvsphere.snapshotsB, ave_trajB, stdev_trajB,
+            print_redox_output_state("B", solvsphere, orcasimpleinput_LL, orcasimpleinput_HL, solvsphere.snapshotsB, ave_trajB, stdev_trajB,
                                      repsnap_ave_trajB, repsnap_stdev_trajB, repsnaplistB, Bulk_ave_trajB, Bulk_stdev_trajB, Bulkcorr_mean_B,
                                      SRPol_ave_trajB, SRPol_stdev_trajB, SRPolcorr_mean_B, LRPol_ave_trajB_Region1, LRPol_ave_trajB_Region2,
                                      LRPol_stdev_trajB_Region1, LRPol_stdev_trajB_Region2, LRPolcorr_mean_B, gasB_VIE_LL, gasB_VIE_HL)
             print_line_with_subheader1("Final Average")
-            functions_solv.print_redox_output_state("AB", solvsphere, orcasimpleinput_LL, orcasimpleinput_HL, solvsphere.snapshots, ave_trajAB, stdev_trajAB,
+            print_redox_output_state("AB", solvsphere, orcasimpleinput_LL, orcasimpleinput_HL, solvsphere.snapshots, ave_trajAB, stdev_trajAB,
                                      repsnap_ave_trajAB, repsnap_stdev_trajAB, repsnaplistAB, Bulk_ave_trajAB, Bulk_stdev_trajAB, Bulkcorr_mean_AB,
                                      SRPol_ave_trajAB, SRPol_stdev_trajAB, SRPolcorr_mean_AB, LRPol_ave_trajAB_Region1, LRPol_ave_trajAB_Region2,
                                      LRPol_stdev_trajAB_Region1, LRPol_stdev_trajAB_Region2, LRPolcorr_mean_AB, gasAB_AIE_LL, gasAB_AIE_HL)
@@ -774,7 +759,7 @@ def solvshell ( orcadir='', NumCores='', calctype='', orcasimpleinput_LL='',
             blankline()
             print_line_with_subheader1("Trajectory A")
 
-            functions_solv.print_redox_output_state("A", solvsphere, orcasimpleinput_LL, orcasimpleinput_HL, solvsphere.snapshotsA, ave_trajA, stdev_trajA,
+            print_redox_output_state("A", solvsphere, orcasimpleinput_LL, orcasimpleinput_HL, solvsphere.snapshotsA, ave_trajA, stdev_trajA,
                                      repsnap_ave_trajA, repsnap_stdev_trajA, repsnaplistA, Bulk_ave_trajA, Bulk_stdev_trajA, Bulkcorr_mean_A,
                                      SRPol_ave_trajA, SRPol_stdev_trajA, SRPolcorr_mean_A, LRPol_ave_trajA_Region1, LRPol_ave_trajA_Region2,
                                      LRPol_stdev_trajA_Region1, LRPol_stdev_trajA_Region2, LRPolcorr_mean_A, gasA_VIE_LL, gasA_VIE_HL)
@@ -783,7 +768,7 @@ def solvshell ( orcadir='', NumCores='', calctype='', orcasimpleinput_LL='',
     blankline()
     blankline()
     print_time_rel_and_tot(CheckpointTime, beginTime, 'final output')
-    functions_solv.print_solvshell_footer()
+    print_solvshell_footer()
 
     #Clean-up files
     #Snapshot frag files
@@ -793,10 +778,8 @@ def solvshell ( orcadir='', NumCores='', calctype='', orcasimpleinput_LL='',
 
     print("Solvshell done!")
 
-
-
 # Function to do all calcs for 1 snapshot (used with multiprocessing)
-def LRPolsnapshotcalc(args):
+def Polsnapshotcalc(args):
     print("Starting function: LRPolsnapshotcalc")
     print(mp.current_process())
     print("args:", args)
@@ -805,12 +788,11 @@ def LRPolsnapshotcalc(args):
     psi4dict=args[2]
     psi4_functional=args[3]
     pot_option=args[4]
-    LRPolRegion1=args[5]
-    LRPolRegion2=args[6]
-    NumCoresPsi4=args[7]
-    LRPolQMRegion=args[8]
-    psi4memory=args[9]
-    psi4runmode=args[10]
+    NumCoresPsi4=args[5]
+    PolQMRegion=args[6]
+    LRPolRegion=args[7]
+    psi4memory=args[8]
+    psi4runmode=args[9]
 
     # create dir for each snapshot and copy snapshot into it
     os.mkdir(snapshot+'_dir')
@@ -824,122 +806,74 @@ def LRPolsnapshotcalc(args):
     # Get elems and coords from each Chemshell frament file
     # Todo: Change to XYZ-file read-in instead (if snapfiles have been converted)
     elems, coords = read_fragfile_xyz(snapshot)
-    # create Ash fragment
+    # create Yggdrasill fragment
     snap_frag = ash.Fragment(elems=elems, coords=coords)
     # QM and PE regions
     solute_elems = [elems[i] for i in solvsphere.soluteatomsA]
     solute_coords = [coords[i] for i in solvsphere.soluteatomsA]
 
     # Defining QM and PE regions
-    #Region 1 calcs. QM, PE and MM
-    qmatoms_LR1 = solvsphere.soluteatomsA
-    qmatoms_LR1_elems = [snap_frag.elems[i] for i in qmatoms_LR1]
-    qmatoms_LR1_coords = [snap_frag.coords[i] for i in qmatoms_LR1]
-    #Typically LRPolRegion1=0 i.e. nonpolarizable MM
-    PEsolvshell_LR1 = functions_solv.get_solvshell(solvsphere, snap_frag.elems, snap_frag.coords, LRPolRegion1, qmatoms_LR1_elems,
-                                  qmatoms_LR1_coords,
-                                  settings_solvation.scale, settings_solvation.tol)
-    peatoms_LR1 = PEsolvshell_LR1  # Polarizable atoms
-    mmatoms_LR1 = listdiff(solvsphere.allatoms, qmatoms_LR1 + peatoms_LR1)  # Nonpolarizable atoms
-
-    #Region 2 calcs. QM, PE and MM
-    #QM solvshell in LR2 region. i.e. accounting for shortrangepol by QM at same time
-    #Typically LRPolregion2=20  i.e 20 Åpolarizable region
-    PEsolvshell_LR2 = functions_solv.get_solvshell(solvsphere, snap_frag.elems, snap_frag.coords, LRPolRegion2, solute_elems,
+    PEsolvshell = get_solvshell(solvsphere, snap_frag.elems, snap_frag.coords, LRPolRegion, solute_elems,
                                   solute_coords,
                                   settings_solvation.scale, settings_solvation.tol)
-    qm_solvshell_LR2 = functions_solv.get_solvshell(solvsphere, snap_frag.elems, snap_frag.coords, LRPolQMRegion, solute_elems,
+    qm_solvshell = get_solvshell(solvsphere, snap_frag.elems, snap_frag.coords, PolQMRegion, solute_elems,
                                   solute_coords,
                                   settings_solvation.scale, settings_solvation.tol)
-    qmatoms_LR2 = solvsphere.soluteatomsA + qm_solvshell_LR2 #QMatoms. solute + possible QM solvshell
-    peatoms_LR2 = listdiff(PEsolvshell_LR2, qmatoms_LR2 )  # Polarizable atoms, except QM shell
-    mmatoms_LR2 = listdiff(solvsphere.allatoms, qmatoms_LR2 + peatoms_LR2)  # Nonpolarizable atoms
+    qmatoms = solvsphere.soluteatomsA + qm_solvshell #QMatoms. solute + possible QM solvshell
+    peatoms = listdiff(PEsolvshell, qmatoms )  # Polarizable atoms, except QM shell
+    mmatoms = listdiff(solvsphere.allatoms, qmatoms + peatoms)  # Nonpolarizable atoms
 
-    print("qmatoms_LR1 ({} atoms): {}".format(len(qmatoms_LR1), qmatoms_LR1))
-    print("PEsolvshell_LR1 num is", len(PEsolvshell_LR1))
-    print("peatoms_LR1 ({} atoms)".format(len(peatoms_LR1)))
-    print("mmatoms_LR1 ({} atoms)".format(len(mmatoms_LR1)))
-    print("Sum of LR1 QM+PE+MM atoms:", len(qmatoms_LR1)+len(peatoms_LR1)+len(mmatoms_LR1))
+    print("qmatoms ({} atoms): {}".format(len(qmatoms), qmatoms))
+    print("PEsolvshell num is", len(PEsolvshell))
+    print("peatoms ({} atoms)".format(len(peatoms)))
+    print("mmatoms ({} atoms)".format(len(mmatoms)))
+    print("Sum of  QM+PE+MM atoms:", len(qmatoms)+len(peatoms)+len(mmatoms))
     blankline()
-    print("qmatoms_LR2 ({} atoms): {}".format(len(qmatoms_LR2), qmatoms_LR2))
-    print("qm_solvshell_LR2:", qm_solvshell_LR2)
-    print("PEsolvshell_LR2 num is", len(PEsolvshell_LR2))
-    print("peatoms_LR2 ({} atoms)".format(len(peatoms_LR2)))
-    print("mmatoms_LR2 ({} atoms)".format(len(mmatoms_LR2)))
     blankline()
     print("Num All atoms:", len(solvsphere.allatoms))
-    print("Sum of LR2 QM+PE+MM atoms:", len(qmatoms_LR2)+len(peatoms_LR2)+len(mmatoms_LR2))
-    if len(qmatoms_LR2)+len(peatoms_LR2)+len(mmatoms_LR2) != len(solvsphere.allatoms):
-        print("QM + MM + PE atoms ({})not equal to total numatoms({})".format(len(qmatoms_LR2)+len(peatoms_LR2)+len(mmatoms_LR2),
+    if len(qmatoms)+len(peatoms)+len(mmatoms) != len(solvsphere.allatoms):
+        print("QM + MM + PE atoms ({})not equal to total numatoms({})".format(len(qmatoms)+len(peatoms)+len(mmatoms),
                                                                               len(solvsphere.allatoms)))
         exit()
 
     # Define Psi4 QMregion
-    Psi4QMpart_A_LR1 = ash.Psi4Theory(charge=solvsphere.ChargeA, mult=solvsphere.MultA, label=snapshot+'A_LR1',
-                                         psi4settings=psi4dict, outputname=snapshot+'A_LR1.out', psi4memory=psi4memory,
+    Psi4QMpart_A = ash.Psi4Theory(charge=solvsphere.ChargeA, mult=solvsphere.MultA, label=snapshot+'A',
+                                         psi4settings=psi4dict, outputname=snapshot+'A.out', psi4memory=psi4memory,
                                          psi4functional=psi4_functional, runmode=psi4runmode, printsetting=False)
-    Psi4QMpart_B_LR1 = ash.Psi4Theory(charge=solvsphere.ChargeB, mult=solvsphere.MultB, label=snapshot+'B_LR1',
-                                         psi4settings=psi4dict, outputname=snapshot+'B_LR1.out', psi4memory=psi4memory,
+    Psi4QMpart_B = ash.Psi4Theory(charge=solvsphere.ChargeB, mult=solvsphere.MultB, label=snapshot+'B',
+                                         psi4settings=psi4dict, outputname=snapshot+'B.out', psi4memory=psi4memory,
                                          psi4functional=psi4_functional, runmode=psi4runmode, printsetting=False)
-
-    Psi4QMpart_A_LR2 = ash.Psi4Theory(charge=solvsphere.ChargeA, mult=solvsphere.MultA, label=snapshot+'A_LR2',
-                                             psi4settings=psi4dict, outputname=snapshot + 'A_LR2.out', psi4memory=psi4memory,
-                                            psi4functional = psi4_functional, runmode = psi4runmode, printsetting = False)
-    Psi4QMpart_B_LR2 = ash.Psi4Theory(charge=solvsphere.ChargeB, mult=solvsphere.MultB, label=snapshot+'B_LR2',
-                                             psi4settings=psi4dict, outputname=snapshot + 'B_LR2.out', psi4memory=psi4memory,
-                                            psi4functional = psi4_functional, runmode = psi4runmode, printsetting = False)
 
     # Create PolEmbed theory object. fragment always defined with it
-    PolEmbed_SP_A_LR1 = ash.PolEmbedTheory(fragment=snap_frag, qm_theory=Psi4QMpart_A_LR1,
-                                                  qmatoms=qmatoms_LR1, peatoms=peatoms_LR1, mmatoms=mmatoms_LR1,
-                                                  pot_option=pot_option, potfilename=snapshot+'System_LR1',
+    PolEmbed_SP_A = ash.PolEmbedTheory(fragment=snap_frag, qm_theory=Psi4QMpart_A,
+                                                  qmatoms=qmatoms, peatoms=peatoms, mmatoms=mmatoms,
+                                                  pot_option=pot_option, potfilename=snapshot+'System',
                                                   pyframe=True, pot_create=True, PElabel_pyframe=PElabel_pyframe)
 
     # Note: pot_create=False for B since the embedding potential is the same
-    PolEmbed_SP_B_LR1 = ash.PolEmbedTheory(fragment=snap_frag, qm_theory=Psi4QMpart_B_LR1,
-                                                  qmatoms=qmatoms_LR1, peatoms=peatoms_LR1, mmatoms=mmatoms_LR1,
-                                                  pot_option=pot_option, potfilename=snapshot+'System_LR1',
+    PolEmbed_SP_B = ash.PolEmbedTheory(fragment=snap_frag, qm_theory=Psi4QMpart_B,
+                                                  qmatoms=qmatoms, peatoms=peatoms, mmatoms=mmatoms,
+                                                  pot_option=pot_option, potfilename=snapshot+'System',
                                                   pyframe=True, pot_create=False, PElabel_pyframe=PElabel_pyframe)
 
-    # Create PolEmbed theory object. fragment always defined with it
-    PolEmbed_SP_A_LR2 = ash.PolEmbedTheory(fragment=snap_frag, qm_theory=Psi4QMpart_A_LR2,
-                                                  qmatoms=qmatoms_LR2, peatoms=peatoms_LR2, mmatoms=mmatoms_LR2,
-                                                  pot_option=pot_option, potfilename=snapshot+'System_LR2',
-                                                  pyframe=True, pot_create=True, PElabel_pyframe=PElabel_pyframe)
-
-    # Note: pot_create=False for B since the embedding potential is the same
-    PolEmbed_SP_B_LR2 = ash.PolEmbedTheory(fragment=snap_frag, qm_theory=Psi4QMpart_B_LR2,
-                                                  qmatoms=qmatoms_LR2, peatoms=peatoms_LR2, mmatoms=mmatoms_LR2,
-                                                  pot_option=pot_option, potfilename=snapshot+'System_LR2',
-                                                  pyframe=True, pot_create=False, PElabel_pyframe=PElabel_pyframe)
 
     # Simple Energy SP calc. potfile needed for B run.
     blankline()
     print(BC.OKGREEN,
-          "Starting PolEmbed job for snapshot {} with LRPolRegion1: {}. State A: Charge: {}  Mult: {}".format(
-              snapshot, LRPolRegion1, solvsphere.ChargeA, solvsphere.MultA), BC.END)
-    PolEmbedEnergyA_LR1 = PolEmbed_SP_A_LR1.run(potfile=snapshot+'System_LR1.pot', nprocs=NumCoresPsi4, restart=False)
+          "Starting PolEmbed job for snapshot {} with PolRegion: {}. State A: Charge: {}  Mult: {}".format(
+              snapshot, LRPolRegion, solvsphere.ChargeA, solvsphere.MultA), BC.END)
+    PolEmbedEnergyA = PolEmbed_SP_A.run(potfile=snapshot+'System.pot', nprocs=NumCoresPsi4, restart=False)
 
     # Doing chargeB (assumed open-shell) after closed-shell.
     print(BC.OKGREEN,
           "Starting PolEmbed job for snapshot {} with LRPolRegion1: {}. State B: Charge: {}  Mult: {}".format(
-              snapshot, LRPolRegion1, solvsphere.ChargeB, solvsphere.MultB), BC.END)
-    PolEmbedEnergyB_LR1 = PolEmbed_SP_B_LR1.run(potfile=snapshot+'System_LR1.pot', nprocs=NumCoresPsi4, restart=True)
+              snapshot, LRPolRegion, solvsphere.ChargeB, solvsphere.MultB), BC.END)
+    PolEmbedEnergyB = PolEmbed_SP_B.run(potfile=snapshot+'System.pot', nprocs=NumCoresPsi4, restart=True)
 
-    #Doing Region2 state A. No re-start as not compatible with QM-region increase
-    print(BC.OKGREEN,
-          "Starting PolEmbed job for snapshot {} with LRPolRegion1: {}. State A: Charge: {}  Mult: {}".format(
-              snapshot, LRPolRegion2, solvsphere.ChargeA, solvsphere.MultA), BC.END)
-    PolEmbedEnergyA_LR2 = PolEmbed_SP_A_LR2.run(potfile=snapshot+'System_LR2.pot', nprocs=NumCoresPsi4, restart=False)
+    PolEmbedEnergyAB = (PolEmbedEnergyB - PolEmbedEnergyA) * constants.hartoeV
 
-    print(BC.OKGREEN,
-          "Starting PolEmbed job for snapshot {} with LRPolRegion2: {}. State B: Charge: {}  Mult: {}".format(
-              snapshot, LRPolRegion2, solvsphere.ChargeB, solvsphere.MultB), BC.END)
-    PolEmbedEnergyB_LR2 = PolEmbed_SP_B_LR2.run(potfile=snapshot+'System_LR2.pot', nprocs=NumCoresPsi4, restart=True)
-
-    PolEmbedEnergyAB_LR1 = (PolEmbedEnergyB_LR1 - PolEmbedEnergyA_LR1) * constants.hartoeV
-    PolEmbedEnergyAB_LR2 = (PolEmbedEnergyB_LR2 - PolEmbedEnergyA_LR2) * constants.hartoeV
+    #Going up one dir
+    os.chdir('..')
 
     #Returning list of snapshotname and energies for both regions
-    return [snapshot, PolEmbedEnergyAB_LR1, PolEmbedEnergyAB_LR2]
-
+    return [snapshot, PolEmbedEnergyAB]

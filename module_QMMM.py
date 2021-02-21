@@ -5,7 +5,7 @@ import math
 
 #functions related to QM/MM
 import ash
-import functions_coords
+import module_coords
 from functions_general import BC,blankline,listdiff,print_time_rel,printdebug
 import settings_ash
 
@@ -167,7 +167,7 @@ class QMMMTheory:
 
             #Check if we need linkatoms by getting boundary atoms dict:
             blankline()
-            self.boundaryatoms = functions_coords.get_boundary_atoms(self.qmatoms, self.coords, self.elems, settings_ash.scale, settings_ash.tol, excludeboundaryatomlist=excludeboundaryatomlist)
+            self.boundaryatoms = module_coords.get_boundary_atoms(self.qmatoms, self.coords, self.elems, settings_ash.scale, settings_ash.tol, excludeboundaryatomlist=excludeboundaryatomlist)
             
             if len(self.boundaryatoms) >0:
                 print("Found covalent QM-MM boundary. Linkatoms option set to True")
@@ -229,7 +229,7 @@ class QMMMTheory:
         #Creating dictionary for each MM1 atom and its connected atoms: MM2-4
         self.MMboundarydict={}
         for (QM1atom,MM1atom) in self.boundaryatoms.items():
-            connatoms = functions_coords.get_connected_atoms(self.coords, self.elems, settings_ash.scale, settings_ash.tol, MM1atom)
+            connatoms = module_coords.get_connected_atoms(self.coords, self.elems, settings_ash.scale, settings_ash.tol, MM1atom)
             #Deleting QM-atom from connatoms list
             connatoms.remove(QM1atom)
             self.MMboundarydict[MM1atom] = connatoms
@@ -283,7 +283,7 @@ class QMMMTheory:
     #Create dipole charge (twice) for each MM2 atom that gets fraction of MM1 charge
     def get_dipole_charge(self,delq,direction,mm1index,mm2index):
         #Distance between MM1 and MM2
-        MM_distance = functions_coords.distance_between_atoms(fragment=self.fragment, atom1=mm1index, atom2=mm2index)
+        MM_distance = module_coords.distance_between_atoms(fragment=self.fragment, atom1=mm1index, atom2=mm2index)
         #Coordinates
         mm1coords=np.array(self.fragment.coords[mm1index])
         mm2coords=np.array(self.fragment.coords[mm2index])
@@ -381,7 +381,7 @@ class QMMMTheory:
         #LINKATOMS
         #1. Get linkatoms coordinates
         if self.linkatoms==True:
-            linkatoms_dict = functions_coords.get_linkatom_positions(self.boundaryatoms,self.qmatoms, current_coords, self.elems)
+            linkatoms_dict = module_coords.get_linkatom_positions(self.boundaryatoms,self.qmatoms, current_coords, self.elems)
             print("linkatoms_dict:", linkatoms_dict)
             #2. Add linkatom coordinates to qmcoords???
             print("Adding linkatom positions to QM coords")
@@ -614,9 +614,9 @@ class QMMMTheory:
                 #This projects the linkatom force onto the respective QM atom and MM atom
                 def linkatom_force_fix(Qcoord, Mcoord, Lcoord, Qgrad,Mgrad,Lgrad):
                     #QM1-L and QM1-MM1 distances
-                    QLdistance=functions_coords.distance(Qcoord,Lcoord)
+                    QLdistance=module_coords.distance(Qcoord,Lcoord)
                     #print("QLdistance:", QLdistance)
-                    MQdistance=functions_coords.distance(Mcoord,Qcoord)
+                    MQdistance=module_coords.distance(Mcoord,Qcoord)
                     #print("MQdistance:", MQdistance)
                     #B and C: a 3x3 arrays
                     B=np.zeros([3,3])
@@ -732,20 +732,20 @@ class QMMMTheory:
             #print_time_rel(CheckpointTime, modulename='QM/MM gradient combine')
             if self.printlevel >=3:
                 print("QM gradient (au/Bohr):")
-                functions_coords.print_coords_all(self.QMgradient, self.qmelems, self.qmatoms)
+                module_coords.print_coords_all(self.QMgradient, self.qmelems, self.qmatoms)
                 blankline()
                 print("PC gradient (au/Bohr):")
-                functions_coords.print_coords_all(self.PCgradient, self.mmelems, self.mmatoms)
+                module_coords.print_coords_all(self.PCgradient, self.mmelems, self.mmatoms)
                 blankline()
                 print("QM+PC gradient (au/Bohr):")
-                functions_coords.print_coords_all(self.QM_PC_gradient, self.elems, self.allatoms)
+                module_coords.print_coords_all(self.QM_PC_gradient, self.elems, self.allatoms)
                 blankline()
                 print("MM gradient (au/Bohr):")
-                functions_coords.print_coords_all(self.MMgradient, self.elems, self.allatoms)
+                module_coords.print_coords_all(self.MMgradient, self.elems, self.allatoms)
                 blankline()
                 print("Total QM/MM gradient (au/Bohr):")
                 print("")
-                functions_coords.print_coords_all(self.QM_MM_gradient, self.elems,self.allatoms)
+                module_coords.print_coords_all(self.QM_MM_gradient, self.elems,self.allatoms)
             if self.printlevel >= 2:
                 print(BC.WARNING,BC.BOLD,"------------ENDING QM/MM MODULE-------------",BC.END)
             return self.QM_MM_energy, self.QM_MM_gradient

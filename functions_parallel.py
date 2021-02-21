@@ -147,7 +147,7 @@ def displacement_QMMMrun(arglist):
     os.chdir(dispdir)
     shutil.move('../'+filelabel+'.xyz','./'+filelabel+'.xyz')
     # Read XYZ-file from file
-    elems,coords = functions_coords.read_xyzfile(filelabel+'.xyz')
+    elems,coords = module_coords.read_xyzfile(filelabel+'.xyz')
 
     #Todo: Copy previous GBW file in here if ORCA, xtbrestart if xtb, etc.
     print("Running displacement: {}".format(label))
