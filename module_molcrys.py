@@ -1,5 +1,5 @@
 import numpy as np
-from module_coords import read_xyzfile,write_xyzfile,print_coords_for_atoms,change_origin_to_centroid,nucchargelist,reorder
+from module_coords import read_xyzfile,write_xyzfile,print_coords_for_atoms,change_origin_to_centroid,nucchargelist,reorder,molformulatolist,nucchargelist,totmasslist
 from functions_general import print_time_rel_and_tot,print_time_rel,blankline,printdebug,BC
 from interface_ORCA import grabatomcharges_ORCA,chargemodel_select
 from interface_xtb import grabatomcharges_xTB
