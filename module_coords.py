@@ -1,4 +1,4 @@
-from functions_general import isint,listdiff
+from functions_general import isint,listdiff,print_time_rel
 import numpy as np
 import settings_ash
 import constants
@@ -73,15 +73,15 @@ class Fragment:
         elif fragfile is not None:
             self.read_fragment_from_file(fragfile)
     def update_attributes(self):
-        self.nuccharge = module_coords.nucchargelist(self.elems)
+        self.nuccharge = nucchargelist(self.elems)
         self.numatoms = len(self.coords)
         self.atomlist = list(range(0, self.numatoms))
         #Unnecessary alias ? Todo: Delete
         self.allatoms = self.atomlist
-        self.mass = module_coords.totmasslist(self.elems)
-        self.list_of_masses = module_coords.list_of_masses(self.elems)
+        self.mass = totmasslist(self.elems)
+        self.list_of_masses = list_of_masses(self.elems)
         #Elemental formula
-        self.formula = module_coords.elemlisttoformula(self.elems)
+        self.formula = elemlisttoformula(self.elems)
         #Pretty formula without 1
         self.prettyformula = self.formula.replace('1','')
 
@@ -136,7 +136,7 @@ class Fragment:
     def print_coords(self):
         if self.printlevel >= 2:
             print("Defined coordinates (Å):")
-        module_coords.print_coords_all(self.coords,self.elems)
+        print_coords_all(self.coords,self.elems)
     #Read Amber coordinate file?
     def read_amberinpcrdfile(self,filename,conncalc=False):
         #Todo: finish
@@ -154,7 +154,7 @@ class Fragment:
         if self.printlevel >= 2:
             print("Reading coordinates from Chemshell file \"{}\" into fragment".format(filename))
         try:
-            elems, coords = module_coords.read_fragfile_xyz(filename)
+            elems, coords = read_fragfile_xyz(filename)
         except FileNotFoundError:
             print("File {} not found".format(filename))
             exit()
@@ -288,7 +288,7 @@ class Fragment:
         if codeversion=='py':
             print("Calculating connectivity of fragment using py")
             timestampB = time.time()
-            fraglist = module_coords.calc_conn_py(self.coords, self.elems, conndepth, scale, tol)
+            fraglist = calc_conn_py(self.coords, self.elems, conndepth, scale, tol)
             print_time_rel(timestampB, modulename='calc connectivity py')
         elif codeversion=='julia':
             print("Calculating connectivity of fragment using julia")
@@ -308,7 +308,7 @@ class Fragment:
                 print(BC.FAIL,"Problem importing Pyjulia (import julia)", BC.END)
                 print("Make sure Julia is installed and PyJulia module available, and that you are using python-jl")
                 print(BC.FAIL,"Using Python version instead (slow for large systems)", BC.END)
-                fraglist = module_coords.calc_conn_py(self.coords, self.elems, conndepth, scale, tol)
+                fraglist = calc_conn_py(self.coords, self.elems, conndepth, scale, tol)
 
 
 

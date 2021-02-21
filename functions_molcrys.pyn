@@ -4,7 +4,7 @@ from module_coords import elemlisttoformula,molformulatolist,nucchargelist,totma
 import interface_ORCA
 from interface_xtb import grabatomcharges_xTB
 from module_MM import UFFdict
-from functions_elstructure import DDEC_to_LJparameters,DDEC_calc
+from functions_elstructureimport DDEC_to_LJparameters,DDEC_calc
 import ash
 import time
 import math

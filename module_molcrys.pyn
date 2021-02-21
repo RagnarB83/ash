@@ -7,7 +7,7 @@ import functions_molcrys
 from functions_molcrys import Fragmenttype
 import ash
 import settings_ash
-from functions_elstructure import DDEC_calc
+from functions_elstructureimport DDEC_calc
 import time
 import shutil
 import os

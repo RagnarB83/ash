@@ -16,7 +16,7 @@ import ash
 from functions_general import blankline,BC,listdiff,print_time_rel,print_time_rel_and_tot,pygrep,printdebug,read_intlist_from_file
 # Fragment class and coordinate functions
 import module_coords
-from module_coords import get_molecules_from_trajectory,eldict_covrad,write_pdbfile
+from module_coords import get_molecules_from_trajectory,eldict_covrad,write_pdbfile,Fragment
 #Parallel 
 import functions_parallel
 from functions_parallel import Singlepoint_parallel,run_QMMM_SP_in_parallel
