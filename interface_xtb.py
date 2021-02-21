@@ -201,7 +201,7 @@ class xTBTheory:
             #Using the xtbobject previously defined
             num_qmatoms=len(current_coords)
             #num_mmatoms=len(MMcharges)
-            nuc_charges=np.array(elemstonuccharges(qm_elems), dtype=self.c_int)
+            nuc_charges=np.array(functions_coords.elemstonuccharges(qm_elems), dtype=self.c_int)
 
             #Converting coords to numpy-array and then to Bohr.
             current_coords_bohr=np.array(current_coords)*constants.ang2bohr

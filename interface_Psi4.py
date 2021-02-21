@@ -1,6 +1,7 @@
 import numpy as np
 import shutil
 import os
+import functions_coords
 
 from functions_general import BC
 
@@ -132,7 +133,7 @@ class Psi4Theory:
 
             #Creating Psi4 molecule object using lists and manual information
             psi4molfrag = psi4.core.Molecule.from_arrays(
-                elez=elemstonuccharges(qm_elems),
+                elez=functions_coords.elemstonuccharges(qm_elems),
                 fix_com=True,
                 fix_orientation=True,
                 fix_symmetry='c1',
