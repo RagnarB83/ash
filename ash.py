@@ -18,6 +18,7 @@ import elstructure_functions
 
 
 #ASH
+import ash
 from functions_general import blankline,BC,listdiff,print_time_rel,print_time_rel_and_tot,pygrep,printdebug,read_intlist_from_file
 import functions_coords
 from functions_coords import get_molecules_from_trajectory,eldict_covrad,write_pdbfile
@@ -57,6 +58,8 @@ import benchmarking
 from benchmarking import run_benchmark
 #Other interfaces
 import interface_crest
+
+
 
 
 #Julia dependency
