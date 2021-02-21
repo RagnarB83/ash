@@ -27,9 +27,9 @@ import constants
 #functions related to electronic structure
 import functions_elstructure
 #Spinprojection
-from module_spinprojection.py import SpinProjectionTheory
+from module_spinprojection import SpinProjectionTheory
 #Surface
-from module_surface.py import calc_surface,calc_surface_fromXYZ,read_surfacedict_from_file
+from module_surface import calc_surface,calc_surface_fromXYZ,read_surfacedict_from_file
 import settings_ash
 from ash_header import print_ash_header
 #QMcode interfaces
@@ -45,7 +45,7 @@ from interface_OpenMM import OpenMMTheory
 from module_MM import NonBondedTheory,UFFdict,UFF_modH_dict,LJCoulpy,coulombcharge,LennardJones,LJCoulombv2,LJCoulomb,MMforcefield_read
 #QM/MM
 from module_QMMM import QMMMTheory
-from module_polembed.py import PolEmbedTheory
+from module_polembed import PolEmbedTheory
 #Solvation
 #NOTE: module_solvation.py or module_solvation2.py To be cleaned up
 import functions_solv
