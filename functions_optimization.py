@@ -1,6 +1,6 @@
 import numpy as np
 import constants
-from functions_general import blankline,print_time_rel_and_tot
+from functions_general import blankline,print_time_rel_and_tot,BC
 from functions_coords import print_coords_all,write_xyzfile
 import time
 import os

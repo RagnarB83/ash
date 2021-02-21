@@ -1,4 +1,4 @@
-
+from functions_general import BC
 
 #PySCF Theory object. Fragment object is optional. Only used for single-points.
 #PySCF runmode: Library only

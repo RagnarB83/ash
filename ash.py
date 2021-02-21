@@ -37,6 +37,7 @@ from interface_dalton import DaltonTheory
 from interface_pyscf import PySCFTheory
 from interface_MRCC import MRCCTheory
 from interface_CFour import CFourTheory
+from interface_xtb import xTBTheory
 #MM: external and internal
 from interface_OpenMM import OpenMMTheory
 from functions_MM import NonBondedTheory,UFFdict,UFF_modH_dict,LJCoulpy,coulombcharge,LennardJones,LJCoulombv2,LJCoulomb,MMforcefield_read

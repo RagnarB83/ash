@@ -2,7 +2,7 @@ import statistics
 from interface_ORCA import checkORCAfinished,finalenergiesgrab,create_orca_inputVIEcomp_pc,create_orca_inputVIEcomp_gas,create_orca_inputVIE_pc
 import time
 import constants
-from functions_xtb import xtbfinalenergygrab,xtbVIPgrab
+from interface_xtb import xtbfinalenergygrab,xtbVIPgrab
 from functions_general import listdiff,blankline
 from functions_coords import get_molecule_members_loop,read_fragfile_xyz
 
