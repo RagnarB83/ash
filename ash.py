@@ -52,7 +52,7 @@ from interface_geometric import geomeTRICOptimizer
 #Workflows, benchmarking etc
 import workflows
 import highlevel_workflows
-from workflows import ReactionEnergy,thermochemprotocol_reaction,thermochemprotocol_single
+from workflows import ReactionEnergy,thermochemprotocol_reaction,thermochemprotocol_single,confsampler_protocol
 import benchmarking
 from benchmarking import run_benchmark
 #Other interfaces

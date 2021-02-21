@@ -1241,7 +1241,7 @@ def gasfragcalc_xTB(fragmentobjects,Cluster,chargemodel,xtbdir,xtbmethod,NUMPROC
         atomlist=fragmentobject.clusterfraglist[0]
         fragcoords,fragelems=Cluster.get_coords_for_atoms(atomlist)
         write_xyzfile(fragelems, fragcoords, "fragment")
-        gasfrag=Fragment(coords=fragcoords,elems=fragelems)
+        gasfrag=ash.Fragment(coords=fragcoords,elems=fragelems)
 
         #print("Defined gasfrag:", gasfrag)
         #print(gasfrag.__dict__)

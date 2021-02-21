@@ -1,5 +1,8 @@
 from functions_general import BC,blankline
 import os
+
+import functions_coords
+
 #Polarizable Embedding theory object.
 #Required at init: qm_theory and qmatoms, X, Y
 #Currently only Polarizable Embedding (PE). Only available for Psi4, PySCF and Dalton.
