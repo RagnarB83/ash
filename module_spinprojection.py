@@ -1,7 +1,7 @@
 from functions_general import BC
 import interface_ORCA
 import constants
-import elstructure_functions
+import functions_elstructure
 #SpinProjectionTheory. Combining energies from two theory levels to give spin-projected energy
 #Example: Noodleman, Yamaguchi spin projection
 class SpinProjectionTheory:
@@ -77,13 +77,13 @@ class SpinProjectionTheory:
         
         #Calculate J using the HS/BS energies and either spin-expectation values or total spin
         if self.jobtype == "Yamaguchi":
-            J=functions_elstructureJcoupling_Yamaguchi(HSenergy,BSenergy,HS_S2,BS_S2)
+            J=functions_elstructure.Jcoupling_Yamaguchi(HSenergy,BSenergy,HS_S2,BS_S2)
         #Strong-interaction limit (bond-formation)
         elif self.jobtype == "Bencini":
-            J=functions_elstructureJcoupling_Bencini(HSenergy,BSenergy,self.Spin_HS)
+            J=functions_elstructure.Jcoupling_Bencini(HSenergy,BSenergy,self.Spin_HS)
         #Weak-interaction limit (little overlap betwen orbitals)
         elif self.jobtype == "Noodleman":
-            J=functions_elstructureJcoupling_Noodleman(HSenergy,BSenergy,self.Spin_HS)
+            J=functions_elstructure.Jcoupling_Noodleman(HSenergy,BSenergy,self.Spin_HS)
 
         #Now  calculate new E of LS state from J
         #Projected energy of low-spin state
