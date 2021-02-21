@@ -6,10 +6,14 @@ import os
 import sys
 import subprocess as sp
 import struct
+import copy
+
 import ash
+import shutil
 import constants
-from functions_ORCA import checkORCAfinished,scfenergygrab,tddftgrab,orbitalgrab,run_orca_plot,grabEOMIPs,check_stability_in_output
-from functions_general import writestringtofile
+import math
+from interface_ORCA import checkORCAfinished,scfenergygrab,tddftgrab,orbitalgrab,run_orca_plot,grabEOMIPs,check_stability_in_output
+from functions_general import writestringtofile,BC,blankline,isint
 from elstructure_functions import HOMOnumbercalc,modosplot,write_cube_diff,read_cube
 
 class bcolors:
@@ -1789,7 +1793,7 @@ def PhotoElectronSpectrum(theory=None, fragment=None, Initialstate_charge=None, 
         if initialorbitalfiles is not None:
             print("initialorbitalfiles keyword provided.")
             print("Will use file {} as guess GBW file for Initial state".format(initialorbitalfiles[0]))
-            shutil.copyfile(initialorbitalfiles[0], theory.inputfilename + '.gbw')
+            shutil.copyfile(initialorbitalfiles[0], theory.filename + '.gbw')
 
         if EOM is not True:
             print(bcolors.OKGREEN, "Calculating Initial State SCF.",bcolors.ENDC)
@@ -1803,11 +1807,11 @@ def PhotoElectronSpectrum(theory=None, fragment=None, Initialstate_charge=None, 
         if Densities == 'SCF' or Densities =='All':
             os.chdir('Calculated_densities')
             print("Density option active. Calling orca_plot to create Cube-file for Initial state SCF.")
-            shutil.copyfile('../' + theory.inputfilename + '.gbw', './'+theory.inputfilename + '.gbw')
+            shutil.copyfile('../' + theory.filename + '.gbw', './'+theory.filename + '.gbw')
             #Electron density
-            run_orca_plot(orcadir=theory.orcadir,filename=theory.inputfilename + '.gbw', option='density', gridvalue=densgridvalue)
-            os.rename(theory.inputfilename+'.scfp','Init_State.scfp')
-            shutil.copyfile(theory.inputfilename + '.eldens.cube', './' + 'Init_State' + '.eldens.cube')
+            run_orca_plot(orcadir=theory.orcadir,filename=theory.filename + '.gbw', option='density', gridvalue=densgridvalue)
+            os.rename(theory.filename+'.scfp','Init_State.scfp')
+            shutil.copyfile(theory.filename + '.eldens.cube', './' + 'Init_State' + '.eldens.cube')
 
             # Read Initial-state-SCF density Cube file into memory
             rlowx, dx, nx, orgx, rlowy, dy, ny, orgy, rlowz, dz, nz, \
@@ -1815,9 +1819,9 @@ def PhotoElectronSpectrum(theory=None, fragment=None, Initialstate_charge=None, 
 
             #Spin density (only if UHF). Otherwise orca_plot gets confused (takes difference between alpha-density and nothing)
             if stateI.hftyp == "UHF":
-                run_orca_plot(orcadir=theory.orcadir,filename=theory.inputfilename + '.gbw', option='spindensity', gridvalue=densgridvalue)
-                os.rename(theory.inputfilename + '.scfr', 'Init_State.scfr')
-                shutil.copyfile(theory.inputfilename + '.spindens.cube', './' + 'Init_State' + '.spindens.cube')
+                run_orca_plot(orcadir=theory.orcadir,filename=theory.filename + '.gbw', option='spindensity', gridvalue=densgridvalue)
+                os.rename(theory.filename + '.scfr', 'Init_State.scfr')
+                shutil.copyfile(theory.filename + '.spindens.cube', './' + 'Init_State' + '.spindens.cube')
             os.chdir('..')
         #Note: Using SCF energy and not Final Single Point energy (does not work for TDDFT)
         if CAS is True:
@@ -1842,9 +1846,9 @@ def PhotoElectronSpectrum(theory=None, fragment=None, Initialstate_charge=None, 
 
         #Saveing GBW/out/in files
         if EOM is not True:
-            shutil.copyfile(theory.inputfilename + '.gbw', './' + 'Init_State' + '.gbw')
-            shutil.copyfile(theory.inputfilename + '.out', './' + 'Init_State' + '.out')
-            shutil.copyfile(theory.inputfilename + '.inp', './' + 'Init_State' + '.inp')
+            shutil.copyfile(theory.filename + '.gbw', './' + 'Init_State' + '.gbw')
+            shutil.copyfile(theory.filename + '.out', './' + 'Init_State' + '.out')
+            shutil.copyfile(theory.filename + '.inp', './' + 'Init_State' + '.inp')
 
             stateI.gbwfile="Init_State"+".gbw"
             stateI.outfile="Init_State"+".out"
@@ -1861,7 +1865,7 @@ def PhotoElectronSpectrum(theory=None, fragment=None, Initialstate_charge=None, 
         elif EOM is True:
             pass
         else:
-            stateI.occorbs_alpha, stateI.occorbs_beta, stateI.hftyp = orbitalgrab(theory.inputfilename+'.out')
+            stateI.occorbs_alpha, stateI.occorbs_beta, stateI.hftyp = orbitalgrab(theory.filename+'.out')
             print("stateI.occorbs_alpha:", stateI.occorbs_alpha)
             print("stateI.hftyp:", stateI.hftyp)
 
@@ -1912,7 +1916,7 @@ def PhotoElectronSpectrum(theory=None, fragment=None, Initialstate_charge=None, 
                     print("not tested for IP-EOM-CCSD...")
                     print("initialorbitalfiles keyword provided.")
                     print("Will use file {} as guess GBW file for this Final state.".format(initialorbitalfiles[findex + 1]))
-                    shutil.copyfile(initialorbitalfiles[findex + 1], theory.inputfilename + '.gbw')
+                    shutil.copyfile(initialorbitalfiles[findex + 1], theory.filename + '.gbw')
 
                 energy = ash.Singlepoint(fragment=fragment, theory=theory)
                 stateI.energy= energy
@@ -1942,9 +1946,9 @@ def PhotoElectronSpectrum(theory=None, fragment=None, Initialstate_charge=None, 
 
 
                 # Saveing GBW and CIS file
-                shutil.copyfile(theory.inputfilename + '.gbw', './' + 'Final_State' + '.gbw')
-                shutil.copyfile(theory.inputfilename + '.out', './' + 'Final_State' + '.out')
-                shutil.copyfile(theory.inputfilename + '.inp', './' + 'Final_State' + '.inp')
+                shutil.copyfile(theory.filename + '.gbw', './' + 'Final_State' + '.gbw')
+                shutil.copyfile(theory.filename + '.out', './' + 'Final_State' + '.out')
+                shutil.copyfile(theory.filename + '.inp', './' + 'Final_State' + '.inp')
 
                 #Each fstate linked with same GBW file and outfile
                 fstate.gbwfile = "Final_State" + ".gbw"
@@ -1994,7 +1998,7 @@ def PhotoElectronSpectrum(theory=None, fragment=None, Initialstate_charge=None, 
                 print("not tested for CASSCF...")
                 print("initialorbitalfiles keyword provided.")
                 print("Will use file {} as guess GBW file for this Final state.".format(initialorbitalfiles[findex + 1]))
-                shutil.copyfile(initialorbitalfiles[findex + 1], theory.inputfilename + '.gbw')
+                shutil.copyfile(initialorbitalfiles[findex + 1], theory.filename + '.gbw')
 
             ash.Singlepoint(fragment=fragment, theory=theory)
 
@@ -2003,9 +2007,9 @@ def PhotoElectronSpectrum(theory=None, fragment=None, Initialstate_charge=None, 
             print("fstates_dict: ", fstates_dict)
 
             # Saveing GBW and CIS file
-            shutil.copyfile(theory.inputfilename + '.gbw', './' + 'Final_State' + '.gbw')
-            shutil.copyfile(theory.inputfilename + '.out', './' + 'Final_State' + '.out')
-            shutil.copyfile(theory.inputfilename + '.inp', './' + 'Final_State' + '.inp')
+            shutil.copyfile(theory.filename + '.gbw', './' + 'Final_State' + '.gbw')
+            shutil.copyfile(theory.filename + '.out', './' + 'Final_State' + '.out')
+            shutil.copyfile(theory.filename + '.inp', './' + 'Final_State' + '.inp')
 
             #Each fstate linked with same GBW file and outfile
             for fstate in Finalstates:
@@ -2067,7 +2071,7 @@ def PhotoElectronSpectrum(theory=None, fragment=None, Initialstate_charge=None, 
                 print("not tested for MRCI...")
                 print("initialorbitalfiles keyword provided.")
                 print("Will use file {} as guess GBW file for this Final state.".format(initialorbitalfiles[findex + 1]))
-                shutil.copyfile(initialorbitalfiles[findex + 1], theory.inputfilename + '.gbw')
+                shutil.copyfile(initialorbitalfiles[findex + 1], theory.filename + '.gbw')
 
             ash.Singlepoint(fragment=fragment, theory=theory)
 
@@ -2077,9 +2081,9 @@ def PhotoElectronSpectrum(theory=None, fragment=None, Initialstate_charge=None, 
             else:
                 fstates_dict = mrci_state_energies_grab("orca-input.out")
             # Saveing GBW and CIS file
-            shutil.copyfile(theory.inputfilename + '.gbw', './' + 'Final_State' + '.gbw')
-            shutil.copyfile(theory.inputfilename + '.out', './' + 'Final_State' + '.out')
-            shutil.copyfile(theory.inputfilename + '.inp', './' + 'Final_State' + '.inp')
+            shutil.copyfile(theory.filename + '.gbw', './' + 'Final_State' + '.gbw')
+            shutil.copyfile(theory.filename + '.out', './' + 'Final_State' + '.out')
+            shutil.copyfile(theory.filename + '.inp', './' + 'Final_State' + '.inp')
 
             #Each fstate linked with same GBW file and outfile
             for fstate in Finalstates:
@@ -2109,7 +2113,7 @@ def PhotoElectronSpectrum(theory=None, fragment=None, Initialstate_charge=None, 
                 if initialorbitalfiles is not None:
                     print("initialorbitalfiles keyword provided.")
                     print("Will use file {} as guess GBW file for this Final state.".format(initialorbitalfiles[findex+1]))
-                    shutil.copyfile(initialorbitalfiles[findex+1], theory.inputfilename + '.gbw')
+                    shutil.copyfile(initialorbitalfiles[findex+1], theory.filename + '.gbw')
 
 
                 ash.Singlepoint(fragment=fragment, theory=theory)
@@ -2121,10 +2125,10 @@ def PhotoElectronSpectrum(theory=None, fragment=None, Initialstate_charge=None, 
                 
                 fstate.energy = scfenergygrab("orca-input.out")
                 #Saveing GBW and CIS file
-                shutil.copyfile(theory.inputfilename + '.gbw', './' + 'Final_State_mult' + str(fstate.mult) + '.gbw')
-                shutil.copyfile(theory.inputfilename + '.cis', './' + 'Final_State_mult' + str(fstate.mult) + '.cis')
-                shutil.copyfile(theory.inputfilename + '.out', './' + 'Final_State_mult' + str(fstate.mult) + '.out')
-                shutil.copyfile(theory.inputfilename + '.inp', './' + 'Final_State_mult' + str(fstate.mult) + '.inp')
+                shutil.copyfile(theory.filename + '.gbw', './' + 'Final_State_mult' + str(fstate.mult) + '.gbw')
+                shutil.copyfile(theory.filename + '.cis', './' + 'Final_State_mult' + str(fstate.mult) + '.cis')
+                shutil.copyfile(theory.filename + '.out', './' + 'Final_State_mult' + str(fstate.mult) + '.out')
+                shutil.copyfile(theory.filename + '.inp', './' + 'Final_State_mult' + str(fstate.mult) + '.inp')
 
                 fstate.gbwfile="Final_State_mult"+str(fstate.mult)+".gbw"
                 fstate.outfile="Final_State_mult"+str(fstate.mult)+".out"
@@ -2132,9 +2136,9 @@ def PhotoElectronSpectrum(theory=None, fragment=None, Initialstate_charge=None, 
 
 
                 #Grab TDDFT states from ORCA file:
-                fstate.TDtransitionenergies = tddftgrab(theory.inputfilename+'.out')
+                fstate.TDtransitionenergies = tddftgrab(theory.filename+'.out')
                 # Final state orbitals for MO-DOSplot
-                fstate.occorbs_alpha, fstate.occorbs_beta, fstate.hftyp = orbitalgrab(theory.inputfilename+'.out')
+                fstate.occorbs_alpha, fstate.occorbs_beta, fstate.hftyp = orbitalgrab(theory.filename+'.out')
 
                 print(fstate.__dict__)
                 if fstate.hftyp == "UHF":
@@ -2150,18 +2154,18 @@ def PhotoElectronSpectrum(theory=None, fragment=None, Initialstate_charge=None, 
                 if Densities == 'SCF' or Densities == 'All':
                     print("Density option active. Calling orca_plot to create Cube-file for Final state SCF.")
                     os.chdir('Calculated_densities')
-                    shutil.copyfile('../' + theory.inputfilename + '.gbw', './' + theory.inputfilename + '.gbw')
+                    shutil.copyfile('../' + theory.filename + '.gbw', './' + theory.filename + '.gbw')
                     #Electron density
-                    run_orca_plot(orcadir=theory.orcadir, filename=theory.inputfilename + '.gbw', option='density',
+                    run_orca_plot(orcadir=theory.orcadir, filename=theory.filename + '.gbw', option='density',
                                  gridvalue=densgridvalue)
-                    os.rename(theory.inputfilename + '.scfp', 'Final_State_mult' + str(fstate.mult) + '.scfp')
-                    shutil.copyfile(theory.inputfilename + '.eldens.cube', './' + 'Final_State_mult' + str(fstate.mult) + '.eldens.cube')
+                    os.rename(theory.filename + '.scfp', 'Final_State_mult' + str(fstate.mult) + '.scfp')
+                    shutil.copyfile(theory.filename + '.eldens.cube', './' + 'Final_State_mult' + str(fstate.mult) + '.eldens.cube')
                     #Spin density
                     if fstate.hftyp == "UHF":
-                        run_orca_plot(orcadir=theory.orcadir, filename=theory.inputfilename + '.gbw', option='spindensity',
+                        run_orca_plot(orcadir=theory.orcadir, filename=theory.filename + '.gbw', option='spindensity',
                                  gridvalue=densgridvalue)
-                        os.rename(theory.inputfilename + '.scfr', 'Final_State_mult' + str(fstate.mult) + '.scfr')
-                        shutil.copyfile(theory.inputfilename + '.spindens.cube', './' + 'Final_State_mult' + str(fstate.mult) + '.spindens.cube')
+                        os.rename(theory.filename + '.scfr', 'Final_State_mult' + str(fstate.mult) + '.scfr')
+                        shutil.copyfile(theory.filename + '.spindens.cube', './' + 'Final_State_mult' + str(fstate.mult) + '.spindens.cube')
                     os.chdir('..')
             blankline()
             blankline()
@@ -2557,7 +2561,7 @@ def PhotoElectronSpectrum(theory=None, fragment=None, Initialstate_charge=None, 
                 theory.charge = fstate.charge
                 theory.mult = fstate.mult
                 shutil.copyfile('../'+'Final_State_mult' + str(fstate.mult) + '.gbw','Final_State_mult' + str(fstate.mult) + '.gbw')
-                os.rename('Final_State_mult' + str(fstate.mult) + '.gbw', theory.inputfilename + '.gbw')
+                os.rename('Final_State_mult' + str(fstate.mult) + '.gbw', theory.filename + '.gbw')
 
 
                 #Looping over each TDDFT-state and doing TDDFT-calc
@@ -2591,14 +2595,14 @@ def PhotoElectronSpectrum(theory=None, fragment=None, Initialstate_charge=None, 
                     print("Calling orca_plot to create Cube-file for Final state TDDFT-state.")
 
                     #Doing spin-density Cubefilefor each cisr file
-                    run_orca_plot(orcadir=theory.orcadir, filename=theory.inputfilename + '.gbw', option='cisspindensity',gridvalue=densgridvalue,
+                    run_orca_plot(orcadir=theory.orcadir, filename=theory.filename + '.gbw', option='cisspindensity',gridvalue=densgridvalue,
                                   densityfilename='Final_State_mult' + str(fstate.mult)+'TDDFTstate_'+str(tddftstate)+'.cisr' )
-                    os.rename(theory.inputfilename + '.spindens.cube', 'Final_State_mult' + str(fstate.mult)+'TDDFTstate_'+str(tddftstate)+'.spindens.cube')
+                    os.rename(theory.filename + '.spindens.cube', 'Final_State_mult' + str(fstate.mult)+'TDDFTstate_'+str(tddftstate)+'.spindens.cube')
                     #Doing eldensity Cubefile for each cisp file and then take difference with Initstate-SCF cubefile
 
-                    run_orca_plot(orcadir=theory.orcadir, filename=theory.inputfilename + '.gbw', option='cisdensity',gridvalue=densgridvalue,
+                    run_orca_plot(orcadir=theory.orcadir, filename=theory.filename + '.gbw', option='cisdensity',gridvalue=densgridvalue,
                                   densityfilename='Final_State_mult' + str(fstate.mult)+'TDDFTstate_'+str(tddftstate)+'.cisp' )
-                    os.rename(theory.inputfilename + '.eldens.cube', 'Final_State_mult' + str(fstate.mult)+'TDDFTstate_'+str(tddftstate)+'.eldens.cube')
+                    os.rename(theory.filename + '.eldens.cube', 'Final_State_mult' + str(fstate.mult)+'TDDFTstate_'+str(tddftstate)+'.eldens.cube')
 
                     final_dens = 'Final_State_mult' + str(fstate.mult)+'TDDFTstate_'+str(tddftstate)+'.eldens.cube'
                     rlowx2, dx2, nx2, orgx2, rlowy2, dy2, ny2, orgy2, rlowz2, dz2, \
@@ -2821,7 +2825,7 @@ def potential_adjustor_DFT(theory=None, fragment=None, Initialstate_charge=None,
     E_N = ash.Singlepoint(fragment=fragment, theory=theory)
     
     #Orbitals in eV
-    occorbs_alpha, occorbs_beta, hftyp = orbitalgrab(theory.inputfilename+'.out')
+    occorbs_alpha, occorbs_beta, hftyp = orbitalgrab(theory.filename+'.out')
     print("occorbs_alpha (eV): ", occorbs_alpha)
     print("occorbs_beta (eV): ", occorbs_beta)
     

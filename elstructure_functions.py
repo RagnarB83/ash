@@ -8,9 +8,7 @@ import shutil
 import constants
 import math
 import dictionaries_lists
-#from functions_ORCA import grab_HF_and_corr_energies
-from functions_ORCA import *
-from interface_geometric import *
+from functions_general import isodd
 
 #CM5. from https://github.com/patrickmelix/CM5-calculator/blob/master/cm5calculator.py
 
@@ -575,7 +573,7 @@ cnvkdiis false
 end"""
 
         #Creating ORCA object for  element
-        ORCASPcalculation = ash.ORCATheory(orcadir=theory.orcadir, charge=0,
+        ORCASPcalculation = interface_ORCA.ORCATheory(orcadir=theory.orcadir, charge=0,
                                            mult=spindictionary[el], orcasimpleinput=theory.orcasimpleinput,
                                            orcablocks=theory.orcablocks, extraline=scfextrasettingsstring)
 

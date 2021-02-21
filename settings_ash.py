@@ -1,6 +1,7 @@
 import os
 import sys
 import ash
+import functions_general
 import time
 import configparser
 import distutils
@@ -11,6 +12,8 @@ userhome = str(Path.home())
 
 #Defining some default ASH settings here
 # (will be overriden by ash_user_settings file variables if present)
+
+debugflag = False
 
 #Whether to use ANSI color escape sequences in output or not.
 use_ANSI_color = True
@@ -48,6 +51,7 @@ try:
     use_ANSI_color = bool(distutils.util.strtobool(parser.get("Settings","use_ANSI_color")))
     print_input = bool(distutils.util.strtobool(parser.get("Settings","print_input")))
     print_logo = bool(distutils.util.strtobool(parser.get("Settings","print_logo")))
+    debugflag = bool(distutils.util.strtobool(parser.get("Settings","debugflag")))
     
 except:
     pass
@@ -76,11 +80,11 @@ def init():
     if print_input is True:
         inputfilepath=inputfile= os.getcwd()+"/"+sys.argv[0]
         print("Input script:", inputfilepath )
-        print(ash.functions_general.BC.WARNING,"="*100)
+        print(functions_general.BC.WARNING,"="*100)
         with open(inputfilepath) as x: f = x.readlines()
         for line in f:
             print(line,end="")
-        print("="*100,ash.functions_general.BC.END)
+        print("="*100,functions_general.BC.END)
         print("")
 
     

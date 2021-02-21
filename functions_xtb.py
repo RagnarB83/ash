@@ -1,18 +1,234 @@
 import constants
 import subprocess as sp
 import settings_solvation
-from functions_general import *
+from functions_general import blankline,reverse_lines
 import os
 import sys
 import shutil
 
 #xTB functions: primarily for inputfile-based interface. Library-interfaces is in interface_xtb.py
 
+
+# https://github.com/grimme-lab/xtb/blob/master/python/xtb/interface.py
+#Now supports 2 runmodes: 'library' (fast Python C-API) or 'inputfile'
+#
 #TODO: THis should be a general interface so remove settings_solvation calls.
 #TODO: xtb. Need to combine OMP-parallelization of xtb and multiprocessing if possible
 #TODO: Currently doing multiprocessing over all 8*2=16 snapshots. First A, then B.
 #TODO: Might not be a need to do first A then B since a ROHF-type Hamiltonian
 #TODO. Could parallelize over all 32 calculations. However, we are currently using 24 cores so...
+
+
+class xTBTheory:
+    def __init__(self, xtbdir=None, fragment=None, charge=None, mult=None, xtbmethod=None, runmode='inputfile', nprocs=1, printlevel=2):
+
+        #Printlevel
+        self.printlevel=printlevel
+
+        if xtbmethod is None:
+            print("xTBTheory requires xtbmethod keyword to be set")
+            exit(1)
+
+        self.nprocs=nprocs
+        if fragment != None:
+            self.fragment=fragment
+            self.coords=fragment.coords
+            self.elems=fragment.elems
+        self.charge=charge
+        self.mult=mult
+        self.xtbmethod=xtbmethod
+        self.runmode=runmode
+        if self.runmode=='library':
+            print("Using library-based xTB interface")
+            print("Loading library...")
+            os.environ["OMP_NUM_THREADS"] = str(nprocs)
+            os.environ["MKL_NUM_THREADS"] = "1"
+            os.environ["OPENBLAS_NUM_THREADS"] = "1"
+            # Load xtB library and ctypes datatypes that run uses
+            try:
+                #import xtb_interface_library
+                import interface_xtb
+                self.xtbobject = interface_xtb.XTBLibrary()
+            except:
+                print("Problem importing xTB library. Check that the library dir (containing libxtb.so) is available in LD_LIBRARY_PATH.")
+                print("e.g. export LD_LIBRARY_PATH=/path/to/xtb_6.2.3/lib64:$LD_LIBRARY_PATH")
+                print("Or that the MKL library is available and loaded")
+                exit(9)
+            from ctypes import c_int, c_double
+            #Needed for complete interface?:
+            # from ctypes import Structure, c_int, c_double, c_bool, c_char_p, c_char, POINTER, cdll, CDLL
+            self.c_int = c_int
+            self.c_double = c_double
+        else:
+            if xtbdir == None:
+                # Trying to find xtbdir in path
+                print("xtbdir argument not provided to xTBTheory object. Trying to find xtb in path")
+                try:
+                    self.xtbdir = os.path.dirname(shutil.which('xtb'))
+                    print("Found xtb in path. Setting xtbdir.")
+                except:
+                    print("Found no xtb executable in path. Exiting... ")
+            else:
+                self.xtbdir = xtbdir
+    #Cleanup after run.
+    def cleanup(self):
+        if self.printlevel >= 2:
+            print("Cleaning up old xTB files")
+        try:
+            os.remove('xtb-inpfile.xyz')
+            os.remove('xtb-inpfile.out')
+            os.remove('gradient')
+            os.remove('charges')
+            os.remove('energy')
+            os.remove('xtbrestart')
+        except:
+            pass
+    def run(self, current_coords=None, current_MM_coords=None, MMcharges=None, qm_elems=None,
+                elems=None, Grad=False, PC=False, nprocs=None):
+        if MMcharges is None:
+            MMcharges=[]
+
+        if nprocs is None:
+            nprocs=self.nprocs
+
+        if self.printlevel >= 2:
+            print("------------STARTING XTB INTERFACE-------------")
+        #Coords provided to run or else taken from initialization.
+        #if len(current_coords) != 0:
+        if current_coords is not None:
+            pass
+        else:
+            current_coords=self.coords
+
+        #What elemlist to use. If qm_elems provided then QM/MM job, otherwise use elems list or self.elems
+        if qm_elems is None:
+            if elems is None:
+                qm_elems=self.elems
+            else:
+                qm_elems = elems
+
+
+        #Parallellization
+        #Todo: this has not been confirmed to work
+        #Needs to be done before library-import??
+        os.environ["OMP_NUM_THREADS"] = str(nprocs)
+        os.environ["MKL_NUM_THREADS"] = "1"
+        os.environ["OPENBLAS_NUM_THREADS"] = "1"
+
+        if self.runmode=='inputfile':
+            if self.printlevel >=2:
+                print("Using inputfile-based xTB interface")
+            #TODO: Add restart function so that xtbrestart is not always deleted
+            #Create XYZfile with generic name for xTB to run
+            inputfilename="xtb-inpfile"
+            if self.printlevel >= 2:
+                print("Creating inputfile:", inputfilename+'.xyz')
+            num_qmatoms=len(current_coords)
+            num_mmatoms=len(MMcharges)
+            self.cleanup()
+            #Todo: xtbrestart possibly. needs to be optional
+            functions_coords.write_xyzfile(qm_elems, current_coords, inputfilename,printlevel=self.printlevel)
+
+            #Run inputfile. Take nprocs argument.
+            if self.printlevel >= 2:
+                print("------------Running xTB-------------")
+                print("...")
+            if Grad==True:
+                if PC==True:
+                    create_xtb_pcfile_general(current_MM_coords, MMcharges)
+                    run_xtb_SP_serial(self.xtbdir, self.xtbmethod, inputfilename + '.xyz', self.charge, self.mult, Grad=True)
+                else:
+                    run_xtb_SP_serial(self.xtbdir, self.xtbmethod, inputfilename + '.xyz', self.charge, self.mult,
+                                  Grad=True)
+            else:
+                if PC==True:
+                    create_xtb_pcfile_general(current_MM_coords, MMcharges)
+                    run_xtb_SP_serial(self.xtbdir, self.xtbmethod, inputfilename + '.xyz', self.charge, self.mult)
+                else:
+                    run_xtb_SP_serial(self.xtbdir, self.xtbmethod, inputfilename + '.xyz', self.charge, self.mult)
+
+            if self.printlevel >= 2:
+                print("------------xTB calculation done-----")
+            #Check if finished. Grab energy
+            if Grad==True:
+                self.energy,self.grad=xtbgradientgrab(num_qmatoms)
+                if PC==True:
+                    # Grab pointcharge gradient. i.e. gradient on MM atoms from QM-MM elstat interaction.
+                    self.pcgrad = xtbpcgradientgrab(num_mmatoms)
+                    if self.printlevel >= 2:
+                        print("xtb energy :", self.energy)
+                        print("------------ENDING XTB-INTERFACE-------------")
+
+                    return self.energy, self.grad, self.pcgrad
+                else:
+                    if self.printlevel >= 2:
+                        print("xtb energy :", self.energy)
+                        print("------------ENDING XTB-INTERFACE-------------")
+                    return self.energy, self.grad
+            else:
+                outfile=inputfilename+'.out'
+                self.energy=xtbfinalenergygrab(outfile)
+                if self.printlevel >= 2:
+                    print("xtb energy :", self.energy)
+                    print("------------ENDING XTB-INTERFACE-------------")
+                return self.energy
+        elif self.runmode=='library':
+
+            if PC==True:
+                print("Pointcharge-embedding on but xtb-runmode is library!")
+                print("The xtb library-interface is not yet ready for QM/MM calculations")
+                print("Use runmode='inputfile' for now")
+                exit(1)
+
+
+            #Hard-coded options. Todo: revisit
+            options = {
+                "print_level": 1,
+                "parallel": 0,
+                "accuracy": 1.0,
+                "electronic_temperature": 300.0,
+                "gradient": True,
+                "restart": False,
+                "ccm": True,
+                "max_iterations": 30,
+                "solvent": "none",
+            }
+
+            #Using the xtbobject previously defined
+            num_qmatoms=len(current_coords)
+            #num_mmatoms=len(MMcharges)
+            nuc_charges=np.array(elemstonuccharges(qm_elems), dtype=self.c_int)
+
+            #Converting coords to numpy-array and then to Bohr.
+            current_coords_bohr=np.array(current_coords)*constants.ang2bohr
+            positions=np.array(current_coords_bohr, dtype=self.c_double)
+            args = (num_qmatoms, nuc_charges, positions, options, 0.0, 0, "-")
+            print("------------Running xTB-------------")
+            if self.xtbmethod=='GFN1':
+                results = self.xtbobject.GFN1Calculation(*args)
+            elif self.xtbmethod=='GFN2':
+                results = self.xtbobject.GFN2Calculation(*args)
+            else:
+                print("Unknown xtbmethod.")
+                exit()
+            print("------------xTB calculation done-------------")
+            if Grad==True:
+                self.energy = float(results['energy'])
+                self.grad = results['gradient']
+                print("xtb energy:", self.energy)
+                #print("self.grad:", self.grad)
+                print("------------ENDING XTB-INTERFACE-------------")
+                return self.energy, self.grad
+            else:
+                self.energy = float(results['energy'])
+                print("xtb energy:", self.energy)
+                print("------------ENDING XTB-INTERFACE-------------")
+                return self.energy
+        else:
+            print("Unknown option to xTB interface")
+            exit()
+
+
 
 #Grab Final single point energy
 def xtbfinalenergygrab(file):

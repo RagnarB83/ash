@@ -1,14 +1,15 @@
 import numpy as np
 import constants
-from functions_coords import *
-from functions_general import *
+from functions_coords import print_coords_all,print_coords_for_atoms,print_internal_coordinate_table,write_XYZ_for_atoms,write_xyzfile
+from functions_general import blankline,BC
 import os
 import shutil
 import ash
 import time
-########################
+
+################################################
 # Interface to geomeTRIC Optimization Library
-########################
+################################################
 # Todo: Add optional print-coords in each step option. Maybe only print QM-coords (if QM/MM).
 # https://github.com/leeping/geomeTRIC/blob/master/examples/constraints.txt
 # bond,angle and dihedral constraints work. If only atom indices provided and constrainvalue is False then constraint at current position
@@ -27,7 +28,7 @@ def geomeTRICOptimizer(theory=None,fragment=None, coordsystem='hdlc', frozenatom
     if fragment.numatoms == 1:
         print("System has 1 atoms.")
         print("Doing single-point energy calculation instead")
-        energy = Singlepoint(fragment=fragment, theory=theory)
+        energy = ash.Singlepoint(fragment=fragment, theory=theory)
         return energy
         #E = self.theory.run(current_coords=fragment.coords, elems=fragment.elems, Grad=False)
 

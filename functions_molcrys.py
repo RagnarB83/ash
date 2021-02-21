@@ -1,9 +1,15 @@
 import numpy as np
-from functions_coords import *
-from functions_ORCA import *
-from elstructure_functions import *
-from ash import *
+from functions_general import blankline,uniq,printdebug,print_time_rel_and_tot,print_time_rel,BC
+from functions_coords import elemlisttoformula,molformulatolist,nucchargelist,totmasslist,write_xyzfile,isElementList,einsum_mat,get_molecule_members_loop_np2,reorder,reorder_hungarian_scipy
+import interface_ORCA
+from functions_xtb import grabatomcharges_xTB
+from functions_MM import UFFdict
+from elstructure_functions import DDEC_to_LJparameters,DDEC_calc
+import ash
 import time
+import math
+import shutil
+import copy
 
 # Fragment-type class
 class Fragmenttype:
@@ -75,26 +81,6 @@ class Fragmenttype:
             outfile.write("\n")
             outfile.write("Flat Cluster fraglist: {} \n".format(self.flat_clusterfraglist))
 
-
-
-def print_time_rel(timestampA,modulename=''):
-    secsA=time.time()-timestampA
-    minsA=secsA/60
-    print("-------------------------------------------------------------------")
-    print("Time to calculate step ({}): {:3.1f} seconds, {:3.1f} minutes.".format(modulename, secsA, minsA ))
-    print("-------------------------------------------------------------------")
-
-def print_time_rel_and_tot(timestampA,timestampB, modulename=''):
-    secsA=time.time()-timestampA
-    minsA=secsA/60
-    hoursA=minsA/60
-    secsB=time.time()-timestampB
-    minsB=secsB/60
-    hoursB=minsB/60
-    print("-------------------------------------------------------------------")
-    print("Time to calculate step ({}): {:3.1f} seconds, {:3.1f} minutes, {:3.1f} hours".format(modulename, secsA, minsA, hoursA ))
-    print("Total Walltime: {:3.1f} seconds, {:3.1f} minutes, {:3.1f} hours".format(secsB, minsB, hoursB ))
-    print("-------------------------------------------------------------------")
 
 #Extend cell to 3x3x3 (27 cells) so that original cell is in middle
 #Loosely based on https://pymolwiki.org/index.php/Supercell
@@ -1082,7 +1068,7 @@ def reordercluster(fragment,fragmenttype,code_version='py'):
         #print("After. fragmenttype.clusterfraglist:", fragmenttype.clusterfraglist)
         #print(fragmenttype.clusterfraglist[236])
         exit()
-        ash.print_time_rel(timestampA, modulename='reorder_cluster julia')
+        print_time_rel(timestampA, modulename='reorder_cluster julia')
     elif code_version=='py':
         print("Calling reorder_cluster py")
         print("Importing scipy")
@@ -1108,7 +1094,7 @@ def reordercluster(fragment,fragmenttype,code_version='py'):
         #print("After. fragmenttype.clusterfraglist:", fragmenttype.clusterfraglist)
         #exit()
         #print(fragmenttype.clusterfraglist[236])
-        ash.print_time_rel(timestampA, modulename='reorder_cluster py')
+        print_time_rel(timestampA, modulename='reorder_cluster py')
 #Updating pointcharges of fragment
 def pointchargeupdate(fragment,fragmenttype,chargelist):
     #print("fragment:", fragment)
@@ -1151,13 +1137,13 @@ def gasfragcalc_ORCA(fragmentobjects,Cluster,chargemodel,orcadir,orcasimpleinput
         blankline()
         print("Fragmentobject:", BC.WARNING, BC.BOLD, fragmentobject.Name, BC.END)
         #Charge-model info to add to inputfile
-        chargemodelline = chargemodel_select(chargemodel)
+        chargemodelline = interface_ORCA.chargemodel_select(chargemodel)
 
         #Call Clusterfragment and have print/write/something out coords and elems for atoms in list [0,1,2,3 etc.]
         atomlist=fragmentobject.clusterfraglist[0]
         fragcoords,fragelems=Cluster.get_coords_for_atoms(atomlist)
         write_xyzfile(fragelems, fragcoords, "fragment")
-        gasfrag=Fragment(coords=fragcoords,elems=fragelems)
+        gasfrag=ash.Fragment(coords=fragcoords,elems=fragelems)
 
         print("Defined gasfrag:", gasfrag)
         
@@ -1172,15 +1158,15 @@ def gasfragcalc_ORCA(fragmentobjects,Cluster,chargemodel,orcadir,orcasimpleinput
         #Assuming mainfrag is fragmentobject 0 and only mainfrag can be Broken-symmetry
         if id == 0:
             if brokensym==True:
-                ORCASPcalculation = ORCATheory(orcadir=orcadir, fragment=gasfrag, charge=fragmentobject.Charge,
+                ORCASPcalculation = interface_ORCA.ORCATheory(orcadir=orcadir, fragment=gasfrag, charge=fragmentobject.Charge,
                                        mult=fragmentobject.Mult, orcasimpleinput=orcasimpleinput,
                                        orcablocks=orcablocks, extraline=chargemodelline, brokensym=brokensym, HSmult=HSmult, atomstoflip=atomstoflip)
             else:
-                ORCASPcalculation = ORCATheory(orcadir=orcadir, fragment=gasfrag, charge=fragmentobject.Charge,
+                ORCASPcalculation = interface_ORCA.ORCATheory(orcadir=orcadir, fragment=gasfrag, charge=fragmentobject.Charge,
                                        mult=fragmentobject.Mult, orcasimpleinput=orcasimpleinput,
                                        orcablocks=orcablocks, extraline=chargemodelline)
         else:
-            ORCASPcalculation = ORCATheory(orcadir=orcadir, fragment=gasfrag, charge=fragmentobject.Charge,
+            ORCASPcalculation = interface_ORCA.ORCATheory(orcadir=orcadir, fragment=gasfrag, charge=fragmentobject.Charge,
                                            mult=fragmentobject.Mult, orcasimpleinput=orcasimpleinput,
                                            orcablocks=orcablocks, extraline=chargemodelline)
         print("ORCASPcalculation:", ORCASPcalculation)
@@ -1205,7 +1191,7 @@ def gasfragcalc_ORCA(fragmentobjects,Cluster,chargemodel,orcadir,orcasimpleinput
             #NOTE: We are not going to derive DDEC LJ parameters here but rather at end of SP loop.
         else:
             #Grab atomic charges for fragment.
-            atomcharges=grabatomcharges_ORCA(chargemodel,ORCASPcalculation.inputfilename+'.out')
+            atomcharges=interface_ORCA.grabatomcharges_ORCA(chargemodel,ORCASPcalculation.filename+'.out')
             print_time_rel_and_tot(currtime, origtime, modulename='grabatomcharges')
             currtime = time.time()
 
@@ -1224,13 +1210,13 @@ def gasfragcalc_ORCA(fragmentobjects,Cluster,chargemodel,orcadir,orcasimpleinput
         print_time_rel_and_tot(currtime, origtime, modulename='pointchargeupdate')
         currtime = time.time()
         #Keep backup of ORCA outputfile and GBW file
-        shutil.copy(ORCASPcalculation.inputfilename + '.out', fragmentobject.Name + '.out')
-        shutil.copyfile(ORCASPcalculation.inputfilename + '.out', './SPloop-files/'+fragmentobject.Name+'-Gascalc' + '.out')
-        shutil.copyfile(ORCASPcalculation.inputfilename + '.gbw', './SPloop-files/'+fragmentobject.Name+'-Gascalc' + '.gbw')
+        shutil.copy(ORCASPcalculation.filename + '.out', fragmentobject.Name + '.out')
+        shutil.copyfile(ORCASPcalculation.filename + '.out', './SPloop-files/'+fragmentobject.Name+'-Gascalc' + '.out')
+        shutil.copyfile(ORCASPcalculation.filename + '.gbw', './SPloop-files/'+fragmentobject.Name+'-Gascalc' + '.gbw')
         if id ==0:
-            shutil.copy(ORCASPcalculation.inputfilename + '.gbw', 'lastorbitals.gbw')
+            shutil.copy(ORCASPcalculation.filename + '.gbw', 'lastorbitals.gbw')
         #Keeping copy of each fragment GBW file: fragment0.gbw, fragment1.gbw etc.
-        shutil.copy(ORCASPcalculation.inputfilename + '.gbw', 'fragment{}.gbw'.format(id))
+        shutil.copy(ORCASPcalculation.filename + '.gbw', 'fragment{}.gbw'.format(id))
         print_time_rel_and_tot(currtime, origtime, modulename='shutil stuff')
         currtime = time.time()
         #Clean up ORCA job.
@@ -1249,7 +1235,7 @@ def gasfragcalc_xTB(fragmentobjects,Cluster,chargemodel,xtbdir,xtbmethod,NUMPROC
         blankline()
         print("Fragmentobject:", fragmentobject.Name)
         #Charge-model info to add to inputfile
-        chargemodelline = chargemodel_select(chargemodel)
+        chargemodelline = interface_ORCA.chargemodel_select(chargemodel)
 
         #Call Clusterfragment and have print/write/something out coords and elems for atoms in list [0,1,2,3 etc.]
         atomlist=fragmentobject.clusterfraglist[0]
@@ -1260,7 +1246,7 @@ def gasfragcalc_xTB(fragmentobjects,Cluster,chargemodel,xtbdir,xtbmethod,NUMPROC
         #print("Defined gasfrag:", gasfrag)
         #print(gasfrag.__dict__)
         #Creating xTB theory object with fragment
-        xTBSPcalculation = xTBTheory(xtbdir=xtbdir, fragment=gasfrag, charge=fragmentobject.Charge,
+        xTBSPcalculation = ash.xTBTheory(xtbdir=xtbdir, fragment=gasfrag, charge=fragmentobject.Charge,
                                    mult=fragmentobject.Mult, xtbmethod=xtbmethod)
 
         print("xTBSPcalculation:", xTBSPcalculation)

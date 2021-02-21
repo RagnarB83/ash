@@ -8,10 +8,10 @@ beginTime = time.time()
 CheckpointTime = time.time()
 import os
 import sys
-from functions_solv import *
-from functions_general import *
-from functions_coords import *
-from functions_ORCA import *
+import functions_solv
+from functions_general import blankline,BC,listdiff,print_time_rel_and_tot,print_line_with_mainheader,print_line_with_subheader1
+from functions_coords import read_fragfile_xyz
+from interface_ORCA import run_inputfiles_in_parallel,finalenergiesgrab,run_orca_SP_ORCApar
 import settings_solvation
 import constants
 import statistics
@@ -37,7 +37,7 @@ def solvshell ( orcadir='', NumCores='', calctype='', orcasimpleinput_LL='',
     programdir=os.path.dirname(ash.__file__)
     programversion=0.1
     blankline()
-    print_solvshell_header(programversion,programdir)
+    functions_solv.print_solvshell_header(programversion,programdir)
 
 
     calcdir=os.getcwd()
@@ -87,9 +87,9 @@ def solvshell ( orcadir='', NumCores='', calctype='', orcasimpleinput_LL='',
     #Create system object with information about the system (charge,mult of states A, B, forcefield, snapshotlist etc.)
     #Attributes: name, chargeA, multA, chargeB, multB, solutetypesA, solutetypesB, solventtypes, snapslist, snapshotsA, snapshotsB
     if calctype=="redox":
-        solvsphere=read_md_variables_fileAB(mdvarfile)
+        solvsphere=functions_solv.read_md_variables_fileAB(mdvarfile)
     elif calctype=="vie":
-        solvsphere=read_md_variables_fileA(mdvarfile)
+        solvsphere=functions_solv.read_md_variables_fileA(mdvarfile)
     else:
         print("unknown calctype for md-read")
         exit()
@@ -112,9 +112,9 @@ def solvshell ( orcadir='', NumCores='', calctype='', orcasimpleinput_LL='',
     #Temporary redefinition of lists for easier faster test runs
     if Testmode == True:
         if calctype=='redox':
-            solvsphere.snapslist, solvsphere.snapshotsA, solvsphere.snapshotsB, solvsphere.snapshots = TestModerunAB()
+            solvsphere.snapslist, solvsphere.snapshotsA, solvsphere.snapshotsB, solvsphere.snapshots = functions_solv.TestModerunAB()
         elif calctype=='vie':
-            solvsphere.snapslist, solvsphere.snapshotsA, solvsphere.snapshots = TestModerunA()
+            solvsphere.snapslist, solvsphere.snapshotsA, solvsphere.snapshots = functions_solv.TestModerunA()
 
     #Get solvent pointcharges for solvent-unit. e.g. [-0.8, 0.4, 0.4] for TIP3P, assuming [O, H, H] order
     # Later use dictionary or object or something for this
@@ -128,7 +128,7 @@ def solvshell ( orcadir='', NumCores='', calctype='', orcasimpleinput_LL='',
     else:
         print("Unknown solvent")
         solventunitcharges=[]
-        exit_solvshell()
+        functions_solv.exit_solvshell()
 
     blankline()
 
@@ -155,7 +155,7 @@ def solvshell ( orcadir='', NumCores='', calctype='', orcasimpleinput_LL='',
     identifiername = '_LL'
     solute_atoms=solvsphere.soluteatomsA
     solvent_atoms=solvsphere.solventatoms
-    snapshotinpfiles = create_AB_inputfiles_ORCA(solute_atoms, solvent_atoms, solvsphere, solvsphere.snapshots,
+    snapshotinpfiles = functions_solv.create_AB_inputfiles_ORCA(solute_atoms, solvent_atoms, solvsphere, solvsphere.snapshots,
                                                       orcasimpleinput_LL, orcablockinput_LL, solventunitcharges, identifiername)
     if calctype == "redox":
         print("There are {} snapshots for A trajectory.".format(len(solvsphere.snapshotsA)))
@@ -213,9 +213,9 @@ def solvshell ( orcadir='', NumCores='', calctype='', orcasimpleinput_LL='',
     print("Representative snapshot method:", repsnapmethod)
     print("Representative snapshot number:", repsnapnumber)
     #Creating dictionaries:
-    repsnapsA=repsnaplist(repsnapmethod, repsnapnumber, AsnapsABenergy)
+    repsnapsA=functions_solv.repsnaplist(repsnapmethod, repsnapnumber, AsnapsABenergy)
     if calctype=="redox":
-        repsnapsB=repsnaplist(repsnapmethod, repsnapnumber, BsnapsABenergy)
+        repsnapsB=functions_solv.repsnaplist(repsnapmethod, repsnapnumber, BsnapsABenergy)
     #Combined list of repsnaps
     print("Representative snapshots for each trajectory")
     blankline()
@@ -292,7 +292,7 @@ def solvshell ( orcadir='', NumCores='', calctype='', orcasimpleinput_LL='',
         if calctype == "redox":
             print("repsnaplistB:", repsnaplistB)
         blankline()
-        bulkinpfiles = create_AB_inputfiles_ORCA(solute_atoms, solvent_atoms, solvsphere, totrepsnaps,
+        bulkinpfiles = functions_solv.create_AB_inputfiles_ORCA(solute_atoms, solvent_atoms, solvsphere, totrepsnaps,
                                                          orcasimpleinput_LL, orcablockinput_LL, solventunitcharges, identifiername, None, bulkcorr)
 
         # RUN BULKCORRECTION INPUTFILES
@@ -402,7 +402,7 @@ def solvshell ( orcadir='', NumCores='', calctype='', orcasimpleinput_LL='',
         # PART 1
         #Create inputfiles of repsnapshots with increased QM regions
         identifiername='_SR_LL'
-        SRPolinpfiles = create_AB_inputfiles_ORCA(solute_atoms, solvent_atoms, solvsphere, totrepsnaps,
+        SRPolinpfiles = functions_solv.create_AB_inputfiles_ORCA(solute_atoms, solvent_atoms, solvsphere, totrepsnaps,
                                                          orcasimpleinput_SRPOL, orcablockinput_SRPOL, solventunitcharges,
                                                           identifiername, SRPolShell, False, solvbasis)
 
@@ -437,7 +437,7 @@ def solvshell ( orcadir='', NumCores='', calctype='', orcasimpleinput_LL='',
             print("orcasimpleinput_SRPOL is different")
             print("Need to recalculate repsnapshots at SRPOL level of theory using regular QM-region")
             identifiername = '_SR_LL_Region1'
-            SRPolinpfiles_Region1 = create_AB_inputfiles_ORCA(solute_atoms, solvent_atoms, solvsphere, totrepsnaps,
+            SRPolinpfiles_Region1 = functions_solv.create_AB_inputfiles_ORCA(solute_atoms, solvent_atoms, solvsphere, totrepsnaps,
                                                          orcasimpleinput_SRPOL, orcablockinput_SRPOL, solventunitcharges,
                                                           identifiername, None, False, solvbasis)
             #Run the inputfiles
@@ -681,10 +681,10 @@ def solvshell ( orcadir='', NumCores='', calctype='', orcasimpleinput_LL='',
             gaslist=gaslistA
         identifiername='_Gas_LL'
         #create_AB_inputfiles_onelist
-        gasinpfiles_LL = create_AB_inputfiles_ORCA(solute_atoms, [], solvsphere, gaslist,orcasimpleinput_LL,
+        gasinpfiles_LL = functions_solv.create_AB_inputfiles_ORCA(solute_atoms, [], solvsphere, gaslist,orcasimpleinput_LL,
                                                        orcablockinput_LL, solventunitcharges, identifiername)
         identifiername='_Gas_HL'
-        gasinpfiles_HL = create_AB_inputfiles_ORCA(solute_atoms, [], solvsphere, gaslist,orcasimpleinput_HL,
+        gasinpfiles_HL = functions_solv.create_AB_inputfiles_ORCA(solute_atoms, [], solvsphere, gaslist,orcasimpleinput_HL,
                                                        orcablockinput_HL, solventunitcharges, identifiername)
 
         print("Created inputfiles:")
@@ -755,17 +755,17 @@ def solvshell ( orcadir='', NumCores='', calctype='', orcasimpleinput_LL='',
             blankline()
             print_line_with_subheader1("Trajectory A")
 
-            print_redox_output_state("A", solvsphere, orcasimpleinput_LL, orcasimpleinput_HL, solvsphere.snapshotsA, ave_trajA, stdev_trajA,
+            functions_solv.print_redox_output_state("A", solvsphere, orcasimpleinput_LL, orcasimpleinput_HL, solvsphere.snapshotsA, ave_trajA, stdev_trajA,
                                      repsnap_ave_trajA, repsnap_stdev_trajA, repsnaplistA, Bulk_ave_trajA, Bulk_stdev_trajA, Bulkcorr_mean_A,
                                      SRPol_ave_trajA, SRPol_stdev_trajA, SRPolcorr_mean_A, LRPol_ave_trajA_Region1, LRPol_ave_trajA_Region2,
                                      LRPol_stdev_trajA_Region1, LRPol_stdev_trajA_Region2, LRPolcorr_mean_A, gasA_VIE_LL, gasA_VIE_HL)
             print_line_with_subheader1("Trajectory B")
-            print_redox_output_state("B", solvsphere, orcasimpleinput_LL, orcasimpleinput_HL, solvsphere.snapshotsB, ave_trajB, stdev_trajB,
+            functions_solv.print_redox_output_state("B", solvsphere, orcasimpleinput_LL, orcasimpleinput_HL, solvsphere.snapshotsB, ave_trajB, stdev_trajB,
                                      repsnap_ave_trajB, repsnap_stdev_trajB, repsnaplistB, Bulk_ave_trajB, Bulk_stdev_trajB, Bulkcorr_mean_B,
                                      SRPol_ave_trajB, SRPol_stdev_trajB, SRPolcorr_mean_B, LRPol_ave_trajB_Region1, LRPol_ave_trajB_Region2,
                                      LRPol_stdev_trajB_Region1, LRPol_stdev_trajB_Region2, LRPolcorr_mean_B, gasB_VIE_LL, gasB_VIE_HL)
             print_line_with_subheader1("Final Average")
-            print_redox_output_state("AB", solvsphere, orcasimpleinput_LL, orcasimpleinput_HL, solvsphere.snapshots, ave_trajAB, stdev_trajAB,
+            functions_solv.print_redox_output_state("AB", solvsphere, orcasimpleinput_LL, orcasimpleinput_HL, solvsphere.snapshots, ave_trajAB, stdev_trajAB,
                                      repsnap_ave_trajAB, repsnap_stdev_trajAB, repsnaplistAB, Bulk_ave_trajAB, Bulk_stdev_trajAB, Bulkcorr_mean_AB,
                                      SRPol_ave_trajAB, SRPol_stdev_trajAB, SRPolcorr_mean_AB, LRPol_ave_trajAB_Region1, LRPol_ave_trajAB_Region2,
                                      LRPol_stdev_trajAB_Region1, LRPol_stdev_trajAB_Region2, LRPolcorr_mean_AB, gasAB_AIE_LL, gasAB_AIE_HL)
@@ -774,7 +774,7 @@ def solvshell ( orcadir='', NumCores='', calctype='', orcasimpleinput_LL='',
             blankline()
             print_line_with_subheader1("Trajectory A")
 
-            print_redox_output_state("A", solvsphere, orcasimpleinput_LL, orcasimpleinput_HL, solvsphere.snapshotsA, ave_trajA, stdev_trajA,
+            functions_solv.print_redox_output_state("A", solvsphere, orcasimpleinput_LL, orcasimpleinput_HL, solvsphere.snapshotsA, ave_trajA, stdev_trajA,
                                      repsnap_ave_trajA, repsnap_stdev_trajA, repsnaplistA, Bulk_ave_trajA, Bulk_stdev_trajA, Bulkcorr_mean_A,
                                      SRPol_ave_trajA, SRPol_stdev_trajA, SRPolcorr_mean_A, LRPol_ave_trajA_Region1, LRPol_ave_trajA_Region2,
                                      LRPol_stdev_trajA_Region1, LRPol_stdev_trajA_Region2, LRPolcorr_mean_A, gasA_VIE_LL, gasA_VIE_HL)
@@ -783,7 +783,7 @@ def solvshell ( orcadir='', NumCores='', calctype='', orcasimpleinput_LL='',
     blankline()
     blankline()
     print_time_rel_and_tot(CheckpointTime, beginTime, 'final output')
-    print_solvshell_footer()
+    functions_solv.print_solvshell_footer()
 
     #Clean-up files
     #Snapshot frag files
@@ -836,7 +836,7 @@ def LRPolsnapshotcalc(args):
     qmatoms_LR1_elems = [snap_frag.elems[i] for i in qmatoms_LR1]
     qmatoms_LR1_coords = [snap_frag.coords[i] for i in qmatoms_LR1]
     #Typically LRPolRegion1=0 i.e. nonpolarizable MM
-    PEsolvshell_LR1 = get_solvshell(solvsphere, snap_frag.elems, snap_frag.coords, LRPolRegion1, qmatoms_LR1_elems,
+    PEsolvshell_LR1 = functions_solv.get_solvshell(solvsphere, snap_frag.elems, snap_frag.coords, LRPolRegion1, qmatoms_LR1_elems,
                                   qmatoms_LR1_coords,
                                   settings_solvation.scale, settings_solvation.tol)
     peatoms_LR1 = PEsolvshell_LR1  # Polarizable atoms
@@ -845,10 +845,10 @@ def LRPolsnapshotcalc(args):
     #Region 2 calcs. QM, PE and MM
     #QM solvshell in LR2 region. i.e. accounting for shortrangepol by QM at same time
     #Typically LRPolregion2=20  i.e 20 Åpolarizable region
-    PEsolvshell_LR2 = get_solvshell(solvsphere, snap_frag.elems, snap_frag.coords, LRPolRegion2, solute_elems,
+    PEsolvshell_LR2 = functions_solv.get_solvshell(solvsphere, snap_frag.elems, snap_frag.coords, LRPolRegion2, solute_elems,
                                   solute_coords,
                                   settings_solvation.scale, settings_solvation.tol)
-    qm_solvshell_LR2 = get_solvshell(solvsphere, snap_frag.elems, snap_frag.coords, LRPolQMRegion, solute_elems,
+    qm_solvshell_LR2 = functions_solv.get_solvshell(solvsphere, snap_frag.elems, snap_frag.coords, LRPolQMRegion, solute_elems,
                                   solute_coords,
                                   settings_solvation.scale, settings_solvation.tol)
     qmatoms_LR2 = solvsphere.soluteatomsA + qm_solvshell_LR2 #QMatoms. solute + possible QM solvshell

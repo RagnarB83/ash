@@ -1,13 +1,16 @@
 import numpy as np
-from functions_coords import *
-from functions_general import *
-from functions_ORCA import *
-from functions_optimization import *
-from functions_molcrys import *
-from ash import *
-from elstructure_functions import *
+from functions_coords import read_xyzfile,write_xyzfile,print_coords_for_atoms,change_origin_to_centroid,nucchargelist,reorder
+from functions_general import print_time_rel_and_tot,print_time_rel,blankline,printdebug,BC
+from interface_ORCA import grabatomcharges_ORCA,chargemodel_select
+from functions_xtb import grabatomcharges_xTB
+import functions_molcrys
+from functions_molcrys import Fragmenttype
+import ash
+import settings_ash
+from elstructure_functions import DDEC_calc
 import time
 import shutil
+import os
 origtime=time.time()
 currtime=time.time()
 
@@ -46,7 +49,7 @@ def molcrys(cif_file=None, xtl_file=None, xyz_file=None, cell_length=None, cell_
         #Read CIF-file
         print("Reading CIF file:", cif_file)
         blankline()
-        cell_length,cell_angles,atomlabels,elems,asymmcoords,symmops,cellunits=read_ciffile(cif_file)
+        cell_length,cell_angles,atomlabels,elems,asymmcoords,symmops,cellunits=functions_molcrys.read_ciffile(cif_file)
         
         #Shifting fractional coordinates to make sure we don't have atoms on edges
         if shiftasymmunit is True:
@@ -54,7 +57,7 @@ def molcrys(cif_file=None, xtl_file=None, xyz_file=None, cell_length=None, cell_
             print("not ready")
             exit()
             shift=[-0.3,-0.3,-0.3]
-            asymmcoords=shift_fractcoords(asymmcoords,shift)
+            asymmcoords=functions_molcrys.shift_fractcoords(asymmcoords,shift)
 
         print("asymmcoords:", asymmcoords)
         print("asymmcoords length", len(asymmcoords))
@@ -65,7 +68,7 @@ def molcrys(cif_file=None, xtl_file=None, xyz_file=None, cell_length=None, cell_
         else:
             # Create system coordinates for whole cell from asymmetric unit
             print("Filling up unitcell using symmetry operations")
-            fullcellcoords, elems = fill_unitcell(cell_length, cell_angles, atomlabels, elems, asymmcoords, symmops)
+            fullcellcoords, elems = functions_molcrys.fill_unitcell(cell_length, cell_angles, atomlabels, elems, asymmcoords, symmops)
             print("Full-cell coords", len(fullcellcoords))
             print("fullcellcoords", fullcellcoords)
             print("elems:", elems)
@@ -83,10 +86,10 @@ def molcrys(cif_file=None, xtl_file=None, xyz_file=None, cell_length=None, cell_
         # Transposed cell vectors used here (otherwise nonsense for non-orthorhombic cells)
         #Not sure why we were transposing here
         #cell_vectors=np.transpose(cellbasis(cell_angles,cell_length))
-        cell_vectors=cellbasis(cell_angles,cell_length)
+        cell_vectors=functions_molcrys.cellbasis(cell_angles,cell_length)
         print("cell_vectors:", cell_vectors)
         #Get orthogonal coordinates of cell
-        orthogcoords=fract_to_orthogonal(cell_vectors,fullcellcoords)      
+        orthogcoords=functions_molcrys.fract_to_orthogonal(cell_vectors,fullcellcoords)      
         blankline()
 
 
@@ -97,7 +100,7 @@ def molcrys(cif_file=None, xtl_file=None, xyz_file=None, cell_length=None, cell_
         #TODO: Does XTL file also support asymmetric units with symm information in header?
         print("Reading XTL file:", xtl_file)
         blankline()
-        cell_length,cell_angles,elems,fullcellcoords=read_xtlfile(xtl_file)
+        cell_length,cell_angles,elems,fullcellcoords=functions_molcrys.read_xtlfile(xtl_file)
         
         #cell_vectors=cellparamtovectors(cell_length,cell_angles)
 
@@ -108,11 +111,11 @@ def molcrys(cif_file=None, xtl_file=None, xyz_file=None, cell_length=None, cell_
         
         #Not sure why we were transposing here. Bad for Ru-allyl
         #cell_vectors=np.transpose(cellbasis(cell_angles,cell_length))
-        cell_vectors=cellbasis(cell_angles,cell_length)
+        cell_vectors=functions_molcrys.cellbasis(cell_angles,cell_length)
         
         print("cell_vectors:", cell_vectors)
         #Get orthogonal coordinates of cell
-        orthogcoords=fract_to_orthogonal(cell_vectors,fullcellcoords)      
+        orthogcoords=functions_molcrys.fract_to_orthogonal(cell_vectors,fullcellcoords)      
         blankline()
 
         
@@ -134,7 +137,7 @@ def molcrys(cif_file=None, xtl_file=None, xyz_file=None, cell_length=None, cell_
         # Transposed cell vectors used here (otherwise nonsense for non-orthorhombic cells)
         #Not sure why transposing
         #cell_vectors=np.transpose(cellbasis(cell_angles,cell_length))
-        cell_vectors=cellbasis(cell_angles,cell_length)
+        cell_vectors=functions_molcrys.cellbasis(cell_angles,cell_length)
         print("cell_vectors:", cell_vectors)
         
     else:
@@ -144,7 +147,7 @@ def molcrys(cif_file=None, xtl_file=None, xyz_file=None, cell_length=None, cell_
 
 
     #Write fractional coordinate XTL file of fullcell coordinates (for visualization in VESTA)
-    write_xtl(cell_length,cell_angles,elems,fullcellcoords,"complete_unitcell.xtl")
+    functions_molcrys.write_xtl(cell_length,cell_angles,elems,fullcellcoords,"complete_unitcell.xtl")
 
 
 
@@ -205,7 +208,7 @@ def molcrys(cif_file=None, xtl_file=None, xyz_file=None, cell_length=None, cell_
         for chosentol in test_tolerances:
             print("Current Scale", chosenscale)
             print("Current Tol: ", chosentol)
-            checkflag = frag_define(orthogcoords,elems,cell_vectors,fragments=fragmentobjects, cell_angles=cell_angles, cell_length=cell_length,
+            checkflag = functions_molcrys.frag_define(orthogcoords,elems,cell_vectors,fragments=fragmentobjects, cell_angles=cell_angles, cell_length=cell_length,
                         scale=chosenscale, tol=chosentol)
             if checkflag == 0:
 
@@ -235,7 +238,7 @@ def molcrys(cif_file=None, xtl_file=None, xyz_file=None, cell_length=None, cell_
         print("Determining connectivity using Scale: {} and Tol: {}".format(chosenscale,chosentol))
 
         #Using the global ASH settings (may have been modified by user)
-        checkflag = frag_define(orthogcoords,elems,cell_vectors,fragments=fragmentobjects, cell_angles=cell_angles, cell_length=cell_length,
+        checkflag = functions_molcrys.frag_define(orthogcoords,elems,cell_vectors,fragments=fragmentobjects, cell_angles=cell_angles, cell_length=cell_length,
                     scale=chosenscale, tol=chosentol)
         if checkflag == 0:
             print(BC.OKMAGENTA, "A miracle occurred! Fragment assignment succeeded!", BC.END)
@@ -255,11 +258,11 @@ def molcrys(cif_file=None, xtl_file=None, xyz_file=None, cell_length=None, cell_
     #TODO: First all mainfrags, then counterfrags ??
     if cluster_type == 'sphere':
         #Create MM cluster here already or later
-        cluster_coords,cluster_elems=create_MMcluster(orthogcoords,elems,cell_vectors,clusterradius)
+        cluster_coords,cluster_elems=functions_molcrys.create_MMcluster(orthogcoords,elems,cell_vectors,clusterradius)
         print_time_rel_and_tot(currtime, origtime, modulename='create_MMcluster')
         currtime=time.time()
 
-        cluster_coords,cluster_elems=remove_partial_fragments(cluster_coords,cluster_elems,clusterradius,fragmentobjects, scale=chosenscale, tol=chosentol)
+        cluster_coords,cluster_elems=functions_molcrys.remove_partial_fragments(cluster_coords,cluster_elems,clusterradius,fragmentobjects, scale=chosenscale, tol=chosentol)
         print_time_rel_and_tot(currtime, origtime, modulename='remove_partial_fragments')
         currtime=time.time()
         write_xyzfile(cluster_elems,cluster_coords,"cluster_coords")
@@ -272,7 +275,7 @@ def molcrys(cif_file=None, xtl_file=None, xyz_file=None, cell_length=None, cell_
         #Disadvantage, we could have partial fragment at boundary. 
         #TODO: Check for partial fragments at boundary and clean up?? Adapt remove_partial_fragments ???
         print(BC.WARNING,"Warning. cluster_type = supercell is untested ",BC.END)
-        cluster_coords,cluster_elems = cell_extend_frag(cell_vectors, orthogcoords,elems,supercell_expansion)
+        cluster_coords,cluster_elems = functions_molcrys.cell_extend_frag(cell_vectors, orthogcoords,elems,supercell_expansion)
         
         #TODO: Clean up partial fragments at boundary
         
@@ -287,7 +290,7 @@ def molcrys(cif_file=None, xtl_file=None, xyz_file=None, cell_length=None, cell_
     ########################################
     blankline()
     print("Creating new Cluster fragment:")
-    Cluster=Fragment(elems=cluster_elems, coords=cluster_coords, scale=chosenscale, tol=chosentol)
+    Cluster=ash.Fragment(elems=cluster_elems, coords=cluster_coords, scale=chosenscale, tol=chosentol)
     
     
     print_time_rel_and_tot(currtime, origtime, modulename='create Cluster fragment')
@@ -314,7 +317,7 @@ def molcrys(cif_file=None, xtl_file=None, xyz_file=None, cell_length=None, cell_
     # Ordered fraglists can then easily be used in pointchargeupdating
     for fragmentobject in fragmentobjects:
         print("Reordering fragment object: ", fragmentobject.Name)
-        reordercluster(Cluster,fragmentobject)
+        functions_molcrys.reordercluster(Cluster,fragmentobject)
         printdebug(fragmentobject.clusterfraglist)
         
         #Update element list in fragmentobject after reordering. Used later (DDEC)
@@ -359,17 +362,17 @@ def molcrys(cif_file=None, xtl_file=None, xyz_file=None, cell_length=None, cell_
             if chargemodel =="IAO":
                 print("Note IAO charges on broken-symmetry solution are probably not sensible")
 
-            gasfragcalc_ORCA(fragmentobjects, Cluster, chargemodel, theory.orcadir, theory.orcasimpleinput,
+            functions_molcrys.gasfragcalc_ORCA(fragmentobjects, Cluster, chargemodel, theory.orcadir, theory.orcasimpleinput,
                              theory.orcablocks, numcores, brokensym=True, HSmult=theory.HSmult,
                              atomstoflip=theory.atomstoflip)
         else:
-            gasfragcalc_ORCA(fragmentobjects, Cluster, chargemodel, theory.orcadir, theory.orcasimpleinput,
+            functions_molcrys.gasfragcalc_ORCA(fragmentobjects, Cluster, chargemodel, theory.orcadir, theory.orcasimpleinput,
                              theory.orcablocks, numcores)
 
 
     elif theory.__class__.__name__ == "xTBTheory":
         pass
-        gasfragcalc_xTB(fragmentobjects,Cluster,chargemodel,theory.xtbdir,theory.xtbmethod,numcores)
+        functions_molcrys.gasfragcalc_xTB(fragmentobjects,Cluster,chargemodel,theory.xtbdir,theory.xtbmethod,numcores)
     else:
         print("Unsupported theory for charge-calculations in MolCrys. Options are: ORCATheory or xTBTheory")
         exit(1)
@@ -410,7 +413,7 @@ def molcrys(cif_file=None, xtl_file=None, xyz_file=None, cell_length=None, cell_
             #Adding UKS keyword if not already present for case AF-coupled BS-singlet to prevent RKS/RHF.
             if 'UKS' not in theory.orcasimpleinput:
                 theory.orcasimpleinput=theory.orcasimpleinput+' UKS'
-        QMtheory = ORCATheory(orcadir=theory.orcadir, charge=fragmentobjects[0].Charge, mult=fragmentobjects[0].Mult,
+        QMtheory = interface_ORCA.ORCATheory(orcadir=theory.orcadir, charge=fragmentobjects[0].Charge, mult=fragmentobjects[0].Mult,
                               orcasimpleinput=theory.orcasimpleinput,
                               orcablocks=theory.orcablocks, extraline=chargemodelline)
         #COPY LAST mainfrag orbitals here: called lastorbitals.gbw from gasfragcalc (mainfrag)
@@ -418,7 +421,7 @@ def molcrys(cif_file=None, xtl_file=None, xyz_file=None, cell_length=None, cell_
         shutil.copyfile('lastorbitals.gbw', 'orca-input.gbw')
 
     elif theory.__class__.__name__ == "xTBTheory":
-        QMtheory = xTBTheory(xtbdir=theory.xtbdir, charge=fragmentobjects[0].Charge, mult=fragmentobjects[0].Mult, xtbmethod=theory.xtbmethod)
+        QMtheory = ash.xTBTheory(xtbdir=theory.xtbdir, charge=fragmentobjects[0].Charge, mult=fragmentobjects[0].Mult, xtbmethod=theory.xtbmethod)
 
     print("QMtheory:", QMtheory)
     print(QMtheory.__dict__)
@@ -451,7 +454,7 @@ def molcrys(cif_file=None, xtl_file=None, xyz_file=None, cell_length=None, cell_
         print_coords_for_atoms(Cluster.coords,Cluster.elems,Centralmainfrag)
         print("")
         # Run ORCA QM/MM calculation with charge-model info
-        QMMM_SP_calculation = QMMMTheory(fragment=Cluster, qm_theory=QMtheory, qmatoms=Centralmainfrag,
+        QMMM_SP_calculation = ash.QMMMTheory(fragment=Cluster, qm_theory=QMtheory, qmatoms=Centralmainfrag,
                                              charges=Cluster.atomcharges, embedding='Elstat')
         QMMM_SP_calculation.run(nprocs=numcores)
 
@@ -475,7 +478,7 @@ def molcrys(cif_file=None, xtl_file=None, xyz_file=None, cell_length=None, cell_
                                                           molecule_spinmult=fragmentobjects[0].Mult, molecule_charge=fragmentobjects[0].Charge,
                                                           calcdir="DDEC_fragment_SPloop" + str(SPLoopNum), gbwfile="orca-input.gbw")
             else:
-                atomcharges = grabatomcharges_ORCA(chargemodel, QMtheory.inputfilename + '.out')
+                atomcharges = grabatomcharges_ORCA(chargemodel, QMtheory.filename + '.out')
             # Keep backup of ORCA outputfile in dir SPloop-files
             shutil.copyfile('orca-input.out', './SPloop-files/mainfrag-SPloop' + str(SPLoopNum) + '.out')
             shutil.copyfile('orca-input.pc', './SPloop-files/mainfrag-SPloop' + str(SPLoopNum) + '.pc')
@@ -492,13 +495,13 @@ def molcrys(cif_file=None, xtl_file=None, xyz_file=None, cell_length=None, cell_
 
         # Assign pointcharges to each atom of MM cluster.
         #pointchargeupdate calls: Cluster.update_atomcharges(chargelist)
-        pointchargeupdate(Cluster, fragmentobjects[0], atomcharges)
+        functions_molcrys.pointchargeupdate(Cluster, fragmentobjects[0], atomcharges)
         Cluster.print_system("Cluster-info_afterSP{}.ygg".format(SPLoopNum))
         fragmentobjects[0].print_infofile('mainfrag-info_afterSP{}.ygg'.format(SPLoopNum))
         blankline()
         #print("Current charges:", fragmentobjects[0].all_atomcharges[-1])
         #print("Previous charges:", fragmentobjects[0].all_atomcharges[-2])
-        RMSD_charges=rmsd_list(fragmentobjects[0].all_atomcharges[-1],fragmentobjects[0].all_atomcharges[-2])
+        RMSD_charges=functions_molcrys.rmsd_list(fragmentobjects[0].all_atomcharges[-1],fragmentobjects[0].all_atomcharges[-2])
         print(BC.OKBLUE,"RMSD of charges: {:6.3f} in SP iteration {:6}:".format(RMSD_charges, SPLoopNum),BC.END)
         if RMSD_charges < RMSD_SP_threshold:
             print("RMSD: {} is less than threshold: {}".format(RMSD_charges,RMSD_SP_threshold))
@@ -515,9 +518,9 @@ def molcrys(cif_file=None, xtl_file=None, xyz_file=None, cell_length=None, cell_
     #Now derive LJ parameters ?? Important for DDEC-LJ derivation
     #Defining atomtypes in Cluster fragment for LJ interaction
     if theory.__class__.__name__ == "ORCATheory":
-        choose_shortrangemodel(Cluster,shortrangemodel,fragmentobjects,QMtheory,mainfrag_gbwfile,numcores,LJHparameters)
+        functions_molcrys.choose_shortrangemodel(Cluster,shortrangemodel,fragmentobjects,QMtheory,mainfrag_gbwfile,numcores,LJHparameters)
     else:
-        choose_shortrangemodel(Cluster,shortrangemodel,fragmentobjects,QMtheory,"dummy",numcores,LJHparameters)
+        functions_molcrys.choose_shortrangemodel(Cluster,shortrangemodel,fragmentobjects,QMtheory,"dummy",numcores,LJHparameters)
 
     print_time_rel_and_tot(currtime, origtime, modulename="LJ stuff done")
     currtime=time.time()

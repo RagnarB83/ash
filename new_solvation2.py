@@ -9,10 +9,11 @@ beginTime = time.time()
 CheckpointTime = time.time()
 import os
 import sys
-from functions_solv import *
-from functions_general import *
-from functions_coords import *
-from functions_ORCA import *
+
+import functions_solv
+from functions_general import blankline,BC,listdiff,print_time_rel_and_tot,print_line_with_mainheader,print_line_with_subheader1
+from functions_coords import read_fragfile_xyz
+from interface_ORCA import run_inputfiles_in_parallel,finalenergiesgrab,run_orca_SP_ORCApar
 import settings_solvation
 import constants
 import statistics

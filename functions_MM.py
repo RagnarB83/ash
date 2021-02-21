@@ -1,4 +1,439 @@
-from functions_coords import *
+import numpy as np
+import time
+
+from functions_coords import distance
+from functions_general import blankline,print_time_rel,BC
+import constants
+import ash
+
+
+# Simple nonbonded MM theory. Charges and LJ-potentials
+class NonBondedTheory:
+    def __init__(self, atomtypes=None, forcefield=None, charges = None, LJcombrule='geometric',
+                 codeversion='julia', printlevel=2):
+
+        #Printlevel
+        self.printlevel=printlevel
+
+        #Atom types
+        self.atomtypes=atomtypes
+        #Read MM forcefield.
+        self.forcefield=forcefield
+
+        #
+        self.numatoms = len(self.atomtypes)
+        self.LJcombrule=LJcombrule
+
+        #Todo: Delete
+        # If qmatoms list passed to Nonbonded theory then we are doing QM/MM
+        #self.qmatoms=qmatoms
+        #print("Defining Nonbonded Theory")
+        #print("qmatoms:", self.qmatoms)
+
+        self.codeversion=codeversion
+
+        #These are charges for whole system including QM.
+        self.atom_charges = charges
+        #Possibly have self.mm_charges here also??
+
+
+        #Initializing sigmaij and epsij arrays. Will be filled by calculate_LJ_pairpotentials
+        self.sigmaij=np.zeros((self.numatoms, self.numatoms))
+        self.epsij=np.zeros((self.numatoms, self.numatoms))
+        self.pairarrays_assigned = False
+
+    #Todo: Need to make active-region version of pyarray version here.
+    def calculate_LJ_pairpotentials(self, qmatoms=None, actatoms=None, frozenatoms=None):
+
+        #actatoms
+        if actatoms is None:
+            actatoms=[]
+        if frozenatoms is None:
+            frozenatoms=[]
+
+        #Deleted combination_rule argument. Now using variable assigned to object
+
+        combination_rule=self.LJcombrule
+
+        #If qmatoms passed list passed then QM/MM and QM-QM pairs will be ignored from pairlist
+        if self.printlevel >= 2:
+            print("Inside calculate_LJ_pairpotentials")
+        #Todo: Figure out if we can find out if qmatoms without being passed
+        if qmatoms is None or qmatoms == []:
+            qmatoms = []
+            print("WARNING: qmatoms list is empty.")
+            print("This is fine if this is a pure MM job.")
+            print("If QM/MM job, then qmatoms list should be passed to NonBonded theory.")
+
+
+        import math
+        if self.printlevel >= 2:
+            print("Defining Lennard-Jones pair potentials")
+
+        #List to store pairpotentials
+        self.LJpairpotentials=[]
+        #New: multi-key dict instead using tuple
+        self.LJpairpotdict={}
+        if combination_rule == 'geometric':
+            if self.printlevel >= 2:
+                print("Using geometric mean for LJ pair potentials")
+        elif combination_rule == 'arithmetic':
+            if self.printlevel >= 2:
+                print("Using geometric mean for LJ pair potentials")
+        elif combination_rule == 'mixed_geoepsilon':
+            if self.printlevel >= 2:
+                print("Using mixed rule for LJ pair potentials")
+                print("Using arithmetic rule for r/sigma")
+                print("Using geometric rule for epsilon")
+        elif combination_rule == 'mixed_geosigma':
+            if self.printlevel >= 2:
+                print("Using mixed rule for LJ pair potentials")
+                print("Using geometric rule for r/sigma")
+                print("Using arithmetic rule for epsilon")
+        else:
+            print("Unknown combination rule. Exiting")
+            exit()
+
+        #A large system has many atomtypes. Creating list of unique atomtypes to simplify loop
+        CheckpointTime = time.time()
+        self.uniqatomtypes = np.unique(self.atomtypes).tolist()
+        DoAll=True
+        for count_i, at_i in enumerate(self.uniqatomtypes):
+            #print("count_i:", count_i)
+            for count_j,at_j in enumerate(self.uniqatomtypes):
+                #if count_i < count_j:
+                if DoAll==True:
+                    #print("at_i {} and at_j {}".format(at_i,at_j))
+                    #Todo: if atom type not in dict we get a KeyError here.
+                    # Todo: Add exception or add zero-entry to dict ??
+                    if len(self.forcefield[at_i].LJparameters) == 0:
+                        continue
+                    if len(self.forcefield[at_j].LJparameters) == 0:
+                        continue
+                    if self.printlevel >= 3:
+                        print("LJ sigma_i {} for atomtype {}:".format(self.forcefield[at_i].LJparameters[0], at_i))
+                        print("LJ sigma_j {} for atomtype {}:".format(self.forcefield[at_j].LJparameters[0], at_j))
+                        print("LJ eps_i {} for atomtype {}:".format(self.forcefield[at_i].LJparameters[1], at_i))
+                        print("LJ eps_j {} for atomtype {}:".format(self.forcefield[at_j].LJparameters[1], at_j))
+                        blankline()
+                    if combination_rule=='geometric':
+                        sigma=math.sqrt(self.forcefield[at_i].LJparameters[0]*self.forcefield[at_j].LJparameters[0])
+                        epsilon=math.sqrt(self.forcefield[at_i].LJparameters[1]*self.forcefield[at_j].LJparameters[1])
+                        if self.printlevel >=3:
+                            print("LJ sigma_ij : {} for atomtype-pair: {} {}".format(sigma,at_i, at_j))
+                            print("LJ epsilon_ij : {} for atomtype-pair: {} {}".format(epsilon,at_i, at_j))
+                            blankline()
+                    elif combination_rule=='arithmetic':
+                        if self.printlevel >=3:
+                            print("Using arithmetic mean for LJ pair potentials")
+                            print("NOTE: to be confirmed")
+                        sigma=0.5*(self.forcefield[at_i].LJparameters[0]+self.forcefield[at_j].LJparameters[0])
+                        epsilon=0.5-(self.forcefield[at_i].LJparameters[1]+self.forcefield[at_j].LJparameters[1])
+                    elif combination_rule=='mixed_geosigma':
+                        if self.printlevel >=3:
+                            print("Using geometric mean for LJ sigma parameters")
+                            print("Using arithmetic mean for LJ epsilon parameters")
+                            print("NOTE: to be confirmed")
+                        sigma=math.sqrt(self.forcefield[at_i].LJparameters[0]*self.forcefield[at_j].LJparameters[0])
+                        epsilon=0.5-(self.forcefield[at_i].LJparameters[1]+self.forcefield[at_j].LJparameters[1])
+                    elif combination_rule=='mixed_geoepsilon':
+                        if self.printlevel >=3:
+                            print("Using arithmetic mean for LJ sigma parameters")
+                            print("Using geometric mean for LJ epsilon parameters")
+                            print("NOTE: to be confirmed")
+                        sigma=0.5*(self.forcefield[at_i].LJparameters[0]+self.forcefield[at_j].LJparameters[0])
+                        epsilon=math.sqrt(self.forcefield[at_i].LJparameters[1]*self.forcefield[at_j].LJparameters[1])
+                    self.LJpairpotentials.append([at_i, at_j, sigma, epsilon])
+                    #Dict using two keys (actually a tuple of two keys)
+                    self.LJpairpotdict[(at_i,at_j)] = [sigma, epsilon]
+                    #print(self.LJpairpotentials)
+        #Takes not time so disabling time-printing
+        #print_time_rel(CheckpointTime, modulename="pairpotentials")
+        #Remove redundant pair potentials
+        CheckpointTime = time.time()
+        for acount, pairpot_a in enumerate(self.LJpairpotentials):
+            for bcount, pairpot_b in enumerate(self.LJpairpotentials):
+                if acount < bcount:
+                    if set(pairpot_a) == set(pairpot_b):
+                        del self.LJpairpotentials[bcount]
+        if self.printlevel >= 2:
+            #print("Final LJ pair potentials (sigma_ij, epsilon_ij):\n", self.LJpairpotentials)
+            print("New: LJ pair potentials as dict:")
+            print("self.LJpairpotdict:", self.LJpairpotdict)
+
+        #Create numatomxnumatom array of eps and sigma
+        blankline()
+        if self.printlevel >= 2:
+            print("Creating epsij and sigmaij arrays ({},{})".format(self.numatoms,self.numatoms))
+            print("Will skip QM-QM ij pairs for qmatoms: ", qmatoms)
+            print("Will skip frozen-frozen ij pairs")
+            print("len actatoms:", len(actatoms))
+            print("len frozenatoms:", len(frozenatoms))
+        beginTime = time.time()
+
+        CheckpointTime = time.time()
+        # See speed-tests at /home/bjornsson/pairpot-test
+
+        if self.codeversion=="julia":
+            if self.printlevel >= 2:
+                print("Using PyJulia for fast sigmaij and epsij array creation")
+            # Necessary for statically linked libpython
+            try:
+                from julia.api import Julia
+                from julia import Main
+            except:
+                print("Problem importing Pyjulia (import julia)")
+                print("Make sure Julia is installed and PyJulia module available")
+                print("Also, are you using python-jl ?")
+                print("Alternatively, use codeversion='py' argument to NonBondedTheory to use slower Python version for array creation")
+                exit(9)
+
+
+            # Do pairpot array for whole system
+            if len(actatoms) == 0:
+                print("Calculating pairpotential array for whole system")
+                self.sigmaij, self.epsij = Main.Juliafunctions.pairpot_full(self.numatoms, self.atomtypes, self.LJpairpotdict,qmatoms)
+            else:
+            #    #or only for active region
+                print("Calculating pairpotential array for active region only")
+                #pairpot_active(numatoms,atomtypes,LJpydict,qmatoms,actatoms)
+                print("self.numatoms", self.numatoms)
+                print("self.atomtypes", self.atomtypes)
+                print("self.LJpairpotdict", self.LJpairpotdict)
+                print("qmatoms", qmatoms)
+                print("actatoms", actatoms)
+                
+                self.sigmaij, self.epsij = Main.Juliafunctions.pairpot_active(self.numatoms, self.atomtypes, self.LJpairpotdict, qmatoms, actatoms)
+        # New for-loop for creating sigmaij and epsij arrays. Uses dict-lookup instead
+        elif self.codeversion=="py":
+            if self.printlevel >= 2:
+                print("Using Python version for array creation")
+                print("Does not yet skip frozen-frozen atoms...to be fixed")
+                #Todo: add frozen-frozen atoms skip
+            #Update: Only doing half of array
+            for i in range(self.numatoms):
+                for j in range(i+1, self.numatoms):
+                    #Skipping if i-j pair in qmatoms list. I.e. not doing QM-QM LJ calc.
+                    #if all(x in qmatoms for x in (i, j)) == True:
+                    #
+                    if i in qmatoms and j in qmatoms:
+                        #print("Skipping i-j pair", i,j, " as these are QM atoms")
+                        continue
+                    elif (self.atomtypes[i], self.atomtypes[j]) in self.LJpairpotdict:
+                        self.sigmaij[i, j] = self.LJpairpotdict[(self.atomtypes[i], self.atomtypes[j])][0]
+                        self.epsij[i, j] = self.LJpairpotdict[(self.atomtypes[i], self.atomtypes[j])][1]
+                    elif (atomtypes[j], atomtypes[i]) in self.LJpairpotdict:
+                        self.sigmaij[i, j] = self.LJpairpotdict[(self.atomtypes[j], self.atomtypes[i])][0]
+                        self.epsij[i, j] = self.LJpairpotdict[(self.atomtypes[j], self.atomtypes[i])][1]
+        else:
+            print("unknown codeversion")
+            exit()
+
+        if self.printlevel >= 2:
+            #print("self.sigmaij ({}) : {}".format(len(self.sigmaij), self.sigmaij))
+            #print("self.epsij ({}) : {}".format(len(self.epsij), self.epsij))
+            print("sigmaij size: {}".format(len(self.sigmaij)))
+            print("epsij size: {}".format(len(self.epsij)))
+        print_time_rel(CheckpointTime, modulename="pairpot arrays")
+        self.pairarrays_assigned = True
+
+    def update_charges(self,atomlist,charges):
+        print("Updating charges.")
+        assert len(atomlist) == len(charges)
+        for atom,charge in zip(atomlist,charges):
+            self.atom_charges[atom] = charge
+        #print("Charges are now:", charges)
+        print("Sum of charges:", sum(charges))
+
+    # current_coords is now used for full_coords, charges for full coords
+    def run(self, current_coords=None, elems=None, charges=None, connectivity=None,
+            Coulomb=True, Grad=True, qmatoms=None, actatoms=None, frozenatoms=None):
+
+        if current_coords is None:
+            print("No current_coords argument. Exiting...")
+            exit()
+        CheckpointTime = time.time()
+        #If qmatoms list provided to run (probably by QM/MM object) then we are doing QM/MM
+        #QM-QM pairs will be skipped in LJ
+
+        #Testing if arrays assigned or not. If not calling calculate_LJ_pairpotentials
+        #Passing qmatoms over so pairs can be skipped
+        #This sets self.sigmaij and self.epsij and also self.LJpairpotentials
+        #Todo: if actatoms have been defined this will be skipped in pairlist creation
+        #if frozenatoms passed frozen-frozen interactions will be skipped
+        if self.pairarrays_assigned is False:
+            print("Calling LJ pairpot calc")
+            self.calculate_LJ_pairpotentials(qmatoms=qmatoms,actatoms=actatoms)
+        else:
+            print("LJ pairpot arrays exist...")
+
+        if len(self.LJpairpotentials) > 0:
+            LJ=True
+        #If charges not provided to run function. Use object charges
+        if charges == None:
+            charges=self.atom_charges
+
+        #If coords not provided to run function. Use object coords
+        #HMM. I guess we are not keeping coords as part of MMtheory?
+        #if len(full_cords)==0:
+        #    full_coords=
+
+        if self.printlevel >= 2:
+            print(BC.OKBLUE, BC.BOLD, "------------RUNNING NONBONDED MM CODE-------------", BC.END)
+            print("Calculating MM energy and gradient")
+        #initializing
+        self.Coulombchargeenergy=0
+        self.LJenergy=0
+        self.MMGradient=[]
+        self.Coulombchargegradient=[]
+        self.LJgradient=[]
+
+        #Slow Python version
+        if self.codeversion=='py':
+            if self.printlevel >= 2:
+                print("Using slow Python MM code")
+            #Sending full coords and charges over. QM charges are set to 0.
+            if Coulomb==True:
+                self.Coulombchargeenergy, self.Coulombchargegradient  = coulombcharge(charges, current_coords)
+                if self.printlevel >= 2:
+                    print("Coulomb Energy (au):", self.Coulombchargeenergy)
+                    print("Coulomb Energy (kcal/mol):", self.Coulombchargeenergy * constants.harkcal)
+                    print("")
+                    #print("self.Coulombchargegradient:", self.Coulombchargegradient)
+                blankline()
+            # NOTE: Lennard-Jones should  calculate both MM-MM and QM-MM LJ interactions. Full coords necessary.
+            if LJ==True:
+                #LennardJones(coords, epsij, sigmaij, connectivity=[], qmatoms=[])
+                #self.LJenergy,self.LJgradient = LennardJones(full_coords,self.atomtypes, self.LJpairpotentials, connectivity=connectivity)
+                self.LJenergy,self.LJgradient = LennardJones(current_coords,self.epsij,self.sigmaij)
+                #print("Lennard-Jones Energy (au):", self.LJenergy)
+                #print("Lennard-Jones Energy (kcal/mol):", self.LJenergy*constants.harkcal)
+            self.MMEnergy = self.Coulombchargeenergy+self.LJenergy
+            if Grad==True:
+                self.MMGradient = self.Coulombchargegradient+self.LJgradient
+        #Combined Coulomb+LJ Python version. Slow
+        elif self.codeversion=='py_comb':
+            print("not active")
+            exit()
+            self.MMenergy, self.MMgradient = LJCoulpy(current_coords, self.atomtypes, charges, self.LJpairpotentials,
+                                                          connectivity=connectivity)
+        elif self.codeversion=='f2py':
+            if self.printlevel >= 2:
+                print("Using Fortran F2Py MM code")
+            try:
+                #print(os.environ.get("LD_LIBRARY_PATH"))
+                import LJCoulombv1
+            except:
+                print("Fortran library LJCoulombv1 not found! Make sure you have run the installation script.")
+            self.MMEnergy, self.MMGradient, self.LJenergy, self.Coulombchargeenergy =\
+                LJCoulomb(current_coords, self.epsij, self.sigmaij, charges, connectivity=connectivity)
+        elif self.codeversion=='f2pyv2':
+            if self.printlevel >= 2:
+                print("Using fast Fortran F2Py MM code v2")
+            try:
+                import LJCoulombv2
+                print(LJCoulombv2.__doc__)
+                print("----------")
+            except:
+                print("Fortran library LJCoulombv2 not found! Make sure you have run the installation script.")
+            self.MMEnergy, self.MMGradient, self.LJenergy, self.Coulombchargeenergy =\
+                LJCoulombv2(current_coords, self.epsij, self.sigmaij, charges, connectivity=connectivity)
+        elif self.codeversion=='julia':
+            if self.printlevel >= 2:
+                print("Using fast Julia version, v1")
+            # Necessary for statically linked libpython
+            try:
+                from julia.api import Julia
+                from julia import Main
+            except:
+                print("Problem importing Pyjulia (import julia)")
+                print("Make sure Julia is installed and PyJulia module available")
+                print("Also, are you using python-jl ?")
+                print("Alternatively, use codeversion='py' argument to NonBondedTheory to use slower Python version for array creation")
+                exit(9)
+            print_time_rel(CheckpointTime, modulename="from run to just before calling ")
+            self.MMEnergy, self.MMGradient, self.LJenergy, self.Coulombchargeenergy =\
+                Main.Juliafunctions.LJcoulombchargev1c(charges, current_coords, self.epsij, self.sigmaij, connectivity)
+            print_time_rel(CheckpointTime, modulename="from run to done julia")
+        else:
+            print("Unknown version of MM code")
+            exit(1)
+
+        if self.printlevel >= 2:
+            print("Lennard-Jones Energy (au):", self.LJenergy)
+            print("Lennard-Jones Energy (kcal/mol):", self.LJenergy * constants.harkcal)
+            print("Coulomb Energy (au):", self.Coulombchargeenergy)
+            print("Coulomb Energy (kcal/mol):", self.Coulombchargeenergy * constants.harkcal)
+            print("MM Energy:", self.MMEnergy)
+        if self.printlevel >= 3:
+            print("self.MMGradient:", self.MMGradient)
+
+        if self.printlevel >= 2:
+            print(BC.OKBLUE, BC.BOLD, "------------ENDING NONBONDED MM CODE-------------", BC.END)
+        return self.MMEnergy, self.MMGradient
+
+
+#MMAtomobject used to store LJ parameter and possibly charge for MM atom with atomtype, e.g. OT
+class AtomMMobject:
+    def __init__(self, atomcharge=None, LJparameters=None):
+        sf="dsf"
+        self.atomcharge = atomcharge
+        self.LJparameters = LJparameters
+    def add_charge(self, atomcharge=None):
+        self.atomcharge = atomcharge
+    def add_LJparameters(self, LJparameters=None):
+        self.LJparameters=LJparameters
+
+#Makes more sense to store this here. Simplifies ASH inputfile import.
+def MMforcefield_read(file):
+    print("Reading forcefield file:", file)
+    MM_forcefield = {}
+    atomtypes=[]
+    with open(file) as f:
+        for line in f:
+            if '#' not in line:
+                if 'combination_rule' in line:
+                    combrule=line.split()[-1]
+                    print("Found combination rule defintion in forcefield file:", combrule)
+                    MM_forcefield["combination_rule"]=combrule
+                if 'charge' in line:
+                    print("Found charge definition in forcefield file:", ' '.join(line.split()[:]))
+                    atomtype=line.split()[1]
+                    if atomtype not in MM_forcefield.keys():
+                        MM_forcefield[atomtype]=AtomMMobject()
+                    charge=float(line.split()[2])
+                    MM_forcefield[atomtype].add_charge(atomcharge=charge)
+                    # TODO: Charges defined are currently not used I think
+                if 'LennardJones_i_sigma' in line:
+                    print("Found LJ single-atom sigma definition in forcefield file:", ' '.join(line.split()[:]))
+                    atomtype=line.split()[1]
+                    if atomtype not in MM_forcefield.keys():
+                        MM_forcefield[atomtype] = AtomMMobject()
+                    sigma_i=float(line.split()[2])
+                    eps_i=float(line.split()[3])
+                    MM_forcefield[atomtype].add_LJparameters(LJparameters=[sigma_i,eps_i])
+                if 'LennardJones_i_R0' in line:
+                    print("Found LJ single-atom R0 definition in forcefield file:", ' '.join(line.split()[:]))
+                    atomtype=line.split()[1]
+                    R0tosigma=0.5**(1/6)
+                    if atomtype not in MM_forcefield.keys():
+                        MM_forcefield[atomtype] = AtomMMobject()
+                    sigma_i=float(line.split()[2])*R0tosigma
+                    eps_i=float(line.split()[3])
+                    MM_forcefield[atomtype].add_LJparameters(LJparameters=[sigma_i,eps_i])
+                if 'LennardJones_ij' in line:
+                    print("Found LJ pair definition in forcefield file")
+                    atomtype_i=line.split()[1]
+                    atomtype_j=line.split()[2]
+                    sigma_ij=float(line.split()[3])
+                    eps_ij=float(line.split()[4])
+                    print("This is incomplete. Exiting")
+                    exit()
+                    # TODO: Need to finish this. Should replace LennardJonespairpotentials later
+    return MM_forcefield
+
+
+
 
 #UFF dictionary with parameters
 #Taken from oldmolcrys/old-solvshell and originally from Chemshell

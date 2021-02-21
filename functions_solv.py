@@ -1,10 +1,10 @@
 import statistics
-from functions_ORCA import *
+from interface_ORCA import checkORCAfinished,finalenergiesgrab,create_orca_inputVIEcomp_pc,create_orca_inputVIEcomp_gas,create_orca_inputVIE_pc
 import time
 import constants
-from functions_xtb import *
-import functions_general
-
+from functions_xtb import xtbfinalenergygrab,xtbVIPgrab
+from functions_general import listdiff,blankline
+from functions_coords import get_molecule_members_loop,read_fragfile_xyz
 
 def TestModerunAB():
     snapslist = ['60000', '60400', '60800', '61200', '61600', '62000']
@@ -20,35 +20,7 @@ def TestModerunA():
     snapshotsA = ['snapA-60000', 'snapA-60400', 'snapA-60800', 'snapA-61200', 'snapA-61600', 'snapA-62000']
     snapshots = ['snapA-60000', 'snapA-60400', 'snapA-60800', 'snapA-61200', 'snapA-61600', 'snapA-62000']
     print("Test mode True. Only running snapshots (for A ):", snapslist)
-    return snapslist, snapshotsA, snapshots
-
-def print_time_rel_and_tot(timestampA,timestampB, modulename=''):
-    secsA=time.time()-timestampA
-    minsA=secsA/60
-    hoursA=minsA/60
-    secsB=time.time()-timestampB
-    minsB=secsB/60
-    hoursB=minsB/60
-    print("-------------------------------------------------------------------")
-    print("Time to calculate step ({}): {:3.1f} seconds, {:3.1f} minutes, {:3.1f} hours".format(modulename, secsA, minsA, hoursA ))
-    print("Total Walltime: {:3.1f} seconds, {:3.1f} minutes, {:3.1f} hours".format(secsB, minsB, hoursB ))
-    print("-------------------------------------------------------------------")
-
-def print_time(timestamp):
-    secs=time.time()-timestamp
-    mins=secs/60
-    hours=mins/60
-    print("-------------------------------------------------------------------")
-    print("Total Walltime: {:3.1f} seconds, {:3.1f} minutes, {:3.1f} hours".format(secs, mins, hours ))
-    print("-------------------------------------------------------------------")
-
-def print_reltime(timestamp):
-    secs=time.time()-timestamp
-    mins=secs/60
-    hours=mins/60
-    print("-------------------------------------------------------------------")
-    print("Time to calculate step: {:3.1f} seconds, {:3.1f} minutes, {:3.1f} hours".format(secs, mins, hours ))
-    print("-------------------------------------------------------------------")
+    return snapslist, snapshotsA, snapshotss
 
 def exit_solvshell():
     print("Solvshell exited ")

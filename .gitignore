@@ -11,3 +11,6 @@ backup
 euclidean-c-test
 reorder-test
 .DS_Store
+test.py
+unused
+__pycache__

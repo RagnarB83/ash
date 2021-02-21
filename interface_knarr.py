@@ -1,7 +1,8 @@
 #Non-intrusive interface to Knarr
 #Assumes that Knarr directory exists inside ASH (for now at least)
 
-from ash import *
+import ash
+from functions_general import blankline
 import numpy as np
 import sys
 import os
@@ -336,8 +337,8 @@ def NEB(reactant=None, product=None, theory=None, images=None, interpolation=Non
             exit(1)
         R_actcoords, R_actelems = reactant.get_coords_for_atoms(actatoms)
         P_actcoords, P_actelems = product.get_coords_for_atoms(actatoms)
-        new_reactant = Fragment(coords=R_actcoords, elems=R_actelems)
-        new_product = Fragment(coords=P_actcoords, elems=P_actelems)
+        new_reactant = ash.Fragment(coords=R_actcoords, elems=R_actelems)
+        new_product = ash.Fragment(coords=P_actcoords, elems=P_actelems)
 
         #Create Knarr calculator from Yggdrasill theory.
         calculator = KnarrCalculator(theory, fragment1=new_reactant, fragment2=new_product, runmode=runmode,
@@ -420,7 +421,7 @@ def NEB(reactant=None, product=None, theory=None, images=None, interpolation=Non
                     full_saddleimage_coords[i] = curr_c
 
             #Creating new Yggdrasill fragment for Full Saddle-point geometry
-            Saddlepoint_fragment = Fragment(coords=full_saddleimage_coords, elems=reactant.elems, connectivity=reactant.connectivity)
+            Saddlepoint_fragment = ash.Fragment(coords=full_saddleimage_coords, elems=reactant.elems, connectivity=reactant.connectivity)
             Saddlepoint_fragment.set_energy(saddle_energy)
             #Adding atomtypes and charges if present.
             Saddlepoint_fragment.update_atomcharges(reactant.atomcharges)
@@ -437,7 +438,7 @@ def NEB(reactant=None, product=None, theory=None, images=None, interpolation=Non
             saddle_coords=np.reshape(saddle_coords_1d, (numatoms, 3))
             saddle_energy = path.GetEnergy()[CI]
             #Creating new Yggdrasill fragment
-            Saddlepoint_fragment = Fragment(coords=saddle_coords, elems=reactant.elems, connectivity=reactant.connectivity)
+            Saddlepoint_fragment = ash.Fragment(coords=saddle_coords, elems=reactant.elems, connectivity=reactant.connectivity)
             Saddlepoint_fragment.set_energy(saddle_energy)
             #Writing out Saddlepoint fragment file and XYZ file
             Saddlepoint_fragment.print_system(filename='Saddlepoint-optimized.ygg')

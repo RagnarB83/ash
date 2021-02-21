@@ -43,8 +43,7 @@ def int_ranges(nums):
 
 #Debug print. Behaves like print but reads global debug var first
 def printdebug(string,var=''):
-    global debugflag
-    if debugflag is True:
+    if settings_ash.debugflag is True:
         print(BC.OKRED,string,var,BC.END)
 
 def timefn(fn):
@@ -143,6 +142,12 @@ def isodd(n):
     else:
         return True
 
+#Compare sign of two numbers. Return True if same sign, return False if opposite sign
+def is_same_sign(a,b):
+    if a*b <0:
+        return False
+    elif a*b >0:
+        return True
 
 #Is it possible to interpret string/number as float.
 #Note: integer variable/string can be interpreted. See also is_string_float_withdecimal below
@@ -290,3 +295,36 @@ def printDate():
     string2 = dagur.strftime('%H:%M')
     print('Time:%s Date:%s' % (string2, string1))
     return None
+
+
+
+def print_time_rel(timestampA,modulename=''):
+    secsA=time.time()-timestampA
+    minsA=secsA/60
+    print("-------------------------------------------------------------------")
+    print("Time to calculate step ({}): {:3.1f} seconds, {:3.1f} minutes.".format(modulename, secsA, minsA ))
+    print("-------------------------------------------------------------------")
+
+def print_time_rel_and_tot(timestampA,timestampB, modulename=''):
+    secsA=time.time()-timestampA
+    minsA=secsA/60
+    #hoursA=minsA/60
+    secsB=time.time()-timestampB
+    minsB=secsB/60
+    #hoursB=minsB/60
+    print("-------------------------------------------------------------------")
+    print("Time to calculate step ({}): {:3.1f} seconds, {:3.1f} minutes.".format(modulename, secsA, minsA ))
+    print("Total Walltime: {:3.1f} seconds, {:3.1f} minutes.".format(secsB, minsB ))
+    print("-------------------------------------------------------------------")
+
+def print_time_rel_and_tot_color(timestampA,timestampB, modulename=''):
+    secsA=time.time()-timestampA
+    minsA=secsA/60
+    #hoursA=minsA/60
+    secsB=time.time()-timestampB
+    minsB=secsB/60
+    #hoursB=minsB/60
+    print(BC.WARNING,"-------------------------------------------------------------------", BC.END)
+    print(BC.WARNING,"Time to calculate step ({}): {:3.1f} seconds, {:3.1f} minutes.".format(modulename, secsA, minsA ), BC.END)
+    print(BC.WARNING,"Total Walltime: {:3.1f} seconds, {:3.1f} minutes.".format(secsB, minsB ), BC.END)
+    print(BC.WARNING,"-------------------------------------------------------------------", BC.END)

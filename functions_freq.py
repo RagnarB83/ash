@@ -1,9 +1,430 @@
-from functions_general import listdiff, clean_number,blankline
-from functions_coords import elematomnumbers, atommasses
+from functions_general import listdiff, clean_number,blankline,BC
+import functions_coords
+import interface_ORCA
 import numpy as np
 import math
 import constants
 import ash
+import shutil
+import os
+
+
+#Analytical frequencies function
+#Only works for ORCAtheory at the moment
+def AnFreq(fragment=None, theory=None, numcores=1, temp=298.15, pressure=1.0):
+    print(BC.WARNING, BC.BOLD, "------------ANALYTICAL FREQUENCIES-------------", BC.END)
+    if theory.__class__.__name__ == "ORCATheory":
+        print("Requesting analytical Hessian calculation from ORCATheory")
+        print("")
+        #Do single-point ORCA Anfreq job
+        energy = theory.run(current_coords=fragment.coords, elems=fragment.elems, Hessian=True, nprocs=numcores)
+        #Grab Hessian
+        hessian = interface_ORCA.Hessgrab(theory.filename+".hess")
+        #Add Hessian to fragment
+        fragment.hessian=hessian
+        
+        #TODO: diagonalize it ourselves. Need to finish projection
+        
+        # For now, we grab frequencies from ORCA Hessian file
+        frequencies = interface_ORCA.ORCAfrequenciesgrab(theory.filename+".hess")
+        
+        hessatoms=list(range(0,fragment.numatoms))
+        Thermochemistry = thermochemcalc(frequencies,hessatoms, fragment, theory.mult, temp=temp,pressure=pressure)
+        
+        print(BC.WARNING, BC.BOLD, "------------ANALYTICAL FREQUENCIES END-------------", BC.END)
+        return Thermochemistry
+        
+    else:
+        print("Analytical frequencies not available for theory. Exiting.")
+        exit()
+
+
+#Numerical frequencies function
+def NumFreq(fragment=None, theory=None, npoint=1, displacement=0.0005, hessatoms=None, numcores=1, runmode='serial', temp=298.15, pressure=1.0):
+    
+    print(BC.WARNING, BC.BOLD, "------------NUMERICAL FREQUENCIES-------------", BC.END)
+    shutil.rmtree('Numfreq_dir', ignore_errors=True)
+    os.mkdir('Numfreq_dir')
+    os.chdir('Numfreq_dir')
+    print("Creating separate directory for displacement calculations: Numfreq_dir ")
+    if fragment is None or theory is None:
+        print("NumFreq requires a fragment and a theory object")
+
+    coords=fragment.coords
+    elems=fragment.elems
+    numatoms=len(elems)
+    #Hessatoms list is allatoms (if not defined), otherwise the atoms provided and thus a partial Hessian is calculated.
+    allatoms=list(range(0,numatoms))
+    if hessatoms is None:
+        hessatoms=allatoms
+
+    #Making sure hessatoms list is sorted
+    hessatoms.sort()
+
+    displacement_bohr = displacement * constants.ang2bohr
+
+    print("Starting Numerical Frequencies job for fragment")
+    print("System size:", numatoms)
+    print("Hessian atoms:", hessatoms)
+    if hessatoms != allatoms:
+        print("This is a partial Hessian.")
+    if npoint ==  1:
+        print("One-point formula used (forward difference)")
+    elif npoint == 2:
+        print("Two-point formula used (central difference)")
+    else:
+        print("Unknown npoint option. npoint should be set to 1 (one-point) or 2 (two-point formula).")
+        exit()
+    if runmode=="serial":
+        print("Numfreq running in serial mode")
+    elif runmode=="parallel":
+        print("Numfreq running in parallel mode")
+    blankline()
+    print("Displacement: {:5.4f} Å ({:5.4f} Bohr)".format(displacement,displacement_bohr))
+    blankline()
+    print("Starting geometry:")
+    #Converting to numpy array
+    #TODO: get rid list->np-array conversion
+    current_coords_array=np.array(coords)
+
+    print("Printing hessatoms geometry...")
+    functions_coords.print_coords_for_atoms(coords,elems,hessatoms)
+    blankline()
+
+    #Looping over each atom and each coordinate to create displaced geometries
+    #Only displacing atom if in hessatoms list. i.e. possible partial Hessian
+    list_of_displaced_geos=[]
+    list_of_displacements=[]
+    for atom_index in range(0,len(current_coords_array)):
+        if atom_index in hessatoms:
+            for coord_index in range(0,3):
+                val=current_coords_array[atom_index,coord_index]
+                #Displacing in + direction
+                current_coords_array[atom_index,coord_index]=val+displacement
+                y = current_coords_array.copy()
+                list_of_displaced_geos.append(y)
+                list_of_displacements.append([atom_index, coord_index, '+'])
+                if npoint == 2:
+                    #Displacing  - direction
+                    current_coords_array[atom_index,coord_index]=val-displacement
+                    y = current_coords_array.copy()
+                    list_of_displaced_geos.append(y)
+                    list_of_displacements.append([atom_index, coord_index, '-'])
+                #Displacing back
+                current_coords_array[atom_index, coord_index] = val
+
+    # Original geo added here if onepoint
+    if npoint == 1:
+        list_of_displaced_geos.append(current_coords_array)
+        list_of_displacements.append('Originalgeo')
+
+    print("List of displacements:", list_of_displacements)
+
+    #Creating displacement labels
+    list_of_labels=[]
+    for disp in list_of_displacements:
+        if disp == 'Originalgeo':
+            calclabel = 'Originalgeo'
+        else:
+            atom_disp = disp[0]
+            if disp[1] == 0:
+                crd = 'x'
+            elif disp[1] == 1:
+                crd = 'y'
+            elif disp[1] == 2:
+                crd = 'z'
+            drection = disp[2]
+            # displacement_jobname='Numfreq-Disp-'+'Atom'+str(atom_disp)+crd+drection
+            #print("Displacing Atom: {} Coordinate: {} Direction: {}".format(atom_disp, crd, drection))
+            calclabel = 'Atom: {} Coord: {} Direction: {}'.format(atom_disp, crd, drection)
+        list_of_labels.append(calclabel)
+
+    assert len(list_of_labels) == len(list_of_displaced_geos), "something is wrong"
+
+    #Write all geometries to disk as XYZ-files
+    list_of_filelabels=[]
+    for label, dispgeo in zip(list_of_labels,list_of_displaced_geos):
+        filelabel=label.replace(' ','').replace(':','')
+        list_of_filelabels.append(filelabel)
+        functions_coords.write_xyzfile(elems=elems, coords=dispgeo,name=filelabel)
+
+    #RUNNING displacements
+    displacement_grad_dictionary = {}
+    if runmode == 'serial':
+        #Looping over geometries and running.
+        #   key: AtomNCoordPDirectionm   where N=atomnumber, P=x,y,z and direction m: + or -
+        #   value: gradient
+        for label, geo in zip(list_of_labels,list_of_displaced_geos):
+            if label == 'Originalgeo':
+                calclabel = 'Originalgeo'
+                print("Doing original geometry calc.")
+            else:
+                calclabel=label
+                #displacement_jobname='Numfreq-Disp-'+'Atom'+str(atom_disp)+crd+drection
+                print("Displacing {}".format(calclabel))
+            energy, gradient = theory.run(current_coords=geo, elems=elems, Grad=True, nprocs=numcores)
+            #Adding gradient to dictionary for AtomNCoordPDirectionm
+            displacement_grad_dictionary[calclabel] = gradient
+    elif runmode == 'parallel':
+        import pickle4reducer
+        import multiprocessing as mp
+        ctx = mp.get_context()
+        ctx.reducer = pickle4reducer.Pickle4Reducer()
+
+        pool = mp.Pool(numcores)
+        blankline()
+        print("Running snapshots in parallel using multiprocessing.Pool")
+        print("Number of CPU cores: ", numcores)
+        print("Number of displacements:", len(list_of_displaced_geos))
+
+        #NumcoresQM can be larger value (e.g. ORCA-parallelization). ORCA seems to run fine with OpenMPI without complaints.
+        #However, this only makes sense to use if way more CPUs available than displacements.
+        #Unlikely situation, so hardcoding to 1 for now.
+        numcoresQM=1
+        print("Setting nprocs for theory object to: ", numcoresQM)
+        #results = pool.map(displacement_run, [[geo, elems, numcoresQM, theory, label] for geo,label in zip(list_of_displaced_geos,list_of_labels)])
+        #results = pool.map(displacement_run2, [[filelabel, numcoresQM, theory, label] for label,filelabel in zip(list_of_labels,list_of_filelabels)])
+
+        #Reducing size of theory object
+        #print("size of theory:", get_size(theory))
+        #print("size of theory.coords:", get_size(theory.coords))
+        #print("size of coords:", get_size(coords))
+        theory.coords=[]
+        theory.elems=[]
+        theory.connectivity=[]
+        print(theory)
+        #print(theory.__dict__)
+        #print("size of theory after del:", get_size(theory))
+
+        #QMMM_xtb = QMMMTheory(fragment=Saddlepoint, qm_theory=xtbcalc, mm_theory=MMpart, actatoms=Centralmainfrag,
+        #                      qmatoms=Centralmainfrag, embedding='Elstat', nprocs=numcores)
+
+        #results = pool.map(displacement_run2, [[filelabel, numcoresQM, label] for label,filelabel in zip(list_of_labels,list_of_filelabels)])
+
+        #Because passing QMMMTheory is too big for pickle inside mp.Pool we create a new QMMMTheory object inside displacement funciont.
+        #This means we need the components of theory object. Here distinguishing between QMMMTheory and other theory (QM theory)
+        #Still seems to be too messy
+
+        #https://towardsdatascience.com/10x-faster-parallel-python-without-python-multiprocessing-e5017c93cce1
+        if theory.__class__.__name__ == "QMMMTheory":
+            print("Numfreq with QMMMTheory")
+            ray_library=True
+            
+            if ray_library == True:
+                print("Ray parallelization is active")
+                try:
+                    import ray
+                    ray.init(num_cpus = numcores)
+                except:
+                    print("Parallel QM/MM Numerical Frequencies require the ray library.")
+                    print("Please install ray : pip install ray")
+                    exit(1)
+                
+                if theory.mm_theory == "NonBondedTheory":
+                    #Do pairpotentials before we begin if NonBondedTheoyr
+                    theory.mm_theory.calculate_LJ_pairpotentials(qmatoms=theory.qmatoms, actatoms=theory.actatoms)
+                    print("theory.mm_theory sigmaij", theory.mm_theory.sigmaij)
+                #going to make QMMMTheory object a shared object that all workers can access
+                theory_shared = ray.put(theory)
+                @ray.remote
+                def dispfunction_ray(label, filelabel, numcoresQM, theory_shared):
+                    print("inside dispfunction")
+                    print("label:", label)
+                    print("filelabel:", filelabel)
+                    print("theory_shared:", theory_shared)
+                    # print("theory_shared.qmatoms: ", theory_shared.qmatoms )
+                    print("xx")
+                    # Numcores can be used. We can launch ORCA-OpenMPI in parallel it seems.
+                    # Only makes sense if we have may more cores available than displacements
+                    print("a")
+                    elems, coords = functions_coords.read_xyzfile(filelabel + '.xyz')
+                    print("b")
+                    dispdir = label.replace(' ', '')
+                    os.mkdir(dispdir)
+                    os.chdir(dispdir)
+                    print("d")
+                    # shutil.move('../' + filelabel + '.xyz', './' + filelabel + '.xyz')
+                    # Read XYZ-file from file
+                    print("e")
+
+                    print("f")
+                    # Todo: Copy previous GBW file in here if ORCA, xtbrestart if xtb, etc.
+                    print("Running displacement: {}".format(label))
+                    energy, gradient = theory_shared.run(current_coords=coords, elems=elems, Grad=True, nprocs=numcoresQM)
+                    print("Energy: ", energy)
+                    os.chdir('..')
+                    # Delete dir?
+                    # os.remove(dispdir)
+                    return [label, energy, gradient]
+                result_ids = [dispfunction_ray.remote(label,filelabel,numcoresQM,theory_shared) for label,filelabel in
+                            zip(list_of_labels,list_of_filelabels)]
+                results = ray.get(result_ids)
+            else:
+            
+                #result_ids = [f.remote(df_id) for _ in range(4)]
+
+                #results = pool.map(displacement_QMrun, [[geo, elems, numcoresQM, theory, label] for geo, label in
+                #                                        zip(list_of_displaced_geos, list_of_labels)])
+                #print(results)
+                results = pool.map(functions_parallel.displacement_QMMMrun, [[filelabel, numcoresQM, label, theory.fragment, theory.qm_theory, theory.mm_theory,
+                                                        theory.actatoms, theory.qmatoms, theory.embedding, theory.charges, theory.printlevel,
+                                                        theory.frozenatoms] for label,filelabel in zip(list_of_labels,list_of_filelabels)])
+        #Passing QM theory directly
+        else:
+            results = pool.map(functions_parallel.displacement_QMrun, [[geo, elems, numcoresQM, theory, label] for geo,label in zip(list_of_displaced_geos,list_of_labels)])
+        pool.close()
+
+        #Gathering results in dictionary
+        for result in results:
+            print("result:", result)
+            calclabel=result[0]
+            energy=result[1]
+            gradient=result[2]
+            displacement_grad_dictionary[calclabel] = gradient
+
+    print("Displacement calculations done.")
+    #print("displacement_grad_dictionary:", displacement_grad_dictionary)
+    #If partial Hessian remove non-hessatoms part of gradient:
+    #Get partial matrix by deleting atoms not present in list.
+    if npoint == 1:
+        original_grad=get_partial_matrix(allatoms, hessatoms, displacement_grad_dictionary['Originalgeo'])
+        original_grad_1d = np.ravel(original_grad)
+    #Initialize Hessian
+    hesslength=3*len(hessatoms)
+    hessian=np.zeros((hesslength,hesslength))
+
+
+    #Onepoint-formula Hessian
+    if npoint == 1:
+        #Starting index for Hessian array
+        index=0
+        #Getting displacements as keys from dictionary and sort
+        dispkeys = list(displacement_grad_dictionary.keys())
+        #Sort seems to sort it correctly w.r.t. atomnumber,x,y,z and +/-
+        dispkeys.sort()
+        #print("dispkeys:", dispkeys)
+        #for displacement, grad in displacement_grad_dictionary.items():
+        for dispkey in dispkeys:
+            grad=displacement_grad_dictionary[dispkey]
+            #Skipping original geo
+            if dispkey != 'Originalgeo':
+                #Getting grad as numpy matrix and converting to 1d
+                # If partial Hessian remove non-hessatoms part of gradient:
+                grad = get_partial_matrix(allatoms, hessatoms, grad)
+                grad_1d = np.ravel(grad)
+                Hessrow=(grad_1d - original_grad_1d)/displacement_bohr
+                hessian[index,:]=Hessrow
+                index+=1
+    #Twopoint-formula Hessian. pos and negative directions come in order
+    elif npoint == 2:
+        count=0; hessindex=0
+        #Getting displacements as keys from dictionary and sort
+        dispkeys = list(displacement_grad_dictionary.keys())
+        #Sort seems to sort it correctly w.r.t. atomnumber,x,y,z and +/-
+        dispkeys.sort()
+        #print("dispkeys:", dispkeys)
+        #for file in freqinputfiles:
+        #for displacement, grad in testdict.items():
+        for dispkey in dispkeys:
+            if dispkey != 'Originalgeo':
+                count+=1
+                if count == 1:
+                    grad_pos=displacement_grad_dictionary[dispkey]
+                    #print("pos I hope")
+                    #print("dispkey:", dispkey)
+                    # If partial Hessian remove non-hessatoms part of gradient:
+                    grad_pos = get_partial_matrix(allatoms, hessatoms, grad_pos)
+                    grad_pos_1d = np.ravel(grad_pos)
+                elif count == 2:
+                    grad_neg=displacement_grad_dictionary[dispkey]
+                    #print("neg I hope")
+                    #print("dispkey:", dispkey)
+                    #Getting grad as numpy matrix and converting to 1d
+                    # If partial Hessian remove non-hessatoms part of gradient:
+                    grad_neg = get_partial_matrix(allatoms, hessatoms, grad_neg)
+                    grad_neg_1d = np.ravel(grad_neg)
+                    Hessrow=(grad_pos_1d - grad_neg_1d)/(2*displacement_bohr)
+                    hessian[hessindex,:]=Hessrow
+                    grad_pos_1d=0
+                    grad_neg_1d=0
+                    count=0
+                    hessindex+=1
+                else:
+                    print("Something bad happened")
+                    exit()
+    blankline()
+
+    #Symmetrize Hessian by taking average of matrix and transpose
+    symm_hessian=(hessian+hessian.transpose())/2
+    hessian=symm_hessian
+
+
+    #Project out Translation+Rotational modes
+    #TODO
+
+    #Diagonalize mass-weighted Hessian
+    # Get partial matrix by deleting atoms not present in list.
+    hesselems = functions_coords.get_partial_list(allatoms, hessatoms, elems)
+    hessmasses = functions_coords.get_partial_list(allatoms, hessatoms, fragment.list_of_masses)
+    hesscoords = [fragment.coords[i] for i in hessatoms]
+    print("Elements:", hesselems)
+    print("Masses used:", hessmasses)
+    #Todo: Note. elems is redefined here. Not ideal
+    frequencies, nmodes, numatoms, elems, evectors, atomlist, masses = diagonalizeHessian(hessian,hessmasses,hesselems)
+    #frequencies=diagonalizeHessian(hessian,hessmasses,hesselems)[0]
+
+    #Print out normal mode output. Like in Chemshell or ORCA
+    blankline()
+    print("Normal modes:")
+    #TODO: Eigenvectors print here.
+    #TODO: or perhaps elemental normal mode composition factors
+    print("Eigenvectors to be  be printed here")
+    blankline()
+    #Print out Freq output. Maybe print normal mode compositions here instead???
+    printfreqs(frequencies,len(hessatoms))
+
+
+
+    #Print out thermochemistry
+    if theory.__class__.__name__ == "QMMMTheory":
+        Thermochemistry = thermochemcalc(frequencies,hessatoms, fragment, theory.qm_theory.mult, temp=temp,pressure=pressure)
+    else:
+        Thermochemistry = thermochemcalc(frequencies,hessatoms, fragment, theory.mult, temp=temp,pressure=pressure)
+
+
+    #Add Hessian to fragment
+    fragment.hessian=hessian
+
+    #Write Hessian to file
+    with open("Hessian", 'w') as hfile:
+        hfile.write(str(hesslength)+' '+str(hesslength)+'\n')
+        for row in hessian:
+            rowline=' '.join(map(str, row))
+            hfile.write(str(rowline)+'\n')
+        blankline()
+        print("Wrote Hessian to file: Hessian")
+    #Write ORCA-style Hessian file. Hardcoded filename here. Change?
+    #Note: Passing hesscords here instead of coords. Change?
+    interface_ORCA.write_ORCA_Hessfile(hessian, hesscoords, hesselems, hessmasses, hessatoms, "orcahessfile.hess")
+    print("Wrote ORCA-style Hessian file: orcahessfile.hess")
+
+    #Create dummy-ORCA file with frequencies and normal modes
+    printdummyORCAfile(hesselems, hesscoords, frequencies, evectors, nmodes, "orcahessfile.hess")
+    print("Wrote dummy ORCA outputfile with frequencies and normal modes: orcahessfile.hess_dummy.out")
+    print("Can be used for visualization")
+
+    #TODO: https://pages.mtu.edu/~msgocken/ma5630spring2003/lectures/diff/diff/node6.html
+    blankline()
+    print(BC.WARNING, BC.BOLD, "------------NUMERICAL FREQUENCIES END-------------", BC.END)
+
+    #Thermochemistry object. Should contain frequencies, zero-point energy, enthalpycorr, gibbscorr, etc.
+    
+    #Return to ..
+    os.chdir('..')
+    return Thermochemistry
+
+
+
 
 #HESSIAN-related functions below
 
@@ -336,14 +757,17 @@ def thermochemcalc(vfreq,atoms,fragment, multiplicity, temp=298.15,pressure=1.0)
         freqs=[]
         vibtemps=[]
         for mode in range(0, 3 * len(atoms)):
-            #print(mode)
+            print(mode)
             if mode < TRmodenum:
                 continue
                 #print("skipping TR mode with freq:", clean_number(vfreq[mode]) )
             else:
                 vib = clean_number(vfreq[mode])
+                #NOTE: probably deprecated case 
                 if np.iscomplex(vib):
                     print("Mode {} with frequency {} is imaginary. Skipping in thermochemistry".format(mode,vib))
+                elif vib < 0:
+                    print("Mode {} with frequency {} is negative. Skipping in thermochemistry".format(mode,vib))
                 else:
                     freqs.append(float(vib))
                     freq_Hz=vib*constants.c
@@ -734,7 +1158,7 @@ def get_center(elems,coords):
     xcom,ycom,zcom = 0,0,0
     totmass = 0
     for el,coord in zip(elems,coords):
-        mass = atommasses[elematomnumbers[el.lower()]-1]
+        mass = functions_coords.atommasses[functions_coords.elematomnumbers[el.lower()]-1]
         xcom += float(mass)*float(coord[0])
         ycom += float(mass)*float(coord[1])
         zcom += float(mass)*float(coord[2])
@@ -756,7 +1180,7 @@ def inertia(elems,coords,center):
     Iyz = 0.
 
     for index,(el,coord) in enumerate(zip(elems,coords)):
-        mass = atommasses[elematomnumbers[el.lower()]-1]
+        mass = functions_coords.atommasses[functions_coords.elematomnumbers[el.lower()]-1]
         x = coord[0] - xcom
         y = coord[1] - ycom
         z = coord[2] - zcom
@@ -806,7 +1230,7 @@ def calc_model_Hessian_ORCA(fragment,model='Almloef'):
     inhess {}
     end
 """.format(model)
-    orcadummycalc=ash.ORCATheory(orcasimpleinput=orcasimple,orcablocks=orcablocks,charge=0,mult=1)
+    orcadummycalc=interface_ORCA.ORCATheory(orcasimpleinput=orcasimple,orcablocks=orcablocks,charge=0,mult=1)
     ash.Singlepoint(theory=orcadummycalc, fragment=fragment)
     #Read orca-input.opt containing Hessian under hessian_approx
     hesstake=False

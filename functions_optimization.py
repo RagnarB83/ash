@@ -1,15 +1,15 @@
 import numpy as np
 import constants
-from functions_general import *
-from functions_coords import *
-from ash import *
+from functions_general import blankline,print_time_rel_and_tot
+from functions_coords import print_coords_all,write_xyzfile
 import time
 import os
 import shutil
 import ash
+
 #Root mean square of numpy array, e.g. gradient
 def RMS_G(grad):
-    sumsq = 0;
+    sumsq = 0
     count = 0
     for row in grad:
         count += len(row)
@@ -426,9 +426,7 @@ def newton_raphson(coords, Gradient,Hessian):
     print(bla)
     exit()
     #newcoords = coords - Hessian_inv*Grad
-    return newcoords
-
-
+    #return newcoords
 #########################
 # PYBERNY Optimization interface.
 # Has internal coordinates

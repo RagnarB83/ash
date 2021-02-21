@@ -1,8 +1,8 @@
 import os
-from functions_coords import *
-from functions_general import int_ranges
+from functions_coords import split_multimolxyzfile
+from functions_general import int_ranges, listdiff
 import subprocess as sp
-from ash import *
+import ash
 
 
 #Very simple crest interface

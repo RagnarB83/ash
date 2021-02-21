@@ -2,7 +2,7 @@ import ash
 import shutil
 import numpy as np
 import functions_coords
-from functions_general import *
+from functions_general import isint,isfloat,is_same_sign,BC
 import os
 import math
 from elstructure_functions import check_cores_vs_electrons, num_core_electrons
@@ -88,12 +88,7 @@ def read_referencedata_file(benchmarksetpath):
             exit()
     return database_dict
 
-#Compare sign of two numbers. Return True if same sign, return False if opposite sign
-def is_same_sign(a,b):
-    if a*b <0:
-        return False
-    elif a*b >0:
-        return True
+
     
 #Get pretty reaction string from molecule-filenames and stoichiometry
 def get_reaction_string(filenames, stoichiometry):
