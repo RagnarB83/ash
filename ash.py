@@ -11,27 +11,37 @@ import sys
 import inspect
 import time
 
+###############
 #ASH modules
+################
 import ash
 from functions_general import blankline,BC,listdiff,print_time_rel,print_time_rel_and_tot,pygrep,printdebug,read_intlist_from_file
+
 # Fragment class and coordinate functions
 import module_coords
 from module_coords import get_molecules_from_trajectory,eldict_covrad,write_pdbfile,Fragment
+
 #Parallel 
 import functions_parallel
 from functions_parallel import Singlepoint_parallel,run_QMMM_SP_in_parallel
+
 #Freq
 from module_freq import AnFreq,NumFreq,approximate_full_Hessian_from_smaller,calc_rotational_constants
+
 #Constants
 import constants
+
 #functions related to electronic structure
 import functions_elstructure
+
 #Spinprojection
 from module_spinprojection import SpinProjectionTheory
+
 #Surface
 from module_surface import calc_surface,calc_surface_fromXYZ,read_surfacedict_from_file
 import settings_ash
 from ash_header import print_ash_header
+
 #QMcode interfaces
 from interface_ORCA import ORCATheory
 from interface_Psi4 import Psi4Theory
@@ -40,28 +50,35 @@ from interface_pyscf import PySCFTheory
 from interface_MRCC import MRCCTheory
 from interface_CFour import CFourTheory
 from interface_xtb import xTBTheory
+
 #MM: external and internal
 from interface_OpenMM import OpenMMTheory
 from module_MM import NonBondedTheory,UFFdict,UFF_modH_dict,LJCoulpy,coulombcharge,LennardJones,LJCoulombv2,LJCoulomb,MMforcefield_read
+
 #QM/MM
 from module_QMMM import QMMMTheory
 from module_polembed import PolEmbedTheory
+
 #Solvation
 #NOTE: module_solvation.py or module_solvation2.py To be cleaned up
 import functions_solv
+
 #Molcrys
 import module_molcrys
-from module_molcrys import molcrys
+from module_molcrys import molcrys,Fragmenttype
+
 # Geometry optimization
 from functions_optimization import SimpleOpt,BernyOpt
 from interface_geometric import geomeTRICOptimizer
+
 #Workflows, benchmarking etc
 import module_workflows
 import module_highlevel_workflows
 from module_workflows import ReactionEnergy,thermochemprotocol_reaction,thermochemprotocol_single,confsampler_protocol
 import module_benchmarking
 from module_benchmarking import run_benchmark
-#Other interfaces
+
+#Other
 import interface_crest
 from interface_crest import call_crest
 

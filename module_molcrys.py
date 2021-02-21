@@ -14,6 +14,76 @@ import os
 origtime=time.time()
 currtime=time.time()
 
+# Fragment-type class
+class Fragmenttype:
+    instances = []
+    def __init__(self, name, formulastring, charge=None, mult=None):
+        self.Name = name
+        self.Formula = formulastring
+        self.Atoms = molformulatolist(formulastring)
+        self.Elements = uniq(self.Atoms)
+        self.Numatoms = len(self.Atoms)
+        self.Nuccharge = nucchargelist(self.Atoms)
+        self.mass =totmasslist(self.Atoms)
+        self.Charge = charge
+        self.Mult = mult
+        self.fraglist= []
+        self.clusterfraglist= []
+        #Keeping track of molmoms, voldict in case of DDEC
+        self.molmoms=[]
+        self.voldict=None
+        self.r0list=[]
+        self.epsilonlist=[]
+        self.atomtypelist=[]
+
+        #Current atom charges defined for fragment. Charges ordered according to something
+        self.charges=[]
+        #List of lists: All atom charges that have been defined for fragment. First the gasfrag, then from SP-loop etc.
+        self.all_atomcharges=[]
+        Fragmenttype.instances.append(self.Name)
+    def change_name(self, new_name): # note that the first argument is self
+        self.name = new_name # access the class attribute with the self keyword
+    def add_fraglist(self, atomlist): # note that the first argument is self
+        self.fraglist.append(atomlist) # access the class attribute with the self keyword
+    def add_clusterfraglist(self, atomlist): # note that the first argument is self
+        self.clusterfraglist.append(atomlist) # access the class attribute with the self keyword
+        self.flat_clusterfraglist = [item for sublist in self.clusterfraglist for item in sublist]
+    def add_charges(self,chargelist):
+        self.all_atomcharges.append(chargelist)
+        self.charges=chargelist
+    def print_infofile(self, filename='fragmenttype-info.txt'):
+        print("Printing fragment-type information to disk:", filename)
+        with open(filename, 'w') as outfile:
+            outfile.write("Name: {} \n".format(self.Name))
+            outfile.write("Formula: {} \n".format(self.Formula))
+            outfile.write("Atoms: {} \n".format(self.Atoms))
+            outfile.write("Elements: {} \n".format(self.Elements))
+            outfile.write("Nuccharge: {} \n".format(self.Nuccharge))
+            outfile.write("Mass: {} \n".format(self.mass))
+            outfile.write("Charge: {} \n".format(self.Charge))
+            outfile.write("Mult: {} \n".format(self.Mult))
+            outfile.write("\n")
+            outfile.write("Current atomcharges: {} \n".format(self.charges))
+            outfile.write("\n")
+            outfile.write("All atomcharges: {} \n".format(self.all_atomcharges))
+            outfile.write("\n")
+            outfile.write("Molmoms: {} \n".format(self.molmoms))
+            outfile.write("Voldicts: {} \n".format(self.voldict))
+            outfile.write("R0 list: {} \n".format(self.r0list))
+            outfile.write("Epsilon list: {} \n".format(self.epsilonlist))
+            outfile.write("Atomtype list: {} \n".format(self.atomtypelist))
+            outfile.write("\n")
+            for al in self.all_atomcharges:
+                outfile.write(' '.join([str(i) for i in al]))
+                outfile.write("\n")
+            outfile.write("\n")
+            outfile.write("\n")
+            outfile.write("Cell fraglist: {} \n".format(self.fraglist))
+            outfile.write("\n")
+            outfile.write("Cluster fraglist: {} \n".format(self.clusterfraglist))
+            outfile.write("\n")
+            outfile.write("Flat Cluster fraglist: {} \n".format(self.flat_clusterfraglist))
+            
 
 def molcrys(cif_file=None, xtl_file=None, xyz_file=None, cell_length=None, cell_angles=None, fragmentobjects=[], theory=None, numcores=1, chargemodel='',
             clusterradius=None, shortrangemodel='UFF_modH', LJHparameters=[0.0,0.0], auto_connectivity=False, simple_supercell=False, shiftasymmunit=False, cluster_type='sphere', 
