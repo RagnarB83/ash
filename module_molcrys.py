@@ -1,6 +1,6 @@
 import numpy as np
-from module_coords import read_xyzfile,write_xyzfile,print_coords_for_atoms,change_origin_to_centroid,nucchargelist,reorder,molformulatolist,nucchargelist,totmasslist
-from functions_general import print_time_rel_and_tot,print_time_rel,blankline,printdebug,BC
+import module_coords
+from functions_general import print_time_rel_and_tot,print_time_rel,blankline,printdebug,BC,uniq
 from interface_ORCA import grabatomcharges_ORCA,chargemodel_select
 from interface_xtb import grabatomcharges_xTB
 import functions_molcrys
@@ -19,11 +19,11 @@ class Fragmenttype:
     def __init__(self, name, formulastring, charge=None, mult=None):
         self.Name = name
         self.Formula = formulastring
-        self.Atoms = molformulatolist(formulastring)
+        self.Atoms = module_coords.molformulatolist(formulastring)
         self.Elements = uniq(self.Atoms)
         self.Numatoms = len(self.Atoms)
-        self.Nuccharge = nucchargelist(self.Atoms)
-        self.mass =totmasslist(self.Atoms)
+        self.Nuccharge = module_coords.nucchargelist(self.Atoms)
+        self.mass =module_coords.totmasslist(self.Atoms)
         self.Charge = charge
         self.Mult = mult
         self.fraglist= []
@@ -193,7 +193,7 @@ def molcrys(cif_file=None, xtl_file=None, xyz_file=None, cell_length=None, cell_
         blankline()
         #Read XYZ-file. Assuming file contains full-cell real-space coordinates 
         print("Reading XYZ file (assuming real-space coordinates in Angstrom):", xyz_file)
-        elems,orthogcoords=read_xyzfile(xyz_file)
+        elems,orthogcoords=module_coords.read_xyzfile(xyz_file)
         print("Read {} atoms from XYZ-files".format(len(orthogcoords)))
         
         #Need to read cell_lengths and cell_angles also
@@ -230,10 +230,10 @@ def molcrys(cif_file=None, xtl_file=None, xyz_file=None, cell_length=None, cell_
     orthogcoords=np.asarray(orthogcoords)
     print("orthogcoords:", orthogcoords)
 
-    write_xyzfile(elems,orthogcoords,"cell_orthog-original")
+    module_coords.write_xyzfile(elems,orthogcoords,"cell_orthog-original")
     #Change origin to centroid of coords
-    orthogcoords=change_origin_to_centroid(orthogcoords)
-    write_xyzfile(elems,orthogcoords,"cell_orthog-changedORIGIN")
+    orthogcoords=module_coords.change_origin_to_centroid(orthogcoords)
+    module_coords.write_xyzfile(elems,orthogcoords,"cell_orthog-changedORIGIN")
     
     
     #Make simpler super-cell for cases where molecule is not in cell
@@ -334,7 +334,7 @@ def molcrys(cif_file=None, xtl_file=None, xyz_file=None, cell_length=None, cell_
         cluster_coords,cluster_elems=functions_molcrys.remove_partial_fragments(cluster_coords,cluster_elems,clusterradius,fragmentobjects, scale=chosenscale, tol=chosentol)
         print_time_rel_and_tot(currtime, origtime, modulename='remove_partial_fragments')
         currtime=time.time()
-        write_xyzfile(cluster_elems,cluster_coords,"cluster_coords")
+        module_coords.write_xyzfile(cluster_elems,cluster_coords,"cluster_coords")
 
         if len(cluster_coords) == 0:
             print(BC.FAIL,"After removing all partial fragments, the Cluster fragment is empty. Something went wrong. Exiting.", BC.END)
@@ -372,7 +372,7 @@ def molcrys(cif_file=None, xtl_file=None, xyz_file=None, cell_length=None, cell_
     # Going through found frags and identify mainfrags and counterfrags
     for frag in Cluster.connectivity:
         el_list = [cluster_elems[i] for i in frag]
-        ncharge = nucchargelist(el_list)
+        ncharge = module_coords.nucchargelist(el_list)
         for fragmentobject in fragmentobjects:
             if ncharge == fragmentobject.Nuccharge:
                 fragmentobject.add_clusterfraglist(frag)
@@ -520,7 +520,7 @@ def molcrys(cif_file=None, xtl_file=None, xyz_file=None, cell_length=None, cell_
         blankline()
         print("This is Charge-Iteration Loop number", SPLoopNum)
         atomcharges=[]
-        print_coords_for_atoms(Cluster.coords,Cluster.elems,Centralmainfrag)
+        module_coords.print_coords_for_atoms(Cluster.coords,Cluster.elems,Centralmainfrag)
         print("")
         # Run ORCA QM/MM calculation with charge-model info
         QMMM_SP_calculation = ash.QMMMTheory(fragment=Cluster, qm_theory=QMtheory, qmatoms=Centralmainfrag,
