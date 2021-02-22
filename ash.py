@@ -19,7 +19,7 @@ from functions_general import blankline,BC,listdiff,print_time_rel,print_time_re
 
 # Fragment class and coordinate functions
 import module_coords
-from module_coords import get_molecules_from_trajectory,eldict_covrad,write_pdbfile,Fragment
+from module_coords import get_molecules_from_trajectory,eldict_covrad,write_pdbfile,Fragment,read_xyzfile,write_xyzfile
 
 #Parallel 
 import functions_parallel
@@ -81,8 +81,6 @@ from module_benchmarking import run_benchmark
 #Other
 import interface_crest
 from interface_crest import call_crest
-
-
 
 #Julia dependency
 #Current behaviour: We try to import, if not possible then we continue
@@ -160,5 +158,5 @@ class ZeroTheory:
         self.gradient = np.zeros((len(elems), 3))
         return self.energy,self.gradient
 
-#
+# Initialize settings and print header and logo
 settings_ash.init()
