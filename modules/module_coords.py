@@ -1,4 +1,4 @@
-from functions_general import isint,listdiff,print_time_rel
+from functions_general import isint,listdiff,print_time_rel,BC
 import dictionaries_lists
 import numpy as np
 import settings_ash

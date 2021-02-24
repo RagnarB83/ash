@@ -119,6 +119,7 @@ if settings_ash.settings_dict["load_julia"] == True:
         
         #Various Julia functions
         print("Loading Julia functions")
+        ashpath = os.path.dirname(ash.__file__)
         Main.include(ashpath + "/functions_julia.jl")
     except:
         print("Problem importing Pyjulia")
