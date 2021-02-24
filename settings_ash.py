@@ -42,6 +42,10 @@ settings_dict["tol"] = 0.1
 settings_dict["conndepth"] = 10
 
 
+############################
+# ASH READ USER SETTINGS
+############################
+
 #Read additional user configuration file if present. Should be present in $HOME.
 #WILL overwrite default settings above
 parser.read(userhome+"/"+"ash_user_settings.ini")
@@ -79,38 +83,3 @@ try_read_setting("print_input","bool")
 try_read_setting("print_logo","bool")
 try_read_setting("debugflag","bool")
 try_read_setting("load_julia","bool")
-
-
-def init():
-    """
-    ASH initial output. Used to print header (logo, version etc.), set initial time, print inputscript etc.
-    """
-    #Initializes time
-    global init_time
-    init_time=time.time()
-    
-    #Comment out to skip printing of header
-    if settings_dict["print_logo"] is True:
-        ash.print_ash_header()
-
-    print("ASH path:", ashpath)
-    print("ASH Settings after reading defaults and ~/ash_user_settings.ini : ")
-    print(settings_dict)
-    print("Setting initial time")
-    print("Note: ASH uses ANSI escape sequences for displaying color. Use less -R to display or set LESS=-R environment variable")
-    print("To turn off escape sequences, set:   use_ANSI_color = False   in  ~/ash_user_settings.ini")
-    print("")
-    
-    #Print input script unless interactive session
-    if settings_dict["print_input"] is True:
-        if interactive_session == False:
-            inputfilepath=inputfile= os.getcwd()+"/"+sys.argv[0]
-            print("Input script:", inputfilepath )
-            print(functions_general.BC.WARNING,"="*100)
-            with open(inputfilepath) as x: f = x.readlines()
-            for line in f:
-                print(line,end="")
-            print("="*100,functions_general.BC.END)
-            print("")
-
-    

@@ -51,7 +51,6 @@ from module_spinprojection import SpinProjectionTheory
 
 #Surface
 from module_surface import calc_surface,calc_surface_fromXYZ,read_surfacedict_from_file
-from ash_header import print_ash_header
 
 #QMcode interfaces
 from interface_ORCA import ORCATheory
@@ -98,9 +97,12 @@ import interface_crest
 from interface_crest import call_crest
 
 
-# Initialize settings and print header and logo
+# Initialize settings
 import settings_ash
-settings_ash.init()
+
+#Print header
+import ash_header
+ash_header.print_header()
 
 
 
