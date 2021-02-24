@@ -11,10 +11,17 @@ import sys
 import inspect
 import time
 
+
 ###############
 #ASH modules
 ################
 import ash
+#Adding modules,interfaces directories to sys.path
+ashpath = os.path.dirname(ash.__file__)
+sys.path.insert(1, ashpath+'/modules')
+sys.path.insert(1, ashpath+'/interfaces')
+sys.path.insert(1, ashpath+'/functions')
+
 from functions_general import blankline,BC,listdiff,print_time_rel,print_time_rel_and_tot,pygrep,printdebug,read_intlist_from_file
 
 # Fragment class and coordinate functions
@@ -74,6 +81,10 @@ from module_molcrys import molcrys,Fragmenttype
 from functions_optimization import SimpleOpt,BernyOpt
 from interface_geometric import geomeTRICOptimizer
 
+#PES
+import module_PES
+from module_PES import PhotoElectronSpectrum
+
 #Workflows, benchmarking etc
 import module_workflows
 import module_highlevel_workflows
@@ -84,9 +95,6 @@ from module_benchmarking import run_benchmark
 #Other
 import interface_crest
 from interface_crest import call_crest
-
-
-
 
 
 # Initialize settings and print header and logo
@@ -108,7 +116,7 @@ if settings_ash.settings_dict["load_julia"] == True:
             from julia import Hungarian
         except:
             print("Problem loading Julia packages: Hungarian")
-        ashpath = os.path.dirname(ash.__file__)
+        
         #Various Julia functions
         print("Loading Julia functions")
         Main.include(ashpath + "/functions_julia.jl")
