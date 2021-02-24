@@ -16,7 +16,11 @@ class ORCATheory:
 
         if orcadir is None:
             print("No orcadir argument passed to ORCATheory. Attempting to find orcadir variable inside settings_ash")
-            self.orcadir=settings_ash.orcadir
+            try:
+                self.orcadir=settings_ash.settings_dict["orcadir"]
+            except:
+                print(BC.FAIL,"Found no orcadir variabla in settings_ash module either. Exiting.",BC.END)
+                exit()
         else:
             self.orcadir = orcadir
 

@@ -273,8 +273,8 @@ class Fragment:
         
         if scale == None:
             try:
-                scale = settings_ash.scale
-                tol = settings_ash.tol
+                scale = settings_ash.settings_dict["scale"]
+                tol = settings_ash.settings_dict["tol"]
                 if self.printlevel >= 2:
                     print("Using global scale and tol parameters from settings_ash. Scale: {} Tol: {} ".format(scale, tol ))
 
@@ -528,8 +528,8 @@ def print_internal_coordinate_table(fragment,actatoms=None):
             chosen_elems=fragment.elems
         
         conndepth=99
-        scale=settings_ash.scale
-        tol=settings_ash.tol
+        scale=settings_ash.settings_dict["scale"]
+        tol=settings_ash.settings_dict["tol"]
         try:
             connectivity = ash.Main.Juliafunctions.calc_connectivity(chosen_coords, chosen_elems, conndepth, scale, tol, eldict_covrad)
         except:
@@ -546,7 +546,7 @@ def print_internal_coordinate_table(fragment,actatoms=None):
         #Looping over atom indices in fragment
         for atom in conn_fragment:
             #print("atom:", atom)
-            connatoms = get_connected_atoms(fragment.coords, fragment.elems,settings_ash.scale,settings_ash.tol,atom)
+            connatoms = get_connected_atoms(fragment.coords, fragment.elems,settings_ash.settings_dict["scale"],settings_ash.settings_dict["tol"],atom)
             #print("connatoms:", connatoms)
             for conn_i in connatoms:
                 dist=distance_between_atoms(fragment=fragment, atom1=atom, atom2=conn_i)
@@ -1609,8 +1609,8 @@ AXIS_REFLECTIONS = np.array([
 #Used by molcrys. Similar to get_solvshell function in functions_solv.py
 def QMregionfragexpand(fragment=None,initial_atoms=None, radius=None):
     #If needed (connectivity ==0):
-    scale=settings_ash.scale
-    tol=settings_ash.tol
+    scale=settings_ash.settings_dict["scale"]
+    tol=settings_ash.settings_dict["tol"]
     if fragment is None or initial_atoms is None or radius == None:
         print("Provide fragment, initial_atoms and radius keyword arguments to QMregionfragexpand!")
         exit()

@@ -167,7 +167,7 @@ class QMMMTheory:
 
             #Check if we need linkatoms by getting boundary atoms dict:
             blankline()
-            self.boundaryatoms = module_coords.get_boundary_atoms(self.qmatoms, self.coords, self.elems, settings_ash.scale, settings_ash.tol, excludeboundaryatomlist=excludeboundaryatomlist)
+            self.boundaryatoms = module_coords.get_boundary_atoms(self.qmatoms, self.coords, self.elems, settings_ash.settings_dict["scale"], settings_ash.settings_dict["tol"], excludeboundaryatomlist=excludeboundaryatomlist)
             
             if len(self.boundaryatoms) >0:
                 print("Found covalent QM-MM boundary. Linkatoms option set to True")
@@ -229,7 +229,7 @@ class QMMMTheory:
         #Creating dictionary for each MM1 atom and its connected atoms: MM2-4
         self.MMboundarydict={}
         for (QM1atom,MM1atom) in self.boundaryatoms.items():
-            connatoms = module_coords.get_connected_atoms(self.coords, self.elems, settings_ash.scale, settings_ash.tol, MM1atom)
+            connatoms = module_coords.get_connected_atoms(self.coords, self.elems, settings_ash.settings_dict["scale"], settings_ash.settings_dict["tol"], MM1atom)
             #Deleting QM-atom from connatoms list
             connatoms.remove(QM1atom)
             self.MMboundarydict[MM1atom] = connatoms

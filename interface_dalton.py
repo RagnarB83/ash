@@ -10,8 +10,8 @@ class DaltonTheory:
     def __init__(self, daltondir=None, fragment=None, charge=None, mult=None, printlevel=2, nprocs=1, pe=False, potfile='',
                  label=None, method=None, response=None, dalton_input=None, basis_name=None,basis_dir=None):
         if daltondir is None:
-            print("No daltondir argument passed to DaltonTheory. Attempting to find daltondir variable inside settings_ash")
-            self.daltondir=settings_ash.daltondir
+            print("No daltondir argument passed to DaltonTheory. Attempting to find daltondir variable inside settings_ash module")
+            self.daltondir=settings_ash.settings_dict["daltondir"]
         else:
             self.daltondir = daltondir
 

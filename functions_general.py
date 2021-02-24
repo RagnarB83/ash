@@ -5,7 +5,7 @@ import time
 from functools import wraps
 
 #ANSI colors: http://jafrog.com/2013/11/23/colors-in-terminal.html
-if settings_ash.use_ANSI_color is True:
+if settings_ash.settings_dict["use_ANSI_color"] == True:
     class BC:
         HEADER = '\033[95m'
         OKBLUE = '\033[94m'
@@ -43,7 +43,7 @@ def int_ranges(nums):
 
 #Debug print. Behaves like print but reads global debug var first
 def printdebug(string,var=''):
-    if settings_ash.debugflag is True:
+    if settings_ash.settings_dict["debugflag"] == True:
         print(BC.OKRED,string,var,BC.END)
 
 def timefn(fn):

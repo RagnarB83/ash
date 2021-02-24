@@ -285,8 +285,8 @@ def molcrys(cif_file=None, xtl_file=None, xyz_file=None, cell_length=None, cell_
                 print("Final connectivity parameters are: Scale: {} and Tol: {}".format(chosenscale, chosentol))
                 print("Setting global scale and tol parameters")
                 #Should be safest option I think. To be revisited
-                settings_ash.tol=chosenscale
-                settings_ash.tol=chosentol
+                settings_ash.settings_dict["scale"]=chosenscale
+                settings_ash.settings_dict["tol"]=chosentol
 
                 print("")
                 break
@@ -302,8 +302,8 @@ def molcrys(cif_file=None, xtl_file=None, xyz_file=None, cell_length=None, cell_
                   "that the cell is not missing atoms or that it contains extra atoms")
             exit(1)
     else:
-        chosenscale=settings_ash.scale
-        chosentol=settings_ash.tol
+        chosenscale=settings_ash.settings_dict["scale"]
+        chosentol=settings_ash.settings_dict["tol"]
         print("Determining connectivity using Scale: {} and Tol: {}".format(chosenscale,chosentol))
 
         #Using the global ASH settings (may have been modified by user)

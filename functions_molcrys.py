@@ -82,9 +82,9 @@ def delete_clashing_atoms(extendedcell,oldcell,extendedelems,oldelems):
 def frag_define(orthogcoords,elems,cell_vectors,fragments,cell_angles=None, cell_length=None, scale=None, tol=None):
 
     if scale is None:
-        scale=settings_ash.scale
+        scale=settings_ash.settings_dict["scale"]
     if tol is None:
-        tol=settings_ash.tol
+        tol=settings_ash.settings_dict["tol"]
 
     blankline()
     print(BC.OKBLUE, BC.BOLD,"Frag_Define: Defining fragments of unit cell", BC.END)
@@ -869,9 +869,9 @@ def create_MMcluster(orthogcoords,elems,cell_vectors,sphereradius):
 #Remove partial fragments of MM cluster
 def remove_partial_fragments(coords,elems,sphereradius,fragmentobjects, scale=None, tol=None, codeversion='julia'):
     if scale is None:
-        scale=settings_ash.scale
+        scale=settings_ash.settings_dict["scale"]
     if tol is None:
-        tol=settings_ash.tol
+        tol=settings_ash.settings_dict["tol"]
 
     print("Removing partial fragments from MM cluster")
     #Finding surfaceatoms
