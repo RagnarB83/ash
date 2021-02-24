@@ -898,7 +898,7 @@ def remove_partial_fragments(coords,elems,sphereradius,fragmentobjects, scale=No
             #from julia.api import Julia
             #from julia import Main
             #ashpath = os.path.dirname(ash.__file__)
-            #Main.include(ashpath + "/functions_julia.jl")
+            #Main.include(ashpath + "/functions/functions_julia.jl")
             #Get list of fragments for all surfaceatoms
             fraglist_temp = Main.Juliafunctions.calc_fraglist_for_atoms(surfaceatoms,coords, elems, 99, scale, tol,eldict_covrad)
             # Converting from numpy to list of lists

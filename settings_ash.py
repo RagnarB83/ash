@@ -11,6 +11,10 @@ from pathlib import Path
 userhome = str(Path.home())
 ashpath = os.path.dirname(ash.__file__)
 
+#Check if interactive session
+interactive_session=bool(getattr(sys, 'ps1', sys.flags.interactive))
+
+
 ############################
 # ASH DEFAULT SETTINGS
 ############################
@@ -97,15 +101,16 @@ def init():
     print("To turn off escape sequences, set:   use_ANSI_color = False   in  ~/ash_user_settings.ini")
     print("")
     
-    #Print input script
+    #Print input script unless interactive session
     if settings_dict["print_input"] is True:
-        inputfilepath=inputfile= os.getcwd()+"/"+sys.argv[0]
-        print("Input script:", inputfilepath )
-        print(functions_general.BC.WARNING,"="*100)
-        with open(inputfilepath) as x: f = x.readlines()
-        for line in f:
-            print(line,end="")
-        print("="*100,functions_general.BC.END)
-        print("")
+        if interactive_session == False:
+            inputfilepath=inputfile= os.getcwd()+"/"+sys.argv[0]
+            print("Input script:", inputfilepath )
+            print(functions_general.BC.WARNING,"="*100)
+            with open(inputfilepath) as x: f = x.readlines()
+            for line in f:
+                print(line,end="")
+            print("="*100,functions_general.BC.END)
+            print("")
 
     
