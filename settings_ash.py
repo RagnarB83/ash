@@ -1,6 +1,7 @@
 import os
 import sys
 import ash
+import functions_general
 import time
 import configparser
 import distutils
@@ -8,79 +9,77 @@ import distutils.util
 parser = configparser.ConfigParser()
 from pathlib import Path
 userhome = str(Path.home())
+ashpath = os.path.dirname(ash.__file__)
 
-#Defining some default ASH settings here
+#Check if interactive session
+interactive_session=bool(getattr(sys, 'ps1', sys.flags.interactive))
+
+
+############################
+# ASH DEFAULT SETTINGS
+############################
+#Defining some default ASH settings here in a dictionary
+settings_dict={}
+
 # (will be overriden by ash_user_settings file variables if present)
+settings_dict["debugflag"] = False
+
+#Julia usage
+settings_dict["load_julia"] = True
 
 #Whether to use ANSI color escape sequences in output or not.
-use_ANSI_color = True
+settings_dict["use_ANSI_color"] = True
 
 #Print logo or not 
-print_logo = True
+settings_dict["print_logo"] = True
 
 #Print inputfile or not in beginning of job
-print_input=True
+settings_dict["print_input"] = True
 
 #Global Connectivity settings
-scale = 1.0
-tol = 0.1
-conndepth = 10
+settings_dict["scale"] = 1.0
+settings_dict["tol"] = 0.1
+settings_dict["conndepth"] = 10
 
 
-#Path to codes can be defined here (incompatible with git pull though. If regularly updating code via git, use configuration file below instead)
-#orcadir='/path/to/orca'
-#xtbdir='/path/to/xtbdir'
+############################
+# ASH READ USER SETTINGS
+############################
 
 #Read additional user configuration file if present. Should be present in $HOME.
-#WILL overwrite settings above
-#Introduced to bypass git conflicts of settings_ash.py. Also useful if user does not have access to source-code
-#Format of file ash_user_settings.ini:
-#[Settings]
-#orcadir = /Applications/orca_4.2.1
-
-ashpath = os.path.dirname(ash.__file__)
+#WILL overwrite default settings above
 parser.read(userhome+"/"+"ash_user_settings.ini")
-try:
-    orcadir = parser.get("Settings","orcadir")
-    scale = float(parser.get("Settings","scale"))
-    tol = float(parser.get("Settings","tol"))
-    #Handling Booleans
-    use_ANSI_color = bool(distutils.util.strtobool(parser.get("Settings","use_ANSI_color")))
-    print_input = bool(distutils.util.strtobool(parser.get("Settings","print_input")))
-    print_logo = bool(distutils.util.strtobool(parser.get("Settings","print_logo")))
-    
-except:
-    pass
 
-
-def init():
-    """
-    ASH initial output. Used to print header (logo, version etc.), set initial time, print inputscript etc.
-    """
-    #Initializes time
-    global init_time
-    init_time=time.time()
-    
-    #Comment out to skip printing of header
-    if print_logo is True:
-        ash.print_ash_header()
-
-    print("ASH path:", ashpath)
-    print("Using global settings:\nConnectivity scale: {} and tol: {}".format(scale,tol))
-    print("Setting initial time")
-    print("Note: ASH uses ANSI escape sequences for displaying color. Use less -R to display or set LESS=-R environment variable")
-    print("To turn off escape sequences, see settings_ash.py")
-    print("")
-    
-    #Print input script
-    if print_input is True:
-        inputfilepath=inputfile= os.getcwd()+"/"+sys.argv[0]
-        print("Input script:", inputfilepath )
-        print(ash.functions_general.BC.WARNING,"="*100)
-        with open(inputfilepath) as x: f = x.readlines()
-        for line in f:
-            print(line,end="")
-        print("="*100,ash.functions_general.BC.END)
-        print("")
-
-    
+def try_read_setting(stringvalue,datatype):
+    try:
+        if datatype == "string":
+                settings_dict[stringvalue] = str(parser.get("Settings",stringvalue))
+        elif datatype == "float":
+            settings_dict[stringvalue] = float(parser.get("Settings",stringvalue))
+        elif datatype == "int":
+            settings_dict[stringvalue] = int(parser.get("Settings",stringvalue))
+        elif datatype == "bool":
+            if parser.get("Settings",stringvalue) == 'True':
+                settings_dict[stringvalue] = True
+            elif parser.get("Settings",stringvalue) == 'False':
+                settings_dict[stringvalue] = False
+        else:
+            settings_dict[stringvalue] = parser.get("Settings",stringvalue)
+    except:
+        pass
+        #print("EXCEPTION!!!!. stringvalue:", stringvalue)
+        
+# Keywords to look up in ash_user_settings.ini
+try_read_setting("orcadir","string")
+try_read_setting("daltondir","string")
+try_read_setting("xtbdir","string")
+try_read_setting("psi4dir","string")
+try_read_setting("cfourdir","string")
+try_read_setting("crestdir","string")
+try_read_setting("scale","float")
+try_read_setting("tol","float")
+try_read_setting("use_ANSI_color","bool")
+try_read_setting("print_input","bool")
+try_read_setting("print_logo","bool")
+try_read_setting("debugflag","bool")
+try_read_setting("load_julia","bool")

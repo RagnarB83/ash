@@ -1,8 +1,0 @@
-1. See ash.readthedocs.io for detailed instructions
-1b. Make sure Python and Julia in Path
-2. Run:
-
-3. Molcrys dependency: Molden2aim compilation
-   cd ./external/Molden2AIM/src
-   F90 = gfortran
-   $F90 -O3 edflib.f90 edflib-pbe0.f90 molden2aim.f90 -o molden2aim.exe
