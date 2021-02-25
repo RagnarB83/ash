@@ -1,6 +1,4 @@
-#does not work to import this for some reason
-
-#TODO: Look into: https://github.com/awvwgk/QCElemental
+#TODO: Look into alternative https://github.com/awvwgk/QCElemental
 
 
 #Dictionary to handle fragments. e.g. mainfrag will contain list of unique elements, charge and multiplicity:
