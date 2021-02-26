@@ -112,7 +112,7 @@ def calc_surface(fragment=None, theory=None, workflow=None, scantype='Unrelaxed'
                 print("surfacepointfragments_lists: ", surfacepointfragments_lists)
                 surfacedictionary = functions_parallel.Singlepoint_parallel(fragments=surfacepointfragments_lists, theories=[theory], numcores=numcores)
                 print("Parallel calculation done!")
-                print("results:", results)
+                print("surfacedictionary:", surfacedictionary)
                 
                 #Gathering results in dictionary
                 #NOTE: WRONG, to be fixed
