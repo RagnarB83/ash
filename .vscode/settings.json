@@ -1,5 +1,5 @@
 {
     "python.linting.pylintEnabled": true,
     "python.linting.enabled": true,
-    "python.pythonPath": "/Users/bjornssonsu/anaconda3/bin/python"
+    "python.pythonPath": "/usr/local/bin/python3"
 }

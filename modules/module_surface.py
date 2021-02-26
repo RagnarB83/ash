@@ -1,12 +1,13 @@
 import math
 import os
 import glob
+import shutil
 
 import ash
 from functions_general import frange
 import interface_geometric
-import shutil
 from module_freq import calc_rotational_constants
+import module_surface
 
 #Calculate 1D or 2D surface, either relaxed or unrelaxed.
 # TODO: Finish parallelize surfacepoint calculations

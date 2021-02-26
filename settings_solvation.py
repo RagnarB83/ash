@@ -1,3 +1,6 @@
+
+#NOTE: Settings for solvation module. To be revisited
+
 class Sphere:
     def __init__(self, name, path, file, numatoms):
         self.Name = name

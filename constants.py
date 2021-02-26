@@ -4,6 +4,7 @@
 #hartree conversions
 #harkcal = 627.50946900
 #harkcal = 627.5096080305927
+hartokcal = 627.5094740631
 harkcal = 627.5094740631
 hartocm = 219474.6313702
 #hartokj = 2625.5002
