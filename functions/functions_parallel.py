@@ -15,7 +15,7 @@ def Single_par(list):
     fragment=list[1]
     #Making label flexible. Can be tuple but inputfilename is converted to string below
     label=list[2]
-
+    print("label:", label)
     #Creating separate inputfilename using label
     #Removing . in inputfilename as ORCA can get confused
     #print("theory:", theory)
@@ -76,8 +76,10 @@ def Singlepoint_parallel(fragments=None, theories=None, numcores=None):
         #NOTE: Python 3.8 and higher use spawn in MacOS. Leads to ash import problems
         #NOTE: Unix/Linux uses fork which seems better behaved
         results = pool.map(Single_par, [[theory,fragment, fragment.label] for fragment in fragments])
+        
         pool.close()
         print("Calculations are done")
+        print("results:", results)
     # Case: Multiple theories, 1 fragment
     elif len(fragments) == 1:
         print("Case: Multiple theories but one fragment")
