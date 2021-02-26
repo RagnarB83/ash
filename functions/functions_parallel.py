@@ -16,7 +16,6 @@ def Single_par(list):
     fragment=list[1]
     #Making label flexible. Can be tuple but inputfilename is converted to string below
     label=list[2]
-    print("label:", label)
     if label is None:
         print("No label provided to fragment or theory objects. This is required to distinguish between calculations ")
         print("Exiting...")
@@ -25,11 +24,10 @@ def Single_par(list):
     #Using label (could be tuple) to create a labelstring which is used to name inputfiles
 
     if type(label) == tuple: 
-        labelstring=str(label[0])+'_'+str(label[1])
+        labelstring=str(str(label[0])+'_'+str(label[1])).replace('.','_')
     else:
         labelstring=str(label).replace('.','_')
 
-    print("labelstring:", labelstring)
     #Creating separate inputfilename using label
     #Removing . in inputfilename as ORCA can get confused
     if theory.__class__.__name__ == "ORCATheory":
