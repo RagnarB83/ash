@@ -27,13 +27,14 @@ def Single_par(list):
     if type(label) == tuple: 
         labelstring=str(label[0])+'_'+str(label[1])
     else:
-        labelstring=label
+        labelstring=str(label).replace('.','_')
 
     print("labelstring:", labelstring)
     #Creating separate inputfilename using label
     #Removing . in inputfilename as ORCA can get confused
     if theory.__class__.__name__ == "ORCATheory":
-        theory.filename=''.join([str(i) for i in labelstring].replace('.','_'))
+        #theory.filename=''.join([str(i) for i in labelstring])
+        theory.filename=labelstring
     #TODO: filename changes for other codes ?
 
     coords = fragment.coords
