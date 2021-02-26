@@ -1,6 +1,6 @@
 import copy
 import multiprocessing as mp
-
+import os
 
 import ash
 from functions_general import BC,blankline
@@ -8,6 +8,7 @@ from functions_general import BC,blankline
 
 
 #Stripped down version of Singlepoint function for Singlepoint_parallel
+#TODO: This function is ORCA-centric. Needs to be generalized 
 def Single_par(list):
     #Creating new copy of theory to prevent Brokensym feature from being deactivated by each run
     #NOTE: Alternatively we can add an if-statement inside orca.run
@@ -16,22 +17,35 @@ def Single_par(list):
     #Making label flexible. Can be tuple but inputfilename is converted to string below
     label=list[2]
     print("label:", label)
-    #Creating separate inputfilename using label
-    #Removing . in inputfilename as ORCA can get confused
-    #print("theory:", theory)
-    theory.filename=''.join([str(i) for i in list[2]]).replace('.','_')
-    #print("theory.inputfilename:", theory.inputfilename)
     if label is None:
         print("No label provided to fragment or theory objects. This is required to distinguish between calculations ")
         print("Exiting...")
         exit(1)
 
+    #Using label (could be tuple) to create a labelstring which is used to name inputfiles
+
+    if type(label) == tuple: 
+        labelstring=str(l[0])+'_'+str(l[1])
+    else:
+        labelstring=label
+
+    print("labelstring:", labelstring)
+    #Creating separate inputfilename using label
+    #Removing . in inputfilename as ORCA can get confused
+    if theory.__class__.__name__ == "ORCATheory":
+        theory.filename=''.join([str(i) for i in labelstring).replace('.','_')
+    #TODO: filename changes for other codes ?
+
     coords = fragment.coords
     elems = fragment.elems
+    #Creating new dir and running calculation inside
+    os.mkdir(labelstring)
+    os.chdir(labelstring)
     print(BC.WARNING,"Doing single-point Energy job on fragment. Formula: {} Label: {} ".format(fragment.prettyformula,fragment.label), BC.END)
     print("\n\nProcess ID {} is running calculation with label: {} \n\n".format(mp.current_process(),label))
 
     energy = theory.run(current_coords=coords, elems=elems, label=label)
+    os.chdir('..')
     print("Energy: ", energy)
     # Now adding total energy to fragment
     fragment.energy = energy
