@@ -75,8 +75,7 @@ def Singlepoint_parallel(fragments=None, theories=None, numcores=None):
         theory = theories[0]
         #NOTE: Python 3.8 and higher use spawn in MacOS. Leads to ash import problems
         #NOTE: Unix/Linux uses fork which seems better behaved
-        #results = pool.map(Single_par, [[theory,fragment, fragment.label] for fragment in fragments])
-        pool.map(bla,[1,2])
+        results = pool.map(Single_par, [[theory,fragment, fragment.label] for fragment in fragments])
         pool.close()
         print("Calculations are done")
     # Case: Multiple theories, 1 fragment
