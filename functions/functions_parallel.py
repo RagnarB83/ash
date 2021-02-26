@@ -25,7 +25,7 @@ def Single_par(list):
     #Using label (could be tuple) to create a labelstring which is used to name inputfiles
 
     if type(label) == tuple: 
-        labelstring=str(l[0])+'_'+str(l[1])
+        labelstring=str(label[0])+'_'+str(label[1])
     else:
         labelstring=label
 
