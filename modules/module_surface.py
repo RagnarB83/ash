@@ -94,6 +94,7 @@ def calc_surface(fragment=None, theory=None, workflow=None, scantype='Unrelaxed'
                             #Shallow copy of fragment
                             newfrag = copy.copy(fragment)
                             newfrag.label = str(RCvalue1)+"_"+str(RCvalue2)
+                            newfrag.write_xyzfile(xyzfilename="RC1_"+str(RCvalue1)+"-RC2_"+str(RCvalue2)+".xyz")
                             surfacepointfragments[(RCvalue1,RCvalue2)] = newfrag
                             #Single-point ORCA calculation on adjusted geometry
                             #energy = ash.Singlepoint(fragment=fragment, theory=theory)
