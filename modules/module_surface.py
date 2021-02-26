@@ -8,6 +8,7 @@ import ash
 from functions_general import frange
 import interface_geometric
 from module_freq import calc_rotational_constants
+import functions_parallel
 
 #Calculate 1D or 2D surface, either relaxed or unrelaxed.
 # TODO: Finish parallelize surfacepoint calculations
@@ -92,7 +93,7 @@ def calc_surface(fragment=None, theory=None, workflow=None, scantype='Unrelaxed'
                             interface_geometric.geomeTRICOptimizer(fragment=fragment, theory=zerotheory, maxiter=maxiter, coordsystem=coordsystem, constraints=allconstraints, constrainvalue=True, convergence_setting=convergence_setting)
                             #Shallow copy of fragment
                             newfrag = copy.copy(fragment)
-                            newfrag.label = str(RCvalue1)+"_"+str(RCvalue1)
+                            newfrag.label = str(RCvalue1)+"_"+str(RCvalue2)
                             surfacepointfragments[(RCvalue1,RCvalue2)] = newfrag
                             #Single-point ORCA calculation on adjusted geometry
                             #energy = ash.Singlepoint(fragment=fragment, theory=theory)
@@ -100,7 +101,7 @@ def calc_surface(fragment=None, theory=None, workflow=None, scantype='Unrelaxed'
                 #TODO: sort this list??
                 surfacepointfragments_lists = list(surfacepointfragments.values())
                 print("surfacepointfragments_lists: ", surfacepointfragments_lists)
-                results = ash.Singlepoint_parallel(fragments=surfacepointfragments_lists, theories=[theory], numcores=numcores)
+                results = functions_parallel.Singlepoint_parallel(fragments=surfacepointfragments_lists, theories=[theory], numcores=numcores)
                 print("Parallel calculation done!")
                 print("results:", results)
                 

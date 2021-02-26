@@ -19,7 +19,7 @@ class ORCATheory:
             try:
                 self.orcadir=settings_ash.settings_dict["orcadir"]
             except:
-                print(BC.FAIL,"Found no orcadir variabla in settings_ash module either. Exiting.",BC.END)
+                print(BC.FAIL,"Found no orcadir variable in settings_ash module either. Exiting.",BC.END)
                 exit()
         else:
             self.orcadir = orcadir

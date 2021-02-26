@@ -1,6 +1,7 @@
 import copy
 import multiprocessing as mp
 
+
 import ash
 from functions_general import BC,blankline
 #Various calculation-functions run in parallel
@@ -14,7 +15,7 @@ def Single_par(list):
     fragment=list[1]
     #Making label flexible. Can be tuple but inputfilename is converted to string below
     label=list[2]
-    
+
     #Creating separate inputfilename using label
     #Removing . in inputfilename as ORCA can get confused
     #print("theory:", theory)
@@ -35,6 +36,11 @@ def Single_par(list):
     # Now adding total energy to fragment
     fragment.energy = energy
     return (label,energy)
+
+
+def bla(blux):
+    print("here")
+    print(blux)
 
 #PARALLEL Single-point energy function
 #will run over fragments, over theories or both
@@ -67,7 +73,10 @@ def Singlepoint_parallel(fragments=None, theories=None, numcores=None):
         print("Case: Multiple fragments but one theory")
         print("Making copy of theory object")
         theory = theories[0]
-        results = pool.map(Single_par, [[theory,fragment, fragment.label] for fragment in fragments])
+        #NOTE: Python 3.8 and higher use spawn in MacOS. Leads to ash import problems
+        #NOTE: Unix/Linux uses fork which seems better behaved
+        #results = pool.map(Single_par, [[theory,fragment, fragment.label] for fragment in fragments])
+        pool.map(bla,[1,2])
         pool.close()
         print("Calculations are done")
     # Case: Multiple theories, 1 fragment
