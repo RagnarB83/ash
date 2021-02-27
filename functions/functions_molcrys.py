@@ -893,6 +893,7 @@ def remove_partial_fragments(coords,elems,sphereradius,fragmentobjects, scale=No
     fraglist=[]
     if codeversion=='julia':
         print("using julia for finding surface atoms")
+        fraglist_temp = ash.Main.Juliafunctions.calc_fraglist_for_atoms(surfaceatoms,coords, elems, 99, scale, tol,eldict_covrad)
         try:
             # Import Julia
             #from julia.api import Julia
