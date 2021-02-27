@@ -900,7 +900,7 @@ def remove_partial_fragments(coords,elems,sphereradius,fragmentobjects, scale=No
             #ashpath = os.path.dirname(ash.__file__)
             #Main.include(ashpath + "/functions/functions_julia.jl")
             #Get list of fragments for all surfaceatoms
-            fraglist_temp = Main.Juliafunctions.calc_fraglist_for_atoms(surfaceatoms,coords, elems, 99, scale, tol,eldict_covrad)
+            fraglist_temp = ash.Main.Juliafunctions.calc_fraglist_for_atoms(surfaceatoms,coords, elems, 99, scale, tol,eldict_covrad)
             # Converting from numpy to list of lists
             for sublist in fraglist_temp:
                 fraglist.append(list(sublist))
@@ -990,7 +990,7 @@ def reordercluster(fragment,fragmenttype,code_version='py'):
         #print(fragmenttype.clusterfraglist[5])
         #Converting from 0-based to 1-based indexing before passing to Julia
         jul_fraglists=[[number+1 for number in group] for group in fraglists]
-        new_jul_fraglists = Main.Juliafunctions.reorder_cluster_julia(fragment.elems,fragment.coords,jul_fraglists)
+        new_jul_fraglists = ash.Main.Juliafunctions.reorder_cluster_julia(fragment.elems,fragment.coords,jul_fraglists)
         print("new_jul_fraglists:", new_jul_fraglists)
         #Converting back from 1-based indexing to 0-based indexing
         fragmenttype.clusterfraglist=[[number-1 for number in group] for group in new_jul_fraglists]

@@ -8,7 +8,7 @@ from functions_general import BC,blankline
 
 
 #Stripped down version of Singlepoint function for Singlepoint_parallel
-#TODO: This function is ORCA-centric. Needs to be generalized 
+#TODO: This function may still be a bit ORCA-centric. Needs to be generalized 
 def Single_par(list):
     #Creating new copy of theory to prevent Brokensym feature from being deactivated by each run
     #NOTE: Alternatively we can add an if-statement inside orca.run

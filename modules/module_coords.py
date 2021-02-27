@@ -304,10 +304,10 @@ class Fragment:
             print("Calculating connectivity of fragment using julia")
             # Import Julia
             try:
-                from julia.api import Julia
-                from julia import Main
+                #from julia.api import Julia
+                #from julia import Main
                 timestampB = time.time()
-                fraglist_temp = Main.Juliafunctions.calc_connectivity(self.coords, self.elems, conndepth, scale, tol,
+                fraglist_temp = ash.Main.Juliafunctions.calc_connectivity(self.coords, self.elems, conndepth, scale, tol,
                                                                       eldict_covrad)
                 fraglist = []
                 # Converting from numpy to list of lists

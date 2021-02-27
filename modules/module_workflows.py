@@ -272,7 +272,7 @@ def thermochemprotocol_reaction(Opt_theory=None, SP_theory=None, fraglist=None, 
     
     print("")
     print(BC.WARNING, BC.BOLD, "------------THERMOCHEM PROTOCOL END-------------", BC.END)
-    ash.print_time_rel(settings_ash.init_time,modulename='Entire thermochemprotocol')
+    ash.print_time_rel(ash_header.init_time,modulename='Entire thermochemprotocol')
 
 
 
@@ -384,6 +384,6 @@ def old_thermochemprotocol(Opt_theory=None, SP_theory=None, fraglist=None, stoic
     
     print("")
     print(BC.WARNING, BC.BOLD, "------------THERMOCHEM PROTOCOL END-------------", BC.END)
-    ash.print_time_rel(settings_ash.init_time,modulename='Entire thermochemprotocol')
+    ash.print_time_rel(ash_header.init_time,modulename='Entire thermochemprotocol')
     
 
