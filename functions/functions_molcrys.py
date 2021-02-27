@@ -1,6 +1,6 @@
 import numpy as np
 from functions_general import blankline,uniq,printdebug,print_time_rel_and_tot,print_time_rel,BC
-from module_coords import elemlisttoformula,molformulatolist,nucchargelist,totmasslist,write_xyzfile,isElementList,einsum_mat,get_molecule_members_loop_np2,reorder,reorder_hungarian_scipy
+from module_coords import elemlisttoformula,molformulatolist,nucchargelist,totmasslist,write_xyzfile,isElementList,einsum_mat,get_molecule_members_loop_np2,reorder,reorder_hungarian_scipy,eldict_covrad
 import interface_ORCA
 from interface_xtb import grabatomcharges_xTB
 from module_MM import UFFdict
@@ -893,7 +893,6 @@ def remove_partial_fragments(coords,elems,sphereradius,fragmentobjects, scale=No
     fraglist=[]
     if codeversion=='julia':
         print("using julia for finding surface atoms")
-        fraglist_temp = ash.Main.Juliafunctions.calc_fraglist_for_atoms(surfaceatoms,coords, elems, 99, scale, tol,eldict_covrad)
         try:
             # Import Julia
             #from julia.api import Julia
