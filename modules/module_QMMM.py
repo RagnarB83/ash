@@ -414,14 +414,14 @@ class QMMMTheory:
             
             self.ShiftMMCharges() # Creates self.pointcharges
             #print("After: self.pointcharges are: ", self.pointcharges)
-            print("len self.pointcharges: ", len(self.pointcharges))
+            print("Num pointcharges for full system: ", len(self.pointcharges))
             
             #TODO: Code alternative to Charge-shifting: L2 scheme which deletes whole charge-group that MM1 belongs to
             
             # Defining pointcharges as only containing MM atoms
             self.pointcharges=[self.pointcharges[i] for i in self.mmatoms]
             #print("After: self.pointcharges are: ", self.pointcharges)
-            print("len self.pointcharges: ", len(self.pointcharges))
+            print("Num pointcharges for MM system: ", len(self.pointcharges))
             #Set 
             self.SetDipoleCharges() #Creates self.dipole_charges and self.dipole_coords
 
@@ -432,7 +432,7 @@ class QMMMTheory:
             #Adding dipole charges to MM charges list (given to QM code)
             #TODO: Rename as pcharges list so as not to confuse with what MM code sees??
             self.pointcharges=self.pointcharges+self.dipole_charges
-            print("len self.pointcharges after dipole addition: ", len(self.pointcharges))
+            print("Num pointcharges after dipole addition: ", len(self.pointcharges))
         else:
             #If no linkatoms then use original self.qmelems
             current_qmelems = self.qmelems

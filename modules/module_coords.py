@@ -590,7 +590,13 @@ def isElementList(list):
 
 #From lists of coords,elems and atom indices, print coords with elem
 def print_coords_for_atoms(coords,elems,members):
+    print("members:", members)
     for m in members:
+        print("m:", m)
+        print("elems[m]:", elems[m])
+        print("coords[m][0]", coords[m][0])
+        print("coords[m][2]", coords[m][1])
+        print("coords[m][2]", coords[m][2])
         print("{:>4} {:>12.8f}  {:>12.8f}  {:>12.8f}".format(elems[m],coords[m][0], coords[m][1], coords[m][2]))
 
 #From lists of coords,elems and atom indices, write XYZ file coords with elem

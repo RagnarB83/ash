@@ -507,12 +507,27 @@ def printfreqs(vfreq,numatoms):
             print(line)
         else:
             print("vfreq[mode]:", vfreq[mode])
-            print("type of vfreq[mode]", type(vfreq[mode]))
-            vib=clean_number(vfreq[mode])
-            print("vib:", vib)
-            print("type of vib", type(vib))
-            line = "{:>3d}   {:>9.4f}".format(mode, vib)
-            print(line)
+            realpart=vfreq[mode].real
+            imagpart=vfreq[mode].imag
+            print("realpart:", realpart)
+            print("imagpart:", imagpart)
+            if realpart == 0.0:
+                vib=imagpart
+                line = "{:>3d}   {:>9.4f}i".format(mode, vib)
+                print(line)
+            elif imagpart == 0.0:
+                vib=clean_number(vfreq[mode])
+                line = "{:>3d}   {:>9.4f}".format(mode, vib)
+                print(line)
+            else:
+                print("vfreq[mode]:", vfreq[mode])
+                print("realpart:", realpart)
+                print("imagpart:", imagpart)
+                print("hmmm")
+                exit()
+            #print("vib:", vib)
+            #print("type of vib", type(vib))
+
 
 # Function to print normal mode composition factors for all atoms, element-groups, specific atom groups or specific atoms
 def printnormalmodecompositions(option,TRmodenum,vfreq,numatoms,elems,evectors,atomlist):
