@@ -88,6 +88,9 @@ def NumFreq(fragment=None, theory=None, npoint=1, displacement=0.0005, hessatoms
     current_coords_array=np.array(coords)
 
     print("Printing hessatoms geometry...")
+    print("Hessatoms:", hessatoms)
+    print(elems)
+    print(coords)
     module_coords.print_coords_for_atoms(coords,elems,hessatoms)
     blankline()
 
@@ -378,7 +381,7 @@ def NumFreq(fragment=None, theory=None, npoint=1, displacement=0.0005, hessatoms
     print("Normal modes:")
     #TODO: Eigenvectors print here.
     #TODO: or perhaps elemental normal mode composition factors
-    print("Eigenvectors to be  be printed here")
+    print("Eigenvectors to be printed here")
     blankline()
     #Print out Freq output. Maybe print normal mode compositions here instead???
     printfreqs(frequencies,len(hessatoms))
@@ -503,7 +506,11 @@ def printfreqs(vfreq,numatoms):
             line = "{:>3d}   {:>9.4f}".format(mode,0.000)
             print(line)
         else:
+            print("vfreq[mode]:", vfreq[mode])
+            print("type of vfreq[mode]", type(vfreq[mode]))
             vib=clean_number(vfreq[mode])
+            print("vib:", vib)
+            print("type of vib", type(vib))
             line = "{:>3d}   {:>9.4f}".format(mode, vib)
             print(line)
 
@@ -757,13 +764,11 @@ def thermochemcalc(vfreq,atoms,fragment, multiplicity, temp=298.15,pressure=1.0)
         freqs=[]
         vibtemps=[]
         for mode in range(0, 3 * len(atoms)):
-            print(mode)
             if mode < TRmodenum:
                 continue
                 #print("skipping TR mode with freq:", clean_number(vfreq[mode]) )
             else:
                 vib = clean_number(vfreq[mode])
-                #NOTE: probably deprecated case 
                 if np.iscomplex(vib):
                     print("Mode {} with frequency {} is imaginary. Skipping in thermochemistry".format(mode,vib))
                 elif vib < 0:
@@ -882,7 +887,7 @@ def thermochemcalc(vfreq,atoms,fragment, multiplicity, temp=298.15,pressure=1.0)
     print("--------------------")
     print("Temperature:", temp, "K")
     print("Pressure:", pressure, "atm")
-    print("Total atomlist:", fragment.atomlist)
+    #print("Total atomlist:", fragment.atomlist)
     print("Hessian atomlist:", atoms)
     print("Masses:", masses)
     print("Total mass:", totalmass)

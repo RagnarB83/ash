@@ -538,7 +538,7 @@ def print_internal_coordinate_table(fragment,actatoms=None):
     else:
         connectivity=fragment.connectivity
     
-    
+    print("connectivity:", connectivity)
     #Looping over connected fragments
     bondpairs=[]
     bondpairsdict={}
@@ -570,6 +570,8 @@ def print_internal_coordinate_table(fragment,actatoms=None):
         elB=fragment.elems[listkey[1]]
         print("Bond: {:8}{:4} - {:4}{:4} {:>6.3f}".format(listkey[0],elA,listkey[1],elB, val ))
     print('='*50)
+
+
 #Function to check if string corresponds to an element symbol or not.
 #Compares in lowercase
 def isElement(string):

@@ -406,7 +406,6 @@ class QMMMTheory:
             current_qmelems=self.qmelems + ['H']*len(linkatoms_dict)
             print("")
             #print("current_qmelems :", current_qmelems)
-            print(len(current_qmelems))
             
             #Charge-shifting + Dipole thing
             print("Doing charge-shifting...")
@@ -434,8 +433,6 @@ class QMMMTheory:
             #TODO: Rename as pcharges list so as not to confuse with what MM code sees??
             self.pointcharges=self.pointcharges+self.dipole_charges
             print("len self.pointcharges after dipole addition: ", len(self.pointcharges))
-            print(len(self.pointcharges))
-            print(len(self.pointchargecoords))
         else:
             #If no linkatoms then use original self.qmelems
             current_qmelems = self.qmelems
