@@ -1,3 +1,9 @@
+"""
+Workflows module
+
+Functions defining multi-step workflows
+
+"""
 import os
 import subprocess as sp
 import shutil
@@ -12,9 +18,21 @@ import interface_crest
 from functions_general import BC
 import settings_ash
 
-#Various workflows,
 
 def ReactionEnergy(stoichiometry=None, list_of_fragments=None, list_of_energies=None, unit='kcal/mol', label=None, reference=None):
+    """Calculate reaction energy from list of energies (or energies from list of fragments) and stoichiometry
+
+    Args:
+        stoichiometry (list, optional): list of integers, e.g. [-1,-1,1,1]. Defaults to None.
+        list_of_fragments ([type], optional): [description]. Defaults to None.
+        list_of_energies ([type], optional): [description]. Defaults to None.
+        unit (str, optional): [description]. Defaults to 'kcal/mol'.
+        label ([type], optional): [description]. Defaults to None.
+        reference ([type], optional): [description]. Defaults to None.
+
+    Returns:
+        [type]: [description]
+    """
     conversionfactor = { 'kcal/mol' : 627.50946900, 'kcalpermol' : 627.50946900, 'kJ/mol' : 2625.499638, 'kJpermol' : 2625.499638, 
                         'eV' : 27.211386245988, 'cm-1' : 219474.6313702 }
     if label is None:
