@@ -41,7 +41,9 @@ def AnFreq(fragment=None, theory=None, numcores=1, temp=298.15, pressure=1.0):
 
 
 #Numerical frequencies function
-def NumFreq(fragment=None, theory=None, npoint=1, displacement=0.0005, hessatoms=None, numcores=1, runmode='serial', temp=298.15, pressure=1.0):
+#NOTE: displacement was set to 0.0005 Angstrom
+#ORCA uses 0.005 Bohr = 0.0026458861 Ang, CHemshell uses 0.01 Bohr = 0.00529 Ang
+def NumFreq(fragment=None, theory=None, npoint=1, displacement=0.005, hessatoms=None, numcores=1, runmode='serial', temp=298.15, pressure=1.0):
     
     print(BC.WARNING, BC.BOLD, "------------NUMERICAL FREQUENCIES-------------", BC.END)
     shutil.rmtree('Numfreq_dir', ignore_errors=True)
@@ -89,9 +91,6 @@ def NumFreq(fragment=None, theory=None, npoint=1, displacement=0.0005, hessatoms
     current_coords_array=np.array(coords)
 
     print("Printing hessatoms geometry...")
-    print("Hessatoms:", hessatoms)
-    print(elems)
-    print(coords)
     module_coords.print_coords_for_atoms(coords,elems,hessatoms)
     blankline()
 
