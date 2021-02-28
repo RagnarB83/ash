@@ -399,9 +399,9 @@ def NumFreq(fragment=None, theory=None, npoint=1, displacement=0.005, hessatoms=
 
     #Print out thermochemistry
     if theory.__class__.__name__ == "QMMMTheory":
-        Thermochemistry = thermochemcalc(frequencies,hessatoms, fragment, theory.qm_theory.mult, temp=temp,pressure=pressure)
+        Thermochemistry = thermochemcalc(frequencies,hessatoms, fragment, theory.qm_theory.mult, temp=temp,pressure=pressure, hessatoms_masses=hessmasses)
     else:
-        Thermochemistry = thermochemcalc(frequencies,hessatoms, fragment, theory.mult, temp=temp,pressure=pressure)
+        Thermochemistry = thermochemcalc(frequencies,hessatoms, fragment, theory.mult, temp=temp,pressure=pressure, hessatoms_masses=hessmasses)
 
 
     #Add Hessian to fragment
@@ -778,6 +778,7 @@ def thermochemcalc(vfreq,atoms,fragment, multiplicity, temp=298.15,pressure=1.0)
     
     coords=fragment.coords
     elems=fragment.elems
+
     masses=fragment.list_of_masses
     totalmass=sum(masses)
     
@@ -913,7 +914,7 @@ def thermochemcalc(vfreq,atoms,fragment, multiplicity, temp=298.15,pressure=1.0)
     print("Pressure:", pressure, "atm")
     #print("Total atomlist:", fragment.atomlist)
     print("Hessian atomlist:", atoms)
-    print("Masses:", masses)
+    #print("Masses:", masses)
     print("Total mass:", totalmass)
     print("")
 
