@@ -1,3 +1,6 @@
+"""
+Functions to print header, logo, inputscript etc.
+"""
 import time
 import os
 import sys
@@ -7,9 +10,7 @@ import ash
 from functions_general import BC
 
 
-############################
-# ASH PRINT HEADER
-############################
+
 
 def print_header():
     """

@@ -446,19 +446,18 @@ class QMMMTheory:
             #If no linkatoms MM coordinates are the same
             self.pointchargecoords=self.mmcoords
        
-        #TODO: Now we have updated MM-coordinates (if doing linkatoms, wtih dipolecharges etc) and updated mm-charges (more, due to dipolecharges if linkatoms)
+        #NOTE: Now we have updated MM-coordinates (if doing linkatoms, wtih dipolecharges etc) and updated mm-charges (more, due to dipolecharges if linkatoms)
         # We also have MMcharges that have been set to zero due to QM/mm
         # Choice: should we now delete charges that are zero or not. chemshell does
-        #TODO: do here or have QM-theory do it. probably best to do here (otherwise we have to write multiple QM interface routines)
+        #NOTE: do here or have QM-theory do it. probably best to do here (otherwise we have to write multiple QM interface routines)
         
 
         #Removing zero-valued charges
         #NOTE: Problem, if we remove zero-charges we lose our indexing as the charges removed could be anywhere
-        # NOTE: Test: Let's not remove them.
+        # NOTE: Thus not removing them.
         print("Number of charges :", len(self.pointcharges))
         #print("Removing zero-valued charges")
         #self.pointcharges, self.pointchargecoords = remove_zero_charges(self.pointcharges, self.pointchargecoords)
-        print("Number of charges :", len(self.pointcharges))
         print("Number of charge coordinates :", len(self.pointchargecoords))
         print_time_rel(CheckpointTime, modulename='QM/MM run prep')
         
@@ -687,7 +686,7 @@ class QMMMTheory:
                     #print("type self.MMgradient", type(self.MMgradient))
                     #print("fullatomindex_mm:", fullatomindex_mm)
                     Mgrad=self.MMgradient[fullatomindex_mm]
-                    print("Mgrad: ", Mgrad)
+                    #print("Mgrad: ", Mgrad)
                     Qgrad,Mgrad= linkatom_force_fix(Qcoord, Mcoord, Lcoord, Qgrad,Mgrad,Lgrad)
                     #print("Qgrad: ", Qgrad)
                     #print("Mgrad: ", Mgrad)
