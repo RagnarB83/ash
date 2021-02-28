@@ -382,7 +382,7 @@ class QMMMTheory:
         #1. Get linkatoms coordinates
         if self.linkatoms==True:
             linkatoms_dict = module_coords.get_linkatom_positions(self.boundaryatoms,self.qmatoms, current_coords, self.elems)
-            print("linkatoms_dict:", linkatoms_dict)
+            printdebug("linkatoms_dict:", linkatoms_dict)
             #2. Add linkatom coordinates to qmcoords???
             print("Adding linkatom positions to QM coords")
             
@@ -390,7 +390,7 @@ class QMMMTheory:
             linkatoms_indices=[]
             
             #Sort by QM atoms:
-            print("linkatoms_dict.keys :", linkatoms_dict.keys())
+            printdebug("linkatoms_dict.keys :", linkatoms_dict.keys())
             for pair in sorted(linkatoms_dict.keys()):
                 print("Pair :", pair)
                 self.qmcoords.append(linkatoms_dict[pair])

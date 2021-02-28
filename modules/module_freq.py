@@ -506,11 +506,11 @@ def printfreqs(vfreq,numatoms):
             line = "{:>3d}   {:>9.4f}".format(mode,0.000)
             print(line)
         else:
-            print("vfreq[mode]:", vfreq[mode])
+            #print("vfreq[mode]:", vfreq[mode])
             realpart=vfreq[mode].real
             imagpart=vfreq[mode].imag
-            print("realpart:", realpart)
-            print("imagpart:", imagpart)
+            #print("realpart:", realpart)
+            #print("imagpart:", imagpart)
             if realpart == 0.0:
                 vib=imagpart
                 line = "{:>3d}   {:>9.4f}i".format(mode, vib)
