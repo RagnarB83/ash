@@ -1,13 +1,14 @@
+import numpy as np
+import math
+import shutil
+import os
+import copy
+
 from functions_general import listdiff, clean_number,blankline,BC
 import module_coords
 import interface_ORCA
-import numpy as np
-import math
 import constants
 import ash
-import shutil
-import os
-
 
 #Analytical frequencies function
 #Only works for ORCAtheory at the moment
@@ -51,7 +52,7 @@ def NumFreq(fragment=None, theory=None, npoint=1, displacement=0.0005, hessatoms
         print("NumFreq requires a fragment and a theory object")
 
     coords=fragment.coords
-    elems=fragment.elems
+    elems=copy.deepcopy(fragment.elems)
     numatoms=len(elems)
     #Hessatoms list is allatoms (if not defined), otherwise the atoms provided and thus a partial Hessian is calculated.
     allatoms=list(range(0,numatoms))
