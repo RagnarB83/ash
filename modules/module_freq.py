@@ -170,10 +170,11 @@ def NumFreq(fragment=None, theory=None, npoint=1, displacement=0.0005, hessatoms
             #Adding gradient to dictionary for AtomNCoordPDirectionm
             displacement_grad_dictionary[calclabel] = gradient
     elif runmode == 'parallel':
-        import pickle4reducer
+
         import multiprocessing as mp
-        ctx = mp.get_context()
-        ctx.reducer = pickle4reducer.Pickle4Reducer()
+        #import pickle4reducer
+        #ctx = mp.get_context()
+        #ctx.reducer = pickle4reducer.Pickle4Reducer()
 
         pool = mp.Pool(numcores)
         blankline()
