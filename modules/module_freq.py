@@ -43,7 +43,7 @@ def AnFreq(fragment=None, theory=None, numcores=1, temp=298.15, pressure=1.0):
 #Numerical frequencies function
 #NOTE: displacement was set to 0.0005 Angstrom
 #ORCA uses 0.005 Bohr = 0.0026458861 Ang, CHemshell uses 0.01 Bohr = 0.00529 Ang
-def NumFreq(fragment=None, theory=None, npoint=1, displacement=0.005, hessatoms=None, numcores=1, runmode='serial', temp=298.15, pressure=1.0):
+def NumFreq(fragment=None, theory=None, npoint=1, displacement=0.005, hessatoms=None, numcores=1, runmode='serial', temp=298.15, pressure=1.0, hessatoms_masses=None):
     
     print(BC.WARNING, BC.BOLD, "------------NUMERICAL FREQUENCIES-------------", BC.END)
     shutil.rmtree('Numfreq_dir', ignore_errors=True)
@@ -365,11 +365,19 @@ def NumFreq(fragment=None, theory=None, npoint=1, displacement=0.005, hessatoms=
 
     #Project out Translation+Rotational modes
     #TODO
+    #NOTE: Only if no frozen atoms
+
 
     #Diagonalize mass-weighted Hessian
     # Get partial matrix by deleting atoms not present in list.
     hesselems = module_coords.get_partial_list(allatoms, hessatoms, elems)
-    hessmasses = module_coords.get_partial_list(allatoms, hessatoms, fragment.list_of_masses)
+
+    #Use input masses if given, otherwise take from frament
+    if hessatoms_masses != None:
+        hessmasses = module_coords.get_partial_list(allatoms, hessatoms, fragment.list_of_masses)
+    else:
+        hessmasses=hessatoms_masses
+    
     hesscoords = [fragment.coords[i] for i in hessatoms]
     print("Elements:", hesselems)
     print("Masses used:", hessmasses)
