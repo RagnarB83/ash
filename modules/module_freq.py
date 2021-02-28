@@ -373,7 +373,7 @@ def NumFreq(fragment=None, theory=None, npoint=1, displacement=0.005, hessatoms=
     hesselems = module_coords.get_partial_list(allatoms, hessatoms, elems)
 
     #Use input masses if given, otherwise take from frament
-    if hessatoms_masses != None:
+    if hessatoms_masses == None:
         hessmasses = module_coords.get_partial_list(allatoms, hessatoms, fragment.list_of_masses)
     else:
         hessmasses=hessatoms_masses
