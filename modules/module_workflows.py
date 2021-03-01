@@ -15,7 +15,8 @@ import dictionaries_lists
 import module_coords
 import interface_geometric
 import interface_crest
-from functions_general import BC
+from functions_general import BC,print_time_rel
+import ash_header
 import settings_ash
 
 
@@ -290,7 +291,7 @@ def thermochemprotocol_reaction(Opt_theory=None, SP_theory=None, fraglist=None, 
     
     print("")
     print(BC.WARNING, BC.BOLD, "------------THERMOCHEM PROTOCOL END-------------", BC.END)
-    ash.print_time_rel(ash_header.init_time,modulename='Entire thermochemprotocol')
+    print_time_rel(ash_header.init_time,modulename='Entire thermochemprotocol')
 
 
 

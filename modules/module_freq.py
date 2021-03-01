@@ -395,13 +395,13 @@ def NumFreq(fragment=None, theory=None, npoint=1, displacement=0.005, hessatoms=
     #Print out Freq output. Maybe print normal mode compositions here instead???
     printfreqs(frequencies,len(hessatoms))
 
-
+    print("Now doing thermochemistry")
 
     #Print out thermochemistry
     if theory.__class__.__name__ == "QMMMTheory":
-        Thermochemistry = thermochemcalc(frequencies,hessatoms, fragment, theory.qm_theory.mult, temp=temp,pressure=pressure, hessatoms_masses=hessmasses)
+        Thermochemistry = thermochemcalc(frequencies,hessatoms, fragment, theory.qm_theory.mult, temp=temp,pressure=pressure)
     else:
-        Thermochemistry = thermochemcalc(frequencies,hessatoms, fragment, theory.mult, temp=temp,pressure=pressure, hessatoms_masses=hessmasses)
+        Thermochemistry = thermochemcalc(frequencies,hessatoms, fragment, theory.mult, temp=temp,pressure=pressure)
 
 
     #Add Hessian to fragment
