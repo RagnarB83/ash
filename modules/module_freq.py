@@ -1,13 +1,14 @@
+import numpy as np
+import math
+import shutil
+import os
+import copy
+
 from functions_general import listdiff, clean_number,blankline,BC
 import module_coords
 import interface_ORCA
-import numpy as np
-import math
 import constants
 import ash
-import shutil
-import os
-
 
 #Analytical frequencies function
 #Only works for ORCAtheory at the moment
@@ -40,7 +41,9 @@ def AnFreq(fragment=None, theory=None, numcores=1, temp=298.15, pressure=1.0):
 
 
 #Numerical frequencies function
-def NumFreq(fragment=None, theory=None, npoint=1, displacement=0.0005, hessatoms=None, numcores=1, runmode='serial', temp=298.15, pressure=1.0):
+#NOTE: displacement was set to 0.0005 Angstrom
+#ORCA uses 0.005 Bohr = 0.0026458861 Ang, CHemshell uses 0.01 Bohr = 0.00529 Ang
+def NumFreq(fragment=None, theory=None, npoint=1, displacement=0.005, hessatoms=None, numcores=1, runmode='serial', temp=298.15, pressure=1.0, hessatoms_masses=None):
     
     print(BC.WARNING, BC.BOLD, "------------NUMERICAL FREQUENCIES-------------", BC.END)
     shutil.rmtree('Numfreq_dir', ignore_errors=True)
@@ -51,7 +54,7 @@ def NumFreq(fragment=None, theory=None, npoint=1, displacement=0.0005, hessatoms
         print("NumFreq requires a fragment and a theory object")
 
     coords=fragment.coords
-    elems=fragment.elems
+    elems=copy.deepcopy(fragment.elems)
     numatoms=len(elems)
     #Hessatoms list is allatoms (if not defined), otherwise the atoms provided and thus a partial Hessian is calculated.
     allatoms=list(range(0,numatoms))
@@ -166,10 +169,11 @@ def NumFreq(fragment=None, theory=None, npoint=1, displacement=0.0005, hessatoms
             #Adding gradient to dictionary for AtomNCoordPDirectionm
             displacement_grad_dictionary[calclabel] = gradient
     elif runmode == 'parallel':
-        import pickle4reducer
+
         import multiprocessing as mp
-        ctx = mp.get_context()
-        ctx.reducer = pickle4reducer.Pickle4Reducer()
+        #import pickle4reducer
+        #ctx = mp.get_context()
+        #ctx.reducer = pickle4reducer.Pickle4Reducer()
 
         pool = mp.Pool(numcores)
         blankline()
@@ -361,11 +365,19 @@ def NumFreq(fragment=None, theory=None, npoint=1, displacement=0.0005, hessatoms
 
     #Project out Translation+Rotational modes
     #TODO
+    #NOTE: Only if no frozen atoms
+
 
     #Diagonalize mass-weighted Hessian
     # Get partial matrix by deleting atoms not present in list.
     hesselems = module_coords.get_partial_list(allatoms, hessatoms, elems)
-    hessmasses = module_coords.get_partial_list(allatoms, hessatoms, fragment.list_of_masses)
+
+    #Use input masses if given, otherwise take from frament
+    if hessatoms_masses == None:
+        hessmasses = module_coords.get_partial_list(allatoms, hessatoms, fragment.list_of_masses)
+    else:
+        hessmasses=hessatoms_masses
+    
     hesscoords = [fragment.coords[i] for i in hessatoms]
     print("Elements:", hesselems)
     print("Masses used:", hessmasses)
@@ -378,12 +390,12 @@ def NumFreq(fragment=None, theory=None, npoint=1, displacement=0.0005, hessatoms
     print("Normal modes:")
     #TODO: Eigenvectors print here.
     #TODO: or perhaps elemental normal mode composition factors
-    print("Eigenvectors to be  be printed here")
+    print("Eigenvectors to be printed here")
     blankline()
     #Print out Freq output. Maybe print normal mode compositions here instead???
     printfreqs(frequencies,len(hessatoms))
 
-
+    print("Now doing thermochemistry")
 
     #Print out thermochemistry
     if theory.__class__.__name__ == "QMMMTheory":
@@ -503,9 +515,28 @@ def printfreqs(vfreq,numatoms):
             line = "{:>3d}   {:>9.4f}".format(mode,0.000)
             print(line)
         else:
-            vib=clean_number(vfreq[mode])
-            line = "{:>3d}   {:>9.4f}".format(mode, vib)
-            print(line)
+            #print("vfreq[mode]:", vfreq[mode])
+            realpart=vfreq[mode].real
+            imagpart=vfreq[mode].imag
+            #print("realpart:", realpart)
+            #print("imagpart:", imagpart)
+            if realpart == 0.0:
+                vib=imagpart
+                line = "{:>3d}   {:>9.4f}i".format(mode, vib)
+                print(line)
+            elif imagpart == 0.0:
+                vib=clean_number(vfreq[mode])
+                line = "{:>3d}   {:>9.4f}".format(mode, vib)
+                print(line)
+            else:
+                print("vfreq[mode]:", vfreq[mode])
+                print("realpart:", realpart)
+                print("imagpart:", imagpart)
+                print("hmmm")
+                exit()
+            #print("vib:", vib)
+            #print("type of vib", type(vib))
+
 
 # Function to print normal mode composition factors for all atoms, element-groups, specific atom groups or specific atoms
 def printnormalmodecompositions(option,TRmodenum,vfreq,numatoms,elems,evectors,atomlist):
@@ -747,6 +778,7 @@ def thermochemcalc(vfreq,atoms,fragment, multiplicity, temp=298.15,pressure=1.0)
     
     coords=fragment.coords
     elems=fragment.elems
+
     masses=fragment.list_of_masses
     totalmass=sum(masses)
     
@@ -757,13 +789,11 @@ def thermochemcalc(vfreq,atoms,fragment, multiplicity, temp=298.15,pressure=1.0)
         freqs=[]
         vibtemps=[]
         for mode in range(0, 3 * len(atoms)):
-            print(mode)
             if mode < TRmodenum:
                 continue
                 #print("skipping TR mode with freq:", clean_number(vfreq[mode]) )
             else:
                 vib = clean_number(vfreq[mode])
-                #NOTE: probably deprecated case 
                 if np.iscomplex(vib):
                     print("Mode {} with frequency {} is imaginary. Skipping in thermochemistry".format(mode,vib))
                 elif vib < 0:
@@ -882,9 +912,9 @@ def thermochemcalc(vfreq,atoms,fragment, multiplicity, temp=298.15,pressure=1.0)
     print("--------------------")
     print("Temperature:", temp, "K")
     print("Pressure:", pressure, "atm")
-    print("Total atomlist:", fragment.atomlist)
+    #print("Total atomlist:", fragment.atomlist)
     print("Hessian atomlist:", atoms)
-    print("Masses:", masses)
+    #print("Masses:", masses)
     print("Total mass:", totalmass)
     print("")
 

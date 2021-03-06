@@ -304,10 +304,10 @@ class Fragment:
             print("Calculating connectivity of fragment using julia")
             # Import Julia
             try:
-                from julia.api import Julia
-                from julia import Main
+                #from julia.api import Julia
+                #from julia import Main
                 timestampB = time.time()
-                fraglist_temp = Main.Juliafunctions.calc_connectivity(self.coords, self.elems, conndepth, scale, tol,
+                fraglist_temp = ash.Main.Juliafunctions.calc_connectivity(self.coords, self.elems, conndepth, scale, tol,
                                                                       eldict_covrad)
                 fraglist = []
                 # Converting from numpy to list of lists
@@ -538,7 +538,7 @@ def print_internal_coordinate_table(fragment,actatoms=None):
     else:
         connectivity=fragment.connectivity
     
-    
+    print("connectivity:", connectivity)
     #Looping over connected fragments
     bondpairs=[]
     bondpairsdict={}
@@ -570,6 +570,8 @@ def print_internal_coordinate_table(fragment,actatoms=None):
         elB=fragment.elems[listkey[1]]
         print("Bond: {:8}{:4} - {:4}{:4} {:>6.3f}".format(listkey[0],elA,listkey[1],elB, val ))
     print('='*50)
+
+
 #Function to check if string corresponds to an element symbol or not.
 #Compares in lowercase
 def isElement(string):

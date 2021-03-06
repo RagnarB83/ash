@@ -1,6 +1,8 @@
 
-# ASH - A GENERAL COMPCHEM AND QM/MM ENVIRONMENT
+"""
+ASH - A MULTISCALE MODELLING PROGRAM
 
+"""
 #Python libraries
 import os
 import shutil

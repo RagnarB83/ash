@@ -1,5 +1,6 @@
 import copy
 import multiprocessing as mp
+import os
 
 import ash
 from functions_general import BC,blankline
@@ -7,6 +8,7 @@ from functions_general import BC,blankline
 
 
 #Stripped down version of Singlepoint function for Singlepoint_parallel
+#TODO: This function may still be a bit ORCA-centric. Needs to be generalized 
 def Single_par(list):
     #Creating new copy of theory to prevent Brokensym feature from being deactivated by each run
     #NOTE: Alternatively we can add an if-statement inside orca.run
@@ -14,27 +16,44 @@ def Single_par(list):
     fragment=list[1]
     #Making label flexible. Can be tuple but inputfilename is converted to string below
     label=list[2]
-    
-    #Creating separate inputfilename using label
-    #Removing . in inputfilename as ORCA can get confused
-    #print("theory:", theory)
-    theory.filename=''.join([str(i) for i in list[2]]).replace('.','_')
-    #print("theory.inputfilename:", theory.inputfilename)
     if label is None:
         print("No label provided to fragment or theory objects. This is required to distinguish between calculations ")
         print("Exiting...")
         exit(1)
 
+    #Using label (could be tuple) to create a labelstring which is used to name inputfiles
+
+    if type(label) == tuple: 
+        labelstring=str(str(label[0])+'_'+str(label[1])).replace('.','_')
+    else:
+        labelstring=str(label).replace('.','_')
+
+    #Creating separate inputfilename using label
+    #Removing . in inputfilename as ORCA can get confused
+    if theory.__class__.__name__ == "ORCATheory":
+        #theory.filename=''.join([str(i) for i in labelstring])
+        theory.filename=labelstring
+    #TODO: filename changes for other codes ?
+
     coords = fragment.coords
     elems = fragment.elems
+    #Creating new dir and running calculation inside
+    os.mkdir(labelstring)
+    os.chdir(labelstring)
     print(BC.WARNING,"Doing single-point Energy job on fragment. Formula: {} Label: {} ".format(fragment.prettyformula,fragment.label), BC.END)
     print("\n\nProcess ID {} is running calculation with label: {} \n\n".format(mp.current_process(),label))
 
     energy = theory.run(current_coords=coords, elems=elems, label=label)
+    os.chdir('..')
     print("Energy: ", energy)
     # Now adding total energy to fragment
     fragment.energy = energy
     return (label,energy)
+
+
+def bla(blux):
+    print("here")
+    print(blux)
 
 #PARALLEL Single-point energy function
 #will run over fragments, over theories or both
@@ -67,9 +86,13 @@ def Singlepoint_parallel(fragments=None, theories=None, numcores=None):
         print("Case: Multiple fragments but one theory")
         print("Making copy of theory object")
         theory = theories[0]
+        #NOTE: Python 3.8 and higher use spawn in MacOS. Leads to ash import problems
+        #NOTE: Unix/Linux uses fork which seems better behaved
         results = pool.map(Single_par, [[theory,fragment, fragment.label] for fragment in fragments])
+        
         pool.close()
         print("Calculations are done")
+        print("results:", results)
     # Case: Multiple theories, 1 fragment
     elif len(fragments) == 1:
         print("Case: Multiple theories but one fragment")

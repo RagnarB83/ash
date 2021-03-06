@@ -382,7 +382,7 @@ class QMMMTheory:
         #1. Get linkatoms coordinates
         if self.linkatoms==True:
             linkatoms_dict = module_coords.get_linkatom_positions(self.boundaryatoms,self.qmatoms, current_coords, self.elems)
-            print("linkatoms_dict:", linkatoms_dict)
+            printdebug("linkatoms_dict:", linkatoms_dict)
             #2. Add linkatom coordinates to qmcoords???
             print("Adding linkatom positions to QM coords")
             
@@ -390,7 +390,7 @@ class QMMMTheory:
             linkatoms_indices=[]
             
             #Sort by QM atoms:
-            print("linkatoms_dict.keys :", linkatoms_dict.keys())
+            printdebug("linkatoms_dict.keys :", linkatoms_dict.keys())
             for pair in sorted(linkatoms_dict.keys()):
                 print("Pair :", pair)
                 self.qmcoords.append(linkatoms_dict[pair])
@@ -406,7 +406,6 @@ class QMMMTheory:
             current_qmelems=self.qmelems + ['H']*len(linkatoms_dict)
             print("")
             #print("current_qmelems :", current_qmelems)
-            print(len(current_qmelems))
             
             #Charge-shifting + Dipole thing
             print("Doing charge-shifting...")
@@ -415,14 +414,14 @@ class QMMMTheory:
             
             self.ShiftMMCharges() # Creates self.pointcharges
             #print("After: self.pointcharges are: ", self.pointcharges)
-            print("len self.pointcharges: ", len(self.pointcharges))
+            print("Num pointcharges for full system: ", len(self.pointcharges))
             
             #TODO: Code alternative to Charge-shifting: L2 scheme which deletes whole charge-group that MM1 belongs to
             
             # Defining pointcharges as only containing MM atoms
             self.pointcharges=[self.pointcharges[i] for i in self.mmatoms]
             #print("After: self.pointcharges are: ", self.pointcharges)
-            print("len self.pointcharges: ", len(self.pointcharges))
+            print("Num pointcharges for MM system: ", len(self.pointcharges))
             #Set 
             self.SetDipoleCharges() #Creates self.dipole_charges and self.dipole_coords
 
@@ -433,9 +432,7 @@ class QMMMTheory:
             #Adding dipole charges to MM charges list (given to QM code)
             #TODO: Rename as pcharges list so as not to confuse with what MM code sees??
             self.pointcharges=self.pointcharges+self.dipole_charges
-            print("len self.pointcharges after dipole addition: ", len(self.pointcharges))
-            print(len(self.pointcharges))
-            print(len(self.pointchargecoords))
+            print("Num pointcharges after dipole addition: ", len(self.pointcharges))
         else:
             #If no linkatoms then use original self.qmelems
             current_qmelems = self.qmelems
@@ -446,19 +443,18 @@ class QMMMTheory:
             #If no linkatoms MM coordinates are the same
             self.pointchargecoords=self.mmcoords
        
-        #TODO: Now we have updated MM-coordinates (if doing linkatoms, wtih dipolecharges etc) and updated mm-charges (more, due to dipolecharges if linkatoms)
+        #NOTE: Now we have updated MM-coordinates (if doing linkatoms, wtih dipolecharges etc) and updated mm-charges (more, due to dipolecharges if linkatoms)
         # We also have MMcharges that have been set to zero due to QM/mm
         # Choice: should we now delete charges that are zero or not. chemshell does
-        #TODO: do here or have QM-theory do it. probably best to do here (otherwise we have to write multiple QM interface routines)
+        #NOTE: do here or have QM-theory do it. probably best to do here (otherwise we have to write multiple QM interface routines)
         
 
         #Removing zero-valued charges
         #NOTE: Problem, if we remove zero-charges we lose our indexing as the charges removed could be anywhere
-        # NOTE: Test: Let's not remove them.
+        # NOTE: Thus not removing them.
         print("Number of charges :", len(self.pointcharges))
         #print("Removing zero-valued charges")
         #self.pointcharges, self.pointchargecoords = remove_zero_charges(self.pointcharges, self.pointchargecoords)
-        print("Number of charges :", len(self.pointcharges))
         print("Number of charge coordinates :", len(self.pointchargecoords))
         print_time_rel(CheckpointTime, modulename='QM/MM run prep')
         
@@ -687,7 +683,7 @@ class QMMMTheory:
                     #print("type self.MMgradient", type(self.MMgradient))
                     #print("fullatomindex_mm:", fullatomindex_mm)
                     Mgrad=self.MMgradient[fullatomindex_mm]
-                    print("Mgrad: ", Mgrad)
+                    #print("Mgrad: ", Mgrad)
                     Qgrad,Mgrad= linkatom_force_fix(Qcoord, Mcoord, Lcoord, Qgrad,Mgrad,Lgrad)
                     #print("Qgrad: ", Qgrad)
                     #print("Mgrad: ", Mgrad)

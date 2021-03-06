@@ -19,7 +19,7 @@ class ORCATheory:
             try:
                 self.orcadir=settings_ash.settings_dict["orcadir"]
             except:
-                print(BC.FAIL,"Found no orcadir variabla in settings_ash module either. Exiting.",BC.END)
+                print(BC.FAIL,"Found no orcadir variable in settings_ash module either. Exiting.",BC.END)
                 exit()
         else:
             self.orcadir = orcadir
@@ -140,7 +140,7 @@ class ORCATheory:
         #If QM/MM then extrabasisatoms and atomstoflip have to be updated
         if len(self.qmatoms) != 0:
             #extrabasisatomindices if QM/MM
-            print("self.qmatoms :", self.qmatoms)
+            print("QM atoms :", self.qmatoms)
             qmatoms_extrabasis=[self.qmatoms.index(i) for i in self.extrabasisatoms]
             #new QM-region indices for atomstoflip if QM/MM
             qmatomstoflip=[self.qmatoms.index(i) for i in self.atomstoflip]

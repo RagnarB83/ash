@@ -1,4 +1,15 @@
 #!/bin/env python3
+"""
+Stand-alone script for updating ASH fragment using XYZ information. Companion script to fragedit.py
+
+Usage:
+python3 fragupdate.py fragfile.ygg (assumes fragment.xyz and qmatoms file present)
+python3 fragupdate.py fragfile.ygg filewithindices ((assumes fragment.xyz )
+
+Reads in ASH fragment file and qmatoms and XYZ file and updates ASH fragment
+
+"""
+
 
 import sys
 #from functions_general import read_intlist_from_file
@@ -74,13 +85,7 @@ def read_xyzfile(filename):
 
 
 
-#Update ASH fragment after fragedit use and XYZ coord modification
 
-#Standalone fragment-update script for ASH
-#Reads in ASH fragment file and qmatoms and XYZ file and updates ASH fragment
-
-#Fragfile is always first argument
-try:
     fragfile=sys.argv[1]
 except:
     print("Please provide an ASH fragment file as argument")

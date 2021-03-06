@@ -1,6 +1,8 @@
 
-#Conversion factors
+"""
+Conversion factors
 
+"""
 #hartree conversions
 #harkcal = 627.50946900
 #harkcal = 627.5096080305927

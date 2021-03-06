@@ -2,12 +2,13 @@ import math
 import os
 import glob
 import shutil
+import copy
 
 import ash
 from functions_general import frange
 import interface_geometric
 from module_freq import calc_rotational_constants
-import module_surface
+import functions_parallel
 
 #Calculate 1D or 2D surface, either relaxed or unrelaxed.
 # TODO: Finish parallelize surfacepoint calculations
@@ -92,7 +93,16 @@ def calc_surface(fragment=None, theory=None, workflow=None, scantype='Unrelaxed'
                             interface_geometric.geomeTRICOptimizer(fragment=fragment, theory=zerotheory, maxiter=maxiter, coordsystem=coordsystem, constraints=allconstraints, constrainvalue=True, convergence_setting=convergence_setting)
                             #Shallow copy of fragment
                             newfrag = copy.copy(fragment)
-                            newfrag.label = str(RCvalue1)+"_"+str(RCvalue1)
+                            #newfrag.label = str(RCvalue1)+"_"+str(RCvalue2)
+                            #Label can be tuple
+                            newfrag.label = (RCvalue1,RCvalue2)
+                            
+                            
+                            
+                            
+                            
+                            newfrag.write_xyzfile(xyzfilename="RC1_"+str(RCvalue1)+"-RC2_"+str(RCvalue2)+".xyz")
+                            shutil.move("RC1_"+str(RCvalue1)+"-RC2_"+str(RCvalue2)+".xyz", "surface_xyzfiles/RC1_"+str(RCvalue1)+"-RC2_"+str(RCvalue2)+".xyz")
                             surfacepointfragments[(RCvalue1,RCvalue2)] = newfrag
                             #Single-point ORCA calculation on adjusted geometry
                             #energy = ash.Singlepoint(fragment=fragment, theory=theory)
@@ -100,21 +110,22 @@ def calc_surface(fragment=None, theory=None, workflow=None, scantype='Unrelaxed'
                 #TODO: sort this list??
                 surfacepointfragments_lists = list(surfacepointfragments.values())
                 print("surfacepointfragments_lists: ", surfacepointfragments_lists)
-                results = ash.Singlepoint_parallel(fragments=surfacepointfragments_lists, theories=[theory], numcores=numcores)
+                surfacedictionary = functions_parallel.Singlepoint_parallel(fragments=surfacepointfragments_lists, theories=[theory], numcores=numcores)
                 print("Parallel calculation done!")
-                print("results:", results)
+                print("surfacedictionary:", surfacedictionary)
                 
                 #Gathering results in dictionary
-                for energy,coord in zip(results,surfacepointfragments_lists):
-                    print("Coord : {}  Energy: {}".format(coord,energy))
-                    surfacedictionary[coord] = energy
-                    print("surfacedictionary:", surfacedictionary)
+                #NOTE: WRONG, to be fixed
+                #for coord,energy in zip(results,surfacepointfragments_lists):
+                #    print("Coord : {}  Energy: {}".format(coord,energy))
+                #    surfacedictionary[coord] = energy
+                #    print("surfacedictionary:", surfacedictionary)
+                #    print("len surfacedictionary:", len(surfacedictionary))
+                #    print("totalnumpoints:", totalnumpoints)
+                if len(surfacedictionary) != totalnumpoints:
+                    print("Dictionary not complete!")
                     print("len surfacedictionary:", len(surfacedictionary))
                     print("totalnumpoints:", totalnumpoints)
-                    if len(surfacedictionary) != totalnumpoints:
-                        print("Dictionary not complete!")
-                        print("len surfacedictionary:", len(surfacedictionary))
-                        print("totalnumpoints:", totalnumpoints)
             elif dimension == 1:
                 print("not ready")
                 exit()

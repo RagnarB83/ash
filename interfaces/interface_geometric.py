@@ -25,6 +25,12 @@ def geomeTRICOptimizer(theory=None,fragment=None, coordsystem='hdlc', frozenatom
     Needed as discussed here: https://github.com/leeping/geomeTRIC/commit/584869707aca1dbeabab6fe873fdf139d384ca66#diff-2af7dd72b77dac63cea64c052a549fe0
     """
 
+    if ActiveRegion == True and coordsystem == "tric":
+        #TODO: Look into this more
+        print("Activeregion true and coordsystem = tric are not compatible")
+        exit()
+
+
     if fragment.numatoms == 1:
         print("System has 1 atoms.")
         print("Doing single-point energy calculation instead")
