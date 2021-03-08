@@ -2,7 +2,7 @@
 
 #MRCC Theory object. Fragment object is optional. Used??
 class MRCCTheory:
-    def __init__(self, fragment=None, charge=None, mult=None, printlevel=2, cfourbasis=None, cfourmethod=None,
+    def __init__(self, mrccdir=None, fragment=None, charge=None, mult=None, printlevel=2, cfourbasis=None, cfourmethod=None,
                 mrccmemory=3100, nprocs=1):
 
         #Printlevel

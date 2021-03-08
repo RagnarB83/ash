@@ -24,15 +24,15 @@ def ReactionEnergy(stoichiometry=None, list_of_fragments=None, list_of_energies=
     """Calculate reaction energy from list of energies (or energies from list of fragments) and stoichiometry
 
     Args:
-        stoichiometry (list, optional): list of integers, e.g. [-1,-1,1,1]. Defaults to None.
-        list_of_fragments ([type], optional): [description]. Defaults to None.
-        list_of_energies ([type], optional): [description]. Defaults to None.
-        unit (str, optional): [description]. Defaults to 'kcal/mol'.
-        label ([type], optional): [description]. Defaults to None.
-        reference ([type], optional): [description]. Defaults to None.
+        stoichiometry (list, optional): A list of integers, e.g. [-1,-1,1,1]. Defaults to None.
+        list_of_fragments (list, optional): A list of ASH fragments . Defaults to None.
+        list_of_energies ([type], optional): A list of total energies in hartrees. Defaults to None.
+        unit (str, optional): Unit for relative energy. Defaults to 'kcal/mol'.
+        label (string, optional): Optional label for energy. Defaults to None.
+        reference (float, optional): Optional shift-parameter of energy Defaults to None.
 
     Returns:
-        [type]: [description]
+        tuple : energy and error in chosen unit
     """
     conversionfactor = { 'kcal/mol' : 627.50946900, 'kcalpermol' : 627.50946900, 'kJ/mol' : 2625.499638, 'kJpermol' : 2625.499638, 
                         'eV' : 27.211386245988, 'cm-1' : 219474.6313702 }
@@ -84,6 +84,19 @@ def ReactionEnergy(stoichiometry=None, list_of_fragments=None, list_of_energies=
 #Provide crest/xtb info, MLtheory object (e.g. ORCA), HLtheory object (e.g. ORCA)
 def confsampler_protocol(fragment=None, crestdir=None, xtbmethod='GFN2-xTB', MLtheory=None, 
                          HLtheory=None, orcadir=None, numcores=1, charge=None, mult=None):
+    """[summary]
+
+    Args:
+        fragment (ASH fragment, optional): An ASH fragment. Defaults to None.
+        crestdir (str, optional): Path to Crest. Defaults to None.
+        xtbmethod (str, optional): The xTB method string. Defaults to 'GFN2-xTB'.
+        MLtheory (ASH theory object, optional): Theoryobject for medium-level theory. Defaults to None.
+        HLtheory (ASH theory object, optional): Theoryobject for high-level theory. Defaults to None.
+        orcadir (str, optional): Path to ORCA. Defaults to None.
+        numcores (int, optional): Number of cores. Defaults to 1.
+        charge (int, optional): Charge. Defaults to None.
+        mult (in, optional): Spin multiplicity. Defaults to None.
+    """
     print("="*50)
     print("CONFSAMPLER FUNCTION")
     print("="*50)
@@ -221,8 +234,23 @@ def thermochemprotocol_single(fragment=None, Opt_theory=None, SP_theory=None, or
 
 #Thermochemistry protocol. Take list of fragments, stoichiometry, and 2 theory levels
 #Requires orcadir, and Opt_theory level (typically an ORCATheory object), SP_theory (either ORCATTheory or workflow.
-def thermochemprotocol_reaction(Opt_theory=None, SP_theory=None, fraglist=None, stoichiometry=None, orcadir=None, numcores=None, memory=5000,
+def thermochemprotocol_reaction(Opt_theory=None, SP_theory=None, fraglist=None, stoichiometry=None, orcadir=None, numcores=1, memory=5000,
                        workflow_args=None, analyticHessian=True, temp=298.15, pressure=1.0):
+    """[summary]
+
+    Args:
+        Opt_theory (ASH theory, optional): ASH theory for optimizations. Defaults to None.
+        SP_theory (ASH theory, optional): ASH theory for Single-points. Defaults to None.
+        fraglist (list, optional): List of ASH fragments. Defaults to None.
+        stoichiometry (list, optional): list of integers defining stoichiometry. Defaults to None.
+        orcadir (str, optional): Path to ORCA. Defaults to None.
+        numcores (int, optional): Number of cores. Defaults to 1.
+        memory (int, optional): Memory in MB (ORCA). Defaults to 5000.
+        workflow_args ([type], optional): dictionary for workflow arguments. Defaults to None.
+        analyticHessian (bool, optional): Analytical Hessian or not. Defaults to True.
+        temp (float, optional): Temperature in Kelvin. Defaults to 298.15.
+        pressure (float, optional): Pressure in atm. Defaults to 1.0.
+    """
     print("")
     print(BC.WARNING, BC.BOLD, "------------THERMOCHEM PROTOCOL (reaction)-------------", BC.END)
     print("")

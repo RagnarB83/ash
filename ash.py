@@ -97,7 +97,7 @@ from module_benchmarking import run_benchmark
 
 #Other
 import interface_crest
-from interface_crest import call_crest
+from interface_crest import call_crest, get_crest_conformers
 
 
 # Initialize settings

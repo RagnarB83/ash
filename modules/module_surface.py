@@ -1,3 +1,10 @@
+"""Surface Scans module:
+    Primary functions:
+    calc_surface : Calculate 1D/2D surface from geometric parameters
+    calc_surface_fromXYZ: Calculate 1D/2D surface from XYZ files
+    read_surfacedict_from_file: Read dictionary of surfacepoints from file
+
+    """
 import math
 import os
 import glob
@@ -10,10 +17,26 @@ import interface_geometric
 from module_freq import calc_rotational_constants
 import functions_parallel
 
-#Calculate 1D or 2D surface, either relaxed or unrelaxed.
 # TODO: Finish parallelize surfacepoint calculations
 def calc_surface(fragment=None, theory=None, workflow=None, scantype='Unrelaxed', resultfile='surface_results.txt', 
-                 runmode='serial', coordsystem='dlc', maxiter=50, extraconstraints=None, convergence_setting=None, **kwargs):    
+                 runmode='serial', coordsystem='dlc', maxiter=50, extraconstraints=None, convergence_setting=None, **kwargs):
+    """Calculate 1D/2D surface
+
+    Args:
+        fragment (ASH fragment, optional): ASH fragment object. Defaults to None.
+        theory (ASH theory, optional): ASH theory object. Defaults to None.
+        workflow (, optional): High-level workflow alternative to theory. Defaults to None.
+        scantype (str, optional): Type of scan: 'Unrelaxed' or 'Relaxed'. Defaults to 'Unrelaxed'.
+        resultfile (str, optional): Name of resultfile. Defaults to 'surface_results.txt'.
+        runmode (str, optional): Runmode: 'serial' or 'parallel. Defaults to 'serial'.
+        coordsystem (str, optional): Coordinate system for geomeTRICOptimizer. Defaults to 'dlc'.
+        maxiter (int, optional): Max number of Opt iterations. Defaults to 50.
+        extraconstraints (dict, optional): Dictionary of additional constraints for geomeTRICOptimizer. Defaults to None.
+        convergence_setting (str, optional): Convergence setting for geomeTRICOptimizer. Defaults to None.
+
+    Returns:
+        [type]: [description]
+    """
     print("="*50)
     print("CALC_SURFACE FUNCTION")
     print("="*50)
@@ -62,13 +85,11 @@ def calc_surface(fragment=None, theory=None, workflow=None, scantype='Unrelaxed'
     surfacedictionary = read_surfacedict_from_file(resultfile, dimension=dimension)
     print("Initial surfacedictionary :", surfacedictionary)
     
-    
     pointcount=0
     
     #Create directory to keep track of surface XYZ files
     os.mkdir('surface_xyzfiles') 
-    
-    
+       
     
     #PARALLEL CALCULATION
     if runmode=='parallel':
@@ -274,6 +295,28 @@ def calc_surface(fragment=None, theory=None, workflow=None, scantype='Unrelaxed'
 def calc_surface_fromXYZ(xyzdir=None, theory=None, dimension=None, resultfile=None, scantype='Unrelaxed',runmode='serial',
                          coordsystem='dlc', maxiter=50, extraconstraints=None, convergence_setting=None, numcores=None,
                          RC1_type=None, RC2_type=None, RC1_indices=None, RC2_indices=None):
+    """Calculate 1D/2D surface from XYZ files
+
+    Args:
+        xyzdir (str, optional): Path to directory with XYZ files. Defaults to None.
+        theory (ASH theory, optional): ASH theory object. Defaults to None.
+        dimension (int, optional): Dimension of surface. Defaults to None.
+        resultfile (str, optional): Name of resultfile. Defaults to None.
+        scantype (str, optional): Tyep of scan: 'Unrelaxed' or 'Relaxed' Defaults to 'Unrelaxed'.
+        runmode (str, optional): Runmode: 'serial' or 'parallel'. Defaults to 'serial'.
+        coordsystem (str, optional): Coordinate system for geomeTRICOptimizer. Defaults to 'dlc'.
+        maxiter (int, optional): Max number of iterations for geomeTRICOptimizer. Defaults to 50.
+        extraconstraints (dict, optional): Dictionary of constraints for geomeTRICOptimizer. Defaults to None.
+        convergence_setting (str, optional): Convergence setting for geomeTRICOptimizer. Defaults to None.
+        numcores (float, optional): Number of cores. Defaults to None.
+        RC1_type (str, optional):  Reaction-coordinate type (bond,angle,dihedral). Defaults to None.
+        RC2_type (str, optional): Reaction-coordinate type (bond,angle,dihedral). Defaults to None.
+        RC1_indices (list, optional):  List of atom-indices involved for RC1. Defaults to None.
+        RC2_indices (list, optional): List of atom-indices involved for RC2. Defaults to None.
+
+    Returns:
+        [type]: [description]
+    """
     
     print("="*50)
     print("CALC_SURFACE_FROMXYZ FUNCTION")
@@ -478,6 +521,21 @@ def calc_numerical_gradient():
 #TODO: Only works if RC constraints do not overwrite the extraconstraints. Need to fix
 def set_constraints(dimension=None,RCvalue1=None, RCvalue2=None, extraconstraints=None,
                     RC1_type=None, RC2_type=None, RC1_indices=None, RC2_indices=None ):
+    """Set constraints for calc_surface and calc_surface_fromXYZ
+
+    Args:
+        dimension (int, optional): Dimension of scan. Defaults to None.
+        RCvalue1 (float, optional): Current value of RC1. Defaults to None.
+        RCvalue2 (float, optional): Current value of RC1. Defaults to None.
+        extraconstraints (dict, optional): Dictionary of additional constraints for geomeTRICOptimizer. Defaults to None.
+        RC1_type (str, optional):  Reaction-coordinate type (bond,angle,dihedral). Defaults to None.
+        RC2_type (str, optional): Reaction-coordinate type (bond,angle,dihedral). Defaults to None.
+        RC1_indices (list, optional):  List of atom-indices involved for RC1. Defaults to None.
+        RC2_indices (list, optional): List of atom-indices involved for RC2. Defaults to None.
+
+    Returns:
+        [type]: [description]
+    """
     allcon = {}
     if extraconstraints is not None:
         allcon = copy.copy(extraconstraints)
@@ -520,6 +578,15 @@ def set_constraints(dimension=None,RCvalue1=None, RCvalue2=None, extraconstraint
 #TODO: Replace with Json read/write instead??
 #Example: https://stackoverflow.com/questions/47568211/how-to-read-and-write-dictionaries-to-external-files-in-python
 def read_surfacedict_from_file(file, dimension=None):
+    """Read surface dictionary from file
+
+    Args:
+        file (str): Name of file to read.
+        dimension (int): Dimension of surface. Defaults to None.
+
+    Returns:
+        dict: Dictionary of surface-points with energies
+    """
     print("Attempting to read old results file...")
     dict = {}
     #If no file then return empty dict
@@ -540,9 +607,16 @@ def read_surfacedict_from_file(file, dimension=None):
                     dict[(key1,key2)]=val
     return dict
 
-def write_surfacedict_to_file(dict,file="surface_results.txt",dimension=None):
+def write_surfacedict_to_file(surfacedict,file="surface_results.txt",dimension=None):
+    """Write surface dictionary to file
+
+    Args:
+        surfacedict (dict): Dictionary of surface-points {(coord1,coord2):energy}
+        file (str, optional): Filename. Defaults to "surface_results.txt".
+        dimension (int, optional): Dimension of surface. Defaults to None.
+    """
     with open(file, 'w') as f:
-        for d in dict.items():
+        for d in surfacedict.items():
             if dimension==1:
                 x=d[0]
                 e=d[1]
