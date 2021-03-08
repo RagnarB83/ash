@@ -2,6 +2,7 @@ import numpy as np
 import module_coords
 from functions_general import print_time_rel_and_tot,print_time_rel,blankline,printdebug,BC,uniq
 from interface_ORCA import grabatomcharges_ORCA,chargemodel_select
+import interface_ORCA
 from interface_xtb import grabatomcharges_xTB
 import functions_molcrys
 import ash

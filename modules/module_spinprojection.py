@@ -1,10 +1,19 @@
+"""
+Spinprojection module:
+
+class SpinProjectionTheory
+
+"""
 from functions_general import BC
 import interface_ORCA
 import constants
 import functions_elstructure
-#SpinProjectionTheory. Combining energies from two theory levels to give spin-projected energy
-#Example: Noodleman, Yamaguchi spin projection
+
 class SpinProjectionTheory:
+    """ASH SpinProjection theory.
+    Combines two theory levels (different spins) to give one final spin-projected energy.
+    Spinprojections: Noodleman, Yamaguchi, Bencini
+    """
     def __init__(self, theory1=None, theory2=None, printlevel=2, reuseorbs=True,
                  label=None, jobtype=None, localspins=None):
         print("Creating SpinProjectionTheory object. Jobtype: ", jobtype)

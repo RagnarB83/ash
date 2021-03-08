@@ -18,7 +18,7 @@ from functions_general import BC
 class Psi4Theory:
     def __init__(self, fragment=None, charge=None, mult=None, printsetting='False', psi4settings=None, psi4method=None,
                  runmode='library', psi4dir=None, pe=False, potfile='', outputname='psi4output.dat', label='psi4input',
-                 psi4memory=3000, nprocs=1, printlevel=2):
+                 psi4memory=3000, nprocs=1, printlevel=2,fchkwrite=False):
 
         #Printlevel
         self.printlevel=printlevel
@@ -32,6 +32,8 @@ class Psi4Theory:
         self.runmode=runmode
         #CPPE Polarizable Embedding options
         self.pe=pe
+        #Write fchk wavefunction file. Can be read by Multiwfn
+        self.fchkwrite=fchkwrite
         #Potfile from user or passed on via QM/MM Theory object ?
         self.potfile=potfile
         #Determining runmode
@@ -48,6 +50,17 @@ class Psi4Theory:
                 else:
                     print("Found psi4 in path:", self.psi4path)
 
+        #Checking if method is defined
+        if psi4method == None:
+            print("psi4method not set. Exiting")
+            exit()
+        if psi4settings == None:
+            print("psi4settings dict not set. Exiting")
+            exit()
+        #All valid Psi4 methods that can be arguments in energy() function
+        self.psi4method=psi4method
+        #Settings dict
+        self.psi4settings=psi4settings
 
         if fragment is not None:
             self.fragment=fragment
@@ -58,13 +71,12 @@ class Psi4Theory:
             self.charge=int(charge)
         if mult is not None:
             self.mult=int(mult)
-        self.psi4settings=psi4settings
+
 
         #DFT-specific. Remove? Marked for deletion
         #self.psi4functional=psi4functional
 
-        #All valid Psi4 methods that can be arguments in energy() function
-        self.psi4method=psi4method
+
 
     #Cleanup after run.
     def cleanup(self):
@@ -344,6 +356,13 @@ class Psi4Theory:
                     inputfile.write('energy, wfn = energy(\'{}\', return_wfn=True)\n'.format(self.psi4method))
                     inputfile.write("print(\"FINAL TOTAL ENERGY :\", energy)")
                     inputfile.write('\n')
+                #Fchk write or not
+                if self.fchkwrite == True:
+                    inputfile.write('#Fchk write\n')
+                    inputfile.write('fchk_writer = psi4.FCHKWriter(wfn)\n')
+                    inputfile.write('fchk_writer.write(\'{}.fchk\')\n'.format(self.label))
+        
+
 
             print("Running inputfile:", self.label+'.inp')
             #Running inputfile
