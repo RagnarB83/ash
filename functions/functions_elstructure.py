@@ -343,7 +343,7 @@ def create_density_from_orb (cubefile):
 
 def centroid_calc(rlowx,dx,nx,orgx,rlowy,dy,ny,orgy,rlowz,dz,nz,orgz,alldensvalues ):
     #########################################################
-    # Calculate centroid. Based on Multiwfn
+    # Calculate centroid.
     ############################################################
 
     #Largest x,y,z coordinates
