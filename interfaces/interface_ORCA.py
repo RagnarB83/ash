@@ -447,11 +447,12 @@ def grab_HF_and_corr_energies(file, DLPNO=False, F12=False):
 
 #Grab TDDFT states from ORCA output
 def tddftgrab(file):
+    tddftstates=[]
     tddft=True
     tddftgrab=False
     if tddft==True:
         with open(file) as f:
-            for line in file:
+            for line in f:
                 if tddftgrab==True:
                     if 'STATE' in line:
                         if 'eV' in line:
