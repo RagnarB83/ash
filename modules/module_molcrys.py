@@ -162,6 +162,8 @@ def molcrys(cif_file=None, xtl_file=None, xyz_file=None, cell_length=None, cell_
         orthogcoords=functions_molcrys.fract_to_orthogonal(cell_vectors,fullcellcoords)      
         blankline()
 
+        #Write fractional coordinate XTL file of fullcell coordinates (for visualization in VESTA)
+        functions_molcrys.write_xtl(cell_length,cell_angles,elems,fullcellcoords,"complete_unitcell.xtl")
 
 
     elif xtl_file is not None:
@@ -188,6 +190,8 @@ def molcrys(cif_file=None, xtl_file=None, xyz_file=None, cell_length=None, cell_
         orthogcoords=functions_molcrys.fract_to_orthogonal(cell_vectors,fullcellcoords)      
         blankline()
 
+        #Write fractional coordinate XTL file of fullcell coordinates (for visualization in VESTA)
+        functions_molcrys.write_xtl(cell_length,cell_angles,elems,fullcellcoords,"complete_unitcell.xtl")
         
     elif xyz_file is not None:
         print("WARNING. This option is not well tested. XYZ-file must contain all coordinates of cell.")
@@ -209,15 +213,17 @@ def molcrys(cif_file=None, xtl_file=None, xyz_file=None, cell_length=None, cell_
         #cell_vectors=np.transpose(cellbasis(cell_angles,cell_length))
         cell_vectors=functions_molcrys.cellbasis(cell_angles,cell_length)
         print("cell_vectors:", cell_vectors)
-        
+
+        #TODO: Need to create fullcellcoords (fract coordinates of full cell) here
+        #TODO: Check whether orthogonal_to_fractional(cellvectors, orthogcoords) function works
+        #Write fractional coordinate XTL file of fullcell coordinates (for visualization in VESTA)
+        #functions_molcrys.write_xtl(cell_length,cell_angles,elems,fullcellcoords,"complete_unitcell.xtl")
+
     else:
         print("Neither CIF-file, XTL-file or XYZ-file passed to molcrys. Exiting...")
         exit(1)
 
 
-
-    #Write fractional coordinate XTL file of fullcell coordinates (for visualization in VESTA)
-    functions_molcrys.write_xtl(cell_length,cell_angles,elems,fullcellcoords,"complete_unitcell.xtl")
 
 
 
