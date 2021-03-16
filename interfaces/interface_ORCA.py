@@ -13,7 +13,7 @@ import settings_ash
 #ORCA Theory object. Fragment object is optional. Only used for single-points.
 class ORCATheory:
     def __init__(self, orcadir=None, fragment=None, charge=None, mult=None, orcasimpleinput='', printlevel=2, extrabasisatoms=None, extrabasis=None,
-                 orcablocks='', extraline='', brokensym=None, HSmult=None, atomstoflip=None, nprocs=1, label=None, moreadfile=None):
+                 orcablocks='', extraline='', brokensym=None, HSmult=None, atomstoflip=None, nprocs=1, label=None, moreadfile=None, autostart=True):
 
         if orcadir is None:
             print(BC.WARNING, "No orcadir argument passed to ORCATheory. Attempting to find orcadir variable inside settings_ash", BC.END)
@@ -33,6 +33,8 @@ class ORCATheory:
 
         #MOREAD-file
         self.moreadfile=moreadfile
+        #Autostart
+        self.autostart=autostart
 
         #Using orcadir to set LD_LIBRARY_PATH
         old = os.environ.get("LD_LIBRARY_PATH")
@@ -62,9 +64,16 @@ class ORCATheory:
             self.mult=int(mult)
         else:
             self.charge=None
+        
+        #Adding NoAutostart keyword to extraline if requested
+        if self.autostart == False:
+            self.extraline=extraline+"\n! Noautostart"
+        else:
+            self.extraline=extraline
+        
         self.orcasimpleinput=orcasimpleinput
         self.orcablocks=orcablocks
-        self.extraline=extraline
+
         #BROKEN SYM OPTIONS
         self.brokensym=brokensym
         self.HSmult=HSmult
