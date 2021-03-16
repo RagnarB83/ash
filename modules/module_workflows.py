@@ -1,7 +1,5 @@
 """
-Workflows module
-
-Functions defining multi-step workflows
+Contains functions defining multi-step workflows
 
 """
 import os

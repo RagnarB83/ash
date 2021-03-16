@@ -30,7 +30,7 @@ from functions_general import blankline,BC,listdiff,print_time_rel,print_time_re
 
 # Fragment class and coordinate functions
 import module_coords
-from module_coords import get_molecules_from_trajectory,eldict_covrad,write_pdbfile,Fragment,read_xyzfile,write_xyzfile
+from module_coords import get_molecules_from_trajectory,eldict_covrad,write_pdbfile,Fragment,read_xyzfile,write_xyzfile,make_cluster_from_box
 
 #Singlepoint
 import module_singlepoint

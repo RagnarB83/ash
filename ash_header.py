@@ -47,7 +47,7 @@ def print_header():
     
 
 def print_logo():
-    programversion = 0.1
+    programversion = 0.2
 
     #Getting commit version number from file VERSION (updated by yggpull) inside module dir
     try:

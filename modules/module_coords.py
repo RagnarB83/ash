@@ -1,16 +1,15 @@
-from functions_general import isint,listdiff,print_time_rel,BC
+from functions_general import isint,listdiff,print_time_rel,BC,printdebug
 import dictionaries_lists
 import numpy as np
 import settings_ash
 import constants
 import copy
 import math
-import ash
 sqrt = math.sqrt
 pow = math.pow
 import ash
 import time
-
+#import functions_molcrys
 
 # ASH Fragment class
 class Fragment:
@@ -258,6 +257,7 @@ class Fragment:
         self.energy=float(energy)
     # Get coordinates for specific atoms (from list of atom indices)
     def get_coords_for_atoms(self, atoms):
+        #TODO: Generalize.
         subcoords=[self.coords[i] for i in atoms]
         subelems=[self.elems[i] for i in atoms]
         return subcoords,subelems
@@ -1039,7 +1039,7 @@ def write_xyzfile(elems,coords,name,printlevel=2):
 #Function that reads XYZ-file with multiple files, splits and return list of coordinates
 #Created for splitting crest_conformers.xyz but may also be used for MD traj.
 #Also grabs last word in title line. Typically an energy (has to be converted to float outside)
-def split_multimolxyzfile(file, writexyz=False):
+def split_multimolxyzfile(file, writexyz=False,skipindex=1):
     all_coords=[]
     all_elems=[]
     all_titles=[]
@@ -1052,6 +1052,7 @@ def split_multimolxyzfile(file, writexyz=False):
         for index, line in enumerate(f):
             if index == 0:
                 numatoms = line.split()[0]
+            #Grab coordinates
             if coordgrab == True:
                 if len(line.split()) > 1:
                     elems.append(line.split()[0])
@@ -1065,16 +1066,29 @@ def split_multimolxyzfile(file, writexyz=False):
                         write_xyzfile(elems, coords, "molecule"+str(molcounter))
                     coords = []
                     elems = []
+            #Grab title
             if titlegrab is True:
-                all_titles.append(line.split()[-1])
+                if len(line.split()) > 0:
+                    all_titles.append(line.split()[-1])
+                else:
+                    all_titles.append("NA")
                 titlegrab=False
                 coordgrab = True
-            if line.split()[0] == str(numatoms):
-                # print("coords is", len(coords))
-                molcounter += 1
-                titlegrab=True
-                coordgrab=False
-
+            #Grabbing number of atoms from string
+            if len(line.split()) > 0:
+                if line.split()[0] == str(numatoms):
+                    #print("Molcounter", molcounter)
+                    # print("coords is", len(coords))
+                    if molcounter % skipindex:
+                        molcounter += 1
+                        titlegrab=False
+                        coordgrab=False
+                    else:
+                        #print("Using. molcounter", molcounter)
+                        molcounter += 1
+                        titlegrab=True
+                        coordgrab=False
+                        #exit()
     return all_elems,all_coords, all_titles
 
 
@@ -1618,8 +1632,6 @@ def QMregionfragexpand(fragment=None,initial_atoms=None, radius=None):
         exit()
     subsetelems = [fragment.elems[i] for i in initial_atoms]
     subsetcoords=[fragment.coords[i]for i in initial_atoms ]
-    print("subsetcoords:", subsetcoords)
-    print("subsetelems:", subsetelems)
     if len(fragment.connectivity) == 0:
         print("No connectivity found. Using slow way of finding nearby fragments...")
     atomlist=[]
@@ -1726,15 +1738,157 @@ def get_linkatom_positions(qm_mm_boundary_dict,qmatoms, coords, elems, linkatom_
 
 #Grabbing molecules from multi-XYZ trajectory file (can be MD-file, optimization traj, nebpath traj etc).
 #Creating ASH fragments for each conformer
-def get_molecules_from_trajectory(file):
-    print("")
-    print("Now finding molecules in multi-XYZ trajectory file and creating ASH fragments...")
+def get_molecules_from_trajectory(file,writexyz=False, skipindex=1,conncalc=False):
+    print("----------------------------------")
+    print("Get molecules from trajectory")
+    print("----------------------------------")
+    print("Finding molecules/snapshots in multi-XYZ trajectory file and creating ASH fragments...")
+    print("Taking every {}th entry".format(skipindex))
     list_of_molecules=[]
-    all_elems, all_coords, all_titles = split_multimolxyzfile(file,writexyz=True)
+    all_elems, all_coords, all_titles = split_multimolxyzfile(file,writexyz=writexyz,skipindex=skipindex)
     print("Found {} molecules in file".format(len(all_elems)))
-    
     for els,cs in zip(all_elems,all_coords):
-        conf = ash.Fragment(elems=els, coords=cs)
+        conf = ash.Fragment(elems=els, coords=cs, conncalc=conncalc, printlevel=0)
         list_of_molecules.append(conf)
 
     return list_of_molecules
+
+
+
+
+#Extend cell in general with original cell in center
+#NOTE: Taken from functions_molcrys.
+#TODO: Remove function from functions_molcrys
+def cell_extend_frag(cellvectors, coords,elems,cellextpars):
+    printdebug("cellextpars:", cellextpars)
+    permutations = []
+    for i in range(int(cellextpars[0])):
+        for j in range(int(cellextpars[1])):
+            for k in range(int(cellextpars[2])):
+                permutations.append([i, j, k])
+                permutations.append([-i, j, k])
+                permutations.append([i, -j, k])
+                permutations.append([i, j, -k])
+                permutations.append([-i, -j, k])
+                permutations.append([i, -j, -k])
+                permutations.append([-i, j, -k])
+                permutations.append([-i, -j, -k])
+    #Removing duplicates and sorting
+    permutations = sorted([list(x) for x in set(tuple(x) for x in permutations)],key=lambda x: (abs(x[0]), abs(x[1]), abs(x[2])))
+    #permutations = permutations.sort(key=lambda x: x[0])
+    printdebug("Num permutations:", len(permutations))
+    numcells=np.prod(cellextpars)
+    numcells=len(permutations)
+    extended = np.zeros((len(coords) * numcells, 3))
+    new_elems = []
+    index = 0
+    for perm in permutations:
+        shift = cellvectors[0:3, 0:3] * perm
+        shift = shift[:, 0] + shift[:, 1] + shift[:, 2]
+        #print("Permutation:", perm, "shift:", shift)
+        for d, el in zip(coords, elems):
+            new_pos=d+shift
+            extended[index] = new_pos
+            new_elems.append(el)
+            #print("extended[index]", extended[index])
+            #print("extended[index+1]", extended[index+1])
+            index+=1
+    printdebug("extended coords num", len(extended))
+    printdebug("new_elems  num,", len(new_elems))
+    return extended, new_elems
+
+#From Pymol. Not sure if useful
+#NOTE: also in functions_molcrys
+def cellbasis(angles, edges):
+    from math import cos, sin, radians, sqrt
+    """
+    For the unit cell with given angles and edge lengths calculate the basis
+    transformation (vectors) as a 4x4 numpy.array
+    """
+    rad = [radians(i) for i in angles]
+    basis = np.identity(4)
+    basis[0][1] = cos(rad[2])
+    basis[1][1] = sin(rad[2])
+    basis[0][2] = cos(rad[1])
+    basis[1][2] = (cos(rad[0]) - basis[0][1]*basis[0][2])/basis[1][1]
+    basis[2][2] = sqrt(1 - basis[0][2]**2 - basis[1][2]**2)
+    edges.append(1.0)
+    return basis * edges # numpy.array multiplication!
+
+
+
+#Cut N-radius cluster from (extended) box from chosen atomindex
+#TODO: Add option to use center-of-mass, centroid, multiple indices etc.
+#NOTE: Deprecated????
+def cut_cluster(coords=None, elems=None, radius=None, center_atomindex=None):
+
+    print("Now cutting spherical cluster with radius {} Å from box".format(radius))
+
+
+    # Getting coordinates of atom to center cluster on
+    #origin=np.array([coords[center_atomindex]])
+    #comparecoords = np.tile(origin, (len(coords), 1))
+
+    # Get all distances in one go
+    #distances = einsum_mat(coords, comparecoords)
+
+    #Get connectivity of whole thing
+    #connectivity=[]
+
+
+    #atomlist=[]
+    ##Keep only atoms with distances from within R of center_atomindex 
+    #for count in range(len(coords)):
+    #    if distances[count] < radius:
+    #        #Look up connected members
+    #        for q in connectivity:
+    #            #print("q:", q)
+    #            if count in q:
+    #                wholemol=q
+    #                #print("wholemol", wholemol)
+    #                break
+    #        for i in wholemol:
+    #            atomlist.append(i)
+
+    #clustercoords=[coords[i] for i in atomlist]
+    clustercoords=np.take(coords,atomlist,axis=0)
+    clusterelems=[elems[i] for i in atomlist]
+
+    return clustercoords,clusterelems
+
+
+
+
+#Create a molecular cluster from a periodix box based on radius and chosen atom(s)
+
+def make_cluster_from_box(fragment=None, radius=10, center_atomindices=[0], cellparameters=None):
+    print("----------------------------")
+    print("Make cluster from box")
+    print("----------------------------")
+    #Choosing how far to extend cell based on chosen cluster-radius
+    if radius < cellparameters[0]:
+        cellextension=[2,2,2]
+    else:
+        cellextension=[3,3,3]
+
+    print("Cell parameters:", cellparameters)
+    print("Radius: {} Å".format(radius))
+    print("Cell extension used: ", cellextension)
+    print("Cluster will be centered on atom indices:", center_atomindices)
+
+
+    #Extend cell
+    cellvectors=cellbasis(cellparameters[3:6],cellparameters[0:3])
+    ext_coords, ext_elems=cell_extend_frag(cellvectors, fragment.coords, fragment.elems, cellextension)
+    print("Size of extended cell:", len(ext_elems))
+    extcellfrag = ash.Fragment(elems=ext_elems, coords=ext_coords, printlevel=0)
+
+    #Cut cluster with radius R from extended cell, centered on atomic index. Returns list of atoms
+    atomlist = QMregionfragexpand(fragment=extcellfrag,initial_atoms=center_atomindices, radius=radius)
+
+    #Grabbing coords and elems from atomlist and creating new fragment
+    clustercoords=np.take(ext_coords,atomlist,axis=0)
+    clusterelems=[ext_elems[i] for i in atomlist]
+    newfrag = ash.Fragment(elems=clusterelems, coords=clustercoords, printlevel=0)
+
+    return newfrag

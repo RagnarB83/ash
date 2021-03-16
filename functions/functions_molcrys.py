@@ -1,6 +1,6 @@
 import numpy as np
 from functions_general import blankline,uniq,printdebug,print_time_rel_and_tot,print_time_rel,BC
-from module_coords import elemlisttoformula,molformulatolist,nucchargelist,totmasslist,write_xyzfile,isElementList,einsum_mat,get_molecule_members_loop_np2,reorder,reorder_hungarian_scipy,eldict_covrad
+import module_coords
 import interface_ORCA
 from interface_xtb import grabatomcharges_xTB
 from module_MM import UFFdict
@@ -100,7 +100,7 @@ def frag_define(orthogcoords,elems,cell_vectors,fragments,cell_angles=None, cell
     print("len temp_extended_elems", len(temp_extended_elems))
     
     # Write XYZ-file with orthogonal coordinates for 3x3xcell
-    write_xyzfile(temp_extended_elems, temp_extended_coords, "temp_cell_extended_coords-beforedel")
+    module_coords.write_xyzfile(temp_extended_elems, temp_extended_coords, "temp_cell_extended_coords-beforedel")
     
     #Delete duplicate entries. May happen if atoms are right on boundary
     temp_extended_coords, temp_extended_elems = delete_clashing_atoms(temp_extended_coords,orthogcoords,temp_extended_elems,elems)
@@ -109,7 +109,7 @@ def frag_define(orthogcoords,elems,cell_vectors,fragments,cell_angles=None, cell
     print("len temp_extended_elems", len(temp_extended_elems))
     
     # Write XYZ-file with orthogonal coordinates for 3x3xcell
-    write_xyzfile(temp_extended_elems, temp_extended_coords, "temp_cell_extended_coords-afterdel")
+    module_coords.write_xyzfile(temp_extended_elems, temp_extended_coords, "temp_cell_extended_coords-afterdel")
     
     #write XTL file for 3x3x3 cell
     #Todo: fix.
@@ -158,14 +158,14 @@ def frag_define(orthogcoords,elems,cell_vectors,fragments,cell_angles=None, cell
     for i in range(len(elems)):
 
         printdebug("i : ", i)
-        members = get_molecule_members_loop_np2(orthogcoords, elems, 99, scale, tol,
+        members = module_coords.get_molecule_members_loop_np2(orthogcoords, elems, 99, scale, tol,
                                             atomindex=i)
         printdebug("members:" , members)
         #print("members:", members)
         el_list = [elems[i] for i in members]
-        formula=elemlisttoformula(el_list)
-        current_mass = totmasslist(el_list)
-        ncharge = nucchargelist(el_list)
+        formula=module_coords.elemlisttoformula(el_list)
+        current_mass = module_coords.totmasslist(el_list)
+        ncharge = module_coords.nucchargelist(el_list)
         printdebug("Current_mass:", current_mass)
         printdebug("current formula:", formula)
         printdebug("el_list:", el_list)
@@ -216,18 +216,18 @@ def frag_define(orthogcoords,elems,cell_vectors,fragments,cell_angles=None, cell
     print(BC.OKBLUE,"Step 2. Using extended cell to find connected members of unassigned fragments",BC.END)
     for m in unassigned:
         printdebug("Trying unassigned m : {} ".format(m))
-        members = get_molecule_members_loop_np2(temp_extended_coords, temp_extended_elems, 99,
+        members = module_coords.get_molecule_members_loop_np2(temp_extended_coords, temp_extended_elems, 99,
                                                 scale, tol, membs=m)
         el_list = [temp_extended_elems[i] for i in members]
         current_mass = totmasslist(el_list)
         printdebug("members:", members)
         printdebug("el_list:", el_list)
         printdebug("current_mass:", current_mass)
-        formula = elemlisttoformula(el_list)
+        formula = module_coords.elemlisttoformula(el_list)
         print("formula:", formula)
         for fragment in fragments:
             printdebug("el_list:", el_list)
-            ncharge = nucchargelist(el_list)
+            ncharge = module_coords.nucchargelist(el_list)
             #if ncharge == fragment.Nuccharge:
             if same_fragment(fragtype=fragment, nuccharge=ncharge, mass=current_mass, formula=formula) is True:
                 printdebug("Found match. ncharge is", ncharge)
@@ -678,11 +678,11 @@ def read_ciffile(file):
         firstcolumn.append(el)
 
     #Checking if first or second column contains strings that are real periodic-table elements
-    if isElementList(firstcolumn):
+    if module_coords.isElementList(firstcolumn):
         print("Found correct elements in 1st column")
         elems=firstcolumn
     else:
-        if isElementList(secondcolumns):
+        if module_coords.isElementList(secondcolumns):
             print("Found correct elements in 2nd column")
             elems = secondcolumns
         else:
@@ -843,7 +843,7 @@ def create_MMcluster(orthogcoords,elems,cell_vectors,sphereradius):
     print("Using cell expansion: [{},{},{}]".format(cell_expansion,cell_expansion,cell_expansion))
     extended_coords,extended_elems=cell_extend_frag(cell_vectors,orthogcoords,elems,[cell_expansion,cell_expansion,cell_expansion])
     #Write XYZ-file with orthogonal coordinates for cell
-    write_xyzfile(extended_elems,extended_coords,"cell_extended_coords")
+    module_coords.write_xyzfile(extended_elems,extended_coords,"cell_extended_coords")
     printdebug("after extended cell")
     printdebug(len(extended_coords))
     printdebug(len(extended_elems))
@@ -852,7 +852,7 @@ def create_MMcluster(orthogcoords,elems,cell_vectors,sphereradius):
     comparecoords = np.tile(origin, (len(extended_coords), 1))
     print("Now cutting spherical cluster with radius {} Å from super-cell".format(sphereradius))
     # Einsum is slightly faster than bare_numpy_mat. All distances in one go
-    distances = einsum_mat(extended_coords, comparecoords)
+    distances = module_coords.einsum_mat(extended_coords, comparecoords)
     #This for loop goes over 112504 count!!! not the best for mol-members
     for count in range(len(extended_coords)):
         #print("count:", count)
@@ -863,7 +863,7 @@ def create_MMcluster(orthogcoords,elems,cell_vectors,sphereradius):
     for d in reversed(deletionlist):
         del extended_elems[d]
     #Write XYZ-file
-    write_xyzfile(extended_elems,extended_coords,"trimmedcell_extended_coords")
+    module_coords.write_xyzfile(extended_elems,extended_coords,"trimmedcell_extended_coords")
     return extended_coords,extended_elems
 
 #Remove partial fragments of MM cluster
@@ -877,7 +877,7 @@ def remove_partial_fragments(coords,elems,sphereradius,fragmentobjects, scale=No
     #Finding surfaceatoms
     origin=np.array([0.0,0.0,0.0])
     comparecoords = np.tile(origin, (len(coords), 1))
-    distances = einsum_mat(coords, comparecoords)
+    distances = module_coords.einsum_mat(coords, comparecoords)
     #ForFe2dimer: good values: 4.5 (5.8min), 5 (6min),6 (6.5min), 10(9.2Min)
     #Bad: 4 (5.4 min)
     thickness=5.0
@@ -900,7 +900,7 @@ def remove_partial_fragments(coords,elems,sphereradius,fragmentobjects, scale=No
             #ashpath = os.path.dirname(ash.__file__)
             #Main.include(ashpath + "/functions/functions_julia.jl")
             #Get list of fragments for all surfaceatoms
-            fraglist_temp = ash.Main.Juliafunctions.calc_fraglist_for_atoms(surfaceatoms,coords, elems, 99, scale, tol,eldict_covrad)
+            fraglist_temp = ash.Main.Juliafunctions.calc_fraglist_for_atoms(surfaceatoms,coords, elems, 99, scale, tol,module_coords.eldict_covrad)
             # Converting from numpy to list of lists
             for sublist in fraglist_temp:
                 fraglist.append(list(sublist))
@@ -913,7 +913,7 @@ def remove_partial_fragments(coords,elems,sphereradius,fragmentobjects, scale=No
             for surfaceatom in surfaceatoms:
                 if surfaceatom not in found_atoms:
                     count += 1
-                    members = get_molecule_members_loop_np2(coords, elems, 99, scale, tol, atomindex=surfaceatom)
+                    members = module_coords.get_molecule_members_loop_np2(coords, elems, 99, scale, tol, atomindex=surfaceatom)
                     if members not in fraglist:
                         fraglist.append(members)
                         found_atoms += members
@@ -922,7 +922,7 @@ def remove_partial_fragments(coords,elems,sphereradius,fragmentobjects, scale=No
         for surfaceatom in surfaceatoms:
             if surfaceatom not in found_atoms:
                 count+=1
-                members=get_molecule_members_loop_np2(coords, elems, 99, scale, tol,atomindex=surfaceatom)
+                members=module_coords.get_molecule_members_loop_np2(coords, elems, 99, scale, tol,atomindex=surfaceatom)
                 if members not in fraglist:
                     fraglist.append(members)
                     found_atoms+=members
@@ -945,8 +945,8 @@ def remove_partial_fragments(coords,elems,sphereradius,fragmentobjects, scale=No
     deletionlist=[]
     for frag in fraglist:
         el_list = [elems[i] for i in frag]
-        ncharge = nucchargelist(el_list)
-        mass = totmasslist(el_list)
+        ncharge = module_coords.nucchargelist(el_list)
+        mass = module_coords.totmasslist(el_list)
 
         #Checking if valid nuccharge for fragment
         if ncharge in nuccharges:
@@ -1012,7 +1012,7 @@ def reordercluster(fragment,fragmenttype,code_version='py'):
                 elems_frag=np.array([fragment.elems[i] for i in frag])
                 coords_frag = np.array([fragment.coords[i] for i in frag])
 
-                order = reorder(reorder_hungarian_scipy, coords_frag_ref, coords_frag,
+                order = module_coords.reorder(module_coords.reorder_hungarian_scipy, coords_frag_ref, coords_frag,
                                 elems_frag_ref, elems_frag)
 
                 #Using order list reshuffle frag:
@@ -1071,7 +1071,7 @@ def gasfragcalc_ORCA(fragmentobjects,Cluster,chargemodel,orcadir,orcasimpleinput
         #Call Clusterfragment and have print/write/something out coords and elems for atoms in list [0,1,2,3 etc.]
         atomlist=fragmentobject.clusterfraglist[0]
         fragcoords,fragelems=Cluster.get_coords_for_atoms(atomlist)
-        write_xyzfile(fragelems, fragcoords, "fragment")
+        module_coords.write_xyzfile(fragelems, fragcoords, "fragment")
         gasfrag=ash.Fragment(coords=fragcoords,elems=fragelems)
 
         print("Defined gasfrag:", gasfrag)
@@ -1169,7 +1169,7 @@ def gasfragcalc_xTB(fragmentobjects,Cluster,chargemodel,xtbdir,xtbmethod,NUMPROC
         #Call Clusterfragment and have print/write/something out coords and elems for atoms in list [0,1,2,3 etc.]
         atomlist=fragmentobject.clusterfraglist[0]
         fragcoords,fragelems=Cluster.get_coords_for_atoms(atomlist)
-        write_xyzfile(fragelems, fragcoords, "fragment")
+        module_coords.write_xyzfile(fragelems, fragcoords, "fragment")
         gasfrag=ash.Fragment(coords=fragcoords,elems=fragelems)
 
         #print("Defined gasfrag:", gasfrag)

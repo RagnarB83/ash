@@ -1,6 +1,7 @@
 import subprocess as sp
 #from functions_solv import *
-from module_coords import elemstonuccharges
+#from module_coords import elemstonuccharges
+import module_coords
 from functions_general import blankline,insert_line_into_file,BC
 import functions_elstructure
 import constants
@@ -15,7 +16,7 @@ class ORCATheory:
                  orcablocks='', extraline='', brokensym=None, HSmult=None, atomstoflip=None, nprocs=1, label=None, moreadfile=None):
 
         if orcadir is None:
-            print("No orcadir argument passed to ORCATheory. Attempting to find orcadir variable inside settings_ash")
+            print(BC.WARNING, "No orcadir argument passed to ORCATheory. Attempting to find orcadir variable inside settings_ash", BC.END)
             try:
                 self.orcadir=settings_ash.settings_dict["orcadir"]
             except:
@@ -444,6 +445,24 @@ def grab_HF_and_corr_energies(file, DLPNO=False, F12=False):
     return edict
 
 
+#Grab XES state energies and intensities from ORCA output
+def xesgrab(file):
+    xesenergies=[]
+    #
+    intensities=[]
+    xesgrab=False
+    
+    with open(file) as f:
+        for line in f:
+            if xesgrab==True:
+                if 'Getting memory' in line:
+                    xesgrab=False
+                if "->" in line:
+                    xesenergies.append(float(line.split()[4]))
+                    intensities.append(float(line.split()[8]))
+            if "COMBINED ELECTRIC DIPOLE + MAGNETIC DIPOLE + ELECTRIC QUADRUPOLE X-RAY EMISSION SPECTRUM" in line:
+                xesgrab=True
+    return xesenergies,intensities
 
 #Grab TDDFT states from ORCA output
 def tddftgrab(file):
@@ -1058,7 +1077,7 @@ def grabatomcharges_ORCA(chargemodel,outputfile):
                     charges=[]
                     grab=True
         print("Hirshfeld charges :", charges)
-        atomicnumbers=elemstonuccharges(elems)
+        atomicnumbers=elemstonuccharges.elemstonuccharges(elems)
         charges = functions_elstructure.calc_cm5(atomicnumbers, coords, charges)
         print("CM5 charges :", list(charges))
     elif chargemodel == "Mulliken":
