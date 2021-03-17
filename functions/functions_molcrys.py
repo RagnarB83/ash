@@ -219,7 +219,7 @@ def frag_define(orthogcoords,elems,cell_vectors,fragments,cell_angles=None, cell
         members = module_coords.get_molecule_members_loop_np2(temp_extended_coords, temp_extended_elems, 99,
                                                 scale, tol, membs=m)
         el_list = [temp_extended_elems[i] for i in members]
-        current_mass = totmasslist(el_list)
+        current_mass = module_coords.totmasslist(el_list)
         printdebug("members:", members)
         printdebug("el_list:", el_list)
         printdebug("current_mass:", current_mass)
