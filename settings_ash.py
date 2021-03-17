@@ -40,7 +40,7 @@ settings_dict["print_input"] = True
 settings_dict["scale"] = 1.0
 settings_dict["tol"] = 0.1
 settings_dict["conndepth"] = 10
-
+settings_dict["connectivity_code"] = "julia"
 
 ############################
 # ASH READ USER SETTINGS
@@ -76,6 +76,7 @@ try_read_setting("xtbdir","string")
 try_read_setting("psi4dir","string")
 try_read_setting("cfourdir","string")
 try_read_setting("crestdir","string")
+try_read_setting("connectivity_code","string")
 try_read_setting("scale","float")
 try_read_setting("tol","float")
 try_read_setting("use_ANSI_color","bool")

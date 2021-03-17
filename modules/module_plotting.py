@@ -1,7 +1,5 @@
 import numpy as np
-import matplotlib
-matplotlib.use('Agg')
-import matplotlib.pyplot as plt 
+
 
 #repeated here so that plotting can be stand-alone
 class BC:
@@ -15,6 +13,17 @@ class BC:
     END = '\033[0m'
     BOLD = '\033[1m'
     UNDERLINE = '\033[4m'
+
+
+def load_matplotlib():
+    print("Loading Matplotlib")
+    import matplotlib
+    matplotlib.use('Agg')
+    import matplotlib.pyplot as plt 
+
+
+
+
 
 def Gaussian(x, mu, strength, sigma):
     "Produces a Gaussian curve"
@@ -30,8 +39,9 @@ def Gaussian(x, mu, strength, sigma):
 #Input: dictionary of (X,Y): energy   entries 
 def reactionprofile_plot(surfacedictionary, finalunit='',label='Label', x_axislabel='Coord', y_axislabel='Energy', dpi=200, 
                          imageformat='png', RelativeEnergy=True, pointsize=40, scatter_linewidth=2, line_linewidth=1, color='blue' ):
-    
-    
+    load_matplotlib()
+
+
     conversionfactor = { 'kcal/mol' : 627.50946900, 'kcalpermol' : 627.50946900, 'kJ/mol' : 2625.499638, 'kJpermol' : 2625.499638, 
                         'eV' : 27.211386245988, 'cm-1' : 219474.6313702 }
     e=[]
@@ -70,7 +80,7 @@ def reactionprofile_plot(surfacedictionary, finalunit='',label='Label', x_axisla
 def contourplot(surfacedictionary, label='Label',x_axislabel='Coord', y_axislabel='Coord', finalunit=None, interpolation='Cubic', 
                 interpolparameter=10, colormap='inferno_r', dpi=200, imageformat='png', RelativeEnergy=True, numcontourlines=500,
                 contour_alpha=0.75, contourline_color='black', clinelabels=False, contour_values=None):
-    
+    load_matplotlib()
     #Relative energy conversion (if RelativeEnergy is True)
     conversionfactor = { 'kcal/mol' : 627.50946900, 'kcalpermol' : 627.50946900, 'kJ/mol' : 2625.499638, 'kJpermol' : 2625.499638, 
                         'eV' : 27.211386245988, 'cm-1' : 219474.6313702 }
@@ -260,6 +270,7 @@ def plot_Spectrum(xvalues=None, yvalues=None, plotname='Spectrum', range=None, u
     ####################################
     if matplotlib is True:
         print("Creating plot with Matplotlib")
+        load_matplotlib()
         
         fig, ax = plt.subplots()
 

@@ -131,6 +131,7 @@ if settings_ash.settings_dict["load_julia"] == True:
         print("Problem importing Pyjulia")
         print("Make sure Julia is installed, PyJulia within Python, Pycall within Julia, Julia packages have been installed and you are using python-jl")
         print("Python routines will be used instead when possible")
+        settings_ash.settings_dict["connectivity_code"] = "py"
         #TODO: We should here set a variable that would pick py version of routines instead
 
 

@@ -262,15 +262,23 @@ class Fragment:
         subelems=[self.elems[i] for i in atoms]
         return subcoords,subelems
     #Calculate connectivity (list of lists) of coords
-    def calc_connectivity(self, conndepth=99, scale=None, tol=None, codeversion='julia' ):
-        #Using py version if molecule is small. Otherwise Julia by default
+    def calc_connectivity(self, conndepth=99, scale=None, tol=None, codeversion=None ):
+        print("Calculating connectivity.")
+        #If codeversion not requested we go to default
+        if codeversion == None:
+            codeversion=settings_ash.settings_dict["connectivity_code"]
+            print("Codeversion not set. Using default setting: ", codeversion)
+        
+        #Overriding with py version if molecule is small. Faster than calling julia.
         if len(self.coords) < 100:
+            print("Small system. Using py version")
             codeversion='py'
         elif len(self.coords) > 10000:
             if self.printlevel >= 2:
                 print("Atom number > 10K. Connectivity calculation could take a while")
 
-        
+
+
         if scale == None:
             try:
                 scale = settings_ash.settings_dict["scale"]
@@ -318,6 +326,8 @@ class Fragment:
                 print(BC.FAIL,"Problem importing Pyjulia (import julia)", BC.END)
                 print("Make sure Julia is installed and PyJulia module available, and that you are using python-jl")
                 print(BC.FAIL,"Using Python version instead (slow for large systems)", BC.END)
+                #Switching default to py since Julia did not load
+                settings_ash.settings_dict["connectivity_code"] = "py"
                 fraglist = calc_conn_py(self.coords, self.elems, conndepth, scale, tol)
 
 
@@ -1635,6 +1645,10 @@ def QMregionfragexpand(fragment=None,initial_atoms=None, radius=None):
     if len(fragment.connectivity) == 0:
         print("No connectivity found. Using slow way of finding nearby fragments...")
     atomlist=[]
+
+
+    #print("fragment.connectivity", fragment.connectivity)
+
     for i,c in enumerate(subsetcoords):
         el=subsetelems[i]
         for index,allc in enumerate(fragment.coords):
@@ -1648,12 +1662,15 @@ def QMregionfragexpand(fragment=None,initial_atoms=None, radius=None):
                     if len(fragment.connectivity) == 0:
                         #wholemol=get_molecule_members_loop(fragment.coords, fragment.elems, index, 1, scale, tol)
                         wholemol=get_molecule_members_loop_np2(fragment.coords, fragment.elems, 99, scale, tol, atomindex=index)
+                        
                     #If stored connectivity
                     else:
                         for q in fragment.connectivity:
+                            #exit()
                             if index in q:
                                 wholemol=q
                                 break
+                    
                     elematoms=[fragment.elems[i] for i in wholemol]
                     atomlist=atomlist+wholemol
     atomlist = np.unique(atomlist).tolist()
@@ -1881,8 +1898,7 @@ def make_cluster_from_box(fragment=None, radius=10, center_atomindices=[0], cell
     cellvectors=cellbasis(cellparameters[3:6],cellparameters[0:3])
     ext_coords, ext_elems=cell_extend_frag(cellvectors, fragment.coords, fragment.elems, cellextension)
     print("Size of extended cell:", len(ext_elems))
-    extcellfrag = ash.Fragment(elems=ext_elems, coords=ext_coords, printlevel=0)
-
+    extcellfrag = ash.Fragment(elems=ext_elems, coords=ext_coords, printlevel=2)
     #Cut cluster with radius R from extended cell, centered on atomic index. Returns list of atoms
     atomlist = QMregionfragexpand(fragment=extcellfrag,initial_atoms=center_atomindices, radius=radius)
 

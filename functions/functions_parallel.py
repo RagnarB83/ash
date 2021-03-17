@@ -16,7 +16,8 @@ def Single_par(list):
     fragment=list[1]
     #Making label flexible. Can be tuple but inputfilename is converted to string below
     label=list[2]
-    if label is None:
+    print("label:", label)
+    if label == None:
         print("No label provided to fragment or theory objects. This is required to distinguish between calculations ")
         print("Exiting...")
         exit(1)
