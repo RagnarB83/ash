@@ -20,7 +20,7 @@ def load_matplotlib():
     import matplotlib
     matplotlib.use('Agg')
     import matplotlib.pyplot as plt 
-
+    return plt
 
 
 
@@ -270,8 +270,7 @@ def plot_Spectrum(xvalues=None, yvalues=None, plotname='Spectrum', range=None, u
     ####################################
     if matplotlib is True:
         print("Creating plot with Matplotlib")
-        load_matplotlib()
-        
+        plt = load_matplotlib()
         fig, ax = plt.subplots()
 
         ax.plot(x, spectrum, 'C3', label=plotname)
