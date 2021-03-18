@@ -1885,7 +1885,7 @@ def PhotoElectronSpectrum(theory=None, fragment=None, Initialstate_charge=None, 
         #Final-state  calc. TDDFT or CASSCF
         #Adding TDDFT block to inputfile
         ##CAS option: State-averaged calculation for both spin multiplicities.
-        if EOM is True:
+        if EOM == True:
             
             #Preserve old
             orig_orcablocks=copy.copy(theory.orcablocks)
@@ -1893,8 +1893,12 @@ def PhotoElectronSpectrum(theory=None, fragment=None, Initialstate_charge=None, 
             #Will calculate IPs directly
             print("Adding MDCI block for initial state")
             
-            if 'IP-EOM-CCSD' not in theory.orcasimpleinput:
-                theory.orcasimpleinput =  theory.orcasimpleinput + ' IP-EOM-CCSD '
+            if btPNO == True:
+                if 'bt-PNO-IP-EOM-CCSD' not in theory.orcasimpleinput:
+                    theory.orcasimpleinput =  theory.orcasimpleinput + ' bt-PNO-IP-EOM-CCSD '
+            else:
+                if 'IP-EOM-CCSD' not in theory.orcasimpleinput:
+                    theory.orcasimpleinput =  theory.orcasimpleinput + ' IP-EOM-CCSD '
             
             FinalIPs=[]
             fstates_dict={}
