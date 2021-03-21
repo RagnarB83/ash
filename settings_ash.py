@@ -42,6 +42,10 @@ settings_dict["tol"] = 0.1
 settings_dict["conndepth"] = 10
 settings_dict["connectivity_code"] = "julia"
 
+#Exit command
+settings_dict["print_exit_footer"] = True
+
+
 ############################
 # ASH READ USER SETTINGS
 ############################
@@ -81,6 +85,7 @@ try_read_setting("scale","float")
 try_read_setting("tol","float")
 try_read_setting("use_ANSI_color","bool")
 try_read_setting("print_input","bool")
+try_read_setting("print_exit_footer","bool")
 try_read_setting("print_logo","bool")
 try_read_setting("debugflag","bool")
 try_read_setting("load_julia","bool")

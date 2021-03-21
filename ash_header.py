@@ -7,15 +7,26 @@ import sys
 
 import settings_ash
 import ash
-from functions_general import BC
+from functions_general import BC,print_time_tot_color
 
 
+
+programversion = 0.2
+
+#ASH footer
+def print_footer():
+    print("")
+
+
+    print_time_tot_color(init_time)
 
 
 def print_header():
     """
     ASH initial output. Used to print header (logo, version etc.), set initial time, print inputscript etc.
     """
+
+
     #Initializes time
     global init_time
     init_time=time.time()
@@ -47,14 +58,14 @@ def print_header():
     
 
 def print_logo():
-    programversion = 0.2
-
-    #Getting commit version number from file VERSION (updated by yggpull) inside module dir
+    
+    #Getting commit version number from file VERSION (updated by ashpull) inside module dir
     try:
         with open(os.path.dirname(ash.__file__)+"/VERSION") as f:
             git_commit_number = int(f.readline())
     except:
         git_commit_number="Unknown"
+
 
     #http://asciiflow.com
     #https://textik.com/#91d6380098664f89

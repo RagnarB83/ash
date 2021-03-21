@@ -14,6 +14,9 @@ import os
 import sys
 import inspect
 import time
+import atexit
+
+
 
 
 ###############
@@ -109,6 +112,10 @@ import settings_ash
 import ash_header
 ash_header.print_header()
 
+
+#Exit command (footer)
+if settings_ash.settings_dict["print_exit_footer"] == True:
+    atexit.register(ash_header.print_footer)
 
 
 #Julia dependency. Current behaviour: 
