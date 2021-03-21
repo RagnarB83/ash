@@ -26,7 +26,7 @@ sys.path.insert(1, ashpath+'/modules')
 sys.path.insert(1, ashpath+'/interfaces')
 sys.path.insert(1, ashpath+'/functions')
 
-from functions_general import blankline,BC,listdiff,print_time_rel,print_time_rel_and_tot,pygrep,printdebug,read_intlist_from_file
+from functions_general import blankline,BC,listdiff,print_time_rel,print_time_rel_and_tot,pygrep,printdebug,read_intlist_from_file,frange
 
 # Fragment class and coordinate functions
 import module_coords
