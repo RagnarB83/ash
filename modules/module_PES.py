@@ -2834,6 +2834,7 @@ def potential_adjustor_DFT(theory=None, fragment=None, Initialstate_charge=None,
     
     #Orbitals in eV
     occorbs_alpha, occorbs_beta, hftyp = orbitalgrab(theory.filename+'.out')
+    
     print("occorbs_alpha (eV): ", occorbs_alpha)
     print("occorbs_beta (eV): ", occorbs_beta)
     

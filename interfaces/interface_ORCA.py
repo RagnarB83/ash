@@ -514,6 +514,8 @@ def grabtrajenergies(filename):
     #    return energies
     return energies,stepvals
 
+
+#TODO: Limited, kept for now for module_PES compatibility. Better version below
 def orbitalgrab(file):
     occorbsgrab=False
     virtorbsgrab=False
@@ -567,6 +569,75 @@ def orbitalgrab(file):
             if 'NO   OCC          E(Eh)            E(eV)' in line:
                 occorbsgrab=True
     return bands_alpha, bands_beta, hftyp
+
+
+
+def MolecularOrbitalGrab(file):
+    occorbsgrab=False
+    virtorbsgrab=False
+    endocc="unset"
+    tddftgrab="unset"
+    tddft="unset"
+    bands_alpha=[]
+    bands_beta=[]
+    virtbands_a=[]
+    virtbands_b=[]
+    f=[]
+    virtf=[]
+    spinflag="unset"
+    hftyp="unset"
+
+    with open(file) as f:
+        for line in f:
+            if '%tddft' in line:
+                tddft="yes"
+            if 'Hartree-Fock type      HFTyp' in line:
+                hftyp=line.split()[4]
+                #if hftyp=="UHF":
+            if hftyp == "RHF":
+                spinflag="alpha"
+            if 'SPIN UP ORBITALS' in line:
+                spinflag="alpha"
+            if 'SPIN DOWN ORBITALS' in line:
+                spinflag="beta"
+            if occorbsgrab==True:
+                endocc=line.split()[1]
+                if endocc == "0.0000" :
+                    occorbsgrab=False
+                    virtorbsgrab=True
+                else:
+                    if spinflag=="alpha":
+                        bands_alpha.append(float(line.split()[3]))
+                    if spinflag=="beta":
+                        bands_beta.append(float(line.split()[3]))
+            if virtorbsgrab==True:
+                if '------------------' in line:
+                    break
+                if line == '\n':
+                    virtorbsgrab=False
+                    spinflag="unset"
+                    continue
+                if spinflag=="alpha":
+                    virtbands_a.append(float(line.split()[3]))
+                if spinflag=="beta":
+                    virtbands_b.append(float(line.split()[3]))
+                endvirt=line.split()[1]
+            if 'NO   OCC          E(Eh)            E(eV)' in line:
+                occorbsgrab=True
+    
+    if hftyp != "RHF":
+        Openshell=True
+    else:
+        Openshell=False
+
+    #Final dict
+    MOdict= {"occ_alpha":bands_alpha, "occ_beta":bands_alpha, "unocc_alpha":virtbands_a, "unocc_beta":virtbands_b, "Openshell":Openshell}
+    return MOdict
+
+
+
+
+
 
 
 #Grab <S**2> expectation values from outputfile

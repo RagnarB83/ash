@@ -57,6 +57,8 @@ from module_surface import calc_surface,calc_surface_fromXYZ,read_surfacedict_fr
 
 #QMcode interfaces
 from interface_ORCA import ORCATheory
+import interface_ORCA
+
 from interface_Psi4 import Psi4Theory
 from interface_dalton import DaltonTheory
 from interface_pyscf import PySCFTheory
