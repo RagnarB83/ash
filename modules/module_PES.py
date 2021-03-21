@@ -2288,14 +2288,18 @@ def PhotoElectronSpectrum(theory=None, fragment=None, Initialstate_charge=None, 
             frozencore = 0
 
             # Grab MO coefficients and write to files mos_init and mos_final
-            if os.path.isfile('./mos_init') == True:
-                print(bcolors.WARNING, "mos_init file already exists in dir! Using (is this what you want?!)", bcolors.ENDC)
-            else:
-                print("stateI.gbwfile: ", stateI.gbwfile)
-                print("stateI.restricted :", stateI.restricted)
-                print("frozencore: ", frozencore)
-                mos_init = get_MO_from_gbw(stateI.gbwfile, stateI.restricted, frozencore,theory.orcadir)
-                writestringtofile(mos_init, "mos_init")
+
+            #Delete old mos_init file
+            os.remove("mos_init")
+
+            #if os.path.isfile('./mos_init') == True:
+            #    print(bcolors.WARNING, "mos_init file already exists in dir! Using (is this what you want?!)", bcolors.ENDC)
+            #else:
+            print("stateI.gbwfile: ", stateI.gbwfile)
+            print("stateI.restricted :", stateI.restricted)
+            print("frozencore: ", frozencore)
+            mos_init = get_MO_from_gbw(stateI.gbwfile, stateI.restricted, frozencore,theory.orcadir)
+            writestringtofile(mos_init, "mos_init")
 
             for fstate in Finalstates:
                 print("here")
