@@ -154,9 +154,7 @@ def run_benchmark(set=None, theory=None, property='energy', workflow=None, orcad
     print("Reuse orbitals option: ", reuseorbs)
     ashpath = os.path.dirname(ash.__file__)
 
-    print("set:", set)
     if 'GMTKN55' in set:
-        print("here")
         bigset="GMTKN55"
         subset=set.split('_')[1]
         benchmarksetpath=ashpath+"/databases/Benchmarking-sets/"+bigset+"/"+subset+"/data/"
