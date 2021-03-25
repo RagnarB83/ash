@@ -559,7 +559,7 @@ class OpenMMTheory:
         
         timeA = time.time()
     
-    def run(self, current_coords=None, elems=None, Grad=True, fragment=None, qmatoms=None):
+    def run(self, current_coords=None, elems=None, Grad=False, fragment=None, qmatoms=None):
         timeA = time.time()
         print(BC.OKBLUE, BC.BOLD, "------------RUNNING OPENMM INTERFACE-------------", BC.END)
         #If no coords given to run then a single-point job probably (not part of Optimizer or MD which would supply coords).
@@ -599,12 +599,16 @@ class OpenMMTheory:
         print_time_rel(timeA, modulename="context pos")
         timeA = time.time()
         print("Calculating MM state")
-        state = self.simulation.context.getState(getEnergy=True, getForces=True)
+        if Grad == True:
+            state = self.simulation.context.getState(getEnergy=True, getForces=True)
+            self.energy = state.getPotentialEnergy().value_in_unit(self.unit.kilojoule_per_mole) / constants.hartokj
+            self.gradient = np.array(state.getForces(asNumpy=True)/factor)
+        else:
+            state = self.simulation.context.getState(getEnergy=True, getForces=False)
+            self.energy = state.getPotentialEnergy().value_in_unit(self.unit.kilojoule_per_mole) / constants.hartokj
+
         print_time_rel(timeA, modulename="state")
         timeA = time.time()
-        self.energy = state.getPotentialEnergy().value_in_unit(self.unit.kilojoule_per_mole) / constants.hartokj
-        self.gradient = np.array(state.getForces(asNumpy=True)/factor)
-
         print("OpenMM Energy:", self.energy, "Eh")
         print("OpenMM Energy:", self.energy*constants.harkcal, "kcal/mol")
         
@@ -614,11 +618,12 @@ class OpenMMTheory:
         
         print("self.energy : ", self.energy, "Eh")
         print("Energy:", self.energy*constants.harkcal, "kcal/mol")
-        #print("self.gradient:", self.gradient)
 
         print(BC.OKBLUE, BC.BOLD, "------------ENDING OPENMM INTERFACE-------------", BC.END)
-        return self.energy, self.gradient
-    
+        if Grad == True:
+            return self.energy, self.gradient
+        else:
+            return self.energy
     #Get list of charges from chosen force object (usually original nonbonded force object)
     def getatomcharges(self,force):
         chargelist = []
