@@ -1443,7 +1443,9 @@ end
         auxbasis='aug-cc-pV5Z/C'
         ccsdt_1_line="! {} aug-cc-pVTZ {} {} {} {}".format(ccsdtkeyword, auxbasis, pnokeyword, scfsetting,extrainputkeyword)
         ccsdt_2_line="! {} aug-cc-pVQZ {} {} {} {}".format(ccsdtkeyword, auxbasis, pnokeyword, scfsetting,extrainputkeyword)
-        
+    else:
+        print("Unrecognized cardinals or basisfamily")
+        exit()
     #Adding special-ECP basis like cc-pVnZ-PP for heavy elements if present
     blocks1 = special_element_basis(fragment,cardinals[0],basisfamily,blocks)
     blocks2 = special_element_basis(fragment,cardinals[1],basisfamily,blocks)

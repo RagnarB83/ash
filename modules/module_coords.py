@@ -160,7 +160,6 @@ class Fragment:
             exit()
         self.coords = coords
         self.elems = elems
-
         self.update_attributes()
         if conncalc is True:
             self.calc_connectivity(scale=scale, tol=tol)
@@ -1209,7 +1208,12 @@ def nucchargelist(ellist):
     totnuccharge=0
     els=[]
     for e in ellist:
-        atcharge=elematomnumbers[e.lower()]
+        try:
+            atcharge=elematomnumbers[e.lower()]
+        except KeyError:
+            print("Unknown element: {} found in element-list".format(e))
+            print("Check coordinate-file. Exiting.")
+            exit()
         totnuccharge+=atcharge
     return totnuccharge
 
