@@ -912,8 +912,9 @@ def check_cores_vs_electrons(fragment,numcores,charge):
 
         if isodd(electronpairs):
             if electronpairs > 1:
-                print("Setting numcores to: ", electronpairs-1)
-                return electronpairs-1
+                #Changed from subtracting 1 to 3 after DLPNO-CC of NaH calculation failed (MB16-43)
+                print("Setting numcores to: ", electronpairs-3)
+                return electronpairs-3
             else:
                 print("Setting numcores to: ", electronpairs)
                 return electronpairs
