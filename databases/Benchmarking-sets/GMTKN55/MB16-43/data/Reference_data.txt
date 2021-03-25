@@ -1,46 +1,46 @@
 #TESTSET_INFO
 #TESTSET_INFO Numentries: 43
 #TESTSET_INFO Unit: kcal/mol
-1   01  H2  BH3 N2  O2  F2  NaH AlH3    Cl2         -2  -4  4   2   2   1   2   2   1           869.5971
-2   02  H2  LiH BH3 O2  F2  MgH2    SiH4    S2          -2  -6  2   4   1   1   2   2   2           737.7865
-3   03  H2  LiH CH4 O2  F2  NaH MgH2    AlH3    S2      -2  -13 2   6   1   1   2   2   2   1       518.6576
-4   04  H2  BH3 CH4 O2  F2  AlH3    SiH4                -2  -17 6   2   1   1   2   4               356.8481
-5   05  H2  BH3 N2  SiH4    P2  Cl2                 -2  -4  4   2   2   4   1                   147.6828
-6   06  H2  BH3 CH4 N2  O2  MgH2    AlH3                -2  -10 6   2   1   1   2   2               368.4941
-7   07  H2  BH3 CH4 N2  O2  F2  MgH2    S2  Cl2     -2  -7  2   4   1   1   2   2   1   1       557.9836
-8   08  H2  BeH2    BH3 CH4 O2  F2  AlH3                -2  -17 2   6   4   2   2   2               681.9598
-9   09  H2  LiH BH3 CH4 F2  SiH4    Cl2             -2  -6  2   4   2   1   2   1               381.4301
-10  10  H2  BH3 CH4 N2  F2  MgH2    SiH4    Cl2         -2  -14 2   6   1   1   2   2   1           46.3073
-11  11  H2  BH3 CH4 N2  O2  F2  MgH2    AlH3            -2  -12 4   4   1   1   1   2   2           294.4058
-12  12  H2  BH3 CH4 N2  O2  F2  AlH3    P2  Cl2     -2  -11 4   2   2   1   1   4   1   1       453.0647
-13  13  H2  CH4 N2  O2  MgH2    S2                  -2  -5  4   4   2   2   2                   19.8751
-14  14  H2  LiH BH3 O2  AlH3    SiH4    Cl2             -2  -9  2   4   1   4   2   1               384.8895
-15  15  H2  BH3 CH4 NaH AlH3    SiH4    S2  Cl2         -2  -15 4   2   2   2   4   1   1           216.0961
-16  16  H2  LiH BH3 O2  MgH2    AlH3    SiH4                -2  -19 2   6   1   4   2   4               326.7567
-17  17  H2  BH3 CH4 O2  F2  MgH2    SiH4                -2  -9  4   2   1   3   2   2               653.5931
-18  18  H2  BH3 N2  O2  F2  AlH3    Cl2             -2  -4  6   1   1   1   2   1               580.8610
-19  19  H2  LiH BH3 O2  F2  AlH3    P2  S2          -2  -7  2   4   1   1   4   2   1           664.5600
-20  20  H2  BH3 CH4 N2  F2  P2                  -2  -11 6   4   2   2   1                   242.8055
-21  21  H2  BH3 O2  NaH MgH2    AlH3    Cl2             -2  -7  2   2   2   4   4   1               806.2253
-22  22  H2  BH3 O2  F2  MgH2    P2                  -2  -3  6   2   1   2   1                   706.2037
-23  23  H2  BH3 CH4 F2  MgH2    SiH4    Cl2             -2  -20 8   2   1   2   4   1               215.3928
-24  24  H2  BH3 O2  F2  AlH3    SiH4    S2              -2  -8  2   1   4   2   4   1               1070.6395
-25  25  H2  BH3 O2  F2  AlH3    SiH4                    -1  -5  2   1   1   1   2                   322.4904
-26  26  H2  BH3 CH4 O2  MgH2    AlH3    SiH4    P2          -2  -8  2   2   2   2   2   2   1           373.6680
-27  27  H2  BH3 CH4 N2  O2  AlH3    S2  Cl2         -2  -12 2   6   2   1   2   1   1           114.9666
-28  28  BH3 N2  O2  F2  AlH3                        -2  4   2   1   1   2                       325.1213
-29  29  H2  LiH BH3 CH4 N2  F2  SiH4    S2          -2  -9  2   4   2   1   3   2   1           695.1032
-30  30  H2  LiH BH3 CH4 F2  AlH3    SiH4    S2          -2  -12 4   2   2   5   2   2   1           1290.7358
-31  31  H2  BH3 CH4 O2  F2  AlH3    P2  Cl2         -2  -8  4   2   1   1   2   4   1           534.9003
-32  32  H2  LiH BH3 N2  F2  AlH3    SiH4    S2          -2  -11 2   6   1   2   2   2   1           685.5818
-33  33  H2  BH3 CH4 N2  F2  AlH3    S2              -2  -6  4   2   2   1   2   2               312.6925
-34  34  H2  BH3 CH4 N2  O2  F2  MgH2    AlH3    SiH4    P2  -2  -10 2   2   1   2   1   2   2   2   1   538.2642
-35  35  H2  LiH BH3 CH4 O2  AlH3    SiH4    P2  Cl2     -2  -20 2   4   4   1   4   2   1   1       228.1748
-36  36  H2  LiH CH4 N2  O2  F2  P2  Cl2         -2  3   2   2   1   2   1   1   1           552.8500
-37  37  H2  BH3 CH4 O2  F2  AlH3    SiH4    S2          -2  -19 8   2   2   1   2   2   2           629.7842
-38  38  H2  BH3 CH4 N2  F2  AlH3    SiH4    P2  S2      -2  -12 2   2   2   1   2   4   1   1       98.1943
-39  39  H2  LiH BH3 CH4 F2  NaH Cl2             -2  -5  2   2   4   2   2   1               436.4044
-40  40  H2  BH3 CH4 N2  AlH3    SiH4                    -2  -26 6   6   1   2   4                   -362.9806
-41  41  H2  BH3 CH4 F2  NaH AlH3    S2              -2  -16 4   6   1   2   2   2               160.2909
-42  42  H2  BH3 CH4 N2  O2  F2  AlH3    P2          -2  -11 4   2   1   2   2   4   1           754.6458
-43  43  H2  BH3 N2  O2  F2  AlH3    SiH4                -2  -7  2   3   1   1   2   4               421.9683
+1   01_  H2  BH3 N2  O2  F2  NaH AlH3    Cl2         -2  -4  4   2   2   1   2   2   1           869.5971
+2   02_  H2  LiH BH3 O2  F2  MgH2    SiH4    S2          -2  -6  2   4   1   1   2   2   2           737.7865
+3   03_  H2  LiH CH4 O2  F2  NaH MgH2    AlH3    S2      -2  -13 2   6   1   1   2   2   2   1       518.6576
+4   04_  H2  BH3 CH4 O2  F2  AlH3    SiH4                -2  -17 6   2   1   1   2   4               356.8481
+5   05_  H2  BH3 N2  SiH4    P2  Cl2                 -2  -4  4   2   2   4   1                   147.6828
+6   06_  H2  BH3 CH4 N2  O2  MgH2    AlH3                -2  -10 6   2   1   1   2   2               368.4941
+7   07_  H2  BH3 CH4 N2  O2  F2  MgH2    S2  Cl2     -2  -7  2   4   1   1   2   2   1   1       557.9836
+8   08_  H2  BeH2    BH3 CH4 O2  F2  AlH3                -2  -17 2   6   4   2   2   2               681.9598
+9   09_  H2  LiH BH3 CH4 F2  SiH4    Cl2             -2  -6  2   4   2   1   2   1               381.4301
+10  10_  H2  BH3 CH4 N2  F2  MgH2    SiH4    Cl2         -2  -14 2   6   1   1   2   2   1           46.3073
+11  11_  H2  BH3 CH4 N2  O2  F2  MgH2    AlH3            -2  -12 4   4   1   1   1   2   2           294.4058
+12  12_  H2  BH3 CH4 N2  O2  F2  AlH3    P2  Cl2     -2  -11 4   2   2   1   1   4   1   1       453.0647
+13  13_  H2  CH4 N2  O2  MgH2    S2                  -2  -5  4   4   2   2   2                   19.8751
+14  14_  H2  LiH BH3 O2  AlH3    SiH4    Cl2             -2  -9  2   4   1   4   2   1               384.8895
+15  15_  H2  BH3 CH4 NaH AlH3    SiH4    S2  Cl2         -2  -15 4   2   2   2   4   1   1           216.0961
+16  16_  H2  LiH BH3 O2  MgH2    AlH3    SiH4                -2  -19 2   6   1   4   2   4               326.7567
+17  17_  H2  BH3 CH4 O2  F2  MgH2    SiH4                -2  -9  4   2   1   3   2   2               653.5931
+18  18_  H2  BH3 N2  O2  F2  AlH3    Cl2             -2  -4  6   1   1   1   2   1               580.8610
+19  19_  H2  LiH BH3 O2  F2  AlH3    P2  S2          -2  -7  2   4   1   1   4   2   1           664.5600
+20  20_  H2  BH3 CH4 N2  F2  P2                  -2  -11 6   4   2   2   1                   242.8055
+21  21_  H2  BH3 O2  NaH MgH2    AlH3    Cl2             -2  -7  2   2   2   4   4   1               806.2253
+22  22_  H2  BH3 O2  F2  MgH2    P2                  -2  -3  6   2   1   2   1                   706.2037
+23  23_  H2  BH3 CH4 F2  MgH2    SiH4    Cl2             -2  -20 8   2   1   2   4   1               215.3928
+24  24_  H2  BH3 O2  F2  AlH3    SiH4    S2              -2  -8  2   1   4   2   4   1               1070.6395
+25  25_  H2  BH3 O2  F2  AlH3    SiH4                    -1  -5  2   1   1   1   2                   322.4904
+26  26_  H2  BH3 CH4 O2  MgH2    AlH3    SiH4    P2          -2  -8  2   2   2   2   2   2   1           373.6680
+27  27_  H2  BH3 CH4 N2  O2  AlH3    S2  Cl2         -2  -12 2   6   2   1   2   1   1           114.9666
+28  28_  BH3 N2  O2  F2  AlH3                        -2  4   2   1   1   2                       325.1213
+29  29_  H2  LiH BH3 CH4 N2  F2  SiH4    S2          -2  -9  2   4   2   1   3   2   1           695.1032
+30  30_  H2  LiH BH3 CH4 F2  AlH3    SiH4    S2          -2  -12 4   2   2   5   2   2   1           1290.7358
+31  31_  H2  BH3 CH4 O2  F2  AlH3    P2  Cl2         -2  -8  4   2   1   1   2   4   1           534.9003
+32  32_  H2  LiH BH3 N2  F2  AlH3    SiH4    S2          -2  -11 2   6   1   2   2   2   1           685.5818
+33  33_  H2  BH3 CH4 N2  F2  AlH3    S2              -2  -6  4   2   2   1   2   2               312.6925
+34  34_  H2  BH3 CH4 N2  O2  F2  MgH2    AlH3    SiH4    P2  -2  -10 2   2   1   2   1   2   2   2   1   538.2642
+35  35_  H2  LiH BH3 CH4 O2  AlH3    SiH4    P2  Cl2     -2  -20 2   4   4   1   4   2   1   1       228.1748
+36  36_  H2  LiH CH4 N2  O2  F2  P2  Cl2         -2  3   2   2   1   2   1   1   1           552.8500
+37  37_  H2  BH3 CH4 O2  F2  AlH3    SiH4    S2          -2  -19 8   2   2   1   2   2   2           629.7842
+38  38_  H2  BH3 CH4 N2  F2  AlH3    SiH4    P2  S2      -2  -12 2   2   2   1   2   4   1   1       98.1943
+39  39_  H2  LiH BH3 CH4 F2  NaH Cl2             -2  -5  2   2   4   2   2   1               436.4044
+40  40_  H2  BH3 CH4 N2  AlH3    SiH4                    -2  -26 6   6   1   2   4                   -362.9806
+41  41_  H2  BH3 CH4 F2  NaH AlH3    S2              -2  -16 4   6   1   2   2   2               160.2909
+42  42_  H2  BH3 CH4 N2  O2  F2  AlH3    P2          -2  -11 4   2   1   2   2   4   1           754.6458
+43  43_  H2  BH3 N2  O2  F2  AlH3    SiH4                -2  -7  2   3   1   1   2   4               421.9683

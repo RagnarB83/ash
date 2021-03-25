@@ -43,8 +43,15 @@ def ReactionEnergy(stoichiometry=None, list_of_fragments=None, list_of_energies=
         print("stoichiometry list is required")
         exit(1)
 
+
+
     #List of energies option
     if list_of_energies is not None:
+
+        if len(list_of_energies) != len(stoichiometry):
+            print("Number of energies not equal to number of stoichiometry values")
+            print("Check ")
+
         #print("List of total energies provided (Eh units assumed).")
         print("list_of_energies:", list_of_energies)
         print("stoichiometry:", stoichiometry)
