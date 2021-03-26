@@ -588,7 +588,12 @@ class QMMMTheory:
             printdebug("Charges for full system is: ", self.charges)
             #Todo: Need to make sure OpenMM skips QM-QM Lj interaction => Exclude
             #Todo: Need to have OpenMM skip frozen region interaction for speed  => => Exclude
-            self.MMenergy, self.MMgradient= self.mm_theory.run(current_coords=current_coords, qmatoms=self.qmatoms)
+            if Grad==True:
+                print("QM/MM Grad is True")
+                self.MMenergy, self.MMgradient= self.mm_theory.run(current_coords=current_coords, qmatoms=self.qmatoms)
+            else:
+                print("QM/MM Grad is false")
+                self.MMenergy= self.mm_theory.run(current_coords=current_coords, qmatoms=self.qmatoms)
         else:
             self.MMenergy=0
         print_time_rel(CheckpointTime, modulename='MM step')

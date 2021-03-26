@@ -1729,7 +1729,7 @@ def get_boundary_atoms(qmatoms, coords, elems, scale, tol, excludeboundaryatomli
                 print(BC.WARNING,"Warning: QM-MM boundary is not the ideal C-C scenario.",BC.END)
                 print(BC.WARNING,"QM-MM boundary: {}({}) - {}({})".format(elems[qmatom],qmatom,elems[boundaryatom[0]],boundaryatom[0]),BC.END)
                 if unusualboundary == False:
-                    print(BC.WARNING,"Make sure you know what you are doing. Exiting.",BC.END)
+                    print(BC.WARNING,"Make sure you know what you are doing (also note that ASH counts atoms from 0 not 1). Exiting.",BC.END)
                     print(BC.WARNING,"To override exit, add: unusualboundary=True  to QMMMTheory object ",BC.END)
                     exit()
                 
