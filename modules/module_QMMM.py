@@ -63,13 +63,14 @@ class QMMMTheory:
             #print("MM region", self.mmatoms)
             blankline()
 
+            #TO delete
             #List of QM and MM labels
-            self.hybridatomlabels=[]
-            for i in self.allatoms:
-                if i in self.qmatoms:
-                    self.hybridatomlabels.append('QM')
-                elif i in self.mmatoms:
-                    self.hybridatomlabels.append('MM')
+            #self.hybridatomlabels=[]
+            #for i in self.allatoms:
+            #    if i in self.qmatoms:
+            #        self.hybridatomlabels.append('QM')
+            #   elif i in self.mmatoms:
+            #        self.hybridatomlabels.append('MM')
         else:
             print("Fragment has not been defined for QM/MM. Exiting")
             exit(1)
