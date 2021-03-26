@@ -1688,7 +1688,7 @@ def distance_between_atoms(fragment=None, atom1=None, atom2=None):
 
 
 
-def get_boundary_atoms(qmatoms, coords, elems, scale, tol, excludeboundaryatomlist=None):
+def get_boundary_atoms(qmatoms, coords, elems, scale, tol, excludeboundaryatomlist=None,unusualboundary=False):
     print("Determining QM-MM boundary")
     if excludeboundaryatomlist == None:
         excludeboundaryatomlist=[]
@@ -1728,7 +1728,12 @@ def get_boundary_atoms(qmatoms, coords, elems, scale, tol, excludeboundaryatomli
             if elems[qmatom] != "C" or elems[boundaryatom[0]] != "C":
                 print(BC.WARNING,"Warning: QM-MM boundary is not the ideal C-C scenario.",BC.END)
                 print(BC.WARNING,"QM-MM boundary: {}({}) - {}({})".format(elems[qmatom],qmatom,elems[boundaryatom[0]],boundaryatom[0]),BC.END)
-                print(BC.WARNING,"Make sure you know what you are doing. Continuing...",BC.END)
+                if unusualboundary == False:
+                    print(BC.WARNING,"Make sure you know what you are doing. Exiting.",BC.END)
+                    print(BC.WARNING,"To override exit, add: unusualboundary=True  to QMMMTheory object ",BC.END)
+                    exit()
+                
+                
 
             # Adding to dict
             qm_mm_boundary_dict[qmatom] = boundaryatom[0]
