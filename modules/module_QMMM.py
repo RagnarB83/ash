@@ -590,7 +590,7 @@ class QMMMTheory:
             #Todo: Need to have OpenMM skip frozen region interaction for speed  => => Exclude
             if Grad==True:
                 print("QM/MM Grad is True")
-                self.MMenergy, self.MMgradient= self.mm_theory.run(current_coords=current_coords, qmatoms=self.qmatoms)
+                self.MMenergy, self.MMgradient= self.mm_theory.run(current_coords=current_coords, qmatoms=self.qmatoms, Grad=True)
             else:
                 print("QM/MM Grad is false")
                 self.MMenergy= self.mm_theory.run(current_coords=current_coords, qmatoms=self.qmatoms)
