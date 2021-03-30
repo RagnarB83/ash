@@ -1127,6 +1127,7 @@ def read_fragfile_xyz(fragfile):
 #Example,manual: write_pdbfile(frag, outputname="name", atomnames=openmmobject.atomnames, resnames=openmmobject.resnames, residlabels=openmmobject.resids,segmentlabels=openmmobject.segmentnames)
 #Example, simple: write_pdbfile(frag, outputname="name", openmmobject=objname)
 #Example, minimal: write_pdbfile(frag)
+#TODO: Add option to write new hybrid-36 standard PDB file instead of current hexadecimal nonstandard fix
 def write_pdbfile(fragment,outputname="ASHfragment", openmmobject=None, atomnames=None, resnames=None,residlabels=None,segmentlabels=None):
     #Using ASH fragment
     elems=fragment.elems
@@ -1151,11 +1152,23 @@ def write_pdbfile(fragment,outputname="ASHfragment", openmmobject=None, atomname
     #Note: choosing to make segment ID 3-letter-string (and then space)
     if segmentlabels == None:
         segmentlabels=fragment.numatoms*['SEG']
+    
+    if len(atomnames) > 99999:
+        print("System larger than 99999 atoms. Will use hexadecimal notation for atom indices 100K and larger.") 
+
     with open(outputname+'.pdb', 'w') as pfile:
         for count,(atomname,c,resname,resid,seg,el) in enumerate(zip(atomnames,coords, resnames, residlabels,segmentlabels,elems)):
+            atomindex=count+1
+            # Convert to hexadecimal if >= 100K.
+            #Note: unsupported standard but VMD will read it
+            if atomindex >= 100000:
+
+                atomindexstring=hex(count+1)[2:]
+            else:
+                atomindexstring=str(atomindex)
             #Using string format from: cupnet.net/pdb-format/
-            line="{:6s}{:5d} {:^4s}{:1s}{:3s} {:1s}{:4d}{:1s}   {:8.3f}{:8.3f}{:8.3f}{:6.2f}{:6.2f}      {:4s}{:2s}".format(
-                'ATOM', count+1, atomname, '', resname, '', resid, '',    c[0], c[1], c[2], 1.0, 0.00, seg[0:3],el, '')
+            line="{:6s}{:5s} {:^4s}{:1s}{:3s} {:1s}{:4d}{:1s}   {:8.3f}{:8.3f}{:8.3f}{:6.2f}{:6.2f}      {:4s}{:2s}".format(
+                'ATOM', atomindexstring, atomname, '', resname, '', resid, '',    c[0], c[1], c[2], 1.0, 0.00, seg[0:3],el, '')
             pfile.write(line+'\n')
     print("Wrote PDB file:", outputname+'.pdb')
 
