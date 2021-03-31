@@ -14,7 +14,7 @@ class NonBondedTheory:
 
         #If codeversion not explicity asked for then we go for defaults (that may have changed if Julia interface failed)
         if codeversion == None:
-            codeversion=settings_ash.settings_dict["nonbondedMM_code"]
+            codeversion=ash.settings_ash.settings_dict["nonbondedMM_code"]
             print("MM Codeversion not set. Using default setting: ", codeversion)
         self.codeversion=codeversion
 
@@ -50,12 +50,6 @@ class NonBondedTheory:
 
     #Todo: Need to make active-region version of pyarray version here.
     def calculate_LJ_pairpotentials(self, qmatoms=None, actatoms=None, frozenatoms=None):
-
-
-
-
-
-
 
         #actatoms
         if actatoms is None:
