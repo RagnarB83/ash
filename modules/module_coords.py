@@ -1168,7 +1168,7 @@ def write_pdbfile(fragment,outputname="ASHfragment", openmmobject=None, atomname
                 atomindexstring=str(atomindex)
             
             #Using only first 3 letters of RESname
-            resname=resname[0:2]
+            resname=resname[0:3]
 
 
             #Using string format from: cupnet.net/pdb-format/
