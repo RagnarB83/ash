@@ -524,6 +524,8 @@ def remove_zero_charges(charges,coords):
 
 
 def print_internal_coordinate_table(fragment,actatoms=None):
+    if actatoms == None:
+        actatoms=[]
     #If no connectivity in fragment then recalculate it for actatoms only
     if len(fragment.connectivity) == 0:
         if actatoms == None:
@@ -547,10 +549,11 @@ def print_internal_coordinate_table(fragment,actatoms=None):
     else:
         connectivity=fragment.connectivity
     
-    print("connectivity:", connectivity)
+    #print("connectivity:", connectivity)
     #Looping over connected fragments
     bondpairs=[]
     bondpairsdict={}
+
     for conn_fragment in connectivity:
         #Looping over atom indices in fragment
         for atom in conn_fragment:
@@ -569,15 +572,20 @@ def print_internal_coordinate_table(fragment,actatoms=None):
     
     #Using frozenset: https://stackoverflow.com/questions/46633065/multiples-keys-dictionary-where-key-order-doesnt-matter
     #sort bondpairs list??
-
     #print bondpairs list
     print("Bond lengths (Å):")
     print('-'*38)
+    #print("actatoms:", actatoms)
     for key,val in bondpairsdict.items():
         listkey=list(key)
         elA=fragment.elems[listkey[0]]
         elB=fragment.elems[listkey[1]]
-        print("Bond: {:8}{:4} - {:4}{:4} {:>6.3f}".format(listkey[0],elA,listkey[1],elB, val ))
+        #Only print bond lengths if both atoms in actatoms list
+        if actatoms != []:
+            if listkey[0] in actatoms and listkey[1] in actatoms:
+                print("Bond: {:8}{:4} - {:4}{:4} {:>6.3f}".format(listkey[0],elA,listkey[1],elB, val ))
+        else:
+                print("Bond: {:8}{:4} - {:4}{:4} {:>6.3f}".format(listkey[0],elA,listkey[1],elB, val ))
     print('='*50)
 
 
