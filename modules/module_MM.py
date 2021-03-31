@@ -10,7 +10,13 @@ import ash
 # Simple nonbonded MM theory. Charges and LJ-potentials
 class NonBondedTheory:
     def __init__(self, atomtypes=None, forcefield=None, charges = None, LJcombrule='geometric',
-                 codeversion='julia', printlevel=2):
+                 codeversion=None, printlevel=2):
+
+        #If codeversion not explicity asked for then we go for defaults (that may have changed if Julia interface failed)
+        if codeversion == None:
+            codeversion=settings_ash.settings_dict["nonbondedMM_code"]
+            print("MM Codeversion not set. Using default setting: ", codeversion)
+        self.codeversion=codeversion
 
         #Printlevel
         self.printlevel=printlevel
@@ -30,7 +36,7 @@ class NonBondedTheory:
         #print("Defining Nonbonded Theory")
         #print("qmatoms:", self.qmatoms)
 
-        self.codeversion=codeversion
+
 
         #These are charges for whole system including QM.
         self.atom_charges = charges
@@ -44,6 +50,12 @@ class NonBondedTheory:
 
     #Todo: Need to make active-region version of pyarray version here.
     def calculate_LJ_pairpotentials(self, qmatoms=None, actatoms=None, frozenatoms=None):
+
+
+
+
+
+
 
         #actatoms
         if actatoms is None:
