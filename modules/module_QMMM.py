@@ -14,7 +14,8 @@ import settings_ash
 #TODO NOTE: If we add init arguments, remember to update Numfreq QMMM option as it depends on the keywords
 class QMMMTheory:
     def __init__(self, qm_theory=None, qmatoms=None, fragment=None, mm_theory=None , charges=None,
-                 embedding="Elstat", printlevel=2, nprocs=1, actatoms=None, frozenatoms=None, excludeboundaryatomlist=None):
+                 embedding="Elstat", printlevel=2, nprocs=1, actatoms=None, frozenatoms=None, excludeboundaryatomlist=None,
+                 unusualboundary=False):
 
         print(BC.WARNING,BC.BOLD,"------------Defining QM/MM object-------------", BC.END)
 
@@ -63,13 +64,14 @@ class QMMMTheory:
             #print("MM region", self.mmatoms)
             blankline()
 
+            #TO delete
             #List of QM and MM labels
-            self.hybridatomlabels=[]
-            for i in self.allatoms:
-                if i in self.qmatoms:
-                    self.hybridatomlabels.append('QM')
-                elif i in self.mmatoms:
-                    self.hybridatomlabels.append('MM')
+            #self.hybridatomlabels=[]
+            #for i in self.allatoms:
+            #    if i in self.qmatoms:
+            #        self.hybridatomlabels.append('QM')
+            #   elif i in self.mmatoms:
+            #        self.hybridatomlabels.append('MM')
         else:
             print("Fragment has not been defined for QM/MM. Exiting")
             exit(1)
@@ -167,7 +169,8 @@ class QMMMTheory:
 
             #Check if we need linkatoms by getting boundary atoms dict:
             blankline()
-            self.boundaryatoms = module_coords.get_boundary_atoms(self.qmatoms, self.coords, self.elems, settings_ash.settings_dict["scale"], settings_ash.settings_dict["tol"], excludeboundaryatomlist=excludeboundaryatomlist)
+            self.boundaryatoms = module_coords.get_boundary_atoms(self.qmatoms, self.coords, self.elems, settings_ash.settings_dict["scale"], 
+                settings_ash.settings_dict["tol"], excludeboundaryatomlist=excludeboundaryatomlist, unusualboundary=unusualboundary)
             
             if len(self.boundaryatoms) >0:
                 print("Found covalent QM-MM boundary. Linkatoms option set to True")
@@ -585,7 +588,12 @@ class QMMMTheory:
             printdebug("Charges for full system is: ", self.charges)
             #Todo: Need to make sure OpenMM skips QM-QM Lj interaction => Exclude
             #Todo: Need to have OpenMM skip frozen region interaction for speed  => => Exclude
-            self.MMenergy, self.MMgradient= self.mm_theory.run(current_coords=current_coords, qmatoms=self.qmatoms)
+            if Grad==True:
+                print("QM/MM Grad is True")
+                self.MMenergy, self.MMgradient= self.mm_theory.run(current_coords=current_coords, qmatoms=self.qmatoms, Grad=True)
+            else:
+                print("QM/MM Grad is false")
+                self.MMenergy= self.mm_theory.run(current_coords=current_coords, qmatoms=self.qmatoms)
         else:
             self.MMenergy=0
         print_time_rel(CheckpointTime, modulename='MM step')

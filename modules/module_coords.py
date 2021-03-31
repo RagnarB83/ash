@@ -1,16 +1,15 @@
-from functions_general import isint,listdiff,print_time_rel,BC
+from functions_general import isint,listdiff,print_time_rel,BC,printdebug
 import dictionaries_lists
 import numpy as np
 import settings_ash
 import constants
 import copy
 import math
-import ash
 sqrt = math.sqrt
 pow = math.pow
 import ash
 import time
-
+#import functions_molcrys
 
 # ASH Fragment class
 class Fragment:
@@ -161,7 +160,6 @@ class Fragment:
             exit()
         self.coords = coords
         self.elems = elems
-
         self.update_attributes()
         if conncalc is True:
             self.calc_connectivity(scale=scale, tol=tol)
@@ -258,19 +256,28 @@ class Fragment:
         self.energy=float(energy)
     # Get coordinates for specific atoms (from list of atom indices)
     def get_coords_for_atoms(self, atoms):
+        #TODO: Generalize.
         subcoords=[self.coords[i] for i in atoms]
         subelems=[self.elems[i] for i in atoms]
         return subcoords,subelems
     #Calculate connectivity (list of lists) of coords
-    def calc_connectivity(self, conndepth=99, scale=None, tol=None, codeversion='julia' ):
-        #Using py version if molecule is small. Otherwise Julia by default
+    def calc_connectivity(self, conndepth=99, scale=None, tol=None, codeversion=None ):
+        print("Calculating connectivity.")
+        #If codeversion not requested we go to default
+        if codeversion == None:
+            codeversion=settings_ash.settings_dict["connectivity_code"]
+            print("Codeversion not set. Using default setting: ", codeversion)
+        
+        #Overriding with py version if molecule is small. Faster than calling julia.
         if len(self.coords) < 100:
+            print("Small system. Using py version")
             codeversion='py'
         elif len(self.coords) > 10000:
             if self.printlevel >= 2:
                 print("Atom number > 10K. Connectivity calculation could take a while")
 
-        
+
+
         if scale == None:
             try:
                 scale = settings_ash.settings_dict["scale"]
@@ -318,6 +325,8 @@ class Fragment:
                 print(BC.FAIL,"Problem importing Pyjulia (import julia)", BC.END)
                 print("Make sure Julia is installed and PyJulia module available, and that you are using python-jl")
                 print(BC.FAIL,"Using Python version instead (slow for large systems)", BC.END)
+                #Switching default to py since Julia did not load
+                settings_ash.settings_dict["connectivity_code"] = "py"
                 fraglist = calc_conn_py(self.coords, self.elems, conndepth, scale, tol)
 
 
@@ -487,7 +496,7 @@ elematomnumbers = {'h':1, 'he': 2, 'li':3, 'be':4, 'b':5, 'c':6, 'n':7, 'o':8, '
 atommasses = [1.00794, 4.002602, 6.94, 9.0121831, 10.81, 12.01070, 14.00670, 15.99940, 18.99840316, 20.1797, 22.98976928, 24.305, 26.9815385, 28.085, 30.973762, 32.065, 35.45, 39.948, 39.0983, 40.078, 44.955908, 47.867, 50.9415, 51.9961, 54.938044, 55.845, 58.933194, 58.6934, 63.546, 65.38, 69.723, 72.63, 74.921595, 78.971, 79.904, 83.798, 85.4678, 87.62, 88.90584, 91.224, 92.90637, 95.96, 97, 101.07, 102.9055, 106.42, 107.8682, 112.414, 114.818, 118.71, 121.76, 127.6, 126.90447, 131.293, 132.905452, 137.327, 138.90547, 140.116, 140.90766, 144.242, 145, 150.36, 151.964, 157.25, 158.92535, 162.5, 164.93033, 167.259, 168.93422, 173.054, 174.9668, 178.49, 180.94788, 183.84, 186.207, 190.23, 192.217, 195.084, 196.966569, 200.592, 204.38, 207.2, 208.9804, 209, 210, 222, 223, 226, 227, 232.0377, 231.03588, 238.02891, 237, 244, 243, 247, 247, 251, 252, 257, 258, 259, 262 ]
 #Covalent radii for elements (Alvarez) in Angstrom.
 #Used for connectivity
-eldict_covrad={'H':0.31, 'He':0.28, 'Li':1.28, 'Be':0.96, 'B':0.84, 'C':0.76, 'N':0.71, 'O':0.66, 'F':0.57, 'Ne':0.58, 'Na':1.66, 'Mg':1.41, 'Al':1.21, 'Si':1.11, 'P':1.07, 'S':1.05, 'Cl':1.02, 'Ar':1.06, 'K':2.03, 'Ca':1.76, 'Sc':1.70, 'Ti':1.6, 'V':1.53, 'Cr':1.39, 'Mn':1.61, 'Fe':1.52, 'Co':1.50, 'Ni':1.24, 'Cu':1.32, 'Zn':1.22, 'Ga':1.22, 'Ge':1.20, 'As':1.19, 'Se':1.20, 'Br':1.20, 'Kr':1.16, 'Rb':2.2, 'Sr':1.95, 'Y':1.9, 'Zr':1.75, 'Nb':1.64, 'Mo':1.54, 'Tc':1.47, 'Ru':1.46, 'Rh':1.42, 'Pd':1.39, 'Ag':1.45, 'Cd':1.44, 'In':1.42, 'Sn':1.39, 'Sb':1.39, 'Te':1.38, 'I':1.39, 'Xe':1.40,}
+eldict_covrad={'H':0.31, 'He':0.28, 'Li':1.28, 'Be':0.96, 'B':0.84, 'C':0.76, 'N':0.71, 'O':0.66, 'F':0.57, 'Ne':0.58, 'Na':1.66, 'Mg':1.41, 'Al':1.21, 'Si':1.11, 'P':1.07, 'S':1.05, 'Cl':1.02, 'Ar':1.06, 'K':2.03, 'Ca':1.76, 'Sc':1.70, 'Ti':1.6, 'V':1.53, 'Cr':1.39, 'Mn':1.61, 'Fe':1.52, 'Co':1.50, 'Ni':1.24, 'Cu':1.32, 'Zn':1.22, 'Ga':1.22, 'Ge':1.20, 'As':1.19, 'Se':1.20, 'Br':1.20, 'Kr':1.16, 'Rb':2.2, 'Sr':1.95, 'Y':1.9, 'Zr':1.75, 'Nb':1.64, 'Mo':1.54, 'Tc':1.47, 'Ru':1.46, 'Rh':1.42, 'Pd':1.39, 'Ag':1.45, 'Cd':1.44, 'In':1.42, 'Sn':1.39, 'Sb':1.39, 'Te':1.38, 'I':1.39, 'Xe':1.40, 'Cs':2.44, 'Ba':2.15, 'La':2.07, 'Ce':2.04, 'Pr':2.03, 'Nd':2.01, 'Pm':1.99, 'Sm':1.98, 'Eu':1.98, 'Gd':1.96, 'Tb':1.94, 'Dy':1.92, 'Ho':1.92, 'Er':1.89, 'Tm':1.90, 'Yb':1.87, 'Lu':1.87, 'Hf':1.75, 'Ta':1.70, 'W':1.62, 'Re':1.51, 'Os':1.44, 'Ir':1.41, 'Pt':1.36, 'Au':1.36, 'Hg':1.32, 'Tl':1.45, 'Pb':1.46, 'Bi':1.48, 'Po':1.40, 'At':1.50, 'Rn':1.50, 'U':1.96}
 #Modified radii for certain elements like Na, K
 eldict_covrad['Na']=0.0001
 eldict_covrad['K']=0.0001
@@ -515,6 +524,8 @@ def remove_zero_charges(charges,coords):
 
 
 def print_internal_coordinate_table(fragment,actatoms=None):
+    if actatoms == None:
+        actatoms=[]
     #If no connectivity in fragment then recalculate it for actatoms only
     if len(fragment.connectivity) == 0:
         if actatoms == None:
@@ -538,10 +549,11 @@ def print_internal_coordinate_table(fragment,actatoms=None):
     else:
         connectivity=fragment.connectivity
     
-    print("connectivity:", connectivity)
+    #print("connectivity:", connectivity)
     #Looping over connected fragments
     bondpairs=[]
     bondpairsdict={}
+
     for conn_fragment in connectivity:
         #Looping over atom indices in fragment
         for atom in conn_fragment:
@@ -560,15 +572,20 @@ def print_internal_coordinate_table(fragment,actatoms=None):
     
     #Using frozenset: https://stackoverflow.com/questions/46633065/multiples-keys-dictionary-where-key-order-doesnt-matter
     #sort bondpairs list??
-
     #print bondpairs list
     print("Bond lengths (Å):")
     print('-'*38)
+    #print("actatoms:", actatoms)
     for key,val in bondpairsdict.items():
         listkey=list(key)
         elA=fragment.elems[listkey[0]]
         elB=fragment.elems[listkey[1]]
-        print("Bond: {:8}{:4} - {:4}{:4} {:>6.3f}".format(listkey[0],elA,listkey[1],elB, val ))
+        #Only print bond lengths if both atoms in actatoms list
+        if actatoms != []:
+            if listkey[0] in actatoms and listkey[1] in actatoms:
+                print("Bond: {:8}{:4} - {:4}{:4} {:>6.3f}".format(listkey[0],elA,listkey[1],elB, val ))
+        else:
+                print("Bond: {:8}{:4} - {:4}{:4} {:>6.3f}".format(listkey[0],elA,listkey[1],elB, val ))
     print('='*50)
 
 
@@ -1039,7 +1056,7 @@ def write_xyzfile(elems,coords,name,printlevel=2):
 #Function that reads XYZ-file with multiple files, splits and return list of coordinates
 #Created for splitting crest_conformers.xyz but may also be used for MD traj.
 #Also grabs last word in title line. Typically an energy (has to be converted to float outside)
-def split_multimolxyzfile(file, writexyz=False):
+def split_multimolxyzfile(file, writexyz=False,skipindex=1):
     all_coords=[]
     all_elems=[]
     all_titles=[]
@@ -1052,6 +1069,7 @@ def split_multimolxyzfile(file, writexyz=False):
         for index, line in enumerate(f):
             if index == 0:
                 numatoms = line.split()[0]
+            #Grab coordinates
             if coordgrab == True:
                 if len(line.split()) > 1:
                     elems.append(line.split()[0])
@@ -1065,16 +1083,29 @@ def split_multimolxyzfile(file, writexyz=False):
                         write_xyzfile(elems, coords, "molecule"+str(molcounter))
                     coords = []
                     elems = []
+            #Grab title
             if titlegrab is True:
-                all_titles.append(line.split()[-1])
+                if len(line.split()) > 0:
+                    all_titles.append(line.split()[-1])
+                else:
+                    all_titles.append("NA")
                 titlegrab=False
                 coordgrab = True
-            if line.split()[0] == str(numatoms):
-                # print("coords is", len(coords))
-                molcounter += 1
-                titlegrab=True
-                coordgrab=False
-
+            #Grabbing number of atoms from string
+            if len(line.split()) > 0:
+                if line.split()[0] == str(numatoms):
+                    #print("Molcounter", molcounter)
+                    # print("coords is", len(coords))
+                    if molcounter % skipindex:
+                        molcounter += 1
+                        titlegrab=False
+                        coordgrab=False
+                    else:
+                        #print("Using. molcounter", molcounter)
+                        molcounter += 1
+                        titlegrab=True
+                        coordgrab=False
+                        #exit()
     return all_elems,all_coords, all_titles
 
 
@@ -1104,6 +1135,7 @@ def read_fragfile_xyz(fragfile):
 #Example,manual: write_pdbfile(frag, outputname="name", atomnames=openmmobject.atomnames, resnames=openmmobject.resnames, residlabels=openmmobject.resids,segmentlabels=openmmobject.segmentnames)
 #Example, simple: write_pdbfile(frag, outputname="name", openmmobject=objname)
 #Example, minimal: write_pdbfile(frag)
+#TODO: Add option to write new hybrid-36 standard PDB file instead of current hexadecimal nonstandard fix
 def write_pdbfile(fragment,outputname="ASHfragment", openmmobject=None, atomnames=None, resnames=None,residlabels=None,segmentlabels=None):
     #Using ASH fragment
     elems=fragment.elems
@@ -1128,11 +1160,28 @@ def write_pdbfile(fragment,outputname="ASHfragment", openmmobject=None, atomname
     #Note: choosing to make segment ID 3-letter-string (and then space)
     if segmentlabels == None:
         segmentlabels=fragment.numatoms*['SEG']
+    
+    if len(atomnames) > 99999:
+        print("System larger than 99999 atoms. Will use hexadecimal notation for atom indices 100K and larger.") 
+
     with open(outputname+'.pdb', 'w') as pfile:
         for count,(atomname,c,resname,resid,seg,el) in enumerate(zip(atomnames,coords, resnames, residlabels,segmentlabels,elems)):
+            atomindex=count+1
+            # Convert to hexadecimal if >= 100K.
+            #Note: unsupported standard but VMD will read it
+            if atomindex >= 100000:
+
+                atomindexstring=hex(count+1)[2:]
+            else:
+                atomindexstring=str(atomindex)
+            
+            #Using only first 3 letters of RESname
+            resname=resname[0:3]
+
+
             #Using string format from: cupnet.net/pdb-format/
-            line="{:6s}{:5d} {:^4s}{:1s}{:3s} {:1s}{:4d}{:1s}   {:8.3f}{:8.3f}{:8.3f}{:6.2f}{:6.2f}      {:4s}{:2s}".format(
-                'ATOM', count+1, atomname, '', resname, '', resid, '',    c[0], c[1], c[2], 1.0, 0.00, seg[0:3],el, '')
+            line="{:6s}{:5s} {:^4s}{:1s}{:3s} {:1s}{:4d}{:1s}   {:8.3f}{:8.3f}{:8.3f}{:6.2f}{:6.2f}      {:4s}{:2s}".format(
+                'ATOM', atomindexstring, atomname, '', resname, '', resid, '',    c[0], c[1], c[2], 1.0, 0.00, seg[0:3],el, '')
             pfile.write(line+'\n')
     print("Wrote PDB file:", outputname+'.pdb')
 
@@ -1185,7 +1234,12 @@ def nucchargelist(ellist):
     totnuccharge=0
     els=[]
     for e in ellist:
-        atcharge=elematomnumbers[e.lower()]
+        try:
+            atcharge=elematomnumbers[e.lower()]
+        except KeyError:
+            print("Unknown element: {} found in element-list".format(e))
+            print("Check coordinate-file. Exiting.")
+            exit()
         totnuccharge+=atcharge
     return totnuccharge
 
@@ -1618,11 +1672,13 @@ def QMregionfragexpand(fragment=None,initial_atoms=None, radius=None):
         exit()
     subsetelems = [fragment.elems[i] for i in initial_atoms]
     subsetcoords=[fragment.coords[i]for i in initial_atoms ]
-    print("subsetcoords:", subsetcoords)
-    print("subsetelems:", subsetelems)
     if len(fragment.connectivity) == 0:
         print("No connectivity found. Using slow way of finding nearby fragments...")
     atomlist=[]
+
+
+    #print("fragment.connectivity", fragment.connectivity)
+
     for i,c in enumerate(subsetcoords):
         el=subsetelems[i]
         for index,allc in enumerate(fragment.coords):
@@ -1636,12 +1692,15 @@ def QMregionfragexpand(fragment=None,initial_atoms=None, radius=None):
                     if len(fragment.connectivity) == 0:
                         #wholemol=get_molecule_members_loop(fragment.coords, fragment.elems, index, 1, scale, tol)
                         wholemol=get_molecule_members_loop_np2(fragment.coords, fragment.elems, 99, scale, tol, atomindex=index)
+                        
                     #If stored connectivity
                     else:
                         for q in fragment.connectivity:
+                            #exit()
                             if index in q:
                                 wholemol=q
                                 break
+                    
                     elematoms=[fragment.elems[i] for i in wholemol]
                     atomlist=atomlist+wholemol
     atomlist = np.unique(atomlist).tolist()
@@ -1655,7 +1714,7 @@ def distance_between_atoms(fragment=None, atom1=None, atom2=None):
 
 
 
-def get_boundary_atoms(qmatoms, coords, elems, scale, tol, excludeboundaryatomlist=None):
+def get_boundary_atoms(qmatoms, coords, elems, scale, tol, excludeboundaryatomlist=None,unusualboundary=False):
     print("Determining QM-MM boundary")
     if excludeboundaryatomlist == None:
         excludeboundaryatomlist=[]
@@ -1695,7 +1754,12 @@ def get_boundary_atoms(qmatoms, coords, elems, scale, tol, excludeboundaryatomli
             if elems[qmatom] != "C" or elems[boundaryatom[0]] != "C":
                 print(BC.WARNING,"Warning: QM-MM boundary is not the ideal C-C scenario.",BC.END)
                 print(BC.WARNING,"QM-MM boundary: {}({}) - {}({})".format(elems[qmatom],qmatom,elems[boundaryatom[0]],boundaryatom[0]),BC.END)
-                print(BC.WARNING,"Make sure you know what you are doing. Continuing...",BC.END)
+                if unusualboundary == False:
+                    print(BC.WARNING,"Make sure you know what you are doing (also note that ASH counts atoms from 0 not 1). Exiting.",BC.END)
+                    print(BC.WARNING,"To override exit, add: unusualboundary=True  to QMMMTheory object ",BC.END)
+                    exit()
+                
+                
 
             # Adding to dict
             qm_mm_boundary_dict[qmatom] = boundaryatom[0]
@@ -1726,15 +1790,156 @@ def get_linkatom_positions(qm_mm_boundary_dict,qmatoms, coords, elems, linkatom_
 
 #Grabbing molecules from multi-XYZ trajectory file (can be MD-file, optimization traj, nebpath traj etc).
 #Creating ASH fragments for each conformer
-def get_molecules_from_trajectory(file):
-    print("")
-    print("Now finding molecules in multi-XYZ trajectory file and creating ASH fragments...")
+def get_molecules_from_trajectory(file,writexyz=False, skipindex=1,conncalc=False):
+    print("----------------------------------")
+    print("Get molecules from trajectory")
+    print("----------------------------------")
+    print("Finding molecules/snapshots in multi-XYZ trajectory file and creating ASH fragments...")
+    print("Taking every {}th entry".format(skipindex))
     list_of_molecules=[]
-    all_elems, all_coords, all_titles = split_multimolxyzfile(file,writexyz=True)
+    all_elems, all_coords, all_titles = split_multimolxyzfile(file,writexyz=writexyz,skipindex=skipindex)
     print("Found {} molecules in file".format(len(all_elems)))
-    
     for els,cs in zip(all_elems,all_coords):
-        conf = ash.Fragment(elems=els, coords=cs)
+        conf = ash.Fragment(elems=els, coords=cs, conncalc=conncalc, printlevel=0)
         list_of_molecules.append(conf)
 
     return list_of_molecules
+
+
+
+
+#Extend cell in general with original cell in center
+#NOTE: Taken from functions_molcrys.
+#TODO: Remove function from functions_molcrys
+def cell_extend_frag(cellvectors, coords,elems,cellextpars):
+    printdebug("cellextpars:", cellextpars)
+    permutations = []
+    for i in range(int(cellextpars[0])):
+        for j in range(int(cellextpars[1])):
+            for k in range(int(cellextpars[2])):
+                permutations.append([i, j, k])
+                permutations.append([-i, j, k])
+                permutations.append([i, -j, k])
+                permutations.append([i, j, -k])
+                permutations.append([-i, -j, k])
+                permutations.append([i, -j, -k])
+                permutations.append([-i, j, -k])
+                permutations.append([-i, -j, -k])
+    #Removing duplicates and sorting
+    permutations = sorted([list(x) for x in set(tuple(x) for x in permutations)],key=lambda x: (abs(x[0]), abs(x[1]), abs(x[2])))
+    #permutations = permutations.sort(key=lambda x: x[0])
+    printdebug("Num permutations:", len(permutations))
+    numcells=np.prod(cellextpars)
+    numcells=len(permutations)
+    extended = np.zeros((len(coords) * numcells, 3))
+    new_elems = []
+    index = 0
+    for perm in permutations:
+        shift = cellvectors[0:3, 0:3] * perm
+        shift = shift[:, 0] + shift[:, 1] + shift[:, 2]
+        #print("Permutation:", perm, "shift:", shift)
+        for d, el in zip(coords, elems):
+            new_pos=d+shift
+            extended[index] = new_pos
+            new_elems.append(el)
+            #print("extended[index]", extended[index])
+            #print("extended[index+1]", extended[index+1])
+            index+=1
+    printdebug("extended coords num", len(extended))
+    printdebug("new_elems  num,", len(new_elems))
+    return extended, new_elems
+
+#From Pymol. Not sure if useful
+#NOTE: also in functions_molcrys
+def cellbasis(angles, edges):
+    from math import cos, sin, radians, sqrt
+    """
+    For the unit cell with given angles and edge lengths calculate the basis
+    transformation (vectors) as a 4x4 numpy.array
+    """
+    rad = [radians(i) for i in angles]
+    basis = np.identity(4)
+    basis[0][1] = cos(rad[2])
+    basis[1][1] = sin(rad[2])
+    basis[0][2] = cos(rad[1])
+    basis[1][2] = (cos(rad[0]) - basis[0][1]*basis[0][2])/basis[1][1]
+    basis[2][2] = sqrt(1 - basis[0][2]**2 - basis[1][2]**2)
+    edges.append(1.0)
+    return basis * edges # numpy.array multiplication!
+
+
+
+#Cut N-radius cluster from (extended) box from chosen atomindex
+#TODO: Add option to use center-of-mass, centroid, multiple indices etc.
+#NOTE: Deprecated????
+def cut_cluster(coords=None, elems=None, radius=None, center_atomindex=None):
+
+    print("Now cutting spherical cluster with radius {} Å from box".format(radius))
+
+
+    # Getting coordinates of atom to center cluster on
+    #origin=np.array([coords[center_atomindex]])
+    #comparecoords = np.tile(origin, (len(coords), 1))
+
+    # Get all distances in one go
+    #distances = einsum_mat(coords, comparecoords)
+
+    #Get connectivity of whole thing
+    #connectivity=[]
+
+
+    #atomlist=[]
+    ##Keep only atoms with distances from within R of center_atomindex 
+    #for count in range(len(coords)):
+    #    if distances[count] < radius:
+    #        #Look up connected members
+    #        for q in connectivity:
+    #            #print("q:", q)
+    #            if count in q:
+    #                wholemol=q
+    #                #print("wholemol", wholemol)
+    #                break
+    #        for i in wholemol:
+    #            atomlist.append(i)
+
+    #clustercoords=[coords[i] for i in atomlist]
+    clustercoords=np.take(coords,atomlist,axis=0)
+    clusterelems=[elems[i] for i in atomlist]
+
+    return clustercoords,clusterelems
+
+
+
+
+#Create a molecular cluster from a periodix box based on radius and chosen atom(s)
+
+def make_cluster_from_box(fragment=None, radius=10, center_atomindices=[0], cellparameters=None):
+    print("----------------------------")
+    print("Make cluster from box")
+    print("----------------------------")
+    #Choosing how far to extend cell based on chosen cluster-radius
+    if radius < cellparameters[0]:
+        cellextension=[2,2,2]
+    else:
+        cellextension=[3,3,3]
+
+    print("Cell parameters:", cellparameters)
+    print("Radius: {} Å".format(radius))
+    print("Cell extension used: ", cellextension)
+    print("Cluster will be centered on atom indices:", center_atomindices)
+
+
+    #Extend cell
+    cellvectors=cellbasis(cellparameters[3:6],cellparameters[0:3])
+    ext_coords, ext_elems=cell_extend_frag(cellvectors, fragment.coords, fragment.elems, cellextension)
+    print("Size of extended cell:", len(ext_elems))
+    extcellfrag = ash.Fragment(elems=ext_elems, coords=ext_coords, printlevel=2)
+    #Cut cluster with radius R from extended cell, centered on atomic index. Returns list of atoms
+    atomlist = QMregionfragexpand(fragment=extcellfrag,initial_atoms=center_atomindices, radius=radius)
+
+    #Grabbing coords and elems from atomlist and creating new fragment
+    clustercoords=np.take(ext_coords,atomlist,axis=0)
+    clusterelems=[ext_elems[i] for i in atomlist]
+    newfrag = ash.Fragment(elems=clusterelems, coords=clustercoords, printlevel=0)
+
+    return newfrag

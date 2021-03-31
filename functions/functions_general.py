@@ -305,6 +305,7 @@ def print_time_rel(timestampA,modulename=''):
     print("Time to calculate step ({}): {:3.1f} seconds, {:3.1f} minutes.".format(modulename, secsA, minsA ))
     print("-------------------------------------------------------------------")
 
+
 def print_time_rel_and_tot(timestampA,timestampB, modulename=''):
     secsA=time.time()-timestampA
     minsA=secsA/60
@@ -327,4 +328,13 @@ def print_time_rel_and_tot_color(timestampA,timestampB, modulename=''):
     print(BC.WARNING,"-------------------------------------------------------------------", BC.END)
     print(BC.WARNING,"Time to calculate step ({}): {:3.1f} seconds, {:3.1f} minutes.".format(modulename, secsA, minsA ), BC.END)
     print(BC.WARNING,"Total Walltime: {:3.1f} seconds, {:3.1f} minutes.".format(secsB, minsB ), BC.END)
+    print(BC.WARNING,"-------------------------------------------------------------------", BC.END)
+
+def print_time_tot_color(time_initial):
+    #hoursA=minsA/60
+    secsB=time.time()-time_initial
+    minsB=secsB/60
+    #hoursB=minsB/60
+    print(BC.WARNING,"-------------------------------------------------------------------", BC.END)
+    print(BC.WARNING,"ASH Total Walltime: {:3.1f} seconds, {:3.1f} minutes.".format(secsB, minsB ), BC.END)
     print(BC.WARNING,"-------------------------------------------------------------------", BC.END)

@@ -1,6 +1,7 @@
 import subprocess as sp
 #from functions_solv import *
-from module_coords import elemstonuccharges
+#from module_coords import elemstonuccharges
+import module_coords
 from functions_general import blankline,insert_line_into_file,BC
 import functions_elstructure
 import constants
@@ -12,10 +13,10 @@ import settings_ash
 #ORCA Theory object. Fragment object is optional. Only used for single-points.
 class ORCATheory:
     def __init__(self, orcadir=None, fragment=None, charge=None, mult=None, orcasimpleinput='', printlevel=2, extrabasisatoms=None, extrabasis=None,
-                 orcablocks='', extraline='', brokensym=None, HSmult=None, atomstoflip=None, nprocs=1, label=None, moreadfile=None):
+                 orcablocks='', extraline='', brokensym=None, HSmult=None, atomstoflip=None, nprocs=1, label=None, moreadfile=None, autostart=True):
 
         if orcadir is None:
-            print("No orcadir argument passed to ORCATheory. Attempting to find orcadir variable inside settings_ash")
+            print(BC.WARNING, "No orcadir argument passed to ORCATheory. Attempting to find orcadir variable inside settings_ash", BC.END)
             try:
                 self.orcadir=settings_ash.settings_dict["orcadir"]
             except:
@@ -32,6 +33,8 @@ class ORCATheory:
 
         #MOREAD-file
         self.moreadfile=moreadfile
+        #Autostart
+        self.autostart=autostart
 
         #Using orcadir to set LD_LIBRARY_PATH
         old = os.environ.get("LD_LIBRARY_PATH")
@@ -61,9 +64,16 @@ class ORCATheory:
             self.mult=int(mult)
         else:
             self.charge=None
+        
+        #Adding NoAutostart keyword to extraline if requested
+        if self.autostart == False:
+            self.extraline=extraline+"\n! Noautostart"
+        else:
+            self.extraline=extraline
+        
         self.orcasimpleinput=orcasimpleinput
         self.orcablocks=orcablocks
-        self.extraline=extraline
+
         #BROKEN SYM OPTIONS
         self.brokensym=brokensym
         self.HSmult=HSmult
@@ -444,6 +454,24 @@ def grab_HF_and_corr_energies(file, DLPNO=False, F12=False):
     return edict
 
 
+#Grab XES state energies and intensities from ORCA output
+def xesgrab(file):
+    xesenergies=[]
+    #
+    intensities=[]
+    xesgrab=False
+    
+    with open(file) as f:
+        for line in f:
+            if xesgrab==True:
+                if 'Getting memory' in line:
+                    xesgrab=False
+                if "->" in line:
+                    xesenergies.append(float(line.split()[4]))
+                    intensities.append(float(line.split()[8]))
+            if "COMBINED ELECTRIC DIPOLE + MAGNETIC DIPOLE + ELECTRIC QUADRUPOLE X-RAY EMISSION SPECTRUM" in line:
+                xesgrab=True
+    return xesenergies,intensities
 
 #Grab TDDFT states from ORCA output
 def tddftgrab(file):
@@ -486,6 +514,8 @@ def grabtrajenergies(filename):
     #    return energies
     return energies,stepvals
 
+
+#TODO: Limited, kept for now for module_PES compatibility. Better version below
 def orbitalgrab(file):
     occorbsgrab=False
     virtorbsgrab=False
@@ -539,6 +569,75 @@ def orbitalgrab(file):
             if 'NO   OCC          E(Eh)            E(eV)' in line:
                 occorbsgrab=True
     return bands_alpha, bands_beta, hftyp
+
+
+
+def MolecularOrbitalGrab(file):
+    occorbsgrab=False
+    virtorbsgrab=False
+    endocc="unset"
+    tddftgrab="unset"
+    tddft="unset"
+    bands_alpha=[]
+    bands_beta=[]
+    virtbands_a=[]
+    virtbands_b=[]
+    f=[]
+    virtf=[]
+    spinflag="unset"
+    hftyp="unset"
+
+    with open(file) as f:
+        for line in f:
+            if '%tddft' in line:
+                tddft="yes"
+            if 'Hartree-Fock type      HFTyp' in line:
+                hftyp=line.split()[4]
+                #if hftyp=="UHF":
+            if hftyp == "RHF":
+                spinflag="alpha"
+            if 'SPIN UP ORBITALS' in line:
+                spinflag="alpha"
+            if 'SPIN DOWN ORBITALS' in line:
+                spinflag="beta"
+            if occorbsgrab==True:
+                endocc=line.split()[1]
+                if endocc == "0.0000" :
+                    occorbsgrab=False
+                    virtorbsgrab=True
+                else:
+                    if spinflag=="alpha":
+                        bands_alpha.append(float(line.split()[3]))
+                    if spinflag=="beta":
+                        bands_beta.append(float(line.split()[3]))
+            if virtorbsgrab==True:
+                if '------------------' in line:
+                    break
+                if line == '\n':
+                    virtorbsgrab=False
+                    spinflag="unset"
+                    continue
+                if spinflag=="alpha":
+                    virtbands_a.append(float(line.split()[3]))
+                if spinflag=="beta":
+                    virtbands_b.append(float(line.split()[3]))
+                endvirt=line.split()[1]
+            if 'NO   OCC          E(Eh)            E(eV)' in line:
+                occorbsgrab=True
+    
+    if hftyp != "RHF":
+        Openshell=True
+    else:
+        Openshell=False
+
+    #Final dict
+    MOdict= {"occ_alpha":bands_alpha, "occ_beta":bands_alpha, "unocc_alpha":virtbands_a, "unocc_beta":virtbands_b, "Openshell":Openshell}
+    return MOdict
+
+
+
+
+
 
 
 #Grab <S**2> expectation values from outputfile
@@ -1058,7 +1157,7 @@ def grabatomcharges_ORCA(chargemodel,outputfile):
                     charges=[]
                     grab=True
         print("Hirshfeld charges :", charges)
-        atomicnumbers=elemstonuccharges(elems)
+        atomicnumbers=elemstonuccharges.elemstonuccharges(elems)
         charges = functions_elstructure.calc_cm5(atomicnumbers, coords, charges)
         print("CM5 charges :", list(charges))
     elif chargemodel == "Mulliken":

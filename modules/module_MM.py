@@ -201,7 +201,7 @@ class NonBondedTheory:
                 print("self.atomtypes", self.atomtypes)
                 print("self.LJpairpotdict", self.LJpairpotdict)
                 print("qmatoms", qmatoms)
-                print("actatoms", actatoms)
+                #print("actatoms", actatoms)
                 
                 self.sigmaij, self.epsij = ash.Main.Juliafunctions.pairpot_active(self.numatoms, self.atomtypes, self.LJpairpotdict, qmatoms, actatoms)
         # New for-loop for creating sigmaij and epsij arrays. Uses dict-lookup instead

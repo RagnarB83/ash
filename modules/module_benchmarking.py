@@ -153,7 +153,13 @@ def run_benchmark(set=None, theory=None, property='energy', workflow=None, orcad
     print("Dataset: ", set)
     print("Reuse orbitals option: ", reuseorbs)
     ashpath = os.path.dirname(ash.__file__)
-    benchmarksetpath=ashpath+"/databases/Benchmarking-sets/"+set+"/data/"
+
+    if 'GMTKN55' in set:
+        bigset="GMTKN55"
+        subset=set.split('_')[1]
+        benchmarksetpath=ashpath+"/databases/Benchmarking-sets/"+bigset+"/"+subset+"/data/"
+    else:
+        benchmarksetpath=ashpath+"/databases/Benchmarking-sets/"+set+"/data/"
     #Read reference data and define reactions
     print("")
     database_dict = read_referencedata_file(benchmarksetpath)

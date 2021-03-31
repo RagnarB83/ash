@@ -1,7 +1,6 @@
 import numpy as np
-import matplotlib
-matplotlib.use('Agg')
-import matplotlib.pyplot as plt 
+import os
+import sys
 
 #repeated here so that plotting can be stand-alone
 class BC:
@@ -15,6 +14,17 @@ class BC:
     END = '\033[0m'
     BOLD = '\033[1m'
     UNDERLINE = '\033[4m'
+
+
+def load_matplotlib():
+    print("Loading Matplotlib")
+    import matplotlib
+    matplotlib.use('Agg')
+    import matplotlib.pyplot as plt 
+    return plt
+
+
+
 
 def Gaussian(x, mu, strength, sigma):
     "Produces a Gaussian curve"
@@ -30,8 +40,9 @@ def Gaussian(x, mu, strength, sigma):
 #Input: dictionary of (X,Y): energy   entries 
 def reactionprofile_plot(surfacedictionary, finalunit='',label='Label', x_axislabel='Coord', y_axislabel='Energy', dpi=200, 
                          imageformat='png', RelativeEnergy=True, pointsize=40, scatter_linewidth=2, line_linewidth=1, color='blue' ):
-    
-    
+    load_matplotlib()
+
+
     conversionfactor = { 'kcal/mol' : 627.50946900, 'kcalpermol' : 627.50946900, 'kJ/mol' : 2625.499638, 'kJpermol' : 2625.499638, 
                         'eV' : 27.211386245988, 'cm-1' : 219474.6313702 }
     e=[]
@@ -57,8 +68,8 @@ def reactionprofile_plot(surfacedictionary, finalunit='',label='Label', x_axisla
     plt.title(label)
     plt.xlabel(x_axislabel)
     plt.ylabel('{} ({})'.format(y_axislabel,finalunit))
-    plt.savefig('Plot{}.png'.format(label), format=imageformat, dpi=dpi)
-    print("Created PNG file: Plot{}.png".format(label))
+    plt.savefig('Plot{}.{}'.format(label,imageformat), format=imageformat, dpi=dpi)
+    print("Created file: Plot{}.{}".format(label,imageformat))
 
 
 
@@ -70,7 +81,7 @@ def reactionprofile_plot(surfacedictionary, finalunit='',label='Label', x_axisla
 def contourplot(surfacedictionary, label='Label',x_axislabel='Coord', y_axislabel='Coord', finalunit=None, interpolation='Cubic', 
                 interpolparameter=10, colormap='inferno_r', dpi=200, imageformat='png', RelativeEnergy=True, numcontourlines=500,
                 contour_alpha=0.75, contourline_color='black', clinelabels=False, contour_values=None):
-    
+    load_matplotlib()
     #Relative energy conversion (if RelativeEnergy is True)
     conversionfactor = { 'kcal/mol' : 627.50946900, 'kcalpermol' : 627.50946900, 'kJ/mol' : 2625.499638, 'kJpermol' : 2625.499638, 
                         'eV' : 27.211386245988, 'cm-1' : 219474.6313702 }
@@ -260,7 +271,7 @@ def plot_Spectrum(xvalues=None, yvalues=None, plotname='Spectrum', range=None, u
     ####################################
     if matplotlib is True:
         print("Creating plot with Matplotlib")
-        
+        plt = load_matplotlib()
         fig, ax = plt.subplots()
 
         ax.plot(x, spectrum, 'C3', label=plotname)
@@ -273,6 +284,160 @@ def plot_Spectrum(xvalues=None, yvalues=None, plotname='Spectrum', range=None, u
         plt.savefig(plotname + '.'+imageformat, format=imageformat, dpi=dpi)
         # plt.show()
         print("Wrote file:", plotname+"."+imageformat)
+    else:
+        print("Skipped Matplotlib part.")
+    print(BC.OKGREEN,"ALL DONE!", BC.END)
+
+
+#Note: Input: dict containing occ/unoccuped alpha/beta orbitals . Created by MolecularOrbitagrab in ORCA interface
+#MOdict= {"occ_alpha":bands_alpha, "occ_beta":bands_alpha, "unocc_alpha":virtbands_a, "unocc_beta":virtbands_b, "Openshell":Openshell}
+def MOplot_vertical(mos_dict, pointsize=4000, linewidth=2, label="Label", yrange=[-30,3], imageformat='png'):
+
+    plt = load_matplotlib()
+
+    bands_alpha=mos_dict["occ_alpha"]
+    bands_beta=mos_dict["occ_beta"]
+    virtbands_alpha=mos_dict["unocc_alpha"]
+    virtbands_beta=mos_dict["unocc_beta"]
+    Openshell=mos_dict["Openshell"]
+    fig, ax = plt.subplots()
+
+    #Alpha MOs
+    ax.scatter([1]*len(bands_alpha), bands_alpha, color='blue', marker = '_',  s=pointsize, linewidth=linewidth )
+    ax.scatter([1]*len(virtbands_alpha), virtbands_alpha, color='cyan', marker = '_',  s=pointsize, linewidth=linewidth )
+
+    #Beta MOs
+    if Openshell == True:
+        ax.scatter([1.05]*len(bands_beta), bands_beta, color='red', marker = '_',  s=pointsize, linewidth=linewidth )
+        ax.scatter([1.05]*len(virtbands_beta), virtbands_beta, color='pink', marker = '_',  s=pointsize, linewidth=linewidth )
+
+    plt.xlim(0.98,1.07)
+    plt.ylim(yrange[0],yrange[1])
+    plt.xticks([])
+    plt.ylabel('MO energy (eV)')
+    #basename=os.path.splitext(str(sys.argv[1]))[0]
+    plt.title(label)
+
+    #Vertical line
+    plt.axhline(y=0.0, color='black', linestyle='--')
+    plt.savefig(label+"."+imageformat, format=imageformat, dpi=200)
+
+    print("Created plot:", label+"."+imageformat)
+
+
+
+
+
+
+
+def sdfdsf(mos_alpha=None, mos_beta=None, plotname='MO-plot', start=None, finish=None, broadening=0.1, points=10000, hftyp_I=None, matplotlib=True, imageformat='png'):
+    print("todo??")
+    exit()
+ 
+    blankline()
+    print(bcolors.OKGREEN,"-------------------------------------------------------------------",bcolors.ENDC)
+    print(bcolors.OKGREEN,"plot_MO_Spectrum",bcolors.ENDC)
+    print(bcolors.OKGREEN,"-------------------------------------------------------------------",bcolors.ENDC)
+    blankline()
+
+
+
+    #########################
+    # Plot spectra.
+    ########################
+    print(bcolors.OKGREEN, "Plotting-range chosen:", start, "-", finish, "eV", "with ", points, "points and ",
+              broadening, "eV broadening.", bcolors.ENDC)
+
+    # X-range is electron binding energy
+    x = np.linspace(start, finish, points)
+    stkheight = 0.5
+    strength = 1.0
+
+    ######################
+    # MO-dosplot
+    ######################
+    if hftyp_I is None:
+        print("hftyp_I not set (value: RHF or UHF). Assuming hftyp_I=RHF and ignoring beta MOs.")
+        blankline()
+    # Creates DOS out of electron binding energies (negative of occupied MO energies)
+    # alpha
+    occDOS_alpha = 0
+    for count, peak in enumerate(mos_alpha):
+        occdospeak = Gaussian(x, peak, strength, broadening)
+        #virtdospeak = Gaussian(x, peak, strength, broadening)
+        occDOS_alpha += occdospeak
+    # beta
+    if hftyp_I == "UHF":
+        occDOS_beta = 0
+        for count, peak in enumerate(mos_beta):
+            occdospeak = Gaussian(x, peak, strength, broadening)
+            #virtdospeak = Gaussian(x, peak, strength, broadening)
+            occDOS_beta += occdospeak
+
+    # Write dat/stk files for MO-DOS
+    datfile = open('MO-DOSPLOT' + '.dat', 'w')
+    stkfile_a = open('MO-DOSPLOT' + '_a.stk', 'w')
+    if hftyp_I == "UHF":
+        stkfile_b = open('MO-DOSPLOT' + '_b.stk', 'w')
+
+    for i in range(0, len(x)):
+        datfile.write(str(x[i]) + " ")
+        datfile.write(str(occDOS_alpha[i]) + " \n")
+        if hftyp_I == "UHF":
+            datfile.write(str(occDOS_beta[i]) + "\n")
+    datfile.close()
+    # Creating stk file for alpha. Only including sticks for plotted region
+    stk_alpha2 = []
+    stk_alpha2height = []
+    for i in mos_alpha:
+        if i > x[-1]:
+            # print("i is", i)
+            continue
+        else:
+            stkfile_a.write(str(i) + " " + str(stkheight) + "\n")
+            stk_alpha2.append(i)
+            stk_alpha2height.append(stkheight)
+    stkfile_a.close()
+    stk_beta2 = []
+    stk_beta2height = []
+    if hftyp_I == "UHF":
+        for i in mos_beta:
+            if i > x[-1]:
+                continue
+            else:
+                stkfile_b.write(str(i) + " " + str(stkheight) + "\n")
+                stk_beta2.append(i)
+                stk_beta2height.append(stkheight)
+        stkfile_b.close()
+
+    ##################################
+    # Plot with Matplotlib
+    ####################################
+    if matplotlib is True:
+        print("Creating plot with Matplotlib")
+        import matplotlib
+        matplotlib.use('Agg')
+        import matplotlib.pyplot as plt
+        fig, ax = plt.subplots()
+        if MOPlot is True:
+            # MO-DOSPLOT for initial state. Here assuming MO energies of initial state to be good approximations for IPs
+            ax.plot(x, occDOS_alpha, 'C2', label='alphaMO')
+            ax.stem(stk_alpha2, stk_alpha2height, label='alphaMO', basefmt=" ", markerfmt=' ', linefmt='C2-', use_line_collection=True)
+            if hftyp_I == "UHF":
+                ax.plot(x, occDOS_beta, 'C2', label='betaMO')
+                ax.stem(stk_beta2, stk_beta2height, label='betaMO', basefmt=" ", markerfmt=' ', linefmt='C2-', use_line_collection=True)
+
+
+        ##############
+        # TDDFT-STATES
+        ###############
+        plt.xlabel('eV')
+        plt.ylabel('Intensity')
+        #################################
+        plt.xlim(start, finish)
+        plt.legend(shadow=True, fontsize='small')
+        plt.savefig(plotname + imageformat, format=imageformat, dpi=200)
+        # plt.show()
     else:
         print("Skipped Matplotlib part.")
     print(BC.OKGREEN,"ALL DONE!", BC.END)

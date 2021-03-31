@@ -14,6 +14,9 @@ import os
 import sys
 import inspect
 import time
+import atexit
+
+
 
 
 ###############
@@ -26,11 +29,11 @@ sys.path.insert(1, ashpath+'/modules')
 sys.path.insert(1, ashpath+'/interfaces')
 sys.path.insert(1, ashpath+'/functions')
 
-from functions_general import blankline,BC,listdiff,print_time_rel,print_time_rel_and_tot,pygrep,printdebug,read_intlist_from_file
+from functions_general import blankline,BC,listdiff,print_time_rel,print_time_rel_and_tot,pygrep,printdebug,read_intlist_from_file,frange
 
 # Fragment class and coordinate functions
 import module_coords
-from module_coords import get_molecules_from_trajectory,eldict_covrad,write_pdbfile,Fragment,read_xyzfile,write_xyzfile
+from module_coords import get_molecules_from_trajectory,eldict_covrad,write_pdbfile,Fragment,read_xyzfile,write_xyzfile,make_cluster_from_box
 
 #Singlepoint
 import module_singlepoint
@@ -57,6 +60,8 @@ from module_surface import calc_surface,calc_surface_fromXYZ,read_surfacedict_fr
 
 #QMcode interfaces
 from interface_ORCA import ORCATheory
+import interface_ORCA
+
 from interface_Psi4 import Psi4Theory
 from interface_dalton import DaltonTheory
 from interface_pyscf import PySCFTheory
@@ -108,6 +113,10 @@ import ash_header
 ash_header.print_header()
 
 
+#Exit command (footer)
+if settings_ash.settings_dict["print_exit_footer"] == True:
+    atexit.register(ash_header.print_footer)
+
 
 #Julia dependency. Current behaviour: 
 # Default: load_julia is True and we try to load and continue if unsuccessful
@@ -131,6 +140,7 @@ if settings_ash.settings_dict["load_julia"] == True:
         print("Problem importing Pyjulia")
         print("Make sure Julia is installed, PyJulia within Python, Pycall within Julia, Julia packages have been installed and you are using python-jl")
         print("Python routines will be used instead when possible")
+        settings_ash.settings_dict["connectivity_code"] = "py"
         #TODO: We should here set a variable that would pick py version of routines instead
 
 

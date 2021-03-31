@@ -1525,7 +1525,7 @@ def PhotoElectronSpectrum(theory=None, fragment=None, Initialstate_charge=None, 
                           Ionizedstate_charge=None, Ionizedstate_mult=None, numionstates=None, path_wfoverlap=None, tda=True,
                           brokensym=False, HSmult=None, atomstoflip=None, initialorbitalfiles=None, Densities='None', densgridvalue=100,
                           CAS=False, CAS_Initial=None, CAS_Final = None, memory=40000, numcores=1, noDyson=False, CASCI=False, MRCI=False, MREOM=False,
-                          MRCI_Initial=None, MRCI_Final = None, tprintwfvalue=1e-6, MRCI_CASCI_Final=True, EOM=False, label=None, check_stability=True):
+                          MRCI_Initial=None, MRCI_Final = None, tprintwfvalue=1e-6, MRCI_CASCI_Final=True, EOM=False, btPNO=False, DLPNO=False, label=None, check_stability=True):
     blankline()
     print(bcolors.OKGREEN,"-------------------------------------------------------------------",bcolors.ENDC)
     print(bcolors.OKGREEN,"PhotoElectronSpectrum: Calculating PES spectra via TDDFT/CAS/MRCI/EOM/MREOM and Dyson-norm approach",bcolors.ENDC)
@@ -1885,7 +1885,7 @@ def PhotoElectronSpectrum(theory=None, fragment=None, Initialstate_charge=None, 
         #Final-state  calc. TDDFT or CASSCF
         #Adding TDDFT block to inputfile
         ##CAS option: State-averaged calculation for both spin multiplicities.
-        if EOM is True:
+        if EOM == True:
             
             #Preserve old
             orig_orcablocks=copy.copy(theory.orcablocks)
@@ -1893,8 +1893,16 @@ def PhotoElectronSpectrum(theory=None, fragment=None, Initialstate_charge=None, 
             #Will calculate IPs directly
             print("Adding MDCI block for initial state")
             
-            if 'IP-EOM-CCSD' not in theory.orcasimpleinput:
-                theory.orcasimpleinput =  theory.orcasimpleinput + ' IP-EOM-CCSD '
+            #Canonical EOM, btPNO or DLPNO
+            if btPNO == True:
+                if 'bt-PNO-IP-EOM-CCSD' not in theory.orcasimpleinput:
+                    theory.orcasimpleinput =  theory.orcasimpleinput + ' bt-PNO-IP-EOM-CCSD '
+            elif DLPNO == True:
+                if 'IP-EOM-DLPNO-CCSD' not in theory.orcasimpleinput:
+                    theory.orcasimpleinput =  theory.orcasimpleinput + ' IP-EOM-DLPNO-CCSD '
+            else:
+                if 'IP-EOM-CCSD' not in theory.orcasimpleinput:
+                    theory.orcasimpleinput =  theory.orcasimpleinput + ' IP-EOM-CCSD '
             
             FinalIPs=[]
             fstates_dict={}
@@ -2280,14 +2288,20 @@ def PhotoElectronSpectrum(theory=None, fragment=None, Initialstate_charge=None, 
             frozencore = 0
 
             # Grab MO coefficients and write to files mos_init and mos_final
-            if os.path.isfile('./mos_init') == True:
-                print(bcolors.WARNING, "mos_init file already exists in dir! Using (is this what you want?!)", bcolors.ENDC)
-            else:
-                print("stateI.gbwfile: ", stateI.gbwfile)
-                print("stateI.restricted :", stateI.restricted)
-                print("frozencore: ", frozencore)
-                mos_init = get_MO_from_gbw(stateI.gbwfile, stateI.restricted, frozencore,theory.orcadir)
-                writestringtofile(mos_init, "mos_init")
+
+            #Delete old mos_init file
+            try:
+                os.remove("mos_init")
+            except:
+                pass
+            #if os.path.isfile('./mos_init') == True:
+            #    print(bcolors.WARNING, "mos_init file already exists in dir! Using (is this what you want?!)", bcolors.ENDC)
+            #else:
+            print("stateI.gbwfile: ", stateI.gbwfile)
+            print("stateI.restricted :", stateI.restricted)
+            print("frozencore: ", frozencore)
+            mos_init = get_MO_from_gbw(stateI.gbwfile, stateI.restricted, frozencore,theory.orcadir)
+            writestringtofile(mos_init, "mos_init")
 
             for fstate in Finalstates:
                 print("here")
@@ -2826,6 +2840,7 @@ def potential_adjustor_DFT(theory=None, fragment=None, Initialstate_charge=None,
     
     #Orbitals in eV
     occorbs_alpha, occorbs_beta, hftyp = orbitalgrab(theory.filename+'.out')
+    
     print("occorbs_alpha (eV): ", occorbs_alpha)
     print("occorbs_beta (eV): ", occorbs_beta)
     

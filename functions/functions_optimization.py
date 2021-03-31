@@ -122,7 +122,8 @@ def SimpleOpt(fragment=None, theory='', optimizer='', maxiter=50, frozen_atoms=N
         print("GEOMETRY OPTIMIZATION STEP", step)
         print("Current geometry (Å):")
         if theory.__class__.__name__ == "QMMMTheory":
-            print_coords_all(current_coords,elems, indices=fragment.allatoms, labels=theory.hybridatomlabels, labels2=actfrozen_labels)
+            print("geometry print-out currently disabled...")
+            #print_coords_all(current_coords,elems, indices=fragment.allatoms, labels=theory.hybridatomlabels, labels2=actfrozen_labels)
         else:
             print_coords_all(current_coords, elems, indices=fragment.allatoms, labels=actfrozen_labels)
         blankline()
