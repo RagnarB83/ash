@@ -81,6 +81,7 @@ class QMMMTheory:
 
         #Theory level definitions
         self.printlevel=printlevel
+        print("self.printlevel: ", self.printlevel)
         self.qm_theory=qm_theory
         self.qm_theory_name = self.qm_theory.__class__.__name__
         
@@ -734,7 +735,7 @@ class QMMMTheory:
             assert len(self.QM_PC_gradient) == len(self.MMgradient)
             self.QM_MM_gradient=self.QM_PC_gradient+self.MMgradient
             #print_time_rel(CheckpointTime, modulename='QM/MM gradient combine')
-
+            print("self.printlevel :", self.printlevel)
             if self.printlevel >=3:
                 print("QM gradient (au/Bohr):")
                 module_coords.print_coords_all(self.QMgradient, self.qmelems, self.qmatoms)
