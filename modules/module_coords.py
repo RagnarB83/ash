@@ -651,6 +651,44 @@ def print_coords_all(coords,elems,indices=None, labels=None, labels2=None):
                 for i in range(len(elems)):
                     print("{:>1} {:>4} {:>12.8f}  {:>12.8f}  {:>12.8f} {:>6} {:>6}".format(indices[i],elems[i],coords[i][0], coords[i][1], coords[i][2], labels[i], labels2[i]))
 
+
+
+
+#From lists of coords,elems and atom indices, print coords with elems
+#If list of atom indices provided, print as leftmost column
+#If list of labels provided, print as rightmost column
+#If list of labels2 provided, print as rightmost column
+def write_coords_all(coords,elems,indices=None, labels=None, labels2=None, file="file", description="description"):
+    f = open(file, "w")
+    f.write("#{}\n".format(description))
+    if indices is None:
+        if labels is None:
+            for i in range(len(elems)):
+                f.write("{:>4} {:>12.8f}  {:>12.8f}  {:>12.8f}\n".format(elems[i],coords[i][0], coords[i][1], coords[i][2]))
+
+        else:
+            if labels2 is None:
+                for i in range(len(elems)):
+                    f.write("{:>4} {:>12.8f}  {:>12.8f}  {:>12.8f} {:>6}\n".format(elems[i],coords[i][0], coords[i][1], coords[i][2], labels[i]))
+            else:
+                for i in range(len(elems)):
+                    f.write("{:>4} {:>12.8f}  {:>12.8f}  {:>12.8f} {:>6} :>6\n".format(elems[i],coords[i][0], coords[i][1], coords[i][2], labels[i], label2[i]))
+    else:
+        if labels is None:
+            for i in range(len(elems)):
+                f.write("{:>1} {:>4} {:>12.8f}  {:>12.8f}  {:>12.8f}\n".format(indices[i],elems[i],coords[i][0], coords[i][1], coords[i][2]))
+        else:
+            if labels2 is None:
+                for i in range(len(elems)):
+                    f.write("{:>1} {:>4} {:>12.8f}  {:>12.8f}  {:>12.8f} {:>6}\n".format(indices[i],elems[i],coords[i][0], coords[i][1], coords[i][2], labels[i]))
+            else:
+                for i in range(len(elems)):
+                    f.write("{:>1} {:>4} {:>12.8f}  {:>12.8f}  {:>12.8f} {:>6} {:>6}\n".format(indices[i],elems[i],coords[i][0], coords[i][1], coords[i][2], labels[i], labels2[i]))
+
+    f.close()
+
+
+
 def distance(A,B):
     return sqrt(pow(A[0] - B[0],2) + pow(A[1] - B[1],2) + pow(A[2] - B[2],2)) #fastest
     #return sum((v_i - u_i) ** 2 for v_i, u_i in zip(A, B)) ** 0.5 #slow

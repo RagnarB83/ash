@@ -618,8 +618,8 @@ class OpenMMTheory:
         
         print("self.energy : ", self.energy, "Eh")
         print("Energy:", self.energy*constants.harkcal, "kcal/mol")
-        print("Grad is", Grad)
-        print("self.gradient:", self.gradient)
+        #print("Grad is", Grad)
+        #print("self.gradient:", self.gradient)
 
         print(BC.OKBLUE, BC.BOLD, "------------ENDING OPENMM INTERFACE-------------", BC.END)
         if Grad == True:
