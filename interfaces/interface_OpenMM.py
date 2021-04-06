@@ -147,7 +147,6 @@ class OpenMMTheory:
             self.b = periodic_cell_dimensions[1] * self.unit.angstroms
             self.c = periodic_cell_dimensions[2] * self.unit.angstroms
             
-            self.topology.setBox(self.a, self.b, self.c)
             #Parameters here are based on OpenMM DHFR example
             
             if CHARMMfiles is True:
