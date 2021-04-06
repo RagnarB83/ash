@@ -145,9 +145,11 @@ class OpenMMTheory:
             self.b = periodic_cell_dimensions[1] * self.unit.angstroms
             self.c = periodic_cell_dimensions[2] * self.unit.angstroms
             
+            self.topology.setBox(self.a, self.b, self.c)
             #Parameters here are based on OpenMM DHFR example
-            self.forcefield.setBox(self.a, self.b, self.c)
+            
             if CHARMMfiles is True:
+                #self.forcefield.setBox(self.a, self.b, self.c)
                 self.system = self.forcefield.createSystem(self.params, nonbondedMethod=simtk.openmm.app.PME,
                                             nonbondedCutoff=12 * self.unit.angstroms, switchDistance=10*self.unit.angstroms)
             else:
