@@ -141,7 +141,9 @@ class OpenMMTheory:
         if self.Periodic is True:
             print("System is periodic")
             self.periodic_cell_dimensions = periodic_cell_dimensions
+            print("periodic_cell_dimensions:", periodic_cell_dimensions)
             self.a = periodic_cell_dimensions[0] * self.unit.angstroms
+            print("self.a", self.a)
             self.b = periodic_cell_dimensions[1] * self.unit.angstroms
             self.c = periodic_cell_dimensions[2] * self.unit.angstroms
             
@@ -149,12 +151,15 @@ class OpenMMTheory:
             #Parameters here are based on OpenMM DHFR example
             
             if CHARMMfiles is True:
-                #self.forcefield.setBox(self.a, self.b, self.c)
+                #Box vectors can only be set here for CHARMM
+                self.forcefield.setBox(self.a, self.b, self.c)
                 self.system = self.forcefield.createSystem(self.params, nonbondedMethod=simtk.openmm.app.PME,
                                             nonbondedCutoff=12 * self.unit.angstroms, switchDistance=10*self.unit.angstroms)
             else:
                 self.system = self.forcefield.createSystem(nonbondedMethod=simtk.openmm.app.PME,
                                             nonbondedCutoff=12 * self.unit.angstroms, switchDistance=10*self.unit.angstroms)
+                
+
             #TODO: Customnonbonded force option here
             print("self.system.getForces() :", self.system.getForces())
             for i,force in enumerate(self.system.getForces()):
@@ -290,6 +295,12 @@ class OpenMMTheory:
         #NOTE: If self.system is modified then we have to remake self.simulation
         #self.simulation = simtk.openmm.app.simulation.Simulation(self.topology, self.system, self.integrator,self.platform)
         self.simulation = self.simulationclass(self.topology, self.system, self.integrator,self.platform)
+
+        if self.Periodic is True and Amberfiles is True:
+            print("Setting periodic box")
+            print("sefl.a :", self.a)
+                self.simulation.context.setPeriodicBoxVectors([self.a,self.b,self.c])
+
 
 
         print_time_rel(timeA, modulename="simulation setup")
