@@ -146,10 +146,13 @@ class OpenMMTheory:
             self.c = periodic_cell_dimensions[2] * self.unit.angstroms
             
             #Parameters here are based on OpenMM DHFR example
-            self.prmtop.setBox(self.a, self.b, self.c)
-            self.system = self.forcefield.createSystem(self.params, nonbondedMethod=simtk.openmm.app.PME,
+            self.forcefield.setBox(self.a, self.b, self.c)
+            if CHARMMfiles is True:
+                self.system = self.forcefield.createSystem(self.params, nonbondedMethod=simtk.openmm.app.PME,
                                             nonbondedCutoff=12 * self.unit.angstroms, switchDistance=10*self.unit.angstroms)
-            
+            else:
+                self.system = self.forcefield.createSystem(nonbondedMethod=simtk.openmm.app.PME,
+                                            nonbondedCutoff=12 * self.unit.angstroms, switchDistance=10*self.unit.angstroms)
             #TODO: Customnonbonded force option here
             print("self.system.getForces() :", self.system.getForces())
             for i,force in enumerate(self.system.getForces()):
@@ -173,8 +176,14 @@ class OpenMMTheory:
         #Non-Periodic
         else:
             print("System is non-periodic")
-            self.system = self.forcefield.createSystem(self.params, nonbondedMethod=simtk.openmm.app.NoCutoff,
-                                                nonbondedCutoff=1000 * simtk.openmm.unit.angstroms)
+
+            if CHARMMfiles is True:
+                self.system = self.forcefield.createSystem(self.params, nonbondedMethod=simtk.openmm.app.NoCutoff,
+                                            nonbondedCutoff=1000 * simtk.openmm.unit.angstroms)
+            else:
+                self.system = self.forcefield.createSystem(nonbondedMethod=simtk.openmm.app.NoCutoff,
+                                            nonbondedCutoff=1000 * simtk.openmm.unit.angstroms)
+
             #print("system created")
             #print("Number of forces:", self.system.getNumForces())
             #print(self.system.getForces())
