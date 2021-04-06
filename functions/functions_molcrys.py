@@ -839,7 +839,8 @@ def create_MMcluster(orthogcoords,elems,cell_vectors,sphereradius):
     #Simple equation to find out roughly how large the extended cell has to be to accommodate cluster-radius
     #Rounds up.
     #Added extra cell. Nov 2020: Added another one because of XUQVAI.xtl
-    cell_expansion=math.ceil(sphereradius/largest_cell_length)+2
+    #More  (+5) in 5 APril 2021. NaFeCl4 crystal
+    cell_expansion=math.ceil(sphereradius/largest_cell_length)+4
     print("Using cell expansion: [{},{},{}]".format(cell_expansion,cell_expansion,cell_expansion))
     extended_coords,extended_elems=cell_extend_frag(cell_vectors,orthogcoords,elems,[cell_expansion,cell_expansion,cell_expansion])
     #Write XYZ-file with orthogonal coordinates for cell

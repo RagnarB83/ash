@@ -149,8 +149,8 @@ class Fragment:
     def read_charmmfile(self,filename,conncalc=False):
         #Todo: finish
         pass
+    #Read Chemshell fragment file (.c ending)
     def read_chemshellfile(self,filename,conncalc=False, scale=None, tol=None):
-        #Read Chemshell fragment file (.c ending)
         if self.printlevel >= 2:
             print("Reading coordinates from Chemshell file \"{}\" into fragment".format(filename))
         try:
@@ -166,7 +166,6 @@ class Fragment:
         else:
             # Read connectivity list
             print("Not reading connectivity from file")
-
     #Read PDB file
     def read_pdbfile(self,filename,conncalc=True, scale=None, tol=None):
         if self.printlevel >= 2:
@@ -1167,6 +1166,66 @@ def read_fragfile_xyz(fragfile):
                 #numatoms=int(line.split()[-1])
                 grabcoords=True
     return elems,coords
+
+
+
+#Read AMBERCRD file and coords and box info
+#Not part of Fragment class because we don't have element information here
+
+def read_ambercoordinates(prmtopfile=None, inpcrdfile=None):
+    elems=[]
+    coords=[]
+    #TODO: Change coords to numpy array instead
+    grabcoords=False
+    numatoms="unset"
+    with open(inpcrdfile) as cfile:
+        for i,line in enumerate(cfile):
+            if i == 0:
+                pass
+            elif i == 1:
+                numatoms=int(line.split()[0])
+                print("Numatoms:", numatoms)
+                numcoordlines=math.ceil(numatoms/2)
+                #print("numcoordlines:", numcoordlines)
+            elif i == numcoordlines+2:
+
+                #Last line: box dimensions
+                box_dims=[float(i) for i in line.split()]
+                print("Box dimensions read:", box_dims)
+            else:
+                linelist=line.split()
+                coordvalues=[]
+                #Checking if values combined: e,g, -16.3842161-100.0326085
+                #Then split and add
+                for c in linelist:
+                    if c.count('.') > 1:
+                        d=c.replace('-', ' -').split()
+                        coordvalues.append(float(d[0]))
+                        coordvalues.append(float(d[1]))
+                    else:
+                        coordvalues.append(float(c))
+                coords.append([coordvalues[0],coordvalues[1],coordvalues[2]])
+                if len(coordvalues)==6:
+                    coords.append([coordvalues[3],coordvalues[4],coordvalues[5]])
+ 
+    #Grab atom numbers and convert to elements
+    grab_atomnumber=False
+    with open(prmtopfile) as pfile:
+        for i,line in enumerate(pfile):
+            if grab_atomnumber is True:
+                if 'FORMAT' not in line:
+                    #reformat_element(i,isatomnum=True)
+                    if '%' in line:
+                        grab_atomnumber=False
+                    else:
+                        elems+=[reformat_element(int(i),isatomnum=True) for i in line.split()]
+            if '%FLAG ATOMIC_NUMBER' in line:
+                grab_atomnumber=True
+    assert len(coords) == len(elems), "Num coords not equal to num elems. Parsing failed. BUG!"
+    return elems,coords,box_dims
+
+
+
 
 
 #Write PDBfile proper
