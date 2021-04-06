@@ -171,8 +171,9 @@ class OpenMMTheory:
                     print('LRC? %s' % force.getUseDispersionCorrection())
                     force.setUseDispersionCorrection(False)
 
-                    #force.setPMEParameters(1.0/0.34, angle1, angle2, angle3) 
-                    
+                    # Set PME Parameters if desired
+                    #force.setPMEParameters(3.285326106/self.unit.nanometers,60, 64, 60) 
+                    #Keeping default for now
                     
                     self.nonbonded_force=force
                     # NOTE: These are hard-coded!
@@ -299,9 +300,8 @@ class OpenMMTheory:
         self.simulation = self.simulationclass(self.topology, self.system, self.integrator,self.platform)
 
         if self.Periodic is True and Amberfiles is True:
-            print("Setting periodic box")
-            print("sefl.a :", self.a)
-            self.simulation.context.setPeriodicBoxVectors([self.a,self.b,self.c])
+            print("Setting periodic box parameters")
+            self.simulation.context.setPeriodicBoxVectors( ((periodic_cell_dimensions[0]/10, 0, 0), (0, periodic_cell_dimensions[1]/10, 0), (0, 0 ,periodic_cell_dimensions[2]/10)) )
 
 
 
