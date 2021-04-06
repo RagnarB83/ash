@@ -141,9 +141,8 @@ class OpenMMTheory:
         if self.Periodic is True:
             print("System is periodic")
             self.periodic_cell_dimensions = periodic_cell_dimensions
-            print("periodic_cell_dimensions:", periodic_cell_dimensions)
+            print("Periodic cell dimensions:", periodic_cell_dimensions)
             self.a = periodic_cell_dimensions[0] * self.unit.angstroms
-            print("self.a", self.a)
             self.b = periodic_cell_dimensions[1] * self.unit.angstroms
             self.c = periodic_cell_dimensions[2] * self.unit.angstroms
             
