@@ -59,7 +59,7 @@ class OpenMMTheory:
         #TODO: Should we keep this? Probably not. Coordinates would be handled by ASH.
         #PDB_ygg_frag = Fragment(pdbfile=pdbfile, conncalc=False)
         #self.coords=PDB_ygg_frag.coords
-        print_time_rel(timeA, modulename="prep")
+        print_time_rel(timeA, modulename="import openMM")
         timeA = time.time()
 
         self.Forcefield=None
@@ -82,245 +82,37 @@ class OpenMMTheory:
             self.atomnames=[self.psf.atom_list[i].name for i in range(0,len(self.psf.atom_list))]
             
             self.params = simtk.openmm.app.CharmmParameterSet(charmmtopfile, charmmprmfile)
-            # self.pdb = simtk.openmm.app.PDBFile(pdbfile) probably not reading coordinates here
-            #self.forcefield = self.psf
             self.topology = self.psf.topology
-            
-            #Setting active and frozen variables once topology is in place
-            #NOTE: Is this actually used?
-            self.set_active_and_frozen_regions(active_atoms=active_atoms, frozen_atoms=frozen_atoms)
-            
-            # Create an OpenMM system by calling createSystem on psf
-            
-            #Periodic
-            if self.Periodic is True:
-                print("System is periodic")
-                self.periodic_cell_dimensions = periodic_cell_dimensions
-                self.a = periodic_cell_dimensions[0] * self.unit.angstroms
-                self.b = periodic_cell_dimensions[1] * self.unit.angstroms
-                self.c = periodic_cell_dimensions[2] * self.unit.angstroms
-                
-                #Parameters here are based on OpenMM DHFR example
-                self.psf.setBox(self.a, self.b, self.c)
-                
-                self.system = self.psf.createSystem(self.params, nonbondedMethod=simtk.openmm.app.PME,
-                                                nonbondedCutoff=12 * self.unit.angstroms, switchDistance=10*self.unit.angstroms)
-                
-                #TODO: Customnonbonded force option here
-                
-                print("self.system.getForces() :", self.system.getForces())
-                for i,force in enumerate(self.system.getForces()):
-                    if isinstance(force, simtk.openmm.CustomNonbondedForce):
-                        print('CustomNonbondedForce: %s' % force.getUseSwitchingFunction())
-                        print('LRC? %s' % force.getUseLongRangeCorrection())
-                        force.setUseLongRangeCorrection(False)
-                    elif isinstance(force, simtk.openmm.NonbondedForce):
-                        print('NonbondedForce: %s' % force.getUseSwitchingFunction())
-                        print('LRC? %s' % force.getUseDispersionCorrection())
-                        force.setUseDispersionCorrection(False)
-                        force.setPMEParameters(1.0/0.34, periodic_cell_dimensions[3], periodic_cell_dimensions[4], periodic_cell_dimensions[5]) 
-                        self.nonbonded_force=force
-                        # NOTE: These are hard-coded!
-                        
-                #Set charges in OpenMMobject by taking from Force
-                print("Setting charges")
-                self.getatomcharges(self.nonbonded_force)
-                        
-                
-            #Non-Periodic
-            else:
-                print("System is non-periodic")
-                #For frozen systems we use Customforce in order to specify interaction groups
-                #if len(self.frozen_atoms) > 0:
-                    
-                    #Two possible ways.
-                    #https://github.com/openmm/openmm/issues/2698
-                    #1. Use CustomNonbondedForce  with interaction groups. Could be slow
-                    #2. CustomNonbondedForce but with scaling
-                
-                
-                #https://ahy3nz.github.io/posts/2019/30/openmm2/
-                #http://www.maccallumlab.org/news/2015/1/23/testing
-                
-                #Comes close to NonbondedForce results (after exclusions) but still not correct
-                #The issue is most likely that the 1-4 LJ interactions should not be excluded but rather scaled.
-                #See https://github.com/openmm/openmm/issues/1200
-                #https://github.com/openmm/openmm/issues/1696
-                #How to do:
-                #1. Keep nonbonded force for only those interactions and maybe also electrostatics?
-                #Mimic this??: https://github.com/openmm/openmm/blob/master/devtools/forcefield-scripts/processCharmmForceField.py
-                #Or do it via Parmed? Better supported for future??
-                #2. Go through the 1-4 interactions and not exclude but scale somehow manually. But maybe we can't do that in CustomNonbonded Force?
-                #Presumably not but maybe can add a special force object just for 1-4 interactions. We
-                def create_cnb(original_nbforce):
-                    """Creates a CustomNonbondedForce object that mimics the original nonbonded force
-                    and also a Custombondforce to handle 14 exceptions
-                    """
-                    #Next, create a CustomNonbondedForce with LJ and Coulomb terms
-                    ONE_4PI_EPS0 = 138.935456
-                    #ONE_4PI_EPS0=1.0
-                    #TODO: Not sure whether sqrt should be present or not in epsilon???
-                    energy_expression  = "4*epsilon*((sigma/r)^12 - (sigma/r)^6) + ONE_4PI_EPS0*chargeprod/r;"
-                    #sqrt ??
-                    energy_expression += "epsilon = sqrt(epsilon1*epsilon2);"
-                    energy_expression += "sigma = 0.5*(sigma1+sigma2);"
-                    energy_expression += "ONE_4PI_EPS0 = {:f};".format(ONE_4PI_EPS0)  # already in OpenMM units
-                    energy_expression += "chargeprod = charge1*charge2;"
-                    custom_nonbonded_force = simtk.openmm.CustomNonbondedForce(energy_expression)
-                    custom_nonbonded_force.addPerParticleParameter('charge')
-                    custom_nonbonded_force.addPerParticleParameter('sigma')
-                    custom_nonbonded_force.addPerParticleParameter('epsilon')
-                    # Configure force
-                    custom_nonbonded_force.setNonbondedMethod(simtk.openmm.CustomNonbondedForce.NoCutoff)
-                    #custom_nonbonded_force.setCutoffDistance(9999999999)
-                    custom_nonbonded_force.setUseLongRangeCorrection(False)
-                    #custom_nonbonded_force.setUseSwitchingFunction(True)
-                    #custom_nonbonded_force.setSwitchingDistance(99999)
-                    print('adding particles to custom force')
-                    for index in range(self.system.getNumParticles()):
-                        [charge, sigma, epsilon] = original_nbforce.getParticleParameters(index)
-                        custom_nonbonded_force.addParticle([charge, sigma, epsilon])
-                    #For CustomNonbondedForce we need (unlike NonbondedForce) to create exclusions that correspond to the automatic exceptions in NonbondedForce
-                    #These are interactions that are skipped for bonded atoms
-                    numexceptions = original_nbforce.getNumExceptions()
-                    print("numexceptions in original_nbforce: ", numexceptions)
-                    
-                    #Turn exceptions from NonbondedForce into exclusions in CustombondedForce
-                    # except 1-4 which are not zeroed but are scaled. These are added to Custombondforce
-                    exceptions_14=[]
-                    numexclusions=0
-                    for i in range(0,numexceptions):
-                        #print("i:", i)
-                        #Get exception parameters (indices)
-                        p1,p2,charge,sigma,epsilon = original_nbforce.getExceptionParameters(i)
-                        #print("p1,p2,charge,sigma,epsilon:", p1,p2,charge,sigma,epsilon)
-                        #If 0.0 then these are CHARMM 1-2 and 1-3 interactions set to zero
-                        if charge._value==0.0 and epsilon._value==0.0:
-                            #print("Charge and epsilons are 0.0. Add proper exclusion")
-                            #Set corresponding exclusion in customnonbforce
-                            custom_nonbonded_force.addExclusion(p1,p2)
-                            numexclusions+=1
-                        else:
-                            #print("This is not an exclusion but a scaled interaction as it is is non-zero. Need to keep")
-                            exceptions_14.append([p1,p2,charge,sigma,epsilon])
-                            #[798, 801, Quantity(value=-0.0684, unit=elementary charge**2), Quantity(value=0.2708332103146632, unit=nanometer), Quantity(value=0.2672524882578271, unit=kilojoule/mole)]
-                    
-                    print("len exceptions_14", len(exceptions_14))
-                    #print("exceptions_14:", exceptions_14)
-                    print("numexclusions:", numexclusions)
-                    
-                    
-                    #Creating custombondforce to handle these special exceptions
-                    #Now defining pair parameters
-                    #https://github.com/openmm/openmm/issues/2698
-                    energy_expression  = "(4*epsilon*((sigma/r)^12 - (sigma/r)^6) + ONE_4PI_EPS0*chargeprod/r);"
-                    energy_expression += "ONE_4PI_EPS0 = {:f};".format(ONE_4PI_EPS0)  # already in OpenMM units
-                    custom_bond_force = self.openmm.CustomBondForce(energy_expression)
-                    custom_bond_force.addPerBondParameter('chargeprod')
-                    custom_bond_force.addPerBondParameter('sigma')
-                    custom_bond_force.addPerBondParameter('epsilon')
-                    
-                    for exception in exceptions_14:
-                        idx=exception[0];jdx=exception[1];c=exception[2];sig=exception[3];eps=exception[4]
-                        custom_bond_force.addBond(idx, jdx, [c, sig, eps])
-                    
-                    print('Number of defined 14 bonds in custom_bond_force:', custom_bond_force.getNumBonds())
-                    
-                    
-                    return custom_nonbonded_force,custom_bond_force
+            self.forcefield = self.psf
 
-                #TODO: Look into: https://github.com/ParmEd/ParmEd/blob/7e411fd03c7db6977e450c2461e065004adab471/parmed/structure.py#L2554
-                    
-                    #myCustomNBForce= simtk.openmm.CustomNonbondedForce("4*epsilon*((sigma/r)^12-(sigma/r)^6); sigma=0.5*(sigma1+sigma2); epsilon=sqrt(epsilon1*epsilon2)")
-                    #myCustomNBForce.setNonbondedMethod(simtk.openmm.app.NoCutoff)
-                    #myCustomNBForce.setCutoffDistance(1000*simtk.openmm.unit.angstroms)
-                    #Frozen-Act interaction
-                    #myCustomNBForce.addInteractionGroup(self.frozen_atoms,self.active_atoms)
-                    #Act-Act interaction
-                    #myCustomNBForce.addInteractionGroup(self.active_atoms,self.active_atoms)
-                
-
-                self.system = self.psf.createSystem(self.params, nonbondedMethod=simtk.openmm.app.NoCutoff,
-                                                    nonbondedCutoff=1000 * simtk.openmm.unit.angstroms)
-                #print("system created")
-                #print("Number of forces:", self.system.getNumForces())
-                #print(self.system.getForces())
-                print("")                
-                print("")
-                #print("original forces: ", forces)
-                # Get charges from OpenMM object into self.charges
-                #self.getatomcharges(forces['NonbondedForce'])
-                self.getatomcharges(self.system.getForces()[6])
-                
-
-                #CASE CUSTOMNONBONDED FORCE
-                if customnonbondedforce is True:
-
-                    #Create CustomNonbonded force
-                    for i,force in enumerate(self.system.getForces()):
-                        if isinstance(force, self.openmm.NonbondedForce):
-                            custom_nonbonded_force,custom_bond_force = create_cnb(self.system.getForces()[i])
-                    print("1custom_nonbonded_force:", custom_nonbonded_force)
-                    print("num exclusions in customnonb:", custom_nonbonded_force.getNumExclusions())
-                    print("num 14 exceptions in custom_bond_force:", custom_bond_force.getNumBonds())
-                    
-                    #TODO: Deal with frozen regions. NOT YET DONE
-                    #Frozen-Act interaction
-                    #custom_nonbonded_force.addInteractionGroup(self.frozen_atoms,self.active_atoms)
-                    #Act-Act interaction
-                    #custom_nonbonded_force.addInteractionGroup(self.active_atoms,self.active_atoms)
-                    #print("2custom_nonbonded_force:", custom_nonbonded_force)
-                
-                    #Pointing self.nonbonded_force to CustomNonBondedForce instead of Nonbonded force
-                    self.nonbonded_force = custom_nonbonded_force
-                    print("self.nonbonded_force:", self.nonbonded_force)
-                    self.custom_bondforce = custom_bond_force
-                    
-                    #Update system with new forces and delete old force
-                    self.system.addForce(self.nonbonded_force) 
-                    self.system.addForce(self.custom_bondforce) 
-                    
-                    #Remove oldNonbondedForce
-                    for i,force in enumerate(self.system.getForces()):
-                        if isinstance(force, self.openmm.NonbondedForce):
-                            self.system.removeForce(i)
-
-                else:
-                    #Regular Nonbonded force
-                    self.nonbonded_force=self.system.getForce(6)
-                            
-
-                print("")
-                #print("Number of forces:", self.system.getNumForces())
-                #print(self.system.getForces())
         elif GROMACSfiles is True:
-            print("Warning: Gromacs-file interface not tested")
+            print("Warning: Gromacs-files interface not tested")
             #Reading grofile, not for coordinates but for periodic vectors
             gro = simtk.openmm.app.GromacsGroFile(grofile)
             self.grotop = simtk.openmm.app.GromacsTopFile(gromacstopfile, periodicBoxVectors=gro.getPeriodicBoxVectors(),
                                  includeDir=gromacstopdir)
             #self.forcefield=self.grotop
             self.topology = self.grotop.topology
+            self.forcefield=self.grotop
             # Create an OpenMM system by calling createSystem on grotop
-            self.system = self.grotop.createSystem(nonbondedMethod=simtk.openmm.app.NoCutoff,
-                                                nonbondedCutoff=1 * simtk.openmm.unit.nanometer)
+            #self.system = self.grotop.createSystem(nonbondedMethod=simtk.openmm.app.NoCutoff,
+            #                                    nonbondedCutoff=1 * simtk.openmm.unit.nanometer)
             
-            forces = {self.system.getForce(index).__class__.__name__: self.system.getForce(index) for index in range(self.system.getNumForces())}
-            self.nonbonded_force = forces['NonbondedForce']
+            #forces = {self.system.getForce(index).__class__.__name__: self.system.getForce(index) for index in range(self.system.getNumForces())}
+            #self.nonbonded_force = forces['NonbondedForce']
         elif Amberfiles is True:
             self.Forcefield='Amber'
-            print("Warning: Amber-file interface not tested")
+            print("Warning: Amber-files interface not well tested. Be careful")
             #Note: Only new-style Amber7 prmtop files work
             self.prmtop = simtk.openmm.app.AmberPrmtopFile(amberprmtopfile)
-            #inpcrd = simtk.openmm.app.AmberInpcrdFile(inpcrdfile)  probably not reading coordinates here
-            #self.forcefield = self.prmtop
             self.topology = self.prmtop.topology
+            self.forcefield= self.prmtop
             # Create an OpenMM system by calling createSystem on prmtop
-            self.system = self.prmtop.createSystem(nonbondedMethod=simtk.openmm.app.NoCutoff,
-                                                nonbondedCutoff=1 * simtk.openmm.unit.nanometer)
+            #self.system = self.prmtop.createSystem(nonbondedMethod=simtk.openmm.app.NoCutoff,
+            #                                    nonbondedCutoff=1 * simtk.openmm.unit.nanometer)
             
-            forces = {self.system.getForce(index).__class__.__name__: self.system.getForce(index) for index in range(self.system.getNumForces())}
-            self.nonbonded_force = forces['NonbondedForce']
+            #forces = {self.system.getForce(index).__class__.__name__: self.system.getForce(index) for index in range(self.system.getNumForces())}
+            #self.nonbonded_force = forces['NonbondedForce']
         else:
             print("Reading OpenMM XML forcefield file and PDB file")
             #This would be regular OpenMM Forcefield definition requiring XML file
@@ -330,17 +122,111 @@ class OpenMMTheory:
             #Todo: support multiple xml file here
             #forcefield = simtk.openmm.app.ForceField('amber14-all.xml', 'amber14/tip3pfb.xml')
             self.forcefield = simtk.openmm.app.ForceField(xmlfile)
-            self.system = self.forcefield.createSystem(nonbondedMethod=simtk.openmm.app.NoCutoff,
-                                                nonbondedCutoff=1 * simtk.openmm.unit.nanometer)
+            #self.system = self.forcefield.createSystem(nonbondedMethod=simtk.openmm.app.NoCutoff,
+            #                                    nonbondedCutoff=1 * simtk.openmm.unit.nanometer)
             
-            forces = {self.system.getForce(index).__class__.__name__: self.system.getForce(index) for index in range(self.system.getNumForces())}
-            self.nonbonded_force = forces['NonbondedForce']
+            #forces = {self.system.getForce(index).__class__.__name__: self.system.getForce(index) for index in range(self.system.getNumForces())}
+            #self.nonbonded_force = forces['NonbondedForce']
+
+
+        #Now after topology is defined we can create system
+
+        #Setting active and frozen variables once topology is in place
+        #NOTE: Is this actually used?
+        self.set_active_and_frozen_regions(active_atoms=active_atoms, frozen_atoms=frozen_atoms)
+
+
+
+        #Periodic or non-periodic ystem
+        if self.Periodic is True:
+            print("System is periodic")
+            self.periodic_cell_dimensions = periodic_cell_dimensions
+            self.a = periodic_cell_dimensions[0] * self.unit.angstroms
+            self.b = periodic_cell_dimensions[1] * self.unit.angstroms
+            self.c = periodic_cell_dimensions[2] * self.unit.angstroms
+            
+            #Parameters here are based on OpenMM DHFR example
+            self.prmtop.setBox(self.a, self.b, self.c)
+            self.system = self.forcefield.createSystem(self.params, nonbondedMethod=simtk.openmm.app.PME,
+                                            nonbondedCutoff=12 * self.unit.angstroms, switchDistance=10*self.unit.angstroms)
+            
+            #TODO: Customnonbonded force option here
+            print("self.system.getForces() :", self.system.getForces())
+            for i,force in enumerate(self.system.getForces()):
+                if isinstance(force, simtk.openmm.CustomNonbondedForce):
+                    print('CustomNonbondedForce: %s' % force.getUseSwitchingFunction())
+                    print('LRC? %s' % force.getUseLongRangeCorrection())
+                    force.setUseLongRangeCorrection(False)
+                elif isinstance(force, simtk.openmm.NonbondedForce):
+                    print('NonbondedForce: %s' % force.getUseSwitchingFunction())
+                    print('LRC? %s' % force.getUseDispersionCorrection())
+                    force.setUseDispersionCorrection(False)
+                    force.setPMEParameters(1.0/0.34, periodic_cell_dimensions[3], periodic_cell_dimensions[4], periodic_cell_dimensions[5]) 
+                    self.nonbonded_force=force
+                    # NOTE: These are hard-coded!
+                    
+            #Set charges in OpenMMobject by taking from Force
+            print("Setting charges")
+            self.getatomcharges(self.nonbonded_force)
+                    
+            
+        #Non-Periodic
+        else:
+            print("System is non-periodic")
+            self.system = self.forcefield.createSystem(self.params, nonbondedMethod=simtk.openmm.app.NoCutoff,
+                                                nonbondedCutoff=1000 * simtk.openmm.unit.angstroms)
+            #print("system created")
+            #print("Number of forces:", self.system.getNumForces())
+            #print(self.system.getForces())
+            print("")                
+            print("")
+            #print("original forces: ", forces)
+            # Get charges from OpenMM object into self.charges
+            #self.getatomcharges(forces['NonbondedForce'])
+            self.getatomcharges(self.system.getForces()[6])
+            
+
+            #CASE CUSTOMNONBONDED FORCE
+            if customnonbondedforce is True:
+
+                #Create CustomNonbonded force
+                for i,force in enumerate(self.system.getForces()):
+                    if isinstance(force, self.openmm.NonbondedForce):
+                        custom_nonbonded_force,custom_bond_force = create_cnb(self.system.getForces()[i])
+                print("1custom_nonbonded_force:", custom_nonbonded_force)
+                print("num exclusions in customnonb:", custom_nonbonded_force.getNumExclusions())
+                print("num 14 exceptions in custom_bond_force:", custom_bond_force.getNumBonds())
+                
+                #TODO: Deal with frozen regions. NOT YET DONE
+                #Frozen-Act interaction
+                #custom_nonbonded_force.addInteractionGroup(self.frozen_atoms,self.active_atoms)
+                #Act-Act interaction
+                #custom_nonbonded_force.addInteractionGroup(self.active_atoms,self.active_atoms)
+                #print("2custom_nonbonded_force:", custom_nonbonded_force)
+            
+                #Pointing self.nonbonded_force to CustomNonBondedForce instead of Nonbonded force
+                self.nonbonded_force = custom_nonbonded_force
+                print("self.nonbonded_force:", self.nonbonded_force)
+                self.custom_bondforce = custom_bond_force
+                
+                #Update system with new forces and delete old force
+                self.system.addForce(self.nonbonded_force) 
+                self.system.addForce(self.custom_bondforce) 
+                
+                #Remove oldNonbondedForce
+                for i,force in enumerate(self.system.getForces()):
+                    if isinstance(force, self.openmm.NonbondedForce):
+                        self.system.removeForce(i)
+
+            else:
+                #Regular Nonbonded force
+                self.nonbonded_force=self.system.getForce(6)
+
 
         print_time_rel(timeA, modulename="system create")
         timeA = time.time()
+
         #constraints=simtk.openmm.app.HBonds, AllBonds, HAngles
-
-
         # Remove Frozen-Frozen interactions
         #Todo: Will be requested by QMMM object so unnecessary unless during pure MM??
         #if frozen_atoms is not None:
@@ -397,7 +283,7 @@ class OpenMMTheory:
         
     def set_active_and_frozen_regions(self, active_atoms=None, frozen_atoms=None):
         #FROZEN AND ACTIVE ATOMS
-        self.numatoms=int(self.psf.topology.getNumAtoms())
+        self.numatoms=int(self.forcefield.topology.getNumAtoms())
         print("self.numatoms:", self.numatoms)
         self.allatoms=list(range(0,self.numatoms))
         if active_atoms is None and frozen_atoms is None:
@@ -847,3 +733,117 @@ class OpenMMTheory:
         print("CustomBond terms", numcustombondterms_removed)
         print("")
 
+
+
+
+
+
+
+#For frozen systems we use Customforce in order to specify interaction groups
+#if len(self.frozen_atoms) > 0:
+    
+    #Two possible ways.
+    #https://github.com/openmm/openmm/issues/2698
+    #1. Use CustomNonbondedForce  with interaction groups. Could be slow
+    #2. CustomNonbondedForce but with scaling
+
+
+#https://ahy3nz.github.io/posts/2019/30/openmm2/
+#http://www.maccallumlab.org/news/2015/1/23/testing
+
+#Comes close to NonbondedForce results (after exclusions) but still not correct
+#The issue is most likely that the 1-4 LJ interactions should not be excluded but rather scaled.
+#See https://github.com/openmm/openmm/issues/1200
+#https://github.com/openmm/openmm/issues/1696
+#How to do:
+#1. Keep nonbonded force for only those interactions and maybe also electrostatics?
+#Mimic this??: https://github.com/openmm/openmm/blob/master/devtools/forcefield-scripts/processCharmmForceField.py
+#Or do it via Parmed? Better supported for future??
+#2. Go through the 1-4 interactions and not exclude but scale somehow manually. But maybe we can't do that in CustomNonbonded Force?
+#Presumably not but maybe can add a special force object just for 1-4 interactions. We
+def create_cnb(original_nbforce):
+    """Creates a CustomNonbondedForce object that mimics the original nonbonded force
+    and also a Custombondforce to handle 14 exceptions
+    """
+    #Next, create a CustomNonbondedForce with LJ and Coulomb terms
+    ONE_4PI_EPS0 = 138.935456
+    #ONE_4PI_EPS0=1.0
+    #TODO: Not sure whether sqrt should be present or not in epsilon???
+    energy_expression  = "4*epsilon*((sigma/r)^12 - (sigma/r)^6) + ONE_4PI_EPS0*chargeprod/r;"
+    #sqrt ??
+    energy_expression += "epsilon = sqrt(epsilon1*epsilon2);"
+    energy_expression += "sigma = 0.5*(sigma1+sigma2);"
+    energy_expression += "ONE_4PI_EPS0 = {:f};".format(ONE_4PI_EPS0)  # already in OpenMM units
+    energy_expression += "chargeprod = charge1*charge2;"
+    custom_nonbonded_force = simtk.openmm.CustomNonbondedForce(energy_expression)
+    custom_nonbonded_force.addPerParticleParameter('charge')
+    custom_nonbonded_force.addPerParticleParameter('sigma')
+    custom_nonbonded_force.addPerParticleParameter('epsilon')
+    # Configure force
+    custom_nonbonded_force.setNonbondedMethod(simtk.openmm.CustomNonbondedForce.NoCutoff)
+    #custom_nonbonded_force.setCutoffDistance(9999999999)
+    custom_nonbonded_force.setUseLongRangeCorrection(False)
+    #custom_nonbonded_force.setUseSwitchingFunction(True)
+    #custom_nonbonded_force.setSwitchingDistance(99999)
+    print('adding particles to custom force')
+    for index in range(self.system.getNumParticles()):
+        [charge, sigma, epsilon] = original_nbforce.getParticleParameters(index)
+        custom_nonbonded_force.addParticle([charge, sigma, epsilon])
+    #For CustomNonbondedForce we need (unlike NonbondedForce) to create exclusions that correspond to the automatic exceptions in NonbondedForce
+    #These are interactions that are skipped for bonded atoms
+    numexceptions = original_nbforce.getNumExceptions()
+    print("numexceptions in original_nbforce: ", numexceptions)
+    
+    #Turn exceptions from NonbondedForce into exclusions in CustombondedForce
+    # except 1-4 which are not zeroed but are scaled. These are added to Custombondforce
+    exceptions_14=[]
+    numexclusions=0
+    for i in range(0,numexceptions):
+        #print("i:", i)
+        #Get exception parameters (indices)
+        p1,p2,charge,sigma,epsilon = original_nbforce.getExceptionParameters(i)
+        #print("p1,p2,charge,sigma,epsilon:", p1,p2,charge,sigma,epsilon)
+        #If 0.0 then these are CHARMM 1-2 and 1-3 interactions set to zero
+        if charge._value==0.0 and epsilon._value==0.0:
+            #print("Charge and epsilons are 0.0. Add proper exclusion")
+            #Set corresponding exclusion in customnonbforce
+            custom_nonbonded_force.addExclusion(p1,p2)
+            numexclusions+=1
+        else:
+            #print("This is not an exclusion but a scaled interaction as it is is non-zero. Need to keep")
+            exceptions_14.append([p1,p2,charge,sigma,epsilon])
+            #[798, 801, Quantity(value=-0.0684, unit=elementary charge**2), Quantity(value=0.2708332103146632, unit=nanometer), Quantity(value=0.2672524882578271, unit=kilojoule/mole)]
+    
+    print("len exceptions_14", len(exceptions_14))
+    #print("exceptions_14:", exceptions_14)
+    print("numexclusions:", numexclusions)
+    
+    
+    #Creating custombondforce to handle these special exceptions
+    #Now defining pair parameters
+    #https://github.com/openmm/openmm/issues/2698
+    energy_expression  = "(4*epsilon*((sigma/r)^12 - (sigma/r)^6) + ONE_4PI_EPS0*chargeprod/r);"
+    energy_expression += "ONE_4PI_EPS0 = {:f};".format(ONE_4PI_EPS0)  # already in OpenMM units
+    custom_bond_force = self.openmm.CustomBondForce(energy_expression)
+    custom_bond_force.addPerBondParameter('chargeprod')
+    custom_bond_force.addPerBondParameter('sigma')
+    custom_bond_force.addPerBondParameter('epsilon')
+    
+    for exception in exceptions_14:
+        idx=exception[0];jdx=exception[1];c=exception[2];sig=exception[3];eps=exception[4]
+        custom_bond_force.addBond(idx, jdx, [c, sig, eps])
+    
+    print('Number of defined 14 bonds in custom_bond_force:', custom_bond_force.getNumBonds())
+    
+    
+    return custom_nonbonded_force,custom_bond_force
+
+#TODO: Look into: https://github.com/ParmEd/ParmEd/blob/7e411fd03c7db6977e450c2461e065004adab471/parmed/structure.py#L2554
+    
+#myCustomNBForce= simtk.openmm.CustomNonbondedForce("4*epsilon*((sigma/r)^12-(sigma/r)^6); sigma=0.5*(sigma1+sigma2); epsilon=sqrt(epsilon1*epsilon2)")
+#myCustomNBForce.setNonbondedMethod(simtk.openmm.app.NoCutoff)
+#myCustomNBForce.setCutoffDistance(1000*simtk.openmm.unit.angstroms)
+#Frozen-Act interaction
+#myCustomNBForce.addInteractionGroup(self.frozen_atoms,self.active_atoms)
+#Act-Act interaction
+#myCustomNBForce.addInteractionGroup(self.active_atoms,self.active_atoms)
