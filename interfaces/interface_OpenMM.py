@@ -299,7 +299,7 @@ class OpenMMTheory:
         if self.Periodic is True and Amberfiles is True:
             print("Setting periodic box")
             print("sefl.a :", self.a)
-                self.simulation.context.setPeriodicBoxVectors([self.a,self.b,self.c])
+            self.simulation.context.setPeriodicBoxVectors([self.a,self.b,self.c])
 
 
 
