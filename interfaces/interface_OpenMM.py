@@ -170,7 +170,10 @@ class OpenMMTheory:
                     print('NonbondedForce: %s' % force.getUseSwitchingFunction())
                     print('LRC? %s' % force.getUseDispersionCorrection())
                     force.setUseDispersionCorrection(False)
-                    force.setPMEParameters(1.0/0.34, periodic_cell_dimensions[3], periodic_cell_dimensions[4], periodic_cell_dimensions[5]) 
+
+                    #force.setPMEParameters(1.0/0.34, angle1, angle2, angle3) 
+                    
+                    
                     self.nonbonded_force=force
                     # NOTE: These are hard-coded!
                     
