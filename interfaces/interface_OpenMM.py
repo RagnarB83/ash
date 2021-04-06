@@ -184,14 +184,15 @@ class OpenMMTheory:
                 self.system = self.forcefield.createSystem(nonbondedMethod=simtk.openmm.app.NoCutoff,
                                             nonbondedCutoff=1000 * simtk.openmm.unit.angstroms)
 
-            #print("system created")
-            #print("Number of forces:", self.system.getNumForces())
-            #print(self.system.getForces())
+            print("system created")
+            print("Number of forces:", self.system.getNumForces())
+            print(self.system.getForces())
             print("")                
             print("")
             #print("original forces: ", forces)
             # Get charges from OpenMM object into self.charges
-            #self.getatomcharges(forces['NonbondedForce'])
+            self.getatomcharges(forces['NonbondedForce'])
+            print("self.system.getForces():", self.system.getForces())
             self.getatomcharges(self.system.getForces()[6])
             
 
