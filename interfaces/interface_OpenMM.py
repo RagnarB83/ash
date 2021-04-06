@@ -301,7 +301,7 @@ class OpenMMTheory:
 
         if self.Periodic is True and Amberfiles is True:
             print("Setting periodic box parameters")
-            self.simulation.context.setPeriodicBoxVectors( ((periodic_cell_dimensions[0]/10, 0, 0), (0, periodic_cell_dimensions[1]/10, 0), (0, 0 ,periodic_cell_dimensions[2]/10)) )
+            self.simulation.context.setPeriodicBoxVectors((periodic_cell_dimensions[0]/10, 0, 0), (0, periodic_cell_dimensions[1]/10, 0), (0, 0 ,periodic_cell_dimensions[2]/10))
 
 
 
