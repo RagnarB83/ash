@@ -187,16 +187,21 @@ class OpenMMTheory:
             print("system created")
             print("Number of forces:", self.system.getNumForces())
             print(self.system.getForces())
-            print("")                
             print("")
+            for i,force in enumerate(self.system.getForces()):
+                if isinstance(force, simtk.openmm.NonbondedForce):
+                    self.getatomcharges(force)
+                    self.nonbonded_force=force
+
             #print("original forces: ", forces)
             # Get charges from OpenMM object into self.charges
-            self.getatomcharges(forces['NonbondedForce'])
-            print("self.system.getForces():", self.system.getForces())
-            self.getatomcharges(self.system.getForces()[6])
+            #self.getatomcharges(forces['NonbondedForce'])
+            #print("self.system.getForces():", self.system.getForces())
+            #self.getatomcharges(self.system.getForces()[6])
             
 
             #CASE CUSTOMNONBONDED FORCE
+            #REPLACING REGULAR NONBONDED FORCE
             if customnonbondedforce is True:
 
                 #Create CustomNonbonded force
@@ -228,9 +233,6 @@ class OpenMMTheory:
                     if isinstance(force, self.openmm.NonbondedForce):
                         self.system.removeForce(i)
 
-            else:
-                #Regular Nonbonded force
-                self.nonbonded_force=self.system.getForce(6)
 
 
         print_time_rel(timeA, modulename="system create")
