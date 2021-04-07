@@ -358,6 +358,11 @@ def calc_surface_fromXYZ(xyzdir=None, theory=None, dimension=None, resultfile=No
     ##########################
     if runmode=='parallel':
         print("Parallel runmode.")
+
+        if numcores == None:
+            print("numcores argument required for parallel runmode")
+            exit()
+
         surfacepointfragments={}
         #Looping over XYZ files to get coordinates
         for count,file in enumerate(glob.glob(xyzdir+'/*.xyz')):

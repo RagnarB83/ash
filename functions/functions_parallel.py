@@ -70,7 +70,7 @@ def Singlepoint_parallel(fragments=None, theories=None, numcores=None):
     :type Grad: Boolean.
     '''
 
-    if fragments is None or theories is None or numcores is None:
+    if fragments == None or theories == None or numcores == None:
         print("fragments:", fragments)
         print("theories:", theories)
         print("numcores:", numcores)
