@@ -151,6 +151,10 @@ class OpenMMTheory:
                 self.forcefield.setBox(self.a, self.b, self.c)
                 self.system = self.forcefield.createSystem(self.params, nonbondedMethod=simtk.openmm.app.PME,
                                             nonbondedCutoff=12 * self.unit.angstroms, switchDistance=10*self.unit.angstroms)
+            elif GROMACSfiles is True:
+                #Note: Turned off switchDistance. Not available for GROMACS?
+                self.system = self.forcefield.createSystem(nonbondedMethod=simtk.openmm.app.PME,
+                                            nonbondedCutoff=12 * self.unit.angstroms, ewaldErrorTolerance=0.0005)
             else:
                 self.system = self.forcefield.createSystem(nonbondedMethod=simtk.openmm.app.PME,
                                             nonbondedCutoff=12 * self.unit.angstroms, switchDistance=10*self.unit.angstroms)
