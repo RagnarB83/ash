@@ -151,7 +151,7 @@ class Fragment:
         if self.printlevel >= 2:
             print("Reading coordinates from Amber INPCRD file: {} and PRMTOP file: {} into fragment".format(inpcrdfile,prmtopfile))
         try:
-            elems,coords,box_dims= read_ambercoordinates(prmtopfile=prmtopfile, inpcrdfile=prmtopfile)
+            elems,coords,box_dims= read_ambercoordinates(prmtopfile=prmtopfile, inpcrdfile=inpcrdfile)
             #NOTE: boxdims not used. Could be set as fragment variable ?
         except FileNotFoundError:
             print("File {} not found".format(filename))
@@ -1268,6 +1268,7 @@ def read_ambercoordinates(prmtopfile=None, inpcrdfile=None):
     grabcoords=False
     numatoms="unset"
     with open(inpcrdfile) as cfile:
+
         for i,line in enumerate(cfile):
             if i == 0:
                 pass
