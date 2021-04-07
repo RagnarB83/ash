@@ -682,30 +682,35 @@ class OpenMMTheory:
                 print("CMAPTorsionForce force")
                 print("There are {} CMAP terms defined.".format(force.getNumTorsions()))
                 print("There are {} CMAP maps defined".format(force.getNumMaps()))
-                print("Map num 0", force.getMapParameters(0))
-                print("Map num 0", force.getMapParameters(1))
-                print("Map num 0", force.getMapParameters(2))
-                print("Map num 0", force.getMapParameters(3))
+                #print("Assuming no CMAP terms in QM-region. Continuing")
+                # Note (RB). CMAP is between pairs of backbone dihedrals.
+                # Would be rarely present in QM-region. Not sure if we can delete the terms:
+                #http://docs.openmm.org/latest/api-c++/generated/OpenMM.CMAPTorsionForce.html
+                #  
+                #print("Map num 0", force.getMapParameters(0))
+                #print("Map num 1", force.getMapParameters(1))
+                #print("Map num 2", force.getMapParameters(2))
                 for i in range(force.getNumTorsions()):
-                    p1, p2, p3, p4, a,b,c,d,e = force.getTorsionParameters(i)
+                    jj, p1, p2, p3, p4,v1,v2,v3,v4 = force.getTorsionParameters(i)
+                    print("jj: {} p1: {} p2: {} p3: {} p4: {}      v1: {} v2: {} v3: {} v4: {}".format(jj,p1,p2,p3,p4,v1,v2,v3,v4))
                     #Are torsion-atoms in atomlist? 
-                    presence=[i in atomlist for i in [p1,p2,p3,p4]]
-                    #Excluding if 3 or 4 QM atoms. i.e. a QM3-QM2-QM1-MM1 or QM4-QM3-QM2-QM1 term
-                    print("Before p1: {} p2: {} p3: {} p4: {} ".format(p1,p2,p3,p4))
-                    print("Before a: {} b: {} c: {} d: {} e: {}  ".format(a,b,c,d,e))
-                    if presence.count(True) >= 3:
-                        print("Found torsion in QM-region")
-                        print("presence.count(True):", presence.count(True))
-                        print("exclude True")
-                        print("atomlist:", atomlist)
-                        print("i:", i)
-                        print("Before p1: {} p2: {} p3: {} p4: {} pars {}".format(p1,p2,p3,p4,pars))
-                        force.setTorsionParameters(i, p1, p2, p3, p4, (0.0,0.0))
-                        numcustomtorsionterms_removed+=1
-                        p1, p2, p3, p4, pars = force.getTorsionParameters(i)
-                        print("After p1: {} p2: {} p3: {} p4: {} pars {}".format(p1,p2,p3,p4,pars))
-                print("Updating force")
-                force.updateParametersInContext(self.simulation.context)
+                    presence=[i in atomlist for i in [p1,p2,p3,p4,v1,v2,v3,v4]]
+                    print("presence:", presence)
+                    if presence.count(True) >= 4:
+                        print("Found CMAP torsion partner in QM-region")
+                        print("Not deleting. To be revisited...")
+                        exit()
+                        #print("presence.count(True):", presence.count(True))
+                        #print("exclude True")
+                        #print("atomlist:", atomlist)
+                        #print("i:", i)
+                        #print("Before p1: {} p2: {} p3: {} p4: {} pars {}".format(p1,p2,p3,p4,pars))
+                        #force.setTorsionParameters(i, p1, p2, p3, p4, (0.0,0.0))
+                        #numcustomtorsionterms_removed+=1
+                        #p1, p2, p3, p4, pars = force.getTorsionParameters(i)
+                        #print("After p1: {} p2: {} p3: {} p4: {} pars {}".format(p1,p2,p3,p4,pars))
+                #print("Updating force")
+                #force.updateParametersInContext(self.simulation.context)
             
             elif isinstance(force, self.openmm.CustomBondForce):
                 #print("CustomBondForce")
