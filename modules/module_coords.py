@@ -13,7 +13,7 @@ import time
 
 # ASH Fragment class
 class Fragment:
-    def __init__(self, coordsstring=None, fragfile=None, xyzfile=None, pdbfile=None, chemshellfile=None, coords=None, elems=None, connectivity=None,
+    def __init__(self, coordsstring=None, fragfile=None, xyzfile=None, pdbfile=None, grofile=None, amber_inpcrdfile=None, amber_prmtopfile=None, chemshellfile=None, coords=None, elems=None, connectivity=None,
                  atomcharges=None, atomtypes=None, conncalc=True, scale=None, tol=None, printlevel=2, charge=None,
                  mult=None, label=None, readchargemult=False):
         #Label for fragment (string). Useful for distinguishing different fragments
@@ -70,6 +70,12 @@ class Fragment:
             self.read_pdbfile(pdbfile, conncalc=conncalc)
         elif grofile is not None:
             self.read_grofile(grofile, conncalc=conncalc)
+        elif amber_inpcrdfile is not None:
+            print("Reading Amber INPCRD file")
+            if amber_prmtopfile == None:
+                print("amber_prmtopfile argument must be provided also!")
+                exit()
+            self.read_amberfile(inpcrdfile=amber_inpcrdfile, prmtopfile=amber_prmtopfile,conncalc=conncalc)
         elif chemshellfile is not None:
             self.read_chemshellfile(chemshellfile, conncalc=conncalc)
         elif fragfile is not None:
@@ -139,11 +145,23 @@ class Fragment:
         if self.printlevel >= 2:
             print("Defined coordinates (Å):")
         print_coords_all(self.coords,self.elems)
-    #Read Amber coordinate file? Needs to read both INPCRD and PRMTOP file. Messy, avoid and just use read_ambercoordinates function instead ?
-    def read_amberinpcrdfile(self,filename,conncalc=False):
-        print("not implemented yet")
-        print("use read_ambercoordinates for now")
-        exit()
+
+    #Read Amber coordinate file? Needs to read both INPCRD and PRMTOP file. Bit messy
+    def read_amberfile(self,inpcrdfile=None, prmtopfile=None,conncalc=False):
+        if self.printlevel >= 2:
+            print("Reading coordinates from Amber INPCRD file: {} and PRMTOP file: {} into fragment".format(inpcrdfile,prmtopfile))
+        try:
+            elems,coords,box_dims= read_ambercoordinates(prmtopfile=prmtopfile, inpcrdfile=prmtopfile)
+            #NOTE: boxdims not used. Could be set as fragment variable ?
+        except FileNotFoundError:
+            print("File {} not found".format(filename))
+            exit()
+        self.coords = coords
+        self.elems = elems
+        self.update_attributes()
+        if conncalc is True:
+            self.calc_connectivity(scale=scale, tol=tol)
+
     #Read GROMACS coordinates file
     def read_grofile(self,filename,conncalc=False):
         if self.printlevel >= 2:
