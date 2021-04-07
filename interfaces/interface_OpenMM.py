@@ -694,10 +694,10 @@ class OpenMMTheory:
                     jj, p1, p2, p3, p4,v1,v2,v3,v4 = force.getTorsionParameters(i)
                     #Are torsion-atoms in atomlist? 
                     presence=[i in atomlist for i in [p1,p2,p3,p4,v1,v2,v3,v4]]
-                    print("presence:", presence)
                     #NOTE: Not sure how to use count properly here when dealing with torsion atoms in QM-region
                     if presence.count(True) >= 4:
                         print("jj: {} p1: {} p2: {} p3: {} p4: {}      v1: {} v2: {} v3: {} v4: {}".format(jj,p1,p2,p3,p4,v1,v2,v3,v4))
+                        print("presence:", presence)
                         print("Found CMAP torsion partner in QM-region")
                         print(BC.WARNING, BC.BOLD,"Not deleting. To be revisited...", BC.END)
                         #print("presence.count(True):", presence.count(True))
