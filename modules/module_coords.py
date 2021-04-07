@@ -1175,7 +1175,8 @@ def conv_atomtypes_elems(atomtype):
     try:
         return dictionaries_lists.atomtypes_dict[atomtype]
     except:
-        return atomtype
+        #Assume correct element but could be wrongly formatted (e.g. FE instead of Fe) so reformatting
+        return reformat_element(atomtype)
 
 #Read GROMACS Gro coordinate file and box info
 #Read AMBERCRD file and coords and box info
