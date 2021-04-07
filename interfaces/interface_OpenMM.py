@@ -91,15 +91,13 @@ class OpenMMTheory:
             gro = simtk.openmm.app.GromacsGroFile(grofile)
             self.grotop = simtk.openmm.app.GromacsTopFile(gromacstopfile, periodicBoxVectors=gro.getPeriodicBoxVectors(),
                                  includeDir=gromacstopdir)
-            #self.forcefield=self.grotop
+
             self.topology = self.grotop.topology
             self.forcefield=self.grotop
             # Create an OpenMM system by calling createSystem on grotop
             #self.system = self.grotop.createSystem(nonbondedMethod=simtk.openmm.app.NoCutoff,
             #                                    nonbondedCutoff=1 * simtk.openmm.unit.nanometer)
-            
-            #forces = {self.system.getForce(index).__class__.__name__: self.system.getForce(index) for index in range(self.system.getNumForces())}
-            #self.nonbonded_force = forces['NonbondedForce']
+
         elif Amberfiles is True:
             self.Forcefield='Amber'
             print("Warning: Amber-files interface not well tested. Be careful")
@@ -681,26 +679,26 @@ class OpenMMTheory:
                 #print("Updating force")
                 force.updateParametersInContext(self.simulation.context)
             elif isinstance(force, self.openmm.CMAPTorsionForce):
-                #print("CMAPTorsionForce force")
-                #print("There are {} CMAP terms defined.".format(force.getNumTorsions()))
+                print("CMAPTorsionForce force")
+                print("There are {} CMAP terms defined.".format(force.getNumTorsions()))
                 for i in range(force.getNumTorsions()):
                     p1, p2, p3, p4, a,b,c,d,e = force.getTorsionParameters(i)
                     #Are torsion-atoms in atomlist? 
                     presence=[i in atomlist for i in [p1,p2,p3,p4]]
                     #Excluding if 3 or 4 QM atoms. i.e. a QM3-QM2-QM1-MM1 or QM4-QM3-QM2-QM1 term
-                    #print("Before p1: {} p2: {} p3: {} p4: {} pars {}".format(p1,p2,p3,p4,pars))
+                    print("Before p1: {} p2: {} p3: {} p4: {} pars {}".format(p1,p2,p3,p4,pars))
                     if presence.count(True) >= 3:
-                        #print("Found torsion in QM-region")
-                        #print("presence.count(True):", presence.count(True))
-                        #print("exclude True")
-                        #print("atomlist:", atomlist)
-                        #print("i:", i)
-                        #print("Before p1: {} p2: {} p3: {} p4: {} pars {}".format(p1,p2,p3,p4,pars))
+                        print("Found torsion in QM-region")
+                        print("presence.count(True):", presence.count(True))
+                        print("exclude True")
+                        print("atomlist:", atomlist)
+                        print("i:", i)
+                        print("Before p1: {} p2: {} p3: {} p4: {} pars {}".format(p1,p2,p3,p4,pars))
                         force.setTorsionParameters(i, p1, p2, p3, p4, (0.0,0.0))
                         numcustomtorsionterms_removed+=1
-                        #p1, p2, p3, p4, pars = force.getTorsionParameters(i)
-                        #print("After p1: {} p2: {} p3: {} p4: {} pars {}".format(p1,p2,p3,p4,pars))
-                #print("Updating force")
+                        p1, p2, p3, p4, pars = force.getTorsionParameters(i)
+                        print("After p1: {} p2: {} p3: {} p4: {} pars {}".format(p1,p2,p3,p4,pars))
+                print("Updating force")
                 force.updateParametersInContext(self.simulation.context)
             
             elif isinstance(force, self.openmm.CustomBondForce):
