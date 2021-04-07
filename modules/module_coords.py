@@ -1172,6 +1172,14 @@ def read_fragfile_xyz(fragfile):
 
 
 def conv_atomtypes_elems(atomtype):
+    """Convert atomtype string to element based on a dictionary.
+        Hopefully captures all cases. If atomtype not found then element string assumed but reformatting so correct case
+
+    Args:
+        atomtype ([str]): [description]
+    Returns:
+        [str]: [description]
+    """
     try:
         return dictionaries_lists.atomtypes_dict[atomtype]
     except:
