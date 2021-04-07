@@ -593,24 +593,30 @@ def read_surfacedict_from_file(file, dimension=None):
         dict: Dictionary of surface-points with energies
     """
     print("Attempting to read old results file...")
-    dict = {}
+    dictionary = {}
     #If no file then return empty dict
     if os.path.isfile(file) is False:
         print("No file found.")
-        return dict
+        return dictionary
     with open(file) as f:
         for line in f:
             if len(line) > 1:
                 if dimension==1:
                     key=float(line.split()[0])
                     val=float(line.split()[1])
-                    dict[(key)]=val
+                    dictionary[(key)]=val
                 elif dimension==2:
                     key1=float(line.split()[0])
                     key2=float(line.split()[1])
                     val=float(line.split()[2])                    
-                    dict[(key1,key2)]=val
-    return dict
+                    dictionary[(key1,key2)]=val
+    
+    if len(dictionary) > 0:
+        print("Dictionary read ")
+        return dictionary
+    else:
+        print("Could not read anything from file")
+        return None
 
 def write_surfacedict_to_file(surfacedict,file="surface_results.txt",dimension=None):
     """Write surface dictionary to file
