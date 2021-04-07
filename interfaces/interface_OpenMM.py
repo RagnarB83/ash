@@ -684,7 +684,7 @@ class OpenMMTheory:
                 print("There are {} CMAP maps defined".format(force.getNumMaps()))
                 #print("Assuming no CMAP terms in QM-region. Continuing")
                 # Note (RB). CMAP is between pairs of backbone dihedrals.
-                # Would be rarely present in QM-region. Not sure if we can delete the terms:
+                # Not sure if we can delete the terms:
                 #http://docs.openmm.org/latest/api-c++/generated/OpenMM.CMAPTorsionForce.html
                 #  
                 #print("Map num 0", force.getMapParameters(0))
@@ -692,14 +692,14 @@ class OpenMMTheory:
                 #print("Map num 2", force.getMapParameters(2))
                 for i in range(force.getNumTorsions()):
                     jj, p1, p2, p3, p4,v1,v2,v3,v4 = force.getTorsionParameters(i)
-                    print("jj: {} p1: {} p2: {} p3: {} p4: {}      v1: {} v2: {} v3: {} v4: {}".format(jj,p1,p2,p3,p4,v1,v2,v3,v4))
                     #Are torsion-atoms in atomlist? 
                     presence=[i in atomlist for i in [p1,p2,p3,p4,v1,v2,v3,v4]]
                     print("presence:", presence)
+                    #NOTE: Not sure how to use count properly here when dealing with torsion atoms in QM-region
                     if presence.count(True) >= 4:
+                        print("jj: {} p1: {} p2: {} p3: {} p4: {}      v1: {} v2: {} v3: {} v4: {}".format(jj,p1,p2,p3,p4,v1,v2,v3,v4))
                         print("Found CMAP torsion partner in QM-region")
-                        print("Not deleting. To be revisited...")
-                        exit()
+                        print(BC.WARNING, BC.BOLD,"Not deleting. To be revisited...", BC.END)
                         #print("presence.count(True):", presence.count(True))
                         #print("exclude True")
                         #print("atomlist:", atomlist)
