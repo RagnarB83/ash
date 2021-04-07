@@ -504,7 +504,12 @@ class OpenMMTheory:
         #Todo: Check speed on this
         print("Updating coordinates")
         timeA = time.time()
+        print("len current coords", len(current_coords))
         pos = [self.Vec3(current_coords[i, 0] / 10, current_coords[i, 1] / 10, current_coords[i, 2] / 10) for i in range(len(current_coords))] * self.unit.nanometer
+        print("len pos", len(pos))
+        print(pos)
+        print("len pos", len(pos))
+
         self.simulation.context.setPositions(pos)
         print_time_rel(timeA, modulename="context pos")
         timeA = time.time()
