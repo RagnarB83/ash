@@ -352,6 +352,14 @@ class OpenMMTheory:
                 for j in atomlist:
                     #print("i,j : ", i,j)
                     self.nonbonded_force.addException(i,j,0, 0, 0, replace=True)
+
+                    #NOTE: Case where there is also a CustomNonbonded force present (GROMACS interface). 
+                    # Then we have to add exclusion there too to avoid this issue: https://github.com/choderalab/perses/issues/357
+                    #Basically both nonbonded forces have to have same exclusions (or exception where chargepro=0, eps=0)
+                    for force in self.system.getForces():
+                        if isinstance(force, self.openmm.CustomNonbondedForce):
+                            force.addExclusion(i,j)
+
                     numexceptions+=1
         elif isinstance(self.nonbonded_force, self.openmm.CustomNonbondedForce):
             print("Case CustomNonbondedforce. Adding Exclusion for ij pair")
