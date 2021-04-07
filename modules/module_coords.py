@@ -1169,9 +1169,54 @@ def read_fragfile_xyz(fragfile):
 
 
 
+
+
+def conv_atomtypes_elems(atomtype):
+    try:
+        return dictionaries_lists.atomtypes_dict[atomtype]
+    except:
+        return atomtype
+
+#Read GROMACS Gro coordinate file and box info
 #Read AMBERCRD file and coords and box info
 #Not part of Fragment class because we don't have element information here
+def read_gromacsfile(grofile):
+    elems=[]
+    coords=[]
+    #TODO: Change coords to numpy array instead
+    grabcoords=False
+    numatoms="unset"
+    box_dims=None
+    with open(grofile) as cfile:
+        for i,line in enumerate(cfile):
+            if i == 0:
+                pass
+            elif i == 1:
+                numatoms=int(line.split()[0])
+                print("Numatoms:", numatoms)
+            elif i == numatoms+2:
+                #Last line: box dimensions
+                box_dims=[float(i) for i in line.split()]
+                print("Box dimensions read:", box_dims)
+            else:
+                linelist=line.split()
+                #Grabbing atomtype
+                atomtype=linelist[1]
+                atomtype = ''.join((item for item in atomtype if not item.isdigit()))
+                #Converting atomtype to element based on function above
+                elem=conv_atomtypes_elems(atomtype)
+                elems.append(elem)
+                coords_x=float(linelist[-6]);coords_y=float(linelist[-5]);coords_z=float(linelist[-4])
+                #Converting from nm to Ang
+                coords.append([10*coords_x,10*coords_y,10*coords_z])
+    assert len(coords) == len(elems), "Num coords not equal to num elems. Parsing failed. BUG!"
+    return elems,coords,box_dims
 
+
+
+
+#Read AMBERCRD file and coords and box info
+#Not part of Fragment class because we don't have element information here
 def read_ambercoordinates(prmtopfile=None, inpcrdfile=None):
     elems=[]
     coords=[]
