@@ -81,7 +81,7 @@ def reactionprofile_plot(surfacedictionary, finalunit='',label='Label', x_axisla
 def contourplot(surfacedictionary, label='Label',x_axislabel='Coord', y_axislabel='Coord', finalunit=None, interpolation='Cubic', 
                 interpolparameter=10, colormap='inferno_r', dpi=200, imageformat='png', RelativeEnergy=True, numcontourlines=500,
                 contour_alpha=0.75, contourline_color='black', clinelabels=False, contour_values=None):
-    load_matplotlib()
+    plt = load_matplotlib()
     #Relative energy conversion (if RelativeEnergy is True)
     conversionfactor = { 'kcal/mol' : 627.50946900, 'kcalpermol' : 627.50946900, 'kJ/mol' : 2625.499638, 'kJpermol' : 2625.499638, 
                         'eV' : 27.211386245988, 'cm-1' : 219474.6313702 }
