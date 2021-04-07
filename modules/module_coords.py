@@ -68,6 +68,8 @@ class Fragment:
             self.read_xyzfile(xyzfile, readchargemult=readchargemult,conncalc=conncalc)
         elif pdbfile is not None:
             self.read_pdbfile(pdbfile, conncalc=conncalc)
+        elif grofile is not None:
+            self.read_grofile(grofile, conncalc=conncalc)
         elif chemshellfile is not None:
             self.read_chemshellfile(chemshellfile, conncalc=conncalc)
         elif fragfile is not None:
@@ -137,18 +139,31 @@ class Fragment:
         if self.printlevel >= 2:
             print("Defined coordinates (Å):")
         print_coords_all(self.coords,self.elems)
-    #Read Amber coordinate file?
+    #Read Amber coordinate file? Needs to read both INPCRD and PRMTOP file. Messy, avoid and just use read_ambercoordinates function instead ?
     def read_amberinpcrdfile(self,filename,conncalc=False):
-        #Todo: finish
-        pass
+        print("not implemented yet")
+        print("use read_ambercoordinates for now")
+        exit()
     #Read GROMACS coordinates file
     def read_grofile(self,filename,conncalc=False):
-        #Todo: finish
-        pass
+        if self.printlevel >= 2:
+            print("Reading coordinates from Gromacs GRO file \"{}\" into fragment".format(filename))
+        try:
+            elems,coords,boxdims=read_gromacsfile(filename)
+            #NOTE: boxdims not used. Could be set as fragment variable ?
+        except FileNotFoundError:
+            print("File {} not found".format(filename))
+            exit()
+        self.coords = coords
+        self.elems = elems
+        self.update_attributes()
+        if conncalc is True:
+            self.calc_connectivity(scale=scale, tol=tol)
+
     #Read CHARMM? coordinate file?
     def read_charmmfile(self,filename,conncalc=False):
-        #Todo: finish
-        pass
+        print("not implemented yet")
+        exit()
     #Read Chemshell fragment file (.c ending)
     def read_chemshellfile(self,filename,conncalc=False, scale=None, tol=None):
         if self.printlevel >= 2:
@@ -1205,7 +1220,9 @@ def read_gromacsfile(grofile):
                 print("Numatoms:", numatoms)
             elif i == numatoms+2:
                 #Last line: box dimensions
-                box_dims=[float(i) for i in line.split()]
+                box_dims=[10*float(i) for i in line.split()]
+                #Assuming cubic and adding 90,90,90
+                box_dims.append(90.0);box_dims.append(90.0);box_dims.append(90.0)
                 print("Box dimensions read:", box_dims)
             else:
                 linelist=line.split()
