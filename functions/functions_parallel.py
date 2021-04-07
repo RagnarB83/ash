@@ -69,7 +69,11 @@ def Singlepoint_parallel(fragments=None, theories=None, numcores=None):
     :param Grad: whether to do Gradient or not.
     :type Grad: Boolean.
     '''
+
     if fragments is None or theories is None or numcores is None:
+        print("fragments:", fragments)
+        print("theories:", theories)
+        print("numcores:", numcores)
         print(BC.FAIL,"Singlepoint_parallel requires a fragment and a theory object and a numcores values",BC.END)
         exit(1)
 
