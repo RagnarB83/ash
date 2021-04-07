@@ -698,7 +698,7 @@ class OpenMMTheory:
                     if presence.count(True) >= 4:
                         print("jj: {} p1: {} p2: {} p3: {} p4: {}      v1: {} v2: {} v3: {} v4: {}".format(jj,p1,p2,p3,p4,v1,v2,v3,v4))
                         print("presence:", presence)
-                        print("Found CMAP torsion partner in QM-region")
+                        print(BC.WARNING, BC.BOLD,"Found CMAP torsion partner in QM-region", BC.END)
                         print(BC.WARNING, BC.BOLD,"Not deleting. To be revisited...", BC.END)
                         #print("presence.count(True):", presence.count(True))
                         #print("exclude True")
