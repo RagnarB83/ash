@@ -681,7 +681,11 @@ class OpenMMTheory:
             elif isinstance(force, self.openmm.CMAPTorsionForce):
                 print("CMAPTorsionForce force")
                 print("There are {} CMAP terms defined.".format(force.getNumTorsions()))
-                print("There are {} CMAP maps defines".format(force.getNumMaps()))
+                print("There are {} CMAP maps defined".format(force.getNumMaps()))
+                print("Map num 0", force.getMapParameters(0))
+                print("Map num 0", force.getMapParameters(1))
+                print("Map num 0", force.getMapParameters(2))
+                print("Map num 0", force.getMapParameters(3))
                 for i in range(force.getNumTorsions()):
                     p1, p2, p3, p4, a,b,c,d,e = force.getTorsionParameters(i)
                     #Are torsion-atoms in atomlist? 
