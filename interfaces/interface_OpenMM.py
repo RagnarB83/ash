@@ -682,12 +682,12 @@ class OpenMMTheory:
                 print("CMAPTorsionForce force")
                 print("There are {} CMAP terms defined.".format(force.getNumTorsions()))
                 for i in range(force.getNumTorsions()):
-                    p1, p2, p3, p4, a,b,c,d,e,f = force.getTorsionParameters(i)
+                    p1, p2, p3, p4, a,b,c,d,e = force.getTorsionParameters(i)
                     #Are torsion-atoms in atomlist? 
                     presence=[i in atomlist for i in [p1,p2,p3,p4]]
                     #Excluding if 3 or 4 QM atoms. i.e. a QM3-QM2-QM1-MM1 or QM4-QM3-QM2-QM1 term
                     print("Before p1: {} p2: {} p3: {} p4: {} ".format(p1,p2,p3,p4))
-                    print("Before a: {} b: {} c: {} d: {} e: {} f: {} ".format(a,b,c,d,e,f))
+                    print("Before a: {} b: {} c: {} d: {} e: {}  ".format(a,b,c,d,e))
                     if presence.count(True) >= 3:
                         print("Found torsion in QM-region")
                         print("presence.count(True):", presence.count(True))
