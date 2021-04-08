@@ -1,6 +1,7 @@
 import subprocess as sp
 from functions_general import BC, pygrep
 import shutil
+import settings_ash
 
 #CFour Theory object. Fragment object is optional. Used??
 class CFourTheory:
@@ -64,7 +65,7 @@ class CFourTheory:
         #Copying ASH basis file to dir if requested
         if ash_basisfile != None:
             #ash_basisfile
-            shutil.copyfile(ash.ashpath+'/basis-sets/cfour/'+ash_basisfile, 'GENBAS')
+            shutil.copyfile(settings_ash.ashpath+'/basis-sets/cfour/'+ash_basisfile, 'GENBAS')
 
 
 
