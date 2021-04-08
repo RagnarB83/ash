@@ -65,11 +65,8 @@ class CFourTheory:
         #Copying ASH basis file to dir if requested
         if ash_basisfile != None:
             #ash_basisfile
+            print("Copying ASH basis-file {} from {} to current directory".format(ash_basisfile,settings_ash.ashpath+'/basis-sets/cfour/'))
             shutil.copyfile(settings_ash.ashpath+'/basis-sets/cfour/'+ash_basisfile, 'GENBAS')
-
-
-
-
 
 
 

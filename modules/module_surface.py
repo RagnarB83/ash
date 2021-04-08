@@ -166,11 +166,11 @@ def calc_surface(fragment=None, theory=None, workflow=None, scantype='Unrelaxed'
                 for RCvalue1 in list(frange(RC1_range[0],RC1_range[1],RC1_range[2])):
                     for RCvalue2 in list(frange(RC2_range[0],RC2_range[1],RC2_range[2])):
                         pointcount+=1
-                        print("=======================================")
+                        print("==================================================")
                         print("Surfacepoint: {} / {}".format(pointcount,totalnumpoints))
                         print("RCvalue1: {} RCvalue2: {}".format(RCvalue1,RCvalue2))
                         print("Unrelaxed scan. Will use Zerotheory and geometric to set geometry.")
-                        print("=======================================")
+                        print("==================================================")
                         
                         if (RCvalue1,RCvalue2) not in surfacedictionary:
                             #Now setting constraints
@@ -200,11 +200,11 @@ def calc_surface(fragment=None, theory=None, workflow=None, scantype='Unrelaxed'
             elif dimension == 1:
                 for RCvalue1 in list(frange(RC1_range[0],RC1_range[1],RC1_range[2])):
                     pointcount+=1
-                    print("=======================================")
+                    print("==================================================")
                     print("Surfacepoint: {} / {}".format(pointcount,totalnumpoints))
                     print("RCvalue1: {}".format(RCvalue1))
                     print("Unrelaxed scan. Will use Zerotheory and geometric to set geometry.")
-                    print("=======================================")
+                    print("==================================================")
                     
                     if (RCvalue1) not in surfacedictionary:
                         #Now setting constraints
@@ -234,11 +234,11 @@ def calc_surface(fragment=None, theory=None, workflow=None, scantype='Unrelaxed'
                 for RCvalue1 in list(frange(RC1_range[0],RC1_range[1],RC1_range[2])):
                     for RCvalue2 in list(frange(RC2_range[0],RC2_range[1],RC2_range[2])):
                         pointcount+=1
-                        print("=======================================")
+                        print("==================================================")
                         print("Surfacepoint: {} / {}".format(pointcount,totalnumpoints))
                         print("RCvalue1: {} RCvalue2: {}".format(RCvalue1,RCvalue2))
                         print("Relaxed scan. Will relax geometry using theory level with the included contraints.")
-                        print("=======================================")
+                        print("==================================================")
                         if (RCvalue1,RCvalue2) not in surfacedictionary:
                             #Now setting constraints
                             allconstraints = set_constraints(dimension=2, RCvalue1=RCvalue1, RCvalue2=RCvalue2, extraconstraints=extraconstraints,
@@ -262,11 +262,11 @@ def calc_surface(fragment=None, theory=None, workflow=None, scantype='Unrelaxed'
             elif dimension == 1:
                 for RCvalue1 in list(frange(RC1_range[0],RC1_range[1],RC1_range[2])):
                     pointcount+=1
-                    print("=======================================")
+                    print("==================================================")
                     print("Surfacepoint: {} / {}".format(pointcount,totalnumpoints))
                     print("RCvalue1: {}".format(RCvalue1))
                     print("Relaxed scan. Will relax geometry using theory level with the included contraints.")
-                    print("=======================================")
+                    print("==================================================")
                     
                     if (RCvalue1) not in surfacedictionary:
                         #Now setting constraints
@@ -292,6 +292,7 @@ def calc_surface(fragment=None, theory=None, workflow=None, scantype='Unrelaxed'
 # Calculate surface from XYZ-file collection.
 #Both unrelaxed (single-point) and relaxed (opt) is now possible
 # TODO: Finish parallelize surfacepoint calculations
+# TODO: Option to keep theory-level programoutput. Add option here. Call theory.keep_output or something after each point??
 def calc_surface_fromXYZ(xyzdir=None, theory=None, dimension=None, resultfile=None, scantype='Unrelaxed',runmode='serial',
                          coordsystem='dlc', maxiter=50, extraconstraints=None, convergence_setting=None, numcores=None,
                          RC1_type=None, RC2_type=None, RC1_indices=None, RC2_indices=None):
@@ -443,10 +444,10 @@ def calc_surface_fromXYZ(xyzdir=None, theory=None, dimension=None, resultfile=No
                 RCvalue1=float(relfile.split(start)[1].split(end)[0])
                 RCvalue2=float(relfile.split(end)[1].split(".xyz")[0])
 
-                print("=======================================================")
+                print("==================================================================")
                 print("Surfacepoint: {} / {}".format(count+1,totalnumpoints))
                 print("XYZ-file: {}     RC1: {}   RC2: {}".format(relfile,RCvalue1,RCvalue2))
-                print("=======================================================")
+                print("==================================================================")
                 
                 
                 if (RCvalue1,RCvalue2) not in surfacedictionary:

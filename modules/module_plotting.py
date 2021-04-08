@@ -90,7 +90,6 @@ def contourplot(surfacedictionary, label='Label',x_axislabel='Coord', y_axislabe
     y_c=[]
     print("surfacedictionary:", surfacedictionary)
     for i in surfacedictionary:
-        print("i:", i)
         coords.append(i)
         x_c.append(i[0])
         y_c.append(i[1])
