@@ -98,7 +98,7 @@ def write_mrcc_input(mrccinput,charge,mult,elems,coords):
 def grab_energy_mrcc(outfile):
     #Option 1. Grabbing all lines containing energy in outputfile. Take last entry.
     # CURRENT Option 2: grab energy from iface file. Higher level WF entry should be last
-    with open("iface") as g:
+    with open("iface") as f:
         for line in f:
             if 'ENERGY' in line:
                 energy=float(line.split()[5])
