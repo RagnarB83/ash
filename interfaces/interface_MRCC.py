@@ -9,7 +9,7 @@ class MRCCTheory:
 
         #Printlevel
         self.printlevel=printlevel
-        self.filename="mrccoutput"
+        self.filename="mrcc"
         self.mrccdir=mrccdir
         self.charge=charge
         self.mult=mult
@@ -56,7 +56,7 @@ class MRCCTheory:
             self.gradient = grab_gradient_mrcc()
         else:
             write_mrcc_input(self.mrccinput,self.charge,self.mult,qm_elems,current_coords)
-            run_mrcc(self.mrccdir,self.filename+'.out')
+            run_mrcc(self.mrccdir,self.filename)
             self.energy=grab_energy_mrcc()
 
         #TODO: write in error handling here
