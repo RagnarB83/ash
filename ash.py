@@ -33,7 +33,7 @@ from functions_general import blankline,BC,listdiff,print_time_rel,print_time_re
 
 # Fragment class and coordinate functions
 import module_coords
-from module_coords import get_molecules_from_trajectory,eldict_covrad,write_pdbfile,Fragment,read_xyzfile,write_xyzfile,make_cluster_from_box
+from module_coords import get_molecules_from_trajectory,eldict_covrad,write_pdbfile,Fragment,read_xyzfile,write_xyzfile,make_cluster_from_box, read_ambercoordinates, read_gromacsfile
 
 #Singlepoint
 import module_singlepoint
@@ -140,7 +140,10 @@ if settings_ash.settings_dict["load_julia"] == True:
         print("Problem importing Pyjulia")
         print("Make sure Julia is installed, PyJulia within Python, Pycall within Julia, Julia packages have been installed and you are using python-jl")
         print("Python routines will be used instead when possible")
+        #Connectivity code in Fragment
         settings_ash.settings_dict["connectivity_code"] = "py"
+        #LJ+Coulomb and pairpot arrays in nonbonded MM
+        settings_ash.settings_dict["nonbondedMM_code"] = "py"
         #TODO: We should here set a variable that would pick py version of routines instead
 
 

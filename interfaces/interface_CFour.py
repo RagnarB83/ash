@@ -1,10 +1,12 @@
 import subprocess as sp
-from functions_general import BC
+from functions_general import BC, pygrep
+import shutil
+import settings_ash
 
 #CFour Theory object. Fragment object is optional. Used??
 class CFourTheory:
     def __init__(self, cfourdir=None,fragment=None, charge=None, mult=None, printlevel=2, cfouroptions=None,nprocs=1,
-                 filename='cfourjob',specialbasis=None):
+                 filename='cfourjob',specialbasis=None, ash_basisfile='def2-SVP'):
                  #basis=None, method=None, reference='RHF', frozen_core='ON',
                 #memory=3100, , guessoption='MOREAD',propoption='OFF',cc_prog='ECC',scf_conv=10,lineq_conv=10,
                 #cc_maxcyc=300,symmetry='OFF',stabilityanalysis='OFF'):
@@ -60,6 +62,16 @@ class CFourTheory:
         else:
             self.specialbasis=[]
         
+        #Copying ASH basis file to dir if requested
+        if ash_basisfile != None:
+            #ash_basisfile
+            print("Copying ASH basis-file {} from {} to current directory".format(ash_basisfile,settings_ash.ashpath+'/basis-sets/cfour/'))
+            shutil.copyfile(settings_ash.ashpath+'/basis-sets/cfour/'+ash_basisfile, 'GENBAS')
+
+
+
+
+
         if cfourdir == None:
             # Trying to find xcfour in path
             print("cfourdir keyword argument not provided to CfourTheory object. Trying to find xcfour in PATH")

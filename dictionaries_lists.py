@@ -5,6 +5,16 @@ Various lists and dictionaries of elements etc.
 elements=['H', 'He', 'Li', 'Be', 'B', 'C', 'N', 'O', 'F', 'Ne', 'Na', 'Mg', 'Al', 'Si', 'P', 'S', 'Cl', 'Ar', 'K', 'Ca', 'Sc', 'Ti', 'V', 'Cr', 'Mn', 'Fe', 'Co', 'Ni', 'Cu', 'Zn', 'Ga', 'Ge', 'As', 'Se', 'Br', 'Kr', 'Rb', 'Sr', 'Y', 'Zr', 'Nb', 'Mo', 'Tc', 'Ru', 'Rh', 'Pd', 'Ag', 'Cd', 'In', 'Sn', 'Sb', 'Te', 'I', 'Xe', 'Cs', 'Ba', 'La', 'Ce', 'Pr', 'Nd', 'Pm', 'Sm', 'Eu', 'Gd', 'Tb', 'Dy', 'Ho', 'Er', 'Tm', 'Yb', 'Lu', 'Hf', 'Ta', 'W', 'Re', 'Os', 'Ir', 'Pt', 'Au', 'Hg', 'Tl', 'Pb', 'Bi', 'Po', 'At', 'Rn', 'Fr', 'Ra', 'Ac', 'Th', 'Pa', 'U', 'Np', 'Pu', 'Am', 'Cm', 'Bk', 'Cf', 'Es', 'Fm', 'Md', 'No', 'Lr']
 
 
+
+#Conversion of common atom types to elements. Used by: module_coords: conv_atomtypes_elems and read_gromacsfile
+atomtypes_dict={'HA':'H', 'HB':'H', 'HW':'H', 'HH':'H', 'HN':'H', 'HD':'H', 'HZ':'H', 'HG':'H', 'HE':'H',
+        'NA':'Na', 
+        'CD':'C', 'CH':'C', 'CA':'C', 'CB':'C', 'CG':'C', 'CZ':'C', 'CE':'C',
+        'SD':'S', 'SG':'S',
+        'OE':'O', 'OG':'O', 'OH':'O', 'OW':'O', 'OT':'O', 'OD':'O', 
+        'NZ':'N', 'NH':'N', 'NE':'N', 'ND':'N'}
+
+
 # Element class 
 class Element:
     def __init__(self, name,symbol,atomnumber):

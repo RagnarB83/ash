@@ -81,6 +81,7 @@ class QMMMTheory:
 
         #Theory level definitions
         self.printlevel=printlevel
+        print("self.printlevel: ", self.printlevel)
         self.qm_theory=qm_theory
         self.qm_theory_name = self.qm_theory.__class__.__name__
         
@@ -735,21 +736,27 @@ class QMMMTheory:
             self.QM_MM_gradient=self.QM_PC_gradient+self.MMgradient
             #print_time_rel(CheckpointTime, modulename='QM/MM gradient combine')
             if self.printlevel >=3:
-                print("QM gradient (au/Bohr):")
-                module_coords.print_coords_all(self.QMgradient, self.qmelems, self.qmatoms)
-                blankline()
-                print("PC gradient (au/Bohr):")
-                module_coords.print_coords_all(self.PCgradient, self.mmelems, self.mmatoms)
-                blankline()
-                print("QM+PC gradient (au/Bohr):")
-                module_coords.print_coords_all(self.QM_PC_gradient, self.elems, self.allatoms)
-                blankline()
-                print("MM gradient (au/Bohr):")
-                module_coords.print_coords_all(self.MMgradient, self.elems, self.allatoms)
-                blankline()
-                print("Total QM/MM gradient (au/Bohr):")
-                print("")
-                module_coords.print_coords_all(self.QM_MM_gradient, self.elems,self.allatoms)
+                print("Printlevel >=3: Printing all gradients to disk")
+                #print("QM gradient (au/Bohr):")
+                #module_coords.print_coords_all(self.QMgradient, self.qmelems, self.qmatoms)
+                module_coords.write_coords_all(self.QMgradient, self.qmelems, indices=self.qmatoms, file="QMgradient", description="QM gradient (au/Bohr):")
+                #blankline()
+                #print("PC gradient (au/Bohr):")
+                #module_coords.print_coords_all(self.PCgradient, self.mmelems, self.mmatoms)
+                module_coords.write_coords_all(self.PCgradient, self.mmelems, indices=self.mmatoms, file="PCgradient", description="PC gradient (au/Bohr):")
+                #blankline()
+                #print("QM+PC gradient (au/Bohr):")
+                #module_coords.print_coords_all(self.QM_PC_gradient, self.elems, self.allatoms)
+                module_coords.write_coords_all(self.QM_PC_gradient, self.elems, indices=self.allatoms, file="QM+PCgradient", description="QM+PC gradient (au/Bohr):")
+                #blankline()
+                #print("MM gradient (au/Bohr):")
+                #module_coords.print_coords_all(self.MMgradient, self.elems, self.allatoms)
+                module_coords.write_coords_all(self.MMgradient, self.elems, indices=self.allatoms, file="MMgradient", description="MM gradient (au/Bohr):")
+                #blankline()
+                #print("Total QM/MM gradient (au/Bohr):")
+                #print("")
+                #module_coords.print_coords_all(self.QM_MM_gradient, self.elems,self.allatoms)
+                module_coords.write_coords_all(self.QM_MM_gradient, self.elems, indices=self.allatoms, file="QM_MMgradient", description="QM/MM gradient (au/Bohr):")
             if self.printlevel >= 2:
                 print(BC.WARNING,BC.BOLD,"------------ENDING QM/MM MODULE-------------",BC.END)
             return self.QM_MM_energy, self.QM_MM_gradient

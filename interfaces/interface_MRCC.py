@@ -1,29 +1,35 @@
+from functions_general import BC
+import subprocess as sp
 #MRCC interface. not ready
 
 #MRCC Theory object. Fragment object is optional. Used??
 class MRCCTheory:
-    def __init__(self, mrccdir=None, fragment=None, charge=None, mult=None, printlevel=2, cfourbasis=None, cfourmethod=None,
-                mrccmemory=3100, nprocs=1):
+    def __init__(self, mrccdir=None, fragment=None, charge=None, mult=None, printlevel=2,
+                mrccinput=None, nprocs=1):
 
         #Printlevel
         self.printlevel=printlevel
-
+        self.filename="mrcc"
+        self.mrccdir=mrccdir
         self.charge=charge
         self.mult=mult
-        self.cfourbasis=cfourbasis
-        self.cfourmethod=cfourmethod
-        self.mrccmemory=mrccmemory
+        self.mrccinput=mrccinput
         self.nprocs=nprocs
 
     # Run function. Takes coords, elems etc. arguments and computes E or E+G.
     def run(self, current_coords=None, current_MM_coords=None, MMcharges=None, qm_elems=None,
-            elems=None, Grad=False, PC=False, nprocs=None, restart=False):
+            elems=None, Grad=False, PC=False, nprocs=None, restart=False, label=None):
 
         if nprocs == None:
             nprocs = self.nprocs
 
         print(BC.OKBLUE, BC.BOLD, "------------RUNNING MRCC INTERFACE-------------", BC.END)
 
+        print("Running MRCC object with {} cores available".format(self.nprocs))
+        print("Job label:", label)
+        print("Creating inputfile: MINP")
+        print("MRCC input:")
+        print(self.mrccinput)
 
         # Coords provided to run or else taken from initialization.
         # if len(current_coords) != 0:
@@ -39,39 +45,79 @@ class MRCCTheory:
             else:
                 qm_elems = elems
 
+        #Grab energy and gradient
+        #TODO: No qm/MM yet. need to check if possible in MRCC
+        if Grad==True:
+            print("Grad not ready")
+            exit()
+            write_mrcc_input(self.mrccinput,self.charge,self.mult,qm_elems,current_coords)
+            run_mrcc(self.mrccdir,self.filename+'.out')
+            self.energy=grab_energy_mrcc(self.filename+'.out')
+            self.gradient = grab_gradient_mrcc()
+        else:
+            write_mrcc_input(self.mrccinput,self.charge,self.mult,qm_elems,current_coords)
+            run_mrcc(self.mrccdir,self.filename+'.out')
+            self.energy=grab_energy_mrcc(self.filename+'.out')
 
-        def write_cfour_input(method,basis,reference,charge,mult,frozencore,memory):
-            with open("ZMAT", 'w') as inpfile:
-                inpfile.write('ASH-created inputfile\n')
-                for el,c in zip(elems,qm_elems):
-                    inpfile.write('{} {} {} {}\n'.format(el,c[0],c[1],c[2]))
-                inpfile.write('\n')
-                inpfile.write('*CFOUR(CALC={},BASIS={},COORD=CARTESIAN,REF={},CHARGE={},MULT={},FROZEN_CORE={},GEO_MAXCYC=1,MEM_UNIT=MB,MEMORY={})\n'.format(
-                    method,basis,reference,charge,mult,frozencore,memory))
-
-        def run_cfour(cfourdir):
-            fdg="dsgfs"
+        #TODO: write in error handling here
+        print(BC.OKBLUE, BC.BOLD, "------------ENDING MRCC INTERFACE-------------", BC.END)
+        if Grad == True:
+            print("Single-point MRCC energy:", self.energy)
+            return self.energy, self.gradient
+        else:
+            print("Single-point MRCC energy:", self.energy)
+            return self.energy
 
 
-            #Grab energy and gradient
-            #TODO: No qm/MM yet. need to check if possible in MRCC
-            if Grad==True:
 
-                write_cfour_input(self.method,self.basis,self.reference,self.charge,self.mult,self.frozen_core,self.memory)
-                run_cfour(self.cfourdir)
-                self.energy = 0.0
-                #self.gradient = X
-            else:
-                write_cfour_input(self.method,self.basis,self.reference,self.charge,self.mult,self.frozen_core,self.memory)
-                run_cfour(self.cfourdir)
-                self.energy = 0.0
 
-            #TODO: write in error handling here
-            print(BC.OKBLUE, BC.BOLD, "------------ENDING MRCC INTERFACE-------------", BC.END)
-            if Grad == True:
-                print("Single-point MRCC energy:", self.energy)
-                return self.energy, self.gradient
-            else:
-                print("Single-point MRCC energy:", self.energy)
-                return self.energy
+def run_mrcc(mrccdir,filename):
+    with open(filename, 'w') as ofile:
+        process = sp.run([mrccdir + '/dmrcc'], check=True, stdout=ofile, stderr=ofile, universal_newlines=True)
 
+#TODO: Gradient option
+def write_mrcc_input(mrccinput,charge,mult,elems,coords):
+    with open("MINP", 'w') as inpfile:
+        inpfile.write(mrccinput + '\n')
+        inpfile.write('unit=angs\n')
+        inpfile.write('charge={}\n'.format(charge))
+        inpfile.write('mult={}\n'.format(mult))
+        #inpfile.write('dens=2\n')
+        inpfile.write('geom=xyz\n')
+        inpfile.write('{}\n'.format(len(elems)))
+        inpfile.write('\n')
+        for el,c in zip(elems,coords):
+            inpfile.write('{}   {} {} {}\n'.format(el,c[0],c[1],c[2]))
+        inpfile.write('\n')
+
+def grab_energy_mrcc(outfile):
+    #Option 1. Grabbing all lines containing energy in outputfile. Take last entry.
+    #Option 2: grab energy from iface file ???
+    linetograb="energy"
+    with open(outfile) as f:
+        for line in f:
+            if linetograb.upper() in line.upper():
+                final=line
+    print(final)
+    try:
+        energy=float(final.split()[-1])
+    except:
+        print("Problem reading energy from MRCC outputfile. Check:", outfile)
+        exit()
+    return energy
+
+
+def grab_gradient_mrcc(self):
+    pass
+   # atomcount=0
+   # with open('GRD') as grdfile:
+   #     for i,line in enumerate(grdfile):
+   #         if i==0:
+   #             numatoms=int(line.split()[0])
+   #             gradient=np.zeros((numatoms,3))
+   #         if i>numatoms:
+   #             gradient[atomcount,0] = float(line.split()[1])
+   #             gradient[atomcount,1] = float(line.split()[2])
+   #              gradient[atomcount,2] = float(line.split()[3])
+   #             atomcount+=1
+   # return gradient    

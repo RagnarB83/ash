@@ -220,6 +220,7 @@ class ORCATheory:
         pcgradfile=self.filename+'.pcgrad'
         if checkORCAfinished(outfile) == True:
             self.energy=ORCAfinalenergygrab(outfile)
+            print("ORCA energy:", self.energy)
 
             if Grad == True:
                 self.grad=ORCAgradientgrab(engradfile)

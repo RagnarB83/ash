@@ -13,7 +13,7 @@ import time
 
 # ASH Fragment class
 class Fragment:
-    def __init__(self, coordsstring=None, fragfile=None, xyzfile=None, pdbfile=None, chemshellfile=None, coords=None, elems=None, connectivity=None,
+    def __init__(self, coordsstring=None, fragfile=None, xyzfile=None, pdbfile=None, grofile=None, amber_inpcrdfile=None, amber_prmtopfile=None, chemshellfile=None, coords=None, elems=None, connectivity=None,
                  atomcharges=None, atomtypes=None, conncalc=True, scale=None, tol=None, printlevel=2, charge=None,
                  mult=None, label=None, readchargemult=False):
         #Label for fragment (string). Useful for distinguishing different fragments
@@ -68,6 +68,14 @@ class Fragment:
             self.read_xyzfile(xyzfile, readchargemult=readchargemult,conncalc=conncalc)
         elif pdbfile is not None:
             self.read_pdbfile(pdbfile, conncalc=conncalc)
+        elif grofile is not None:
+            self.read_grofile(grofile, conncalc=conncalc)
+        elif amber_inpcrdfile is not None:
+            print("Reading Amber INPCRD file")
+            if amber_prmtopfile == None:
+                print("amber_prmtopfile argument must be provided also!")
+                exit()
+            self.read_amberfile(inpcrdfile=amber_inpcrdfile, prmtopfile=amber_prmtopfile,conncalc=conncalc)
         elif chemshellfile is not None:
             self.read_chemshellfile(chemshellfile, conncalc=conncalc)
         elif fragfile is not None:
@@ -137,20 +145,45 @@ class Fragment:
         if self.printlevel >= 2:
             print("Defined coordinates (Å):")
         print_coords_all(self.coords,self.elems)
-    #Read Amber coordinate file?
-    def read_amberinpcrdfile(self,filename,conncalc=False):
-        #Todo: finish
-        pass
+
+    #Read Amber coordinate file? Needs to read both INPCRD and PRMTOP file. Bit messy
+    def read_amberfile(self,inpcrdfile=None, prmtopfile=None,conncalc=False):
+        if self.printlevel >= 2:
+            print("Reading coordinates from Amber INPCRD file: {} and PRMTOP file: {} into fragment".format(inpcrdfile,prmtopfile))
+        try:
+            elems,coords,box_dims= read_ambercoordinates(prmtopfile=prmtopfile, inpcrdfile=inpcrdfile)
+            #NOTE: boxdims not used. Could be set as fragment variable ?
+        except FileNotFoundError:
+            print("File {} not found".format(filename))
+            exit()
+        self.coords = coords
+        self.elems = elems
+        self.update_attributes()
+        if conncalc is True:
+            self.calc_connectivity(scale=scale, tol=tol)
+
     #Read GROMACS coordinates file
     def read_grofile(self,filename,conncalc=False):
-        #Todo: finish
-        pass
+        if self.printlevel >= 2:
+            print("Reading coordinates from Gromacs GRO file \"{}\" into fragment".format(filename))
+        try:
+            elems,coords,boxdims=read_gromacsfile(filename)
+            #NOTE: boxdims not used. Could be set as fragment variable ?
+        except FileNotFoundError:
+            print("File {} not found".format(filename))
+            exit()
+        self.coords = coords
+        self.elems = elems
+        self.update_attributes()
+        if conncalc is True:
+            self.calc_connectivity(scale=scale, tol=tol)
+
     #Read CHARMM? coordinate file?
     def read_charmmfile(self,filename,conncalc=False):
-        #Todo: finish
-        pass
+        print("not implemented yet")
+        exit()
+    #Read Chemshell fragment file (.c ending)
     def read_chemshellfile(self,filename,conncalc=False, scale=None, tol=None):
-        #Read Chemshell fragment file (.c ending)
         if self.printlevel >= 2:
             print("Reading coordinates from Chemshell file \"{}\" into fragment".format(filename))
         try:
@@ -166,7 +199,6 @@ class Fragment:
         else:
             # Read connectivity list
             print("Not reading connectivity from file")
-
     #Read PDB file
     def read_pdbfile(self,filename,conncalc=True, scale=None, tol=None):
         if self.printlevel >= 2:
@@ -651,6 +683,44 @@ def print_coords_all(coords,elems,indices=None, labels=None, labels2=None):
                 for i in range(len(elems)):
                     print("{:>1} {:>4} {:>12.8f}  {:>12.8f}  {:>12.8f} {:>6} {:>6}".format(indices[i],elems[i],coords[i][0], coords[i][1], coords[i][2], labels[i], labels2[i]))
 
+
+
+
+#From lists of coords,elems and atom indices, print coords with elems
+#If list of atom indices provided, print as leftmost column
+#If list of labels provided, print as rightmost column
+#If list of labels2 provided, print as rightmost column
+def write_coords_all(coords,elems,indices=None, labels=None, labels2=None, file="file", description="description"):
+    f = open(file, "w")
+    f.write("#{}\n".format(description))
+    if indices is None:
+        if labels is None:
+            for i in range(len(elems)):
+                f.write("{:>4} {:>12.8f}  {:>12.8f}  {:>12.8f}\n".format(elems[i],coords[i][0], coords[i][1], coords[i][2]))
+
+        else:
+            if labels2 is None:
+                for i in range(len(elems)):
+                    f.write("{:>4} {:>12.8f}  {:>12.8f}  {:>12.8f} {:>6}\n".format(elems[i],coords[i][0], coords[i][1], coords[i][2], labels[i]))
+            else:
+                for i in range(len(elems)):
+                    f.write("{:>4} {:>12.8f}  {:>12.8f}  {:>12.8f} {:>6} :>6\n".format(elems[i],coords[i][0], coords[i][1], coords[i][2], labels[i], label2[i]))
+    else:
+        if labels is None:
+            for i in range(len(elems)):
+                f.write("{:>1} {:>4} {:>12.8f}  {:>12.8f}  {:>12.8f}\n".format(indices[i],elems[i],coords[i][0], coords[i][1], coords[i][2]))
+        else:
+            if labels2 is None:
+                for i in range(len(elems)):
+                    f.write("{:>1} {:>4} {:>12.8f}  {:>12.8f}  {:>12.8f} {:>6}\n".format(indices[i],elems[i],coords[i][0], coords[i][1], coords[i][2], labels[i]))
+            else:
+                for i in range(len(elems)):
+                    f.write("{:>1} {:>4} {:>12.8f}  {:>12.8f}  {:>12.8f} {:>6} {:>6}\n".format(indices[i],elems[i],coords[i][0], coords[i][1], coords[i][2], labels[i], labels2[i]))
+
+    f.close()
+
+
+
 def distance(A,B):
     return sqrt(pow(A[0] - B[0],2) + pow(A[1] - B[1],2) + pow(A[2] - B[2],2)) #fastest
     #return sum((v_i - u_i) ** 2 for v_i, u_i in zip(A, B)) ** 0.5 #slow
@@ -1129,6 +1199,123 @@ def read_fragfile_xyz(fragfile):
                 #numatoms=int(line.split()[-1])
                 grabcoords=True
     return elems,coords
+
+
+
+
+
+def conv_atomtypes_elems(atomtype):
+    """Convert atomtype string to element based on a dictionary.
+        Hopefully captures all cases. If atomtype not found then element string assumed but reformatting so correct case
+
+    Args:
+        atomtype ([str]): [description]
+    Returns:
+        [str]: [description]
+    """
+    try:
+        return dictionaries_lists.atomtypes_dict[atomtype]
+    except:
+        #Assume correct element but could be wrongly formatted (e.g. FE instead of Fe) so reformatting
+        return reformat_element(atomtype)
+
+#Read GROMACS Gro coordinate file and box info
+#Read AMBERCRD file and coords and box info
+#Not part of Fragment class because we don't have element information here
+def read_gromacsfile(grofile):
+    elems=[]
+    coords=[]
+    #TODO: Change coords to numpy array instead
+    grabcoords=False
+    numatoms="unset"
+    box_dims=None
+    with open(grofile) as cfile:
+        for i,line in enumerate(cfile):
+            if i == 0:
+                pass
+            elif i == 1:
+                numatoms=int(line.split()[0])
+                print("Numatoms:", numatoms)
+            elif i == numatoms+2:
+                #Last line: box dimensions
+                box_dims=[10*float(i) for i in line.split()]
+                #Assuming cubic and adding 90,90,90
+                box_dims.append(90.0);box_dims.append(90.0);box_dims.append(90.0)
+                print("Box dimensions read:", box_dims)
+            else:
+                linelist=line.split()
+                #Grabbing atomtype
+                atomtype=linelist[1]
+                atomtype = ''.join((item for item in atomtype if not item.isdigit()))
+                #Converting atomtype to element based on function above
+                elem=conv_atomtypes_elems(atomtype)
+                elems.append(elem)
+                coords_x=float(linelist[-6]);coords_y=float(linelist[-5]);coords_z=float(linelist[-4])
+                #Converting from nm to Ang
+                coords.append([10*coords_x,10*coords_y,10*coords_z])
+    assert len(coords) == len(elems), "Num coords not equal to num elems. Parsing failed. BUG!"
+    return elems,coords,box_dims
+
+
+
+
+#Read AMBERCRD file and coords and box info
+#Not part of Fragment class because we don't have element information here
+def read_ambercoordinates(prmtopfile=None, inpcrdfile=None):
+    elems=[]
+    coords=[]
+    #TODO: Change coords to numpy array instead
+    grabcoords=False
+    numatoms="unset"
+    with open(inpcrdfile) as cfile:
+
+        for i,line in enumerate(cfile):
+            if i == 0:
+                pass
+            elif i == 1:
+                numatoms=int(line.split()[0])
+                print("Numatoms:", numatoms)
+                numcoordlines=math.ceil(numatoms/2)
+                #print("numcoordlines:", numcoordlines)
+            elif i == numcoordlines+2:
+
+                #Last line: box dimensions
+                box_dims=[float(i) for i in line.split()]
+                print("Box dimensions read:", box_dims)
+            else:
+                linelist=line.split()
+                coordvalues=[]
+                #Checking if values combined: e,g, -16.3842161-100.0326085
+                #Then split and add
+                for c in linelist:
+                    if c.count('.') > 1:
+                        d=c.replace('-', ' -').split()
+                        coordvalues.append(float(d[0]))
+                        coordvalues.append(float(d[1]))
+                    else:
+                        coordvalues.append(float(c))
+                coords.append([coordvalues[0],coordvalues[1],coordvalues[2]])
+                if len(coordvalues)==6:
+                    coords.append([coordvalues[3],coordvalues[4],coordvalues[5]])
+ 
+    #Grab atom numbers and convert to elements
+    grab_atomnumber=False
+    with open(prmtopfile) as pfile:
+        for i,line in enumerate(pfile):
+            if grab_atomnumber is True:
+                if 'FORMAT' not in line:
+                    #reformat_element(i,isatomnum=True)
+                    if '%' in line:
+                        grab_atomnumber=False
+                    else:
+                        elems+=[reformat_element(int(i),isatomnum=True) for i in line.split()]
+            if '%FLAG ATOMIC_NUMBER' in line:
+                grab_atomnumber=True
+    assert len(coords) == len(elems), "Num coords not equal to num elems. Parsing failed. BUG!"
+    return elems,coords,box_dims
+
+
+
 
 
 #Write PDBfile proper
