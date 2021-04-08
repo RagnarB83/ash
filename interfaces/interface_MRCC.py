@@ -15,16 +15,22 @@ class MRCCTheory:
         self.mult=mult
         self.mrccinput=mrccinput
         self.nprocs=nprocs
+        self.job
 
     # Run function. Takes coords, elems etc. arguments and computes E or E+G.
     def run(self, current_coords=None, current_MM_coords=None, MMcharges=None, qm_elems=None,
-            elems=None, Grad=False, PC=False, nprocs=None, restart=False):
+            elems=None, Grad=False, PC=False, nprocs=None, restart=False, label=None):
 
         if nprocs == None:
             nprocs = self.nprocs
 
         print(BC.OKBLUE, BC.BOLD, "------------RUNNING MRCC INTERFACE-------------", BC.END)
 
+        print("Running MRCC object with {} cores available".format(self.nprocs))
+        print("Job label:", label)
+        print("Creating inputfile: MINP")
+        print("MRCC input:")
+        print(self.mrccinput)
 
         # Coords provided to run or else taken from initialization.
         # if len(current_coords) != 0:
