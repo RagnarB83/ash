@@ -15,7 +15,6 @@ class MRCCTheory:
         self.mult=mult
         self.mrccinput=mrccinput
         self.nprocs=nprocs
-        self.job
 
     # Run function. Takes coords, elems etc. arguments and computes E or E+G.
     def run(self, current_coords=None, current_MM_coords=None, MMcharges=None, qm_elems=None,
