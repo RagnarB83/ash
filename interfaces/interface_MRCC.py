@@ -96,7 +96,7 @@ def grab_energy_mrcc(outfile):
     linetograb="energy"
     with open(outfile) as f:
         for line in f:
-            if linetograb in line:
+            if linetograb.upper() in line.upper():
                 final=line
     print(final)
     try:
