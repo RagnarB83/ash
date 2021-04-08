@@ -51,13 +51,13 @@ class MRCCTheory:
             print("Grad not ready")
             exit()
             write_mrcc_input(self.mrccinput,self.charge,self.mult,qm_elems,current_coords)
-            run_mrcc(self.mrccdir,self.filename)
+            run_mrcc(self.mrccdir,self.filename+'.out')
             self.energy=grab_energy_mrcc(self.filename+'.out')
             self.gradient = grab_gradient_mrcc()
         else:
             write_mrcc_input(self.mrccinput,self.charge,self.mult,qm_elems,current_coords)
-            run_mrcc(self.mrccdir,self.filename)
-            self.energy=grab_energy_mrcc()
+            run_mrcc(self.mrccdir,self.filename+'.out')
+            self.energy=grab_energy_mrcc(self.filename+'.out')
 
         #TODO: write in error handling here
         print(BC.OKBLUE, BC.BOLD, "------------ENDING MRCC INTERFACE-------------", BC.END)
@@ -72,7 +72,7 @@ class MRCCTheory:
 
 
 def run_mrcc(mrccdir,filename):
-    with open(filename+'.out', 'w') as ofile:
+    with open(filename, 'w') as ofile:
         process = sp.run([mrccdir + '/dmrcc'], check=True, stdout=ofile, stderr=ofile, universal_newlines=True)
 
 #TODO: Gradient option
