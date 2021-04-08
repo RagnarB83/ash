@@ -1,5 +1,5 @@
 import subprocess as sp
-from functions_general import BC
+from functions_general import BC, pygrep
 
 #CFour Theory object. Fragment object is optional. Used??
 class CFourTheory:
