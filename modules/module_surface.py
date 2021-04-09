@@ -12,7 +12,7 @@ import shutil
 import copy
 
 import ash
-from functions_general import frange
+from functions_general import frange, BC
 import interface_geometric
 from module_freq import calc_rotational_constants
 import functions_parallel
