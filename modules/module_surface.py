@@ -88,9 +88,13 @@ def calc_surface(fragment=None, theory=None, workflow=None, scantype='Unrelaxed'
     pointcount=0
     
     #Create directory to keep track of surface XYZ files
-    os.mkdir('surface_xyzfiles') 
-    os.mkdir('surface_outfiles')   
-    
+    try:
+        os.mkdir('surface_xyzfiles') 
+        os.mkdir('surface_outfiles')   
+    except FileExistsError:
+        print("surface_xyzfiles or surface_outfiles directories exist already in dir. Please remove them")
+        exit()
+
     #PARALLEL CALCULATION
     if runmode=='parallel':
         print("Parallel runmode.")
