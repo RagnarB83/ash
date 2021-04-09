@@ -71,16 +71,22 @@ def calc_surface(fragment=None, theory=None, workflow=None, scantype='Unrelaxed'
     #Calc number of surfacepoints
     if dimension==2:
         range2=math.ceil(abs((RC2_range[0]-RC2_range[1])/RC2_range[2]))
-        #print("range2", range2)
+        print("range2", range2)
         range1=math.ceil(abs((RC1_range[0]-RC1_range[1])/RC1_range[2]))
         totalnumpoints=range2*range1
-        #print("range1", range1)
+        print("range1", range1)
         print("Number of surfacepoints to calculate ", totalnumpoints)
     elif dimension==1:
         totalnumpoints=math.ceil(abs((RC1_range[0]-RC1_range[1])/RC1_range[2]))
         print("Number of surfacepoints to calculate ", totalnumpoints)
     
-    
+    #Create lists of point-values
+    RCvalue1_list=list(frange(RC1_range[0],RC1_range[1],RC1_range[2]))
+    RCvalue1_list.append(RC1_range[2])    #Adding last value to list
+    RCvalue2_list=list(frange(RC2_range[0],RC2_range[1],RC2_range[2]))
+    RCvalue2_list.append(RC2_range[2])    #Adding last value to list
+    print("RCvalue1_list: ", RCvalue1_list)
+    print("RCvalue2_list: ", RCvalue2_list)
     #Read dict from file. If file exists, read entries, if not, return empty dict
     surfacedictionary = read_surfacedict_from_file(resultfile, dimension=dimension)
     print("Initial surfacedictionary :", surfacedictionary)
@@ -104,8 +110,8 @@ def calc_surface(fragment=None, theory=None, workflow=None, scantype='Unrelaxed'
         if scantype=='Unrelaxed':
             if dimension == 2:
                 zerotheory = ash.ZeroTheory()
-                for RCvalue1 in list(frange(RC1_range[0],RC1_range[1],RC1_range[2])):
-                    for RCvalue2 in list(frange(RC2_range[0],RC2_range[1],RC2_range[2])):
+                for RCvalue1 in RCvalue1_list:
+                    for RCvalue2 in RCvalue2_list:
                         pointcount+=1
                         print("=======================================")
                         print("Surfacepoint: {} / {}".format(pointcount,totalnumpoints))
@@ -166,8 +172,8 @@ def calc_surface(fragment=None, theory=None, workflow=None, scantype='Unrelaxed'
         if scantype=='Unrelaxed':
             zerotheory = ash.ZeroTheory()
             if dimension == 2:
-                for RCvalue1 in list(frange(RC1_range[0],RC1_range[1],RC1_range[2])):
-                    for RCvalue2 in list(frange(RC2_range[0],RC2_range[1],RC2_range[2])):
+                for RCvalue1 in RCvalue1_list:
+                    for RCvalue2 in RCvalue2_list:
                         pointcount+=1
                         print("==================================================")
                         print("Surfacepoint: {} / {}".format(pointcount,totalnumpoints))
@@ -205,7 +211,7 @@ def calc_surface(fragment=None, theory=None, workflow=None, scantype='Unrelaxed'
                     print("surfacedictionary:", surfacedictionary)
                     
             elif dimension == 1:
-                for RCvalue1 in list(frange(RC1_range[0],RC1_range[1],RC1_range[2])):
+                for RCvalue1 in RCvalue1_list:
                     pointcount+=1
                     print("==================================================")
                     print("Surfacepoint: {} / {}".format(pointcount,totalnumpoints))
@@ -241,8 +247,8 @@ def calc_surface(fragment=None, theory=None, workflow=None, scantype='Unrelaxed'
         elif scantype=='Relaxed':
             zerotheory = ash.ZeroTheory()
             if dimension == 2:
-                for RCvalue1 in list(frange(RC1_range[0],RC1_range[1],RC1_range[2])):
-                    for RCvalue2 in list(frange(RC2_range[0],RC2_range[1],RC2_range[2])):
+                for RCvalue1 in RCvalue1_list:
+                    for RCvalue2 in RCvalue2_list:
                         pointcount+=1
                         print("==================================================")
                         print("Surfacepoint: {} / {}".format(pointcount,totalnumpoints))
@@ -273,7 +279,7 @@ def calc_surface(fragment=None, theory=None, workflow=None, scantype='Unrelaxed'
                             print("RC1, RC2 values in dict already. Skipping.")
                     print("surfacedictionary:", surfacedictionary)
             elif dimension == 1:
-                for RCvalue1 in list(frange(RC1_range[0],RC1_range[1],RC1_range[2])):
+                for RCvalue1 in RCvalue1_list:
                     pointcount+=1
                     print("==================================================")
                     print("Surfacepoint: {} / {}".format(pointcount,totalnumpoints))
