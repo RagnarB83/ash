@@ -364,7 +364,23 @@ def calc_surface_fromXYZ(xyzdir=None, theory=None, dimension=None, resultfile=No
 
     #Case Relaxed Scan: Create directory to keep track of optimized surface XYZ files
     if scantype=="Relaxed":
-        os.mkdir('surface_xyzfiles') 
+        try:
+            os.mkdir('surface_xyzfiles') 
+        except FileExistsError:
+            print("")
+            print(BC.FAIL,"surface_xyzfiles directory exist already in dir. Please remove it", BC.END)
+            exit()
+
+    #Create directory to keep track of surface outfiles
+    try:
+        os.mkdir('surface_outfiles')
+    except FileExistsError:
+        print("")
+        print(BC.FAIL,"surface_outfiles directory exist already in dir. Please remove it", BC.END)
+        exit()
+
+
+
 
 
     #Points
