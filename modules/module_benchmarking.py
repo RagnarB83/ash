@@ -239,10 +239,10 @@ def run_benchmark(set=None, theory=None, property='energy', workflow=None, orcad
                     
                     all_calc_energies[file] = energy
                     reaction.totalenergies.append(energy)
-                    shutil.copyfile('orca-input.out', './' + file  + '.out')
+                    shutil.copyfile(theory.filename+'.out', './' + file  + '.out')
                     
                     #If reuseorbs False (default) then delete ORCA files in each step
-                    #If True, keep file, including orca-input.gbw which enables Autostart
+                    #If True, keep file, including orcat.gbw which enables Autostart
                     if reuseorbs is False:
                         theory.cleanup()
                     print("")

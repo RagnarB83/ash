@@ -582,8 +582,8 @@ end"""
         print("Elfrag dict ", Elfrag.__dict__)
         ash.Singlepoint(theory=ORCASPcalculation,fragment=Elfrag)
         #Preserve outputfile and GBW file for each element
-        shutil.copyfile('orca-input.out', './' + str(el) + '.out')
-        shutil.copyfile('orca-input.gbw', './' + str(el) + '.gbw')
+        shutil.copyfile(ORCASPcalculation.filename+'.out', './' + str(el) + '.out')
+        shutil.copyfile(ORCASPcalculation.filename+'.gbw', './' + str(el) + '.gbw')
 
         #Create molden file from el.gbw
         sp.call([theory.orcadir+'/orca_2mkl', el, '-molden'])

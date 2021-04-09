@@ -1798,7 +1798,7 @@ def PhotoElectronSpectrum(theory=None, fragment=None, Initialstate_charge=None, 
         if EOM is not True:
             print(bcolors.OKGREEN, "Calculating Initial State SCF.",bcolors.ENDC)
             finalsinglepointenergy = ash.Singlepoint(fragment=fragment, theory=theory)
-            stability = check_stability_in_output("orca-input.out")
+            stability = check_stability_in_output(theory.filename+'.out')
             if stability is False and check_stability is True:
                 print("PES: Unstable initial state. Exiting...")
                 exit()
@@ -1826,22 +1826,22 @@ def PhotoElectronSpectrum(theory=None, fragment=None, Initialstate_charge=None, 
         #Note: Using SCF energy and not Final Single Point energy (does not work for TDDFT)
         if CAS is True:
             print("here")
-            stateI.energy=casscfenergygrab("orca-input.out")
+            stateI.energy=casscfenergygrab(theory.filename+'.out')
             print("stateI.energy: ", stateI.energy)
 
             #Get orbital ranges (stateI is sufficient)
-            internal_orbs,active_orbs,external_orbs = casscf_orbitalranges_grab("orca-input.out")
+            internal_orbs,active_orbs,external_orbs = casscf_orbitalranges_grab(theory.filename+'.out')
         elif MRCI is True or MREOM is True:
             stateI.energy=finalsinglepointenergy
             print("stateI.energy: ", stateI.energy)
 
             #Get orbital ranges (stateI is sufficient)
-            internal_orbs,active_orbs,external_orbs = casscf_orbitalranges_grab("orca-input.out")
+            internal_orbs,active_orbs,external_orbs = casscf_orbitalranges_grab(theory.filename+'.out')
         elif EOM is True:
             #No separate initial-state calc when doing EOM
             pass
         else:
-            stateI.energy=scfenergygrab("orca-input.out")
+            stateI.energy=scfenergygrab(theory.filename+'.out')
 
 
         #Saveing GBW/out/in files
@@ -1931,7 +1931,7 @@ def PhotoElectronSpectrum(theory=None, fragment=None, Initialstate_charge=None, 
 
 
                 #Grab EOM-IPs and dominant singles amplitudes
-                IPs, amplitudes = grabEOMIPs("orca-input.out")
+                IPs, amplitudes = grabEOMIPs(theory.filename+'.out')
                 print("IPs:", IPs)
                 print("Dominant singles EOM amplitudes:", amplitudes)
                 
@@ -2011,7 +2011,7 @@ def PhotoElectronSpectrum(theory=None, fragment=None, Initialstate_charge=None, 
             ash.Singlepoint(fragment=fragment, theory=theory)
 
             #Getting state-energies of all states for each spin multiplicity (state-averaged calculation)
-            fstates_dict = casscf_state_energies_grab("orca-input.out")
+            fstates_dict = casscf_state_energies_grab(theory.filename+'.out')
             print("fstates_dict: ", fstates_dict)
 
             # Saveing GBW and CIS file
@@ -2085,9 +2085,9 @@ def PhotoElectronSpectrum(theory=None, fragment=None, Initialstate_charge=None, 
 
             #Getting state-energies of all states for each spin multiplicity. MRCI vs. SORCI
             if SORCI is True:
-                fstates_dict = mrci_state_energies_grab("orca-input.out", SORCI=True)
+                fstates_dict = mrci_state_energies_grab(theory.filename+'.out', SORCI=True)
             else:
-                fstates_dict = mrci_state_energies_grab("orca-input.out")
+                fstates_dict = mrci_state_energies_grab(theory.filename+'.out')
             # Saveing GBW and CIS file
             shutil.copyfile(theory.filename + '.gbw', './' + 'Final_State' + '.gbw')
             shutil.copyfile(theory.filename + '.out', './' + 'Final_State' + '.out')
@@ -2125,13 +2125,13 @@ def PhotoElectronSpectrum(theory=None, fragment=None, Initialstate_charge=None, 
 
 
                 ash.Singlepoint(fragment=fragment, theory=theory)
-                stability = check_stability_in_output("orca-input.out")
+                stability = check_stability_in_output(theory.filename+'.out')
                 if stability is False and check_stability is True:
                     print("PES: Unstable final state. Exiting...")
                     exit()
                 
                 
-                fstate.energy = scfenergygrab("orca-input.out")
+                fstate.energy = scfenergygrab(theory.filename+'.out')
                 #Saveing GBW and CIS file
                 shutil.copyfile(theory.filename + '.gbw', './' + 'Final_State_mult' + str(fstate.mult) + '.gbw')
                 shutil.copyfile(theory.filename + '.cis', './' + 'Final_State_mult' + str(fstate.mult) + '.cis')
@@ -2604,8 +2604,8 @@ def PhotoElectronSpectrum(theory=None, fragment=None, Initialstate_charge=None, 
 
                     ash.Singlepoint(fragment=fragment, theory=theory)
                     # TDDFT state done. Renaming cisp and cisr files
-                    os.rename('orca-input.cisp', 'Final_State_mult' + str(fstate.mult)+'TDDFTstate_'+str(tddftstate)+'.cisp')
-                    os.rename('orca-input.cisr', 'Final_State_mult' + str(fstate.mult)+'TDDFTstate_'+str(tddftstate)+'.cisr')
+                    os.rename(theory.filename+'.cisp', 'Final_State_mult' + str(fstate.mult)+'TDDFTstate_'+str(tddftstate)+'.cisp')
+                    os.rename(theory.filename+'.cisr', 'Final_State_mult' + str(fstate.mult)+'TDDFTstate_'+str(tddftstate)+'.cisr')
                     print("Calling orca_plot to create Cube-file for Final state TDDFT-state.")
 
                     #Doing spin-density Cubefilefor each cisr file

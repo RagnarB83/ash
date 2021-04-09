@@ -1270,7 +1270,7 @@ def calc_model_Hessian_ORCA(fragment,model='Almloef'):
     shiftpar=0
     lastchunk=False
     grabsize=False
-    with open("orca-input.opt") as optfile:
+    with open(orcadummycalc.filename+'.opt') as optfile:
         for line in optfile:
             if '$bmatrix' in line:
                 hesstake=False

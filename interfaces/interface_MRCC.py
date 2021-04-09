@@ -4,12 +4,12 @@ import subprocess as sp
 
 #MRCC Theory object. Fragment object is optional. Used??
 class MRCCTheory:
-    def __init__(self, mrccdir=None, fragment=None, charge=None, mult=None, printlevel=2,
+    def __init__(self, mrccdir=None, filename='mrcc', fragment=None, charge=None, mult=None, printlevel=2,
                 mrccinput=None, nprocs=1):
 
         #Printlevel
         self.printlevel=printlevel
-        self.filename="mrcc"
+        self.filename=filename
         self.mrccdir=mrccdir
         self.charge=charge
         self.mult=mult
