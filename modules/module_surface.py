@@ -106,7 +106,7 @@ def calc_surface(fragment=None, theory=None, workflow=None, scantype='Unrelaxed'
         os.mkdir('surface_fragfiles')
     except FileExistsError:
         print("")
-        print(BC.FAIL,"surface_xyzfiles, surface_fragfiles or surface_outfiles directories exist already in dir. Please remove them", BC.END)
+        print(BC.FAIL,"surface_xyzfiles, surface_fragfiles and surface_outfiles directories exist already in dir. Please remove them", BC.END)
         exit()
 
     #PARALLEL CALCULATION
