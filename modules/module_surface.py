@@ -82,9 +82,9 @@ def calc_surface(fragment=None, theory=None, workflow=None, scantype='Unrelaxed'
     
     #Create lists of point-values
     RCvalue1_list=list(frange(RC1_range[0],RC1_range[1],RC1_range[2]))
-    RCvalue1_list.append(RC1_range[2])    #Adding last specified value to list also
+    RCvalue1_list.append(RC1_range[1])    #Adding last specified value to list also
     RCvalue2_list=list(frange(RC2_range[0],RC2_range[1],RC2_range[2]))
-    RCvalue2_list.append(RC2_range[2])    #Adding last specified value to list also
+    RCvalue2_list.append(RC2_range[1])    #Adding last specified value to list also
     print("RCvalue1_list: ", RCvalue1_list)
     print("RCvalue2_list: ", RCvalue2_list)
     #Read dict from file. If file exists, read entries, if not, return empty dict
