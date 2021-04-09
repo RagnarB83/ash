@@ -192,7 +192,7 @@ def calc_surface(fragment=None, theory=None, workflow=None, scantype='Unrelaxed'
                                 energy = ash.Singlepoint(fragment=fragment, theory=theory)
                                 print("RCvalue1: {} RCvalue2: {} Energy: {}".format(RCvalue1,RCvalue2, energy))
                                 if keepoutputfiles == True:
-                                    shutil.copyfile(theory.filename+'.out', 'surface_outfiles/QM_'+pointlabel+'.out')
+                                    shutil.copyfile(theory.filename+'.out', 'surface_outfiles/'+str(theory.filename)+'_'+pointlabel+'.out')
                             surfacedictionary[(RCvalue1,RCvalue2)] = energy
 
                             #Writing dictionary to file
@@ -227,7 +227,7 @@ def calc_surface(fragment=None, theory=None, workflow=None, scantype='Unrelaxed'
                         energy = ash.Singlepoint(fragment=fragment, theory=theory)
                         print("RCvalue1: {} Energy: {}".format(RCvalue1,energy))
                         if keepoutputfiles == True:
-                            shutil.copyfile(theory.filename+'.out', 'surface_outfiles/QM_'+pointlabel+'.out')
+                            shutil.copyfile(theory.filename+'.out', 'surface_outfiles/'+str(theory.filename)+'_'+pointlabel+'.out')
                         surfacedictionary[(RCvalue1)] = energy
                         #Writing dictionary to file
                         write_surfacedict_to_file(surfacedictionary,"surface_results.txt", dimension=1)
@@ -256,7 +256,7 @@ def calc_surface(fragment=None, theory=None, workflow=None, scantype='Unrelaxed'
                             energy = interface_geometric.geomeTRICOptimizer(fragment=fragment, theory=theory, maxiter=maxiter, coordsystem=coordsystem, constraints=allconstraints, constrainvalue=True, convergence_setting=convergence_setting)
                             print("RCvalue1: {} RCvalue2: {} Energy: {}".format(RCvalue1,RCvalue2, energy))
                             if keepoutputfiles == True:
-                                shutil.copyfile(theory.filename+'.out', 'surface_outfiles/QM_'+pointlabel+'.out')
+                                shutil.copyfile(theory.filename+'.out', 'surface_outfiles/'+str(theory.filename)+'_'+pointlabel+'.out')
                             surfacedictionary[(RCvalue1,RCvalue2)] = energy
                             #Writing dictionary to file
                             write_surfacedict_to_file(surfacedictionary,"surface_results.txt", dimension=2)
@@ -287,7 +287,7 @@ def calc_surface(fragment=None, theory=None, workflow=None, scantype='Unrelaxed'
                         energy = interface_geometric.geomeTRICOptimizer(fragment=fragment, theory=theory, maxiter=maxiter, coordsystem=coordsystem, constraints=allconstraints, constrainvalue=True, convergence_setting=convergence_setting)
                         print("RCvalue1: {} Energy: {}".format(RCvalue1, energy))
                         if keepoutputfiles == True:
-                            shutil.copyfile(theory.filename+'.out', 'surface_outfiles/QM_'+pointlabel+'.out')
+                            shutil.copyfile(theory.filename+'.out', 'surface_outfiles/'+str(theory.filename)+'_'+pointlabel+'.out')
                         surfacedictionary[(RCvalue1)] = energy
                         #Writing dictionary to file
                         write_surfacedict_to_file(surfacedictionary,"surface_results.txt", dimension=1)
@@ -482,7 +482,7 @@ def calc_surface_fromXYZ(xyzdir=None, theory=None, dimension=None, resultfile=No
                     
                     print("Energy of file {} : {} Eh".format(relfile, energy))
                     if keepoutputfiles == True:
-                        shutil.copyfile(theory.filename+'.out', 'surface_outfiles/QM_'+pointlabel+'.out')
+                        shutil.copyfile(theory.filename+'.out', 'surface_outfiles/'+str(theory.filename)+'_'+pointlabel+'.out')
                     #theory.cleanup()
                     surfacedictionary[(RCvalue1,RCvalue2)] = energy
                     #Writing dictionary to file
@@ -516,7 +516,7 @@ def calc_surface_fromXYZ(xyzdir=None, theory=None, dimension=None, resultfile=No
                         
                     print("Energy of file {} : {} Eh".format(relfile, energy))
                     if keepoutputfiles == True:
-                        shutil.copyfile(theory.filename+'.out', 'surface_outfiles/QM_'+pointlabel+'.out')
+                        shutil.copyfile(theory.filename+'.out', 'surface_outfiles/'+str(theory.filename)+'_'+pointlabel+'.out')
                     #theory.cleanup()
                     surfacedictionary[(RCvalue1)] = energy
                     #Writing dictionary to file
