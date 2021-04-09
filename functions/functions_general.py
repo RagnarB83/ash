@@ -3,6 +3,7 @@ import os
 import numpy as np
 import time
 from functools import wraps
+import math
 
 #ANSI colors: http://jafrog.com/2013/11/23/colors-in-terminal.html
 if settings_ash.settings_dict["use_ANSI_color"] == True:
@@ -74,7 +75,8 @@ def listdiff(list1, list2):
     return diff
 
 # Range function for floats
-def frange(start, stop=None, step=None):
+#Using round to deal with floating-point problem : 0.6+0.3 =0.89999
+def frange(start, stop=None, step=None, rounddigits=4):
     # if stop and step argument is None set start=0.0 and step = 1.0
     start = float(start)
     if stop == None:
@@ -82,12 +84,11 @@ def frange(start, stop=None, step=None):
         start = 0.0
     if step == None:
         step = 1.0
-
     #print("start= ", start, "stop= ", stop, "step= ", step)
-
     count = 0
     while True:
-        temp = float(start + count * step)
+        temp = round(float(start + count * step),rounddigits)
+        #print("temp:", temp)
         if step > 0 and temp >= stop:
             break
         elif step < 0 and temp <= stop:

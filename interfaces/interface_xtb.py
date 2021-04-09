@@ -24,7 +24,7 @@ import module_coords
 
 
 class xTBTheory:
-    def __init__(self, xtbdir=None, fragment=None, charge=None, mult=None, xtbmethod=None, runmode='inputfile', nprocs=1, printlevel=2):
+    def __init__(self, xtbdir=None, fragment=None, charge=None, mult=None, xtbmethod=None, runmode='inputfile', nprocs=1, printlevel=2, filename='xtb_'):
 
         #Printlevel
         self.printlevel=printlevel
@@ -40,6 +40,7 @@ class xTBTheory:
             self.elems=fragment.elems
         self.charge=charge
         self.mult=mult
+        self.filename=filename
         self.xtbmethod=xtbmethod
         self.runmode=runmode
         if self.runmode=='library':
@@ -79,8 +80,8 @@ class xTBTheory:
         if self.printlevel >= 2:
             print("Cleaning up old xTB files")
         try:
-            os.remove('xtb-inpfile.xyz')
-            os.remove('xtb-inpfile.out')
+            os.remove(self.filename+'.xyz')
+            os.remove(self.filename+'.out')
             os.remove('gradient')
             os.remove('charges')
             os.remove('energy')
@@ -124,14 +125,14 @@ class xTBTheory:
                 print("Using inputfile-based xTB interface")
             #TODO: Add restart function so that xtbrestart is not always deleted
             #Create XYZfile with generic name for xTB to run
-            inputfilename="xtb-inpfile"
+            #inputfilename="xtb-inpfile"
             if self.printlevel >= 2:
-                print("Creating inputfile:", inputfilename+'.xyz')
+                print("Creating inputfile:", self.filename+'.xyz')
             num_qmatoms=len(current_coords)
             num_mmatoms=len(MMcharges)
             self.cleanup()
             #Todo: xtbrestart possibly. needs to be optional
-            module_coords.write_xyzfile(qm_elems, current_coords, inputfilename,printlevel=self.printlevel)
+            module_coords.write_xyzfile(qm_elems, current_coords, self.filename,printlevel=self.printlevel)
 
             #Run inputfile. Take nprocs argument.
             if self.printlevel >= 2:
@@ -140,16 +141,16 @@ class xTBTheory:
             if Grad==True:
                 if PC==True:
                     create_xtb_pcfile_general(current_MM_coords, MMcharges)
-                    run_xtb_SP_serial(self.xtbdir, self.xtbmethod, inputfilename + '.xyz', self.charge, self.mult, Grad=True)
+                    run_xtb_SP_serial(self.xtbdir, self.xtbmethod, self.filename + '.xyz', self.charge, self.mult, Grad=True)
                 else:
-                    run_xtb_SP_serial(self.xtbdir, self.xtbmethod, inputfilename + '.xyz', self.charge, self.mult,
+                    run_xtb_SP_serial(self.xtbdir, self.xtbmethod, self.filename + '.xyz', self.charge, self.mult,
                                   Grad=True)
             else:
                 if PC==True:
                     create_xtb_pcfile_general(current_MM_coords, MMcharges)
-                    run_xtb_SP_serial(self.xtbdir, self.xtbmethod, inputfilename + '.xyz', self.charge, self.mult)
+                    run_xtb_SP_serial(self.xtbdir, self.xtbmethod, self.filename + '.xyz', self.charge, self.mult)
                 else:
-                    run_xtb_SP_serial(self.xtbdir, self.xtbmethod, inputfilename + '.xyz', self.charge, self.mult)
+                    run_xtb_SP_serial(self.xtbdir, self.xtbmethod, self.filename + '.xyz', self.charge, self.mult)
 
             if self.printlevel >= 2:
                 print("------------xTB calculation done-----")
@@ -170,7 +171,7 @@ class xTBTheory:
                         print("------------ENDING XTB-INTERFACE-------------")
                     return self.energy, self.grad
             else:
-                outfile=inputfilename+'.out'
+                outfile=self.filename+'.out'
                 self.energy=xtbfinalenergygrab(outfile)
                 if self.printlevel >= 2:
                     print("xtb energy :", self.energy)

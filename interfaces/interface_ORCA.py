@@ -29,7 +29,7 @@ class ORCATheory:
         self.label=label
 
         #Create inputfile with generic name
-        self.filename="orca-input"
+        self.filename="orca"
 
         #MOREAD-file
         self.moreadfile=moreadfile

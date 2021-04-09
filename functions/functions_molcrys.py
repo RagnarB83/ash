@@ -1111,7 +1111,7 @@ def gasfragcalc_ORCA(fragmentobjects,Cluster,chargemodel,orcadir,orcasimpleinput
             atomcharges, molmoms, voldict = DDEC_calc(elems=gasfrag.elems, theory=ORCASPcalculation,
                                             ncores=NUMPROC, DDECmodel=chargemodel, molecule_charge=fragmentobject.Charge,
                                             molecule_spinmult=fragmentobject.Mult,
-                                            calcdir="DDEC_fragment"+str(id), gbwfile="orca-input.gbw")
+                                            calcdir="DDEC_fragment"+str(id), gbwfile=ORCASPcalculation.filename+'.gbw')
 
             print("atomcharges:", atomcharges)
             

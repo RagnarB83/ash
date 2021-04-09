@@ -1473,13 +1473,13 @@ end
     else:
         #Running both theories
         ash.Singlepoint(fragment=fragment, theory=ccsdt_1)
-        CCSDT_1_dict = interface_ORCA.grab_HF_and_corr_energies('orca-input.out', DLPNO=True)
-        shutil.copyfile('orca-input.out', './' + calc_label + 'CCSDT_1' + '.out')
+        CCSDT_1_dict = interface_ORCA.grab_HF_and_corr_energies(ccsdt_1.filename+'.out', DLPNO=True)
+        shutil.copyfile(ccsdt_1.filename+'.out', './' + calc_label + 'CCSDT_1' + '.out')
         print("CCSDT_1_dict:", CCSDT_1_dict)
 
         ash.Singlepoint(fragment=fragment, theory=ccsdt_2)
-        CCSDT_2_dict = interface_ORCA.grab_HF_and_corr_energies('orca-input.out', DLPNO=True)
-        shutil.copyfile('orca-input.out', './' + calc_label + 'CCSDT_2' + '.out')
+        CCSDT_2_dict = interface_ORCA.grab_HF_and_corr_energies(ccsdt_2.filename+'.out', DLPNO=True)
+        shutil.copyfile(ccsdt_2.filename+'.out', './' + calc_label + 'CCSDT_2' + '.out')
         print("CCSDT_2_dict:", CCSDT_2_dict)
 
         #List of all SCF energies (DZ,TZ,QZ), all CCSD-corr energies (DZ,TZ,QZ) and all (T) corr energies (DZ,TZ)
@@ -1560,7 +1560,7 @@ end
 
     #Cleanup GBW file. Full cleanup ??
     # TODO: Keep output files for each step
-    os.remove('orca-input.gbw')
+    os.remove(ccsdt_1.filename+'.gbw')
 
     #return final energy and also dictionary with energy components
     return E_FINAL, E_dict
@@ -2171,16 +2171,16 @@ def PNOExtrapolationStep(fragment=None, theory=None, pnoextrapolation=None, DLPN
     theory.orcablocks = PNOXblocks
     
     ash.Singlepoint(fragment=fragment, theory=theory)
-    resultdict_X = interface_ORCA.grab_HF_and_corr_energies('orca-input.out', DLPNO=DLPNO,F12=F12)
-    shutil.copyfile('orca-input.out', './' + calc_label + '_PNOX' + '.out')
+    resultdict_X = interface_ORCA.grab_HF_and_corr_energies(theory.filename+'.out', DLPNO=DLPNO,F12=F12)
+    shutil.copyfile(theory.filename+'.out', './' + calc_label + '_PNOX' + '.out')
     print("resultdict_X:", resultdict_X)
 
 
     
     theory.orcablocks = PNOYblocks
     ash.Singlepoint(fragment=fragment, theory=theory)
-    resultdict_Y = interface_ORCA.grab_HF_and_corr_energies('orca-input.out', DLPNO=DLPNO,F12=F12)
-    shutil.copyfile('orca-input.out', './' + calc_label + '_PNOY' + '.out')
+    resultdict_Y = interface_ORCA.grab_HF_and_corr_energies(theory.filename+'.out', DLPNO=DLPNO,F12=F12)
+    shutil.copyfile(theory.filename+'.out', './' + calc_label + '_PNOY' + '.out')
     print("resultdict_Y:", resultdict_Y)
     
     #Extrapolation to PNO limit
@@ -2209,9 +2209,9 @@ def CVSR_Step(cvbasis,reloption,ccsdtkeyword,auxbasis,pnooption,scfsetting,extra
     ccsdt_mtsmall_FC = interface_ORCA.ORCATheory(orcadir=orcadir, orcasimpleinput=ccsdt_mtsmall_FC_line, orcablocks=blocks, nprocs=numcores, charge=charge, mult=mult)
 
     energy_ccsdt_mtsmall_nofc = ash.Singlepoint(fragment=fragment, theory=ccsdt_mtsmall_NoFC)
-    shutil.copyfile('orca-input.out', './' + calc_label + 'CCSDT_MTsmall_NoFC_DKH' + '.out')
+    shutil.copyfile(ccsdt_mtsmall_NoFC.filename+'.out', './' + calc_label + 'CCSDT_MTsmall_NoFC_DKH' + '.out')
     energy_ccsdt_mtsmall_fc = ash.Singlepoint(fragment=fragment, theory=ccsdt_mtsmall_FC)
-    shutil.copyfile('orca-input.out', './' + calc_label + 'CCSDT_MTsmall_FC_noDKH' + '.out')
+    shutil.copyfile(ccsdt_mtsmall_NoFC.filename+'.out', './' + calc_label + 'CCSDT_MTsmall_FC_noDKH' + '.out')
 
     #Core-correlation is total energy difference between NoFC-DKH and FC-norel
     E_corecorr_and_SR = energy_ccsdt_mtsmall_nofc - energy_ccsdt_mtsmall_fc

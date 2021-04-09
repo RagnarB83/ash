@@ -12,13 +12,13 @@ import shutil
 import copy
 
 import ash
-from functions_general import frange
+from functions_general import frange, BC
 import interface_geometric
 from module_freq import calc_rotational_constants
 import functions_parallel
 
 # TODO: Finish parallelize surfacepoint calculations
-def calc_surface(fragment=None, theory=None, workflow=None, scantype='Unrelaxed', resultfile='surface_results.txt', 
+def calc_surface(fragment=None, theory=None, workflow=None, scantype='Unrelaxed', resultfile='surface_results.txt', keepoutputfiles=True,
                  runmode='serial', coordsystem='dlc', maxiter=50, extraconstraints=None, convergence_setting=None, **kwargs):
     """Calculate 1D/2D surface
 
@@ -73,14 +73,26 @@ def calc_surface(fragment=None, theory=None, workflow=None, scantype='Unrelaxed'
         range2=math.ceil(abs((RC2_range[0]-RC2_range[1])/RC2_range[2]))
         #print("range2", range2)
         range1=math.ceil(abs((RC1_range[0]-RC1_range[1])/RC1_range[2]))
-        totalnumpoints=range2*range1
-        #print("range1", range1)
-        print("Number of surfacepoints to calculate ", totalnumpoints)
+
+        #Create lists of point-values
+        RCvalue1_list=list(frange(RC1_range[0],RC1_range[1],RC1_range[2]))
+        RCvalue1_list.append(float(RC1_range[1]))    #Adding last specified value to list also
+        RCvalue2_list=list(frange(RC2_range[0],RC2_range[1],RC2_range[2]))
+        RCvalue2_list.append(float(RC2_range[1]))    #Adding last specified value to list also
+        print("RCvalue1_list: ", RCvalue1_list)
+        print("RCvalue2_list: ", RCvalue2_list)
+        totalnumpoints=len(RCvalue1_list)*len(RCvalue2_list)
+
     elif dimension==1:
-        totalnumpoints=math.ceil(abs((RC1_range[0]-RC1_range[1])/RC1_range[2]))
-        print("Number of surfacepoints to calculate ", totalnumpoints)
-    
-    
+        #totalnumpoints=math.ceil(abs((RC1_range[0]-RC1_range[1])/RC1_range[2]))
+        #Create lists of point-values
+        RCvalue1_list=list(frange(RC1_range[0],RC1_range[1],RC1_range[2]))
+        RCvalue1_list.append(float(RC1_range[1]))    #Adding last specified value to list also
+        print("RCvalue1_list: ", RCvalue1_list)
+        totalnumpoints=len(RCvalue1_list)
+
+    print("Number of surfacepoints to calculate ", totalnumpoints)
+
     #Read dict from file. If file exists, read entries, if not, return empty dict
     surfacedictionary = read_surfacedict_from_file(resultfile, dimension=dimension)
     print("Initial surfacedictionary :", surfacedictionary)
@@ -88,9 +100,15 @@ def calc_surface(fragment=None, theory=None, workflow=None, scantype='Unrelaxed'
     pointcount=0
     
     #Create directory to keep track of surface XYZ files
-    os.mkdir('surface_xyzfiles') 
-       
-    
+    try:
+        os.mkdir('surface_xyzfiles') 
+        os.mkdir('surface_outfiles')
+        os.mkdir('surface_fragfiles')
+    except FileExistsError:
+        print("")
+        print(BC.FAIL,"surface_xyzfiles, surface_fragfiles and surface_outfiles directories exist already in dir. Please remove them", BC.END)
+        exit()
+
     #PARALLEL CALCULATION
     if runmode=='parallel':
         print("Parallel runmode.")
@@ -98,13 +116,14 @@ def calc_surface(fragment=None, theory=None, workflow=None, scantype='Unrelaxed'
         if scantype=='Unrelaxed':
             if dimension == 2:
                 zerotheory = ash.ZeroTheory()
-                for RCvalue1 in list(frange(RC1_range[0],RC1_range[1],RC1_range[2])):
-                    for RCvalue2 in list(frange(RC2_range[0],RC2_range[1],RC2_range[2])):
+                for RCvalue1 in RCvalue1_list:
+                    for RCvalue2 in RCvalue2_list:
                         pointcount+=1
                         print("=======================================")
                         print("Surfacepoint: {} / {}".format(pointcount,totalnumpoints))
                         print("RCvalue1: {} RCvalue2: {}".format(RCvalue1,RCvalue2))
                         print("=======================================")
+                        pointlabel='RC1_'+str(RCvalue1)+'RC2_'+str(RCvalue2)
                         if (RCvalue1,RCvalue2) not in surfacedictionary:
                             #Now setting constraints
                             allconstraints = set_constraints(dimension=2, RCvalue1=RCvalue1, RCvalue2=RCvalue2, extraconstraints=extraconstraints,
@@ -117,10 +136,6 @@ def calc_surface(fragment=None, theory=None, workflow=None, scantype='Unrelaxed'
                             #newfrag.label = str(RCvalue1)+"_"+str(RCvalue2)
                             #Label can be tuple
                             newfrag.label = (RCvalue1,RCvalue2)
-                            
-                            
-                            
-                            
                             
                             newfrag.write_xyzfile(xyzfilename="RC1_"+str(RCvalue1)+"-RC2_"+str(RCvalue2)+".xyz")
                             shutil.move("RC1_"+str(RCvalue1)+"-RC2_"+str(RCvalue2)+".xyz", "surface_xyzfiles/RC1_"+str(RCvalue1)+"-RC2_"+str(RCvalue2)+".xyz")
@@ -163,15 +178,15 @@ def calc_surface(fragment=None, theory=None, workflow=None, scantype='Unrelaxed'
         if scantype=='Unrelaxed':
             zerotheory = ash.ZeroTheory()
             if dimension == 2:
-                for RCvalue1 in list(frange(RC1_range[0],RC1_range[1],RC1_range[2])):
-                    for RCvalue2 in list(frange(RC2_range[0],RC2_range[1],RC2_range[2])):
+                for RCvalue1 in RCvalue1_list:
+                    for RCvalue2 in RCvalue2_list:
                         pointcount+=1
                         print("==================================================")
                         print("Surfacepoint: {} / {}".format(pointcount,totalnumpoints))
                         print("RCvalue1: {} RCvalue2: {}".format(RCvalue1,RCvalue2))
                         print("Unrelaxed scan. Will use Zerotheory and geometric to set geometry.")
                         print("==================================================")
-                        
+                        pointlabel='RC1_'+str(RCvalue1)+'RC2_'+str(RCvalue2)
                         if (RCvalue1,RCvalue2) not in surfacedictionary:
                             #Now setting constraints
                             allconstraints = {}
@@ -185,11 +200,15 @@ def calc_surface(fragment=None, theory=None, workflow=None, scantype='Unrelaxed'
                             fragment.write_xyzfile(xyzfilename="RC1_"+str(RCvalue1)+"-RC2_"+str(RCvalue2)+".xyz")
                             fragment.print_system(filename="RC1_"+str(RCvalue1)+"-RC2_"+str(RCvalue2)+".ygg")
                             shutil.move("RC1_"+str(RCvalue1)+"-RC2_"+str(RCvalue2)+".xyz", "surface_xyzfiles/RC1_"+str(RCvalue1)+"-RC2_"+str(RCvalue2)+".xyz")
+                            shutil.move("RC1_"+str(RCvalue1)+"-RC2_"+str(RCvalue2)+".ygg", "surface_fragfiles/RC1_"+str(RCvalue1)+"-RC2_"+str(RCvalue2)+".ygg")
                             #Single-point ORCA calculation on adjusted geometry
                             if theory is not None:
                                 energy = ash.Singlepoint(fragment=fragment, theory=theory)
                                 print("RCvalue1: {} RCvalue2: {} Energy: {}".format(RCvalue1,RCvalue2, energy))
+                                if keepoutputfiles == True:
+                                    shutil.copyfile(theory.filename+'.out', 'surface_outfiles/'+str(theory.filename)+'_'+pointlabel+'.out')
                             surfacedictionary[(RCvalue1,RCvalue2)] = energy
+
                             #Writing dictionary to file
                             write_surfacedict_to_file(surfacedictionary,"surface_results.txt", dimension=2)
                             calc_rotational_constants(fragment)
@@ -198,14 +217,14 @@ def calc_surface(fragment=None, theory=None, workflow=None, scantype='Unrelaxed'
                     print("surfacedictionary:", surfacedictionary)
                     
             elif dimension == 1:
-                for RCvalue1 in list(frange(RC1_range[0],RC1_range[1],RC1_range[2])):
+                for RCvalue1 in RCvalue1_list:
                     pointcount+=1
                     print("==================================================")
                     print("Surfacepoint: {} / {}".format(pointcount,totalnumpoints))
                     print("RCvalue1: {}".format(RCvalue1))
                     print("Unrelaxed scan. Will use Zerotheory and geometric to set geometry.")
                     print("==================================================")
-                    
+                    pointlabel='RC1_'+str(RCvalue1)
                     if (RCvalue1) not in surfacedictionary:
                         #Now setting constraints
                         allconstraints = set_constraints(dimension=1, RCvalue1=RCvalue1, extraconstraints=extraconstraints,
@@ -218,9 +237,12 @@ def calc_surface(fragment=None, theory=None, workflow=None, scantype='Unrelaxed'
                         fragment.write_xyzfile(xyzfilename="RC1_"+str(RCvalue1)+".xyz")
                         fragment.print_system(filename="RC1_"+str(RCvalue1)+".ygg")
                         shutil.move("RC1_"+str(RCvalue1)+".xyz", "surface_xyzfiles/"+"RC1_"+str(RCvalue1)+".xyz")
+                        shutil.move("RC1_"+str(RCvalue1)+".ygg", "surface_fragfiles/"+"RC1_"+str(RCvalue1)+".ygg")
                         #Single-point ORCA calculation on adjusted geometry
                         energy = ash.Singlepoint(fragment=fragment, theory=theory)
                         print("RCvalue1: {} Energy: {}".format(RCvalue1,energy))
+                        if keepoutputfiles == True:
+                            shutil.copyfile(theory.filename+'.out', 'surface_outfiles/'+str(theory.filename)+'_'+pointlabel+'.out')
                         surfacedictionary[(RCvalue1)] = energy
                         #Writing dictionary to file
                         write_surfacedict_to_file(surfacedictionary,"surface_results.txt", dimension=1)
@@ -231,14 +253,15 @@ def calc_surface(fragment=None, theory=None, workflow=None, scantype='Unrelaxed'
         elif scantype=='Relaxed':
             zerotheory = ash.ZeroTheory()
             if dimension == 2:
-                for RCvalue1 in list(frange(RC1_range[0],RC1_range[1],RC1_range[2])):
-                    for RCvalue2 in list(frange(RC2_range[0],RC2_range[1],RC2_range[2])):
+                for RCvalue1 in RCvalue1_list:
+                    for RCvalue2 in RCvalue2_list:
                         pointcount+=1
                         print("==================================================")
                         print("Surfacepoint: {} / {}".format(pointcount,totalnumpoints))
                         print("RCvalue1: {} RCvalue2: {}".format(RCvalue1,RCvalue2))
                         print("Relaxed scan. Will relax geometry using theory level with the included contraints.")
                         print("==================================================")
+                        pointlabel='RC1_'+str(RCvalue1)+'RC2_'+str(RCvalue2)
                         if (RCvalue1,RCvalue2) not in surfacedictionary:
                             #Now setting constraints
                             allconstraints = set_constraints(dimension=2, RCvalue1=RCvalue1, RCvalue2=RCvalue2, extraconstraints=extraconstraints,
@@ -247,6 +270,8 @@ def calc_surface(fragment=None, theory=None, workflow=None, scantype='Unrelaxed'
                             #Running 
                             energy = interface_geometric.geomeTRICOptimizer(fragment=fragment, theory=theory, maxiter=maxiter, coordsystem=coordsystem, constraints=allconstraints, constrainvalue=True, convergence_setting=convergence_setting)
                             print("RCvalue1: {} RCvalue2: {} Energy: {}".format(RCvalue1,RCvalue2, energy))
+                            if keepoutputfiles == True:
+                                shutil.copyfile(theory.filename+'.out', 'surface_outfiles/'+str(theory.filename)+'_'+pointlabel+'.out')
                             surfacedictionary[(RCvalue1,RCvalue2)] = energy
                             #Writing dictionary to file
                             write_surfacedict_to_file(surfacedictionary,"surface_results.txt", dimension=2)
@@ -255,19 +280,19 @@ def calc_surface(fragment=None, theory=None, workflow=None, scantype='Unrelaxed'
                             fragment.write_xyzfile(xyzfilename="RC1_"+str(RCvalue1)+"-RC2_"+str(RCvalue2)+".xyz")
                             fragment.print_system(filename="RC1_"+str(RCvalue1)+"-RC2_"+str(RCvalue2)+".ygg")
                             shutil.move("RC1_"+str(RCvalue1)+"-RC2_"+str(RCvalue2)+".xyz", "surface_xyzfiles/RC1_"+str(RCvalue1)+"-RC2_"+str(RCvalue2)+".xyz")
-
+                            shutil.move("RC1_"+str(RCvalue1)+"-RC2_"+str(RCvalue2)+".ygg", "surface_fragfiles/RC1_"+str(RCvalue1)+"-RC2_"+str(RCvalue2)+".ygg")
                         else:
                             print("RC1, RC2 values in dict already. Skipping.")
                     print("surfacedictionary:", surfacedictionary)
             elif dimension == 1:
-                for RCvalue1 in list(frange(RC1_range[0],RC1_range[1],RC1_range[2])):
+                for RCvalue1 in RCvalue1_list:
                     pointcount+=1
                     print("==================================================")
                     print("Surfacepoint: {} / {}".format(pointcount,totalnumpoints))
                     print("RCvalue1: {}".format(RCvalue1))
                     print("Relaxed scan. Will relax geometry using theory level with the included contraints.")
                     print("==================================================")
-                    
+                    pointlabel='RC1_'+str(RCvalue1)
                     if (RCvalue1) not in surfacedictionary:
                         #Now setting constraints
                         allconstraints = set_constraints(dimension=1, RCvalue1=RCvalue1, extraconstraints=extraconstraints,
@@ -276,6 +301,8 @@ def calc_surface(fragment=None, theory=None, workflow=None, scantype='Unrelaxed'
                         #Running zero-theory with optimizer just to set geometry
                         energy = interface_geometric.geomeTRICOptimizer(fragment=fragment, theory=theory, maxiter=maxiter, coordsystem=coordsystem, constraints=allconstraints, constrainvalue=True, convergence_setting=convergence_setting)
                         print("RCvalue1: {} Energy: {}".format(RCvalue1, energy))
+                        if keepoutputfiles == True:
+                            shutil.copyfile(theory.filename+'.out', 'surface_outfiles/'+str(theory.filename)+'_'+pointlabel+'.out')
                         surfacedictionary[(RCvalue1)] = energy
                         #Writing dictionary to file
                         write_surfacedict_to_file(surfacedictionary,"surface_results.txt", dimension=1)
@@ -285,6 +312,7 @@ def calc_surface(fragment=None, theory=None, workflow=None, scantype='Unrelaxed'
                         fragment.write_xyzfile(xyzfilename="RC1_"+str(RCvalue1)+".xyz")
                         fragment.print_system(filename="RC1_"+str(RCvalue1)+".ygg")
                         shutil.move("RC1_"+str(RCvalue1)+".xyz", "surface_xyzfiles/"+"RC1_"+str(RCvalue1)+".xyz")
+                        shutil.move("RC1_"+str(RCvalue1)+".ygg", "surface_fragfiles/"+"RC1_"+str(RCvalue1)+".ygg")
                     else:
                         print("RC1 value in dict already. Skipping.")
     return surfacedictionary
@@ -295,7 +323,7 @@ def calc_surface(fragment=None, theory=None, workflow=None, scantype='Unrelaxed'
 # TODO: Option to keep theory-level programoutput. Add option here. Call theory.keep_output or something after each point??
 def calc_surface_fromXYZ(xyzdir=None, theory=None, dimension=None, resultfile=None, scantype='Unrelaxed',runmode='serial',
                          coordsystem='dlc', maxiter=50, extraconstraints=None, convergence_setting=None, numcores=None,
-                         RC1_type=None, RC2_type=None, RC1_indices=None, RC2_indices=None):
+                         RC1_type=None, RC2_type=None, RC1_indices=None, RC2_indices=None, keepoutputfiles=True):
     """Calculate 1D/2D surface from XYZ files
 
     Args:
@@ -443,7 +471,7 @@ def calc_surface_fromXYZ(xyzdir=None, theory=None, dimension=None, resultfile=No
                 start="RC1_"; end="-RC2_"
                 RCvalue1=float(relfile.split(start)[1].split(end)[0])
                 RCvalue2=float(relfile.split(end)[1].split(".xyz")[0])
-
+                pointlabel='RC1_'+str(RCvalue1)+'RC2_'+str(RCvalue2)
                 print("==================================================================")
                 print("Surfacepoint: {} / {}".format(count+1,totalnumpoints))
                 print("XYZ-file: {}     RC1: {}   RC2: {}".format(relfile,RCvalue1,RCvalue2))
@@ -466,9 +494,11 @@ def calc_surface_fromXYZ(xyzdir=None, theory=None, dimension=None, resultfile=No
                         fragment.write_xyzfile(xyzfilename="RC1_"+str(RCvalue1)+"-RC2_"+str(RCvalue2)+".xyz")
                         fragment.print_system(filename="RC1_"+str(RCvalue1)+"-RC2_"+str(RCvalue2)+".ygg")
                         shutil.move("RC1_"+str(RCvalue1)+"-RC2_"+str(RCvalue2)+".xyz", "surface_xyzfiles/RC1_"+str(RCvalue1)+"-RC2_"+str(RCvalue2)+".xyz")
-                        
+                        shutil.move("RC1_"+str(RCvalue1)+"-RC2_"+str(RCvalue2)+".ygg", "surface_fragfiles/RC1_"+str(RCvalue1)+"-RC2_"+str(RCvalue2)+".ygg")
                     
                     print("Energy of file {} : {} Eh".format(relfile, energy))
+                    if keepoutputfiles == True:
+                        shutil.copyfile(theory.filename+'.out', 'surface_outfiles/'+str(theory.filename)+'_'+pointlabel+'.out')
                     #theory.cleanup()
                     surfacedictionary[(RCvalue1,RCvalue2)] = energy
                     #Writing dictionary to file
@@ -481,6 +511,7 @@ def calc_surface_fromXYZ(xyzdir=None, theory=None, dimension=None, resultfile=No
             elif dimension == 1:
                 #RC1_2.02.xyz
                 RCvalue1=float(relfile.replace('.xyz','').replace('RC1_',''))
+                pointlabel='RC1_'+str(RCvalue1)
                 print("XYZ-file: {}     RC1: {} ".format(relfile,RCvalue1))
                 if (RCvalue1) not in surfacedictionary:
                     mol=ash.Fragment(xyzfile=file)
@@ -498,8 +529,10 @@ def calc_surface_fromXYZ(xyzdir=None, theory=None, dimension=None, resultfile=No
                         fragment.write_xyzfile(xyzfilename="RC1_"+str(RCvalue1)+".xyz")
                         fragment.print_system(filename="RC1_"+str(RCvalue1)+".ygg")
                         shutil.move("RC1_"+str(RCvalue1)+".xyz", "surface_xyzfiles/"+"RC1_"+str(RCvalue1)+".xyz")
-                        
+                        shutil.move("RC1_"+str(RCvalue1)+".ygg", "surface_fragfiles/"+"RC1_"+str(RCvalue1)+".ygg")
                     print("Energy of file {} : {} Eh".format(relfile, energy))
+                    if keepoutputfiles == True:
+                        shutil.copyfile(theory.filename+'.out', 'surface_outfiles/'+str(theory.filename)+'_'+pointlabel+'.out')
                     #theory.cleanup()
                     surfacedictionary[(RCvalue1)] = energy
                     #Writing dictionary to file

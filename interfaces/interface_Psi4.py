@@ -17,9 +17,9 @@ from functions_general import BC
 # PE: Polarizable embedding (CPPE). Pass pe_modulesettings dict as well
 class Psi4Theory:
     def __init__(self, fragment=None, charge=None, mult=None, printsetting='False', psi4settings=None, psi4method=None,
-                 runmode='library', psi4dir=None, pe=False, potfile='', outputname='psi4output.dat', label='psi4input',
+                 runmode='library', psi4dir=None, pe=False, potfile='', filename='psi4_', label='psi4input',
                  psi4memory=3000, nprocs=1, printlevel=2,fchkwrite=False):
-
+        #outputname='psi4output.dat'
         #Printlevel
         self.printlevel=printlevel
 
@@ -27,7 +27,8 @@ class Psi4Theory:
         self.nprocs=nprocs
         self.psi4memory=psi4memory
         self.label=label
-        self.outputname=outputname
+        #self.outputname=outputname
+        self.filename=filename
         self.printsetting=printsetting
         self.runmode=runmode
         #CPPE Polarizable Embedding options
@@ -83,7 +84,7 @@ class Psi4Theory:
         print("Cleaning up old Psi4 files")
         try:
             os.remove('timer.dat')
-            os.remove('psi4output.dat')
+            os.remove(self.filename+'.out')
         except:
             pass
     #Run function. Takes coords, elems etc. arguments and computes E or E+G.
@@ -137,8 +138,8 @@ class Psi4Theory:
             if self.printsetting:
                 print("Printsetting = True. Printing output to stdout...")
             else:
-                print("Printsetting = False. Printing output to file: {}) ".format(self.outputname))
-                psi4.core.set_output_file(self.outputname, False)
+                print("Printsetting = False. Printing output to file: {}) ".format(self.filename+'.out'))
+                psi4.core.set_output_file(self.filename+'.out', False)
 
             #Psi4 scratch dir
             print("Setting Psi4 scratchdir to ", os.getcwd())
@@ -189,8 +190,8 @@ class Psi4Theory:
                 #Renameing orbital file
                 PID = str(os.getpid())
                 print("Restart Option On!")
-                print("Renaming lastrestart.180 to {}".format(os.path.splitext( self.outputname)[0] + '.default.' + PID + '.180.npy'))
-                os.rename('lastrestart.180', os.path.splitext( self.outputname)[0] + '.default.' + PID + '.180.npy')
+                print("Renaming lastrestart.180 to {}".format(os.path.splitext( self.filename+'.out')[0] + '.default.' + PID + '.180.npy'))
+                os.rename('lastrestart.180', os.path.splitext( self.filename+'.out')[0] + '.default.' + PID + '.180.npy')
             else:
                 self.psi4settings['guess'] = 'sad'
 
@@ -241,8 +242,8 @@ class Psi4Theory:
             #Keep restart file 180 as lastrestart.180
             PID = str(os.getpid())
             try:
-                print("Renaming {} to lastrestart.180".format(os.path.splitext(self.outputname)[0]+'.default.'+PID+'.180.npy'))
-                os.rename(os.path.splitext(self.outputname)[0]+'.default.'+PID+'.180.npy', 'lastrestart.180')
+                print("Renaming {} to lastrestart.180".format(os.path.splitext(self.filename+'.out')[0]+'.default.'+PID+'.180.npy'))
+                os.rename(os.path.splitext(self.filename+'.out')[0]+'.default.'+PID+'.180.npy', 'lastrestart.180')
             except:
                 pass
 

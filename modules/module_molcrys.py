@@ -494,7 +494,7 @@ def molcrys(cif_file=None, xtl_file=None, xyz_file=None, cell_length=None, cell_
                               orcablocks=theory.orcablocks, extraline=chargemodelline)
         #COPY LAST mainfrag orbitals here: called lastorbitals.gbw from gasfragcalc (mainfrag)
         #Necessary to avoid broken-sym SpinFlip but should be good in general
-        shutil.copyfile('lastorbitals.gbw', 'orca-input.gbw')
+        shutil.copyfile('lastorbitals.gbw', QMtheory.filename+',gbw')
 
     elif theory.__class__.__name__ == "xTBTheory":
         QMtheory = ash.xTBTheory(xtbdir=theory.xtbdir, charge=fragmentobjects[0].Charge, mult=fragmentobjects[0].Mult, xtbmethod=theory.xtbmethod)
@@ -537,7 +537,7 @@ def molcrys(cif_file=None, xtl_file=None, xyz_file=None, cell_length=None, cell_
         #Keeping the GBWfile
         if theory.__class__.__name__ == "ORCATheory":
             mainfrag_gbwfile="last_mainfrag.gbw"
-            shutil.copy('orca-input.gbw', mainfrag_gbwfile)
+            shutil.copy(QMtheory.filename+'.gbw', mainfrag_gbwfile)
 
         #Grab atomic charges for fragment.
         if theory.__class__.__name__ == "ORCATheory":
@@ -552,12 +552,12 @@ def molcrys(cif_file=None, xtl_file=None, xyz_file=None, cell_length=None, cell_
                 atomcharges, molmoms, voldict = DDEC_calc(elems=elemlist_mainfrag, theory=QMtheory,
                                                           ncores=numcores, DDECmodel=chargemodel,
                                                           molecule_spinmult=fragmentobjects[0].Mult, molecule_charge=fragmentobjects[0].Charge,
-                                                          calcdir="DDEC_fragment_SPloop" + str(SPLoopNum), gbwfile="orca-input.gbw")
+                                                          calcdir="DDEC_fragment_SPloop" + str(SPLoopNum), gbwfile=QMtheory.filename+'.gbw')
             else:
                 atomcharges = grabatomcharges_ORCA(chargemodel, QMtheory.filename + '.out')
             # Keep backup of ORCA outputfile in dir SPloop-files
-            shutil.copyfile('orca-input.out', './SPloop-files/mainfrag-SPloop' + str(SPLoopNum) + '.out')
-            shutil.copyfile('orca-input.pc', './SPloop-files/mainfrag-SPloop' + str(SPLoopNum) + '.pc')
+            shutil.copyfile(QMtheory.filename+'.out', './SPloop-files/mainfrag-SPloop' + str(SPLoopNum) + '.out')
+            shutil.copyfile(QMtheory.filename+'.pc', './SPloop-files/mainfrag-SPloop' + str(SPLoopNum) + '.pc')
             blankline()
         elif theory.__class__.__name__ == "xTBTheory":
             atomcharges = grabatomcharges_xTB()

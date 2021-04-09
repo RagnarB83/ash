@@ -7,7 +7,7 @@ from functions_general import BC
 import module_coords
 
 class DaltonTheory:
-    def __init__(self, daltondir=None, fragment=None, charge=None, mult=None, printlevel=2, nprocs=1, pe=False, potfile='',
+    def __init__(self, daltondir=None, filename='dalton', fragment=None, charge=None, mult=None, printlevel=2, nprocs=1, pe=False, potfile='',
                  label=None, method=None, response=None, dalton_input=None, basis_name=None,basis_dir=None):
         if daltondir is None:
             print("No daltondir argument passed to DaltonTheory. Attempting to find daltondir variable inside settings_ash module")
@@ -20,6 +20,8 @@ class DaltonTheory:
         else:
             print("Please provide basis_name to DaltonTheory object")
             exit()
+
+        self.filename=filename
 
         #Directory where basis sets are. If not defined, ASH will assume basis directory is one dir up
         self.basis_dir=basis_dir
@@ -142,7 +144,7 @@ class DaltonTheory:
             print("Using basis_dir:", self.basis_dir)
             os.environ['BASDIR'] = self.basis_dir
         def run_dalton_serial(daltondir):
-            with open("DALTON.OUT", 'w') as ofile:
+            with open(self.filename+'.out', 'w') as ofile:
                 
                 process = sp.run([daltondir + '/dalton.x'], check=True, stdout=ofile, stderr=ofile, universal_newlines=True)
             
@@ -151,12 +153,12 @@ class DaltonTheory:
         #Grab final energy
         #TODO: Support more than DFT energies
         #ALSO: Grab excitation energies etc
-        with open("DALTON.OUT") as outfile:
+        with open(self.filename+'.out') as outfile:
             for line in outfile:
                 if 'Final DFT energy:' in line:
                     self.energy=float(line.split()[-1])
         
         if self.energy==0.0:
-            print("Problem. Energy not found in output: DALTON.OUT")
+            print("Problem. Energy not found in output:", self.filename+'.out')
             exit()
         return self.energy

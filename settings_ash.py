@@ -91,5 +91,3 @@ try_read_setting("print_exit_footer","bool")
 try_read_setting("print_logo","bool")
 try_read_setting("debugflag","bool")
 try_read_setting("load_julia","bool")
-
-print("TEST RB")

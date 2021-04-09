@@ -4,17 +4,22 @@ import subprocess as sp
 
 #MRCC Theory object. Fragment object is optional. Used??
 class MRCCTheory:
-    def __init__(self, mrccdir=None, fragment=None, charge=None, mult=None, printlevel=2,
+    def __init__(self, mrccdir=None, filename='mrcc', fragment=None, charge=None, mult=None, printlevel=2,
                 mrccinput=None, nprocs=1):
 
         #Printlevel
         self.printlevel=printlevel
-        self.filename="mrcc"
+        self.filename=filename
         self.mrccdir=mrccdir
         self.charge=charge
         self.mult=mult
         self.mrccinput=mrccinput
         self.nprocs=nprocs
+
+
+    #TODO: Parallelization is enabled most easily by OMP_NUM_THREADS AND MKL_NUM_THREADS. NOt sure if we can control this here
+
+
 
     # Run function. Takes coords, elems etc. arguments and computes E or E+G.
     def run(self, current_coords=None, current_MM_coords=None, MMcharges=None, qm_elems=None,
@@ -25,7 +30,7 @@ class MRCCTheory:
 
         print(BC.OKBLUE, BC.BOLD, "------------RUNNING MRCC INTERFACE-------------", BC.END)
 
-        print("Running MRCC object with {} cores available".format(self.nprocs))
+        print("Running MRCC object. Will use threads if OMP_NUM_THREADS and MKL_NUM_THREAD environment variables")
         print("Job label:", label)
         print("Creating inputfile: MINP")
         print("MRCC input:")
@@ -92,18 +97,23 @@ def write_mrcc_input(mrccinput,charge,mult,elems,coords):
 
 def grab_energy_mrcc(outfile):
     #Option 1. Grabbing all lines containing energy in outputfile. Take last entry.
-    #Option 2: grab energy from iface file ???
-    linetograb="energy"
-    with open(outfile) as f:
+    # CURRENT Option 2: grab energy from iface file. Higher level WF entry should be last
+    with open("iface") as f:
         for line in f:
-            if linetograb.upper() in line.upper():
-                final=line
-    print(final)
-    try:
-        energy=float(final.split()[-1])
-    except:
-        print("Problem reading energy from MRCC outputfile. Check:", outfile)
-        exit()
+            if 'ENERGY' in line:
+                energy=float(line.split()[5])
+    
+    #linetograb="energy"
+    #with open(outfile) as f:
+    #    for line in f:
+    #        if linetograb.upper() in line.upper():
+    #            final=line
+    #print(final)
+    #try:
+    #    energy=float(final.split()[-1])
+    #except:
+    #    print("Problem reading energy from MRCC outputfile. Check:", outfile)
+    #    exit()
     return energy
 
 

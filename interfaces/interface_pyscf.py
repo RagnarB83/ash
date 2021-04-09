@@ -6,7 +6,7 @@ import module_coords
 # PE: Polarizable embedding (CPPE). Not completely active in PySCF 1.7.1. Bugfix required I think
 class PySCFTheory:
     def __init__(self, fragment='', charge='', mult='', printsetting='False', printlevel=2, pyscfbasis='', pyscffunctional='',
-                 pe=False, potfile='', outputname='pyscf.out', pyscfmemory=3100, nprocs=1):
+                 pe=False, potfile='', filename='pyscf', pyscfmemory=3100, nprocs=1):
 
 
         #Printlevel
@@ -15,7 +15,7 @@ class PySCFTheory:
         self.nprocs=nprocs
 
         self.pyscfmemory=pyscfmemory
-        self.outputname=outputname
+        self.filename=filename
         self.printsetting=printsetting
         #CPPE Polarizable Embedding options
         self.pe=pe
@@ -39,7 +39,7 @@ class PySCFTheory:
         print("Cleaning up old PySCF files")
         try:
             os.remove('timer.dat')
-            os.remove('pyscfoutput.dat')
+            os.remove(self.filename+'.dat')
         except:
             pass
     #Run function. Takes coords, elems etc. arguments and computes E or E+G.
@@ -140,8 +140,8 @@ class PySCFTheory:
             print("Printsetting = True. Printing output to stdout...")
             #np.set_printoptions(linewidth=500) TODO: not sure
         else:
-            print("Printsetting = False. Printing to:", self.outputname )
-            mf.stdout = open(self.outputname, 'w')
+            print("Printsetting = False. Printing to:", self.filename+'.out' )
+            mf.stdout = open(self.filename+'.out', 'w')
 
 
         #TODO: Restart settings for PySCF
