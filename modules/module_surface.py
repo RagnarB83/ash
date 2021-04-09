@@ -90,10 +90,11 @@ def calc_surface(fragment=None, theory=None, workflow=None, scantype='Unrelaxed'
     #Create directory to keep track of surface XYZ files
     try:
         os.mkdir('surface_xyzfiles') 
-        os.mkdir('surface_outfiles')   
+        os.mkdir('surface_outfiles')
+        os.mkdir('surface_fragfiles')
     except FileExistsError:
         print("")
-        print(BC.FAIL,"surface_xyzfiles or surface_outfiles directories exist already in dir. Please remove them", BC.END)
+        print(BC.FAIL,"surface_xyzfiles, surface_fragfiles or surface_outfiles directories exist already in dir. Please remove them", BC.END)
         exit()
 
     #PARALLEL CALCULATION
@@ -187,6 +188,7 @@ def calc_surface(fragment=None, theory=None, workflow=None, scantype='Unrelaxed'
                             fragment.write_xyzfile(xyzfilename="RC1_"+str(RCvalue1)+"-RC2_"+str(RCvalue2)+".xyz")
                             fragment.print_system(filename="RC1_"+str(RCvalue1)+"-RC2_"+str(RCvalue2)+".ygg")
                             shutil.move("RC1_"+str(RCvalue1)+"-RC2_"+str(RCvalue2)+".xyz", "surface_xyzfiles/RC1_"+str(RCvalue1)+"-RC2_"+str(RCvalue2)+".xyz")
+                            shutil.move("RC1_"+str(RCvalue1)+"-RC2_"+str(RCvalue2)+".ygg", "surface_fragfiles/RC1_"+str(RCvalue1)+"-RC2_"+str(RCvalue2)+".ygg")
                             #Single-point ORCA calculation on adjusted geometry
                             if theory is not None:
                                 energy = ash.Singlepoint(fragment=fragment, theory=theory)
@@ -223,6 +225,7 @@ def calc_surface(fragment=None, theory=None, workflow=None, scantype='Unrelaxed'
                         fragment.write_xyzfile(xyzfilename="RC1_"+str(RCvalue1)+".xyz")
                         fragment.print_system(filename="RC1_"+str(RCvalue1)+".ygg")
                         shutil.move("RC1_"+str(RCvalue1)+".xyz", "surface_xyzfiles/"+"RC1_"+str(RCvalue1)+".xyz")
+                        shutil.move("RC1_"+str(RCvalue1)+".ygg", "surface_fragfiles/"+"RC1_"+str(RCvalue1)+".ygg")
                         #Single-point ORCA calculation on adjusted geometry
                         energy = ash.Singlepoint(fragment=fragment, theory=theory)
                         print("RCvalue1: {} Energy: {}".format(RCvalue1,energy))
@@ -265,7 +268,7 @@ def calc_surface(fragment=None, theory=None, workflow=None, scantype='Unrelaxed'
                             fragment.write_xyzfile(xyzfilename="RC1_"+str(RCvalue1)+"-RC2_"+str(RCvalue2)+".xyz")
                             fragment.print_system(filename="RC1_"+str(RCvalue1)+"-RC2_"+str(RCvalue2)+".ygg")
                             shutil.move("RC1_"+str(RCvalue1)+"-RC2_"+str(RCvalue2)+".xyz", "surface_xyzfiles/RC1_"+str(RCvalue1)+"-RC2_"+str(RCvalue2)+".xyz")
-
+                            shutil.move("RC1_"+str(RCvalue1)+"-RC2_"+str(RCvalue2)+".ygg", "surface_fragfiles/RC1_"+str(RCvalue1)+"-RC2_"+str(RCvalue2)+".ygg")
                         else:
                             print("RC1, RC2 values in dict already. Skipping.")
                     print("surfacedictionary:", surfacedictionary)
@@ -297,6 +300,7 @@ def calc_surface(fragment=None, theory=None, workflow=None, scantype='Unrelaxed'
                         fragment.write_xyzfile(xyzfilename="RC1_"+str(RCvalue1)+".xyz")
                         fragment.print_system(filename="RC1_"+str(RCvalue1)+".ygg")
                         shutil.move("RC1_"+str(RCvalue1)+".xyz", "surface_xyzfiles/"+"RC1_"+str(RCvalue1)+".xyz")
+                        shutil.move("RC1_"+str(RCvalue1)+".ygg", "surface_fragfiles/"+"RC1_"+str(RCvalue1)+".ygg")
                     else:
                         print("RC1 value in dict already. Skipping.")
     return surfacedictionary
@@ -478,7 +482,7 @@ def calc_surface_fromXYZ(xyzdir=None, theory=None, dimension=None, resultfile=No
                         fragment.write_xyzfile(xyzfilename="RC1_"+str(RCvalue1)+"-RC2_"+str(RCvalue2)+".xyz")
                         fragment.print_system(filename="RC1_"+str(RCvalue1)+"-RC2_"+str(RCvalue2)+".ygg")
                         shutil.move("RC1_"+str(RCvalue1)+"-RC2_"+str(RCvalue2)+".xyz", "surface_xyzfiles/RC1_"+str(RCvalue1)+"-RC2_"+str(RCvalue2)+".xyz")
-                        
+                        shutil.move("RC1_"+str(RCvalue1)+"-RC2_"+str(RCvalue2)+".ygg", "surface_fragfiles/RC1_"+str(RCvalue1)+"-RC2_"+str(RCvalue2)+".ygg")
                     
                     print("Energy of file {} : {} Eh".format(relfile, energy))
                     if keepoutputfiles == True:
@@ -513,7 +517,7 @@ def calc_surface_fromXYZ(xyzdir=None, theory=None, dimension=None, resultfile=No
                         fragment.write_xyzfile(xyzfilename="RC1_"+str(RCvalue1)+".xyz")
                         fragment.print_system(filename="RC1_"+str(RCvalue1)+".ygg")
                         shutil.move("RC1_"+str(RCvalue1)+".xyz", "surface_xyzfiles/"+"RC1_"+str(RCvalue1)+".xyz")
-                        
+                        shutil.move("RC1_"+str(RCvalue1)+".ygg", "surface_fragfiles/"+"RC1_"+str(RCvalue1)+".ygg")
                     print("Energy of file {} : {} Eh".format(relfile, energy))
                     if keepoutputfiles == True:
                         shutil.copyfile(theory.filename+'.out', 'surface_outfiles/'+str(theory.filename)+'_'+pointlabel+'.out')
