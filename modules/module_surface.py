@@ -97,6 +97,14 @@ def calc_surface(fragment=None, theory=None, workflow=None, scantype='Unrelaxed'
     surfacedictionary = read_surfacedict_from_file(resultfile, dimension=dimension)
     print("Initial surfacedictionary :", surfacedictionary)
     
+    #
+    print("keepoutputfiles: ", keepoutputfiles)
+    print("keepmofiles: ", keepmofiles)
+
+
+
+
+
     pointcount=0
     
     #Create directory to keep track of surface XYZ files
@@ -523,7 +531,7 @@ def calc_surface_fromXYZ(xyzdir=None, theory=None, dimension=None, resultfile=No
                 
                 #Adding MO-file for point to theory level object if requested
                 if read_mofiles == True:
-                    print("Attempting to read MO-file: {} from dir: {}".format(mofilesdir+'/'+str(theory.filename)+'_'+pointlabel+'.gbw',mofilesdir))
+                    print("Will read MO-file: {}".format(mofilesdir+'/'+str(theory.filename)+'_'+pointlabel+'.gbw'))
                     if theory.__class__.__name__ == "ORCATheory":
                         theory.moreadfile=mofilesdir+'/'+str(theory.filename)+'_'+pointlabel+'.gbw'
 
@@ -573,7 +581,7 @@ def calc_surface_fromXYZ(xyzdir=None, theory=None, dimension=None, resultfile=No
 
                 #Adding MO-file for point to theory level object if requested
                 if read_mofiles == True:
-                    print("Attempting to read MO-file: {} from dir: {}".format(mofilesdir+'/'+str(theory.filename)+'_'+pointlabel+'.gbw',mofilesdir))
+                    print("Will read MO-file: {}".format(mofilesdir+'/'+str(theory.filename)+'_'+pointlabel+'.gbw'))
                     if theory.__class__.__name__ == "ORCATheory":
                         theory.moreadfile=mofilesdir+'/'+str(theory.filename)+'_'+pointlabel+'.gbw'
 
