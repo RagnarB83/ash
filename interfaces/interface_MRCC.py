@@ -1,6 +1,6 @@
 from functions_general import BC
 import subprocess as sp
-#MRCC interface. not ready
+import os
 
 #MRCC Theory object. Fragment object is optional. Used??
 class MRCCTheory:
@@ -31,6 +31,8 @@ class MRCCTheory:
         print(BC.OKBLUE, BC.BOLD, "------------RUNNING MRCC INTERFACE-------------", BC.END)
 
         print("Running MRCC object. Will use threads if OMP_NUM_THREADS and MKL_NUM_THREAD environment variables")
+        print("OMP_NUM_TREADS :", os.environ['OMP_NUM_THREADS'])
+        print("MKL_NUM_TREADS :", os.environ['MKL_NUM_THREADS'])
         print("Job label:", label)
         print("Creating inputfile: MINP")
         print("MRCC input:")

@@ -17,8 +17,12 @@ class BC:
 
 
 def load_matplotlib():
-    print("Loading Matplotlib")
-    import matplotlib
+    print("Trying to load Matplotlib")
+    try:
+        import matplotlib
+    except:
+        print("Loading MatplotLib failed. Probably not installed. Please install using conda: conda install matplotlib or pip: pip install matplotlib")
+        exit()
     matplotlib.use('Agg')
     import matplotlib.pyplot as plt 
     return plt

@@ -130,18 +130,18 @@ end
     ccsd_qz = interface_ORCA.ORCATheory(orcadir=orcadir, orcasimpleinput=ccsd_qz_line, orcablocks=blocks, nprocs=numcores, charge=charge, mult=mult)
 
     ash.Singlepoint(fragment=fragment, theory=ccsdt_dz)
-    CCSDT_DZ_dict = interface_ORCA.grab_HF_and_corr_energies('orca-input.out')
-    shutil.copyfile('orca-input.out', './' + calc_label + 'CCSDT_DZ' + '.out')
+    CCSDT_DZ_dict = interface_ORCA.grab_HF_and_corr_energies(ccsdt_dz.filename+'.out')
+    shutil.copyfile(ccsdt_dz.filename+'.out', './' + calc_label + 'CCSDT_DZ' + '.out')
     print("CCSDT_DZ_dict:", CCSDT_DZ_dict)
 
     ash.Singlepoint(fragment=fragment, theory=ccsdt_tz)
-    CCSDT_TZ_dict = interface_ORCA.grab_HF_and_corr_energies('orca-input.out')
-    shutil.copyfile('orca-input.out', './' + calc_label + 'CCSDT_TZ' + '.out')
+    CCSDT_TZ_dict = interface_ORCA.grab_HF_and_corr_energies(ccsdt_tz.filename+'.out')
+    shutil.copyfile(ccsdt_tz.filename+'.out', './' + calc_label + 'CCSDT_TZ' + '.out')
     print("CCSDT_TZ_dict:", CCSDT_TZ_dict)
 
     ash.Singlepoint(fragment=fragment, theory=ccsd_qz)
-    CCSD_QZ_dict = interface_ORCA.grab_HF_and_corr_energies('orca-input.out')
-    shutil.copyfile('orca-input.out', './' + calc_label + 'CCSD_QZ' + '.out')
+    CCSD_QZ_dict = interface_ORCA.grab_HF_and_corr_energies(ccsd_qz.filename+'.out')
+    shutil.copyfile(ccsd_qz.filename+'.out', './' + calc_label + 'CCSD_QZ' + '.out')
     print("CCSD_QZ_dict:", CCSD_QZ_dict)
 
     #List of all SCF energies (DZ,TZ,QZ), all CCSD-corr energies (DZ,TZ,QZ) and all (T) corr energies (DZ,TZ)
@@ -217,7 +217,7 @@ end
 
     #Cleanup GBW file. Full cleanup ??
     # TODO: Keep output files for each step
-    os.remove('orca-input.gbw')
+    os.remove(ccsdt_mtsmall_FC.filename+'.gbw')
 
     #return final energy and also dictionary with energy components
     return W1_total, E_dict
