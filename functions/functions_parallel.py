@@ -23,7 +23,7 @@ def Single_par(listx):
         print("Exiting...")
         exit(1)
 
-    #Using label (could be tuple) to create a labelstring which is used to name inputfiles
+    #Using label (could be tuple) to create a labelstring which is used to name worker directories
     # Tuple-label used by calc_surface functions
     if type(label) == tuple:
         labelstring=str(str(label[0])+'_'+str(label[1])).replace('.','_')
@@ -42,7 +42,9 @@ def Single_par(listx):
     #Removing . in inputfilename as ORCA can get confused
     if theory.__class__.__name__ == "ORCATheory":
         #theory.filename=''.join([str(i) for i in labelstring])
-        theory.filename=labelstring
+        #NOTE: Not sure if we really need to use labelstring for input since inside separate directoreies
+        #Disabling for now
+        #theory.filename=labelstring
         theory.moreadfile=moreadfile_path+'.gbw'
         print("Setting moreadfile to:", theory.moreadfile)
     elif theory.__class__.__name__ == "MRCCTheory":
