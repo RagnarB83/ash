@@ -9,23 +9,44 @@ from functions_general import BC,blankline
 
 #Stripped down version of Singlepoint function for Singlepoint_parallel
 #TODO: This function may still be a bit ORCA-centric. Needs to be generalized 
-def Single_par(list):
+def Single_par(listx):
     #Creating new copy of theory to prevent Brokensym feature from being deactivated by each run
     #NOTE: Alternatively we can add an if-statement inside orca.run
-    theory=copy.deepcopy(list[0])
-    fragment=list[1]
+    theory=copy.deepcopy(listx[0])
+    fragment=listx[1]
     #Making label flexible. Can be tuple but inputfilename is converted to string below
-    label=list[2]
+    label=listx[2]
+    mofilesdir=listx[3]
     print("label:", label)
     if label == None:
         print("No label provided to fragment or theory objects. This is required to distinguish between calculations ")
         print("Exiting...")
         exit(1)
 
+
+    if mofilesdir == None:
+        print("No mofilesdir provided.")
+    else:
+        print("Mofilesdir: {} ".format(mofilesdir))
+
     #Using label (could be tuple) to create a labelstring which is used to name inputfiles
 
-    if type(label) == tuple: 
+    if type(label) == tuple:
+        
         labelstring=str(str(label[0])+'_'+str(label[1])).replace('.','_')
+        print("labelstring:", labelstring)
+
+        #RC1_0.9-RC2_170.0.xyz
+        #orca_RC1_0.9RC2_170.0.gbw
+        #TODO: what if tuple is only a single number???
+        if mofilesdir != None:
+            moreadfile=mofilesdir+'/'+theory.filename+'_'+'RC1_'+str(label[0])+'-'+'RC2_'+str(label[1])+'.gbw'
+            print("moreadfile:", moreadfile)
+            exit()
+
+
+
+
     else:
         labelstring=str(label).replace('.','_')
 
@@ -34,17 +55,19 @@ def Single_par(list):
     if theory.__class__.__name__ == "ORCATheory":
         #theory.filename=''.join([str(i) for i in labelstring])
         theory.filename=labelstring
+
+        theory.moreadfile
+
+
     #TODO: filename changes for other codes ?
 
-    coords = fragment.coords
-    elems = fragment.elems
     #Creating new dir and running calculation inside
     os.mkdir(labelstring)
     os.chdir(labelstring)
     print(BC.WARNING,"Doing single-point Energy job on fragment. Formula: {} Label: {} ".format(fragment.prettyformula,fragment.label), BC.END)
     print("\n\nProcess ID {} is running calculation with label: {} \n\n".format(mp.current_process(),label))
 
-    energy = theory.run(current_coords=coords, elems=elems, label=label)
+    energy = theory.run(current_coords=fragment.coords, elems=fragment.elems, label=label)
     os.chdir('..')
     print("Energy: ", energy)
     # Now adding total energy to fragment
@@ -58,7 +81,8 @@ def bla(blux):
 
 #PARALLEL Single-point energy function
 #will run over fragments, over theories or both
-def Singlepoint_parallel(fragments=None, theories=None, numcores=None):
+#mofilesdir. Directory containing MO-files (GBW files for ORCA). Usef for multiple fragment option
+def Singlepoint_parallel(fragments=None, theories=None, numcores=None, mofilesdir=None):
     print("")
     '''
     The Singlepoint_parallel function carries out multiple single-point calculations in a parallel fashion
@@ -89,11 +113,10 @@ def Singlepoint_parallel(fragments=None, theories=None, numcores=None):
     #Case: 1 theory, multiple fragments
     if len(theories) == 1:
         print("Case: Multiple fragments but one theory")
-        print("Making copy of theory object")
         theory = theories[0]
         #NOTE: Python 3.8 and higher use spawn in MacOS. Leads to ash import problems
         #NOTE: Unix/Linux uses fork which seems better behaved
-        results = pool.map(Single_par, [[theory,fragment, fragment.label] for fragment in fragments])
+        results = pool.map(Single_par, [[theory,fragment, fragment.label, mofilesdir] for fragment in fragments])
         
         pool.close()
         print("Calculations are done")

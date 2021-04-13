@@ -132,7 +132,7 @@ def calc_surface(fragment=None, theory=None, workflow=None, scantype='Unrelaxed'
                         print("Surfacepoint: {} / {}".format(pointcount,totalnumpoints))
                         print("RCvalue1: {} RCvalue2: {}".format(RCvalue1,RCvalue2))
                         print("=======================================")
-                        pointlabel='RC1_'+str(RCvalue1)+'RC2_'+str(RCvalue2)
+                        pointlabel='RC1_'+str(RCvalue1)+'-'+'RC2_'+str(RCvalue2)
                         if (RCvalue1,RCvalue2) not in surfacedictionary:
                             #Now setting constraints
                             allconstraints = set_constraints(dimension=2, RCvalue1=RCvalue1, RCvalue2=RCvalue2, extraconstraints=extraconstraints,
@@ -195,7 +195,7 @@ def calc_surface(fragment=None, theory=None, workflow=None, scantype='Unrelaxed'
                         print("RCvalue1: {} RCvalue2: {}".format(RCvalue1,RCvalue2))
                         print("Unrelaxed scan. Will use Zerotheory and geometric to set geometry.")
                         print("==================================================")
-                        pointlabel='RC1_'+str(RCvalue1)+'RC2_'+str(RCvalue2)
+                        pointlabel='RC1_'+str(RCvalue1)+'-'+'RC2_'+str(RCvalue2)
                         if (RCvalue1,RCvalue2) not in surfacedictionary:
                             #Now setting constraints
                             allconstraints = {}
@@ -274,7 +274,7 @@ def calc_surface(fragment=None, theory=None, workflow=None, scantype='Unrelaxed'
                         print("RCvalue1: {} RCvalue2: {}".format(RCvalue1,RCvalue2))
                         print("Relaxed scan. Will relax geometry using theory level with the included contraints.")
                         print("==================================================")
-                        pointlabel='RC1_'+str(RCvalue1)+'RC2_'+str(RCvalue2)
+                        pointlabel='RC1_'+str(RCvalue1)+'-'+'RC2_'+str(RCvalue2)
                         if (RCvalue1,RCvalue2) not in surfacedictionary:
                             #Now setting constraints
                             allconstraints = set_constraints(dimension=2, RCvalue1=RCvalue1, RCvalue2=RCvalue2, extraconstraints=extraconstraints,
@@ -383,10 +383,10 @@ def calc_surface_fromXYZ(xyzdir=None, theory=None, dimension=None, resultfile=No
         if mofilesdir == None:
             print("mofilesdir not set. Exiting")
             exit()
-        if runmode=='parallel':
-            #TODO: Figure this out
-            print("Reading MO files and parallel runmode currently not supported.")
-            exit()
+        #if runmode=='parallel':
+        #    #TODO: Figure this out
+        #    print("Reading MO files and parallel runmode currently not supported.")
+        #    exit()
 
     print()
 
@@ -446,6 +446,7 @@ def calc_surface_fromXYZ(xyzdir=None, theory=None, dimension=None, resultfile=No
 
         surfacepointfragments={}
         #Looping over XYZ files to get coordinates
+        print("Reading XYZ files, excepting format:  RC1_value1-RC2_value2.xyz     Example:  RC1_2.0-RC2_180.0.xyz")
         for count,file in enumerate(glob.glob(xyzdir+'/*.xyz')):
             relfile=os.path.basename(file)
             #Getting RC values from XYZ filename e.g. RC1_2.0-RC2_180.0.xyz
@@ -486,7 +487,14 @@ def calc_surface_fromXYZ(xyzdir=None, theory=None, dimension=None, resultfile=No
         surfacepointfragments_lists=[point.fragment for point in list_of_surfacepoints]
         
         if scantype=='Unrelaxed':
-            results = ash.Singlepoint_parallel(fragments=surfacepointfragments_lists, theories=[theory], numcores=numcores)
+
+            if read_mofiles == True:
+                #print("Will read MO-file: {}".format(mofilesdir+'/'+str(theory.filename)+'_'+pointlabel+'.gbw'))
+                #if theory.__class__.__name__ == "ORCATheory":
+                #    theory.moreadfile=mofilesdir+'/'+str(theory.filename)+'_'+pointlabel+'.gbw'
+                results = ash.Singlepoint_parallel(fragments=surfacepointfragments_lists, theories=[theory], numcores=numcores, mofilesdir=mofilesdir)
+            else:
+                results = ash.Singlepoint_parallel(fragments=surfacepointfragments_lists, theories=[theory], numcores=numcores)
             print("Parallel calculation done!")
             
             #Gathering results in FINAL dictionary.
@@ -523,7 +531,7 @@ def calc_surface_fromXYZ(xyzdir=None, theory=None, dimension=None, resultfile=No
                 start="RC1_"; end="-RC2_"
                 RCvalue1=float(relfile.split(start)[1].split(end)[0])
                 RCvalue2=float(relfile.split(end)[1].split(".xyz")[0])
-                pointlabel='RC1_'+str(RCvalue1)+'RC2_'+str(RCvalue2)
+                pointlabel='RC1_'+str(RCvalue1)+'-'+'RC2_'+str(RCvalue2)
                 print("==================================================================")
                 print("Surfacepoint: {} / {}".format(count+1,totalnumpoints))
                 print("XYZ-file: {}     RC1: {}   RC2: {}".format(relfile,RCvalue1,RCvalue2))

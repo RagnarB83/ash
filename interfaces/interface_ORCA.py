@@ -1,6 +1,4 @@
 import subprocess as sp
-#from functions_solv import *
-#from module_coords import elemstonuccharges
 import module_coords
 from functions_general import blankline,insert_line_into_file,BC
 import functions_elstructure
