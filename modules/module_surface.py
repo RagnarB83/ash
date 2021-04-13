@@ -37,9 +37,7 @@ def calc_surface(fragment=None, theory=None, workflow=None, scantype='Unrelaxed'
     Returns:
         [type]: [description]
     """
-    print("="*50)
-    print("CALC_SURFACE FUNCTION")
-    print("="*50)
+    print_line_with_mainheader("CALC_SURFACE FUNCTION")
     if 'numcores' in kwargs:
         numcores = kwargs['numcores']
     #Getting reaction coordinates and checking if 1D or 2D
@@ -386,6 +384,14 @@ def calc_surface_fromXYZ(xyzdir=None, theory=None, dimension=None, resultfile=No
     print("Initial surfacedictionary :", surfacedictionary)
     print("")
 
+    #Points
+    totalnumpoints=len(glob.glob(xyzdir+'/*.xyz'))
+    print("totalnumpoints:", totalnumpoints)
+    if len(surfacedictionary) == totalnumpoints:
+        print("Surface dictionary size {} matching total number of XYZ files {}. We should have all data".format(len(surfacedictionary),totalnumpoints))
+        print("Exiting.")
+        return surfacedictionary
+
 
     #Case Relaxed Scan: Create directory to keep track of optimized surface XYZ files
     if scantype=="Relaxed":
@@ -408,12 +414,7 @@ def calc_surface_fromXYZ(xyzdir=None, theory=None, dimension=None, resultfile=No
             exit()
 
 
-    #Points
-    totalnumpoints=len(glob.glob(xyzdir+'/*.xyz'))
-    print("totalnumpoints:", totalnumpoints)
-    if len(surfacedictionary) == totalnumpoints:
-        print("Surface dictionary size matching total number of XYZ files. We should have all data")
-        return surfacedictionary
+
 
 
 
