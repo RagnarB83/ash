@@ -504,19 +504,20 @@ def calc_surface_fromXYZ(xyzdir=None, theory=None, dimension=None, resultfile=No
                 print("Surfacepoint: {} Energy: {}".format(dictitem, results[dictitem]))
                 surfacedictionary[dictitem] = results[dictitem]
             print("")
-            print("surfacedictionary:", surfacedictionary)
+
             if len(surfacedictionary) != totalnumpoints:
                 print("Dictionary not complete!")
                 print("len surfacedictionary:", len(surfacedictionary))
                 print("totalnumpoints:", totalnumpoints)
 
-            #Replacing tuple-key with number to make things cleaner for 1d surface dicts 
+            #Replacing tuple-key with number to make things cleaner for 1d surface dicts.
             if dimension == 1:
                 newsurfacedictionary={}
                 for k,v in surfacedictionary.items():
                     newsurfacedictionary[k[0]]=v
                 surfacedictionary=newsurfacedictionary
 
+            print("surfacedictionary:", surfacedictionary)
             #Write final surface to file
             write_surfacedict_to_file(surfacedictionary,"surface_results.txt", dimension=dimension)
         elif scantype=='Relaxed':
