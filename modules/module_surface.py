@@ -726,16 +726,17 @@ def read_surfacedict_from_file(file, dimension=None):
         return dictionary
     with open(file) as f:
         for line in f:
-            if len(line) > 1:
-                if dimension==1:
-                    key=float(line.split()[0])
-                    val=float(line.split()[1])
-                    dictionary[(key)]=val
-                elif dimension==2:
-                    key1=float(line.split()[0])
-                    key2=float(line.split()[1])
-                    val=float(line.split()[2])                    
-                    dictionary[(key1,key2)]=val
+            if '#' not in line:
+                if len(line) > 1:
+                    if dimension==1:
+                        key=float(line.split()[0])
+                        val=float(line.split()[1])
+                        dictionary[(key)]=val
+                    elif dimension==2:
+                        key1=float(line.split()[0])
+                        key2=float(line.split()[1])
+                        val=float(line.split()[2])                    
+                        dictionary[(key1,key2)]=val
     
     if len(dictionary) > 0:
         print("Dictionary read ")

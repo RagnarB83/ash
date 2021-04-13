@@ -15,6 +15,25 @@ import time
 # bond,angle and dihedral constraints work. If only atom indices provided and constrainvalue is False then constraint at current position
 # If constrainvalue=True then last entry should be value of constraint
 
+
+
+
+#Functions to convert atom indices from full system to Active region. Used in case of QM/MM
+
+#Single index case
+def fullindex_to_actindex(fullindex,actatoms):
+    actindex=actatoms.index(fullindex)
+    return actindex
+
+#List of indices to convert
+#def fullindices_to_actindices(fullindexlist,actatoms):
+#    actindexlist=[]
+#    for i in fullindexlist:
+#        actindex=fullindex_to_actindex(i,actatoms)
+#        actindexlist.append(actindex)
+ #   return actindexlist
+
+
 def geomeTRICOptimizer(theory=None,fragment=None, coordsystem='hdlc', frozenatoms=[], constraintsinputfile=None, constraints=None, 
                        constrainvalue=False, maxiter=50, ActiveRegion=False, actatoms=[], convergence_setting=None, conv_criteria=None):
     """
@@ -59,7 +78,52 @@ def geomeTRICOptimizer(theory=None,fragment=None, coordsystem='hdlc', frozenatom
     #    print("Problem. Actatoms list is not sorted in ascending order. Please sort this list (and possibly qmatoms list also))")
     #    exit()
     
-    
+    #Function Convert constraints indices to actatom indices
+    def constraints_indices_convert(con,actatoms):
+        print("con:", con)
+        try:
+            bondcons=con['bond']
+        except KeyError:
+            bondcons=[]
+        try:
+            anglecons=con['angle']
+        except KeyError:
+            anglecons=[]
+        try:
+            dihedralcons=con['dihedral']
+        except KeyError:
+            dihedralcons=[]
+        #Looping over constraints-class (bond,angle-dihedral)
+        #list-item:
+        for bc in bondcons:
+            #atomindex:
+            for i,bc_i in enumerate(bc):
+                #replacing
+                bc[i]=fullindex_to_actindex(bc_i,actatoms)
+        for ac in anglecons:
+            #atomindex:
+            for j,ac_j in enumerate(ac):
+                #replacing
+                ac[j]=fullindex_to_actindex(ac_j,actatoms)
+        for dc in dihedralcons:
+            #atomindex:
+            for k,dc_k in enumerate(dc):
+                #replacing
+                dc[k]=fullindex_to_actindex(dc_k,actatoms)
+        print("con:", con)
+        return con
+
+    #CONSTRAINTS
+    # For QM/MM we need to convert full-system atoms into active region atoms 
+    #constraints={'bond':[[8854,37089]]}
+    if ActiveRegion == True:
+        if constraints != None:
+            print("Constraints set. Active region true")
+            print("Defined constraints (fullsystem-indices):", constraints)
+            constraints=constraints_indices_convert(constraints,actatoms)
+            print("Converting constraints indices to active-region indices")
+            print("Constraints (actregion-indices):", constraints)
+
     
     #Delete constraintsfile unless asked for
     if constraintsinputfile is None:
