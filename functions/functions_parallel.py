@@ -122,6 +122,7 @@ def Singlepoint_parallel(fragments=None, theories=None, numcores=None, mofilesdi
     # Singlepoint(fragment=None, theory=None, Grad=False)
     #Case: 1 theory, multiple fragments
     if len(theories) == 1:
+        theory = theories[0]
         print("Case: Multiple fragments but one theory")
         print("")
         print("Launching multiprocessing pool.map:")
@@ -133,10 +134,6 @@ def Singlepoint_parallel(fragments=None, theories=None, numcores=None, mofilesdi
             print(BC.WARNING,"Since ASH is running in parallel we will now turn off Theory Parallelization",BC.END)
             theory.nprocs=1
 
-
-
-
-        theory = theories[0]
         #NOTE: Python 3.8 and higher use spawn in MacOS. Leads to ash import problems
         #NOTE: Unix/Linux uses fork which seems better behaved
         results = pool.map(Single_par, [[theory,fragment, fragment.label, mofilesdir] for fragment in fragments])
