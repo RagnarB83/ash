@@ -92,7 +92,8 @@ def contourplot(surfacedictionary, label='Label',x_axislabel='Coord', y_axislabe
     coords=[]
     x_c=[]
     y_c=[]
-    print("surfacedictionary:", surfacedictionary)
+    print("")
+    print("Read surfacedictionary:", surfacedictionary)
     for i in surfacedictionary:
         coords.append(i)
         x_c.append(i[0])
@@ -106,11 +107,12 @@ def contourplot(surfacedictionary, label='Label',x_axislabel='Coord', y_axislabe
     relsurfacedictionary={}
     #Creating relative-energy array here. Unmodified property is used if False
     if RelativeEnergy is True:
+        print("RelativeEnergy option. Using finalunit:", finalunit)
         refenergy=float(min(e))
         relsurfacedictionary={}
         for i in surfacedictionary:
             relsurfacedictionary[(i[0],i[1])] = (surfacedictionary[i]-refenergy)*conversionfactor[finalunit]
-        print("relsurfacedictionary ({}): {}".format(finalunit,relsurfacedictionary))
+        print("Relative energy surfacedictionary ({}): {}".format(finalunit,relsurfacedictionary))
         
         rele=[]
         for numb in e:

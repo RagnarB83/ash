@@ -365,10 +365,6 @@ def calc_surface_fromXYZ(xyzdir=None, theory=None, dimension=None, resultfile=No
         [type]: [description]
     """
     
-    print("="*50)
-    print("CALC_SURFACE_FROMXYZ FUNCTION")
-    print("="*50)
-    print("")
     print_line_with_mainheader("CALC_SURFACE_FROMXYZ FUNCTION")
     print("XYZdir:", xyzdir)
     print("Theory:", theory)
@@ -400,14 +396,16 @@ def calc_surface_fromXYZ(xyzdir=None, theory=None, dimension=None, resultfile=No
             print(BC.FAIL,"surface_xyzfiles directory exist already in dir. Please remove it", BC.END)
             exit()
 
-    #Create directory to keep track of surface outfiles
-    try:
-        os.mkdir('surface_outfiles')
-        os.mkdir('surface_mofiles')
-    except FileExistsError:
-        print("")
-        print(BC.FAIL,"surface_outfiles or surface_mofiles directory exist already in dir. Please remove it", BC.END)
-        exit()
+    #Create directory to keep track of surface outfiles for runmode=serial
+    #Note: for runmode_parallel we have separate dirs for each surfacepoint where we have inputfile, outputfile and MOfile
+    if runmode=='serial':
+        try:
+            os.mkdir('surface_outfiles')
+            os.mkdir('surface_mofiles')
+        except FileExistsError:
+            print("")
+            print(BC.FAIL,"surface_outfiles or surface_mofiles directory exist already in dir. Please remove it", BC.END)
+            exit()
 
 
     #Points
@@ -494,7 +492,7 @@ def calc_surface_fromXYZ(xyzdir=None, theory=None, dimension=None, resultfile=No
             for dictitem in results:
                 print("Surfacepoint: {} Energy: {}".format(dictitem, results[dictitem]))
                 surfacedictionary[dictitem] = results[dictitem]
-
+            print("")
             print("surfacedictionary:", surfacedictionary)
             if len(surfacedictionary) != totalnumpoints:
                 print("Dictionary not complete!")
