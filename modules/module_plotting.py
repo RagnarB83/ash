@@ -55,10 +55,20 @@ def reactionprofile_plot(surfacedictionary, finalunit='',label='Label', x_axisla
                         'eV' : 27.211386245988, 'cm-1' : 219474.6313702 }
     e=[]
     coords=[]
-    for i in surfacedictionary:
-        coords.append(i)
-        e.append(surfacedictionary[i])
+
+    print("surfacedictionary:", surfacedictionary)
+
+    #Sorting
+    for key in sorted(surfacedictionary.keys()):
+        coords.append(key)
+        e.append(surfacedictionary[key])
+    #for i in surfacedictionary:
+    #    coords.append(i)
+    #    e.append(surfacedictionary[i])
     
+
+
+
     if RelativeEnergy is True:
         #List of energies and relenergies here
         refenergy=float(min(e))
@@ -68,7 +78,8 @@ def reactionprofile_plot(surfacedictionary, finalunit='',label='Label', x_axisla
         finalvalues=rele
     else:
         finalvalues=e
-    
+    print("Coords:", coords)
+    print("Finalvalues:", finalvalues)
     
     plt.scatter(coords, finalvalues, color=color, marker = 'o',  s=pointsize, linewidth=scatter_linewidth )
     plt.plot(coords, finalvalues, linestyle='-', color=color, linewidth=line_linewidth)
