@@ -55,8 +55,8 @@ def Single_par(listx):
         exit()
 
     #Creating new dir and running calculation inside
-    os.mkdir(labelstring)
-    os.chdir(labelstring)
+    os.mkdir('Pooljob_'+labelstring)
+    os.chdir('Pooljob_'+labelstring)
     print(BC.WARNING,"Doing single-point Energy job on fragment. Formula: {} Label: {} ".format(fragment.prettyformula,fragment.label), BC.END)
     print("\n\nProcess ID {} is running calculation with label: {} \n\n".format(mp.current_process(),label))
 
