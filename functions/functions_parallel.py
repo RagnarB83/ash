@@ -17,7 +17,7 @@ def Single_par(listx):
     #Making label flexible. Can be tuple but inputfilename is converted to string below
     label=listx[2]
     mofilesdir=listx[3]
-    print("label: {} (type {})".format(label,type(label))
+    print("label: {} (type {})".format(label,type(label)))
     if label == None:
         print("No label provided to fragment or theory objects. This is required to distinguish between calculations ")
         print("Exiting...")
