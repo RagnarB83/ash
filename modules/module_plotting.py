@@ -48,7 +48,7 @@ def reactionprofile_plot(surfacedictionary, finalunit='',label='Label', x_axisla
 
     print_line_with_mainheader("reactionprofile_plot")
 
-    load_matplotlib()
+    plt = load_matplotlib()
 
 
     conversionfactor = { 'kcal/mol' : 627.50946900, 'kcalpermol' : 627.50946900, 'kJ/mol' : 2625.499638, 'kJpermol' : 2625.499638, 
