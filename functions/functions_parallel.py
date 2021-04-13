@@ -38,7 +38,7 @@ def Single_par(listx):
             if len(label) == 2:
                 moreadfile_path=mofilesdir+'/'+theory.filename+'_'+'RC1_'+str(label[0])+'-'+'RC2_'+str(label[1])
             else:
-                moreadfile_path=mofilesdir+'/'+theory.filename+'_'+'RC1_'+str(label[0]))
+                moreadfile_path=mofilesdir+'/'+theory.filename+'_'+'RC1_'+str(label[0])
 
     #Label is not tuple. Not coming from calc_surface funcitons
     elif type(label) == float or type(label) == int:
