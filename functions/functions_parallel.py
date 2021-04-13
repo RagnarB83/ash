@@ -27,7 +27,10 @@ def Single_par(listx):
     # Tuple-label (1 or 2 element) used by calc_surface functions.
     # Otherwise normally string
     if type(label) == tuple:
-        labelstring=str(str(label[0])+'_'+str(label[1])).replace('.','_')
+        if len(label) ==2:
+            labelstring=str(str(label[0])+'_'+str(label[1])).replace('.','_')
+        else:
+            labelstring=str(str(label[0])).replace('.','_')
         print("Labelstring:", labelstring)
         #RC1_0.9-RC2_170.0.xyz
         #orca_RC1_0.9RC2_170.0.gbw
