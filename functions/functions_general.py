@@ -97,11 +97,15 @@ def frange(start, stop=None, step=None, rounddigits=4):
         count += 1
 
 
-def print_line_with_mainheader(line):
-    print(BC.OKGREEN,"--------------------------------------------------",BC.END)
-    print(BC.OKGREEN,BC.BOLD,line,BC.END)
-    print(BC.OKGREEN,"--------------------------------------------------",BC.END)
+#FUNCTIONS TO PRINT MODULE AND SUBMODULE HEADERS
 
+#mainmodule header
+def print_line_with_mainheader(line):
+    print(BC.OKGREEN,"=======================================================",BC.END)
+    print(BC.OKGREEN,BC.BOLD,line,BC.END)
+    print(BC.OKGREEN,"=======================================================",BC.END)
+
+#Submodule header
 def print_line_with_subheader1(line):
     print(BC.OKBLUE,"--------------------------------------------------",BC.END)
     print(BC.OKBLUE,BC.BOLD,line,BC.END)
