@@ -58,16 +58,10 @@ def reactionprofile_plot(surfacedictionary, finalunit='',label='Label', x_axisla
 
     print("surfacedictionary:", surfacedictionary)
 
-    #Sorting
+    #Sorting keys dictionary before grabbing so that line-plot is correct
     for key in sorted(surfacedictionary.keys()):
         coords.append(key)
         e.append(surfacedictionary[key])
-    #for i in surfacedictionary:
-    #    coords.append(i)
-    #    e.append(surfacedictionary[i])
-    
-
-
 
     if RelativeEnergy is True:
         #List of energies and relenergies here
