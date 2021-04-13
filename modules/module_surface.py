@@ -480,7 +480,7 @@ def calc_surface_fromXYZ(xyzdir=None, theory=None, dimension=None, resultfile=No
                     newsurfacepoint.xyzfile=xyzdir+'/'+relfile
                     #NOTE: Currently putting fragment into surfacepoint. Could also just point to xyzfile. Currently more memory-demanding
                     #NOTE: Using tuple as a label for fragment
-                    newfrag=ash.Fragment(xyzfile=xyzdir+'/'+relfile, label=(RCvalue1))
+                    newfrag=ash.Fragment(xyzfile=xyzdir+'/'+relfile, label=(RCvalue1,))
                     newsurfacepoint.fragment=newfrag
                     list_of_surfacepoints.append(newsurfacepoint)
 

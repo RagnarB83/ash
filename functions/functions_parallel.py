@@ -24,18 +24,26 @@ def Single_par(listx):
         exit(1)
 
     #Using label (could be tuple) to create a labelstring which is used to name worker directories
-    # Tuple-label used by calc_surface functions
+    # Tuple-label (1 or 2 element) used by calc_surface functions.
+    # Otherwise normally string
     if type(label) == tuple:
         labelstring=str(str(label[0])+'_'+str(label[1])).replace('.','_')
-        print("labelstring:", labelstring)
+        print("Labelstring:", labelstring)
         #RC1_0.9-RC2_170.0.xyz
         #orca_RC1_0.9RC2_170.0.gbw
         #TODO: what if tuple is only a single number???
+
         if mofilesdir != None:
             print("Mofilesdir option.")
-            moreadfile_path=mofilesdir+'/'+theory.filename+'_'+'RC1_'+str(label[0])+'-'+'RC2_'+str(label[1])
+            if len(label) == 2:
+                moreadfile_path=mofilesdir+'/'+theory.filename+'_'+'RC1_'+str(label[0])+'-'+'RC2_'+str(label[1])
+            else:
+                moreadfile_path=mofilesdir+'/'+theory.filename+'_'+'RC1_'+str(label[0]))
+
+    #Label is not tuple. Not coming from calc_surface funcitons
     elif type(label) == float or type(label) == int:
-        print("here label is float or int")
+        print("Label is float or int")
+        #
         #Label is float or int. 
         if mofilesdir != None:
             print("Mofilesdir option.")
