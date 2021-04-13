@@ -410,6 +410,12 @@ def calc_surface_fromXYZ(xyzdir=None, theory=None, dimension=None, resultfile=No
 
     #Points
     totalnumpoints=len(glob.glob(xyzdir+'/*.xyz'))
+    print("totalnumpoints:", totalnumpoints)
+    if len(surfacedictionary) == totalnumpoints:
+        print("Surface dictionary size matching total number of XYZ files. We should have all data")
+        return surfacedictionary
+
+
 
     #New Surfacepoint class to organize the data, at least for parallel mode
     #Using list to collect the Surfacepoint objects
