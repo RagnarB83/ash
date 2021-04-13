@@ -17,7 +17,7 @@ def Single_par(listx):
     #Making label flexible. Can be tuple but inputfilename is converted to string below
     label=listx[2]
     mofilesdir=listx[3]
-    print("label:", label)
+    print("label: {} (type {})".format(label,type(label))
     if label == None:
         print("No label provided to fragment or theory objects. This is required to distinguish between calculations ")
         print("Exiting...")
@@ -28,14 +28,21 @@ def Single_par(listx):
     if type(label) == tuple:
         labelstring=str(str(label[0])+'_'+str(label[1])).replace('.','_')
         print("labelstring:", labelstring)
-
         #RC1_0.9-RC2_170.0.xyz
         #orca_RC1_0.9RC2_170.0.gbw
         #TODO: what if tuple is only a single number???
         if mofilesdir != None:
             print("Mofilesdir option.")
             moreadfile_path=mofilesdir+'/'+theory.filename+'_'+'RC1_'+str(label[0])+'-'+'RC2_'+str(label[1])
+    elif type(label) == float or type(label) == int:
+        print("here label is float or int")
+        #Label is float or int. 
+        if mofilesdir != None:
+            print("Mofilesdir option.")
+            moreadfile_path=mofilesdir+'/'+theory.filename+'_'+'RC1_'+str(label[0])
     else:
+        print("Here. label.", label)
+        #Label is not tuple. String or single number
         labelstring=str(label).replace('.','_')
 
     #Creating separate inputfilename using label

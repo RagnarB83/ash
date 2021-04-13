@@ -469,7 +469,7 @@ def calc_surface_fromXYZ(xyzdir=None, theory=None, dimension=None, resultfile=No
             elif dimension == 1:
                 print("relfile:", relfile)
                 if 'RC2' in relfile:
-                    print("RC2 information in filename string. Chosen dimension wrong or filename wrong. Exiting")
+                    print(BC.FAIL,"RC2 information in filename string. Chosen dimension wrong or filename wrong. Exiting", BC.END)
                     exit()
                 #RC1_2.02.xyz
                 RCvalue1=float(relfile.replace('.xyz','').replace('RC1_',''))
