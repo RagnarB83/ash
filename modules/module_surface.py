@@ -744,10 +744,16 @@ def write_surfacedict_to_file(surfacedict,file="surface_results.txt",dimension=N
         file (str, optional): Filename. Defaults to "surface_results.txt".
         dimension (int, optional): Dimension of surface. Defaults to None.
     """
+    if dimension == None:
+        print("write_surfacedict_to_file: Dimension needs to be given")
+        exit()
     with open(file, 'w') as f:
         for d in surfacedict.items():
             if dimension==1:
                 x=d[0]
+                #Converting from 1-element tuple to number if it happens to be a tuple
+                if type(x) == tuple:
+                    x=x[0]
                 e=d[1]
                 f.write(str(x)+" "+str(e)+'\n')
             elif dimension==2:
