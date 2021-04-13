@@ -3,7 +3,7 @@ import multiprocessing as mp
 import os
 
 import ash
-from functions_general import BC,blankline
+from functions_general import BC,blankline,print_line_with_mainheader,print_line_with_subheader1
 #Various calculation-functions run in parallel
 
 
@@ -23,16 +23,9 @@ def Single_par(listx):
         print("Exiting...")
         exit(1)
 
-
-    if mofilesdir == None:
-        print("No mofilesdir provided.")
-    else:
-        print("Mofilesdir: {} ".format(mofilesdir))
-
     #Using label (could be tuple) to create a labelstring which is used to name inputfiles
-
+    # Tuple-label used by calc_surface functions
     if type(label) == tuple:
-        
         labelstring=str(str(label[0])+'_'+str(label[1])).replace('.','_')
         print("labelstring:", labelstring)
 
@@ -40,13 +33,8 @@ def Single_par(listx):
         #orca_RC1_0.9RC2_170.0.gbw
         #TODO: what if tuple is only a single number???
         if mofilesdir != None:
-            moreadfile=mofilesdir+'/'+theory.filename+'_'+'RC1_'+str(label[0])+'-'+'RC2_'+str(label[1])+'.gbw'
-            print("moreadfile:", moreadfile)
-            exit()
-
-
-
-
+            print("Mofilesdir option.")
+            moreadfile_path=mofilesdir+'/'+theory.filename+'_'+'RC1_'+str(label[0])+'-'+'RC2_'+str(label[1])
     else:
         labelstring=str(label).replace('.','_')
 
@@ -55,11 +43,16 @@ def Single_par(listx):
     if theory.__class__.__name__ == "ORCATheory":
         #theory.filename=''.join([str(i) for i in labelstring])
         theory.filename=labelstring
-
-        theory.moreadfile
-
-
-    #TODO: filename changes for other codes ?
+        theory.moreadfile=moreadfile_path+'.gbw'
+        print("Setting moreadfile to:", theory.moreadfile)
+    elif theory.__class__.__name__ == "MRCCTheory":
+        print("Case MRCC MOREADfile parallel")
+        print("moreadfile_path:", moreadfile_path)
+        print("not finished. exiting")
+        exit()
+    else:
+        print("moreadfile option not ready for this Theory. exiting")
+        exit()
 
     #Creating new dir and running calculation inside
     os.mkdir(labelstring)
@@ -74,10 +67,6 @@ def Single_par(listx):
     fragment.energy = energy
     return (label,energy)
 
-
-def bla(blux):
-    print("here")
-    print(blux)
 
 #PARALLEL Single-point energy function
 #will run over fragments, over theories or both
@@ -102,17 +91,20 @@ def Singlepoint_parallel(fragments=None, theories=None, numcores=None, mofilesdi
         exit(1)
 
     blankline()
-    print("Singlepoint_parallel function")
+    print_line_with_subheader1("Singlepoint_parallel function")
     print("Number of CPU cores available: ", numcores)
     print("Number of fragments:", len(fragments))
     print("Number of theories:", len(theories))
     print("Running single-point calculations in parallel")
+    print("Mofilesdir:", mofilesdir)
 
     pool = mp.Pool(numcores)
     # Singlepoint(fragment=None, theory=None, Grad=False)
     #Case: 1 theory, multiple fragments
     if len(theories) == 1:
         print("Case: Multiple fragments but one theory")
+        print("")
+        print("Launching multiprocessing pool.map:")
         theory = theories[0]
         #NOTE: Python 3.8 and higher use spawn in MacOS. Leads to ash import problems
         #NOTE: Unix/Linux uses fork which seems better behaved

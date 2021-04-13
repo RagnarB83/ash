@@ -368,6 +368,8 @@ def calc_surface_fromXYZ(xyzdir=None, theory=None, dimension=None, resultfile=No
     print("="*50)
     print("CALC_SURFACE_FROMXYZ FUNCTION")
     print("="*50)
+    print("")
+    print_line_with_mainheader("CALC_SURFACE_FROMXYZ FUNCTION")
     print("XYZdir:", xyzdir)
     print("Theory:", theory)
     print("Dimension:", dimension)
@@ -379,22 +381,14 @@ def calc_surface_fromXYZ(xyzdir=None, theory=None, dimension=None, resultfile=No
     print("mofilesdir:", mofilesdir)
     print("runmode:", runmode)
     if read_mofiles == True:
-        print("Reading MO files")
         if mofilesdir == None:
             print("mofilesdir not set. Exiting")
             exit()
-        #if runmode=='parallel':
-        #    #TODO: Figure this out
-        #    print("Reading MO files and parallel runmode currently not supported.")
-        #    exit()
-
-    print()
-
-    print("")
+    print("");print("")
     #Read dict from file. If file exists, read entries, if not, return empty dict
     surfacedictionary = read_surfacedict_from_file(resultfile, dimension=dimension)
     print("Initial surfacedictionary :", surfacedictionary)
-
+    print("")
 
 
     #Case Relaxed Scan: Create directory to keep track of optimized surface XYZ files
@@ -414,9 +408,6 @@ def calc_surface_fromXYZ(xyzdir=None, theory=None, dimension=None, resultfile=No
         print("")
         print(BC.FAIL,"surface_outfiles or surface_mofiles directory exist already in dir. Please remove it", BC.END)
         exit()
-
-
-
 
 
     #Points
@@ -446,7 +437,9 @@ def calc_surface_fromXYZ(xyzdir=None, theory=None, dimension=None, resultfile=No
 
         surfacepointfragments={}
         #Looping over XYZ files to get coordinates
-        print("Reading XYZ files, excepting format:  RC1_value1-RC2_value2.xyz     Example:  RC1_2.0-RC2_180.0.xyz")
+        print("")
+        print("Reading XYZ files, expecting format:  RC1_value1-RC2_value2.xyz     Example:  RC1_2.0-RC2_180.0.xyz")
+        print("")
         for count,file in enumerate(glob.glob(xyzdir+'/*.xyz')):
             relfile=os.path.basename(file)
             #Getting RC values from XYZ filename e.g. RC1_2.0-RC2_180.0.xyz
