@@ -80,7 +80,6 @@ def geomeTRICOptimizer(theory=None,fragment=None, coordsystem='hdlc', frozenatom
     
     #Function Convert constraints indices to actatom indices
     def constraints_indices_convert(con,actatoms):
-        print("con:", con)
         try:
             bondcons=con['bond']
         except KeyError:
@@ -110,7 +109,6 @@ def geomeTRICOptimizer(theory=None,fragment=None, coordsystem='hdlc', frozenatom
             for k,dc_k in enumerate(dc):
                 #replacing
                 dc[k]=fullindex_to_actindex(dc_k,actatoms)
-        print("con:", con)
         return con
 
     #CONSTRAINTS
@@ -119,12 +117,12 @@ def geomeTRICOptimizer(theory=None,fragment=None, coordsystem='hdlc', frozenatom
     if ActiveRegion == True:
         if constraints != None:
             print("Constraints set. Active region true")
-            print("Defined constraints (fullsystem-indices):", constraints)
+            print("User-defined constraints (fullsystem-indices):", constraints)
             constraints=constraints_indices_convert(constraints,actatoms)
             print("Converting constraints indices to active-region indices")
             print("Constraints (actregion-indices):", constraints)
 
-    
+
     #Delete constraintsfile unless asked for
     if constraintsinputfile is None:
         try:
