@@ -467,6 +467,10 @@ def calc_surface_fromXYZ(xyzdir=None, theory=None, dimension=None, resultfile=No
                     #surfacepointfragments[(RCvalue1,RCvalue2)] = newfrag
                     
             elif dimension == 1:
+                print("relfile:", relfile)
+                if 'RC2' in relfile:
+                    print("RC2 information in filename string. Chosen dimension wrong or filename wrong. Exiting")
+                    exit()
                 #RC1_2.02.xyz
                 RCvalue1=float(relfile.replace('.xyz','').replace('RC1_',''))
                 print("XYZ-file: {}     RC1: {} ".format(relfile,RCvalue1))

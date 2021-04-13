@@ -118,7 +118,7 @@ def contourplot(surfacedictionary, label='Label',x_axislabel='Coord', y_axislabe
         for i in surfacedictionary:
             relsurfacedictionary[(i[0],i[1])] = (surfacedictionary[i]-refenergy)*conversionfactor[finalunit]
         print("Relative energy surfacedictionary ({}): {}".format(finalunit,relsurfacedictionary))
-        
+        print("")
         rele=[]
         for numb in e:
             rele.append((numb-refenergy)*conversionfactor[finalunit])
