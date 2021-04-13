@@ -502,9 +502,9 @@ def calc_surface_fromXYZ(xyzdir=None, theory=None, dimension=None, resultfile=No
             #Gathering results in FINAL dictionary.
             for dictitem in results:
                 print("Surfacepoint: {} Energy: {}".format(dictitem, results[dictitem]))
-                tempsurfacedictionary[dictitem] = results[dictitem]
+                surfacedictionary[dictitem] = results[dictitem]
             print("")
-            print("tempsurfacedictionary:", tempsurfacedictionary)
+            print("surfacedictionary:", surfacedictionary)
             if len(surfacedictionary) != totalnumpoints:
                 print("Dictionary not complete!")
                 print("len surfacedictionary:", len(surfacedictionary))
@@ -512,11 +512,10 @@ def calc_surface_fromXYZ(xyzdir=None, theory=None, dimension=None, resultfile=No
 
             #Replacing tuple-key with number to make things cleaner for 1d surface dicts 
             if dimension == 1:
-                surfacedictionary={}
-                for k,v in tempsurfacedictionary.items():
-                    surfacedictionary[k[0]]=v
-            else:
-                surfacedictionary=tempsurfacedictionary
+                newsurfacedictionary={}
+                for k,v in surfacedictionary.items():
+                    newsurfacedictionary[k[0]]=v
+                surfacedictionary=newsurfacedictionary
 
             #Write final surface to file
             write_surfacedict_to_file(surfacedictionary,"surface_results.txt", dimension=dimension)
