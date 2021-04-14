@@ -63,15 +63,18 @@ def Single_par(listx):
         #NOTE: Not sure if we really need to use labelstring for input since inside separate directoreies
         #Disabling for now
         #theory.filename=labelstring
-        theory.moreadfile=moreadfile_path+'.gbw'
-        print("Setting moreadfile to:", theory.moreadfile)
+        if mofilesdir != None:
+            theory.moreadfile=moreadfile_path+'.gbw'
+            print("Setting moreadfile to:", theory.moreadfile)
     elif theory.__class__.__name__ == "MRCCTheory":
-        print("Case MRCC MOREADfile parallel")
-        print("moreadfile_path:", moreadfile_path)
+        if mofilesdir != None:
+            print("Case MRCC MOREADfile parallel")
+            print("moreadfile_path:", moreadfile_path)
         print("not finished. exiting")
         exit()
     else:
-        print("moreadfile option not ready for this Theory. exiting")
+        if mofilesdir != None:
+            print("moreadfile option not ready for this Theory. exiting")
         exit()
 
     #Creating new dir and running calculation inside

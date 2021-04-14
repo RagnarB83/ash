@@ -18,20 +18,12 @@ import time
 
 
 
-#Functions to convert atom indices from full system to Active region. Used in case of QM/MM
-
+#Function to convert atom indices from full system to Active region. Used in case of QM/MM
 #Single index case
 def fullindex_to_actindex(fullindex,actatoms):
     actindex=actatoms.index(fullindex)
     return actindex
 
-#List of indices to convert
-#def fullindices_to_actindices(fullindexlist,actatoms):
-#    actindexlist=[]
-#    for i in fullindexlist:
-#        actindex=fullindex_to_actindex(i,actatoms)
-#        actindexlist.append(actindex)
- #   return actindexlist
 
 
 def geomeTRICOptimizer(theory=None,fragment=None, coordsystem='hdlc', frozenatoms=[], constraintsinputfile=None, constraints=None, 
