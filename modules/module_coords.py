@@ -1393,15 +1393,6 @@ def write_pdbfile_dummy(elems,coords,name, atomlabels,residlabels):
             pfile.write(line+'\n')
     print("Wrote PDB file:", name+'.pdb')
 
-#set out [open "result.pdb" w ]
-#foreach a $atomindexlist b $segmentlist c $residlist d $resnamelist e $atomnamelist f $typeslist cx $coords_x cy $coords_y cz $coords_z el $ellist {
-# #ATOM      1  N   SER A   2      65.342  32.035  32.324  1.00  0.00           N
-#             set fmt1 "ATOM%7d %4s%4s%-1s%5d%12.3f%8.3f%8.3f%6s%6s%10s%2s"
-# puts $out [format $fmt1 $a $e $d " " $c $cx $cy $cz "1.00" "0.00" $b $el]
-#
-#}
-#close $out
-
 
 #Calculate nuclear charge from XYZ-file
 def nucchargexyz(file):
