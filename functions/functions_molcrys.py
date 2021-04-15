@@ -1224,7 +1224,7 @@ def choose_shortrangemodel(Cluster,shortrangemodel,fragmentobjects,QMtheory,main
         Cluster.atomtypes=atomtypelist
         #Create ASH forcefield file by looking up UFF parameters
         with open('Cluster_forcefield.ff', 'w') as forcefile:
-            forcefile.write('#UFF Lennard-Jones parameters \n')
+            forcefile.write('#UFF Lennard-Jones parameters (R0 in Angstrom and eps in kcal/mol) \n')
             for atomtype in atomtypelist_uniq:
                 #Getting just element-par for UFFdict lookup
                 atomtype_el=atomtype.replace('UFF_','')
@@ -1250,7 +1250,7 @@ def choose_shortrangemodel(Cluster,shortrangemodel,fragmentobjects,QMtheory,main
         atomtypelist_uniq = np.unique(atomtypelist).tolist()
         #Create ASH forcefield file by looking up UFF parameters
         with open('Cluster_forcefield.ff', 'w') as forcefile:
-            forcefile.write('#UFF Lennard-Jones parameters \n')
+            forcefile.write('#UFF Lennard-Jones parameters (R0 in Angstrom and eps in kcal/mol) \n')
             for atomtype in atomtypelist_uniq:
                 #Getting just element-par for UFFdict lookup
                 atomtype_el=atomtype.replace('UFF_','')
@@ -1316,7 +1316,7 @@ def choose_shortrangemodel(Cluster,shortrangemodel,fragmentobjects,QMtheory,main
         #print("atomtypelist_uniq:", atomtypelist_uniq)
         #Create ASH forcefield file by looking up UFF parameters
         with open('Cluster_forcefield.ff', 'w') as forcefile:
-            forcefile.write('#{} Lennard-Jones parameters \n'.format(shortrangemodel))
+            forcefile.write('#{} Lennard-Jones parameters (R0 in Angstrom and eps in kcal/mol) \n'.format(shortrangemodel))
             #for atomtype in atomtypelist_uniq:
             for fragmentobject in fragmentobjects:
                 for atomtype,r0,eps in zip(fragmentobject.atomtypelist,fragmentobject.r0list,fragmentobject.epsilonlist):

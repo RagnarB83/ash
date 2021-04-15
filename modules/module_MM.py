@@ -204,7 +204,7 @@ class NonBondedTheory:
                 print("Calculating pairpotential array for active region only")
                 #pairpot_active(numatoms,atomtypes,LJpydict,qmatoms,actatoms)
                 print("self.numatoms", self.numatoms)
-                print("self.atomtypes", self.atomtypes)
+                #print("self.atomtypes", self.atomtypes)
                 print("self.LJpairpotdict", self.LJpairpotdict)
                 print("qmatoms", qmatoms)
                 #print("actatoms", actatoms)
@@ -443,7 +443,7 @@ def MMforcefield_read(file):
 
 #UFF dictionary with parameters
 #Taken from oldmolcrys/old-solvshell and originally from Chemshell
-# Element: [R0,eps]. R0 in Angstrom (I think) and eps in kcal/mol
+# Element: [R0,eps]. R0 in Angstrom and eps in kcal/mol
 UFFdict={'H': [2.886, 0.044], 'He': [2.362, 0.056], 'Li': [2.451, 0.025], 'Be': [2.745, 0.085], 'B': [4.083, 0.18],
          'C': [3.851, 0.105], 'N': [3.66, 0.069], 'O': [3.5, 0.06], 'F': [3.364, 0.05], 'Ne': [3.243, 0.042],
          'Na': [2.983, 0.03], 'Mg': [3.021, 0.111], 'Al': [4.499, 0.505], 'Si': [4.295, 0.402], 'P': [4.147, 0.305],
