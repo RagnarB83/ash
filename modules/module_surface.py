@@ -12,7 +12,7 @@ import shutil
 import copy
 import time
 import ash
-from functions_general import frange, BC, print_line_with_mainheader,print_line_with_subheader1
+from functions_general import frange, BC, print_line_with_mainheader,print_line_with_subheader1,print_time_rel
 import interface_geometric
 from module_freq import calc_rotational_constants
 import functions_parallel
