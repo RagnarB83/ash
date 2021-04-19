@@ -1,4 +1,6 @@
 import os
+import time
+
 from module_coords import split_multimolxyzfile
 from functions_general import int_ranges, listdiff,print_time_rel
 import subprocess as sp
@@ -8,7 +10,9 @@ import ash
 #Very simple crest interface
 def call_crest(fragment=None, xtbmethod=None, crestdir=None,charge=None, mult=None, solvent=None, energywindow=6, numcores=1, 
                constrained_atoms=None, forceconstant_constraint=0.5):
-
+    
+    module_init_time=time.time()
+    
     os.mkdir('crest-calc')
     os.chdir('crest-calc')
 

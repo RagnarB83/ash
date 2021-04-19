@@ -3,6 +3,7 @@ import sys
 import shutil
 import numpy as np
 import subprocess as sp
+import time
 
 import constants
 import settings_solvation
@@ -90,6 +91,7 @@ class xTBTheory:
             pass
     def run(self, current_coords=None, current_MM_coords=None, MMcharges=None, qm_elems=None,
                 elems=None, Grad=False, PC=False, nprocs=None):
+        module_init_time=time.time()
         if MMcharges is None:
             MMcharges=[]
 

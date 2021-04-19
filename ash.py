@@ -115,11 +115,10 @@ ash_header.print_header()
 
 #Exit command (footer)
 if settings_ash.settings_dict["print_exit_footer"] == True:
-
+    atexit.register(ash_header.print_footer)
     if settings_ash.settings_dict["print_full_timings"] == True:
         atexit.register(ash_header.print_timings)
 
-    atexit.register(ash_header.print_footer)
 
 
 #Julia dependency. Current behaviour: 

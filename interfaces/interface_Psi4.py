@@ -3,6 +3,7 @@ import shutil
 import os
 import subprocess as sp
 import glob
+import time
 
 import module_coords
 from functions_general import BC,print_time_rel
@@ -90,6 +91,8 @@ class Psi4Theory:
     #Run function. Takes coords, elems etc. arguments and computes E or E+G.
     def run(self, current_coords=None, current_MM_coords=None, MMcharges=None, qm_elems=None,
             elems=None, Grad=False, PC=False, nprocs=None, pe=False, potfile='', restart=False ):
+        
+        module_init_time=time.time()
 
         if nprocs==None:
             nprocs=self.nprocs
