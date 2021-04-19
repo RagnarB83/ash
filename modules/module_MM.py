@@ -50,7 +50,7 @@ class NonBondedTheory:
 
     #Todo: Need to make active-region version of pyarray version here.
     def calculate_LJ_pairpotentials(self, qmatoms=None, actatoms=None, frozenatoms=None):
-
+        module_init_time=time.time()
         #actatoms
         if actatoms is None:
             actatoms=[]
@@ -240,8 +240,10 @@ class NonBondedTheory:
             #print("self.epsij ({}) : {}".format(len(self.epsij), self.epsij))
             print("sigmaij size: {}".format(len(self.sigmaij)))
             print("epsij size: {}".format(len(self.epsij)))
-        print_time_rel(CheckpointTime, modulename="pairpot arrays")
+        #print_time_rel(CheckpointTime, modulename="pairpot arrays", moduleindex=4)
         self.pairarrays_assigned = True
+        print_time_rel(module_init_time, modulename='LJ-pairpotential arrays', moduleindex=0)
+
 
     def update_charges(self,atomlist,charges):
         print("Updating charges.")
@@ -254,7 +256,7 @@ class NonBondedTheory:
     # current_coords is now used for full_coords, charges for full coords
     def run(self, current_coords=None, elems=None, charges=None, connectivity=None,
             Coulomb=True, Grad=True, qmatoms=None, actatoms=None, frozenatoms=None):
-
+        module_init_time=time.time()
         if current_coords is None:
             print("No current_coords argument. Exiting...")
             exit()
@@ -376,6 +378,7 @@ class NonBondedTheory:
 
         if self.printlevel >= 2:
             print(BC.OKBLUE, BC.BOLD, "------------ENDING NONBONDED MM CODE-------------", BC.END)
+        print_time_rel(module_init_time, modulename='NonbondedTheory run', moduleindex=2)
         return self.MMEnergy, self.MMGradient
 
 

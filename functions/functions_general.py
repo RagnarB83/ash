@@ -21,7 +21,8 @@ if settings_ash.settings_dict["use_ANSI_color"] == True:
 else:
     class BC:
         HEADER = ''; OKBLUE = ''; OKGREEN = ''; OKMAGENTA= ''; OKRED= ''; WARNING = ''; FAIL = ''; END = ''; BOLD = ''; UNDERLINE = ''
-        
+
+
 #Get ranges of integers from list. Returns string of ranges. Used to communitcate with crest and xtb
 #example: input: [1,2,3,4,5,6,20,21,22,23,500,700,701,702,1000,1100,1101]
 #output: '1-6,20-23,500,700-702,1000,1100-1101'
@@ -270,6 +271,7 @@ def clean_number(number):
     return np.real_if_close(number)
 
 
+
 #Function to get unique values
 def uniq(seq, idfun=None):
    # order preserving
@@ -302,16 +304,18 @@ def printDate():
     return None
 
 
+#Various function to print time of module/step. Will add time also to Timings object
 
-def print_time_rel(timestampA,modulename=''):
-    secsA=time.time()-timestampA
-    minsA=secsA/60
+def print_time_rel(timestamp,modulename='Unknown', moduleindex=4):
+    secs=time.time()-timestamp
+    mins=secs/60
     print("-------------------------------------------------------------------")
-    print("Time to calculate step ({}): {:3.1f} seconds, {:3.1f} minutes.".format(modulename, secsA, minsA ))
+    print("Time to calculate step ({}): {:3.1f} seconds, {:3.1f} minutes.".format(modulename, secs, mins ))
     print("-------------------------------------------------------------------")
+    #Adding time to Timings object
+    timingsobject.add(modulename,secs, moduleindex=moduleindex)
 
-
-def print_time_rel_and_tot(timestampA,timestampB, modulename=''):
+def print_time_rel_and_tot(timestampA,timestampB, modulename='Unknown', moduleindex=4):
     secsA=time.time()-timestampA
     minsA=secsA/60
     #hoursA=minsA/60
@@ -322,24 +326,135 @@ def print_time_rel_and_tot(timestampA,timestampB, modulename=''):
     print("Time to calculate step ({}): {:3.1f} seconds, {:3.1f} minutes.".format(modulename, secsA, minsA ))
     print("Total Walltime: {:3.1f} seconds, {:3.1f} minutes.".format(secsB, minsB ))
     print("-------------------------------------------------------------------")
+    #Adding time to Timings object
+    timingsobject.add(modulename,secsA, moduleindex=moduleindex)
 
-def print_time_rel_and_tot_color(timestampA,timestampB, modulename=''):
-    secsA=time.time()-timestampA
-    minsA=secsA/60
+def print_time_tot_color(time_initial, modulename='Unknown', moduleindex=4):
     #hoursA=minsA/60
-    secsB=time.time()-timestampB
-    minsB=secsB/60
+    secs=time.time()-time_initial
+    mins=secs/60
     #hoursB=minsB/60
     print(BC.WARNING,"-------------------------------------------------------------------", BC.END)
-    print(BC.WARNING,"Time to calculate step ({}): {:3.1f} seconds, {:3.1f} minutes.".format(modulename, secsA, minsA ), BC.END)
-    print(BC.WARNING,"Total Walltime: {:3.1f} seconds, {:3.1f} minutes.".format(secsB, minsB ), BC.END)
+    print(BC.WARNING,"ASH Total Walltime: {:3.1f} seconds, {:3.1f} minutes.".format(secs, mins ), BC.END)
     print(BC.WARNING,"-------------------------------------------------------------------", BC.END)
+    #Adding time to Timings object
+    timingsobject.add(modulename,secs, moduleindex=moduleindex)
 
-def print_time_tot_color(time_initial):
-    #hoursA=minsA/60
-    secsB=time.time()-time_initial
-    minsB=secsB/60
-    #hoursB=minsB/60
-    print(BC.WARNING,"-------------------------------------------------------------------", BC.END)
-    print(BC.WARNING,"ASH Total Walltime: {:3.1f} seconds, {:3.1f} minutes.".format(secsB, minsB ), BC.END)
-    print(BC.WARNING,"-------------------------------------------------------------------", BC.END)
+
+#Keep track of module runtimes
+class Timings:
+    def __init__(self):
+        self.simple_dict={}
+        self.module_count={}
+        self.module_indices={}
+        self.totalsumtime=0
+    def add(self, modulename, mtime, moduleindex=4):
+
+        #Adding time to dictionary
+        if modulename in self.simple_dict:
+            self.simple_dict[modulename] += mtime
+        else:
+            self.simple_dict[modulename] = mtime
+
+        #Adding moduleindex to dictionary
+        if modulename not in self.module_indices:
+            self.module_indices[modulename] = moduleindex
+
+
+        #Adding times called
+        if modulename in self.module_count:
+            self.module_count[modulename] +=1
+        else:
+            self.module_count[modulename] = 1
+
+        self.totalsumtime+=mtime
+
+    # Distinguish and sort between: 
+    # workflows (thermochem_protol, PES, calc_surface etc.): 0
+    # jobtype (optimizer,Singlepoint,Anfreq,Numfreq): 1
+    # theory-run (ORCAtheory run, QM/MM run, MM run etc.): 2 
+    # various: 3 
+    # others (calc connectivity etc.): 4
+
+    def print(self, inittime):
+        totalwalltime=time.time()-inittime
+
+        print("Note: module-timings are a work in progress (report bugs!)")
+
+        ######################
+        #Old way of printing
+        #Sort dict by value
+        #simple_dict_ordered=dict(sorted(self.simple_dict.items(), key=lambda item: item[1]))
+        #print("")
+        ##idea: if module labelled submodule add ---> or something and dont't include in totalsumtime above ??
+        #print("{:35}{:>20}{:>20}{:>17}".format("Modulename", "Time (sec)", "Percentage of total", "Times called"))
+        #print("-"*100)
+        #for dictitem in simple_dict_ordered:
+        #    mmtime=simple_dict_ordered[dictitem]
+        #    time_per= 100*(mmtime/totalwalltime)
+        #    print("{:35}{:>20.2f}{:>10.1f}{:>20}".format(dictitem, mmtime, time_per, self.module_count[dictitem]))
+        #print("")
+        #print("{:35}{:>20.2f}".format("Sum of all moduletimes (flawed)", self.totalsumtime))
+        #print("{:35}{:>20.2f}{:>10}".format("Total walltime", totalwalltime, 100.0))
+        #print("-"*100)
+
+
+
+        print("")
+        print("{:35}{:>20}{:>20}{:>17}".format("Modulename", "Time (sec)", "Percentage of total", "Times called"))
+        print("-"*100)
+
+        #Lists of dictitems by module_labels
+        #Workflows: thermochemprotocol, calc_surface, benchmarking etc.
+        dictitems_index0=[i for i in self.simple_dict if self.module_indices[i] == 0]
+        #Jobtype: Singlepoint, Opt, freq
+        dictitems_index1=[i for i in self.simple_dict if self.module_indices[i] == 1]
+        #Theory run: ORCATHeory, QM/MM Theory etc
+        dictitems_index2=[i for i in self.simple_dict if self.module_indices[i] == 2]
+        #NOTE: currently not using index 3. Disabled until a good reason for it
+        #dictitems_index3=[i for i in self.simple_dict if self.module_indices[i] == 3]
+        #Other small modules. 4 is default
+        dictitems_index4=[i for i in self.simple_dict if self.module_indices[i] == 4]
+
+        print("Workflow modules")
+        print("-"*30)
+        for dictitem in dictitems_index0:
+            mmtime=self.simple_dict[dictitem]
+            time_per= 100*(mmtime/totalwalltime)
+            print("{:35}{:>20.2f}{:>10.1f}{:>20}".format(dictitem, mmtime, time_per, self.module_count[dictitem]))
+        print("")
+        print("Jobtype modules")
+        print("-"*30)
+        for dictitem in dictitems_index1:
+            mmtime=self.simple_dict[dictitem]
+            time_per= 100*(mmtime/totalwalltime)
+            print("{:35}{:>20.2f}{:>10.1f}{:>20}".format(dictitem, mmtime, time_per, self.module_count[dictitem]))
+        print("")
+        print("Theory-run modules")
+        print("-"*30)
+        for dictitem in dictitems_index2:
+            mmtime=self.simple_dict[dictitem]
+            time_per= 100*(mmtime/totalwalltime)
+            print("{:35}{:>20.2f}{:>10.1f}{:>20}".format(dictitem, mmtime, time_per, self.module_count[dictitem]))
+        print("")
+        #print("Various modules")
+        #print("-"*30)
+        #for dictitem in dictitems_index3:
+        #    mmtime=self.simple_dict[dictitem]
+        #    time_per= 100*(mmtime/totalwalltime)
+        #    print("{:35}{:>20.2f}{:>10.1f}{:>20}".format(dictitem, mmtime, time_per, self.module_count[dictitem]))
+        print("")
+        print("Other modules")
+        print("-"*30)
+        for dictitem in dictitems_index4:
+            mmtime=self.simple_dict[dictitem]
+            time_per= 100*(mmtime/totalwalltime)
+            print("{:35}{:>20.2f}{:>10.1f}{:>20}".format(dictitem, mmtime, time_per, self.module_count[dictitem]))
+        print("")
+        print("")
+        print("{:35}{:>20.2f}".format("Sum of all moduletimes (flawed)", self.totalsumtime))
+        print("{:35}{:>20.2f}{:>10}".format("Total walltime", totalwalltime, 100.0))
+
+
+#Creating object
+timingsobject = Timings()

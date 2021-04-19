@@ -1,5 +1,5 @@
 import subprocess as sp
-from functions_general import BC, pygrep
+from functions_general import BC, pygrep, print_time_rel
 import shutil
 import settings_ash
 
@@ -204,8 +204,10 @@ LINEQ_CONV={},CC_MAXCYC={},SYMMETRY={},HFSTABILITY={})\n\n""".format(
         if Grad == True:
             print("Single-point CFour energy:", self.energy)
             print("Single-point CFour gradient:", self.gradient)
+            print_time_rel(module_init_time, modulename='Cfour run', moduleindex=2)
             return self.energy, self.gradient
         else:
             print("Single-point CFour energy:", self.energy)
+            print_time_rel(module_init_time, modulename='Cfour run', moduleindex=2)
             return self.energy
 

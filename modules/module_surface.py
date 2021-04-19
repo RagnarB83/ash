@@ -10,7 +10,7 @@ import os
 import glob
 import shutil
 import copy
-
+import time
 import ash
 from functions_general import frange, BC, print_line_with_mainheader,print_line_with_subheader1
 import interface_geometric
@@ -37,6 +37,7 @@ def calc_surface(fragment=None, theory=None, workflow=None, scantype='Unrelaxed'
     Returns:
         [type]: [description]
     """
+    module_init_time=time.time()
     print_line_with_mainheader("CALC_SURFACE FUNCTION")
     if 'numcores' in kwargs:
         numcores = kwargs['numcores']
@@ -330,6 +331,7 @@ def calc_surface(fragment=None, theory=None, workflow=None, scantype='Unrelaxed'
                         shutil.move("RC1_"+str(RCvalue1)+".ygg", "surface_fragfiles/"+"RC1_"+str(RCvalue1)+".ygg")
                     else:
                         print("RC1 value in dict already. Skipping.")
+    print_time_rel(module_init_time, modulename='calc_surface', moduleindex=0)                    
     return surfacedictionary
 
 # Calculate surface from XYZ-file collection.
@@ -362,7 +364,7 @@ def calc_surface_fromXYZ(xyzdir=None, theory=None, dimension=None, resultfile=No
     Returns:
         [type]: [description]
     """
-    
+    module_init_time=time.time()
     print_line_with_mainheader("CALC_SURFACE_FROMXYZ FUNCTION")
     print("XYZdir:", xyzdir)
     print("Theory:", theory)
@@ -634,7 +636,7 @@ def calc_surface_fromXYZ(xyzdir=None, theory=None, dimension=None, resultfile=No
                     print("")            
                 else:
                     print("RC1 value in dict already. Skipping.")
-
+    print_time_rel(module_init_time, modulename='calc_surface_fromXYZ', moduleindex=0)
     return surfacedictionary
 
 def calc_numerical_gradient():

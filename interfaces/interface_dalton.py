@@ -3,7 +3,7 @@ import os
 import glob
 
 import settings_ash
-from functions_general import BC
+from functions_general import BC,print_time_rel
 import module_coords
 
 class DaltonTheory:

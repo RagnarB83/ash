@@ -1,4 +1,4 @@
-from functions_general import BC
+from functions_general import BC,print_time_rel
 import module_coords
 
 #PySCF Theory object. Fragment object is optional. Only used for single-points.
@@ -185,8 +185,10 @@ class PySCFTheory:
         print(BC.OKBLUE, BC.BOLD, "------------ENDING PYSCF INTERFACE-------------", BC.END)
         if Grad == True:
             print("Single-point PySCF energy:", self.energy)
+            print_time_rel(module_init_time, modulename='pySCF run', moduleindex=2)
             return self.energy, self.gradient
         else:
             print("Single-point PySCF energy:", self.energy)
+            print_time_rel(module_init_time, modulename='pySCF run', moduleindex=2)
             return self.energy
 

@@ -6,7 +6,7 @@ import os
 import subprocess as sp
 import shutil
 import math
-
+import time
 import constants
 import ash
 import dictionaries_lists
@@ -16,6 +16,7 @@ import interface_crest
 from functions_general import BC,print_time_rel
 import ash_header
 import settings_ash
+import module_highlevel_workflows
 
 
 def ReactionEnergy(stoichiometry=None, list_of_fragments=None, list_of_energies=None, unit='kcal/mol', label=None, reference=None):
@@ -53,7 +54,7 @@ def ReactionEnergy(stoichiometry=None, list_of_fragments=None, list_of_energies=
             print("Check ")
 
         #print("List of total energies provided (Eh units assumed).")
-        print("list_of_energies:", list_of_energies)
+        #print("list_of_energies:", list_of_energies)
         print("stoichiometry:", stoichiometry)
         for i,stoich in enumerate(stoichiometry):
             if stoich < 0:
@@ -104,6 +105,7 @@ def confsampler_protocol(fragment=None, crestdir=None, xtbmethod='GFN2-xTB', MLt
         charge (int, optional): Charge. Defaults to None.
         mult (in, optional): Spin multiplicity. Defaults to None.
     """
+    module_init_time=time.time()
     print("="*50)
     print("CONFSAMPLER FUNCTION")
     print("="*50)
@@ -178,13 +180,14 @@ def confsampler_protocol(fragment=None, crestdir=None, xtbmethod='GFN2-xTB', MLt
         print("{:10} {:13.10f} {:13.10f} {:13.10f}".format(index,rel_xtb, rel_ML, rel_HL))
 
     print("")
-    print("Workflow done!")
-    
+    print("Confsamplerprotocol done!")
+    print_time_rel(module_init_time, modulename='Confsamplerprotocol', moduleindex=0)
     
 
 # opt+freq+HL protocol for single species
 def thermochemprotocol_single(fragment=None, Opt_theory=None, SP_theory=None, orcadir=None, numcores=None, memory=5000,
                        workflow_args=None, analyticHessian=True, temp=298.15, pressure=1.0):
+    module_init_time=time.time()
     print(BC.WARNING, BC.BOLD, "------------THERMOCHEM PROTOCOL (single-species)-------------", BC.END)
     if fragment.charge == None:
         print("1st. Fragment: {}".format(fragment.__dict__))
@@ -220,6 +223,10 @@ def thermochemprotocol_single(fragment=None, Opt_theory=None, SP_theory=None, or
     print("THERMOCHEM PROTOCOL-single: Step 3. High-level single-point calculation")
     print("-------------------------------------------------------------------------")
     #Workflow (callable function) or ORCATheory object
+    #print("SP_theory:", SP_theory)
+    #print("callable(SP_theory):", callable(SP_theory))
+    #print("callable(SP_theory):", callable(module_highlevel_workflows.SP_theory))
+    #print("callable(SP_theory):", callable(SP_theory))
     if callable(SP_theory) is True:
         FinalE, componentsdict = SP_theory(fragment=fragment, charge=fragment.charge,
                     mult=fragment.mult, orcadir=orcadir, numcores=numcores, memory=memory, workflow_args=workflow_args)
@@ -235,7 +242,7 @@ def thermochemprotocol_single(fragment=None, Opt_theory=None, SP_theory=None, or
     else:
         print("Unknown Singlepoint protocol")
         exit()
-    
+    print_time_rel(module_init_time, modulename='thermochemprotocol_single', moduleindex=0)
     return FinalE, componentsdict, thermochem
 
 
@@ -258,6 +265,7 @@ def thermochemprotocol_reaction(Opt_theory=None, SP_theory=None, fraglist=None, 
         temp (float, optional): Temperature in Kelvin. Defaults to 298.15.
         pressure (float, optional): Pressure in atm. Defaults to 1.0.
     """
+    module_init_time=time.time()
     print("")
     print(BC.WARNING, BC.BOLD, "------------THERMOCHEM PROTOCOL (reaction)-------------", BC.END)
     print("")
@@ -326,8 +334,8 @@ def thermochemprotocol_reaction(Opt_theory=None, SP_theory=None, fraglist=None, 
     
     print("")
     print(BC.WARNING, BC.BOLD, "------------THERMOCHEM PROTOCOL END-------------", BC.END)
-    print_time_rel(ash_header.init_time,modulename='Entire thermochemprotocol')
-
+    #print_time_rel(ash_header.init_time,modulename='Entire thermochemprotocol')
+    print_time_rel(module_init_time, modulename='thermochemprotocol_reaction', moduleindex=0)
 
 
 
@@ -438,6 +446,6 @@ def old_thermochemprotocol(Opt_theory=None, SP_theory=None, fraglist=None, stoic
     
     print("")
     print(BC.WARNING, BC.BOLD, "------------THERMOCHEM PROTOCOL END-------------", BC.END)
-    ash.print_time_rel(ash_header.init_time,modulename='Entire thermochemprotocol')
-    
+    #ash.print_time_rel(ash_header.init_time,modulename='Entire thermochemprotocol')
+    #print_time_rel(module_init_time, modulename='thermochemprotocol')
 

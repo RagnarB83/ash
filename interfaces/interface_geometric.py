@@ -1,7 +1,7 @@
 import numpy as np
 import constants
 from module_coords import print_coords_all,print_coords_for_atoms,print_internal_coordinate_table,write_XYZ_for_atoms,write_xyzfile
-from functions_general import blankline,BC
+from functions_general import blankline,BC,print_time_rel
 import os
 import shutil
 import ash
@@ -35,7 +35,7 @@ def geomeTRICOptimizer(theory=None,fragment=None, coordsystem='hdlc', frozenatom
     Active-atom coords (e.g. only QM region) are only provided to geomeTRIC during optimization while rest is frozen.
     Needed as discussed here: https://github.com/leeping/geomeTRIC/commit/584869707aca1dbeabab6fe873fdf139d384ca66#diff-2af7dd72b77dac63cea64c052a549fe0
     """
-
+    module_init_time=time.time()
     if ActiveRegion == True and coordsystem == "tric":
         #TODO: Look into this more
         print("Activeregion true and coordsystem = tric are not compatible")
@@ -400,5 +400,5 @@ def geomeTRICOptimizer(theory=None,fragment=None, coordsystem='hdlc', frozenatom
     #Now returning final energy
     #TODO: Return dictionary of energy, gradient, coordinates etc, coordinates along trajectory ??
     
-    
+    print_time_rel(module_init_time, modulename='geomeTRIC', moduleindex=1)
     return ashengine.energy

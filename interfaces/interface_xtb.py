@@ -6,7 +6,7 @@ import subprocess as sp
 
 import constants
 import settings_solvation
-from functions_general import blankline,reverse_lines
+from functions_general import blankline,reverse_lines, print_time_rel
 import module_coords
 
 
@@ -163,12 +163,13 @@ class xTBTheory:
                     if self.printlevel >= 2:
                         print("xtb energy :", self.energy)
                         print("------------ENDING XTB-INTERFACE-------------")
-
+                    print_time_rel(module_init_time, modulename='xTB run', moduleindex=2)
                     return self.energy, self.grad, self.pcgrad
                 else:
                     if self.printlevel >= 2:
                         print("xtb energy :", self.energy)
                         print("------------ENDING XTB-INTERFACE-------------")
+                    print_time_rel(module_init_time, modulename='xTB run', moduleindex=2)
                     return self.energy, self.grad
             else:
                 outfile=self.filename+'.out'
@@ -176,6 +177,7 @@ class xTBTheory:
                 if self.printlevel >= 2:
                     print("xtb energy :", self.energy)
                     print("------------ENDING XTB-INTERFACE-------------")
+                print_time_rel(module_init_time, modulename='xTB run', moduleindex=2)
                 return self.energy
         elif self.runmode=='library':
 
@@ -223,11 +225,13 @@ class xTBTheory:
                 print("xtb energy:", self.energy)
                 #print("self.grad:", self.grad)
                 print("------------ENDING XTB-INTERFACE-------------")
+                print_time_rel(module_init_time, modulename='xTB run', moduleindex=2)
                 return self.energy, self.grad
             else:
                 self.energy = float(results['energy'])
                 print("xtb energy:", self.energy)
                 print("------------ENDING XTB-INTERFACE-------------")
+                print_time_rel(module_init_time, modulename='xTB run', moduleindex=2)
                 return self.energy
         else:
             print("Unknown option to xTB interface")

@@ -1,4 +1,4 @@
-from functions_general import BC
+from functions_general import BC, print_time_rel
 import subprocess as sp
 import os
 
@@ -70,9 +70,11 @@ class MRCCTheory:
         print(BC.OKBLUE, BC.BOLD, "------------ENDING MRCC INTERFACE-------------", BC.END)
         if Grad == True:
             print("Single-point MRCC energy:", self.energy)
+            print_time_rel(module_init_time, modulename='MRCC run', moduleindex=2)
             return self.energy, self.gradient
         else:
             print("Single-point MRCC energy:", self.energy)
+            print_time_rel(module_init_time, modulename='MRCC run', moduleindex=2)
             return self.energy
 
 

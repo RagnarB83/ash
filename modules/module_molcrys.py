@@ -88,7 +88,7 @@ class Fragmenttype:
 def molcrys(cif_file=None, xtl_file=None, xyz_file=None, cell_length=None, cell_angles=None, fragmentobjects=[], theory=None, numcores=1, chargemodel='',
             clusterradius=None, shortrangemodel='UFF_modH', LJHparameters=[0.0,0.0], auto_connectivity=False, simple_supercell=False, shiftasymmunit=False, cluster_type='sphere', 
             supercell_expansion=[3,3,3]):
-
+    module_init_time=time.time()
     banner="""
     THE
 ╔╦╗╔═╗╦  ╔═╗╦═╗╦ ╦╔═╗
@@ -494,7 +494,7 @@ def molcrys(cif_file=None, xtl_file=None, xyz_file=None, cell_length=None, cell_
                               orcablocks=theory.orcablocks, extraline=chargemodelline)
         #COPY LAST mainfrag orbitals here: called lastorbitals.gbw from gasfragcalc (mainfrag)
         #Necessary to avoid broken-sym SpinFlip but should be good in general
-        shutil.copyfile('lastorbitals.gbw', QMtheory.filename+',gbw')
+        shutil.copyfile('lastorbitals.gbw', QMtheory.filename+'.gbw')
 
     elif theory.__class__.__name__ == "xTBTheory":
         QMtheory = ash.xTBTheory(xtbdir=theory.xtbdir, charge=fragmentobjects[0].Charge, mult=fragmentobjects[0].Mult, xtbmethod=theory.xtbmethod)
@@ -609,6 +609,7 @@ def molcrys(cif_file=None, xtl_file=None, xyz_file=None, cell_length=None, cell_
     print_time_rel_and_tot(currtime, origtime, modulename="final stuff")
     currtime=time.time()
 
+    print_time_rel(module_init_time, modulename='Molcrys', moduleindex=0)
     return Cluster
 
 

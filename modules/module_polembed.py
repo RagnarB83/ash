@@ -1,5 +1,6 @@
 import os
 import shutil
+import time
 
 from functions_general import BC,blankline
 import module_coords
@@ -11,6 +12,7 @@ import module_coords
 class PolEmbedTheory:
     def __init__(self, fragment=None, qm_theory=None, qmatoms=None, peatoms=None, mmatoms=None, pot_create=True,
                  potfilename='System', pot_option=None, pyframe=False, PElabel_pyframe='MM', daltondir=None, pdbfile=None):
+        module_init_time=time.time()
         print(BC.WARNING,BC.BOLD,"------------Defining PolEmbedTheory object-------------", BC.END)
         self.pot_create=pot_create
         self.pyframe=pyframe
@@ -246,7 +248,7 @@ class PolEmbedTheory:
         else:
             print("Pot creation is off for this object. Assuming potfile has been provided")
             self.potfile=potfilename+'.pot'
-
+        print_time_rel(module_init_time, modulename='PolEmbedTheory creation')
     def run(self, current_coords=None, elems=None, Grad=False, nprocs=1, potfile=None, restart=False):
         print(BC.WARNING, BC.BOLD, "------------RUNNING PolEmbedTheory MODULE-------------", BC.END)
         if restart==True:
@@ -307,4 +309,5 @@ class PolEmbedTheory:
         print("{:<20} {:>20.12f}".format("MM energy: ", self.MMEnergy))
         print("{:<20} {:>20.12f}".format("PolEmbed energy: ", self.PolEmbedEnergy))
         blankline()
+        print_time_rel(module_init_time, modulename='PolEmbedTheory run', moduleindex=2)
         return self.PolEmbedEnergy

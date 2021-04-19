@@ -1,12 +1,13 @@
 import subprocess as sp
 import module_coords
-from functions_general import blankline,insert_line_into_file,BC
+from functions_general import blankline,insert_line_into_file,BC,print_time_rel
 import functions_elstructure
 import constants
 import multiprocessing as mp
 import numpy as np
 import os
 import settings_ash
+import time
 
 #ORCA Theory object. Fragment object is optional. Only used for single-points.
 class ORCATheory:
@@ -130,6 +131,7 @@ class ORCATheory:
     #Run function. Takes coords, elems etc. arguments and computes E or E+G.
     def run(self, current_coords=None, current_MM_coords=None, MMcharges=None, qm_elems=None,
             elems=None, Grad=False, Hessian=False, PC=False, nprocs=None, label=None ):
+        module_init_time=time.time()
         print(BC.OKBLUE,BC.BOLD, "------------RUNNING ORCA INTERFACE-------------", BC.END)
         #Coords provided to run or else taken from initialization.
         #if len(current_coords) != 0:
@@ -226,18 +228,22 @@ class ORCATheory:
                     #Grab pointcharge gradient. i.e. gradient on MM atoms from QM-MM elstat interaction.
                     self.pcgrad=ORCApcgradientgrab(pcgradfile)
                     print(BC.OKBLUE,BC.BOLD,"------------ENDING ORCA-INTERFACE-------------", BC.END)
+                    print_time_rel(module_init_time, modulename='ORCA run', moduleindex=2)
                     return self.energy, self.grad, self.pcgrad
                 else:
                     print(BC.OKBLUE,BC.BOLD,"------------ENDING ORCA-INTERFACE-------------", BC.END)
+                    print_time_rel(module_init_time, modulename='ORCA run', moduleindex=2)
                     return self.energy, self.grad
 
             else:
                 print("Single-point ORCA energy:", self.energy)
                 print(BC.OKBLUE,BC.BOLD,"------------ENDING ORCA-INTERFACE-------------", BC.END)
+                print_time_rel(module_init_time, modulename='ORCA run', moduleindex=2)
                 return self.energy
         else:
             print(BC.FAIL,"Problem with ORCA run", BC.END)
             print(BC.OKBLUE,BC.BOLD, "------------ENDING ORCA-INTERFACE-------------", BC.END)
+            print_time_rel(module_init_time, modulename='ORCA run', moduleindex=2)
             exit(1)
 
 

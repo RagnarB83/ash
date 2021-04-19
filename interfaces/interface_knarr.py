@@ -2,7 +2,7 @@
 #Assumes that Knarr directory exists inside ASH (for now at least)
 
 import ash
-from functions_general import blankline
+from functions_general import blankline,print_time_rel
 import numpy as np
 import sys
 import os
@@ -448,5 +448,8 @@ def NEB(reactant=None, product=None, theory=None, images=None, interpolation=Non
     print('KNARR successfully terminated')
     blankline()
     print("Please consider citing the following paper if you found the NEB module (from Knarr) useful: To be added")
+
+    print_time_rel(module_init_time, modulename='Knarr-NEB run', moduleindex=1)
+
     if neb_settings["CLIMBING"] is True:
         return Saddlepoint_fragment

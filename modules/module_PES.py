@@ -7,6 +7,7 @@ import sys
 import subprocess as sp
 import struct
 import copy
+import time
 
 import ash
 import shutil
@@ -1526,6 +1527,7 @@ def PhotoElectronSpectrum(theory=None, fragment=None, Initialstate_charge=None, 
                           brokensym=False, HSmult=None, atomstoflip=None, initialorbitalfiles=None, Densities='None', densgridvalue=100,
                           CAS=False, CAS_Initial=None, CAS_Final = None, memory=40000, numcores=1, noDyson=False, CASCI=False, MRCI=False, MREOM=False,
                           MRCI_Initial=None, MRCI_Final = None, tprintwfvalue=1e-6, MRCI_CASCI_Final=True, EOM=False, btPNO=False, DLPNO=False, label=None, check_stability=True):
+    module_init_time=time.time()
     blankline()
     print(bcolors.OKGREEN,"-------------------------------------------------------------------",bcolors.ENDC)
     print(bcolors.OKGREEN,"PhotoElectronSpectrum: Calculating PES spectra via TDDFT/CAS/MRCI/EOM/MREOM and Dyson-norm approach",bcolors.ENDC)
@@ -2640,6 +2642,7 @@ def PhotoElectronSpectrum(theory=None, fragment=None, Initialstate_charge=None, 
         resultfile.write("MOs_alpha : {}\n".format(stk_alpha))
         resultfile.write("MOs_beta : {}\n".format(stk_beta))
 
+    print_time_rel(module_init_time, modulename='Photoelectronspectrum', moduleindex=0)
     return FinalIPs, finaldysonnorms
 
 def Read_old_results():
@@ -2668,6 +2671,8 @@ def Read_old_results():
     #            mos_alpha = [float(i) for i in line.split(':')[1].replace('[', '').replace(']', '').split(',')]
     #        if 'MOs_beta' in line:
     #            mos_beta = [float(i) for i in line.split(':')[1].replace('[', '').replace(']', '').split(',')]
+
+
 
     return IPs, dysonnorms, mos_alpha, mos_beta
 

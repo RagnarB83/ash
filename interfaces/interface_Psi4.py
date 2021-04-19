@@ -5,7 +5,7 @@ import subprocess as sp
 import glob
 
 import module_coords
-from functions_general import BC
+from functions_general import BC,print_time_rel
 
 
 #Psi4 Theory object. Fragment object is optional. Only used for single-points.
@@ -253,9 +253,11 @@ class Psi4Theory:
 
             if Grad == True:
                 print("Single-point PSI4 energy:", self.energy)
+                print_time_rel(module_init_time, modulename='Psi4 run', moduleindex=2)
                 return self.energy, self.gradient
             else:
                 print("Single-point PSI4 energy:", self.energy)
+                print_time_rel(module_init_time, modulename='Psi4 run', moduleindex=2)
                 return self.energy
 
         #Psithon INPUT-FILE BASED INTERFACE. Creates Psi4 inputfiles and runs Psithon as subprocessses
@@ -395,9 +397,11 @@ class Psi4Theory:
 
             if Grad == True:
                 print("Single-point PSI4 energy:", self.energy)
+                print_time_rel(module_init_time, modulename='Psi4 run', moduleindex=2)
                 return self.energy, self.gradient
             else:
                 print("Single-point PSI4 energy:", self.energy)
+                print_time_rel(module_init_time, modulename='Psi4 run', moduleindex=2)
                 return self.energy
         else:
             print("Unknown Psi4 runmode")

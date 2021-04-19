@@ -3,8 +3,8 @@ import math
 import shutil
 import os
 import copy
-
-from functions_general import listdiff, clean_number,blankline,BC
+import time
+from functions_general import listdiff, clean_number,blankline,BC,print_time_rel
 import module_coords
 import interface_ORCA
 import constants
@@ -13,6 +13,7 @@ import ash
 #Analytical frequencies function
 #Only works for ORCAtheory at the moment
 def AnFreq(fragment=None, theory=None, numcores=1, temp=298.15, pressure=1.0):
+    module_init_time=time.time()
     print(BC.WARNING, BC.BOLD, "------------ANALYTICAL FREQUENCIES-------------", BC.END)
     if theory.__class__.__name__ == "ORCATheory":
         print("Requesting analytical Hessian calculation from ORCATheory")
@@ -33,6 +34,7 @@ def AnFreq(fragment=None, theory=None, numcores=1, temp=298.15, pressure=1.0):
         Thermochemistry = thermochemcalc(frequencies,hessatoms, fragment, theory.mult, temp=temp,pressure=pressure)
         
         print(BC.WARNING, BC.BOLD, "------------ANALYTICAL FREQUENCIES END-------------", BC.END)
+        print_time_rel(module_init_time, modulename='AnFreq', moduleindex=1)
         return Thermochemistry
         
     else:
@@ -44,7 +46,7 @@ def AnFreq(fragment=None, theory=None, numcores=1, temp=298.15, pressure=1.0):
 #NOTE: displacement was set to 0.0005 Angstrom
 #ORCA uses 0.005 Bohr = 0.0026458861 Ang, CHemshell uses 0.01 Bohr = 0.00529 Ang
 def NumFreq(fragment=None, theory=None, npoint=1, displacement=0.005, hessatoms=None, numcores=1, runmode='serial', temp=298.15, pressure=1.0, hessatoms_masses=None):
-    
+    module_init_time=time.time()
     print(BC.WARNING, BC.BOLD, "------------NUMERICAL FREQUENCIES-------------", BC.END)
     shutil.rmtree('Numfreq_dir', ignore_errors=True)
     os.mkdir('Numfreq_dir')
@@ -433,6 +435,7 @@ def NumFreq(fragment=None, theory=None, npoint=1, displacement=0.005, hessatoms=
     
     #Return to ..
     os.chdir('..')
+    print_time_rel(module_init_time, modulename='NumFreq', moduleindex=1)
     return Thermochemistry
 
 
@@ -748,6 +751,7 @@ def comparenormalmodes(hessianA,hessianB,massesA,massesB):
 
 #
 def thermochemcalc(vfreq,atoms,fragment, multiplicity, temp=298.15,pressure=1.0):
+    module_init_time=time.time()
     """[summary]
 
     Args:
@@ -963,6 +967,7 @@ def thermochemcalc(vfreq,atoms,fragment, multiplicity, temp=298.15,pressure=1.0)
     thermochemcalc['Gcorr'] = Gcorr
     thermochemcalc['TS_tot'] = TS_tot
     
+    print_time_rel(module_init_time, modulename='thermochemcalc', moduleindex=4)
     return thermochemcalc
 
 #From Hess-tool.py: Copied 13 May 2020

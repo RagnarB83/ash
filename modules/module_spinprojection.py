@@ -42,6 +42,7 @@ class SpinProjectionTheory:
     
     #Run function. Takes coords, elems etc. arguments and computes E or E+G.
     def run(self, current_coords=None, elems=None, Grad=False, Hessian=False, PC=False, nprocs=None, label=None ):
+        module_init_time=time.time()
         print(BC.OKBLUE,BC.BOLD, "------------RUNNING SPINPROJECTIONTHEORY INTERFACE-------------", BC.END)
 
         
@@ -109,7 +110,7 @@ class SpinProjectionTheory:
         E_proj=HSenergy+Jmultiple_HSLS*J
         print("Projected energy of state S={} (label: {}) state : {}".format(self.Spin_LS,label,E_proj))
         finalE=E_proj
-        
+        print_time_rel(module_init_time, modulename='SpinProjectionTheory run')
         return finalE
     
 

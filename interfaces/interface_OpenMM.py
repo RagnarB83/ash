@@ -11,7 +11,7 @@ class OpenMMTheory:
                  Amberfiles=False, amberprmtopfile=None, printlevel=2, do_energy_composition=True,
                  xmlfile=None, periodic=False, periodic_cell_dimensions=None, customnonbondedforce=False):
         
-        timeA = time.time()
+        module_init_time = time.time()
         # OPEN MM load
         try:
             import simtk.openmm.app
@@ -59,7 +59,7 @@ class OpenMMTheory:
         #TODO: Should we keep this? Probably not. Coordinates would be handled by ASH.
         #PDB_ygg_frag = Fragment(pdbfile=pdbfile, conncalc=False)
         #self.coords=PDB_ygg_frag.coords
-        print_time_rel(timeA, modulename="import openMM")
+        print_time_rel(module_init_time, modulename="import openMM")
         timeA = time.time()
 
         self.Forcefield=None
@@ -308,6 +308,7 @@ class OpenMMTheory:
 
         print_time_rel(timeA, modulename="simulation setup")
         timeA = time.time()
+        print_time_rel(module_init_time, modulename="OpenMM object creation")
         
     def set_active_and_frozen_regions(self, active_atoms=None, frozen_atoms=None):
         #FROZEN AND ACTIVE ATOMS
@@ -484,6 +485,7 @@ class OpenMMTheory:
         timeA = time.time()
     
     def run(self, current_coords=None, elems=None, Grad=False, fragment=None, qmatoms=None):
+        module_init_time=time.time()
         timeA = time.time()
         print(BC.OKBLUE, BC.BOLD, "------------RUNNING OPENMM INTERFACE-------------", BC.END)
         #If no coords given to run then a single-point job probably (not part of Optimizer or MD which would supply coords).
@@ -547,6 +549,7 @@ class OpenMMTheory:
         #print("self.gradient:", self.gradient)
 
         print(BC.OKBLUE, BC.BOLD, "------------ENDING OPENMM INTERFACE-------------", BC.END)
+        print_time_rel(module_init_time, modulename="OpenMM run", moduleindex=2)
         if Grad == True:
             return self.energy, self.gradient
         else:

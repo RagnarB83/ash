@@ -6,9 +6,9 @@
     class ZeroTheory
     """
 import numpy as np
-
+import time
 import ash
-from functions_general import BC,blankline
+from functions_general import BC,blankline,print_time_rel
 
 #Single-point energy function
 def Singlepoint(fragment=None, theory=None, Grad=False):
@@ -24,6 +24,7 @@ def Singlepoint(fragment=None, theory=None, Grad=False):
         or
         float,np.array : Energy and gradient array
     """
+    module_init_time=time.time()
     print("")
     if fragment is None or theory is None:
         print(BC.FAIL,"Singlepoint requires a fragment and a theory object",BC.END)
@@ -36,6 +37,7 @@ def Singlepoint(fragment=None, theory=None, Grad=False):
         # An Energy+Gradient calculation where we change the number of cores to 12
         energy,gradient= theory.run(current_coords=coords, elems=elems, Grad=True)
         print("Energy: ", energy)
+        print_time_rel(module_init_time, modulename='Singlepoint')
         return energy,gradient
     # Run a single-point energy job without gradient (default)
     else:
@@ -44,6 +46,7 @@ def Singlepoint(fragment=None, theory=None, Grad=False):
         print("Energy: ", energy)
         #Now adding total energy to fragment
         fragment.energy=energy
+        print_time_rel(module_init_time, modulename='Singlepoint', moduleindex=1)
         return energy
 
 # Theory object that always gives zero energy and zero gradient. Useful for setting constraints
