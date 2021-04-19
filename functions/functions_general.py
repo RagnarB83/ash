@@ -380,7 +380,8 @@ class Timings:
         totalwalltime=time.time()-inittime
 
         print("Note: module-timings are a work in progress (report bugs!)")
-
+        print("To turn off timing output add to settings file: ~/ash_user_settings.ini")
+        print("print_full_timings = False   ")
         ######################
         #Old way of printing
         #Sort dict by value
@@ -416,41 +417,46 @@ class Timings:
         #Other small modules. 4 is default
         dictitems_index4=[i for i in self.simple_dict if self.module_indices[i] == 4]
 
-        print("Workflow modules")
-        print("-"*30)
-        for dictitem in dictitems_index0:
-            mmtime=self.simple_dict[dictitem]
-            time_per= 100*(mmtime/totalwalltime)
-            print("{:35}{:>20.2f}{:>10.1f}{:>20}".format(dictitem, mmtime, time_per, self.module_count[dictitem]))
-        print("")
-        print("Jobtype modules")
-        print("-"*30)
-        for dictitem in dictitems_index1:
-            mmtime=self.simple_dict[dictitem]
-            time_per= 100*(mmtime/totalwalltime)
-            print("{:35}{:>20.2f}{:>10.1f}{:>20}".format(dictitem, mmtime, time_per, self.module_count[dictitem]))
-        print("")
-        print("Theory-run modules")
-        print("-"*30)
-        for dictitem in dictitems_index2:
-            mmtime=self.simple_dict[dictitem]
-            time_per= 100*(mmtime/totalwalltime)
-            print("{:35}{:>20.2f}{:>10.1f}{:>20}".format(dictitem, mmtime, time_per, self.module_count[dictitem]))
-        print("")
-        #print("Various modules")
-        #print("-"*30)
-        #for dictitem in dictitems_index3:
-        #    mmtime=self.simple_dict[dictitem]
-        #    time_per= 100*(mmtime/totalwalltime)
-        #    print("{:35}{:>20.2f}{:>10.1f}{:>20}".format(dictitem, mmtime, time_per, self.module_count[dictitem]))
-        print("")
-        print("Other modules")
-        print("-"*30)
-        for dictitem in dictitems_index4:
-            mmtime=self.simple_dict[dictitem]
-            time_per= 100*(mmtime/totalwalltime)
-            print("{:35}{:>20.2f}{:>10.1f}{:>20}".format(dictitem, mmtime, time_per, self.module_count[dictitem]))
-        print("")
+        if len(dictitems_index0) !=0 :
+            print("Workflow modules")
+            print("-"*30)
+            for dictitem in dictitems_index0:
+                mmtime=self.simple_dict[dictitem]
+                time_per= 100*(mmtime/totalwalltime)
+                print("{:35}{:>20.2f}{:>10.1f}{:>20}".format(dictitem, mmtime, time_per, self.module_count[dictitem]))
+            print("")
+        if len(dictitems_index1) !=0 :
+            print("Jobtype modules")
+            print("-"*30)
+            for dictitem in dictitems_index1:
+                mmtime=self.simple_dict[dictitem]
+                time_per= 100*(mmtime/totalwalltime)
+                print("{:35}{:>20.2f}{:>10.1f}{:>20}".format(dictitem, mmtime, time_per, self.module_count[dictitem]))
+            print("")
+        if len(dictitems_index2) !=0 :
+            print("Theory-run modules")
+            print("-"*30)
+            for dictitem in dictitems_index2:
+                mmtime=self.simple_dict[dictitem]
+                time_per= 100*(mmtime/totalwalltime)
+                print("{:35}{:>20.2f}{:>10.1f}{:>20}".format(dictitem, mmtime, time_per, self.module_count[dictitem]))
+            print("")
+        #if len(dictitems_index3) !=0 :
+            #print("Various modules")
+            #print("-"*30)
+            #for dictitem in dictitems_index3:
+            #    mmtime=self.simple_dict[dictitem]
+            #    time_per= 100*(mmtime/totalwalltime)
+            #    print("{:35}{:>20.2f}{:>10.1f}{:>20}".format(dictitem, mmtime, time_per, self.module_count[dictitem]))
+            #print("")
+        if len(dictitems_index4) !=0 :
+            print("Other modules")
+            print("-"*30)
+            for dictitem in dictitems_index4:
+                mmtime=self.simple_dict[dictitem]
+                time_per= 100*(mmtime/totalwalltime)
+                print("{:35}{:>20.2f}{:>10.1f}{:>20}".format(dictitem, mmtime, time_per, self.module_count[dictitem]))
+            print("")
         print("")
         print("{:35}{:>20.2f}".format("Sum of all moduletimes (flawed)", self.totalsumtime))
         print("{:35}{:>20.2f}{:>10}".format("Total walltime", totalwalltime, 100.0))
