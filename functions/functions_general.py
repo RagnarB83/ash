@@ -307,6 +307,7 @@ def printDate():
 #Various function to print time of module/step. Will add time also to Timings object
 
 def print_time_rel(timestamp,modulename='Unknown', moduleindex=4):
+    print("modulename is unknown!!!")
     secs=time.time()-timestamp
     mins=secs/60
     print("-------------------------------------------------------------------")
@@ -316,6 +317,7 @@ def print_time_rel(timestamp,modulename='Unknown', moduleindex=4):
     timingsobject.add(modulename,secs, moduleindex=moduleindex)
 
 def print_time_rel_and_tot(timestampA,timestampB, modulename='Unknown', moduleindex=4):
+    print("modulename is unknown!!!")
     secsA=time.time()-timestampA
     minsA=secsA/60
     #hoursA=minsA/60
@@ -330,6 +332,7 @@ def print_time_rel_and_tot(timestampA,timestampB, modulename='Unknown', modulein
     timingsobject.add(modulename,secsA, moduleindex=moduleindex)
 
 def print_time_tot_color(time_initial, modulename='Unknown', moduleindex=4):
+    print("modulename is unknown!!!")
     #hoursA=minsA/60
     secs=time.time()-time_initial
     mins=secs/60

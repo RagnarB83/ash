@@ -242,7 +242,7 @@ class NonBondedTheory:
             print("epsij size: {}".format(len(self.epsij)))
         #print_time_rel(CheckpointTime, modulename="pairpot arrays", moduleindex=4)
         self.pairarrays_assigned = True
-        print_time_rel(module_init_time, modulename='LJ-pairpotential arrays', moduleindex=0)
+        print_time_rel(module_init_time, modulename='LJ-pairpotential arrays', moduleindex=4)
 
 
     def update_charges(self,atomlist,charges):
