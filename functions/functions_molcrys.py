@@ -209,7 +209,7 @@ def frag_define(orthogcoords,elems,cell_vectors,fragments,cell_angles=None, cell
     print("systemlist:", systemlist)
     print("Systemlist length:", len(systemlist))
     blankline()
-    print_time_rel_and_tot(currtime, origtime)
+    print_time_rel_and_tot(currtime, origtime, modulename='molcrys_frag_define_step1')
     currtime=time.time()
 
     #2.  Using extended cell find connected members of unassigned fragments
@@ -255,7 +255,7 @@ def frag_define(orthogcoords,elems,cell_vectors,fragments,cell_angles=None, cell
 
     print("Systemlist ({}) remaining: {}".format(len(systemlist), systemlist))
 
-    print_time_rel_and_tot(currtime, origtime)
+    print_time_rel_and_tot(currtime, origtime, modulename='molcrys_frag_define_step2')
     currtime=time.time()
     #3.  Going through fragment fraglists. Finding atoms that belong to another cell (i.e. large atom index).
     # Finding equivalent atom positions inside original cell
@@ -288,7 +288,7 @@ def frag_define(orthogcoords,elems,cell_vectors,fragments,cell_angles=None, cell
             sorted_mfrag = sorted(mfrag)
             fragment.fraglist[fragindex] = sorted_mfrag
 
-    print_time_rel_and_tot(currtime, origtime)
+    print_time_rel_and_tot(currtime, origtime, modulename='molcrys_frag_define_step3a')
     currtime=time.time()
 
     #Because every fragment with an atom inside original cell in step 2 gets added
