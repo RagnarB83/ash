@@ -321,8 +321,8 @@ def checkORCAfinished(file):
             if 'TOTAL RUN TIME:' in line:
                 return True
 
-#Grab Final single point energy
-def ORCAfinalenergygrab(file):
+#Grab Final single point energy. Ignoring possible encoding errors in file
+def ORCAfinalenergygrab(file, errors='ignore'):
     with open(file) as f:
         for line in f:
             if 'FINAL SINGLE POINT ENERGY' in line:
