@@ -96,7 +96,7 @@ from module_PES import PhotoElectronSpectrum
 #Workflows, benchmarking etc
 import module_workflows
 import module_highlevel_workflows
-from module_workflows import ReactionEnergy,thermochemprotocol_reaction,thermochemprotocol_single,confsampler_protocol
+from module_workflows import ReactionEnergy,thermochemprotocol_reaction,thermochemprotocol_single,confsampler_protocol, auto_active_space
 import module_benchmarking
 from module_benchmarking import run_benchmark
 

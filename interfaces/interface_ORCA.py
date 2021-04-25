@@ -1282,3 +1282,82 @@ def check_stability_in_output(file):
                 print("ASH: WF is NOT stable. Check ORCA output for details.")
                 return False
     return True
+
+
+def MP2_natocc_grab(filename):
+    natoccgrab=False
+    natoccupations=[]
+    with open(filename) as f:
+        for line in f:
+            if natoccgrab==True:
+                if 'N' in line:
+                    natoccupations.append(float(line.split()[-1]))
+                if '***' in line:
+                    natoccgrab=False
+            if 'Natural Orbital Occupation Num' in line:
+                natoccgrab=True
+    return natoccupations
+
+
+
+
+def SCF_FODocc_grab(filename):
+    occgrab=False
+    occupations=[]
+    with open(filename) as f:
+        for line in f:
+            if occgrab==True:
+                if '  NO   OCC' not in line:
+                    if len(line) >5:
+                        occupations.append(float(line.split()[1]))
+                    if len(line) < 2 or ' SPIN DOWN' in line:
+                        occgrab=False
+                        return occupations
+            if 'SPIN UP ORBITALS' in line:
+                occgrab=True
+    return natoccupations
+
+def CASSCF_natocc_grab(filename):
+    natoccgrab=False
+    natoccupations=[]
+    with open(filename) as f:
+        for line in f:
+            if natoccgrab==True:
+                if len(line) >5:
+                    natoccupations.append(float(line.split()[1]))
+                if len(line) < 2 or '----' in line:
+                    natoccgrab=False
+                    return natoccupations
+            if 'NO   OCC          E(Eh)            E(eV)' in line:
+                natoccgrab=True
+    return natoccupations
+
+def QRO_occ_energies_grab(filename):
+    occgrab=False
+    occupations=[]
+    qro_energies=[]
+    with open(filename) as f:
+        for line in f:
+            if occgrab==True:
+                if len(line) < 2 or '----' in line:
+                    occgrab=False
+                    return occupations,qro_energies
+                if len(line) >5:
+                    occ=line.split()[1][0]
+                    occupations.append(float(occ))
+                    qro_energies.append(float(line.split()[-4]))
+
+            if 'Orbital Energies of Quasi-Restricted' in line:
+                occgrab=True
+
+def ICE_WF_size(filename):
+    after_SD_numCFGs=0
+    num_genCFGs=0
+    with open(filename) as g:
+        for line in g:
+            if '# of configurations after S+D' in line:
+                after_SD_numCFGs=int(line.split()[-1])
+            if 'Selecting from the generated configurations  ...    # of configurations after Selection' in line:
+                num_genCFGs=int(line.split()[-1])
+            if 'Final CASSCF energy       :' in line:
+                return num_genCFGs,after_SD_numCFGs

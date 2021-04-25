@@ -13,10 +13,11 @@ import dictionaries_lists
 import module_coords
 import interface_geometric
 import interface_crest
-from functions_general import BC,print_time_rel
+from functions_general import BC,print_time_rel,print_line_with_mainheader,pygrep
 import ash_header
 import settings_ash
 import module_highlevel_workflows
+import functions_elstructure
 
 
 def ReactionEnergy(stoichiometry=None, list_of_fragments=None, list_of_energies=None, unit='kcal/mol', label=None, reference=None):
@@ -449,3 +450,152 @@ def old_thermochemprotocol(Opt_theory=None, SP_theory=None, fraglist=None, stoic
     #ash.print_time_rel(ash_header.init_time,modulename='Entire thermochemprotocol')
     #print_time_rel(module_init_time, modulename='thermochemprotocol')
 
+def auto_active_space(fragment=None, orcadir=None, basis="def2-SVP", scalar_rel=None, charge=None, mult=None, 
+    initial_orbitals='MP2', functional='TPSS', smeartemp=5000, tgen=1e-1, selection_thresholds=[1.999,0.001]):
+    print_line_with_mainheader("auto_active_space function")
+    print("Will do N-step orbital selection scheme")
+    print("basis:", basis)
+    print("scalar_rel:", scalar_rel)
+    print("")
+    print("1. Initial Orbital Step")
+    print("initial_orbitals:", initial_orbitals)
+    print("2. ICE-CI Orbital Step")
+    print("ICE-CI tgen:", tgen)
+    #1. Converge an RI-MP2 natural orbital calculation
+    if scalar_rel == None:
+        scalar_rel_keyword=""
+    else:
+        scalar_rel_keyword=scalar_rel
+
+    print("")
+    if initial_orbitals == 'MP2':
+        steplabel='MP2natorbs'
+        orcasimpleinput="! RI-MP2 autoaux tightscf {} {} ".format(basis, scalar_rel_keyword)
+        orcablocks="""
+        %scf
+        maxiter 800
+        end
+        %mp2
+        density unrelaxed
+        natorbs true
+        end
+        """
+        ORCAcalc_1 = ash.ORCATheory(orcadir=orcadir, charge=charge, mult=mult, orcasimpleinput=orcasimpleinput, orcablocks=orcablocks)
+        ash.Singlepoint(theory=ORCAcalc_1,fragment=fragment)
+        init_orbitals=ORCAcalc_1.filename+'.mp2nat'
+
+        step1occupations=ash.interface_ORCA.MP2_natocc_grab(ORCAcalc_1.filename+'.out')
+        print("MP2natoccupations:", step1occupations)
+    elif initial_orbitals == 'FOD':
+        steplabel='FODorbs'
+        print("Initial orbitals: FOD-DFT")
+        print("Functional used:", functional)
+        print("Smear temperature: {} K".format(smeartemp))
+        #Enforcing UKS so that we get QROs even for S=0
+        orcasimpleinput="! UKS  {} {} {} tightscf  slowconv".format(functional,basis, scalar_rel_keyword)
+        orcablocks="""
+        %scf
+        maxiter 800
+        Smeartemp {}
+        end
+        """.format(smeartemp)
+        ORCAcalc_1 = ash.ORCATheory(orcadir=orcadir, charge=charge, mult=mult, orcasimpleinput=orcasimpleinput, orcablocks=orcablocks)
+        ash.Singlepoint(theory=ORCAcalc_1,fragment=fragment)
+        step1occupations=ash.interface_ORCA.SCF_FODocc_grab(ORCAcalc_1.filename+'.out')
+        shutil.copy(ORCAcalc_1.filename+'.gbw', ORCAcalc_1.filename+'_fod.gbw')
+        init_orbitals=ORCAcalc_1.filename+'_fod.gbw'
+    elif initial_orbitals == 'QRO' or initial_orbitals == 'DFT':
+        print("not active")
+        #
+        exit()
+        steplabel='DFTQROorbs'
+        print("Initial orbitals: DFT-QRO")
+        print("Functional used:", functional)
+        #Enforcing UKS so that we get QROs even for S=0
+        orcasimpleinput="! UKS {} {} {} tightscf UNO ".format(functional,basis, scalar_rel_keyword)
+        orcablocks="""
+        %scf
+        maxiter 800
+        end
+        """
+        ORCAcalc_1 = ash.ORCATheory(orcadir=orcadir, charge=charge, mult=mult, orcasimpleinput=orcasimpleinput, orcablocks=orcablocks)
+        ash.Singlepoint(theory=ORCAcalc_1,fragment=fragment)
+        step1occupations,qroenergies=ash.interface_ORCA.QRO_occ_energies_grab(ORCAcalc_1.filename+'.out')
+        print("occupations:", step1occupations)
+        print("qroenergies:", qroenergies)
+        init_orbitals=ORCAcalc_1.filename+'.qro'
+        #if mult != 1:
+        #    init_orbitals=ORCAcalc.filename+'.qro'
+        #else:
+        #    #Use canonical if not open-shell
+        #    init_orbitals=ORCAcalc.filename+'.gbw'
+
+    print("Initial orbitals file:", init_orbitals)
+
+    #2a. Count size of ICE-CI CASSCF active space to test
+    print("")
+    upper_threshold=selection_thresholds[0]
+    lower_threshold=selection_thresholds[1]
+    print("Selecting size of active-space for ICE-CI step")
+    print("Using orbital tresholds:", upper_threshold,lower_threshold )
+    numelectrons,numorbitals=functions_elstructure.select_space_from_occupations(step1occupations, selection_thresholds=[upper_threshold,lower_threshold])
+    print("Will use CAS size of CAS({},{}) for ICE-CI step".format(numelectrons,numorbitals))
+
+    #2b. Read orbitals into ICE-CI calculation
+    orcasimpleinput="! CASSCF noiter {} {} MOREAD ".format(basis, scalar_rel_keyword)
+    orcablocks="""
+    %maxcore 5000
+    %moinp \"{}\"
+    %casscf
+    nel {}
+    norb {}
+    cistep ice
+    ci
+    tgen {}
+    maxiter 200
+    end
+    end
+    """.format(init_orbitals,numelectrons,numorbitals,tgen)
+    ORCAcalc_2 = ash.ORCATheory(orcadir=orcadir, charge=charge, mult=mult, orcasimpleinput=orcasimpleinput, orcablocks=orcablocks)
+    ash.Singlepoint(theory=ORCAcalc_2,fragment=fragment)
+
+    ICEnatoccupations=ash.interface_ORCA.CASSCF_natocc_grab(ORCAcalc_2.filename+'.out')
+
+    finalICE_Gen_CFGs,finalICE_SD_CFGs=ash.interface_ORCA.ICE_WF_size(ORCAcalc_2.filename+'.out')
+
+    Tvar=float(pygrep("ICE TVar                          ...", ORCAcalc_2.filename+'.out')[-1])
+    print("ICE-CI step done")
+    print("")
+
+    print("Wavefunction size:")
+    print("Tgen:", tgen)
+    print("Tvar:", Tvar)
+    print("Orbital space of CAS({},{}) used for ICE-CI step".format(numelectrons,numorbitals))
+    print("Num generator CFGs:", finalICE_Gen_CFGs)
+    print("Num CFGS after S+D:", finalICE_SD_CFGs)
+    print("")
+
+    #3. Do something clever with occupations
+
+    print("Table of natural occupation numbers")
+    print("")
+    print("{:<9} {:6} {:6}".format("Orbital", steplabel, "ICE-nat-occ"))
+    print("----------------------------------------")
+    for index,(step1occ,iceocc) in enumerate(zip(step1occupations,ICEnatoccupations)):
+        print("{:<9} {:9.4f} {:9.4f}".format(index,step1occ,iceocc))
+
+
+    minimal_CAS=functions_elstructure.select_space_from_occupations(ICEnatoccupations, selection_thresholds=[1.95,0.05])
+    medium_CAS=functions_elstructure.select_space_from_occupations(ICEnatoccupations, selection_thresholds=[1.98,0.02])
+    large_CAS=functions_elstructure.select_space_from_occupations(ICEnatoccupations, selection_thresholds=[1.995,0.005])
+    print("")
+    print("Recommended active spaces based on ICE-CI natural occupations:")
+    print("Minimal (1.95,0.05): CAS({},{})".format(minimal_CAS[0],minimal_CAS[1]))
+    print("Medium (1.98,0.02): CAS({},{})".format(medium_CAS[0],medium_CAS[1]))
+    print("Large (1.995,0.005): CAS({},{})".format(large_CAS[0],large_CAS[1]))
+
+    print("Orbital file to use:", ORCAcalc_2.filename+'.gbw')
+    print("Note: orbitals are the unmodified initial-step orbitals:", steplabel)
+
+    #Returning list of active spaces
+    return [[minimal_CAS[0],minimal_CAS[1]],[medium_CAS[0],medium_CAS[1]],[large_CAS[0],large_CAS[1]]]

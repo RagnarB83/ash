@@ -929,3 +929,12 @@ def Jcoupling_Noodleman(HSenergy,BSenergy,smax):
     print("J coupling constant: {} kcal/Mol".format(J_kcal))
     print("J coupling constant: {} cm**-1".format(J_cm))
     return J
+
+#Select an active space from list of occupations and thresholds
+def select_space_from_occupations(occlist, selection_thresholds=[1.98,0.02]):
+    upper_threshold=selection_thresholds[0]
+    lower_threshold=selection_thresholds[1]
+    welloccorbs=[i for i in occlist if i < upper_threshold and i > lower_threshold]
+    numelectrons=math.ceil(sum(welloccorbs))
+    numorbitals=len(welloccorbs)
+    return [numelectrons,numorbitals]
