@@ -573,6 +573,7 @@ def auto_active_space(fragment=None, orcadir=None, basis="def2-SVP", scalar_rel=
 
     Tvar=float(pygrep("ICE TVar                          ...", ORCAcalc_2.filename+'.out')[-1])
     print("ICE-CI step done")
+    print("Note: New natural orbitals from ICE-CI density matrix formed!")
     print("")
 
     print("Wavefunction size:")
@@ -602,7 +603,7 @@ def auto_active_space(fragment=None, orcadir=None, basis="def2-SVP", scalar_rel=
     print("Medium (1.98,0.02): CAS({},{})".format(medium_CAS[0],medium_CAS[1]))
     print("Large (1.995,0.005): CAS({},{})".format(large_CAS[0],large_CAS[1]))
 
-    print("Orbital file to use:", ORCAcalc_2.filename+'.gbw')
+    print("Orbital file to use for future calculations:", ORCAcalc_2.filename+'.gbw')
     print("Note: orbitals are new natural orbitals formed from the ICE-CI density matrix")
 
     #Returning list of active spaces
