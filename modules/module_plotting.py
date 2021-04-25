@@ -104,6 +104,7 @@ def contourplot(surfacedictionary, label='Label',x_axislabel='Coord', y_axislabe
     y_c=[]
     print("")
     print("Read surfacedictionary:", surfacedictionary)
+    print("Number of entries:", len(surfacedictionary))
     for i in surfacedictionary:
         coords.append(i)
         x_c.append(i[0])
