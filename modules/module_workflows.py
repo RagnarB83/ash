@@ -468,6 +468,7 @@ def auto_active_space(fragment=None, orcadir=None, basis="def2-SVP", scalar_rel=
         scalar_rel_keyword=scalar_rel
 
     print("")
+    #NOTE: Ideas: Insted of UHF-MP2 step. DFT-SCF and then MP2 natural orbitals from unrelaxed density on top?
     if initial_orbitals == 'MP2':
         steplabel='MP2natorbs'
         orcasimpleinput="! RI-MP2 autoaux tightscf {} {} ".format(basis, scalar_rel_keyword)
@@ -502,6 +503,12 @@ def auto_active_space(fragment=None, orcadir=None, basis="def2-SVP", scalar_rel=
         ORCAcalc_1 = ash.ORCATheory(orcadir=orcadir, charge=charge, mult=mult, orcasimpleinput=orcasimpleinput, orcablocks=orcablocks)
         ash.Singlepoint(theory=ORCAcalc_1,fragment=fragment)
         step1occupations=ash.interface_ORCA.SCF_FODocc_grab(ORCAcalc_1.filename+'.out')
+        print("FOD occupations:", step1occupations)
+        #FOD occupations are unrestricted.
+        #Need to change 1.0 to 2.0 to get fake double-occupations
+        print("Warning: replacing unrestricted set (1.0 occupations) with doubly-occupied (2.0 occupations)")
+        step1occupations =  [i if i != 1.0 else 2.0 for i in step1occupations]
+        print("New FOD occupations:", step1occupations)
         shutil.copy(ORCAcalc_1.filename+'.gbw', ORCAcalc_1.filename+'_fod.gbw')
         init_orbitals=ORCAcalc_1.filename+'_fod.gbw'
     elif initial_orbitals == 'QRO' or initial_orbitals == 'DFT':
@@ -542,11 +549,12 @@ def auto_active_space(fragment=None, orcadir=None, basis="def2-SVP", scalar_rel=
     print("Will use CAS size of CAS({},{}) for ICE-CI step".format(numelectrons,numorbitals))
 
     #2b. Read orbitals into ICE-CI calculation
-    orcasimpleinput="! CASSCF noiter {} {} MOREAD ".format(basis, scalar_rel_keyword)
+    orcasimpleinput="! CASSCF  {} {} MOREAD ".format(basis, scalar_rel_keyword)
     orcablocks="""
     %maxcore 5000
     %moinp \"{}\"
     %casscf
+    gtol 99999
     nel {}
     norb {}
     cistep ice
@@ -595,7 +603,7 @@ def auto_active_space(fragment=None, orcadir=None, basis="def2-SVP", scalar_rel=
     print("Large (1.995,0.005): CAS({},{})".format(large_CAS[0],large_CAS[1]))
 
     print("Orbital file to use:", ORCAcalc_2.filename+'.gbw')
-    print("Note: orbitals are the unmodified initial-step orbitals:", steplabel)
+    print("Note: orbitals are new natural orbitals formed from the ICE-CI density matrix")
 
     #Returning list of active spaces
     return [[minimal_CAS[0],minimal_CAS[1]],[medium_CAS[0],medium_CAS[1]],[large_CAS[0],large_CAS[1]]]
