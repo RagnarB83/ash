@@ -68,6 +68,7 @@ class OpenMMTheory:
         if CHARMMfiles is True:
             self.Forcefield='CHARMM'
             print("Reading CHARMM files")
+            print("Note: OpenMM will fail here if parameters are missing in topology and parameter files (e.g. nonbonded entries)")
             # Load CHARMM PSF files. Both CHARMM-style and XPLOR allowed I believe. Todo: Check
             self.psffile=psffile
             self.psf = simtk.openmm.app.CharmmPsfFile(psffile)
