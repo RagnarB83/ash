@@ -216,7 +216,7 @@ class Fragment:
         try:
             with open(filename) as f:
                 for line in f:
-                    if 'ATOM' in line:
+                    if 'ATOM ' in line:
                         atomindex.append(float(line[6:11].replace(' ','')))
                         atom_name.append(line[12:16].replace(' ',''))
                         residname.append(line[17:20].replace(' ',''))
