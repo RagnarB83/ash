@@ -56,7 +56,7 @@ import functions_elstructure
 from module_spinprojection import SpinProjectionTheory
 
 #Surface
-from module_surface import calc_surface,calc_surface_fromXYZ,read_surfacedict_from_file
+from module_surface import calc_surface,calc_surface_fromXYZ,read_surfacedict_from_file,write_surfacedict_to_file
 
 #QMcode interfaces
 from interface_ORCA import ORCATheory
