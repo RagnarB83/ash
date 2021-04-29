@@ -157,15 +157,7 @@ def calc_surface(fragment=None, theory=None, workflow=None, scantype='Unrelaxed'
                 surfacedictionary = functions_parallel.Singlepoint_parallel(fragments=surfacepointfragments_lists, theories=[theory], numcores=numcores)
                 print("Parallel calculation done!")
                 print("surfacedictionary:", surfacedictionary)
-                
-                #Gathering results in dictionary
-                #NOTE: WRONG, to be fixed
-                #for coord,energy in zip(results,surfacepointfragments_lists):
-                #    print("Coord : {}  Energy: {}".format(coord,energy))
-                #    surfacedictionary[coord] = energy
-                #    print("surfacedictionary:", surfacedictionary)
-                #    print("len surfacedictionary:", len(surfacedictionary))
-                #    print("totalnumpoints:", totalnumpoints)
+
                 if len(surfacedictionary) != totalnumpoints:
                     print("Dictionary not complete!")
                     print("len surfacedictionary:", len(surfacedictionary))
@@ -336,8 +328,8 @@ def calc_surface(fragment=None, theory=None, workflow=None, scantype='Unrelaxed'
 
 # Calculate surface from XYZ-file collection.
 #Both unrelaxed (single-point) and relaxed (opt) is now possible
-# TODO: Finish parallelize surfacepoint calculations
-# TODO: FIgure out MO-read with parallelization
+# Parallelization and MOREAD complete
+# TODO: Parallelization and Relaxed mode
 def calc_surface_fromXYZ(xyzdir=None, theory=None, dimension=None, resultfile=None, scantype='Unrelaxed',runmode='serial',
                          coordsystem='dlc', maxiter=50, extraconstraints=None, convergence_setting=None, numcores=None,
                          RC1_type=None, RC2_type=None, RC1_indices=None, RC2_indices=None, keepoutputfiles=True, keepmofiles=False,

@@ -120,7 +120,7 @@ def Singlepoint_parallel(fragments=None, theories=None, numcores=None, mofilesdi
     print("Number of theories:", len(theories))
     print("Running single-point calculations in parallel")
     print("Mofilesdir:", mofilesdir)
-
+    print(BC.WARNING, "Warning: Output from Singlepoint_parallel will be erratic due to simultaneous output from multiple workers", BC.END)
     pool = mp.Pool(numcores)
     # Singlepoint(fragment=None, theory=None, Grad=False)
     #Case: 1 theory, multiple fragments
