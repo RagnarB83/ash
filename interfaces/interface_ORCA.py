@@ -1,14 +1,13 @@
 import subprocess as sp
-#from functions_solv import *
-#from module_coords import elemstonuccharges
 import module_coords
-from functions_general import blankline,insert_line_into_file,BC
+from functions_general import blankline,insert_line_into_file,BC,print_time_rel
 import functions_elstructure
 import constants
 import multiprocessing as mp
 import numpy as np
 import os
 import settings_ash
+import time
 
 #ORCA Theory object. Fragment object is optional. Only used for single-points.
 class ORCATheory:
@@ -132,6 +131,7 @@ class ORCATheory:
     #Run function. Takes coords, elems etc. arguments and computes E or E+G.
     def run(self, current_coords=None, current_MM_coords=None, MMcharges=None, qm_elems=None,
             elems=None, Grad=False, Hessian=False, PC=False, nprocs=None, label=None ):
+        module_init_time=time.time()
         print(BC.OKBLUE,BC.BOLD, "------------RUNNING ORCA INTERFACE-------------", BC.END)
         #Coords provided to run or else taken from initialization.
         #if len(current_coords) != 0:
@@ -228,18 +228,22 @@ class ORCATheory:
                     #Grab pointcharge gradient. i.e. gradient on MM atoms from QM-MM elstat interaction.
                     self.pcgrad=ORCApcgradientgrab(pcgradfile)
                     print(BC.OKBLUE,BC.BOLD,"------------ENDING ORCA-INTERFACE-------------", BC.END)
+                    print_time_rel(module_init_time, modulename='ORCA run', moduleindex=2)
                     return self.energy, self.grad, self.pcgrad
                 else:
                     print(BC.OKBLUE,BC.BOLD,"------------ENDING ORCA-INTERFACE-------------", BC.END)
+                    print_time_rel(module_init_time, modulename='ORCA run', moduleindex=2)
                     return self.energy, self.grad
 
             else:
                 print("Single-point ORCA energy:", self.energy)
                 print(BC.OKBLUE,BC.BOLD,"------------ENDING ORCA-INTERFACE-------------", BC.END)
+                print_time_rel(module_init_time, modulename='ORCA run', moduleindex=2)
                 return self.energy
         else:
             print(BC.FAIL,"Problem with ORCA run", BC.END)
             print(BC.OKBLUE,BC.BOLD, "------------ENDING ORCA-INTERFACE-------------", BC.END)
+            print_time_rel(module_init_time, modulename='ORCA run', moduleindex=2)
             exit(1)
 
 
@@ -317,8 +321,8 @@ def checkORCAfinished(file):
             if 'TOTAL RUN TIME:' in line:
                 return True
 
-#Grab Final single point energy
-def ORCAfinalenergygrab(file):
+#Grab Final single point energy. Ignoring possible encoding errors in file
+def ORCAfinalenergygrab(file, errors='ignore'):
     with open(file) as f:
         for line in f:
             if 'FINAL SINGLE POINT ENERGY' in line:
@@ -1158,7 +1162,7 @@ def grabatomcharges_ORCA(chargemodel,outputfile):
                     charges=[]
                     grab=True
         print("Hirshfeld charges :", charges)
-        atomicnumbers=elemstonuccharges.elemstonuccharges(elems)
+        atomicnumbers=module_coords.elemstonuccharges(elems)
         charges = functions_elstructure.calc_cm5(atomicnumbers, coords, charges)
         print("CM5 charges :", list(charges))
     elif chargemodel == "Mulliken":
@@ -1278,3 +1282,82 @@ def check_stability_in_output(file):
                 print("ASH: WF is NOT stable. Check ORCA output for details.")
                 return False
     return True
+
+
+def MP2_natocc_grab(filename):
+    natoccgrab=False
+    natoccupations=[]
+    with open(filename) as f:
+        for line in f:
+            if natoccgrab==True:
+                if 'N' in line:
+                    natoccupations.append(float(line.split()[-1]))
+                if '***' in line:
+                    natoccgrab=False
+            if 'Natural Orbital Occupation Num' in line:
+                natoccgrab=True
+    return natoccupations
+
+
+
+
+def SCF_FODocc_grab(filename):
+    occgrab=False
+    occupations=[]
+    with open(filename) as f:
+        for line in f:
+            if occgrab==True:
+                if '  NO   OCC' not in line:
+                    if len(line) >5:
+                        occupations.append(float(line.split()[1]))
+                    if len(line) < 2 or ' SPIN DOWN' in line:
+                        occgrab=False
+                        return occupations
+            if 'SPIN UP ORBITALS' in line:
+                occgrab=True
+    return natoccupations
+
+def CASSCF_natocc_grab(filename):
+    natoccgrab=False
+    natoccupations=[]
+    with open(filename) as f:
+        for line in f:
+            if natoccgrab==True:
+                if len(line) >5:
+                    natoccupations.append(float(line.split()[1]))
+                if len(line) < 2 or '----' in line:
+                    natoccgrab=False
+                    return natoccupations
+            if 'NO   OCC          E(Eh)            E(eV)' in line:
+                natoccgrab=True
+    return natoccupations
+
+def QRO_occ_energies_grab(filename):
+    occgrab=False
+    occupations=[]
+    qro_energies=[]
+    with open(filename) as f:
+        for line in f:
+            if occgrab==True:
+                if len(line) < 2 or '----' in line:
+                    occgrab=False
+                    return occupations,qro_energies
+                if len(line) >5:
+                    occ=line.split()[1][0]
+                    occupations.append(float(occ))
+                    qro_energies.append(float(line.split()[-4]))
+
+            if 'Orbital Energies of Quasi-Restricted' in line:
+                occgrab=True
+
+def ICE_WF_size(filename):
+    after_SD_numCFGs=0
+    num_genCFGs=0
+    with open(filename) as g:
+        for line in g:
+            if '# of configurations after S+D' in line:
+                after_SD_numCFGs=int(line.split()[-1])
+            if 'Selecting from the generated configurations  ...    # of configurations after Selection' in line:
+                num_genCFGs=int(line.split()[-1])
+            if 'Final CASSCF energy       :' in line:
+                return num_genCFGs,after_SD_numCFGs

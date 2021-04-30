@@ -50,7 +50,7 @@ class NonBondedTheory:
 
     #Todo: Need to make active-region version of pyarray version here.
     def calculate_LJ_pairpotentials(self, qmatoms=None, actatoms=None, frozenatoms=None):
-
+        module_init_time=time.time()
         #actatoms
         if actatoms is None:
             actatoms=[]
@@ -204,7 +204,7 @@ class NonBondedTheory:
                 print("Calculating pairpotential array for active region only")
                 #pairpot_active(numatoms,atomtypes,LJpydict,qmatoms,actatoms)
                 print("self.numatoms", self.numatoms)
-                print("self.atomtypes", self.atomtypes)
+                #print("self.atomtypes", self.atomtypes)
                 print("self.LJpairpotdict", self.LJpairpotdict)
                 print("qmatoms", qmatoms)
                 #print("actatoms", actatoms)
@@ -240,8 +240,10 @@ class NonBondedTheory:
             #print("self.epsij ({}) : {}".format(len(self.epsij), self.epsij))
             print("sigmaij size: {}".format(len(self.sigmaij)))
             print("epsij size: {}".format(len(self.epsij)))
-        print_time_rel(CheckpointTime, modulename="pairpot arrays")
+        #print_time_rel(CheckpointTime, modulename="pairpot arrays", moduleindex=4)
         self.pairarrays_assigned = True
+        print_time_rel(module_init_time, modulename='LJ-pairpotential arrays', moduleindex=4)
+
 
     def update_charges(self,atomlist,charges):
         print("Updating charges.")
@@ -254,7 +256,7 @@ class NonBondedTheory:
     # current_coords is now used for full_coords, charges for full coords
     def run(self, current_coords=None, elems=None, charges=None, connectivity=None,
             Coulomb=True, Grad=True, qmatoms=None, actatoms=None, frozenatoms=None):
-
+        module_init_time=time.time()
         if current_coords is None:
             print("No current_coords argument. Exiting...")
             exit()
@@ -376,6 +378,7 @@ class NonBondedTheory:
 
         if self.printlevel >= 2:
             print(BC.OKBLUE, BC.BOLD, "------------ENDING NONBONDED MM CODE-------------", BC.END)
+        print_time_rel(module_init_time, modulename='NonbondedTheory run', moduleindex=2)
         return self.MMEnergy, self.MMGradient
 
 
@@ -443,7 +446,7 @@ def MMforcefield_read(file):
 
 #UFF dictionary with parameters
 #Taken from oldmolcrys/old-solvshell and originally from Chemshell
-# Element: [R0,eps]. R0 in Angstrom (I think) and eps in kcal/mol
+# Element: [R0,eps]. R0 in Angstrom and eps in kcal/mol
 UFFdict={'H': [2.886, 0.044], 'He': [2.362, 0.056], 'Li': [2.451, 0.025], 'Be': [2.745, 0.085], 'B': [4.083, 0.18],
          'C': [3.851, 0.105], 'N': [3.66, 0.069], 'O': [3.5, 0.06], 'F': [3.364, 0.05], 'Ne': [3.243, 0.042],
          'Na': [2.983, 0.03], 'Mg': [3.021, 0.111], 'Al': [4.499, 0.505], 'Si': [4.295, 0.402], 'P': [4.147, 0.305],

@@ -1,6 +1,8 @@
 import os
+import time
+
 from module_coords import split_multimolxyzfile
-from functions_general import int_ranges, listdiff
+from functions_general import int_ranges, listdiff,print_time_rel
 import subprocess as sp
 import ash
 
@@ -8,7 +10,9 @@ import ash
 #Very simple crest interface
 def call_crest(fragment=None, xtbmethod=None, crestdir=None,charge=None, mult=None, solvent=None, energywindow=6, numcores=1, 
                constrained_atoms=None, forceconstant_constraint=0.5):
-
+    
+    module_init_time=time.time()
+    
     os.mkdir('crest-calc')
     os.chdir('crest-calc')
 
@@ -55,6 +59,7 @@ def call_crest(fragment=None, xtbmethod=None, crestdir=None,charge=None, mult=No
              str(charge), '-uhf', str(mult - 1)])
 
     os.chdir('..')
+    print_time_rel(module_init_time, modulename='crest run', moduleindex=0)
 
 #Grabbing crest conformers. Assuming inside crest-calc dir and in file called crest_conformers.xyz
 #Creating ASH fragments for each conformer

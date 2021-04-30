@@ -16,7 +16,7 @@ class QMMMTheory:
     def __init__(self, qm_theory=None, qmatoms=None, fragment=None, mm_theory=None , charges=None,
                  embedding="Elstat", printlevel=2, nprocs=1, actatoms=None, frozenatoms=None, excludeboundaryatomlist=None,
                  unusualboundary=False):
-
+        module_init_time=time.time()
         print(BC.WARNING,BC.BOLD,"------------Defining QM/MM object-------------", BC.END)
 
         #Linkatoms False by default. Later checked.
@@ -226,7 +226,7 @@ class QMMMTheory:
             #TODO: Remove option for no MM theory or keep this ??
             self.ZeroQMCharges() #Modifies self.charges_qmregionzeroed
             print("length of self.charges_qmregionzeroed :", len(self.charges_qmregionzeroed))
-
+        print_time_rel(module_init_time, modulename='QM/MM object creation', moduleindex=2)
     #From QM1:MM1 boundary dict, get MM1:MMx boundary dict (atoms connected to MM1)
     def get_MMboundary(self):
         # if boundarydict is not empty we need to zero MM1 charge and distribute charge from MM1 atom to MM2,MM3,MM4
@@ -347,6 +347,7 @@ class QMMMTheory:
                 self.dipole_coords.append(pos_d2)
     
     def run(self, current_coords=None, elems=None, Grad=False, nprocs=1):
+        module_init_time=time.time()
         CheckpointTime = time.time()
         if self.printlevel >= 2:
             print(BC.WARNING, BC.BOLD, "------------RUNNING QM/MM MODULE-------------", BC.END)
@@ -460,7 +461,7 @@ class QMMMTheory:
         #print("Removing zero-valued charges")
         #self.pointcharges, self.pointchargecoords = remove_zero_charges(self.pointcharges, self.pointchargecoords)
         print("Number of charge coordinates :", len(self.pointchargecoords))
-        print_time_rel(CheckpointTime, modulename='QM/MM run prep')
+        print_time_rel(CheckpointTime, modulename='QM/MM run prep', moduleindex=2)
         
         #If no qmatoms then do MM-only
         if len(self.qmatoms) == 0:
@@ -554,7 +555,7 @@ class QMMMTheory:
         else:
             print("invalid QM theory")
             exit(1)
-        print_time_rel(CheckpointTime, modulename='QM step')
+        print_time_rel(CheckpointTime, modulename='QM step', moduleindex=2)
         CheckpointTime = time.time()
 
 
@@ -597,7 +598,7 @@ class QMMMTheory:
                 self.MMenergy= self.mm_theory.run(current_coords=current_coords, qmatoms=self.qmatoms)
         else:
             self.MMenergy=0
-        print_time_rel(CheckpointTime, modulename='MM step')
+        print_time_rel(CheckpointTime, modulename='MM step', moduleindex=2)
         CheckpointTime = time.time()
         #Final QM/MM Energy
         self.QM_MM_energy= self.QMenergy+self.MMenergy
@@ -759,8 +760,10 @@ class QMMMTheory:
                 module_coords.write_coords_all(self.QM_MM_gradient, self.elems, indices=self.allatoms, file="QM_MMgradient", description="QM/MM gradient (au/Bohr):")
             if self.printlevel >= 2:
                 print(BC.WARNING,BC.BOLD,"------------ENDING QM/MM MODULE-------------",BC.END)
+                print_time_rel(module_init_time, modulename='QM/MM run', moduleindex=2)
             return self.QM_MM_energy, self.QM_MM_gradient
         else:
+            print_time_rel(module_init_time, modulename='QM/MM run', moduleindex=2)
             return self.QM_MM_energy
 
 

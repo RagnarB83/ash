@@ -3,6 +3,7 @@ import shutil
 import numpy as np
 import os
 import math
+import time
 
 import ash
 import module_coords
@@ -145,6 +146,7 @@ def run_benchmark(set=None, theory=None, property='energy', workflow=None, orcad
         reuseorbs (bool, optional): [description]. Defaults to False.
         corrections ([type], optional): [description]. Defaults to None.
     """
+    module_init_time=time.time()
     print("")
     print("")
     print(BC.WARNING,"="*30,BC.END)
@@ -300,3 +302,5 @@ def run_benchmark(set=None, theory=None, property='energy', workflow=None, orcad
     print(" {:<10s} {:13.4f} {:<10s} ".format("ME", ME, unit))
     print(" {:<10s} {:13.4f} {:<10s} ".format("RMSE", RMSE, unit))
     print(" {:<10s} {:13.4f} {:<10s} ".format("MaxError", MaxError, unit))
+
+    print_time_rel(module_init_time, modulename='Benchmarking', moduleindex=0)

@@ -1,7 +1,7 @@
 import numpy as np
 import constants
 from module_coords import print_coords_all,print_coords_for_atoms,print_internal_coordinate_table,write_XYZ_for_atoms,write_xyzfile
-from functions_general import blankline,BC
+from functions_general import blankline,BC,print_time_rel
 import os
 import shutil
 import ash
@@ -15,6 +15,17 @@ import time
 # bond,angle and dihedral constraints work. If only atom indices provided and constrainvalue is False then constraint at current position
 # If constrainvalue=True then last entry should be value of constraint
 
+
+
+
+#Function to convert atom indices from full system to Active region. Used in case of QM/MM
+#Single index case
+def fullindex_to_actindex(fullindex,actatoms):
+    actindex=actatoms.index(fullindex)
+    return actindex
+
+
+
 def geomeTRICOptimizer(theory=None,fragment=None, coordsystem='hdlc', frozenatoms=[], constraintsinputfile=None, constraints=None, 
                        constrainvalue=False, maxiter=50, ActiveRegion=False, actatoms=[], convergence_setting=None, conv_criteria=None):
     """
@@ -24,7 +35,7 @@ def geomeTRICOptimizer(theory=None,fragment=None, coordsystem='hdlc', frozenatom
     Active-atom coords (e.g. only QM region) are only provided to geomeTRIC during optimization while rest is frozen.
     Needed as discussed here: https://github.com/leeping/geomeTRIC/commit/584869707aca1dbeabab6fe873fdf139d384ca66#diff-2af7dd72b77dac63cea64c052a549fe0
     """
-
+    module_init_time=time.time()
     if ActiveRegion == True and coordsystem == "tric":
         #TODO: Look into this more
         print("Activeregion true and coordsystem = tric are not compatible")
@@ -59,8 +70,51 @@ def geomeTRICOptimizer(theory=None,fragment=None, coordsystem='hdlc', frozenatom
     #    print("Problem. Actatoms list is not sorted in ascending order. Please sort this list (and possibly qmatoms list also))")
     #    exit()
     
-    
-    
+    #Function Convert constraints indices to actatom indices
+    def constraints_indices_convert(con,actatoms):
+        try:
+            bondcons=con['bond']
+        except KeyError:
+            bondcons=[]
+        try:
+            anglecons=con['angle']
+        except KeyError:
+            anglecons=[]
+        try:
+            dihedralcons=con['dihedral']
+        except KeyError:
+            dihedralcons=[]
+        #Looping over constraints-class (bond,angle-dihedral)
+        #list-item:
+        for bc in bondcons:
+            #atomindex:
+            for i,bc_i in enumerate(bc):
+                #replacing
+                bc[i]=fullindex_to_actindex(bc_i,actatoms)
+        for ac in anglecons:
+            #atomindex:
+            for j,ac_j in enumerate(ac):
+                #replacing
+                ac[j]=fullindex_to_actindex(ac_j,actatoms)
+        for dc in dihedralcons:
+            #atomindex:
+            for k,dc_k in enumerate(dc):
+                #replacing
+                dc[k]=fullindex_to_actindex(dc_k,actatoms)
+        return con
+
+    #CONSTRAINTS
+    # For QM/MM we need to convert full-system atoms into active region atoms 
+    #constraints={'bond':[[8854,37089]]}
+    if ActiveRegion == True:
+        if constraints != None:
+            print("Constraints set. Active region true")
+            print("User-defined constraints (fullsystem-indices):", constraints)
+            constraints=constraints_indices_convert(constraints,actatoms)
+            print("Converting constraints indices to active-region indices")
+            print("Constraints (actregion-indices):", constraints)
+
+
     #Delete constraintsfile unless asked for
     if constraintsinputfile is None:
         try:
@@ -346,5 +400,5 @@ def geomeTRICOptimizer(theory=None,fragment=None, coordsystem='hdlc', frozenatom
     #Now returning final energy
     #TODO: Return dictionary of energy, gradient, coordinates etc, coordinates along trajectory ??
     
-    
+    print_time_rel(module_init_time, modulename='geomeTRIC', moduleindex=1)
     return ashengine.energy

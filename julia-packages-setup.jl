@@ -9,6 +9,10 @@ Pkg.add("PyCall")
 Pkg.add("Hungarian")
 #Distances package. https://github.com/JuliaStats/Distances.jl
 Pkg.add("Distances")
+#LoopVectorization package. https://github.com/JuliaSIMD/LoopVectorization.jl
+Pkg.add("LoopVectorization")
+#Tullio package. https://github.com/mcabbott/Tullio.jl
+Pkg.add("Tullio")
 
 #For Python-Julia to work properly one may have to set ENV_PYTHON below (path to python version) and then rebuild PyCall
 #ENV["PYTHON"] = "/Users/bjornssonsu/anaconda3/bin/python3"

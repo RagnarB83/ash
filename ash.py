@@ -56,7 +56,7 @@ import functions_elstructure
 from module_spinprojection import SpinProjectionTheory
 
 #Surface
-from module_surface import calc_surface,calc_surface_fromXYZ,read_surfacedict_from_file
+from module_surface import calc_surface,calc_surface_fromXYZ,read_surfacedict_from_file,write_surfacedict_to_file
 
 #QMcode interfaces
 from interface_ORCA import ORCATheory
@@ -96,7 +96,7 @@ from module_PES import PhotoElectronSpectrum
 #Workflows, benchmarking etc
 import module_workflows
 import module_highlevel_workflows
-from module_workflows import ReactionEnergy,thermochemprotocol_reaction,thermochemprotocol_single,confsampler_protocol
+from module_workflows import ReactionEnergy,thermochemprotocol_reaction,thermochemprotocol_single,confsampler_protocol, auto_active_space
 import module_benchmarking
 from module_benchmarking import run_benchmark
 
@@ -116,6 +116,9 @@ ash_header.print_header()
 #Exit command (footer)
 if settings_ash.settings_dict["print_exit_footer"] == True:
     atexit.register(ash_header.print_footer)
+    if settings_ash.settings_dict["print_full_timings"] == True:
+        atexit.register(ash_header.print_timings)
+
 
 
 #Julia dependency. Current behaviour: 

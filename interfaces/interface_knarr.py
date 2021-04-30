@@ -1,17 +1,19 @@
 #Non-intrusive interface to Knarr
 #Assumes that Knarr directory exists inside ASH (for now at least)
-
-import ash
-from functions_general import blankline
 import numpy as np
 import sys
 import os
 import copy
+import time
+
+
+import ash
+from functions_general import blankline,print_time_rel
 
 #This makes Knarr part of python path
 #Recommended way?
-yggpath = os.path.dirname(ash.__file__)
-sys.path.insert(0,yggpath+'/knarr')
+ashpath = os.path.dirname(ash.__file__)
+sys.path.insert(0,ashpath+'/knarr')
 
 from KNARRio.system_print import PrintHeader, PrintDivider, PrintCredit
 from KNARRatom.utilities import InitializeAtomObject, InitializePathObject
@@ -26,7 +28,7 @@ import KNARRatom.atom
 #3. Made variable  calculator.ISCION = True . Bad idea?
 
 #Knarr settings for path-generation, NEB and optimizer
-#These will be the reasonable defaults that can be overridden by special keywords in Yggdrasill NEB object
+#These will be the reasonable defaults that can be overridden by special keywords in ASH NEB object
 #RB modified springconst from 10 to 5
 # Changed "IDPP_RMS_F": 0.005    and "IDPP_MAX_F": 0.01
 path_parameters = {"METHOD": "DOUBLE", "INTERPOLATION": "IDPP", "NIMAGES": 6,
@@ -108,7 +110,7 @@ def coords_to_Knarr(coords):
     coords_xyz_np=np.array(coords_xyz)
     return coords_xyz_np
 
-#Wrapper around Yggdrasill object
+#Wrapper around ASH object
 class KnarrCalculator:
     def __init__(self,theory,fragment1,fragment2,runmode='serial',printlevel=None, ActiveRegion=False, actatoms=None,
                  full_fragment_reactant=None, full_fragment_product=None, numimages=None, FreeEnd=False ):
@@ -118,11 +120,11 @@ class KnarrCalculator:
         self.forcecalls=0
         self.iterations=0
         self.theory=theory
-        #Yggdrasill fragments for reactant and product
+        #ASH fragments for reactant and product
         #Used for element list and keep track of full system if QM/MM
         self.fragment1=fragment1
         self.fragment2=fragment2
-        #Full Yggdrasill fragments for reactant and product. Inactive part of reactant will be used for all images
+        #Full ASH fragments for reactant and product. Inactive part of reactant will be used for all images
         self.full_fragment_reactant=full_fragment_reactant
         self.full_fragment_product=full_fragment_product
         self.runmode=runmode
@@ -262,11 +264,13 @@ class KnarrCalculator:
                         trajfile.write(el + "  " + str(corp[0]) + " " + str(corp[1]) + " " + str(corp[2]) + "\n")
 
 
-#Yggdrasill NEB function. Calls Knarr
+#ASH NEB function. Calls Knarr
 def NEB(reactant=None, product=None, theory=None, images=None, interpolation=None, CI=None, free_end=None,
         conv_type=None, tol_scale=None, tol_max_fci=None, tol_rms_fci=None, tol_max_f=None, tol_rms_f=None,
         tol_turn_on_ci=None, ActiveRegion=False, actatoms=None, runmode='serial', printlevel=1,
         idpp_maxiter=None):
+
+    module_init_time=time.time()
 
     if reactant==None or product==None or theory==None:
         print("You need to provide reactant and product fragment and a theory to NEB")
@@ -340,7 +344,7 @@ def NEB(reactant=None, product=None, theory=None, images=None, interpolation=Non
         new_reactant = ash.Fragment(coords=R_actcoords, elems=R_actelems)
         new_product = ash.Fragment(coords=P_actcoords, elems=P_actelems)
 
-        #Create Knarr calculator from Yggdrasill theory.
+        #Create Knarr calculator from ASH theory.
         calculator = KnarrCalculator(theory, fragment1=new_reactant, fragment2=new_product, runmode=runmode,
                                      ActiveRegion=True, actatoms=actatoms, full_fragment_reactant=reactant,
                                      full_fragment_product=product,numimages=images )
@@ -360,7 +364,7 @@ def NEB(reactant=None, product=None, theory=None, images=None, interpolation=Non
 
 
     else:
-        #Create Knarr calculator from Yggdrasill theory
+        #Create Knarr calculator from ASH theory
         calculator = KnarrCalculator(theory, fragment1=reactant, fragment2=product,
                                      ActiveRegion=False, runmode=runmode,numimages=images)
 
@@ -420,7 +424,7 @@ def NEB(reactant=None, product=None, theory=None, images=None, interpolation=Non
                     curr_c, saddle_coords = saddle_coords[0], saddle_coords[1:]
                     full_saddleimage_coords[i] = curr_c
 
-            #Creating new Yggdrasill fragment for Full Saddle-point geometry
+            #Creating new ASH fragment for Full Saddle-point geometry
             Saddlepoint_fragment = ash.Fragment(coords=full_saddleimage_coords, elems=reactant.elems, connectivity=reactant.connectivity)
             Saddlepoint_fragment.set_energy(saddle_energy)
             #Adding atomtypes and charges if present.
@@ -437,7 +441,7 @@ def NEB(reactant=None, product=None, theory=None, images=None, interpolation=Non
             saddle_coords_1d=path.GetCoords()[CI * path.GetNDimIm():(CI + 1) * path.GetNDimIm()]
             saddle_coords=np.reshape(saddle_coords_1d, (numatoms, 3))
             saddle_energy = path.GetEnergy()[CI]
-            #Creating new Yggdrasill fragment
+            #Creating new ASH fragment
             Saddlepoint_fragment = ash.Fragment(coords=saddle_coords, elems=reactant.elems, connectivity=reactant.connectivity)
             Saddlepoint_fragment.set_energy(saddle_energy)
             #Writing out Saddlepoint fragment file and XYZ file
@@ -448,5 +452,8 @@ def NEB(reactant=None, product=None, theory=None, images=None, interpolation=Non
     print('KNARR successfully terminated')
     blankline()
     print("Please consider citing the following paper if you found the NEB module (from Knarr) useful: To be added")
+
+    print_time_rel(module_init_time, modulename='Knarr-NEB run', moduleindex=1)
+
     if neb_settings["CLIMBING"] is True:
         return Saddlepoint_fragment

@@ -1,6 +1,7 @@
 import numpy as np
 import os
 import sys
+from functions_general import print_line_with_mainheader,print_line_with_subheader1
 
 #repeated here so that plotting can be stand-alone
 class BC:
@@ -17,8 +18,12 @@ class BC:
 
 
 def load_matplotlib():
-    print("Loading Matplotlib")
-    import matplotlib
+    print("Trying to load Matplotlib")
+    try:
+        import matplotlib
+    except:
+        print("Loading MatplotLib failed. Probably not installed. Please install using conda: conda install matplotlib or pip: pip install matplotlib")
+        exit()
     matplotlib.use('Agg')
     import matplotlib.pyplot as plt 
     return plt
@@ -40,17 +45,24 @@ def Gaussian(x, mu, strength, sigma):
 #Input: dictionary of (X,Y): energy   entries 
 def reactionprofile_plot(surfacedictionary, finalunit='',label='Label', x_axislabel='Coord', y_axislabel='Energy', dpi=200, 
                          imageformat='png', RelativeEnergy=True, pointsize=40, scatter_linewidth=2, line_linewidth=1, color='blue' ):
-    load_matplotlib()
+
+    print_line_with_mainheader("reactionprofile_plot")
+
+    plt = load_matplotlib()
 
 
     conversionfactor = { 'kcal/mol' : 627.50946900, 'kcalpermol' : 627.50946900, 'kJ/mol' : 2625.499638, 'kJpermol' : 2625.499638, 
                         'eV' : 27.211386245988, 'cm-1' : 219474.6313702 }
     e=[]
     coords=[]
-    for i in surfacedictionary:
-        coords.append(i)
-        e.append(surfacedictionary[i])
-    
+
+    print("surfacedictionary:", surfacedictionary)
+
+    #Sorting keys dictionary before grabbing so that line-plot is correct
+    for key in sorted(surfacedictionary.keys()):
+        coords.append(key)
+        e.append(surfacedictionary[key])
+
     if RelativeEnergy is True:
         #List of energies and relenergies here
         refenergy=float(min(e))
@@ -60,7 +72,8 @@ def reactionprofile_plot(surfacedictionary, finalunit='',label='Label', x_axisla
         finalvalues=rele
     else:
         finalvalues=e
-    
+    print("Coords:", coords)
+    print("Relative energies({}): {}".format(finalunit,finalvalues))
     
     plt.scatter(coords, finalvalues, color=color, marker = 'o',  s=pointsize, linewidth=scatter_linewidth )
     plt.plot(coords, finalvalues, linestyle='-', color=color, linewidth=line_linewidth)
@@ -78,9 +91,10 @@ def reactionprofile_plot(surfacedictionary, finalunit='',label='Label', x_axisla
 # Can also be other property than energy. Use RelativeEnergy=False
 #Good colormaps: viridis, viridis_r, inferno, inferno_r, plasma, plasma_r, magma, magma_r
 # Less recommended: jet, jet_r
-def contourplot(surfacedictionary, label='Label',x_axislabel='Coord', y_axislabel='Coord', finalunit=None, interpolation='Cubic', 
+def contourplot(surfacedictionary, label='Label',x_axislabel='Coord', y_axislabel='Coord', finalunit='kcal/mol', interpolation='Cubic', 
                 interpolparameter=10, colormap='inferno_r', dpi=200, imageformat='png', RelativeEnergy=True, numcontourlines=500,
                 contour_alpha=0.75, contourline_color='black', clinelabels=False, contour_values=None):
+    print_line_with_mainheader("contourplot")
     #Relative energy conversion (if RelativeEnergy is True)
     conversionfactor = { 'kcal/mol' : 627.50946900, 'kcalpermol' : 627.50946900, 'kJ/mol' : 2625.499638, 'kJpermol' : 2625.499638, 
                         'eV' : 27.211386245988, 'cm-1' : 219474.6313702 }
@@ -88,7 +102,9 @@ def contourplot(surfacedictionary, label='Label',x_axislabel='Coord', y_axislabe
     coords=[]
     x_c=[]
     y_c=[]
-    print("surfacedictionary:", surfacedictionary)
+    print("")
+    print("Read surfacedictionary:", surfacedictionary)
+    print("Number of entries:", len(surfacedictionary))
     for i in surfacedictionary:
         coords.append(i)
         x_c.append(i[0])
@@ -102,12 +118,13 @@ def contourplot(surfacedictionary, label='Label',x_axislabel='Coord', y_axislabe
     relsurfacedictionary={}
     #Creating relative-energy array here. Unmodified property is used if False
     if RelativeEnergy is True:
+        print("RelativeEnergy option. Using finalunit:", finalunit)
         refenergy=float(min(e))
         relsurfacedictionary={}
         for i in surfacedictionary:
             relsurfacedictionary[(i[0],i[1])] = (surfacedictionary[i]-refenergy)*conversionfactor[finalunit]
-        print("relsurfacedictionary ({}): {}".format(finalunit,relsurfacedictionary))
-        
+        print("Relative energy surfacedictionary ({}): {}".format(finalunit,relsurfacedictionary))
+        print("")
         rele=[]
         for numb in e:
             rele.append((numb-refenergy)*conversionfactor[finalunit])
@@ -220,6 +237,8 @@ def contourplot(surfacedictionary, label='Label',x_axislabel='Coord', y_axislabe
 #plot_Spectrum reads stick-values (e.g. absorption energie or IPs) and intensities, broadens spectrum (writes out dat and stk files) and then creates image-file using Matplotlib.
 #TODO: Currently only Gaussian broadening. Add Lorentzian and Voight
 def plot_Spectrum(xvalues=None, yvalues=None, plotname='Spectrum', range=None, unit='eV', broadening=0.1, points=10000, imageformat='png', dpi=200, matplotlib=True, CSV=True):
+    
+    print_line_with_mainheader("plot_Spectrum")
     if xvalues is None or yvalues is None:
         print("plot_Spectrum requires xvalues and yvalues variables")
         exit(1)
@@ -298,6 +317,7 @@ def plot_Spectrum(xvalues=None, yvalues=None, plotname='Spectrum', range=None, u
 #Note: Input: dict containing occ/unoccuped alpha/beta orbitals . Created by MolecularOrbitagrab in ORCA interface
 #MOdict= {"occ_alpha":bands_alpha, "occ_beta":bands_alpha, "unocc_alpha":virtbands_a, "unocc_beta":virtbands_b, "Openshell":Openshell}
 def MOplot_vertical(mos_dict, pointsize=4000, linewidth=2, label="Label", yrange=[-30,3], imageformat='png'):
+    print_line_with_mainheader("MOplot_vertical")
 
     plt = load_matplotlib()
 

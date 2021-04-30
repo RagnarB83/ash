@@ -1,5 +1,5 @@
 """
-Functions to print header, logo, inputscript etc.
+Functions to print header, footer, logo, inputscript etc.
 """
 import time
 import os
@@ -7,7 +7,7 @@ import sys
 
 import settings_ash
 import ash
-from functions_general import BC,print_time_tot_color
+from functions_general import BC,print_time_tot_color, timingsobject, print_line_with_mainheader, print_line_with_subheader1
 
 
 
@@ -16,9 +16,17 @@ programversion = 0.2
 #ASH footer
 def print_footer():
     print("")
-
-
     print_time_tot_color(init_time)
+
+
+def print_timings():
+  """
+  Print timings of each module
+  """
+  print("")
+  print_line_with_subheader1("Total timings of all modules")
+
+  timingsobject.print(init_time)
 
 
 def print_header():

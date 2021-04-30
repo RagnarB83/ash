@@ -9,6 +9,7 @@ import constants
 import math
 import dictionaries_lists
 from functions_general import isodd
+import interface_ORCA
 
 #CM5. from https://github.com/patrickmelix/CM5-calculator/blob/master/cm5calculator.py
 
@@ -454,9 +455,7 @@ def DDEC_calc(elems=None, theory=None, gbwfile=None, ncores=1, DDECmodel='DDEC3'
     #Copying GBW file to current dir and label as molecule.gbw
     shutil.copyfile('../'+gbwfile, './' + 'molecule.gbw')
 
-
-    #Finding molden2aim in PATH:
-    # Should now be present in ASH
+    #Finding molden2aim in PATH. Present in ASH (May require compilation)
     ashpath=os.path.dirname(ash.__file__)
     molden2aim=ashpath+"/external/Molden2AIM/src/"+"molden2aim.exe"
     if os.path.isfile(molden2aim) is False:
@@ -465,16 +464,6 @@ def DDEC_calc(elems=None, theory=None, gbwfile=None, ncores=1, DDECmodel='DDEC3'
     else:
         print("Found molden2aim.exe: ", molden2aim)
         
-    # Below works if MOLDEN2AIM dir is in PATH
-    #molden2aim=None
-    #if molden2aimdir is not None:
-    #    if os.path.isfile(molden2aimdir+"/"+"molden2aim.exe") is True:
-    #        molden2aim=molden2aimdir+"/"+"molden2aim.exe"
-    #    else:
-     #       print("Found no molden2aim.exe in dir:", molden2aimdir)
-    #else:
-    #    print("molden2aimdir keyword not provided. Will search for Molden2aim binary in PATH")
-
     print("Warning: DDEC_calc requires chargemol-binary dir to be present in environment PATH variable.")
 
     #Finding chargemoldir from PATH in os.path
@@ -485,18 +474,12 @@ def DDEC_calc(elems=None, theory=None, gbwfile=None, ncores=1, DDECmodel='DDEC3'
         if 'chargemol' in p:
             print("Found chargemol in path line (this dir should contain the executables):", p)
             chargemolbinarydir=p
-        #if 'Molden2AIM' in p:
-        #    molden2aim="molden2aim.exe"
     
     #Checking if we can proceed
     if chargemolbinarydir is None:
         print("chargemolbinarydir is not defined.")
         print("Please provide path as argument to DDEC_calc or put the location inside the $PATH variable on your Unix/Linux OS.")
         exit()
-    #if molden2aim is None:
-    #    print("Found no molden2aim.exe in PATH. Exiting...")
-    #    exit()
-
 
     #Defining Chargemoldir (main dir) as 3-up from binary dir
     var=os.path.split(chargemolbinarydir)[0]
@@ -504,8 +487,6 @@ def DDEC_calc(elems=None, theory=None, gbwfile=None, ncores=1, DDECmodel='DDEC3'
     chargemoldir=os.path.split(var)[0]
     print("Chargemoldir (base directory): ", chargemoldir)
     print("Chargemol binary dir:", chargemolbinarydir)
-
-
 
     if theory is None :
         print("DDEC_calc requires theory, keyword argument")
@@ -515,12 +496,7 @@ def DDEC_calc(elems=None, theory=None, gbwfile=None, ncores=1, DDECmodel='DDEC3'
         exit(1)
 
     # What DDEC charge model to use. Jorgensen paper uses DDEC3. DDEC6 is the newer recommended chargemodel
-    # Set variable to 'DDEC3' or 'DDEC6'
     print("DDEC model:", DDECmodel)
-
-    #bindir=glob.glob('*chargemol*')[0]
-    #chargemolbinarydir=chargemoldir+bindir+'compiled_binaries'+'linux'
-
 
     # Serial or parallel version
     if ncores == 1:
@@ -534,7 +510,6 @@ def DDEC_calc(elems=None, theory=None, gbwfile=None, ncores=1, DDECmodel='DDEC3'
         # Parallelization of Chargemol code. 8 should be good.
         os.environ['OMP_NUM_THREADS'] = str(ncores)
     print("Using Chargemoldir executable: ", chargemol)
-
 
     #Dictionary for spin multiplicities of atoms
     spindictionary = {'H':2, 'He': 1, 'Li':2, 'Be':1, 'B':2, 'C':3, 'N':4, 'O':3, 'F':2, 'Ne':1, 'Na':2, 'Mg':1, 'Al':2, 'Si':3, 'P':4, 'S':3, 'Cl':2, 'Ar':1, 'K':2, 'Ca':1, 'Sc':2, 'Ti':3, 'V':4, 'Cr':7, 'Mn':6, 'Fe':5, 'Co':4, 'Ni':3, 'Cu':2, 'Zn':1, 'Ga':2, 'Ge':3, 'As':4, 'Se':3, 'Br':2, 'Kr':1, 'Rb':2, 'Sr':1, 'Y':2, 'Zr':3, 'Nb':6, 'Mo':7, 'Tc':6, 'Ru':5, 'Rh':4, 'Pd':1, 'Ag':2, 'Cd':1, 'In':2, 'Sn':3, 'Sb':4, 'Te':3, 'I':2, 'Xe':1, 'Cs':2, 'Ba':1, 'La':2, 'Ce':1, 'Pr':4, 'Nd':5, 'Pm':6, 'Sm':7, 'Eu':8, 'Gd':9, 'Tb':6, 'Dy':5, 'Ho':4, 'Er':3, 'Tm':2, 'Yb':1, 'Lu':2, 'Hf':3, 'Ta':4, 'W':5, 'Re':6, 'Os':5, 'Ir':4, 'Pt':3, 'Au':2, 'Hg':1, 'Tl':2, 'Pb':3, 'Bi':4, 'Po':3, 'At':2, 'Rn':1, 'Fr':2, 'Ra':1, 'Ac':2, 'Th':3, 'Pa':4, 'U':5, 'Np':6, 'Pu':7, 'Am':8, 'Cm':9, 'Bk':6, 'Cf':5, 'Es':5, 'Fm':3, 'Md':2, 'No':1, 'Lr':2, 'Rf':3, 'Db':4, 'Sg':5, 'Bh':6, 'Hs':5, 'Mt':4, 'Ds':3, 'Rg':2, 'Cn':1, 'Nh':2, 'Fl':3, 'Mc':4, 'Lv':3, 'Ts':2, 'Og':1 }
@@ -560,7 +535,7 @@ def DDEC_calc(elems=None, theory=None, gbwfile=None, ncores=1, DDECmodel='DDEC3'
         if os.path.isfile(el+'.molden.wfx'):
             print(el+'.molden.wfx', "exists already. Skipping calculation.")
             continue
-
+        #TODO: Revisit with ORCA5 and TRAH?
         scfextrasettingsstring="""%scf
 Maxiter 500
 DIISMaxIt 0
@@ -807,7 +782,6 @@ def Rvdwfree(polz):
     return RvdW
     
 
-#TODO: Not finished
 def DDEC_to_LJparameters(elems, molmoms, voldict, scale_polarH=False):
     
     #voldict: Vfree. Computed using MP4SDQ/augQZ and chargemol in Jorgensen paper
@@ -816,7 +790,7 @@ def DDEC_to_LJparameters(elems, molmoms, voldict, scale_polarH=False):
     #Rfree fit parameters. Jorgensen 2016 J. Chem. Theory Comput. 2016, 12, 2312−2323. H,C,N,O,F,S,Cl
     #Thes are free atomic vdW radii
     # In Jorgensen and Cole papers these are fit parameters : rfreedict = {'H':1.64, 'C':2.08, 'N':1.72, 'O':1.6, 'F':1.58, 'S':2.0, 'Cl':1.88}
-    # We are using atomic Rvdw derived directly from atomic polarizabilities
+    # We are instead using atomic Rvdw derived directly from atomic polarizabilities
     
     print("Elems:", elems)
     print("Molmoms:", molmoms)
@@ -869,7 +843,7 @@ def DDEC_to_LJparameters(elems, molmoms, voldict, scale_polarH=False):
     
     #Accounting for polar H. This could be set to zero as in Jorgensen paper
     if scale_polarH is True:
-        print("Scaling not implemented yet")
+        print("Scaling og polar H not implemented yet")
         exit()
         for count,el in enumerate(elems):
             if el == 'H':
@@ -955,3 +929,12 @@ def Jcoupling_Noodleman(HSenergy,BSenergy,smax):
     print("J coupling constant: {} kcal/Mol".format(J_kcal))
     print("J coupling constant: {} cm**-1".format(J_cm))
     return J
+
+#Select an active space from list of occupations and thresholds
+def select_space_from_occupations(occlist, selection_thresholds=[1.98,0.02]):
+    upper_threshold=selection_thresholds[0]
+    lower_threshold=selection_thresholds[1]
+    welloccorbs=[i for i in occlist if i < upper_threshold and i > lower_threshold]
+    numelectrons=round(sum(welloccorbs))
+    numorbitals=len(welloccorbs)
+    return [numelectrons,numorbitals]

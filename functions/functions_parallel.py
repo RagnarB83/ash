@@ -3,48 +3,87 @@ import multiprocessing as mp
 import os
 
 import ash
-from functions_general import BC,blankline
+from functions_general import BC,blankline,print_line_with_mainheader,print_line_with_subheader1
 #Various calculation-functions run in parallel
 
 
 #Stripped down version of Singlepoint function for Singlepoint_parallel
 #TODO: This function may still be a bit ORCA-centric. Needs to be generalized 
-def Single_par(list):
+def Single_par(listx):
     #Creating new copy of theory to prevent Brokensym feature from being deactivated by each run
     #NOTE: Alternatively we can add an if-statement inside orca.run
-    theory=copy.deepcopy(list[0])
-    fragment=list[1]
+    theory=copy.deepcopy(listx[0])
+    fragment=listx[1]
     #Making label flexible. Can be tuple but inputfilename is converted to string below
-    label=list[2]
-    print("label:", label)
+    label=listx[2]
+    mofilesdir=listx[3]
+    print("label: {} (type {})".format(label,type(label)))
     if label == None:
         print("No label provided to fragment or theory objects. This is required to distinguish between calculations ")
         print("Exiting...")
         exit(1)
 
-    #Using label (could be tuple) to create a labelstring which is used to name inputfiles
+    #Using label (could be tuple) to create a labelstring which is used to name worker directories
+    # Tuple-label (1 or 2 element) used by calc_surface functions.
+    # Otherwise normally string
+    if type(label) == tuple:
+        if len(label) ==2:
+            labelstring=str(str(label[0])+'_'+str(label[1])).replace('.','_')
+        else:
+            labelstring=str(str(label[0])).replace('.','_')
+        print("Labelstring:", labelstring)
+        #RC1_0.9-RC2_170.0.xyz
+        #orca_RC1_0.9RC2_170.0.gbw
+        #TODO: what if tuple is only a single number???
 
-    if type(label) == tuple: 
-        labelstring=str(str(label[0])+'_'+str(label[1])).replace('.','_')
+        if mofilesdir != None:
+            print("Mofilesdir option.")
+            if len(label) == 2:
+                moreadfile_path=mofilesdir+'/'+theory.filename+'_'+'RC1_'+str(label[0])+'-'+'RC2_'+str(label[1])
+            else:
+                moreadfile_path=mofilesdir+'/'+theory.filename+'_'+'RC1_'+str(label[0])
+
+    #Label is not tuple. Not coming from calc_surface funcitons
+    elif type(label) == float or type(label) == int:
+        print("Label is float or int")
+        #
+        #Label is float or int. 
+        if mofilesdir != None:
+            print("Mofilesdir option.")
+            moreadfile_path=mofilesdir+'/'+theory.filename+'_'+'RC1_'+str(label[0])
     else:
+        print("Here. label.", label)
+        #Label is not tuple. String or single number
         labelstring=str(label).replace('.','_')
 
     #Creating separate inputfilename using label
     #Removing . in inputfilename as ORCA can get confused
     if theory.__class__.__name__ == "ORCATheory":
         #theory.filename=''.join([str(i) for i in labelstring])
-        theory.filename=labelstring
-    #TODO: filename changes for other codes ?
+        #NOTE: Not sure if we really need to use labelstring for input since inside separate directoreies
+        #Disabling for now
+        #theory.filename=labelstring
+        if mofilesdir != None:
+            theory.moreadfile=moreadfile_path+'.gbw'
+            print("Setting moreadfile to:", theory.moreadfile)
+    elif theory.__class__.__name__ == "MRCCTheory":
+        if mofilesdir != None:
+            print("Case MRCC MOREADfile parallel")
+            print("moreadfile_path:", moreadfile_path)
+        print("not finished. exiting")
+        exit()
+    else:
+        if mofilesdir != None:
+            print("moreadfile option not ready for this Theory. exiting")
+        exit()
 
-    coords = fragment.coords
-    elems = fragment.elems
     #Creating new dir and running calculation inside
-    os.mkdir(labelstring)
-    os.chdir(labelstring)
+    os.mkdir('Pooljob_'+labelstring)
+    os.chdir('Pooljob_'+labelstring)
     print(BC.WARNING,"Doing single-point Energy job on fragment. Formula: {} Label: {} ".format(fragment.prettyformula,fragment.label), BC.END)
     print("\n\nProcess ID {} is running calculation with label: {} \n\n".format(mp.current_process(),label))
 
-    energy = theory.run(current_coords=coords, elems=elems, label=label)
+    energy = theory.run(current_coords=fragment.coords, elems=fragment.elems, label=label)
     os.chdir('..')
     print("Energy: ", energy)
     # Now adding total energy to fragment
@@ -52,13 +91,10 @@ def Single_par(list):
     return (label,energy)
 
 
-def bla(blux):
-    print("here")
-    print(blux)
-
 #PARALLEL Single-point energy function
 #will run over fragments, over theories or both
-def Singlepoint_parallel(fragments=None, theories=None, numcores=None):
+#mofilesdir. Directory containing MO-files (GBW files for ORCA). Usef for multiple fragment option
+def Singlepoint_parallel(fragments=None, theories=None, numcores=None, mofilesdir=None):
     print("")
     '''
     The Singlepoint_parallel function carries out multiple single-point calculations in a parallel fashion
@@ -78,22 +114,32 @@ def Singlepoint_parallel(fragments=None, theories=None, numcores=None):
         exit(1)
 
     blankline()
-    print("Singlepoint_parallel function")
+    print_line_with_subheader1("Singlepoint_parallel function")
     print("Number of CPU cores available: ", numcores)
     print("Number of fragments:", len(fragments))
     print("Number of theories:", len(theories))
     print("Running single-point calculations in parallel")
-
+    print("Mofilesdir:", mofilesdir)
+    print(BC.WARNING, "Warning: Output from Singlepoint_parallel will be erratic due to simultaneous output from multiple workers", BC.END)
     pool = mp.Pool(numcores)
     # Singlepoint(fragment=None, theory=None, Grad=False)
     #Case: 1 theory, multiple fragments
     if len(theories) == 1:
-        print("Case: Multiple fragments but one theory")
-        print("Making copy of theory object")
         theory = theories[0]
+        print("Case: Multiple fragments but one theory")
+        print("")
+        print("Launching multiprocessing pool.map:")
+
+        #Change theory nprocs to 1 since we are running ASH in parallel
+        #NOTE: Alternative to exit here instead ??
+        if theory.nprocs != 1:
+            print(BC.WARNING,"Theory nprocs set to:", theory.nprocs, BC.END)
+            print(BC.WARNING,"Since ASH is running in parallel we will now turn off Theory Parallelization",BC.END)
+            theory.nprocs=1
+
         #NOTE: Python 3.8 and higher use spawn in MacOS. Leads to ash import problems
         #NOTE: Unix/Linux uses fork which seems better behaved
-        results = pool.map(Single_par, [[theory,fragment, fragment.label] for fragment in fragments])
+        results = pool.map(Single_par, [[theory,fragment, fragment.label, mofilesdir] for fragment in fragments])
         
         pool.close()
         print("Calculations are done")

@@ -3,9 +3,10 @@ import shutil
 import os
 import subprocess as sp
 import glob
+import time
 
 import module_coords
-from functions_general import BC
+from functions_general import BC,print_time_rel
 
 
 #Psi4 Theory object. Fragment object is optional. Only used for single-points.
@@ -90,6 +91,8 @@ class Psi4Theory:
     #Run function. Takes coords, elems etc. arguments and computes E or E+G.
     def run(self, current_coords=None, current_MM_coords=None, MMcharges=None, qm_elems=None,
             elems=None, Grad=False, PC=False, nprocs=None, pe=False, potfile='', restart=False ):
+        
+        module_init_time=time.time()
 
         if nprocs==None:
             nprocs=self.nprocs
@@ -253,9 +256,11 @@ class Psi4Theory:
 
             if Grad == True:
                 print("Single-point PSI4 energy:", self.energy)
+                print_time_rel(module_init_time, modulename='Psi4 run', moduleindex=2)
                 return self.energy, self.gradient
             else:
                 print("Single-point PSI4 energy:", self.energy)
+                print_time_rel(module_init_time, modulename='Psi4 run', moduleindex=2)
                 return self.energy
 
         #Psithon INPUT-FILE BASED INTERFACE. Creates Psi4 inputfiles and runs Psithon as subprocessses
@@ -395,9 +400,11 @@ class Psi4Theory:
 
             if Grad == True:
                 print("Single-point PSI4 energy:", self.energy)
+                print_time_rel(module_init_time, modulename='Psi4 run', moduleindex=2)
                 return self.energy, self.gradient
             else:
                 print("Single-point PSI4 energy:", self.energy)
+                print_time_rel(module_init_time, modulename='Psi4 run', moduleindex=2)
                 return self.energy
         else:
             print("Unknown Psi4 runmode")

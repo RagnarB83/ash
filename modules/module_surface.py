@@ -10,15 +10,15 @@ import os
 import glob
 import shutil
 import copy
-
+import time
 import ash
-from functions_general import frange, BC
+from functions_general import frange, BC, print_line_with_mainheader,print_line_with_subheader1,print_time_rel
 import interface_geometric
 from module_freq import calc_rotational_constants
 import functions_parallel
 
 # TODO: Finish parallelize surfacepoint calculations
-def calc_surface(fragment=None, theory=None, workflow=None, scantype='Unrelaxed', resultfile='surface_results.txt', keepoutputfiles=True,
+def calc_surface(fragment=None, theory=None, workflow=None, scantype='Unrelaxed', resultfile='surface_results.txt', keepoutputfiles=True, keepmofiles=False,
                  runmode='serial', coordsystem='dlc', maxiter=50, extraconstraints=None, convergence_setting=None, **kwargs):
     """Calculate 1D/2D surface
 
@@ -37,9 +37,8 @@ def calc_surface(fragment=None, theory=None, workflow=None, scantype='Unrelaxed'
     Returns:
         [type]: [description]
     """
-    print("="*50)
-    print("CALC_SURFACE FUNCTION")
-    print("="*50)
+    module_init_time=time.time()
+    print_line_with_mainheader("CALC_SURFACE FUNCTION")
     if 'numcores' in kwargs:
         numcores = kwargs['numcores']
     #Getting reaction coordinates and checking if 1D or 2D
@@ -97,6 +96,14 @@ def calc_surface(fragment=None, theory=None, workflow=None, scantype='Unrelaxed'
     surfacedictionary = read_surfacedict_from_file(resultfile, dimension=dimension)
     print("Initial surfacedictionary :", surfacedictionary)
     
+    #
+    print("keepoutputfiles: ", keepoutputfiles)
+    print("keepmofiles: ", keepmofiles)
+
+
+
+
+
     pointcount=0
     
     #Create directory to keep track of surface XYZ files
@@ -104,9 +111,10 @@ def calc_surface(fragment=None, theory=None, workflow=None, scantype='Unrelaxed'
         os.mkdir('surface_xyzfiles') 
         os.mkdir('surface_outfiles')
         os.mkdir('surface_fragfiles')
+        os.mkdir('surface_mofiles')
     except FileExistsError:
         print("")
-        print(BC.FAIL,"surface_xyzfiles, surface_fragfiles and surface_outfiles directories exist already in dir. Please remove them", BC.END)
+        print(BC.FAIL,"surface_xyzfiles, surface_fragfiles, surface_mofiles and surface_outfiles directories exist already in dir. Please remove them", BC.END)
         exit()
 
     #PARALLEL CALCULATION
@@ -123,7 +131,7 @@ def calc_surface(fragment=None, theory=None, workflow=None, scantype='Unrelaxed'
                         print("Surfacepoint: {} / {}".format(pointcount,totalnumpoints))
                         print("RCvalue1: {} RCvalue2: {}".format(RCvalue1,RCvalue2))
                         print("=======================================")
-                        pointlabel='RC1_'+str(RCvalue1)+'RC2_'+str(RCvalue2)
+                        pointlabel='RC1_'+str(RCvalue1)+'-'+'RC2_'+str(RCvalue2)
                         if (RCvalue1,RCvalue2) not in surfacedictionary:
                             #Now setting constraints
                             allconstraints = set_constraints(dimension=2, RCvalue1=RCvalue1, RCvalue2=RCvalue2, extraconstraints=extraconstraints,
@@ -149,15 +157,7 @@ def calc_surface(fragment=None, theory=None, workflow=None, scantype='Unrelaxed'
                 surfacedictionary = functions_parallel.Singlepoint_parallel(fragments=surfacepointfragments_lists, theories=[theory], numcores=numcores)
                 print("Parallel calculation done!")
                 print("surfacedictionary:", surfacedictionary)
-                
-                #Gathering results in dictionary
-                #NOTE: WRONG, to be fixed
-                #for coord,energy in zip(results,surfacepointfragments_lists):
-                #    print("Coord : {}  Energy: {}".format(coord,energy))
-                #    surfacedictionary[coord] = energy
-                #    print("surfacedictionary:", surfacedictionary)
-                #    print("len surfacedictionary:", len(surfacedictionary))
-                #    print("totalnumpoints:", totalnumpoints)
+
                 if len(surfacedictionary) != totalnumpoints:
                     print("Dictionary not complete!")
                     print("len surfacedictionary:", len(surfacedictionary))
@@ -186,7 +186,7 @@ def calc_surface(fragment=None, theory=None, workflow=None, scantype='Unrelaxed'
                         print("RCvalue1: {} RCvalue2: {}".format(RCvalue1,RCvalue2))
                         print("Unrelaxed scan. Will use Zerotheory and geometric to set geometry.")
                         print("==================================================")
-                        pointlabel='RC1_'+str(RCvalue1)+'RC2_'+str(RCvalue2)
+                        pointlabel='RC1_'+str(RCvalue1)+'-'+'RC2_'+str(RCvalue2)
                         if (RCvalue1,RCvalue2) not in surfacedictionary:
                             #Now setting constraints
                             allconstraints = {}
@@ -207,6 +207,8 @@ def calc_surface(fragment=None, theory=None, workflow=None, scantype='Unrelaxed'
                                 print("RCvalue1: {} RCvalue2: {} Energy: {}".format(RCvalue1,RCvalue2, energy))
                                 if keepoutputfiles == True:
                                     shutil.copyfile(theory.filename+'.out', 'surface_outfiles/'+str(theory.filename)+'_'+pointlabel+'.out')
+                                if keepmofiles == True:
+                                    shutil.copyfile(theory.filename+'.gbw', 'surface_mofiles/'+str(theory.filename)+'_'+pointlabel+'.gbw')
                             surfacedictionary[(RCvalue1,RCvalue2)] = energy
 
                             #Writing dictionary to file
@@ -243,6 +245,8 @@ def calc_surface(fragment=None, theory=None, workflow=None, scantype='Unrelaxed'
                         print("RCvalue1: {} Energy: {}".format(RCvalue1,energy))
                         if keepoutputfiles == True:
                             shutil.copyfile(theory.filename+'.out', 'surface_outfiles/'+str(theory.filename)+'_'+pointlabel+'.out')
+                        if keepmofiles == True:
+                            shutil.copyfile(theory.filename+'.gbw', 'surface_mofiles/'+str(theory.filename)+'_'+pointlabel+'.gbw')
                         surfacedictionary[(RCvalue1)] = energy
                         #Writing dictionary to file
                         write_surfacedict_to_file(surfacedictionary,"surface_results.txt", dimension=1)
@@ -261,7 +265,7 @@ def calc_surface(fragment=None, theory=None, workflow=None, scantype='Unrelaxed'
                         print("RCvalue1: {} RCvalue2: {}".format(RCvalue1,RCvalue2))
                         print("Relaxed scan. Will relax geometry using theory level with the included contraints.")
                         print("==================================================")
-                        pointlabel='RC1_'+str(RCvalue1)+'RC2_'+str(RCvalue2)
+                        pointlabel='RC1_'+str(RCvalue1)+'-'+'RC2_'+str(RCvalue2)
                         if (RCvalue1,RCvalue2) not in surfacedictionary:
                             #Now setting constraints
                             allconstraints = set_constraints(dimension=2, RCvalue1=RCvalue1, RCvalue2=RCvalue2, extraconstraints=extraconstraints,
@@ -272,6 +276,8 @@ def calc_surface(fragment=None, theory=None, workflow=None, scantype='Unrelaxed'
                             print("RCvalue1: {} RCvalue2: {} Energy: {}".format(RCvalue1,RCvalue2, energy))
                             if keepoutputfiles == True:
                                 shutil.copyfile(theory.filename+'.out', 'surface_outfiles/'+str(theory.filename)+'_'+pointlabel+'.out')
+                            if keepmofiles == True:
+                                shutil.copyfile(theory.filename+'.gbw', 'surface_mofiles/'+str(theory.filename)+'_'+pointlabel+'.gbw')
                             surfacedictionary[(RCvalue1,RCvalue2)] = energy
                             #Writing dictionary to file
                             write_surfacedict_to_file(surfacedictionary,"surface_results.txt", dimension=2)
@@ -303,6 +309,8 @@ def calc_surface(fragment=None, theory=None, workflow=None, scantype='Unrelaxed'
                         print("RCvalue1: {} Energy: {}".format(RCvalue1, energy))
                         if keepoutputfiles == True:
                             shutil.copyfile(theory.filename+'.out', 'surface_outfiles/'+str(theory.filename)+'_'+pointlabel+'.out')
+                        if keepmofiles == True:
+                            shutil.copyfile(theory.filename+'.gbw', 'surface_mofiles/'+str(theory.filename)+'_'+pointlabel+'.gbw')
                         surfacedictionary[(RCvalue1)] = energy
                         #Writing dictionary to file
                         write_surfacedict_to_file(surfacedictionary,"surface_results.txt", dimension=1)
@@ -315,15 +323,17 @@ def calc_surface(fragment=None, theory=None, workflow=None, scantype='Unrelaxed'
                         shutil.move("RC1_"+str(RCvalue1)+".ygg", "surface_fragfiles/"+"RC1_"+str(RCvalue1)+".ygg")
                     else:
                         print("RC1 value in dict already. Skipping.")
+    print_time_rel(module_init_time, modulename='calc_surface', moduleindex=0)                    
     return surfacedictionary
 
 # Calculate surface from XYZ-file collection.
 #Both unrelaxed (single-point) and relaxed (opt) is now possible
-# TODO: Finish parallelize surfacepoint calculations
-# TODO: Option to keep theory-level programoutput. Add option here. Call theory.keep_output or something after each point??
+# Parallelization and MOREAD complete
+# TODO: Parallelization and Relaxed mode
 def calc_surface_fromXYZ(xyzdir=None, theory=None, dimension=None, resultfile=None, scantype='Unrelaxed',runmode='serial',
                          coordsystem='dlc', maxiter=50, extraconstraints=None, convergence_setting=None, numcores=None,
-                         RC1_type=None, RC2_type=None, RC1_indices=None, RC2_indices=None, keepoutputfiles=True):
+                         RC1_type=None, RC2_type=None, RC1_indices=None, RC2_indices=None, keepoutputfiles=True, keepmofiles=False,
+                         read_mofiles=False, mofilesdir=None):
     """Calculate 1D/2D surface from XYZ files
 
     Args:
@@ -346,29 +356,61 @@ def calc_surface_fromXYZ(xyzdir=None, theory=None, dimension=None, resultfile=No
     Returns:
         [type]: [description]
     """
-    
-    print("="*50)
-    print("CALC_SURFACE_FROMXYZ FUNCTION")
-    print("="*50)
+    module_init_time=time.time()
+    print_line_with_mainheader("CALC_SURFACE_FROMXYZ FUNCTION")
     print("XYZdir:", xyzdir)
     print("Theory:", theory)
     print("Dimension:", dimension)
     print("Resultfile:", resultfile)
     print("Scan type:", scantype)
-    print("")
+    print("keepoutputfiles:", keepoutputfiles)
+    print("keepmofiles:", keepmofiles)
+    print("read_mofiles:", read_mofiles)
+    print("mofilesdir:", mofilesdir)
+    print("runmode:", runmode)
+    if read_mofiles == True:
+        if mofilesdir == None:
+            print("mofilesdir not set. Exiting")
+            exit()
+    print("");print("")
     #Read dict from file. If file exists, read entries, if not, return empty dict
     surfacedictionary = read_surfacedict_from_file(resultfile, dimension=dimension)
     print("Initial surfacedictionary :", surfacedictionary)
+    print("")
 
+    #Points
+    totalnumpoints=len(glob.glob(xyzdir+'/*.xyz'))
+    print("totalnumpoints:", totalnumpoints)
+    if len(surfacedictionary) == totalnumpoints:
+        print("Surface dictionary size {} matching total number of XYZ files {}. We should have all data".format(len(surfacedictionary),totalnumpoints))
+        print("Exiting.")
+        return surfacedictionary
 
 
     #Case Relaxed Scan: Create directory to keep track of optimized surface XYZ files
     if scantype=="Relaxed":
-        os.mkdir('surface_xyzfiles') 
+        try:
+            os.mkdir('surface_xyzfiles') 
+        except FileExistsError:
+            print("")
+            print(BC.FAIL,"surface_xyzfiles directory exist already in dir. Please remove it", BC.END)
+            exit()
+
+    #Create directory to keep track of surface outfiles for runmode=serial
+    #Note: for runmode_parallel we have separate dirs for each surfacepoint where we have inputfile, outputfile and MOfile
+    if runmode=='serial':
+        try:
+            os.mkdir('surface_outfiles')
+            os.mkdir('surface_mofiles')
+        except FileExistsError:
+            print("")
+            print(BC.FAIL,"surface_outfiles or surface_mofiles directory exist already in dir. Please remove it", BC.END)
+            exit()
 
 
-    #Points
-    totalnumpoints=len(glob.glob(xyzdir+'/*.xyz'))
+
+
+
 
     #New Surfacepoint class to organize the data, at least for parallel mode
     #Using list to collect the Surfacepoint objects
@@ -394,6 +436,9 @@ def calc_surface_fromXYZ(xyzdir=None, theory=None, dimension=None, resultfile=No
 
         surfacepointfragments={}
         #Looping over XYZ files to get coordinates
+        print("")
+        print("Reading XYZ files, expecting format:  RC1_value1-RC2_value2.xyz     Example:  RC1_2.0-RC2_180.0.xyz")
+        print("")
         for count,file in enumerate(glob.glob(xyzdir+'/*.xyz')):
             relfile=os.path.basename(file)
             #Getting RC values from XYZ filename e.g. RC1_2.0-RC2_180.0.xyz
@@ -416,6 +461,10 @@ def calc_surface_fromXYZ(xyzdir=None, theory=None, dimension=None, resultfile=No
                     #surfacepointfragments[(RCvalue1,RCvalue2)] = newfrag
                     
             elif dimension == 1:
+                print("relfile:", relfile)
+                if 'RC2' in relfile:
+                    print(BC.FAIL,"RC2 information in filename string. Chosen dimension wrong or filename wrong. Exiting", BC.END)
+                    exit()
                 #RC1_2.02.xyz
                 RCvalue1=float(relfile.replace('.xyz','').replace('RC1_',''))
                 print("XYZ-file: {}     RC1: {} ".format(relfile,RCvalue1))
@@ -425,7 +474,7 @@ def calc_surface_fromXYZ(xyzdir=None, theory=None, dimension=None, resultfile=No
                     newsurfacepoint.xyzfile=xyzdir+'/'+relfile
                     #NOTE: Currently putting fragment into surfacepoint. Could also just point to xyzfile. Currently more memory-demanding
                     #NOTE: Using tuple as a label for fragment
-                    newfrag=ash.Fragment(xyzfile=xyzdir+'/'+relfile, label=(RCvalue1))
+                    newfrag=ash.Fragment(xyzfile=xyzdir+'/'+relfile, label=(RCvalue1,))
                     newsurfacepoint.fragment=newfrag
                     list_of_surfacepoints.append(newsurfacepoint)
 
@@ -434,20 +483,35 @@ def calc_surface_fromXYZ(xyzdir=None, theory=None, dimension=None, resultfile=No
         surfacepointfragments_lists=[point.fragment for point in list_of_surfacepoints]
         
         if scantype=='Unrelaxed':
-            results = ash.Singlepoint_parallel(fragments=surfacepointfragments_lists, theories=[theory], numcores=numcores)
+
+            if read_mofiles == True:
+                #print("Will read MO-file: {}".format(mofilesdir+'/'+str(theory.filename)+'_'+pointlabel+'.gbw'))
+                #if theory.__class__.__name__ == "ORCATheory":
+                #    theory.moreadfile=mofilesdir+'/'+str(theory.filename)+'_'+pointlabel+'.gbw'
+                results = ash.Singlepoint_parallel(fragments=surfacepointfragments_lists, theories=[theory], numcores=numcores, mofilesdir=mofilesdir)
+            else:
+                results = ash.Singlepoint_parallel(fragments=surfacepointfragments_lists, theories=[theory], numcores=numcores)
             print("Parallel calculation done!")
             
             #Gathering results in FINAL dictionary.
             for dictitem in results:
                 print("Surfacepoint: {} Energy: {}".format(dictitem, results[dictitem]))
                 surfacedictionary[dictitem] = results[dictitem]
+            print("")
 
-            print("surfacedictionary:", surfacedictionary)
             if len(surfacedictionary) != totalnumpoints:
                 print("Dictionary not complete!")
                 print("len surfacedictionary:", len(surfacedictionary))
                 print("totalnumpoints:", totalnumpoints)
 
+            #Replacing tuple-key with number to make things cleaner for 1d surface dicts.
+            if dimension == 1:
+                newsurfacedictionary={}
+                for k,v in surfacedictionary.items():
+                    newsurfacedictionary[k[0]]=v
+                surfacedictionary=newsurfacedictionary
+
+            print("surfacedictionary:", surfacedictionary)
             #Write final surface to file
             write_surfacedict_to_file(surfacedictionary,"surface_results.txt", dimension=dimension)
         elif scantype=='Relaxed':
@@ -471,16 +535,23 @@ def calc_surface_fromXYZ(xyzdir=None, theory=None, dimension=None, resultfile=No
                 start="RC1_"; end="-RC2_"
                 RCvalue1=float(relfile.split(start)[1].split(end)[0])
                 RCvalue2=float(relfile.split(end)[1].split(".xyz")[0])
-                pointlabel='RC1_'+str(RCvalue1)+'RC2_'+str(RCvalue2)
+                pointlabel='RC1_'+str(RCvalue1)+'-'+'RC2_'+str(RCvalue2)
                 print("==================================================================")
                 print("Surfacepoint: {} / {}".format(count+1,totalnumpoints))
                 print("XYZ-file: {}     RC1: {}   RC2: {}".format(relfile,RCvalue1,RCvalue2))
                 print("==================================================================")
                 
+                #Adding MO-file for point to theory level object if requested
+                if read_mofiles == True:
+                    print("Will read MO-file: {}".format(mofilesdir+'/'+str(theory.filename)+'_'+pointlabel+'.gbw'))
+                    if theory.__class__.__name__ == "ORCATheory":
+                        theory.moreadfile=mofilesdir+'/'+str(theory.filename)+'_'+pointlabel+'.gbw'
+
                 
                 if (RCvalue1,RCvalue2) not in surfacedictionary:
                     mol=ash.Fragment(xyzfile=file)
                     if scantype=="Unrelaxed":
+
                         energy = ash.Singlepoint(theory=theory, fragment=mol)
                     elif scantype=="Relaxed":
                         #Now setting constraints
@@ -499,6 +570,8 @@ def calc_surface_fromXYZ(xyzdir=None, theory=None, dimension=None, resultfile=No
                     print("Energy of file {} : {} Eh".format(relfile, energy))
                     if keepoutputfiles == True:
                         shutil.copyfile(theory.filename+'.out', 'surface_outfiles/'+str(theory.filename)+'_'+pointlabel+'.out')
+                    if keepmofiles == True:
+                        shutil.copyfile(theory.filename+'.gbw', 'surface_mofiles/'+str(theory.filename)+'_'+pointlabel+'.gbw')
                     #theory.cleanup()
                     surfacedictionary[(RCvalue1,RCvalue2)] = energy
                     #Writing dictionary to file
@@ -512,7 +585,18 @@ def calc_surface_fromXYZ(xyzdir=None, theory=None, dimension=None, resultfile=No
                 #RC1_2.02.xyz
                 RCvalue1=float(relfile.replace('.xyz','').replace('RC1_',''))
                 pointlabel='RC1_'+str(RCvalue1)
+                #print("XYZ-file: {}     RC1: {} ".format(relfile,RCvalue1))
+                print("==================================================================")
+                print("Surfacepoint: {} / {}".format(count+1,totalnumpoints))
                 print("XYZ-file: {}     RC1: {} ".format(relfile,RCvalue1))
+                print("==================================================================")
+
+                #Adding MO-file for point to theory level object if requested
+                if read_mofiles == True:
+                    print("Will read MO-file: {}".format(mofilesdir+'/'+str(theory.filename)+'_'+pointlabel+'.gbw'))
+                    if theory.__class__.__name__ == "ORCATheory":
+                        theory.moreadfile=mofilesdir+'/'+str(theory.filename)+'_'+pointlabel+'.gbw'
+
                 if (RCvalue1) not in surfacedictionary:
                     mol=ash.Fragment(xyzfile=file)
                     if scantype=="Unrelaxed":
@@ -533,6 +617,8 @@ def calc_surface_fromXYZ(xyzdir=None, theory=None, dimension=None, resultfile=No
                     print("Energy of file {} : {} Eh".format(relfile, energy))
                     if keepoutputfiles == True:
                         shutil.copyfile(theory.filename+'.out', 'surface_outfiles/'+str(theory.filename)+'_'+pointlabel+'.out')
+                    if keepmofiles == True:
+                        shutil.copyfile(theory.filename+'.gbw', 'surface_mofiles/'+str(theory.filename)+'_'+pointlabel+'.gbw')
                     #theory.cleanup()
                     surfacedictionary[(RCvalue1)] = energy
                     #Writing dictionary to file
@@ -542,7 +628,7 @@ def calc_surface_fromXYZ(xyzdir=None, theory=None, dimension=None, resultfile=No
                     print("")            
                 else:
                     print("RC1 value in dict already. Skipping.")
-
+    print_time_rel(module_init_time, modulename='calc_surface_fromXYZ', moduleindex=0)
     return surfacedictionary
 
 def calc_numerical_gradient():
@@ -634,16 +720,17 @@ def read_surfacedict_from_file(file, dimension=None):
         return dictionary
     with open(file) as f:
         for line in f:
-            if len(line) > 1:
-                if dimension==1:
-                    key=float(line.split()[0])
-                    val=float(line.split()[1])
-                    dictionary[(key)]=val
-                elif dimension==2:
-                    key1=float(line.split()[0])
-                    key2=float(line.split()[1])
-                    val=float(line.split()[2])                    
-                    dictionary[(key1,key2)]=val
+            if '#' not in line:
+                if len(line) > 1:
+                    if dimension==1:
+                        key=float(line.split()[0])
+                        val=float(line.split()[1])
+                        dictionary[(key)]=val
+                    elif dimension==2:
+                        key1=float(line.split()[0])
+                        key2=float(line.split()[1])
+                        val=float(line.split()[2])                    
+                        dictionary[(key1,key2)]=val
     
     if len(dictionary) > 0:
         print("Dictionary read ")
@@ -660,10 +747,16 @@ def write_surfacedict_to_file(surfacedict,file="surface_results.txt",dimension=N
         file (str, optional): Filename. Defaults to "surface_results.txt".
         dimension (int, optional): Dimension of surface. Defaults to None.
     """
+    if dimension == None:
+        print("write_surfacedict_to_file: Dimension needs to be given")
+        exit()
     with open(file, 'w') as f:
         for d in surfacedict.items():
             if dimension==1:
                 x=d[0]
+                #Converting from 1-element tuple to number if it happens to be a tuple
+                if type(x) == tuple:
+                    x=x[0]
                 e=d[1]
                 f.write(str(x)+" "+str(e)+'\n')
             elif dimension==2:

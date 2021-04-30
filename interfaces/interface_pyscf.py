@@ -1,4 +1,6 @@
-from functions_general import BC
+import time
+
+from functions_general import BC,print_time_rel
 import module_coords
 
 #PySCF Theory object. Fragment object is optional. Only used for single-points.
@@ -45,6 +47,8 @@ class PySCFTheory:
     #Run function. Takes coords, elems etc. arguments and computes E or E+G.
     def run(self, current_coords=None, current_MM_coords=None, MMcharges=None, qm_elems=None,
             elems=None, Grad=False, PC=False, nprocs=None, pe=False, potfile=None, restart=False ):
+
+        module_init_time=time.time()
 
         if nprocs==None:
             nprocs=self.nprocs
@@ -185,8 +189,10 @@ class PySCFTheory:
         print(BC.OKBLUE, BC.BOLD, "------------ENDING PYSCF INTERFACE-------------", BC.END)
         if Grad == True:
             print("Single-point PySCF energy:", self.energy)
+            print_time_rel(module_init_time, modulename='pySCF run', moduleindex=2)
             return self.energy, self.gradient
         else:
             print("Single-point PySCF energy:", self.energy)
+            print_time_rel(module_init_time, modulename='pySCF run', moduleindex=2)
             return self.energy
 

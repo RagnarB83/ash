@@ -216,7 +216,7 @@ class Fragment:
         try:
             with open(filename) as f:
                 for line in f:
-                    if 'ATOM' in line:
+                    if 'ATOM ' in line:
                         atomindex.append(float(line[6:11].replace(' ','')))
                         atom_name.append(line[12:16].replace(' ',''))
                         residname.append(line[17:20].replace(' ',''))
@@ -338,7 +338,7 @@ class Fragment:
             print("Calculating connectivity of fragment using py")
             timestampB = time.time()
             fraglist = calc_conn_py(self.coords, self.elems, conndepth, scale, tol)
-            print_time_rel(timestampB, modulename='calc connectivity py')
+            print_time_rel(timestampB, modulename='calc connectivity py', moduleindex=4)
         elif codeversion=='julia':
             print("Calculating connectivity of fragment using julia")
             # Import Julia
@@ -352,7 +352,7 @@ class Fragment:
                 # Converting from numpy to list of lists
                 for sublist in fraglist_temp:
                     fraglist.append(list(sublist))
-                print_time_rel(timestampB, modulename='calc connectivity julia')
+                print_time_rel(timestampB, modulename='calc connectivity julia', moduleindex=4)
             except:
                 print(BC.FAIL,"Problem importing Pyjulia (import julia)", BC.END)
                 print("Make sure Julia is installed and PyJulia module available, and that you are using python-jl")
@@ -1393,15 +1393,6 @@ def write_pdbfile_dummy(elems,coords,name, atomlabels,residlabels):
             pfile.write(line+'\n')
     print("Wrote PDB file:", name+'.pdb')
 
-#set out [open "result.pdb" w ]
-#foreach a $atomindexlist b $segmentlist c $residlist d $resnamelist e $atomnamelist f $typeslist cx $coords_x cy $coords_y cz $coords_z el $ellist {
-# #ATOM      1  N   SER A   2      65.342  32.035  32.324  1.00  0.00           N
-#             set fmt1 "ATOM%7d %4s%4s%-1s%5d%12.3f%8.3f%8.3f%6s%6s%10s%2s"
-# puts $out [format $fmt1 $a $e $d " " $c $cx $cy $cz "1.00" "0.00" $b $el]
-#
-#}
-#close $out
-
 
 #Calculate nuclear charge from XYZ-file
 def nucchargexyz(file):
@@ -2130,3 +2121,28 @@ def make_cluster_from_box(fragment=None, radius=10, center_atomindices=[0], cell
     newfrag = ash.Fragment(elems=clusterelems, coords=clustercoords, printlevel=0)
 
     return newfrag
+
+
+
+#Set up constraints
+
+def set_up_MMwater_bondconstraints(actatoms, oxygentype='OT'):
+    print("set_up_MMwater_bondconstraints")
+    print("Assuming oxygen atom type is:", oxygentype)
+    print("Change with keyword arguement: oxygentype='XX")
+
+    #Go over actatoms and check if oxygen-water type 
+
+
+
+    #Shift nested list by number e.g. shift([[1,2],[100,101]], -1)  gives : [[0,1],[99,100]]
+    #TODO: generalize
+    def shift_nested(ll, par):
+        new=[]
+        for l in ll:
+            new.append([l[0]+par,l[1]+par])
+        return new
+    bondconslist=shift_nested(bondlist,-1)
+    constraints={'bond':bondconslist}
+
+    return constraints
