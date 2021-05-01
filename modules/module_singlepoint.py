@@ -37,7 +37,7 @@ def Singlepoint(fragment=None, theory=None, Grad=False):
         # An Energy+Gradient calculation where we change the number of cores to 12
         energy,gradient= theory.run(current_coords=coords, elems=elems, Grad=True)
         print("Energy: ", energy)
-        print_time_rel(module_init_time, modulename='Singlepoint')
+        print_time_rel(module_init_time, modulename='Singlepoint', moduleindex=1)
         return energy,gradient
     # Run a single-point energy job without gradient (default)
     else:
