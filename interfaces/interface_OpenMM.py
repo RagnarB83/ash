@@ -592,10 +592,11 @@ class OpenMMTheory:
         #Instead of recreating simulation we can just update like this:
         print("Updating simulation object for modified Nonbonded force")
         print("self.nonbonded_force:", self.nonbonded_force)
+        #Making sure that there still is a nonbonded force present in system (in case deleted)
         for i,force in enumerate(self.system.getForces()):
-            if isinstance(self.nonbonded_force, self.openmm.NonbondedForce):
+            if isinstance(force, self.openmm.NonbondedForce):
                 self.nonbonded_force.updateParametersInContext(self.simulation.context)
-            if isinstance(self.nonbonded_force, self.openmm.CustomNonbondedForce):
+            if isinstance(force, self.openmm.CustomNonbondedForce):
                 self.nonbonded_force.updateParametersInContext(self.simulation.context)
 
 
