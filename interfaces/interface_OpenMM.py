@@ -640,7 +640,8 @@ class OpenMMTheory:
                     #Are angle-atoms in atomlist? 
                     presence=[i in atomlist for i in [p1,p2,p3]]
                     #Excluding if 2 or 3 QM atoms. i.e. a QM2-QM1-MM1 or QM3-QM2-QM1 term
-                    if presence.count(True) >= 2:
+                    #Originally set to 2
+                    if presence.count(True) >= 1:
                         print("presence.count(True):", presence.count(True))
                         print("exclude True")
                         print("atomlist:", atomlist)
@@ -661,7 +662,8 @@ class OpenMMTheory:
                     presence=[i in atomlist for i in [p1,p2,p3,p4]]
                     #Excluding if 3 or 4 QM atoms. i.e. a QM3-QM2-QM1-MM1 or QM4-QM3-QM2-QM1 term
                     #print("Before p1: {} p2: {} p3: {} p4: {} periodicity: {} phase: {} k: {}".format(p1,p2,p3,p4,periodicity, phase,k))
-                    if presence.count(True) >= 3:
+                    #Originally set to 3
+                    if presence.count(True) >= 1:
                         print("Found torsion in QM-region")
                         print("presence.count(True):", presence.count(True))
                         print("exclude True")
