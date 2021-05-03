@@ -195,7 +195,7 @@ class QMMMTheory:
 
                     #NOTE: Temporary. Exceptions for nonbonded QM atoms. Will ignore QM-QM Coulomb and LJ interactions. Coulomb interactions are also set to zero elsewhere.
                     print("Removing nonbonded terms for QM-region in MMtheory")
-                    self.mm_theory.addexceptions(self.qmatoms)
+                    #self.mm_theory.addexceptions(self.qmatoms)
                 
                 #Change charges
                 # Keeping self.charges as originally defined.
