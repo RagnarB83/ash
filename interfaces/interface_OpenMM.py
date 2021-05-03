@@ -531,7 +531,7 @@ class OpenMMTheory:
         print("Calculating MM state")
         
         print("forces")
-        print(self.system.getForces()))
+        print(self.system.getForces())
         
         if Grad == True:
             state = self.simulation.context.getState(getEnergy=True, getForces=True)
