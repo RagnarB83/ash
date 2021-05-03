@@ -618,7 +618,7 @@ class OpenMMTheory:
                     #print("i:", i)
                     p1, p2, length, k = force.getBondParameters(i)
                     #print("p1: {} p2: {} length: {} k: {}".format(p1,p2,length,k))
-                    exclude = (p1 in atomlist and p2 in atomlist)
+                    exclude = (p1 in atomlist or p2 in atomlist)
                     #print("exclude:", exclude)
                     if exclude is True:
                         print("exclude True")
