@@ -412,7 +412,7 @@ class OpenMMTheory:
         # Only do for cases: a) single-point b) First energy-step in optimization and last energy-step
         # OpenMM energy components
         openmm_energy = dict()
-        energycomp = self.getEnergyDecomposition(self.simulation.context, self.forcegroups)
+        energycomp = self.getEnergyDecomposition(self.simulation.context)
         print("energycomp: ", energycomp)
         print("self.forcegroups:", self.forcegroups)
         #print("len energycomp", len(energycomp))
