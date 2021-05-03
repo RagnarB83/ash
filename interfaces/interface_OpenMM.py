@@ -629,6 +629,7 @@ class OpenMMTheory:
                         numharmbondterms_removed+=1
                         p1, p2, length, k = force.getBondParameters(i)
                         print("After p1: {} p2: {} length: {} k: {}".format(p1,p2,length,k))
+                        print("")
                 force.updateParametersInContext(self.simulation.context)
             elif isinstance(force, self.openmm.HarmonicAngleForce):
                 print("HarmonicAngle force")
@@ -682,18 +683,17 @@ class OpenMMTheory:
                     #Excluding if 3 or 4 QM atoms. i.e. a QM3-QM2-QM1-MM1 or QM4-QM3-QM2-QM1 term
                     #print("Before p1: {} p2: {} p3: {} p4: {} pars {}".format(p1,p2,p3,p4,pars))
                     #print("pars:", pars)
-                    if presence.count(True) >= 3:
-                        #print("Found torsion in QM-region")
-                        #print("presence.count(True):", presence.count(True))
-                        #print("exclude True")
-                        #print("atomlist:", atomlist)
-                        #print("i:", i)
-                        #print("Before p1: {} p2: {} p3: {} p4: {} pars {}".format(p1,p2,p3,p4,pars))
+                    if presence.count(True) >= 1:
+                        print("Found torsion in QM-region")
+                        print("presence.count(True):", presence.count(True))
+                        print("exclude True")
+                        print("atomlist:", atomlist)
+                        print("i:", i)
+                        print("Before p1: {} p2: {} p3: {} p4: {} pars {}".format(p1,p2,p3,p4,pars))
                         force.setTorsionParameters(i, p1, p2, p3, p4, (0.0,0.0))
                         numcustomtorsionterms_removed+=1
-                        #p1, p2, p3, p4, pars = force.getTorsionParameters(i)
-                        #print("After p1: {} p2: {} p3: {} p4: {} pars {}".format(p1,p2,p3,p4,pars))
-                #print("Updating force")
+                        p1, p2, p3, p4, pars = force.getTorsionParameters(i)
+                        print("After p1: {} p2: {} p3: {} p4: {} pars {}".format(p1,p2,p3,p4,pars))
                 force.updateParametersInContext(self.simulation.context)
             elif isinstance(force, self.openmm.CMAPTorsionForce):
                 print("CMAPTorsionForce force")
@@ -736,9 +736,7 @@ class OpenMMTheory:
                     #print("i:", i)
                     p1, p2, vars = force.getBondParameters(i)
                     #print("p1: {} p2: {}".format(p1,p2))
-                    charge=vars[0];sigma=vars[1];epsilon=vars[2]
-                    #print("charge: {} sigma: {} epsilon: {}".format(charge,sigma,epsilon))
-                    exclude = (p1 in atomlist or p2 in atomlist)
+                    exclude = (p1 in atomlist and p2 in atomlist)
                     #print("exclude:", exclude)
                     if exclude is True:
                         #print("exclude True")
