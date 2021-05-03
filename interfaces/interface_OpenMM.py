@@ -591,8 +591,14 @@ class OpenMMTheory:
 
         #Instead of recreating simulation we can just update like this:
         print("Updating simulation object for modified Nonbonded force")
-        self.nonbonded_force.updateParametersInContext(self.simulation.context)
-        
+        print("self.nonbonded_force:", self.nonbonded_force)
+        for i,force in enumerate(self.system.getForces()):
+            if isinstance(self.nonbonded_force, self.openmm.NonbondedForce):
+                self.nonbonded_force.updateParametersInContext(self.simulation.context)
+            if isinstance(self.nonbonded_force, self.openmm.CustomNonbondedForce):
+                self.nonbonded_force.updateParametersInContext(self.simulation.context)
+
+
     def modify_bonded_forces(self,atomlist):
         print("Modifying bonded forces")
         print("")
@@ -683,7 +689,7 @@ class OpenMMTheory:
                     #Excluding if 3 or 4 QM atoms. i.e. a QM3-QM2-QM1-MM1 or QM4-QM3-QM2-QM1 term
                     #print("Before p1: {} p2: {} p3: {} p4: {} pars {}".format(p1,p2,p3,p4,pars))
                     #print("pars:", pars)
-                    if presence.count(True) >= 1:
+                    if presence.count(True) >= 3:
                         print("Found torsion in QM-region")
                         print("presence.count(True):", presence.count(True))
                         print("exclude True")
