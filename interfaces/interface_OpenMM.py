@@ -344,11 +344,13 @@ class OpenMMTheory:
         #https://stackoverflow.com/questions/942543/operation-on-every-pair-of-element-in-a-list
         #[self.nonbonded_force.addException(i,j,0, 0, 0, replace=True) for i,j in itertools.combinations(atomlist, r=2)]
         numexceptions=0
+        print("self.system.getForces() ", self.system.getForces())
+        print("self.nonbonded_force:"m self.nonbonded_force)
         if isinstance(self.nonbonded_force, self.openmm.NonbondedForce):
             print("Case Nonbondedforce. Adding Exception for ij pair")
             for i in atomlist:
                 for j in atomlist:
-                    #print("i,j : ", i,j)
+                    print("i,j : ", i,j)
                     self.nonbonded_force.addException(i,j,0, 0, 0, replace=True)
 
                     #NOTE: Case where there is also a CustomNonbonded force present (GROMACS interface). 
@@ -369,7 +371,8 @@ class OpenMMTheory:
                     self.nonbonded_force.addExclusion(i,j)
                     numexceptions+=1
         print("Number of exceptions/exclusions added: ", numexceptions)
-        
+        print("self.system.getForces() ", self.system.getForces())
+        print("self.nonbonded_force:"m self.nonbonded_force)
         #Seems like updateParametersInContext does not reliably work here so we have to remake the simulation instead
         #Might be bug (https://github.com/openmm/openmm/issues/2709). Revisit
         #self.nonbonded_force.updateParametersInContext(self.simulation.context)
@@ -384,7 +387,7 @@ class OpenMMTheory:
     def create_simulation(self):
         timeA=time.time()
         print("Creating/updating OpenMM simulation object")
-        
+        print("self.system.getForces() ", self.system.getForces())
         self.integrator = self.langevinintegrator(300 * self.unit.kelvin,  # Temperature of heat bath
                                         1 / self.unit.picosecond,  # Friction coefficient
                                         0.002 * self.unit.picoseconds)  # Time step
