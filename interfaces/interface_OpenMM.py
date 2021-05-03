@@ -529,6 +529,10 @@ class OpenMMTheory:
         print_time_rel(timeA, modulename="context pos")
         timeA = time.time()
         print("Calculating MM state")
+        
+        print("forces")
+        print(self.system.getForces()))
+        
         if Grad == True:
             state = self.simulation.context.getState(getEnergy=True, getForces=True)
             self.energy = state.getPotentialEnergy().value_in_unit(self.unit.kilojoule_per_mole) / constants.hartokj
