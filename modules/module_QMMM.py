@@ -197,7 +197,7 @@ class QMMMTheory:
 
                     #NOTE: Temporary. Exceptions for nonbonded QM atoms. Will ignore QM-QM Coulomb and LJ interactions. Coulomb interactions are also set to zero elsewhere.
                     print("Removing nonbonded terms for QM-region in MMtheory")
-                    #self.mm_theory.addexceptions(self.qmatoms)
+                    self.mm_theory.addexceptions(self.qmatoms)
                 
                 #Change charges
                 # Keeping self.charges as originally defined.
@@ -212,7 +212,7 @@ class QMMMTheory:
                 # Todo: make sure this works for OpenMM and for NonBondedTheory
                 # Updating charges in MM object. Using charges that have been zeroed for QM (no other modifications)
                 #Updated...
-                #self.mm_theory.update_charges(self.qmatoms,[0.0 for i in self.qmatoms])
+                self.mm_theory.update_charges(self.qmatoms,[0.0 for i in self.qmatoms])
                 
                 
                 print("Charges of QM atoms set to 0 (since Electrostatic Embedding):")

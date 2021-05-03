@@ -609,6 +609,7 @@ class OpenMMTheory:
                 self.nonbonded_force.updateParametersInContext(self.simulation.context)
             if isinstance(force, self.openmm.CustomNonbondedForce):
                 self.nonbonded_force.updateParametersInContext(self.simulation.context)
+        self.create_simulation()
         print("done here")
 
     def modify_bonded_forces(self,atomlist):
@@ -796,7 +797,7 @@ class OpenMMTheory:
         print("CMAP Torsion terms:", numcmaptorsionterms_removed)
         print("CustomBond terms", numcustombondterms_removed)
         print("")
-
+        self.create_simulation()
 
 #For frozen systems we use Customforce in order to specify interaction groups
 #if len(self.frozen_atoms) > 0:
