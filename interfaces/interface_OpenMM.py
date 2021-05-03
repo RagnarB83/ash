@@ -286,16 +286,16 @@ class OpenMMTheory:
         #print_time_rel(timeA, modulename="constraint fix")
         timeA = time.time()
     
-        #Dummy integrator
-        self.integrator = self.langevinintegrator(300 * self.unit.kelvin,  # Temperature of heat bath
-                                        1 / self.unit.picosecond,  # Friction coefficient
-                                        0.002 * self.unit.picoseconds)  # Time step
+        #Platform
         self.platform = simtk.openmm.Platform.getPlatformByName(self.platform_choice)
+    
+        #Create simulation
+        self.create_simulation()
 
-        #Defined first here. 
+        #Old:
         #NOTE: If self.system is modified then we have to remake self.simulation
         #self.simulation = simtk.openmm.app.simulation.Simulation(self.topology, self.system, self.integrator,self.platform)
-        self.simulation = self.simulationclass(self.topology, self.system, self.integrator,self.platform)
+        #self.simulation = self.simulationclass(self.topology, self.system, self.integrator,self.platform)
 
         if self.Periodic is True and Amberfiles is True:
             print("Setting periodic box parameters")
@@ -373,15 +373,19 @@ class OpenMMTheory:
         #Seems like updateParametersInContext does not reliably work here so we have to remake the simulation instead
         #Might be bug (https://github.com/openmm/openmm/issues/2709). Revisit
         #self.nonbonded_force.updateParametersInContext(self.simulation.context)
-        self.integrator = self.langevinintegrator(300 * self.unit.kelvin,  # Temperature of heat bath
-                                        1 / self.unit.picosecond,  # Friction coefficient
-                                        0.002 * self.unit.picoseconds)  # Time step
-        self.simulation = self.simulationclass(self.topology, self.system, self.integrator,self.platform)
+        self.create_simulation()
         
         print_time_rel(timeA, modulename="add exception")
     #Run: coords or framents can be given (usually coords). qmatoms in order to avoid QM-QM interactions (TODO)
     #Probably best to do QM-QM exclusions etc. in a separate function though as we want run to be as simple as possible
     #qmatoms list provided for generality of MM objects. Not used here for now
+    
+    # Create/update simulation from scratch or after system has been modified (force modification or even deletion)
+    def create_simulation(self):
+        self.integrator = self.langevinintegrator(300 * self.unit.kelvin,  # Temperature of heat bath
+                                        1 / self.unit.picosecond,  # Friction coefficient
+                                        0.002 * self.unit.picoseconds)  # Time step
+        self.simulation = self.simulationclass(self.topology, self.system, self.integrator,self.platform)
     
     
     #Functions for energy compositions
