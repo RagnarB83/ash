@@ -345,7 +345,7 @@ class OpenMMTheory:
         #[self.nonbonded_force.addException(i,j,0, 0, 0, replace=True) for i,j in itertools.combinations(atomlist, r=2)]
         numexceptions=0
         print("self.system.getForces() ", self.system.getForces())
-        print("self.nonbonded_force:"m self.nonbonded_force)
+        print("self.nonbonded_force:", self.nonbonded_force)
         if isinstance(self.nonbonded_force, self.openmm.NonbondedForce):
             print("Case Nonbondedforce. Adding Exception for ij pair")
             for i in atomlist:
