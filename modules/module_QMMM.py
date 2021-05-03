@@ -131,6 +131,7 @@ class QMMMTheory:
                 print("Unrecognized MM theory for QMMMTheory")
                 exit(1)
         else:
+            print("Reading in charges")
             self.charges=charges
         
         if len(self.charges) == 0:

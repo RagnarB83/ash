@@ -391,9 +391,9 @@ class OpenMMTheory:
     #Functions for energy compositions
     def forcegroupify(self):
         self.forcegroups = {}
-        #print("inside forcegroupify")
-        #print("self.system.getForces() ", self.system.getForces())
-        #print("Number of forces:", self.system.getNumForces())
+        print("inside forcegroupify")
+        print("self.system.getForces() ", self.system.getForces())
+        print("Number of forces:", self.system.getNumForces())
         for i in range(self.system.getNumForces()):
             force = self.system.getForce(i)
             force.setForceGroup(i)
@@ -402,6 +402,7 @@ class OpenMMTheory:
         #exit()
     def getEnergyDecomposition(self,context, forcegroups):
         energies = {}
+        print("forcegroups:", forcegroups)
         for f, i in forcegroups.items():
             energies[f] = context.getState(getEnergy=True, groups=2**i).getPotentialEnergy()
         return energies
@@ -414,7 +415,8 @@ class OpenMMTheory:
         # OpenMM energy components
         openmm_energy = dict()
         energycomp = self.getEnergyDecomposition(self.simulation.context, self.forcegroups)
-        #print("energycomp: ", energycomp)
+        print("energycomp: ", energycomp)
+        print("self.forcegroups:", self.forcegroups)
         #print("len energycomp", len(energycomp))
         #print("openmm_energy: ", openmm_energy)
         print("")
@@ -422,7 +424,7 @@ class OpenMMTheory:
         extrafcount=0
         #This currently assumes CHARMM36 components, More to be added
         for comp in energycomp.items():
-            #print("comp: ", comp)
+            print("comp: ", comp)
             if 'HarmonicBondForce' in str(type(comp[0])):
                 #Not sure if this works in general.
                 if bondterm_set is False:
