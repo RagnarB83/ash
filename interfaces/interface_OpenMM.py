@@ -663,7 +663,7 @@ class OpenMMTheory:
                     #Excluding if 3 or 4 QM atoms. i.e. a QM3-QM2-QM1-MM1 or QM4-QM3-QM2-QM1 term
                     #print("Before p1: {} p2: {} p3: {} p4: {} periodicity: {} phase: {} k: {}".format(p1,p2,p3,p4,periodicity, phase,k))
                     #Originally set to 3
-                    if presence.count(True) >= 2:
+                    if presence.count(True) >= 3:
                         print("Found torsion in QM-region")
                         print("presence.count(True):", presence.count(True))
                         print("exclude True")
