@@ -210,7 +210,7 @@ class QMMMTheory:
                 # Todo: make sure this works for OpenMM and for NonBondedTheory
                 # Updating charges in MM object. Using charges that have been zeroed for QM (no other modifications)
                 #Updated...
-                self.mm_theory.update_charges(self.qmatoms,[0.0 for i in self.qmatoms])
+                #self.mm_theory.update_charges(self.qmatoms,[0.0 for i in self.qmatoms])
                 
                 
                 print("Charges of QM atoms set to 0 (since Electrostatic Embedding):")
