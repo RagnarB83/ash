@@ -345,34 +345,36 @@ class OpenMMTheory:
         #[self.nonbonded_force.addException(i,j,0, 0, 0, replace=True) for i,j in itertools.combinations(atomlist, r=2)]
         numexceptions=0
         print("self.system.getForces() ", self.system.getForces())
-        print("self.nonbonded_force:", self.nonbonded_force)
-        if isinstance(self.nonbonded_force, self.openmm.NonbondedForce):
-            print("Case Nonbondedforce. Adding Exception for ij pair")
-            for i in atomlist:
-                for j in atomlist:
-                    print("i,j : ", i,j)
-                    self.nonbonded_force.addException(i,j,0, 0, 0, replace=True)
+        #print("self.nonbonded_force:", self.nonbonded_force)
+        
+        for force in self.system.getForces():
+            print("force:", force)
+            if isinstance(force, self.openmm.NonbondedForce):
+                print("Case Nonbondedforce. Adding Exception for ij pair")
+                for i in atomlist:
+                    for j in atomlist:
+                        print("i,j : ", i,j)
+                        force.addException(i,j,0, 0, 0, replace=True)
 
-                    #NOTE: Case where there is also a CustomNonbonded force present (GROMACS interface). 
-                    # Then we have to add exclusion there too to avoid this issue: https://github.com/choderalab/perses/issues/357
-                    #Basically both nonbonded forces have to have same exclusions (or exception where chargepro=0, eps=0)
-                    #TODO: This leads to : Exception: CustomNonbondedForce: Multiple exclusions are specified for particles
-                    #Basically we have to inspect what is actually present in CustomNonbondedForce
-                    #for force in self.system.getForces():
-                    #    if isinstance(force, self.openmm.CustomNonbondedForce):
-                    #        force.addExclusion(i,j)
+                        #NOTE: Case where there is also a CustomNonbonded force present (GROMACS interface). 
+                        # Then we have to add exclusion there too to avoid this issue: https://github.com/choderalab/perses/issues/357
+                        #Basically both nonbonded forces have to have same exclusions (or exception where chargepro=0, eps=0)
+                        #TODO: This leads to : Exception: CustomNonbondedForce: Multiple exclusions are specified for particles
+                        #Basically we have to inspect what is actually present in CustomNonbondedForce
+                        #for force in self.system.getForces():
+                        #    if isinstance(force, self.openmm.CustomNonbondedForce):
+                        #        force.addExclusion(i,j)
 
-                    numexceptions+=1
-        elif isinstance(self.nonbonded_force, self.openmm.CustomNonbondedForce):
-            print("Case CustomNonbondedforce. Adding Exclusion for ij pair")
-            for i in atomlist:
-                for j in atomlist:
-                    #print("i,j : ", i,j)
-                    self.nonbonded_force.addExclusion(i,j)
-                    numexceptions+=1
+                        numexceptions+=1
+            elif isinstance(force, self.openmm.CustomNonbondedForce):
+                print("Case CustomNonbondedforce. Adding Exclusion for kl pair")
+                for k in atomlist:
+                    for l in atomlist:
+                        #print("k,l : ", k,l)
+                        force.addExclusion(k,l)
+                        numexceptions+=1
         print("Number of exceptions/exclusions added: ", numexceptions)
         print("self.system.getForces() ", self.system.getForces())
-        print("self.nonbonded_force:", self.nonbonded_force)
         #Seems like updateParametersInContext does not reliably work here so we have to remake the simulation instead
         #Might be bug (https://github.com/openmm/openmm/issues/2709). Revisit
         #self.nonbonded_force.updateParametersInContext(self.simulation.context)
