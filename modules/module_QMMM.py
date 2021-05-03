@@ -612,7 +612,14 @@ class QMMMTheory:
         #Final QM/MM gradient. Combine QM gradient, MM gradient and PC-gradient (elstat MM gradient from QM code).
         #First combining QM and PC gradient to one.
         if Grad == True:
-            
+            print("MM gradient before modification")
+            module_coords.write_coords_all(self.MMgradient, self.elems, indices=self.allatoms, file="MMgradient-before mod", description="MM gradient (au/Bohr):")
+            print(self.MMgradient[589])
+            print(self.MMgradient[590])
+            print(self.MMgradient[591])
+            print(self.MMgradient[592])
+            print(self.MMgradient[593])
+            exit()
             #TODO: Deal with linkatom gradient here.
             # Add contribution to QM1 and MM1 contribution???
             
