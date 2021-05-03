@@ -594,11 +594,13 @@ class OpenMMTheory:
         print("self.nonbonded_force:", self.nonbonded_force)
         #Making sure that there still is a nonbonded force present in system (in case deleted)
         for i,force in enumerate(self.system.getForces()):
+            print("i is {} and force is {}".format(i,force))
             if isinstance(force, self.openmm.NonbondedForce):
+                print("here")
                 self.nonbonded_force.updateParametersInContext(self.simulation.context)
             if isinstance(force, self.openmm.CustomNonbondedForce):
                 self.nonbonded_force.updateParametersInContext(self.simulation.context)
-
+        print("done here")
 
     def modify_bonded_forces(self,atomlist):
         print("Modifying bonded forces")
