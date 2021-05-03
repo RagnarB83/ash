@@ -382,6 +382,7 @@ class OpenMMTheory:
     
     # Create/update simulation from scratch or after system has been modified (force modification or even deletion)
     def create_simulation(self):
+        print("Creating/updating OpenMM simulation object")
         self.integrator = self.langevinintegrator(300 * self.unit.kelvin,  # Temperature of heat bath
                                         1 / self.unit.picosecond,  # Friction coefficient
                                         0.002 * self.unit.picoseconds)  # Time step
