@@ -285,11 +285,7 @@ class OpenMMTheory:
         #print("Constraints:", self.system.getNumConstraints())
         #print_time_rel(timeA, modulename="constraint fix")
         timeA = time.time()
-        
-        self.forcegroupify()
-        print_time_rel(timeA, modulename="forcegroupify")
-        timeA = time.time()
-        
+    
         #Dummy integrator
         self.integrator = self.langevinintegrator(300 * self.unit.kelvin,  # Temperature of heat bath
                                         1 / self.unit.picosecond,  # Friction coefficient
@@ -400,10 +396,12 @@ class OpenMMTheory:
             self.forcegroups[force] = i
         #print("self.forcegroups :", self.forcegroups)
         #exit()
-    def getEnergyDecomposition(self,context, forcegroups):
+    def getEnergyDecomposition(self,context):
+        #Call and set force groups
+        self.forcegroupify()
         energies = {}
-        print("forcegroups:", forcegroups)
-        for f, i in forcegroups.items():
+        print("self.forcegroups:", self.forcegroups)
+        for f, i in self.forcegroups.items():
             energies[f] = context.getState(getEnergy=True, groups=2**i).getPotentialEnergy()
         return energies
     
