@@ -327,9 +327,10 @@ class OpenMMTheory:
         else:
             print("active_atoms and frozen_atoms can not be both defined")
             exit(1)
+
+
     #This removes interactions between particles (e.g. QM-QM or frozen-frozen pairs)
     # list of atom indices for which we will remove all pairs
-
     #Todo: Way too slow to do for all frozen atoms but works well for qmatoms list size
     # Alternative: Remove force interaction and then add in the interaction of active atoms to frozen atoms
     # should be reasonably fast
@@ -582,9 +583,10 @@ class OpenMMTheory:
         self.charges=chargelist
         return chargelist
 
-    # Delete selected exceptions f
-    def delete_exceptions(self,atomlist, Coulomb=True):
-        print("Delete exceptions for atomlist:", atomlist)
+    # Delete selected exceptions. Only for Coulomb.
+    #Used to delete Coulomb interactions involving QM-QM and QM-MM atoms
+    def delete_exceptions(self,atomlist):
+        print("Deleting Coulombexceptions for atomlist:", atomlist)
         for force in self.system.getForces():
             if isinstance(force, self.openmm.NonbondedForce):
                 for exc in range(force.getNumExceptions()):
@@ -592,21 +594,18 @@ class OpenMMTheory:
                     #force.getExceptionParameters(exc)
                     p1,p2,chargeprod,sigmaij,epsilonij = force.getExceptionParameters(exc)
                     if p1 in atomlist or p2 in atomlist:
-                        print("p1: {} and p2: {}".format(p1,p2))
-                        print("chargeprod:", chargeprod)
-                        print("sigmaij:", sigmaij)
-                        print("epsilonij:", epsilonij)
-                        #exit()
-                        #chargeprod._value=0.0
-                        #sigmaij._value=0.0
-                        #epsilonij._value=0.0
-                        #force.setExceptionParameters(exc, p1, p2, chargeprod, sigmaij, epsilonij)
+                        #print("p1: {} and p2: {}".format(p1,p2))
+                        #print("chargeprod:", chargeprod)
+                        #print("sigmaij:", sigmaij)
+                        #print("epsilonij:", epsilonij)
+                        chargeprod._value=0.0
+                        force.setExceptionParameters(exc, p1, p2, chargeprod, sigmaij, epsilonij)
                         #print("New:", force.getExceptionParameters(exc))
+        self.create_simulation()
 
+    #Function to
     def zero_nonbondedforce(self,atomlist, zeroCoulomb=True, zeroLJ=True):
         print("Zero-ing nonbondedforce")
-
-        
         def charge_sigma_epsilon(charge,sigma,epsilon):
             if zeroCoulomb ==  True:
                 newcharge=charge
@@ -626,6 +625,7 @@ class OpenMMTheory:
         #Zero all nonbonding interactions for atomlist
         for force in self.system.getForces():
             if isinstance(force, self.openmm.NonbondedForce):
+                #Setting single particle parameters
                 for atomindex in atomlist:
                     oldcharge, oldsigma, oldepsilon = force.getParticleParameters(atomindex)
                     newpars = charge_sigma_epsilon(oldcharge,oldsigma,oldepsilon)
@@ -635,15 +635,17 @@ class OpenMMTheory:
                 print("force.getNumExceptionParameterOffsets() ", force.getNumExceptionParameterOffsets())
                 print("force.getNonbondedMethod():", force.getNonbondedMethod())
                 print("force.getNumGlobalParameters() ", force.getNumGlobalParameters())
+                #Now doing exceptions
                 for exc in range(force.getNumExceptions()):
                     print(force.getExceptionParameters(exc))
                     force.getExceptionParameters(exc)
                     p1,p2,chargeprod,sigmaij,epsilonij = force.getExceptionParameters(exc)
-                    chargeprod._value=0.0
-                    sigmaij._value=0.0
-                    epsilonij._value=0.0
-                    force.setExceptionParameters(exc, p1, p2, chargeprod, sigmaij, epsilonij)
-                    print("New:", force.getExceptionParameters(exc))
+                    #chargeprod._value=0.0
+                    #sigmaij._value=0.0
+                    #epsilonij._value=0.0
+                    newpars2 = charge_sigma_epsilon(chargeprod,sigmaij,epsilonij)
+                    force.setExceptionParameters(exc, p1, p2, newpars2[0], newpars2[1], newpars2[2])
+                    #print("New:", force.getExceptionParameters(exc))
                 #force.updateParametersInContext(self.simulation.context)
             elif isinstance(force, self.openmm.CustomNonbondedForce):
                 print("customnonbondedforce not implemented")
@@ -652,6 +654,7 @@ class OpenMMTheory:
         #self.create_simulation()
     #Updating charges in OpenMM object. Used to set QM charges to 0 for example
     #Taking list of atom-indices and list of charges (usually zero) and setting new charge
+    #Note: Exceptions also needs to be dealt with (see delete_exceptions)
     def update_charges(self,atomlist,atomcharges):
         print("Updating charges in OpenMM object.")
         assert len(atomlist) == len(atomcharges)
