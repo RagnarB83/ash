@@ -615,8 +615,10 @@ class OpenMMTheory:
                 print("force.getNumGlobalParameters() ", force.getNumGlobalParameters())
                 for exc in range(force.getNumExceptions()):
                     print(force.getExceptionParameters(exc))
-                
-                exit()
+                    force.getExceptionParameters(exc)
+                    p1,p2,chargeprod,sigmaij,epsilonij = force.getExceptionParameters(exc)
+                    force.setExceptionParameters(exc, p1, p2, chargeprod, sigmaij, epsilonij)
+                    print("New:", force.getExceptionParameters(exc))
                 force.updateParametersInContext(self.simulation.context)
             elif isinstance(force, self.openmm.CustomNonbondedForce):
                 print("customnonbondedforce not implemented")
