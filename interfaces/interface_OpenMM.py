@@ -604,10 +604,7 @@ class OpenMMTheory:
         #Zero all nonbonding interactions for atomlist
         for force in self.system.getForces():
             if isinstance(force, self.openmm.NonbondedForce):
-                
-                print("This force has this many particles")
-                print(force.getNumParticles())
-                exit()
+                print(force.getUseDispersionCorrection())
                 for atomindex in atomlist:
                     oldcharge, oldsigma, oldepsilon = force.getParticleParameters(atomindex)
                     newpars = charge_sigma_epsilon(oldcharge,oldsigma,oldepsilon)
