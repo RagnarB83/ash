@@ -609,6 +609,14 @@ class OpenMMTheory:
                     newpars = charge_sigma_epsilon(oldcharge,oldsigma,oldepsilon)
                     print(newpars)
                     force.setParticleParameters(atomindex, newpars[0],newpars[1],newpars[2])
+                print("force.getNumExceptions() ", force.getNumExceptions())
+                print("force.getNumExceptionParameterOffsets() ", force.getNumExceptionParameterOffsets())
+                print("force.getNonbondedMethod():", getNonbondedMethod())
+                print("force.getNumGlobalParameters() ", getNumGlobalParameters())
+                for exc in range(force.getNumExceptions()):
+                    print(force.getExceptionParameters(exc))
+                
+                exit()
                 force.updateParametersInContext(self.simulation.context)
             elif isinstance(force, self.openmm.CustomNonbondedForce):
                 print("customnonbondedforce not implemented")
