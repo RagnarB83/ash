@@ -588,16 +588,16 @@ class OpenMMTheory:
                 print("charge:", charge)
                 newcharge=charge
                 print("newcharge:", newcharge)
-                newcharge.value=0.0
+                newcharge._value=0.0
                 print("newcharge:", newcharge)
                 exit()
             else:
                 newcharge=charge
             if zeroLJ == True:
                 newsigma=sigma
-                newsigma.value=0.0
+                newsigma._value=0.0
                 newepsilon=epsilon
-                newepsilon.value=0.0
+                newepsilon._value=0.0
             else:
                 newsigma=sigma
                 newepsilon=epsilon
