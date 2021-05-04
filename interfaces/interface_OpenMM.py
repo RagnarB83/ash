@@ -610,6 +610,7 @@ class OpenMMTheory:
             elif isinstance(force, self.openmm.CustomNonbondedForce):
                 print("customnonbondedforce not implemented")
                 exit()
+            force.updateParametersInContext(self.simulation.context)
         self.create_simulation()
     #Updating charges in OpenMM object. Used to set QM charges to 0 for example
     #Taking list of atom-indices and list of charges (usually zero) and setting new charge
