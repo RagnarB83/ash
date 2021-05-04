@@ -622,11 +622,11 @@ class OpenMMTheory:
                     epsilonij._value=0.0
                     force.setExceptionParameters(exc, p1, p2, chargeprod, sigmaij, epsilonij)
                     print("New:", force.getExceptionParameters(exc))
-                force.updateParametersInContext(self.simulation.context)
+                #force.updateParametersInContext(self.simulation.context)
             elif isinstance(force, self.openmm.CustomNonbondedForce):
                 print("customnonbondedforce not implemented")
                 exit()
-
+        self.create_simulation()
         #self.create_simulation()
     #Updating charges in OpenMM object. Used to set QM charges to 0 for example
     #Taking list of atom-indices and list of charges (usually zero) and setting new charge
