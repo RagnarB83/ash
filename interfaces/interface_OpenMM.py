@@ -581,6 +581,31 @@ class OpenMMTheory:
                 chargelist.append(charge)
         self.charges=chargelist
         return chargelist
+    def zero_nonbondedforce(self,atomlist, zeroCoulomb=True, zeroLJ=True):
+        print("Zero-ing nonbondedforce")
+        def charge_sigma_epsilon(charge,sigma,epsilon):
+            if zeroCoulomb ==  True:
+                newcharge=0.0
+            else:
+                newcharge=charge
+            if zeroLJ == True:
+                newsigma=0.0
+                newepsilon=0.0
+            else:
+                newsigma=sigma
+                newepsilon=epsilon
+            return [newcharge,newsigma,newepsilon]
+        #Zero all nonbonding interactions for atomlist
+        for force in self.system.getForces():
+            if isinstance(force, self.openmm.NonbondedForce):
+                for atomindex in atomlist:
+                    oldcharge, oldsigma, oldepsilon = force.getParticleParameters(atomindex)
+                    newpars = charge_sigma_epsilon(oldcharge,oldsigma,oldepsilon)
+                    force.setParticleParameters(atomindex, newpars)
+            elif isinstance(force, self.openmm.CustomNonbondedForce):
+                print("customnonbondedforce not implemented")
+                exit()
+        self.create_simulation()
     #Updating charges in OpenMM object. Used to set QM charges to 0 for example
     #Taking list of atom-indices and list of charges (usually zero) and setting new charge
     def update_charges(self,atomlist,atomcharges):
