@@ -606,7 +606,7 @@ class OpenMMTheory:
             if isinstance(force, self.openmm.NonbondedForce):
                 
                 print("This force has this many particles")
-                print(force.getNumParticles)
+                print(force.getNumParticles())
                 exit()
                 for atomindex in atomlist:
                     oldcharge, oldsigma, oldepsilon = force.getParticleParameters(atomindex)
