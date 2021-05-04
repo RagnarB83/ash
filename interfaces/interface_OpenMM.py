@@ -585,12 +585,9 @@ class OpenMMTheory:
         print("Zero-ing nonbondedforce")
         def charge_sigma_epsilon(charge,sigma,epsilon):
             if zeroCoulomb ==  True:
-                print("charge:", charge)
                 newcharge=charge
-                print("newcharge:", newcharge)
                 newcharge._value=0.0
-                print("newcharge:", newcharge)
-                exit()
+
             else:
                 newcharge=charge
             if zeroLJ == True:
