@@ -604,9 +604,6 @@ class OpenMMTheory:
             if isinstance(force, self.openmm.NonbondedForce):
                 for atomindex in atomlist:
                     oldcharge, oldsigma, oldepsilon = force.getParticleParameters(atomindex)
-                    print("oldcharge:", oldcharge)
-                    print("oldsigma:", oldsigma)
-                    print("oldepsilon:", oldepsilon)
                     newpars = charge_sigma_epsilon(oldcharge,oldsigma,oldepsilon)
                     print(newpars)
                     force.setParticleParameters(atomindex, newpars[0],newpars[1],newpars[2])
