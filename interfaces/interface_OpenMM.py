@@ -617,6 +617,9 @@ class OpenMMTheory:
                     print(force.getExceptionParameters(exc))
                     force.getExceptionParameters(exc)
                     p1,p2,chargeprod,sigmaij,epsilonij = force.getExceptionParameters(exc)
+                    chargeprod._value=0.0
+                    sigmaij._value=0.0
+                    epsilonij._value=0.0
                     force.setExceptionParameters(exc, p1, p2, chargeprod, sigmaij, epsilonij)
                     print("New:", force.getExceptionParameters(exc))
                 force.updateParametersInContext(self.simulation.context)
