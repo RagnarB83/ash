@@ -596,12 +596,12 @@ class OpenMMTheory:
                         print("chargeprod:", chargeprod)
                         print("sigmaij:", sigmaij)
                         print("epsilonij:", epsilonij)
-                        exit()
-                        chargeprod._value=0.0
-                        sigmaij._value=0.0
-                        epsilonij._value=0.0
-                        force.setExceptionParameters(exc, p1, p2, chargeprod, sigmaij, epsilonij)
-                        print("New:", force.getExceptionParameters(exc))
+                        #exit()
+                        #chargeprod._value=0.0
+                        #sigmaij._value=0.0
+                        #epsilonij._value=0.0
+                        #force.setExceptionParameters(exc, p1, p2, chargeprod, sigmaij, epsilonij)
+                        #print("New:", force.getExceptionParameters(exc))
 
     def zero_nonbondedforce(self,atomlist, zeroCoulomb=True, zeroLJ=True):
         print("Zero-ing nonbondedforce")
