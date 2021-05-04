@@ -611,8 +611,8 @@ class OpenMMTheory:
                     force.setParticleParameters(atomindex, newpars[0],newpars[1],newpars[2])
                 print("force.getNumExceptions() ", force.getNumExceptions())
                 print("force.getNumExceptionParameterOffsets() ", force.getNumExceptionParameterOffsets())
-                print("force.getNonbondedMethod():", getNonbondedMethod())
-                print("force.getNumGlobalParameters() ", getNumGlobalParameters())
+                print("force.getNonbondedMethod():", force.getNonbondedMethod())
+                print("force.getNumGlobalParameters() ", force.getNumGlobalParameters())
                 for exc in range(force.getNumExceptions()):
                     print(force.getExceptionParameters(exc))
                 
