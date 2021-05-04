@@ -390,7 +390,7 @@ class OpenMMTheory:
         timeA=time.time()
         print("Creating/updating OpenMM simulation object")
         print("self.system.getForces() ", self.system.getForces())
-        self.integrator = self.langevinintegrator(300 * self.unit.kelvin,  # Temperature of heat bath
+        self.integrator = self.langevinintegrator(0.0000001 * self.unit.kelvin,  # Temperature of heat bath
                                         1 / self.unit.picosecond,  # Friction coefficient
                                         0.002 * self.unit.picoseconds)  # Time step
         self.simulation = self.simulationclass(self.topology, self.system, self.integrator,self.platform)
@@ -604,7 +604,6 @@ class OpenMMTheory:
         #Zero all nonbonding interactions for atomlist
         for force in self.system.getForces():
             if isinstance(force, self.openmm.NonbondedForce):
-                print(force.getUseDispersionCorrection())
                 for atomindex in atomlist:
                     oldcharge, oldsigma, oldepsilon = force.getParticleParameters(atomindex)
                     newpars = charge_sigma_epsilon(oldcharge,oldsigma,oldepsilon)
