@@ -581,9 +581,31 @@ class OpenMMTheory:
                 chargelist.append(charge)
         self.charges=chargelist
         return chargelist
+
+    # Delete selected exceptions f
+    def delete_exceptions(self,atomlist, Coulomb=True):
+        print("Delete exceptions for atomlist:", atomlist)
+        for force in self.system.getForces():
+            if isinstance(force, self.openmm.NonbondedForce):
+                for exc in range(force.getNumExceptions()):
+                    #print(force.getExceptionParameters(exc))
+                    #force.getExceptionParameters(exc)
+                    p1,p2,chargeprod,sigmaij,epsilonij = force.getExceptionParameters(exc)
+                    if p1 in atomlist or p2 in atomlist:
+                        print("p1: {} and p2: {}".format(p1,p2))
+                        print("chargeprod:", chargeprod)
+                        print("sigmaij:", sigmaij)
+                        print("epsilonij:", epsilonij)
+                        exit()
+                        chargeprod._value=0.0
+                        sigmaij._value=0.0
+                        epsilonij._value=0.0
+                        force.setExceptionParameters(exc, p1, p2, chargeprod, sigmaij, epsilonij)
+                        print("New:", force.getExceptionParameters(exc))
+
     def zero_nonbondedforce(self,atomlist, zeroCoulomb=True, zeroLJ=True):
         print("Zero-ing nonbondedforce")
-        
+
         
         def charge_sigma_epsilon(charge,sigma,epsilon):
             if zeroCoulomb ==  True:
