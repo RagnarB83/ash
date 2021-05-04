@@ -585,8 +585,12 @@ class OpenMMTheory:
         print("Zero-ing nonbondedforce")
         def charge_sigma_epsilon(charge,sigma,epsilon):
             if zeroCoulomb ==  True:
+                print("charge:", charge)
                 newcharge=charge
+                print("newcharge:", newcharge)
                 newcharge.value=0.0
+                print("newcharge:", newcharge)
+                exit()
             else:
                 newcharge=charge
             if zeroLJ == True:
@@ -603,8 +607,12 @@ class OpenMMTheory:
             if isinstance(force, self.openmm.NonbondedForce):
                 for atomindex in atomlist:
                     oldcharge, oldsigma, oldepsilon = force.getParticleParameters(atomindex)
+                    print("oldcharge:", oldcharge)
+                    print("oldsigma:", oldsigma)
+                    print("oldepsilon:", oldepsilon)
                     newpars = charge_sigma_epsilon(oldcharge,oldsigma,oldepsilon)
                     print(newpars)
+                    exit()
                     force.setParticleParameters(atomindex, newpars[0],newpars[1],newpars[2])
             elif isinstance(force, self.openmm.CustomNonbondedForce):
                 print("customnonbondedforce not implemented")
