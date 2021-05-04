@@ -601,7 +601,8 @@ class OpenMMTheory:
                 for atomindex in atomlist:
                     oldcharge, oldsigma, oldepsilon = force.getParticleParameters(atomindex)
                     newpars = charge_sigma_epsilon(oldcharge,oldsigma,oldepsilon)
-                    force.setParticleParameters(atomindex, newpars)
+                    print(newpars)
+                    force.setParticleParameters(atomindex, [newpars[0],newpars[1],newpars[2]])
             elif isinstance(force, self.openmm.CustomNonbondedForce):
                 print("customnonbondedforce not implemented")
                 exit()
