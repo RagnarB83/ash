@@ -643,22 +643,22 @@ class QMMMTheory:
                         C[i,i] = C[i,i] + 1.0                
                 
                     #QM atom gradient
-                    #print("Qgrad:", Qgrad)
-                    #print("Lgrad:", Lgrad)
-                    #print("C: ", C)
-                    #print("B:", B)
+                    print("Qgrad:", Qgrad)
+                    print("Lgrad:", Lgrad)
+                    print("C: ", C)
+                    print("B:", B)
                     #Multiply grad by C-diagonal
                     Qgrad[0] = Qgrad[0]*C[0][0]
                     Qgrad[1] = Qgrad[1]*C[1][1]
                     Qgrad[2] = Qgrad[2]*C[2][2]
                     
-                    #print("Qgrad:", Qgrad)
+                    print("Qgrad:", Qgrad)
                     #MM atom gradient
-                    #print("Mgrad:", Mgrad)
+                    print("Mgrad:", Mgrad)
                     Mgrad[0] = Mgrad[0]*B[0][0]
                     Mgrad[1] = Mgrad[1]*B[1][1]
                     Mgrad[2] = Mgrad[2]*B[2][2]                    
-                    #print("Mgrad:", Mgrad)
+                    print("Mgrad:", Mgrad)
                     
                     return Qgrad,Mgrad
                 
