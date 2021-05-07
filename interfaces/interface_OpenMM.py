@@ -738,7 +738,7 @@ class OpenMMTheory:
                     presence=[i in atomlist for i in [p1,p2,p3]]
                     #Excluding if 2 or 3 QM atoms. i.e. a QM2-QM1-MM1 or QM3-QM2-QM1 term
                     #Originally set to 2
-                    if presence.count(True) >= 2:
+                    if presence.count(True) >= 1:
                         print("presence.count(True):", presence.count(True))
                         print("exclude True")
                         print("atomlist:", atomlist)
