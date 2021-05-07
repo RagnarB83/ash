@@ -329,9 +329,9 @@ class OpenMMTheory:
             exit(1)
 
 
-    #This removes interactions between particles (e.g. QM-QM or frozen-frozen pairs)
-    # list of atom indices for which we will remove all pairs
-    #Todo: Way too slow to do for all frozen atoms but works well for qmatoms list size
+    #This removes interactions between particles in a region (e.g. QM-QM or frozen-frozen pairs)
+    # Give list of atom indices for which we will remove all pairs
+    #Todo: Way too slow to do for big list of e.g. frozen atoms but works well for qmatoms list size
     # Alternative: Remove force interaction and then add in the interaction of active atoms to frozen atoms
     # should be reasonably fast
     # https://github.com/openmm/openmm/issues/2124
@@ -759,7 +759,7 @@ class OpenMMTheory:
                     #Excluding if 3 or 4 QM atoms. i.e. a QM3-QM2-QM1-MM1 or QM4-QM3-QM2-QM1 term
                     #print("Before p1: {} p2: {} p3: {} p4: {} periodicity: {} phase: {} k: {}".format(p1,p2,p3,p4,periodicity, phase,k))
                     #Originally set to 3
-                    if presence.count(True) >= 3:
+                    if presence.count(True) >= 2:
                         print("Found torsion in QM-region")
                         print("presence.count(True):", presence.count(True))
                         print("exclude True")
