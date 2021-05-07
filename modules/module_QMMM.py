@@ -623,11 +623,14 @@ class QMMMTheory:
             if self.linkatoms==True:
                 #This projects the linkatom force onto the respective QM atom and MM atom
                 def linkatom_force_fix(Qcoord, Mcoord, Lcoord, Qgrad,Mgrad,Lgrad):
+                    print("Qcoord:", Qcoord)
+                    print("Mcoord:", Mcoord)
+                    print("Lcoord:", Lcoord)
                     #QM1-L and QM1-MM1 distances
                     QLdistance=module_coords.distance(Qcoord,Lcoord)
-                    #print("QLdistance:", QLdistance)
+                    print("QLdistance:", QLdistance)
                     MQdistance=module_coords.distance(Mcoord,Qcoord)
-                    #print("MQdistance:", MQdistance)
+                    print("MQdistance:", MQdistance)
                     #B and C: a 3x3 arrays
                     B=np.zeros([3,3])
                     C=np.zeros([3,3])
@@ -643,7 +646,7 @@ class QMMMTheory:
                         C[i,i] = C[i,i] + 1.0                
                 
                     #QM atom gradient
-                    print("Qgrad:", Qgrad)
+                    print("Qgrad before:", Qgrad)
                     print("Lgrad:", Lgrad)
                     print("C: ", C)
                     print("B:", B)
@@ -652,13 +655,13 @@ class QMMMTheory:
                     Qgrad[1] = Qgrad[1]*C[1][1]
                     Qgrad[2] = Qgrad[2]*C[2][2]
                     
-                    print("Qgrad:", Qgrad)
+                    print("Qgrad after:", Qgrad)
                     #MM atom gradient
-                    print("Mgrad:", Mgrad)
+                    print("Mgrad before", Mgrad)
                     Mgrad[0] = Mgrad[0]*B[0][0]
                     Mgrad[1] = Mgrad[1]*B[1][1]
                     Mgrad[2] = Mgrad[2]*B[2][2]                    
-                    print("Mgrad:", Mgrad)
+                    print("Mgrad after:", Mgrad)
                     
                     return Qgrad,Mgrad
                 
