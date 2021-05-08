@@ -646,7 +646,7 @@ class QMMMTheory:
                             B[i,j]=-1*QLdistance*(Mcoord[i]-Qcoord[i])*(Mcoord[j]-Qcoord[j]) / (MQdistance*MQdistance*MQdistance)
                             print("B[i,j]:", B[i,j])
                     for i in range(0,2):
-                        print("i is {}".format(is))
+                        print("i is {}".format(i))
                         B[i,i] = B[i,i] + QLdistance / MQdistance
                     for i in range(0,2):
                         for j in range(0,2):
