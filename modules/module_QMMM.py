@@ -634,8 +634,8 @@ class QMMMTheory:
                     #B and C: a 3x3 arrays
                     B=np.zeros([3,3])
                     C=np.zeros([3,3])
-                    for i in range(0,2):
-                        for j in range(0,2):
+                    for i in range(0,3):
+                        for j in range(0,3):
                             print("i is {} and j is {}".format(i,j))
                             print("QLdistance:", QLdistance)
                             print("Mcoord[i]:", Mcoord[i])
@@ -645,13 +645,13 @@ class QMMMTheory:
                             print("MQdistance:", MQdistance)
                             B[i,j]=-1*QLdistance*(Mcoord[i]-Qcoord[i])*(Mcoord[j]-Qcoord[j]) / (MQdistance*MQdistance*MQdistance)
                             print("B[i,j]:", B[i,j])
-                    for i in range(0,2):
+                    for i in range(0,3):
                         print("i is {}".format(i))
                         B[i,i] = B[i,i] + QLdistance / MQdistance
-                    for i in range(0,2):
-                        for j in range(0,2):
+                    for i in range(0,3):
+                        for j in range(0,3):
                             C[i,j]= -1 * B[i,j]
-                    for i in range(0,2):
+                    for i in range(0,3):
                         C[i,i] = C[i,i] + 1.0                
                 
                     #QM atom gradient
