@@ -636,8 +636,17 @@ class QMMMTheory:
                     C=np.zeros([3,3])
                     for i in range(0,2):
                         for j in range(0,2):
+                            print("i is {} and j is {}".format(i,j))
+                            print("QLdistance:", QLdistance)
+                            print("Mcoord[i]:", Mcoord[i])
+                            print("Qcoord[i]:", Qcoord[i])
+                            print("Qcoord[j]:", Qcoord[j])
+                            print("Mcoord[j]:", Mcoord[j])
+                            print("MQdistance:", MQdistance)
                             B[i,j]=-1*QLdistance*(Mcoord[i]-Qcoord[i])*(Mcoord[j]-Qcoord[j]) / (MQdistance*MQdistance*MQdistance)
+                            print("B[i,j]:", B[i,j]s)
                     for i in range(0,2):
+                        print("i is {}".format(is))
                         B[i,i] = B[i,i] + QLdistance / MQdistance
                     for i in range(0,2):
                         for j in range(0,2):
