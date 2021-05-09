@@ -644,11 +644,24 @@ class QMMMTheory:
                     for i in range(0,3):
                         C[i,i] = C[i,i] + 1.0                
 
-                    #ctmp
+                    #Multiplying C matrix with Linkatom gradient
+                    #temp
                     g_x=C[0,0]*Lgrad[0]+C[0,1]*Lgrad[1]+C[0,2]*Lgrad[2]
                     g_y=C[1,0]*Lgrad[0]+C[1,1]*Lgrad[1]+C[1,2]*Lgrad[2]
                     g_z=C[2,0]*Lgrad[0]+C[2,1]*Lgrad[1]+C[2,2]*Lgrad[2]
                     
+                    print("g_x:", g_x)
+                    print("g_y:", g_y)
+                    print("g_z:", g_z)
+                    
+                    #Multiplying B matrix with Linkatom gradient
+                    gg_x=B[0,0]*Lgrad[0]+B[0,1]*Lgrad[1]+B[0,2]*Lgrad[2]
+                    gg_y=B[1,0]*Lgrad[0]+B[1,1]*Lgrad[1]+B[1,2]*Lgrad[2]
+                    gg_z=B[2,0]*Lgrad[0]+B[2,1]*Lgrad[1]+B[2,2]*Lgrad[2]                    
+                    
+                    print("gg_x:", gg_x)
+                    print("gg_y:", gg_y)
+                    print("gg_z:", gg_z)
                     #QM atom gradient
                     printdebug("Qgrad before:", Qgrad)
                     printdebug("Lgrad:", Lgrad)
@@ -665,9 +678,12 @@ class QMMMTheory:
                     exit()
                     #MM atom gradient
                     printdebug("Mgrad before", Mgrad)
-                    Mgrad[0] = Mgrad[0]*B[0][0]
-                    Mgrad[1] = Mgrad[1]*B[1][1]
-                    Mgrad[2] = Mgrad[2]*B[2][2]                    
+                    #Mgrad[0] = Mgrad[0]*B[0][0]
+                    #Mgrad[1] = Mgrad[1]*B[1][1]
+                    #Mgrad[2] = Mgrad[2]*B[2][2]
+                    Mgrad[0]=Mgrad[0]+gg_x
+                    Mgrad[1]=Mgrad[1]+gg_y
+                    Mgrad[2]=Mgrad[2]+gg_z                    
                     printdebug("Mgrad after:", Mgrad)
                     
                     return Qgrad,Mgrad
