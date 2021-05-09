@@ -410,7 +410,9 @@ class QMMMTheory:
                 #Linkatom indices for book-keeping
                 linkatoms_indices.append(len(self.qmcoords)-1)
                 print("linkatoms_indices: ", linkatoms_indices)
-                
+            
+            num_linkatoms=len(linkatoms_indices)
+            
             #TODO: Modify qm_elems list. Use self.qmelems or separate qmelems ?
             #TODO: Should we do this at object creation instead?
             current_qmelems=self.qmelems + ['H']*len(linkatoms_dict)
@@ -444,6 +446,7 @@ class QMMMTheory:
             self.pointcharges=self.pointcharges+self.dipole_charges
             print("Num pointcharges after dipole addition: ", len(self.pointcharges))
         else:
+            num_linkatoms=0
             #If no linkatoms then use original self.qmelems
             current_qmelems = self.qmelems
             #If no linkatoms then self.pointcharges are just original charges with QM-region zeroed
@@ -661,7 +664,7 @@ class QMMMTheory:
                 #print("here")
                 #print("linkatoms_dict: ", linkatoms_dict)
                 #print("linkatoms_indices: ", linkatoms_indices)
-                num_linkatoms=len(linkatoms_indices)
+                
                 for pair in sorted(linkatoms_dict.keys()):
                     print("pair: ", pair)
                     #Grabbing linkatom data
