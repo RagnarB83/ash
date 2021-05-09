@@ -614,162 +614,103 @@ class QMMMTheory:
             print("{:<20} {:>20.12f}".format("QM/MM energy: ", self.QM_MM_energy))
         blankline()
 
-        #Final QM/MM gradient. Combine QM gradient, MM gradient and PC-gradient (elstat MM gradient from QM code).
-        #First combining QM and PC gradient to one.
+        #Final QM/MM gradient. Combine QM gradient, MM gradient, PC-gradient (elstat MM gradient from QM code).
+        # Do linkatom force projections in the end
         if Grad == True:
-            # Add contribution to QM1 and MM1 contribution???
+            assert len(self.allatoms) == len(self.MMgradient)
             
+            #Defining QMgradient without linkatoms if present
             if self.linkatoms==True:
-                #This projects the linkatom force onto the respective QM atom and MM atom
-                def linkatom_force_fix(Qcoord, Mcoord, Lcoord, Qgrad,Mgrad,Lgrad):
-                    printdebug("Qcoord:", Qcoord)
-                    printdebug("Mcoord:", Mcoord)
-                    printdebug("Lcoord:", Lcoord)
-                    #QM1-L and QM1-MM1 distances
-                    QLdistance=module_coords.distance(Qcoord,Lcoord)
-                    printdebug("QLdistance:", QLdistance)
-                    MQdistance=module_coords.distance(Mcoord,Qcoord)
-                    printdebug("MQdistance:", MQdistance)
-                    #B and C: a 3x3 arrays
-                    B=np.zeros([3,3])
-                    C=np.zeros([3,3])
-                    for i in range(0,3):
-                        for j in range(0,3):
-                            B[i,j]=-1*QLdistance*(Mcoord[i]-Qcoord[i])*(Mcoord[j]-Qcoord[j]) / (MQdistance*MQdistance*MQdistance)
-                    for i in range(0,3):
-                        B[i,i] = B[i,i] + QLdistance / MQdistance
-                    for i in range(0,3):
-                        for j in range(0,3):
-                            C[i,j]= -1 * B[i,j]
-                    for i in range(0,3):
-                        C[i,i] = C[i,i] + 1.0                
+                self.QMgradient_wo_linkatoms=self.QMgradient[0:-num_linkatoms] #remove linkatoms
+                #Sanity check
+                assert len(self.QMgradient_wo_linkatoms) + len(self.PCgradient) - len(self.dipole_charges)  == len(self.MMgradient)
+            else:
+                self.QMgradient_wo_linkatoms=self.QMgradient
 
-                    #Multiplying C matrix with Linkatom gradient
-                    #temp
-                    g_x=C[0,0]*Lgrad[0]+C[0,1]*Lgrad[1]+C[0,2]*Lgrad[2]
-                    g_y=C[1,0]*Lgrad[0]+C[1,1]*Lgrad[1]+C[1,2]*Lgrad[2]
-                    g_z=C[2,0]*Lgrad[0]+C[2,1]*Lgrad[1]+C[2,2]*Lgrad[2]
-                    
-                    print("g_x:", g_x)
-                    print("g_y:", g_y)
-                    print("g_z:", g_z)
-                    
-                    #Multiplying B matrix with Linkatom gradient
-                    gg_x=B[0,0]*Lgrad[0]+B[0,1]*Lgrad[1]+B[0,2]*Lgrad[2]
-                    gg_y=B[1,0]*Lgrad[0]+B[1,1]*Lgrad[1]+B[1,2]*Lgrad[2]
-                    gg_z=B[2,0]*Lgrad[0]+B[2,1]*Lgrad[1]+B[2,2]*Lgrad[2]                    
-                    
-                    print("gg_x:", gg_x)
-                    print("gg_y:", gg_y)
-                    print("gg_z:", gg_z)
-                    #QM atom gradient
-                    printdebug("Qgrad before:", Qgrad)
-                    printdebug("Lgrad:", Lgrad)
-                    printdebug("C: ", C)
-                    printdebug("B:", B)
-                    #Multiply grad by C-diagonal
-                    #Qgrad[0] = Qgrad[0]*C[0][0]
-                    #Qgrad[1] = Qgrad[1]*C[1][1]
-                    #Qgrad[2] = Qgrad[2]*C[2][2]
-                    Qgrad[0]=Qgrad[0]+g_x
-                    Qgrad[1]=Qgrad[1]+g_y
-                    Qgrad[2]=Qgrad[2]+g_z
-                    printdebug("Qgrad after:", Qgrad)
-                    #MM atom gradient
-                    printdebug("Mgrad before", Mgrad)
-                    #Mgrad[0] = Mgrad[0]*B[0][0]
-                    #Mgrad[1] = Mgrad[1]*B[1][1]
-                    #Mgrad[2] = Mgrad[2]*B[2][2]
-                    Mgrad[0]=Mgrad[0]+gg_x
-                    Mgrad[1]=Mgrad[1]+gg_y
-                    Mgrad[2]=Mgrad[2]+gg_z                    
-                    printdebug("Mgrad after:", Mgrad)
-                    
-                    return Qgrad,Mgrad
-                
-                def fullindex_to_qmindex(fullindex,qmatoms):
-                    qmindex=qmatoms.index(fullindex)
-                    return qmindex
-                
+            #Initialize QM_PC gradient (has full system size) and fill up
+            self.QM_PC_gradient = np.zeros((len(self.MMgradient), 3))
+            qmcount=0;pccount=0
+            for i in self.allatoms:
+                if i in self.qmatoms:
+                    #QM-gradient. Linkatom gradients are skipped
+                    self.QM_PC_gradient[i]=self.QMgradient_wo_linkatoms[qmcount]
+                    qmcount+=1
+                else:
+                    #Pointcharge-gradient. Dipole-charge gradients are skipped (never reached)
+                    self.QM_PC_gradient[i] = self.PCgradient[pccount]
+                    pccount += 1
+            assert qmcount == len(self.qmatoms)
+            assert pccount == len(self.mmatoms)           
+            #print("qmcount:", qmcount)
+            #print("pccount:", pccount)
+            #print("self.QM_PC_gradient len ", len(self.QM_PC_gradient))
+
+
+            #Now assemble full QM/MM gradient (no linkatom force projection yet)
+            assert len(self.QM_PC_gradient) == len(self.MMgradient)
+            self.QM_MM_gradient=self.QM_PC_gradient+self.MMgradient
+            if self.printlevel >=3:
+                print("Printlevel >=3: Printing QM/MM gradient w/o linkatom proj. to disk")
+                module_coords.write_coords_all(self.QM_MM_gradient, self.elems, indices=self.allatoms, file="QM_MMgradient_wo_linkatomproj", description="QM/MM gradient w/o linkatom projection (au/Bohr):")
+            
+            #print_time_rel(CheckpointTime, modulename='QM/MM gradient combine')
+            
+            #LINKATOM FORCE PROJECTION
+            # Add contribution to QM1 and MM1 contribution???
+            if self.linkatoms==True:                
                 #print("here")
                 #print("linkatoms_dict: ", linkatoms_dict)
                 #print("linkatoms_indices: ", linkatoms_indices)
                 num_linkatoms=len(linkatoms_indices)
                 for pair in sorted(linkatoms_dict.keys()):
                     print("pair: ", pair)
+                    #Grabbing linkatom data
                     linkatomindex=linkatoms_indices.pop(0)
                     print("linkatomindex:", linkatomindex)
                     Lgrad=self.QMgradient[linkatomindex]
                     print("Lgrad:",Lgrad)
                     Lcoord=linkatoms_dict[pair]
                     print("Lcoord:", Lcoord)
+                    #Grabbing QMatom info
                     fullatomindex_qm=pair[0]
                     print("fullatomindex_qm:", fullatomindex_qm)
                     print("self.qmatoms:", self.qmatoms)
                     qmatomindex=fullindex_to_qmindex(fullatomindex_qm,self.qmatoms)
                     print("qmatomindex:", qmatomindex)
-                    fullatomindex_mm=pair[1]
-                    print("fullatomindex_mm:", fullatomindex_mm)
                     Qcoord=self.qmcoords[qmatomindex]
                     print("Qcoords: ", Qcoord)
-                    #print("type self.QMGradient", type(self.QMgradient))
-                    Qgrad=self.QMgradient[qmatomindex]
-                    print("Qgrad:", Qgrad)
+
+                    Qgrad=self.QM_MM_gradient[fullatomindex_qm]
+                    print("Qgrad (full QM/MM grad)s:", Qgrad)
                     
-                    #print("length of self.MMgradient:", len(self.MMgradient))
+                    #Grabbing MMatom info
+                    fullatomindex_mm=pair[1]
+                    print("fullatomindex_mm:", fullatomindex_mm)
                     Mcoord=current_coords[fullatomindex_mm]
                     print("Mcoord:", Mcoord)
-                    #print("type self.MMgradient", type(self.MMgradient))
-                    print("fullatomindex_mm:", fullatomindex_mm)
-                    Mgrad=self.MMgradient[fullatomindex_mm]
-                    print("Mgrad: ", Mgrad)
-                    Qgrad,Mgrad= linkatom_force_fix(Qcoord, Mcoord, Lcoord, Qgrad,Mgrad,Lgrad)
-                    print("Qgrad: ", Qgrad)
-                    print("Mgrad: ", Mgrad)
-                    self.QMgradient[qmatomindex]=Qgrad
-                    self.MMgradient[fullatomindex_mm]=Mgrad
-                #Fix QMgradient by removing linkatom contributions (bottom)
-                #Redundant?
-                #print("self.QMgradient:", self.QMgradient)
-                self.QMgradient=self.QMgradient[0:-num_linkatoms] #remove linkatoms
-                #print("self.QMgradient:", self.QMgradient)
-            
-                # QM_PC_gradient is system size. Combining QM part (after linkatom-contribution removed) and PC part into 
-                #print("self.allatoms:", len(self.allatoms))
-                #print("len(self.QMgradient) :", len(self.QMgradient))
-                #print("len(self.MMgradient) :", len(self.MMgradient))
-                #print("length self.PCgradient ", len(self.PCgradient))
-            
-                assert len(self.allatoms) == len(self.MMgradient)
-                assert len(self.QMgradient) + len(self.PCgradient) - len(self.dipole_charges)  == len(self.MMgradient)
-            
-            self.QM_PC_gradient = np.zeros((len(self.MMgradient), 3))
-            qmcount=0;pccount=0
-            for i in self.allatoms:
-                if i in self.qmatoms:
-                    #QM-gradient. Linkatom gradients are skipped
-                    self.QM_PC_gradient[i]=self.QMgradient[qmcount]
-                    qmcount+=1
-                else:
-                    #Pointcharge-gradient. Dipole-charge gradients are skipped (never reached)
-                    self.QM_PC_gradient[i] = self.PCgradient[pccount]
-                    pccount += 1
-            
-            #print("qmcount:", qmcount)
-            #print("pccount:", pccount)
-            #print("self.QM_PC_gradient len ", len(self.QM_PC_gradient))
-            assert qmcount == len(self.qmatoms)
-            assert pccount == len(self.mmatoms)
-            
-            #Now assemble final QM/MM gradient
-            assert len(self.QM_PC_gradient) == len(self.MMgradient)
-            self.QM_MM_gradient=self.QM_PC_gradient+self.MMgradient
-            #print_time_rel(CheckpointTime, modulename='QM/MM gradient combine')
+                    
+                    Mgrad=self.QM_MM_gradient[fullatomindex_mm]
+                    print("Mgrad (full QM/MM grad): ", Mgrad)
+                    
+                    #Now grabbed all components, calculating new projecteed gradient on QM atom and MM atom
+                    newQgrad,newMgrad = linkatom_force_fix(Qcoord, Mcoord, Lcoord, Qgrad,Mgrad,Lgrad)
+                    print("newQgrad: ", newQgrad)
+                    print("newMgrad: ", newMgrad)
+                    
+                    #Updating full QM/MM gradient
+                    self.QM_MM_gradient[fullatomindex_qm] = newQgrad
+                    self.QM_MM_gradient[fullatomindex_mm] = newMgrad
+                    
+
             if self.printlevel >=3:
                 print("Printlevel >=3: Printing all gradients to disk")
                 #print("QM gradient (au/Bohr):")
                 #module_coords.print_coords_all(self.QMgradient, self.qmelems, self.qmatoms)
-                module_coords.write_coords_all(self.QMgradient, self.qmelems, indices=self.qmatoms, file="QMgradient", description="QM gradient (au/Bohr):")
+                module_coords.write_coords_all(self.QMgradient_wo_linkatoms, self.qmelems, indices=self.qmatoms, file="QMgradient w/o linkatoms", description="QM gradient w/o linkatoms (au/Bohr):")
+                
+                #Writing QM+Linkatoms gradient
+                module_coords.write_coords_all(self.QMgradient, self.qmelems+['L' for i in range(num_linkatoms)], indices=self.qmatoms+[0 for i in range(num_linkatoms)], file="QMgradient-with-linkatoms", description="QM gradient with linkatoms (au/Bohr):")
+                
                 #blankline()
                 #print("PC gradient (au/Bohr):")
                 #module_coords.print_coords_all(self.PCgradient, self.mmelems, self.mmatoms)
@@ -887,3 +828,74 @@ def microiter_QM_MM_OPT_v3(theory=None, fragment=None, maxiter=500, qmregion=Non
         print("Micro-iterative QM/MM opt complete !")
     return final
     
+
+#This projects the linkatom force onto the respective QM atom and MM atom
+def linkatom_force_fix(Qcoord, Mcoord, Lcoord, Qgrad,Mgrad,Lgrad):
+    printdebug("Qcoord:", Qcoord)
+    printdebug("Mcoord:", Mcoord)
+    printdebug("Lcoord:", Lcoord)
+    #QM1-L and QM1-MM1 distances
+    QLdistance=module_coords.distance(Qcoord,Lcoord)
+    printdebug("QLdistance:", QLdistance)
+    MQdistance=module_coords.distance(Mcoord,Qcoord)
+    printdebug("MQdistance:", MQdistance)
+    #B and C: a 3x3 arrays
+    B=np.zeros([3,3])
+    C=np.zeros([3,3])
+    for i in range(0,3):
+        for j in range(0,3):
+            B[i,j]=-1*QLdistance*(Mcoord[i]-Qcoord[i])*(Mcoord[j]-Qcoord[j]) / (MQdistance*MQdistance*MQdistance)
+    for i in range(0,3):
+        B[i,i] = B[i,i] + QLdistance / MQdistance
+    for i in range(0,3):
+        for j in range(0,3):
+            C[i,j]= -1 * B[i,j]
+    for i in range(0,3):
+        C[i,i] = C[i,i] + 1.0                
+
+    #Multiplying C matrix with Linkatom gradient
+    #temp
+    g_x=C[0,0]*Lgrad[0]+C[0,1]*Lgrad[1]+C[0,2]*Lgrad[2]
+    g_y=C[1,0]*Lgrad[0]+C[1,1]*Lgrad[1]+C[1,2]*Lgrad[2]
+    g_z=C[2,0]*Lgrad[0]+C[2,1]*Lgrad[1]+C[2,2]*Lgrad[2]
+    
+    print("g_x:", g_x)
+    print("g_y:", g_y)
+    print("g_z:", g_z)
+    
+    #Multiplying B matrix with Linkatom gradient
+    gg_x=B[0,0]*Lgrad[0]+B[0,1]*Lgrad[1]+B[0,2]*Lgrad[2]
+    gg_y=B[1,0]*Lgrad[0]+B[1,1]*Lgrad[1]+B[1,2]*Lgrad[2]
+    gg_z=B[2,0]*Lgrad[0]+B[2,1]*Lgrad[1]+B[2,2]*Lgrad[2]                    
+    
+    print("gg_x:", gg_x)
+    print("gg_y:", gg_y)
+    print("gg_z:", gg_z)
+    #QM atom gradient
+    printdebug("Qgrad before:", Qgrad)
+    printdebug("Lgrad:", Lgrad)
+    printdebug("C: ", C)
+    printdebug("B:", B)
+    #Multiply grad by C-diagonal
+    #Qgrad[0] = Qgrad[0]*C[0][0]
+    #Qgrad[1] = Qgrad[1]*C[1][1]
+    #Qgrad[2] = Qgrad[2]*C[2][2]
+    Qgrad[0]=Qgrad[0]+g_x
+    Qgrad[1]=Qgrad[1]+g_y
+    Qgrad[2]=Qgrad[2]+g_z
+    printdebug("Qgrad after:", Qgrad)
+    #MM atom gradient
+    printdebug("Mgrad before", Mgrad)
+    #Mgrad[0] = Mgrad[0]*B[0][0]
+    #Mgrad[1] = Mgrad[1]*B[1][1]
+    #Mgrad[2] = Mgrad[2]*B[2][2]
+    Mgrad[0]=Mgrad[0]+gg_x
+    Mgrad[1]=Mgrad[1]+gg_y
+    Mgrad[2]=Mgrad[2]+gg_z                    
+    printdebug("Mgrad after:", Mgrad)
+    
+    return Qgrad,Mgrad
+
+def fullindex_to_qmindex(fullindex,qmatoms):
+    qmindex=qmatoms.index(fullindex)
+    return qmindex
