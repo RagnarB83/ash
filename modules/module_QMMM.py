@@ -675,7 +675,6 @@ class QMMMTheory:
                     Qgrad[1]=Qgrad[1]+g_y
                     Qgrad[2]=Qgrad[2]+g_z
                     printdebug("Qgrad after:", Qgrad)
-                    exit()
                     #MM atom gradient
                     printdebug("Mgrad before", Mgrad)
                     #Mgrad[0] = Mgrad[0]*B[0][0]
