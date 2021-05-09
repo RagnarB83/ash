@@ -649,11 +649,11 @@ class QMMMTheory:
             #print("self.QM_PC_gradient len ", len(self.QM_PC_gradient))
 
 
-            #Now assemble full QM/MM gradient (no linkatom force projection yet)
+            #Now assemble full QM/MM gradient (no linkatom force projection done yet)
             assert len(self.QM_PC_gradient) == len(self.MMgradient)
             self.QM_MM_gradient=self.QM_PC_gradient+self.MMgradient
             if self.printlevel >=3:
-                print("Printlevel >=3: Printing QM/MM gradient w/o linkatom proj. to disk")
+                print("Printlevel >=3: Printing QM/MM gradient before linkatom proj. to disk")
                 module_coords.write_coords_all(self.QM_MM_gradient, self.elems, indices=self.allatoms, file="QM_MMgradient_wo_linkatomproj", description="QM/MM gradient w/o linkatom projection (au/Bohr):")
             
             #print_time_rel(CheckpointTime, modulename='QM/MM gradient combine')
@@ -709,7 +709,7 @@ class QMMMTheory:
                 print("Printlevel >=3: Printing all gradients to disk")
                 #print("QM gradient (au/Bohr):")
                 #module_coords.print_coords_all(self.QMgradient, self.qmelems, self.qmatoms)
-                module_coords.write_coords_all(self.QMgradient_wo_linkatoms, self.qmelems, indices=self.qmatoms, file="QMgradient w/o linkatoms", description="QM gradient w/o linkatoms (au/Bohr):")
+                module_coords.write_coords_all(self.QMgradient_wo_linkatoms, self.qmelems, indices=self.qmatoms, file="QMgradient-without-linkatoms", description="QM gradient w/o linkatoms (au/Bohr):")
                 
                 #Writing QM+Linkatoms gradient
                 module_coords.write_coords_all(self.QMgradient, self.qmelems+['L' for i in range(num_linkatoms)], indices=self.qmatoms+[0 for i in range(num_linkatoms)], file="QMgradient-with-linkatoms", description="QM gradient with linkatoms (au/Bohr):")
