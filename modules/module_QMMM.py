@@ -696,36 +696,36 @@ class QMMMTheory:
                 #print("linkatoms_indices: ", linkatoms_indices)
                 num_linkatoms=len(linkatoms_indices)
                 for pair in sorted(linkatoms_dict.keys()):
-                    #print("pair: ", pair)
+                    print("pair: ", pair)
                     linkatomindex=linkatoms_indices.pop(0)
-                    #print("linkatomindex:", linkatomindex)
+                    print("linkatomindex:", linkatomindex)
                     Lgrad=self.QMgradient[linkatomindex]
-                    #print("Lgrad:",Lgrad)
+                    print("Lgrad:",Lgrad)
                     Lcoord=linkatoms_dict[pair]
-                    #print("Lcoord:", Lcoord)
+                    print("Lcoord:", Lcoord)
                     fullatomindex_qm=pair[0]
-                    #print("fullatomindex_qm:", fullatomindex_qm)
-                    #print("self.qmatoms:", self.qmatoms)
+                    print("fullatomindex_qm:", fullatomindex_qm)
+                    print("self.qmatoms:", self.qmatoms)
                     qmatomindex=fullindex_to_qmindex(fullatomindex_qm,self.qmatoms)
-                    #print("qmatomindex:", qmatomindex)
+                    print("qmatomindex:", qmatomindex)
                     fullatomindex_mm=pair[1]
-                    #print("fullatomindex_mm:", fullatomindex_mm)
+                    print("fullatomindex_mm:", fullatomindex_mm)
                     Qcoord=self.qmcoords[qmatomindex]
-                    #print("Qcoords: ", Qcoord)
+                    print("Qcoords: ", Qcoord)
                     #print("type self.QMGradient", type(self.QMgradient))
                     Qgrad=self.QMgradient[qmatomindex]
-                    #print("Qgrad:", Qgrad)
+                    print("Qgrad:", Qgrad)
                     
                     #print("length of self.MMgradient:", len(self.MMgradient))
                     Mcoord=current_coords[fullatomindex_mm]
-                    #print("Mcoord:", Mcoord)
+                    print("Mcoord:", Mcoord)
                     #print("type self.MMgradient", type(self.MMgradient))
-                    #print("fullatomindex_mm:", fullatomindex_mm)
+                    print("fullatomindex_mm:", fullatomindex_mm)
                     Mgrad=self.MMgradient[fullatomindex_mm]
-                    #print("Mgrad: ", Mgrad)
+                    print("Mgrad: ", Mgrad)
                     Qgrad,Mgrad= linkatom_force_fix(Qcoord, Mcoord, Lcoord, Qgrad,Mgrad,Lgrad)
-                    #print("Qgrad: ", Qgrad)
-                    #print("Mgrad: ", Mgrad)
+                    print("Qgrad: ", Qgrad)
+                    print("Mgrad: ", Mgrad)
                     self.QMgradient[qmatomindex]=Qgrad
                     self.MMgradient[fullatomindex_mm]=Mgrad
                 #Fix QMgradient by removing linkatom contributions (bottom)
