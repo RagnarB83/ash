@@ -617,60 +617,58 @@ class QMMMTheory:
         #Final QM/MM gradient. Combine QM gradient, MM gradient and PC-gradient (elstat MM gradient from QM code).
         #First combining QM and PC gradient to one.
         if Grad == True:
-            #TODO: Deal with linkatom gradient here.
             # Add contribution to QM1 and MM1 contribution???
             
             if self.linkatoms==True:
                 #This projects the linkatom force onto the respective QM atom and MM atom
                 def linkatom_force_fix(Qcoord, Mcoord, Lcoord, Qgrad,Mgrad,Lgrad):
-                    print("Qcoord:", Qcoord)
-                    print("Mcoord:", Mcoord)
-                    print("Lcoord:", Lcoord)
+                    printdebug("Qcoord:", Qcoord)
+                    printdebug("Mcoord:", Mcoord)
+                    printdebug("Lcoord:", Lcoord)
                     #QM1-L and QM1-MM1 distances
                     QLdistance=module_coords.distance(Qcoord,Lcoord)
-                    print("QLdistance:", QLdistance)
+                    printdebug("QLdistance:", QLdistance)
                     MQdistance=module_coords.distance(Mcoord,Qcoord)
-                    print("MQdistance:", MQdistance)
+                    printdebug("MQdistance:", MQdistance)
                     #B and C: a 3x3 arrays
                     B=np.zeros([3,3])
                     C=np.zeros([3,3])
                     for i in range(0,3):
                         for j in range(0,3):
-                            print("i is {} and j is {}".format(i,j))
-                            print("QLdistance:", QLdistance)
-                            print("Mcoord[i]:", Mcoord[i])
-                            print("Qcoord[i]:", Qcoord[i])
-                            print("Qcoord[j]:", Qcoord[j])
-                            print("Mcoord[j]:", Mcoord[j])
-                            print("MQdistance:", MQdistance)
                             B[i,j]=-1*QLdistance*(Mcoord[i]-Qcoord[i])*(Mcoord[j]-Qcoord[j]) / (MQdistance*MQdistance*MQdistance)
-                            print("B[i,j]:", B[i,j])
                     for i in range(0,3):
-                        print("i is {}".format(i))
                         B[i,i] = B[i,i] + QLdistance / MQdistance
                     for i in range(0,3):
                         for j in range(0,3):
                             C[i,j]= -1 * B[i,j]
                     for i in range(0,3):
                         C[i,i] = C[i,i] + 1.0                
-                
-                    #QM atom gradient
-                    print("Qgrad before:", Qgrad)
-                    print("Lgrad:", Lgrad)
-                    print("C: ", C)
-                    print("B:", B)
-                    #Multiply grad by C-diagonal
-                    Qgrad[0] = Qgrad[0]*C[0][0]
-                    Qgrad[1] = Qgrad[1]*C[1][1]
-                    Qgrad[2] = Qgrad[2]*C[2][2]
+
+                    #ctmp
+                    g_x=C[0,0]*Lgrad[0]+C[0,1]*Lgrad[1]+C[0,2]*Lgrad[2]
+                    g_y=C[1,0]*Lgrad[0]+C[1,1]*Lgrad[1]+C[1,2]*Lgrad[2]
+                    g_z=C[2,0]*Lgrad[0]+C[2,1]*Lgrad[1]+C[2,2]*Lgrad[2]
                     
-                    print("Qgrad after:", Qgrad)
+                    #QM atom gradient
+                    printdebug("Qgrad before:", Qgrad)
+                    printdebug("Lgrad:", Lgrad)
+                    printdebug("C: ", C)
+                    printdebug("B:", B)
+                    #Multiply grad by C-diagonal
+                    #Qgrad[0] = Qgrad[0]*C[0][0]
+                    #Qgrad[1] = Qgrad[1]*C[1][1]
+                    #Qgrad[2] = Qgrad[2]*C[2][2]
+                    Qgrad[0]=Qgrad[0]+g_x
+                    Qgrad[1]=Qgrad[1]+g_y
+                    Qgrad[2]=Qgrad[2]+g_z
+                    printdebug("Qgrad after:", Qgrad)
+                    exit()
                     #MM atom gradient
-                    print("Mgrad before", Mgrad)
+                    printdebug("Mgrad before", Mgrad)
                     Mgrad[0] = Mgrad[0]*B[0][0]
                     Mgrad[1] = Mgrad[1]*B[1][1]
                     Mgrad[2] = Mgrad[2]*B[2][2]                    
-                    print("Mgrad after:", Mgrad)
+                    printdebug("Mgrad after:", Mgrad)
                     
                     return Qgrad,Mgrad
                 
