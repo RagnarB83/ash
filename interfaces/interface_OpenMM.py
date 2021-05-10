@@ -710,8 +710,7 @@ class OpenMMTheory:
                 print("HarmonicBonded force")
                 print("There are {} HarmonicBond terms defined.".format(force.getNumBonds()))
                 print("")
-                #REVISIT: Neglecting QM1-MM1 interactions. i.e if one atom in bond-pair is QM we neglect
-                #CURRENT BEHAVIOUR. Keeping QM1-MM1 interaction but removing all QM-QM interactions
+                #REVISIT: Neglecting QM-QM and sQM1-MM1 interactions. i.e if one atom in bond-pair is QM we neglect
                 for i in range(force.getNumBonds()):
                     #print("i:", i)
                     p1, p2, length, k = force.getBondParameters(i)

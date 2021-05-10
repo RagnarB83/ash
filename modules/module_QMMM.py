@@ -431,6 +431,8 @@ class QMMMTheory:
             #TODO: Code alternative to Charge-shifting: L2 scheme which deletes whole charge-group that MM1 belongs to
             
             # Defining pointcharges as only containing MM atoms
+            print("len self.pointcharges:", len(self.pointcharges))
+            print("len self.mmatoms:", len(self.mmatoms))
             self.pointcharges=[self.pointcharges[i] for i in self.mmatoms]
             #print("After: self.pointcharges are: ", self.pointcharges)
             print("Num pointcharges for MM system: ", len(self.pointcharges))
