@@ -161,8 +161,9 @@ class QMMMTheory:
 
             #Sanity check. Same number of atoms in fragment and MM object ?
             if fragment.numatoms != mm_theory.numatoms:
-                print("Number of atoms in fragment ({}) and MMtheory object differ ({})".format(fragment.numatoms,mm_theory.numatoms))
-                print("This does not make sense. Check coordinates and forcefield files. Exiting...")
+                print("")
+                print(BC.FAIL,"Number of atoms in fragment ({}) and MMtheory object differ ({})".format(fragment.numatoms,mm_theory.numatoms),BC.END)
+                print(BC.FAIL,"This does not make sense. Check coordinates and forcefield files. Exiting...", BC.END)
                 exit()
 
             #Add possible exception for QM-QM atoms here.
