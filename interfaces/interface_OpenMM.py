@@ -129,7 +129,7 @@ class OpenMMTheory:
 
 
         #Now after topology is defined we can create system
-
+        self.numatoms=int(self.forcefield.topology.getNumAtoms())
         #Setting active and frozen variables once topology is in place
         #NOTE: Is this actually used?
         self.set_active_and_frozen_regions(active_atoms=active_atoms, frozen_atoms=frozen_atoms)
@@ -309,7 +309,7 @@ class OpenMMTheory:
         
     def set_active_and_frozen_regions(self, active_atoms=None, frozen_atoms=None):
         #FROZEN AND ACTIVE ATOMS
-        self.numatoms=int(self.forcefield.topology.getNumAtoms())
+        
         print("self.numatoms:", self.numatoms)
         self.allatoms=list(range(0,self.numatoms))
         if active_atoms is None and frozen_atoms is None:

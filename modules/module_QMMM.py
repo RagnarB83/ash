@@ -158,9 +158,17 @@ class QMMMTheory:
 
         #If MM THEORY (not just pointcharges)
         if mm_theory is not None:
+
+            #Sanity check. Same number of atoms in fragment and MM object ?
+            if fragment.numatoms != mm_theory.numatoms:
+                print("Number of atoms in fragment ({}) and MMtheory object differ ({})".format(fragment.numatoms,mm_theory.numatoms))
+                print("This does not make sense. Check coordinates and forcefield files. Exiting...")
+                exit()
+
             #Add possible exception for QM-QM atoms here.
             #Maybe easier to just just set charges to 0. LJ for QM-QM still needs to be done by MM code
             if self.mm_theory_name == "OpenMMTheory":
+                       
                 print("Now adding exceptions for frozen atoms")
                 if len(self.frozenatoms) > 0:
                     print("Here adding exceptions for OpenMM")
