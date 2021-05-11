@@ -584,7 +584,7 @@ class QMMMTheory:
             if self.printlevel >= 2:
                 print("Running MM theory as part of QM/MM.")
                 print("Using MM on full system. Charges for QM region  have to be set to zero ")
-                printdebug("Charges for full system is: ", self.charges)
+                #printdebug("Charges for full system is: ", self.charges)
                 print("Passing QM atoms to MMtheory run so that QM-QM pairs are skipped in pairlist")
                 print("Passing active atoms to MMtheory run so that frozen pairs are skipped in pairlist")
             assert len(current_coords) == len(self.charges_qmregionzeroed)
@@ -606,7 +606,7 @@ class QMMMTheory:
             else:
                 print("QMCharges have not been zeroed")
                 exit(1)
-            printdebug("Charges for full system is: ", self.charges)
+            #printdebug("Charges for full system is: ", self.charges)
             #Todo: Need to make sure OpenMM skips QM-QM Lj interaction => Exclude
             #Todo: Need to have OpenMM skip frozen region interaction for speed  => => Exclude
             if Grad==True:
