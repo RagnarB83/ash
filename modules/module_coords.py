@@ -187,7 +187,7 @@ class Fragment:
         if self.printlevel >= 2:
             print("Reading coordinates from Chemshell file \"{}\" into fragment".format(filename))
         try:
-            elems, coords = read_fragfile_xyz(filename)
+            elems, coords = read_chemshellfragfile_xyz(filename)
         except FileNotFoundError:
             print("File {} not found".format(filename))
             exit()
@@ -1181,7 +1181,7 @@ def split_multimolxyzfile(file, writexyz=False,skipindex=1):
 
 #Read Tcl-Chemshell fragment file and grab elems and coords. Coordinates converted from Bohr to Angstrom
 #Taken from functions_solv
-def read_fragfile_xyz(fragfile):
+def read_chemshellfragfile_xyz(fragfile):
     #removing extension from fragfile name if present and then adding back.
     pathtofragfile=fragfile.split('.')[0]+'.c'
     coords=[]
@@ -1194,7 +1194,8 @@ def read_fragfile_xyz(fragfile):
                 grabcoords=False
             if grabcoords==True:
                 coords.append([float(i)*constants.bohr2ang for i in line.split()[1:]])
-                elems.append(line.split()[0])
+                el=reformat_element(line.split()[0])
+                elems.append(el)
             if 'block = coordinates records ' in line:
                 #numatoms=int(line.split()[-1])
                 grabcoords=True
