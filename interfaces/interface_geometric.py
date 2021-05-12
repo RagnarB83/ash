@@ -164,9 +164,8 @@ def geomeTRICOptimizer(theory=None,fragment=None, coordsystem='hdlc', frozenatom
         #Print-atoms list not specified. What to do: 
         if ActiveRegion == True:
             #If QM/MM object then QM-region:
-            print("theory.__class__.__name__:", theory.__class__.__name__)
             if theory.__class__.__name__ == "QMMMTheory":
-                print("Theory: QMMMTheory")
+                print("Theory object: QMMMTheory")
                 print("Will by default print only QM-region in output (use print_atoms_list option to change)")
                 print_atoms_list=theory.qmatoms
             else:
@@ -242,12 +241,13 @@ def geomeTRICOptimizer(theory=None,fragment=None, coordsystem='hdlc', frozenatom
 
                 #PRINTING TO OUTPUT SPECIFIC GEOMETRY IN EACH GEOMETRIC ITERATION (now: self.print_atoms_list)
                 print("Current geometry (Å) in step {} (print_atoms_list region)".format(self.iteration_count))
-                print("Note: printing only print_atoms_list (not necessary all active atoms) ")
+                
                 print("-------------------------------------------------")
                 
                 #print_atoms_list
                 #Previously act: print_coords_for_atoms(self.full_current_coords, fragment.elems, self.actatoms)
                 print_coords_for_atoms(self.full_current_coords, fragment.elems, self.print_atoms_list)
+                print("Note: printed only print_atoms_list (this not necessary all active atoms) ")
                 #Request Engrad calc for full system
                 E, Grad = self.theory.run(current_coords=self.full_current_coords, elems=fragment.elems, Grad=True)
                 #Trim Full gradient down to only act-atoms gradient
@@ -267,9 +267,13 @@ def geomeTRICOptimizer(theory=None,fragment=None, coordsystem='hdlc', frozenatom
             else:
                 self.full_current_coords=currcoords
                 #PRINTING ACTIVE GEOMETRY IN EACH GEOMETRIC ITERATION
-                print("Current geometry (Å) in step {}".format(self.iteration_count))
+                #print("Current geometry (Å) in step {}".format(self.iteration_count))
+                print("Current geometry (Å) in step {} (print_atoms_list region)".format(self.iteration_count))
                 print("---------------------------------------------------")
-                print_coords_all(currcoords, fragment.elems)
+                #Disabled: print_coords_all(currcoords, fragment.elems)
+                print_coords_for_atoms(currcoords, fragment.elems, self.print_atoms_list)
+                print("Note: printed only print_atoms_list (this not necessary all atoms) ")
+                
                 E,Grad=self.theory.run(current_coords=currcoords, elems=self.M.elem, Grad=True)
                 self.iteration_count += 1
                 self.energy = E
