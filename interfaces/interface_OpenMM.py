@@ -8,7 +8,7 @@ class OpenMMTheory:
     def __init__(self, pdbfile=None, platform='CPU', active_atoms=None, frozen_atoms=None,
                  CHARMMfiles=False, psffile=None, charmmtopfile=None, charmmprmfile=None,
                  GROMACSfiles=False, gromacstopfile=None, grofile=None, gromacstopdir=None,
-                 Amberfiles=False, amberprmtopfile=None, printlevel=2, do_energy_composition=True,
+                 Amberfiles=False, amberprmtopfile=None, printlevel=2, do_energy_composition=False,
                  xmlfile=None, periodic=False, periodic_cell_dimensions=None, customnonbondedforce=False,
                  delete_QM1_MM1_bonded=False):
         
@@ -29,6 +29,7 @@ class OpenMMTheory:
 
         # Setting for controlling whether QM1-MM1 bonded terms are deleted or not in a QM/MM job
         #See modify_bonded_forces
+        #TODO: Move option to module_QMMM instead
         self.delete_QM1_MM1_bonded=delete_QM1_MM1_bonded
 
         #Parallelization
