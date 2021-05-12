@@ -411,14 +411,14 @@ class QMMMTheory:
             #Sort by QM atoms:
             printdebug("linkatoms_dict.keys :", linkatoms_dict.keys())
             for pair in sorted(linkatoms_dict.keys()):
-                print("Pair :", pair)
+                printdebug("Pair :", pair)
                 self.qmcoords.append(linkatoms_dict[pair])
                 #print("self.qmcoords :", self.qmcoords)
                 #print(len(self.qmcoords))
                 #exit()
                 #Linkatom indices for book-keeping
                 linkatoms_indices.append(len(self.qmcoords)-1)
-                print("linkatoms_indices: ", linkatoms_indices)
+                printdebug("linkatoms_indices: ", linkatoms_indices)
             
             num_linkatoms=len(linkatoms_indices)
             
@@ -435,16 +435,15 @@ class QMMMTheory:
             
             self.ShiftMMCharges() # Creates self.pointcharges
             #print("After: self.pointcharges are: ", self.pointcharges)
-            print("Num pointcharges for full system: ", len(self.pointcharges))
-            
+            print("Number of pointcharges for full system: ", len(self.pointcharges))
+
             #TODO: Code alternative to Charge-shifting: L2 scheme which deletes whole charge-group that MM1 belongs to
             
             # Defining pointcharges as only containing MM atoms
-            print("len self.pointcharges:", len(self.pointcharges))
-            print("len self.mmatoms:", len(self.mmatoms))
+            print("Number of MM atoms:", len(self.mmatoms))
             self.pointcharges=[self.pointcharges[i] for i in self.mmatoms]
             #print("After: self.pointcharges are: ", self.pointcharges)
-            print("Num pointcharges for MM system: ", len(self.pointcharges))
+            print("Number of pointcharges for MM system: ", len(self.pointcharges))
             #Set 
             self.SetDipoleCharges() #Creates self.dipole_charges and self.dipole_coords
 
@@ -455,7 +454,7 @@ class QMMMTheory:
             #Adding dipole charges to MM charges list (given to QM code)
             #TODO: Rename as pcharges list so as not to confuse with what MM code sees??
             self.pointcharges=self.pointcharges+self.dipole_charges
-            print("Num pointcharges after dipole addition: ", len(self.pointcharges))
+            print("Number of pointcharges after dipole addition: ", len(self.pointcharges))
         else:
             num_linkatoms=0
             #If no linkatoms then use original self.qmelems
@@ -677,39 +676,39 @@ class QMMMTheory:
                 #print("linkatoms_indices: ", linkatoms_indices)
                 
                 for pair in sorted(linkatoms_dict.keys()):
-                    print("pair: ", pair)
+                    printdebug("pair: ", pair)
                     #Grabbing linkatom data
                     linkatomindex=linkatoms_indices.pop(0)
-                    print("linkatomindex:", linkatomindex)
+                    printdebug("linkatomindex:", linkatomindex)
                     Lgrad=self.QMgradient[linkatomindex]
-                    print("Lgrad:",Lgrad)
+                    printdebug("Lgrad:",Lgrad)
                     Lcoord=linkatoms_dict[pair]
-                    print("Lcoord:", Lcoord)
+                    printdebug("Lcoord:", Lcoord)
                     #Grabbing QMatom info
                     fullatomindex_qm=pair[0]
-                    print("fullatomindex_qm:", fullatomindex_qm)
-                    print("self.qmatoms:", self.qmatoms)
+                    printdebug("fullatomindex_qm:", fullatomindex_qm)
+                    printdebug("self.qmatoms:", self.qmatoms)
                     qmatomindex=fullindex_to_qmindex(fullatomindex_qm,self.qmatoms)
-                    print("qmatomindex:", qmatomindex)
+                    printdebug("qmatomindex:", qmatomindex)
                     Qcoord=self.qmcoords[qmatomindex]
-                    print("Qcoords: ", Qcoord)
+                    printdebug("Qcoords: ", Qcoord)
 
                     Qgrad=self.QM_MM_gradient[fullatomindex_qm]
-                    print("Qgrad (full QM/MM grad)s:", Qgrad)
+                    printdebug("Qgrad (full QM/MM grad)s:", Qgrad)
                     
                     #Grabbing MMatom info
                     fullatomindex_mm=pair[1]
-                    print("fullatomindex_mm:", fullatomindex_mm)
+                    printdebug("fullatomindex_mm:", fullatomindex_mm)
                     Mcoord=current_coords[fullatomindex_mm]
-                    print("Mcoord:", Mcoord)
+                    printdebug("Mcoord:", Mcoord)
                     
                     Mgrad=self.QM_MM_gradient[fullatomindex_mm]
-                    print("Mgrad (full QM/MM grad): ", Mgrad)
+                    printdebug("Mgrad (full QM/MM grad): ", Mgrad)
                     
                     #Now grabbed all components, calculating new projecteed gradient on QM atom and MM atom
                     newQgrad,newMgrad = linkatom_force_fix(Qcoord, Mcoord, Lcoord, Qgrad,Mgrad,Lgrad)
-                    print("newQgrad: ", newQgrad)
-                    print("newMgrad: ", newMgrad)
+                    printdebug("newQgrad: ", newQgrad)
+                    printdebug("newMgrad: ", newMgrad)
                     
                     #Updating full QM/MM gradient
                     self.QM_MM_gradient[fullatomindex_qm] = newQgrad
@@ -873,18 +872,18 @@ def linkatom_force_fix(Qcoord, Mcoord, Lcoord, Qgrad,Mgrad,Lgrad):
     g_y=C[1,0]*Lgrad[0]+C[1,1]*Lgrad[1]+C[1,2]*Lgrad[2]
     g_z=C[2,0]*Lgrad[0]+C[2,1]*Lgrad[1]+C[2,2]*Lgrad[2]
     
-    print("g_x:", g_x)
-    print("g_y:", g_y)
-    print("g_z:", g_z)
+    printdebug("g_x:", g_x)
+    printdebug("g_y:", g_y)
+    printdebug("g_z:", g_z)
     
     #Multiplying B matrix with Linkatom gradient
     gg_x=B[0,0]*Lgrad[0]+B[0,1]*Lgrad[1]+B[0,2]*Lgrad[2]
     gg_y=B[1,0]*Lgrad[0]+B[1,1]*Lgrad[1]+B[1,2]*Lgrad[2]
     gg_z=B[2,0]*Lgrad[0]+B[2,1]*Lgrad[1]+B[2,2]*Lgrad[2]                    
     
-    print("gg_x:", gg_x)
-    print("gg_y:", gg_y)
-    print("gg_z:", gg_z)
+    printdebug("gg_x:", gg_x)
+    printdebug("gg_y:", gg_y)
+    printdebug("gg_z:", gg_z)
     #QM atom gradient
     printdebug("Qgrad before:", Qgrad)
     printdebug("Lgrad:", Lgrad)
