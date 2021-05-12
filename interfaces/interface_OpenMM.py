@@ -360,7 +360,7 @@ class OpenMMTheory:
                 print("Case Nonbondedforce. Adding Exception for ij pair")
                 for i in atomlist:
                     for j in atomlist:
-                        printdebug("i,j : ", i,j)
+                        printdebug("i,j : {} and {} ".format(i,j))
                         force.addException(i,j,0, 0, 0, replace=True)
 
                         #NOTE: Case where there is also a CustomNonbonded force present (GROMACS interface). 
