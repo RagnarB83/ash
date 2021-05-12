@@ -168,7 +168,8 @@ class OpenMMTheory:
                 
 
             #TODO: Customnonbonded force option here
-            print("self.system.getForces() :", self.system.getForces())
+            print("OpenMM system created")
+            print("OpenMM Forces defined:", self.system.getForces())
             for i,force in enumerate(self.system.getForces()):
                 if isinstance(force, simtk.openmm.CustomNonbondedForce):
                     print('CustomNonbondedForce: %s' % force.getUseSwitchingFunction())
@@ -202,9 +203,8 @@ class OpenMMTheory:
                 self.system = self.forcefield.createSystem(nonbondedMethod=simtk.openmm.app.NoCutoff,
                                             nonbondedCutoff=1000 * simtk.openmm.unit.angstroms)
 
-            print("system created")
-            print("Number of forces:", self.system.getNumForces())
-            print(self.system.getForces())
+            print("OpenMM system created")
+            print("OpenMM Forces defined:", self.system.getForces())
             print("")
             for i,force in enumerate(self.system.getForces()):
                 if isinstance(force, simtk.openmm.NonbondedForce):
@@ -351,16 +351,16 @@ class OpenMMTheory:
         #https://stackoverflow.com/questions/942543/operation-on-every-pair-of-element-in-a-list
         #[self.nonbonded_force.addException(i,j,0, 0, 0, replace=True) for i,j in itertools.combinations(atomlist, r=2)]
         numexceptions=0
-        print("self.system.getForces() ", self.system.getForces())
+        printdebug("self.system.getForces() ", self.system.getForces())
         #print("self.nonbonded_force:", self.nonbonded_force)
         
         for force in self.system.getForces():
-            print("force:", force)
+            printdebug("force:", force)
             if isinstance(force, self.openmm.NonbondedForce):
                 print("Case Nonbondedforce. Adding Exception for ij pair")
                 for i in atomlist:
                     for j in atomlist:
-                        print("i,j : ", i,j)
+                        printdebug("i,j : ", i,j)
                         force.addException(i,j,0, 0, 0, replace=True)
 
                         #NOTE: Case where there is also a CustomNonbonded force present (GROMACS interface). 
@@ -381,7 +381,7 @@ class OpenMMTheory:
                         force.addExclusion(k,l)
                         numexceptions+=1
         print("Number of exceptions/exclusions added: ", numexceptions)
-        print("self.system.getForces() ", self.system.getForces())
+        printdebug("self.system.getForces() ", self.system.getForces())
         #Seems like updateParametersInContext does not reliably work here so we have to remake the simulation instead
         #Might be bug (https://github.com/openmm/openmm/issues/2709). Revisit
         #self.nonbonded_force.updateParametersInContext(self.simulation.context)
@@ -396,7 +396,7 @@ class OpenMMTheory:
     def create_simulation(self):
         timeA=time.time()
         print("Creating/updating OpenMM simulation object")
-        print("self.system.getForces() ", self.system.getForces())
+        printdebug("self.system.getForces() ", self.system.getForces())
         self.integrator = self.langevinintegrator(0.0000001 * self.unit.kelvin,  # Temperature of heat bath
                                         1 / self.unit.picosecond,  # Friction coefficient
                                         0.002 * self.unit.picoseconds)  # Time step
@@ -685,17 +685,17 @@ class OpenMMTheory:
 
         #Instead of recreating simulation we can just update like this:
         print("Updating simulation object for modified Nonbonded force")
-        print("self.nonbonded_force:", self.nonbonded_force)
+        printdebug("self.nonbonded_force:", self.nonbonded_force)
         #Making sure that there still is a nonbonded force present in system (in case deleted)
         for i,force in enumerate(self.system.getForces()):
-            print("i is {} and force is {}".format(i,force))
+            printdebug("i is {} and force is {}".format(i,force))
             if isinstance(force, self.openmm.NonbondedForce):
-                print("here")
+                printdebug("here")
                 self.nonbonded_force.updateParametersInContext(self.simulation.context)
             if isinstance(force, self.openmm.CustomNonbondedForce):
                 self.nonbonded_force.updateParametersInContext(self.simulation.context)
         self.create_simulation()
-        print("done here")
+        printdebug("done here")
 
     def modify_bonded_forces(self,atomlist):
         print("Modifying bonded forces")
@@ -713,9 +713,9 @@ class OpenMMTheory:
         
         for force in self.system.getForces():
             if isinstance(force, self.openmm.HarmonicBondForce):
-                print("HarmonicBonded force")
-                print("There are {} HarmonicBond terms defined.".format(force.getNumBonds()))
-                print("")
+                printdebug("HarmonicBonded force")
+                printdebug("There are {} HarmonicBond terms defined.".format(force.getNumBonds()))
+                printdebug("")
                 #REVISIT: Neglecting QM-QM and sQM1-MM1 interactions. i.e if one atom in bond-pair is QM we neglect
                 for i in range(force.getNumBonds()):
                     #print("i:", i)
@@ -730,19 +730,19 @@ class OpenMMTheory:
                         exclude = (p1 in atomlist and p2 in atomlist)
                     #print("exclude:", exclude)
                     if exclude is True:
-                        print("exclude True")
-                        print("atomlist:", atomlist)
-                        print("i:", i)
-                        print("Before p1: {} p2: {} length: {} k: {}".format(p1,p2,length,k))
+                        printdebug("exclude True")
+                        printdebug("atomlist:", atomlist)
+                        printdebug("i:", i)
+                        printdebug("Before p1: {} p2: {} length: {} k: {}".format(p1,p2,length,k))
                         force.setBondParameters(i, p1, p2, length, 0)
                         numharmbondterms_removed+=1
                         p1, p2, length, k = force.getBondParameters(i)
-                        print("After p1: {} p2: {} length: {} k: {}".format(p1,p2,length,k))
-                        print("")
+                        printdebug("After p1: {} p2: {} length: {} k: {}".format(p1,p2,length,k))
+                        printdebug("")
                 force.updateParametersInContext(self.simulation.context)
             elif isinstance(force, self.openmm.HarmonicAngleForce):
-                print("HarmonicAngle force")
-                print("There are {} HarmonicAngle terms defined.".format(force.getNumAngles()))
+                printdebug("HarmonicAngle force")
+                printdebug("There are {} HarmonicAngle terms defined.".format(force.getNumAngles()))
                 for i in range(force.getNumAngles()):
                     p1, p2, p3, angle, k = force.getAngleParameters(i)
                     #Are angle-atoms in atomlist? 
@@ -750,19 +750,19 @@ class OpenMMTheory:
                     #Excluding if 2 or 3 QM atoms. i.e. a QM2-QM1-MM1 or QM3-QM2-QM1 term
                     #Originally set to 2
                     if presence.count(True) >= 2:
-                        print("presence.count(True):", presence.count(True))
-                        print("exclude True")
-                        print("atomlist:", atomlist)
-                        print("i:", i)
-                        print("Before p1: {} p2: {} p3: {} angle: {} k: {}".format(p1,p2,p3,angle,k))
+                        printdebug("presence.count(True):", presence.count(True))
+                        printdebug("exclude True")
+                        printdebug("atomlist:", atomlist)
+                        printdebug("i:", i)
+                        printdebug("Before p1: {} p2: {} p3: {} angle: {} k: {}".format(p1,p2,p3,angle,k))
                         force.setAngleParameters(i, p1, p2, p3, angle, 0)
                         numharmangleterms_removed+=1
                         p1, p2, p3, angle, k = force.getAngleParameters(i)
-                        print("After p1: {} p2: {} p3: {} angle: {} k: {}".format(p1,p2,p3,angle,k))
+                        printdebug("After p1: {} p2: {} p3: {} angle: {} k: {}".format(p1,p2,p3,angle,k))
                 force.updateParametersInContext(self.simulation.context)
             elif isinstance(force, self.openmm.PeriodicTorsionForce):
-                print("PeriodicTorsionForce force")
-                print("There are {} PeriodicTorsionForce terms defined.".format(force.getNumTorsions()))
+                printdebug("PeriodicTorsionForce force")
+                printdebug("There are {} PeriodicTorsionForce terms defined.".format(force.getNumTorsions()))
                 for i in range(force.getNumTorsions()):
                     p1, p2, p3, p4, periodicity, phase, k = force.getTorsionParameters(i)
                     #Are torsion-atoms in atomlist? 
@@ -771,20 +771,20 @@ class OpenMMTheory:
                     #print("Before p1: {} p2: {} p3: {} p4: {} periodicity: {} phase: {} k: {}".format(p1,p2,p3,p4,periodicity, phase,k))
                     #Originally set to 3
                     if presence.count(True) >= 3:
-                        print("Found torsion in QM-region")
-                        print("presence.count(True):", presence.count(True))
-                        print("exclude True")
-                        print("atomlist:", atomlist)
-                        print("i:", i)
-                        print("Before p1: {} p2: {} p3: {} p4: {} periodicity: {} phase: {} k: {}".format(p1,p2,p3,p4,periodicity, phase,k))
+                        printdebug("Found torsion in QM-region")
+                        printdebug("presence.count(True):", presence.count(True))
+                        printdebug("exclude True")
+                        printdebug("atomlist:", atomlist)
+                        printdebug("i:", i)
+                        printdebug("Before p1: {} p2: {} p3: {} p4: {} periodicity: {} phase: {} k: {}".format(p1,p2,p3,p4,periodicity, phase,k))
                         force.setTorsionParameters(i, p1, p2, p3, p4, periodicity, phase, 0)
                         numpertorsionterms_removed+=1
                         p1, p2, p3, p4, periodicity, phase, k = force.getTorsionParameters(i)
-                        print("After p1: {} p2: {} p3: {} p4: {} periodicity: {} phase: {} k: {}".format(p1,p2,p3,p4,periodicity, phase,k))
+                        printdebug("After p1: {} p2: {} p3: {} p4: {} periodicity: {} phase: {} k: {}".format(p1,p2,p3,p4,periodicity, phase,k))
                 force.updateParametersInContext(self.simulation.context)
             elif isinstance(force, self.openmm.CustomTorsionForce):
-                print("CustomTorsionForce force")
-                print("There are {} CustomTorsionForce terms defined.".format(force.getNumTorsions()))
+                printdebug("CustomTorsionForce force")
+                printdebug("There are {} CustomTorsionForce terms defined.".format(force.getNumTorsions()))
                 for i in range(force.getNumTorsions()):
                     p1, p2, p3, p4, pars = force.getTorsionParameters(i)
                     #Are torsion-atoms in atomlist? 
@@ -793,21 +793,21 @@ class OpenMMTheory:
                     #print("Before p1: {} p2: {} p3: {} p4: {} pars {}".format(p1,p2,p3,p4,pars))
                     #print("pars:", pars)
                     if presence.count(True) >= 3:
-                        print("Found torsion in QM-region")
-                        print("presence.count(True):", presence.count(True))
-                        print("exclude True")
-                        print("atomlist:", atomlist)
-                        print("i:", i)
-                        print("Before p1: {} p2: {} p3: {} p4: {} pars {}".format(p1,p2,p3,p4,pars))
+                        printdebug("Found torsion in QM-region")
+                        printdebug("presence.count(True):", presence.count(True))
+                        printdebug("exclude True")
+                        printdebug("atomlist:", atomlist)
+                        printdebug("i:", i)
+                        printdebug("Before p1: {} p2: {} p3: {} p4: {} pars {}".format(p1,p2,p3,p4,pars))
                         force.setTorsionParameters(i, p1, p2, p3, p4, (0.0,0.0))
                         numcustomtorsionterms_removed+=1
                         p1, p2, p3, p4, pars = force.getTorsionParameters(i)
                         print("After p1: {} p2: {} p3: {} p4: {} pars {}".format(p1,p2,p3,p4,pars))
                 force.updateParametersInContext(self.simulation.context)
             elif isinstance(force, self.openmm.CMAPTorsionForce):
-                print("CMAPTorsionForce force")
-                print("There are {} CMAP terms defined.".format(force.getNumTorsions()))
-                print("There are {} CMAP maps defined".format(force.getNumMaps()))
+                printdebug("CMAPTorsionForce force")
+                printdebug("There are {} CMAP terms defined.".format(force.getNumTorsions()))
+                printdebug("There are {} CMAP maps defined".format(force.getNumMaps()))
                 #print("Assuming no CMAP terms in QM-region. Continuing")
                 # Note (RB). CMAP is between pairs of backbone dihedrals.
                 # Not sure if we can delete the terms:
@@ -822,10 +822,10 @@ class OpenMMTheory:
                     presence=[i in atomlist for i in [p1,p2,p3,p4,v1,v2,v3,v4]]
                     #NOTE: Not sure how to use count properly here when dealing with torsion atoms in QM-region
                     if presence.count(True) >= 4:
-                        print("jj: {} p1: {} p2: {} p3: {} p4: {}      v1: {} v2: {} v3: {} v4: {}".format(jj,p1,p2,p3,p4,v1,v2,v3,v4))
-                        print("presence:", presence)
-                        print(BC.WARNING, BC.BOLD,"Found CMAP torsion partner in QM-region", BC.END)
-                        print(BC.WARNING, BC.BOLD,"Not deleting. To be revisited...", BC.END)
+                        printdebug("jj: {} p1: {} p2: {} p3: {} p4: {}      v1: {} v2: {} v3: {} v4: {}".format(jj,p1,p2,p3,p4,v1,v2,v3,v4))
+                        printdebug("presence:", presence)
+                        printdebug(BC.WARNING, BC.BOLD,"Found CMAP torsion partner in QM-region", BC.END)
+                        printdebug(BC.WARNING, BC.BOLD,"Not deleting. To be revisited...", BC.END)
                         #print("presence.count(True):", presence.count(True))
                         #print("exclude True")
                         #print("atomlist:", atomlist)
@@ -838,8 +838,8 @@ class OpenMMTheory:
                 #force.updateParametersInContext(self.simulation.context)
             
             elif isinstance(force, self.openmm.CustomBondForce):
-                print("CustomBondForce")
-                print("There are {} force terms defined.".format(force.getNumBonds()))
+                printdebug("CustomBondForce")
+                printdebug("There are {} force terms defined.".format(force.getNumBonds()))
                 #Neglecting QM1-MM1 interactions. i.e if one atom in bond-pair is QM we neglect
                 for i in range(force.getNumBonds()):
                     #print("i:", i)

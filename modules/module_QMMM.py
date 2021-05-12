@@ -39,8 +39,8 @@ class QMMMTheory:
 
             # FROZEN AND ACTIVE ATOMS
             if actatoms is None and frozenatoms is None:
-                print("Actatoms/frozenatoms list not passed to QM/MM object. Will do all frozen interactions in MM (expensive).")
-                print("All {} atoms active, no atoms frozen".format(len(self.allatoms)))
+                #print("Actatoms/frozenatoms list not passed to QM/MM object. Will do all frozen interactions in MM (expensive).")
+                print("All {} atoms active, no atoms frozen in QM/MM definition (may not be frozen in optimizer)".format(len(self.allatoms)))
                 self.actatoms=self.allatoms
                 self.frozenatoms=[]
             elif actatoms is not None and frozenatoms is None:
