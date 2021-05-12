@@ -9,7 +9,8 @@ class OpenMMTheory:
                  CHARMMfiles=False, psffile=None, charmmtopfile=None, charmmprmfile=None,
                  GROMACSfiles=False, gromacstopfile=None, grofile=None, gromacstopdir=None,
                  Amberfiles=False, amberprmtopfile=None, printlevel=2, do_energy_composition=True,
-                 xmlfile=None, periodic=False, periodic_cell_dimensions=None, customnonbondedforce=False):
+                 xmlfile=None, periodic=False, periodic_cell_dimensions=None, customnonbondedforce=False,
+                 delete_QM1_MM1_bonded=False):
         
         module_init_time = time.time()
         # OPEN MM load
@@ -25,6 +26,10 @@ class OpenMMTheory:
         print(BC.WARNING, BC.BOLD, "------------Defining OpenMM object-------------", BC.END)
         #Printlevel
         self.printlevel=printlevel
+
+        # Setting for controlling whether QM1-MM1 bonded terms are deleted or not in a QM/MM job
+        #See modify_bonded_forces
+        self.delete_QM1_MM1_bonded=delete_QM1_MM1_bonded
 
         #Parallelization
         #Control by setting env variable: $OPENMM_CPU_THREADS in shell before running.
@@ -717,7 +722,11 @@ class OpenMMTheory:
                     #print("p1: {} p2: {} length: {} k: {}".format(p1,p2,length,k))
                     #or: delete QM-QM and QM-MM
                     #and: delete QM-QM
-                    exclude = (p1 in atomlist and p2 in atomlist)
+                    
+                    if self.delete_QM1_MM1_bonded == True:
+                        exclude = (p1 in atomlist or p2 in atomlist)
+                    else:
+                        exclude = (p1 in atomlist and p2 in atomlist)
                     #print("exclude:", exclude)
                     if exclude is True:
                         print("exclude True")
