@@ -164,7 +164,7 @@ def geomeTRICOptimizer(theory=None,fragment=None, coordsystem='hdlc', frozenatom
         #Print-atoms list not specified. What to do: 
         if ActiveRegion == True:
             #If QM/MM object then QM-region:
-            if theory.__class__.__name__ == ash.QMMMTheory
+            if theory.__class__.__name__ == ash.QMMMTheory:
                 print("Theory: QMMMTheory")
                 print("Will by default print only QM-region in output (use print_atoms_list option to change)")
                 print_atoms_list=theory.qmatoms
