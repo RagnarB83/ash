@@ -45,7 +45,7 @@ class OpenMMTheory:
         self.coords=[]
         self.charges=[]
         self.Periodic = periodic
-        #Residue names,ids,segments,atomtypes of all atoms of systme.
+        #Residue names,ids,segments,atomtypes of all atoms of system.
         # Grabbed below from PSF-file. Information used to write PDB-file
         self.resnames=[]
         self.resids=[]

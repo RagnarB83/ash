@@ -74,7 +74,7 @@ from interface_OpenMM import OpenMMTheory
 from module_MM import NonBondedTheory,UFFdict,UFF_modH_dict,LJCoulpy,coulombcharge,LennardJones,LJCoulombv2,LJCoulomb,MMforcefield_read
 
 #QM/MM
-from module_QMMM import QMMMTheory
+from module_QMMM import QMMMTheory,actregiondefine
 from module_polembed import PolEmbedTheory
 
 #Solvation

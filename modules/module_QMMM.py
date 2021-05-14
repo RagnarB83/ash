@@ -6,7 +6,7 @@ import math
 #functions related to QM/MM
 import ash
 import module_coords
-from functions_general import BC,blankline,listdiff,print_time_rel,printdebug
+from functions_general import BC,blankline,listdiff,print_time_rel,printdebug,print_line_with_mainheader,writelisttofile
 import settings_ash
 
 #QM/MM theory object.
@@ -912,3 +912,48 @@ def linkatom_force_fix(Qcoord, Mcoord, Lcoord, Qgrad,Mgrad,Lgrad):
 def fullindex_to_qmindex(fullindex,qmatoms):
     qmindex=qmatoms.index(fullindex)
     return qmindex
+
+
+def actregiondefine(mmtheory=None, fragment=None, radius=None, originatom=None,shiftpar=50):
+    if fragment == None or mmtheory == None or radius == None or originatom == None:
+        print("actregiondefine requires mmtheory, fragment, radius and originatom keyword arguments")
+        exit()
+
+    if mmtheory.__class__.__name__ == "NonBondedTheory":
+        print("MMtheory: NonBondedTheory currently not supported.")
+        exit()
+
+    print_line_with_mainheader("ActregionDefine")
+
+    print("Radius:", radius)
+    print("Origin atom: {} ({})".format(originatom,fragment.elems[originatom]))
+    print("Will find all atoms within {} Å from atom: {} ({})".format(radius,originatom,fragment.elems[originatom]))
+    print("Will select all whole residues within region and export list")
+    print("shiftpar:", shiftpar)
+    
+    origincoords=fragment.coords[originatom]
+    act_indices=[]
+    for index,allc in enumerate(fragment.coords):
+        dist=module_coords.distance(origincoords,allc)
+        if dist < radius:
+            resid_value=mmtheory.resids[index]
+
+            #Looping over nearby indices as current index and checking if same resid. Silly but should work well for shiftpar 35-3000 or so
+            for k in range(index-shiftpar,index+shiftpar):
+                if mmtheory.resids[k] == resid_value:
+                    act_indices.append(k)
+    #Only unique and sorting:
+    act_indices = np.unique(act_indices).tolist()
+
+    #Print indices to output
+    print("act_indices:", act_indices)
+    #Print indices to disk as file
+    writelisttofile(act_indices, "active_atoms")
+    #Print information on how to use
+    print("Active region size:", len(act_indices))
+    print("Active-region indices written to file: active_atoms")
+    print("The active_atoms list  can be read-into Python script like this:	 actatoms = read_intlist_from_file(\"active_atoms\")")
+    #Print XYZ file with active region shown
+    module_coords.write_XYZ_for_atoms(fragment.coords,fragment.elems, act_indices, "ActiveRegion")
+    print("Wrote Active region XYZfile: ActiveRegion.xyz  (inspect with visualization program)")
+    return act_indices
