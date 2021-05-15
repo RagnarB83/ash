@@ -14,15 +14,16 @@ Documentation: https://ash.readthedocs.io/en/latest
 Example:
 ```sh
 from ash import *
-import sys
-settings_ash.init()
 
 coords="""
 H 0.0 0.0 0.0
 F 0.0 0.0 1.0
 """
-#Create fragment
+#Create fragment from string
 HF_frag=Fragment(coordsstring=coords)
+
+#Alternative: Create fragment from XYZ-file
+HF_frag=Fragment(xyzfile="hf.xyz")
 
 #ORCA settings
 orcadir='/opt/orca_4.2.1'
@@ -33,4 +34,7 @@ ORCAcalc = ORCATheory(orcadir=orcadir, fragment=HF_frag, charge=0, mult=1,
                          	orcasimpleinput=input, orcablocks=blocks)
 #Call optimizer with ORCAtheory object and fragment
 geomeTRICOptimizer(ORCAcalc,HF_frag)
+
+
+
  ```

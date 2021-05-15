@@ -4,7 +4,7 @@ import time
 import constants
 from interface_xtb import xtbfinalenergygrab,xtbVIPgrab
 from functions_general import listdiff,blankline
-from module_coords import get_molecule_members_loop,read_fragfile_xyz
+from module_coords import get_molecule_members_loop,read_chemshellfragfile_xyz
 
 def TestModerunAB():
     snapslist = ['60000', '60400', '60800', '61200', '61600', '62000']

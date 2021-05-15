@@ -27,7 +27,8 @@ def fullindex_to_actindex(fullindex,actatoms):
 
 
 def geomeTRICOptimizer(theory=None,fragment=None, coordsystem='hdlc', frozenatoms=[], constraintsinputfile=None, constraints=None, 
-                       constrainvalue=False, maxiter=50, ActiveRegion=False, actatoms=[], convergence_setting=None, conv_criteria=None):
+                       constrainvalue=False, maxiter=50, ActiveRegion=False, actatoms=[], convergence_setting=None, conv_criteria=None,
+                       print_atoms_list=None):
     """
     Wrapper function around geomeTRIC code. Take theory and fragment info from ASH
     Supports frozen atoms and bond/angle/dihedral constraints in native code. Use frozenatoms and bondconstraints etc. for this.
@@ -36,11 +37,16 @@ def geomeTRICOptimizer(theory=None,fragment=None, coordsystem='hdlc', frozenatom
     Needed as discussed here: https://github.com/leeping/geomeTRIC/commit/584869707aca1dbeabab6fe873fdf139d384ca66#diff-2af7dd72b77dac63cea64c052a549fe0
     """
     module_init_time=time.time()
-    if ActiveRegion == True and coordsystem == "tric":
-        #TODO: Look into this more
-        print("Activeregion true and coordsystem = tric are not compatible")
+    if fragment==None:
+        print("geomeTRIC requires fragment object")
         exit()
-
+    try:
+        import geometric
+    except:
+        blankline()
+        print(BC.FAIL,"geomeTRIC module not found!", BC.END)
+        print(BC.WARNING,"Either install geomeTRIC using pip:\n pip install geometric\n or manually from Github (https://github.com/leeping/geomeTRIC)", BC.END)
+        exit(9)
 
     if fragment.numatoms == 1:
         print("System has 1 atoms.")
@@ -49,8 +55,12 @@ def geomeTRICOptimizer(theory=None,fragment=None, coordsystem='hdlc', frozenatom
         return energy
         #E = self.theory.run(current_coords=fragment.coords, elems=fragment.elems, Grad=False)
 
+    if ActiveRegion == True and coordsystem == "tric":
+        #TODO: Look into this more
+        print("Activeregion true and coordsystem = tric are not compatible")
+        exit()
 
-
+    #Clean-up
     try:
         os.remove('geometric_OPTtraj.log')
         os.remove('geometric_OPTtraj.xyz')
@@ -147,16 +157,26 @@ def geomeTRICOptimizer(theory=None,fragment=None, coordsystem='hdlc', frozenatom
     print("Max iterations: ", maxiter)
     #print("Frozen atoms: ", frozenatoms)
     print("Constraints: ", constraints)
-    if fragment==None:
-        print("geomeTRIC requires fragment object")
-        exit()
-    try:
-        import geometric
-    except:
-        blankline()
-        print(BC.FAIL,"geomeTRIC module not found!", BC.END)
-        print(BC.WARNING,"Either install geomeTRIC using pip:\n pip install geometric\n or manually from Github (https://github.com/leeping/geomeTRIC)", BC.END)
-        exit(9)
+
+    #What atoms to print in outputfile in each opt-step. Example choice: QM-region only
+    #If not specified then active-region or all-atoms
+    if print_atoms_list == None:
+        #Print-atoms list not specified. What to do: 
+        if ActiveRegion == True:
+            #If QM/MM object then QM-region:
+            if theory.__class__.__name__ == "QMMMTheory":
+                print("Theory object: QMMMTheory")
+                print("Will by default print only QM-region in output (use print_atoms_list option to change)")
+                print_atoms_list=theory.qmatoms
+            else:
+                #Print actatoms since using Active Region (can be too much)
+                print_atoms_list=actatoms
+        else:
+            #No act-region. Print all atoms
+            print_atoms_list=fragment.allatoms
+
+    print("Atomlist to print in output:", print_atoms_list)
+
 
     #ActiveRegion option where geomeTRIC only sees the QM part that is being optimized
     if ActiveRegion == True:
@@ -176,7 +196,7 @@ def geomeTRICOptimizer(theory=None,fragment=None, coordsystem='hdlc', frozenatom
 
     #Defining ASH engine class used to communicate with geomeTRIC
     class ASHengineclass:
-        def __init__(self,geometric_molf, theory, ActiveRegion=False, actatoms=None):
+        def __init__(self,geometric_molf, theory, ActiveRegion=False, actatoms=None,print_atoms_list=None):
             #Defining M attribute of engine object as geomeTRIC Molecule object
             self.M=geometric_molf
             #Defining theory from argument
@@ -190,6 +210,10 @@ def geomeTRICOptimizer(theory=None,fragment=None, coordsystem='hdlc', frozenatom
             self.energy = 0
             #Active atoms
             self.actatoms=actatoms
+            #Print-list atoms (set above)
+            self.print_atoms_list=print_atoms_list
+            
+            
         #Defining calculator
         def clearCalcs(self):
             print("ClearCalcs option chosen by geomeTRIC. Not sure why")
@@ -215,11 +239,15 @@ def geomeTRICOptimizer(theory=None,fragment=None, coordsystem='hdlc', frozenatom
                 fragment.replace_coords(fragment.elems, self.full_current_coords, conn=False)
                 fragment.print_system(filename='Fragment-currentgeo.ygg')
 
-                #PRINTING ACTIVE GEOMETRY IN EACH GEOMETRIC ITERATION
-                print("Current geometry (Å) in step {} (active region)".format(self.iteration_count))
+                #PRINTING TO OUTPUT SPECIFIC GEOMETRY IN EACH GEOMETRIC ITERATION (now: self.print_atoms_list)
+                print("Current geometry (Å) in step {} (print_atoms_list region)".format(self.iteration_count))
+                
                 print("-------------------------------------------------")
-                print_coords_for_atoms(self.full_current_coords, fragment.elems, self.actatoms)
-
+                
+                #print_atoms_list
+                #Previously act: print_coords_for_atoms(self.full_current_coords, fragment.elems, self.actatoms)
+                print_coords_for_atoms(self.full_current_coords, fragment.elems, self.print_atoms_list)
+                print("Note: printed only print_atoms_list (this not necessary all active atoms) ")
                 #Request Engrad calc for full system
                 E, Grad = self.theory.run(current_coords=self.full_current_coords, elems=fragment.elems, Grad=True)
                 #Trim Full gradient down to only act-atoms gradient
@@ -239,9 +267,13 @@ def geomeTRICOptimizer(theory=None,fragment=None, coordsystem='hdlc', frozenatom
             else:
                 self.full_current_coords=currcoords
                 #PRINTING ACTIVE GEOMETRY IN EACH GEOMETRIC ITERATION
-                print("Current geometry (Å) in step {}".format(self.iteration_count))
+                #print("Current geometry (Å) in step {}".format(self.iteration_count))
+                print("Current geometry (Å) in step {} (print_atoms_list region)".format(self.iteration_count))
                 print("---------------------------------------------------")
-                print_coords_all(currcoords, fragment.elems)
+                #Disabled: print_coords_all(currcoords, fragment.elems)
+                print_coords_for_atoms(currcoords, fragment.elems, self.print_atoms_list)
+                print("Note: printed only print_atoms_list (this not necessary all atoms) ")
+                
                 E,Grad=self.theory.run(current_coords=currcoords, elems=self.M.elem, Grad=True)
                 self.iteration_count += 1
                 self.energy = E
@@ -367,7 +399,8 @@ def geomeTRICOptimizer(theory=None,fragment=None, coordsystem='hdlc', frozenatom
 
 
     #Defining ASHengineclass engine object containing geometry and theory. ActiveRegion boolean passed.
-    ashengine = ASHengineclass(mol_geometric_frag,theory, ActiveRegion=ActiveRegion, actatoms=actatoms)
+    #Also now passing list of atoms to print in each step.
+    ashengine = ASHengineclass(mol_geometric_frag,theory, ActiveRegion=ActiveRegion, actatoms=actatoms, print_atoms_list=print_atoms_list)
     #Defining args object, containing engine object
     args=geomeTRICArgsObject(ashengine,constraintsfile,coordsys=coordsystem, maxiter=maxiter, conv_criteria=conv_criteria)
 

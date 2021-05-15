@@ -8,8 +8,9 @@ class OpenMMTheory:
     def __init__(self, pdbfile=None, platform='CPU', active_atoms=None, frozen_atoms=None,
                  CHARMMfiles=False, psffile=None, charmmtopfile=None, charmmprmfile=None,
                  GROMACSfiles=False, gromacstopfile=None, grofile=None, gromacstopdir=None,
-                 Amberfiles=False, amberprmtopfile=None, printlevel=2, do_energy_composition=True,
-                 xmlfile=None, periodic=False, periodic_cell_dimensions=None, customnonbondedforce=False):
+                 Amberfiles=False, amberprmtopfile=None, printlevel=2, do_energy_composition=False,
+                 xmlfile=None, periodic=False, periodic_cell_dimensions=None, customnonbondedforce=False,
+                 delete_QM1_MM1_bonded=False):
         
         module_init_time = time.time()
         # OPEN MM load
@@ -26,6 +27,11 @@ class OpenMMTheory:
         #Printlevel
         self.printlevel=printlevel
 
+        # Setting for controlling whether QM1-MM1 bonded terms are deleted or not in a QM/MM job
+        #See modify_bonded_forces
+        #TODO: Move option to module_QMMM instead
+        self.delete_QM1_MM1_bonded=delete_QM1_MM1_bonded
+
         #Parallelization
         #Control by setting env variable: $OPENMM_CPU_THREADS in shell before running.
         #Don't think it's possible to change variable inside Python environment
@@ -39,7 +45,7 @@ class OpenMMTheory:
         self.coords=[]
         self.charges=[]
         self.Periodic = periodic
-        #Residue names,ids,segments,atomtypes of all atoms of systme.
+        #Residue names,ids,segments,atomtypes of all atoms of system.
         # Grabbed below from PSF-file. Information used to write PDB-file
         self.resnames=[]
         self.resids=[]
@@ -129,7 +135,7 @@ class OpenMMTheory:
 
 
         #Now after topology is defined we can create system
-
+        self.numatoms=int(self.forcefield.topology.getNumAtoms())
         #Setting active and frozen variables once topology is in place
         #NOTE: Is this actually used?
         self.set_active_and_frozen_regions(active_atoms=active_atoms, frozen_atoms=frozen_atoms)
@@ -162,7 +168,8 @@ class OpenMMTheory:
                 
 
             #TODO: Customnonbonded force option here
-            print("self.system.getForces() :", self.system.getForces())
+            print("OpenMM system created")
+            print("OpenMM Forces defined:", self.system.getForces())
             for i,force in enumerate(self.system.getForces()):
                 if isinstance(force, simtk.openmm.CustomNonbondedForce):
                     print('CustomNonbondedForce: %s' % force.getUseSwitchingFunction())
@@ -196,9 +203,8 @@ class OpenMMTheory:
                 self.system = self.forcefield.createSystem(nonbondedMethod=simtk.openmm.app.NoCutoff,
                                             nonbondedCutoff=1000 * simtk.openmm.unit.angstroms)
 
-            print("system created")
-            print("Number of forces:", self.system.getNumForces())
-            print(self.system.getForces())
+            print("OpenMM system created")
+            print("OpenMM Forces defined:", self.system.getForces())
             print("")
             for i,force in enumerate(self.system.getForces()):
                 if isinstance(force, simtk.openmm.NonbondedForce):
@@ -285,21 +291,17 @@ class OpenMMTheory:
         #print("Constraints:", self.system.getNumConstraints())
         #print_time_rel(timeA, modulename="constraint fix")
         timeA = time.time()
-        
-        self.forcegroupify()
-        print_time_rel(timeA, modulename="forcegroupify")
-        timeA = time.time()
-        
-        #Dummy integrator
-        self.integrator = self.langevinintegrator(300 * self.unit.kelvin,  # Temperature of heat bath
-                                        1 / self.unit.picosecond,  # Friction coefficient
-                                        0.002 * self.unit.picoseconds)  # Time step
+    
+        #Platform
         self.platform = simtk.openmm.Platform.getPlatformByName(self.platform_choice)
+    
+        #Create simulation
+        self.create_simulation()
 
-        #Defined first here. 
+        #Old:
         #NOTE: If self.system is modified then we have to remake self.simulation
         #self.simulation = simtk.openmm.app.simulation.Simulation(self.topology, self.system, self.integrator,self.platform)
-        self.simulation = self.simulationclass(self.topology, self.system, self.integrator,self.platform)
+        #self.simulation = self.simulationclass(self.topology, self.system, self.integrator,self.platform)
 
         if self.Periodic is True and Amberfiles is True:
             print("Setting periodic box parameters")
@@ -313,7 +315,7 @@ class OpenMMTheory:
         
     def set_active_and_frozen_regions(self, active_atoms=None, frozen_atoms=None):
         #FROZEN AND ACTIVE ATOMS
-        self.numatoms=int(self.forcefield.topology.getNumAtoms())
+        
         print("self.numatoms:", self.numatoms)
         self.allatoms=list(range(0,self.numatoms))
         if active_atoms is None and frozen_atoms is None:
@@ -331,10 +333,11 @@ class OpenMMTheory:
         else:
             print("active_atoms and frozen_atoms can not be both defined")
             exit(1)
-    #This removes interactions between particles (e.g. QM-QM or frozen-frozen pairs)
-    # list of atom indices for which we will remove all pairs
 
-    #Todo: Way too slow to do for all frozen atoms but works well for qmatoms list size
+
+    #This removes interactions between particles in a region (e.g. QM-QM or frozen-frozen pairs)
+    # Give list of atom indices for which we will remove all pairs
+    #Todo: Way too slow to do for big list of e.g. frozen atoms but works well for qmatoms list size
     # Alternative: Remove force interaction and then add in the interaction of active atoms to frozen atoms
     # should be reasonably fast
     # https://github.com/openmm/openmm/issues/2124
@@ -348,61 +351,76 @@ class OpenMMTheory:
         #https://stackoverflow.com/questions/942543/operation-on-every-pair-of-element-in-a-list
         #[self.nonbonded_force.addException(i,j,0, 0, 0, replace=True) for i,j in itertools.combinations(atomlist, r=2)]
         numexceptions=0
-        if isinstance(self.nonbonded_force, self.openmm.NonbondedForce):
-            print("Case Nonbondedforce. Adding Exception for ij pair")
-            for i in atomlist:
-                for j in atomlist:
-                    #print("i,j : ", i,j)
-                    self.nonbonded_force.addException(i,j,0, 0, 0, replace=True)
-
-                    #NOTE: Case where there is also a CustomNonbonded force present (GROMACS interface). 
-                    # Then we have to add exclusion there too to avoid this issue: https://github.com/choderalab/perses/issues/357
-                    #Basically both nonbonded forces have to have same exclusions (or exception where chargepro=0, eps=0)
-                    #TODO: This leads to : Exception: CustomNonbondedForce: Multiple exclusions are specified for particles
-                    #Basically we have to inspect what is actually present in CustomNonbondedForce
-                    #for force in self.system.getForces():
-                    #    if isinstance(force, self.openmm.CustomNonbondedForce):
-                    #        force.addExclusion(i,j)
-
-                    numexceptions+=1
-        elif isinstance(self.nonbonded_force, self.openmm.CustomNonbondedForce):
-            print("Case CustomNonbondedforce. Adding Exclusion for ij pair")
-            for i in atomlist:
-                for j in atomlist:
-                    #print("i,j : ", i,j)
-                    self.nonbonded_force.addExclusion(i,j)
-                    numexceptions+=1
-        print("Number of exceptions/exclusions added: ", numexceptions)
+        printdebug("self.system.getForces() ", self.system.getForces())
+        #print("self.nonbonded_force:", self.nonbonded_force)
         
+        for force in self.system.getForces():
+            printdebug("force:", force)
+            if isinstance(force, self.openmm.NonbondedForce):
+                print("Case Nonbondedforce. Adding Exception for ij pair")
+                for i in atomlist:
+                    for j in atomlist:
+                        printdebug("i,j : {} and {} ".format(i,j))
+                        force.addException(i,j,0, 0, 0, replace=True)
+
+                        #NOTE: Case where there is also a CustomNonbonded force present (GROMACS interface). 
+                        # Then we have to add exclusion there too to avoid this issue: https://github.com/choderalab/perses/issues/357
+                        #Basically both nonbonded forces have to have same exclusions (or exception where chargepro=0, eps=0)
+                        #TODO: This leads to : Exception: CustomNonbondedForce: Multiple exclusions are specified for particles
+                        #Basically we have to inspect what is actually present in CustomNonbondedForce
+                        #for force in self.system.getForces():
+                        #    if isinstance(force, self.openmm.CustomNonbondedForce):
+                        #        force.addExclusion(i,j)
+
+                        numexceptions+=1
+            elif isinstance(force, self.openmm.CustomNonbondedForce):
+                print("Case CustomNonbondedforce. Adding Exclusion for kl pair")
+                for k in atomlist:
+                    for l in atomlist:
+                        #print("k,l : ", k,l)
+                        force.addExclusion(k,l)
+                        numexceptions+=1
+        print("Number of exceptions/exclusions added: ", numexceptions)
+        printdebug("self.system.getForces() ", self.system.getForces())
         #Seems like updateParametersInContext does not reliably work here so we have to remake the simulation instead
         #Might be bug (https://github.com/openmm/openmm/issues/2709). Revisit
         #self.nonbonded_force.updateParametersInContext(self.simulation.context)
-        self.integrator = self.langevinintegrator(300 * self.unit.kelvin,  # Temperature of heat bath
-                                        1 / self.unit.picosecond,  # Friction coefficient
-                                        0.002 * self.unit.picoseconds)  # Time step
-        self.simulation = self.simulationclass(self.topology, self.system, self.integrator,self.platform)
+        self.create_simulation()
         
         print_time_rel(timeA, modulename="add exception")
     #Run: coords or framents can be given (usually coords). qmatoms in order to avoid QM-QM interactions (TODO)
     #Probably best to do QM-QM exclusions etc. in a separate function though as we want run to be as simple as possible
     #qmatoms list provided for generality of MM objects. Not used here for now
     
+    # Create/update simulation from scratch or after system has been modified (force modification or even deletion)
+    def create_simulation(self):
+        timeA=time.time()
+        print("Creating/updating OpenMM simulation object")
+        printdebug("self.system.getForces() ", self.system.getForces())
+        self.integrator = self.langevinintegrator(0.0000001 * self.unit.kelvin,  # Temperature of heat bath
+                                        1 / self.unit.picosecond,  # Friction coefficient
+                                        0.002 * self.unit.picoseconds)  # Time step
+        self.simulation = self.simulationclass(self.topology, self.system, self.integrator,self.platform)
+        print_time_rel(timeA, modulename="creating simulation")
     
     #Functions for energy compositions
     def forcegroupify(self):
         self.forcegroups = {}
-        #print("inside forcegroupify")
-        #print("self.system.getForces() ", self.system.getForces())
-        #print("Number of forces:", self.system.getNumForces())
+        print("inside forcegroupify")
+        print("self.system.getForces() ", self.system.getForces())
+        print("Number of forces:", self.system.getNumForces())
         for i in range(self.system.getNumForces()):
             force = self.system.getForce(i)
             force.setForceGroup(i)
             self.forcegroups[force] = i
         #print("self.forcegroups :", self.forcegroups)
         #exit()
-    def getEnergyDecomposition(self,context, forcegroups):
+    def getEnergyDecomposition(self,context):
+        #Call and set force groups
+        self.forcegroupify()
         energies = {}
-        for f, i in forcegroups.items():
+        print("self.forcegroups:", self.forcegroups)
+        for f, i in self.forcegroups.items():
             energies[f] = context.getState(getEnergy=True, groups=2**i).getPotentialEnergy()
         return energies
     
@@ -413,8 +431,9 @@ class OpenMMTheory:
         # Only do for cases: a) single-point b) First energy-step in optimization and last energy-step
         # OpenMM energy components
         openmm_energy = dict()
-        energycomp = self.getEnergyDecomposition(self.simulation.context, self.forcegroups)
-        #print("energycomp: ", energycomp)
+        energycomp = self.getEnergyDecomposition(self.simulation.context)
+        print("energycomp: ", energycomp)
+        print("self.forcegroups:", self.forcegroups)
         #print("len energycomp", len(energycomp))
         #print("openmm_energy: ", openmm_energy)
         print("")
@@ -422,7 +441,7 @@ class OpenMMTheory:
         extrafcount=0
         #This currently assumes CHARMM36 components, More to be added
         for comp in energycomp.items():
-            #print("comp: ", comp)
+            print("comp: ", comp)
             if 'HarmonicBondForce' in str(type(comp[0])):
                 #Not sure if this works in general.
                 if bondterm_set is False:
@@ -527,6 +546,10 @@ class OpenMMTheory:
         print_time_rel(timeA, modulename="context pos")
         timeA = time.time()
         print("Calculating MM state")
+        
+        print("forces")
+        print(self.system.getForces())
+        
         if Grad == True:
             state = self.simulation.context.getState(getEnergy=True, getForces=True)
             self.energy = state.getPotentialEnergy().value_in_unit(self.unit.kilojoule_per_mole) / constants.hartokj
@@ -565,8 +588,79 @@ class OpenMMTheory:
                 chargelist.append(charge)
         self.charges=chargelist
         return chargelist
+
+    # Delete selected exceptions. Only for Coulomb.
+    #Used to delete Coulomb interactions involving QM-QM and QM-MM atoms
+    def delete_exceptions(self,atomlist):
+        print("Deleting Coulombexceptions for atomlist:", atomlist)
+        for force in self.system.getForces():
+            if isinstance(force, self.openmm.NonbondedForce):
+                for exc in range(force.getNumExceptions()):
+                    #print(force.getExceptionParameters(exc))
+                    #force.getExceptionParameters(exc)
+                    p1,p2,chargeprod,sigmaij,epsilonij = force.getExceptionParameters(exc)
+                    if p1 in atomlist or p2 in atomlist:
+                        #print("p1: {} and p2: {}".format(p1,p2))
+                        #print("chargeprod:", chargeprod)
+                        #print("sigmaij:", sigmaij)
+                        #print("epsilonij:", epsilonij)
+                        chargeprod._value=0.0
+                        force.setExceptionParameters(exc, p1, p2, chargeprod, sigmaij, epsilonij)
+                        #print("New:", force.getExceptionParameters(exc))
+        self.create_simulation()
+
+    #Function to
+    def zero_nonbondedforce(self,atomlist, zeroCoulomb=True, zeroLJ=True):
+        print("Zero-ing nonbondedforce")
+        def charge_sigma_epsilon(charge,sigma,epsilon):
+            if zeroCoulomb ==  True:
+                newcharge=charge
+                newcharge._value=0.0
+
+            else:
+                newcharge=charge
+            if zeroLJ == True:
+                newsigma=sigma
+                newsigma._value=0.0
+                newepsilon=epsilon
+                newepsilon._value=0.0
+            else:
+                newsigma=sigma
+                newepsilon=epsilon
+            return [newcharge,newsigma,newepsilon]
+        #Zero all nonbonding interactions for atomlist
+        for force in self.system.getForces():
+            if isinstance(force, self.openmm.NonbondedForce):
+                #Setting single particle parameters
+                for atomindex in atomlist:
+                    oldcharge, oldsigma, oldepsilon = force.getParticleParameters(atomindex)
+                    newpars = charge_sigma_epsilon(oldcharge,oldsigma,oldepsilon)
+                    print(newpars)
+                    force.setParticleParameters(atomindex, newpars[0],newpars[1],newpars[2])
+                print("force.getNumExceptions() ", force.getNumExceptions())
+                print("force.getNumExceptionParameterOffsets() ", force.getNumExceptionParameterOffsets())
+                print("force.getNonbondedMethod():", force.getNonbondedMethod())
+                print("force.getNumGlobalParameters() ", force.getNumGlobalParameters())
+                #Now doing exceptions
+                for exc in range(force.getNumExceptions()):
+                    print(force.getExceptionParameters(exc))
+                    force.getExceptionParameters(exc)
+                    p1,p2,chargeprod,sigmaij,epsilonij = force.getExceptionParameters(exc)
+                    #chargeprod._value=0.0
+                    #sigmaij._value=0.0
+                    #epsilonij._value=0.0
+                    newpars2 = charge_sigma_epsilon(chargeprod,sigmaij,epsilonij)
+                    force.setExceptionParameters(exc, p1, p2, newpars2[0], newpars2[1], newpars2[2])
+                    #print("New:", force.getExceptionParameters(exc))
+                #force.updateParametersInContext(self.simulation.context)
+            elif isinstance(force, self.openmm.CustomNonbondedForce):
+                print("customnonbondedforce not implemented")
+                exit()
+        self.create_simulation()
+        #self.create_simulation()
     #Updating charges in OpenMM object. Used to set QM charges to 0 for example
     #Taking list of atom-indices and list of charges (usually zero) and setting new charge
+    #Note: Exceptions also needs to be dealt with (see delete_exceptions)
     def update_charges(self,atomlist,atomcharges):
         print("Updating charges in OpenMM object.")
         assert len(atomlist) == len(atomcharges)
@@ -591,8 +685,18 @@ class OpenMMTheory:
 
         #Instead of recreating simulation we can just update like this:
         print("Updating simulation object for modified Nonbonded force")
-        self.nonbonded_force.updateParametersInContext(self.simulation.context)
-        
+        printdebug("self.nonbonded_force:", self.nonbonded_force)
+        #Making sure that there still is a nonbonded force present in system (in case deleted)
+        for i,force in enumerate(self.system.getForces()):
+            printdebug("i is {} and force is {}".format(i,force))
+            if isinstance(force, self.openmm.NonbondedForce):
+                printdebug("here")
+                self.nonbonded_force.updateParametersInContext(self.simulation.context)
+            if isinstance(force, self.openmm.CustomNonbondedForce):
+                self.nonbonded_force.updateParametersInContext(self.simulation.context)
+        self.create_simulation()
+        printdebug("done here")
+
     def modify_bonded_forces(self,atomlist):
         print("Modifying bonded forces")
         print("")
@@ -609,74 +713,78 @@ class OpenMMTheory:
         
         for force in self.system.getForces():
             if isinstance(force, self.openmm.HarmonicBondForce):
-                #print("HarmonicBonded force")
-                #print("There are {} HarmonicBond terms defined.".format(force.getNumBonds()))
-                print("")
-                #REVISIT: Neglecting QM1-MM1 interactions. i.e if one atom in bond-pair is QM we neglect
-                #CURRENT BEHAVIOUR. Keeping QM1-MM1 interaction but removing all QM-QM interactions
+                printdebug("HarmonicBonded force")
+                printdebug("There are {} HarmonicBond terms defined.".format(force.getNumBonds()))
+                printdebug("")
+                #REVISIT: Neglecting QM-QM and sQM1-MM1 interactions. i.e if one atom in bond-pair is QM we neglect
                 for i in range(force.getNumBonds()):
                     #print("i:", i)
                     p1, p2, length, k = force.getBondParameters(i)
                     #print("p1: {} p2: {} length: {} k: {}".format(p1,p2,length,k))
-                    exclude = (p1 in atomlist and p2 in atomlist)
+                    #or: delete QM-QM and QM-MM
+                    #and: delete QM-QM
+                    
+                    if self.delete_QM1_MM1_bonded == True:
+                        exclude = (p1 in atomlist or p2 in atomlist)
+                    else:
+                        exclude = (p1 in atomlist and p2 in atomlist)
                     #print("exclude:", exclude)
                     if exclude is True:
-                        #print("exclude True")
-                        #print("atomlist:", atomlist)
-                        #print("i:", i)
-                        #print("Before p1: {} p2: {} length: {} k: {}".format(p1,p2,length,k))
+                        printdebug("exclude True")
+                        printdebug("atomlist:", atomlist)
+                        printdebug("i:", i)
+                        printdebug("Before p1: {} p2: {} length: {} k: {}".format(p1,p2,length,k))
                         force.setBondParameters(i, p1, p2, length, 0)
                         numharmbondterms_removed+=1
-                        #p1, p2, length, k = force.getBondParameters(i)
-                        #print("After p1: {} p2: {} length: {} k: {}".format(p1,p2,length,k))
-                        #exit()
-                #print("Updating force")
+                        p1, p2, length, k = force.getBondParameters(i)
+                        printdebug("After p1: {} p2: {} length: {} k: {}".format(p1,p2,length,k))
+                        printdebug("")
                 force.updateParametersInContext(self.simulation.context)
             elif isinstance(force, self.openmm.HarmonicAngleForce):
-                #print("HarmonicAngle force")
-                #print("There are {} HarmonicAngle terms defined.".format(force.getNumAngles()))
+                printdebug("HarmonicAngle force")
+                printdebug("There are {} HarmonicAngle terms defined.".format(force.getNumAngles()))
                 for i in range(force.getNumAngles()):
                     p1, p2, p3, angle, k = force.getAngleParameters(i)
                     #Are angle-atoms in atomlist? 
                     presence=[i in atomlist for i in [p1,p2,p3]]
                     #Excluding if 2 or 3 QM atoms. i.e. a QM2-QM1-MM1 or QM3-QM2-QM1 term
+                    #Originally set to 2
                     if presence.count(True) >= 2:
-                        #print("presence.count(True):", presence.count(True))
-                        #print("exclude True")
-                        #print("atomlist:", atomlist)
-                        #print("i:", i)
-                        #print("Before p1: {} p2: {} p3: {} angle: {} k: {}".format(p1,p2,p3,angle,k))
+                        printdebug("presence.count(True):", presence.count(True))
+                        printdebug("exclude True")
+                        printdebug("atomlist:", atomlist)
+                        printdebug("i:", i)
+                        printdebug("Before p1: {} p2: {} p3: {} angle: {} k: {}".format(p1,p2,p3,angle,k))
                         force.setAngleParameters(i, p1, p2, p3, angle, 0)
                         numharmangleterms_removed+=1
-                        #p1, p2, p3, angle, k = force.getAngleParameters(i)
-                        #print("After p1: {} p2: {} p3: {} angle: {} k: {}".format(p1,p2,p3,angle,k))
-                #print("Updating force")
+                        p1, p2, p3, angle, k = force.getAngleParameters(i)
+                        printdebug("After p1: {} p2: {} p3: {} angle: {} k: {}".format(p1,p2,p3,angle,k))
                 force.updateParametersInContext(self.simulation.context)
             elif isinstance(force, self.openmm.PeriodicTorsionForce):
-                #print("PeriodicTorsionForce force")
-                #print("There are {} PeriodicTorsionForce terms defined.".format(force.getNumTorsions()))
+                printdebug("PeriodicTorsionForce force")
+                printdebug("There are {} PeriodicTorsionForce terms defined.".format(force.getNumTorsions()))
                 for i in range(force.getNumTorsions()):
                     p1, p2, p3, p4, periodicity, phase, k = force.getTorsionParameters(i)
                     #Are torsion-atoms in atomlist? 
                     presence=[i in atomlist for i in [p1,p2,p3,p4]]
                     #Excluding if 3 or 4 QM atoms. i.e. a QM3-QM2-QM1-MM1 or QM4-QM3-QM2-QM1 term
                     #print("Before p1: {} p2: {} p3: {} p4: {} periodicity: {} phase: {} k: {}".format(p1,p2,p3,p4,periodicity, phase,k))
+                    #Originally set to 3
                     if presence.count(True) >= 3:
-                        #print("Found torsion in QM-region")
-                        #print("presence.count(True):", presence.count(True))
-                        #print("exclude True")
-                        #print("atomlist:", atomlist)
-                        #print("i:", i)
-                        #print("Before p1: {} p2: {} p3: {} p4: {} periodicity: {} phase: {} k: {}".format(p1,p2,p3,p4,periodicity, phase,k))
+                        printdebug("Found torsion in QM-region")
+                        printdebug("presence.count(True):", presence.count(True))
+                        printdebug("exclude True")
+                        printdebug("atomlist:", atomlist)
+                        printdebug("i:", i)
+                        printdebug("Before p1: {} p2: {} p3: {} p4: {} periodicity: {} phase: {} k: {}".format(p1,p2,p3,p4,periodicity, phase,k))
                         force.setTorsionParameters(i, p1, p2, p3, p4, periodicity, phase, 0)
                         numpertorsionterms_removed+=1
                         p1, p2, p3, p4, periodicity, phase, k = force.getTorsionParameters(i)
-                        #print("After p1: {} p2: {} p3: {} p4: {} periodicity: {} phase: {} k: {}".format(p1,p2,p3,p4,periodicity, phase,k))
-                #print("Updating force")
+                        printdebug("After p1: {} p2: {} p3: {} p4: {} periodicity: {} phase: {} k: {}".format(p1,p2,p3,p4,periodicity, phase,k))
                 force.updateParametersInContext(self.simulation.context)
             elif isinstance(force, self.openmm.CustomTorsionForce):
-                #print("CustomTorsionForce force")
-                #print("There are {} CustomTorsionForce terms defined.".format(force.getNumTorsions()))
+                printdebug("CustomTorsionForce force")
+                printdebug("There are {} CustomTorsionForce terms defined.".format(force.getNumTorsions()))
                 for i in range(force.getNumTorsions()):
                     p1, p2, p3, p4, pars = force.getTorsionParameters(i)
                     #Are torsion-atoms in atomlist? 
@@ -685,22 +793,21 @@ class OpenMMTheory:
                     #print("Before p1: {} p2: {} p3: {} p4: {} pars {}".format(p1,p2,p3,p4,pars))
                     #print("pars:", pars)
                     if presence.count(True) >= 3:
-                        #print("Found torsion in QM-region")
-                        #print("presence.count(True):", presence.count(True))
-                        #print("exclude True")
-                        #print("atomlist:", atomlist)
-                        #print("i:", i)
-                        #print("Before p1: {} p2: {} p3: {} p4: {} pars {}".format(p1,p2,p3,p4,pars))
+                        printdebug("Found torsion in QM-region")
+                        printdebug("presence.count(True):", presence.count(True))
+                        printdebug("exclude True")
+                        printdebug("atomlist:", atomlist)
+                        printdebug("i:", i)
+                        printdebug("Before p1: {} p2: {} p3: {} p4: {} pars {}".format(p1,p2,p3,p4,pars))
                         force.setTorsionParameters(i, p1, p2, p3, p4, (0.0,0.0))
                         numcustomtorsionterms_removed+=1
-                        #p1, p2, p3, p4, pars = force.getTorsionParameters(i)
-                        #print("After p1: {} p2: {} p3: {} p4: {} pars {}".format(p1,p2,p3,p4,pars))
-                #print("Updating force")
+                        p1, p2, p3, p4, pars = force.getTorsionParameters(i)
+                        print("After p1: {} p2: {} p3: {} p4: {} pars {}".format(p1,p2,p3,p4,pars))
                 force.updateParametersInContext(self.simulation.context)
             elif isinstance(force, self.openmm.CMAPTorsionForce):
-                print("CMAPTorsionForce force")
-                print("There are {} CMAP terms defined.".format(force.getNumTorsions()))
-                print("There are {} CMAP maps defined".format(force.getNumMaps()))
+                printdebug("CMAPTorsionForce force")
+                printdebug("There are {} CMAP terms defined.".format(force.getNumTorsions()))
+                printdebug("There are {} CMAP maps defined".format(force.getNumMaps()))
                 #print("Assuming no CMAP terms in QM-region. Continuing")
                 # Note (RB). CMAP is between pairs of backbone dihedrals.
                 # Not sure if we can delete the terms:
@@ -715,10 +822,10 @@ class OpenMMTheory:
                     presence=[i in atomlist for i in [p1,p2,p3,p4,v1,v2,v3,v4]]
                     #NOTE: Not sure how to use count properly here when dealing with torsion atoms in QM-region
                     if presence.count(True) >= 4:
-                        print("jj: {} p1: {} p2: {} p3: {} p4: {}      v1: {} v2: {} v3: {} v4: {}".format(jj,p1,p2,p3,p4,v1,v2,v3,v4))
-                        print("presence:", presence)
-                        print(BC.WARNING, BC.BOLD,"Found CMAP torsion partner in QM-region", BC.END)
-                        print(BC.WARNING, BC.BOLD,"Not deleting. To be revisited...", BC.END)
+                        printdebug("jj: {} p1: {} p2: {} p3: {} p4: {}      v1: {} v2: {} v3: {} v4: {}".format(jj,p1,p2,p3,p4,v1,v2,v3,v4))
+                        printdebug("presence:", presence)
+                        printdebug(BC.WARNING, BC.BOLD,"Found CMAP torsion partner in QM-region", BC.END)
+                        printdebug(BC.WARNING, BC.BOLD,"Not deleting. To be revisited...", BC.END)
                         #print("presence.count(True):", presence.count(True))
                         #print("exclude True")
                         #print("atomlist:", atomlist)
@@ -728,20 +835,17 @@ class OpenMMTheory:
                         #numcustomtorsionterms_removed+=1
                         #p1, p2, p3, p4, pars = force.getTorsionParameters(i)
                         #print("After p1: {} p2: {} p3: {} p4: {} pars {}".format(p1,p2,p3,p4,pars))
-                #print("Updating force")
                 #force.updateParametersInContext(self.simulation.context)
             
             elif isinstance(force, self.openmm.CustomBondForce):
-                #print("CustomBondForce")
-                #print("There are {} force terms defined.".format(force.getNumBonds()))
+                printdebug("CustomBondForce")
+                printdebug("There are {} force terms defined.".format(force.getNumBonds()))
                 #Neglecting QM1-MM1 interactions. i.e if one atom in bond-pair is QM we neglect
                 for i in range(force.getNumBonds()):
                     #print("i:", i)
                     p1, p2, vars = force.getBondParameters(i)
                     #print("p1: {} p2: {}".format(p1,p2))
-                    charge=vars[0];sigma=vars[1];epsilon=vars[2]
-                    #print("charge: {} sigma: {} epsilon: {}".format(charge,sigma,epsilon))
-                    exclude = (p1 in atomlist or p2 in atomlist)
+                    exclude = (p1 in atomlist and p2 in atomlist)
                     #print("exclude:", exclude)
                     if exclude is True:
                         #print("exclude True")
@@ -749,15 +853,12 @@ class OpenMMTheory:
                         #print("i:", i)
                         #print("Before")
                         #print("p1: {} p2: {}")
-                        #print("charge: {} sigma: {} epsilon: {}".format(charge,sigma,epsilon))
                         force.setBondParameters(i, p1, p2, [0.0,0.0,0.0])
                         numcustombondterms_removed+=1
-                        #p1, p2, vars = force.getBondParameters(i)
-                        #charge=vars[0];sigma=vars[1];epsilon=vars[2]
+                        p1, p2, vars = force.getBondParameters(i)
                         #print("p1: {} p2: {}")
-                        #print("charge: {} sigma: {} epsilon: {}".format(charge,sigma,epsilon))
+                        #print("vars:", vars)
                         #exit()
-                #print("Updating force")
                 force.updateParametersInContext(self.simulation.context)
             
             elif isinstance(force, self.openmm.CMMotionRemover):
@@ -786,12 +887,7 @@ class OpenMMTheory:
         print("CMAP Torsion terms:", numcmaptorsionterms_removed)
         print("CustomBond terms", numcustombondterms_removed)
         print("")
-
-
-
-
-
-
+        self.create_simulation()
 
 #For frozen systems we use Customforce in order to specify interaction groups
 #if len(self.frozen_atoms) > 0:

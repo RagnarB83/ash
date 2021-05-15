@@ -6,7 +6,7 @@ import math
 #functions related to QM/MM
 import ash
 import module_coords
-from functions_general import BC,blankline,listdiff,print_time_rel,printdebug
+from functions_general import BC,blankline,listdiff,print_time_rel,printdebug,print_line_with_mainheader,writelisttofile
 import settings_ash
 
 #QM/MM theory object.
@@ -39,8 +39,8 @@ class QMMMTheory:
 
             # FROZEN AND ACTIVE ATOMS
             if actatoms is None and frozenatoms is None:
-                print("Actatoms/frozenatoms list not passed to QM/MM object. Will do all frozen interactions in MM (expensive).")
-                print("All {} atoms active, no atoms frozen".format(len(self.allatoms)))
+                #print("Actatoms/frozenatoms list not passed to QM/MM object. Will do all frozen interactions in MM (expensive).")
+                print("All {} atoms active, no atoms frozen in QM/MM definition (may not be frozen in optimizer)".format(len(self.allatoms)))
                 self.actatoms=self.allatoms
                 self.frozenatoms=[]
             elif actatoms is not None and frozenatoms is None:
@@ -131,6 +131,8 @@ class QMMMTheory:
                 print("Unrecognized MM theory for QMMMTheory")
                 exit(1)
         else:
+            print("Reading in charges")
+            assert len(charges) == len(fragment.atomlist), "Number of charges not matching number of fragment atoms"
             self.charges=charges
         
         if len(self.charges) == 0:
@@ -156,9 +158,18 @@ class QMMMTheory:
 
         #If MM THEORY (not just pointcharges)
         if mm_theory is not None:
+
+            #Sanity check. Same number of atoms in fragment and MM object ?
+            if fragment.numatoms != mm_theory.numatoms:
+                print("")
+                print(BC.FAIL,"Number of atoms in fragment ({}) and MMtheory object differ ({})".format(fragment.numatoms,mm_theory.numatoms),BC.END)
+                print(BC.FAIL,"This does not make sense. Check coordinates and forcefield files. Exiting...", BC.END)
+                exit()
+
             #Add possible exception for QM-QM atoms here.
             #Maybe easier to just just set charges to 0. LJ for QM-QM still needs to be done by MM code
             if self.mm_theory_name == "OpenMMTheory":
+                       
                 print("Now adding exceptions for frozen atoms")
                 if len(self.frozenatoms) > 0:
                     print("Here adding exceptions for OpenMM")
@@ -193,8 +204,9 @@ class QMMMTheory:
                     print("Removing bonded terms for QM-region in MMtheory")
                     self.mm_theory.modify_bonded_forces(self.qmatoms)
 
-                    #NOTE: Temporary. Exceptions for nonbonded QM atoms. Will ignore QM-QM Coulomb and LJ interactions. Coulomb interactions are also set to zero elsewhere.
-                    print("Removing nonbonded terms for QM-region in MMtheory")
+                    #NOTE: Temporary. Adding exceptions for nonbonded QM atoms. Will ignore QM-QM Coulomb and LJ interactions. 
+                    #NOTE: For QM-MM interactions Coulomb charges are zeroed below (update_charges and delete_exceptions)
+                    print("Removing nonbonded terms for QM-region in MMtheory (QM-QM interactions)")
                     self.mm_theory.addexceptions(self.qmatoms)
                 
                 #Change charges
@@ -207,10 +219,12 @@ class QMMMTheory:
                 self.ZeroQMCharges() #Modifies self.charges_qmregionzeroed
                 print("length of self.charges_qmregionzeroed :", len(self.charges_qmregionzeroed))
                 
-                # Todo: make sure this works for OpenMM and for NonBondedTheory
-                # Updating charges in MM object. Using charges that have been zeroed for QM (no other modifications)
-                #Updated...
+                #TODO: make sure this works for OpenMM and for NonBondedTheory
+                # Updating charges in MM object. 
                 self.mm_theory.update_charges(self.qmatoms,[0.0 for i in self.qmatoms])
+                if self.mm_theory_name == "OpenMMTheory":
+                    #Deleting Coulomb exception interactions involving QM and MM atoms
+                    self.mm_theory.delete_exceptions(self.qmatoms)
                 
                 
                 print("Charges of QM atoms set to 0 (since Electrostatic Embedding):")
@@ -397,15 +411,17 @@ class QMMMTheory:
             #Sort by QM atoms:
             printdebug("linkatoms_dict.keys :", linkatoms_dict.keys())
             for pair in sorted(linkatoms_dict.keys()):
-                print("Pair :", pair)
+                printdebug("Pair :", pair)
                 self.qmcoords.append(linkatoms_dict[pair])
                 #print("self.qmcoords :", self.qmcoords)
                 #print(len(self.qmcoords))
                 #exit()
                 #Linkatom indices for book-keeping
                 linkatoms_indices.append(len(self.qmcoords)-1)
-                print("linkatoms_indices: ", linkatoms_indices)
-                
+                printdebug("linkatoms_indices: ", linkatoms_indices)
+            
+            num_linkatoms=len(linkatoms_indices)
+            
             #TODO: Modify qm_elems list. Use self.qmelems or separate qmelems ?
             #TODO: Should we do this at object creation instead?
             current_qmelems=self.qmelems + ['H']*len(linkatoms_dict)
@@ -419,14 +435,15 @@ class QMMMTheory:
             
             self.ShiftMMCharges() # Creates self.pointcharges
             #print("After: self.pointcharges are: ", self.pointcharges)
-            print("Num pointcharges for full system: ", len(self.pointcharges))
-            
+            print("Number of pointcharges for full system: ", len(self.pointcharges))
+
             #TODO: Code alternative to Charge-shifting: L2 scheme which deletes whole charge-group that MM1 belongs to
             
             # Defining pointcharges as only containing MM atoms
+            print("Number of MM atoms:", len(self.mmatoms))
             self.pointcharges=[self.pointcharges[i] for i in self.mmatoms]
             #print("After: self.pointcharges are: ", self.pointcharges)
-            print("Num pointcharges for MM system: ", len(self.pointcharges))
+            print("Number of pointcharges for MM system: ", len(self.pointcharges))
             #Set 
             self.SetDipoleCharges() #Creates self.dipole_charges and self.dipole_coords
 
@@ -437,8 +454,9 @@ class QMMMTheory:
             #Adding dipole charges to MM charges list (given to QM code)
             #TODO: Rename as pcharges list so as not to confuse with what MM code sees??
             self.pointcharges=self.pointcharges+self.dipole_charges
-            print("Num pointcharges after dipole addition: ", len(self.pointcharges))
+            print("Number of pointcharges after dipole addition: ", len(self.pointcharges))
         else:
+            num_linkatoms=0
             #If no linkatoms then use original self.qmelems
             current_qmelems = self.qmelems
             #If no linkatoms then self.pointcharges are just original charges with QM-region zeroed
@@ -565,7 +583,7 @@ class QMMMTheory:
             if self.printlevel >= 2:
                 print("Running MM theory as part of QM/MM.")
                 print("Using MM on full system. Charges for QM region  have to be set to zero ")
-                printdebug("Charges for full system is: ", self.charges)
+                #printdebug("Charges for full system is: ", self.charges)
                 print("Passing QM atoms to MMtheory run so that QM-QM pairs are skipped in pairlist")
                 print("Passing active atoms to MMtheory run so that frozen pairs are skipped in pairlist")
             assert len(current_coords) == len(self.charges_qmregionzeroed)
@@ -587,7 +605,7 @@ class QMMMTheory:
             else:
                 print("QMCharges have not been zeroed")
                 exit(1)
-            printdebug("Charges for full system is: ", self.charges)
+            #printdebug("Charges for full system is: ", self.charges)
             #Todo: Need to make sure OpenMM skips QM-QM Lj interaction => Exclude
             #Todo: Need to have OpenMM skip frozen region interaction for speed  => => Exclude
             if Grad==True:
@@ -609,138 +627,103 @@ class QMMMTheory:
             print("{:<20} {:>20.12f}".format("QM/MM energy: ", self.QM_MM_energy))
         blankline()
 
-        #Final QM/MM gradient. Combine QM gradient, MM gradient and PC-gradient (elstat MM gradient from QM code).
-        #First combining QM and PC gradient to one.
+        #Final QM/MM gradient. Combine QM gradient, MM gradient, PC-gradient (elstat MM gradient from QM code).
+        # Do linkatom force projections in the end
         if Grad == True:
+            assert len(self.allatoms) == len(self.MMgradient)
             
-            #TODO: Deal with linkatom gradient here.
-            # Add contribution to QM1 and MM1 contribution???
-            
+            #Defining QMgradient without linkatoms if present
             if self.linkatoms==True:
-                #This projects the linkatom force onto the respective QM atom and MM atom
-                def linkatom_force_fix(Qcoord, Mcoord, Lcoord, Qgrad,Mgrad,Lgrad):
-                    #QM1-L and QM1-MM1 distances
-                    QLdistance=module_coords.distance(Qcoord,Lcoord)
-                    #print("QLdistance:", QLdistance)
-                    MQdistance=module_coords.distance(Mcoord,Qcoord)
-                    #print("MQdistance:", MQdistance)
-                    #B and C: a 3x3 arrays
-                    B=np.zeros([3,3])
-                    C=np.zeros([3,3])
-                    for i in range(0,2):
-                        for j in range(0,2):
-                            B[i,j]=-1*QLdistance*(Mcoord[i]-Qcoord[i])*(Mcoord[j]-Qcoord[j]) / (MQdistance*MQdistance*MQdistance)
-                    for i in range(0,2):
-                        B[i,i] = B[i,i] + QLdistance / MQdistance
-                    for i in range(0,2):
-                        for j in range(0,2):
-                            C[i,j]= -1 * B[i,j]
-                    for i in range(0,2):
-                        C[i,i] = C[i,i] + 1.0                
-                
-                    #QM atom gradient
-                    #print("Qgrad:", Qgrad)
-                    #print("Lgrad:", Lgrad)
-                    #print("C: ", C)
-                    #print("B:", B)
-                    #Multiply grad by C-diagonal
-                    Qgrad[0] = Qgrad[0]*C[0][0]
-                    Qgrad[1] = Qgrad[1]*C[1][1]
-                    Qgrad[2] = Qgrad[2]*C[2][2]
-                    
-                    #print("Qgrad:", Qgrad)
-                    #MM atom gradient
-                    #print("Mgrad:", Mgrad)
-                    Mgrad[0] = Mgrad[0]*B[0][0]
-                    Mgrad[1] = Mgrad[1]*B[1][1]
-                    Mgrad[2] = Mgrad[2]*B[2][2]                    
-                    #print("Mgrad:", Mgrad)
-                    
-                    return Qgrad,Mgrad
-                
-                def fullindex_to_qmindex(fullindex,qmatoms):
-                    qmindex=qmatoms.index(fullindex)
-                    return qmindex
-                
-                #print("here")
-                #print("linkatoms_dict: ", linkatoms_dict)
-                #print("linkatoms_indices: ", linkatoms_indices)
-                num_linkatoms=len(linkatoms_indices)
-                for pair in sorted(linkatoms_dict.keys()):
-                    #print("pair: ", pair)
-                    linkatomindex=linkatoms_indices.pop(0)
-                    #print("linkatomindex:", linkatomindex)
-                    Lgrad=self.QMgradient[linkatomindex]
-                    #print("Lgrad:",Lgrad)
-                    Lcoord=linkatoms_dict[pair]
-                    #print("Lcoord:", Lcoord)
-                    fullatomindex_qm=pair[0]
-                    #print("fullatomindex_qm:", fullatomindex_qm)
-                    #print("self.qmatoms:", self.qmatoms)
-                    qmatomindex=fullindex_to_qmindex(fullatomindex_qm,self.qmatoms)
-                    #print("qmatomindex:", qmatomindex)
-                    fullatomindex_mm=pair[1]
-                    #print("fullatomindex_mm:", fullatomindex_mm)
-                    Qcoord=self.qmcoords[qmatomindex]
-                    #print("Qcoords: ", Qcoord)
-                    #print("type self.QMGradient", type(self.QMgradient))
-                    Qgrad=self.QMgradient[qmatomindex]
-                    #print("Qgrad:", Qgrad)
-                    
-                    #print("length of self.MMgradient:", len(self.MMgradient))
-                    Mcoord=current_coords[fullatomindex_mm]
-                    #print("Mcoord:", Mcoord)
-                    #print("type self.MMgradient", type(self.MMgradient))
-                    #print("fullatomindex_mm:", fullatomindex_mm)
-                    Mgrad=self.MMgradient[fullatomindex_mm]
-                    #print("Mgrad: ", Mgrad)
-                    Qgrad,Mgrad= linkatom_force_fix(Qcoord, Mcoord, Lcoord, Qgrad,Mgrad,Lgrad)
-                    #print("Qgrad: ", Qgrad)
-                    #print("Mgrad: ", Mgrad)
-                    self.QMgradient[qmatomindex]=Qgrad
-                    self.MMgradient[fullatomindex_mm]=Mgrad
-                #Fix QMgradient by removing linkatom contributions (bottom)
-                #Redundant?
-                #print("self.QMgradient:", self.QMgradient)
-                self.QMgradient=self.QMgradient[0:-num_linkatoms] #remove linkatoms
-                #print("self.QMgradient:", self.QMgradient)
-            
-                # QM_PC_gradient is system size. Combining QM part (after linkatom-contribution removed) and PC part into 
-                #print("self.allatoms:", len(self.allatoms))
-                #print("len(self.QMgradient) :", len(self.QMgradient))
-                #print("len(self.MMgradient) :", len(self.MMgradient))
-                #print("length self.PCgradient ", len(self.PCgradient))
-            
-                assert len(self.allatoms) == len(self.MMgradient)
-                assert len(self.QMgradient) + len(self.PCgradient) - len(self.dipole_charges)  == len(self.MMgradient)
-            
+                self.QMgradient_wo_linkatoms=self.QMgradient[0:-num_linkatoms] #remove linkatoms
+                #Sanity check
+                assert len(self.QMgradient_wo_linkatoms) + len(self.PCgradient) - len(self.dipole_charges)  == len(self.MMgradient)
+            else:
+                self.QMgradient_wo_linkatoms=self.QMgradient
+
+            #Initialize QM_PC gradient (has full system size) and fill up
             self.QM_PC_gradient = np.zeros((len(self.MMgradient), 3))
             qmcount=0;pccount=0
             for i in self.allatoms:
                 if i in self.qmatoms:
                     #QM-gradient. Linkatom gradients are skipped
-                    self.QM_PC_gradient[i]=self.QMgradient[qmcount]
+                    self.QM_PC_gradient[i]=self.QMgradient_wo_linkatoms[qmcount]
                     qmcount+=1
                 else:
                     #Pointcharge-gradient. Dipole-charge gradients are skipped (never reached)
                     self.QM_PC_gradient[i] = self.PCgradient[pccount]
                     pccount += 1
-            
+            assert qmcount == len(self.qmatoms)
+            assert pccount == len(self.mmatoms)           
             #print("qmcount:", qmcount)
             #print("pccount:", pccount)
             #print("self.QM_PC_gradient len ", len(self.QM_PC_gradient))
-            assert qmcount == len(self.qmatoms)
-            assert pccount == len(self.mmatoms)
-            
-            #Now assemble final QM/MM gradient
+
+
+            #Now assemble full QM/MM gradient (no linkatom force projection done yet)
             assert len(self.QM_PC_gradient) == len(self.MMgradient)
             self.QM_MM_gradient=self.QM_PC_gradient+self.MMgradient
+            if self.printlevel >=3:
+                print("Printlevel >=3: Printing QM/MM gradient before linkatom proj. to disk")
+                module_coords.write_coords_all(self.QM_MM_gradient, self.elems, indices=self.allatoms, file="QM_MMgradient_wo_linkatomproj", description="QM/MM gradient w/o linkatom projection (au/Bohr):")
+            
             #print_time_rel(CheckpointTime, modulename='QM/MM gradient combine')
+            
+            #LINKATOM FORCE PROJECTION
+            # Add contribution to QM1 and MM1 contribution???
+            if self.linkatoms==True:                
+                #print("here")
+                #print("linkatoms_dict: ", linkatoms_dict)
+                #print("linkatoms_indices: ", linkatoms_indices)
+                
+                for pair in sorted(linkatoms_dict.keys()):
+                    printdebug("pair: ", pair)
+                    #Grabbing linkatom data
+                    linkatomindex=linkatoms_indices.pop(0)
+                    printdebug("linkatomindex:", linkatomindex)
+                    Lgrad=self.QMgradient[linkatomindex]
+                    printdebug("Lgrad:",Lgrad)
+                    Lcoord=linkatoms_dict[pair]
+                    printdebug("Lcoord:", Lcoord)
+                    #Grabbing QMatom info
+                    fullatomindex_qm=pair[0]
+                    printdebug("fullatomindex_qm:", fullatomindex_qm)
+                    printdebug("self.qmatoms:", self.qmatoms)
+                    qmatomindex=fullindex_to_qmindex(fullatomindex_qm,self.qmatoms)
+                    printdebug("qmatomindex:", qmatomindex)
+                    Qcoord=self.qmcoords[qmatomindex]
+                    printdebug("Qcoords: ", Qcoord)
+
+                    Qgrad=self.QM_MM_gradient[fullatomindex_qm]
+                    printdebug("Qgrad (full QM/MM grad)s:", Qgrad)
+                    
+                    #Grabbing MMatom info
+                    fullatomindex_mm=pair[1]
+                    printdebug("fullatomindex_mm:", fullatomindex_mm)
+                    Mcoord=current_coords[fullatomindex_mm]
+                    printdebug("Mcoord:", Mcoord)
+                    
+                    Mgrad=self.QM_MM_gradient[fullatomindex_mm]
+                    printdebug("Mgrad (full QM/MM grad): ", Mgrad)
+                    
+                    #Now grabbed all components, calculating new projecteed gradient on QM atom and MM atom
+                    newQgrad,newMgrad = linkatom_force_fix(Qcoord, Mcoord, Lcoord, Qgrad,Mgrad,Lgrad)
+                    printdebug("newQgrad: ", newQgrad)
+                    printdebug("newMgrad: ", newMgrad)
+                    
+                    #Updating full QM/MM gradient
+                    self.QM_MM_gradient[fullatomindex_qm] = newQgrad
+                    self.QM_MM_gradient[fullatomindex_mm] = newMgrad
+                    
+
             if self.printlevel >=3:
                 print("Printlevel >=3: Printing all gradients to disk")
                 #print("QM gradient (au/Bohr):")
                 #module_coords.print_coords_all(self.QMgradient, self.qmelems, self.qmatoms)
-                module_coords.write_coords_all(self.QMgradient, self.qmelems, indices=self.qmatoms, file="QMgradient", description="QM gradient (au/Bohr):")
+                module_coords.write_coords_all(self.QMgradient_wo_linkatoms, self.qmelems, indices=self.qmatoms, file="QMgradient-without-linkatoms", description="QM gradient w/o linkatoms (au/Bohr):")
+                
+                #Writing QM+Linkatoms gradient
+                module_coords.write_coords_all(self.QMgradient, self.qmelems+['L' for i in range(num_linkatoms)], indices=self.qmatoms+[0 for i in range(num_linkatoms)], file="QMgradient-with-linkatoms", description="QM gradient with linkatoms (au/Bohr):")
+                
                 #blankline()
                 #print("PC gradient (au/Bohr):")
                 #module_coords.print_coords_all(self.PCgradient, self.mmelems, self.mmatoms)
@@ -858,3 +841,119 @@ def microiter_QM_MM_OPT_v3(theory=None, fragment=None, maxiter=500, qmregion=Non
         print("Micro-iterative QM/MM opt complete !")
     return final
     
+
+#This projects the linkatom force onto the respective QM atom and MM atom
+def linkatom_force_fix(Qcoord, Mcoord, Lcoord, Qgrad,Mgrad,Lgrad):
+    printdebug("Qcoord:", Qcoord)
+    printdebug("Mcoord:", Mcoord)
+    printdebug("Lcoord:", Lcoord)
+    #QM1-L and QM1-MM1 distances
+    QLdistance=module_coords.distance(Qcoord,Lcoord)
+    printdebug("QLdistance:", QLdistance)
+    MQdistance=module_coords.distance(Mcoord,Qcoord)
+    printdebug("MQdistance:", MQdistance)
+    #B and C: a 3x3 arrays
+    B=np.zeros([3,3])
+    C=np.zeros([3,3])
+    for i in range(0,3):
+        for j in range(0,3):
+            B[i,j]=-1*QLdistance*(Mcoord[i]-Qcoord[i])*(Mcoord[j]-Qcoord[j]) / (MQdistance*MQdistance*MQdistance)
+    for i in range(0,3):
+        B[i,i] = B[i,i] + QLdistance / MQdistance
+    for i in range(0,3):
+        for j in range(0,3):
+            C[i,j]= -1 * B[i,j]
+    for i in range(0,3):
+        C[i,i] = C[i,i] + 1.0                
+
+    #Multiplying C matrix with Linkatom gradient
+    #temp
+    g_x=C[0,0]*Lgrad[0]+C[0,1]*Lgrad[1]+C[0,2]*Lgrad[2]
+    g_y=C[1,0]*Lgrad[0]+C[1,1]*Lgrad[1]+C[1,2]*Lgrad[2]
+    g_z=C[2,0]*Lgrad[0]+C[2,1]*Lgrad[1]+C[2,2]*Lgrad[2]
+    
+    printdebug("g_x:", g_x)
+    printdebug("g_y:", g_y)
+    printdebug("g_z:", g_z)
+    
+    #Multiplying B matrix with Linkatom gradient
+    gg_x=B[0,0]*Lgrad[0]+B[0,1]*Lgrad[1]+B[0,2]*Lgrad[2]
+    gg_y=B[1,0]*Lgrad[0]+B[1,1]*Lgrad[1]+B[1,2]*Lgrad[2]
+    gg_z=B[2,0]*Lgrad[0]+B[2,1]*Lgrad[1]+B[2,2]*Lgrad[2]                    
+    
+    printdebug("gg_x:", gg_x)
+    printdebug("gg_y:", gg_y)
+    printdebug("gg_z:", gg_z)
+    #QM atom gradient
+    printdebug("Qgrad before:", Qgrad)
+    printdebug("Lgrad:", Lgrad)
+    printdebug("C: ", C)
+    printdebug("B:", B)
+    #Multiply grad by C-diagonal
+    #Qgrad[0] = Qgrad[0]*C[0][0]
+    #Qgrad[1] = Qgrad[1]*C[1][1]
+    #Qgrad[2] = Qgrad[2]*C[2][2]
+    Qgrad[0]=Qgrad[0]+g_x
+    Qgrad[1]=Qgrad[1]+g_y
+    Qgrad[2]=Qgrad[2]+g_z
+    printdebug("Qgrad after:", Qgrad)
+    #MM atom gradient
+    printdebug("Mgrad before", Mgrad)
+    #Mgrad[0] = Mgrad[0]*B[0][0]
+    #Mgrad[1] = Mgrad[1]*B[1][1]
+    #Mgrad[2] = Mgrad[2]*B[2][2]
+    Mgrad[0]=Mgrad[0]+gg_x
+    Mgrad[1]=Mgrad[1]+gg_y
+    Mgrad[2]=Mgrad[2]+gg_z                    
+    printdebug("Mgrad after:", Mgrad)
+    
+    return Qgrad,Mgrad
+
+def fullindex_to_qmindex(fullindex,qmatoms):
+    qmindex=qmatoms.index(fullindex)
+    return qmindex
+
+
+def actregiondefine(mmtheory=None, fragment=None, radius=None, originatom=None,shiftpar=50):
+    if fragment == None or mmtheory == None or radius == None or originatom == None:
+        print("actregiondefine requires mmtheory, fragment, radius and originatom keyword arguments")
+        exit()
+
+    if mmtheory.__class__.__name__ == "NonBondedTheory":
+        print("MMtheory: NonBondedTheory currently not supported.")
+        exit()
+
+    print_line_with_mainheader("ActregionDefine")
+
+    print("Radius:", radius)
+    print("Origin atom: {} ({})".format(originatom,fragment.elems[originatom]))
+    print("Will find all atoms within {} Å from atom: {} ({})".format(radius,originatom,fragment.elems[originatom]))
+    print("Will select all whole residues within region and export list")
+    print("shiftpar:", shiftpar)
+    
+    origincoords=fragment.coords[originatom]
+    act_indices=[]
+    for index,allc in enumerate(fragment.coords):
+        dist=module_coords.distance(origincoords,allc)
+        if dist < radius:
+            resid_value=mmtheory.resids[index]
+
+            #Looping over nearby indices as current index and checking if same resid. Silly but should work well for shiftpar 35-3000 or so
+            for k in range(index-shiftpar,index+shiftpar):
+                if mmtheory.resids[k] == resid_value:
+                    act_indices.append(k)
+    #Only unique and sorting:
+    act_indices = np.unique(act_indices).tolist()
+
+    #Print indices to output
+    print("act_indices:", act_indices)
+    #Print indices to disk as file
+    writelisttofile(act_indices, "active_atoms")
+    #Print information on how to use
+    print("Active region size:", len(act_indices))
+    print("Active-region indices written to file: active_atoms")
+    print("The active_atoms list  can be read-into Python script like this:	 actatoms = read_intlist_from_file(\"active_atoms\")")
+    #Print XYZ file with active region shown
+    module_coords.write_XYZ_for_atoms(fragment.coords,fragment.elems, act_indices, "ActiveRegion")
+    print("Wrote Active region XYZfile: ActiveRegion.xyz  (inspect with visualization program)")
+    return act_indices

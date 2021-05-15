@@ -239,6 +239,12 @@ def writestringtofile(string,file):
     with open(file, 'w') as f:
         f.write(string)
 
+#Write a Python list to file simply
+def writelisttofile(pylist,file):
+    with open(file, 'w') as f:
+        for l in pylist:
+            f.write(str(l)+' ')
+
 #Natural (human) sorting of list
 def natural_sort(l):
     convert = lambda text: int(text) if text.isdigit() else text.lower()
