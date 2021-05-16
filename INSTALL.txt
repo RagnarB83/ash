@@ -7,6 +7,9 @@ See https://ash.readthedocs.io/en/latest/setup.html  for more detailed instructi
 
 chmod +x /path/to/ash/python3_ash
 
+#Copy ASH settings file to your home-directory:
+cp /path/to/ash/ash_user_settings.ini ~/
+
 
 #Test installation
 
