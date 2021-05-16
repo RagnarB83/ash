@@ -16,7 +16,7 @@ export PATH=$ASHPATH:$PATH
 export LD_LIBRARY_PATH=$ASHPATH/lib:$LD_LIBRARY_PATH
 
 - pip3 install geometric  # Install geometry optimizer
-- pip3 install julia    #Install PyJulia inside Python
+- pip3 install julia    #Install PyJulia inside Pythons
 - Install Julia packages:   julia $ASHPATH/julia-packages-setup.jl 
 
 Note: On a computing cluster a single installation should be sufficient.
