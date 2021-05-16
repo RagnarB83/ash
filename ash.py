@@ -139,6 +139,7 @@ if settings_ash.settings_dict["load_julia"] == True:
         print("Loading Julia functions")
         ashpath = os.path.dirname(ash.__file__)
         Main.include(ashpath + "/functions/functions_julia.jl")
+        print("")
     except:
         print("Problem importing Pyjulia")
         print("Make sure Julia is installed, PyJulia within Python, Pycall within Julia, Julia packages have been installed and you are using python3_ash")
