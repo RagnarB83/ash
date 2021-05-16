@@ -915,6 +915,18 @@ def fullindex_to_qmindex(fullindex,qmatoms):
 
 
 def actregiondefine(mmtheory=None, fragment=None, radius=None, originatom=None,shiftpar=50):
+    """ActRegionDefine function
+
+    Args:
+        mmtheory ([OpenMMTheory]): OpenMMTheory object. Defaults to None.
+        fragment ([Fragment]): ASH Fragment. Defaults to None.
+        radius ([int]): Radius (in Angstrom). Defaults to None.
+        originatom ([int]): Origin atom for radius. Defaults to None.
+        shiftpar (int): [description]. Defaults to 50.
+
+    Returns:
+        [type]: [description]
+    """
     if fragment == None or mmtheory == None or radius == None or originatom == None:
         print("actregiondefine requires mmtheory, fragment, radius and originatom keyword arguments")
         exit()

@@ -21,14 +21,15 @@ interactive_session=bool(getattr(sys, 'ps1', sys.flags.interactive))
 #Defining some default ASH settings here in a dictionary
 settings_dict={}
 
-# (will be overriden by ash_user_settings file variables if present)
+# Settings will be overriden by ash_user_settings file variables if present
+
 settings_dict["debugflag"] = False
 
 #Julia usage
 settings_dict["load_julia"] = True
 
 #Whether to use ANSI color escape sequences in output or not.
-settings_dict["use_ANSI_color"] = True
+settings_dict["use_ANSI_color"] = False
 
 #Print logo or not 
 settings_dict["print_logo"] = True

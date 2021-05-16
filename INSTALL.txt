@@ -1,0 +1,51 @@
+
+###########################
+#Installation instructions
+###########################
+See https://ash.readthedocs.io/en/latest/setup.html  for  detailed instructions on getting Python3, Julia, PyJulia etc.
+up and running
+
+Simple expert instructions:
+- Use a Python3 with Numpy. Make sure that in PATH.
+- Install Julia if not available and make sure that is in PATH.
+- Make sure things are in PATH:
+
+export ASHPATH=/path/to/ash  # Change /path/to/ash to the actual ASH directory location on your machine
+export PYTHONPATH=$ASHPATH:$ASHPATH/lib:$PYTHONPATH
+export PATH=$ASHPATH:$PATH
+export LD_LIBRARY_PATH=$ASHPATH/lib:$LD_LIBRARY_PATH
+
+- pip3 install geometric  # Install geometry optimizer
+- pip3 install julia    #Install PyJulia inside Pythons
+- Install Julia packages:   julia $ASHPATH/julia-packages-setup.jl 
+
+Note: On a computing cluster a single installation should be sufficient.
+Then set the environment variables for each user and each user has to run:
+   julia $ASHPATH/julia-packages-setup.jl 
+once.
+
+###########################
+#AFTER INSTALLATION
+###########################
+
+- Make sure the /path/to/ash/python3_ash is executable:
+    chmod +x /path/to/ash/python3_ash
+
+- Make sure Python3, Julia, the ASH-directory are available:
+  Try:
+  which python3
+  which Julia
+  which python3_ash
+
+  If the 'which' commands point to the correct versions then you should be ready to go.
+
+- Copy ASH settings file to your home-directory and modify as needed
+  cp /path/to/ash/ash_user_settings.ini ~/
+
+
+- Test installation
+   # Basic test:
+   python3_ash  test_ash.py
+   #Will print "ASH and geometric finished. Everything looks good" if successful
+
+   #More tests to come
