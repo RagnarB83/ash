@@ -355,7 +355,7 @@ class Fragment:
                 print_time_rel(timestampB, modulename='calc connectivity julia', moduleindex=4)
             except:
                 print(BC.FAIL,"Problem importing Pyjulia (import julia)", BC.END)
-                print("Make sure Julia is installed and PyJulia module available, and that you are using python-jl")
+                print("Make sure Julia is installed and PyJulia module available, and that you are using python3_ash")
                 print(BC.FAIL,"Using Python version instead (slow for large systems)", BC.END)
                 #Switching default to py since Julia did not load
                 settings_ash.settings_dict["connectivity_code"] = "py"

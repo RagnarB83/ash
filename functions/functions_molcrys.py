@@ -908,7 +908,7 @@ def remove_partial_fragments(coords,elems,sphereradius,fragmentobjects, scale=No
         except:
             print(BC.FAIL, "Problem importing Pyjulia (import julia)", BC.END)
             print("Make sure Julia is installed and PyJulia module available")
-            print("Also, are you using python-jl ?")
+            print("Also, are you using python3_ash ?")
             print("")
             print(BC.FAIL, "Using py version instead (slow for large systems)", BC.END)
             for surfaceatom in surfaceatoms:

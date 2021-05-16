@@ -190,7 +190,7 @@ class NonBondedTheory:
             #except:
             #   print("Problem importing Pyjulia (import julia)")
             #    print("Make sure Julia is installed and PyJulia module available")
-            #    print("Also, are you using python-jl ?")
+            #    print("Also, are you using python3_ash ?")
             #    print("Alternatively, use codeversion='py' argument to NonBondedTheory to use slower Python version for array creation")
             #    exit(9)
 
@@ -356,7 +356,7 @@ class NonBondedTheory:
             except:
                 print("Problem importing Pyjulia (import julia)")
                 print("Make sure Julia is installed and PyJulia module available")
-                print("Also, are you using python-jl ?")
+                print("Also, are you using python3_ash ?")
                 print("Alternatively, use codeversion='py' argument to NonBondedTheory to use slower Python version for array creation")
                 exit(9)
             print_time_rel(CheckpointTime, modulename="from run to just before calling ")

@@ -1,0 +1,13 @@
+#Basic installation instructions
+
+See https://ash.readthedocs.io/en/latest/setup.html  for more detailed instructions
+
+
+
+
+chmod +x /path/to/ash/python3_ash
+
+
+#Test installation
+
+TODO
