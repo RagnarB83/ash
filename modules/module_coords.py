@@ -2252,7 +2252,7 @@ def remove_atoms_from_system_CHARMM(fragment=None, psffile=None, topfile=None, a
     print("remove_atoms_from_system_CHARMM: Done!")
 
 
-def add_atoms_to_PSF(topfile=None, resgroup=None, psffile=None,psfgendir=None):
+def add_atoms_to_PSF(resgroup=None, topfile=None, psffile=None,psfgendir=None):
     #Checking if resgroup present in topfile
     resgroup_in_topfile=False
     with open(topfile) as tfile:
