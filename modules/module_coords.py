@@ -2201,8 +2201,8 @@ close $fp
 #regenerate angles dihedrals
 
 #Printing Xplor PSF file
-writepsf x-plor cmap c
-#writepsf charmm cmap new-CHARMM-psffile.psf
+writepsf x-plor cmap newsystem_XPLOR.psf
+#writepsf charmm cmap newsystem_CHARMM.psf
 writepdb new-system.pdb
     """.format(topfile,psffile,psffile,atomindices_string)
 
@@ -2272,8 +2272,8 @@ def add_atoms_to_PSF(resgroup=None, topfile=None, psffile=None,psfgendir=None):
     segment {} {{ residue 1 {} }}
 
     #Printing Xplor PSF file
-    writepsf x-plor cmap c
-    #writepsf charmm cmap new-CHARMM-psffile.psf
+    writepsf x-plor cmap newsystem_XPLOR.psf
+    #writepsf charmm cmap newsystem_CHARMM.psf
     writepdb new-system.pdb
         """.format(topfile, psffile, resgroup, resgroup)
 
@@ -2313,7 +2313,11 @@ def add_atoms_to_system_CHARMM(fragment=None, added_atoms_coordstring=None, resg
     
     #Adding atoms to PSF-file
     add_atoms_to_PSF(resgroup,topfile,psffile,psfgendir)
-    
+    print("")
+    print("Added atoms to PSF.")
+    print("Wrote new PSF-file: newsystem_XPLOR.psf")
+    print("Wrote new PDB-file: new-system.pdb")
+    print("")
     
     #Writing new fragment to disk
     fragment.write_xyzfile(xyzfilename="newfragment.xyz")
