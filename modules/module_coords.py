@@ -2260,7 +2260,7 @@ def add_atoms_to_PSF(resgroup=None, topfile=None, psffile=None,psfgendir=None):
             if resgroup in line:
                 resgroup_in_topfile=True
     if resgroup_in_topfile == False:
-        print("Chosen resgroup not in topfile: ", topfile)
+        print("Chosen resgroup: {} not in topfile: {}", resgroup, topfile)
         print("Add residuegroup to topology file first!")
         print("Exiting.")
         exit()
