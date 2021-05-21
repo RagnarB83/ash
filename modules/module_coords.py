@@ -2212,7 +2212,7 @@ writepdb new-system.pdb
         f.write(psf_script)
 
     #Running PSFgen
-    process = sp.run([psfgendir + '/psfgen', 'psfinput'])
+    process = sp.run([psfgendir + '/psfgen', 'psfinput.tcl'])
 
 
 def remove_atoms_from_system_CHARMM(fragment=None, psffile=None, topfile=None, atomindices=None, psfgendir=None):
