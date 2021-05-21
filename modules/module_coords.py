@@ -2164,7 +2164,6 @@ def set_up_MMwater_bondconstraints(actatoms, oxygentype='OT'):
 def remove_atoms_from_PSF(atomindices=None,topfile=None,psffile=None,psfgendir=None):
     
     atomindices_string='{ '+' '.join(([str(i) for i in atomindices]))+' }'
-    print("atomindices_string:", atomindices_string)
     psf_script="""
 # This section requires PSFGEN 1.6 to be loaded
 topology {}
@@ -2201,7 +2200,7 @@ close $fp
 #Needed?
 #regenerate angles dihedrals
 
-#Printing Xplor PSF file and CHARMM-types PSF file
+#Printing Xplor PSF file
 writepsf x-plor cmap c
 #writepsf charmm cmap new-CHARMM-psffile.psf
 writepdb new-system.pdb
@@ -2216,7 +2215,7 @@ writepdb new-system.pdb
 
 
 def remove_atoms_from_system_CHARMM(fragment=None, psffile=None, topfile=None, atomindices=None, psfgendir=None):
-    print_line_with_mainheader("remove_atoms_from_systems")
+    print_line_with_mainheader("remove_atoms_from_system_CHARMM")
     if fragment==None or psffile==None or topfile==None or atomindices==None:
         print("Error: remove_atoms_from_system requires keyword arguments:")
         print("fragment, psffile, topfile, atomindices")
@@ -2235,10 +2234,12 @@ def remove_atoms_from_system_CHARMM(fragment=None, psffile=None, topfile=None, a
     atomindices.sort(reverse=True)
     for atomindex in atomindices:
         fragment.delete_atom(atomindex)
+    print("")
     print("Removed atom from fragment.")
     
     #Using PSFgen to create new PSF-file
     remove_atoms_from_PSF(atomindices=atomindices,topfile=topfile,psffile=psffile, psfgendir=psfgendir)
+    print("")
     print("Removed atom from PSF.")
     print("Wrote new PSF-file: newsystem_XPLOR.psf")
     print("Wrote new PDB-file: new-system.pdb")
@@ -2251,9 +2252,72 @@ def remove_atoms_from_system_CHARMM(fragment=None, psffile=None, topfile=None, a
     print("remove_atoms_from_system_CHARMM: Done!")
 
 
-def add_atoms_to_PSF():
-    pass
+def add_atoms_to_PSF(topfile=None, resgroup=None, psffile=None,psfgendir=None):
+    #Checking if resgroup present in topfile
+    resgroup_in_topfile=False
+    with open(topfile) as tfile:
+        for line in tfile:
+            if resgroup in line:
+                resgroup_in_topfile=True
+    if resgroup_in_topfile == False:
+        print("Chosen resgroup not in topfile: ", topfile)
+        print("Add residuegroup to topology file first!")
+        print("Exiting.")
+        exit()
+    
+    
+    psf_script="""
+    topology {}
+    readpsf {}
 
-def add_atoms_to_system(fragfile=None, PSFfile=None):
+    segment {} {{ residue 1 {} }}
 
-    add_atoms_to_PSF()
+    #Printing Xplor PSF file
+    writepsf x-plor cmap c
+    #writepsf charmm cmap new-CHARMM-psffile.psf
+    writepdb new-system.pdb
+        """.format(topfile, psffile, resgroup)
+
+    #Creating PSF inputfile
+    with open("psfinput.tcl", 'w') as f:
+        f.write(psf_script)
+
+    #Running PSFgen. Writing to stdout
+    process = sp.run([psfgendir + '/psfgen', 'psfinput.tcl'])
+    
+    return
+
+def add_atoms_to_system_CHARMM(fragment=None, added_atoms_coordstring=None, resgroup=None, psffile=None, topfile=None, psfgendir=None):
+    print_line_with_mainheader("add_atoms_to_system")
+    if fragment==None or psffile==None or topfile==None or added_atoms_coordstring == None or resgroup=None:
+        print("Error: add_atoms_to_system_CHARMM requires keyword arguments:")
+        print("fragment, psffile, topfile, added_atoms_coordstring, resgroup")
+        exit()
+    
+    if psfgendir==None:
+        print(BC.WARNING, "No psfgendir argument passed to remove_atoms_from_system. Attempting to find psfgendir variable inside settings_ash", BC.END)
+        try:
+            psfgendir=settings_ash.settings_dict["psfgendir"]
+        except: 
+            print(BC.FAIL,"Found no psfgendir variable in settings_ash module or in $PATH. Exiting.",BC.END)
+            exit()
+    
+    #Adding coordinates to fragment
+    added_atoms_coords_list=added_atoms_coordstring.split('\n')
+    added_elems=[]
+    added_coords=[]
+    for count, line in enumerate(added_atoms_coords_list):
+        if len(line)> 1:
+            added_elems.append(line.split()[0])
+            added_coords.append([float(line.split()[1]), float(line.split()[2]), float(line.split()[3])])
+    fragment.add_coords(added_elems,added_coords,conn=False)
+    
+    #Adding atoms to PSF-file
+    add_atoms_to_PSF(resgroup,topfile,psffile,psfgendir)
+    
+    
+    #Writing new fragment to disk
+    fragment.write_xyzfile(xyzfilename="newfragment.xyz")
+    fragment.print_system(filename='newfragment.ygg')
+    print("")
+    print("add_atoms_to_system_CHARMM: Done!")
