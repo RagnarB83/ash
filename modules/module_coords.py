@@ -2252,18 +2252,38 @@ def remove_atoms_from_system_CHARMM(fragment=None, psffile=None, topfile=None, a
     print("remove_atoms_from_system_CHARMM: Done!")
 
 
-def add_atoms_to_PSF(resgroup=None, topfile=None, psffile=None,psfgendir=None):
+def add_atoms_to_PSF(resgroup=None, topfile=None, psffile=None,psfgendir=None,num_added_atoms=None):
+    print("Finding resgroup {} in topfile {} ".format(resgroup,topfile))
     #Checking if resgroup present in topfile
     resgroup_in_topfile=False
+    grab_atoms=False
+    numatoms_in_resgroup=0
     with open(topfile) as tfile:
         for line in tfile:
-            if resgroup in line:
+            if grab_atoms == True:
+                if 'RESI' in line:
+                    grab_atoms=False
+                if 'ATOM ' in line:
+                    numatoms_in_resgroup+=1
+            if resgroup in line and 'RESI' in line:
                 resgroup_in_topfile=True
+                grab_atoms=True
+
+                    
     if resgroup_in_topfile == False:
         print("Chosen resgroup: {} not in topfile: {}".format(resgroup, topfile))
         print("Add residuegroup to topology file first!")
         print("Exiting.")
         exit()
+    
+    print("numatoms_in_resgroup:", numatoms_in_resgroup)
+    print("num_added_atoms:", num_added_atoms)
+    if numatoms_in_resgroup != num_added_atoms:
+        print("Number of ATOM entries in resgroup in {} not equal to number of added atom-coordinatese")
+        print("Wrong RESgroup chosen or missing coordinates?")
+        print("Exiting")
+        exit()
+    
     
     psf_script="""
     topology {}
@@ -2309,10 +2329,11 @@ def add_atoms_to_system_CHARMM(fragment=None, added_atoms_coordstring=None, resg
         if len(line)> 1:
             added_elems.append(line.split()[0])
             added_coords.append([float(line.split()[1]), float(line.split()[2]), float(line.split()[3])])
+    num_added_atoms=len(added_elems)
     fragment.add_coords(added_elems,added_coords,conn=False)
     
     #Adding atoms to PSF-file
-    add_atoms_to_PSF(resgroup,topfile,psffile,psfgendir)
+    add_atoms_to_PSF(resgroup,topfile,psffile,psfgendir,num_added_atoms)
     print("")
     print("Added atoms to PSF.")
     print("Wrote new PSF-file: newsystem_XPLOR.psf")
