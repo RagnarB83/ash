@@ -2202,16 +2202,16 @@ close $fp
 #regenerate angles dihedrals
 
 #Printing Xplor PSF file and CHARMM-types PSF file
-writepsf x-plor cmap newsystem_XPLOR.psf
+writepsf x-plor cmap c
 #writepsf charmm cmap new-CHARMM-psffile.psf
 writepdb new-system.pdb
     """.format(topfile,psffile,psffile,atomindices_string)
 
-    print("here")
+    #Creating PSF inputfile
     with open("psfinput.tcl", 'w') as f:
         f.write(psf_script)
 
-    #Running PSFgen
+    #Running PSFgen. Writing to stdout
     process = sp.run([psfgendir + '/psfgen', 'psfinput.tcl'])
 
 
@@ -2235,15 +2235,20 @@ def remove_atoms_from_system_CHARMM(fragment=None, psffile=None, topfile=None, a
     atomindices.sort(reverse=True)
     for atomindex in atomindices:
         fragment.delete_atom(atomindex)
+    print("Removed atom from fragment.")
     
     #Using PSFgen to create new PSF-file
     remove_atoms_from_PSF(atomindices=atomindices,topfile=topfile,psffile=psffile, psfgendir=psfgendir)
-    
+    print("Removed atom from PSF.")
+    print("Wrote new PSF-file: newsystem_XPLOR.psf")
+    print("Wrote new PDB-file: new-system.pdb")
+    print("")
     #Writing new fragment to disk
-    print("Removed atom from fragment.")
     fragment.write_xyzfile(xyzfilename="newfragment.xyz")
     fragment.print_system(filename='newfragment.ygg')
 
+    print("")
+    print("remove_atoms_from_system_CHARMM: Done!")
 
 
 def add_atoms_to_PSF():
