@@ -2289,7 +2289,7 @@ def add_atoms_to_PSF(topfile=None, resgroup=None, psffile=None,psfgendir=None):
 
 def add_atoms_to_system_CHARMM(fragment=None, added_atoms_coordstring=None, resgroup=None, psffile=None, topfile=None, psfgendir=None):
     print_line_with_mainheader("add_atoms_to_system")
-    if fragment==None or psffile==None or topfile==None or added_atoms_coordstring == None or resgroup=None:
+    if fragment==None or psffile==None or topfile==None or added_atoms_coordstring == None or resgroup==None:
         print("Error: add_atoms_to_system_CHARMM requires keyword arguments:")
         print("fragment, psffile, topfile, added_atoms_coordstring, resgroup")
         exit()
