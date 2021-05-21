@@ -2265,7 +2265,6 @@ def add_atoms_to_PSF(resgroup=None, topfile=None, psffile=None,psfgendir=None):
         print("Exiting.")
         exit()
     
-    
     psf_script="""
     topology {}
     readpsf {}
@@ -2276,7 +2275,7 @@ def add_atoms_to_PSF(resgroup=None, topfile=None, psffile=None,psfgendir=None):
     writepsf x-plor cmap c
     #writepsf charmm cmap new-CHARMM-psffile.psf
     writepdb new-system.pdb
-        """.format(topfile, psffile, resgroup)
+        """.format(topfile, psffile, resgroup, resgroup)
 
     #Creating PSF inputfile
     with open("psfinput.tcl", 'w') as f:
