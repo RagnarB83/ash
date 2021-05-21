@@ -1,14 +1,17 @@
-from functions_general import isint,listdiff,print_time_rel,BC,printdebug
-import dictionaries_lists
-import numpy as np
-import settings_ash
-import constants
-import copy
 import math
 sqrt = math.sqrt
 pow = math.pow
-import ash
+import copy
 import time
+import numpy as np
+import subprocess as sp
+
+from functions_general import isint,listdiff,print_time_rel,BC,printdebug,print_line_with_mainheader
+import dictionaries_lists
+import settings_ash
+import constants
+import ash
+
 #import functions_molcrys
 
 # ASH Fragment class
@@ -127,6 +130,13 @@ class Fragment:
         self.coords=[]
         self.elems=[]
         self.connectivity=[]
+    def delete_atom(self,atomindex):
+        self.elems.pop(atomindex)
+        if type(self.coords) == np.ndarray:
+            self.coords=np.delete(self.coords,atomindex,axis=0)
+        elif type(self.coords) == list:
+            self.coords.pop(atomindex)
+        self.update_attributes()
     def add_coords(self, elems,coords,conn=True, scale=None, tol=None):
         if self.printlevel >= 2:
             print("Adding coordinates to fragment.")
@@ -2147,3 +2157,98 @@ def set_up_MMwater_bondconstraints(actatoms, oxygentype='OT'):
     constraints={'bond':bondconslist}
 
     return constraints
+
+
+
+    
+def remove_atoms_from_PSF(atomindices=None,topfile=None,psffile=None,psfgendir=None):
+    
+    atomindices_string='{ '+' '.join(([str(i) for i in atomindices]))+' }'
+    print("atomindices_string:", atomindices_string)
+    psf_script="""
+# This section requires PSFGEN 1.6 to be loaded
+topology {}
+readpsf {}
+set psffile {}
+#For each delatom
+set delatoms {}
+for {{ set i 0}}  {{ $i < [llength $delatoms] }} {{ incr i 1 }} {{
+set d [lindex $delatoms $i]
+set startatoms false
+
+#Here finding out which segname and resid for atomnumber
+     set fp [open $psffile r]
+     while {{-1 != [gets $fp line]}} {{
+          if {{[lindex $line 1] == "NATOM" || [lindex $line 1] == "!NATOM"}} {{
+                set startatoms true
+          }}
+             if {{ $startatoms == "true" }} {{
+                if {{ [lindex $line 0] == "$d" }} {{
+                  set segname [lindex $line 1]
+                  set resid [lindex $line 2]
+                  set atomname [lindex $line 4]
+                 puts "\033\[31m Deleting atom $atomname (segname  $segname,  resid is $resid) from PSF information!\033\[0m"
+                 #PSFgen 1.6 delatom command
+                 delatom $segname $resid $atomname
+                }}
+             }}
+     }}
+
+
+}}
+close $fp
+
+#Needed?
+#regenerate angles dihedrals
+
+#Printing Xplor PSF file and CHARMM-types PSF file
+writepsf x-plor cmap newsystem_XPLOR.psf
+#writepsf charmm cmap new-CHARMM-psffile.psf
+writepdb new-system.pdb
+    """.format(topfile,psffile,psffile,atomindices_string)
+
+    print("here")
+    with open("psfinput.tcl", 'w') as f:
+        f.write(psf_script)
+
+    #Running PSFgen
+    process = sp.run([psfgendir + '/psfgen', 'psfinput'])
+
+
+def remove_atoms_from_system_CHARMM(fragment=None, psffile=None, topfile=None, atomindices=None, psfgendir=None):
+    print_line_with_mainheader("remove_atoms_from_systems")
+    if fragment==None or psffile==None or topfile==None or atomindices==None:
+        print("Error: remove_atoms_from_system requires keyword arguments:")
+        print("fragment, psffile, topfile, atomindices")
+        exit()
+    
+    if psfgendir==None:
+        print(BC.WARNING, "No psfgendir argument passed to remove_atoms_from_system. Attempting to find psfgendir variable inside settings_ash", BC.END)
+        try:
+            psfgendir=settings_ash.settings_dict["psfgendir"]
+        except: 
+            print(BC.FAIL,"Found no psfgendir variable in settings_ash module or in $PATH. Exiting.",BC.END)
+            exit()
+        
+        
+    #Deleting element and coords for each atom index
+    atomindices.sort(reverse=True)
+    for atomindex in atomindices:
+        fragment.delete_atom(atomindex)
+    
+    #Using PSFgen to create new PSF-file
+    remove_atoms_from_PSF(atomindices=atomindices,topfile=topfile,psffile=psffile, psfgendir=psfgendir)
+    
+    #Writing new fragment to disk
+    print("Removed atom from fragment.")
+    fragment.write_xyzfile(xyzfilename="newfragment.xyz")
+    fragment.print_system(filename='newfragment.ygg')
+
+
+
+def add_atoms_to_PSF():
+    pass
+
+def add_atoms_to_system(fragfile=None, PSFfile=None):
+
+    add_atoms_to_PSF()

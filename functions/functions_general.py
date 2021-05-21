@@ -300,16 +300,6 @@ def uniq(seq, idfun=None):
 def column(matrix, i):
     return [row[i] for row in matrix]
 
-#From Knarr
-def printDate():
-    import datetime
-    dagur = datetime.datetime.now()
-    string1 = dagur.strftime('%d.%m.%Y')
-    string2 = dagur.strftime('%H:%M')
-    print('Time:%s Date:%s' % (string2, string1))
-    return None
-
-
 #Various function to print time of module/step. Will add time also to Timings object
 
 def print_time_rel(timestamp,modulename='Unknown', moduleindex=4):
