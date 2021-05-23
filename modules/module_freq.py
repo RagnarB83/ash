@@ -64,8 +64,8 @@ def NumFreq(fragment=None, theory=None, npoint=1, displacement=0.005, hessatoms=
         hessatoms=allatoms
 
     if len(hessatoms_masses) != len(hessatoms):
-        print("Number of provided masses (hessatoms_masses keyword)s not equal to number of Hessian-atoms.")
-        print("Check input masses!")
+        print(BC.FAIL,"Error: Number of provided masses (hessatoms_masses keyword) is not equal to number of Hessian-atoms.")
+        print("Check input masses!",BC.END)
         exit()
     
     #Making sure hessatoms list is sorted
