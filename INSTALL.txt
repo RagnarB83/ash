@@ -15,7 +15,7 @@
 1. Set path_to_python3_dir in ./install_ash.sh script to the Python3 installation you want to use.
 Note: You need to be able to install packages to this installation via pip
 
-2. cd to ASH directory and run: ./install_ash.sh
+2. cd to ASH directory. Do: chmod +x ./install_ash.sh and run:  ./install_ash.sh
 
 3. Run: source ./set_environment_ash.sh
     and get going!
