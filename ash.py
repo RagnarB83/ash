@@ -34,7 +34,7 @@ from functions_general import blankline,BC,listdiff,print_time_rel,print_time_re
 # Fragment class and coordinate functions
 import module_coords
 from module_coords import get_molecules_from_trajectory,eldict_covrad,write_pdbfile,Fragment,read_xyzfile,write_xyzfile,make_cluster_from_box, read_ambercoordinates, read_gromacsfile
-
+from module_coords import remove_atoms_from_system_CHARMM,add_atoms_to_system_CHARMM
 #Singlepoint
 import module_singlepoint
 from module_singlepoint import Singlepoint,ZeroTheory

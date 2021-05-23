@@ -63,6 +63,11 @@ def NumFreq(fragment=None, theory=None, npoint=1, displacement=0.005, hessatoms=
     if hessatoms is None:
         hessatoms=allatoms
 
+    if len(hessatoms_masses) != len(hessatoms):
+        print(BC.FAIL,"Error: Number of provided masses (hessatoms_masses keyword) is not equal to number of Hessian-atoms.")
+        print("Check input masses!",BC.END)
+        exit()
+    
     #Making sure hessatoms list is sorted
     hessatoms.sort()
 
@@ -514,31 +519,25 @@ def printfreqs(vfreq,numatoms):
     line = "{:>4}{:>14}".format("Mode", "Freq(cm**-1)")
     print(line)
     for mode in range(0,3*numatoms):
-        if mode < TRmodenum:
-            line = "{:>3d}   {:>9.4f}".format(mode,0.000)
-            print(line)
+        realpart=vfreq[mode].real
+        imagpart=vfreq[mode].imag
+        if realpart == 0.0:
+            vib=imagpart
+            line = "{:>3d}   {:>9.4f}i".format(mode, vib)
+        elif imagpart == 0.0:
+            vib=clean_number(vfreq[mode])
+            line = "{:>3d}   {:>9.4f}".format(mode, vib)
         else:
-            #print("vfreq[mode]:", vfreq[mode])
-            realpart=vfreq[mode].real
-            imagpart=vfreq[mode].imag
-            #print("realpart:", realpart)
-            #print("imagpart:", imagpart)
-            if realpart == 0.0:
-                vib=imagpart
-                line = "{:>3d}   {:>9.4f}i".format(mode, vib)
-                print(line)
-            elif imagpart == 0.0:
-                vib=clean_number(vfreq[mode])
-                line = "{:>3d}   {:>9.4f}".format(mode, vib)
-                print(line)
-            else:
-                print("vfreq[mode]:", vfreq[mode])
-                print("realpart:", realpart)
-                print("imagpart:", imagpart)
-                print("hmmm")
-                exit()
-            #print("vib:", vib)
-            #print("type of vib", type(vib))
+            print("vfreq[mode]:", vfreq[mode])
+            print("realpart:", realpart)
+            print("imagpart:", imagpart)
+            print("This should not have happened")
+            exit()
+        if mode < TRmodenum:
+            line=line+" (TR mode)"
+        print(line)
+        #print("vib:", vib)
+        #print("type of vib", type(vib))
 
 
 # Function to print normal mode composition factors for all atoms, element-groups, specific atom groups or specific atoms

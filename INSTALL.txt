@@ -2,13 +2,36 @@
 ###########################
 #Installation instructions
 ###########################
+
+#
+
+
+
+###########################
+#SEMI-AUTOMATIC INSTALLATION
+#handles Python package addition and Julia installation and packages
+###########################
+
+1. Set path_to_python3_dir in ./install_ash.sh script to the Python3 installation you want to use.
+Note: You need to be able to install packages to this installation via pip
+
+2. cd to ASH directory and run: ./install_ash.sh
+
+3. Run: source ./set_environment_ash.sh
+    and get going!
+
+
+###########################
+#MANUAL INSTALLATION
+###########################
+
 See https://ash.readthedocs.io/en/latest/setup.html  for  detailed instructions on getting Python3, Julia, PyJulia etc.
 up and running
 
 Simple expert instructions:
 - Use a Python3 with Numpy. Make sure that in PATH.
-- Install Julia if not available and make sure that is in PATH.
-- Make sure things are in PATH:
+- Install Julia if not available and make sure that the Julia binary dir is in PATH.
+- Make sure ASH is in PATH:
 
 export ASHPATH=/path/to/ash  # Change /path/to/ash to the actual ASH directory location on your machine
 export PYTHONPATH=$ASHPATH:$ASHPATH/lib:$PYTHONPATH
@@ -29,7 +52,7 @@ once.
 ###########################
 
 - Make sure the /path/to/ash/python3_ash is executable:
-    chmod +x /path/to/ash/python3_ash
+    chmod ugo+x /path/to/ash/python3_ash
 
 - Make sure Python3, Julia, the ASH-directory are available:
   Try:
@@ -45,7 +68,8 @@ once.
 
 - Test installation
    # Basic test:
+   cd $ASHPATH
    python3_ash  test_ash.py
-   #Will print "ASH and geometric finished. Everything looks good" if successful
+   Should launch ASH and print "ASH and geometric finished. Everything looks good" if successful
 
    #More tests to come
