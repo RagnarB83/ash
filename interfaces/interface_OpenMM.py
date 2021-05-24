@@ -10,7 +10,7 @@ class OpenMMTheory:
                  GROMACSfiles=False, gromacstopfile=None, grofile=None, gromacstopdir=None,
                  Amberfiles=False, amberprmtopfile=None, printlevel=2, do_energy_composition=False,
                  xmlfile=None, periodic=False, periodic_cell_dimensions=None, customnonbondedforce=False,
-                 delete_QM1_MM1_bonded=False, watermodel=None, parmed=False):
+                 delete_QM1_MM1_bonded=False, watermodel=None, use_parmed=False):
         
         module_init_time = time.time()
         # OPEN MM load
@@ -28,7 +28,7 @@ class OpenMMTheory:
         self.printlevel=printlevel
 
         #Load Parmed if requested
-        if parmed == True:
+        if use_parmed == True:
             print("Using Parmed to read topologyfiles")
             try:
                 import parmed
@@ -92,7 +92,7 @@ class OpenMMTheory:
             self.Forcefield='CHARMM'
             print("Reading CHARMM files")
             self.psffile=psffile
-            if parmed == True:
+            if use_parmed == True:
                 self.psf = parmed.charmm.CharmmPsfFile(psffile)
                 self.params = parmed.charmm.CharmmParameterSet(charmmtopfile, charmmprmfile)
             else:
@@ -112,8 +112,8 @@ class OpenMMTheory:
         elif GROMACSfiles is True:
             print("Warning: Gromacs-files interface not tested")
             #Reading grofile, not for coordinates but for periodic vectors
-            
-            if parmed == True:    
+            print("use_parmed:", use_parmed)
+            if use_parmed == True:    
                 gmx_top = parmed.gromacs.GromacsTopologyFile(gromacstopfile)
                 gmx_gro = parmed.gromacs.GromacsGroFile.parse(grofile)
                 gmx_top.box = gmx_gro.box
@@ -139,7 +139,7 @@ class OpenMMTheory:
             self.Forcefield='Amber'
             print("Warning: Amber-files interface not well tested. Be careful")
             print("Warning: Only new-style Amber7 prmtopfile will work")
-            if parmed == True: 
+            if use_parmed == True: 
                 self.prmtop = parmed.load_file(amberprmtopfile)
             else:
                 #Note: Only new-style Amber7 prmtop files work
