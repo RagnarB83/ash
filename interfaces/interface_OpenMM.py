@@ -10,7 +10,7 @@ class OpenMMTheory:
                  GROMACSfiles=False, gromacstopfile=None, grofile=None, gromacstopdir=None,
                  Amberfiles=False, amberprmtopfile=None, printlevel=2, do_energy_composition=False,
                  xmlfile=None, periodic=False, periodic_cell_dimensions=None, customnonbondedforce=False,
-                 delete_QM1_MM1_bonded=False, watermodel=None):
+                 delete_QM1_MM1_bonded=False, watermodel=None, parmed=False):
         
         module_init_time = time.time()
         # OPEN MM load
@@ -95,12 +95,33 @@ class OpenMMTheory:
         elif GROMACSfiles is True:
             print("Warning: Gromacs-files interface not tested")
             #Reading grofile, not for coordinates but for periodic vectors
-            gro = simtk.openmm.app.GromacsGroFile(grofile)
-            self.grotop = simtk.openmm.app.GromacsTopFile(gromacstopfile, periodicBoxVectors=gro.getPeriodicBoxVectors(),
-                                 includeDir=gromacstopdir)
+            
+            if parmed == True:
+                print("Using Parmed to read GROMACS topology")
+                try:
+                    import parmed
+                except:
+                    print("Problem importing parmed Python library")
+                    print("Make sure parmed is present in your Python.")
+                    print("Parmed can be installed using pip: pip install parmed")
+                    exit()
+                
+                gmx_top = parmed.gromacs.GromacsTopologyFile(gromacstopfile)
+                gmx_gro = parmed.gromacs.GromacsGroFile.parse(grofile)
+                gmx_top.box = gmx_gro.box
+                gmx_top.positions = gmx_gro.positions
+                
+                self.topology = gmx_top.topology
+                self.forcefield = gmx_top
+                
+            else:
+                print("Using built-in OpenMM routines to read GROMACS topology")
+                gro = simtk.openmm.app.GromacsGroFile(grofile)
+                self.grotop = simtk.openmm.app.GromacsTopFile(gromacstopfile, periodicBoxVectors=gro.getPeriodicBoxVectors(),
+                                    includeDir=gromacstopdir)
 
-            self.topology = self.grotop.topology
-            self.forcefield=self.grotop
+                self.topology = self.grotop.topology
+                self.forcefield=self.grotop
             # Create an OpenMM system by calling createSystem on grotop
             #self.system = self.grotop.createSystem(nonbondedMethod=simtk.openmm.app.NoCutoff,
             #                                    nonbondedCutoff=1 * simtk.openmm.unit.nanometer)
@@ -166,6 +187,7 @@ class OpenMMTheory:
                 self.system = self.forcefield.createSystem(self.params, nonbondedMethod=simtk.openmm.app.PME,
                                             nonbondedCutoff=12 * self.unit.angstroms, switchDistance=10*self.unit.angstroms)
             elif GROMACSfiles is True:
+                
                 #Note: Turned off switchDistance. Not available for GROMACS?
                 self.system = self.forcefield.createSystem(nonbondedMethod=simtk.openmm.app.PME,
                                             nonbondedCutoff=12 * self.unit.angstroms, ewaldErrorTolerance=0.0005)
