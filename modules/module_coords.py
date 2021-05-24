@@ -545,7 +545,7 @@ eldict_covrad={'H':0.31, 'He':0.28, 'Li':1.28, 'Be':0.96, 'B':0.84, 'C':0.76, 'N
 eldict_covrad['Na']=0.0001
 eldict_covrad['K']=0.0001
 #Dummy atom M. For example the M-site on TIP4P model
-eldict_covrad['M']:0.0
+eldict_covrad['M']=0.0
  
 #Function to reformat element string to be correct('cu' or 'CU' become 'Cu')
 #Can also convert atomic-number (isatomnum flag)
