@@ -18,7 +18,9 @@ juliaversion="1.6.1"
 
 #use_julia_conda=true #problem with python3 binary inside Conda.jl
 #######################
-
+echo "-------------------------------"
+echo "ASH installation script"
+echo "-------------------------------"
 #Check if path_to_python3_exe has been set. Otherwise search for python3 in $PATH
 if [ -z ${path_to_python3_exe+x} ]
 then
@@ -56,9 +58,7 @@ fi
 
 #thisdir="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null 2>&1 && pwd )"
 thisdir=$PWD
-echo
-echo "-------------------------------"
-echo "ASH installation script"
+echo ""
 echo "Using Python3 installation in: $path_to_python3_dir"
 echo "Make sure this is the Python3 installation you want"
 echo ""
@@ -67,21 +67,23 @@ echo "Current directory is:  $thisdir"
 echo ""
 echo "Step 1. Downloading and installing Julia"
 
+# Julia major version var: 1.6.1 => 1.6. Used in download URL
+juliamajorversion=${juliaversion%??}
 #Download previous Julia dirs
 rm -rf julia-${juliaversion}
 rm -rf julia-python-bundle
 
-#Download Julia 1.6.1 and uncompress
+#Download Julia and uncompress
 if [ $download_julia = true ]
 then
-  wget https://julialang-s3.julialang.org/bin/linux/x64/1.6/julia-1.6.1-linux-x86_64.tar.gz
+  wget https://julialang-s3.julialang.org/bin/linux/x64/${juliamajorversion}/julia-${juliaversion}-linux-x86_64.tar.gz
 fi
 
 #Deleting old
 rm -rf julia-${juliaversion}-linux-x86_64.tar
 #Decompress archive
 gunzip julia-${juliaversion}-linux-x86_64.tar.gz
-tar -xvf julia-${juliaversion}-linux-x86_64.tar
+tar -xf julia-${juliaversion}-linux-x86_64.tar
 
 path_to_julia=$thisdir/julia-${juliaversion}/bin
 #Create julia-python-bundle dir
@@ -123,8 +125,9 @@ fi
 
 # Change python3 to be used in python3_ash to the Conda.jl python3
 echo "Step 4. Modifying python3_ash binary"
-sed -i "s:/usr/bin/env python3:/usr/bin/env ${path_to_python3_dir}/python3:g" python3_ash
-
+#sed -i "s:/usr/bin/env python3:/usr/bin/env ${path_to_python3_dir}/python3:g" python3_ash
+echo "#!/bin/bash" > set_environment_ash.sh
+echo "export ASHPATH=${thisdir}" >> set_environment_ash.sh
 #Making python3_ash executable
 chmod uog+x python3_ash
 
