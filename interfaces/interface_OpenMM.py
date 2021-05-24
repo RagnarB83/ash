@@ -10,7 +10,7 @@ class OpenMMTheory:
                  GROMACSfiles=False, gromacstopfile=None, grofile=None, gromacstopdir=None,
                  Amberfiles=False, amberprmtopfile=None, printlevel=2, do_energy_composition=False,
                  xmlfile=None, periodic=False, periodic_cell_dimensions=None, customnonbondedforce=False,
-                 delete_QM1_MM1_bonded=False):
+                 delete_QM1_MM1_bonded=False, watermodel=None):
         
         module_init_time = time.time()
         # OPEN MM load
@@ -133,6 +133,14 @@ class OpenMMTheory:
             #forces = {self.system.getForce(index).__class__.__name__: self.system.getForce(index) for index in range(self.system.getNumForces())}
             #self.nonbonded_force = forces['NonbondedForce']
 
+        # Deal with possible 4/5 site water model like TIP4P
+        #NOTE: EXPERIMENTAL
+        #NOTE: We have no positions here. Make separate callable function?????
+        if watermodel != None:
+            print("watermodel:", watermodel)
+            modeller = simtk.openmm.app.Modeller(self.topology, pdb.positions)
+            modeller.addExtraParticles(self.forcefield)
+            simtk.openmm.app.app.PDBFile.writeFile(modeller.topology, modeller.positions, open('test-water.pdb', 'w'))
 
         #Now after topology is defined we can create system
         self.numatoms=int(self.forcefield.topology.getNumAtoms())
@@ -145,15 +153,14 @@ class OpenMMTheory:
         #Periodic or non-periodic ystem
         if self.Periodic is True:
             print("System is periodic")
-            self.periodic_cell_dimensions = periodic_cell_dimensions
-            print("Periodic cell dimensions:", periodic_cell_dimensions)
-            self.a = periodic_cell_dimensions[0] * self.unit.angstroms
-            self.b = periodic_cell_dimensions[1] * self.unit.angstroms
-            self.c = periodic_cell_dimensions[2] * self.unit.angstroms
-            
             #Parameters here are based on OpenMM DHFR example
             
             if CHARMMfiles is True:
+                self.periodic_cell_dimensions = periodic_cell_dimensions
+                print("Periodic cell dimensions:", periodic_cell_dimensions)
+                self.a = periodic_cell_dimensions[0] * self.unit.angstroms
+                self.b = periodic_cell_dimensions[1] * self.unit.angstroms
+                self.c = periodic_cell_dimensions[2] * self.unit.angstroms
                 #Box vectors can only be set here for CHARMM
                 self.forcefield.setBox(self.a, self.b, self.c)
                 self.system = self.forcefield.createSystem(self.params, nonbondedMethod=simtk.openmm.app.PME,
