@@ -10,7 +10,7 @@ class OpenMMTheory:
                  GROMACSfiles=False, gromacstopfile=None, grofile=None, gromacstopdir=None,
                  Amberfiles=False, amberprmtopfile=None, printlevel=2, do_energy_composition=False,
                  xmlfile=None, periodic=False, periodic_cell_dimensions=None, customnonbondedforce=False,
-                 delete_QM1_MM1_bonded=False, watermodel=None, use_parmed=False):
+                 delete_QM1_MM1_bonded=False, watermodel=None, use_parmed=False, periodic_nonbonded_cutoff=12):
         
         module_init_time = time.time()
         # OPEN MM load
@@ -189,6 +189,7 @@ class OpenMMTheory:
         #Periodic or non-periodic ystem
         if self.Periodic is True:
             print("System is periodic")
+            print("Nonbonded cutoff is {} Angstrom".format(periodic_nonbonded_cutoff))
             #Parameters here are based on OpenMM DHFR example
             
             if CHARMMfiles is True:
@@ -200,15 +201,16 @@ class OpenMMTheory:
                 #Box vectors can only be set here for CHARMM
                 self.forcefield.setBox(self.a, self.b, self.c)
                 self.system = self.forcefield.createSystem(self.params, nonbondedMethod=simtk.openmm.app.PME,
-                                            nonbondedCutoff=12 * self.unit.angstroms, switchDistance=10*self.unit.angstroms)
+                                            nonbondedCutoff=periodic_nonbonded_cutoff * self.unit.angstroms, switchDistance=10*self.unit.angstroms)
             elif GROMACSfiles is True:
                 
                 #Note: Turned off switchDistance. Not available for GROMACS?
+                #
                 self.system = self.forcefield.createSystem(nonbondedMethod=simtk.openmm.app.PME,
-                                            nonbondedCutoff=12 * self.unit.angstroms, ewaldErrorTolerance=0.0005)
+                                            nonbondedCutoff=periodic_nonbonded_cutoff * self.unit.angstroms, ewaldErrorTolerance=0.0005)
             else:
                 self.system = self.forcefield.createSystem(nonbondedMethod=simtk.openmm.app.PME,
-                                            nonbondedCutoff=12 * self.unit.angstroms, switchDistance=10*self.unit.angstroms)
+                                            nonbondedCutoff=periodic_nonbonded_cutoff * self.unit.angstroms, switchDistance=10*self.unit.angstroms)
                 
 
             #TODO: Customnonbonded force option here

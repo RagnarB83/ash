@@ -118,6 +118,7 @@ class xTBTheory:
         #Parallellization
         #Todo: this has not been confirmed to work
         #Needs to be done before library-import??
+        print("nprocs:", nprocs)
         os.environ["OMP_NUM_THREADS"] = str(nprocs)
         os.environ["MKL_NUM_THREADS"] = "1"
         os.environ["OPENBLAS_NUM_THREADS"] = "1"
