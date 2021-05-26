@@ -10,7 +10,6 @@ import time
 ################################################
 # Interface to geomeTRIC Optimization Library
 ################################################
-# Todo: Add optional print-coords in each step option. Maybe only print QM-coords (if QM/MM).
 # https://github.com/leeping/geomeTRIC/blob/master/examples/constraints.txt
 # bond,angle and dihedral constraints work. If only atom indices provided and constrainvalue is False then constraint at current position
 # If constrainvalue=True then last entry should be value of constraint

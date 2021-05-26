@@ -10,7 +10,8 @@ class OpenMMTheory:
                  GROMACSfiles=False, gromacstopfile=None, grofile=None, gromacstopdir=None,
                  Amberfiles=False, amberprmtopfile=None, printlevel=2, do_energy_composition=False,
                  xmlfile=None, periodic=False, periodic_cell_dimensions=None, customnonbondedforce=False,
-                 delete_QM1_MM1_bonded=False, watermodel=None, use_parmed=False, periodic_nonbonded_cutoff=12):
+                 delete_QM1_MM1_bonded=False, watermodel=None, use_parmed=False, periodic_nonbonded_cutoff=12,
+                 dispersion_correction=False):
         
         module_init_time = time.time()
         # OPEN MM load
@@ -213,8 +214,9 @@ class OpenMMTheory:
                                             nonbondedCutoff=periodic_nonbonded_cutoff * self.unit.angstroms, switchDistance=10*self.unit.angstroms)
                 
 
-            #TODO: Customnonbonded force option here
+            #TODO: Customnonbonded force option. Currently disabled
             print("OpenMM system created")
+            #Force modification here
             print("OpenMM Forces defined:", self.system.getForces())
             for i,force in enumerate(self.system.getForces()):
                 if isinstance(force, simtk.openmm.CustomNonbondedForce):
@@ -222,9 +224,12 @@ class OpenMMTheory:
                     print('LRC? %s' % force.getUseLongRangeCorrection())
                     force.setUseLongRangeCorrection(False)
                 elif isinstance(force, simtk.openmm.NonbondedForce):
-                    print('NonbondedForce: %s' % force.getUseSwitchingFunction())
-                    print('LRC? %s' % force.getUseDispersionCorrection())
-                    force.setUseDispersionCorrection(False)
+                    #Turn Dispersion correction on/off depending on user
+                    #NOTE: Default: False   To be revisited
+                    force.setUseDispersionCorrection(dispersion_correction)
+                    print('Use SwitchingFunction: %s' % force.getUseSwitchingFunction())
+                    print('Long-range Dispersion correction %s' % force.getUseDispersionCorrection())
+
 
                     # Set PME Parameters if desired
                     #force.setPMEParameters(3.285326106/self.unit.nanometers,60, 64, 60) 
