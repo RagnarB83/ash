@@ -11,7 +11,7 @@ class OpenMMTheory:
                  Amberfiles=False, amberprmtopfile=None, printlevel=2, do_energy_composition=False,
                  xmlfile=None, periodic=False, periodic_cell_dimensions=None, customnonbondedforce=False,
                  delete_QM1_MM1_bonded=False, watermodel=None, use_parmed=False, periodic_nonbonded_cutoff=12,
-                 dispersion_correction=False):
+                 dispersion_correction=False, switching_function=False):
         
         module_init_time = time.time()
         # OPEN MM load
@@ -226,9 +226,12 @@ class OpenMMTheory:
                 elif isinstance(force, simtk.openmm.NonbondedForce):
                     #Turn Dispersion correction on/off depending on user
                     #NOTE: Default: False   To be revisited
-                    force.setUseDispersionCorrection(dispersion_correction)
+                    if dispersion_correction == True:
+                        force.setUseDispersionCorrection(dispersion_correction)
+                    if switching_function == True:
+                        force.setUseSwitchingFunction(switching_function)
                     print('Use SwitchingFunction: %s' % force.getUseSwitchingFunction())
-                    print('Long-range Dispersion correction %s' % force.getUseDispersionCorrection())
+                    print('Use Long-range Dispersion correction: %s' % force.getUseDispersionCorrection())
 
 
                     # Set PME Parameters if desired
