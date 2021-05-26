@@ -11,7 +11,7 @@ class OpenMMTheory:
                  Amberfiles=False, amberprmtopfile=None, printlevel=2, do_energy_composition=False,
                  xmlfile=None, periodic=False, periodic_cell_dimensions=None, customnonbondedforce=False,
                  delete_QM1_MM1_bonded=False, watermodel=None, use_parmed=False, periodic_nonbonded_cutoff=12,
-                 dispersion_correction=False, switching_function=False):
+                 dispersion_correction=False, switching_function=False, switching_function_distance=1.1):
         
         module_init_time = time.time()
         # OPEN MM load
@@ -125,6 +125,8 @@ class OpenMMTheory:
                 
             else:
                 print("Using built-in OpenMM routines to read GROMACS topology")
+                print("Warning: may fail if virtual sites present (e.g. TIP4P residues)")
+                print("Use parmed=True  to avoid")
                 gro = simtk.openmm.app.GromacsGroFile(grofile)
                 self.grotop = simtk.openmm.app.GromacsTopFile(gromacstopfile, periodicBoxVectors=gro.getPeriodicBoxVectors(),
                                     includeDir=gromacstopdir)
@@ -230,6 +232,10 @@ class OpenMMTheory:
                         force.setUseDispersionCorrection(dispersion_correction)
                     if switching_function == True:
                         force.setUseSwitchingFunction(switching_function)
+                        #Switching distance in nm. To be looked at further
+                        force.setSwitchingDistance(switching_function_distance)
+                        
+                    print("Periodic cutoff distance: {} nm", force.getCutoffDistance)
                     print('Use SwitchingFunction: %s' % force.getUseSwitchingFunction())
                     print('Use Long-range Dispersion correction: %s' % force.getUseDispersionCorrection())
 
