@@ -234,7 +234,8 @@ class OpenMMTheory:
                         force.setUseSwitchingFunction(switching_function)
                         #Switching distance in nm. To be looked at further
                         force.setSwitchingDistance(switching_function_distance)
-                        
+                        print('SwitchingFunction distance: %s' % force.getSwitchingDistance())
+                    
                     print("Periodic cutoff distance: {} nm", force.getCutoffDistance)
                     print('Use SwitchingFunction: %s' % force.getUseSwitchingFunction())
                     print('Use Long-range Dispersion correction: %s' % force.getUseDispersionCorrection())
