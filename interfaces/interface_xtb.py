@@ -90,6 +90,8 @@ class xTBTheory:
         list_files.append('wbo')
         list_files.append('xtbinput')
         list_files.append('pcharge')
+        list_files.append('xtbtopo.mol')
+        
         for file in list_files:
             try:
                 os.remove(file)
