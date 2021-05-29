@@ -92,12 +92,11 @@ path_to_julia=$thisdir/julia-${juliaversion}/bin
 rm -rf julia-python-bundle
 mkdir -p julia-python-bundle
 
-#TODO: get full path?
 # Set Julia packages path
 export JULIA_DEPOT_PATH=$thisdir/julia-python-bundle
 
 #Install Julia packages
-echo "Step 2. Downloading and install Julia packages"
+echo "Step 2. Downloading and installing Julia packages"
 $path_to_julia/julia julia-packages-setup.jl
 
 #Adding Julia to PATH
@@ -109,7 +108,7 @@ echo "Step 3. Downloading and installing Python3 packages"
 if [ $path_to_python3_dir ]
 then
 
-  #Install numpy just in case
+  #Install numpy in case missing
   pip3 install numpy
   #Geometric
   pip3 install geometric
@@ -128,8 +127,9 @@ fi
 
 # Change python3 to be used in python3_ash to the Conda.jl python3
 echo "Step 4. Modifying python3_ash binary"
+#NOTE: This is not really necessary if set_environment_ash.sh is set
 #sed -i "s:/usr/bin/env python3:/usr/bin/env ${path_to_python3_dir}/python3:g" python3_ash
-echo "#!/bin/bash" > python3_ash
+echo "#!/usr/bin/env ${path_to_python3_dir}/python3" > python3_ash
 echo "# -*- coding: utf-8 -*-" >> python3_ash
 echo "#Note: python-jl fix so that PyJulia works without problems" >> python3_ash
 echo "#Note: This file needs to be made executable: chmod +x python3_ash" >> python3_ash
