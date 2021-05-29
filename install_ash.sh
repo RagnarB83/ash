@@ -119,8 +119,8 @@ if [[ ${path_to_pip_dir} == $path_to_python3_dir ]]
 then
   pipcommand=$path_to_pip_exe
   echo "pipcommand is : $pipcommand"
-elif
-  [[ ${path_to_pip3_dir} == $path_to_python3_dir ]] 
+elif [[ ${path_to_pip3_dir} == $path_to_python3_dir ]]
+then
   pipcommand=$path_to_pip3_exe
   echo "pipcommand is : $pipcommand"
 else
