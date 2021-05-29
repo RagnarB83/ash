@@ -85,7 +85,7 @@ class xTBTheory:
         list_files.append(self.filename + '.out')
         list_files.append('xtbrestart')
         list_files.append('molden.input')
-        list_files.append('charges')
+        list_files.append('chargess')
         list_files.append('pcgrad')
         list_files.append('wbo')
         list_files.append('xtbinput')

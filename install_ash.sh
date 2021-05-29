@@ -65,18 +65,19 @@ echo ""
 echo "Current directory is:  $thisdir"
 
 echo ""
-echo "Step 1. Downloading and installing Julia"
+echo "Step 1. Julia setup"
 
 # Julia major version var: 1.6.1 => 1.6. Used in download URL
 juliamajorversion=${juliaversion%??}
-#Download previous Julia dirs
-rm -rf julia-${juliaversion}
-rm -rf julia-python-bundle
 
 #Download Julia and uncompress
 if [ $download_julia = true ]
 then
+  echo "Downloading Julia"
+  rm -rf julia-${juliaversion}
   wget https://julialang-s3.julialang.org/bin/linux/x64/${juliamajorversion}/julia-${juliaversion}-linux-x86_64.tar.gz
+else
+ echo "Skipping Julia download. Assuming file julia-${juliaversion}-linux-x86_64.tar.gz is present"
 fi
 
 #Deleting old
@@ -86,7 +87,9 @@ gunzip julia-${juliaversion}-linux-x86_64.tar.gz
 tar -xf julia-${juliaversion}-linux-x86_64.tar
 
 path_to_julia=$thisdir/julia-${juliaversion}/bin
-#Create julia-python-bundle dir
+
+#Delete old and Create julia-python-bundle dir
+rm -rf julia-python-bundle
 mkdir -p julia-python-bundle
 
 #TODO: get full path?
@@ -126,8 +129,17 @@ fi
 # Change python3 to be used in python3_ash to the Conda.jl python3
 echo "Step 4. Modifying python3_ash binary"
 #sed -i "s:/usr/bin/env python3:/usr/bin/env ${path_to_python3_dir}/python3:g" python3_ash
-echo "#!/bin/bash" > set_environment_ash.sh
-echo "export ASHPATH=${thisdir}" >> set_environment_ash.sh
+echo "#!/bin/bash" > python3_ash
+echo "# -*- coding: utf-8 -*-" >> python3_ash
+echo "#Note: python-jl fix so that PyJulia works without problems" >> python3_ash
+echo "#Note: This file needs to be made executable: chmod +x python3_ash" >> python3_ash
+echo "import sys" >> python3_ash
+echo "import re" >> python3_ash
+echo "" >> python3_ash
+echo "from julia.python_jl import main" >> python3_ash
+echo "if __name__ == '__main__':" >> python3_ash
+echo "    sys.argv[0] = re.sub(r'(-script\.pyw|\.exe)?$', '', sys.argv[0])" >> python3_ash
+echo "    sys.exit(main())" >> python3_ash
 #Making python3_ash executable
 chmod uog+x python3_ash
 
