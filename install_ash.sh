@@ -105,16 +105,39 @@ export PATH=$path_to_julia:$PATH
 echo "Julia packages and setup done"
 echo ""
 echo "Step 3. Downloading and installing Python3 packages"
-if [ $path_to_python3_dir ]
-then
 
-  #Install numpy in case missing
-  pip3 install numpy
-  #Geometric
-  pip3 install geometric
-  #PyJulia. Julia needs to be available
-  pip3 install julia
-fi
+#Check if pip or pip3 is in correct location
+path_to_pip_exe=$(which pip)
+path_to_pip_dir=${path_to_pip_exe%/pip}
+path_to_pip3_exe=$(which pip3)
+path_to_pip3_dir=${path_to_pip3_exe%/pip3}
+
+echo "Finding correct pip"
+if [[ ${path_to_pip_dir} == $path_to_python3_dir ]]
+  pipcommand=$path_to_pip_exe
+  echo "pipcommand is : $pipcommand"
+elif
+  [[ ${path_to_pip3_dir} == $path_to_python3_dir ]] 
+  pipcommand=$path_to_pip3_exe
+  echo "pipcommand is : $pipcommand"
+else
+  echo "Did not find pip executable in same dir as python3"
+  echo "which pip gives: $path_to_pip_exe"
+  echo "which pip3 gives: $path_to_pip3_exe"
+  echo "something wrong with environment?"
+  echo "Exiting."
+  exit
+
+#Install numpy in case missing
+$pipcommand install numpy
+
+#Geometric
+$pipcommand install geometric
+
+#PyJulia. Julia needs to be available
+$pipcommand install julia
+
+
 #elif [ $use_julia_conda = true ]
 #then
 #  $thisdir/julia-${juliaversion}/bin/julia julia-conda-setup.jl
