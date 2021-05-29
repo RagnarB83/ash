@@ -75,6 +75,8 @@ if [ $download_julia = true ]
 then
   echo "Downloading Julia"
   rm -rf julia-${juliaversion}
+  rm -rf julia-${juliaversion}-linux-x86_64.tar.gz
+  rm -rf julia-${juliaversion}-linux-x86_64.tar
   wget https://julialang-s3.julialang.org/bin/linux/x64/${juliamajorversion}/julia-${juliaversion}-linux-x86_64.tar.gz
 else
  echo "Skipping Julia download. Assuming file julia-${juliaversion}-linux-x86_64.tar.gz is present"
