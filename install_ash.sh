@@ -114,6 +114,7 @@ path_to_pip3_dir=${path_to_pip3_exe%/pip3}
 
 echo "Finding correct pip"
 if [[ ${path_to_pip_dir} == $path_to_python3_dir ]]
+then
   pipcommand=$path_to_pip_exe
   echo "pipcommand is : $pipcommand"
 elif
@@ -127,6 +128,7 @@ else
   echo "something wrong with environment?"
   echo "Exiting."
   exit
+fi
 
 #Install numpy in case missing
 $pipcommand install numpy
