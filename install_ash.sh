@@ -8,20 +8,25 @@
 #Settings
 #________
 
+#Download Julia or not (otherwise a julia tar.gz file is needed)
 download_julia=true
 
-#Julia version to use (1.6.1 is recommended)
+#Julia version to download/use (1.6.1 is recommended)
 juliaversion="1.6.1"
 
-#Path to Python3 executable can be set here. Otherwise script will try to find python3 in PATH
+#Path to Python3 executable can be set below (uncomment first). If not set, script will try to find python3 in PATH
 #path_to_python3_exe="/usr/bin/python3"
 
-#use_julia_conda=true #problem with python3 binary inside Conda.jl
+# Force pip to install in user home directory instead of in default global Python location.
+localuserpipoption=false 
 
-#Whether to install Python packages in this dir. Potentially problematic
+#Whether to install Python packages in ASH dir instead. Potentially problematic
 localpipinstallation=false
 
-#######################
+# Use conda and python inside Julia. Problematic and disabled
+#use_julia_conda=true #problem with python3 binary inside Conda.jl
+
+###############################################
 echo "-------------------------------"
 echo "ASH installation script"
 echo "-------------------------------"
@@ -143,14 +148,22 @@ mkdir pythonpackages
 export PIP_TARGET=$thisdir/pythonpackages
 fi
 
+# Option to force pip install in user's home directory
+if [[ $localuserpipoption == true ]]
+then
+piparg="--user"
+else
+piparg=""
+fi
+
 #Install numpy in case missing
-$pipcommand install numpy
+$pipcommand install numpy $piparg
 
 #Geometric
-$pipcommand install geometric
+$pipcommand install geometric $piparg
 
 #PyJulia. Julia needs to be available
-$pipcommand install julia
+$pipcommand install julia $piparg
 
 
 #elif [ $use_julia_conda = true ]
@@ -193,7 +206,7 @@ echo "export PATH=\$python3path:\$ASHPATH:\$JULIAPATH:\$PATH" >> set_environment
 echo "export LD_LIBRARY_PATH=$ASHPATH/lib:\$LD_LIBRARY_PATH" >> set_environment_ash.sh
 
 
-echo "Installation of ASH is successful!"
+echo "Installation of ASH was successful!"
 echo ""
 echo "Remember:"
 echo "     - Run: source ${thisdir}/set_environment_ash.sh to activate ASH!"
