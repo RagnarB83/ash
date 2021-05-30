@@ -10,7 +10,8 @@ class OpenMMTheory:
                  GROMACSfiles=False, gromacstopfile=None, grofile=None, gromacstopdir=None,
                  Amberfiles=False, amberprmtopfile=None, printlevel=2, do_energy_composition=False,
                  xmlfile=None, periodic=False, periodic_cell_dimensions=None, customnonbondedforce=False,
-                 delete_QM1_MM1_bonded=False):
+                 delete_QM1_MM1_bonded=False, watermodel=None, use_parmed=False, periodic_nonbonded_cutoff=12,
+                 dispersion_correction=False, switching_function=False, switching_function_distance=1.1):
         
         module_init_time = time.time()
         # OPEN MM load
@@ -26,6 +27,18 @@ class OpenMMTheory:
         print(BC.WARNING, BC.BOLD, "------------Defining OpenMM object-------------", BC.END)
         #Printlevel
         self.printlevel=printlevel
+
+        #Load Parmed if requested
+        if use_parmed == True:
+            print("Using Parmed to read topologyfiles")
+            try:
+                import parmed
+            except:
+                print("Problem importing parmed Python library")
+                print("Make sure parmed is present in your Python.")
+                print("Parmed can be installed using pip: pip install parmed")
+                exit()
+
 
         # Setting for controlling whether QM1-MM1 bonded terms are deleted or not in a QM/MM job
         #See modify_bonded_forces
@@ -61,6 +74,9 @@ class OpenMMTheory:
         self.unit=simtk.unit
         self.Vec3=simtk.openmm.Vec3
 
+        #Positions. Generally not used but can be if if e.g. grofile has been read in.
+        #Purpose: set virtual sites etc.
+        self.positions=None
 
         #TODO: Should we keep this? Probably not. Coordinates would be handled by ASH.
         #PDB_ygg_frag = Fragment(pdbfile=pdbfile, conncalc=False)
@@ -70,15 +86,22 @@ class OpenMMTheory:
 
         self.Forcefield=None
         #What type of forcefield files to read. Reads in different way.
+        print("Now reading forcefield files")
+        print("Note: OpenMM will fail in this step if parameters are missing in topology and parameter files (e.g. nonbonded entries)")
         # #Always creates object we call self.forcefield that contains topology attribute
         if CHARMMfiles is True:
             self.Forcefield='CHARMM'
             print("Reading CHARMM files")
-            print("Note: OpenMM will fail here if parameters are missing in topology and parameter files (e.g. nonbonded entries)")
-            # Load CHARMM PSF files. Both CHARMM-style and XPLOR allowed I believe. Todo: Check
             self.psffile=psffile
-            self.psf = simtk.openmm.app.CharmmPsfFile(psffile)
-            
+            if use_parmed == True:
+                self.psf = parmed.charmm.CharmmPsfFile(psffile)
+                self.params = parmed.charmm.CharmmParameterSet(charmmtopfile, charmmprmfile)
+            else:
+                # Load CHARMM PSF files via native routine.
+                self.psf = simtk.openmm.app.CharmmPsfFile(psffile)                
+                self.params = simtk.openmm.app.CharmmParameterSet(charmmtopfile, charmmprmfile)
+            self.topology = self.psf.topology
+            self.forcefield = self.psf
             #Grab resnames from psf-object
             #Note: OpenMM uses 0-indexing
             self.resnames=[self.psf.atom_list[i].residue.resname for i in range(0,len(self.psf.atom_list))]
@@ -87,20 +110,29 @@ class OpenMMTheory:
             self.atomtypes=[self.psf.atom_list[i].attype for i in range(0,len(self.psf.atom_list))]
             #TODO: Note: For atomnames it seems OpenMM converts atomnames to its own. Perhaps not useful
             self.atomnames=[self.psf.atom_list[i].name for i in range(0,len(self.psf.atom_list))]
-            
-            self.params = simtk.openmm.app.CharmmParameterSet(charmmtopfile, charmmprmfile)
-            self.topology = self.psf.topology
-            self.forcefield = self.psf
-
         elif GROMACSfiles is True:
             print("Warning: Gromacs-files interface not tested")
             #Reading grofile, not for coordinates but for periodic vectors
-            gro = simtk.openmm.app.GromacsGroFile(grofile)
-            self.grotop = simtk.openmm.app.GromacsTopFile(gromacstopfile, periodicBoxVectors=gro.getPeriodicBoxVectors(),
-                                 includeDir=gromacstopdir)
+            if use_parmed == True:    
+                gmx_top = parmed.gromacs.GromacsTopologyFile(gromacstopfile)
+                gmx_gro = parmed.gromacs.GromacsGroFile.parse(grofile)
+                gmx_top.box = gmx_gro.box
+                gmx_top.positions = gmx_gro.positions
+                self.positions = gmx_top.positions
+                
+                self.topology = gmx_top.topology
+                self.forcefield = gmx_top
+                
+            else:
+                print("Using built-in OpenMM routines to read GROMACS topology")
+                print("Warning: may fail if virtual sites present (e.g. TIP4P residues)")
+                print("Use parmed=True  to avoid")
+                gro = simtk.openmm.app.GromacsGroFile(grofile)
+                self.grotop = simtk.openmm.app.GromacsTopFile(gromacstopfile, periodicBoxVectors=gro.getPeriodicBoxVectors(),
+                                    includeDir=gromacstopdir)
 
-            self.topology = self.grotop.topology
-            self.forcefield=self.grotop
+                self.topology = self.grotop.topology
+                self.forcefield=self.grotop
             # Create an OpenMM system by calling createSystem on grotop
             #self.system = self.grotop.createSystem(nonbondedMethod=simtk.openmm.app.NoCutoff,
             #                                    nonbondedCutoff=1 * simtk.openmm.unit.nanometer)
@@ -108,8 +140,12 @@ class OpenMMTheory:
         elif Amberfiles is True:
             self.Forcefield='Amber'
             print("Warning: Amber-files interface not well tested. Be careful")
-            #Note: Only new-style Amber7 prmtop files work
-            self.prmtop = simtk.openmm.app.AmberPrmtopFile(amberprmtopfile)
+            print("Warning: Only new-style Amber7 prmtopfile will work")
+            if use_parmed == True: 
+                self.prmtop = parmed.load_file(amberprmtopfile)
+            else:
+                #Note: Only new-style Amber7 prmtop files work
+                self.prmtop = simtk.openmm.app.AmberPrmtopFile(amberprmtopfile)
             self.topology = self.prmtop.topology
             self.forcefield= self.prmtop
             # Create an OpenMM system by calling createSystem on prmtop
@@ -133,42 +169,56 @@ class OpenMMTheory:
             #forces = {self.system.getForce(index).__class__.__name__: self.system.getForce(index) for index in range(self.system.getNumForces())}
             #self.nonbonded_force = forces['NonbondedForce']
 
+        # Deal with possible 4/5 site water model like TIP4P
+        #NOTE: EXPERIMENTAL
+        #NOTE: We have no positions here. Make separate callable function?????
+        
+        #if watermodel != None:
+        #    print("watermodel:", watermodel)
+        #    modeller = simtk.openmm.app.Modeller(self.topology, pdb.positions)
+        #    modeller.addExtraParticles(self.forcefield)
+        #    simtk.openmm.app.app.PDBFile.writeFile(modeller.topology, modeller.positions, open('test-water.pdb', 'w'))
 
         #Now after topology is defined we can create system
+        #Get number of atoms
         self.numatoms=int(self.forcefield.topology.getNumAtoms())
+        print("Number of atoms in OpenMM object", self.numatoms)
+        
         #Setting active and frozen variables once topology is in place
         #NOTE: Is this actually used?
         self.set_active_and_frozen_regions(active_atoms=active_atoms, frozen_atoms=frozen_atoms)
 
 
-
         #Periodic or non-periodic ystem
         if self.Periodic is True:
             print("System is periodic")
-            self.periodic_cell_dimensions = periodic_cell_dimensions
-            print("Periodic cell dimensions:", periodic_cell_dimensions)
-            self.a = periodic_cell_dimensions[0] * self.unit.angstroms
-            self.b = periodic_cell_dimensions[1] * self.unit.angstroms
-            self.c = periodic_cell_dimensions[2] * self.unit.angstroms
-            
+            print("Nonbonded cutoff is {} Angstrom".format(periodic_nonbonded_cutoff))
             #Parameters here are based on OpenMM DHFR example
             
             if CHARMMfiles is True:
+                self.periodic_cell_dimensions = periodic_cell_dimensions
+                print("Periodic cell dimensions:", periodic_cell_dimensions)
+                self.a = periodic_cell_dimensions[0] * self.unit.angstroms
+                self.b = periodic_cell_dimensions[1] * self.unit.angstroms
+                self.c = periodic_cell_dimensions[2] * self.unit.angstroms
                 #Box vectors can only be set here for CHARMM
                 self.forcefield.setBox(self.a, self.b, self.c)
                 self.system = self.forcefield.createSystem(self.params, nonbondedMethod=simtk.openmm.app.PME,
-                                            nonbondedCutoff=12 * self.unit.angstroms, switchDistance=10*self.unit.angstroms)
+                                            nonbondedCutoff=periodic_nonbonded_cutoff * self.unit.angstroms, switchDistance=10*self.unit.angstroms)
             elif GROMACSfiles is True:
+                
                 #Note: Turned off switchDistance. Not available for GROMACS?
+                #
                 self.system = self.forcefield.createSystem(nonbondedMethod=simtk.openmm.app.PME,
-                                            nonbondedCutoff=12 * self.unit.angstroms, ewaldErrorTolerance=0.0005)
+                                            nonbondedCutoff=periodic_nonbonded_cutoff * self.unit.angstroms, ewaldErrorTolerance=0.0005)
             else:
                 self.system = self.forcefield.createSystem(nonbondedMethod=simtk.openmm.app.PME,
-                                            nonbondedCutoff=12 * self.unit.angstroms, switchDistance=10*self.unit.angstroms)
+                                            nonbondedCutoff=periodic_nonbonded_cutoff * self.unit.angstroms, switchDistance=10*self.unit.angstroms)
                 
 
-            #TODO: Customnonbonded force option here
+            #TODO: Customnonbonded force option. Currently disabled
             print("OpenMM system created")
+            #Force modification here
             print("OpenMM Forces defined:", self.system.getForces())
             for i,force in enumerate(self.system.getForces()):
                 if isinstance(force, simtk.openmm.CustomNonbondedForce):
@@ -176,9 +226,20 @@ class OpenMMTheory:
                     print('LRC? %s' % force.getUseLongRangeCorrection())
                     force.setUseLongRangeCorrection(False)
                 elif isinstance(force, simtk.openmm.NonbondedForce):
-                    print('NonbondedForce: %s' % force.getUseSwitchingFunction())
-                    print('LRC? %s' % force.getUseDispersionCorrection())
-                    force.setUseDispersionCorrection(False)
+                    #Turn Dispersion correction on/off depending on user
+                    #NOTE: Default: False   To be revisited
+                    if dispersion_correction == True:
+                        force.setUseDispersionCorrection(dispersion_correction)
+                    if switching_function == True:
+                        force.setUseSwitchingFunction(switching_function)
+                        #Switching distance in nm. To be looked at further
+                        force.setSwitchingDistance(switching_function_distance)
+                        print('SwitchingFunction distance: %s' % force.getSwitchingDistance())
+                    
+                    print("Periodic cutoff distance: {} nm", force.getCutoffDistance)
+                    print('Use SwitchingFunction: %s' % force.getUseSwitchingFunction())
+                    print('Use Long-range Dispersion correction: %s' % force.getUseDispersionCorrection())
+
 
                     # Set PME Parameters if desired
                     #force.setPMEParameters(3.285326106/self.unit.nanometers,60, 64, 60) 
@@ -315,8 +376,6 @@ class OpenMMTheory:
         
     def set_active_and_frozen_regions(self, active_atoms=None, frozen_atoms=None):
         #FROZEN AND ACTIVE ATOMS
-        
-        print("self.numatoms:", self.numatoms)
         self.allatoms=list(range(0,self.numatoms))
         if active_atoms is None and frozen_atoms is None:
             print("All {} atoms active, no atoms frozen".format(len(self.allatoms)))

@@ -7,12 +7,15 @@ elements=['H', 'He', 'Li', 'Be', 'B', 'C', 'N', 'O', 'F', 'Ne', 'Na', 'Mg', 'Al'
 
 
 #Conversion of common atom types to elements. Used by: module_coords: conv_atomtypes_elems and read_gromacsfile
-atomtypes_dict={'HA':'H', 'HB':'H', 'HW':'H', 'HH':'H', 'HN':'H', 'HD':'H', 'HZ':'H', 'HG':'H', 'HE':'H',
+#Added MW as atomtype for M-site. Problem for QM-code
+atomtypes_dict={'H':'H','HA':'H', 'HB':'H', 'HW':'H', 'HH':'H', 'HN':'H', 'HD':'H', 'HZ':'H', 'HG':'H', 'HE':'H', 'HT':'H',
         'NA':'Na', 
-        'CD':'C', 'CH':'C', 'CA':'C', 'CB':'C', 'CG':'C', 'CZ':'C', 'CE':'C',
-        'SD':'S', 'SG':'S',
-        'OE':'O', 'OG':'O', 'OH':'O', 'OW':'O', 'OT':'O', 'OD':'O', 
-        'NZ':'N', 'NH':'N', 'NE':'N', 'ND':'N'}
+        'C':'C','CD':'C', 'CH':'C', 'CA':'C', 'CB':'C', 'CG':'C', 'CZ':'C', 'CE':'C',
+        'S':'S','SD':'S', 'SG':'S',
+        'O':'O', 'OE':'O', 'OG':'O', 'OH':'O', 'OW':'O', 'OT':'O', 'OD':'O', 'OP':'O',
+        'N':'N','NZ':'N', 'NH':'N', 'NE':'N', 'ND':'N',
+        'CL':'Cl',
+        'MW':'M'}
 
 
 # Element class 

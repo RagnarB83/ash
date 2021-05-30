@@ -70,9 +70,9 @@ class Fragment:
         elif xyzfile is not None:
             self.read_xyzfile(xyzfile, readchargemult=readchargemult,conncalc=conncalc)
         elif pdbfile is not None:
-            self.read_pdbfile(pdbfile, conncalc=conncalc)
+            self.read_pdbfile(pdbfile, conncalc=False)
         elif grofile is not None:
-            self.read_grofile(grofile, conncalc=conncalc)
+            self.read_grofile(grofile, conncalc=False)
         elif amber_inpcrdfile is not None:
             print("Reading Amber INPCRD file")
             if amber_prmtopfile == None:
@@ -173,7 +173,7 @@ class Fragment:
             self.calc_connectivity(scale=scale, tol=tol)
 
     #Read GROMACS coordinates file
-    def read_grofile(self,filename,conncalc=False):
+    def read_grofile(self,filename,conncalc=False, scale=None, tol=None):
         if self.printlevel >= 2:
             print("Reading coordinates from Gromacs GRO file \"{}\" into fragment".format(filename))
         try:
@@ -532,17 +532,21 @@ class Fragment:
 #TODO: Reorganize and move to dictionaries_lists ?
 #Elements and atom numbers
 #elements=['H', 'He', 'Li', 'Be', 'B', 'C', 'N', 'O', 'F', 'Ne', 'Na', 'Mg', 'Al', 'Si', 'P', 'S', 'Cl', 'Ar', 'K', 'Ca', 'Sc', 'Ti', 'V', 'Cr', 'Mn', 'Fe', 'Co', 'Ni', 'Cu', 'Zn', 'Ga', 'Ge', 'As', 'Se', 'Br', 'Kr', 'Rb', 'Sr', 'Y', 'Zr', 'Nb', 'Mo', 'Tc', 'Ru', 'Rh', 'Pd', 'Ag', 'Cd', 'In', 'Sn', 'Sb', 'Te', 'I', 'Xe', 'Cs', 'Ba', 'La', 'Ce', 'Pr', 'Nd', 'Pm', 'Sm', 'Eu', 'Gd', 'Tb', 'Dy', 'Ho', 'Er', 'Tm', 'Yb', 'Lu', 'Hf', 'Ta', 'W', 'Re', 'Os', 'Ir', 'Pt', 'Au', 'Hg', 'Tl', 'Pb', 'Bi', 'Po', 'At', 'Rn', 'Fr', 'Ra', 'Ac', 'Th', 'Pa', 'U', 'Np', 'Pu', 'Am', 'Cm', 'Bk', 'Cf', 'Es', 'Fm', 'Md', 'No', 'Lr']
-elematomnumbers = {'h':1, 'he': 2, 'li':3, 'be':4, 'b':5, 'c':6, 'n':7, 'o':8, 'f':9, 'ne':10, 'na':11, 'mg':12, 'al':13, 'si':14, 'p':15, 's':16, 'cl':17, 'ar':18, 'k':19, 'ca':20, 'sc':21, 'ti':22, 'v':23, 'cr':24, 'mn':25, 'fe':26, 'co':27, 'ni':28, 'cu':29, 'zn':30, 'ga':31, 'ge':32, 'as':33, 'se':34, 'br':35, 'kr':36, 'rb':37, 'sr':38, 'y':39, 'zr':40, 'nb':41, 'mo':42, 'tc':43, 'ru':44, 'rh':45, 'pd':46, 'ag':47, 'cd':48, 'in':49, 'sn':50, 'sb':51, 'te':52, 'i':53, 'xe':54, 'cs':55, 'ba':56, 'la':57, 'ce':58, 'pr':59, 'nd':60, 'pm':61, 'sm':62, 'eu':63, 'gd':64, 'tb':65, 'dy':66, 'ho':67, 'er':68, 'tm':69, 'yb':70, 'lu':71, 'hf':72, 'ta':73, 'w':74, 're':75, 'os':76, 'ir':77, 'pt':78, 'au':79, 'hg':80, 'tl':81, 'pb':82, 'bi':83, 'po':84, 'at':85, 'rn':86, 'fr':87, 'ra':88, 'ac':89, 'th':90, 'pa':91, 'u':92, 'np':93, 'pu':94, 'am':95, 'cm':96, 'bk':97, 'cf':98, 'es':99, 'fm':100, 'md':101, 'no':102, 'lr':103, 'rf':104, 'db':105, 'sg':106, 'bh':107, 'hs':108, 'mt':109, 'ds':110, 'rg':111, 'cn':112, 'nh':113, 'fl':114, 'mc':115, 'lv':116, 'ts':117, 'og':118}
+#Added M-site dummy atom
+elematomnumbers = {'m':0, 'h':1, 'he': 2, 'li':3, 'be':4, 'b':5, 'c':6, 'n':7, 'o':8, 'f':9, 'ne':10, 'na':11, 'mg':12, 'al':13, 'si':14, 'p':15, 's':16, 'cl':17, 'ar':18, 'k':19, 'ca':20, 'sc':21, 'ti':22, 'v':23, 'cr':24, 'mn':25, 'fe':26, 'co':27, 'ni':28, 'cu':29, 'zn':30, 'ga':31, 'ge':32, 'as':33, 'se':34, 'br':35, 'kr':36, 'rb':37, 'sr':38, 'y':39, 'zr':40, 'nb':41, 'mo':42, 'tc':43, 'ru':44, 'rh':45, 'pd':46, 'ag':47, 'cd':48, 'in':49, 'sn':50, 'sb':51, 'te':52, 'i':53, 'xe':54, 'cs':55, 'ba':56, 'la':57, 'ce':58, 'pr':59, 'nd':60, 'pm':61, 'sm':62, 'eu':63, 'gd':64, 'tb':65, 'dy':66, 'ho':67, 'er':68, 'tm':69, 'yb':70, 'lu':71, 'hf':72, 'ta':73, 'w':74, 're':75, 'os':76, 'ir':77, 'pt':78, 'au':79, 'hg':80, 'tl':81, 'pb':82, 'bi':83, 'po':84, 'at':85, 'rn':86, 'fr':87, 'ra':88, 'ac':89, 'th':90, 'pa':91, 'u':92, 'np':93, 'pu':94, 'am':95, 'cm':96, 'bk':97, 'cf':98, 'es':99, 'fm':100, 'md':101, 'no':102, 'lr':103, 'rf':104, 'db':105, 'sg':106, 'bh':107, 'hs':108, 'mt':109, 'ds':110, 'rg':111, 'cn':112, 'nh':113, 'fl':114, 'mc':115, 'lv':116, 'ts':117, 'og':118}
 
 #Atom masses
 atommasses = [1.00794, 4.002602, 6.94, 9.0121831, 10.81, 12.01070, 14.00670, 15.99940, 18.99840316, 20.1797, 22.98976928, 24.305, 26.9815385, 28.085, 30.973762, 32.065, 35.45, 39.948, 39.0983, 40.078, 44.955908, 47.867, 50.9415, 51.9961, 54.938044, 55.845, 58.933194, 58.6934, 63.546, 65.38, 69.723, 72.63, 74.921595, 78.971, 79.904, 83.798, 85.4678, 87.62, 88.90584, 91.224, 92.90637, 95.96, 97, 101.07, 102.9055, 106.42, 107.8682, 112.414, 114.818, 118.71, 121.76, 127.6, 126.90447, 131.293, 132.905452, 137.327, 138.90547, 140.116, 140.90766, 144.242, 145, 150.36, 151.964, 157.25, 158.92535, 162.5, 164.93033, 167.259, 168.93422, 173.054, 174.9668, 178.49, 180.94788, 183.84, 186.207, 190.23, 192.217, 195.084, 196.966569, 200.592, 204.38, 207.2, 208.9804, 209, 210, 222, 223, 226, 227, 232.0377, 231.03588, 238.02891, 237, 244, 243, 247, 247, 251, 252, 257, 258, 259, 262 ]
 #Covalent radii for elements (Alvarez) in Angstrom.
 #Used for connectivity
+#Added dummy atom, M
 eldict_covrad={'H':0.31, 'He':0.28, 'Li':1.28, 'Be':0.96, 'B':0.84, 'C':0.76, 'N':0.71, 'O':0.66, 'F':0.57, 'Ne':0.58, 'Na':1.66, 'Mg':1.41, 'Al':1.21, 'Si':1.11, 'P':1.07, 'S':1.05, 'Cl':1.02, 'Ar':1.06, 'K':2.03, 'Ca':1.76, 'Sc':1.70, 'Ti':1.6, 'V':1.53, 'Cr':1.39, 'Mn':1.61, 'Fe':1.52, 'Co':1.50, 'Ni':1.24, 'Cu':1.32, 'Zn':1.22, 'Ga':1.22, 'Ge':1.20, 'As':1.19, 'Se':1.20, 'Br':1.20, 'Kr':1.16, 'Rb':2.2, 'Sr':1.95, 'Y':1.9, 'Zr':1.75, 'Nb':1.64, 'Mo':1.54, 'Tc':1.47, 'Ru':1.46, 'Rh':1.42, 'Pd':1.39, 'Ag':1.45, 'Cd':1.44, 'In':1.42, 'Sn':1.39, 'Sb':1.39, 'Te':1.38, 'I':1.39, 'Xe':1.40, 'Cs':2.44, 'Ba':2.15, 'La':2.07, 'Ce':2.04, 'Pr':2.03, 'Nd':2.01, 'Pm':1.99, 'Sm':1.98, 'Eu':1.98, 'Gd':1.96, 'Tb':1.94, 'Dy':1.92, 'Ho':1.92, 'Er':1.89, 'Tm':1.90, 'Yb':1.87, 'Lu':1.87, 'Hf':1.75, 'Ta':1.70, 'W':1.62, 'Re':1.51, 'Os':1.44, 'Ir':1.41, 'Pt':1.36, 'Au':1.36, 'Hg':1.32, 'Tl':1.45, 'Pb':1.46, 'Bi':1.48, 'Po':1.40, 'At':1.50, 'Rn':1.50, 'U':1.96}
 #Modified radii for certain elements like Na, K
 eldict_covrad['Na']=0.0001
 eldict_covrad['K']=0.0001
-
+#Dummy atom M. For example the M-site on TIP4P model
+eldict_covrad['M']=0.0
+ 
 #Function to reformat element string to be correct('cu' or 'CU' become 'Cu')
 #Can also convert atomic-number (isatomnum flag)
 def reformat_element(elem,isatomnum=False):
@@ -1225,10 +1229,17 @@ def conv_atomtypes_elems(atomtype):
         [str]: [description]
     """
     try:
-        return dictionaries_lists.atomtypes_dict[atomtype]
+        element=dictionaries_lists.atomtypes_dict[atomtype]
+        return element
     except:
         #Assume correct element but could be wrongly formatted (e.g. FE instead of Fe) so reformatting
-        return reformat_element(atomtype)
+        try:
+            element = reformat_element(atomtype)
+            return element
+        except:
+            print("Atomtype: {} not recognized either as valid atomtype or element. Exiting".format(atomtype))
+            print("You might have to modify the atomtype/element information in coordinate file you're reading in")
+            exit()
 
 #Read GROMACS Gro coordinate file and box info
 #Read AMBERCRD file and coords and box info
@@ -1258,6 +1269,7 @@ def read_gromacsfile(grofile):
                 #Grabbing atomtype
                 atomtype=linelist[1]
                 atomtype = ''.join((item for item in atomtype if not item.isdigit()))
+                atomtype = atomtype.replace('\'','')
                 #Converting atomtype to element based on function above
                 elem=conv_atomtypes_elems(atomtype)
                 elems.append(elem)

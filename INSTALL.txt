@@ -3,10 +3,6 @@
 #Installation instructions
 ###########################
 
-#
-
-
-
 ###########################
 #SEMI-AUTOMATIC INSTALLATION
 #handles Python package addition and Julia installation and packages
@@ -29,8 +25,8 @@ See https://ash.readthedocs.io/en/latest/setup.html  for  detailed instructions 
 up and running
 
 Simple expert instructions:
-- Use a Python3 with Numpy. Make sure that in PATH.
-- Install Julia if not available and make sure that the Julia binary dir is in PATH.
+- Use a Python3 with Numpy. Make sure to have in PATH.
+- Install Julia if not available (Julia 1.6 recommended) and make sure that the Julia binary dir is in PATH.
 - Make sure ASH is in PATH:
 
 export ASHPATH=/path/to/ash  # Change /path/to/ash to the actual ASH directory location on your machine
@@ -38,14 +34,14 @@ export PYTHONPATH=$ASHPATH:$ASHPATH/lib:$PYTHONPATH
 export PATH=$ASHPATH:$PATH
 export LD_LIBRARY_PATH=$ASHPATH/lib:$LD_LIBRARY_PATH
 
-- pip3 install geometric  # Install geometry optimizer
-- pip3 install julia    #Install PyJulia inside Pythons
+- pip3 install geometric  # Install geometry optimizer python package
+- pip3 install julia    #Install PyJulia inside Python
 - Install Julia packages:   julia $ASHPATH/julia-packages-setup.jl 
 
 Note: On a computing cluster a single installation should be sufficient.
-Then set the environment variables for each user and each user has to run:
+Then set the environment variables for each user and each user has to run once:
    julia $ASHPATH/julia-packages-setup.jl 
-once.
+
 
 ###########################
 #AFTER INSTALLATION
@@ -62,7 +58,7 @@ once.
 
   If the 'which' commands point to the correct versions then you should be ready to go.
 
-- Copy ASH settings file to your home-directory and modify as needed
+- Copy ASH settings file to your user'ss home-directory and modify as needed
   cp /path/to/ash/ash_user_settings.ini ~/
 
 

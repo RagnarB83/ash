@@ -80,15 +80,23 @@ class xTBTheory:
     def cleanup(self):
         if self.printlevel >= 2:
             print("Cleaning up old xTB files")
-        try:
-            os.remove(self.filename+'.xyz')
-            os.remove(self.filename+'.out')
-            os.remove('gradient')
-            os.remove('charges')
-            os.remove('energy')
-            os.remove('xtbrestart')
-        except:
-            pass
+        list_files=[]
+        list_files.append(self.filename + '.xyz')
+        list_files.append(self.filename + '.out')
+        list_files.append('xtbrestart')
+        list_files.append('molden.input')
+        list_files.append('chargess')
+        list_files.append('pcgrad')
+        list_files.append('wbo')
+        list_files.append('xtbinput')
+        list_files.append('pcharge')
+        list_files.append('xtbtopo.mol')
+        
+        for file in list_files:
+            try:
+                os.remove(file)
+            except:
+                pass
     def run(self, current_coords=None, current_MM_coords=None, MMcharges=None, qm_elems=None,
                 elems=None, Grad=False, PC=False, nprocs=None):
         module_init_time=time.time()
@@ -118,6 +126,7 @@ class xTBTheory:
         #Parallellization
         #Todo: this has not been confirmed to work
         #Needs to be done before library-import??
+        print("nprocs:", nprocs)
         os.environ["OMP_NUM_THREADS"] = str(nprocs)
         os.environ["MKL_NUM_THREADS"] = "1"
         os.environ["OPENBLAS_NUM_THREADS"] = "1"
