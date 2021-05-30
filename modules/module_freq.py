@@ -62,15 +62,15 @@ def NumFreq(fragment=None, theory=None, npoint=1, displacement=0.005, hessatoms=
     allatoms=list(range(0,numatoms))
     if hessatoms is None:
         hessatoms=allatoms
-
-    if len(hessatoms_masses) != len(hessatoms):
-        print(BC.FAIL,"Error: Number of provided masses (hessatoms_masses keyword) is not equal to number of Hessian-atoms.")
-        print("Check input masses!",BC.END)
-        exit()
-    
     #Making sure hessatoms list is sorted
     hessatoms.sort()
 
+    if hessatoms_masses != None:
+        if len(hessatoms_masses) != len(hessatoms):
+            print(BC.FAIL,"Error: Number of provided masses (hessatoms_masses keyword) is not equal to number of Hessian-atoms.")
+            print("Check input masses!",BC.END)
+            exit()
+    
     displacement_bohr = displacement * constants.ang2bohr
 
     print("Starting Numerical Frequencies job for fragment")

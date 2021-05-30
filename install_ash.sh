@@ -17,6 +17,10 @@ juliaversion="1.6.1"
 #path_to_python3_exe="/usr/bin/python3"
 
 #use_julia_conda=true #problem with python3 binary inside Conda.jl
+
+#Whether to install Python packages in this dir. Potentially problematic
+localpipinstallation=false
+
 #######################
 echo "-------------------------------"
 echo "ASH installation script"
@@ -132,6 +136,13 @@ else
   exit
 fi
 
+if [[ $localpipinstallation == true ]]
+then
+echo "Installing python packages in local dir: $thisdir/pythonpackages "
+mkdir pythonpackages
+export PIP_TARGET=$thisdir/pythonpackages
+fi
+
 #Install numpy in case missing
 $pipcommand install numpy
 
@@ -177,7 +188,7 @@ echo "export ASHPATH=${thisdir}" >> set_environment_ash.sh
 echo "export python3path=${path_to_python3_dir}" >> set_environment_ash.sh
 echo "export JULIAPATH=${thisdir}/julia-${juliaversion}/bin" >> set_environment_ash.sh
 echo "export JULIA_DEPOT_PATH=${thisdir}/julia-python-bundle" >> set_environment_ash.sh
-echo "export PYTHONPATH=\$ASHPATH:\$ASHPATH/lib:\$PYTHONPATH" >> set_environment_ash.sh
+echo "export PYTHONPATH=\$ASHPATH:\$ASHPATH/lib:$ASHPATH/pythonpackages:\$PYTHONPATH" >> set_environment_ash.sh
 echo "export PATH=\$python3path:\$ASHPATH:\$JULIAPATH:\$PATH" >> set_environment_ash.sh
 echo "export LD_LIBRARY_PATH=$ASHPATH/lib:\$LD_LIBRARY_PATH" >> set_environment_ash.sh
 
