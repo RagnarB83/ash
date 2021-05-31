@@ -4,9 +4,9 @@
 #AUTO-INSTALLATION SCRIPT FOR ASH
 #this avoids manual setup of Python, Julia etc.
 ################################################
-#________
+#__________________
 #Settings
-#________
+#__________________
 
 #Download Julia or not (otherwise a julia tar.gz file is needed)
 download_julia=true
@@ -25,6 +25,12 @@ localpipinstallation=false
 
 # Use conda and python inside Julia. Problematic and disabled
 #use_julia_conda=true #problem with python3 binary inside Conda.jl
+
+
+#__________________
+# END OF SETTINGS
+#__________________
+
 
 ###############################################
 echo "-------------------------------"

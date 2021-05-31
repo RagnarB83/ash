@@ -451,7 +451,8 @@ def old_thermochemprotocol(Opt_theory=None, SP_theory=None, fraglist=None, stoic
     #print_time_rel(module_init_time, modulename='thermochemprotocol')
 
 def auto_active_space(fragment=None, orcadir=None, basis="def2-SVP", scalar_rel=None, charge=None, mult=None, 
-    initial_orbitals='MP2', functional='TPSS', smeartemp=5000, tgen=1e-1, selection_thresholds=[1.999,0.001]):
+    initial_orbitals='MP2', functional='TPSS', smeartemp=5000, tgen=1e-1, selection_thresholds=[1.999,0.001],
+    numcores=1):
     print_line_with_mainheader("auto_active_space function")
     print("Will do N-step orbital selection scheme")
     print("basis:", basis)
@@ -461,6 +462,7 @@ def auto_active_space(fragment=None, orcadir=None, basis="def2-SVP", scalar_rel=
     print("initial_orbitals:", initial_orbitals)
     print("2. ICE-CI Orbital Step")
     print("ICE-CI tgen:", tgen)
+    print("Numcores:", numcores)
     #1. Converge an RI-MP2 natural orbital calculation
     if scalar_rel == None:
         scalar_rel_keyword=""
@@ -481,7 +483,8 @@ def auto_active_space(fragment=None, orcadir=None, basis="def2-SVP", scalar_rel=
         natorbs true
         end
         """
-        ORCAcalc_1 = ash.ORCATheory(orcadir=orcadir, charge=charge, mult=mult, orcasimpleinput=orcasimpleinput, orcablocks=orcablocks)
+        ORCAcalc_1 = ash.ORCATheory(orcadir=orcadir, charge=charge, mult=mult, orcasimpleinput=orcasimpleinput, orcablocks=orcablocks,
+                                    nprocs=numcores)
         ash.Singlepoint(theory=ORCAcalc_1,fragment=fragment)
         init_orbitals=ORCAcalc_1.filename+'.mp2nat'
 
@@ -500,7 +503,8 @@ def auto_active_space(fragment=None, orcadir=None, basis="def2-SVP", scalar_rel=
         Smeartemp {}
         end
         """.format(smeartemp)
-        ORCAcalc_1 = ash.ORCATheory(orcadir=orcadir, charge=charge, mult=mult, orcasimpleinput=orcasimpleinput, orcablocks=orcablocks)
+        ORCAcalc_1 = ash.ORCATheory(orcadir=orcadir, charge=charge, mult=mult, orcasimpleinput=orcasimpleinput, orcablocks=orcablocks,
+                                    nprocs=numcores)
         ash.Singlepoint(theory=ORCAcalc_1,fragment=fragment)
         step1occupations=ash.interface_ORCA.SCF_FODocc_grab(ORCAcalc_1.filename+'.out')
         print("FOD occupations:", step1occupations)
@@ -525,7 +529,8 @@ def auto_active_space(fragment=None, orcadir=None, basis="def2-SVP", scalar_rel=
         maxiter 800
         end
         """
-        ORCAcalc_1 = ash.ORCATheory(orcadir=orcadir, charge=charge, mult=mult, orcasimpleinput=orcasimpleinput, orcablocks=orcablocks)
+        ORCAcalc_1 = ash.ORCATheory(orcadir=orcadir, charge=charge, mult=mult, orcasimpleinput=orcasimpleinput, orcablocks=orcablocks,
+                                    nprocs=numcores)
         ash.Singlepoint(theory=ORCAcalc_1,fragment=fragment)
         step1occupations,qroenergies=ash.interface_ORCA.QRO_occ_energies_grab(ORCAcalc_1.filename+'.out')
         print("occupations:", step1occupations)
@@ -564,7 +569,8 @@ def auto_active_space(fragment=None, orcadir=None, basis="def2-SVP", scalar_rel=
     end
     end
     """.format(init_orbitals,numelectrons,numorbitals,tgen)
-    ORCAcalc_2 = ash.ORCATheory(orcadir=orcadir, charge=charge, mult=mult, orcasimpleinput=orcasimpleinput, orcablocks=orcablocks)
+    ORCAcalc_2 = ash.ORCATheory(orcadir=orcadir, charge=charge, mult=mult, orcasimpleinput=orcasimpleinput, orcablocks=orcablocks,
+                                nprocs=numcores)
     ash.Singlepoint(theory=ORCAcalc_2,fragment=fragment)
 
     ICEnatoccupations=ash.interface_ORCA.CASSCF_natocc_grab(ORCAcalc_2.filename+'.out')
