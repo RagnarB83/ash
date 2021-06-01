@@ -120,7 +120,7 @@ class OpenMMTheory:
                 gmx_gro = parmed.gromacs.GromacsGroFile.parse(grofile)
                 
                 print("Reading GROMACS topology file: ", gromacstopfile)
-                gmx_top = parmed.gromacs.GromacsTopologyFile(gromacstopfile, includeDir=gromacstopdir)
+                gmx_top = parmed.gromacs.GromacsTopologyFile(gromacstopfile)
 
                 gmx_top.box = gmx_gro.box
                 gmx_top.positions = gmx_gro.positions
