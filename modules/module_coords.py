@@ -1273,7 +1273,13 @@ def read_gromacsfile(grofile):
                 #Converting atomtype to element based on function above
                 elem=conv_atomtypes_elems(atomtype)
                 elems.append(elem)
-                coords_x=float(linelist[-6]);coords_y=float(linelist[-5]);coords_z=float(linelist[-4])
+                
+                #If larer than 7 then GRO file contains both coords and velocities
+                if len(linelist) > 7 :
+                    coords_x=float(linelist[-6]);coords_y=float(linelist[-5]);coords_z=float(linelist[-4])
+                #If smaller then only coords
+                else:
+                    coords_x=float(linelist[-3]);coords_y=float(linelist[-2]);coords_z=float(linelist[-1])
                 #Converting from nm to Ang
                 coords.append([10*coords_x,10*coords_y,10*coords_z])
     assert len(coords) == len(elems), "Num coords not equal to num elems. Parsing failed. BUG!"

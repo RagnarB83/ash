@@ -77,6 +77,9 @@ from module_MM import NonBondedTheory,UFFdict,UFF_modH_dict,LJCoulpy,coulombchar
 from module_QMMM import QMMMTheory,actregiondefine
 from module_polembed import PolEmbedTheory
 
+#Knarr
+from interface_knarr import NEB
+
 #Solvation
 #NOTE: module_solvation.py or module_solvation2.py To be cleaned up
 import functions_solv
