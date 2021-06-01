@@ -25,7 +25,8 @@ import module_coords
 
 
 class xTBTheory:
-    def __init__(self, xtbdir=None, fragment=None, charge=None, mult=None, xtbmethod=None, runmode='inputfile', nprocs=1, printlevel=2, filename='xtb_'):
+    def __init__(self, xtbdir=None, fragment=None, charge=None, mult=None, xtbmethod=None, runmode='inputfile', nprocs=1, printlevel=2, filename='xtb_',
+                 maxiter=500):
 
         #Printlevel
         self.printlevel=printlevel
@@ -43,6 +44,7 @@ class xTBTheory:
         self.mult=mult
         self.filename=filename
         self.xtbmethod=xtbmethod
+        self.maxiter=maxiter
         self.runmode=runmode
         if self.runmode=='library':
             print("Using library-based xTB interface")
@@ -152,16 +154,16 @@ class xTBTheory:
             if Grad==True:
                 if PC==True:
                     create_xtb_pcfile_general(current_MM_coords, MMcharges)
-                    run_xtb_SP_serial(self.xtbdir, self.xtbmethod, self.filename + '.xyz', self.charge, self.mult, Grad=True)
+                    run_xtb_SP_serial(self.xtbdir, self.xtbmethod, self.filename + '.xyz', self.charge, self.mult, Grad=True, maxiter=self.maxiter)
                 else:
-                    run_xtb_SP_serial(self.xtbdir, self.xtbmethod, self.filename + '.xyz', self.charge, self.mult,
+                    run_xtb_SP_serial(self.xtbdir, self.xtbmethod, self.filename + '.xyz', self.charge, self.mult, maxiter=self.maxiter,
                                   Grad=True)
             else:
                 if PC==True:
                     create_xtb_pcfile_general(current_MM_coords, MMcharges)
-                    run_xtb_SP_serial(self.xtbdir, self.xtbmethod, self.filename + '.xyz', self.charge, self.mult)
+                    run_xtb_SP_serial(self.xtbdir, self.xtbmethod, self.filename + '.xyz', self.charge, self.mult, maxiter=self.maxiter)
                 else:
-                    run_xtb_SP_serial(self.xtbdir, self.xtbmethod, self.filename + '.xyz', self.charge, self.mult)
+                    run_xtb_SP_serial(self.xtbdir, self.xtbmethod, self.filename + '.xyz', self.charge, self.mult, maxiter=self.maxiter)
 
             if self.printlevel >= 2:
                 print("------------xTB calculation done-----")
@@ -299,7 +301,7 @@ def xtbVEAgrab(file):
     return VIP
 
 # Run xTB single-point job
-def run_xtb_SP_serial(xtbdir, xtbmethod, xyzfile, charge, mult, Grad=False):
+def run_xtb_SP_serial(xtbdir, xtbmethod, xyzfile, charge, mult, Grad=False, maxiter=500):
     basename = xyzfile.split('.')[0]
     uhf=mult-1
     #Writing xtbinputfile to disk so that we use ORCA-style PCfile and embedding
@@ -319,11 +321,11 @@ def run_xtb_SP_serial(xtbdir, xtbmethod, xyzfile, charge, mult, Grad=False):
         exit()
     with open(basename+'.out', 'w') as ofile:
         if Grad==True:
-            process = sp.run([xtbdir + '/xtb', basename+'.xyz', '--gfn', str(xtbflag), '--grad', '--chrg', str(charge), '--uhf',
+            process = sp.run([xtbdir + '/xtb', basename+'.xyz', '--gfn', str(xtbflag), '--grad', '--chrg', str(charge), '--uhf', '--iterations', str(maxiter),
                               str(uhf), '--input', 'xtbinput' ], check=True, stdout=ofile, stderr=ofile, universal_newlines=True)
         else:
             process = sp.run(
-                [xtbdir + '/xtb', basename + '.xyz', '--gfn', str(xtbflag), '--chrg', str(charge), '--uhf', str(uhf),
+                [xtbdir + '/xtb', basename + '.xyz', '--gfn', str(xtbflag), '--chrg', str(charge), '--uhf', str(uhf), '--iterations', str(maxiter),
                  '--input', 'xtbinput'], check=True, stdout=ofile, stderr=ofile, universal_newlines=True)
 # Run GFN-xTB single-point job (for multiprocessing execution) for both state A and B (e.g. VIE calc)
 #Takes 1 argument: line with xyzfilename and the xtb options.

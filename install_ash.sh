@@ -203,6 +203,7 @@ chmod uog+x python3_ash
 #Create set_environment_ash.sh file
 echo "Step 5. Creating set_environent_ash.sh script"
 echo "#!/bin/bash" > set_environment_ash.sh
+echo "ulimit -s unlimited" >> set_environment_ash.sh
 echo "export ASHPATH=${thisdir}" >> set_environment_ash.sh
 echo "export python3path=${path_to_python3_dir}" >> set_environment_ash.sh
 echo "export JULIAPATH=${thisdir}/julia-${juliaversion}/bin" >> set_environment_ash.sh
