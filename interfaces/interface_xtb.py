@@ -328,10 +328,10 @@ def run_xtb_SP_serial(xtbdir, xtbmethod, xyzfile, charge, mult, Grad=False, maxi
     
     if Grad==True:
         command_list=[xtbdir + '/xtb', basename+'.xyz', '--gfn', str(xtbflag), '--grad', '--chrg', str(charge), '--uhf', '--iterations', str(maxiter),
-                              str(uhf), '--etemp', electronic_temp, '--input', 'xtbinput'  ]
+                              str(uhf), '--etemp', str(electronic_temp), '--input', 'xtbinput'  ]
     else:
         command_list=[xtbdir + '/xtb', basename + '.xyz', '--gfn', str(xtbflag), '--chrg', str(charge), '--uhf', str(uhf), '--iterations', str(maxiter),
-                      '--etemp', electronic_temp, '--input', 'xtbinput']
+                      '--etemp', str(electronic_temp), '--input', 'xtbinput']
     print("Running xtb with these arguments:", command_list)
     
     with open(basename+'.out', 'w') as ofile:
