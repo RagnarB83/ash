@@ -116,6 +116,7 @@ class OpenMMTheory:
             if use_parmed == True:
                 print("Using Parmed.")
                 print("GROMACS top dir:", gromacstopdir)
+                parmed.gromacs.GROMACS_TOPDIR = gromacstopdir
                 print("Reading GROMACS GRO file: ", grofile)
                 gmx_gro = parmed.gromacs.GromacsGroFile.parse(grofile)
                 
