@@ -319,14 +319,18 @@ def run_xtb_SP_serial(xtbdir, xtbmethod, xyzfile, charge, mult, Grad=False, maxi
     else:
         print("Unknown xtbmethod chosen. Exiting...")
         exit()
+    
+    if Grad==True:
+        command_list=[xtbdir + '/xtb', basename+'.xyz', '--gfn', str(xtbflag), '--grad', '--chrg', str(charge), '--uhf', '--iterations', str(maxiter),
+                              str(uhf), '--input', 'xtbinput' ]
+    else:
+        command_list=[xtbdir + '/xtb', basename + '.xyz', '--gfn', str(xtbflag), '--chrg', str(charge), '--uhf', str(uhf), '--iterations', str(maxiter),
+                 '--input', 'xtbinput']
+    print("Running xtb with these arguments:", command_list)
+    
     with open(basename+'.out', 'w') as ofile:
-        if Grad==True:
-            process = sp.run([xtbdir + '/xtb', basename+'.xyz', '--gfn', str(xtbflag), '--grad', '--chrg', str(charge), '--uhf', '--iterations', str(maxiter),
-                              str(uhf), '--input', 'xtbinput' ], check=True, stdout=ofile, stderr=ofile, universal_newlines=True)
-        else:
-            process = sp.run(
-                [xtbdir + '/xtb', basename + '.xyz', '--gfn', str(xtbflag), '--chrg', str(charge), '--uhf', str(uhf), '--iterations', str(maxiter),
-                 '--input', 'xtbinput'], check=True, stdout=ofile, stderr=ofile, universal_newlines=True)
+        process = sp.run(command_list, check=True, stdout=ofile, stderr=ofile, universal_newlines=True)
+
 # Run GFN-xTB single-point job (for multiprocessing execution) for both state A and B (e.g. VIE calc)
 #Takes 1 argument: line with xyzfilename and the xtb options.
 #Runs inside separate dir
