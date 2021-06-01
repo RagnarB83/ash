@@ -113,8 +113,11 @@ class OpenMMTheory:
         elif GROMACSfiles is True:
             print("Warning: Gromacs-files interface not tested")
             #Reading grofile, not for coordinates but for periodic vectors
-            if use_parmed == True:    
+            if use_parmed == True:
+                print("Using Parmed.")
+                print("Reading GROMACS topology file: ", gromacstopfile)
                 gmx_top = parmed.gromacs.GromacsTopologyFile(gromacstopfile)
+                print("Reading GROMACS GRO file: ", grofile)
                 gmx_gro = parmed.gromacs.GromacsGroFile.parse(grofile)
                 gmx_top.box = gmx_gro.box
                 gmx_top.positions = gmx_gro.positions
