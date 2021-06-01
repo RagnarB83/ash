@@ -17,6 +17,7 @@ class QMMMTheory:
                  embedding="Elstat", printlevel=2, nprocs=1, actatoms=None, frozenatoms=None, excludeboundaryatomlist=None,
                  unusualboundary=False):
         module_init_time=time.time()
+        timeA=time.time()
         print(BC.WARNING,BC.BOLD,"------------Defining QM/MM object-------------", BC.END)
 
         #Linkatoms False by default. Later checked.
@@ -61,6 +62,8 @@ class QMMMTheory:
             #print("List of all atoms:", self.allatoms)
             print("QM region ({} atoms): {}".format(len(self.qmatoms),self.qmatoms))
             print("MM region ({} atoms)".format(len(self.mmatoms)))
+            print_time_rel(timeA, modulename="Region setup")
+            timeA=time.time()
             #print("MM region", self.mmatoms)
             blankline()
 
@@ -183,7 +186,8 @@ class QMMMTheory:
             blankline()
             self.boundaryatoms = module_coords.get_boundary_atoms(self.qmatoms, self.coords, self.elems, settings_ash.settings_dict["scale"], 
                 settings_ash.settings_dict["tol"], excludeboundaryatomlist=excludeboundaryatomlist, unusualboundary=unusualboundary)
-            
+            print_time_rel(timeA, modulename="Region setup")
+            timeA=time.time()
             if len(self.boundaryatoms) >0:
                 print("Found covalent QM-MM boundary. Linkatoms option set to True")
                 print("Boundaryatoms (QM:MM pairs):", self.boundaryatoms)
@@ -243,6 +247,7 @@ class QMMMTheory:
         print_time_rel(module_init_time, modulename='QM/MM object creation', moduleindex=2)
     #From QM1:MM1 boundary dict, get MM1:MMx boundary dict (atoms connected to MM1)
     def get_MMboundary(self):
+        timeA=time.time()
         # if boundarydict is not empty we need to zero MM1 charge and distribute charge from MM1 atom to MM2,MM3,MM4
         #Creating dictionary for each MM1 atom and its connected atoms: MM2-4
         self.MMboundarydict={}
@@ -253,11 +258,12 @@ class QMMMTheory:
             self.MMboundarydict[MM1atom] = connatoms
         print("")
         print("MM boundary (MM1:MMx pairs):", self.MMboundarydict)
-                
+        print_time_rel(timeA, modulename="get_MMboundary")
     # Set QMcharges to Zero and shift charges at boundary
     #TODO: Add both L2 scheme (delete whole charge-group of M1) and charge-shifting scheme (shift charges to Mx atoms and add dipoles for each Mx atom)
     
     def ZeroQMCharges(self):
+        timeA=time.time()
         print("Setting QM charges to Zero")
         #Looping over charges and setting QM atoms to zero
         #1. Copy charges to charges_qmregionzeroed
@@ -269,7 +275,9 @@ class QMMMTheory:
                 self.charges_qmregionzeroed[i] = 0.0
         #3. Flag that this has been done
         self.QMChargesZeroed = True
+        print_time_rel(timeA, modulename="ZeroQMCharges")
     def ShiftMMCharges(self):
+        timeA=time.time()
         print("Shifting MM charges at QM-MM boundary.")
         print("len self.charges_qmregionzeroed: ", len(self.charges_qmregionzeroed))
         print("len self.charges: ", len(self.charges))
@@ -297,9 +305,10 @@ class QMMMTheory:
                     self.pointcharges[MMx] += MM1charge_fract
                     #print("New charge : ", self.charges_qmregionzeroed[MMx])
                     #exit()
-                
+        print_time_rel(timeA, modulename="ShiftMMCharges")
     #Create dipole charge (twice) for each MM2 atom that gets fraction of MM1 charge
     def get_dipole_charge(self,delq,direction,mm1index,mm2index):
+        timeA=time.time()
         #Distance between MM1 and MM2
         MM_distance = module_coords.distance_between_atoms(fragment=self.fragment, atom1=mm1index, atom2=mm2index)
         #Coordinates
@@ -331,8 +340,10 @@ class QMMMTheory:
         #print("pos :", pos)
         #Returning charge with sign based on direction and position
         #Return coords as regular list
+        print_time_rel(timeA, modulename="get_dipole_charge")
         return -q0*direction,list(pos)
     def SetDipoleCharges(self):
+        timeA=time.time()
         print("Adding extra charges to preserve dipole moment for charge-shifting")
         #Adding 2 dipole pointcharges for each MM2 atom
         self.dipole_charges = []
@@ -359,7 +370,7 @@ class QMMMTheory:
                 self.dipole_charges.append(q_d2)
                 self.dipole_coords.append(pos_d1)
                 self.dipole_coords.append(pos_d2)
-    
+        print_time_rel(timeA, modulename="SetDipoleCharges")
     def run(self, current_coords=None, elems=None, Grad=False, nprocs=1):
         module_init_time=time.time()
         CheckpointTime = time.time()

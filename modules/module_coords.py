@@ -1916,6 +1916,7 @@ def distance_between_atoms(fragment=None, atom1=None, atom2=None):
 
 
 def get_boundary_atoms(qmatoms, coords, elems, scale, tol, excludeboundaryatomlist=None,unusualboundary=False):
+    timeA=time.time()
     print("Determining QM-MM boundary")
     if excludeboundaryatomlist == None:
         excludeboundaryatomlist=[]
@@ -1965,12 +1966,13 @@ def get_boundary_atoms(qmatoms, coords, elems, scale, tol, excludeboundaryatomli
             # Adding to dict
             qm_mm_boundary_dict[qmatom] = boundaryatom[0]
     print("qm_mm_boundary_dict:", qm_mm_boundary_dict)
+    print_time_rel(timeA, modulename="get_boundary_atoms")
     return qm_mm_boundary_dict
 
 #Get linkatom positions for a list of qmatoms and the current set of coordinates
 # Using linkatom distance of 1.08999 Å for now as default. Makes sense for C-H link atoms. Check what Chemshell does
 def get_linkatom_positions(qm_mm_boundary_dict,qmatoms, coords, elems, linkatom_distance=1.09):
-    
+    timeA=time.time()
     #Get boundary atoms
     #TODO: Should we always call get_boundary_atoms or we should use previously defined dict??
     #qm_mm_boundary_dict = get_boundary_atoms(qmatoms, coords, elems, scale, tol)
@@ -1984,6 +1986,7 @@ def get_linkatom_positions(qm_mm_boundary_dict,qmatoms, coords, elems, linkatom_
 
         linkatom_coords = list(qmatom_coords + (mmatom_coords - qmatom_coords) * (linkatom_distance / distance(qmatom_coords, mmatom_coords)))
         linkatoms_dict[(dict_item[0], dict_item[1])] = linkatom_coords
+    print_time_rel(timeA, modulename="get_linkatom_positions")
     return linkatoms_dict
 
 

@@ -111,7 +111,7 @@ class OpenMMTheory:
             #TODO: Note: For atomnames it seems OpenMM converts atomnames to its own. Perhaps not useful
             self.atomnames=[self.psf.atom_list[i].name for i in range(0,len(self.psf.atom_list))]
         elif GROMACSfiles is True:
-            print("Warning: Gromacs-files interface not tested")
+            print("Warning: Gromacs-files interface not well tested")
             #Reading grofile, not for coordinates but for periodic vectors
             if use_parmed == True:
                 print("Using Parmed.")
@@ -409,9 +409,10 @@ class OpenMMTheory:
     # https://github.com/openmm/openmm/issues/2124
     #https://github.com/openmm/openmm/issues/1696
     def addexceptions(self,atomlist):
+        timeA=time.time()
         import itertools
         print("Add exceptions/exclusions. Removing i-j interactions for list :", len(atomlist), "atoms")
-        timeA=time.time()
+
         #Has duplicates
         #[self.nonbonded_force.addException(i,j,0, 0, 0, replace=True) for i in atomlist for j in atomlist]
         #https://stackoverflow.com/questions/942543/operation-on-every-pair-of-element-in-a-list
@@ -658,6 +659,7 @@ class OpenMMTheory:
     # Delete selected exceptions. Only for Coulomb.
     #Used to delete Coulomb interactions involving QM-QM and QM-MM atoms
     def delete_exceptions(self,atomlist):
+        timeA=time.time()
         print("Deleting Coulombexceptions for atomlist:", atomlist)
         for force in self.system.getForces():
             if isinstance(force, self.openmm.NonbondedForce):
@@ -674,9 +676,12 @@ class OpenMMTheory:
                         force.setExceptionParameters(exc, p1, p2, chargeprod, sigmaij, epsilonij)
                         #print("New:", force.getExceptionParameters(exc))
         self.create_simulation()
+        print_time_rel(timeA, modulename="delete_exceptions")
+        
 
     #Function to
     def zero_nonbondedforce(self,atomlist, zeroCoulomb=True, zeroLJ=True):
+        timeA=time.time()
         print("Zero-ing nonbondedforce")
         def charge_sigma_epsilon(charge,sigma,epsilon):
             if zeroCoulomb ==  True:
@@ -723,11 +728,13 @@ class OpenMMTheory:
                 print("customnonbondedforce not implemented")
                 exit()
         self.create_simulation()
+        print_time_rel(timeA, modulename="zero_nonbondedforce")
         #self.create_simulation()
     #Updating charges in OpenMM object. Used to set QM charges to 0 for example
     #Taking list of atom-indices and list of charges (usually zero) and setting new charge
     #Note: Exceptions also needs to be dealt with (see delete_exceptions)
     def update_charges(self,atomlist,atomcharges):
+        timeA=time.time()
         print("Updating charges in OpenMM object.")
         assert len(atomlist) == len(atomcharges)
         newcharges=[]
@@ -762,8 +769,10 @@ class OpenMMTheory:
                 self.nonbonded_force.updateParametersInContext(self.simulation.context)
         self.create_simulation()
         printdebug("done here")
+        print_time_rel(timeA, modulename="update_charges")
 
     def modify_bonded_forces(self,atomlist):
+        timeA=time.time()
         print("Modifying bonded forces")
         print("")
         #This is typically used by QM/MM object to set bonded forces to zero for qmatoms (atomlist) 
@@ -954,7 +963,7 @@ class OpenMMTheory:
         print("CustomBond terms", numcustombondterms_removed)
         print("")
         self.create_simulation()
-
+        print_time_rel(timeA, modulename="modify_bonded_forces")
 #For frozen systems we use Customforce in order to specify interaction groups
 #if len(self.frozen_atoms) > 0:
     
