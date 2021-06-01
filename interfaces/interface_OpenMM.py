@@ -115,10 +115,14 @@ class OpenMMTheory:
             #Reading grofile, not for coordinates but for periodic vectors
             if use_parmed == True:
                 print("Using Parmed.")
-                print("Reading GROMACS topology file: ", gromacstopfile)
-                gmx_top = parmed.gromacs.GromacsTopologyFile(gromacstopfile)
+                print("GROMACS top dir:", gromacstopdir)
                 print("Reading GROMACS GRO file: ", grofile)
                 gmx_gro = parmed.gromacs.GromacsGroFile.parse(grofile)
+                
+                print("Reading GROMACS topology file: ", gromacstopfile)
+                gmx_top = parmed.gromacs.GromacsTopologyFile(gromacstopfile, periodicBoxVectors=gmx_gro.getPeriodicBoxVectors(),
+                                    includeDir=gromacstopdir)
+
                 gmx_top.box = gmx_gro.box
                 gmx_top.positions = gmx_gro.positions
                 self.positions = gmx_top.positions
