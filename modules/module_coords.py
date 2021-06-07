@@ -111,7 +111,7 @@ class Fragment:
         coordslist=coordsstring.split('\n')
         for count, line in enumerate(coordslist):
             if len(line)> 1:
-                self.elems.append(line.split()[0])
+                self.elems.append(reformat_element(line.split()[0]))
                 self.coords.append([float(line.split()[1]), float(line.split()[2]), float(line.split()[3])])
         self.update_attributes()
         self.calc_connectivity(scale=scale, tol=tol)
@@ -1156,7 +1156,8 @@ def split_multimolxyzfile(file, writexyz=False,skipindex=1):
             #Grab coordinates
             if coordgrab == True:
                 if len(line.split()) > 1:
-                    elems.append(line.split()[0])
+                    #elems.append(line.split()[0])
+                    elems.append(reformat_element(line.split()[0]))
                     coords_x=float(line.split()[1]);coords_y=float(line.split()[2]);coords_z=float(line.split()[3])
                     coords.append([coords_x,coords_y,coords_z])
                 if len(coords) == int(numatoms):
@@ -1429,7 +1430,7 @@ def nucchargexyz(file):
     with open(file) as f:
         for count,line in enumerate(f):
             if count >1:
-                el.append(line.split()[0])
+                el.append(reformat_element(line.split()[0]))
     totnuccharge=0
     for e in el:
         atcharge=eldict[e]
@@ -1595,7 +1596,8 @@ def coord2xyz(inputfile):
             x.append(float(line.split()[0])*constants.bohr2ang)
             y.append(float(line.split()[1])*constants.bohr2ang)
             z.append(float(line.split()[2])*constants.bohr2ang)
-            atom.append(str(line.split()[3]))
+            el=reformat_element(str(line.split()[3]))
+            atom.append(el)
         for item in atom:
             if len(item) == 1:
                 atom[atom.index(item)] = item.replace(item[0], item[0].upper())
@@ -2348,7 +2350,7 @@ def add_atoms_to_system_CHARMM(fragment=None, added_atoms_coordstring=None, resg
     added_coords=[]
     for count, line in enumerate(added_atoms_coords_list):
         if len(line)> 1:
-            added_elems.append(line.split()[0])
+            added_elems.append(reformat_element(line.split()[0]))
             added_coords.append([float(line.split()[1]), float(line.split()[2]), float(line.split()[3])])
     num_added_atoms=len(added_elems)
     fragment.add_coords(added_elems,added_coords,conn=False)
