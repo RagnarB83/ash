@@ -97,6 +97,9 @@ def calc_surface(fragment=None, theory=None, workflow=None, scantype='Unrelaxed'
     print("Initial surfacedictionary :", surfacedictionary)
     
     #
+    if theory.__class__.__name__ == "ZeroTheory":
+        keepoutputfiles=False
+        keepomofile=False
     print("keepoutputfiles: ", keepoutputfiles)
     print("keepmofiles: ", keepmofiles)
 
