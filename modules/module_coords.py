@@ -18,7 +18,7 @@ import ash
 class Fragment:
     def __init__(self, coordsstring=None, fragfile=None, xyzfile=None, pdbfile=None, grofile=None, amber_inpcrdfile=None, amber_prmtopfile=None, chemshellfile=None, coords=None, elems=None, connectivity=None,
                  atomcharges=None, atomtypes=None, conncalc=True, scale=None, tol=None, printlevel=2, charge=None,
-                 mult=None, label=None, readchargemult=False):
+                 mult=None, label=None, readchargemult=False, use_atomnames_as_elements=False):
         #Label for fragment (string). Useful for distinguishing different fragments
         self.label=label
 
@@ -70,7 +70,7 @@ class Fragment:
         elif xyzfile is not None:
             self.read_xyzfile(xyzfile, readchargemult=readchargemult,conncalc=conncalc)
         elif pdbfile is not None:
-            self.read_pdbfile(pdbfile, conncalc=False)
+            self.read_pdbfile(pdbfile, conncalc=False, use_atomnames_as_elements=use_atomnames_as_elements)
         elif grofile is not None:
             self.read_grofile(grofile, conncalc=False)
         elif amber_inpcrdfile is not None:
@@ -210,14 +210,14 @@ class Fragment:
             # Read connectivity list
             print("Not reading connectivity from file")
     #Read PDB file
-    def read_pdbfile(self,filename,conncalc=True, scale=None, tol=None):
+    def read_pdbfile(self,filename,conncalc=True, scale=None, tol=None, use_atomnames_as_elements=False):
         if self.printlevel >= 2:
             print("Reading coordinates from PDBfile \"{}\" into fragment".format(filename))
         residuelist=[]
         #If elemcolumn found
         elemcol=[]
         #Not atomtype but atomname
-        atom_name=[]
+        #atom_name=[]
         atomindex=[]
         residname=[]
 
@@ -228,20 +228,34 @@ class Fragment:
                 for line in f:
                     if 'ATOM ' in line:
                         atomindex.append(float(line[6:11].replace(' ','')))
-                        atom_name.append(line[12:16].replace(' ',''))
+                        atom_name=line[12:16].replace(' ','')
                         residname.append(line[17:20].replace(' ',''))
                         residuelist.append(line[22:26].replace(' ',''))
                         coords_x=float(line[30:38].replace(' ',''))
                         coords_y=float(line[38:46].replace(' ',''))
                         coords_z=float(line[46:54].replace(' ',''))
                         self.coords.append([coords_x,coords_y,coords_z])
-                        elem=line[76:78].replace(' ','')
-                        if len(elem) != 0:
-                            if len(elem)==2:
-                                #Making sure second elem letter is lowercase
-                                elemcol.append(elem[0]+elem[1].lower())
+                        elem=line[76:78].replace(' ','').replace('\n','')
+                        #elem=elem.replace('\n','')
+                        #Option to use atomnamecolumn for element information instead of element-column
+                        if use_atomnames_as_elements == True:
+                            elem_name=dictionaries_lists.atomtypes_dict[atom_name]
+                            elemcol.append(elem_name)
+                        else:
+                            if len(elem) != 0:
+                                if len(elem)==2:
+                                    #Making sure second elem letter is lowercase
+                                    #elemcol.append(elem[0]+elem[1].lower())
+                                    elemcol.append(reformat_element(elem))
+                                else:
+                                    elemcol.append(reformat_element(elem))
                             else:
-                                elemcol.append(elem)    
+                                print("While reading line:")
+                                print(line)
+                                print("No element found in element-column of PDB-file")
+                                print("Either fix element-column (columns 77-78) or try to use to read element-information from atomname-column:")
+                                print(" Fragment(pdbfile=\"X\", use_atomnames_as_elements=True) ")
+                                exit()
                         #self.coords.append([float(line.split()[6]), float(line.split()[7]), float(line.split()[8])])
                         #elemcol.append(line.split()[-1])
                         #residuelist.append(line.split()[3])
@@ -553,7 +567,13 @@ def reformat_element(elem,isatomnum=False):
     if isatomnum is True:
         el_correct=dictionaries_lists.element_dict_atnum[elem].symbol    
     else:
-        el_correct=dictionaries_lists.element_dict_atname[elem.lower()].symbol
+        try:
+            el_correct=dictionaries_lists.element_dict_atname[elem.lower()].symbol
+        except KeyError:
+            print("Element-string: {} not found in element-dictionary!".format(elem))
+            print("This is not a valid element as defined in ASH source-file: dictionaries_lists.py")
+            print("Fix element-information in coordinate-file.")
+            exit()
     return el_correct
 
 
