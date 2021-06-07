@@ -218,7 +218,7 @@ class Fragment:
         elemcol=[]
         #Not atomtype but atomname
         #atom_name=[]
-        atomindex=[]
+        #atomindex=[]
         residname=[]
 
         #TODO: Check. Are there different PDB formats?
@@ -227,7 +227,7 @@ class Fragment:
             with open(filename) as f:
                 for line in f:
                     if 'ATOM ' in line:
-                        atomindex.append(float(line[6:11].replace(' ','')))
+                        #atomindex=float(line[6:11].replace(' ',''))
                         atom_name=line[12:16].replace(' ','')
                         residname.append(line[17:20].replace(' ',''))
                         residuelist.append(line[22:26].replace(' ',''))
