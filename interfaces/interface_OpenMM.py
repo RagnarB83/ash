@@ -19,6 +19,7 @@ class OpenMMTheory:
         try:
             import simtk.openmm.app
             import simtk.unit
+            print("Imported OpenMM library version:", simtk.openmm.__version__)
             #import simtk.openmm
         except ImportError:
             raise ImportError(
