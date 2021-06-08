@@ -615,6 +615,8 @@ class OpenMMTheory:
         self.simulation.context.setPositions(pos)
         print_time_rel(timeA, modulename="context: set positions")
         timeA = time.time()
+        #While these distance constraints should not matter. Applying them makes the energy function agree with previous benchmarking.
+        #https://www.ncbi.nlm.nih.gov/pmc/articles/PMC5549999/
         self.simulation.context.applyConstraints(1e-6)
         print_time_rel(timeA, modulename="context: apply constraints")
         timeA = time.time()
