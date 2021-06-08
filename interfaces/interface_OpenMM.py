@@ -273,6 +273,7 @@ class OpenMMTheory:
                     print('Use Long-range Dispersion correction: %s' % force.getUseDispersionCorrection())
 
                     print("PME Parameters:", force.getPMEParameters())
+
                     # Set PME Parameters if desired
                     #force.setPMEParameters(3.285326106/self.unit.nanometers,60, 64, 60) 
                     #Keeping default for now
@@ -592,10 +593,7 @@ class OpenMMTheory:
         
         print("")
         print("")
-        print_time_rel(timeA, modulename="print table")
-        
-        
-        timeA = time.time()
+        self.energy_components=openmm_energy
     
     def run(self, current_coords=None, elems=None, Grad=False, fragment=None, qmatoms=None):
         module_init_time=time.time()
