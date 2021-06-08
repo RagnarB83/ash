@@ -238,8 +238,7 @@ class OpenMMTheory:
                 elif isinstance(force, simtk.openmm.NonbondedForce):
                     #Turn Dispersion correction on/off depending on user
                     #NOTE: Default: False   To be revisited
-                    if dispersion_correction == True:
-                        force.setUseDispersionCorrection(dispersion_correction)
+                    force.setUseDispersionCorrection(dispersion_correction)
                     if switching_function == True:
                         force.setUseSwitchingFunction(switching_function)
                         #Switching distance in nm. To be looked at further
