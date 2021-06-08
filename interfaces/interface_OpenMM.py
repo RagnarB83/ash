@@ -11,7 +11,7 @@ class OpenMMTheory:
                  Amberfiles=False, amberprmtopfile=None, printlevel=2, do_energy_composition=False,
                  xmlfile=None, periodic=False, periodic_cell_dimensions=None, customnonbondedforce=False,
                  delete_QM1_MM1_bonded=False, watermodel=None, use_parmed=False, periodic_nonbonded_cutoff=12,
-                 dispersion_correction=True, switching_function=False, switching_function_distance=1.1,
+                 dispersion_correction=True, switching_function=False, switching_function_distance=10,
                  ewalderrortolerance=1e-5, applyconstraints=False):
         
         module_init_time = time.time()
@@ -63,6 +63,9 @@ class OpenMMTheory:
 
         #Whether to apply constraints or not when calculating MM energy
         self.applyconstraints=applyconstraints
+
+        #Switching function distance in Angstrom
+        self.switching_function_distance=switching_function_distance
 
         #Residue names,ids,segments,atomtypes of all atoms of system.
         # Grabbed below from PSF-file. Information used to write PDB-file
@@ -210,6 +213,7 @@ class OpenMMTheory:
             #Parameters here are based on OpenMM DHFR example
             
             if CHARMMfiles is True:
+                print("Using CHARMM files")
                 self.periodic_cell_dimensions = periodic_cell_dimensions
                 print("Periodic cell dimensions:", periodic_cell_dimensions)
                 self.a = periodic_cell_dimensions[0] * self.unit.angstroms
@@ -218,7 +222,7 @@ class OpenMMTheory:
                 #Box vectors can only be set here for CHARMM
                 self.forcefield.setBox(self.a, self.b, self.c)
                 self.system = self.forcefield.createSystem(self.params, nonbondedMethod=simtk.openmm.app.PME,
-                                            nonbondedCutoff=periodic_nonbonded_cutoff * self.unit.angstroms, switchDistance=10*self.unit.angstroms)
+                                            nonbondedCutoff=periodic_nonbonded_cutoff * self.unit.angstroms, switchDistance=switching_function_distance*self.unit.angstroms)
             elif GROMACSfiles is True:
                 print("Ewald Error tolerance:", self.ewalderrortolerance)
                 #Note: Turned off switchDistance. Not available for GROMACS?
@@ -236,21 +240,27 @@ class OpenMMTheory:
             print("OpenMM Forces defined:", self.system.getForces())
             for i,force in enumerate(self.system.getForces()):
                 if isinstance(force, simtk.openmm.CustomNonbondedForce):
-                    print('CustomNonbondedForce: %s' % force.getUseSwitchingFunction())
-                    print('LRC? %s' % force.getUseLongRangeCorrection())
-                    force.setUseLongRangeCorrection(False)
+                    #NOTE: THIS IS CURRENTLY NOT USED
+                    pass
+                    #print('CustomNonbondedForce: %s' % force.getUseSwitchingFunction())
+                    #print('LRC? %s' % force.getUseLongRangeCorrection())
+                    #force.setUseLongRangeCorrection(False)
                 elif isinstance(force, simtk.openmm.NonbondedForce):
                     #Turn Dispersion correction on/off depending on user
                     #NOTE: Default: False   To be revisited
+
+                    #NOte: 
                     force.setUseDispersionCorrection(dispersion_correction)
-                    if switching_function == True:
-                        force.setUseSwitchingFunction(switching_function)
-                        #Switching distance in nm. To be looked at further
-                        force.setSwitchingDistance(switching_function_distance)
-                        print('SwitchingFunction distance: %s' % force.getSwitchingDistance())
-                    
-                    print("Periodic cutoff distance: {} nm", force.getCutoffDistance)
+                    #force.setSwitchingDistance(switching_function_distance)
+                    #if switching_function == True:
+                    #    force.setUseSwitchingFunction(switching_function)
+                    #    #Switching distance in nm. To be looked at further
+                    #   force.setSwitchingDistance(switching_function_distance)
+                    #    print('SwitchingFunction distance: %s' % force.getSwitchingDistance())
+                    print("Nonbonded force settings:")
+                    print("Periodic cutoff distance: {} nm".format(force.getCutoffDistance))
                     print('Use SwitchingFunction: %s' % force.getUseSwitchingFunction())
+                    print('SwitchingFunction distance {} nm:'.format(force.getUseSwitchingFunction()))
                     print('Use Long-range Dispersion correction: %s' % force.getUseDispersionCorrection())
 
 
