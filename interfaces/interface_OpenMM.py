@@ -230,9 +230,12 @@ class OpenMMTheory:
                 #
                 self.system = self.forcefield.createSystem(nonbondedMethod=simtk.openmm.app.PME,
                                             nonbondedCutoff=periodic_nonbonded_cutoff * self.unit.angstroms, ewaldErrorTolerance=self.ewalderrortolerance)
+            elif Amberfiles is True:
+                self.system = self.forcefield.createSystem(nonbondedMethod=simtk.openmm.app.PME,
+                                            nonbondedCutoff=periodic_nonbonded_cutoff * self.unit.angstroms)
             else:
                 self.system = self.forcefield.createSystem(nonbondedMethod=simtk.openmm.app.PME,
-                                            nonbondedCutoff=periodic_nonbonded_cutoff * self.unit.angstroms, switchDistance=10*self.unit.angstroms)
+                                            nonbondedCutoff=periodic_nonbonded_cutoff * self.unit.angstroms, switchDistance=switching_function_distance*self.unit.angstroms)
                 
 
             #TODO: Customnonbonded force option. Currently disabled
