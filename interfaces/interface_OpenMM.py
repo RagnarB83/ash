@@ -11,7 +11,7 @@ class OpenMMTheory:
                  Amberfiles=False, amberprmtopfile=None, printlevel=2, do_energy_composition=False,
                  xmlfile=None, periodic=False, periodic_cell_dimensions=None, customnonbondedforce=False,
                  delete_QM1_MM1_bonded=False, watermodel=None, use_parmed=False, periodic_nonbonded_cutoff=12,
-                 dispersion_correction=False, switching_function=False, switching_function_distance=1.1,
+                 dispersion_correction=True, switching_function=False, switching_function_distance=1.1,
                  ewalderrortolerance=1e-5):
         
         module_init_time = time.time()
