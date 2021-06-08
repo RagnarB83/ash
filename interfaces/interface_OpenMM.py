@@ -71,6 +71,7 @@ class OpenMMTheory:
         #OpenMM things
         self.openmm=simtk.openmm
         self.simulationclass=simtk.openmm.app.simulation.Simulation
+        self.verletintegrator=simtk.openmm.VerletIntegrator
         self.langevinintegrator=simtk.openmm.LangevinIntegrator
         self.platform_choice=platform
         self.unit=simtk.unit
@@ -466,9 +467,10 @@ class OpenMMTheory:
         timeA=time.time()
         print("Creating/updating OpenMM simulation object")
         printdebug("self.system.getForces() ", self.system.getForces())
-        self.integrator = self.langevinintegrator(0.0000001 * self.unit.kelvin,  # Temperature of heat bath
-                                        1 / self.unit.picosecond,  # Friction coefficient
-                                        0.002 * self.unit.picoseconds)  # Time step
+        #self.integrator = self.langevinintegrator(0.0000001 * self.unit.kelvin,  # Temperature of heat bath
+        #                                1 / self.unit.picosecond,  # Friction coefficient
+        #                                0.002 * self.unit.picoseconds)  # Time step
+        self.integrator = self.verletintegrator(0.001*self.unit.picosecond)
         self.simulation = self.simulationclass(self.topology, self.system, self.integrator,self.platform)
         print_time_rel(timeA, modulename="creating simulation")
     
