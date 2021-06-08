@@ -13,6 +13,7 @@ atomtypes_dict={'H':'H','HA':'H', 'HB':'H', 'HW':'H', 'HH':'H', 'HN':'H', 'HD':'
         'HB1':'H', 'HB2':'H', 'HG1':'H', 'HG2':'H', 'HE1':'H', 'HE2':'H', 'HE3':'H', 'HD1':'H', 'HD2':'H', '1HH1':'H', '2HH1':'H', '1HH2':'H', '2HH2':'H',
         '1HG1':'H', '2HG1':'H', '3HG1':'H', '1HG2':'H', '2HG2':'H',  '3HG2':'H',  '1HD1':'H', '2HD1':'H', '3HD1':'H', '1HD2':'H', '2HD2':'H', '3HD2':'H',
         'HD3':'H', '1HE2':'H', '2HE2':'H', 'HZ1':'H', 'HZ2':'H', 'HZ3':'H', 'HB3':'H', 'HA1':'H', 'HA2':'H', 'HH2':'H', 'HOB':'H', 'HW1':'H', 'HW2':'H',
+        'HO':'H',
         'NA':'Na', 
         'C':'C','CD':'C', 'CH':'C', 'CH2':'C', 'CA':'C', 'CB':'C', 'CG':'C', 'CZ':'C', 'CE':'C', 'CG1':'C', 'CG2':'C',  'CD1':'C', 'CD2':'C', 'CE1':'C', 'CE2':'C', 'CE3':'C',
         'CZ3':'C', 'CZ2':'C', 'CX':'C', 'CBC':'C', 'CAC':'C', 'CDC':'C',
