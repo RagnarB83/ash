@@ -215,7 +215,7 @@ class OpenMMTheory:
                 self.system = self.forcefield.createSystem(self.params, nonbondedMethod=simtk.openmm.app.PME,
                                             nonbondedCutoff=periodic_nonbonded_cutoff * self.unit.angstroms, switchDistance=10*self.unit.angstroms)
             elif GROMACSfiles is True:
-                
+                print("Ewald Error tolerance:", self.ewalderrortolerance)
                 #Note: Turned off switchDistance. Not available for GROMACS?
                 #
                 self.system = self.forcefield.createSystem(nonbondedMethod=simtk.openmm.app.PME,
