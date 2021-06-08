@@ -12,7 +12,7 @@ class OpenMMTheory:
                  xmlfile=None, periodic=False, periodic_cell_dimensions=None, customnonbondedforce=False,
                  delete_QM1_MM1_bonded=False, watermodel=None, use_parmed=False, periodic_nonbonded_cutoff=12,
                  dispersion_correction=True, switching_function=False, switching_function_distance=10,
-                 ewalderrortolerance=1e-5, applyconstraints=False):
+                 ewalderrortolerance=1e-5, applyconstraints=False, PMEparameters=None):
         
         module_init_time = time.time()
         # OPEN MM load
@@ -238,6 +238,9 @@ class OpenMMTheory:
             print("OpenMM system created")
             #Force modification here
             print("OpenMM Forces defined:", self.system.getForces())
+
+
+            #PRINTING PROPERTIES OF NONBONDED FORCE BELOW
             for i,force in enumerate(self.system.getForces()):
                 if isinstance(force, simtk.openmm.CustomNonbondedForce):
                     #NOTE: THIS IS CURRENTLY NOT USED
@@ -249,21 +252,27 @@ class OpenMMTheory:
                     #Turn Dispersion correction on/off depending on user
                     #NOTE: Default: False   To be revisited
 
-                    #NOte: 
+                    #NOte:
                     force.setUseDispersionCorrection(dispersion_correction)
+
+                    #Modify PME Parameters if desired
+                    #force.setPMEParameters(1.0/0.34, fftx, ffty, fftz)
+                    if PMEparameters != None:
+                        print("Changing PME parameters")
+                        force.setPMEParameters(PMEparameters[0], PMEparameters[1], PMEparameters[2], PMEparameters[3])
                     #force.setSwitchingDistance(switching_function_distance)
                     #if switching_function == True:
                     #    force.setUseSwitchingFunction(switching_function)
                     #    #Switching distance in nm. To be looked at further
                     #   force.setSwitchingDistance(switching_function_distance)
                     #    print('SwitchingFunction distance: %s' % force.getSwitchingDistance())
-                    print("Nonbonded force settings:")
-                    print("Periodic cutoff distance: {} nm".format(force.getCutoffDistance()))
+                    print("Nonbonded force settings (after all modifications):")
+                    print("Periodic cutoff distance: {}".format(force.getCutoffDistance()))
                     print('Use SwitchingFunction: %s' % force.getUseSwitchingFunction())
-                    print('SwitchingFunction distance: {} nm'.format(force.getSwitchingDistance()))
+                    print('SwitchingFunction distance: {}'.format(force.getSwitchingDistance()))
                     print('Use Long-range Dispersion correction: %s' % force.getUseDispersionCorrection())
 
-
+                    print("PME Parameters:", force.getPMEParameters())
                     # Set PME Parameters if desired
                     #force.setPMEParameters(3.285326106/self.unit.nanometers,60, 64, 60) 
                     #Keeping default for now
