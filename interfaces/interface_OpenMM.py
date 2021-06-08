@@ -580,12 +580,12 @@ class OpenMMTheory:
         for val in openmm_energy.values():
             sumofallcomponents+=val._value
         
+
+
         #Print energy table       
         print('%-20s | %-15s | %-15s' % ('Component', 'kJ/mol', 'kcal/mol'))
         print('-'*56)
         #TODO: Figure out better sorting of terms
-        print("self.unit.kilojoules_per_mole:", self.unit.kilojoules_per_mole)
-        print("self.unit.kilocalorie_per_mole:", self.unit.kilocalorie_per_mole)
         for name in sorted(openmm_energy):
             print('%-20s | %15.2f | %15.2f' % (name, openmm_energy[name] / self.unit.kilojoules_per_mole, openmm_energy[name] / self.unit.kilocalorie_per_mole))
         print('-'*56)
@@ -595,6 +595,8 @@ class OpenMMTheory:
         
         print("")
         print("")
+        #Adding sum to table
+        openmm_energy['Sum'] = sumofallcomponents
         self.energy_components=openmm_energy
     
     def run(self, current_coords=None, elems=None, Grad=False, fragment=None, qmatoms=None):
