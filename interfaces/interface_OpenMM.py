@@ -12,7 +12,7 @@ class OpenMMTheory:
                  xmlfile=None, periodic=False, periodic_cell_dimensions=None, customnonbondedforce=False,
                  delete_QM1_MM1_bonded=False, watermodel=None, use_parmed=False, periodic_nonbonded_cutoff=12,
                  dispersion_correction=True, switching_function=False, switching_function_distance=1.1,
-                 ewalderrortolerance=1e-5):
+                 ewalderrortolerance=1e-5, applyconstraints=False):
         
         module_init_time = time.time()
         # OPEN MM load
@@ -60,6 +60,10 @@ class OpenMMTheory:
         self.charges=[]
         self.Periodic = periodic
         self.ewalderrortolerance=ewalderrortolerance
+
+        #Whether to apply constraints or not when calculating MM energy
+        self.applyconstraints=applyconstraints
+
         #Residue names,ids,segments,atomtypes of all atoms of system.
         # Grabbed below from PSF-file. Information used to write PDB-file
         self.resnames=[]
@@ -615,11 +619,14 @@ class OpenMMTheory:
         self.simulation.context.setPositions(pos)
         print_time_rel(timeA, modulename="context: set positions")
         timeA = time.time()
-        #While these distance constraints should not matter. Applying them makes the energy function agree with previous benchmarking.
+        #While these distance constraints should not matter, applying them makes the energy function agree with previous benchmarking for bonded and nonbonded
         #https://www.ncbi.nlm.nih.gov/pmc/articles/PMC5549999/
-        self.simulation.context.applyConstraints(1e-6)
-        print_time_rel(timeA, modulename="context: apply constraints")
-        timeA = time.time()
+        #Using 1e-6 hardcoded value since how used in paper
+        if self.applyconstraints == True:
+            print("Applying constraints before calculating MM energy")
+            self.simulation.context.applyConstraints(1e-6)
+            print_time_rel(timeA, modulename="context: apply constraints")
+            timeA = time.time()
 
         print("Calculating MM state")
         
