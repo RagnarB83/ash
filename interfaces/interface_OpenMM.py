@@ -612,8 +612,12 @@ class OpenMMTheory:
         pos = [self.Vec3(current_coords[i, 0] / 10, current_coords[i, 1] / 10, current_coords[i, 2] / 10) for i in range(len(current_coords))] * self.unit.nanometer
 
         self.simulation.context.setPositions(pos)
-        print_time_rel(timeA, modulename="context pos")
+        print_time_rel(timeA, modulename="context: set positions")
         timeA = time.time()
+        self.simulation.context.applyConstraints(1e-6)
+        print_time_rel(timeA, modulename="context: apply constraints")
+        timeA = time.time()
+
         print("Calculating MM state")
         
         print("forces")
