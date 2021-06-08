@@ -11,7 +11,8 @@ class OpenMMTheory:
                  Amberfiles=False, amberprmtopfile=None, printlevel=2, do_energy_composition=False,
                  xmlfile=None, periodic=False, periodic_cell_dimensions=None, customnonbondedforce=False,
                  delete_QM1_MM1_bonded=False, watermodel=None, use_parmed=False, periodic_nonbonded_cutoff=12,
-                 dispersion_correction=False, switching_function=False, switching_function_distance=1.1):
+                 dispersion_correction=False, switching_function=False, switching_function_distance=1.1,
+                 ewalderrortolerance=0.0005):
         
         module_init_time = time.time()
         # OPEN MM load
@@ -58,6 +59,7 @@ class OpenMMTheory:
         self.coords=[]
         self.charges=[]
         self.Periodic = periodic
+        self.ewalderrortolerance=ewalderrortolerance
         #Residue names,ids,segments,atomtypes of all atoms of system.
         # Grabbed below from PSF-file. Information used to write PDB-file
         self.resnames=[]
@@ -217,7 +219,8 @@ class OpenMMTheory:
                 #Note: Turned off switchDistance. Not available for GROMACS?
                 #
                 self.system = self.forcefield.createSystem(nonbondedMethod=simtk.openmm.app.PME,
-                                            nonbondedCutoff=periodic_nonbonded_cutoff * self.unit.angstroms, ewaldErrorTolerance=0.0005)
+                                            nonbondedCutoff=periodic_nonbonded_cutoff * self.unit.angstroms, ewaldErrorTolerance=self.ewalderrortolerance,
+                                            constraints=simtk.openmm.app.HBonds)
             else:
                 self.system = self.forcefield.createSystem(nonbondedMethod=simtk.openmm.app.PME,
                                             nonbondedCutoff=periodic_nonbonded_cutoff * self.unit.angstroms, switchDistance=10*self.unit.angstroms)
