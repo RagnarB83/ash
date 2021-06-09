@@ -25,8 +25,8 @@ def fullindex_to_actindex(fullindex,actatoms):
 
 
 
-def geomeTRICOptimizer(theory=None,fragment=None, coordsystem='hdlc', frozenatoms=[], constraintsinputfile=None, constraints=None, 
-                       constrainvalue=False, maxiter=50, ActiveRegion=False, actatoms=[], convergence_setting=None, conv_criteria=None,
+def geomeTRICOptimizer(theory=None,fragment=None, coordsystem='hdlc', frozenatoms=None, constraintsinputfile=None, constraints=None, 
+                       constrainvalue=False, maxiter=50, ActiveRegion=False, actatoms=None, convergence_setting=None, conv_criteria=None,
                        print_atoms_list=None):
     """
     Wrapper function around geomeTRIC code. Take theory and fragment info from ASH
@@ -58,6 +58,11 @@ def geomeTRICOptimizer(theory=None,fragment=None, coordsystem='hdlc', frozenatom
         #TODO: Look into this more
         print("Activeregion true and coordsystem = tric are not compatible")
         exit()
+
+    if actatoms==None:
+        actatoms=[]
+    if frozenatoms==None:
+        frozenatoms=[]
 
     #Clean-up
     try:
@@ -424,7 +429,8 @@ def geomeTRICOptimizer(theory=None,fragment=None, coordsystem='hdlc', frozenatom
     fragment.print_system(filename='Fragment-optimized.ygg')
     fragment.write_xyzfile(xyzfilename='Fragment-optimized.xyz')
 
-    write_XYZ_for_atoms(fragment.coords, fragment.elems, actatoms, "Fragment-optimized_Active")
+    if ActiveRegion==True:
+        write_XYZ_for_atoms(fragment.coords, fragment.elems, actatoms, "Fragment-optimized_Active")
 
     print_internal_coordinate_table(fragment,actatoms=actatoms)
 
