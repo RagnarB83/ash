@@ -240,7 +240,7 @@ class OpenMMTheory:
 
             #TODO: Customnonbonded force option. Currently disabled
             print("OpenMM system created")
-            print("Periodic vectors:", system.getDefaultPeriodicBoxVectors())
+            print("Periodic vectors:", self.system.getDefaultPeriodicBoxVectors())
             #Force modification here
             print("OpenMM Forces defined:", self.system.getForces())
 
