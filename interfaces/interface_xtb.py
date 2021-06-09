@@ -327,8 +327,8 @@ def run_xtb_SP_serial(xtbdir, xtbmethod, xyzfile, charge, mult, Grad=False, maxi
         exit()
     
     if Grad==True:
-        command_list=[xtbdir + '/xtb', basename+'.xyz', '--gfn', str(xtbflag), '--grad', '--chrg', str(charge), '--uhf', '--iterations', str(maxiter),
-                              str(uhf), '--etemp', str(electronic_temp), '--input', 'xtbinput'  ]
+        command_list=[xtbdir + '/xtb', basename+'.xyz', '--gfn', str(xtbflag), '--grad', '--chrg', str(charge), '--uhf', str(uhf), '--iterations', str(maxiter),
+                              '--etemp', str(electronic_temp), '--input', 'xtbinput'  ]
     else:
         command_list=[xtbdir + '/xtb', basename + '.xyz', '--gfn', str(xtbflag), '--chrg', str(charge), '--uhf', str(uhf), '--iterations', str(maxiter),
                       '--etemp', str(electronic_temp), '--input', 'xtbinput']
