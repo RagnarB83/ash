@@ -240,6 +240,7 @@ class OpenMMTheory:
 
             #TODO: Customnonbonded force option. Currently disabled
             print("OpenMM system created")
+            print("Periodic vectors:", system.getDefaultPeriodicBoxVectors())
             #Force modification here
             print("OpenMM Forces defined:", self.system.getForces())
 
@@ -401,9 +402,9 @@ class OpenMMTheory:
         #self.simulation = simtk.openmm.app.simulation.Simulation(self.topology, self.system, self.integrator,self.platform)
         #self.simulation = self.simulationclass(self.topology, self.system, self.integrator,self.platform)
 
-        if self.Periodic is True and Amberfiles is True:
-            print("Setting periodic box parameters")
-            self.simulation.context.setPeriodicBoxVectors((periodic_cell_dimensions[0]/10, 0, 0), (0, periodic_cell_dimensions[1]/10, 0), (0, 0 ,periodic_cell_dimensions[2]/10))
+        #if self.Periodic is True and Amberfiles is True:
+        #    print("Setting periodic box parameters")
+        #    self.simulation.context.setPeriodicBoxVectors((periodic_cell_dimensions[0]/10, 0, 0), (0, periodic_cell_dimensions[1]/10, 0), (0, 0 ,periodic_cell_dimensions[2]/10))
 
 
 
