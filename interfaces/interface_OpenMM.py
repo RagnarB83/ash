@@ -219,7 +219,7 @@ class OpenMMTheory:
 
                 if periodic_cell_dimensions == None:
                     print("Error: When using CHARMMfiles and Periodic=True, periodic_cell_dimensions keyword needs to be supplied")
-                    print("Example: periodic_cell_dimensions= [200, 200, 200, 90, 90, 90]  in Angstrom and degrees)
+                    print("Example: periodic_cell_dimensions= [200, 200, 200, 90, 90, 90]  in Angstrom and degrees")
                     exit()
                 self.periodic_cell_dimensions = periodic_cell_dimensions
                 print("Periodic cell dimensions:", periodic_cell_dimensions)
