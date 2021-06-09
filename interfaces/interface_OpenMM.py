@@ -101,7 +101,6 @@ class OpenMMTheory:
         print("Note: OpenMM will fail in this step if parameters are missing in topology and parameter files (e.g. nonbonded entries)")
         # #Always creates object we call self.forcefield that contains topology attribute
         if CHARMMfiles is True:
-            self.Forcefield='CHARMM'
             print("Reading CHARMM files")
             self.psffile=psffile
             if use_parmed == True:
@@ -122,7 +121,7 @@ class OpenMMTheory:
             #TODO: Note: For atomnames it seems OpenMM converts atomnames to its own. Perhaps not useful
             self.atomnames=[self.psf.atom_list[i].name for i in range(0,len(self.psf.atom_list))]
         elif GROMACSfiles is True:
-            print("Warning: Gromacs-files interface not well tested")
+            print("Reading Gromacs files")
             #Reading grofile, not for coordinates but for periodic vectors
             if use_parmed == True:
                 print("Using Parmed.")
@@ -134,6 +133,7 @@ class OpenMMTheory:
                 print("Reading GROMACS topology file: ", gromacstopfile)
                 gmx_top = parmed.gromacs.GromacsTopologyFile(gromacstopfile)
 
+                #Getting PBC parameters
                 gmx_top.box = gmx_gro.box
                 gmx_top.positions = gmx_gro.positions
                 self.positions = gmx_top.positions
@@ -156,12 +156,13 @@ class OpenMMTheory:
             #                                    nonbondedCutoff=1 * simtk.openmm.unit.nanometer)
 
         elif Amberfiles is True:
-            self.Forcefield='Amber'
-            print("Warning: Amber-files interface not well tested. Be careful")
+            print("Reading Amber files")
             print("Warning: Only new-style Amber7 prmtopfile will work")
-            if use_parmed == True: 
+            if use_parmed == True:
+                print("Using Parmed to read Amber files")
                 self.prmtop = parmed.load_file(amberprmtopfile)
             else:
+                print("Using built-in OpenMM routines to read Amber files.")
                 #Note: Only new-style Amber7 prmtop files work
                 self.prmtop = simtk.openmm.app.AmberPrmtopFile(amberprmtopfile)
             self.topology = self.prmtop.topology
@@ -215,22 +216,29 @@ class OpenMMTheory:
             
             if CHARMMfiles is True:
                 print("Using CHARMM files")
+
+                if periodic_cell_dimensions == None:
+                    print("Error: When using CHARMMfiles and Periodic=True, periodic_cell_dimensions keyword needs to be supplied")
+                    print("Example: periodic_cell_dimensions= [200, 200, 200, 90, 90, 90]  in Angstrom and degrees)
+                    exit()
                 self.periodic_cell_dimensions = periodic_cell_dimensions
                 print("Periodic cell dimensions:", periodic_cell_dimensions)
                 self.a = periodic_cell_dimensions[0] * self.unit.angstroms
                 self.b = periodic_cell_dimensions[1] * self.unit.angstroms
                 self.c = periodic_cell_dimensions[2] * self.unit.angstroms
-                #Box vectors can only be set here for CHARMM
+                #NOTE: SHould this be made more general??
                 self.forcefield.setBox(self.a, self.b, self.c)
                 self.system = self.forcefield.createSystem(self.params, nonbondedMethod=simtk.openmm.app.PME,
                                             nonbondedCutoff=periodic_nonbonded_cutoff * self.unit.angstroms, switchDistance=switching_function_distance*self.unit.angstroms)
             elif GROMACSfiles is True:
+                #NOTE: Gromacs has read PBC info from Gro file already
                 print("Ewald Error tolerance:", self.ewalderrortolerance)
                 #Note: Turned off switchDistance. Not available for GROMACS?
                 #
                 self.system = self.forcefield.createSystem(nonbondedMethod=simtk.openmm.app.PME,
                                             nonbondedCutoff=periodic_nonbonded_cutoff * self.unit.angstroms, ewaldErrorTolerance=self.ewalderrortolerance)
             elif Amberfiles is True:
+                #NOTE: Amber-interface has read PBC info from prmtop file already
                 self.system = self.forcefield.createSystem(nonbondedMethod=simtk.openmm.app.PME,
                                             nonbondedCutoff=periodic_nonbonded_cutoff * self.unit.angstroms)
             else:
@@ -402,6 +410,7 @@ class OpenMMTheory:
         #self.simulation = simtk.openmm.app.simulation.Simulation(self.topology, self.system, self.integrator,self.platform)
         #self.simulation = self.simulationclass(self.topology, self.system, self.integrator,self.platform)
 
+        #Disabled below because we get PBC info from prmtop file. More robust
         #if self.Periodic is True and Amberfiles is True:
         #    print("Setting periodic box parameters")
         #    self.simulation.context.setPeriodicBoxVectors((periodic_cell_dimensions[0]/10, 0, 0), (0, periodic_cell_dimensions[1]/10, 0), (0, 0 ,periodic_cell_dimensions[2]/10))
