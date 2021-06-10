@@ -204,7 +204,7 @@ def calc_surface(fragment=None, theory=None, workflow=None, scantype='Unrelaxed'
                             #Running zero-theory with optimizer just to set geometry
                             interface_geometric.geomeTRICOptimizer(fragment=fragment, theory=zerotheory, maxiter=maxiter, coordsystem=coordsystem, 
                             constraints=allconstraints, constrainvalue=True, convergence_setting=convergence_setting,
-                            ActiveRegion=ActiveRegion, actatoms=actatoms))
+                            ActiveRegion=ActiveRegion, actatoms=actatoms)
                             
                             #Write geometry to disk
                             fragment.write_xyzfile(xyzfilename="RC1_"+str(RCvalue1)+"-RC2_"+str(RCvalue2)+".xyz")
