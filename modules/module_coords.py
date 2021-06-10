@@ -2328,7 +2328,7 @@ def remove_atoms_from_system_CHARMM(fragment=None, psffile=None, topfile=None, a
         writelisttofile(new_actatoms, "active_atoms")
     else:
         print("Warning: qmatoms and actatoms not provided to function. Use qmatoms and actatoms keyword arguments if you want to update qmatoms and actatoms list.")
-        print("Otherwise you have to update qmatoms and actatoms lists manually!
+        print("Otherwise you have to update qmatoms and actatoms lists manually!")
     print("")
     print("remove_atoms_from_system_CHARMM: Done!")
 
@@ -2437,7 +2437,7 @@ def add_atoms_to_system_CHARMM(fragment=None, added_atoms_coordstring=None, resg
         writelisttofile(new_actatoms, "active_atoms")
     else:
         print("Warning: qmatoms and actatoms not provided to function. Use qmatoms and actatoms keyword arguments if you want to update qmatoms and actatoms list.")
-        print("Otherwise you have to update qmatoms and actatoms lists manually!
+        print("Otherwise you have to update qmatoms and actatoms lists manually!")
     print("")
 
 
