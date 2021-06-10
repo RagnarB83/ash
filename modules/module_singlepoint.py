@@ -69,9 +69,12 @@ class ZeroTheory:
         self.printlevel=printlevel
         self.label=label
         self.fragment=fragment
-        pass
+        self.filename="zerotheory"
     def run(self, current_coords=None, elems=None, Grad=False, PC=False, nprocs=None ):
         self.energy = 0.0
         #Gradient as np array 
         self.gradient = np.zeros((len(elems), 3))
-        return self.energy,self.gradient
+        if Grad==False:
+            return self.energy
+        else:
+            return self.energy,self.gradient

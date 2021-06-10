@@ -11,13 +11,15 @@ class OpenMMTheory:
                  Amberfiles=False, amberprmtopfile=None, printlevel=2, do_energy_composition=False,
                  xmlfile=None, periodic=False, periodic_cell_dimensions=None, customnonbondedforce=False,
                  delete_QM1_MM1_bonded=False, watermodel=None, use_parmed=False, periodic_nonbonded_cutoff=12,
-                 dispersion_correction=False, switching_function=False, switching_function_distance=1.1):
+                 dispersion_correction=True, switching_function=False, switching_function_distance=10,
+                 ewalderrortolerance=1e-5, applyconstraints=False, PMEparameters=None):
         
         module_init_time = time.time()
         # OPEN MM load
         try:
             import simtk.openmm.app
             import simtk.unit
+            print("Imported OpenMM library version:", simtk.openmm.__version__)
             #import simtk.openmm
         except ImportError:
             raise ImportError(
@@ -58,6 +60,14 @@ class OpenMMTheory:
         self.coords=[]
         self.charges=[]
         self.Periodic = periodic
+        self.ewalderrortolerance=ewalderrortolerance
+
+        #Whether to apply constraints or not when calculating MM energy
+        self.applyconstraints=applyconstraints
+
+        #Switching function distance in Angstrom
+        self.switching_function_distance=switching_function_distance
+
         #Residue names,ids,segments,atomtypes of all atoms of system.
         # Grabbed below from PSF-file. Information used to write PDB-file
         self.resnames=[]
@@ -69,6 +79,7 @@ class OpenMMTheory:
         #OpenMM things
         self.openmm=simtk.openmm
         self.simulationclass=simtk.openmm.app.simulation.Simulation
+        self.verletintegrator=simtk.openmm.VerletIntegrator
         self.langevinintegrator=simtk.openmm.LangevinIntegrator
         self.platform_choice=platform
         self.unit=simtk.unit
@@ -90,7 +101,6 @@ class OpenMMTheory:
         print("Note: OpenMM will fail in this step if parameters are missing in topology and parameter files (e.g. nonbonded entries)")
         # #Always creates object we call self.forcefield that contains topology attribute
         if CHARMMfiles is True:
-            self.Forcefield='CHARMM'
             print("Reading CHARMM files")
             self.psffile=psffile
             if use_parmed == True:
@@ -111,11 +121,19 @@ class OpenMMTheory:
             #TODO: Note: For atomnames it seems OpenMM converts atomnames to its own. Perhaps not useful
             self.atomnames=[self.psf.atom_list[i].name for i in range(0,len(self.psf.atom_list))]
         elif GROMACSfiles is True:
-            print("Warning: Gromacs-files interface not tested")
+            print("Reading Gromacs files")
             #Reading grofile, not for coordinates but for periodic vectors
-            if use_parmed == True:    
-                gmx_top = parmed.gromacs.GromacsTopologyFile(gromacstopfile)
+            if use_parmed == True:
+                print("Using Parmed.")
+                print("GROMACS top dir:", gromacstopdir)
+                parmed.gromacs.GROMACS_TOPDIR = gromacstopdir
+                print("Reading GROMACS GRO file: ", grofile)
                 gmx_gro = parmed.gromacs.GromacsGroFile.parse(grofile)
+                
+                print("Reading GROMACS topology file: ", gromacstopfile)
+                gmx_top = parmed.gromacs.GromacsTopologyFile(gromacstopfile)
+
+                #Getting PBC parameters
                 gmx_top.box = gmx_gro.box
                 gmx_top.positions = gmx_gro.positions
                 self.positions = gmx_top.positions
@@ -138,12 +156,13 @@ class OpenMMTheory:
             #                                    nonbondedCutoff=1 * simtk.openmm.unit.nanometer)
 
         elif Amberfiles is True:
-            self.Forcefield='Amber'
-            print("Warning: Amber-files interface not well tested. Be careful")
+            print("Reading Amber files")
             print("Warning: Only new-style Amber7 prmtopfile will work")
-            if use_parmed == True: 
+            if use_parmed == True:
+                print("Using Parmed to read Amber files")
                 self.prmtop = parmed.load_file(amberprmtopfile)
             else:
+                print("Using built-in OpenMM routines to read Amber files.")
                 #Note: Only new-style Amber7 prmtop files work
                 self.prmtop = simtk.openmm.app.AmberPrmtopFile(amberprmtopfile)
             self.topology = self.prmtop.topology
@@ -196,50 +215,77 @@ class OpenMMTheory:
             #Parameters here are based on OpenMM DHFR example
             
             if CHARMMfiles is True:
+                print("Using CHARMM files")
+
+                if periodic_cell_dimensions == None:
+                    print("Error: When using CHARMMfiles and Periodic=True, periodic_cell_dimensions keyword needs to be supplied")
+                    print("Example: periodic_cell_dimensions= [200, 200, 200, 90, 90, 90]  in Angstrom and degrees")
+                    exit()
                 self.periodic_cell_dimensions = periodic_cell_dimensions
                 print("Periodic cell dimensions:", periodic_cell_dimensions)
                 self.a = periodic_cell_dimensions[0] * self.unit.angstroms
                 self.b = periodic_cell_dimensions[1] * self.unit.angstroms
                 self.c = periodic_cell_dimensions[2] * self.unit.angstroms
-                #Box vectors can only be set here for CHARMM
+                #NOTE: SHould this be made more general??
                 self.forcefield.setBox(self.a, self.b, self.c)
                 self.system = self.forcefield.createSystem(self.params, nonbondedMethod=simtk.openmm.app.PME,
-                                            nonbondedCutoff=periodic_nonbonded_cutoff * self.unit.angstroms, switchDistance=10*self.unit.angstroms)
+                                            nonbondedCutoff=periodic_nonbonded_cutoff * self.unit.angstroms, switchDistance=switching_function_distance*self.unit.angstroms)
             elif GROMACSfiles is True:
-                
+                #NOTE: Gromacs has read PBC info from Gro file already
+                print("Ewald Error tolerance:", self.ewalderrortolerance)
                 #Note: Turned off switchDistance. Not available for GROMACS?
                 #
                 self.system = self.forcefield.createSystem(nonbondedMethod=simtk.openmm.app.PME,
-                                            nonbondedCutoff=periodic_nonbonded_cutoff * self.unit.angstroms, ewaldErrorTolerance=0.0005)
+                                            nonbondedCutoff=periodic_nonbonded_cutoff * self.unit.angstroms, ewaldErrorTolerance=self.ewalderrortolerance)
+            elif Amberfiles is True:
+                #NOTE: Amber-interface has read PBC info from prmtop file already
+                self.system = self.forcefield.createSystem(nonbondedMethod=simtk.openmm.app.PME,
+                                            nonbondedCutoff=periodic_nonbonded_cutoff * self.unit.angstroms)
             else:
                 self.system = self.forcefield.createSystem(nonbondedMethod=simtk.openmm.app.PME,
-                                            nonbondedCutoff=periodic_nonbonded_cutoff * self.unit.angstroms, switchDistance=10*self.unit.angstroms)
+                                            nonbondedCutoff=periodic_nonbonded_cutoff * self.unit.angstroms, switchDistance=switching_function_distance*self.unit.angstroms)
                 
 
             #TODO: Customnonbonded force option. Currently disabled
             print("OpenMM system created")
+            print("Periodic vectors:", self.system.getDefaultPeriodicBoxVectors())
             #Force modification here
             print("OpenMM Forces defined:", self.system.getForces())
+
+
+            #PRINTING PROPERTIES OF NONBONDED FORCE BELOW
             for i,force in enumerate(self.system.getForces()):
                 if isinstance(force, simtk.openmm.CustomNonbondedForce):
-                    print('CustomNonbondedForce: %s' % force.getUseSwitchingFunction())
-                    print('LRC? %s' % force.getUseLongRangeCorrection())
-                    force.setUseLongRangeCorrection(False)
+                    #NOTE: THIS IS CURRENTLY NOT USED
+                    pass
+                    #print('CustomNonbondedForce: %s' % force.getUseSwitchingFunction())
+                    #print('LRC? %s' % force.getUseLongRangeCorrection())
+                    #force.setUseLongRangeCorrection(False)
                 elif isinstance(force, simtk.openmm.NonbondedForce):
                     #Turn Dispersion correction on/off depending on user
                     #NOTE: Default: False   To be revisited
-                    if dispersion_correction == True:
-                        force.setUseDispersionCorrection(dispersion_correction)
-                    if switching_function == True:
-                        force.setUseSwitchingFunction(switching_function)
-                        #Switching distance in nm. To be looked at further
-                        force.setSwitchingDistance(switching_function_distance)
-                        print('SwitchingFunction distance: %s' % force.getSwitchingDistance())
-                    
-                    print("Periodic cutoff distance: {} nm", force.getCutoffDistance)
+
+                    #NOte:
+                    force.setUseDispersionCorrection(dispersion_correction)
+
+                    #Modify PME Parameters if desired
+                    #force.setPMEParameters(1.0/0.34, fftx, ffty, fftz)
+                    if PMEparameters != None:
+                        print("Changing PME parameters")
+                        force.setPMEParameters(PMEparameters[0], PMEparameters[1], PMEparameters[2], PMEparameters[3])
+                    #force.setSwitchingDistance(switching_function_distance)
+                    #if switching_function == True:
+                    #    force.setUseSwitchingFunction(switching_function)
+                    #    #Switching distance in nm. To be looked at further
+                    #   force.setSwitchingDistance(switching_function_distance)
+                    #    print('SwitchingFunction distance: %s' % force.getSwitchingDistance())
+                    print("Nonbonded force settings (after all modifications):")
+                    print("Periodic cutoff distance: {}".format(force.getCutoffDistance()))
                     print('Use SwitchingFunction: %s' % force.getUseSwitchingFunction())
+                    print('SwitchingFunction distance: {}'.format(force.getSwitchingDistance()))
                     print('Use Long-range Dispersion correction: %s' % force.getUseDispersionCorrection())
 
+                    print("PME Parameters:", force.getPMEParameters())
 
                     # Set PME Parameters if desired
                     #force.setPMEParameters(3.285326106/self.unit.nanometers,60, 64, 60) 
@@ -364,9 +410,10 @@ class OpenMMTheory:
         #self.simulation = simtk.openmm.app.simulation.Simulation(self.topology, self.system, self.integrator,self.platform)
         #self.simulation = self.simulationclass(self.topology, self.system, self.integrator,self.platform)
 
-        if self.Periodic is True and Amberfiles is True:
-            print("Setting periodic box parameters")
-            self.simulation.context.setPeriodicBoxVectors((periodic_cell_dimensions[0]/10, 0, 0), (0, periodic_cell_dimensions[1]/10, 0), (0, 0 ,periodic_cell_dimensions[2]/10))
+        #Disabled below because we get PBC info from prmtop file. More robust
+        #if self.Periodic is True and Amberfiles is True:
+        #    print("Setting periodic box parameters")
+        #    self.simulation.context.setPeriodicBoxVectors((periodic_cell_dimensions[0]/10, 0, 0), (0, periodic_cell_dimensions[1]/10, 0), (0, 0 ,periodic_cell_dimensions[2]/10))
 
 
 
@@ -402,9 +449,10 @@ class OpenMMTheory:
     # https://github.com/openmm/openmm/issues/2124
     #https://github.com/openmm/openmm/issues/1696
     def addexceptions(self,atomlist):
+        timeA=time.time()
         import itertools
         print("Add exceptions/exclusions. Removing i-j interactions for list :", len(atomlist), "atoms")
-        timeA=time.time()
+
         #Has duplicates
         #[self.nonbonded_force.addException(i,j,0, 0, 0, replace=True) for i in atomlist for j in atomlist]
         #https://stackoverflow.com/questions/942543/operation-on-every-pair-of-element-in-a-list
@@ -456,9 +504,10 @@ class OpenMMTheory:
         timeA=time.time()
         print("Creating/updating OpenMM simulation object")
         printdebug("self.system.getForces() ", self.system.getForces())
-        self.integrator = self.langevinintegrator(0.0000001 * self.unit.kelvin,  # Temperature of heat bath
-                                        1 / self.unit.picosecond,  # Friction coefficient
-                                        0.002 * self.unit.picoseconds)  # Time step
+        #self.integrator = self.langevinintegrator(0.0000001 * self.unit.kelvin,  # Temperature of heat bath
+        #                                1 / self.unit.picosecond,  # Friction coefficient
+        #                                0.002 * self.unit.picoseconds)  # Time step
+        self.integrator = self.verletintegrator(0.001*self.unit.picosecond)
         self.simulation = self.simulationclass(self.topology, self.system, self.integrator,self.platform)
         print_time_rel(timeA, modulename="creating simulation")
     
@@ -545,6 +594,8 @@ class OpenMMTheory:
         for val in openmm_energy.values():
             sumofallcomponents+=val._value
         
+
+
         #Print energy table       
         print('%-20s | %-15s | %-15s' % ('Component', 'kJ/mol', 'kcal/mol'))
         print('-'*56)
@@ -558,10 +609,9 @@ class OpenMMTheory:
         
         print("")
         print("")
-        print_time_rel(timeA, modulename="print table")
-        
-        
-        timeA = time.time()
+        #Adding sum to table
+        openmm_energy['Sum'] = sumofallcomponents
+        self.energy_components=openmm_energy
     
     def run(self, current_coords=None, elems=None, Grad=False, fragment=None, qmatoms=None):
         module_init_time=time.time()
@@ -602,8 +652,17 @@ class OpenMMTheory:
         pos = [self.Vec3(current_coords[i, 0] / 10, current_coords[i, 1] / 10, current_coords[i, 2] / 10) for i in range(len(current_coords))] * self.unit.nanometer
 
         self.simulation.context.setPositions(pos)
-        print_time_rel(timeA, modulename="context pos")
+        print_time_rel(timeA, modulename="context: set positions")
         timeA = time.time()
+        #While these distance constraints should not matter, applying them makes the energy function agree with previous benchmarking for bonded and nonbonded
+        #https://www.ncbi.nlm.nih.gov/pmc/articles/PMC5549999/
+        #Using 1e-6 hardcoded value since how used in paper
+        if self.applyconstraints == True:
+            print("Applying constraints before calculating MM energy")
+            self.simulation.context.applyConstraints(1e-6)
+            print_time_rel(timeA, modulename="context: apply constraints")
+            timeA = time.time()
+
         print("Calculating MM state")
         
         print("forces")
@@ -651,6 +710,7 @@ class OpenMMTheory:
     # Delete selected exceptions. Only for Coulomb.
     #Used to delete Coulomb interactions involving QM-QM and QM-MM atoms
     def delete_exceptions(self,atomlist):
+        timeA=time.time()
         print("Deleting Coulombexceptions for atomlist:", atomlist)
         for force in self.system.getForces():
             if isinstance(force, self.openmm.NonbondedForce):
@@ -667,9 +727,12 @@ class OpenMMTheory:
                         force.setExceptionParameters(exc, p1, p2, chargeprod, sigmaij, epsilonij)
                         #print("New:", force.getExceptionParameters(exc))
         self.create_simulation()
+        print_time_rel(timeA, modulename="delete_exceptions")
+        
 
     #Function to
     def zero_nonbondedforce(self,atomlist, zeroCoulomb=True, zeroLJ=True):
+        timeA=time.time()
         print("Zero-ing nonbondedforce")
         def charge_sigma_epsilon(charge,sigma,epsilon):
             if zeroCoulomb ==  True:
@@ -716,11 +779,13 @@ class OpenMMTheory:
                 print("customnonbondedforce not implemented")
                 exit()
         self.create_simulation()
+        print_time_rel(timeA, modulename="zero_nonbondedforce")
         #self.create_simulation()
     #Updating charges in OpenMM object. Used to set QM charges to 0 for example
     #Taking list of atom-indices and list of charges (usually zero) and setting new charge
     #Note: Exceptions also needs to be dealt with (see delete_exceptions)
     def update_charges(self,atomlist,atomcharges):
+        timeA=time.time()
         print("Updating charges in OpenMM object.")
         assert len(atomlist) == len(atomcharges)
         newcharges=[]
@@ -755,8 +820,10 @@ class OpenMMTheory:
                 self.nonbonded_force.updateParametersInContext(self.simulation.context)
         self.create_simulation()
         printdebug("done here")
+        print_time_rel(timeA, modulename="update_charges")
 
     def modify_bonded_forces(self,atomlist):
+        timeA=time.time()
         print("Modifying bonded forces")
         print("")
         #This is typically used by QM/MM object to set bonded forces to zero for qmatoms (atomlist) 
@@ -947,7 +1014,7 @@ class OpenMMTheory:
         print("CustomBond terms", numcustombondterms_removed)
         print("")
         self.create_simulation()
-
+        print_time_rel(timeA, modulename="modify_bonded_forces")
 #For frozen systems we use Customforce in order to specify interaction groups
 #if len(self.frozen_atoms) > 0:
     

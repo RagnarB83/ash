@@ -4,9 +4,9 @@
 #AUTO-INSTALLATION SCRIPT FOR ASH
 #this avoids manual setup of Python, Julia etc.
 ################################################
-#________
+#__________________
 #Settings
-#________
+#__________________
 
 #Download Julia or not (otherwise a julia tar.gz file is needed)
 download_julia=true
@@ -25,6 +25,12 @@ localpipinstallation=false
 
 # Use conda and python inside Julia. Problematic and disabled
 #use_julia_conda=true #problem with python3 binary inside Conda.jl
+
+
+#__________________
+# END OF SETTINGS
+#__________________
+
 
 ###############################################
 echo "-------------------------------"
@@ -197,13 +203,14 @@ chmod uog+x python3_ash
 #Create set_environment_ash.sh file
 echo "Step 5. Creating set_environent_ash.sh script"
 echo "#!/bin/bash" > set_environment_ash.sh
+echo "ulimit -s unlimited" >> set_environment_ash.sh
 echo "export ASHPATH=${thisdir}" >> set_environment_ash.sh
 echo "export python3path=${path_to_python3_dir}" >> set_environment_ash.sh
 echo "export JULIAPATH=${thisdir}/julia-${juliaversion}/bin" >> set_environment_ash.sh
 echo "export JULIA_DEPOT_PATH=${thisdir}/julia-python-bundle" >> set_environment_ash.sh
 echo "export PYTHONPATH=\$ASHPATH:\$ASHPATH/lib:$ASHPATH/pythonpackages:\$PYTHONPATH" >> set_environment_ash.sh
 echo "export PATH=\$python3path:\$ASHPATH:\$JULIAPATH:\$PATH" >> set_environment_ash.sh
-echo "export LD_LIBRARY_PATH=$ASHPATH/lib:\$LD_LIBRARY_PATH" >> set_environment_ash.sh
+echo "export LD_LIBRARY_PATH=\$ASHPATH/lib:\$LD_LIBRARY_PATH" >> set_environment_ash.sh
 
 
 echo "Installation of ASH was successful!"

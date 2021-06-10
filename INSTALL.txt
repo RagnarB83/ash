@@ -8,13 +8,14 @@
 #handles Python package addition and Julia installation and packages
 ###########################
 
-1. Set path_to_python3_dir in ./install_ash.sh script to the Python3 installation you want to use.
-Note: You need to be able to install packages to this installation via pip
+1. Make sure the Python3 installation you wish to use is active (which python3).
+Or set path_to_python3_dir in ./install_ash.sh script.
+Note: You need to be able to install packages to this installation via pip (either locally or globally)
 
-2. cd to ASH directory. Do: chmod +x ./install_ash.sh and run:  ./install_ash.sh
+2. cd to ASH directory. Do: chmod +x ./install_ash.sh and run:  ./install_ash.sh . Make sure installation succeeds.
 
 3. Run: source ./set_environment_ash.sh
-    and get going!
+    and that's it!
 
 
 ###########################
@@ -42,11 +43,9 @@ Note: On a computing cluster a single installation should be sufficient.
 Then set the environment variables for each user and each user has to run once:
    julia $ASHPATH/julia-packages-setup.jl 
 
-
-###########################
+#####################
 #AFTER INSTALLATION
-###########################
-
+#####################
 - Make sure the /path/to/ash/python3_ash is executable:
     chmod ugo+x /path/to/ash/python3_ash
 
@@ -58,11 +57,12 @@ Then set the environment variables for each user and each user has to run once:
 
   If the 'which' commands point to the correct versions then you should be ready to go.
 
-- Copy ASH settings file to your user'ss home-directory and modify as needed
+- Copy ASH settings file to your user's home-directory and modify as needed
   cp /path/to/ash/ash_user_settings.ini ~/
 
 
 - Test installation
+
    # Basic test:
    cd $ASHPATH
    python3_ash  test_ash.py
