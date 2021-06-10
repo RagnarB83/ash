@@ -244,6 +244,7 @@ def writelisttofile(pylist,file):
     with open(file, 'w') as f:
         for l in pylist:
             f.write(str(l)+' ')
+    print("Wrote list to file:", file)
 
 #Natural (human) sorting of list
 def natural_sort(l):
