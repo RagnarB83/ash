@@ -84,6 +84,7 @@ class Fragment:
         elif fragfile is not None:
             self.read_fragment_from_file(fragfile)
     def update_attributes(self):
+        print("Updating fragment attributes...")
         self.nuccharge = nucchargelist(self.elems)
         self.numatoms = len(self.coords)
         self.atomlist = list(range(0, self.numatoms))
@@ -99,19 +100,19 @@ class Fragment:
         #Update atomtypes, atomcharges and fragmenttype_labels also
         if len(self.atomcharges)==0:
             self.atomcharges=[0.0 for i in range(0,self.numatoms)]
-        elif len(self.atomcharges) == self.numatoms:
+        elif len(self.atomcharges) != self.numatoms:
             print("Warning. atomcharges list not matching number of atoms when updating attributes")
             print("Adding 0.0 entries for missing atoms")
             self.atomcharges = self.atomcharges + [0.0 for i in range(0,self.numatoms-len(self.atomcharges))]
         if len(self.fragmenttype_labels)==0:
             self.fragmenttype_labels=[0 for i in range(0,self.numatoms)]
-        elif len(self.fragmenttype_labels) == self.numatoms:
+        elif len(self.fragmenttype_labels) != self.numatoms:
             print("Warning. fragmenttype_labels list not matching number of atoms")
             print("Adding 0 entries for missing atoms")
             self.fragmenttype_labels = self.fragmenttype_labels + [0 for i in range(0,self.numatoms-len(self.fragmenttype_labels))]
         if len(self.atomtypes)==0:
             self.atomtypes=['None' for i in range(0,self.numatoms)]
-        elif len(self.atomtypes) == self.numatoms:
+        elif len(self.atomtypes) != self.numatoms:
             print("Warning. atomtypes list not matching number of atoms")
             print("Adding None entries for missing atoms")
             self.atomtypes = self.atomtypes + [None for i in range(0,self.numatoms-len(self.atomtypes))]
