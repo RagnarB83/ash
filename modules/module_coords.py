@@ -97,6 +97,8 @@ class Fragment:
         self.prettyformula = self.formula.replace('1','')
 
         #Update atomtypes, atomcharges and fragmenttype_labels also
+        print("self.atomcharges:", self.atomcharges)
+        print(len(self.atomcharges))
         if len(self.atomcharges)==0:
             self.atomcharges=[0.0 for i in range(0,self.numatoms)]
         elif len(self.atomcharges) == self.numatoms:
