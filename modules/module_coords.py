@@ -475,21 +475,7 @@ class Fragment:
         if self.printlevel >= 2:
             print("Printing fragment to disk:", filename)
 
-        #Setting atomcharges, fragmenttype_labels and atomtypes to dummy lists if empty
-        if len(self.atomcharges)==0:
-            self.atomcharges=[0.0 for i in range(0,self.numatoms)]
-        if len(self.fragmenttype_labels)==0:
-            self.fragmenttype_labels=[0 for i in range(0,self.numatoms)]
-        if len(self.atomtypes)==0:
-            self.atomtypes=['None' for i in range(0,self.numatoms)]
-
-        print("len(self.atomlist)", len(self.atomlist))
-        print("len(self.elems)", len(self.elems))
-        print("len(self.coords)", len(self.coords))
-        print("len(self.atomcharges)", len(self.atomcharges))
-        print("len(self.fragmenttype_labels)", len(self.fragmenttype_labels))
-        print("len(self.atomtypes):", len(self.atomtypes))
-
+        #Checking that lists have same length (as zip will just ignore the mismatch)
         assert len(self.atomlist) == len(self.elems) == len(self.coords) == len(self.atomcharges) == len(self.fragmenttype_labels) == len(self.atomtypes), "Missing entries in list"
         with open(filename, 'w') as outfile:
             outfile.write("Fragment: \n")
