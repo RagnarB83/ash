@@ -482,12 +482,12 @@ class Fragment:
             print("Printing fragment to disk:", filename)
 
         #Checking that lists have same length (as zip will just ignore the mismatch)
-        print("len(self.atomlist)", len(self.atomlist))
-        print("len(self.elems)",len(self.elems) )
-        print("len(self.coords)",len(self.coords) )
-        print("len(self.atomcharges)", len(self.atomcharges) )
-        print("len(self.fragmenttype_labels)", len(self.fragmenttype_labels) )
-        print("len(self.atomtypes)", len(self.atomtypes))
+        #print("len(self.atomlist)", len(self.atomlist))
+        #rint("len(self.elems)",len(self.elems) )
+        #print("len(self.coords)",len(self.coords) )
+        #print("len(self.atomcharges)", len(self.atomcharges) )
+        #print("len(self.fragmenttype_labels)", len(self.fragmenttype_labels) )
+        #print("len(self.atomtypes)", len(self.atomtypes))
 
         print("", )
         assert len(self.atomlist) == len(self.elems) == len(self.coords) == len(self.atomcharges) == len(self.fragmenttype_labels) == len(self.atomtypes), "Missing entries in list"
@@ -2351,6 +2351,7 @@ def remove_atoms_from_system_CHARMM(fragment=None, psffile=None, topfile=None, a
     #Updating provided qmatoms and actatoms lists
     if qmatoms != None and actatoms != None:
         print("qmatoms and actatoms lists provided to function. Will now update atomindices in these lists.")
+        print("Deletion list:", atomindices)
         print("Old list of QM atoms:", qmatoms)
         print("Old list of active atoms:", actatoms)
         print("")
