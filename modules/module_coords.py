@@ -476,6 +476,14 @@ class Fragment:
             print("Printing fragment to disk:", filename)
 
         #Checking that lists have same length (as zip will just ignore the mismatch)
+        print("len(self.atomlist)", len(self.atomlist))
+        print("len(self.elems)",len(self.elems) )
+        print("len(self.coords)",len(self.coords) )
+        print("len(self.atomcharges)", len(self.atomcharges) )
+        print("len(self.fragmenttype_labels)", len(self.fragmenttype_labels) )
+        print("len(self.atomtypes)", len(self.atomtypes))
+
+        print("", )
         assert len(self.atomlist) == len(self.elems) == len(self.coords) == len(self.atomcharges) == len(self.fragmenttype_labels) == len(self.atomtypes), "Missing entries in list"
         with open(filename, 'w') as outfile:
             outfile.write("Fragment: \n")
