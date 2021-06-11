@@ -460,6 +460,14 @@ class Fragment:
         if len(self.atomtypes)==0:
             self.atomtypes=['None' for i in range(0,self.numatoms)]
 
+        print("len(self.atomlist)", len(self.atomlist))
+        print("en(self.elems)", en(self.elems))
+        print("len(self.coords)", len(self.coords))
+        print("len(self.atomcharges)", len(self.atomcharges))
+        print("len(self.fragmenttype_labels)", len(self.fragmenttype_labels))
+        print("len(self.atomtypes):", len(self.atomtypes))
+
+        assert len(self.atomlist) == len(self.elems) == len(self.coords) == len(self.atomcharges) == len(self.fragmenttype_labels) == len(self.atomtypes), "Missing entries in list"
         with open(filename, 'w') as outfile:
             outfile.write("Fragment: \n")
             outfile.write("Num atoms: {}\n".format(self.numatoms))
@@ -468,7 +476,7 @@ class Fragment:
             outfile.write("\n")
             outfile.write(" Index    Atom         x                  y                  z               charge        fragment-type        atom-type\n")
             outfile.write("---------------------------------------------------------------------------------------------------------------------------------\n")
-            for at, el, coord, charge, label, atomtype in zip(self.atomlist, self.elems,self.coords,self.atomcharges, self.fragmenttype_labels, self.atomtypes):
+            for at, el, coord, charge, label, atomtype in zip(self.atomlist, self.elems, self.coords, self.atomcharges, self.fragmenttype_labels, self.atomtypes):
                 line="{:>6} {:>6}  {:17.11f}  {:17.11f}  {:17.11f}  {:14.8f} {:12d} {:>21}\n".format(at, el,coord[0], coord[1], coord[2], charge, label, atomtype)
                 outfile.write(line)
             outfile.write(
