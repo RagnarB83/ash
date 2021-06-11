@@ -2253,7 +2253,7 @@ def update_atom_indices_upon_deletion(atomlist,dellist):
         else:
             #These atom indices are inbetween
             #Shifting depending on how many delatoms indices come before
-            shiftpar=len([i for i in delatoms if i < q])
+            shiftpar=len([i for i in dellist if i < q])
             atomlist_new.append(q-shiftpar)
     return atomlist_new
 
