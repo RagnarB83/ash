@@ -115,7 +115,7 @@ class Fragment:
         elif len(self.atomtypes) != self.numatoms:
             print("Warning. atomtypes list not matching number of atoms")
             print("Adding None entries for missing atoms")
-            self.atomtypes = self.atomtypes + [None for i in range(0,self.numatoms-len(self.atomtypes))]
+            self.atomtypes = self.atomtypes + ['None' for i in range(0,self.numatoms-len(self.atomtypes))]
         #TODO: If mismatch above happens, should we just set everything to zero ????
         # THINK ABOUT
 
