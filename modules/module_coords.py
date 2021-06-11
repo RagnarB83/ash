@@ -461,7 +461,7 @@ class Fragment:
             self.atomtypes=['None' for i in range(0,self.numatoms)]
 
         print("len(self.atomlist)", len(self.atomlist))
-        print("en(self.elems)", en(self.elems))
+        print("len(self.elems)", len(self.elems))
         print("len(self.coords)", len(self.coords))
         print("len(self.atomcharges)", len(self.atomcharges))
         print("len(self.fragmenttype_labels)", len(self.fragmenttype_labels))
