@@ -97,23 +97,24 @@ class Fragment:
         self.prettyformula = self.formula.replace('1','')
 
         #Update atomtypes, atomcharges and fragmenttype_labels also
-        print("self.atomcharges:", self.atomcharges)
-        print(len(self.atomcharges))
         if len(self.atomcharges)==0:
             self.atomcharges=[0.0 for i in range(0,self.numatoms)]
         elif len(self.atomcharges) == self.numatoms:
-            print("Problem. atomcharges list not matching number of atoms")
-            exit()
+            print("Warning. atomcharges list not matching number of atoms when updating attributes")
+            print("Adding 0.0 entries for missing atoms")
+            self.atomcharges = self.atomcharges + [0.0 for i in range(0,self.numatoms-len(self.atomcharges))]
         if len(self.fragmenttype_labels)==0:
             self.fragmenttype_labels=[0 for i in range(0,self.numatoms)]
         elif len(self.fragmenttype_labels) == self.numatoms:
-            print("Problem. fragmenttype_labels list not matching number of atoms")
-            exit()
+            print("Warning. fragmenttype_labels list not matching number of atoms")
+            print("Adding 0 entries for missing atoms")
+            self.fragmenttype_labels = self.fragmenttype_labels + [0 for i in range(0,self.numatoms-len(self.fragmenttype_labels))]
         if len(self.atomtypes)==0:
             self.atomtypes=['None' for i in range(0,self.numatoms)]
         elif len(self.atomtypes) == self.numatoms:
-            print("Problem. atomtypes list not matching number of atoms")
-            exit()
+            print("Warning. atomtypes list not matching number of atoms")
+            print("Adding None entries for missing atoms")
+            self.atomtypes = self.atomtypes + [None for i in range(0,self.numatoms-len(self.atomtypes))]
         #TODO: If mismatch above happens, should we just set everything to zero ????
         # THINK ABOUT
 
