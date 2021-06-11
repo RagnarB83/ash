@@ -2351,6 +2351,9 @@ def remove_atoms_from_system_CHARMM(fragment=None, psffile=None, topfile=None, a
     #Updating provided qmatoms and actatoms lists
     if qmatoms != None and actatoms != None:
         print("qmatoms and actatoms lists provided to function. Will now update atomindices in these lists.")
+        print("Old list of QM atoms:", qmatoms)
+        print("Old list of active atoms:", actatoms)
+        print("")
         new_qmatoms = update_atom_indices_upon_deletion(qmatoms,atomindices)
         new_actatoms = update_atom_indices_upon_deletion(actatoms,atomindices)
 
