@@ -97,27 +97,25 @@ class Fragment:
         #Pretty formula without 1
         self.prettyformula = self.formula.replace('1','')
 
-        #Update atomtypes, atomcharges and fragmenttype_labels also
+        #Update atomtypes, atomcharges and fragmenttype_labels also if needed
         if len(self.atomcharges)==0:
             self.atomcharges=[0.0 for i in range(0,self.numatoms)]
-        elif len(self.atomcharges) != self.numatoms:
-            print("Warning. atomcharges list not matching number of atoms when updating attributes")
+        elif len(self.atomcharges) < self.numatoms:
+            print("Warning. atomcharges list shorter than number of atoms")
             print("Adding 0.0 entries for missing atoms")
             self.atomcharges = self.atomcharges + [0.0 for i in range(0,self.numatoms-len(self.atomcharges))]
         if len(self.fragmenttype_labels)==0:
             self.fragmenttype_labels=[0 for i in range(0,self.numatoms)]
-        elif len(self.fragmenttype_labels) != self.numatoms:
-            print("Warning. fragmenttype_labels list not matching number of atoms")
+        elif len(self.fragmenttype_labels) < self.numatoms:
+            print("Warning. fragmenttype_labels list shorter than number of atoms")
             print("Adding 0 entries for missing atoms")
             self.fragmenttype_labels = self.fragmenttype_labels + [0 for i in range(0,self.numatoms-len(self.fragmenttype_labels))]
         if len(self.atomtypes)==0:
             self.atomtypes=['None' for i in range(0,self.numatoms)]
-        elif len(self.atomtypes) != self.numatoms:
-            print("Warning. atomtypes list not matching number of atoms")
+        elif len(self.atomtypes) < self.numatoms:
+            print("Warning. atomtypes list shorter than number of atoms")
             print("Adding None entries for missing atoms")
             self.atomtypes = self.atomtypes + ['None' for i in range(0,self.numatoms-len(self.atomtypes))]
-        #TODO: If mismatch above happens, should we just set everything to zero ????
-        # THINK ABOUT
 
         if self.printlevel >= 2:
             print("Fragment numatoms: {} Formula: {}  Label: {}".format(self.numatoms,self.prettyformula,self.label))
@@ -154,12 +152,20 @@ class Fragment:
         self.elems=[]
         self.connectivity=[]
     def delete_atom(self,atomindex):
-        self.elems.pop(atomindex)
         if type(self.coords) == np.ndarray:
             self.coords=np.delete(self.coords,atomindex,axis=0)
         elif type(self.coords) == list:
             self.coords.pop(atomindex)
+        
+        #Deleting from lists
+        self.elems.pop(atomindex)
+        self.atomcharges.pop(atomindex)
+        self.atomtypes.pop(atomindex)
+        self.fragmenttype_labels.pop(atomindex)
+
+        #Updating other attributes
         self.update_attributes()
+
     def add_coords(self, elems,coords,conn=True, scale=None, tol=None):
         if self.printlevel >= 2:
             print("Adding coordinates to fragment.")
@@ -2342,6 +2348,7 @@ def remove_atoms_from_system_CHARMM(fragment=None, psffile=None, topfile=None, a
     fragment.write_xyzfile(xyzfilename="newfragment.xyz")
     fragment.print_system(filename='newfragment.ygg')
 
+    #Updating provided qmatoms and actatoms lists
     if qmatoms != None and actatoms != None:
         print("qmatoms and actatoms lists provided to function. Will now update atomindices in these lists.")
         new_qmatoms = update_atom_indices_upon_deletion(qmatoms,atomindices)
