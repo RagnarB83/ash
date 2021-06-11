@@ -96,6 +96,25 @@ class Fragment:
         #Pretty formula without 1
         self.prettyformula = self.formula.replace('1','')
 
+        #Update atomtypes, atomcharges and fragmenttype_labels also
+        if len(self.atomcharges)==0:
+            self.atomcharges=[0.0 for i in range(0,self.numatoms)]
+        elif len(self.atomcharges) == self.numatoms:
+            print("Problem. atomcharges list not matching number of atoms")
+            exit()
+        if len(self.fragmenttype_labels)==0:
+            self.fragmenttype_labels=[0 for i in range(0,self.numatoms)]
+        elif len(self.fragmenttype_labels) == self.numatoms:
+            print("Problem. fragmenttype_labels list not matching number of atoms")
+            exit()
+        if len(self.atomtypes)==0:
+            self.atomtypes=['None' for i in range(0,self.numatoms)]
+        elif len(self.atomtypes) == self.numatoms:
+            print("Problem. atomtypes list not matching number of atoms")
+            exit()
+        #TODO: If mismatch above happens, should we just set everything to zero ????
+        # THINK ABOUT
+
         if self.printlevel >= 2:
             print("Fragment numatoms: {} Formula: {}  Label: {}".format(self.numatoms,self.prettyformula,self.label))
 
