@@ -169,7 +169,7 @@ def geomeTRICOptimizer(theory=None,fragment=None, coordsystem='hdlc', frozenatom
         if ActiveRegion == True:
             #If QM/MM object then QM-region:
             if theory.__class__.__name__ == "QMMMTheory":
-                print("Theory object: QMMMTheory")
+                print("Theory class: QMMMTheory")
                 print("Will by default print only QM-region in output (use print_atoms_list option to change)")
                 print_atoms_list=theory.qmatoms
             else:
@@ -432,7 +432,9 @@ def geomeTRICOptimizer(theory=None,fragment=None, coordsystem='hdlc', frozenatom
     if ActiveRegion==True:
         write_XYZ_for_atoms(fragment.coords, fragment.elems, actatoms, "Fragment-optimized_Active")
 
-    print_internal_coordinate_table(fragment,actatoms=actatoms)
+    #Printing internal coordinate table
+    #TODO: Make a lot better
+    print_internal_coordinate_table(fragment,actatoms=print_atoms_list)
 
     blankline()
     #Now returning final energy

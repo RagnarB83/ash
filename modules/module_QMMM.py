@@ -306,7 +306,7 @@ class QMMMTheory:
         print_time_rel(timeA, modulename="ShiftMMCharges")
     #Create dipole charge (twice) for each MM2 atom that gets fraction of MM1 charge
     def get_dipole_charge(self,delq,direction,mm1index,mm2index):
-        timeA=time.time()
+        #timeA=time.time()
         #Distance between MM1 and MM2
         MM_distance = module_coords.distance_between_atoms(fragment=self.fragment, atom1=mm1index, atom2=mm2index)
         #Coordinates
@@ -338,7 +338,7 @@ class QMMMTheory:
         #print("pos :", pos)
         #Returning charge with sign based on direction and position
         #Return coords as regular list
-        print_time_rel(timeA, modulename="get_dipole_charge")
+        #print_time_rel(timeA, modulename="get_dipole_charge")
         return -q0*direction,list(pos)
     def SetDipoleCharges(self):
         timeA=time.time()

@@ -621,6 +621,7 @@ def remove_zero_charges(charges,coords):
 
 
 def print_internal_coordinate_table(fragment,actatoms=None):
+    timeA=time.time()
     if actatoms == None:
         actatoms=[]
     #If no connectivity in fragment then recalculate it for actatoms only
@@ -684,7 +685,7 @@ def print_internal_coordinate_table(fragment,actatoms=None):
         else:
                 print("Bond: {:8}{:4} - {:4}{:4} {:>6.3f}".format(listkey[0],elA,listkey[1],elB, val ))
     print('='*50)
-
+    print_time_rel(timeA, modulename='print internal coordinate table')
 
 #Function to check if string corresponds to an element symbol or not.
 #Compares in lowercase
@@ -2312,7 +2313,7 @@ writepdb new-system.pdb
     process = sp.run([psfgendir + '/psfgen', 'psfinput.tcl'])
 
 
-def remove_atoms_from_system_CHARMM(fragment=None, psffile=None, topfile=None, atomindices=None, psfgendir=None, qmatoms=None, actatoms=None):
+def remove_atoms_from_system_CHARMM(fragment=None, psffile=None, topfile=None, atomindices=None, psfgendir=None, qmatoms=None, actatoms=None, offset_atom_indices=0):
     print_line_with_mainheader("remove_atoms_from_system_CHARMM")
     if fragment==None or psffile==None or topfile==None or atomindices==None:
         print("Error: remove_atoms_from_system requires keyword arguments:")
@@ -2357,6 +2358,11 @@ def remove_atoms_from_system_CHARMM(fragment=None, psffile=None, topfile=None, a
         print("")
         new_qmatoms = update_atom_indices_upon_deletion(qmatoms,atomindices)
         new_actatoms = update_atom_indices_upon_deletion(actatoms,atomindices)
+
+        #Possible offset of atom indices
+        new_qmatoms = [i+offset_atom_indices for i in new_qmatoms]
+        new_actatoms = [i+offset_atom_indices for i in new_actatoms]
+
 
         print("New list of QM atoms:", new_qmatoms)
         print("New list of active atoms:", new_actatoms)
@@ -2423,7 +2429,7 @@ def add_atoms_to_PSF(resgroup=None, topfile=None, psffile=None,psfgendir=None,nu
     
     return
 
-def add_atoms_to_system_CHARMM(fragment=None, added_atoms_coordstring=None, resgroup=None, psffile=None, topfile=None, psfgendir=None, qmatoms=None, actatoms=None):
+def add_atoms_to_system_CHARMM(fragment=None, added_atoms_coordstring=None, resgroup=None, psffile=None, topfile=None, psfgendir=None, qmatoms=None, actatoms=None, offset_atom_indices=0):
     print_line_with_mainheader("add_atoms_to_system")
     if fragment==None or psffile==None or topfile==None or added_atoms_coordstring == None or resgroup==None:
         print("Error: add_atoms_to_system_CHARMM requires keyword arguments:")
@@ -2467,6 +2473,10 @@ def add_atoms_to_system_CHARMM(fragment=None, added_atoms_coordstring=None, resg
         print("qmatoms and actatoms lists provided to function. Will now add atomindices to these lists.")
         new_qmatoms = qmatoms + newatomindices
         new_actatoms = actatoms + newatomindices
+        #Possible offset of atom indices
+        new_qmatoms = [i+offset_atom_indices for i in new_qmatoms]
+        new_actatoms = [i+offset_atom_indices for i in new_actatoms]
+
         print("New list of QM atoms:", new_qmatoms)
         print("New list of active atoms:", new_actatoms)
         writelisttofile(new_qmatoms, "qmatoms")
