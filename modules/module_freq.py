@@ -164,13 +164,15 @@ def NumFreq(fragment=None, theory=None, npoint=1, displacement=0.005, hessatoms=
         #Looping over geometries and running.
         #   key: AtomNCoordPDirectionm   where N=atomnumber, P=x,y,z and direction m: + or -
         #   value: gradient
-        for label, geo in zip(list_of_labels,list_of_displaced_geos):
+        for numdisp,(label, geo) in enumerate(zip(list_of_labels,list_of_displaced_geos)):
             if label == 'Originalgeo':
                 calclabel = 'Originalgeo'
                 print("Doing original geometry calc.")
             else:
                 calclabel=label
+                #for index,(el,coord) in enumerate(zip(elems,coords))
                 #displacement_jobname='Numfreq-Disp-'+'Atom'+str(atom_disp)+crd+drection
+                print("Running displacement: {} / {}".format(numdisp,len(list_of_labels)))
                 print("Displacing {}".format(calclabel))
             energy, gradient = theory.run(current_coords=geo, elems=elems, Grad=True, nprocs=numcores)
             #Adding gradient to dictionary for AtomNCoordPDirectionm
