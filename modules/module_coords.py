@@ -2453,7 +2453,7 @@ def add_atoms_to_system_CHARMM(fragment=None, added_atoms_coordstring=None, resg
             added_elems.append(reformat_element(line.split()[0]))
             added_coords.append([float(line.split()[1]), float(line.split()[2]), float(line.split()[3])])
     num_added_atoms=len(added_elems)
-    newatomindices = [fragment.numatoms+i for i in range(0,num_added_atoms+1)]
+    newatomindices = [fragment.numatoms+i for i in range(0,num_added_atoms)]
     print("newatomindices (0-based indexing):", newatomindices)
     fragment.add_coords(added_elems,added_coords,conn=False)
 
