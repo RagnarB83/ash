@@ -2454,6 +2454,7 @@ def add_atoms_to_system_CHARMM(fragment=None, added_atoms_coordstring=None, resg
             added_coords.append([float(line.split()[1]), float(line.split()[2]), float(line.split()[3])])
     num_added_atoms=len(added_elems)
     newatomindices = [fragment.numatoms+i for i in range(1,num_added_atoms+1)]
+    print("newatomindices (0-based indexing):", newatomindices)
     fragment.add_coords(added_elems,added_coords,conn=False)
 
     #Adding atoms to PSF-file
@@ -2473,6 +2474,7 @@ def add_atoms_to_system_CHARMM(fragment=None, added_atoms_coordstring=None, resg
         print("qmatoms and actatoms lists provided to function. Will now add atomindices to these lists.")
         new_qmatoms = qmatoms + newatomindices
         new_actatoms = actatoms + newatomindices
+
         #Possible offset of atom indices
         new_qmatoms = [i+offset_atom_indices for i in new_qmatoms]
         new_actatoms = [i+offset_atom_indices for i in new_actatoms]
