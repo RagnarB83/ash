@@ -294,10 +294,6 @@ class PolEmbedTheory:
         elif self.qm_theory_name == "ORCATheory":
             print("not available for ORCATheory")
             exit()
-
-        elif self.qm_theory_name == "NWChemTheory":
-            print("not available for NWChemTheory")
-            exit()
         else:
             print("invalid QM theory")
             exit()

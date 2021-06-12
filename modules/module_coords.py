@@ -6,7 +6,7 @@ import time
 import numpy as np
 import subprocess as sp
 
-from functions_general import isint,listdiff,print_time_rel,BC,printdebug,print_line_with_mainheader
+from functions_general import isint,listdiff,print_time_rel,BC,printdebug,print_line_with_mainheader,writelisttofile
 import dictionaries_lists
 import settings_ash
 import constants
@@ -84,6 +84,7 @@ class Fragment:
         elif fragfile is not None:
             self.read_fragment_from_file(fragfile)
     def update_attributes(self):
+        print("Updating fragment attributes...")
         self.nuccharge = nucchargelist(self.elems)
         self.numatoms = len(self.coords)
         self.atomlist = list(range(0, self.numatoms))
@@ -95,6 +96,26 @@ class Fragment:
         self.formula = elemlisttoformula(self.elems)
         #Pretty formula without 1
         self.prettyformula = self.formula.replace('1','')
+
+        #Update atomtypes, atomcharges and fragmenttype_labels also if needed
+        if len(self.atomcharges)==0:
+            self.atomcharges=[0.0 for i in range(0,self.numatoms)]
+        elif len(self.atomcharges) < self.numatoms:
+            print("Warning. atomcharges list shorter than number of atoms")
+            print("Adding 0.0 entries for missing atoms")
+            self.atomcharges = self.atomcharges + [0.0 for i in range(0,self.numatoms-len(self.atomcharges))]
+        if len(self.fragmenttype_labels)==0:
+            self.fragmenttype_labels=[0 for i in range(0,self.numatoms)]
+        elif len(self.fragmenttype_labels) < self.numatoms:
+            print("Warning. fragmenttype_labels list shorter than number of atoms")
+            print("Adding 0 entries for missing atoms")
+            self.fragmenttype_labels = self.fragmenttype_labels + [0 for i in range(0,self.numatoms-len(self.fragmenttype_labels))]
+        if len(self.atomtypes)==0:
+            self.atomtypes=['None' for i in range(0,self.numatoms)]
+        elif len(self.atomtypes) < self.numatoms:
+            print("Warning. atomtypes list shorter than number of atoms")
+            print("Adding None entries for missing atoms")
+            self.atomtypes = self.atomtypes + ['None' for i in range(0,self.numatoms-len(self.atomtypes))]
 
         if self.printlevel >= 2:
             print("Fragment numatoms: {} Formula: {}  Label: {}".format(self.numatoms,self.prettyformula,self.label))
@@ -131,12 +152,20 @@ class Fragment:
         self.elems=[]
         self.connectivity=[]
     def delete_atom(self,atomindex):
-        self.elems.pop(atomindex)
         if type(self.coords) == np.ndarray:
             self.coords=np.delete(self.coords,atomindex,axis=0)
         elif type(self.coords) == list:
             self.coords.pop(atomindex)
+        
+        #Deleting from lists
+        self.elems.pop(atomindex)
+        self.atomcharges.pop(atomindex)
+        self.atomtypes.pop(atomindex)
+        self.fragmenttype_labels.pop(atomindex)
+
+        #Updating other attributes
         self.update_attributes()
+
     def add_coords(self, elems,coords,conn=True, scale=None, tol=None):
         if self.printlevel >= 2:
             print("Adding coordinates to fragment.")
@@ -452,14 +481,16 @@ class Fragment:
         if self.printlevel >= 2:
             print("Printing fragment to disk:", filename)
 
-        #Setting atomcharges, fragmenttype_labels and atomtypes to dummy lists if empty
-        if len(self.atomcharges)==0:
-            self.atomcharges=[0.0 for i in range(0,self.numatoms)]
-        if len(self.fragmenttype_labels)==0:
-            self.fragmenttype_labels=[0 for i in range(0,self.numatoms)]
-        if len(self.atomtypes)==0:
-            self.atomtypes=['None' for i in range(0,self.numatoms)]
+        #Checking that lists have same length (as zip will just ignore the mismatch)
+        #print("len(self.atomlist)", len(self.atomlist))
+        #rint("len(self.elems)",len(self.elems) )
+        #print("len(self.coords)",len(self.coords) )
+        #print("len(self.atomcharges)", len(self.atomcharges) )
+        #print("len(self.fragmenttype_labels)", len(self.fragmenttype_labels) )
+        #print("len(self.atomtypes)", len(self.atomtypes))
 
+        print("", )
+        assert len(self.atomlist) == len(self.elems) == len(self.coords) == len(self.atomcharges) == len(self.fragmenttype_labels) == len(self.atomtypes), "Missing entries in list"
         with open(filename, 'w') as outfile:
             outfile.write("Fragment: \n")
             outfile.write("Num atoms: {}\n".format(self.numatoms))
@@ -468,7 +499,7 @@ class Fragment:
             outfile.write("\n")
             outfile.write(" Index    Atom         x                  y                  z               charge        fragment-type        atom-type\n")
             outfile.write("---------------------------------------------------------------------------------------------------------------------------------\n")
-            for at, el, coord, charge, label, atomtype in zip(self.atomlist, self.elems,self.coords,self.atomcharges, self.fragmenttype_labels, self.atomtypes):
+            for at, el, coord, charge, label, atomtype in zip(self.atomlist, self.elems, self.coords, self.atomcharges, self.fragmenttype_labels, self.atomtypes):
                 line="{:>6} {:>6}  {:17.11f}  {:17.11f}  {:17.11f}  {:14.8f} {:12d} {:>21}\n".format(at, el,coord[0], coord[1], coord[2], charge, label, atomtype)
                 outfile.write(line)
             outfile.write(
@@ -590,6 +621,7 @@ def remove_zero_charges(charges,coords):
 
 
 def print_internal_coordinate_table(fragment,actatoms=None):
+    timeA=time.time()
     if actatoms == None:
         actatoms=[]
     #If no connectivity in fragment then recalculate it for actatoms only
@@ -653,7 +685,7 @@ def print_internal_coordinate_table(fragment,actatoms=None):
         else:
                 print("Bond: {:8}{:4} - {:4}{:4} {:>6.3f}".format(listkey[0],elA,listkey[1],elB, val ))
     print('='*50)
-
+    print_time_rel(timeA, modulename='print internal coordinate table')
 
 #Function to check if string corresponds to an element symbol or not.
 #Compares in lowercase
@@ -2201,6 +2233,30 @@ def set_up_MMwater_bondconstraints(actatoms, oxygentype='OT'):
 
     return constraints
 
+#Function to update list of atomindices after deletion of a list of atom indices (used in remove_atoms functions below)
+def update_atom_indices_upon_deletion(atomlist,dellist):
+    #Making sure dellist is sorted and determining highest and lowest value
+    dellist.sort(reverse=True)
+    lowest_atomindex=dellist[-1]
+    highest_atomindex=dellist[0]
+    atomlist_new=[]
+    for q in atomlist:
+        if q in dellist:
+            #These QM atoms were deleted and do not survive
+            pass
+        elif q < lowest_atomindex:
+            #These QM atoms have lower value than loweste deleted atomindex and survive
+            atomlist_new.append(q)
+        elif q > highest_atomindex:
+            #Shifting these indices by length of delatoms-list
+            shiftpar=len(dellist)
+            atomlist_new.append(q-shiftpar)
+        else:
+            #These atom indices are inbetween
+            #Shifting depending on how many delatoms indices come before
+            shiftpar=len([i for i in dellist if i < q])
+            atomlist_new.append(q-shiftpar)
+    return atomlist_new
 
 
     
@@ -2257,7 +2313,7 @@ writepdb new-system.pdb
     process = sp.run([psfgendir + '/psfgen', 'psfinput.tcl'])
 
 
-def remove_atoms_from_system_CHARMM(fragment=None, psffile=None, topfile=None, atomindices=None, psfgendir=None):
+def remove_atoms_from_system_CHARMM(fragment=None, psffile=None, topfile=None, atomindices=None, psfgendir=None, qmatoms=None, actatoms=None, offset_atom_indices=0):
     print_line_with_mainheader("remove_atoms_from_system_CHARMM")
     if fragment==None or psffile==None or topfile==None or atomindices==None:
         print("Error: remove_atoms_from_system requires keyword arguments:")
@@ -2275,6 +2331,8 @@ def remove_atoms_from_system_CHARMM(fragment=None, psffile=None, topfile=None, a
         
     #Deleting element and coords for each atom index
     atomindices.sort(reverse=True)
+    lowest_atomindex=atomindices[-1]
+    highest_atomindex=atomindices[0]
     for atomindex in atomindices:
         fragment.delete_atom(atomindex)
     print("")
@@ -2291,6 +2349,28 @@ def remove_atoms_from_system_CHARMM(fragment=None, psffile=None, topfile=None, a
     fragment.write_xyzfile(xyzfilename="newfragment.xyz")
     fragment.print_system(filename='newfragment.ygg')
 
+    #Updating provided qmatoms and actatoms lists
+    if qmatoms != None and actatoms != None:
+        print("qmatoms and actatoms lists provided to function. Will now update atomindices in these lists.")
+        print("Deletion list:", atomindices)
+        print("Old list of QM atoms:", qmatoms)
+        print("Old list of active atoms:", actatoms)
+        print("")
+        new_qmatoms = update_atom_indices_upon_deletion(qmatoms,atomindices)
+        new_actatoms = update_atom_indices_upon_deletion(actatoms,atomindices)
+
+        #Possible offset of atom indices
+        new_qmatoms = [i+offset_atom_indices for i in new_qmatoms]
+        new_actatoms = [i+offset_atom_indices for i in new_actatoms]
+
+
+        print("New list of QM atoms:", new_qmatoms)
+        print("New list of active atoms:", new_actatoms)
+        writelisttofile(new_qmatoms, "newqmatoms")
+        writelisttofile(new_actatoms, "newactive_atoms")
+    else:
+        print("Warning: qmatoms and actatoms not provided to function. Use qmatoms and actatoms keyword arguments if you want to update qmatoms and actatoms list.")
+        print("Otherwise you have to update qmatoms and actatoms lists manually!")
     print("")
     print("remove_atoms_from_system_CHARMM: Done!")
 
@@ -2349,7 +2429,7 @@ def add_atoms_to_PSF(resgroup=None, topfile=None, psffile=None,psfgendir=None,nu
     
     return
 
-def add_atoms_to_system_CHARMM(fragment=None, added_atoms_coordstring=None, resgroup=None, psffile=None, topfile=None, psfgendir=None):
+def add_atoms_to_system_CHARMM(fragment=None, added_atoms_coordstring=None, resgroup=None, psffile=None, topfile=None, psfgendir=None, qmatoms=None, actatoms=None, offset_atom_indices=0):
     print_line_with_mainheader("add_atoms_to_system")
     if fragment==None or psffile==None or topfile==None or added_atoms_coordstring == None or resgroup==None:
         print("Error: add_atoms_to_system_CHARMM requires keyword arguments:")
@@ -2373,8 +2453,10 @@ def add_atoms_to_system_CHARMM(fragment=None, added_atoms_coordstring=None, resg
             added_elems.append(reformat_element(line.split()[0]))
             added_coords.append([float(line.split()[1]), float(line.split()[2]), float(line.split()[3])])
     num_added_atoms=len(added_elems)
+    newatomindices = [fragment.numatoms+i for i in range(0,num_added_atoms)]
+    print("newatomindices (0-based indexing):", newatomindices)
     fragment.add_coords(added_elems,added_coords,conn=False)
-    
+
     #Adding atoms to PSF-file
     add_atoms_to_PSF(resgroup,topfile,psffile,psfgendir,num_added_atoms)
     print("")
@@ -2386,5 +2468,26 @@ def add_atoms_to_system_CHARMM(fragment=None, added_atoms_coordstring=None, resg
     #Writing new fragment to disk
     fragment.write_xyzfile(xyzfilename="newfragment.xyz")
     fragment.print_system(filename='newfragment.ygg')
+
+
+    if qmatoms != None and actatoms != None:
+        print("qmatoms and actatoms lists provided to function. Will now add atomindices to these lists.")
+        new_qmatoms = qmatoms + newatomindices
+        new_actatoms = actatoms + newatomindices
+
+        #Possible offset of atom indices
+        new_qmatoms = [i+offset_atom_indices for i in new_qmatoms]
+        new_actatoms = [i+offset_atom_indices for i in new_actatoms]
+
+        print("New list of QM atoms:", new_qmatoms)
+        print("New list of active atoms:", new_actatoms)
+        writelisttofile(new_qmatoms, "newqmatoms")
+        writelisttofile(new_actatoms, "newactive_atoms")
+    else:
+        print("Warning: qmatoms and actatoms not provided to function. Use qmatoms and actatoms keyword arguments if you want to update qmatoms and actatoms list.")
+        print("Otherwise you have to update qmatoms and actatoms lists manually!")
+    print("")
+
+
     print("")
     print("add_atoms_to_system_CHARMM: Done!")
