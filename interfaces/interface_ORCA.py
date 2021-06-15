@@ -12,7 +12,7 @@ import time
 #ORCA Theory object. Fragment object is optional. Only used for single-points.
 class ORCATheory:
     def __init__(self, orcadir=None, fragment=None, charge=None, mult=None, orcasimpleinput='', printlevel=2, extrabasisatoms=None, extrabasis=None,
-                 orcablocks='', extraline='', brokensym=None, HSmult=None, atomstoflip=None, nprocs=1, label=None, moreadfile=None, autostart=True):
+                 orcablocks='', extraline='', brokensym=None, HSmult=None, atomstoflip=None, nprocs=1, label=None, moreadfile=None, autostart=True, propertyblock=None):
 
         if orcadir is None:
             print(BC.WARNING, "No orcadir argument passed to ORCATheory. Attempting to find orcadir variable inside settings_ash", BC.END)
@@ -49,6 +49,8 @@ class ORCATheory:
         #Setting nprocs of object
         self.nprocs=nprocs
 
+        #Property block. Added after coordinates unless None
+        self.propertyblock=propertyblock
 
         if fragment != None:
             self.fragment=fragment
@@ -184,20 +186,20 @@ class ORCATheory:
             if self.brokensym == True:
                 create_orca_input_pc(self.filename, qm_elems, current_coords, self.orcasimpleinput, self.orcablocks,
                                         self.charge, self.mult, extraline=self.extraline, HSmult=self.HSmult, Grad=Grad, Hessian=Hessian, moreadfile=self.moreadfile,
-                                     atomstoflip=qmatomstoflip, extrabasisatoms=qmatoms_extrabasis, extrabasis=self.extrabasis)
+                                     atomstoflip=qmatomstoflip, extrabasisatoms=qmatoms_extrabasis, extrabasis=self.extrabasis, propertyblock=self.propertyblock)
             else:
                 create_orca_input_pc(self.filename, qm_elems, current_coords, self.orcasimpleinput, self.orcablocks,
                                         self.charge, self.mult, extraline=self.extraline, Grad=Grad, Hessian=Hessian, moreadfile=self.moreadfile,
-                                        extrabasisatoms=qmatoms_extrabasis, extrabasis=self.extrabasis)
+                                        extrabasisatoms=qmatoms_extrabasis, extrabasis=self.extrabasis, propertyblock=self.propertyblock)
         else:
             if self.brokensym == True:
                 create_orca_input_plain(self.filename, qm_elems, current_coords, self.orcasimpleinput,self.orcablocks,
                                         self.charge,self.mult, extraline=self.extraline, HSmult=self.HSmult, Grad=Grad, Hessian=Hessian, moreadfile=self.moreadfile,
-                                     atomstoflip=qmatomstoflip, extrabasisatoms=qmatoms_extrabasis, extrabasis=self.extrabasis)
+                                     atomstoflip=qmatomstoflip, extrabasisatoms=qmatoms_extrabasis, extrabasis=self.extrabasis, propertyblock=self.propertyblock)
             else:
                 create_orca_input_plain(self.filename, qm_elems, current_coords, self.orcasimpleinput,self.orcablocks,
                                         self.charge,self.mult, extraline=self.extraline, Grad=Grad, Hessian=Hessian, moreadfile=self.moreadfile,
-                                        extrabasisatoms=qmatoms_extrabasis, extrabasis=self.extrabasis)
+                                        extrabasisatoms=qmatoms_extrabasis, extrabasis=self.extrabasis, propertyblock=self.propertyblock)
 
         #Run inputfile using ORCA parallelization. Take nprocs argument.
         #print(BC.OKGREEN, "------------Running ORCA calculation-------------", BC.END)
@@ -983,7 +985,7 @@ def create_orca_inputVIEcomp_gas(name, name2, elems, coords, orcasimpleinput, or
 #Create PC-embedded ORCA inputfile from elems,coords, input, charge, mult,pointcharges
 #Allows for extraline that could be another '!' line or block-inputline.
 def create_orca_input_pc(name,elems,coords,orcasimpleinput,orcablockinput,charge,mult, Grad=False, extraline='',
-                         HSmult=None, atomstoflip=None, Hessian=False, extrabasisatoms=None, extrabasis=None, moreadfile=None):
+                         HSmult=None, atomstoflip=None, Hessian=False, extrabasisatoms=None, extrabasis=None, moreadfile=None, propertyblock=None):
     if extrabasisatoms is None:
         extrabasisatoms=[]
     pcfile=name+'.pc'
@@ -1019,12 +1021,13 @@ def create_orca_input_pc(name,elems,coords,orcasimpleinput,orcablockinput,charge
             else:
                 orcafile.write('{} {} {} {} \n'.format(el,c[0], c[1], c[2]))
         orcafile.write('*\n')
-
+        if propertyblock != None:
+            orcafile.write(propertyblock)
 #Create simple ORCA inputfile from elems,coords, input, charge, mult,pointcharges
 #Allows for extraline that could be another '!' line or block-inputline.
 
 def create_orca_input_plain(name,elems,coords,orcasimpleinput,orcablockinput,charge,mult, Grad=False, Hessian=False, extraline='',
-                            HSmult=None, atomstoflip=None, extrabasis=None, extrabasisatoms=None, moreadfile=None):
+                            HSmult=None, atomstoflip=None, extrabasis=None, extrabasisatoms=None, moreadfile=None, propertyblock=None):
     if extrabasisatoms is None:
         extrabasisatoms=[]
     
@@ -1062,7 +1065,8 @@ def create_orca_input_plain(name,elems,coords,orcasimpleinput,orcablockinput,cha
             else:
                 orcafile.write('{} {} {} {} \n'.format(el,c[0], c[1], c[2]))
         orcafile.write('*\n')
-
+        if propertyblock != None:
+            orcafile.write(propertyblock)
 # Create ORCA pointcharge file based on provided list of elems and coords (MM region elems and coords)
 # and list of point charges of MM atoms
 def create_orca_pcfile(name,coords,listofcharges):
@@ -1361,3 +1365,14 @@ def ICE_WF_size(filename):
                 num_genCFGs=int(line.split()[-1])
             if 'Final CASSCF energy       :' in line:
                 return num_genCFGs,after_SD_numCFGs
+
+
+def grab_EFG_from_ORCA_output(filename):
+    occgrab=False
+    occupations=[]
+    qro_energies=[]
+    with open(filename) as f:
+        for line in f:
+            if ' V(Tot)' in line:
+                efg_values=[float(line.split()[-3]),float(line.split()[-2]),float(line.split()[-1])]
+                return efg_values
