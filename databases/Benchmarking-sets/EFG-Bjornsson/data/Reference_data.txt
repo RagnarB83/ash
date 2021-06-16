@@ -1,13 +1,13 @@
 #TESTSET_INFO
-#TESTSET_INFO Numentries: 2
+#TESTSET_INFO Numentries: 7
 #TESTSET_INFO Unit: au
 #TESTSET_INFO Property: EFG
 # EFG Vzz component by converting experimental NQCC to EFG via known experimental quadrupole moment
 #Second column is atomindex of metal EFG
 1 crc6h6co3 0 0.344
 2 mno3f 0 0.217
-#3 mnco5h 0 -0.57
-#4 mncpcp3 0 0.877
-#5 cohco4 0 1.182
-#6 cocono3  0 0.356
-#7 vcpco4 0 0.39
+3 mnco5h 0 -0.57
+4 mncpcp3 0 0.877
+5 cohco4 0 1.182
+6 cocono3  0 0.356
+7 vcpco4 0 0.39

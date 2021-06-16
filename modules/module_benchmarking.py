@@ -35,9 +35,9 @@ class Reaction:
 #AtomProperty class. Used for benchmarking
 #TODO: Can this also be a molecular property like dipole ?
 class AtomProperty:
-    def __init__(self, index, filenames, atomindex, refvalue, unit, correction=0.0):
+    def __init__(self, index, filename, atomindex, refvalue, unit, correction=0.0):
         self.index = index
-        self.filenames = filenames
+        self.filename = filename
         #Reference property value
         self.refvalue = refvalue
         # Unit of property
@@ -142,8 +142,6 @@ def read_referencedata_property_file(benchmarksetpath):
                     numentries=int(line.split()[-1])
             if '#' not in line:
                 count+=1
-                filenames=[]
-                stoichiometry=[]
                 #Getting index (first line)
                 # Next entries are either strings (filename) or stoichiometry-indices (integers). 
                 # Check if integer or float, if neither then assume filename string
@@ -155,13 +153,12 @@ def read_referencedata_property_file(benchmarksetpath):
                     elif isfloat(word):
                         refvalue=float(line.split()[-1])
                     else:
-                        filenames.append(word)
+                        filename=word
                 #New reaction
                 if corrections is True:
-                    #newreaction = Reaction(index, filenames, stoichiometry, refvalue, unit, correction=corrections_dict[index])
-                    newatomproperty = AtomProperty(index, filenames, atomindex, refvalue, unit, correction=corrections_dict[index])          
+                    newatomproperty = AtomProperty(index, filename, atomindex, refvalue, unit, correction=corrections_dict[index])          
                 else:
-                    newatomproperty = AtomProperty(index, filenames, atomindex, refvalue, unit)   
+                    newatomproperty = AtomProperty(index, filename, atomindex, refvalue, unit)   
                 
                 
                 #print("New reaction: ", newreaction.__dict__)
@@ -218,7 +215,7 @@ def run_geobenchmark(set=None, theory=None, orcadir=None, numcores=None):
 #run_benchmark
 #Reuseorbs option: Reuse orbitals within same reaction. This only makes sense if reaction contains very similar geometries (e.g. IE/EA reaction)
 #property='energy', 
-def run_benchmark(set=None, theory=None, workflow=None, orcadir=None, numcores=None, reuseorbs=False, corrections=None, workflow_args=None):
+def run_benchmark(set=None, theory=None, workflow=None, orcadir=None, numcores=None, reuseorbs=False, corrections=None, workflow_args=None, keepoutputfiles=True):
     """[summary]
 
     Args:
@@ -290,87 +287,73 @@ def run_benchmark(set=None, theory=None, workflow=None, orcadir=None, numcores=N
 
     #Non-energy properties
     if property!='energy':
-
+        if workflow != None:
+            print("Workflow not allowed for property")
+            exit()
         #Exit if non-energetic property and not ORCATheory
         if theory.__class__.__name__ != "ORCATheory":
             print("Only ORCATheory supported for non-energetic property in run_benchmark!")
             exit()
 
-        all_calc_values ={}
         for systemindex in database_dict:
             system=database_dict[systemindex]
             
             print("")
             print("-"*70)
-            print(BC.WARNING,"System {} : {} {} ".format(systemindex, BC.OKBLUE, system.filenames),BC.END)
+            print(BC.WARNING,"System {} : {} {} ".format(systemindex, BC.OKBLUE, system.filename),BC.END)
             print(BC.WARNING,"Atom index:", BC.OKBLUE,system.atomindex,BC.END)
             #TODO: Fix refenergy name at some point
             print(BC.WARNING,"Reference value:", BC.OKBLUE,system.refvalue, unit, BC.END)
             print("-"*70)
 
-            #Reading XYZ file and grabbing charge and multiplicity
             propertyvalues=[]
-            for file in system.filenames:
-                #If previously calculated fragment, grab energy from all_calc_energies and skip
-                if file in all_calc_values:
-                    print("File {} already calculated. Skipping calculation".format(file))
-                    value = all_calc_values[file]
-                    system.propertyvalues.append(value)
-                    values.append(value)
-                    continue
                 
-                #Creating fragment
-                frag = ash.Fragment(xyzfile=benchmarksetpath+file+'.xyz', readchargemult=True, conncalc=False)
+            #Creating fragment
+            frag = ash.Fragment(xyzfile=benchmarksetpath+system.filename+'.xyz', readchargemult=True, conncalc=False)
+            
+            #Modifying theory object
+            theory.charge=frag.charge
+            theory.mult=frag.mult
+            #Reducing numcores if few electrons, otherwise original value
+            theory.nprocs = check_cores_vs_electrons(frag,numcores,theory.charge)
+            
+            #Case EFG
+            if property == 'EFG':
+                Proptype='EFG'
+                theory.propertyblock="\n%eprnmr\nnuclei = {} {{ fgrad }} \nend\n".format(system.atomindex+1)
+                energy = ash.Singlepoint(fragment=frag, theory=theory)
 
-                # Setting charge and mult for theory
-                if theory is not None:
-                    theory.charge=frag.charge
-                    theory.mult=frag.mult
-                    
-                    #Reducing numcores if few electrons, otherwise original value
-                    theory.nprocs = check_cores_vs_electrons(frag,numcores,theory.charge)
-                    
+                efg =grab_EFG_from_ORCA_output(theory.filename+'.out')
+                print("efg:", efg)
+                propertyvalue=max(efg, key=abs)
+                print("propertyvalue:", propertyvalue)
+            elif property == 'Mossbauer':
+                pass
+                Proptype='Mossbauer'
+                theory.propertyblock="\n%eprnmr\nnuclei = all Fe {rho,fgrad}\n"
+                
+                energy = ash.Singlepoint(fragment=frag, theory=theory)
 
+                #grab_Mossbauer_from_ORCA_output(theory.filename)
 
-                    #Case EFG. Add 
-                    if property == 'EFG':
-                        Proptype='EFG'
-                        theory.propertyblock="\n%eprnmr\nnuclei = {} {{ fgrad }} \nend\n".format(system.atomindex+1)
-                        energy = ash.Singlepoint(fragment=frag, theory=theory)
+            elif property == 'NMR':
+                pass
+                Proptype='NMR'
+                theory.propertyblock="\n%eprnmr\nnuclei = all {} {fgrad}\n".format(property_element)
 
-                        efg =grab_EFG_from_ORCA_output(theory.filename+'.out')
-                        print("efg:", efg)
-                        propertyvalue=max(efg, key=abs)
-                        print("propertyvalue:", propertyvalue)
-                    elif property == 'Mossbauer':
-                        pass
-                        Proptype='Mossbauer'
-                        theory.propertyblock="\n%eprnmr\nnuclei = all Fe {rho,fgrad}\n"
-                        
-                        energy = ash.Singlepoint(fragment=frag, theory=theory)
+                energy = ash.Singlepoint(fragment=frag, theory=theory)
 
-                        #grab_Mossbauer_from_ORCA_output(theory.filename)
+                #grab_NMRshielding_from_ORCA_output(theory.filename)
+            else:
+                print("Unrecognized property")
 
-                    elif property == 'NMR':
-                        pass
-                        Proptype='NMR'
-                        theory.propertyblock="\n%eprnmr\nnuclei = all {} {fgrad}\n".format(property_element)
+            #Preserve outputfile
+            if keepoutputfiles == True:
+                shutil.copyfile(theory.filename+'.out', str(theory.filename)+'_'+system.filename+'.out')
+            theory.cleanup()
 
-                        energy = ash.Singlepoint(fragment=frag, theory=theory)
-
-                        #grab_NMRshielding_from_ORCA_output(theory.filename)
-
-                    else:
-                        print("Unrecognized property")
-
-                    #Preserve outputfile
-
-                    theory.cleanup()
-                elif workflow is not None:
-                    print("Workflow not allowed for property")
-                    exit()
-                #List of all property values for reaction
-                propertyvalues.append(propertyvalue)
+            #List of all property values for reaction
+            propertyvalues.append(propertyvalue)
             print("")
             #reaction_energy, error = ash.ReactionEnergy(stoichiometry=reaction.stoichiometry, list_of_energies=energies, unit=unit, label=reactionindex, 
             #                                            reference=reaction.refenergy)
@@ -380,12 +363,12 @@ def run_benchmark(set=None, theory=None, workflow=None, orcadir=None, numcores=N
             print("error:", error)
             #Adding error with correction
             system.error = error + system.correction
-            print("system:", system)
             print(system.__dict__)
 
 
     # REACTION ENERGY
     elif property=='energy':
+
         Proptype='Energy'
         #Dictionary of energies of calculated fragments so that we don't have to calculate same fragment multiple times
         all_calc_energies ={}
@@ -488,7 +471,7 @@ def run_benchmark(set=None, theory=None, workflow=None, orcadir=None, numcores=N
             print(" {:<7} {:<55s}  {:<13.4f} {:<13.4f} {:<13.4f}{} {:>8.4f}{}".format(rindex, reactionstring, r.refenergy, r.calcenergy, r.calcenergy_corrected, colorcode, r.error,BC.END))
         else:
             #print(" {:<10} {:<40s}  {:<13.4f} {:<13.4f}{} {:<13.4f}{}".format(rindex, ' '.join(r.filenames), r.refenergy, r.calcenergy, colorcode, r.error,BC.END))
-            print(" {:<7} {:<55}  {:<13.4f} {:<13.4f} {:<13.4f}{} {:>8.4f}{}".format(rindex, str(r.filenames), r.refvalue, r.calcvalue, r.calcvalue_corrected, colorcode, r.error,BC.END))
+            print(" {:<7} {:<55}  {:<13.4f} {:<13.4f} {:<13.4f}{} {:>8.4f}{}".format(rindex, str(r.filename), r.refvalue, r.calcvalue, r.calcvalue_corrected, colorcode, r.error,BC.END))
         
     print("-"*120)
     print(" {:<10s} {:13.4f} {:<10s} ".format("MAE", MAE, unit))
