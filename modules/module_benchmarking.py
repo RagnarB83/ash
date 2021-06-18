@@ -7,8 +7,9 @@ import time
 
 import ash
 import module_coords
-from functions_general import isint,isfloat,is_same_sign,BC
+from functions_general import isint,isfloat,is_same_sign,BC,print_time_rel,pygrep
 from functions_elstructure import check_cores_vs_electrons, num_core_electrons
+from interface_ORCA import grab_EFG_from_ORCA_output
 
 #Reaction class. Used for benchmarking
 class Reaction:
@@ -29,6 +30,28 @@ class Reaction:
         self.correction = correction
         #Corrected energy and corrected error
         self.calcenergy_corrected = None
+        self.error = None
+
+#AtomProperty class. Used for benchmarking
+#TODO: Can this also be a molecular property like dipole ?
+class AtomProperty:
+    def __init__(self, index, filename, atomindex, refvalue, unit, correction=0.0):
+        self.index = index
+        self.filename = filename
+        #Reference property value
+        self.refvalue = refvalue
+        # Unit of property
+        self.unit =unit
+        #Calculated reaction energy
+        self.calcvalue = None
+        #What atom index in coordinate file
+        self.atomindex = atomindex
+        #List of molecular formulas
+        self.formulas= None
+        # Correction to energy: e.g. ZPE. If not provided then 0.0
+        self.correction = correction
+        #Corrected energy and corrected error
+        self.calcvalue_corrected = None
         self.error = None
 
 #Read benchmark-set reference file ("Reference_data") inside indicated directory 
@@ -91,6 +114,63 @@ def read_referencedata_file(benchmarksetpath):
             exit()
     return database_dict
 
+#Read Property benchmark-set reference file ("Reference_data") inside indicated directory 
+def read_referencedata_property_file(benchmarksetpath):
+    #Open file and get database info as dict
+    database_dict={}
+    corrections=False
+    count=0
+    
+    #with open(benchmarksetpath+"Reference_data.txt") as ref_file:
+    if os.path.isfile(benchmarksetpath+'corrections.txt') is True:
+        print("Found corrections.txt file. Grabbing corrections")
+        corrections=True
+        corrections_dict={}
+        with open(benchmarksetpath+'corrections.txt') as correction_file:
+            for line in correction_file:
+                if '#' not in line:
+                    rindex=int(line.split()[0])
+                    corr = float(line.split()[1])
+                    corrections_dict[rindex] = corr
+    
+    with open(benchmarksetpath+"Reference_data.txt") as ref_file:
+        for line in ref_file:
+            if '#TESTSET_INFO' in line:
+                if 'Unit' in line:
+                    unit=line.split()[-1]
+                if 'Numentries' in line:
+                    numentries=int(line.split()[-1])
+            if '#' not in line:
+                count+=1
+                #Getting index (first line)
+                # Next entries are either strings (filename) or stoichiometry-indices (integers). 
+                # Check if integer or float, if neither then assume filename string
+                for i,word in enumerate(line.split()):
+                    if i == 0:
+                        index=int(word)
+                    elif isint(word):
+                        atomindex=int(word)
+                    elif isfloat(word):
+                        refvalue=float(line.split()[-1])
+                    else:
+                        filename=word
+                #New reaction
+                if corrections is True:
+                    newatomproperty = AtomProperty(index, filename, atomindex, refvalue, unit, correction=corrections_dict[index])          
+                else:
+                    newatomproperty = AtomProperty(index, filename, atomindex, refvalue, unit)   
+                
+                
+                #print("New reaction: ", newreaction.__dict__)
+                #Add to dict.
+                database_dict[index] = newatomproperty
+        if count != index or count != numentries:
+            print("count:", count)
+            print("index:", index)
+            print("numentries:", numentries)
+            print("System lines does not match indices or number of entries in header. Mistake in file?!")
+            exit()
+    return database_dict
 
     
 #Get pretty reaction string from molecule-filenames and stoichiometry
@@ -134,7 +214,8 @@ def run_geobenchmark(set=None, theory=None, orcadir=None, numcores=None):
 
 #run_benchmark
 #Reuseorbs option: Reuse orbitals within same reaction. This only makes sense if reaction contains very similar geometries (e.g. IE/EA reaction)
-def run_benchmark(set=None, theory=None, property='energy', workflow=None, orcadir=None, numcores=None, reuseorbs=False, corrections=None, workflow_args=None):
+#property='energy', 
+def run_benchmark(set=None, theory=None, workflow=None, orcadir=None, numcores=None, reuseorbs=False, corrections=None, workflow_args=None, keepoutputfiles=True):
     """[summary]
 
     Args:
@@ -162,9 +243,23 @@ def run_benchmark(set=None, theory=None, property='energy', workflow=None, orcad
         benchmarksetpath=ashpath+"/databases/Benchmarking-sets/"+bigset+"/"+subset+"/data/"
     else:
         benchmarksetpath=ashpath+"/databases/Benchmarking-sets/"+set+"/data/"
+    
+    #Determine what type of type of property by grepping file
+    
+    test_property = pygrep("#TESTSET_INFO Property:",benchmarksetpath+'Reference_data.txt')
+    if test_property == None:
+        print("Found no \"#TESTSET_INFO Property\" line in Reference.txt file. Assuming property to be energy")
+        property='energy' 
+    else:
+        property=test_property[-1]
+        print("Property is:", property)
+
     #Read reference data and define reactions
     print("")
-    database_dict = read_referencedata_file(benchmarksetpath)
+    if property=="energy":
+        database_dict = read_referencedata_file(benchmarksetpath)
+    else:
+        database_dict = read_referencedata_property_file(benchmarksetpath)
     print("Database: ", database_dict)
     print("Number of reactions:", len(database_dict))
     #One way of providing corrections: give list of floats
@@ -189,16 +284,92 @@ def run_benchmark(set=None, theory=None, property='energy', workflow=None, orcad
     
     errors=[]
     
-    #Make function for each property ??
-    
-    #TODO!!!!!!!!!!!!!
-    if property=='efg':
-        sffdf="dsff"
-    #TODO!!!!!!!!!!!!!
-    elif property=='NMR':
-        sdff="dfsf"
+
+    #Non-energy properties
+    if property!='energy':
+        if workflow != None:
+            print("Workflow not allowed for property")
+            exit()
+        #Exit if non-energetic property and not ORCATheory
+        if theory.__class__.__name__ != "ORCATheory":
+            print("Only ORCATheory supported for non-energetic property in run_benchmark!")
+            exit()
+
+        for systemindex in database_dict:
+            system=database_dict[systemindex]
+            
+            print("")
+            print("-"*70)
+            print(BC.WARNING,"System {} : {} {} ".format(systemindex, BC.OKBLUE, system.filename),BC.END)
+            print(BC.WARNING,"Atom index:", BC.OKBLUE,system.atomindex,BC.END)
+            #TODO: Fix refenergy name at some point
+            print(BC.WARNING,"Reference value:", BC.OKBLUE,system.refvalue, unit, BC.END)
+            print("-"*70)
+
+            propertyvalues=[]
+                
+            #Creating fragment
+            frag = ash.Fragment(xyzfile=benchmarksetpath+system.filename+'.xyz', readchargemult=True, conncalc=False)
+            
+            #Modifying theory object
+            theory.charge=frag.charge
+            theory.mult=frag.mult
+            #Reducing numcores if few electrons, otherwise original value
+            theory.nprocs = check_cores_vs_electrons(frag,numcores,theory.charge)
+            
+            #Case EFG
+            if property == 'EFG':
+                Proptype='EFG'
+                theory.propertyblock="\n%eprnmr\nnuclei = {} {{ fgrad }} \nend\n".format(system.atomindex+1)
+                energy = ash.Singlepoint(fragment=frag, theory=theory)
+
+                efg =grab_EFG_from_ORCA_output(theory.filename+'.out')
+                print("efg:", efg)
+                propertyvalue=max(efg, key=abs)
+                print("propertyvalue:", propertyvalue)
+            elif property == 'Mossbauer':
+                pass
+                Proptype='Mossbauer'
+                theory.propertyblock="\n%eprnmr\nnuclei = all Fe {rho,fgrad}\n"
+                
+                energy = ash.Singlepoint(fragment=frag, theory=theory)
+
+                #grab_Mossbauer_from_ORCA_output(theory.filename)
+
+            elif property == 'NMR':
+                pass
+                Proptype='NMR'
+                theory.propertyblock="\n%eprnmr\nnuclei = all {} {fgrad}\n".format(property_element)
+
+                energy = ash.Singlepoint(fragment=frag, theory=theory)
+
+                #grab_NMRshielding_from_ORCA_output(theory.filename)
+            else:
+                print("Unrecognized property")
+
+            #Preserve outputfile
+            if keepoutputfiles == True:
+                shutil.copyfile(theory.filename+'.out', str(theory.filename)+'_'+system.filename+'.out')
+            theory.cleanup()
+
+            #List of all property values for reaction
+            propertyvalues.append(propertyvalue)
+            print("")
+            #reaction_energy, error = ash.ReactionEnergy(stoichiometry=reaction.stoichiometry, list_of_energies=energies, unit=unit, label=reactionindex, 
+            #                                            reference=reaction.refenergy)
+            system.calcvalue = propertyvalue
+            system.calcvalue_corrected = propertyvalue + system.correction
+            error=system.calcvalue-system.refvalue
+            print("error:", error)
+            #Adding error with correction
+            system.error = error + system.correction
+            print(system.__dict__)
+
+
     # REACTION ENERGY
     elif property=='energy':
+
+        Proptype='Energy'
         #Dictionary of energies of calculated fragments so that we don't have to calculate same fragment multiple times
         all_calc_energies ={}
         
@@ -286,7 +457,7 @@ def run_benchmark(set=None, theory=None, property='energy', workflow=None, orcad
     RMSE=math.sqrt(sum([i**2 for i in errors])/len(errors))
     
     #Print nice table
-    print(BC.WARNING, "{:7s} {:55s}  {:13s} {:13s} {:13s}   {:17s}".format("Index", "Reaction", "Ref.", "Calc.", "Calc.+corr.", "Error"), BC.END)
+    print(BC.WARNING, "{:7s} {:55s}  {:13s} {:13s} {:13s}   {:17s}".format("Index", Proptype, "Ref.", "Calc.", "Calc.+corr.", "Error"), BC.END)
     print("-"*120)
     for rindex in database_dict:
         r=database_dict[rindex]
@@ -294,9 +465,14 @@ def run_benchmark(set=None, theory=None, property='energy', workflow=None, orcad
             colorcode=BC.FAIL
         else:
             colorcode=BC.END
-        reactionstring=get_reaction_string(r.filenames, r.stoichiometry)
-        #print(" {:<10} {:<40s}  {:<13.4f} {:<13.4f}{} {:<13.4f}{}".format(rindex, ' '.join(r.filenames), r.refenergy, r.calcenergy, colorcode, r.error,BC.END))
-        print(" {:<7} {:<55s}  {:<13.4f} {:<13.4f} {:<13.4f}{} {:>8.4f}{}".format(rindex, reactionstring, r.refenergy, r.calcenergy, r.calcenergy_corrected, colorcode, r.error,BC.END))
+        
+        if property=='energy':
+            reactionstring=get_reaction_string(r.filenames, r.stoichiometry)
+            print(" {:<7} {:<55s}  {:<13.4f} {:<13.4f} {:<13.4f}{} {:>8.4f}{}".format(rindex, reactionstring, r.refenergy, r.calcenergy, r.calcenergy_corrected, colorcode, r.error,BC.END))
+        else:
+            #print(" {:<10} {:<40s}  {:<13.4f} {:<13.4f}{} {:<13.4f}{}".format(rindex, ' '.join(r.filenames), r.refenergy, r.calcenergy, colorcode, r.error,BC.END))
+            print(" {:<7} {:<55}  {:<13.4f} {:<13.4f} {:<13.4f}{} {:>8.4f}{}".format(rindex, str(r.filename), r.refvalue, r.calcvalue, r.calcvalue_corrected, colorcode, r.error,BC.END))
+        
     print("-"*120)
     print(" {:<10s} {:13.4f} {:<10s} ".format("MAE", MAE, unit))
     print(" {:<10s} {:13.4f} {:<10s} ".format("ME", ME, unit))
