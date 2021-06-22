@@ -2261,8 +2261,8 @@ def update_atom_indices_upon_deletion(atomlist,dellist):
 
     
 def remove_atoms_from_PSF(atomindices=None,topfile=None,psffile=None,psfgendir=None):
-    
-    atomindices_string='{ '+' '.join(([str(i) for i in atomindices]))+' }'
+    #Change to 1-based indexing for PSFgen
+    atomindices_string='{ '+' '.join(([str(i+1) for i in atomindices]))+' }'
     psf_script="""
 # This section requires PSFGEN 1.6 to be loaded
 topology {}
@@ -2331,7 +2331,7 @@ def remove_atoms_from_system_CHARMM(fragment=None, psffile=None, topfile=None, a
     print("Atoms to be deleted (0-based indexing):", atomindices)
     for a in atomindices:
         print("Atom: {} Element: {}".format(a,fragment.elems[a]))
-
+    print("")
     #Deleting element and coords for each atom index
     atomindices.sort(reverse=True)
     lowest_atomindex=atomindices[-1]
