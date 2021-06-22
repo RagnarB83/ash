@@ -17,7 +17,7 @@ import ash
 # ASH Fragment class
 class Fragment:
     def __init__(self, coordsstring=None, fragfile=None, xyzfile=None, pdbfile=None, grofile=None, amber_inpcrdfile=None, amber_prmtopfile=None, chemshellfile=None, coords=None, elems=None, connectivity=None,
-                 atomcharges=None, atomtypes=None, conncalc=True, scale=None, tol=None, printlevel=2, charge=None,
+                 atomcharges=None, atomtypes=None, conncalc=False, scale=None, tol=None, printlevel=2, charge=None,
                  mult=None, label=None, readchargemult=False, use_atomnames_as_elements=False):
         #Label for fragment (string). Useful for distinguishing different fragments
         self.label=label
@@ -2328,7 +2328,10 @@ def remove_atoms_from_system_CHARMM(fragment=None, psffile=None, topfile=None, a
             print(BC.FAIL,"Found no psfgendir variable in settings_ash module or in $PATH. Exiting.",BC.END)
             exit()
         
-        
+    print("Atoms to be deleted (0-based indexing):", atomindices)
+    for a in atomindices:
+        print("Atom: {} Element: {}".format(a,fragment.elems[a]))
+
     #Deleting element and coords for each atom index
     atomindices.sort(reverse=True)
     lowest_atomindex=atomindices[-1]
