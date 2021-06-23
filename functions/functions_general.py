@@ -67,6 +67,15 @@ def pygrep(string,file):
                 stringlist=line.split()
                 return stringlist
 
+#Multiple
+def pygrep2(string,file):
+    l=[]
+    with open(file) as f:
+        for line in f:
+            if string in line:
+                l.append(string)
+
+    return l
 
 
 # Give difference of two lists, sorted. List1: Bigger list

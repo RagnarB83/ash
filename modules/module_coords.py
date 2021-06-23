@@ -6,7 +6,7 @@ import time
 import numpy as np
 import subprocess as sp
 
-from functions_general import isint,listdiff,print_time_rel,BC,printdebug,print_line_with_mainheader,writelisttofile
+from functions_general import isint,listdiff,print_time_rel,BC,printdebug,print_line_with_mainheader,writelisttofile,pygrep2
 import dictionaries_lists
 import settings_ash
 import constants
@@ -2410,7 +2410,14 @@ def add_atoms_to_PSF(resgroup=None, topfile=None, psffile=None,psfgendir=None,nu
         print("Exiting")
         exit()
     
-    
+    #Dummy segmentname. Can't be something existing
+    matches=pygrep2("ADD", psffile)
+    print("matches:", matches)
+    if len(matches)
+        segname="ADD"+str(len(matches)+1)
+    else:
+        segname="ADD1"
+    print("segname:", segname)
     psf_script="""
     topology {}
     readpsf {}
@@ -2421,7 +2428,7 @@ def add_atoms_to_PSF(resgroup=None, topfile=None, psffile=None,psfgendir=None,nu
     writepsf x-plor cmap newsystem_XPLOR.psf
     #writepsf charmm cmap newsystem_CHARMM.psf
     writepdb new-system.pdb
-        """.format(topfile, psffile, resgroup, resgroup)
+        """.format(topfile, psffile, segname, resgroup)
 
     #Creating PSF inputfile
     with open("psfinput.tcl", 'w') as f:
