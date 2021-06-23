@@ -2413,10 +2413,11 @@ def add_atoms_to_PSF(resgroup=None, topfile=None, psffile=None,psfgendir=None,nu
     #Dummy segmentname. Can't be something existing
     matches=pygrep2("ADD", psffile)
     print("matches:", matches)
-    if len(matches)
-        segname="ADD"+str(len(matches)+1)
-    else:
-        segname="ADD1"
+    segname="ADD"+str(len(matches)+1)
+    #if len(matches)
+    #    
+    #else:
+    #    segname="ADD1"
     print("segname:", segname)
     psf_script="""
     topology {}
