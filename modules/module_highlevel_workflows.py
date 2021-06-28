@@ -1300,7 +1300,7 @@ def CC_CBS(cardinals = [2,3], basisfamily="def2", fragment=None, charge=None, or
     :param pnosetting: ORCA keyword: NormalPNO, LoosePNO, TightPNO or extrapolation
     :param pnoextrapolation: list. e.g. [5,6]
     ;param T1: Boolean (whether to do expensive iterative triples or not)
-    :return: energy and dictionary with energy-components
+    :return: energy and dictionary with energy-components.
     """
     # If run_benchmark or other passed workflow_args then use them instead
     if 'workflow_args' in kwargs and kwargs['workflow_args'] is not None:
