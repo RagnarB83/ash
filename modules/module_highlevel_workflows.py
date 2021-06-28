@@ -1427,6 +1427,10 @@ end
     #Frozen-core CCSD(T) calculations defined here
     ############################################################
 
+    #Auxiliary basis set. One big one for now
+    #TODO: Revisit
+    auxbasis='cc-pV5Z/C'
+
     #Choosing 
     ccsdt_1_line,ccsdt_2_line=choose_inputlines_from_basisfamily(ccsdtkeyword,auxbasis,pnokeyword,scfsetting,extrainputkeyword)
 
