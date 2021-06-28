@@ -8,7 +8,15 @@ import sys
 #from functions_general import read_intlist_from_file
 #from functions_coords import write_xyzfile
 
-
+#Is variable an integer
+def isint(s):
+    try:
+        int(s)
+        return True
+    except ValueError:
+        return False
+    except TypeError:
+        return False
 #Read list of integers from file. Output list of integers. Ignores blanklines, return chars, non-int characters
 #offset option: shifts integers by a value (e.g. 1 or -1)
 def read_intlist_from_file(file,offset=0):
@@ -22,6 +30,16 @@ def read_intlist_from_file(file,offset=0):
                 list.append(int(l)+offset)
     list.sort()
     return list
+#Read lines of file by slurping.
+def readlinesfile(filename):
+  try:
+    f=open(filename)
+    out=f.readlines()
+    f.close()
+  except IOError:
+    print('File %s does not exist!' % (filename))
+    exit(12)
+  return out
 
 #Write XYZfile provided list of elements and list of list of coords and filename
 def write_xyzfile(elems,coords,name,printlevel=2):

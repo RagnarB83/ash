@@ -85,7 +85,7 @@ def read_xyzfile(filename):
 
 
 
-
+try:
     fragfile=sys.argv[1]
 except:
     print("Please provide an ASH fragment file as argument")

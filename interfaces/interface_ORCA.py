@@ -214,6 +214,7 @@ class ORCATheory:
         #Now that we have possibly run a BS-DFT calculation, turning Brokensym off for future calcs (opt, restart, etc.)
         # using this theory object
         #TODO: Possibly use different flag for this???
+        print("ORCA Flipspin calculation done. Now turning off brokensym in ORCA object for possible future calculations")
         self.brokensym=False
 
         #Check if finished. Grab energy and gradient
