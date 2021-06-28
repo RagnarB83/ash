@@ -1391,36 +1391,36 @@ end
 
 
 
-#Choosing whether DLPNO or not
-if DLPNO == True:
-    #Iterative DLPNO triples or not
-    if T1 is True:
-        ccsdtkeyword='DLPNO-CCSD(T1)'
+    #Choosing whether DLPNO or not
+    if DLPNO == True:
+        #Iterative DLPNO triples or not
+        if T1 is True:
+            ccsdtkeyword='DLPNO-CCSD(T1)'
+        else:
+            #DLPNO-F12 or not
+            if F12 is True:
+                print("Note: not supported yet ")
+                exit()
+                ccsdtkeyword='DLPNO-CCSD(T)-F12'
+            else:
+                ccsdtkeyword='DLPNO-CCSD(T)'
+        #Add PNO keyword in simpleinputline or not (if extrapolation)
+        if pnosetting != "extrapolation":
+            pnokeyword=pnosetting
+        else:
+            pnokeyword=""
+    #Regular CCSD(T)
     else:
-        #DLPNO-F12 or not
+        #No PNO keywords
+        pnokeyword=""
+        pnosetting=None
+        #F12 or not
         if F12 is True:
+            ccsdtkeyword='CCSD(T)-F12'
             print("Note: not supported yet ")
             exit()
-            ccsdtkeyword='DLPNO-CCSD(T)-F12'
         else:
-            ccsdtkeyword='DLPNO-CCSD(T)'
-    #Add PNO keyword in simpleinputline or not (if extrapolation)
-    if pnosetting != "extrapolation":
-        pnokeyword=pnosetting
-    else:
-        pnokeyword=""
-#Regular CCSD(T)
-else:
-    #No PNO keywords
-    pnokeyword=""
-    pnosetting=None
-    #F12 or not
-    if F12 is True:
-        ccsdtkeyword='CCSD(T)-F12'
-        print("Note: not supported yet ")
-        exit()
-    else:
-        ccsdtkeyword='CCSD(T)'
+            ccsdtkeyword='CCSD(T)'
 
 
     ############################################################s
