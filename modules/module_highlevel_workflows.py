@@ -1432,7 +1432,7 @@ end
     auxbasis='cc-pV5Z/C'
 
     #Choosing 
-    ccsdt_1_line,ccsdt_2_line=choose_inputlines_from_basisfamily(cardinals,ccsdtkeyword,auxbasis,pnokeyword,scfsetting,extrainputkeyword)
+    ccsdt_1_line,ccsdt_2_line=choose_inputlines_from_basisfamily(cardinals,basisfamily,ccsdtkeyword,auxbasis,pnokeyword,scfsetting,extrainputkeyword)
 
 
 
@@ -1680,7 +1680,7 @@ end
     ############################################################s
     #Frozen-core CCSD(T) calculations defined here
     ############################################################
-    ccsdt_1_line,ccsdt_2_line=choose_inputlines_from_basisfamily(cardinals,ccsdtkeyword,auxbasis,pnokeyword,scfsetting,extrainputkeyword)
+    ccsdt_1_line,ccsdt_2_line=choose_inputlines_from_basisfamily(cardinals,basisfamily,ccsdtkeyword,auxbasis,pnokeyword,scfsetting,extrainputkeyword)
 
 
     #Adding special-ECP basis like cc-pVnZ-PP for heavy elements if present
@@ -2038,7 +2038,7 @@ end
 
 
 
-def choose_inputlines_from_basisfamily(cardinals,ccsdtkeyword,auxbasis,pnokeyword,scfsetting,extrainputkeyword):
+def choose_inputlines_from_basisfamily(cardinals,basisfamily,ccsdtkeyword,auxbasis,pnokeyword,scfsetting,extrainputkeyword):
     if cardinals == [2,3] and basisfamily=="def2":
         #Auxiliary basis set.
         auxbasis='def2-QZVPP/C'
