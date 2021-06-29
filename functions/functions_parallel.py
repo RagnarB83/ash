@@ -214,22 +214,25 @@ def Singlepoint_parallel(fragments=None, fragmentfiles=None, theories=None, numc
         print("This is not supported. Exiting...")
         exit(1)
 
-    print("Calculations are now done")
-    print("here")
-
     print("event.is_set():", event.is_set())
 
+    print("a")
     pool.close()
+    print("b")
     pool.join()
+    print("c")
     #OLD event based thing
     #event.set()
-    #while True:
-    #    print("Pool multiprocessing underway....")
-    #    time.sleep(3)
-    #    if event.is_set():
-    #        print("Event has been set! Now terminating Pool processes")
-    #        pool.terminate()
+    while True:
+        print("Pool multiprocessing underway....")
+        time.sleep(3)
+        if event.is_set():
+            print("Event has been set! Now terminating Pool processes")
+            pool.terminate()
+            exit()
     #        break
+
+    print("e")
 
     #Dict comprehension to get results from list of Pool-ApplyResult objects
     energy_dict = {result.get()[0]: result.get()[1] for result in results}
