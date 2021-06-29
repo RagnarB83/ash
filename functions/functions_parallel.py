@@ -186,13 +186,13 @@ def Singlepoint_parallel(fragments=None, fragmentfiles=None, theories=None, numc
             print("fragments:", fragments)
             for fragment in fragments:
                 print("fragment:", fragment)
-                results.append(pool.apply_async(Single_par_improved, kwds=dict(theory=theory,fragment=fragment,label=fragment.label,mofilesdir=mofilesdir,event=event), error_callback=Terminate_Pool_processes))
+                results.append(pool.apply_async(Single_par, kwds=dict(theory=theory,fragment=fragment,label=fragment.label,mofilesdir=mofilesdir,event=event), error_callback=Terminate_Pool_processes))
         #Passing list of fragment files
         elif len(fragmentfiles) > 0:
             print("Launching multiprocessing and passing list of ASH fragmentfiles")
             for fragmentfile in fragmentsfiles:
                 print("fragmentfile:", fragmentfile)
-                results.append(pool.apply_async(Single_par_improved, kwds=dict(theory=theory,fragmentfile=fragmentfile,label=fragmentfile,mofilesdir=mofilesdir,event=event), error_callback=Terminate_Pool_processes))
+                results.append(pool.apply_async(Single_par, kwds=dict(theory=theory,fragmentfile=fragmentfile,label=fragmentfile,mofilesdir=mofilesdir,event=event), error_callback=Terminate_Pool_processes))
     # Case: Multiple theories, 1 fragment
     elif len(fragments) == 1:
         print("Case: Multiple theories but one fragment")
@@ -200,14 +200,14 @@ def Singlepoint_parallel(fragments=None, fragmentfiles=None, theories=None, numc
         #results = pool.map(Single_par, [[theory,fragment, theory.label, event] for theory in theories])
         for theory in theories:
             print("theory:", theory)
-            results.append(pool.apply_async(Single_par_improved, kwds=dict(theory=theory,fragment=fragment,label=fragment.label,mofilesdir=mofilesdir,event=event), error_callback=Terminate_Pool_processes))
+            results.append(pool.apply_async(Single_par, kwds=dict(theory=theory,fragment=fragment,label=fragment.label,mofilesdir=mofilesdir,event=event), error_callback=Terminate_Pool_processes))
     # Case: Multiple theories, 1 fragmentfile
     elif len(fragmentfiles) == 1:
         print("Case: Multiple theories but one fragmentfile")
         fragmentfile = fragmentfiles[0]
         for theory in theories:
             print("theory:", theory)
-            results.append(pool.apply_async(Single_par_improved, kwds=dict(theory=theory,fragmentfile=fragmentfile,label=fragmentfile,mofilesdir=mofilesdir,event=event), error_callback=Terminate_Pool_processes))
+            results.append(pool.apply_async(Single_par, kwds=dict(theory=theory,fragmentfile=fragmentfile,label=fragmentfile,mofilesdir=mofilesdir,event=event), error_callback=Terminate_Pool_processes))
     else:
         print("Multiple theories and multiple fragments provided.")
         print("This is not supported. Exiting...")
