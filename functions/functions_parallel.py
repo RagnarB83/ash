@@ -23,6 +23,10 @@ def kill_all_mp_processes():
 #Stripped down version of Singlepoint function for Singlepoint_parallel
 #TODO: This function may still be a bit ORCA-centric. Needs to be generalized 
 def Single_par(listx):
+
+    #Multiprocessing event
+    event = listx[4]
+
     #Creating new copy of theory to prevent Brokensym feature from being deactivated by each run
     #NOTE: Alternatively we can add an if-statement inside orca.run
     theory=copy.deepcopy(listx[0])
@@ -48,6 +52,8 @@ def Single_par(listx):
     if label == None:
         print("No label provided to fragment or theory objects. This is required to distinguish between calculations ")
         print("Exiting...")
+        print("event:", event)
+        event.set()
         kill_all_mp_processes()
         exit()
 
@@ -162,6 +168,9 @@ def Singlepoint_parallel(fragments=None, fragmentfiles=None, theories=None, numc
     print("Mofilesdir:", mofilesdir)
     print(BC.WARNING, "Warning: Output from Singlepoint_parallel will be erratic due to simultaneous output from multiple workers", BC.END)
     pool = mp.Pool(numcores)
+    manager = mp.Manager()
+    event = manager.Event()
+
     # Singlepoint(fragment=None, theory=None, Grad=False)
     #Case: 1 theory, multiple fragments
     if len(theories) == 1:
@@ -183,33 +192,34 @@ def Singlepoint_parallel(fragments=None, fragmentfiles=None, theories=None, numc
         #Passing list of fragments
         if len(fragments) > 0:
             print("Launching multiprocessing and passing list of ASH fragments")
-            results = pool.map(Single_par, [[theory,fragment, fragment.label, mofilesdir] for fragment in fragments])
+            results = pool.map(Single_par, [[theory,fragment, fragment.label, mofilesdir, event] for fragment in fragments])
         #Passing list of fragment files
         elif len(fragmentfiles) > 0:
             print("Launching multiprocessing and passing list of ASH fragmentfiles")
-            results = pool.map(Single_par, [[theory,fragmentfile, fragmentfile, mofilesdir] for fragmentfile in fragmentfiles])
+            results = pool.map(Single_par, [[theory,fragmentfile, fragmentfile, mofilesdir, event] for fragmentfile in fragmentfiles])
 
-        pool.close()
         print("Calculations are done")
         print("results:", results)
     # Case: Multiple theories, 1 fragment
     elif len(fragments) == 1:
         print("Case: Multiple theories but one fragment")
         fragment = fragments[0]
-        results = pool.map(Single_par, [[theory,fragment, theory.label] for theory in theories])
-        pool.close()
+        results = pool.map(Single_par, [[theory,fragment, theory.label, event] for theory in theories])
+
         print("Calculations are done")
     elif len(fragmentfiles) == 1:
         print("Case: Multiple theories but one fragmentfile")
         fragmentfile = fragmentfiles[0]
-        results = pool.map(Single_par, [[theory,fragmentfile, theory.label] for theory in theories])
-        pool.close()
+        results = pool.map(Single_par, [[theory,fragmentfile, theory.label,event] for theory in theories])
         print("Calculations are done")  
     else:
         print("Multiple theories and multiple fragments provided.")
         print("This is not supported. Exiting...")
         exit(1)
 
+    pool.close()
+    event.wait()
+    pool.terminate()
     #Convert list of tuples into dict
     energy_dict = {result[0]: result[1] for result in results}
     print("energy_dict:", energy_dict)
