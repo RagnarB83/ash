@@ -148,7 +148,7 @@ def Singlepoint_parallel(fragments=None, fragmentfiles=None, theories=None, numc
     #Function to handle exception of child processes
     def Terminate_Pool_processes(message):
         print(BC.FAIL,"Terminating Pool processes due to exception", BC.END)
-        print("Exception message:", message)
+        print(BC.FAIL,"Exception message:", message, BC.END)
         pool.terminate()
         event.set()
         exit()
@@ -190,7 +190,7 @@ def Singlepoint_parallel(fragments=None, fragmentfiles=None, theories=None, numc
         #Passing list of fragment files
         elif len(fragmentfiles) > 0:
             print("Launching multiprocessing and passing list of ASH fragmentfiles")
-            for fragmentfile in fragmentsfiles:
+            for fragmentfile in fragmentfiles:
                 print("fragmentfile:", fragmentfile)
                 results.append(pool.apply_async(Single_par, kwds=dict(theory=theory,fragmentfile=fragmentfile,label=fragmentfile,mofilesdir=mofilesdir,event=event), error_callback=Terminate_Pool_processes))
     # Case: Multiple theories, 1 fragment
