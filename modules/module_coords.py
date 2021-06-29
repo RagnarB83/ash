@@ -90,7 +90,7 @@ class Fragment:
             self.read_fragment_from_file(fragfile)
 
         #Label for fragment (string). Useful for distinguishing different fragments
-        #This override label-definitions above (self.label=xyzfile etc)
+        #This overrides label-definitions above (self.label=xyzfile etc)
         if label != None:
             self.label=label
 
@@ -149,6 +149,7 @@ class Fragment:
             if len(line)> 1:
                 self.elems.append(reformat_element(line.split()[0]))
                 self.coords.append([float(line.split()[1]), float(line.split()[2]), float(line.split()[3])])
+        self.label=''.join(self.elems)
         self.update_attributes()
         self.calc_connectivity(scale=scale, tol=tol)
     #Replace coordinates by providing elems and coords lists. Optional: recalculate connectivity
