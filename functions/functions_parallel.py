@@ -221,8 +221,9 @@ def Singlepoint_parallel(fragments=None, fragmentfiles=None, theories=None, numc
     print("b")
     pool.join()
     print("c")
+    event.set()
     #OLD event based thing
-    #event.set()
+
     while True:
         print("Pool multiprocessing underway....")
         time.sleep(3)
