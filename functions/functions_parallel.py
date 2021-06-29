@@ -152,6 +152,7 @@ def Singlepoint_parallel(fragments=None, fragmentfiles=None, theories=None, numc
         print("Exception message:", message)
         pool.terminate()
         event.set()
+        exit()
         #print("Setting event")
         #event.set()
         #print("XXXXX")
