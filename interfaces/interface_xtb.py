@@ -75,21 +75,20 @@ class xTBTheory:
             self.c_int = c_int
             self.c_double = c_double
         else:
-
-        if xtbdir == None:
-            print(BC.WARNING, "No xtbdir argument passed to xTBTheory. Attempting to find xTBTheory variable inside settings_ash", BC.END)
-            try:
-                self.xtbdir=settings_ash.settings_dict["xtbdir"]
-            except:
-                print(BC.FAIL,"Found no xtbdir variable in settings_ash module either.",BC.END)
+            if xtbdir == None:
+                print(BC.WARNING, "No xtbdir argument passed to xTBTheory. Attempting to find xTBTheory variable inside settings_ash", BC.END)
                 try:
-                    self.xtbdir = os.path.dirname(shutil.which('xtb'))
-                    print("Found xtb in path. Setting xtbdir to:", self.xtbdir)
+                    self.xtbdir=settings_ash.settings_dict["xtbdir"]
                 except:
-                    print("Found no xtb executable in path. Exiting... ")
-                    exit()
-        else:
-            self.xtbdir = xtbdir
+                    print(BC.FAIL,"Found no xtbdir variable in settings_ash module either.",BC.END)
+                    try:
+                        self.xtbdir = os.path.dirname(shutil.which('xtb'))
+                        print("Found xtb in path. Setting xtbdir to:", self.xtbdir)
+                    except:
+                        print("Found no xtb executable in path. Exiting... ")
+                        exit()
+            else:
+                self.xtbdir = xtbdir
 
 
     #Cleanup after run.
