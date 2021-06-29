@@ -261,8 +261,11 @@ def Singlepoint_parallel(fragments=None, fragmentfiles=None, theories=None, numc
     def Terminate_Pool_processes(message):
         print("Terminating Pool processes due to exception")
         print("Exception message:", message)
+        pool.close()
+        print("a")
         pool.terminate()
-        exit()
+        print("b")
+        sys.exit()
 
 
     # Singlepoint(fragment=None, theory=None, Grad=False)
