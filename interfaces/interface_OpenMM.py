@@ -1148,7 +1148,7 @@ def create_cnb(original_nbforce):
 #Integrators: LangevinMiddleIntegrator, NoseHooverIntegrator, VerletIntegrator, BrownianIntegrator, VariableLangevinIntegrator, VariableVerletIntegrator
 #Thermostat: AndersenThermostat (use with Verlet)
 #Barostat: MonteCarloBarostat (not yet supported: MonteCarloAnisotropicBarostat, MonteCarloMembraneBarostat)
-def OpenMM_MD(openmmobject=None, timestep=0.001, simulation_steps=None, simulation_time=None, traj_frequency=1000, temperature=300, integrator=None,
+def OpenMM_MD(fragment=None, openmmobject=None, timestep=0.001, simulation_steps=None, simulation_time=None, traj_frequency=1000, temperature=300, integrator=None,
     thermostat=None, barostat=None, trajectory_file_option='PDB', coupling_frequency=None, anderson_thermostat=None):
     
     print_line_with_mainheader("OpenMM MOLECULAR DYNAMICS")
@@ -1189,7 +1189,24 @@ def OpenMM_MD(openmmobject=None, timestep=0.001, simulation_steps=None, simulati
     
 
     
-    #Context
+    #Context: settings positions
+    coords=fragment.coords
+    pos = [openmmobject.Vec3(coords[i, 0] / 10, coords[i, 1] / 10, coords[i, 2] / 10) for i in range(len(coords))] * openmmobject.openmm.unit.nanometer
+
+    openmmobject.simulation.context.setPositions(pos)
+    print_time_rel(timeA, modulename="context: set positions")
+    timeA = time.time()
+    #While these distance constraints should not matter, applying them makes the energy function agree with previous benchmarking for bonded and nonbonded
+    #https://www.ncbi.nlm.nih.gov/pmc/articles/PMC5549999/
+    #Using 1e-6 hardcoded value since how used in paper
+    if self.applyconstraints == True:
+        print("Applying constraints before calculating MM energy")
+        self.simulation.context.applyConstraints(1e-6)
+
+
+
+
+
 
     if trajectory_file_option == 'PDB':
         openmmobject.simulation.reporters.append(openmmobject.openmm.app.PDBReporter('output.pdb', traj_frequency))
