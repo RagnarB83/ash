@@ -9,19 +9,6 @@ from functions_general import BC,blankline,print_line_with_mainheader,print_line
 #Various calculation-functions run in parallel
 
 
-def kill_all_mp_processes():
-    print("Killing all MP processes")
-    print(mp)
-    print(mp.active_children())
-    print(mp.pool)
-    print("now trying close")
-    mp.pool.close()
-    print("now term")
-    mp.pool.terminate()
-    print("now exit")
-    exit()
-
-
 #Stripped down version of Singlepoint function for Singlepoint_parallel
 #TODO: This function may still be a bit ORCA-centric. Needs to be generalized 
 def Single_par_improved(fragment=None, fragment_file=None, theory=None, label=None, mofilesdir=None, event=None):
@@ -296,10 +283,10 @@ def Singlepoint_parallel(fragments=None, fragmentfiles=None, theories=None, numc
         #NOTE: Python 3.8 and higher use spawn in MacOS. Leads to ash import problems
         #NOTE: Unix/Linux uses fork which seems better behaved
 
-
-        def blax(bla):
-            print("entered blax")
-            print("bla:", bla)
+        #Function to handle exception of child processes
+        def Terminate_Pool_processes(var):
+            print("Terminating Pool processes")
+            print("var:", var)
             pool.terminate()
 
         #Passing list of fragments
@@ -309,7 +296,7 @@ def Singlepoint_parallel(fragments=None, fragmentfiles=None, theories=None, numc
             #results = pool.map(Single_par, [[theory,fragment, fragment.label, mofilesdir, event] for fragment in fragments], error_callback=blax)
             for fragment in fragments:
                 print("fragment:", fragment)
-                results = pool.apply_async(Single_par_improved, kwds=dict(theory=theory,fragment=fragment,label=fragment.label,mofilesdir=mofilesdir,event=event), error_callback=blax)
+                results = pool.apply_async(Single_par_improved, kwds=dict(theory=theory,fragment=fragment,label=fragment.label,mofilesdir=mofilesdir,event=event), error_callback=Terminate_Pool_processes)
             
             print("xy2")
             print("results:", results)
