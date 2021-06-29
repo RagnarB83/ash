@@ -10,17 +10,20 @@ from functions_general import BC,blankline,print_line_with_mainheader,print_line
 #Various calculation-functions run in parallel
 
 
-#Stripped down version of Singlepoint function for Singlepoint_parallel.
+#Stripped down version of Singlepoint functffragment_fileion for Singlepoint_parallel.
 #NOTE: Version intended for apply_async
 #TODO: This function may still be a bit ORCA-centric. Needs to be generalized 
-def Single_par(fragment=None, fragment_file=None, theory=None, label=None, mofilesdir=None, event=None):
+def Single_par(fragment=None, fragmentfile=None, theory=None, label=None, mofilesdir=None, event=None):
 
     #Creating new copy of theory to prevent Brokensym feature from being deactivated by each run
     #NOTE: Alternatively we can add an if-statement inside orca.run
     theory=copy.deepcopy(theory)
 
     print("Fragment:", fragment)
-    print("fragment_file:", fragment_file)
+    print("fragmentfile:", fragmentfile)
+    if fragmentfile != None:
+        print("Reading fragmentfile from disk")
+        fragment=Fragment(fragfile=fragmentfile)
 
     #Making label flexible. Can be tuple but inputfilename is converted to string below
     print("label: {} (type {})".format(label,type(label)))
