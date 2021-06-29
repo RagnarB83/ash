@@ -1469,7 +1469,7 @@ def write_pdbfile(fragment,outputname="ASHfragment", openmmobject=None, atomname
 
 
             #Using string format from: cupnet.net/pdb-format/
-            line="{:6s}{:5s} {:^4s}{:1s}{:3s} {:1s}{:4d}{:1s}   {:8.3f}{:8.3f}{:8.3f}{:6.2f}{:6.2f}      {:4s}{:2s}".format(
+            line="{:6s}{:5s} {:^4s}{:1s}{:3s} {:1s}{:5d}{:1s}  {:8.3f}{:8.3f}{:8.3f}{:6.2f}{:6.2f}      {:4s}{:2s}".format(
                 'ATOM', atomindexstring, atomname, '', resname, '', resid, '',    c[0], c[1], c[2], 1.0, 0.00, seg[0:3],el, '')
             pfile.write(line+'\n')
     print("Wrote PDB file:", outputname+'.pdb')
