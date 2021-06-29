@@ -4,7 +4,13 @@ import os
 
 import ash
 from functions_general import BC,blankline,print_line_with_mainheader,print_line_with_subheader1
+
 #Various calculation-functions run in parallel
+
+
+def kill_all_mp_processes():
+   for p in mp.active_children():
+       p.terminate()
 
 
 #Stripped down version of Singlepoint function for Singlepoint_parallel
@@ -24,6 +30,7 @@ def Single_par(listx):
             fragment=ash.Fragment(fragfile=listx[1])
     else:
         print("Unknown object passed")
+        kill_all_mp_processes()
         exit()
     print("Fragment:", fragment)
 
@@ -34,7 +41,8 @@ def Single_par(listx):
     if label == None:
         print("No label provided to fragment or theory objects. This is required to distinguish between calculations ")
         print("Exiting...")
-        exit(1)
+        kill_all_mp_processes()
+        exit()
 
     #Using label (could be tuple) to create a labelstring which is used to name worker directories
     # Tuple-label (1 or 2 element) used by calc_surface functions.
@@ -84,11 +92,13 @@ def Single_par(listx):
             print("Case MRCC MOREADfile parallel")
             print("moreadfile_path:", moreadfile_path)
         print("not finished. exiting")
+        kill_all_mp_processes()
         exit()
     else:
         if mofilesdir != None:
             print("moreadfile option not ready for this Theory. exiting")
-        exit()
+            kill_all_mp_processes()
+            exit()
 
     #Creating new dir and running calculation inside
     os.mkdir('Pooljob_'+labelstring)
