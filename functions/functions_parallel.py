@@ -300,7 +300,8 @@ def Singlepoint_parallel(fragments=None, fragmentfiles=None, theories=None, numc
             for fragment in fragments:
                 print("fragment:", fragment)
                 results = pool.apply_async(Single_par_improved, kwds=dict(theory=theory,fragment=fragment,label=fragment.label,mofilesdir=mofilesdir,event=event), error_callback=Terminate_Pool_processes)
-            
+                pool.close()
+                pool.join()
         #Passing list of fragment files
         elif len(fragmentfiles) > 0:
             print("Launching multiprocessing and passing list of ASH fragmentfiles")
