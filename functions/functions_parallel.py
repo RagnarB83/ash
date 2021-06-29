@@ -195,10 +195,15 @@ def Singlepoint_parallel(fragments=None, fragmentfiles=None, theories=None, numc
         #NOTE: Python 3.8 and higher use spawn in MacOS. Leads to ash import problems
         #NOTE: Unix/Linux uses fork which seems better behaved
 
+
+        def blax():
+            print("entered blax")
+            pool.terminate()
+
         #Passing list of fragments
         if len(fragments) > 0:
             print("Launching multiprocessing and passing list of ASH fragments")
-            results = pool.map(Single_par, [[theory,fragment, fragment.label, mofilesdir, event] for fragment in fragments])
+            results = pool.map(Single_par, [[theory,fragment, fragment.label, mofilesdir, event] for fragment in fragments], error_callback=blax)
             print("xy2")
         #Passing list of fragment files
         elif len(fragmentfiles) > 0:
