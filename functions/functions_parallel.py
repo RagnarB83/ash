@@ -43,6 +43,7 @@ def Single_par_improved(fragment=None, fragment_file=None, theory=None, label=No
         event.set()
         print("after event")
         print("event is_set: ", event.is_set())
+        raise Exception()
         exit()
         #sys.exit()
         #kill_all_mp_processes()
