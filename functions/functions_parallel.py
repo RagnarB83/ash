@@ -119,9 +119,8 @@ def Singlepoint_parallel(fragments=None, fragmentfiles=None, theories=None, numc
     :param Grad: whether to do Gradient or not.
     :type Grad: Boolean.
     '''
-    print(fragments)
-    print(fragmentfiles)
-    if fragments == None or fragmentfiles == None:
+
+    if fragments == None and fragmentfiles == None:
         print(BC.FAIL,"Singlepoint_parallel requires a list of ASH fragments or a list of fragmentfilenames",BC.END)
         exit(1)
     if theories == None or numcores == None :
