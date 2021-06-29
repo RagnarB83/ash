@@ -10,6 +10,13 @@ from functions_general import BC,blankline,print_line_with_mainheader,print_line
 
 def kill_all_mp_processes():
     print("Killing all MP processes")
+    global pool
+    print(mp.active_children())
+    print(pool)
+    print("now trying close")
+    pool.close()
+    print("now term")
+    pool.terminate()
     for p in mp.active_children():
         print("p:", p)
         p.terminate()
