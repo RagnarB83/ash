@@ -223,14 +223,15 @@ def Singlepoint_parallel(fragments=None, fragmentfiles=None, theories=None, numc
 
     print("Closing Pool")
     pool.close()
+    #Setting event to True since all is done
     event.set()
-    print("Event wait")
-    print("event is_set: ", event.is_set())
+    #print("event is_set: ", event.is_set())
 
-
+    #Terminate Pool if event flag was set to True (either above or by error in Single_par)
     event.wait()
     print("Pool terminate")
     pool.terminate()
+
     #Convert list of tuples into dict
     energy_dict = {result[0]: result[1] for result in results}
     print("energy_dict:", energy_dict)
