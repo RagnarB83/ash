@@ -324,7 +324,8 @@ def Singlepoint_parallel(fragments=None, fragmentfiles=None, theories=None, numc
 
     print("xy2")
     while True:
-        print("true,,")
+        print("true")
+        sleep(3)
         if event.is_set():
             print("Event has been set! Now termininating Pool processes")
             pool.terminate()
