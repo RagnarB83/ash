@@ -21,11 +21,126 @@ def kill_all_mp_processes():
     print("now exit")
     exit()
 
+
+#Stripped down version of Singlepoint function for Singlepoint_parallel
+#TODO: This function may still be a bit ORCA-centric. Needs to be generalized 
+def Single_par_improved(fragment=None, theory=None, label=None, mofilesdir=None, event=None):
+    print("theory:", theory)
+    #Multiprocessing event
+    event = listx[4]
+
+    #Creating new copy of theory to prevent Brokensym feature from being deactivated by each run
+    #NOTE: Alternatively we can add an if-statement inside orca.run
+    theory=copy.deepcopy(listx[0])
+
+    #listx[1] is either an ASH Fragment or Fragment file string (avoids massive pickle object)
+    if listx[1].__class__.__name__ == "Fragment":
+        print("Here", listx[1].__class__.__name__)
+        fragment=listx[1]
+    elif listx[1].__class__.__name__ == "str":
+        if "ygg" in listx[1]:
+            print("Found string assumed to be ASH fragmentfile")
+            fragment=ash.Fragment(fragfile=listx[1])
+    else:
+        print("Unknown object passed")
+        kill_all_mp_processes()
+        exit()
+    print("Fragment:", fragment)
+
+    #Making label flexible. Can be tuple but inputfilename is converted to string below
+    label=listx[2]
+    mofilesdir=listx[3]
+    print("label: {} (type {})".format(label,type(label)))
+    if label == None:
+        print("No label provided to fragment or theory objects. This is required to distinguish between calculations ")
+        print("Exiting...")
+        print("event:", event)
+        print("event is_set: ", event.is_set())
+        event.set()
+        print("after event")
+        print("event is_set: ", event.is_set())
+        exit()
+        #sys.exit()
+        #kill_all_mp_processes()
+        #exit()
+
+    #Using label (could be tuple) to create a labelstring which is used to name worker directories
+    # Tuple-label (1 or 2 element) used by calc_surface functions.
+    # Otherwise normally string
+    if type(label) == tuple:
+        if len(label) ==2:
+            labelstring=str(str(label[0])+'_'+str(label[1])).replace('.','_')
+        else:
+            labelstring=str(str(label[0])).replace('.','_')
+        print("Labelstring:", labelstring)
+        #RC1_0.9-RC2_170.0.xyz
+        #orca_RC1_0.9RC2_170.0.gbw
+        #TODO: what if tuple is only a single number???
+
+        if mofilesdir != None:
+            print("Mofilesdir option.")
+            if len(label) == 2:
+                moreadfile_path=mofilesdir+'/'+theory.filename+'_'+'RC1_'+str(label[0])+'-'+'RC2_'+str(label[1])
+            else:
+                moreadfile_path=mofilesdir+'/'+theory.filename+'_'+'RC1_'+str(label[0])
+
+    #Label is not tuple. Not coming from calc_surface funcitons
+    elif type(label) == float or type(label) == int:
+        print("Label is float or int")
+        #
+        #Label is float or int. 
+        if mofilesdir != None:
+            print("Mofilesdir option.")
+            moreadfile_path=mofilesdir+'/'+theory.filename+'_'+'RC1_'+str(label[0])
+    else:
+        print("Here. label.", label)
+        #Label is not tuple. String or single number
+        labelstring=str(label).replace('.','_')
+
+    #Creating separate inputfilename using label
+    #Removing . in inputfilename as ORCA can get confused
+    if theory.__class__.__name__ == "ORCATheory":
+        #theory.filename=''.join([str(i) for i in labelstring])
+        #NOTE: Not sure if we really need to use labelstring for input since inside separate directoreies
+        #Disabling for now
+        #theory.filename=labelstring
+        if mofilesdir != None:
+            theory.moreadfile=moreadfile_path+'.gbw'
+            print("Setting moreadfile to:", theory.moreadfile)
+    elif theory.__class__.__name__ == "MRCCTheory":
+        if mofilesdir != None:
+            print("Case MRCC MOREADfile parallel")
+            print("moreadfile_path:", moreadfile_path)
+        print("not finished. exiting")
+        kill_all_mp_processes()
+        exit()
+    else:
+        if mofilesdir != None:
+            print("moreadfile option not ready for this Theory. exiting")
+            kill_all_mp_processes()
+            exit()
+
+    #Creating new dir and running calculation inside
+    os.mkdir('Pooljob_'+labelstring)
+    os.chdir('Pooljob_'+labelstring)
+    print(BC.WARNING,"Doing single-point Energy job on fragment. Formula: {} Label: {} ".format(fragment.prettyformula,fragment.label), BC.END)
+    print("\n\nProcess ID {} is running calculation with label: {} \n\n".format(mp.current_process(),label))
+
+    energy = theory.run(current_coords=fragment.coords, elems=fragment.elems, label=label)
+    os.chdir('..')
+    print("Energy: ", energy)
+    # Now adding total energy to fragment
+    fragment.energy = energy
+    return (label,energy)
+
+
+
+
+
 #Stripped down version of Singlepoint function for Singlepoint_parallel
 #TODO: This function may still be a bit ORCA-centric. Needs to be generalized 
 def Single_par(listx):
     print("listx:", listx)
-    exit()
     #Multiprocessing event
     event = listx[4]
 
@@ -209,9 +324,10 @@ def Singlepoint_parallel(fragments=None, fragmentfiles=None, theories=None, numc
             #results = pool.map(Single_par, [[theory,fragment, fragment.label, mofilesdir, event] for fragment in fragments], error_callback=blax)
             for fragment in fragments:
                 print("fragment:", fragment)
-                results = pool.apply_async(Single_par, kwds=dict(theory=theory,fragment=fragment,label=fragment.label,mofilesdir=mofilesdir,event=event), error_callback=blax)
+                results = pool.apply_async(Single_par_improved, kwds=dict(theory=theory,fragment=fragment,label=fragment.label,mofilesdir=mofilesdir,event=event), error_callback=blax)
             
             print("xy2")
+            print("results:", results)
             pool.close()
             pool.join()
             exit()
