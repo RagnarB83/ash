@@ -58,6 +58,7 @@ def Single_par(listx):
         event.set()
         print("after event")
         print("event is_set: ", event.is_set())
+        exit()
         #sys.exit()
         #kill_all_mp_processes()
         #exit()
