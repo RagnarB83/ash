@@ -510,8 +510,6 @@ class OpenMMTheory:
 
         #Integrators: LangevinIntegrator, LangevinMiddleIntegrator, NoseHooverIntegrator, VerletIntegrator, BrownianIntegrator, VariableLangevinIntegrator, VariableVerletIntegrator
 
-        print("temperature:", temperature)
-        print("coupling_frequency:", coupling_frequency)
         if integrator == 'VerletIntegrator':
             self.integrator = self.openmm.VerletIntegrator(timestep*self.unit.picoseconds)
         elif integrator == 'VariableVerletIntegrator':
@@ -522,8 +520,9 @@ class OpenMMTheory:
             self.integrator = self.openmm.LangevinMiddleIntegrator(temperature*self.unit.kelvin, coupling_frequency/self.unit.picosecond, timestep*self.unit.picoseconds)
         elif integrator == 'NoseHooverIntegrator':
             self.integrator = self.openmm.NoseHooverIntegrator(temperature*self.unit.kelvin, coupling_frequency/self.unit.picosecond, timestep*self.unit.picoseconds)
-        elif integrator == 'BrownianIntegrator':
-            self.integrator = self.openmm.BrownianIntegrator(temperature*self.unit.kelvin, coupling_frequency/self.unit.picosecond, timestep*self.unit.picoseconds)
+        #NOTE: Problem with Brownian, disabling
+        #elif integrator == 'BrownianIntegrator':
+        #    self.integrator = self.openmm.BrownianIntegrator(temperature*self.unit.kelvin, coupling_frequency/self.unit.picosecond, timestep*self.unit.picoseconds)
         elif integrator == 'VariableLangevinIntegrator':
             self.integrator = self.openmm.VariableLangevinIntegrator(temperature*self.unit.kelvin, coupling_frequency/self.unit.picosecond, timestep*self.unit.picoseconds)
 
@@ -1167,7 +1166,7 @@ def OpenMM_MD(fragment=None, openmmobject=None, timestep=0.001, simulation_steps
     print("Temperature: {} K".format(temperature))
     print("Integrator:", integrator)
     print("Thermostat:", thermostat)
-    print("coupling_frequency: {} /ps (Nose-Hoover,Langevin,Brownian)".format(coupling_frequency))
+    print("coupling_frequency: {} ps^-1 (Nose-Hoover,Langevin,Brownian)".format(coupling_frequency))
     print("Barostat:", barostat)
 
 
@@ -1175,8 +1174,7 @@ def OpenMM_MD(fragment=None, openmmobject=None, timestep=0.001, simulation_steps
         print("Adding barostat")
         openmmobject.system.addForce(openmmobject.openmm.MonteCarloBarostat(1*openmmobject.openmm.unit.bar, temperature*openmmobject.openmm.unit.kelvin))
         integrator="LangevinMiddleIntegrator"
-        print("Now using integrator:", integrator)
-
+        print("Barostat requires using integrator:", integrator)
         openmmobject.create_simulation(timestep=0.001, temperature=temperature, integrator=integrator, coupling_frequency=coupling_frequency)
     elif anderson_thermostat == True:
         print("Anderson thermostat is on")
@@ -1185,7 +1183,7 @@ def OpenMM_MD(fragment=None, openmmobject=None, timestep=0.001, simulation_steps
         print("Now using integrator:", integrator)
         openmmobject.create_simulation(timestep=0.001, temperature=temperature, integrator=integrator, coupling_frequency=coupling_frequency)
     else:
-        #Modify simulation parameters if required
+        #Regular thermostat and integrator without barostat
         #Integrators: LangevinIntegrator, LangevinMiddleIntegrator, NoseHooverIntegrator, VerletIntegrator, BrownianIntegrator, VariableLangevinIntegrator, VariableVerletIntegrator
         openmmobject.create_simulation(timestep=0.001, temperature=temperature, integrator=integrator, coupling_frequency=coupling_frequency)
     
@@ -1202,7 +1200,7 @@ def OpenMM_MD(fragment=None, openmmobject=None, timestep=0.001, simulation_steps
     elif trajectory_file_option == 'DCD':
         openmmobject.simulation.reporters.append(openmmobject.openmm.app.DCDReporter('output.dcd', traj_frequency))
     openmmobject.simulation.reporters.append(openmmobject.openmm.app.StateDataReporter(stdout, traj_frequency, step=True, time=True,
-            potentialEnergy=True, temperature=True, kineticEnergy=True))
+            potentialEnergy=True, temperature=True, kineticEnergy=True,  separator='     '))
 
     #Run simulation
     openmmobject.simulation.step(simulation_steps)
