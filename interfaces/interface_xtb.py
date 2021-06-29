@@ -7,7 +7,7 @@ import time
 
 import constants
 import settings_solvation
-from functions_general import blankline,reverse_lines, print_time_rel
+from functions_general import blankline,reverse_lines, print_time_rel,BC
 import module_coords
 
 
