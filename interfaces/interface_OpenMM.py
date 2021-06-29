@@ -510,7 +510,8 @@ class OpenMMTheory:
 
         #Integrators: LangevinIntegrator, LangevinMiddleIntegrator, NoseHooverIntegrator, VerletIntegrator, BrownianIntegrator, VariableLangevinIntegrator, VariableVerletIntegrator
 
-        
+        print("temperature:", temperature)
+        print("coupling_frequency:", coupling_frequency)
         if integrator == 'VerletIntegrator':
             self.integrator = self.openmm.VerletIntegrator(timestep*self.unit.picosecond)
         elif integrator == 'VariableVerletIntegrator':
@@ -1177,7 +1178,8 @@ def OpenMM_MD(fragment=None, openmmobject=None, timestep=0.001, simulation_steps
         print("Now using integrator:", integrator)
 
         openmmobject.create_simulation(timestep=0.001, temperature=temperature, integrator=integrator, coupling_frequency=coupling_frequency)
-    elif anderson_thermostat != None:
+    elif anderson_thermostat == True:
+        print("Anderson thermostat is on")
         openmmobject.system.addForce(openmmobject.openmm.AndersenThermostat(temperature*openmmobject.openmm.unit.kelvin, 1/openmmobject.openmm.unit.picosecond))
         integrator="VerletIntegrator"
         print("Now using integrator:", integrator)
@@ -1194,7 +1196,7 @@ def OpenMM_MD(fragment=None, openmmobject=None, timestep=0.001, simulation_steps
     pos = [openmmobject.Vec3(coords[i, 0] / 10, coords[i, 1] / 10, coords[i, 2] / 10) for i in range(len(coords))] * openmmobject.openmm.unit.nanometer
 
     openmmobject.simulation.context.setPositions(pos)
-    
+
     if trajectory_file_option == 'PDB':
         openmmobject.simulation.reporters.append(openmmobject.openmm.app.PDBReporter('output.pdb', traj_frequency))
     elif trajectory_file_option == 'DCD':
