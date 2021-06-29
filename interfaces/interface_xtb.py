@@ -78,6 +78,7 @@ class xTBTheory:
             if xtbdir == None:
                 print(BC.WARNING, "No xtbdir argument passed to xTBTheory. Attempting to find xTBTheory variable inside settings_ash", BC.END)
                 try:
+                    print("settings_ash.settings_dict:", settings_ash.settings_dict)
                     self.xtbdir=settings_ash.settings_dict["xtbdir"]
                 except:
                     print(BC.FAIL,"Found no xtbdir variable in settings_ash module either.",BC.END)
