@@ -528,6 +528,10 @@ class Fragment:
         Centralmainfrag = []
         with open(fragfile) as file:
             for n, line in enumerate(file):
+                if n==0:
+                    if 'Fragment:' not in line:
+                        print("This is not a valid ASH fragment file. Exiting")
+                        exit()
                 if 'Num atoms:' in line:
                     numatoms=int(line.split()[-1])
                 if coordgrab==True:
