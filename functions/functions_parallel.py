@@ -215,6 +215,9 @@ def Singlepoint_parallel(fragments=None, fragmentfiles=None, theories=None, numc
         exit(1)
 
     print("Calculations are now done")
+    print("here")
+    pool.close()
+    pool.join()
     #OLD event based thing
     event.set()
     while True:
@@ -224,10 +227,6 @@ def Singlepoint_parallel(fragments=None, fragmentfiles=None, theories=None, numc
             print("Event has been set! Now terminating Pool processes")
             pool.terminate()
             break
-
-    print("here")
-    pool.close()
-    pool.join()
 
     #Dict comprehension to get results from list of Pool-ApplyResult objects
     energy_dict = {result.get()[0]: result.get()[1] for result in results}
