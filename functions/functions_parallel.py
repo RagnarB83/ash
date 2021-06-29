@@ -266,7 +266,7 @@ def Singlepoint_parallel(fragments=None, fragmentfiles=None, theories=None, numc
         pool.terminate()
         print("b")
         sys.exit()
-
+        event.set()
 
     # Singlepoint(fragment=None, theory=None, Grad=False)
     #Case: 1 theory, multiple fragments
