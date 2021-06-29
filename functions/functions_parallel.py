@@ -338,10 +338,7 @@ def Singlepoint_parallel(fragments=None, fragmentfiles=None, theories=None, numc
     pool.close()
     pool.join()
     print("N results:", results)
-    print(results.get())
-
-
-    #energy_dict = {result[0]: result[1] for result in results}
+    energy_dict = {result[0]: result[1] for result.get() in results}
     #print("energy_dict:", energy_dict)
 
     exit()
