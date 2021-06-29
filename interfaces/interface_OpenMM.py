@@ -1156,6 +1156,9 @@ def OpenMM_MD(fragment=None, openmmobject=None, timestep=0.001, simulation_steps
     if simulation_steps == None and simulation_time == None:
         print("Either simulation_steps or simulation_time needs to be set")
         exit()
+    if fragment == None:
+        print("No fragment object. Exiting")
+        exit()
     if simulation_time != None:
         simulation_steps=simulation_time/timestep
     if simulation_steps != None:
@@ -1169,7 +1172,10 @@ def OpenMM_MD(fragment=None, openmmobject=None, timestep=0.001, simulation_steps
     print("coupling_frequency: {} ps^-1 (Nose-Hoover,Langevin,Brownian)".format(coupling_frequency))
     print("Barostat:", barostat)
 
-
+    print("")
+    print("Will write trajectory in format:", trajectory_file_option)
+    print("Trajectory write frequency:", traj_frequency)
+    print("")
     if barostat != None:
         print("Adding barostat")
         openmmobject.system.addForce(openmmobject.openmm.MonteCarloBarostat(1*openmmobject.openmm.unit.bar, temperature*openmmobject.openmm.unit.kelvin))
@@ -1196,7 +1202,8 @@ def OpenMM_MD(fragment=None, openmmobject=None, timestep=0.001, simulation_steps
     openmmobject.simulation.context.setPositions(pos)
 
     if trajectory_file_option == 'PDB':
-        openmmobject.simulation.reporters.append(openmmobject.openmm.app.PDBReporter('output.pdb', traj_frequency))
+        write_pdbfile(fragment,outputname="initial_frag.pdb", openmmobject=openmmobject)
+        openmmobject.simulation.reporters.append(openmmobject.openmm.app.PDBReporter('output_traj.pdb', traj_frequency))
     elif trajectory_file_option == 'DCD':
         openmmobject.simulation.reporters.append(openmmobject.openmm.app.DCDReporter('output.dcd', traj_frequency))
     openmmobject.simulation.reporters.append(openmmobject.openmm.app.StateDataReporter(stdout, traj_frequency, step=True, time=True,
