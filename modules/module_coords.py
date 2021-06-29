@@ -67,26 +67,26 @@ class Fragment:
             self.add_coords_from_string(coordsstring, scale=scale, tol=tol)
         #If xyzfile argument, run read_xyzfile
         elif xyzfile is not None:
-            self.label=xyzfile
+            self.label=xyzfile.split('/')[-1].split('.')[0]
             self.read_xyzfile(xyzfile, readchargemult=readchargemult,conncalc=conncalc)
         elif pdbfile is not None:
-            self.label=pdbfile
+            self.label=pdbfile.split('/')[-1].split('.')[0]
             self.read_pdbfile(pdbfile, conncalc=False, use_atomnames_as_elements=use_atomnames_as_elements)
         elif grofile is not None:
-            self.label=grofile
+            self.label=grofile.split('/')[-1].split('.')[0]
             self.read_grofile(grofile, conncalc=False)
         elif amber_inpcrdfile is not None:
-            self.label=amber_inpcrdfile
+            self.label=amber_inpcrdfile.split('/')[-1].split('.')[0]
             print("Reading Amber INPCRD file")
             if amber_prmtopfile == None:
                 print("amber_prmtopfile argument must be provided also!")
                 exit()
             self.read_amberfile(inpcrdfile=amber_inpcrdfile, prmtopfile=amber_prmtopfile,conncalc=conncalc)
         elif chemshellfile is not None:
-            self.label=chemshellfile
+            self.label=chemshellfile.split('/')[-1].split('.')[0]
             self.read_chemshellfile(chemshellfile, conncalc=conncalc)
         elif fragfile is not None:
-            self.label=fragfile
+            self.label=fragfile.split('/')[-1].split('.')[0]
             self.read_fragment_from_file(fragfile)
 
         #Label for fragment (string). Useful for distinguishing different fragments
