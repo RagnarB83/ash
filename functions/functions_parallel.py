@@ -54,7 +54,7 @@ def Single_par(listx):
         print("Exiting...")
         print("event:", event)
         event.set()
-        kill_all_mp_processes()
+        #kill_all_mp_processes()
         exit()
 
     #Using label (could be tuple) to create a labelstring which is used to name worker directories
@@ -217,8 +217,11 @@ def Singlepoint_parallel(fragments=None, fragmentfiles=None, theories=None, numc
         print("This is not supported. Exiting...")
         exit(1)
 
+    print("Cloing Pool")
     pool.close()
+    print("Event wait")
     event.wait()
+    print("Pool terminate")
     pool.terminate()
     #Convert list of tuples into dict
     energy_dict = {result[0]: result[1] for result in results}
