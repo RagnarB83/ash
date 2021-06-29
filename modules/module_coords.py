@@ -19,9 +19,8 @@ class Fragment:
     def __init__(self, coordsstring=None, fragfile=None, xyzfile=None, pdbfile=None, grofile=None, amber_inpcrdfile=None, amber_prmtopfile=None, chemshellfile=None, coords=None, elems=None, connectivity=None,
                  atomcharges=None, atomtypes=None, conncalc=False, scale=None, tol=None, printlevel=2, charge=None,
                  mult=None, label=None, readchargemult=False, use_atomnames_as_elements=False):
-        #Label for fragment (string). Useful for distinguishing different fragments
-        self.label=label
-
+        
+        
         #Printlevel. Default: 2 (slightly verbose)
         self.printlevel=printlevel
 
@@ -68,21 +67,34 @@ class Fragment:
             self.add_coords_from_string(coordsstring, scale=scale, tol=tol)
         #If xyzfile argument, run read_xyzfile
         elif xyzfile is not None:
+            self.label=xyzfile
             self.read_xyzfile(xyzfile, readchargemult=readchargemult,conncalc=conncalc)
         elif pdbfile is not None:
+            self.label=pdbfile
             self.read_pdbfile(pdbfile, conncalc=False, use_atomnames_as_elements=use_atomnames_as_elements)
         elif grofile is not None:
+            self.label=grofile
             self.read_grofile(grofile, conncalc=False)
         elif amber_inpcrdfile is not None:
+            self.label=amber_inpcrdfile
             print("Reading Amber INPCRD file")
             if amber_prmtopfile == None:
                 print("amber_prmtopfile argument must be provided also!")
                 exit()
             self.read_amberfile(inpcrdfile=amber_inpcrdfile, prmtopfile=amber_prmtopfile,conncalc=conncalc)
         elif chemshellfile is not None:
+            self.label=chemshellfile
             self.read_chemshellfile(chemshellfile, conncalc=conncalc)
         elif fragfile is not None:
+            self.label=fragfile
             self.read_fragment_from_file(fragfile)
+
+        #Label for fragment (string). Useful for distinguishing different fragments
+        #This override label-definitions above (self.label=xyzfile etc)
+        if label != None:
+            self.label=label
+
+
     def update_attributes(self):
         print("Updating fragment attributes...")
         if len(self.coords) == 0:
