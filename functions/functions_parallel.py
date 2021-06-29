@@ -13,7 +13,20 @@ def Single_par(listx):
     #Creating new copy of theory to prevent Brokensym feature from being deactivated by each run
     #NOTE: Alternatively we can add an if-statement inside orca.run
     theory=copy.deepcopy(listx[0])
-    fragment=listx[1]
+
+    #listx[1] is either an ASH Fragment or Fragment file string (avoids massive pickle object)
+    if listx[1].__class__.__name__ == "Fragment":
+        print("Here", listx[1].__class__.__name__)
+        fragment=listx[1]
+    elif listx[1].__class__.__name__ == "str":
+        if "ygg" in listx[1]:
+            print("Found string assumed to be ASH fragmentfile")
+            fragment=ash.Fragment(fragfile=listx[1])
+    else:
+        print("Unknown object passed")
+        exit()
+    print("Fragment:", fragment)
+
     #Making label flexible. Can be tuple but inputfilename is converted to string below
     label=listx[2]
     mofilesdir=listx[3]
@@ -92,31 +105,41 @@ def Single_par(listx):
 
 
 #PARALLEL Single-point energy function
-#will run over fragments, over theories or both
+#will run over fragments or fragmentfiles, over theories or both
 #mofilesdir. Directory containing MO-files (GBW files for ORCA). Usef for multiple fragment option
-def Singlepoint_parallel(fragments=None, theories=None, numcores=None, mofilesdir=None):
+def Singlepoint_parallel(fragments=None, fragmentfiles=None, theories=None, numcores=None, mofilesdir=None):
     print("")
     '''
     The Singlepoint_parallel function carries out multiple single-point calculations in a parallel fashion
     :param fragments:
     :type list: list of ASH objects of class Fragment
+    :type list: list of ASH fragmentfiles (strings)
     :param theories:
     :type list: list of ASH theory objects
     :param Grad: whether to do Gradient or not.
     :type Grad: Boolean.
     '''
 
-    if fragments == None or theories == None or numcores == None:
-        print("fragments:", fragments)
+    if fragments == None or fragmentfiles == None:
+        print(BC.FAIL,"Singlepoint_parallel requires a list of ASH fragments or a list of fragmentfilenames",BC.END)
+        exit(1)
+    if theories == None or numcores == None :
         print("theories:", theories)
         print("numcores:", numcores)
-        print(BC.FAIL,"Singlepoint_parallel requires a fragment and a theory object and a numcores values",BC.END)
+        print(BC.FAIL,"Singlepoint_parallel requires a theory object and a numcores value",BC.END)
         exit(1)
 
     blankline()
     print_line_with_subheader1("Singlepoint_parallel function")
     print("Number of CPU cores available: ", numcores)
-    print("Number of fragments:", len(fragments))
+    if fragments != None:
+        print("Number of fragments:", len(fragments))
+    else:
+        fragments=[]
+    if fragmentfiles != None:
+        print("Number of fragmentfiles:", len(fragmentfiles))
+    else:
+        fragmentfiles=[]
     print("Number of theories:", len(theories))
     print("Running single-point calculations in parallel")
     print("Mofilesdir:", mofilesdir)
@@ -139,8 +162,16 @@ def Singlepoint_parallel(fragments=None, theories=None, numcores=None, mofilesdi
 
         #NOTE: Python 3.8 and higher use spawn in MacOS. Leads to ash import problems
         #NOTE: Unix/Linux uses fork which seems better behaved
-        results = pool.map(Single_par, [[theory,fragment, fragment.label, mofilesdir] for fragment in fragments])
-        
+
+        #Passing list of fragments
+        if len(fragments) > 0:
+            print("Launching multiprocessing and passing list of ASH fragments")
+            results = pool.map(Single_par, [[theory,fragment, fragment.label, mofilesdir] for fragment in fragments])
+        #Passing list of fragment files
+        elif len(fragmentfiles) > 0:
+            print("Launching multiprocessing and passing list of ASH fragmentfiles")
+            results = pool.map(Single_par, [[theory,fragmentfile, fragmentfile, mofilesdir] for fragmentfile in fragmentfiles])
+
         pool.close()
         print("Calculations are done")
         print("results:", results)
@@ -151,13 +182,16 @@ def Singlepoint_parallel(fragments=None, theories=None, numcores=None, mofilesdi
         results = pool.map(Single_par, [[theory,fragment, theory.label] for theory in theories])
         pool.close()
         print("Calculations are done")
+    elif len(fragmentfiles) == 1:
+        print("Case: Multiple theories but one fragmentfile")
+        fragmentfile = fragmentfiles[0]
+        results = pool.map(Single_par, [[theory,fragmentfile, theory.label] for theory in theories])
+        pool.close()
+        print("Calculations are done")  
     else:
         print("Multiple theories and multiple fragments provided.")
         print("This is not supported. Exiting...")
-        #fragment = fragments[0]
-        #results = pool.map(Single_par, [[theory,fragment,label] for theory,fragment in zip(theories,fragments)])
-        #pool.close()
-
+        exit(1)
 
     #Convert list of tuples into dict
     energy_dict = {result[0]: result[1] for result in results}
