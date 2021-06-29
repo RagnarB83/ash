@@ -143,7 +143,6 @@ def Singlepoint_parallel(fragments=None, fragmentfiles=None, theories=None, numc
     print("Launching multiprocessing and passing list of ASH fragments")
     pool = mp.Pool(numcores)
     manager = mp.Manager()
-    #Note: Event is unused right now
     event = manager.Event()
 
     #Function to handle exception of child processes
@@ -214,16 +213,11 @@ def Singlepoint_parallel(fragments=None, fragmentfiles=None, theories=None, numc
         print("This is not supported. Exiting...")
         exit(1)
 
-    print("event.is_set():", event.is_set())
-
-    print("a")
     pool.close()
-    print("b")
     pool.join()
-    print("c")
     event.set()
-    #OLD event based thing
 
+    #While loop that is only terminated if processes finished or exception occurred
     while True:
         print("Pool multiprocessing underway....")
         time.sleep(3)
@@ -231,18 +225,14 @@ def Singlepoint_parallel(fragments=None, fragmentfiles=None, theories=None, numc
             print("Event has been set! Now terminating Pool processes")
             pool.terminate()
             break
-            #exit()
-    #        break
 
-    print("e")
     #Going through each result-object and adding to energy_dict if ready
-    #This prevents hanging if Pool did not finish correctly
+    #This prevents hanging for ApplyResult.get() if Pool did not finish correctly
     energy_dict={}
     for r in results:
         print("Result ready:", r.ready())
         if r.ready() == True:
             energy_dict[r.get()[0]] = r.get()[1]
-
 
 
     #Dict comprehension to get results from list of Pool-ApplyResult objects
