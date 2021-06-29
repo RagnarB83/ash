@@ -223,6 +223,14 @@ def Singlepoint_parallel(fragments=None, fragmentfiles=None, theories=None, numc
         print("This is not supported. Exiting...")
         exit(1)
 
+
+    while True:
+        if event.is_set():
+            print("Event has been set! Now termininating Pool processes")
+            pool.terminate()
+    
+    print("here")
+    exit()
     print("Closing Pool")
     pool.close()
     #Setting event to True since all is done
@@ -232,7 +240,7 @@ def Singlepoint_parallel(fragments=None, fragmentfiles=None, theories=None, numc
     #Terminate Pool if event flag was set to True (either above or by error in Single_par)
     event.wait()
     print("Pool terminate")
-    pool.terminate()
+    
 
     #Convert list of tuples into dict
     energy_dict = {result[0]: result[1] for result in results}
