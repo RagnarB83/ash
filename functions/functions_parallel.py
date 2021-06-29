@@ -9,9 +9,10 @@ from functions_general import BC,blankline,print_line_with_mainheader,print_line
 
 
 def kill_all_mp_processes():
-   for p in mp.active_children():
-       p.terminate()
-
+    print("Killing all MP processes")
+    for p in mp.active_children():
+        print("p:", p)
+        p.terminate()
 
 #Stripped down version of Singlepoint function for Singlepoint_parallel
 #TODO: This function may still be a bit ORCA-centric. Needs to be generalized 
