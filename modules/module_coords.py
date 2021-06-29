@@ -6,7 +6,7 @@ import time
 import numpy as np
 import subprocess as sp
 
-from functions_general import isint,listdiff,print_time_rel,BC,printdebug,print_line_with_mainheader,writelisttofile
+from functions_general import isint,listdiff,print_time_rel,BC,printdebug,print_line_with_mainheader,writelisttofile,pygrep2
 import dictionaries_lists
 import settings_ash
 import constants
@@ -19,9 +19,8 @@ class Fragment:
     def __init__(self, coordsstring=None, fragfile=None, xyzfile=None, pdbfile=None, grofile=None, amber_inpcrdfile=None, amber_prmtopfile=None, chemshellfile=None, coords=None, elems=None, connectivity=None,
                  atomcharges=None, atomtypes=None, conncalc=False, scale=None, tol=None, printlevel=2, charge=None,
                  mult=None, label=None, readchargemult=False, use_atomnames_as_elements=False):
-        #Label for fragment (string). Useful for distinguishing different fragments
-        self.label=label
-
+        
+        
         #Printlevel. Default: 2 (slightly verbose)
         self.printlevel=printlevel
 
@@ -68,23 +67,39 @@ class Fragment:
             self.add_coords_from_string(coordsstring, scale=scale, tol=tol)
         #If xyzfile argument, run read_xyzfile
         elif xyzfile is not None:
+            self.label=xyzfile.split('/')[-1].split('.')[0]
             self.read_xyzfile(xyzfile, readchargemult=readchargemult,conncalc=conncalc)
         elif pdbfile is not None:
+            self.label=pdbfile.split('/')[-1].split('.')[0]
             self.read_pdbfile(pdbfile, conncalc=False, use_atomnames_as_elements=use_atomnames_as_elements)
         elif grofile is not None:
+            self.label=grofile.split('/')[-1].split('.')[0]
             self.read_grofile(grofile, conncalc=False)
         elif amber_inpcrdfile is not None:
+            self.label=amber_inpcrdfile.split('/')[-1].split('.')[0]
             print("Reading Amber INPCRD file")
             if amber_prmtopfile == None:
                 print("amber_prmtopfile argument must be provided also!")
                 exit()
             self.read_amberfile(inpcrdfile=amber_inpcrdfile, prmtopfile=amber_prmtopfile,conncalc=conncalc)
         elif chemshellfile is not None:
+            self.label=chemshellfile.split('/')[-1].split('.')[0]
             self.read_chemshellfile(chemshellfile, conncalc=conncalc)
         elif fragfile is not None:
+            self.label=fragfile.split('/')[-1].split('.')[0]
             self.read_fragment_from_file(fragfile)
+
+        #Label for fragment (string). Useful for distinguishing different fragments
+        #This overrides label-definitions above (self.label=xyzfile etc)
+        if label != None:
+            self.label=label
+
+
     def update_attributes(self):
         print("Updating fragment attributes...")
+        if len(self.coords) == 0:
+            print("No coordinates in fragment. Something went wrong. Exiting")
+            exit()
         self.nuccharge = nucchargelist(self.elems)
         self.numatoms = len(self.coords)
         self.atomlist = list(range(0, self.numatoms))
@@ -134,6 +149,7 @@ class Fragment:
             if len(line)> 1:
                 self.elems.append(reformat_element(line.split()[0]))
                 self.coords.append([float(line.split()[1]), float(line.split()[2]), float(line.split()[3])])
+        self.label=''.join(self.elems)
         self.update_attributes()
         self.calc_connectivity(scale=scale, tol=tol)
     #Replace coordinates by providing elems and coords lists. Optional: recalculate connectivity
@@ -528,6 +544,10 @@ class Fragment:
         Centralmainfrag = []
         with open(fragfile) as file:
             for n, line in enumerate(file):
+                if n==0:
+                    if 'Fragment:' not in line:
+                        print("This is not a valid ASH fragment file. Exiting")
+                        exit()
                 if 'Num atoms:' in line:
                     numatoms=int(line.split()[-1])
                 if coordgrab==True:
@@ -2410,7 +2430,10 @@ def add_atoms_to_PSF(resgroup=None, topfile=None, psffile=None,psfgendir=None,nu
         print("Exiting")
         exit()
     
-    
+    #Dummy segmentname. Can't be something existing. Using ADD1, ADD2 etc.
+    matches=pygrep2("ADD", psffile)
+    segname="ADD"+str(len(matches)+1)
+    print("segname:", segname)
     psf_script="""
     topology {}
     readpsf {}
@@ -2421,7 +2444,7 @@ def add_atoms_to_PSF(resgroup=None, topfile=None, psffile=None,psfgendir=None,nu
     writepsf x-plor cmap newsystem_XPLOR.psf
     #writepsf charmm cmap newsystem_CHARMM.psf
     writepdb new-system.pdb
-        """.format(topfile, psffile, resgroup, resgroup)
+        """.format(topfile, psffile, segname, resgroup)
 
     #Creating PSF inputfile
     with open("psfinput.tcl", 'w') as f:

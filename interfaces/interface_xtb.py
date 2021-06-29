@@ -7,7 +7,8 @@ import time
 
 import constants
 import settings_solvation
-from functions_general import blankline,reverse_lines, print_time_rel
+import settings_ash
+from functions_general import blankline,reverse_lines, print_time_rel,BC
 import module_coords
 
 
@@ -26,10 +27,14 @@ import module_coords
 
 class xTBTheory:
     def __init__(self, xtbdir=None, fragment=None, charge=None, mult=None, xtbmethod=None, runmode='inputfile', nprocs=1, printlevel=2, filename='xtb_',
-                 maxiter=500, electronic_temp=300):
+                 maxiter=500, electronic_temp=300, label=None):
+
 
         #Printlevel
         self.printlevel=printlevel
+
+        #Label to distinguish different ORCA objects
+        self.label=label
 
         if xtbmethod is None:
             print("xTBTheory requires xtbmethod keyword to be set")
@@ -72,15 +77,22 @@ class xTBTheory:
             self.c_double = c_double
         else:
             if xtbdir == None:
-                # Trying to find xtbdir in path
-                print("xtbdir argument not provided to xTBTheory object. Trying to find xtb in path")
+                print(BC.WARNING, "No xtbdir argument passed to xTBTheory. Attempting to find xTBTheory variable inside settings_ash", BC.END)
                 try:
-                    self.xtbdir = os.path.dirname(shutil.which('xtb'))
-                    print("Found xtb in path. Setting xtbdir.")
+                    print("settings_ash.settings_dict:", settings_ash.settings_dict)
+                    self.xtbdir=settings_ash.settings_dict["xtbdir"]
                 except:
-                    print("Found no xtb executable in path. Exiting... ")
+                    print(BC.FAIL,"Found no xtbdir variable in settings_ash module either.",BC.END)
+                    try:
+                        self.xtbdir = os.path.dirname(shutil.which('xtb'))
+                        print("Found xtb in path. Setting xtbdir to:", self.xtbdir)
+                    except:
+                        print("Found no xtb executable in path. Exiting... ")
+                        exit()
             else:
                 self.xtbdir = xtbdir
+
+
     #Cleanup after run.
     def cleanup(self):
         if self.printlevel >= 2:
@@ -103,7 +115,7 @@ class xTBTheory:
             except:
                 pass
     def run(self, current_coords=None, current_MM_coords=None, MMcharges=None, qm_elems=None,
-                elems=None, Grad=False, PC=False, nprocs=None):
+                elems=None, Grad=False, PC=False, nprocs=None, label=None):
         module_init_time=time.time()
         if MMcharges is None:
             MMcharges=[]
@@ -131,6 +143,7 @@ class xTBTheory:
         #Parallellization
         #Todo: this has not been confirmed to work
         #Needs to be done before library-import??
+        print("Job label:", label)
         print("nprocs:", nprocs)
         os.environ["OMP_NUM_THREADS"] = str(nprocs)
         os.environ["MKL_NUM_THREADS"] = "1"
@@ -149,6 +162,8 @@ class xTBTheory:
             self.cleanup()
             #Todo: xtbrestart possibly. needs to be optional
             module_coords.write_xyzfile(qm_elems, current_coords, self.filename,printlevel=self.printlevel)
+
+
 
             #Run inputfile. Take nprocs argument.
             if self.printlevel >= 2:

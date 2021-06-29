@@ -1279,12 +1279,13 @@ end
     #return final energy and also dictionary with energy components
     return W2_total, E_dict
 
-#DLPNO-test CBS protocol. Simple. No core-correlation, scalar relativistic or spin-orbit coupling for now
-def DLPNO_CC_CBS(cardinals = [2,3], basisfamily="def2", fragment=None, charge=None, orcadir=None, mult=None, stabilityanalysis=False, numcores=1, CVSR=False, CVbasis="W1-mtsmall",
-                      memory=5000, pnosetting='NormalPNO', pnoextrapolation=[5,6], T1=False, scfsetting='TightSCF', extrainputkeyword='', extrablocks='', **kwargs):
+#Flexible CCSD(T)/CBS protocol. Simple. No core-correlation, scalar relativistic or spin-orbit coupling for now.
+# Regular CC, DLPNO-CC, DLPNO-CC with PNO extrapolation etc.
+def CC_CBS(cardinals = [2,3], basisfamily="def2", fragment=None, charge=None, orcadir=None, mult=None, stabilityanalysis=False, numcores=1, CVSR=False, CVbasis="W1-mtsmall", F12=False,
+                        DLPNO=False, memory=5000, pnosetting='NormalPNO', pnoextrapolation=[5,6], T1=False, scfsetting='TightSCF', extrainputkeyword='', extrablocks='', **kwargs):
     """
     WORK IN PROGRESS
-    DLPNO-CCSD(T)/CBS frozencore workflow
+    CCSD(T)/CBS frozencore workflow
 
     :param fragment: ASH fragment
     :param charge: Charge of fragment (to be replaced)?
@@ -1294,10 +1295,12 @@ def DLPNO_CC_CBS(cardinals = [2,3], basisfamily="def2", fragment=None, charge=No
     :param numcores: number of cores
     :param memory: Memory in MB
     :param scfsetting: ORCA keyword (e.g. NormalSCF, TightSCF, VeryTightSCF)
+    :param F12: True/False
+    :param DLPNO: True/False  
     :param pnosetting: ORCA keyword: NormalPNO, LoosePNO, TightPNO or extrapolation
     :param pnoextrapolation: list. e.g. [5,6]
     ;param T1: Boolean (whether to do expensive iterative triples or not)
-    :return: energy and dictionary with energy-components
+    :return: energy and dictionary with energy-components.
     """
     # If run_benchmark or other passed workflow_args then use them instead
     if 'workflow_args' in kwargs and kwargs['workflow_args'] is not None:
@@ -1319,6 +1322,8 @@ def DLPNO_CC_CBS(cardinals = [2,3], basisfamily="def2", fragment=None, charge=No
             pnoextrapolation=workflow_args['pnoextrapolation']
         if 'T1' in workflow_args:
             T1=workflow_args['T1']
+        if 'DLPNO' in workflow_args:
+            DLPNO=workflow_args['DLPNO']
         if 'scfsetting' in workflow_args:
             scfsetting=workflow_args['scfsetting']
         if 'memory' in workflow_args:
@@ -1329,7 +1334,7 @@ def DLPNO_CC_CBS(cardinals = [2,3], basisfamily="def2", fragment=None, charge=No
             extrablocks=workflow_args['extrablocks']
 
     print("-----------------------------")
-    print("DLPNO_CC_CBS PROTOCOL")
+    print("CC_CBS PROTOCOL")
     print("-----------------------------")
     print("Settings:")
     print("Cardinals chosen:", cardinals)
@@ -1337,10 +1342,12 @@ def DLPNO_CC_CBS(cardinals = [2,3], basisfamily="def2", fragment=None, charge=No
     print("Number of cores: ", numcores)
     print("Maxcore setting: ", memory, "MB")
     print("")
-    print("PNO setting: ", pnosetting)
-    if pnosetting == "extrapolation":
-        print("pnoextrapolation:", pnoextrapolation)
-    print("T1 : ", T1)
+    print("DLPNO:", DLPNO)
+    if DLPNO == True:
+        print("PNO setting: ", pnosetting)
+        if pnosetting == "extrapolation":
+            print("pnoextrapolation:", pnoextrapolation)
+        print("T1 : ", T1)
     print("SCF setting: ", scfsetting)
     print("Stability analysis:", stabilityanalysis)
     print("Core-Valence Scalar Relativistic correction (CVSR): ", CVSR)
@@ -1385,67 +1392,52 @@ end
         blocks = blocks + "%scf stabperform true end"
 
 
-    #Whether to use iterative triples or not. Default: regular DLPNO-CCSD(T)
-    if T1 is True:
-        ccsdtkeyword='DLPNO-CCSD(T1)'
+
+    #Choosing whether DLPNO or not
+    if DLPNO == True:
+        #Iterative DLPNO triples or not
+        if T1 is True:
+            ccsdtkeyword='DLPNO-CCSD(T1)'
+        else:
+            #DLPNO-F12 or not
+            if F12 is True:
+                print("Note: not supported yet ")
+                exit()
+                ccsdtkeyword='DLPNO-CCSD(T)-F12'
+            else:
+                ccsdtkeyword='DLPNO-CCSD(T)'
+        #Add PNO keyword in simpleinputline or not (if extrapolation)
+        if pnosetting != "extrapolation":
+            pnokeyword=pnosetting
+        else:
+            pnokeyword=""
+    #Regular CCSD(T)
     else:
-        ccsdtkeyword='DLPNO-CCSD(T)'
-        
-    #Add PNO keyword in simpleinputline or not (if extrapolation)
-    if pnosetting != "extrapolation":
-        pnokeyword=pnosetting
-    else:
+        #No PNO keywords
         pnokeyword=""
-
-
+        pnosetting=None
+        #F12 or not
+        if F12 is True:
+            ccsdtkeyword='CCSD(T)-F12'
+            print("Note: not supported yet ")
+            exit()
+        else:
+            ccsdtkeyword='CCSD(T)'
 
 
     ############################################################s
-    #Frozen-core DLPNO-CCSD(T) calculations defined here
+    #Frozen-core CCSD(T) calculations defined here
     ############################################################
-    if cardinals == [2,3] and basisfamily=="def2":
-        #Auxiliary basis set.
-        auxbasis='def2-QZVPP/C'
-        ccsdt_1_line="! {} def2-SVP {} {} {} {}".format(ccsdtkeyword, auxbasis, pnokeyword, scfsetting,extrainputkeyword)
-        ccsdt_2_line="! {} def2-TZVPP {} {} {} {}".format(ccsdtkeyword, auxbasis, pnokeyword, scfsetting,extrainputkeyword)
-    elif cardinals == [3,4] and basisfamily=="def2":
-        #Auxiliary basis set.
-        auxbasis='def2-QZVPP/C'
-        ccsdt_1_line="! {} def2-TZVPP {} {} {} {}".format(ccsdtkeyword, auxbasis, pnokeyword, scfsetting,extrainputkeyword)
-        ccsdt_2_line="! {} def2-QZVPP {} {} {} {}".format(ccsdtkeyword, auxbasis, pnokeyword, scfsetting,extrainputkeyword)  
-    elif cardinals == [2,3] and basisfamily=="ma-def2":
-        #Auxiliary basis set.
-        auxbasis='aug-cc-pVQZ/C'
-        ccsdt_1_line="! {} def2-SVP {} {} {} {}".format(ccsdtkeyword, auxbasis, pnokeyword, scfsetting,extrainputkeyword)
-        ccsdt_2_line="! {} def2-TZVPP {} {} {} {}".format(ccsdtkeyword, auxbasis, pnokeyword, scfsetting,extrainputkeyword)
-    elif cardinals == [3,4] and basisfamily=="ma-def2":
-        #Auxiliary basis set.
-        auxbasis='aug-cc-pVQZ/C'
-        ccsdt_1_line="! {} ma-def2-TZVPP {} {} {} {}".format(ccsdtkeyword, auxbasis, pnokeyword, scfsetting,extrainputkeyword)
-        ccsdt_2_line="! {} ma-def2-QZVPP {} {} {} {}".format(ccsdtkeyword, auxbasis, pnokeyword, scfsetting,extrainputkeyword)
-    elif cardinals == [2,3] and basisfamily=="cc":
-        #Auxiliary basis set.
-        auxbasis='cc-pVQZ/C'
-        ccsdt_1_line="! {} cc-pVDZ {} {} {} {}".format(ccsdtkeyword, auxbasis, pnokeyword, scfsetting,extrainputkeyword)
-        ccsdt_2_line="! {} cc-pVTZ {} {} {} {}".format(ccsdtkeyword, auxbasis, pnokeyword, scfsetting,extrainputkeyword)
-    elif cardinals == [3,4] and basisfamily=="cc":
-        #Auxiliary basis set.
-        auxbasis='cc-pV5Z/C'
-        ccsdt_1_line="! {} cc-pVTZ {} {} {} {}".format(ccsdtkeyword, auxbasis, pnokeyword, scfsetting,extrainputkeyword)
-        ccsdt_2_line="! {} cc-pVQZ {} {} {} {}".format(ccsdtkeyword, auxbasis, pnokeyword, scfsetting,extrainputkeyword)
-    elif cardinals == [2,3] and basisfamily=="aug-cc":
-        #Auxiliary basis set.
-        auxbasis='aug-cc-pVQZ/C'
-        ccsdt_1_line="! {} aug-cc-pVDZ {} {} {} {}".format(ccsdtkeyword, auxbasis, pnokeyword, scfsetting,extrainputkeyword)
-        ccsdt_2_line="! {} aug-cc-pVTZ {} {} {} {}".format(ccsdtkeyword, auxbasis, pnokeyword, scfsetting,extrainputkeyword)
-    elif cardinals == [3,4] and basisfamily=="aug-cc":
-        #Auxiliary basis set.
-        auxbasis='aug-cc-pV5Z/C'
-        ccsdt_1_line="! {} aug-cc-pVTZ {} {} {} {}".format(ccsdtkeyword, auxbasis, pnokeyword, scfsetting,extrainputkeyword)
-        ccsdt_2_line="! {} aug-cc-pVQZ {} {} {} {}".format(ccsdtkeyword, auxbasis, pnokeyword, scfsetting,extrainputkeyword)
-    else:
-        print("Unrecognized cardinals or basisfamily")
-        exit()
+
+    #Auxiliary basis set. One big one for now
+    #TODO: Revisit
+    auxbasis='cc-pV5Z/C'
+
+    #Choosing 
+    ccsdt_1_line,ccsdt_2_line=choose_inputlines_from_basisfamily(cardinals,basisfamily,ccsdtkeyword,auxbasis,pnokeyword,scfsetting,extrainputkeyword)
+
+
+
     #Adding special-ECP basis like cc-pVnZ-PP for heavy elements if present
     blocks1 = special_element_basis(fragment,cardinals[0],basisfamily,blocks)
     blocks2 = special_element_basis(fragment,cardinals[1],basisfamily,blocks)
@@ -1463,8 +1455,8 @@ end
     if pnosetting=="extrapolation":
         print("PNO Extrapolation option chosen.")
         print("Will run 2 jobs with PNO thresholds TCutPNO : 1e-{} and 1e-{}".format(pnoextrapolation[0],pnoextrapolation[1]))
-        E_SCF_1, E_corrCCSD_1, E_corrCCT_1,E_corrCC_1 = PNOExtrapolationStep(fragment=fragment, theory=ccsdt_1, pnoextrapolation=pnoextrapolation, DLPNO=True, F12=False, calc_label=calc_label)
-        E_SCF_2, E_corrCCSD_2, E_corrCCT_2,E_corrCC_2 = PNOExtrapolationStep(fragment=fragment, theory=ccsdt_2, pnoextrapolation=pnoextrapolation, DLPNO=True, F12=False, calc_label=calc_label)
+        E_SCF_1, E_corrCCSD_1, E_corrCCT_1,E_corrCC_1 = PNOExtrapolationStep(fragment=fragment, theory=ccsdt_1, pnoextrapolation=pnoextrapolation, DLPNO=DLPNO, F12=False, calc_label=calc_label)
+        E_SCF_2, E_corrCCSD_2, E_corrCCT_2,E_corrCC_2 = PNOExtrapolationStep(fragment=fragment, theory=ccsdt_2, pnoextrapolation=pnoextrapolation, DLPNO=DLPNO, F12=False, calc_label=calc_label)
         scf_energies = [E_SCF_1, E_SCF_2]
         ccsdcorr_energies = [E_corrCCSD_1, E_corrCCSD_2]
         triplescorr_energies = [E_corrCCT_1, E_corrCCT_2]
@@ -1473,12 +1465,12 @@ end
     else:
         #Running both theories
         ash.Singlepoint(fragment=fragment, theory=ccsdt_1)
-        CCSDT_1_dict = interface_ORCA.grab_HF_and_corr_energies(ccsdt_1.filename+'.out', DLPNO=True)
+        CCSDT_1_dict = interface_ORCA.grab_HF_and_corr_energies(ccsdt_1.filename+'.out', DLPNO=DLPNO)
         shutil.copyfile(ccsdt_1.filename+'.out', './' + calc_label + 'CCSDT_1' + '.out')
         print("CCSDT_1_dict:", CCSDT_1_dict)
 
         ash.Singlepoint(fragment=fragment, theory=ccsdt_2)
-        CCSDT_2_dict = interface_ORCA.grab_HF_and_corr_energies(ccsdt_2.filename+'.out', DLPNO=True)
+        CCSDT_2_dict = interface_ORCA.grab_HF_and_corr_energies(ccsdt_2.filename+'.out', DLPNO=DLPNO)
         shutil.copyfile(ccsdt_2.filename+'.out', './' + calc_label + 'CCSDT_2' + '.out')
         print("CCSDT_2_dict:", CCSDT_2_dict)
 
@@ -1669,78 +1661,30 @@ end
 
 
     #Whether to use iterative triples or not. Default: regular DLPNO-CCSD(T)
-    if T1 is True:
-        ccsdtkeyword='DLPNO-CCSD(T1)'
-    else:
-        if DLPNO is True:
-            if F12 is True:
-                ccsdtkeyword='DLPNO-CCSD(T)-F12'                
-            else:
-                ccsdtkeyword='DLPNO-CCSD(T)'
+    if DLPNO == True:
+        pnokeyword=pnosetting
+        if T1 is True:
+            ccsdtkeyword='DLPNO-CCSD(T1)'
         else:
             if F12 is True:
-                ccsdtkeyword='CCSD(T)-F12'
+                ccsdtkeyword='DLPNO-CCSD(T)-F12'
             else:
-                ccsdtkeyword='CCSD(T)'
-            pnosetting=""
+                ccsdtkeyword='DLPNO-CCSD(T)'   
+    else:
+        pnokeyword=""
+        if F12 is True:
+            ccsdtkeyword='CCSD(T)-F12'
+        else:
+            ccsdtkeyword='CCSD(T)'
 
 
 
     ############################################################s
-    #Frozen-core DLPNO-CCSD(T) calculations defined here
+    #Frozen-core CCSD(T) calculations defined here
     ############################################################
-    if cardinals == [2,3] and basisfamily=="def2":
-        #Auxiliary basis set.
-        auxbasis='def2-QZVPP/C'
-        ccsdt_1_line="! {} def2-SVP {} {} {} {}".format(ccsdtkeyword, auxbasis, pnosetting, scfsetting,extrainputkeyword)
-        ccsdt_2_line="! {} def2-TZVPP {} {} {} {}".format(ccsdtkeyword, auxbasis, pnosetting, scfsetting,extrainputkeyword)
-    elif cardinals == [3,4] and basisfamily=="def2":
-        #Auxiliary basis set.
-        auxbasis='def2-QZVPP/C'
-        ccsdt_1_line="! {} def2-TZVPP {} {} {} {}".format(ccsdtkeyword, auxbasis, pnosetting, scfsetting,extrainputkeyword)
-        ccsdt_2_line="! {} def2-QZVPP {} {} {} {}".format(ccsdtkeyword, auxbasis, pnosetting, scfsetting,extrainputkeyword)  
-    elif cardinals == [2,3] and basisfamily=="ma-def2":
-        #Auxiliary basis set.
-        auxbasis='aug-cc-pVQZ/C'
-        ccsdt_1_line="! {} def2-SVP {} {} {} {}".format(ccsdtkeyword, auxbasis, pnosetting, scfsetting,extrainputkeyword)
-        ccsdt_2_line="! {} def2-TZVPP {} {} {} {}".format(ccsdtkeyword, auxbasis, pnosetting, scfsetting,extrainputkeyword)
-    elif cardinals == [3,4] and basisfamily=="ma-def2":
-        #Auxiliary basis set.
-        auxbasis='aug-cc-pVQZ/C'
-        ccsdt_1_line="! {} ma-def2-TZVPP {} {} {} {}".format(ccsdtkeyword, auxbasis, pnosetting, scfsetting,extrainputkeyword)
-        ccsdt_2_line="! {} ma-def2-QZVPP {} {} {} {}".format(ccsdtkeyword, auxbasis, pnosetting, scfsetting,extrainputkeyword)
-    elif cardinals == [2,3] and basisfamily=="cc":
-        #Auxiliary basis set.
-        auxbasis='cc-pVQZ/C'
-        ccsdt_1_line="! {} cc-pVDZ {} {} {} {}".format(ccsdtkeyword, auxbasis, pnosetting, scfsetting,extrainputkeyword)
-        ccsdt_2_line="! {} cc-pVTZ {} {} {} {}".format(ccsdtkeyword, auxbasis, pnosetting, scfsetting,extrainputkeyword)
-    elif cardinals == [3,4] and basisfamily=="cc":
-        #Auxiliary basis set.
-        auxbasis='cc-pV5Z/C'
-        ccsdt_1_line="! {} cc-pVTZ {} {} {} {}".format(ccsdtkeyword, auxbasis, pnosetting, scfsetting,extrainputkeyword)
-        ccsdt_2_line="! {} cc-pVQZ {} {} {} {}".format(ccsdtkeyword, auxbasis, pnosetting, scfsetting,extrainputkeyword)
-    elif cardinals == [2,3] and basisfamily=="aug-cc":
-        #Auxiliary basis set.
-        auxbasis='aug-cc-pVQZ/C'
-        ccsdt_1_line="! {} aug-cc-pVDZ {} {} {} {}".format(ccsdtkeyword, auxbasis, pnosetting, scfsetting,extrainputkeyword)
-        ccsdt_2_line="! {} aug-cc-pVTZ {} {} {} {}".format(ccsdtkeyword, auxbasis, pnosetting, scfsetting,extrainputkeyword)
-    elif cardinals == [3,4] and basisfamily=="aug-cc":
-        #Auxiliary basis set.
-        auxbasis='aug-cc-pV5Z/C'
-        ccsdt_1_line="! {} aug-cc-pVTZ {} {} {} {}".format(ccsdtkeyword, auxbasis, pnosetting, scfsetting,extrainputkeyword)
-        ccsdt_2_line="! {} aug-cc-pVQZ {} {} {} {}".format(ccsdtkeyword, auxbasis, pnosetting, scfsetting,extrainputkeyword)
-    elif cardinals == [4,5] and basisfamily=="cc":
-        #Auxiliary basis set.
-        auxbasis='cc-pV5Z/C'
-        ccsdt_1_line="! {} cc-pVQZ {} {} {} {}".format(ccsdtkeyword, auxbasis, pnosetting, scfsetting,extrainputkeyword)
-        ccsdt_2_line="! {} cc-pV5Z {} {} {} {}".format(ccsdtkeyword, auxbasis, pnosetting, scfsetting,extrainputkeyword)
-    elif cardinals == [4,5] and basisfamily=="aug-cc":
-        #Auxiliary basis set.
-        auxbasis='aug-cc-pV5Z/C'
-        ccsdt_1_line="! {} aug-cc-pVQZ {} {} {} {}".format(ccsdtkeyword, auxbasis, pnosetting, scfsetting,extrainputkeyword)
-        ccsdt_2_line="! {} aug-cc-pV5Z {} {} {} {}".format(ccsdtkeyword, auxbasis, pnosetting, scfsetting,extrainputkeyword)
-        #TODO Note: 4/5 cc/aug-cc basis sets are available but we need extrapolation parameters
-    
+    ccsdt_1_line,ccsdt_2_line=choose_inputlines_from_basisfamily(cardinals,basisfamily,ccsdtkeyword,auxbasis,pnokeyword,scfsetting,extrainputkeyword)
+
+
     #Adding special-ECP basis like cc-pVnZ-PP for heavy elements if present
     blocks1 = special_element_basis(fragment,cardinals[0],basisfamily,blocks)
     blocks2 = special_element_basis(fragment,cardinals[1],basisfamily,blocks)
@@ -2096,7 +2040,97 @@ end
 
 
 
+def choose_inputlines_from_basisfamily(cardinals,basisfamily,ccsdtkeyword,auxbasis,pnokeyword,scfsetting,extrainputkeyword):
+    if cardinals == [2,3] and basisfamily=="def2":
+        #Auxiliary basis set.
+        auxbasis='def2-QZVPP/C'
+        ccsdt_1_line="! {} def2-SVP {} {} {} {}".format(ccsdtkeyword, auxbasis, pnokeyword, scfsetting,extrainputkeyword)
+        ccsdt_2_line="! {} def2-TZVPP {} {} {} {}".format(ccsdtkeyword, auxbasis, pnokeyword, scfsetting,extrainputkeyword)
+    elif cardinals == [3,4] and basisfamily=="def2":
+        #Auxiliary basis set.
+        auxbasis='def2-QZVPP/C'
+        ccsdt_1_line="! {} def2-TZVPP {} {} {} {}".format(ccsdtkeyword, auxbasis, pnokeyword, scfsetting,extrainputkeyword)
+        ccsdt_2_line="! {} def2-QZVPP {} {} {} {}".format(ccsdtkeyword, auxbasis, pnokeyword, scfsetting,extrainputkeyword)  
+    elif cardinals == [2,3] and basisfamily=="ma-def2":
+        #Auxiliary basis set.
+        auxbasis='aug-cc-pVQZ/C'
+        ccsdt_1_line="! {} ma-def2-SVP {} {} {} {}".format(ccsdtkeyword, auxbasis, pnokeyword, scfsetting,extrainputkeyword)
+        ccsdt_2_line="! {} ma-def2-TZVPP {} {} {} {}".format(ccsdtkeyword, auxbasis, pnokeyword, scfsetting,extrainputkeyword)
+    elif cardinals == [3,4] and basisfamily=="ma-def2":
+        #Auxiliary basis set.
+        auxbasis='aug-cc-pVQZ/C'
+        ccsdt_1_line="! {} ma-def2-TZVPP {} {} {} {}".format(ccsdtkeyword, auxbasis, pnokeyword, scfsetting,extrainputkeyword)
+        ccsdt_2_line="! {} ma-def2-QZVPP {} {} {} {}".format(ccsdtkeyword, auxbasis, pnokeyword, scfsetting,extrainputkeyword)
+    elif cardinals == [2,3] and basisfamily=="cc":
+        #Auxiliary basis set.
+        auxbasis='cc-pVQZ/C'
+        ccsdt_1_line="! {} cc-pVDZ {} {} {} {}".format(ccsdtkeyword, auxbasis, pnokeyword, scfsetting,extrainputkeyword)
+        ccsdt_2_line="! {} cc-pVTZ {} {} {} {}".format(ccsdtkeyword, auxbasis, pnokeyword, scfsetting,extrainputkeyword)
+    elif cardinals == [3,4] and basisfamily=="cc":
+        #Auxiliary basis set.
+        auxbasis='cc-pV5Z/C'
+        ccsdt_1_line="! {} cc-pVTZ {} {} {} {}".format(ccsdtkeyword, auxbasis, pnokeyword, scfsetting,extrainputkeyword)
+        ccsdt_2_line="! {} cc-pVQZ {} {} {} {}".format(ccsdtkeyword, auxbasis, pnokeyword, scfsetting,extrainputkeyword)
+    elif cardinals == [4,5] and basisfamily=="cc":
+        #Auxiliary basis set.
+        auxbasis='cc-pV5Z/C'
+        ccsdt_1_line="! {} cc-pVQZ {} {} {} {}".format(ccsdtkeyword, auxbasis, pnokeyword, scfsetting,extrainputkeyword)
+        ccsdt_2_line="! {} cc-pV5Z {} {} {} {}".format(ccsdtkeyword, auxbasis, pnokeyword, scfsetting,extrainputkeyword)
+    elif cardinals == [2,3] and basisfamily=="aug-cc":
+        #Auxiliary basis set.
+        auxbasis='aug-cc-pVQZ/C'
+        ccsdt_1_line="! {} aug-cc-pVDZ {} {} {} {}".format(ccsdtkeyword, auxbasis, pnokeyword, scfsetting,extrainputkeyword)
+        ccsdt_2_line="! {} aug-cc-pVTZ {} {} {} {}".format(ccsdtkeyword, auxbasis, pnokeyword, scfsetting,extrainputkeyword)
+    elif cardinals == [3,4] and basisfamily=="aug-cc":
+        #Auxiliary basis set.
+        auxbasis='aug-cc-pV5Z/C'
+        ccsdt_1_line="! {} aug-cc-pVTZ {} {} {} {}".format(ccsdtkeyword, auxbasis, pnokeyword, scfsetting,extrainputkeyword)
+        ccsdt_2_line="! {} aug-cc-pVQZ {} {} {} {}".format(ccsdtkeyword, auxbasis, pnokeyword, scfsetting,extrainputkeyword)
+    elif cardinals == [4,5] and basisfamily=="aug-cc":
+        #Auxiliary basis set.
+        auxbasis='aug-cc-pV5Z/C'
+        ccsdt_1_line="! {} aug-cc-pVQZ {} {} {} {}".format(ccsdtkeyword, auxbasis, pnokeyword, scfsetting,extrainputkeyword)
+        ccsdt_2_line="! {} aug-cc-pV5Z {} {} {} {}".format(ccsdtkeyword, auxbasis, pnokeyword, scfsetting,extrainputkeyword)
+        #TODO Note: 4/5 cc/aug-cc basis sets are available but we need extrapolation parameters
 
+    #DKH correlation consistent basis sets
+    elif cardinals == [2,3] and basisfamily=="cc-dk":
+        #Auxiliary basis set.
+        auxbasis='cc-pVQZ/C'
+        ccsdt_1_line="! DKH {} cc-pVDZ-DK {} {} {} {}".format(ccsdtkeyword, auxbasis, pnokeyword, scfsetting,extrainputkeyword)
+        ccsdt_2_line="! DKH {} cc-pVTZ-DK {} {} {} {}".format(ccsdtkeyword, auxbasis, pnokeyword, scfsetting,extrainputkeyword)
+    elif cardinals == [3,4] and basisfamily=="cc-dk":
+        #Auxiliary basis set.
+        auxbasis='cc-pV5Z/C'
+        ccsdt_1_line="! DKH {} cc-pVTZ-DK {} {} {} {}".format(ccsdtkeyword, auxbasis, pnokeyword, scfsetting,extrainputkeyword)
+        ccsdt_2_line="! DKH {} cc-pVQZ-DK {} {} {} {}".format(ccsdtkeyword, auxbasis, pnokeyword, scfsetting,extrainputkeyword)
+    elif cardinals == [4,5] and basisfamily=="cc-dk":
+        #Auxiliary basis set.
+        auxbasis='cc-pV5Z/C'
+        ccsdt_1_line="! DKH {} cc-pVQZ-DK {} {} {} {}".format(ccsdtkeyword, auxbasis, pnokeyword, scfsetting,extrainputkeyword)
+        ccsdt_2_line="! DKH {} cc-pV5Z-DK {} {} {} {}".format(ccsdtkeyword, auxbasis, pnokeyword, scfsetting,extrainputkeyword)
+    elif cardinals == [2,3] and basisfamily=="aug-cc-dk":
+        #Auxiliary basis set.
+        auxbasis='aug-cc-pVQZ/C'
+        ccsdt_1_line="! DKH {} aug-cc-pVDZ-DK {} {} {} {}".format(ccsdtkeyword, auxbasis, pnokeyword, scfsetting,extrainputkeyword)
+        ccsdt_2_line="! DKH {} aug-cc-pVTZ-DK {} {} {} {}".format(ccsdtkeyword, auxbasis, pnokeyword, scfsetting,extrainputkeyword)
+    elif cardinals == [3,4] and basisfamily=="aug-cc-dk":
+        #Auxiliary basis set.
+        auxbasis='aug-cc-pV5Z/C'
+        ccsdt_1_line="! DKH {} aug-cc-pVTZ-DK {} {} {} {}".format(ccsdtkeyword, auxbasis, pnokeyword, scfsetting,extrainputkeyword)
+        ccsdt_2_line="! DKH {} aug-cc-pVQZ-DK {} {} {} {}".format(ccsdtkeyword, auxbasis, pnokeyword, scfsetting,extrainputkeyword)
+    elif cardinals == [4,5] and basisfamily=="aug-cc-dk":
+        #Auxiliary basis set.
+        auxbasis='aug-cc-pV5Z/C'
+        ccsdt_1_line="! DKH {} aug-cc-pVQZ-DK {} {} {} {}".format(ccsdtkeyword, auxbasis, pnokeyword, scfsetting,extrainputkeyword)
+        ccsdt_2_line="! DKH {} aug-cc-pV5Z-DK {} {} {} {}".format(ccsdtkeyword, auxbasis, pnokeyword, scfsetting,extrainputkeyword)
+        #TODO Note: 4/5 cc/aug-cc basis sets are available but we need extrapolation parameters
+
+
+    else:
+        print("Unknown basisfamily or cardinals chosen...")
+        exit()
+    return ccsdt_1_line,ccsdt_2_line
 
 
 
