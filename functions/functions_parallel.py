@@ -24,17 +24,10 @@ def Single_par_improved(fragment=None, fragment_file=None, theory=None, label=No
     print("label: {} (type {})".format(label,type(label)))
     if label == None:
         print("No label provided to fragment or theory objects. This is required to distinguish between calculations ")
-        print("Exiting...")
-        print("event:", event)
-        print("event is_set: ", event.is_set())
-        event.set()
-        print("after event")
-        print("event is_set: ", event.is_set())
+        print("Exiting.")
+        #event.set()
+        #print("event is_set: ", event.is_set())
         raise Exception()
-        exit()
-        #sys.exit()
-        #kill_all_mp_processes()
-        #exit()
 
     #Using label (could be tuple) to create a labelstring which is used to name worker directories
     # Tuple-label (1 or 2 element) used by calc_surface functions.
@@ -84,13 +77,11 @@ def Single_par_improved(fragment=None, fragment_file=None, theory=None, label=No
             print("Case MRCC MOREADfile parallel")
             print("moreadfile_path:", moreadfile_path)
         print("not finished. exiting")
-        kill_all_mp_processes()
-        exit()
+        raise Exception()
     else:
         if mofilesdir != None:
             print("moreadfile option not ready for this Theory. exiting")
-            kill_all_mp_processes()
-            exit()
+            raise Exception()
 
     #Creating new dir and running calculation inside
     os.mkdir('Pooljob_'+labelstring)
