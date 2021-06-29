@@ -24,7 +24,8 @@ def kill_all_mp_processes():
 #Stripped down version of Singlepoint function for Singlepoint_parallel
 #TODO: This function may still be a bit ORCA-centric. Needs to be generalized 
 def Single_par(listx):
-
+    print("listx:", listx)
+    exit()
     #Multiprocessing event
     event = listx[4]
 
@@ -203,7 +204,10 @@ def Singlepoint_parallel(fragments=None, fragmentfiles=None, theories=None, numc
         #Passing list of fragments
         if len(fragments) > 0:
             print("Launching multiprocessing and passing list of ASH fragments")
-            results = pool.map(Single_par, [[theory,fragment, fragment.label, mofilesdir, event] for fragment in fragments], error_callback=blax)
+            #results = pool.map(Single_par, [[theory,fragment, fragment.label, mofilesdir, event] for fragment in fragments], error_callback=blax)
+            for fragment in fragments:
+                pool.apply_async(Single_par, kwds=dict(theory=theory,fragment=fragment,label=fragment.label,mofilesdir=mofilesdir,event=event), error_callback=blax)
+            
             print("xy2")
         #Passing list of fragment files
         elif len(fragmentfiles) > 0:
