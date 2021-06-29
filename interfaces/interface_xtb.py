@@ -26,10 +26,13 @@ import module_coords
 
 class xTBTheory:
     def __init__(self, xtbdir=None, fragment=None, charge=None, mult=None, xtbmethod=None, runmode='inputfile', nprocs=1, printlevel=2, filename='xtb_',
-                 maxiter=500, electronic_temp=300):
+                 maxiter=500, electronic_temp=300, label=None):
 
         #Printlevel
         self.printlevel=printlevel
+
+        #Label to distinguish different ORCA objects
+        self.label=label
 
         if xtbmethod is None:
             print("xTBTheory requires xtbmethod keyword to be set")
@@ -103,7 +106,7 @@ class xTBTheory:
             except:
                 pass
     def run(self, current_coords=None, current_MM_coords=None, MMcharges=None, qm_elems=None,
-                elems=None, Grad=False, PC=False, nprocs=None):
+                elems=None, Grad=False, PC=False, nprocs=None, label=None):
         module_init_time=time.time()
         if MMcharges is None:
             MMcharges=[]
@@ -131,6 +134,7 @@ class xTBTheory:
         #Parallellization
         #Todo: this has not been confirmed to work
         #Needs to be done before library-import??
+        print("Job label:", label)
         print("nprocs:", nprocs)
         os.environ["OMP_NUM_THREADS"] = str(nprocs)
         os.environ["MKL_NUM_THREADS"] = "1"
@@ -149,6 +153,8 @@ class xTBTheory:
             self.cleanup()
             #Todo: xtbrestart possibly. needs to be optional
             module_coords.write_xyzfile(qm_elems, current_coords, self.filename,printlevel=self.printlevel)
+
+
 
             #Run inputfile. Take nprocs argument.
             if self.printlevel >= 2:
