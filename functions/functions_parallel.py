@@ -54,11 +54,13 @@ def Single_par(listx):
         print("No label provided to fragment or theory objects. This is required to distinguish between calculations ")
         print("Exiting...")
         print("event:", event)
+        print("event is_set: ", event.is_set())
         event.set()
         print("after event")
-        sys.exit()
+        print("event is_set: ", event.is_set())
+        #sys.exit()
         #kill_all_mp_processes()
-        exit()
+        #exit()
 
     #Using label (could be tuple) to create a labelstring which is used to name worker directories
     # Tuple-label (1 or 2 element) used by calc_surface functions.
