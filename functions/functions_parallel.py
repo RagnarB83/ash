@@ -1,6 +1,7 @@
 import copy
 import multiprocessing as mp
 import os
+import sys
 
 import ash
 from functions_general import BC,blankline,print_line_with_mainheader,print_line_with_subheader1
@@ -55,6 +56,7 @@ def Single_par(listx):
         print("event:", event)
         event.set()
         print("after event")
+        sys.exit()
         #kill_all_mp_processes()
         exit()
 
