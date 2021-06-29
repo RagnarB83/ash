@@ -4,6 +4,7 @@ import constants
 from sys import stdout
 
 from functions_general import BC,print_time_rel,listdiff,printdebug,print_line_with_mainheader
+from module_coords import write_pdbfile
 
 class OpenMMTheory:
     def __init__(self, pdbfile=None, platform='CPU', active_atoms=None, frozen_atoms=None,
