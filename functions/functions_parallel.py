@@ -229,11 +229,10 @@ def Singlepoint_parallel(fragments=None, fragmentfiles=None, theories=None, numc
     #Going through each result-object and adding to energy_dict if ready
     #This prevents hanging for ApplyResult.get() if Pool did not finish correctly
     energy_dict={}
-    for r in results:
-        print("Result ready:", r.ready())
+    for i,r in enumerate(results):
+        print("Result {} ready: {}".format(i, r.ready()))
         if r.ready() == True:
             energy_dict[r.get()[0]] = r.get()[1]
-
 
     #Dict comprehension to get results from list of Pool-ApplyResult objects
     #energy_dict = {result.get()[0]: result.get()[1] for result in results}
