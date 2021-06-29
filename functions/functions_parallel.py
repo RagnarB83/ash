@@ -27,7 +27,7 @@ def Single_par_improved(fragment=None, fragment_file=None, theory=None, label=No
         print("Exiting.")
         #event.set()
         #print("event is_set: ", event.is_set())
-        raise Exception()
+        raise Exception("Labelproblem")
 
     #Using label (could be tuple) to create a labelstring which is used to name worker directories
     # Tuple-label (1 or 2 element) used by calc_surface functions.
@@ -289,14 +289,6 @@ def Singlepoint_parallel(fragments=None, fragmentfiles=None, theories=None, numc
                 print("fragment:", fragment)
                 results = pool.apply_async(Single_par_improved, kwds=dict(theory=theory,fragment=fragment,label=fragment.label,mofilesdir=mofilesdir,event=event), error_callback=Terminate_Pool_processes)
             
-            print("xy2")
-            pool.close()
-            pool.join()
-            print("results:", results)
-            energy_dict = {result[0]: result[1] for result in results}
-            print("energy_dict:", energy_dict)
-
-            exit()
         #Passing list of fragment files
         elif len(fragmentfiles) > 0:
             print("Launching multiprocessing and passing list of ASH fragmentfiles")
@@ -322,11 +314,26 @@ def Singlepoint_parallel(fragments=None, fragmentfiles=None, theories=None, numc
         exit(1)
 
 
+    print("xy2")
     while True:
         if event.is_set():
             print("Event has been set! Now termininating Pool processes")
             pool.terminate()
-    
+    print("YYYX3")
+    pool.close()
+    pool.join()
+    print("results:", results)
+    energy_dict = {result[0]: result[1] for result in results}
+    print("energy_dict:", energy_dict)
+
+    exit()
+
+
+
+
+
+
+
     print("here")
     exit()
     print("Closing Pool")
