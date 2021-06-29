@@ -1,6 +1,7 @@
 import time
 import numpy as np
 import constants
+from sys import stdout
 
 from functions_general import BC,print_time_rel,listdiff,printdebug,print_line_with_mainheader
 
