@@ -290,11 +290,12 @@ def Singlepoint_parallel(fragments=None, fragmentfiles=None, theories=None, numc
                 results = pool.apply_async(Single_par_improved, kwds=dict(theory=theory,fragment=fragment,label=fragment.label,mofilesdir=mofilesdir,event=event), error_callback=Terminate_Pool_processes)
             
             print("xy2")
+            pool.close()
+            pool.join()
             print("results:", results)
             energy_dict = {result[0]: result[1] for result in results}
             print("energy_dict:", energy_dict)
-            pool.close()
-            pool.join()
+
             exit()
         #Passing list of fragment files
         elif len(fragmentfiles) > 0:
