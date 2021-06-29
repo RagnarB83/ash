@@ -1205,7 +1205,7 @@ def OpenMM_MD(fragment=None, openmmobject=None, timestep=0.001, simulation_steps
     if trajectory_file_option == 'PDB':
         openmmobject.simulation.reporters.append(openmmobject.openmm.app.PDBReporter('output_traj.pdb', traj_frequency))
     elif trajectory_file_option == 'DCD':
-        write_pdbfile(fragment,outputname="initial_frag.pdb", openmmobject=openmmobject)
+        write_pdbfile(fragment,outputname="initial_frag", openmmobject=openmmobject)
         openmmobject.simulation.reporters.append(openmmobject.openmm.app.DCDReporter('output.dcd', traj_frequency))
     openmmobject.simulation.reporters.append(openmmobject.openmm.app.StateDataReporter(stdout, traj_frequency, step=True, time=True,
             potentialEnergy=True, temperature=True, kineticEnergy=True,  separator='     '))
