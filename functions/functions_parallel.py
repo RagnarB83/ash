@@ -308,7 +308,7 @@ def Singlepoint_parallel(fragments=None, fragmentfiles=None, theories=None, numc
             print("Launching multiprocessing and passing list of ASH fragmentfiles")
             results = pool.map(Single_par, [[theory,fragmentfile, fragmentfile, mofilesdir, event] for fragmentfile in fragmentfiles])
 
-        print("Calculations are done")
+        print("XCalculations are done")
         print("results:", results)
     # Case: Multiple theories, 1 fragment
     elif len(fragments) == 1:
@@ -316,12 +316,12 @@ def Singlepoint_parallel(fragments=None, fragmentfiles=None, theories=None, numc
         fragment = fragments[0]
         results = pool.map(Single_par, [[theory,fragment, theory.label, event] for theory in theories])
 
-        print("Calculations are done")
+        print("YCalculations are done")
     elif len(fragmentfiles) == 1:
         print("Case: Multiple theories but one fragmentfile")
         fragmentfile = fragmentfiles[0]
         results = pool.map(Single_par, [[theory,fragmentfile, theory.label,event] for theory in theories])
-        print("Calculations are done")  
+        print("ZCalculations are done")  
     else:
         print("Multiple theories and multiple fragments provided.")
         print("This is not supported. Exiting...")
