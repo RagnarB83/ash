@@ -2,7 +2,7 @@ import time
 import numpy as np
 import constants
 
-from functions_general import BC,print_time_rel,listdiff,printdebug
+from functions_general import BC,print_time_rel,listdiff,printdebug,print_line_with_mainheader
 
 class OpenMMTheory:
     def __init__(self, pdbfile=None, platform='CPU', active_atoms=None, frozen_atoms=None,
