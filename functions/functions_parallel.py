@@ -230,7 +230,8 @@ def Singlepoint_parallel(fragments=None, fragmentfiles=None, theories=None, numc
         if event.is_set():
             print("Event has been set! Now terminating Pool processes")
             pool.terminate()
-            exit()
+            break
+            #exit()
     #        break
 
     print("e")
