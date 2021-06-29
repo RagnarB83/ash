@@ -24,32 +24,16 @@ def kill_all_mp_processes():
 
 #Stripped down version of Singlepoint function for Singlepoint_parallel
 #TODO: This function may still be a bit ORCA-centric. Needs to be generalized 
-def Single_par_improved(fragment=None, theory=None, label=None, mofilesdir=None, event=None):
-    print("theory:", theory)
-    #Multiprocessing event
-    event = listx[4]
+def Single_par_improved(fragment=None, fragment_file=None, theory=None, label=None, mofilesdir=None, event=None):
 
     #Creating new copy of theory to prevent Brokensym feature from being deactivated by each run
     #NOTE: Alternatively we can add an if-statement inside orca.run
-    theory=copy.deepcopy(listx[0])
+    theory=copy.deepcopy(theory)
 
-    #listx[1] is either an ASH Fragment or Fragment file string (avoids massive pickle object)
-    if listx[1].__class__.__name__ == "Fragment":
-        print("Here", listx[1].__class__.__name__)
-        fragment=listx[1]
-    elif listx[1].__class__.__name__ == "str":
-        if "ygg" in listx[1]:
-            print("Found string assumed to be ASH fragmentfile")
-            fragment=ash.Fragment(fragfile=listx[1])
-    else:
-        print("Unknown object passed")
-        kill_all_mp_processes()
-        exit()
     print("Fragment:", fragment)
+    print("fragment_file:", fragment_file)
 
     #Making label flexible. Can be tuple but inputfilename is converted to string below
-    label=listx[2]
-    mofilesdir=listx[3]
     print("label: {} (type {})".format(label,type(label)))
     if label == None:
         print("No label provided to fragment or theory objects. This is required to distinguish between calculations ")
