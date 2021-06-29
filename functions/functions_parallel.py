@@ -236,6 +236,10 @@ def Singlepoint_parallel(fragments=None, fragmentfiles=None, theories=None, numc
 
     print("e")
 
+    for r in results:
+        print("r ready:")
+        print(r.ready())
+
     #Dict comprehension to get results from list of Pool-ApplyResult objects
     energy_dict = {result.get()[0]: result.get()[1] for result in results}
     print("energy_dict:", energy_dict)
