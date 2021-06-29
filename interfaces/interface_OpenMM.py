@@ -517,7 +517,7 @@ class OpenMMTheory:
         elif integrator == 'VariableVerletIntegrator':
             self.integrator = self.openmm.VariableVerletIntegrator(timestep*self.unit.picosecond)
         elif integrator == 'LangevinIntegrator':
-            self.integrator = self.openmm.LangevinIntegrator(timestep*self.unit.picosecond)
+            self.integrator = self.openmm.LangevinIntegrator(temperature*self.unit.kelvin, coupling_frequency/self.unit.picosecond, timestep*self.unit.picosecond)
         elif integrator == 'LangevinMiddleIntegrator':
             self.integrator = self.openmm.LangevinMiddleIntegrator(temperature*self.unit.kelvin, coupling_frequency/self.unit.picosecond, timestep*self.unit.picosecond)
         elif integrator == 'NoseHooverIntegrator':
