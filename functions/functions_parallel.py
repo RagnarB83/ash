@@ -147,7 +147,7 @@ def Singlepoint_parallel(fragments=None, fragmentfiles=None, theories=None, numc
 
     #Function to handle exception of child processes
     def Terminate_Pool_processes(message):
-        print("Terminating Pool processes due to exception")
+        print(BC.FAIL,"Terminating Pool processes due to exception", BC.END)
         print("Exception message:", message)
         pool.terminate()
         event.set()
