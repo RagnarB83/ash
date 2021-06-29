@@ -1190,7 +1190,7 @@ def OpenMM_MD(fragment=None, openmmobject=None, timestep=0.001, simulation_steps
 
     
     #Context: settings positions
-    coords=fragment.coords
+    coords=np.array(fragment.coords)
     pos = [openmmobject.Vec3(coords[i, 0] / 10, coords[i, 1] / 10, coords[i, 2] / 10) for i in range(len(coords))] * openmmobject.openmm.unit.nanometer
 
     openmmobject.simulation.context.setPositions(pos)
