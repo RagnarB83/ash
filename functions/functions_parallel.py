@@ -197,8 +197,9 @@ def Singlepoint_parallel(fragments=None, fragmentfiles=None, theories=None, numc
         #NOTE: Unix/Linux uses fork which seems better behaved
 
 
-        def blax():
+        def blax(bla):
             print("entered blax")
+            print("bla:", bla)
             pool.terminate()
 
         #Passing list of fragments
