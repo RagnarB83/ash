@@ -28,6 +28,7 @@ class xTBTheory:
     def __init__(self, xtbdir=None, fragment=None, charge=None, mult=None, xtbmethod=None, runmode='inputfile', nprocs=1, printlevel=2, filename='xtb_',
                  maxiter=500, electronic_temp=300, label=None):
 
+
         #Printlevel
         self.printlevel=printlevel
 
@@ -74,16 +75,23 @@ class xTBTheory:
             self.c_int = c_int
             self.c_double = c_double
         else:
-            if xtbdir == None:
-                # Trying to find xtbdir in path
-                print("xtbdir argument not provided to xTBTheory object. Trying to find xtb in path")
+
+        if xtbdir == None:
+            print(BC.WARNING, "No xtbdir argument passed to xTBTheory. Attempting to find xTBTheory variable inside settings_ash", BC.END)
+            try:
+                self.xtbdir=settings_ash.settings_dict["xtbdir"]
+            except:
+                print(BC.FAIL,"Found no xtbdir variable in settings_ash module either.",BC.END)
                 try:
                     self.xtbdir = os.path.dirname(shutil.which('xtb'))
                     print("Found xtb in path. Setting xtbdir to:", self.xtbdir)
                 except:
                     print("Found no xtb executable in path. Exiting... ")
-            else:
-                self.xtbdir = xtbdir
+                    exit()
+        else:
+            self.xtbdir = xtbdir
+
+
     #Cleanup after run.
     def cleanup(self):
         if self.printlevel >= 2:
