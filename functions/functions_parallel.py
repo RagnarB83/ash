@@ -23,7 +23,7 @@ def Single_par(fragment=None, fragmentfile=None, theory=None, label=None, mofile
     print("fragmentfile:", fragmentfile)
     if fragmentfile != None:
         print("Reading fragmentfile from disk")
-        fragment=Fragment(fragfile=fragmentfile)
+        fragment=ash.Fragment(fragfile=fragmentfile)
 
     #Making label flexible. Can be tuple but inputfilename is converted to string below
     print("label: {} (type {})".format(label,type(label)))
