@@ -25,8 +25,8 @@ def Single_par_improved(fragment=None, fragment_file=None, theory=None, label=No
     if label == None:
         print("No label provided to fragment or theory objects. This is required to distinguish between calculations ")
         print("Exiting.")
-        #event.set()
-        #print("event is_set: ", event.is_set())
+        event.set()
+        print("event is_set: ", event.is_set())
         raise Exception()
 
     #Using label (could be tuple) to create a labelstring which is used to name worker directories
