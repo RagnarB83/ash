@@ -256,6 +256,15 @@ def Singlepoint_parallel(fragments=None, fragmentfiles=None, theories=None, numc
     manager = mp.Manager()
     event = manager.Event()
     print("event is_set: ", event.is_set())
+
+    #Function to handle exception of child processes
+    def Terminate_Pool_processes(message):
+        print("Terminating Pool processes due to exception")
+        print("Exception message:", message)
+        pool.terminate()
+        exit()
+
+
     # Singlepoint(fragment=None, theory=None, Grad=False)
     #Case: 1 theory, multiple fragments
     if len(theories) == 1:
@@ -274,11 +283,7 @@ def Singlepoint_parallel(fragments=None, fragmentfiles=None, theories=None, numc
         #NOTE: Python 3.8 and higher use spawn in MacOS. Leads to ash import problems
         #NOTE: Unix/Linux uses fork which seems better behaved
 
-        #Function to handle exception of child processes
-        def Terminate_Pool_processes(var):
-            print("Terminating Pool processes")
-            print("var:", var)
-            pool.terminate()
+
 
         #Passing list of fragments
         if len(fragments) > 0:
