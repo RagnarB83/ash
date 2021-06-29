@@ -10,16 +10,15 @@ from functions_general import BC,blankline,print_line_with_mainheader,print_line
 
 def kill_all_mp_processes():
     print("Killing all MP processes")
-    global pool
+    print(mp)
     print(mp.active_children())
-    print(pool)
+    print(mp.pool)
     print("now trying close")
-    pool.close()
+    mp.pool.close()
     print("now term")
-    pool.terminate()
-    for p in mp.active_children():
-        print("p:", p)
-        p.terminate()
+    mp.pool.terminate()
+    print("now exit")
+    exit()
 
 #Stripped down version of Singlepoint function for Singlepoint_parallel
 #TODO: This function may still be a bit ORCA-centric. Needs to be generalized 
