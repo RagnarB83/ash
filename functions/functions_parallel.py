@@ -325,14 +325,16 @@ def Singlepoint_parallel(fragments=None, fragmentfiles=None, theories=None, numc
         exit(1)
 
     print("Calculations are done")
-    event.set()
-    while True:
-        print("Pool multiprocessing underway....")
-        time.sleep(3)
-        if event.is_set():
-            print("Event has been set! Now termininating Pool processes")
-            pool.terminate()
-            break
+    #event.set()
+    #while True:
+    #    print("Pool multiprocessing underway....")
+    #    time.sleep(3)
+    #    if event.is_set():
+    #        print("Event has been set! Now terminating Pool processes")
+    #        pool.terminate()
+    #        break
+
+
     print("YYYX3")
     pool.close()
     pool.join()
