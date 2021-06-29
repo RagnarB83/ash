@@ -85,6 +85,9 @@ class Fragment:
             self.read_fragment_from_file(fragfile)
     def update_attributes(self):
         print("Updating fragment attributes...")
+        if len(self.coords) == 0:
+            print("No coordinates in fragment. Something went wrong. Exiting")
+            exit()
         self.nuccharge = nucchargelist(self.elems)
         self.numatoms = len(self.coords)
         self.atomlist = list(range(0, self.numatoms))

@@ -173,7 +173,7 @@ def Singlepoint_parallel(fragments=None, fragmentfiles=None, theories=None, numc
     pool = mp.Pool(numcores)
     manager = mp.Manager()
     event = manager.Event()
-
+    print("event is_set: ", event.is_set())
     # Singlepoint(fragment=None, theory=None, Grad=False)
     #Case: 1 theory, multiple fragments
     if len(theories) == 1:
@@ -224,6 +224,8 @@ def Singlepoint_parallel(fragments=None, fragmentfiles=None, theories=None, numc
     print("Closing Pool")
     pool.close()
     print("Event wait")
+    print("event is_set: ", event.is_set())
+    print(event.wait())
     event.wait()
     print("Pool terminate")
     pool.terminate()
