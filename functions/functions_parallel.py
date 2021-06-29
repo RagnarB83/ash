@@ -54,6 +54,7 @@ def Single_par(listx):
         print("Exiting...")
         print("event:", event)
         event.set()
+        print("after event")
         #kill_all_mp_processes()
         exit()
 
@@ -193,6 +194,7 @@ def Singlepoint_parallel(fragments=None, fragmentfiles=None, theories=None, numc
         if len(fragments) > 0:
             print("Launching multiprocessing and passing list of ASH fragments")
             results = pool.map(Single_par, [[theory,fragment, fragment.label, mofilesdir, event] for fragment in fragments])
+            print("xy2")
         #Passing list of fragment files
         elif len(fragmentfiles) > 0:
             print("Launching multiprocessing and passing list of ASH fragmentfiles")
@@ -217,7 +219,7 @@ def Singlepoint_parallel(fragments=None, fragmentfiles=None, theories=None, numc
         print("This is not supported. Exiting...")
         exit(1)
 
-    print("Cloing Pool")
+    print("Closing Pool")
     pool.close()
     print("Event wait")
     event.wait()
