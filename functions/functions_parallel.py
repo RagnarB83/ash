@@ -223,9 +223,11 @@ def Singlepoint_parallel(fragments=None, fragmentfiles=None, theories=None, numc
 
     print("Closing Pool")
     pool.close()
+    event.set()
     print("Event wait")
     print("event is_set: ", event.is_set())
-    print(event.wait())
+
+
     event.wait()
     print("Pool terminate")
     pool.terminate()
