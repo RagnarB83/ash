@@ -2,6 +2,7 @@ import copy
 import multiprocessing as mp
 import os
 import sys
+import time
 
 import ash
 from functions_general import BC,blankline,print_line_with_mainheader,print_line_with_subheader1
@@ -325,7 +326,7 @@ def Singlepoint_parallel(fragments=None, fragmentfiles=None, theories=None, numc
     print("xy2")
     while True:
         print("true")
-        sleep(3)
+        time.sleep(3)
         if event.is_set():
             print("Event has been set! Now termininating Pool processes")
             pool.terminate()
