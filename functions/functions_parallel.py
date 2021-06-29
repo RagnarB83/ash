@@ -216,6 +216,9 @@ def Singlepoint_parallel(fragments=None, fragmentfiles=None, theories=None, numc
 
     print("Calculations are now done")
     print("here")
+
+    print("event.is_set():", event.is_set())
+
     pool.close()
     pool.join()
     #OLD event based thing
