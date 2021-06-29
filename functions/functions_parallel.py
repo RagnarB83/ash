@@ -27,8 +27,7 @@ def Single_par_improved(fragment=None, fragment_file=None, theory=None, label=No
         print("Exiting.")
         #event.set()
         #print("event is_set: ", event.is_set())
-        raise Exception("Labelproblem")
-        exit()
+        raise Exception()
 
     #Using label (could be tuple) to create a labelstring which is used to name worker directories
     # Tuple-label (1 or 2 element) used by calc_surface functions.
