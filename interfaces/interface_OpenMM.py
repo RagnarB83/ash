@@ -513,19 +513,19 @@ class OpenMMTheory:
         print("temperature:", temperature)
         print("coupling_frequency:", coupling_frequency)
         if integrator == 'VerletIntegrator':
-            self.integrator = self.openmm.VerletIntegrator(timestep*self.unit.picosecond)
+            self.integrator = self.openmm.VerletIntegrator(timestep*self.unit.picoseconds)
         elif integrator == 'VariableVerletIntegrator':
-            self.integrator = self.openmm.VariableVerletIntegrator(timestep*self.unit.picosecond)
+            self.integrator = self.openmm.VariableVerletIntegrator(timestep*self.unit.picoseconds)
         elif integrator == 'LangevinIntegrator':
-            self.integrator = self.openmm.LangevinIntegrator(temperature*self.unit.kelvin, coupling_frequency/self.unit.picosecond, timestep*self.unit.picosecond)
+            self.integrator = self.openmm.LangevinIntegrator(temperature*self.unit.kelvin, coupling_frequency/self.unit.picosecond, timestep*self.unit.picoseconds)
         elif integrator == 'LangevinMiddleIntegrator':
-            self.integrator = self.openmm.LangevinMiddleIntegrator(temperature*self.unit.kelvin, coupling_frequency/self.unit.picosecond, timestep*self.unit.picosecond)
+            self.integrator = self.openmm.LangevinMiddleIntegrator(temperature*self.unit.kelvin, coupling_frequency/self.unit.picosecond, timestep*self.unit.picoseconds)
         elif integrator == 'NoseHooverIntegrator':
-            self.integrator = self.openmm.NoseHooverIntegrator(temperature*self.unit.kelvin, coupling_frequency/self.unit.picosecond, timestep*self.unit.picosecond)
+            self.integrator = self.openmm.NoseHooverIntegrator(temperature*self.unit.kelvin, coupling_frequency/self.unit.picosecond, timestep*self.unit.picoseconds)
         elif integrator == 'BrownianIntegrator':
-            self.integrator = self.openmm.BrownianIntegrator(temperature*self.unit.kelvin, coupling_frequency/self.unit.picosecond, timestep*self.unit.picosecond)
+            self.integrator = self.openmm.BrownianIntegrator(temperature*self.unit.kelvin, coupling_frequency/self.unit.picosecond, timestep*self.unit.picoseconds)
         elif integrator == 'VariableLangevinIntegrator':
-            self.integrator = self.openmm.VariableLangevinIntegrator(temperature*self.unit.kelvin, coupling_frequency/self.unit.picosecond, timestep*self.unit.picosecond)
+            self.integrator = self.openmm.VariableLangevinIntegrator(temperature*self.unit.kelvin, coupling_frequency/self.unit.picosecond, timestep*self.unit.picoseconds)
 
         
         self.simulation = self.simulationclass(self.topology, self.system, self.integrator,self.platform)
