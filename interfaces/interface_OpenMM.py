@@ -1169,13 +1169,13 @@ def OpenMM_MD(openmmobject=None, timestep=0.001, simulation_steps=None, simulati
 
     if barostat != None:
         print("Adding barostat")
-        openmmobject.system.addForce(simtk.openmm.MonteCarloBarostat(1*simtk.openmm.unit.bar, temperature*simtk.openmm.unit.kelvin))
+        openmmobject.system.addForce(openmmobject.openmm.MonteCarloBarostat(1*openmmobject.openmm.unit.bar, temperature*openmmobject.openmm.unit.kelvin))
         integrator="LangevinMiddleIntegrator"
         print("Now using integrator:", integrator)
 
         openmmobject.create_simulation(timestep=0.001, temperature=temperature, integrator=integrator, coupling_frequency=coupling_frequency)
     elif anderson_thermostat != None:
-        openmmobject.system.addForce(simtk.openmm.AndersenThermostat(temperature*simtk.openmm.unit.kelvin, 1/simtk.openmm.unit.picosecond))
+        openmmobject.system.addForce(openmmobject.openmm.AndersenThermostat(temperature*openmmobject.openmm.unit.kelvin, 1/openmmobject.openmm.unit.picosecond))
         integrator="VerletIntegrator"
         print("Now using integrator:", integrator)
         openmmobject.create_simulation(timestep=0.001, temperature=temperature, integrator=integrator, coupling_frequency=coupling_frequency)
