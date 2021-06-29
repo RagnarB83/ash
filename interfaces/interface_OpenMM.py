@@ -1150,6 +1150,8 @@ def create_cnb(original_nbforce):
 def OpenMM_MD(openmmobject=None, timestep=0.001, simulation_steps=None, simulation_time=None, traj_frequency=1000, temperature=300, integrator=None,
     thermostat=None, barostat=None, trajectory_file_option='PDB', coupling_frequency=None, anderson_thermostat=None):
     
+    print_line_with_mainheader("OpenMM MOLECULAR DYNAMICS")
+
     if simulation_steps == None and simulation_time == None:
         print("Either simulation_steps or simulation_time needs to be set")
         exit()
@@ -1189,10 +1191,10 @@ def OpenMM_MD(openmmobject=None, timestep=0.001, simulation_steps=None, simulati
     #Context
 
     if trajectory_file_option == 'PDB':
-        openmmobject.simulation.reporters.append(openmmobject.openmm.PDBReporter('output.pdb', traj_frequency))
+        openmmobject.simulation.reporters.append(openmmobject.openmm.app.PDBReporter('output.pdb', traj_frequency))
     elif trajectory_file_option == 'DCD':
-        openmmobject.simulation.reporters.append(openmmobject.openmm.DCDReporter('output.dcd', traj_frequency))
-    openmmobject.simulation.reporters.append(openmmobject.openmm.StateDataReporter(stdout, traj_frequency, step=True, time=True,
+        openmmobject.simulation.reporters.append(openmmobject.openmm.app.DCDReporter('output.dcd', traj_frequency))
+    openmmobject.simulation.reporters.append(openmmobject.openmm.app.StateDataReporter(stdout, traj_frequency, step=True, time=True,
             potentialEnergy=True, temperature=True, kineticEnergy=True))
 
     #Run simulation
