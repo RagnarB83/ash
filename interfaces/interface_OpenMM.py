@@ -1149,8 +1149,12 @@ def create_cnb(original_nbforce):
 #Integrators: LangevinMiddleIntegrator, NoseHooverIntegrator, VerletIntegrator, BrownianIntegrator, VariableLangevinIntegrator, VariableVerletIntegrator
 #Additional thermostat: AndersenThermostat (use with Verlet)
 #Barostat: MonteCarloBarostat (not yet supported: MonteCarloAnisotropicBarostat, MonteCarloMembraneBarostat)
+
+#Note: enforcePeriodicBox=True/False/None option. False works for current test system to get trajectory without PBC problem. Other systems may require True or None.
+#see https://github.com/openmm/openmm/issues/2688, https://github.com/openmm/openmm/pull/1895
+#Also should we add: https://github.com/mdtraj/mdtraj ?
 def OpenMM_MD(fragment=None, openmmobject=None, timestep=0.001, simulation_steps=None, simulation_time=None, traj_frequency=1000, temperature=300, integrator=None,
-    barostat=None, trajectory_file_option='PDB', coupling_frequency=None, anderson_thermostat=False, enforcePeriodicBox=None):
+    barostat=None, trajectory_file_option='PDB', coupling_frequency=None, anderson_thermostat=False, enforcePeriodicBox=False):
     
     print_line_with_mainheader("OpenMM MOLECULAR DYNAMICS")
 
@@ -1176,6 +1180,7 @@ def OpenMM_MD(fragment=None, openmmobject=None, timestep=0.001, simulation_steps
     print("")
     print("Will write trajectory in format:", trajectory_file_option)
     print("Trajectory write frequency:", traj_frequency)
+    print("enforcePeriodicBox option:", enforcePeriodicBox)
     print("")
     if barostat != None:
         print("Adding barostat")
@@ -1205,8 +1210,9 @@ def OpenMM_MD(fragment=None, openmmobject=None, timestep=0.001, simulation_steps
     if trajectory_file_option == 'PDB':
         openmmobject.simulation.reporters.append(openmmobject.openmm.app.PDBReporter('output_traj.pdb', traj_frequency, enforcePeriodicBox=enforcePeriodicBox))
     elif trajectory_file_option == 'DCD':
+        #NOTE: Safer option might be to use PDB-writer from OpenMM. We shall see.
         write_pdbfile(fragment,outputname="initial_frag", openmmobject=openmmobject)
-        openmmobject.simulation.reporters.append(openmmobject.openmm.app.DCDReporter('output.dcd', traj_frequency, enforcePeriodicBox=enforcePeriodicBox))
+        openmmobject.simulation.reporters.append(openmmobject.openmm.app.DCDReporter('output_traj.dcd', traj_frequency, enforcePeriodicBox=enforcePeriodicBox))
     openmmobject.simulation.reporters.append(openmmobject.openmm.app.StateDataReporter(stdout, traj_frequency, step=True, time=True,
             potentialEnergy=True, temperature=True, kineticEnergy=True,  separator='     '))
 

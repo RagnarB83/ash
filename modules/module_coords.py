@@ -20,6 +20,9 @@ class Fragment:
                  atomcharges=None, atomtypes=None, conncalc=False, scale=None, tol=None, printlevel=2, charge=None,
                  mult=None, label=None, readchargemult=False, use_atomnames_as_elements=False):
         
+        #Setting initial dummy label. Possibly redefined below, either when reading in file or by label keyword
+        self.label=None
+
         
         #Printlevel. Default: 2 (slightly verbose)
         self.printlevel=printlevel
