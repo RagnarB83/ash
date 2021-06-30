@@ -601,12 +601,18 @@ def auto_active_space(fragment=None, orcadir=None, basis="def2-SVP", scalar_rel=
 
 
     minimal_CAS=functions_elstructure.select_space_from_occupations(ICEnatoccupations, selection_thresholds=[1.95,0.05])
-    medium_CAS=functions_elstructure.select_space_from_occupations(ICEnatoccupations, selection_thresholds=[1.98,0.02])
+    medium1_CAS=functions_elstructure.select_space_from_occupations(ICEnatoccupations, selection_thresholds=[1.98,0.02])
+    medium2_CAS=functions_elstructure.select_space_from_occupations(ICEnatoccupations, selection_thresholds=[1.985,0.015])
+    medium3_CAS=functions_elstructure.select_space_from_occupations(ICEnatoccupations, selection_thresholds=[1.99,0.01])
+    medium4_CAS=functions_elstructure.select_space_from_occupations(ICEnatoccupations, selection_thresholds=[1.992,0.008])
     large_CAS=functions_elstructure.select_space_from_occupations(ICEnatoccupations, selection_thresholds=[1.995,0.005])
     print("")
     print("Recommended active spaces based on ICE-CI natural occupations:")
     print("Minimal (1.95,0.05): CAS({},{})".format(minimal_CAS[0],minimal_CAS[1]))
-    print("Medium (1.98,0.02): CAS({},{})".format(medium_CAS[0],medium_CAS[1]))
+    print("Medium1 (1.98,0.02): CAS({},{})".format(medium1_CAS[0],medium1_CAS[1]))
+    print("Medium2 (1.985,0.015): CAS({},{})".format(medium2_CAS[0],medium2_CAS[1]))
+    print("Medium3 (1.99,0.01): CAS({},{})".format(medium3_CAS[0],medium3_CAS[1]))
+    print("Medium4 (1.992,0.008): CAS({},{})".format(medium4_CAS[0],medium4_CAS[1]))
     print("Large (1.995,0.005): CAS({},{})".format(large_CAS[0],large_CAS[1]))
 
     print("Orbital file to use for future calculations:", ORCAcalc_2.filename+'.gbw')
