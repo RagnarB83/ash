@@ -1,8 +1,10 @@
 import time
 import numpy as np
 import constants
+from sys import stdout
 
-from functions_general import BC,print_time_rel,listdiff,printdebug
+from functions_general import BC,print_time_rel,listdiff,printdebug,print_line_with_mainheader
+from module_coords import write_pdbfile
 
 class OpenMMTheory:
     def __init__(self, pdbfile=None, platform='CPU', active_atoms=None, frozen_atoms=None,
@@ -79,8 +81,7 @@ class OpenMMTheory:
         #OpenMM things
         self.openmm=simtk.openmm
         self.simulationclass=simtk.openmm.app.simulation.Simulation
-        self.verletintegrator=simtk.openmm.VerletIntegrator
-        self.langevinintegrator=simtk.openmm.LangevinIntegrator
+
         self.platform_choice=platform
         self.unit=simtk.unit
         self.Vec3=simtk.openmm.Vec3
@@ -500,14 +501,33 @@ class OpenMMTheory:
     #qmatoms list provided for generality of MM objects. Not used here for now
     
     # Create/update simulation from scratch or after system has been modified (force modification or even deletion)
-    def create_simulation(self):
+    def create_simulation(self, timestep=0.001, integrator='VerletIntegrator', coupling_frequency=None, temperature=None):
         timeA=time.time()
         print("Creating/updating OpenMM simulation object")
         printdebug("self.system.getForces() ", self.system.getForces())
         #self.integrator = self.langevinintegrator(0.0000001 * self.unit.kelvin,  # Temperature of heat bath
         #                                1 / self.unit.picosecond,  # Friction coefficient
         #                                0.002 * self.unit.picoseconds)  # Time step
-        self.integrator = self.verletintegrator(0.001*self.unit.picosecond)
+
+        #Integrators: LangevinIntegrator, LangevinMiddleIntegrator, NoseHooverIntegrator, VerletIntegrator, BrownianIntegrator, VariableLangevinIntegrator, VariableVerletIntegrator
+
+        if integrator == 'VerletIntegrator':
+            self.integrator = self.openmm.VerletIntegrator(timestep*self.unit.picoseconds)
+        elif integrator == 'VariableVerletIntegrator':
+            self.integrator = self.openmm.VariableVerletIntegrator(timestep*self.unit.picoseconds)
+        elif integrator == 'LangevinIntegrator':
+            self.integrator = self.openmm.LangevinIntegrator(temperature*self.unit.kelvin, coupling_frequency/self.unit.picosecond, timestep*self.unit.picoseconds)
+        elif integrator == 'LangevinMiddleIntegrator':
+            self.integrator = self.openmm.LangevinMiddleIntegrator(temperature*self.unit.kelvin, coupling_frequency/self.unit.picosecond, timestep*self.unit.picoseconds)
+        elif integrator == 'NoseHooverIntegrator':
+            self.integrator = self.openmm.NoseHooverIntegrator(temperature*self.unit.kelvin, coupling_frequency/self.unit.picosecond, timestep*self.unit.picoseconds)
+        #NOTE: Problem with Brownian, disabling
+        #elif integrator == 'BrownianIntegrator':
+        #    self.integrator = self.openmm.BrownianIntegrator(temperature*self.unit.kelvin, coupling_frequency/self.unit.picosecond, timestep*self.unit.picoseconds)
+        elif integrator == 'VariableLangevinIntegrator':
+            self.integrator = self.openmm.VariableLangevinIntegrator(temperature*self.unit.kelvin, coupling_frequency/self.unit.picosecond, timestep*self.unit.picoseconds)
+
+        
         self.simulation = self.simulationclass(self.topology, self.system, self.integrator,self.platform)
         print_time_rel(timeA, modulename="creating simulation")
     
@@ -1123,3 +1143,78 @@ def create_cnb(original_nbforce):
 #myCustomNBForce.addInteractionGroup(self.frozen_atoms,self.active_atoms)
 #Act-Act interaction
 #myCustomNBForce.addInteractionGroup(self.active_atoms,self.active_atoms)
+
+
+#Simple Molecular Dynamics using the OpenMM  object
+#Integrators: LangevinMiddleIntegrator, NoseHooverIntegrator, VerletIntegrator, BrownianIntegrator, VariableLangevinIntegrator, VariableVerletIntegrator
+#Additional thermostat: AndersenThermostat (use with Verlet)
+#Barostat: MonteCarloBarostat (not yet supported: MonteCarloAnisotropicBarostat, MonteCarloMembraneBarostat)
+
+#Note: enforcePeriodicBox=True/False/None option. False works for current test system to get trajectory without PBC problem. Other systems may require True or None.
+#see https://github.com/openmm/openmm/issues/2688, https://github.com/openmm/openmm/pull/1895
+#Also should we add: https://github.com/mdtraj/mdtraj ?
+def OpenMM_MD(fragment=None, openmmobject=None, timestep=0.001, simulation_steps=None, simulation_time=None, traj_frequency=1000, temperature=300, integrator=None,
+    barostat=None, trajectory_file_option='PDB', coupling_frequency=None, anderson_thermostat=False, enforcePeriodicBox=False):
+    
+    print_line_with_mainheader("OpenMM MOLECULAR DYNAMICS")
+
+    if simulation_steps == None and simulation_time == None:
+        print("Either simulation_steps or simulation_time needs to be set")
+        exit()
+    if fragment == None:
+        print("No fragment object. Exiting")
+        exit()
+    if simulation_time != None:
+        simulation_steps=simulation_time/timestep
+    if simulation_steps != None:
+        simulation_time=simulation_steps*timestep
+    print("Simulation time: {} ps".format(simulation_time))
+    print("Timestep: {} ps".format(timestep))
+    print("Simulation steps: ".format(simulation_steps))
+    print("Temperature: {} K".format(temperature))
+    print("Integrator:", integrator)
+    print("Anderon Thermostat:", anderson_thermostat)
+    print("coupling_frequency: {} ps^-1 (Nose-Hoover,Langevin,Brownian)".format(coupling_frequency))
+    print("Barostat:", barostat)
+
+    print("")
+    print("Will write trajectory in format:", trajectory_file_option)
+    print("Trajectory write frequency:", traj_frequency)
+    print("enforcePeriodicBox option:", enforcePeriodicBox)
+    print("")
+    if barostat != None:
+        print("Adding barostat")
+        openmmobject.system.addForce(openmmobject.openmm.MonteCarloBarostat(1*openmmobject.openmm.unit.bar, temperature*openmmobject.openmm.unit.kelvin))
+        integrator="LangevinMiddleIntegrator"
+        print("Barostat requires using integrator:", integrator)
+        openmmobject.create_simulation(timestep=0.001, temperature=temperature, integrator=integrator, coupling_frequency=coupling_frequency)
+    elif anderson_thermostat == True:
+        print("Anderson thermostat is on")
+        openmmobject.system.addForce(openmmobject.openmm.AndersenThermostat(temperature*openmmobject.openmm.unit.kelvin, 1/openmmobject.openmm.unit.picosecond))
+        integrator="VerletIntegrator"
+        print("Now using integrator:", integrator)
+        openmmobject.create_simulation(timestep=0.001, temperature=temperature, integrator=integrator, coupling_frequency=coupling_frequency)
+    else:
+        #Regular thermostat and integrator without barostat
+        #Integrators: LangevinIntegrator, LangevinMiddleIntegrator, NoseHooverIntegrator, VerletIntegrator, BrownianIntegrator, VariableLangevinIntegrator, VariableVerletIntegrator
+        openmmobject.create_simulation(timestep=0.001, temperature=temperature, integrator=integrator, coupling_frequency=coupling_frequency)
+    
+
+    
+    #Context: settings positions
+    coords=np.array(fragment.coords)
+    pos = [openmmobject.Vec3(coords[i, 0] / 10, coords[i, 1] / 10, coords[i, 2] / 10) for i in range(len(coords))] * openmmobject.openmm.unit.nanometer
+
+    openmmobject.simulation.context.setPositions(pos)
+
+    if trajectory_file_option == 'PDB':
+        openmmobject.simulation.reporters.append(openmmobject.openmm.app.PDBReporter('output_traj.pdb', traj_frequency, enforcePeriodicBox=enforcePeriodicBox))
+    elif trajectory_file_option == 'DCD':
+        #NOTE: Safer option might be to use PDB-writer from OpenMM. We shall see.
+        write_pdbfile(fragment,outputname="initial_frag", openmmobject=openmmobject)
+        openmmobject.simulation.reporters.append(openmmobject.openmm.app.DCDReporter('output_traj.dcd', traj_frequency, enforcePeriodicBox=enforcePeriodicBox))
+    openmmobject.simulation.reporters.append(openmmobject.openmm.app.StateDataReporter(stdout, traj_frequency, step=True, time=True,
+            potentialEnergy=True, temperature=True, kineticEnergy=True,  separator='     '))
+
+    #Run simulation
+    openmmobject.simulation.step(simulation_steps)
