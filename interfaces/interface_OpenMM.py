@@ -1150,7 +1150,7 @@ def create_cnb(original_nbforce):
 #Additional thermostat: AndersenThermostat (use with Verlet)
 #Barostat: MonteCarloBarostat (not yet supported: MonteCarloAnisotropicBarostat, MonteCarloMembraneBarostat)
 def OpenMM_MD(fragment=None, openmmobject=None, timestep=0.001, simulation_steps=None, simulation_time=None, traj_frequency=1000, temperature=300, integrator=None,
-    barostat=None, trajectory_file_option='PDB', coupling_frequency=None, anderson_thermostat=False):
+    barostat=None, trajectory_file_option='PDB', coupling_frequency=None, anderson_thermostat=False, enforcePeriodicBox=None):
     
     print_line_with_mainheader("OpenMM MOLECULAR DYNAMICS")
 
@@ -1203,10 +1203,10 @@ def OpenMM_MD(fragment=None, openmmobject=None, timestep=0.001, simulation_steps
     openmmobject.simulation.context.setPositions(pos)
 
     if trajectory_file_option == 'PDB':
-        openmmobject.simulation.reporters.append(openmmobject.openmm.app.PDBReporter('output_traj.pdb', traj_frequency))
+        openmmobject.simulation.reporters.append(openmmobject.openmm.app.PDBReporter('output_traj.pdb', traj_frequency, enforcePeriodicBox=enforcePeriodicBox))
     elif trajectory_file_option == 'DCD':
         write_pdbfile(fragment,outputname="initial_frag", openmmobject=openmmobject)
-        openmmobject.simulation.reporters.append(openmmobject.openmm.app.DCDReporter('output.dcd', traj_frequency))
+        openmmobject.simulation.reporters.append(openmmobject.openmm.app.DCDReporter('output.dcd', traj_frequency, enforcePeriodicBox=enforcePeriodicBox))
     openmmobject.simulation.reporters.append(openmmobject.openmm.app.StateDataReporter(stdout, traj_frequency, step=True, time=True,
             potentialEnergy=True, temperature=True, kineticEnergy=True,  separator='     '))
 
