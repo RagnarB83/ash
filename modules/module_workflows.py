@@ -606,6 +606,9 @@ def auto_active_space(fragment=None, orcadir=None, basis="def2-SVP", scalar_rel=
     medium3_CAS=functions_elstructure.select_space_from_occupations(ICEnatoccupations, selection_thresholds=[1.99,0.01])
     medium4_CAS=functions_elstructure.select_space_from_occupations(ICEnatoccupations, selection_thresholds=[1.992,0.008])
     large_CAS=functions_elstructure.select_space_from_occupations(ICEnatoccupations, selection_thresholds=[1.995,0.005])
+
+    spaces_dict={"minimal_CAS":minimal_CAS,"medium1_CAS":medium1_CAS,"medium2_CAS":medium2_CAS, "medium3_CAS":medium3_CAS, "medium4_CAS":medium4_CAS, "large_CAS":large_CAS  }
+
     print("")
     print("Recommended active spaces based on ICE-CI natural occupations:")
     print("Minimal (1.95,0.05): CAS({},{})".format(minimal_CAS[0],minimal_CAS[1]))
@@ -618,5 +621,5 @@ def auto_active_space(fragment=None, orcadir=None, basis="def2-SVP", scalar_rel=
     print("Orbital file to use for future calculations:", ORCAcalc_2.filename+'.gbw')
     print("Note: orbitals are new natural orbitals formed from the ICE-CI density matrix")
 
-    #Returning list of active spaces
-    return [[minimal_CAS[0],minimal_CAS[1]],[medium_CAS[0],medium_CAS[1]],[large_CAS[0],large_CAS[1]]]
+    #Returning dict of active spaces
+    return spaces_dict
