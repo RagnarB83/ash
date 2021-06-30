@@ -1147,10 +1147,10 @@ def create_cnb(original_nbforce):
 
 #Simple Molecular Dynamics using the OpenMM  object
 #Integrators: LangevinMiddleIntegrator, NoseHooverIntegrator, VerletIntegrator, BrownianIntegrator, VariableLangevinIntegrator, VariableVerletIntegrator
-#Thermostat: AndersenThermostat (use with Verlet)
+#Additional thermostat: AndersenThermostat (use with Verlet)
 #Barostat: MonteCarloBarostat (not yet supported: MonteCarloAnisotropicBarostat, MonteCarloMembraneBarostat)
 def OpenMM_MD(fragment=None, openmmobject=None, timestep=0.001, simulation_steps=None, simulation_time=None, traj_frequency=1000, temperature=300, integrator=None,
-    thermostat=None, barostat=None, trajectory_file_option='PDB', coupling_frequency=None, anderson_thermostat=None):
+    barostat=None, trajectory_file_option='PDB', coupling_frequency=None, anderson_thermostat=False):
     
     print_line_with_mainheader("OpenMM MOLECULAR DYNAMICS")
 
@@ -1169,7 +1169,7 @@ def OpenMM_MD(fragment=None, openmmobject=None, timestep=0.001, simulation_steps
     print("Simulation steps: ".format(simulation_steps))
     print("Temperature: {} K".format(temperature))
     print("Integrator:", integrator)
-    print("Thermostat:", thermostat)
+    print("Anderon Thermostat:", anderson_thermostat)
     print("coupling_frequency: {} ps^-1 (Nose-Hoover,Langevin,Brownian)".format(coupling_frequency))
     print("Barostat:", barostat)
 
