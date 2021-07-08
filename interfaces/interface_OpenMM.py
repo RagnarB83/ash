@@ -54,7 +54,6 @@ class OpenMMTheory:
         #Control by setting env variable: $OPENMM_CPU_THREADS in shell before running.
         #Don't think it's possible to change variable inside Python environment
         print("Checking for OPENMM_CPU_THREADS shell variable:")
-        print(os.environ["OPENMM_CPU_THREADS"])
         try:
             print("OpenMM will use {} threads according to environment variable: OPENMM_CPU_THREADS".format(os.environ["OPENMM_CPU_THREADS"]))
         except:
