@@ -8,14 +8,15 @@ from functions_general import BC,print_time_rel,listdiff,printdebug,print_line_w
 from module_coords import write_pdbfile
 
 class OpenMMTheory:
-    def __init__(self, pdbfile=None, platform='CPU', active_atoms=None, frozen_atoms=None,
+    def __init__(self, pdbfile=None, platform='CPU', numcores=None, xmlfile=None, use_parmed=False,
                  CHARMMfiles=False, psffile=None, charmmtopfile=None, charmmprmfile=None,
                  GROMACSfiles=False, gromacstopfile=None, grofile=None, gromacstopdir=None,
                  Amberfiles=False, amberprmtopfile=None, printlevel=2, do_energy_composition=False,
-                 xmlfile=None, periodic=False, charmm_periodic_cell_dimensions=None, customnonbondedforce=False,
-                 delete_QM1_MM1_bonded=False, watermodel=None, use_parmed=False, periodic_nonbonded_cutoff=12,
-                 dispersion_correction=True, switching_function=False, switching_function_distance=10,
-                 ewalderrortolerance=1e-5, applyconstraints=False, PMEparameters=None, numcores=None):
+                 periodic=False, charmm_periodic_cell_dimensions=None, customnonbondedforce=False,
+                 periodic_nonbonded_cutoff=12, dispersion_correction=True, 
+                 switching_function=False, switching_function_distance=10,
+                 ewalderrortolerance=1e-5, PMEparameters=None,
+                 delete_QM1_MM1_bonded=False, applyconstraints=False):
         
         module_init_time = time.time()
         # OPEN MM load
@@ -55,6 +56,7 @@ class OpenMMTheory:
         #CPU: Control either by provided numcores keyword, or by setting env variable: $OPENMM_CPU_THREADS in shell before running.
         self.properties= {}
         if self.platform_choice == 'CPU':
+            print("Using platform: CPU")
             if numcores != None:
                 print("Numcores variable provided to OpenMM object. Will use {} cores with OpenMM".format(numcores))
                 self.properties["Threads"]=str(numcores)
@@ -65,7 +67,8 @@ class OpenMMTheory:
                     print("OpenMM will use {} threads according to environment variable: OPENMM_CPU_THREADS".format(os.environ["OPENMM_CPU_THREADS"]))
                 except:
                     print("OPENMM_CPU_THREADS environment variable not set. OpenMM will choose number of physical cores present.")
-        
+        else:
+            print("Using platform:", self.platform_choice)
         
         #Whether to do energy composition of MM energy or not. Takes time. Can be turned off for MD runs
         self.do_energy_composition=do_energy_composition
@@ -230,7 +233,8 @@ class OpenMMTheory:
         
         #Setting active and frozen variables once topology is in place
         #NOTE: Is this actually used?
-        self.set_active_and_frozen_regions(active_atoms=active_atoms, frozen_atoms=frozen_atoms)
+        #NOTE: Disabled for now
+        #self.set_active_and_frozen_regions(active_atoms=active_atoms, frozen_atoms=frozen_atoms)
 
 
         #Periodic or non-periodic ystem
