@@ -8,13 +8,15 @@ from functions_general import BC,print_time_rel,listdiff,printdebug,print_line_w
 from module_coords import write_pdbfile
 
 class OpenMMTheory:
-    def __init__(self, pdbfile=None, platform='CPU', numcores=None, xmlfile=None, use_parmed=False,
+    def __init__(self, printlevel=2, platform='CPU', numcores=None, 
                  CHARMMfiles=False, psffile=None, charmmtopfile=None, charmmprmfile=None,
                  GROMACSfiles=False, gromacstopfile=None, grofile=None, gromacstopdir=None,
-                 Amberfiles=False, amberprmtopfile=None, printlevel=2, do_energy_composition=False,
+                 Amberfiles=False, amberprmtopfile=None,
+                 xmlfile=None, pdbfile=None, use_parmed=False,
+                 do_energy_decomposition=False,
                  periodic=False, charmm_periodic_cell_dimensions=None, customnonbondedforce=False,
                  periodic_nonbonded_cutoff=12, dispersion_correction=True, 
-                 switching_function=False, switching_function_distance=10,
+                 switching_function_distance=10,
                  ewalderrortolerance=1e-5, PMEparameters=None,
                  delete_QM1_MM1_bonded=False, applyconstraints=False):
         
@@ -70,8 +72,8 @@ class OpenMMTheory:
         else:
             print("Using platform:", self.platform_choice)
         
-        #Whether to do energy composition of MM energy or not. Takes time. Can be turned off for MD runs
-        self.do_energy_composition=do_energy_composition
+        #Whether to do energy decomposition of MM energy or not. Takes time. Can be turned off for MD runs
+        self.do_energy_decomposition=do_energy_decomposition
         #Initializing
         self.coords=[]
         self.charges=[]
@@ -571,7 +573,7 @@ class OpenMMTheory:
         self.simulation = self.simulationclass(self.topology, self.system, self.integrator,self.platform, self.properties)
         print_time_rel(timeA, modulename="creating simulation")
     
-    #Functions for energy compositions
+    #Functions for energy decompositions
     def forcegroupify(self):
         self.forcegroups = {}
         print("inside forcegroupify")
@@ -637,7 +639,7 @@ class OpenMMTheory:
                 openmm_energy['Otherforce'+str(extrafcount)] = comp[1]
                 
         
-        print_time_rel(timeA, modulename="energy composition")
+        print_time_rel(timeA, modulename="energy decomposition")
         timeA = time.time()
         
         #The force terms to print in the ordered table.
@@ -742,7 +744,7 @@ class OpenMMTheory:
         print("OpenMM Energy:", self.energy*constants.harkcal, "kcal/mol")
         
         #Do energy components or not. Can be turned off for e.g. MM MD simulation
-        if self.do_energy_composition is True:
+        if self.do_energy_decomposition is True:
             self.printEnergyDecomposition()
         
         print("self.energy : ", self.energy, "Eh")
