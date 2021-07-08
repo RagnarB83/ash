@@ -510,8 +510,8 @@ class OpenMMTheory:
         #                                0.002 * self.unit.picoseconds)  # Time step
 
         #Integrators: LangevinIntegrator, LangevinMiddleIntegrator, NoseHooverIntegrator, VerletIntegrator, BrownianIntegrator, VariableLangevinIntegrator, VariableVerletIntegrator
-
         if integrator == 'VerletIntegrator':
+            print("Defining verlet")
             self.integrator = self.openmm.VerletIntegrator(timestep*self.unit.picoseconds)
         elif integrator == 'VariableVerletIntegrator':
             self.integrator = self.openmm.VariableVerletIntegrator(timestep*self.unit.picoseconds)
@@ -526,8 +526,9 @@ class OpenMMTheory:
         #    self.integrator = self.openmm.BrownianIntegrator(temperature*self.unit.kelvin, coupling_frequency/self.unit.picosecond, timestep*self.unit.picoseconds)
         elif integrator == 'VariableLangevinIntegrator':
             self.integrator = self.openmm.VariableLangevinIntegrator(temperature*self.unit.kelvin, coupling_frequency/self.unit.picosecond, timestep*self.unit.picoseconds)
-
-        
+        else:
+            print(BC.FAIL,"Unknown integrator.\n Valid integrator keywords are: VerletIntegrator, VariableVerletIntegrator, LangevinIntegrator, LangevinMiddleIntegrator, NoseHooverIntegrator, VariableLangevinIntegrator ", BC.END)
+            exit()
         self.simulation = self.simulationclass(self.topology, self.system, self.integrator,self.platform)
         print_time_rel(timeA, modulename="creating simulation")
     
@@ -1170,11 +1171,11 @@ def OpenMM_MD(fragment=None, openmmobject=None, timestep=0.001, simulation_steps
         simulation_time=simulation_steps*timestep
     print("Simulation time: {} ps".format(simulation_time))
     print("Timestep: {} ps".format(timestep))
-    print("Simulation steps: ".format(simulation_steps))
+    print("Simulation steps: {}".format(simulation_steps))
     print("Temperature: {} K".format(temperature))
     print("Integrator:", integrator)
     print("Anderon Thermostat:", anderson_thermostat)
-    print("coupling_frequency: {} ps^-1 (Nose-Hoover,Langevin,Brownian)".format(coupling_frequency))
+    print("coupling_frequency: {} ps^-1 (for Nose-Hoover and Langevin integrators)".format(coupling_frequency))
     print("Barostat:", barostat)
 
     print("")
@@ -1195,12 +1196,12 @@ def OpenMM_MD(fragment=None, openmmobject=None, timestep=0.001, simulation_steps
         print("Now using integrator:", integrator)
         openmmobject.create_simulation(timestep=0.001, temperature=temperature, integrator=integrator, coupling_frequency=coupling_frequency)
     else:
-        #Regular thermostat and integrator without barostat
+        #Regular thermostat or integrator without barostat
         #Integrators: LangevinIntegrator, LangevinMiddleIntegrator, NoseHooverIntegrator, VerletIntegrator, BrownianIntegrator, VariableLangevinIntegrator, VariableVerletIntegrator
         openmmobject.create_simulation(timestep=0.001, temperature=temperature, integrator=integrator, coupling_frequency=coupling_frequency)
     
 
-    
+    print("Simulation created. Adding coordinates")
     #Context: settings positions
     coords=np.array(fragment.coords)
     pos = [openmmobject.Vec3(coords[i, 0] / 10, coords[i, 1] / 10, coords[i, 2] / 10) for i in range(len(coords))] * openmmobject.openmm.unit.nanometer
