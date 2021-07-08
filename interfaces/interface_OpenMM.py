@@ -105,22 +105,35 @@ class OpenMMTheory:
             print("Reading CHARMM files")
             self.psffile=psffile
             if use_parmed == True:
+                print("Using Parmed.")
                 self.psf = parmed.charmm.CharmmPsfFile(psffile)
                 self.params = parmed.charmm.CharmmParameterSet(charmmtopfile, charmmprmfile)
+                #Grab resnames from psf-object. Different for parmed object
+                #Note: OpenMM uses 0-indexing
+                self.resnames=[self.psf.atoms[i].residue.name for i in range(0,len(self.psf.atoms))]
+                self.resids=[self.psf.atoms[i].residue.idx for i in range(0,len(self.psf.atoms))]
+                self.segmentnames=[self.psf.atoms[i].residue.segid for i in range(0,len(self.psf.atoms))]
+                #self.atomtypes=[self.psf.atoms[i].attype for i in range(0,len(self.psf.atoms))]
+                #TODO: Note: For atomnames it seems OpenMM converts atomnames to its own. Perhaps not useful
+                self.atomnames=[self.psf.atoms[i].name for i in range(0,len(self.psf.atoms))]
+
             else:
                 # Load CHARMM PSF files via native routine.
                 self.psf = simtk.openmm.app.CharmmPsfFile(psffile)                
                 self.params = simtk.openmm.app.CharmmParameterSet(charmmtopfile, charmmprmfile)
+                #Grab resnames from psf-object
+                #Note: OpenMM uses 0-indexing
+                self.resnames=[self.psf.atom_list[i].residue.resname for i in range(0,len(self.psf.atom_list))]
+                self.resids=[self.psf.atom_list[i].residue.idx for i in range(0,len(self.psf.atom_list))]
+                self.segmentnames=[self.psf.atom_list[i].system for i in range(0,len(self.psf.atom_list))]
+                self.atomtypes=[self.psf.atom_list[i].attype for i in range(0,len(self.psf.atom_list))]
+                #TODO: Note: For atomnames it seems OpenMM converts atomnames to its own. Perhaps not useful
+                self.atomnames=[self.psf.atom_list[i].name for i in range(0,len(self.psf.atom_list))]
+
             self.topology = self.psf.topology
             self.forcefield = self.psf
-            #Grab resnames from psf-object
-            #Note: OpenMM uses 0-indexing
-            self.resnames=[self.psf.atom_list[i].residue.resname for i in range(0,len(self.psf.atom_list))]
-            self.resids=[self.psf.atom_list[i].residue.idx for i in range(0,len(self.psf.atom_list))]
-            self.segmentnames=[self.psf.atom_list[i].system for i in range(0,len(self.psf.atom_list))]
-            self.atomtypes=[self.psf.atom_list[i].attype for i in range(0,len(self.psf.atom_list))]
-            #TODO: Note: For atomnames it seems OpenMM converts atomnames to its own. Perhaps not useful
-            self.atomnames=[self.psf.atom_list[i].name for i in range(0,len(self.psf.atom_list))]
+
+
         elif GROMACSfiles is True:
             print("Reading Gromacs files")
             #Reading grofile, not for coordinates but for periodic vectors
@@ -227,8 +240,21 @@ class OpenMMTheory:
                 self.a = periodic_cell_dimensions[0] * self.unit.angstroms
                 self.b = periodic_cell_dimensions[1] * self.unit.angstroms
                 self.c = periodic_cell_dimensions[2] * self.unit.angstroms
+                if use_parmed == True:
+                    self.forcefield.box=[self.a, self.b, self.c, periodic_cell_dimensions[3], periodic_cell_dimensions[4], periodic_cell_dimensions[5]]
+                    print("Set box vectors:", self.forcefield.box)
+                else:
+                    self.forcefield.setBox(self.a, self.b, self.c, alpha=self.unit.Quantity(value=periodic_cell_dimensions[3], unit=self.unit.degree), 
+                    beta=self.unit.Quantity(value=periodic_cell_dimensions[3], unit=self.unit.degree), gamma=self.unit.Quantity(value=periodic_cell_dimensions[3], unit=self.unit.degree))
+                    #self.forcefield.setBox(self.a, self.b, self.c)
+                    #print(self.forcefield.__dict__)
+                    print("Set box vectors:", self.forcefield.box_vectors)
                 #NOTE: SHould this be made more general??
-                self.forcefield.setBox(self.a, self.b, self.c)
+                #print("a,b,c:", self.a, self.b, self.c)
+                #print("box in self.forcefield", self.forcefield.get_box())
+
+                #exit()
+                
                 self.system = self.forcefield.createSystem(self.params, nonbondedMethod=simtk.openmm.app.PME,
                                             nonbondedCutoff=periodic_nonbonded_cutoff * self.unit.angstroms, switchDistance=switching_function_distance*self.unit.angstroms)
             elif GROMACSfiles is True:
