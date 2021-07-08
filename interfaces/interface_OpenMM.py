@@ -12,7 +12,7 @@ class OpenMMTheory:
                  CHARMMfiles=False, psffile=None, charmmtopfile=None, charmmprmfile=None,
                  GROMACSfiles=False, gromacstopfile=None, grofile=None, gromacstopdir=None,
                  Amberfiles=False, amberprmtopfile=None, printlevel=2, do_energy_composition=False,
-                 xmlfile=None, periodic=False, periodic_cell_dimensions=None, customnonbondedforce=False,
+                 xmlfile=None, periodic=False, charmm_periodic_cell_dimensions=None, customnonbondedforce=False,
                  delete_QM1_MM1_bonded=False, watermodel=None, use_parmed=False, periodic_nonbonded_cutoff=12,
                  dispersion_correction=True, switching_function=False, switching_function_distance=10,
                  ewalderrortolerance=1e-5, applyconstraints=False, PMEparameters=None, numcores=None):
@@ -50,19 +50,21 @@ class OpenMMTheory:
         #TODO: Move option to module_QMMM instead
         self.delete_QM1_MM1_bonded=delete_QM1_MM1_bonded
 
-        #Parallelization
-        #Control either by provided numcores keyword, or by setting env variable: $OPENMM_CPU_THREADS in shell before running.
-        self.properties_threads= {}
-        if numcores != None:
-            print("Numcores variable provided to OpenMM object. Will use {} cores with OpenMM".format(numcores))
-            self.properties_threads["Threads"]=str(numcores)
-        else:
-            print("No numcores variable provided to OpenMM object")
-            print("Checking if OPENMM_CPU_THREADS shell variable is presentþ")
-            try:
-                print("OpenMM will use {} threads according to environment variable: OPENMM_CPU_THREADS".format(os.environ["OPENMM_CPU_THREADS"]))
-            except:
-                print("OPENMM_CPU_THREADS environment variable not set. OpenMM will choose number of physical cores present.")
+        #Platform (CPU, CUDA, OpenCL) and Parallelization
+        self.platform_choice=platform
+        #CPU: Control either by provided numcores keyword, or by setting env variable: $OPENMM_CPU_THREADS in shell before running.
+        self.properties= {}
+        if self.platform_choice == 'CPU':
+            if numcores != None:
+                print("Numcores variable provided to OpenMM object. Will use {} cores with OpenMM".format(numcores))
+                self.properties["Threads"]=str(numcores)
+            else:
+                print("No numcores variable provided to OpenMM object")
+                print("Checking if OPENMM_CPU_THREADS shell variable is presentþ")
+                try:
+                    print("OpenMM will use {} threads according to environment variable: OPENMM_CPU_THREADS".format(os.environ["OPENMM_CPU_THREADS"]))
+                except:
+                    print("OPENMM_CPU_THREADS environment variable not set. OpenMM will choose number of physical cores present.")
         
         
         #Whether to do energy composition of MM energy or not. Takes time. Can be turned off for MD runs
@@ -91,7 +93,6 @@ class OpenMMTheory:
         self.openmm=simtk.openmm
         self.simulationclass=simtk.openmm.app.simulation.Simulation
 
-        self.platform_choice=platform
         self.unit=simtk.unit
         self.Vec3=simtk.openmm.Vec3
 
@@ -181,6 +182,7 @@ class OpenMMTheory:
         elif Amberfiles is True:
             print("Reading Amber files")
             print("Warning: Only new-style Amber7 prmtopfile will work")
+            print("Warning: Will take periodic boundary conditions from PRMtop file.")
             if use_parmed == True:
                 print("Using Parmed to read Amber files")
                 self.prmtop = parmed.load_file(amberprmtopfile)
@@ -240,21 +242,21 @@ class OpenMMTheory:
             if CHARMMfiles is True:
                 print("Using CHARMM files")
 
-                if periodic_cell_dimensions == None:
-                    print("Error: When using CHARMMfiles and Periodic=True, periodic_cell_dimensions keyword needs to be supplied")
+                if charmm_periodic_cell_dimensions == None:
+                    print("Error: When using CHARMMfiles and Periodic=True, charmm_periodic_cell_dimensions keyword needs to be supplied")
                     print("Example: periodic_cell_dimensions= [200, 200, 200, 90, 90, 90]  in Angstrom and degrees")
                     exit()
-                self.periodic_cell_dimensions = periodic_cell_dimensions
-                print("Periodic cell dimensions:", periodic_cell_dimensions)
-                self.a = periodic_cell_dimensions[0] * self.unit.angstroms
-                self.b = periodic_cell_dimensions[1] * self.unit.angstroms
-                self.c = periodic_cell_dimensions[2] * self.unit.angstroms
+                self.charmm_periodic_cell_dimensions = charmm_periodic_cell_dimensions
+                print("Periodic cell dimensions:", charmm_periodic_cell_dimensions)
+                self.a = charmm_periodic_cell_dimensions[0] * self.unit.angstroms
+                self.b = charmm_periodic_cell_dimensions[1] * self.unit.angstroms
+                self.c = charmm_periodic_cell_dimensions[2] * self.unit.angstroms
                 if use_parmed == True:
-                    self.forcefield.box=[self.a, self.b, self.c, periodic_cell_dimensions[3], periodic_cell_dimensions[4], periodic_cell_dimensions[5]]
+                    self.forcefield.box=[self.a, self.b, self.c, charmm_periodic_cell_dimensions[3], charmm_periodic_cell_dimensions[4], charmm_periodic_cell_dimensions[5]]
                     print("Set box vectors:", self.forcefield.box)
                 else:
-                    self.forcefield.setBox(self.a, self.b, self.c, alpha=self.unit.Quantity(value=periodic_cell_dimensions[3], unit=self.unit.degree), 
-                    beta=self.unit.Quantity(value=periodic_cell_dimensions[3], unit=self.unit.degree), gamma=self.unit.Quantity(value=periodic_cell_dimensions[3], unit=self.unit.degree))
+                    self.forcefield.setBox(self.a, self.b, self.c, alpha=self.unit.Quantity(value=charmm_periodic_cell_dimensions[3], unit=self.unit.degree), 
+                    beta=self.unit.Quantity(value=charmm_periodic_cell_dimensions[3], unit=self.unit.degree), gamma=self.unit.Quantity(value=charmm_periodic_cell_dimensions[3], unit=self.unit.degree))
                     #self.forcefield.setBox(self.a, self.b, self.c)
                     #print(self.forcefield.__dict__)
                     print("Set box vectors:", self.forcefield.box_vectors)
@@ -436,8 +438,10 @@ class OpenMMTheory:
         timeA = time.time()
     
         #Platform
+        print("Hardware platform:", self.platform_choice)
         self.platform = simtk.openmm.Platform.getPlatformByName(self.platform_choice)
-    
+
+
         #Create simulation
         self.create_simulation()
 
@@ -446,10 +450,6 @@ class OpenMMTheory:
         #self.simulation = simtk.openmm.app.simulation.Simulation(self.topology, self.system, self.integrator,self.platform)
         #self.simulation = self.simulationclass(self.topology, self.system, self.integrator,self.platform)
 
-        #Disabled below because we get PBC info from prmtop file. More robust
-        #if self.Periodic is True and Amberfiles is True:
-        #    print("Setting periodic box parameters")
-        #    self.simulation.context.setPeriodicBoxVectors((periodic_cell_dimensions[0]/10, 0, 0), (0, periodic_cell_dimensions[1]/10, 0), (0, 0 ,periodic_cell_dimensions[2]/10))
 
 
 
@@ -564,7 +564,7 @@ class OpenMMTheory:
         else:
             print(BC.FAIL,"Unknown integrator.\n Valid integrator keywords are: VerletIntegrator, VariableVerletIntegrator, LangevinIntegrator, LangevinMiddleIntegrator, NoseHooverIntegrator, VariableLangevinIntegrator ", BC.END)
             exit()
-        self.simulation = self.simulationclass(self.topology, self.system, self.integrator,self.platform, self.properties_threads)
+        self.simulation = self.simulationclass(self.topology, self.system, self.integrator,self.platform, self.properties)
         print_time_rel(timeA, modulename="creating simulation")
     
     #Functions for energy compositions
