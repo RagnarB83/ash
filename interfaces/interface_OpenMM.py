@@ -15,7 +15,7 @@ class OpenMMTheory:
                  xmlfile=None, periodic=False, periodic_cell_dimensions=None, customnonbondedforce=False,
                  delete_QM1_MM1_bonded=False, watermodel=None, use_parmed=False, periodic_nonbonded_cutoff=12,
                  dispersion_correction=True, switching_function=False, switching_function_distance=10,
-                 ewalderrortolerance=1e-5, applyconstraints=False, PMEparameters=None):
+                 ewalderrortolerance=1e-5, applyconstraints=False, PMEparameters=None, numcores=None):
         
         module_init_time = time.time()
         # OPEN MM load
@@ -51,13 +51,20 @@ class OpenMMTheory:
         self.delete_QM1_MM1_bonded=delete_QM1_MM1_bonded
 
         #Parallelization
-        #Control by setting env variable: $OPENMM_CPU_THREADS in shell before running.
-        #Don't think it's possible to change variable inside Python environment
-        print("Checking for OPENMM_CPU_THREADS shell variable:")
-        try:
-            print("OpenMM will use {} threads according to environment variable: OPENMM_CPU_THREADS".format(os.environ["OPENMM_CPU_THREADS"]))
-        except:
-            print("OPENMM_CPU_THREADS environment variable not set. OpenMM will choose number of physical cores present.")
+        #Control either by provided numcores keyword, or by setting env variable: $OPENMM_CPU_THREADS in shell before running.
+        self.properties_threads= {}
+        if numcores != None:
+            print("Numcores variable provided to OpenMM object. Will use {} cores with OpenMM".format(numcores))
+            self.properties_threads["Threads"]=str(numcores)
+        else:
+            print("No numcores variable provided to OpenMM object")
+            print("Checking if OPENMM_CPU_THREADS shell variable is presentþ")
+            try:
+                print("OpenMM will use {} threads according to environment variable: OPENMM_CPU_THREADS".format(os.environ["OPENMM_CPU_THREADS"]))
+            except:
+                print("OPENMM_CPU_THREADS environment variable not set. OpenMM will choose number of physical cores present.")
+        
+        
         #Whether to do energy composition of MM energy or not. Takes time. Can be turned off for MD runs
         self.do_energy_composition=do_energy_composition
         #Initializing
@@ -557,7 +564,7 @@ class OpenMMTheory:
         else:
             print(BC.FAIL,"Unknown integrator.\n Valid integrator keywords are: VerletIntegrator, VariableVerletIntegrator, LangevinIntegrator, LangevinMiddleIntegrator, NoseHooverIntegrator, VariableLangevinIntegrator ", BC.END)
             exit()
-        self.simulation = self.simulationclass(self.topology, self.system, self.integrator,self.platform)
+        self.simulation = self.simulationclass(self.topology, self.system, self.integrator,self.platform, self.properties_threads)
         print_time_rel(timeA, modulename="creating simulation")
     
     #Functions for energy compositions
