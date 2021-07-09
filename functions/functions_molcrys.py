@@ -596,12 +596,13 @@ def read_ciffile(file):
             #symmops
             if symmopgrab==True:
                 if 'space' not in line and len(line) > 2:
-                    if 'x' in line:
+                    if 'x' in line or 'X' in line:
                         symmops.append(line.split('\'')[1])
                 if len(line) < 2:
                     symmopgrab=False
                 if 'x' not in line:
-                    symmopgrab=False
+                    if 'X' not in line:
+                        symmopgrab=False
             if symmopgrab_oldsyntax==True:
                 if 'x' not in line:
                     symmopgrab_oldsyntax=False
@@ -726,16 +727,18 @@ def shift_fractcoords(coords,shift):
 def fill_unitcell(cell_length,cell_angles,atomlabels,elems,coords,symmops):
     fullcell=[]
     for i in symmops:
-        print("symmop i:", i)
+        #Making symmop lowercase just in case
+        symmop_i=i.lower()
+        print("symmop i:", symmop_i)
         operations_x=[];operations_y=[];operations_z=[]
         #Multoperations are unity by default. Sumoperations are 0 by default
         multoperation_x=1;sumoperation_x=0
         multoperation_y=1;sumoperation_y=0
         multoperation_z=1;sumoperation_z=0
         #Splitting by comma
-        op_x=i.split(',')[0].replace(",","")
-        op_y=i.split(',')[1].replace(",","")
-        op_z = i.split(',')[2].replace(",", "")
+        op_x=symmop_i.split(',')[0].replace(",","")
+        op_y=symmop_i.split(',')[1].replace(",","")
+        op_z = symmop_i.split(',')[2].replace(",", "")
         print("op_x: {} op_y: {} op_z: {}".format(op_x,op_y,op_z))
         #op_z=i.split(',')[2].replace(",","").replace(" ","").replace("\n","")
         if len(op_x)==1 and len(op_y)==1 and len(op_z)==1:
@@ -1241,7 +1244,7 @@ def choose_shortrangemodel(Cluster,shortrangemodel,fragmentobjects,QMtheory,main
         for fragmentobject in fragmentobjects:
             #fragmentobject.Elements
             for el in fragmentobject.Elements:
-                print("UFF parameter for {} :".format(el, UFFdict_Hzero[el]))
+                print("UFF parameter for {} : {}".format(el, UFFdict_Hzero[el]))
 
         #Using UFF_ prefix before element
         atomtypelist=['UFF_'+i for i in Cluster.elems]

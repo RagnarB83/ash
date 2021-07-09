@@ -298,7 +298,7 @@ def molcrys(cif_file=None, xtl_file=None, xyz_file=None, cell_length=None, cell_
                 print("")
                 break
             else:
-                print(BC.FAIL,"Fragment assignment failed.", BC.WARNING,"Trying next Tol parameter.", BC.END)
+                print(BC.FAIL,"Fragment assignment failed. for tolerance: {} ".format(chosentol), BC.WARNING,"Trying next Tol parameter.",BC.END)
                 #Setting found fragmentlists as empty. Otherwise trouble.
                 for fragobject in fragmentobjects:
                     fragobject.fraglist=[]
@@ -366,7 +366,7 @@ def molcrys(cif_file=None, xtl_file=None, xyz_file=None, cell_length=None, cell_
     ########################################
     blankline()
     print("Creating new Cluster fragment:")
-    Cluster=ash.Fragment(elems=cluster_elems, coords=cluster_coords, scale=chosenscale, tol=chosentol)
+    Cluster=ash.Fragment(elems=cluster_elems, coords=cluster_coords, scale=chosenscale, tol=chosentol, conncalc=True)
     
     
     print_time_rel_and_tot(currtime, origtime, modulename='create Cluster fragment')

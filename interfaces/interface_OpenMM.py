@@ -1,20 +1,24 @@
 import time
 import numpy as np
 import constants
+import os
 from sys import stdout
 
 from functions_general import BC,print_time_rel,listdiff,printdebug,print_line_with_mainheader
 from module_coords import write_pdbfile
 
 class OpenMMTheory:
-    def __init__(self, pdbfile=None, platform='CPU', active_atoms=None, frozen_atoms=None,
+    def __init__(self, printlevel=2, platform='CPU', numcores=None, 
                  CHARMMfiles=False, psffile=None, charmmtopfile=None, charmmprmfile=None,
                  GROMACSfiles=False, gromacstopfile=None, grofile=None, gromacstopdir=None,
-                 Amberfiles=False, amberprmtopfile=None, printlevel=2, do_energy_composition=False,
-                 xmlfile=None, periodic=False, periodic_cell_dimensions=None, customnonbondedforce=False,
-                 delete_QM1_MM1_bonded=False, watermodel=None, use_parmed=False, periodic_nonbonded_cutoff=12,
-                 dispersion_correction=True, switching_function=False, switching_function_distance=10,
-                 ewalderrortolerance=1e-5, applyconstraints=False, PMEparameters=None):
+                 Amberfiles=False, amberprmtopfile=None,
+                 xmlfile=None, pdbfile=None, use_parmed=False,
+                 do_energy_decomposition=False,
+                 periodic=False, charmm_periodic_cell_dimensions=None, customnonbondedforce=False,
+                 periodic_nonbonded_cutoff=12, dispersion_correction=True, 
+                 switching_function_distance=10,
+                 ewalderrortolerance=1e-5, PMEparameters=None,
+                 delete_QM1_MM1_bonded=False, applyconstraints=False):
         
         module_init_time = time.time()
         # OPEN MM load
@@ -49,15 +53,27 @@ class OpenMMTheory:
         #TODO: Move option to module_QMMM instead
         self.delete_QM1_MM1_bonded=delete_QM1_MM1_bonded
 
-        #Parallelization
-        #Control by setting env variable: $OPENMM_CPU_THREADS in shell before running.
-        #Don't think it's possible to change variable inside Python environment
-        try:
-            print("OpenMM will use {} threads according to environment variable: OPENMM_CPU_THREADS".format(os.environ["OPENMM_CPU_THREADS"]))
-        except:
-            print("OPENMM_CPU_THREADS environment variable not set. OpenMM will choose number of physical cores present.")
-        #Whether to do energy composition of MM energy or not. Takes time. Can be turned off for MD runs
-        self.do_energy_composition=do_energy_composition
+        #Platform (CPU, CUDA, OpenCL) and Parallelization
+        self.platform_choice=platform
+        #CPU: Control either by provided numcores keyword, or by setting env variable: $OPENMM_CPU_THREADS in shell before running.
+        self.properties= {}
+        if self.platform_choice == 'CPU':
+            print("Using platform: CPU")
+            if numcores != None:
+                print("Numcores variable provided to OpenMM object. Will use {} cores with OpenMM".format(numcores))
+                self.properties["Threads"]=str(numcores)
+            else:
+                print("No numcores variable provided to OpenMM object")
+                print("Checking if OPENMM_CPU_THREADS shell variable is presentþ")
+                try:
+                    print("OpenMM will use {} threads according to environment variable: OPENMM_CPU_THREADS".format(os.environ["OPENMM_CPU_THREADS"]))
+                except:
+                    print("OPENMM_CPU_THREADS environment variable not set. OpenMM will choose number of physical cores present.")
+        else:
+            print("Using platform:", self.platform_choice)
+        
+        #Whether to do energy decomposition of MM energy or not. Takes time. Can be turned off for MD runs
+        self.do_energy_decomposition=do_energy_decomposition
         #Initializing
         self.coords=[]
         self.charges=[]
@@ -82,7 +98,6 @@ class OpenMMTheory:
         self.openmm=simtk.openmm
         self.simulationclass=simtk.openmm.app.simulation.Simulation
 
-        self.platform_choice=platform
         self.unit=simtk.unit
         self.Vec3=simtk.openmm.Vec3
 
@@ -105,22 +120,35 @@ class OpenMMTheory:
             print("Reading CHARMM files")
             self.psffile=psffile
             if use_parmed == True:
+                print("Using Parmed.")
                 self.psf = parmed.charmm.CharmmPsfFile(psffile)
                 self.params = parmed.charmm.CharmmParameterSet(charmmtopfile, charmmprmfile)
+                #Grab resnames from psf-object. Different for parmed object
+                #Note: OpenMM uses 0-indexing
+                self.resnames=[self.psf.atoms[i].residue.name for i in range(0,len(self.psf.atoms))]
+                self.resids=[self.psf.atoms[i].residue.idx for i in range(0,len(self.psf.atoms))]
+                self.segmentnames=[self.psf.atoms[i].residue.segid for i in range(0,len(self.psf.atoms))]
+                #self.atomtypes=[self.psf.atoms[i].attype for i in range(0,len(self.psf.atoms))]
+                #TODO: Note: For atomnames it seems OpenMM converts atomnames to its own. Perhaps not useful
+                self.atomnames=[self.psf.atoms[i].name for i in range(0,len(self.psf.atoms))]
+
             else:
                 # Load CHARMM PSF files via native routine.
                 self.psf = simtk.openmm.app.CharmmPsfFile(psffile)                
                 self.params = simtk.openmm.app.CharmmParameterSet(charmmtopfile, charmmprmfile)
+                #Grab resnames from psf-object
+                #Note: OpenMM uses 0-indexing
+                self.resnames=[self.psf.atom_list[i].residue.resname for i in range(0,len(self.psf.atom_list))]
+                self.resids=[self.psf.atom_list[i].residue.idx for i in range(0,len(self.psf.atom_list))]
+                self.segmentnames=[self.psf.atom_list[i].system for i in range(0,len(self.psf.atom_list))]
+                self.atomtypes=[self.psf.atom_list[i].attype for i in range(0,len(self.psf.atom_list))]
+                #TODO: Note: For atomnames it seems OpenMM converts atomnames to its own. Perhaps not useful
+                self.atomnames=[self.psf.atom_list[i].name for i in range(0,len(self.psf.atom_list))]
+
             self.topology = self.psf.topology
             self.forcefield = self.psf
-            #Grab resnames from psf-object
-            #Note: OpenMM uses 0-indexing
-            self.resnames=[self.psf.atom_list[i].residue.resname for i in range(0,len(self.psf.atom_list))]
-            self.resids=[self.psf.atom_list[i].residue.idx for i in range(0,len(self.psf.atom_list))]
-            self.segmentnames=[self.psf.atom_list[i].system for i in range(0,len(self.psf.atom_list))]
-            self.atomtypes=[self.psf.atom_list[i].attype for i in range(0,len(self.psf.atom_list))]
-            #TODO: Note: For atomnames it seems OpenMM converts atomnames to its own. Perhaps not useful
-            self.atomnames=[self.psf.atom_list[i].name for i in range(0,len(self.psf.atom_list))]
+
+
         elif GROMACSfiles is True:
             print("Reading Gromacs files")
             #Reading grofile, not for coordinates but for periodic vectors
@@ -159,6 +187,7 @@ class OpenMMTheory:
         elif Amberfiles is True:
             print("Reading Amber files")
             print("Warning: Only new-style Amber7 prmtopfile will work")
+            print("Warning: Will take periodic boundary conditions from PRMtop file.")
             if use_parmed == True:
                 print("Using Parmed to read Amber files")
                 self.prmtop = parmed.load_file(amberprmtopfile)
@@ -206,7 +235,8 @@ class OpenMMTheory:
         
         #Setting active and frozen variables once topology is in place
         #NOTE: Is this actually used?
-        self.set_active_and_frozen_regions(active_atoms=active_atoms, frozen_atoms=frozen_atoms)
+        #NOTE: Disabled for now
+        #self.set_active_and_frozen_regions(active_atoms=active_atoms, frozen_atoms=frozen_atoms)
 
 
         #Periodic or non-periodic ystem
@@ -218,17 +248,30 @@ class OpenMMTheory:
             if CHARMMfiles is True:
                 print("Using CHARMM files")
 
-                if periodic_cell_dimensions == None:
-                    print("Error: When using CHARMMfiles and Periodic=True, periodic_cell_dimensions keyword needs to be supplied")
+                if charmm_periodic_cell_dimensions == None:
+                    print("Error: When using CHARMMfiles and Periodic=True, charmm_periodic_cell_dimensions keyword needs to be supplied")
                     print("Example: periodic_cell_dimensions= [200, 200, 200, 90, 90, 90]  in Angstrom and degrees")
                     exit()
-                self.periodic_cell_dimensions = periodic_cell_dimensions
-                print("Periodic cell dimensions:", periodic_cell_dimensions)
-                self.a = periodic_cell_dimensions[0] * self.unit.angstroms
-                self.b = periodic_cell_dimensions[1] * self.unit.angstroms
-                self.c = periodic_cell_dimensions[2] * self.unit.angstroms
+                self.charmm_periodic_cell_dimensions = charmm_periodic_cell_dimensions
+                print("Periodic cell dimensions:", charmm_periodic_cell_dimensions)
+                self.a = charmm_periodic_cell_dimensions[0] * self.unit.angstroms
+                self.b = charmm_periodic_cell_dimensions[1] * self.unit.angstroms
+                self.c = charmm_periodic_cell_dimensions[2] * self.unit.angstroms
+                if use_parmed == True:
+                    self.forcefield.box=[self.a, self.b, self.c, charmm_periodic_cell_dimensions[3], charmm_periodic_cell_dimensions[4], charmm_periodic_cell_dimensions[5]]
+                    print("Set box vectors:", self.forcefield.box)
+                else:
+                    self.forcefield.setBox(self.a, self.b, self.c, alpha=self.unit.Quantity(value=charmm_periodic_cell_dimensions[3], unit=self.unit.degree), 
+                    beta=self.unit.Quantity(value=charmm_periodic_cell_dimensions[3], unit=self.unit.degree), gamma=self.unit.Quantity(value=charmm_periodic_cell_dimensions[3], unit=self.unit.degree))
+                    #self.forcefield.setBox(self.a, self.b, self.c)
+                    #print(self.forcefield.__dict__)
+                    print("Set box vectors:", self.forcefield.box_vectors)
                 #NOTE: SHould this be made more general??
-                self.forcefield.setBox(self.a, self.b, self.c)
+                #print("a,b,c:", self.a, self.b, self.c)
+                #print("box in self.forcefield", self.forcefield.get_box())
+
+                #exit()
+                
                 self.system = self.forcefield.createSystem(self.params, nonbondedMethod=simtk.openmm.app.PME,
                                             nonbondedCutoff=periodic_nonbonded_cutoff * self.unit.angstroms, switchDistance=switching_function_distance*self.unit.angstroms)
             elif GROMACSfiles is True:
@@ -401,8 +444,10 @@ class OpenMMTheory:
         timeA = time.time()
     
         #Platform
+        print("Hardware platform:", self.platform_choice)
         self.platform = simtk.openmm.Platform.getPlatformByName(self.platform_choice)
-    
+
+
         #Create simulation
         self.create_simulation()
 
@@ -411,10 +456,6 @@ class OpenMMTheory:
         #self.simulation = simtk.openmm.app.simulation.Simulation(self.topology, self.system, self.integrator,self.platform)
         #self.simulation = self.simulationclass(self.topology, self.system, self.integrator,self.platform)
 
-        #Disabled below because we get PBC info from prmtop file. More robust
-        #if self.Periodic is True and Amberfiles is True:
-        #    print("Setting periodic box parameters")
-        #    self.simulation.context.setPeriodicBoxVectors((periodic_cell_dimensions[0]/10, 0, 0), (0, periodic_cell_dimensions[1]/10, 0), (0, 0 ,periodic_cell_dimensions[2]/10))
 
 
 
@@ -510,8 +551,8 @@ class OpenMMTheory:
         #                                0.002 * self.unit.picoseconds)  # Time step
 
         #Integrators: LangevinIntegrator, LangevinMiddleIntegrator, NoseHooverIntegrator, VerletIntegrator, BrownianIntegrator, VariableLangevinIntegrator, VariableVerletIntegrator
-
         if integrator == 'VerletIntegrator':
+            print("Defining verlet")
             self.integrator = self.openmm.VerletIntegrator(timestep*self.unit.picoseconds)
         elif integrator == 'VariableVerletIntegrator':
             self.integrator = self.openmm.VariableVerletIntegrator(timestep*self.unit.picoseconds)
@@ -526,12 +567,13 @@ class OpenMMTheory:
         #    self.integrator = self.openmm.BrownianIntegrator(temperature*self.unit.kelvin, coupling_frequency/self.unit.picosecond, timestep*self.unit.picoseconds)
         elif integrator == 'VariableLangevinIntegrator':
             self.integrator = self.openmm.VariableLangevinIntegrator(temperature*self.unit.kelvin, coupling_frequency/self.unit.picosecond, timestep*self.unit.picoseconds)
-
-        
-        self.simulation = self.simulationclass(self.topology, self.system, self.integrator,self.platform)
+        else:
+            print(BC.FAIL,"Unknown integrator.\n Valid integrator keywords are: VerletIntegrator, VariableVerletIntegrator, LangevinIntegrator, LangevinMiddleIntegrator, NoseHooverIntegrator, VariableLangevinIntegrator ", BC.END)
+            exit()
+        self.simulation = self.simulationclass(self.topology, self.system, self.integrator,self.platform, self.properties)
         print_time_rel(timeA, modulename="creating simulation")
     
-    #Functions for energy compositions
+    #Functions for energy decompositions
     def forcegroupify(self):
         self.forcegroups = {}
         print("inside forcegroupify")
@@ -597,7 +639,7 @@ class OpenMMTheory:
                 openmm_energy['Otherforce'+str(extrafcount)] = comp[1]
                 
         
-        print_time_rel(timeA, modulename="energy composition")
+        print_time_rel(timeA, modulename="energy decomposition")
         timeA = time.time()
         
         #The force terms to print in the ordered table.
@@ -702,7 +744,7 @@ class OpenMMTheory:
         print("OpenMM Energy:", self.energy*constants.harkcal, "kcal/mol")
         
         #Do energy components or not. Can be turned off for e.g. MM MD simulation
-        if self.do_energy_composition is True:
+        if self.do_energy_decomposition is True:
             self.printEnergyDecomposition()
         
         print("self.energy : ", self.energy, "Eh")
@@ -1170,11 +1212,11 @@ def OpenMM_MD(fragment=None, openmmobject=None, timestep=0.001, simulation_steps
         simulation_time=simulation_steps*timestep
     print("Simulation time: {} ps".format(simulation_time))
     print("Timestep: {} ps".format(timestep))
-    print("Simulation steps: ".format(simulation_steps))
+    print("Simulation steps: {}".format(simulation_steps))
     print("Temperature: {} K".format(temperature))
     print("Integrator:", integrator)
     print("Anderon Thermostat:", anderson_thermostat)
-    print("coupling_frequency: {} ps^-1 (Nose-Hoover,Langevin,Brownian)".format(coupling_frequency))
+    print("coupling_frequency: {} ps^-1 (for Nose-Hoover and Langevin integrators)".format(coupling_frequency))
     print("Barostat:", barostat)
 
     print("")
@@ -1195,12 +1237,12 @@ def OpenMM_MD(fragment=None, openmmobject=None, timestep=0.001, simulation_steps
         print("Now using integrator:", integrator)
         openmmobject.create_simulation(timestep=0.001, temperature=temperature, integrator=integrator, coupling_frequency=coupling_frequency)
     else:
-        #Regular thermostat and integrator without barostat
+        #Regular thermostat or integrator without barostat
         #Integrators: LangevinIntegrator, LangevinMiddleIntegrator, NoseHooverIntegrator, VerletIntegrator, BrownianIntegrator, VariableLangevinIntegrator, VariableVerletIntegrator
         openmmobject.create_simulation(timestep=0.001, temperature=temperature, integrator=integrator, coupling_frequency=coupling_frequency)
     
 
-    
+    print("Simulation created. Adding coordinates")
     #Context: settings positions
     coords=np.array(fragment.coords)
     pos = [openmmobject.Vec3(coords[i, 0] / 10, coords[i, 1] / 10, coords[i, 2] / 10) for i in range(len(coords))] * openmmobject.openmm.unit.nanometer
