@@ -965,10 +965,13 @@ def get_molecule_members_loop_np2(coords, elems, loopnumber, scale, tol, atomind
         membs.append(atomindex)
         timestampA = time.time()
         membs = get_connected_atoms_np(coords, elems, scale,tol, atomindex)
-        #print("membs:", membs)
         #ash.print_time_rel(timestampA, modulename='membs first py')
-
+    
+    #If membs is just an integer turn into list
+    if type(membs) == int:
+        membs=[membs]
     finalmembs=membs
+
     for i in range(loopnumber):
         #Get list of lists of connatoms for each member
         newmembers=[get_connected_atoms_np(coords, elems, scale,tol, k) for k in membs]

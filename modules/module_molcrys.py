@@ -298,7 +298,7 @@ def molcrys(cif_file=None, xtl_file=None, xyz_file=None, cell_length=None, cell_
                 print("")
                 break
             else:
-                print(BC.FAIL,"Fragment assignment failed.", BC.WARNING,"Trying next Tol parameter.", BC.END)
+                print(BC.FAIL,"Fragment assignment failed. for tolerance: {} ".format(chosentol), BC.WARNING,"Trying next Tol parameter.",BC.END)
                 #Setting found fragmentlists as empty. Otherwise trouble.
                 for fragobject in fragmentobjects:
                     fragobject.fraglist=[]
