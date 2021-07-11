@@ -478,7 +478,6 @@ class Fragment:
         #labellist contains unsorted list of labels
         #Now ordering the labels according to the sort indices
         self.fragmenttype_labels =  [combined_flat_labels[i] for i in sortindices]
-
     #Molcrys option:
     def add_centralfraginfo(self,list):
         self.Centralmainfrag = list
@@ -509,6 +508,13 @@ class Fragment:
         #print("len(self.atomtypes)", len(self.atomtypes))
 
         print("", )
+        printdebug("len(self.atomlist): ", len(self.atomlist))
+        printdebug("len(self.elems): ", len(self.elems))
+        printdebug("len(self.coords): ", len(self.coords))
+        printdebug("len(self.atomcharges): ", len(self.atomcharges))
+        printdebug("len(self.fragmenttype_labels): ", len(self.fragmenttype_labels))
+        printdebug("len(self.atomtypes): ", len(self.atomtypes))
+
         assert len(self.atomlist) == len(self.elems) == len(self.coords) == len(self.atomcharges) == len(self.fragmenttype_labels) == len(self.atomtypes), "Missing entries in list"
         with open(filename, 'w') as outfile:
             outfile.write("Fragment: \n")
@@ -1432,11 +1438,13 @@ def read_ambercoordinates(prmtopfile=None, inpcrdfile=None):
 #Example, minimal: write_pdbfile(frag)
 #TODO: Add option to write new hybrid-36 standard PDB file instead of current hexadecimal nonstandard fix
 def write_pdbfile(fragment,outputname="ASHfragment", openmmobject=None, atomnames=None, resnames=None,residlabels=None,segmentlabels=None):
+    print("Writing PDB-file...")
     #Using ASH fragment
     elems=fragment.elems
     coords=fragment.coords
-    
+
     #Can grab everything from OpenMMobject if provided
+    #NOTE: These lists are only defined for CHARMM files currently. Not Amber or GROMACS
     if openmmobject != None:
         atomnames=openmmobject.atomnames
         resnames=openmmobject.resnames
@@ -1458,6 +1466,20 @@ def write_pdbfile(fragment,outputname="ASHfragment", openmmobject=None, atomname
     
     if len(atomnames) > 99999:
         print("System larger than 99999 atoms. Will use hexadecimal notation for atom indices 100K and larger.") 
+
+    try:
+        assert len(atomnames) == len(coords) == len(resnames) == len(residlabels) == len(segmentlabels)
+    except AssertionError:
+        print("Problem with lists...")
+        print("len: atomnames", len(atomnames))
+        print("len: coords", len(coords))
+        print("len: resnames", len(resnames))
+        print("len: residlabels", len(residlabels))
+        print("len: segmentlabels", len(segmentlabels))
+        print("len elems:", len(elems))
+        exit()
+
+
 
     with open(outputname+'.pdb', 'w') as pfile:
         for count,(atomname,c,resname,resid,seg,el) in enumerate(zip(atomnames,coords, resnames, residlabels,segmentlabels,elems)):

@@ -834,6 +834,22 @@ NAME         X           Y           Z
 
 
 
+#Filter coords array based on duplicate condition. https://stackoverflow.com/questions/43035503/efficiently-delete-arrays-that-are-close-from-each-other-given-a-threshold-in-py
+#Gives list of duplicate row indices if less than threshold
+def filter_duplicate(data):
+    def condition(xs,prev):
+        threshold=1e-5
+        val=sum((x-yp)*(x-yp) for x,yp in zip(xs,prev))
+        return val > threshold
+    result = []; duplicate_indices=[]
+    for rowindex,element in enumerate(data):
+        if all(condition(element,previous) for previous in result):
+            result.append(element)
+        else:
+            duplicate_indices.append(rowindex)
+    return duplicate_indices
+
+
 def create_MMcluster(orthogcoords,elems,cell_vectors,sphereradius):
     print("Creating MM cluster-sphere with radius {} Å".format(sphereradius))
     print("Extending MM unit cell")
@@ -855,17 +871,30 @@ def create_MMcluster(orthogcoords,elems,cell_vectors,sphereradius):
     origin=np.array([0.0,0.0,0.0])
     comparecoords = np.tile(origin, (len(extended_coords), 1))
     print("Now cutting spherical cluster with radius {} Å from super-cell".format(sphereradius))
-    # Einsum is slightly faster than bare_numpy_mat. All distances in one go
+    # Einsum is slightly faster than bare_numpy_mat. 
+    # All atom-distances compared to origin in one go
     distances = module_coords.einsum_mat(extended_coords, comparecoords)
-    #This for loop goes over 112504 count!!! not the best for mol-members
     for count in range(len(extended_coords)):
         #print("count:", count)
         if distances[count] > sphereradius:
             deletionlist.append(count)
+
     #Deleting atoms in deletion list in reverse
     extended_coords=np.delete(extended_coords, list(reversed(deletionlist)), 0)
     for d in reversed(deletionlist):
         del extended_elems[d]
+
+    printdebug(len(extended_coords))
+    printdebug(len(extended_elems))
+
+    #Find duplicate coordinates (atoms on top of each other). Add index to deletion list. Happens if atoms have coordinates right on box boundary
+    #List of Bools, duplicates are True
+    dupls=np.array(filter_duplicate(extended_coords))
+    #Deleting atoms in duplication list in reverse
+    extended_coords=np.delete(extended_coords, list(reversed(dupls)), 0)
+    for d in reversed(dupls):
+        del extended_elems[d]
+
     #Write XYZ-file
     module_coords.write_xyzfile(extended_elems,extended_coords,"trimmedcell_extended_coords")
     return extended_coords,extended_elems
@@ -876,7 +905,6 @@ def remove_partial_fragments(coords,elems,sphereradius,fragmentobjects, scale=No
         scale=settings_ash.settings_dict["scale"]
     if tol is None:
         tol=settings_ash.settings_dict["tol"]
-
     print("Removing partial fragments from MM cluster")
     #Finding surfaceatoms
     origin=np.array([0.0,0.0,0.0])
@@ -1004,9 +1032,12 @@ def reordercluster(fragment,fragmenttype,code_version='py'):
         print_time_rel(timestampA, modulename='reorder_cluster julia')
     elif code_version=='py':
         print("Calling reorder_cluster py")
-        print("Importing scipy")
-        import scipy.spatial.distance
-        import scipy.optimize
+        print("Now trying to importing scipy")
+        try:
+            import scipy.spatial.distance
+            import scipy.optimize
+        except:
+            print("Problem importing scipy library. This part of the code requires scipy")
         #print(fragmenttype.clusterfraglist[5])
         elems_frag_ref = np.array([fragment.elems[i] for i in fraglists[0]])
         coords_frag_ref = np.array([fragment.coords[i] for i in fraglists[0]])
