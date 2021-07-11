@@ -5,7 +5,7 @@ import os
 from sys import stdout
 
 from functions_general import BC,print_time_rel,listdiff,printdebug,print_line_with_mainheader
-from module_coords import write_pdbfile
+from module_coords import write_pdbfile,distance_between_atoms
 
 class OpenMMTheory:
     def __init__(self, printlevel=2, platform='CPU', numcores=None, 
@@ -170,6 +170,7 @@ class OpenMMTheory:
                 self.topology = gmx_top.topology
                 self.forcefield = gmx_top
                 
+
             else:
                 print("Using built-in OpenMM routines to read GROMACS topology")
                 print("Warning: may fail if virtual sites present (e.g. TIP4P residues)")
@@ -180,6 +181,9 @@ class OpenMMTheory:
 
                 self.topology = self.grotop.topology
                 self.forcefield=self.grotop
+
+            #TODO: Define resnames, resids, segmentnames, atomtypes, atomnames??
+
             # Create an OpenMM system by calling createSystem on grotop
             #self.system = self.grotop.createSystem(nonbondedMethod=simtk.openmm.app.NoCutoff,
             #                                    nonbondedCutoff=1 * simtk.openmm.unit.nanometer)
@@ -197,6 +201,9 @@ class OpenMMTheory:
                 self.prmtop = simtk.openmm.app.AmberPrmtopFile(amberprmtopfile)
             self.topology = self.prmtop.topology
             self.forcefield= self.prmtop
+
+            #TODO: Define resnames, resids, segmentnames, atomtypes, atomnames??
+
             # Create an OpenMM system by calling createSystem on prmtop
             #self.system = self.prmtop.createSystem(nonbondedMethod=simtk.openmm.app.NoCutoff,
             #                                    nonbondedCutoff=1 * simtk.openmm.unit.nanometer)
@@ -212,6 +219,9 @@ class OpenMMTheory:
             #Todo: support multiple xml file here
             #forcefield = simtk.openmm.app.ForceField('amber14-all.xml', 'amber14/tip3pfb.xml')
             self.forcefield = simtk.openmm.app.ForceField(xmlfile)
+
+            #TODO: Define resnames, resids, segmentnames, atomtypes, atomnames??
+
             #self.system = self.forcefield.createSystem(nonbondedMethod=simtk.openmm.app.NoCutoff,
             #                                    nonbondedCutoff=1 * simtk.openmm.unit.nanometer)
             
@@ -462,7 +472,29 @@ class OpenMMTheory:
         print_time_rel(timeA, modulename="simulation setup")
         timeA = time.time()
         print_time_rel(module_init_time, modulename="OpenMM object creation")
-        
+
+    #Function to add bond constraints to system before MD
+    def add_bondconstraints(self,constraints=None):
+        for i,j,d in constraints:
+            print("Adding bond constraint between atoms {} and {} . Distance value: {} Å".format(i,j,d))
+            self.system.addConstraint(i, j, d*self.unit.angstroms)
+    #Function to add restraints to system before MD
+    def add_bondrestraints(self,restraints=None):
+        new_restraints = self.openmm.HarmonicBondForce()
+        for i,j,d,k in restraints:
+            print("Adding bond restraint between atoms {} and {} . Distance value: {} Å. Force constant: {} kcal/mol*Å^-2".format(i,j,d,k))
+            new_restraints.addBond(i, j, d*self.unit.angstroms, k*self.unit.kilocalories_per_mole/self.unit.angstroms**2)
+        self.system.addForce(new_restraints)
+    #TODO: Angleconstraints and Dihedral restraints
+    
+    #Function to freeze atoms during OpenMM MD simulation. Sets masses to zero. Does not modify potential energy-function.
+    def freeze_atoms(self,frozen_atoms=None):
+        print("Freezing atoms: {} by setting particles masses to zero.".format(frozen_atoms))
+        #Modify particle masses in system object. For freezing atoms
+        for i in frozen_atoms:
+            self.system.setParticleMass(i, 0 * self.unit.dalton)
+
+    #Currently unused
     def set_active_and_frozen_regions(self, active_atoms=None, frozen_atoms=None):
         #FROZEN AND ACTIVE ATOMS
         self.allatoms=list(range(0,self.numatoms))
@@ -1187,6 +1219,27 @@ def create_cnb(original_nbforce):
 #myCustomNBForce.addInteractionGroup(self.active_atoms,self.active_atoms)
 
 
+
+#Clean up list of lists of constraint definition. Add distance if missing
+def clean_up_constraints_list(fragment=None, constraints=None):
+    print("Checking defined constraints")
+    newconstraints=[]
+    for con in constraints:
+        print("Constraint:", con)
+        if len(con) == 3:
+            newconstraints.append(con)
+        elif len(con) == 2:
+            distance=distance_between_atoms(fragment=fragment, atom1=con[0], atom2=con[1])
+            print("Missing distance definition between atoms {} and {}. Adding distance {} Å".format(con[0],con[1],distance))
+            newcon=[con[0],con[1],distance]
+            newconstraints.append(newcon)
+    return newconstraints
+
+
+
+
+
+
 #Simple Molecular Dynamics using the OpenMM  object
 #Integrators: LangevinMiddleIntegrator, NoseHooverIntegrator, VerletIntegrator, BrownianIntegrator, VariableLangevinIntegrator, VariableVerletIntegrator
 #Additional thermostat: AndersenThermostat (use with Verlet)
@@ -1196,7 +1249,7 @@ def create_cnb(original_nbforce):
 #see https://github.com/openmm/openmm/issues/2688, https://github.com/openmm/openmm/pull/1895
 #Also should we add: https://github.com/mdtraj/mdtraj ?
 def OpenMM_MD(fragment=None, openmmobject=None, timestep=0.001, simulation_steps=None, simulation_time=None, traj_frequency=1000, temperature=300, integrator=None,
-    barostat=None, trajectory_file_option='PDB', coupling_frequency=None, anderson_thermostat=False, enforcePeriodicBox=False):
+    barostat=None, trajectory_file_option='PDB', coupling_frequency=None, anderson_thermostat=False, enforcePeriodicBox=False, frozen_atoms=None, constraints=None, restraints=None):
     
     print_line_with_mainheader("OpenMM MOLECULAR DYNAMICS")
 
@@ -1214,6 +1267,9 @@ def OpenMM_MD(fragment=None, openmmobject=None, timestep=0.001, simulation_steps
     print("Timestep: {} ps".format(timestep))
     print("Simulation steps: {}".format(simulation_steps))
     print("Temperature: {} K".format(temperature))
+    print("Frozen atoms:", frozen_atoms)
+    print("Constraints:", constraints)
+    print("Restraints:", restraints)
     print("Integrator:", integrator)
     print("Anderon Thermostat:", anderson_thermostat)
     print("coupling_frequency: {} ps^-1 (for Nose-Hoover and Langevin integrators)".format(coupling_frequency))
@@ -1224,26 +1280,45 @@ def OpenMM_MD(fragment=None, openmmobject=None, timestep=0.001, simulation_steps
     print("Trajectory write frequency:", traj_frequency)
     print("enforcePeriodicBox option:", enforcePeriodicBox)
     print("")
+
+    #Freezing atoms in OpenMM object by setting particles masses to zero. Needs to be done before simulation creation
+    if frozen_atoms != None:
+        openmmobject.freeze_atoms(frozen_atoms=frozen_atoms)
+
+    #Adding constraints/restraints between atoms
+    if constraints != None:
+        print("Constraints defined.")
+        #constraints is a list of lists defining bond constraints: constraints = [[700,701], [802,803,1.04]]
+        #Cleaning up constraint list. Adding distance if missing
+        constraints = clean_up_constraints_list(fragment=fragment, constraints=constraints)
+        print("Will enforce constrain definitions during MD:", constraints)
+        openmmobject.add_bondconstraints(constraints=constraints)
+    if restraints != None:
+        print("Restraints defined")
+        #restraints is a list of lists defining bond restraints: constraints = [[atom_i,atom_j, d, k ]]    Example: [[700,701, 1.05, 5.0 ]] Unit is Angstrom and kcal/mol * Angstrom^-2
+        openmmobject.add_bondrestraints(restraints=restraints)
+
+    # Set up system with chosen barostat, thermostat, integrator
     if barostat != None:
         print("Adding barostat")
         openmmobject.system.addForce(openmmobject.openmm.MonteCarloBarostat(1*openmmobject.openmm.unit.bar, temperature*openmmobject.openmm.unit.kelvin))
         integrator="LangevinMiddleIntegrator"
         print("Barostat requires using integrator:", integrator)
-        openmmobject.create_simulation(timestep=0.001, temperature=temperature, integrator=integrator, coupling_frequency=coupling_frequency)
+        openmmobject.create_simulation(timestep=timestep, temperature=temperature, integrator=integrator, coupling_frequency=coupling_frequency)
     elif anderson_thermostat == True:
         print("Anderson thermostat is on")
         openmmobject.system.addForce(openmmobject.openmm.AndersenThermostat(temperature*openmmobject.openmm.unit.kelvin, 1/openmmobject.openmm.unit.picosecond))
         integrator="VerletIntegrator"
         print("Now using integrator:", integrator)
-        openmmobject.create_simulation(timestep=0.001, temperature=temperature, integrator=integrator, coupling_frequency=coupling_frequency)
+        openmmobject.create_simulation(timestep=timestep, temperature=temperature, integrator=integrator, coupling_frequency=coupling_frequency)
     else:
         #Regular thermostat or integrator without barostat
         #Integrators: LangevinIntegrator, LangevinMiddleIntegrator, NoseHooverIntegrator, VerletIntegrator, BrownianIntegrator, VariableLangevinIntegrator, VariableVerletIntegrator
-        openmmobject.create_simulation(timestep=0.001, temperature=temperature, integrator=integrator, coupling_frequency=coupling_frequency)
-    
+        openmmobject.create_simulation(timestep=timestep, temperature=temperature, integrator=integrator, coupling_frequency=coupling_frequency)
+    print("Simulation created.")
 
-    print("Simulation created. Adding coordinates")
     #Context: settings positions
+    print("Now adding coordinates")
     coords=np.array(fragment.coords)
     pos = [openmmobject.Vec3(coords[i, 0] / 10, coords[i, 1] / 10, coords[i, 2] / 10) for i in range(len(coords))] * openmmobject.openmm.unit.nanometer
 
@@ -1252,8 +1327,9 @@ def OpenMM_MD(fragment=None, openmmobject=None, timestep=0.001, simulation_steps
     if trajectory_file_option == 'PDB':
         openmmobject.simulation.reporters.append(openmmobject.openmm.app.PDBReporter('output_traj.pdb', traj_frequency, enforcePeriodicBox=enforcePeriodicBox))
     elif trajectory_file_option == 'DCD':
-        #NOTE: Safer option might be to use PDB-writer from OpenMM. We shall see.
-        write_pdbfile(fragment,outputname="initial_frag", openmmobject=openmmobject)
+        #NOTE: Safer option seems to be to use PDB-writer from OpenMM instead of ASH. Because ASH requires ASH-openMMobject to have a bunch of lists defined (currently only for CHARMM)
+        #write_pdbfile(fragment,outputname="initial_frag", openmmobject=openmmobject)
+        with open('initial_frag.pdb', 'w') as f: openmmobject.openmm.app.pdbfile.PDBFile.writeModel(openmmobject.topology, openmmobject.simulation.context.getState(getPositions=True).getPositions(), f)
         openmmobject.simulation.reporters.append(openmmobject.openmm.app.DCDReporter('output_traj.dcd', traj_frequency, enforcePeriodicBox=enforcePeriodicBox))
     openmmobject.simulation.reporters.append(openmmobject.openmm.app.StateDataReporter(stdout, traj_frequency, step=True, time=True,
             potentialEnergy=True, temperature=True, kineticEnergy=True,  separator='     '))

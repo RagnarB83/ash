@@ -376,7 +376,10 @@ def molcrys(cif_file=None, xtl_file=None, xyz_file=None, cell_length=None, cell_
     print("Cluster size: ", Cluster.numatoms, "atoms")
     print_time_rel_and_tot(currtime, origtime, modulename='print Cluster system')
     currtime=time.time()
+    
     # Going through found frags and identify mainfrags and counterfrags
+    print("Connectivity fragments:", Cluster.connectivity)
+    print("Number of Connectivity fragments:", len(Cluster.connectivity))
     for frag in Cluster.connectivity:
         el_list = [cluster_elems[i] for i in frag]
         ncharge = module_coords.nucchargelist(el_list)
@@ -404,7 +407,8 @@ def molcrys(cif_file=None, xtl_file=None, xyz_file=None, cell_length=None, cell_
     currtime=time.time()
     #TODO: after removing partial fragments and getting connectivity etc. Would be good to make MM cluster neutral
 
-
+    print("fragmentobjects:", fragmentobjects)
+    print(len(fragmentobjects))
 
     #Add fragmentobject-info to Cluster fragment
     #Old slow code:
