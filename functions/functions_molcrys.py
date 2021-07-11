@@ -735,13 +735,14 @@ def fill_unitcell(cell_length,cell_angles,atomlabels,elems,coords,symmops):
         multoperation_x=1;sumoperation_x=0
         multoperation_y=1;sumoperation_y=0
         multoperation_z=1;sumoperation_z=0
-        #Splitting by comma
-        op_x=symmop_i.split(',')[0].replace(",","")
-        op_y=symmop_i.split(',')[1].replace(",","")
-        op_z = symmop_i.split(',')[2].replace(",", "")
+        #Splitting by comma, removing comma and spaces
+        op_x=symmop_i.split(',')[0].replace(",","").replace(" ","")
+        op_y=symmop_i.split(',')[1].replace(",","").replace(" ","")
+        op_z = symmop_i.split(',')[2].replace(",", "").replace(" ","")
         print("op_x: {} op_y: {} op_z: {}".format(op_x,op_y,op_z))
         #op_z=i.split(',')[2].replace(",","").replace(" ","").replace("\n","")
         if len(op_x)==1 and len(op_y)==1 and len(op_z)==1:
+            print("herex")
             for c in coords:
                 if c[0] < 0:
                     cnew_x=1+c[0]
@@ -757,9 +758,13 @@ def fill_unitcell(cell_length,cell_angles,atomlabels,elems,coords,symmops):
                     cnew_z = c[2]
                 fullcell.append([cnew_x,cnew_y,cnew_z])
         else:
+            print("else")
             op_x_split=op_x.split('x')
             op_y_split = op_y.split('y')
             op_z_split = op_z.split('z')
+            print("op_x_split:", op_x_split)
+            print("op_y_split:", op_y_split)
+            print("op_z_split:", op_z_split)
             for xj in op_x_split:
                 if len(xj) > 0:
                     if xj =='-':
