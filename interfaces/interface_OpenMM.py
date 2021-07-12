@@ -1435,24 +1435,37 @@ def OpenMM_Opt(fragment=None, openmmobject=None, frozen_atoms=None, constraints=
     pos = [openmmobject.Vec3(coords[i, 0] / 10, coords[i, 1] / 10, coords[i, 2] / 10) for i in range(len(coords))] * openmmobject.openmm.unit.nanometer
     openmmobject.simulation.context.setPositions(pos)
 
-
-    print("Calculating initial energy")
-    state = openmmobject.simulation.context.getState(getEnergy=True)
-    print("Potential energy is:", state.getPotentialEnergy().value_in_unit_system(openmmobject.unit.md_unit_system))
+    print("")
+    state = openmmobject.simulation.context.getState(getEnergy=True, getForces=True)
+    print("Initial potential energy is:", state.getPotentialEnergy().value_in_unit_system(openmmobject.unit.md_unit_system))
+    kjmolnm_to_atomic_factor=-49614.752589207
+    forces_init=np.array(state.getForces(asNumpy=True))/kjmolnm_to_atomic_factor
+    rms_force=np.sqrt(sum(n*n for n in forces_init.flatten())/len(forces_init.flatten()))
+    print("RMS force:", rms_force)
+    print("Max force component:", forces_init.max())
+    print("")
     print("Starting minimization")
     openmmobject.simulation.minimizeEnergy(maxIterations=maxiter, tolerance=tolerance)
     print("Minimization done")
-    state = openmmobject.simulation.context.getState(getEnergy=True, getPositions=True)
+    print("")
+    state = openmmobject.simulation.context.getState(getEnergy=True, getPositions=True, getForces=True)
     print("Potential energy is:", state.getPotentialEnergy().value_in_unit_system(openmmobject.unit.md_unit_system))
+    forces_final=np.array(state.getForces(asNumpy=True))/kjmolnm_to_atomic_factor
+    rms_force=np.sqrt(sum(n*n for n in forces_final.flatten())/len(forces_final.flatten()))
+    print("RMS force:", rms_force)
+    print("Max force component:", forces_final.max())
+
+
+    #print("RMS Force:", state.getPotentialEnergy().value_in_unit_system(openmmobject.unit.md_unit_system))
 
     newcoords = state.getPositions(asNumpy=True).value_in_unit(openmmobject.unit.angstrom)
-
+    print("")
     print("Updating coordinates in ASH fragment")
     fragment.coords=newcoords
 
     with open('frag-minimized.pdb', 'w') as f: openmmobject.openmm.app.pdbfile.PDBFile.writeModel(openmmobject.topology, openmmobject.simulation.context.getState(getPositions=True).getPositions(), f)
 
-    print('Optimization Done!')
+    print('All Done!')
 
     # Now write a serialized state that has coordinates
     #print('Finished. Writing serialized XML restart file...')
