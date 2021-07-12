@@ -215,7 +215,7 @@ def DoNEB(path, calculator, neb, optimizer, second_run=False):
             raise RuntimeError("Too large zoom interval chosen, "
                                "nothing will be gained from the zoom. Please inspect the calculation")
 
-        print('Zoom region is defined by images: %i -to- %i'(A, B))
+        print('Zoom region is defined by images: {} -to- {}'.format(A, B))
         coords = path.GetCoords()[A * path.GetNDimIm():(B + 1) * path.GetNDimIm()]
         energy = path.GetEnergy()[A:B + 1]
         znim = len(energy)

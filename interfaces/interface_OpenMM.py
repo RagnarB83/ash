@@ -18,7 +18,8 @@ class OpenMMTheory:
                  periodic_nonbonded_cutoff=12, dispersion_correction=True, 
                  switching_function_distance=10,
                  ewalderrortolerance=1e-5, PMEparameters=None,
-                 delete_QM1_MM1_bonded=False, applyconstraints=False):
+                 delete_QM1_MM1_bonded=False, applyconstraints=False,
+                 autoconstraints=None, hydrogenmass=None):
         
         module_init_time = time.time()
         # OPEN MM load
@@ -31,6 +32,13 @@ class OpenMMTheory:
             raise ImportError(
                 "OpenMM requires installing the OpenMM package. Try: conda install -c omnia openmm  \
                 Also see http://docs.openmm.org/latest/userguide/application.html")
+
+        #OpenMM things
+        self.openmm=simtk.openmm
+        self.simulationclass=simtk.openmm.app.simulation.Simulation
+
+        self.unit=simtk.unit
+        self.Vec3=simtk.openmm.Vec3
 
         print(BC.WARNING, BC.BOLD, "------------Defining OpenMM object-------------", BC.END)
         #Printlevel
@@ -46,6 +54,31 @@ class OpenMMTheory:
                 print("Make sure parmed is present in your Python.")
                 print("Parmed can be installed using pip: pip install parmed")
                 exit()
+
+        #Autoconstraints when creating MM system: Default: None,  Options: Hbonds, AllBonds, HAng
+        if autoconstraints == 'HBonds':
+            print("HBonds option: X-H bond lengths will automatically be constrained")
+            self.autoconstraints=self.openmm.app.HBonds
+        elif autoconstraints =='AllBonds':
+            print("AllBonds option: All bond lengths will automatically be constrained")
+            self.autoconstraints=self.openmm.app.AllBonds
+        elif autoconstraints =='HAngles':
+            print("HAngles option: All bond lengths and H-X-H and H-O-X angles will automatically be constrained")
+            self.autoconstraints=self.openmm.app.HAngles
+        elif autoconstraints == None or autoconstraints == 'None':
+            print("No automatic constraints")
+            self.autoconstraints=None
+        else:
+            print("Unknown autoconstraints option")
+            exit()
+        print("AutoConstraint setting:", self.autoconstraints)
+
+        #Modify hydrogenmass or not 
+        if hydrogenmass != None:
+            self.hydrogenmass=hydrogenmass*self.unit.amu
+        else:
+            self.hydrogenmass=None
+        print("Hydrogenmass option:", self.hydrogenmass)
 
 
         # Setting for controlling whether QM1-MM1 bonded terms are deleted or not in a QM/MM job
@@ -80,7 +113,7 @@ class OpenMMTheory:
         self.Periodic = periodic
         self.ewalderrortolerance=ewalderrortolerance
 
-        #Whether to apply constraints or not when calculating MM energy
+        #Whether to apply constraints or not when calculating MM energy via ASH (does not apply to OpenMM MD)
         self.applyconstraints=applyconstraints
 
         #Switching function distance in Angstrom
@@ -94,12 +127,7 @@ class OpenMMTheory:
         self.atomtypes=[]
         self.atomnames=[]
             
-        #OpenMM things
-        self.openmm=simtk.openmm
-        self.simulationclass=simtk.openmm.app.simulation.Simulation
 
-        self.unit=simtk.unit
-        self.Vec3=simtk.openmm.Vec3
 
         #Positions. Generally not used but can be if if e.g. grofile has been read in.
         #Purpose: set virtual sites etc.
@@ -203,13 +231,6 @@ class OpenMMTheory:
             self.forcefield= self.prmtop
 
             #TODO: Define resnames, resids, segmentnames, atomtypes, atomnames??
-
-            # Create an OpenMM system by calling createSystem on prmtop
-            #self.system = self.prmtop.createSystem(nonbondedMethod=simtk.openmm.app.NoCutoff,
-            #                                    nonbondedCutoff=1 * simtk.openmm.unit.nanometer)
-            
-            #forces = {self.system.getForce(index).__class__.__name__: self.system.getForce(index) for index in range(self.system.getNumForces())}
-            #self.nonbonded_force = forces['NonbondedForce']
         else:
             print("Reading OpenMM XML forcefield file and PDB file")
             #This would be regular OpenMM Forcefield definition requiring XML file
@@ -221,12 +242,6 @@ class OpenMMTheory:
             self.forcefield = simtk.openmm.app.ForceField(xmlfile)
 
             #TODO: Define resnames, resids, segmentnames, atomtypes, atomnames??
-
-            #self.system = self.forcefield.createSystem(nonbondedMethod=simtk.openmm.app.NoCutoff,
-            #                                    nonbondedCutoff=1 * simtk.openmm.unit.nanometer)
-            
-            #forces = {self.system.getForce(index).__class__.__name__: self.system.getForce(index) for index in range(self.system.getNumForces())}
-            #self.nonbonded_force = forces['NonbondedForce']
 
         # Deal with possible 4/5 site water model like TIP4P
         #NOTE: EXPERIMENTAL
@@ -282,21 +297,23 @@ class OpenMMTheory:
 
                 #exit()
                 
-                self.system = self.forcefield.createSystem(self.params, nonbondedMethod=simtk.openmm.app.PME,
+                self.system = self.forcefield.createSystem(self.params, nonbondedMethod=simtk.openmm.app.PME, constraints=self.autoconstraints, hydrogenMass=self.hydrogenmass,
                                             nonbondedCutoff=periodic_nonbonded_cutoff * self.unit.angstroms, switchDistance=switching_function_distance*self.unit.angstroms)
             elif GROMACSfiles is True:
                 #NOTE: Gromacs has read PBC info from Gro file already
                 print("Ewald Error tolerance:", self.ewalderrortolerance)
                 #Note: Turned off switchDistance. Not available for GROMACS?
                 #
-                self.system = self.forcefield.createSystem(nonbondedMethod=simtk.openmm.app.PME,
+                self.system = self.forcefield.createSystem(nonbondedMethod=simtk.openmm.app.PME, constraints=self.autoconstraints, hydrogenMass=self.hydrogenmass,
                                             nonbondedCutoff=periodic_nonbonded_cutoff * self.unit.angstroms, ewaldErrorTolerance=self.ewalderrortolerance)
             elif Amberfiles is True:
                 #NOTE: Amber-interface has read PBC info from prmtop file already
-                self.system = self.forcefield.createSystem(nonbondedMethod=simtk.openmm.app.PME,
+                self.system = self.forcefield.createSystem(nonbondedMethod=simtk.openmm.app.PME, constraints=self.autoconstraints, hydrogenMass=self.hydrogenmass,
                                             nonbondedCutoff=periodic_nonbonded_cutoff * self.unit.angstroms)
+                
+                #print("self.system num con", self.system.getNumConstraints())
             else:
-                self.system = self.forcefield.createSystem(nonbondedMethod=simtk.openmm.app.PME,
+                self.system = self.forcefield.createSystem(nonbondedMethod=simtk.openmm.app.PME, constraints=self.autoconstraints, hydrogenMass=self.hydrogenmass,
                                             nonbondedCutoff=periodic_nonbonded_cutoff * self.unit.angstroms, switchDistance=switching_function_distance*self.unit.angstroms)
                 
 
@@ -358,11 +375,11 @@ class OpenMMTheory:
             print("System is non-periodic")
 
             if CHARMMfiles is True:
-                self.system = self.forcefield.createSystem(self.params, nonbondedMethod=simtk.openmm.app.NoCutoff,
-                                            nonbondedCutoff=1000 * simtk.openmm.unit.angstroms)
+                self.system = self.forcefield.createSystem(self.params, nonbondedMethod=simtk.openmm.app.NoCutoff, constraints=self.autoconstraints,
+                                            nonbondedCutoff=1000 * simtk.openmm.unit.angstroms, hydrogenMass=self.hydrogenmass)
             else:
-                self.system = self.forcefield.createSystem(nonbondedMethod=simtk.openmm.app.NoCutoff,
-                                            nonbondedCutoff=1000 * simtk.openmm.unit.angstroms)
+                self.system = self.forcefield.createSystem(nonbondedMethod=simtk.openmm.app.NoCutoff, constraints=self.autoconstraints,
+                                            nonbondedCutoff=1000 * simtk.openmm.unit.angstroms, hydrogenMass=self.hydrogenmass)
 
             print("OpenMM system created")
             print("OpenMM Forces defined:", self.system.getForces())
@@ -1268,9 +1285,12 @@ def OpenMM_MD(fragment=None, openmmobject=None, timestep=0.001, simulation_steps
     print("Simulation steps: {}".format(simulation_steps))
     print("Temperature: {} K".format(temperature))
     print("Frozen atoms:", frozen_atoms)
+    print("OpenMM autoconstraints:", openmmobject.autoconstraints)
+    print("OpenMM hydrogenmass:", openmmobject.hydrogenmass)
     print("Constraints:", constraints)
     print("Restraints:", restraints)
     print("Integrator:", integrator)
+
     print("Anderon Thermostat:", anderson_thermostat)
     print("coupling_frequency: {} ps^-1 (for Nose-Hoover and Langevin integrators)".format(coupling_frequency))
     print("Barostat:", barostat)
@@ -1280,6 +1300,19 @@ def OpenMM_MD(fragment=None, openmmobject=None, timestep=0.001, simulation_steps
     print("Trajectory write frequency:", traj_frequency)
     print("enforcePeriodicBox option:", enforcePeriodicBox)
     print("")
+
+    if openmmobject.autoconstraints == None:
+        print(BC.WARNING,"Warning: Autoconstraints have not been set in OpenMMTheory object definition.")
+        print("This means that by default no bonds are constrained in the MD simulation. This usually requires a small timestep: 0.5 fs or so")
+        print("autoconstraints='HBonds' is recommended for 1-2 fs timesteps with Verlet (4fs with Langevin).")
+        print("autoconstraints='AllBonds' or autoconstraints='HAngles' allows even larger timesteps to be used", BC.END)
+        print("Will continue...")
+    #createSystem(constraints=None), createSystem(constraints=HBonds), createSystem(constraints=All-Bonds), createSystem(constraints=HAngles)
+    #HBonds constraints: timestep can be 2fs with Verlet and 4fs with Langevin
+    #HAngles constraints: even larger timesteps
+    #HAngles constraints: even larger timesteps
+
+
 
     #Freezing atoms in OpenMM object by setting particles masses to zero. Needs to be done before simulation creation
     if frozen_atoms != None:
@@ -1336,3 +1369,9 @@ def OpenMM_MD(fragment=None, openmmobject=None, timestep=0.001, simulation_steps
 
     #Run simulation
     openmmobject.simulation.step(simulation_steps)
+
+    print("OpenMM MD simulation finished!")
+
+
+#QM/MM functionality to Open_MM MD
+#http://docs.openmm.org/latest/userguide/application.html#extending-forcefield
