@@ -48,7 +48,7 @@ def write_xyz_trajectory(file, coords, elems, titleline):
 # Interface DL-FIND (internal coords, HDLC etc.): https://www.chemshell.org/dl-find
 
 #ASH Cartesian Optimizer function for basic usage
-def SimpleOpt(fragment=None, theory='', optimizer='', maxiter=50, frozen_atoms=None, RMSGtolerance=0.0001, MaxGtolerance=0.0003):
+def SimpleOpt(fragment=None, theory='', optimizer='', maxiter=50, frozen_atoms=None, RMSGtolerance=0.0001, MaxGtolerance=0.0003, FIRE_timestep=0.00009):
     if fragment is not None:
         pass
     else:
@@ -66,16 +66,16 @@ def SimpleOpt(fragment=None, theory='', optimizer='', maxiter=50, frozen_atoms=N
 
     #List of active vs. frozen labels
     actfrozen_labels=[]
-    for i in range(fragment.numatoms):
-        print("i", i)
-        if i in frozen_atoms:
-            actfrozen_labels.append('Frozen')
-        else:
-            actfrozen_labels.append('Active')
+    #for i in range(fragment.numatoms):
+    #    print("i", i)
+    #    if i in frozen_atoms:
+    #        actfrozen_labels.append('Frozen')
+    #    else:
+     #       actfrozen_labels.append('Active')
 
     beginTime = time.time()
     print(BC.OKMAGENTA, BC.BOLD, "------------STARTING OPTIMIZER-------------", BC.END)
-    print_option='Big'
+    print_option='Small'
     print("Running Optimizer")
     print("Optimization algorithm:", optimizer)
     if len(frozen_atoms)> 0:
@@ -96,11 +96,13 @@ def SimpleOpt(fragment=None, theory='', optimizer='', maxiter=50, frozen_atoms=N
         print("Using different SD optimizer")
         print("SD Scaling parameter:", sdscaling)
     elif optimizer=="KNARR-FIRE":
-        time_step=0.01
+        time_step=FIRE_timestep
         was_scaled=False
-        print("FIRE Parameters for timestep:", timestep)
+        print("FIRE Parameters for timestep:", time_step)
         print(GetFIREParam(time_step))
-
+    else:
+        print("Unknown optimizer")
+        exit()
     print("Tolerances:  RMSG: {}  MaxG: {}  Eh/Bohr".format(RMSGtolerance, MaxGtolerance))
     #Name of trajectory file
     trajname="opt-trajectory.xyz"
@@ -121,17 +123,17 @@ def SimpleOpt(fragment=None, theory='', optimizer='', maxiter=50, frozen_atoms=N
         blankline()
         print("GEOMETRY OPTIMIZATION STEP", step)
         print("Current geometry (Å):")
-        if theory.__class__.__name__ == "QMMMTheory":
-            print("geometry print-out currently disabled...")
-            #print_coords_all(current_coords,elems, indices=fragment.allatoms, labels=theory.hybridatomlabels, labels2=actfrozen_labels)
-        else:
-            print_coords_all(current_coords, elems, indices=fragment.allatoms, labels=actfrozen_labels)
+        #if theory.__class__.__name__ == "QMMMTheory":
+        #    print("geometry print-out currently disabled...")
+        #    #print_coords_all(current_coords,elems, indices=fragment.allatoms, labels=theory.hybridatomlabels, labels2=actfrozen_labels)
+        #else:
+        #    print_coords_all(current_coords, elems, indices=fragment.allatoms, labels=actfrozen_labels)
         blankline()
 
         #Running E+G theory job.
         E, Grad = theory.run(current_coords=current_coords, elems=fragment.elems, Grad=True)
-        print("E,", E)
-        print("Grad,", Grad)
+        #print("E,", E)
+        #print("Grad,", Grad)
 
         #Applying frozen atoms constraint. Setting gradient to zero on atoms
         if len(frozen_atoms) > 0:
@@ -140,7 +142,7 @@ def SimpleOpt(fragment=None, theory='', optimizer='', maxiter=50, frozen_atoms=N
             for num,gradcomp in enumerate(Grad):
                 if num in frozen_atoms:
                     Grad[num]=[0.0,0.0,0.0]
-        print("Grad (after frozen constraints)", Grad)
+        #print("Grad (after frozen constraints)", Grad)
         #Converting to atomic forces in eV/Angstrom. Used by Knarr
         forces_evAng=Grad * (-1) * constants.hartoeV / constants.bohr2ang
         blankline()

@@ -18,8 +18,8 @@ class OpenMMTheory:
                  periodic_nonbonded_cutoff=12, dispersion_correction=True, 
                  switching_function_distance=10,
                  ewalderrortolerance=1e-5, PMEparameters=None,
-                 delete_QM1_MM1_bonded=False, applyconstraints=False,
-                 autoconstraints=None, hydrogenmass=None):
+                 delete_QM1_MM1_bonded=False, applyconstraints=True,
+                 autoconstraints=None, hydrogenmass=None, rigidwater=True):
         
         module_init_time = time.time()
         # OPEN MM load
@@ -72,7 +72,9 @@ class OpenMMTheory:
             print("Unknown autoconstraints option")
             exit()
         print("AutoConstraint setting:", self.autoconstraints)
-
+        #Rigidwater constraints are on by default. Can be turned off
+        self.rigidwater=rigidwater
+        print("Rigidwater constraints:", self.rigidwater)
         #Modify hydrogenmass or not 
         if hydrogenmass != None:
             self.hydrogenmass=hydrogenmass*self.unit.amu
@@ -297,23 +299,23 @@ class OpenMMTheory:
 
                 #exit()
                 
-                self.system = self.forcefield.createSystem(self.params, nonbondedMethod=simtk.openmm.app.PME, constraints=self.autoconstraints, hydrogenMass=self.hydrogenmass,
+                self.system = self.forcefield.createSystem(self.params, nonbondedMethod=simtk.openmm.app.PME, constraints=self.autoconstraints, hydrogenMass=self.hydrogenmass, rigidWater=self.rigidwater,
                                             nonbondedCutoff=periodic_nonbonded_cutoff * self.unit.angstroms, switchDistance=switching_function_distance*self.unit.angstroms)
             elif GROMACSfiles is True:
                 #NOTE: Gromacs has read PBC info from Gro file already
                 print("Ewald Error tolerance:", self.ewalderrortolerance)
                 #Note: Turned off switchDistance. Not available for GROMACS?
                 #
-                self.system = self.forcefield.createSystem(nonbondedMethod=simtk.openmm.app.PME, constraints=self.autoconstraints, hydrogenMass=self.hydrogenmass,
+                self.system = self.forcefield.createSystem(nonbondedMethod=simtk.openmm.app.PME, constraints=self.autoconstraints, hydrogenMass=self.hydrogenmass, rigidWater=self.rigidwater,
                                             nonbondedCutoff=periodic_nonbonded_cutoff * self.unit.angstroms, ewaldErrorTolerance=self.ewalderrortolerance)
             elif Amberfiles is True:
                 #NOTE: Amber-interface has read PBC info from prmtop file already
-                self.system = self.forcefield.createSystem(nonbondedMethod=simtk.openmm.app.PME, constraints=self.autoconstraints, hydrogenMass=self.hydrogenmass,
+                self.system = self.forcefield.createSystem(nonbondedMethod=simtk.openmm.app.PME, constraints=self.autoconstraints, hydrogenMass=self.hydrogenmass, rigidWater=self.rigidwater,
                                             nonbondedCutoff=periodic_nonbonded_cutoff * self.unit.angstroms)
                 
                 #print("self.system num con", self.system.getNumConstraints())
             else:
-                self.system = self.forcefield.createSystem(nonbondedMethod=simtk.openmm.app.PME, constraints=self.autoconstraints, hydrogenMass=self.hydrogenmass,
+                self.system = self.forcefield.createSystem(nonbondedMethod=simtk.openmm.app.PME, constraints=self.autoconstraints, hydrogenMass=self.hydrogenmass, rigidWater=self.rigidwater,
                                             nonbondedCutoff=periodic_nonbonded_cutoff * self.unit.angstroms, switchDistance=switching_function_distance*self.unit.angstroms)
                 
 
@@ -375,10 +377,10 @@ class OpenMMTheory:
             print("System is non-periodic")
 
             if CHARMMfiles is True:
-                self.system = self.forcefield.createSystem(self.params, nonbondedMethod=simtk.openmm.app.NoCutoff, constraints=self.autoconstraints,
+                self.system = self.forcefield.createSystem(self.params, nonbondedMethod=simtk.openmm.app.NoCutoff, constraints=self.autoconstraints, rigidWater=self.rigidwater,
                                             nonbondedCutoff=1000 * simtk.openmm.unit.angstroms, hydrogenMass=self.hydrogenmass)
             else:
-                self.system = self.forcefield.createSystem(nonbondedMethod=simtk.openmm.app.NoCutoff, constraints=self.autoconstraints,
+                self.system = self.forcefield.createSystem(nonbondedMethod=simtk.openmm.app.NoCutoff, constraints=self.autoconstraints, rigidWater=self.rigidwater,
                                             nonbondedCutoff=1000 * simtk.openmm.unit.angstroms, hydrogenMass=self.hydrogenmass)
 
             print("OpenMM system created")
@@ -1286,6 +1288,7 @@ def OpenMM_MD(fragment=None, openmmobject=None, timestep=0.001, simulation_steps
     print("Frozen atoms:", frozen_atoms)
     print("OpenMM autoconstraints:", openmmobject.autoconstraints)
     print("OpenMM hydrogenmass:", openmmobject.hydrogenmass)
+    print("OpenMM rigidwater constraints:", openmmobject.rigidwater)
     print("Constraints:", constraints)
     print("Restraints:", restraints)
     print("Integrator:", integrator)
@@ -1311,7 +1314,7 @@ def OpenMM_MD(fragment=None, openmmobject=None, timestep=0.001, simulation_steps
     #HAngles constraints: even larger timesteps
     #HAngles constraints: even larger timesteps
 
-
+    print("Before adding constraints, system contains {} constraints".format(openmmobject.system.getNumConstraints()))
 
     #Freezing atoms in OpenMM object by setting particles masses to zero. Needs to be done before simulation creation
     if frozen_atoms != None:
@@ -1329,6 +1332,8 @@ def OpenMM_MD(fragment=None, openmmobject=None, timestep=0.001, simulation_steps
         print("Restraints defined")
         #restraints is a list of lists defining bond restraints: constraints = [[atom_i,atom_j, d, k ]]    Example: [[700,701, 1.05, 5.0 ]] Unit is Angstrom and kcal/mol * Angstrom^-2
         openmmobject.add_bondrestraints(restraints=restraints)
+
+    print("After adding constraints, system contains {} constraints".format(openmmobject.system.getNumConstraints()))
 
     # Set up system with chosen barostat, thermostat, integrator
     if barostat != None:
@@ -1437,27 +1442,25 @@ def OpenMM_Opt(fragment=None, openmmobject=None, frozen_atoms=None, constraints=
 
     print("")
     state = openmmobject.simulation.context.getState(getEnergy=True, getForces=True)
-    print("Initial potential energy is:", state.getPotentialEnergy().value_in_unit_system(openmmobject.unit.md_unit_system))
+    print("Initial potential energy is: {} Eh".format(state.getPotentialEnergy().value_in_unit_system(openmmobject.unit.md_unit_system) / constants.hartokj))
     kjmolnm_to_atomic_factor=-49614.752589207
     forces_init=np.array(state.getForces(asNumpy=True))/kjmolnm_to_atomic_factor
     rms_force=np.sqrt(sum(n*n for n in forces_init.flatten())/len(forces_init.flatten()))
-    print("RMS force:", rms_force)
-    print("Max force component:", forces_init.max())
+    print("RMS force: {} Eh/Bohr".format(rms_force))
+    print("Max force component: {} Eh/Bohr".format(forces_init.max()))
     print("")
     print("Starting minimization")
     openmmobject.simulation.minimizeEnergy(maxIterations=maxiter, tolerance=tolerance)
     print("Minimization done")
     print("")
     state = openmmobject.simulation.context.getState(getEnergy=True, getPositions=True, getForces=True)
-    print("Potential energy is:", state.getPotentialEnergy().value_in_unit_system(openmmobject.unit.md_unit_system))
+    print("Potential energy is: {} Eh".format(state.getPotentialEnergy().value_in_unit_system(openmmobject.unit.md_unit_system) / constants.hartokj))
     forces_final=np.array(state.getForces(asNumpy=True))/kjmolnm_to_atomic_factor
     rms_force=np.sqrt(sum(n*n for n in forces_final.flatten())/len(forces_final.flatten()))
-    print("RMS force:", rms_force)
-    print("Max force component:", forces_final.max())
+    print("RMS force: {} Eh/Bohr".format(rms_force))
+    print("Max force component: {} Eh/Bohr".format(forces_final.max()))
 
-
-    #print("RMS Force:", state.getPotentialEnergy().value_in_unit_system(openmmobject.unit.md_unit_system))
-
+    #Get coordinates
     newcoords = state.getPositions(asNumpy=True).value_in_unit(openmmobject.unit.angstrom)
     print("")
     print("Updating coordinates in ASH fragment")
