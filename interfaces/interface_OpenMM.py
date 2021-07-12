@@ -1398,6 +1398,7 @@ def OpenMM_Opt(fragment=None, openmmobject=None, frozen_atoms=None, constraints=
     print("Frozen atoms:", frozen_atoms)
     print("OpenMM autoconstraints:", openmmobject.autoconstraints)
     print("OpenMM hydrogenmass:", openmmobject.hydrogenmass)
+    print("OpenMM rigidwater constraints:", openmmobject.rigidwater)
     print("Constraints:", constraints)
     print("Restraints:", restraints)
     print("")
@@ -1412,6 +1413,7 @@ def OpenMM_Opt(fragment=None, openmmobject=None, frozen_atoms=None, constraints=
     #HAngles constraints: even larger timesteps
 
 
+    print("Before adding constraints, system contains {} constraints".format(openmmobject.system.getNumConstraints()))
 
     #Freezing atoms in OpenMM object by setting particles masses to zero. Needs to be done before simulation creation
     if frozen_atoms != None:
@@ -1430,6 +1432,7 @@ def OpenMM_Opt(fragment=None, openmmobject=None, frozen_atoms=None, constraints=
         #restraints is a list of lists defining bond restraints: constraints = [[atom_i,atom_j, d, k ]]    Example: [[700,701, 1.05, 5.0 ]] Unit is Angstrom and kcal/mol * Angstrom^-2
         openmmobject.add_bondrestraints(restraints=restraints)
 
+    print("After adding constraints, system contains {} constraints".format(openmmobject.system.getNumConstraints()))
     
     openmmobject.create_simulation(timestep=0.001, temperature=1, integrator='VerletIntegrator')
     print("Simulation created.")
@@ -1497,4 +1500,14 @@ def OpenMM_Opt(fragment=None, openmmobject=None, frozen_atoms=None, constraints=
 
 
 #QM/MM functionality to Open_MM MD
+
+#Janus: https://github.com/CCQC/janus/blob/aa8446e96c90221a10ba37cee379083162ac17e4/janus/mm_wrapper/openmm_wrapper.py#L222
+
 #http://docs.openmm.org/latest/userguide/application.html#extending-forcefield
+
+#https://freesoft.dev/program/166462447
+#https://github.com/openmm/openmmexampleplugin
+#https://github.com/openmm/openmm-torch
+#https://github.com/openmm/openmm-tensorflow
+
+#Polarizable QM/MM: https://github.com/swillow/modelingworkshop/blob/39125c0588621137b962d9837f3463fbb497e793/QMMM/qmmm_pol.py

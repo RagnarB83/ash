@@ -170,6 +170,13 @@ class Fragment:
         self.coords=[]
         self.elems=[]
         self.connectivity=[]
+    #Get list of atom-indices for specific elements
+    def get_nonH_atomindices(self):
+        return [index for index,el in enumerate(self.elems) if el!='H']
+    def get_atomindices_for_element(self,element):
+        return [index for index,el in enumerate(self.elems) if el==element]
+    def get_atomindices_except_element(self,element):
+        return [index for index,el in enumerate(self.elems) if el!=element]
     def delete_atom(self,atomindex):
         if type(self.coords) == np.ndarray:
             self.coords=np.delete(self.coords,atomindex,axis=0)
