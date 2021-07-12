@@ -70,7 +70,7 @@ from interface_CFour import CFourTheory
 from interface_xtb import xTBTheory
 
 #MM: external and internal
-from interface_OpenMM import OpenMMTheory, OpenMM_MD
+from interface_OpenMM import OpenMMTheory, OpenMM_MD, OpenMM_Opt
 from module_MM import NonBondedTheory,UFFdict,UFF_modH_dict,LJCoulpy,coulombcharge,LennardJones,LJCoulombv2,LJCoulomb,MMforcefield_read
 
 #QM/MM

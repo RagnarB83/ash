@@ -601,7 +601,6 @@ class OpenMMTheory:
 
         #Integrators: LangevinIntegrator, LangevinMiddleIntegrator, NoseHooverIntegrator, VerletIntegrator, BrownianIntegrator, VariableLangevinIntegrator, VariableVerletIntegrator
         if integrator == 'VerletIntegrator':
-            print("Defining verlet")
             self.integrator = self.openmm.VerletIntegrator(timestep*self.unit.picoseconds)
         elif integrator == 'VariableVerletIntegrator':
             self.integrator = self.openmm.VariableVerletIntegrator(timestep*self.unit.picoseconds)
@@ -1256,7 +1255,6 @@ def clean_up_constraints_list(fragment=None, constraints=None):
 
 
 
-
 #Simple Molecular Dynamics using the OpenMM  object
 #Integrators: LangevinMiddleIntegrator, NoseHooverIntegrator, VerletIntegrator, BrownianIntegrator, VariableLangevinIntegrator, VariableVerletIntegrator
 #Additional thermostat: AndersenThermostat (use with Verlet)
@@ -1266,7 +1264,8 @@ def clean_up_constraints_list(fragment=None, constraints=None):
 #see https://github.com/openmm/openmm/issues/2688, https://github.com/openmm/openmm/pull/1895
 #Also should we add: https://github.com/mdtraj/mdtraj ?
 def OpenMM_MD(fragment=None, openmmobject=None, timestep=0.001, simulation_steps=None, simulation_time=None, traj_frequency=1000, temperature=300, integrator=None,
-    barostat=None, trajectory_file_option='PDB', coupling_frequency=None, anderson_thermostat=False, enforcePeriodicBox=False, frozen_atoms=None, constraints=None, restraints=None):
+    barostat=None, trajectory_file_option='PDB', coupling_frequency=None, anderson_thermostat=False, enforcePeriodicBox=False, frozen_atoms=None, constraints=None, restraints=None,
+    parmed_state_datareporter=False):
     
     print_line_with_mainheader("OpenMM MOLECULAR DYNAMICS")
 
@@ -1364,13 +1363,121 @@ def OpenMM_MD(fragment=None, openmmobject=None, timestep=0.001, simulation_steps
         #write_pdbfile(fragment,outputname="initial_frag", openmmobject=openmmobject)
         with open('initial_frag.pdb', 'w') as f: openmmobject.openmm.app.pdbfile.PDBFile.writeModel(openmmobject.topology, openmmobject.simulation.context.getState(getPositions=True).getPositions(), f)
         openmmobject.simulation.reporters.append(openmmobject.openmm.app.DCDReporter('output_traj.dcd', traj_frequency, enforcePeriodicBox=enforcePeriodicBox))
-    openmmobject.simulation.reporters.append(openmmobject.openmm.app.StateDataReporter(stdout, traj_frequency, step=True, time=True,
-            potentialEnergy=True, temperature=True, kineticEnergy=True,  separator='     '))
+    
+    if parmed_state_datareporter == True:
+        print("Using ParMed StateDataReporter")
+        import parmed
+        openmmobject.simulation.reporters.append(parmed.openmm.StateDataReporter(stdout, traj_frequency, step=True, time=True,
+                potentialEnergy=True, temperature=True, kineticEnergy=True,  separator='     '))
+    else:
+        openmmobject.simulation.reporters.append(openmmobject.openmm.app.StateDataReporter(stdout, traj_frequency, step=True, time=True,
+                potentialEnergy=True, temperature=True, kineticEnergy=True,  separator='     '))
 
     #Run simulation
     openmmobject.simulation.step(simulation_steps)
 
     print("OpenMM MD simulation finished!")
+
+
+
+def OpenMM_Opt(fragment=None, openmmobject=None, frozen_atoms=None, constraints=None, restraints=None, maxiter=1000, tolerance=1):
+    
+    print_line_with_mainheader("OpenMM Optimization")
+
+    if fragment == None:
+        print("No fragment object. Exiting")
+        exit()
+
+    print("Max iterations:", maxiter)
+    print("Energy tolerance:", tolerance)
+    print("Frozen atoms:", frozen_atoms)
+    print("OpenMM autoconstraints:", openmmobject.autoconstraints)
+    print("OpenMM hydrogenmass:", openmmobject.hydrogenmass)
+    print("Constraints:", constraints)
+    print("Restraints:", restraints)
+    print("")
+
+    if openmmobject.autoconstraints == None:
+        print(BC.WARNING,"Warning: Autoconstraints have not been set in OpenMMTheory object definition.")
+        print("This means that by default no bonds are constrained in the optimization.", BC.END)
+        print("Will continue...")
+    #createSystem(constraints=None), createSystem(constraints=HBonds), createSystem(constraints=All-Bonds), createSystem(constraints=HAngles)
+    #HBonds constraints: timestep can be 2fs with Verlet and 4fs with Langevin
+    #HAngles constraints: even larger timesteps
+    #HAngles constraints: even larger timesteps
+
+
+
+    #Freezing atoms in OpenMM object by setting particles masses to zero. Needs to be done before simulation creation
+    if frozen_atoms != None:
+        openmmobject.freeze_atoms(frozen_atoms=frozen_atoms)
+
+    #Adding constraints/restraints between atoms
+    if constraints != None:
+        print("Constraints defined.")
+        #constraints is a list of lists defining bond constraints: constraints = [[700,701], [802,803,1.04]]
+        #Cleaning up constraint list. Adding distance if missing
+        constraints = clean_up_constraints_list(fragment=fragment, constraints=constraints)
+        print("Will enforce constrain definitions during Opt:", constraints)
+        openmmobject.add_bondconstraints(constraints=constraints)
+    if restraints != None:
+        print("Restraints defined")
+        #restraints is a list of lists defining bond restraints: constraints = [[atom_i,atom_j, d, k ]]    Example: [[700,701, 1.05, 5.0 ]] Unit is Angstrom and kcal/mol * Angstrom^-2
+        openmmobject.add_bondrestraints(restraints=restraints)
+
+    
+    openmmobject.create_simulation(timestep=0.001, temperature=1, integrator='VerletIntegrator')
+    print("Simulation created.")
+
+    #Context: settings positions
+    print("Now adding coordinates")
+    coords=np.array(fragment.coords)
+    pos = [openmmobject.Vec3(coords[i, 0] / 10, coords[i, 1] / 10, coords[i, 2] / 10) for i in range(len(coords))] * openmmobject.openmm.unit.nanometer
+    openmmobject.simulation.context.setPositions(pos)
+
+
+    print("Calculating initial energy")
+    state = openmmobject.simulation.context.getState(getEnergy=True)
+    print("Potential energy is:", state.getPotentialEnergy().value_in_unit_system(openmmobject.unit.md_unit_system))
+    print("Starting minimization")
+    openmmobject.simulation.minimizeEnergy(maxIterations=maxiter, tolerance=tolerance)
+    print("Minimization done")
+    state = openmmobject.simulation.context.getState(getEnergy=True, getPositions=True)
+    print("Potential energy is:", state.getPotentialEnergy().value_in_unit_system(openmmobject.unit.md_unit_system))
+
+    newcoords = state.getPositions(asNumpy=True).value_in_unit(openmmobject.unit.angstrom)
+
+    print("Updating coordinates in ASH fragment")
+    fragment.coords=newcoords
+
+    with open('frag-minimized.pdb', 'w') as f: openmmobject.openmm.app.pdbfile.PDBFile.writeModel(openmmobject.topology, openmmobject.simulation.context.getState(getPositions=True).getPositions(), f)
+
+    print('Optimization Done!')
+
+    # Now write a serialized state that has coordinates
+    #print('Finished. Writing serialized XML restart file...')
+    #with open('job.min.xml', 'w') as f:
+    #    f.write(
+    #            openmmobject.openmm.XmlSerializer.serialize(
+    #                openmmobject.simulation.context.getState(getPositions=True, getVelocities=True,
+    #                                    getForces=True, getEnergy=True,
+    #                                    enforcePeriodicBox=True)
+    #            )
+    #    )
+
+    #print('Loading the XML file and calculating energy')
+    #openmmobject.simulation.context.setState(
+    #        openmmobject.openmm.XmlSerializer.deserialize(open('job.min.xml').read())
+    #)
+    #state = openmmobject.simulation.context.getState(getEnergy=True)
+    #print('After minimization. Potential energy is %.5f' %
+    #        (state.getPotentialEnergy().value_in_unit_system(openmmobject.unit.md_unit_system))
+    #)
+
+
+
+
+
 
 
 #QM/MM functionality to Open_MM MD
