@@ -508,7 +508,7 @@ class OpenMMTheory:
     
     #Function to freeze atoms during OpenMM MD simulation. Sets masses to zero. Does not modify potential energy-function.
     def freeze_atoms(self,frozen_atoms=None):
-        print("Freezing atoms: {} by setting particles masses to zero.".format(frozen_atoms))
+        print("Freezing {} atoms by setting particles masses to zero.".format(len(frozen_atoms)))
         #Modify particle masses in system object. For freezing atoms
         for i in frozen_atoms:
             self.system.setParticleMass(i, 0 * self.unit.dalton)
@@ -1285,7 +1285,9 @@ def OpenMM_MD(fragment=None, openmmobject=None, timestep=0.001, simulation_steps
     print("Timestep: {} ps".format(timestep))
     print("Simulation steps: {}".format(simulation_steps))
     print("Temperature: {} K".format(temperature))
-    print("Frozen atoms:", frozen_atoms)
+    print("Number of frozen atoms:", len(frozen_atoms))
+    if len(frozen_atoms) < 50:
+        print("Frozen atoms", frozen_atoms)
     print("OpenMM autoconstraints:", openmmobject.autoconstraints)
     print("OpenMM hydrogenmass:", openmmobject.hydrogenmass)
     print("OpenMM rigidwater constraints:", openmmobject.rigidwater)
@@ -1309,6 +1311,12 @@ def OpenMM_MD(fragment=None, openmmobject=None, timestep=0.001, simulation_steps
         print("autoconstraints='HBonds' is recommended for 1-2 fs timesteps with Verlet (4fs with Langevin).")
         print("autoconstraints='AllBonds' or autoconstraints='HAngles' allows even larger timesteps to be used", BC.END)
         print("Will continue...")
+    if openmmobject.rigidwater == True and frozen_atoms != None or (openmmobject.autoconstraints != None and frozen_atoms != None):
+        print("Warning: Frozen_atoms options selected but there are general constraints defined in the OpenMM object (either rigidwater=True or autoconstraints != None")
+        print("OpenMM will crash if constraints and frozen atoms involve the same atoms")
+    print("")
+
+
     #createSystem(constraints=None), createSystem(constraints=HBonds), createSystem(constraints=All-Bonds), createSystem(constraints=HAngles)
     #HBonds constraints: timestep can be 2fs with Verlet and 4fs with Langevin
     #HAngles constraints: even larger timesteps
@@ -1395,7 +1403,9 @@ def OpenMM_Opt(fragment=None, openmmobject=None, frozen_atoms=None, constraints=
 
     print("Max iterations:", maxiter)
     print("Energy tolerance:", tolerance)
-    print("Frozen atoms:", frozen_atoms)
+    print("Number of frozen atoms:", len(frozen_atoms))
+    if len(frozen_atoms) < 50:
+        print("Frozen atoms", frozen_atoms)
     print("OpenMM autoconstraints:", openmmobject.autoconstraints)
     print("OpenMM hydrogenmass:", openmmobject.hydrogenmass)
     print("OpenMM rigidwater constraints:", openmmobject.rigidwater)
@@ -1407,18 +1417,21 @@ def OpenMM_Opt(fragment=None, openmmobject=None, frozen_atoms=None, constraints=
         print(BC.WARNING,"Warning: Autoconstraints have not been set in OpenMMTheory object definition.")
         print("This means that by default no bonds are constrained in the optimization.", BC.END)
         print("Will continue...")
+    if openmmobject.rigidwater == True and frozen_atoms != None or (openmmobject.autoconstraints != None and frozen_atoms != None):
+        print("Warning: Frozen_atoms options selected but there are general constraints defined in the OpenMM object (either rigidwater=True or autoconstraints != None")
+        print("OpenMM will crash if constraints and frozen atoms involve the same atoms")
     #createSystem(constraints=None), createSystem(constraints=HBonds), createSystem(constraints=All-Bonds), createSystem(constraints=HAngles)
     #HBonds constraints: timestep can be 2fs with Verlet and 4fs with Langevin
     #HAngles constraints: even larger timesteps
     #HAngles constraints: even larger timesteps
 
 
-    print("Before adding constraints, system contains {} constraints".format(openmmobject.system.getNumConstraints()))
-
     #Freezing atoms in OpenMM object by setting particles masses to zero. Needs to be done before simulation creation
-    if frozen_atoms != None:
-        openmmobject.freeze_atoms(frozen_atoms=frozen_atoms)
 
+    if frozen_atoms != None:
+        print("Freezing atoms")
+        openmmobject.freeze_atoms(frozen_atoms=frozen_atoms)
+    print("Before adding constraints, system contains {} constraints".format(openmmobject.system.getNumConstraints()))
     #Adding constraints/restraints between atoms
     if constraints != None:
         print("Constraints defined.")
@@ -1427,12 +1440,13 @@ def OpenMM_Opt(fragment=None, openmmobject=None, frozen_atoms=None, constraints=
         constraints = clean_up_constraints_list(fragment=fragment, constraints=constraints)
         print("Will enforce constrain definitions during Opt:", constraints)
         openmmobject.add_bondconstraints(constraints=constraints)
+        print("After adding constraints, system contains {} constraints".format(openmmobject.system.getNumConstraints()))
     if restraints != None:
         print("Restraints defined")
         #restraints is a list of lists defining bond restraints: constraints = [[atom_i,atom_j, d, k ]]    Example: [[700,701, 1.05, 5.0 ]] Unit is Angstrom and kcal/mol * Angstrom^-2
         openmmobject.add_bondrestraints(restraints=restraints)
 
-    print("After adding constraints, system contains {} constraints".format(openmmobject.system.getNumConstraints()))
+
     
     openmmobject.create_simulation(timestep=0.001, temperature=1, integrator='VerletIntegrator')
     print("Simulation created.")
