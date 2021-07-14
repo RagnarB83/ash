@@ -127,7 +127,7 @@ def molcrys(cif_file=None, xtl_file=None, xyz_file=None, cell_length=None, cell_
             print("not ready")
             exit()
             shift=[-0.3,-0.3,-0.3]
-            asymmcoords=functions_molcrys.shift_fractcoords(asymmcoords,shift)
+            asymmcoords=functions.functions_molcrys.shift_fractcoords(asymmcoords,shift)
 
         print("asymmcoords:", asymmcoords)
         print("asymmcoords length", len(asymmcoords))
@@ -163,7 +163,7 @@ def molcrys(cif_file=None, xtl_file=None, xyz_file=None, cell_length=None, cell_
         blankline()
 
         #Write fractional coordinate XTL file of fullcell coordinates (for visualization in VESTA)
-        functions_molcrys.write_xtl(cell_length,cell_angles,elems,fullcellcoords,"complete_unitcell.xtl")
+        functions.functions_molcrys.write_xtl(cell_length,cell_angles,elems,fullcellcoords,"complete_unitcell.xtl")
 
 
     elif xtl_file is not None:

@@ -99,7 +99,7 @@ class PySCFTheory:
         mol = gto.Mole()
         #Not very verbose system printing
         mol.verbose = 3
-        coords_string=module_coords.create_coords_string(qm_elems,current_coords)
+        coords_string=modules.module_coords.create_coords_string(qm_elems,current_coords)
         mol.atom = coords_string
         mol.symmetry = 1
         mol.charge = self.charge

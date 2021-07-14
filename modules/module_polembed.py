@@ -116,7 +116,7 @@ class PolEmbedTheory:
                     exit(9)
                 #Create dummy pdb-file if PDB-file not provided
                 if pdbfile is None:
-                    module_coords.write_pdbfile_dummy(self.elems, self.coords, self.potfilename, self.hybridatomlabels, self.residlabels)
+                    modules.module_coords.write_pdbfile_dummy(self.elems, self.coords, self.potfilename, self.hybridatomlabels, self.residlabels)
                     file=self.potfilename+'.pdb'
                 #Pyframe
                 if self.pot_option=='SEP':

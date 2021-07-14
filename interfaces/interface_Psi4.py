@@ -151,7 +151,7 @@ class Psi4Theory:
 
             #Creating Psi4 molecule object using lists and manual information
             psi4molfrag = psi4.core.Molecule.from_arrays(
-                elez=module_coords.elemstonuccharges(qm_elems),
+                elez=modules.module_coords.elemstonuccharges(qm_elems),
                 fix_com=True,
                 fix_orientation=True,
                 fix_symmetry='c1',
