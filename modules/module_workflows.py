@@ -130,7 +130,7 @@ def confsampler_protocol(fragment=None, crestdir=None, xtbmethod='GFN2-xTB', MLt
     for index,conformer in enumerate(list_conformer_frags):
         print("")
         print("Performing ML Geometry Optimization for Conformer ", index)
-        interface_geometric.geomeTRICOptimizer(fragment=conformer, theory=MLtheory, coordsystem='tric')
+        interfaces.interface_geometric.geomeTRICOptimizer(fragment=conformer, theory=MLtheory, coordsystem='tric')
         ML_energies.append(conformer.energy)
         #Saving ASH fragment and XYZ file for each ML-optimized conformer
         os.rename('Fragment-optimized.ygg', 'Conformer{}_ML.ygg'.format(index))
@@ -207,7 +207,7 @@ def thermochemprotocol_single(fragment=None, Opt_theory=None, SP_theory=None, or
         #Adding charge and mult to theory object, taken from each fragment object
         Opt_theory.charge = fragment.charge
         Opt_theory.mult = fragment.mult
-        interface_geometric.geomeTRICOptimizer(theory=Opt_theory,fragment=fragment)
+        interfaces.interface_geometric.geomeTRICOptimizer(theory=Opt_theory,fragment=fragment)
         print("-------------------------------------------------------------------------")
         print("THERMOCHEM PROTOCOL-single: Step 2. Frequency calculation")
         print("-------------------------------------------------------------------------")
@@ -370,7 +370,7 @@ def old_thermochemprotocol(Opt_theory=None, SP_theory=None, fraglist=None, stoic
             #Adding charge and mult to theory object, taken from each fragment object
             Opt_theory.charge = species.charge
             Opt_theory.mult = species.mult
-            interface_geometric.geomeTRICOptimizer(theory=Opt_theory,fragment=species)
+            interfaces.interface_geometric.geomeTRICOptimizer(theory=Opt_theory,fragment=species)
             
             #DFT-FREQ
             if analyticHessian == True:

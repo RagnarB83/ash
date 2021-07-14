@@ -63,8 +63,8 @@ class xTBTheory:
             # Load xtB library and ctypes datatypes that run uses
             try:
                 #import xtb_interface_library
-                import interface_xtb_library
-                self.xtbobject = interface_xtb_library.XTBLibrary()
+                import interfaces.interface_xtb_library
+                self.xtbobject = interfaces.interface_xtb_library.XTBLibrary()
             except:
                 print("Problem importing xTB library. Check that the library dir (containing libxtb.so) is available in LD_LIBRARY_PATH.")
                 print("e.g. export LD_LIBRARY_PATH=/path/to/xtb_6.X.X/lib64:$LD_LIBRARY_PATH")

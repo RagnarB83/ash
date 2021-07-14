@@ -215,9 +215,9 @@ class Psi4Theory:
                         pass
                     else:
                         print(BC.FAIL, "Potfile: ", self.potfile, "does not exist!", BC.END)
-                        exit()
+                        exit(1)
                 except:
-                    exit()
+                    exit(1)
                 psi4.set_module_options('pe', {'potfile' : self.potfile})
                 self.psi4settings['pe'] = 'true'
 
@@ -290,9 +290,9 @@ class Psi4Theory:
                         pass
                     else:
                         print(BC.FAIL, "Potfile: ", self.potfile, "does not exist!", BC.END)
-                        exit()
+                        exit(1)
                 except:
-                    exit()
+                    exit(1)
 
             #Write inputfile
             with open(self.label+'.inp', 'w') as inputfile:
