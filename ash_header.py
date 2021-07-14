@@ -7,7 +7,7 @@ import sys
 
 import settings_ash
 import ash
-from functions_general import BC,print_time_tot_color, timingsobject, print_line_with_mainheader, print_line_with_subheader1
+from functions.functions_general import BC,print_time_tot_color, timingsobject, print_line_with_mainheader, print_line_with_subheader1
 
 
 

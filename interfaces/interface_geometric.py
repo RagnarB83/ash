@@ -1,7 +1,7 @@
 import numpy as np
 import constants
-from module_coords import print_coords_all,print_coords_for_atoms,print_internal_coordinate_table,write_XYZ_for_atoms,write_xyzfile
-from functions_general import blankline,BC,print_time_rel
+from modules.module_coords import print_coords_all,print_coords_for_atoms,print_internal_coordinate_table,write_XYZ_for_atoms,write_xyzfile
+from functions.functions_general import blankline,BC,print_time_rel
 import os
 import shutil
 import ash

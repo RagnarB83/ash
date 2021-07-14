@@ -6,8 +6,8 @@ import shutil
 import constants
 import math
 import dictionaries_lists
-import interface_ORCA
-from functions_elstructure import check_cores_vs_electrons, num_core_electrons
+import interfaces.interface_ORCA
+from functions.functions_elstructure import check_cores_vs_electrons, num_core_electrons
 
 
 #Note: Inner-shell correlation information: https://webhome.weizmann.ac.il/home/comartin/preprints/w1/node6.html

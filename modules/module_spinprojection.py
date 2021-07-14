@@ -4,10 +4,10 @@ Spinprojection module:
 class SpinProjectionTheory
 
 """
-from functions_general import BC
-import interface_ORCA
+from functions.functions_general import BC
+import interfaces.interface_ORCA
 import constants
-import functions_elstructure
+import functions.functions_elstructure
 
 class SpinProjectionTheory:
     """ASH SpinProjection theory.

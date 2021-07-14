@@ -1,5 +1,5 @@
 import numpy as np
-import module_coords
+import modules.module_coords
 import os
 import glob
 import ash
@@ -8,8 +8,8 @@ import shutil
 import constants
 import math
 import dictionaries_lists
-from functions_general import isodd
-import interface_ORCA
+from functions.functions_general import isodd
+import interfaces.interface_ORCA
 
 #CM5. from https://github.com/patrickmelix/CM5-calculator/blob/master/cm5calculator.py
 

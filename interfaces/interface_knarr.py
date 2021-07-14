@@ -8,7 +8,7 @@ import time
 
 
 import ash
-from functions_general import blankline,print_time_rel
+from functions.functions_general import blankline,print_time_rel
 
 #This makes Knarr part of python path
 #Recommended way?

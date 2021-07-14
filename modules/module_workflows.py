@@ -10,14 +10,14 @@ import time
 import constants
 import ash
 import dictionaries_lists
-import module_coords
-import interface_geometric
-import interface_crest
-from functions_general import BC,print_time_rel,print_line_with_mainheader,pygrep
+import modules.module_coords
+import interfaces.interface_geometric
+import interfaces.interface_crest
+from functions.functions_general import BC,print_time_rel,print_line_with_mainheader,pygrep
 import ash_header
 import settings_ash
-import module_highlevel_workflows
-import functions_elstructure
+import modules.module_highlevel_workflows
+import functions.functions_elstructure
 
 
 def ReactionEnergy(stoichiometry=None, list_of_fragments=None, list_of_energies=None, unit='kcal/mol', label=None, reference=None):
@@ -113,10 +113,10 @@ def confsampler_protocol(fragment=None, crestdir=None, xtbmethod='GFN2-xTB', MLt
     
     #1. Calling crest
     #call_crest(fragment=molecule, xtbmethod='GFN2-xTB', crestdir=crestdir, charge=charge, mult=mult, solvent='H2O', energywindow=6 )
-    interface_crest.call_crest(fragment=fragment, xtbmethod=xtbmethod, crestdir=crestdir, charge=charge, mult=mult, numcores=numcores)
+    interfaces.interface_crest.call_crest(fragment=fragment, xtbmethod=xtbmethod, crestdir=crestdir, charge=charge, mult=mult, numcores=numcores)
 
     #2. Grab low-lying conformers from crest_conformers.xyz as list of ASH fragments.
-    list_conformer_frags, xtb_energies = interface_crest.get_crest_conformers()
+    list_conformer_frags, xtb_energies = interfaces.interface_crest.get_crest_conformers()
 
     print("list_conformer_frags:", list_conformer_frags)
     print("")

@@ -2,8 +2,8 @@ import os
 import shutil
 import time
 
-from functions_general import BC,blankline
-import module_coords
+from functions.functions_general import BC,blankline,print_time_rel
+import modules.module_coords
 
 #Polarizable Embedding theory object.
 #Required at init: qm_theory and qmatoms, X, Y

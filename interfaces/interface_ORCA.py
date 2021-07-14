@@ -1,7 +1,7 @@
 import subprocess as sp
-import module_coords
-from functions_general import blankline,insert_line_into_file,BC,print_time_rel
-import functions_elstructure
+import modules.module_coords
+from functions.functions_general import blankline,insert_line_into_file,BC,print_time_rel
+import functions.functions_elstructure
 import constants
 import multiprocessing as mp
 import numpy as np

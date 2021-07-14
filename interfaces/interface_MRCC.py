@@ -1,4 +1,4 @@
-from functions_general import BC, print_time_rel
+from functions.functions_general import BC, print_time_rel
 import subprocess as sp
 import os
 

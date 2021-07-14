@@ -6,7 +6,7 @@ import time
 import numpy as np
 import subprocess as sp
 
-from functions_general import isint,listdiff,print_time_rel,BC,printdebug,print_line_with_mainheader,writelisttofile,pygrep2
+from functions.functions_general import isint,listdiff,print_time_rel,BC,printdebug,print_line_with_mainheader,writelisttofile,pygrep2
 import dictionaries_lists
 import settings_ash
 import constants

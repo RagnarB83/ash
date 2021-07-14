@@ -1,10 +1,10 @@
 import numpy as np
-from functions_general import blankline,uniq,printdebug,print_time_rel_and_tot,print_time_rel,BC
-import module_coords
-import interface_ORCA
-from interface_xtb import grabatomcharges_xTB
-from module_MM import UFFdict
-from functions_elstructure import DDEC_to_LJparameters,DDEC_calc
+from functions.functions_general import blankline,uniq,printdebug,print_time_rel_and_tot,print_time_rel,BC
+import modules.module_coords
+import interfaces.interface_ORCA
+from interfaces.interface_xtb import grabatomcharges_xTB
+from modules.module_MM import UFFdict
+from functions.functions_elstructure import DDEC_to_LJparameters,DDEC_calc
 import ash
 import time
 import math
@@ -679,11 +679,11 @@ def read_ciffile(file):
         firstcolumn.append(el)
 
     #Checking if first or second column contains strings that are real periodic-table elements
-    if module_coords.isElementList(firstcolumn):
+    if modules.module_coords.isElementList(firstcolumn):
         print("Found correct elements in 1st column")
         elems=firstcolumn
     else:
-        if module_coords.isElementList(secondcolumns):
+        if modules.module_coords.isElementList(secondcolumns):
             print("Found correct elements in 2nd column")
             elems = secondcolumns
         else:

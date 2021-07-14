@@ -8,7 +8,7 @@
 import numpy as np
 import time
 import ash
-from functions_general import BC,blankline,print_time_rel
+from functions.functions_general import BC,blankline,print_time_rel
 
 #Single-point energy function
 def Singlepoint(fragment=None, theory=None, Grad=False):

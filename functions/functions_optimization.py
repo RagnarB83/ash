@@ -1,7 +1,7 @@
 import numpy as np
 import constants
-from functions_general import blankline,print_time_rel_and_tot,BC
-from module_coords import print_coords_all,write_xyzfile
+from functions.functions_general import blankline,print_time_rel_and_tot,BC
+from modules.module_coords import print_coords_all,write_xyzfile
 import time
 import os
 import shutil

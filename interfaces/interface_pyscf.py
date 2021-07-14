@@ -1,7 +1,7 @@
 import time
 
-from functions_general import BC,print_time_rel
-import module_coords
+from functions.functions_general import BC,print_time_rel
+import modules.module_coords
 
 #PySCF Theory object. Fragment object is optional. Only used for single-points.
 #PySCF runmode: Library only

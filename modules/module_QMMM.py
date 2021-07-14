@@ -5,8 +5,8 @@ import math
 
 #functions related to QM/MM
 import ash
-import module_coords
-from functions_general import BC,blankline,listdiff,print_time_rel,printdebug,print_line_with_mainheader,writelisttofile
+import modules.module_coords
+from functions.functions_general import BC,blankline,listdiff,print_time_rel,printdebug,print_line_with_mainheader,writelisttofile
 import settings_ash
 
 #QM/MM theory object.
@@ -184,7 +184,7 @@ class QMMMTheory:
 
             #Check if we need linkatoms by getting boundary atoms dict:
             blankline()
-            self.boundaryatoms = module_coords.get_boundary_atoms(self.qmatoms, self.coords, self.elems, settings_ash.settings_dict["scale"], 
+            self.boundaryatoms = modules.module_coords.get_boundary_atoms(self.qmatoms, self.coords, self.elems, settings_ash.settings_dict["scale"], 
                 settings_ash.settings_dict["tol"], excludeboundaryatomlist=excludeboundaryatomlist, unusualboundary=unusualboundary)
             if len(self.boundaryatoms) >0:
                 print("Found covalent QM-MM boundary. Linkatoms option set to True")
@@ -250,7 +250,7 @@ class QMMMTheory:
         #Creating dictionary for each MM1 atom and its connected atoms: MM2-4
         self.MMboundarydict={}
         for (QM1atom,MM1atom) in self.boundaryatoms.items():
-            connatoms = module_coords.get_connected_atoms(self.coords, self.elems, settings_ash.settings_dict["scale"], settings_ash.settings_dict["tol"], MM1atom)
+            connatoms = modules.module_coords.get_connected_atoms(self.coords, self.elems, settings_ash.settings_dict["scale"], settings_ash.settings_dict["tol"], MM1atom)
             #Deleting QM-atom from connatoms list
             connatoms.remove(QM1atom)
             self.MMboundarydict[MM1atom] = connatoms
@@ -308,7 +308,7 @@ class QMMMTheory:
     def get_dipole_charge(self,delq,direction,mm1index,mm2index):
         #timeA=time.time()
         #Distance between MM1 and MM2
-        MM_distance = module_coords.distance_between_atoms(fragment=self.fragment, atom1=mm1index, atom2=mm2index)
+        MM_distance = modules.module_coords.distance_between_atoms(fragment=self.fragment, atom1=mm1index, atom2=mm2index)
         #Coordinates
         mm1coords=np.array(self.fragment.coords[mm1index])
         mm2coords=np.array(self.fragment.coords[mm2index])
@@ -409,7 +409,7 @@ class QMMMTheory:
         #LINKATOMS
         #1. Get linkatoms coordinates
         if self.linkatoms==True:
-            linkatoms_dict = module_coords.get_linkatom_positions(self.boundaryatoms,self.qmatoms, current_coords, self.elems)
+            linkatoms_dict = modules.module_coords.get_linkatom_positions(self.boundaryatoms,self.qmatoms, current_coords, self.elems)
             printdebug("linkatoms_dict:", linkatoms_dict)
             #2. Add linkatom coordinates to qmcoords???
             print("Adding linkatom positions to QM coords")
@@ -673,7 +673,7 @@ class QMMMTheory:
             self.QM_MM_gradient=self.QM_PC_gradient+self.MMgradient
             if self.printlevel >=3:
                 print("Printlevel >=3: Printing QM/MM gradient before linkatom proj. to disk")
-                module_coords.write_coords_all(self.QM_MM_gradient, self.elems, indices=self.allatoms, file="QM_MMgradient_wo_linkatomproj", description="QM/MM gradient w/o linkatom projection (au/Bohr):")
+                modules.module_coords.write_coords_all(self.QM_MM_gradient, self.elems, indices=self.allatoms, file="QM_MMgradient_wo_linkatomproj", description="QM/MM gradient w/o linkatom projection (au/Bohr):")
             
             #print_time_rel(CheckpointTime, modulename='QM/MM gradient combine')
             
@@ -728,28 +728,28 @@ class QMMMTheory:
                 print("Printlevel >=3: Printing all gradients to disk")
                 #print("QM gradient (au/Bohr):")
                 #module_coords.print_coords_all(self.QMgradient, self.qmelems, self.qmatoms)
-                module_coords.write_coords_all(self.QMgradient_wo_linkatoms, self.qmelems, indices=self.qmatoms, file="QMgradient-without-linkatoms", description="QM gradient w/o linkatoms (au/Bohr):")
+                modules.module_coords.write_coords_all(self.QMgradient_wo_linkatoms, self.qmelems, indices=self.qmatoms, file="QMgradient-without-linkatoms", description="QM gradient w/o linkatoms (au/Bohr):")
                 
                 #Writing QM+Linkatoms gradient
-                module_coords.write_coords_all(self.QMgradient, self.qmelems+['L' for i in range(num_linkatoms)], indices=self.qmatoms+[0 for i in range(num_linkatoms)], file="QMgradient-with-linkatoms", description="QM gradient with linkatoms (au/Bohr):")
+                modules.module_coords.write_coords_all(self.QMgradient, self.qmelems+['L' for i in range(num_linkatoms)], indices=self.qmatoms+[0 for i in range(num_linkatoms)], file="QMgradient-with-linkatoms", description="QM gradient with linkatoms (au/Bohr):")
                 
                 #blankline()
                 #print("PC gradient (au/Bohr):")
                 #module_coords.print_coords_all(self.PCgradient, self.mmelems, self.mmatoms)
-                module_coords.write_coords_all(self.PCgradient, self.mmelems, indices=self.mmatoms, file="PCgradient", description="PC gradient (au/Bohr):")
+                modules.module_coords.write_coords_all(self.PCgradient, self.mmelems, indices=self.mmatoms, file="PCgradient", description="PC gradient (au/Bohr):")
                 #blankline()
                 #print("QM+PC gradient (au/Bohr):")
                 #module_coords.print_coords_all(self.QM_PC_gradient, self.elems, self.allatoms)
-                module_coords.write_coords_all(self.QM_PC_gradient, self.elems, indices=self.allatoms, file="QM+PCgradient", description="QM+PC gradient (au/Bohr):")
+                modules.module_coords.write_coords_all(self.QM_PC_gradient, self.elems, indices=self.allatoms, file="QM+PCgradient", description="QM+PC gradient (au/Bohr):")
                 #blankline()
                 #print("MM gradient (au/Bohr):")
                 #module_coords.print_coords_all(self.MMgradient, self.elems, self.allatoms)
-                module_coords.write_coords_all(self.MMgradient, self.elems, indices=self.allatoms, file="MMgradient", description="MM gradient (au/Bohr):")
+                modules.module_coords.write_coords_all(self.MMgradient, self.elems, indices=self.allatoms, file="MMgradient", description="MM gradient (au/Bohr):")
                 #blankline()
                 #print("Total QM/MM gradient (au/Bohr):")
                 #print("")
                 #module_coords.print_coords_all(self.QM_MM_gradient, self.elems,self.allatoms)
-                module_coords.write_coords_all(self.QM_MM_gradient, self.elems, indices=self.allatoms, file="QM_MMgradient", description="QM/MM gradient (au/Bohr):")
+                modules.module_coords.write_coords_all(self.QM_MM_gradient, self.elems, indices=self.allatoms, file="QM_MMgradient", description="QM/MM gradient (au/Bohr):")
             if self.printlevel >= 2:
                 print(BC.WARNING,BC.BOLD,"------------ENDING QM/MM MODULE-------------",BC.END)
                 print_time_rel(module_init_time, modulename='QM/MM run', moduleindex=2)
@@ -857,9 +857,9 @@ def linkatom_force_fix(Qcoord, Mcoord, Lcoord, Qgrad,Mgrad,Lgrad):
     printdebug("Mcoord:", Mcoord)
     printdebug("Lcoord:", Lcoord)
     #QM1-L and QM1-MM1 distances
-    QLdistance=module_coords.distance(Qcoord,Lcoord)
+    QLdistance=modules.module_coords.distance(Qcoord,Lcoord)
     printdebug("QLdistance:", QLdistance)
-    MQdistance=module_coords.distance(Mcoord,Qcoord)
+    MQdistance=modules.module_coords.distance(Mcoord,Qcoord)
     printdebug("MQdistance:", MQdistance)
     #B and C: a 3x3 arrays
     B=np.zeros([3,3])
@@ -955,7 +955,7 @@ def actregiondefine(mmtheory=None, fragment=None, radius=None, originatom=None,s
     origincoords=fragment.coords[originatom]
     act_indices=[]
     for index,allc in enumerate(fragment.coords):
-        dist=module_coords.distance(origincoords,allc)
+        dist=modules.module_coords.distance(origincoords,allc)
         if dist < radius:
             resid_value=mmtheory.resids[index]
 
@@ -975,6 +975,6 @@ def actregiondefine(mmtheory=None, fragment=None, radius=None, originatom=None,s
     print("Active-region indices written to file: active_atoms")
     print("The active_atoms list  can be read-into Python script like this:	 actatoms = read_intlist_from_file(\"active_atoms\")")
     #Print XYZ file with active region shown
-    module_coords.write_XYZ_for_atoms(fragment.coords,fragment.elems, act_indices, "ActiveRegion")
+    modules.module_coords.write_XYZ_for_atoms(fragment.coords,fragment.elems, act_indices, "ActiveRegion")
     print("Wrote Active region XYZfile: ActiveRegion.xyz  (inspect with visualization program)")
     return act_indices

@@ -4,9 +4,9 @@ import shutil
 import os
 import copy
 import time
-from functions_general import listdiff, clean_number,blankline,BC,print_time_rel
-import module_coords
-import interface_ORCA
+from functions.functions_general import listdiff, clean_number,blankline,BC,print_time_rel
+import modules.module_coords
+import interfaces.interface_ORCA
 import constants
 import ash
 

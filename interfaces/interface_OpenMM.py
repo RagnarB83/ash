@@ -4,8 +4,8 @@ import constants
 import os
 from sys import stdout
 
-from functions_general import BC,print_time_rel,listdiff,printdebug,print_line_with_mainheader
-from module_coords import write_pdbfile,distance_between_atoms
+from functions.functions_general import BC,print_time_rel,listdiff,printdebug,print_line_with_mainheader
+from modules.module_coords import write_pdbfile,distance_between_atoms
 
 class OpenMMTheory:
     def __init__(self, printlevel=2, platform='CPU', numcores=None, 
@@ -30,7 +30,7 @@ class OpenMMTheory:
             #import simtk.openmm
         except ImportError:
             raise ImportError(
-                "OpenMM requires installing the OpenMM package. Try: conda install -c omnia openmm  \
+                "OpenMM requires installing the OpenMM package. Try: conda install -c conda-forge openmm  \
                 Also see http://docs.openmm.org/latest/userguide/application.html")
 
         #OpenMM things
@@ -1514,8 +1514,37 @@ def OpenMM_Opt(fragment=None, openmmobject=None, frozen_atoms=None, constraints=
     #        (state.getPotentialEnergy().value_in_unit_system(openmmobject.unit.md_unit_system))
     #)
 
+def OpenMM_Modeller(pdbfile=None, watermodel='tip3p', pH=7.0, solvent_padding=10.0, boxdims=[10.0,10.0,10.0],
+                    ionicstrength=0.1):
+    try:
+        import simtk.openmm.app
+        import simtk.unit
+        print("Imported OpenMM library version:", simtk.openmm.__version__)
+        #import simtk.openmm
+    except ImportError:
+        raise ImportError(
+            "OpenMM requires installing the OpenMM package. Try: conda install -c conda-forge openmm  \
+            Also see http://docs.openmm.org/latest/userguide/application.html")
 
-
+    #OpenMM things
+    openmm=simtk.openmm
+    openmm_unit=simtk.unit
+    pdb = openmm.PDBFile(pdbfile)
+    modeller = Modeller(pdb.topology, pdb.positions)
+    
+    #Define a forcefield
+    #TODO: FINISH
+    forcefield=openmm.Forcefield()
+    
+    #Add solvent and ions
+    #modeller.addHydrogen(forcefield, pH=pH)
+    #modeller.addSolvent(forcefield, padding=solvent_padding*openmm_unit.angstrom, model=watermodel)
+    #modeller.addSolvent(forcefield, boxSize=openmm.Vec3(boxdims[0], boxdims[1], boxdims[2])*openmm_unit.nanometers)
+    #Add ions example
+    #modeller.addSolvent(forcefield, ionicStrength=ionicstrength*openmm_unit.molar, positiveIon='K+')
+    
+    #Exit
+    #system = forcefield.createSystem(modeller.topology, nonbondedMethod=openmm.PME)
 
 
 

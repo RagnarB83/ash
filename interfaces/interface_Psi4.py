@@ -5,8 +5,8 @@ import subprocess as sp
 import glob
 import time
 
-import module_coords
-from functions_general import BC,print_time_rel
+import modules.module_coords
+from functions.functions_general import BC,print_time_rel
 
 
 #Psi4 Theory object. Fragment object is optional. Only used for single-points.

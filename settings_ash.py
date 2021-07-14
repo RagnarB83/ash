@@ -1,7 +1,7 @@
 import os
 import sys
 import ash
-import functions_general
+import functions.functions_general
 import time
 import configparser
 import distutils

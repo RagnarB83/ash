@@ -1,7 +1,7 @@
 import numpy as np
 import os
 import sys
-from functions_general import print_line_with_mainheader,print_line_with_subheader1
+from functions.functions_general import print_line_with_mainheader,print_line_with_subheader1
 
 #repeated here so that plotting can be stand-alone
 class BC:

@@ -3,8 +3,8 @@ import os
 import glob
 
 import settings_ash
-from functions_general import BC,print_time_rel
-import module_coords
+from functions.functions_general import BC,print_time_rel
+import modules.module_coords
 
 class DaltonTheory:
     def __init__(self, daltondir=None, filename='dalton', fragment=None, charge=None, mult=None, printlevel=2, nprocs=1, pe=False, potfile='',
