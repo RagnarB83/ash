@@ -1273,6 +1273,8 @@ def OpenMM_MD(fragment=None, openmmobject=None, timestep=0.001, simulation_steps
     if constraints==None: constraints=[]
     if restraints==None: restraints=[]
     
+    print("frozen_atoms:", frozen_atoms)
+    
     if simulation_steps == None and simulation_time == None:
         print("Either simulation_steps or simulation_time needs to be set")
         exit()
