@@ -1243,7 +1243,6 @@ def clean_up_constraints_list(fragment=None, constraints=None):
     print("Checking defined constraints")
     newconstraints=[]
     for con in constraints:
-        print("Constraint:", con)
         if len(con) == 3:
             newconstraints.append(con)
         elif len(con) == 2:
@@ -1270,7 +1269,10 @@ def OpenMM_MD(fragment=None, openmmobject=None, timestep=0.001, simulation_steps
     parmed_state_datareporter=False):
     
     print_line_with_mainheader("OpenMM MOLECULAR DYNAMICS")
-
+    if frozen_atoms==None: frozen_atoms=[]
+    if constraints==None: constraints=[]
+    if restraints==None: restraints=[]
+    
     if simulation_steps == None and simulation_time == None:
         print("Either simulation_steps or simulation_time needs to be set")
         exit()
@@ -1325,18 +1327,18 @@ def OpenMM_MD(fragment=None, openmmobject=None, timestep=0.001, simulation_steps
     print("Before adding constraints, system contains {} constraints".format(openmmobject.system.getNumConstraints()))
 
     #Freezing atoms in OpenMM object by setting particles masses to zero. Needs to be done before simulation creation
-    if frozen_atoms != None:
+    if len(frozen_atoms) > 0:
         openmmobject.freeze_atoms(frozen_atoms=frozen_atoms)
 
     #Adding constraints/restraints between atoms
-    if constraints != None:
+    if len(constraints) > 0:
         print("Constraints defined.")
         #constraints is a list of lists defining bond constraints: constraints = [[700,701], [802,803,1.04]]
         #Cleaning up constraint list. Adding distance if missing
         constraints = clean_up_constraints_list(fragment=fragment, constraints=constraints)
         print("Will enforce constrain definitions during MD:", constraints)
         openmmobject.add_bondconstraints(constraints=constraints)
-    if restraints != None:
+    if len(restraints) > 0:
         print("Restraints defined")
         #restraints is a list of lists defining bond restraints: constraints = [[atom_i,atom_j, d, k ]]    Example: [[700,701, 1.05, 5.0 ]] Unit is Angstrom and kcal/mol * Angstrom^-2
         openmmobject.add_bondrestraints(restraints=restraints)
@@ -1396,7 +1398,10 @@ def OpenMM_MD(fragment=None, openmmobject=None, timestep=0.001, simulation_steps
 def OpenMM_Opt(fragment=None, openmmobject=None, frozen_atoms=None, constraints=None, restraints=None, maxiter=1000, tolerance=1):
     
     print_line_with_mainheader("OpenMM Optimization")
-
+    if frozen_atoms==None: frozen_atoms=[]
+    if constraints==None: constraints=[]
+    if restraints==None: restraints=[]
+    
     if fragment == None:
         print("No fragment object. Exiting")
         exit()
@@ -1428,20 +1433,20 @@ def OpenMM_Opt(fragment=None, openmmobject=None, frozen_atoms=None, constraints=
 
     #Freezing atoms in OpenMM object by setting particles masses to zero. Needs to be done before simulation creation
 
-    if frozen_atoms != None:
+    if len(frozen_atoms) > 0:
         print("Freezing atoms")
         openmmobject.freeze_atoms(frozen_atoms=frozen_atoms)
-    print("Before adding constraints, system contains {} constraints".format(openmmobject.system.getNumConstraints()))
     #Adding constraints/restraints between atoms
-    if constraints != None:
+    if len(constraints) > 0:
         print("Constraints defined.")
+        print("Before adding constraints, system contains {} constraints".format(openmmobject.system.getNumConstraints()))
         #constraints is a list of lists defining bond constraints: constraints = [[700,701], [802,803,1.04]]
         #Cleaning up constraint list. Adding distance if missing
         constraints = clean_up_constraints_list(fragment=fragment, constraints=constraints)
-        print("Will enforce constrain definitions during Opt:", constraints)
+        #print("Will enforce constrain definitions during Opt:", constraints)
         openmmobject.add_bondconstraints(constraints=constraints)
         print("After adding constraints, system contains {} constraints".format(openmmobject.system.getNumConstraints()))
-    if restraints != None:
+    if len(restraints) > 0:
         print("Restraints defined")
         #restraints is a list of lists defining bond restraints: constraints = [[atom_i,atom_j, d, k ]]    Example: [[700,701, 1.05, 5.0 ]] Unit is Angstrom and kcal/mol * Angstrom^-2
         openmmobject.add_bondrestraints(restraints=restraints)
