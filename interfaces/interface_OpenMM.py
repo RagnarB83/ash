@@ -8,7 +8,7 @@ from functions.functions_general import BC,print_time_rel,listdiff,printdebug,pr
 from modules.module_coords import write_pdbfile,distance_between_atoms
 
 class OpenMMTheory:
-    def __init__(self, printlevel=2, platform='CPU', numcores=None, 
+    def __init__(self, printlevel=2, platform='CPU', numcores=None, Modeller=False, forcefield=None, topology=None,
                  CHARMMfiles=False, psffile=None, charmmtopfile=None, charmmprmfile=None,
                  GROMACSfiles=False, gromacstopfile=None, grofile=None, gromacstopdir=None,
                  Amberfiles=False, amberprmtopfile=None,
@@ -233,6 +233,10 @@ class OpenMMTheory:
             self.forcefield= self.prmtop
 
             #TODO: Define resnames, resids, segmentnames, atomtypes, atomnames??
+        elif Modeller is True:
+            print("Using info from Modeller")
+            self.topology = topology
+            self.forcefield= forcefield
         else:
             print("Reading OpenMM XML forcefield file and PDB file")
             #This would be regular OpenMM Forcefield definition requiring XML file
@@ -257,8 +261,8 @@ class OpenMMTheory:
 
         #Now after topology is defined we can create system
         #Get number of atoms
-        self.numatoms=int(self.forcefield.topology.getNumAtoms())
-        print("Number of atoms in OpenMM object", self.numatoms)
+        #self.numatoms=int(self.forcefield.topology.getNumAtoms())
+        #print("Number of atoms in OpenMM object", self.numatoms)
         
         #Setting active and frozen variables once topology is in place
         #NOTE: Is this actually used?
@@ -315,7 +319,9 @@ class OpenMMTheory:
                 
                 #print("self.system num con", self.system.getNumConstraints())
             else:
-                self.system = self.forcefield.createSystem(nonbondedMethod=simtk.openmm.app.PME, constraints=self.autoconstraints, hydrogenMass=self.hydrogenmass, rigidWater=self.rigidwater,
+                #Modeller
+                print("here")
+                self.system = self.forcefield.createSystem(self.topology, nonbondedMethod=simtk.openmm.app.PME, constraints=self.autoconstraints, hydrogenMass=self.hydrogenmass, rigidWater=self.rigidwater,
                                             nonbondedCutoff=periodic_nonbonded_cutoff * self.unit.angstroms, switchDistance=switching_function_distance*self.unit.angstroms)
                 
 
@@ -1522,8 +1528,9 @@ def OpenMM_Opt(fragment=None, openmmobject=None, frozen_atoms=None, constraints=
     #        (state.getPotentialEnergy().value_in_unit_system(openmmobject.unit.md_unit_system))
     #)
 
-def OpenMM_Modeller(pdbfile=None, watermodel='tip3p', pH=7.0, solvent_padding=10.0, boxdims=[10.0,10.0,10.0],
-                    ionicstrength=0.1):
+def OpenMM_Modeller(pdbfile=None, forcefield=None, xmlfile=None, watermodel='tip3p', pH=7.0, 
+                    solvent_padding=10.0, solvent_boxdims=None,
+                    ionicstrength=0.1, iontype='K+'):
     try:
         import simtk.openmm.app
         import simtk.unit
@@ -1537,23 +1544,90 @@ def OpenMM_Modeller(pdbfile=None, watermodel='tip3p', pH=7.0, solvent_padding=10
     #OpenMM things
     openmm=simtk.openmm
     openmm_unit=simtk.unit
-    pdb = openmm.PDBFile(pdbfile)
-    modeller = Modeller(pdb.topology, pdb.positions)
     
-    #Define a forcefield
-    #TODO: FINISH
-    forcefield=openmm.Forcefield()
+    #Forcefield options
+    if forcefield != None:
+        if forcefield =='Amber99':
+            xmlfile="amber99sb.xml"
+        elif forcefield =='Amber96':
+            xmlfile="amber96.xml"
+        elif forcefield =='Amber03':
+            xmlfile="amber03.xml"
+        elif forcefield =='Amber10':
+            xmlfile="amber10.xml"
+        elif forcefield =='Amber10':
+            xmlfile="amber10.xml"
+        elif forcefield =='Amber14':
+            xmlfile="amber14/protein.ff14SB.xml"
+        elif forcefield =='Amber96':
+            xmlfile="amber96.xml"
+        elif forcefield =='CHARMM36':
+            xmlfile="charmm36.xml"
+        elif forcefield =='CHARMM2013':
+            xmlfile="charmm_polar_2013.xml"
+        elif forcefield =='Amoeba2013':
+            xmlfile="amoeba2013.xml"
+        elif forcefield =='Amoeba2009':
+            xmlfile="amoeba2009.xml"
+    elif xmlfile != None:
+        print("Using xmlfile:", xmlfile)
+    else:
+        print("You must provide a forcefield or xmlfile keyword!")
+        exit()
+    if watermodel=="tip3p":
+        waterxmlfile="tip3p.xml"
     
-    #Add solvent and ions
-    #modeller.addHydrogen(forcefield, pH=pH)
-    #modeller.addSolvent(forcefield, padding=solvent_padding*openmm_unit.angstrom, model=watermodel)
-    #modeller.addSolvent(forcefield, boxSize=openmm.Vec3(boxdims[0], boxdims[1], boxdims[2])*openmm_unit.nanometers)
-    #Add ions example
-    #modeller.addSolvent(forcefield, ionicStrength=ionicstrength*openmm_unit.molar, positiveIon='K+')
+    print("Forcefield:", forcefield)
+    print("XMfile:", xmlfile)
+    print("Water model:", watermodel)
+    print("Xmlfile:", waterxmlfile)   
+    print("pH:", pH)
     
-    #Exit
-    #system = forcefield.createSystem(modeller.topology, nonbondedMethod=openmm.PME)
+    def create_system(forcefield,topology):
+        system = forcefield.createSystem(modeller.topology, nonbondedMethod=openmm.app.PME)
+        return system
+    def write_pdbfile(topology,positions,filename):
+        openmm.app.PDBFile.writeFile(topology, positions, file=open(filename, 'w'))
+        print("Wrote PDB-file:", filename)
+    def print_systemsize():
+        print("System size: {} atoms\n".format(len(modeller.getPositions())))
+    pdb = openmm.app.PDBFile(pdbfile)
+    modeller = openmm.app.Modeller(pdb.topology, pdb.positions)
+    
 
+    #Define a forcefield
+    forcefield=openmm.app.forcefield.ForceField(xmlfile, waterxmlfile)
+    
+    #Adding hydrogens
+    print("")
+    print("Adding hydrogens for pH:", pH)
+    modeller.addHydrogens(forcefield, pH=pH)
+    write_pdbfile(modeller.topology,modeller.positions,"system_afterH.pdb")
+    print_systemsize()
+    #Solvent
+    print("Adding solvent, watermodel:", watermodel)
+    if solvent_boxdims != None: 
+        print("Solvent boxdimension provided: {} Å".format(solvent_boxdims))
+        modeller.addSolvent(forcefield, boxSize=openmm.Vec3(solvent_boxdims[0], solvent_boxdims[1], solvent_boxdims[2])*openmm_unit.angstrom)
+    else:
+        print("Using solvent padding (solvent_padding=X keyword): {} Å".format(solvent_padding))
+        modeller.addSolvent(forcefield, padding=solvent_padding*openmm_unit.angstrom, model=watermodel)
+    write_pdbfile(modeller.topology,modeller.positions,"system_aftersolvent.pdb")
+    print_systemsize()
+    
+    #Ions
+    print("Adding ionic strength: {} using ions {}".format(ionicstrength,iontype))
+    modeller.addSolvent(forcefield, ionicStrength=ionicstrength*openmm_unit.molar, positiveIon=iontype)
+    write_pdbfile(modeller.topology,modeller.positions,"system_afterions.pdb")
+    print_systemsize()
+    
+    return forcefield, modeller.topology
+
+    #1. We could create system now. Best way to check for correctness of PDB-file??
+    #system = create_system(forcefield,pdb.topology)
+    #system = forcefield.createSystem(modeller.topology, nonbondedMethod=openmm.PME)
+    #1b. we then calls OpenMMTheory and create full object ? Too messy since we can't change options
+    #3. We exit and return forcefield and topology object. Then pass that to OpenMMTheory????
 
 def MDtraj_import_():
     print("Importing mdtraj")
