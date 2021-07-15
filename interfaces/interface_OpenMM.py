@@ -1265,7 +1265,7 @@ def clean_up_constraints_list(fragment=None, constraints=None):
 #see https://github.com/openmm/openmm/issues/2688, https://github.com/openmm/openmm/pull/1895
 #Also should we add: https://github.com/mdtraj/mdtraj ?
 def OpenMM_MD(fragment=None, openmmobject=None, timestep=0.001, simulation_steps=None, simulation_time=None, traj_frequency=1000, temperature=300, integrator=None,
-    barostat=None, trajectory_file_option='PDB', coupling_frequency=None, anderson_thermostat=False, enforcePeriodicBox=False, frozen_atoms=None, constraints=None, restraints=None,
+    barostat=None, trajectory_file_option='PDB', coupling_frequency=None, anderson_thermostat=False, enforcePeriodicBox=True, frozen_atoms=None, constraints=None, restraints=None,
     parmed_state_datareporter=False):
     
     print_line_with_mainheader("OpenMM MOLECULAR DYNAMICS")
@@ -1380,7 +1380,15 @@ def OpenMM_MD(fragment=None, openmmobject=None, timestep=0.001, simulation_steps
         #write_pdbfile(fragment,outputname="initial_frag", openmmobject=openmmobject)
         with open('initial_frag.pdb', 'w') as f: openmmobject.openmm.app.pdbfile.PDBFile.writeModel(openmmobject.topology, openmmobject.simulation.context.getState(getPositions=True).getPositions(), f)
         openmmobject.simulation.reporters.append(openmmobject.openmm.app.DCDReporter('output_traj.dcd', traj_frequency, enforcePeriodicBox=enforcePeriodicBox))
-    
+    elif trajectory_file_option =='NetCDFReporter':
+        print("NetCDFReporter traj format selected. This requires mdtraj. Importing.")
+        mdtraj=MDtraj_import_()
+        openmmobject.simulation.reporters.append(mdtraj.reporters.NetCDFReporter('output_traj.nc', traj_frequency)
+    elif trajectory_file_option =='HDF5Reporter':
+        print("HDF5Reporter traj format selected. This requires mdtraj. Importing.")
+        mdtraj=MDtraj_import_()
+        openmmobject.simulation.reporters.append(mdtraj.reporters.HDF5Reporter('output_traj.lh5', traj_frequency, enforcePeriodicBox=enforcePeriodicBox))
+        
     if parmed_state_datareporter == True:
         print("Using ParMed StateDataReporter")
         import parmed
@@ -1547,8 +1555,29 @@ def OpenMM_Modeller(pdbfile=None, watermodel='tip3p', pH=7.0, solvent_padding=10
     #system = forcefield.createSystem(modeller.topology, nonbondedMethod=openmm.PME)
 
 
+def MDtraj_import_():
+    print("Importing mdtraj")
+    try:
+        import mdtraj
+    except:
+        print("Problem importing mdtraj. Try: pip install mdtraj or conda install -c conda-forge mdtraj")
+    return mdtraj
 
+def MDtraj_stuff(trajectory, pdbtopology):
+    mdtraj=MDtraj_import_()
+    traj = mdtraj.load(trajectory, top=pdbtopology)
 
+    traj.image_molecules()
+
+    traj.center_coordinates()
+    
+    #Save trajectory in format
+    traj.save('file.dcd')
+    traj.save('file.h5')
+    traj.save('file.nc')
+    traj.save('file.xyz')
+    traj.save('file.pdb')
+    
 #QM/MM functionality to Open_MM MD
 
 #Janus: https://github.com/CCQC/janus/blob/aa8446e96c90221a10ba37cee379083162ac17e4/janus/mm_wrapper/openmm_wrapper.py#L222
