@@ -1383,7 +1383,7 @@ def OpenMM_MD(fragment=None, openmmobject=None, timestep=0.001, simulation_steps
     elif trajectory_file_option =='NetCDFReporter':
         print("NetCDFReporter traj format selected. This requires mdtraj. Importing.")
         mdtraj=MDtraj_import_()
-        openmmobject.simulation.reporters.append(mdtraj.reporters.NetCDFReporter('output_traj.nc', traj_frequency)
+        openmmobject.simulation.reporters.append(mdtraj.reporters.NetCDFReporter('output_traj.nc', traj_frequency))
     elif trajectory_file_option =='HDF5Reporter':
         print("HDF5Reporter traj format selected. This requires mdtraj. Importing.")
         mdtraj=MDtraj_import_()
