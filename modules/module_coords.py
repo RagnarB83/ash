@@ -281,7 +281,7 @@ class Fragment:
         try:
             with open(filename) as f:
                 for line in f:
-                    if 'ATOM ' in line:
+                    if 'ATOM ' in line or 'HETATM' in line:
                         #atomindex=float(line[6:11].replace(' ',''))
                         atom_name=line[12:16].replace(' ','')
                         residname.append(line[17:20].replace(' ',''))
@@ -315,9 +315,9 @@ class Fragment:
                         #elemcol.append(line.split()[-1])
                         #residuelist.append(line.split()[3])
                         #atom_name.append(line.split()[3])
-                    if 'HETATM' in line:
-                        print("HETATM line in file found. Please rename to ATOM")
-                        exit()
+                    #if 'HETATM' in line:
+                    #    print("HETATM line in file found. Please rename to ATOM")
+                    #    exit()
         except FileNotFoundError:
             print("File {} does not exist!".format(filename))
             exit()

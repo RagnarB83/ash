@@ -5,7 +5,7 @@ import os
 from sys import stdout
 
 from functions.functions_general import BC,print_time_rel,listdiff,printdebug,print_line_with_mainheader
-from modules.module_coords import write_pdbfile,distance_between_atoms
+from modules.module_coords import Fragment, write_pdbfile,distance_between_atoms
 
 class OpenMMTheory:
     def __init__(self, printlevel=2, platform='CPU', numcores=None, Modeller=False, forcefield=None, topology=None,
@@ -234,7 +234,7 @@ class OpenMMTheory:
 
             #TODO: Define resnames, resids, segmentnames, atomtypes, atomnames??
         elif Modeller is True:
-            print("Using info from Modeller")
+            print("Using forcefield info from Modeller")
             self.topology = topology
             self.forcefield= forcefield
         else:
@@ -260,19 +260,20 @@ class OpenMMTheory:
         #    simtk.openmm.app.app.PDBFile.writeFile(modeller.topology, modeller.positions, open('test-water.pdb', 'w'))
 
         #Now after topology is defined we can create system
-        #Get number of atoms
-        #self.numatoms=int(self.forcefield.topology.getNumAtoms())
-        #print("Number of atoms in OpenMM object", self.numatoms)
+
         
         #Setting active and frozen variables once topology is in place
         #NOTE: Is this actually used?
         #NOTE: Disabled for now
         #self.set_active_and_frozen_regions(active_atoms=active_atoms, frozen_atoms=frozen_atoms)
-
+        #Get number of atoms
+        self.numatoms=int(self.topology.getNumAtoms())
+        print("Number of atoms in OpenMM topology:", self.numatoms)
 
         #Periodic or non-periodic ystem
         if self.Periodic is True:
             print("System is periodic")
+
             print("Nonbonded cutoff is {} Angstrom".format(periodic_nonbonded_cutoff))
             #Parameters here are based on OpenMM DHFR example
             
@@ -320,7 +321,6 @@ class OpenMMTheory:
                 #print("self.system num con", self.system.getNumConstraints())
             else:
                 #Modeller
-                print("here")
                 self.system = self.forcefield.createSystem(self.topology, nonbondedMethod=simtk.openmm.app.PME, constraints=self.autoconstraints, hydrogenMass=self.hydrogenmass, rigidWater=self.rigidwater,
                                             nonbondedCutoff=periodic_nonbonded_cutoff * self.unit.angstroms, switchDistance=switching_function_distance*self.unit.angstroms)
                 
@@ -1384,7 +1384,7 @@ def OpenMM_MD(fragment=None, openmmobject=None, timestep=0.001, simulation_steps
     elif trajectory_file_option == 'DCD':
         #NOTE: Safer option seems to be to use PDB-writer from OpenMM instead of ASH. Because ASH requires ASH-openMMobject to have a bunch of lists defined (currently only for CHARMM)
         #write_pdbfile(fragment,outputname="initial_frag", openmmobject=openmmobject)
-        with open('initial_frag.pdb', 'w') as f: openmmobject.openmm.app.pdbfile.PDBFile.writeModel(openmmobject.topology, openmmobject.simulation.context.getState(getPositions=True).getPositions(), f)
+        with open('initial_MDfrag_step1.pdb', 'w') as f: openmmobject.openmm.app.pdbfile.PDBFile.writeModel(openmmobject.topology, openmmobject.simulation.context.getState(getPositions=True).getPositions(), f)
         openmmobject.simulation.reporters.append(openmmobject.openmm.app.DCDReporter('output_traj.dcd', traj_frequency, enforcePeriodicBox=enforcePeriodicBox))
     elif trajectory_file_option =='NetCDFReporter':
         print("NetCDFReporter traj format selected. This requires mdtraj. Importing.")
@@ -1408,7 +1408,13 @@ def OpenMM_MD(fragment=None, openmmobject=None, timestep=0.001, simulation_steps
     openmmobject.simulation.step(simulation_steps)
 
     print("OpenMM MD simulation finished!")
-
+    state = openmmobject.simulation.context.getState(getEnergy=True, getPositions=True, getForces=True)
+    #Writing final frame to disk as PDB
+    with open('final_MDfrag_laststep.pdb', 'w') as f: openmmobject.openmm.app.pdbfile.PDBFile.writeModel(openmmobject.topology, state.getPositions(asNumpy=True).value_in_unit(openmmobject.unit.angstrom), f)
+    #Updating ASH fragment
+    newcoords = state.getPositions(asNumpy=True).value_in_unit(openmmobject.unit.angstrom)
+    print("Updating coordinates in ASH fragment")
+    fragment.coords=newcoords
 
 
 def OpenMM_Opt(fragment=None, openmmobject=None, frozen_atoms=None, constraints=None, restraints=None, maxiter=1000, tolerance=1):
@@ -1531,6 +1537,7 @@ def OpenMM_Opt(fragment=None, openmmobject=None, frozen_atoms=None, constraints=
 def OpenMM_Modeller(pdbfile=None, forcefield=None, xmlfile=None, watermodel='tip3p', pH=7.0, 
                     solvent_padding=10.0, solvent_boxdims=None,
                     ionicstrength=0.1, iontype='K+'):
+    print_line_with_mainheader("OpenMM Modeller")
     try:
         import simtk.openmm.app
         import simtk.unit
@@ -1620,8 +1627,14 @@ def OpenMM_Modeller(pdbfile=None, forcefield=None, xmlfile=None, watermodel='tip
     modeller.addSolvent(forcefield, ionicStrength=ionicstrength*openmm_unit.molar, positiveIon=iontype)
     write_pdbfile(modeller.topology,modeller.positions,"system_afterions.pdb")
     print_systemsize()
-    
-    return forcefield, modeller.topology
+
+    #Create ASH fragment
+    fragment = Fragment(pdbfile="system_afterions.pdb")
+    #Write to disk
+    fragment.print_system(filename="fragment.ygg")
+    fragment.write_xyzfile(xyzfilename="fragment.xyz")
+    #Return forcefield object,  topology object and ASH fragment
+    return forcefield, modeller.topology, fragment
 
     #1. We could create system now. Best way to check for correctness of PDB-file??
     #system = create_system(forcefield,pdb.topology)
