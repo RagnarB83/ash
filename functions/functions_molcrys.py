@@ -1101,7 +1101,7 @@ def gasfragcalc_ORCA(fragmentobjects,Cluster,chargemodel,orcadir,orcasimpleinput
         blankline()
         print("Fragmentobject:", BC.WARNING, BC.BOLD, fragmentobject.Name, BC.END)
         #Charge-model info to add to inputfile
-        chargemodelline = interface_ORCA.chargemodel_select(chargemodel)
+        chargemodelline = interfaces.interface_ORCA.chargemodel_select(chargemodel)
 
         #Call Clusterfragment and have print/write/something out coords and elems for atoms in list [0,1,2,3 etc.]
         atomlist=fragmentobject.clusterfraglist[0]
@@ -1199,7 +1199,7 @@ def gasfragcalc_xTB(fragmentobjects,Cluster,chargemodel,xtbdir,xtbmethod,NUMPROC
         blankline()
         print("Fragmentobject:", fragmentobject.Name)
         #Charge-model info to add to inputfile
-        chargemodelline = interface_ORCA.chargemodel_select(chargemodel)
+        chargemodelline = interfaces.interface_ORCA.chargemodel_select(chargemodel)
 
         #Call Clusterfragment and have print/write/something out coords and elems for atoms in list [0,1,2,3 etc.]
         atomlist=fragmentobject.clusterfraglist[0]

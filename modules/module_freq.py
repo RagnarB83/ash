@@ -21,14 +21,14 @@ def AnFreq(fragment=None, theory=None, numcores=1, temp=298.15, pressure=1.0):
         #Do single-point ORCA Anfreq job
         energy = theory.run(current_coords=fragment.coords, elems=fragment.elems, Hessian=True, nprocs=numcores)
         #Grab Hessian
-        hessian = interface_ORCA.Hessgrab(theory.filename+".hess")
+        hessian = interfaces.interface_ORCA.Hessgrab(theory.filename+".hess")
         #Add Hessian to fragment
         fragment.hessian=hessian
         
         #TODO: diagonalize it ourselves. Need to finish projection
         
         # For now, we grab frequencies from ORCA Hessian file
-        frequencies = interface_ORCA.ORCAfrequenciesgrab(theory.filename+".hess")
+        frequencies = interfaces.interface_ORCA.ORCAfrequenciesgrab(theory.filename+".hess")
         
         hessatoms=list(range(0,fragment.numatoms))
         Thermochemistry = thermochemcalc(frequencies,hessatoms, fragment, theory.mult, temp=temp,pressure=pressure)
@@ -98,7 +98,7 @@ def NumFreq(fragment=None, theory=None, npoint=1, displacement=0.005, hessatoms=
     current_coords_array=np.array(coords)
 
     print("Printing hessatoms geometry...")
-    module_coords.print_coords_for_atoms(coords,elems,hessatoms)
+    modules.module_coords.print_coords_for_atoms(coords,elems,hessatoms)
     blankline()
 
     #Looping over each atom and each coordinate to create displaced geometries
@@ -279,12 +279,12 @@ def NumFreq(fragment=None, theory=None, npoint=1, displacement=0.005, hessatoms=
                 #results = pool.map(displacement_QMrun, [[geo, elems, numcoresQM, theory, label] for geo, label in
                 #                                        zip(list_of_displaced_geos, list_of_labels)])
                 #print(results)
-                results = pool.map(functions_parallel.displacement_QMMMrun, [[filelabel, numcoresQM, label, theory.fragment, theory.qm_theory, theory.mm_theory,
+                results = pool.map(functions.functions_parallel.displacement_QMMMrun, [[filelabel, numcoresQM, label, theory.fragment, theory.qm_theory, theory.mm_theory,
                                                         theory.actatoms, theory.qmatoms, theory.embedding, theory.charges, theory.printlevel,
                                                         theory.frozenatoms] for label,filelabel in zip(list_of_labels,list_of_filelabels)])
         #Passing QM theory directly
         else:
-            results = pool.map(functions_parallel.displacement_QMrun, [[geo, elems, numcoresQM, theory, label] for geo,label in zip(list_of_displaced_geos,list_of_labels)])
+            results = pool.map(functions.functions_parallel.displacement_QMrun, [[geo, elems, numcoresQM, theory, label] for geo,label in zip(list_of_displaced_geos,list_of_labels)])
         pool.close()
 
         #Gathering results in dictionary
@@ -426,7 +426,7 @@ def NumFreq(fragment=None, theory=None, npoint=1, displacement=0.005, hessatoms=
         print("Wrote Hessian to file: Hessian")
     #Write ORCA-style Hessian file. Hardcoded filename here. Change?
     #Note: Passing hesscords here instead of coords. Change?
-    interface_ORCA.write_ORCA_Hessfile(hessian, hesscoords, hesselems, hessmasses, hessatoms, "orcahessfile.hess")
+    interfaces.interface_ORCA.write_ORCA_Hessfile(hessian, hesscoords, hesselems, hessmasses, hessatoms, "orcahessfile.hess")
     print("Wrote ORCA-style Hessian file: orcahessfile.hess")
 
     #Create dummy-ORCA file with frequencies and normal modes
@@ -1266,7 +1266,7 @@ def calc_model_Hessian_ORCA(fragment,model='Almloef'):
     inhess {}
     end
 """.format(model)
-    orcadummycalc=interface_ORCA.ORCATheory(orcasimpleinput=orcasimple,orcablocks=orcablocks,charge=0,mult=1)
+    orcadummycalc=interfaces.interface_ORCA.ORCATheory(orcasimpleinput=orcasimple,orcablocks=orcablocks,charge=0,mult=1)
     ash.Singlepoint(theory=orcadummycalc, fragment=fragment)
     #Read orca-input.opt containing Hessian under hessian_approx
     hesstake=False
