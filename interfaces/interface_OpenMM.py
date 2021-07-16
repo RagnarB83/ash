@@ -3,6 +3,7 @@ import numpy as np
 import constants
 import os
 from sys import stdout
+import traceback
 
 from functions.functions_general import BC,print_time_rel,listdiff,printdebug,print_line_with_mainheader
 from modules.module_coords import Fragment, write_pdbfile,distance_between_atoms
@@ -1534,24 +1535,34 @@ def OpenMM_Opt(fragment=None, openmmobject=None, frozen_atoms=None, constraints=
     #        (state.getPotentialEnergy().value_in_unit_system(openmmobject.unit.md_unit_system))
     #)
 
-def OpenMM_Modeller(pdbfile=None, forcefield=None, xmlfile=None, watermodel='tip3p', pH=7.0, 
-                    solvent_padding=10.0, solvent_boxdims=None,
+def OpenMM_Modeller(pdbfile=None, forcefield=None, xmlfile=None, waterxmlfile=None, watermodel=None, pH=7.0, 
+                    solvent_padding=10.0, solvent_boxdims=None, extraxmlfile=None,
                     ionicstrength=0.1, iontype='K+'):
     print_line_with_mainheader("OpenMM Modeller")
     try:
-        import simtk.openmm.app
-        import simtk.unit
-        print("Imported OpenMM library version:", simtk.openmm.__version__)
-        #import simtk.openmm
+        import simtk.openmm as openmm
+        import simtk.openmm.app as openmm_app
+        import simtk.unit as openmm_unit
+        print("Imported OpenMM library version:", openmm.__version__)
+
     except ImportError:
         raise ImportError(
             "OpenMM requires installing the OpenMM package. Try: conda install -c conda-forge openmm  \
             Also see http://docs.openmm.org/latest/userguide/application.html")
+    def write_pdbfile(topology,positions,filename):
+        openmm.app.PDBFile.writeFile(topology, positions, file=open(filename, 'w'))
+        print("Wrote PDB-file:", filename)
+    def print_systemsize():
+        print("System size: {} atoms\n".format(len(modeller.getPositions())))
 
-    #OpenMM things
-    openmm=simtk.openmm
-    openmm_unit=simtk.unit
-    
+    #https://github.com/openmm/openmm/wiki/Frequently-Asked-Questions#template
+
+    #Water model. May be overridden by forcefield below
+    if watermodel=="tip3p":
+        waterxmlfile="tip3p.xml"
+    elif waterxmlfile != None:
+        #Problem: we need to define watermodel also
+        print("Using waterxmlfile:", waterxmlfile)
     #Forcefield options
     if forcefield != None:
         if forcefield =='Amber99':
@@ -1562,14 +1573,17 @@ def OpenMM_Modeller(pdbfile=None, forcefield=None, xmlfile=None, watermodel='tip
             xmlfile="amber03.xml"
         elif forcefield =='Amber10':
             xmlfile="amber10.xml"
-        elif forcefield =='Amber10':
-            xmlfile="amber10.xml"
         elif forcefield =='Amber14':
-            xmlfile="amber14/protein.ff14SB.xml"
+            xmlfile="amber14-all.xml"
+            #Using specific Amber FB version of TIP3P
+            if watermodel == "tip3p":
+                waterxmlfile="amber14/tip3pfb.xml"
         elif forcefield =='Amber96':
             xmlfile="amber96.xml"
         elif forcefield =='CHARMM36':
             xmlfile="charmm36.xml"
+            #Using specific CHARMM36 version of TIP3P
+            waterxmlfile="charmm36/water.xml"
         elif forcefield =='CHARMM2013':
             xmlfile="charmm_polar_2013.xml"
         elif forcefield =='Amoeba2013':
@@ -1581,34 +1595,49 @@ def OpenMM_Modeller(pdbfile=None, forcefield=None, xmlfile=None, watermodel='tip
     else:
         print("You must provide a forcefield or xmlfile keyword!")
         exit()
-    if watermodel=="tip3p":
-        waterxmlfile="tip3p.xml"
     
     print("Forcefield:", forcefield)
     print("XMfile:", xmlfile)
     print("Water model:", watermodel)
     print("Xmlfile:", waterxmlfile)   
     print("pH:", pH)
-    
-    def create_system(forcefield,topology):
-        system = forcefield.createSystem(modeller.topology, nonbondedMethod=openmm.app.PME)
-        return system
-    def write_pdbfile(topology,positions,filename):
-        openmm.app.PDBFile.writeFile(topology, positions, file=open(filename, 'w'))
-        print("Wrote PDB-file:", filename)
-    def print_systemsize():
-        print("System size: {} atoms\n".format(len(modeller.getPositions())))
-    pdb = openmm.app.PDBFile(pdbfile)
-    modeller = openmm.app.Modeller(pdb.topology, pdb.positions)
-    
 
     #Define a forcefield
-    forcefield=openmm.app.forcefield.ForceField(xmlfile, waterxmlfile)
+    if extraxmlfile == None:
+        forcefield=openmm_app.forcefield.ForceField(xmlfile, waterxmlfile)
+    else:
+        print("Using extra XML file:", extraxmlfile)
+        forcefield=openmm_app.forcefield.ForceField(xmlfile, waterxmlfile, extraxmlfile)
     
-    #Adding hydrogens
+    #Load PDB-file
+    pdb = openmm_app.PDBFile(pdbfile)
+
+    #Create modeller object
+    modeller = openmm_app.Modeller(pdb.topology, pdb.positions)
+    
+
+    #Adding hydrogens. 
+    # This is were missing residue/atom errors will come
     print("")
     print("Adding hydrogens for pH:", pH)
-    modeller.addHydrogens(forcefield, pH=pH)
+    try:
+        modeller.addHydrogens(forcefield, pH=pH)
+    except ValueError as err:
+        traceback.print_tb(err.__traceback__)
+        print("")
+        print(BC.FAIL,"ASH: OpenMM exited with ValueError. Probably means that you are missing forcefield terms. Please provide an extraxmlfile argument to OpenMM_Modeller", BC.END)
+        exit()
+    except KeyError as err:
+        traceback.print_tb(err.__traceback__)
+        print("ASH: Some key error")
+        exit()
+    except Exception as err:
+        traceback.print_tb(err.__traceback__)
+        print("ASH: OpenMM failed with some error. Read the error message above carefully.")
+        exit()
+
+
+    
     write_pdbfile(modeller.topology,modeller.positions,"system_afterH.pdb")
     print_systemsize()
     #Solvent
