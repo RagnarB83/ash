@@ -1274,7 +1274,7 @@ def clean_up_constraints_list(fragment=None, constraints=None):
 def OpenMM_MD(fragment=None, openmmobject=None, timestep=0.001, simulation_steps=None, simulation_time=None, traj_frequency=1000, temperature=300, integrator=None,
     barostat=None, trajectory_file_option='PDB', coupling_frequency=None, anderson_thermostat=False, enforcePeriodicBox=True, frozen_atoms=None, constraints=None, restraints=None,
     parmed_state_datareporter=False):
-    
+    module_init_time = time.time()
     print_line_with_mainheader("OpenMM MOLECULAR DYNAMICS")
     if frozen_atoms==None: frozen_atoms=[]
     if constraints==None: constraints=[]
@@ -1416,10 +1416,10 @@ def OpenMM_MD(fragment=None, openmmobject=None, timestep=0.001, simulation_steps
     newcoords = state.getPositions(asNumpy=True).value_in_unit(openmmobject.unit.angstrom)
     print("Updating coordinates in ASH fragment")
     fragment.coords=newcoords
-
+    print_time_rel(module_init_time, modulename="OpenMM_MD", moduleindex=1)
 
 def OpenMM_Opt(fragment=None, openmmobject=None, frozen_atoms=None, constraints=None, restraints=None, maxiter=1000, tolerance=1):
-    
+    module_init_time = time.time()
     print_line_with_mainheader("OpenMM Optimization")
     if frozen_atoms==None: frozen_atoms=[]
     if constraints==None: constraints=[]
@@ -1514,7 +1514,7 @@ def OpenMM_Opt(fragment=None, openmmobject=None, frozen_atoms=None, constraints=
     with open('frag-minimized.pdb', 'w') as f: openmmobject.openmm.app.pdbfile.PDBFile.writeModel(openmmobject.topology, openmmobject.simulation.context.getState(getPositions=True).getPositions(), f)
 
     print('All Done!')
-
+    print_time_rel(module_init_time, modulename="OpenMM_Opt", moduleindex=1)
     # Now write a serialized state that has coordinates
     #print('Finished. Writing serialized XML restart file...')
     #with open('job.min.xml', 'w') as f:
@@ -1538,6 +1538,7 @@ def OpenMM_Opt(fragment=None, openmmobject=None, frozen_atoms=None, constraints=
 def OpenMM_Modeller(pdbfile=None, forcefield=None, xmlfile=None, waterxmlfile=None, watermodel=None, pH=7.0, 
                     solvent_padding=10.0, solvent_boxdims=None, extraxmlfile=None,
                     ionicstrength=0.1, iontype='K+'):
+    module_init_time = time.time()
     print_line_with_mainheader("OpenMM Modeller")
     try:
         import simtk.openmm as openmm
@@ -1662,6 +1663,7 @@ def OpenMM_Modeller(pdbfile=None, forcefield=None, xmlfile=None, waterxmlfile=No
     #Write to disk
     fragment.print_system(filename="fragment.ygg")
     fragment.write_xyzfile(xyzfilename="fragment.xyz")
+    print_time_rel(module_init_time, modulename="OpenMM_Modeller", moduleindex=1)
     #Return forcefield object,  topology object and ASH fragment
     return forcefield, modeller.topology, fragment
 
