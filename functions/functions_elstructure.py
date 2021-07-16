@@ -71,7 +71,7 @@ _DNO = -0.0346
 def distance_matrix_from_coords(coords):
     distmatrix=[]
     for i in coords:
-        dist_row=[module_coords.distance(i,j) for j in coords]
+        dist_row=[modules.module_coords.distance(i,j) for j in coords]
         distmatrix.append(dist_row)
     return distmatrix
             
@@ -548,7 +548,7 @@ cnvkdiis false
 end"""
 
         #Creating ORCA object for  element
-        ORCASPcalculation = interface_ORCA.ORCATheory(orcadir=theory.orcadir, charge=0,
+        ORCASPcalculation = interfaces.interface_ORCA.ORCATheory(orcadir=theory.orcadir, charge=0,
                                            mult=spindictionary[el], orcasimpleinput=theory.orcasimpleinput,
                                            orcablocks=theory.orcablocks, extraline=scfextrasettingsstring)
 
@@ -805,7 +805,7 @@ def DDEC_to_LJparameters(elems, molmoms, voldict, scale_polarH=False):
     Radii_vdw_free=[]
     for count,el in enumerate(elems):
         print("el :", el, "count:", count)
-        atmnumber=module_coords.elematomnumbers[el.lower()]
+        atmnumber=modules.module_coords.elematomnumbers[el.lower()]
         print("atmnumber:", atmnumber)
         Radii_vdw_free.append(dictionaries_lists.elems_C6_polz[atmnumber].Rvdw_ang)
         print("Radii_vdw_free:", Radii_vdw_free)
@@ -862,7 +862,7 @@ def DDEC_to_LJparameters(elems, molmoms, voldict, scale_polarH=False):
 
 def num_core_electrons(fragment):
     sum=0
-    formula_list = module_coords.molformulatolist(fragment.formula)
+    formula_list = modules.module_coords.molformulatolist(fragment.formula)
     for i in formula_list:
         els = dictionaries_lists.atom_core_electrons[i]
         sum+=els
