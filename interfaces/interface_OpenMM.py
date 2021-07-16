@@ -100,7 +100,7 @@ class OpenMMTheory:
                 self.properties["Threads"]=str(numcores)
             else:
                 print("No numcores variable provided to OpenMM object")
-                print("Checking if OPENMM_CPU_THREADS shell variable is presentþ")
+                print("Checking if OPENMM_CPU_THREADS shell variable is present")
                 try:
                     print("OpenMM will use {} threads according to environment variable: OPENMM_CPU_THREADS".format(os.environ["OPENMM_CPU_THREADS"]))
                 except:
@@ -1380,12 +1380,16 @@ def OpenMM_MD(fragment=None, openmmobject=None, timestep=0.001, simulation_steps
 
     openmmobject.simulation.context.setPositions(pos)
 
+    print("Checking PBC vectors")
+    state = openmmobject.simulation.context.getState()
+    print("PBC: ", state.getPeriodicBoxVectors())
+
     if trajectory_file_option == 'PDB':
         openmmobject.simulation.reporters.append(openmmobject.openmm.app.PDBReporter('output_traj.pdb', traj_frequency, enforcePeriodicBox=enforcePeriodicBox))
     elif trajectory_file_option == 'DCD':
         #NOTE: Safer option seems to be to use PDB-writer from OpenMM instead of ASH. Because ASH requires ASH-openMMobject to have a bunch of lists defined (currently only for CHARMM)
         #write_pdbfile(fragment,outputname="initial_frag", openmmobject=openmmobject)
-        with open('initial_MDfrag_step1.pdb', 'w') as f: openmmobject.openmm.app.pdbfile.PDBFile.writeModel(openmmobject.topology, openmmobject.simulation.context.getState(getPositions=True).getPositions(), f)
+        with open('initial_MDfrag_step1.pdb', 'w') as f: openmmobject.openmm.app.pdbfile.PDBFile.writeModel(openmmobject.topology, openmmobject.simulation.context.getState(getPositions=True, enforcePeriodicBox=enforcePeriodicBox).getPositions(), f)
         openmmobject.simulation.reporters.append(openmmobject.openmm.app.DCDReporter('output_traj.dcd', traj_frequency, enforcePeriodicBox=enforcePeriodicBox))
     elif trajectory_file_option =='NetCDFReporter':
         print("NetCDFReporter traj format selected. This requires mdtraj. Importing.")
@@ -1409,7 +1413,11 @@ def OpenMM_MD(fragment=None, openmmobject=None, timestep=0.001, simulation_steps
     openmmobject.simulation.step(simulation_steps)
 
     print("OpenMM MD simulation finished!")
-    state = openmmobject.simulation.context.getState(getEnergy=True, getPositions=True, getForces=True)
+
+    state = openmmobject.simulation.context.getState(getEnergy=True, getPositions=True, getForces=True, enforcePeriodicBox=True)
+    print("Checking PBC vectors")
+    print("PBC: ", state.getPeriodicBoxVectors())
+
     #Writing final frame to disk as PDB
     with open('final_MDfrag_laststep.pdb', 'w') as f: openmmobject.openmm.app.pdbfile.PDBFile.writeModel(openmmobject.topology, state.getPositions(asNumpy=True).value_in_unit(openmmobject.unit.angstrom), f)
     #Updating ASH fragment
@@ -1486,7 +1494,7 @@ def OpenMM_Opt(fragment=None, openmmobject=None, frozen_atoms=None, constraints=
     openmmobject.simulation.context.setPositions(pos)
 
     print("")
-    state = openmmobject.simulation.context.getState(getEnergy=True, getForces=True)
+    state = openmmobject.simulation.context.getState(getEnergy=True, getForces=True, enforcePeriodicBox=True)
     print("Initial potential energy is: {} Eh".format(state.getPotentialEnergy().value_in_unit_system(openmmobject.unit.md_unit_system) / constants.hartokj))
     kjmolnm_to_atomic_factor=-49614.752589207
     forces_init=np.array(state.getForces(asNumpy=True))/kjmolnm_to_atomic_factor
@@ -1498,7 +1506,7 @@ def OpenMM_Opt(fragment=None, openmmobject=None, frozen_atoms=None, constraints=
     openmmobject.simulation.minimizeEnergy(maxIterations=maxiter, tolerance=tolerance)
     print("Minimization done")
     print("")
-    state = openmmobject.simulation.context.getState(getEnergy=True, getPositions=True, getForces=True)
+    state = openmmobject.simulation.context.getState(getEnergy=True, getPositions=True, getForces=True, enforcePeriodicBox=True)
     print("Potential energy is: {} Eh".format(state.getPotentialEnergy().value_in_unit_system(openmmobject.unit.md_unit_system) / constants.hartokj))
     forces_final=np.array(state.getForces(asNumpy=True))/kjmolnm_to_atomic_factor
     rms_force=np.sqrt(sum(n*n for n in forces_final.flatten())/len(forces_final.flatten()))
@@ -1681,21 +1689,24 @@ def MDtraj_import_():
         print("Problem importing mdtraj. Try: pip install mdtraj or conda install -c conda-forge mdtraj")
     return mdtraj
 
-def MDtraj_stuff(trajectory, pdbtopology):
+def MDtraj_imagetraj(trajectory, pdbtopology, format='DCD'):
+    traj_basename=os.path.splitext(trajectory)[0]
     mdtraj=MDtraj_import_()
     traj = mdtraj.load(trajectory, top=pdbtopology)
 
-    traj.image_molecules()
-
-    traj.center_coordinates()
-    
+    imaged=traj.image_molecules()
     #Save trajectory in format
-    traj.save('file.dcd')
-    traj.save('file.h5')
-    traj.save('file.nc')
-    traj.save('file.xyz')
-    traj.save('file.pdb')
+    if format == 'DCD':
+        traj.save(traj_basename+'_imaged.dcd')
+        print("Saved reimaged trajectory:", traj_basename+'_imaged.dcd')
+    else:
+        print("Unknown traj format")
     
+    #traj.save('file.h5')
+    #traj.save('file.nc')
+    #traj.save('file.xyz')
+    #traj.save('file.pdb')
+
 #QM/MM functionality to Open_MM MD
 
 #Janus: https://github.com/CCQC/janus/blob/aa8446e96c90221a10ba37cee379083162ac17e4/janus/mm_wrapper/openmm_wrapper.py#L222
