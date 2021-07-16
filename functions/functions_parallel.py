@@ -5,7 +5,7 @@ import sys
 import time
 
 import ash
-from functions_general import BC,blankline,print_line_with_mainheader,print_line_with_subheader1
+from functions.functions_general import BC,blankline,print_line_with_mainheader,print_line_with_subheader1
 
 #Various calculation-functions run in parallel
 

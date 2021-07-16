@@ -1,10 +1,10 @@
 import statistics
-from interface_ORCA import checkORCAfinished,finalenergiesgrab,create_orca_inputVIEcomp_pc,create_orca_inputVIEcomp_gas,create_orca_inputVIE_pc
+from interfaces.interface_ORCA import checkORCAfinished,finalenergiesgrab,create_orca_inputVIEcomp_pc,create_orca_inputVIEcomp_gas,create_orca_inputVIE_pc
 import time
 import constants
-from interface_xtb import xtbfinalenergygrab,xtbVIPgrab
-from functions_general import listdiff,blankline
-from module_coords import get_molecule_members_loop,read_chemshellfragfile_xyz
+from interfaces.interface_xtb import xtbfinalenergygrab,xtbVIPgrab
+from functions.functions_general import listdiff,blankline
+from modules.module_coords import get_molecule_members_loop,read_chemshellfragfile_xyz
 
 def TestModerunAB():
     snapslist = ['60000', '60400', '60800', '61200', '61600', '62000']

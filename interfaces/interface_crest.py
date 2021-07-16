@@ -1,8 +1,8 @@
 import os
 import time
 
-from module_coords import split_multimolxyzfile
-from functions_general import int_ranges, listdiff,print_time_rel
+from modules.module_coords import split_multimolxyzfile
+from functions.functions_general import int_ranges, listdiff,print_time_rel
 import subprocess as sp
 import ash
 

@@ -1,7 +1,5 @@
 import numpy as np
-import os
-import sys
-from functions_general import print_line_with_mainheader,print_line_with_subheader1
+from functions.functions_general import print_line_with_mainheader,print_line_with_subheader1
 
 #repeated here so that plotting can be stand-alone
 class BC:
@@ -341,7 +339,6 @@ def MOplot_vertical(mos_dict, pointsize=4000, linewidth=2, label="Label", yrange
     plt.ylim(yrange[0],yrange[1])
     plt.xticks([])
     plt.ylabel('MO energy (eV)')
-    #basename=os.path.splitext(str(sys.argv[1]))[0]
     plt.title(label)
 
     #Vertical line

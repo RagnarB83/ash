@@ -6,10 +6,10 @@ import math
 import time
 
 import ash
-import module_coords
-from functions_general import isint,isfloat,is_same_sign,BC,print_time_rel,pygrep
-from functions_elstructure import check_cores_vs_electrons, num_core_electrons
-from interface_ORCA import grab_EFG_from_ORCA_output
+import modules.module_coords
+from functions.functions_general import isint,isfloat,is_same_sign,BC,print_time_rel,pygrep
+from functions.functions_elstructure import check_cores_vs_electrons, num_core_electrons
+from interfaces.interface_ORCA import grab_EFG_from_ORCA_output
 
 #Reaction class. Used for benchmarking
 class Reaction:

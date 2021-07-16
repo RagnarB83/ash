@@ -12,10 +12,10 @@ import shutil
 import copy
 import time
 import ash
-from functions_general import frange, BC, print_line_with_mainheader,print_line_with_subheader1,print_time_rel
-import interface_geometric
-from module_freq import calc_rotational_constants
-import functions_parallel
+from functions.functions_general import frange, BC, print_line_with_mainheader,print_line_with_subheader1,print_time_rel
+import interfaces.interface_geometric
+from modules.module_freq import calc_rotational_constants
+import functions.functions_parallel
 
 # TODO: Finish parallelize surfacepoint calculations
 def calc_surface(fragment=None, theory=None, workflow=None, scantype='Unrelaxed', resultfile='surface_results.txt', keepoutputfiles=True, keepmofiles=False,

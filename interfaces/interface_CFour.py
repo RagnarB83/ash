@@ -1,5 +1,5 @@
 import subprocess as sp
-from functions_general import BC, pygrep, print_time_rel
+from functions.functions_general import BC, pygrep, print_time_rel
 import shutil
 import settings_ash
 

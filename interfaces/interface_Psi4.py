@@ -5,8 +5,8 @@ import subprocess as sp
 import glob
 import time
 
-import module_coords
-from functions_general import BC,print_time_rel
+import modules.module_coords
+from functions.functions_general import BC,print_time_rel
 
 
 #Psi4 Theory object. Fragment object is optional. Only used for single-points.
@@ -151,7 +151,7 @@ class Psi4Theory:
 
             #Creating Psi4 molecule object using lists and manual information
             psi4molfrag = psi4.core.Molecule.from_arrays(
-                elez=module_coords.elemstonuccharges(qm_elems),
+                elez=modules.module_coords.elemstonuccharges(qm_elems),
                 fix_com=True,
                 fix_orientation=True,
                 fix_symmetry='c1',
@@ -215,9 +215,9 @@ class Psi4Theory:
                         pass
                     else:
                         print(BC.FAIL, "Potfile: ", self.potfile, "does not exist!", BC.END)
-                        exit()
+                        exit(1)
                 except:
-                    exit()
+                    exit(1)
                 psi4.set_module_options('pe', {'potfile' : self.potfile})
                 self.psi4settings['pe'] = 'true'
 
@@ -290,9 +290,9 @@ class Psi4Theory:
                         pass
                     else:
                         print(BC.FAIL, "Potfile: ", self.potfile, "does not exist!", BC.END)
-                        exit()
+                        exit(1)
                 except:
-                    exit()
+                    exit(1)
 
             #Write inputfile
             with open(self.label+'.inp', 'w') as inputfile:

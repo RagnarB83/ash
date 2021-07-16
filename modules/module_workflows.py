@@ -10,14 +10,14 @@ import time
 import constants
 import ash
 import dictionaries_lists
-import module_coords
-import interface_geometric
-import interface_crest
-from functions_general import BC,print_time_rel,print_line_with_mainheader,pygrep
+import modules.module_coords
+import interfaces.interface_geometric
+import interfaces.interface_crest
+from functions.functions_general import BC,print_time_rel,print_line_with_mainheader,pygrep
 import ash_header
 import settings_ash
-import module_highlevel_workflows
-import functions_elstructure
+import modules.module_highlevel_workflows
+import functions.functions_elstructure
 
 
 def ReactionEnergy(stoichiometry=None, list_of_fragments=None, list_of_energies=None, unit='kcal/mol', label=None, reference=None):
@@ -113,10 +113,10 @@ def confsampler_protocol(fragment=None, crestdir=None, xtbmethod='GFN2-xTB', MLt
     
     #1. Calling crest
     #call_crest(fragment=molecule, xtbmethod='GFN2-xTB', crestdir=crestdir, charge=charge, mult=mult, solvent='H2O', energywindow=6 )
-    interface_crest.call_crest(fragment=fragment, xtbmethod=xtbmethod, crestdir=crestdir, charge=charge, mult=mult, numcores=numcores)
+    interfaces.interface_crest.call_crest(fragment=fragment, xtbmethod=xtbmethod, crestdir=crestdir, charge=charge, mult=mult, numcores=numcores)
 
     #2. Grab low-lying conformers from crest_conformers.xyz as list of ASH fragments.
-    list_conformer_frags, xtb_energies = interface_crest.get_crest_conformers()
+    list_conformer_frags, xtb_energies = interfaces.interface_crest.get_crest_conformers()
 
     print("list_conformer_frags:", list_conformer_frags)
     print("")
@@ -130,7 +130,7 @@ def confsampler_protocol(fragment=None, crestdir=None, xtbmethod='GFN2-xTB', MLt
     for index,conformer in enumerate(list_conformer_frags):
         print("")
         print("Performing ML Geometry Optimization for Conformer ", index)
-        interface_geometric.geomeTRICOptimizer(fragment=conformer, theory=MLtheory, coordsystem='tric')
+        interfaces.interface_geometric.geomeTRICOptimizer(fragment=conformer, theory=MLtheory, coordsystem='tric')
         ML_energies.append(conformer.energy)
         #Saving ASH fragment and XYZ file for each ML-optimized conformer
         os.rename('Fragment-optimized.ygg', 'Conformer{}_ML.ygg'.format(index))
@@ -207,7 +207,7 @@ def thermochemprotocol_single(fragment=None, Opt_theory=None, SP_theory=None, or
         #Adding charge and mult to theory object, taken from each fragment object
         Opt_theory.charge = fragment.charge
         Opt_theory.mult = fragment.mult
-        interface_geometric.geomeTRICOptimizer(theory=Opt_theory,fragment=fragment)
+        interfaces.interface_geometric.geomeTRICOptimizer(theory=Opt_theory,fragment=fragment)
         print("-------------------------------------------------------------------------")
         print("THERMOCHEM PROTOCOL-single: Step 2. Frequency calculation")
         print("-------------------------------------------------------------------------")
@@ -370,7 +370,7 @@ def old_thermochemprotocol(Opt_theory=None, SP_theory=None, fraglist=None, stoic
             #Adding charge and mult to theory object, taken from each fragment object
             Opt_theory.charge = species.charge
             Opt_theory.mult = species.mult
-            interface_geometric.geomeTRICOptimizer(theory=Opt_theory,fragment=species)
+            interfaces.interface_geometric.geomeTRICOptimizer(theory=Opt_theory,fragment=species)
             
             #DFT-FREQ
             if analyticHessian == True:

@@ -6,7 +6,7 @@ import time
 import numpy as np
 import subprocess as sp
 
-from functions_general import isint,listdiff,print_time_rel,BC,printdebug,print_line_with_mainheader,writelisttofile,pygrep2
+from functions.functions_general import isint,listdiff,print_time_rel,BC,printdebug,print_line_with_mainheader,writelisttofile,pygrep2
 import dictionaries_lists
 import settings_ash
 import constants
@@ -170,6 +170,13 @@ class Fragment:
         self.coords=[]
         self.elems=[]
         self.connectivity=[]
+    #Get list of atom-indices for specific elements
+    def get_nonH_atomindices(self):
+        return [index for index,el in enumerate(self.elems) if el!='H']
+    def get_atomindices_for_element(self,element):
+        return [index for index,el in enumerate(self.elems) if el==element]
+    def get_atomindices_except_element(self,element):
+        return [index for index,el in enumerate(self.elems) if el!=element]
     def delete_atom(self,atomindex):
         if type(self.coords) == np.ndarray:
             self.coords=np.delete(self.coords,atomindex,axis=0)
@@ -274,7 +281,7 @@ class Fragment:
         try:
             with open(filename) as f:
                 for line in f:
-                    if 'ATOM ' in line:
+                    if 'ATOM ' in line or 'HETATM' in line:
                         #atomindex=float(line[6:11].replace(' ',''))
                         atom_name=line[12:16].replace(' ','')
                         residname.append(line[17:20].replace(' ',''))
@@ -308,9 +315,9 @@ class Fragment:
                         #elemcol.append(line.split()[-1])
                         #residuelist.append(line.split()[3])
                         #atom_name.append(line.split()[3])
-                    if 'HETATM' in line:
-                        print("HETATM line in file found. Please rename to ATOM")
-                        exit()
+                    #if 'HETATM' in line:
+                    #    print("HETATM line in file found. Please rename to ATOM")
+                    #    exit()
         except FileNotFoundError:
             print("File {} does not exist!".format(filename))
             exit()

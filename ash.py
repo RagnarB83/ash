@@ -25,88 +25,88 @@ import atexit
 import ash
 #Adding modules,interfaces directories to sys.path
 ashpath = os.path.dirname(ash.__file__)
-sys.path.insert(1, ashpath+'/modules')
-sys.path.insert(1, ashpath+'/interfaces')
-sys.path.insert(1, ashpath+'/functions')
+#sys.path.insert(1, ashpath+'/modules')
+#sys.path.insert(1, ashpath+'/interfaces')
+#sys.path.insert(1, ashpath+'/functions')
 
-from functions_general import blankline,BC,listdiff,print_time_rel,print_time_rel_and_tot,pygrep,printdebug,read_intlist_from_file,frange, writelisttofile
+from functions.functions_general import blankline,BC,listdiff,print_time_rel,print_time_rel_and_tot,pygrep,printdebug,read_intlist_from_file,frange, writelisttofile
 
 # Fragment class and coordinate functions
-import module_coords
-from module_coords import get_molecules_from_trajectory,eldict_covrad,write_pdbfile,Fragment,read_xyzfile,write_xyzfile,make_cluster_from_box, read_ambercoordinates, read_gromacsfile
-from module_coords import remove_atoms_from_system_CHARMM,add_atoms_to_system_CHARMM
+import modules.module_coords
+from modules.module_coords import get_molecules_from_trajectory,eldict_covrad,write_pdbfile,Fragment,read_xyzfile,write_xyzfile,make_cluster_from_box, read_ambercoordinates, read_gromacsfile
+from modules.module_coords import remove_atoms_from_system_CHARMM,add_atoms_to_system_CHARMM
 #Singlepoint
-import module_singlepoint
-from module_singlepoint import Singlepoint,ZeroTheory
+import modules.module_singlepoint
+from modules.module_singlepoint import Singlepoint,ZeroTheory
 
 #Parallel 
-import functions_parallel
-from functions_parallel import Singlepoint_parallel,run_QMMM_SP_in_parallel
+import functions.functions_parallel
+from functions.functions_parallel import Singlepoint_parallel,run_QMMM_SP_in_parallel
 
 #Freq
-from module_freq import AnFreq,NumFreq,approximate_full_Hessian_from_smaller,calc_rotational_constants
+from modules.module_freq import AnFreq,NumFreq,approximate_full_Hessian_from_smaller,calc_rotational_constants
 
 #Constants
 import constants
 
 #functions related to electronic structure
-import functions_elstructure
+import functions.functions_elstructure
 
 #Spinprojection
-from module_spinprojection import SpinProjectionTheory
+from modules.module_spinprojection import SpinProjectionTheory
 
 #Surface
-from module_surface import calc_surface,calc_surface_fromXYZ,read_surfacedict_from_file,write_surfacedict_to_file
+from modules.module_surface import calc_surface,calc_surface_fromXYZ,read_surfacedict_from_file,write_surfacedict_to_file
 
 #QMcode interfaces
-from interface_ORCA import ORCATheory
-import interface_ORCA
+from interfaces.interface_ORCA import ORCATheory
+import interfaces.interface_ORCA
 
-from interface_Psi4 import Psi4Theory
-from interface_dalton import DaltonTheory
-from interface_pyscf import PySCFTheory
-from interface_MRCC import MRCCTheory
-from interface_CFour import CFourTheory
-from interface_xtb import xTBTheory
+from interfaces.interface_Psi4 import Psi4Theory
+from interfaces.interface_dalton import DaltonTheory
+from interfaces.interface_pyscf import PySCFTheory
+from interfaces.interface_MRCC import MRCCTheory
+from interfaces.interface_CFour import CFourTheory
+from interfaces.interface_xtb import xTBTheory
 
 #MM: external and internal
-from interface_OpenMM import OpenMMTheory, OpenMM_MD
-from module_MM import NonBondedTheory,UFFdict,UFF_modH_dict,LJCoulpy,coulombcharge,LennardJones,LJCoulombv2,LJCoulomb,MMforcefield_read
+from interfaces.interface_OpenMM import OpenMMTheory, OpenMM_MD, OpenMM_Opt, OpenMM_Modeller
+from modules.module_MM import NonBondedTheory,UFFdict,UFF_modH_dict,LJCoulpy,coulombcharge,LennardJones,LJCoulombv2,LJCoulomb,MMforcefield_read
 
 #QM/MM
-from module_QMMM import QMMMTheory,actregiondefine
-from module_polembed import PolEmbedTheory
+from modules.module_QMMM import QMMMTheory,actregiondefine
+from modules.module_polembed import PolEmbedTheory
 
 #Knarr
-from interface_knarr import NEB
+from interfaces.interface_knarr import NEB
 
 
 #Solvation
 #NOTE: module_solvation.py or module_solvation2.py To be cleaned up
-import functions_solv
+import functions.functions_solv
 
 #Molcrys
-import module_molcrys
-from module_molcrys import molcrys,Fragmenttype
+import modules.module_molcrys
+from modules.module_molcrys import molcrys,Fragmenttype
 
 # Geometry optimization
-from functions_optimization import SimpleOpt,BernyOpt
-from interface_geometric import geomeTRICOptimizer
+from functions.functions_optimization import SimpleOpt,BernyOpt
+from interfaces.interface_geometric import geomeTRICOptimizer
 
 #PES
-import module_PES
-from module_PES import PhotoElectronSpectrum
+import modules.module_PES
+from modules.module_PES import PhotoElectronSpectrum
 
 #Workflows, benchmarking etc
-import module_workflows
-import module_highlevel_workflows
-from module_workflows import ReactionEnergy,thermochemprotocol_reaction,thermochemprotocol_single,confsampler_protocol, auto_active_space
-import module_benchmarking
-from module_benchmarking import run_benchmark
+import modules.module_workflows
+import modules.module_highlevel_workflows
+from modules.module_workflows import ReactionEnergy,thermochemprotocol_reaction,thermochemprotocol_single,confsampler_protocol, auto_active_space
+import modules.module_benchmarking
+from modules.module_benchmarking import run_benchmark
 
 #Other
-import interface_crest
-from interface_crest import call_crest, get_crest_conformers
+import interfaces.interface_crest
+from interfaces.interface_crest import call_crest, get_crest_conformers
 
 
 # Initialize settings

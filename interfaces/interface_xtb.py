@@ -8,8 +8,8 @@ import time
 import constants
 import settings_solvation
 import settings_ash
-from functions_general import blankline,reverse_lines, print_time_rel,BC
-import module_coords
+from functions.functions_general import blankline,reverse_lines, print_time_rel,BC
+import modules.module_coords
 
 
 #xTB functions: primarily for inputfile-based interface. Library-interfaces is in interface_xtb.py
@@ -63,11 +63,11 @@ class xTBTheory:
             # Load xtB library and ctypes datatypes that run uses
             try:
                 #import xtb_interface_library
-                import interface_xtb_library
-                self.xtbobject = interface_xtb_library.XTBLibrary()
+                import interfaces.interface_xtb_library
+                self.xtbobject = interfaces.interface_xtb_library.XTBLibrary()
             except:
                 print("Problem importing xTB library. Check that the library dir (containing libxtb.so) is available in LD_LIBRARY_PATH.")
-                print("e.g. export LD_LIBRARY_PATH=/path/to/xtb_6.2.3/lib64:$LD_LIBRARY_PATH")
+                print("e.g. export LD_LIBRARY_PATH=/path/to/xtb_6.X.X/lib64:$LD_LIBRARY_PATH")
                 print("Or that the MKL library is available and loaded")
                 exit(9)
             from ctypes import c_int, c_double
@@ -161,7 +161,7 @@ class xTBTheory:
             num_mmatoms=len(MMcharges)
             self.cleanup()
             #Todo: xtbrestart possibly. needs to be optional
-            module_coords.write_xyzfile(qm_elems, current_coords, self.filename,printlevel=self.printlevel)
+            modules.module_coords.write_xyzfile(qm_elems, current_coords, self.filename,printlevel=self.printlevel)
 
 
 
@@ -238,7 +238,7 @@ class xTBTheory:
             #Using the xtbobject previously defined
             num_qmatoms=len(current_coords)
             #num_mmatoms=len(MMcharges)
-            nuc_charges=np.array(module_coords.elemstonuccharges(qm_elems), dtype=self.c_int)
+            nuc_charges=np.array(modules.module_coords.elemstonuccharges(qm_elems), dtype=self.c_int)
 
             #Converting coords to numpy-array and then to Bohr.
             current_coords_bohr=np.array(current_coords)*constants.ang2bohr

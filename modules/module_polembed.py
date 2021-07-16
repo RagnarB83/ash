@@ -2,8 +2,8 @@ import os
 import shutil
 import time
 
-from functions_general import BC,blankline
-import module_coords
+from functions.functions_general import BC,blankline,print_time_rel
+import modules.module_coords
 
 #Polarizable Embedding theory object.
 #Required at init: qm_theory and qmatoms, X, Y
@@ -12,7 +12,7 @@ import module_coords
 class PolEmbedTheory:
     def __init__(self, fragment=None, qm_theory=None, qmatoms=None, peatoms=None, mmatoms=None, pot_create=True,
                  potfilename='System', pot_option=None, pyframe=False, PElabel_pyframe='MM', daltondir=None, pdbfile=None):
-
+        module_init_time=time.time()
         print(BC.WARNING,BC.BOLD,"------------Defining PolEmbedTheory object-------------", BC.END)
         self.pot_create=pot_create
         self.pyframe=pyframe
@@ -116,7 +116,7 @@ class PolEmbedTheory:
                     exit(9)
                 #Create dummy pdb-file if PDB-file not provided
                 if pdbfile is None:
-                    module_coords.write_pdbfile_dummy(self.elems, self.coords, self.potfilename, self.hybridatomlabels, self.residlabels)
+                    modules.module_coords.write_pdbfile_dummy(self.elems, self.coords, self.potfilename, self.hybridatomlabels, self.residlabels)
                     file=self.potfilename+'.pdb'
                 #Pyframe
                 if self.pot_option=='SEP':
