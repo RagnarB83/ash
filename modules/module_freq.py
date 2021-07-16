@@ -156,7 +156,7 @@ def NumFreq(fragment=None, theory=None, npoint=1, displacement=0.005, hessatoms=
     for label, dispgeo in zip(list_of_labels,list_of_displaced_geos):
         filelabel=label.replace(' ','').replace(':','')
         list_of_filelabels.append(filelabel)
-        module_coords.write_xyzfile(elems=elems, coords=dispgeo,name=filelabel)
+        modules.module_coords.write_xyzfile(elems=elems, coords=dispgeo,name=filelabel)
 
     #RUNNING displacements
     displacement_grad_dictionary = {}
@@ -250,7 +250,7 @@ def NumFreq(fragment=None, theory=None, npoint=1, displacement=0.005, hessatoms=
                     # Numcores can be used. We can launch ORCA-OpenMPI in parallel it seems.
                     # Only makes sense if we have may more cores available than displacements
                     print("a")
-                    elems, coords = module_coords.read_xyzfile(filelabel + '.xyz')
+                    elems, coords = modules.module_coords.read_xyzfile(filelabel + '.xyz')
                     print("b")
                     dispdir = label.replace(' ', '')
                     os.mkdir(dispdir)
@@ -379,11 +379,11 @@ def NumFreq(fragment=None, theory=None, npoint=1, displacement=0.005, hessatoms=
 
     #Diagonalize mass-weighted Hessian
     # Get partial matrix by deleting atoms not present in list.
-    hesselems = module_coords.get_partial_list(allatoms, hessatoms, elems)
+    hesselems = modules.module_coords.get_partial_list(allatoms, hessatoms, elems)
 
     #Use input masses if given, otherwise take from frament
     if hessatoms_masses == None:
-        hessmasses = module_coords.get_partial_list(allatoms, hessatoms, fragment.list_of_masses)
+        hessmasses = modules.module_coords.get_partial_list(allatoms, hessatoms, fragment.list_of_masses)
     else:
         hessmasses=hessatoms_masses
     
@@ -1194,7 +1194,7 @@ def get_center(elems,coords):
     xcom,ycom,zcom = 0,0,0
     totmass = 0
     for el,coord in zip(elems,coords):
-        mass = module_coords.atommasses[module_coords.elematomnumbers[el.lower()]-1]
+        mass = modules.module_coords.atommasses[modules.module_coords.elematomnumbers[el.lower()]-1]
         xcom += float(mass)*float(coord[0])
         ycom += float(mass)*float(coord[1])
         zcom += float(mass)*float(coord[2])
@@ -1216,7 +1216,7 @@ def inertia(elems,coords,center):
     Iyz = 0.
 
     for index,(el,coord) in enumerate(zip(elems,coords)):
-        mass = module_coords.atommasses[module_coords.elematomnumbers[el.lower()]-1]
+        mass = modules.module_coords.atommasses[modules.module_coords.elematomnumbers[el.lower()]-1]
         x = coord[0] - xcom
         y = coord[1] - ycom
         z = coord[2] - zcom
