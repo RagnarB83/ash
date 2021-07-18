@@ -28,13 +28,12 @@ class OpenMMTheory:
             import simtk.openmm.app
             import simtk.unit
             print("Imported OpenMM library version:", simtk.openmm.__version__)
-            #import simtk.openmm
         except ImportError:
             raise ImportError(
                 "OpenMM requires installing the OpenMM package. Try: conda install -c conda-forge openmm  \
                 Also see http://docs.openmm.org/latest/userguide/application.html")
 
-        #OpenMM things
+        #OpenMM variables
         self.openmm=simtk.openmm
         self.simulationclass=simtk.openmm.app.simulation.Simulation
 
@@ -117,6 +116,7 @@ class OpenMMTheory:
         self.ewalderrortolerance=ewalderrortolerance
 
         #Whether to apply constraints or not when calculating MM energy via ASH (does not apply to OpenMM MD)
+        #NOTE: Should be False in general. Only True for special cases
         self.applyconstraints=applyconstraints
 
         #Switching function distance in Angstrom
