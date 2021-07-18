@@ -978,3 +978,5 @@ def actregiondefine(mmtheory=None, fragment=None, radius=None, originatom=None,s
     modules.module_coords.write_XYZ_for_atoms(fragment.coords,fragment.elems, act_indices, "ActiveRegion")
     print("Wrote Active region XYZfile: ActiveRegion.xyz  (inspect with visualization program)")
     return act_indices
+
+

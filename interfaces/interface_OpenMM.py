@@ -13,7 +13,7 @@ class OpenMMTheory:
                  CHARMMfiles=False, psffile=None, charmmtopfile=None, charmmprmfile=None,
                  GROMACSfiles=False, gromacstopfile=None, grofile=None, gromacstopdir=None,
                  Amberfiles=False, amberprmtopfile=None,
-                 xmlfile=None, pdbfile=None, use_parmed=False,
+                 xmlfiles=None, pdbfile=None, use_parmed=False,
                  do_energy_decomposition=False,
                  periodic=False, charmm_periodic_cell_dimensions=None, customnonbondedforce=False,
                  periodic_nonbonded_cutoff=12, dispersion_correction=True, 
@@ -239,14 +239,15 @@ class OpenMMTheory:
             self.topology = topology
             self.forcefield= forcefield
         else:
-            print("Reading OpenMM XML forcefield file and PDB file")
+            print("Reading OpenMM XML forcefield files and PDB file")
+            print("xmlfiles:", xmlfiles)
             #This would be regular OpenMM Forcefield definition requiring XML file
             #Topology from PDBfile annoyingly enough
             pdb = simtk.openmm.app.PDBFile(pdbfile)
             self.topology = pdb.topology
             #Todo: support multiple xml file here
             #forcefield = simtk.openmm.app.ForceField('amber14-all.xml', 'amber14/tip3pfb.xml')
-            self.forcefield = simtk.openmm.app.ForceField(xmlfile)
+            self.forcefield = simtk.openmm.app.ForceField(*xmlfiles)
 
             #TODO: Define resnames, resids, segmentnames, atomtypes, atomnames??
 
@@ -283,7 +284,7 @@ class OpenMMTheory:
 
                 if charmm_periodic_cell_dimensions == None:
                     print("Error: When using CHARMMfiles and Periodic=True, charmm_periodic_cell_dimensions keyword needs to be supplied")
-                    print("Example: periodic_cell_dimensions= [200, 200, 200, 90, 90, 90]  in Angstrom and degrees")
+                    print("Example: charmm_periodic_cell_dimensions= [200, 200, 200, 90, 90, 90]  in Angstrom and degrees")
                     exit()
                 self.charmm_periodic_cell_dimensions = charmm_periodic_cell_dimensions
                 print("Periodic cell dimensions:", charmm_periodic_cell_dimensions)
@@ -321,10 +322,13 @@ class OpenMMTheory:
                 
                 #print("self.system num con", self.system.getNumConstraints())
             else:
-                #Modeller
+                print("Setting up periodic system here.")
+                #Modeller and manual xmlfiles
                 self.system = self.forcefield.createSystem(self.topology, nonbondedMethod=simtk.openmm.app.PME, constraints=self.autoconstraints, hydrogenMass=self.hydrogenmass, rigidWater=self.rigidwater,
                                             nonbondedCutoff=periodic_nonbonded_cutoff * self.unit.angstroms, switchDistance=switching_function_distance*self.unit.angstroms)
-                
+            
+            
+            print("self.system dict", self.system.__dict__)
 
             #TODO: Customnonbonded force option. Currently disabled
             print("OpenMM system created")
@@ -847,7 +851,23 @@ class OpenMMTheory:
                         #print("New:", force.getExceptionParameters(exc))
         self.create_simulation()
         print_time_rel(timeA, modulename="delete_exceptions")
-        
+
+    #Get list of lists of water constraints in system (O-H,O-H,H-H)
+    def getwaterconstraintslist(self,watermodel='tip3p'):
+        #Assuming OT or OW oxygen atomtypes used if TIP3P. Assuming oxygen comes first
+        #TODO: support more water models here. like 4-site and 5-site models
+        if watermodel == 'tip3p' or watermodel =='spc':
+            oxygenlabels=['OT', 'OW', 'OWT3']
+        else:
+            print("unknown watermodel")
+            exit()
+        waterconstraints=[]
+        for index,at in enumerate(self.atomtypes):
+            if at in oxygenlabels:
+                waterconstraints.append([index,index+1])
+                waterconstraints.append([index,index+2])
+                waterconstraints.append([index+1,index+2])
+        return waterconstraints
 
     #Function to
     def zero_nonbondedforce(self,atomlist, zeroCoulomb=True, zeroLJ=True):
@@ -1379,10 +1399,10 @@ def OpenMM_MD(fragment=None, openmmobject=None, timestep=0.001, simulation_steps
     pos = [openmmobject.Vec3(coords[i, 0] / 10, coords[i, 1] / 10, coords[i, 2] / 10) for i in range(len(coords))] * openmmobject.openmm.unit.nanometer
 
     openmmobject.simulation.context.setPositions(pos)
-
-    print("Checking PBC vectors")
-    state = openmmobject.simulation.context.getState()
-    print("PBC: ", state.getPeriodicBoxVectors())
+    print("Coordinates set")
+    #print("Checking PBC vectors")
+    #state = openmmobject.simulation.context.getState()
+    #print("PBC: ", state.getPeriodicBoxVectors())
 
     if trajectory_file_option == 'PDB':
         openmmobject.simulation.reporters.append(openmmobject.openmm.app.PDBReporter('output_traj.pdb', traj_frequency, enforcePeriodicBox=enforcePeriodicBox))
@@ -1390,6 +1410,7 @@ def OpenMM_MD(fragment=None, openmmobject=None, timestep=0.001, simulation_steps
         #NOTE: Safer option seems to be to use PDB-writer from OpenMM instead of ASH. Because ASH requires ASH-openMMobject to have a bunch of lists defined (currently only for CHARMM)
         #write_pdbfile(fragment,outputname="initial_frag", openmmobject=openmmobject)
         with open('initial_MDfrag_step1.pdb', 'w') as f: openmmobject.openmm.app.pdbfile.PDBFile.writeModel(openmmobject.topology, openmmobject.simulation.context.getState(getPositions=True, enforcePeriodicBox=enforcePeriodicBox).getPositions(), f)
+        print("Wrote PDB")
         openmmobject.simulation.reporters.append(openmmobject.openmm.app.DCDReporter('output_traj.dcd', traj_frequency, enforcePeriodicBox=enforcePeriodicBox))
     elif trajectory_file_option =='NetCDFReporter':
         print("NetCDFReporter traj format selected. This requires mdtraj. Importing.")
@@ -1419,14 +1440,15 @@ def OpenMM_MD(fragment=None, openmmobject=None, timestep=0.001, simulation_steps
     print("PBC: ", state.getPeriodicBoxVectors())
 
     #Writing final frame to disk as PDB
-    with open('final_MDfrag_laststep.pdb', 'w') as f: openmmobject.openmm.app.pdbfile.PDBFile.writeModel(openmmobject.topology, state.getPositions(asNumpy=True).value_in_unit(openmmobject.unit.angstrom), f)
+    with open('final_MDfrag_laststep.pdb', 'w') as f: openmmobject.openmm.app.pdbfile.PDBFile.writeHeader(openmmobject.topology, f)
+    with open('final_MDfrag_laststep.pdb', 'a') as f: openmmobject.openmm.app.pdbfile.PDBFile.writeModel(openmmobject.topology, state.getPositions(asNumpy=True).value_in_unit(openmmobject.unit.angstrom), f)
     #Updating ASH fragment
     newcoords = state.getPositions(asNumpy=True).value_in_unit(openmmobject.unit.angstrom)
     print("Updating coordinates in ASH fragment")
     fragment.coords=newcoords
     print_time_rel(module_init_time, modulename="OpenMM_MD", moduleindex=1)
 
-def OpenMM_Opt(fragment=None, openmmobject=None, frozen_atoms=None, constraints=None, restraints=None, maxiter=1000, tolerance=1):
+def OpenMM_Opt(fragment=None, openmmobject=None, maxiter=1000, tolerance=1, frozen_atoms=None, constraints=None, restraints=None, trajectory_file_option='PDB', traj_frequency=1, enforcePeriodicBox=True):
     module_init_time = time.time()
     print_line_with_mainheader("OpenMM Optimization")
     if frozen_atoms==None: frozen_atoms=[]
@@ -1503,6 +1525,8 @@ def OpenMM_Opt(fragment=None, openmmobject=None, frozen_atoms=None, constraints=
     print("Max force component: {} Eh/Bohr".format(forces_init.max()))
     print("")
     print("Starting minimization")
+
+
     openmmobject.simulation.minimizeEnergy(maxIterations=maxiter, tolerance=tolerance)
     print("Minimization done")
     print("")
@@ -1519,7 +1543,8 @@ def OpenMM_Opt(fragment=None, openmmobject=None, frozen_atoms=None, constraints=
     print("Updating coordinates in ASH fragment")
     fragment.coords=newcoords
 
-    with open('frag-minimized.pdb', 'w') as f: openmmobject.openmm.app.pdbfile.PDBFile.writeModel(openmmobject.topology, openmmobject.simulation.context.getState(getPositions=True).getPositions(), f)
+    with open('frag-minimized.pdb', 'w') as f: openmmobject.openmm.app.pdbfile.PDBFile.writeHeader(openmmobject.topology, f)
+    with open('frag-minimized.pdb', 'a') as f: openmmobject.openmm.app.pdbfile.PDBFile.writeModel(openmmobject.topology, openmmobject.simulation.context.getState(getPositions=True, enforcePeriodicBox=True).getPositions(), f)
 
     print('All Done!')
     print_time_rel(module_init_time, modulename="OpenMM_Opt", moduleindex=1)
@@ -1682,23 +1707,44 @@ def OpenMM_Modeller(pdbfile=None, forcefield=None, xmlfile=None, waterxmlfile=No
     #3. We exit and return forcefield and topology object. Then pass that to OpenMMTheory????
 
 def MDtraj_import_():
-    print("Importing mdtraj")
+    print("Importing mdtraj (https://www.mdtraj.org)")
     try:
         import mdtraj
     except:
         print("Problem importing mdtraj. Try: pip install mdtraj or conda install -c conda-forge mdtraj")
     return mdtraj
 
-def MDtraj_imagetraj(trajectory, pdbtopology, format='DCD'):
+def MDtraj_imagetraj(trajectory, pdbtopology, format='DCD', unitcell_lengths=None, unitcell_angles=None):
     traj_basename=os.path.splitext(trajectory)[0]
     mdtraj=MDtraj_import_()
-    traj = mdtraj.load(trajectory, top=pdbtopology)
 
+    #Load traj
+    print("Loading trajecory using mdtraj")
+    traj = mdtraj.load(trajectory, top=pdbtopology)
+    numframes=len(traj._time)
+    print("Found {} frames in trajectory".format(numframes))
+    print("PBC information in trajectory:")
+    print("traj.unitcell_lengths:", traj.unitcell_lengths)
+    print("traj.unitcell_angles", traj.unitcell_angles)
+    #If PBC information is missing from traj file (OpenMM: Charmmfiles, Amberfiles option etc) then provide this info
+    if unitcell_lengths != None:
+        print("unitcell_lengths info provided by user.")
+        unitcell_lengths_nm=[i/10 for i in unitcell_lengths]
+        traj.unitcell_lengths=np.array(unitcell_lengths_nm*numframes).reshape(numframes,3)
+        traj.unitcell_angles=np.array(unitcell_angles*numframes).reshape(numframes,3)
+    else:
+        print("Missing PBC info. This can be provided by unitcell_lengths and unitcell_angles keywords")
+    
+    #Re-imaging trajectory
     imaged=traj.image_molecules()
+
     #Save trajectory in format
     if format == 'DCD':
-        traj.save(traj_basename+'_imaged.dcd')
+        imaged.save(traj_basename+'_imaged.dcd')
         print("Saved reimaged trajectory:", traj_basename+'_imaged.dcd')
+    elif format == 'PDB':
+        imaged.save(traj_basename+'_imaged.pdb')
+        print("Saved reimaged trajectory:", traj_basename+'_imaged.pdb')
     else:
         print("Unknown traj format")
     
