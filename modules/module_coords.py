@@ -2556,7 +2556,7 @@ def add_atoms_to_system_CHARMM(fragment=None, added_atoms_coordstring=None, resg
 
 
 #Get list of lists of water constraints in system (O-H,O-H,H-H) from atomtypes
-def getwaterconstraintslist(atomtypes, actatoms=None, watermodel='tip3p'):
+def getwaterconstraintslist(atomtypes=None, actatoms=None, watermodel='tip3p'):
     #Assuming OT or OW oxygen atomtypes used if TIP3P. Assuming oxygen comes first
     #TODO: support more water models here. like 4-site and 5-site models
     if watermodel == 'tip3p' or watermodel =='spc':
