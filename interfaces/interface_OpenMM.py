@@ -852,23 +852,6 @@ class OpenMMTheory:
         self.create_simulation()
         print_time_rel(timeA, modulename="delete_exceptions")
 
-    #Get list of lists of water constraints in system (O-H,O-H,H-H)
-    def getwaterconstraintslist(self,watermodel='tip3p'):
-        #Assuming OT or OW oxygen atomtypes used if TIP3P. Assuming oxygen comes first
-        #TODO: support more water models here. like 4-site and 5-site models
-        if watermodel == 'tip3p' or watermodel =='spc':
-            oxygenlabels=['OT', 'OW', 'OWT3']
-        else:
-            print("unknown watermodel")
-            exit()
-        waterconstraints=[]
-        for index,at in enumerate(self.atomtypes):
-            if at in oxygenlabels:
-                waterconstraints.append([index,index+1])
-                waterconstraints.append([index,index+2])
-                waterconstraints.append([index+1,index+2])
-        return waterconstraints
-
     #Function to
     def zero_nonbondedforce(self,atomlist, zeroCoulomb=True, zeroLJ=True):
         timeA=time.time()
@@ -1752,6 +1735,42 @@ def MDtraj_imagetraj(trajectory, pdbtopology, format='DCD', unitcell_lengths=Non
     #traj.save('file.nc')
     #traj.save('file.xyz')
     #traj.save('file.pdb')
+
+
+
+
+
+#Get list of lists of water constraints in system (O-H,O-H,H-H)
+def getwaterconstraintslist(openmmtheory=None, actatoms=None, watermodel='tip3p'):
+
+    if openmmtheory==None:
+        print("Need openmmtheory")
+        exit()
+
+    #Assuming OT or OW oxygen atomtypes used if TIP3P. Assuming oxygen comes first
+    #TODO: support more water models here. like 4-site and 5-site models
+    if watermodel == 'tip3p' or watermodel =='spc':
+        oxygenlabels=['OT', 'OW', 'OWT3']
+    else:
+        print("unknown watermodel")
+        exit()
+    waterconstraints=[]
+    for index,at in enumerate(openmmtheory.atomtypes):
+        #Skipping if not in actatomslist
+        if actatoms != None:
+            if index not in actatoms:
+                continue
+        if at in oxygenlabels:
+            waterconstraints.append([index,index+1])
+            waterconstraints.append([index,index+2])
+            waterconstraints.append([index+1,index+2])
+    return waterconstraints
+
+
+
+
+
+
 
 #QM/MM functionality to Open_MM MD
 
