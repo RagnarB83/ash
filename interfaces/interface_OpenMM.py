@@ -442,7 +442,12 @@ class OpenMMTheory:
                     if isinstance(force, self.openmm.NonbondedForce):
                         self.system.removeForce(i)
 
-
+        print("System constraints defined upon system creation:", self.system.getNumConstraints())
+        print("Use printlevel =>2 to see list of all constraints")
+        if self.printlevel >= 3:
+            for i in range(0,self.system.getNumConstraints()):
+                constraint=self.system.getConstraintParameters(i)
+                print("constraint:", constraint)
 
         print_time_rel(timeA, modulename="system create")
         timeA = time.time()
@@ -1695,6 +1700,7 @@ def MDtraj_import_():
         import mdtraj
     except:
         print("Problem importing mdtraj. Try: pip install mdtraj or conda install -c conda-forge mdtraj")
+        exit()
     return mdtraj
 
 def MDtraj_imagetraj(trajectory, pdbtopology, format='DCD', unitcell_lengths=None, unitcell_angles=None):
@@ -1715,8 +1721,8 @@ def MDtraj_imagetraj(trajectory, pdbtopology, format='DCD', unitcell_lengths=Non
         unitcell_lengths_nm=[i/10 for i in unitcell_lengths]
         traj.unitcell_lengths=np.array(unitcell_lengths_nm*numframes).reshape(numframes,3)
         traj.unitcell_angles=np.array(unitcell_angles*numframes).reshape(numframes,3)
-    else:
-        print("Missing PBC info. This can be provided by unitcell_lengths and unitcell_angles keywords")
+    #else:
+    #    print("Missing PBC info. This can be provided by unitcell_lengths and unitcell_angles keywords")
     
     #Re-imaging trajectory
     imaged=traj.image_molecules()
