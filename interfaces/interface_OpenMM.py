@@ -12,7 +12,7 @@ class OpenMMTheory:
     def __init__(self, printlevel=2, platform='CPU', numcores=None, Modeller=False, forcefield=None, topology=None,
                  CHARMMfiles=False, psffile=None, charmmtopfile=None, charmmprmfile=None,
                  GROMACSfiles=False, gromacstopfile=None, grofile=None, gromacstopdir=None,
-                 Amberfiles=False, amberprmtopfile=None, oldsettings=False,
+                 Amberfiles=False, amberprmtopfile=None, oldsettings=True,
                  xmlfiles=None, pdbfile=None, use_parmed=False,
                  do_energy_decomposition=False,
                  periodic=False, charmm_periodic_cell_dimensions=None, customnonbondedforce=False,
@@ -305,8 +305,11 @@ class OpenMMTheory:
                 #print("box in self.forcefield", self.forcefield.get_box())
 
                 #exit()
-                
-                self.system = self.forcefield.createSystem(self.params, nonbondedMethod=simtk.openmm.app.PME, constraints=self.autoconstraints, hydrogenMass=self.hydrogenmass, rigidWater=self.rigidwater,
+                if oldsettings == True:
+                    self.system = self.forcefield.createSystem(self.params, nonbondedMethod=simtk.openmm.app.PME, constraints=self.autoconstraints, hydrogenMass=self.hydrogenmass,
+                                            nonbondedCutoff=periodic_nonbonded_cutoff * self.unit.angstroms, switchDistance=switching_function_distance*self.unit.angstroms)
+                else:
+                    self.system = self.forcefield.createSystem(self.params, nonbondedMethod=simtk.openmm.app.PME, constraints=self.autoconstraints, hydrogenMass=self.hydrogenmass, rigidWater=self.rigidwater,
                                             nonbondedCutoff=periodic_nonbonded_cutoff * self.unit.angstroms, switchDistance=switching_function_distance*self.unit.angstroms)
             elif GROMACSfiles is True:
                 #NOTE: Gromacs has read PBC info from Gro file already
@@ -389,6 +392,7 @@ class OpenMMTheory:
 
             if CHARMMfiles is True:
                 if oldsettings == True:
+                    print("old settings are used")
                     self.system = self.forcefield.createSystem(self.params, nonbondedMethod=simtk.openmm.app.NoCutoff,
                                             nonbondedCutoff=1000 * simtk.openmm.unit.angstroms, hydrogenMass=self.hydrogenmass)
                 else:    
@@ -452,7 +456,7 @@ class OpenMMTheory:
             for i in range(0,self.system.getNumConstraints()):
                 constraint=self.system.getConstraintParameters(i)
                 print("constraint:", constraint)
-
+        print("self.system dict", self.system.__dict__)
         print_time_rel(timeA, modulename="system create")
         timeA = time.time()
 
