@@ -19,7 +19,7 @@ class OpenMMTheory:
                  periodic_nonbonded_cutoff=12, dispersion_correction=True, 
                  switching_function_distance=10,
                  ewalderrortolerance=1e-5, PMEparameters=None,
-                 delete_QM1_MM1_bonded=False, applyconstraints=True,
+                 delete_QM1_MM1_bonded=False, applyconstraints=False,
                  autoconstraints=None, hydrogenmass=None, rigidwater=True):
         
         module_init_time = time.time()
@@ -793,6 +793,7 @@ class OpenMMTheory:
         #While these distance constraints should not matter, applying them makes the energy function agree with previous benchmarking for bonded and nonbonded
         #https://www.ncbi.nlm.nih.gov/pmc/articles/PMC5549999/
         #Using 1e-6 hardcoded value since how used in paper
+        #NOTE: Weirdly, applyconstraints == True seems to result in constraints for TIP3P waters going off?
         if self.applyconstraints == True:
             print("Applying constraints before calculating MM energy")
             self.simulation.context.applyConstraints(1e-6)
