@@ -323,9 +323,10 @@ class OpenMMTheory:
             else:
                 print("Setting up periodic system here.")
                 #Modeller and manual xmlfiles
-                self.system = self.forcefield.createSystem(self.topology, nonbondedMethod=simtk.openmm.app.PME, constraints=self.autoconstraints, hydrogenMass=self.hydrogenmass, rigidWater=self.rigidwater,
-                                            nonbondedCutoff=periodic_nonbonded_cutoff * self.unit.angstroms, switchDistance=switching_function_distance*self.unit.angstroms)
-            
+                self.system = self.forcefield.createSystem(self.topology, nonbondedMethod=simtk.openmm.app.PME, constraints=self.autoconstraints, 
+                                                           hydrogenMass=self.hydrogenmass, rigidWater=self.rigidwater,
+                                                            nonbondedCutoff=periodic_nonbonded_cutoff * self.unit.angstroms)
+                #switchDistance=switching_function_distance*self.unit.angstroms
             
             print("self.system dict", self.system.__dict__)
 
@@ -784,7 +785,7 @@ class OpenMMTheory:
         #While these distance constraints should not matter, applying them makes the energy function agree with previous benchmarking for bonded and nonbonded
         #https://www.ncbi.nlm.nih.gov/pmc/articles/PMC5549999/
         #Using 1e-6 hardcoded value since how used in paper
-        #NOTE: Weirdly, applyconstraints == True seems to result in constraints for TIP3P waters going off?
+        #NOTE: Weirdly, applyconstraints == True result in constraints for TIP3P disappearing
         if self.applyconstraints == True:
             print("Applying constraints before calculating MM energy")
             self.simulation.context.applyConstraints(1e-6)
