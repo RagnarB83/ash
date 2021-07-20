@@ -1558,7 +1558,7 @@ def OpenMM_Opt(fragment=None, openmmobject=None, maxiter=1000, tolerance=1, froz
     #)
 
 def OpenMM_Modeller(pdbfile=None, forcefield=None, xmlfile=None, waterxmlfile=None, watermodel=None, pH=7.0, 
-                    solvent_padding=10.0, solvent_boxdims=None, extraxmlfile=None,
+                    solvent_padding=10.0, solvent_boxdims=None, extraxmlfile=None, residue_variants=None,
                     ionicstrength=0.1, iontype='K+'):
     module_init_time = time.time()
     print_line_with_mainheader("OpenMM Modeller")
@@ -1566,6 +1566,7 @@ def OpenMM_Modeller(pdbfile=None, forcefield=None, xmlfile=None, waterxmlfile=No
         import simtk.openmm as openmm
         import simtk.openmm.app as openmm_app
         import simtk.unit as openmm_unit
+        import pdbfixer
         print("Imported OpenMM library version:", openmm.__version__)
 
     except ImportError:
@@ -1624,7 +1625,9 @@ def OpenMM_Modeller(pdbfile=None, forcefield=None, xmlfile=None, waterxmlfile=No
     print("Water model:", watermodel)
     print("Xmlfile:", waterxmlfile)   
     print("pH:", pH)
-
+    
+    
+    print("User-provided dictionary of residue_variants:", residue_variants)
     #Define a forcefield
     if extraxmlfile == None:
         forcefield=openmm_app.forcefield.ForceField(xmlfile, waterxmlfile)
@@ -1632,37 +1635,69 @@ def OpenMM_Modeller(pdbfile=None, forcefield=None, xmlfile=None, waterxmlfile=No
         print("Using extra XML file:", extraxmlfile)
         forcefield=openmm_app.forcefield.ForceField(xmlfile, waterxmlfile, extraxmlfile)
     
-    #Load PDB-file
-    pdb = openmm_app.PDBFile(pdbfile)
 
-    #Create modeller object
+    #Fix basic mistakes in PDB by PDBFixer
+    #This will e.g. fix bad terminii
+    print("Running PDBFixer")
+    fixer = pdbfixer.PDBFixer(pdbfile)
+    fixer.findMissingResidues()
+    print("Found missing residues:", fixer.missingResidues)
+    fixer.findNonstandardResidues()
+    print("Found non-standard residues:", fixer.nonstandardResidues)
+    #fixer.replaceNonstandardResidues()
+    fixer.findMissingAtoms()
+    print("Found missing atoms:", fixer.missingAtoms)
+    print("Found missing terminals:", fixer.missingTerminals)
+    #print(fixer.__dict__)
+    fixer.addMissingAtoms()
+    print("Added missing atoms")
+    #fixer.removeHeterogens(True)
+    #print(fixer.__dict__)
+
+    openmm_app.PDBFile.writeFile(fixer.topology, fixer.positions, open('system_afterfixes.pdb', 'w'))
+    print("PDBFixer done")
+    print("Wrote PDBfile: system_afterfixes.pdb")
+
+    #Load fixed PDB-file and create Modeller object
+    pdb = openmm_app.PDBFile("system_afterfixes.pdb")
+    print("Loading Modeller")
     modeller = openmm_app.Modeller(pdb.topology, pdb.positions)
+    numresidues=modeller.topology.getNumResidues()
+    print("Modeller topology has {} residues".format(numresidues))
     
+    #User provided dictionary of special residues e.g residue_variants={0:'LYN', 17:'CYX', 18:'ASH', 19:'HIE' }
+    #Now creating list of all residues [None,None,None...] with added changes
+    residue_states=[None for i in range(0,numresidues)]
+    if residue_variants != None:
+        for resid,newstate in residue_variants.items():
+            residue_states[resid] =newstate
+
 
     #Adding hydrogens. 
     # This is were missing residue/atom errors will come
     print("")
     print("Adding hydrogens for pH:", pH)
-    try:
-        modeller.addHydrogens(forcefield, pH=pH)
-    except ValueError as err:
-        traceback.print_tb(err.__traceback__)
-        print("")
-        print(BC.FAIL,"ASH: OpenMM exited with ValueError. Probably means that you are missing forcefield terms. Please provide an extraxmlfile argument to OpenMM_Modeller", BC.END)
-        exit()
-    except KeyError as err:
-        traceback.print_tb(err.__traceback__)
-        print("ASH: Some key error")
-        exit()
-    except Exception as err:
-        traceback.print_tb(err.__traceback__)
-        print("ASH: OpenMM failed with some error. Read the error message above carefully.")
-        exit()
+    modeller.addHydrogens(forcefield, pH=pH, variants=residue_states)
+    #try:
+    #    modeller.addHydrogens(forcefield, pH=pH, variants=residue_variants)
+    #except ValueError as err:
+    #    traceback.print_tb(err.__traceback__)
+    #    print("")
+    #    print(BC.FAIL,"ASH: OpenMM exited with ValueError. Probably means that you are missing forcefield terms or you provided wrong residue info.")
+    #    print("Please provide an extraxmlfile argument to OpenMM_Modeller or fix the residue info", BC.END)
+    #    exit()
+    #except KeyError as err:
+    #    traceback.print_tb(err.__traceback__)
+    #    print("ASH: Some key error")
+    #    exit()
+    #except Exception as err:
+    #    traceback.print_tb(err.__traceback__)
+    #    print("ASH: OpenMM failed with some error. Read the error message above carefully.")
+    #    exit()
 
-
-    
     write_pdbfile(modeller.topology,modeller.positions,"system_afterH.pdb")
     print_systemsize()
+    
     #Solvent
     print("Adding solvent, watermodel:", watermodel)
     if solvent_boxdims != None: 
@@ -1688,12 +1723,6 @@ def OpenMM_Modeller(pdbfile=None, forcefield=None, xmlfile=None, waterxmlfile=No
     print_time_rel(module_init_time, modulename="OpenMM_Modeller", moduleindex=1)
     #Return forcefield object,  topology object and ASH fragment
     return forcefield, modeller.topology, fragment
-
-    #1. We could create system now. Best way to check for correctness of PDB-file??
-    #system = create_system(forcefield,pdb.topology)
-    #system = forcefield.createSystem(modeller.topology, nonbondedMethod=openmm.PME)
-    #1b. we then calls OpenMMTheory and create full object ? Too messy since we can't change options
-    #3. We exit and return forcefield and topology object. Then pass that to OpenMMTheory????
 
 def MDtraj_import_():
     print("Importing mdtraj (https://www.mdtraj.org)")
