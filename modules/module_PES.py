@@ -14,7 +14,7 @@ import shutil
 import constants
 import math
 from interfaces.interface_ORCA import checkORCAfinished,scfenergygrab,tddftgrab,orbitalgrab,run_orca_plot,grabEOMIPs,check_stability_in_output
-from functions.functions_general import writestringtofile,BC,blankline,isint
+from functions.functions_general import writestringtofile,BC,blankline,isint,print_time_rel
 from functions.functions_elstructure import HOMOnumbercalc,modosplot,write_cube_diff,read_cube
 
 class bcolors:
