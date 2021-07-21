@@ -1566,13 +1566,18 @@ def OpenMM_Modeller(pdbfile=None, forcefield=None, xmlfile=None, waterxmlfile=No
         import simtk.openmm as openmm
         import simtk.openmm.app as openmm_app
         import simtk.unit as openmm_unit
-        import pdbfixer
         print("Imported OpenMM library version:", openmm.__version__)
 
     except ImportError:
         raise ImportError(
             "OpenMM requires installing the OpenMM package. Try: conda install -c conda-forge openmm  \
             Also see http://docs.openmm.org/latest/userguide/application.html")
+    try:
+        import pdbfixer
+    except:
+        print("Problem importing pdbfixer. Install first via conda:")
+        print("conda install -c conda-forge pdbfixer")
+
     def write_pdbfile(topology,positions,filename):
         openmm.app.PDBFile.writeFile(topology, positions, file=open(filename, 'w'))
         print("Wrote PDB-file:", filename)
@@ -1671,6 +1676,7 @@ def OpenMM_Modeller(pdbfile=None, forcefield=None, xmlfile=None, waterxmlfile=No
     if residue_variants != None:
         for resid,newstate in residue_variants.items():
             residue_states[resid] =newstate
+
 
 
     #Adding hydrogens. 
