@@ -1559,7 +1559,7 @@ def nucchargelist(ellist):
     return totnuccharge
 
 #get list of nuclear charges from list of elements
-#Used by Psi4 and CM5calc
+#Used by Psi4 and CM5calc and xTBlibrary
 # aka atomic numbers, aka atom numbers
 def elemstonuccharges(ellist):
     nuccharges=[]
