@@ -27,7 +27,7 @@ from modules.module_coords import elemstonuccharges
 
 
 class xTBTheory:
-    def __init__(self, xtbdir=None, fragment=None, charge=None, mult=None, xtbmethod=None, runmode='inputfile', nprocs=1, printlevel=2, filename='xtb_',
+    def __init__(self, xtbdir=None, fragment=None, charge=None, mult=None, xtbmethod=None, runmode='inputfile', numcores=1, printlevel=2, filename='xtb_',
                  maxiter=500, electronic_temp=300, label=None):
 
 
@@ -41,7 +41,7 @@ class xTBTheory:
             print("xTBTheory requires xtbmethod keyword to be set")
             exit(1)
 
-        self.nprocs=nprocs
+        self.numcores=numcores
         if fragment != None:
             self.fragment=fragment
             self.coords=fragment.coords
@@ -57,9 +57,17 @@ class xTBTheory:
         
         print_line_with_mainheader("xTB INTERFACE")
         print("Runmode:", self.runmode)
+
+        #Parallelization:
+        print("xTB object numcores:", self.numcores)
+        os.environ["OMP_NUM_THREADS"] = str(self.numcores)
+        os.environ["MKL_NUM_THREADS"] = "1"
+        os.environ["OPENBLAS_NUM_THREADS"] = "1"
+
         #New library version. interface via conda: xtb-python
         if self.runmode=='library':
             print("Using new library-based xTB interface")
+
             try:
                 #
                 from xtb.libxtb import VERBOSITY_MINIMAL
@@ -67,6 +75,9 @@ class xTBTheory:
                 self.Calculator=Calculator
                 self.Param=Param
                 self.VERBOSITY_MINIMAL=VERBOSITY_MINIMAL
+                # Creating variable and setting to None. Replaced by run
+                self.calcobject=None
+
             except:
                 print("Problem importing xTB library. Have you installed : conda install xtb-python ?")
                 exit(9)
@@ -75,9 +86,6 @@ class xTBTheory:
         elif self.runmode=='oldlibrary':
             print("Using old library-based xTB interface")
             print("Loading library...")
-            os.environ["OMP_NUM_THREADS"] = str(nprocs)
-            os.environ["MKL_NUM_THREADS"] = "1"
-            os.environ["OPENBLAS_NUM_THREADS"] = "1"
             # Load xtB library and ctypes datatypes that run uses
             try:
                 #import xtb_interface_library
@@ -93,7 +101,7 @@ class xTBTheory:
             # from ctypes import Structure, c_int, c_double, c_bool, c_char_p, c_char, POINTER, cdll, CDLL
             self.c_int = c_int
             self.c_double = c_double
-        else:
+        elif self.runmode=='inputfile':
             if xtbdir == None:
                 print(BC.WARNING, "No xtbdir argument passed to xTBTheory. Attempting to find xTBTheory variable inside settings_ash", BC.END)
                 try:
@@ -109,7 +117,9 @@ class xTBTheory:
                         exit()
             else:
                 self.xtbdir = xtbdir
-
+        else:
+            print("unknown runmode. exiting")
+            exit(1)
 
     #Cleanup after run.
     def cleanup(self):
@@ -133,13 +143,13 @@ class xTBTheory:
             except:
                 pass
     def run(self, current_coords=None, current_MM_coords=None, MMcharges=None, qm_elems=None,
-                elems=None, Grad=False, PC=False, nprocs=None, label=None):
+                elems=None, Grad=False, PC=False, numcores=None, label=None):
         module_init_time=time.time()
         if MMcharges is None:
             MMcharges=[]
 
-        if nprocs is None:
-            nprocs=self.nprocs
+        if numcores is None:
+            numcores=self.numcores
 
         if self.printlevel >= 2:
             print("------------STARTING XTB INTERFACE-------------")
@@ -158,15 +168,6 @@ class xTBTheory:
                 qm_elems = elems
 
 
-        #Parallellization
-        #Todo: this has not been confirmed to work
-        #Needs to be done before library-import??
-        print("Job label:", label)
-        print("nprocs:", nprocs)
-        os.environ["OMP_NUM_THREADS"] = str(nprocs)
-        os.environ["MKL_NUM_THREADS"] = "1"
-        os.environ["OPENBLAS_NUM_THREADS"] = "1"
-
         if self.runmode=='inputfile':
             if self.printlevel >=2:
                 print("Using inputfile-based xTB interface")
@@ -183,7 +184,7 @@ class xTBTheory:
 
 
 
-            #Run inputfile. Take nprocs argument.
+            #Run inputfile.
             if self.printlevel >= 2:
                 print("------------Running xTB-------------")
                 print("...")
@@ -261,15 +262,23 @@ class xTBTheory:
                 print("unknown xtbmethod")
                 exit()
 
-    
             #Creating calculator using Hamiltonian and coordinates
             #Setting charge and mult
-            calc = self.Calculator(param_method, qm_elems_numbers, coords_au, charge=self.charge, uhf=self.mult-1)
-            calc.set_verbosity(self.VERBOSITY_MINIMAL)
+            #NOTE: New calculator object in every Opt/MD iteration is unnecessary
+            #TODO: change
 
-            #Some modifications to calc object: etemp, maxiter
-            calc.set_electronic_temperature(self.electronic_temp)
-            calc.set_max_iterations(self.maxiter)
+            #first run call: create new object containing coordinates and settings
+            if self.calcobject == None:
+                print("Creating new xTB calc object")
+                self.calcobject = self.Calculator(param_method, qm_elems_numbers, coords_au, charge=self.charge, uhf=self.mult-1)
+                self.calcobject.set_verbosity(self.VERBOSITY_MINIMAL)
+                self.calcobject.set_electronic_temperature(self.electronic_temp)
+                self.calcobject.set_max_iterations(self.maxiter)
+            #nextt run calls: only update coordinates
+            else:
+                print("Updating coordinates in xTB calcobject")
+                self.calcobject.update(coords_au)
+
             #QM/MM pointcharge field
             #calc.
             if PC==True:
@@ -288,12 +297,13 @@ class xTBTheory:
 
             #Run
             #TODO: Can we turn off gradient calculation somewhere?
-            res = calc.singlepoint()
+            res = self.calcobject.singlepoint()
             print("------------xTB calculation done-------------")
             if Grad == True:
                 self.energy = res.get_energy()
                 self.grad =res.get_gradient()
-                print("length of gradient", len(self.grad))
+                if self.printlevel >= 2:
+                    print("xtb energy :", self.energy)
                 if PC == True:
                     #pcgrad
                     #get pcgrad
@@ -310,7 +320,8 @@ class xTBTheory:
             else:
                 #NOTE: Gradient has still been calculated but is ignored. Not sure how to turn off
                 self.energy = res.get_energy()
-
+                if self.printlevel >= 2:
+                    print("xtb energy :", self.energy)
                 print("------------ENDING XTB-INTERFACE-------------")
                 print_time_rel(module_init_time, modulename='xTBlib run', moduleindex=2)
                 return self.energy

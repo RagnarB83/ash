@@ -240,7 +240,6 @@ def plot_Spectrum(xvalues=None, yvalues=None, plotname='Spectrum', range=None, u
     if xvalues is None or yvalues is None:
         print("plot_Spectrum requires xvalues and yvalues variables")
         exit(1)
-
     assert len(xvalues) == len(yvalues), "List of yvalues not same size as list of xvalues." 
 
     start=range[0]
@@ -253,7 +252,9 @@ def plot_Spectrum(xvalues=None, yvalues=None, plotname='Spectrum', range=None, u
     print("")
     print("xvalues ({}): {}".format(len(xvalues),xvalues))
     print("yvalues ({}): {}".format(len(yvalues),yvalues))
-
+    if len(xvalues) == 0:
+        print("X-values list length zero. Exiting.")
+        exit()
 
     #########################
     # Plot spectra.
