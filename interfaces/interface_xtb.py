@@ -61,8 +61,8 @@ class xTBTheory:
         #Parallelization:
         print("xTB object numcores:", self.numcores)
         os.environ["OMP_NUM_THREADS"] = str(self.numcores)
-        os.environ["MKL_NUM_THREADS"] = "1"
-        os.environ["OPENBLAS_NUM_THREADS"] = "1"
+        #os.environ["MKL_NUM_THREADS"] = "1"
+        #os.environ["OPENBLAS_NUM_THREADS"] = "1"
 
         #New library version. interface via conda: xtb-python
         if self.runmode=='library':
