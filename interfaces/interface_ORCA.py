@@ -11,7 +11,7 @@ import time
 
 #ORCA Theory object. Fragment object is optional. Only used for single-points.
 class ORCATheory:
-    def __init__(self, orcadir=None, fragment=None, charge=None, mult=None, orcasimpleinput='', printlevel=2, extrabasisatoms=None, extrabasis=None,
+    def __init__(self, orcadir=None, fragment=None, charge=None, mult=None, orcasimpleinput='', printlevel=2, extrabasisatoms=None, extrabasis=None, TDDFT=False, FollowRoot=1,
                  orcablocks='', extraline='', brokensym=None, HSmult=None, atomstoflip=None, nprocs=1, label=None, moreadfile=None, autostart=True, propertyblock=None):
 
         if orcadir is None:
@@ -45,6 +45,10 @@ class ORCATheory:
 
         #Printlevel
         self.printlevel=printlevel
+
+        #TDDFT
+        self.TDDFT=TDDFT
+        self.FollowRoot=FollowRoot
 
         #Setting nprocs of object
         self.nprocs=nprocs
@@ -164,6 +168,17 @@ class ORCATheory:
             nprocs=self.nprocs
         print("Running ORCA object with {} cores available".format(nprocs))
         print("Job label:", label)
+
+        #TDDFT option
+        #If gradient requested by Singlepoint(Grad=True) or Optimizer then TDDFT gradient is calculated instead
+        if self.TDDFT == True:
+            if '%tddft' not in self.orcablocks:
+                self.orcablocks=self.orcablocks+"""
+                %tddft
+                nroots 10
+                IRoot {}
+                end
+                """.format(self.FollowRoot)
 
 
         print("Creating inputfile:", self.filename+'.inp')

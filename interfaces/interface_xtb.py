@@ -13,17 +13,10 @@ import modules.module_coords
 from modules.module_coords import elemstonuccharges
 
 
-#xTB functions: primarily for inputfile-based interface. Library-interfaces is in interface_xtb.py
-
-
-# https://github.com/grimme-lab/xtb/blob/master/python/xtb/interface.py
 #Now supports 2 runmodes: 'library' (fast Python C-API) or 'inputfile'
 #
 #TODO: THis should be a general interface so remove settings_solvation calls.
 #TODO: xtb. Need to combine OMP-parallelization of xtb and multiprocessing if possible
-#TODO: Currently doing multiprocessing over all 8*2=16 snapshots. First A, then B.
-#TODO: Might not be a need to do first A then B since a ROHF-type Hamiltonian
-#TODO. Could parallelize over all 32 calculations. However, we are currently using 24 cores so...
 
 
 class xTBTheory:
@@ -58,11 +51,11 @@ class xTBTheory:
         print_line_with_mainheader("xTB INTERFACE")
         print("Runmode:", self.runmode)
 
-        #Parallelization:
+        #Parallelization for both library and inputfile runmode
         print("xTB object numcores:", self.numcores)
+        #NOTE: Setting OMP_NUM_THREADS should be sufficient for performance. MKL threading should be handled by xTB
         os.environ["OMP_NUM_THREADS"] = str(self.numcores)
         #os.environ["MKL_NUM_THREADS"] = "1"
-        #os.environ["OPENBLAS_NUM_THREADS"] = "1"
 
         #New library version. interface via conda: xtb-python
         if self.runmode=='library':
@@ -187,6 +180,7 @@ class xTBTheory:
             #Run inputfile.
             if self.printlevel >= 2:
                 print("------------Running xTB-------------")
+                print("Running xtB using {} cores".format(self.numcores))
                 print("...")
             if Grad==True:
                 if PC==True:
@@ -297,7 +291,7 @@ class xTBTheory:
 
             #Run
             #TODO: Can we turn off gradient calculation somewhere?
-            print("Running xtB(library)")
+            print("Running xtB using {} cores".format(self.numcores))
             res = self.calcobject.singlepoint()
             print("------------xTB calculation done-------------")
             if Grad == True:
