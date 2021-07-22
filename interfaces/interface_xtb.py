@@ -297,6 +297,7 @@ class xTBTheory:
 
             #Run
             #TODO: Can we turn off gradient calculation somewhere?
+            print("Running xtB(library)")
             res = self.calcobject.singlepoint()
             print("------------xTB calculation done-------------")
             if Grad == True:
