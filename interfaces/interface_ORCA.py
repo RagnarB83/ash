@@ -11,7 +11,7 @@ import time
 
 #ORCA Theory object. Fragment object is optional. Only used for single-points.
 class ORCATheory:
-    def __init__(self, orcadir=None, fragment=None, charge=None, mult=None, orcasimpleinput='', printlevel=2, extrabasisatoms=None, extrabasis=None, TDDFT=False, FollowRoot=1,
+    def __init__(self, orcadir=None, fragment=None, charge=None, mult=None, orcasimpleinput='', printlevel=2, extrabasisatoms=None, extrabasis=None, TDDFT=False, TDDFTroots=5, FollowRoot=1,
                  orcablocks='', extraline='', brokensym=None, HSmult=None, atomstoflip=None, nprocs=1, label=None, moreadfile=None, autostart=True, propertyblock=None):
 
         if orcadir is None:
@@ -48,6 +48,7 @@ class ORCATheory:
 
         #TDDFT
         self.TDDFT=TDDFT
+        self.TDDFTroots=TDDFTroots
         self.FollowRoot=FollowRoot
 
         #Setting nprocs of object
@@ -175,10 +176,10 @@ class ORCATheory:
             if '%tddft' not in self.orcablocks:
                 self.orcablocks=self.orcablocks+"""
                 %tddft
-                nroots 10
+                nroots {}
                 IRoot {}
                 end
-                """.format(self.FollowRoot)
+                """.format(self.TDDFTroots, self.FollowRoot)
 
 
         print("Creating inputfile:", self.filename+'.inp')
