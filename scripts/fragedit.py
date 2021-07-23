@@ -198,7 +198,8 @@ try:
     print("Read atom indices from file:", selatoms_file)
 except IndexError:
     print("Please provide file containing atom indices as 2nd argument")
-
+    exit()
+#Indexing argument
 try:
     extraarg=sys.argv[3]
 except:
