@@ -166,25 +166,30 @@ def write_xyzfile(elems,coords,name,printlevel=2):
 try:
     fragfile=sys.argv[1]
     print("Reading file:", fragfile)
-    #Read coordinates from XYZ-files
-    if '.xyz' in fragfile:
-        elems,coords=read_xyzfile(fragfile)
-    elif '.ygg' in fragfile:
-        elems,coords=read_yggfile(fragfile)
-    else:
-        print("Unknown file format. Only .xyz and .ygg files currently supported")
-        exit()
-    # PDB-file could be a bit tricky to support. Should we use element-column or atomname column?
-    #elif '.pdb' in fragfile:
-    #    elems,coords=read_pdbfile(fragfile)
 except:
+    print("Error:")
     print("Please provide an Ash fragment file and atomindices file as argument:")
     print("Examples:")
     print("fragedit.py file.ygg qmatoms")
     print("fragedit.py file.xyz qmatoms")
     print("fragedit.py file.xyz qmatoms index1  (if using 1-based atom indices)")
     exit(1)
-    
+
+
+#Read coordinates from XYZ-files
+if '.xyz' in fragfile:
+    elems,coords=read_xyzfile(fragfile)
+elif '.ygg' in fragfile:
+    elems,coords=read_yggfile(fragfile)
+else:
+    print("Unknown file format. Only .xyz and .ygg files currently supported")
+    print("")
+    exit()
+# PDB-file could be a bit tricky to support. Should we use element-column or atomname column?
+#elif '.pdb' in fragfile:
+#    elems,coords=read_pdbfile(fragfile)
+
+
 #Try to process a list-of-atom-indices file if provided
 try:
     selatoms_file = sys.argv[2]
