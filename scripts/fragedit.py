@@ -193,10 +193,20 @@ try:
 except IndexError:
     print("Please provide file containing atom indices as 2nd argument")
 
+try:
+    extraarg=sys.argv[3]
+except:
+    extraarg=None
 
 #Grab the relevant elems and coords
-subcoords=[coords[i] for i in atomslist]
-subelems=[elems[i] for i in atomslist]
-
+if extraarg=="index1":
+    print("!!Warning!!: using 1-based indexing as chosen by user")
+    subcoords=[coords[i-1] for i in atomslist]
+    subelems=[elems[i-1] for i in atomslist]
+else:
+    print("!!Warning!!: assuming 0-based indexing by default")
+    print("Do: fragedit.py fragfile atomslistfile index1  if you want to use 1-based indexing")
+    subcoords=[coords[i] for i in atomslist]
+    subelems=[elems[i] for i in atomslist]
 print("Grabbing XYZ coordinates from coordinatefile: {} for atom indices: {}".format(fragfile,atomslist))
 write_xyzfile(subelems,subcoords,"fragment")
