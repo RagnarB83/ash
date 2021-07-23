@@ -182,6 +182,7 @@ except:
     print("Examples:")
     print("fragedit.py file.ygg qmatoms")
     print("fragedit.py file.xyz qmatoms")
+    print("fragedit.py file.xyz qmatoms index1  (if using 1-based atom indices)")
     exit(1)
     
 #Try to process a list-of-atom-indices file if provided
