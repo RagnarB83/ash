@@ -196,6 +196,7 @@ try:
     atomslist=read_intlist_from_file(selatoms_file)
     atomslist.sort()
     print("Read atom indices from file:", selatoms_file)
+    print("atomslist:", atomslist)
 except IndexError:
     print("Please provide file containing atom indices as 2nd argument")
     exit()
