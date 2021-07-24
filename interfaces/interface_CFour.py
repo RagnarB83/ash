@@ -5,7 +5,7 @@ import settings_ash
 
 #CFour Theory object. Fragment object is optional. Used??
 class CFourTheory:
-    def __init__(self, cfourdir=None,fragment=None, charge=None, mult=None, printlevel=2, cfouroptions=None,nprocs=1,
+    def __init__(self, cfourdir=None,fragment=None, charge=None, mult=None, printlevel=2, cfouroptions=None,numcores=1,
                  filename='cfourjob',specialbasis=None, ash_basisfile='def2-SVP'):
                  #basis=None, method=None, reference='RHF', frozen_core='ON',
                 #memory=3100, , guessoption='MOREAD',propoption='OFF',cc_prog='ECC',scf_conv=10,lineq_conv=10,
@@ -13,7 +13,7 @@ class CFourTheory:
         self.printlevel=printlevel
         self.charge=charge
         self.mult=mult
-        self.nprocs=nprocs
+        self.numcores=numcores
         self.filename=filename
         
         #Default Cfour settings
@@ -135,10 +135,10 @@ class CFourTheory:
         return S2
     # Run function. Takes coords, elems etc. arguments and computes E or E+G.
     def run(self, current_coords=None, current_MM_coords=None, MMcharges=None, qm_elems=None,
-            elems=None, Grad=False, PC=False, nprocs=None, restart=False):
+            elems=None, Grad=False, PC=False, numcores=None, restart=False):
 
-        if nprocs == None:
-            nprocs = self.nprocs
+        if numcores == None:
+            numcores = self.numcores
 
         print(BC.OKBLUE, BC.BOLD, "------------RUNNING CFOUR INTERFACE-------------", BC.END)
 

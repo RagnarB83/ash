@@ -447,7 +447,7 @@ def HOMOnumbercalc(file,charge,mult):
 #Uses Chargemol program
 # Uses ORCA to calculate densities of molecule and its free atoms. Uses orca_2mkl to create Molden file and molden2aim to create WFX file from Molden.
 # Wfx file is read into Chargemol program for DDEC analysis which radial moments used to compute C6 parameters and radii for Lennard-Jones equation.
-def DDEC_calc(elems=None, theory=None, gbwfile=None, ncores=1, DDECmodel='DDEC3', calcdir='DDEC', molecule_charge=None, 
+def DDEC_calc(elems=None, theory=None, gbwfile=None, numcores=1, DDECmodel='DDEC3', calcdir='DDEC', molecule_charge=None, 
               molecule_spinmult=None, chargemolbinarydir=None):
     #Creating calcdir. Should not exist previously
     os.mkdir(calcdir)
@@ -499,16 +499,16 @@ def DDEC_calc(elems=None, theory=None, gbwfile=None, ncores=1, DDECmodel='DDEC3'
     print("DDEC model:", DDECmodel)
 
     # Serial or parallel version
-    if ncores == 1:
+    if numcores == 1:
         print("Using serial version of Chargemol")
         chargemol=glob.glob(chargemolbinarydir+'/*serial*')[0]
         #chargemol=chargemolbinarydir+glob.glob('*serial*')[0]
     else:
-        print("Using parallel version of Chargemol using {} cores".format(ncores))
+        print("Using parallel version of Chargemol using {} cores".format(numcores))
         #chargemol=chargemolbinarydir+glob.glob('*parallel*')[0]
         chargemol=glob.glob(chargemolbinarydir+'/*parallel*')[0]
         # Parallelization of Chargemol code. 8 should be good.
-        os.environ['OMP_NUM_THREADS'] = str(ncores)
+        os.environ['OMP_NUM_THREADS'] = str(numcores)
     print("Using Chargemoldir executable: ", chargemol)
 
     #Dictionary for spin multiplicities of atoms

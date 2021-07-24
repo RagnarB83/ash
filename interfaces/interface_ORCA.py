@@ -12,7 +12,7 @@ import time
 #ORCA Theory object. Fragment object is optional. Only used for single-points.
 class ORCATheory:
     def __init__(self, orcadir=None, fragment=None, charge=None, mult=None, orcasimpleinput='', printlevel=2, extrabasisatoms=None, extrabasis=None, TDDFT=False, TDDFTroots=5, FollowRoot=1,
-                 orcablocks='', extraline='', brokensym=None, HSmult=None, atomstoflip=None, nprocs=1, label=None, moreadfile=None, autostart=True, propertyblock=None):
+                 orcablocks='', extraline='', brokensym=None, HSmult=None, atomstoflip=None, numcores=1, label=None, moreadfile=None, autostart=True, propertyblock=None):
 
         if orcadir is None:
             print(BC.WARNING, "No orcadir argument passed to ORCATheory. Attempting to find orcadir variable inside settings_ash", BC.END)
@@ -51,8 +51,8 @@ class ORCATheory:
         self.TDDFTroots=TDDFTroots
         self.FollowRoot=FollowRoot
 
-        #Setting nprocs of object
-        self.nprocs=nprocs
+        #Setting numcores of object
+        self.numcores=numcores
 
         #Property block. Added after coordinates unless None
         self.propertyblock=propertyblock
@@ -137,7 +137,7 @@ class ORCATheory:
     
     #Run function. Takes coords, elems etc. arguments and computes E or E+G.
     def run(self, current_coords=None, current_MM_coords=None, MMcharges=None, qm_elems=None,
-            elems=None, Grad=False, Hessian=False, PC=False, nprocs=None, label=None ):
+            elems=None, Grad=False, Hessian=False, PC=False, numcores=None, label=None ):
         module_init_time=time.time()
         print(BC.OKBLUE,BC.BOLD, "------------RUNNING ORCA INTERFACE-------------", BC.END)
         #Coords provided to run or else taken from initialization.
@@ -165,9 +165,9 @@ class ORCATheory:
             qmatomstoflip=self.atomstoflip
             qmatoms_extrabasis=self.extrabasisatoms
         
-        if nprocs==None:
-            nprocs=self.nprocs
-        print("Running ORCA object with {} cores available".format(nprocs))
+        if numcores==None:
+            numcores=self.numcores
+        print("Running ORCA object with {} cores available".format(numcores))
         print("Job label:", label)
 
         #TDDFT option
@@ -217,14 +217,14 @@ class ORCATheory:
                                         self.charge,self.mult, extraline=self.extraline, Grad=Grad, Hessian=Hessian, moreadfile=self.moreadfile,
                                         extrabasisatoms=qmatoms_extrabasis, extrabasis=self.extrabasis, propertyblock=self.propertyblock)
 
-        #Run inputfile using ORCA parallelization. Take nprocs argument.
+        #Run inputfile using ORCA parallelization. Take numcores argument.
         #print(BC.OKGREEN, "------------Running ORCA calculation-------------", BC.END)
         print(BC.OKGREEN, "ORCA Calculation started.", BC.END)
         # Doing gradient or not. Disabling, doing above instead.
         #if Grad == True:
-        #    run_orca_SP_ORCApar(self.orcadir, self.filename + '.inp', nprocs=nprocs, Grad=True)
+        #    run_orca_SP_ORCApar(self.orcadir, self.filename + '.inp', numcores=numcores, Grad=True)
         #else:
-        run_orca_SP_ORCApar(self.orcadir, self.filename + '.inp', nprocs=nprocs)
+        run_orca_SP_ORCApar(self.orcadir, self.filename + '.inp', numcores=numcores)
         print(BC.OKGREEN, "ORCA Calculation done.", BC.END)
 
         #Now that we have possibly run a BS-DFT calculation, turning Brokensym off for future calcs (opt, restart, etc.)
@@ -311,16 +311,16 @@ def run_orca_SP(list):
     with open(basename+'.out', 'w') as ofile:
         process = sp.run([orcadir + '/orca', basename+'.inp'], check=True, stdout=ofile, stderr=ofile, universal_newlines=True)
 
-# Run ORCA single-point job using ORCA parallelization. Will add pal-block if nprocs >1.
+# Run ORCA single-point job using ORCA parallelization. Will add pal-block if numcores >1.
 # Takes possible Grad boolean argument.
 
-def run_orca_SP_ORCApar(orcadir, inpfile, nprocs=1):
+def run_orca_SP_ORCApar(orcadir, inpfile, numcores=1):
     #if Grad==True:
     #    with open(inpfile) as ifile:
     #        insert_line_into_file(inpfile, '!', '! Engrad')
     #Add pal block to inputfile before running. Adding after '!' line. Should work for regular, new_job and compound job.
-    if nprocs>1:
-        palstring='% pal nprocs {} end'.format(nprocs)
+    if numcores>1:
+        palstring='% pal numcores {} end'.format(numcores)
         with open(inpfile) as ifile:
             insert_line_into_file(inpfile, '!', palstring, Once=True )
     #basename = inpfile.split('.')[0]

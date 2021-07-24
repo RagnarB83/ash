@@ -39,7 +39,7 @@ MaxIter 500
 end
 """
 orcaobject = ORCATheory(orcadir="/Applications/orca_500", charge=-1,mult=1, orcasimpleinput=ORCAinpline,
-                        orcablocks=ORCAblocklines, nprocs=1)
+                        orcablocks=ORCAblocklines, numcores=1)
 
 # Create QM/MM OBJECT
 qmmmobject = QMMMTheory(qm_theory=orcaobject, mm_theory=openmmobject,

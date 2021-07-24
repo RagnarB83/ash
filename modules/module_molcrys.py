@@ -536,7 +536,7 @@ def molcrys(cif_file=None, xtl_file=None, xyz_file=None, cell_length=None, cell_
         # Run ORCA QM/MM calculation with charge-model info
         QMMM_SP_calculation = ash.QMMMTheory(fragment=Cluster, qm_theory=QMtheory, qmatoms=Centralmainfrag,
                                              charges=Cluster.atomcharges, embedding='Elstat')
-        QMMM_SP_calculation.run(nprocs=numcores)
+        QMMM_SP_calculation.run(numcores=numcores)
 
         #Keeping the GBWfile
         if theory.__class__.__name__ == "ORCATheory":

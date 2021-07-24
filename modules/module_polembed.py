@@ -249,7 +249,7 @@ class PolEmbedTheory:
             print("Pot creation is off for this object. Assuming potfile has been provided")
             self.potfile=potfilename+'.pot'
         print_time_rel(module_init_time, modulename='PolEmbedTheory creation')
-    def run(self, current_coords=None, elems=None, Grad=False, nprocs=1, potfile=None, restart=False):
+    def run(self, current_coords=None, elems=None, Grad=False, numcores=1, potfile=None, restart=False):
     
         module_init_time=time.time()
 
@@ -282,14 +282,14 @@ class PolEmbedTheory:
             #Currently doing SP case only without Grad
 
             self.QMEnergy = self.qm_theory.run(current_coords=self.qmcoords, qm_elems=self.qmelems, Grad=False,
-                                               nprocs=nprocs, pe=True, potfile=self.potfile, restart=restart)
+                                               numcores=numcores, pe=True, potfile=self.potfile, restart=restart)
         elif self.qm_theory_name == "DaltonTheory":
             print("self.potfile:", self.potfile)
             self.QMEnergy = self.qm_theory.run(current_coords=self.qmcoords, qm_elems=self.qmelems, Grad=False,
-                                               nprocs=nprocs, pe=True, potfile=self.potfile, restart=restart)
+                                               numcores=numcores, pe=True, potfile=self.potfile, restart=restart)
         elif self.qm_theory_name == "PySCFTheory":
             self.QMEnergy = self.qm_theory.run(current_coords=self.qmcoords, qm_elems=self.qmelems, Grad=False,
-                                               nprocs=nprocs, pe=True, potfile=self.potfile, restart=restart)
+                                               numcores=numcores, pe=True, potfile=self.potfile, restart=restart)
 
         elif self.qm_theory_name == "ORCATheory":
             print("not available for ORCATheory")

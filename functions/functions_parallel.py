@@ -174,12 +174,12 @@ def Singlepoint_parallel(fragments=None, fragmentfiles=None, theories=None, numc
         print("")
         print("Launching multiprocessing pool.map:")
 
-        #Change theory nprocs to 1 since we are running ASH in parallel
+        #Change theory numcores to 1 since we are running ASH in parallel
         #NOTE: Alternative to exit here instead ??
-        if theory.nprocs != 1:
-            print(BC.WARNING,"Theory nprocs set to:", theory.nprocs, BC.END)
+        if theory.numcores != 1:
+            print(BC.WARNING,"Theory numcores set to:", theory.numcores, BC.END)
             print(BC.WARNING,"Since ASH is running in parallel we will now turn off Theory Parallelization",BC.END)
-            theory.nprocs=1
+            theory.numcores=1
 
         #NOTE: Python 3.8 and higher use spawn in MacOS. Leads to ash import problems
         #NOTE: Unix/Linux uses fork which seems better behaved
@@ -259,7 +259,7 @@ def displacement_QMrun(arglist):
     os.chdir(dispdir)
     #Todo: Copy previous GBW file in here if ORCA, xtbrestart if xtb, etc.
     print("Running displacement: {}".format(label))
-    energy, gradient = theory.run(current_coords=geo, elems=elems, Grad=True, nprocs=numcores)
+    energy, gradient = theory.run(current_coords=geo, elems=elems, Grad=True, numcores=numcores)
     print("Energy: ", energy)
     os.chdir('..')
     #Delete dir?
@@ -307,9 +307,9 @@ def displacement_QMMMrun(arglist):
     #If QMMMTheory init keywords are changed this needs to be updated
     qmmmobject = ash.QMMMTheory(fragment=fragment, qm_theory=qm_theory, mm_theory=mm_theory, actatoms=actatoms,
                           qmatoms=qmatoms, embedding=embedding, charges=charges, printlevel=printlevel,
-                            nprocs=numcores, frozenatoms=frozenatoms)
+                            numcores=numcores, frozenatoms=frozenatoms)
 
-    energy, gradient = qmmmobject.run(current_coords=coords, elems=elems, Grad=True, nprocs=numcores)
+    energy, gradient = qmmmobject.run(current_coords=coords, elems=elems, Grad=True, numcores=numcores)
     print("Energy: ", energy)
     os.chdir('..')
     #Delete dir?

@@ -19,7 +19,7 @@ def AnFreq(fragment=None, theory=None, numcores=1, temp=298.15, pressure=1.0):
         print("Requesting analytical Hessian calculation from ORCATheory")
         print("")
         #Do single-point ORCA Anfreq job
-        energy = theory.run(current_coords=fragment.coords, elems=fragment.elems, Hessian=True, nprocs=numcores)
+        energy = theory.run(current_coords=fragment.coords, elems=fragment.elems, Hessian=True, numcores=numcores)
         #Grab Hessian
         hessian = interfaces.interface_ORCA.Hessgrab(theory.filename+".hess")
         #Add Hessian to fragment
@@ -174,7 +174,7 @@ def NumFreq(fragment=None, theory=None, npoint=1, displacement=0.005, hessatoms=
                 #displacement_jobname='Numfreq-Disp-'+'Atom'+str(atom_disp)+crd+drection
                 print("Running displacement: {} / {}".format(numdisp,len(list_of_labels)))
                 print("Displacing {}".format(calclabel))
-            energy, gradient = theory.run(current_coords=geo, elems=elems, Grad=True, nprocs=numcores)
+            energy, gradient = theory.run(current_coords=geo, elems=elems, Grad=True, numcores=numcores)
             #Adding gradient to dictionary for AtomNCoordPDirectionm
             displacement_grad_dictionary[calclabel] = gradient
     elif runmode == 'parallel':
@@ -194,7 +194,7 @@ def NumFreq(fragment=None, theory=None, npoint=1, displacement=0.005, hessatoms=
         #However, this only makes sense to use if way more CPUs available than displacements.
         #Unlikely situation, so hardcoding to 1 for now.
         numcoresQM=1
-        print("Setting nprocs for theory object to: ", numcoresQM)
+        print("Setting numcores for theory object to: ", numcoresQM)
         #results = pool.map(displacement_run, [[geo, elems, numcoresQM, theory, label] for geo,label in zip(list_of_displaced_geos,list_of_labels)])
         #results = pool.map(displacement_run2, [[filelabel, numcoresQM, theory, label] for label,filelabel in zip(list_of_labels,list_of_filelabels)])
 
@@ -210,7 +210,7 @@ def NumFreq(fragment=None, theory=None, npoint=1, displacement=0.005, hessatoms=
         #print("size of theory after del:", get_size(theory))
 
         #QMMM_xtb = QMMMTheory(fragment=Saddlepoint, qm_theory=xtbcalc, mm_theory=MMpart, actatoms=Centralmainfrag,
-        #                      qmatoms=Centralmainfrag, embedding='Elstat', nprocs=numcores)
+        #                      qmatoms=Centralmainfrag, embedding='Elstat', numcores=numcores)
 
         #results = pool.map(displacement_run2, [[filelabel, numcoresQM, label] for label,filelabel in zip(list_of_labels,list_of_filelabels)])
 
@@ -263,7 +263,7 @@ def NumFreq(fragment=None, theory=None, npoint=1, displacement=0.005, hessatoms=
                     print("f")
                     # Todo: Copy previous GBW file in here if ORCA, xtbrestart if xtb, etc.
                     print("Running displacement: {}".format(label))
-                    energy, gradient = theory_shared.run(current_coords=coords, elems=elems, Grad=True, nprocs=numcoresQM)
+                    energy, gradient = theory_shared.run(current_coords=coords, elems=elems, Grad=True, numcores=numcoresQM)
                     print("Energy: ", energy)
                     os.chdir('..')
                     # Delete dir?

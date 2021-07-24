@@ -7,7 +7,7 @@ from functions.functions_general import BC,print_time_rel
 import modules.module_coords
 
 class DaltonTheory:
-    def __init__(self, daltondir=None, filename='dalton', fragment=None, charge=None, mult=None, printlevel=2, nprocs=1, pe=False, potfile='',
+    def __init__(self, daltondir=None, filename='dalton', fragment=None, charge=None, mult=None, printlevel=2, numcores=1, pe=False, potfile='',
                  label=None, method=None, response=None, dalton_input=None, basis_name=None,basis_dir=None):
         if daltondir is None:
             print("No daltondir argument passed to DaltonTheory. Attempting to find daltondir variable inside settings_ash module")
@@ -36,8 +36,8 @@ class DaltonTheory:
         self.label=label
         #Printlevel
         self.printlevel=printlevel
-        #Setting nprocs of object
-        self.nprocs=nprocs
+        #Setting numcores of object
+        self.numcores=numcores
         
         #Setting energy to 0.0 for now
         self.energy=0.0
@@ -76,7 +76,7 @@ class DaltonTheory:
         except:
             pass
     #Run function. Takes coords, elems etc. arguments and computes E or E+G.
-    def run(self, current_coords=None, qm_elems=None, Grad=False, nprocs=None, pe=None, potfile='', restart=False ):
+    def run(self, current_coords=None, qm_elems=None, Grad=False, numcores=None, pe=None, potfile='', restart=False ):
         
         print(BC.OKBLUE,BC.BOLD, "------------RUNNING DALTON INTERFACE-------------", BC.END)
         if pe is None:
@@ -97,9 +97,9 @@ class DaltonTheory:
             else:
                 qm_elems = elems
 
-        if nprocs==None:
-            nprocs=self.nprocs
-        print("Running Dalton object with {} cores available".format(nprocs))
+        if numcores==None:
+            numcores=self.numcores
+        print("Running Dalton object with {} cores available".format(numcores))
 
         #DALTON.INP
         print("Creating inputfile: DALTON.INP")

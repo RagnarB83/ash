@@ -401,7 +401,7 @@ def solvshell_v2 ( orcadir='', NumCores=None, calctype='', orcasimpleinput_LL=''
             print("Using ORCA parallelization. Running each file 1 by 1. ORCA using {} cores".format(NumCores))
             for SRPolinpfile in SRPolinpfiles:
                 print("Running file: ", SRPolinpfile)
-                run_orca_SP_ORCApar(orcadir, SRPolinpfile, nprocs=NumCores)
+                run_orca_SP_ORCApar(orcadir, SRPolinpfile, numcores=NumCores)
         else:
             print("Using multiproc parallelization. All calculations running in parallel but each ORCA calculation using 1 core.")
             run_inputfiles_in_parallel(orcadir, SRPolinpfiles, NumCores)
@@ -683,9 +683,9 @@ def solvshell_v2 ( orcadir='', NumCores=None, calctype='', orcasimpleinput_LL=''
         print_line_with_subheader1("Running Gas calculations at HL theory")
         print(BC.WARNING,"HL-theory:", orcasimpleinput_HL,BC.END)
         #run_inputfiles_in_parallel_AB(gasinpfiles_HL)
-        run_orca_SP_ORCApar(orcadir, gasinpfiles_HL[0], nprocs=NumCores)
+        run_orca_SP_ORCApar(orcadir, gasinpfiles_HL[0], numcores=NumCores)
         if calctype=="redox":
-            run_orca_SP_ORCApar(orcadir, gasinpfiles_HL[1], nprocs=NumCores)
+            run_orca_SP_ORCApar(orcadir, gasinpfiles_HL[1], numcores=NumCores)
 
         #GRAB output
         gasA_stateA_LL=finalenergiesgrab('gas-molA_StateAB_Gas_LL.out')[0]
@@ -862,13 +862,13 @@ def Polsnapshotcalc(args):
     print(BC.OKGREEN,
           "Starting PolEmbed job for snapshot {} with PolRegion: {}. State A: Charge: {}  Mult: {}".format(
               snapshot, LRPolRegion, solvsphere.ChargeA, solvsphere.MultA), BC.END)
-    PolEmbedEnergyA = PolEmbed_SP_A.run(potfile=snapshot+'System.pot', nprocs=NumCoresPsi4, restart=False)
+    PolEmbedEnergyA = PolEmbed_SP_A.run(potfile=snapshot+'System.pot', numcores=NumCoresPsi4, restart=False)
 
     # Doing chargeB (assumed open-shell) after closed-shell.
     print(BC.OKGREEN,
           "Starting PolEmbed job for snapshot {} with LRPolRegion1: {}. State B: Charge: {}  Mult: {}".format(
               snapshot, LRPolRegion, solvsphere.ChargeB, solvsphere.MultB), BC.END)
-    PolEmbedEnergyB = PolEmbed_SP_B.run(potfile=snapshot+'System.pot', nprocs=NumCoresPsi4, restart=True)
+    PolEmbedEnergyB = PolEmbed_SP_B.run(potfile=snapshot+'System.pot', numcores=NumCoresPsi4, restart=True)
 
     PolEmbedEnergyAB = (PolEmbedEnergyB - PolEmbedEnergyA) * constants.hartoeV
 

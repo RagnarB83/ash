@@ -19,13 +19,13 @@ from functions.functions_general import BC,print_time_rel
 class Psi4Theory:
     def __init__(self, fragment=None, charge=None, mult=None, printsetting='False', psi4settings=None, psi4method=None,
                  runmode='library', psi4dir=None, pe=False, potfile='', filename='psi4_', label='psi4input',
-                 psi4memory=3000, nprocs=1, printlevel=2,fchkwrite=False):
+                 psi4memory=3000, numcores=1, printlevel=2,fchkwrite=False):
         #outputname='psi4output.dat'
         #Printlevel
         self.printlevel=printlevel
 
 
-        self.nprocs=nprocs
+        self.numcores=numcores
         self.psi4memory=psi4memory
         self.label=label
         #self.outputname=outputname
@@ -90,12 +90,12 @@ class Psi4Theory:
             pass
     #Run function. Takes coords, elems etc. arguments and computes E or E+G.
     def run(self, current_coords=None, current_MM_coords=None, MMcharges=None, qm_elems=None,
-            elems=None, Grad=False, PC=False, nprocs=None, pe=False, potfile='', restart=False ):
+            elems=None, Grad=False, PC=False, numcores=None, pe=False, potfile='', restart=False ):
         
         module_init_time=time.time()
 
-        if nprocs==None:
-            nprocs=self.nprocs
+        if numcores==None:
+            numcores=self.numcores
 
         print(BC.OKBLUE,BC.BOLD, "------------RUNNING PSI4 INTERFACE-------------", BC.END)
 
@@ -222,7 +222,7 @@ class Psi4Theory:
                 self.psi4settings['pe'] = 'true'
 
             #Controlling OpenMP parallelization. Controlled here, not via OMP_NUM_THREADS etc.
-            psi4.set_num_threads(nprocs)
+            psi4.set_num_threads(numcores)
 
             #Namespace issue overlap integrals requires this when running with multiprocessing:
             # http://forum.psicode.org/t/wfn-form-h-errors/1304/2
@@ -374,8 +374,8 @@ class Psi4Theory:
             #Running inputfile
             with open(self.label + '.out', 'w') as ofile:
                 #Psi4 -m option for saving 180 file
-                print("nprocs:", nprocs)
-                process = sp.run(['psi4', '-m', '-i', self.label + '.inp', '-o', self.label + '.out', '-n', '{}'.format(str(nprocs)) ], check=True, stdout=ofile, stderr=ofile, universal_newlines=True)
+                print("numcores:", numcores)
+                process = sp.run(['psi4', '-m', '-i', self.label + '.inp', '-o', self.label + '.out', '-n', '{}'.format(str(numcores)) ], check=True, stdout=ofile, stderr=ofile, universal_newlines=True)
 
             #Keep restart file 180 as lastrestart.180
             try:

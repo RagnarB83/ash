@@ -484,7 +484,7 @@ def auto_active_space(fragment=None, orcadir=None, basis="def2-SVP", scalar_rel=
         end
         """
         ORCAcalc_1 = ash.ORCATheory(orcadir=orcadir, charge=charge, mult=mult, orcasimpleinput=orcasimpleinput, orcablocks=orcablocks,
-                                    nprocs=numcores)
+                                    numcores=numcores)
         ash.Singlepoint(theory=ORCAcalc_1,fragment=fragment)
         init_orbitals=ORCAcalc_1.filename+'.mp2nat'
 
@@ -504,7 +504,7 @@ def auto_active_space(fragment=None, orcadir=None, basis="def2-SVP", scalar_rel=
         end
         """.format(smeartemp)
         ORCAcalc_1 = ash.ORCATheory(orcadir=orcadir, charge=charge, mult=mult, orcasimpleinput=orcasimpleinput, orcablocks=orcablocks,
-                                    nprocs=numcores)
+                                    numcores=numcores)
         ash.Singlepoint(theory=ORCAcalc_1,fragment=fragment)
         step1occupations=ash.interface_ORCA.SCF_FODocc_grab(ORCAcalc_1.filename+'.out')
         print("FOD occupations:", step1occupations)
@@ -530,7 +530,7 @@ def auto_active_space(fragment=None, orcadir=None, basis="def2-SVP", scalar_rel=
         end
         """
         ORCAcalc_1 = ash.ORCATheory(orcadir=orcadir, charge=charge, mult=mult, orcasimpleinput=orcasimpleinput, orcablocks=orcablocks,
-                                    nprocs=numcores)
+                                    numcores=numcores)
         ash.Singlepoint(theory=ORCAcalc_1,fragment=fragment)
         step1occupations,qroenergies=ash.interface_ORCA.QRO_occ_energies_grab(ORCAcalc_1.filename+'.out')
         print("occupations:", step1occupations)
@@ -570,7 +570,7 @@ def auto_active_space(fragment=None, orcadir=None, basis="def2-SVP", scalar_rel=
     end
     """.format(init_orbitals,numelectrons,numorbitals,tgen)
     ORCAcalc_2 = ash.ORCATheory(orcadir=orcadir, charge=charge, mult=mult, orcasimpleinput=orcasimpleinput, orcablocks=orcablocks,
-                                nprocs=numcores)
+                                numcores=numcores)
     ash.Singlepoint(theory=ORCAcalc_2,fragment=fragment)
 
     ICEnatoccupations=ash.interface_ORCA.CASSCF_natocc_grab(ORCAcalc_2.filename+'.out')
