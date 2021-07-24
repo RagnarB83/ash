@@ -550,7 +550,7 @@ def auto_active_space(fragment=None, orcadir=None, basis="def2-SVP", scalar_rel=
     lower_threshold=selection_thresholds[1]
     print("Selecting size of active-space for ICE-CI step")
     print("Using orbital tresholds:", upper_threshold,lower_threshold )
-    numelectrons,numorbitals=functions_elstructure.select_space_from_occupations(step1occupations, selection_thresholds=[upper_threshold,lower_threshold])
+    numelectrons,numorbitals=functions.functions_elstructure.select_space_from_occupations(step1occupations, selection_thresholds=[upper_threshold,lower_threshold])
     print("Will use CAS size of CAS({},{}) for ICE-CI step".format(numelectrons,numorbitals))
 
     #2b. Read orbitals into ICE-CI calculation
@@ -600,12 +600,12 @@ def auto_active_space(fragment=None, orcadir=None, basis="def2-SVP", scalar_rel=
         print("{:<9} {:9.4f} {:9.4f}".format(index,step1occ,iceocc))
 
 
-    minimal_CAS=functions_elstructure.select_space_from_occupations(ICEnatoccupations, selection_thresholds=[1.95,0.05])
-    medium1_CAS=functions_elstructure.select_space_from_occupations(ICEnatoccupations, selection_thresholds=[1.98,0.02])
-    medium2_CAS=functions_elstructure.select_space_from_occupations(ICEnatoccupations, selection_thresholds=[1.985,0.015])
-    medium3_CAS=functions_elstructure.select_space_from_occupations(ICEnatoccupations, selection_thresholds=[1.99,0.01])
-    medium4_CAS=functions_elstructure.select_space_from_occupations(ICEnatoccupations, selection_thresholds=[1.992,0.008])
-    large_CAS=functions_elstructure.select_space_from_occupations(ICEnatoccupations, selection_thresholds=[1.995,0.005])
+    minimal_CAS=functions.functions_elstructure.select_space_from_occupations(ICEnatoccupations, selection_thresholds=[1.95,0.05])
+    medium1_CAS=functions.functions_elstructure.select_space_from_occupations(ICEnatoccupations, selection_thresholds=[1.98,0.02])
+    medium2_CAS=functions.functions_elstructure.select_space_from_occupations(ICEnatoccupations, selection_thresholds=[1.985,0.015])
+    medium3_CAS=functions.functions_elstructure.select_space_from_occupations(ICEnatoccupations, selection_thresholds=[1.99,0.01])
+    medium4_CAS=functions.functions_elstructure.select_space_from_occupations(ICEnatoccupations, selection_thresholds=[1.992,0.008])
+    large_CAS=functions.functions_elstructure.select_space_from_occupations(ICEnatoccupations, selection_thresholds=[1.995,0.005])
 
     spaces_dict={"minimal_CAS":minimal_CAS,"medium1_CAS":medium1_CAS,"medium2_CAS":medium2_CAS, "medium3_CAS":medium3_CAS, "medium4_CAS":medium4_CAS, "large_CAS":large_CAS  }
 
