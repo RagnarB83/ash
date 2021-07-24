@@ -12,7 +12,7 @@ import time
 #ORCA Theory object. Fragment object is optional. Only used for single-points.
 class ORCATheory:
     def __init__(self, orcadir=None, fragment=None, charge=None, mult=None, orcasimpleinput='', printlevel=2, extrabasisatoms=None, extrabasis=None, TDDFT=False, TDDFTroots=5, FollowRoot=1,
-                 orcablocks='', extraline='', brokensym=None, HSmult=None, atomstoflip=None, numcores=1, label=None, moreadfile=None, autostart=True, propertyblock=None):
+                 orcablocks='', extraline='', brokensym=None, HSmult=None, atomstoflip=None, numcores=1, nprocs=None, label=None, moreadfile=None, autostart=True, propertyblock=None):
 
         if orcadir is None:
             print(BC.WARNING, "No orcadir argument passed to ORCATheory. Attempting to find orcadir variable inside settings_ash", BC.END)
@@ -52,8 +52,15 @@ class ORCATheory:
         self.FollowRoot=FollowRoot
 
         #Setting numcores of object
-        self.numcores=numcores
+        #NOTE: nprocs is deprecated but kept on for a bit
+        if nprocs==None:
+            self.numcores=numcores
+            self.nprocs=numcores
+        else:
+            self.numcores=nprocs
+            self.nprocs=nprocs
 
+        
         #Property block. Added after coordinates unless None
         self.propertyblock=propertyblock
 
