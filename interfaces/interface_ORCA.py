@@ -327,7 +327,7 @@ def run_orca_SP_ORCApar(orcadir, inpfile, numcores=1):
     #        insert_line_into_file(inpfile, '!', '! Engrad')
     #Add pal block to inputfile before running. Adding after '!' line. Should work for regular, new_job and compound job.
     if numcores>1:
-        palstring='% pal numcores {} end'.format(numcores)
+        palstring='%pal nprocs {} end'.format(numcores)
         with open(inpfile) as ifile:
             insert_line_into_file(inpfile, '!', palstring, Once=True )
     #basename = inpfile.split('.')[0]
