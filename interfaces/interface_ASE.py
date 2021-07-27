@@ -1,4 +1,5 @@
 import numpy as np
+from modules.module_singlepoint import Singlepoint
 #Interface to ASE
 
 #Function to load whole AS
@@ -37,40 +38,56 @@ def Dynamics_ASE(fragment=None, theory=None, temperature=300, timestep=None):
             self.numatoms=fragment.numatoms
             self.masses=np.array(fragment.list_of_masses)
             self.momenta=[]
-            self.current_positions=np.array(fragment.coords)
+            #self.current_positions=np.array(fragment.coords)
             self.constraints=[]
         def get_positions(self):
-            return self.current_positions
+            print("Called get positions")
+            print(fragment.coords)
+            #exit()
+            #Convert from Angstrom to something else?
+            return self.fragment.coords
         def set_positions(self,pos):
+            print("Called set_positions")
             print("pos:", pos)
-            self.current_positions=pos
+            #exit()
+            self.fragment.coords=pos
         def get_potential_energy(self):
-            self.potenergy=5.00
+            print("Calling get pot energy")
             return self.potenergy
         def get_kinetic_energy(self):
+            print("Called get_kinetic_energy")
+            #TODO: Calculate from momenta
+            exit()
             self.kinenergy=6.00
             return self.kinenergy
         def get_forces(self, md=False):
+            print("Called get_forces")
+            print(self.fragment.coords)
+            self.potenergy, self.gradient = Singlepoint(theory=self.theory, fragment=self.fragment, Grad=True)
+            self.forces=self.gradient*-1
+            print("self.potenergy:", self.potenergy)
+            print("self.forces:", self.forces)
             if md == False:
-                print("md false")
+                print("Called md false")
             else:
-                print("md true")
-            
-            self.forces=np.array([4.0, 5.0, 6.0])
+                print("Calling md true")
+
             return self.forces
         def get_masses(self):
+            print("Called get_masses")
             return self.masses
         def set_momenta(self, momenta, apply_constraint=False):
-            
+            print("Called set_momenta")
             if apply_constraint ==  True:
                 print("appcon true")
                 exit()
             
-            
             self.momenta=momenta
         def get_momenta(self):
+            print("Called get_momenta")
             return self.momenta
         def has(self,bla):
+            print("called has")
             if len(self.momenta)==0:
                 return False
             else:
@@ -78,16 +95,18 @@ def Dynamics_ASE(fragment=None, theory=None, temperature=300, timestep=None):
         def __len__(self):
             return self.numatoms
 
+    #Creating ASE-style atoms object
     atoms = ASEatoms(fragment=fragment, theory=theory)
     
     print(atoms)
     print(atoms.__dict__)
     
     # Set the momenta corresponding to T=300K
-    #TODO: check unit of temperature in ASE
-    MaxwellBoltzmannDistribution(atoms, temp=temperature)
-
+    print("Called Maxwell")
+    MaxwellBoltzmannDistribution(atoms, temp=None, temperature_K=temperature)
+    print("Maxwell done")
     # We want to run MD with constant energy using the VelocityVerlet algorithm.
+    print("Called VelocityVerlet")
     dyn = VelocityVerlet(atoms, timestep_fs * units.fs)
 
     #https://wiki.fysik.dtu.dk/ase/tutorials/md/md.html
@@ -101,7 +120,8 @@ def Dynamics_ASE(fragment=None, theory=None, temperature=300, timestep=None):
 
 
     # Now run the dynamics
-    printenergy(atoms)
-    for i in range(20):
-        dyn.run(10)
-        printenergy(atoms)
+    #printenergy(atoms)
+    dyn.run(steps=3)
+    #for i in range(5):
+    #    dyn.run()
+    #    printenergy(atoms)
