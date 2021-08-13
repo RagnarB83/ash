@@ -221,7 +221,8 @@ def geomeTRICOptimizer(theory=None,fragment=None, coordsystem='hdlc', frozenatom
         #Defining calculator
         def clearCalcs(self):
             print("ClearCalcs option chosen by geomeTRIC. Not sure why")
-        def calc(self,coords,tmp):
+        def calc(self,coords,tmp, read_data=None):
+            #Note: tmp and read_data not used. Needed for geomeTRIC version compatibility
             print("Convergence criteria:", conv_criteria)
             blankline()
             #Updating coords in object
