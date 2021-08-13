@@ -8,25 +8,19 @@ import time
 import constants
 import settings_solvation
 import settings_ash
-from functions.functions_general import blankline,reverse_lines, print_time_rel,BC
+from functions.functions_general import blankline,reverse_lines, print_time_rel,BC, print_line_with_mainheader
 import modules.module_coords
+from modules.module_coords import elemstonuccharges
 
 
-#xTB functions: primarily for inputfile-based interface. Library-interfaces is in interface_xtb.py
-
-
-# https://github.com/grimme-lab/xtb/blob/master/python/xtb/interface.py
 #Now supports 2 runmodes: 'library' (fast Python C-API) or 'inputfile'
 #
 #TODO: THis should be a general interface so remove settings_solvation calls.
 #TODO: xtb. Need to combine OMP-parallelization of xtb and multiprocessing if possible
-#TODO: Currently doing multiprocessing over all 8*2=16 snapshots. First A, then B.
-#TODO: Might not be a need to do first A then B since a ROHF-type Hamiltonian
-#TODO. Could parallelize over all 32 calculations. However, we are currently using 24 cores so...
 
 
 class xTBTheory:
-    def __init__(self, xtbdir=None, fragment=None, charge=None, mult=None, xtbmethod=None, runmode='inputfile', nprocs=1, printlevel=2, filename='xtb_',
+    def __init__(self, xtbdir=None, fragment=None, charge=None, mult=None, xtbmethod=None, runmode='inputfile', numcores=1, printlevel=2, filename='xtb_',
                  maxiter=500, electronic_temp=300, label=None):
 
 
@@ -40,7 +34,7 @@ class xTBTheory:
             print("xTBTheory requires xtbmethod keyword to be set")
             exit(1)
 
-        self.nprocs=nprocs
+        self.numcores=numcores
         if fragment != None:
             self.fragment=fragment
             self.coords=fragment.coords
@@ -54,12 +48,37 @@ class xTBTheory:
         
         self.electronic_temp=electronic_temp
         
+        print_line_with_mainheader("xTB INTERFACE")
+        print("Runmode:", self.runmode)
+
+        #Parallelization for both library and inputfile runmode
+        print("xTB object numcores:", self.numcores)
+        #NOTE: Setting OMP_NUM_THREADS should be sufficient for performance. MKL threading should be handled by xTB
+        os.environ["OMP_NUM_THREADS"] = str(self.numcores)
+        #os.environ["MKL_NUM_THREADS"] = "1"
+
+        #New library version. interface via conda: xtb-python
         if self.runmode=='library':
-            print("Using library-based xTB interface")
+            print("Using new library-based xTB interface")
+
+            try:
+                #
+                from xtb.libxtb import VERBOSITY_MINIMAL
+                from xtb.interface import Calculator, Param
+                self.Calculator=Calculator
+                self.Param=Param
+                self.VERBOSITY_MINIMAL=VERBOSITY_MINIMAL
+                # Creating variable and setting to None. Replaced by run
+                self.calcobject=None
+
+            except:
+                print("Problem importing xTB library. Have you installed : conda install xtb-python ?")
+                exit(9)
+            print("xTB method:", self.xtbmethod)
+        #OLD library.
+        elif self.runmode=='oldlibrary':
+            print("Using old library-based xTB interface")
             print("Loading library...")
-            os.environ["OMP_NUM_THREADS"] = str(nprocs)
-            os.environ["MKL_NUM_THREADS"] = "1"
-            os.environ["OPENBLAS_NUM_THREADS"] = "1"
             # Load xtB library and ctypes datatypes that run uses
             try:
                 #import xtb_interface_library
@@ -75,7 +94,7 @@ class xTBTheory:
             # from ctypes import Structure, c_int, c_double, c_bool, c_char_p, c_char, POINTER, cdll, CDLL
             self.c_int = c_int
             self.c_double = c_double
-        else:
+        elif self.runmode=='inputfile':
             if xtbdir == None:
                 print(BC.WARNING, "No xtbdir argument passed to xTBTheory. Attempting to find xTBTheory variable inside settings_ash", BC.END)
                 try:
@@ -91,7 +110,9 @@ class xTBTheory:
                         exit()
             else:
                 self.xtbdir = xtbdir
-
+        else:
+            print("unknown runmode. exiting")
+            exit(1)
 
     #Cleanup after run.
     def cleanup(self):
@@ -115,13 +136,13 @@ class xTBTheory:
             except:
                 pass
     def run(self, current_coords=None, current_MM_coords=None, MMcharges=None, qm_elems=None,
-                elems=None, Grad=False, PC=False, nprocs=None, label=None):
+                elems=None, Grad=False, PC=False, numcores=None, label=None):
         module_init_time=time.time()
         if MMcharges is None:
             MMcharges=[]
 
-        if nprocs is None:
-            nprocs=self.nprocs
+        if numcores is None:
+            numcores=self.numcores
 
         if self.printlevel >= 2:
             print("------------STARTING XTB INTERFACE-------------")
@@ -140,15 +161,6 @@ class xTBTheory:
                 qm_elems = elems
 
 
-        #Parallellization
-        #Todo: this has not been confirmed to work
-        #Needs to be done before library-import??
-        print("Job label:", label)
-        print("nprocs:", nprocs)
-        os.environ["OMP_NUM_THREADS"] = str(nprocs)
-        os.environ["MKL_NUM_THREADS"] = "1"
-        os.environ["OPENBLAS_NUM_THREADS"] = "1"
-
         if self.runmode=='inputfile':
             if self.printlevel >=2:
                 print("Using inputfile-based xTB interface")
@@ -165,9 +177,10 @@ class xTBTheory:
 
 
 
-            #Run inputfile. Take nprocs argument.
+            #Run inputfile.
             if self.printlevel >= 2:
                 print("------------Running xTB-------------")
+                print("Running xtB using {} cores".format(self.numcores))
                 print("...")
             if Grad==True:
                 if PC==True:
@@ -213,7 +226,102 @@ class xTBTheory:
                     print("------------ENDING XTB-INTERFACE-------------")
                 print_time_rel(module_init_time, modulename='xTB run', moduleindex=2)
                 return self.energy
-        elif self.runmode=='library':
+        
+        elif self.runmode =='library':
+            print("------------Running xTB (library)-------------")
+            #Converting Angstroms to Bohr
+            coords_au=np.array(current_coords)*constants.ang2bohr
+            #Converting element-symbols to nuclear charges
+            qm_elems_numbers=np.array(elemstonuccharges(qm_elems))
+            assert len(coords_au) == len(qm_elems_numbers)
+            print("Number of xTB atoms:", len(coords_au))
+            #Choosing method
+            if self.xtbmethod == 'GFN2':
+                print("Using GFN2 parameterization")
+                param_method=self.Param.GFN2xTB
+            elif self.xtbmethod == 'GFN1':
+                print("Using GFN1 parameterization")
+                param_method=self.Param.GFN1xTB
+            elif self.xtbmethod == 'GFN0':
+                print("Using GFN0 parameterization")
+                param_method=self.Param.GFN0xTB
+            elif self.xtbmethod == 'GFNFF':
+                print("Using GFNFF parameterization")
+                print("warning: experimental")
+                param_method=self.Param.GFNFF
+            elif self.xtbmethod == 'IPEA':
+                print("Using IPEA parameterization")
+                param_method=self.Param.IPEAxTB
+            else:
+                print("unknown xtbmethod")
+                exit()
+
+            #Creating calculator using Hamiltonian and coordinates
+            #Setting charge and mult
+            #NOTE: New calculator object in every Opt/MD iteration is unnecessary
+            #TODO: change
+
+            #first run call: create new object containing coordinates and settings
+            if self.calcobject == None:
+                print("Creating new xTB calc object")
+                self.calcobject = self.Calculator(param_method, qm_elems_numbers, coords_au, charge=self.charge, uhf=self.mult-1)
+                self.calcobject.set_verbosity(self.VERBOSITY_MINIMAL)
+                self.calcobject.set_electronic_temperature(self.electronic_temp)
+                self.calcobject.set_max_iterations(self.maxiter)
+            #nextt run calls: only update coordinates
+            else:
+                print("Updating coordinates in xTB calcobject")
+                self.calcobject.update(coords_au)
+
+            #QM/MM pointcharge field
+            #calc.
+            if PC==True:
+                mmcharges=np.array(MMcharges)
+                #print("Setting external point charges")
+                #print("num MM charges", len(MMcharges))
+                #print(MMcharges)
+                #print("num MM coords", len(current_MM_coords))
+                #print(current_MM_coords)
+                MMcoords_au=np.array(current_MM_coords)*constants.ang2bohr
+                #print(MMcoords_au)
+                #NOTE: Are these element nuclear charges or what ?
+                numbers=np.array([9999 for i in MMcharges])
+                #print("numbers:", numbers)
+                calc.set_external_charges(numbers,mmcharges,MMcoords_au)
+
+            #Run
+            #TODO: Can we turn off gradient calculation somewhere?
+            print("Running xtB using {} cores".format(self.numcores))
+            res = self.calcobject.singlepoint()
+            print("------------xTB calculation done-------------")
+            if Grad == True:
+                self.energy = res.get_energy()
+                self.grad =res.get_gradient()
+                if self.printlevel >= 2:
+                    print("xtb energy :", self.energy)
+                if PC == True:
+                    #pcgrad
+                    #get pcgrad
+                    print("pc grad is not yet implemented. ")
+                    exit()
+                    print("------------ENDING XTB-INTERFACE-------------")
+                    print_time_rel(module_init_time, modulename='xTBlib run', moduleindex=2)
+                    return self.energy, self.grad, self.pcgrad
+                else:
+                    print("------------ENDING XTB-INTERFACE-------------")
+                    print_time_rel(module_init_time, modulename='xTBlib run', moduleindex=2)
+                    return self.energy, self.grad
+
+            else:
+                #NOTE: Gradient has still been calculated but is ignored. Not sure how to turn off
+                self.energy = res.get_energy()
+                if self.printlevel >= 2:
+                    print("xtb energy :", self.energy)
+                print("------------ENDING XTB-INTERFACE-------------")
+                print_time_rel(module_init_time, modulename='xTBlib run', moduleindex=2)
+                return self.energy
+
+        elif self.runmode=='oldlibrary':
 
             if PC==True:
                 print("Pointcharge-embedding on but xtb-runmode is library!")

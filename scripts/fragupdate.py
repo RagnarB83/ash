@@ -1,4 +1,4 @@
-#!/bin/env python3
+#!/usr/bin/env python3
 """
 Stand-alone script for updating ASH fragment using XYZ information. Companion script to fragedit.py
 

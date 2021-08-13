@@ -51,7 +51,7 @@ def Singlepoint(fragment=None, theory=None, Grad=False):
 
 # Theory object that always gives zero energy and zero gradient. Useful for setting constraints
 class ZeroTheory:
-    def __init__(self, fragment=None, charge=None, mult=None, printlevel=None, nprocs=1, label=None):
+    def __init__(self, fragment=None, charge=None, mult=None, printlevel=None, numcores=1, label=None):
         """Class Zerotheory: Simple dummy theory that gives zero energy and a zero-valued gradient array
             Note: includes unnecessary attributes for consistency.
 
@@ -60,17 +60,17 @@ class ZeroTheory:
             charge (int, optional): Charge. Defaults to None.
             mult (int, optional): Spin multiplicity. Defaults to None.
             printlevel (int, optional): Printlevel:0,1,2 or 3. Defaults to None.
-            nprocs (int, optional): Number of cores. Defaults to 1.
+            numcores (int, optional): Number of cores. Defaults to 1.
             label (str, optional): String label. Defaults to None.
         """
-        self.nprocs=nprocs
+        self.numcores=numcores
         self.charge=charge
         self.mult=mult
         self.printlevel=printlevel
         self.label=label
         self.fragment=fragment
         self.filename="zerotheory"
-    def run(self, current_coords=None, elems=None, Grad=False, PC=False, nprocs=None ):
+    def run(self, current_coords=None, elems=None, Grad=False, PC=False, numcores=None ):
         self.energy = 0.0
         #Gradient as np array 
         self.gradient = np.zeros((len(elems), 3))

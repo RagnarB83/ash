@@ -1136,14 +1136,14 @@ def gasfragcalc_ORCA(fragmentobjects,Cluster,chargemodel,orcadir,orcasimpleinput
         print("ORCASPcalculation:", ORCASPcalculation)
         #print(ORCASPcalculation.__dict__)
         #Run ORCA calculation with charge-model info
-        ORCASPcalculation.run(nprocs=NUMPROC)
+        ORCASPcalculation.run(numcores=NUMPROC)
         print_time_rel_and_tot(currtime, origtime, modulename='orca run')
         currtime = time.time()
 
         if chargemodel == 'DDEC3' or chargemodel == 'DDEC6':
             #Calling DDEC_calc (calls chargemol)
             atomcharges, molmoms, voldict = DDEC_calc(elems=gasfrag.elems, theory=ORCASPcalculation,
-                                            ncores=NUMPROC, DDECmodel=chargemodel, molecule_charge=fragmentobject.Charge,
+                                            numcores=NUMPROC, DDECmodel=chargemodel, molecule_charge=fragmentobject.Charge,
                                             molecule_spinmult=fragmentobject.Mult,
                                             calcdir="DDEC_fragment"+str(id), gbwfile=ORCASPcalculation.filename+'.gbw')
 
@@ -1216,7 +1216,7 @@ def gasfragcalc_xTB(fragmentobjects,Cluster,chargemodel,xtbdir,xtbmethod,NUMPROC
         print("xTBSPcalculation:", xTBSPcalculation)
         print(xTBSPcalculation.__dict__)
         #Run xTB calculation with charge-model info
-        xTBSPcalculation.run(nprocs=NUMPROC)
+        xTBSPcalculation.run(numcores=NUMPROC)
 
 
         #Grab atomic charges for fragment.
@@ -1320,7 +1320,7 @@ def choose_shortrangemodel(Cluster,shortrangemodel,fragmentobjects,QMtheory,main
                 
                 print("Using GBW file: ", gbwfile)
                 DDECcharges, fragmentobject.molmoms, fragmentobject.voldict = DDEC_calc(elems=fragmentobject.Atoms, theory=QMtheory,
-                                                        ncores=numcores, DDECmodel=shortrangemodel,
+                                                        numcores=numcores, DDECmodel=shortrangemodel,
                                                         molecule_spinmult=fragmentobject.Mult, molecule_charge=fragmentobject.Charge,
                                                         calcdir="DDEC_LJcalc_fragment_{}".format(fragmentobject.Name), gbwfile=gbwfile)
                 print("DDECcharges:", DDECcharges)

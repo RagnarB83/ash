@@ -41,7 +41,7 @@ class SpinProjectionTheory:
 
     
     #Run function. Takes coords, elems etc. arguments and computes E or E+G.
-    def run(self, current_coords=None, elems=None, Grad=False, Hessian=False, PC=False, nprocs=None, label=None ):
+    def run(self, current_coords=None, elems=None, Grad=False, Hessian=False, PC=False, numcores=None, label=None ):
         module_init_time=time.time()
         print(BC.OKBLUE,BC.BOLD, "------------RUNNING SPINPROJECTIONTHEORY INTERFACE-------------", BC.END)
 
@@ -54,8 +54,8 @@ class SpinProjectionTheory:
             self.theory2.moreadfile=self.theory1.filename+".gbw"
         
         #RUNNING both theories
-        HSenergy = self.theory1.run(current_coords=current_coords, elems=elems, PC=PC, nprocs=nprocs, Grad=Grad)
-        BSenergy = self.theory2.run(current_coords=current_coords, elems=elems, PC=PC, nprocs=nprocs, Grad=Grad)
+        HSenergy = self.theory1.run(current_coords=current_coords, elems=elems, PC=PC, numcores=numcores, Grad=Grad)
+        BSenergy = self.theory2.run(current_coords=current_coords, elems=elems, PC=PC, numcores=numcores, Grad=Grad)
 
         #Grab S2 expectation values. Used by Yamaguchi
         if self.theory1.__class__.__name__ == "ORCATheory":

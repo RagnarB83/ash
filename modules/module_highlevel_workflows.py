@@ -125,9 +125,9 @@ end
 
     ccsd_qz_line="! CCSD W1-QZ {} {} {}".format(scfsetting,hfkeyword,extrainputkeyword)
 
-    ccsdt_dz = interfaces.interface_ORCA.ORCATheory(orcadir=orcadir, orcasimpleinput=ccsdt_dz_line, orcablocks=blocks, nprocs=numcores, charge=charge, mult=mult)
-    ccsdt_tz = interfaces.interface_ORCA.ORCATheory(orcadir=orcadir, orcasimpleinput=ccsdt_tz_line, orcablocks=blocks, nprocs=numcores, charge=charge, mult=mult)
-    ccsd_qz = interfaces.interface_ORCA.ORCATheory(orcadir=orcadir, orcasimpleinput=ccsd_qz_line, orcablocks=blocks, nprocs=numcores, charge=charge, mult=mult)
+    ccsdt_dz = interfaces.interface_ORCA.ORCATheory(orcadir=orcadir, orcasimpleinput=ccsdt_dz_line, orcablocks=blocks, numcores=numcores, charge=charge, mult=mult)
+    ccsdt_tz = interfaces.interface_ORCA.ORCATheory(orcadir=orcadir, orcasimpleinput=ccsdt_tz_line, orcablocks=blocks, numcores=numcores, charge=charge, mult=mult)
+    ccsd_qz = interfaces.interface_ORCA.ORCATheory(orcadir=orcadir, orcasimpleinput=ccsd_qz_line, orcablocks=blocks, numcores=numcores, charge=charge, mult=mult)
 
     ash.Singlepoint(fragment=fragment, theory=ccsdt_dz)
     CCSDT_DZ_dict = interfaces.interface_ORCA.grab_HF_and_corr_energies(ccsdt_dz.filename+'.out')
@@ -172,8 +172,8 @@ end
     ccsdt_mtsmall_NoFC_line="! CCSD(T) DKH W1-mtsmall  {} nofrozencore {} {}".format(scfsetting,hfkeyword,extrainputkeyword)
     ccsdt_mtsmall_FC_line="! CCSD(T) W1-mtsmall {} {} {}".format(scfsetting,hfkeyword,extrainputkeyword)
 
-    ccsdt_mtsmall_NoFC = interfaces.interface_ORCA.ORCATheory(orcadir=orcadir, orcasimpleinput=ccsdt_mtsmall_NoFC_line, orcablocks=blocks, nprocs=numcores, charge=charge, mult=mult)
-    ccsdt_mtsmall_FC = interfaces.interface_ORCA.ORCATheory(orcadir=orcadir, orcasimpleinput=ccsdt_mtsmall_FC_line, orcablocks=blocks, nprocs=numcores, charge=charge, mult=mult)
+    ccsdt_mtsmall_NoFC = interfaces.interface_ORCA.ORCATheory(orcadir=orcadir, orcasimpleinput=ccsdt_mtsmall_NoFC_line, orcablocks=blocks, numcores=numcores, charge=charge, mult=mult)
+    ccsdt_mtsmall_FC = interfaces.interface_ORCA.ORCATheory(orcadir=orcadir, orcasimpleinput=ccsdt_mtsmall_FC_line, orcablocks=blocks, numcores=numcores, charge=charge, mult=mult)
 
     energy_ccsdt_mtsmall_nofc = ash.Singlepoint(fragment=fragment, theory=ccsdt_mtsmall_NoFC)
     shutil.copyfile(ccsdt_mtsmall_NoFC.filename+'out', './' + calc_label + 'CCSDT_MTsmall_NoFC_DKH' + '.out')
@@ -342,12 +342,12 @@ end
     ccsdt_tz_line="! CCSD(T) W1-TZ tightscf {} {} ".format(hfkeyword,extrainputkeyword)
 
     #F12
-    ccsdf12_dz = interfaces.interface_ORCA.ORCATheory(orcadir=orcadir, orcasimpleinput=ccsdf12_dz_line, orcablocks=blocks, nprocs=numcores, charge=charge, mult=mult)
-    ccsdf12_tz = interfaces.interface_ORCA.ORCATheory(orcadir=orcadir, orcasimpleinput=ccsdf12_tz_line, orcablocks=blocks, nprocs=numcores, charge=charge, mult=mult)
+    ccsdf12_dz = interfaces.interface_ORCA.ORCATheory(orcadir=orcadir, orcasimpleinput=ccsdf12_dz_line, orcablocks=blocks, numcores=numcores, charge=charge, mult=mult)
+    ccsdf12_tz = interfaces.interface_ORCA.ORCATheory(orcadir=orcadir, orcasimpleinput=ccsdf12_tz_line, orcablocks=blocks, numcores=numcores, charge=charge, mult=mult)
 
     #Regular
-    ccsdt_dz = interfaces.interface_ORCA.ORCATheory(orcadir=orcadir, orcasimpleinput=ccsdt_dz_line, orcablocks=blocks, nprocs=numcores, charge=charge, mult=mult)
-    ccsdt_tz = interfaces.interface_ORCA.ORCATheory(orcadir=orcadir, orcasimpleinput=ccsdt_tz_line, orcablocks=blocks, nprocs=numcores, charge=charge, mult=mult)    
+    ccsdt_dz = interfaces.interface_ORCA.ORCATheory(orcadir=orcadir, orcasimpleinput=ccsdt_dz_line, orcablocks=blocks, numcores=numcores, charge=charge, mult=mult)
+    ccsdt_tz = interfaces.interface_ORCA.ORCATheory(orcadir=orcadir, orcasimpleinput=ccsdt_tz_line, orcablocks=blocks, numcores=numcores, charge=charge, mult=mult)    
     
     
     ash.Singlepoint(fragment=fragment, theory=ccsdf12_dz)
@@ -399,8 +399,8 @@ end
     ccsdt_mtsmall_NoFC_line="! CCSD(T) DKH W1-mtsmall  tightscf nofrozencore {} {}".format(hfkeyword,extrainputkeyword)
     ccsdt_mtsmall_FC_line="! CCSD(T) W1-mtsmall tightscf {} {}".format(hfkeyword,extrainputkeyword)
 
-    ccsdt_mtsmall_NoFC = interfaces.interface_ORCA.ORCATheory(orcadir=orcadir, orcasimpleinput=ccsdt_mtsmall_NoFC_line, orcablocks=blocks, nprocs=numcores, charge=charge, mult=mult)
-    ccsdt_mtsmall_FC = interfaces.interface_ORCA.ORCATheory(orcadir=orcadir, orcasimpleinput=ccsdt_mtsmall_FC_line, orcablocks=blocks, nprocs=numcores, charge=charge, mult=mult)
+    ccsdt_mtsmall_NoFC = interfaces.interface_ORCA.ORCATheory(orcadir=orcadir, orcasimpleinput=ccsdt_mtsmall_NoFC_line, orcablocks=blocks, numcores=numcores, charge=charge, mult=mult)
+    ccsdt_mtsmall_FC = interfaces.interface_ORCA.ORCATheory(orcadir=orcadir, orcasimpleinput=ccsdt_mtsmall_FC_line, orcablocks=blocks, numcores=numcores, charge=charge, mult=mult)
 
     energy_ccsdt_mtsmall_nofc = ash.Singlepoint(fragment=fragment, theory=ccsdt_mtsmall_NoFC)
     shutil.copyfile(ccsdt_mtsmall_NoFC.filename+'.out', './' + calc_label + 'CCSDT_MTsmall_NoFC_DKH' + '.out')
@@ -555,13 +555,13 @@ end
     ccsdt_tz_line="! DLPNO-CCSD(T) W1-TZ  {} {} {} {}".format(auxbasis,pnosetting,scfsetting,extrainputkeyword)
 
     #F12
-    ccsdf12_dz = interfaces.interface_ORCA.ORCATheory(orcadir=orcadir, orcasimpleinput=ccsdf12_dz_line, orcablocks=blocks, nprocs=numcores, charge=charge, mult=mult)
-    ccsdf12_tz = interfaces.interface_ORCA.ORCATheory(orcadir=orcadir, orcasimpleinput=ccsdf12_tz_line, orcablocks=blocks, nprocs=numcores, charge=charge, mult=mult)
-    #ccsdf12_qz = interfaces.interface_ORCA.ORCATheory(orcadir=orcadir, orcasimpleinput=ccsdf12_qz_line, orcablocks=blocks, nprocs=numcores, charge=charge, mult=mult)
+    ccsdf12_dz = interfaces.interface_ORCA.ORCATheory(orcadir=orcadir, orcasimpleinput=ccsdf12_dz_line, orcablocks=blocks, numcores=numcores, charge=charge, mult=mult)
+    ccsdf12_tz = interfaces.interface_ORCA.ORCATheory(orcadir=orcadir, orcasimpleinput=ccsdf12_tz_line, orcablocks=blocks, numcores=numcores, charge=charge, mult=mult)
+    #ccsdf12_qz = interfaces.interface_ORCA.ORCATheory(orcadir=orcadir, orcasimpleinput=ccsdf12_qz_line, orcablocks=blocks, numcores=numcores, charge=charge, mult=mult)
     
     #Regular
-    ccsdt_dz = interfaces.interface_ORCA.ORCATheory(orcadir=orcadir, orcasimpleinput=ccsdt_dz_line, orcablocks=blocks, nprocs=numcores, charge=charge, mult=mult)
-    ccsdt_tz = interfaces.interface_ORCA.ORCATheory(orcadir=orcadir, orcasimpleinput=ccsdt_tz_line, orcablocks=blocks, nprocs=numcores, charge=charge, mult=mult)    
+    ccsdt_dz = interfaces.interface_ORCA.ORCATheory(orcadir=orcadir, orcasimpleinput=ccsdt_dz_line, orcablocks=blocks, numcores=numcores, charge=charge, mult=mult)
+    ccsdt_tz = interfaces.interface_ORCA.ORCATheory(orcadir=orcadir, orcasimpleinput=ccsdt_tz_line, orcablocks=blocks, numcores=numcores, charge=charge, mult=mult)    
     
     
     ash.Singlepoint(fragment=fragment, theory=ccsdf12_dz)
@@ -622,8 +622,8 @@ end
     ccsdt_mtsmall_NoFC_line="! DLPNO-CCSD(T) DKH W1-mtsmall   nofrozencore {} {} {} {}".format(auxbasis,pnosetting,scfsetting,extrainputkeyword)
     ccsdt_mtsmall_FC_line="! DLPNO-CCSD(T) W1-mtsmall  {} {} {} {}".format(auxbasis,pnosetting,scfsetting,extrainputkeyword)
 
-    ccsdt_mtsmall_NoFC = interfaces.interface_ORCA.ORCATheory(orcadir=orcadir, orcasimpleinput=ccsdt_mtsmall_NoFC_line, orcablocks=blocks, nprocs=numcores, charge=charge, mult=mult)
-    ccsdt_mtsmall_FC = interfaces.interface_ORCA.ORCATheory(orcadir=orcadir, orcasimpleinput=ccsdt_mtsmall_FC_line, orcablocks=blocks, nprocs=numcores, charge=charge, mult=mult)
+    ccsdt_mtsmall_NoFC = interfaces.interface_ORCA.ORCATheory(orcadir=orcadir, orcasimpleinput=ccsdt_mtsmall_NoFC_line, orcablocks=blocks, numcores=numcores, charge=charge, mult=mult)
+    ccsdt_mtsmall_FC = interfaces.interface_ORCA.ORCATheory(orcadir=orcadir, orcasimpleinput=ccsdt_mtsmall_FC_line, orcablocks=blocks, numcores=numcores, charge=charge, mult=mult)
 
     energy_ccsdt_mtsmall_nofc = ash.Singlepoint(fragment=fragment, theory=ccsdt_mtsmall_NoFC)
     shutil.copyfile(ccsdt_mtsmall_NoFC.filename+'.out', './' + calc_label + 'CCSDT_MTsmall_NoFC_DKH' + '.out')
@@ -781,9 +781,9 @@ end
     ccsd_qz_line="! DLPNO-CCSD     W1-QZ {} {} {} {}".format(auxbasis, pnosetting, scfsetting,extrainputkeyword)
 
 
-    ccsdt_dz = interfaces.interface_ORCA.ORCATheory(orcadir=orcadir, orcasimpleinput=ccsdt_dz_line, orcablocks=blocks, nprocs=numcores, charge=charge, mult=mult)
-    ccsdt_tz = interfaces.interface_ORCA.ORCATheory(orcadir=orcadir, orcasimpleinput=ccsdt_tz_line, orcablocks=blocks, nprocs=numcores, charge=charge, mult=mult)
-    ccsd_qz = interfaces.interface_ORCA.ORCATheory(orcadir=orcadir, orcasimpleinput=ccsd_qz_line, orcablocks=blocks, nprocs=numcores, charge=charge, mult=mult)
+    ccsdt_dz = interfaces.interface_ORCA.ORCATheory(orcadir=orcadir, orcasimpleinput=ccsdt_dz_line, orcablocks=blocks, numcores=numcores, charge=charge, mult=mult)
+    ccsdt_tz = interfaces.interface_ORCA.ORCATheory(orcadir=orcadir, orcasimpleinput=ccsdt_tz_line, orcablocks=blocks, numcores=numcores, charge=charge, mult=mult)
+    ccsd_qz = interfaces.interface_ORCA.ORCATheory(orcadir=orcadir, orcasimpleinput=ccsd_qz_line, orcablocks=blocks, numcores=numcores, charge=charge, mult=mult)
 
     ash.Singlepoint(fragment=fragment, theory=ccsdt_dz)
     CCSDT_DZ_dict = interfaces.interface_ORCA.grab_HF_and_corr_energies(ccsdt_dz.filename+'.out', DLPNO=True)
@@ -828,8 +828,8 @@ end
     ccsdt_mtsmall_NoFC_line="! {} DKH W1-mtsmall  {} {} nofrozencore {} {}".format(ccsdtkeyword, auxbasis, pnosetting, scfsetting,extrainputkeyword)
     ccsdt_mtsmall_FC_line="! {} W1-mtsmall {}  {} {} {}".format(ccsdtkeyword, auxbasis, pnosetting, scfsetting,extrainputkeyword)
 
-    ccsdt_mtsmall_NoFC = interfaces.interface_ORCA.ORCATheory(orcadir=orcadir, orcasimpleinput=ccsdt_mtsmall_NoFC_line, orcablocks=blocks, nprocs=numcores, charge=charge, mult=mult)
-    ccsdt_mtsmall_FC = interfaces.interface_ORCA.ORCATheory(orcadir=orcadir, orcasimpleinput=ccsdt_mtsmall_FC_line, orcablocks=blocks, nprocs=numcores, charge=charge, mult=mult)
+    ccsdt_mtsmall_NoFC = interfaces.interface_ORCA.ORCATheory(orcadir=orcadir, orcasimpleinput=ccsdt_mtsmall_NoFC_line, orcablocks=blocks, numcores=numcores, charge=charge, mult=mult)
+    ccsdt_mtsmall_FC = interfaces.interface_ORCA.ORCATheory(orcadir=orcadir, orcasimpleinput=ccsdt_mtsmall_FC_line, orcablocks=blocks, numcores=numcores, charge=charge, mult=mult)
 
     energy_ccsdt_mtsmall_nofc = ash.Singlepoint(fragment=fragment, theory=ccsdt_mtsmall_NoFC)
     shutil.copyfile(ccsdt_mtsmall_NoFC.filename+'.out', './'+ calc_label + 'CCSDT_MTsmall_NoFC_DKH' + '.out')
@@ -991,7 +991,7 @@ end
     ccsdt_f12_line="! {} cc-pV{}-F12 cc-pV{}-F12-CABS {} {} {} {}".format(ccsdtkeyword, F12level, F12level,auxbasis, pnosetting, scfsetting,extrainputkeyword)
 
 
-    ccsdt_f12 = interfaces.interface_ORCA.ORCATheory(orcadir=orcadir, orcasimpleinput=ccsdt_f12_line, orcablocks=blocks, nprocs=numcores, charge=charge, mult=mult)
+    ccsdt_f12 = interfaces.interface_ORCA.ORCATheory(orcadir=orcadir, orcasimpleinput=ccsdt_f12_line, orcablocks=blocks, numcores=numcores, charge=charge, mult=mult)
 
     ash.Singlepoint(fragment=fragment, theory=ccsdt_f12)
     CCSDT_F12_dict = interfaces.interface_ORCA.grab_HF_and_corr_energies(ccsdt_f12.filename+'.out', DLPNO=True,F12=True)
@@ -1021,8 +1021,8 @@ end
     ccsdt_mtsmall_NoFC_line="! DLPNO-CCSD(T) DKH W1-mtsmall  {} {} nofrozencore {} {}".format(auxbasis, pnosetting, scfsetting,extrainputkeyword)
     ccsdt_mtsmall_FC_line="! DLPNO-CCSD(T) W1-mtsmall {}  {} {} {}".format(auxbasis, pnosetting, scfsetting,extrainputkeyword)
 
-    ccsdt_mtsmall_NoFC = interfaces.interface_ORCA.ORCATheory(orcadir=orcadir, orcasimpleinput=ccsdt_mtsmall_NoFC_line, orcablocks=blocks, nprocs=numcores, charge=charge, mult=mult)
-    ccsdt_mtsmall_FC = interfaces.interface_ORCA.ORCATheory(orcadir=orcadir, orcasimpleinput=ccsdt_mtsmall_FC_line, orcablocks=blocks, nprocs=numcores, charge=charge, mult=mult)
+    ccsdt_mtsmall_NoFC = interfaces.interface_ORCA.ORCATheory(orcadir=orcadir, orcasimpleinput=ccsdt_mtsmall_NoFC_line, orcablocks=blocks, numcores=numcores, charge=charge, mult=mult)
+    ccsdt_mtsmall_FC = interfaces.interface_ORCA.ORCATheory(orcadir=orcadir, orcasimpleinput=ccsdt_mtsmall_FC_line, orcablocks=blocks, numcores=numcores, charge=charge, mult=mult)
 
     energy_ccsdt_mtsmall_nofc = ash.Singlepoint(fragment=fragment, theory=ccsdt_mtsmall_NoFC)
     shutil.copyfile(ccsdt_mtsmall_NoFC.filename+'.out', './'+ calc_label + 'CCSDT_MTsmall_NoFC_DKH' + '.out')
@@ -1182,9 +1182,9 @@ end
     #quintblocks = blocks + """%basis newgto H "cc-pV5Z" end
     #"""
 
-    ccsdt_tz = interfaces.interface_ORCA.ORCATheory(orcadir=orcadir, orcasimpleinput=ccsdt_tz_line, orcablocks=blocks, nprocs=numcores, charge=charge, mult=mult)
-    ccsdt_qz = interfaces.interface_ORCA.ORCATheory(orcadir=orcadir, orcasimpleinput=ccsdt_qz_line, orcablocks=blocks, nprocs=numcores, charge=charge, mult=mult)
-    ccsd_5z = interfaces.interface_ORCA.ORCATheory(orcadir=orcadir, orcasimpleinput=ccsd_5z_line, orcablocks=blocks, nprocs=numcores, charge=charge, mult=mult)
+    ccsdt_tz = interfaces.interface_ORCA.ORCATheory(orcadir=orcadir, orcasimpleinput=ccsdt_tz_line, orcablocks=blocks, numcores=numcores, charge=charge, mult=mult)
+    ccsdt_qz = interfaces.interface_ORCA.ORCATheory(orcadir=orcadir, orcasimpleinput=ccsdt_qz_line, orcablocks=blocks, numcores=numcores, charge=charge, mult=mult)
+    ccsd_5z = interfaces.interface_ORCA.ORCATheory(orcadir=orcadir, orcasimpleinput=ccsd_5z_line, orcablocks=blocks, numcores=numcores, charge=charge, mult=mult)
 
     ash.Singlepoint(fragment=fragment, theory=ccsdt_tz)
     CCSDT_TZ_dict = interfaces.interface_ORCA.grab_HF_and_corr_energies(ccsdt_tz.filename+'.out', DLPNO=True)
@@ -1229,8 +1229,8 @@ end
     ccsdt_mtsmall_NoFC_line="! {} DKH W1-mtsmall  {} {} nofrozencore {} {}".format(ccsdtkeyword, auxbasis, pnosetting, scfsetting,extrainputkeyword)
     ccsdt_mtsmall_FC_line="! {} W1-mtsmall {}  {} {} {}".format(ccsdtkeyword, auxbasis, pnosetting, scfsetting,extrainputkeyword)
 
-    ccsdt_mtsmall_NoFC = interfaces.interface_ORCA.ORCATheory(orcadir=orcadir, orcasimpleinput=ccsdt_mtsmall_NoFC_line, orcablocks=blocks, nprocs=numcores, charge=charge, mult=mult)
-    ccsdt_mtsmall_FC = interfaces.interface_ORCA.ORCATheory(orcadir=orcadir, orcasimpleinput=ccsdt_mtsmall_FC_line, orcablocks=blocks, nprocs=numcores, charge=charge, mult=mult)
+    ccsdt_mtsmall_NoFC = interfaces.interface_ORCA.ORCATheory(orcadir=orcadir, orcasimpleinput=ccsdt_mtsmall_NoFC_line, orcablocks=blocks, numcores=numcores, charge=charge, mult=mult)
+    ccsdt_mtsmall_FC = interfaces.interface_ORCA.ORCATheory(orcadir=orcadir, orcasimpleinput=ccsdt_mtsmall_FC_line, orcablocks=blocks, numcores=numcores, charge=charge, mult=mult)
 
     energy_ccsdt_mtsmall_nofc = ash.Singlepoint(fragment=fragment, theory=ccsdt_mtsmall_NoFC)
     shutil.copyfile(ccsdt_mtsmall_NoFC.filename+'.out', './'+ calc_label + 'CCSDT_MTsmall_NoFC_DKH' + '.out')
@@ -1447,8 +1447,8 @@ end
     
     
     #Defining two theory objects for each basis set
-    ccsdt_1 = interfaces.interface_ORCA.ORCATheory(orcadir=orcadir, orcasimpleinput=ccsdt_1_line, orcablocks=blocks1, nprocs=numcores, charge=charge, mult=mult)
-    ccsdt_2 = interfaces.interface_ORCA.ORCATheory(orcadir=orcadir, orcasimpleinput=ccsdt_2_line, orcablocks=blocks2, nprocs=numcores, charge=charge, mult=mult)
+    ccsdt_1 = interfaces.interface_ORCA.ORCATheory(orcadir=orcadir, orcasimpleinput=ccsdt_1_line, orcablocks=blocks1, numcores=numcores, charge=charge, mult=mult)
+    ccsdt_2 = interfaces.interface_ORCA.ORCATheory(orcadir=orcadir, orcasimpleinput=ccsdt_2_line, orcablocks=blocks2, numcores=numcores, charge=charge, mult=mult)
     
     
     # EXTRAPOLATION TO PNO LIMIT BY 2 PNO calculations
@@ -1693,8 +1693,8 @@ end
     ECPflag=isECP(blocks1)
     
     #Defining two theory objects for each basis set
-    ccsdt_1 = interfaces.interface_ORCA.ORCATheory(orcadir=orcadir, orcasimpleinput=ccsdt_1_line, orcablocks=blocks1, nprocs=numcores, charge=charge, mult=mult)
-    ccsdt_2 = interfaces.interface_ORCA.ORCATheory(orcadir=orcadir, orcasimpleinput=ccsdt_2_line, orcablocks=blocks2, nprocs=numcores, charge=charge, mult=mult)
+    ccsdt_1 = interfaces.interface_ORCA.ORCATheory(orcadir=orcadir, orcasimpleinput=ccsdt_1_line, orcablocks=blocks1, numcores=numcores, charge=charge, mult=mult)
+    ccsdt_2 = interfaces.interface_ORCA.ORCATheory(orcadir=orcadir, orcasimpleinput=ccsdt_2_line, orcablocks=blocks2, numcores=numcores, charge=charge, mult=mult)
 
     #Running both theories
     ash.Singlepoint(fragment=fragment, theory=ccsdt_1)
@@ -1934,7 +1934,7 @@ end
     ############################################################
 
     ccsdt_f12_line="! {} cc-pV{}-F12 cc-pV{}-F12-CABS {} {} {} {}".format(ccsdtkeyword, F12level, F12level,auxbasis, pnosetting, scfsetting,extrainputkeyword)
-    ccsdt_f12 = interfaces.interface_ORCA.ORCATheory(orcadir=orcadir, orcasimpleinput=ccsdt_f12_line, orcablocks=blocks, nprocs=numcores, charge=charge, mult=mult)
+    ccsdt_f12 = interfaces.interface_ORCA.ORCATheory(orcadir=orcadir, orcasimpleinput=ccsdt_f12_line, orcablocks=blocks, numcores=numcores, charge=charge, mult=mult)
 
     #PNO extrapolation or not
     if pnosetting=="extrapolation":
@@ -2239,8 +2239,8 @@ def CVSR_Step(cvbasis,reloption,ccsdtkeyword,auxbasis,pnooption,scfsetting,extra
     ccsdt_mtsmall_NoFC_line="! {} {} {}   nofrozencore {} {} {} {}".format(ccsdtkeyword,reloption,cvbasis,auxbasis,pnooption,scfsetting,extrainputkeyword)
     ccsdt_mtsmall_FC_line="! {} {}  {} {} {} {}".format(ccsdtkeyword,cvbasis,auxbasis,pnooption,scfsetting,extrainputkeyword)
 
-    ccsdt_mtsmall_NoFC = interfaces.interface_ORCA.ORCATheory(orcadir=orcadir, orcasimpleinput=ccsdt_mtsmall_NoFC_line, orcablocks=blocks, nprocs=numcores, charge=charge, mult=mult)
-    ccsdt_mtsmall_FC = interfaces.interface_ORCA.ORCATheory(orcadir=orcadir, orcasimpleinput=ccsdt_mtsmall_FC_line, orcablocks=blocks, nprocs=numcores, charge=charge, mult=mult)
+    ccsdt_mtsmall_NoFC = interfaces.interface_ORCA.ORCATheory(orcadir=orcadir, orcasimpleinput=ccsdt_mtsmall_NoFC_line, orcablocks=blocks, numcores=numcores, charge=charge, mult=mult)
+    ccsdt_mtsmall_FC = interfaces.interface_ORCA.ORCATheory(orcadir=orcadir, orcasimpleinput=ccsdt_mtsmall_FC_line, orcablocks=blocks, numcores=numcores, charge=charge, mult=mult)
 
     energy_ccsdt_mtsmall_nofc = ash.Singlepoint(fragment=fragment, theory=ccsdt_mtsmall_NoFC)
     shutil.copyfile(ccsdt_mtsmall_NoFC.filename+'.out', './' + calc_label + 'CCSDT_MTsmall_NoFC_DKH' + '.out')

@@ -14,7 +14,7 @@ import shutil
 import constants
 import math
 from interfaces.interface_ORCA import checkORCAfinished,scfenergygrab,tddftgrab,orbitalgrab,run_orca_plot,grabEOMIPs,check_stability_in_output
-from functions.functions_general import writestringtofile,BC,blankline,isint
+from functions.functions_general import writestringtofile,BC,blankline,isint,print_time_rel
 from functions.functions_elstructure import HOMOnumbercalc,modosplot,write_cube_diff,read_cube
 
 class bcolors:
@@ -257,7 +257,9 @@ def get_dets_from_single(logfile,restr,gscharge,gsmult,totnuccharge,frozencore):
     data=readfile(logfile)
     infos={}
     for iline,line in enumerate(data):
-      if '# of contracted basis functions' in line:
+      #print("line:", line)
+      #if '# of contracted basis functions' in line:
+      if 'Number of basis functions                   ...' in line:
         infos['nbsuse']=int(line.split()[-1])
       if 'Orbital ranges used for CIS calculation:' in line:
         s=data[iline+1].replace('.',' ').split()
@@ -271,7 +273,6 @@ def get_dets_from_single(logfile,restr,gscharge,gsmult,totnuccharge,frozencore):
           s=data[iline+2].replace('.',' ').split()
           infos['NOB']=int(s[4])-int(s[3])+1
           infos['NVB']=int(s[7])-int(s[6])+1
-
     if not 'NOA' in infos:
       charge=gscharge
       #charge=QMin['chargemap'][gsmult]
@@ -336,7 +337,8 @@ def get_dets_from_cis(logfile,cisfilename,restr,mults,gscharge,gsmult,totnucchar
     data=readfile(logfile)
     infos={}
     for iline,line in enumerate(data):
-      if '# of contracted basis functions' in line:
+      #if '# of contracted basis functions' in line:
+      if 'Number of basis functions                   ...' in line:
         infos['nbsuse']=int(line.split()[-1])
       if 'Orbital ranges used for CIS calculation:' in line:
         s=data[iline+1].replace('.',' ').split()

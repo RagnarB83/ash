@@ -416,7 +416,7 @@ def solvshell ( orcadir='', NumCores='', calctype='', orcasimpleinput_LL='',
             print("Using ORCA parallelization. Running each file 1 by 1. ORCA using {} cores".format(NumCores))
             for SRPolinpfile in SRPolinpfiles:
                 print("Running file: ", SRPolinpfile)
-                run_orca_SP_ORCApar(orcadir, SRPolinpfile, nprocs=NumCores)
+                run_orca_SP_ORCApar(orcadir, SRPolinpfile, numcores=NumCores)
         else:
             print("Using multiproc parallelization. All calculations running in parallel but each ORCA calculation using 1 core.")
             run_inputfiles_in_parallel(orcadir, SRPolinpfiles, NumCores)
@@ -698,9 +698,9 @@ def solvshell ( orcadir='', NumCores='', calctype='', orcasimpleinput_LL='',
         print_line_with_subheader1("Running Gas calculations at HL theory")
         print(BC.WARNING,"HL-theory:", orcasimpleinput_HL,BC.END)
         #run_inputfiles_in_parallel_AB(gasinpfiles_HL)
-        run_orca_SP_ORCApar(orcadir, gasinpfiles_HL[0], nprocs=NumCores)
+        run_orca_SP_ORCApar(orcadir, gasinpfiles_HL[0], numcores=NumCores)
         if calctype=="redox":
-            run_orca_SP_ORCApar(orcadir, gasinpfiles_HL[1], nprocs=NumCores)
+            run_orca_SP_ORCApar(orcadir, gasinpfiles_HL[1], numcores=NumCores)
 
         #GRAB output
         gasA_stateA_LL=finalenergiesgrab('gas-molA_StateAB_Gas_LL.out')[0]
@@ -918,24 +918,24 @@ def LRPolsnapshotcalc(args):
     print(BC.OKGREEN,
           "Starting PolEmbed job for snapshot {} with LRPolRegion1: {}. State A: Charge: {}  Mult: {}".format(
               snapshot, LRPolRegion1, solvsphere.ChargeA, solvsphere.MultA), BC.END)
-    PolEmbedEnergyA_LR1 = PolEmbed_SP_A_LR1.run(potfile=snapshot+'System_LR1.pot', nprocs=NumCoresPsi4, restart=False)
+    PolEmbedEnergyA_LR1 = PolEmbed_SP_A_LR1.run(potfile=snapshot+'System_LR1.pot', numcores=NumCoresPsi4, restart=False)
 
     # Doing chargeB (assumed open-shell) after closed-shell.
     print(BC.OKGREEN,
           "Starting PolEmbed job for snapshot {} with LRPolRegion1: {}. State B: Charge: {}  Mult: {}".format(
               snapshot, LRPolRegion1, solvsphere.ChargeB, solvsphere.MultB), BC.END)
-    PolEmbedEnergyB_LR1 = PolEmbed_SP_B_LR1.run(potfile=snapshot+'System_LR1.pot', nprocs=NumCoresPsi4, restart=True)
+    PolEmbedEnergyB_LR1 = PolEmbed_SP_B_LR1.run(potfile=snapshot+'System_LR1.pot', numcores=NumCoresPsi4, restart=True)
 
     #Doing Region2 state A. No re-start as not compatible with QM-region increase
     print(BC.OKGREEN,
           "Starting PolEmbed job for snapshot {} with LRPolRegion1: {}. State A: Charge: {}  Mult: {}".format(
               snapshot, LRPolRegion2, solvsphere.ChargeA, solvsphere.MultA), BC.END)
-    PolEmbedEnergyA_LR2 = PolEmbed_SP_A_LR2.run(potfile=snapshot+'System_LR2.pot', nprocs=NumCoresPsi4, restart=False)
+    PolEmbedEnergyA_LR2 = PolEmbed_SP_A_LR2.run(potfile=snapshot+'System_LR2.pot', numcores=NumCoresPsi4, restart=False)
 
     print(BC.OKGREEN,
           "Starting PolEmbed job for snapshot {} with LRPolRegion2: {}. State B: Charge: {}  Mult: {}".format(
               snapshot, LRPolRegion2, solvsphere.ChargeB, solvsphere.MultB), BC.END)
-    PolEmbedEnergyB_LR2 = PolEmbed_SP_B_LR2.run(potfile=snapshot+'System_LR2.pot', nprocs=NumCoresPsi4, restart=True)
+    PolEmbedEnergyB_LR2 = PolEmbed_SP_B_LR2.run(potfile=snapshot+'System_LR2.pot', numcores=NumCoresPsi4, restart=True)
 
     PolEmbedEnergyAB_LR1 = (PolEmbedEnergyB_LR1 - PolEmbedEnergyA_LR1) * constants.hartoeV
     PolEmbedEnergyAB_LR2 = (PolEmbedEnergyB_LR2 - PolEmbedEnergyA_LR2) * constants.hartoeV

@@ -34,7 +34,7 @@ from functions.functions_general import blankline,BC,listdiff,print_time_rel,pri
 # Fragment class and coordinate functions
 import modules.module_coords
 from modules.module_coords import get_molecules_from_trajectory,eldict_covrad,write_pdbfile,Fragment,read_xyzfile,write_xyzfile,make_cluster_from_box, read_ambercoordinates, read_gromacsfile
-from modules.module_coords import remove_atoms_from_system_CHARMM,add_atoms_to_system_CHARMM
+from modules.module_coords import remove_atoms_from_system_CHARMM,add_atoms_to_system_CHARMM, getwaterconstraintslist
 #Singlepoint
 import modules.module_singlepoint
 from modules.module_singlepoint import Singlepoint,ZeroTheory
@@ -70,7 +70,7 @@ from interfaces.interface_CFour import CFourTheory
 from interfaces.interface_xtb import xTBTheory
 
 #MM: external and internal
-from interfaces.interface_OpenMM import OpenMMTheory, OpenMM_MD, OpenMM_Opt, OpenMM_Modeller
+from interfaces.interface_OpenMM import OpenMMTheory, OpenMM_MD, OpenMM_Opt, OpenMM_Modeller, MDtraj_imagetraj
 from modules.module_MM import NonBondedTheory,UFFdict,UFF_modH_dict,LJCoulpy,coulombcharge,LennardJones,LJCoulombv2,LJCoulomb,MMforcefield_read
 
 #QM/MM

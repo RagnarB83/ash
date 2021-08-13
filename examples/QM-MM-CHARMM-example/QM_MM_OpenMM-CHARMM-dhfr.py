@@ -24,7 +24,7 @@ ORCAblocklines="""
 """
 #Create ORCA QM object. Attaching numcores so that ORCA runs in parallel
 orcaobject = ORCATheory(orcadir=orcadir, charge=0,mult=1, orcasimpleinput=ORCAinpline,
-                        orcablocks=ORCAblocklines, nprocs=numcores)
+                        orcablocks=ORCAblocklines, numcores=numcores)
 
 #act and qmatoms lists. Defines QM-region (atoms described by QM) and Active-region (atoms allowed to move)
 #IMPORTANT: atom indices begin at 0.

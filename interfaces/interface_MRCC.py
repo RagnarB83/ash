@@ -5,7 +5,7 @@ import os
 #MRCC Theory object. Fragment object is optional. Used??
 class MRCCTheory:
     def __init__(self, mrccdir=None, filename='mrcc', fragment=None, charge=None, mult=None, printlevel=2,
-                mrccinput=None, nprocs=1):
+                mrccinput=None, numcores=1):
 
         #Printlevel
         self.printlevel=printlevel
@@ -14,7 +14,7 @@ class MRCCTheory:
         self.charge=charge
         self.mult=mult
         self.mrccinput=mrccinput
-        self.nprocs=nprocs
+        self.numcores=numcores
 
 
     #TODO: Parallelization is enabled most easily by OMP_NUM_THREADS AND MKL_NUM_THREADS. NOt sure if we can control this here
@@ -23,10 +23,10 @@ class MRCCTheory:
 
     # Run function. Takes coords, elems etc. arguments and computes E or E+G.
     def run(self, current_coords=None, current_MM_coords=None, MMcharges=None, qm_elems=None,
-            elems=None, Grad=False, PC=False, nprocs=None, restart=False, label=None):
+            elems=None, Grad=False, PC=False, numcores=None, restart=False, label=None):
 
-        if nprocs == None:
-            nprocs = self.nprocs
+        if numcores == None:
+            numcores = self.numcores
 
         print(BC.OKBLUE, BC.BOLD, "------------RUNNING MRCC INTERFACE-------------", BC.END)
 

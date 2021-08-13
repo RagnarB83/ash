@@ -14,7 +14,7 @@ import settings_ash
 #TODO NOTE: If we add init arguments, remember to update Numfreq QMMM option as it depends on the keywords
 class QMMMTheory:
     def __init__(self, qm_theory=None, qmatoms=None, fragment=None, mm_theory=None , charges=None,
-                 embedding="Elstat", printlevel=2, nprocs=1, actatoms=None, frozenatoms=None, excludeboundaryatomlist=None,
+                 embedding="Elstat", printlevel=2, numcores=1, actatoms=None, frozenatoms=None, excludeboundaryatomlist=None,
                  unusualboundary=False):
         module_init_time=time.time()
         timeA=time.time()
@@ -98,19 +98,19 @@ class QMMMTheory:
         print("QM-theory:", self.qm_theory_name)
         print("MM-theory:", self.mm_theory_name)
         
-        #Setting nprocs of object.
+        #Setting numcores of object.
         #This will be when calling QMtheory and probably MMtheory
         
-        #nproc-setting in QMMMTheory takes precedent
-        if nprocs != 1:
-            self.nprocs=nprocs
-        #If QMtheory nprocs was set (and QMMMTHeory not)
-        elif self.qm_theory.nprocs != 1:
-            self.nprocs=self.qm_theory.nprocs
+        #numcores-setting in QMMMTheory takes precedent
+        if numcores != 1:
+            self.numcores=numcores
+        #If QMtheory numcores was set (and QMMMTHeory not)
+        elif self.qm_theory.numcores != 1:
+            self.numcores=self.qm_theory.numcores
         #Default 1 proc
         else:
-            self.nprocs=1
-        print("QM/MM object selected to use {} cores".format(self.nprocs))
+            self.numcores=1
+        print("QM/MM object selected to use {} cores".format(self.numcores))
 
         #Embedding type: mechanical, electrostatic etc.
         self.embedding=embedding
@@ -369,7 +369,7 @@ class QMMMTheory:
                 self.dipole_coords.append(pos_d1)
                 self.dipole_coords.append(pos_d2)
         print_time_rel(timeA, modulename="SetDipoleCharges")
-    def run(self, current_coords=None, elems=None, Grad=False, nprocs=1):
+    def run(self, current_coords=None, elems=None, Grad=False, numcores=1):
         module_init_time=time.time()
         CheckpointTime = time.time()
         if self.printlevel >= 2:
@@ -389,12 +389,12 @@ class QMMMTheory:
         else:
             PC=False
         
-        #If nprocs was set when calling .run then using, otherwise use self.nprocs
-        if nprocs==1:
-            nprocs=self.nprocs
+        #If numcores was set when calling .run then using, otherwise use self.numcores
+        if numcores==1:
+            numcores=self.numcores
         
         if self.printlevel >= 2:
-            print("Running QM/MM object with {} cores available".format(nprocs))
+            print("Running QM/MM object with {} cores available".format(numcores))
         #Updating QM coords and MM coords.
         
         #TODO: Should we use different name for updated QMcoords and MMcoords here??
@@ -506,15 +506,15 @@ class QMMMTheory:
                                                                                          current_MM_coords=self.pointchargecoords,
                                                                                          MMcharges=self.pointcharges,
                                                                                          qm_elems=current_qmelems,
-                                                                                         Grad=True, PC=True, nprocs=nprocs)
+                                                                                         Grad=True, PC=True, numcores=numcores)
                 else:
                     self.QMenergy, self.QMgradient = self.qm_theory.run(current_coords=self.qmcoords,
                                                       current_MM_coords=self.pointchargecoords, MMcharges=self.pointcharges,
-                                                      qm_elems=current_qmelems, Grad=True, PC=False, nprocs=nprocs)
+                                                      qm_elems=current_qmelems, Grad=True, PC=False, numcores=numcores)
             else:
                 self.QMenergy = self.qm_theory.run(current_coords=self.qmcoords,
                                                       current_MM_coords=self.pointchargecoords, MMcharges=self.pointcharges,
-                                                      qm_elems=current_qmelems, Grad=False, PC=PC, nprocs=nprocs)
+                                                      qm_elems=current_qmelems, Grad=False, PC=PC, numcores=numcores)
         elif self.qm_theory_name == "Psi4Theory":
             #Calling Psi4 theory, providing current QM and MM coordinates.
             if Grad==True:
@@ -526,7 +526,7 @@ class QMMMTheory:
                                                                                          current_MM_coords=self.pointchargecoords,
                                                                                          MMcharges=self.pointcharges,
                                                                                          qm_elems=current_qmelems,
-                                                                                         Grad=True, PC=True, nprocs=nprocs)
+                                                                                         Grad=True, PC=True, numcores=numcores)
                     #Creating zero-gradient array
                     self.PCgradient = np.zeros((len(self.mmatoms), 3))
                 else:
@@ -534,14 +534,14 @@ class QMMMTheory:
                     exit()
                     self.QMenergy, self.QMgradient = self.qm_theory.run(current_coords=self.qmcoords,
                                                       current_MM_coords=self.pointchargecoords, MMcharges=self.pointcharges,
-                                                      qm_elems=current_qmelems, Grad=True, PC=False, nprocs=nprocs)
+                                                      qm_elems=current_qmelems, Grad=True, PC=False, numcores=numcores)
             else:
                 print("grad false.")
                 if PC == True:
                     print("PC embed true. not ready")
                     self.QMenergy = self.qm_theory.run(current_coords=self.qmcoords,
                                                       current_MM_coords=self.pointchargecoords, MMcharges=self.pointcharges,
-                                                      qm_elems=current_qmelems, Grad=False, PC=PC, nprocs=nprocs)
+                                                      qm_elems=current_qmelems, Grad=False, PC=PC, numcores=numcores)
                 else:
                     print("mech true", not ready)
                     exit()
@@ -555,15 +555,15 @@ class QMMMTheory:
                                                                                          current_MM_coords=self.pointchargecoords,
                                                                                          MMcharges=self.pointcharges,
                                                                                          qm_elems=current_qmelems,
-                                                                                         Grad=True, PC=True, nprocs=nprocs)
+                                                                                         Grad=True, PC=True, numcores=numcores)
                 else:
                     self.QMenergy, self.QMgradient = self.qm_theory.run(current_coords=self.qmcoords,
                                                       current_MM_coords=self.pointchargecoords, MMcharges=self.pointcharges,
-                                                      qm_elems=current_qmelems, Grad=True, PC=False, nprocs=nprocs)
+                                                      qm_elems=current_qmelems, Grad=True, PC=False, numcores=numcores)
             else:
                 self.QMenergy = self.qm_theory.run(current_coords=self.qmcoords,
                                                       current_MM_coords=self.pointchargecoords, MMcharges=self.pointcharges,
-                                                      qm_elems=current_qmelems, Grad=False, PC=PC, nprocs=nprocs)
+                                                      qm_elems=current_qmelems, Grad=False, PC=PC, numcores=numcores)
 
 
         elif self.qm_theory_name == "DaltonTheory":
@@ -801,7 +801,7 @@ def microiter_QM_MM_OPT_v3(theory=None, fragment=None, maxiter=500, qmregion=Non
     orig_theory=copy.deepcopy(theory)
     # TODO: If BS-spinflipping, use Hsmult instead of regular mul6
     xtbtheory=xTBTheory(xtbdir=None, charge=theory.qm_theory.charge, mult=theory.qm_theory.mult, xtbmethod=xtbmethod, 
-                        runmode='inputfile', nprocs=1, printlevel=2)
+                        runmode='inputfile', numcores=1, printlevel=2)
     ll_theory=copy.deepcopy(theory)
     ll_theory.qm_theory=xtbtheory
     #Convergence criteria
@@ -978,3 +978,5 @@ def actregiondefine(mmtheory=None, fragment=None, radius=None, originatom=None,s
     modules.module_coords.write_XYZ_for_atoms(fragment.coords,fragment.elems, act_indices, "ActiveRegion")
     print("Wrote Active region XYZfile: ActiveRegion.xyz  (inspect with visualization program)")
     return act_indices
+
+

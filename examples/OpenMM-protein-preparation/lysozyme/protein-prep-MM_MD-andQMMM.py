@@ -6,9 +6,14 @@ numcores=4
 #Original raw PDB-file (no hydrogens, nosolvent). Lysozyme example
 pdbfile="1aki.pdb"
 
+
+#Defining residues with special user-wanted protonation states
+residue_variants={}
+
 #Setting up new system, adding hydrogens, solvent, ions and defining forcefield, topology
-forcefield, topology, ashfragment = OpenMM_Modeller(pdbfile=pdbfile, forcefield='CHARMM36', watermodel="tip3p", pH=7.0, solvent_padding=10.0, ionicstrength=0.1, iontype="Na+")
-# extraxmlfile="specialresidue.xml",
+forcefield, topology, ashfragment = OpenMM_Modeller(pdbfile=pdbfile, forcefield='CHARMM36', watermodel="tip3p", pH=7.0, 
+    solvent_padding=10.0, ionicstrength=0.1, iontype="Na+", residue_variants=residue_variants)
+
 #Creating new OpenMM object from forcefield, topology and and fragment
 openmmobject =OpenMMTheory(platform='CPU', numcores=numcores, Modeller=True, forcefield=forcefield, topology=topology,
                  pdbfile=None, do_energy_decomposition=True, periodic=True,
@@ -34,7 +39,7 @@ MaxIter 500
 end
 """
 orcaobject = ORCATheory(orcadir="/Applications/orca_500", charge=-1,mult=1, orcasimpleinput=ORCAinpline,
-                        orcablocks=ORCAblocklines, nprocs=1)
+                        orcablocks=ORCAblocklines, numcores=1)
 
 # Create QM/MM OBJECT
 qmmmobject = QMMMTheory(qm_theory=orcaobject, mm_theory=openmmobject,

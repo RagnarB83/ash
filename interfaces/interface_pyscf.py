@@ -8,13 +8,13 @@ import modules.module_coords
 # PE: Polarizable embedding (CPPE). Not completely active in PySCF 1.7.1. Bugfix required I think
 class PySCFTheory:
     def __init__(self, fragment='', charge='', mult='', printsetting='False', printlevel=2, pyscfbasis='', pyscffunctional='',
-                 pe=False, potfile='', filename='pyscf', pyscfmemory=3100, nprocs=1):
+                 pe=False, potfile='', filename='pyscf', pyscfmemory=3100, numcores=1):
 
 
         #Printlevel
         self.printlevel=printlevel
 
-        self.nprocs=nprocs
+        self.numcores=numcores
 
         self.pyscfmemory=pyscfmemory
         self.filename=filename
@@ -46,12 +46,12 @@ class PySCFTheory:
             pass
     #Run function. Takes coords, elems etc. arguments and computes E or E+G.
     def run(self, current_coords=None, current_MM_coords=None, MMcharges=None, qm_elems=None,
-            elems=None, Grad=False, PC=False, nprocs=None, pe=False, potfile=None, restart=False ):
+            elems=None, Grad=False, PC=False, numcores=None, pe=False, potfile=None, restart=False ):
 
         module_init_time=time.time()
 
-        if nprocs==None:
-            nprocs=self.nprocs
+        if numcores==None:
+            numcores=self.numcores
 
 
 
@@ -151,7 +151,7 @@ class PySCFTheory:
         #TODO: Restart settings for PySCF
 
         #Controlling OpenMP parallelization.
-        lib.num_threads(nprocs)
+        lib.num_threads(numcores)
 
         #Setting functional
         mf.xc = self.pyscffunctional

@@ -17,7 +17,7 @@ ORCAcalc = ORCATheory(
         orcadir=orcadir,
         orcasimpleinput=orcasimpleinput,
         orcablocks=orcablocks,
-        nprocs=numcores,
+        numcores=numcores,
         )
 
 #Chargemodel. Options: CHELPG, Hirshfeld, CM5, NPA, Mulliken
@@ -101,7 +101,7 @@ QMMM_object = QMMMTheory(
         qmatoms=Centralmainfrag,
         charges=Cluster.atomcharges,
         embedding='Elstat',
-        nprocs=numcores,
+        numcores=numcores,
         )
 
 geomeTRICOptimizer(

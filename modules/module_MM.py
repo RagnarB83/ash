@@ -180,6 +180,7 @@ class NonBondedTheory:
         CheckpointTime = time.time()
         # See speed-tests at /home/bjornsson/pairpot-test
 
+        print("self.codeversion:", self.codeversion)
         if self.codeversion=="julia":
             if self.printlevel >= 2:
                 print("Using PyJulia for fast sigmaij and epsij array creation")
