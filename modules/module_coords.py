@@ -35,7 +35,7 @@ class Fragment:
             print("New ASH fragment object")
         self.energy = None
         self.elems=[]
-        self.coords=[]
+        self.coords=np.empty_like([],shape=(0,3))
         self.connectivity=[]
         self.atomcharges = []
         self.atomtypes = []
@@ -53,9 +53,9 @@ class Fragment:
         self.fragmenttype_labels=[]
         #Here either providing coords, elems as lists. Possibly reading connectivity also
         if coords is not None:
-            #self.add_coords(coords,elems,conn=conncalc)
-            #Adding coords as list of lists. Possible conversion from numpy array below.
-            self.coords=[list(i) for i in coords]
+            #Adding coords as list of lists (or np.array). Conversion to numpy arrary
+            #self.coords=np.array([list(i) for i in coords])
+            self.coords = reformat_list_to_array(coords)
             self.elems=elems
             self.update_attributes()
             #If connectivity passed
@@ -151,7 +151,13 @@ class Fragment:
         for count, line in enumerate(coordslist):
             if len(line)> 1:
                 self.elems.append(reformat_element(line.split()[0]))
-                self.coords.append([float(line.split()[1]), float(line.split()[2]), float(line.split()[3])])
+                #self.coords.append([float(line.split()[1]), float(line.split()[2]), float(line.split()[3])])
+                #Appending to numpy aray
+                clist= [float(line.split()[1]),float(line.split()[2]),float(line.split()[3])]
+                clist_np=reformat_list_to_array(clist)
+                self.coords = np.append(self.coords, [clist_np],axis=0)
+        print(self.elems)
+        print(self.coords)
         self.label=''.join(self.elems)
         self.update_attributes()
         self.calc_connectivity(scale=scale, tol=tol)
@@ -161,13 +167,14 @@ class Fragment:
             print("Replacing coordinates in fragment.")
         
         self.elems=elems
-        # Adding coords as list of lists. Possible conversion from numpy array below.
-        self.coords = [list(i) for i in coords]
+        # Adding coords as list of lists. Conversion to numpy array
+        #np.array([list(i) for i in coords])
+        self.coords = reformat_list_to_array(coords)
         self.update_attributes()
         if conn==True:
             self.calc_connectivity(scale=scale, tol=tol)
     def delete_coords(self):
-        self.coords=[]
+        self.coords=np.empty_like([],shape=(0,3))
         self.elems=[]
         self.connectivity=[]
     #Get list of atom-indices for specific elements
@@ -178,10 +185,11 @@ class Fragment:
     def get_atomindices_except_element(self,element):
         return [index for index,el in enumerate(self.elems) if el!=element]
     def delete_atom(self,atomindex):
-        if type(self.coords) == np.ndarray:
-            self.coords=np.delete(self.coords,atomindex,axis=0)
-        elif type(self.coords) == list:
-            self.coords.pop(atomindex)
+        self.coords=np.delete(self.coords,atomindex,axis=0)
+        #if type(self.coords) == np.ndarray:
+        #    self.coords=np.delete(self.coords,atomindex,axis=0)
+        #elif type(self.coords) == list:
+        #    self.coords.pop(atomindex)
         
         #Deleting from lists
         self.elems.pop(atomindex)
@@ -191,8 +199,11 @@ class Fragment:
 
         #Updating other attributes
         self.update_attributes()
-
+    #Appending coordinates. Taking list of lists but appending to np array
     def add_coords(self, elems,coords,conn=True, scale=None, tol=None):
+        
+        #TODO: Check if coords is list or list of lists before proceeding
+        #TODO: if np array, check if dimensions are correect before proceeding
         if self.printlevel >= 2:
             print("Adding coordinates to fragment.")
         if len(self.coords)>0:
@@ -202,7 +213,8 @@ class Fragment:
         print(elems)
         print(type(elems))
         self.elems = self.elems+list(elems)
-        self.coords = self.coords+coords
+        #self.coords = self.coords+coords
+        self.coords = np.append(self.coords,coords, axis=0)
         self.update_attributes()
         if conn==True:
             self.calc_connectivity(scale=scale, tol=tol)
@@ -289,7 +301,8 @@ class Fragment:
                         coords_x=float(line[30:38].replace(' ',''))
                         coords_y=float(line[38:46].replace(' ',''))
                         coords_z=float(line[46:54].replace(' ',''))
-                        self.coords.append([coords_x,coords_y,coords_z])
+                        #self.coords.append([coords_x,coords_y,coords_z])
+                        self.coords = np.append([coords_x,coords_y,coords_z])
                         elem=line[76:78].replace(' ','').replace('\n','')
                         #elem=elem.replace('\n','')
                         #Option to use atomnamecolumn for element information instead of element-column
@@ -355,7 +368,8 @@ class Fragment:
                         else:
                             el=line.split()[0]
                             self.elems.append(reformat_element(el))
-                        self.coords.append([float(line.split()[1]), float(line.split()[2]), float(line.split()[3])])
+                        self.coords = np.append(self.coords,[float(line.split()[1]), float(line.split()[2]), float(line.split()[3])])
+                        #self.coords.append([float(line.split()[1]), float(line.split()[2]), float(line.split()[3])])
         if self.numatoms != len(self.coords):
             print("Number of atoms in header not equal to number of coordinate-lines. Check XYZ file!")
             exit()
@@ -368,6 +382,7 @@ class Fragment:
     # Get coordinates for specific atoms (from list of atom indices)
     def get_coords_for_atoms(self, atoms):
         #TODO: Generalize.
+        #TODO: np compatible?
         subcoords=[self.coords[i] for i in atoms]
         subelems=[self.elems[i] for i in atoms]
         return subcoords,subelems
@@ -609,6 +624,19 @@ class Fragment:
         self.update_attributes()
         self.connectivity=connectivity
         self.Centralmainfrag = Centralmainfrag
+
+
+
+def reformat_list_to_array(l):
+    #If np array already
+    if type(l) == np.ndarray:
+        return l
+    elif type(l) == list:
+        newl = np.array(l)
+        return newl
+
+    
+
 
 #TODO: Reorganize and move to dictionaries_lists ?
 #Elements and atom numbers
