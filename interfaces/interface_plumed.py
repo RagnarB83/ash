@@ -76,7 +76,7 @@ class plumed_ASH():
         else:
             print("bias_type not implemented")
             exit()
-    def run(self, coords=None, charges=None, forces=None, masses=None):
+    def run(self, coords=None, forces=None, masses=None):
         #box=array.array('d',[10,0,0,0,10,0,0,0,10])
         #virial=array.array('d',[0,0,0,0,0,0,0,0,0])
         #masses=array.array('d',[1,1])
@@ -88,12 +88,13 @@ class plumed_ASH():
 
         self.plumedobj.cmd("setStep",0)
         #Setting masses. Must be done after Step
-        self.plumedobj.cmd("setMasses", np.array(fragment.list_of_masses,dtype=np.float64) )
+        self.plumedobj.cmd("setMasses", np.array(self.fragment.list_of_masses,dtype=np.float64) )
 
         #self.plumedobj.cmd("setBox",box )
         
         #self.plumedobj.cmd("setCharges", charges )
-        self.plumedobj.cmd("setPositions", positions )
+        print("here")
+        self.plumedobj.cmd("setPositions", coords )
         self.plumedobj.cmd("setForces", forces )
         #p.cmd("setVirial", virial )
         
