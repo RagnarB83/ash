@@ -1,6 +1,7 @@
 import os
 import shutil
 import time
+import numpy as np
 
 from functions.functions_general import BC,blankline,print_time_rel
 import modules.module_coords

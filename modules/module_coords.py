@@ -302,7 +302,7 @@ class Fragment:
                         coords_y=float(line[38:46].replace(' ',''))
                         coords_z=float(line[46:54].replace(' ',''))
                         #self.coords.append([coords_x,coords_y,coords_z])
-                        self.coords = np.append([coords_x,coords_y,coords_z])
+                        self.coords = np.append([[coords_x,coords_y,coords_z]], axis=0)
                         elem=line[76:78].replace(' ','').replace('\n','')
                         #elem=elem.replace('\n','')
                         #Option to use atomnamecolumn for element information instead of element-column
@@ -381,9 +381,9 @@ class Fragment:
         self.energy=float(energy)
     # Get coordinates for specific atoms (from list of atom indices)
     def get_coords_for_atoms(self, atoms):
-        #TODO: Generalize.
-        #TODO: np compatible?
-        subcoords=[self.coords[i] for i in atoms]
+        #Now np compatible
+        #subcoords=[self.coords[i] for i in atoms]
+        subcoords=np.take(self.coords,atoms,axis=0)
         subelems=[self.elems[i] for i in atoms]
         return subcoords,subelems
     #Calculate connectivity (list of lists) of coords
@@ -631,6 +631,7 @@ def reformat_list_to_array(l):
     #If np array already
     if type(l) == np.ndarray:
         return l
+    #Reformat to np array
     elif type(l) == list:
         newl = np.array(l)
         return newl
@@ -694,7 +695,8 @@ def print_internal_coordinate_table(fragment,actatoms=None):
             actatoms=[]
         
         if len(actatoms) > 0:
-            chosen_coords=[fragment.coords[i] for i in actatoms]
+            #chosen_coords=[fragment.coords[i] for i in actatoms]
+            chosen_coords=np.take(fragment.coords,actatoms,axis=0)
             chosen_elems=[fragment.elems[i] for i in actatoms]
         else:
             chosen_coords=fragment.coords
@@ -776,7 +778,8 @@ def print_coords_for_atoms(coords,elems,members):
 #Todo: make part of Fragment class
 def write_XYZ_for_atoms(coords,elems,members,name):
     subset_elems=[elems[i] for i in members]
-    subset_coords=[coords[i] for i in members]
+    #subset_coords=[coords[i] for i in members]
+    subset_coords=np.take(coords,members,axis=0)
     with open(name+'.xyz', 'w') as ofile:
         ofile.write(str(len(subset_elems))+'\n')
         ofile.write("title"+'\n')
