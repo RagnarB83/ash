@@ -98,10 +98,14 @@ class plumed_ASH():
         
         #self.plumedobj.cmd("setCharges", charges )
         print("here")
+        self.plumedobj.cmd("setBox", np.zeros(9) )
+        self.plumedobj.cmd("setVirial", np.zeros(9) )
+
         self.plumedobj.cmd("setPositions", coords )
         self.plumedobj.cmd("setForces", forces )
-        #p.cmd("setVirial", virial )
+
         
+        print("Running calc")
         self.plumedobj.cmd("calc")
         
         #Initialize bias array
