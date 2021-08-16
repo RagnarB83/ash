@@ -61,14 +61,13 @@ class plumed_ASH():
             print("sfd:", sfd)
             self.plumedobj.cmd("readInputLine","d: {} ATOMS={}".format(self.colvar_type, self.colvar_indices_string))
             #p.cmd("readInputLine","RESTRAINT ARG=d AT=0 KAPPA=1")
-            self.plumedobj.cmd("readInputLine","METAD ...")
-            self.plumedobj.cmd("readInputLine","LABEL=MTD")
-            self.plumedobj.cmd("readInputLine","ARG=dihed PACE={} HEIGHT={} SIGMA={} FILE={} BIASFACTOR={} TEMP={}".format(pace_num, height, sigma, hills_file, biasfactor, temperature))
+            self.plumedobj.cmd("readInputLine","METAD LABEL=MTD ARG=dihed PACE={} HEIGHT={} SIGMA={} FILE={} BIASFACTOR={} TEMP={}".format(pace_num, 
+                height, sigma, hills_file, biasfactor, temperature))
             #p.cmd("WALKERS_N=SET_WALKERNUM")
             #p.cmd("WALKERS_ID=SET_WALKERID")
             #p.cmd("WALKERS_DIR=../")
             #p.cmd("WALKERS_RSTRIDE=10")
-            self.plumedobj.cmd("readInputLine","... METAD")
+            #self.plumedobj.cmd("readInputLine","... METAD")
             self.plumedobj.cmd("readInputLine","PRINT STRIDE={} ARG=d,MTD.bias FILE={}".format(stride_num, colvar_file))
         else:
             print("bias_type not implemented")
