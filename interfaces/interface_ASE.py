@@ -80,7 +80,7 @@ def Dynamics_ASE(fragment=None, theory=None, temperature=300, timestep=None, the
             self.parameters={}
             self.atoms=None
             self.forces=[]
-            self.plumed=plumed
+            self.plumedobj=plumed
         def get_potential_energy(self, atomsobj):
             return self.potenergy
         def get_forces(self, atomsobj):
@@ -116,10 +116,10 @@ def Dynamics_ASE(fragment=None, theory=None, temperature=300, timestep=None, the
             print("potenergy:", self.potenergy)
             print("self.forces:", self.forces)
             #DO PLUMED-STEP HERE
-            if self.plumed!=None:
+            if self.plumedobj!=None:
                 print("Plumed active.")
                 print("Calling Plumed")
-                energy,forces=plumed.run(coords=fragment.coords, forces=self.forces, masses=None)
+                energy,forces=self.plumedobj.run(coords=fragment.coords, forces=self.forces, masses=None)
                 print("energy:", energy)
                 print("forces:", forces)
                 exit()

@@ -46,6 +46,9 @@ class plumed_ASH():
         #self.plumedobj.cmd("setKbT", 1.)
         self.plumedobj.cmd("setNatoms",fragment.numatoms)
         self.plumedobj.cmd("setLogFile","test.log")
+        
+        self.plumedobj.cmd("setMasses", np.array(fragment.list_of_masses,dtype=np.float64) )
+
         self.plumedobj.cmd("init")
         
         #Units: length set to Angstrom and time to ps, energy in hartree
@@ -77,15 +80,15 @@ class plumed_ASH():
         #virial=array.array('d',[0,0,0,0,0,0,0,0,0])
         #masses=array.array('d',[1,1])
         #NOTE: Only set masses, charges etc. once ?
-        masses=np.array(fragment.list_of_masses,dtype=np.float64)
-        charges=array.array('d',[0,0])
-        forces=array.array('d',[0,0,0,0,0,0])
-        positions=array.array('d',[0,0,0,1,2,3])
+        #masses=np.array(fragment.list_of_masses,dtype=np.float64)
+        #charges=array.array('d',[0,0])
+        #forces=array.array('d',[0,0,0,0,0,0])
+        #positions=array.array('d',[0,0,0,1,2,3])
 
         self.plumedobj.cmd("setStep",0)
         #self.plumedobj.cmd("setBox",box )
-        self.plumedobj.cmd("setMasses", masses )
-        self.plumedobj.cmd("setCharges", charges )
+        
+        #self.plumedobj.cmd("setCharges", charges )
         self.plumedobj.cmd("setPositions", positions )
         self.plumedobj.cmd("setForces", forces )
         #p.cmd("setVirial", virial )
