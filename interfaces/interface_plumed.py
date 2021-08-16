@@ -128,7 +128,6 @@ class plumed_ASH():
         print("virial:", virial)
         print("coords", coords)
         
-        exit()
         #NOTE: Return bias or modified forces?
         
         return bias
