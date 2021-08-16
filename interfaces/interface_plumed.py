@@ -61,7 +61,7 @@ class plumed_ASH():
             print("sfd:", sfd)
             self.plumedobj.cmd("readInputLine","d: {} ATOMS={}".format(self.colvar_type, self.colvar_indices_string))
             #p.cmd("readInputLine","RESTRAINT ARG=d AT=0 KAPPA=1")
-            self.plumedobj.cmd("readInputLine","METAD LABEL=MTD ARG=dihed PACE={} HEIGHT={} SIGMA={} FILE={} BIASFACTOR={} TEMP={}".format(pace_num, 
+            self.plumedobj.cmd("readInputLine","METAD LABEL=MTD ARG=d PACE={} HEIGHT={} SIGMA={} FILE={} BIASFACTOR={} TEMP={}".format(pace_num, 
                 height, sigma, hills_file, biasfactor, temperature))
             #p.cmd("WALKERS_N=SET_WALKERNUM")
             #p.cmd("WALKERS_ID=SET_WALKERID")
