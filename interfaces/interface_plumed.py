@@ -47,9 +47,13 @@ class plumed_ASH():
         self.plumedobj.cmd("setNatoms",fragment.numatoms)
         self.plumedobj.cmd("setLogFile","test.log")
         
+        #Initialize object
+        self.plumedobj.cmd("init")
+
+        #Setting masses
         self.plumedobj.cmd("setMasses", np.array(fragment.list_of_masses,dtype=np.float64) )
 
-        self.plumedobj.cmd("init")
+
         
         #Units: length set to Angstrom and time to ps, energy in hartree
         self.plumedobj.cmd("readInputLine","UNITS LENGTH=A TIME=ps ENERGY=Ha")
