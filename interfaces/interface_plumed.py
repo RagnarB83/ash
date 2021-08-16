@@ -6,8 +6,14 @@ import numpy as np
 
 class plumed_ASH():
     def __init__(self, path_to_plumed_kernel=None, bias_type="1D_MTD", fragment=None, theory=None, colvar_type=None, colvar_indices=None,
-               temperature=300.0, hills_file="HILLS", colvar_file="COLVAR", height=None, sigma=None, biasfactor=None,
+               temperature=300.0, hills_file="HILLS", colvar_file="COLVAR", height=None, sigma=None, biasfactor=None, timestep=None,
                stride_num=10, pace_num=500):
+        
+        if timestep==None:
+            print("timestep= needs to be provided to plumed object")
+            exit()
+
+        
         if path_to_plumed_kernel == None:
             print("plumed_MD requires path_to_plumed_kernel argument to be set")
             print("Should point to: /path/to/libplumedKernel.so")
@@ -45,8 +51,9 @@ class plumed_ASH():
         
         #Basic settings
         self.plumedobj.cmd("setMDEngine","python")
-        #Needed?
-        #self.plumedobj.cmd("setTimestep", 1.)
+        #Timestep needs to be set
+        self.plumedobj.cmd("setTimestep", timestep)
+        #Not sure about KbT
         #self.plumedobj.cmd("setKbT", 1.)
         self.plumedobj.cmd("setNatoms",fragment.numatoms)
         self.plumedobj.cmd("setLogFile","test.log")
