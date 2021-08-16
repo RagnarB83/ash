@@ -109,16 +109,22 @@ def Dynamics_ASE(fragment=None, theory=None, temperature=300, timestep=None, the
             #Copy ASE coords into ASH fragment
             self.fragment.coords=copy.copy(atomsobj.positions)
             #print("Current coordinates:", self.fragment.coords)
+            #Calculate E+G
             energy, gradient = Singlepoint(theory=self.theory, fragment=self.fragment, Grad=True)
             self.potenergy=energy*constants.hartoeV
             self.forces=-gradient* units.Hartree / units.Bohr
-            
-            #DO PLUMED-STEP HERE????
-            #Take 
+            print("potenergy:", self.potenergy)
+            print("self.forces:", self.forces)
+            #DO PLUMED-STEP HERE
             if self.plumed!=None:
+                print("Plumed active.")
+                print("Calling Plumed")
+                energy,forces=plumed.run(coords=fragment.coords, forces=self.forces, masses=None)
+                print("energy:", energy)
+                print("forces:", forces)
+                exit()
                 #self.potenergy, self.forces = plumed_ash(energy,forces)
                 #energy, forces = plumedlib.cv_calculation(istep, pos, vel, box, jobforces, jobenergy)
-                pass
             
             
             print("Done with ASHcalc get_forces")
