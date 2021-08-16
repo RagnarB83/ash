@@ -100,22 +100,26 @@ class plumed_ASH():
         
         #self.plumedobj.cmd("setCharges", charges )
         print("here")
-        self.plumedobj.cmd("setBox", np.zeros(9) )
-        self.plumedobj.cmd("setVirial", np.zeros(9) )
+        box=np.zeros(9)
+        virial=np.zeros(9)
+        self.plumedobj.cmd("setBox", box )
+        self.plumedobj.cmd("setVirial", virial )
 
         self.plumedobj.cmd("setPositions", coords )
         self.plumedobj.cmd("setForces", forces )
-
+        
         
         print("Running calc")
         self.plumedobj.cmd("calc")
         print("Calc done")
-        #Initialize bias array
         bias = np.zeros((1),dtype=np.float64)
         self.plumedobj.cmd("getBias", bias )
+        #Initialize bias array
         
         print("forces are now:", forces)
         print("bias:", bias)
+        print("virial:", virial)
+        print("coords", coords)
         
         exit()
         #NOTE: Return bias or modified forces?
