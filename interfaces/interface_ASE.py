@@ -119,7 +119,7 @@ def Dynamics_ASE(fragment=None, theory=None, temperature=300, timestep=None, the
             if self.plumedobj!=None:
                 print("Plumed active.")
                 print("Calling Plumed")
-                energy,forces=self.plumedobj.run(coords=fragment.coords, forces=self.forces, masses=None)
+                energy,forces=self.plumedobj.run(coords=fragment.coords, forces=self.forces)
                 print("energy:", energy)
                 print("forces:", forces)
                 exit()
