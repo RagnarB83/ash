@@ -107,11 +107,10 @@ class plumed_ASH():
         
         print("Running calc")
         self.plumedobj.cmd("calc")
-        
+        print("Calc done")
         #Initialize bias array
         bias = np.zeros((1),dtype=np.float64)
         self.plumedobj.cmd("getBias", bias )
-        bias=array.array('d',[0])
         
         print("forces are now:", forces)
         print("bias:", bias)
