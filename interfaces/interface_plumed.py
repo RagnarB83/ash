@@ -49,7 +49,7 @@ class plumed_ASH():
         self.plumedobj.cmd("init")
         
         #Units: length set to Angstrom and time to ps, energy in hartree
-        self.plumedobj.cmd("UNITS LENGTH=A TIME=ps ENERGY=Ha")
+        self.plumedobj.cmd("readInputLine","UNITS LENGTH=A TIME=ps ENERGY=Ha")
         
         
         if bias_type == "1D_MTD":
@@ -58,17 +58,17 @@ class plumed_ASH():
             #biasfactor=6.0
             #1D metadynamics
             self.plumedobj.cmd("readInputLine","d: {} ATOMS={}".format(self.colvar_type, self.colvar_indices_string))
-            self.plumedobj.cmd("")
+            self.plumedobj.cmd("readInputLine",)
             #p.cmd("readInputLine","RESTRAINT ARG=d AT=0 KAPPA=1")
-            self.plumedobj.cmd("METAD ...")
-            self.plumedobj.cmd("LABEL=MTD")
-            self.plumedobj.cmd("ARG=dihed PACE={} HEIGHT={} SIGMA={} FILE={} BIASFACTOR={} TEMP={}".format(pace_num, height, sigma, hills_file, biasfactor, temperature))
+            self.plumedobj.cmd("readInputLine","METAD ...")
+            self.plumedobj.cmd("readInputLine","LABEL=MTD")
+            self.plumedobj.cmd("readInputLine","ARG=dihed PACE={} HEIGHT={} SIGMA={} FILE={} BIASFACTOR={} TEMP={}".format(pace_num, height, sigma, hills_file, biasfactor, temperature))
             #p.cmd("WALKERS_N=SET_WALKERNUM")
             #p.cmd("WALKERS_ID=SET_WALKERID")
             #p.cmd("WALKERS_DIR=../")
             #p.cmd("WALKERS_RSTRIDE=10")
-            self.plumedobj.cmd("... METAD")
-            self.plumedobj.cmd("PRINT STRIDE={} ARG=d,MTD.bias FILE={}".format(stride_num, colvar_file))
+            self.plumedobj.cmd("readInputLine","... METAD")
+            self.plumedobj.cmd("readInputLine","PRINT STRIDE={} ARG=d,MTD.bias FILE={}".format(stride_num, colvar_file))
         else:
             print("bias_type not implemented")
             exit()
