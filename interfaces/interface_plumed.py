@@ -92,7 +92,7 @@ class plumed_ASH():
 
         self.plumedobj.cmd("setStep",0)
         #Setting masses. Must be done after Step
-        self.plumedobj.cmd("setMasses", np.array(self.masses)
+        self.plumedobj.cmd("setMasses", np.array(self.masses))
 
         #self.plumedobj.cmd("setBox",box )
         
