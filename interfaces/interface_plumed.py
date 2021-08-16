@@ -60,7 +60,6 @@ class plumed_ASH():
             sfd="readInputLine","d: {} ATOMS={}".format(self.colvar_type, self.colvar_indices_string)
             print("sfd:", sfd)
             self.plumedobj.cmd("readInputLine","d: {} ATOMS={}".format(self.colvar_type, self.colvar_indices_string))
-            self.plumedobj.cmd("readInputLine",)
             #p.cmd("readInputLine","RESTRAINT ARG=d AT=0 KAPPA=1")
             self.plumedobj.cmd("readInputLine","METAD ...")
             self.plumedobj.cmd("readInputLine","LABEL=MTD")
