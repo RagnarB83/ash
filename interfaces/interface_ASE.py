@@ -14,7 +14,7 @@ from modules.module_singlepoint import Singlepoint
 
 def Dynamics_ASE(fragment=None, theory=None, temperature=300, timestep=None, thermostat=None, simulation_steps=None, simulation_time=None,
                  barostat=None, trajectoryname="Trajectory_ASE", traj_frequency=1, coupling_freq=0.002, frozen_atoms=None, frozen_bonds=None,
-                 frozen_angles=None, frozen_dihedrals=None):
+                 frozen_angles=None, frozen_dihedrals=None, plumed_object=None):
     module_init_time = time.time()
     print_line_with_mainheader("ASE MOLECULAR DYNAMICS")
     if frozen_atoms==None: frozen_atoms=[]
@@ -71,7 +71,7 @@ def Dynamics_ASE(fragment=None, theory=None, temperature=300, timestep=None, the
         pass
 
     class ASHcalc(Calculator):
-        def __init__(self, fragment=None, theory=None, plumed=False):
+        def __init__(self, fragment=None, theory=None, plumed=None):
             self.gradientcalls=0
             self.fragment=fragment
             self.theory=theory
@@ -115,7 +115,7 @@ def Dynamics_ASE(fragment=None, theory=None, temperature=300, timestep=None, the
             
             #DO PLUMED-STEP HERE????
             #Take 
-            if self.plumed==True:
+            if self.plumed!=None:
                 #self.potenergy, self.forces = plumed_ash(energy,forces)
                 #energy, forces = plumedlib.cv_calculation(istep, pos, vel, box, jobforces, jobenergy)
                 pass
@@ -134,7 +134,7 @@ def Dynamics_ASE(fragment=None, theory=None, temperature=300, timestep=None, the
 
     #ASH calculator for ASE
     print("Creating ASH-ASE calculator")
-    calc= ASHcalc(fragment=fragment, theory=theory)
+    calc= ASHcalc(fragment=fragment, theory=theory, plumed=plumed_object)
     atoms.calc = calc
 
     print(atoms)

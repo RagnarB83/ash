@@ -5,11 +5,11 @@ import numpy as np
 #PLUMED_ASH class
 
 class plumed_ASH():
-    def __init__(self, path_to_plumed_library=None, bias_type="1D_MTD", fragment=None, theory=None, colvar_type=None, colvar_indices=None,
+    def __init__(self, path_to_plumed_kernel=None, bias_type="1D_MTD", fragment=None, theory=None, colvar_type=None, colvar_indices=None,
                temperature=300.0, hills_file="HILLS", colvar_file="COLVAR", height=None, sigma=None, biasfactor=None,
                stride_num=10, pace_num=500):
-        if path_to_plumed_library == None:
-            print("plumed_MD requires path_to_plumed_library argument to be set")
+        if path_to_plumed_kernel == None:
+            print("plumed_MD requires path_to_plumed_kernel argument to be set")
             print("Should point to: /path/to/libplumedKernel.so")
             exit()
         try:
@@ -36,7 +36,7 @@ class plumed_ASH():
 
         #os.environ["PLUMED_KERNEL"]=path_to_plumed_library
         #p=plumed.Plumed()
-        self.plumedobj=self.plumed.Plumed(kernel=path_to_plumed_library)
+        self.plumedobj=self.plumed.Plumed(kernel=path_to_plumed_kernel)
         
         
         #Basic settings
