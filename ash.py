@@ -83,6 +83,8 @@ from interfaces.interface_knarr import NEB
 #ASE-Dynamics
 from interfaces.interface_ASE import Dynamics_ASE
 
+#Plumed interface
+from interfaces.interface_plumed import plumed_ASH
 
 #Solvation
 #NOTE: module_solvation.py or module_solvation2.py To be cleaned up

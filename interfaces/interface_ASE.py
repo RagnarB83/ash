@@ -1,26 +1,28 @@
 import numpy as np
 import time
 import os
+import copy
 
 
 import constants
 from functions.functions_general import print_line_with_mainheader, print_time_rel
 from modules.module_singlepoint import Singlepoint
-#Interface to ASE
 
-#Function to load whole AS
-#def load_ASE():
-#    try:
-#        import ase
-#    except:
-#        print("problem importing ASE")
-#        exit()
+
+#Interface to limited parts of ASE
+
 
 def Dynamics_ASE(fragment=None, theory=None, temperature=300, timestep=None, thermostat=None, simulation_steps=None, simulation_time=None,
-                 barostat=None, trajectoryname="Trajectory_ASE", traj_frequency=1, coupling_freq=0.002):
+                 barostat=None, trajectoryname="Trajectory_ASE", traj_frequency=1, coupling_freq=0.002, frozen_atoms=None, frozen_bonds=None,
+                 frozen_angles=None, frozen_dihedrals=None):
     module_init_time = time.time()
     print_line_with_mainheader("ASE MOLECULAR DYNAMICS")
+    if frozen_atoms==None: frozen_atoms=[]
+    if frozen_bonds==None: frozen_bonds=[]
+    if frozen_angles==None: frozen_angles=[]
+    if frozen_dihedrals==None: frozen_dihedrals=[]
     try:
+        from ase.constraints import FixAtoms, FixBondLengths, FixInternals
         from ase.md.velocitydistribution import MaxwellBoltzmannDistribution
         from ase.md.verlet import VelocityVerlet
         from ase.md.andersen import Andersen
@@ -53,7 +55,12 @@ def Dynamics_ASE(fragment=None, theory=None, temperature=300, timestep=None, the
     print("Temperature: {} K".format(temperature))
     print("")
     print("Trajectory write frequency:", traj_frequency)
-
+    print("Number of frozen atoms:", len(frozen_atoms))
+    print("Number of frozen bonds:", len(frozen_bonds))
+    if len(frozen_atoms) < 50:
+        print("Frozen atoms", frozen_atoms)
+    if len(frozen_bonds) < 50:
+        print("Frozen bonds", frozen_bonds)
     #Delete old stuff
     print("Removing old trajectory file if present")
     try:
@@ -64,15 +71,16 @@ def Dynamics_ASE(fragment=None, theory=None, temperature=300, timestep=None, the
         pass
 
     class ASHcalc(Calculator):
-        def __init__(self, fragment=None, theory=None):
+        def __init__(self, fragment=None, theory=None, plumed=False):
             self.gradientcalls=0
             self.fragment=fragment
             self.theory=theory
-            self.dummycall=False
             self.results={}
             self.name='ash'
             self.parameters={}
             self.atoms=None
+            self.forces=[]
+            self.plumed=plumed
         def get_potential_energy(self, atomsobj):
             return self.potenergy
         def get_forces(self, atomsobj):
@@ -82,24 +90,40 @@ def Dynamics_ASE(fragment=None, theory=None, temperature=300, timestep=None, the
             print("called ASHcalc get_forces")
             #print("atomsobj:", atomsobj)
             #print(atoms.__dict__)
-            print("Here. dummycall:", self.dummycall)
-            if self.dummycall==True:
-                self.dummycall=False
-                print("Returning old forces")
-                return self.forces
-            else:
-                print("will now calculate new forces")
-                self.gradientcalls+=1
-                #New coordinates from ASE atomsobj
-                #Updating ASH fragment
-                self.fragment.coords=atomsobj.positions
-                #print("Current coordinates:", self.fragment.coords)
-                energy, gradient = Singlepoint(theory=self.theory, fragment=self.fragment, Grad=True)
-                self.potenergy=energy*constants.hartoeV
-                self.forces=-gradient* units.Hartree / units.Bohr
-                print("Done with ASHcalc get_forces")
-                self.dummycall=True
+            #silly. TODO: replace with coords comparison instead
+            print("atomsobj.get_positions():", atomsobj.get_positions())
+            print("fragment.coords:", fragment.coords)
+            # Check if coordinates have changed. If not, return old forces
+            if np.array_equal(atomsobj.get_positions(), fragment.coords) == True:
+                #coordinates have not changed
+                print("Same coords.")
+                if len(self.forces)==0:
+                    print("No forces available (1st step?). Will do calulation")
+                else:
+                    print("Returning old forces")
+                    return self.forces
+            print("Will calculate new forces")
+            
+            self.gradientcalls+=1
+
+            #Copy ASE coords into ASH fragment
+            self.fragment.coords=copy.copy(atomsobj.positions)
+            #print("Current coordinates:", self.fragment.coords)
+            energy, gradient = Singlepoint(theory=self.theory, fragment=self.fragment, Grad=True)
+            self.potenergy=energy*constants.hartoeV
+            self.forces=-gradient* units.Hartree / units.Bohr
+            
+            #DO PLUMED-STEP HERE????
+            #Take 
+            if self.plumed==True:
+                #self.potenergy, self.forces = plumed_ash(energy,forces)
+                #energy, forces = plumedlib.cv_calculation(istep, pos, vel, box, jobforces, jobenergy)
+                pass
+            
+            
+            print("Done with ASHcalc get_forces")
             return self.forces
+        
     #Option 2: Dummy ASE class where we create the attributes and methods we want
     #Too complicated
 
@@ -115,6 +139,39 @@ def Dynamics_ASE(fragment=None, theory=None, temperature=300, timestep=None, the
 
     print(atoms)
     print(atoms.__dict__)
+
+    #CONSTRAINTS AND FROZEN ATOMS
+    #Frozen atoms
+    print("Adding possible constraints")
+    all_constraints=[]
+    if len(frozen_atoms) > 0:
+        print("Freezing atoms")
+        frozenatom_cons = FixAtoms(indices=frozen_atoms)
+        all_constraints.append(frozenatom_cons)
+    #Constraints
+    
+    if len(frozen_bonds) > 0:
+        print("Freezing bonds")
+        frozenbondlength_cons = FixBondLengths(frozen_bonds)
+        all_constraints.append(frozenbondlength_cons)
+    #NOTE: Angles and dihedrals are not tested!
+    if len(frozen_angles) > 0:
+        print("Freezing angles")
+        for angle in frozen_angles:
+            angle1 = [atoms.get_angle(*angle), angle]
+            frozenangle_cons = FixInternals(angles_deg=[angle1])
+            all_constraints.append(frozenangle_cons)
+    if len(frozen_dihedrals) > 0:
+        print("Freezing dihedrals")
+        for dihedral in frozen_dihedrals:
+            dihedral1 = [atoms.get_angle(*dihedral), dihedral]
+            frozendihedral_cons = FixInternals(angles_deg=[dihedral1])
+            all_constraints.append(frozendihedral_cons)
+    #Adding all constraints
+    atoms.set_constraint(all_constraints)
+    print("Printing ASE atoms object:", atoms.__dict__)
+    
+    
     
     # Set the momenta corresponding to T=300K
     print("Calling MaxwellBoltzmannDistribution")
@@ -139,10 +196,7 @@ def Dynamics_ASE(fragment=None, theory=None, temperature=300, timestep=None, the
     else:
         print("Unknown thermostat/barostat. Exiting")
         exit()
-    #https://wiki.fysik.dtu.dk/ase/tutorials/md/md.html
 
-    print(dyn.__dict__)
-    #exit()
 
     def printenergy(a):
         """Function to print the potential, kinetic and total energy"""
@@ -154,9 +208,9 @@ def Dynamics_ASE(fragment=None, theory=None, temperature=300, timestep=None, the
     def print_step(a=atoms):
         print("-"*30)
         print("Step ", a.calc.gradientcalls)
-        print("Pot. Energy:", a.get_potential_energy())
-        print("Kin. Energy:", a.get_kinetic_energy())
-        print("Total energy:", a.get_total_energy())
+        print("Pot. Energy (eV):", a.get_potential_energy())
+        print("Kin. Energy (eV):", a.get_kinetic_energy())
+        print("Total energy (eV):", a.get_total_energy())
         print("Temperature:", a.get_temperature(), "K" )
         print("-"*30)
     def write_traj(a=atoms, trajname=trajectoryname):

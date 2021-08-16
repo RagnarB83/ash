@@ -284,6 +284,7 @@ class Fragment:
     def read_xyzfile(self,filename, scale=None, tol=None, readchargemult=False,conncalc=True):
         if self.printlevel >= 2:
             print("Reading coordinates from XYZfile {} into fragment".format(filename))
+        coords=[]
         with open(filename) as f:
             for count,line in enumerate(f):
                 if count == 0:
@@ -303,12 +304,13 @@ class Fragment:
                         else:
                             el=line.split()[0]
                             self.elems.append(reformat_element(el))
-                        self.coords = np.append(self.coords,[float(line.split()[1]), float(line.split()[2]), float(line.split()[3])])
-                        #self.coords.append([float(line.split()[1]), float(line.split()[2]), float(line.split()[3])])
+                        #self.coords = np.append(self.coords,[float(line.split()[1]), float(line.split()[2]), float(line.split()[3])])
+                        coords.append([float(line.split()[1]), float(line.split()[2]), float(line.split()[3])])
+        #Convert to numpy
+        self.coords=reformat_list_to_array(coords)
         if self.numatoms != len(self.coords):
             print("Number of atoms in header not equal to number of coordinate-lines. Check XYZ file!")
             exit()
-            
         self.update_attributes()
         if conncalc is True:
             self.calc_connectivity(scale=scale, tol=tol)
