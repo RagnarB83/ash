@@ -18,6 +18,10 @@ class plumed_ASH():
             print("Found no plumed library. Install via: pip install plumed")
             exit()
         self.plumed=plumed
+        
+        #Store masses
+        self.masses=np.array(fragment.list_of_masses,dtype=np.float64))
+        
         if colvar_type=="distance" or colvar_type=="bondlength":
             self.colvar_type="DISTANCE"
         elif colvar_type=="torsion" or colvar_type=="dihedral":
@@ -88,7 +92,7 @@ class plumed_ASH():
 
         self.plumedobj.cmd("setStep",0)
         #Setting masses. Must be done after Step
-        self.plumedobj.cmd("setMasses", np.array(self.fragment.list_of_masses,dtype=np.float64) )
+        self.plumedobj.cmd("setMasses", np.array(self.masses)
 
         #self.plumedobj.cmd("setBox",box )
         
