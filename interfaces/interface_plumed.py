@@ -30,8 +30,8 @@ class plumed_ASH():
             print("Specify colvar_type argumentt.")
             print("Options: distance, angle, torsion, rmsd")
             exit()
-        #Atom indices to text-string
-        self.colvar_indices_string=','.join(map(str, colvar_indices))
+        #Change 0 to 1 basedindexing and converting to text-string
+        self.colvar_indices_string=','.join(map(str, [i+1 for i in colvar_indices]))
 
 
         #os.environ["PLUMED_KERNEL"]=path_to_plumed_library
