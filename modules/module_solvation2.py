@@ -810,8 +810,8 @@ def Polsnapshotcalc(args):
     snap_frag = ash.Fragment(elems=elems, coords=coords)
     # QM and PE regions
     solute_elems = [elems[i] for i in solvsphere.soluteatomsA]
-    solute_coords = [coords[i] for i in solvsphere.soluteatomsA]
-
+    #solute_coords = [coords[i] for i in solvsphere.soluteatomsA]
+    solute_coords = np.take(coords,solvsphere.soluteatomsA,axis=0)
     # Defining QM and PE regions
     PEsolvshell = get_solvshell(solvsphere, snap_frag.elems, snap_frag.coords, LRPolRegion, solute_elems,
                                   solute_coords,

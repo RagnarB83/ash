@@ -4,7 +4,7 @@ fragedit.py
 
 """
 import sys
-
+import numpy as np
 #Standalone script to grab subcoordinates
 
 #Function to reformat element string to be correct('cu' or 'CU' become 'Cu')
@@ -210,11 +210,13 @@ except:
 if extraarg=="index1":
     print("!!Warning!!: using 1-based indexing as chosen by user")
     subcoords=[coords[i-1] for i in atomslist]
+    #subcoords = np.take(coords,atomslist,axis=0)
     subelems=[elems[i-1] for i in atomslist]
 else:
     print("!!Warning!!: assuming 0-based indexing by default")
     print("Do: fragedit.py fragfile atomslistfile index1  if you want to use 1-based indexing")
     subcoords=[coords[i] for i in atomslist]
+    #subcoords = np.take(coords,atomslist,axis=0)
     subelems=[elems[i] for i in atomslist]
 print("Grabbing XYZ coordinates from coordinatefile: {} for atom indices: {}".format(fragfile,atomslist))
 write_xyzfile(subelems,subcoords,"fragment")

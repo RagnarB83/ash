@@ -503,9 +503,9 @@ class Fragment:
     #Molcrys option:
     def add_centralfraginfo(self,list):
         self.Centralmainfrag = list
-    def write_xyzfile(self,xyzfilename="Fragment-xyzfile.xyz"):
+    def write_xyzfile(self,xyzfilename="Fragment-xyzfile.xyz", writemode='w'):
         #Energy written to XYZ title-line if present. Otherwise: None
-        with open(xyzfilename, 'w') as ofile:
+        with open(xyzfilename, writemode) as ofile:
             ofile.write(str(len(self.elems)) + '\n')
             if self.energy is None:
                 ofile.write("Energy: None" + '\n')
@@ -2015,7 +2015,8 @@ def QMregionfragexpand(fragment=None,initial_atoms=None, radius=None):
         print("Provide fragment, initial_atoms and radius keyword arguments to QMregionfragexpand!")
         exit()
     subsetelems = [fragment.elems[i] for i in initial_atoms]
-    subsetcoords=[fragment.coords[i]for i in initial_atoms ]
+    #subsetcoords=[fragment.coords[i]for i in initial_atoms ]
+    subsetcoords=np.take(fragment.coords,initial_atoms,axis=0)
     if len(fragment.connectivity) == 0:
         print("No connectivity found. Using slow way of finding nearby fragments...")
     atomlist=[]

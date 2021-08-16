@@ -80,6 +80,9 @@ from modules.module_polembed import PolEmbedTheory
 #Knarr
 from interfaces.interface_knarr import NEB
 
+#ASE-Dynamics
+from interfaces.interface_ASE import Dynamics_ASE
+
 
 #Solvation
 #NOTE: module_solvation.py or module_solvation2.py To be cleaned up

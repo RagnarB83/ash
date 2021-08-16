@@ -31,7 +31,6 @@ def Singlepoint(fragment=None, theory=None, Grad=False):
         exit(1)
     coords=fragment.coords
     elems=fragment.elems
-    print("x coords:", coords)
     # Run a single-point energy job with gradient
     if Grad ==True:
         print(BC.WARNING,"Doing single-point Energy+Gradient job on fragment. Formula: {} Label: {} ".format(fragment.prettyformula,fragment.label), BC.END)
