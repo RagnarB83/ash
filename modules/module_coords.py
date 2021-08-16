@@ -12,8 +12,6 @@ import settings_ash
 import constants
 import ash
 
-#import functions_molcrys
-
 # ASH Fragment class
 class Fragment:
     def __init__(self, coordsstring=None, fragfile=None, xyzfile=None, pdbfile=None, grofile=None, amber_inpcrdfile=None, amber_prmtopfile=None, chemshellfile=None, coords=None, elems=None, connectivity=None,
@@ -290,6 +288,7 @@ class Fragment:
 
         #TODO: Check. Are there different PDB formats?
         #used this: https://cupnet.net/pdb-format/
+        coords=[]
         try:
             with open(filename) as f:
                 for line in f:
@@ -301,8 +300,8 @@ class Fragment:
                         coords_x=float(line[30:38].replace(' ',''))
                         coords_y=float(line[38:46].replace(' ',''))
                         coords_z=float(line[46:54].replace(' ',''))
-                        #self.coords.append([coords_x,coords_y,coords_z])
-                        self.coords = np.append([[coords_x,coords_y,coords_z]], axis=0)
+                        coords.append([coords_x,coords_y,coords_z])
+                        #self.coords = np.append([[coords_x,coords_y,coords_z]], axis=0)
                         elem=line[76:78].replace(' ','').replace('\n','')
                         #elem=elem.replace('\n','')
                         #Option to use atomnamecolumn for element information instead of element-column
@@ -334,6 +333,9 @@ class Fragment:
         except FileNotFoundError:
             print("File {} does not exist!".format(filename))
             exit()
+        #Create numpy array
+        self.coords = reformat_list_to_array(coords)
+        
         if len(elemcol) != len(self.coords):
             print("len coords", len(self.coords))
             print("len elemcol", len(elemcol))            
