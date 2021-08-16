@@ -57,6 +57,8 @@ class plumed_ASH():
             #sigma=0.35
             #biasfactor=6.0
             #1D metadynamics
+            sfd="readInputLine","d: {} ATOMS={}".format(self.colvar_type, self.colvar_indices_string)
+            print("sfd:", sfd)
             self.plumedobj.cmd("readInputLine","d: {} ATOMS={}".format(self.colvar_type, self.colvar_indices_string))
             self.plumedobj.cmd("readInputLine",)
             #p.cmd("readInputLine","RESTRAINT ARG=d AT=0 KAPPA=1")
