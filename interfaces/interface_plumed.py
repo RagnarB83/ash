@@ -128,6 +128,7 @@ class plumed_ASH():
         print("virial:", virial)
         print("coords", coords)
         
+        energy=999.9999
         #NOTE: Return bias or modified forces?
         
-        return bias
+        return energy,forces
