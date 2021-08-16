@@ -183,12 +183,7 @@ class Fragment:
     def get_atomindices_except_element(self,element):
         return [index for index,el in enumerate(self.elems) if el!=element]
     def delete_atom(self,atomindex):
-        self.coords=np.delete(self.coords,atomindex,axis=0)
-        #if type(self.coords) == np.ndarray:
-        #    self.coords=np.delete(self.coords,atomindex,axis=0)
-        #elif type(self.coords) == list:
-        #    self.coords.pop(atomindex)
-        
+        self.coords=np.delete(self.coords,atomindex,axis=0)        
         #Deleting from lists
         self.elems.pop(atomindex)
         self.atomcharges.pop(atomindex)
@@ -273,81 +268,19 @@ class Fragment:
             self.calc_connectivity(scale=scale, tol=tol)
         else:
             # Read connectivity list
-            print("Not reading connectivity from file")
+            print("Note: Not reading connectivity from file")
     #Read PDB file
     def read_pdbfile(self,filename,conncalc=True, scale=None, tol=None, use_atomnames_as_elements=False):
         if self.printlevel >= 2:
             print("Reading coordinates from PDBfile \"{}\" into fragment".format(filename))
-        residuelist=[]
-        #If elemcolumn found
-        elemcol=[]
-        #Not atomtype but atomname
-        #atom_name=[]
-        #atomindex=[]
-        residname=[]
 
-        #TODO: Check. Are there different PDB formats?
-        #used this: https://cupnet.net/pdb-format/
-        coords=[]
-        try:
-            with open(filename) as f:
-                for line in f:
-                    if 'ATOM ' in line or 'HETATM' in line:
-                        #atomindex=float(line[6:11].replace(' ',''))
-                        atom_name=line[12:16].replace(' ','')
-                        residname.append(line[17:20].replace(' ',''))
-                        residuelist.append(line[22:26].replace(' ',''))
-                        coords_x=float(line[30:38].replace(' ',''))
-                        coords_y=float(line[38:46].replace(' ',''))
-                        coords_z=float(line[46:54].replace(' ',''))
-                        coords.append([coords_x,coords_y,coords_z])
-                        #self.coords = np.append([[coords_x,coords_y,coords_z]], axis=0)
-                        elem=line[76:78].replace(' ','').replace('\n','')
-                        #elem=elem.replace('\n','')
-                        #Option to use atomnamecolumn for element information instead of element-column
-                        if use_atomnames_as_elements == True:
-                            elem_name=dictionaries_lists.atomtypes_dict[atom_name]
-                            elemcol.append(elem_name)
-                        else:
-                            if len(elem) != 0:
-                                if len(elem)==2:
-                                    #Making sure second elem letter is lowercase
-                                    #elemcol.append(elem[0]+elem[1].lower())
-                                    elemcol.append(reformat_element(elem))
-                                else:
-                                    elemcol.append(reformat_element(elem))
-                            else:
-                                print("While reading line:")
-                                print(line)
-                                print("No element found in element-column of PDB-file")
-                                print("Either fix element-column (columns 77-78) or try to use to read element-information from atomname-column:")
-                                print(" Fragment(pdbfile=\"X\", use_atomnames_as_elements=True) ")
-                                exit()
-                        #self.coords.append([float(line.split()[6]), float(line.split()[7]), float(line.split()[8])])
-                        #elemcol.append(line.split()[-1])
-                        #residuelist.append(line.split()[3])
-                        #atom_name.append(line.split()[3])
-                    #if 'HETATM' in line:
-                    #    print("HETATM line in file found. Please rename to ATOM")
-                    #    exit()
-        except FileNotFoundError:
-            print("File {} does not exist!".format(filename))
-            exit()
-        #Create numpy array
-        self.coords = reformat_list_to_array(coords)
+        self.elems, self.coords = read_pdbfile(filename)
         
-        if len(elemcol) != len(self.coords):
-            print("len coords", len(self.coords))
-            print("len elemcol", len(elemcol))            
-            print("did not find same number of elements as coordinates")
-            print("Need to define elements in some other way")
-            exit()
-        else:
-            self.elems=elemcol
         self.update_attributes()
         if conncalc is True:
             self.calc_connectivity(scale=scale, tol=tol)
     #Read XYZ file
+    #TODO: 
     def read_xyzfile(self,filename, scale=None, tol=None, readchargemult=False,conncalc=True):
         if self.printlevel >= 2:
             print("Reading coordinates from XYZfile {} into fragment".format(filename))
@@ -1365,6 +1298,76 @@ def conv_atomtypes_elems(atomtype):
             print("Atomtype: {} not recognized either as valid atomtype or element. Exiting".format(atomtype))
             print("You might have to modify the atomtype/element information in coordinate file you're reading in")
             exit()
+
+#READ PDBfile
+def read_pdbfile(filename):
+    residuelist=[]
+    #If elemcolumn found
+    elemcol=[]
+    #Not atomtype but atomname
+    #atom_name=[]
+    #atomindex=[]
+    residname=[]
+
+    #TODO: Check. Are there different PDB formats?
+    #used this: https://cupnet.net/pdb-format/
+    coords=[]
+    try:
+        with open(filename) as f:
+            for line in f:
+                if 'ATOM ' in line or 'HETATM' in line:
+                    #atomindex=float(line[6:11].replace(' ',''))
+                    atom_name=line[12:16].replace(' ','')
+                    residname.append(line[17:20].replace(' ',''))
+                    residuelist.append(line[22:26].replace(' ',''))
+                    coords_x=float(line[30:38].replace(' ',''))
+                    coords_y=float(line[38:46].replace(' ',''))
+                    coords_z=float(line[46:54].replace(' ',''))
+                    coords.append([coords_x,coords_y,coords_z])
+                    elem=line[76:78].replace(' ','').replace('\n','')
+                    #elem=elem.replace('\n','')
+                    #Option to use atomnamecolumn for element information instead of element-column
+                    if use_atomnames_as_elements == True:
+                        elem_name=dictionaries_lists.atomtypes_dict[atom_name]
+                        elemcol.append(elem_name)
+                    else:
+                        if len(elem) != 0:
+                            if len(elem)==2:
+                                #Making sure second elem letter is lowercase
+                                #elemcol.append(elem[0]+elem[1].lower())
+                                elemcol.append(reformat_element(elem))
+                            else:
+                                elemcol.append(reformat_element(elem))
+                        else:
+                            print("While reading line:")
+                            print(line)
+                            print("No element found in element-column of PDB-file")
+                            print("Either fix element-column (columns 77-78) or try to use to read element-information from atomname-column:")
+                            print(" Fragment(pdbfile=\"X\", use_atomnames_as_elements=True) ")
+                            exit()
+                    #self.coords.append([float(line.split()[6]), float(line.split()[7]), float(line.split()[8])])
+                    #elemcol.append(line.split()[-1])
+                    #residuelist.append(line.split()[3])
+                    #atom_name.append(line.split()[3])
+                #if 'HETATM' in line:
+                #    print("HETATM line in file found. Please rename to ATOM")
+                #    exit()
+    except FileNotFoundError:
+        print("File {} does not exist!".format(filename))
+        exit()
+    #Create numpy array
+    coords_np = reformat_list_to_array(coords)
+    
+    if len(elemcol) != len(coords):
+        print("len coords", len(coords))
+        print("len elemcol", len(elemcol))            
+        print("did not find same number of elements as coordinates")
+        print("Need to define elements in some other way")
+        exit()
+    else:
+        elems=elemcol
+    return elems, coords_np
+
 
 #Read GROMACS Gro coordinate file and box info
 #Read AMBERCRD file and coords and box info
