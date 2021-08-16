@@ -20,7 +20,7 @@ class plumed_ASH():
         self.plumed=plumed
         
         #Store masses
-        self.masses=np.array(fragment.list_of_masses,dtype=np.float64))
+        self.masses=np.array(fragment.list_of_masses,dtype=np.float64)
         
         if colvar_type=="distance" or colvar_type=="bondlength":
             self.colvar_type="DISTANCE"
