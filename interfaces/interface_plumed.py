@@ -57,7 +57,7 @@ class plumed_ASH():
         #Not sure about KbT
         self.plumedobj.cmd("setKbT", 2.478957)
         self.plumedobj.cmd("setNatoms",fragment.numatoms)
-        self.plumedobj.cmd("setLogFile","test.log")
+        self.plumedobj.cmd("setLogFile","plumed.log")
         
         #Initialize object
         self.plumedobj.cmd("init")
