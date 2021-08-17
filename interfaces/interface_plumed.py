@@ -53,6 +53,7 @@ class plumed_ASH():
         self.plumedobj.cmd("setMDEngine","python")
         #Timestep needs to be set
         self.plumedobj.cmd("setTimestep", timestep)
+        print("timestep:", timestep)
         #Not sure about KbT
         #self.plumedobj.cmd("setKbT", 1.)
         self.plumedobj.cmd("setNatoms",fragment.numatoms)
@@ -72,8 +73,6 @@ class plumed_ASH():
             #sigma=0.35
             #biasfactor=6.0
             #1D metadynamics
-            sfd="readInputLine","d: {} ATOMS={}".format(self.colvar_type, self.colvar_indices_string)
-            print("sfd:", sfd)
             self.plumedobj.cmd("readInputLine","d: {} ATOMS={}".format(self.colvar_type, self.colvar_indices_string))
             #p.cmd("readInputLine","RESTRAINT ARG=d AT=0 KAPPA=1")
             self.plumedobj.cmd("readInputLine","METAD LABEL=MTD ARG=d PACE={} HEIGHT={} SIGMA={} FILE={} BIASFACTOR={} TEMP={}".format(pace_num, 
@@ -87,7 +86,7 @@ class plumed_ASH():
         else:
             print("bias_type not implemented")
             exit()
-    def run(self, coords=None, forces=None):
+    def run(self, coords=None, forces=None, step=None):
         #box=array.array('d',[10,0,0,0,10,0,0,0,10])
         #virial=array.array('d',[0,0,0,0,0,0,0,0,0])
         #masses=array.array('d',[1,1])
@@ -99,7 +98,8 @@ class plumed_ASH():
         print("plumed run")
         print("coords:", coords)
         print("forces:", forces)
-        self.plumedobj.cmd("setStep",0)
+        print("step:", step)
+        self.plumedobj.cmd("setStep",step)
         #Setting masses. Must be done after Step
         self.plumedobj.cmd("setMasses", np.array(self.masses))
 
