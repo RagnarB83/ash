@@ -65,7 +65,7 @@ class plumed_ASH():
 
 
         #Units: length set to Angstrom and time to ps, energy in hartree
-        self.plumedobj.cmd("readInputLine","UNITS LENGTH=A TIME=ps ENERGY=Ha")
+        self.plumedobj.cmd("readInputLine","UNITS LENGTH=A TIME=ps")
         
         
         if bias_type == "1D_MTD":
