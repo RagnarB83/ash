@@ -54,24 +54,24 @@ class plumed_ASH():
         #p=plumed.Plumed()
         self.plumedobj=self.plumed.Plumed(kernel=path_to_plumed_kernel)
         
-        
         #Basic settings
-        self.plumedobj.cmd("setMDEngine","python")
+        self.plumed_settings=[]
+        self.plumed_settings.append("setMDEngine","python")
         #Timestep needs to be set
-        self.plumedobj.cmd("setTimestep", timestep)
+        self.plumed_settings.append("setTimestep", timestep)
         print("timestep:", timestep)
         #Not sure about KbT
-        self.plumedobj.cmd("setKbT", 2.478957)
-        self.plumedobj.cmd("setNatoms",fragment.numatoms)
-        self.plumedobj.cmd("setLogFile","plumed.log")
+        self.plumed_settings.append("setKbT", 2.478957)
+        self.plumed_settings.append("setNatoms",fragment.numatoms)
+        self.plumed_settings.append("setLogFile","plumed.log")
         
         #Initialize object
-        self.plumedobj.cmd("init")
+        self.plumed_settings.append("init")
 
 
 
-        #Units: length set to Angstrom and time to ps, energy in eV (ASE unit)
-        self.plumedobj.cmd("readInputLine","UNITS LENGTH=A ENERGY=eV TIME=ps")
+        #Units: length set to Angstrom (ASE unit) and time to ps, energy in eV (ASE unit)
+        self.plumed_settings.append("readInputLine","UNITS LENGTH=A ENERGY=eV TIME=ps")
         
         
         if bias_type == "1D_MTD":
@@ -79,19 +79,32 @@ class plumed_ASH():
             #sigma=0.35
             #biasfactor=6.0
             #1D metadynamics
-            self.plumedobj.cmd("readInputLine","d: {} ATOMS={}".format(self.colvar_type, self.colvar_indices_string))
+            self.plumed_settings.append("readInputLine","d: {} ATOMS={}".format(self.colvar_type, self.colvar_indices_string))
             #p.cmd("readInputLine","RESTRAINT ARG=d AT=0 KAPPA=1")
-            self.plumedobj.cmd("readInputLine","METAD LABEL=MTD ARG=d PACE={} HEIGHT={} SIGMA={} FILE={} BIASFACTOR={} TEMP={}".format(pace_num, 
+            self.plumed_settings.append("readInputLine","METAD LABEL=MTD ARG=d PACE={} HEIGHT={} SIGMA={} FILE={} BIASFACTOR={} TEMP={}".format(pace_num, 
                 height, sigma, hills_file, biasfactor, temperature))
             #p.cmd("WALKERS_N=SET_WALKERNUM")
             #p.cmd("WALKERS_ID=SET_WALKERID")
             #p.cmd("WALKERS_DIR=../")
             #p.cmd("WALKERS_RSTRIDE=10")
             #self.plumedobj.cmd("readInputLine","... METAD")
-            self.plumedobj.cmd("readInputLine","PRINT STRIDE={} ARG=d,MTD.bias FILE={}".format(stride_num, colvar_file))
+            self.plumed_settings.append("readInputLine","PRINT STRIDE={} ARG=d,MTD.bias FILE={}".format(stride_num, colvar_file))
         else:
             print("bias_type not implemented")
             exit()
+        
+        #Writing Plumed settings to file. NOTE: Only to keep a record of settings. Not read by Plumed
+        #Useful for analysis script/function.
+        plumedfile = open("plumed.in", "w")
+        
+        #Setting up Plumed input settings in Plumed object and writing also to file
+        for plumed_setting in self.plumed_settings:
+            self.plumedobj.cmd(plumed_setting)
+            plumedfile.write(plumed_setting+'\n')
+
+        plumedfile.close()
+
+        
     def run(self, coords=None, forces=None, step=None):
         #box=array.array('d',[10,0,0,0,10,0,0,0,10])
         #virial=array.array('d',[0,0,0,0,0,0,0,0,0])
