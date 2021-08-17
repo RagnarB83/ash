@@ -146,8 +146,8 @@ class plumed_ASH():
 #Metadynamics visualization tool
 
 def MTD_analyze(path_to_plumed=None, Plot_To_Screen=False, colvar_type=None, temperature=None,
-                CV1atoms=None, CV2atoms=None, read_plumed_inputfile=False):
-
+                CV1atoms=None, CV2atoms=None, read_plumed_inputfile=False, input_energy_unit='eV'):
+    #Energy-unit used by Plumed-ASH should be eV in general
     print_line_with_mainheader("Metadynamics Analysis Script")
     try:
         import matplotlib.pyplot as plt
@@ -391,8 +391,10 @@ def MTD_analyze(path_to_plumed=None, Plot_To_Screen=False, colvar_type=None, tem
         finalcvunit='Å'
     print("CV unit:", finalcvunit)
 
+    #Dict of energy conversions: Energy-unit to kcal/mol
+    energy_conversion_dict{'eV':23.060541945329334}
     # possibly conversion from kJ/mol to kcal/molt
-    energy_scaling=1
+    energy_scaling=energy_conversion_dict[input_energy_unit]
     #Possible nm to Ang conversion
     distance_scaling=1
 
@@ -533,11 +535,12 @@ def MTD_analyze(path_to_plumed=None, Plot_To_Screen=False, colvar_type=None, tem
     else:
         print("Unknown CV...oops...")
         exit()
-
+    print("final_rc:", final_rc)
     #Convert free energy from kJ/mol to kcal/mol
     free_energy_kcal=np.array(free_energy)/energy_scaling
+    print("free_energy_kcal:", free_energy_kcal)
     Relfreeenergy_kcal=free_energy_kcal-min(free_energy_kcal)
-
+    print("Relfreeenergy_kcal:", Relfreeenergy_kcal)
     ###################
     # Matplotlib part
     ###################
