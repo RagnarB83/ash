@@ -387,7 +387,7 @@ def MTD_analyze(path_to_plumed=None, Plot_To_Screen=False, colvar_type=None, tem
     print("CV:", CV)
     if CV =='Torsion' or CV=='Angle':
         finalcvunit='°'
-    elif CV == 'RMSD' or CV=='Distance'
+    elif CV == 'RMSD' or CV=='Distance':
         finalcvunit='Å'
     print("CV unit:", finalcvunit)
 
