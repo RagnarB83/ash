@@ -137,7 +137,7 @@ class plumed_ASH():
         energy=999.9999
         #NOTE: Return bias or modified forces?
         
-        return energy,forces
+        return
 
 
 #Metadynamics visualization tool

@@ -125,14 +125,14 @@ def Dynamics_ASE(fragment=None, theory=None, temperature=300, timestep=None, the
             self.potenergy=energy*constants.hartoeV
             self.forces=-gradient* units.Hartree / units.Bohr
             print("potenergy:", self.potenergy)
-            print("self.forces:", self.forces)
+            print("self.forces before plumed:", self.forces)
             #DO PLUMED-STEP HERE
             if self.plumedobj!=None:
                 print("Plumed active.")
                 print("Calling Plumed")
-                energy,forces=self.plumedobj.run(coords=fragment.coords, forces=self.forces, step=self.gradientcalls-1)
+                self.plumedobj.run(coords=fragment.coords, forces=self.forces, step=self.gradientcalls-1)
                 print("energy:", energy)
-                print("forces:", forces)
+                print("forces after plumed:", forces)
                 self.potenergy=energy
                 self.forces=forces
                 #self.potenergy, self.forces = plumed_ash(energy,forces)
