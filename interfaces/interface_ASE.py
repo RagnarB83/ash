@@ -17,6 +17,17 @@ def Dynamics_ASE(fragment=None, theory=None, temperature=300, timestep=None, the
                  frozen_angles=None, frozen_dihedrals=None, plumed_object=None):
     module_init_time = time.time()
     print_line_with_mainheader("ASE MOLECULAR DYNAMICS")
+    
+    #Delete old
+    try:
+        os.remove('md.log')
+    except:
+        pass
+    
+    
+    
+    
+    
     if frozen_atoms==None: frozen_atoms=[]
     if frozen_bonds==None: frozen_bonds=[]
     if frozen_angles==None: frozen_angles=[]
