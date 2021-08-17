@@ -70,8 +70,8 @@ class plumed_ASH():
 
 
 
-        #Units: length set to Angstrom and time to ps, energy in hartree
-        self.plumedobj.cmd("readInputLine","UNITS LENGTH=A TIME=ps")
+        #Units: length set to Angstrom and time to ps, energy in eV (ASE unit)
+        self.plumedobj.cmd("readInputLine","UNITS LENGTH=A ENERGY=eV TIME=ps")
         
         
         if bias_type == "1D_MTD":
@@ -102,8 +102,8 @@ class plumed_ASH():
         #forces=array.array('d',[0,0,0,0,0,0])
         #positions=array.array('d',[0,0,0,1,2,3])
         print("plumed run")
-        print("coords:", coords)
-        print("forces:", forces)
+        #print("coords:", coords)
+        #print("forces:", forces)
         print("step:", step)
         self.plumedobj.cmd("setStep",step)
         #Setting masses. Must be done after Step
@@ -129,10 +129,10 @@ class plumed_ASH():
         self.plumedobj.cmd("getBias", bias )
         #Initialize bias array
         
-        print("forces are now:", forces)
+       # print("forces are now:", forces)
         print("bias:", bias)
         print("virial:", virial)
-        print("coords", coords)
+        #print("coords", coords)
         
         energy=999.9999
         #NOTE: Return bias or modified forces?
