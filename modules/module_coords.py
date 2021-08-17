@@ -33,7 +33,8 @@ class Fragment:
             print("New ASH fragment object")
         self.energy = None
         self.elems=[]
-        self.coords=np.empty_like([],shape=(0,3))
+        #self.coords=np.empty_like([],shape=(0,3))
+        self.coords=np.zeros((0,3))
         self.connectivity=[]
         self.atomcharges = []
         self.atomtypes = []
@@ -146,16 +147,18 @@ class Fragment:
                 print("Fragment already contains coordinates")
                 print("Adding extra coordinates")
         coordslist=coordsstring.split('\n')
+        tempcoords=[]
         for count, line in enumerate(coordslist):
             if len(line)> 1:
                 self.elems.append(reformat_element(line.split()[0]))
                 #self.coords.append([float(line.split()[1]), float(line.split()[2]), float(line.split()[3])])
-                #Appending to numpy aray
+                #Appending to numpy array
                 clist= [float(line.split()[1]),float(line.split()[2]),float(line.split()[3])]
-                clist_np=reformat_list_to_array(clist)
-                self.coords = np.append(self.coords, [clist_np],axis=0)
-        print(self.elems)
-        print(self.coords)
+                tempcoords.append(clist)
+                #clist_np=reformat_list_to_array(clist)
+                #self.coords = np.append(self.coords, [clist_np],axis=0)
+        #Converting list of lists to numpy array
+        self.coords=reformat_list_to_array(tempcoords)
         self.label=''.join(self.elems)
         self.update_attributes()
         self.calc_connectivity(scale=scale, tol=tol)
@@ -172,7 +175,7 @@ class Fragment:
         if conn==True:
             self.calc_connectivity(scale=scale, tol=tol)
     def delete_coords(self):
-        self.coords=np.empty_like([],shape=(0,3))
+        self.coords=np.zeros((0,3))
         self.elems=[]
         self.connectivity=[]
     #Get list of atom-indices for specific elements
@@ -206,8 +209,10 @@ class Fragment:
         print(elems)
         print(type(elems))
         self.elems = self.elems+list(elems)
-        #self.coords = self.coords+coords
+        #coords must be list of lists
         self.coords = np.append(self.coords,coords, axis=0)
+        
+        
         self.update_attributes()
         if conn==True:
             self.calc_connectivity(scale=scale, tol=tol)
