@@ -385,12 +385,16 @@ def MTD_analyze(path_to_plumed=None, Plot_To_Screen=False, colvar_type=None, tem
         CV=colvar_type
         temperature=temperature
     print("CV:", CV)
-    print("CV unit:", cvunit)
+    if CV =='Torsion' or CV=='Angle':
+        finalcvunit='°'
+    elif CV == 'RMSD' or CV=='Distance'
+        finalcvunit='Å'
+    print("CV unit:", finalcvunit)
 
     # possibly conversion from kJ/mol to kcal/molt
-    energy_scaling=4.184
+    energy_scaling=1
     #Possible nm to Ang conversion
-    distance_scaling=10
+    distance_scaling=1
 
 
     #READ HILLS. Only necessary for Well-Tempered Metadynamics and plotting of Gaussian height
@@ -548,7 +552,7 @@ def MTD_analyze(path_to_plumed=None, Plot_To_Screen=False, colvar_type=None, tem
         #Subplot 1: Free energy surface. From fes.dat via HILLS file (single-walker) or HILLS.X files (multiple-walker)
         plt.subplot(2, 2, 1)
         plt.gca().set_title('Free energy vs. CV', fontsize='small', style='italic', fontweight='bold')
-        plt.xlabel('{} ({})'.format(CV,cvunit), fontsize='small')
+        plt.xlabel('{} ({})'.format(CV,finalcvunit), fontsize='small')
         plt.ylabel('Energy (kcal/mol)', fontsize='small')
         if CV=='Torsion':
             plt.xlim([-180,180])
@@ -562,7 +566,7 @@ def MTD_analyze(path_to_plumed=None, Plot_To_Screen=False, colvar_type=None, tem
         plt.subplot(2, 2, 2)
         plt.gca().set_title('CV vs. time', fontsize='small', style='italic', fontweight='bold')
         plt.xlabel('Time (ps)', fontsize='small')
-        plt.ylabel('{} ({})'.format(CV,cvunit), fontsize='small')
+        plt.ylabel('{} ({})'.format(CV,finalcvunit), fontsize='small')
         #New: Using first timelist to get x-axis limit
         plt.xlim([0,max(time_list[0])+5])
 
@@ -575,7 +579,7 @@ def MTD_analyze(path_to_plumed=None, Plot_To_Screen=False, colvar_type=None, tem
         plt.subplot(2, 2, 3)
         #plt.title.set_text('Bias potential')
         plt.gca().set_title('Bias potential', fontsize='small', style='italic', fontweight='bold')
-        plt.xlabel('{} ({})'.format(CV,cvunit), fontsize='small')
+        plt.xlabel('{} ({})'.format(CV,finalcvunit), fontsize='small')
         plt.ylabel('Bias potential (kcal/mol)', fontsize='small')
         if CV=='Torsion':
             plt.xlim([-180,180])
