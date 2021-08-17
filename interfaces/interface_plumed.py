@@ -392,7 +392,7 @@ def MTD_analyze(path_to_plumed=None, Plot_To_Screen=False, colvar_type=None, tem
     print("CV unit:", finalcvunit)
 
     #Dict of energy conversions: Energy-unit to kcal/mol
-    energy_conversion_dict= {'eV':23.060541945329334}
+    energy_conversion_dict= {'eV':1/23.060541945329334}
     # possibly conversion from kJ/mol to kcal/molt
     energy_scaling=energy_conversion_dict[input_energy_unit]
     #Possible nm to Ang conversion
