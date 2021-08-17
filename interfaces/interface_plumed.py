@@ -146,7 +146,7 @@ class plumed_ASH():
 #Metadynamics visualization tool
 
 def MTD_analyze(path_to_plumed=None, Plot_To_Screen=False, colvar_type=None, temperature=None,
-                CV1atoms=None, CV2atoms=None):
+                CV1atoms=None, CV2atoms=None, read_plumed_inputfile=False):
 
     print_line_with_mainheader("Metadynamics Analysis Script")
     try:
@@ -164,8 +164,8 @@ def MTD_analyze(path_to_plumed=None, Plot_To_Screen=False, colvar_type=None, tem
         print("Set path_to_plumed argument. Example: MTD_analyze(path_to_plumed=/home/bjornsson/plumed-install)")
         exit()
     
-    os.environ['PATH'] = path_to_plumed+'/bin:$PATH'
-    os.environ['LD_LIBRARY_PATH'] = path_to_plumed+'/lib:$LD_LIBRARY_PATH'
+    os.environ['PATH'] = path_to_plumed+'/bin'+os.pathsep+os.environ['PATH']
+    os.environ['LD_LIBRARY_PATH'] = path_to_plumed+'/lib'+os.pathsep+os.environ['LD_LIBRARY_PATH']
 
     #Colormap to use in 2CV plots.
     # Perceptually uniform sequential: viridis, plasma, inferno, magma, cividis
