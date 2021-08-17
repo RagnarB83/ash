@@ -55,7 +55,7 @@ class plumed_ASH():
         self.plumedobj.cmd("setTimestep", timestep)
         print("timestep:", timestep)
         #Not sure about KbT
-        #self.plumedobj.cmd("setKbT", 1.)
+        self.plumedobj.cmd("setKbT", 2.478957)
         self.plumedobj.cmd("setNatoms",fragment.numatoms)
         self.plumedobj.cmd("setLogFile","test.log")
         
