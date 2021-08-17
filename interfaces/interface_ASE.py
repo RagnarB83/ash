@@ -133,6 +133,8 @@ def Dynamics_ASE(fragment=None, theory=None, temperature=300, timestep=None, the
                 energy,forces=self.plumedobj.run(coords=fragment.coords, forces=self.forces, step=self.gradientcalls-1)
                 print("energy:", energy)
                 print("forces:", forces)
+                self.potenergy=energy
+                self.forces=forces
                 #self.potenergy, self.forces = plumed_ash(energy,forces)
                 #energy, forces = plumedlib.cv_calculation(istep, pos, vel, box, jobforces, jobenergy)
             
