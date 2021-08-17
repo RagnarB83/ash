@@ -5,7 +5,7 @@ import numpy as np
 #PLUMED_ASH class
 
 class plumed_ASH():
-    def __init__(self, path_to_plumed_kernel=None, bias_type="1D_MTD", fragment=None, theory=None, colvar_type=None, colvar_indices=None,
+    def __init__(self, path_to_plumed_kernel=None, bias_type="1D_MTD", fragment=None, colvar_type=None, colvar_indices=None,
                temperature=300.0, hills_file="HILLS", colvar_file="COLVAR", height=None, sigma=None, biasfactor=None, timestep=None,
                stride_num=10, pace_num=500):
         
