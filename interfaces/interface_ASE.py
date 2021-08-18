@@ -248,6 +248,13 @@ def Dynamics_ASE(fragment=None, theory=None, temperature=300, timestep=None, the
             pool = mp.Pool(numwalkers)
             manager = mp.Manager()
             event = manager.Event()
+            #Function to handle exception of child processes
+            def Terminate_Pool_processes(message):
+                print("Terminating Pool processes due to exception")
+                print("Exception message:", message)
+                pool.terminate()
+                event.set()
+                exit()
             pool.apply_async(dynamics_walker, kwds=dict(dynobj=dyn, simulation_steps=simulation_steps), error_callback=Terminate_Pool_processes)
 
             pool.close()
@@ -258,15 +265,6 @@ def Dynamics_ASE(fragment=None, theory=None, temperature=300, timestep=None, the
         dyn.run(simulation_steps)
 
     print_time_rel(module_init_time, modulename='Dynamics_ASE', moduleindex=1)
-
-
-#Function to handle exception of child processes
-def Terminate_Pool_processes(message):
-    print("Terminating Pool processes due to exception")
-    print("Exception message:", message)
-    pool.terminate()
-    event.set()
-    exit()
 
 def dynamics_walker(dynobj=None, simulation_steps=None):
     dyn=copy.deepcopy(dynobj)
