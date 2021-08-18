@@ -2,23 +2,22 @@ import numpy as np
 import os
 import sys
 import re
+import time
 import glob
 
 from functions.functions_general import natural_sort, print_line_with_mainheader
+
 #Interface to Plumed
-
-
 #PLUMED_ASH class
 
 class plumed_ASH():
     def __init__(self, path_to_plumed_kernel=None, bias_type="1D_MTD", fragment=None, colvar_type=None, colvar_indices=None,
                temperature=300.0, hills_file="HILLS", colvar_file="COLVAR", height=None, sigma=None, biasfactor=None, timestep=None,
-               stride_num=10, pace_num=500):
+               stride_num=10, pace_num=500, dynamics_program="ASE"):
         
         if timestep==None:
             print("timestep= needs to be provided to plumed object")
             exit()
-
         
         if path_to_plumed_kernel == None:
             print("plumed_MD requires path_to_plumed_kernel argument to be set")
@@ -46,12 +45,9 @@ class plumed_ASH():
             print("Specify colvar_type argumentt.")
             print("Options: distance, angle, torsion, rmsd")
             exit()
-        #Change 0 to 1 basedindexing and converting to text-string
+        #Change from 0 to 1 based indexing and converting to text-string
         self.colvar_indices_string=','.join(map(str, [i+1 for i in colvar_indices]))
 
-
-        #os.environ["PLUMED_KERNEL"]=path_to_plumed_library
-        #p=plumed.Plumed()
         self.plumedobj=self.plumed.Plumed(kernel=path_to_plumed_kernel)
         
         
@@ -69,10 +65,18 @@ class plumed_ASH():
         self.plumedobj.cmd("init")
 
 
-
-        #Units: length set to Angstrom (ASE unit) and time to ps, energy in eV (ASE unit)
-        self.plumedobj.cmd("readInputLine","UNITS LENGTH=A ENERGY=eV TIME=ps")
-        
+        #Choose Plumed units based on what the dynamics program is:
+        #By using same units as dynamics program, we can avoid unit-conversion of forces
+        if dynamics_program == "ASE":
+            print("Dynamics program ASE is set. Setting Plumed units to Angstrom, eV and ps.")
+            self.plumed_length_unit="A" #Plumed-label for Angstrom
+            self.plumed_energy_unit="eV"
+            self.plumed_time_unit="ps"
+            #Units: length set to Angstrom (ASE unit) and time to ps, energy in eV (ASE unit)
+            self.plumedobj.cmd("readInputLine","UNITS LENGTH={} ENERGY={} TIME={}".format(self.plumed_length_unit,self.plumed_energy_unit,self.plumed_time_unit))
+        else:
+            print("unknown dynamics_program. Exiting")
+            exit()
         
         if bias_type == "1D_MTD":
             #height=1.2
@@ -94,52 +98,35 @@ class plumed_ASH():
             exit()
         
         
-        
     def run(self, coords=None, forces=None, step=None):
-        #box=array.array('d',[10,0,0,0,10,0,0,0,10])
-        #virial=array.array('d',[0,0,0,0,0,0,0,0,0])
-        #masses=array.array('d',[1,1])
-        #NOTE: Only set masses, charges etc. once ?
-        #masses=np.array(fragment.list_of_masses,dtype=np.float64)
-        #charges=array.array('d',[0,0])
-        #forces=array.array('d',[0,0,0,0,0,0])
-        #positions=array.array('d',[0,0,0,1,2,3])
-        print("plumed run")
-        #print("coords:", coords)
-        #print("forces:", forces)
-        print("step:", step)
+        module_init_time = time.time()
+        #Setting step
         self.plumedobj.cmd("setStep",step)
         #Setting masses. Must be done after Step
         self.plumedobj.cmd("setMasses", np.array(self.masses))
 
-        #self.plumedobj.cmd("setBox",box )
-        
-        #self.plumedobj.cmd("setCharges", charges )
-        print("here")
+        #Necessary?
         box=np.zeros(9)
         virial=np.zeros(9)
         self.plumedobj.cmd("setBox", box )
         self.plumedobj.cmd("setVirial", virial )
 
+        #Setting current coordinates and forces
         self.plumedobj.cmd("setPositions", coords )
         self.plumedobj.cmd("setForces", forces )
         
-        
-        print("Running calc")
+        #Running
+        print("Running Plumed bias calculation")
         self.plumedobj.cmd("calc")
-        print("Calc done")
-        bias = np.zeros((1),dtype=np.float64)
-        self.plumedobj.cmd("getBias", bias )
-        #Initialize bias array
-        
-       # print("forces are now:", forces)
-        print("bias:", bias)
-        print("virial:", virial)
+        print("Plumed done")
+        #bias = np.zeros((1),dtype=np.float64)
+        #self.plumedobj.cmd("getBias", bias )
+        # print("forces are now:", forces)
+        #print("bias:", bias)
+        #print("virial:", virial)
         #print("coords", coords)
-        
         energy=999.9999
-        #NOTE: Return bias or modified forces?
-        
+        print_time_rel(module_init_time, modulename='Plumed run', moduleindex=2)
         return energy,forces
 
 

@@ -127,6 +127,7 @@ def Dynamics_ASE(fragment=None, theory=None, temperature=300, timestep=None, the
             self.forces=-gradient* units.Hartree / units.Bohr
             print("potenergy:", self.potenergy)
             print("self.forces before plumed:", self.forces)
+            
             #DO PLUMED-STEP HERE
             if self.plumedobj!=None:
                 print("Plumed active.")
