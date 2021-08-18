@@ -5,7 +5,7 @@ import re
 import time
 import glob
 
-from functions.functions_general import natural_sort, print_line_with_mainheader
+from functions.functions_general import natural_sort, print_line_with_mainheader,print_time_rel
 
 #Interface to Plumed
 #PLUMED_ASH class
