@@ -268,6 +268,6 @@ def Terminate_Pool_processes(message):
     event.set()
     exit()
 
-def dynamics_walker(dynobj=None, simulation_steps):
+def dynamics_walker(dynobj=None, simulation_steps=None):
     dyn=copy.deepcopy(dynobj)
     dyn.run(simulation_steps)
