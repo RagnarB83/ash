@@ -256,7 +256,7 @@ def Dynamics_ASE(fragment=None, theory=None, temperature=300, timestep=None, the
                 event.set()
                 exit()
             print("Launching")
-            pool.apply_async(dynamics_walker, kwds=dict(simulation_steps=simulation_steps), error_callback=Terminate_Pool_processes)
+            pool.apply_async(dynamics_walker, kwds=dict(atomsobj=atoms, simulation_steps=simulation_steps), error_callback=Terminate_Pool_processes)
 
             pool.close()
             pool.join()
@@ -267,9 +267,10 @@ def Dynamics_ASE(fragment=None, theory=None, temperature=300, timestep=None, the
 
     print_time_rel(module_init_time, modulename='Dynamics_ASE', moduleindex=1)
 
-def dynamics_walker(dynobj=None, simulation_steps=None):
+def dynamics_walker(dynobj=None, atomsobj=None, simulation_steps=None):
     print("dynobj:", dynobj)
     print("simulation_steps:", simulation_steps)
+    print("atomsobj", atomsobj)
     exit()
     dyn=copy.deepcopy(dynobj)
     dyn.run(simulation_steps)
