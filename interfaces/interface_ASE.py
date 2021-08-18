@@ -262,8 +262,8 @@ def Dynamics_ASE(fragment=None, theory=None, temperature=300, timestep=None, the
 
 #Function to handle exception of child processes
 def Terminate_Pool_processes(message):
-    print(BC.FAIL,"Terminating Pool processes due to exception", BC.END)
-    print(BC.FAIL,"Exception message:", message, BC.END)
+    print("Terminating Pool processes due to exception")
+    print("Exception message:", message)
     pool.terminate()
     event.set()
     exit()
