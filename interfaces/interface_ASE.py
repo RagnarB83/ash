@@ -244,7 +244,7 @@ def Dynamics_ASE(fragment=None, theory=None, temperature=300, timestep=None, the
             print("Multiple walker dynamics enabled. Will launch {} walkers".format(numwalkers))
 
             #Make copy of dyn object for each walker. Also atoms object? And ASHcalc object?
-            print("Launching multiprocessing and passing list of ASH fragments")
+            print("Launching multiprocessing")
             pool = mp.Pool(numwalkers)
             manager = mp.Manager()
             event = manager.Event()
@@ -255,7 +255,8 @@ def Dynamics_ASE(fragment=None, theory=None, temperature=300, timestep=None, the
                 pool.terminate()
                 event.set()
                 exit()
-            pool.apply_async(dynamics_walker, kwds=dict(dynobj=dyn, simulation_steps=simulation_steps), error_callback=Terminate_Pool_processes)
+            print("Launching")
+            pool.apply_async(dynamics_walker, kwds=dict(simulation_steps=simulation_steps), error_callback=Terminate_Pool_processes)
 
             pool.close()
             pool.join()
@@ -267,5 +268,14 @@ def Dynamics_ASE(fragment=None, theory=None, temperature=300, timestep=None, the
     print_time_rel(module_init_time, modulename='Dynamics_ASE', moduleindex=1)
 
 def dynamics_walker(dynobj=None, simulation_steps=None):
+    print("dynobj:", dynobj)
+    print("simulation_steps:", simulation_steps)
+    exit()
     dyn=copy.deepcopy(dynobj)
     dyn.run(simulation_steps)
+
+
+#Not picklable
+# https://stackoverflow.com/questions/36123586/python-multiprocessing-cant-pickle-type-function
+#https://towardsdatascience.com/multiprocessing-and-pickle-how-to-easily-fix-that-6f7e55dee29d
+#https://stackoverflow.com/questions/8804830/python-multiprocessing-picklingerror-cant-pickle-type-function
