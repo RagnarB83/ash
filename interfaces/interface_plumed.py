@@ -99,7 +99,7 @@ class plumed_ASH():
         
         
     def run(self, coords=None, forces=None, step=None):
-        module_init_time = time.time()
+        #module_init_time = time.time()
         #Setting step
         self.plumedobj.cmd("setStep",step)
         #Setting masses. Must be done after Step
@@ -126,7 +126,7 @@ class plumed_ASH():
         #print("virial:", virial)
         #print("coords", coords)
         energy=999.9999
-        print_time_rel(module_init_time, modulename='Plumed run', moduleindex=2)
+        #print_time_rel(module_init_time, modulename='Plumed run', moduleindex=2)
         return energy,forces
 
 

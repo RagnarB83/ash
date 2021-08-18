@@ -95,19 +95,12 @@ def Dynamics_ASE(fragment=None, theory=None, temperature=300, timestep=None, the
         def get_potential_energy(self, atomsobj):
             return self.potenergy
         def get_forces(self, atomsobj):
-            print("")
-            print("---------------------------------")
-            print("")
-            print("called ASHcalc get_forces")
-            #print("atomsobj:", atomsobj)
-            #print(atoms.__dict__)
-            #silly. TODO: replace with coords comparison instead
-            print("atomsobj.get_positions():", atomsobj.get_positions())
-            print("fragment.coords:", fragment.coords)
+            print("Called ASHcalc get_forces")
+
             # Check if coordinates have changed. If not, return old forces
             if np.array_equal(atomsobj.get_positions(), fragment.coords) == True:
                 #coordinates have not changed
-                print("Same coords.")
+                print("Coordinates unchanged.")
                 if len(self.forces)==0:
                     print("No forces available (1st step?). Will do calulation")
                 else:
@@ -125,24 +118,26 @@ def Dynamics_ASE(fragment=None, theory=None, temperature=300, timestep=None, the
             #Converting E and G from Eh and Eh/Bohr to ASE units: eV and eV/Angstrom
             self.potenergy=energy*constants.hartoeV
             self.forces=-gradient* units.Hartree / units.Bohr
-            print("potenergy:", self.potenergy)
-            print("self.forces before plumed:", self.forces)
+            #print("potenergy:", self.potenergy)
+            #print("self.forces before plumed:", self.forces)
             
             #DO PLUMED-STEP HERE
             if self.plumedobj!=None:
                 print("Plumed active.")
                 print("Calling Plumed")
+                #Note: this updated self.forces. No need to use returned forces
                 energy, forces = self.plumedobj.run(coords=fragment.coords, forces=self.forces, step=self.gradientcalls-1)
-                print("energy from plumed:", energy)
-                print("self.forces after plumed:", self.forces)
-                print("forces returned from plumed", forces)
+                #TODO: Use Plumed energy ??
+                #print("energy from plumed:", energy)
+                #print("self.forces after plumed:", self.forces)
+                #print("forces returned from plumed", forces)
                 #self.potenergy=energy
                 #self.forces=forces
                 #self.potenergy, self.forces = plumed_ash(energy,forces)
                 #energy, forces = plumedlib.cv_calculation(istep, pos, vel, box, jobforces, jobenergy)
             
             
-            print("Done with ASHcalc get_forces")
+            print("ASHcalc get_forces done")
             return self.forces
         
     #Option 2: Dummy ASE class where we create the attributes and methods we want
