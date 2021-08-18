@@ -2,7 +2,7 @@ import numpy as np
 import time
 import os
 import copy
-
+import multiprocessing as mp
 
 import constants
 from functions.functions_general import print_line_with_mainheader, print_time_rel
@@ -14,7 +14,7 @@ from modules.module_singlepoint import Singlepoint
 
 def Dynamics_ASE(fragment=None, theory=None, temperature=300, timestep=None, thermostat=None, simulation_steps=None, simulation_time=None,
                  barostat=None, trajectoryname="Trajectory_ASE", traj_frequency=1, coupling_freq=0.002, frozen_atoms=None, frozen_bonds=None,
-                 frozen_angles=None, frozen_dihedrals=None, plumed_object=None):
+                 frozen_angles=None, frozen_dihedrals=None, plumed_object=None, multiple_walkers=False, numwalkers=None):
     module_init_time = time.time()
     print_line_with_mainheader("ASE MOLECULAR DYNAMICS")
     
@@ -236,6 +236,38 @@ def Dynamics_ASE(fragment=None, theory=None, temperature=300, timestep=None, the
     print("")
     print("Running dynamics")
     print("simulation_steps:", simulation_steps)
-    dyn.run(simulation_steps)
+
+    if multiple_walkers == True:
+        if numwalkers==1:
+            print("Please provide number of walkers by numwalkers keyword argument");exit()
+        else:
+            print("Multiple walker dynamics enabled. Will launch {} walkers".format(numwalkers))
+
+            #Make copy of dyn object for each walker. Also atoms object? And ASHcalc object?
+            print("Launching multiprocessing and passing list of ASH fragments")
+            pool = mp.Pool(numwalkers)
+            manager = mp.Manager()
+            event = manager.Event()
+            pool.apply_async(dynamics_walker, kwds=dict(dynobj=dyn, simulation_steps=simulation_steps), error_callback=Terminate_Pool_processes)
+
+            pool.close()
+            pool.join()
+            event.set()
+
+    else:
+        dyn.run(simulation_steps)
 
     print_time_rel(module_init_time, modulename='Dynamics_ASE', moduleindex=1)
+
+
+#Function to handle exception of child processes
+def Terminate_Pool_processes(message):
+    print(BC.FAIL,"Terminating Pool processes due to exception", BC.END)
+    print(BC.FAIL,"Exception message:", message, BC.END)
+    pool.terminate()
+    event.set()
+    exit()
+
+def dynamics_walker(dynobj=None, simulation_steps):
+    dyn=copy.deepcopy(dynobj)
+    dyn.run(simulation_steps)
