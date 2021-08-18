@@ -24,10 +24,6 @@ def Dynamics_ASE(fragment=None, theory=None, temperature=300, timestep=None, the
     except:
         pass
     
-    
-    
-    
-    
     if frozen_atoms==None: frozen_atoms=[]
     if frozen_bonds==None: frozen_bonds=[]
     if frozen_angles==None: frozen_angles=[]
@@ -39,7 +35,7 @@ def Dynamics_ASE(fragment=None, theory=None, temperature=300, timestep=None, the
         from ase.md.andersen import Andersen
         from ase.md.nvtberendsen import NVTBerendsen
         from ase.md.langevin import Langevin
-        from ase.calculators.calculator import Calculator, FileIOCalculator
+        from ase.calculators.calculator import Calculator
         from ase import units
         import ase.atoms
         print("Imported ASE")
@@ -208,7 +204,8 @@ def Dynamics_ASE(fragment=None, theory=None, temperature=300, timestep=None, the
     elif thermostat=="Berendsen":
         dyn = NVTBerendsen(atoms, timestep_fs*units.fs, temperature*units.kB, taut=coupling_freq*1000*units.fs, trajectory=trajectoryname+'.traj', logfile='md.log')
     elif thermostat=="NoseHoover":
-        print("nosehoover")
+        print("nosehoover to do")
+        exit()
     else:
         print("Unknown thermostat/barostat. Exiting")
         exit()
