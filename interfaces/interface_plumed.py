@@ -221,13 +221,14 @@ def MTD_analyze(plumed_ash_object=None, path_to_plumed=None, Plot_To_Screen=Fals
     distance_scaling=1
 
     #1D
-    if CV2_type == None:
+    if CV1_type == None:
         if CV1_type.upper() =='TORSION' or CV1_type.upper()=='ANGLE':
             finalcvunit_1='°'
         elif CV1_type.upper() == 'RMSD' or CV1_type.upper()=='Distance':
             finalcvunit_1='Å'
         else:
             print("unknown. exiting");exit()
+        print("Final CV1 units:", finalcvunit_1)
     #2D
     else:
         if CV1_type.upper() =='TORSION' or CV1_type.upper()=='ANGLE':
@@ -236,19 +237,18 @@ def MTD_analyze(plumed_ash_object=None, path_to_plumed=None, Plot_To_Screen=Fals
             finalcvunit_1='Å'
         else:
             print("unknown. exiting");exit()
-            
+        print("Final CV1 units:", finalcvunit_1)
         if CV2_type.upper() =='TORSION' or CV2_type.upper()=='ANGLE':
             finalcvunit_2='°'
         elif CV2_type.upper() == 'RMSD' or CV2_type.upper()=='Distance':
             finalcvunit_2='Å'
         else:
             print("unknown. exiting");exit()
-    
+        print("Final CV2 units:", finalcvunit_2)
     if finalcvunit_2 != finalcvunit_1:
         print("differ. possible problem")
         
-    print("CV unit:", finalcvunit)
-
+    
     print("CV1_type:", CV1_type)
     print("CV2_type:", CV2_type)
 
@@ -498,7 +498,7 @@ def MTD_analyze(plumed_ash_object=None, path_to_plumed=None, Plot_To_Screen=Fals
         #Subplot 1: Free energy surface. From fes.dat via HILLS file (single-walker) or HILLS.X files (multiple-walker)
         plt.subplot(2, 2, 1)
         plt.gca().set_title('Free energy vs. CV', fontsize='small', style='italic', fontweight='bold')
-        plt.xlabel('{} ({})'.format(CV,finalcvunit), fontsize='small')
+        plt.xlabel('{} ({})'.format(CV,finalcvunit_1), fontsize='small')
         plt.ylabel('Energy (kcal/mol)', fontsize='small')
         if CV=='Torsion':
             plt.xlim([-180,180])
@@ -512,7 +512,7 @@ def MTD_analyze(plumed_ash_object=None, path_to_plumed=None, Plot_To_Screen=Fals
         plt.subplot(2, 2, 2)
         plt.gca().set_title('CV vs. time', fontsize='small', style='italic', fontweight='bold')
         plt.xlabel('Time (ps)', fontsize='small')
-        plt.ylabel('{} ({})'.format(CV,finalcvunit), fontsize='small')
+        plt.ylabel('{} ({})'.format(CV,finalcvunit_1), fontsize='small')
         #New: Using first timelist to get x-axis limit
         plt.xlim([0,max(time_list[0])+5])
 
@@ -525,7 +525,7 @@ def MTD_analyze(plumed_ash_object=None, path_to_plumed=None, Plot_To_Screen=Fals
         plt.subplot(2, 2, 3)
         #plt.title.set_text('Bias potential')
         plt.gca().set_title('Bias potential', fontsize='small', style='italic', fontweight='bold')
-        plt.xlabel('{} ({})'.format(CV,finalcvunit), fontsize='small')
+        plt.xlabel('{} ({})'.format(CV,finalcvunit_1), fontsize='small')
         plt.ylabel('Bias potential (kcal/mol)', fontsize='small')
         if CV=='Torsion':
             plt.xlim([-180,180])
