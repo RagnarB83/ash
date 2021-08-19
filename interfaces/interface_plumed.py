@@ -519,7 +519,7 @@ def MTD_analyze(plumed_ash_object=None, path_to_plumed=None, Plot_To_Screen=Fals
         plt.gca().set_title('Free energy vs. CV', fontsize='small', style='italic', fontweight='bold')
         plt.xlabel('{} ({})'.format(CV1_type,finalcvunit_1), fontsize='small')
         plt.ylabel('Energy (kcal/mol)', fontsize='small')
-        if CV=='Torsion':
+        if CV1_type=='Torsion':
             plt.xlim([-180,180])
         #plt.plot(rc_deg, free_energy_kcal, marker='o', linestyle='-', markerwidth is , linewidth=1, label='G (kcal/mol)')
         plt.plot(final_rc, Relfreeenergy_kcal, marker='o', linestyle='-', linewidth=1, markersize=3, label='G({} K)'.format(temperature))
@@ -546,7 +546,7 @@ def MTD_analyze(plumed_ash_object=None, path_to_plumed=None, Plot_To_Screen=Fals
         plt.gca().set_title('Bias potential', fontsize='small', style='italic', fontweight='bold')
         plt.xlabel('{} ({})'.format(CV1_type,finalcvunit_1), fontsize='small')
         plt.ylabel('Bias potential (kcal/mol)', fontsize='small')
-        if CV=='Torsion':
+        if CV1_type=='Torsion':
             plt.xlim([-180,180])
         #elif CV=='RMSD':
         #    plt.xlim([min(),180])
@@ -591,7 +591,7 @@ def MTD_analyze(plumed_ash_object=None, path_to_plumed=None, Plot_To_Screen=Fals
         plt.gca().set_title('Free energy vs. CV', fontsize='small', style='italic', fontweight='bold')
         plt.xlabel('{} ({})'.format(CV1_type,CV1_indices), fontsize='small')
         plt.ylabel('{} ({})'.format(CV2_type,CV2_indices), fontsize='small')
-        if CV=='Torsion':
+        if CV1_type=='Torsion':
             plt.xlim([-180,180])
             plt.ylim([-180,180])
         cm = plt.cm.get_cmap(colormap)
