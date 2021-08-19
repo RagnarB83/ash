@@ -208,8 +208,8 @@ def Dynamics_ASE(fragment=None, theory=None, temperature=300, timestep=None, the
     elif thermostat=="NoseHoover":
         print("Nose-Hoover thermostat using ASE NPT class")
         #Adding dummy box : https://gitlab.com/ase/ase/-/issues/942
-        atoms.set_cell((100, 100, 100))
-        atoms.center()
+        atoms.set_cell((1, 1, 1))
+        #atoms.center()
         print("Using ttime_nosehoover:", ttime_nosehoover)
         dyn = NPT(atoms, externalstress=1., timestep=timestep_fs*units.fs, ttime=ttime_nosehoover*units.fs, temperature_K=temperature,
                 pfactor=0.0)
