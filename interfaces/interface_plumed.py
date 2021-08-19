@@ -166,7 +166,14 @@ class plumed_ASH():
         energy=999.9999
         #print_time_rel(module_init_time, modulename='Plumed run', moduleindex=2)
         return energy,forces
-
+    def run_sum_hills(self,hillsfile):
+        #Either run plumed binary, requiring to st
+        os.environ['PATH'] = self.path_to_plumed+'/bin'+os.pathsep+os.environ['PATH']
+        os.environ['LD_LIBRARY_PATH'] = self.path_to_plumed+'/lib'+os.pathsep+os.environ['LD_LIBRARY_PATH']
+        print("os.environ PATH", os.environ['PATH'])
+        os.system('plumed sum_hills --hills {}}'.format(hillsfile))
+        #Or run via library? TODO
+        #
 
 #Metadynamics visualization tool
 
@@ -254,9 +261,7 @@ def MTD_analyze(plumed_ash_object=None, path_to_plumed=None, Plot_To_Screen=Fals
 
 
         
-    os.environ['PATH'] = path_to_plumed+'/bin'+os.pathsep+os.environ['PATH']
-    os.environ['LD_LIBRARY_PATH'] = path_to_plumed+'/lib'+os.pathsep+os.environ['LD_LIBRARY_PATH']
-    print("os.environ PATH", os.environ['PATH'])
+
     ########################
     #READING MAIN DATA
     ########################
@@ -304,9 +309,12 @@ def MTD_analyze(plumed_ash_object=None, path_to_plumed=None, Plot_To_Screen=Fals
 
         print("Running plumed to sum hills...")
         print("")
-        os.system('plumed sum_hills --hills HILLS.ALL')
+        #RUN PLUMED_ASH OBJECT function
+        plumed_ash_object.run_sum_hills("HILLS.ALL")
+        #os.system('plumed sum_hills --hills HILLS.ALL')
     else:
-        os.system('plumed sum_hills --hills HILLS')
+        plumed_ash_object.run_sum_hills("HILLS")
+        #os.system('plumed sum_hills --hills HILLS')
         #HILLSFILE="HILLS"
         HILLSFILELIST=['HILLS']
         #Single COLVAR file
