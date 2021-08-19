@@ -248,6 +248,7 @@ def MTD_analyze(plumed_ash_object=None, path_to_plumed=None, Plot_To_Screen=Fals
                     CV1_type = line.split()[-1]
                 if 'CV2_type' in line:
                     CV2_type = line.split()[-1]
+                    print("CV2_type:", CV2_type)
                 if 'CV1_indices' in line:
                     CV1_indices = line.split()[-1]
                 if 'CV2_indices' in line:
