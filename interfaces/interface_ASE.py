@@ -204,7 +204,7 @@ def Dynamics_ASE(fragment=None, theory=None, temperature=300, timestep=None, the
         collision_prob=coupling_freq
         dyn = Andersen(atoms, timestep_fs*units.fs, temperature, collision_prob, trajectory=trajectoryname+'.traj', logfile='md.log')
     elif thermostat=="Berendsen":
-        dyn = NVTBerendsen(atoms, timestep_fs*units.fs, temperature_K=temperature, taut=coupling_freq*1000*units.fs, trajectory=trajectoryname+'.traj', logfile='md.log')
+        dyn = NVTBerendsen(atoms, timestep_fs*units.fs, temperature, taut=coupling_freq*1000*units.fs, trajectory=trajectoryname+'.traj', logfile='md.log')
     elif thermostat=="NoseHoover":
         print("Nose-Hoover thermostat using ASE NPT class")
         #Adding dummy box : https://gitlab.com/ase/ase/-/issues/942
