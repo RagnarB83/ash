@@ -237,7 +237,8 @@ def MTD_analyze(plumed_ash_object=None, path_to_plumed=None, Plot_To_Screen=Fals
     distance_scaling=1
 
     #1D
-    if CV1_type == None:
+    if CV2_type == None:
+        CVnum=1
         if CV1_type.upper() =='TORSION' or CV1_type.upper()=='ANGLE':
             finalcvunit_1='°'
         elif CV1_type.upper() == 'RMSD' or CV1_type.upper()=='Distance':
@@ -247,6 +248,7 @@ def MTD_analyze(plumed_ash_object=None, path_to_plumed=None, Plot_To_Screen=Fals
         print("Final CV1 units:", finalcvunit_1)
     #2D
     else:
+        CVnum=2
         if CV1_type.upper() =='TORSION' or CV1_type.upper()=='ANGLE':
             finalcvunit_1='°'
         elif CV1_type.upper() == 'RMSD' or CV1_type.upper()=='Distance':
