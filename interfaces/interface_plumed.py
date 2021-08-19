@@ -16,6 +16,7 @@ class plumed_ASH():
                 temperature=300.0, hills_file="HILLS", colvar_file="COLVAR", height=0.01243, sigma1=None, sigma2=None, biasfactor=6.0, timestep=None,
                 stride_num=10, pace_num=500, dynamics_program="ASE",
                 numwalkers=None):
+        print_line_with_mainheader("Plumed ASH interface")
         # Making sure both Plumed kernel and Python wrappers are available
         if path_to_plumed_kernel == None:
             print("plumed_MD requires path_to_plumed_kernel argument to be set")
