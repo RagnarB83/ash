@@ -202,7 +202,7 @@ def Dynamics_ASE(fragment=None, theory=None, temperature=300, timestep=None, the
         dyn = Langevin(atoms, timestep_fs*units.fs, friction_coeff, temperature_K=temperature, trajectory=trajectoryname+'.traj', logfile='md.log')
     elif thermostat=="Andersen":
         collision_prob=coupling_freq
-        dyn = Andersen(atoms, timestep_fs*units.fs, collision_prob, temperature_K=temperature, trajectory=trajectoryname+'.traj', logfile='md.log')
+        dyn = Andersen(atoms, timestep_fs*units.fs, temperature, collision_prob, trajectory=trajectoryname+'.traj', logfile='md.log')
     elif thermostat=="Berendsen":
         dyn = NVTBerendsen(atoms, timestep_fs*units.fs, temperature_K=temperature, taut=coupling_freq*1000*units.fs, trajectory=trajectoryname+'.traj', logfile='md.log')
     elif thermostat=="NoseHoover":
