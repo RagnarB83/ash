@@ -167,6 +167,8 @@ class plumed_ASH():
         #print_time_rel(module_init_time, modulename='Plumed run', moduleindex=2)
         return energy,forces
     def run_sum_hills(self,hillsfile):
+        print("Running run_sum_hills")
+        print("HILLS file is:", hillsfile)
         #Either run plumed binary, requiring to st
         os.environ['PATH'] = self.path_to_plumed+'/bin'+os.pathsep+os.environ['PATH']
         os.environ['LD_LIBRARY_PATH'] = self.path_to_plumed+'/lib'+os.pathsep+os.environ['LD_LIBRARY_PATH']
