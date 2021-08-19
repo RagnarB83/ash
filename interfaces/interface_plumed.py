@@ -106,13 +106,13 @@ class plumed_ASH():
         if bias_type == "MTD":
             #1D metadynamics
             CV1_indices_string = ','.join(map(str, [i+1 for i in CV1_indices])) #Change from 0 to 1 based indexing and converting to text-string
-            self.plumedobj.cmd("readInputLine","cv1: {} ATOMS={}".format(self.CV1_type, CV1_indices_string))
+            self.plumedobj.cmd("readInputLine","cv1: {} ATOMS={}".format(self.CV1_type.upper(), CV1_indices_string))
             CV_string="cv1"
             sigma_string=sigma
             #2D metadynamics if CV2_type has been set
             if CV2_type != None:
                 CV2_indices_string = ','.join(map(str, [i+1 for i in CV2_indices]))
-                self.plumedobj.cmd("readInputLine","cv2: {} ATOMS={}".format(self.CV2_type, CV2_indices_string))
+                self.plumedobj.cmd("readInputLine","cv2: {} ATOMS={}".format(self.CV2_type.upper(), CV2_indices_string))
                 CV_string="cv1,cv2"
                 sigma_string=str(sigma1)+","+str(sigma2)
             
