@@ -22,6 +22,8 @@ class plumed_ASH():
             print("plumed_MD requires path_to_plumed_kernel argument to be set")
             print("Should point to: /path/to/libplumedKernel.so")
             exit()
+        #Path to Plumed (used by MTD_analyze)
+        self.path_to_plumed=path_to_plumed_kernel.replace("/libplumedKernel.so","")
         try:
             import plumed
         except:
@@ -61,15 +63,16 @@ class plumed_ASH():
 
         self.CV1_type=CV1_type
         self.CV2_type=CV2_type
+        self.temperature=temperature
         print("")
         print("Settings")
         print("")
         print("Path to Plumed kernel:", path_to_plumed_kernel)
         print("Dynamics program:", dynamics_program)
         print("Bias type:", bias_type)
-        print("CV1 type:", CV1_type)
+        print("CV1 type:", self.CV1_type)
         print("CV1 indices:", CV1_indices)
-        print("CV2 type:", CV2_type)
+        print("CV2 type:", self.CV2_type)
         print("CV2 indices:", CV2_indices)
         print("")
         print("Temperature:", temperature)
@@ -165,7 +168,7 @@ class plumed_ASH():
 
 #Metadynamics visualization tool
 
-def MTD_analyze(path_to_plumed=None, Plot_To_Screen=False, colvar_type=None, temperature=None,
+def MTD_analyze(plumed_ash_object=None, path_to_plumed=None, Plot_To_Screen=False, CV1_type=None, CV2_type=None, temperature=None,
                 CV1atoms=None, CV2atoms=None, read_plumed_inputfile=False, input_energy_unit='eV'):
     #Energy-unit used by Plumed-ASH should be eV in general
     print_line_with_mainheader("Metadynamics Analysis Script")
@@ -173,38 +176,90 @@ def MTD_analyze(path_to_plumed=None, Plot_To_Screen=False, colvar_type=None, tem
         import matplotlib.pyplot as plt
     except:
         print("Problem importing matplotlib.")
-        
+    
+
 
     ###############################
     #USER SETTINGS
     ###############################
-    #Run Plumed script to get fes.dat from HILLS
-    #Setting PATH and LD_LIBRARY_PATH for PLUMED. LD-lib path to C library may also be required
-    if path_to_plumed==None:
-        print("Set path_to_plumed argument. Example: MTD_analyze(path_to_plumed=/home/bjornsson/plumed-install)")
-        exit()
-    
-    os.environ['PATH'] = path_to_plumed+'/bin'+os.pathsep+os.environ['PATH']
-    os.environ['LD_LIBRARY_PATH'] = path_to_plumed+'/lib'+os.pathsep+os.environ['LD_LIBRARY_PATH']
-
+    colormap='RdYlBu_r'
     #Colormap to use in 2CV plots.
     # Perceptually uniform sequential: viridis, plasma, inferno, magma, cividis
     #Others: # RdYlBu_r
     #See https://matplotlib.org/3.1.0/tutorials/colors/colormaps.html
-    colormap='RdYlBu_r'
-
-
-    # If WellTempered MetaDynamics (generally recommended) is used. For regular MTD a pointless plot would be generated for Welltemp=True
+    ##############################
     WellTemp=True
+    
+    #Get everything from provided plumed_ash object
+    if plumed_ash_object != None:
+        path_to_plumed=plumed_ash_object.path_to_plumed
+        CV1_type = plumed_ash_object.CV1_type
+        CV2_type = plumed_ash_object.CV2_type
+        CV1_indices = plumed_ash_object.CV1_indices
+        CV2_indices = plumed_ash_object.CV2_indices
+        temperature=plumed_ash_object.temperature
+    #Or from keywords
+    else:
+        print("No Plumed_ASH object provided. Getting information via keywords")
+        if CV1_type==None or temperature==None:
+            print("give CV1_type and temperature")
+            exit()
+        #Run Plumed script to get fes.dat from HILLS
+        #Setting PATH and LD_LIBRARY_PATH for PLUMED. LD-lib path to C library may also be required
+        if path_to_plumed==None:
+            print("Set path_to_plumed argument. Example: MTD_analyze(path_to_plumed=/home/bjornsson/plumed-install)")
+            exit()
 
-    #try:
-    #    path=sys.argv[1]
-    #    os.chdir(path)
-    #    print("Changing dir to path: ", path)
-    #except:
+
+    #Dict of energy conversions: Energy-unit to kcal/mol
+    energy_conversion_dict= {'eV':1/23.060541945329334}
+    # possibly conversion from kJ/mol to kcal/molt
+    energy_scaling=energy_conversion_dict[input_energy_unit]
+    #Possible nm to Ang conversion
+    distance_scaling=1
+
+    #1D
+    if CV2_type == None:
+        if CV1_type.upper() =='TORSION' or CV1_type.upper()=='ANGLE':
+            finalcvunit_1='°'
+        elif CV1_type.upper() == 'RMSD' or CV1_type.upper()=='Distance':
+            finalcvunit_1='Å'
+        else:
+            print("unknown. exiting");exit()
+    #2D
+    else:
+        if CV1_type.upper() =='TORSION' or CV1_type.upper()=='ANGLE':
+            finalcvunit_1='°'
+        elif CV1_type.upper() == 'RMSD' or CV1_type.upper()=='Distance':
+            finalcvunit_1='Å'
+        else:
+            print("unknown. exiting");exit()
+            
+        if CV2_type.upper() =='TORSION' or CV2_type.upper()=='ANGLE':
+            finalcvunit_2='°'
+        elif CV2_type.upper() == 'RMSD' or CV2_type.upper()=='Distance':
+            finalcvunit_2='Å'
+        else:
+            print("unknown. exiting");exit()
+    
+    if finalcvunit_2 != finalcvunit_1:
+        print("differ. possible problem")
+        
+    print("CV unit:", finalcvunit)
+
+    print("CV1_type:", CV1_type)
+    print("CV2_type:", CV2_type)
+
+
+        
+    os.environ['PATH'] = path_to_plumed+'/bin'+os.pathsep+os.environ['PATH']
+    os.environ['LD_LIBRARY_PATH'] = path_to_plumed+'/lib'+os.pathsep+os.environ['LD_LIBRARY_PATH']
+
+    ########################
+    #READING MAIN DATA
+    ########################
     print("Assuming current dir contains COLVAR/HILLS files")
-
-
+    print("Reading HILLS files")
     #Checking if Multiple Walker MTD or not (by analyzing whether HILLS.X files are present or not)
     try:
         f = open("HILLS.0")
@@ -280,143 +335,36 @@ def MTD_analyze(path_to_plumed=None, Plot_To_Screen=False, colvar_type=None, tem
             print("File potcurve not found. Add file if desired.")
     ########################################
     pi=3.14159265359
-    #Get temperature from plumed.in in dir or dir above
-    dihed1atoms=[]
-    dihed2atoms=[]
-    angle1atoms=[]
-    angle2atoms=[]
-    distance1atoms=[]
-    distance2atoms=[]
-    print("")
 
 
-    #
-    if read_plumed_inputfile == True:
-        try:
-            with open("plumed.in") as pluminpfile:
-                print("Found plumed.in file. Reading variables")
-                for line in pluminpfile:
-                    if '#' not in line:
-                        if 'TORSION' in line:
-                            CV='Torsion'
-                            cvunit='°'
-                            if len(dihed1atoms) > 0:
-                                x=line.split()[-1]
-                                y=line.split('=')[-1]
-                                for z in y.split(','):
-                                    dihed2atoms.append(int(z))
-                            else:
-                                x=line.split()[-1]
-                                y=line.split('=')[-1]
-                                for z in y.split(','):
-                                    dihed1atoms.append(int(z))
+    #READING fes.dat
+    #Reaction coordinates (radian if torsion)
+    rc=[]
+    rc2=[]
+    #Free energy (kJ/mol)
+    free_energy=[]
 
-                        elif 'RMSD' in line:
-                            CV='RMSD'
-                            #The unit we will plot
-                            cvunit='Å'
-                        if 'TEMP' in line:
-                            for x in line.split():
-                                if 'TEMP' in x:
-                                    temperature=float(x.split('=')[1])
-            print("Found temperature:", temperature)
-        except:
-            print("Found no plumed.in in dir")
-            print("Trying dir above...")
-            try:
-                with open("../plumed.in") as pluminpfile:
-                    print("Found plumed.in file. Reading variables")
-                    for line in pluminpfile:
-                        if '#' not in line:
-                            if 'TORSION' in line:
-                                CV = 'Torsion'
-                                cvunit = '°'
-                                if len(dihed1atoms) > 0:
-                                    x=line.split()[-1]
-                                    y=line.split('=')[-1]
-                                    for z in y.split(','):
-                                        dihed2atoms.append(int(z))
-                                else:
-                                    x=line.split()[-1]
-                                    y=line.split('=')[-1]
-                                    for z in y.split(','):
-                                        dihed1atoms.append(int(z))
-                            elif 'DISTANCE' in line:
-                                CV = 'Distance'
-                                #What we end up with
-                                cvunit = 'Å'
-                            elif 'ANGLE' in line:
-                                CV = 'Angle'
-                                cvunit = '°'
-                                if len(angle1atoms) > 0:
-                                    x=line.split()[-1]
-                                    y=line.split('=')[-1]
-                                    for z in y.split(','):
-                                        angle2atoms.append(int(z))
-                                else:
-                                    x=line.split()[-1]
-                                    y=line.split('=')[-1]
-                                    for z in y.split(','):
-                                        angle1atoms.append(int(z))
-                            elif 'DISTANCE' in line:
-                                CV = 'Distance'
-                                cvunit = 'Å'
-                                if len(distance1atoms) > 0:
-                                    x = line.split()[-1]
-                                    y = line.split('=')[-1]
-                                    for z in y.split(','):
-                                        distance2atoms.append(int(z))
-                                else:
-                                    x = line.split()[-1]
-                                    y = line.split('=')[-1]
-                                    for z in y.split(','):
-                                        distance1atoms.append(int(z))
+    #Derivative of Free Energy vs. reaction-coordinate. Probably not useful
+    derivG=[]
+    derivG2=[]
 
-                            elif 'ANGLE' in line:
-                                CV = 'Angle'
-                                cvunit = '°'
-                                if len(angle1atoms) > 0:
-                                    x=line.split()[-1]
-                                    y=line.split('=')[-1]
-                                    for z in y.split(','):
-                                        angle2atoms.append(int(z))
-                                else:
-                                    x=line.split()[-1]
-                                    y=line.split('=')[-1]
-                                    for z in y.split(','):
-                                        angle1atoms.append(int(z))
-                            elif 'RMSD' in line:
-                                CV = 'RMSD'
-                                #The unit we will plot
-                                cvunit = 'Å'
-                            if 'TEMP' in line:
-                                for x in line.split():
-                                    if 'TEMP' in x:
-                                        temperature=float(x.split('=')[1])
-                print("Found temperature:", temperature)
-            except:
-                print("Unknown exception occurred when reading plumed.in")
-                print("Setting temp to unknown")
-                temperature="Unknown"
-    else:
-        if colvar_type==None or temperature==None:
-            print("give colvar_type and temperature")
-            exit()
-        CV=colvar_type
-        temperature=temperature
-    print("CV:", CV)
-    if CV =='Torsion' or CV=='Angle':
-        finalcvunit='°'
-    elif CV == 'RMSD' or CV=='Distance':
-        finalcvunit='Å'
-    print("CV unit:", finalcvunit)
+    #Reading file
+    ##! FIELDS dihed1 dihed2 file.free der_dihed1 der_dihed2
+    with open("fes.dat") as fesfile:
+        for line in fesfile:
+            if '#' not in line and len(line.split()) > 0:
+                if CVnum==1:
+                    rc.append(float(line.split()[0]))
+                    free_energy.append(float(line.split()[1]))
+                    derivG.append(float(line.split()[2]))
+                else:
+                    rc.append(float(line.split()[0]))
+                    rc2.append(float(line.split()[1]))
+                    free_energy.append(float(line.split()[2]))
+                    derivG.append(float(line.split()[3]))
+                    derivG2.append(float(line.split()[4]))
 
-    #Dict of energy conversions: Energy-unit to kcal/mol
-    energy_conversion_dict= {'eV':1/23.060541945329334}
-    # possibly conversion from kJ/mol to kcal/molt
-    energy_scaling=energy_conversion_dict[input_energy_unit]
-    #Possible nm to Ang conversion
-    distance_scaling=1
+
 
 
     #READ HILLS. Only necessary for Well-Tempered Metadynamics and plotting of Gaussian height
@@ -480,32 +428,42 @@ def MTD_analyze(path_to_plumed=None, Plot_To_Screen=False, colvar_type=None, tem
                             exit()
                     except:
                         pass
-        #convert to deg if torsion
-        if CV=='Torsion' or CV=='Angle':
+
+        #convert to deg if torsion/angle
+        if CV1_type.upper()=='Torsion' or CV1_type.upper()=='Angle':
+            rc_deg=np.array(rc)*180/pi
+            final_rc=rc_deg
             colvar_value_deg=np.array(colvar_value)*180/pi
-            colvar2_value_deg=np.array(colvar2_value)*180/pi
             # New. For multiple COLVAR files we create lists of colvar_value_deg, colvar2_value_deg and biaspot_value_kcal
-            colvar_value_deg_list.append(colvar_value_deg)
-            colvar2_value_deg_list.append(colvar2_value_deg)
-
+            colvar_value_deg_list.append(colvar_value_deg)            
             finalcolvar_value_list=colvar_value_deg_list
-            finalcolvar2_value_list=colvar2_value_deg_list
-
-        elif CV=='RMSD' or CV=='Distance':
-            #Converting from nm to A
+        #Possible conversion from nm to Angstrom
+        elif CV1_type.upper()=='RMSD' or CV1_type.upper()=='Distance':
+            rc_ang=np.array(rc)*distance_scaling
+            final_rc=rc_ang
             colvar_value=np.array(colvar_value)*distance_scaling
-            colvar2_value=np.array(colvar2_value)*distance_scaling
             finalcolvar_value_list.append(colvar_value)
-            finalcolvar2_value_list.append(colvar2_value)
-
-            #finalcolvar_value_list=np.array(finalcolvar_value_list)
-            #finalcolvar2_value_list=np.array(finalcolvar2_value_list)
         else:
             finalcolvar_value_list.append(colvar_value)
+
+        #convert to deg if torsion/angle
+        if CV2_type.upper()=='Torsion' or CV2_type.upper()=='Angle':
+            rc2_deg=np.array(rc2)*180/pi
+            final_rc2=rc2_deg
+            colvar2_value_deg=np.array(colvar2_value)*180/pi
+            # New. For multiple COLVAR files we create lists of colvar_value_deg, colvar2_value_deg and biaspot_value_kcal
+            colvar2_value_deg_list.append(colvar2_value_deg)            
+            finalcolvar2_value_list=colvar2_value_deg_list
+        #Possible conversion from nm to Angstrom
+        elif CV2_type.upper()=='RMSD' or CV2_type.upper()=='Distance':
+            rc2_ang=np.array(rc2)*distance_scaling
+            final_rc2=rc2_ang
+            colvar2_value=np.array(colvar2_value)*distance_scaling
+            finalcolvar2_value_list.append(colvar2_value)
+        else:
             finalcolvar2_value_list.append(colvar2_value)
 
-
-        #Convert to kcal
+        #Possible energy conversion
         biaspot_value_kcal=np.array(biaspot_value)/energy_scaling
 
 
@@ -514,53 +472,16 @@ def MTD_analyze(path_to_plumed=None, Plot_To_Screen=False, colvar_type=None, tem
         time=[];biaspot_value_kcal=[];colvar2_value_deg=[];colvar_value_deg=[]
         biaspot_value=[];colvar2_value=[];colvar_value=[]
 
-    #READING fes.dat
-    #Reaction coordinates (radian if torsion)
-    rc=[]
-    rc2=[]
-    #Free energy (kJ/mol)
-    free_energy=[]
 
-    #Derivative of Free Energy vs. reaction-coordinate. Probably not useful
-    derivG=[]
-    derivG2=[]
-
-    #Reading file
-    ##! FIELDS dihed1 dihed2 file.free der_dihed1 der_dihed2
-    with open("fes.dat") as fesfile:
-        for line in fesfile:
-            if '#' not in line and len(line.split()) > 0:
-                if CVnum==1:
-                    rc.append(float(line.split()[0]))
-                    free_energy.append(float(line.split()[1]))
-                    derivG.append(float(line.split()[2]))
-                else:
-                    rc.append(float(line.split()[0]))
-                    rc2.append(float(line.split()[1]))
-                    free_energy.append(float(line.split()[2]))
-                    derivG.append(float(line.split()[3]))
-                    derivG2.append(float(line.split()[4]))
-    #rc is in rad. convert to deg
-    if CV=='Torsion' or CV=='Angle':
-        rc_deg=np.array(rc)*180/pi
-        rc2_deg=np.array(rc2)*180/pi
-        final_rc=rc_deg
-        final_rc2=rc2_deg
-    #rc is is in nm. convert to Å
-    elif CV=='RMSD' or CV=='Distance':
-        rc_ang=np.array(rc)*distance_scaling
-        rc2_ang=np.array(rc2)*distance_scaling
-        final_rc=rc_ang
-        final_rc2=rc2_ang
-    else:
-        print("Unknown CV...oops...")
-        exit()
     print("final_rc:", final_rc)
     #Convert free energy from kJ/mol to kcal/mol
     free_energy_kcal=np.array(free_energy)/energy_scaling
     print("free_energy_kcal:", free_energy_kcal)
     Relfreeenergy_kcal=free_energy_kcal-min(free_energy_kcal)
     print("Relfreeenergy_kcal:", Relfreeenergy_kcal)
+    
+    
+    
     ###################
     # Matplotlib part
     ###################
@@ -702,3 +623,122 @@ def MTD_analyze(path_to_plumed=None, Plot_To_Screen=False, colvar_type=None, tem
     print("Plotted to file: ", "MTD_Plot-"+str(maxtime)+"ps"+".png"  )
     if Plot_To_Screen is True:
         plt.show()
+
+
+
+#Possibly obsolete
+def read_plumed_inputfile(plumedinputfile="plumed.in"):
+    #Get temperature from plumed.in in dir or dir above
+    dihed1atoms=[]
+    dihed2atoms=[]
+    angle1atoms=[]
+    angle2atoms=[]
+    distance1atoms=[]
+    distance2atoms=[]
+    print("")
+    try:
+        with open(plumedinputfile) as pluminpfile:
+            print("Found plumed inputfile file. Reading variables")
+            for line in pluminpfile:
+                if '#' not in line:
+                    if 'TORSION' in line:
+                        CV='Torsion'
+                        cvunit='°'
+                        if len(dihed1atoms) > 0:
+                            x=line.split()[-1]
+                            y=line.split('=')[-1]
+                            for z in y.split(','):
+                                dihed2atoms.append(int(z))
+                        else:
+                            x=line.split()[-1]
+                            y=line.split('=')[-1]
+                            for z in y.split(','):
+                                dihed1atoms.append(int(z))
+
+                    elif 'RMSD' in line:
+                        CV='RMSD'
+                        #The unit we will plot
+                        cvunit='Å'
+                    if 'TEMP' in line:
+                        for x in line.split():
+                            if 'TEMP' in x:
+                                temperature=float(x.split('=')[1])
+        print("Found temperature:", temperature)
+    except:
+        print("Found no plumed.in in dir")
+        print("Trying dir above...")
+        try:
+            with open("../plumed.in") as pluminpfile:
+                print("Found plumed.in file. Reading variables")
+                for line in pluminpfile:
+                    if '#' not in line:
+                        if 'TORSION' in line:
+                            CV = 'Torsion'
+                            cvunit = '°'
+                            if len(dihed1atoms) > 0:
+                                x=line.split()[-1]
+                                y=line.split('=')[-1]
+                                for z in y.split(','):
+                                    dihed2atoms.append(int(z))
+                            else:
+                                x=line.split()[-1]
+                                y=line.split('=')[-1]
+                                for z in y.split(','):
+                                    dihed1atoms.append(int(z))
+                        elif 'DISTANCE' in line:
+                            CV = 'Distance'
+                            #What we end up with
+                            cvunit = 'Å'
+                        elif 'ANGLE' in line:
+                            CV = 'Angle'
+                            cvunit = '°'
+                            if len(angle1atoms) > 0:
+                                x=line.split()[-1]
+                                y=line.split('=')[-1]
+                                for z in y.split(','):
+                                    angle2atoms.append(int(z))
+                            else:
+                                x=line.split()[-1]
+                                y=line.split('=')[-1]
+                                for z in y.split(','):
+                                    angle1atoms.append(int(z))
+                        elif 'DISTANCE' in line:
+                            CV = 'Distance'
+                            cvunit = 'Å'
+                            if len(distance1atoms) > 0:
+                                x = line.split()[-1]
+                                y = line.split('=')[-1]
+                                for z in y.split(','):
+                                    distance2atoms.append(int(z))
+                            else:
+                                x = line.split()[-1]
+                                y = line.split('=')[-1]
+                                for z in y.split(','):
+                                    distance1atoms.append(int(z))
+
+                        elif 'ANGLE' in line:
+                            CV = 'Angle'
+                            cvunit = '°'
+                            if len(angle1atoms) > 0:
+                                x=line.split()[-1]
+                                y=line.split('=')[-1]
+                                for z in y.split(','):
+                                    angle2atoms.append(int(z))
+                            else:
+                                x=line.split()[-1]
+                                y=line.split('=')[-1]
+                                for z in y.split(','):
+                                    angle1atoms.append(int(z))
+                        elif 'RMSD' in line:
+                            CV = 'RMSD'
+                            #The unit we will plot
+                            cvunit = 'Å'
+                        if 'TEMP' in line:
+                            for x in line.split():
+                                if 'TEMP' in x:
+                                    temperature=float(x.split('=')[1])
+            print("Found temperature:", temperature)
+        except:
+            print("Unknown exception occurred when reading plumed.in")
+            print("Setting temp to unknown")
+            temperature="Unknown"
