@@ -11,66 +11,6 @@ from modules.module_singlepoint import Singlepoint
 
 #Interface to limited parts of ASE
 
-#ASH calculator class for ASE
-class ASHcalc(Calculator):
-        def __init__(self, fragment=None, theory=None, plumed=None):
-            self.gradientcalls=0
-            self.fragment=fragment
-            self.theory=theory
-            self.results={}
-            self.name='ash'
-            self.parameters={}
-            self.atoms=None
-            self.forces=[]
-            self.plumedobj=plumed
-        def get_potential_energy(self, atomsobj):
-            return self.potenergy
-        def get_forces(self, atomsobj):
-            print("Called ASHcalc get_forces")
-
-            # Check if coordinates have changed. If not, return old forces
-            if np.array_equal(atomsobj.get_positions(), fragment.coords) == True:
-                #coordinates have not changed
-                print("Coordinates unchanged.")
-                if len(self.forces)==0:
-                    print("No forces available (1st step?). Will do calulation")
-                else:
-                    print("Returning old forces")
-                    return self.forces
-            print("Will calculate new forces")
-            
-            self.gradientcalls+=1
-
-            #Copy ASE coords into ASH fragment
-            self.fragment.coords=copy.copy(atomsobj.positions)
-            #print("Current coordinates:", self.fragment.coords)
-            #Calculate E+G
-            energy, gradient = Singlepoint(theory=self.theory, fragment=self.fragment, Grad=True)
-            #Converting E and G from Eh and Eh/Bohr to ASE units: eV and eV/Angstrom
-            self.potenergy=energy*constants.hartoeV
-            self.forces=-gradient* units.Hartree / units.Bohr
-            #print("potenergy:", self.potenergy)
-            #print("self.forces before plumed:", self.forces)
-            
-            #DO PLUMED-STEP HERE
-            if self.plumedobj!=None:
-                print("Plumed active.")
-                print("Calling Plumed")
-                #Note: this updated self.forces. No need to use returned forces
-                energy, forces = self.plumedobj.run(coords=fragment.coords, forces=self.forces, step=self.gradientcalls-1)
-                #TODO: Use Plumed energy ??
-                #print("energy from plumed:", energy)
-                #print("self.forces after plumed:", self.forces)
-                #print("forces returned from plumed", forces)
-                #self.potenergy=energy
-                #self.forces=forces
-                #self.potenergy, self.forces = plumed_ash(energy,forces)
-                #energy, forces = plumedlib.cv_calculation(istep, pos, vel, box, jobforces, jobenergy)
-            
-            
-            print("ASHcalc get_forces done")
-            return self.forces
-        
 
 def Dynamics_ASE(fragment=None, theory=None, temperature=300, timestep=None, thermostat=None, simulation_steps=None, simulation_time=None,
                  barostat=None, trajectoryname="Trajectory_ASE", traj_frequency=1, coupling_freq=0.002, frozen_atoms=None, frozen_bonds=None,
@@ -137,7 +77,65 @@ def Dynamics_ASE(fragment=None, theory=None, temperature=300, timestep=None, the
     except:
         pass
 
-    
+    class ASHcalc(Calculator):
+        def __init__(self, fragment=None, theory=None, plumed=None):
+            self.gradientcalls=0
+            self.fragment=fragment
+            self.theory=theory
+            self.results={}
+            self.name='ash'
+            self.parameters={}
+            self.atoms=None
+            self.forces=[]
+            self.plumedobj=plumed
+        def get_potential_energy(self, atomsobj):
+            return self.potenergy
+        def get_forces(self, atomsobj):
+            print("Called ASHcalc get_forces")
+
+            # Check if coordinates have changed. If not, return old forces
+            if np.array_equal(atomsobj.get_positions(), fragment.coords) == True:
+                #coordinates have not changed
+                print("Coordinates unchanged.")
+                if len(self.forces)==0:
+                    print("No forces available (1st step?). Will do calulation")
+                else:
+                    print("Returning old forces")
+                    return self.forces
+            print("Will calculate new forces")
+            
+            self.gradientcalls+=1
+
+            #Copy ASE coords into ASH fragment
+            self.fragment.coords=copy.copy(atomsobj.positions)
+            #print("Current coordinates:", self.fragment.coords)
+            #Calculate E+G
+            energy, gradient = Singlepoint(theory=self.theory, fragment=self.fragment, Grad=True)
+            #Converting E and G from Eh and Eh/Bohr to ASE units: eV and eV/Angstrom
+            self.potenergy=energy*constants.hartoeV
+            self.forces=-gradient* units.Hartree / units.Bohr
+            #print("potenergy:", self.potenergy)
+            #print("self.forces before plumed:", self.forces)
+            
+            #DO PLUMED-STEP HERE
+            if self.plumedobj!=None:
+                print("Plumed active.")
+                print("Calling Plumed")
+                #Note: this updated self.forces. No need to use returned forces
+                energy, forces = self.plumedobj.run(coords=fragment.coords, forces=self.forces, step=self.gradientcalls-1)
+                #TODO: Use Plumed energy ??
+                #print("energy from plumed:", energy)
+                #print("self.forces after plumed:", self.forces)
+                #print("forces returned from plumed", forces)
+                #self.potenergy=energy
+                #self.forces=forces
+                #self.potenergy, self.forces = plumed_ash(energy,forces)
+                #energy, forces = plumedlib.cv_calculation(istep, pos, vel, box, jobforces, jobenergy)
+            
+            
+            print("ASHcalc get_forces done")
+            return self.forces
+        
     #Option 2: Dummy ASE class where we create the attributes and methods we want
     #Too complicated
 
