@@ -410,7 +410,7 @@ def MTD_analyze(plumed_ash_object=None, path_to_plumed=None, Plot_To_Screen=Fals
             time_hills_list.append(time_hills)
             gaussheightkcal_list.append(gaussheight_kcal)
             time_hills=[];gaussheight_kcal=[];gaussheight=[]
-
+    print("time_hills_list", time_hills_list)
     #READ COLVAR
     time=[]
     colvar_value=[]
