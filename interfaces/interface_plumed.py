@@ -11,9 +11,11 @@ from functions.functions_general import natural_sort, print_line_with_mainheader
 #PLUMED_ASH class
 
 class plumed_ASH():
-    def __init__(self, path_to_plumed_kernel=None, bias_type="1D_MTD", fragment=None, colvar_type=None, colvar_indices=None,
-               temperature=300.0, hills_file="HILLS", colvar_file="COLVAR", height=None, sigma=None, biasfactor=None, timestep=None,
-               stride_num=10, pace_num=500, dynamics_program="ASE"):
+    def __init__(self, path_to_plumed_kernel=None, bias_type="MTD", fragment=None, CV1_type=None, CV1_indices=None,
+                CV2_type=None, CV2_indices=None,
+                temperature=300.0, hills_file="HILLS", colvar_file="COLVAR", height=0.01243, sigma=None, biasfactor=6.0, timestep=None,
+                stride_num=10, pace_num=500, dynamics_program="ASE",
+                numwalkers=None):
         
         if timestep==None:
             print("timestep= needs to be provided to plumed object")
@@ -29,24 +31,25 @@ class plumed_ASH():
             print("Found no plumed library. Install via: pip install plumed")
             exit()
         self.plumed=plumed
-        
+        self.numwalkers=numwalkers
         #Store masses
         self.masses=np.array(fragment.list_of_masses,dtype=np.float64)
         
-        if colvar_type=="distance" or colvar_type=="bondlength":
-            self.colvar_type="DISTANCE"
-        elif colvar_type=="torsion" or colvar_type=="dihedral":
-            self.colvar_type="TORSION"
-        elif colvar_type=="angle":
-            self.colvar_type="ANGLE"
-        elif colvar_type=="rmsd":
-            self.colvar_type="RMSD"
-        else:
-            print("Specify colvar_type argumentt.")
-            print("Options: distance, angle, torsion, rmsd")
-            exit()
-        #Change from 0 to 1 based indexing and converting to text-string
-        self.colvar_indices_string=','.join(map(str, [i+1 for i in colvar_indices]))
+        self.CV1_type=CV1_type
+        self.CV2_type=CV2_type
+        #if CV1_type=="distance" or CV1_type=="bondlength":
+        #    self.colvar_type="DISTANCE"
+        #elif CV1_type=="torsion" or CV1_type=="dihedral":
+        #    self.CV1_type="TORSION"
+        #elif CV1_type=="angle":
+        #    self.CV1_type="ANGLE"
+        #elif CV1_type=="rmsd":
+        #    self.CV1_type="RMSD"
+        #else:
+        #    print("Specify CV1_type argumentt.")
+        #    print("Options: distance, angle, torsion, rmsd")
+        #    exit()
+
 
         self.plumedobj=self.plumed.Plumed(kernel=path_to_plumed_kernel)
         
@@ -57,7 +60,7 @@ class plumed_ASH():
         self.plumedobj.cmd("setTimestep", timestep)
         print("timestep:", timestep)
         #Not sure about KbT
-        self.plumedobj.cmd("setKbT", 2.478957)
+        #self.plumedobj.cmd("setKbT", 2.478957)
         self.plumedobj.cmd("setNatoms",fragment.numatoms)
         self.plumedobj.cmd("setLogFile","plumed.log")
         
@@ -68,7 +71,8 @@ class plumed_ASH():
         #Choose Plumed units based on what the dynamics program is:
         #By using same units as dynamics program, we can avoid unit-conversion of forces
         if dynamics_program == "ASE":
-            print("Dynamics program ASE is set. Setting Plumed units to Angstrom, eV and ps.")
+            print("Dynamics program ASE is set. Setting Plumed units to Angstrom (distance), eV (energy) and ps (time).")
+            print("sigma and height values should reflect this. ")
             self.plumed_length_unit="A" #Plumed-label for Angstrom
             self.plumed_energy_unit="eV"
             self.plumed_time_unit="ps"
@@ -78,21 +82,27 @@ class plumed_ASH():
             print("unknown dynamics_program. Exiting")
             exit()
         
-        if bias_type == "1D_MTD":
-            #height=1.2
-            #sigma=0.35
-            #biasfactor=6.0
+        if bias_type == "MTD":
             #1D metadynamics
-            self.plumedobj.cmd("readInputLine","d: {} ATOMS={}".format(self.colvar_type, self.colvar_indices_string))
-            #p.cmd("readInputLine","RESTRAINT ARG=d AT=0 KAPPA=1")
-            self.plumedobj.cmd("readInputLine","METAD LABEL=MTD ARG=d PACE={} HEIGHT={} SIGMA={} FILE={} BIASFACTOR={} TEMP={}".format(pace_num, 
+            CV1_indices_string = ','.join(map(str, [i+1 for i in CV1_indices])) #Change from 0 to 1 based indexing and converting to text-string
+            self.plumedobj.cmd("readInputLine","cv1: {} ATOMS={}".format(self.CV1_type, CV1_indices_string))
+            CV_string="cv1"
+            #2D metadynamics if CV2_type has been set
+            if CV2_type != None:
+                CV2_indices_string = ','.join(map(str, [i+1 for i in CV2_indices]))
+                self.plumedobj.cmd("readInputLine","cv2: {} ATOMS={}".format(self.CV2_type, CV2_indices_string))
+                CV_string="cv1,cv2"
+            
+            self.plumedobj.cmd("readInputLine","METAD LABEL=MTD ARG={} PACE={} HEIGHT={} SIGMA={} FILE={} BIASFACTOR={} TEMP={}".format(CV_string,pace_num, 
                 height, sigma, hills_file, biasfactor, temperature))
-            #p.cmd("WALKERS_N=SET_WALKERNUM")
-            #p.cmd("WALKERS_ID=SET_WALKERID")
-            #p.cmd("WALKERS_DIR=../")
-            #p.cmd("WALKERS_RSTRIDE=10")
-            #self.plumedobj.cmd("readInputLine","... METAD")
-            self.plumedobj.cmd("readInputLine","PRINT STRIDE={} ARG=d,MTD.bias FILE={}".format(stride_num, colvar_file))
+            
+            #Multiple walker option. Not confirmed to work
+            if numwalkers != None:
+                self.plumedobj.cmd("readInputLine",str(numwalkers))
+                self.plumedobj.cmd("readInputLine","WALKERS_ID=SET_WALKERID") #NOTE: How to set this??
+                self.plumedobj.cmd("readInputLine","WALKERS_DIR=../")
+                self.plumedobj.cmd("readInputLine","WALKERS_RSTRIDE={}".format(stride_num))
+            self.plumedobj.cmd("readInputLine","PRINT STRIDE={} ARG={},MTD.bias FILE={}".format(stride_num, CV_string, colvar_file))
         else:
             print("bias_type not implemented")
             exit()
