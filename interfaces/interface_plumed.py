@@ -61,7 +61,8 @@ class plumed_ASH():
 
         self.CV1_type=CV1_type
         self.CV2_type=CV2_type
-        print("Defining plumed_ASH object")
+        print("")
+        print("Settings")
         print("")
         print("Path to Plumed kernel:", path_to_plumed_kernel)
         print("Dynamics program:", dynamics_program)
@@ -73,6 +74,8 @@ class plumed_ASH():
         print("")
         print("Temperature:", temperature)
         print("Gaussian height: {} {}".format(height, self.plumed_energy_unit))
+
+        
         if self.CV1_type.upper() == "DISTANCE" or self.CV1_type.upper() == "RMSD":
             print("Gaussian sigma for CV1: {} {}".format(sigma1,self.plumed_length_unit))
         elif self.CV1_type.upper() == "TORSION" or self.CV1_type.upper() == "ANGLE":
@@ -98,8 +101,6 @@ class plumed_ASH():
         self.numwalkers=numwalkers
         #Store masses
         self.masses=np.array(fragment.list_of_masses,dtype=np.float64)
-            
-
 
         
         if bias_type == "MTD":
