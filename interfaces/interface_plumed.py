@@ -517,7 +517,7 @@ def MTD_analyze(plumed_ash_object=None, path_to_plumed=None, Plot_To_Screen=Fals
         #Subplot 1: Free energy surface. From fes.dat via HILLS file (single-walker) or HILLS.X files (multiple-walker)
         plt.subplot(2, 2, 1)
         plt.gca().set_title('Free energy vs. CV', fontsize='small', style='italic', fontweight='bold')
-        plt.xlabel('{} ({})'.format(CV,finalcvunit_1), fontsize='small')
+        plt.xlabel('{} ({})'.format(CV1_type,finalcvunit_1), fontsize='small')
         plt.ylabel('Energy (kcal/mol)', fontsize='small')
         if CV=='Torsion':
             plt.xlim([-180,180])
@@ -531,7 +531,7 @@ def MTD_analyze(plumed_ash_object=None, path_to_plumed=None, Plot_To_Screen=Fals
         plt.subplot(2, 2, 2)
         plt.gca().set_title('CV vs. time', fontsize='small', style='italic', fontweight='bold')
         plt.xlabel('Time (ps)', fontsize='small')
-        plt.ylabel('{} ({})'.format(CV,finalcvunit_1), fontsize='small')
+        plt.ylabel('{} ({})'.format(CV1_type,finalcvunit_1), fontsize='small')
         #New: Using first timelist to get x-axis limit
         plt.xlim([0,max(time_list[0])+5])
 
@@ -544,7 +544,7 @@ def MTD_analyze(plumed_ash_object=None, path_to_plumed=None, Plot_To_Screen=Fals
         plt.subplot(2, 2, 3)
         #plt.title.set_text('Bias potential')
         plt.gca().set_title('Bias potential', fontsize='small', style='italic', fontweight='bold')
-        plt.xlabel('{} ({})'.format(CV,finalcvunit_1), fontsize='small')
+        plt.xlabel('{} ({})'.format(CV1_type,finalcvunit_1), fontsize='small')
         plt.ylabel('Bias potential (kcal/mol)', fontsize='small')
         if CV=='Torsion':
             plt.xlim([-180,180])
@@ -589,8 +589,8 @@ def MTD_analyze(plumed_ash_object=None, path_to_plumed=None, Plot_To_Screen=Fals
         #Subplot 1: Free energy surface
         plt.subplot(2, 2, 1)
         plt.gca().set_title('Free energy vs. CV', fontsize='small', style='italic', fontweight='bold')
-        plt.xlabel('{} ({})'.format(CV,CV1atoms), fontsize='small')
-        plt.ylabel('{} ({})'.format(CV,CV2atoms), fontsize='small')
+        plt.xlabel('{} ({})'.format(CV1_type,CV1_indices), fontsize='small')
+        plt.ylabel('{} ({})'.format(CV2_type,CV2_indices), fontsize='small')
         if CV=='Torsion':
             plt.xlim([-180,180])
             plt.ylim([-180,180])
@@ -602,8 +602,8 @@ def MTD_analyze(plumed_ash_object=None, path_to_plumed=None, Plot_To_Screen=Fals
         #Subplot 2: CV vs. time
         plt.subplot(2, 2, 2)
         plt.gca().set_title('CV vs. time', fontsize='small', style='italic', fontweight='bold')
-        plt.xlabel('{} ({})'.format(CV,CV1atoms), fontsize='small')
-        plt.ylabel('{} ({})'.format(CV,CV2atoms), fontsize='small')
+        plt.xlabel('{} ({})'.format(CV1_type,CV1_indices), fontsize='small')
+        plt.ylabel('{} ({})'.format(CV2_type,CV2_indices), fontsize='small')
         #plt.xlim([0,max(time)+5])
         cm = plt.cm.get_cmap('RdYlBu_r')
         colorscatter=plt.scatter(finalcolvar_value_list_flat, finalcolvar2_value_list_flat, c=time_flat, marker='o', s=2, linestyle='-', linewidth=1, cmap=cm)
@@ -614,8 +614,8 @@ def MTD_analyze(plumed_ash_object=None, path_to_plumed=None, Plot_To_Screen=Fals
         #Subplot 3: Bias potential
         plt.subplot(2, 2, 3)
         plt.gca().set_title('Bias potential', fontsize='small', style='italic', fontweight='bold')
-        plt.xlabel('{} ({})'.format(CV,CV1atoms), fontsize='small')
-        plt.ylabel('{} ({})'.format(CV,CV2atoms), fontsize='small')
+        plt.xlabel('{} ({})'.format(CV1_type,CV1_indices), fontsize='small')
+        plt.ylabel('{} ({})'.format(CV2_type,CV2_indices), fontsize='small')
         cm = plt.cm.get_cmap(colormap)
         colorscatter2=plt.scatter(finalcolvar_value_list_flat, finalcolvar2_value_list_flat, c=biaspot_value_kcal_list_flat, marker='o', linestyle='-', linewidth=1, cmap=cm)
         cbar2 = plt.colorbar(colorscatter2)
