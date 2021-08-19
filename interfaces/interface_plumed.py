@@ -13,9 +13,60 @@ from functions.functions_general import natural_sort, print_line_with_mainheader
 class plumed_ASH():
     def __init__(self, path_to_plumed_kernel=None, bias_type="MTD", fragment=None, CV1_type=None, CV1_indices=None,
                 CV2_type=None, CV2_indices=None,
-                temperature=300.0, hills_file="HILLS", colvar_file="COLVAR", height=0.01243, sigma=None, biasfactor=6.0, timestep=None,
+                temperature=300.0, hills_file="HILLS", colvar_file="COLVAR", height=0.01243, sigma1=None, sigma2=None, biasfactor=6.0, timestep=None,
                 stride_num=10, pace_num=500, dynamics_program="ASE",
                 numwalkers=None):
+        
+        #Choose Plumed units based on what the dynamics program is:
+        #By using same units as dynamics program, we can avoid unit-conversion of forces
+        if dynamics_program == "ASE":
+            print("Dynamics program ASE is set. Setting Plumed units to Angstrom (distance), eV (energy) and ps (time).")
+            print("sigma and height values should reflect this. ")
+            self.plumed_length_unit="A" #Plumed-label for Angstrom
+            self.plumed_energy_unit="eV"
+            self.plumed_time_unit="ps"
+            #Units: length set to Angstrom (ASE unit) and time to ps, energy in eV (ASE unit)
+            self.plumedobj.cmd("readInputLine","UNITS LENGTH={} ENERGY={} TIME={}".format(self.plumed_length_unit,self.plumed_energy_unit,self.plumed_time_unit))
+        else:
+            print("unknown dynamics_program. Exiting")
+            exit()
+        
+        self.CV1_type=CV1_type
+        self.CV2_type=CV2_type
+        
+        print("Defining plumed_ASH object")
+        print("")
+        print("Path to Plumed kernel:", path_to_plumed_kernel)
+        print("Dynamics program:", dynamics_program)
+        print("Bias type:", bias_type)
+        print("CV1 type:", CV1_type)
+        print("CV1 indices:", CV1_indices)
+        print("CV2 type:", CV2_type)
+        print("CV2 indices:", CV2_indices)
+        print("")
+        print("Temperature:", temperature)
+        print("Gaussian height: {} {}".format(height, self.plumed_energy_unit))
+        if self.CV1_type.upper() == "DISTANCE" or self.CV1_type.upper() == "RMSD":
+            print("Gaussian sigma for CV1: {} {}".format(sigma1,self.plumed_length_unit))
+        elif self.CV1_type.upper() == "TORSION" or self.CV1_type.upper() == "ANGLE":
+            print("Gaussian sigma for CV1: {} {}".format(sigma1,"rad"))
+        else:
+            print("unknown CV1 type. Exiting")
+            exit()
+        if self.CV2_type.upper() == "DISTANCE" or self.CV2_type.upper() == "RMSD":
+            print("Gaussian sigma for CV2: {} {}".format(sigma2,self.plumed_length_unit))
+        elif self.CV2_type.upper() == "TORSION" or self.CV2_type.upper() == "ANGLE":
+            print("Gaussian sigma for CV2: {} {}".format(sigma2,"rad"))
+        else:
+            print("unknown CV2 type. Exiting")
+            exit()            
+        print("Bias factor:", biasfactor)
+        print("Timestep: {} {}".format(timestep, self.plumed_time_unit))
+        print("")
+        print("HILLS filename:", hills_file)
+        print("COLVAR filename:", colvar_file)
+        print("Stride number", stride_num)
+        print("Pace number", pace_num)
         
         if timestep==None:
             print("timestep= needs to be provided to plumed object")
@@ -35,8 +86,7 @@ class plumed_ASH():
         #Store masses
         self.masses=np.array(fragment.list_of_masses,dtype=np.float64)
         
-        self.CV1_type=CV1_type
-        self.CV2_type=CV2_type
+
         #if CV1_type=="distance" or CV1_type=="bondlength":
         #    self.colvar_type="DISTANCE"
         #elif CV1_type=="torsion" or CV1_type=="dihedral":
@@ -68,33 +118,23 @@ class plumed_ASH():
         self.plumedobj.cmd("init")
 
 
-        #Choose Plumed units based on what the dynamics program is:
-        #By using same units as dynamics program, we can avoid unit-conversion of forces
-        if dynamics_program == "ASE":
-            print("Dynamics program ASE is set. Setting Plumed units to Angstrom (distance), eV (energy) and ps (time).")
-            print("sigma and height values should reflect this. ")
-            self.plumed_length_unit="A" #Plumed-label for Angstrom
-            self.plumed_energy_unit="eV"
-            self.plumed_time_unit="ps"
-            #Units: length set to Angstrom (ASE unit) and time to ps, energy in eV (ASE unit)
-            self.plumedobj.cmd("readInputLine","UNITS LENGTH={} ENERGY={} TIME={}".format(self.plumed_length_unit,self.plumed_energy_unit,self.plumed_time_unit))
-        else:
-            print("unknown dynamics_program. Exiting")
-            exit()
+
         
         if bias_type == "MTD":
             #1D metadynamics
             CV1_indices_string = ','.join(map(str, [i+1 for i in CV1_indices])) #Change from 0 to 1 based indexing and converting to text-string
             self.plumedobj.cmd("readInputLine","cv1: {} ATOMS={}".format(self.CV1_type, CV1_indices_string))
             CV_string="cv1"
+            sigma_string=sigma
             #2D metadynamics if CV2_type has been set
             if CV2_type != None:
                 CV2_indices_string = ','.join(map(str, [i+1 for i in CV2_indices]))
                 self.plumedobj.cmd("readInputLine","cv2: {} ATOMS={}".format(self.CV2_type, CV2_indices_string))
                 CV_string="cv1,cv2"
+                sigma_string=str(sigma1)+","+str(sigma2)
             
             self.plumedobj.cmd("readInputLine","METAD LABEL=MTD ARG={} PACE={} HEIGHT={} SIGMA={} FILE={} BIASFACTOR={} TEMP={}".format(CV_string,pace_num, 
-                height, sigma, hills_file, biasfactor, temperature))
+                height, sigma_string, hills_file, biasfactor, temperature))
             
             #Multiple walker option. Not confirmed to work
             if numwalkers != None:
