@@ -16,6 +16,18 @@ class plumed_ASH():
                 temperature=300.0, hills_file="HILLS", colvar_file="COLVAR", height=0.01243, sigma1=None, sigma2=None, biasfactor=6.0, timestep=None,
                 stride_num=10, pace_num=500, dynamics_program="ASE",
                 numwalkers=None):
+        # Making sure both Plumed kernel and Python wrappers are available
+        if path_to_plumed_kernel == None:
+            print("plumed_MD requires path_to_plumed_kernel argument to be set")
+            print("Should point to: /path/to/libplumedKernel.so")
+            exit()
+        try:
+            import plumed
+        except:
+            print("Found no plumed library. Install via: pip install plumed")
+            exit()
+        self.plumed=plumed
+        self.plumedobj=self.plumed.Plumed(kernel=path_to_plumed_kernel)
         
         #Choose Plumed units based on what the dynamics program is:
         #By using same units as dynamics program, we can avoid unit-conversion of forces
@@ -30,10 +42,11 @@ class plumed_ASH():
         else:
             print("unknown dynamics_program. Exiting")
             exit()
-        
+        if timestep==None:
+            print("timestep= needs to be provided to plumed object")
+            exit()
         self.CV1_type=CV1_type
         self.CV2_type=CV2_type
-        
         print("Defining plumed_ASH object")
         print("")
         print("Path to Plumed kernel:", path_to_plumed_kernel)
@@ -68,43 +81,11 @@ class plumed_ASH():
         print("Stride number", stride_num)
         print("Pace number", pace_num)
         
-        if timestep==None:
-            print("timestep= needs to be provided to plumed object")
-            exit()
-        
-        if path_to_plumed_kernel == None:
-            print("plumed_MD requires path_to_plumed_kernel argument to be set")
-            print("Should point to: /path/to/libplumedKernel.so")
-            exit()
-        try:
-            import plumed
-        except:
-            print("Found no plumed library. Install via: pip install plumed")
-            exit()
-        self.plumed=plumed
         self.numwalkers=numwalkers
         #Store masses
         self.masses=np.array(fragment.list_of_masses,dtype=np.float64)
-        
-
-        #if CV1_type=="distance" or CV1_type=="bondlength":
-        #    self.colvar_type="DISTANCE"
-        #elif CV1_type=="torsion" or CV1_type=="dihedral":
-        #    self.CV1_type="TORSION"
-        #elif CV1_type=="angle":
-        #    self.CV1_type="ANGLE"
-        #elif CV1_type=="rmsd":
-        #    self.CV1_type="RMSD"
-        #else:
-        #    print("Specify CV1_type argumentt.")
-        #    print("Options: distance, angle, torsion, rmsd")
-        #    exit()
-
-
-        self.plumedobj=self.plumed.Plumed(kernel=path_to_plumed_kernel)
-        
-        
-        #Basic settings
+            
+        #Basic settings in Plumed object
         self.plumedobj.cmd("setMDEngine","python")
         #Timestep needs to be set
         self.plumedobj.cmd("setTimestep", timestep)
@@ -116,8 +97,6 @@ class plumed_ASH():
         
         #Initialize object
         self.plumedobj.cmd("init")
-
-
 
         
         if bias_type == "MTD":
