@@ -451,7 +451,7 @@ def MTD_analyze(plumed_ash_object=None, path_to_plumed=None, Plot_To_Screen=Fals
                         pass
 
         #convert to deg if torsion/angle
-        if CV1_type.upper()=='Torsion' or CV1_type.upper()=='Angle':
+        if CV1_type.upper()=='TORSION' or CV1_type.upper()=='ANGLE':
             rc_deg=np.array(rc)*180/pi
             final_rc=rc_deg
             colvar_value_deg=np.array(colvar_value)*180/pi
@@ -459,7 +459,7 @@ def MTD_analyze(plumed_ash_object=None, path_to_plumed=None, Plot_To_Screen=Fals
             colvar_value_deg_list.append(colvar_value_deg)            
             finalcolvar_value_list=colvar_value_deg_list
         #Possible conversion from nm to Angstrom
-        elif CV1_type.upper()=='RMSD' or CV1_type.upper()=='Distance':
+        elif CV1_type.upper()=='RMSD' or CV1_type.upper()=='DISTANCE':
             rc_ang=np.array(rc)*distance_scaling
             final_rc=rc_ang
             colvar_value=np.array(colvar_value)*distance_scaling
@@ -468,7 +468,7 @@ def MTD_analyze(plumed_ash_object=None, path_to_plumed=None, Plot_To_Screen=Fals
             finalcolvar_value_list.append(colvar_value)
 
         #convert to deg if torsion/angle
-        if CV2_type.upper()=='Torsion' or CV2_type.upper()=='Angle':
+        if CV2_type.upper()=='TORSION' or CV2_type.upper()=='ANGLE':
             rc2_deg=np.array(rc2)*180/pi
             final_rc2=rc2_deg
             colvar2_value_deg=np.array(colvar2_value)*180/pi
@@ -476,7 +476,7 @@ def MTD_analyze(plumed_ash_object=None, path_to_plumed=None, Plot_To_Screen=Fals
             colvar2_value_deg_list.append(colvar2_value_deg)            
             finalcolvar2_value_list=colvar2_value_deg_list
         #Possible conversion from nm to Angstrom
-        elif CV2_type.upper()=='RMSD' or CV2_type.upper()=='Distance':
+        elif CV2_type.upper()=='RMSD' or CV2_type.upper()=='DISTANCE':
             rc2_ang=np.array(rc2)*distance_scaling
             final_rc2=rc2_ang
             colvar2_value=np.array(colvar2_value)*distance_scaling
