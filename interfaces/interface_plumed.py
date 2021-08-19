@@ -26,9 +26,24 @@ class plumed_ASH():
         except:
             print("Found no plumed library. Install via: pip install plumed")
             exit()
+        if timestep==None:
+            print("timestep= needs to be provided to plumed object")
+            exit()
         self.plumed=plumed
         self.plumedobj=self.plumed.Plumed(kernel=path_to_plumed_kernel)
+
+        #Basic settings in Plumed object
+        self.plumedobj.cmd("setMDEngine","python")
+        #Timestep needs to be set
+        self.plumedobj.cmd("setTimestep", timestep)
+        #Not sure about KbT
+        #self.plumedobj.cmd("setKbT", 2.478957)
+        self.plumedobj.cmd("setNatoms",fragment.numatoms)
+        self.plumedobj.cmd("setLogFile","plumed.log")
         
+        #Initialize object
+        self.plumedobj.cmd("init")
+
         #Choose Plumed units based on what the dynamics program is:
         #By using same units as dynamics program, we can avoid unit-conversion of forces
         if dynamics_program == "ASE":
@@ -42,9 +57,7 @@ class plumed_ASH():
         else:
             print("unknown dynamics_program. Exiting")
             exit()
-        if timestep==None:
-            print("timestep= needs to be provided to plumed object")
-            exit()
+
         self.CV1_type=CV1_type
         self.CV2_type=CV2_type
         print("Defining plumed_ASH object")
@@ -85,18 +98,7 @@ class plumed_ASH():
         #Store masses
         self.masses=np.array(fragment.list_of_masses,dtype=np.float64)
             
-        #Basic settings in Plumed object
-        self.plumedobj.cmd("setMDEngine","python")
-        #Timestep needs to be set
-        self.plumedobj.cmd("setTimestep", timestep)
-        print("timestep:", timestep)
-        #Not sure about KbT
-        #self.plumedobj.cmd("setKbT", 2.478957)
-        self.plumedobj.cmd("setNatoms",fragment.numatoms)
-        self.plumedobj.cmd("setLogFile","plumed.log")
-        
-        #Initialize object
-        self.plumedobj.cmd("init")
+
 
         
         if bias_type == "MTD":
