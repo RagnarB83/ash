@@ -108,7 +108,7 @@ class plumed_ASH():
             CV1_indices_string = ','.join(map(str, [i+1 for i in CV1_indices])) #Change from 0 to 1 based indexing and converting to text-string
             self.plumedobj.cmd("readInputLine","cv1: {} ATOMS={}".format(self.CV1_type.upper(), CV1_indices_string))
             CV_string="cv1"
-            sigma_string=sigma
+            sigma_string=sigma1
             #2D metadynamics if CV2_type has been set
             if CV2_type != None:
                 CV2_indices_string = ','.join(map(str, [i+1 for i in CV2_indices]))
