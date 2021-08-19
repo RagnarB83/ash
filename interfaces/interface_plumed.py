@@ -63,6 +63,8 @@ class plumed_ASH():
 
         self.CV1_type=CV1_type
         self.CV2_type=CV2_type
+        self.CV1_indices=CV1_indices
+        self.CV2_indices=CV2_indices
         self.temperature=temperature
         print("")
         print("Settings")
@@ -71,9 +73,9 @@ class plumed_ASH():
         print("Dynamics program:", dynamics_program)
         print("Bias type:", bias_type)
         print("CV1 type:", self.CV1_type)
-        print("CV1 indices:", CV1_indices)
+        print("CV1 indices:", self.CV1_indices)
         print("CV2 type:", self.CV2_type)
-        print("CV2 indices:", CV2_indices)
+        print("CV2 indices:", self.CV2_indices)
         print("")
         print("Temperature:", temperature)
         print("Gaussian height: {} {}".format(height, self.plumed_energy_unit))
