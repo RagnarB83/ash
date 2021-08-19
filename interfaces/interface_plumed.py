@@ -23,7 +23,7 @@ class plumed_ASH():
             print("Should point to: /path/to/libplumedKernel.so")
             exit()
         #Path to Plumed (used by MTD_analyze)
-        self.path_to_plumed=path_to_plumed_kernel.replace("/libplumedKernel.so","")
+        self.path_to_plumed=path_to_plumed_kernel.replace("/lib/libplumedKernel.so","")
         try:
             import plumed
         except:
