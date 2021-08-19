@@ -171,7 +171,7 @@ class plumed_ASH():
         os.environ['PATH'] = self.path_to_plumed+'/bin'+os.pathsep+os.environ['PATH']
         os.environ['LD_LIBRARY_PATH'] = self.path_to_plumed+'/lib'+os.pathsep+os.environ['LD_LIBRARY_PATH']
         print("os.environ PATH", os.environ['PATH'])
-        os.system('plumed sum_hills --hills {}}'.format(hillsfile))
+        os.system('plumed sum_hills --hills {}'.format(hillsfile))
         #Or run via library? TODO
         #
 
