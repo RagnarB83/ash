@@ -1782,7 +1782,99 @@ def MDtraj_imagetraj(trajectory, pdbtopology, format='DCD', unitcell_lengths=Non
 
 
 
+def solvate_small_molecule(fragment=None, watermodel=None, pH=7.0, solvent_padding=10.0, extraxmlfile=None,
+                           solvent_boxdims=None, ionicstrength=0.1, iontype='K+'):
+    print_line_with_mainheader("SmallMolecule Solvator")
+    try:
+        import simtk.openmm as openmm
+        import simtk.openmm.app as openmm_app
+        import simtk.unit as openmm_unit
+        print("Imported OpenMM library version:", openmm.__version__)
 
+    except ImportError:
+        raise ImportError(
+            "OpenMM requires installing the OpenMM package. Try: conda install -c conda-forge openmm  \
+            Also see http://docs.openmm.org/latest/userguide/application.html")
+    
+    #Needed?
+    try:
+        import pdbfixer
+    except:
+        print("Problem importing pdbfixer. Install first via conda:")
+        print("conda install -c conda-forge pdbfixer")
+    
+    write_pdbfile(fragment,outputname="smallmol")
+    
+    #Take input ASH fragment and write PDB
+    
+    #Load fixed PDB-file and create Modeller object
+    pdb = openmm_app.PDBFile("smallmol.pdb")
+    print("Loading Modeller")
+    modeller = openmm_app.Modeller(pdb.topology, pdb.positions)
+    numresidues=modeller.topology.getNumResidues()
+    print("Modeller topology has {} residues".format(numresidues))
+    
+    #Forcefield
+    
+    #TODO: Need to figure out how to create XML file for our small molecule
+    #Option 1: Find some automatic tool that may work for organics
+    #Option 2: Write something that writes out an XML-file with nonbonded parameters
+        # charges: initially zero. later populate via xTB or something
+        # LJ parameters: ??
+        # Use DDEC or something to create parameters
+    
+    #TODO: generalize to other solvents.
+    if watermodel=="tip3p":
+        waterxmlfile="tip3p.xml"
+    else:
+        print("unknown watermodel");exit()
+    xmlfile=None
+
+    #Simple function to write a basic XML-file for a molecule
+    #TODO: FINISH
+    
+    #Do ORCA single-point calc to get DFT-calc
+    #call DDEC to get charges and LJ parameters??
+    
+    def write_xmlfile(atomtypes, elements, charges, LJpars):
+        with open("test.xml") as xmlfile:
+            xmlfile.write("<ForceField>\n")
+            xmlfile.write("<AtomTypes>\n")
+            xmlfile.write("<Type name=\"{}\" class=\"{}\" element=\"{}\" mass=\"{}\"/>".format(0,"N","N", str(14.00672)))
+            #All other atomtypes
+            xmlfile.write("</AtomTypes>\n")
+            
+            xmlfile.write("<Residues>\n")
+            xmlfile.write("<Residue name=\"ACE\">\n")
+            xmlfile.write("<Atom name=\"HH31\" type=\"710\"/>".format(atomname,atomtype))
+            #All other atoms
+            xmlfile.write("</Residue>\n")
+            xmlfile.write("</Residues>\n")
+            
+            xmlfile.write("<NonbondedForce coulomb14scale=\"0.833333\" lj14scale=\"0.5\">")
+            xmlfile.write("<Atom type=\"0\" charge=\"-0.4157\" sigma=\"0.32499\" epsilon=\"0.71128\"/>")
+            #all other atomtypes
+            xmlfile.write("</NonbondedForce>\n")
+            xmlfile.write("</ForceField>\n")
+
+
+    if extraxmlfile == None:
+        print("here")
+        forcefield=openmm_app.forcefield.ForceField(xmlfile, waterxmlfile)
+    else:
+        print("Using extra XML file:", extraxmlfile)
+        forcefield=openmm_app.forcefield.ForceField(xmlfile, waterxmlfile, extraxmlfile)
+    
+
+
+
+
+
+    #Solvent
+    print("Adding solvent, watermodel:", watermodel)
+    if solvent_boxdims != None: 
+        print("Solvent boxdimension provided: {} Å".format(solvent_boxdims))
+        modeller.addSolvent(forcefield, boxSize=openmm.Vec3(solvent_boxdims[0], solvent_boxdims[1], solvent_boxdims[2])*openmm_unit.angstrom)
 
 
 
