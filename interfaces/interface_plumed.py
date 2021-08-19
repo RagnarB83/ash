@@ -20,10 +20,16 @@ class plumed_ASH():
         # Making sure both Plumed kernel and Python wrappers are available
         if path_to_plumed_kernel == None:
             print("plumed_MD requires path_to_plumed_kernel argument to be set")
-            print("Should point to: /path/to/libplumedKernel.so")
+            print("Should point to: /path/to/libplumedKernel.so or /path/to/libplumedKernel.dylib")
             exit()
         #Path to Plumed (used by MTD_analyze)
-        self.path_to_plumed=path_to_plumed_kernel.replace("/lib/libplumedKernel.so","")
+        if '.dylib' in path_to_plumed_kernel:
+            self.path_to_plumed=path_to_plumed_kernel.replace("/lib/libplumedKernel.dylib","")
+        else:
+            self.path_to_plumed=path_to_plumed_kernel.replace("/lib/libplumedKernel.so","")
+        
+        
+        
         try:
             import plumed
         except:
@@ -135,8 +141,19 @@ class plumed_ASH():
         else:
             print("bias_type not implemented")
             exit()
-        
-        
+        #Write Plumed info file
+        with open ("plumed_ash.info", 'w') as pfile:
+            pfile.write("path_to_plumed {}\n".format(self.path_to_plumed))
+            pfile.write("CV1_type {}\n".format(self.CV1_type))
+            pfile.write("CV2_type {}\n".format(self.CV2_type))
+            pfile.write("CV1_indices {}\n".format(self.CV1_indices))
+            pfile.write("CV2_indices {}\n".format(self.CV2_indices))
+            pfile.write("temperature {}\n".format(self.temperature))
+            pfile.write("plumed_length_unit {}\n".format(self.plumed_length_unit))
+            pfile.write("plumed_energy_unit {}\n".format(self.plumed_energy_unit))
+            pfile.write("plumed_time_unit {}\n".format(self.plumed_time_unit))
+
+
     def run(self, coords=None, forces=None, step=None):
         #module_init_time = time.time()
         #Setting step
@@ -167,28 +184,26 @@ class plumed_ASH():
         energy=999.9999
         #print_time_rel(module_init_time, modulename='Plumed run', moduleindex=2)
         return energy,forces
-    def run_sum_hills(self,hillsfile):
-        print("Running run_sum_hills")
-        print("HILLS file is:", hillsfile)
-        #Either run plumed binary, requiring to st
-        os.environ['PATH'] = self.path_to_plumed+'/bin'+os.pathsep+os.environ['PATH']
-        os.environ['LD_LIBRARY_PATH'] = self.path_to_plumed+'/lib'+os.pathsep+os.environ['LD_LIBRARY_PATH']
-        print("os.environ PATH", os.environ['PATH'])
-        print("os.environ LD_LIBRARY_PATH", os.environ['LD_LIBRARY_PATH'])
-        if hillsfile=="HILLS":
-            os.system('plumed sum_hills --hills HILLS')
-        elif hillsfile=="HILLS.ALL":
-            os.system('plumed sum_hills --hills HILLS.ALL')
-        else:
-            print("problem")
-            exit()
-        #Or run via library? TODO
-        #
 
+    def close(self):
+        #Properly close Plumed object (flushes outputfiles etc)
+        self.plumedobj.finalize()
+
+#Standalone function to call plumed binary and get fes.dat
+def call_plumed_sum_hills(path_to_plumed,hillsfile):
+        print("Running plumed sum_hills on hills file")
+        print("path_to_plumed:", path_to_plumed)
+        print("HILLS file is:", hillsfile)
+        print("Will create fes.dat")
+        #Either run plumed binary, requiring to st
+        os.environ['PATH'] = path_to_plumed+'/bin'+os.pathsep+os.environ['PATH']
+        os.environ['LD_LIBRARY_PATH'] = path_to_plumed+'/lib'+os.pathsep+os.environ['LD_LIBRARY_PATH']
+        os.system('plumed sum_hills --hills {}'.format(hillsfile))
+        
 #Metadynamics visualization tool
 
 def MTD_analyze(plumed_ash_object=None, path_to_plumed=None, Plot_To_Screen=False, CV1_type=None, CV2_type=None, temperature=None,
-                CV1atoms=None, CV2atoms=None, read_plumed_inputfile=False, input_energy_unit='eV'):
+                CV1_indices=None, CV2_indices=None):
     #Energy-unit used by Plumed-ASH should be eV in general
     print_line_with_mainheader("Metadynamics Analysis Script")
     try:
@@ -196,7 +211,6 @@ def MTD_analyze(plumed_ash_object=None, path_to_plumed=None, Plot_To_Screen=Fals
     except:
         print("Problem importing matplotlib.")
     
-
 
     ###############################
     #USER SETTINGS
@@ -211,15 +225,45 @@ def MTD_analyze(plumed_ash_object=None, path_to_plumed=None, Plot_To_Screen=Fals
     
     #Get everything from provided plumed_ash object
     if plumed_ash_object != None:
+        print("plumed_ash object provided. Reading")
         path_to_plumed=plumed_ash_object.path_to_plumed
         CV1_type = plumed_ash_object.CV1_type
         CV2_type = plumed_ash_object.CV2_type
         CV1_indices = plumed_ash_object.CV1_indices
         CV2_indices = plumed_ash_object.CV2_indices
         temperature=plumed_ash_object.temperature
-    #Or from keywords
+        plumed_length_unit=plumed_ash_object.plumed_length_unit
+        plumed_energy_unit=plumed_ash_object.plumed_energy_unit
+        plumed_time_unit=plumed_ash_object.plumed_time_unit
+    #Or from plumed info file
+    elif os.path.isfile("plumed_ash.info") == True:
+        print("Found file plumed_ash.info file in directory. Reading")
+        with open("plumed_ash.info") as pinfo:
+            for line in pinfo:
+                if 'path_to_plumed' in line:
+                    print("here")
+                    print(line)
+                    path_to_plumed=line.split()[-1]
+                if 'CV1_type' in line:
+                    CV1_type = line.split()[-1]
+                if 'CV2_type' in line:
+                    CV2_type = line.split()[-1]
+                if 'CV1_indices' in line:
+                    CV1_indices = line.split()[-1]
+                if 'CV2_indices' in line:
+                    CV2_indices = line.split()[-1]
+                if 'temperature' in line:
+                    temperature = line.split()[-1]
+                if 'plumed_length_unit' in line:
+                    plumed_length_unit = line.split()[-1]
+                if 'plumed_energy_unit' in line:
+                    plumed_energy_unit = line.split()[-1]
+                if 'plumed_time_unit' in line:
+                    plumed_time_unit = line.split()[-1]
+
+    #Or from keywords (TO BE CHECKED)
     else:
-        print("No Plumed_ASH object provided. Getting information via keywords")
+        print("No Plumed_ASH object provided or plumed_ash.info file. Trying to get information via keywords")
         if CV1_type==None or temperature==None:
             print("give CV1_type and temperature")
             exit()
@@ -232,17 +276,22 @@ def MTD_analyze(plumed_ash_object=None, path_to_plumed=None, Plot_To_Screen=Fals
 
     #Dict of energy conversions: Energy-unit to kcal/mol
     energy_conversion_dict= {'eV':1/23.060541945329334}
-    # possibly conversion from kJ/mol to kcal/molt
-    energy_scaling=energy_conversion_dict[input_energy_unit]
-    #Possible nm to Ang conversion
-    distance_scaling=1
-
+    # possibly conversion from energy-unit to kcal/mol. 
+    energy_scaling=energy_conversion_dict[plumed_energy_unit]
+    
+    #Possible nm to Ang conversion. TODO: Generalize
+    if plumed_length_unit =="A":
+        distance_scaling=1
+    else:
+        print("No plumed_length_unit defined. Assuming default plumed (nm)")
+        distance_scaling=10
     #1D
     if CV2_type == None:
+        print("here")
         CVnum=1
         if CV1_type.upper() =='TORSION' or CV1_type.upper()=='ANGLE':
             finalcvunit_1='°'
-        elif CV1_type.upper() == 'RMSD' or CV1_type.upper()=='Distance':
+        elif CV1_type.upper() == 'RMSD' or CV1_type.upper()=='DISTANCE':
             finalcvunit_1='Å'
         else:
             print("unknown. exiting");exit()
@@ -252,20 +301,20 @@ def MTD_analyze(plumed_ash_object=None, path_to_plumed=None, Plot_To_Screen=Fals
         CVnum=2
         if CV1_type.upper() =='TORSION' or CV1_type.upper()=='ANGLE':
             finalcvunit_1='°'
-        elif CV1_type.upper() == 'RMSD' or CV1_type.upper()=='Distance':
+        elif CV1_type.upper() == 'RMSD' or CV1_type.upper()=='DISTANCE':
             finalcvunit_1='Å'
         else:
             print("unknown. exiting");exit()
         print("Final CV1 units:", finalcvunit_1)
         if CV2_type.upper() =='TORSION' or CV2_type.upper()=='ANGLE':
             finalcvunit_2='°'
-        elif CV2_type.upper() == 'RMSD' or CV2_type.upper()=='Distance':
+        elif CV2_type.upper() == 'RMSD' or CV2_type.upper()=='DISTANCE':
             finalcvunit_2='Å'
         else:
             print("unknown. exiting");exit()
         print("Final CV2 units:", finalcvunit_2)
-    if finalcvunit_2 != finalcvunit_1:
-        print("differ. possible problem")
+        if finalcvunit_2 != finalcvunit_1:
+            print("differ. possible problem")
         
     
     print("CV1_type:", CV1_type)
@@ -313,6 +362,7 @@ def MTD_analyze(plumed_ash_object=None, path_to_plumed=None, Plot_To_Screen=Fals
         print("MW= True. Concatenating files to HILLS.ALL")
         #os.system('cat HILLS.* > HILLS.ALL')
         print("HILLSFILELIST:", HILLSFILELIST)
+
         with open('HILLS.ALL', 'w') as outfile:
             for hfile in HILLSFILELIST:
                 with open(hfile) as infile:
@@ -322,10 +372,12 @@ def MTD_analyze(plumed_ash_object=None, path_to_plumed=None, Plot_To_Screen=Fals
         print("Running plumed to sum hills...")
         print("")
         #RUN PLUMED_ASH OBJECT function
-        plumed_ash_object.run_sum_hills("HILLS.ALL")
+        call_plumed_sum_hills(path_to_plumed,"HILLS.ALL")
+        #plumed_ash_object.run_sum_hills("HILLS.ALL")
         #os.system('plumed sum_hills --hills HILLS.ALL')
     else:
-        plumed_ash_object.run_sum_hills("HILLS")
+        call_plumed_sum_hills(path_to_plumed,"HILLS")
+        #plumed_ash_object.run_sum_hills("HILLS")
         #os.system('plumed sum_hills --hills HILLS')
         #HILLSFILE="HILLS"
         HILLSFILELIST=['HILLS']
@@ -387,17 +439,15 @@ def MTD_analyze(plumed_ash_object=None, path_to_plumed=None, Plot_To_Screen=Fals
                     derivG2.append(float(line.split()[4]))
 
 
-
-
     #READ HILLS. Only necessary for Well-Tempered Metadynamics and plotting of Gaussian height
     if WellTemp==True:
         time_hills=[]
         gaussheight=[]
         time_hills_list=[]
         gaussheightkcal_list=[]
-        for hillsfile in HILLSFILELIST:
-            with open(hillsfile) as hillsf:
-                for line in hillsf:
+        for hillsf in HILLSFILELIST:
+            with open(hillsf) as hillsfx:
+                for line in hillsfx:
                     if 'FIELDS' in line:
                         biasfcolnum=int(line.split().index('biasf'))
                     if '#' not in line:
@@ -411,7 +461,7 @@ def MTD_analyze(plumed_ash_object=None, path_to_plumed=None, Plot_To_Screen=Fals
             time_hills_list.append(time_hills)
             gaussheightkcal_list.append(gaussheight_kcal)
             time_hills=[];gaussheight_kcal=[];gaussheight=[]
-    print("time_hills_list", time_hills_list)
+
     #READ COLVAR
     time=[]
     colvar_value=[]
@@ -469,21 +519,22 @@ def MTD_analyze(plumed_ash_object=None, path_to_plumed=None, Plot_To_Screen=Fals
             finalcolvar_value_list.append(colvar_value)
 
         #convert to deg if torsion/angle
-        if CV2_type.upper()=='TORSION' or CV2_type.upper()=='ANGLE':
-            rc2_deg=np.array(rc2)*180/pi
-            final_rc2=rc2_deg
-            colvar2_value_deg=np.array(colvar2_value)*180/pi
-            # New. For multiple COLVAR files we create lists of colvar_value_deg, colvar2_value_deg and biaspot_value_kcal
-            colvar2_value_deg_list.append(colvar2_value_deg)            
-            finalcolvar2_value_list=colvar2_value_deg_list
-        #Possible conversion from nm to Angstrom
-        elif CV2_type.upper()=='RMSD' or CV2_type.upper()=='DISTANCE':
-            rc2_ang=np.array(rc2)*distance_scaling
-            final_rc2=rc2_ang
-            colvar2_value=np.array(colvar2_value)*distance_scaling
-            finalcolvar2_value_list.append(colvar2_value)
-        else:
-            finalcolvar2_value_list.append(colvar2_value)
+        if CV2_type != None:
+            if CV2_type.upper()=='TORSION' or CV2_type.upper()=='ANGLE':
+                rc2_deg=np.array(rc2)*180/pi
+                final_rc2=rc2_deg
+                colvar2_value_deg=np.array(colvar2_value)*180/pi
+                # New. For multiple COLVAR files we create lists of colvar_value_deg, colvar2_value_deg and biaspot_value_kcal
+                colvar2_value_deg_list.append(colvar2_value_deg)            
+                finalcolvar2_value_list=colvar2_value_deg_list
+            #Possible conversion from nm to Angstrom
+            elif CV2_type.upper()=='RMSD' or CV2_type.upper()=='DISTANCE':
+                rc2_ang=np.array(rc2)*distance_scaling
+                final_rc2=rc2_ang
+                colvar2_value=np.array(colvar2_value)*distance_scaling
+                finalcolvar2_value_list.append(colvar2_value)
+            else:
+                finalcolvar2_value_list.append(colvar2_value)
 
         #Possible energy conversion
         biaspot_value_kcal=np.array(biaspot_value)/energy_scaling

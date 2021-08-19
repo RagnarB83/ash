@@ -264,6 +264,9 @@ def Dynamics_ASE(fragment=None, theory=None, temperature=300, timestep=None, the
 
     else:
         dyn.run(simulation_steps)
+        #Close Plumed also if active. Flushes HILLS/COLVAR etc.
+        if plumed_object != None:
+            plumed_object.close()
 
     print_time_rel(module_init_time, modulename='Dynamics_ASE', moduleindex=1)
 
