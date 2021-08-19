@@ -211,7 +211,7 @@ def Dynamics_ASE(fragment=None, theory=None, temperature=300, timestep=None, the
         atoms.set_cell((1, 1, 1))
         #atoms.center()
         print("Using ttime_nosehoover:", ttime_nosehoover)
-        dyn = NPT(atoms, externalstress=1., timestep=timestep_fs*units.fs, ttime=ttime_nosehoover*units.fs, temperature_K=temperature,
+        dyn = NPT(atoms, externalstress=None, timestep=timestep_fs*units.fs, ttime=ttime_nosehoover*units.fs, temperature_K=temperature,
                 pfactor=None)
     else:
         print("Unknown thermostat/barostat. Exiting")
