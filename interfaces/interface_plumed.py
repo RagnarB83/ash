@@ -88,13 +88,14 @@ class plumed_ASH():
         else:
             print("unknown CV1 type. Exiting")
             exit()
-        if self.CV2_type.upper() == "DISTANCE" or self.CV2_type.upper() == "RMSD":
-            print("Gaussian sigma for CV2: {} {}".format(sigma2,self.plumed_length_unit))
-        elif self.CV2_type.upper() == "TORSION" or self.CV2_type.upper() == "ANGLE":
-            print("Gaussian sigma for CV2: {} {}".format(sigma2,"rad"))
-        else:
-            print("unknown CV2 type. Exiting")
-            exit()            
+        if self.CV2_type != None:
+            if self.CV2_type.upper() == "DISTANCE" or self.CV2_type.upper() == "RMSD":
+                print("Gaussian sigma for CV2: {} {}".format(sigma2,self.plumed_length_unit))
+            elif self.CV2_type.upper() == "TORSION" or self.CV2_type.upper() == "ANGLE":
+                print("Gaussian sigma for CV2: {} {}".format(sigma2,"rad"))
+            else:
+                print("unknown CV2 type. Exiting")
+                exit()     
         print("Bias factor:", biasfactor)
         print("Timestep: {} {}".format(timestep, self.plumed_time_unit))
         print("")
