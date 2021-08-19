@@ -14,7 +14,8 @@ from modules.module_singlepoint import Singlepoint
 
 def Dynamics_ASE(fragment=None, theory=None, temperature=300, timestep=None, thermostat=None, simulation_steps=None, simulation_time=None,
                  barostat=None, trajectoryname="Trajectory_ASE", traj_frequency=1, coupling_freq=0.002, frozen_atoms=None, frozen_bonds=None,
-                 frozen_angles=None, frozen_dihedrals=None, plumed_object=None, multiple_walkers=False, numwalkers=None):
+                 frozen_angles=None, frozen_dihedrals=None, plumed_object=None, multiple_walkers=False, numwalkers=None,
+                 ttime_nosehoover=5):
     module_init_time = time.time()
     print_line_with_mainheader("ASE MOLECULAR DYNAMICS")
     
@@ -34,6 +35,7 @@ def Dynamics_ASE(fragment=None, theory=None, temperature=300, timestep=None, the
         from ase.md.verlet import VelocityVerlet
         from ase.md.andersen import Andersen
         from ase.md.nvtberendsen import NVTBerendsen
+        from ase.md.npt import NPT
         from ase.md.langevin import Langevin
         from ase.calculators.calculator import Calculator
         from ase import units
@@ -197,15 +199,19 @@ def Dynamics_ASE(fragment=None, theory=None, temperature=300, timestep=None, the
     elif thermostat=="Langevin":
         print("Setting up Langevin thermostat")
         friction_coeff=coupling_freq
-        dyn = Langevin(atoms, timestep_fs*units.fs, temperature*units.kB, friction_coeff, trajectory=trajectoryname+'.traj', logfile='md.log')
+        dyn = Langevin(atoms, timestep_fs*units.fs, friction_coeff, temperature_K=temperature, trajectory=trajectoryname+'.traj', logfile='md.log')
     elif thermostat=="Andersen":
         collision_prob=coupling_freq
-        dyn = Andersen(atoms, timestep_fs*units.fs, temperature*units.kB, collision_prob, trajectory=trajectoryname+'.traj', logfile='md.log')
+        dyn = Andersen(atoms, timestep_fs*units.fs, temperature*units.kB, collision_prob, temperature_K=temperature, trajectory=trajectoryname+'.traj', logfile='md.log')
     elif thermostat=="Berendsen":
-        dyn = NVTBerendsen(atoms, timestep_fs*units.fs, temperature*units.kB, taut=coupling_freq*1000*units.fs, trajectory=trajectoryname+'.traj', logfile='md.log')
+        dyn = NVTBerendsen(atoms, timestep_fs*units.fs, temperature_K=temperature, taut=coupling_freq*1000*units.fs, trajectory=trajectoryname+'.traj', logfile='md.log')
     elif thermostat=="NoseHoover":
-        print("nosehoover to do")
-        exit()
+        print("Nose-Hoover thermostat using ASE NPT class")
+        #Adding dummy box : https://gitlab.com/ase/ase/-/issues/942
+        atoms.set_cell((100, 100, 100))
+        atoms.center()
+        print("Using ttime_nosehoover:", ttime_nosehoover)
+        dyn = NPT(atoms, externalstress=1., timestep=timestep_fs*units.fs, ttime=ttime_nosehoover*units.fs, temperature_K=temperature)
     else:
         print("Unknown thermostat/barostat. Exiting")
         exit()
