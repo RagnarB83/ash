@@ -145,9 +145,10 @@ class plumed_ASH():
         with open ("plumed_ash.info", 'w') as pfile:
             pfile.write("path_to_plumed {}\n".format(self.path_to_plumed))
             pfile.write("CV1_type {}\n".format(self.CV1_type))
-            pfile.write("CV2_type {}\n".format(self.CV2_type))
             pfile.write("CV1_indices {}\n".format(self.CV1_indices))
-            pfile.write("CV2_indices {}\n".format(self.CV2_indices))
+            if self.CV2_type != None:
+                pfile.write("CV2_type {}\n".format(self.CV2_type))
+                pfile.write("CV2_indices {}\n".format(self.CV2_indices))
             pfile.write("temperature {}\n".format(self.temperature))
             pfile.write("plumed_length_unit {}\n".format(self.plumed_length_unit))
             pfile.write("plumed_energy_unit {}\n".format(self.plumed_energy_unit))
@@ -248,7 +249,6 @@ def MTD_analyze(plumed_ash_object=None, path_to_plumed=None, Plot_To_Screen=Fals
                     CV1_type = line.split()[-1]
                 if 'CV2_type' in line:
                     CV2_type = line.split()[-1]
-                    print("CV2_type:", CV2_type)
                 if 'CV1_indices' in line:
                     CV1_indices = line.split()[-1]
                 if 'CV2_indices' in line:
@@ -287,7 +287,7 @@ def MTD_analyze(plumed_ash_object=None, path_to_plumed=None, Plot_To_Screen=Fals
         print("No plumed_length_unit defined. Assuming default plumed (nm)")
         distance_scaling=10
     #1D
-    if CV2_type == None:
+    if CV2_type == None or CV2_type == "None":
         print("1D MTD")
         CVnum=1
         if CV1_type.upper() =='TORSION' or CV1_type.upper()=='ANGLE':
