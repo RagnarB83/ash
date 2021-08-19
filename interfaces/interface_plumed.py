@@ -256,7 +256,7 @@ def MTD_analyze(plumed_ash_object=None, path_to_plumed=None, Plot_To_Screen=Fals
         
     os.environ['PATH'] = path_to_plumed+'/bin'+os.pathsep+os.environ['PATH']
     os.environ['LD_LIBRARY_PATH'] = path_to_plumed+'/lib'+os.pathsep+os.environ['LD_LIBRARY_PATH']
-
+    print("os.environ PATH", os.environ['PATH'])
     ########################
     #READING MAIN DATA
     ########################
