@@ -7,7 +7,8 @@ import traceback
 
 from functions.functions_general import BC,print_time_rel,listdiff,printdebug,print_line_with_mainheader
 from modules.module_coords import Fragment, write_pdbfile,distance_between_atoms
-
+from modules.module_MM import UFF_modH_dict
+from interfaces.interface_xtb import xTBTheory
 class OpenMMTheory:
     def __init__(self, printlevel=2, platform='CPU', numcores=None, Modeller=False, forcefield=None, topology=None,
                  CHARMMfiles=False, psffile=None, charmmtopfile=None, charmmprmfile=None,
@@ -507,6 +508,13 @@ class OpenMMTheory:
         print_time_rel(timeA, modulename="simulation setup")
         timeA = time.time()
         print_time_rel(module_init_time, modulename="OpenMM object creation")
+
+    #Write XML-file for full system
+    #TODO: Should we do this by default???
+    def saveXML(self, xmlfile="system_full.xml"):
+        serialized_system = self.openmm.XmlSerializer.serialize(self.system)
+        with open(xmlfile, 'w') as f: f.write(serialized_system)
+        print("Wrote system XML file:", xmlfile)
 
     #Function to add bond constraints to system before MD
     def add_bondconstraints(self,constraints=None):
@@ -1331,7 +1339,7 @@ def OpenMM_MD(fragment=None, openmmobject=None, timestep=0.001, simulation_steps
         print("autoconstraints='HBonds' is recommended for 1-2 fs timesteps with Verlet (4fs with Langevin).")
         print("autoconstraints='AllBonds' or autoconstraints='HAngles' allows even larger timesteps to be used", BC.END)
         print("Will continue...")
-    if openmmobject.rigidwater == True and frozen_atoms != None or (openmmobject.autoconstraints != None and frozen_atoms != None):
+    if openmmobject.rigidwater == True and len(frozen_atoms) != 0 or (openmmobject.autoconstraints != None and len(frozen_atoms) != 0):
         print("Warning: Frozen_atoms options selected but there are general constraints defined in the OpenMM object (either rigidwater=True or autoconstraints != None")
         print("OpenMM will crash if constraints and frozen atoms involve the same atoms")
     print("")
@@ -1464,7 +1472,7 @@ def OpenMM_Opt(fragment=None, openmmobject=None, maxiter=1000, tolerance=1, froz
         print(BC.WARNING,"Warning: Autoconstraints have not been set in OpenMMTheory object definition.")
         print("This means that by default no bonds are constrained in the optimization.", BC.END)
         print("Will continue...")
-    if openmmobject.rigidwater == True and frozen_atoms != None or (openmmobject.autoconstraints != None and frozen_atoms != None):
+    if openmmobject.rigidwater == True and len(frozen_atoms) != 0 or (openmmobject.autoconstraints != None and len(frozen_atoms) != 0):
         print("Warning: Frozen_atoms options selected but there are general constraints defined in the OpenMM object (either rigidwater=True or autoconstraints != None")
         print("OpenMM will crash if constraints and frozen atoms involve the same atoms")
     #createSystem(constraints=None), createSystem(constraints=HBonds), createSystem(constraints=All-Bonds), createSystem(constraints=HAngles)
@@ -1578,7 +1586,7 @@ def OpenMM_Modeller(pdbfile=None, forcefield=None, xmlfile=None, waterxmlfile=No
         print("Problem importing pdbfixer. Install first via conda:")
         print("conda install -c conda-forge pdbfixer")
 
-    def write_pdbfile(topology,positions,filename):
+    def write_pdbfile_openMM(topology,positions,filename):
         openmm.app.PDBFile.writeFile(topology, positions, file=open(filename, 'w'))
         print("Wrote PDB-file:", filename)
     def print_systemsize():
@@ -1701,7 +1709,7 @@ def OpenMM_Modeller(pdbfile=None, forcefield=None, xmlfile=None, waterxmlfile=No
     #    print("ASH: OpenMM failed with some error. Read the error message above carefully.")
     #    exit()
 
-    write_pdbfile(modeller.topology,modeller.positions,"system_afterH.pdb")
+    write_pdbfile_openMM(modeller.topology,modeller.positions,"system_afterH.pdb")
     print_systemsize()
     
     #Solvent
@@ -1712,13 +1720,13 @@ def OpenMM_Modeller(pdbfile=None, forcefield=None, xmlfile=None, waterxmlfile=No
     else:
         print("Using solvent padding (solvent_padding=X keyword): {} Å".format(solvent_padding))
         modeller.addSolvent(forcefield, padding=solvent_padding*openmm_unit.angstrom, model=watermodel)
-    write_pdbfile(modeller.topology,modeller.positions,"system_aftersolvent.pdb")
+    write_pdbfile_openMM(modeller.topology,modeller.positions,"system_aftersolvent.pdb")
     print_systemsize()
     
     #Ions
     print("Adding ionic strength: {} using ions {}".format(ionicstrength,iontype))
     modeller.addSolvent(forcefield, ionicStrength=ionicstrength*openmm_unit.molar, positiveIon=iontype)
-    write_pdbfile(modeller.topology,modeller.positions,"system_afterions.pdb")
+    write_pdbfile_openMM(modeller.topology,modeller.positions,"system_afterions.pdb")
     print_systemsize()
 
     #Create ASH fragment
@@ -1739,7 +1747,9 @@ def MDtraj_import_():
         exit()
     return mdtraj
 
-def MDtraj_imagetraj(trajectory, pdbtopology, format='DCD', unitcell_lengths=None, unitcell_angles=None):
+
+#anchor_molecules. Use if automatic guess fails
+def MDtraj_imagetraj(trajectory, pdbtopology, format='DCD', unitcell_lengths=None, unitcell_angles=None, solute_anchor=None):
     traj_basename=os.path.splitext(trajectory)[0]
     mdtraj=MDtraj_import_()
 
@@ -1760,8 +1770,14 @@ def MDtraj_imagetraj(trajectory, pdbtopology, format='DCD', unitcell_lengths=Non
     #else:
     #    print("Missing PBC info. This can be provided by unitcell_lengths and unitcell_angles keywords")
     
+    #Manual anchor if needed
+    #NOTE: not sure how well this works but it's something
+    if solute_anchor == True:
+        anchors=[set(traj.topology.residue(0).atoms)]
+        print("anchors:", anchors)
+    
     #Re-imaging trajectory
-    imaged=traj.image_molecules()
+    imaged=traj.image_molecules(anchor_molecules=anchors)
 
     #Save trajectory in format
     if format == 'DCD':
@@ -1781,14 +1797,15 @@ def MDtraj_imagetraj(trajectory, pdbtopology, format='DCD', unitcell_lengths=Non
 
 
 
-
-def solvate_small_molecule(fragment=None, watermodel=None, pH=7.0, solvent_padding=10.0, extraxmlfile=None,
-                           solvent_boxdims=None, ionicstrength=0.1, iontype='K+'):
+#Assumes all atoms present (including hydrogens)
+def solvate_small_molecule(fragment=None, charge=None, mult=None, watermodel=None, solvent_boxdims=[70.0,70.0,70.0], nonbonded_pars="dummy"):
+    #, ionicstrength=0.1, iontype='K+'
     print_line_with_mainheader("SmallMolecule Solvator")
     try:
         import simtk.openmm as openmm
         import simtk.openmm.app as openmm_app
         import simtk.unit as openmm_unit
+        from simtk.openmm import XmlSerializer
         print("Imported OpenMM library version:", openmm.__version__)
 
     except ImportError:
@@ -1796,18 +1813,20 @@ def solvate_small_molecule(fragment=None, watermodel=None, pH=7.0, solvent_paddi
             "OpenMM requires installing the OpenMM package. Try: conda install -c conda-forge openmm  \
             Also see http://docs.openmm.org/latest/userguide/application.html")
     
-    #Needed?
-    try:
-        import pdbfixer
-    except:
-        print("Problem importing pdbfixer. Install first via conda:")
-        print("conda install -c conda-forge pdbfixer")
+    def write_pdbfile_openMM(topology,positions,filename):
+        openmm.app.PDBFile.writeFile(topology, positions, file=open(filename, 'w'))
+        print("Wrote PDB-file:", filename)
+    def print_systemsize():
+        print("System size: {} atoms\n".format(len(modeller.getPositions())))
+        
+    #Defining simple atomnames and atomtypes to be used for solute
+    atomnames=[el+"Y"+str(i) for i,el in enumerate(fragment.elems)]
+    atomtypes=[el+"X"+str(i) for i,el in enumerate(fragment.elems)]
     
-    write_pdbfile(fragment,outputname="smallmol")
+    #Take input ASH fragment and write a basic PDB file via ASH
+    write_pdbfile(fragment,outputname="smallmol", dummyname='LIG', atomnames=atomnames)
     
-    #Take input ASH fragment and write PDB
-    
-    #Load fixed PDB-file and create Modeller object
+    #Load PDB-file and create Modeller object
     pdb = openmm_app.PDBFile("smallmol.pdb")
     print("Loading Modeller")
     modeller = openmm_app.Modeller(pdb.topology, pdb.positions)
@@ -1816,69 +1835,121 @@ def solvate_small_molecule(fragment=None, watermodel=None, pH=7.0, solvent_paddi
     
     #Forcefield
     
-    #TODO: Need to figure out how to create XML file for our small molecule
-    #Option 1: Find some automatic tool that may work for organics
-    #Option 2: Write something that writes out an XML-file with nonbonded parameters
-        # charges: initially zero. later populate via xTB or something
-        # LJ parameters: ??
-        # Use DDEC or something to create parameters
-    
     #TODO: generalize to other solvents.
+    #Create local ASH library of XML files ???
     if watermodel=="tip3p":
         waterxmlfile="tip3p.xml"
     else:
         print("unknown watermodel");exit()
-    xmlfile=None
 
-    #Simple function to write a basic XML-file for a molecule
-    #TODO: FINISH
+
     
-    #Do ORCA single-point calc to get DFT-calc
-    #call DDEC to get charges and LJ parameters??
-    
-    def write_xmlfile(atomtypes, elements, charges, LJpars):
-        with open("test.xml") as xmlfile:
-            xmlfile.write("<ForceField>\n")
-            xmlfile.write("<AtomTypes>\n")
-            xmlfile.write("<Type name=\"{}\" class=\"{}\" element=\"{}\" mass=\"{}\"/>".format(0,"N","N", str(14.00672)))
-            #All other atomtypes
-            xmlfile.write("</AtomTypes>\n")
-            
-            xmlfile.write("<Residues>\n")
-            xmlfile.write("<Residue name=\"ACE\">\n")
-            xmlfile.write("<Atom name=\"HH31\" type=\"710\"/>".format(atomname,atomtype))
-            #All other atoms
-            xmlfile.write("</Residue>\n")
-            xmlfile.write("</Residues>\n")
-            
-            xmlfile.write("<NonbondedForce coulomb14scale=\"0.833333\" lj14scale=\"0.5\">")
-            xmlfile.write("<Atom type=\"0\" charge=\"-0.4157\" sigma=\"0.32499\" epsilon=\"0.71128\"/>")
-            #all other atomtypes
-            xmlfile.write("</NonbondedForce>\n")
-            xmlfile.write("</ForceField>\n")
-
-
-    if extraxmlfile == None:
-        print("here")
-        forcefield=openmm_app.forcefield.ForceField(xmlfile, waterxmlfile)
+    #Define nonbonded paramers
+    if nonbonded_pars=="DDEC":
+        print("Not ready")
+        #Do ORCA single-point calc to get DFT-calc
+        #call DDEC to get charges and LJ parameters??
+        exit()
+    elif nonbonded_pars=="dummy":
+        print("Using some basic dummy parameters")
+        charges=[0.0 for i in fragment.elems]
+        #Basic UFF LJ parameters
+        #Converting r0 parameters from Ang to nm and to sigma
+        sigmas=[UFF_modH_dict[el][0]*0.1/(2**(1/6)) for el in fragment.elems]
+        #Convering epsilon from kcal/mol to kJ/mol
+        epsilons=[UFF_modH_dict[el][1]*4.184 for el in fragment.elems]
+    elif nonbonded_pars=="xtb_UFF":
+        print("Using xTB charges and UFF-LJ parameters")
+        charges=basic_atomcharges_xTB(fragment=fragment, charge=None, mult=None, xtbmethod='GFN2')
+        #Basic UFF LJ parameters
+        #Converting r0 parameters from Ang to nm and to sigma
+        sigmas=[UFF_modH_dict[el][0]*0.1/(2**(1/6)) for el in fragment.elems]
+        #Convering epsilon from kcal/mol to kJ/mol
+        epsilons=[UFF_modH_dict[el][1]*4.184 for el in fragment.elems]
     else:
-        print("Using extra XML file:", extraxmlfile)
-        forcefield=openmm_app.forcefield.ForceField(xmlfile, waterxmlfile, extraxmlfile)
+        print("unknown nonbonded_pars option")
+        exit()
+
+
+    #Creating XML-file for solute
+    xmlfile = write_xmlfile_nonbonded(resname="LIG", atomnames=atomnames,atomtypes=atomtypes, elements=fragment.elems, masses=fragment.masses, charges=charges, 
+                        sigmas=sigmas, epsilons=epsilons, filename="system.xml")
     
+    
+    print("Creating forcefield using XML-files:", xmlfile, waterxmlfile)
+    forcefield=openmm_app.forcefield.ForceField(xmlfile, waterxmlfile)
+    
+    print("XX")
 
-
-
-
-
-    #Solvent
+    #, waterxmlfile
+    #if extraxmlfile == None:
+    #    print("here")
+    #    forcefield=openmm_app.forcefield.ForceField(xmlfile, waterxmlfile)
+    #else:
+    #    print("Using extra XML file:", extraxmlfile)
+    #    forcefield=openmm_app.forcefield.ForceField(xmlfile, waterxmlfile, extraxmlfile)
+    
+    #Solvent+Ions
     print("Adding solvent, watermodel:", watermodel)
+    #NOTE: modeller.addsolvent will automatically add ions to neutralize any excess charge
+    #TODO: Replace with something simpler
     if solvent_boxdims != None: 
         print("Solvent boxdimension provided: {} Å".format(solvent_boxdims))
         modeller.addSolvent(forcefield, boxSize=openmm.Vec3(solvent_boxdims[0], solvent_boxdims[1], solvent_boxdims[2])*openmm_unit.angstrom)
 
+    #Write out solvated system coordinates
+    write_pdbfile_openMM(modeller.topology,modeller.positions,"system_aftersolvent.pdb")
+    print_systemsize()
+    #Create ASH fragment and write to disk
+    newfragment = Fragment(pdbfile="system_aftersolvent.pdb")
+    newfragment.print_system(filename="newfragment.ygg")
+    newfragment.write_xyzfile(xyzfilename="newfragment.xyz")
+    
+    #Return forcefield object,  topology object and ASH fragment
+    return forcefield, modeller.topology, newfragment
 
 
 
+
+#Simple XML-writing function. Will only write nonbonded parameters 
+def write_xmlfile_nonbonded(atomtypes=None, atomnames=None, resname=None, elements=None, masses=None, charges=None, sigmas=None, 
+                            epsilons=None, filename="system.xml", coulomb14scale=0.833333, lj14scale=0.5):
+    print("Inside write_xml file")
+    with open(filename, 'w') as xmlfile:
+        xmlfile.write("<ForceField>\n")
+        xmlfile.write("<AtomTypes>\n")
+        for i,(atomtype,elem,mass) in enumerate(zip(atomtypes,elements,masses)):
+            xmlfile.write("<Type name=\"{}\" class=\"{}\" element=\"{}\" mass=\"{}\"/>\n".format(atomtype,atomtype,elem, str(mass)))
+        #All other atomtypes
+        xmlfile.write("</AtomTypes>\n")
+        
+        xmlfile.write("<Residues>\n")
+        xmlfile.write("<Residue name=\"{}\">\n".format(resname))
+        for i,(atomname,atomtype) in enumerate(zip(atomnames,atomtypes)):
+            xmlfile.write("<Atom name=\"{}\" type=\"{}\"/>\n".format(atomname,atomtype))
+        #All other atoms
+        xmlfile.write("</Residue>\n")
+        xmlfile.write("</Residues>\n")
+        
+        xmlfile.write("<NonbondedForce coulomb14scale=\"{}\" lj14scale=\"{}\">\n".format(coulomb14scale,lj14scale))
+        for i,(atomtype,charge,sigma,epsilon) in enumerate(zip(atomtypes,charges,sigmas,epsilons)):
+            xmlfile.write("<Atom type=\"{}\" charge=\"{}\" sigma=\"{}\" epsilon=\"{}\"/>\n".format(atomtype,charge,sigma,epsilon))
+        #all other atomtypes
+        xmlfile.write("</NonbondedForce>\n")
+        xmlfile.write("</ForceField>\n")
+    print("Wrote XML-file:", filename)
+    return filename
+
+
+def basic_atomcharges_xTB(fragment=None, charge=None, mult=None, xtbmethod='GFN2'):
+    print("Now calculating atom charges for fragment")
+    print("Using default xTB charges")
+    calc = xTBTheory(fragment=fragment, charge=charge, runmode='inputfile',
+                                   mult=mult, xtbmethod=xtbmethod)
+
+    Singlepoint(theory=calc, fragment=fragment)
+    atomcharges=grabatomcharges_xTB()
+    return atomcharges
 
 
 

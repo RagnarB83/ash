@@ -109,6 +109,7 @@ class Fragment:
         self.allatoms = self.atomlist
         self.mass = totmasslist(self.elems)
         self.list_of_masses = list_of_masses(self.elems)
+        self.masses=self.list_of_masses
         #Elemental formula
         self.formula = elemlisttoformula(self.elems)
         #Pretty formula without 1
@@ -279,7 +280,7 @@ class Fragment:
         if self.printlevel >= 2:
             print("Reading coordinates from PDBfile \"{}\" into fragment".format(filename))
 
-        self.elems, self.coords = read_pdbfile(filename)
+        self.elems, self.coords = read_pdbfile(filename, use_atomnames_as_elements=use_atomnames_as_elements)
         
         self.update_attributes()
         if conncalc is True:
@@ -1307,7 +1308,7 @@ def conv_atomtypes_elems(atomtype):
             exit()
 
 #READ PDBfile
-def read_pdbfile(filename):
+def read_pdbfile(filename, use_atomnames_as_elements=False):
     residuelist=[]
     #If elemcolumn found
     elemcol=[]
@@ -1487,7 +1488,7 @@ def read_ambercoordinates(prmtopfile=None, inpcrdfile=None):
 #Example, simple: write_pdbfile(frag, outputname="name", openmmobject=objname)
 #Example, minimal: write_pdbfile(frag)
 #TODO: Add option to write new hybrid-36 standard PDB file instead of current hexadecimal nonstandard fix
-def write_pdbfile(fragment,outputname="ASHfragment", openmmobject=None, atomnames=None, resnames=None,residlabels=None,segmentlabels=None):
+def write_pdbfile(fragment,outputname="ASHfragment", openmmobject=None, atomnames=None, resnames=None,residlabels=None,segmentlabels=None, dummyname='DUM'):
     print("Writing PDB-file...")
     #Using ASH fragment
     elems=fragment.elems
@@ -1507,7 +1508,7 @@ def write_pdbfile(fragment,outputname="ASHfragment", openmmobject=None, atomname
         #Elements instead. Means VMD will display atoms properly at least
         atomnames=fragment.elems
     if resnames == None:
-        resnames=fragment.numatoms*['DUM']
+        resnames=fragment.numatoms*[dummyname]
     if residlabels == None:
         residlabels=fragment.numatoms*[1]
     #Note: choosing to make segment ID 3-letter-string (and then space)

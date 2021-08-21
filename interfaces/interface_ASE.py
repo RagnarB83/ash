@@ -12,7 +12,7 @@ from modules.module_singlepoint import Singlepoint
 #Interface to limited parts of ASE
 
 
-def Dynamics_ASE(fragment=None, theory=None, temperature=300, timestep=None, thermostat=None, simulation_steps=None, simulation_time=None,
+def Dynamics_ASE(fragment=None, PBC=False, theory=None, temperature=300, timestep=None, thermostat=None, simulation_steps=None, simulation_time=None,
                  barostat=None, trajectoryname="Trajectory_ASE", traj_frequency=1, coupling_freq=0.002, frozen_atoms=None, frozen_bonds=None,
                  frozen_angles=None, frozen_dihedrals=None, plumed_object=None, multiple_walkers=False, numwalkers=None,
                  ttime_nosehoover=5):
@@ -146,6 +146,11 @@ def Dynamics_ASE(fragment=None, theory=None, temperature=300, timestep=None, the
     print("Creating ASE atoms object")
     atoms = ase.atoms.Atoms(fragment.elems,positions=fragment.coords)
 
+    #Periodic boundary conditions (UNTESTED)
+    if PBC == True:
+        print("Setting PBC to true in atoms object")
+        atoms.set_pbc(True)
+
     #ASH calculator for ASE
     print("Creating ASH-ASE calculator")
     calc= ASHcalc(fragment=fragment, theory=theory, plumed=plumed_object)
@@ -199,7 +204,7 @@ def Dynamics_ASE(fragment=None, theory=None, temperature=300, timestep=None, the
     elif thermostat=="Langevin":
         print("Setting up Langevin thermostat")
         friction_coeff=coupling_freq
-        dyn = Langevin(atoms, timestep_fs*units.fs, friction_coeff, temperature_K=temperature, trajectory=trajectoryname+'.traj', logfile='md.log')
+        dyn = Langevin(atoms, timestep_fs*units.fs, friction=friction_coeff, temperature_K=temperature, trajectory=trajectoryname+'.traj', logfile='md.log')
     elif thermostat=="Andersen":
         collision_prob=coupling_freq
         dyn = Andersen(atoms, timestep_fs*units.fs, temperature, collision_prob, trajectory=trajectoryname+'.traj', logfile='md.log')
