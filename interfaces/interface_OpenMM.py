@@ -515,7 +515,9 @@ class OpenMMTheory:
     #To set positions in OpenMMobject (in nm) from np-array (Angstrom)
     def set_positions(self,coords):
         print("Setting coordinates of OpenMM object")
-        pos = [self.Vec3(coords[i, 0] / 10, coords[i, 1] / 10, coords[i, 2] / 10) for i in range(len(coords))] * self.openmm.unit.nanometer
+
+        coords_nm=coords*0.1 #converting from Angstrom to nm
+        pos = [self.Vec3(coords_nm[i, 0], coords_nm[i, 1], coords_nm[i, 2]) for i in range(len(coords_nm))] * self.unit.nanometer      
         self.simulation.context.setPositions(pos)
         print("Coordinates set")
 
@@ -838,11 +840,14 @@ class OpenMMTheory:
         #        pos[i] = vsfuncs[i](pos, vsidxs[i], vswts[i])
         #newpos = [self.Vec3(*i) for i in pos]*self.unit.nanometer
 
-        #NOTE: THIS IS HORRIFYINGLY SLOW! NEEDS TO BE FIXED
+        #NOTE: THIS IS STILL RATHER SLOW
 
         current_coords_nm=current_coords*0.1 #converting from Angstrom to nm
         pos = [self.Vec3(current_coords_nm[i, 0], current_coords_nm[i, 1], current_coords_nm[i, 2]) for i in range(len(current_coords_nm))] * self.unit.nanometer      
         #pos = [self.Vec3(*v) for v in current_coords_nm] * self.unit.nanometer #slower
+        print_time_rel(timeA, modulename="Creating pos array")
+        timeA = time.time()
+        #THIS IS THE SLOWEST PART. Probably nothing to be done
         self.simulation.context.setPositions(pos)
 
         print_time_rel(timeA, modulename="Updating MM positions")
@@ -1646,9 +1651,10 @@ def OpenMM_Opt(fragment=None, openmmobject=None, maxiter=1000, tolerance=1, froz
 
     #Context: settings positions
     print("Now adding coordinates")
-    coords=np.array(fragment.coords)
-    pos = [openmmobject.Vec3(coords[i, 0] / 10, coords[i, 1] / 10, coords[i, 2] / 10) for i in range(len(coords))] * openmmobject.openmm.unit.nanometer
-    openmmobject.simulation.context.setPositions(pos)
+    openmmobject.set_positions(fragment.coords)
+    #coords=np.array(fragment.coords)
+    #pos = [openmmobject.Vec3(coords[i, 0] / 10, coords[i, 1] / 10, coords[i, 2] / 10) for i in range(len(coords))] * openmmobject.openmm.unit.nanometer
+    #openmmobject.simulation.context.setPositions(pos)
 
     print("")
     state = openmmobject.simulation.context.getState(getEnergy=True, getForces=True, enforcePeriodicBox=True)
