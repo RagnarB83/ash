@@ -831,10 +831,21 @@ class OpenMMTheory:
         #Todo: Check speed on this
         print("Updating coordinates")
         timeA = time.time()
-        pos = [self.Vec3(current_coords[i, 0] / 10, current_coords[i, 1] / 10, current_coords[i, 2] / 10) for i in range(len(current_coords))] * self.unit.nanometer
+        #print(type(current_coords))
 
+        #for i in range(len(positions)):
+        #    if isvsites[i]:
+        #        pos[i] = vsfuncs[i](pos, vsidxs[i], vswts[i])
+        #newpos = [self.Vec3(*i) for i in pos]*self.unit.nanometer
+
+        #NOTE: THIS IS HORRIFYINGLY SLOW! NEEDS TO BE FIXED
+
+        current_coords_nm=current_coords*0.1 #converting from Angstrom to nm
+        pos = [self.Vec3(current_coords_nm[i, 0], current_coords_nm[i, 1], current_coords_nm[i, 2]) for i in range(len(current_coords_nm))] * self.unit.nanometer      
+        #pos = [self.Vec3(*v) for v in current_coords_nm] * self.unit.nanometer #slower
         self.simulation.context.setPositions(pos)
-        print_time_rel(timeA, modulename="context: set positions")
+
+        print_time_rel(timeA, modulename="Updating MM positions")
         timeA = time.time()
         #While these distance constraints should not matter, applying them makes the energy function agree with previous benchmarking for bonded and nonbonded
         #https://www.ncbi.nlm.nih.gov/pmc/articles/PMC5549999/
@@ -859,7 +870,7 @@ class OpenMMTheory:
             state = self.simulation.context.getState(getEnergy=True, getForces=False)
             self.energy = state.getPotentialEnergy().value_in_unit(self.unit.kilojoule_per_mole) / constants.hartokj
 
-        print_time_rel(timeA, modulename="state")
+        print_time_rel(timeA, modulename="OpenMM getState")
         timeA = time.time()
         print("OpenMM Energy:", self.energy, "Eh")
         print("OpenMM Energy:", self.energy*constants.harkcal, "kcal/mol")
@@ -1336,10 +1347,22 @@ def clean_up_constraints_list(fragment=None, constraints=None):
 #Also should we add: https://github.com/mdtraj/mdtraj ?
 def OpenMM_MD(fragment=None, openmmobject=None, timestep=0.001, simulation_steps=None, simulation_time=None, traj_frequency=1000, temperature=300, integrator=None,
     barostat=None, trajectory_file_option='PDB', coupling_frequency=None, anderson_thermostat=False, enforcePeriodicBox=True, frozen_atoms=None, constraints=None, restraints=None,
-    parmed_state_datareporter=False, QM_MM_object=None, dummy_MM=False, plumed_object=None):
+    parmed_state_datareporter=False, dummy_MM=False, plumed_object=None):
     module_init_time = time.time()
 
     print_line_with_mainheader("OpenMM MOLECULAR DYNAMICS")
+
+    #Distinguish between OpenMM theory or QM/MM theory
+    if theory.__class__.__name__ == "OpenMMTheory":
+        openmmobject=theory
+        QM_MM_object=None
+    elif theory.__class__.__name__ == "QMMMTheory":
+        QM_MM_object=theory
+        openmmobject=theory.mm_theory
+    else:
+        print("Unknown theory. Exiting")
+        exit()
+
     if frozen_atoms==None: frozen_atoms=[]
     if constraints==None: constraints=[]
     if restraints==None: restraints=[]
