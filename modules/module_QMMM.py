@@ -15,13 +15,21 @@ import settings_ash
 class QMMMTheory:
     def __init__(self, qm_theory=None, qmatoms=None, fragment=None, mm_theory=None , charges=None,
                  embedding="Elstat", printlevel=2, numcores=1, actatoms=None, frozenatoms=None, excludeboundaryatomlist=None,
-                 unusualboundary=False):
+                 unusualboundary=False, openmm_externalforce=False):
         module_init_time=time.time()
         timeA=time.time()
         print(BC.WARNING,BC.BOLD,"------------Defining QM/MM object-------------", BC.END)
 
+        #External force energy. ALways zero except when using openmm_externalforce
+        self.extforce_energy=0.0
+
+
         #Linkatoms False by default. Later checked.
         self.linkatoms=False
+
+        #Whether we are using OpenMM custom external forces or not
+        #NOTE: affects runmode
+        self.openmm_externalforce=openmm_externalforce
 
         #If fragment object has been defined
         #This probably needs to be always true
@@ -228,8 +236,14 @@ class QMMMTheory:
                     #Deleting Coulomb exception interactions involving QM and MM atoms
                     self.mm_theory.delete_exceptions(self.qmatoms)
                 
-                
                 print("Charges of QM atoms set to 0 (since Electrostatic Embedding):")
+
+                #Option to create OpenMM externalforce that handles full system
+                if openmm_externalforce == True:
+                    print("openmm_externalforce is True")
+                    print("Creating new OpenMM custom external force")
+                    self.openmm_externalforceobject = self.mm_theory.add_custom_external_force()
+
                 if self.printlevel > 3:
                     for i in self.allatoms:
                         if i in self.qmatoms:
@@ -369,7 +383,8 @@ class QMMMTheory:
                 self.dipole_coords.append(pos_d1)
                 self.dipole_coords.append(pos_d2)
         print_time_rel(timeA, modulename="SetDipoleCharges")
-    def run(self, current_coords=None, elems=None, Grad=False, numcores=1):
+
+    def run(self, current_coords=None, elems=None, Grad=False, numcores=1, exit_after_customexternalforce_update=False):
         module_init_time=time.time()
         CheckpointTime = time.time()
         if self.printlevel >= 2:
@@ -398,9 +413,12 @@ class QMMMTheory:
         #Updating QM coords and MM coords.
         
         #TODO: Should we use different name for updated QMcoords and MMcoords here??
-        self.qmcoords=[current_coords[i] for i in self.qmatoms]
-        self.mmcoords=[current_coords[i] for i in self.mmatoms]
-        
+        print("type current_coords:", type(current_coords))
+        #self.qmcoords=[current_coords[i] for i in self.qmatoms]
+        #self.mmcoords=[current_coords[i] for i in self.mmatoms]
+        self.qmcoords=np.take(current_coords,self.qmatoms,axis=0)
+        self.mmcoords=np.take(current_coords,self.mmatoms,axis=0)
+
         self.qmelems=[self.elems[i] for i in self.qmatoms]
         self.mmelems=[self.elems[i] for i in self.mmatoms]
         
@@ -413,15 +431,14 @@ class QMMMTheory:
             printdebug("linkatoms_dict:", linkatoms_dict)
             #2. Add linkatom coordinates to qmcoords???
             print("Adding linkatom positions to QM coords")
-            
-
             linkatoms_indices=[]
             
             #Sort by QM atoms:
             printdebug("linkatoms_dict.keys :", linkatoms_dict.keys())
             for pair in sorted(linkatoms_dict.keys()):
                 printdebug("Pair :", pair)
-                self.qmcoords.append(linkatoms_dict[pair])
+                #self.qmcoords.append(linkatoms_dict[pair])
+                self.qmcoords = np.append(self.qmcoords,np.array([linkatoms_dict[pair]]), axis=0)
                 #print("self.qmcoords :", self.qmcoords)
                 #print(len(self.qmcoords))
                 #exit()
@@ -458,8 +475,8 @@ class QMMMTheory:
 
             #Adding dipole charge coords to MM coords (given to QM code) and defining pointchargecoords
             print("Adding {} dipole charges to PC environment".format(len(self.dipole_charges)))
-            self.pointchargecoords=self.mmcoords+self.dipole_coords
-            
+            #self.pointchargecoords=self.mmcoords+self.dipole_coords
+            self.pointchargecoords=np.append(self.mmcoords,np.array(self.dipole_coords), axis=0)
             #Adding dipole charges to MM charges list (given to QM code)
             #TODO: Rename as pcharges list so as not to confuse with what MM code sees??
             self.pointcharges=self.pointcharges+self.dipole_charges
@@ -585,8 +602,90 @@ class QMMMTheory:
         print_time_rel(CheckpointTime, modulename='QM step', moduleindex=2)
         CheckpointTime = time.time()
 
+        #Final QM/MM gradient. Combine QM gradient, MM gradient, PC-gradient (elstat MM gradient from QM code).
+        # Do linkatom force projections in the end
+        #UPDATE: Do MM step in the end now so that we have options for OpenMM extern force
+        if Grad == True:
+            #assert len(self.allatoms) == len(self.MMgradient)
+            
+            #Defining QMgradient without linkatoms if present
+            if self.linkatoms==True:
+                self.QMgradient_wo_linkatoms=self.QMgradient[0:-num_linkatoms] #remove linkatoms
+                #Sanity check
+                assert len(self.QMgradient_wo_linkatoms) + len(self.PCgradient) - len(self.dipole_charges)  == len(self.allatoms)
+            else:
+                self.QMgradient_wo_linkatoms=self.QMgradient
 
+            #Initialize QM_PC gradient (has full system size) and fill up
+            #TODO: This can be made more efficient
+            self.QM_PC_gradient = np.zeros((len(self.allatoms), 3))
+            qmcount=0;pccount=0
+            for i in self.allatoms:
+                if i in self.qmatoms:
+                    #QM-gradient. Linkatom gradients are skipped
+                    self.QM_PC_gradient[i]=self.QMgradient_wo_linkatoms[qmcount]
+                    qmcount+=1
+                else:
+                    #Pointcharge-gradient. Dipole-charge gradients are skipped (never reached)
+                    self.QM_PC_gradient[i] = self.PCgradient[pccount]
+                    pccount += 1
+            assert qmcount == len(self.qmatoms)
+            assert pccount == len(self.mmatoms)           
+            #print("qmcount:", qmcount)
+            #print("pccount:", pccount)
+            #print("self.QM_PC_gradient len ", len(self.QM_PC_gradient))
 
+            
+            #LINKATOM FORCE PROJECTION
+            # Add contribution to QM1 and MM1 contribution???
+            if self.linkatoms==True:                
+                #print("here")
+                #print("linkatoms_dict: ", linkatoms_dict)
+                #print("linkatoms_indices: ", linkatoms_indices)
+                
+                for pair in sorted(linkatoms_dict.keys()):
+                    printdebug("pair: ", pair)
+                    #Grabbing linkatom data
+                    linkatomindex=linkatoms_indices.pop(0)
+                    printdebug("linkatomindex:", linkatomindex)
+                    Lgrad=self.QMgradient[linkatomindex]
+                    printdebug("Lgrad:",Lgrad)
+                    Lcoord=linkatoms_dict[pair]
+                    printdebug("Lcoord:", Lcoord)
+                    #Grabbing QMatom info
+                    fullatomindex_qm=pair[0]
+                    printdebug("fullatomindex_qm:", fullatomindex_qm)
+                    printdebug("self.qmatoms:", self.qmatoms)
+                    qmatomindex=fullindex_to_qmindex(fullatomindex_qm,self.qmatoms)
+                    printdebug("qmatomindex:", qmatomindex)
+                    Qcoord=self.qmcoords[qmatomindex]
+                    printdebug("Qcoords: ", Qcoord)
+
+                    Qgrad=self.QM_PC_gradient[fullatomindex_qm]
+                    printdebug("Qgrad (full QM/MM grad)s:", Qgrad)
+                    
+                    #Grabbing MMatom info
+                    fullatomindex_mm=pair[1]
+                    printdebug("fullatomindex_mm:", fullatomindex_mm)
+                    Mcoord=current_coords[fullatomindex_mm]
+                    printdebug("Mcoord:", Mcoord)
+                    
+                    Mgrad=self.QM_PC_gradient[fullatomindex_mm]
+                    printdebug("Mgrad (full QM/MM grad): ", Mgrad)
+                    
+                    #Now grabbed all components, calculating new projected gradient on QM atom and MM atom
+                    newQgrad,newMgrad = linkatom_force_fix(Qcoord, Mcoord, Lcoord, Qgrad,Mgrad,Lgrad)
+                    printdebug("newQgrad: ", newQgrad)
+                    printdebug("newMgrad: ", newMgrad)
+                    
+                    #Updating full QM_PC_gradient (used to be QM/MM gradient)
+                    #self.QM_MM_gradient[fullatomindex_qm] = newQgrad
+                    #self.QM_MM_gradient[fullatomindex_mm] = newMgrad
+                    self.QM_PC_gradient[fullatomindex_qm] = newQgrad
+                    self.QM_PC_gradient[fullatomindex_mm] = newMgrad                    
+
+        print_time_rel(CheckpointTime, modulename='gradient prepare', moduleindex=2)
+        CheckpointTime = time.time()
         # MM THEORY
         if self.mm_theory_name == "NonBondedTheory":
             if self.printlevel >= 2:
@@ -619,6 +718,19 @@ class QMMMTheory:
             #Todo: Need to have OpenMM skip frozen region interaction for speed  => => Exclude
             if Grad==True:
                 print("QM/MM Grad is True")
+                #Provide QM_PC_gradient to OpenMMTheory 
+                if self.openmm_externalforce == True:
+                    print("OpenMM externalforce")
+                    #Take QM_PC gradient (link-atom projected) and provide to OpenMM external force
+                    self.mm_theory.update_custom_external_force(self.openmm_externalforceobject,self.QM_PC_gradient)
+
+                    print_time_rel(CheckpointTime, modulename='openmm run prep until custom', moduleindex=2)
+                    if exit_after_customexternalforce_update==True:
+                        print("OpenMM custom external force updated. Exit requested")
+                        #This is used if OpenMM MD is handling forces and dynamics
+                        return
+                    #Calculate energy associated with external force so that we can subtract it later
+                    self.extforce_energy=3*np.mean(sum(self.QM_PC_gradient*current_coords*1.88972612546))
                 self.MMenergy, self.MMgradient= self.mm_theory.run(current_coords=current_coords, qmatoms=self.qmatoms, Grad=True)
             else:
                 print("QM/MM Grad is false")
@@ -627,8 +739,10 @@ class QMMMTheory:
             self.MMenergy=0
         print_time_rel(CheckpointTime, modulename='MM step', moduleindex=2)
         CheckpointTime = time.time()
-        #Final QM/MM Energy
-        self.QM_MM_energy= self.QMenergy+self.MMenergy
+
+
+        #Final QM/MM Energy. Possible correction for OpenMM external force term
+        self.QM_MM_energy= self.QMenergy+self.MMenergy-self.extforce_energy
         blankline()
         if self.printlevel >= 2:
             print("{:<20} {:>20.12f}".format("QM energy: ",self.QMenergy))
@@ -636,93 +750,20 @@ class QMMMTheory:
             print("{:<20} {:>20.12f}".format("QM/MM energy: ", self.QM_MM_energy))
         blankline()
 
-        #Final QM/MM gradient. Combine QM gradient, MM gradient, PC-gradient (elstat MM gradient from QM code).
-        # Do linkatom force projections in the end
+
+
+        #FINAL QM/MM GRADIENT ASSEMBLY
         if Grad == True:
-            assert len(self.allatoms) == len(self.MMgradient)
-            
-            #Defining QMgradient without linkatoms if present
-            if self.linkatoms==True:
-                self.QMgradient_wo_linkatoms=self.QMgradient[0:-num_linkatoms] #remove linkatoms
-                #Sanity check
-                assert len(self.QMgradient_wo_linkatoms) + len(self.PCgradient) - len(self.dipole_charges)  == len(self.MMgradient)
+
+            #If OpenMM external force method then QM/MM gradient is already complete
+            if self.openmm_externalforce == True:
+                self.QM_MM_gradient = self.MMgradient
+            #Otherwise combine
             else:
-                self.QMgradient_wo_linkatoms=self.QMgradient
+                #Now assemble full QM/MM gradient
+                assert len(self.QM_PC_gradient) == len(self.MMgradient)
+                self.QM_MM_gradient=self.QM_PC_gradient+self.MMgradient
 
-            #Initialize QM_PC gradient (has full system size) and fill up
-            self.QM_PC_gradient = np.zeros((len(self.MMgradient), 3))
-            qmcount=0;pccount=0
-            for i in self.allatoms:
-                if i in self.qmatoms:
-                    #QM-gradient. Linkatom gradients are skipped
-                    self.QM_PC_gradient[i]=self.QMgradient_wo_linkatoms[qmcount]
-                    qmcount+=1
-                else:
-                    #Pointcharge-gradient. Dipole-charge gradients are skipped (never reached)
-                    self.QM_PC_gradient[i] = self.PCgradient[pccount]
-                    pccount += 1
-            assert qmcount == len(self.qmatoms)
-            assert pccount == len(self.mmatoms)           
-            #print("qmcount:", qmcount)
-            #print("pccount:", pccount)
-            #print("self.QM_PC_gradient len ", len(self.QM_PC_gradient))
-
-
-            #Now assemble full QM/MM gradient (no linkatom force projection done yet)
-            assert len(self.QM_PC_gradient) == len(self.MMgradient)
-            self.QM_MM_gradient=self.QM_PC_gradient+self.MMgradient
-            if self.printlevel >=3:
-                print("Printlevel >=3: Printing QM/MM gradient before linkatom proj. to disk")
-                modules.module_coords.write_coords_all(self.QM_MM_gradient, self.elems, indices=self.allatoms, file="QM_MMgradient_wo_linkatomproj", description="QM/MM gradient w/o linkatom projection (au/Bohr):")
-            
-            #print_time_rel(CheckpointTime, modulename='QM/MM gradient combine')
-            
-            #LINKATOM FORCE PROJECTION
-            # Add contribution to QM1 and MM1 contribution???
-            if self.linkatoms==True:                
-                #print("here")
-                #print("linkatoms_dict: ", linkatoms_dict)
-                #print("linkatoms_indices: ", linkatoms_indices)
-                
-                for pair in sorted(linkatoms_dict.keys()):
-                    printdebug("pair: ", pair)
-                    #Grabbing linkatom data
-                    linkatomindex=linkatoms_indices.pop(0)
-                    printdebug("linkatomindex:", linkatomindex)
-                    Lgrad=self.QMgradient[linkatomindex]
-                    printdebug("Lgrad:",Lgrad)
-                    Lcoord=linkatoms_dict[pair]
-                    printdebug("Lcoord:", Lcoord)
-                    #Grabbing QMatom info
-                    fullatomindex_qm=pair[0]
-                    printdebug("fullatomindex_qm:", fullatomindex_qm)
-                    printdebug("self.qmatoms:", self.qmatoms)
-                    qmatomindex=fullindex_to_qmindex(fullatomindex_qm,self.qmatoms)
-                    printdebug("qmatomindex:", qmatomindex)
-                    Qcoord=self.qmcoords[qmatomindex]
-                    printdebug("Qcoords: ", Qcoord)
-
-                    Qgrad=self.QM_MM_gradient[fullatomindex_qm]
-                    printdebug("Qgrad (full QM/MM grad)s:", Qgrad)
-                    
-                    #Grabbing MMatom info
-                    fullatomindex_mm=pair[1]
-                    printdebug("fullatomindex_mm:", fullatomindex_mm)
-                    Mcoord=current_coords[fullatomindex_mm]
-                    printdebug("Mcoord:", Mcoord)
-                    
-                    Mgrad=self.QM_MM_gradient[fullatomindex_mm]
-                    printdebug("Mgrad (full QM/MM grad): ", Mgrad)
-                    
-                    #Now grabbed all components, calculating new projecteed gradient on QM atom and MM atom
-                    newQgrad,newMgrad = linkatom_force_fix(Qcoord, Mcoord, Lcoord, Qgrad,Mgrad,Lgrad)
-                    printdebug("newQgrad: ", newQgrad)
-                    printdebug("newMgrad: ", newMgrad)
-                    
-                    #Updating full QM/MM gradient
-                    self.QM_MM_gradient[fullatomindex_qm] = newQgrad
-                    self.QM_MM_gradient[fullatomindex_mm] = newMgrad
-                    
 
             if self.printlevel >=3:
                 print("Printlevel >=3: Printing all gradients to disk")

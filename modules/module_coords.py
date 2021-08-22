@@ -210,7 +210,6 @@ class Fragment:
         print(elems)
         print(type(elems))
         self.elems = self.elems+list(elems)
-        #coords must be list of lists
         self.coords = np.append(self.coords,coords, axis=0)
         
         

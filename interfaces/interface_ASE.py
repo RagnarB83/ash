@@ -123,7 +123,7 @@ def Dynamics_ASE(fragment=None, PBC=False, theory=None, temperature=300, timeste
             if self.plumedobj!=None:
                 print("Plumed active.")
                 print("Calling Plumed")
-                #Note: this updated self.forces. No need to use returned forces
+                #Note: this updates self.forces. No need to use returned forces
                 energy, forces = self.plumedobj.run(coords=fragment.coords, forces=self.forces, step=self.gradientcalls-1)
                 #TODO: Use Plumed energy ??
                 #print("energy from plumed:", energy)

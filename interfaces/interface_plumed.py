@@ -56,17 +56,21 @@ class plumed_ASH():
         #Choose Plumed units based on what the dynamics program is:
         #By using same units as dynamics program, we can avoid unit-conversion of forces
         if dynamics_program == "ASE":
-            print("Dynamics program ASE is set. Setting Plumed units to Angstrom (distance), eV (energy) and ps (time).")
+            print("Dynamics program ASE is recognized. Setting Plumed units to Angstrom (distance), eV (energy) and ps (time).")
             print("sigma and height values should reflect this. ")
             self.plumed_length_unit="A" #Plumed-label for Angstrom
             self.plumed_energy_unit="eV"
             self.plumed_time_unit="ps"
-            #Units: length set to Angstrom (ASE unit) and time to ps, energy in eV (ASE unit)
-            self.plumedobj.cmd("readInputLine","UNITS LENGTH={} ENERGY={} TIME={}".format(self.plumed_length_unit,self.plumed_energy_unit,self.plumed_time_unit))
+        elif dynamics_program == "OpenMM":
+            print("Dynamics program OpenMM is recognized. Setting Plumed units to nm (distance), kJ/mol (energy) and ps (time).")
+            print("sigma and height values should reflect this. ")
+            self.plumed_length_unit="nm" #Plumed-label for Angstrom
+            self.plumed_energy_unit="kJ/mol"
+            self.plumed_time_unit="ps"
         else:
             print("unknown dynamics_program. Exiting")
             exit()
-
+        self.plumedobj.cmd("readInputLine","UNITS LENGTH={} ENERGY={} TIME={}".format(self.plumed_length_unit,self.plumed_energy_unit,self.plumed_time_unit))
         self.CV1_type=CV1_type
         self.CV2_type=CV2_type
         self.CV1_indices=CV1_indices

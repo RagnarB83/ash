@@ -509,8 +509,53 @@ class OpenMMTheory:
         timeA = time.time()
         print_time_rel(module_init_time, modulename="OpenMM object creation")
 
+    #add force that restrains atoms to a fixed point:
+    #https://github.com/openmm/openmm/issues/2568
+
+    #To set positions in OpenMMobject (in nm) from np-array (Angstrom)
+    def set_positions(self,coords):
+        print("Setting coordinates of OpenMM object")
+        pos = [self.Vec3(coords[i, 0] / 10, coords[i, 1] / 10, coords[i, 2] / 10) for i in range(len(coords))] * self.openmm.unit.nanometer
+        self.simulation.context.setPositions(pos)
+        print("Coordinates set")
+
+    def add_custom_external_force(self):
+        #customforce=None
+        #inspired by https://github.com/CCQC/janus/blob/ba70224cd7872541d279caf0487387104c8253e6/janus/mm_wrapper/openmm_wrapper.py
+        customforce = self.openmm.CustomExternalForce("-x*fx-y*fy-z*fz")
+        #customforce.addGlobalParameter('shift', 0.0)
+        customforce.addPerParticleParameter('fx')
+        customforce.addPerParticleParameter('fy')
+        customforce.addPerParticleParameter('fz')
+        for i in range(self.system.getNumParticles()):
+            customforce.addParticle(i, np.array([0.0, 0.0, 0.0]))
+        self.system.addForce(customforce)
+        #self.externalforce=customforce
+        #Necessary:
+        self.create_simulation()
+        #http://docs.openmm.org/latest/api-c++/generated/OpenMM.CustomExternalForce.html
+
+        print("Added force")
+        return customforce
+    def update_custom_external_force(self, customforce, gradient):
+        #print("Updating custom external force")
+        #shiftpar_inkjmol=shiftparameter*2625.4996394799
+        #Convert Eh/Bohr gradient to force in kj/mol nm
+        #*49614.501681716106452
+        forces=-gradient*49614.752589207
+        for i,f in enumerate(forces):
+            customforce.setParticleParameters(i, i, f)
+        #print("xx")
+        #self.externalforce.X(shiftparameter)
+        #NOTE: updateParametersInContext expensive. Avoid somehow???
+        #https://github.com/openmm/openmm/issues/1892
+        #print("Current value of global par 0:", self.externalforce.getGlobalParameterDefaultValue(0))
+        #self.externalforce.setGlobalParameterDefaultValue(0, shiftpar_inkjmol)
+        #print("Current value of global par 0:", self.externalforce.getGlobalParameterDefaultValue(0))
+
+        customforce.updateParametersInContext(self.simulation.context)
+
     #Write XML-file for full system
-    #TODO: Should we do this by default???
     def saveXML(self, xmlfile="system_full.xml"):
         serialized_system = self.openmm.XmlSerializer.serialize(self.system)
         with open(xmlfile, 'w') as f: f.write(serialized_system)
@@ -633,6 +678,7 @@ class OpenMMTheory:
         elif integrator == 'LangevinIntegrator':
             self.integrator = self.openmm.LangevinIntegrator(temperature*self.unit.kelvin, coupling_frequency/self.unit.picosecond, timestep*self.unit.picoseconds)
         elif integrator == 'LangevinMiddleIntegrator':
+            #openmm recommended with 4 fs timestep, Hbonds 1/ps friction
             self.integrator = self.openmm.LangevinMiddleIntegrator(temperature*self.unit.kelvin, coupling_frequency/self.unit.picosecond, timestep*self.unit.picoseconds)
         elif integrator == 'NoseHooverIntegrator':
             self.integrator = self.openmm.NoseHooverIntegrator(temperature*self.unit.kelvin, coupling_frequency/self.unit.picosecond, timestep*self.unit.picoseconds)
@@ -652,7 +698,7 @@ class OpenMMTheory:
         self.forcegroups = {}
         print("inside forcegroupify")
         print("self.system.getForces() ", self.system.getForces())
-        print("Number of forces:", self.system.getNumForces())
+        print("Number of forces:\n", self.system.getNumForces())
         for i in range(self.system.getNumForces()):
             force = self.system.getForce(i)
             force.setForceGroup(i)
@@ -663,7 +709,7 @@ class OpenMMTheory:
         #Call and set force groups
         self.forcegroupify()
         energies = {}
-        print("self.forcegroups:", self.forcegroups)
+        #print("self.forcegroups:", self.forcegroups)
         for f, i in self.forcegroups.items():
             energies[f] = context.getState(getEnergy=True, groups=2**i).getPotentialEnergy()
         return energies
@@ -676,8 +722,8 @@ class OpenMMTheory:
         # OpenMM energy components
         openmm_energy = dict()
         energycomp = self.getEnergyDecomposition(self.simulation.context)
-        print("energycomp: ", energycomp)
-        print("self.forcegroups:", self.forcegroups)
+        #print("energycomp: ", energycomp)
+        #print("self.forcegroups:", self.forcegroups)
         #print("len energycomp", len(energycomp))
         #print("openmm_energy: ", openmm_energy)
         print("")
@@ -685,7 +731,7 @@ class OpenMMTheory:
         extrafcount=0
         #This currently assumes CHARMM36 components, More to be added
         for comp in energycomp.items():
-            print("comp: ", comp)
+            #print("comp: ", comp)
             if 'HarmonicBondForce' in str(type(comp[0])):
                 #Not sure if this works in general.
                 if bondterm_set is False:
@@ -1290,8 +1336,9 @@ def clean_up_constraints_list(fragment=None, constraints=None):
 #Also should we add: https://github.com/mdtraj/mdtraj ?
 def OpenMM_MD(fragment=None, openmmobject=None, timestep=0.001, simulation_steps=None, simulation_time=None, traj_frequency=1000, temperature=300, integrator=None,
     barostat=None, trajectory_file_option='PDB', coupling_frequency=None, anderson_thermostat=False, enforcePeriodicBox=True, frozen_atoms=None, constraints=None, restraints=None,
-    parmed_state_datareporter=False):
+    parmed_state_datareporter=False, QM_MM_object=None, dummy_MM=False, plumed_object=None):
     module_init_time = time.time()
+
     print_line_with_mainheader("OpenMM MOLECULAR DYNAMICS")
     if frozen_atoms==None: frozen_atoms=[]
     if constraints==None: constraints=[]
@@ -1306,7 +1353,7 @@ def OpenMM_MD(fragment=None, openmmobject=None, timestep=0.001, simulation_steps
         print("No fragment object. Exiting")
         exit()
     if simulation_time != None:
-        simulation_steps=simulation_time/timestep
+        simulation_steps=int(simulation_time/timestep)
     if simulation_steps != None:
         simulation_time=simulation_steps*timestep
     print("Simulation time: {} ps".format(simulation_time))
@@ -1317,7 +1364,7 @@ def OpenMM_MD(fragment=None, openmmobject=None, timestep=0.001, simulation_steps
     if len(frozen_atoms) < 50:
         print("Frozen atoms", frozen_atoms)
     print("OpenMM autoconstraints:", openmmobject.autoconstraints)
-    print("OpenMM hydrogenmass:", openmmobject.hydrogenmass)
+    print("OpenMM hydrogenmass:", openmmobject.hydrogenmass) #Note 1.5 amu mass is recommended for LangevinMiddle with 4fs timestep
     print("OpenMM rigidwater constraints:", openmmobject.rigidwater)
     print("Constraints:", constraints)
     print("Restraints:", restraints)
@@ -1390,13 +1437,8 @@ def OpenMM_MD(fragment=None, openmmobject=None, timestep=0.001, simulation_steps
         openmmobject.create_simulation(timestep=timestep, temperature=temperature, integrator=integrator, coupling_frequency=coupling_frequency)
     print("Simulation created.")
 
-    #Context: settings positions
-    print("Now adding coordinates")
-    coords=np.array(fragment.coords)
-    pos = [openmmobject.Vec3(coords[i, 0] / 10, coords[i, 1] / 10, coords[i, 2] / 10) for i in range(len(coords))] * openmmobject.openmm.unit.nanometer
 
-    openmmobject.simulation.context.setPositions(pos)
-    print("Coordinates set")
+
     #print("Checking PBC vectors")
     #state = openmmobject.simulation.context.getState()
     #print("PBC: ", state.getPeriodicBoxVectors())
@@ -1428,9 +1470,82 @@ def OpenMM_MD(fragment=None, openmmobject=None, timestep=0.001, simulation_steps
                 potentialEnergy=True, temperature=True, kineticEnergy=True,  separator='     '))
 
     #Run simulation
-    openmmobject.simulation.step(simulation_steps)
+    kjmolnm_to_atomic_factor=-49614.752589207
 
+
+    #NOTE: Better to use OpenMM-plumed interface instead??
+    if plumed_object != None:
+        print("Plumed active")
+        #Create new OpenMM custom external force
+        print("Creating new OpenMM custom external force for Plumed")
+        plumedcustomforce=openmmobject.add_custom_external_force()
+
+    #QM/MM MD
+    if QM_MM_object!=None:
+        print("QM_MM_object provided. Turning on QM/MM option")
+        #Setting coordinates
+        openmmobject.set_positions(fragment.coords)
+        #Does step by step
+        for step in range(simulation_steps):
+            #Get current coordinates to use for QM/MM step
+            current_coords =  np.array(openmmobject.simulation.context.getState(getPositions=True).getPositions(asNumpy=True))*10   
+            #Run QM/MM step to get full system QM+PC gradient.
+            #Updates OpenMM object with QM-PC forces
+            QM_MM_object.run(current_coords=current_coords, elems=fragment.elems, Grad=True, exit_after_customexternalforce_update=True)
+            #NOTE: Think about energy correction (currently skipped above)
+
+
+
+
+
+            #Now take OpenMM step (E+G + displacement essentially)
+            checkpoint = time.time()
+            openmmobject.simulation.step(1)
+
+            #NOTE: Better to use OpenMM-plumed interface instead??
+            #After MM step, grab coordinates and forces
+            if plumed_object != None:
+                print("Plumed active. Untested. Hopefully works")
+                print("Calling Plumed")
+                current_coords =  np.array(openmmobject.simulation.context.getState(getPositions=True).getPositions(asNumpy=True)) #in nm
+                current_forces =  np.array(openmmobject.simulation.context.getState(getForces=True).getForces(asNumpy=True)) #in kJ/mol /nm
+                energy, newforces = plumed_object.run(coords=current_coords, forces=current_forces, step=step) #Plumed object needs to be configured for OpenMM
+                openmmobject.update_custom_external_force(plumedcustomforce,newforces)
+            print_time_rel(checkpoint, modulename="openmmobject sim step", moduleindex=2)
+    #Dummy MM step to check how MD is affected by additional steps
+    #TODO: DELETE
+    elif dummy_MM==True:
+        #Testing whether any cost-penalty by running step-by-step
+        print("Dummy MM option")
+        #Adding a custom external force
+        openmmobject.add_custom_external_force()
+
+        #Setting coordinates
+        openmmobject.set_positions(fragment.coords)
+        current_coords=fragment.coords
+        
+        dummygradient=np.random.random((fragment.numatoms, 3))*0.001
+        for i in range(simulation_steps):
+            #Get current coordinates to use for QM/MM step
+            current_coords =  np.array(openmmobject.simulation.context.getState(getPositions=True).getPositions(asNumpy=True))*10
+            #Custom force update (slows things down a bit)
+            openmmobject.update_custom_external_force(dummygradient)
+            #Now take OpenMM step
+            checkpoint = time.time()
+            openmmobject.simulation.step(1)
+            print_time_rel(checkpoint, modulename="openmmobject sim step", moduleindex=2)
+    else:
+        print("Regular classical OpenMM MD option chosen")
+        #Setting coordinates
+        openmmobject.set_positions(fragment.coords)
+        #Running all steps in one go
+        #TODO: If we wanted to support plumed then we would have to do step 1-by-1 here
+        openmmobject.simulation.step(simulation_steps)        
     print("OpenMM MD simulation finished!")
+    #Close Plumed also if active. Flushes HILLS/COLVAR etc.
+    if plumed_object != None:
+        plumed_object.close()
+
 
     state = openmmobject.simulation.context.getState(getEnergy=True, getPositions=True, getForces=True, enforcePeriodicBox=True)
     print("Checking PBC vectors")
