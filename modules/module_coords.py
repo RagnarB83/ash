@@ -179,13 +179,43 @@ class Fragment:
         self.coords=np.zeros((0,3))
         self.elems=[]
         self.connectivity=[]
-    #Get list of atom-indices for specific elements
+    #Get list of atom-indices for specific elements or groups
+    #Atom indices except those provided
+    def get_atomindices_except(self,excludelist):
+        return listdiff(self.allatoms,excludelist)
     def get_nonH_atomindices(self):
         return [index for index,el in enumerate(self.elems) if el!='H']
     def get_atomindices_for_element(self,element):
         return [index for index,el in enumerate(self.elems) if el==element]
     def get_atomindices_except_element(self,element):
         return [index for index,el in enumerate(self.elems) if el!=element]
+    #Get list of lists of bonds. Used for X-H constraints for example
+    def get_XH_indices(self, conncode='julia'):
+        timestamp=time.time()
+        scale = settings_ash.settings_dict["scale"]
+        tol = settings_ash.settings_dict["tol"]
+        Hatoms=self.get_atomindices_for_element('H')
+        #Hatoms=[1,2,3,5]
+        print("Hatoms:", Hatoms)
+
+        #way too slow
+        if conncode=='py':
+            final_list=[]
+            for Hatom in Hatoms:
+                connatoms=get_connected_atoms_np(self.coords, self.elems, scale,tol, Hatom)
+                final_list.append(connatoms)
+            return final_list
+        else:
+            final_list=ash.Main.Juliafunctions.get_connected_atoms_forlist_julia(self.coords, self.elems, scale, tol, eldict_covrad, Hatoms)
+        print("final_list:", final_list)
+        print_time_rel(timestamp, modulename='get_XH_indices', moduleindex=4)
+        return final_list
+        #Call connectivity routines
+        #for el in self.elems:
+        #    if -
+    def get_water_XH_indices(self):
+        print("not ready")
+        exit()
     def delete_atom(self,atomindex):
         self.coords=np.delete(self.coords,atomindex,axis=0)        
         #Deleting from lists
@@ -410,6 +440,9 @@ class Fragment:
             conn_number_sum+=len(l)
         if self.numatoms != conn_number_sum:
             print(BC.FAIL,"Connectivity problem", BC.END)
+            print("self.connectivity:", self.connectivity)
+            print("conn_number_sum:", conn_number_sum)
+            print("self numatoms", self.numatoms)
             exit()
         self.connected_atoms_number=conn_number_sum
 
@@ -1759,12 +1792,12 @@ def coord2xyz(inputfile):
 
 
 #Get partial list by deleting elements not present in provided list of indices.
-def get_partial_list(allatoms,partialatoms,list):
+def get_partial_list(allatoms,partialatoms,l):
     otheratoms=listdiff(allatoms,partialatoms)
     otheratoms.reverse()
     for at in otheratoms:
-        del list[at]
-    return list
+        del l[at]
+    return l
 
 
 #Old function that used scipy to do distances and Hungarian. 
