@@ -559,8 +559,6 @@ class OpenMMTheory:
     #To set positions in OpenMMobject (in nm) from np-array (Angstrom)
     def set_positions(self,coords):
         print("Setting coordinates of OpenMM object")
-        print("coords:", coords)
-        print(type(coords))
         coords_nm=coords*0.1 #converting from Angstrom to nm
         pos = [self.Vec3(coords_nm[i, 0], coords_nm[i, 1], coords_nm[i, 2]) for i in range(len(coords_nm))] * self.unit.nanometer      
         self.simulation.context.setPositions(pos)
@@ -1557,8 +1555,6 @@ def OpenMM_MD(fragment=None, theory=None, timestep=0.001, simulation_steps=None,
     if QM_MM_object!=None:
         print("QM_MM_object provided. Turning on QM/MM option")
         #Setting coordinates
-        print(len(fragment.coords))
-        print(type(fragment.coords))
         openmmobject.set_positions(fragment.coords)
         #Does step by step
         for step in range(simulation_steps):

@@ -107,6 +107,9 @@ class Fragment:
         if len(self.coords) == 0:
             print("No coordinates in fragment. Something went wrong. Exiting")
             exit()
+        if type(self.coords) != numpy.ndarray:
+            print("self.coords is not a numpy array. Something is wrong. Exiting.")
+            exit()
         self.nuccharge = nucchargelist(self.elems)
         self.numatoms = len(self.coords)
         self.atomlist = list(range(0, self.numatoms))
@@ -609,7 +612,8 @@ class Fragment:
                             connlist=[]
                         connectivity.append(connlist)
         self.elems=elems
-        self.coords=coords
+        #Converting to numpy array
+        self.coords=np.array(coords)
         self.atomcharges=atomcharges
         self.atomtypes=atomtypes
         self.update_attributes()
