@@ -1394,7 +1394,7 @@ def clean_up_constraints_list(fragment=None, constraints=None):
 #Note: enforcePeriodicBox=True/False/None option. False works for current test system to get trajectory without PBC problem. Other systems may require True or None.
 #see https://github.com/openmm/openmm/issues/2688, https://github.com/openmm/openmm/pull/1895
 #Also should we add: https://github.com/mdtraj/mdtraj ?
-def OpenMM_MD(fragment=None, openmmobject=None, timestep=0.001, simulation_steps=None, simulation_time=None, traj_frequency=1000, temperature=300, integrator=None,
+def OpenMM_MD(fragment=None, theory=None, timestep=0.001, simulation_steps=None, simulation_time=None, traj_frequency=1000, temperature=300, integrator=None,
     barostat=None, trajectory_file_option='PDB', coupling_frequency=None, anderson_thermostat=False, enforcePeriodicBox=True, frozen_atoms=None, constraints=None, restraints=None,
     parmed_state_datareporter=False, dummy_MM=False, plumed_object=None):
     module_init_time = time.time()
