@@ -1557,7 +1557,8 @@ def OpenMM_MD(fragment=None, theory=None, timestep=0.001, simulation_steps=None,
         
         #Does not make sense without it (it would calculate OpenMM energy twice)
         if QM_MM_object.openmm_externalforce == False:
-            print("Turning on openmm_externalforce option in QM/MM object in case not active")
+            print("QM/MM object did not have openmm_externalforce=True.")
+            print("Need to turn on externalforce option")
             QM_MM_object.openmm_externalforceobject = QM_MM_object.mm_theory.add_custom_external_force()
             print("done")
         #Setting coordinates
