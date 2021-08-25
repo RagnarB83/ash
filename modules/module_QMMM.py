@@ -718,6 +718,7 @@ class QMMMTheory:
             #Todo: Need to have OpenMM skip frozen region interaction for speed  => => Exclude
             if Grad==True:
                 print("QM/MM Grad is True")
+                print("self.openmm_externalforce:", self.openmm_externalforce)
                 #Provide QM_PC_gradient to OpenMMTheory 
                 if self.openmm_externalforce == True:
                     print("OpenMM externalforce is True")
