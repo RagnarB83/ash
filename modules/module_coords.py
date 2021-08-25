@@ -107,7 +107,7 @@ class Fragment:
         if len(self.coords) == 0:
             print("No coordinates in fragment. Something went wrong. Exiting")
             exit()
-        if type(self.coords) != numpy.ndarray:
+        if type(self.coords) != np.ndarray:
             print("self.coords is not a numpy array. Something is wrong. Exiting.")
             exit()
         self.nuccharge = nucchargelist(self.elems)
