@@ -6,7 +6,7 @@ from sys import stdout
 import traceback
 
 from functions.functions_general import BC,print_time_rel,listdiff,printdebug,print_line_with_mainheader,isint
-from modules.module_coords import Fragment, write_pdbfile,distance_between_atoms, list_of_masses
+from modules.module_coords import Fragment, write_pdbfile,distance_between_atoms, list_of_masses, write_xyzfile
 from modules.module_MM import UFF_modH_dict,MMforcefield_read
 from interfaces.interface_xtb import xTBTheory
 class OpenMMTheory:
