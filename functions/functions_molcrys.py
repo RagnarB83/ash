@@ -875,27 +875,32 @@ def create_MMcluster(orthogcoords,elems,cell_vectors,sphereradius):
     # Einsum is slightly faster than bare_numpy_mat. 
     # All atom-distances compared to origin in one go
     distances = modules.module_coords.einsum_mat(extended_coords, comparecoords)
+    print("here we are1")
     for count in range(len(extended_coords)):
         #print("count:", count)
         if distances[count] > sphereradius:
             deletionlist.append(count)
-
+    print("here we are1a")
     #Deleting atoms in deletion list in reverse
     extended_coords=np.delete(extended_coords, list(reversed(deletionlist)), 0)
+    print("here we are1b")
     for d in reversed(deletionlist):
         del extended_elems[d]
 
+    print("here we are2")
     printdebug(len(extended_coords))
     printdebug(len(extended_elems))
 
     #Find duplicate coordinates (atoms on top of each other). Add index to deletion list. Happens if atoms have coordinates right on box boundary
     #List of Bools, duplicates are True
+    print("here we are3")
     dupls=np.array(filter_duplicate(extended_coords))
     #Deleting atoms in duplication list in reverse
     extended_coords=np.delete(extended_coords, list(reversed(dupls)), 0)
+    print("here we are4")
     for d in reversed(dupls):
         del extended_elems[d]
-
+    print("here we are5")
     #Write XYZ-file
     modules.module_coords.write_xyzfile(extended_elems,extended_coords,"trimmedcell_extended_coords")
     return extended_coords,extended_elems
