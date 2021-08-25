@@ -334,16 +334,16 @@ def molcrys(cif_file=None, xtl_file=None, xyz_file=None, cell_length=None, cell_
     #TODO: First all mainfrags, then counterfrags ??
     if cluster_type == 'sphere':
         #Create MM cluster here already or later
-        cluster_coords,cluster_elems=functions.functions_molcrys.create_MMcluster(orthogcoords,elems,cell_vectors,clusterradius)
+        tempcluster_coords,tempcluster_elems=functions.functions_molcrys.create_MMcluster(orthogcoords,elems,cell_vectors,clusterradius)
         print_time_rel_and_tot(currtime, origtime, modulename='create_MMcluster')
         currtime=time.time()
 
-        cluster_coords,cluster_elems=functions.functions_molcrys.remove_partial_fragments(cluster_coords,cluster_elems,clusterradius,fragmentobjects, scale=chosenscale, tol=chosentol)
+        tempcluster_coords,tempcluster_elems=functions.functions_molcrys.remove_partial_fragments(tempcluster_coords,tempcluster_elems,clusterradius,fragmentobjects, scale=chosenscale, tol=chosentol)
         print_time_rel_and_tot(currtime, origtime, modulename='remove_partial_fragments')
         currtime=time.time()
-        modules.module_coords.write_xyzfile(cluster_elems,cluster_coords,"cluster_coords")
+        modules.module_coords.write_xyzfile(tempcluster_elems,tempcluster_coords,"cluster_coords")
 
-        if len(cluster_coords) == 0:
+        if len(tempcluster_coords) == 0:
             print(BC.FAIL,"After removing all partial fragments, the Cluster fragment is empty. Something went wrong. Exiting.", BC.END)
             exit(1)
     elif cluster_type == 'supercell':
@@ -351,7 +351,7 @@ def molcrys(cif_file=None, xtl_file=None, xyz_file=None, cell_length=None, cell_
         #Disadvantage, we could have partial fragment at boundary. 
         #TODO: Check for partial fragments at boundary and clean up?? Adapt remove_partial_fragments ???
         print(BC.WARNING,"Warning. cluster_type = supercell is untested ",BC.END)
-        cluster_coords,cluster_elems = functions.functions_molcrys.cell_extend_frag(cell_vectors, orthogcoords,elems,supercell_expansion)
+        tempcluster_coords,tempcluster_elems = functions.functions_molcrys.cell_extend_frag(cell_vectors, orthogcoords,elems,supercell_expansion)
         
         #TODO: Clean up partial fragments at boundary
         
@@ -365,9 +365,19 @@ def molcrys(cif_file=None, xtl_file=None, xyz_file=None, cell_length=None, cell_
     #Create ASH fragment object from created cluster (spherical or super-cell)
     ########################################
     blankline()
+    #TODO: Slightly ugly. Clean up at some point
+    print("Creating temp Cluster fragment:")
+    tempcluster=ash.Fragment(elems=tempcluster_elems, coords=tempcluster_coords, scale=chosenscale, tol=chosentol, conncalc=True)
+    
+    #Reorder cluster so that molecular fragment atoms appear in order
+    newatomindexorder=[]
+    for fragx in tempcluster.connectivity:
+        newatomindexorder=newatomindexorder+fragx
+    cluster_elems=[tempcluster_elems[i] for i in newatomindexorder]
+    cluster_coords=tempcluster_coords[newatomindexorder]
+
     print("Creating new Cluster fragment:")
     Cluster=ash.Fragment(elems=cluster_elems, coords=cluster_coords, scale=chosenscale, tol=chosentol, conncalc=True)
-    
     
     print_time_rel_and_tot(currtime, origtime, modulename='create Cluster fragment')
     currtime=time.time()
@@ -493,7 +503,7 @@ def molcrys(cif_file=None, xtl_file=None, xyz_file=None, cell_length=None, cell_
             #Adding UKS keyword if not already present for case AF-coupled BS-singlet to prevent RKS/RHF.
             if 'UKS' not in theory.orcasimpleinput:
                 theory.orcasimpleinput=theory.orcasimpleinput+' UKS'
-        QMtheory = interface_ORCA.ORCATheory(orcadir=theory.orcadir, charge=fragmentobjects[0].Charge, mult=fragmentobjects[0].Mult,
+        QMtheory = interfaces.interface_ORCA.ORCATheory(orcadir=theory.orcadir, charge=fragmentobjects[0].Charge, mult=fragmentobjects[0].Mult,
                               orcasimpleinput=theory.orcasimpleinput,
                               orcablocks=theory.orcablocks, extraline=chargemodelline)
         #COPY LAST mainfrag orbitals here: called lastorbitals.gbw from gasfragcalc (mainfrag)
@@ -501,7 +511,7 @@ def molcrys(cif_file=None, xtl_file=None, xyz_file=None, cell_length=None, cell_
         shutil.copyfile('lastorbitals.gbw', QMtheory.filename+'.gbw')
 
     elif theory.__class__.__name__ == "xTBTheory":
-        QMtheory = ash.xTBTheory(xtbdir=theory.xtbdir, charge=fragmentobjects[0].Charge, mult=fragmentobjects[0].Mult, xtbmethod=theory.xtbmethod)
+        QMtheory = interfaces.interface_xtb.xTBTheory(xtbdir=theory.xtbdir, charge=fragmentobjects[0].Charge, mult=fragmentobjects[0].Mult, xtbmethod=theory.xtbmethod)
 
     print("QMtheory:", QMtheory)
     print(QMtheory.__dict__)
@@ -589,6 +599,7 @@ def molcrys(cif_file=None, xtl_file=None, xyz_file=None, cell_length=None, cell_
             break
         print(BC.WARNING,"Not converged in iteration {}. Continuing SP loop".format(SPLoopNum),BC.END)
 
+
     print(BC.OKMAGENTA,"Molcrys Charge-Iteration done!",BC.END)
     print("")
     print_time_rel_and_tot(currtime, origtime, modulename="SP iteration done")
@@ -597,6 +608,7 @@ def molcrys(cif_file=None, xtl_file=None, xyz_file=None, cell_length=None, cell_
     #Now that charges are converged (for mainfrag and counterfrags ???).
     #Now derive LJ parameters ?? Important for DDEC-LJ derivation
     #Defining atomtypes in Cluster fragment for LJ interaction
+    #Now also adding charges for each fragment
     if theory.__class__.__name__ == "ORCATheory":
         functions.functions_molcrys.choose_shortrangemodel(Cluster,shortrangemodel,fragmentobjects,QMtheory,mainfrag_gbwfile,numcores,LJHparameters)
     else:
@@ -604,6 +616,24 @@ def molcrys(cif_file=None, xtl_file=None, xyz_file=None, cell_length=None, cell_
 
     print_time_rel_and_tot(currtime, origtime, modulename="LJ stuff done")
     currtime=time.time()
+
+
+
+    #New: writing atomcharges, residues and element info to FF file
+    with open('Cluster_forcefield.ff', 'a') as forcefile:
+        forcefile.write('# Residues (fragmenttypes)\n')
+        for fragnum,frag in enumerate(fragmentobjects):
+            forcefile.write('resid{} {}\n'.format(fragnum,' '.join([str(i) for i in fragmentobjects[fragnum].atomtypelist])))
+        forcefile.write('# Charges for each atomtype\n')
+        for fragnum,frag in enumerate(fragmentobjects):
+            for atype,charge in zip(fragmentobjects[fragnum].atomtypelist,fragmentobjects[fragnum].all_atomcharges[-1]):
+                forcefile.write('charge  {} {}\n'.format(atype,charge))
+        forcefile.write('# Elements for each atomtype\n')
+        for fragnum,frag in enumerate(fragmentobjects):
+            for atype,el in zip(fragmentobjects[fragnum].atomtypelist,fragmentobjects[fragnum].Atoms):
+                forcefile.write('element  {} {}\n'.format(atype,el))
+    
+    
     #Adding Centralmainfrag to Cluster
     Cluster.add_centralfraginfo(Centralmainfrag)
     #Printing out Cluster fragment file

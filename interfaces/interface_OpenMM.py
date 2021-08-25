@@ -5,15 +5,16 @@ import os
 from sys import stdout
 import traceback
 
-from functions.functions_general import BC,print_time_rel,listdiff,printdebug,print_line_with_mainheader
-from modules.module_coords import Fragment, write_pdbfile,distance_between_atoms
-from modules.module_MM import UFF_modH_dict
+from functions.functions_general import BC,print_time_rel,listdiff,printdebug,print_line_with_mainheader,isint
+from modules.module_coords import Fragment, write_pdbfile,distance_between_atoms, list_of_masses
+from modules.module_MM import UFF_modH_dict,MMforcefield_read
 from interfaces.interface_xtb import xTBTheory
 class OpenMMTheory:
     def __init__(self, printlevel=2, platform='CPU', numcores=None, Modeller=False, forcefield=None, topology=None,
                  CHARMMfiles=False, psffile=None, charmmtopfile=None, charmmprmfile=None,
                  GROMACSfiles=False, gromacstopfile=None, grofile=None, gromacstopdir=None,
                  Amberfiles=False, amberprmtopfile=None,
+                 cluster_fragment=None, ASH_FF_file=None,
                  xmlfiles=None, pdbfile=None, use_parmed=False,
                  do_energy_decomposition=False,
                  periodic=False, charmm_periodic_cell_dimensions=None, customnonbondedforce=False,
@@ -239,6 +240,49 @@ class OpenMMTheory:
             print("Using forcefield info from Modeller")
             self.topology = topology
             self.forcefield= forcefield
+            
+        elif ASH_FF_file != None:
+            print("Reading ASH cluster fragment file and ASH Forcefield file")
+            #Converting ASH FF file to OpenMM XML file
+            MM_forcefield=MMforcefield_read(ASH_FF_file)
+            atomtypes_res=[];atomnames_res=[];elements_res=[];atomcharges_res=[];sigmas_res=[];epsilons_res=[];
+            residue_types=[];masses_res=[]
+            for residuetype in MM_forcefield['residues']:
+                residue_types.append(residuetype)
+                atypelist=MM_forcefield[residuetype]
+                #Atomnames, have to be unique and 4 letters, adding number
+                atomnames_res.append([at[-3:]+str(i) for i,at in enumerate(atypelist)])                          
+                atomtypes_res.append(atypelist)
+                sigmas_res.append([MM_forcefield[atomtype].LJparameters[0]/10 for atomtype in MM_forcefield[residuetype]])
+                epsilons_res.append([MM_forcefield[atomtype].LJparameters[1]*4.184 for atomtype in MM_forcefield[residuetype]])
+                atomcharges_res.append([MM_forcefield[atomtype].atomcharge for atomtype in MM_forcefield[residuetype]])
+                elements_res.append([MM_forcefield[atomtype].element for atomtype in MM_forcefield[residuetype]])
+                masses_res.append(list_of_masses(elements_res[-1]))
+            
+            #Creating PDB file for topology
+            #requires ffragmenttype_labels to be present in fragment.
+            #NOTE: will only for molcrys-prepared files I think for now
+            atomnames_full=[];jindex=0;resid_index=1
+            residlabels=[]
+            for i,fragtypelabel in enumerate(cluster_fragment.fragmenttype_labels):
+                if jindex== len(atomnames_res[fragtypelabel]):
+                    jindex=0;resid_index+=1
+                atomnames_full.append(atomnames_res[fragtypelabel][jindex])
+                residlabels.append(resid_index)
+                jindex+=1
+
+            #Creating PDB-file, only for topology (not coordinates)
+            write_pdbfile(cluster_fragment,outputname="cluster", dummyname='MOL', atomnames=atomnames_full, residlabels=residlabels)
+            pdb = simtk.openmm.app.PDBFile("cluster.pdb")
+            self.topology = pdb.topology
+
+            #TODO: provide list of lists for multiple residue types
+            xmlfile = write_xmlfile_nonbonded(resnames=residue_types, atomnames_per_res=atomnames_res, atomtypes_per_res=atomtypes_res, 
+                                              elements_per_res=elements_res, masses_per_res=masses_res, 
+                                              charges_per_res=atomcharges_res, sigmas_per_res=sigmas_res, epsilons_per_res=epsilons_res, 
+                                              filename="system.xml",coulomb14scale=1.0, lj14scale=1.0)
+             
+            self.forcefield = simtk.openmm.app.ForceField(xmlfile)
         else:
             print("Reading OpenMM XML forcefield files and PDB file")
             print("xmlfiles:", xmlfiles)
@@ -392,7 +436,7 @@ class OpenMMTheory:
                 self.system = self.forcefield.createSystem(self.params, nonbondedMethod=simtk.openmm.app.NoCutoff,
                                             nonbondedCutoff=1000 * simtk.openmm.unit.angstroms, hydrogenMass=self.hydrogenmass)
             else:
-                self.system = self.forcefield.createSystem(nonbondedMethod=simtk.openmm.app.NoCutoff, constraints=self.autoconstraints, rigidWater=self.rigidwater,
+                self.system = self.forcefield.createSystem(self.topology,nonbondedMethod=simtk.openmm.app.NoCutoff, constraints=self.autoconstraints, rigidWater=self.rigidwater,
                                             nonbondedCutoff=1000 * simtk.openmm.unit.angstroms, hydrogenMass=self.hydrogenmass)
 
             print("OpenMM system created")
@@ -2016,9 +2060,10 @@ def solvate_small_molecule(fragment=None, charge=None, mult=None, watermodel=Non
 
 
     #Creating XML-file for solute
-    xmlfile = write_xmlfile_nonbonded(resname="LIG", atomnames=atomnames,atomtypes=atomtypes, elements=fragment.elems, masses=fragment.masses, charges=charges, 
-                        sigmas=sigmas, epsilons=epsilons, filename="system.xml")
     
+    xmlfile = write_xmlfile_nonbonded(resnames=["LIG"], atomnames_per_res=[atomnames],atomtypes_per_res=[atomtypes], 
+                                      elements_per_res=[fragment.elems], masses_per_res=[fragment.masses], charges_per_res=[charges], 
+                        sigmas_per_res=[sigmas], epsilons_per_res=[epsilons], filename="system.xml")
     
     print("Creating forcefield using XML-files:", xmlfile, waterxmlfile)
     forcefield=openmm_app.forcefield.ForceField(xmlfile, waterxmlfile)
@@ -2056,29 +2101,57 @@ def solvate_small_molecule(fragment=None, charge=None, mult=None, watermodel=Non
 
 
 #Simple XML-writing function. Will only write nonbonded parameters 
-def write_xmlfile_nonbonded(atomtypes=None, atomnames=None, resname=None, elements=None, masses=None, charges=None, sigmas=None, 
-                            epsilons=None, filename="system.xml", coulomb14scale=0.833333, lj14scale=0.5):
+def write_xmlfile_nonbonded(resnames=None, atomnames_per_res=None, atomtypes_per_res=None,  elements_per_res=None, 
+                            masses_per_res=None, charges_per_res=None, sigmas_per_res=None, 
+                            epsilons_per_res=None, filename="system.xml", coulomb14scale=0.833333, lj14scale=0.5):
     print("Inside write_xml file")
+    #resnames=["MOL1", "MOL2"]
+    #atomnames_per_res=[["CM1","CM2","HX1","HX2"],["OT1","HT1","HT2"]]
+    #atomtypes_per_res=[["CM","CM","H","H"],["OT","HT","HT"]]
+    #sigmas_per_res=[[1.2,1.2,1.3,1.3],[1.25,1.17,1.17]]
+    #epsilons_per_res=[[0.2,0.2,0.3,0.3],[0.25,0.17,0.17]]
+    #etc.
+    #Always list of lists now
+    
+    assert len(resnames) == len(atomnames_per_res) == len(atomtypes_per_res)
+    #Get list of all unique atomtypes, elements, masses
+    #all_atomtypes=list(set([item for sublist in atomtypes_per_res for item in sublist]))
+    #all_elements=list(set([item for sublist in elements_per_res for item in sublist]))
+    #all_masses=list(set([item for sublist in masses_per_res for item in sublist]))
+    
+    #Create list of all AtomTypelines (unique)
+    atomtypelines=[]
+    for resname,atomtypelist,elemlist,masslist in zip(resnames,atomtypes_per_res, elements_per_res, masses_per_res):
+        for atype,elem,mass in zip(atomtypelist,elemlist,masslist):
+            atomtypeline="<Type name=\"{}\" class=\"{}\" element=\"{}\" mass=\"{}\"/>\n".format(atype,atype,elem, str(mass))
+            if atomtypeline not in atomtypelines:
+                atomtypelines.append(atomtypeline)
+    #Create list of all nonbonded lines (unique)
+    nonbondedlines=[]
+    for resname,atomtypelist,chargelist,sigmalist,epsilonlist in zip(resnames,atomtypes_per_res, charges_per_res, sigmas_per_res, epsilons_per_res):
+        for atype,charge,sigma,epsilon in zip(atomtypelist,chargelist,sigmalist,epsilonlist):
+            nonbondedline="<Atom type=\"{}\" charge=\"{}\" sigma=\"{}\" epsilon=\"{}\"/>\n".format(atype,charge,sigma,epsilon)
+            if nonbondedline not in nonbondedlines:
+                nonbondedlines.append(nonbondedline)
+
     with open(filename, 'w') as xmlfile:
         xmlfile.write("<ForceField>\n")
         xmlfile.write("<AtomTypes>\n")
-        for i,(atomtype,elem,mass) in enumerate(zip(atomtypes,elements,masses)):
-            xmlfile.write("<Type name=\"{}\" class=\"{}\" element=\"{}\" mass=\"{}\"/>\n".format(atomtype,atomtype,elem, str(mass)))
-        #All other atomtypes
+        for atomtypeline in atomtypelines:
+            xmlfile.write(atomtypeline)
         xmlfile.write("</AtomTypes>\n")
-        
         xmlfile.write("<Residues>\n")
-        xmlfile.write("<Residue name=\"{}\">\n".format(resname))
-        for i,(atomname,atomtype) in enumerate(zip(atomnames,atomtypes)):
-            xmlfile.write("<Atom name=\"{}\" type=\"{}\"/>\n".format(atomname,atomtype))
-        #All other atoms
-        xmlfile.write("</Residue>\n")
+        for resname,atomnamelist,atomtypelist in zip(resnames,atomnames_per_res,atomtypes_per_res):
+            xmlfile.write("<Residue name=\"{}\">\n".format(resname))
+            for i,(atomname,atomtype) in enumerate(zip(atomnamelist,atomtypelist)):
+                xmlfile.write("<Atom name=\"{}\" type=\"{}\"/>\n".format(atomname,atomtype))
+            #All other atoms
+            xmlfile.write("</Residue>\n")
         xmlfile.write("</Residues>\n")
         
         xmlfile.write("<NonbondedForce coulomb14scale=\"{}\" lj14scale=\"{}\">\n".format(coulomb14scale,lj14scale))
-        for i,(atomtype,charge,sigma,epsilon) in enumerate(zip(atomtypes,charges,sigmas,epsilons)):
-            xmlfile.write("<Atom type=\"{}\" charge=\"{}\" sigma=\"{}\" epsilon=\"{}\"/>\n".format(atomtype,charge,sigma,epsilon))
-        #all other atomtypes
+        for nonbondedline in nonbondedlines:
+            xmlfile.write(nonbondedline)
         xmlfile.write("</NonbondedForce>\n")
         xmlfile.write("</ForceField>\n")
     print("Wrote XML-file:", filename)

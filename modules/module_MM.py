@@ -385,23 +385,32 @@ class NonBondedTheory:
 
 #MMAtomobject used to store LJ parameter and possibly charge for MM atom with atomtype, e.g. OT
 class AtomMMobject:
-    def __init__(self, atomcharge=None, LJparameters=None):
-        sf="dsf"
+    def __init__(self, atomcharge=None, LJparameters=None, element=None):
         self.atomcharge = atomcharge
         self.LJparameters = LJparameters
+        self.element=element
     def add_charge(self, atomcharge=None):
         self.atomcharge = atomcharge
     def add_LJparameters(self, LJparameters=None):
         self.LJparameters=LJparameters
+    def add_element(self,element=None):
+        self.element=element
 
 #Makes more sense to store this here. Simplifies ASH inputfile import.
 def MMforcefield_read(file):
     print("Reading forcefield file:", file)
     MM_forcefield = {}
     atomtypes=[]
+    MM_forcefield["residues"]=[]
     with open(file) as f:
         for line in f:
             if '#' not in line:
+                #Now reading residue type (fragmenttypes)
+                if 'resid' in line:
+                    lsplit=line.split()
+                    residname=lsplit[0]
+                    MM_forcefield[residname]=lsplit[1:]
+                    MM_forcefield["residues"].append(residname)
                 if 'combination_rule' in line:
                     combrule=line.split()[-1]
                     print("Found combination rule defintion in forcefield file:", combrule)
@@ -431,6 +440,12 @@ def MMforcefield_read(file):
                     sigma_i=float(line.split()[2])*R0tosigma
                     eps_i=float(line.split()[3])
                     MM_forcefield[atomtype].add_LJparameters(LJparameters=[sigma_i,eps_i])
+                if 'element' in line:
+                    atomtype=line.split()[1]
+                    if atomtype not in MM_forcefield.keys():
+                        MM_forcefield[atomtype] = AtomMMobject()
+                    el=line.split()[2]
+                    MM_forcefield[atomtype].add_element(element=el)
                 if 'LennardJones_ij' in line:
                     print("Found LJ pair definition in forcefield file")
                     atomtype_i=line.split()[1]

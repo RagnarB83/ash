@@ -14,7 +14,8 @@ import ash
 
 # ASH Fragment class
 class Fragment:
-    def __init__(self, coordsstring=None, fragfile=None, xyzfile=None, pdbfile=None, grofile=None, amber_inpcrdfile=None, amber_prmtopfile=None, chemshellfile=None, coords=None, elems=None, connectivity=None,
+    def __init__(self, coordsstring=None, fragfile=None, xyzfile=None, pdbfile=None, grofile=None, amber_inpcrdfile=None, amber_prmtopfile=None, 
+                 chemshellfile=None, coords=None, elems=None, connectivity=None,
                  atomcharges=None, atomtypes=None, conncalc=False, scale=None, tol=None, printlevel=2, charge=None,
                  mult=None, label=None, readchargemult=False, use_atomnames_as_elements=False):
         
@@ -38,12 +39,16 @@ class Fragment:
         self.connectivity=[]
         self.atomcharges = []
         self.atomtypes = []
+        #Atomnames in a forcefield sense
+        #self.atomnames = []
         self.Centralmainfrag = []
         self.formula = None
         if atomcharges is not None:
             self.atomcharges=atomcharges
         if atomtypes is not None:
             self.atomtypes=atomtypes
+        #if atomnames is not None:
+        #    self.atomnames=atomnames
         #Hessian. Can be added by Numfreq/Anfreq job
         self.hessian=[]
 
@@ -462,19 +467,30 @@ class Fragment:
     #Adding fragment-type info (used by molcrys, identifies whether atom is mainfrag, counterfrag1 etc.)
     #This one is fast
     def add_fragment_type_info(self,fragmentobjects):
+        print("fragmentobjects:", fragmentobjects)
         # Create list of fragment-type label-list
         combined_flat_clusterfraglist = []
         combined_flat_labels = []
         #Going through objects, getting flat atomlists for each object and combine (combined_flat_clusterfraglist)
         #Also create list of labels (using fragindex) for each atom
+        self.fragmenttypes_numatoms=[]
         for fragindex,frago in enumerate(fragmentobjects):
+            print("fragindex:", fragindex)
+            print("frago:", frago)
+            print(frago.__dict__)
+            print("frago.flat_clusterfraglist:", frago.flat_clusterfraglist)
             combined_flat_clusterfraglist.extend(frago.flat_clusterfraglist)
             combined_flat_labels.extend([fragindex]*len(frago.flat_clusterfraglist))
+            self.fragmenttypes_numatoms.append([frago.Numatoms]) 
+        self.fragmenttypes=len(fragmentobjects)
+
+        
         #Getting indices required to sort atomindices in ascending order
         sortindices = np.argsort(combined_flat_clusterfraglist)
         #labellist contains unsorted list of labels
         #Now ordering the labels according to the sort indices
         self.fragmenttype_labels =  [combined_flat_labels[i] for i in sortindices]
+        print("self.fragmenttype_labels:", self.fragmenttype_labels)
     #Molcrys option:
     def add_centralfraginfo(self,list):
         self.Centralmainfrag = list
@@ -1578,10 +1594,11 @@ def write_pdbfile(fragment,outputname="ASHfragment", openmmobject=None, atomname
             #Using only first 3 letters of RESname
             resname=resname[0:3]
 
-
+            #Using last 4 letters of atomnmae
+            atomnamestring=atomname[-4:]
             #Using string format from: cupnet.net/pdb-format/
             line="{:6s}{:5s} {:^4s}{:1s}{:3s} {:1s}{:5d}{:1s}  {:8.3f}{:8.3f}{:8.3f}{:6.2f}{:6.2f}      {:4s}{:2s}".format(
-                'ATOM', atomindexstring, atomname, '', resname, '', resid, '',    c[0], c[1], c[2], 1.0, 0.00, seg[0:3],el, '')
+                'ATOM', atomindexstring, atomnamestring, '', resname, '', resid, '',    c[0], c[1], c[2], 1.0, 0.00, seg[0:3],el, '')
             pfile.write(line+'\n')
     print("Wrote PDB file:", outputname+'.pdb')
 

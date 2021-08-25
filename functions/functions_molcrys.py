@@ -2,6 +2,7 @@ import numpy as np
 from functions.functions_general import blankline,uniq,printdebug,print_time_rel_and_tot,print_time_rel,BC
 import modules.module_coords
 import interfaces.interface_ORCA
+import interfaces.interface_xtb
 from interfaces.interface_xtb import grabatomcharges_xTB
 from modules.module_MM import UFFdict
 from functions.functions_elstructure import DDEC_to_LJparameters,DDEC_calc
@@ -998,7 +999,7 @@ def remove_partial_fragments(coords,elems,sphereradius,fragmentobjects, scale=No
         del elems[d]
     return coords,elems
 
-#Updating pointcharges of fragment
+#
 def reordercluster(fragment,fragmenttype,code_version='py'):
     print("Reordering Cluster fraglists")
     #print("fragment:", fragment)
@@ -1122,15 +1123,15 @@ def gasfragcalc_ORCA(fragmentobjects,Cluster,chargemodel,orcadir,orcasimpleinput
         #Assuming mainfrag is fragmentobject 0 and only mainfrag can be Broken-symmetry
         if id == 0:
             if brokensym==True:
-                ORCASPcalculation = interface_ORCA.ORCATheory(orcadir=orcadir, fragment=gasfrag, charge=fragmentobject.Charge,
+                ORCASPcalculation = interfaces.interface_ORCA.ORCATheory(orcadir=orcadir, fragment=gasfrag, charge=fragmentobject.Charge,
                                        mult=fragmentobject.Mult, orcasimpleinput=orcasimpleinput,
                                        orcablocks=orcablocks, extraline=chargemodelline, brokensym=brokensym, HSmult=HSmult, atomstoflip=atomstoflip)
             else:
-                ORCASPcalculation = interface_ORCA.ORCATheory(orcadir=orcadir, fragment=gasfrag, charge=fragmentobject.Charge,
+                ORCASPcalculation = interfaces.interface_ORCA.ORCATheory(orcadir=orcadir, fragment=gasfrag, charge=fragmentobject.Charge,
                                        mult=fragmentobject.Mult, orcasimpleinput=orcasimpleinput,
                                        orcablocks=orcablocks, extraline=chargemodelline)
         else:
-            ORCASPcalculation = interface_ORCA.ORCATheory(orcadir=orcadir, fragment=gasfrag, charge=fragmentobject.Charge,
+            ORCASPcalculation = interfaces.interface_ORCA.ORCATheory(orcadir=orcadir, fragment=gasfrag, charge=fragmentobject.Charge,
                                            mult=fragmentobject.Mult, orcasimpleinput=orcasimpleinput,
                                            orcablocks=orcablocks, extraline=chargemodelline)
         print("ORCASPcalculation:", ORCASPcalculation)
@@ -1155,7 +1156,7 @@ def gasfragcalc_ORCA(fragmentobjects,Cluster,chargemodel,orcadir,orcasimpleinput
             #NOTE: We are not going to derive DDEC LJ parameters here but rather at end of SP loop.
         else:
             #Grab atomic charges for fragment.
-            atomcharges=interface_ORCA.grabatomcharges_ORCA(chargemodel,ORCASPcalculation.filename+'.out')
+            atomcharges=interfaces.interface_ORCA.grabatomcharges_ORCA(chargemodel,ORCASPcalculation.filename+'.out')
             print_time_rel_and_tot(currtime, origtime, modulename='grabatomcharges')
             currtime = time.time()
 
@@ -1244,6 +1245,7 @@ def rmsd_list(listA,listB):
 
 
 def choose_shortrangemodel(Cluster,shortrangemodel,fragmentobjects,QMtheory,mainfrag_gbwfile,numcores,LJHparameters):
+
     if shortrangemodel=='UFF':
         print("Using UFF forcefield for all elements")
         for fragmentobject in fragmentobjects:
@@ -1256,6 +1258,11 @@ def choose_shortrangemodel(Cluster,shortrangemodel,fragmentobjects,QMtheory,main
         atomtypelist_uniq = np.unique(atomtypelist).tolist()
         #Adding atomtypes to Cluster object
         Cluster.atomtypes=atomtypelist
+        
+        #Adding atomtypes to fragmentobjects
+        for fragmentobject in fragmentobjects:
+            fragmentobject.atomtypelist = ["UFF_{}".format(el) for el in fragmentobject.Atoms]
+        
         #Create ASH forcefield file by looking up UFF parameters
         with open('Cluster_forcefield.ff', 'w') as forcefile:
             forcefile.write('#UFF Lennard-Jones parameters (R0 in Angstrom and eps in kcal/mol) \n')
@@ -1282,6 +1289,11 @@ def choose_shortrangemodel(Cluster,shortrangemodel,fragmentobjects,QMtheory,main
         #Adding atomtypes to Cluster object
         Cluster.atomtypes=atomtypelist
         atomtypelist_uniq = np.unique(atomtypelist).tolist()
+        
+        #Adding atomtypes to fragmentobjects
+        for fragmentobject in fragmentobjects:
+            fragmentobject.atomtypelist = ["UFF_{}".format(el) for el in fragmentobject.Atoms]
+        
         #Create ASH forcefield file by looking up UFF parameters
         with open('Cluster_forcefield.ff', 'w') as forcefile:
             forcefile.write('#UFF Lennard-Jones parameters (R0 in Angstrom and eps in kcal/mol) \n')
@@ -1330,21 +1342,6 @@ def choose_shortrangemodel(Cluster,shortrangemodel,fragmentobjects,QMtheory,main
             fragmentobject.atomtypelist = ["DDEC_f{}_{}_{}".format(fragindex,el,m) for m,el in enumerate(fragmentobject.Atoms)]
             print("fragmentobject.atomtypelist:", fragmentobject.atomtypelist)
 
-        #Create full atomtypelist to be added to Cluster object
-        atomtypelist = [item for frag in fragmentobjects for item in frag.atomtypelist]        
-        full_list=[None]*Cluster.numatoms
-        for fragmentobject in fragmentobjects:
-            for fraglist in fragmentobject.clusterfraglist:
-                for atomid,attype in zip(fraglist,atomtypelist):
-                    #print("atomid : {} and attype: {}".format(atomid,attype))
-                    full_list[atomid] = attype 
-        if None in full_list:
-            print("problem")
-            print(full_list)
-            exit()
-        Cluster.atomtypes=full_list
-
-            
         print("Using {}-derived forcefield for all elements".format(shortrangemodel))
         #atomtypelist_uniq = np.unique(atomtypelist).tolist()
         #print("atomtypelist_uniq:", atomtypelist_uniq)
@@ -1365,9 +1362,22 @@ def choose_shortrangemodel(Cluster,shortrangemodel,fragmentobjects,QMtheory,main
         print("File needs to be copied to scratch for geometry optimization job.")
         #Using MAN prefix before element
         atomtypelist=['MAN_'+i for i in Cluster.elems]
-        
         #Adding atomtypes to Cluster object
         Cluster.atomtypes=atomtypelist
     else:
         print("Undefined shortrangemodel")
         exit()
+
+    #Create full atomtypelist to be added to Cluster object
+    atomtypelist = [item for frag in fragmentobjects for item in frag.atomtypelist]        
+    full_list=[None]*Cluster.numatoms
+    for fragmentobject in fragmentobjects:
+        for fraglist in fragmentobject.clusterfraglist:
+            for atomid,attype in zip(fraglist,atomtypelist):
+                #print("atomid : {} and attype: {}".format(atomid,attype))
+                full_list[atomid] = attype 
+    if None in full_list:
+        print("problem")
+        print(full_list)
+        exit()
+    Cluster.atomtypes=full_list

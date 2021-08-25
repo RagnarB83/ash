@@ -67,7 +67,7 @@ def pygrep(string,file):
                 stringlist=line.split()
                 return stringlist
 
-#Multiple
+#Multiple match version. Replace pygrep ?
 def pygrep2(string,file):
     l=[]
     with open(file) as f:
@@ -140,7 +140,7 @@ def insert_line_into_file(file,string,addedstring, Once=True):
 def blankline():
     print("")
 
-#Is variable an integer
+#Can variable be converted into integer
 def isint(s):
     try:
         int(s)
