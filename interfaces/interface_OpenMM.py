@@ -1559,7 +1559,9 @@ def OpenMM_MD(fragment=None, theory=None, timestep=0.001, simulation_steps=None,
         if QM_MM_object.openmm_externalforce == False:
             print("QM/MM object did not have openmm_externalforce=True.")
             print("Need to turn on externalforce option")
+            QM_MM_object.openmm_externalforce=True
             QM_MM_object.openmm_externalforceobject = QM_MM_object.mm_theory.add_custom_external_force()
+
             print("done")
         #Setting coordinates
         openmmobject.set_positions(fragment.coords)
