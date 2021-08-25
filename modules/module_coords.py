@@ -771,6 +771,7 @@ def print_coords_for_atoms(coords,elems,members):
 
 #From lists of coords,elems and atom indices, write XYZ file coords with elem
 #Todo: make part of Fragment class
+
 def write_XYZ_for_atoms(coords,elems,members,name):
     subset_elems=[elems[i] for i in members]
     #subset_coords=[coords[i] for i in members]
@@ -1243,8 +1244,8 @@ def print_coordinates(atoms, V, title=""):
     return
 
 #Write XYZfile provided list of elements and list of list of coords and filename
-def write_xyzfile(elems,coords,name,printlevel=2):
-    with open(name+'.xyz', 'w') as ofile:
+def write_xyzfile(elems,coords,name,printlevel=2, writemode='w'):
+    with open(name+'.xyz', writemode) as ofile:
         ofile.write(str(len(elems))+'\n')
         ofile.write("title"+'\n')
         for el,c in zip(elems,coords):

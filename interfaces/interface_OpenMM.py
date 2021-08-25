@@ -1555,25 +1555,31 @@ def OpenMM_MD(fragment=None, theory=None, timestep=0.001, simulation_steps=None,
     if QM_MM_object!=None:
         print("QM_MM_object provided. Turning on QM/MM option")
         
-        #Does not make sense without it (it would calculate OpenMM energy twice)
+        #OpenMM_MD with QM/MM object does not make sense without openmm_externalforce
+        # (it would calculate OpenMM energy twice) so turning on in case forgotten
         if QM_MM_object.openmm_externalforce == False:
             print("QM/MM object did not have openmm_externalforce=True.")
             print("Need to turn on externalforce option")
             QM_MM_object.openmm_externalforce=True
             QM_MM_object.openmm_externalforceobject = QM_MM_object.mm_theory.add_custom_external_force()
-
             print("done")
+        #TODO:
+        #Should we set parallelization of QM theory here also in case forgotten?
+        
         #Setting coordinates
         openmmobject.set_positions(fragment.coords)
         #Does step by step
         for step in range(simulation_steps):
+            print("Step:", step)
+            #Manual trajectory write
+            fragment.write_xyzfile(xyzfilename=trajname+'.xyz', writemode='a')
+            
             #Get current coordinates to use for QM/MM step
             current_coords =  np.array(openmmobject.simulation.context.getState(getPositions=True).getPositions(asNumpy=True))*10   
             #Run QM/MM step to get full system QM+PC gradient.
             #Updates OpenMM object with QM-PC forces
             QM_MM_object.run(current_coords=current_coords, elems=fragment.elems, Grad=True, exit_after_customexternalforce_update=True)
             #NOTE: Think about energy correction (currently skipped above)
-
 
             #Now take OpenMM step (E+G + displacement essentially)
             checkpoint = time.time()
