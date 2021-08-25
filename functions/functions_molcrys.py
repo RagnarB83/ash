@@ -1251,10 +1251,7 @@ def choose_shortrangemodel(Cluster,shortrangemodel,fragmentobjects,QMtheory,main
         for fragmentobject in fragmentobjects:
             #fragmentobject.Elements
             for el in fragmentobject.Elements:
-                print("UFFdict:", UFFdict)
-                print("el:", el)
-                print("UFFdict[el]:", UFFdict[el])
-                print("UFF parameter for {} :".format(el, UFFdict[el]))
+                print("UFF parameter for {} : {}".format(el, UFFdict[el]))
 
         #Using UFF_ prefix before element
         atomtypelist=['UFF_'+i for i in Cluster.elems]
