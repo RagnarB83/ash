@@ -1554,6 +1554,12 @@ def OpenMM_MD(fragment=None, theory=None, timestep=0.001, simulation_steps=None,
     #QM/MM MD
     if QM_MM_object!=None:
         print("QM_MM_object provided. Turning on QM/MM option")
+        
+        #Does not make sense without it (it would calculate OpenMM energy twice)
+        if QM_MM_object.openmm_externalforce == False:
+            print("Turning on openmm_externalforce option in QM/MM object in case not active")
+            QM_MM_object.openmm_externalforceobject = QM_MM_object.mm_theory.add_custom_external_force()
+            print("done")
         #Setting coordinates
         openmmobject.set_positions(fragment.coords)
         #Does step by step
@@ -1564,9 +1570,6 @@ def OpenMM_MD(fragment=None, theory=None, timestep=0.001, simulation_steps=None,
             #Updates OpenMM object with QM-PC forces
             QM_MM_object.run(current_coords=current_coords, elems=fragment.elems, Grad=True, exit_after_customexternalforce_update=True)
             #NOTE: Think about energy correction (currently skipped above)
-
-
-
 
 
             #Now take OpenMM step (E+G + displacement essentially)

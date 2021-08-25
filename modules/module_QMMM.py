@@ -706,7 +706,7 @@ class QMMMTheory:
 
         elif self.mm_theory_name == "OpenMMTheory":
             if self.printlevel >= 2:
-                print("Running OpenMM theory as part of QM/MM.")
+                print("Using OpenMM theory as part of QM/MM.")
             if self.QMChargesZeroed==True:
                 if self.printlevel >= 2:
                     print("Using MM on full system. Charges for QM region {} have been set to zero ".format(self.qmatoms))
@@ -720,7 +720,7 @@ class QMMMTheory:
                 print("QM/MM Grad is True")
                 #Provide QM_PC_gradient to OpenMMTheory 
                 if self.openmm_externalforce == True:
-                    print("OpenMM externalforce")
+                    print("OpenMM externalforce is True")
                     #Take QM_PC gradient (link-atom projected) and provide to OpenMM external force
                     self.mm_theory.update_custom_external_force(self.openmm_externalforceobject,self.QM_PC_gradient)
 
