@@ -1569,12 +1569,18 @@ def OpenMM_MD(fragment=None, theory=None, timestep=0.001, simulation_steps=None,
         #Setting coordinates
         openmmobject.set_positions(fragment.coords)
         #Does step by step
+        #Delete old traj
+        try:
+            os.remove("OpenMMMD_traj.xyz")
+        except:
+            pass
         for step in range(simulation_steps):
             print("Step:", step)
             #Get current coordinates to use for QM/MM step
             current_coords =  np.array(openmmobject.simulation.context.getState(getPositions=True).getPositions(asNumpy=True))*10
             #Manual trajectory option (reporters do not work for manual dynamics steps)
-            write_xyzfile(fragment.elems,current_coords,"OpenMMMD_traj.xyz",printlevel=1, writemode='a')
+            #if step traj_frequency
+            write_xyzfile(fragment.elems,current_coords,"OpenMMMD_traj",printlevel=1, writemode='a')
             #Run QM/MM step to get full system QM+PC gradient.
             #Updates OpenMM object with QM-PC forces
             QM_MM_object.run(current_coords=current_coords, elems=fragment.elems, Grad=True, exit_after_customexternalforce_update=True)
