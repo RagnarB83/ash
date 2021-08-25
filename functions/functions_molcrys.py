@@ -895,6 +895,7 @@ def create_MMcluster(orthogcoords,elems,cell_vectors,sphereradius):
     #List of Bools, duplicates are True
     print("here we are3")
     dupls=np.array(filter_duplicate(extended_coords))
+    print("here we are3b")
     #Deleting atoms in duplication list in reverse
     extended_coords=np.delete(extended_coords, list(reversed(dupls)), 0)
     print("here we are4")
