@@ -144,7 +144,7 @@ def calc_surface(fragment=None, theory=None, workflow=None, scantype='Unrelaxed'
                                                              RC1_type=RC1_type, RC2_type=RC2_type, RC1_indices=RC1_indices, RC2_indices=RC2_indices)
                             print("allconstraints:", allconstraints)
                             #Running zero-theory with optimizer just to set geometry
-                            interface_geometric.geomeTRICOptimizer(fragment=fragment, theory=zerotheory, maxiter=maxiter, coordsystem=coordsystem, 
+                            interfaces.interface_geometric.geomeTRICOptimizer(fragment=fragment, theory=zerotheory, maxiter=maxiter, coordsystem=coordsystem, 
                             constraints=allconstraints, constrainvalue=True, convergence_setting=convergence_setting,
                             ActiveRegion=ActiveRegion, actatoms=actatoms)
                             #Shallow copy of fragment
@@ -202,7 +202,7 @@ def calc_surface(fragment=None, theory=None, workflow=None, scantype='Unrelaxed'
                                                              RC1_type=RC1_type, RC2_type=RC2_type, RC1_indices=RC1_indices, RC2_indices=RC2_indices)
                             print("x allconstraints:", allconstraints)
                             #Running zero-theory with optimizer just to set geometry
-                            interface_geometric.geomeTRICOptimizer(fragment=fragment, theory=zerotheory, maxiter=maxiter, coordsystem=coordsystem, 
+                            interfaces.interface_geometric.geomeTRICOptimizer(fragment=fragment, theory=zerotheory, maxiter=maxiter, coordsystem=coordsystem, 
                             constraints=allconstraints, constrainvalue=True, convergence_setting=convergence_setting,
                             ActiveRegion=ActiveRegion, actatoms=actatoms)
                             
@@ -243,7 +243,7 @@ def calc_surface(fragment=None, theory=None, workflow=None, scantype='Unrelaxed'
                                                          RC1_type=RC1_type, RC1_indices=RC1_indices)
                         print("allconstraints:", allconstraints)
                         #Running zero-theory with optimizer just to set geometry
-                        interface_geometric.geomeTRICOptimizer(fragment=fragment, theory=zerotheory, maxiter=maxiter, coordsystem=coordsystem, 
+                        interfaces.interface_geometric.geomeTRICOptimizer(fragment=fragment, theory=zerotheory, maxiter=maxiter, coordsystem=coordsystem, 
                         constraints=allconstraints, constrainvalue=True, convergence_setting=convergence_setting,
                         ActiveRegion=ActiveRegion, actatoms=actatoms)
                         
@@ -284,7 +284,7 @@ def calc_surface(fragment=None, theory=None, workflow=None, scantype='Unrelaxed'
                                                              RC1_type=RC1_type, RC2_type=RC2_type, RC1_indices=RC1_indices, RC2_indices=RC2_indices)
                             print("allconstraints:", allconstraints)
                             #Running 
-                            energy = interface_geometric.geomeTRICOptimizer(fragment=fragment, theory=theory, maxiter=maxiter, coordsystem=coordsystem, 
+                            energy = interfaces.interface_geometric.geomeTRICOptimizer(fragment=fragment, theory=theory, maxiter=maxiter, coordsystem=coordsystem, 
                             constraints=allconstraints, constrainvalue=True, convergence_setting=convergence_setting,
                             ActiveRegion=ActiveRegion, actatoms=actatoms)
                             print("RCvalue1: {} RCvalue2: {} Energy: {}".format(RCvalue1,RCvalue2, energy))
@@ -319,7 +319,7 @@ def calc_surface(fragment=None, theory=None, workflow=None, scantype='Unrelaxed'
                                                          RC1_type=RC1_type, RC1_indices=RC1_indices)
                         print("allconstraints:", allconstraints)
                         #Running zero-theory with optimizer just to set geometry
-                        energy = interface_geometric.geomeTRICOptimizer(fragment=fragment, theory=theory, maxiter=maxiter, coordsystem=coordsystem, 
+                        energy = interfaces.interface_geometric.geomeTRICOptimizer(fragment=fragment, theory=theory, maxiter=maxiter, coordsystem=coordsystem, 
                         constraints=allconstraints, constrainvalue=True, convergence_setting=convergence_setting,
                         ActiveRegion=ActiveRegion, actatoms=actatoms)
                         print("RCvalue1: {} Energy: {}".format(RCvalue1, energy))
@@ -574,7 +574,7 @@ def calc_surface_fromXYZ(xyzdir=None, theory=None, dimension=None, resultfile=No
                         allconstraints = set_constraints(dimension=2, RCvalue1=RCvalue1, RCvalue2=RCvalue2, extraconstraints=extraconstraints,
                                                         RC1_type=RC1_type, RC2_type=RC2_type, RC1_indices=RC1_indices, RC2_indices=RC2_indices)
                         print("allconstraints:", allconstraints)
-                        energy = interface_geometric.geomeTRICOptimizer(fragment=mol, theory=theory, 
+                        energy = interfaces.interface_geometric.geomeTRICOptimizer(fragment=mol, theory=theory, 
                                                     maxiter=maxiter, coordsystem=coordsystem, constraints=allconstraints, constrainvalue=True, 
                                                     convergence_setting=convergence_setting)
                         #Write geometry to disk in dir : surface_xyzfiles
@@ -622,7 +622,7 @@ def calc_surface_fromXYZ(xyzdir=None, theory=None, dimension=None, resultfile=No
                         allconstraints = set_constraints(dimension=1, RCvalue1=RCvalue1, extraconstraints=extraconstraints,
                                                         RC1_type=RC1_type, RC1_indices=RC1_indices)
                         print("allconstraints:", allconstraints)
-                        energy = interface_geometric.geomeTRICOptimizer(fragment=mol, theory=theory, 
+                        energy = interfaces.interface_geometric.geomeTRICOptimizer(fragment=mol, theory=theory, 
                                                     maxiter=maxiter, coordsystem=coordsystem, constraints=allconstraints, constrainvalue=True, 
                                                     convergence_setting=convergence_setting)
                         #Write geometry to disk in dir : surface_xyzfiles
