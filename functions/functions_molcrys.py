@@ -865,7 +865,6 @@ def create_MMcluster(orthogcoords,elems,cell_vectors,sphereradius):
     extended_coords,extended_elems=cell_extend_frag(cell_vectors,orthogcoords,elems,[cell_expansion,cell_expansion,cell_expansion])
     #Write XYZ-file with orthogonal coordinates for cell
     modules.module_coords.write_xyzfile(extended_elems,extended_coords,"cell_extended_coords")
-    printdebug("after extended cell")
     printdebug(len(extended_coords))
     printdebug(len(extended_elems))
     deletionlist=[]
@@ -875,34 +874,27 @@ def create_MMcluster(orthogcoords,elems,cell_vectors,sphereradius):
     # Einsum is slightly faster than bare_numpy_mat. 
     # All atom-distances compared to origin in one go
     distances = modules.module_coords.einsum_mat(extended_coords, comparecoords)
-    print("here we are1")
     for count in range(len(extended_coords)):
         #print("count:", count)
         if distances[count] > sphereradius:
             deletionlist.append(count)
-    print("here we are1a")
     #Deleting atoms in deletion list in reverse
     extended_coords=np.delete(extended_coords, list(reversed(deletionlist)), 0)
-    print("here we are1b")
     for d in reversed(deletionlist):
         del extended_elems[d]
 
-    print("here we are2")
     printdebug(len(extended_coords))
     printdebug(len(extended_elems))
 
     #Find duplicate coordinates (atoms on top of each other). Add index to deletion list. Happens if atoms have coordinates right on box boundary
     #List of Bools, duplicates are True
     #NOTE: Problem, way too slow 
-    print("here we are3")
+    print("Starting filter duplicate. This step is currently slow. To be fixed")
     dupls=np.array(filter_duplicate(extended_coords))
-    print("here we are3b")
     #Deleting atoms in duplication list in reverse
     extended_coords=np.delete(extended_coords, list(reversed(dupls)), 0)
-    print("here we are4")
     for d in reversed(dupls):
         del extended_elems[d]
-    print("here we are5")
     #Write XYZ-file
     modules.module_coords.write_xyzfile(extended_elems,extended_coords,"trimmedcell_extended_coords")
     return extended_coords,extended_elems
@@ -1376,15 +1368,27 @@ def choose_shortrangemodel(Cluster,shortrangemodel,fragmentobjects,QMtheory,main
         exit()
 
     #Create full atomtypelist to be added to Cluster object
-    atomtypelist = [item for frag in fragmentobjects for item in frag.atomtypelist]        
+    #atomtypelist = [item for frag in fragmentobjects for item in frag.atomtypelist]
+    #print("atomtypelist:", atomtypelist)        
     full_list=[None]*Cluster.numatoms
+    #print("full_list:", full_list)
     for fragmentobject in fragmentobjects:
+        #print("fragmentobject Name:", fragmentobject.Name)
+        #print("fragmentobject.clusterfraglist:", fragmentobject.clusterfraglist)
         for fraglist in fragmentobject.clusterfraglist:
-            for atomid,attype in zip(fraglist,atomtypelist):
+            #print("Fragmentobject is:", fragmentobject)
+            #print("Fragmentobject is:", fragmentobject.Name)
+            #print("Fragmentobject dict:", fragmentobject.__dict__)
+            #print("fraglist:", fraglist)
+            for atomid,attype in zip(fraglist,fragmentobject.atomtypelist):
                 #print("atomid : {} and attype: {}".format(atomid,attype))
-                full_list[atomid] = attype 
+                full_list[atomid] = attype
+            #print("full_list:", full_list)
+            #print("-----------")
+    #print("full_list:", full_list)
     if None in full_list:
         print("problem")
         print(full_list)
         exit()
     Cluster.atomtypes=full_list
+    #print("Cluster.atomtypes:", Cluster.atomtypes)
