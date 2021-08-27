@@ -255,7 +255,7 @@ class OpenMMTheory:
                 atomtypes_res.append(atypelist)
                 sigmas_res.append([MM_forcefield[atomtype].LJparameters[0]/10 for atomtype in MM_forcefield[residuetype]])
                 epsilons_res.append([MM_forcefield[atomtype].LJparameters[1]*4.184 for atomtype in MM_forcefield[residuetype]])
-                atomcharges_res.append([MM_forcefield[atomtype].atomcharge for atomtype in MM_forcefield[residuetype]])
+                #atomcharges_res.append([MM_forcefield[atomtype].atomcharge for atomtype in MM_forcefield[residuetype]])
                 elements_res.append([MM_forcefield[atomtype].element for atomtype in MM_forcefield[residuetype]])
                 masses_res.append(list_of_masses(elements_res[-1]))
             

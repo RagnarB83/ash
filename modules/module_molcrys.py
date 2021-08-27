@@ -620,18 +620,24 @@ def molcrys(cif_file=None, xtl_file=None, xyz_file=None, cell_length=None, cell_
 
 
     #New: writing atomcharges, residues and element info to FF file
+    atomtypesdict={}
     with open('Cluster_forcefield.ff', 'a') as forcefile:
         forcefile.write('# Residues (fragmenttypes)\n')
         for fragnum,frag in enumerate(fragmentobjects):
-            forcefile.write('resid{} {}\n'.format(fragnum,' '.join([str(i) for i in fragmentobjects[fragnum].atomtypelist])))
+            forcefile.write('resid{}_atomtypes {}\n'.format(fragnum,' '.join([str(i) for i in fragmentobjects[fragnum].atomtypelist])))
+            forcefile.write('resid{}_charges {}\n'.format(fragnum,' '.join([str(i) for i in fragmentobjects[fragnum].charges])))
+            forcefile.write('resid{}_elements {}\n'.format(fragnum,' '.join([str(i) for i in fragmentobjects[fragnum].Atoms])))
         forcefile.write('# Charges for each atomtype\n')
-        for fragnum,frag in enumerate(fragmentobjects):
-            for atype,charge in zip(fragmentobjects[fragnum].atomtypelist,fragmentobjects[fragnum].all_atomcharges[-1]):
-                forcefile.write('charge  {} {}\n'.format(atype,charge))
+        #This is not helping (more charges than atomtypes). Let's keep charges as part of Fragment
+        #for fragnum,frag in enumerate(fragmentobjects):
+        #    for atype,charge in zip(fragmentobjects[fragnum].atomtypelist,fragmentobjects[fragnum].all_atomcharges[-1]):
+        #        forcefile.write('charge  {} {}\n'.format(atype,charge))
         forcefile.write('# Elements for each atomtype\n')
         for fragnum,frag in enumerate(fragmentobjects):
             for atype,el in zip(fragmentobjects[fragnum].atomtypelist,fragmentobjects[fragnum].Atoms):
-                forcefile.write('element  {} {}\n'.format(atype,el))
+                atomtypesdict[atype]=el
+        for atypex in atomtypesdict.items():
+            forcefile.write('element  {} {}\n'.format(atypex[0],atypex[1]))
     
     
     #Adding Centralmainfrag to Cluster
