@@ -271,6 +271,9 @@ class OpenMMTheory:
                 residlabels.append(resid_index)
                 jindex+=1
 
+            print("Still a problem here!!")
+            exit()
+
             #Creating PDB-file, only for topology (not coordinates)
             write_pdbfile(cluster_fragment,outputname="cluster", dummyname='MOL', atomnames=atomnames_full, residlabels=residlabels)
             pdb = simtk.openmm.app.PDBFile("cluster.pdb")
@@ -905,11 +908,7 @@ class OpenMMTheory:
             print_time_rel(timeA, modulename="context: apply constraints")
             timeA = time.time()
 
-        print("Calculating MM state")
-        
-        print("forces")
-        print(self.system.getForces())
-        
+        print("Calling OpenMM getState")
         if Grad == True:
             state = self.simulation.context.getState(getEnergy=True, getForces=True)
             self.energy = state.getPotentialEnergy().value_in_unit(self.unit.kilojoule_per_mole) / constants.hartokj
@@ -1415,7 +1414,6 @@ def OpenMM_MD(fragment=None, theory=None, timestep=0.001, simulation_steps=None,
     if constraints==None: constraints=[]
     if restraints==None: restraints=[]
     
-    print("frozen_atoms:", frozen_atoms)
     
     if simulation_steps == None and simulation_time == None:
         print("Either simulation_steps or simulation_time needs to be set")
@@ -1574,33 +1572,34 @@ def OpenMM_MD(fragment=None, theory=None, timestep=0.001, simulation_steps=None,
             os.remove("OpenMMMD_traj.xyz")
         except:
             pass
+        #Simulation loop
         for step in range(simulation_steps):
             print("Step:", step)
             #Get current coordinates to use for QM/MM step
             current_coords =  np.array(openmmobject.simulation.context.getState(getPositions=True).getPositions(asNumpy=True))*10
             #Manual trajectory option (reporters do not work for manual dynamics steps)
-            #if step traj_frequency
-            if step % traj_frequency == 0
+            if step % traj_frequency == 0:
                 write_xyzfile(fragment.elems,current_coords,"OpenMMMD_traj",printlevel=1, writemode='a')
             #Run QM/MM step to get full system QM+PC gradient.
             #Updates OpenMM object with QM-PC forces
+            checkpoint = time.time()
             QM_MM_object.run(current_coords=current_coords, elems=fragment.elems, Grad=True, exit_after_customexternalforce_update=True)
+            print_time_rel(checkpoint, modulename="QM/MM run", moduleindex=2)
             #NOTE: Think about energy correction (currently skipped above)
 
             #Now take OpenMM step (E+G + displacement essentially)
             checkpoint = time.time()
             openmmobject.simulation.step(1)
-
+            print_time_rel(checkpoint, modulename="openmmobject sim step", moduleindex=2)
             #NOTE: Better to use OpenMM-plumed interface instead??
             #After MM step, grab coordinates and forces
             if plumed_object != None:
                 print("Plumed active. Untested. Hopefully works")
-                print("Calling Plumed")
                 current_coords =  np.array(openmmobject.simulation.context.getState(getPositions=True).getPositions(asNumpy=True)) #in nm
                 current_forces =  np.array(openmmobject.simulation.context.getState(getForces=True).getForces(asNumpy=True)) #in kJ/mol /nm
                 energy, newforces = plumed_object.run(coords=current_coords, forces=current_forces, step=step) #Plumed object needs to be configured for OpenMM
                 openmmobject.update_custom_external_force(plumedcustomforce,newforces)
-            print_time_rel(checkpoint, modulename="openmmobject sim step", moduleindex=2)
+            
     #Dummy MM step to check how MD is affected by additional steps
     #TODO: DELETE
     elif dummy_MM==True:

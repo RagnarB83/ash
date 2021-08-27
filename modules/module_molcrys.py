@@ -341,7 +341,7 @@ def molcrys(cif_file=None, xtl_file=None, xyz_file=None, cell_length=None, cell_
         tempcluster_coords,tempcluster_elems=functions.functions_molcrys.remove_partial_fragments(tempcluster_coords,tempcluster_elems,clusterradius,fragmentobjects, scale=chosenscale, tol=chosentol)
         print_time_rel_and_tot(currtime, origtime, modulename='remove_partial_fragments')
         currtime=time.time()
-        modules.module_coords.write_xyzfile(tempcluster_elems,tempcluster_coords,"cluster_coords")
+        modules.module_coords.write_xyzfile(tempcluster_elems,tempcluster_coords,"tempcluster_coords")
 
         if len(tempcluster_coords) == 0:
             print(BC.FAIL,"After removing all partial fragments, the Cluster fragment is empty. Something went wrong. Exiting.", BC.END)

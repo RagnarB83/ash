@@ -4,7 +4,6 @@ import numpy as np
 import math
 
 #functions related to QM/MM
-import ash
 import modules.module_coords
 from functions.functions_general import BC,blankline,listdiff,print_time_rel,printdebug,print_line_with_mainheader,writelisttofile
 import settings_ash
@@ -413,7 +412,6 @@ class QMMMTheory:
         #Updating QM coords and MM coords.
         
         #TODO: Should we use different name for updated QMcoords and MMcoords here??
-        print("type current_coords:", type(current_coords))
         #self.qmcoords=[current_coords[i] for i in self.qmatoms]
         #self.mmcoords=[current_coords[i] for i in self.mmatoms]
         self.qmcoords=np.take(current_coords,self.qmatoms,axis=0)
@@ -684,7 +682,7 @@ class QMMMTheory:
                     self.QM_PC_gradient[fullatomindex_qm] = newQgrad
                     self.QM_PC_gradient[fullatomindex_mm] = newMgrad                    
 
-        print_time_rel(CheckpointTime, modulename='gradient prepare', moduleindex=2)
+        print_time_rel(CheckpointTime, modulename='QM/MM gradient prepare', moduleindex=2)
         CheckpointTime = time.time()
         # MM THEORY
         if self.mm_theory_name == "NonBondedTheory":
@@ -718,14 +716,13 @@ class QMMMTheory:
             #Todo: Need to have OpenMM skip frozen region interaction for speed  => => Exclude
             if Grad==True:
                 print("QM/MM Grad is True")
-                print("self.openmm_externalforce:", self.openmm_externalforce)
                 #Provide QM_PC_gradient to OpenMMTheory 
                 if self.openmm_externalforce == True:
                     print("OpenMM externalforce is True")
                     #Take QM_PC gradient (link-atom projected) and provide to OpenMM external force
                     self.mm_theory.update_custom_external_force(self.openmm_externalforceobject,self.QM_PC_gradient)
 
-                    print_time_rel(CheckpointTime, modulename='openmm run prep until custom', moduleindex=2)
+                    print_time_rel(CheckpointTime, modulename='QM/MM openMM: update custom external force', moduleindex=2)
                     if exit_after_customexternalforce_update==True:
                         print("OpenMM custom external force updated. Exit requested")
                         #This is used if OpenMM MD is handling forces and dynamics
