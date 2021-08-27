@@ -245,20 +245,42 @@ class OpenMMTheory:
             print("Reading ASH cluster fragment file and ASH Forcefield file")
             #Converting ASH FF file to OpenMM XML file
             MM_forcefield=MMforcefield_read(ASH_FF_file)
+            print("MM_forcefield:", MM_forcefield)
             atomtypes_res=[];atomnames_res=[];elements_res=[];atomcharges_res=[];sigmas_res=[];epsilons_res=[];
             residue_types=[];masses_res=[]
+            print("-----------")
+            print("MM_forcefield['residues']:", MM_forcefield['residues'])
             for residuetype in MM_forcefield['residues']:
+                print("residuetype:", residuetype)
                 residue_types.append(residuetype)
-                atypelist=MM_forcefield[residuetype]
+                atypelist=MM_forcefield[residuetype+"_atomtypes"]
+                print("atypelist:", atypelist)
+                #atypelist needs to be more unique due to different charges
+                atypelist2=[at[-3:]+str(i) for i,at in enumerate(atypelist)]    
+                print("atypelist2:", atypelist2)
+                atomtypes_res.append(atypelist2)
+                exit()
+                elements_res.append(MM_forcefield[residuetype+"_elements"])
+                atomcharges_res.append(MM_forcefield[residuetype+"_charges"])
                 #Atomnames, have to be unique and 4 letters, adding number
                 atomnames_res.append([at[-3:]+str(i) for i,at in enumerate(atypelist)])                          
-                atomtypes_res.append(atypelist)
-                sigmas_res.append([MM_forcefield[atomtype].LJparameters[0]/10 for atomtype in MM_forcefield[residuetype]])
-                epsilons_res.append([MM_forcefield[atomtype].LJparameters[1]*4.184 for atomtype in MM_forcefield[residuetype]])
+
+                sigmas_res.append([MM_forcefield[atomtype].LJparameters[0]/10 for atomtype in MM_forcefield[residuetype+"_atomtypes"]])
+                epsilons_res.append([MM_forcefield[atomtype].LJparameters[1]*4.184 for atomtype in MM_forcefield[residuetype+"_atomtypes"]])
                 #atomcharges_res.append([MM_forcefield[atomtype].atomcharge for atomtype in MM_forcefield[residuetype]])
-                elements_res.append([MM_forcefield[atomtype].element for atomtype in MM_forcefield[residuetype]])
+
+                #elements_res.append([MM_forcefield[atomtype].element for atomtype in MM_forcefield[residuetype+"_atomtypes"]])
+                #print("elements_res:", elements_res)
                 masses_res.append(list_of_masses(elements_res[-1]))
             
+            print("residue_types:", residue_types)
+            print("atomtypes_res:", atomtypes_res)
+            print("atomnames_res:", atomnames_res)
+            print("elements_res:", elements_res)
+            print("atomcharges_res:", atomcharges_res)
+            print("sigmas_res:", sigmas_res)
+            print("epsilons_res:", epsilons_res)
+            print("masses_res:", masses_res)
             #Creating PDB file for topology
             #requires ffragmenttype_labels to be present in fragment.
             #NOTE: will only for molcrys-prepared files I think for now

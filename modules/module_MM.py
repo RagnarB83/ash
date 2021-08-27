@@ -406,16 +406,36 @@ def MMforcefield_read(file):
         for line in f:
             if '#' not in line:
                 #Now reading residue type (fragmenttypes)
-                if 'resid' in line:
-                    lsplit=line.split()
-                    residname=lsplit[0]
-                    MM_forcefield[residname]=lsplit[1:]
-                    MM_forcefield["residues"].append(residname)
+                if line.startswith("resid"):
+                    if 'atomtypes' in line:
+                        #adding resid
+                        residname=line.split()[0].replace("_atomtypes","")
+                        MM_forcefield["residues"].append(residname)
+                        #residnames
+                        #adding atomtypes for residue
+                        lsplit=line.split()
+                        MM_forcefield[residname+'_atomtypes']=lsplit[1:]
+                    if 'charges' in line:
+                        residname=line.split()[0].replace("_charges","")
+                        lsplit=line.split()
+                        MM_forcefield[residname+'_charges']=[float(i) for i in lsplit[1:]]                 
+                    if 'elements' in line:
+                        #adding elements for residue
+                        lsplit=line.split()
+                        residname=line.split()[0].replace("_elements","")
+                        MM_forcefield[residname+'_elements']=lsplit[1:]
+                    #if line.startswith("charges"):
+                    #    lsplit=line.split()
+                    #    for c in lsplit:
+                    #        MM_forcefield[atomtype].add_charge(atomcharge=c)
+                    #    MM_forcefield[residname]=lsplit[1:]     
+                
                 if 'combination_rule' in line:
                     combrule=line.split()[-1]
                     print("Found combination rule defintion in forcefield file:", combrule)
                     MM_forcefield["combination_rule"]=combrule
-                if 'charge' in line:
+                #This 
+                if line.startswith("charge") == True:
                     print("Found charge definition in forcefield file:", ' '.join(line.split()[:]))
                     atomtype=line.split()[1]
                     if atomtype not in MM_forcefield.keys():
@@ -440,12 +460,12 @@ def MMforcefield_read(file):
                     sigma_i=float(line.split()[2])*R0tosigma
                     eps_i=float(line.split()[3])
                     MM_forcefield[atomtype].add_LJparameters(LJparameters=[sigma_i,eps_i])
-                if 'element' in line:
-                    atomtype=line.split()[1]
-                    if atomtype not in MM_forcefield.keys():
-                        MM_forcefield[atomtype] = AtomMMobject()
-                    el=line.split()[2]
-                    MM_forcefield[atomtype].add_element(element=el)
+                #if 'element' in line:
+                #    atomtype=line.split()[1]
+                #    if atomtype not in MM_forcefield.keys():
+                #        MM_forcefield[atomtype] = AtomMMobject()
+                #    el=line.split()[2]
+                #    MM_forcefield[atomtype].add_element(element=el)
                 if 'LennardJones_ij' in line:
                     print("Found LJ pair definition in forcefield file")
                     atomtype_i=line.split()[1]
