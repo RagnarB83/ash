@@ -271,8 +271,7 @@ class OpenMMTheory:
                 residlabels.append(resid_index)
                 jindex+=1
 
-            print("Still a problem here!!")
-            exit()
+
 
             #Creating PDB-file, only for topology (not coordinates)
             write_pdbfile(cluster_fragment,outputname="cluster", dummyname='MOL', atomnames=atomnames_full, residlabels=residlabels)
