@@ -130,12 +130,15 @@ class Fragment:
             print("Warning. atomcharges list shorter than number of atoms")
             print("Adding 0.0 entries for missing atoms")
             self.atomcharges = self.atomcharges + [0.0 for i in range(0,self.numatoms-len(self.atomcharges))]
+
         if len(self.fragmenttype_labels)==0:
-            self.fragmenttype_labels=[0 for i in range(0,self.numatoms)]
+            self.fragmenttype_labels=["None" for i in range(0,self.numatoms)]
         elif len(self.fragmenttype_labels) < self.numatoms:
             print("Warning. fragmenttype_labels list shorter than number of atoms")
             print("Adding 0 entries for missing atoms")
             self.fragmenttype_labels = self.fragmenttype_labels + [0 for i in range(0,self.numatoms-len(self.fragmenttype_labels))]
+        
+        
         if len(self.atomtypes)==0:
             self.atomtypes=['None' for i in range(0,self.numatoms)]
         elif len(self.atomtypes) < self.numatoms:
@@ -493,7 +496,6 @@ class Fragment:
         #labellist contains unsorted list of labels
         #Now ordering the labels according to the sort indices
         self.fragmenttype_labels =  [combined_flat_labels[i] for i in sortindices]
-        print("self.fragmenttype_labels:", self.fragmenttype_labels)
     #Molcrys option:
     def add_centralfraginfo(self,list):
         self.Centralmainfrag = list
@@ -541,7 +543,8 @@ class Fragment:
             outfile.write(" Index    Atom         x                  y                  z               charge        fragment-type        atom-type\n")
             outfile.write("---------------------------------------------------------------------------------------------------------------------------------\n")
             for at, el, coord, charge, label, atomtype in zip(self.atomlist, self.elems, self.coords, self.atomcharges, self.fragmenttype_labels, self.atomtypes):
-                line="{:>6} {:>6}  {:17.11f}  {:17.11f}  {:17.11f}  {:14.8f} {:12d} {:>21}\n".format(at, el,coord[0], coord[1], coord[2], charge, label, atomtype)
+                label=str(label)
+                line="{:>6} {:>6}  {:17.11f}  {:17.11f}  {:17.11f}  {:14.8f} {:12s} {:>21}\n".format(at, el,coord[0], coord[1], coord[2], charge, label, atomtype)
                 outfile.write(line)
             outfile.write(
                 "===========================================================================================================================================\n")
@@ -616,6 +619,7 @@ class Fragment:
         self.coords=np.array(coords)
         self.atomcharges=atomcharges
         self.atomtypes=atomtypes
+        self.fragmenttype_labels=fragment_type_labels
         self.update_attributes()
         self.connectivity=connectivity
         self.Centralmainfrag = Centralmainfrag
@@ -1574,7 +1578,7 @@ def write_pdbfile(fragment,outputname="ASHfragment", openmmobject=None, atomname
     try:
         assert len(atomnames) == len(coords) == len(resnames) == len(residlabels) == len(segmentlabels)
     except AssertionError:
-        print("Problem with lists...")
+        print("ERROR: Problem with lists...")
         print("len: atomnames", len(atomnames))
         print("len: coords", len(coords))
         print("len: resnames", len(resnames))
