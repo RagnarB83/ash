@@ -238,6 +238,7 @@ def molcrys(cif_file=None, xtl_file=None, xyz_file=None, cell_length=None, cell_
     print("orthogcoords:", orthogcoords)
 
     modules.module_coords.write_xyzfile(elems,orthogcoords,"cell_orthog-original")
+    
     #Change origin to centroid of coords
     orthogcoords=modules.module_coords.change_origin_to_centroid(orthogcoords)
     modules.module_coords.write_xyzfile(elems,orthogcoords,"cell_orthog-changedORIGIN")

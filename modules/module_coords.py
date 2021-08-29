@@ -882,7 +882,7 @@ def get_centroid(coords):
 
 #Change origin to centroid. Either use centroid of full system (default) or alternatively subset or (something else even)
 def change_origin_to_centroid(fullcoords, subsetcoords=None):
-    if type(subsetcoords)==bool:
+    if type(subsetcoords)==NoneType:
         centroid = get_centroid(fullcoords)
     else:
         centroid = get_centroid(subsetcoords)
