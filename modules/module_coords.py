@@ -881,8 +881,8 @@ def get_centroid(coords):
     return [sum_x/len(coords),sum_y/len(coords),sum_z/len(coords)]
 
 #Change origin to centroid. Either use centroid of full system (default) or alternatively subset or (something else even)
-def change_origin_to_centroid(fullcoords, subsetcoords=None):
-    if type(subsetcoords)==NoneType:
+def change_origin_to_centroid(fullcoords, subsetcoords="None"):
+    if subsetcoords=="None":
         centroid = get_centroid(fullcoords)
     else:
         centroid = get_centroid(subsetcoords)
