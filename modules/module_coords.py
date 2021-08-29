@@ -363,6 +363,7 @@ class Fragment:
     def set_energy(self,energy):
         self.energy=float(energy)
     # Get coordinates for specific atoms (from list of atom indices)
+    #NOTE: This also returns elements, bit silly 
     def get_coords_for_atoms(self, atoms):
         #Now np compatible
         #subcoords=[self.coords[i] for i in atoms]
@@ -586,7 +587,7 @@ class Fragment:
                     elems.append(line.split()[1])
                     coords.append([float(line.split()[2]), float(line.split()[3]), float(line.split()[4])])
                     atomcharges.append(float(line.split()[5]))
-                    fragment_type_labels.append(int(line.split()[6]))
+                    fragment_type_labels.append(line.split()[6])
                     atomtypes.append(line.split()[7])
 
                 if '--------------------------' in line:
@@ -872,23 +873,28 @@ def distance(A,B):
 
 
 
-def center_of_mass(coords,masses):
-    print("to be finished")
-    exit()
-
 def get_centroid(coords):
+    print("coords", coords)
     sum_x=0; sum_y=0; sum_z=0
     for c in coords:
         sum_x+=c[0]; sum_y+=c[1]; sum_z+=c[2]
     return [sum_x/len(coords),sum_y/len(coords),sum_z/len(coords)]
 
-#Change origin to centroid of coords
-def change_origin_to_centroid(coords):
-    centroid = get_centroid(coords)
-    new_coords=[]
-    for c in coords:
-        new_coords.append(c-centroid)
-    return new_coords
+#Change origin to centroid. Either use centroid of full system (default) or alternatively subset or (something else even)
+def change_origin_to_centroid(fullcoords, subsetcoords=None):
+    if type(subsetcoords)==bool:
+        centroid = get_centroid(fullcoords)
+    else:
+        centroid = get_centroid(subsetcoords)
+    print("centroid:", centroid)
+    #new_coords=[]
+    #for c in coords:
+    #    new_coords.append(c-centroid)
+    #
+    print("fullcoords")
+    newcoords=fullcoords-centroid
+    print("Newcoords:", newcoords)
+    return newcoords
 
 #get_solvshell function based on single point of origin. Using geometric center of molecule
 def get_solvshell_origin():

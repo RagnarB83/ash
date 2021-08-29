@@ -6,7 +6,7 @@ from sys import stdout
 import traceback
 
 from functions.functions_general import BC,print_time_rel,listdiff,printdebug,print_line_with_mainheader,isint
-from modules.module_coords import Fragment, write_pdbfile,distance_between_atoms, list_of_masses, write_xyzfile
+from modules.module_coords import Fragment, write_pdbfile,distance_between_atoms, list_of_masses, write_xyzfile, change_origin_to_centroid
 from modules.module_MM import UFF_modH_dict,MMforcefield_read
 from interfaces.interface_xtb import xTBTheory
 class OpenMMTheory:
@@ -322,6 +322,7 @@ class OpenMMTheory:
         #self.set_active_and_frozen_regions(active_atoms=active_atoms, frozen_atoms=frozen_atoms)
         #Get number of atoms
         self.numatoms=int(self.topology.getNumAtoms())
+        self.allatoms=list(range(0,self.numatoms))
         print("Number of atoms in OpenMM topology:", self.numatoms)
 
         #Periodic or non-periodic ystem
@@ -629,11 +630,17 @@ class OpenMMTheory:
     
     #Function to freeze atoms during OpenMM MD simulation. Sets masses to zero. Does not modify potential energy-function.
     def freeze_atoms(self,frozen_atoms=None):
+        #Preserve original masses
+        self.system_masses=[self.system.getParticleMass(i) for i in self.allatoms]
+        #print("self.system_masses:", self.system_masses)
         print("Freezing {} atoms by setting particles masses to zero.".format(len(frozen_atoms)))
+
         #Modify particle masses in system object. For freezing atoms
         for i in frozen_atoms:
             self.system.setParticleMass(i, 0 * self.unit.dalton)
-
+    def unfreeze_atoms(self):
+        for atom,mass in zip(self.allatoms,self.system_masses):
+            self.system.setParticleMass(atom, mass * self.unit.dalton)
     #Currently unused
     def set_active_and_frozen_regions(self, active_atoms=None, frozen_atoms=None):
         #FROZEN AND ACTIVE ATOMS
@@ -1516,6 +1523,7 @@ def OpenMM_MD(fragment=None, theory=None, timestep=0.001, simulation_steps=None,
     #state = openmmobject.simulation.context.getState()
     #print("PBC: ", state.getPeriodicBoxVectors())
 
+    #THIS DOES NOT APPLY TO QM/MM. MOVE ELSEWHERE??
     if trajectory_file_option == 'PDB':
         openmmobject.simulation.reporters.append(openmmobject.openmm.app.PDBReporter('output_traj.pdb', traj_frequency, enforcePeriodicBox=enforcePeriodicBox))
     elif trajectory_file_option == 'DCD':
@@ -1555,21 +1563,37 @@ def OpenMM_MD(fragment=None, theory=None, timestep=0.001, simulation_steps=None,
 
     #QM/MM MD
     if QM_MM_object!=None:
-        print("QM_MM_object provided. Turning on QM/MM option")
-        
+        print("QM_MM_object provided. Switching to QM/MM loop")
+        print("QM/MM requires enforcePeriodicBox to be False")
+        enforcePeriodicBox=False
+        #enforcePeriodicBox or not 
+        print("enforcePeriodicBox:", enforcePeriodicBox)
+
         #OpenMM_MD with QM/MM object does not make sense without openmm_externalforce
         # (it would calculate OpenMM energy twice) so turning on in case forgotten
         if QM_MM_object.openmm_externalforce == False:
-            print("QM/MM object did not have openmm_externalforce=True.")
-            print("Need to turn on externalforce option")
+            print("QM/MM object was not set to have openmm_externalforce=True.")
+            print("Turning on externalforce option")
             QM_MM_object.openmm_externalforce=True
             QM_MM_object.openmm_externalforceobject = QM_MM_object.mm_theory.add_custom_external_force()
-            print("done")
         #TODO:
         #Should we set parallelization of QM theory here also in case forgotten?
         
-        #Setting coordinates
+
+        centercoordinates=False
+        #CENTER COORDINATES HERE on SOLUTE HERE ??
+        if centercoordinates == True:
+            #Solute atoms assumed to be QM-region
+            fragment.write_xyzfile(xyzfilename="fragment-before-centering.xyz")
+            soluteatoms=QM_MM_object.qmatoms
+            solutecoords=fragment.get_coords_for_atoms(soluteatoms)[0]
+            print("Changing origin to centroid")
+            fragment.coords = change_origin_to_centroid(fragment.coords, subsetcoords=solutecoords)
+            fragment.write_xyzfile(xyzfilename="fragment-after-centering.xyz")
+
+        #Setting coordinates of OpenMM object from current fragment.coords
         openmmobject.set_positions(fragment.coords)
+
         #Does step by step
         #Delete old traj
         try:
@@ -1580,7 +1604,9 @@ def OpenMM_MD(fragment=None, theory=None, timestep=0.001, simulation_steps=None,
         for step in range(simulation_steps):
             print("Step:", step)
             #Get current coordinates to use for QM/MM step
-            current_coords =  np.array(openmmobject.simulation.context.getState(getPositions=True).getPositions(asNumpy=True))*10
+            current_coords =  np.array(openmmobject.simulation.context.getState(getPositions=True, enforcePeriodicBox=enforcePeriodicBox).getPositions(asNumpy=True))*10
+            #state =  openmmobject.simulation.context.getState(getPositions=True, enforcePeriodicBox=enforcePeriodicBox)
+            #current_coords = np.array(state.getPositions(asNumpy=True))*10
             #Manual trajectory option (reporters do not work for manual dynamics steps)
             if step % traj_frequency == 0:
                 write_xyzfile(fragment.elems,current_coords,"OpenMMMD_traj",printlevel=1, writemode='a')
@@ -1638,8 +1664,8 @@ def OpenMM_MD(fragment=None, theory=None, timestep=0.001, simulation_steps=None,
     if plumed_object != None:
         plumed_object.close()
 
-
-    state = openmmobject.simulation.context.getState(getEnergy=True, getPositions=True, getForces=True, enforcePeriodicBox=True)
+    # , enforcePeriodicBox=True
+    state = openmmobject.simulation.context.getState(getEnergy=True, getPositions=True, getForces=True)
     print("Checking PBC vectors")
     print("PBC: ", state.getPeriodicBoxVectors())
 
@@ -1650,9 +1676,16 @@ def OpenMM_MD(fragment=None, theory=None, timestep=0.001, simulation_steps=None,
     newcoords = state.getPositions(asNumpy=True).value_in_unit(openmmobject.unit.angstrom)
     print("Updating coordinates in ASH fragment")
     fragment.coords=newcoords
+
+    #Remove frozen atom constraints in the end
+    print("Removing frozen atoms from OpenMM object")
+    openmmobject.unfreeze_atoms()
+
+
+
     print_time_rel(module_init_time, modulename="OpenMM_MD", moduleindex=1)
 
-def OpenMM_Opt(fragment=None, openmmobject=None, maxiter=1000, tolerance=1, frozen_atoms=None, constraints=None, restraints=None, trajectory_file_option='PDB', traj_frequency=1, enforcePeriodicBox=True):
+def OpenMM_Opt(fragment=None, theory=None, maxiter=1000, tolerance=1, frozen_atoms=None, constraints=None, restraints=None, trajectory_file_option='PDB', traj_frequency=1, enforcePeriodicBox=True):
     module_init_time = time.time()
     print_line_with_mainheader("OpenMM Optimization")
     if frozen_atoms==None: frozen_atoms=[]
@@ -1661,6 +1694,13 @@ def OpenMM_Opt(fragment=None, openmmobject=None, maxiter=1000, tolerance=1, froz
     
     if fragment == None:
         print("No fragment object. Exiting")
+        exit()
+
+    #Distinguish between OpenMM theory or QM/MM theory
+    if theory.__class__.__name__ == "OpenMMTheory":
+        openmmobject=theory
+    else:
+        print("Only OpenMMTheory allowed in OpenMM_Opt. Exiting")
         exit()
 
     print("Max iterations:", maxiter)
@@ -1721,7 +1761,7 @@ def OpenMM_Opt(fragment=None, openmmobject=None, maxiter=1000, tolerance=1, froz
     #openmmobject.simulation.context.setPositions(pos)
 
     print("")
-    state = openmmobject.simulation.context.getState(getEnergy=True, getForces=True, enforcePeriodicBox=True)
+    state = openmmobject.simulation.context.getState(getEnergy=True, getForces=True, enforcePeriodicBox=enforcePeriodicBox)
     print("Initial potential energy is: {} Eh".format(state.getPotentialEnergy().value_in_unit_system(openmmobject.unit.md_unit_system) / constants.hartokj))
     kjmolnm_to_atomic_factor=-49614.752589207
     forces_init=np.array(state.getForces(asNumpy=True))/kjmolnm_to_atomic_factor
@@ -1735,7 +1775,7 @@ def OpenMM_Opt(fragment=None, openmmobject=None, maxiter=1000, tolerance=1, froz
     openmmobject.simulation.minimizeEnergy(maxIterations=maxiter, tolerance=tolerance)
     print("Minimization done")
     print("")
-    state = openmmobject.simulation.context.getState(getEnergy=True, getPositions=True, getForces=True, enforcePeriodicBox=True)
+    state = openmmobject.simulation.context.getState(getEnergy=True, getPositions=True, getForces=True, enforcePeriodicBox=enforcePeriodicBox)
     print("Potential energy is: {} Eh".format(state.getPotentialEnergy().value_in_unit_system(openmmobject.unit.md_unit_system) / constants.hartokj))
     forces_final=np.array(state.getForces(asNumpy=True))/kjmolnm_to_atomic_factor
     rms_force=np.sqrt(sum(n*n for n in forces_final.flatten())/len(forces_final.flatten()))
@@ -1749,7 +1789,14 @@ def OpenMM_Opt(fragment=None, openmmobject=None, maxiter=1000, tolerance=1, froz
     fragment.coords=newcoords
 
     with open('frag-minimized.pdb', 'w') as f: openmmobject.openmm.app.pdbfile.PDBFile.writeHeader(openmmobject.topology, f)
-    with open('frag-minimized.pdb', 'a') as f: openmmobject.openmm.app.pdbfile.PDBFile.writeModel(openmmobject.topology, openmmobject.simulation.context.getState(getPositions=True, enforcePeriodicBox=True).getPositions(), f)
+    with open('frag-minimized.pdb', 'a') as f: openmmobject.openmm.app.pdbfile.PDBFile.writeModel(openmmobject.topology, openmmobject.simulation.context.getState(getPositions=True, enforcePeriodicBox=enforcePeriodicBox).getPositions(), f)
+
+
+    #Remove frozen atom constraints in the end
+    print("Removing frozen atoms from OpenMM object")
+    openmmobject.unfreeze_atoms()
+
+
 
     print('All Done!')
     print_time_rel(module_init_time, modulename="OpenMM_Opt", moduleindex=1)
@@ -1983,9 +2030,10 @@ def MDtraj_imagetraj(trajectory, pdbtopology, format='DCD', unitcell_lengths=Non
     if solute_anchor == True:
         anchors=[set(traj.topology.residue(0).atoms)]
         print("anchors:", anchors)
-    
-    #Re-imaging trajectory
-    imaged=traj.image_molecules(anchor_molecules=anchors)
+        #Re-imaging trajectory
+        imaged=traj.image_molecules(anchor_molecules=anchors)
+    else:
+        imaged=traj.image_molecules()
 
     #Save trajectory in format
     if format == 'DCD':
