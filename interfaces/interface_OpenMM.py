@@ -2154,8 +2154,8 @@ def solvate_small_molecule(fragment=None, charge=None, mult=None, watermodel=Non
     #Create local ASH library of XML files ???
     #This only has water parameters no ions
     if watermodel=="tip3p":
-        print("Using watermodel=TIP3P . Using parameters in:",  ashpath+"/databases/forcefields/solvents")
-        forcefieldpath=ashpath+"/databases/forcefields/solvents"
+        print("Using watermodel=TIP3P . Using parameters in:",  ashpath+"/databases/forcefields")
+        forcefieldpath=ashpath+"/databases/forcefields"
         waterxmlfile=forcefieldpath+"/tip3p_water_ions.xml"
         coulomb14scale=1.0
         lj14scale=1.0
