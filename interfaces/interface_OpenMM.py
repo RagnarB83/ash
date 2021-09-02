@@ -10,7 +10,7 @@ from functions.functions_elstructure import DDEC_calc, DDEC_to_LJparameters
 from modules.module_coords import Fragment, write_pdbfile,distance_between_atoms, list_of_masses, write_xyzfile, change_origin_to_centroid
 from modules.module_MM import UFF_modH_dict,MMforcefield_read
 from interfaces.interface_xtb import xTBTheory, grabatomcharges_xTB
-from interfaces.interface_ORCA import ORCATheory, grabatomcharges_ORCA
+from interfaces.interface_ORCA import ORCATheory, grabatomcharges_ORCA, chargemodel_select
 from modules.module_singlepoint import Singlepoint
 class OpenMMTheory:
     def __init__(self, printlevel=2, platform='CPU', numcores=None, Modeller=False, forcefield=None, topology=None,
@@ -2305,13 +2305,16 @@ def basic_atomcharges_xTB(fragment=None, charge=None, mult=None, xtbmethod='GFN2
 def basic_atom_charges_ORCA(fragment=None, charge=None, mult=None, orcatheory=None, chargemodel=None, numcores=1):
     atompropdict={}
     print("Will calculate charges using ORCA")
+    
     #Define default ORCA object if notprovided
     if orcatheory==None:
         print("orcatheory not provided. Will do r2SCAN/def2-TZVP single-point calculation")
-        orcasimpleinput="! r2SCAN def2-TZVP tightscf"
+        orcasimpleinput="! r2SCAN def2-TZVP tightscf "
         orcablocks= "%scf maxiter 300 end"
         orcatheory = ORCATheory(fragment=fragment, charge=charge, mult=mult, orcasimpleinput=orcasimpleinput,
                         orcablocks=orcablocks, numcores=numcores)
+    if chargemodel=='CM5':
+        orcatheory.extraline = chargemodel_select(chargemodel)
     #Run ORCA calculation
     Singlepoint(theory=orcatheory, fragment=fragment)
     if 'DDEC' not in chargemodel:
