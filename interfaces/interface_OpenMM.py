@@ -2109,7 +2109,7 @@ def MDAnalysis_transform(topfile,trajfile, solute_indices=None, trajoutputformat
 
 #Assumes all atoms present (including hydrogens)
 def solvate_small_molecule(fragment=None, charge=None, mult=None, watermodel=None, solvent_boxdims=[70.0,70.0,70.0], 
-                           nonbonded_pars="CM5", orcatheory=None, numcores=1):
+                           nonbonded_pars="CM5_UFF", orcatheory=None, numcores=1):
     #, ionicstrength=0.1, iontype='K+'
     print_line_with_mainheader("SmallMolecule Solvator")
     try:
@@ -2156,7 +2156,7 @@ def solvate_small_molecule(fragment=None, charge=None, mult=None, watermodel=Non
 
     
     #Define nonbonded paramers
-    if nonbonded_pars=="CM5":
+    if nonbonded_pars=="CM5_UFF":
         print("Using CM5 atomcharges and UFF-LJ parameters.")
         atompropdict=basic_atom_charges_ORCA(fragment=fragment, charge=charge, mult=mult, 
                                         orcatheory=orcatheory,chargemodel=nonbonded_pars)
