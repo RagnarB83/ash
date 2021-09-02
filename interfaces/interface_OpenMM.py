@@ -5,6 +5,8 @@ import os
 from sys import stdout
 import traceback
 
+import ash
+ashpath=os.path.dirname(ash.__file__)
 from functions.functions_general import BC,print_time_rel,listdiff,printdebug,print_line_with_mainheader,isint
 from functions.functions_elstructure import DDEC_calc, DDEC_to_LJparameters
 from modules.module_coords import Fragment, write_pdbfile,distance_between_atoms, list_of_masses, write_xyzfile, change_origin_to_centroid
@@ -1844,6 +1846,7 @@ def OpenMM_Modeller(pdbfile=None, forcefield=None, xmlfile=None, waterxmlfile=No
     except:
         print("Problem importing pdbfixer. Install first via conda:")
         print("conda install -c conda-forge pdbfixer")
+        exit()
 
     def write_pdbfile_openMM(topology,positions,filename):
         openmm.app.PDBFile.writeFile(topology, positions, file=open(filename, 'w'))
@@ -2152,7 +2155,8 @@ def solvate_small_molecule(fragment=None, charge=None, mult=None, watermodel=Non
     #This only has water parameters no ions
     if watermodel=="tip3p":
         print("Using watermodel=TIP3P (Warning: contains no ions)")
-        waterxmlfile="tip3p.xml"
+        forcefieldpath=ashpath+"/databases/forcefields/solvents"
+        waterxmlfile=forcefieldpath+"/tip3p_water_ions.xml"
     elif watermodel=="charmm_tip3p":
         coulomb14scale=1.0
         lj14scale=1.0

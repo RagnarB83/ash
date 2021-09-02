@@ -1,0 +1,90 @@
+<ForceField>
+ <AtomTypes>
+  <Type name="tip3p-O" class="OW" element="O" mass="15.99943"/>
+  <Type name="tip3p-H" class="HW" element="H" mass="1.007947"/>
+  <Type class="HX" element="H" mass="1.008" name="HX"/>
+  <Type class="OX" element="O" mass="15.9994" name="OX"/>
+  <Type class="LIT" element="Li" mass="6.941" name="LIT"/>
+  <Type class="SOD" element="Na" mass="22.98977" name="SOD"/>
+  <Type class="MG" element="Mg" mass="24.305" name="MG"/> 
+  <Type class="POT" element="K" mass="39.0983" name="POT"/>
+  <Type class="CAL" element="Ca" mass="40.08" name="CAL"/>
+  <Type class="RUB" element="Rb" mass="85.4678" name="RUB"/>
+  <Type class="CES" element="Cs" mass="132.90545" name="CES"/>
+  <Type class="BAR" element="Ba" mass="137.327" name="BAR"/> 
+  <Type class="ZN" element="Zn" mass="65.37" name="ZN"/>
+  <Type class="CAD" element="Cd" mass="112.411" name="CAD"/>
+  <Type class="CLA" element="Cl" mass="35.45" name="CLA"/>
+ </AtomTypes>
+ <Residues>
+  <Residue name="HOH">
+   <Atom name="O" type="tip3p-O"/>
+   <Atom name="H1" type="tip3p-H"/>
+   <Atom name="H2" type="tip3p-H"/>
+   <Bond atomName1="O" atomName2="H1"/>
+   <Bond atomName1="O" atomName2="H2"/>
+  </Residue>
+
+    <Residue name="OH">
+      <Atom charge="-1.32" name="O1" type="OX"/>
+      <Atom charge="0.32" name="H1" type="HX"/>
+      <Bond atomName1="O1" atomName2="H1"/>
+    </Residue>
+    <Residue name="LIT">
+      <Atom charge="1.0" name="LIT" type="LIT"/>
+    </Residue>
+    <Residue name="SOD">
+      <Atom charge="1.0" name="SOD" type="SOD"/>
+    </Residue>
+    <Residue name="MG">
+      <Atom charge="2.0" name="MG" type="MG"/>
+    </Residue>
+    <Residue name="POT">
+      <Atom charge="1.0" name="POT" type="POT"/>
+    </Residue>
+    <Residue name="CAL">
+      <Atom charge="2.0" name="CAL" type="CAL"/>
+    </Residue>
+    <Residue name="CLA">
+      <Atom charge="-1.0" name="CLA" type="CLA"/>
+    </Residue>
+
+ </Residues>
+ <HarmonicBondForce>
+  <Bond class1="OW" class2="HW" length="0.09572" k="462750.4"/>
+
+
+  
+ </HarmonicBondForce>
+ <HarmonicAngleForce>
+  <Angle class1="HW" class2="OW" class3="HW" angle="1.82421813418" k="836.8"/>
+ </HarmonicAngleForce>
+ <NonbondedForce coulomb14scale="1.0" lj14scale="1.0">
+  <Atom type="tip3p-O" charge="-0.834" sigma="0.31507524065751241" epsilon="0.635968"/>
+  <Atom type="tip3p-H" charge="0.417" sigma="1" epsilon="0"/>
+    <Atom charge="0.32" epsilon="0.192464" sigma="0.04000135244450124" type="HX"/>
+    <Atom charge="-1.32" epsilon="0.50208" sigma="0.30290556416771536" type="OX"/>
+    <Atom charge="1.0" epsilon="0.00974872" sigma="0.23118821735741807" type="LIT"/>
+    <Atom charge="1.0" epsilon="0.1962296" sigma="0.2513670733232967" type="SOD"/>
+    <Atom charge="2.0" epsilon="0.06276" sigma="0.2111429961992604" type="MG"/>
+    <Atom charge="1.0" epsilon="0.364008" sigma="0.3142645228240047" type="POT"/>
+    <Atom charge="2.0" epsilon="0.50208" sigma="0.24357170953956878" type="CAL"/>
+    <Atom charge="1.0" epsilon="0.6276" sigma="0.3385415128933289" type="RUB"/>
+    <Atom charge="1.0" epsilon="0.79496" sigma="0.37417746161894255" type="CES"/>
+    <Atom charge="2.0" epsilon="0.6276" sigma="0.33675971545704825" type="BAR"/>
+    <Atom charge="2.0" epsilon="1.046" sigma="0.194215920554594" type="ZN"/>
+    <Atom charge="2.0" epsilon="0.50208" sigma="0.2417899121032881" type="CAD"/>
+    <Atom charge="-1" epsilon="0.6276" sigma="0.4044680180357141" type="CLA"/>
+    <NBFixPair epsilon="0.35093300000000005" sigma="0.3323943117381606" type1="CLA" type2="SOD"/>
+    <NBFixPair epsilon="0.477963424" sigma="0.3635757668730725" type1="CLA" type2="POT"/>
+    <NBFixPair epsilon="0.31388368000000005" sigma="0.2877602859593296" type1="OC" type2="SOD"/>
+    <NBFixPair epsilon="0.31388368000000005" sigma="0.2788512987779262" type1="OS" type2="SOD"/>
+    <NBFixPair epsilon="0.31388368000000005" sigma="0.2877602859593296" type1="OCL" type2="SOD"/>
+    <NBFixPair epsilon="0.31388368000000005" sigma="0.2788512987779262" type1="OBL" type2="SOD"/>
+    <NBFixPair epsilon="0.31388368000000005" sigma="0.28152399493234725" type1="O2L" type2="SOD"/>
+    <NBFixPair epsilon="0.31388368000000005" sigma="0.2877602859593296" type1="OC2D2" type2="SOD"/>
+    <NBFixPair epsilon="0.31388368000000005" sigma="0.28152399493234725" type1="OC2DP" type2="SOD"/>
+    <NBFixPair epsilon="0.31388368000000005" sigma="0.2877602859593296" type1="OG2D2" type2="SOD"/>
+    <NBFixPair epsilon="0.31388368000000005" sigma="0.28152399493234725" type1="OG2P1" type2="SOD"/>
+ </NonbondedForce>
+</ForceField>
