@@ -120,9 +120,10 @@ class Fragment:
         self.masses=self.list_of_masses
         #Elemental formula
         self.formula = elemlisttoformula(self.elems)
-        #Pretty formula without 1
-        self.prettyformula = self.formula.replace('1','')
-
+        print("formula:", self.formula)
+        #Pretty formula without 1 TODO
+        self.prettyformula = self.formula
+        #self.prettyformula = self.formula.replace('1','')
         #Update atomtypes, atomcharges and fragmenttype_labels also if needed
         if len(self.atomcharges)==0:
             self.atomcharges=[0.0 for i in range(0,self.numatoms)]

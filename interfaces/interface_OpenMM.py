@@ -9,6 +9,7 @@ from functions.functions_general import BC,print_time_rel,listdiff,printdebug,pr
 from modules.module_coords import Fragment, write_pdbfile,distance_between_atoms, list_of_masses, write_xyzfile, change_origin_to_centroid
 from modules.module_MM import UFF_modH_dict,MMforcefield_read
 from interfaces.interface_xtb import xTBTheory
+from modules.module_singlepoint import Singlepoint
 class OpenMMTheory:
     def __init__(self, printlevel=2, platform='CPU', numcores=None, Modeller=False, forcefield=None, topology=None,
                  CHARMMfiles=False, psffile=None, charmmtopfile=None, charmmprmfile=None,

@@ -593,6 +593,8 @@ def run_wfoverlap(wfoverlapinput,path_wfoverlap,memory):
     print(wfcommand)
     print("Using memory: {} MB".format(memory))
     print("OMP num threads available to WFoverlap: ", os.environ["OMP_NUM_THREADS"])
+    os.system('ldd {}'.format(path_wfoverlap))
+    
     try:
         proc=sp.Popen(wfcommand,shell=True,stdout=sp.PIPE,stderr=sp.PIPE)
         wfoverlapout=proc.communicate()
