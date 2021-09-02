@@ -2173,7 +2173,7 @@ def solvate_small_molecule(fragment=None, charge=None, mult=None, watermodel=Non
         charges=atompropdict['charges']
         r0=atompropdict['r0s']
         eps=atompropdict['epsilons']
-        sigmas = [s*0.1/(2**(1/6) for s in r0]
+        sigmas = [s*0.1/(2**(1/6)) for s in r0]
         epsilons= [e*4.184 for e in eps]
     elif nonbonded_pars=="xtb_UFF":
         print("Using xTB charges and UFF-LJ parameters")
