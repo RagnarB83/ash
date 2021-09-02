@@ -1638,6 +1638,11 @@ def OpenMM_MD(fragment=None, theory=None, timestep=0.001, simulation_steps=None,
         #Setting coordinates of OpenMM object from current fragment.coords
         openmmobject.set_positions(fragment.coords)
 
+
+        #After adding QM/MM force, possible Plumed force, possible center force
+        #Let's list all OpenMM object system forces
+        print("OpenMM Forces defined:", openmmobject.system.getForces())
+        print("Now starting QM/MM MD simulation")
         #Does step by step
         #Delete old traj
         try:
