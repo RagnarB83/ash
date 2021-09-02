@@ -2313,7 +2313,7 @@ def basic_atom_charges_ORCA(fragment=None, charge=None, mult=None, orcatheory=No
         orcatheory = ORCATheory(fragment=fragment, charge=charge, mult=mult, orcasimpleinput=orcasimpleinput,
                         orcablocks=orcablocks, numcores=numcores)
     #Run ORCA calculation
-    Singlepoint(theory=orcacalc, fragment=fragment)
+    Singlepoint(theory=orcatheory, fragment=fragment)
     if 'DDEC' not in chargemodel:
         atomcharges = grabatomcharges_ORCA(chargemodel, orcatheory.filename + '.out')
         atompropdict['charges'] = atomcharges
