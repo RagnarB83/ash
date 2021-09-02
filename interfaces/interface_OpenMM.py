@@ -1855,7 +1855,12 @@ def OpenMM_Modeller(pdbfile=None, forcefield=None, xmlfile=None, waterxmlfile=No
 
     #Water model. May be overridden by forcefield below
     if watermodel=="tip3p":
+        #Problem: this only has water, no ions.
         waterxmlfile="tip3p.xml"
+    elif watermodel=="charmm_tip3p":
+        #This is the modified CHARMM-TIP3P (LJ parameters on H at least, maybe bonded parameters defined also)
+        #Advantage: also contains ion parameters
+        waterxmlfile="charmm36/water.xml"
     elif waterxmlfile != None:
         #Problem: we need to define watermodel also
         print("Using waterxmlfile:", waterxmlfile)
