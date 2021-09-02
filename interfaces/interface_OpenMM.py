@@ -1602,6 +1602,7 @@ def OpenMM_MD(fragment=None, theory=None, timestep=0.001, simulation_steps=None,
             pass
         #Simulation loop
         for step in range(simulation_steps):
+            checkpoint_begin_step = time.time()
             print("Step:", step)
             #Get current coordinates to use for QM/MM step
             current_coords =  np.array(openmmobject.simulation.context.getState(getPositions=True, enforcePeriodicBox=enforcePeriodicBox).getPositions(asNumpy=True))*10
@@ -1616,11 +1617,11 @@ def OpenMM_MD(fragment=None, theory=None, timestep=0.001, simulation_steps=None,
             QM_MM_object.run(current_coords=current_coords, elems=fragment.elems, Grad=True, exit_after_customexternalforce_update=True)
             print_time_rel(checkpoint, modulename="QM/MM run", moduleindex=2)
             #NOTE: Think about energy correction (currently skipped above)
-
-            #Now take OpenMM step (E+G + displacement essentially)
+            #Now take OpenMM step (E+G + displacement etc.)
             checkpoint = time.time()
             openmmobject.simulation.step(1)
             print_time_rel(checkpoint, modulename="openmmobject sim step", moduleindex=2)
+            print_time_rel(checkpoint_begin_step, modulename="Total sim step", moduleindex=2)
             #NOTE: Better to use OpenMM-plumed interface instead??
             #After MM step, grab coordinates and forces
             if plumed_object != None:
@@ -2051,6 +2052,56 @@ def MDtraj_imagetraj(trajectory, pdbtopology, format='DCD', unitcell_lengths=Non
     #traj.save('file.pdb')
 
 
+def MDAnalysis_transform(topfile,trajfile, solute_indices=None, trajoutputformat='PDB', trajname="MDAnalysis_traj"):
+    #Load traj
+    print("MDAnalysis interface: transform")
+
+    try:
+        import MDAnalysis as mda
+        import MDAnalysis.transformations as trans
+    except:
+        print("Problem importing MDAnalysis library.")
+        print("Install via: pip install mdtraj")
+        exit()
+
+    print("Loading trajecory using MDAnalysis")
+    print("Topology file:", topfile)
+    print("Trajectory file:", trajfile)
+    print("Solute_indices:", solute_indices)
+    print("Trajectory output format", trajoutputformat)
+    print("Will unwrap solute and center in box")
+    print("Will then wrap full system")
+
+    #Load trajectory
+    u = mda.Universe(topfile, trajfile,  in_memory=True)
+    print(u.trajectory.ts, u.trajectory.time)
+
+    #Grab solute
+    numatoms=len(u.atoms)
+    solutenum=len(solute_indices)
+    solute = u.atoms[:solutenum]
+    solvent = u.atoms[solutenum:numatoms]
+    fullsystem=u.atoms[:numatoms]
+    elems_list=list(fullsystem.types)
+    #Guess bonds. Could also read in vdW radii. Could also read in connectivity from ASH if this fails
+    solute.guess_bonds()
+    #Unwrap solute, center solute and wraps full system (or solvent)
+    workflow = (trans.unwrap(solute),
+                    trans.center_in_box(solute, center='mass'),
+                    trans.wrap(fullsystem, compound='residues'))
+
+    u.trajectory.add_transformations(*workflow)
+    if trajoutputformat == 'PDB':
+        fullsystem.write(trajname+".pdb", frames='all')
+
+    #TODO: Distinguish between transforming whole trajectory vs. single geometry
+    # Maybe just read in single-frame trajectory so that things are general
+    #Returning last frame. To be used in ASH workflow
+    lastframe=u.trajectory[-1]
+
+    return elems_list, lastframe._pos
+
+
 
 
 #Assumes all atoms present (including hydrogens)
@@ -2136,7 +2187,6 @@ def solvate_small_molecule(fragment=None, charge=None, mult=None, watermodel=Non
     print("Creating forcefield using XML-files:", xmlfile, waterxmlfile)
     forcefield=openmm_app.forcefield.ForceField(xmlfile, waterxmlfile)
     
-    print("XX")
 
     #, waterxmlfile
     #if extraxmlfile == None:
