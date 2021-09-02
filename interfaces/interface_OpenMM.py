@@ -2159,7 +2159,7 @@ def solvate_small_molecule(fragment=None, charge=None, mult=None, watermodel=Non
     if nonbonded_pars=="CM5_UFF":
         print("Using CM5 atomcharges and UFF-LJ parameters.")
         atompropdict=basic_atom_charges_ORCA(fragment=fragment, charge=charge, mult=mult, 
-                                        orcatheory=orcatheory,chargemodel=nonbonded_pars, numcores=numcores)
+                                        orcatheory=orcatheory,chargemodel="CM5", numcores=numcores)
         charges=atompropdict['charges']
         #Basic UFF LJ parameters
         #Converting r0 parameters from Ang to nm and to sigma
