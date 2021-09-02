@@ -450,6 +450,10 @@ def HOMOnumbercalc(file,charge,mult):
 def DDEC_calc(elems=None, theory=None, gbwfile=None, numcores=1, DDECmodel='DDEC3', calcdir='DDEC', molecule_charge=None, 
               molecule_spinmult=None, chargemolbinarydir=None):
     #Creating calcdir. Should not exist previously
+    try:
+        os.remove(calcdir)
+    except:
+        pass
     os.mkdir(calcdir)
     os.chdir(calcdir)
     #Copying GBW file to current dir and label as molecule.gbw
