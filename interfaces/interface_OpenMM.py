@@ -6,9 +6,11 @@ from sys import stdout
 import traceback
 
 from functions.functions_general import BC,print_time_rel,listdiff,printdebug,print_line_with_mainheader,isint
+from functions.functions_elstructure import DDEC_calc, DDEC_to_LJparameters
 from modules.module_coords import Fragment, write_pdbfile,distance_between_atoms, list_of_masses, write_xyzfile, change_origin_to_centroid
 from modules.module_MM import UFF_modH_dict,MMforcefield_read
 from interfaces.interface_xtb import xTBTheory, grabatomcharges_xTB
+from interfaces.interface_ORCA import grabatomcharges_ORCA
 from modules.module_singlepoint import Singlepoint
 class OpenMMTheory:
     def __init__(self, printlevel=2, platform='CPU', numcores=None, Modeller=False, forcefield=None, topology=None,
@@ -2106,7 +2108,8 @@ def MDAnalysis_transform(topfile,trajfile, solute_indices=None, trajoutputformat
 
 
 #Assumes all atoms present (including hydrogens)
-def solvate_small_molecule(fragment=None, charge=None, mult=None, watermodel=None, solvent_boxdims=[70.0,70.0,70.0], nonbonded_pars="dummy"):
+def solvate_small_molecule(fragment=None, charge=None, mult=None, watermodel=None, solvent_boxdims=[70.0,70.0,70.0], 
+                           nonbonded_pars="CM5", orcatheory=None, numcores=1):
     #, ionicstrength=0.1, iontype='K+'
     print_line_with_mainheader("SmallMolecule Solvator")
     try:
@@ -2153,19 +2156,25 @@ def solvate_small_molecule(fragment=None, charge=None, mult=None, watermodel=Non
 
     
     #Define nonbonded paramers
-    if nonbonded_pars=="DDEC":
-        print("Not ready")
-        #Do ORCA single-point calc to get DFT-calc
-        #call DDEC to get charges and LJ parameters??
-        exit()
-    elif nonbonded_pars=="dummy":
-        print("Using some basic dummy parameters")
-        charges=[0.0 for i in fragment.elems]
+    if nonbonded_pars=="CM5":
+        print("Using CM5 atomcharges and UFF-LJ parameters.")
+        atompropdict=basic_atom_charges_ORCA(fragment=fragment, charge=charge, mult=mult, 
+                                        orcatheory=orcatheory,chargemodel=nonbonded_pars)
+        charges=atompropdict['charges']
         #Basic UFF LJ parameters
         #Converting r0 parameters from Ang to nm and to sigma
         sigmas=[UFF_modH_dict[el][0]*0.1/(2**(1/6)) for el in fragment.elems]
         #Convering epsilon from kcal/mol to kJ/mol
         epsilons=[UFF_modH_dict[el][1]*4.184 for el in fragment.elems]
+    elif nonbonded_pars=="DDEC3" or nonbonded_pars=="DDEC6":
+        print("Using {} atomcharges and DDEC-derived parameters.".format(nonbonded_pars))
+        atompropdict=basic_atom_charges_ORCA(fragment=fragment, charge=charge, mult=mult, 
+                                        orcatheory=orcatheory, chargemodel=nonbonded_pars)
+        charges=atompropdict['charges']
+        r0=atompropdict['r0s']
+        eps=atompropdict['epsilons']
+        sigmas = [s*0.1/(2**(1/6) for s in r0]
+        epsilons= [e*4.184 for e in eps]
     elif nonbonded_pars=="xtb_UFF":
         print("Using xTB charges and UFF-LJ parameters")
         charges=basic_atomcharges_xTB(fragment=fragment, charge=charge, mult=mult, xtbmethod='GFN2')
@@ -2178,6 +2187,8 @@ def solvate_small_molecule(fragment=None, charge=None, mult=None, watermodel=Non
         print("unknown nonbonded_pars option")
         exit()
 
+    print("sigmas:", sigmas)
+    print("epsilons:", epsilons)
 
     #Creating XML-file for solute
     
@@ -2277,6 +2288,7 @@ def write_xmlfile_nonbonded(resnames=None, atomnames_per_res=None, atomtypes_per
     return filename
 
 
+#TODO: Move elsewhere?
 def basic_atomcharges_xTB(fragment=None, charge=None, mult=None, xtbmethod='GFN2'):
     print("Now calculating atom charges for fragment")
     print("Using default xTB charges")
@@ -2285,8 +2297,39 @@ def basic_atomcharges_xTB(fragment=None, charge=None, mult=None, xtbmethod='GFN2
 
     Singlepoint(theory=calc, fragment=fragment)
     atomcharges=grabatomcharges_xTB()
+    print("atomcharges:", atomcharges)
+    print("fragment elems:", fragment.elems)
     return atomcharges
 
+#TODO: Move elsewhere?
+def basic_atom_charges_ORCA(fragment=None, charge=None, mult=None, orcatheory=None, chargemodel=None):
+    atompropdict={}
+    print("Will calculate charges using ORCA")
+    #Define default ORCA object if notprovided
+    if orcatheory==None:
+        print("orcatheory not provided. Will do r2SCAN/def2-TZVP single-point calculation")
+        orcasimpleinput="! r2SCAN def2-TZVP tightscf"
+        orcablocks= "%scf maxiter 300 end"
+        orcatheory = ORCATheory(fragment=fragment, charge=charge, mult=mult, orcasimpleinput=orcasimpleinput,
+                        orcablocks=orcablocks, mult=mult, numcores=numcores)
+    #Run ORCA calculation
+    Singlepoint(theory=orcacalc, fragment=fragment)
+    if 'DDEC' not in chargemodel:
+        atomcharges = grabatomcharges_ORCA(chargemodel, orcatheory.filename + '.out')
+        atompropdict['charges'] = atomcharges
+    else:
+        atomcharges, molmoms, voldict = DDEC_calc(elems=fragment.elems, theory=orcatheory, gbwfile=orcatheory.filename+'.gbw', numcores=numcores, 
+                  DDECmodel='DDEC3', calcdir='DDEC', molecule_charge=charge, molecule_spinmult=mult):
+        atompropdict['charges'] = atomcharges
+        r0list, epsilonlist = DDEC_to_LJparameters(fragment.elems, molmoms, voldict)
+        print("r0list:", r0list)
+        print("epsilonlist:", epsilonlist)
+        atompropdict['r0s'] = r0list
+        atompropdict['epsilons'] = epsilonlist
+
+    print("atomcharges:", atomcharges)
+    print("fragment elems:", fragment.elems)
+    return atompropdict
 
 
 #QM/MM functionality to Open_MM MD
