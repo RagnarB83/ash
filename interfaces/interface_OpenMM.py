@@ -2151,8 +2151,12 @@ def solvate_small_molecule(fragment=None, charge=None, mult=None, watermodel=Non
     #Create local ASH library of XML files ???
     #This only has water parameters no ions
     if watermodel=="tip3p":
+        print("Using watermodel=TIP3P (Warning: contains no ions)")
         waterxmlfile="tip3p.xml"
     elif watermodel=="charmm_tip3p":
+        coulomb14scale=1.0
+        lj14scale=1.0
+        print("Using watermodel: CHARMM-TIP3P (has ion parameters also)")
         #This is the modified CHARMM-TIP3P (LJ parameters on H at least, maybe bonded parameters defined also)
         #Advantage: also contains ion parameters
         waterxmlfile="charmm36/water.xml"
@@ -2200,7 +2204,7 @@ def solvate_small_molecule(fragment=None, charge=None, mult=None, watermodel=Non
     
     xmlfile = write_xmlfile_nonbonded(resnames=["LIG"], atomnames_per_res=[atomnames],atomtypes_per_res=[atomtypes], 
                                       elements_per_res=[fragment.elems], masses_per_res=[fragment.masses], charges_per_res=[charges], 
-                        sigmas_per_res=[sigmas], epsilons_per_res=[epsilons], filename="system.xml")
+                        sigmas_per_res=[sigmas], epsilons_per_res=[epsilons], filename="system.xml", coulomb14scale=coulomb14scale, lj14scale=lj14scale)
     
     print("Creating forcefield using XML-files:", xmlfile, waterxmlfile)
     forcefield=openmm_app.forcefield.ForceField(xmlfile, waterxmlfile)
