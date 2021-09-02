@@ -2159,7 +2159,7 @@ def solvate_small_molecule(fragment=None, charge=None, mult=None, watermodel=Non
     if nonbonded_pars=="CM5_UFF":
         print("Using CM5 atomcharges and UFF-LJ parameters.")
         atompropdict=basic_atom_charges_ORCA(fragment=fragment, charge=charge, mult=mult, 
-                                        orcatheory=orcatheory,chargemodel=nonbonded_pars)
+                                        orcatheory=orcatheory,chargemodel=nonbonded_pars, numcores=numcores)
         charges=atompropdict['charges']
         #Basic UFF LJ parameters
         #Converting r0 parameters from Ang to nm and to sigma
@@ -2169,7 +2169,7 @@ def solvate_small_molecule(fragment=None, charge=None, mult=None, watermodel=Non
     elif nonbonded_pars=="DDEC3" or nonbonded_pars=="DDEC6":
         print("Using {} atomcharges and DDEC-derived parameters.".format(nonbonded_pars))
         atompropdict=basic_atom_charges_ORCA(fragment=fragment, charge=charge, mult=mult, 
-                                        orcatheory=orcatheory, chargemodel=nonbonded_pars)
+                                        orcatheory=orcatheory, chargemodel=nonbonded_pars, numcores=numcores)
         charges=atompropdict['charges']
         r0=atompropdict['r0s']
         eps=atompropdict['epsilons']
@@ -2302,7 +2302,7 @@ def basic_atomcharges_xTB(fragment=None, charge=None, mult=None, xtbmethod='GFN2
     return atomcharges
 
 #TODO: Move elsewhere?
-def basic_atom_charges_ORCA(fragment=None, charge=None, mult=None, orcatheory=None, chargemodel=None):
+def basic_atom_charges_ORCA(fragment=None, charge=None, mult=None, orcatheory=None, chargemodel=None, numcores=1):
     atompropdict={}
     print("Will calculate charges using ORCA")
     #Define default ORCA object if notprovided
@@ -2318,8 +2318,10 @@ def basic_atom_charges_ORCA(fragment=None, charge=None, mult=None, orcatheory=No
         atomcharges = grabatomcharges_ORCA(chargemodel, orcatheory.filename + '.out')
         atompropdict['charges'] = atomcharges
     else:
-        atomcharges, molmoms, voldict = DDEC_calc(elems=fragment.elems, theory=orcatheory, gbwfile=orcatheory.filename+'.gbw', numcores=numcores, 
-                  DDECmodel='DDEC3', calcdir='DDEC', molecule_charge=charge, molecule_spinmult=mult):
+        atomcharges, molmoms, voldict = DDEC_calc(elems=fragment.elems, theory=orcatheory, 
+                                                  gbwfile=orcatheory.filename+'.gbw', numcores=numcores, 
+                                                    DDECmodel='DDEC3', calcdir='DDEC', molecule_charge=charge, 
+                                                    molecule_spinmult=mult)
         atompropdict['charges'] = atomcharges
         r0list, epsilonlist = DDEC_to_LJparameters(fragment.elems, molmoms, voldict)
         print("r0list:", r0list)
