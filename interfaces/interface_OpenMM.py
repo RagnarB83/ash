@@ -578,9 +578,9 @@ class OpenMMTheory:
         print("Coordinates set")
 
     #This is custom externa force that restrains group of atoms to center of system
-    def add_center_force(self, center_coords=None, atomindices=None, forceconstant=5.0):
+    def add_center_force(self, center_coords=None, atomindices=None, forceconstant=1.0):
         centerforce = self.openmm.CustomExternalForce("k*(abs(x-x0)+abs(y-y0)+abs(z-z0))")
-        centerforce.addGlobalParameter("k", forceconstant*unit.kilocalorie_per_mole/unit.angstrom/unit.mole)
+        centerforce.addGlobalParameter("k", forceconstant*4.184*self.unit.kilojoule/self.unit.angstrom/self.unit.mole)
         centerforce.addPerParticleParameter('x0')
         centerforce.addPerParticleParameter('y0')
         centerforce.addPerParticleParameter('z0')
@@ -1625,23 +1625,11 @@ def OpenMM_MD(fragment=None, theory=None, timestep=0.001, simulation_steps=None,
             if center_force_atoms == None:
                 print("center_force_atoms unset. Using QM/MM atoms :", QM_MM_object.qmatoms)
                 center_force_atoms=QM_MM_object.qmatoms
-            current_coords =  np.array(openmmobject.simulation.context.getState(getPositions=True, 
-                                                                                enforcePeriodicBox=False).getPositions(asNumpy=True))*10
-            print("current_coords:", current_coords)
-            center_x = np.mean(current_coords[:,0])
-            center_y = np.mean(current_coords[:,1])
-            center_z = np.mean(current_coords[:,2])
-
+            #Get geometric center of system (Angstrom)
             center = fragment.get_coordinate_center()
             print("center:", center)
             
-            #center_x = np.mean(np.array(state.getPositions()/openmmobject.unit.nanometer)[:,0])*openmmobject.nanometer
-            #center_y = np.mean(np.array(state.getPositions()/openmmobject.unit.nanometer)[:,1])*openmmobject.nanometer
-            #center_z = np.mean(np.array(state.getPositions()/openmmobject.unit.nanometer)[:,2])*openmmobject.nanometer
-            print("center_x", center_x)
-            print("center_y", center_y)
-            print("center_z", center_z)
-            openmmobject.add_center_force(center_coords=[center_x,center_y,center_z], atomindices=center_force_atoms, 
+            openmmobject.add_center_force(center_coords=center, atomindices=center_force_atoms, 
                                           forceconstant=centerforce_constant)
 
 
