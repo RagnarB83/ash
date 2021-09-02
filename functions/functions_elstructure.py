@@ -699,7 +699,8 @@ end"""
         mol2aiminput=[' ',  "molecule"+'.molden.input', str(molecule_spinmult), ' ', ' ', ' ']
     else:
         #Charged system, will ask for charge
-        mol2aiminput=[' ',  "molecule"+'.molden.input', 'N', str(molecule_charge), str(molecule_spinmult), ' ', ' ', ' ']        
+        #str(molecule_charge)
+        mol2aiminput=[' ',  "molecule"+'.molden.input', 'N', '2', ' ', str(molecule_spinmult), ' ', ' ', ' ']        
         
     m2aimfile = open("mol2aim.inp", "w")
     for mline in mol2aiminput:
@@ -707,6 +708,7 @@ end"""
     m2aimfile.close()
 
     #Run molden2aim
+    print("Running Molden2Aim for molecule")
     m2aimfile = open('mol2aim.inp')
     p = sp.Popen(molden2aim, stdin=m2aimfile, stderr=sp.STDOUT)
     p.wait()
