@@ -363,8 +363,15 @@ class Fragment:
             self.calc_connectivity(scale=scale, tol=tol)
     def set_energy(self,energy):
         self.energy=float(energy)
+
+    #Get coo
+    def get_coordinate_center(self):
+        center_x=np.mean(self.coords[:,0])
+        center_y=np.mean(self.coords[:,1])
+        center_z=np.mean(self.coords[:,2])
+        return [center_x,center_y,center_z]
     # Get coordinates for specific atoms (from list of atom indices)
-    #NOTE: This also returns elements, bit silly 
+    #NOTE: This also returns elements, bit silly
     def get_coords_for_atoms(self, atoms):
         #Now np compatible
         #subcoords=[self.coords[i] for i in atoms]
@@ -873,9 +880,8 @@ def distance(A,B):
     #return np.sum((A - B) ** 2)**0.5 #very slow
 
 
-
+#TODO: clean up
 def get_centroid(coords):
-    print("coords", coords)
     sum_x=0; sum_y=0; sum_z=0
     for c in coords:
         sum_x+=c[0]; sum_y+=c[1]; sum_z+=c[2]

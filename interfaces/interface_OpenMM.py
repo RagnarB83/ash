@@ -577,6 +577,23 @@ class OpenMMTheory:
         self.simulation.context.setPositions(pos)
         print("Coordinates set")
 
+    #This is custom externa force that restrains group of atoms to center of system
+    def add_center_force(self, center_coords=None, atomindices=None, forceconstant=5.0):
+        centerforce = self.openmm.CustomExternalForce("k*(abs(x-x0)+abs(y-y0)+abs(z-z0))")
+        centerforce.addGlobalParameter("k", forceconstant*unit.kilocalorie_per_mole/unit.angstrom/unit.mole)
+        centerforce.addPerParticleParameter('x0')
+        centerforce.addPerParticleParameter('y0')
+        centerforce.addPerParticleParameter('z0')
+        # Coordinates of system center
+        center_x= center_coords[0]/10;center_y= center_coords[1]/10;center_z= center_coords[2]/10
+        for i in atomindices:
+            #centerforce.addParticle(i, np.array([0.0, 0.0, 0.0]))
+            centerforce.addParticle(i, self.Vec3(center_x, center_y, center_z))
+        self.system.addForce(centerforce)
+        self.create_simulation()
+        print("Added center force")
+        return centerforce
+
     def add_custom_external_force(self):
         #customforce=None
         #inspired by https://github.com/CCQC/janus/blob/ba70224cd7872541d279caf0487387104c8253e6/janus/mm_wrapper/openmm_wrapper.py
@@ -1410,7 +1427,7 @@ def clean_up_constraints_list(fragment=None, constraints=None):
 #Also should we add: https://github.com/mdtraj/mdtraj ?
 def OpenMM_MD(fragment=None, theory=None, timestep=0.001, simulation_steps=None, simulation_time=None, traj_frequency=1000, temperature=300, integrator=None,
     barostat=None, trajectory_file_option='PDB', coupling_frequency=None, anderson_thermostat=False, enforcePeriodicBox=True, frozen_atoms=None, constraints=None, restraints=None,
-    parmed_state_datareporter=False, dummy_MM=False, plumed_object=None):
+    parmed_state_datareporter=False, dummy_MM=False, plumed_object=None, add_center_force=False, center_force_atoms=None, centerforce_constant=1.0):
     module_init_time = time.time()
 
     print_line_with_mainheader("OpenMM MOLECULAR DYNAMICS")
@@ -1534,8 +1551,9 @@ def OpenMM_MD(fragment=None, theory=None, timestep=0.001, simulation_steps=None,
     elif trajectory_file_option == 'DCD':
         #NOTE: Safer option seems to be to use PDB-writer from OpenMM instead of ASH. Because ASH requires ASH-openMMobject to have a bunch of lists defined (currently only for CHARMM)
         #write_pdbfile(fragment,outputname="initial_frag", openmmobject=openmmobject)
-        with open('initial_MDfrag_step1.pdb', 'w') as f: openmmobject.openmm.app.pdbfile.PDBFile.writeModel(openmmobject.topology, openmmobject.simulation.context.getState(getPositions=True, enforcePeriodicBox=enforcePeriodicBox).getPositions(), f)
-        print("Wrote PDB")
+        #NOTE: Disabling for now
+        #with open('initial_MDfrag_step1.pdb', 'w') as f: openmmobject.openmm.app.pdbfile.PDBFile.writeModel(openmmobject.topology, openmmobject.simulation.context.getState(getPositions=True, enforcePeriodicBox=enforcePeriodicBox).getPositions(), f)
+        #print("Wrote PDB")
         openmmobject.simulation.reporters.append(openmmobject.openmm.app.DCDReporter('output_traj.dcd', traj_frequency, enforcePeriodicBox=enforcePeriodicBox))
     elif trajectory_file_option =='NetCDFReporter':
         print("NetCDFReporter traj format selected. This requires mdtraj. Importing.")
@@ -1587,6 +1605,7 @@ def OpenMM_MD(fragment=None, theory=None, timestep=0.001, simulation_steps=None,
 
         centercoordinates=False
         #CENTER COORDINATES HERE on SOLUTE HERE ??
+        #TODO: Deprecated I think
         if centercoordinates == True:
             #Solute atoms assumed to be QM-region
             fragment.write_xyzfile(xyzfilename="fragment-before-centering.xyz")
@@ -1598,6 +1617,35 @@ def OpenMM_MD(fragment=None, theory=None, timestep=0.001, simulation_steps=None,
 
         #Setting coordinates of OpenMM object from current fragment.coords
         openmmobject.set_positions(fragment.coords)
+
+        #Now adding center force acting on solute
+        if add_center_force==True:
+            print("add_center_force is True")
+            print("Forceconstant is: {} kcal/mol/Ang^2".format(centerforce_constant))
+            if center_force_atoms == None:
+                print("center_force_atoms unset. Using QM/MM atoms :", QM_MM_object.qmatoms)
+                center_force_atoms=QM_MM_object.qmatoms
+            current_coords =  np.array(openmmobject.simulation.context.getState(getPositions=True, 
+                                                                                enforcePeriodicBox=False).getPositions(asNumpy=True))*10
+            print("current_coords:", current_coords)
+            center_x = np.mean(current_coords[:,0])
+            center_y = np.mean(current_coords[:,1])
+            center_z = np.mean(current_coords[:,2])
+
+            center = fragment.get_coordinate_center()
+            print("center:", center)
+            
+            #center_x = np.mean(np.array(state.getPositions()/openmmobject.unit.nanometer)[:,0])*openmmobject.nanometer
+            #center_y = np.mean(np.array(state.getPositions()/openmmobject.unit.nanometer)[:,1])*openmmobject.nanometer
+            #center_z = np.mean(np.array(state.getPositions()/openmmobject.unit.nanometer)[:,2])*openmmobject.nanometer
+            print("center_x", center_x)
+            print("center_y", center_y)
+            print("center_z", center_z)
+            openmmobject.add_center_force(center_coords=[center_x,center_y,center_z], atomindices=center_force_atoms, 
+                                          forceconstant=centerforce_constant)
+
+
+
 
         #Does step by step
         #Delete old traj
@@ -2151,8 +2199,7 @@ def solvate_small_molecule(fragment=None, charge=None, mult=None, watermodel=Non
     #Forcefield
     
     #TODO: generalize to other solvents.
-    #Create local ASH library of XML files ???
-    #This only has water parameters no ions
+    #Create local ASH library of XML files
     if watermodel=="tip3p":
         print("Using watermodel=TIP3P . Using parameters in:",  ashpath+"/databases/forcefields")
         forcefieldpath=ashpath+"/databases/forcefields"
@@ -2162,6 +2209,7 @@ def solvate_small_molecule(fragment=None, charge=None, mult=None, watermodel=Non
     elif watermodel=="charmm_tip3p":
         coulomb14scale=1.0
         lj14scale=1.0
+        #NOTE: Problem combining this and solute XML file. 
         print("Using watermodel: CHARMM-TIP3P (has ion parameters also)")
         #This is the modified CHARMM-TIP3P (LJ parameters on H at least, maybe bonded parameters defined also)
         #Advantage: also contains ion parameters
