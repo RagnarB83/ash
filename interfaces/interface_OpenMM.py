@@ -579,6 +579,10 @@ class OpenMMTheory:
 
     #This is custom externa force that restrains group of atoms to center of system
     def add_center_force(self, center_coords=None, atomindices=None, forceconstant=1.0):
+        print("Inside add_center_force")
+        print("center_coords:", center_coords)
+        print("atomindices:", atomindices)
+        print("forceconstant:", forceconstant)
         centerforce = self.openmm.CustomExternalForce("k*(abs(x-x0)+abs(y-y0)+abs(z-z0))")
         centerforce.addGlobalParameter("k", forceconstant*4.184*self.unit.kilojoule/self.unit.angstrom/self.unit.mole)
         centerforce.addPerParticleParameter('x0')
@@ -1615,8 +1619,6 @@ def OpenMM_MD(fragment=None, theory=None, timestep=0.001, simulation_steps=None,
             fragment.coords = change_origin_to_centroid(fragment.coords, subsetcoords=solutecoords)
             fragment.write_xyzfile(xyzfilename="fragment-after-centering.xyz")
 
-        #Setting coordinates of OpenMM object from current fragment.coords
-        openmmobject.set_positions(fragment.coords)
 
         #Now adding center force acting on solute
         if add_center_force==True:
@@ -1633,7 +1635,8 @@ def OpenMM_MD(fragment=None, theory=None, timestep=0.001, simulation_steps=None,
                                           forceconstant=centerforce_constant)
 
 
-
+        #Setting coordinates of OpenMM object from current fragment.coords
+        openmmobject.set_positions(fragment.coords)
 
         #Does step by step
         #Delete old traj
