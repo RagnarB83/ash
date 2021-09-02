@@ -649,9 +649,6 @@ end"""
         #Write job control file for Chargemol
         wfxfile=el+'.molden.wfx'
         jobcontfilewrite=[
-        '<net charge>',
-        ''.format(str(float(molecule_charge))),
-        '</net charge>',
         '<atomic densities directory complete path>',
         chargemoldir+'/atomic_densities/',
         '</atomic densities directory complete path>',
@@ -717,6 +714,9 @@ end"""
     # Write job control file for Chargemol
     wfxfile = "molecule" + '.molden.wfx'
     jobcontfilewrite = [
+        '<net charge>',
+        '{}'.format(str(float(molecule_charge))),
+        '</net charge>',
         '<atomic densities directory complete path>',
         chargemoldir + '/atomic_densities/',
         '</atomic densities directory complete path>',
