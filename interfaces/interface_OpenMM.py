@@ -10,7 +10,7 @@ from functions.functions_elstructure import DDEC_calc, DDEC_to_LJparameters
 from modules.module_coords import Fragment, write_pdbfile,distance_between_atoms, list_of_masses, write_xyzfile, change_origin_to_centroid
 from modules.module_MM import UFF_modH_dict,MMforcefield_read
 from interfaces.interface_xtb import xTBTheory, grabatomcharges_xTB
-from interfaces.interface_ORCA import grabatomcharges_ORCA
+from interfaces.interface_ORCA import ORCATheory, grabatomcharges_ORCA
 from modules.module_singlepoint import Singlepoint
 class OpenMMTheory:
     def __init__(self, printlevel=2, platform='CPU', numcores=None, Modeller=False, forcefield=None, topology=None,
