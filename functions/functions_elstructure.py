@@ -451,7 +451,7 @@ def DDEC_calc(elems=None, theory=None, gbwfile=None, numcores=1, DDECmodel='DDEC
               molecule_spinmult=None, chargemolbinarydir=None):
     #Creating calcdir. Should not exist previously
     try:
-        os.remove(calcdir)
+        shutil.rmtree(calcdir)
     except:
         pass
     os.mkdir(calcdir)
