@@ -460,6 +460,10 @@ def DDEC_calc(elems=None, theory=None, gbwfile=None, numcores=1, DDECmodel='DDEC
     molden2aim=ashpath+"/external/Molden2AIM/src/"+"molden2aim.exe"
     if os.path.isfile(molden2aim) is False:
         print("Did not find {}. Did you compile it ? ".format(molden2aim))
+        print("Go into dir:", ashpath+"/external/Molden2AIM/src")
+        print("Compile using gfortran or ifort:")
+        print("gfortran -O3 edflib.f90 edflib-pbe0.f90 molden2aim.f90 -o molden2aim.exe")
+        print("ifort -O3 edflib.f90 edflib-pbe0.f90 molden2aim.f90 -o molden2aim.exe")
         exit()
     else:
         print("Found molden2aim.exe: ", molden2aim)
