@@ -3,8 +3,14 @@
 using Pkg
 
 
+
+
 #Julia-Python interface: https://github.com/JuliaPy/PyCall.jl
 Pkg.add("PyCall")
+
+#Rebuilding just in case (sometimes needed)
+Pkg.build("PyCall")
+
 # Hungarian assignment. https://github.com/Gnimuc/Hungarian.jl
 Pkg.add("Hungarian")
 #Distances package. https://github.com/JuliaStats/Distances.jl

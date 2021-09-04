@@ -32,20 +32,21 @@ class OpenMMTheory:
         module_init_time = time.time()
         # OPEN MM load
         try:
-            import simtk.openmm.app
-            import simtk.unit
-            print("Imported OpenMM library version:", simtk.openmm.__version__)
+            import openmm
+            import openmm.app
+            import openmm.unit
+            print("Imported OpenMM library version:", openmm.__version__)
         except ImportError:
             raise ImportError(
                 "OpenMM requires installing the OpenMM package. Try: conda install -c conda-forge openmm  \
                 Also see http://docs.openmm.org/latest/userguide/application.html")
 
         #OpenMM variables
-        self.openmm=simtk.openmm
-        self.simulationclass=simtk.openmm.app.simulation.Simulation
+        self.openmm=openmm
+        self.simulationclass=openmm.app.simulation.Simulation
 
-        self.unit=simtk.unit
-        self.Vec3=simtk.openmm.Vec3
+        self.unit=openmm.unit
+        self.Vec3=openmm.Vec3
 
         print(BC.WARNING, BC.BOLD, "------------Defining OpenMM object-------------", BC.END)
         #Printlevel
@@ -172,8 +173,8 @@ class OpenMMTheory:
 
             else:
                 # Load CHARMM PSF files via native routine.
-                self.psf = simtk.openmm.app.CharmmPsfFile(psffile)                
-                self.params = simtk.openmm.app.CharmmParameterSet(charmmtopfile, charmmprmfile)
+                self.psf = openmm.app.CharmmPsfFile(psffile)                
+                self.params = openmm.app.CharmmParameterSet(charmmtopfile, charmmprmfile)
                 #Grab resnames from psf-object
                 #Note: OpenMM uses 0-indexing
                 self.resnames=[self.psf.atom_list[i].residue.resname for i in range(0,len(self.psf.atom_list))]
@@ -213,8 +214,8 @@ class OpenMMTheory:
                 print("Using built-in OpenMM routines to read GROMACS topology")
                 print("Warning: may fail if virtual sites present (e.g. TIP4P residues)")
                 print("Use parmed=True  to avoid")
-                gro = simtk.openmm.app.GromacsGroFile(grofile)
-                self.grotop = simtk.openmm.app.GromacsTopFile(gromacstopfile, periodicBoxVectors=gro.getPeriodicBoxVectors(),
+                gro = openmm.app.GromacsGroFile(grofile)
+                self.grotop = openmm.app.GromacsTopFile(gromacstopfile, periodicBoxVectors=gro.getPeriodicBoxVectors(),
                                     includeDir=gromacstopdir)
 
                 self.topology = self.grotop.topology
@@ -236,7 +237,7 @@ class OpenMMTheory:
             else:
                 print("Using built-in OpenMM routines to read Amber files.")
                 #Note: Only new-style Amber7 prmtop files work
-                self.prmtop = simtk.openmm.app.AmberPrmtopFile(amberprmtopfile)
+                self.prmtop = openmm.app.AmberPrmtopFile(amberprmtopfile)
             self.topology = self.prmtop.topology
             self.forcefield= self.prmtop
 
@@ -288,23 +289,23 @@ class OpenMMTheory:
 
             #Creating PDB-file, only for topology (not coordinates)
             write_pdbfile(cluster_fragment,outputname="cluster", resnames=residue_types_full, atomnames=atomnames_full, residlabels=residlabels)
-            pdb = simtk.openmm.app.PDBFile("cluster.pdb")
+            pdb = openmm.app.PDBFile("cluster.pdb")
             self.topology = pdb.topology
 
 
              
-            self.forcefield = simtk.openmm.app.ForceField(xmlfile)
+            self.forcefield = openmm.app.ForceField(xmlfile)
 
         else:
             print("Reading OpenMM XML forcefield files and PDB file")
             print("xmlfiles:", xmlfiles)
             #This would be regular OpenMM Forcefield definition requiring XML file
             #Topology from PDBfile annoyingly enough
-            pdb = simtk.openmm.app.PDBFile(pdbfile)
+            pdb = openmm.app.PDBFile(pdbfile)
             self.topology = pdb.topology
             #Todo: support multiple xml file here
             #forcefield = simtk.openmm.app.ForceField('amber14-all.xml', 'amber14/tip3pfb.xml')
-            self.forcefield = simtk.openmm.app.ForceField(*xmlfiles)
+            self.forcefield = openmm.app.ForceField(*xmlfiles)
 
             #TODO: Define resnames, resids, segmentnames, atomtypes, atomnames??
 
@@ -363,25 +364,25 @@ class OpenMMTheory:
                 #print("box in self.forcefield", self.forcefield.get_box())
 
                 #exit()
-                self.system = self.forcefield.createSystem(self.params, nonbondedMethod=simtk.openmm.app.PME, constraints=self.autoconstraints, hydrogenMass=self.hydrogenmass, rigidWater=self.rigidwater,
+                self.system = self.forcefield.createSystem(self.params, nonbondedMethod=openmm.app.PME, constraints=self.autoconstraints, hydrogenMass=self.hydrogenmass, rigidWater=self.rigidwater,
                                             nonbondedCutoff=periodic_nonbonded_cutoff * self.unit.angstroms, switchDistance=switching_function_distance*self.unit.angstroms)
             elif GROMACSfiles is True:
                 #NOTE: Gromacs has read PBC info from Gro file already
                 print("Ewald Error tolerance:", self.ewalderrortolerance)
                 #Note: Turned off switchDistance. Not available for GROMACS?
                 #
-                self.system = self.forcefield.createSystem(nonbondedMethod=simtk.openmm.app.PME, constraints=self.autoconstraints, hydrogenMass=self.hydrogenmass, rigidWater=self.rigidwater,
+                self.system = self.forcefield.createSystem(nonbondedMethod=openmm.app.PME, constraints=self.autoconstraints, hydrogenMass=self.hydrogenmass, rigidWater=self.rigidwater,
                                             nonbondedCutoff=periodic_nonbonded_cutoff * self.unit.angstroms, ewaldErrorTolerance=self.ewalderrortolerance)
             elif Amberfiles is True:
                 #NOTE: Amber-interface has read PBC info from prmtop file already
-                self.system = self.forcefield.createSystem(nonbondedMethod=simtk.openmm.app.PME, constraints=self.autoconstraints, hydrogenMass=self.hydrogenmass, rigidWater=self.rigidwater,
+                self.system = self.forcefield.createSystem(nonbondedMethod=openmm.app.PME, constraints=self.autoconstraints, hydrogenMass=self.hydrogenmass, rigidWater=self.rigidwater,
                                             nonbondedCutoff=periodic_nonbonded_cutoff * self.unit.angstroms)
                 
                 #print("self.system num con", self.system.getNumConstraints())
             else:
                 print("Setting up periodic system here.")
                 #Modeller and manual xmlfiles
-                self.system = self.forcefield.createSystem(self.topology, nonbondedMethod=simtk.openmm.app.PME, constraints=self.autoconstraints, 
+                self.system = self.forcefield.createSystem(self.topology, nonbondedMethod=openmm.app.PME, constraints=self.autoconstraints, 
                                                            hydrogenMass=self.hydrogenmass, rigidWater=self.rigidwater,
                                                             nonbondedCutoff=periodic_nonbonded_cutoff * self.unit.angstroms)
                 #switchDistance=switching_function_distance*self.unit.angstroms
@@ -397,13 +398,13 @@ class OpenMMTheory:
 
             #PRINTING PROPERTIES OF NONBONDED FORCE BELOW
             for i,force in enumerate(self.system.getForces()):
-                if isinstance(force, simtk.openmm.CustomNonbondedForce):
+                if isinstance(force, openmm.CustomNonbondedForce):
                     #NOTE: THIS IS CURRENTLY NOT USED
                     pass
                     #print('CustomNonbondedForce: %s' % force.getUseSwitchingFunction())
                     #print('LRC? %s' % force.getUseLongRangeCorrection())
                     #force.setUseLongRangeCorrection(False)
-                elif isinstance(force, simtk.openmm.NonbondedForce):
+                elif isinstance(force, openmm.NonbondedForce):
                     #Turn Dispersion correction on/off depending on user
                     #NOTE: Default: False   To be revisited
 
@@ -446,17 +447,17 @@ class OpenMMTheory:
             print("System is non-periodic")
 
             if CHARMMfiles is True:
-                self.system = self.forcefield.createSystem(self.params, nonbondedMethod=simtk.openmm.app.NoCutoff,
-                                            nonbondedCutoff=1000 * simtk.openmm.unit.angstroms, hydrogenMass=self.hydrogenmass)
+                self.system = self.forcefield.createSystem(self.params, nonbondedMethod=openmm.app.NoCutoff,
+                                            nonbondedCutoff=1000 * openmm.unit.angstroms, hydrogenMass=self.hydrogenmass)
             else:
-                self.system = self.forcefield.createSystem(self.topology,nonbondedMethod=simtk.openmm.app.NoCutoff, constraints=self.autoconstraints, rigidWater=self.rigidwater,
-                                            nonbondedCutoff=1000 * simtk.openmm.unit.angstroms, hydrogenMass=self.hydrogenmass)
+                self.system = self.forcefield.createSystem(self.topology,nonbondedMethod=openmm.app.NoCutoff, constraints=self.autoconstraints, rigidWater=self.rigidwater,
+                                            nonbondedCutoff=1000 * openmm.unit.angstroms, hydrogenMass=self.hydrogenmass)
 
             print("OpenMM system created")
             print("OpenMM Forces defined:", self.system.getForces())
             print("")
             for i,force in enumerate(self.system.getForces()):
-                if isinstance(force, simtk.openmm.NonbondedForce):
+                if isinstance(force, openmm.NonbondedForce):
                     self.getatomcharges(force)
                     self.nonbonded_force=force
 
@@ -548,7 +549,7 @@ class OpenMMTheory:
     
         #Platform
         print("Hardware platform:", self.platform_choice)
-        self.platform = simtk.openmm.Platform.getPlatformByName(self.platform_choice)
+        self.platform = openmm.Platform.getPlatformByName(self.platform_choice)
 
 
         #Create simulation
@@ -663,10 +664,10 @@ class OpenMMTheory:
 
         #Modify particle masses in system object. For freezing atoms
         for i in frozen_atoms:
-            self.system.setParticleMass(i, 0 * self.unit.dalton)
+            self.system.setParticleMass(i, 0 * self.unit.daltons)
     def unfreeze_atoms(self):
         for atom,mass in zip(self.allatoms,self.system_masses):
-            self.system.setParticleMass(atom, mass * self.unit.dalton)
+            self.system.setParticleMass(atom, mass)
     #Currently unused
     def set_active_and_frozen_regions(self, active_atoms=None, frozen_atoms=None):
         #FROZEN AND ACTIVE ATOMS
@@ -1328,12 +1329,12 @@ def create_cnb(original_nbforce):
     energy_expression += "sigma = 0.5*(sigma1+sigma2);"
     energy_expression += "ONE_4PI_EPS0 = {:f};".format(ONE_4PI_EPS0)  # already in OpenMM units
     energy_expression += "chargeprod = charge1*charge2;"
-    custom_nonbonded_force = simtk.openmm.CustomNonbondedForce(energy_expression)
+    custom_nonbonded_force = openmm.CustomNonbondedForce(energy_expression)
     custom_nonbonded_force.addPerParticleParameter('charge')
     custom_nonbonded_force.addPerParticleParameter('sigma')
     custom_nonbonded_force.addPerParticleParameter('epsilon')
     # Configure force
-    custom_nonbonded_force.setNonbondedMethod(simtk.openmm.CustomNonbondedForce.NoCutoff)
+    custom_nonbonded_force.setNonbondedMethod(openmm.CustomNonbondedForce.NoCutoff)
     #custom_nonbonded_force.setCutoffDistance(9999999999)
     custom_nonbonded_force.setUseLongRangeCorrection(False)
     #custom_nonbonded_force.setUseSwitchingFunction(True)
@@ -1876,9 +1877,9 @@ def OpenMM_Modeller(pdbfile=None, forcefield=None, xmlfile=None, waterxmlfile=No
     module_init_time = time.time()
     print_line_with_mainheader("OpenMM Modeller")
     try:
-        import simtk.openmm as openmm
-        import simtk.openmm.app as openmm_app
-        import simtk.unit as openmm_unit
+        import openmm as openmm
+        import openmm.app as openmm_app
+        import openmm.unit as openmm_unit
         print("Imported OpenMM library version:", openmm.__version__)
 
     except ImportError:
@@ -2161,10 +2162,10 @@ def solvate_small_molecule(fragment=None, charge=None, mult=None, watermodel=Non
     #, ionicstrength=0.1, iontype='K+'
     print_line_with_mainheader("SmallMolecule Solvator")
     try:
-        import simtk.openmm as openmm
-        import simtk.openmm.app as openmm_app
-        import simtk.unit as openmm_unit
-        from simtk.openmm import XmlSerializer
+        import openmm as openmm
+        import openmm.app as openmm_app
+        import openmm.unit as openmm_unit
+        from openmm import XmlSerializer
         print("Imported OpenMM library version:", openmm.__version__)
 
     except ImportError:
