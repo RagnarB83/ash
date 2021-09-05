@@ -1,5 +1,6 @@
 echo "Searching for python3 in PATH"
 path_to_python3_exe=$(which python3)
+path_to_julia_exe=$(which julia)
 #Check if fou
   if [ $? -eq 1 ]
   then
@@ -10,8 +11,10 @@ path_to_python3_exe=$(which python3)
 
 #Dirname only
 path_to_python3_dir=${path_to_python3_exe%/python3}
+path_to_julia_dir=${path_to_julia_exe%/julia}
 echo ""
 echo "Python3 path: $path_to_python3_dir"
+echo "Julia path: $path_to_julia_dir"
 echo ""
 
 thisdir=$PWD
@@ -40,7 +43,7 @@ echo "#!/bin/bash" > set_environment_ash.sh
 echo "ulimit -s unlimited" >> set_environment_ash.sh
 echo "export ASHPATH=${thisdir}" >> set_environment_ash.sh
 echo "export python3path=${path_to_python3_dir}" >> set_environment_ash.sh
-#echo "export JULIAPATH=${thisdir}/julia-${juliaversion}/bin" >> set_environment_ash.sh
+echo "export JULIAPATH=${path_to_julia_dir}" >> set_environment_ash.sh
 #echo "export JULIA_DEPOT_PATH=${thisdir}/julia-python-bundle" >> set_environment_ash.sh
 #echo "export PYTHONPATH=\$ASHPATH:\$ASHPATH/lib:$ASHPATH/pythonpackages:\$PYTHONPATH" >> set_environment_ash.sh
 echo "export PATH=\$python3path:\$ASHPATH:\$JULIAPATH:\$PATH" >> set_environment_ash.sh

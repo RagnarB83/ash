@@ -21,13 +21,13 @@ conda install -c conda-forge matplotlib
 conda install -c psi4 psi4 
 
 #Required pip packages (make sure which pip points to conda environment)
-pip install julia
+pip3 install julia
 
 #Optional pip packages(MD)
-pip install plumed
-pip install mdtraj #may not be needed anymore
+pip3 install plumed
+pip3 install mdtraj #may not be needed anymore
 
 #Other optional pip packages
-pip install pyscf
-pip install pyframe
+pip3 install pyscf
+pip3 install pyframe
 
