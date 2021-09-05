@@ -45,7 +45,7 @@ echo "export ASHPATH=${thisdir}" >> set_environment_ash.sh
 echo "export python3path=${path_to_python3_dir}" >> set_environment_ash.sh
 echo "export JULIAPATH=${path_to_julia_dir}" >> set_environment_ash.sh
 #echo "export JULIA_DEPOT_PATH=${thisdir}/julia-python-bundle" >> set_environment_ash.sh
-#echo "export PYTHONPATH=\$ASHPATH:\$ASHPATH/lib:$ASHPATH/pythonpackages:\$PYTHONPATH" >> set_environment_ash.sh
+echo "export PYTHONPATH=\$ASHPATH:\$ASHPATH/lib:\$PYTHONPATH" >> set_environment_ash.sh
 echo "export PATH=\$python3path:\$ASHPATH:\$JULIAPATH:\$PATH" >> set_environment_ash.sh
 echo "export LD_LIBRARY_PATH=\$ASHPATH/lib:\$LD_LIBRARY_PATH" >> set_environment_ash.sh
 
