@@ -595,7 +595,12 @@ class Fragment:
                     elems.append(line.split()[1])
                     coords.append([float(line.split()[2]), float(line.split()[3]), float(line.split()[4])])
                     atomcharges.append(float(line.split()[5]))
-                    fragment_type_labels.append(line.split()[6])
+                    #Reading and converting to integer.
+                    if line.split()[6] == 'None':
+                        ftypelabel='None'
+                    else:
+                        ftypelabel=int(line.split()[6])
+                    fragment_type_labels.append(ftypelabel)
                     atomtypes.append(line.split()[7])
 
                 if '--------------------------' in line:

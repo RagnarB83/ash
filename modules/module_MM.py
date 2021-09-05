@@ -408,10 +408,8 @@ def MMforcefield_read(file):
                 #Now reading residue type (fragmenttypes)
                 if line.startswith("resid"):
                     if 'atomtypes' in line:
-                        #adding resid
                         residname=line.split()[0].replace("_atomtypes","")
                         MM_forcefield["residues"].append(residname)
-                        #residnames
                         #adding atomtypes for residue
                         lsplit=line.split()
                         MM_forcefield[residname+'_atomtypes']=lsplit[1:]
