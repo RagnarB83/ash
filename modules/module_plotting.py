@@ -74,12 +74,13 @@ def reactionprofile_plot(surfacedictionary, finalunit='',label='Label', x_axisla
     print("Relative energies({}): {}".format(finalunit,finalvalues))
     
     plt.scatter(coords, finalvalues, color=color, marker = 'o',  s=pointsize, linewidth=scatter_linewidth )
-    plt.plot(coords, finalvalues, linestyle='-', color=color, linewidth=line_linewidth)
+    plt.plot(coords, finalvalues, linestyle='-', color=color, linewidth=line_linewidth, label=label)
 
     plt.title(label)
     plt.xlabel(x_axislabel)
     plt.ylabel('{} ({})'.format(y_axislabel,finalunit))
     plt.savefig('Plot{}.{}'.format(label,imageformat), format=imageformat, dpi=dpi)
+    plt.legend(shadow=True, fontsize='small')
     print("Created file: Plot{}.{}".format(label,imageformat))
 
 

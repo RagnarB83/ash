@@ -226,20 +226,29 @@ def geomeTRICOptimizer(theory=None,fragment=None, coordsystem='hdlc', frozenatom
             print("Convergence criteria:", conv_criteria)
             blankline()
             #Updating coords in object
-            #Need to combine with rest of full-syme coords
+            #Need to combine with rest of full-system coords
             self.M.xyzs[0] = coords.reshape(-1, 3) * constants.bohr2ang
             currcoords=self.M.xyzs[0]
             #Special act-region (for QM/MM) since GeomeTRIC does not handle huge system and constraints
             if self.ActiveRegion==True:
                 #Defining full_coords as original coords temporarily
-                full_coords = np.array(fragment.coords)
-                #Replacing act-region coordinates with coords from currcoords
-                for i, c in enumerate(full_coords):
-                    if i in self.actatoms:
-                        #Silly. Pop-ing first coord from currcoords until done
-                        curr_c, currcoords = currcoords[0], currcoords[1:]
-                        full_coords[i] = curr_c
-                self.full_current_coords=full_coords
+                #full_coords = np.array(fragment.coords)
+                full_coords = fragment.coords
+                
+                #Replacing act-region coordinates in full_coords with coords from currcoords
+                for act_i,curr_i in zip(self.actatoms,currcoords):
+                    full_coords[act_i] = curr_i
+
+                #for i, c in enumerate(full_coords):
+                #    if i in self.actatoms:
+                #        #Silly. Pop-ing first coord from currcoords until done
+                #        curr_c, currcoords = currcoords[0], currcoords[1:]
+                #        full_coords[i] = curr_c
+
+                
+                
+                self.full_current_coords = full_coords
+                
                 #Write out fragment with updated coordinates for the purpose of doing restart
                 fragment.replace_coords(fragment.elems, self.full_current_coords, conn=False)
                 fragment.print_system(filename='Fragment-currentgeo.ygg')
@@ -277,6 +286,7 @@ def geomeTRICOptimizer(theory=None,fragment=None, coordsystem='hdlc', frozenatom
                 print("---------------------------------------------------")
                 #Disabled: print_coords_all(currcoords, fragment.elems)
                 print_coords_for_atoms(currcoords, fragment.elems, self.print_atoms_list)
+                print("")
                 print("Note: printed only print_atoms_list (this not necessary all atoms) ")
                 
                 E,Grad=self.theory.run(current_coords=currcoords, elems=self.M.elem, Grad=True)

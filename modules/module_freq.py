@@ -1326,3 +1326,57 @@ def approximate_full_Hessian_from_smaller(fragment_small,fragment_large,hessian_
             if i not in capping_atom_hessian_indices or j not in capping_atom_hessian_indices:
                 fragment_large.hessian[i,j]=hessian_small[i,j]
     return fragment_large.hessian
+
+
+#Change isotopes of Hessian. Read-in hessian array or hessfile
+#TODO: generalize. Input isotope-pair: 'H': 1.0, 'D' : '2.0' or something
+def isotope_change_Hessian(hessfile=None, hessian=None, elems=None, masses=None,
+                           isotope_change="deuterium"):
+    if hessfile==None and hessian==None or hessfile!=None and hessian!=None:
+        print("Please provide either hessfile (ORCA-style) or hessian keyword")
+        return
+    if hessfile != None:
+        hessfile =sys.argv[1]
+        print("Reading hessfile", hessfile)
+        hessian, elems, coords, masses = read_ORCA_Hessian(hessfile)
+    else:
+        print("Hessian provided")
+        if elems == None or masses == None:
+            print("Please also provide elems and masses lists")
+    print("elems:", elems)
+    print("masses:", masses)
+
+    #Modify masses
+    print("isotope_change:", isotope_change)
+    if isotope_change == deuterium:
+        modmass=2.01410177811
+        masses_mod = [m if el !="H" else modmass for m,el in zip(masses,elems)]
+    else:
+        print("unknown isotope_change")
+        exit()
+    print("masses_mod:", masses_mod)
+
+    #Regular mass-weighted Hessian
+    vfreqs1,nmodes1,numatoms1,elems1,evectors1,atomlist1,masses1 = diagonalizeHessian(hessian, masses, elems)
+
+    #Mass- substituted
+    vfreqs2,nmodes2,numatoms2,elems2,evectors2,atomlist2,masses2 = diagonalizeHessian(hessian, masses_mod, elems)
+
+    print("masses:", masses)
+    print("masses_mod:", masses)
+    ###############
+    print("vfreqs1:", vfreqs1)
+    print("vfreqs2:", vfreqs2)
+    vfreqs1_x = [float(i) for i in vfreqs1]
+    zpe_freq_list1 = [0.5*i for i in vfreqs1_x]
+    ZPE_1= sum(zpe_freq_list1)/349.7550112241469 #cm-1 to kcal/mol
+    ############
+    vfreqs2_x = [float(i) for i in vfreqs2]
+    zpe_freq_list2 = [0.5*i for i in vfreqs2_x]
+    ZPE_2= sum(zpe_freq_list2)/349.7550112241469 #cm-1 to kcal/mol
+
+    #Print ZPVE in kcal/mol
+    print("ZPE_1 (kcal/mol):", ZPE_1)
+    print("ZPE_2 (kcal/mol):", ZPE_2)
+    
+    #What else?

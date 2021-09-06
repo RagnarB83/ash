@@ -54,7 +54,7 @@ def print_header():
     #Print input script unless interactive session
     if settings_ash.settings_dict["print_input"] is True:
         if settings_ash.interactive_session == False:
-            inputfilepath=inputfile= os.getcwd()+"/"+sys.argv[0]
+            inputfilepath= os.getcwd()+"/"+sys.argv[0]
             print("Input script:", inputfilepath )
             print(BC.WARNING,"="*100)
             with open(inputfilepath) as x: f = x.readlines()

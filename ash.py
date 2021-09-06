@@ -70,7 +70,7 @@ from interfaces.interface_CFour import CFourTheory
 from interfaces.interface_xtb import xTBTheory
 
 #MM: external and internal
-from interfaces.interface_OpenMM import OpenMMTheory, OpenMM_MD, OpenMM_Opt, OpenMM_Modeller, MDtraj_imagetraj
+from interfaces.interface_OpenMM import OpenMMTheory, OpenMM_MD, OpenMM_Opt, OpenMM_Modeller, MDtraj_imagetraj, solvate_small_molecule, MDAnalysis_transform
 from modules.module_MM import NonBondedTheory,UFFdict,UFF_modH_dict,LJCoulpy,coulombcharge,LennardJones,LJCoulombv2,LJCoulomb,MMforcefield_read
 
 #QM/MM
@@ -80,6 +80,11 @@ from modules.module_polembed import PolEmbedTheory
 #Knarr
 from interfaces.interface_knarr import NEB
 
+#ASE-Dynamics
+from interfaces.interface_ASE import Dynamics_ASE
+
+#Plumed interface
+from interfaces.interface_plumed import plumed_ASH, MTD_analyze
 
 #Solvation
 #NOTE: module_solvation.py or module_solvation2.py To be cleaned up

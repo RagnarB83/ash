@@ -450,6 +450,10 @@ def HOMOnumbercalc(file,charge,mult):
 def DDEC_calc(elems=None, theory=None, gbwfile=None, numcores=1, DDECmodel='DDEC3', calcdir='DDEC', molecule_charge=None, 
               molecule_spinmult=None, chargemolbinarydir=None):
     #Creating calcdir. Should not exist previously
+    try:
+        shutil.rmtree(calcdir)
+    except:
+        pass
     os.mkdir(calcdir)
     os.chdir(calcdir)
     #Copying GBW file to current dir and label as molecule.gbw
@@ -460,6 +464,10 @@ def DDEC_calc(elems=None, theory=None, gbwfile=None, numcores=1, DDECmodel='DDEC
     molden2aim=ashpath+"/external/Molden2AIM/src/"+"molden2aim.exe"
     if os.path.isfile(molden2aim) is False:
         print("Did not find {}. Did you compile it ? ".format(molden2aim))
+        print("Go into dir:", ashpath+"/external/Molden2AIM/src")
+        print("Compile using gfortran or ifort:")
+        print("gfortran -O3 edflib.f90 edflib-pbe0.f90 molden2aim.f90 -o molden2aim.exe")
+        print("ifort -O3 edflib.f90 edflib-pbe0.f90 molden2aim.f90 -o molden2aim.exe")
         exit()
     else:
         print("Found molden2aim.exe: ", molden2aim)
@@ -691,7 +699,8 @@ end"""
         mol2aiminput=[' ',  "molecule"+'.molden.input', str(molecule_spinmult), ' ', ' ', ' ']
     else:
         #Charged system, will ask for charge
-        mol2aiminput=[' ',  "molecule"+'.molden.input', 'N', str(molecule_charge), str(molecule_spinmult), ' ', ' ', ' ']        
+        #str(molecule_charge)
+        mol2aiminput=[' ',  "molecule"+'.molden.input', 'N', '2', ' ', str(molecule_spinmult), ' ', ' ', ' ']        
         
     m2aimfile = open("mol2aim.inp", "w")
     for mline in mol2aiminput:
@@ -699,6 +708,7 @@ end"""
     m2aimfile.close()
 
     #Run molden2aim
+    print("Running Molden2Aim for molecule")
     m2aimfile = open('mol2aim.inp')
     p = sp.Popen(molden2aim, stdin=m2aimfile, stderr=sp.STDOUT)
     p.wait()
@@ -706,6 +716,9 @@ end"""
     # Write job control file for Chargemol
     wfxfile = "molecule" + '.molden.wfx'
     jobcontfilewrite = [
+        '<net charge>',
+        '{}'.format(str(float(molecule_charge))),
+        '</net charge>',
         '<atomic densities directory complete path>',
         chargemoldir + '/atomic_densities/',
         '</atomic densities directory complete path>',

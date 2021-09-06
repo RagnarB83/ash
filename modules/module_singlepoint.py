@@ -15,7 +15,7 @@ def Singlepoint(fragment=None, theory=None, Grad=False):
     """Singlepoint function: runs a single-point energy calculation using ASH theory and ASH fragment.
 
     Args:
-        fragment (ASH frgment, optional): An ASH fragment. Defaults to None.
+        fragment (ASH fragment, optional): An ASH fragment. Defaults to None.
         theory (ASH theory, optional): Any valid ASH theory. Defaults to None.
         Grad (bool, optional): Do gradient or not Defaults to False.
 

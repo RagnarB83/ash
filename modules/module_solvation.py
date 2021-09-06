@@ -828,13 +828,14 @@ def LRPolsnapshotcalc(args):
     snap_frag = ash.Fragment(elems=elems, coords=coords)
     # QM and PE regions
     solute_elems = [elems[i] for i in solvsphere.soluteatomsA]
-    solute_coords = [coords[i] for i in solvsphere.soluteatomsA]
-
+    #solute_coords = [coords[i] for i in solvsphere.soluteatomsA]
+    solute_coords = np.take(coords,solvsphere.soluteatomsA,axis=0)
     # Defining QM and PE regions
     #Region 1 calcs. QM, PE and MM
     qmatoms_LR1 = solvsphere.soluteatomsA
     qmatoms_LR1_elems = [snap_frag.elems[i] for i in qmatoms_LR1]
-    qmatoms_LR1_coords = [snap_frag.coords[i] for i in qmatoms_LR1]
+    #qmatoms_LR1_coords = [snap_frag.coords[i] for i in qmatoms_LR1]
+    qmatoms_LR1_coords = np.take(snap_frag.coords,qmatoms_LR1,axis=0)
     #Typically LRPolRegion1=0 i.e. nonpolarizable MM
     PEsolvshell_LR1 = functions_solv.get_solvshell(solvsphere, snap_frag.elems, snap_frag.coords, LRPolRegion1, qmatoms_LR1_elems,
                                   qmatoms_LR1_coords,

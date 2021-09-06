@@ -12,11 +12,10 @@ import settings_ash
 import constants
 import ash
 
-#import functions_molcrys
-
 # ASH Fragment class
 class Fragment:
-    def __init__(self, coordsstring=None, fragfile=None, xyzfile=None, pdbfile=None, grofile=None, amber_inpcrdfile=None, amber_prmtopfile=None, chemshellfile=None, coords=None, elems=None, connectivity=None,
+    def __init__(self, coordsstring=None, fragfile=None, xyzfile=None, pdbfile=None, grofile=None, amber_inpcrdfile=None, amber_prmtopfile=None, 
+                 chemshellfile=None, coords=None, elems=None, connectivity=None,
                  atomcharges=None, atomtypes=None, conncalc=False, scale=None, tol=None, printlevel=2, charge=None,
                  mult=None, label=None, readchargemult=False, use_atomnames_as_elements=False):
         
@@ -35,16 +34,21 @@ class Fragment:
             print("New ASH fragment object")
         self.energy = None
         self.elems=[]
-        self.coords=[]
+        #self.coords=np.empty_like([],shape=(0,3))
+        self.coords=np.zeros((0,3))
         self.connectivity=[]
         self.atomcharges = []
         self.atomtypes = []
+        #Atomnames in a forcefield sense
+        #self.atomnames = []
         self.Centralmainfrag = []
         self.formula = None
         if atomcharges is not None:
             self.atomcharges=atomcharges
         if atomtypes is not None:
             self.atomtypes=atomtypes
+        #if atomnames is not None:
+        #    self.atomnames=atomnames
         #Hessian. Can be added by Numfreq/Anfreq job
         self.hessian=[]
 
@@ -53,9 +57,9 @@ class Fragment:
         self.fragmenttype_labels=[]
         #Here either providing coords, elems as lists. Possibly reading connectivity also
         if coords is not None:
-            #self.add_coords(coords,elems,conn=conncalc)
-            #Adding coords as list of lists. Possible conversion from numpy array below.
-            self.coords=[list(i) for i in coords]
+            #Adding coords as list of lists (or np.array). Conversion to numpy arrary
+            #self.coords=np.array([list(i) for i in coords])
+            self.coords = reformat_list_to_array(coords)
             self.elems=elems
             self.update_attributes()
             #If connectivity passed
@@ -103,6 +107,9 @@ class Fragment:
         if len(self.coords) == 0:
             print("No coordinates in fragment. Something went wrong. Exiting")
             exit()
+        if type(self.coords) != np.ndarray:
+            print("self.coords is not a numpy array. Something is wrong. Exiting.")
+            exit()
         self.nuccharge = nucchargelist(self.elems)
         self.numatoms = len(self.coords)
         self.atomlist = list(range(0, self.numatoms))
@@ -110,11 +117,13 @@ class Fragment:
         self.allatoms = self.atomlist
         self.mass = totmasslist(self.elems)
         self.list_of_masses = list_of_masses(self.elems)
+        self.masses=self.list_of_masses
         #Elemental formula
         self.formula = elemlisttoformula(self.elems)
-        #Pretty formula without 1
-        self.prettyformula = self.formula.replace('1','')
-
+        print("formula:", self.formula)
+        #Pretty formula without 1 TODO
+        self.prettyformula = self.formula
+        #self.prettyformula = self.formula.replace('1','')
         #Update atomtypes, atomcharges and fragmenttype_labels also if needed
         if len(self.atomcharges)==0:
             self.atomcharges=[0.0 for i in range(0,self.numatoms)]
@@ -122,12 +131,15 @@ class Fragment:
             print("Warning. atomcharges list shorter than number of atoms")
             print("Adding 0.0 entries for missing atoms")
             self.atomcharges = self.atomcharges + [0.0 for i in range(0,self.numatoms-len(self.atomcharges))]
+
         if len(self.fragmenttype_labels)==0:
-            self.fragmenttype_labels=[0 for i in range(0,self.numatoms)]
+            self.fragmenttype_labels=["None" for i in range(0,self.numatoms)]
         elif len(self.fragmenttype_labels) < self.numatoms:
             print("Warning. fragmenttype_labels list shorter than number of atoms")
             print("Adding 0 entries for missing atoms")
             self.fragmenttype_labels = self.fragmenttype_labels + [0 for i in range(0,self.numatoms-len(self.fragmenttype_labels))]
+        
+        
         if len(self.atomtypes)==0:
             self.atomtypes=['None' for i in range(0,self.numatoms)]
         elif len(self.atomtypes) < self.numatoms:
@@ -148,10 +160,18 @@ class Fragment:
                 print("Fragment already contains coordinates")
                 print("Adding extra coordinates")
         coordslist=coordsstring.split('\n')
+        tempcoords=[]
         for count, line in enumerate(coordslist):
             if len(line)> 1:
                 self.elems.append(reformat_element(line.split()[0]))
-                self.coords.append([float(line.split()[1]), float(line.split()[2]), float(line.split()[3])])
+                #self.coords.append([float(line.split()[1]), float(line.split()[2]), float(line.split()[3])])
+                #Appending to numpy array
+                clist= [float(line.split()[1]),float(line.split()[2]),float(line.split()[3])]
+                tempcoords.append(clist)
+                #clist_np=reformat_list_to_array(clist)
+                #self.coords = np.append(self.coords, [clist_np],axis=0)
+        #Converting list of lists to numpy array
+        self.coords=reformat_list_to_array(tempcoords)
         self.label=''.join(self.elems)
         self.update_attributes()
         self.calc_connectivity(scale=scale, tol=tol)
@@ -161,28 +181,55 @@ class Fragment:
             print("Replacing coordinates in fragment.")
         
         self.elems=elems
-        # Adding coords as list of lists. Possible conversion from numpy array below.
-        self.coords = [list(i) for i in coords]
+        # Adding coords as list of lists. Conversion to numpy array
+        #np.array([list(i) for i in coords])
+        self.coords = reformat_list_to_array(coords)
         self.update_attributes()
         if conn==True:
             self.calc_connectivity(scale=scale, tol=tol)
     def delete_coords(self):
-        self.coords=[]
+        self.coords=np.zeros((0,3))
         self.elems=[]
         self.connectivity=[]
-    #Get list of atom-indices for specific elements
+    #Get list of atom-indices for specific elements or groups
+    #Atom indices except those provided
+    def get_atomindices_except(self,excludelist):
+        return listdiff(self.allatoms,excludelist)
     def get_nonH_atomindices(self):
         return [index for index,el in enumerate(self.elems) if el!='H']
     def get_atomindices_for_element(self,element):
         return [index for index,el in enumerate(self.elems) if el==element]
     def get_atomindices_except_element(self,element):
         return [index for index,el in enumerate(self.elems) if el!=element]
+    #Get list of lists of bonds. Used for X-H constraints for example
+    def get_XH_indices(self, conncode='julia'):
+        timestamp=time.time()
+        scale = settings_ash.settings_dict["scale"]
+        tol = settings_ash.settings_dict["tol"]
+        Hatoms=self.get_atomindices_for_element('H')
+        #Hatoms=[1,2,3,5]
+        print("Hatoms:", Hatoms)
+
+        #way too slow
+        if conncode=='py':
+            final_list=[]
+            for Hatom in Hatoms:
+                connatoms=get_connected_atoms_np(self.coords, self.elems, scale,tol, Hatom)
+                final_list.append(connatoms)
+            return final_list
+        else:
+            final_list=ash.Main.Juliafunctions.get_connected_atoms_forlist_julia(self.coords, self.elems, scale, tol, eldict_covrad, Hatoms)
+        print("final_list:", final_list)
+        print_time_rel(timestamp, modulename='get_XH_indices', moduleindex=4)
+        return final_list
+        #Call connectivity routines
+        #for el in self.elems:
+        #    if -
+    def get_water_XH_indices(self):
+        print("not ready")
+        exit()
     def delete_atom(self,atomindex):
-        if type(self.coords) == np.ndarray:
-            self.coords=np.delete(self.coords,atomindex,axis=0)
-        elif type(self.coords) == list:
-            self.coords.pop(atomindex)
-        
+        self.coords=np.delete(self.coords,atomindex,axis=0)        
         #Deleting from lists
         self.elems.pop(atomindex)
         self.atomcharges.pop(atomindex)
@@ -191,8 +238,11 @@ class Fragment:
 
         #Updating other attributes
         self.update_attributes()
-
+    #Appending coordinates. Taking list of lists but appending to np array
     def add_coords(self, elems,coords,conn=True, scale=None, tol=None):
+        
+        #TODO: Check if coords is list or list of lists before proceeding
+        #TODO: if np array, check if dimensions are correect before proceeding
         if self.printlevel >= 2:
             print("Adding coordinates to fragment.")
         if len(self.coords)>0:
@@ -202,7 +252,9 @@ class Fragment:
         print(elems)
         print(type(elems))
         self.elems = self.elems+list(elems)
-        self.coords = self.coords+coords
+        self.coords = np.append(self.coords,coords, axis=0)
+        
+        
         self.update_attributes()
         if conn==True:
             self.calc_connectivity(scale=scale, tol=tol)
@@ -263,79 +315,23 @@ class Fragment:
             self.calc_connectivity(scale=scale, tol=tol)
         else:
             # Read connectivity list
-            print("Not reading connectivity from file")
+            print("Note: Not reading connectivity from file")
     #Read PDB file
     def read_pdbfile(self,filename,conncalc=True, scale=None, tol=None, use_atomnames_as_elements=False):
         if self.printlevel >= 2:
             print("Reading coordinates from PDBfile \"{}\" into fragment".format(filename))
-        residuelist=[]
-        #If elemcolumn found
-        elemcol=[]
-        #Not atomtype but atomname
-        #atom_name=[]
-        #atomindex=[]
-        residname=[]
 
-        #TODO: Check. Are there different PDB formats?
-        #used this: https://cupnet.net/pdb-format/
-        try:
-            with open(filename) as f:
-                for line in f:
-                    if 'ATOM ' in line or 'HETATM' in line:
-                        #atomindex=float(line[6:11].replace(' ',''))
-                        atom_name=line[12:16].replace(' ','')
-                        residname.append(line[17:20].replace(' ',''))
-                        residuelist.append(line[22:26].replace(' ',''))
-                        coords_x=float(line[30:38].replace(' ',''))
-                        coords_y=float(line[38:46].replace(' ',''))
-                        coords_z=float(line[46:54].replace(' ',''))
-                        self.coords.append([coords_x,coords_y,coords_z])
-                        elem=line[76:78].replace(' ','').replace('\n','')
-                        #elem=elem.replace('\n','')
-                        #Option to use atomnamecolumn for element information instead of element-column
-                        if use_atomnames_as_elements == True:
-                            elem_name=dictionaries_lists.atomtypes_dict[atom_name]
-                            elemcol.append(elem_name)
-                        else:
-                            if len(elem) != 0:
-                                if len(elem)==2:
-                                    #Making sure second elem letter is lowercase
-                                    #elemcol.append(elem[0]+elem[1].lower())
-                                    elemcol.append(reformat_element(elem))
-                                else:
-                                    elemcol.append(reformat_element(elem))
-                            else:
-                                print("While reading line:")
-                                print(line)
-                                print("No element found in element-column of PDB-file")
-                                print("Either fix element-column (columns 77-78) or try to use to read element-information from atomname-column:")
-                                print(" Fragment(pdbfile=\"X\", use_atomnames_as_elements=True) ")
-                                exit()
-                        #self.coords.append([float(line.split()[6]), float(line.split()[7]), float(line.split()[8])])
-                        #elemcol.append(line.split()[-1])
-                        #residuelist.append(line.split()[3])
-                        #atom_name.append(line.split()[3])
-                    #if 'HETATM' in line:
-                    #    print("HETATM line in file found. Please rename to ATOM")
-                    #    exit()
-        except FileNotFoundError:
-            print("File {} does not exist!".format(filename))
-            exit()
-        if len(elemcol) != len(self.coords):
-            print("len coords", len(self.coords))
-            print("len elemcol", len(elemcol))            
-            print("did not find same number of elements as coordinates")
-            print("Need to define elements in some other way")
-            exit()
-        else:
-            self.elems=elemcol
+        self.elems, self.coords = read_pdbfile(filename, use_atomnames_as_elements=use_atomnames_as_elements)
+        
         self.update_attributes()
         if conncalc is True:
             self.calc_connectivity(scale=scale, tol=tol)
     #Read XYZ file
+    #TODO: 
     def read_xyzfile(self,filename, scale=None, tol=None, readchargemult=False,conncalc=True):
         if self.printlevel >= 2:
             print("Reading coordinates from XYZfile {} into fragment".format(filename))
+        coords=[]
         with open(filename) as f:
             for count,line in enumerate(f):
                 if count == 0:
@@ -355,20 +351,31 @@ class Fragment:
                         else:
                             el=line.split()[0]
                             self.elems.append(reformat_element(el))
-                        self.coords.append([float(line.split()[1]), float(line.split()[2]), float(line.split()[3])])
+                        #self.coords = np.append(self.coords,[float(line.split()[1]), float(line.split()[2]), float(line.split()[3])])
+                        coords.append([float(line.split()[1]), float(line.split()[2]), float(line.split()[3])])
+        #Convert to numpy
+        self.coords=reformat_list_to_array(coords)
         if self.numatoms != len(self.coords):
             print("Number of atoms in header not equal to number of coordinate-lines. Check XYZ file!")
             exit()
-            
         self.update_attributes()
         if conncalc is True:
             self.calc_connectivity(scale=scale, tol=tol)
     def set_energy(self,energy):
         self.energy=float(energy)
+
+    #Get coo
+    def get_coordinate_center(self):
+        center_x=np.mean(self.coords[:,0])
+        center_y=np.mean(self.coords[:,1])
+        center_z=np.mean(self.coords[:,2])
+        return [center_x,center_y,center_z]
     # Get coordinates for specific atoms (from list of atom indices)
+    #NOTE: This also returns elements, bit silly
     def get_coords_for_atoms(self, atoms):
-        #TODO: Generalize.
-        subcoords=[self.coords[i] for i in atoms]
+        #Now np compatible
+        #subcoords=[self.coords[i] for i in atoms]
+        subcoords=np.take(self.coords,atoms,axis=0)
         subelems=[self.elems[i] for i in atoms]
         return subcoords,subelems
     #Calculate connectivity (list of lists) of coords
@@ -453,6 +460,9 @@ class Fragment:
             conn_number_sum+=len(l)
         if self.numatoms != conn_number_sum:
             print(BC.FAIL,"Connectivity problem", BC.END)
+            print("self.connectivity:", self.connectivity)
+            print("conn_number_sum:", conn_number_sum)
+            print("self numatoms", self.numatoms)
             exit()
         self.connected_atoms_number=conn_number_sum
 
@@ -472,14 +482,24 @@ class Fragment:
     #Adding fragment-type info (used by molcrys, identifies whether atom is mainfrag, counterfrag1 etc.)
     #This one is fast
     def add_fragment_type_info(self,fragmentobjects):
+        print("fragmentobjects:", fragmentobjects)
         # Create list of fragment-type label-list
         combined_flat_clusterfraglist = []
         combined_flat_labels = []
         #Going through objects, getting flat atomlists for each object and combine (combined_flat_clusterfraglist)
         #Also create list of labels (using fragindex) for each atom
+        self.fragmenttypes_numatoms=[]
         for fragindex,frago in enumerate(fragmentobjects):
+            print("fragindex:", fragindex)
+            print("frago:", frago)
+            print(frago.__dict__)
+            print("frago.flat_clusterfraglist:", frago.flat_clusterfraglist)
             combined_flat_clusterfraglist.extend(frago.flat_clusterfraglist)
             combined_flat_labels.extend([fragindex]*len(frago.flat_clusterfraglist))
+            self.fragmenttypes_numatoms.append([frago.Numatoms]) 
+        self.fragmenttypes=len(fragmentobjects)
+
+        
         #Getting indices required to sort atomindices in ascending order
         sortindices = np.argsort(combined_flat_clusterfraglist)
         #labellist contains unsorted list of labels
@@ -488,9 +508,9 @@ class Fragment:
     #Molcrys option:
     def add_centralfraginfo(self,list):
         self.Centralmainfrag = list
-    def write_xyzfile(self,xyzfilename="Fragment-xyzfile.xyz"):
+    def write_xyzfile(self,xyzfilename="Fragment-xyzfile.xyz", writemode='w'):
         #Energy written to XYZ title-line if present. Otherwise: None
-        with open(xyzfilename, 'w') as ofile:
+        with open(xyzfilename, writemode) as ofile:
             ofile.write(str(len(self.elems)) + '\n')
             if self.energy is None:
                 ofile.write("Energy: None" + '\n')
@@ -532,7 +552,8 @@ class Fragment:
             outfile.write(" Index    Atom         x                  y                  z               charge        fragment-type        atom-type\n")
             outfile.write("---------------------------------------------------------------------------------------------------------------------------------\n")
             for at, el, coord, charge, label, atomtype in zip(self.atomlist, self.elems, self.coords, self.atomcharges, self.fragmenttype_labels, self.atomtypes):
-                line="{:>6} {:>6}  {:17.11f}  {:17.11f}  {:17.11f}  {:14.8f} {:12d} {:>21}\n".format(at, el,coord[0], coord[1], coord[2], charge, label, atomtype)
+                label=str(label)
+                line="{:>6} {:>6}  {:17.11f}  {:17.11f}  {:17.11f}  {:14.8f} {:12s} {:>21}\n".format(at, el,coord[0], coord[1], coord[2], charge, label, atomtype)
                 outfile.write(line)
             outfile.write(
                 "===========================================================================================================================================\n")
@@ -574,7 +595,12 @@ class Fragment:
                     elems.append(line.split()[1])
                     coords.append([float(line.split()[2]), float(line.split()[3]), float(line.split()[4])])
                     atomcharges.append(float(line.split()[5]))
-                    fragment_type_labels.append(int(line.split()[6]))
+                    #Reading and converting to integer.
+                    if line.split()[6] == 'None':
+                        ftypelabel='None'
+                    else:
+                        ftypelabel=int(line.split()[6])
+                    fragment_type_labels.append(ftypelabel)
                     atomtypes.append(line.split()[7])
 
                 if '--------------------------' in line:
@@ -603,12 +629,28 @@ class Fragment:
                             connlist=[]
                         connectivity.append(connlist)
         self.elems=elems
-        self.coords=coords
+        #Converting to numpy array
+        self.coords=np.array(coords)
         self.atomcharges=atomcharges
         self.atomtypes=atomtypes
+        self.fragmenttype_labels=fragment_type_labels
         self.update_attributes()
         self.connectivity=connectivity
         self.Centralmainfrag = Centralmainfrag
+
+
+
+def reformat_list_to_array(l):
+    #If np array already
+    if type(l) == np.ndarray:
+        return l
+    #Reformat to np array
+    elif type(l) == list:
+        newl = np.array(l)
+        return newl
+
+    
+
 
 #TODO: Reorganize and move to dictionaries_lists ?
 #Elements and atom numbers
@@ -666,7 +708,8 @@ def print_internal_coordinate_table(fragment,actatoms=None):
             actatoms=[]
         
         if len(actatoms) > 0:
-            chosen_coords=[fragment.coords[i] for i in actatoms]
+            #chosen_coords=[fragment.coords[i] for i in actatoms]
+            chosen_coords=np.take(fragment.coords,actatoms,axis=0)
             chosen_elems=[fragment.elems[i] for i in actatoms]
         else:
             chosen_coords=fragment.coords
@@ -746,9 +789,11 @@ def print_coords_for_atoms(coords,elems,members):
 
 #From lists of coords,elems and atom indices, write XYZ file coords with elem
 #Todo: make part of Fragment class
+
 def write_XYZ_for_atoms(coords,elems,members,name):
     subset_elems=[elems[i] for i in members]
-    subset_coords=[coords[i] for i in members]
+    #subset_coords=[coords[i] for i in members]
+    subset_coords=np.take(coords,members,axis=0)
     with open(name+'.xyz', 'w') as ofile:
         ofile.write(str(len(subset_elems))+'\n')
         ofile.write("title"+'\n')
@@ -840,24 +885,28 @@ def distance(A,B):
     #return np.sum((A - B) ** 2)**0.5 #very slow
 
 
-
-def center_of_mass(coords,masses):
-    print("to be finished")
-    exit()
-
+#TODO: clean up
 def get_centroid(coords):
     sum_x=0; sum_y=0; sum_z=0
     for c in coords:
         sum_x+=c[0]; sum_y+=c[1]; sum_z+=c[2]
     return [sum_x/len(coords),sum_y/len(coords),sum_z/len(coords)]
 
-#Change origin to centroid of coords
-def change_origin_to_centroid(coords):
-    centroid = get_centroid(coords)
-    new_coords=[]
-    for c in coords:
-        new_coords.append(c-centroid)
-    return new_coords
+#Change origin to centroid. Either use centroid of full system (default) or alternatively subset or (something else even)
+def change_origin_to_centroid(fullcoords, subsetcoords="None"):
+    if subsetcoords=="None":
+        centroid = get_centroid(fullcoords)
+    else:
+        centroid = get_centroid(subsetcoords)
+    print("centroid:", centroid)
+    #new_coords=[]
+    #for c in coords:
+    #    new_coords.append(c-centroid)
+    #
+    print("fullcoords")
+    newcoords=fullcoords-centroid
+    print("Newcoords:", newcoords)
+    return newcoords
 
 #get_solvshell function based on single point of origin. Using geometric center of molecule
 def get_solvshell_origin():
@@ -1217,8 +1266,8 @@ def print_coordinates(atoms, V, title=""):
     return
 
 #Write XYZfile provided list of elements and list of list of coords and filename
-def write_xyzfile(elems,coords,name,printlevel=2):
-    with open(name+'.xyz', 'w') as ofile:
+def write_xyzfile(elems,coords,name,printlevel=2, writemode='w'):
+    with open(name+'.xyz', writemode) as ofile:
         ofile.write(str(len(elems))+'\n')
         ofile.write("title"+'\n')
         for el,c in zip(elems,coords):
@@ -1333,6 +1382,76 @@ def conv_atomtypes_elems(atomtype):
             print("You might have to modify the atomtype/element information in coordinate file you're reading in")
             exit()
 
+#READ PDBfile
+def read_pdbfile(filename, use_atomnames_as_elements=False):
+    residuelist=[]
+    #If elemcolumn found
+    elemcol=[]
+    #Not atomtype but atomname
+    #atom_name=[]
+    #atomindex=[]
+    residname=[]
+
+    #TODO: Check. Are there different PDB formats?
+    #used this: https://cupnet.net/pdb-format/
+    coords=[]
+    try:
+        with open(filename) as f:
+            for line in f:
+                if 'ATOM ' in line or 'HETATM' in line:
+                    #atomindex=float(line[6:11].replace(' ',''))
+                    atom_name=line[12:16].replace(' ','')
+                    residname.append(line[17:20].replace(' ',''))
+                    residuelist.append(line[22:26].replace(' ',''))
+                    coords_x=float(line[30:38].replace(' ',''))
+                    coords_y=float(line[38:46].replace(' ',''))
+                    coords_z=float(line[46:54].replace(' ',''))
+                    coords.append([coords_x,coords_y,coords_z])
+                    elem=line[76:78].replace(' ','').replace('\n','')
+                    #elem=elem.replace('\n','')
+                    #Option to use atomnamecolumn for element information instead of element-column
+                    if use_atomnames_as_elements == True:
+                        elem_name=dictionaries_lists.atomtypes_dict[atom_name]
+                        elemcol.append(elem_name)
+                    else:
+                        if len(elem) != 0:
+                            if len(elem)==2:
+                                #Making sure second elem letter is lowercase
+                                #elemcol.append(elem[0]+elem[1].lower())
+                                elemcol.append(reformat_element(elem))
+                            else:
+                                elemcol.append(reformat_element(elem))
+                        else:
+                            print("While reading line:")
+                            print(line)
+                            print("No element found in element-column of PDB-file")
+                            print("Either fix element-column (columns 77-78) or try to use to read element-information from atomname-column:")
+                            print(" Fragment(pdbfile=\"X\", use_atomnames_as_elements=True) ")
+                            exit()
+                    #self.coords.append([float(line.split()[6]), float(line.split()[7]), float(line.split()[8])])
+                    #elemcol.append(line.split()[-1])
+                    #residuelist.append(line.split()[3])
+                    #atom_name.append(line.split()[3])
+                #if 'HETATM' in line:
+                #    print("HETATM line in file found. Please rename to ATOM")
+                #    exit()
+    except FileNotFoundError:
+        print("File {} does not exist!".format(filename))
+        exit()
+    #Create numpy array
+    coords_np = reformat_list_to_array(coords)
+    
+    if len(elemcol) != len(coords):
+        print("len coords", len(coords))
+        print("len elemcol", len(elemcol))            
+        print("did not find same number of elements as coordinates")
+        print("Need to define elements in some other way")
+        exit()
+    else:
+        elems=elemcol
+    return elems, coords_np
+
+
 #Read GROMACS Gro coordinate file and box info
 #Read AMBERCRD file and coords and box info
 #Not part of Fragment class because we don't have element information here
@@ -1444,7 +1563,7 @@ def read_ambercoordinates(prmtopfile=None, inpcrdfile=None):
 #Example, simple: write_pdbfile(frag, outputname="name", openmmobject=objname)
 #Example, minimal: write_pdbfile(frag)
 #TODO: Add option to write new hybrid-36 standard PDB file instead of current hexadecimal nonstandard fix
-def write_pdbfile(fragment,outputname="ASHfragment", openmmobject=None, atomnames=None, resnames=None,residlabels=None,segmentlabels=None):
+def write_pdbfile(fragment,outputname="ASHfragment", openmmobject=None, atomnames=None, resnames=None,residlabels=None,segmentlabels=None, dummyname='DUM'):
     print("Writing PDB-file...")
     #Using ASH fragment
     elems=fragment.elems
@@ -1464,7 +1583,7 @@ def write_pdbfile(fragment,outputname="ASHfragment", openmmobject=None, atomname
         #Elements instead. Means VMD will display atoms properly at least
         atomnames=fragment.elems
     if resnames == None:
-        resnames=fragment.numatoms*['DUM']
+        resnames=fragment.numatoms*[dummyname]
     if residlabels == None:
         residlabels=fragment.numatoms*[1]
     #Note: choosing to make segment ID 3-letter-string (and then space)
@@ -1477,7 +1596,7 @@ def write_pdbfile(fragment,outputname="ASHfragment", openmmobject=None, atomname
     try:
         assert len(atomnames) == len(coords) == len(resnames) == len(residlabels) == len(segmentlabels)
     except AssertionError:
-        print("Problem with lists...")
+        print("ERROR: Problem with lists...")
         print("len: atomnames", len(atomnames))
         print("len: coords", len(coords))
         print("len: resnames", len(resnames))
@@ -1502,10 +1621,11 @@ def write_pdbfile(fragment,outputname="ASHfragment", openmmobject=None, atomname
             #Using only first 3 letters of RESname
             resname=resname[0:3]
 
-
+            #Using last 4 letters of atomnmae
+            atomnamestring=atomname[-4:]
             #Using string format from: cupnet.net/pdb-format/
             line="{:6s}{:5s} {:^4s}{:1s}{:3s} {:1s}{:5d}{:1s}  {:8.3f}{:8.3f}{:8.3f}{:6.2f}{:6.2f}      {:4s}{:2s}".format(
-                'ATOM', atomindexstring, atomname, '', resname, '', resid, '',    c[0], c[1], c[2], 1.0, 0.00, seg[0:3],el, '')
+                'ATOM', atomindexstring, atomnamestring, '', resname, '', resid, '',    c[0], c[1], c[2], 1.0, 0.00, seg[0:3],el, '')
             pfile.write(line+'\n')
     print("Wrote PDB file:", outputname+'.pdb')
 
@@ -1716,12 +1836,12 @@ def coord2xyz(inputfile):
 
 
 #Get partial list by deleting elements not present in provided list of indices.
-def get_partial_list(allatoms,partialatoms,list):
+def get_partial_list(allatoms,partialatoms,l):
     otheratoms=listdiff(allatoms,partialatoms)
     otheratoms.reverse()
     for at in otheratoms:
-        del list[at]
-    return list
+        del l[at]
+    return l
 
 
 #Old function that used scipy to do distances and Hungarian. 
@@ -1987,7 +2107,8 @@ def QMregionfragexpand(fragment=None,initial_atoms=None, radius=None):
         print("Provide fragment, initial_atoms and radius keyword arguments to QMregionfragexpand!")
         exit()
     subsetelems = [fragment.elems[i] for i in initial_atoms]
-    subsetcoords=[fragment.coords[i]for i in initial_atoms ]
+    #subsetcoords=[fragment.coords[i]for i in initial_atoms ]
+    subsetcoords=np.take(fragment.coords,initial_atoms,axis=0)
     if len(fragment.connectivity) == 0:
         print("No connectivity found. Using slow way of finding nearby fragments...")
     atomlist=[]

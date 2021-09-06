@@ -124,6 +124,24 @@ function get_molecule_members_julia(coords, elems, loopnumber, scale, tol, eldic
 	return finalmembs
 end
 
+# Get list of connected atoms
+#NOTE: This function is not optimized!
+function get_connected_atoms_forlist_julia(coords::Array{Float64,2}, elems::Array{String,1}, scale::Float64,tol::Float64,
+    eldict_covrad, atomlist::Array{Int64,1})
+    println("get_connected_atoms_forlist_julia")
+    eldict_covrad_jul=convert(Dict{String,Float64}, eldict_covrad)
+    #newmembers = Matrix[]
+    #newmembers = Int64[]
+    finallist = Array{Int64}[]
+    @inbounds for atomindex in atomlist
+        conn = get_connected_atoms_julia(coords, elems, eldict_covrad_jul, scale, tol, atomindex)
+        #newmembers = [newmembers;[new]]
+        push!(finallist,conn)
+        #newmembers=vcat(newmembers,new)
+    end
+    return finallist
+end
+
 #Here accessing Julia arrays. Switching from 0-based to 1-based indexing here
 function get_connected_atoms_julia(coords::Array{Float64,2}, elems::Array{String,1},
     eldict_covrad_jul::Dict{String,Float64},scale::Float64,tol::Float64, atomindex::Int64)

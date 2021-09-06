@@ -1,6 +1,7 @@
 import os
 import shutil
 import time
+import numpy as np
 
 from functions.functions_general import BC,blankline,print_time_rel
 import modules.module_coords
@@ -60,11 +61,14 @@ class PolEmbedTheory:
             self.connectivity=fragment.connectivity
 
             self.allatoms = list(range(0, len(self.elems)))
-            self.qmcoords=[self.coords[i] for i in self.qmatoms]
+            #self.qmcoords=[self.coords[i] for i in self.qmatoms]
+            self.qmcoords=np.take(self.coords,self.qmatoms,axis=0)
             self.qmelems=[self.elems[i] for i in self.qmatoms]
-            self.pecoords=[self.coords[i] for i in self.peatoms]
+            #self.pecoords=[self.coords[i] for i in self.peatoms]
+            self.pecoords=np.take(self.coords,self.peatoms,axis=0)
             self.peelems=[self.elems[i] for i in self.peatoms]
-            self.mmcoords=[self.coords[i] for i in self.mmatoms]
+            #self.mmcoords=[self.coords[i] for i in self.mmatoms]
+            self.mmcoords=np.take(self.coords,self.mmatoms,axis=0)
             self.mmelems=[self.elems[i] for i in self.mmatoms]
 
             #print("List of all atoms:", self.allatoms)
@@ -275,7 +279,8 @@ class PolEmbedTheory:
 
         #Updating QM coords and MM coords.
         #TODO: Should we use different name for updated QMcoords and MMcoords here??
-        self.qmcoords=[current_coords[i] for i in self.qmatoms]
+        #self.qmcoords=[current_coords[i] for i in self.qmatoms]
+        self.qmcoords=np.take(current_coords,self.qmatoms,axis=0)
 
         if self.qm_theory_name == "Psi4Theory":
             #Calling Psi4 theory, providing current QM and MM coordinates.
