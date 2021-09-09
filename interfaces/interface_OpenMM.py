@@ -95,10 +95,8 @@ class OpenMMTheory:
         #See modify_bonded_forces
         #TODO: Move option to module_QMMM instead
         self.delete_QM1_MM1_bonded=delete_QM1_MM1_bonded
-
-        #System masses (may or may not be defined)
+        #Initialize system_masses. Only used when freezing/unfreezing atoms
         self.system_masses=[]
-
         #Platform (CPU, CUDA, OpenCL) and Parallelization
         self.platform_choice=platform
         #CPU: Control either by provided numcores keyword, or by setting env variable: $OPENMM_CPU_THREADS in shell before running.
@@ -295,6 +293,8 @@ class OpenMMTheory:
             pdb = openmm.app.PDBFile("cluster.pdb")
             self.topology = pdb.topology
 
+
+             
             self.forcefield = openmm.app.ForceField(xmlfile)
 
         else:
@@ -667,7 +667,7 @@ class OpenMMTheory:
         for i in frozen_atoms:
             self.system.setParticleMass(i, 0 * self.unit.daltons)
     def unfreeze_atoms(self):
-        #If system_masses list is not empty then we loop over and unfreeze
+        #Looping over system_masses if frozen, otherwise empty list
         for atom,mass in zip(self.allatoms,self.system_masses):
             self.system.setParticleMass(atom, mass)
     #Currently unused
@@ -1910,10 +1910,7 @@ def OpenMM_Modeller(pdbfile=None, forcefield=None, xmlfile=None, waterxmlfile=No
     elif waterxmlfile != None:
         #Problem: we need to define watermodel also
         print("Using waterxmlfile:", waterxmlfile)
-    
-    #######################
-    #FORCEFIELD CHOICE
-    #1. Using OpenMM built-in forcefield name (points to XML files)
+    #Forcefield options
     if forcefield != None:
         if forcefield =='Amber99':
             xmlfile="amber99sb.xml"
@@ -1940,13 +1937,8 @@ def OpenMM_Modeller(pdbfile=None, forcefield=None, xmlfile=None, waterxmlfile=No
             xmlfile="amoeba2013.xml"
         elif forcefield =='Amoeba2009':
             xmlfile="amoeba2009.xml"
-        else:
-            print("Unknown forcefield name")
-            exit()
-    #2. Using external XML file
     elif xmlfile != None:
         print("Using xmlfile:", xmlfile)
-        #NOTE: What about waterxmlfile here?
     else:
         print("You must provide a forcefield or xmlfile keyword!")
         exit()
@@ -1959,8 +1951,7 @@ def OpenMM_Modeller(pdbfile=None, forcefield=None, xmlfile=None, waterxmlfile=No
     
     
     print("User-provided dictionary of residue_variants:", residue_variants)
-    
-    #Adding extra xmlfile or not
+    #Define a forcefield
     if extraxmlfile == None:
         forcefield=openmm_app.forcefield.ForceField(xmlfile, waterxmlfile)
     else:
