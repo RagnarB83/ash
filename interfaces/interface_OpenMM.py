@@ -96,6 +96,9 @@ class OpenMMTheory:
         #TODO: Move option to module_QMMM instead
         self.delete_QM1_MM1_bonded=delete_QM1_MM1_bonded
 
+        #System masses (may or may not be defined)
+        self.system_masses=[]
+
         #Platform (CPU, CUDA, OpenCL) and Parallelization
         self.platform_choice=platform
         #CPU: Control either by provided numcores keyword, or by setting env variable: $OPENMM_CPU_THREADS in shell before running.
@@ -666,6 +669,7 @@ class OpenMMTheory:
         for i in frozen_atoms:
             self.system.setParticleMass(i, 0 * self.unit.daltons)
     def unfreeze_atoms(self):
+        #If system_masses list is not empty then we loop over and unfreeze
         for atom,mass in zip(self.allatoms,self.system_masses):
             self.system.setParticleMass(atom, mass)
     #Currently unused
