@@ -295,8 +295,6 @@ class OpenMMTheory:
             pdb = openmm.app.PDBFile("cluster.pdb")
             self.topology = pdb.topology
 
-
-             
             self.forcefield = openmm.app.ForceField(xmlfile)
 
         else:
@@ -1912,7 +1910,10 @@ def OpenMM_Modeller(pdbfile=None, forcefield=None, xmlfile=None, waterxmlfile=No
     elif waterxmlfile != None:
         #Problem: we need to define watermodel also
         print("Using waterxmlfile:", waterxmlfile)
-    #Forcefield options
+    
+    #######################
+    #FORCEFIELD CHOICE
+    #1. Using OpenMM built-in forcefield name (points to XML files)
     if forcefield != None:
         if forcefield =='Amber99':
             xmlfile="amber99sb.xml"
@@ -1939,8 +1940,13 @@ def OpenMM_Modeller(pdbfile=None, forcefield=None, xmlfile=None, waterxmlfile=No
             xmlfile="amoeba2013.xml"
         elif forcefield =='Amoeba2009':
             xmlfile="amoeba2009.xml"
+        else:
+            print("Unknown forcefield name")
+            exit()
+    #2. Using external XML file
     elif xmlfile != None:
         print("Using xmlfile:", xmlfile)
+        #NOTE: What about waterxmlfile here?
     else:
         print("You must provide a forcefield or xmlfile keyword!")
         exit()
@@ -1953,7 +1959,8 @@ def OpenMM_Modeller(pdbfile=None, forcefield=None, xmlfile=None, waterxmlfile=No
     
     
     print("User-provided dictionary of residue_variants:", residue_variants)
-    #Define a forcefield
+    
+    #Adding extra xmlfile or not
     if extraxmlfile == None:
         forcefield=openmm_app.forcefield.ForceField(xmlfile, waterxmlfile)
     else:
