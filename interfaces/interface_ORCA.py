@@ -141,7 +141,83 @@ class ORCATheory:
                 os.remove(tmpfile)
         except:
             pass
-    
+
+    #Do an ORCA-optimization instead of ASH optimization. Useful for gas-phase chemistry when ORCA-optimizer is better than geomeTRIC
+    def Opt(self, fragment=None, Grad=None, Hessian=None, numcores=None, label=None):
+
+        module_init_time=time.time()
+        print(BC.OKBLUE,BC.BOLD, "------------RUNNING INTERNAL ORCA OPTIMIZATION-------------", BC.END)
+        #Coords provided to run or else taken from initialization.
+        #if len(current_coords) != 0:
+
+        if fragment == None:
+            print("No fragment provided to Opt.")
+            if self.fragment == None:
+                print("No fragment associated with ORCATheory object either. Exiting")
+                exit()
+            else:
+                current_coords=self.fragment.coords
+                elems=self.fragment.elems
+        else:
+            print("Fragment provided to Opt")
+            self.fragment=fragment
+
+        current_coords=self.fragment.coords
+        elems=self.fragment.elems
+
+        if numcores==None:
+            numcores=self.numcores
+
+        self.extraline=self.extraline+"\n! OPT "
+
+        print("Running ORCA object with {} cores available".format(numcores))
+        print("Job label:", label)
+
+        print("Creating inputfile:", self.filename+'.inp')
+        print("ORCA input:")
+        print(self.orcasimpleinput)
+        print(self.extraline)
+        print(self.orcablocks)
+        print("Charge: {}  Mult: {}".format(self.charge, self.mult))
+
+
+        #TODO: Make more general
+        create_orca_input_plain(self.filename, elems, current_coords, self.orcasimpleinput,self.orcablocks,
+                                self.charge, self.mult, extraline=self.extraline, HSmult=self.HSmult, moreadfile=self.moreadfile)
+        print(BC.OKGREEN, "ORCA Calculation started.", BC.END)
+        run_orca_SP_ORCApar(self.orcadir, self.filename + '.inp', numcores=numcores)
+        print(BC.OKGREEN, "ORCA Calculation done.", BC.END)
+
+        outfile=self.filename+'.out'
+        if checkORCAfinished(outfile) == True:
+            print("ORCA job finished")
+            if checkORCAOptfinished(outfile) ==  True:
+                print("ORCA geometry optimization finished")
+                self.energy=ORCAfinalenergygrab(outfile)
+                #Grab optimized coordinates from filename.xyz
+                opt_elems,opt_coords = modules.module_coords.read_xyzfile(self.filename+'.xyz')
+                print(opt_coords)
+                
+                self.fragment.replace_coords(self.fragment.elems,opt_coords)
+            else:
+                print("ORCA optimization failed to converge. Check ORCA output")
+                exit()
+        else:
+            print("Something happened with ORCA job. Check ORCA output")
+            exit()
+
+        print("ORCA optimized energy:", self.energy)
+        print("ASH fragment updated:", self.fragment)
+        self.fragment.print_coords()
+        #Writing out fragment file and XYZ file
+        self.fragment.print_system(filename='Fragment-optimized.ygg')
+        self.fragment.write_xyzfile(xyzfilename='Fragment-optimized.xyz')
+
+        #Printing internal coordinate table
+        modules.module_coords.print_internal_coordinate_table(self.fragment)
+        print_time_rel(module_init_time, modulename='ORCA Opt-run', moduleindex=2)
+        return 
+
     #Run function. Takes coords, elems etc. arguments and computes E or E+G.
     def run(self, current_coords=None, current_MM_coords=None, MMcharges=None, qm_elems=None,
             elems=None, Grad=False, Hessian=False, PC=False, numcores=None, label=None ):
@@ -341,12 +417,22 @@ def run_orca_SP_ORCApar(orcadir, inpfile, numcores=1):
 def checkORCAfinished(file):
     with open(file) as f:
         for line in f:
-            
             if 'SCF CONVERGED AFTER' in line:
                 iter=line.split()[-3]
                 print("ORCA converged in {} iterations".format(iter))
             if 'TOTAL RUN TIME:' in line:
                 return True
+def checkORCAOptfinished(file):
+    converged=False
+    with open(file) as f:
+        for line in f:
+            if 'THE OPTIMIZATION HAS CONVERGED' in line:
+                converged=True
+            if converged==True:
+                if '***               (AFTER' in line:
+                    cycles=line.split()[2]
+                    print("ORCA Optimization converged in {} cycles".format(cycles))
+        return converged
 
 #Grab Final single point energy. Ignoring possible encoding errors in file
 def ORCAfinalenergygrab(file, errors='ignore'):

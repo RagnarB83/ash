@@ -15,7 +15,7 @@ from modules.module_singlepoint import Singlepoint
 def Dynamics_ASE(fragment=None, PBC=False, theory=None, temperature=300, timestep=None, thermostat=None, simulation_steps=None, simulation_time=None,
                  barostat=None, trajectoryname="Trajectory_ASE", traj_frequency=1, coupling_freq=0.002, frozen_atoms=None, frozen_bonds=None,
                  frozen_angles=None, frozen_dihedrals=None, plumed_object=None, multiple_walkers=False, numwalkers=None,
-                 ttime_nosehoover=5):
+                 ttime_nosehoover=5, safires=False, safires_solute=None, safire_inner_region=None):
     module_init_time = time.time()
     print_line_with_mainheader("ASE MOLECULAR DYNAMICS")
     
@@ -191,7 +191,6 @@ def Dynamics_ASE(fragment=None, PBC=False, theory=None, temperature=300, timeste
     print("Printing ASE atoms object:", atoms.__dict__)
     
     
-    
     # Set the momenta corresponding to T=300K
     print("Calling MaxwellBoltzmannDistribution")
     #MaxwellBoltzmannDistribution(atoms, temp=None, temperature_K=temperature)
@@ -247,6 +246,32 @@ def Dynamics_ASE(fragment=None, PBC=False, theory=None, temperature=300, timeste
 
     dyn.attach(print_step, interval=1)
     dyn.attach(write_traj, interval=traj_frequency)
+
+    #SAFIRES: Adaptive QM/MM
+    if safires == True:
+        if safires_solute == None or safires_inner_region == None:
+            print("Safires requires safires_solute and safires_inner_region lists to be defined")
+            exit()
+        from ase.md.safires import SAFIRES
+        #Setting up Safires
+        safires = SAFIRES(atoms=atoms,
+                            mdobject=dyn,
+                            natoms=3, #number of atoms in solvent ???
+                            logfile='safire.log',
+                            debug=False,
+                            barometer=False,
+                            surface=False,
+                            reflective=True/False)
+        #Defining regions
+        for index,atom in enumerate(atoms):
+            if index in safires_solute:
+                atom.tag = 0
+            elif index in safires_inner_region:
+                atom.tag = 1
+            else:
+                atom.tag = 2
+        dyn.attach(safires.safires, interval=1)
+
     print("")
     print("")
     print("Running dynamics")
