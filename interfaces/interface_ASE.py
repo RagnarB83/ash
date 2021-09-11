@@ -5,7 +5,7 @@ import copy
 import multiprocessing as mp
 
 import constants
-from functions.functions_general import print_line_with_mainheader, print_time_rel
+from functions.functions_general import print_line_with_mainheader, print_time_rel, printdebug
 from modules.module_singlepoint import Singlepoint
 
 
@@ -15,7 +15,7 @@ from modules.module_singlepoint import Singlepoint
 def Dynamics_ASE(fragment=None, PBC=False, theory=None, temperature=300, timestep=None, thermostat=None, simulation_steps=None, simulation_time=None,
                  barostat=None, trajectoryname="Trajectory_ASE", traj_frequency=1, coupling_freq=0.002, frozen_atoms=None, frozen_bonds=None,
                  frozen_angles=None, frozen_dihedrals=None, plumed_object=None, multiple_walkers=False, numwalkers=None,
-                 ttime_nosehoover=5, safires=False, safires_solute=None, safire_inner_region=None):
+                 ttime_nosehoover=5, safires=False, safires_solute=None, safires_inner_region=None, safires_solvent_atomsnum=3):
     module_init_time = time.time()
     print_line_with_mainheader("ASE MOLECULAR DYNAMICS")
     
@@ -94,7 +94,7 @@ def Dynamics_ASE(fragment=None, PBC=False, theory=None, temperature=300, timeste
             return self.potenergy
         def get_forces(self, atomsobj):
             print("Called ASHcalc get_forces")
-
+            print("self.results:", self.results)
             # Check if coordinates have changed. If not, return old forces
             if np.array_equal(atomsobj.get_positions(), fragment.coords) == True:
                 #coordinates have not changed
@@ -116,6 +116,8 @@ def Dynamics_ASE(fragment=None, PBC=False, theory=None, temperature=300, timeste
             #Converting E and G from Eh and Eh/Bohr to ASE units: eV and eV/Angstrom
             self.potenergy=energy*constants.hartoeV
             self.forces=-gradient* units.Hartree / units.Bohr
+            #Adding forces to results also (sometimes called)
+            self.results['forces'] = self.forces
             #print("potenergy:", self.potenergy)
             #print("self.forces before plumed:", self.forces)
             
@@ -156,9 +158,6 @@ def Dynamics_ASE(fragment=None, PBC=False, theory=None, temperature=300, timeste
     calc= ASHcalc(fragment=fragment, theory=theory, plumed=plumed_object)
     atoms.calc = calc
 
-    print(atoms)
-    print(atoms.__dict__)
-
     #CONSTRAINTS AND FROZEN ATOMS
     #Frozen atoms
     print("Adding possible constraints")
@@ -188,7 +187,7 @@ def Dynamics_ASE(fragment=None, PBC=False, theory=None, temperature=300, timeste
             all_constraints.append(frozendihedral_cons)
     #Adding all constraints
     atoms.set_constraint(all_constraints)
-    print("Printing ASE atoms object:", atoms.__dict__)
+    printdebug("Printing ASE atoms object:", atoms.__dict__)
     
     
     # Set the momenta corresponding to T=300K
@@ -252,16 +251,22 @@ def Dynamics_ASE(fragment=None, PBC=False, theory=None, temperature=300, timeste
         if safires_solute == None or safires_inner_region == None:
             print("Safires requires safires_solute and safires_inner_region lists to be defined")
             exit()
-        from ase.md.safires import SAFIRES
+        print("SAFIRES")
+        print("Solute region:", safires_solute)
+        print("Inner region:", safires_inner_region)
+
+        #When Safires has become part of ASE
+        #from ase.md.safires import SAFIRES
+        from interfaces.interface_safires import SAFIRES
         #Setting up Safires
         safires = SAFIRES(atoms=atoms,
                             mdobject=dyn,
-                            natoms=3, #number of atoms in solvent ???
+                            natoms=safires_solvent_atomsnum, #number of atoms in solvent ???
                             logfile='safire.log',
                             debug=False,
                             barometer=False,
                             surface=False,
-                            reflective=True/False)
+                            reflective=False)
         #Defining regions
         for index,atom in enumerate(atoms):
             if index in safires_solute:

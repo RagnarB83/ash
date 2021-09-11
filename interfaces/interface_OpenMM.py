@@ -21,6 +21,7 @@ class OpenMMTheory:
                  Amberfiles=False, amberprmtopfile=None,
                  cluster_fragment=None, ASH_FF_file=None,
                  xmlfiles=None, pdbfile=None, use_parmed=False,
+                 xmlsystemfile=None,
                  do_energy_decomposition=False,
                  periodic=False, charmm_periodic_cell_dimensions=None, customnonbondedforce=False,
                  periodic_nonbonded_cutoff=12, dispersion_correction=True, 
@@ -38,7 +39,7 @@ class OpenMMTheory:
             print("Imported OpenMM library version:", openmm.__version__)
         except ImportError:
             raise ImportError(
-                "OpenMM requires installing the OpenMM package. Try: conda install -c conda-forge openmm  \
+                "OpenMMTheory requires installing the OpenMM library. Try: conda install -c conda-forge openmm  \
                 Also see http://docs.openmm.org/latest/userguide/application.html")
 
         #OpenMM variables
@@ -51,6 +52,9 @@ class OpenMMTheory:
         print(BC.WARNING, BC.BOLD, "------------Defining OpenMM object-------------", BC.END)
         #Printlevel
         self.printlevel=printlevel
+
+        #Initialize system
+        self.system=None
 
         #Load Parmed if requested
         if use_parmed == True:
@@ -272,7 +276,7 @@ class OpenMMTheory:
             xmlfile = write_xmlfile_nonbonded(resnames=residue_types, atomnames_per_res=atomnames_res, atomtypes_per_res=atomtypes_res, 
                                               elements_per_res=elements_res, masses_per_res=masses_res, 
                                               charges_per_res=atomcharges_res, sigmas_per_res=sigmas_res, epsilons_per_res=epsilons_res, 
-                                              filename="system.xml",coulomb14scale=1.0, lj14scale=1.0)
+                                              filename="cluster_system.xml",coulomb14scale=1.0, lj14scale=1.0)
 
             #Creating lists for PDB-file
             #requires ffragmenttype_labels to be present in fragment.
@@ -297,6 +301,18 @@ class OpenMMTheory:
              
             self.forcefield = openmm.app.ForceField(xmlfile)
 
+        #Load XMLfile for whole system
+        elif xmlsystemfile!=None:
+            print("Reading system XML file:", xmlsystemfile)
+            xmlsystemfileobj = open(xmlsystemfile).read()
+            # Deserialize the XML text to create a System object.
+            self.system = openmm.XmlSerializer.deserializeSystem(xmlsystemfileobj)
+            #We still need topology from somewhere to using pdbfile
+            print("Reading topology from PDBfile:", pdbfile)
+            pdb = openmm.app.PDBFile(pdbfile)
+            self.topology = pdb.topology
+
+        #Read topology from PDB-file and XML-forcefield files to define forcefield
         else:
             print("Reading OpenMM XML forcefield files and PDB file")
             print("xmlfiles:", xmlfiles)
@@ -320,187 +336,192 @@ class OpenMMTheory:
         #    modeller.addExtraParticles(self.forcefield)
         #    simtk.openmm.app.app.PDBFile.writeFile(modeller.topology, modeller.positions, open('test-water.pdb', 'w'))
 
-        #Now after topology is defined we can create system
 
-        
-        #Setting active and frozen variables once topology is in place
-        #NOTE: Is this actually used?
-        #NOTE: Disabled for now
-        #self.set_active_and_frozen_regions(active_atoms=active_atoms, frozen_atoms=frozen_atoms)
-        #Get number of atoms
-        self.numatoms=int(self.topology.getNumAtoms())
-        self.allatoms=list(range(0,self.numatoms))
-        print("Number of atoms in OpenMM topology:", self.numatoms)
+        #NOW CREATE SYSTEM UNLESS already created (xmlsystemfile)
+        if self.system == None:
+            #Periodic or non-periodic ystem
+            if self.Periodic is True:
+                print("System is periodic")
 
-        #Periodic or non-periodic ystem
-        if self.Periodic is True:
-            print("System is periodic")
+                print("Nonbonded cutoff is {} Angstrom".format(periodic_nonbonded_cutoff))
+                #Parameters here are based on OpenMM DHFR example
+                
+                if CHARMMfiles is True:
+                    print("Using CHARMM files")
 
-            print("Nonbonded cutoff is {} Angstrom".format(periodic_nonbonded_cutoff))
-            #Parameters here are based on OpenMM DHFR example
-            
-            if CHARMMfiles is True:
-                print("Using CHARMM files")
+                    if charmm_periodic_cell_dimensions == None:
+                        print("Error: When using CHARMMfiles and Periodic=True, charmm_periodic_cell_dimensions keyword needs to be supplied")
+                        print("Example: charmm_periodic_cell_dimensions= [200, 200, 200, 90, 90, 90]  in Angstrom and degrees")
+                        exit()
+                    self.charmm_periodic_cell_dimensions = charmm_periodic_cell_dimensions
+                    print("Periodic cell dimensions:", charmm_periodic_cell_dimensions)
+                    self.a = charmm_periodic_cell_dimensions[0] * self.unit.angstroms
+                    self.b = charmm_periodic_cell_dimensions[1] * self.unit.angstroms
+                    self.c = charmm_periodic_cell_dimensions[2] * self.unit.angstroms
+                    if use_parmed == True:
+                        self.forcefield.box=[self.a, self.b, self.c, charmm_periodic_cell_dimensions[3], charmm_periodic_cell_dimensions[4], charmm_periodic_cell_dimensions[5]]
+                        print("Set box vectors:", self.forcefield.box)
+                    else:
+                        self.forcefield.setBox(self.a, self.b, self.c, alpha=self.unit.Quantity(value=charmm_periodic_cell_dimensions[3], unit=self.unit.degree), 
+                        beta=self.unit.Quantity(value=charmm_periodic_cell_dimensions[3], unit=self.unit.degree), gamma=self.unit.Quantity(value=charmm_periodic_cell_dimensions[3], unit=self.unit.degree))
+                        #self.forcefield.setBox(self.a, self.b, self.c)
+                        #print(self.forcefield.__dict__)
+                        print("Set box vectors:", self.forcefield.box_vectors)
+                    #NOTE: SHould this be made more general??
+                    #print("a,b,c:", self.a, self.b, self.c)
+                    #print("box in self.forcefield", self.forcefield.get_box())
 
-                if charmm_periodic_cell_dimensions == None:
-                    print("Error: When using CHARMMfiles and Periodic=True, charmm_periodic_cell_dimensions keyword needs to be supplied")
-                    print("Example: charmm_periodic_cell_dimensions= [200, 200, 200, 90, 90, 90]  in Angstrom and degrees")
-                    exit()
-                self.charmm_periodic_cell_dimensions = charmm_periodic_cell_dimensions
-                print("Periodic cell dimensions:", charmm_periodic_cell_dimensions)
-                self.a = charmm_periodic_cell_dimensions[0] * self.unit.angstroms
-                self.b = charmm_periodic_cell_dimensions[1] * self.unit.angstroms
-                self.c = charmm_periodic_cell_dimensions[2] * self.unit.angstroms
-                if use_parmed == True:
-                    self.forcefield.box=[self.a, self.b, self.c, charmm_periodic_cell_dimensions[3], charmm_periodic_cell_dimensions[4], charmm_periodic_cell_dimensions[5]]
-                    print("Set box vectors:", self.forcefield.box)
+                    #exit()
+                    self.system = self.forcefield.createSystem(self.params, nonbondedMethod=openmm.app.PME, constraints=self.autoconstraints, hydrogenMass=self.hydrogenmass, rigidWater=self.rigidwater,
+                                                nonbondedCutoff=periodic_nonbonded_cutoff * self.unit.angstroms, switchDistance=switching_function_distance*self.unit.angstroms)
+                elif GROMACSfiles is True:
+                    #NOTE: Gromacs has read PBC info from Gro file already
+                    print("Ewald Error tolerance:", self.ewalderrortolerance)
+                    #Note: Turned off switchDistance. Not available for GROMACS?
+                    #
+                    self.system = self.forcefield.createSystem(nonbondedMethod=openmm.app.PME, constraints=self.autoconstraints, hydrogenMass=self.hydrogenmass, rigidWater=self.rigidwater,
+                                                nonbondedCutoff=periodic_nonbonded_cutoff * self.unit.angstroms, ewaldErrorTolerance=self.ewalderrortolerance)
+                elif Amberfiles is True:
+                    #NOTE: Amber-interface has read PBC info from prmtop file already
+                    self.system = self.forcefield.createSystem(nonbondedMethod=openmm.app.PME, constraints=self.autoconstraints, hydrogenMass=self.hydrogenmass, rigidWater=self.rigidwater,
+                                                nonbondedCutoff=periodic_nonbonded_cutoff * self.unit.angstroms)
+                    
+                    #print("self.system num con", self.system.getNumConstraints())
                 else:
-                    self.forcefield.setBox(self.a, self.b, self.c, alpha=self.unit.Quantity(value=charmm_periodic_cell_dimensions[3], unit=self.unit.degree), 
-                    beta=self.unit.Quantity(value=charmm_periodic_cell_dimensions[3], unit=self.unit.degree), gamma=self.unit.Quantity(value=charmm_periodic_cell_dimensions[3], unit=self.unit.degree))
-                    #self.forcefield.setBox(self.a, self.b, self.c)
-                    #print(self.forcefield.__dict__)
-                    print("Set box vectors:", self.forcefield.box_vectors)
-                #NOTE: SHould this be made more general??
-                #print("a,b,c:", self.a, self.b, self.c)
-                #print("box in self.forcefield", self.forcefield.get_box())
-
-                #exit()
-                self.system = self.forcefield.createSystem(self.params, nonbondedMethod=openmm.app.PME, constraints=self.autoconstraints, hydrogenMass=self.hydrogenmass, rigidWater=self.rigidwater,
-                                            nonbondedCutoff=periodic_nonbonded_cutoff * self.unit.angstroms, switchDistance=switching_function_distance*self.unit.angstroms)
-            elif GROMACSfiles is True:
-                #NOTE: Gromacs has read PBC info from Gro file already
-                print("Ewald Error tolerance:", self.ewalderrortolerance)
-                #Note: Turned off switchDistance. Not available for GROMACS?
-                #
-                self.system = self.forcefield.createSystem(nonbondedMethod=openmm.app.PME, constraints=self.autoconstraints, hydrogenMass=self.hydrogenmass, rigidWater=self.rigidwater,
-                                            nonbondedCutoff=periodic_nonbonded_cutoff * self.unit.angstroms, ewaldErrorTolerance=self.ewalderrortolerance)
-            elif Amberfiles is True:
-                #NOTE: Amber-interface has read PBC info from prmtop file already
-                self.system = self.forcefield.createSystem(nonbondedMethod=openmm.app.PME, constraints=self.autoconstraints, hydrogenMass=self.hydrogenmass, rigidWater=self.rigidwater,
-                                            nonbondedCutoff=periodic_nonbonded_cutoff * self.unit.angstroms)
+                    print("Setting up periodic system here.")
+                    #Modeller and manual xmlfiles
+                    self.system = self.forcefield.createSystem(self.topology, nonbondedMethod=openmm.app.PME, constraints=self.autoconstraints, 
+                                                            hydrogenMass=self.hydrogenmass, rigidWater=self.rigidwater,
+                                                                nonbondedCutoff=periodic_nonbonded_cutoff * self.unit.angstroms)
+                    #switchDistance=switching_function_distance*self.unit.angstroms
                 
-                #print("self.system num con", self.system.getNumConstraints())
-            else:
-                print("Setting up periodic system here.")
-                #Modeller and manual xmlfiles
-                self.system = self.forcefield.createSystem(self.topology, nonbondedMethod=openmm.app.PME, constraints=self.autoconstraints, 
-                                                           hydrogenMass=self.hydrogenmass, rigidWater=self.rigidwater,
-                                                            nonbondedCutoff=periodic_nonbonded_cutoff * self.unit.angstroms)
-                #switchDistance=switching_function_distance*self.unit.angstroms
-            
-            print("self.system dict", self.system.__dict__)
+                print("self.system dict", self.system.__dict__)
 
-            #TODO: Customnonbonded force option. Currently disabled
-            print("OpenMM system created")
-            print("Periodic vectors:", self.system.getDefaultPeriodicBoxVectors())
-            #Force modification here
-            print("OpenMM Forces defined:", self.system.getForces())
+                #TODO: Customnonbonded force option. Currently disabled
+                print("OpenMM system created")
+                print("Periodic vectors:", self.system.getDefaultPeriodicBoxVectors())
+                #Force modification here
+                print("OpenMM Forces defined:", self.system.getForces())
 
 
-            #PRINTING PROPERTIES OF NONBONDED FORCE BELOW
-            for i,force in enumerate(self.system.getForces()):
-                if isinstance(force, openmm.CustomNonbondedForce):
-                    #NOTE: THIS IS CURRENTLY NOT USED
-                    pass
-                    #print('CustomNonbondedForce: %s' % force.getUseSwitchingFunction())
-                    #print('LRC? %s' % force.getUseLongRangeCorrection())
-                    #force.setUseLongRangeCorrection(False)
-                elif isinstance(force, openmm.NonbondedForce):
-                    #Turn Dispersion correction on/off depending on user
-                    #NOTE: Default: False   To be revisited
-
-                    #NOte:
-                    force.setUseDispersionCorrection(dispersion_correction)
-
-                    #Modify PME Parameters if desired
-                    #force.setPMEParameters(1.0/0.34, fftx, ffty, fftz)
-                    if PMEparameters != None:
-                        print("Changing PME parameters")
-                        force.setPMEParameters(PMEparameters[0], PMEparameters[1], PMEparameters[2], PMEparameters[3])
-                    #force.setSwitchingDistance(switching_function_distance)
-                    #if switching_function == True:
-                    #    force.setUseSwitchingFunction(switching_function)
-                    #    #Switching distance in nm. To be looked at further
-                    #   force.setSwitchingDistance(switching_function_distance)
-                    #    print('SwitchingFunction distance: %s' % force.getSwitchingDistance())
-                    print("Nonbonded force settings (after all modifications):")
-                    print("Periodic cutoff distance: {}".format(force.getCutoffDistance()))
-                    print('Use SwitchingFunction: %s' % force.getUseSwitchingFunction())
-                    print('SwitchingFunction distance: {}'.format(force.getSwitchingDistance()))
-                    print('Use Long-range Dispersion correction: %s' % force.getUseDispersionCorrection())
-
-                    print("PME Parameters:", force.getPMEParameters())
-
-                    # Set PME Parameters if desired
-                    #force.setPMEParameters(3.285326106/self.unit.nanometers,60, 64, 60) 
-                    #Keeping default for now
-                    
-                    self.nonbonded_force=force
-                    # NOTE: These are hard-coded!
-                    
-            #Set charges in OpenMMobject by taking from Force
-            print("Setting charges")
-            self.getatomcharges(self.nonbonded_force)
-                    
-            
-        #Non-Periodic
-        else:
-            print("System is non-periodic")
-
-            if CHARMMfiles is True:
-                self.system = self.forcefield.createSystem(self.params, nonbondedMethod=openmm.app.NoCutoff,
-                                            nonbondedCutoff=1000 * openmm.unit.angstroms, hydrogenMass=self.hydrogenmass)
-            else:
-                self.system = self.forcefield.createSystem(self.topology,nonbondedMethod=openmm.app.NoCutoff, constraints=self.autoconstraints, rigidWater=self.rigidwater,
-                                            nonbondedCutoff=1000 * openmm.unit.angstroms, hydrogenMass=self.hydrogenmass)
-
-            print("OpenMM system created")
-            print("OpenMM Forces defined:", self.system.getForces())
-            print("")
-            for i,force in enumerate(self.system.getForces()):
-                if isinstance(force, openmm.NonbondedForce):
-                    self.getatomcharges(force)
-                    self.nonbonded_force=force
-
-            #print("original forces: ", forces)
-            # Get charges from OpenMM object into self.charges
-            #self.getatomcharges(forces['NonbondedForce'])
-            #print("self.system.getForces():", self.system.getForces())
-            #self.getatomcharges(self.system.getForces()[6])
-            
-
-            #CASE CUSTOMNONBONDED FORCE
-            #REPLACING REGULAR NONBONDED FORCE
-            if customnonbondedforce is True:
-
-                #Create CustomNonbonded force
+                #PRINTING PROPERTIES OF NONBONDED FORCE BELOW
                 for i,force in enumerate(self.system.getForces()):
-                    if isinstance(force, self.openmm.NonbondedForce):
-                        custom_nonbonded_force,custom_bond_force = create_cnb(self.system.getForces()[i])
-                print("1custom_nonbonded_force:", custom_nonbonded_force)
-                print("num exclusions in customnonb:", custom_nonbonded_force.getNumExclusions())
-                print("num 14 exceptions in custom_bond_force:", custom_bond_force.getNumBonds())
+                    if isinstance(force, openmm.CustomNonbondedForce):
+                        #NOTE: THIS IS CURRENTLY NOT USED
+                        pass
+                        #print('CustomNonbondedForce: %s' % force.getUseSwitchingFunction())
+                        #print('LRC? %s' % force.getUseLongRangeCorrection())
+                        #force.setUseLongRangeCorrection(False)
+                    elif isinstance(force, openmm.NonbondedForce):
+                        #Turn Dispersion correction on/off depending on user
+                        #NOTE: Default: False   To be revisited
+
+                        #NOte:
+                        force.setUseDispersionCorrection(dispersion_correction)
+
+                        #Modify PME Parameters if desired
+                        #force.setPMEParameters(1.0/0.34, fftx, ffty, fftz)
+                        if PMEparameters != None:
+                            print("Changing PME parameters")
+                            force.setPMEParameters(PMEparameters[0], PMEparameters[1], PMEparameters[2], PMEparameters[3])
+                        #force.setSwitchingDistance(switching_function_distance)
+                        #if switching_function == True:
+                        #    force.setUseSwitchingFunction(switching_function)
+                        #    #Switching distance in nm. To be looked at further
+                        #   force.setSwitchingDistance(switching_function_distance)
+                        #    print('SwitchingFunction distance: %s' % force.getSwitchingDistance())
+                        print("Nonbonded force settings (after all modifications):")
+                        print("Periodic cutoff distance: {}".format(force.getCutoffDistance()))
+                        print('Use SwitchingFunction: %s' % force.getUseSwitchingFunction())
+                        print('SwitchingFunction distance: {}'.format(force.getSwitchingDistance()))
+                        print('Use Long-range Dispersion correction: %s' % force.getUseDispersionCorrection())
+
+                        print("PME Parameters:", force.getPMEParameters())
+
+                        # Set PME Parameters if desired
+                        #force.setPMEParameters(3.285326106/self.unit.nanometers,60, 64, 60) 
+                        #Keeping default for now
+                        
+                        #self.nonbonded_force=force
+                        # NOTE: These are hard-coded!
+                        
                 
-                #TODO: Deal with frozen regions. NOT YET DONE
-                #Frozen-Act interaction
-                #custom_nonbonded_force.addInteractionGroup(self.frozen_atoms,self.active_atoms)
-                #Act-Act interaction
-                #custom_nonbonded_force.addInteractionGroup(self.active_atoms,self.active_atoms)
-                #print("2custom_nonbonded_force:", custom_nonbonded_force)
-            
-                #Pointing self.nonbonded_force to CustomNonBondedForce instead of Nonbonded force
-                self.nonbonded_force = custom_nonbonded_force
-                print("self.nonbonded_force:", self.nonbonded_force)
-                self.custom_bondforce = custom_bond_force
+            #Non-Periodic
+            else:
+                print("System is non-periodic")
+
+                if CHARMMfiles is True:
+                    self.system = self.forcefield.createSystem(self.params, nonbondedMethod=openmm.app.NoCutoff,
+                                                nonbondedCutoff=1000 * openmm.unit.angstroms, hydrogenMass=self.hydrogenmass)
+                else:
+                    self.system = self.forcefield.createSystem(self.topology,nonbondedMethod=openmm.app.NoCutoff, constraints=self.autoconstraints, rigidWater=self.rigidwater,
+                                                nonbondedCutoff=1000 * openmm.unit.angstroms, hydrogenMass=self.hydrogenmass)
+
+                print("OpenMM system created")
+                print("OpenMM Forces defined:", self.system.getForces())
+                print("")
+                #for i,force in enumerate(self.system.getForces()):
+                #    if isinstance(force, openmm.NonbondedForce):
+                #        self.getatomcharges()
+                #        self.nonbonded_force=force
+
+                #print("original forces: ", forces)
+                # Get charges from OpenMM object into self.charges
+                #self.getatomcharges(forces['NonbondedForce'])
+                #print("self.system.getForces():", self.system.getForces())
+                #self.getatomcharges(self.system.getForces()[6])
                 
-                #Update system with new forces and delete old force
-                self.system.addForce(self.nonbonded_force) 
-                self.system.addForce(self.custom_bondforce) 
+
+                #CASE CUSTOMNONBONDED FORCE
+                #REPLACING REGULAR NONBONDED FORCE
+                if customnonbondedforce is True:
+                    print("currently inactive")
+                    exit()
+                    #Create CustomNonbonded force
+                    for i,force in enumerate(self.system.getForces()):
+                        if isinstance(force, self.openmm.NonbondedForce):
+                            custom_nonbonded_force,custom_bond_force = create_cnb(self.system.getForces()[i])
+                    print("1custom_nonbonded_force:", custom_nonbonded_force)
+                    print("num exclusions in customnonb:", custom_nonbonded_force.getNumExclusions())
+                    print("num 14 exceptions in custom_bond_force:", custom_bond_force.getNumBonds())
+                    
+                    #TODO: Deal with frozen regions. NOT YET DONE
+                    #Frozen-Act interaction
+                    #custom_nonbonded_force.addInteractionGroup(self.frozen_atoms,self.active_atoms)
+                    #Act-Act interaction
+                    #custom_nonbonded_force.addInteractionGroup(self.active_atoms,self.active_atoms)
+                    #print("2custom_nonbonded_force:", custom_nonbonded_force)
                 
-                #Remove oldNonbondedForce
-                for i,force in enumerate(self.system.getForces()):
-                    if isinstance(force, self.openmm.NonbondedForce):
-                        self.system.removeForce(i)
+                    #Pointing self.nonbonded_force to CustomNonBondedForce instead of Nonbonded force
+                    self.nonbonded_force = custom_nonbonded_force
+                    print("self.nonbonded_force:", self.nonbonded_force)
+                    self.custom_bondforce = custom_bond_force
+                    
+                    #Update system with new forces and delete old force
+                    self.system.addForce(self.nonbonded_force) 
+                    self.system.addForce(self.custom_bondforce) 
+                    
+                    #Remove oldNonbondedForce
+                    for i,force in enumerate(self.system.getForces()):
+                        if isinstance(force, self.openmm.NonbondedForce):
+                            self.system.removeForce(i)
+
+        #Defining nonbonded force
+        for i,force in enumerate(self.system.getForces()):
+            if isinstance(force, openmm.NonbondedForce):
+                #self.getatomcharges()
+                self.nonbonded_force=force
+
+        #Set charges in OpenMMobject by taking from Force (used by QM/MM)
+        print("Setting charges")
+        #self.getatomcharges(self.nonbonded_force)
+        self.getatomcharges()
+
+
+        #Storing numatoms and list of all atoms
+        self.numatoms=int(self.system.getNumParticles())
+        self.allatoms=list(range(0,self.numatoms))
+        print("Number of atoms in OpenMM system:", self.numatoms)
 
         print("System constraints defined upon system creation:", self.system.getNumConstraints())
         print("Use printlevel =>2 to see list of all constraints")
@@ -978,7 +999,7 @@ class OpenMMTheory:
         else:
             return self.energy
     #Get list of charges from chosen force object (usually original nonbonded force object)
-    def getatomcharges(self,force):
+    def getatomcharges_old(self,force):
         chargelist = []
         for i in range( force.getNumParticles() ):
             charge = force.getParticleParameters( i )[0]
@@ -987,7 +1008,17 @@ class OpenMMTheory:
                 chargelist.append(charge)
         self.charges=chargelist
         return chargelist
-
+    def getatomcharges(self):
+        chargelist = []
+        for force in self.system.getForces():
+            if isinstance(force, self.openmm.NonbondedForce):
+                for i in range( force.getNumParticles() ):
+                    charge = force.getParticleParameters( i )[0]
+                    if isinstance(charge, self.unit.Quantity):
+                        charge = charge / self.unit.elementary_charge
+                        chargelist.append(charge)
+                self.charges=chargelist
+        return chargelist
     # Delete selected exceptions. Only for Coulomb.
     #Used to delete Coulomb interactions involving QM-QM and QM-MM atoms
     def delete_exceptions(self,atomlist):
@@ -2257,7 +2288,7 @@ def solvate_small_molecule(fragment=None, charge=None, mult=None, watermodel=Non
     
     xmlfile = write_xmlfile_nonbonded(resnames=["LIG"], atomnames_per_res=[atomnames],atomtypes_per_res=[atomtypes], 
                                       elements_per_res=[fragment.elems], masses_per_res=[fragment.masses], charges_per_res=[charges], 
-                        sigmas_per_res=[sigmas], epsilons_per_res=[epsilons], filename="system.xml", coulomb14scale=coulomb14scale, lj14scale=lj14scale)
+                        sigmas_per_res=[sigmas], epsilons_per_res=[epsilons], filename="solute.xml", coulomb14scale=coulomb14scale, lj14scale=lj14scale)
     
     print("Creating forcefield using XML-files:", xmlfile, waterxmlfile)
     forcefield=openmm_app.forcefield.ForceField(xmlfile, waterxmlfile)
