@@ -1,5 +1,5 @@
 import numpy as np
-from functions.functions_general import blankline,uniq,printdebug,print_time_rel_and_tot,print_time_rel,BC
+from functions.functions_general import blankline,uniq,printdebug,print_time_rel_and_tot,print_time_rel,BC, load_julia_interface
 import modules.module_coords
 import interfaces.interface_ORCA
 import interfaces.interface_xtb
@@ -927,12 +927,14 @@ def remove_partial_fragments(coords,elems,sphereradius,fragmentobjects, scale=No
         print("using julia for finding surface atoms")
         try:
             # Import Julia
-            #from julia.api import Julia
-            #from julia import Main
-            #ashpath = os.path.dirname(ash.__file__)
-            #Main.include(ashpath + "/functions/functions_julia.jl")
+            print("Loading Julia")
+            try:
+                Juliafunctions=load_julia_interface()
+            except:
+                print("Problem loading Julia")
+                exit()
             #Get list of fragments for all surfaceatoms
-            fraglist_temp = ash.Main.Juliafunctions.calc_fraglist_for_atoms(surfaceatoms,coords, elems, 99, scale, tol,modules.module_coords.eldict_covrad)
+            fraglist_temp = Juliafunctions.calc_fraglist_for_atoms(surfaceatoms,coords, elems, 99, scale, tol,modules.module_coords.eldict_covrad)
             # Converting from numpy to list of lists
             for sublist in fraglist_temp:
                 fraglist.append(list(sublist))
@@ -1019,10 +1021,15 @@ def reordercluster(fragment,fragmenttype,code_version='py'):
     if code_version=='julia':
         print("Calling reorder_cluster_julia")
         exit()
+        try:
+            Juliafunctions=load_julia_interface()
+        except:
+            print("Problem loading Julia")
+            exit()
         #print(fragmenttype.clusterfraglist[5])
         #Converting from 0-based to 1-based indexing before passing to Julia
         jul_fraglists=[[number+1 for number in group] for group in fraglists]
-        new_jul_fraglists = ash.Main.Juliafunctions.reorder_cluster_julia(fragment.elems,fragment.coords,jul_fraglists)
+        new_jul_fraglists = Juliafunctions.reorder_cluster_julia(fragment.elems,fragment.coords,jul_fraglists)
         print("new_jul_fraglists:", new_jul_fraglists)
         #Converting back from 1-based indexing to 0-based indexing
         fragmenttype.clusterfraglist=[[number-1 for number in group] for group in new_jul_fraglists]

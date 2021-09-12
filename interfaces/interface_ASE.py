@@ -94,7 +94,6 @@ def Dynamics_ASE(fragment=None, PBC=False, theory=None, temperature=300, timeste
             return self.potenergy
         def get_forces(self, atomsobj):
             print("Called ASHcalc get_forces")
-            print("self.results:", self.results)
             # Check if coordinates have changed. If not, return old forces
             if np.array_equal(atomsobj.get_positions(), fragment.coords) == True:
                 #coordinates have not changed

@@ -26,7 +26,7 @@ settings_dict={}
 settings_dict["debugflag"] = False
 
 #Julia usage
-settings_dict["load_julia"] = True
+settings_dict["load_julia"] = False
 
 #Whether to use ANSI color escape sequences in output or not.
 settings_dict["use_ANSI_color"] = False
