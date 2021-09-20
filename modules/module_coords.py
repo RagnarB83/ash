@@ -283,7 +283,7 @@ class Fragment:
         except FileNotFoundError:
             print("File {} not found".format(filename))
             exit()
-        self.coords = coords
+        self.coords=reformat_list_to_array(coords)
         self.elems = elems
         self.update_attributes()
         if conncalc is True:
