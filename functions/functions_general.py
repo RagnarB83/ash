@@ -5,6 +5,7 @@ import time
 from functools import wraps
 import math
 
+from ash import ashpath
 #ANSI colors: http://jafrog.com/2013/11/23/colors-in-terminal.html
 if settings_ash.settings_dict["use_ANSI_color"] == True:
     class BC:
@@ -21,6 +22,28 @@ if settings_ash.settings_dict["use_ANSI_color"] == True:
 else:
     class BC:
         HEADER = ''; OKBLUE = ''; OKGREEN = ''; OKMAGENTA= ''; OKRED= ''; WARNING = ''; FAIL = ''; END = ''; BOLD = ''; UNDERLINE = ''
+
+
+#Julia load interface
+#TODO: Avoid reloading 
+julia_loaded=False
+def load_julia_interface():
+    global julia_loaded
+    global JuliaMain
+    if julia_loaded == False:
+        #print("julia loaded false")
+        #from julia.api import Julia
+        #jl = Julia(compiled_modules=False)
+        from julia import Main as JuliaMain
+        JuliaMain.include(ashpath + "/functions/functions_julia.jl")
+        julia_loaded=True
+    #else:
+    #    print("Julia loaded true")
+    #print("JuliaMain:", JuliaMain)
+    #print("JuliaMain include:", JuliaMain.include)
+    #print(JuliaMain.__dict__)
+    return JuliaMain.Juliafunctions
+
 
 
 #Get ranges of integers from list. Returns string of ranges. Used to communitcate with crest and xtb

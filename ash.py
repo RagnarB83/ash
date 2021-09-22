@@ -29,7 +29,7 @@ ashpath = os.path.dirname(ash.__file__)
 #sys.path.insert(1, ashpath+'/interfaces')
 #sys.path.insert(1, ashpath+'/functions')
 
-from functions.functions_general import blankline,BC,listdiff,print_time_rel,print_time_rel_and_tot,pygrep,printdebug,read_intlist_from_file,frange, writelisttofile
+from functions.functions_general import blankline,BC,listdiff,print_time_rel,print_time_rel_and_tot,pygrep,printdebug,read_intlist_from_file,frange, writelisttofile, load_julia_interface
 
 # Fragment class and coordinate functions
 import modules.module_coords
@@ -130,25 +130,17 @@ if settings_ash.settings_dict["print_exit_footer"] == True:
 
 
 
-#Julia dependency. Current behaviour: 
-# Default: load_julia is True and we try to load and continue if unsuccessful
-# 
+#Julia dependency. Load in the beginning or not 
 if settings_ash.settings_dict["load_julia"] == True:
     try:
-        print("Import PyJulia interface")
-        from julia.api import Julia
-        from julia import Main
+        print("Import PyJulia interface and loading functions")
+        Juliafunctions = load_julia_interface()
         #Hungarian package needs to be installed
-        try:
-            from julia import Hungarian
-        except:
-            print("Problem loading Julia packages: Hungarian")
+        #try:
+        #    from julia import Hungarian
+        #except:
+        #    print("Problem loading Julia packages: Hungarian")
         
-        #Various Julia functions
-        print("Loading Julia functions")
-        ashpath = os.path.dirname(ash.__file__)
-        Main.include(ashpath + "/functions/functions_julia.jl")
-        print("")
     except:
         print("Problem importing Pyjulia")
         print("Make sure Julia is installed, PyJulia within Python, Pycall within Julia, Julia packages have been installed and you are using python3_ash")

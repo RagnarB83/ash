@@ -2,7 +2,7 @@ import numpy as np
 import time
 
 from modules.module_coords import distance
-from functions.functions_general import blankline,print_time_rel,BC
+from functions.functions_general import blankline,print_time_rel,BC, load_julia_interface
 import constants
 import ash
 
@@ -194,12 +194,17 @@ class NonBondedTheory:
             #    print("Also, are you using python3_ash ?")
             #    print("Alternatively, use codeversion='py' argument to NonBondedTheory to use slower Python version for array creation")
             #    exit(9)
-
-
+            print("Loading Julia")
+            try:
+                Juliafunctions=load_julia_interface()
+            except:
+                print("Problem loading Julia")
+                exit()
             # Do pairpot array for whole system
             if len(actatoms) == 0:
                 print("Calculating pairpotential array for whole system")
-                self.sigmaij, self.epsij = ash.Main.Juliafunctions.pairpot_full(self.numatoms, self.atomtypes, self.LJpairpotdict,qmatoms)
+
+                self.sigmaij, self.epsij = Juliafunctions.pairpot_full(self.numatoms, self.atomtypes, self.LJpairpotdict,qmatoms)
             else:
             #    #or only for active region
                 print("Calculating pairpotential array for active region only")
@@ -210,7 +215,7 @@ class NonBondedTheory:
                 print("qmatoms", qmatoms)
                 #print("actatoms", actatoms)
                 
-                self.sigmaij, self.epsij = ash.Main.Juliafunctions.pairpot_active(self.numatoms, self.atomtypes, self.LJpairpotdict, qmatoms, actatoms)
+                self.sigmaij, self.epsij = Juliafunctions.pairpot_active(self.numatoms, self.atomtypes, self.LJpairpotdict, qmatoms, actatoms)
         # New for-loop for creating sigmaij and epsij arrays. Uses dict-lookup instead
         elif self.codeversion=="py":
             if self.printlevel >= 2:
@@ -352,17 +357,18 @@ class NonBondedTheory:
                 print("Using fast Julia version, v1")
             # Necessary for statically linked libpython
             try:
-                from julia.api import Julia
-                from julia import Main
+                Juliafunctions=load_julia_interface()
             except:
+                print("Problem loading Julia")
                 print("Problem importing Pyjulia (import julia)")
                 print("Make sure Julia is installed and PyJulia module available")
                 print("Also, are you using python3_ash ?")
                 print("Alternatively, use codeversion='py' argument to NonBondedTheory to use slower Python version for array creation")
                 exit(9)
+
             print_time_rel(CheckpointTime, modulename="from run to just before calling ")
             self.MMEnergy, self.MMGradient, self.LJenergy, self.Coulombchargeenergy =\
-                ash.Main.Juliafunctions.LJcoulombchargev1c(charges, current_coords, self.epsij, self.sigmaij, connectivity)
+                Juliafunctions.LJcoulombchargev1c(charges, current_coords, self.epsij, self.sigmaij, connectivity)
             print_time_rel(CheckpointTime, modulename="from run to done julia")
         else:
             print("Unknown version of MM code")

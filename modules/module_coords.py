@@ -4,13 +4,17 @@ pow = math.pow
 import copy
 import time
 import numpy as np
+import os
 import subprocess as sp
 
-from functions.functions_general import isint,listdiff,print_time_rel,BC,printdebug,print_line_with_mainheader,writelisttofile,pygrep2
+from functions.functions_general import isint,listdiff,print_time_rel,BC,printdebug,print_line_with_mainheader,writelisttofile,pygrep2, load_julia_interface
 import dictionaries_lists
 import settings_ash
 import constants
 import ash
+
+
+
 
 # ASH Fragment class
 class Fragment:
@@ -218,7 +222,13 @@ class Fragment:
                 final_list.append(connatoms)
             return final_list
         else:
-            final_list=ash.Main.Juliafunctions.get_connected_atoms_forlist_julia(self.coords, self.elems, scale, tol, eldict_covrad, Hatoms)
+            print("Loading Julia")
+            try:
+                Juliafunctions=load_julia_interface()
+            except:
+                print("Problem loading Julia")
+                exit()
+            final_list=Juliafunctions.get_connected_atoms_forlist_julia(self.coords, self.elems, scale, tol, eldict_covrad, Hatoms)
         print("final_list:", final_list)
         print_time_rel(timestamp, modulename='get_XH_indices', moduleindex=4)
         return final_list
@@ -273,7 +283,7 @@ class Fragment:
         except FileNotFoundError:
             print("File {} not found".format(filename))
             exit()
-        self.coords = coords
+        self.coords=reformat_list_to_array(coords)
         self.elems = elems
         self.update_attributes()
         if conncalc is True:
@@ -394,8 +404,6 @@ class Fragment:
             if self.printlevel >= 2:
                 print("Atom number > 10K. Connectivity calculation could take a while")
 
-
-
         if scale == None:
             try:
                 scale = settings_ash.settings_dict["scale"]
@@ -427,13 +435,11 @@ class Fragment:
             print_time_rel(timestampB, modulename='calc connectivity py', moduleindex=4)
         elif codeversion=='julia':
             print("Calculating connectivity of fragment using julia")
-            # Import Julia
+            timestampB = time.time()
             try:
-                #from julia.api import Julia
-                #from julia import Main
-                timestampB = time.time()
-                fraglist_temp = ash.Main.Juliafunctions.calc_connectivity(self.coords, self.elems, conndepth, scale, tol,
-                                                                      eldict_covrad)
+                Juliafunctions=load_julia_interface()
+                fraglist_temp = Juliafunctions.calc_connectivity(self.coords, self.elems, conndepth, scale, tol,
+                                                                        eldict_covrad)
                 fraglist = []
                 # Converting from numpy to list of lists
                 for sublist in fraglist_temp:
@@ -719,7 +725,8 @@ def print_internal_coordinate_table(fragment,actatoms=None):
         scale=settings_ash.settings_dict["scale"]
         tol=settings_ash.settings_dict["tol"]
         try:
-            connectivity = ash.Main.Juliafunctions.calc_connectivity(chosen_coords, chosen_elems, conndepth, scale, tol, eldict_covrad)
+            Juliafunctions=load_julia_interface()
+            connectivity = Juliafunctions.calc_connectivity(chosen_coords, chosen_elems, conndepth, scale, tol, eldict_covrad)
         except:
             print("Problem importing Pyjulia (import julia). Trying py-version instead")
             connectivity = calc_conn_py(chosen_coords, chosen_elems, conndepth, scale, tol)
@@ -1869,12 +1876,17 @@ def hungarian_julia(A, B):
         #timestampA = time.time()
         
         #This one is SLOW!!! For rad30 Bf3hcn example it takes 23 seconds compare to 3.8 sec for scipy. 0.8 sec for scipy for both dist and hungarian
-        #distances =ash.Main.Juliafunctions.distance_array(A,B)
+        #distances =Juliafunctions.distance_array(A,B)
         distances = cdist(A, B, 'euclidean')
         #ash.print_time_rel(timestampA, modulename='julia distance array')
         #timestampA = time.time()
         # Julian Hungarian call. Requires Hungarian package
-        assignment, cost = ash.Hungarian.hungarian(distances)
+        try:
+            Juliafunctions=load_julia_interface()
+        except:
+            print("Problem loading Julia")
+            exit()
+        assignment, cost = Juliafunctions.Hungarian.hungarian(distances)
         
         #ash.print_time_rel(timestampA, modulename='julia hungarian')
         #timestampA = time.time()
