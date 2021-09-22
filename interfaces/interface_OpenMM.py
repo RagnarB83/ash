@@ -383,7 +383,7 @@ class OpenMMTheory:
                                                 nonbondedCutoff=periodic_nonbonded_cutoff * self.unit.angstroms, ewaldErrorTolerance=self.ewalderrortolerance)
                 elif Amberfiles is True:
                     #NOTE: Amber-interface has read PBC info from prmtop file already
-                    self.system = self.forcefield.createSystem(nonbondedMethod=openmm.app.PME, constraints=self.autoconstraints, hydrogenMass=self.hydrogenmass, rigidWater=self.rigidwater,
+                    self.system = self.forcefield.createSystem( nonbondedMethod=openmm.app.PME, constraints=self.autoconstraints, hydrogenMass=self.hydrogenmass, rigidWater=self.rigidwater,
                                                 nonbondedCutoff=periodic_nonbonded_cutoff * self.unit.angstroms)
                     
                     #print("self.system num con", self.system.getNumConstraints())
