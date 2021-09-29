@@ -1750,8 +1750,7 @@ def OpenMM_MD(fragment=None, theory=None, timestep=0.001, simulation_steps=None,
 
     # , enforcePeriodicBox=True
     state = openmmobject.simulation.context.getState(getEnergy=True, getPositions=True, getForces=True)
-    print("Checking PBC vectors")
-    print("PBC: ", state.getPeriodicBoxVectors())
+    print("PBC vectors: ", state.getPeriodicBoxVectors())
 
     #Writing final frame to disk as PDB
     with open('final_MDfrag_laststep.pdb', 'w') as f: openmmobject.openmm.app.pdbfile.PDBFile.writeHeader(openmmobject.topology, f)
@@ -1766,7 +1765,8 @@ def OpenMM_MD(fragment=None, theory=None, timestep=0.001, simulation_steps=None,
     openmmobject.unfreeze_atoms()
 
 
-
+    print('All Done!')
+    print("ASH fragment now contains coordinates from last MD snapshot.")
     print_time_rel(module_init_time, modulename="OpenMM_MD", moduleindex=1)
 
 def OpenMM_Opt(fragment=None, theory=None, maxiter=1000, tolerance=1, frozen_atoms=None, constraints=None, restraints=None, trajectory_file_option='PDB', traj_frequency=1, enforcePeriodicBox=True):
@@ -1880,29 +1880,10 @@ def OpenMM_Opt(fragment=None, theory=None, maxiter=1000, tolerance=1, frozen_ato
     print("Removing frozen atoms from OpenMM object")
     openmmobject.unfreeze_atoms()
 
-
-
     print('All Done!')
+    print("ASH fragment now contains optimized coordinates.")
     print_time_rel(module_init_time, modulename="OpenMM_Opt", moduleindex=1)
-    # Now write a serialized state that has coordinates
-    #print('Finished. Writing serialized XML restart file...')
-    #with open('job.min.xml', 'w') as f:
-    #    f.write(
-    #            openmmobject.openmm.XmlSerializer.serialize(
-    #                openmmobject.simulation.context.getState(getPositions=True, getVelocities=True,
-    #                                    getForces=True, getEnergy=True,
-    #                                    enforcePeriodicBox=True)
-    #            )
-    #    )
 
-    #print('Loading the XML file and calculating energy')
-    #openmmobject.simulation.context.setState(
-    #        openmmobject.openmm.XmlSerializer.deserialize(open('job.min.xml').read())
-    #)
-    #state = openmmobject.simulation.context.getState(getEnergy=True)
-    #print('After minimization. Potential energy is %.5f' %
-    #        (state.getPotentialEnergy().value_in_unit_system(openmmobject.unit.md_unit_system))
-    #)
 
 def OpenMM_Modeller(pdbfile=None, forcefield=None, xmlfile=None, waterxmlfile=None, watermodel=None, pH=7.0, 
                     solvent_padding=10.0, solvent_boxdims=None, extraxmlfile=None, residue_variants=None,
