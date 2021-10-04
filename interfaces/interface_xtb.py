@@ -276,6 +276,7 @@ class xTBTheory:
             #QM/MM pointcharge field
             #calc.
             if PC==True:
+                print("Using PointCharges")
                 mmcharges=np.array(MMcharges)
                 #print("Setting external point charges")
                 #print("num MM charges", len(MMcharges))
@@ -295,6 +296,7 @@ class xTBTheory:
             res = self.calcobject.singlepoint()
             print("------------xTB calculation done-------------")
             if Grad == True:
+                print("Grad is True")
                 self.energy = res.get_energy()
                 self.grad =res.get_gradient()
                 if self.printlevel >= 2:
