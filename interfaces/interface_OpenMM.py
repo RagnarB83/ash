@@ -1886,8 +1886,26 @@ def OpenMM_Opt(fragment=None, theory=None, maxiter=1000, tolerance=1, frozen_ato
     openmmobject.unfreeze_atoms()
 
     print('All Done!')
-    print("ASH fragment now contains optimized coordinates.")
     print_time_rel(module_init_time, modulename="OpenMM_Opt", moduleindex=1)
+    # Now write a serialized state that has coordinates
+    # print('Finished. Writing serialized XML restart file...')
+    # with open('job.min.xml', 'w') as f:
+    #    f.write(
+    #            openmmobject.openmm.XmlSerializer.serialize(
+    #                openmmobject.simulation.context.getState(getPositions=True, getVelocities=True,
+    #                                    getForces=True, getEnergy=True,
+    #                                    enforcePeriodicBox=True)
+    #            )
+    #    )
+
+    # print('Loading the XML file and calculating energy')
+    # openmmobject.simulation.context.setState(
+    #        openmmobject.openmm.XmlSerializer.deserialize(open('job.min.xml').read())
+    # )
+    # state = openmmobject.simulation.context.getState(getEnergy=True)
+    # print('After minimization. Potential energy is %.5f' %
+    #        (state.getPotentialEnergy().value_in_unit_system(openmmobject.unit.md_unit_system))
+    # )
 
 
 def OpenMM_Modeller(pdbfile=None, forcefield=None, xmlfile=None, waterxmlfile=None, watermodel=None, pH=7.0, 
