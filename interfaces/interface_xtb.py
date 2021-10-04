@@ -287,7 +287,7 @@ class xTBTheory:
                 #NOTE: Are these element nuclear charges or what ?
                 numbers=np.array([9999 for i in MMcharges])
                 #print("numbers:", numbers)
-                calc.set_external_charges(numbers,mmcharges,MMcoords_au)
+                self.calcobject.set_external_charges(numbers,mmcharges,MMcoords_au)
 
             #Run
             #TODO: Can we turn off gradient calculation somewhere?
