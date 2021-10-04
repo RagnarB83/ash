@@ -1772,9 +1772,6 @@ def OpenMM_MD(fragment=None, theory=None, timestep=0.001, simulation_steps=None,
     print("Removing frozen atoms from OpenMM object")
     openmmobject.unfreeze_atoms()
 
-
-    print('All Done!')
-    print("ASH fragment now contains coordinates from last MD snapshot.")
     print_time_rel(module_init_time, modulename="OpenMM_MD", moduleindex=1)
 
 def OpenMM_Opt(fragment=None, theory=None, maxiter=1000, tolerance=1, frozen_atoms=None, constraints=None, restraints=None, trajectory_file_option='PDB', traj_frequency=1, enforcePeriodicBox=True):
