@@ -1765,13 +1765,13 @@ def OpenMM_MD(fragment=None, theory=None, timestep=0.001, simulation_steps=None,
                                                                openmmobject.unit.angstrom), f)
     # Updating ASH fragment
 
-    #Writing final frame to disk as PDB
+    # Writing final frame to disk as PDB
     with open('final_MDfrag_laststep.pdb', 'w') as f: 
         openmmobject.openmm.app.pdbfile.PDBFile.writeHeader(openmmobject.topology, f)
     with open('final_MDfrag_laststep.pdb', 'a') as f: 
         openmmobject.openmm.app.pdbfile.PDBFile.writeModel(openmmobject.topology, 
         state.getPositions(asNumpy=True).value_in_unit(openmmobject.unit.angstrom), f)
-    #Updating ASH fragment
+    # Updating ASH fragment
     newcoords = state.getPositions(asNumpy=True).value_in_unit(openmmobject.unit.angstrom)
     print("Updating coordinates in ASH fragment")
     fragment.coords=newcoords
