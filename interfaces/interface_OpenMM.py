@@ -1701,7 +1701,7 @@ def OpenMM_MD(fragment=None, theory=None, timestep=0.001, simulation_steps=None,
     if barostat is not None:
         volume = density = True
     else:
-        volume = density = True
+        volume = density = False
 
     if parmed_state_datareporter is True:
         print("Using ParMed StateDataReporter")
@@ -1856,10 +1856,13 @@ def OpenMM_MD(fragment=None, theory=None, timestep=0.001, simulation_steps=None,
     if plumed_object is not None:
         plumed_object.close()
 
-    # , enforcePeriodicBox=True
+    # enforcePeriodicBox=True
     state = openmmobject.simulation.context.getState(getEnergy=True, getPositions=True, getForces=True)
-    print("Checking PBC vectors")
-    print("PBC: ", state.getPeriodicBoxVectors())
+    print("Checking PBC vectors:")
+    a, b, c = state.getPeriodicBoxVectors()
+    print(f"A: ", a)
+    print(f"B: ", a)
+    print(f"C: ", a)
 
     # Writing final frame to disk as PDB
     with open('final_MDfrag_laststep.pdb', 'w') as f:
