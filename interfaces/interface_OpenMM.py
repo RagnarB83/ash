@@ -1748,13 +1748,29 @@ def OpenMM_MD(fragment=None, theory=None, timestep=0.001, simulation_steps=None,
     if plumed_object != None:
         plumed_object.close()
 
-    # , enforcePeriodicBox=True
+    # enforcePeriodicBox=True
     state = openmmobject.simulation.context.getState(getEnergy=True, getPositions=True, getForces=True)
-    print("PBC vectors: ", state.getPeriodicBoxVectors())
+    print("Checking PBC vectors:")
+    a, b, c = state.getPeriodicBoxVectors()
+    print(f"A: ", a)
+    print(f"B: ", a)
+    print(f"C: ", a)
+
+    # Writing final frame to disk as PDB
+    with open('final_MDfrag_laststep.pdb', 'w') as f:
+        openmmobject.openmm.app.pdbfile.PDBFile.writeHeader(openmmobject.topology, f)
+    with open('final_MDfrag_laststep.pdb', 'a') as f:
+        openmmobject.openmm.app.pdbfile.PDBFile.writeModel(openmmobject.topology,
+                                                           state.getPositions(asNumpy=True).value_in_unit(
+                                                               openmmobject.unit.angstrom), f)
+    # Updating ASH fragment
 
     #Writing final frame to disk as PDB
-    with open('final_MDfrag_laststep.pdb', 'w') as f: openmmobject.openmm.app.pdbfile.PDBFile.writeHeader(openmmobject.topology, f)
-    with open('final_MDfrag_laststep.pdb', 'a') as f: openmmobject.openmm.app.pdbfile.PDBFile.writeModel(openmmobject.topology, state.getPositions(asNumpy=True).value_in_unit(openmmobject.unit.angstrom), f)
+    with open('final_MDfrag_laststep.pdb', 'w') as f: 
+        openmmobject.openmm.app.pdbfile.PDBFile.writeHeader(openmmobject.topology, f)
+    with open('final_MDfrag_laststep.pdb', 'a') as f: 
+        openmmobject.openmm.app.pdbfile.PDBFile.writeModel(openmmobject.topology, 
+        state.getPositions(asNumpy=True).value_in_unit(openmmobject.unit.angstrom), f)
     #Updating ASH fragment
     newcoords = state.getPositions(asNumpy=True).value_in_unit(openmmobject.unit.angstrom)
     print("Updating coordinates in ASH fragment")
