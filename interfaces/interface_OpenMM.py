@@ -2619,19 +2619,6 @@ def basic_atom_charges_ORCA(fragment=None, charge=None, mult=None, orcatheory=No
     print("fragment elems:", fragment.elems)
     return atompropdict
 
-# QM/MM functionality to Open_MM MD
-
-# Janus: https://github.com/CCQC/janus/blob/aa8446e96c90221a10ba37cee379083162ac17e4/janus/mm_wrapper/openmm_wrapper.py#L222
-
-# http://docs.openmm.org/latest/userguide/application.html#extending-forcefield
-
-# https://freesoft.dev/program/166462447
-# https://github.com/openmm/openmmexampleplugin
-# https://github.com/openmm/openmm-torch
-# https://github.com/openmm/openmm-tensorflow
-
-# Polarizable QM/MM: https://github.com/swillow/modelingworkshop/blob/39125c0588621137b962d9837f3463fbb497e793/QMMM/qmmm_pol.py
-
 
 def read_NPT_statefile(npt_output):
     import csv
@@ -2659,11 +2646,13 @@ def read_NPT_statefile(npt_output):
     print("resultdict:", resultdict)
     return resultdict
 
+#############################
 #Multi-step MD protocols
-#OpenMM_box_relaxation: NPT simulations until target volume and density is reached
+#############################
+
 def OpenMM_box_relaxation(fragment=None, theory=None, datafilename="nptsim.csv", numsteps_per_NPT=2000, volume_threshold=1.0, density_threshold=0.001, 
                           temperature=300, timestep=0.001, traj_frequency=100, trajectory_file_option='DCD', coupling_frequency=1):
-    """OpenMM_box_relaxation: NPT simulations until target volume and density is reached
+    """OpenMM_box_relaxation: NPT simulations until volume and density stops changing
 
     Args:
         fragment ([type], optional): [description]. Defaults to None.
