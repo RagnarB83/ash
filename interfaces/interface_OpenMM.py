@@ -712,10 +712,25 @@ class OpenMMTheory:
 
     # Function to add bond constraints to system before MD
     def add_bondconstraints(self, constraints=None):
+        #for i in range(0,self.system.getNumConstraints()):
+        #    print("Constraint:", i)
+        #    print(self.system.getConstraintParameters(i))
+        #prevconstraints=[self.system.getConstraintParameters(i) for i in range(0,self.system.getNumConstraints())]
+        #print("prevconstraints:", prevconstraints)
+        
         for i, j, d in constraints:
+            #Checking if constraints previously defined
+            #if ()
+            #else:
             print("Adding bond constraint between atoms {} and {} . Distance value: {} Å".format(i, j, d))
             self.system.addConstraint(i, j, d * self.unit.angstroms)
-
+    def remove_constraints(self, constraints=None):
+        #Looping over all defined system constraints
+        for i in range(0,self.system.getNumConstraints()):
+            con=self.system.getConstraintParameters(i)
+            for usercon in constraints:
+                if all(elem in usercon for elem in [con[0],con[1]]):
+                    self.system.removeConstraint(i)
     # Function to add restraints to system before MD
     def add_bondrestraints(self, restraints=None):
         new_restraints = self.openmm.HarmonicBondForce()
@@ -1901,15 +1916,6 @@ def OpenMM_MD(fragment=None, theory=None, timestep=0.001, simulation_steps=None,
     #System. Necessary
     openmmobject.system.setDefaultPeriodicBoxVectors(*[a,b,c])
     
-    a, b, c = state.getPeriodicBoxVectors()
-    ax, bx, cx = openmmobject.system.getDefaultPeriodicBoxVectors()
-    print(f"A: ", a)
-    print(f"B: ", b)
-    print(f"C: ", c)
-    print(f"Ax: ", ax)
-    print(f"Bx: ", bx)
-    print(f"Cx: ", cx)
-
     # Writing final frame to disk as PDB
     with open('final_MDfrag_laststep.pdb', 'w') as f:
         openmmobject.openmm.app.pdbfile.PDBFile.writeHeader(openmmobject.topology, f)
@@ -1925,7 +1931,11 @@ def OpenMM_MD(fragment=None, theory=None, timestep=0.001, simulation_steps=None,
     # Remove frozen atom constraints in the end
     print("Removing frozen atoms from OpenMM object")
     openmmobject.unfreeze_atoms()
-
+    
+    #Remove user-applied constraints to avoid double-enforcing later
+    print("Removing constraints")
+    openmmobject.remove_constraints(constraints)
+    
     print_time_rel(module_init_time, modulename="OpenMM_MD", moduleindex=1)
 
 
@@ -2053,6 +2063,10 @@ def OpenMM_Opt(fragment=None, theory=None, maxiter=1000, tolerance=1, frozen_ato
     # Remove frozen atom constraints in the end
     print("Removing frozen atoms from OpenMM object")
     openmmobject.unfreeze_atoms()
+
+    #Remove user-applied constraints to avoid double-enforcing later
+    print("Removing constraints")
+    openmmobject.remove_constraints(constraints)
 
     print('All Done!')
     print_time_rel(module_init_time, modulename="OpenMM_Opt", moduleindex=1)
