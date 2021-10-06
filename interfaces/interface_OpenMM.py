@@ -2676,8 +2676,8 @@ def OpenMM_box_relaxation(fragment=None, theory=None, datafilename="nptsim.csv",
 
         #Read reporter file and check stdev
         NPTresults = read_NPT_statefile(datafilename)
-        volume_threshold=NPTresults["volume_std"]
-        density_threshold=NPTresults["density_std"]
+        volume_par=NPTresults["volume_std"]
+        density_par=NPTresults["density_std"]
         print("{} steps taken in total. Volume : {} stdev: {}    Density: {} stdev: {}".format(steps, NPTresults["volume"],
             NPTresults["volume_std"], NPTresults["density"], NPTresults["density_std"]))
         print("Density threshold:", density_threshold)
