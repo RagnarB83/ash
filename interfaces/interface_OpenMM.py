@@ -24,7 +24,7 @@ class OpenMMTheory:
                  CHARMMfiles=False, psffile=None, charmmtopfile=None, charmmprmfile=None,
                  GROMACSfiles=False, gromacstopfile=None, grofile=None, gromacstopdir=None,
                  Amberfiles=False, amberprmtopfile=None,
-                 cluster_fragment=None, ASH_FF_file=None,
+                 cluster_fragment=None, ASH_FF_file=None, PBCvectors=None,
                  xmlfiles=None, pdbfile=None, use_parmed=False,
                  xmlsystemfile=None,
                  do_energy_decomposition=False,
@@ -437,6 +437,12 @@ class OpenMMTheory:
 
                 # TODO: Customnonbonded force option. Currently disabled
                 print("OpenMM system created")
+                if PBCvectors != None:
+                    pbcvectors_mod = PBCvectors
+                    print("Setting PBC vectors by user request")
+                    print("Assuming list of lists or list of Vec3 objects")
+                    print("Assuming vectors in nanometers")
+                    self.system.setDefaultPeriodicBoxVectors(*PBCvectors)
                 print("Periodic vectors:", self.system.getDefaultPeriodicBoxVectors())
                 # Force modification here
                 print("OpenMM Forces defined:", self.system.getForces())
