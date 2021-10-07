@@ -725,12 +725,15 @@ class OpenMMTheory:
             print("Adding bond constraint between atoms {} and {} . Distance value: {} Å".format(i, j, d))
             self.system.addConstraint(i, j, d * self.unit.angstroms)
     def remove_constraints(self, constraints=None):
+        todelete=[]
         #Looping over all defined system constraints
         for i in range(0,self.system.getNumConstraints()):
             con=self.system.getConstraintParameters(i)
             for usercon in constraints:
                 if all(elem in usercon for elem in [con[0],con[1]]):
-                    self.system.removeConstraint(i)
+                    todelete.append(i)
+        for d in reversed(todelete):
+            self.system.removeConstraint(d)
     # Function to add restraints to system before MD
     def add_bondrestraints(self, restraints=None):
         new_restraints = self.openmm.HarmonicBondForce()
@@ -1565,7 +1568,7 @@ def OpenMM_MD(fragment=None, theory=None, timestep=0.001, simulation_steps=None,
               traj_frequency=1000, temperature=300, integrator=None,
               barostat=None, pressure=1, trajectory_file_option='PDB', coupling_frequency=None, anderson_thermostat=False,
               enforcePeriodicBox=True, frozen_atoms=None, constraints=None, restraints=None,
-              parmed_state_datareporter=False, datafilename=None, dummy_MM=False, plumed_object=None, add_center_force=False,
+              datafilename=None, dummy_MM=False, plumed_object=None, add_center_force=False,
               center_force_atoms=None, centerforce_constant=1.0):
     module_init_time = time.time()
 
@@ -1739,26 +1742,17 @@ def OpenMM_MD(fragment=None, theory=None, timestep=0.001, simulation_steps=None,
     else:
         volume = density = False
 
-    if parmed_state_datareporter is True:
-        print("Using ParMed StateDataReporter")
-        import parmed
-        openmmobject.simulation.reporters.append(
-            parmed.openmm.StateDataReporter(stdout, traj_frequency, step=True, time=True,
-                                            potentialEnergy=True, kineticEnergy=True, volume=volume, density=density,
-                                            temperature=True, separator=','))
-        #\t
+    #If statedatareporter filename set:
+    if datafilename != None:
+        outputoption=datafilename
+    #otherwise stdout:
     else:
-        #If statedatareporter filename set:
-        if datafilename != None:
-            outputoption=datafilename
-        #otherwise stdout:
-        else:
-            outputoption=stdout
-        
-        openmmobject.simulation.reporters.append(
-            openmmobject.openmm.app.StateDataReporter(outputoption, traj_frequency, step=True, time=True,
-                                                      potentialEnergy=True, kineticEnergy=True, volume=volume,
-                                                      density=density, temperature=True, separator=','))
+        outputoption=stdout
+    
+    openmmobject.simulation.reporters.append(
+        openmmobject.openmm.app.StateDataReporter(outputoption, traj_frequency, step=True, time=True,
+                                                    potentialEnergy=True, kineticEnergy=True, volume=volume,
+                                                    density=density, temperature=True, separator=','))
 
 
     # Run simulation
