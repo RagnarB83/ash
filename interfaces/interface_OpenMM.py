@@ -107,7 +107,8 @@ class OpenMMTheory:
         self.system_masses = []
         # Platform (CPU, CUDA, OpenCL) and Parallelization
         self.platform_choice = platform
-        # CPU: Control either by provided numcores keyword, or by setting env variable: $OPENMM_CPU_THREADS in shell before running.
+        # CPU: Control either by provided numcores keyword, or by setting env variable: $OPENMM_CPU_THREADS in shell
+        # before running.
         self.properties = {}
         if self.platform_choice == 'CPU':
             print("Using platform: CPU")
@@ -122,7 +123,8 @@ class OpenMMTheory:
                         os.environ["OPENMM_CPU_THREADS"]))
                 except KeyError:
                     print(
-                        "OPENMM_CPU_THREADS environment variable not set. OpenMM will choose number of physical cores present.")
+                        "OPENMM_CPU_THREADS environment variable not set. OpenMM will choose number of physical cores "
+                        "present.")
         else:
             print("Using platform:", self.platform_choice)
 
@@ -164,7 +166,8 @@ class OpenMMTheory:
         # What type of forcefield files to read. Reads in different way.
         print("Now reading forcefield files")
         print(
-            "Note: OpenMM will fail in this step if parameters are missing in topology and parameter files (e.g. nonbonded entries)")
+            "Note: OpenMM will fail in this step if parameters are missing in topology and parameter files (e.g. "
+            "nonbonded entries)")
 
         # #Always creates object we call self.forcefield that contains topology attribute
         if CHARMMfiles is True:
@@ -320,7 +323,7 @@ class OpenMMTheory:
             self.forcefield = openmm.app.ForceField([xmlfile])
 
         # Load XMLfile for whole system
-        elif xmlsystemfile is None:
+        elif xmlsystemfile is not None:
             print("Reading system XML file:", xmlsystemfile)
             xmlsystemfileobj = open(xmlsystemfile).read()
             # Deserialize the XML text to create a System object.
@@ -368,9 +371,11 @@ class OpenMMTheory:
 
                     if charmm_periodic_cell_dimensions is None:
                         print(
-                            "Error: When using CHARMMfiles and Periodic=True, charmm_periodic_cell_dimensions keyword needs to be supplied")
+                            "Error: When using CHARMMfiles and Periodic=True, charmm_periodic_cell_dimensions keyword "
+                            "needs to be supplied")
                         print(
-                            "Example: charmm_periodic_cell_dimensions= [200, 200, 200, 90, 90, 90]  in Angstrom and degrees")
+                            "Example: charmm_periodic_cell_dimensions= [200, 200, 200, 90, 90, 90]  in Angstrom and "
+                            "degrees")
                         exit()
                     self.charmm_periodic_cell_dimensions = charmm_periodic_cell_dimensions
                     print("Periodic cell dimensions:", charmm_periodic_cell_dimensions)
@@ -437,8 +442,8 @@ class OpenMMTheory:
 
                 # TODO: Customnonbonded force option. Currently disabled
                 print("OpenMM system created")
-                if PBCvectors != None:
-                    pbcvectors_mod = PBCvectors
+                if PBCvectors is not None:
+                    # pbcvectors_mod = PBCvectors
                     print("Setting PBC vectors by user request")
                     print("Assuming list of lists or list of Vec3 objects")
                     print("Assuming vectors in nanometers")
@@ -488,7 +493,6 @@ class OpenMMTheory:
 
                         # self.nonbonded_force=force
                         # NOTE: These are hard-coded!
-
 
             # Non-Periodic
             else:
@@ -577,7 +581,7 @@ class OpenMMTheory:
                 print("constraint:", constraint)
         print("self.system dict", self.system.__dict__)
         print_time_rel(timeA, modulename="system create")
-        timeA = time.time()
+        # timeA = time.time()
 
         # constraints=simtk.openmm.app.HBonds, AllBonds, HAngles
         # Remove Frozen-Frozen interactions
@@ -627,7 +631,7 @@ class OpenMMTheory:
         # self.simulation = self.simulationclass(self.topology, self.system, self.integrator,self.platform)
 
         print_time_rel(timeA, modulename="simulation setup")
-        timeA = time.time()
+        # timeA = time.time()
         print_time_rel(module_init_time, modulename="OpenMM object creation")
 
     # add force that restrains atoms to a fixed point:
@@ -712,16 +716,16 @@ class OpenMMTheory:
 
     # Function to add bond constraints to system before MD
     def add_bondconstraints(self, constraints=None):
-        #for i in range(0,self.system.getNumConstraints()):
+        # for i in range(0,self.system.getNumConstraints()):
         #    print("Constraint:", i)
         #    print(self.system.getConstraintParameters(i))
-        #prevconstraints=[self.system.getConstraintParameters(i) for i in range(0,self.system.getNumConstraints())]
-        #print("prevconstraints:", prevconstraints)
-        
+        # prevconstraints=[self.system.getConstraintParameters(i) for i in range(0,self.system.getNumConstraints())]
+        # print("prevconstraints:", prevconstraints)
+
         for i, j, d in constraints:
-            #Checking if constraints previously defined
-            #if ()
-            #else:
+            # Checking if constraints previously defined
+            # if ()
+            # else:
             print("Adding bond constraint between atoms {} and {} . Distance value: {} Å".format(i, j, d))
             self.system.addConstraint(i, j, d * self.unit.angstroms)
 
@@ -749,7 +753,8 @@ class OpenMMTheory:
 
     # TODO: Angleconstraints and Dihedral restraints
 
-    # Function to freeze atoms during OpenMM MD simulation. Sets masses to zero. Does not modify potential energy-function.
+    # Function to freeze atoms during OpenMM MD simulation. Sets masses to zero. Does not modify potential
+    # energy-function.
     def freeze_atoms(self, frozen_atoms=None):
         # Preserve original masses
         self.system_masses = [self.system.getParticleMass(i) for i in self.allatoms]
@@ -854,7 +859,8 @@ class OpenMMTheory:
         #                                1 / self.unit.picosecond,  # Friction coefficient
         #                                0.002 * self.unit.picoseconds)  # Time step
 
-        # Integrators: LangevinIntegrator, LangevinMiddleIntegrator, NoseHooverIntegrator, VerletIntegrator, BrownianIntegrator, VariableLangevinIntegrator, VariableVerletIntegrator
+        # Integrators: LangevinIntegrator, LangevinMiddleIntegrator, NoseHooverIntegrator, VerletIntegrator,
+        # BrownianIntegrator, VariableLangevinIntegrator, VariableVerletIntegrator
         if integrator == 'VerletIntegrator':
             self.integrator = self.openmm.VerletIntegrator(timestep * self.unit.picoseconds)
         elif integrator == 'VariableVerletIntegrator':
@@ -881,7 +887,8 @@ class OpenMMTheory:
                                                                      timestep * self.unit.picoseconds)
         else:
             print(BC.FAIL,
-                  "Unknown integrator.\n Valid integrator keywords are: VerletIntegrator, VariableVerletIntegrator, LangevinIntegrator, LangevinMiddleIntegrator, NoseHooverIntegrator, VariableLangevinIntegrator ",
+                  "Unknown integrator.\n Valid integrator keywords are: VerletIntegrator, VariableVerletIntegrator, "
+                  "LangevinIntegrator, LangevinMiddleIntegrator, NoseHooverIntegrator, VariableLangevinIntegrator ",
                   BC.END)
             exit()
         self.simulation = self.simulationclass(self.topology, self.system, self.integrator, self.platform,
@@ -955,7 +962,7 @@ class OpenMMTheory:
                 openmm_energy['Otherforce' + str(extrafcount)] = comp[1]
 
         print_time_rel(timeA, modulename="energy decomposition")
-        timeA = time.time()
+        # timeA = time.time()
 
         # The force terms to print in the ordered table.
         # Deprecated. Better to print everything.
@@ -991,10 +998,10 @@ class OpenMMTheory:
 
     def run(self, current_coords=None, elems=None, Grad=False, fragment=None, qmatoms=None):
         module_init_time = time.time()
-        timeA = time.time()
+        # timeA = time.time()
         print(BC.OKBLUE, BC.BOLD, "------------RUNNING OPENMM INTERFACE-------------", BC.END)
-        # If no coords given to run then a single-point job probably (not part of Optimizer or MD which would supply coords).
-        # Then try if fragment object was supplied.
+        # If no coords given to run then a single-point job probably (not part of Optimizer or MD which would supply
+        # coords). Then try if fragment object was supplied.
         # Otherwise internal coords if they exist
         if current_coords is None:
             if fragment is None:
@@ -1009,9 +1016,9 @@ class OpenMMTheory:
 
         # Making sure coords is np array and not list-of-lists
         current_coords = np.array(current_coords)
-        ##  unit conversion for energy
+        #  unit conversion for energy
         # eqcgmx = 2625.5002
-        ## unit conversion for force
+        # unit conversion for force
         # TODO: Check this.
         # fqcgmx = -49614.75258920567
         # fqcgmx = -49621.9
@@ -1045,7 +1052,8 @@ class OpenMMTheory:
 
         print_time_rel(timeA, modulename="Updating MM positions")
         timeA = time.time()
-        # While these distance constraints should not matter, applying them makes the energy function agree with previous benchmarking for bonded and nonbonded
+        # While these distance constraints should not matter, applying them makes the energy function agree with
+        # previous benchmarking for bonded and nonbonded
         # https://www.ncbi.nlm.nih.gov/pmc/articles/PMC5549999/
         # Using 1e-6 hardcoded value since how used in paper
         # NOTE: Weirdly, applyconstraints is True result in constraints for TIP3P disappearing
@@ -1065,7 +1073,7 @@ class OpenMMTheory:
             self.energy = state.getPotentialEnergy().value_in_unit(self.unit.kilojoule_per_mole) / constants.hartokj
 
         print_time_rel(timeA, modulename="OpenMM getState")
-        timeA = time.time()
+        # timeA = time.time()
         print("OpenMM Energy:", self.energy, "Eh")
         print("OpenMM Energy:", self.energy * constants.harkcal, "kcal/mol")
 
@@ -1191,7 +1199,7 @@ class OpenMMTheory:
         timeA = time.time()
         print("Updating charges in OpenMM object.")
         assert len(atomlist) == len(atomcharges)
-        newcharges = []
+        # newcharges = []
         # print("atomlist:", atomlist)
         for atomindex, newcharge in zip(atomlist, atomcharges):
             # Updating big chargelist of OpenMM object.
@@ -1237,7 +1245,7 @@ class OpenMMTheory:
         numpertorsionterms_removed = 0
         numcustomtorsionterms_removed = 0
         numcmaptorsionterms_removed = 0
-        numcmmotionterms_removed = 0
+        # numcmmotionterms_removed = 0
         numcustombondterms_removed = 0
 
         for force in self.system.getForces():
@@ -1393,7 +1401,7 @@ class OpenMMTheory:
                         # print("p1: {} p2: {}")
                         force.setBondParameters(i, p1, p2, [0.0, 0.0, 0.0])
                         numcustombondterms_removed += 1
-                        p1, p2, vars = force.getBondParameters(i)
+                        # p1, p2, vars = force.getBondParameters(i)
                         # print("p1: {} p2: {}")
                         # print("vars:", vars)
                         # exit()
@@ -1449,7 +1457,8 @@ class OpenMMTheory:
 # 1. Keep nonbonded force for only those interactions and maybe also electrostatics?
 # Mimic this??: https://github.com/openmm/openmm/blob/master/devtools/forcefield-scripts/processCharmmForceField.py
 # Or do it via Parmed? Better supported for future??
-# 2. Go through the 1-4 interactions and not exclude but scale somehow manually. But maybe we can't do that in CustomNonbonded Force?
+# 2. Go through the 1-4 interactions and not exclude but scale somehow manually. But maybe we can't do that in
+# CustomNonbonded Force?
 # Presumably not but maybe can add a special force object just for 1-4 interactions. We
 def create_cnb(original_nbforce):
     """Creates a CustomNonbondedForce object that mimics the original nonbonded force
@@ -1479,7 +1488,8 @@ def create_cnb(original_nbforce):
     for index in range(self.system.getNumParticles()):
         [charge, sigma, epsilon] = original_nbforce.getParticleParameters(index)
         custom_nonbonded_force.addParticle([charge, sigma, epsilon])
-    # For CustomNonbondedForce we need (unlike NonbondedForce) to create exclusions that correspond to the automatic exceptions in NonbondedForce
+    # For CustomNonbondedForce we need (unlike NonbondedForce) to create exclusions that correspond to the automatic
+    # exceptions in NonbondedForce
     # These are interactions that are skipped for bonded atoms
     numexceptions = original_nbforce.getNumExceptions()
     print("numexceptions in original_nbforce: ", numexceptions)
@@ -1559,16 +1569,19 @@ def clean_up_constraints_list(fragment=None, constraints=None):
 
 
 # Simple Molecular Dynamics using the OpenMM  object
-# Integrators: LangevinMiddleIntegrator, NoseHooverIntegrator, VerletIntegrator, BrownianIntegrator, VariableLangevinIntegrator, VariableVerletIntegrator
+# Integrators: LangevinMiddleIntegrator, NoseHooverIntegrator, VerletIntegrator, BrownianIntegrator,
+# VariableLangevinIntegrator, VariableVerletIntegrator
 # Additional thermostat: AndersenThermostat (use with Verlet)
 # Barostat: MonteCarloBarostat (not yet supported: MonteCarloAnisotropicBarostat, MonteCarloMembraneBarostat)
 
-# Note: enforcePeriodicBox=True/False/None option. False works for current test system to get trajectory without PBC problem. Other systems may require True or None.
+# Note: enforcePeriodicBox=True/False/None option. False works for current test system to get trajectory without PBC
+# problem. Other systems may require True or None.
 # see https://github.com/openmm/openmm/issues/2688, https://github.com/openmm/openmm/pull/1895
 # Also should we add: https://github.com/mdtraj/mdtraj ?
 def OpenMM_MD(fragment=None, theory=None, timestep=0.001, simulation_steps=None, simulation_time=None,
               traj_frequency=1000, temperature=300, integrator=None,
-              barostat=None, pressure=1, trajectory_file_option='PDB', coupling_frequency=None, anderson_thermostat=False,
+              barostat=None, pressure=1, trajectory_file_option='PDB', coupling_frequency=None,
+              anderson_thermostat=False,
               enforcePeriodicBox=True, frozen_atoms=None, constraints=None, restraints=None,
               datafilename=None, dummy_MM=False, plumed_object=None, add_center_force=False,
               center_force_atoms=None, centerforce_constant=1.0):
@@ -1632,14 +1645,16 @@ def OpenMM_MD(fragment=None, theory=None, timestep=0.001, simulation_steps=None,
     if openmmobject.autoconstraints is None:
         print(BC.WARNING, "Warning: Autoconstraints have not been set in OpenMMTheory object definition.")
         print(
-            "This means that by default no bonds are constrained in the MD simulation. This usually requires a small timestep: 0.5 fs or so")
+            "This means that by default no bonds are constrained in the MD simulation. This usually requires a small "
+            "timestep: 0.5 fs or so")
         print("autoconstraints='HBonds' is recommended for 1-2 fs timesteps with Verlet (4fs with Langevin).")
         print("autoconstraints='AllBonds' or autoconstraints='HAngles' allows even larger timesteps to be used", BC.END)
         print("Will continue...")
     if openmmobject.rigidwater is True and len(frozen_atoms) != 0 or (
             openmmobject.autoconstraints is not None and len(frozen_atoms) != 0):
         print(
-            "Warning: Frozen_atoms options selected but there are general constraints defined in the OpenMM object (either rigidwater=True or autoconstraints != None")
+            "Warning: Frozen_atoms options selected but there are general constraints defined in the OpenMM object "
+            "(either rigidwater=True or autoconstraints != None")
         print("OpenMM will crash if constraints and frozen atoms involve the same atoms")
     print("")
 
@@ -1669,14 +1684,14 @@ def OpenMM_MD(fragment=None, theory=None, timestep=0.001, simulation_steps=None,
 
     print("After adding constraints, system contains {} constraints".format(openmmobject.system.getNumConstraints()))
 
-    forceclassnames=[i.__class__.__name__ for i in openmmobject.system.getForces()]
+    forceclassnames = [i.__class__.__name__ for i in openmmobject.system.getForces()]
     # Set up system with chosen barostat, thermostat, integrator
     if barostat is not None:
         print("Attempting to add barostat")
         if "MonteCarloBarostat" not in forceclassnames:
             print("Adding barostat")
             openmmobject.system.addForce(openmmobject.openmm.MonteCarloBarostat(pressure * openmmobject.openmm.unit.bar,
-                                                                            temperature * openmmobject.openmm.unit.kelvin))
+                                                                                temperature * openmmobject.openmm.unit.kelvin))
         else:
             print("Barostat already present. Skipping")
         print("after barostat added")
@@ -1690,25 +1705,25 @@ def OpenMM_MD(fragment=None, theory=None, timestep=0.001, simulation_steps=None,
         if "AndersenThermostat" not in forceclassnames:
             openmmobject.system.addForce(
                 openmmobject.openmm.AndersenThermostat(temperature * openmmobject.openmm.unit.kelvin,
-                                                    1 / openmmobject.openmm.unit.picosecond))
+                                                       1 / openmmobject.openmm.unit.picosecond))
         integrator = "VerletIntegrator"
         print("Now using integrator:", integrator)
         openmmobject.create_simulation(timestep=timestep, temperature=temperature, integrator=integrator,
                                        coupling_frequency=coupling_frequency)
     else:
-        #Deleting barostat and Andersen thermostat if present from previous sims
-        for i,forcename in enumerate(forceclassnames):
+        # Deleting barostat and Andersen thermostat if present from previous sims
+        for i, forcename in enumerate(forceclassnames):
             if forcename == "MonteCarloBarostat" or forcename == "AndersenThermostat":
                 print("Removing old force:", forcename)
                 openmmobject.system.removeForce(i)
-        
+
         # Regular thermostat or integrator without barostat
         # Integrators: LangevinIntegrator, LangevinMiddleIntegrator, NoseHooverIntegrator, VerletIntegrator,
         # BrownianIntegrator, VariableLangevinIntegrator, VariableVerletIntegrator
         openmmobject.create_simulation(timestep=timestep, temperature=temperature, integrator=integrator,
                                        coupling_frequency=coupling_frequency)
     print("Simulation created.")
-    forceclassnames=[i.__class__.__name__ for i in openmmobject.system.getForces()]
+    forceclassnames = [i.__class__.__name__ for i in openmmobject.system.getForces()]
     print("OpenMM System forces present:", forceclassnames)
     print("Checking Initial PBC vectors")
     state = openmmobject.simulation.context.getState()
@@ -1744,21 +1759,20 @@ def OpenMM_MD(fragment=None, theory=None, timestep=0.001, simulation_steps=None,
     else:
         volume = density = False
 
-    #If statedatareporter filename set:
-    if datafilename != None:
-        outputoption=datafilename
-    #otherwise stdout:
+    # If statedatareporter filename set:
+    if datafilename is not None:
+        outputoption = datafilename
+    # otherwise stdout:
     else:
-        outputoption=stdout
-    
+        outputoption = stdout
+
     openmmobject.simulation.reporters.append(
         openmmobject.openmm.app.StateDataReporter(outputoption, traj_frequency, step=True, time=True,
-                                                    potentialEnergy=True, kineticEnergy=True, volume=volume,
-                                                    density=density, temperature=True, separator=','))
-
+                                                  potentialEnergy=True, kineticEnergy=True, volume=volume,
+                                                  density=density, temperature=True, separator=','))
 
     # Run simulation
-    kjmolnm_to_atomic_factor = -49614.752589207
+    # kjmolnm_to_atomic_factor = -49614.752589207
 
     # NOTE: Better to use OpenMM-plumed interface instead??
     if plumed_object is not None:
@@ -1872,13 +1886,13 @@ def OpenMM_MD(fragment=None, theory=None, timestep=0.001, simulation_steps=None,
 
         # Setting coordinates
         openmmobject.set_positions(fragment.coords)
-        current_coords = fragment.coords
+        # current_coords = fragment.coords
 
         dummygradient = np.random.random((fragment.numatoms, 3)) * 0.001
         for i in range(simulation_steps):
             # Get current coordinates to use for QM/MM step
-            current_coords = np.array(
-                openmmobject.simulation.context.getState(getPositions=True).getPositions(asNumpy=True)) * 10
+            # current_coords = np.array(
+            #     openmmobject.simulation.context.getState(getPositions=True).getPositions(asNumpy=True)) * 10
             # Custom force update (slows things down a bit)
             openmmobject.update_custom_external_force(dummygradient)
             # Now take OpenMM step
@@ -1907,11 +1921,11 @@ def OpenMM_MD(fragment=None, theory=None, timestep=0.001, simulation_steps=None,
 
     # Set new PBC vectors since they may have changed
     print("Updating PBC vectors")
-    #Context. Used?
-    openmmobject.simulation.context.setPeriodicBoxVectors(*[a,b,c])
-    #System. Necessary
-    openmmobject.system.setDefaultPeriodicBoxVectors(*[a,b,c])
-    
+    # Context. Used?
+    openmmobject.simulation.context.setPeriodicBoxVectors(*[a, b, c])
+    # System. Necessary
+    openmmobject.system.setDefaultPeriodicBoxVectors(*[a, b, c])
+
     # Writing final frame to disk as PDB
     with open('final_MDfrag_laststep.pdb', 'w') as f:
         openmmobject.openmm.app.pdbfile.PDBFile.writeHeader(openmmobject.topology, f)
@@ -1927,11 +1941,11 @@ def OpenMM_MD(fragment=None, theory=None, timestep=0.001, simulation_steps=None,
     # Remove frozen atom constraints in the end
     print("Removing frozen atoms from OpenMM object")
     openmmobject.unfreeze_atoms()
-    
-    #Remove user-applied constraints to avoid double-enforcing later
+
+    # Remove user-applied constraints to avoid double-enforcing later
     print("Removing constraints")
     openmmobject.remove_constraints(constraints)
-    
+
     print_time_rel(module_init_time, modulename="OpenMM_MD", moduleindex=1)
 
 
@@ -2060,7 +2074,7 @@ def OpenMM_Opt(fragment=None, theory=None, maxiter=1000, tolerance=1, frozen_ato
     print("Removing frozen atoms from OpenMM object")
     openmmobject.unfreeze_atoms()
 
-    #Remove user-applied constraints to avoid double-enforcing later
+    # Remove user-applied constraints to avoid double-enforcing later
     print("Removing constraints")
     openmmobject.remove_constraints(constraints)
 
@@ -2203,7 +2217,7 @@ def OpenMM_Modeller(pdbfile=None, forcefield=None, xmlfile=None, waterxmlfile=No
 
     # User provided dictionary of special residues e.g residue_variants={0:'LYN', 17:'CYX', 18:'ASH', 19:'HIE' }
     # Now creating list of all residues [None,None,None...] with added changes
-    residue_states = [None for i in range(0, numresidues)]
+    residue_states = [None for _ in range(0, numresidues)]
     if residue_variants is not None:
         for resid, newstate in residue_variants.items():
             residue_states[resid] = newstate
@@ -2348,7 +2362,7 @@ def MDAnalysis_transform(topfile, trajfile, solute_indices=None, trajoutputforma
     numatoms = len(u.atoms)
     solutenum = len(solute_indices)
     solute = u.atoms[:solutenum]
-    solvent = u.atoms[solutenum:numatoms]
+    # solvent = u.atoms[solutenum:numatoms]
     fullsystem = u.atoms[:numatoms]
     elems_list = list(fullsystem.types)
     # Guess bonds. Could also read in vdW radii. Could also read in connectivity from ASH if this fails
@@ -2427,7 +2441,7 @@ def solvate_small_molecule(fragment=None, charge=None, mult=None, watermodel=Non
         # Advantage: also contains ion parameters
         waterxmlfile = "charmm36/water.xml"
     else:
-        print("unknown watermodel");
+        print("unknown watermodel")
         exit()
 
     # Define nonbonded paramers
@@ -2643,6 +2657,7 @@ def read_NPT_statefile(npt_output):
     resultdict = {"steps": steps, "volume": volume, "density": density}
     return resultdict
 
+
 #############################
 #  Multi-step MD protocols  #
 #############################
@@ -2682,12 +2697,14 @@ def OpenMM_box_relaxation(fragment=None, theory=None, datafilename="nptsim.csv",
     print("Density threshold:", density_threshold)
     print("Volume threshold:", volume_threshold)
 
+    md = OpenMM_MDclass(fragment=fragment, theory=theory, timestep=timestep, traj_frequency=traj_frequency,
+                        temperature=temperature, integrator="LangevinMiddleIntegrator",
+                        coupling_frequency=coupling_frequency, barostat='MonteCarloBarostat',
+                        datafilename=datafilename, trajectory_file_option=trajectory_file_option,
+                        frozen_atoms=frozen_atoms, constraints=constraints, restraints=restraints)
+
     while volume_std >= volume_threshold and density_std >= density_threshold:
-        OpenMM_MD(fragment=fragment, theory=theory, timestep=timestep, simulation_steps=numsteps_per_NPT,
-                  traj_frequency=traj_frequency, temperature=temperature, integrator="LangevinMiddleIntegrator",
-                  coupling_frequency=coupling_frequency, barostat='MonteCarloBarostat', datafilename=datafilename,
-                  trajectory_file_option=trajectory_file_option, frozen_atoms=frozen_atoms, constraints=constraints,
-                  restraints=restraints)
+        md.run(numsteps_per_NPT)
         steps += numsteps_per_NPT
 
         # Read reporter file and calculate stdev
@@ -2706,24 +2723,19 @@ def OpenMM_box_relaxation(fragment=None, theory=None, datafilename="nptsim.csv",
     print("Relaxation of periodic box size finished!\n")
 
 
-
-
-
-
-
-
 ###########################
 # CLASS-BASED OpenMM_MD
 # Under development
 ###########################
 
 class OpenMM_MDclass:
-    def __init__(self,fragment=None, theory=None, timestep=0.001, 
-              traj_frequency=1000, temperature=300, integrator=None,
-              barostat=None, pressure=1, trajectory_file_option='PDB', coupling_frequency=None, anderson_thermostat=False,
-              enforcePeriodicBox=True, frozen_atoms=None, constraints=None, restraints=None,
-              datafilename=None, dummy_MM=False, plumed_object=None, add_center_force=False,
-              center_force_atoms=None, centerforce_constant=1.0):
+    def __init__(self, fragment=None, theory=None, timestep=0.001,
+                 traj_frequency=1000, temperature=300, integrator=None,
+                 barostat=None, pressure=1, trajectory_file_option='PDB', coupling_frequency=None,
+                 anderson_thermostat=False,
+                 enforcePeriodicBox=True, frozen_atoms=None, constraints=None, restraints=None,
+                 datafilename=None, dummy_MM=False, plumed_object=None, add_center_force=False,
+                 center_force_atoms=None, centerforce_constant=1.0):
         module_init_time = time.time()
 
         print_line_with_mainheader("OpenMM MOLECULAR DYNAMICS INITIALIZATION")
@@ -2742,35 +2754,36 @@ class OpenMM_MDclass:
         if frozen_atoms is None:
             self.frozen_atoms = []
         else:
-            self.frozen_atoms=frozen_atoms
+            self.frozen_atoms = frozen_atoms
         if constraints is None:
             self.constraints = []
         else:
-            self.constraints=constraints
+            self.constraints = constraints
         if restraints is None:
             self.restraints = []
         else:
-            self.restraints=restraints
+            self.restraints = restraints
 
         if fragment is None:
             print("No fragment object. Exiting")
             exit()
         else:
-            self.fragment=fragment
-        #various
-        self.temperature=temperature
-        self.integrator=integrator
-        self.coupling_frequency=coupling_frequency
-        self.timestep=timestep
-        self.traj_frequency=traj_frequency
-        self.plumed_object=plumed_object
+            self.fragment = fragment
+        # various
+        self.temperature = temperature
+        self.pressure = pressure
+        self.integrator = integrator
+        self.coupling_frequency = coupling_frequency
+        self.timestep = timestep
+        self.traj_frequency = traj_frequency
+        self.plumed_object = plumed_object
         print("Temperature: {} K".format(self.temperature))
         print("Number of frozen atoms:", len(self.frozen_atoms))
         if len(self.frozen_atoms) < 50:
             print("Frozen atoms", self.frozen_atoms)
         print("OpenMM autoconstraints:", self.openmmobject.autoconstraints)
         print("OpenMM hydrogenmass:",
-            self.openmmobject.hydrogenmass)  # Note 1.5 amu mass is recommended for LangevinMiddle with 4fs timestep
+              self.openmmobject.hydrogenmass)  # Note 1.5 amu mass is recommended for LangevinMiddle with 4fs timestep
         print("OpenMM rigidwater constraints:", self.openmmobject.rigidwater)
         print("Constraints:", self.constraints)
         print("Restraints:", self.restraints)
@@ -2789,14 +2802,17 @@ class OpenMM_MDclass:
         if self.openmmobject.autoconstraints is None:
             print(BC.WARNING, "Warning: Autoconstraints have not been set in OpenMMTheory object definition.")
             print(
-                "This means that by default no bonds are constrained in the MD simulation. This usually requires a small timestep: 0.5 fs or so")
+                "This means that by default no bonds are constrained in the MD simulation. This usually requires a "
+                "small timestep: 0.5 fs or so")
             print("autoconstraints='HBonds' is recommended for 1-2 fs timesteps with Verlet (4fs with Langevin).")
-            print("autoconstraints='AllBonds' or autoconstraints='HAngles' allows even larger timesteps to be used", BC.END)
+            print("autoconstraints='AllBonds' or autoconstraints='HAngles' allows even larger timesteps to be used",
+                  BC.END)
             print("Will continue...")
         if self.openmmobject.rigidwater is True and len(self.frozen_atoms) != 0 or (
                 self.openmmobject.autoconstraints is not None and len(self.frozen_atoms) != 0):
             print(
-                "Warning: Frozen_atoms options selected but there are general constraints defined in the OpenMM object (either rigidwater=True or autoconstraints != None")
+                "Warning: Frozen_atoms options selected but there are general constraints defined in the OpenMM object "
+                "(either rigidwater=True or autoconstraints != None")
             print("OpenMM will crash if constraints and frozen atoms involve the same atoms")
         print("")
 
@@ -2805,9 +2821,11 @@ class OpenMM_MDclass:
         # HAngles constraints: even larger timesteps
         # HAngles constraints: even larger timesteps
 
-        print("Before adding constraints, system contains {} constraints".format(self.openmmobject.system.getNumConstraints()))
+        print("Before adding constraints, system contains {} constraints".format(
+            self.openmmobject.system.getNumConstraints()))
 
-        # Freezing atoms in OpenMM object by setting particles masses to zero. Needs to be done before simulation creation
+        # Freezing atoms in OpenMM object by setting particles masses to zero. Needs to be done before simulation
+        # creation
         if len(self.frozen_atoms) > 0:
             self.openmmobject.freeze_atoms(frozen_atoms=self.frozen_atoms)
 
@@ -2821,51 +2839,57 @@ class OpenMM_MDclass:
             self.openmmobject.add_bondconstraints(constraints=self.constraints)
         if len(self.restraints) > 0:
             print("Restraints defined")
-            # restraints is a list of lists defining bond restraints: constraints = [[atom_i,atom_j, d, k ]]    Example: [[700,701, 1.05, 5.0 ]] Unit is Angstrom and kcal/mol * Angstrom^-2
+            # restraints is a list of lists defining bond restraints: constraints = [[atom_i,atom_j, d, k ]]
+            # Example: [[700,701, 1.05, 5.0 ]] Unit is Angstrom and kcal/mol * Angstrom^-2
             self.openmmobject.add_bondrestraints(restraints=self.restraints)
 
-        print("After adding constraints, system contains {} constraints".format(self.openmmobject.system.getNumConstraints()))
+        print("After adding constraints, system contains {} constraints".format(
+            self.openmmobject.system.getNumConstraints()))
 
-        forceclassnames=[i.__class__.__name__ for i in self.openmmobject.system.getForces()]
+        forceclassnames = [i.__class__.__name__ for i in self.openmmobject.system.getForces()]
         # Set up system with chosen barostat, thermostat, integrator
         if barostat is not None:
             print("Attempting to add barostat")
             if "MonteCarloBarostat" not in forceclassnames:
                 print("Adding barostat")
-                self.openmmobject.system.addForce(self.openmmobject.openmm.MonteCarloBarostat(self.pressure * self.openmmobject.openmm.unit.bar,
-                                                                                self.temperature * self.openmmobject.openmm.unit.kelvin))
+                self.openmmobject.system.addForce(
+                    self.openmmobject.openmm.MonteCarloBarostat(self.pressure * self.openmmobject.openmm.unit.bar,
+                                                                self.temperature * self.openmmobject.openmm.unit.kelvin))
             else:
                 print("Barostat already present. Skipping")
             print("after barostat added")
 
             self.integrator = "LangevinMiddleIntegrator"
             print("Barostat requires using integrator:", integrator)
-            self.openmmobject.create_simulation(timestep=self.timestep, temperature=self.temperature, integrator=self.integrator,
-                                        coupling_frequency=self.coupling_frequency)
+            self.openmmobject.create_simulation(timestep=self.timestep, temperature=self.temperature,
+                                                integrator=self.integrator,
+                                                coupling_frequency=self.coupling_frequency)
         elif anderson_thermostat is True:
             print("Anderson thermostat is on")
             if "AndersenThermostat" not in forceclassnames:
                 self.openmmobject.system.addForce(
                     self.openmmobject.openmm.AndersenThermostat(self.temperature * self.openmmobject.openmm.unit.kelvin,
-                                                        1 / self.openmmobject.openmm.unit.picosecond))
+                                                                1 / self.openmmobject.openmm.unit.picosecond))
             self.integrator = "VerletIntegrator"
             print("Now using integrator:", integrator)
-            self.openmmobject.create_simulation(timestep=self.timestep, temperature=self.temperature, integrator=self.integrator,
-                                        coupling_frequency=coupling_frequency)
+            self.openmmobject.create_simulation(timestep=self.timestep, temperature=self.temperature,
+                                                integrator=self.integrator,
+                                                coupling_frequency=coupling_frequency)
         else:
-            #Deleting barostat and Andersen thermostat if present from previous sims
-            for i,forcename in enumerate(forceclassnames):
+            # Deleting barostat and Andersen thermostat if present from previous sims
+            for i, forcename in enumerate(forceclassnames):
                 if forcename == "MonteCarloBarostat" or forcename == "AndersenThermostat":
                     print("Removing old force:", forcename)
                     self.openmmobject.system.removeForce(i)
-            
+
             # Regular thermostat or integrator without barostat
             # Integrators: LangevinIntegrator, LangevinMiddleIntegrator, NoseHooverIntegrator, VerletIntegrator,
             # BrownianIntegrator, VariableLangevinIntegrator, VariableVerletIntegrator
-            self.openmmobject.create_simulation(timestep=self.timestep, temperature=self.temperature, integrator=self.integrator,
-                                        coupling_frequency=self.coupling_frequency)
+            self.openmmobject.create_simulation(timestep=self.timestep, temperature=self.temperature,
+                                                integrator=self.integrator,
+                                                coupling_frequency=self.coupling_frequency)
         print("Simulation created.")
-        forceclassnames=[i.__class__.__name__ for i in self.openmmobject.system.getForces()]
+        forceclassnames = [i.__class__.__name__ for i in self.openmmobject.system.getForces()]
         print("OpenMM System forces present:", forceclassnames)
         print("Checking Initial PBC vectors")
         self.state = self.openmmobject.simulation.context.getState()
@@ -2876,49 +2900,53 @@ class OpenMM_MDclass:
 
         # THIS DOES NOT APPLY TO QM/MM. MOVE ELSEWHERE??
         if trajectory_file_option == 'PDB':
-            self.openmmobject.simulation.reporters.append(self.openmmobject.openmm.app.PDBReporter('output_traj.pdb', self.traj_frequency,
-                                                                                        enforcePeriodicBox=enforcePeriodicBox))
+            self.openmmobject.simulation.reporters.append(
+                self.openmmobject.openmm.app.PDBReporter('output_traj.pdb', self.traj_frequency,
+                                                         enforcePeriodicBox=enforcePeriodicBox))
         elif trajectory_file_option == 'DCD':
             # NOTE: Disabling for now
             # with open('initial_MDfrag_step1.pdb', 'w') as f: openmmobject.openmm.app.pdbfile.PDBFile
             # .writeModel(openmmobject.topology, openmmobject.simulation.context.getState(getPositions=True,
             # enforcePeriodicBox=enforcePeriodicBox).getPositions(), f)
             # print("Wrote PDB")
-            self.openmmobject.simulation.reporters.append(openmmobject.openmm.app.DCDReporter('output_traj.dcd', self.traj_frequency,
-                                                                                        enforcePeriodicBox=enforcePeriodicBox))
+            self.openmmobject.simulation.reporters.append(
+                self.openmmobject.openmm.app.DCDReporter('output_traj.dcd', self.traj_frequency,
+                                                         enforcePeriodicBox=enforcePeriodicBox))
         elif trajectory_file_option == 'NetCDFReporter':
             print("NetCDFReporter traj format selected. This requires mdtraj. Importing.")
             mdtraj = MDtraj_import_()
-            self.openmmobject.simulation.reporters.append(mdtraj.reporters.NetCDFReporter('output_traj.nc', self.traj_frequency))
+            self.openmmobject.simulation.reporters.append(
+                mdtraj.reporters.NetCDFReporter('output_traj.nc', self.traj_frequency))
         elif trajectory_file_option == 'HDF5Reporter':
             print("HDF5Reporter traj format selected. This requires mdtraj. Importing.")
             mdtraj = MDtraj_import_()
             self.openmmobject.simulation.reporters.append(
-                mdtraj.reporters.HDF5Reporter('output_traj.lh5', self.traj_frequency, enforcePeriodicBox=enforcePeriodicBox))
+                mdtraj.reporters.HDF5Reporter('output_traj.lh5', self.traj_frequency,
+                                              enforcePeriodicBox=enforcePeriodicBox))
 
         if barostat is not None:
             volume = density = True
         else:
             volume = density = False
 
-        #If statedatareporter filename set:
-        if datafilename != None:
-            outputoption=datafilename
-        #otherwise stdout:
+        # If statedatareporter filename set:
+        if datafilename is not None:
+            outputoption = datafilename
+        # otherwise stdout:
         else:
-            outputoption=stdout
-        
+            outputoption = stdout
+
         self.openmmobject.simulation.reporters.append(
             self.openmmobject.openmm.app.StateDataReporter(outputoption, self.traj_frequency, step=True, time=True,
-                                                        potentialEnergy=True, kineticEnergy=True, volume=volume,
-                                                        density=density, temperature=True, separator=','))
+                                                           potentialEnergy=True, kineticEnergy=True, volume=volume,
+                                                           density=density, temperature=True, separator=','))
 
         # NOTE: Better to use OpenMM-plumed interface instead??
         if plumed_object is not None:
             print("Plumed active")
             # Create new OpenMM custom external force
             print("Creating new OpenMM custom external force for Plumed")
-            plumedcustomforce = openmmobject.add_custom_external_force()
+            # plumedcustomforce = openmmobject.add_custom_external_force()
 
         # QM/MM MD
         if self.QM_MM_object is not None:
@@ -2962,7 +2990,7 @@ class OpenMM_MDclass:
                 print("center:", center)
 
                 self.openmmobject.add_center_force(center_coords=center, atomindices=center_force_atoms,
-                                            forceconstant=centerforce_constant)
+                                                   forceconstant=centerforce_constant)
 
             # Setting coordinates of OpenMM object from current fragment.coords
             self.openmmobject.set_positions(self.fragment.coords)
@@ -2979,7 +3007,7 @@ class OpenMM_MDclass:
             except FileNotFoundError:
                 pass
             print_time_rel(module_init_time, modulename="OpenMM_MD setup", moduleindex=1)
-            
+
     # Simulation loop
     def run(self, simulation_steps=None, simulation_time=None):
         module_init_time = time.time()
@@ -2992,13 +3020,13 @@ class OpenMM_MDclass:
             simulation_steps = int(simulation_time / self.timestep)
         if simulation_steps is not None:
             simulation_time = simulation_steps * self.timestep
-            
+
         print("Simulation time: {} ps".format(simulation_time))
         print("Simulation steps: {}".format(simulation_steps))
         print("Timestep: {} ps".format(self.timestep))
-        
+
         # Run simulation
-        kjmolnm_to_atomic_factor = -49614.752589207
+        # kjmolnm_to_atomic_factor = -49614.752589207
 
         if self.QM_MM_object is not None:
             for step in range(simulation_steps):
@@ -3006,7 +3034,7 @@ class OpenMM_MDclass:
                 print("Step:", step)
                 # Get current coordinates to use for QM/MM step
                 current_coords = np.array(self.openmmobject.simulation.context.getState(getPositions=True,
-                                                                                enforcePeriodicBox=self.enforcePeriodicBox).getPositions(
+                                                                                        enforcePeriodicBox=self.enforcePeriodicBox).getPositions(
                     asNumpy=True)) * 10
                 # state =  openmmobject.simulation.context.getState(getPositions=True, enforcePeriodicBox=enforcePeriodicBox)
                 # current_coords = np.array(state.getPositions(asNumpy=True))*10
@@ -3017,7 +3045,7 @@ class OpenMM_MDclass:
                 # Updates OpenMM object with QM-PC forces
                 checkpoint = time.time()
                 self.QM_MM_object.run(current_coords=current_coords, elems=self.fragment.elems, Grad=True,
-                                exit_after_customexternalforce_update=True)
+                                      exit_after_customexternalforce_update=True)
                 print_time_rel(checkpoint, modulename="QM/MM run", moduleindex=2)
                 # NOTE: Think about energy correction (currently skipped above)
                 # Now take OpenMM step (E+G + displacement etc.)
@@ -3030,11 +3058,14 @@ class OpenMM_MDclass:
                 if self.plumed_object is not None:
                     print("Plumed active. Untested. Hopefully works")
                     current_coords = np.array(
-                        self.openmmobject.simulation.context.getState(getPositions=True).getPositions(asNumpy=True))  # in nm
+                        self.openmmobject.simulation.context.getState(getPositions=True).getPositions(
+                            asNumpy=True))  # in nm
                     current_forces = np.array(
-                        self.openmmobject.simulation.context.getState(getForces=True).getForces(asNumpy=True))  # in kJ/mol /nm
+                        self.openmmobject.simulation.context.getState(getForces=True).getForces(
+                            asNumpy=True))  # in kJ/mol /nm
+                    # Plumed object needs to be configured for OpenMM
                     energy, newforces = self.plumed_object.run(coords=current_coords, forces=current_forces,
-                                                        step=step)  # Plumed object needs to be configured for OpenMM
+                                                               step=step)
                     self.openmmobject.update_custom_external_force(self.plumedcustomforce, newforces)
 
         else:
@@ -3060,29 +3091,21 @@ class OpenMM_MDclass:
 
         # Set new PBC vectors since they may have changed
         print("Updating PBC vectors")
-        #Context. Used?
-        self.openmmobject.simulation.context.setPeriodicBoxVectors(*[a,b,c])
-        #System. Necessary
-        self.openmmobject.system.setDefaultPeriodicBoxVectors(*[a,b,c])
-        
+        # Context. Used?
+        self.openmmobject.simulation.context.setPeriodicBoxVectors(*[a, b, c])
+        # System. Necessary
+        self.openmmobject.system.setDefaultPeriodicBoxVectors(*[a, b, c])
+
         # Writing final frame to disk as PDB
         with open('final_MDfrag_laststep.pdb', 'w') as f:
             self.openmmobject.openmm.app.pdbfile.PDBFile.writeHeader(self.openmmobject.topology, f)
         with open('final_MDfrag_laststep.pdb', 'a') as f:
             self.openmmobject.openmm.app.pdbfile.PDBFile.writeModel(self.openmmobject.topology,
-                                                            self.state.getPositions(asNumpy=True).value_in_unit(
-                                                                self.openmmobject.unit.angstrom), f)
+                                                                    self.state.getPositions(asNumpy=True).value_in_unit(
+                                                                        self.openmmobject.unit.angstrom), f)
         # Updating ASH fragment
         newcoords = self.state.getPositions(asNumpy=True).value_in_unit(self.openmmobject.unit.angstrom)
         print("Updating coordinates in ASH fragment")
         self.fragment.coords = newcoords
 
-        # Remove frozen atom constraints in the end
-        print("Removing frozen atoms from OpenMM object")
-        self.openmmobject.unfreeze_atoms()
-        
-        #Remove user-applied constraints to avoid double-enforcing later
-        print("Removing constraints")
-        self.openmmobject.remove_constraints(self.constraints)
-        
         print_time_rel(module_init_time, modulename="OpenMM_MD run", moduleindex=1)
