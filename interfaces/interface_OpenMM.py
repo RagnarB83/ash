@@ -2759,6 +2759,7 @@ class OpenMM_MDclass:
             self.fragment=fragment
         #various
         self.temperature=temperature
+        self.pressure=pressure
         self.integrator=integrator
         self.coupling_frequency=coupling_frequency
         self.timestep=timestep
