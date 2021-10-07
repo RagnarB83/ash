@@ -4,8 +4,8 @@
  # Ash: a computational chemistry environment
 Ash is a Python-based computational chemistry and QM/MM environment, primarily for molecular calculations
 in the gas phase, explicit solution, crystal or protein environment. Can do single-point calculations,
-geometry optimizations, molecular dynamics (soon), numerical frequencies using a MM, QM or QM/MM Hamiltonian.
-Interfaces to popular QM codes: ORCA, xTB, Psi4, PySCF
+geometry optimizations, surface scans, molecular dynamics, numerical frequencies etc. using a MM, QM or QM/MM Hamiltonian.
+Interfaces to popular QM codes: ORCA, xTB, Psi4, PySCF, Dalton, CFour, MRCC.
 
 Documentation: https://ash.readthedocs.io/en/latest
 
@@ -26,8 +26,8 @@ HF_frag=Fragment(coordsstring=coords)
 HF_frag=Fragment(xyzfile="hf.xyz")
 
 #ORCA settings
-orcadir='/opt/orca_4.2.1'
-input="! BP86 def2-SVP Grid5 Finalgrid6 tightscf"
+orcadir='/opt/orca_5.0.0'
+input="! r2SCAN def2-SVP def2/J tightscf"
 blocks="%scf maxiter 200 end"
 #ORCA theory object
 ORCAcalc = ORCATheory(orcadir=orcadir, fragment=HF_frag, charge=0, mult=1,
