@@ -724,22 +724,24 @@ class OpenMMTheory:
             #else:
             print("Adding bond constraint between atoms {} and {} . Distance value: {} Å".format(i, j, d))
             self.system.addConstraint(i, j, d * self.unit.angstroms)
-    def remove_constraints(self, constraints=None):
-        todelete=[]
-        #Looping over all defined system constraints
-        for i in range(0,self.system.getNumConstraints()):
-            con=self.system.getConstraintParameters(i)
+
+    def remove_constraints(self, constraints):
+        todelete = []
+        # Looping over all defined system constraints
+        for i in range(0, self.system.getNumConstraints()):
+            con = self.system.getConstraintParameters(i)
             for usercon in constraints:
-                if all(elem in usercon for elem in [con[0],con[1]]):
+                if all(elem in usercon for elem in [con[0], con[1]]):
                     todelete.append(i)
         for d in reversed(todelete):
             self.system.removeConstraint(d)
+
     # Function to add restraints to system before MD
     def add_bondrestraints(self, restraints=None):
         new_restraints = self.openmm.HarmonicBondForce()
         for i, j, d, k in restraints:
             print(
-                "Adding bond restraint between atoms {} and {} . Distance value: {} Å. Force constant: {} kcal/mol*Å^-2".format(
+                "Adding bond restraint between atoms {} and {}. Distance value: {} Å. Force constant: {} kcal/mol*Å^-2".format(
                     i, j, d, k))
             new_restraints.addBond(i, j, d * self.unit.angstroms,
                                    k * self.unit.kilocalories_per_mole / self.unit.angstroms ** 2)
@@ -2626,26 +2628,30 @@ def read_NPT_statefile(npt_output):
             for (k, v) in row.items():
                 columns[k].append(v)
 
-    # Extract volume and density, cast as floats and extract last iterations
+    # Extract step number, volume and density and cast as floats
+    steps = np.array(columns['#"Step"'])
     volume = np.array(columns["Box Volume (nm^3)"]).astype(float)
-    volume = volume[-1:-10:-1]
+    # volume = volume[-1:-10:-1]
     density = np.array(columns["Density (g/mL)"]).astype(float)
-    density = density[-1:-10:-1]
+    # density = density[-1:-10:-1]
 
     # Calculate standard deviations
-    volume_std = np.std(volume)
-    density_std = np.std(density)
+    # volume_std = np.std(volume)
+    # density_std = np.std(density)
 
-    resultdict={"volume_std":volume_std, "density_std":density_std, "density":density[-1], "volume":volume[-1]}
-    print("resultdict:", resultdict)
+    # resultdict = {"volume_std": volume_std, "density_std": density_std, "density": density[-1], "volume": volume[-1]}
+    resultdict = {"steps": steps, "volume": volume, "density": density}
     return resultdict
 
 #############################
-#Multi-step MD protocols
+#  Multi-step MD protocols  #
 #############################
 
-def OpenMM_box_relaxation(fragment=None, theory=None, datafilename="nptsim.csv", numsteps_per_NPT=2000, volume_threshold=1.0, density_threshold=0.001, 
-                          temperature=300, timestep=0.001, traj_frequency=100, trajectory_file_option='DCD', coupling_frequency=1):
+
+def OpenMM_box_relaxation(fragment=None, theory=None, datafilename="nptsim.csv", numsteps_per_NPT=10000,
+                          volume_threshold=1.0, density_threshold=0.001, temperature=300, timestep=0.001,
+                          traj_frequency=100, trajectory_file_option='DCD', coupling_frequency=1,
+                          frozen_atoms=None, constraints=None, restraints=None):
     """OpenMM_box_relaxation: NPT simulations until volume and density stops changing
 
     Args:
@@ -2661,30 +2667,41 @@ def OpenMM_box_relaxation(fragment=None, theory=None, datafilename="nptsim.csv",
         trajectory_file_option (str, optional): [description]. Defaults to 'DCD'.
         coupling_frequency (int, optional): [description]. Defaults to 1.
     """
-    if fragment==None or theory == None:
+
+    print("Starting relaxation of periodic box size\n")
+
+    if fragment is None or theory is None:
         print("Fragment and theory required")
         exit()
-    #Starting parameters
+
+    # Starting parameters
     steps = 0
-    volume_par=50
-    density_par=1
+    volume_std = 10
+    density_std = 1
 
-    while volume_par >= volume_threshold and density_par >= density_threshold:
-        OpenMM_MD(fragment=fragment, theory=theory, timestep=timestep,
-            simulation_steps=numsteps_per_NPT, traj_frequency=traj_frequency, temperature=temperature,
-            integrator="LangevinMiddleIntegrator", coupling_frequency=coupling_frequency,
-            barostat='MonteCarloBarostat', datafilename=datafilename,
-            trajectory_file_option=trajectory_file_option)
-        steps+=numsteps_per_NPT
+    print("Density threshold:", density_threshold)
+    print("Volume threshold:", volume_threshold)
 
-        #Read reporter file and check stdev
+    while volume_std >= volume_threshold and density_std >= density_threshold:
+        OpenMM_MD(fragment=fragment, theory=theory, timestep=timestep, simulation_steps=numsteps_per_NPT,
+                  traj_frequency=traj_frequency, temperature=temperature, integrator="LangevinMiddleIntegrator",
+                  coupling_frequency=coupling_frequency, barostat='MonteCarloBarostat', datafilename=datafilename,
+                  trajectory_file_option=trajectory_file_option, frozen_atoms=frozen_atoms, constraints=constraints,
+                  restraints=restraints)
+        steps += numsteps_per_NPT
+
+        # Read reporter file and calculate stdev
         NPTresults = read_NPT_statefile(datafilename)
-        volume_par=NPTresults["volume_std"]
-        density_par=NPTresults["density_std"]
-        print("{} steps taken in total. Volume : {} stdev: {}    Density: {} stdev: {}".format(steps, NPTresults["volume"],
-            NPTresults["volume_std"], NPTresults["density"], NPTresults["density_std"]))
-        print("Density threshold:", density_threshold)
-        print("Volume threshold:", volume_threshold)
+        volume = NPTresults["volume"]
+        density = NPTresults["density"]
+        volume_std = np.std(volume)
+        density_std = np.std(density)
+
+        print("{} steps taken in total. Volume : {} stdev: {}\tDensity: {} stdev: {}".format(steps,
+                                                                                             volume[-1],
+                                                                                             volume_std,
+                                                                                             density[-1],
+                                                                                             density_std))
 
     print("Relaxation of periodic box size finished!\n")
 
