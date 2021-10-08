@@ -30,7 +30,7 @@ julia_loaded=False
 def load_julia_interface():
     global julia_loaded
     global JuliaMain
-    if julia_loaded == False:
+    if julia_loaded is False:
         #print("julia loaded false")
         #from julia.api import Julia
         #jl = Julia(compiled_modules=False)
