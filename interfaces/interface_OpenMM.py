@@ -2657,8 +2657,6 @@ def read_NPT_statefile(npt_output):
     resultdict = {"steps": steps, "volume": volume, "density": density}
     return resultdict
 
-
-
 ###########################
 # CLASS-BASED OpenMM_MD
 ###########################
