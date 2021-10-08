@@ -2662,8 +2662,71 @@ def read_NPT_statefile(npt_output):
 #  Multi-step MD protocols  #
 #############################
 
-
 def OpenMM_box_relaxation(fragment=None, theory=None, datafilename="nptsim.csv", numsteps_per_NPT=10000,
+                          volume_threshold=1.0, density_threshold=0.001, temperature=300, timestep=0.001,
+                          traj_frequency=100, trajectory_file_option='DCD', coupling_frequency=1,
+                          frozen_atoms=None, constraints=None, restraints=None):
+    """OpenMM_box_relaxation: NPT simulations until volume and density stops changing
+
+    Args:
+        fragment ([type], optional): [description]. Defaults to None.
+        theory ([type], optional): [description]. Defaults to None.
+        datafilename (str, optional): [description]. Defaults to "nptsim.csv".
+        numsteps_per_NPT (int, optional): [description]. Defaults to 2000.
+        volume_threshold (float, optional): [description]. Defaults to 1.0.
+        density_threshold (float, optional): [description]. Defaults to 0.001.
+        temperature (int, optional): [description]. Defaults to 300.
+        timestep (float, optional): [description]. Defaults to 0.001.
+        traj_frequency (int, optional): [description]. Defaults to 100.
+        trajectory_file_option (str, optional): [description]. Defaults to 'DCD'.
+        coupling_frequency (int, optional): [description]. Defaults to 1.
+    """
+
+    print("Starting relaxation of periodic box size\n")
+
+    if fragment is None or theory is None:
+        print("Fragment and theory required")
+        exit()
+
+    # Starting parameters
+    steps = 0
+    volume_std = 10
+    density_std = 1
+
+    print("Density threshold:", density_threshold)
+    print("Volume threshold:", volume_threshold)
+
+    OpenMM_MD(fragment=fragment, theory=theory, timestep=timestep, traj_frequency=traj_frequency,
+                        temperature=temperature, integrator="LangevinMiddleIntegrator",
+                        coupling_frequency=coupling_frequency, barostat='MonteCarloBarostat',
+                        datafilename=datafilename, trajectory_file_option=trajectory_file_option,
+                        frozen_atoms=frozen_atoms, constraints=constraints, restraints=restraints)
+
+    while volume_std >= volume_threshold and density_std >= density_threshold:
+        OpenMM_MD(fragment=fragment, theory=theory, timestep=timestep, traj_frequency=traj_frequency,
+                  temperature=temperature, integrator="LangevinMiddleIntegrator", simulation_steps=numsteps_per_NPT,
+                  coupling_frequency=coupling_frequency, barostat='MonteCarloBarostat',
+                  datafilename=datafilename, trajectory_file_option=trajectory_file_option,
+                  frozen_atoms=frozen_atoms, constraints=constraints, restraints=restraints)
+        steps += numsteps_per_NPT
+
+        # Read reporter file and calculate stdev
+        NPTresults = read_NPT_statefile(datafilename)
+        volume = NPTresults["volume"]
+        density = NPTresults["density"]
+        volume_std = np.std(volume)
+        density_std = np.std(density)
+
+        print("{} steps taken in total. Volume : {} stdev: {}\tDensity: {} stdev: {}".format(steps,
+                                                                                             volume[-1],
+                                                                                             volume_std,
+                                                                                             density[-1],
+                                                                                             density_std))
+
+    print("Relaxation of periodic box size finished!\n")
+
+
+def OpenMM_box_relaxation_class(fragment=None, theory=None, datafilename="nptsim.csv", numsteps_per_NPT=10000,
                           volume_threshold=1.0, density_threshold=0.001, temperature=300, timestep=0.001,
                           traj_frequency=100, trajectory_file_option='DCD', coupling_frequency=1,
                           frozen_atoms=None, constraints=None, restraints=None):
