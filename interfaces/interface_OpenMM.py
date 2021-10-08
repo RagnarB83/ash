@@ -3080,13 +3080,13 @@ def OpenMM_box_relaxation(fragment=None, theory=None, datafilename="nptsim.csv",
                           volume_threshold=1.0, density_threshold=0.001, temperature=300, timestep=0.001,
                           traj_frequency=100, trajectory_file_option='DCD', coupling_frequency=1,
                           frozen_atoms=None, constraints=None, restraints=None):
-    """OpenMM_box_relaxation: NPT simulations until volume and density stops changing
+    """NPT simulations until volume and density stops changing
 
     Args:
         fragment ([type], optional): [description]. Defaults to None.
         theory ([type], optional): [description]. Defaults to None.
         datafilename (str, optional): [description]. Defaults to "nptsim.csv".
-        numsteps_per_NPT (int, optional): [description]. Defaults to 2000.
+        numsteps_per_NPT (int, optional): [description]. Defaults to 10000.
         volume_threshold (float, optional): [description]. Defaults to 1.0.
         density_threshold (float, optional): [description]. Defaults to 0.001.
         temperature (int, optional): [description]. Defaults to 300.
@@ -3094,6 +3094,9 @@ def OpenMM_box_relaxation(fragment=None, theory=None, datafilename="nptsim.csv",
         traj_frequency (int, optional): [description]. Defaults to 100.
         trajectory_file_option (str, optional): [description]. Defaults to 'DCD'.
         coupling_frequency (int, optional): [description]. Defaults to 1.
+        frozen_atoms ([type], optional): [description]. Defaults to None.
+        constraints ([type], optional): [description]. Defaults to None.
+        restraints ([type], optional): [description]. Defaults to None.
     """
 
     print("Starting relaxation of periodic box size\n")
