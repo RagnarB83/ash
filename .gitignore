@@ -14,3 +14,4 @@ reorder-test
 test.py
 unused
 __pycache__
+set_environment_ash.sh
