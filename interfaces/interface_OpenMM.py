@@ -2774,6 +2774,8 @@ def OpenMM_box_relaxation_class(fragment=None, theory=None, datafilename="nptsim
         NPTresults = read_NPT_statefile(datafilename)
         volume = NPTresults["volume"]
         density = NPTresults["density"]
+        volume = volume[-traj_frequency:]
+        density = density[-traj_frequency:]
         volume_std = np.std(volume)
         density_std = np.std(density)
 
