@@ -245,7 +245,7 @@ def Dynamics_ASE(fragment=None, PBC=False, theory=None, temperature=300, timeste
     dyn.attach(print_step, interval=1)
     dyn.attach(write_traj, interval=traj_frequency)
 
-    #SAFIRES: Adaptive QM/MM
+    #SAFIRES
     if safires == True:
         if safires_solute == None or safires_inner_region == None:
             print("Safires requires safires_solute and safires_inner_region lists to be defined")
@@ -256,6 +256,7 @@ def Dynamics_ASE(fragment=None, PBC=False, theory=None, temperature=300, timeste
 
         #When Safires has become part of ASE
         #from ase.md.safires import SAFIRES
+        #Until then:
         from interfaces.interface_safires import SAFIRES
         #Setting up Safires
         safires = SAFIRES(atoms=atoms,
