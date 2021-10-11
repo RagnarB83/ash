@@ -165,15 +165,12 @@ class Fragment:
                 print("Adding extra coordinates")
         coordslist=coordsstring.split('\n')
         tempcoords=[]
-        for count, line in enumerate(coordslist):
-            if len(line)> 1:
+        for line in coordslist:
+            if len(line)> 5:
                 self.elems.append(reformat_element(line.split()[0]))
-                #self.coords.append([float(line.split()[1]), float(line.split()[2]), float(line.split()[3])])
                 #Appending to numpy array
                 clist= [float(line.split()[1]),float(line.split()[2]),float(line.split()[3])]
                 tempcoords.append(clist)
-                #clist_np=reformat_list_to_array(clist)
-                #self.coords = np.append(self.coords, [clist_np],axis=0)
         #Converting list of lists to numpy array
         self.coords=reformat_list_to_array(tempcoords)
         self.label=''.join(self.elems)
@@ -192,9 +189,11 @@ class Fragment:
         if conn==True:
             self.calc_connectivity(scale=scale, tol=tol)
     def delete_coords(self):
+        #TODO: Should we allow this? We can not update attributes so current fragment info is all wrong after running
         self.coords=np.zeros((0,3))
         self.elems=[]
         self.connectivity=[]
+        #self.update_attributes()
     #Get list of atom-indices for specific elements or groups
     #Atom indices except those provided
     def get_atomindices_except(self,excludelist):
@@ -1405,7 +1404,9 @@ def read_pdbfile(filename, use_atomnames_as_elements=False):
     try:
         with open(filename) as f:
             for line in f:
-                if 'ATOM ' in line or 'HETATM' in line:
+                #if 'ATOM ' in line or 'HETATM' in line:
+                if line.startswith("ATOM") or line.startswith("HETATM"):
+                    print("line:", line)
                     #atomindex=float(line[6:11].replace(' ',''))
                     atom_name=line[12:16].replace(' ','')
                     residname.append(line[17:20].replace(' ',''))
@@ -2451,7 +2452,7 @@ def update_atom_indices_upon_deletion(atomlist,dellist):
 def remove_atoms_from_PSF(atomindices=None,topfile=None,psffile=None,psfgendir=None):
     #Change to 1-based indexing for PSFgen
     atomindices_string='{ '+' '.join(([str(i+1) for i in atomindices]))+' }'
-    psf_script="""
+    psf_script = """
 # This section requires PSFGEN 1.6 to be loaded
 topology {}
 readpsf {}
@@ -2473,7 +2474,7 @@ set startatoms false
                   set segname [lindex $line 1]
                   set resid [lindex $line 2]
                   set atomname [lindex $line 4]
-                 puts "\033\[31m Deleting atom $atomname (segname  $segname,  resid is $resid) from PSF information!\033\[0m"
+                 puts "[31m Deleting atom $atomname (segname  $segname,  resid is $resid) from PSF information!"
                  #PSFgen 1.6 delatom command
                  delatom $segname $resid $atomname
                 }}
