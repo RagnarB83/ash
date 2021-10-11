@@ -280,7 +280,7 @@ class Fragment:
             elems,coords,box_dims= read_ambercoordinates(prmtopfile=prmtopfile, inpcrdfile=inpcrdfile)
             #NOTE: boxdims not used. Could be set as fragment variable ?
         except FileNotFoundError:
-            print("File {} not found".format(filename))
+            print("File {} or {} not found".format(prmtopfile,inpcrdfile))
             exit()
         self.coords=reformat_list_to_array(coords)
         self.elems = elems
@@ -1406,7 +1406,7 @@ def read_pdbfile(filename, use_atomnames_as_elements=False):
             for line in f:
                 #if 'ATOM ' in line or 'HETATM' in line:
                 if line.startswith("ATOM") or line.startswith("HETATM"):
-                    print("line:", line)
+                    #print("line:", line)
                     #atomindex=float(line[6:11].replace(' ',''))
                     atom_name=line[12:16].replace(' ','')
                     residname.append(line[17:20].replace(' ',''))
