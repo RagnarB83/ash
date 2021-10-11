@@ -850,8 +850,8 @@ class OpenMMTheory:
     # qmatoms list provided for generality of MM objects. Not used here for now
 
     # Create/update simulation from scratch or after system has been modified (force modification or even deletion)
-    def create_simulation(self, timestep=0.001, integrator='VerletIntegrator', coupling_frequency=None,
-                          temperature=None):
+    def create_simulation(self, timestep=0.001, integrator='VerletIntegrator', coupling_frequency=1,
+                          temperature=300):
         timeA = time.time()
         print("Creating/updating OpenMM simulation object")
         printdebug("self.system.getForces() ", self.system.getForces())
@@ -2666,7 +2666,7 @@ def read_NPT_statefile(npt_output):
 #Wrapper function for OpenMM_MDclass
 def OpenMM_MD(fragment=None, theory=None, timestep=0.001, simulation_steps=None, simulation_time=None,
               traj_frequency=1000, temperature=300, integrator=None,
-              barostat=None, pressure=1, trajectory_file_option='PDB', coupling_frequency=None,
+              barostat=None, pressure=1, trajectory_file_option='PDB', coupling_frequency=1,
               anderson_thermostat=False,
               enforcePeriodicBox=True, frozen_atoms=None, constraints=None, restraints=None,
               datafilename=None, dummy_MM=False, plumed_object=None, add_center_force=False,
@@ -2690,7 +2690,7 @@ def OpenMM_MD(fragment=None, theory=None, timestep=0.001, simulation_steps=None,
 class OpenMM_MDclass:
     def __init__(self, fragment=None, theory=None, timestep=0.001,
                  traj_frequency=1000, temperature=300, integrator=None,
-                 barostat=None, pressure=1, trajectory_file_option='PDB', coupling_frequency=None,
+                 barostat=None, pressure=1, trajectory_file_option='PDB', coupling_frequency=1,
                  anderson_thermostat=False,
                  enforcePeriodicBox=True, frozen_atoms=None, constraints=None, restraints=None,
                  datafilename=None, dummy_MM=False, plumed_object=None, add_center_force=False,
