@@ -2209,13 +2209,12 @@ def read_NPT_statefile(npt_output):
     resultdict = {"steps": steps, "volume": volume, "density": density}
     return resultdict
 
-
-
 ###########################
 # CLASS-BASED OpenMM_MD
 ###########################
 
-#Wrapper function for OpenMM_MDclass
+
+# Wrapper function for OpenMM_MDclass
 def OpenMM_MD(fragment=None, theory=None, timestep=0.001, simulation_steps=None, simulation_time=None,
               traj_frequency=1000, temperature=300, integrator=None,
               barostat=None, pressure=1, trajectory_file_option='PDB', coupling_frequency=1,
@@ -2233,11 +2232,12 @@ def OpenMM_MD(fragment=None, theory=None, timestep=0.001, simulation_steps=None,
                  center_force_atoms=center_force_atoms, centerforce_constant=centerforce_constant)
     if simulation_steps != None:
         md.run(simulation_steps=simulation_steps)
-    elif simulation_time != None:
+    elif simulation_time is not None:
         md.run(simulation_time=simulation_time)
     else:
         print("Either simulation_steps or simulation_time need to be defined (not both)")
         exit()
+
 
 class OpenMM_MDclass:
     def __init__(self, fragment=None, theory=None, timestep=0.001,
@@ -2560,9 +2560,9 @@ class OpenMM_MDclass:
         # Set new PBC vectors since they may have changed
         print("Updating PBC vectors")
         # Context. Used?
-        self.openmmobject.simulation.context.setPeriodicBoxVectors(*[a, b, c])
+        self.openmmobject.simulation.context.setPeriodicBoxVectors(a, b, c)
         # System. Necessary
-        self.openmmobject.system.setDefaultPeriodicBoxVectors(*[a, b, c])
+        self.openmmobject.system.setDefaultPeriodicBoxVectors(a, b, c)
 
         # Writing final frame to disk as PDB
         with open('final_MDfrag_laststep.pdb', 'w') as f:
@@ -2577,7 +2577,6 @@ class OpenMM_MDclass:
         self.fragment.coords = newcoords
 
         print_time_rel(module_init_time, modulename="OpenMM_MD run", moduleindex=1)
-
 
 
 #############################
@@ -2643,3 +2642,4 @@ def OpenMM_box_relaxation(fragment=None, theory=None, datafilename="nptsim.csv",
                                                                                              density_std))
 
     print("Relaxation of periodic box size finished!\n")
+    return theory.simulation.context.getState().getPeriodicBoxVectors()
