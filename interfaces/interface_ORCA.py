@@ -123,6 +123,7 @@ class ORCATheory:
         print("Cleaning up old ORCA files")
         list_files=[]
         list_files.append(self.filename + '.gbw')
+        list_files.append(self.filename + '.densities')
         list_files.append(self.filename + '.ges')
         list_files.append(self.filename + '.prop')
         list_files.append(self.filename + '.uco')
