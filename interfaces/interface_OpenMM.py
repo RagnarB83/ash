@@ -9,7 +9,8 @@ import ash
 import constants
 
 ashpath = os.path.dirname(ash.__file__)
-from functions.functions_general import BC, print_time_rel, listdiff, printdebug, print_line_with_mainheader, isint
+from functions.functions_general import BC, print_time_rel, listdiff, printdebug, print_line_with_mainheader, isint, \
+    print_highlighted_text, print_small_banner, print_large_banner
 from functions.functions_elstructure import DDEC_calc, DDEC_to_LJparameters
 from modules.module_coords import Fragment, write_pdbfile, distance_between_atoms, list_of_masses, write_xyzfile, \
     change_origin_to_centroid
@@ -36,6 +37,8 @@ class OpenMMTheory:
                  constraints=None, restraints=None, frozen_atoms=None, fragment=None,
                  autoconstraints=None, hydrogenmass=None, rigidwater=True):
 
+        print_large_banner("OpenMM Theory\n")
+
         module_init_time = time.time()
         # OPEN MM load
         try:
@@ -55,7 +58,8 @@ class OpenMMTheory:
         self.unit = openmm.unit
         self.Vec3 = openmm.Vec3
 
-        print(BC.WARNING, BC.BOLD, "------------Defining OpenMM object-------------", BC.END)
+        # print(BC.WARNING, BC.BOLD, "------------Defining OpenMM object-------------", BC.END)
+        print_highlighted_text("Defining OpenMM object")
         # Printlevel
         self.printlevel = printlevel
 
@@ -581,14 +585,15 @@ class OpenMMTheory:
         print("Number of atoms in OpenMM system:", self.numatoms)
         
         print("\nNow adding possible additional constraints, restraints or frozen atoms")
-        #Now adding user-defined system constraints (only bond-constraints supported for now)
-        if constraints != None:
+        # Now adding user-defined system constraints (only bond-constraints supported for now)
+        if constraints is not None:
             print("Before adding user constraints, system contains {} constraints".format(self.system.getNumConstraints()))
             print("User-constraints to add:", constraints)
             # Cleaning up constraint list. Adding distance if missing
             if 2 in [len(con) for con in constraints]:
-                print("Missing distance value for some constraints. Can apply current-geometry distances if ASH fragment provided")
-                if fragment == None:
+                print("Missing distance value for some constraints. Can apply current-geometry distances if ASH "
+                      "fragment provided")
+                if fragment is None:
                     print("No ASH fragment provided to OpenMMTheory. Will exit.")
                     exit()
                 # Cleaning up constraint list. Adding distance if missing
@@ -596,14 +601,14 @@ class OpenMMTheory:
             self.user_constraints = constraints
             self.add_bondconstraints(constraints=constraints)
             print("After adding user constraints, system contains {} constraints".format(self.system.getNumConstraints()))
-        #Now adding user-defined frozen atoms
-        if frozen_atoms != None:
+        # Now adding user-defined frozen atoms
+        if frozen_atoms is not None:
             self.user_frozen_atoms = frozen_atoms
             print("Frozen atoms to add:", frozen_atoms)
             self.freeze_atoms(frozen_atoms=frozen_atoms)
         
-        #Now adding user-defined restraints (only bond-restraints supported for now)
-        if restraints != None:
+        # Now adding user-defined restraints (only bond-restraints supported for now)
+        if restraints is not None:
             # restraints is a list of lists defining bond restraints: constraints = [[atom_i,atom_j, d, k ]]
             # Example: [[700,701, 1.05, 5.0 ]] Unit is Angstrom and kcal/mol * Angstrom^-2
             self.user_restraints = restraints

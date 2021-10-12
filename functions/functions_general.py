@@ -132,6 +132,29 @@ def frange(start, stop=None, step=None, rounddigits=4):
 
 #FUNCTIONS TO PRINT MODULE AND SUBMODULE HEADERS
 
+def print_highlighted_text(text):
+    length = len(text)
+    print("")
+    print("-" * length)
+    print(text)
+    print("-" * length)
+
+
+def print_small_banner(text):
+    print("")
+    print("-" * 80)
+    print(text.center(80))
+    print("-" * 80)
+    print("")
+
+
+def print_large_banner(text):
+    print("\n")
+    print("=" * 80)
+    print(text.center(80))
+    print("=" * 80)
+    print("\n")
+
 #mainmodule header
 def print_line_with_mainheader(line):
     print(BC.OKGREEN,"=======================================================",BC.END)
