@@ -15,7 +15,7 @@ programversion = 0.2
 
 # ASH footer
 def print_footer():
-    print("")
+    print()
     print_time_tot_color(init_time)
 
 
@@ -23,7 +23,7 @@ def print_timings():
     """
     Print timings of each module
     """
-    print("")
+    print()
     print_line_with_subheader1("Total timings of all modules")
 
     timingsobject.print(init_time)
@@ -50,24 +50,22 @@ def print_header():
     print("\nSetting initial time\n")
     print("Note: ASH uses ANSI escape sequences for displaying color. Use less -R to display")
     print("or set LESS=-R environment variable")
-    print("")
+    print()
     print("To turn off escape sequences, set: 'use_ANSI_color = False' in")
     print("~/ash_user_settings.ini")
-    print("")
+    print()
 
     # Print input script unless interactive session
     if settings_ash.settings_dict["print_input"] is True:
         if settings_ash.interactive_session is False:
             inputfilepath = os.getcwd() + "/" + sys.argv[0]
             print("Input script:", inputfilepath)
-            print(BC.WARNING, "=" * 80)
+            print(f"{BC.WARNING}{'=' * 80}")
             with open(inputfilepath) as f:
                 for line in f:
                     print("   >", line, end="")
-                # txt = f.read()
-            # print(txt)
-            print("=" * 80, BC.END)
-            print("")
+            print(f"{BC.WARNING}{'=' * 80}")
+            print()
 
 
 def print_logo():
@@ -141,16 +139,24 @@ def print_logo():
                    ▓      \    ▀    ╙µ  ⌡                                       
                                      └                                                                                                                      
     """
-    print(BC.OKGREEN, "-" * 80, BC.END)
-    print(BC.OKGREEN, "-" * 80, BC.END)
+    print(f"{BC.OKGREEN}{'-' * 80}{BC.END}")
+    print(f"{BC.OKGREEN}{'-' * 80}{BC.END}")
     # print(BC.OKBLUE,ascii_banner3,BC.END)
     # print(BC.OKBLUE,ascii_banner2,BC.END)
-    print(BC.OKGREEN, ascii_banner_center, BC.END)
-    print(BC.OKGREEN, ascii_tree, BC.END)
-    print(BC.WARNING, "A COMPCHEM AND QM/MM ENVIRONMENT".center(80), BC.END)
-    print(BC.WARNING, BC.BOLD, f"Version: {programversion}".center(80), BC.END)
-    print(BC.WARNING, f"Git commit version: {git_commit_number}".center(80), BC.END)
-    print(BC.OKGREEN, "-" * 80, BC.END)
-    print(BC.OKGREEN, "-" * 80, BC.END)
+    print(f"{BC.OKGREEN}{ascii_banner_center}{BC.END}")
+    print(f"{BC.OKGREEN}{ascii_tree}{BC.END}")
+    print(f"{BC.WARNING}A COMPCHEM AND QM/MM ENVIRONMENT{BC.END}".center(80))
+    print(f"{BC.WARNING}{BC.BOLD}Version: {programversion}{BC.END}".center(80))
+    print(f"{BC.WARNING}Git commit version: {git_commit_number}{BC.END}".center(80))
+    print(f"{BC.OKGREEN}{'-' * 80}{BC.END}")
+    print(f"{BC.OKGREEN}{'-' * 80}{BC.END}")
 
-
+    # print(BC.OKGREEN, ascii_banner_center, BC.END)
+    # print(BC.OKGREEN, ascii_tree, BC.END)
+    # print(BC.WARNING, "A COMPCHEM AND QM/MM ENVIRONMENT".center(80), BC.END)
+    # print(BC.WARNING, BC.BOLD, f"Version: {programversion}".center(80), BC.END)
+    # print(BC.WARNING, f"Git commit version: {git_commit_number}".center(80), BC.END)
+    # print(BC.OKGREEN, "-" * 80, BC.END)
+    # print(BC.OKGREEN, "-" * 80, BC.END)
+    #
+    #

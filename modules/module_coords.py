@@ -9,7 +9,7 @@ import os
 import subprocess as sp
 
 from functions.functions_general import isint, listdiff, print_time_rel, BC, printdebug, print_line_with_mainheader, \
-    writelisttofile, pygrep2, load_julia_interface, print_large_banner, print_small_banner, print_highlighted_text
+    print_line_with_subheader1, print_line_with_subheader2, writelisttofile, pygrep2, load_julia_interface
 import dictionaries_lists
 import settings_ash
 import constants
@@ -24,7 +24,7 @@ class Fragment:
                  atomcharges=None, atomtypes=None, conncalc=False, scale=None, tol=None, printlevel=2, charge=None,
                  mult=None, label=None, readchargemult=False, use_atomnames_as_elements=False):
 
-        print_large_banner("Fragment")
+        print_line_with_mainheader("Fragment")
 
         # Setting initial dummy label. Possibly redefined below, either when reading in file or by label keyword
         self.label = None
@@ -37,7 +37,7 @@ class Fragment:
         self.mult = mult
 
         if self.printlevel >= 2:
-            print_highlighted_text("New ASH fragment")
+            print_line_with_subheader1("New ASH fragment")
         self.energy = None
         self.elems = []
         # self.coords=np.empty_like([],shape=(0,3))
@@ -806,12 +806,12 @@ def print_internal_coordinate_table(fragment, actatoms=None):
                 # bondpairs.append([atom,conn_i,dist])
                 bondpairsdict[frozenset((atom, conn_i))] = dist
 
-    print_highlighted_text("Optimized internal coordinates")
+    print_line_with_subheader2("Optimized internal coordinates")
 
     # Using frozenset: https://stackoverflow.com/questions/46633065/multiples-keys-dictionary-where-key-order-doesnt-matter
     # sort bondpairs list??
     # print bondpairs list
-    print_highlighted_text("Bond lengths (Å):")
+    print_line_with_subheader2("Bond lengths (Å):")
     # print("actatoms:", actatoms)
     for key, val in bondpairsdict.items():
         listkey = list(key)
@@ -2352,7 +2352,7 @@ def get_linkatom_positions(qm_mm_boundary_dict, qmatoms, coords, elems, linkatom
 # Grabbing molecules from multi-XYZ trajectory file (can be MD-file, optimization traj, nebpath traj etc).
 # Creating ASH fragments for each conformer
 def get_molecules_from_trajectory(file, writexyz=False, skipindex=1, conncalc=False):
-    print_highlighted_text("Get molecules from trajectory")
+    print_line_with_subheader2("Get molecules from trajectory")
     print("Finding molecules/snapshots in multi-XYZ trajectory file and creating ASH fragments...")
     print("Taking every {}th entry".format(skipindex))
     list_of_molecules = []
@@ -2467,7 +2467,7 @@ def cut_cluster(coords=None, elems=None, radius=None, center_atomindex=None):
 # Create a molecular cluster from a periodix box based on radius and chosen atom(s)
 
 def make_cluster_from_box(fragment=None, radius=10, center_atomindices=[0], cellparameters=None):
-    print_highlighted_text("Make cluster from box")
+    print_line_with_subheader2("Make cluster from box")
     # Choosing how far to extend cell based on chosen cluster-radius
     if radius < cellparameters[0]:
         cellextension = [2, 2, 2]
