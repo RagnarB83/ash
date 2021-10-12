@@ -2217,7 +2217,8 @@ def read_NPT_statefile(npt_output):
 # Wrapper function for OpenMM_MDclass
 def OpenMM_MD(fragment=None, theory=None, timestep=0.001, simulation_steps=None, simulation_time=None,
               traj_frequency=1000, temperature=300, integrator=None,
-              barostat=None, pressure=1, trajectory_file_option='PDB', coupling_frequency=1,
+              barostat=None, pressure=1, trajectory_file_option='PDB', trajfilename='trajectory',
+              coupling_frequency=1,
               anderson_thermostat=False,
               enforcePeriodicBox=True, 
               datafilename=None, dummy_MM=False, plumed_object=None, add_center_force=False,
@@ -2242,7 +2243,8 @@ def OpenMM_MD(fragment=None, theory=None, timestep=0.001, simulation_steps=None,
 class OpenMM_MDclass:
     def __init__(self, fragment=None, theory=None, timestep=0.001,
                  traj_frequency=1000, temperature=300, integrator=None,
-                 barostat=None, pressure=1, trajectory_file_option='PDB', coupling_frequency=1,
+                 barostat=None, pressure=1, trajectory_file_option='PDB', trajfilename='trajectory',
+                 coupling_frequency=1,
                  anderson_thermostat=False,
                  enforcePeriodicBox=True,
                  datafilename=None, dummy_MM=False, plumed_object=None, add_center_force=False,
@@ -2369,7 +2371,7 @@ class OpenMM_MDclass:
         # THIS DOES NOT APPLY TO QM/MM. MOVE ELSEWHERE??
         if trajectory_file_option == 'PDB':
             self.openmmobject.simulation.reporters.append(
-                self.openmmobject.openmm.app.PDBReporter('output_traj.pdb', self.traj_frequency,
+                self.openmmobject.openmm.app.PDBReporter(trajfilename+'.pdb', self.traj_frequency,
                                                          enforcePeriodicBox=enforcePeriodicBox))
         elif trajectory_file_option == 'DCD':
             # NOTE: Disabling for now
@@ -2378,18 +2380,18 @@ class OpenMM_MDclass:
             # enforcePeriodicBox=enforcePeriodicBox).getPositions(), f)
             # print("Wrote PDB")
             self.openmmobject.simulation.reporters.append(
-                self.openmmobject.openmm.app.DCDReporter('output_traj.dcd', self.traj_frequency,
+                self.openmmobject.openmm.app.DCDReporter(trajfilename+'.dcd', self.traj_frequency,
                                                          enforcePeriodicBox=enforcePeriodicBox))
         elif trajectory_file_option == 'NetCDFReporter':
             print("NetCDFReporter traj format selected. This requires mdtraj. Importing.")
             mdtraj = MDtraj_import_()
             self.openmmobject.simulation.reporters.append(
-                mdtraj.reporters.NetCDFReporter('output_traj.nc', self.traj_frequency))
+                mdtraj.reporters.NetCDFReporter(trajfilename+'.nc', self.traj_frequency))
         elif trajectory_file_option == 'HDF5Reporter':
             print("HDF5Reporter traj format selected. This requires mdtraj. Importing.")
             mdtraj = MDtraj_import_()
             self.openmmobject.simulation.reporters.append(
-                mdtraj.reporters.HDF5Reporter('output_traj.lh5', self.traj_frequency,
+                mdtraj.reporters.HDF5Reporter(trajfilename+'.lh5', self.traj_frequency,
                                               enforcePeriodicBox=enforcePeriodicBox))
 
         if barostat is not None:
@@ -2586,7 +2588,7 @@ class OpenMM_MDclass:
 
 def OpenMM_box_relaxation(fragment=None, theory=None, datafilename="nptsim.csv", numsteps_per_NPT=10000,
                           volume_threshold=1.0, density_threshold=0.001, temperature=300, timestep=0.001,
-                          traj_frequency=100, trajectory_file_option='DCD', coupling_frequency=1):
+                          traj_frequency=100, trajfilename='relaxbox_NVT', trajectory_file_option='DCD', coupling_frequency=1):
     """NPT simulations until volume and density stops changing
 
     Args:
@@ -2619,7 +2621,7 @@ def OpenMM_box_relaxation(fragment=None, theory=None, datafilename="nptsim.csv",
 
     md = OpenMM_MDclass(fragment=fragment, theory=theory, timestep=timestep, traj_frequency=traj_frequency,
                         temperature=temperature, integrator="LangevinMiddleIntegrator",
-                        coupling_frequency=coupling_frequency, barostat='MonteCarloBarostat',
+                        coupling_frequency=coupling_frequency, barostat='MonteCarloBarostat', trajfilename=trajfilename,
                         datafilename=datafilename, trajectory_file_option=trajectory_file_option)
 
     while volume_std >= volume_threshold and density_std >= density_threshold:
