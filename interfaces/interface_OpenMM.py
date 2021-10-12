@@ -477,7 +477,7 @@ class OpenMMTheory:
                 print("")
                 # Force modification here
                 # print("OpenMM Forces defined:", self.system.getForces())
-                print_line_with_subheader2("OpenMM Forces definded:")
+                print_line_with_subheader2("OpenMM Forces defined:")
                 for force in self.system.getForces():
                     print(force.getName())
 
@@ -619,7 +619,7 @@ class OpenMMTheory:
             # Cleaning up constraint list. Adding distance if missing
             if 2 in [len(con) for con in constraints]:
                 print("Missing distance value for some constraints. Can apply current-geometry distances if ASH\n"
-                      "fragment provided")
+                      "fragment has been provided")
                 if fragment is None:
                     print("No ASH fragment provided to OpenMMTheory. Will exit.")
                     exit()
@@ -645,7 +645,7 @@ class OpenMMTheory:
             # restraints is a list of lists defining bond restraints: constraints = [[atom_i,atom_j, d, k ]]
             # Example: [[700,701, 1.05, 5.0 ]] Unit is Angstrom and kcal/mol * Angstrom^-2
             self.user_restraints = restraints
-            if self.user_restraints < 50:
+            if len(self.user_restraints) < 50:
                 print("User-restraints to add:", restraints)
             else:
                 print(f"{len(self.user_restraints)} user-defined restraints to add.")
@@ -1649,8 +1649,8 @@ def OpenMM_Opt(fragment=None, theory=None, maxiter=1000, tolerance=1, enforcePer
             openmmobject.autoconstraints is not None and len(openmmobject.user_frozen_atoms) != 0):
         print(
             f"{BC.WARNING}WARNING: Frozen_atoms options selected but there are general constraints defined in{BC.END} "
-            f"{BC.WARNING}the OpenMM object (either rigidwater=True or autoconstraints is not None){BC.END}")
-        print("OpenMM will crash if constraints and frozen atoms involve the same atoms")
+            f"{BC.WARNING}the OpenMM object (either rigidwater=True or autoconstraints is not None){BC.END}"
+            f"{BC.WARNING}\nOpenMM will crash if constraints and frozen atoms involve the same atoms{BC.END}")
 
 
     openmmobject.create_simulation(timestep=0.001, temperature=1, integrator='VerletIntegrator')
@@ -2351,13 +2351,11 @@ class OpenMM_MDclass:
         if self.openmmobject.rigidwater is True and len(self.openmmobject.user_frozen_atoms) != 0 or (
                 self.openmmobject.autoconstraints is not None and len(self.openmmobject.user_frozen_atoms) != 0):
             print(
-                f"""{BC.WARNING}
-                WARNING: Frozen_atoms options selected but there are general autoconstraints 
-                         defined in the OpenMM object (either rigidwater=True or autoconstraints 
-                         is not None) {BC.END}""")
-            print("OpenMM will crash if constraints and frozen atoms involve the same atoms.")
+                f"{BC.WARNING}WARNING: Frozen_atoms options selected but there are general constraints defined in{BC.END} "
+                f"{BC.WARNING}the OpenMM object (either rigidwater=True or autoconstraints is not None){BC.END}"
+                f"{BC.WARNING}\nOpenMM will crash if constraints and frozen atoms involve the same atoms{BC.END}")
         print("")
-
+        
         forceclassnames = [i.__class__.__name__ for i in self.openmmobject.system.getForces()]
         # Set up system with chosen barostat, thermostat, integrator
         if barostat is not None:
