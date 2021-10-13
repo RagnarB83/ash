@@ -126,6 +126,9 @@ class OpenMMTheory:
             if numcores is not None:
                 print("Numcores variable provided to OpenMM object. Will use {} cores with OpenMM".format(numcores))
                 self.properties["Threads"] = str(numcores)
+                print("Warning: Linux may ignore this user-setting and go with OPENMM_CPU_THREADS variable instead if set.")
+                print("If OPENMM_CPU_THREADS was not set in jobscript, physical cores will probably be used.")
+                print("To be safe: check the running process on the node")
             else:
                 print("No numcores variable provided to OpenMM object")
                 print("Checking if OPENMM_CPU_THREADS shell variable is present")
@@ -515,7 +518,7 @@ class OpenMMTheory:
                             print('SwitchingFunction distance: {}'.format(force.getSwitchingDistance()))
                         print('Use Long-range Dispersion correction: %s' % force.getUseDispersionCorrection())
                         print("PME Parameters:", force.getPMEParameters())
-
+                        print("Ewald error tolerance:", force.getEwaldErrorTolerance())
                         # Set PME Parameters if desired
                         # force.setPMEParameters(3.285326106/self.unit.nanometers,60, 64, 60)
                         # Keeping default for now
@@ -931,6 +934,8 @@ class OpenMMTheory:
             exit()
         self.simulation = self.simulationclass(self.topology, self.system, self.integrator, self.platform,
                                                self.properties)
+        
+        print("PME parameters in context", self.nonbonded_force.getPMEParametersInContext(self.simulation.context))
         print_time_rel(timeA, modulename="creating simulation")
 
     # Functions for energy decompositions

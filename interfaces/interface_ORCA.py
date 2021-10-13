@@ -1,6 +1,7 @@
 import subprocess as sp
 import modules.module_coords
-from functions.functions_general import blankline,insert_line_into_file,BC,print_time_rel
+from functions.functions_general import blankline,insert_line_into_file,BC,print_time_rel, print_line_with_mainheader
+from modules.module_singlepoint import Singlepoint
 import functions.functions_elstructure
 import constants
 import multiprocessing as mp
@@ -1488,3 +1489,86 @@ def grab_EFG_from_ORCA_output(filename):
             if ' V(Tot)' in line:
                 efg_values=[float(line.split()[-3]),float(line.split()[-2]),float(line.split()[-1])]
                 return efg_values
+
+
+def counterpoise_calculation_ORCA(fragments=None, theory=None):
+    print_line_with_mainheader("COUNTERPOISE JOB")
+    
+    #list of fragment indices
+    fragments_indices=[i for i in range(0,len(fragments))]
+    
+    #Find dimer in fragments
+    numatoms_all=[fragment.numatoms for fragment in fragments]
+    dimer_index = numatoms_all.index(max(numatoms_all))
+    fragments_indices.remove(dimer_index)
+
+    monomer1_index = fragments_indices[0]
+    monomer2_index = fragments_indices[1]
+    
+    print("dimer_index:", dimer_index)
+    print("monomer1_index:", monomer1_index)
+    print("monomer2_index:", monomer2_index)
+    
+    #Run dimer
+    print("\nRunning dimer calculation")
+    dimer_energy=Singlepoint(theory=theory,fragment=fragments[dimer_index])
+    theory.cleanup()
+    #Run monomers
+    print("\nRunning monomer1 calculation")
+    monomer1_energy=Singlepoint(theory=theory,fragment=fragments[monomer1_index])
+    theory.cleanup()
+    print("\nRunning monomer2 calculation")
+    monomer2_energy=Singlepoint(theory=theory,fragment=fragments[monomer2_index])
+    theory.cleanup()
+    print("\nUncorrected binding energy: {} kcal/mol".format((dimer_energy - monomer1_energy-monomer2_energy)*constants.hartokcal))
+    
+    #Monomer calcs at dimer geometry
+    monomer1_geo=
+    
+    
+    
+    # # Now the calculations of the monomers at the
+    # # dimer geometry
+    # # --------------------------------------------
+    # $new_job
+    # ! RHF MP2 TZVPP VeryTightSCF XYZFile PModel
+    # %id "monomer_1"
+    # * xyz 0 1
+    # O 7.439917 6.726792 7.762120
+    # H 7.025510 6.226170 8.467436
+    # H 8.274883 6.280259 7.609894
+    # *
+    # $new_job
+    # ! RHF MP2 TZVPP VeryTightSCF XYZFile PModel
+    # %id "monomer_1"
+    # * xyz 0 1
+    # O 5.752050 6.489306 5.407671
+    # H 6.313507 6.644667 6.176902
+    # H 5.522285 7.367132 5.103852
+    # *
+    # # --------------------------------------------
+    # # Now the calculation of the monomer at the
+    # # dimer geometry but with the dimer basis set
+    # # --------------------------------------------
+    # $new_job
+    # ! RHF MP2 TZVPP VeryTightSCF XYZFile PModel
+    # %id "monomer_2"
+    # * xyz 0 1
+    # O 7.439917 6.726792 7.762120
+    # O : 5.752050 6.489306 5.407671
+    # H 7.025510 6.226170 8.467436
+    # H 8.274883 6.280259 7.609894
+    # H : 6.313507 6.644667 6.176902
+    # H : 5.522285 7.367132 5.103852
+    # *
+    # $new_job
+    # ! RHF MP2 TZVPP VeryTightSCF XYZFile PModel
+    # %id "monomer_2"
+    # * xyz 0 1
+    # O : 7.439917 6.726792 7.762120
+    # O 5.752050 6.489306 5.407671
+    # H : 7.025510 6.226170 8.467436
+    # H : 8.274883 6.280259 7.609894
+    # H 6.313507 6.644667 6.176902
+    # H 5.522285 7.367132 5.103852
+    # *
