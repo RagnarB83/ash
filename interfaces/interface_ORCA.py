@@ -1523,7 +1523,7 @@ def counterpoise_calculation_ORCA(fragments=None, theory=None):
     print("\nUncorrected binding energy: {} kcal/mol".format((dimer_energy - monomer1_energy-monomer2_energy)*constants.hartokcal))
     
     #Monomer calcs at dimer geometry
-    monomer1_geo=
+    # monomer1_geo=
     
     
     
