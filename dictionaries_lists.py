@@ -86,7 +86,9 @@ element_dict_atname = {'h': Element('hydrogen', 'H', 1), 'he': Element('helium',
                        'w': Element('tungsten', 'W', 74), 're': Element('rhenium', 'Re', 75),
                        'os': Element('osmium', 'Os', 76),
                        'ir': Element('iridium', 'Ir', 77), 'pt': Element('platinum', 'Pt', 78),
-                       'au': Element('gold', 'Au', 79), 'hg': Element('mercury', 'Hg', 80)}
+                       'au': Element('gold', 'Au', 79), 'hg': Element('mercury', 'Hg', 80), 'tl': Element('thallium', 'Tl', 81),
+                       'pb': Element('lead', 'Pb', 82),'bi': Element('bismuth', 'Bi', 83),'po': Element('polonium', 'Po', 84),
+                       'at': Element('astatine', 'At', 85), 'rn': Element('radon', 'Rn', 86)}
 
 # NOTE: redundant? remove?
 element_dict_atnum = {1: Element('hydrogen', 'H', 1), 2: Element('helium', 'He', 2), 3: Element('lithium', 'Li', 3),
