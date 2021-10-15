@@ -35,7 +35,7 @@ class OpenMMTheory:
                  ewalderrortolerance=1e-5, PMEparameters=None,
                  delete_QM1_MM1_bonded=False, applyconstraints_in_run=False,
                  constraints=None, restraints=None, frozen_atoms=None, fragment=None,
-                 autoconstraints=None, hydrogenmass=None, rigidwater=True):
+                 autoconstraints='HBonds', hydrogenmass=1.5, rigidwater=True):
 
         print_line_with_mainheader("OpenMM Theory")
 
@@ -170,9 +170,6 @@ class OpenMMTheory:
         # Purpose: set virtual sites etc.
         self.positions = None
 
-        # TODO: Should we keep this? Probably not. Coordinates would be handled by ASH.
-        # PDB_ygg_frag = Fragment(pdbfile=pdbfile, conncalc=False)
-        # self.coords=PDB_ygg_frag.coords
         print_time_rel(module_init_time, modulename="import openMM")
         timeA = time.time()
 
@@ -416,18 +413,14 @@ class OpenMMTheory:
                                                                        unit=self.unit.degree),
                                                gamma=self.unit.Quantity(value=charmm_periodic_cell_dimensions[3],
                                                                         unit=self.unit.degree))
-                        # self.forcefield.setBox(self.a, self.b, self.c)
-                        # print(self.forcefield.__dict__)
                         print("Set box vectors:", self.forcefield.box_vectors)
-                    # NOTE: SHould this be made more general??
-                    # print("a,b,c:", self.a, self.b, self.c)
-                    # print("box in self.forcefield", self.forcefield.get_box())
+
 
                     # exit()
                     self.system = self.forcefield.createSystem(self.params, nonbondedMethod=openmm.app.PME,
                                                                constraints=self.autoconstraints,
                                                                hydrogenMass=self.hydrogenmass,
-                                                               rigidWater=self.rigidwater,
+                                                               rigidWater=self.rigidwater, ewaldErrorTolerance=self.ewalderrortolerance,
                                                                nonbondedCutoff=periodic_nonbonded_cutoff * self.unit.angstroms,
                                                                switchDistance=switching_function_distance * self.unit.angstroms)
                 elif GROMACSfiles is True:
@@ -438,15 +431,14 @@ class OpenMMTheory:
                     self.system = self.forcefield.createSystem(nonbondedMethod=openmm.app.PME,
                                                                constraints=self.autoconstraints,
                                                                hydrogenMass=self.hydrogenmass,
-                                                               rigidWater=self.rigidwater,
-                                                               nonbondedCutoff=periodic_nonbonded_cutoff * self.unit.angstroms,
-                                                               ewaldErrorTolerance=self.ewalderrortolerance)
+                                                               rigidWater=self.rigidwater, ewaldErrorTolerance=self.ewalderrortolerance,
+                                                               nonbondedCutoff=periodic_nonbonded_cutoff * self.unit.angstroms)
                 elif Amberfiles is True:
                     # NOTE: Amber-interface has read PBC info from prmtop file already
                     self.system = self.forcefield.createSystem(nonbondedMethod=openmm.app.PME,
                                                                constraints=self.autoconstraints,
                                                                hydrogenMass=self.hydrogenmass,
-                                                               rigidWater=self.rigidwater,
+                                                               rigidWater=self.rigidwater, ewaldErrorTolerance=self.ewalderrortolerance,
                                                                nonbondedCutoff=periodic_nonbonded_cutoff * self.unit.angstroms)
 
                     # print("self.system num con", self.system.getNumConstraints())
@@ -456,7 +448,7 @@ class OpenMMTheory:
                     self.system = self.forcefield.createSystem(self.topology, nonbondedMethod=openmm.app.PME,
                                                                constraints=self.autoconstraints,
                                                                hydrogenMass=self.hydrogenmass,
-                                                               rigidWater=self.rigidwater,
+                                                               rigidWater=self.rigidwater, ewaldErrorTolerance=self.ewalderrortolerance,
                                                                nonbondedCutoff=periodic_nonbonded_cutoff * self.unit.angstroms)
                     # switchDistance=switching_function_distance*self.unit.angstroms
 
@@ -484,19 +476,14 @@ class OpenMMTheory:
                 for force in self.system.getForces():
                     print(force.getName())
 
-                # PRINTING PROPERTIES OF NONBONDED FORCE BELOW
-                for i, force in enumerate(self.system.getForces()):
+                    #NONBONDED FORCE 
                     if isinstance(force, openmm.CustomNonbondedForce):
                         # NOTE: THIS IS CURRENTLY NOT USED
                         pass
-                        # print('CustomNonbondedForce: %s' % force.getUseSwitchingFunction())
-                        # print('LRC? %s' % force.getUseLongRangeCorrection())
-                        # force.setUseLongRangeCorrection(False)
                     elif isinstance(force, openmm.NonbondedForce):
+
                         # Turn Dispersion correction on/off depending on user
                         # NOTE: Default: False   To be revisited
-
-                        # NOte:
                         force.setUseDispersionCorrection(dispersion_correction)
 
                         # Modify PME Parameters if desired
@@ -519,12 +506,7 @@ class OpenMMTheory:
                         print('Use Long-range Dispersion correction: %s' % force.getUseDispersionCorrection())
                         print("PME Parameters:", force.getPMEParameters())
                         print("Ewald error tolerance:", force.getEwaldErrorTolerance())
-                        # Set PME Parameters if desired
-                        # force.setPMEParameters(3.285326106/self.unit.nanometers,60, 64, 60)
-                        # Keeping default for now
 
-                        # self.nonbonded_force=force
-                        # NOTE: These are hard-coded!
 
                 print_line_with_subheader2("OpenMM system created.")
 
@@ -2274,7 +2256,7 @@ def OpenMM_MD(fragment=None, theory=None, timestep=0.001, simulation_steps=None,
                         barostat=barostat, pressure=pressure, trajectory_file_option=trajectory_file_option,
                         coupling_frequency=coupling_frequency, anderson_thermostat=anderson_thermostat,
                         enforcePeriodicBox=enforcePeriodicBox, datafilename=datafilename, dummy_MM=dummy_MM,
-                        plumed_object=plumed_object, add_center_force=add_center_force,
+                        plumed_object=plumed_object, add_center_force=add_center_force,trajfilename=trajfilename,
                         center_force_atoms=center_force_atoms, centerforce_constant=centerforce_constant)
     if simulation_steps is not None:
         md.run(simulation_steps=simulation_steps)
@@ -2324,15 +2306,15 @@ class OpenMM_MDclass:
         self.plumed_object = plumed_object
         print_line_with_subheader2("MD system parameters")
         print("Temperature: {} K".format(self.temperature))
-        # print("OpenMM autoconstraints:", self.openmmobject.autoconstraints)
-        # print("OpenMM hydrogenmass:",
-        #       self.openmmobject.hydrogenmass)  # Note 1.5 amu mass is recommended for LangevinMiddle with 4fs timestep
-        # print("OpenMM rigidwater constraints:", self.openmmobject.rigidwater)
-        # print("User Constraints:", self.openmmobject.user_constraints)
-        # print("User Restraints:", self.openmmobject.user_restraints)
-        # print("Number of frozen atoms:", len(self.openmmobject.user_frozen_atoms))
-        # if len(self.openmmobject.user_frozen_atoms) < 50:
-        #     print("Frozen atoms", self.openmmobject.user_frozen_atoms)
+        print("OpenMM autoconstraints:", self.openmmobject.autoconstraints)
+        print("OpenMM hydrogenmass:",
+               self.openmmobject.hydrogenmass)  # Note 1.5 amu mass is recommended for LangevinMiddle with 4fs timestep
+        print("OpenMM rigidwater constraints:", self.openmmobject.rigidwater)
+        print("User Constraints:", self.openmmobject.user_constraints)
+        print("User Restraints:", self.openmmobject.user_restraints)
+        print("Number of frozen atoms:", len(self.openmmobject.user_frozen_atoms))
+        if len(self.openmmobject.user_frozen_atoms) < 50:
+             print("Frozen atoms", self.openmmobject.user_frozen_atoms)
         print("Integrator:", self.integrator)
         print("Anderon Thermostat:", anderson_thermostat)
         print("coupling_frequency: {} ps^-1 (for Nosé-Hoover and Langevin integrators)".format(self.coupling_frequency))
@@ -2349,8 +2331,10 @@ class OpenMM_MDclass:
                 WARNING: Autoconstraints have not been set in OpenMMTheory object definition. This means that by 
                          default no bonds are constrained in the MD simulation. This usually requires a small 
                          timestep: 0.5 fs or so.
-                         autoconstraints='HBonds' is recommended for 1-2 fs timesteps with Verlet (4fs with Langevin).
-                         autoconstraints='AllBonds' or autoconstraints='HAngles' allows even larger timesteps to be used
+                         autoconstraints='HBonds' is recommended for 2 fs timesteps with LangevinIntegrator and 4fs with LangevinMiddleIntegrator).
+                         autoconstraints='AllBonds' or autoconstraints='HAngles' allows even larger timesteps to be used.
+                         See : https://github.com/openmm/openmm/pull/2754 and https://github.com/openmm/openmm/issues/2520 
+                         for recommended simulation settings in OpenMM.
                          {BC.END}""")
             print("Will continue...")
         if self.openmmobject.rigidwater is True and len(self.openmmobject.user_frozen_atoms) != 0 or (
@@ -2646,7 +2630,7 @@ def OpenMM_box_relaxation(fragment=None, theory=None, datafilename="nptsim.csv",
         volume_threshold (float, optional): [description]. Defaults to 1.0.
         density_threshold (float, optional): [description]. Defaults to 0.001.
         temperature (int, optional): [description]. Defaults to 300.
-        timestep (float, optional): [description]. Defaults to 0.001.
+        timestep (float, optional): [description]. Defaults to 0.004.
         traj_frequency (int, optional): [description]. Defaults to 100.
         trajectory_file_option (str, optional): [description]. Defaults to 'DCD'.
         coupling_frequency (int, optional): [description]. Defaults to 1.

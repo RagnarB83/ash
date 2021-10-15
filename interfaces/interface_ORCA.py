@@ -106,6 +106,10 @@ class ORCATheory:
             self.extrabasisatoms=[]
             self.extrabasis=""
         
+        #Used in the case of counterpoise calculations
+        self.ghostatoms = [] #Adds ":" in front of element in coordinate block. Have basis functions and grid points
+        self.dummyatoms = [] #Adds DA instead of element. No real atom
+
         
         # self.qmatoms need to be set for Flipspin to work for QM/MM job.
         #Overwritten by QMMMtheory, used in Flip-spin
@@ -280,6 +284,10 @@ class ORCATheory:
                 print("Flipping atom: {} QMregionindex: {} Element: {}".format(flipatom, qmflipatom, qm_elems[qmflipatom]))
         if self.extrabasis != "":
             print("Using extra basis ({}) on QM-region indices : {}".format(self.extrabasis,qmatoms_extrabasis))
+        if self.dummyatoms:
+            print("Dummy atoms defined:", self.dummyatoms)
+        if self.ghostatoms:
+            print("Ghost atoms defined:", self.ghostatoms)
 
         if PC==True:
             print("Pointcharge embedding is on!")
@@ -296,11 +304,13 @@ class ORCATheory:
             if self.brokensym == True:
                 create_orca_input_plain(self.filename, qm_elems, current_coords, self.orcasimpleinput,self.orcablocks,
                                         self.charge,self.mult, extraline=self.extraline, HSmult=self.HSmult, Grad=Grad, Hessian=Hessian, moreadfile=self.moreadfile,
-                                     atomstoflip=qmatomstoflip, extrabasisatoms=qmatoms_extrabasis, extrabasis=self.extrabasis, propertyblock=self.propertyblock)
+                                     atomstoflip=qmatomstoflip, extrabasisatoms=qmatoms_extrabasis, extrabasis=self.extrabasis, propertyblock=self.propertyblock, 
+                                     ghostatoms=self.ghostatoms, dummyatoms=self.dummyatoms)
             else:
                 create_orca_input_plain(self.filename, qm_elems, current_coords, self.orcasimpleinput,self.orcablocks,
                                         self.charge,self.mult, extraline=self.extraline, Grad=Grad, Hessian=Hessian, moreadfile=self.moreadfile,
-                                        extrabasisatoms=qmatoms_extrabasis, extrabasis=self.extrabasis, propertyblock=self.propertyblock)
+                                        extrabasisatoms=qmatoms_extrabasis, extrabasis=self.extrabasis, propertyblock=self.propertyblock,
+                                        ghostatoms=self.ghostatoms, dummyatoms=self.dummyatoms)
 
         #Run inputfile using ORCA parallelization. Take numcores argument.
         #print(BC.OKGREEN, "------------Running ORCA calculation-------------", BC.END)
@@ -1140,10 +1150,15 @@ def create_orca_input_pc(name,elems,coords,orcasimpleinput,orcablockinput,charge
 #Allows for extraline that could be another '!' line or block-inputline.
 
 def create_orca_input_plain(name,elems,coords,orcasimpleinput,orcablockinput,charge,mult, Grad=False, Hessian=False, extraline='',
-                            HSmult=None, atomstoflip=None, extrabasis=None, extrabasisatoms=None, moreadfile=None, propertyblock=None):
-    if extrabasisatoms is None:
+                            HSmult=None, atomstoflip=None, extrabasis=None, extrabasisatoms=None, moreadfile=None, propertyblock=None, 
+                            ghostatoms=None, dummyatoms=None):
+    if extrabasisatoms == None:
         extrabasisatoms=[]
-    
+    if ghostatoms == None:
+        ghostatoms=[]
+    if dummyatoms == None:
+        dummyatoms = []
+
     with open(name+'.inp', 'w') as orcafile:
         orcafile.write(orcasimpleinput+'\n')
         if extraline != '':
@@ -1174,7 +1189,12 @@ def create_orca_input_plain(name,elems,coords,orcasimpleinput,orcablockinput,cha
 
         for i,(el,c) in enumerate(zip(elems,coords)):
             if i in extrabasisatoms:
-                orcafile.write('{} {} {} {} newgto \"{}\" end\n'.format(el,c[0], c[1], c[2], extrabasis))                
+                orcafile.write('{} {} {} {} newgto \"{}\" end\n'.format(el,c[0], c[1], c[2], extrabasis))
+            #Setting atom to be a ghost atom
+            elif i in ghostatoms:
+                orcafile.write('{}{} {} {} {} \n'.format(el,":", c[0], c[1], c[2]))
+            elif i in dummyatoms:
+                orcafile.write('{} {} {} {} \n'.format("DA", c[0], c[1], c[2]))
             else:
                 orcafile.write('{} {} {} {} \n'.format(el,c[0], c[1], c[2]))
         orcafile.write('*\n')
@@ -1491,84 +1511,143 @@ def grab_EFG_from_ORCA_output(filename):
                 return efg_values
 
 
-def counterpoise_calculation_ORCA(fragments=None, theory=None):
-    print_line_with_mainheader("COUNTERPOISE JOB")
+def counterpoise_calculation_ORCA(fragments=None, theory=None, monomer1_indices=None, monomer2_indices=None):
+    print_line_with_mainheader("COUNTERPOISE CORRECTION JOB")
+    print("\n Boys-Bernardi counterpoise correction\n")
     
+    if theory == None and fragments == None:
+        print("theory and list of ASH fragments required")
+        exit()
+    if monomer1_indices==None or monomer2_indices == None:
+        print("Error: monomer1_indices and monomer2_indices need to be set")
+        print("These are lists of atom indices indicating monomer1 and monomer2 in dimer fragment")
+        print("Example: monomer1_indices=[0,1,2] (H2O monomer) and monomer2_indices=[3,4,5,6] (MeOH monomer) in an H2O...MeOH dimer with coordinates:")
+        print("""O   -0.525329794  -0.050971084  -0.314516861
+H   -0.942006633   0.747901631   0.011252816
+H    0.403696525   0.059785981  -0.073568368
+O    2.316633291   0.045500849   0.071858389
+H    2.684616115  -0.526576554   0.749386716
+C    2.781638362  -0.426129067  -1.190300721
+H    2.350821267   0.224964624  -1.943414753
+H    3.867602049  -0.375336206  -1.264612649
+H    2.453295744  -1.445998564  -1.389381355
+        """)
+        print("")
+        exit()
+
+    print("monomer1_indices:", monomer1_indices)
+    print("monomer2_indices:", monomer2_indices)
+    print("")
     #list of fragment indices
     fragments_indices=[i for i in range(0,len(fragments))]
     
-    #Find dimer in fragments
+    #Determine what is dimer and monomers in list of fragments
     numatoms_all=[fragment.numatoms for fragment in fragments]
     dimer_index = numatoms_all.index(max(numatoms_all))
+    dimer=fragments[dimer_index]
+
+    if len(monomer1_indices+monomer2_indices) != dimer.numatoms:
+        print("Error: Something wrong with monomer1_indices or monomer2_indices. Don't add up ({}) to number of atoms in dimer ({})".format(len(monomer1_indices+monomer2_indices),dimer.numatoms))
+        exit()
+
     fragments_indices.remove(dimer_index)
 
-    monomer1_index = fragments_indices[0]
-    monomer2_index = fragments_indices[1]
-    
-    print("dimer_index:", dimer_index)
-    print("monomer1_index:", monomer1_index)
-    print("monomer2_index:", monomer2_index)
+    #Decide which is monomer1 and monomer 2 by comparing indices list to fragment.numatoms
+    if fragments[fragments_indices[0]].numatoms == len(monomer1_indices):
+        monomer1=fragments[fragments_indices[0]]
+        monomer2=fragments[fragments_indices[1]]
+    else:
+        monomer1=fragments[fragments_indices[1]]
+        monomer2=fragments[fragments_indices[0]]
+
+    #Print before we begin
+    print("Monomer 1:")
+    print("-"*20)
+    monomer1.print_coords()
+    print("Monomer 1 indices in dimer:", monomer1_indices)
+    print("\nMonomer 2:")
+    print("-"*20)
+    monomer2.print_coords()
+    print("Monomer 2 indices in dimer:", monomer2_indices)
+    print("\nDimer:")
+    print("-"*20)
+    for a,i in enumerate(range(0,dimer.numatoms)):
+        if i in monomer1_indices:
+            label="Monomer1"
+        elif i in monomer2_indices:
+            label="Monomer2"
+        print("{}   {} {} {} {}   {}".format(a, dimer.elems[i], *dimer.coords[i], label))
+
+
+    #Initial cleanup
+    theory.cleanup()
     
     #Run dimer
     print("\nRunning dimer calculation")
-    dimer_energy=Singlepoint(theory=theory,fragment=fragments[dimer_index])
+    dimer_energy=Singlepoint(theory=theory,fragment=dimer)
     theory.cleanup()
     #Run monomers
     print("\nRunning monomer1 calculation")
-    monomer1_energy=Singlepoint(theory=theory,fragment=fragments[monomer1_index])
+    monomer1_energy=Singlepoint(theory=theory,fragment=monomer1)
     theory.cleanup()
     print("\nRunning monomer2 calculation")
-    monomer2_energy=Singlepoint(theory=theory,fragment=fragments[monomer2_index])
+    monomer2_energy=Singlepoint(theory=theory,fragment=monomer2)
     theory.cleanup()
     print("\nUncorrected binding energy: {} kcal/mol".format((dimer_energy - monomer1_energy-monomer2_energy)*constants.hartokcal))
     
     #Monomer calcs at dimer geometry
-    monomer1_geo=
-    
-    
-    
-    # # Now the calculations of the monomers at the
-    # # dimer geometry
-    # # --------------------------------------------
-    # $new_job
-    # ! RHF MP2 TZVPP VeryTightSCF XYZFile PModel
-    # %id "monomer_1"
-    # * xyz 0 1
-    # O 7.439917 6.726792 7.762120
-    # H 7.025510 6.226170 8.467436
-    # H 8.274883 6.280259 7.609894
-    # *
-    # $new_job
-    # ! RHF MP2 TZVPP VeryTightSCF XYZFile PModel
-    # %id "monomer_1"
-    # * xyz 0 1
-    # O 5.752050 6.489306 5.407671
-    # H 6.313507 6.644667 6.176902
-    # H 5.522285 7.367132 5.103852
-    # *
-    # # --------------------------------------------
-    # # Now the calculation of the monomer at the
-    # # dimer geometry but with the dimer basis set
-    # # --------------------------------------------
-    # $new_job
-    # ! RHF MP2 TZVPP VeryTightSCF XYZFile PModel
-    # %id "monomer_2"
-    # * xyz 0 1
-    # O 7.439917 6.726792 7.762120
-    # O : 5.752050 6.489306 5.407671
-    # H 7.025510 6.226170 8.467436
-    # H 8.274883 6.280259 7.609894
-    # H : 6.313507 6.644667 6.176902
-    # H : 5.522285 7.367132 5.103852
-    # *
-    # $new_job
-    # ! RHF MP2 TZVPP VeryTightSCF XYZFile PModel
-    # %id "monomer_2"
-    # * xyz 0 1
-    # O : 7.439917 6.726792 7.762120
-    # O 5.752050 6.489306 5.407671
-    # H : 7.025510 6.226170 8.467436
-    # H : 8.274883 6.280259 7.609894
-    # H 6.313507 6.644667 6.176902
-    # H 5.522285 7.367132 5.103852
-    # *
+    print("\nRunning monomers at dimer geometry via dummy atoms")
+    theory.dummyatoms=monomer1_indices
+    monomer1_in_dimergeo_energy=Singlepoint(theory=theory,fragment=dimer)
+
+    theory.cleanup()
+    theory.dummyatoms=monomer2_indices
+    monomer2_in_dimergeo_energy=Singlepoint(theory=theory,fragment=dimer)
+    theory.cleanup()
+
+    #Removing dummyatoms
+    theory.dummyatoms=[]
+
+    #Monomers in dimer geometry with dimer basis sets (ghost atoms)
+    print("-------------------------------")
+    print("\nRunning monomers at dimer geometry with dimer basis set via ghostatoms")
+    theory.ghostatoms=monomer1_indices
+
+    monomer1_in_dimer_dimerbasis_energy=Singlepoint(theory=theory,fragment=dimer)
+    theory.cleanup()
+    theory.ghostatoms=monomer2_indices
+    monomer2_in_dimer_dimerbasis_energy=Singlepoint(theory=theory,fragment=dimer)
+    theory.cleanup()
+
+    #Removing ghost atoms
+    theory.ghostatoms=[]
+
+
+    #RESULTS
+    print("\n\nCOUNTERPOISE CORRECTION RESULTS")
+    print("="*50)
+    print("\nMonomer 1 energy: {} Eh".format(monomer1_energy))
+    print("Monomer 2 energy: {} Eh".format(monomer2_energy))
+    print("Sum of monomers energy: {} Eh".format(monomer1_energy+monomer2_energy))
+    print("Dimer energy: {} Eh".format(dimer_energy))
+
+
+    #Monomers at dimer geometry and dimer basis (DUMMYATOMS)
+    print("\nMonomer 1 at dimer geometry: {} Eh".format(monomer1_in_dimergeo_energy))
+    print("Monomer 2 at dimer geometry: {} Eh".format(monomer2_in_dimergeo_energy))
+    print("Sum of monomers at dimer geometry energy: {} Eh".format(monomer1_in_dimergeo_energy+monomer2_in_dimergeo_energy))
+
+    #Monomers at dimer geometry and dimer basis (GHOSTATOMS)
+    print("\nMonomer 1 at dimer geometry with dimer basis: {} Eh".format(monomer1_in_dimer_dimerbasis_energy)) #E_A^AB (AB)
+    print("Monomer 2 at dimer geometry with dimer basis: {} Eh".format(monomer2_in_dimer_dimerbasis_energy)) #E_B^AB (AB)
+    print("Sum of monomers at dimer geometry with dimer basis: {} Eh".format(monomer1_in_dimer_dimerbasis_energy+monomer2_in_dimer_dimerbasis_energy))
+
+    #
+    deltaE_unc=(dimer_energy - monomer1_energy-monomer2_energy)*constants.hartokcal
+    counterpoise_corr=-1*(monomer1_in_dimer_dimerbasis_energy-monomer1_in_dimergeo_energy+monomer2_in_dimer_dimerbasis_energy-monomer2_in_dimergeo_energy)*constants.hartokcal
+    print("counterpoise_corr: {} kcal/mol".format(counterpoise_corr))
+    deltaE_corrected=deltaE_unc+counterpoise_corr
+
+    print("\nUncorrected interaction energy: {} kcal/mol".format(deltaE_unc))
+
+    print("Corrected interaction energy: {} kcal/mol".format(deltaE_corrected))
