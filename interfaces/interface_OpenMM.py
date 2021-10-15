@@ -2244,7 +2244,7 @@ def read_NPT_statefile(npt_output):
 # Wrapper function for OpenMM_MDclass
 def OpenMM_MD(fragment=None, theory=None, timestep=0.004, simulation_steps=None, simulation_time=None,
               traj_frequency=1000, temperature=300, integrator='LangevinMiddleIntegrator',
-              barostat=None, pressure=1, trajectory_file_option='PDB', trajfilename='trajectory',
+              barostat=None, pressure=1, trajectory_file_option='DCD', trajfilename='trajectory',
               coupling_frequency=1,
               anderson_thermostat=False,
               enforcePeriodicBox=True, 
@@ -2270,7 +2270,7 @@ def OpenMM_MD(fragment=None, theory=None, timestep=0.004, simulation_steps=None,
 class OpenMM_MDclass:
     def __init__(self, fragment=None, theory=None, timestep=0.004,
                  traj_frequency=1000, temperature=300, integrator='LangevinMiddleIntegrator',
-                 barostat=None, pressure=1, trajectory_file_option='PDB', trajfilename='trajectory',
+                 barostat=None, pressure=1, trajectory_file_option='DCD', trajfilename='trajectory',
                  coupling_frequency=1,
                  anderson_thermostat=False,
                  enforcePeriodicBox=True,
@@ -2619,7 +2619,7 @@ class OpenMM_MDclass:
 
 def OpenMM_box_relaxation(fragment=None, theory=None, datafilename="nptsim.csv", numsteps_per_NPT=10000,
                           volume_threshold=1.3, density_threshold=0.0012, temperature=300, timestep=0.004,
-                          traj_frequency=100, trajfilename='relaxbox_NVT', trajectory_file_option='DCD', coupling_frequency=1):
+                          traj_frequency=100, trajfilename='relaxbox_NPT', trajectory_file_option='DCD', coupling_frequency=1):
     """NPT simulations until volume and density stops changing
 
     Args:
