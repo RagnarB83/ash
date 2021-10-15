@@ -2618,7 +2618,7 @@ class OpenMM_MDclass:
 
 
 def OpenMM_box_relaxation(fragment=None, theory=None, datafilename="nptsim.csv", numsteps_per_NPT=10000,
-                          volume_threshold=1.0, density_threshold=0.001, temperature=300, timestep=0.004,
+                          volume_threshold=1.3, density_threshold=0.0012, temperature=300, timestep=0.004,
                           traj_frequency=100, trajfilename='relaxbox_NPT', trajectory_file_option='DCD', coupling_frequency=1):
     """NPT simulations until volume and density stops changing
 
@@ -2649,6 +2649,7 @@ def OpenMM_box_relaxation(fragment=None, theory=None, datafilename="nptsim.csv",
 
     print_line_with_subheader2("Relaxation Parameters")
     print("Steps per NPT cycle:", numsteps_per_NPT)
+    print(f"Step size: {timestep * 1000} fs")
     print("Density threshold:", density_threshold)
     print("Volume threshold:", volume_threshold)
     print("Intermediate MD trajectory data file:", datafilename)
@@ -2678,6 +2679,7 @@ def OpenMM_box_relaxation(fragment=None, theory=None, datafilename="nptsim.csv",
 
         print_line_with_subheader2("Relaxation Status")
         print("Total steps taken:", steps)
+        print(f"Total simulation time: {timestep * steps} ps")
         print("Current Volume:", volume[-1])
         print("Current Volume SD:", volume_std)
         print("Current Density", density[-1])
