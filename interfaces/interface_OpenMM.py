@@ -32,7 +32,7 @@ class OpenMMTheory:
                  periodic=False, charmm_periodic_cell_dimensions=None, customnonbondedforce=False,
                  periodic_nonbonded_cutoff=12, dispersion_correction=True,
                  switching_function_distance=10,
-                 ewalderrortolerance=1e-5, PMEparameters=None,
+                 ewalderrortolerance=5e-4, PMEparameters=None,
                  delete_QM1_MM1_bonded=False, applyconstraints_in_run=False,
                  constraints=None, restraints=None, frozen_atoms=None, fragment=None,
                  autoconstraints='HBonds', hydrogenmass=1.5, rigidwater=True):
