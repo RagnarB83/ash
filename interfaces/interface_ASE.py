@@ -7,7 +7,7 @@ import multiprocessing as mp
 import constants
 from functions.functions_general import print_line_with_mainheader, print_time_rel, printdebug
 from modules.module_singlepoint import Singlepoint
-
+from interfaces.interface_safires import attach_safires_to_ASE
 
 #Interface to limited parts of ASE
 
@@ -245,38 +245,11 @@ def Dynamics_ASE(fragment=None, PBC=False, theory=None, temperature=300, timeste
     dyn.attach(print_step, interval=1)
     dyn.attach(write_traj, interval=traj_frequency)
 
-    #SAFIRES
+    #SAFIRES: attach SAFIRES object to ASE dyn
     if safires == True:
-        if safires_solute == None or safires_inner_region == None:
-            print("Safires requires safires_solute and safires_inner_region lists to be defined")
-            exit()
-        print("SAFIRES")
-        print("Solute region:", safires_solute)
-        print("Inner region:", safires_inner_region)
-
-        #When Safires has become part of ASE
-        #from ase.md.safires import SAFIRES
-        #Until then:
-        from interfaces.interface_safires import SAFIRES
-        #Setting up Safires
-        safires = SAFIRES(atoms=atoms,
-                            mdobject=dyn,
-                            natoms=safires_solvent_atomsnum, #number of atoms in solvent ???
-                            logfile='safire.log',
-                            debug=False,
-                            barometer=False,
-                            surface=False,
-                            reflective=False)
-        #Defining regions
-        for index,atom in enumerate(atoms):
-            if index in safires_solute:
-                atom.tag = 0
-            elif index in safires_inner_region:
-                atom.tag = 1
-            else:
-                atom.tag = 2
-        dyn.attach(safires.safires, interval=1)
-
+        attach_safires_to_ASE(atoms=atoms, dyn=dyn, safires_solvent_atomsnum=safires_solvent_atomsnum, 
+                                  safires_solute=safires_solute, safires_inner_region=safires_inner_region )
+        
     print("")
     print("")
     print("Running dynamics")

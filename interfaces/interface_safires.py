@@ -6,6 +6,42 @@ from ase import Atoms
 from ase.calculators.lj import LennardJones as LJ
 from ase.io import write
 from ase.geometry import find_mic
+from ase.parallel import parprint
+
+
+#ASE-ASH-SAFIRES wrapper
+def attach_safires_to_ASE(atoms=None, dyn=None, safires_solvent_atomsnum=3, 
+                            safires_solute=None, safires_inner_region=None ):
+    if safires_solute == None or safires_inner_region == None:
+        print("Safires requires safires_solute and safires_inner_region lists to be defined")
+        exit()
+    print("SAFIRES")
+    print("Solute region:", safires_solute)
+    print("Inner region:", safires_inner_region)
+
+    #When Safires has become part of ASE
+    #from ase.md.safires import SAFIRES
+    #Until then:
+    #from interfaces.interface_safires import SAFIRES
+    
+    #Setting up Safires
+    safires = SAFIRES(atoms=atoms,
+                        mdobject=dyn,
+                        natoms=safires_solvent_atomsnum, #number of atoms in solvent ???
+                        logfile='safire.log',
+                        debug=False,
+                        barometer=False,
+                        surface=False,
+                        reflective=False)
+    #Defining regions
+    for index,atom in enumerate(atoms):
+        if index in safires_solute:
+            atom.tag = 0
+        elif index in safires_inner_region:
+            atom.tag = 1
+        else:
+            atom.tag = 2
+    dyn.attach(safires.safires, interval=1)
 
 
 class SAFIRES:
@@ -23,9 +59,13 @@ class SAFIRES:
 
     VERSION INFO
     ------------
+    0.1.1:
+        2021-10-06
+        Replacing print by parprint.    
+    
     0.1.0: 
         2021-09-06 
-        Initial release
+        Initial release.
 
     DESCRIPTION
     -----------
@@ -238,6 +278,10 @@ class SAFIRES:
         self.reflective = reflective
         self.previous_atoms = atoms.copy()
         self.previous_atoms.calc = LJ()
+        self.previous_atoms.set_momenta(self.atoms.get_momenta(),
+                                        apply_constraint=False)
+        self.previous_atoms.calc.results = (
+            self.atoms.calc.results.copy())
         self.mdobject = mdobject
         self.default_dt = self.mdobject.dt
         self.remaining_dt = 0.
@@ -288,12 +332,12 @@ class SAFIRES:
                               "within SAFIRES. Keep that in mind!\n")
 
         # say hi to the user
-        print("\n"
+        parprint("\n"
               " ##############\n"
               " # SAFIRES    #\n"
               " # ---------- #\n"
-              " # v. 0.1.0   #\n"
-              " # 2021-09-06 #\n"
+              " # v. 0.1.1   #\n"
+              " # 2021-10-06 #\n"
               " ##############\n")
 
     def logger(self, iteration, boundary_idx, boundary):
@@ -596,10 +640,9 @@ class SAFIRES:
         checkup -- True/False, is used internally to indicate if
                    this is a checkup run which occurs after a
                    successful boundary event resolution. this is done
-                   to catch rare cases where a secon outer region
+                   to catch rare cases where a second outer region
                    particle has entered the inner region during the
-                   resolution of a first boundary event. in this case,
-                   slightly different rules apply.
+                   resolution of a first boundary event.
         halfstep -- 1/2, indicates if we're propagating so that the
                     conflicting inner and outer particle are at the
                     same distance from the center using the
@@ -768,8 +811,7 @@ class SAFIRES:
 
         Arrays r and d have the same ordering as atoms object.
         """
-        print("Inside safires update")
-        print("atoms:", atoms)
+
         # calculate distance of the resulting COM
         i = 0
         com_atoms = Atoms()
@@ -790,9 +832,6 @@ class SAFIRES:
         M = np.sum(atoms[idx_sol].get_masses())
         mom = np.sum(atoms[idx_sol].get_momenta(), axis=0)
         tag = 0
-        print("herex1")
-        print("atoms.calc.results:", atoms.calc.results)
-        print("")
         frc = np.sum(atoms.calc.results['forces'][idx_sol], axis=0)
         sym = atoms[idx_sol[0]].symbol
         tmp = Atoms(sym)
@@ -852,7 +891,6 @@ class SAFIRES:
 
         # boundary is defined by the inner region particle that has
         # the largest absolute distance from the COM of the solute
-        print("inner_mols:", inner_mols)
         boundary_idx, boundary = sorted(inner_mols, key=itemgetter(1),
                                         reverse=True)[0]
 
@@ -1057,7 +1095,7 @@ class SAFIRES:
                              "adjusted to a value < 0. This should not"
                              " happen. remaining_dt was now reset"
                              " to zero.\n")
-                    print("<SAFIRES>" + error)
+                    parprint("<SAFIRES>" + error)
                     self.debuglog(error)
 
             if self.barometer:
@@ -1109,7 +1147,7 @@ class SAFIRES:
             self.debuglog("   < ELASTIC COLLISION >\n")
 
             # write boundary event info to stdout
-            print("".join(["<SAFIRES> Iteration {:d}: "
+            parprint("".join(["<SAFIRES> Iteration {:d}: "
                            .format(iteration),
                            "Treating atoms {:d} and {:d} at d = {:.5f}"
                            .format(outer_reflect, inner_reflect,
@@ -1136,7 +1174,7 @@ class SAFIRES:
                 # bit too high? anyways the code is usually robust
                 # enough to deal with that. but  we inform the user,
                 # just in case this leads to a complete meltdown.
-                print("WARNING: INNER and OUTER particle are not "
+                parprint("WARNING: INNER and OUTER particle are not "
                       "exactly on the border! Difference > 0.001 "
                       "A but < 0.01 A.")
 
@@ -1289,7 +1327,7 @@ class SAFIRES:
                 # simulation but are concerning, so the user
                 # will be warned in case of a complete meltdown
                 # later on.
-                print("<SAFIRES> Remaining dt after collision is "
+                parprint("<SAFIRES> Remaining dt after collision is "
                       "larger than initial dt. Resetting to intial dt.")
                 self.debuglog("".join([
                               "   WARNING: Remaining dt after collision"
@@ -1387,7 +1425,7 @@ class SAFIRES:
                               "Total number of collisions: "
                               "{:d}\n".format(self.ncollisions))
             self.debuglog(checkout_long)
-            print(checkout_short)
+            parprint(checkout_short)
 
             # print out "barometer" results (collisions caused
             # by inner and outer region particles, respectively)
@@ -1405,7 +1443,7 @@ class SAFIRES:
                                     "region particle; symmetric, "
                                     "\"heads-on\" collisions of both "
                                     "particles are not counted."])
-                print(pressure)
+                parprint(pressure)
                 self.debuglog(pressure)
 
             # close logfiles
