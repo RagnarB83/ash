@@ -2074,7 +2074,7 @@ def solvate_small_molecule(fragment=None, charge=None, mult=None, watermodel=Non
                                       coulomb14scale=coulomb14scale, lj14scale=lj14scale)
 
     print("Creating forcefield using XML-files:", xmlfile, waterxmlfile)
-    forcefield = openmm_app.forcefield.ForceField([xmlfile, waterxmlfile])
+    forcefield = openmm_app.forcefield.ForceField(*[xmlfile, waterxmlfile])
 
     # , waterxmlfile
     # if extraxmlfile == None:
