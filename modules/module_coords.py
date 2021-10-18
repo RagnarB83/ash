@@ -219,7 +219,7 @@ class Fragment:
         tol = settings_ash.settings_dict["tol"]
         Hatoms = self.get_atomindices_for_element('H')
         # Hatoms=[1,2,3,5]
-        print("H Atoms: ", str(Hatoms).strip("[]"))
+        #print("H Atoms: ", str(Hatoms).strip("[]"))
 
         # way too slow
         if conncode == 'py':
@@ -237,16 +237,29 @@ class Fragment:
                 exit()
             final_list = Juliafunctions.get_connected_atoms_forlist_julia(self.coords, self.elems, scale, tol,
                                                                           eldict_covrad, Hatoms)
-        print("final_list: ", str(final_list).strip("[]"))
+        #print("final_list: ", str(final_list).strip("[]"))
         print_time_rel(timestamp, modulename='get_XH_indices', moduleindex=4)
         return final_list
         # Call connectivity routines
         # for el in self.elems:
         #    if -
 
-    def get_water_XH_indices(self):
-        print("not ready")
-        exit()
+    #Simple get_water constraints for fragment without doing connectivity
+    #Limitation: Assumes all waters from starting index to end and that waters are ordered: O H H
+    def simple_get_water_constraints(self, starting_index=None):
+        if self.elems[starting_index] != 'O':
+            print("Starting atom for water fragment is not oxygen!")
+            print("Make sure starting index ({}) is correct".format(starting_index))
+            print("Also note that water fragments must have O H H order!")
+            exit()
+        constraints=[]
+        for i in range(starting_index, self.numatoms):
+            if self.elems[i] == "O":
+                #X-H constraint
+                constraints.append([i,i+1])
+                constraints.append([i,i+2])
+                constraints.append([i+1,i+2])
+        return constraints
 
     def delete_atom(self, atomindex):
         self.coords = np.delete(self.coords, atomindex, axis=0)
@@ -547,6 +560,16 @@ class Fragment:
                 ofile.write(line + '\n')
         if self.printlevel >= 2:
             print("Wrote XYZ file: ", xyzfilename)
+    def write_XYZ_for_atoms(self,xyzfilename="Fragment-subset.xyz", atoms=None):
+        subset_elems = [self.elems[i] for i in atoms]
+        subset_coords = np.take(self.coords, atoms, axis=0)
+        with open(xyzfilename, 'w') as ofile:
+            ofile.write(str(len(subset_elems)) + '\n')
+            ofile.write("title" + '\n')
+            for el, c in zip(subset_elems, subset_coords):
+                line = "{:4} {:>12.6f} {:>12.6f} {:>12.6f}".format(el, c[0], c[1], c[2])
+                ofile.write(line + '\n')
+
 
     # Print system-fragment information to file. Default name of file: "fragment.ygg
     def print_system(self, filename='fragment.ygg'):
