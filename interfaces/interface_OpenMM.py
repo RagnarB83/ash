@@ -266,7 +266,13 @@ class OpenMMTheory:
             self.topology = self.prmtop.topology
             self.forcefield = self.prmtop
 
-            # TODO: Define resnames, resids, segmentnames, atomtypes, atomnames??
+            #List of resid. Used by actregiondefine
+            self.resids = [i.residue.index for i in self.prmtop.topology.atoms()]
+            #TODO: Grab more topology information
+            # TODO: Define resnames, segmentnames, atomtypes, atomnames??
+
+
+
         elif Modeller is True:
             print("Using forcefield info from Modeller.")
             self.topology = topology
@@ -2378,6 +2384,7 @@ class OpenMM_MDclass:
         self.timestep = timestep
         self.traj_frequency = traj_frequency
         self.plumed_object = plumed_object
+        self.enforcePeriodicBox=enforcePeriodicBox
         print_line_with_subheader2("MD system parameters")
         print("Temperature: {} K".format(self.temperature))
         print("OpenMM autoconstraints:", self.openmmobject.autoconstraints)
@@ -2397,7 +2404,7 @@ class OpenMM_MDclass:
         print("")
         print("Will write trajectory in format:", trajectory_file_option)
         print("Trajectory write frequency:", self.traj_frequency)
-        print("enforcePeriodicBox:", enforcePeriodicBox)
+        print("enforcePeriodicBox:", self.enforcePeriodicBox)
         print("")
 
         if self.openmmobject.autoconstraints is None:
@@ -2523,7 +2530,7 @@ class OpenMM_MDclass:
         if trajectory_file_option == 'PDB':
             self.openmmobject.simulation.reporters.append(
                 self.openmmobject.openmm.app.PDBReporter(trajfilename+'.pdb', self.traj_frequency,
-                                                         enforcePeriodicBox=enforcePeriodicBox))
+                                                         enforcePeriodicBox=self.enforcePeriodicBox))
         elif trajectory_file_option == 'DCD':
             # NOTE: Disabling for now
             # with open('initial_MDfrag_step1.pdb', 'w') as f: openmmobject.openmm.app.pdbfile.PDBFile
@@ -2532,7 +2539,7 @@ class OpenMM_MDclass:
             # print("Wrote PDB")
             self.openmmobject.simulation.reporters.append(
                 self.openmmobject.openmm.app.DCDReporter(trajfilename+'.dcd', self.traj_frequency,
-                                                         enforcePeriodicBox=enforcePeriodicBox))
+                                                         enforcePeriodicBox=self.enforcePeriodicBox))
         elif trajectory_file_option == 'NetCDFReporter':
             print("NetCDFReporter traj format selected. This requires mdtraj. Importing.")
             mdtraj = MDtraj_import_()
@@ -2543,7 +2550,7 @@ class OpenMM_MDclass:
             mdtraj = MDtraj_import_()
             self.openmmobject.simulation.reporters.append(
                 mdtraj.reporters.HDF5Reporter(trajfilename+'.lh5', self.traj_frequency,
-                                              enforcePeriodicBox=enforcePeriodicBox))
+                                              enforcePeriodicBox=self.enforcePeriodicBox))
 
         if barostat is not None:
             volume = density = True
@@ -2574,10 +2581,9 @@ class OpenMM_MDclass:
             print("QM_MM_object provided. Switching to QM/MM loop.")
             print("QM/MM requires enforcePeriodicBox to be False.")
             #True means we end up with solute in corner of box (wrong for nonPBC QM code)
-            enforcePeriodicBox = False
-            self.enforcePeriodicBox=enforcePeriodicBox
+            self.enforcePeriodicBox = False
             # enforcePeriodicBox or not
-            print("enforcePeriodicBox:", enforcePeriodicBox)
+            print("self.enforcePeriodicBox:", self.enforcePeriodicBox)
 
             # OpenMM_MD with QM/MM object does not make sense without openmm_externalforce
             # (it would calculate OpenMM energy twice) so turning on in case forgotten
@@ -2715,7 +2721,7 @@ class OpenMM_MDclass:
             self.plumed_object.close()
 
         # enforcePeriodicBox=True
-        self.state = self.openmmobject.simulation.context.getState(getEnergy=True, getPositions=True, getForces=True)
+        self.state = self.openmmobject.simulation.context.getState(getEnergy=True, getPositions=True, getForces=True, enforcePeriodicBox=self.enforcePeriodicBox)
         print("Checking PBC vectors:")
         a, b, c = self.state.getPeriodicBoxVectors()
         print(f"A: ", a)
