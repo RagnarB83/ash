@@ -990,16 +990,24 @@ def actregiondefine(mmtheory=None, fragment=None, radius=None, originatom=None,s
     print("Will find all atoms within {} Å from atom: {} ({})".format(radius,originatom,fragment.elems[originatom]))
     print("Will select all whole residues within region and export list")
     print("shiftpar:", shiftpar)
-    
+    print("mmtheory.resids:", mmtheory.resids)
     origincoords=fragment.coords[originatom]
     act_indices=[]
+    
     for index,allc in enumerate(fragment.coords):
+        #print("index:", index)
+        #print("allc:", allc)
         dist=modules.module_coords.distance(origincoords,allc)
         if dist < radius:
+            #print("DIST!!")
+            #print("index:", index)
+            #print("allc:", allc)
+            #print("mmtheory.resids len", len(mmtheory.resids))
             resid_value=mmtheory.resids[index]
-
+            #print("resid_value:", resid_value)
             #Looping over nearby indices as current index and checking if same resid. Silly but should work well for shiftpar 35-3000 or so
             for k in range(index-shiftpar,index+shiftpar):
+                #print("k:", k)
                 if mmtheory.resids[k] == resid_value:
                     act_indices.append(k)
     #Only unique and sorting:

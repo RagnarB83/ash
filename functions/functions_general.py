@@ -268,15 +268,15 @@ def islist(l):
 
 
 # Read lines of file by slurping.
-# def readlinesfile(filename):
-#     try:
-#         f = open(filename)
-#         out = f.readlines()
-#         f.close()
-#     except IOError:
-#         print('File %s does not exist!' % (filename))
-#         exit(12)
-#     return out
+#def readlinesfile(filename):
+#    try:
+#        f = open(filename)
+#        out = f.readlines()
+#        f.close()
+#    except IOError:
+#        print('File %s does not exist!' % (filename))
+#        exit(12)
+#    return out
 
 
 # Find substring of string between left and right parts
