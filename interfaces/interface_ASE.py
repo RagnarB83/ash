@@ -7,7 +7,7 @@ import multiprocessing as mp
 import constants
 from functions.functions_general import print_line_with_mainheader, print_time_rel, printdebug
 from modules.module_singlepoint import Singlepoint
-
+from interfaces.interface_safires import attach_safires_to_ASE
 
 #Interface to limited parts of ASE
 
@@ -93,6 +93,7 @@ def Dynamics_ASE(fragment=None, PBC=False, theory=None, temperature=300, timeste
         def get_potential_energy(self, atomsobj):
             return self.potenergy
         def get_forces(self, atomsobj):
+            timeA = time.time()
             print("Called ASHcalc get_forces")
             # Check if coordinates have changed. If not, return old forces
             if np.array_equal(atomsobj.get_positions(), fragment.coords) == True:
@@ -102,6 +103,7 @@ def Dynamics_ASE(fragment=None, PBC=False, theory=None, temperature=300, timeste
                     print("No forces available (1st step?). Will do calulation")
                 else:
                     print("Returning old forces")
+                    print_time_rel(timeA, modulename="get_forces: returning old forces")
                     return self.forces
             print("Will calculate new forces")
             
@@ -137,6 +139,7 @@ def Dynamics_ASE(fragment=None, PBC=False, theory=None, temperature=300, timeste
             
             
             print("ASHcalc get_forces done")
+            print_time_rel(timeA, modulename="get_forces : new")
             return self.forces
         
     #Option 2: Dummy ASE class where we create the attributes and methods we want
@@ -159,6 +162,9 @@ def Dynamics_ASE(fragment=None, PBC=False, theory=None, temperature=300, timeste
 
     #CONSTRAINTS AND FROZEN ATOMS
     #Frozen atoms
+
+    #NOTE: CONSTRAINTS ARE DEAD SLOW IN ASE
+
     print("Adding possible constraints")
     all_constraints=[]
     if len(frozen_atoms) > 0:
@@ -197,16 +203,23 @@ def Dynamics_ASE(fragment=None, PBC=False, theory=None, temperature=300, timeste
     #NVE VV:
     if thermostat==None and barostat==None:
         print("Setting up VelocityVerlet")
-        dyn = VelocityVerlet(atoms, timestep_fs * units.fs, trajectory=trajectoryname+'.traj', logfile='md.log')
+        #trajectory=trajectoryname+'.traj', 
+        dyn = VelocityVerlet(atoms, timestep_fs * units.fs, logfile='md.log')
     elif thermostat=="Langevin":
         print("Setting up Langevin thermostat")
-        friction_coeff=coupling_freq
-        dyn = Langevin(atoms, timestep_fs*units.fs, friction=friction_coeff, temperature_K=temperature, trajectory=trajectoryname+'.traj', logfile='md.log')
+        print("coupling_freq: {} ps".format(coupling_freq))
+        friction_coeff=1000*coupling_freq
+        print("friction coeff: {} fs".format(friction_coeff))
+        #trajectory=trajectoryname+'.traj'
+        #, logfile='md.log'
+        dyn = Langevin(atoms, timestep_fs*units.fs, friction=friction_coeff*units.fs, temperature_K=temperature, logfile='md.log')
     elif thermostat=="Andersen":
         collision_prob=coupling_freq
-        dyn = Andersen(atoms, timestep_fs*units.fs, temperature, collision_prob, trajectory=trajectoryname+'.traj', logfile='md.log')
+        #trajectory=trajectoryname+'.traj', 
+        dyn = Andersen(atoms, timestep_fs*units.fs, temperature, collision_prob, logfile='md.log')
     elif thermostat=="Berendsen":
-        dyn = NVTBerendsen(atoms, timestep_fs*units.fs, temperature, taut=coupling_freq*1000*units.fs, trajectory=trajectoryname+'.traj', logfile='md.log')
+        #trajectory=trajectoryname+'.traj', 
+        dyn = NVTBerendsen(atoms, timestep_fs*units.fs, temperature, taut=coupling_freq*1000*units.fs, logfile='md.log')
     elif thermostat=="NoseHoover":
         print("Nose-Hoover thermostat using ASE NPT class")
         print("Disabled")
@@ -231,6 +244,7 @@ def Dynamics_ASE(fragment=None, PBC=False, theory=None, temperature=300, timeste
             'Etot = %.3feV' % (epot, ekin, ekin / (1.5 * units.kB), epot + ekin))
 
     def print_step(a=atoms):
+        timeA=time.time()
         print("-"*30)
         print("Step ", a.calc.gradientcalls)
         print("Pot. Energy (eV):", a.get_potential_energy())
@@ -238,45 +252,21 @@ def Dynamics_ASE(fragment=None, PBC=False, theory=None, temperature=300, timeste
         print("Total energy (eV):", a.get_total_energy())
         print("Temperature:", a.get_temperature(), "K" )
         print("-"*30)
+        print_time_rel(timeA, modulename="print_step")
     def write_traj(a=atoms, trajname=trajectoryname):
+        timeA=time.time()
         print("Writing trajectory")
         fragment.write_xyzfile(xyzfilename=trajname+'.xyz', writemode='a')
+        print_time_rel(timeA, modulename="write_traj ASE")
 
     dyn.attach(print_step, interval=1)
     dyn.attach(write_traj, interval=traj_frequency)
 
-    #SAFIRES
+    #SAFIRES: attach SAFIRES object to ASE dyn
     if safires == True:
-        if safires_solute == None or safires_inner_region == None:
-            print("Safires requires safires_solute and safires_inner_region lists to be defined")
-            exit()
-        print("SAFIRES")
-        print("Solute region:", safires_solute)
-        print("Inner region:", safires_inner_region)
-
-        #When Safires has become part of ASE
-        #from ase.md.safires import SAFIRES
-        #Until then:
-        from interfaces.interface_safires import SAFIRES
-        #Setting up Safires
-        safires = SAFIRES(atoms=atoms,
-                            mdobject=dyn,
-                            natoms=safires_solvent_atomsnum, #number of atoms in solvent ???
-                            logfile='safire.log',
-                            debug=False,
-                            barometer=False,
-                            surface=False,
-                            reflective=False)
-        #Defining regions
-        for index,atom in enumerate(atoms):
-            if index in safires_solute:
-                atom.tag = 0
-            elif index in safires_inner_region:
-                atom.tag = 1
-            else:
-                atom.tag = 2
-        dyn.attach(safires.safires, interval=1)
-
+        attach_safires_to_ASE(atoms=atoms, dyn=dyn, safires_solvent_atomsnum=safires_solvent_atomsnum, 
+                                  safires_solute=safires_solute, safires_inner_region=safires_inner_region )
+        
     print("")
     print("")
     print("Running dynamics")
@@ -308,7 +298,9 @@ def Dynamics_ASE(fragment=None, PBC=False, theory=None, temperature=300, timeste
             event.set()
 
     else:
+        #Run dyn object
         dyn.run(simulation_steps)
+
         #Close Plumed also if active. Flushes HILLS/COLVAR etc.
         if plumed_object != None:
             plumed_object.close()
