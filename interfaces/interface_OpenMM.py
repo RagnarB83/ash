@@ -266,7 +266,13 @@ class OpenMMTheory:
             self.topology = self.prmtop.topology
             self.forcefield = self.prmtop
 
-            # TODO: Define resnames, resids, segmentnames, atomtypes, atomnames??
+            #List of resid. Used by actregiondefine
+            self.resids = [i.residue.index for i in self.prmtop.topology.atoms()]
+            #TODO: Grab more topology information
+            # TODO: Define resnames, segmentnames, atomtypes, atomnames??
+
+
+
         elif Modeller is True:
             print("Using forcefield info from Modeller.")
             self.topology = topology
