@@ -286,28 +286,36 @@ def find_between(s, start, end):
 
 # Read list of integers from file. Output list of integers. Ignores blanklines, return chars, non-int characters
 # offset option: shifts integers by a value (e.g. 1 or -1)
-def read_intlist_from_file(file, offset=0):
-    list = []
-    lines = readlinesfile(file)
-    for line in lines:
-        for l in line.split():
-            # Removing non-numeric part
-            l = ''.join(i for i in l if i.isdigit())
-            if isint(l):
-                list.append(int(l) + offset)
+def read_intlist_from_file(filename, offset=0):
+    intlist = []
+    try:
+        with open(filename, "r") as f:
+            for line in f:
+                for l in line.split():
+                    # Removing non-numeric part
+                    l = ''.join(i for i in l if i.isdigit())
+                    if isint(l):
+                        intlist.append(int(l) + offset)
+    except FileNotFoundError:
+        print(f"File '{filename}' does not exists!")
+        exit()
     list.sort()
     return list
 
 
 # Read list of flaots from file. Output list of floats.
 # Works for single-line with numbers and multi-lines
-def read_floatlist_from_file(file):
-    list = []
-    lines = readlinesfile(file)
-    for line in lines:
-        for l in line.split():
-            if isfloat(l):
-                list.append(float(l))
+def read_floatlist_from_file(filename):
+    floatlist = []
+    try:
+        with open(filename, "r") as f:
+            for line in f:
+                for l in line.split():
+                    if isfloat(l):
+                        floatlist.append(float(l))
+    except FileNotFoundError:
+        print(f"File '{filename}' does not exists!")
+        exit()
     list.sort()
     return list
 
