@@ -303,7 +303,7 @@ def read_intlist_from_file(filename, offset=0):
 # Works for single-line with numbers and multi-lines
 def read_floatlist_from_file(file):
     floatlist = []
-    with open(filename, "w") as f:
+    with open(filename, "r") as f:
         for line in f:
             for l in line.split():
                 if isfloat(l):
