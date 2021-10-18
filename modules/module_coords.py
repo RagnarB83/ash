@@ -560,6 +560,16 @@ class Fragment:
                 ofile.write(line + '\n')
         if self.printlevel >= 2:
             print("Wrote XYZ file: ", xyzfilename)
+    def write_XYZ_for_atoms(self,xyzfilename="Fragment-subset.xyz", atoms=None):
+        subset_elems = [self.elems[i] for i in atoms]
+        subset_coords = np.take(self.coords, atoms, axis=0)
+        with open(xyzfilename, 'w') as ofile:
+            ofile.write(str(len(subset_elems)) + '\n')
+            ofile.write("title" + '\n')
+            for el, c in zip(subset_elems, subset_coords):
+                line = "{:4} {:>12.6f} {:>12.6f} {:>12.6f}".format(el, c[0], c[1], c[2])
+                ofile.write(line + '\n')
+
 
     # Print system-fragment information to file. Default name of file: "fragment.ygg
     def print_system(self, filename='fragment.ygg'):
