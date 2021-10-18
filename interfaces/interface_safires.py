@@ -2,11 +2,12 @@ import numpy as np
 import math
 from operator import itemgetter
 
-from ase import Atoms
-from ase.calculators.lj import LennardJones as LJ
-from ase.io import write
-from ase.geometry import find_mic
-from ase.parallel import parprint
+
+#from ase import Atoms
+#from ase.calculators.lj import LennardJones as LJ
+#from ase.io import write
+#from ase.geometry import find_mic
+#from ase.parallel import parprint
 
 
 #ASE-ASH-SAFIRES wrapper

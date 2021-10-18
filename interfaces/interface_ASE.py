@@ -162,6 +162,9 @@ def Dynamics_ASE(fragment=None, PBC=False, theory=None, temperature=300, timeste
 
     #CONSTRAINTS AND FROZEN ATOMS
     #Frozen atoms
+
+    #NOTE: CONSTRAINTS ARE DEAD SLOW IN ASE
+
     print("Adding possible constraints")
     all_constraints=[]
     if len(frozen_atoms) > 0:
@@ -204,10 +207,12 @@ def Dynamics_ASE(fragment=None, PBC=False, theory=None, temperature=300, timeste
         dyn = VelocityVerlet(atoms, timestep_fs * units.fs, logfile='md.log')
     elif thermostat=="Langevin":
         print("Setting up Langevin thermostat")
-        friction_coeff=coupling_freq
+        print("coupling_freq: {} ps".format(coupling_freq))
+        friction_coeff=1000*coupling_freq
+        print("friction coeff: {} fs".format(friction_coeff))
         #trajectory=trajectoryname+'.traj'
         #, logfile='md.log'
-        dyn = Langevin(atoms, timestep_fs*units.fs, friction=friction_coeff, temperature_K=temperature)
+        dyn = Langevin(atoms, timestep_fs*units.fs, friction=friction_coeff*units.fs, temperature_K=temperature, logfile='md.log')
     elif thermostat=="Andersen":
         collision_prob=coupling_freq
         #trajectory=trajectoryname+'.traj', 
@@ -254,7 +259,7 @@ def Dynamics_ASE(fragment=None, PBC=False, theory=None, temperature=300, timeste
         fragment.write_xyzfile(xyzfilename=trajname+'.xyz', writemode='a')
         print_time_rel(timeA, modulename="write_traj ASE")
 
-    dyn.attach(print_step, interval=20)
+    dyn.attach(print_step, interval=1)
     dyn.attach(write_traj, interval=traj_frequency)
 
     #SAFIRES: attach SAFIRES object to ASE dyn
