@@ -522,6 +522,12 @@ class OpenMMTheory:
                     self.system = self.forcefield.createSystem(self.params, nonbondedMethod=openmm.app.NoCutoff,
                                                                nonbondedCutoff=1000 * openmm.unit.angstroms,
                                                                hydrogenMass=self.hydrogenmass)
+                elif Amberfiles is True:
+                    self.system = self.forcefield.createSystem(nonbondedMethod=openmm.app.NoCutoff,
+                                                               constraints=self.autoconstraints,
+                                                               rigidWater=self.rigidwater,
+                                                               nonbondedCutoff=1000 * openmm.unit.angstroms,
+                                                               hydrogenMass=self.hydrogenmass)
                 else:
                     self.system = self.forcefield.createSystem(self.topology, nonbondedMethod=openmm.app.NoCutoff,
                                                                constraints=self.autoconstraints,
