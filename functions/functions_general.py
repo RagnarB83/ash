@@ -299,8 +299,8 @@ def read_intlist_from_file(filename, offset=0):
     except FileNotFoundError:
         print(f"File '{filename}' does not exists!")
         exit()
-    list.sort()
-    return list
+    intlist.sort()
+    return intlist
 
 
 # Read list of flaots from file. Output list of floats.
@@ -316,8 +316,8 @@ def read_floatlist_from_file(filename):
     except FileNotFoundError:
         print(f"File '{filename}' does not exists!")
         exit()
-    list.sort()
-    return list
+    floatlist.sort()
+    return floatlist
 
 
 # Write a string to file simply
