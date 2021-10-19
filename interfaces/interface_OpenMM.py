@@ -2587,9 +2587,10 @@ class OpenMM_MDclass:
         # QM/MM MD
         if self.QM_MM_object is not None:
             print("QM_MM_object provided. Switching to QM/MM loop.")
-            print("QM/MM requires enforcePeriodicBox to be False.")
+            #print("QM/MM requires enforcePeriodicBox to be False.")
             #True means we end up with solute in corner of box (wrong for nonPBC QM code)
-            self.enforcePeriodicBox = False
+            #NOTE: but OK for proteins?
+            self.enforcePeriodicBox = True
             # enforcePeriodicBox or not
             print("self.enforcePeriodicBox:", self.enforcePeriodicBox)
 
