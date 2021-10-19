@@ -20,7 +20,7 @@ from modules.module_coords import elemstonuccharges
 
 
 class xTBTheory:
-    def __init__(self, xtbdir=None, fragment=None, charge=None, mult=None, xtbmethod=None, runmode='inputfile', numcores=1, printlevel=2, filename='xtb_',
+    def __init__(self, xtbdir=None, fragment=None, charge=None, mult=None, xtbmethod='GFN2', runmode='inputfile', numcores=1, printlevel=2, filename='xtb_',
                  maxiter=500, electronic_temp=300, label=None):
 
 

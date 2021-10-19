@@ -2815,23 +2815,49 @@ def add_atoms_to_system_CHARMM(fragment=None, added_atoms_coordstring=None, resg
     print("add_atoms_to_system_CHARMM: Done!")
 
 
-# Get list of lists of water constraints in system (O-H,O-H,H-H) from atomtypes
-def getwaterconstraintslist(atomtypes=None, actatoms=None, watermodel='tip3p'):
-    # Assuming OT or OW oxygen atomtypes used if TIP3P. Assuming oxygen comes first
-    # TODO: support more water models here. like 4-site and 5-site models
+# Get list of lists of water constraints in system (O-H,O-H,H-H) via OpenMM theory
+def getwaterconstraintslist(openmmtheoryobject=None, atomlist=None, watermodel='tip3p'):
+    print("Inside getwaterconstraintslist")
+    if openmmtheoryobject==None or atomlist==None:
+        print("getwaterconstraintslist requires openmmtheoryobject=None and atomlist= ")
+        exit()
     if watermodel == 'tip3p' or watermodel == 'spc':
-        oxygenlabels = ['OT', 'OW', 'OWT3']
+        #oxygenlabels = ['OT', 'OW', 'OWT3']
+        water_resname = ['HOH','WAT','TIP']
     else:
         print("unknown watermodel")
         exit()
+
+    atomtypes=openmmtheoryobject.atomtypes
+    resnames=openmmtheoryobject.resnames
+    elements=openmmtheoryobject.mm_elements
+    
     waterconstraints = []
-    for index, at in enumerate(atomtypes):
-        # Skipping if not in actatomslist
-        if actatoms is not None:
-            if index not in actatoms:
+    if resnames:
+        for index,(rn,el) in enumerate(zip(resnames,elements)):
+            # Skipping if not in atomlist
+            if index not in atomlist:
                 continue
-        if at in oxygenlabels:
-            waterconstraints.append([index, index + 1])
-            waterconstraints.append([index, index + 2])
-            waterconstraints.append([index + 1, index + 2])
+            
+            if rn in water_resname:
+                if el == 'O':
+                    waterconstraints.append([index, index + 1])
+                    waterconstraints.append([index, index + 2])
+                    waterconstraints.append([index + 1, index + 2])
+    #if len(atomtypes) == 0:
+    #    #NOTE: Atomtypes only defined if OpenMMTheory created from CHARMM Files
+    #    # Assuming OT or OW oxygen atomtypes used if TIP3P. Assuming oxygen comes first
+    #    # TODO: support more water models here. like 4-site and 5-site models
+    #    
+    #    waterconstraints = []
+    #    for index, at in enumerate(atomtypes):
+    #        # Skipping if not in actatomslist
+    #        if actatoms is not None:
+    #            if index not in actatoms:
+    #                continue
+    #        if at in oxygenlabels:
+    #            waterconstraints.append([index, index + 1])
+    #            waterconstraints.append([index, index + 2])
+    #            waterconstraints.append([index + 1, index + 2])
+
     return waterconstraints
