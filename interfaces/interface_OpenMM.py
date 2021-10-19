@@ -165,6 +165,7 @@ class OpenMMTheory:
         self.segmentnames = []
         self.atomtypes = []
         self.atomnames = []
+        self.mm_elements = []
 
         # Positions. Generally not used but can be if e.g. grofile has been read in.
         # Purpose: set virtual sites etc.
@@ -194,22 +195,26 @@ class OpenMMTheory:
                 self.resnames = [self.psf.atoms[i].residue.name for i in range(0, len(self.psf.atoms))]
                 self.resids = [self.psf.atoms[i].residue.idx for i in range(0, len(self.psf.atoms))]
                 self.segmentnames = [self.psf.atoms[i].residue.segid for i in range(0, len(self.psf.atoms))]
-                # self.atomtypes=[self.psf.atoms[i].attype for i in range(0,len(self.psf.atoms))]
+                self.atomtypes = [i.type for i in self.psf.atoms]
                 # TODO: Note: For atomnames it seems OpenMM converts atomnames to its own. Perhaps not useful
                 self.atomnames = [self.psf.atoms[i].name for i in range(0, len(self.psf.atoms))]
 
+                #TODO: Elements are unset here. Parmed parses things differently
+                #NOTE: we could deduce element from atomname or mass 
+                #self.mm_elements = [self.psf.atoms[i].element for i in range(0, len(self.psf.atoms))]
+                #self.mm_elements = [i.element.symbol for i in self.psf.topology.atoms()]
             else:
                 # Load CHARMM PSF files via native routine.
                 self.psf = openmm.app.CharmmPsfFile(psffile)
                 self.params = openmm.app.CharmmParameterSet(charmmtopfile, charmmprmfile)
                 # Grab resnames from psf-object
-                # Note: OpenMM uses 0-indexing
                 self.resnames = [self.psf.atom_list[i].residue.resname for i in range(0, len(self.psf.atom_list))]
                 self.resids = [self.psf.atom_list[i].residue.idx for i in range(0, len(self.psf.atom_list))]
                 self.segmentnames = [self.psf.atom_list[i].system for i in range(0, len(self.psf.atom_list))]
                 self.atomtypes = [self.psf.atom_list[i].attype for i in range(0, len(self.psf.atom_list))]
                 # TODO: Note: For atomnames it seems OpenMM converts atomnames to its own. Perhaps not useful
                 self.atomnames = [self.psf.atom_list[i].name for i in range(0, len(self.psf.atom_list))]
+                self.mm_elements = [i.element.symbol for i in self.psf.topology.atoms()]
 
             self.topology = self.psf.topology
             self.forcefield = self.psf
@@ -268,9 +273,11 @@ class OpenMMTheory:
 
             #List of resid. Used by actregiondefine
             self.resids = [i.residue.index for i in self.prmtop.topology.atoms()]
+            self.resnames = [i.residue.name for i in self.prmtop.topology.atoms()]
+            self.mm_elements = [i.element.symbol for i in self.prmtop.topology.atoms()]
+            #NOTE: OpenMM does not grab Amber atomtypes for some reason. Feature request
             #TODO: Grab more topology information
-            # TODO: Define resnames, segmentnames, atomtypes, atomnames??
-
+            # TODO: Define segmentnames, atomtypes, atomnames??
 
 
         elif Modeller is True:
@@ -2514,7 +2521,8 @@ class OpenMM_MDclass:
                                                 integrator=self.integrator,
                                                 coupling_frequency=self.coupling_frequency)
         print("Simulation created.")
-        print("PME parameters in context", self.openmmobject.nonbonded_force.getPMEParametersInContext(self.openmmobject.simulation.context))
+        if self.openmmobject.Periodic is True:
+            print("PME parameters in context", self.openmmobject.nonbonded_force.getPMEParametersInContext(self.openmmobject.simulation.context))
         forceclassnames = [i.__class__.__name__ for i in self.openmmobject.system.getForces()]
         print("OpenMM System forces present:", forceclassnames)
         print("Checking Initial PBC vectors.")
