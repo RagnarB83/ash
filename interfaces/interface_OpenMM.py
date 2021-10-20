@@ -869,7 +869,6 @@ class OpenMMTheory:
         # Modify particle masses in system object. For freezing atoms
         for i in frozen_atoms:
             self.system.setParticleMass(i, 0 * self.unit.daltons)
-
     def unfreeze_atoms(self):
         # Looping over system_masses if frozen, otherwise empty list
         for atom, mass in zip(self.allatoms, self.system_masses):
@@ -1106,8 +1105,9 @@ class OpenMMTheory:
 
     def run(self, current_coords=None, elems=None, Grad=False, fragment=None, qmatoms=None):
         module_init_time = time.time()
+        timeA = time.time()
         # timeA = time.time()
-        print_line_with_subheader1("Running OpenMM Interface")
+        print_line_with_subheader1("Running Single-point OpenMM Interface")
         # If no coords given to run then a single-point job probably (not part of Optimizer or MD which would supply
         # coords). Then try if fragment object was supplied.
         # Otherwise internal coords if they exist
@@ -1122,30 +1122,32 @@ class OpenMMTheory:
             else:
                 current_coords = fragment.coords
 
+        #IMPORTANT: Checking whether constraints have been defined in OpenMM object
+        # Defined OpenMM constraints will not work within a Single-point run scheme
+        # In fact forces will be all wrong. Thus checking before continuing
+        # Constraints and frozen atoms have to instead by enforced by geomeTRICOptimizer, non-OpenMM dynamics module etc.
+        defined_constraints=self.system.getNumConstraints()
+        print("Number of OpenMM system constraints defined:", defined_constraints)
+
+        if self.autoconstraints != None or self.rigidwater==True:
+            print("OpenMM autoconstraints (HBonds,AllBonds,HAngles)in OpemmTheory are not compatible with OpenMMTheory.run()")
+            print("Please redefine OpenMMTheory object: autoconstraints=None, rigidwater=False")
+            exit()
+            
+        if self.user_frozen_atoms or self.user_constraints or self.user_restraints:
+            print("User-defined frozen atoms/constraints/restraints in OpemmTheory are not compatible with OpenMMTheory.run()")
+            print("Constraints must instead be defined inside the program that called OpenMMtheory.run(), e.g. geomeTRICOptimizer.")
+            exit()
+        if defined_constraints != 0:
+            print("OpenMM constraints not zero. Exiting.")
+            exit()
+
+        print_time_rel(timeA, modulename="OpenMMTheory.run: constraints checking")
         # Making sure coords is np array and not list-of-lists
         current_coords = np.array(current_coords)
-        #  unit conversion for energy
-        # eqcgmx = 2625.5002
-        # unit conversion for force
-        # TODO: Check this.
-        # fqcgmx = -49614.75258920567
-        # fqcgmx = -49621.9
-        # Convert from kj/(nm *mol) = kJ/(10*Ang*mol)
-        # factor=2625.5002/(10*1.88972612546)
-        # factor=-138.93548724479302
-        # Correct:
         factor = -49614.752589207
-
-        # pos = [Vec3(coords[:,0]/10,coords[:,1]/10,coords[:,2]/10)] * u.nanometer
-        # Todo: Check speed on this
         print("Updating coordinates.")
         timeA = time.time()
-        # print(type(current_coords))
-
-        # for i in range(len(positions)):
-        #    if isvsites[i]:
-        #        pos[i] = vsfuncs[i](pos, vsidxs[i], vswts[i])
-        # newpos = [self.Vec3(*i) for i in pos]*self.unit.nanometer
 
         # NOTE: THIS IS STILL RATHER SLOW
 

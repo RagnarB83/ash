@@ -15,7 +15,8 @@ from interfaces.interface_safires import attach_safires_to_ASE
 def Dynamics_ASE(fragment=None, PBC=False, theory=None, temperature=300, timestep=None, thermostat=None, simulation_steps=None, simulation_time=None,
                  barostat=None, trajectoryname="Trajectory_ASE", traj_frequency=1, coupling_freq=0.002, frozen_atoms=None, frozen_bonds=None,
                  frozen_angles=None, frozen_dihedrals=None, plumed_object=None, multiple_walkers=False, numwalkers=None,
-                 ttime_nosehoover=5, safires=False, safires_solute=None, safires_inner_region=None, safires_solvent_atomsnum=3):
+                 ttime_nosehoover=5, safires=False, safires_solute=None, safires_inner_region=None, safires_solvent_atomsnum=3,
+                 gpaw_rattle_constraints=False):
     module_init_time = time.time()
     print_line_with_mainheader("ASE MOLECULAR DYNAMICS")
     
@@ -162,34 +163,50 @@ def Dynamics_ASE(fragment=None, PBC=False, theory=None, temperature=300, timeste
 
     #CONSTRAINTS AND FROZEN ATOMS
     #Frozen atoms
-
-    #NOTE: CONSTRAINTS ARE DEAD SLOW IN ASE
-
-    print("Adding possible constraints")
-    all_constraints=[]
-    if len(frozen_atoms) > 0:
-        print("Freezing atoms")
-        frozenatom_cons = FixAtoms(indices=frozen_atoms)
-        all_constraints.append(frozenatom_cons)
-    #Constraints
+    #USING RATTLE C-CODE from GPAW
+    #NOTE: Butt-ugly GPAW dependency
+    if gpaw_rattle_constraints is True:
+        import gpaw
+        FixBondLengths_gpaw=gpaw.utilities.watermodel.FixBondLengthsWaterModel
+        print("To be finished")
+        exit()
+        def rigid(atoms):
+            rattle = ([(3 * i + j, 3 * i + (j + 1) % 3)
+                                for i in range(len(atoms) // 3)
+                                for j in [0, 1, 2]])
+            rattle = FixBondLengths_gpaw(rattle)
+            return rattle
     
-    if len(frozen_bonds) > 0:
-        print("Freezing bonds")
-        frozenbondlength_cons = FixBondLengths(frozen_bonds)
-        all_constraints.append(frozenbondlength_cons)
-    #NOTE: Angles and dihedrals are not tested!
-    if len(frozen_angles) > 0:
-        print("Freezing angles")
-        for angle in frozen_angles:
-            angle1 = [atoms.get_angle(*angle), angle]
-            frozenangle_cons = FixInternals(angles_deg=[angle1])
-            all_constraints.append(frozenangle_cons)
-    if len(frozen_dihedrals) > 0:
-        print("Freezing dihedrals")
-        for dihedral in frozen_dihedrals:
-            dihedral1 = [atoms.get_angle(*dihedral), dihedral]
-            frozendihedral_cons = FixInternals(angles_deg=[dihedral1])
-            all_constraints.append(frozendihedral_cons)
+        rattle = rigid(atoms)
+        atoms.constraints = ([rattle])
+    else:
+        #NOTE: REGULAR CONSTRAINTS ARE DEAD SLOW IN ASE
+
+        print("Adding possible constraints")
+        all_constraints=[]
+        if len(frozen_atoms) > 0:
+            print("Freezing atoms")
+            frozenatom_cons = FixAtoms(indices=frozen_atoms)
+            all_constraints.append(frozenatom_cons)
+        #Constraints
+        
+        if len(frozen_bonds) > 0:
+            print("Freezing bonds")
+            frozenbondlength_cons = FixBondLengths(frozen_bonds)
+            all_constraints.append(frozenbondlength_cons)
+        #NOTE: Angles and dihedrals are not tested!
+        if len(frozen_angles) > 0:
+            print("Freezing angles")
+            for angle in frozen_angles:
+                angle1 = [atoms.get_angle(*angle), angle]
+                frozenangle_cons = FixInternals(angles_deg=[angle1])
+                all_constraints.append(frozenangle_cons)
+        if len(frozen_dihedrals) > 0:
+            print("Freezing dihedrals")
+            for dihedral in frozen_dihedrals:
+                dihedral1 = [atoms.get_angle(*dihedral), dihedral]
+                frozendihedral_cons = FixInternals(angles_deg=[dihedral1])
+                all_constraints.append(frozendihedral_cons)
     #Adding all constraints
     atoms.set_constraint(all_constraints)
     printdebug("Printing ASE atoms object:", atoms.__dict__)
