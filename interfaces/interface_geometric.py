@@ -224,10 +224,13 @@ def geomeTRICOptimizer(theory=None,fragment=None, coordsystem='hdlc', frozenatom
         def calc(self,coords,tmp, read_data=None):
             #Note: tmp and read_data not used. Needed for geomeTRIC version compatibility
             print("Convergence criteria:", conv_criteria)
-            blankline()
+            print()
             #Updating coords in object
             #Need to combine with rest of full-system coords
+            timeA=time.time()
             self.M.xyzs[0] = coords.reshape(-1, 3) * constants.bohr2ang
+            print_time_rel(timeA, modulename='geometric ASHcalc.calc reshape', moduleindex=2)
+            timeA=time.time()
             currcoords=self.M.xyzs[0]
             #Special act-region (for QM/MM) since GeomeTRIC does not handle huge system and constraints
             if self.ActiveRegion==True:
@@ -238,7 +241,8 @@ def geomeTRICOptimizer(theory=None,fragment=None, coordsystem='hdlc', frozenatom
                 #Replacing act-region coordinates in full_coords with coords from currcoords
                 for act_i,curr_i in zip(self.actatoms,currcoords):
                     full_coords[act_i] = curr_i
-
+                print_time_rel(timeA, modulename='geometric ASHcalc.calc replacing act-region', moduleindex=2)
+                timeA=time.time()
                 #for i, c in enumerate(full_coords):
                 #    if i in self.actatoms:
                 #        #Silly. Pop-ing first coord from currcoords until done
@@ -252,6 +256,8 @@ def geomeTRICOptimizer(theory=None,fragment=None, coordsystem='hdlc', frozenatom
                 #Write out fragment with updated coordinates for the purpose of doing restart
                 fragment.replace_coords(fragment.elems, self.full_current_coords, conn=False)
                 fragment.print_system(filename='Fragment-currentgeo.ygg')
+                print_time_rel(timeA, modulename='geometric ASHcalc.calc replacecoords and printsystem', moduleindex=2)
+                timeA=time.time()
 
                 #PRINTING TO OUTPUT SPECIFIC GEOMETRY IN EACH GEOMETRIC ITERATION (now: self.print_atoms_list)
                 print("Current geometry (Å) in step {} (print_atoms_list region)".format(self.iteration_count))
@@ -261,11 +267,17 @@ def geomeTRICOptimizer(theory=None,fragment=None, coordsystem='hdlc', frozenatom
                 #print_atoms_list
                 #Previously act: print_coords_for_atoms(self.full_current_coords, fragment.elems, self.actatoms)
                 print_coords_for_atoms(self.full_current_coords, fragment.elems, self.print_atoms_list)
+                print_time_rel(timeA, modulename='geometric ASHcalc.calc printcoords atoms', moduleindex=2)
+                timeA=time.time()
                 print("Note: printed only print_atoms_list (this not necessary all active atoms) ")
                 #Request Engrad calc for full system
                 E, Grad = self.theory.run(current_coords=self.full_current_coords, elems=fragment.elems, Grad=True)
+                print_time_rel(timeA, modulename='geometric ASHcalc.calc theory.run', moduleindex=2)
+                timeA=time.time()
                 #Trim Full gradient down to only act-atoms gradient
                 Grad_act = np.array([Grad[i] for i in self.actatoms])
+                print_time_rel(timeA, modulename='geometric ASHcalc.calc trim full gradient', moduleindex=2)
+                timeA=time.time()
                 self.energy = E
 
                 #Writing out trajectory file for full system. Act system done by GeomeTRIC
@@ -275,7 +287,8 @@ def geomeTRICOptimizer(theory=None,fragment=None, coordsystem='hdlc', frozenatom
                     for el,cor in zip(fragment.elems,self.full_current_coords):
                         trajfile.write(el + "  " + str(cor[0]) + " " + str(cor[1]) + " " + str(cor[2]) +
                                        "\n")
-
+                print_time_rel(timeA, modulename='geometric ASHcalc.calc writetraj full', moduleindex=2)
+                timeA=time.time()
                 self.iteration_count += 1
                 return {'energy': E, 'gradient': Grad_act.flatten()}
             else:
