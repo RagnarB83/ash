@@ -70,6 +70,7 @@ def Single_par(fragment=None, fragmentfile=None, theory=None, label=None, mofile
     #Charge and mult to use for fragment
     #If fragment contains charge/mult information then use that instead of whatever is initially defined in theory
     if fragment.charge != None:
+        print("Reading charge and mult information from fragment. Charge: {} Mult: {}".format(fragment.charge,fragment.mult))
         theory.charge=fragment.charge
         theory.mult=fragment.mult
 
