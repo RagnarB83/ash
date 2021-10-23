@@ -67,6 +67,14 @@ def Single_par(fragment=None, fragmentfile=None, theory=None, label=None, mofile
         #Label is not tuple. String or single number
         labelstring=str(label).replace('.','_')
 
+    #Charge and mult to use for fragment
+    #If fragment contains charge/mult information then use that instead of whatever is initially defined in theory
+    if fragment.charge != None:
+        print("Reading charge and mult information from fragment. Charge: {} Mult: {}".format(fragment.charge,fragment.mult))
+        theory.charge=fragment.charge
+        theory.mult=fragment.mult
+
+
     #Creating separate inputfilename using label
     #Removing . in inputfilename as ORCA can get confused
     if theory.__class__.__name__ == "ORCATheory":

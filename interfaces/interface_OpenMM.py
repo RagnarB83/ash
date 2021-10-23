@@ -2406,6 +2406,7 @@ class OpenMM_MDclass:
         if len(self.openmmobject.user_frozen_atoms) < 50:
              print("Frozen atoms", self.openmmobject.user_frozen_atoms)
         print("Integrator:", self.integrator)
+        print("Timestep: {} ps".format(self.timestep))
         print("Anderon Thermostat:", anderson_thermostat)
         print("coupling_frequency: {} ps^-1 (for Nosé-Hoover and Langevin integrators)".format(self.coupling_frequency))
         print("Barostat:", barostat)
@@ -2592,7 +2593,7 @@ class OpenMM_MDclass:
             #print("QM/MM requires enforcePeriodicBox to be False.")
             #True means we end up with solute in corner of box (wrong for nonPBC QM code)
             #NOTE: but OK for proteins?
-            self.enforcePeriodicBox = True
+            #self.enforcePeriodicBox = True
             # enforcePeriodicBox or not
             print("self.enforcePeriodicBox:", self.enforcePeriodicBox)
 
