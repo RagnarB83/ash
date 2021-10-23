@@ -1674,10 +1674,7 @@ def print_gradient_in_ORCAformat(energy,gradient,basename):
                 f.write("{}\n".format(gg))
 
 def create_ASH_otool(basename=None, theoryfile=None, scriptlocation=None):
-    #TODO: Do something general with theory object
-
     import stat
-    
     with open(scriptlocation+"/otool_external", 'w') as otool:
         otool.write("#!/usr/bin/env python3\n")
         otool.write("from ash import *\n")
@@ -1701,26 +1698,35 @@ def create_ASH_otool(basename=None, theoryfile=None, scriptlocation=None):
 # Using ORCA as External Optimizer for ASH
 #Will only work for theories that can be pickled: not OpenMMTheory, probably not QMMMTheory
 def ORCA_External_Optimizer(fragment=None, theory=None, orcadir=None):
+    print_line_with_mainheader("ORCA_External_Optimizer")
+    if fragment == None or theory == None:
+        print("ORCA_External_Optimizer requires fragment and theory keywords")
+        exit()
+
+    #Adding orcadir to PATH. Only required if ORCA not in PATH already
+    if orcadir != None:
+        os.environ["PATH"] += os.pathsep + orcadir
+    
+    #Pickle for serializing theory object
     import pickle
 
     #Serialize theory object for later use
     theoryfilename="theory.saved"
     pickle.dump(theory, open(theoryfilename, "wb" ))
 
-    basename = "ORCAEXTERNAL"
     #Write otool_script once in location that ORCA will launch. This is an ASH E+Grad calculator
     #ORCA will call : otool_external test_EXT.extinp.tmp
     #ASH_otool creates basename_Ext.engrad that ORCA reads
+    basename = "ORCAEXTERNAL"
     scriptlocation="."
     os.environ["PATH"] += os.pathsep + "."
     create_ASH_otool(basename=basename, theoryfile=theoryfilename, scriptlocation=scriptlocation)
-    
 
     #Create XYZ-file for ORCA-Extopt
     xyzfile="ASH-xyzfile.xyz"
     fragment.write_xyzfile(xyzfile)
 
- 
+    #ORCA input file
     with open(basename+".inp", 'w') as o:
         o.write("! ExtOpt Opt\n")
         o.write("\n")
@@ -1734,13 +1740,13 @@ def ORCA_External_Optimizer(fragment=None, theory=None, orcadir=None):
     if checkORCAfinished(basename+'.out') is not True:
         print("Something failed about external ORCA job")
         exit()
-    #Check if 
+    #Check if optimization completed
     if checkORCAOptfinished(basename+'.out') is not True:
         print("ORCA external optimization failed. Check outputfile:", basename+'.out')
         exit()
     print("ORCA external optimization finished")
 
-    #Grabbing final geometry
+    #Grabbing final geometry to update fragment object
     elems,coords=modules.module_coords.read_xyzfile(basename+".xyz")
     fragment.coords=coords
 
