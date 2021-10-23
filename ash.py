@@ -61,7 +61,7 @@ from modules.module_surface import calc_surface, calc_surface_fromXYZ, read_surf
     write_surfacedict_to_file
 
 # QMcode interfaces
-from interfaces.interface_ORCA import ORCATheory, counterpoise_calculation_ORCA
+from interfaces.interface_ORCA import ORCATheory, counterpoise_calculation_ORCA, ORCA_External_Optimizer
 import interfaces.interface_ORCA
 
 from interfaces.interface_Psi4 import Psi4Theory

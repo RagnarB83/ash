@@ -456,7 +456,9 @@ def ORCAfinalenergygrab(file, errors='ignore'):
                     print("Not using energy. Modify ORCA settings")
                     exit()
                 else:
-                    Energy=float(line.split()[-1])
+                    #Changing: sometimes ORCA adds info to the right of energy
+                    #Energy=float(line.split()[-1])
+                    Energy=float(line.split()[4])
     return Energy
 
 
@@ -1651,3 +1653,99 @@ H    2.453295744  -1.445998564  -1.389381355
     print("\nUncorrected interaction energy: {} kcal/mol".format(deltaE_unc))
 
     print("Corrected interaction energy: {} kcal/mol".format(deltaE_corrected))
+
+
+def print_gradient_in_ORCAformat(energy,gradient,basename):
+    numatoms=len(gradient)
+    with open(basename+"_EXT"+".engrad", "w") as f:
+        f.write("#\n")
+        f.write("# Number of atoms\n")
+        f.write("#\n")
+        f.write("{}\n".format(numatoms))
+        f.write("#\n")
+        f.write("# The current total energy in E\n")
+        f.write("#\n")
+        f.write("     {}\n".format(energy))
+        f.write("#\n")
+        f.write("# The current gradient in Eh/Bohr\n")
+        f.write("#\n")
+        for g in gradient:
+            for gg in g:
+                f.write("{}\n".format(gg))
+
+def create_ASH_otool(basename=None, theoryfile=None, scriptlocation=None):
+    #TODO: Do something general with theory object
+
+    import stat
+    
+    with open(scriptlocation+"/otool_external", 'w') as otool:
+        otool.write("#!/usr/bin/env python3\n")
+        otool.write("from ash import *\n")
+        otool.write("import pickle\n")
+        otool.write("import numpy as np\n\n")
+        otool.write("frag=Fragment(xyzfile=\"{}.xyz\")\n".format(basename))
+        otool.write("\n")
+        #TODO: FINISH
+        #otool.write("energy=54.4554\n")
+        #otool.write("gradient=np.random.random((frag.numatoms,3))\n")
+        otool.write("#Unpickling theory object\n")
+        otool.write("theory = pickle.load(open(\"{}\", \"rb\" ))\n".format(theoryfile))
+        #otool.write("theory=ZeroTheory()\n")
+        #otool.write("theory=ZeroTheory()\n")
+        otool.write("energy,gradient=Singlepoint(theory=theory,fragment=frag,Grad=True)\n")
+        otool.write("print(gradient)\n")
+        otool.write("ash.interfaces.interface_ORCA.print_gradient_in_ORCAformat(energy,gradient,\"{}\")\n".format(basename))
+    st = os.stat(scriptlocation+"/otool_external")
+    os.chmod(scriptlocation+"/otool_external", st.st_mode | stat.S_IEXEC)
+
+# Using ORCA as External Optimizer for ASH
+#Will only work for theories that can be pickled: not OpenMMTheory, probably not QMMMTheory
+def ORCA_External_Optimizer(fragment=None, theory=None, orcadir=None):
+    import pickle
+
+    #Serialize theory object for later use
+    theoryfilename="theory.saved"
+    pickle.dump(theory, open(theoryfilename, "wb" ))
+
+    basename = "ORCAEXTERNAL"
+    #Write otool_script once in location that ORCA will launch. This is an ASH E+Grad calculator
+    #ORCA will call : otool_external test_EXT.extinp.tmp
+    #ASH_otool creates basename_Ext.engrad that ORCA reads
+    scriptlocation="."
+    os.environ["PATH"] += os.pathsep + "."
+    create_ASH_otool(basename=basename, theoryfile=theoryfilename, scriptlocation=scriptlocation)
+    
+
+    #Create XYZ-file for ORCA-Extopt
+    xyzfile="ASH-xyzfile.xyz"
+    fragment.write_xyzfile(xyzfile)
+
+ 
+    with open(basename+".inp", 'w') as o:
+        o.write("! ExtOpt Opt\n")
+        o.write("\n")
+        o.write("*xyzfile {} {} {}\n".format(theory.charge,theory.mult,xyzfile))
+    
+    #Call ORCA to do geometry optimization
+    with open(basename+'.out', 'w') as ofile:
+        process = sp.run(['orca', basename+'.inp'], check=True, stdout=ofile, stderr=ofile, universal_newlines=True)
+
+    #Check if ORCA finished
+    if checkORCAfinished(basename+'.out') is not True:
+        print("Something failed about external ORCA job")
+        exit()
+    #Check if 
+    if checkORCAOptfinished(basename+'.out') is not True:
+        print("ORCA external optimization failed. Check outputfile:", basename+'.out')
+        exit()
+    print("ORCA external optimization finished")
+
+    #Grabbing final geometry
+    elems,coords=modules.module_coords.read_xyzfile(basename+".xyz")
+    fragment.coords=coords
+
+    #Grabbing final energy
+    energy = ORCAfinalenergygrab(basename+".out")
+    print("Final energy from external ORCA optimization:", energy)
+
+    return energy
