@@ -845,6 +845,19 @@ class OpenMMTheory:
         for d in reversed(todelete):
             self.system.removeConstraint(d)
 
+    #Remove constraints for selected atoms. For example: QM atoms in QM/MM MD
+    def remove_constraints_for_atoms(self, atoms):
+        print("Removing constraints in OpenMM object for atoms:", atoms)
+        todelete = []
+        # Looping over all defined system constraints
+        for i in range(0, self.system.getNumConstraints()):
+            con = self.system.getConstraintParameters(i)
+            #print("con:", con)
+            if con[0] in atoms or con[1] in atoms:
+                todelete.append(i)
+        for d in reversed(todelete):
+            self.system.removeConstraint(d)
+
     # Function to add restraints to system before MD
     def add_bondrestraints(self, restraints=None):
         new_restraints = self.openmm.HarmonicBondForce()
@@ -2370,6 +2383,8 @@ class OpenMM_MDclass:
         print_line_with_mainheader("OpenMM Molecular Dynamics Initialization")
 
         # Distinguish between OpenMM theory or QM/MM theory
+        self.dummy_MM=dummy_MM
+        print("self.dummy_MM:", self.dummy_MM)
         if isinstance(theory, OpenMMTheory):
             self.openmmobject = theory
             self.QM_MM_object = None
@@ -2633,8 +2648,6 @@ class OpenMM_MDclass:
                 self.openmmobject.add_center_force(center_coords=center, atomindices=center_force_atoms,
                                                    forceconstant=centerforce_constant)
 
-            # Setting coordinates of OpenMM object from current fragment.coords
-            self.openmmobject.set_positions(self.positions)
 
             # After adding QM/MM force, possible Plumed force, possible center force
             # Let's list all OpenMM object system forces
@@ -2668,6 +2681,10 @@ class OpenMM_MDclass:
         print("Timestep: {} ps".format(self.timestep))
         print()
 
+
+        # Setting coordinates of OpenMM object from current fragment.coords
+        self.openmmobject.set_positions(self.positions)
+
         # Run simulation
         # kjmolnm_to_atomic_factor = -49614.752589207
 
@@ -2683,7 +2700,9 @@ class OpenMM_MDclass:
                 # current_coords = np.array(state.getPositions(asNumpy=True))*10
                 # Manual trajectory option (reporters do not work for manual dynamics steps)
                 if step % self.traj_frequency == 0:
+                    checkpoint = time.time()
                     write_xyzfile(self.fragment.elems, current_coords, "OpenMMMD_traj", printlevel=1, writemode='a')
+                    print_time_rel(checkpoint, modulename="OpenMM_MD writetraj", moduleindex=2)
                 # Run QM/MM step to get full system QM+PC gradient.
                 # Updates OpenMM object with QM-PC forces
                 checkpoint = time.time()
@@ -2711,11 +2730,19 @@ class OpenMM_MDclass:
                                                                step=step)
                     self.openmmobject.update_custom_external_force(self.plumedcustomforce, newforces)
 
+        elif self.dummy_MM is True:
+            print("Dummy MM option")
+            for step in range(simulation_steps):
+                current_coords = np.array(self.openmmobject.simulation.context.getState(getPositions=True,
+                                                                                        enforcePeriodicBox=self.enforcePeriodicBox).getPositions(
+                    asNumpy=True)) * 10
+                if step % self.traj_frequency == 0:
+                    checkpoint = time.time()
+                    write_xyzfile(self.fragment.elems, current_coords, "OpenMMMD_traj", printlevel=1, writemode='a')
+                    print_time_rel(checkpoint, modulename="OpenMM_MD writetraj", moduleindex=2)
+                self.openmmobject.simulation.step(1)
         else:
             print("Regular classical OpenMM MD option chosen.")
-            # Setting coordinates
-            print(self.positions)
-            self.openmmobject.set_positions(self.positions)
             # Running all steps in one go
             # TODO: If we wanted to support plumed then we would have to do step 1-by-1 here
             self.openmmobject.simulation.step(simulation_steps)
