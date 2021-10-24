@@ -618,6 +618,10 @@ class QMMMTheory:
             else:
                 self.QMgradient_wo_linkatoms=self.QMgradient
 
+            if self.printlevel >= 2:
+                modules.module_coords.write_coords_all(self.QMgradient_wo_linkatoms, self.qmelems, indices=self.allatoms, file="QMgradient_wo_linkatoms", description="QM+ gradient withoutlinkatoms (au/Bohr):")
+
+
             #Initialize QM_PC gradient (has full system size) and fill up
             #TODO: This can be made more efficient
             self.QM_PC_gradient = np.zeros((len(self.allatoms), 3))
@@ -637,7 +641,9 @@ class QMMMTheory:
             #print("pccount:", pccount)
             #print("self.QM_PC_gradient len ", len(self.QM_PC_gradient))
 
-            
+            if self.printlevel >= 2:
+                modules.module_coords.write_coords_all(self.QM_PC_gradient, self.elems, indices=self.allatoms, file="QM+PCgradient_before_linkatomproj", description="QM+PC gradient before linkatomproj (au/Bohr):")
+
             #LINKATOM FORCE PROJECTION
             # Add contribution to QM1 and MM1 contribution???
             if self.linkatoms==True:                
