@@ -21,8 +21,10 @@ from modules.module_coords import elemstonuccharges
 
 class xTBTheory:
     def __init__(self, xtbdir=None, fragment=None, charge=None, mult=None, xtbmethod='GFN2', runmode='inputfile', numcores=1, printlevel=2, filename='xtb_',
-                 maxiter=500, electronic_temp=300, label=None):
+                 maxiter=500, electronic_temp=300, label=None, accuracy=0.1):
 
+        #Accuracy (0.1 it quite tight)
+        self.accuracy=accuracy
 
         #Printlevel
         self.printlevel=printlevel
@@ -171,7 +173,8 @@ class xTBTheory:
                 print("Creating inputfile:", self.filename+'.xyz')
             num_qmatoms=len(current_coords)
             num_mmatoms=len(MMcharges)
-            self.cleanup()
+
+            #self.cleanup()
             #Todo: xtbrestart possibly. needs to be optional
             modules.module_coords.write_xyzfile(qm_elems, current_coords, self.filename,printlevel=self.printlevel)
 
@@ -186,18 +189,18 @@ class xTBTheory:
                 if PC==True:
                     create_xtb_pcfile_general(current_MM_coords, MMcharges)
                     run_xtb_SP_serial(self.xtbdir, self.xtbmethod, self.filename + '.xyz', self.charge, self.mult, 
-                                      Grad=True, maxiter=self.maxiter, electronic_temp=self.electronic_temp)
+                                      Grad=True, maxiter=self.maxiter, electronic_temp=self.electronic_temp, accuracy=self.accuracy)
                 else:
                     run_xtb_SP_serial(self.xtbdir, self.xtbmethod, self.filename + '.xyz', self.charge, self.mult, maxiter=self.maxiter,
-                                  Grad=True, electronic_temp=self.electronic_temp)
+                                  Grad=True, electronic_temp=self.electronic_temp, accuracy=self.accuracy)
             else:
                 if PC==True:
                     create_xtb_pcfile_general(current_MM_coords, MMcharges)
                     run_xtb_SP_serial(self.xtbdir, self.xtbmethod, self.filename + '.xyz', self.charge, self.mult, maxiter=self.maxiter,
-                                      electronic_temp=self.electronic_temp)
+                                      electronic_temp=self.electronic_temp, accuracy=self.accuracy)
                 else:
                     run_xtb_SP_serial(self.xtbdir, self.xtbmethod, self.filename + '.xyz', self.charge, self.mult, maxiter=self.maxiter,
-                                      electronic_temp=self.electronic_temp)
+                                      electronic_temp=self.electronic_temp, accuracy=self.accuracy)
 
             if self.printlevel >= 2:
                 print("------------xTB calculation done-----")
@@ -268,6 +271,7 @@ class xTBTheory:
                 self.calcobject.set_verbosity(self.VERBOSITY_MINIMAL)
                 self.calcobject.set_electronic_temperature(self.electronic_temp)
                 self.calcobject.set_max_iterations(self.maxiter)
+                self.calcobject.set_accuracy(self.accuracy)
             #nextt run calls: only update coordinates
             else:
                 print("Updating coordinates in xTB calcobject")
@@ -432,7 +436,7 @@ def xtbVEAgrab(file):
     return VIP
 
 # Run xTB single-point job
-def run_xtb_SP_serial(xtbdir, xtbmethod, xyzfile, charge, mult, Grad=False, maxiter=500, electronic_temp=300):
+def run_xtb_SP_serial(xtbdir, xtbmethod, xyzfile, charge, mult, Grad=False, maxiter=500, electronic_temp=300, accuracy=0.1):
     basename = xyzfile.split('.')[0]
     uhf=mult-1
     #Writing xtbinputfile to disk so that we use ORCA-style PCfile and embedding
@@ -453,10 +457,10 @@ def run_xtb_SP_serial(xtbdir, xtbmethod, xyzfile, charge, mult, Grad=False, maxi
     
     if Grad==True:
         command_list=[xtbdir + '/xtb', basename+'.xyz', '--gfn', str(xtbflag), '--grad', '--chrg', str(charge), '--uhf', str(uhf), '--iterations', str(maxiter),
-                              '--etemp', str(electronic_temp), '--input', 'xtbinput'  ]
+                              '--etemp', str(electronic_temp), '--acc', str(accuracy), '--input', 'xtbinput'  ]
     else:
         command_list=[xtbdir + '/xtb', basename + '.xyz', '--gfn', str(xtbflag), '--chrg', str(charge), '--uhf', str(uhf), '--iterations', str(maxiter),
-                      '--etemp', str(electronic_temp), '--input', 'xtbinput']
+                      '--etemp', str(electronic_temp), '--acc', str(accuracy), '--input', 'xtbinput']
     print("Running xtb with these arguments:", command_list)
     
     with open(basename+'.out', 'w') as ofile:
