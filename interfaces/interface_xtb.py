@@ -21,7 +21,10 @@ from modules.module_coords import elemstonuccharges
 
 class xTBTheory:
     def __init__(self, xtbdir=None, fragment=None, charge=None, mult=None, xtbmethod='GFN2', runmode='inputfile', numcores=1, printlevel=2, filename='xtb_',
-                 maxiter=500, electronic_temp=300, label=None, accuracy=0.1):
+                 maxiter=500, electronic_temp=300, label=None, accuracy=0.1, hardness_PC=1000):
+
+        #Hardness of pointcharge. GAM factor
+        self.hardness=hardness_PC
 
         #Accuracy (0.1 it quite tight)
         self.accuracy=accuracy
@@ -187,7 +190,7 @@ class xTBTheory:
                 print("...")
             if Grad==True:
                 if PC==True:
-                    create_xtb_pcfile_general(current_MM_coords, MMcharges)
+                    create_xtb_pcfile_general(current_MM_coords, MMcharges, hardness=self.hardness)
                     run_xtb_SP_serial(self.xtbdir, self.xtbmethod, self.filename + '.xyz', self.charge, self.mult, 
                                       Grad=True, maxiter=self.maxiter, electronic_temp=self.electronic_temp, accuracy=self.accuracy)
                 else:
@@ -195,7 +198,7 @@ class xTBTheory:
                                   Grad=True, electronic_temp=self.electronic_temp, accuracy=self.accuracy)
             else:
                 if PC==True:
-                    create_xtb_pcfile_general(current_MM_coords, MMcharges)
+                    create_xtb_pcfile_general(current_MM_coords, MMcharges, hardness=self.hardness)
                     run_xtb_SP_serial(self.xtbdir, self.xtbmethod, self.filename + '.xyz', self.charge, self.mult, maxiter=self.maxiter,
                                       electronic_temp=self.electronic_temp, accuracy=self.accuracy)
                 else:
@@ -605,10 +608,9 @@ def create_xtb_pcfile_solvent(name,elems,coords,solventunitcharges,bulkcorr=Fals
 
 #General xtb pointchargefile creation
 #Using ORCA-style format: pc-coords in Å
-def create_xtb_pcfile_general(coords,pchargelist):
+def create_xtb_pcfile_general(coords,pchargelist,hardness=1000):
     #Creating list of pointcharges based on solventunitcharges and number of elements provided
     bohr2ang=constants.bohr2ang
-    hardness=1000
     #https://xtb-docs.readthedocs.io/en/latest/pcem.html
     with open('pcharge', 'w') as pcfile:
         pcfile.write(str(len(pchargelist))+'\n')
