@@ -336,10 +336,10 @@ class xTBTheory:
             options = {
                 "print_level": 1,
                 "parallel": 0,
-                "accuracy": 1.0,
+                "accuracy": 0.1,
                 "electronic_temperature": 300.0,
                 "gradient": True,
-                "restart": False,
+                "restart": True,
                 "ccm": True,
                 "max_iterations": 30,
                 "solvent": "none",
