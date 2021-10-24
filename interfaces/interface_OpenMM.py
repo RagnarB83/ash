@@ -35,7 +35,7 @@ class OpenMMTheory:
                  ewalderrortolerance=5e-4, PMEparameters=None,
                  delete_QM1_MM1_bonded=False, applyconstraints_in_run=False,
                  constraints=None, restraints=None, frozen_atoms=None, fragment=None,
-                 autoconstraints='HBonds', hydrogenmass=1.5, rigidwater=True):
+                 autoconstraints='HBonds', hydrogenmass=1.5, rigidwater=True, changed_masses=None):
 
         print_line_with_mainheader("OpenMM Theory")
 
@@ -659,6 +659,13 @@ class OpenMMTheory:
                 print(f"{len(self.user_restraints)} user-defined restraints to add.")
             self.add_bondrestraints(restraints=restraints)
 
+        #Now changing masses if requested
+        if changed_masses is not None:
+            print("Modified masses")
+            #changed_masses should be a dict of : atomindex: mass
+            self.modify_masses(changed_masses=changed_masses)
+
+
         print("\nSystem constraints defined upon system creation:", self.system.getNumConstraints())
         print("Use printlevel =>2 to see list of all constraints")
         if self.printlevel >= 3:
@@ -882,6 +889,15 @@ class OpenMMTheory:
         # Modify particle masses in system object. For freezing atoms
         for i in frozen_atoms:
             self.system.setParticleMass(i, 0 * self.unit.daltons)
+    #Changed masses according to user input dictionary
+    def modify_masses(self, changed_masses=None):
+        print("Modify masses according: ", changed_masses)
+        # Preserve original masses
+        #self.system_masses = [self.system.getParticleMass(i) for i in self.allatoms]
+        # Modify particle masses in system object.
+        for am in changed_masses:
+            self.system.setParticleMass(am, changed_masses[am] * self.unit.daltons)
+
     def unfreeze_atoms(self):
         # Looping over system_masses if frozen, otherwise empty list
         for atom, mass in zip(self.allatoms, self.system_masses):

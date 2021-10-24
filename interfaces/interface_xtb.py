@@ -609,7 +609,6 @@ def create_xtb_pcfile_solvent(name,elems,coords,solventunitcharges,bulkcorr=Fals
 #General xtb pointchargefile creation
 #Using ORCA-style format: pc-coords in Å
 def create_xtb_pcfile_general(coords,pchargelist,hardness=1000):
-    #Creating list of pointcharges based on solventunitcharges and number of elements provided
     bohr2ang=constants.bohr2ang
     #https://xtb-docs.readthedocs.io/en/latest/pcem.html
     with open('pcharge', 'w') as pcfile:

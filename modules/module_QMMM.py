@@ -688,6 +688,13 @@ class QMMMTheory:
 
         print_time_rel(CheckpointTime, modulename='QM/MM gradient prepare', moduleindex=2)
         CheckpointTime = time.time()
+
+
+        if self.printlevel >= 2:
+            modules.module_coords.write_coords_all(self.QM_PC_gradient, self.elems, indices=self.allatoms, file="QM+PCgradient", description="QM+PC gradient (au/Bohr):")
+
+
+
         # MM THEORY
         if self.mm_theory_name == "NonBondedTheory":
             if self.printlevel >= 2:
