@@ -204,6 +204,10 @@ class QMMMTheory:
                 print("No covalent QM-MM boundary. Linkatoms option set to False")
                 self.linkatoms=False
             
+            #Removing possible QM atom constraints in OpenMMTheory
+            #Will only apply when running OpenMM_Opt or OpenMM_MD
+            if self.mm_theory_name == "OpenMMTheory":
+                self.mm_theory.remove_constraints_for_atoms(self.qmatoms)
 
             if self.embedding=="Elstat":
                 

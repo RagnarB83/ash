@@ -845,6 +845,19 @@ class OpenMMTheory:
         for d in reversed(todelete):
             self.system.removeConstraint(d)
 
+    #Remove constraints for selected atoms. For example: QM atoms in QM/MM MD
+    def remove_constraints_for_atoms(self, atoms):
+        print("Removing constraints in OpenMM object for atoms:", atoms)
+        todelete = []
+        # Looping over all defined system constraints
+        for i in range(0, self.system.getNumConstraints()):
+            con = self.system.getConstraintParameters(i)
+            #print("con:", con)
+            if con[0] in atoms or con[1] in atoms:
+                todelete.append(i)
+        for d in reversed(todelete):
+            self.system.removeConstraint(d)
+
     # Function to add restraints to system before MD
     def add_bondrestraints(self, restraints=None):
         new_restraints = self.openmm.HarmonicBondForce()
@@ -2371,6 +2384,7 @@ class OpenMM_MDclass:
 
         # Distinguish between OpenMM theory or QM/MM theory
         self.dummy_MM=dummy_MM
+        print("self.dummy_MM:", self.dummy_MM)
         if isinstance(theory, OpenMMTheory):
             self.openmmobject = theory
             self.QM_MM_object = None
@@ -2717,6 +2731,7 @@ class OpenMM_MDclass:
                     self.openmmobject.update_custom_external_force(self.plumedcustomforce, newforces)
 
         elif self.dummy_MM is True:
+            print("Dummy MM option")
             for step in range(simulation_steps):
                 current_coords = np.array(self.openmmobject.simulation.context.getState(getPositions=True,
                                                                                         enforcePeriodicBox=self.enforcePeriodicBox).getPositions(
