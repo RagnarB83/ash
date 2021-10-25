@@ -2750,26 +2750,30 @@ class OpenMM_MDclass:
                 checkpoint_begin_step = time.time()
                 print("Step:", step)
                 #Get state of simulation. Gives access to coords, velocities, forces, energy etc.
-                current_state=self.openmmobject.simulation.context.getState(getPositions=True, enforcePeriodicBox=self.enforcePeriodicBox,
-                                                                            getEnergy=True)
+                current_state=self.openmmobject.simulation.context.getState(getPositions=True, enforcePeriodicBox=self.enforcePeriodicBox, getEnergy=True)
                 
-                #
                 if step % self.traj_frequency == 0:
+                    #current_state_vel=self.openmmobject.simulation.context.getState(getVelocities=True, enforcePeriodicBox=self.enforcePeriodicBox,
+                    #                                                    )
+                    #velocities = current_state_vel.getVelocities(asNumpy=True)
+                    kinetic_energy=current_state.getKineticEnergy()
+                    pot_energy=current_state.getPotentialEnergy()
                     print("="*50)
                     print("SIMULATION STATUS")
                     print("_"*50)
                     print("Step:", step)
                     print("Time: {}".format(current_state.getTime()))
-                    print("Potential energy:", current_state.getPotentialEnergy())
-                    print("Kinetic energy:", current_state.getKineticEnergy())
-                    print("Temperature:", self.openmmobject.integrator.getTemperature())
+                    print("Potential energy:", pot_energy)
+                    print("Kinetic energy:", kinetic_energy )
+                    temperature=2*kinetic_energy/(3*constants.R_gasconst_JK*self.openmmobject.unit.kilojoules_per_mole)
+                    print("Temperature: {} K".format(temperature))
                     print("="*50)
                 
                 #current_coords = np.array(self.openmmobject.simulation.context.getState(getPositions=True,
                 #                                                                        enforcePeriodicBox=self.enforcePeriodicBox).getPositions(
                 #    asNumpy=True)) * 10
                 # Get current coordinates to use for QM/MM step
-                current_coords = np.array(current_state.getPositions(asNumpy=True))
+                current_coords = np.array(current_state.getPositions(asNumpy=True))*10
 
                 # state =  openmmobject.simulation.context.getState(getPositions=True, enforcePeriodicBox=enforcePeriodicBox)
                 # current_coords = np.array(state.getPositions(asNumpy=True))*10
