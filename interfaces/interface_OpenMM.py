@@ -1997,8 +1997,8 @@ def MDtraj_imagetraj(trajectory, pdbtopology, format='DCD', unitcell_lengths=Non
     numframes = len(traj._time)
     print("Found {} frames in trajectory.".format(numframes))
     print("PBC information in trajectory:")
-    print("traj.unitcell_lengths:", traj.unitcell_lengths[0])
-    print("traj.unitcell_angles", traj.unitcell_angles[0])
+    print("Unitcell lengths:", traj.unitcell_lengths[0])
+    print("Unitcell angles", traj.unitcell_angles[0])
     # If PBC information is missing from traj file (OpenMM: Charmmfiles, Amberfiles option etc) then provide this info
     if unitcell_lengths is not None:
         print("unitcell_lengths info provided by user.")

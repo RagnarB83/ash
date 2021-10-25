@@ -20,10 +20,10 @@ from modules.module_coords import elemstonuccharges
 
 
 class xTBTheory:
-    def __init__(self, xtbdir=None, fragment=None, charge=None, mult=None, xtbmethod='GFN2', runmode='inputfile', numcores=1, printlevel=2, filename='xtb_',
+    def __init__(self, xtbdir=None, fragment=None, charge=None, mult=None, xtbmethod='GFN1', runmode='inputfile', numcores=1, printlevel=2, filename='xtb_',
                  maxiter=500, electronic_temp=300, label=None, accuracy=0.1, hardness_PC=1000):
 
-        #Hardness of pointcharge. GAM factor
+        #Hardness of pointcharge. GAM factor. Big number means PC behaviour
         self.hardness=hardness_PC
 
         #Accuracy (0.1 it quite tight)
@@ -35,9 +35,6 @@ class xTBTheory:
         #Label to distinguish different ORCA objects
         self.label=label
 
-        if xtbmethod is None:
-            print("xTBTheory requires xtbmethod keyword to be set")
-            exit(1)
 
         self.numcores=numcores
         if fragment != None:
@@ -55,7 +52,7 @@ class xTBTheory:
         
         print_line_with_mainheader("xTB INTERFACE")
         print("Runmode:", self.runmode)
-
+        print("xTB method:", self.xtbmethod)
         #Parallelization for both library and inputfile runmode
         print("xTB object numcores:", self.numcores)
         #NOTE: Setting OMP_NUM_THREADS should be sufficient for performance. MKL threading should be handled by xTB
