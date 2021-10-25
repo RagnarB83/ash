@@ -640,6 +640,11 @@ class QMMMTheory:
             #print("qmcount:", qmcount)
             #print("pccount:", pccount)
             #print("self.QM_PC_gradient len ", len(self.QM_PC_gradient))
+            print("self.PCgradient 20:", self.PCgradient[0:20])
+            print("self.QM_PC_gradient 20:", self.QM_PC_gradient[0:20])
+            if self.printlevel >= 2:
+                modules.module_coords.write_coords_all(self.PC_gradient, self.mmatoms, indices=self.allatoms, file="PCgradient", description="PC gradient (au/Bohr):")
+
 
             if self.printlevel >= 2:
                 modules.module_coords.write_coords_all(self.QM_PC_gradient, self.elems, indices=self.allatoms, file="QM+PCgradient_before_linkatomproj", description="QM+PC gradient before linkatomproj (au/Bohr):")
