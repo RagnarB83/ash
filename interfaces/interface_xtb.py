@@ -21,8 +21,14 @@ from modules.module_coords import elemstonuccharges
 
 class xTBTheory:
     def __init__(self, xtbdir=None, fragment=None, charge=None, mult=None, xtbmethod='GFN1', runmode='inputfile', numcores=1, printlevel=2, filename='xtb_',
-                 maxiter=500, electronic_temp=300, label=None, accuracy=0.1, hardness_PC=1000):
+                 maxiter=500, electronic_temp=300, label=None, accuracy=0.1, hardness_PC=1000, solvent=None):
 
+        #SOlvent
+        #TODO: Only available for inputfile interface right now
+        if solvent != None:
+            self.solvent_line="--alpb {}".format(solvent)
+        else:
+            self.solvent_line=""
         #Hardness of pointcharge. GAM factor. Big number means PC behaviour
         self.hardness=hardness_PC
 
@@ -192,15 +198,15 @@ class xTBTheory:
                                       Grad=True, maxiter=self.maxiter, electronic_temp=self.electronic_temp, accuracy=self.accuracy)
                 else:
                     run_xtb_SP_serial(self.xtbdir, self.xtbmethod, self.filename + '.xyz', self.charge, self.mult, maxiter=self.maxiter,
-                                  Grad=True, electronic_temp=self.electronic_temp, accuracy=self.accuracy)
+                                  Grad=True, electronic_temp=self.electronic_temp, accuracy=self.accuracy, solvent=self.solvent_line)
             else:
                 if PC==True:
                     create_xtb_pcfile_general(current_MM_coords, MMcharges, hardness=self.hardness)
                     run_xtb_SP_serial(self.xtbdir, self.xtbmethod, self.filename + '.xyz', self.charge, self.mult, maxiter=self.maxiter,
-                                      electronic_temp=self.electronic_temp, accuracy=self.accuracy)
+                                      electronic_temp=self.electronic_temp, accuracy=self.accuracy, solvent=self.solvent_line)
                 else:
                     run_xtb_SP_serial(self.xtbdir, self.xtbmethod, self.filename + '.xyz', self.charge, self.mult, maxiter=self.maxiter,
-                                      electronic_temp=self.electronic_temp, accuracy=self.accuracy)
+                                      electronic_temp=self.electronic_temp, accuracy=self.accuracy, solvent=self.solvent_line)
 
             if self.printlevel >= 2:
                 print("------------xTB calculation done-----")
@@ -436,7 +442,12 @@ def xtbVEAgrab(file):
     return VIP
 
 # Run xTB single-point job
-def run_xtb_SP_serial(xtbdir, xtbmethod, xyzfile, charge, mult, Grad=False, maxiter=500, electronic_temp=300, accuracy=0.1):
+def run_xtb_SP_serial(xtbdir, xtbmethod, xyzfile, charge, mult, Grad=False, maxiter=500, electronic_temp=300, accuracy=0.1, solvent=None):
+    
+    if solvent != None:
+        solvent_line=""
+    else:
+        solvent_line=solvent
     basename = xyzfile.split('.')[0]
     uhf=mult-1
     #Writing xtbinputfile to disk so that we use ORCA-style PCfile and embedding
@@ -457,10 +468,10 @@ def run_xtb_SP_serial(xtbdir, xtbmethod, xyzfile, charge, mult, Grad=False, maxi
     
     if Grad==True:
         command_list=[xtbdir + '/xtb', basename+'.xyz', '--gfn', str(xtbflag), '--grad', '--chrg', str(charge), '--uhf', str(uhf), '--iterations', str(maxiter),
-                              '--etemp', str(electronic_temp), '--acc', str(accuracy), '--input', 'xtbinput'  ]
+                              '--etemp', str(electronic_temp), '--acc', str(accuracy), '--input', 'xtbinput', str(solvent_line)  ]
     else:
         command_list=[xtbdir + '/xtb', basename + '.xyz', '--gfn', str(xtbflag), '--chrg', str(charge), '--uhf', str(uhf), '--iterations', str(maxiter),
-                      '--etemp', str(electronic_temp), '--acc', str(accuracy), '--input', 'xtbinput']
+                      '--etemp', str(electronic_temp), '--acc', str(accuracy), '--input', 'xtbinput', str(solvent_line)]
     print("Running xtb with these arguments:", command_list)
     
     with open(basename+'.out', 'w') as ofile:
