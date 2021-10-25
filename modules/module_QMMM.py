@@ -643,7 +643,7 @@ class QMMMTheory:
             print("self.PCgradient 20:", self.PCgradient[0:20])
             print("self.QM_PC_gradient 20:", self.QM_PC_gradient[0:20])
             if self.printlevel >= 2:
-                modules.module_coords.write_coords_all(self.PC_gradient, self.mmatoms, indices=self.allatoms, file="PCgradient", description="PC gradient (au/Bohr):")
+                modules.module_coords.write_coords_all(self.PCgradient, self.mmatoms, indices=self.allatoms, file="PCgradient", description="PC gradient (au/Bohr):")
 
 
             if self.printlevel >= 2:

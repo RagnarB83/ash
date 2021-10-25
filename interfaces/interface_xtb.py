@@ -626,7 +626,8 @@ def xtbpcgradientgrab(numatoms):
             val_x=float(line.split()[0])
             val_y = float(line.split()[1])
             val_z = float(line.split()[2])
-            gradient[count-1] = [val_x,val_y,val_z]
+            #gradient[count-1] = [val_x,val_y,val_z]
+            gradient[count] = [val_x,val_y,val_z]
     return gradient
 
 #Grab xTB charges. Assuming default xTB charges that are inside file charges
