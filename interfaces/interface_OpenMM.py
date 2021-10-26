@@ -2765,7 +2765,7 @@ class OpenMM_MDclass:
 
         # Setting coordinates of OpenMM object from current fragment.coords
         self.openmmobject.set_positions(self.positions)
-
+        print()
         # Run simulation
         # kjmolnm_to_atomic_factor = -49614.752589207
 
