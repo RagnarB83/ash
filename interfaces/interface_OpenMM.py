@@ -2,6 +2,7 @@ import os
 from sys import stdout
 import time
 import traceback
+import io
 
 import numpy as np
 
@@ -65,6 +66,10 @@ class OpenMMTheory:
 
         # Initialize system
         self.system = None
+        
+        #Degrees of freedom of system (accounts for frozen atoms and constraints)
+        #Will be set by update_simulation
+        self.dof=None
 
         # Load Parmed if requested
         if use_parmed is True:
@@ -678,9 +683,10 @@ class OpenMMTheory:
         # print("Hardware platform:", self.platform_choice)
         self.platform = openmm.Platform.getPlatformByName(self.platform_choice)
 
-        # Create simulation (can be overridden by OpenMM_Opt, OpenMM_MD functions) 
-        self.create_simulation()
-
+        # Create basic simulation (will be overridden by OpenMM_Opt, OpenMM_MD functions) 
+        #self.create_simulation()
+        self.set_simulation_parameters()
+        self.update_simulation()
         # Old:
         # NOTE: If self.system is modified then we have to remake self.simulation
         # self.simulation = simtk.openmm.app.simulation.Simulation(self.topology, self.system, self.integrator,self.platform)
@@ -781,7 +787,10 @@ class OpenMMTheory:
             # centerforce.addParticle(i, np.array([0.0, 0.0, 0.0]))
             centerforce.addParticle(i, self.Vec3(center_x, center_y, center_z))
         self.system.addForce(centerforce)
-        self.create_simulation()
+        #Updating simulation again in order to update parameters. Making sure not to change integrator etc.
+        #self.create_simulation(timestep=self.timestep, integrator=self.integrator, 
+        #                       coupling_frequency=self.coupling_frequency, temperature=self.temperature)
+        self.update_simulation()
         print("Added center force")
         return centerforce
 
@@ -798,7 +807,9 @@ class OpenMMTheory:
         self.system.addForce(customforce)
         # self.externalforce=customforce
         # Necessary:
-        self.create_simulation()
+        #self.create_simulation(timestep=self.timestep, integrator=self.integrator, 
+        #                       coupling_frequency=self.coupling_frequency, temperature=self.temperature)
+        self.update_simulation()
         # http://docs.openmm.org/latest/api-c++/generated/OpenMM.CustomExternalForce.html
 
         print("Added force")
@@ -974,7 +985,8 @@ class OpenMMTheory:
         # Seems like updateParametersInContext does not reliably work here so we have to remake the simulation instead
         # Might be bug (https://github.com/openmm/openmm/issues/2709). Revisit
         # self.nonbonded_force.updateParametersInContext(self.simulation.context)
-        self.create_simulation()
+        #self.create_simulation()
+        self.update_simulation()
 
         print_time_rel(timeA, modulename="add exception")
 
@@ -982,54 +994,64 @@ class OpenMMTheory:
     # Probably best to do QM-QM exclusions etc. in a separate function though as we want run to be as simple as possible
     # qmatoms list provided for generality of MM objects. Not used here for now
 
+    def set_simulation_parameters(self, timestep=0.001, coupling_frequency=1, temperature=300, integrator='VerletIntegrator'):
+        self.timestep=timestep
+        self.coupling_frequency=coupling_frequency
+        self.temperature=temperature
+        self.integrator_name=integrator
     # Create/update simulation from scratch or after system has been modified (force modification or even deletion)
-    def create_simulation(self, timestep=0.001, integrator='VerletIntegrator', coupling_frequency=1,
-                          temperature=300):
+    #def create_simulation(self, timestep=0.001, integrator='VerletIntegrator', coupling_frequency=1,
+    #                      temperature=300):
+    def update_simulation(self):
+        #Keeping variables
         timeA = time.time()
         print_line_with_subheader1("Creating/updating OpenMM simulation object")
         printdebug("self.system.getForces() ", self.system.getForces())
-        # self.integrator = self.langevinintegrator(0.0000001 * self.unit.kelvin,  # Temperature of heat bath
-        #                                1 / self.unit.picosecond,  # Friction coefficient
-        #                                0.002 * self.unit.picoseconds)  # Time step
 
+        #NOTE: Integrator definition has to be here (instead of set_simulation_parameters) as it has to be recreated for each updated simulation
         # Integrators: LangevinIntegrator, LangevinMiddleIntegrator, NoseHooverIntegrator, VerletIntegrator,
         # BrownianIntegrator, VariableLangevinIntegrator, VariableVerletIntegrator
-        if integrator == 'VerletIntegrator':
-            self.integrator = self.openmm.VerletIntegrator(timestep * self.unit.picoseconds)
-        elif integrator == 'VariableVerletIntegrator':
-            self.integrator = self.openmm.VariableVerletIntegrator(timestep * self.unit.picoseconds)
-        elif integrator == 'LangevinIntegrator':
-            self.integrator = self.openmm.LangevinIntegrator(temperature * self.unit.kelvin,
-                                                             coupling_frequency / self.unit.picosecond,
-                                                             timestep * self.unit.picoseconds)
-        elif integrator == 'LangevinMiddleIntegrator':
+        if self.integrator_name == 'VerletIntegrator':
+            self.integrator = self.openmm.VerletIntegrator(self.timestep * self.unit.picoseconds)
+        elif self.integrator_name == 'VariableVerletIntegrator':
+            self.integrator = self.openmm.VariableVerletIntegrator(self.timestep * self.unit.picoseconds)
+        elif self.integrator_name == 'LangevinIntegrator':
+            self.integrator = self.openmm.LangevinIntegrator(self.temperature * self.unit.kelvin,
+                                                             self.coupling_frequency / self.unit.picosecond,
+                                                             self.timestep * self.unit.picoseconds)
+        elif self.integrator_name == 'LangevinMiddleIntegrator':
             # openmm recommended with 4 fs timestep, Hbonds 1/ps friction
-            self.integrator = self.openmm.LangevinMiddleIntegrator(temperature * self.unit.kelvin,
-                                                                   coupling_frequency / self.unit.picosecond,
-                                                                   timestep * self.unit.picoseconds)
-        elif integrator == 'NoseHooverIntegrator':
-            self.integrator = self.openmm.NoseHooverIntegrator(temperature * self.unit.kelvin,
-                                                               coupling_frequency / self.unit.picosecond,
-                                                               timestep * self.unit.picoseconds)
+            self.integrator = self.openmm.LangevinMiddleIntegrator(self.temperature * self.unit.kelvin,
+                                                                   self.coupling_frequency / self.unit.picosecond,
+                                                                   self.timestep * self.unit.picoseconds)
+        elif self.integrator_name == 'NoseHooverIntegrator':
+            self.integrator = self.openmm.NoseHooverIntegrator(self.temperature * self.unit.kelvin,
+                                                               self.coupling_frequency / self.unit.picosecond,
+                                                               self.timestep * self.unit.picoseconds)
         # NOTE: Problem with Brownian, disabling
         # elif integrator == 'BrownianIntegrator':
         #    self.integrator = self.openmm.BrownianIntegrator(temperature*self.unit.kelvin, coupling_frequency/self.unit.picosecond, timestep*self.unit.picoseconds)
-        elif integrator == 'VariableLangevinIntegrator':
-            self.integrator = self.openmm.VariableLangevinIntegrator(temperature * self.unit.kelvin,
-                                                                     coupling_frequency / self.unit.picosecond,
-                                                                     timestep * self.unit.picoseconds)
+        elif self.integrator_name == 'VariableLangevinIntegrator':
+            self.integrator = self.openmm.VariableLangevinIntegrator(self.temperature * self.unit.kelvin,
+                                                                     self.coupling_frequency / self.unit.picosecond,
+                                                                     self.timestep * self.unit.picoseconds)
         else:
             print(BC.FAIL,
                   "Unknown integrator.\n Valid integrator keywords are: VerletIntegrator, VariableVerletIntegrator, "
                   "LangevinIntegrator, LangevinMiddleIntegrator, NoseHooverIntegrator, VariableLangevinIntegrator ",
                   BC.END)
             exit()
+
+
+
+
         self.simulation = self.simulationclass(self.topology, self.system, self.integrator, self.platform,
                                                self.properties)
-        
-        #if self.Periodic is True:
-        #    print("PME parameters in context", self.nonbonded_force.getPMEParametersInContext(self.simulation.context))
-        print_time_rel(timeA, modulename="creating simulation")
+        print("integrator:", self.integrator)
+        #Now calling function to compute the actual degrees of freedom.
+        #NOTE: Better place for this? Just needs to be called once, after constraints and frozen atoms are done 
+        self.compute_DOF()
+        print_time_rel(timeA, modulename="creating/updating simulation")
 
     # Functions for energy decompositions
     def forcegroupify(self):
@@ -1131,6 +1153,21 @@ class OpenMMTheory:
         # Adding sum to table
         openmm_energy['Sum'] = sumofallcomponents
         self.energy_components = openmm_energy
+
+    def compute_DOF(self):
+        # Compute the number of degrees of freedom.
+        dof = 0
+        for i in range(self.system.getNumParticles()):
+            if self.system.getParticleMass(i) > 0*self.unit.dalton:
+                dof += 3
+        for i in range(self.system.getNumConstraints()):
+            p1, p2, distance = self.system.getConstraintParameters(i)
+            if self.system.getParticleMass(p1) > 0*self.unit.dalton or self.system.getParticleMass(p2) > 0*self.unit.dalton:
+                dof -= 1
+        if any(type(self.system.getForce(i)) == self.openmm.CMMotionRemover for i in range(self.system.getNumForces())):
+            dof -= 3
+        self.dof=dof
+
 
     def run(self, current_coords=None, elems=None, Grad=False, fragment=None, qmatoms=None):
         module_init_time = time.time()
@@ -1274,7 +1311,8 @@ class OpenMMTheory:
                         chargeprod._value = 0.0
                         force.setExceptionParameters(exc, p1, p2, chargeprod, sigmaij, epsilonij)
                         # print("New:", force.getExceptionParameters(exc))
-        self.create_simulation()
+        #self.create_simulation()
+        self.update_simulation()
         print_time_rel(timeA, modulename="delete_exceptions")
 
     # Function to
@@ -1327,7 +1365,8 @@ class OpenMMTheory:
             elif isinstance(force, self.openmm.CustomNonbondedForce):
                 print("customnonbondedforce not implemented")
                 exit()
-        self.create_simulation()
+        #self.create_simulation()
+        self.update_simulation()
         print_time_rel(timeA, modulename="zero_nonbondedforce")
         # self.create_simulation()
 
@@ -1368,7 +1407,8 @@ class OpenMMTheory:
                 self.nonbonded_force.updateParametersInContext(self.simulation.context)
             if isinstance(force, self.openmm.CustomNonbondedForce):
                 self.nonbonded_force.updateParametersInContext(self.simulation.context)
-        self.create_simulation()
+        #self.create_simulation()
+        self.update_simulation()
         printdebug("done here")
         print_time_rel(timeA, modulename="update_charges")
 
@@ -1572,7 +1612,8 @@ class OpenMMTheory:
         print("CMAP Torsion terms:", numcmaptorsionterms_removed)
         print("CustomBond terms", numcustombondterms_removed)
         print("")
-        self.create_simulation()
+        #self.create_simulation()
+        self.update_simulation()
         print_time_rel(timeA, modulename="modify_bonded_forces")
 
 
@@ -1754,7 +1795,8 @@ def OpenMM_Opt(fragment=None, theory=None, maxiter=1000, tolerance=1, enforcePer
             f"{BC.WARNING}\nOpenMM will crash if constraints and frozen atoms involve the same atoms{BC.END}")
 
 
-    openmmobject.create_simulation(timestep=0.001, temperature=1, integrator='VerletIntegrator')
+    openmmobject.set_simulation_parameters(timestep=0.001, temperature=1, integrator='VerletIntegrator')
+    openmmobject.update_simulation()
     print("Simulation created.")
 
     # Context: settings positions
@@ -1997,8 +2039,8 @@ def MDtraj_imagetraj(trajectory, pdbtopology, format='DCD', unitcell_lengths=Non
     numframes = len(traj._time)
     print("Found {} frames in trajectory.".format(numframes))
     print("PBC information in trajectory:")
-    print("traj.unitcell_lengths:", traj.unitcell_lengths[0])
-    print("traj.unitcell_angles", traj.unitcell_angles[0])
+    print("Unitcell lengths:", traj.unitcell_lengths[0])
+    print("Unitcell angles", traj.unitcell_angles[0])
     # If PBC information is missing from traj file (OpenMM: Charmmfiles, Amberfiles option etc) then provide this info
     if unitcell_lengths is not None:
         print("unitcell_lengths info provided by user.")
@@ -2527,9 +2569,11 @@ class OpenMM_MDclass:
 
             self.integrator = "LangevinMiddleIntegrator"
             print("Barostat requires using integrator:", integrator)
-            self.openmmobject.create_simulation(timestep=self.timestep, temperature=self.temperature,
-                                                integrator=self.integrator,
-                                                coupling_frequency=self.coupling_frequency)
+            #self.openmmobject.create_simulation(timestep=self.timestep, temperature=self.temperature,
+            #                                    integrator=self.integrator,
+            #                                    coupling_frequency=self.coupling_frequency)
+            self.openmmobject.set_simulation_parameters(timestep=self.timestep, temperature=self.temperature, 
+                                                        integrator=self.integrator, coupling_frequency=self.coupling_frequency)
         elif anderson_thermostat is True:
             print("Anderson thermostat is on.")
             if "AndersenThermostat" not in forceclassnames:
@@ -2538,9 +2582,11 @@ class OpenMM_MDclass:
                                                                 1 / self.openmmobject.openmm.unit.picosecond))
             self.integrator = "VerletIntegrator"
             print("Now using integrator:", integrator)
-            self.openmmobject.create_simulation(timestep=self.timestep, temperature=self.temperature,
-                                                integrator=self.integrator,
-                                                coupling_frequency=coupling_frequency)
+            #self.openmmobject.create_simulation(timestep=self.timestep, temperature=self.temperature,
+            #                                    integrator=self.integrator,
+            #                                    coupling_frequency=coupling_frequency)
+            self.openmmobject.set_simulation_parameters(timestep=self.timestep, temperature=self.temperature, 
+                                                        integrator=self.integrator, coupling_frequency=self.coupling_frequency)
         else:
             # Deleting barostat and Andersen thermostat if present from previous sims
             for i, forcename in enumerate(forceclassnames):
@@ -2551,10 +2597,15 @@ class OpenMM_MDclass:
             # Regular thermostat or integrator without barostat
             # Integrators: LangevinIntegrator, LangevinMiddleIntegrator, NoseHooverIntegrator, VerletIntegrator,
             # BrownianIntegrator, VariableLangevinIntegrator, VariableVerletIntegrator
-            self.openmmobject.create_simulation(timestep=self.timestep, temperature=self.temperature,
-                                                integrator=self.integrator,
-                                                coupling_frequency=self.coupling_frequency)
-        print("Simulation created.")
+            #self.openmmobject.create_simulation(timestep=self.timestep, temperature=self.temperature,
+            #                                    integrator=self.integrator,
+            #                                    coupling_frequency=self.coupling_frequency)
+            self.openmmobject.set_simulation_parameters(timestep=self.timestep, temperature=self.temperature, 
+                                                        integrator=self.integrator, coupling_frequency=self.coupling_frequency)
+        
+        self.openmmobject.update_simulation()
+        print("Simulation updated.")
+        print(self.openmmobject.integrator)
         if self.openmmobject.Periodic is True:
             print("PME parameters in context", self.openmmobject.nonbonded_force.getPMEParametersInContext(self.openmmobject.simulation.context))
         forceclassnames = [i.__class__.__name__ for i in self.openmmobject.system.getForces()]
@@ -2600,16 +2651,25 @@ class OpenMM_MDclass:
             volume = density = False
 
         # If statedatareporter filename set:
-        if datafilename is not None:
-            outputoption = datafilename
+        self.datafilename=datafilename
+        if self.datafilename is not None:
+            #Remove old file
+            try:
+                os.remove(self.datafilename)
+            except FileNotFoundError:
+                pass
+            #Now doing open file object in append mode instead of just filename.
+            #Just filename does not play nice when running simulation step by step
+            #Future OpenMM update may do this automatically?
+            self.dataoutputoption = open(self.datafilename,'a')
+            print("Will write data to file:", self.datafilename)
         # otherwise stdout:
         else:
-            outputoption = stdout
-
-        self.openmmobject.simulation.reporters.append(
-            self.openmmobject.openmm.app.StateDataReporter(outputoption, self.traj_frequency, step=True, time=True,
+            self.dataoutputoption = stdout
+        self.statedatareporter=self.openmmobject.openmm.app.StateDataReporter(self.dataoutputoption, self.traj_frequency, step=True, time=True,
                                                            potentialEnergy=True, kineticEnergy=True, volume=volume,
-                                                           density=density, temperature=True, separator=','))
+                                                           density=density, temperature=True, separator=',')
+        self.openmmobject.simulation.reporters.append(self.statedatareporter)
 
         # NOTE: Better to use OpenMM-plumed interface instead??
         if plumed_object is not None:
@@ -2635,6 +2695,7 @@ class OpenMM_MDclass:
                 print("Turning on externalforce option.")
                 self.QM_MM_object.openmm_externalforce = True
                 self.QM_MM_object.openmm_externalforceobject = self.QM_MM_object.mm_theory.add_custom_external_force()
+                print("1openmm obj integrator:", self.openmmobject.integrator)
             # TODO:
             # Should we set parallelization of QM theory here also in case forgotten?
 
@@ -2667,8 +2728,10 @@ class OpenMM_MDclass:
 
             # After adding QM/MM force, possible Plumed force, possible center force
             # Let's list all OpenMM object system forces
+            print("2openmm obj integrator:", self.openmmobject.integrator)
             print("OpenMM Forces defined:", self.openmmobject.system.getForces())
             print("Now starting QM/MM MD simulation.")
+            print("openmm obj integrator:", self.openmmobject.integrator)
             # Does step by step
             # Delete old traj
             try:
@@ -2682,7 +2745,7 @@ class OpenMM_MDclass:
     def run(self, simulation_steps=None, simulation_time=None):
         module_init_time = time.time()
         print_line_with_mainheader("OpenMM Molecular Dynamics Run")
-
+        print("openmm obj integrator:", self.openmmobject.integrator)
         if simulation_steps is None and simulation_time is None:
             print("Either simulation_steps or simulation_time needs to be set.")
             exit()
@@ -2695,6 +2758,8 @@ class OpenMM_MDclass:
         print("Simulation time: {} ps".format(simulation_time))
         print("Simulation steps: {}".format(simulation_steps))
         print("Timestep: {} ps".format(self.timestep))
+        print("OpenMM integrator:", self.openmmobject.integrator_name)
+        print("self.openmmobject.integrator:", self.openmmobject.integrator)
         print()
 
 
@@ -2707,21 +2772,31 @@ class OpenMM_MDclass:
         if self.QM_MM_object is not None:
             for step in range(simulation_steps):
                 checkpoint_begin_step = time.time()
+                checkpoint = time.time()
                 print("Step:", step)
-                # Get current coordinates to use for QM/MM step
-                current_coords = np.array(self.openmmobject.simulation.context.getState(getPositions=True,
-                                                                                        enforcePeriodicBox=self.enforcePeriodicBox).getPositions(
-                    asNumpy=True)) * 10
-                # state =  openmmobject.simulation.context.getState(getPositions=True, enforcePeriodicBox=enforcePeriodicBox)
-                # current_coords = np.array(state.getPositions(asNumpy=True))*10
-                # Manual trajectory option (reporters do not work for manual dynamics steps)
+                #Get state of simulation. Gives access to coords, velocities, forces, energy etc.
+                current_state=self.openmmobject.simulation.context.getState(getPositions=True, enforcePeriodicBox=self.enforcePeriodicBox, getEnergy=True)
+                print_time_rel(checkpoint, modulename="get OpenMM state", moduleindex=2)
+                checkpoint = time.time()
+                # Get current coordinates from state to use for QM/MM step
+                current_coords = np.array(current_state.getPositions(asNumpy=True))*10
+                
+                #Printing step-info or write-trajectory at regular intervals
                 if step % self.traj_frequency == 0:
+                    # Manual step info option
+                    print_current_step_info(step,current_state,self.openmmobject)
+                    print_time_rel(checkpoint, modulename="print_current_step_info", moduleindex=2)
                     checkpoint = time.time()
+                    # Manual trajectory option (reporters do not work for manual dynamics steps)
                     write_xyzfile(self.fragment.elems, current_coords, "OpenMMMD_traj", printlevel=1, writemode='a')
                     print_time_rel(checkpoint, modulename="OpenMM_MD writetraj", moduleindex=2)
+                    checkpoint = time.time()
+                
+
+                checkpoint = time.time()
+                print_time_rel(checkpoint, modulename="get current_coords", moduleindex=2)
                 # Run QM/MM step to get full system QM+PC gradient.
                 # Updates OpenMM object with QM-PC forces
-                checkpoint = time.time()
                 self.QM_MM_object.run(current_coords=current_coords, elems=self.fragment.elems, Grad=True,
                                       exit_after_customexternalforce_update=True)
                 print_time_rel(checkpoint, modulename="QM/MM run", moduleindex=2)
@@ -2731,6 +2806,7 @@ class OpenMM_MDclass:
                 self.openmmobject.simulation.step(1)
                 print_time_rel(checkpoint, modulename="openmmobject sim step", moduleindex=2)
                 print_time_rel(checkpoint_begin_step, modulename="Total sim step", moduleindex=2)
+                
                 # NOTE: Better to use OpenMM-plumed interface instead??
                 # After MM step, grab coordinates and forces
                 if self.plumed_object is not None:
@@ -2749,13 +2825,27 @@ class OpenMM_MDclass:
         elif self.dummy_MM is True:
             print("Dummy MM option")
             for step in range(simulation_steps):
-                current_coords = np.array(self.openmmobject.simulation.context.getState(getPositions=True,
-                                                                                        enforcePeriodicBox=self.enforcePeriodicBox).getPositions(
-                    asNumpy=True)) * 10
+                checkpoint_begin_step = time.time()
+                checkpoint = time.time()
+                print("Step:", step)
+                #Get state of simulation. Gives access to coords, velocities, forces, energy etc.
+                current_state=self.openmmobject.simulation.context.getState(getPositions=True, enforcePeriodicBox=self.enforcePeriodicBox, getEnergy=True)
+                print_time_rel(checkpoint, modulename="get OpenMM state", moduleindex=2)
+                checkpoint = time.time()
+                # Get current coordinates from state to use for QM/MM step
+                current_coords = np.array(current_state.getPositions(asNumpy=True))*10
+                
+                #Printing step-info or write-trajectory at regular intervals
                 if step % self.traj_frequency == 0:
+                    # Manual step info option
+                    print_current_step_info(step,current_state,self.openmmobject)
+                    print_time_rel(checkpoint, modulename="print_current_step_info", moduleindex=2)
                     checkpoint = time.time()
+                    # Manual trajectory option (reporters do not work for manual dynamics steps)
                     write_xyzfile(self.fragment.elems, current_coords, "OpenMMMD_traj", printlevel=1, writemode='a')
                     print_time_rel(checkpoint, modulename="OpenMM_MD writetraj", moduleindex=2)
+                    checkpoint = time.time()
+
                 self.openmmobject.simulation.step(1)
         else:
             print("Regular classical OpenMM MD option chosen.")
@@ -2770,6 +2860,11 @@ class OpenMM_MDclass:
         #if self.dummyatomrestraint is True:
         #    print("Removing dummy atom from OpenMM topology and system")
         #    self.openmmobject.remove_dummy_atom()
+
+        #Close Statadatareporter file if open
+        if self.datafilename != None:
+            self.dataoutputoption.close()
+
 
         # Close Plumed also if active. Flushes HILLS/COLVAR etc.
         if self.plumed_object is not None:
@@ -2890,3 +2985,28 @@ def OpenMM_box_relaxation(fragment=None, theory=None, datafilename="nptsim.csv",
 
     print("Relaxation of periodic box size finished!\n")
     return theory.simulation.context.getState().getPeriodicBoxVectors()
+
+
+#Kinetic energy from velocities
+def calc_kinetic_energy(velocities,dof):
+    kin=0.0
+    for v in velocities:
+        kin+=0.5*np.dot(v,v)
+    return 2*kin / (dof*constants.BOLTZ)
+
+#Used in OpenMM_MD when doing simulation step-by-step (e.g. QM/MM MD)
+def print_current_step_info(step,state,openmmobject):
+    kinetic_energy=state.getKineticEnergy()
+    pot_energy=state.getPotentialEnergy()
+    temp=(2*kinetic_energy/(openmmobject.dof*openmmobject.unit.MOLAR_GAS_CONSTANT_R)).value_in_unit(openmmobject.unit.kelvin)
+    
+    print("="*50)
+    print("SIMULATION STATUS (STEP {})".format(step))
+    print("_"*50)
+    print("Time: {}".format(state.getTime()))
+    print("Potential energy:", pot_energy)
+    print("Kinetic energy:", kinetic_energy )
+    print("Temperature: {}".format(temp))
+    print("="*50)
+    
+
