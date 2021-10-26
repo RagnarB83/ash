@@ -2,6 +2,7 @@ import os
 from sys import stdout
 import time
 import traceback
+import io
 
 import numpy as np
 
@@ -65,6 +66,10 @@ class OpenMMTheory:
 
         # Initialize system
         self.system = None
+        
+        #Degrees of freedom of system (accounts for frozen atoms and constraints)
+        #Will be set by update_simulation
+        self.dof=None
 
         # Load Parmed if requested
         if use_parmed is True:
@@ -1043,6 +1048,9 @@ class OpenMMTheory:
         self.simulation = self.simulationclass(self.topology, self.system, self.integrator, self.platform,
                                                self.properties)
         print("integrator:", self.integrator)
+        #Now calling function to compute the actual degrees of freedom.
+        #NOTE: Better place for this? Just needs to be called once, after constraints and frozen atoms are done 
+        self.compute_DOF()
         print_time_rel(timeA, modulename="creating/updating simulation")
 
     # Functions for energy decompositions
@@ -1145,6 +1153,21 @@ class OpenMMTheory:
         # Adding sum to table
         openmm_energy['Sum'] = sumofallcomponents
         self.energy_components = openmm_energy
+
+    def compute_DOF(self):
+        # Compute the number of degrees of freedom.
+        dof = 0
+        for i in range(self.system.getNumParticles()):
+            if self.system.getParticleMass(i) > 0*self.unit.dalton:
+                dof += 3
+        for i in range(self.system.getNumConstraints()):
+            p1, p2, distance = self.system.getConstraintParameters(i)
+            if self.system.getParticleMass(p1) > 0*self.unit.dalton or self.system.getParticleMass(p2) > 0*self.unit.dalton:
+                dof -= 1
+        if any(type(self.system.getForce(i)) == self.openmm.CMMotionRemover for i in range(self.system.getNumForces())):
+            dof -= 3
+        self.dof=dof
+
 
     def run(self, current_coords=None, elems=None, Grad=False, fragment=None, qmatoms=None):
         module_init_time = time.time()
@@ -2628,25 +2651,26 @@ class OpenMM_MDclass:
             volume = density = False
 
         # If statedatareporter filename set:
-        if datafilename is not None:
+        self.datafilename=datafilename
+        if self.datafilename is not None:
             #Remove old file
             try:
-                os.remove(datafilename)
+                os.remove(self.datafilename)
             except FileNotFoundError:
                 pass
-            #Now doing open file object in append mode instead
-            #outputoption = datafilename
-            outputoption = open(datafilename,'a')
-            print("Will write data to:", outputoption)
+            #Now doing open file object in append mode instead of just filename.
+            #Just filename does not play nice when running simulation step by step
+            #Future OpenMM update may do this automatically?
+            self.dataoutputoption = open(self.datafilename,'a')
+            print("Will write data to file:", self.datafilename)
         # otherwise stdout:
         else:
-            outputoption = stdout
-
-        self.openmmobject.simulation.reporters.append(
-            self.openmmobject.openmm.app.StateDataReporter(outputoption, self.traj_frequency, step=True, time=True,
+            self.dataoutputoption = stdout
+        self.statedatareporter=self.openmmobject.openmm.app.StateDataReporter(self.dataoutputoption, self.traj_frequency, step=True, time=True,
                                                            potentialEnergy=True, kineticEnergy=True, volume=volume,
-                                                           density=density, temperature=True, separator=','))
-        print("openmm obj integrator:", self.openmmobject.integrator)
+                                                           density=density, temperature=True, separator=',')
+        self.openmmobject.simulation.reporters.append(self.statedatareporter)
+
         # NOTE: Better to use OpenMM-plumed interface instead??
         if plumed_object is not None:
             print("Plumed active")
@@ -2748,43 +2772,31 @@ class OpenMM_MDclass:
         if self.QM_MM_object is not None:
             for step in range(simulation_steps):
                 checkpoint_begin_step = time.time()
+                checkpoint = time.time()
                 print("Step:", step)
                 #Get state of simulation. Gives access to coords, velocities, forces, energy etc.
                 current_state=self.openmmobject.simulation.context.getState(getPositions=True, enforcePeriodicBox=self.enforcePeriodicBox, getEnergy=True)
-                
-                if step % self.traj_frequency == 0:
-                    #current_state_vel=self.openmmobject.simulation.context.getState(getVelocities=True, enforcePeriodicBox=self.enforcePeriodicBox,
-                    #                                                    )
-                    #velocities = current_state_vel.getVelocities(asNumpy=True)
-                    kinetic_energy=current_state.getKineticEnergy()
-                    pot_energy=current_state.getPotentialEnergy()
-                    print("="*50)
-                    print("SIMULATION STATUS")
-                    print("_"*50)
-                    print("Step:", step)
-                    print("Time: {}".format(current_state.getTime()))
-                    print("Potential energy:", pot_energy)
-                    print("Kinetic energy:", kinetic_energy )
-                    temperature=2*kinetic_energy/(3*constants.R_gasconst_JK*self.openmmobject.unit.kilojoules_per_mole)
-                    print("Temperature: {} K".format(temperature))
-                    print("="*50)
-                
-                #current_coords = np.array(self.openmmobject.simulation.context.getState(getPositions=True,
-                #                                                                        enforcePeriodicBox=self.enforcePeriodicBox).getPositions(
-                #    asNumpy=True)) * 10
-                # Get current coordinates to use for QM/MM step
+                print_time_rel(checkpoint, modulename="get OpenMM state", moduleindex=2)
+                checkpoint = time.time()
+                # Get current coordinates from state to use for QM/MM step
                 current_coords = np.array(current_state.getPositions(asNumpy=True))*10
-
-                # state =  openmmobject.simulation.context.getState(getPositions=True, enforcePeriodicBox=enforcePeriodicBox)
-                # current_coords = np.array(state.getPositions(asNumpy=True))*10
-                # Manual trajectory option (reporters do not work for manual dynamics steps)
+                
+                #Printing step-info or write-trajectory at regular intervals
                 if step % self.traj_frequency == 0:
+                    # Manual step info option
+                    print_current_step_info(step,current_state,self.openmmobject)
+                    print_time_rel(checkpoint, modulename="print_current_step_info", moduleindex=2)
                     checkpoint = time.time()
+                    # Manual trajectory option (reporters do not work for manual dynamics steps)
                     write_xyzfile(self.fragment.elems, current_coords, "OpenMMMD_traj", printlevel=1, writemode='a')
                     print_time_rel(checkpoint, modulename="OpenMM_MD writetraj", moduleindex=2)
+                    checkpoint = time.time()
+                
+
+                checkpoint = time.time()
+                print_time_rel(checkpoint, modulename="get current_coords", moduleindex=2)
                 # Run QM/MM step to get full system QM+PC gradient.
                 # Updates OpenMM object with QM-PC forces
-                checkpoint = time.time()
                 self.QM_MM_object.run(current_coords=current_coords, elems=self.fragment.elems, Grad=True,
                                       exit_after_customexternalforce_update=True)
                 print_time_rel(checkpoint, modulename="QM/MM run", moduleindex=2)
@@ -2794,6 +2806,7 @@ class OpenMM_MDclass:
                 self.openmmobject.simulation.step(1)
                 print_time_rel(checkpoint, modulename="openmmobject sim step", moduleindex=2)
                 print_time_rel(checkpoint_begin_step, modulename="Total sim step", moduleindex=2)
+                
                 # NOTE: Better to use OpenMM-plumed interface instead??
                 # After MM step, grab coordinates and forces
                 if self.plumed_object is not None:
@@ -2812,13 +2825,27 @@ class OpenMM_MDclass:
         elif self.dummy_MM is True:
             print("Dummy MM option")
             for step in range(simulation_steps):
-                current_coords = np.array(self.openmmobject.simulation.context.getState(getPositions=True,
-                                                                                        enforcePeriodicBox=self.enforcePeriodicBox).getPositions(
-                    asNumpy=True)) * 10
+                checkpoint_begin_step = time.time()
+                checkpoint = time.time()
+                print("Step:", step)
+                #Get state of simulation. Gives access to coords, velocities, forces, energy etc.
+                current_state=self.openmmobject.simulation.context.getState(getPositions=True, enforcePeriodicBox=self.enforcePeriodicBox, getEnergy=True)
+                print_time_rel(checkpoint, modulename="get OpenMM state", moduleindex=2)
+                checkpoint = time.time()
+                # Get current coordinates from state to use for QM/MM step
+                current_coords = np.array(current_state.getPositions(asNumpy=True))*10
+                
+                #Printing step-info or write-trajectory at regular intervals
                 if step % self.traj_frequency == 0:
+                    # Manual step info option
+                    print_current_step_info(step,current_state,self.openmmobject)
+                    print_time_rel(checkpoint, modulename="print_current_step_info", moduleindex=2)
                     checkpoint = time.time()
+                    # Manual trajectory option (reporters do not work for manual dynamics steps)
                     write_xyzfile(self.fragment.elems, current_coords, "OpenMMMD_traj", printlevel=1, writemode='a')
                     print_time_rel(checkpoint, modulename="OpenMM_MD writetraj", moduleindex=2)
+                    checkpoint = time.time()
+
                 self.openmmobject.simulation.step(1)
         else:
             print("Regular classical OpenMM MD option chosen.")
@@ -2833,6 +2860,11 @@ class OpenMM_MDclass:
         #if self.dummyatomrestraint is True:
         #    print("Removing dummy atom from OpenMM topology and system")
         #    self.openmmobject.remove_dummy_atom()
+
+        #Close Statadatareporter file if open
+        if self.datafilename != None:
+            self.dataoutputoption.close()
+
 
         # Close Plumed also if active. Flushes HILLS/COLVAR etc.
         if self.plumed_object is not None:
@@ -2953,3 +2985,28 @@ def OpenMM_box_relaxation(fragment=None, theory=None, datafilename="nptsim.csv",
 
     print("Relaxation of periodic box size finished!\n")
     return theory.simulation.context.getState().getPeriodicBoxVectors()
+
+
+#Kinetic energy from velocities
+def calc_kinetic_energy(velocities,dof):
+    kin=0.0
+    for v in velocities:
+        kin+=0.5*np.dot(v,v)
+    return 2*kin / (dof*constants.BOLTZ)
+
+#Used in OpenMM_MD when doing simulation step-by-step (e.g. QM/MM MD)
+def print_current_step_info(step,state,openmmobject):
+    kinetic_energy=state.getKineticEnergy()
+    pot_energy=state.getPotentialEnergy()
+    temp=(2*kinetic_energy/(openmmobject.dof*openmmobject.unit.MOLAR_GAS_CONSTANT_R)).value_in_unit(openmmobject.unit.kelvin)
+    
+    print("="*50)
+    print("SIMULATION STATUS (STEP {})".format(step))
+    print("_"*50)
+    print("Time: {}".format(state.getTime()))
+    print("Potential energy:", pot_energy)
+    print("Kinetic energy:", kinetic_energy )
+    print("Temperature: {}".format(temp))
+    print("="*50)
+    
+

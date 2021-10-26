@@ -34,6 +34,15 @@ R_gasconst = 3.16681161675373E-06
 R_gasconst_JK = 8.31446261815324
 k_b_JK = 1.380649e-23
 
+#From OpenMM
+BOLTZMANN=1.380649e-23 # J/K
+AVOGADRO=6.02214076e23
+RGAS=BOLTZMANN*AVOGADRO # J/(mol K)
+KILO=1e3 # grams
+BOLTZ=RGAS/KILO # kJ/(mol K)
+
+
+
 # speed of light in cm/s
 c = 2.99792458e10
 pi = 3.14159265359
