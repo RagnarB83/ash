@@ -234,7 +234,7 @@ def molcrys(cif_file=None, xtl_file=None, xyz_file=None, cell_length=None, cell_
     #fract_to_orthogonal uses original so it is transposed back
     
     #Converting orthogcoords to numpy array for better performance
-    orthogcoords=np.asarray(orthogcoords)
+    orthogcoords=np.array(orthogcoords)
     print("orthogcoords:", orthogcoords)
 
     modules.module_coords.write_xyzfile(elems,orthogcoords,"cell_orthog-original")
