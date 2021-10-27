@@ -68,20 +68,21 @@ class xTBTheory:
         #New library version. interface via conda: xtb-python
         if self.runmode=='library':
             print("Using new library-based xTB interface")
-
+            print("Importing xtb-python library")
             try:
                 #
                 from xtb.libxtb import VERBOSITY_MINIMAL
                 from xtb.interface import Calculator, Param
-                self.Calculator=Calculator
-                self.Param=Param
-                self.VERBOSITY_MINIMAL=VERBOSITY_MINIMAL
-                # Creating variable and setting to None. Replaced by run
-                self.calcobject=None
+
 
             except:
                 print("Problem importing xTB library. Have you installed : conda install xtb-python ?")
                 exit(9)
+            self.Calculator=Calculator
+            self.Param=Param
+            self.VERBOSITY_MINIMAL=VERBOSITY_MINIMAL
+            # Creating variable and setting to None. Replaced by run
+            self.calcobject=None
             print("xTB method:", self.xtbmethod)
         #OLD library.
         elif self.runmode=='oldlibrary':

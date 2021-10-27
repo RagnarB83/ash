@@ -326,7 +326,6 @@ class OpenMMTheory:
                                               charges_per_res=atomcharges_res, sigmas_per_res=sigmas_res,
                                               epsilons_per_res=epsilons_res,
                                               filename="cluster_system.xml", coulomb14scale=1.0, lj14scale=1.0)
-
             # Creating lists for PDB-file
             # requires ffragmenttype_labels to be present in fragment.
             # NOTE: Hence will only work for molcrys-prepared files for now
@@ -350,7 +349,7 @@ class OpenMMTheory:
             pdb = openmm.app.PDBFile("cluster.pdb")
             self.topology = pdb.topology
 
-            self.forcefield = openmm.app.ForceField([xmlfile])
+            self.forcefield = openmm.app.ForceField(xmlfile)
 
         # Load XMLfile for whole system
         elif xmlsystemfile is not None:
@@ -379,17 +378,6 @@ class OpenMMTheory:
             # forcefield = simtk.openmm.app.ForceField('amber14-all.xml', 'amber14/tip3pfb.xml')
             self.forcefield = openmm.app.ForceField(*xmlfiles)
 
-            # TODO: Define resnames, resids, segmentnames, atomtypes, atomnames??
-
-        # Deal with possible 4/5 site water model like TIP4P
-        # NOTE: EXPERIMENTAL
-        # NOTE: We have no positions here. Make separate callable function?????
-
-        # if watermodel is not None:
-        #    print("watermodel:", watermodel)
-        #    modeller = simtk.openmm.app.Modeller(self.topology, pdb.positions)
-        #    modeller.addExtraParticles(self.forcefield)
-        #    simtk.openmm.app.app.PDBFile.writeFile(modeller.topology, modeller.positions, open('test-water.pdb', 'w'))
 
         # NOW CREATE SYSTEM UNLESS already created (xmlsystemfile)
         if self.system is None:
@@ -1196,7 +1184,7 @@ class OpenMMTheory:
         print("Number of OpenMM system constraints defined:", defined_constraints)
 
         if self.autoconstraints != None or self.rigidwater==True:
-            print("OpenMM autoconstraints (HBonds,AllBonds,HAngles)in OpemmTheory are not compatible with OpenMMTheory.run()")
+            print("OpenMM autoconstraints (HBonds,AllBonds,HAngles) in OpemmTheory are not compatible with OpenMMTheory.run()")
             print("Please redefine OpenMMTheory object: autoconstraints=None, rigidwater=False")
             exit()
             

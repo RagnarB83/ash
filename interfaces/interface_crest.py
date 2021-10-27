@@ -2,7 +2,7 @@ import os
 import time
 
 from modules.module_coords import split_multimolxyzfile
-from functions.functions_general import int_ranges, listdiff,print_time_rel
+from functions.functions_general import int_ranges, listdiff, print_line_with_subheader1,print_time_rel
 import subprocess as sp
 import ash
 
@@ -10,7 +10,7 @@ import ash
 #Very simple crest interface
 def call_crest(fragment=None, xtbmethod=None, crestdir=None,charge=None, mult=None, solvent=None, energywindow=6, numcores=1, 
                constrained_atoms=None, forceconstant_constraint=0.5):
-    
+    print_line_with_subheader1("call_crest")
     module_init_time=time.time()
     
     os.mkdir('crest-calc')
@@ -50,7 +50,6 @@ def call_crest(fragment=None, xtbmethod=None, crestdir=None,charge=None, mult=No
     else:
         print("Using default GFN2-xTB")
         xtbflag=2
-    uhf=mult-1
     #GBSA solvation or not
     if solvent is None:
         process = sp.run([crestdir + '/crest', 'initial.xyz', '-T', str(numcores), '-gfn'+str(xtbflag), '-ewin', str(energywindow), '-chrg', str(charge), '-uhf', str(mult-1)])
