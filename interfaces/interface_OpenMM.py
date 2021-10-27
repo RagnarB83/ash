@@ -2452,7 +2452,7 @@ class OpenMM_MDclass:
         self.integrator = integrator
         self.coupling_frequency = coupling_frequency
         self.timestep = timestep
-        self.traj_frequency = traj_frequency
+        self.traj_frequency = int(traj_frequency)
         self.plumed_object = plumed_object
         self.enforcePeriodicBox=enforcePeriodicBox
         print_line_with_subheader2("MD system parameters")
@@ -2608,6 +2608,7 @@ class OpenMM_MDclass:
 
 
         # THIS DOES NOT APPLY TO QM/MM. MOVE ELSEWHERE??
+        #TODO: See if this can be made to work for simulations with step-by-step
         if trajectory_file_option == 'PDB':
             self.openmmobject.simulation.reporters.append(
                 self.openmmobject.openmm.app.PDBReporter(trajfilename+'.pdb', self.traj_frequency,
@@ -2746,6 +2747,7 @@ class OpenMM_MDclass:
         print("Simulation time: {} ps".format(simulation_time))
         print("Simulation steps: {}".format(simulation_steps))
         print("Timestep: {} ps".format(self.timestep))
+        print("Set temperature: {} K".format(self.temperature))
         print("OpenMM integrator:", self.openmmobject.integrator_name)
         print("self.openmmobject.integrator:", self.openmmobject.integrator)
         print()
@@ -2822,7 +2824,8 @@ class OpenMM_MDclass:
                 checkpoint = time.time()
                 # Get current coordinates from state to use for QM/MM step
                 current_coords = np.array(current_state.getPositions(asNumpy=True))*10
-                
+                print_time_rel(checkpoint, modulename="get current coords", moduleindex=2)
+                checkpoint = time.time()
                 #Printing step-info or write-trajectory at regular intervals
                 if step % self.traj_frequency == 0:
                     # Manual step info option
@@ -2835,6 +2838,8 @@ class OpenMM_MDclass:
                     checkpoint = time.time()
 
                 self.openmmobject.simulation.step(1)
+                print_time_rel(checkpoint, modulename="OpenMM sim step", moduleindex=2)
+                print_time_rel(checkpoint_begin_step, modulename="Total sim step", moduleindex=2)
         else:
             print("Regular classical OpenMM MD option chosen.")
             # Running all steps in one go
