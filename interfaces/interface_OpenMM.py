@@ -3,6 +3,7 @@ from sys import stdout
 import time
 import traceback
 import io
+import copy
 
 import numpy as np
 
@@ -119,8 +120,6 @@ class OpenMMTheory:
         # See modify_bonded_forces
         # TODO: Move option to module_QMMM instead
         self.delete_QM1_MM1_bonded = delete_QM1_MM1_bonded
-        # Initialize system_masses. Only used when freezing/unfreezing atoms
-        self.system_masses = []
         # Platform (CPU, CUDA, OpenCL) and Parallelization
         self.platform_choice = platform
         # CPU: Control either by provided numcores keyword, or by setting env variable: $OPENMM_CPU_THREADS in shell
@@ -605,6 +604,14 @@ class OpenMMTheory:
         self.allatoms = list(range(0, self.numatoms))
         print("Number of atoms in OpenMM system:", self.numatoms)
 
+        # Preserve original masses before any mass modifications or frozen atoms (set mass to 0)
+        #NOTE: Creates list of Quantity objects (value, unit attributes)
+        self.system_masses_original = [self.system.getParticleMass(i) for i in self.allatoms]
+        #List of currently used masses. Can be modified by self.modify_masses and self.freeze_atoms
+        #NOTE: Regular list of floats
+        self.system_masses = [self.system.getParticleMass(i)._value for i in self.allatoms]
+
+
         if constraints or frozen_atoms or restraints:
             print_line_with_subheader1("Adding user constraints, restraints or frozen atoms.")
         # Now adding user-defined system constraints (only bond-constraints supported for now)
@@ -880,14 +887,15 @@ class OpenMMTheory:
     # Function to freeze atoms during OpenMM MD simulation. Sets masses to zero. Does not modify potential
     # energy-function.
     def freeze_atoms(self, frozen_atoms=None):
-        # Preserve original masses
-        self.system_masses = [self.system.getParticleMass(i) for i in self.allatoms]
-        # print("self.system_masses:", self.system_masses)
         print("Freezing {} atoms by setting particles masses to zero.".format(len(frozen_atoms)))
 
         # Modify particle masses in system object. For freezing atoms
         for i in frozen_atoms:
             self.system.setParticleMass(i, 0 * self.unit.daltons)
+        
+        #Update list of current masses
+        self.system_masses = [self.system.getParticleMass(i)._value for i in self.allatoms]
+
     #Changed masses according to user input dictionary
     def modify_masses(self, changed_masses=None):
         print("Modify masses according: ", changed_masses)
@@ -897,10 +905,16 @@ class OpenMMTheory:
         for am in changed_masses:
             self.system.setParticleMass(am, changed_masses[am] * self.unit.daltons)
 
+        #Update list of current masses
+        self.system_masses = [self.system.getParticleMass(i)._value for i in self.allatoms]
+
     def unfreeze_atoms(self):
         # Looping over system_masses if frozen, otherwise empty list
-        for atom, mass in zip(self.allatoms, self.system_masses):
+        for atom, mass in zip(self.allatoms, self.system_masses_original):
             self.system.setParticleMass(atom, mass)
+
+        #Update list of current masses
+        self.system_masses = [self.system.getParticleMass(i)._value for i in self.allatoms]
 
     # Currently unused
     def set_active_and_frozen_regions(self, active_atoms=None, frozen_atoms=None):
