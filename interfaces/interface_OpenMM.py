@@ -525,6 +525,8 @@ class OpenMMTheory:
 
                 if CHARMMfiles is True:
                     self.system = self.forcefield.createSystem(self.params, nonbondedMethod=openmm.app.NoCutoff,
+                                                               constraints=self.autoconstraints,
+                                                               rigidWater=self.rigidwater,
                                                                nonbondedCutoff=1000 * openmm.unit.angstroms,
                                                                hydrogenMass=self.hydrogenmass)
                 elif Amberfiles is True:
