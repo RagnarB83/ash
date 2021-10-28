@@ -2467,7 +2467,16 @@ class OpenMM_MDclass:
         self.timestep = timestep
         self.traj_frequency = int(traj_frequency)
         self.plumed_object = plumed_object
-        self.enforcePeriodicBox=enforcePeriodicBox
+        
+        #PERIODIC or not
+        if self.openmmobject.Periodic is True:
+            #Generally we want True but for now allowing user to modify (default=True)
+            self.enforcePeriodicBox=enforcePeriodicBox
+        else:
+            print("System is non-periodic. Setting enforcePeriodicBox to False")
+            #Non-periodic. Setting enforcePeriodicBox to False (otherwise nonsense)
+            self.enforcePeriodicBox=False
+        
         print_line_with_subheader2("MD system parameters")
         print("Temperature: {} K".format(self.temperature))
         print("OpenMM autoconstraints:", self.openmmobject.autoconstraints)
