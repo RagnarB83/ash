@@ -1483,6 +1483,7 @@ def read_chemshellfragfile_xyz(fragfile):
             if 'block = coordinates records ' in line:
                 # numatoms=int(line.split()[-1])
                 grabcoords = True
+        coords = reformat_list_to_array(coords)
     return elems, coords
 
 
