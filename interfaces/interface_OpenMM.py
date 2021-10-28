@@ -3,6 +3,7 @@ from sys import stdout
 import time
 import traceback
 import io
+import copy
 
 import numpy as np
 
@@ -119,8 +120,6 @@ class OpenMMTheory:
         # See modify_bonded_forces
         # TODO: Move option to module_QMMM instead
         self.delete_QM1_MM1_bonded = delete_QM1_MM1_bonded
-        # Initialize system_masses. Only used when freezing/unfreezing atoms
-        self.system_masses = []
         # Platform (CPU, CUDA, OpenCL) and Parallelization
         self.platform_choice = platform
         # CPU: Control either by provided numcores keyword, or by setting env variable: $OPENMM_CPU_THREADS in shell
@@ -326,7 +325,6 @@ class OpenMMTheory:
                                               charges_per_res=atomcharges_res, sigmas_per_res=sigmas_res,
                                               epsilons_per_res=epsilons_res,
                                               filename="cluster_system.xml", coulomb14scale=1.0, lj14scale=1.0)
-
             # Creating lists for PDB-file
             # requires ffragmenttype_labels to be present in fragment.
             # NOTE: Hence will only work for molcrys-prepared files for now
@@ -350,7 +348,7 @@ class OpenMMTheory:
             pdb = openmm.app.PDBFile("cluster.pdb")
             self.topology = pdb.topology
 
-            self.forcefield = openmm.app.ForceField([xmlfile])
+            self.forcefield = openmm.app.ForceField(xmlfile)
 
         # Load XMLfile for whole system
         elif xmlsystemfile is not None:
@@ -379,17 +377,6 @@ class OpenMMTheory:
             # forcefield = simtk.openmm.app.ForceField('amber14-all.xml', 'amber14/tip3pfb.xml')
             self.forcefield = openmm.app.ForceField(*xmlfiles)
 
-            # TODO: Define resnames, resids, segmentnames, atomtypes, atomnames??
-
-        # Deal with possible 4/5 site water model like TIP4P
-        # NOTE: EXPERIMENTAL
-        # NOTE: We have no positions here. Make separate callable function?????
-
-        # if watermodel is not None:
-        #    print("watermodel:", watermodel)
-        #    modeller = simtk.openmm.app.Modeller(self.topology, pdb.positions)
-        #    modeller.addExtraParticles(self.forcefield)
-        #    simtk.openmm.app.app.PDBFile.writeFile(modeller.topology, modeller.positions, open('test-water.pdb', 'w'))
 
         # NOW CREATE SYSTEM UNLESS already created (xmlsystemfile)
         if self.system is None:
@@ -616,6 +603,14 @@ class OpenMMTheory:
         self.numatoms = int(self.system.getNumParticles())
         self.allatoms = list(range(0, self.numatoms))
         print("Number of atoms in OpenMM system:", self.numatoms)
+
+        # Preserve original masses before any mass modifications or frozen atoms (set mass to 0)
+        #NOTE: Creates list of Quantity objects (value, unit attributes)
+        self.system_masses_original = [self.system.getParticleMass(i) for i in self.allatoms]
+        #List of currently used masses. Can be modified by self.modify_masses and self.freeze_atoms
+        #NOTE: Regular list of floats
+        self.system_masses = [self.system.getParticleMass(i)._value for i in self.allatoms]
+
 
         if constraints or frozen_atoms or restraints:
             print_line_with_subheader1("Adding user constraints, restraints or frozen atoms.")
@@ -892,14 +887,15 @@ class OpenMMTheory:
     # Function to freeze atoms during OpenMM MD simulation. Sets masses to zero. Does not modify potential
     # energy-function.
     def freeze_atoms(self, frozen_atoms=None):
-        # Preserve original masses
-        self.system_masses = [self.system.getParticleMass(i) for i in self.allatoms]
-        # print("self.system_masses:", self.system_masses)
         print("Freezing {} atoms by setting particles masses to zero.".format(len(frozen_atoms)))
 
         # Modify particle masses in system object. For freezing atoms
         for i in frozen_atoms:
             self.system.setParticleMass(i, 0 * self.unit.daltons)
+        
+        #Update list of current masses
+        self.system_masses = [self.system.getParticleMass(i)._value for i in self.allatoms]
+
     #Changed masses according to user input dictionary
     def modify_masses(self, changed_masses=None):
         print("Modify masses according: ", changed_masses)
@@ -909,10 +905,16 @@ class OpenMMTheory:
         for am in changed_masses:
             self.system.setParticleMass(am, changed_masses[am] * self.unit.daltons)
 
+        #Update list of current masses
+        self.system_masses = [self.system.getParticleMass(i)._value for i in self.allatoms]
+
     def unfreeze_atoms(self):
         # Looping over system_masses if frozen, otherwise empty list
-        for atom, mass in zip(self.allatoms, self.system_masses):
+        for atom, mass in zip(self.allatoms, self.system_masses_original):
             self.system.setParticleMass(atom, mass)
+
+        #Update list of current masses
+        self.system_masses = [self.system.getParticleMass(i)._value for i in self.allatoms]
 
     # Currently unused
     def set_active_and_frozen_regions(self, active_atoms=None, frozen_atoms=None):
@@ -1196,7 +1198,7 @@ class OpenMMTheory:
         print("Number of OpenMM system constraints defined:", defined_constraints)
 
         if self.autoconstraints != None or self.rigidwater==True:
-            print("OpenMM autoconstraints (HBonds,AllBonds,HAngles)in OpemmTheory are not compatible with OpenMMTheory.run()")
+            print("OpenMM autoconstraints (HBonds,AllBonds,HAngles) in OpemmTheory are not compatible with OpenMMTheory.run()")
             print("Please redefine OpenMMTheory object: autoconstraints=None, rigidwater=False")
             exit()
             
@@ -2464,7 +2466,7 @@ class OpenMM_MDclass:
         self.integrator = integrator
         self.coupling_frequency = coupling_frequency
         self.timestep = timestep
-        self.traj_frequency = traj_frequency
+        self.traj_frequency = int(traj_frequency)
         self.plumed_object = plumed_object
         self.enforcePeriodicBox=enforcePeriodicBox
         print_line_with_subheader2("MD system parameters")
@@ -2620,6 +2622,7 @@ class OpenMM_MDclass:
 
 
         # THIS DOES NOT APPLY TO QM/MM. MOVE ELSEWHERE??
+        #TODO: See if this can be made to work for simulations with step-by-step
         if trajectory_file_option == 'PDB':
             self.openmmobject.simulation.reporters.append(
                 self.openmmobject.openmm.app.PDBReporter(trajfilename+'.pdb', self.traj_frequency,
@@ -2758,6 +2761,7 @@ class OpenMM_MDclass:
         print("Simulation time: {} ps".format(simulation_time))
         print("Simulation steps: {}".format(simulation_steps))
         print("Timestep: {} ps".format(self.timestep))
+        print("Set temperature: {} K".format(self.temperature))
         print("OpenMM integrator:", self.openmmobject.integrator_name)
         print("self.openmmobject.integrator:", self.openmmobject.integrator)
         print()
@@ -2834,7 +2838,8 @@ class OpenMM_MDclass:
                 checkpoint = time.time()
                 # Get current coordinates from state to use for QM/MM step
                 current_coords = np.array(current_state.getPositions(asNumpy=True))*10
-                
+                print_time_rel(checkpoint, modulename="get current coords", moduleindex=2)
+                checkpoint = time.time()
                 #Printing step-info or write-trajectory at regular intervals
                 if step % self.traj_frequency == 0:
                     # Manual step info option
@@ -2847,6 +2852,8 @@ class OpenMM_MDclass:
                     checkpoint = time.time()
 
                 self.openmmobject.simulation.step(1)
+                print_time_rel(checkpoint, modulename="OpenMM sim step", moduleindex=2)
+                print_time_rel(checkpoint_begin_step, modulename="Total sim step", moduleindex=2)
         else:
             print("Regular classical OpenMM MD option chosen.")
             # Running all steps in one go
