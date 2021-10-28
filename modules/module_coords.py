@@ -1630,8 +1630,9 @@ def read_gromacsfile(grofile):
                     coords_z = float(linelist[-1])
                 # Converting from nm to Ang
                 coords.append([10 * coords_x, 10 * coords_y, 10 * coords_z])
-    assert len(coords) == len(elems), "Num coords not equal to num elems. Parsing failed. BUG!"
-    return elems, coords, box_dims
+    npcoords=reformat_list_to_array(coords)    
+    assert len(npcoords) == len(elems), "Num coords not equal to num elems. Parsing failed. BUG!"
+    return elems, npcoords, box_dims
 
 
 # Read AMBERCRD file and coords and box info
