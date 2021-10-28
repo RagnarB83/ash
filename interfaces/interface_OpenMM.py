@@ -1010,8 +1010,13 @@ class OpenMMTheory:
         #Keeping variables
         timeA = time.time()
         print_line_with_subheader1("Creating/updating OpenMM simulation object")
+        print("Integrator name:", self.integrator_name)
+        print("Timestep:", self.timestep)
+        print("Temperature:", self.temperature)
+        print("Coupling frequency:", self.coupling_frequency)
+        print("Properties:", self.properties)
+        print("Topology:", self.topology)
         printdebug("self.system.getForces() ", self.system.getForces())
-
         #NOTE: Integrator definition has to be here (instead of set_simulation_parameters) as it has to be recreated for each updated simulation
         # Integrators: LangevinIntegrator, LangevinMiddleIntegrator, NoseHooverIntegrator, VerletIntegrator,
         # BrownianIntegrator, VariableLangevinIntegrator, VariableVerletIntegrator
@@ -1046,14 +1051,10 @@ class OpenMMTheory:
                   BC.END)
             exit()
 
-
-
-
         self.simulation = self.simulationclass(self.topology, self.system, self.integrator, self.platform,
                                                self.properties)
-        print("integrator:", self.integrator)
         #Now calling function to compute the actual degrees of freedom.
-        #NOTE: Better place for this? Just needs to be called once, after constraints and frozen atoms are done 
+        #NOTE: Better place for this? Just needs to be called once, after constraints and frozen atoms are done.
         self.compute_DOF()
         print_time_rel(timeA, modulename="creating/updating simulation")
 
