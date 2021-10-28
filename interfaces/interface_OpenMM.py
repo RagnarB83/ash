@@ -2444,7 +2444,6 @@ class OpenMM_MDclass:
 
         # Distinguish between OpenMM theory or QM/MM theory
         self.dummy_MM=dummy_MM
-        print("self.dummy_MM:", self.dummy_MM)
         if isinstance(theory, OpenMMTheory):
             self.openmmobject = theory
             self.QM_MM_object = None
@@ -2608,17 +2607,19 @@ class OpenMM_MDclass:
         self.openmmobject.update_simulation()
         print("Simulation updated.")
         print(self.openmmobject.integrator)
-        if self.openmmobject.Periodic is True:
-            print("PME parameters in context", self.openmmobject.nonbonded_force.getPMEParametersInContext(self.openmmobject.simulation.context))
+        #if self.openmmobject.Periodic is True:
+        #    print("PME parameters in context", self.openmmobject.nonbonded_force.getPMEParametersInContext(self.openmmobject.simulation.context))
         forceclassnames = [i.__class__.__name__ for i in self.openmmobject.system.getForces()]
         print("OpenMM System forces present:", forceclassnames)
-        print("Checking Initial PBC vectors.")
-        self.state = self.openmmobject.simulation.context.getState()
-        a, b, c = self.state.getPeriodicBoxVectors()
-        print(f"A: ", a)
-        print(f"B: ", b)
-        print(f"C: ", c)
-
+        if self.openmmobject.Periodic is True:
+            print("Checking Initial PBC vectors.")
+            self.state = self.openmmobject.simulation.context.getState()
+            a, b, c = self.state.getPeriodicBoxVectors()
+            print(f"A: ", a)
+            print(f"B: ", b)
+            print(f"C: ", c)
+        else:
+            print("System is not periodic")
 
 
         # THIS DOES NOT APPLY TO QM/MM. MOVE ELSEWHERE??
