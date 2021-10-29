@@ -275,7 +275,7 @@ class OpenMMTheory:
             self.topology = self.prmtop.topology
             self.forcefield = self.prmtop
 
-            #List of resid. Used by actregiondefine
+            #List of resids, resnames and mm_elements. Used by actregiondefine
             self.resids = [i.residue.index for i in self.prmtop.topology.atoms()]
             self.resnames = [i.residue.name for i in self.prmtop.topology.atoms()]
             self.mm_elements = [i.element.symbol for i in self.prmtop.topology.atoms()]
@@ -955,6 +955,7 @@ class OpenMMTheory:
         # https://stackoverflow.com/questions/942543/operation-on-every-pair-of-element-in-a-list
         # [self.nonbonded_force.addException(i,j,0, 0, 0, replace=True) for i,j in itertools.combinations(atomlist, r=2)]
         numexceptions = 0
+        numexclusions = 0
         printdebug("self.system.getForces() ", self.system.getForces())
         # print("self.nonbonded_force:", self.nonbonded_force)
 
@@ -979,12 +980,25 @@ class OpenMMTheory:
                         numexceptions += 1
             elif isinstance(force, self.openmm.CustomNonbondedForce):
                 print("Case CustomNonbondedforce. Adding Exclusion for kl pair.")
+                # NOTE: This step is unfortunately a bit slow (43 seconds for 28 atomlist in 71K system)
+                # Only applies to system with CustomNonbondedForce (e.g. GROMACS setup)
+                # TODO: look into speeding up
+                # Get list of all present exclusions first
+                all_exclusions = [force.getExclusionParticles(exclindex) for exclindex in range(0,force.getNumExclusions()) ]
+                # Function 
+                def check_if_exclusion_present(all_exclusions,pair):
+                    for exclusion in all_exclusions:
+                        if set(exclusion) == set(pair):
+                            return True
+                    return False
                 for k in atomlist:
                     for l in atomlist:
-                        # print("k,l : ", k,l)
-                        force.addExclusion(k, l)
-                        numexceptions += 1
-        print("Number of exceptions/exclusions added:", numexceptions)
+                        if check_if_exclusion_present(all_exclusions,(k,l)) is False:
+                            all_exclusions.append([k,l])
+                            force.addExclusion(k, l)
+                            numexclusions += 1
+        print("Number of exceptions (Nonbondedforce) added:", numexceptions)
+        print("Number of exclusions (CustomNonbondedforce) added:", numexclusions)
         printdebug("self.system.getForces() ", self.system.getForces())
         # Seems like updateParametersInContext does not reliably work here so we have to remake the simulation instead
         # Might be bug (https://github.com/openmm/openmm/issues/2709). Revisit

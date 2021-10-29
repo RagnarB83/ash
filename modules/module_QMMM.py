@@ -739,6 +739,7 @@ class QMMMTheory:
                 if self.openmm_externalforce == True:
                     print("OpenMM externalforce is True")
                     #Take QM_PC gradient (link-atom projected) and provide to OpenMM external force
+                    CheckpointTime = time.time()
                     self.mm_theory.update_custom_external_force(self.openmm_externalforceobject,self.QM_PC_gradient)
 
                     print_time_rel(CheckpointTime, modulename='QM/MM openMM: update custom external force', moduleindex=2)

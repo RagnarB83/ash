@@ -1,5 +1,5 @@
 #ALL conda/PyPi PACKAGES that ASH may use
-
+#Run the lines for the packages you want within the conda environment. Make sure the correct conda environment is active
 #Requirements
 conda install python
 conda install -c conda-forge geometric
@@ -7,7 +7,7 @@ conda install -c conda-forge openmm
 conda install -c conda-forge julia
 conda install -c conda-forge xtb
 
-#Optional: for MM and MD functionality
+#Optional: for extra MM and MD functionality
 conda install -c conda-forge plumed
 conda install -c conda-forge parmed
 conda install -c conda-forge mdanalysis
