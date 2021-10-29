@@ -2538,9 +2538,10 @@ class OpenMM_MDclass:
                 f"{BC.WARNING}\nOpenMM will crash if constraints and frozen atoms involve the same atoms{BC.END}")
         print("")
 
-        print("Defining atom positions from fragment")    
+        print("Defining atom positions from fragment")
+        #Note: using self.positions as we may add dummy atoms (e.g. dummyatomrestraint below) 
         self.positions = self.fragment.coords
-
+        
         #Dummy-atom restraint to deal with NPT simulations that contain constraints/restraints/frozen_atoms
         self.dummyatomrestraint=dummyatomrestraint
         if self.dummyatomrestraint is True:
