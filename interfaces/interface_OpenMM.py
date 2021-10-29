@@ -2427,7 +2427,7 @@ def OpenMM_MD(fragment=None, theory=None, timestep=0.004, simulation_steps=None,
               anderson_thermostat=False,
               enforcePeriodicBox=True, dummyatomrestraint=False, center_on_atoms=None, solute_indices=None,
               datafilename=None, dummy_MM=False, plumed_object=None, add_center_force=False,
-              center_force_atoms=None, centerforce_constant=1.0):
+              center_force_atoms=None, centerforce_constant=1.0, barostat_frequency=25):
     print_line_with_mainheader("OpenMM MD wrapper function")
     md = OpenMM_MDclass(fragment=fragment, theory=theory, timestep=timestep,
                         traj_frequency=traj_frequency, temperature=temperature, integrator=integrator,
@@ -2436,7 +2436,8 @@ def OpenMM_MD(fragment=None, theory=None, timestep=0.004, simulation_steps=None,
                         enforcePeriodicBox=enforcePeriodicBox, dummyatomrestraint=dummyatomrestraint, center_on_atoms=center_on_atoms, solute_indices=solute_indices,
                         datafilename=datafilename, dummy_MM=dummy_MM,
                         plumed_object=plumed_object, add_center_force=add_center_force,trajfilename=trajfilename,
-                        center_force_atoms=center_force_atoms, centerforce_constant=centerforce_constant)
+                        center_force_atoms=center_force_atoms, centerforce_constant=centerforce_constant,
+                        barostat_frequency=barostat_frequency)
     if simulation_steps is not None:
         md.run(simulation_steps=simulation_steps)
     elif simulation_time is not None:
@@ -2454,7 +2455,8 @@ class OpenMM_MDclass:
                  anderson_thermostat=False,
                  enforcePeriodicBox=True, dummyatomrestraint=False, center_on_atoms=None, solute_indices=None,
                  datafilename=None, dummy_MM=False, plumed_object=None, add_center_force=False,
-                 center_force_atoms=None, centerforce_constant=1.0):
+                 center_force_atoms=None, centerforce_constant=1.0,
+                 barostat_frequency=25):
         module_init_time = time.time()
 
         print_line_with_mainheader("OpenMM Molecular Dynamics Initialization")
@@ -2484,7 +2486,7 @@ class OpenMM_MDclass:
         self.timestep = timestep
         self.traj_frequency = int(traj_frequency)
         self.plumed_object = plumed_object
-        
+        self.barostat_frequency = barostat_frequency
         #PERIODIC or not
         if self.openmmobject.Periodic is True:
             #Generally we want True but for now allowing user to modify (default=True)
@@ -2536,10 +2538,6 @@ class OpenMM_MDclass:
                 f"{BC.WARNING}\nOpenMM will crash if constraints and frozen atoms involve the same atoms{BC.END}")
         print("")
 
-
-
-
-
         print("Defining atom positions from fragment")    
         self.positions = self.fragment.coords
 
@@ -2576,20 +2574,17 @@ class OpenMM_MDclass:
             changed_origin_coords = change_origin_to_centroid(self.fragment.coords, subsetcoords=solute_coords)
             print("changed_origin_coords", changed_origin_coords)
 
-
-
-
-
-
         forceclassnames = [i.__class__.__name__ for i in self.openmmobject.system.getForces()]
         # Set up system with chosen barostat, thermostat, integrator
         if barostat is not None:
             print("Attempting to add barostat.")
             if "MonteCarloBarostat" not in forceclassnames:
                 print("Adding barostat.")
-                self.openmmobject.system.addForce(
-                    self.openmmobject.openmm.MonteCarloBarostat(self.pressure * self.openmmobject.openmm.unit.bar,
-                                                                self.temperature * self.openmmobject.openmm.unit.kelvin))
+                montecarlobarostat=self.openmmobject.openmm.MonteCarloBarostat(self.pressure * self.openmmobject.openmm.unit.bar,
+                                                                self.temperature * self.openmmobject.openmm.unit.kelvin)
+                #Setting barostat frequency to chosen value or default (25)
+                montecarlobarostat.setFrequency(self.barostat_frequency)
+                self.openmmobject.system.addForce(montecarlobarostat)
             else:
                 print("Barostat already present. Skipping.")
             # print("after barostat added")
@@ -2889,6 +2884,7 @@ class OpenMM_MDclass:
 
         print_line_with_subheader2("OpenMM MD simulation finished!")
 
+        
         #Delete dummyatoms if defined
         #NOTE: probably not possible
         #if self.dummyatomrestraint is True:
@@ -2930,6 +2926,9 @@ class OpenMM_MDclass:
         newcoords = self.state.getPositions(asNumpy=True).value_in_unit(self.openmmobject.unit.angstrom)
         print("Updating coordinates in ASH fragment.")
         self.fragment.coords = newcoords
+        #Updating positions array also in case we call run again
+        self.positions = newcoords
+        
 
         print_time_rel(module_init_time, modulename="OpenMM_MD run", moduleindex=1)
 
@@ -2942,7 +2941,7 @@ class OpenMM_MDclass:
 def OpenMM_box_relaxation(fragment=None, theory=None, datafilename="nptsim.csv", numsteps_per_NPT=10000,
                           volume_threshold=1.3, density_threshold=0.0012, temperature=300, timestep=0.004,
                           traj_frequency=100, trajfilename='relaxbox_NPT', trajectory_file_option='DCD', coupling_frequency=1,
-                          dummyatomrestraint=False, solute_indices=None):
+                          dummyatomrestraint=False, solute_indices=None, barostat_frequency=25):
     """NPT simulations until volume and density stops changing
 
     Args:
@@ -2957,6 +2956,7 @@ def OpenMM_box_relaxation(fragment=None, theory=None, datafilename="nptsim.csv",
         traj_frequency (int, optional): [description]. Defaults to 100.
         trajectory_file_option (str, optional): [description]. Defaults to 'DCD'.
         coupling_frequency (int, optional): [description]. Defaults to 1.
+        barostat_frequency (int, optional): [description]. Defaults to 25 (timesteps).
     """
 
 
@@ -2987,7 +2987,8 @@ def OpenMM_box_relaxation(fragment=None, theory=None, datafilename="nptsim.csv",
                         temperature=temperature, integrator="LangevinMiddleIntegrator",
                         coupling_frequency=coupling_frequency, barostat='MonteCarloBarostat', trajfilename=trajfilename,
                         datafilename=datafilename, trajectory_file_option=trajectory_file_option,
-                        dummyatomrestraint=dummyatomrestraint, solute_indices=solute_indices)
+                        dummyatomrestraint=dummyatomrestraint, solute_indices=solute_indices,
+                        barostat_frequency=barostat_frequency)
 
     while volume_std >= volume_threshold and density_std >= density_threshold:
         md.run(numsteps_per_NPT)
