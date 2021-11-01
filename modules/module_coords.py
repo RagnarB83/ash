@@ -1002,19 +1002,21 @@ def get_centroid(coords):
 
 
 # Change origin to centroid. Either use centroid of full system (default) or alternatively subset or (something else even)
-def change_origin_to_centroid(fullcoords, subsetcoords="None"):
-    if subsetcoords == "None":
-        centroid = get_centroid(fullcoords)
-    else:
+def change_origin_to_centroid(fullcoords, subsetcoords=None, subsetatoms=None):
+    if subsetcoords != None:
+        print("Calculating centroid for the specified subset coordinates")
         centroid = get_centroid(subsetcoords)
-    print("centroid:", centroid)
-    # new_coords=[]
-    # for c in coords:
-    #    new_coords.append(c-centroid)
-    #
-    print("fullcoords")
+    elif subsetatoms != None:
+        print("Calculating centroid for the coordintes of specified subatoms:", subsetatoms)
+        #Will grab subsetcoords
+        subcoords= np.take(fullcoords, subsetatoms, axis=0)
+        centroid = get_centroid(subcoords)
+    else:
+        print("Calculating centroid for full set of coordinates")
+        centroid = get_centroid(fullcoords)
+
     newcoords = fullcoords - centroid
-    print("Newcoords:", newcoords)
+    print("Returning full coordinates with new origin at centroid")
     return newcoords
 
 
