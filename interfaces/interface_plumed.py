@@ -14,9 +14,13 @@ class plumed_ASH():
     def __init__(self, path_to_plumed_kernel=None, bias_type="MTD", fragment=None, CV1_type=None, CV1_indices=None,
                 CV2_type=None, CV2_indices=None,
                 temperature=300.0, hills_file="HILLS", colvar_file="COLVAR", height=0.01243, sigma1=None, sigma2=None, biasfactor=6.0, timestep=None,
-                stride_num=10, pace_num=500, dynamics_program="ASE",
+                stride_num=10, pace_num=500, dynamics_program=None,
                 numwalkers=None, debug=False):
         print_line_with_mainheader("Plumed ASH interface")
+
+        if dynamics_program == None:
+            print("Please specify dynamics program: e.g. dynamics_program=\"ASE\" or dynamics_program=\"OpenMM\"" )
+            exit()
         # Making sure both Plumed kernel and Python wrappers are available
         if path_to_plumed_kernel == None:
             print("plumed_MD requires path_to_plumed_kernel argument to be set")
@@ -64,8 +68,8 @@ class plumed_ASH():
         elif dynamics_program == "OpenMM":
             print("Dynamics program OpenMM is recognized. Setting Plumed units to nm (distance), kJ/mol (energy) and ps (time).")
             print("sigma and height values should reflect this. ")
-            self.plumed_length_unit="nm" #Plumed-label for Angstrom
-            self.plumed_energy_unit="kJ/mol"
+            self.plumed_length_unit="nm"
+            self.plumed_energy_unit="kj/mol"
             self.plumed_time_unit="ps"
         else:
             print("unknown dynamics_program. Exiting")
