@@ -2427,7 +2427,7 @@ def OpenMM_MD(fragment=None, theory=None, timestep=0.004, simulation_steps=None,
               anderson_thermostat=False,
               enforcePeriodicBox=True, dummyatomrestraint=False, center_on_atoms=None, solute_indices=None,
               datafilename=None, dummy_MM=False, plumed_object=None, add_center_force=False,
-              center_force_atoms=None, centerforce_constant=1.0, barostat_frequency=25):
+              center_force_atoms=None, centerforce_constant=1.0, barostat_frequency=25, specialbox=False):
     print_line_with_mainheader("OpenMM MD wrapper function")
     md = OpenMM_MDclass(fragment=fragment, theory=theory, timestep=timestep,
                         traj_frequency=traj_frequency, temperature=temperature, integrator=integrator,
@@ -2437,7 +2437,7 @@ def OpenMM_MD(fragment=None, theory=None, timestep=0.004, simulation_steps=None,
                         datafilename=datafilename, dummy_MM=dummy_MM,
                         plumed_object=plumed_object, add_center_force=add_center_force,trajfilename=trajfilename,
                         center_force_atoms=center_force_atoms, centerforce_constant=centerforce_constant,
-                        barostat_frequency=barostat_frequency)
+                        barostat_frequency=barostat_frequency, specialbox=specialbox)
     if simulation_steps is not None:
         md.run(simulation_steps=simulation_steps)
     elif simulation_time is not None:
@@ -2456,7 +2456,7 @@ class OpenMM_MDclass:
                  enforcePeriodicBox=True, dummyatomrestraint=False, center_on_atoms=None, solute_indices=None,
                  datafilename=None, dummy_MM=False, plumed_object=None, add_center_force=False,
                  center_force_atoms=None, centerforce_constant=1.0,
-                 barostat_frequency=25):
+                 barostat_frequency=25, specialbox=False):
         module_init_time = time.time()
 
         print_line_with_mainheader("OpenMM Molecular Dynamics Initialization")
@@ -2518,6 +2518,8 @@ class OpenMM_MDclass:
         print("Trajectory write frequency:", self.traj_frequency)
         print("enforcePeriodicBox:", self.enforcePeriodicBox)
         print("")
+        #specialbox for QM/MM
+        self.specialbox=specialbox
 
         if self.openmmobject.autoconstraints is None:
             print(f"""{BC.WARNING}
@@ -2702,7 +2704,7 @@ class OpenMM_MDclass:
             print("Plumed active")
             # Create new OpenMM custom external force
             print("Creating new OpenMM custom external force for Plumed.")
-            # plumedcustomforce = openmmobject.add_custom_external_force()
+            self.plumedcustomforce = self.openmmobject.add_custom_external_force()
 
         # QM/MM MD
         if self.QM_MM_object is not None:
@@ -2807,6 +2809,16 @@ class OpenMM_MDclass:
                 checkpoint = time.time()
                 # Get current coordinates from state to use for QM/MM step
                 current_coords = np.array(current_state.getPositions(asNumpy=True))*10
+
+                #TODO: Translate box coordinates so that they are centered on solute
+                #Do manually or use mdtraj, mdanalysis or something??
+                if self.specialbox is True:
+                    print("not ready")
+                    exit()
+                    solute_coords = np.take(current_coords, solute_indices, axis=0)
+                    changed_origin_coords = change_origin_to_centroid(self.fragment.coords, subsetcoords=solute_coords)
+                    current_coords = center_coordinates(current_coords,)
+
                 
                 #Printing step-info or write-trajectory at regular intervals
                 if step % self.traj_frequency == 0:
@@ -2838,12 +2850,16 @@ class OpenMM_MDclass:
                 # After MM step, grab coordinates and forces
                 if self.plumed_object is not None:
                     print("Plumed active. Untested. Hopefully works.")
-                    current_coords = np.array(
-                        self.openmmobject.simulation.context.getState(getPositions=True).getPositions(
-                            asNumpy=True))  # in nm
-                    current_forces = np.array(
-                        self.openmmobject.simulation.context.getState(getForces=True).getForces(
-                            asNumpy=True))  # in kJ/mol /nm
+                    #Necessary to call again
+                    current_state_forces=self.openmmobject.simulation.context.getState(getForces=True, enforcePeriodicBox=self.enforcePeriodicBox,)
+                    #current_coords = np.array(
+                    #    self.openmmobject.simulation.context.getState(getPositions=True).getPositions(
+                    #        asNumpy=True))  # in nm
+                    current_coords = np.array(current_state.getPositions(asNumpy=True)) #in nm
+                    current_forces = np.array(current_state_forces.getForces(asNumpy=True)) # in kJ/mol /nm
+                    #np.array(
+                    #    self.openmmobject.simulation.context.getState(getForces=True).getForces(
+                    #        asNumpy=True))  # in kJ/mol /nm
                     # Plumed object needs to be configured for OpenMM
                     energy, newforces = self.plumed_object.run(coords=current_coords, forces=current_forces,
                                                                step=step)

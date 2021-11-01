@@ -15,7 +15,7 @@ class plumed_ASH():
                 CV2_type=None, CV2_indices=None,
                 temperature=300.0, hills_file="HILLS", colvar_file="COLVAR", height=0.01243, sigma1=None, sigma2=None, biasfactor=6.0, timestep=None,
                 stride_num=10, pace_num=500, dynamics_program="ASE",
-                numwalkers=None):
+                numwalkers=None, debug=False):
         print_line_with_mainheader("Plumed ASH interface")
         # Making sure both Plumed kernel and Python wrappers are available
         if path_to_plumed_kernel == None:
@@ -27,8 +27,6 @@ class plumed_ASH():
             self.path_to_plumed=path_to_plumed_kernel.replace("/lib/libplumedKernel.dylib","")
         else:
             self.path_to_plumed=path_to_plumed_kernel.replace("/lib/libplumedKernel.so","")
-        
-        
         
         try:
             import plumed
@@ -50,6 +48,8 @@ class plumed_ASH():
         self.plumedobj.cmd("setNatoms",fragment.numatoms)
         self.plumedobj.cmd("setLogFile","plumed.log")
         
+        self.debug=debug
+
         #Initialize object
         self.plumedobj.cmd("init")
 
@@ -178,8 +178,12 @@ class plumed_ASH():
         
         #Running
         print("Running Plumed bias calculation")
+        if self.debug is True:
+            print("forces before:", forces)
         self.plumedobj.cmd("calc")
-        print("Plumed done")
+        print("Plumed calc done")
+        if self.debug is True:
+            print("forces after:", forces)
         #bias = np.zeros((1),dtype=np.float64)
         #self.plumedobj.cmd("getBias", bias )
         # print("forces are now:", forces)
