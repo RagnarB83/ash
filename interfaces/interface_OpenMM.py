@@ -36,7 +36,7 @@ class OpenMMTheory:
                  switching_function_distance=10,
                  ewalderrortolerance=5e-4, PMEparameters=None,
                  delete_QM1_MM1_bonded=False, applyconstraints_in_run=False,
-                 constraints=None, restraints=None, frozen_atoms=None, fragment=None,
+                 constraints=None, restraints=None, frozen_atoms=None, fragment=None, dummysystem=False,
                  autoconstraints='HBonds', hydrogenmass=1.5, rigidwater=True, changed_masses=None):
 
         print_line_with_mainheader("OpenMM Theory")
@@ -52,9 +52,11 @@ class OpenMMTheory:
             raise ImportError(
                 "OpenMMTheory requires installing the OpenMM library. Try: conda install -c conda-forge openmm  \
                 Also see http://docs.openmm.org/latest/userguide/application.html")
-
+        print_time_rel(module_init_time, modulename="import openMM")
+        timeA = time.time()
         # OpenMM variables
         self.openmm = openmm
+        self.openmm_app = openmm.app
         self.simulationclass = openmm.app.simulation.Simulation
 
         self.unit = openmm.unit
@@ -175,8 +177,8 @@ class OpenMMTheory:
         # Purpose: set virtual sites etc.
         self.positions = None
 
-        print_time_rel(module_init_time, modulename="import openMM")
-        timeA = time.time()
+        
+        
 
         self.Forcefield = None
         # What type of forcefield files to read. Reads in different way.
@@ -364,6 +366,25 @@ class OpenMMTheory:
             print("Reading topology from PDBfile:", pdbfile)
             pdb = openmm.app.PDBFile(pdbfile)
             self.topology = pdb.topology
+        # Simple OpenMM system without any forcefield defined. Requires ASH fragment
+        # Used for OpenMM_MD with QM Hamiltonian
+        elif dummysystem is True:
+            #Create list of atomnames, used in PDB topology and XML file
+            atomnames_full=[j+str(i) for i,j in enumerate(fragment.elems)]
+            #Write PDB-file frag.pdb with dummy atomnames
+            write_pdbfile(fragment, outputname="frag", atomnames=atomnames_full)
+            #Load PDB-file and create topology
+            pdb = openmm.app.PDBFile("frag.pdb")
+            self.topology = pdb.topology
+            print("xmlfiles:", xmlfiles)
+            #Create dummy XML file
+            xmlfile = write_xmlfile_nonbonded(filename="dummy.xml", resnames=["DUM"], atomnames_per_res=[atomnames_full], atomtypes_per_res=[fragment.elems],
+                                            elements_per_res=[fragment.elems], masses_per_res=[fragment.masses],
+                                            charges_per_res=[[0.0]*fragment.numatoms],
+                                            sigmas_per_res=[[0.0]*fragment.numatoms], epsilons_per_res=[[0.0]*fragment.numatoms], skip_nb=True)
+            #Create dummy forcefield
+            self.forcefield = self.openmm_app.ForceField(xmlfile)
+
 
         # Read topology from PDB-file and XML-forcefield files to define forcefield
         else:
@@ -535,6 +556,9 @@ class OpenMMTheory:
                                                                rigidWater=self.rigidwater,
                                                                nonbondedCutoff=1000 * openmm.unit.angstroms,
                                                                hydrogenMass=self.hydrogenmass)
+                #NOTE: might be unnecessary
+                elif dummysystem is True:
+                    self. system = self.forcefield.createSystem(self.topology)
                 else:
                     self.system = self.forcefield.createSystem(self.topology, nonbondedMethod=openmm.app.NoCutoff,
                                                                constraints=self.autoconstraints,
@@ -813,7 +837,7 @@ class OpenMMTheory:
         return customforce
 
     def update_custom_external_force(self, customforce, gradient):
-        # print("Updating custom external force")
+        print("Updating custom external force")
         # shiftpar_inkjmol=shiftparameter*2625.4996394799
         # Convert Eh/Bohr gradient to force in kj/mol nm
         # *49614.501681716106452
@@ -2286,7 +2310,7 @@ def solvate_small_molecule(fragment=None, charge=None, mult=None, watermodel=Non
 # Simple XML-writing function. Will only write nonbonded parameters
 def write_xmlfile_nonbonded(resnames=None, atomnames_per_res=None, atomtypes_per_res=None, elements_per_res=None,
                             masses_per_res=None, charges_per_res=None, sigmas_per_res=None,
-                            epsilons_per_res=None, filename="system.xml", coulomb14scale=0.833333, lj14scale=0.5):
+                            epsilons_per_res=None, filename="system.xml", coulomb14scale=0.833333, lj14scale=0.5, skip_nb=False):
     print("Inside write_xml file")
     # resnames=["MOL1", "MOL2"]
     # atomnames_per_res=[["CM1","CM2","HX1","HX2"],["OT1","HT1","HT2"]]
@@ -2314,6 +2338,9 @@ def write_xmlfile_nonbonded(resnames=None, atomnames_per_res=None, atomtypes_per
     nonbondedlines = []
     for resname, atomtypelist, chargelist, sigmalist, epsilonlist in zip(resnames, atomtypes_per_res, charges_per_res,
                                                                          sigmas_per_res, epsilons_per_res):
+        print("atomtypelist:", atomtypelist)
+        print("chargelist.", chargelist)
+        print("sigmalist", sigmalist)
         for atype, charge, sigma, epsilon in zip(atomtypelist, chargelist, sigmalist, epsilonlist):
             nonbondedline = "<Atom type=\"{}\" charge=\"{}\" sigma=\"{}\" epsilon=\"{}\"/>\n".format(atype, charge,
                                                                                                      sigma, epsilon)
@@ -2334,11 +2361,11 @@ def write_xmlfile_nonbonded(resnames=None, atomnames_per_res=None, atomtypes_per
             # All other atoms
             xmlfile.write("</Residue>\n")
         xmlfile.write("</Residues>\n")
-
-        xmlfile.write("<NonbondedForce coulomb14scale=\"{}\" lj14scale=\"{}\">\n".format(coulomb14scale, lj14scale))
-        for nonbondedline in nonbondedlines:
-            xmlfile.write(nonbondedline)
-        xmlfile.write("</NonbondedForce>\n")
+        if skip_nb is False:
+            xmlfile.write("<NonbondedForce coulomb14scale=\"{}\" lj14scale=\"{}\">\n".format(coulomb14scale, lj14scale))
+            for nonbondedline in nonbondedlines:
+                xmlfile.write(nonbondedline)
+            xmlfile.write("</NonbondedForce>\n")
         xmlfile.write("</ForceField>\n")
     print("Wrote XML-file:", filename)
     return filename
@@ -2461,7 +2488,9 @@ class OpenMM_MDclass:
 
         print_line_with_mainheader("OpenMM Molecular Dynamics Initialization")
 
-        # Distinguish between OpenMM theory or QM/MM theory
+        self.externalqm=False
+
+        # Distinguish between OpenMM theory QM/MM theory or QM theory
         self.dummy_MM=dummy_MM
         if isinstance(theory, OpenMMTheory):
             self.openmmobject = theory
@@ -2470,8 +2499,18 @@ class OpenMM_MDclass:
             self.QM_MM_object = theory
             self.openmmobject = theory.mm_theory
         else:
-            print("Unknown theory. Exiting.")
-            exit()
+            print("Unknown theory.")
+            #NOTE: Recognize QM theories here ??
+            #OpenMM with external QM
+            print("Will assume some kind of QM theory and will continue")
+            self.externalqm=True
+
+            #Creating dummy OpenMMTheory 
+            self.openmmobject = OpenMMTheory(fragment=fragment, dummysystem=True)
+            self.QM_MM_object = None
+            self.qmtheory=theory
+        
+
 
         if fragment is None:
             print("No fragment object. Exiting.")
@@ -2706,6 +2745,10 @@ class OpenMM_MDclass:
             print("Creating new OpenMM custom external force for Plumed.")
             self.plumedcustomforce = self.openmmobject.add_custom_external_force()
 
+        #QM MD
+        if self.externalqm is True:
+            print("Creating new OpenMM custom external force for external QM theory.")
+            self.qmcustomforce = self.openmmobject.add_custom_external_force()
         # QM/MM MD
         if self.QM_MM_object is not None:
             print("QM_MM_object provided. Switching to QM/MM loop.")
@@ -2761,12 +2804,7 @@ class OpenMM_MDclass:
             print("Now starting QM/MM MD simulation.")
             print("openmm obj integrator:", self.openmmobject.integrator)
             # Does step by step
-            # Delete old traj
-            try:
-                os.remove("OpenMMMD_traj.xyz")
-            # Crashes when permissions not present or file is folder. Should never occur.
-            except FileNotFoundError:
-                pass
+
             print_time_rel(module_init_time, modulename="OpenMM_MD setup", moduleindex=1)
 
     # Simulation loop
@@ -2790,6 +2828,14 @@ class OpenMM_MDclass:
         print("OpenMM integrator:", self.openmmobject.integrator_name)
         print("self.openmmobject.integrator:", self.openmmobject.integrator)
         print()
+        forceclassnames = [i.__class__.__name__ for i in self.openmmobject.system.getForces()]
+        print("OpenMM System forces present before run:", forceclassnames)
+        # Delete old traj
+        try:
+            os.remove("OpenMMMD_traj.xyz")
+        # Crashes when permissions not present or file is folder. Should never occur.
+        except FileNotFoundError:
+            pass
 
 
         # Setting coordinates of OpenMM object from current fragment.coords
@@ -2865,6 +2911,77 @@ class OpenMM_MDclass:
                                                                step=step)
                     self.openmmobject.update_custom_external_force(self.plumedcustomforce, newforces)
 
+        #External QM for OpenMMtheory
+        #Used to run QM dynamics with OpenMM
+        elif self.externalqm is True:
+            print("External QM with OpenMM option")
+            for step in range(simulation_steps):
+                checkpoint_begin_step = time.time()
+                checkpoint = time.time()
+                print("Step:", step)
+                #Get state of simulation. Gives access to coords, velocities, forces, energy etc.
+                current_state=self.openmmobject.simulation.context.getState(getPositions=True, enforcePeriodicBox=self.enforcePeriodicBox, getEnergy=True)
+                print_time_rel(checkpoint, modulename="get OpenMM state", moduleindex=2)
+                checkpoint = time.time()
+                # Get current coordinates from state to use for QM/MM step
+                current_coords = np.array(current_state.getPositions(asNumpy=True))*10
+                print_time_rel(checkpoint, modulename="get current coords", moduleindex=2)
+                checkpoint = time.time()
+
+                #Printing step-info or write-trajectory at regular intervals
+                if step % self.traj_frequency == 0:
+                    # Manual step info option
+                    print_current_step_info(step,current_state,self.openmmobject)
+                    print_time_rel(checkpoint, modulename="print_current_step_info", moduleindex=2)
+                    checkpoint = time.time()
+                    # Manual trajectory option (reporters do not work for manual dynamics steps)
+                    write_xyzfile(self.fragment.elems, current_coords, "OpenMMMD_traj", printlevel=1, writemode='a')
+                    print_time_rel(checkpoint, modulename="OpenMM_MD writetraj", moduleindex=2)
+                    checkpoint = time.time()
+
+                # Run QM step to get full system QM gradient.
+                # Updates OpenMM object with QM forces
+                energy,gradient=self.qmtheory.run(current_coords=current_coords, elems=self.fragment.elems, Grad=True)
+                print("energy:", energy)
+                print_time_rel(checkpoint, modulename="QM run", moduleindex=2)
+
+
+                self.openmmobject.update_custom_external_force(self.qmcustomforce,gradient)
+
+                #Calculate energy associated with external force so that we can subtract it later
+                #TODO: take this and QM energy and add to print_current_step_info
+                extforce_energy=3*np.mean(sum(gradient*current_coords*1.88972612546))
+                print("extforce_energy:", extforce_energy)
+
+                self.openmmobject.simulation.step(1)
+                print_time_rel(checkpoint, modulename="OpenMM sim step", moduleindex=2)
+                print_time_rel(checkpoint_begin_step, modulename="Total sim step", moduleindex=2)
+
+
+                # NOTE: Better to use OpenMM-plumed interface instead??
+                # After MM step, grab coordinates and forces
+                if self.plumed_object is not None:
+                    print("Plumed active. Untested. Hopefully works.")
+                    #TODO: SOME PROBLEMS HERE STILL. UNITS ETC
+                    #Necessary to call again
+                    current_state_forces=self.openmmobject.simulation.context.getState(getForces=True, enforcePeriodicBox=self.enforcePeriodicBox,)
+                    #current_coords = np.array(
+                    #    self.openmmobject.simulation.context.getState(getPositions=True).getPositions(
+                    #        asNumpy=True))  # in nm
+                    current_coords = np.array(current_state.getPositions(asNumpy=True)) #in nm
+                    current_forces = np.array(current_state_forces.getForces(asNumpy=True)) # in kJ/mol /nm
+                    #np.array(
+                    #    self.openmmobject.simulation.context.getState(getForces=True).getForces(
+                    #        asNumpy=True))  # in kJ/mol /nm
+                    # Plumed object needs to be configured for OpenMM
+                    energy, newforces = self.plumed_object.run(coords=current_coords, forces=current_forces,
+                                                               step=step)
+                    self.openmmobject.update_custom_external_force(self.plumedcustomforce, newforces)
+
+
+
+
+        #TODO: Delete at some point once testing and debugging are over
         elif self.dummy_MM is True:
             print("Dummy MM option")
             for step in range(simulation_steps):
@@ -2895,8 +3012,9 @@ class OpenMM_MDclass:
                 print_time_rel(checkpoint_begin_step, modulename="Total sim step", moduleindex=2)
         else:
             print("Regular classical OpenMM MD option chosen.")
+            #This is the fastest option as getState is never called in each loop iteration like above
             # Running all steps in one go
-            # TODO: If we wanted to support plumed then we would have to do step 1-by-1 here
+            # TODO: If we wanted to support plumed then we would have to do step 1-by-1 instead
             self.openmmobject.simulation.step(simulation_steps)
 
         print_line_with_subheader2("OpenMM MD simulation finished!")
