@@ -2489,37 +2489,40 @@ class OpenMM_MDclass:
 
         print_line_with_mainheader("OpenMM Molecular Dynamics Initialization")
 
-        self.externalqm=False
-
-        # Distinguish between OpenMM theory QM/MM theory or QM theory
-        self.dummy_MM=dummy_MM
-        if isinstance(theory, OpenMMTheory):
-            self.openmmobject = theory
-            self.QM_MM_object = None
-        elif isinstance(theory, ash.QMMMTheory):
-            self.QM_MM_object = theory
-            self.openmmobject = theory.mm_theory
-        else:
-            print("Unrecognized theory.")
-            #NOTE: Recognize QM theories here ??
-            #OpenMM with external QM
-            print("Will assume to be QM theory and will continue")
-            print("QM-program forces will be added as a custom external force to OpenMM")
-            self.externalqm=True
-
-            #Creating dummy OpenMMTheory 
-            self.openmmobject = OpenMMTheory(fragment=fragment, dummysystem=True)
-            self.QM_MM_object = None
-            self.qmtheory=theory
-        
-
-
         if fragment is None:
             print("No fragment object. Exiting.")
             exit()
         else:
             self.fragment = fragment
-        # various
+
+        #External QM option off by default
+        self.externalqm=False
+
+        # Distinguish between OpenMM theory QM/MM theory or QM theory
+        self.dummy_MM=dummy_MM
+
+        #Case: OpenMMTheory
+        if isinstance(theory, OpenMMTheory):
+            self.openmmobject = theory
+            self.QM_MM_object = None
+        #Case: QM/MM theory with OpenMM mm_theory
+        elif isinstance(theory, ash.QMMMTheory):
+            self.QM_MM_object = theory
+            self.openmmobject = theory.mm_theory
+        #Case: OpenMM with external QM
+        else:
+            #NOTE: Recognize QM theories here ??
+            print("Unrecognized theory.")
+            print("Will assume to be QM theory and will continue")
+            print("QM-program forces will be added as a custom external force to OpenMM")
+            self.externalqm=True
+
+            #Creating dummy OpenMMTheory (basic topology, particle masses, no forces except CMMRemoval)
+            self.openmmobject = OpenMMTheory(fragment=fragment, dummysystem=True) #NOTE: might add more options here
+            self.QM_MM_object = None
+            self.qmtheory=theory
+        
+        # Assigning some basic variables
         self.temperature = temperature
         self.pressure = pressure
         self.integrator = integrator
