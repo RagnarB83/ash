@@ -2500,10 +2500,11 @@ class OpenMM_MDclass:
             self.QM_MM_object = theory
             self.openmmobject = theory.mm_theory
         else:
-            print("Unknown theory.")
+            print("Unrecognized theory.")
             #NOTE: Recognize QM theories here ??
             #OpenMM with external QM
-            print("Will assume some kind of QM theory and will continue")
+            print("Will assume to be QM theory and will continue")
+            print("QM-program forces will be added as a custom external force to OpenMM")
             self.externalqm=True
 
             #Creating dummy OpenMMTheory 
