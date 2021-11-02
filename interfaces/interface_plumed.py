@@ -290,7 +290,7 @@ def MTD_analyze(plumed_ash_object=None, path_to_plumed=None, Plot_To_Screen=Fals
 
 
     #Dict of energy conversions: Energy-unit to kcal/mol
-    energy_conversion_dict= {'eV':1/23.060541945329334}
+    energy_conversion_dict= {'eV':1/23.060541945329334, 'kj/mol':4.184 }
     # possibly conversion from energy-unit to kcal/mol. 
     energy_scaling=energy_conversion_dict[plumed_energy_unit]
     
