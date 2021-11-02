@@ -141,6 +141,8 @@ class plumed_ASH():
             
             #Multiple walker option. Not confirmed to work
             if numwalkers != None:
+                print("not ready")
+                exit()
                 self.plumedobj.cmd("readInputLine",str(numwalkers))
                 self.plumedobj.cmd("readInputLine","WALKERS_ID=SET_WALKERID") #NOTE: How to set this??
                 self.plumedobj.cmd("readInputLine","WALKERS_DIR=../")

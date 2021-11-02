@@ -836,12 +836,13 @@ class OpenMMTheory:
         print("Added force")
         return customforce
 
-    def update_custom_external_force(self, customforce, gradient):
+    def update_custom_external_force(self, customforce, gradient, conversion_factor=49614.752589207):
         print("Updating custom external force")
         # shiftpar_inkjmol=shiftparameter*2625.4996394799
         # Convert Eh/Bohr gradient to force in kj/mol nm
         # *49614.501681716106452
-        forces = -gradient * 49614.752589207
+        #NOTE: default conversion factor (49614.752589207) assumes input gradient in Eh/Bohr and converting to kJ/mol nm
+        forces = -gradient * conversion_factor
         for i, f in enumerate(forces):
             customforce.setParticleParameters(i, i, f)
         # print("xx")
@@ -2811,7 +2812,6 @@ class OpenMM_MDclass:
     def run(self, simulation_steps=None, simulation_time=None):
         module_init_time = time.time()
         print_line_with_mainheader("OpenMM Molecular Dynamics Run")
-        print("openmm obj integrator:", self.openmmobject.integrator)
         if simulation_steps is None and simulation_time is None:
             print("Either simulation_steps or simulation_time needs to be set.")
             exit()
@@ -2962,21 +2962,15 @@ class OpenMM_MDclass:
                 # After MM step, grab coordinates and forces
                 if self.plumed_object is not None:
                     print("Plumed active. Untested. Hopefully works.")
-                    #TODO: SOME PROBLEMS HERE STILL. UNITS ETC
                     #Necessary to call again
                     current_state_forces=self.openmmobject.simulation.context.getState(getForces=True, enforcePeriodicBox=self.enforcePeriodicBox,)
-                    #current_coords = np.array(
-                    #    self.openmmobject.simulation.context.getState(getPositions=True).getPositions(
-                    #        asNumpy=True))  # in nm
-                    current_coords = np.array(current_state.getPositions(asNumpy=True)) #in nm
-                    current_forces = np.array(current_state_forces.getForces(asNumpy=True)) # in kJ/mol /nm
-                    #np.array(
-                    #    self.openmmobject.simulation.context.getState(getForces=True).getForces(
-                    #        asNumpy=True))  # in kJ/mol /nm
+                    #Keep coords as default OpenMM nm and forces ad kJ/mol/nm. Avoid conversion
+                    plumed_coords = np.array(current_state.getPositions(asNumpy=True)) #in nm
+                    plumed_forces = np.array(current_state_forces.getForces(asNumpy=True)) # in kJ/mol /nm
                     # Plumed object needs to be configured for OpenMM
-                    energy, newforces = self.plumed_object.run(coords=current_coords, forces=current_forces,
+                    energy, newforces = self.plumed_object.run(coords=plumed_coords, forces=plumed_forces,
                                                                step=step)
-                    self.openmmobject.update_custom_external_force(self.plumedcustomforce, newforces)
+                    self.openmmobject.update_custom_external_force(self.plumedcustomforce, newforces, conversion_factor=1.0)
 
 
 
