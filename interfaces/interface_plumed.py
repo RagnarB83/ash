@@ -121,7 +121,7 @@ class plumed_ASH():
         self.numwalkers=numwalkers
         #Store masses
         self.masses=np.array(fragment.list_of_masses,dtype=np.float64)
-
+        print("Masses:", self.masses)
         
         if bias_type == "MTD":
             #1D metadynamics
