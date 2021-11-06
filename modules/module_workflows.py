@@ -628,7 +628,7 @@ def auto_active_space(fragment=None, orcadir=None, basis="def2-SVP", scalar_rel=
 #Simple function to run calculations (SP or OPT) on collection of XYZ-files
 #Assuming XYZ-files have charge,mult info in header, or if single global charge,mult, apply that
 
-def calc_xyzfiles(xyzdir=None, Opt=False, theory=None, charge=None, mult=None ):
+def calc_xyzfiles(xyzdir=None, Opt=False, theory=None, charge=None, mult=None, xtb_preopt=False ):
     import glob
     print_line_with_mainheader("calc_xyzfiles function")
 
@@ -671,8 +671,11 @@ def calc_xyzfiles(xyzdir=None, Opt=False, theory=None, charge=None, mult=None ):
             theory.mult=mult
         #Do Optimization or Singlepoint
         if Opt is True:
-            if xtb_preopt is True:
-                energy = interfaces.interface_geometric.geomeTRICOptimizer(theory=theory, fragment=mol)
+            #TODO: FINISH. Best to call xtB on its own to reduce ASH printout
+            #NOTE: do in separate xtbdir
+            #if xtb_preopt is True:
+            #    energy = interfaces.interface_geometric.geomeTRICOptimizer(theory=theory, fragment=mol)
+            
             energy = interfaces.interface_geometric.geomeTRICOptimizer(theory=theory, fragment=mol)
             #Rename optimized XYZ-file
             filenamestring_suffix="" #nothing for now
@@ -685,11 +688,15 @@ def calc_xyzfiles(xyzdir=None, Opt=False, theory=None, charge=None, mult=None ):
         theory.cleanup()
         energies.append(energy)
         print("")
-    #print(" XYZ-file             Energy (Eh)")
-    print("{:20} {:7} {:>7} {:>20}".format("XYZ-file","Charge","Mult", "Energy(Eh)"))
+
+    #TODO: Collect things in dictionary before printing table
+    # Then we can sort the items in an intelligent way
+
+
+    print("{:30} {:>7} {:>7} {:>20}".format("XYZ-file","Charge","Mult", "Energy(Eh)"))
     print("-"*70)
     for xyzfile, frag, e in zip(filenames, fragments,energies):
-        print("{:20} {:7} {:7} {:>20.10f}".format(xyzfile,frag.charge, frag.mult, e))
+        print("{:30} {:>7} {:>7} {:>20.10f}".format(xyzfile,frag.charge, frag.mult, e))
     
     if Opt is True:
         print("\n\nXYZ-files with optimized coordinates can be found in:", finalxyzdir)
