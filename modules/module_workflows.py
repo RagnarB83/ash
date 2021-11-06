@@ -651,13 +651,14 @@ def calc_xyzfiles(xyzdir=None, Opt=False, theory=None, charge=None, mult=None, x
     filenames=[]
     fragments=[]
     finalxyzdir="optimized_xyzfiles"
-    #Create new directory with optimized geometries
+
+    #Remove old dir if present
     try:
         shutil.rmtree(finalxyzdir)
-        os.mkdir(finalxyzdir)
     except:
         pass
-
+    #Create new directory with optimized geometries
+    os.mkdir(finalxyzdir)
     for file in glob.glob(xyzdir+'/*.xyz'):
         filename=os.path.basename(file)
         filenames.append(filename)
@@ -673,7 +674,9 @@ def calc_xyzfiles(xyzdir=None, Opt=False, theory=None, charge=None, mult=None, x
         if Opt is True:
             #TODO: FINISH. Best to call xtB on its own to reduce ASH printout
             #NOTE: do in separate xtbdir
-            #if xtb_preopt is True:
+            if xtb_preopt is True:
+                print("not ready")
+                exit()
             #    energy = interfaces.interface_geometric.geomeTRICOptimizer(theory=theory, fragment=mol)
             
             energy = interfaces.interface_geometric.geomeTRICOptimizer(theory=theory, fragment=mol)
