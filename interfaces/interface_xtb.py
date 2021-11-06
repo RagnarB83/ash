@@ -144,6 +144,11 @@ class xTBTheory:
                 os.remove(file)
             except:
                 pass
+    def Opt():
+        print(BC.OKBLUE,BC.BOLD, "------------RUNNING INTERNAL xTB OPTIMIZATION-------------", BC.END)
+        print("not ready")
+        exit()
+
     def run(self, current_coords=None, current_MM_coords=None, MMcharges=None, qm_elems=None,
                 elems=None, Grad=False, PC=False, numcores=None, label=None):
         module_init_time=time.time()
