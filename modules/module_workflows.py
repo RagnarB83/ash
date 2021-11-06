@@ -641,8 +641,9 @@ def calc_xyzfiles(xyzdir=None, Opt=False, theory=None, charge=None, mult=None, x
     print("Theory:", theory)
     print("Optimization:", Opt)
     print("Global charge/mult options:", charge, mult)
+    print("xTB preoptimization", xtb_preopt)
     if charge == None or mult == None:
-        print("Charge/mult options are None. This means that XYZ-files must have charge/mult information in their header")
+        print("Charge/mult options are None. This means that XYZ-files must have charge/mult information in their header\n\n")
         readchargemult=True
     else:
         readchargemult=False
@@ -659,25 +660,30 @@ def calc_xyzfiles(xyzdir=None, Opt=False, theory=None, charge=None, mult=None, x
         pass
     #Create new directory with optimized geometries
     os.mkdir(finalxyzdir)
+
+    #Looping through XYZ-files
     for file in glob.glob(xyzdir+'/*.xyz'):
         filename=os.path.basename(file)
         filenames.append(filename)
         print("XYZ-file:", filename)
         mol=ash.Fragment(xyzfile=file, readchargemult=readchargemult)
         fragments.append(mol)
+
+        #Charge/mult from fragment
         if charge == None and mult ==None:
     	    theory.charge=mol.charge; theory.mult=mol.mult
+        #Global charge/mult keywords (rare)
         else:
             theory.charge=charge
             theory.mult=mult
         #Do Optimization or Singlepoint
         if Opt is True:
-            #TODO: FINISH. Best to call xtB on its own to reduce ASH printout
-            #NOTE: do in separate xtbdir
             if xtb_preopt is True:
-                print("not ready")
-                exit()
-            #    energy = interfaces.interface_geometric.geomeTRICOptimizer(theory=theory, fragment=mol)
+                print("xTB Pre-optimization is active. Will first call xTB directly to do pre-optimization before actual optimization!")
+                #Defining temporary xtBtheory
+                xtbcalc=ash.xTBTheory(charge=theory.charge,mult=theory.mult, numcores=theory.numcores)
+                #Run direct xtb optimization. This will update fragment mol.
+                xtbcalc.Opt(fragment=mol)
             
             energy = interfaces.interface_geometric.geomeTRICOptimizer(theory=theory, fragment=mol)
             #Rename optimized XYZ-file

@@ -35,6 +35,13 @@ class xTBTheory:
         #Accuracy (0.1 it quite tight)
         self.accuracy=accuracy
 
+        if fragment != None:
+            self.fragment=fragment
+            self.coords=fragment.coords
+            self.elems=fragment.elems
+        else:
+            self.fragment=None
+
         #Printlevel
         self.printlevel=printlevel
 
@@ -144,10 +151,77 @@ class xTBTheory:
                 os.remove(file)
             except:
                 pass
-    def Opt():
+    def check_charge_mult(self):
+        if self.charge == None or self.mult==None:
+            print("Charge and mult has not been set yet. Exiting.")
+            exit()
+    #Do an xTB-optimization instead of ASH optimization. Useful for gas-phase chemistry (avoids too much ASH printout
+    def Opt(self, fragment=None, Grad=None, Hessian=None, numcores=None, label=None):
+        module_init_time=time.time()
         print(BC.OKBLUE,BC.BOLD, "------------RUNNING INTERNAL xTB OPTIMIZATION-------------", BC.END)
-        print("not ready")
-        exit()
+
+        if fragment == None:
+            print("No fragment provided to xTB Opt.")
+            if self.fragment == None:
+                print("No fragment associated with xTBTheory object either. Exiting")
+                exit()
+            else:
+                current_coords=self.fragment.coords
+                elems=self.fragment.elems
+        else:
+            print("Fragment provided to Opt")
+            self.fragment=fragment
+
+        current_coords=self.fragment.coords
+        elems=self.fragment.elems
+
+        if numcores==None:
+            numcores=self.numcores
+
+
+        if self.printlevel >= 2:
+            print("Creating inputfile:", self.filename+'.xyz')
+
+        self.check_charge_mult()
+        if self.runmode=='inputfile':
+            #Write xyz_file
+            modules.module_coords.write_xyzfile(elems, current_coords, self.filename, printlevel=self.printlevel)
+
+            #Run inputfile.
+            if self.printlevel >= 2:
+                print("------------Running xTB-------------")
+                print("Running xtB using {} cores".format(numcores))
+                print("...")
+
+            
+            run_xtb_SP_serial(self.xtbdir, self.xtbmethod, self.filename + '.xyz', self.charge, self.mult, 
+                                      Opt=True, maxiter=self.maxiter, electronic_temp=self.electronic_temp, accuracy=self.accuracy)
+
+            if self.printlevel >= 2:
+                print("------------xTB calculation done-----")
+
+            print("Grabbing optimized coordinates")
+            #Grab optimized coordinates from filename.xyz
+            opt_elems,opt_coords = modules.module_coords.read_xyzfile("xtbopt.xyz")
+            self.fragment.replace_coords(self.fragment.elems,opt_coords)
+
+            return
+            #TODO: Check if xtB properly converged or not 
+            #Regardless take coordinates and go on. Possibly abort if xtb completely
+        else:
+            print("something else")
+            exit()
+            #Update coordinates in someway
+        print("ASH fragment updated:", self.fragment)
+        self.fragment.print_coords()
+        #Writing out fragment file and XYZ file
+        self.fragment.print_system(filename='Fragment-optimized.ygg')
+        self.fragment.write_xyzfile(xyzfilename='Fragment-optimized.xyz')
+
+        #Printing internal coordinate table
+        modules.module_coords.print_internal_coordinate_table(self.fragment)
+        print_time_rel(module_init_time, modulename='xtB Opt-run', moduleindex=2)
+        return 
 
     def run(self, current_coords=None, current_MM_coords=None, MMcharges=None, qm_elems=None,
                 elems=None, Grad=False, PC=False, numcores=None, label=None):
@@ -174,7 +248,7 @@ class xTBTheory:
             else:
                 qm_elems = elems
 
-
+        self.check_charge_mult()
         if self.runmode=='inputfile':
             if self.printlevel >=2:
                 print("Using inputfile-based xTB interface")
@@ -448,7 +522,7 @@ def xtbVEAgrab(file):
     return VIP
 
 # Run xTB single-point job
-def run_xtb_SP_serial(xtbdir, xtbmethod, xyzfile, charge, mult, Grad=False, maxiter=500, electronic_temp=300, accuracy=0.1, solvent=None):
+def run_xtb_SP_serial(xtbdir, xtbmethod, xyzfile, charge, mult, Grad=False, Opt=True, maxiter=500, electronic_temp=300, accuracy=0.1, solvent=None):
     
     if solvent != None:
         solvent_line=""
@@ -475,6 +549,9 @@ def run_xtb_SP_serial(xtbdir, xtbmethod, xyzfile, charge, mult, Grad=False, maxi
     if Grad==True:
         command_list=[xtbdir + '/xtb', basename+'.xyz', '--gfn', str(xtbflag), '--grad', '--chrg', str(charge), '--uhf', str(uhf), '--iterations', str(maxiter),
                               '--etemp', str(electronic_temp), '--acc', str(accuracy), '--input', 'xtbinput', str(solvent_line)  ]
+    elif Opt == True:
+        command_list=[xtbdir + '/xtb', basename+'.xyz', '--gfn', str(xtbflag), '--opt', '--chrg', str(charge), '--uhf', str(uhf), '--iterations', str(maxiter),
+                              '--etemp', str(electronic_temp), '--acc', str(accuracy), '--input', 'xtbinput', str(solvent_line)  ]    
     else:
         command_list=[xtbdir + '/xtb', basename + '.xyz', '--gfn', str(xtbflag), '--chrg', str(charge), '--uhf', str(uhf), '--iterations', str(maxiter),
                       '--etemp', str(electronic_temp), '--acc', str(accuracy), '--input', 'xtbinput', str(solvent_line)]
