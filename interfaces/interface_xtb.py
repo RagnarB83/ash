@@ -209,7 +209,7 @@ class xTBTheory:
             #TODO: Check if xtB properly converged or not 
             #Regardless take coordinates and go on. Possibly abort if xtb completely
         else:
-            print("something else")
+            print("Only runmode='inputfile allowed for xTBTheory.Opt(). Exiting")
             exit()
             #Update coordinates in someway
         print("ASH fragment updated:", self.fragment)

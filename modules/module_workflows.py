@@ -628,7 +628,7 @@ def auto_active_space(fragment=None, orcadir=None, basis="def2-SVP", scalar_rel=
 #Simple function to run calculations (SP or OPT) on collection of XYZ-files
 #Assuming XYZ-files have charge,mult info in header, or if single global charge,mult, apply that
 
-def calc_xyzfiles(xyzdir=None, Opt=False, theory=None, charge=None, mult=None, xtb_preopt=False ):
+def calc_xyzfiles(xyzdir=None, theory=None, Opt=False, Freq=False, charge=None, mult=None, xtb_preopt=False ):
     import glob
     print_line_with_mainheader("calc_xyzfiles function")
 
@@ -685,12 +685,19 @@ def calc_xyzfiles(xyzdir=None, Opt=False, theory=None, charge=None, mult=None, x
                 #Run direct xtb optimization. This will update fragment mol.
                 xtbcalc.Opt(fragment=mol)
             
-            energy = interfaces.interface_geometric.geomeTRICOptimizer(theory=theory, fragment=mol)
+            energy = interfaces.interface_geometric.geomeTRICOptimizer(theory=theory, fragment=mol, coordsystem='tric')
             #Rename optimized XYZ-file
             filenamestring_suffix="" #nothing for now
             os.rename("Fragment-optimized.xyz",os.path.splitext(filename)[0]+filenamestring_suffix+".xyz")
             #shutil.copy(os.path.splitext(filename)[0]+"_opt.xyz", ORCAcalc_1.filename+'_fod.gbw')
             shutil.copy(os.path.splitext(filename)[0]+filenamestring_suffix+".xyz",finalxyzdir)
+
+            #Freq job after OPt
+            if Freq is True:
+                print("not ready")
+                exit()
+
+
         else:
             energy = ash.Singlepoint(theory=theory, fragment=mol)
         print("Energy of file {} : {} Eh".format(file, energy))
@@ -699,7 +706,7 @@ def calc_xyzfiles(xyzdir=None, Opt=False, theory=None, charge=None, mult=None, x
         print("")
 
     #TODO: Collect things in dictionary before printing table
-    # Then we can sort the items in an intelligent way
+    # Then we can sort the items in an intelligent way before printing
 
 
     print("{:30} {:>7} {:>7} {:>20}".format("XYZ-file","Charge","Mult", "Energy(Eh)"))
