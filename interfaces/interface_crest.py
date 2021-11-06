@@ -57,18 +57,19 @@ def call_crest(fragment=None, xtbmethod=None, crestdir=None,charge=None, mult=No
         process = sp.run([crestdir + '/crest', 'initial.xyz','-T', str(numcores),  '-gfn' + str(xtbflag), '-ewin', str(energywindow), '-chrg', str(charge),'-gbsa', str(solvent),
              str(charge), '-uhf', str(mult - 1)])
 
+
     os.chdir('..')
     print_time_rel(module_init_time, modulename='crest run', moduleindex=0)
 
-#Grabbing crest conformers. Assuming inside crest-calc dir and in file called crest_conformers.xyz
+#Grabbing crest conformers. Goes inside rest-calc dir and finds file called crest_conformers.xyz
 #Creating ASH fragments for each conformer
-def get_crest_conformers():
+def get_crest_conformers(crest_calcdir='crest-calc',conf_file="crest_conformers.xyz"):
     print("")
     print("Now finding Crest conformers and creating ASH fragments...")
-    os.chdir('crest-calc')
+    os.chdir(crest_calcdir)
     list_conformers=[]
     list_xtb_energies=[]
-    all_elems, all_coords, all_titles = split_multimolxyzfile("crest_conformers.xyz",writexyz=True)
+    all_elems, all_coords, all_titles = split_multimolxyzfile(conf_file,writexyz=True)
     print("Found {} Crest conformers".format(len(all_elems)))
     
     #Getting energies from title lines

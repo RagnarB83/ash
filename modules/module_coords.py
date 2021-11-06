@@ -547,14 +547,27 @@ class Fragment:
     def add_centralfraginfo(self, list):
         self.Centralmainfrag = list
 
-    def write_xyzfile(self, xyzfilename="Fragment-xyzfile.xyz", writemode='w'):
-        # Energy written to XYZ title-line if present. Otherwise: None
+    def write_xyzfile(self, xyzfilename="Fragment-xyzfile.xyz", writemode='w', write_chargemult=True, write_energy=True):
+        
         with open(xyzfilename, writemode) as ofile:
             ofile.write(str(len(self.elems)) + '\n')
-            if self.energy is None:
-                ofile.write("Energy: None" + '\n')
+            
+            #Title line
+            #Write charge,mult and energy by default. Will be None if not available
+            if write_chargemult is True and write_energy is True:
+                ofile.write("{} {} {}\n".format(self.charge,self.mult,self.energy))
             else:
-                ofile.write("Energy: {:14.8f}".format(self.energy) + '\n')
+                ofile.write("title\n")
+            #elif write_chargemult is True and write_energy is True:
+            #    ofile.write("{} {}\n".format(self.charge,self.mult))
+            # Energy written otherwise
+            #else:
+            #    if self.energy is None:
+            #        ofile.write("Energy: None" + '\n')
+            #    else:
+            #        ofile.write("Energy: {:14.8f}".format(self.energy) + '\n')
+            
+            #Coordinates
             for el, c in zip(self.elems, self.coords):
                 line = "{:4} {:14.8f} {:14.8f} {:14.8f}".format(el, c[0], c[1], c[2])
                 ofile.write(line + '\n')
