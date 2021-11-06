@@ -623,3 +623,64 @@ def auto_active_space(fragment=None, orcadir=None, basis="def2-SVP", scalar_rel=
 
     #Returning dict of active spaces
     return spaces_dict
+
+
+#Simple function to run calculations on collections of XYZ-files
+#Assuming XYZ-files have charge,mult info in header, or if single charge,mult, apply that
+
+def calc_xyzfiles(xyzdir=None, Opt=False, theory=None, charge=None, mult=None ):
+    import glob
+    print_line_with_mainheader("calc_xyzfiles function")
+
+    print("XYZ directory:", xyzdir)
+    print("Theory:", theory)
+    print("Optimization:", Opt)
+    print("Global charge/mult options:", charge, mult)
+    if charge == None or mult == None:
+        print("Charge/mult options are None. This means that XYZ-files must have charge/mult information in their header")
+
+    energies=[]
+    filenames=[]
+    fragments=[]
+    finalxyzdir="optimized_xyzfiles"
+    #Create new directory with optimized geometries
+    try:
+        shutil.rmtree(finalxyzdir)
+        os.mkdir(finalxyzdir)
+    except:
+        pass
+
+    for file in glob.glob(xyzdir+'/*.xyz'):
+        filename=os.path.basename(file)
+        filenames.append(filename)
+        print("XYZ-file:", filename)
+        mol=ash.Fragment(xyzfile=file, readchargemult=True)
+        fragments.append(mol)
+        if charge == None and mult ==None:
+    	    theory.charge=mol.charge; theory.mult=mol.mult
+        else:
+            theory.charge=charge
+            theory.mult=mult
+        #Do Optimization or Singlepoint
+        if Opt is True:
+            energy = interfaces.interface_geometric.geomeTRICOptimizer(theory=theory, fragment=mol)
+            #Rename optimized XYZ-file
+            filenamestring_suffix="" #nothing for now
+            os.rename("Fragment-optimized.xyz",os.path.splitext(filename)[0]+filenamestring_suffix+".xyz")
+            #shutil.copy(os.path.splitext(filename)[0]+"_opt.xyz", ORCAcalc_1.filename+'_fod.gbw')
+            shutil.copy(os.path.splitext(filename)[0]+filenamestring_suffix+".xyz",finalxyzdir)
+        else:
+            energy = ash.Singlepoint(theory=theory, fragment=mol)
+        print("Energy of file {} : {} Eh".format(file, energy))
+        theory.cleanup()
+        energies.append(energy)
+        print("")
+    #print(" XYZ-file             Energy (Eh)")
+    print("{:20} {:7} {:>7} {:>20}".format("XYZ-file","Charge","Mult", "Energy(Eh)"))
+    print("-"*70)
+    for xyzfile, frag, e in zip(filenames, fragments,energies):
+        print("{:20} {:7} {:7} {:>20.10f}".format(xyzfile,frag.charge, frag.mult, e))
+    
+    if Opt is True:
+        print("\n\nXYZ-files with optimized coordinates can be found in:", finalxyzdir)
+    

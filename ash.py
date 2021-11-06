@@ -110,7 +110,7 @@ from modules.module_PES import PhotoElectronSpectrum
 import modules.module_workflows
 import modules.module_highlevel_workflows
 from modules.module_workflows import ReactionEnergy, thermochemprotocol_reaction, thermochemprotocol_single, \
-    confsampler_protocol, auto_active_space
+    confsampler_protocol, auto_active_space, calc_xyzfiles
 import modules.module_benchmarking
 from modules.module_benchmarking import run_benchmark
 

@@ -117,6 +117,8 @@ def Dynamics_ASE(fragment=None, PBC=False, theory=None, temperature=300, timeste
             energy, gradient = Singlepoint(theory=self.theory, fragment=self.fragment, Grad=True)
             #Converting E and G from Eh and Eh/Bohr to ASE units: eV and eV/Angstrom
             self.potenergy=energy*constants.hartoeV
+            print("units.Hartree:", units.Hartree)
+            print("units.Bohr:", units.Bohr)
             self.forces=-gradient* units.Hartree / units.Bohr
             #Adding forces to results also (sometimes called)
             self.results['forces'] = self.forces
