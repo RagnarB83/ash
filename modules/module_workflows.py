@@ -625,12 +625,17 @@ def auto_active_space(fragment=None, orcadir=None, basis="def2-SVP", scalar_rel=
     return spaces_dict
 
 
-#Simple function to run calculations on collections of XYZ-files
-#Assuming XYZ-files have charge,mult info in header, or if single charge,mult, apply that
+#Simple function to run calculations (SP or OPT) on collection of XYZ-files
+#Assuming XYZ-files have charge,mult info in header, or if single global charge,mult, apply that
 
 def calc_xyzfiles(xyzdir=None, Opt=False, theory=None, charge=None, mult=None ):
     import glob
     print_line_with_mainheader("calc_xyzfiles function")
+
+    #Checkf if xyz-directory exists
+    if os.path.isdir(xyzdir) is False:
+        print("XYZ directory does not exist. Check that dirname is complete, has been copied to scratch. You may have to use full path to dir")
+        exit()
 
     print("XYZ directory:", xyzdir)
     print("Theory:", theory)
@@ -638,6 +643,9 @@ def calc_xyzfiles(xyzdir=None, Opt=False, theory=None, charge=None, mult=None ):
     print("Global charge/mult options:", charge, mult)
     if charge == None or mult == None:
         print("Charge/mult options are None. This means that XYZ-files must have charge/mult information in their header")
+        readchargemult=True
+    else:
+        readchargemult=False
 
     energies=[]
     filenames=[]
@@ -654,7 +662,7 @@ def calc_xyzfiles(xyzdir=None, Opt=False, theory=None, charge=None, mult=None ):
         filename=os.path.basename(file)
         filenames.append(filename)
         print("XYZ-file:", filename)
-        mol=ash.Fragment(xyzfile=file, readchargemult=True)
+        mol=ash.Fragment(xyzfile=file, readchargemult=readchargemult)
         fragments.append(mol)
         if charge == None and mult ==None:
     	    theory.charge=mol.charge; theory.mult=mol.mult
@@ -663,6 +671,8 @@ def calc_xyzfiles(xyzdir=None, Opt=False, theory=None, charge=None, mult=None ):
             theory.mult=mult
         #Do Optimization or Singlepoint
         if Opt is True:
+            if xtb_preopt is True:
+                energy = interfaces.interface_geometric.geomeTRICOptimizer(theory=theory, fragment=mol)
             energy = interfaces.interface_geometric.geomeTRICOptimizer(theory=theory, fragment=mol)
             #Rename optimized XYZ-file
             filenamestring_suffix="" #nothing for now
