@@ -25,7 +25,7 @@ def fullindex_to_actindex(fullindex,actatoms):
 
 
 
-def geomeTRICOptimizer(theory=None,fragment=None, coordsystem='hdlc', frozenatoms=None, constraintsinputfile=None, constraints=None, 
+def geomeTRICOptimizer(theory=None,fragment=None, coordsystem='tric', frozenatoms=None, constraintsinputfile=None, constraints=None, 
                        constrainvalue=False, maxiter=50, ActiveRegion=False, actatoms=None, convergence_setting=None, conv_criteria=None,
                        print_atoms_list=None):
     """
@@ -57,7 +57,8 @@ def geomeTRICOptimizer(theory=None,fragment=None, coordsystem='hdlc', frozenatom
     if ActiveRegion == True and coordsystem == "tric":
         #TODO: Look into this more
         print("Activeregion true and coordsystem = tric are not compatible")
-        exit()
+        print("Switching to HDLC")
+        coordsystem='hdlc'
 
     if actatoms==None:
         actatoms=[]
