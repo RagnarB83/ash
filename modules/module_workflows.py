@@ -684,6 +684,7 @@ def calc_xyzfiles(xyzdir=None, theory=None, Opt=False, Freq=False, charge=None, 
                 xtbcalc=ash.xTBTheory(charge=theory.charge,mult=theory.mult, numcores=theory.numcores)
                 #Run direct xtb optimization. This will update fragment mol.
                 xtbcalc.Opt(fragment=mol)
+                xtbcalc.cleanup()
             
             energy = interfaces.interface_geometric.geomeTRICOptimizer(theory=theory, fragment=mol, coordsystem='tric')
             #Rename optimized XYZ-file

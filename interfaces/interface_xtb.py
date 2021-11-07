@@ -134,19 +134,9 @@ class xTBTheory:
     def cleanup(self):
         if self.printlevel >= 2:
             print("Cleaning up old xTB files")
-        list_files=[]
-        list_files.append(self.filename + '.xyz')
-        list_files.append(self.filename + '.out')
-        list_files.append('xtbrestart')
-        list_files.append('molden.input')
-        list_files.append('chargess')
-        list_files.append('pcgrad')
-        list_files.append('wbo')
-        list_files.append('xtbinput')
-        list_files.append('pcharge')
-        list_files.append('xtbtopo.mol')
+        files=[self.filename + '.xyz',self.filename + '.out','xtbopt.xyz','xtbopt.log','xtbrestart','molden.input','charges','pcgrad','wbo','xtbinput','pcharge','xtbtopo.mol']
         
-        for file in list_files:
+        for file in files:
             try:
                 os.remove(file)
             except:
