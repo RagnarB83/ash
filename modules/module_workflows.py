@@ -224,10 +224,6 @@ def thermochemprotocol_single(fragment=None, Opt_theory=None, SP_theory=None, or
     print("THERMOCHEM PROTOCOL-single: Step 3. High-level single-point calculation")
     print("-------------------------------------------------------------------------")
     #Workflow (callable function) or ORCATheory object
-    #print("SP_theory:", SP_theory)
-    #print("callable(SP_theory):", callable(SP_theory))
-    #print("callable(SP_theory):", callable(module_highlevel_workflows.SP_theory))
-    #print("callable(SP_theory):", callable(SP_theory))
     if callable(SP_theory) is True:
         FinalE, componentsdict = SP_theory(fragment=fragment, charge=fragment.charge,
                     mult=fragment.mult, orcadir=orcadir, numcores=numcores, memory=memory, workflow_args=workflow_args)
@@ -627,7 +623,9 @@ def auto_active_space(fragment=None, orcadir=None, basis="def2-SVP", scalar_rel=
 
 #Simple function to run calculations (SP or OPT) on collection of XYZ-files
 #Assuming XYZ-files have charge,mult info in header, or if single global charge,mult, apply that
-
+#NOTE: Maybe change to opt_theory and SP_theory. If both are set: then first Opt using opt_theory then HL-SP using SP_theory.
+#If only opt_theory set then second SP step skipped, if only SP_theory set then we skip the first Opt-step
+# TODO: Add parallelization. Requires some rewriting 
 def calc_xyzfiles(xyzdir=None, theory=None, Opt=False, Freq=False, charge=None, mult=None, xtb_preopt=False ):
     import glob
     print_line_with_mainheader("calc_xyzfiles function")
@@ -648,11 +646,7 @@ def calc_xyzfiles(xyzdir=None, theory=None, Opt=False, Freq=False, charge=None, 
     else:
         readchargemult=False
 
-    energies=[]
-    filenames=[]
-    fragments=[]
-    finalxyzdir="optimized_xyzfiles"
-
+    energies=[];filenames=[];fragments=[];finalxyzdir="optimized_xyzfiles"
     #Remove old dir if present
     try:
         shutil.rmtree(finalxyzdir)
@@ -665,7 +659,7 @@ def calc_xyzfiles(xyzdir=None, theory=None, Opt=False, Freq=False, charge=None, 
     for file in glob.glob(xyzdir+'/*.xyz'):
         filename=os.path.basename(file)
         filenames.append(filename)
-        print("XYZ-file:", filename)
+        print("\n\nXYZ-file:", filename)
         mol=ash.Fragment(xyzfile=file, readchargemult=readchargemult)
         fragments.append(mol)
 
