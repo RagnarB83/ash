@@ -1973,7 +1973,11 @@ def OpenMM_Modeller(pdbfile=None, forcefield=None, xmlfile=None, waterxmlfile=No
         forcefield = openmm_app.forcefield.ForceField([xmlfile, waterxmlfile])
     else:
         print("Using extra XML file:", extraxmlfile)
-        forcefield = openmm_app.forcefield.ForceField([xmlfile, waterxmlfile, extraxmlfile])
+        #Checking if file exists first
+        if os.path.isfile(extraxmlfile) is not True:
+            print(BC.FAIL,"File {} can not be found. Exiting.".format(extraxmlfile),BC.END)
+            exit()
+        forcefield = openmm_app.forcefield.ForceField(*[xmlfile, waterxmlfile, extraxmlfile])
 
     # Fix basic mistakes in PDB by PDBFixer
     # This will e.g. fix bad terminii
@@ -2001,6 +2005,7 @@ def OpenMM_Modeller(pdbfile=None, forcefield=None, xmlfile=None, waterxmlfile=No
     numresidues = modeller.topology.getNumResidues()
     print("Modeller topology has {} residues.".format(numresidues))
 
+    openmm_app.PDBFile.writeFile(modeller.topology, modeller.positions, open('system_aftermodeller.pdb', 'w'))
     # User provided dictionary of special residues e.g residue_variants={0:'LYN', 17:'CYX', 18:'ASH', 19:'HIE' }
     # Now creating list of all residues [None,None,None...] with added changes
     residue_states = [None for _ in range(0, numresidues)]
@@ -2012,6 +2017,7 @@ def OpenMM_Modeller(pdbfile=None, forcefield=None, xmlfile=None, waterxmlfile=No
     # This is were missing residue/atom errors will come
     print("")
     print("Adding hydrogens for pH:", pH)
+    print("Warning: OpenMM Modeller will fail in this step if residue information is missing")
     modeller.addHydrogens(forcefield, pH=pH, variants=residue_states)
     # try:
     #    modeller.addHydrogens(forcefield, pH=pH, variants=residue_variants)
