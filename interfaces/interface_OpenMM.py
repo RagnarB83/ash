@@ -655,8 +655,13 @@ class OpenMMTheory:
                 print("Missing distance value for some constraints. Can apply current-geometry distances if ASH\n"
                       "fragment has been provided")
                 if fragment is None:
-                    print("No ASH fragment provided to OpenMMTheory. Will exit.")
-                    exit()
+                    print("No ASH fragment provided to OpenMMTheory. Will check if pdbfile is defined and use coordinates from there")
+                    if pdbfile is None:
+                        print("No PDBfile present either. Either fragment or PDBfile containing \
+                            coordinates is required for constraint definition")
+                        exit()
+                    else:
+                        fragment=Fragment(pdbfile=pdbfile)
                 # Cleaning up constraint list. Adding distance if missing
                 constraints = clean_up_constraints_list(fragment=fragment, constraints=constraints)
             self.user_constraints = constraints
@@ -2004,8 +2009,8 @@ def OpenMM_Modeller(pdbfile=None, forcefield=None, xmlfile=None, waterxmlfile=No
     modeller = openmm_app.Modeller(pdb.topology, pdb.positions)
     numresidues = modeller.topology.getNumResidues()
     print("Modeller topology has {} residues.".format(numresidues))
-
-    openmm_app.PDBFile.writeFile(modeller.topology, modeller.positions, open('system_aftermodeller.pdb', 'w'))
+    print(BC.FAIL,"TODO: WRITE OUT ALL RESIDUE STATES HERE",BC.END)
+    openmm_app.PDBFile.writeFile(modeller.topology, modeller.positions, open('system_afterfixes2.pdb', 'w'))
     # User provided dictionary of special residues e.g residue_variants={0:'LYN', 17:'CYX', 18:'ASH', 19:'HIE' }
     # Now creating list of all residues [None,None,None...] with added changes
     residue_states = [None for _ in range(0, numresidues)]
@@ -2013,6 +2018,7 @@ def OpenMM_Modeller(pdbfile=None, forcefield=None, xmlfile=None, waterxmlfile=No
         for resid, newstate in residue_variants.items():
             residue_states[resid] = newstate
 
+    print("residue_states:", residue_states)
     # Adding hydrogens.
     # This is were missing residue/atom errors will come
     print("")
@@ -2062,9 +2068,52 @@ def OpenMM_Modeller(pdbfile=None, forcefield=None, xmlfile=None, waterxmlfile=No
     # Write to disk
     fragment.print_system(filename="fragment.ygg")
     fragment.write_xyzfile(xyzfilename="fragment.xyz")
+
+    print("OpenMM_Modeller used the following XML-files to define system:")
+    print("General forcefield XML file:", xmlfile)
+    print("Solvent forcefield XML file:", waterxmlfile)
+    print("Extra forcefield XML file:", extraxmlfile)
+
+    #Creating new OpenMM object from forcefield so that we can write out system XMLfile
+    print("Creating temporary OpenMMTheory object")
+    openmmobject =OpenMMTheory(platform='CPU', Modeller=True, forcefield=forcefield, 
+                        topology=modeller.topology, pdbfile=None, periodic=True,
+                        autoconstraints='HBonds', rigidwater=True)
+    #Write out System XMLfile    
+    systemxmlfile="system_full.xml"
+
+    serialized_system = openmm.XmlSerializer.serialize(openmmobject.system)
+    with open(systemxmlfile, 'w') as f:
+        f.write(serialized_system)
+    
+    print("\n\nFiles written to disk:")
+    print("system_afterfixes.pdb")
+    print("system_afterfixes2.pdb")
+    print("system_afterH.pdb")
+    print("system_aftersolvent.pdb")
+    print("system_afterions.pdb and finalsystem.pdb (same)")
+    print("\nFinal files:")
+    print("finalsystem.pdb  (PDB file)")
+    print("finalsystem.ygg  (ASH fragment file)")
+    print("finalsystem.xyz   (XYZ coordinate file)")
+    print(systemxmlfile)
+    print(BC.OKGREEN,"\n\n OpenMM_Modeller done! System has been fully set up\n",BC.END)
+    print("To use this system setup to define a future OpenMMTheory object for this system you can either do:\n")
+    print(BC.OKMAGENTA,"1. Use full system XML-file:\n",BC.END, \
+        "omm = OpenMMTheory(xmlsystemfile=\"system_full.xml\", pdbfile=\"finalsystem.pdb\", periodic=True)",BC.END)
+
+
+    print(BC.OKMAGENTA,"2. Define using separate forcefield XML files:\n",BC.END)
+    if extraxmlfile is None:
+        print("omm = OpenMMTheory(xmlfiles=[{}, {}], pdbfile=\"finalsystem.pdb\", periodic=True)".format(xmlfile,waterxmlfile),BC.END)
+    else:
+        print("omm = OpenMMTheory(xmlfiles=[{}, {}, {}], pdbfile=\"finalsystem.pdb\", periodic=True)".format(xmlfile,waterxmlfile,extraxmlfile),BC.END)
     print_time_rel(module_init_time, modulename="OpenMM_Modeller", moduleindex=1)
+    
+    #Return openmmobject. Could be used directly
+    return openmmobject
     # Return forcefield object,  topology object and ASH fragment
-    return forcefield, modeller.topology, fragment
+    #return forcefield, modeller.topology, fragment
 
 
 def MDtraj_import_():
