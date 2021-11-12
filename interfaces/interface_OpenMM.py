@@ -1897,7 +1897,7 @@ def OpenMM_Opt(fragment=None, theory=None, maxiter=1000, tolerance=1, enforcePer
 
 def OpenMM_Modeller(pdbfile=None, forcefield=None, xmlfile=None, waterxmlfile=None, watermodel=None, pH=7.0,
                     solvent_padding=10.0, solvent_boxdims=None, extraxmlfile=None, residue_variants=None,
-                    ionicstrength=0.1, iontype='K+'):
+                    ionicstrength=0.1, pos_iontype='Na+', neg_iontype='Cl-'):
     module_init_time = time.time()
     print_line_with_mainheader("OpenMM Modeller")
     try:
@@ -1914,7 +1914,11 @@ def OpenMM_Modeller(pdbfile=None, forcefield=None, xmlfile=None, waterxmlfile=No
         import pdbfixer
     except ImportError:
         print("Problem importing pdbfixer. Install first via conda:")
-        print("'conda install -c conda-forge pdbfixer'")
+        print("conda install -c conda-forge pdbfixer")
+        exit()
+
+    if pdbfile == None:
+        print("You must provide a pdbfile= keyword argument")
         exit()
 
     def write_pdbfile_openMM(topology, positions, filename):
@@ -1953,6 +1957,7 @@ def OpenMM_Modeller(pdbfile=None, forcefield=None, xmlfile=None, waterxmlfile=No
         elif forcefield == 'CHARMM36':
             xmlfile = "charmm36.xml"
             # Using specific CHARMM36 version of TIP3P
+            watermodel="tip3p"
             waterxmlfile = "charmm36/water.xml"
         elif forcefield == 'CHARMM2013':
             xmlfile = "charmm_polar_2013.xml"
@@ -1975,14 +1980,14 @@ def OpenMM_Modeller(pdbfile=None, forcefield=None, xmlfile=None, waterxmlfile=No
     print("User-provided dictionary of residue_variants:", residue_variants)
     # Define a forcefield
     if extraxmlfile is None:
-        forcefield = openmm_app.forcefield.ForceField([xmlfile, waterxmlfile])
+        forcefield = openmm_app.forcefield.ForceField(xmlfile, waterxmlfile)
     else:
         print("Using extra XML file:", extraxmlfile)
         #Checking if file exists first
         if os.path.isfile(extraxmlfile) is not True:
             print(BC.FAIL,"File {} can not be found. Exiting.".format(extraxmlfile),BC.END)
             exit()
-        forcefield = openmm_app.forcefield.ForceField(*[xmlfile, waterxmlfile, extraxmlfile])
+        forcefield = openmm_app.forcefield.ForceField(xmlfile, waterxmlfile, extraxmlfile)
 
     # Fix basic mistakes in PDB by PDBFixer
     # This will e.g. fix bad terminii
@@ -2049,18 +2054,20 @@ def OpenMM_Modeller(pdbfile=None, forcefield=None, xmlfile=None, waterxmlfile=No
     print("Adding solvent, watermodel:", watermodel)
     if solvent_boxdims is not None:
         print("Solvent boxdimension provided: {} Å".format(solvent_boxdims))
-        modeller.addSolvent(forcefield, boxSize=openmm.Vec3(solvent_boxdims[0], solvent_boxdims[1],
+        modeller.addSolvent(forcefield, neutralize=False, boxSize=openmm.Vec3(solvent_boxdims[0], solvent_boxdims[1],
                                                             solvent_boxdims[2]) * openmm_unit.angstrom)
     else:
         print("Using solvent padding (solvent_padding=X keyword): {} Å".format(solvent_padding))
-        modeller.addSolvent(forcefield, padding=solvent_padding * openmm_unit.angstrom, model=watermodel)
+        modeller.addSolvent(forcefield, neutralize=False, padding=solvent_padding * openmm_unit.angstrom, model=watermodel)
     write_pdbfile_openMM(modeller.topology, modeller.positions, "system_aftersolvent.pdb")
     print_systemsize()
 
     # Ions
-    print("Adding ionic strength: {} using ions {}".format(ionicstrength, iontype))
-    modeller.addSolvent(forcefield, ionicStrength=ionicstrength * openmm_unit.molar, positiveIon=iontype)
+    print("Adding ionic strength: {} M, using ions: {} and {}".format(ionicstrength, pos_iontype, neg_iontype))
+    modeller.addSolvent(forcefield, neutralize=True, positiveIon=pos_iontype, negativeIon=neg_iontype, 
+        ionicStrength=ionicstrength * openmm_unit.molar)
     write_pdbfile_openMM(modeller.topology, modeller.positions, "system_afterions.pdb")
+    write_pdbfile_openMM(modeller.topology, modeller.positions, "finalsystem.pdb")
     print_systemsize()
 
     # Create ASH fragment
@@ -2096,18 +2103,17 @@ def OpenMM_Modeller(pdbfile=None, forcefield=None, xmlfile=None, waterxmlfile=No
     print("finalsystem.pdb  (PDB file)")
     print("finalsystem.ygg  (ASH fragment file)")
     print("finalsystem.xyz   (XYZ coordinate file)")
-    print(systemxmlfile)
+    print("{}   (System XML file)".format(systemxmlfile))
     print(BC.OKGREEN,"\n\n OpenMM_Modeller done! System has been fully set up\n",BC.END)
     print("To use this system setup to define a future OpenMMTheory object for this system you can either do:\n")
     print(BC.OKMAGENTA,"1. Use full system XML-file:\n",BC.END, \
         "omm = OpenMMTheory(xmlsystemfile=\"system_full.xml\", pdbfile=\"finalsystem.pdb\", periodic=True)",BC.END)
 
-
-    print(BC.OKMAGENTA,"2. Define using separate forcefield XML files:\n",BC.END)
+    print(BC.OKMAGENTA,"\n2. Define using separate forcefield XML files:",BC.END)
     if extraxmlfile is None:
         print("omm = OpenMMTheory(xmlfiles=[{}, {}], pdbfile=\"finalsystem.pdb\", periodic=True)".format(xmlfile,waterxmlfile),BC.END)
     else:
-        print("omm = OpenMMTheory(xmlfiles=[{}, {}, {}], pdbfile=\"finalsystem.pdb\", periodic=True)".format(xmlfile,waterxmlfile,extraxmlfile),BC.END)
+        print("omm = OpenMMTheory(xmlfiles=[\"{}\", \"{}\", \"{}\"], pdbfile=\"finalsystem.pdb\", periodic=True)".format(xmlfile,waterxmlfile,extraxmlfile),BC.END)
     print_time_rel(module_init_time, modulename="OpenMM_Modeller", moduleindex=1)
     
     #Return openmmobject. Could be used directly
