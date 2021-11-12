@@ -655,8 +655,13 @@ class OpenMMTheory:
                 print("Missing distance value for some constraints. Can apply current-geometry distances if ASH\n"
                       "fragment has been provided")
                 if fragment is None:
-                    print("No ASH fragment provided to OpenMMTheory. Will exit.")
-                    exit()
+                    print("No ASH fragment provided to OpenMMTheory. Will check if pdbfile is defined and use coordinates from there")
+                    if pdbfile is None:
+                        print("No PDBfile present either. Either fragment or PDBfile containing \
+                            coordinates is required for constraint definition")
+                        exit()
+                    else:
+                        fragment=Fragment(pdbfile=pdbfile)
                 # Cleaning up constraint list. Adding distance if missing
                 constraints = clean_up_constraints_list(fragment=fragment, constraints=constraints)
             self.user_constraints = constraints
@@ -1892,7 +1897,7 @@ def OpenMM_Opt(fragment=None, theory=None, maxiter=1000, tolerance=1, enforcePer
 
 def OpenMM_Modeller(pdbfile=None, forcefield=None, xmlfile=None, waterxmlfile=None, watermodel=None, pH=7.0,
                     solvent_padding=10.0, solvent_boxdims=None, extraxmlfile=None, residue_variants=None,
-                    ionicstrength=0.1, iontype='K+'):
+                    ionicstrength=0.1, pos_iontype='Na+', neg_iontype='Cl-'):
     module_init_time = time.time()
     print_line_with_mainheader("OpenMM Modeller")
     try:
@@ -1909,7 +1914,11 @@ def OpenMM_Modeller(pdbfile=None, forcefield=None, xmlfile=None, waterxmlfile=No
         import pdbfixer
     except ImportError:
         print("Problem importing pdbfixer. Install first via conda:")
-        print("'conda install -c conda-forge pdbfixer'")
+        print("conda install -c conda-forge pdbfixer")
+        exit()
+
+    if pdbfile == None:
+        print("You must provide a pdbfile= keyword argument")
         exit()
 
     def write_pdbfile_openMM(topology, positions, filename):
@@ -1948,6 +1957,7 @@ def OpenMM_Modeller(pdbfile=None, forcefield=None, xmlfile=None, waterxmlfile=No
         elif forcefield == 'CHARMM36':
             xmlfile = "charmm36.xml"
             # Using specific CHARMM36 version of TIP3P
+            watermodel="tip3p"
             waterxmlfile = "charmm36/water.xml"
         elif forcefield == 'CHARMM2013':
             xmlfile = "charmm_polar_2013.xml"
@@ -1970,10 +1980,14 @@ def OpenMM_Modeller(pdbfile=None, forcefield=None, xmlfile=None, waterxmlfile=No
     print("User-provided dictionary of residue_variants:", residue_variants)
     # Define a forcefield
     if extraxmlfile is None:
-        forcefield = openmm_app.forcefield.ForceField([xmlfile, waterxmlfile])
+        forcefield = openmm_app.forcefield.ForceField(xmlfile, waterxmlfile)
     else:
         print("Using extra XML file:", extraxmlfile)
-        forcefield = openmm_app.forcefield.ForceField([xmlfile, waterxmlfile, extraxmlfile])
+        #Checking if file exists first
+        if os.path.isfile(extraxmlfile) is not True:
+            print(BC.FAIL,"File {} can not be found. Exiting.".format(extraxmlfile),BC.END)
+            exit()
+        forcefield = openmm_app.forcefield.ForceField(xmlfile, waterxmlfile, extraxmlfile)
 
     # Fix basic mistakes in PDB by PDBFixer
     # This will e.g. fix bad terminii
@@ -2000,7 +2014,8 @@ def OpenMM_Modeller(pdbfile=None, forcefield=None, xmlfile=None, waterxmlfile=No
     modeller = openmm_app.Modeller(pdb.topology, pdb.positions)
     numresidues = modeller.topology.getNumResidues()
     print("Modeller topology has {} residues.".format(numresidues))
-
+    print(BC.FAIL,"TODO: WRITE OUT ALL RESIDUE STATES HERE",BC.END)
+    openmm_app.PDBFile.writeFile(modeller.topology, modeller.positions, open('system_afterfixes2.pdb', 'w'))
     # User provided dictionary of special residues e.g residue_variants={0:'LYN', 17:'CYX', 18:'ASH', 19:'HIE' }
     # Now creating list of all residues [None,None,None...] with added changes
     residue_states = [None for _ in range(0, numresidues)]
@@ -2008,10 +2023,12 @@ def OpenMM_Modeller(pdbfile=None, forcefield=None, xmlfile=None, waterxmlfile=No
         for resid, newstate in residue_variants.items():
             residue_states[resid] = newstate
 
+    print("residue_states:", residue_states)
     # Adding hydrogens.
     # This is were missing residue/atom errors will come
     print("")
     print("Adding hydrogens for pH:", pH)
+    print("Warning: OpenMM Modeller will fail in this step if residue information is missing")
     modeller.addHydrogens(forcefield, pH=pH, variants=residue_states)
     # try:
     #    modeller.addHydrogens(forcefield, pH=pH, variants=residue_variants)
@@ -2037,18 +2054,20 @@ def OpenMM_Modeller(pdbfile=None, forcefield=None, xmlfile=None, waterxmlfile=No
     print("Adding solvent, watermodel:", watermodel)
     if solvent_boxdims is not None:
         print("Solvent boxdimension provided: {} Å".format(solvent_boxdims))
-        modeller.addSolvent(forcefield, boxSize=openmm.Vec3(solvent_boxdims[0], solvent_boxdims[1],
+        modeller.addSolvent(forcefield, neutralize=False, boxSize=openmm.Vec3(solvent_boxdims[0], solvent_boxdims[1],
                                                             solvent_boxdims[2]) * openmm_unit.angstrom)
     else:
         print("Using solvent padding (solvent_padding=X keyword): {} Å".format(solvent_padding))
-        modeller.addSolvent(forcefield, padding=solvent_padding * openmm_unit.angstrom, model=watermodel)
+        modeller.addSolvent(forcefield, neutralize=False, padding=solvent_padding * openmm_unit.angstrom, model=watermodel)
     write_pdbfile_openMM(modeller.topology, modeller.positions, "system_aftersolvent.pdb")
     print_systemsize()
 
     # Ions
-    print("Adding ionic strength: {} using ions {}".format(ionicstrength, iontype))
-    modeller.addSolvent(forcefield, ionicStrength=ionicstrength * openmm_unit.molar, positiveIon=iontype)
+    print("Adding ionic strength: {} M, using ions: {} and {}".format(ionicstrength, pos_iontype, neg_iontype))
+    modeller.addSolvent(forcefield, neutralize=True, positiveIon=pos_iontype, negativeIon=neg_iontype, 
+        ionicStrength=ionicstrength * openmm_unit.molar)
     write_pdbfile_openMM(modeller.topology, modeller.positions, "system_afterions.pdb")
+    write_pdbfile_openMM(modeller.topology, modeller.positions, "finalsystem.pdb")
     print_systemsize()
 
     # Create ASH fragment
@@ -2056,9 +2075,51 @@ def OpenMM_Modeller(pdbfile=None, forcefield=None, xmlfile=None, waterxmlfile=No
     # Write to disk
     fragment.print_system(filename="fragment.ygg")
     fragment.write_xyzfile(xyzfilename="fragment.xyz")
+
+    print("OpenMM_Modeller used the following XML-files to define system:")
+    print("General forcefield XML file:", xmlfile)
+    print("Solvent forcefield XML file:", waterxmlfile)
+    print("Extra forcefield XML file:", extraxmlfile)
+
+    #Creating new OpenMM object from forcefield so that we can write out system XMLfile
+    print("Creating temporary OpenMMTheory object")
+    openmmobject =OpenMMTheory(platform='CPU', Modeller=True, forcefield=forcefield, 
+                        topology=modeller.topology, pdbfile=None, periodic=True,
+                        autoconstraints='HBonds', rigidwater=True)
+    #Write out System XMLfile    
+    systemxmlfile="system_full.xml"
+
+    serialized_system = openmm.XmlSerializer.serialize(openmmobject.system)
+    with open(systemxmlfile, 'w') as f:
+        f.write(serialized_system)
+    
+    print("\n\nFiles written to disk:")
+    print("system_afterfixes.pdb")
+    print("system_afterfixes2.pdb")
+    print("system_afterH.pdb")
+    print("system_aftersolvent.pdb")
+    print("system_afterions.pdb and finalsystem.pdb (same)")
+    print("\nFinal files:")
+    print("finalsystem.pdb  (PDB file)")
+    print("finalsystem.ygg  (ASH fragment file)")
+    print("finalsystem.xyz   (XYZ coordinate file)")
+    print("{}   (System XML file)".format(systemxmlfile))
+    print(BC.OKGREEN,"\n\n OpenMM_Modeller done! System has been fully set up\n",BC.END)
+    print("To use this system setup to define a future OpenMMTheory object for this system you can either do:\n")
+    print(BC.OKMAGENTA,"1. Use full system XML-file:\n",BC.END, \
+        "omm = OpenMMTheory(xmlsystemfile=\"system_full.xml\", pdbfile=\"finalsystem.pdb\", periodic=True)",BC.END)
+
+    print(BC.OKMAGENTA,"\n2. Define using separate forcefield XML files:",BC.END)
+    if extraxmlfile is None:
+        print("omm = OpenMMTheory(xmlfiles=[{}, {}], pdbfile=\"finalsystem.pdb\", periodic=True)".format(xmlfile,waterxmlfile),BC.END)
+    else:
+        print("omm = OpenMMTheory(xmlfiles=[\"{}\", \"{}\", \"{}\"], pdbfile=\"finalsystem.pdb\", periodic=True)".format(xmlfile,waterxmlfile,extraxmlfile),BC.END)
     print_time_rel(module_init_time, modulename="OpenMM_Modeller", moduleindex=1)
+    
+    #Return openmmobject. Could be used directly
+    return openmmobject
     # Return forcefield object,  topology object and ASH fragment
-    return forcefield, modeller.topology, fragment
+    #return forcefield, modeller.topology, fragment
 
 
 def MDtraj_import_():
