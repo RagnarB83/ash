@@ -2902,6 +2902,9 @@ class OpenMM_MDclass:
         except FileNotFoundError:
             pass
 
+        #Make sure file associated with StateDataReporter is open
+        if self.datafilename is not None:
+            self.dataoutputoption = open(self.datafilename,'a')
 
         # Setting coordinates of OpenMM object from current fragment.coords
         self.openmmobject.set_positions(self.positions)
