@@ -2135,12 +2135,22 @@ def MDtraj_import_():
 # anchor_molecules. Use if automatic guess fails
 def MDtraj_imagetraj(trajectory, pdbtopology, format='DCD', unitcell_lengths=None, unitcell_angles=None,
                      solute_anchor=None):
+    #Trajectory basename
     traj_basename = os.path.splitext(trajectory)[0]
+    #PDB-file basename
+    pdb_basename = os.path.splitext(pdbtopology)[0]
+    
+    #Import mdtraj library
     mdtraj = MDtraj_import_()
 
-    # Load traj
+    # Load trajectory
     print("Loading trajecory using mdtraj.")
     traj = mdtraj.load(trajectory, top=pdbtopology)
+
+    #Also load the pdbfile as a trajectory-snapshot (in addition to being topology)
+    pdbsnap = mdtraj.load(pdbtopology, top=pdbtopology)
+    pdbsnap_imaged = pdbsnap.image_molecules()
+
     numframes = len(traj._time)
     print("Found {} frames in trajectory.".format(numframes))
     print("PBC information in trajectory:")
@@ -2175,9 +2185,10 @@ def MDtraj_imagetraj(trajectory, pdbtopology, format='DCD', unitcell_lengths=Non
     else:
         print("Unknown trajectory format.")
 
+    #Save PDB-snapshot
+    pdbsnap_imaged.save(pdb_basename + '_imaged.pdb')
+    print("Saved reimaged PDB-file:", pdb_basename + '_imaged.pdb')
     #Return last frame as coords or ASH fragment ?
-    #print(imaged.__dict__)
-
     #Last frame coordinates as Angstrom
     lastframe=imaged[-1]._xyz[-1]*10
 
