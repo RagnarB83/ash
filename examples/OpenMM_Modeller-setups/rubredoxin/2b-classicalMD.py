@@ -13,7 +13,7 @@ bondconstraints=[[755,96],[755,136],[755,567],[755,607]]
 fragment=Fragment(pdbfile="finalsystem.pdb")
 
 #Creating new OpenMM object from OpenMM full system file
-omm = OpenMMTheory(xmlsystemfile="system_full.xml", pdbfile="finalsystem.pdb", periodic=True, platform='OpenCL', numcores=numcores,
+omm = OpenMMTheory(xmlsystemfile="system_full.xml", pdbfile="finalsystem.pdb", periodic=True, platform='CPU', numcores=numcores,
                     autoconstraints='HBonds', constraints=bondconstraints, rigidwater=True)
 
 #MM minimization for 100 steps
