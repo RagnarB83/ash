@@ -2105,11 +2105,11 @@ def OpenMM_Modeller(pdbfile=None, forcefield=None, xmlfile=None, waterxmlfile=No
     print("finalsystem.xyz   (XYZ coordinate file)")
     print("{}   (System XML file)".format(systemxmlfile))
     print(BC.OKGREEN,"\n\n OpenMM_Modeller done! System has been fully set up\n",BC.END)
-    print("To use this system setup to define a future OpenMMTheory object for this system you can either do:\n")
+    print("To use this system setup to define a future OpenMMTheory object you can either do:\n")
     print(BC.OKMAGENTA,"1. Use full system XML-file:\n",BC.END, \
-        "omm = OpenMMTheory(xmlsystemfile=\"system_full.xml\", pdbfile=\"finalsystem.pdb\", periodic=True)",BC.END)
+        "omm = OpenMMTheory(xmlsystemfile=\"system_full.xml\", pdbfile=\"finalsystem.pdb\", periodic=True)\n",BC.END)
 
-    print(BC.OKMAGENTA,"\n2. Define using separate forcefield XML files:",BC.END)
+    print(BC.OKMAGENTA,"2. Define using separate forcefield XML files:",BC.END)
     if extraxmlfile is None:
         print("omm = OpenMMTheory(xmlfiles=[{}, {}], pdbfile=\"finalsystem.pdb\", periodic=True)".format(xmlfile,waterxmlfile),BC.END)
     else:
