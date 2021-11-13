@@ -406,6 +406,8 @@ class OpenMMTheory:
             # forcefield = simtk.openmm.app.ForceField('amber14-all.xml', 'amber14/tip3pfb.xml')
             self.forcefield = openmm.app.ForceField(*xmlfiles)
 
+            #Defining some things. resids is used by actregiondefine
+            self.resids = [i.residue.index for i in self.topology.atoms()]
         # NOW CREATE SYSTEM UNLESS already created (xmlsystemfile)
         if self.system is None:
             # Periodic or non-periodic ystem
