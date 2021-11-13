@@ -988,7 +988,23 @@ def fullindex_to_qmindex(fullindex,qmatoms):
     return qmindex
 
 
-def actregiondefine(mmtheory=None, fragment=None, radius=None, originatom=None,shiftpar=50):
+#Grab resid column from PDB-fil
+# NOTE: Problem: what if we have repeating sequences of resids, additional chains or segments ?
+#TODO: this is 1-based indexing. Switch to 0-based indexing??
+def grab_resids_from_pdbfile(pdbfile):
+    resids=[]
+    with open(pdbfile) as f:
+        for line in f:
+            if 'ATOM' in line or 'HETATM' in line:
+                #Based on: https://cupnet.net/pdb-format/
+                resid_part=int(line[22:26].replace(" ",""))
+                resids.append(resid_part)
+    return resids
+
+#Define active region based on radius from an origin atom.
+#Requires fragment (for coordinates) and resids list inside OpenMMTheory object
+#TODO: Also allow PDBfile to grab resid information from?? Prettier since we don't have to create an OpenMMTheory object
+def actregiondefine(pdbfile=None, mmtheory=None, fragment=None, radius=None, originatom=None):
     """ActRegionDefine function
 
     Args:
@@ -996,27 +1012,49 @@ def actregiondefine(mmtheory=None, fragment=None, radius=None, originatom=None,s
         fragment ([Fragment]): ASH Fragment. Defaults to None.
         radius ([int]): Radius (in Angstrom). Defaults to None.
         originatom ([int]): Origin atom for radius. Defaults to None.
-        shiftpar (int): [description]. Defaults to 50.
 
     Returns:
         [type]: [description]
     """
-    if fragment == None or mmtheory == None or radius == None or originatom == None:
-        print("actregiondefine requires mmtheory, fragment, radius and originatom keyword arguments")
-        exit()
-
-    if mmtheory.__class__.__name__ == "NonBondedTheory":
-        print("MMtheory: NonBondedTheory currently not supported.")
-        exit()
-
     print_line_with_mainheader("ActregionDefine")
+
+    #Checking if proper information has been provided
+    if radius == None or originatom == None:
+        print("actregiondefine requires radius and originatom keyword arguments")
+        exit()
+    if pdbfile == None and fragment == None:
+        print("actregiondefine requires either fragment or pdbfile arguments (for coordinates)")
+        exit()
+    if pdbfile == None and mmtheory == None:
+        print("actregiondefine requires either pdbfile or mmtheory arguments (for residue topology information)")
+        exit()
+    #Creating fragment from pdbfile 
+    if fragment == None:
+        print("No ASH fragment provided. Creating ASH fragment from PDBfile")
+        fragment = Fragment(pdbfile=pdbfile, printlevel=1)
 
     print("Radius:", radius)
     print("Origin atom: {} ({})".format(originatom,fragment.elems[originatom]))
     print("Will find all atoms within {} Å from atom: {} ({})".format(radius,originatom,fragment.elems[originatom]))
     print("Will select all whole residues within region and export list")
-    print("shiftpar:", shiftpar)
-    print("mmtheory.resids:", mmtheory.resids)
+    if mmtheory != None:
+        if mmtheory.__class__.__name__ == "NonBondedTheory":
+            print("MMtheory: NonBondedTheory currently not supported.")
+            exit()
+        if not mmtheory.resids :
+            print(BC.FAIL,"mmtheory.resids list is empty! Something wrong with OpenMMTheory setup. Exiting",BC.END)
+            exit()
+        #Defining list of residue from OpenMMTheory object 
+        resids=mmtheory.resids
+    else:
+        #No mmtheory but PDB file should have been provided
+        #Defining resids list from PDB-file
+        #NOTE: Call grab_resids_from_pdbfile
+        resids = grab_resids_from_pdbfile()
+        print("Not ready yet")
+        exit()
+        exit()
+
     origincoords=fragment.coords[originatom]
     act_indices=[]
     
@@ -1028,19 +1066,21 @@ def actregiondefine(mmtheory=None, fragment=None, radius=None, originatom=None,s
             #print("DIST!!")
             #print("index:", index)
             #print("allc:", allc)
-            #print("mmtheory.resids len", len(mmtheory.resids))
-            resid_value=mmtheory.resids[index]
+            #Get residue ID for this atom index
+            resid_value=resids[index]
             #print("resid_value:", resid_value)
-            #Looping over nearby indices as current index and checking if same resid. Silly but should work well for shiftpar 35-3000 or so
-            for k in range(index-shiftpar,index+shiftpar):
-                #print("k:", k)
-                if mmtheory.resids[k] == resid_value:
+            #Get all residue members (atom indices)
+            resid_members = [i for i, x in enumerate(resids) if x==resid_value]
+            #print("resid_members:", resid_members)
+            #Adding to act_indices list unless already added
+            for k in resid_members:
+                if k not in act_indices:
                     act_indices.append(k)
+
     #Only unique and sorting:
     act_indices = np.unique(act_indices).tolist()
 
     #Print indices to output
-    print("act_indices:", act_indices)
     #Print indices to disk as file
     writelisttofile(act_indices, "active_atoms")
     #Print information on how to use

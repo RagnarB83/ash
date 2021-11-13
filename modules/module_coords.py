@@ -2836,7 +2836,7 @@ def add_atoms_to_system_CHARMM(fragment=None, added_atoms_coordstring=None, resg
 def getwaterconstraintslist(openmmtheoryobject=None, atomlist=None, watermodel='tip3p'):
     print("Inside getwaterconstraintslist")
     if openmmtheoryobject==None or atomlist==None:
-        print("getwaterconstraintslist requires openmmtheoryobject=None and atomlist= ")
+        print("getwaterconstraintslist requires openmmtheoryobject and atomlist to be set ")
         exit()
     if watermodel == 'tip3p' or watermodel == 'spc':
         #oxygenlabels = ['OT', 'OW', 'OWT3']
