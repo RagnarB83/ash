@@ -357,7 +357,15 @@ class OpenMMTheory:
             print("Reading system XML file:", xmlsystemfile)
             xmlsystemfileobj = open(xmlsystemfile).read()
             # Deserialize the XML text to create a System object.
+            print("Now defining OpenMM system using information in file")
+            print("Warning: file may contain hardcoded constraints that can not be overridden.")
             self.system = openmm.XmlSerializer.deserializeSystem(xmlsystemfileobj)
+            #self.forcefield = system_temp.forcefield
+            #NOTE: Big drawback of xmlsystemfile is that constraints have been hardcoded and can
+            #NOTE: we could remove all present constraints using: self.remove_all_constraints()
+            #NOTE: However, not sure how easy to enforce Hatom, rigidwater etc. constraints again without remaking system object
+            #NOTE: Maybe define system object using XmlSerializer, somehow create forcefield object from it.
+            #NOTE: Then recreate system below. Not sure if possible
 
             #TODO: set further properties of system here, e.g. PME parameters
             #otherwise system is not completely set
@@ -397,7 +405,6 @@ class OpenMMTheory:
             # Todo: support multiple xml file here
             # forcefield = simtk.openmm.app.ForceField('amber14-all.xml', 'amber14/tip3pfb.xml')
             self.forcefield = openmm.app.ForceField(*xmlfiles)
-
 
         # NOW CREATE SYSTEM UNLESS already created (xmlsystemfile)
         if self.system is None:
@@ -698,7 +705,7 @@ class OpenMMTheory:
 
 
         print("\nSystem constraints defined upon system creation:", self.system.getNumConstraints())
-        print("Use printlevel =>2 to see list of all constraints")
+        print("Use printlevel =>3 to see list of all constraints")
         if self.printlevel >= 3:
             for i in range(0, self.system.getNumConstraints()):
                 print("Defined constraints:", self.system.getConstraintParameters(i))
@@ -879,6 +886,15 @@ class OpenMMTheory:
             print("Adding bond constraint between atoms {} and {}. Distance value: {:.4f} Å".format(i, j, d))
             self.system.addConstraint(i, j, d * self.unit.angstroms)
 
+    #Remove all defined constraints in system
+    def remove_all_constraints(self):
+        todelete=[]
+        # Looping over all defined system constraints
+        for i in range(0, self.system.getNumConstraints()):
+            todelete.append(i)
+        for d in reversed(todelete):
+            self.system.removeConstraint(d)
+    #Remove specific constraints
     def remove_constraints(self, constraints):
         todelete = []
         # Looping over all defined system constraints
@@ -889,7 +905,6 @@ class OpenMMTheory:
                     todelete.append(i)
         for d in reversed(todelete):
             self.system.removeConstraint(d)
-
     #Remove constraints for selected atoms. For example: QM atoms in QM/MM MD
     def remove_constraints_for_atoms(self, atoms):
         print("Removing constraints in OpenMM object for atoms:", atoms)
@@ -1245,8 +1260,8 @@ class OpenMMTheory:
         print("Number of OpenMM system constraints defined:", defined_constraints)
 
         if self.autoconstraints != None or self.rigidwater==True:
-            print("OpenMM autoconstraints (HBonds,AllBonds,HAngles) in OpemmTheory are not compatible with OpenMMTheory.run()")
-            print("Please redefine OpenMMTheory object: autoconstraints=None, rigidwater=False")
+            print(BC.FAIL,"OpenMM autoconstraints (HBonds,AllBonds,HAngles) in OpemmTheory are not compatible with OpenMMTheory.run()", BC.END)
+            print(BC.WARNING,"Please redefine OpenMMTheory object: autoconstraints=None, rigidwater=False", BC.END)
             exit()
             
         if self.user_frozen_atoms or self.user_constraints or self.user_restraints:
@@ -1254,7 +1269,7 @@ class OpenMMTheory:
             print("Constraints must instead be defined inside the program that called OpenMMtheory.run(), e.g. geomeTRICOptimizer.")
             exit()
         if defined_constraints != 0:
-            print("OpenMM constraints not zero. Exiting.")
+            print(BC.FAIL,"OpenMM constraints not zero. Exiting.",BC.END)
             exit()
 
         print_time_rel(timeA, modulename="OpenMMTheory.run: constraints checking")
@@ -2802,6 +2817,7 @@ class OpenMM_MDclass:
                 os.remove(self.datafilename)
             except FileNotFoundError:
                 pass
+
             #Now doing open file object in append mode instead of just filename.
             #Just filename does not play nice when running simulation step by step
             #Future OpenMM update may do this automatically?
