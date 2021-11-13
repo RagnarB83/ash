@@ -191,15 +191,21 @@ class QMMMTheory:
 
             #Check if we need linkatoms by getting boundary atoms dict:
             blankline()
-            self.boundaryatoms = modules.module_coords.get_boundary_atoms(self.qmatoms, self.coords, self.elems, settings_ash.settings_dict["scale"], 
-                settings_ash.settings_dict["tol"], excludeboundaryatomlist=excludeboundaryatomlist, unusualboundary=unusualboundary)
+
+            #Update: Tolerance modification to make sure we definitely catch connected atoms and get QM-MM boundary right.
+            #Scale=1.0 and tol=0.1 fails for S-C bond in rubredoxin from a classical MD run
+            #Bumping up a bit here
+            conn_scale=settings_ash.settings_dict["scale"]
+            conn_tolerance=settings_ash.settings_dict["tol"]+0.1
+            self.boundaryatoms = modules.module_coords.get_boundary_atoms(self.qmatoms, self.coords, self.elems, conn_scale, 
+                conn_tolerance, excludeboundaryatomlist=excludeboundaryatomlist, unusualboundary=unusualboundary)
             if len(self.boundaryatoms) >0:
                 print("Found covalent QM-MM boundary. Linkatoms option set to True")
                 print("Boundaryatoms (QM:MM pairs):", self.boundaryatoms)
+                print("Note: used connectivity settings, scale={} and tol={} to determine boundary.".format(conn_scale,conn_tolerance))
                 self.linkatoms=True
-                
                 #Get MM boundary information. Stored as self.MMboundarydict
-                self.get_MMboundary()
+                self.get_MMboundary(conn_scale,conn_tolerance)
             else:
                 print("No covalent QM-MM boundary. Linkatoms option set to False")
                 self.linkatoms=False
@@ -261,13 +267,13 @@ class QMMMTheory:
             print("length of self.charges_qmregionzeroed :", len(self.charges_qmregionzeroed))
         print_time_rel(module_init_time, modulename='QM/MM object creation', moduleindex=2)
     #From QM1:MM1 boundary dict, get MM1:MMx boundary dict (atoms connected to MM1)
-    def get_MMboundary(self):
+    def get_MMboundary(self,scale,tol):
         timeA=time.time()
         # if boundarydict is not empty we need to zero MM1 charge and distribute charge from MM1 atom to MM2,MM3,MM4
         #Creating dictionary for each MM1 atom and its connected atoms: MM2-4
         self.MMboundarydict={}
         for (QM1atom,MM1atom) in self.boundaryatoms.items():
-            connatoms = modules.module_coords.get_connected_atoms(self.coords, self.elems, settings_ash.settings_dict["scale"], settings_ash.settings_dict["tol"], MM1atom)
+            connatoms = modules.module_coords.get_connected_atoms(self.coords, self.elems, scale,tol, MM1atom)
             #Deleting QM-atom from connatoms list
             connatoms.remove(QM1atom)
             self.MMboundarydict[MM1atom] = connatoms
