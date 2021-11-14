@@ -10,7 +10,7 @@ import settings_solvation
 import settings_ash
 from functions.functions_general import blankline,reverse_lines, print_time_rel,BC, print_line_with_mainheader
 import modules.module_coords
-from modules.module_coords import elemstonuccharges
+from modules.module_coords import elemstonuccharges, check_multiplicity
 
 
 #Now supports 2 runmodes: 'library' (fast Python C-API) or 'inputfile'
@@ -171,8 +171,10 @@ class xTBTheory:
 
         if self.printlevel >= 2:
             print("Creating inputfile:", self.filename+'.xyz')
-
+        #Check if charge/mult set
         self.check_charge_mult()
+        #Check if mult is sensible
+        check_multiplicity(elems,self.charge,self.mult)
         if self.runmode=='inputfile':
             #Write xyz_file
             modules.module_coords.write_xyzfile(elems, current_coords, self.filename, printlevel=self.printlevel)
@@ -213,9 +215,12 @@ class xTBTheory:
         print_time_rel(module_init_time, modulename='xtB Opt-run', moduleindex=2)
         return 
 
+
     def run(self, current_coords=None, current_MM_coords=None, MMcharges=None, qm_elems=None,
                 elems=None, Grad=False, PC=False, numcores=None, label=None):
         module_init_time=time.time()
+
+
         if MMcharges is None:
             MMcharges=[]
 
@@ -238,7 +243,11 @@ class xTBTheory:
             else:
                 qm_elems = elems
 
-        self.check_charge_mult()
+        #Since xTB will stupidly run even when number of unp. electrons and num-electrons don't match
+        #we wil this little test here
+        timeA=time.time()
+        check_multiplicity(qm_elems,self.charge,self.mult)
+        print_time_rel(timeA, modulename='check_multiplicity', moduleindex=2)
         if self.runmode=='inputfile':
             if self.printlevel >=2:
                 print("Using inputfile-based xTB interface")
