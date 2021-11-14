@@ -2023,47 +2023,76 @@ def OpenMM_Modeller(pdbfile=None, forcefield=None, xmlfile=None, waterxmlfile=No
 
     openmm_app.PDBFile.writeFile(fixer.topology, fixer.positions, open('system_afterfixes.pdb', 'w'))
     print("PDBFixer done.")
+    print(BC.WARNING,"Warning: PDBFixer can create unreasonable orientations of residues if residues are missing or multiple thermal copies were present.",BC.END)
     print("Wrote PDBfile: system_afterfixes.pdb")
 
     # Load fixed PDB-file and create Modeller object
     pdb = openmm_app.PDBFile("system_afterfixes.pdb")
-    print("Loading Modeller.")
+    print("\n\nNow loading Modeller.")
     modeller = openmm_app.Modeller(pdb.topology, pdb.positions)
+    modeller_numatoms = modeller.topology.getNumAtoms()
     numresidues = modeller.topology.getNumResidues()
+    numchains = modeller.topology.getNumChains()
+    modeller_atoms=list(modeller.topology.atoms())
+    modeller_bonds=list(modeller.topology.bonds())
+    modeller_chains=list(modeller.topology.chains())
+    modeller_residues=list(modeller.topology.residues())
     print("Modeller topology has {} residues.".format(numresidues))
-    print(BC.FAIL,"TODO: WRITE OUT ALL RESIDUE STATES HERE",BC.END)
-    openmm_app.PDBFile.writeFile(modeller.topology, modeller.positions, open('system_afterfixes2.pdb', 'w'))
-    # User provided dictionary of special residues e.g residue_variants={0:'LYN', 17:'CYX', 18:'ASH', 19:'HIE' }
-    # Now creating list of all residues [None,None,None...] with added changes
-    residue_states = [None for _ in range(0, numresidues)]
-    if residue_variants is not None:
-        for resid, newstate in residue_variants.items():
-            residue_states[resid] = newstate
+    print("Modeller topology has {} chains.".format(numchains))
+    print("Modeller topology has {} atoms.".format(modeller_numatoms))
+    print("Chains:", modeller_chains)
+    #Getting residues for each chain
+    for chain_x in modeller_chains:
+        print("This is chain {}, it has {} residues and they are: {}\n".format(chain_x.index,len(chain_x._residues),chain_x._residues))
+    print("\n")
 
-    print("residue_states:", residue_states)
-    # Adding hydrogens.
+    #PRINTING big table of residues
+    print("User defined residue variants per chain:")
+    for rv_key,rv_vals in residue_variants.items():
+        print("Chain {} : {}".format(rv_key,rv_vals))
+    print("\nMODELLER TOPOLOGY - RESIDUES TABLE\n")
+    print("  {:<12}{:<13}{:<13}{:<13}{:<13}       {}".format("ASH-resid","Resname","Chain-index", "Chain-name", "ResID-in-chain","User-modification"))
+    print("-"*100)
+    current_chainindex=0
+    #Also using loop to get residue_states list that we pass on to modeller.addHydrogens
+    residue_states=[]
+    for each_residue in modeller_residues:
+        #Division line between chains
+        if each_residue.chain.index != current_chainindex:
+            print("--"*30)
+        resid=each_residue.index
+        resid_in_chain=int(each_residue.id)
+        resname=each_residue.name
+        chain=each_residue.chain
+        current_chainindex=each_residue.chain.index
+        if chain.id in residue_variants:
+            if resid_in_chain in residue_variants[chain.id]:
+                residue_states.append(residue_variants[chain.id][resid_in_chain])
+                FLAGLABEL="-- This residue will be changed to: {} --".format(residue_variants[chain.id][resid_in_chain])
+            else:
+                residue_states.append(None) #Note: we add None since we don't want to influence addHydrogens 
+                FLAGLABEL=""
+        else:
+            residue_states.append(None)  #Note: we add None since we don't want to influence addHydrogens
+            FLAGLABEL=""
+
+        print("  {:<12}{:<13}{:<13}{:<13}{:<13}       {}".format(resid,resname,chain.index,chain.id, resid_in_chain,FLAGLABEL))
+
+    openmm_app.PDBFile.writeFile(modeller.topology, modeller.positions, open('system_afterfixes2.pdb', 'w'))
+
+
+    #NOTE: to be deleted
+    if len(residue_states) != numresidues:
+        print("residue_states != numresidues. Something went wrong")
+        exit()
+
+    # Adding hydrogens feeding in residue_states
     # This is were missing residue/atom errors will come
     print("")
     print("Adding hydrogens for pH:", pH)
+    print("Providing full list of residue_states", residue_states)
     print("Warning: OpenMM Modeller will fail in this step if residue information is missing")
     modeller.addHydrogens(forcefield, pH=pH, variants=residue_states)
-    # try:
-    #    modeller.addHydrogens(forcefield, pH=pH, variants=residue_variants)
-    # except ValueError as err:
-    #    traceback.print_tb(err.__traceback__)
-    #    print("")
-    #    print(BC.FAIL,"ASH: OpenMM exited with ValueError. Probably means that you are missing forcefield terms or you provided wrong residue info.")
-    #    print("Please provide an extraxmlfile argument to OpenMM_Modeller or fix the residue info", BC.END)
-    #    exit()
-    # except KeyError as err:
-    #    traceback.print_tb(err.__traceback__)
-    #    print("ASH: Some key error")
-    #    exit()
-    # except Exception as err:
-    #    traceback.print_tb(err.__traceback__)
-    #    print("ASH: OpenMM failed with some error. Read the error message above carefully.")
-    #    exit()
-
     write_pdbfile_openMM(modeller.topology, modeller.positions, "system_afterH.pdb")
     print_systemsize()
 
