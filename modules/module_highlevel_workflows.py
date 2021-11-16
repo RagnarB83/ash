@@ -2041,11 +2041,32 @@ end
 
 
 def choose_inputlines_from_basisfamily(cardinals,basisfamily,ccsdtkeyword,auxbasis,pnokeyword,scfsetting,extrainputkeyword):
+
     if cardinals == [2,3] and basisfamily=="def2":
         #Auxiliary basis set.
         auxbasis='def2-QZVPP/C'
         ccsdt_1_line="! {} def2-SVP {} {} {} {}".format(ccsdtkeyword, auxbasis, pnokeyword, scfsetting,extrainputkeyword)
         ccsdt_2_line="! {} def2-TZVPP {} {} {} {}".format(ccsdtkeyword, auxbasis, pnokeyword, scfsetting,extrainputkeyword)
+    elif cardinals == [2,3] and basisfamily=="def2-dk":
+        #Auxiliary basis set.
+        auxbasis='def2-QZVPP/C'
+        ccsdt_1_line="! {} DKH-def2-SVP {} {} {} {}".format(ccsdtkeyword, auxbasis, pnokeyword, scfsetting,extrainputkeyword)
+        ccsdt_2_line="! {} DKH-def2-TZVPP {} {} {} {}".format(ccsdtkeyword, auxbasis, pnokeyword, scfsetting,extrainputkeyword)
+    elif cardinals == [3,4] and basisfamily=="def2-dk":
+        #Auxiliary basis set.
+        auxbasis='def2-QZVPP/C'
+        ccsdt_1_line="! {} DKH-def2-TZVPP {} {} {} {}".format(ccsdtkeyword, auxbasis, pnokeyword, scfsetting,extrainputkeyword)
+        ccsdt_2_line="! {} DKH-def2-QZVPP {} {} {} {}".format(ccsdtkeyword, auxbasis, pnokeyword, scfsetting,extrainputkeyword)
+    elif cardinals == [2,3] and basisfamily=="def2-zora":
+        #Auxiliary basis set.
+        auxbasis='def2-QZVPP/C'
+        ccsdt_1_line="! {} ZORA-def2-SVP {} {} {} {}".format(ccsdtkeyword, auxbasis, pnokeyword, scfsetting,extrainputkeyword)
+        ccsdt_2_line="! {} ZORA-def2-TZVPP {} {} {} {}".format(ccsdtkeyword, auxbasis, pnokeyword, scfsetting,extrainputkeyword)
+    elif cardinals == [3,4] and basisfamily=="def2-zora":
+        #Auxiliary basis set.
+        auxbasis='def2-QZVPP/C'
+        ccsdt_1_line="! {} ZORA-def2-TZVPP {} {} {} {}".format(ccsdtkeyword, auxbasis, pnokeyword, scfsetting,extrainputkeyword)
+        ccsdt_2_line="! {} ZORA-def2-QZVPP {} {} {} {}".format(ccsdtkeyword, auxbasis, pnokeyword, scfsetting,extrainputkeyword)
     elif cardinals == [3,4] and basisfamily=="def2":
         #Auxiliary basis set.
         auxbasis='def2-QZVPP/C'
