@@ -189,7 +189,11 @@ end
     ############################################################
     if fragment.numatoms == 1:
         print("Fragment is an atom. Looking up atomic spin-orbit splitting value")
-        E_SO = dictionaries_lists.atom_spinorbitsplittings[fragment.elems[0]] / constants.hartocm
+        try:
+            E_SO = dictionaries_lists.atom_spinorbitsplittings[fragment.elems[0]] / constants.hartocm
+        except KeyError:
+            print("Found no SO value for atom. Will set to 0.0 and continue")
+            E_SO = 0.0
     else :
         E_SO = 0.0
 
@@ -416,7 +420,11 @@ end
     ############################################################
     if fragment.numatoms == 1:
         print("Fragment is an atom. Looking up atomic spin-orbit splitting value")
-        E_SO = dictionaries_lists.atom_spinorbitsplittings[fragment.elems[0]] / constants.hartocm
+        try:
+            E_SO = dictionaries_lists.atom_spinorbitsplittings[fragment.elems[0]] / constants.hartocm
+        except KeyError:
+            print("Found no SO value for atom. Will set to 0.0 and continue")
+            E_SO = 0.0
     else :
         E_SO = 0.0
 
@@ -639,7 +647,11 @@ end
     ############################################################
     if fragment.numatoms == 1:
         print("Fragment is an atom. Looking up atomic spin-orbit splitting value")
-        E_SO = dictionaries_lists.atom_spinorbitsplittings[fragment.elems[0]] / constants.hartocm
+        try:
+            E_SO = dictionaries_lists.atom_spinorbitsplittings[fragment.elems[0]] / constants.hartocm
+        except KeyError:
+            print("Found no SO value for atom. Will set to 0.0 and continue")
+            E_SO = 0.0
     else :
         E_SO = 0.0
 
@@ -845,7 +857,11 @@ end
     ############################################################
     if fragment.numatoms == 1:
         print("Fragment is an atom. Looking up atomic spin-orbit splitting value")
-        E_SO = dictionaries_lists.atom_spinorbitsplittings[fragment.elems[0]] / constants.hartocm
+        try:
+            E_SO = dictionaries_lists.atom_spinorbitsplittings[fragment.elems[0]] / constants.hartocm
+        except KeyError:
+            print("Found no SO value for atom. Will set to 0.0 and continue")
+            E_SO = 0.0
     else :
         E_SO = 0.0
 
@@ -1038,7 +1054,11 @@ end
     ############################################################
     if fragment.numatoms == 1:
         print("Fragment is an atom. Looking up atomic spin-orbit splitting value")
-        E_SO = dictionaries_lists.atom_spinorbitsplittings[fragment.elems[0]] / constants.hartocm
+        try:
+            E_SO = dictionaries_lists.atom_spinorbitsplittings[fragment.elems[0]] / constants.hartocm
+        except KeyError:
+            print("Found no SO value for atom. Will set to 0.0 and continue")
+            E_SO = 0.0
     else :
         E_SO = 0.0
 
@@ -1246,7 +1266,11 @@ end
     ############################################################
     if fragment.numatoms == 1:
         print("Fragment is an atom. Looking up atomic spin-orbit splitting value")
-        E_SO = dictionaries_lists.atom_spinorbitsplittings[fragment.elems[0]] / constants.hartocm
+        try:
+            E_SO = dictionaries_lists.atom_spinorbitsplittings[fragment.elems[0]] / constants.hartocm
+        except KeyError:
+            print("Found no SO value for atom. Will set to 0.0 and continue")
+            E_SO = 0.0
     else :
         E_SO = 0.0
 
@@ -1281,7 +1305,7 @@ end
 
 #Flexible CCSD(T)/CBS protocol. Simple. No core-correlation, scalar relativistic or spin-orbit coupling for now.
 # Regular CC, DLPNO-CC, DLPNO-CC with PNO extrapolation etc.
-def CC_CBS(cardinals = [2,3], basisfamily="def2", fragment=None, charge=None, orcadir=None, mult=None, stabilityanalysis=False, numcores=1, CVSR=False, CVbasis="W1-mtsmall", F12=False,
+def CC_CBS(cardinals = [2,3], basisfamily="def2", relativity=None, fragment=None, charge=None, orcadir=None, mult=None, stabilityanalysis=False, numcores=1, CVSR=False, CVbasis="W1-mtsmall", F12=False,
                         DLPNO=False, memory=5000, pnosetting='NormalPNO', pnoextrapolation=[5,6], T1=False, scfsetting='TightSCF', extrainputkeyword='', extrablocks='', **kwargs):
     """
     WORK IN PROGRESS
@@ -1349,6 +1373,7 @@ def CC_CBS(cardinals = [2,3], basisfamily="def2", fragment=None, charge=None, or
             print("pnoextrapolation:", pnoextrapolation)
         print("T1 : ", T1)
     print("SCF setting: ", scfsetting)
+    print("Relativity: ", relativity)
     print("Stability analysis:", stabilityanalysis)
     print("Core-Valence Scalar Relativistic correction (CVSR): ", CVSR)
     print("")
@@ -1424,6 +1449,44 @@ end
         else:
             ccsdtkeyword='CCSD(T)'
 
+
+    #SCALAR RELATIVITY HAMILTONIAN AND SELECT CORRELATED AUX BASIS
+    #TODO: Handle RIJK/RIJCOSX and AUXBASIS FOR HF/DFT reference also
+    if relativity == None:
+        extrainputkeyword = extrainputkeyword + '  '
+         #Auxiliary basis set. 1 big one for now
+         #TODO: look more into
+        if 'def2' in basisfamily:
+            auxbasis='def2-QZVPP/C'
+        else:
+            if 'aug' in basisfamily:
+                auxbasis='aug-cc-pV5Z/C'                
+            else:
+                auxbasis='cc-pV5Z/C'
+    elif relativity == 'DKH':
+        extrainputkeyword = extrainputkeyword + ' DKH '
+        if 'def2' in basisfamily:
+            auxbasis='def2-QZVPP/C'
+        else:
+            if 'aug' in basisfamily:
+                auxbasis='aug-cc-pV5Z/C'                
+            else:
+                auxbasis='cc-pV5Z/C'
+    elif relativity == 'ZORA':
+        extrainputkeyword = extrainputkeyword + ' ZORA '
+        auxbasis='cc-pV5Z/C'
+        if 'def2' in basisfamily:
+            auxbasis='def2-QZVPP/C'
+        else:
+            if 'aug' in basisfamily:
+                auxbasis='aug-cc-pV5Z/C'                
+            else:
+                auxbasis='cc-pV5Z/C'
+    elif relativity == 'X2C':
+        extrainputkeyword = extrainputkeyword + ' X2C '
+        auxbasis='cc-pV5Z/C'
+        print("Not ready")
+        exit()
 
     ############################################################s
     #Frozen-core CCSD(T) calculations defined here
@@ -1527,10 +1590,12 @@ end
     ############################################################
     if fragment.numatoms == 1:
         print("Fragment is an atom. Looking up atomic spin-orbit splitting value")
-        E_SO = dictionaries_lists.atom_spinorbitsplittings[fragment.elems[0]] / constants.hartocm
-        print("Spin-orbit correction (E_SO):", E_SO)
+        try:
+            E_SO = dictionaries_lists.atom_spinorbitsplittings[fragment.elems[0]] / constants.hartocm
+        except KeyError:
+            print("Found no SO value for atom. Will set to 0.0 and continue")
+            E_SO = 0.0
     else :
-        print("No atomic spin-orbit coupling. Spin-orbit coupling energy set to zero.")
         E_SO = 0.0
     ############################################################
     #FINAL RESULT
@@ -1770,10 +1835,12 @@ end
     ############################################################
     if fragment.numatoms == 1:
         print("Fragment is an atom. Looking up atomic spin-orbit splitting value")
-        E_SO = dictionaries_lists.atom_spinorbitsplittings[fragment.elems[0]] / constants.hartocm
-        print("Spin-orbit correction (E_SO):", E_SO)
+        try:
+            E_SO = dictionaries_lists.atom_spinorbitsplittings[fragment.elems[0]] / constants.hartocm
+        except KeyError:
+            print("Found no SO value for atom. Will set to 0.0 and continue")
+            E_SO = 0.0
     else :
-        print("No atomic spin-orbit coupling. Spin-orbit coupling energy set to zero.")
         E_SO = 0.0
 
     
@@ -1994,10 +2061,12 @@ end
     ############################################################
     if fragment.numatoms == 1:
         print("Fragment is an atom. Looking up atomic spin-orbit splitting value")
-        E_SO = dictionaries_lists.atom_spinorbitsplittings[fragment.elems[0]] / constants.hartocm
-        print("Spin-orbit correction (E_SO):", E_SO)
+        try:
+            E_SO = dictionaries_lists.atom_spinorbitsplittings[fragment.elems[0]] / constants.hartocm
+        except KeyError:
+            print("Found no SO value for atom. Will set to 0.0 and continue")
+            E_SO = 0.0
     else :
-        print("No atomic spin-orbit coupling. Spin-orbit coupling energy set to zero.")
         E_SO = 0.0
     
     ############################################################
