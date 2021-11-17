@@ -2547,7 +2547,8 @@ def Extrapolation_twopoint(scf_energies, corr_energies, cardinals, basis_family,
         extrap_dict_key='pc_34'
     else:
         print("WARNING: Unknown basis set family")
-        print("Using default settings: alpha: {} , beta: {}".format(extrap_dict_key['default'][0], extrap_dict_key['default'][1]))
+        extrap_dict_key='default'
+        print("Using default settings: alpha: {} , beta: {}".format(extrapolation_parameters_dict[extrap_dict_key][0], extrapolation_parameters_dict[extrap_dict_key][1]))
         extrap_dict_key='default'
     
     #Override settings if desired
