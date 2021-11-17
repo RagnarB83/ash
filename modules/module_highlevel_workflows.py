@@ -1309,7 +1309,7 @@ end
 def CC_CBS(cardinals = [2,3], basisfamily="def2", relativity=None, fragment=None, charge=None, orcadir=None, mult=None, 
            stabilityanalysis=False, numcores=1, CVSR=False, CVbasis="W1-mtsmall", F12=False, DFTreference=None,
                         DLPNO=False, memory=5000, pnosetting='NormalPNO', pnoextrapolation=[5,6], T1=False, scfsetting='TightSCF',
-                        alpha=None, beta=None
+                        alpha=None, beta=None,
                         extrainputkeyword='', extrablocks='', **kwargs):
     """
     WORK IN PROGRESS
