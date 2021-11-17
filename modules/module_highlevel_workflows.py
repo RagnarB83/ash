@@ -1281,7 +1281,7 @@ end
 
 #Flexible CCSD(T)/CBS protocol. Simple. No core-correlation, scalar relativistic or spin-orbit coupling for now.
 # Regular CC, DLPNO-CC, DLPNO-CC with PNO extrapolation etc.
-def CC_CBS(cardinals = [2,3], basisfamily="def2", fragment=None, charge=None, orcadir=None, mult=None, stabilityanalysis=False, numcores=1, CVSR=False, CVbasis="W1-mtsmall", F12=False,
+def CC_CBS(cardinals = [2,3], basisfamily="def2", relativity=None, fragment=None, charge=None, orcadir=None, mult=None, stabilityanalysis=False, numcores=1, CVSR=False, CVbasis="W1-mtsmall", F12=False,
                         DLPNO=False, memory=5000, pnosetting='NormalPNO', pnoextrapolation=[5,6], T1=False, scfsetting='TightSCF', extrainputkeyword='', extrablocks='', **kwargs):
     """
     WORK IN PROGRESS
@@ -1349,6 +1349,7 @@ def CC_CBS(cardinals = [2,3], basisfamily="def2", fragment=None, charge=None, or
             print("pnoextrapolation:", pnoextrapolation)
         print("T1 : ", T1)
     print("SCF setting: ", scfsetting)
+    print("Relativity: ", relativity)
     print("Stability analysis:", stabilityanalysis)
     print("Core-Valence Scalar Relativistic correction (CVSR): ", CVSR)
     print("")
@@ -1424,6 +1425,44 @@ end
         else:
             ccsdtkeyword='CCSD(T)'
 
+
+    #SCALAR RELATIVITY HAMILTONIAN AND SELECT CORRELATED AUX BASIS
+    #TODO: Handle RIJK/RIJCOSX and AUXBASIS FOR HF/DFT reference also
+    if relativity == None:
+        extrainputkeyword = extrainputkeyword + '  '
+         #Auxiliary basis set. 1 big one for now
+         #TODO: look more into
+        if 'def2' in basisfamily:
+            auxbasis='def2-QZVPP/C'
+        else:
+            if 'aug' in basisfamily:
+                auxbasis='aug-cc-pV5Z/C'                
+            else:
+                auxbasis='cc-pV5Z/C'
+    elif relativity == 'DKH':
+        extrainputkeyword = extrainputkeyword + ' DKH '
+        if 'def2' in basisfamily:
+            auxbasis='def2-QZVPP/C'
+        else:
+            if 'aug' in basisfamily:
+                auxbasis='aug-cc-pV5Z/C'                
+            else:
+                auxbasis='cc-pV5Z/C'
+    elif relativity == 'ZORA':
+        extrainputkeyword = extrainputkeyword + ' ZORA '
+        auxbasis='cc-pV5Z/C'
+        if 'def2' in basisfamily:
+            auxbasis='def2-QZVPP/C'
+        else:
+            if 'aug' in basisfamily:
+                auxbasis='aug-cc-pV5Z/C'                
+            else:
+                auxbasis='cc-pV5Z/C'
+    elif relativity == 'X2C':
+        extrainputkeyword = extrainputkeyword + ' X2C '
+        auxbasis='cc-pV5Z/C'
+        print("Not ready")
+        exit()
 
     ############################################################s
     #Frozen-core CCSD(T) calculations defined here
