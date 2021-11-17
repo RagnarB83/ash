@@ -1604,7 +1604,7 @@ end
     print("")
     print("")
     E_FINAL = E_SCF_CBS + E_corr_CBS + E_SO+E_corecorr_and_SR
-    print("Final DLPNO-CCSD(T)/CBS energy :", E_FINAL, "Eh")
+    print("Final CCSD(T)/CBS energy :", E_FINAL, "Eh")
     print("")
     print("Contributions:")
     print("--------------")
