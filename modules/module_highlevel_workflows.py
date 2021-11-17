@@ -2404,20 +2404,44 @@ def Extrapolation_twopoint(scf_energies, corr_energies, cardinals, basis_family)
     #NOTE: pc-n family uses different numbering. pc-1 is DZ(cardinal 2), pc-2 is TZ(cardinal 3), pc-4 is QZ(cardinal 4).
     if basis_family=='cc' and all(x in cardinals for x in [2, 3]):
         extrap_dict_key='cc_23'
+    #Note: assuming extrapolation parameters are transferable here
+    elif basis_family=='cc-dk' and all(x in cardinals for x in [2, 3]):
+        extrap_dict_key='cc_23'
     elif basis_family=='aug-cc' and all(x in cardinals for x in [2, 3]):
+        extrap_dict_key='aug-cc_23'
+        #Note: assuming extrapolation parameters are transferable here
+    elif basis_family=='aug-cc-dk' and all(x in cardinals for x in [2, 3]):
         extrap_dict_key='aug-cc_23'
     elif basis_family=='cc' and all(x in cardinals for x in [3, 4]):
         extrap_dict_key='cc_34'
+    #Note: assuming extrapolation parameters are transferable here
+    elif basis_family=='cc-dk' and all(x in cardinals for x in [3, 4]):
+        extrap_dict_key='cc_34'
     elif basis_family=='aug-cc' and all(x in cardinals for x in [3, 4]):
+        extrap_dict_key='aug-cc_23'
+    #Note: assuming extrapolation parameters are transferable here
+    elif basis_family=='aug-cc-dk' and all(x in cardinals for x in [3, 4]):
         extrap_dict_key='aug-cc_23'
     elif basis_family=='def2' and all(x in cardinals for x in [2, 3]):
         extrap_dict_key='def2_23'
+    #Note: assuming extrapolation parameters are transferable here
+    elif basis_family=='def2-dk' and all(x in cardinals for x in [2, 3]):
+        extrap_dict_key='def2_23'
     elif basis_family=='def2' and all(x in cardinals for x in [3, 4]):
+        extrap_dict_key='def2_34'
+    #Note: assuming extrapolation parameters are transferable here
+    elif basis_family=='def2-dk' and all(x in cardinals for x in [3, 4]):
         extrap_dict_key='def2_34'
     elif basis_family=='ma-def2' and all(x in cardinals for x in [2, 3]):
         extrap_dict_key='ma-def2_23'
+    #Note: assuming extrapolation parameters are transferable here
+    elif basis_family=='ma-def2-dk' and all(x in cardinals for x in [2, 3]):
+        extrap_dict_key='ma-def2_23'
         print("Warning. ma-def2 family. Using extrapolation parameters from def2 family. UNTESTED!")
     elif basis_family=='ma-def2' and all(x in cardinals for x in [3, 4]):
+        extrap_dict_key='ma-def2_34'
+    #Note: assuming extrapolation parameters are transferable here
+    elif basis_family=='ma-def2-dk' and all(x in cardinals for x in [3, 4]):
         extrap_dict_key='ma-def2_34'
         print("Warning. ma-def2 family. Using extrapolation parameters from def2 family. UNTESTED!")
     elif basis_family=='pc' and all(x in cardinals for x in [2, 3]):

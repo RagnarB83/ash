@@ -715,6 +715,10 @@ def reformat_list_to_array(l):
         return l
     # Reformat to np array
     elif type(l) == list:
+        #Checking if input l is list of lists or not
+        if any(isinstance(el, list) for el in l) is False:
+            print(BC.FAIL,"Error (reformat_list_to_array): input should be a list of lists, not just a list", BC.END)
+            exit()
         newl = np.array(l)
         return newl
 
