@@ -189,7 +189,11 @@ end
     ############################################################
     if fragment.numatoms == 1:
         print("Fragment is an atom. Looking up atomic spin-orbit splitting value")
-        E_SO = dictionaries_lists.atom_spinorbitsplittings[fragment.elems[0]] / constants.hartocm
+        try:
+            E_SO = dictionaries_lists.atom_spinorbitsplittings[fragment.elems[0]] / constants.hartocm
+        except KeyError:
+            print("Found no SO value for atom. Will set to 0.0 and continue")
+            E_SO = 0.0
     else :
         E_SO = 0.0
 
@@ -416,7 +420,11 @@ end
     ############################################################
     if fragment.numatoms == 1:
         print("Fragment is an atom. Looking up atomic spin-orbit splitting value")
-        E_SO = dictionaries_lists.atom_spinorbitsplittings[fragment.elems[0]] / constants.hartocm
+        try:
+            E_SO = dictionaries_lists.atom_spinorbitsplittings[fragment.elems[0]] / constants.hartocm
+        except KeyError:
+            print("Found no SO value for atom. Will set to 0.0 and continue")
+            E_SO = 0.0
     else :
         E_SO = 0.0
 
@@ -639,7 +647,11 @@ end
     ############################################################
     if fragment.numatoms == 1:
         print("Fragment is an atom. Looking up atomic spin-orbit splitting value")
-        E_SO = dictionaries_lists.atom_spinorbitsplittings[fragment.elems[0]] / constants.hartocm
+        try:
+            E_SO = dictionaries_lists.atom_spinorbitsplittings[fragment.elems[0]] / constants.hartocm
+        except KeyError:
+            print("Found no SO value for atom. Will set to 0.0 and continue")
+            E_SO = 0.0
     else :
         E_SO = 0.0
 
@@ -845,7 +857,11 @@ end
     ############################################################
     if fragment.numatoms == 1:
         print("Fragment is an atom. Looking up atomic spin-orbit splitting value")
-        E_SO = dictionaries_lists.atom_spinorbitsplittings[fragment.elems[0]] / constants.hartocm
+        try:
+            E_SO = dictionaries_lists.atom_spinorbitsplittings[fragment.elems[0]] / constants.hartocm
+        except KeyError:
+            print("Found no SO value for atom. Will set to 0.0 and continue")
+            E_SO = 0.0
     else :
         E_SO = 0.0
 
@@ -1038,7 +1054,11 @@ end
     ############################################################
     if fragment.numatoms == 1:
         print("Fragment is an atom. Looking up atomic spin-orbit splitting value")
-        E_SO = dictionaries_lists.atom_spinorbitsplittings[fragment.elems[0]] / constants.hartocm
+        try:
+            E_SO = dictionaries_lists.atom_spinorbitsplittings[fragment.elems[0]] / constants.hartocm
+        except KeyError:
+            print("Found no SO value for atom. Will set to 0.0 and continue")
+            E_SO = 0.0
     else :
         E_SO = 0.0
 
@@ -1246,7 +1266,11 @@ end
     ############################################################
     if fragment.numatoms == 1:
         print("Fragment is an atom. Looking up atomic spin-orbit splitting value")
-        E_SO = dictionaries_lists.atom_spinorbitsplittings[fragment.elems[0]] / constants.hartocm
+        try:
+            E_SO = dictionaries_lists.atom_spinorbitsplittings[fragment.elems[0]] / constants.hartocm
+        except KeyError:
+            print("Found no SO value for atom. Will set to 0.0 and continue")
+            E_SO = 0.0
     else :
         E_SO = 0.0
 
@@ -1566,10 +1590,12 @@ end
     ############################################################
     if fragment.numatoms == 1:
         print("Fragment is an atom. Looking up atomic spin-orbit splitting value")
-        E_SO = dictionaries_lists.atom_spinorbitsplittings[fragment.elems[0]] / constants.hartocm
-        print("Spin-orbit correction (E_SO):", E_SO)
+        try:
+            E_SO = dictionaries_lists.atom_spinorbitsplittings[fragment.elems[0]] / constants.hartocm
+        except KeyError:
+            print("Found no SO value for atom. Will set to 0.0 and continue")
+            E_SO = 0.0
     else :
-        print("No atomic spin-orbit coupling. Spin-orbit coupling energy set to zero.")
         E_SO = 0.0
     ############################################################
     #FINAL RESULT
@@ -1809,10 +1835,12 @@ end
     ############################################################
     if fragment.numatoms == 1:
         print("Fragment is an atom. Looking up atomic spin-orbit splitting value")
-        E_SO = dictionaries_lists.atom_spinorbitsplittings[fragment.elems[0]] / constants.hartocm
-        print("Spin-orbit correction (E_SO):", E_SO)
+        try:
+            E_SO = dictionaries_lists.atom_spinorbitsplittings[fragment.elems[0]] / constants.hartocm
+        except KeyError:
+            print("Found no SO value for atom. Will set to 0.0 and continue")
+            E_SO = 0.0
     else :
-        print("No atomic spin-orbit coupling. Spin-orbit coupling energy set to zero.")
         E_SO = 0.0
 
     
@@ -2033,10 +2061,12 @@ end
     ############################################################
     if fragment.numatoms == 1:
         print("Fragment is an atom. Looking up atomic spin-orbit splitting value")
-        E_SO = dictionaries_lists.atom_spinorbitsplittings[fragment.elems[0]] / constants.hartocm
-        print("Spin-orbit correction (E_SO):", E_SO)
+        try:
+            E_SO = dictionaries_lists.atom_spinorbitsplittings[fragment.elems[0]] / constants.hartocm
+        except KeyError:
+            print("Found no SO value for atom. Will set to 0.0 and continue")
+            E_SO = 0.0
     else :
-        print("No atomic spin-orbit coupling. Spin-orbit coupling energy set to zero.")
         E_SO = 0.0
     
     ############################################################
