@@ -1491,8 +1491,9 @@ end
         exit()
 
     #Possible DFT reference (functional name)
+    #NOTE: Hardcoding RIJCOSX SARC/J defgrid3 for now
     if DFTreference != None:
-        extrainputkeyword =  + ' {} '.format(DFTreference)
+        extrainputkeyword = extrainputkeyword + ' {} RIJCOSX SARC/J defgrid3 '.format(DFTreference)
 
 
     ############################################################s
