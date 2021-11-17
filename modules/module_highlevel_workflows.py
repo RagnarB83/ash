@@ -2134,6 +2134,16 @@ def choose_inputlines_from_basisfamily(cardinals,basisfamily,ccsdtkeyword,auxbas
         auxbasis='def2-QZVPP/C'
         ccsdt_1_line="! {} DKH-def2-TZVPP {} {} {} {}".format(ccsdtkeyword, auxbasis, pnokeyword, scfsetting,extrainputkeyword)
         ccsdt_2_line="! {} DKH-def2-QZVPP {} {} {} {}".format(ccsdtkeyword, auxbasis, pnokeyword, scfsetting,extrainputkeyword)
+    elif cardinals == [2,3] and basisfamily=="ma-def2-dk":
+        #Auxiliary basis set.
+        auxbasis='def2-QZVPP/C'
+        ccsdt_1_line="! {} ma-DKH-def2-SVP {} {} {} {}".format(ccsdtkeyword, auxbasis, pnokeyword, scfsetting,extrainputkeyword)
+        ccsdt_2_line="! {} ma-DKH-def2-TZVPP {} {} {} {}".format(ccsdtkeyword, auxbasis, pnokeyword, scfsetting,extrainputkeyword)
+    elif cardinals == [3,4] and basisfamily=="ma-def2-dk":
+        #Auxiliary basis set.
+        auxbasis='def2-QZVPP/C'
+        ccsdt_1_line="! {} ma-DKH-def2-TZVPP {} {} {} {}".format(ccsdtkeyword, auxbasis, pnokeyword, scfsetting,extrainputkeyword)
+        ccsdt_2_line="! {} ma-DKH-def2-QZVPP {} {} {} {}".format(ccsdtkeyword, auxbasis, pnokeyword, scfsetting,extrainputkeyword)
     elif cardinals == [2,3] and basisfamily=="def2-zora":
         #Auxiliary basis set.
         auxbasis='def2-QZVPP/C'
@@ -2511,12 +2521,14 @@ def Extrapolation_twopoint(scf_energies, corr_energies, cardinals, basis_family)
         extrap_dict_key='def2_34'
     elif basis_family=='ma-def2' and all(x in cardinals for x in [2, 3]):
         extrap_dict_key='ma-def2_23'
+        print("Warning. ma-def2 family. Using extrapolation parameters from def2 family. UNTESTED!")
     #Note: assuming extrapolation parameters are transferable here
     elif basis_family=='ma-def2-dk' and all(x in cardinals for x in [2, 3]):
         extrap_dict_key='ma-def2_23'
         print("Warning. ma-def2 family. Using extrapolation parameters from def2 family. UNTESTED!")
     elif basis_family=='ma-def2' and all(x in cardinals for x in [3, 4]):
         extrap_dict_key='ma-def2_34'
+        print("Warning. ma-def2 family. Using extrapolation parameters from def2 family. UNTESTED!")
     #Note: assuming extrapolation parameters are transferable here
     elif basis_family=='ma-def2-dk' and all(x in cardinals for x in [3, 4]):
         extrap_dict_key='ma-def2_34'
