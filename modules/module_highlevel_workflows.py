@@ -1305,9 +1305,11 @@ end
 
 #Flexible CCSD(T)/CBS protocol. Simple. No core-correlation, scalar relativistic or spin-orbit coupling for now.
 # Regular CC, DLPNO-CC, DLPNO-CC with PNO extrapolation etc.
+#alpha and beta can be manually set. If not set then they are picked based on basisfamily
 def CC_CBS(cardinals = [2,3], basisfamily="def2", relativity=None, fragment=None, charge=None, orcadir=None, mult=None, 
            stabilityanalysis=False, numcores=1, CVSR=False, CVbasis="W1-mtsmall", F12=False, DFTreference=None,
-                        DLPNO=False, memory=5000, pnosetting='NormalPNO', pnoextrapolation=[5,6], T1=False, scfsetting='TightSCF', 
+                        DLPNO=False, memory=5000, pnosetting='NormalPNO', pnoextrapolation=[5,6], T1=False, scfsetting='TightSCF',
+                        alpha=None, beta=None
                         extrainputkeyword='', extrablocks='', **kwargs):
     """
     WORK IN PROGRESS
@@ -1560,7 +1562,7 @@ end
     
     #BASIS SET EXTRAPOLATION
 
-    E_SCF_CBS, E_corr_CBS = Extrapolation_twopoint(scf_energies, corr_energies, cardinals, basisfamily) #2-point extrapolation
+    E_SCF_CBS, E_corr_CBS = Extrapolation_twopoint(scf_energies, corr_energies, cardinals, basisfamily, alpha=alpha, beta=beta) #2-point extrapolation
 
     print("E_SCF_CBS:", E_SCF_CBS)
     print("E_corr_CBS:", E_corr_CBS)
@@ -2475,7 +2477,7 @@ def Extrapolation_W2_triples(E):
     triples_CBS = E[-1]+(E[-1]-E[-2])/((4/3)**3 - 1)
     return triples_CBS
 
-def Extrapolation_twopoint(scf_energies, corr_energies, cardinals, basis_family):
+def Extrapolation_twopoint(scf_energies, corr_energies, cardinals, basis_family, alpha=None, beta=None):
     """
     Extrapolation function for general 2-point extrapolations
     :param scf_energies: list of SCF energies
@@ -2485,8 +2487,10 @@ def Extrapolation_twopoint(scf_energies, corr_energies, cardinals, basis_family)
     :return: extrapolated SCF energy and correlation energy
     """
     #Dictionary of extrapolation parameters. Key: Basisfamilyandcardinals Value: list: [alpha, beta]
+    #Added default value of beta=3.0 (theoretical value), alpha=3.9
     extrapolation_parameters_dict = { 'cc_23' : [4.42, 2.460], 'aug-cc_23' : [4.30, 2.510], 'cc_34' : [5.46, 3.050], 'aug-cc_34' : [5.790, 3.050],
-    'def2_23' : [10.390,2.4], 'def2_34' : [7.880,2.970], 'pc_23' : [7.02, 2.01], 'pc_34': [9.78, 4.09],  'ma-def2_23' : [10.390,2.4], 'ma-def2_34' : [7.880,2.970]}
+    'def2_23' : [10.390,2.4], 'def2_34' : [7.880,2.970], 'pc_23' : [7.02, 2.01], 'pc_34': [9.78, 4.09],  'ma-def2_23' : [10.390,2.4], 
+    'ma-def2_34' : [7.880,2.970], 'default' : [3.9,3.0]}
 
     #NOTE: pc-n family uses different numbering. pc-1 is DZ(cardinal 2), pc-2 is TZ(cardinal 3), pc-4 is QZ(cardinal 4).
     if basis_family=='cc' and all(x in cardinals for x in [2, 3]):
@@ -2537,17 +2541,28 @@ def Extrapolation_twopoint(scf_energies, corr_energies, cardinals, basis_family)
         extrap_dict_key='pc_23'
     elif basis_family=='pc' and all(x in cardinals for x in [3, 4]):
         extrap_dict_key='pc_34'
+    else:
+        print("WARNING: Unknown basis set family")
+        print("Using default settings: alpha: {} , beta: {}".format(extrap_dict_key['default'][0], extrap_dict_key['default'][1]))
+        extrap_dict_key='default'
+    
+    #Override settings if desired
+    print("Extrapolation parameters:")
+    
+    # If alpha/beta have not been set then we define based on basisfamily and cardinals
+    if alpha == None and beta == None:
+        alpha=extrapolation_parameters_dict[extrap_dict_key][0]
+        beta=extrapolation_parameters_dict[extrap_dict_key][1]
+    
+    print("alpha :",alpha)
+    print("beta :", beta)
 
     #Print energies
     print("Basis family is:", basis_family)
     print("SCF energies are:", scf_energies[0], "and", scf_energies[1])
     print("Correlation energies are:", corr_energies[0], "and", corr_energies[1])
 
-    print("Extrapolation parameters:")
-    alpha=extrapolation_parameters_dict[extrap_dict_key][0]
-    beta=extrapolation_parameters_dict[extrap_dict_key][1]
-    print("alpha :",alpha)
-    print("beta :", beta)
+
     eX=math.exp(-1*alpha*math.sqrt(cardinals[0]))
     eY=math.exp(-1*alpha*math.sqrt(cardinals[1]))
     SCFextrap=(scf_energies[0]*eY-scf_energies[1]*eX)/(eY-eX)
