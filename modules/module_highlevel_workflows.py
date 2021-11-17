@@ -1305,8 +1305,10 @@ end
 
 #Flexible CCSD(T)/CBS protocol. Simple. No core-correlation, scalar relativistic or spin-orbit coupling for now.
 # Regular CC, DLPNO-CC, DLPNO-CC with PNO extrapolation etc.
-def CC_CBS(cardinals = [2,3], basisfamily="def2", relativity=None, fragment=None, charge=None, orcadir=None, mult=None, stabilityanalysis=False, numcores=1, CVSR=False, CVbasis="W1-mtsmall", F12=False,
-                        DLPNO=False, memory=5000, pnosetting='NormalPNO', pnoextrapolation=[5,6], T1=False, scfsetting='TightSCF', extrainputkeyword='', extrablocks='', **kwargs):
+def CC_CBS(cardinals = [2,3], basisfamily="def2", relativity=None, fragment=None, charge=None, orcadir=None, mult=None, 
+           stabilityanalysis=False, numcores=1, CVSR=False, CVbasis="W1-mtsmall", F12=False, DFTreference=None,
+                        DLPNO=False, memory=5000, pnosetting='NormalPNO', pnoextrapolation=[5,6], T1=False, scfsetting='TightSCF', 
+                        extrainputkeyword='', extrablocks='', **kwargs):
     """
     WORK IN PROGRESS
     CCSD(T)/CBS frozencore workflow
@@ -1488,6 +1490,11 @@ end
         print("Not ready")
         exit()
 
+    #Possible DFT reference (functional name)
+    if DFTreference != None:
+        extrainputkeyword =  + ' {} '.format(DFTreference)
+
+
     ############################################################s
     #Frozen-core CCSD(T) calculations defined here
     ############################################################
@@ -1604,7 +1611,7 @@ end
     print("")
     print("")
     E_FINAL = E_SCF_CBS + E_corr_CBS + E_SO+E_corecorr_and_SR
-    print("Final DLPNO-CCSD(T)/CBS energy :", E_FINAL, "Eh")
+    print("Final CCSD(T)/CBS energy :", E_FINAL, "Eh")
     print("")
     print("Contributions:")
     print("--------------")
