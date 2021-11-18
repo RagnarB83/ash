@@ -2183,7 +2183,7 @@ def choose_inputlines_from_basisfamily(cardinals,basisfamily,ccsdtkeyword,auxbas
         ccsdt_2_line="! {} cc-pVQZ {} {} {} {}".format(ccsdtkeyword, auxbasis, pnokeyword, scfsetting,extrainputkeyword)
     elif cardinals == [4,5] and basisfamily=="cc":
         #Auxiliary basis set.
-        auxbasis='cc-pV5Z/C'
+        auxbasis='Autoaux'
         ccsdt_1_line="! {} cc-pVQZ {} {} {} {}".format(ccsdtkeyword, auxbasis, pnokeyword, scfsetting,extrainputkeyword)
         ccsdt_2_line="! {} cc-pV5Z {} {} {} {}".format(ccsdtkeyword, auxbasis, pnokeyword, scfsetting,extrainputkeyword)
     elif cardinals == [2,3] and basisfamily=="aug-cc":
@@ -2198,7 +2198,7 @@ def choose_inputlines_from_basisfamily(cardinals,basisfamily,ccsdtkeyword,auxbas
         ccsdt_2_line="! {} aug-cc-pVQZ {} {} {} {}".format(ccsdtkeyword, auxbasis, pnokeyword, scfsetting,extrainputkeyword)
     elif cardinals == [4,5] and basisfamily=="aug-cc":
         #Auxiliary basis set.
-        auxbasis='aug-cc-pV5Z/C'
+        auxbasis='Autoaux'
         ccsdt_1_line="! {} aug-cc-pVQZ {} {} {} {}".format(ccsdtkeyword, auxbasis, pnokeyword, scfsetting,extrainputkeyword)
         ccsdt_2_line="! {} aug-cc-pV5Z {} {} {} {}".format(ccsdtkeyword, auxbasis, pnokeyword, scfsetting,extrainputkeyword)
         #TODO Note: 4/5 cc/aug-cc basis sets are available but we need extrapolation parameters
@@ -2216,7 +2216,7 @@ def choose_inputlines_from_basisfamily(cardinals,basisfamily,ccsdtkeyword,auxbas
         ccsdt_2_line="! {} cc-pVQZ-DK {} {} {} {}".format(ccsdtkeyword, auxbasis, pnokeyword, scfsetting,extrainputkeyword)
     elif cardinals == [4,5] and basisfamily=="cc-dk":
         #Auxiliary basis set.
-        auxbasis='cc-pV5Z/C'
+        auxbasis='autoaux'
         ccsdt_1_line="! {} cc-pVQZ-DK {} {} {} {}".format(ccsdtkeyword, auxbasis, pnokeyword, scfsetting,extrainputkeyword)
         ccsdt_2_line="! {} cc-pV5Z-DK {} {} {} {}".format(ccsdtkeyword, auxbasis, pnokeyword, scfsetting,extrainputkeyword)
     elif cardinals == [2,3] and basisfamily=="aug-cc-dk":
@@ -2231,16 +2231,25 @@ def choose_inputlines_from_basisfamily(cardinals,basisfamily,ccsdtkeyword,auxbas
         ccsdt_2_line="! {} aug-cc-pVQZ-DK {} {} {} {}".format(ccsdtkeyword, auxbasis, pnokeyword, scfsetting,extrainputkeyword)
     elif cardinals == [4,5] and basisfamily=="aug-cc-dk":
         #Auxiliary basis set.
-        auxbasis='aug-cc-pV5Z/C'
+        auxbasis='Autoaux'
         ccsdt_1_line="! {} aug-cc-pVQZ-DK {} {} {} {}".format(ccsdtkeyword, auxbasis, pnokeyword, scfsetting,extrainputkeyword)
         ccsdt_2_line="! {} aug-cc-pV5Z-DK {} {} {} {}".format(ccsdtkeyword, auxbasis, pnokeyword, scfsetting,extrainputkeyword)
         #TODO Note: 4/5 cc/aug-cc basis sets are available but we need extrapolation parameters
+    elif cardinals == [2,3] and basisfamily=="cc-pw-dk":
+        #Auxiliary basis set.
+        auxbasis='cc-pVQZ/C'
+        ccsdt_1_line="! {} cc-pwCVDZ-DK {} {} {} {}".format(ccsdtkeyword, auxbasis, pnokeyword, scfsetting,extrainputkeyword)
+        ccsdt_2_line="! {} cc-pwCVTZ-DK {} {} {} {}".format(ccsdtkeyword, auxbasis, pnokeyword, scfsetting,extrainputkeyword)
     elif cardinals == [3,4] and basisfamily=="cc-pw-dk":
         #Auxiliary basis set.
         auxbasis='cc-pVQZ/C'
         ccsdt_1_line="! {} cc-pwCVTZ-DK {} {} {} {}".format(ccsdtkeyword, auxbasis, pnokeyword, scfsetting,extrainputkeyword)
         ccsdt_2_line="! {} cc-pwCVQZ-DK {} {} {} {}".format(ccsdtkeyword, auxbasis, pnokeyword, scfsetting,extrainputkeyword)
-
+    elif cardinals == [4,5] and basisfamily=="cc-pw-dk":
+        #Auxiliary basis set.
+        auxbasis='Autoaux'
+        ccsdt_1_line="! {} cc-pwCVQZ-DK {} {} {} {}".format(ccsdtkeyword, auxbasis, pnokeyword, scfsetting,extrainputkeyword)
+        ccsdt_2_line="! {} cc-pwCV5Z-DK {} {} {} {}".format(ccsdtkeyword, auxbasis, pnokeyword, scfsetting,extrainputkeyword)
     else:
         print("Unknown basisfamily or cardinals chosen...")
         exit()
