@@ -1597,9 +1597,15 @@ end
     ############################################################
     if fragment.numatoms == 1:
         print("Fragment is an atom. Looking up atomic spin-orbit splitting value")
-        try:
-            E_SO = dictionaries_lists.atom_spinorbitsplittings[fragment.elems[0]] / constants.hartocm
-        except KeyError:
+        if charge == 0:
+            print("Charge of atom is zero. Looking up in neutral dict")
+            try:
+                E_SO = dictionaries_lists.atom_spinorbitsplittings[fragment.elems[0]] / constants.hartocm
+            except KeyError:
+                print("Found no SO value for atom. Will set to 0.0 and continue")
+                E_SO = 0.0
+        else:
+            print("Charge of atom is not zero. Dictionary not available")
             print("Found no SO value for atom. Will set to 0.0 and continue")
             E_SO = 0.0
     else :
@@ -2223,7 +2229,7 @@ def choose_inputlines_from_basisfamily(cardinals,basisfamily,ccsdtkeyword,auxbas
         ccsdt_2_line="! {} aug-cc-pVTZ-DK {} {} {} {}".format(ccsdtkeyword, auxbasis, pnokeyword, scfsetting,extrainputkeyword)
     elif cardinals == [3,4] and basisfamily=="aug-cc-dk":
         #Auxiliary basis set.
-        auxbasis='aug-cc-pV5Z/C'
+        auxbasis='Autoaux'
         ccsdt_1_line="! {} aug-cc-pVTZ-DK {} {} {} {}".format(ccsdtkeyword, auxbasis, pnokeyword, scfsetting,extrainputkeyword)
         ccsdt_2_line="! {} aug-cc-pVQZ-DK {} {} {} {}".format(ccsdtkeyword, auxbasis, pnokeyword, scfsetting,extrainputkeyword)
     elif cardinals == [4,5] and basisfamily=="aug-cc-dk":
@@ -2232,6 +2238,8 @@ def choose_inputlines_from_basisfamily(cardinals,basisfamily,ccsdtkeyword,auxbas
         ccsdt_1_line="! {} aug-cc-pVQZ-DK {} {} {} {}".format(ccsdtkeyword, auxbasis, pnokeyword, scfsetting,extrainputkeyword)
         ccsdt_2_line="! {} aug-cc-pV5Z-DK {} {} {} {}".format(ccsdtkeyword, auxbasis, pnokeyword, scfsetting,extrainputkeyword)
         #TODO Note: 4/5 cc/aug-cc basis sets are available but we need extrapolation parameters
+    
+    #DKH CORE-VALENCE CORRELATION CONSISTENT BASIS SETS
     elif cardinals == [2,3] and basisfamily=="cc-pw-dk":
         #Auxiliary basis set.
         auxbasis='cc-pVQZ/C'
@@ -2247,6 +2255,21 @@ def choose_inputlines_from_basisfamily(cardinals,basisfamily,ccsdtkeyword,auxbas
         auxbasis='Autoaux'
         ccsdt_1_line="! {} cc-pwCVQZ-DK {} {} {} {}".format(ccsdtkeyword, auxbasis, pnokeyword, scfsetting,extrainputkeyword)
         ccsdt_2_line="! {} cc-pwCV5Z-DK {} {} {} {}".format(ccsdtkeyword, auxbasis, pnokeyword, scfsetting,extrainputkeyword)
+    elif cardinals == [2,3] and basisfamily=="aug-cc-pw-dk":
+        #Auxiliary basis set.
+        auxbasis='cc-pVQZ/C'
+        ccsdt_1_line="! {} aug-cc-pwCVDZ-DK {} {} {} {}".format(ccsdtkeyword, auxbasis, pnokeyword, scfsetting,extrainputkeyword)
+        ccsdt_2_line="! {} aug-cc-pwCVTZ-DK {} {} {} {}".format(ccsdtkeyword, auxbasis, pnokeyword, scfsetting,extrainputkeyword)
+    elif cardinals == [3,4] and basisfamily=="aug-cc-pw-dk":
+        #Auxiliary basis set.
+        auxbasis='cc-pVQZ/C'
+        ccsdt_1_line="! {} aug-cc-pwCVTZ-DK {} {} {} {}".format(ccsdtkeyword, auxbasis, pnokeyword, scfsetting,extrainputkeyword)
+        ccsdt_2_line="! {} aug-cc-pwCVQZ-DK {} {} {} {}".format(ccsdtkeyword, auxbasis, pnokeyword, scfsetting,extrainputkeyword)
+    elif cardinals == [4,5] and basisfamily=="aug-cc-pw-dk":
+        #Auxiliary basis set.
+        auxbasis='Autoaux'
+        ccsdt_1_line="! {} aug-cc-pwCVQZ-DK {} {} {} {}".format(ccsdtkeyword, auxbasis, pnokeyword, scfsetting,extrainputkeyword)
+        ccsdt_2_line="! {} aug-cc-pwCV5Z-DK {} {} {} {}".format(ccsdtkeyword, auxbasis, pnokeyword, scfsetting,extrainputkeyword)
     else:
         print("Unknown basisfamily or cardinals chosen...")
         exit()
