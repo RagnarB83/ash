@@ -1307,7 +1307,7 @@ end
 # Regular CC, DLPNO-CC, DLPNO-CC with PNO extrapolation etc.
 #alpha and beta can be manually set. If not set then they are picked based on basisfamily
 def CC_CBS(cardinals = [2,3], basisfamily="def2", relativity=None, fragment=None, charge=None, orcadir=None, mult=None, 
-           stabilityanalysis=False, numcores=1, CVSR=False, CVbasis="W1-mtsmall", F12=False, DFTreference=None,
+           stabilityanalysis=False, numcores=1, CVSR=False, CVbasis="W1-mtsmall", F12=False, DFTreference=None, DFT_RI=False,
                         DLPNO=False, memory=5000, pnosetting='NormalPNO', pnoextrapolation=[5,6], T1=False, scfsetting='TightSCF',
                         alpha=None, beta=None,
                         extrainputkeyword='', extrablocks='', **kwargs):
@@ -1495,8 +1495,10 @@ end
     #Possible DFT reference (functional name)
     #NOTE: Hardcoding RIJCOSX SARC/J defgrid3 for now
     if DFTreference != None:
-        extrainputkeyword = extrainputkeyword + ' {} RIJCOSX SARC/J defgrid3 '.format(DFTreference)
-
+        if DFT_RI is True:
+            extrainputkeyword = extrainputkeyword + ' {} RIJCOSX SARC/J defgrid3 '.format(DFTreference)
+        else:
+            extrainputkeyword = extrainputkeyword + ' {} NORI defgrid3 '.format(DFTreference)
 
     ############################################################s
     #Frozen-core CCSD(T) calculations defined here
