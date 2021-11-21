@@ -1501,11 +1501,6 @@ end
     ############################################################s
     #Frozen-core CCSD(T) calculations defined here
     ############################################################
-
-    #Auxiliary basis set. One big one for now
-    #TODO: Revisit
-    auxbasis='cc-pV5Z/C'
-
     #Choosing 
     ccsdt_1_line,ccsdt_2_line=choose_inputlines_from_basisfamily(cardinals,basisfamily,ccsdtkeyword,auxbasis,pnokeyword,scfsetting,extrainputkeyword)
 
@@ -2211,7 +2206,7 @@ def choose_inputlines_from_basisfamily(cardinals,basisfamily,ccsdtkeyword,auxbas
         ccsdt_2_line="! {} cc-pVTZ-DK {} {} {} {}".format(ccsdtkeyword, auxbasis, pnokeyword, scfsetting,extrainputkeyword)
     elif cardinals == [3,4] and basisfamily=="cc-dk":
         #Auxiliary basis set.
-        auxbasis='cc-pV5Z/C'
+        auxbasis='autoaux'
         ccsdt_1_line="! {} cc-pVTZ-DK {} {} {} {}".format(ccsdtkeyword, auxbasis, pnokeyword, scfsetting,extrainputkeyword)
         ccsdt_2_line="! {} cc-pVQZ-DK {} {} {} {}".format(ccsdtkeyword, auxbasis, pnokeyword, scfsetting,extrainputkeyword)
     elif cardinals == [4,5] and basisfamily=="cc-dk":
