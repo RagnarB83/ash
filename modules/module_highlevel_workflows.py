@@ -1371,10 +1371,13 @@ def CC_CBS(cardinals = [2,3], basisfamily="def2", relativity=None, fragment=None
     print("Maxcore setting: ", memory, "MB")
     print("")
     print("DLPNO:", DLPNO)
+    dlpno_line=""
     if DLPNO == True:
         print("PNO setting: ", pnosetting)
         if pnosetting == "extrapolation":
             print("pnoextrapolation:", pnoextrapolation)
+        #Setting Full LMP2 to false in general for DLPNO
+        dlpno_line="UseFullLMP2Guess false"
         print("T1 : ", T1)
     print("SCF setting: ", scfsetting)
     print("Relativity: ", relativity)
@@ -1411,12 +1414,12 @@ def CC_CBS(cardinals = [2,3], basisfamily="def2", relativity=None, fragment=None
 maxiter 1200
 end
 %mdci
-UseFullLMP2Guess false
+{}
 maxiter 150
 end
 {}
 
-""".format(memory,extrablocks)
+""".format(memory,dlpno_line,extrablocks)
     if stabilityanalysis is True:
         blocks = blocks + "%scf stabperform true end"
         #Adding 1-center approximation
