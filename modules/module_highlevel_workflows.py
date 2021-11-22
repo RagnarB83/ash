@@ -1423,7 +1423,7 @@ end
         if relativity != None:
             print("Stability analysis and relativity requires 1-center approximation")
             print("Turning on")
-            blocks = blocks + "%rel onecenter true end"
+            blocks = blocks + "\n%rel onecenter true end"
 
     #Choosing whether DLPNO or not
     if DLPNO == True:
