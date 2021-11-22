@@ -1419,8 +1419,11 @@ end
 """.format(memory,extrablocks)
     if stabilityanalysis is True:
         blocks = blocks + "%scf stabperform true end"
-
-
+        #Adding 1-center approximation
+        if relativity != None:
+            print("Stability analysis and relativity requires 1-center approximation")
+            print("Turning on")
+            blocks = blocks + "%rel onecenter true end"
 
     #Choosing whether DLPNO or not
     if DLPNO == True:
