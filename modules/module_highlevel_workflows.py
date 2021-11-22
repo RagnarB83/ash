@@ -1307,7 +1307,7 @@ end
 # Regular CC, DLPNO-CC, DLPNO-CC with PNO extrapolation etc.
 #alpha and beta can be manually set. If not set then they are picked based on basisfamily
 def CC_CBS(cardinals = [2,3], basisfamily="def2", relativity=None, fragment=None, charge=None, orcadir=None, mult=None, 
-           stabilityanalysis=False, numcores=1, CVSR=False, CVbasis="W1-mtsmall", F12=False, DFTreference=None,
+           stabilityanalysis=False, numcores=1, CVSR=False, CVbasis="W1-mtsmall", F12=False, DFTreference=None, DFT_RI=False,
                         DLPNO=False, memory=5000, pnosetting='NormalPNO', pnoextrapolation=[5,6], T1=False, scfsetting='TightSCF',
                         alpha=None, beta=None,
                         extrainputkeyword='', extrablocks='', **kwargs):
@@ -1499,17 +1499,14 @@ end
     #Possible DFT reference (functional name)
     #NOTE: Hardcoding RIJCOSX SARC/J defgrid3 for now
     if DFTreference != None:
-        extrainputkeyword = extrainputkeyword + ' {} RIJCOSX SARC/J defgrid3 '.format(DFTreference)
-
+        if DFT_RI is True:
+            extrainputkeyword = extrainputkeyword + ' {} RIJCOSX SARC/J defgrid3 '.format(DFTreference)
+        else:
+            extrainputkeyword = extrainputkeyword + ' {} NORI defgrid3 '.format(DFTreference)
 
     ############################################################s
     #Frozen-core CCSD(T) calculations defined here
     ############################################################
-
-    #Auxiliary basis set. One big one for now
-    #TODO: Revisit
-    auxbasis='cc-pV5Z/C'
-
     #Choosing 
     ccsdt_1_line,ccsdt_2_line=choose_inputlines_from_basisfamily(cardinals,basisfamily,ccsdtkeyword,auxbasis,pnokeyword,scfsetting,extrainputkeyword)
 
@@ -1604,9 +1601,15 @@ end
     ############################################################
     if fragment.numatoms == 1:
         print("Fragment is an atom. Looking up atomic spin-orbit splitting value")
-        try:
-            E_SO = dictionaries_lists.atom_spinorbitsplittings[fragment.elems[0]] / constants.hartocm
-        except KeyError:
+        if charge == 0:
+            print("Charge of atom is zero. Looking up in neutral dict")
+            try:
+                E_SO = dictionaries_lists.atom_spinorbitsplittings[fragment.elems[0]] / constants.hartocm
+            except KeyError:
+                print("Found no SO value for atom. Will set to 0.0 and continue")
+                E_SO = 0.0
+        else:
+            print("Charge of atom is not zero. Dictionary not available")
             print("Found no SO value for atom. Will set to 0.0 and continue")
             E_SO = 0.0
     else :
@@ -2215,7 +2218,7 @@ def choose_inputlines_from_basisfamily(cardinals,basisfamily,ccsdtkeyword,auxbas
         ccsdt_2_line="! {} cc-pVTZ-DK {} {} {} {}".format(ccsdtkeyword, auxbasis, pnokeyword, scfsetting,extrainputkeyword)
     elif cardinals == [3,4] and basisfamily=="cc-dk":
         #Auxiliary basis set.
-        auxbasis='cc-pV5Z/C'
+        auxbasis='autoaux'
         ccsdt_1_line="! {} cc-pVTZ-DK {} {} {} {}".format(ccsdtkeyword, auxbasis, pnokeyword, scfsetting,extrainputkeyword)
         ccsdt_2_line="! {} cc-pVQZ-DK {} {} {} {}".format(ccsdtkeyword, auxbasis, pnokeyword, scfsetting,extrainputkeyword)
     elif cardinals == [4,5] and basisfamily=="cc-dk":
@@ -2230,7 +2233,7 @@ def choose_inputlines_from_basisfamily(cardinals,basisfamily,ccsdtkeyword,auxbas
         ccsdt_2_line="! {} aug-cc-pVTZ-DK {} {} {} {}".format(ccsdtkeyword, auxbasis, pnokeyword, scfsetting,extrainputkeyword)
     elif cardinals == [3,4] and basisfamily=="aug-cc-dk":
         #Auxiliary basis set.
-        auxbasis='aug-cc-pV5Z/C'
+        auxbasis='Autoaux'
         ccsdt_1_line="! {} aug-cc-pVTZ-DK {} {} {} {}".format(ccsdtkeyword, auxbasis, pnokeyword, scfsetting,extrainputkeyword)
         ccsdt_2_line="! {} aug-cc-pVQZ-DK {} {} {} {}".format(ccsdtkeyword, auxbasis, pnokeyword, scfsetting,extrainputkeyword)
     elif cardinals == [4,5] and basisfamily=="aug-cc-dk":
@@ -2239,6 +2242,8 @@ def choose_inputlines_from_basisfamily(cardinals,basisfamily,ccsdtkeyword,auxbas
         ccsdt_1_line="! {} aug-cc-pVQZ-DK {} {} {} {}".format(ccsdtkeyword, auxbasis, pnokeyword, scfsetting,extrainputkeyword)
         ccsdt_2_line="! {} aug-cc-pV5Z-DK {} {} {} {}".format(ccsdtkeyword, auxbasis, pnokeyword, scfsetting,extrainputkeyword)
         #TODO Note: 4/5 cc/aug-cc basis sets are available but we need extrapolation parameters
+    
+    #DKH CORE-VALENCE CORRELATION CONSISTENT BASIS SETS
     elif cardinals == [2,3] and basisfamily=="cc-pw-dk":
         #Auxiliary basis set.
         auxbasis='cc-pVQZ/C'
@@ -2254,6 +2259,21 @@ def choose_inputlines_from_basisfamily(cardinals,basisfamily,ccsdtkeyword,auxbas
         auxbasis='Autoaux'
         ccsdt_1_line="! {} cc-pwCVQZ-DK {} {} {} {}".format(ccsdtkeyword, auxbasis, pnokeyword, scfsetting,extrainputkeyword)
         ccsdt_2_line="! {} cc-pwCV5Z-DK {} {} {} {}".format(ccsdtkeyword, auxbasis, pnokeyword, scfsetting,extrainputkeyword)
+    elif cardinals == [2,3] and basisfamily=="aug-cc-pw-dk":
+        #Auxiliary basis set.
+        auxbasis='cc-pVQZ/C'
+        ccsdt_1_line="! {} aug-cc-pwCVDZ-DK {} {} {} {}".format(ccsdtkeyword, auxbasis, pnokeyword, scfsetting,extrainputkeyword)
+        ccsdt_2_line="! {} aug-cc-pwCVTZ-DK {} {} {} {}".format(ccsdtkeyword, auxbasis, pnokeyword, scfsetting,extrainputkeyword)
+    elif cardinals == [3,4] and basisfamily=="aug-cc-pw-dk":
+        #Auxiliary basis set.
+        auxbasis='cc-pVQZ/C'
+        ccsdt_1_line="! {} aug-cc-pwCVTZ-DK {} {} {} {}".format(ccsdtkeyword, auxbasis, pnokeyword, scfsetting,extrainputkeyword)
+        ccsdt_2_line="! {} aug-cc-pwCVQZ-DK {} {} {} {}".format(ccsdtkeyword, auxbasis, pnokeyword, scfsetting,extrainputkeyword)
+    elif cardinals == [4,5] and basisfamily=="aug-cc-pw-dk":
+        #Auxiliary basis set.
+        auxbasis='Autoaux'
+        ccsdt_1_line="! {} aug-cc-pwCVQZ-DK {} {} {} {}".format(ccsdtkeyword, auxbasis, pnokeyword, scfsetting,extrainputkeyword)
+        ccsdt_2_line="! {} aug-cc-pwCV5Z-DK {} {} {} {}".format(ccsdtkeyword, auxbasis, pnokeyword, scfsetting,extrainputkeyword)
     else:
         print("Unknown basisfamily or cardinals chosen...")
         exit()
