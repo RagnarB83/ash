@@ -1425,7 +1425,6 @@ end
             print("Turning on")
             blocks = blocks + "%rel onecenter true end"
 
-
     #Choosing whether DLPNO or not
     if DLPNO == True:
         #Iterative DLPNO triples or not
