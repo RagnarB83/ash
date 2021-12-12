@@ -66,7 +66,7 @@ def W1theory(fragment=None, charge=None, orcadir=None, mult=None, stabilityanaly
     
     numelectrons = int(fragment.nuccharge - charge)
     #Reduce numcores if required
-    numcores = check_cores_vs_electrons(fragment,numcores,charge)
+    numcores = check_cores_vs_electrons(fragment.elems,numcores,charge)
     #if 1-electron species like Hydrogen atom then we either need to code special HF-based procedure or just hardcode values
     #Currently hardcoding H-atom case. Replace with proper extrapolated value later.
     if numelectrons == 1:
@@ -281,7 +281,7 @@ def W1F12theory(fragment=None, charge=None, orcadir=None, mult=None, stabilityan
     
     numelectrons = int(fragment.nuccharge - charge)
     #Reduce numcores if required
-    numcores = check_cores_vs_electrons(fragment,numcores,charge)
+    numcores = check_cores_vs_electrons(fragment.elems,numcores,charge)
     
     #if 1-electron species like Hydrogen atom then we either need to code special HF-based procedure or just hardcode values
     #Currently hardcoding H-atom case. Replace with proper extrapolated value later.
@@ -512,7 +512,7 @@ def DLPNO_W1F12theory(fragment=None, charge=None, orcadir=None, mult=None, stabi
     print("Calculation label: ", calc_label)
     numelectrons = int(fragment.nuccharge - charge)
     #Reduce numcores if required
-    numcores = check_cores_vs_electrons(fragment,numcores,charge)
+    numcores = check_cores_vs_electrons(fragment.elems,numcores,charge)
 
     #if 1-electron species like Hydrogen atom then we either need to code special HF-based procedure or just hardcode values
     #Currently hardcoding H-atom case. Replace with proper extrapolated value later.
@@ -742,7 +742,7 @@ def DLPNO_W1theory(fragment=None, charge=None, orcadir=None, mult=None, stabilit
 
     numelectrons = int(fragment.nuccharge - charge)
     #Reduce cores if needed
-    numcores = check_cores_vs_electrons(fragment,numcores,charge)
+    numcores = check_cores_vs_electrons(fragment.elems,numcores,charge)
     #if 1-electron species like Hydrogen atom then we either need to code special HF-based procedure or just hardcode values
     #Currently hardcoding H-atom case. Replace with proper extrapolated value later.
     if numelectrons == 1:
@@ -956,7 +956,7 @@ def DLPNO_F12(fragment=None, charge=None, orcadir=None, mult=None, stabilityanal
 
     numelectrons = int(fragment.nuccharge - charge)
     #Reduce cores if needed
-    numcores = check_cores_vs_electrons(fragment,numcores,charge)
+    numcores = check_cores_vs_electrons(fragment.elems,numcores,charge)
 
     #if 1-electron species like Hydrogen atom then we either need to code special HF-based procedure or just hardcode values
     #Currently hardcoding H-atom case. Replace with proper extrapolated value later.
@@ -1141,7 +1141,7 @@ def DLPNO_W2theory(fragment=None, charge=None, orcadir=None, mult=None, stabilit
 
     numelectrons = int(fragment.nuccharge - charge)
     #Check if numcores should be reduced
-    numcores = check_cores_vs_electrons(fragment,numcores,charge)
+    numcores = check_cores_vs_electrons(fragment.elems,numcores,charge)
     
     #if 1-electron species like Hydrogen atom then we either need to code special HF-based procedure or just hardcode values
     #Currently hardcoding H-atom case. Replace with proper extrapolated value later.
@@ -1390,7 +1390,7 @@ def CC_CBS(cardinals = [2,3], basisfamily="def2", relativity=None, fragment=None
 
     numelectrons = int(fragment.nuccharge - charge)
     #Reduce numcores if required
-    numcores = check_cores_vs_electrons(fragment,numcores,charge)
+    numcores = check_cores_vs_electrons(fragment.elems,numcores,charge)
 
 
     #if 1-electron species like Hydrogen atom then we either need to code special HF-based procedure or just hardcode values
@@ -1509,6 +1509,11 @@ end
     ############################################################s
     #Frozen-core CCSD(T) calculations defined here
     ############################################################
+    
+    #TODO: Figure out a check here to make sure if basis present for all element in elements list
+    #EXAMPLE: cc-pwCVNZ-DK available for Fe but not S. cc-pCVNZ-DK available for S but not Fe. 
+    #Hence for cc-pw-DK choose appropriate pw basis for Fe but CV basis for S ???
+    # Maybe call basis family: cc-CV-dk or something ?
     #Choosing 
     ccsdt_1_line,ccsdt_2_line=choose_inputlines_from_basisfamily(cardinals,basisfamily,ccsdtkeyword,auxbasis,pnokeyword,scfsetting,extrainputkeyword)
 
@@ -1708,7 +1713,7 @@ def FCI_CBS(cardinals = [2,3], basisfamily="def2", fragment=None, charge=None, o
 
     numelectrons = int(fragment.nuccharge - charge)
     #Reduce numcores if required
-    numcores = check_cores_vs_electrons(fragment,numcores,charge)
+    numcores = check_cores_vs_electrons(fragment.elems,numcores,charge)
 
 
 
@@ -1970,7 +1975,7 @@ def FCI_F12(F12level='DZ', fragment=None, charge=None, orcadir=None, mult=None, 
 
     numelectrons = int(fragment.nuccharge - charge)
     #Reduce numcores if required
-    numcores = check_cores_vs_electrons(fragment,numcores,charge)
+    numcores = check_cores_vs_electrons(fragment.elems,numcores,charge)
 
     #if 1-electron species like Hydrogen atom then we either need to code special HF-based procedure or just hardcode values
     #Currently hardcoding H-atom case. Replace with proper extrapolated value later.

@@ -38,7 +38,7 @@ from modules.module_coords import remove_atoms_from_system_CHARMM, add_atoms_to_
 
 # Singlepoint
 import modules.module_singlepoint
-from modules.module_singlepoint import Singlepoint, ZeroTheory
+from modules.module_singlepoint import Singlepoint, newSinglepoint, ZeroTheory
 
 # Parallel
 import functions.functions_parallel

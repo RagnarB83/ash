@@ -133,8 +133,9 @@ class CFourTheory:
         except:
             S2=None
         return S2
+
     # Run function. Takes coords, elems etc. arguments and computes E or E+G.
-    def run(self, current_coords=None, current_MM_coords=None, MMcharges=None, qm_elems=None,
+    def run(self, fragment=None, current_coords=None, current_MM_coords=None, MMcharges=None, qm_elems=None,
             elems=None, Grad=False, PC=False, numcores=None, restart=False):
 
         if numcores == None:

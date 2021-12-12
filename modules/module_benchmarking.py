@@ -315,7 +315,7 @@ def run_benchmark(set=None, theory=None, workflow=None, orcadir=None, numcores=N
             theory.charge=frag.charge
             theory.mult=frag.mult
             #Reducing numcores if few electrons, otherwise original value
-            theory.numcores = check_cores_vs_electrons(frag,numcores,theory.charge)
+            theory.numcores = check_cores_vs_electrons(frag.elems,numcores,theory.charge)
             
             #Case EFG
             if property == 'EFG':
@@ -404,7 +404,7 @@ def run_benchmark(set=None, theory=None, workflow=None, orcadir=None, numcores=N
                     theory.mult=frag.mult
                     
                     #Reducing numcores if few electrons, otherwise original value
-                    theory.numcores = check_cores_vs_electrons(frag,numcores,theory.charge)
+                    theory.numcores = check_cores_vs_electrons(frag.elems,numcores,theory.charge)
                     
                     energy = ash.Singlepoint(fragment=frag, theory=theory)
                     

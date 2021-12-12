@@ -49,6 +49,65 @@ def Singlepoint(fragment=None, theory=None, Grad=False):
         print_time_rel(module_init_time, modulename='Singlepoint', moduleindex=1)
         return energy
 
+
+
+#Single-point energy function that communicates via fragment
+def newSinglepoint(fragment=None, theory=None, Grad=False):
+    """Singlepoint function: runs a single-point energy calculation using ASH theory and ASH fragment.
+
+    Args:
+        fragment (ASH fragment, optional): An ASH fragment. Defaults to None.
+        theory (ASH theory, optional): Any valid ASH theory. Defaults to None.
+        Grad (bool, optional): Do gradient or not Defaults to False.
+
+    Returns:
+        float: Energy
+        or
+        float,np.array : Energy and gradient array
+    """
+    module_init_time=time.time()
+    print("")
+    if fragment is None or theory is None:
+        print(BC.FAIL,"Singlepoint requires a fragment and a theory object",BC.END)
+        exit(1)
+    
+    #Case QM/MM: we don't pass whole fragment?
+    if isinstance(theory, ash.QMMMTheory):
+        print("this is QM/MM. not ready")
+        exit()
+    #Regular single-point
+    else:
+        # Run a single-point energy job with gradient
+        if Grad ==True:
+            print(BC.WARNING,"Doing single-point Energy+Gradient job on fragment. Formula: {} Label: {} ".format(fragment.prettyformula,fragment.label), BC.END)
+            # An Energy+Gradient calculation
+            energy,gradient= theory.run(fragment=fragment, Grad=True)
+            print("Energy: ", energy)
+            print_time_rel(module_init_time, modulename='Singlepoint', moduleindex=1)
+            return energy,gradient
+        # Run a single-point energy job without gradient (default)
+        else:
+            print(BC.WARNING,"Doing single-point Energy job on fragment. Formula: {} Label: {} ".format(fragment.prettyformula,fragment.label), BC.END)
+            #energy = theory.run(current_coords=coords, elems=elems)
+            energy = theory.run(fragment=fragment)
+            print("Energy: ", energy)
+            #Now adding total energy to fragment
+            fragment.energy=energy
+            print_time_rel(module_init_time, modulename='Singlepoint', moduleindex=1)
+            return energy
+
+
+
+
+
+
+
+
+
+
+
+
+
 # Theory object that always gives zero energy and zero gradient. Useful for setting constraints
 class ZeroTheory:
     def __init__(self, fragment=None, charge=None, mult=None, printlevel=None, numcores=1, label=None):
