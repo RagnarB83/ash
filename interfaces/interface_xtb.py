@@ -271,7 +271,9 @@ class xTBTheory:
                 print("Running xtB using {} cores".format(self.numcores))
                 print("...")
             if Grad==True:
+                print("Grad is True")
                 if PC==True:
+                    print("PC is true")
                     create_xtb_pcfile_general(current_MM_coords, MMcharges, hardness=self.hardness)
                     run_xtb_SP_serial(self.xtbdir, self.xtbmethod, self.filename + '.xyz', self.charge, self.mult, 
                                       Grad=True, maxiter=self.maxiter, electronic_temp=self.electronic_temp, accuracy=self.accuracy)

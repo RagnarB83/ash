@@ -10,6 +10,7 @@ import math
 import dictionaries_lists
 from functions.functions_general import isodd
 import interfaces.interface_ORCA
+from modules.module_coords import nucchargelist
 
 #CM5. from https://github.com/patrickmelix/CM5-calculator/blob/master/cm5calculator.py
 
@@ -873,27 +874,29 @@ def DDEC_to_LJparameters(elems, molmoms, voldict, scale_polarH=False):
     return r0list, epsilonlist
 
 
-def num_core_electrons(fragment):
+#Get number of core electrons for list of elements
+def num_core_electrons(elems):
     sum=0
-    formula_list = modules.module_coords.molformulatolist(fragment.formula)
-    for i in formula_list:
-        els = dictionaries_lists.atom_core_electrons[i]
-        sum+=els
+    #formula_list = modules.module_coords.molformulatolist(fragment.formula)
+    for i in elems:
+        cels = dictionaries_lists.atom_core_electrons[i]
+        sum+=cels
     return sum
 
-#Check if electrons pairs in fragment are less than numcores. Reduce numcores if so.
+
+#Check if electrons pairs in element list are less than numcores. Reduce numcores if so.
 #Using even number of electrons
-def check_cores_vs_electrons(fragment,numcores,charge):
+def check_cores_vs_electrons(elems,numcores,charge):
     print("numcores:", numcores)
     print("charge:", charge)
-    numelectrons = int(fragment.nuccharge - charge)
+    numelectrons = int(nucchargelist(elems) - charge)
     #Reducing numcores if fewer active electron pairs than numcores.
-    core_electrons = num_core_electrons(fragment)
+    core_electrons = num_core_electrons(elems)
     print("core_electrons:", core_electrons)
     valence_electrons = (numelectrons - core_electrons)
     electronpairs = int(valence_electrons / 2)
     if electronpairs  < numcores:
-        print("Number of electrons in fragment:", numelectrons)
+        print("Number of total electrons :", numelectrons)
         print("Number of valence electrons :", valence_electrons )
         print("Number of valence electron pairs :", electronpairs )
 
@@ -909,6 +912,8 @@ def check_cores_vs_electrons(fragment,numcores,charge):
             print("Setting numcores to:", electronpairs)
             return int(electronpairs)
     return numcores
+
+
 
 #Approximate J-coupling spin projection functions
 def Jcoupling_Yamaguchi(HSenergy,BSenergy,HS_S2,BS_S2):

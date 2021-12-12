@@ -1,29 +1,35 @@
 import subprocess as sp
+import os
+import shutil
+import time
+import multiprocessing as mp
+import numpy as np
+
 import modules.module_coords
 from functions.functions_general import blankline,insert_line_into_file,BC,print_time_rel, print_line_with_mainheader
 from modules.module_singlepoint import Singlepoint
 import functions.functions_elstructure
 import constants
-import multiprocessing as mp
-import numpy as np
-import os
 import settings_ash
-import time
+
 
 #ORCA Theory object. Fragment object is optional. Only used for single-points.
 class ORCATheory:
     def __init__(self, orcadir=None, fragment=None, charge=None, mult=None, orcasimpleinput='', printlevel=2, extrabasisatoms=None, extrabasis=None, TDDFT=False, TDDFTroots=5, FollowRoot=1,
                  orcablocks='', extraline='', brokensym=None, HSmult=None, atomstoflip=None, numcores=1, nprocs=None, label=None, moreadfile=None, autostart=True, propertyblock=None):
+        print_line_with_mainheader("ORCATheory initialization")
 
-        if orcadir is None:
-            print(BC.WARNING, "No orcadir argument passed to ORCATheory. Attempting to find orcadir variable inside settings_ash", BC.END)
-            try:
-                self.orcadir=settings_ash.settings_dict["orcadir"]
-            except:
-                print(BC.FAIL,"Found no orcadir variable in settings_ash module either. Exiting.",BC.END)
-                exit()
-        else:
-            self.orcadir = orcadir
+        #Making sure we have a working ORCA location
+        print("Checking for ORCA location")
+        self.orcadir = check_ORCA_location(orcadir)
+        #Making sure ORCA binary works (and is not orca the screenreader)
+        check_ORCAbinary(self.orcadir)
+
+        #Checking if user added Opt, Freq keywords
+        if 'OPT' in orcasimpleinput.upper() or 'FREQ' in orcasimpleinput.upper() :
+            print(BC.FAIL,"Error. orcasimpleinput variable can not contain ORCA job-directives like: Opt, Freq, Numfreq", BC.END)
+            print("orcasimpleinput should only contain information on method (e.g. functional), basis set, grid, SCF convergence etc.")
+            exit()
 
         #Label to distinguish different ORCA objects
         self.label=label
@@ -56,11 +62,8 @@ class ORCATheory:
         #NOTE: nprocs is deprecated but kept on for a bit
         if nprocs==None:
             self.numcores=numcores
-            self.nprocs=numcores
         else:
             self.numcores=nprocs
-            self.nprocs=nprocs
-
         
         #Property block. Added after coordinates unless None
         self.propertyblock=propertyblock
@@ -85,8 +88,10 @@ class ORCATheory:
         else:
             self.extraline=extraline
         
+        #Inputfile definitions
         self.orcasimpleinput=orcasimpleinput
         self.orcablocks=orcablocks
+
 
         #BROKEN SYM OPTIONS
         self.brokensym=brokensym
@@ -123,6 +128,7 @@ class ORCATheory:
             #print("Charge: {} Mult: {}".format(self.charge,self.mult))
             print(self.orcasimpleinput)
             print(self.orcablocks)
+        print("\nORCATheory object created!")
     #Cleanup after run.
     def cleanup(self):
         print("Cleaning up old ORCA files")
@@ -362,11 +368,40 @@ class ORCATheory:
             exit(1)
 
 
+def check_ORCA_location(orcadir):
+    if orcadir != None:
+        finalorcadir = orcadir
+        print(BC.OKGREEN,"Using orcadir path provided: {}  (this dir should contain all the ORCA executable programs: orca, orca_scf, orca_mp2 etc.)".format(finalorcadir), BC.END)
+    else:
+        print(BC.WARNING, "No orcadir argument passed to ORCATheory. Attempting to find orcadir variable in ASH settings file (~/ash_user_settings.ini)", BC.END)
+        try:
+            finalorcadir=settings_ash.settings_dict["orcadir"]
+            print(BC.OKGREEN,"Using orcadir path provided from ASH settings file (~/ash_user_settings.ini): ", finalorcadir, BC.END)
+        except KeyError:
+            print(BC.WARNING,"Found no orcadir variable in ASH settings file either.",BC.END)
+            print(BC.WARNING,"Checking for ORCA in PATH environment variable.",BC.END)
+            try:
+                finalorcadir = os.path.dirname(shutil.which('orca'))
+                print(BC.OKGREEN,"Found orca binary in PATH. Using the following directory:", finalorcadir, BC.END)
+            except TypeError:
+                print(BC.FAIL,"Found no orca binary in PATH environment variable either. Giving up.", BC.END)
+                exit()
+    return finalorcadir
 
-
-
-
-
+def check_ORCAbinary(orcadir):
+    """Checks if this is a proper working ORCA quantum chemistry binary
+    Args:
+        orcadir ([type]): [description]
+    """
+    print("Checking if ORCA binary works...",end="")
+    p = sp.Popen([orcadir+"/orca"], stdout = sp.PIPE)
+    out, err = p.communicate()
+    if 'This program requires the name of a parameterfile' in str(out):
+        print(BC.OKGREEN,"yes", BC.END)
+        return True
+    else:
+        print(BC.FAIL,"Problem: ORCA binary: {} does not work. Exiting!".format(orcadir+'/orca'), BC.END)
+        exit()
 
 
 
