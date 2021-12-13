@@ -529,9 +529,9 @@ class Fragment:
         self.fragmenttypes_numatoms = []
         for fragindex, frago in enumerate(fragmentobjects):
             print("fragindex:", fragindex)
-            print("frago:", frago)
-            print(frago.__dict__)
-            print("frago.flat_clusterfraglist:", frago.flat_clusterfraglist)
+            #print("frago:", frago)
+            #print(frago.__dict__)
+            #print("frago.flat_clusterfraglist:", frago.flat_clusterfraglist)
             combined_flat_clusterfraglist.extend(frago.flat_clusterfraglist)
             combined_flat_labels.extend([fragindex] * len(frago.flat_clusterfraglist))
             self.fragmenttypes_numatoms.append([frago.Numatoms])

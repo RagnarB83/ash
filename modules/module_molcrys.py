@@ -389,7 +389,7 @@ def molcrys(cif_file=None, xtl_file=None, xyz_file=None, cell_length=None, cell_
     currtime=time.time()
     
     # Going through found frags and identify mainfrags and counterfrags
-    print("Connectivity fragments:", Cluster.connectivity)
+    #print("Connectivity fragments:", Cluster.connectivity)
     print("Number of Connectivity fragments:", len(Cluster.connectivity))
     for frag in Cluster.connectivity:
         el_list = [cluster_elems[i] for i in frag]
