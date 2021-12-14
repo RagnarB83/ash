@@ -45,7 +45,7 @@ def load_julia_interface():
     global JuliaMain
     if julia_loaded is False:
         print("Now loading Julia interface.")
-        print("This requires an active Julia installation")
+        print("This requires a Julia installation available in PATH")
         try:
             juliapath=os.path.dirname(shutil.which('julia'))
             print("Found Julia in dir:", juliapath)
@@ -56,6 +56,10 @@ def load_julia_interface():
         # print("julia loaded false")
         # from julia.api import Julia
         # jl = Julia(compiled_modules=False)
+        print("Now loading PyJulia next. This will fail if :\n\
+            - PyJulia Python package has not been installed\n\
+            - Julia PyCall has not been installed\n\
+            - Julia Hungarian package has not been installed")
         from julia import Main as JuliaMain
         JuliaMain.include(ashpath + "/functions/functions_julia.jl")
         julia_loaded = True
