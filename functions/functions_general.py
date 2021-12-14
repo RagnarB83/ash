@@ -59,6 +59,7 @@ def load_julia_interface():
         from julia import Main as JuliaMain
         JuliaMain.include(ashpath + "/functions/functions_julia.jl")
         julia_loaded = True
+        print("Julia interface successfully loaded")
     # else:
     #    print("Julia loaded true")
     # print("JuliaMain:", JuliaMain)

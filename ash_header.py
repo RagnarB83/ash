@@ -64,7 +64,7 @@ def print_header():
             with open(inputfilepath) as f:
                 for line in f:
                     print("   >", line, end="")
-            print(f"{BC.WARNING}{'=' * 80}")
+            print(f"{BC.WARNING}{'=' * 80}",BC.END)
             print()
 
 
