@@ -9,7 +9,8 @@ import ash
 import modules.module_coords
 from functions.functions_general import isint,isfloat,is_same_sign,BC,print_time_rel,pygrep
 from functions.functions_elstructure import check_cores_vs_electrons, num_core_electrons
-from interfaces.interface_ORCA import grab_EFG_from_ORCA_output
+from interfaces.interface_ORCA import ORCATheory, grab_EFG_from_ORCA_output
+from modules.module_highlevel_workflows import CC_CBS_Theory
 
 #Reaction class. Used for benchmarking
 class Reaction:
@@ -215,13 +216,12 @@ def run_geobenchmark(set=None, theory=None, orcadir=None, numcores=None):
 #run_benchmark
 #Reuseorbs option: Reuse orbitals within same reaction. This only makes sense if reaction contains very similar geometries (e.g. IE/EA reaction)
 #property='energy', 
-def run_benchmark(set=None, theory=None, workflow=None, orcadir=None, numcores=None, reuseorbs=False, corrections=None, workflow_args=None, keepoutputfiles=True):
+def run_benchmark(set=None, theory=None, orcadir=None, numcores=None, reuseorbs=False, corrections=None, keepoutputfiles=True):
     """[summary]
 
     Args:
         set ([type], optional): [description]. Defaults to None.
         theory ([type], optional): [description]. Defaults to None.
-        workflow ([type], optional): [description]. Defaults to None.
         orcadir ([type], optional): [description]. Defaults to None.
         numcores ([type], optional): [description]. Defaults to None.
         reuseorbs (bool, optional): [description]. Defaults to False.
@@ -287,9 +287,7 @@ def run_benchmark(set=None, theory=None, workflow=None, orcadir=None, numcores=N
 
     #Non-energy properties
     if property!='energy':
-        if workflow != None:
-            print("Workflow not allowed for property")
-            exit()
+
         #Exit if non-energetic property and not ORCATheory
         if theory.__class__.__name__ != "ORCATheory":
             print("Only ORCATheory supported for non-energetic property in run_benchmark!")
@@ -402,30 +400,23 @@ def run_benchmark(set=None, theory=None, workflow=None, orcadir=None, numcores=N
                 if theory is not None:
                     theory.charge=frag.charge
                     theory.mult=frag.mult
-                    
                     #Reducing numcores if few electrons, otherwise original value
                     theory.numcores = check_cores_vs_electrons(frag.elems,numcores,theory.charge)
                     
                     energy = ash.Singlepoint(fragment=frag, theory=theory)
                     
-                    
-                    
                     all_calc_energies[file] = energy
                     reaction.totalenergies.append(energy)
-                    shutil.copyfile(theory.filename+'.out', './' + file  + '.out')
+
+                    #Keep copy of outputfile if ORCATheory.
+                    if isinstance(theory,ORCATheory):
+                        shutil.copyfile(theory.filename+'.out', './' + file  + '.out')
                     
                     #If reuseorbs False (default) then delete ORCA files in each step
-                    #If True, keep file, including orcat.gbw which enables Autostart
+                    #If True, keep file, including orca.gbw which enables Autostart
                     if reuseorbs is False:
                         theory.cleanup()
                     print("")
-                elif workflow is not None:
-                    if orcadir is None:
-                        print("Please provide orcadir variable to run_benchmark_set")
-                        exit()
-                    energy, energydict = workflow(fragment=frag, charge=frag.charge, mult=frag.mult, orcadir=orcadir, numcores=numcores, workflow_args=workflow_args)
-                    all_calc_energies[file] = energy
-                    reaction.totalenergies.append(energy)
                 #List of all energies
                 energies.append(energy)
             print("")

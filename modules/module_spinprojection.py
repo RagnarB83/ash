@@ -57,6 +57,15 @@ class SpinProjectionTheory:
         HSenergy = self.theory1.run(current_coords=current_coords, elems=elems, PC=PC, numcores=numcores, Grad=Grad)
         BSenergy = self.theory2.run(current_coords=current_coords, elems=elems, PC=PC, numcores=numcores, Grad=Grad)
 
+        #Some theories like CC_CBS_Theory may return both energy and energy componentsdict as a tuple
+        #TODO: avoid this nasty fix
+        if type(HSenergy) is tuple:
+            componentsdict1=HSenergy[1]
+            HSenergy=HSenergy[0]
+        if type(BSenergy) is tuple:
+            componentsdict2=BSenergy[1]
+            BSenergy=BSenergy[0]
+
         #Grab S2 expectation values. Used by Yamaguchi
         if self.theory1.__class__.__name__ == "ORCATheory":
             HS_S2=interface_ORCA.grab_spin_expect_values_ORCA(self.theory1.filename+'.out')

@@ -146,6 +146,7 @@ def confsampler_protocol(fragment=None, crestdir=None, xtbmethod='GFN2-xTB', MLt
         print("")
         print("Performing High-level calculation for ML-optimized Conformer ", index)
         HLenergy = ash.Singlepoint(theory=HLtheory, fragment=conformer)
+
         HL_energies.append(HLenergy)
 
 
@@ -187,7 +188,7 @@ def confsampler_protocol(fragment=None, crestdir=None, xtbmethod='GFN2-xTB', MLt
 
 # opt+freq+HL protocol for single species
 def thermochemprotocol_single(fragment=None, Opt_theory=None, SP_theory=None, orcadir=None, numcores=None, memory=5000,
-                       workflow_args=None, analyticHessian=True, temp=298.15, pressure=1.0):
+                       analyticHessian=True, temp=298.15, pressure=1.0):
     module_init_time=time.time()
     print(BC.WARNING, BC.BOLD, "------------THERMOCHEM PROTOCOL (single-species)-------------", BC.END)
     if fragment.charge == None:
@@ -224,21 +225,17 @@ def thermochemprotocol_single(fragment=None, Opt_theory=None, SP_theory=None, or
     print("THERMOCHEM PROTOCOL-single: Step 3. High-level single-point calculation")
     print("-------------------------------------------------------------------------")
     #Workflow (callable function) or ORCATheory object
-    if callable(SP_theory) is True:
-        FinalE, componentsdict = SP_theory(fragment=fragment, charge=fragment.charge,
-                    mult=fragment.mult, orcadir=orcadir, numcores=numcores, memory=memory, workflow_args=workflow_args)
-    elif SP_theory.__class__.__name__ == "ORCATheory":
+    #if callable(SP_theory) is True:
+    #    FinalE, componentsdict = SP_theory(fragment=fragment, charge=fragment.charge,
+    #                mult=fragment.mult, orcadir=orcadir, numcores=numcores, memory=memory, workflow_args=workflow_args)
+    #elif SP_theory.__class__.__name__ == "ORCATheory":
         #Adding charge and mult to theory object, taken from each fragment object
-        SP_theory.charge = fragment.charge
-        SP_theory.mult = fragment.mult
-        FinalE = ash.Singlepoint(fragment=fragment, theory=SP_theory)
-        SP_theory.cleanup()
-        #TODO: Add SCF-energy and corr-energy to dict here. Need to grab. Can we make general?
-        componentsdict={}
-        #componentsdict = {'E_SCF_CBS' : scf_energy, 'E_corr_CBS' : corr_energy}
-    else:
-        print("Unknown Singlepoint protocol")
-        exit()
+    SP_theory.charge = fragment.charge
+    SP_theory.mult = fragment.mult
+    FinalE = ash.Singlepoint(fragment=fragment, theory=SP_theory)
+
+    SP_theory.cleanup()
+
     print_time_rel(module_init_time, modulename='thermochemprotocol_single', moduleindex=0)
     return FinalE, componentsdict, thermochem
 
@@ -246,7 +243,7 @@ def thermochemprotocol_single(fragment=None, Opt_theory=None, SP_theory=None, or
 #Thermochemistry protocol. Take list of fragments, stoichiometry, and 2 theory levels
 #Requires orcadir, and Opt_theory level (typically an ORCATheory object), SP_theory (either ORCATTheory or workflow.
 def thermochemprotocol_reaction(Opt_theory=None, SP_theory=None, fraglist=None, stoichiometry=None, orcadir=None, numcores=1, memory=5000,
-                       workflow_args=None, analyticHessian=True, temp=298.15, pressure=1.0):
+                       analyticHessian=True, temp=298.15, pressure=1.0):
     """[summary]
 
     Args:
@@ -257,7 +254,6 @@ def thermochemprotocol_reaction(Opt_theory=None, SP_theory=None, fraglist=None, 
         orcadir (str, optional): Path to ORCA. Defaults to None.
         numcores (int, optional): Number of cores. Defaults to 1.
         memory (int, optional): Memory in MB (ORCA). Defaults to 5000.
-        workflow_args ([type], optional): dictionary for workflow arguments. Defaults to None.
         analyticHessian (bool, optional): Analytical Hessian or not. Defaults to True.
         temp (float, optional): Temperature in Kelvin. Defaults to 298.15.
         pressure (float, optional): Pressure in atm. Defaults to 1.0.
@@ -278,12 +274,15 @@ def thermochemprotocol_reaction(Opt_theory=None, SP_theory=None, fraglist=None, 
     for species in fraglist:
         #Get energy and components for species
         FinalE, componentsdict, thermochem = thermochemprotocol_single(fragment=species, Opt_theory=Opt_theory, SP_theory=SP_theory, orcadir=orcadir, numcores=numcores, memory=memory,
-                       workflow_args=workflow_args, analyticHessian=analyticHessian, temp=temp, pressure=pressure)
+                       analyticHessian=analyticHessian, temp=temp, pressure=pressure)
         
+        print("FinalE:", FinalE)
+        print("componentsdict", componentsdict)
+        print("thermochem", thermochem)
         ZPVE=thermochem['ZPVE']
         Hcorr=thermochem['Hcorr']
         Gcorr=thermochem['Gcorr']
-        
+        print("ZPVE:", ZPVE)
         FinalEnergies_el.append(FinalE)
         FinalEnergies_zpve.append(FinalE+ZPVE)
         FinalEnthalpies.append(FinalE+Hcorr)
@@ -335,116 +334,6 @@ def thermochemprotocol_reaction(Opt_theory=None, SP_theory=None, fraglist=None, 
     print_time_rel(module_init_time, modulename='thermochemprotocol_reaction', moduleindex=0)
 
 
-
-#Thermochemistry protocol. Take list of fragments, stoichiometry, and 2 theory levels
-#Requires orcadir, and Opt_theory level (typically an ORCATheory object), SP_theory (either ORCATTheory or workflow.
-#Old non-modularized code
-#TODO: DELETE, deprecated
-def old_thermochemprotocol(Opt_theory=None, SP_theory=None, fraglist=None, stoichiometry=None, orcadir=None, numcores=None, memory=5000,
-                       workflow_args=None, analyticHessian=True, temp=298.15, pressure=1.0):
-    print("")
-    print("inactive, to be deleted....")
-    exit()
-    print(BC.WARNING, BC.BOLD, "------------THERMOCHEM PROTOCOL-------------", BC.END)
-    print("")
-    if fraglist[0].charge == None:
-        print("1st. Fragment: {}".format(fraglist[0].__dict__))
-        print("No charge/mult information present in fragment. Each fragment in provided fraglist must have charge/mult information defined.")
-        print("Example:")
-        print("fragment.charge= 0; fragment.mult=1")
-        print("Exiting...")
-        exit()
-    #DFT Opt+Freq  and Single-point High-level workflow
-    FinalEnergies = []; FinalEnthalpies = []; FinalFreeEnergies = []; list_of_dicts = []; ZPVE_Energies=[]
-    Hcorr_Energies = []; Gcorr_Energies = []
-    for species in fraglist:
-        #Only Opt+Freq for molecules, not atoms
-        if species.numatoms != 1:
-            #DFT-opt
-            #TODO: Check if this works in general. At least for ORCA.
-            
-            #Adding charge and mult to theory object, taken from each fragment object
-            Opt_theory.charge = species.charge
-            Opt_theory.mult = species.mult
-            interfaces.interface_geometric.geomeTRICOptimizer(theory=Opt_theory,fragment=species)
-            
-            #DFT-FREQ
-            if analyticHessian == True:
-                thermochem = ash.AnFreq(fragment=species, theory=Opt_theory, numcores=numcores)                
-            else:
-                thermochem = ash.NumFreq(fragment=species, theory=Opt_theory, npoint=2, runmode='serial')
-            ZPVE = thermochem['ZPVE']
-            Hcorr = thermochem['Hcorr']
-            Gcorr = thermochem['Gcorr']
-        else:
-            #Setting thermoproperties for atom
-            thermochem = thermochemcalc([],atoms,species, species.mult, temp=temp,pressure=pressure)
-            ZPVE = thermochem['ZPVE']
-            Hcorr = thermochem['Hcorr']
-            Gcorr = thermochem['Gcorr']
-            
-        
-        #Workflow (callable function) or ORCATheory object
-        if callable(SP_theory) is True:
-            FinalE, componentsdict = DLPNO_CC_CBS(fragment=species, charge=species.charge,
-                        mult=species.mult, orcadir=orcadir, numcores=numcores, memory=memory, workflow_args=workflow_args)
-        elif SP_theory.__class__.__name__ == "ORCATheory":
-            #Adding charge and mult to theory object, taken from each fragment object
-            SP_theory.charge = species.charge
-            SP_theory.mult = species.mult
-            FinalE = ash.Singlepoint(fragment=species, theory=SP_theory)
-            SP_theory.cleanup()
-            #TODO: Add SCF-energy and corr-energy to dict here. Need to grab. Can we make general?
-            componentsdict={}
-            #componentsdict = {'E_SCF_CBS' : scf_energy, 'E_corr_CBS' : corr_energy}
-        else:
-            print("Unknown Singlepoint protocol")
-            exit()
-        FinalEnergies.append(FinalE+ZPVE)
-        FinalEnthalpies.append(FinalE+Hcorr)
-        FinalFreeEnergies.append(FinalE+Gcorr)
-        list_of_dicts.append(componentsdict)
-        ZPVE_Energies.append(ZPVE)
-        Hcorr_Energies.append(Hcorr)
-        Gcorr_Energies.append(Gcorr)
-    print("")
-    print("")
-    print("FINAL REACTION ENERGY:")
-    print("Enthalpy and Gibbs Energies for  T={} and P={}".format(temp,pressure))
-    print("----------------------------------------------")
-    ReactionEnergy(stoichiometry=stoichiometry, list_of_fragments=fraglist, list_of_energies=FinalEnergies, unit='kcalpermol', label='Total ΔE')
-    ReactionEnergy(stoichiometry=stoichiometry, list_of_fragments=fraglist, list_of_energies=FinalEnthalpies, unit='kcalpermol', label='Total ΔH')
-    ReactionEnergy(stoichiometry=stoichiometry, list_of_fragments=fraglist, list_of_energies=FinalFreeEnergies, unit='kcalpermol', label='Total ΔG')
-    print("----------------------------------------------")
-    print("Individual contributions")
-    #Print individual contributions if available
-    #ZPVE
-    ReactionEnergy(stoichiometry=stoichiometry, list_of_fragments=fraglist, list_of_energies=ZPVE_Energies, unit='kcalpermol', label='ΔZPVE')
-    ReactionEnergy(stoichiometry=stoichiometry, list_of_fragments=fraglist, list_of_energies=Hcorr_Energies, unit='kcalpermol', label='ΔHcorr')
-    ReactionEnergy(stoichiometry=stoichiometry, list_of_fragments=fraglist, list_of_energies=Gcorr_Energies, unit='kcalpermol', label='ΔGcorr')
-    if 'E_SCF_CBS' in componentsdict:
-        scf_parts=[dict['E_SCF_CBS'] for dict in list_of_dicts]
-        ReactionEnergy(stoichiometry=stoichiometry, list_of_fragments=fraglist, list_of_energies=scf_parts, unit='kcalpermol', label='ΔSCF')
-    if 'E_CCSDcorr_CBS' in componentsdict:
-        ccsd_parts=[dict['E_CCSDcorr_CBS'] for dict in list_of_dicts]
-        ReactionEnergy(stoichiometry=stoichiometry, list_of_fragments=fraglist, list_of_energies=ccsd_parts, unit='kcalpermol', label='ΔCCSD')
-    if 'E_triplescorr_CBS' in componentsdict:
-        triples_parts=[dict['E_triplescorr_CBS'] for dict in list_of_dicts]
-        ReactionEnergy(stoichiometry=stoichiometry, list_of_fragments=fraglist, list_of_energies=triples_parts, unit='kcalpermol', label='Δ(T)')
-    if 'E_corr_CBS' in componentsdict:
-        valencecorr_parts=[dict['E_corr_CBS'] for dict in list_of_dicts]
-        ReactionEnergy(stoichiometry=stoichiometry, list_of_fragments=fraglist, list_of_energies=valencecorr_parts, unit='kcalpermol', label='ΔCCSD+Δ(T) corr')
-    if 'E_SO' in componentsdict:
-        SO_parts=[dict['E_SO'] for dict in list_of_dicts]
-        ReactionEnergy(stoichiometry=stoichiometry, list_of_fragments=fraglist, list_of_energies=SO_parts, unit='kcalpermol', label='ΔSO')
-    if 'E_corecorr_and_SR' in componentsdict:
-        CV_SR_parts=[dict['E_corecorr_and_SR'] for dict in list_of_dicts]
-        ReactionEnergy(stoichiometry=stoichiometry, list_of_fragments=fraglist, list_of_energies=CV_SR_parts, unit='kcalpermol', label='ΔCV+SR')
-    
-    print("")
-    print(BC.WARNING, BC.BOLD, "------------THERMOCHEM PROTOCOL END-------------", BC.END)
-    #ash.print_time_rel(ash_header.init_time,modulename='Entire thermochemprotocol')
-    #print_time_rel(module_init_time, modulename='thermochemprotocol')
 
 def auto_active_space(fragment=None, orcadir=None, basis="def2-SVP", scalar_rel=None, charge=None, mult=None, 
     initial_orbitals='MP2', functional='TPSS', smeartemp=5000, tgen=1e-1, selection_thresholds=[1.999,0.001],
@@ -668,8 +557,7 @@ def calc_xyzfiles(xyzdir=None, theory=None, Opt=False, Freq=False, charge=None, 
     	    theory.charge=mol.charge; theory.mult=mol.mult
         #Global charge/mult keywords (rare)
         else:
-            theory.charge=charge
-            theory.mult=mult
+            theory.charge=charge; theory.mult=mult; mol.charge=charge; mol.mult=mult
         #Do Optimization or Singlepoint
         if Opt is True:
             if xtb_preopt is True:
@@ -684,7 +572,6 @@ def calc_xyzfiles(xyzdir=None, theory=None, Opt=False, Freq=False, charge=None, 
             #Rename optimized XYZ-file
             filenamestring_suffix="" #nothing for now
             os.rename("Fragment-optimized.xyz",os.path.splitext(filename)[0]+filenamestring_suffix+".xyz")
-            #shutil.copy(os.path.splitext(filename)[0]+"_opt.xyz", ORCAcalc_1.filename+'_fod.gbw')
             shutil.copy(os.path.splitext(filename)[0]+filenamestring_suffix+".xyz",finalxyzdir)
 
             #Freq job after OPt
@@ -695,6 +582,7 @@ def calc_xyzfiles(xyzdir=None, theory=None, Opt=False, Freq=False, charge=None, 
 
         else:
             energy = ash.Singlepoint(theory=theory, fragment=mol)
+        
         print("Energy of file {} : {} Eh".format(file, energy))
         theory.cleanup()
         energies.append(energy)

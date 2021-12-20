@@ -32,7 +32,7 @@ class Fragment:
         # Printlevel. Default: 2 (slightly verbose)
         self.printlevel = printlevel
 
-        # New. Charge and mult attribute of fragment. Useful for workflows
+        # Optional charge and mult attributes of fragment.
         self.charge = charge
         self.mult = mult
 

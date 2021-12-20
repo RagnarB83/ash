@@ -43,6 +43,13 @@ def Singlepoint(fragment=None, theory=None, Grad=False):
     else:
         print(BC.WARNING,"Doing single-point Energy job on fragment. Formula: {} Label: {} ".format(fragment.prettyformula,fragment.label), BC.END)
         energy = theory.run(current_coords=coords, elems=elems)
+
+        #Some theories like CC_CBS_Theory may return both energy and energy componentsdict as a tuple
+        #TODO: avoid this nasty fix
+        if type(energy) is tuple:
+            componentsdict=energy[1]
+            energy=energy[0]
+
         print("Energy: ", energy)
         #Now adding total energy to fragment
         fragment.energy=energy
