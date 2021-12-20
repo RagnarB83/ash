@@ -4,6 +4,7 @@ import numpy as np
 import time
 from functools import wraps
 import math
+import shutil
 
 from ash import ashpath
 
@@ -39,15 +40,30 @@ julia_loaded = False
 
 
 def load_julia_interface():
+    print("Calling Julia interface")
     global julia_loaded
     global JuliaMain
     if julia_loaded is False:
+        print("Now loading Julia interface.")
+        print("This requires a Julia installation available in PATH")
+        try:
+            juliapath=os.path.dirname(shutil.which('julia'))
+            print("Found Julia in dir:", juliapath)
+        except TypeError:
+            print("Problem. No julia binary found in PATH environment variable.")
+            print("Make sure the path to Julia's bin directory is available in your shell-configuration or jobscript")
+            exit()
         # print("julia loaded false")
         # from julia.api import Julia
         # jl = Julia(compiled_modules=False)
+        print("Now loading PyJulia next. This will fail if :\n\
+            - PyJulia Python package has not been installed\n\
+            - Julia PyCall has not been installed\n\
+            - Julia Hungarian package has not been installed")
         from julia import Main as JuliaMain
         JuliaMain.include(ashpath + "/functions/functions_julia.jl")
         julia_loaded = True
+        print("Julia interface successfully loaded")
     # else:
     #    print("Julia loaded true")
     # print("JuliaMain:", JuliaMain)
