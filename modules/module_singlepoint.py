@@ -8,7 +8,7 @@
 import numpy as np
 import time
 import ash
-from functions.functions_general import BC,blankline,print_time_rel
+from functions.functions_general import BC,blankline,print_time_rel,print_line_with_mainheader
 
 #Single-point energy function
 def Singlepoint(fragment=None, theory=None, Grad=False):
@@ -24,8 +24,8 @@ def Singlepoint(fragment=None, theory=None, Grad=False):
         or
         float,np.array : Energy and gradient array
     """
+    print_line_with_mainheader("Singlepoint function")
     module_init_time=time.time()
-    print("")
     if fragment is None or theory is None:
         print(BC.FAIL,"Singlepoint requires a fragment and a theory object",BC.END)
         exit(1)
@@ -41,7 +41,17 @@ def Singlepoint(fragment=None, theory=None, Grad=False):
         return energy,gradient
     # Run a single-point energy job without gradient (default)
     else:
-        print(BC.WARNING,"Doing single-point Energy job on fragment. Formula: {} Label: {} ".format(fragment.prettyformula,fragment.label), BC.END)
+        print("Doing single-point Energy job on fragment. Formula: {} Label: {} ".format(fragment.prettyformula,fragment.label))
+
+        #Check if charge/mult has been defined in theory. Otherwise grab from fragment
+        #TODO: Would be good to also check that theory is a QM-theory. Define as attribute?
+        if theory.charge == None and theory.mult == None:
+            print(BC.WARNING,"Warning: There is no charge or mult defined in theory",BC.END)
+            if fragment.charge != None and fragment.mult != None:
+                print(BC.WARNING,"Fragment contains charge/mult information: Charge: {} Mult: {} Using this instead".format(fragment.charge,fragment.mult), BC.END)
+                print(BC.WARNING,"Make sure this is what you want!", BC.END)
+                theory.charge=fragment.charge; theory.mult=fragment.mult
+
         energy = theory.run(current_coords=coords, elems=elems)
 
         #Some theories like CC_CBS_Theory may return both energy and energy componentsdict as a tuple
