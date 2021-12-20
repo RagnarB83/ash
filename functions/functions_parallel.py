@@ -103,6 +103,13 @@ def Single_par(fragment=None, fragmentfile=None, theory=None, label=None, mofile
     print("\n\nProcess ID {} is running calculation with label: {} \n\n".format(mp.current_process(),label))
 
     energy = theory.run(current_coords=fragment.coords, elems=fragment.elems, label=label)
+
+    #Some theories like CC_CBS_Theory may return both energy and energy componentsdict as a tuple
+    #TODO: avoid this nasty fix
+    if type(energy) is tuple:
+        componentsdict=energy[1]
+        energy=energy[0]
+
     os.chdir('..')
     print("Energy: ", energy)
     # Now adding total energy to fragment

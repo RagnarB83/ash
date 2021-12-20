@@ -13,6 +13,7 @@ import constants
 import settings_ash
 
 
+
 #ORCA Theory object. Fragment object is optional. Only used for single-points.
 class ORCATheory:
     def __init__(self, orcadir=None, fragment=None, charge=None, mult=None, orcasimpleinput='', printlevel=2, extrabasisatoms=None, extrabasis=None, TDDFT=False, TDDFTroots=5, FollowRoot=1,
@@ -24,11 +25,15 @@ class ORCATheory:
         self.orcadir = check_ORCA_location(orcadir)
         #Making sure ORCA binary works (and is not orca the screenreader)
         check_ORCAbinary(self.orcadir)
+        #Checking OpenMPI
+        if numcores != 1:
+            print("ORCA parallel job requested. Make sure that the correct OpenMPI version (for the ORCA version) is available in your environment")
+            check_OpenMPI()
 
         #Checking if user added Opt, Freq keywords
         if 'OPT' in orcasimpleinput.upper() or 'FREQ' in orcasimpleinput.upper() :
             print(BC.FAIL,"Error. orcasimpleinput variable can not contain ORCA job-directives like: Opt, Freq, Numfreq", BC.END)
-            print("orcasimpleinput should only contain information on method (e.g. functional), basis set, grid, SCF convergence etc.")
+            print("orcasimpleinput should only contain information on electronic-structure method (e.g. functional), basis set, grid, SCF convergence etc.")
             exit()
 
         #Label to distinguish different ORCA objects
@@ -367,6 +372,9 @@ class ORCATheory:
             print_time_rel(module_init_time, modulename='ORCA run', moduleindex=2)
             exit(1)
 
+###############################################
+#CHECKS FOR ORCA program
+###############################################
 
 def check_ORCA_location(orcadir):
     if orcadir != None:
@@ -403,6 +411,33 @@ def check_ORCAbinary(orcadir):
         print(BC.FAIL,"Problem: ORCA binary: {} does not work. Exiting!".format(orcadir+'/orca'), BC.END)
         exit()
 
+###############################################
+#CHECKS FOR OPENMPI
+#NOTE: Perhaps to be moved to other location
+###############################################
+def check_OpenMPI():
+    #Find mpirun and take path
+    try:
+        openmpibindir = os.path.dirname(shutil.which('mpirun'))
+    except:
+        print("No mpirun found in PATH. Make sure to add OpenMPI to PATH in your environment/jobscript")
+        exit()
+    print("OpenMPI binary directory found:", openmpibindir)
+    #Test that mpirun is executable and grab OpenMPI version number for printout
+    test_OpenMPI()
+    #NOTE: Not sure if we should do more here
+    #Inspect LD_LIBRARY_PATH
+    #openmpilibdir= os.environ.get("LD_LIBRARY_PATH")
+    #print("OpenMPI library directory:", openmpilibdir)
+    return
+
+def test_OpenMPI():
+    print("Testing that mpirun is executable...", end="")
+    p = sp.Popen(["mpirun", "-V"], stdout = sp.PIPE)
+    out, err = p.communicate()
+    mpiversion=out.split()[3].decode()
+    print(BC.OKGREEN,"yes",BC.END)
+    print("OpenMPI version:", mpiversion)
 
 
 # Once inputfiles are ready, organize them. We want open-shell calculation (e.g. oxidized) to reuse closed-shell GBW file

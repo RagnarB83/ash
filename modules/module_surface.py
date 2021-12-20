@@ -18,7 +18,7 @@ from modules.module_freq import calc_rotational_constants
 import functions.functions_parallel
 
 # TODO: Finish parallelize surfacepoint calculations
-def calc_surface(fragment=None, theory=None, workflow=None, scantype='Unrelaxed', resultfile='surface_results.txt', keepoutputfiles=True, keepmofiles=False,
+def calc_surface(fragment=None, theory=None, scantype='Unrelaxed', resultfile='surface_results.txt', keepoutputfiles=True, keepmofiles=False,
                  runmode='serial', coordsystem='dlc', maxiter=50, extraconstraints=None, convergence_setting=None, 
                  ActiveRegion=False, actatoms=None, **kwargs):
     """Calculate 1D/2D surface
@@ -26,7 +26,6 @@ def calc_surface(fragment=None, theory=None, workflow=None, scantype='Unrelaxed'
     Args:
         fragment (ASH fragment, optional): ASH fragment object. Defaults to None.
         theory (ASH theory, optional): ASH theory object. Defaults to None.
-        workflow (, optional): High-level workflow alternative to theory. Defaults to None.
         scantype (str, optional): Type of scan: 'Unrelaxed' or 'Relaxed'. Defaults to 'Unrelaxed'.
         resultfile (str, optional): Name of resultfile. Defaults to 'surface_results.txt'.
         runmode (str, optional): Runmode: 'serial' or 'parallel. Defaults to 'serial'.
