@@ -216,7 +216,7 @@ def run_geobenchmark(set=None, theory=None, orcadir=None, numcores=None):
 #run_benchmark
 #Reuseorbs option: Reuse orbitals within same reaction. This only makes sense if reaction contains very similar geometries (e.g. IE/EA reaction)
 #property='energy', 
-def run_benchmark(set=None, theory=None, orcadir=None, numcores=None, reuseorbs=False, corrections=None, keepoutputfiles=True):
+def run_benchmark(set=None, theory=None, numcores=None, reuseorbs=False, corrections=None, keepoutputfiles=True):
     """[summary]
 
     Args:

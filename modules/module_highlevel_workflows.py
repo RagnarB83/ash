@@ -15,7 +15,8 @@ from modules.module_coords import elemlisttoformula, nucchargelist,elematomnumbe
 
 # Allowed basis set families. Accessed by function basis_for_element and extrapolation
 basisfamilies=['cc','aug-cc','cc-dkh','cc-dk','aug-cc-dkh','aug-cc-dk','def2','ma-def2','def2-zora', 'def2-dkh',
-            'ma-def2-zora','ma-def2-dkh', 'cc-CV', 'aug-cc-CV', 'cc-CV-dkh', 'cc-CV-dk', 'aug-cc-CV-dkh', 'aug-cc-CV-dk' ]
+            'ma-def2-zora','ma-def2-dkh', 'cc-CV', 'aug-cc-CV', 'cc-CV-dkh', 'cc-CV-dk', 'aug-cc-CV-dkh', 'aug-cc-CV-dk',
+            'cc-CV_3dTM-cc_L', 'aug-cc-CV_3dTM-cc_L' ]
 
 
 #Flexible CCSD(T)/CBS protocol class. Simple. No core-correlation, scalar relativistic or spin-orbit coupling for now.
@@ -1044,6 +1045,41 @@ def basis_for_element(element,basisfamily,cardinal):
         elif 81 <= atomnumber <= 86 and cardinal in [3,4]: #Tl-Rn for TZ and QZ
             return ("cc-pwCV{}Z-DK".format(cardlabel), None)
 
+    #RB: Using cc-pwCVnZ-DK for 3d transition metals and cc-pVnZ-DK or aug-cc-pVNZ-DK for light atoms
+    #NOTE: Very little available for 4d and 5d row
+    elif basisfamily == "cc-CV_3dTM-cc_L" or basisfamily == "aug-cc-CV_3dTM-cc_L":
+        if 'aug' in basisfamily:
+            prefix="aug-"
+        else:
+            prefix=""
+        cardlabels={2:'D',3:'T',4:'Q',5:"5",6:"6"}
+        cardlabel=cardlabels[cardinal]
+        # No cc-pV6Z-DK basis available
+        if cardinal == 6:
+            print(BC.FAIL,"cc-pV6Z-DK/cc-pwCV6Z basis sets not available",BC.END)
+            exit()
+
+        #Going through atomnumbers
+        if atomnumber <= 18 :
+            return (prefix+"cc-pV{}Z-DK".format(cardlabel), None)
+        elif atomnumber == 19 or atomnumber == 20:
+            print(BC.FAIL,"cc-dkh basis sets for K and Ca is missing in ORCA. Take a look at literature.",BC.END)
+            exit()
+        elif 21 <= atomnumber <= 30   : #Sc-Zn
+            return ("cc-pwCV{}Z".format(cardlabel), None) #Skipping aug here anyway
+        elif cardinal == 3:
+            if 39 <= atomnumber <= 54: #Y-Xe for cc-pVTZ-DK
+                return (prefix+"cc-pV{}Z-DK".format(cardlabel), None)
+            elif 72 <= atomnumber <= 80: #Hf-Rn for cc-pVTZ-DK
+                return (prefix+"cc-pV{}Z-DK".format(cardlabel), None)
+        elif cardinal == 4:                   
+            if 49 <= atomnumber <= 54 : #In-Xe for cc-pVQZ-DK
+                return (prefix+"cc-pV{}Z-DK".format(cardlabel), None)
+            elif 81 <= atomnumber <= 86: #Tl-Rn for cc-pVQZ-DK
+                return (prefix+"cc-pV{}Z-DK".format(cardlabel), None)
+        elif cardinal == 5 and atomnumber > 36:
+            print(BC.FAIL,"cc-pV5Z-DK basis sets for elements beyond Kr is missing in ORCA. Take a look at literature.",BC.END)
+            exit()
 
 
     #Core-valence cc-basis sets (cc-pCVnZ or cc-pwCVnZ) for DKH
