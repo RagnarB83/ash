@@ -1152,7 +1152,7 @@ def basis_for_element(element,basisfamily,cardinal):
         cardlabel=cardlabels[cardinal]
         if atomnumber <= 36 :
             return ("ZORA-def2-{}".format(cardlabel), None)
-        elif 36 < atomnumber < 86 and cardinal == 3:
+        elif 36 < atomnumber < 86 and cardinal < 4:
             #NOTE: Problem SARC QZ basis set not really available
             return ("SARC-ZORA-{}".format(cardlabel), None)
 
@@ -1164,7 +1164,7 @@ def basis_for_element(element,basisfamily,cardinal):
         cardlabel=cardlabels[cardinal]
         if atomnumber <= 36 :
             return ("DKH-def2-{}".format(cardlabel), None)
-        elif 36 < atomnumber < 86 and cardinal == 3:
+        elif 36 < atomnumber < 86 and cardinal < 4:
             
             return ("SARC-DKH-{}".format(cardlabel), None)
     #NOTE: Problem SARC QZ or DZ basis set not really available so extrapolations for heavy elements not really possible
