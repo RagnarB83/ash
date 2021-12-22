@@ -78,6 +78,7 @@ class ORCATheory:
             self.coords=fragment.coords
             self.elems=fragment.elems
         #print("frag elems", self.fragment.elems)
+
         if charge!=None:
             self.charge=int(charge)
         else:
@@ -85,7 +86,7 @@ class ORCATheory:
         if mult!=None:
             self.mult=int(mult)
         else:
-            self.charge=None
+            self.mult=None
         
         #Adding NoAutostart keyword to extraline if requested
         if self.autostart == False:
