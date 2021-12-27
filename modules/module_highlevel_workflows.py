@@ -16,13 +16,12 @@ from modules.module_coords import elemlisttoformula, nucchargelist,elematomnumbe
 # Allowed basis set families. Accessed by function basis_for_element and extrapolation
 basisfamilies=['cc','aug-cc','cc-dkh','cc-dk','aug-cc-dkh','aug-cc-dk','def2','ma-def2','def2-zora', 'def2-dkh',
             'ma-def2-zora','ma-def2-dkh', 'cc-CV', 'aug-cc-CV', 'cc-CV-dkh', 'cc-CV-dk', 'aug-cc-CV-dkh', 'aug-cc-CV-dk',
-            'cc-CV_3dTM-cc_L', 'aug-cc-CV_3dTM-cc_L' ]
+            'cc-CV_3dTM-cc_L', 'aug-cc-CV_3dTM-cc_L', 'cc-f12', 'def2-x2c' ]
 
 
 #Flexible CCSD(T)/CBS protocol class. Simple. No core-correlation, scalar relativistic or spin-orbit coupling for now.
 # Regular CC, DLPNO-CC, DLPNO-CC with PNO extrapolation etc.
 #alpha and beta can be manually set. If not set then they are picked based on basisfamily
-#FCI extrapolation will be made available
 #NOTE: List of elements are required here
 class CC_CBS_Theory:
     def __init__(self, elements=None, cardinals = [2,3], basisfamily="def2", relativity=None, charge=None, mult=None, orcadir=None, 
@@ -51,6 +50,7 @@ class CC_CBS_Theory:
 
         print_line_with_mainheader("CC_CBS_Theory")
 
+        #CHECKS to exit early 
         if elements == None:
             print(BC.FAIL, "\nCC_CBS_Theory requires a list of elements to be given in order to set up basis sets", BC.END)
             print("Example: CC_CBS_Theory(elements=['C','Fe','S','H','Mo'], basisfamily='def2',cardinals=[2,3], ...")
@@ -58,9 +58,22 @@ class CC_CBS_Theory:
             exit()
         else:
             #Removing redundant symbols (in case fragment.elems list was passed for example)
-            elements = set(elements)
+            elements = list(set(elements))
+
+        #Check if F12 is chosen correctly
+        if F12 == False and basisfamily == "cc-f12":
+            print(BC.FAIL,"Basisfamily cc-f12 chosen but F12 is not active.")
+            print("To use F12 instead of extrapolation set: F12=True, basisfamily='cc-f12', cardinals=[X] (i.e. single cardinal)",BC.END)
+            exit()
+        if F12 is True and 'f12' not in basisfamily:
+            print(BC.FAIL,"F12 option chosen but an F12-basisfamily was not chosen. Choose basisfamily='cc-f12'",BC.END)
+            exit()
+        if F12 is True and len(cardinals) != 1:
+            print(BC.FAIL,"For F12 calculations, set cardinals=[X] i.e. a list of one integer.", BC.END)
+            exit()
 
         #Main attributes
+        self.cardlabels={2:'D',3:'T',4:'Q',5:"5",6:"6"}
         self.orcadir = orcadir
         self.elements=elements
         self.cardinals = cardinals
@@ -153,17 +166,20 @@ maxiter 150\nend
             finalauxbasis="auxc \"{}\"".format(auxbasis)
 
         #Getting basis sets and ECPs for each element for a given basis-family and cardinal
+        
         self.Calc1_basis_dict={}
         for elem in elements:
             bas=basis_for_element(elem, basisfamily, cardinals[0])
             self.Calc1_basis_dict[elem] = bas
-        self.Calc2_basis_dict={}
-        for elem in elements:
-            bas=basis_for_element(elem, basisfamily, cardinals[1])
-            self.Calc2_basis_dict[elem] = bas
         print("Basis set definitions for each element:")
         print("Calc1_basis_dict:", self.Calc1_basis_dict)
-        print("Calc2_basis_dict", self.Calc2_basis_dict)
+        if self.F12 is False:
+            self.Calc2_basis_dict={}
+            for elem in elements:
+                bas=basis_for_element(elem, basisfamily, cardinals[1])
+                self.Calc2_basis_dict[elem] = bas
+            print("Basis set definitions for each element:")
+            print("Calc2_basis_dict", self.Calc2_basis_dict)
 
         #Adding basis set info for each element into blocks
         basis1_block="%basis\n"
@@ -174,21 +190,17 @@ maxiter 150\nend
         #Adding auxiliary basis
         basis1_block=basis1_block+finalauxbasis
         basis1_block=basis1_block+"\nend"
-
-        basis2_block="%basis\n"
-        for el,bas_ecp in self.Calc2_basis_dict.items():
-            basis2_block=basis2_block+"newgto {} \"{}\" end\n".format(el,bas_ecp[0])
-            if bas_ecp[1] != None:
-                basis2_block=basis2_block+"newecp {} \"{}\" end\n".format(el,bas_ecp[1])
-        #Adding auxiliary basis
-        basis2_block=basis2_block+finalauxbasis
-        basis2_block=basis2_block+"\nend"
-        print("basis1_block:", basis1_block)
-        print("basis2_block:", basis2_block)
-
-        #Final blocks input
         self.blocks1= blocks +basis1_block
-        self.blocks2= blocks +basis2_block
+        if self.F12 is False:
+            basis2_block="%basis\n"
+            for el,bas_ecp in self.Calc2_basis_dict.items():
+                basis2_block=basis2_block+"newgto {} \"{}\" end\n".format(el,bas_ecp[0])
+                if bas_ecp[1] != None:
+                    basis2_block=basis2_block+"newecp {} \"{}\" end\n".format(el,bas_ecp[1])
+            #Adding auxiliary basis
+            basis2_block=basis2_block+finalauxbasis
+            basis2_block=basis2_block+"\nend"
+            self.blocks2= blocks +basis2_block
 
 
         ###################
@@ -229,8 +241,6 @@ maxiter 150\nend
             else:
                 #DLPNO-F12 or not
                 if self.F12 is True:
-                    print("DLPNO-CCSD(T)-F12 not supported yet.")
-                    exit()
                     self.ccsdtkeyword='DLPNO-CCSD(T)-F12'
                 else:
                     self.ccsdtkeyword='DLPNO-CCSD(T)'
@@ -246,9 +256,7 @@ maxiter 150\nend
             self.pnosetting=None
             #F12 or not
             if self.F12 is True:
-                self.ccsdtkeyword='CCSD(T)-F12'
-                print("CCSD(T)-F12 not supported yet ")
-                exit()
+                self.ccsdtkeyword='CCSD(T)-F12/RI'
             else:
                 self.ccsdtkeyword='CCSD(T)'
         
@@ -256,14 +264,37 @@ maxiter 150\nend
             self.extrainputkeyword = self.extrainputkeyword + ' UNO '
         elif Openshellreference == 'UHF':
             self.extrainputkeyword = self.extrainputkeyword + ' UHF '
+        
+        #Global F12-aux basis keyword
+        if self.F12 is True:
+            cardlabel=self.cardlabels[self.cardinals[0]]
+            self.auxbasiskeyword="cc-pV{}Z-F12-OptRI".format(cardlabel)
+        else:
+            #Chosen elsewhere for non-F12
+            self.auxbasiskeyword=""
+
+        #NOTE: For F12 calculations ORCA determines the F12GAMMA parameter based on the F12-basis keyword is present in the simple-input
+        #So we have to put a basis-set keyword there
+        if self.F12 is True:
+            self.mainbasiskeyword=self.Calc1_basis_dict[elements[0]][0]
+
+        else:
+            #For regular F12 we do not set a mainbasis-keyword
+            self.mainbasiskeyword=""
+
+
+
         #Final simple-input line
-        self.ccsdt_line="! {}  {} {} {}".format(self.ccsdtkeyword, self.pnokeyword, self.scfsetting,self.extrainputkeyword)
+        self.ccsdt_line="! {} {} {} {} {} {} printbasis".format(self.ccsdtkeyword, self.mainbasiskeyword, self.pnokeyword, self.scfsetting,self.extrainputkeyword,self.auxbasiskeyword)
 
         #################################################
         #Defining two theory objects for each basis set
         #################################################
-        self.ccsdt_1 = interfaces.interface_ORCA.ORCATheory(orcadir=self.orcadir, orcasimpleinput=self.ccsdt_line, orcablocks=self.blocks1, numcores=self.numcores, charge=self.charge, mult=self.mult)
-        self.ccsdt_2 = interfaces.interface_ORCA.ORCATheory(orcadir=self.orcadir, orcasimpleinput=self.ccsdt_line, orcablocks=self.blocks2, numcores=self.numcores, charge=self.charge, mult=self.mult)
+        if self.F12 is True:
+            self.ccsdt_1 = interfaces.interface_ORCA.ORCATheory(orcadir=self.orcadir, orcasimpleinput=self.ccsdt_line, orcablocks=self.blocks1, numcores=self.numcores, charge=self.charge, mult=self.mult)        
+        else:
+            self.ccsdt_1 = interfaces.interface_ORCA.ORCATheory(orcadir=self.orcadir, orcasimpleinput=self.ccsdt_line, orcablocks=self.blocks1, numcores=self.numcores, charge=self.charge, mult=self.mult)
+            self.ccsdt_2 = interfaces.interface_ORCA.ORCATheory(orcadir=self.orcadir, orcasimpleinput=self.ccsdt_line, orcablocks=self.blocks2, numcores=self.numcores, charge=self.charge, mult=self.mult)
 
 
     def cleanup(self):
@@ -352,7 +383,7 @@ maxiter 150\nend
         #Checking that there is a basis set defined for each element provided here
         #NOTE: ORCA will use default SVP basis set if basis set not defined for element
         for element in elems:
-            if element not in self.Calc1_basis_dict or element not in self.Calc2_basis_dict:
+            if element not in self.Calc1_basis_dict:
                 print("Error. No basis-set definition available for element: {}".format(element))
                 print("Make sure to pass a list of all elements of molecule/benchmark-database when creating CC_CBS_Theory object")
                 print("Example: CC_CBS_Theory(elements=[\"{}\" ] ".format(element))
@@ -365,9 +396,10 @@ maxiter 150\nend
         #if charge/mult was changed (e.g. when running benchmarking, multiple jobs) then  ccsdt_1 and ccsdt_2 object need to be updated
         #NOTE: Perhaps we should have a ASHtheory method that changes charge/mult (and subtheories)
         self.ccsdt_1.charge=self.charge
-        self.ccsdt_2.charge=self.charge
         self.ccsdt_1.mult=self.mult
-        self.ccsdt_2.mult=self.mult
+        if self.F12 is False:
+            self.ccsdt_2.charge=self.charge
+            self.ccsdt_2.mult=self.mult
 
         #Number of atoms and number of electrons
         numatoms=len(elems)
@@ -400,51 +432,67 @@ maxiter 150\nend
             print("="*70)
             print("Now doing Basis-1 job: Family: {} Cardinal: {} ".format(self.basisfamily, self.cardinals[0]))
             print("="*70)
-            
-            E_SCF_1, E_corrCCSD_1, E_corrCCT_1,E_corrCC_1 = self.PNOExtrapolationStep(elems=elems, current_coords=current_coords, theory=self.ccsdt_1, calc_label=calc_label+'cardinal1')
-            print("="*70)
-            print("Basis-1 job done. Now doing Basis-2 job: Family: {} Cardinal: {} ".format(self.basisfamily, self.cardinals[1]))
-            print("="*70)
-            E_SCF_2, E_corrCCSD_2, E_corrCCT_2,E_corrCC_2 = self.PNOExtrapolationStep(elems=elems, current_coords=current_coords, theory=self.ccsdt_2, calc_label=calc_label+'cardinal2')
-            scf_energies = [E_SCF_1, E_SCF_2]
-            ccsdcorr_energies = [E_corrCCSD_1, E_corrCCSD_2]
-            triplescorr_energies = [E_corrCCT_1, E_corrCCT_2]
-            corr_energies = [E_corrCC_1, E_corrCC_2]
+            #SINGLE F12 EXPLICIT CORRELATION JOB
+            if self.F12 is True:
+                E_SCF_1, E_corrCCSD_1, E_corrCCT_1,E_corrCC_1 = self.PNOExtrapolationStep(elems=elems, current_coords=current_coords, theory=self.ccsdt_1, calc_label=calc_label+'cardinal1')
+            #REGULAR EXTRAPOLATION WITH 2 THEORIES
+            else:
+                E_SCF_1, E_corrCCSD_1, E_corrCCT_1,E_corrCC_1 = self.PNOExtrapolationStep(elems=elems, current_coords=current_coords, theory=self.ccsdt_1, calc_label=calc_label+'cardinal1')
+                print("="*70)
+                print("Basis-1 job done. Now doing Basis-2 job: Family: {} Cardinal: {} ".format(self.basisfamily, self.cardinals[1]))
+                print("="*70)
+                E_SCF_2, E_corrCCSD_2, E_corrCCT_2,E_corrCC_2 = self.PNOExtrapolationStep(elems=elems, current_coords=current_coords, theory=self.ccsdt_2, calc_label=calc_label+'cardinal2')
+                scf_energies = [E_SCF_1, E_SCF_2]
+                ccsdcorr_energies = [E_corrCCSD_1, E_corrCCSD_2]
+                triplescorr_energies = [E_corrCCT_1, E_corrCCT_2]
+                corr_energies = [E_corrCC_1, E_corrCC_2]
         # OR REGULAR
         else:
-            #Running both theories
-            #ash.Singlepoint(fragment=fragment, theory=self.ccsdt_1)
-            self.ccsdt_1.run(elems=elems, current_coords=current_coords)
-            CCSDT_1_dict = interfaces.interface_ORCA.grab_HF_and_corr_energies(self.ccsdt_1.filename+'.out', DLPNO=self.DLPNO)
-            shutil.copyfile(self.ccsdt_1.filename+'.out', './' + calc_label + 'CCSDT_1' + '.out')
-            print("CCSDT_1_dict:", CCSDT_1_dict)
 
-            #ash.Singlepoint(fragment=fragment, theory=self.ccsdt_2)
-            self.ccsdt_2.run(elems=elems, current_coords=current_coords)
-            CCSDT_2_dict = interfaces.interface_ORCA.grab_HF_and_corr_energies(self.ccsdt_2.filename+'.out', DLPNO=self.DLPNO)
-            shutil.copyfile(self.ccsdt_2.filename+'.out', './' + calc_label + 'CCSDT_2' + '.out')
-            print("CCSDT_2_dict:", CCSDT_2_dict)
+            #SINGLE F12 EXPLICIT CORRELATION JOB
+            if self.F12 is True:
 
-            #List of all SCF energies (DZ,TZ,QZ), all CCSD-corr energies (DZ,TZ,QZ) and all (T) corr energies (DZ,TZ)
-            scf_energies = [CCSDT_1_dict['HF'], CCSDT_2_dict['HF']]
-            ccsdcorr_energies = [CCSDT_1_dict['CCSD_corr'], CCSDT_2_dict['CCSD_corr']]
-            triplescorr_energies = [CCSDT_1_dict['CCSD(T)_corr'], CCSDT_2_dict['CCSD(T)_corr']]
-            #Here combining corr energies in a silly way
-            corr_energies = list(np.array(ccsdcorr_energies)+np.array(triplescorr_energies))
+                self.ccsdt_1.run(elems=elems, current_coords=current_coords)
+                CCSDT_1_dict = interfaces.interface_ORCA.grab_HF_and_corr_energies(self.ccsdt_1.filename+'.out', DLPNO=self.DLPNO, F12=self.F12)
+                shutil.copyfile(self.ccsdt_1.filename+'.out', './' + calc_label + 'CCSDT_1' + '.out')
+                print("CCSDT_1_dict:", CCSDT_1_dict)
+                E_SCF_CBS = CCSDT_1_dict['HF']
+                E_corr_CBS = CCSDT_1_dict['full_corr']
+                E_corrCCSD_CBS = CCSDT_1_dict['CCSD_corr']
+                E_corrCCT_CBS = CCSDT_1_dict['CCSD(T)_corr']
+            #REGULAR EXTRAPOLATION WITH 2 THEORIES
+            else:
+                self.ccsdt_1.run(elems=elems, current_coords=current_coords)
+                CCSDT_1_dict = interfaces.interface_ORCA.grab_HF_and_corr_energies(self.ccsdt_1.filename+'.out', DLPNO=self.DLPNO)
+                shutil.copyfile(self.ccsdt_1.filename+'.out', './' + calc_label + 'CCSDT_1' + '.out')
+                print("CCSDT_1_dict:", CCSDT_1_dict)
 
-        print("")
-        print("scf_energies :", scf_energies)
-        print("ccsdcorr_energies :", ccsdcorr_energies)
-        print("triplescorr_energies :", triplescorr_energies)
-        print("corr_energies :", corr_energies)
-        
-        #BASIS SET EXTRAPOLATION
-        E_SCF_CBS, E_corrCCSD_CBS = Extrapolation_twopoint(scf_energies, ccsdcorr_energies, self.cardinals, self.basisfamily, alpha=self.alpha, beta=self.beta) #2-point extrapolation
-        #Separate CCSD and (T) CBS energies
-        E_SCF_CBS, E_corrCCT_CBS = Extrapolation_twopoint(scf_energies, triplescorr_energies, self.cardinals, self.basisfamily, alpha=self.alpha, beta=self.beta) #2-point extrapolation
+                self.ccsdt_2.run(elems=elems, current_coords=current_coords)
+                CCSDT_2_dict = interfaces.interface_ORCA.grab_HF_and_corr_energies(self.ccsdt_2.filename+'.out', DLPNO=self.DLPNO)
+                shutil.copyfile(self.ccsdt_2.filename+'.out', './' + calc_label + 'CCSDT_2' + '.out')
+                print("CCSDT_2_dict:", CCSDT_2_dict)
 
-        #BASIS SET EXTRAPOLATION of SCF and full correlation energies
-        E_SCF_CBS, E_corr_CBS = Extrapolation_twopoint(scf_energies, corr_energies, self.cardinals, self.basisfamily, alpha=self.alpha, beta=self.beta) #2-point extrapolation
+                #List of all SCF energies (DZ,TZ,QZ), all CCSD-corr energies (DZ,TZ,QZ) and all (T) corr energies (DZ,TZ)
+                scf_energies = [CCSDT_1_dict['HF'], CCSDT_2_dict['HF']]
+                ccsdcorr_energies = [CCSDT_1_dict['CCSD_corr'], CCSDT_2_dict['CCSD_corr']]
+                triplescorr_energies = [CCSDT_1_dict['CCSD(T)_corr'], CCSDT_2_dict['CCSD(T)_corr']]
+                #Here combining corr energies in a silly way
+                corr_energies = list(np.array(ccsdcorr_energies)+np.array(triplescorr_energies))
+
+                print("")
+                print("scf_energies :", scf_energies)
+                print("ccsdcorr_energies :", ccsdcorr_energies)
+                print("triplescorr_energies :", triplescorr_energies)
+                print("corr_energies :", corr_energies)
+            
+            #BASIS SET EXTRAPOLATION
+
+                E_SCF_CBS, E_corrCCSD_CBS = Extrapolation_twopoint(scf_energies, ccsdcorr_energies, self.cardinals, self.basisfamily, alpha=self.alpha, beta=self.beta) #2-point extrapolation
+                #Separate CCSD and (T) CBS energies
+                E_SCF_CBS, E_corrCCT_CBS = Extrapolation_twopoint(scf_energies, triplescorr_energies, self.cardinals, self.basisfamily, alpha=self.alpha, beta=self.beta) #2-point extrapolation
+
+                #BASIS SET EXTRAPOLATION of SCF and full correlation energies
+                E_SCF_CBS, E_corr_CBS = Extrapolation_twopoint(scf_energies, corr_energies, self.cardinals, self.basisfamily, alpha=self.alpha, beta=self.beta) #2-point extrapolation
 
         print("E_SCF_CBS:", E_SCF_CBS)
         print("E_corr_CBS:", E_corr_CBS)
@@ -678,6 +726,7 @@ def Extrapolation_twopoint(scf_energies, corr_energies, cardinals, basis_family,
 
     #Print energies
     print("Basis family is:", basis_family)
+    print("Cardinals are:", cardinals)
     print("SCF energies are:", scf_energies[0], "and", scf_energies[1])
     print("Correlation energies are:", corr_energies[0], "and", corr_energies[1])
 
@@ -689,7 +738,7 @@ def Extrapolation_twopoint(scf_energies, corr_energies, cardinals, basis_family,
 
     print("SCF Extrapolated value is", SCFextrap)
     print("Correlation Extrapolated value is", corrextrap)
-    print("Total Extrapolated value is", SCFextrap+corrextrap)
+    #print("Total Extrapolated value is", SCFextrap+corrextrap)
 
     return SCFextrap, corrextrap
 
@@ -1038,9 +1087,7 @@ def basis_for_element(element,basisfamily,cardinal):
             return ("cc-pwCV{}Z-DK".format(cardlabel), None)
         elif 39 <= atomnumber <= 54 and cardinal > 2:
             return ("cc-pwCV{}Z-DK".format(cardlabel), None)      
-        elif 49 <= atomnumber <= 71 :
-            return ("cc-pwCV{}Z-DK3".format(cardlabel), None)
-        elif 72 <= atomnumber <= 80 and cardinal == 3:
+        elif 72 <= atomnumber <= 80 and cardinal == 3: #Hf-Hg
             return ("cc-pwCV{}Z-DK".format(cardlabel), None)            
         elif 81 <= atomnumber <= 86 and cardinal in [3,4]: #Tl-Rn for TZ and QZ
             return ("cc-pwCV{}Z-DK".format(cardlabel), None)
@@ -1120,7 +1167,18 @@ def basis_for_element(element,basisfamily,cardinal):
         elif 81 <= atomnumber <= 86 and cardinal in [3,4]: #Tl-Rn for TZ and QZ
             return ("aug-cc-pwCV{}Z-DK".format(cardlabel), None)
 
-
+    #All-electron relativistic Karlsruhe basis sets: https://pubs.acs.org/doi/10.1021/acs.jctc.7b00593
+    #For use with X2C Hamiltonian. Suitable for DKH also ??
+    elif basisfamily == "def2-x2c":
+        if cardinal > 4:
+            print(BC.FAIL,"def2-x2c basis sets only available up to QZ level", BC.END)
+            exit()
+        cardlabels={2:'SVP',3:'TZVPP',4:'QZVPP'}
+        cardlabel=cardlabels[cardinal]
+        if atomnumber <= 36 :
+            return ("x2c-{}all".format(cardlabel), None)
+        elif 1 <= atomnumber <= 86 :
+            return ("x2c-{}all".format(cardlabel), None)
     elif basisfamily == "def2":
         if cardinal > 4:
             print(BC.FAIL,"def2 basis sets only available up to QZ level", BC.END)
@@ -1129,7 +1187,7 @@ def basis_for_element(element,basisfamily,cardinal):
         cardlabel=cardlabels[cardinal]
         if atomnumber <= 36 :
             return ("def2-{}".format(cardlabel), None)
-        elif 36 < atomnumber < 86 :
+        elif 36 < atomnumber <= 86 :
             return ("def2-{}".format(cardlabel), "def2-ECP")
 
     elif basisfamily == "ma-def2":
@@ -1140,7 +1198,7 @@ def basis_for_element(element,basisfamily,cardinal):
         cardlabel=cardlabels[cardinal]
         if atomnumber <= 36 :
             return ("ma-def2-{}".format(cardlabel), None)
-        elif 36 < atomnumber < 86 :
+        elif 36 < atomnumber <= 86 :
             return ("ma-def2-{}".format(cardlabel), "def2-ECP")
 
     #NOTE: Problem SARC QZ or DZ basis set not really available so extrapolations for heavy elements not really possible
@@ -1152,7 +1210,7 @@ def basis_for_element(element,basisfamily,cardinal):
         cardlabel=cardlabels[cardinal]
         if atomnumber <= 36 :
             return ("ZORA-def2-{}".format(cardlabel), None)
-        elif 36 < atomnumber < 86 and cardinal < 4:
+        elif 36 < atomnumber <= 86 and cardinal < 4:
             #NOTE: Problem SARC QZ basis set not really available
             return ("SARC-ZORA-{}".format(cardlabel), None)
 
@@ -1164,7 +1222,7 @@ def basis_for_element(element,basisfamily,cardinal):
         cardlabel=cardlabels[cardinal]
         if atomnumber <= 36 :
             return ("DKH-def2-{}".format(cardlabel), None)
-        elif 36 < atomnumber < 86 and cardinal < 4:
+        elif 36 < atomnumber <= 86 and cardinal < 4:
             
             return ("SARC-DKH-{}".format(cardlabel), None)
     #NOTE: Problem SARC QZ or DZ basis set not really available so extrapolations for heavy elements not really possible
@@ -1185,6 +1243,25 @@ def basis_for_element(element,basisfamily,cardinal):
         cardlabel=cardlabels[cardinal]
         if atomnumber <= 36 :
             return ("ma-DKH-def2-{}".format(cardlabel), None)
+    elif basisfamily == "cc-f12":
+        cardlabels={2:'D',3:'T',4:'Q'}
+        cardlabel=cardlabels[cardinal]
+        #Special cases: cc-pV6Z only for specific light elements
+        if cardinal > 4:
+            print(BC.FAIL,"cc-pVnZ-F12 basis set only available up to QZ level.",BC.END)
+            exit()
+
+        if atomnumber <= 18 :
+            return ("cc-pV{}Z-F12".format(cardlabel), None)
+        elif 19 <= atomnumber <= 30 :
+            print("cc-F12 basis set missing for K-Zn. Take a look at literature to see if this has changed.")
+            exit()
+        elif 31 <= atomnumber <= 36   : #Ga-Kr.
+            return ("cc-pV{}Z-PP-F12".format(cardlabel), "SK-MCDHF-RSC")        
+        elif 49 <= atomnumber <= 54   : #In-Xe.
+            return ("cc-pV{}Z-PP-F12".format(cardlabel), "SK-MCDHF-RSC")
+        elif 81 <= atomnumber <= 86   : #Tl-Rn
+            return ("cc-pV{}Z-PP-F12".format(cardlabel), "SK-MCDHF-RSC")
 
     print(BC.FAIL,"There is probably no {} {}Z basis set available for element {} in ORCA. Exiting.".format(basisfamily, cardinal, element), BC.END)
     exit()

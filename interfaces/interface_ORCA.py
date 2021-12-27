@@ -31,7 +31,7 @@ class ORCATheory:
             check_OpenMPI()
 
         #Checking if user added Opt, Freq keywords
-        if 'OPT' in orcasimpleinput.upper() or 'FREQ' in orcasimpleinput.upper() :
+        if ' OPT' in orcasimpleinput.upper() or ' FREQ' in orcasimpleinput.upper() :
             print(BC.FAIL,"Error. orcasimpleinput variable can not contain ORCA job-directives like: Opt, Freq, Numfreq", BC.END)
             print("orcasimpleinput should only contain information on electronic-structure method (e.g. functional), basis set, grid, SCF convergence etc.")
             exit()
