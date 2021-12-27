@@ -51,7 +51,9 @@ def Singlepoint(fragment=None, theory=None, Grad=False):
                 print(BC.WARNING,"Fragment contains charge/mult information: Charge: {} Mult: {} Using this instead".format(fragment.charge,fragment.mult), BC.END)
                 print(BC.WARNING,"Make sure this is what you want!", BC.END)
                 theory.charge=fragment.charge; theory.mult=fragment.mult
-
+            else:
+                print(BC.FAIL,"No charge/mult information present. Exiting.",BC.END)
+                exit()
         energy = theory.run(current_coords=coords, elems=elems)
 
         #Some theories like CC_CBS_Theory may return both energy and energy componentsdict as a tuple
@@ -112,15 +114,6 @@ def newSinglepoint(fragment=None, theory=None, Grad=False):
             fragment.energy=energy
             print_time_rel(module_init_time, modulename='Singlepoint', moduleindex=1)
             return energy
-
-
-
-
-
-
-
-
-
 
 
 

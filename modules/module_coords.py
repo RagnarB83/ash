@@ -9,22 +9,24 @@ import os
 import subprocess as sp
 
 from functions.functions_general import isint, listdiff, print_time_rel, BC, printdebug, print_line_with_mainheader, \
-    print_line_with_subheader1, print_line_with_subheader2, writelisttofile, pygrep2, load_julia_interface
+    print_line_with_subheader1, print_line_with_subheader1_end, print_line_with_subheader2, writelisttofile, pygrep2, load_julia_interface
 import dictionaries_lists
 import settings_ash
 import constants
 import ash
 
+ashpath = os.path.dirname(ash.__file__)
+
 
 # ASH Fragment class
 class Fragment:
-    def __init__(self, coordsstring=None, fragfile=None, xyzfile=None, pdbfile=None, grofile=None,
+    def __init__(self, coordsstring=None, fragfile=None, databasefile=None, xyzfile=None, pdbfile=None, grofile=None,
                  amber_inpcrdfile=None, amber_prmtopfile=None,
                  chemshellfile=None, coords=None, elems=None, connectivity=None,
                  atomcharges=None, atomtypes=None, conncalc=False, scale=None, tol=None, printlevel=2, charge=None,
                  mult=None, label=None, readchargemult=False, use_atomnames_as_elements=False):
 
-        print_line_with_mainheader("Fragment")
+        #print_line_with_mainheader("Fragment")
 
         # Setting initial dummy label. Possibly redefined below, either when reading in file or by label keyword
         self.label = None
@@ -101,14 +103,24 @@ class Fragment:
         elif fragfile is not None:
             self.label = fragfile.split('/')[-1].split('.')[0]
             self.read_fragment_from_file(fragfile)
-
+        #Reading an XYZ-file from the ASH database
+        elif databasefile is not None:
+            databasepath=ashpath+"/databases/fragments/"
+            xyzfile=databasepath+databasefile
+            if '.xyz' not in databasefile:
+                xyzfile=databasepath+databasefile+'.xyz'
+            self.label = xyzfile.split('/')[-1].split('.')[0]
+            self.read_xyzfile(xyzfile, readchargemult=readchargemult, conncalc=conncalc)
+        else:
+            print(BC.FAIL,"Fragment requires some kind of valid coordinates input!", BC.END)
+            exit()
         # Label for fragment (string). Useful for distinguishing different fragments
         # This overrides label-definitions above (self.label=xyzfile etc)
         if label is not None:
             self.label = label
 
     def update_attributes(self):
-        print("Updating fragment attributes...")
+        print("Creating/Updating fragment attributes...")
         if len(self.coords) == 0:
             print("No coordinates in fragment. Something went wrong. Exiting.")
             exit()
@@ -125,7 +137,6 @@ class Fragment:
         self.masses = self.list_of_masses
         # Elemental formula
         self.formula = elemlisttoformula(self.elems)
-        print("Formula:", self.formula)
         # Pretty formula without 1 TODO
         self.prettyformula = self.formula
         # self.prettyformula = self.formula.replace('1','')
@@ -154,7 +165,8 @@ class Fragment:
 
         if self.printlevel >= 2:
             print("Number of Atoms in fragment: {}\nFormula: {}\nLabel: {}".format(self.numatoms, self.prettyformula, self.label))
-
+            print("Charge: {} Mult: {}".format(self.charge, self.mult))
+            print_line_with_subheader1_end()
     # Add coordinates from geometry string. Will replace.
     # Todo: Needs more work as elems and coords may be lists or numpy arrays
     def add_coords_from_string(self, coordsstring, scale=None, tol=None):
@@ -403,7 +415,6 @@ class Fragment:
     def set_energy(self, energy):
         self.energy = float(energy)
 
-    # Get coo
     def get_coordinate_center(self):
         center_x = np.mean(self.coords[:, 0])
         center_y = np.mean(self.coords[:, 1])

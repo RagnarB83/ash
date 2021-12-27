@@ -187,6 +187,10 @@ def print_line_with_subheader1(line):
     print(f"{BC.OKBLUE}{'-' * 80}{BC.END}")
     print("")
 
+# Submodule header
+def print_line_with_subheader1_end():
+    print("")
+    print(f"{BC.OKBLUE}{'-' * 80}{BC.END}")
 
 # Smaller header
 def print_line_with_subheader2(line):
