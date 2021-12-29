@@ -79,7 +79,7 @@ class Fragment:
                 self.calc_connectivity(scale=scale, tol=tol)
         # If coordsstring given, read elems and coords from it
         elif coordsstring is not None:
-            self.add_coords_from_string(coordsstring, scale=scale, tol=tol)
+            self.add_coords_from_string(coordsstring, scale=scale, tol=tol, conncalc=conncalc)
         # If xyzfile argument, run read_xyzfile
         elif xyzfile is not None:
             self.label = xyzfile.split('/')[-1].split('.')[0]
@@ -169,7 +169,7 @@ class Fragment:
             print_line_with_subheader1_end()
     # Add coordinates from geometry string. Will replace.
     # Todo: Needs more work as elems and coords may be lists or numpy arrays
-    def add_coords_from_string(self, coordsstring, scale=None, tol=None):
+    def add_coords_from_string(self, coordsstring, scale=None, tol=None, conncalc=False):
         if self.printlevel >= 2:
             print("Getting coordinates from string:", coordsstring)
         if len(self.coords) > 0:
@@ -188,7 +188,8 @@ class Fragment:
         self.coords = reformat_list_to_array(tempcoords)
         self.label = ''.join(self.elems)
         self.update_attributes()
-        self.calc_connectivity(scale=scale, tol=tol)
+        if conncalc is True:
+            self.calc_connectivity(scale=scale, tol=tol)
 
     # Replace coordinates by providing elems and coords lists. Optional: recalculate connectivity
     def replace_coords(self, elems, coords, conn=False, scale=None, tol=None):
@@ -812,15 +813,20 @@ def remove_zero_charges(charges, coords):
 
 def print_internal_coordinate_table(fragment, actatoms=None):
     timeA = time.time()
+    print("\nPrinting internal coordinate table")
+    if actatoms != None:
+        print("Actatoms:", actatoms)
+
+    #If no actatoms
     if actatoms is None:
         actatoms = []
+        chosen_coords = fragment.coords
+        chosen_elems = fragment.elems
     # If no connectivity in fragment then recalculate it for actatoms only
     if len(fragment.connectivity) == 0:
-        if actatoms is None:
-            actatoms = []
+        print("Connectivity needs to be calculated")
 
         if len(actatoms) > 0:
-            # chosen_coords=[fragment.coords[i] for i in actatoms]
             chosen_coords = np.take(fragment.coords, actatoms, axis=0)
             chosen_elems = [fragment.elems[i] for i in actatoms]
         else:
@@ -837,43 +843,45 @@ def print_internal_coordinate_table(fragment, actatoms=None):
         except:
             print("Problem importing PyJulia (import julia). Trying py-version instead.")
             connectivity = calc_conn_py(chosen_coords, chosen_elems, conndepth, scale, tol)
+        print("Connectivity calculation complete.")
     else:
+        print("Using precalculated connectivity")
         connectivity = fragment.connectivity
+        chosen_coords = fragment.coords
+        chosen_elems = fragment.elems
 
-    # print("connectivity:", connectivity)
     # Looping over connected fragments
-    bondpairs = []
     bondpairsdict = {}
 
     for conn_fragment in connectivity:
         # Looping over atom indices in fragment
         for atom in conn_fragment:
-            # print("atom:", atom)
-            connatoms = get_connected_atoms(fragment.coords, fragment.elems, settings_ash.settings_dict["scale"],
+            connatoms = get_connected_atoms(chosen_coords, chosen_elems, settings_ash.settings_dict["scale"],
                                             settings_ash.settings_dict["tol"], atom)
-            # print("connatoms:", connatoms)
             for conn_i in connatoms:
-                dist = distance_between_atoms(fragment=fragment, atom1=atom, atom2=conn_i)
+                #dist = distance_between_atoms(fragment=fragment, atom1=atom, atom2=conn_i)
+                dist = distance(chosen_coords[atom], chosen_coords[conn_i])
                 # bondpairs.append([atom,conn_i,dist])
                 bondpairsdict[frozenset((atom, conn_i))] = dist
 
     print_line_with_subheader2("Optimized internal coordinates")
 
     # Using frozenset: https://stackoverflow.com/questions/46633065/multiples-keys-dictionary-where-key-order-doesnt-matter
-    # sort bondpairs list??
-    # print bondpairs list
     print_line_with_subheader2("Bond lengths (Å):")
-    # print("actatoms:", actatoms)
     for key, val in bondpairsdict.items():
         listkey = list(key)
-        elA = fragment.elems[listkey[0]]
-        elB = fragment.elems[listkey[1]]
+        elA = chosen_elems[listkey[0]]
+        elB = chosen_elems[listkey[1]]
         # Only print bond lengths if both atoms in actatoms list
         if not actatoms:
-            if listkey[0] in actatoms and listkey[1] in actatoms:
+            
                 print("Bond: {:8}{:4} - {:4}{:4} {:>6.3f}".format(listkey[0], elA, listkey[1], elB, val))
         else:
-            print("Bond: {:8}{:4} - {:4}{:4} {:>6.3f}".format(listkey[0], elA, listkey[1], elB, val))
+            #converting to full-system indices
+            fullsystem_keyA=actatoms[listkey[0]]
+            fullsystem_keyB=actatoms[listkey[1]]
+            if fullsystem_keyA in actatoms and fullsystem_keyB in actatoms:
+                print("Bond: {:8}{:4} - {:4}{:4} {:>6.3f}".format(fullsystem_keyA, elA, fullsystem_keyB, elB, val))
     print('=' * 50)
     print_time_rel(timeA, modulename='print internal coordinate table')
 
@@ -1019,9 +1027,7 @@ def distance(A, B):
 
 # TODO: clean up
 def get_centroid(coords):
-    sum_x = 0
-    sum_y = 0
-    sum_z = 0
+    sum_x = 0; sum_y = 0; sum_z = 0
     for c in coords:
         sum_x += c[0]
         sum_y += c[1]

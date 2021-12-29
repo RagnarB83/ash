@@ -45,7 +45,7 @@ class xTBTheory:
         #Printlevel
         self.printlevel=printlevel
 
-        #Label to distinguish different ORCA objects
+        #Label to distinguish different xtb objects
         self.label=label
 
 

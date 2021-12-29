@@ -46,7 +46,7 @@ class PySCFTheory:
             pass
     #Run function. Takes coords, elems etc. arguments and computes E or E+G.
     def run(self, current_coords=None, current_MM_coords=None, MMcharges=None, qm_elems=None,
-            elems=None, Grad=False, PC=False, numcores=None, pe=False, potfile=None, restart=False ):
+            elems=None, Grad=False, PC=False, numcores=None, pe=False, potfile=None, restart=False, label=None ):
 
         module_init_time=time.time()
 

@@ -31,6 +31,10 @@ def Singlepoint(fragment=None, theory=None, Grad=False):
         exit(1)
     coords=fragment.coords
     elems=fragment.elems
+
+    #Flag whether we have changed charge/mult of theory
+    theory_chargemult_change=False
+
     # Run a single-point energy job with gradient
     if Grad ==True:
         print(BC.WARNING,"Doing single-point Energy+Gradient job on fragment. Formula: {} Label: {} ".format(fragment.prettyformula,fragment.label), BC.END)
@@ -51,10 +55,15 @@ def Singlepoint(fragment=None, theory=None, Grad=False):
                 print(BC.WARNING,"Fragment contains charge/mult information: Charge: {} Mult: {} Using this instead".format(fragment.charge,fragment.mult), BC.END)
                 print(BC.WARNING,"Make sure this is what you want!", BC.END)
                 theory.charge=fragment.charge; theory.mult=fragment.mult
+                theory_chargemult_change=True
             else:
                 print(BC.FAIL,"No charge/mult information present. Exiting.",BC.END)
                 exit()
         energy = theory.run(current_coords=coords, elems=elems)
+
+        #If we changed theory charge/mult information. Change back
+        if theory_chargemult_change is True:
+            theory.charge=None; theory.mult=None
 
         #Some theories like CC_CBS_Theory may return both energy and energy componentsdict as a tuple
         #TODO: avoid this nasty fix
