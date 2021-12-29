@@ -136,7 +136,7 @@ class CFourTheory:
 
     # Run function. Takes coords, elems etc. arguments and computes E or E+G.
     def run(self, fragment=None, current_coords=None, current_MM_coords=None, MMcharges=None, qm_elems=None,
-            elems=None, Grad=False, PC=False, numcores=None, restart=False):
+            elems=None, Grad=False, PC=False, numcores=None, restart=False, label=None):
 
         if numcores == None:
             numcores = self.numcores

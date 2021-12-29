@@ -1235,7 +1235,7 @@ class OpenMMTheory:
         self.dof=dof
 
 
-    def run(self, current_coords=None, elems=None, Grad=False, fragment=None, qmatoms=None):
+    def run(self, current_coords=None, elems=None, Grad=False, fragment=None, qmatoms=None, label=None):
         module_init_time = time.time()
         timeA = time.time()
         # timeA = time.time()
