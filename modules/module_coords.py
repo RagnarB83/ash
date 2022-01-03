@@ -22,7 +22,7 @@ ashpath = os.path.dirname(ash.__file__)
 class Fragment:
     def __init__(self, coordsstring=None, fragfile=None, databasefile=None, xyzfile=None, pdbfile=None, grofile=None,
                  amber_inpcrdfile=None, amber_prmtopfile=None,
-                 chemshellfile=None, coords=None, elems=None, connectivity=None,
+                 chemshellfile=None, coords=None, elems=None, connectivity=None, atom=None, diatomic=None, diatomic_bondlength=None,
                  atomcharges=None, atomtypes=None, conncalc=False, scale=None, tol=None, printlevel=2, charge=None,
                  mult=None, label=None, readchargemult=False, use_atomnames_as_elements=False):
 
@@ -77,6 +77,19 @@ class Fragment:
             # If connectivity requested (default for new frags)
             if conncalc is True:
                 self.calc_connectivity(scale=scale, tol=tol)
+        elif atom is not None:
+            print("Creating Atom Fragment")
+            self.elems=[atom]
+            self.coords = reformat_list_to_array([[0.0,0.0,0.0]])
+            self.update_attributes()
+        elif diatomic is not None:
+            print("Creating Diatomic Fragment from formula and diatomic_bondlength")
+            if diatomic_bondlength == None:
+                print(BC.FAIL,"diatomic option requires diatomic_bondlength to be set. Exiting!", BC.END)
+                exit()
+            self.elems=molformulatolist(diatomic)
+            self.coords = reformat_list_to_array([[0.0,0.0,0.0],[0.0,0.0,diatomic_bondlength]])
+            self.update_attributes()
         # If coordsstring given, read elems and coords from it
         elif coordsstring is not None:
             self.add_coords_from_string(coordsstring, scale=scale, tol=tol, conncalc=conncalc)

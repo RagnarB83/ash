@@ -72,6 +72,13 @@ class CC_CBS_Theory:
             print(BC.FAIL,"For F12 calculations, set cardinals=[X] i.e. a list of one integer.", BC.END)
             exit()
 
+        #Check if only 1 cardinal was chosen: meaning no extrapolation and just a single 
+        if len(cardinals) == 1:
+            print(BC.WARNING, "Only a single cardinal was chosen. This means that no extrapolation will be carried out", BC.END)
+            self.singlebasis=True
+        else:
+            self.singlebasis=False
+
         #Main attributes
         self.cardlabels={2:'D',3:'T',4:'Q',5:"5",6:"6"}
         self.orcadir = orcadir
@@ -101,6 +108,8 @@ class CC_CBS_Theory:
         self.FullLMP2Guess=FullLMP2Guess
         self.FCI=FCI
         self.atomicSOcorrection=atomicSOcorrection
+        #ECP-flag may be set to True later
+        self.ECPflag=False
         print("-----------------------------")
         print("CC_CBS PROTOCOL")
         print("-----------------------------")
@@ -137,7 +146,7 @@ class CC_CBS_Theory:
         #Block input for SCF/MDCI block options.
         #Disabling FullLMP2 guess in general as not available for open-shell
         #Adding memory and extrablocks.
-        blocks="""%maxcore {}
+        self.blocks="""%maxcore {}
 %scf
 maxiter 1200
 stabperform {}
@@ -154,7 +163,7 @@ maxiter 150\nend
             if self.relativity != None:
                 print("Stability analysis and relativity requires 1-center approximation")
                 print("Turning on")
-                blocks = blocks + "\n%rel onecenter true end"
+                self.blocks = self.blocks + "\n%rel onecenter true end"
 
 
         #AUXBASIS choice
@@ -173,7 +182,7 @@ maxiter 150\nend
             self.Calc1_basis_dict[elem] = bas
         print("Basis set definitions for each element:")
         print("Calc1_basis_dict:", self.Calc1_basis_dict)
-        if self.F12 is False:
+        if self.singlebasis is False:
             self.Calc2_basis_dict={}
             for elem in elements:
                 bas=basis_for_element(elem, basisfamily, cardinals[1])
@@ -186,12 +195,14 @@ maxiter 150\nend
         for el,bas_ecp in self.Calc1_basis_dict.items():
             basis1_block=basis1_block+"newgto {} \"{}\" end\n".format(el,bas_ecp[0])
             if bas_ecp[1] != None:
+                #Setting ECP flag to True
+                self.ECPflag=True
                 basis1_block=basis1_block+"newecp {} \"{}\" end\n".format(el,bas_ecp[1])
         #Adding auxiliary basis
         basis1_block=basis1_block+finalauxbasis
         basis1_block=basis1_block+"\nend"
-        self.blocks1= blocks +basis1_block
-        if self.F12 is False:
+        self.blocks1= self.blocks +basis1_block
+        if self.singlebasis is False:
             basis2_block="%basis\n"
             for el,bas_ecp in self.Calc2_basis_dict.items():
                 basis2_block=basis2_block+"newgto {} \"{}\" end\n".format(el,bas_ecp[0])
@@ -200,7 +211,7 @@ maxiter 150\nend
             #Adding auxiliary basis
             basis2_block=basis2_block+finalauxbasis
             basis2_block=basis2_block+"\nend"
-            self.blocks2= blocks +basis2_block
+            self.blocks2= self.blocks +basis2_block
 
 
         ###################
@@ -279,26 +290,54 @@ maxiter 150\nend
             self.mainbasiskeyword=self.Calc1_basis_dict[elements[0]][0]
 
         else:
-            #For regular F12 we do not set a mainbasis-keyword
+            #For regular calculation we do not set a mainbasis-keyword
             self.mainbasiskeyword=""
-
 
 
         #Final simple-input line
         self.ccsdt_line="! {} {} {} {} {} {} printbasis".format(self.ccsdtkeyword, self.mainbasiskeyword, self.pnokeyword, self.scfsetting,self.extrainputkeyword,self.auxbasiskeyword)
 
-        #################################################
-        #Defining two theory objects for each basis set
-        #################################################
-        if self.F12 is True:
-            self.ccsdt_1 = interfaces.interface_ORCA.ORCATheory(orcadir=self.orcadir, orcasimpleinput=self.ccsdt_line, orcablocks=self.blocks1, numcores=self.numcores, charge=self.charge, mult=self.mult)        
+        ##########################################################################################
+        #Defining two theory objects for each basis set unless F12 or single-cardinal provided
+        ##########################################################################################
+        if self.singlebasis is True:
+            #For single-basis CCSD(T) or single-basis F12 calculations
+            self.ccsdt_1 = interfaces.interface_ORCA.ORCATheory(orcadir=self.orcadir, orcasimpleinput=self.ccsdt_line, orcablocks=self.blocks1, numcores=self.numcores, charge=self.charge, mult=self.mult)
         else:
+            #Extrapolations
             self.ccsdt_1 = interfaces.interface_ORCA.ORCATheory(orcadir=self.orcadir, orcasimpleinput=self.ccsdt_line, orcablocks=self.blocks1, numcores=self.numcores, charge=self.charge, mult=self.mult)
             self.ccsdt_2 = interfaces.interface_ORCA.ORCATheory(orcadir=self.orcadir, orcasimpleinput=self.ccsdt_line, orcablocks=self.blocks2, numcores=self.numcores, charge=self.charge, mult=self.mult)
 
 
     def cleanup(self):
         print("Cleanup called")
+
+
+    #Core-Valence ScalarRelativistic Step
+    def CVSR_Step(self, current_coords, elems, reloption,calc_label):
+
+        #Note: if reloption=='DKH' then we do DKH in NoFC and not in FC
+        # if reloption=='' then no relativity
+        #TODO: Option to use DKH for both, consistent with other calculations if using DKH ??
+
+        ccsdt_mtsmall_NoFC_line="! {} {} {}   nofrozencore {} {} {} {}".format(self.ccsdtkeyword,reloption,self.CVbasis,self.auxbasiskeyword,self.pnokeyword,self.scfsetting,self.extrainputkeyword)
+        ccsdt_mtsmall_FC_line="! {} {}  {} {} {} {}".format(self.ccsdtkeyword,self.CVbasis,self.auxbasiskeyword,self.pnokeyword,self.scfsetting,self.extrainputkeyword)
+
+        ccsdt_mtsmall_NoFC = interfaces.interface_ORCA.ORCATheory(orcadir=self.orcadir, orcasimpleinput=ccsdt_mtsmall_NoFC_line, orcablocks=self.blocks, numcores=self.numcores, charge=self.charge, mult=self.mult)
+        ccsdt_mtsmall_FC = interfaces.interface_ORCA.ORCATheory(orcadir=self.orcadir, orcasimpleinput=ccsdt_mtsmall_FC_line, orcablocks=self.blocks, numcores=self.numcores, charge=self.charge, mult=self.mult)
+
+        #Run
+        energy_ccsdt_mtsmall_nofc = ccsdt_mtsmall_NoFC.run(elems=elems, current_coords=current_coords)
+        shutil.copyfile(ccsdt_mtsmall_NoFC.filename+'.out', './' + calc_label + 'CCSDT_MTsmall_NoFC_DKH' + '.out')
+        
+        energy_ccsdt_mtsmall_fc = ccsdt_mtsmall_FC.run(elems=elems, current_coords=current_coords)
+        shutil.copyfile(ccsdt_mtsmall_NoFC.filename+'.out', './' + calc_label + 'CCSDT_MTsmall_FC_noDKH' + '.out')
+
+        #Core-correlation is total energy difference between NoFC-DKH and FC-norel
+        E_corecorr_and_SR = energy_ccsdt_mtsmall_nofc - energy_ccsdt_mtsmall_fc
+        print("E_corecorr_and_SR:", E_corecorr_and_SR)
+        return E_corecorr_and_SR
+
 
     # Do 2 calculations with different DLPNO thresholds and extrapolate
     def PNOExtrapolationStep(self,elems=None, current_coords=None, theory=None, calc_label=None):
@@ -397,7 +436,7 @@ maxiter 150\nend
         #NOTE: Perhaps we should have a ASHtheory method that changes charge/mult (and subtheories)
         self.ccsdt_1.charge=self.charge
         self.ccsdt_1.mult=self.mult
-        if self.F12 is False:
+        if self.singlebasis is False:
             self.ccsdt_2.charge=self.charge
             self.ccsdt_2.mult=self.mult
 
@@ -412,8 +451,8 @@ maxiter 150\nend
             print("Assuming hydrogen atom and skipping calculation")
             E_total = -0.500000
             print("Using hardcoded value: ", E_total)
-            E_dict = {'Total_E': E_total, 'E_SCF_CBS': E_total, 'E_CCSDcorr_CBS': 0.0,
-                    'E_triplescorr_CBS': 0.0, 'E_corecorr_and_SR': 0.0, 'E_SO': 0.0}
+            E_dict = {'Total_E': E_total, 'E_SCF_CBS': E_total, 'E_CC_CBS': E_total, 'E_FCI_CBS': E_total, 'E_CCSDcorr_CBS': 0.0, 
+                    'E_corrCCT_CBS': 0.0, 'E_corr_CBS' : 0.0, 'E_corecorr_and_SR': 0.0, 'E_SO': 0.0, 'E_FCIcorrection': 0.0}
             return E_total, E_dict
 
         #Defining initial label here based on element and charge/mult of system
@@ -432,8 +471,8 @@ maxiter 150\nend
             print("="*70)
             print("Now doing Basis-1 job: Family: {} Cardinal: {} ".format(self.basisfamily, self.cardinals[0]))
             print("="*70)
-            #SINGLE F12 EXPLICIT CORRELATION JOB
-            if self.F12 is True:
+            #SINGLE F12 EXPLICIT CORRELATION JOB or if only 1 cardinal was provided
+            if self.singlebasis is True:
                 E_SCF_1, E_corrCCSD_1, E_corrCCT_1,E_corrCC_1 = self.PNOExtrapolationStep(elems=elems, current_coords=current_coords, theory=self.ccsdt_1, calc_label=calc_label+'cardinal1')
             #REGULAR EXTRAPOLATION WITH 2 THEORIES
             else:
@@ -446,11 +485,20 @@ maxiter 150\nend
                 ccsdcorr_energies = [E_corrCCSD_1, E_corrCCSD_2]
                 triplescorr_energies = [E_corrCCT_1, E_corrCCT_2]
                 corr_energies = [E_corrCC_1, E_corrCC_2]
-        # OR REGULAR
+    
+            #BASIS SET EXTRAPOLATION
+                E_SCF_CBS, E_corrCCSD_CBS = Extrapolation_twopoint(scf_energies, ccsdcorr_energies, self.cardinals, self.basisfamily, alpha=self.alpha, beta=self.beta) #2-point extrapolation
+                #Separate CCSD and (T) CBS energies
+                E_SCF_CBS, E_corrCCT_CBS = Extrapolation_twopoint(scf_energies, triplescorr_energies, self.cardinals, self.basisfamily, alpha=self.alpha, beta=self.beta) #2-point extrapolation
+
+                #BASIS SET EXTRAPOLATION of SCF and full correlation energies
+                E_SCF_CBS, E_corr_CBS = Extrapolation_twopoint(scf_energies, corr_energies, self.cardinals, self.basisfamily, alpha=self.alpha, beta=self.beta) #2-point extrapolation
+
+        # OR no PNO extrapolation
         else:
 
-            #SINGLE F12 EXPLICIT CORRELATION JOB
-            if self.F12 is True:
+            #SINGLE BASIS CORRELATION JOB
+            if self.singlebasis is True:
 
                 self.ccsdt_1.run(elems=elems, current_coords=current_coords)
                 CCSDT_1_dict = interfaces.interface_ORCA.grab_HF_and_corr_energies(self.ccsdt_1.filename+'.out', DLPNO=self.DLPNO, F12=self.F12)
@@ -486,7 +534,6 @@ maxiter 150\nend
                 print("corr_energies :", corr_energies)
             
             #BASIS SET EXTRAPOLATION
-
                 E_SCF_CBS, E_corrCCSD_CBS = Extrapolation_twopoint(scf_energies, ccsdcorr_energies, self.cardinals, self.basisfamily, alpha=self.alpha, beta=self.beta) #2-point extrapolation
                 #Separate CCSD and (T) CBS energies
                 E_SCF_CBS, E_corrCCT_CBS = Extrapolation_twopoint(scf_energies, triplescorr_energies, self.cardinals, self.basisfamily, alpha=self.alpha, beta=self.beta) #2-point extrapolation
@@ -498,30 +545,32 @@ maxiter 150\nend
         print("E_corr_CBS:", E_corr_CBS)
         print("E_corrCCSD_CBS:", E_corrCCSD_CBS)
         print("E_corrCCT_CBS:", E_corrCCT_CBS)
+
         ############################################################
         #Core-correlation + scalar relativistic as joint correction
         ############################################################
         if self.CVSR is True:
             print("")
             print("Core-Valence Scalar Relativistic Correction is on!")
-            exit()
-            #TODO: We should only do CV if we are doing all-electron calculations. If we have heavy element then we have probably added an ECP (specialbasisfunction)
-            # Switch to doing only CV correction in that case ?
-            # TODO: Option if W1-mtsmall basis set is not available?
+            #NOTE: We should only do CV if we are doing all-electron calculations. If we have heavy element then we have probably added an ECP (specialbasisfunction)
             
+            # TODO: Option if W1-mtsmall basis set is not available? Do: cc-pwCVnZ-DK and cc-pwCVnZ ??
+            #TODO: Do element check here to make sure there is an appropriate CV basis set available.
+            #W1-mtsmall available for H-Ar
+            #For Ca/Sc - Kr use : ??
+            #Exit if heavier elements ?
+
             if self.ECPflag is True:
                 print("ECPs present. Not doing ScalarRelativistic Correction. Switching to Core-Valence Correction only.")
                 reloption=" "
-                pnooption="NormalPNO"
-                print("Doing CVSR_Step with No Scalar Relativity and CV-basis: {} and PNO-option: {}".format(CVbasis,pnooption))
-                E_corecorr_and_SR = CV_Step(cvbasis,reloption,ccsdtkeyword,auxbasis,pnooption,scfsetting,extrainputkeyword,orcadir,blocks,numcores,charge,mult,fragment,calc_label)
+                calc_label=calc_label+"CV_"
+                print("Doing CVSR_Step with No Scalar Relativity and CV-basis: {}".format(self.CVbasis))
+                E_corecorr_and_SR = self.CVSR_Step(current_coords, elems, reloption,calc_label)
             else:
                 reloption="DKH"
-                pnooption="NormalPNO"
-                print("Doing CVSR_Step with Relativistic Option: {} and CV-basis: {} and PNO-option: {}".format(reloption,CVbasis,pnooption))
-                E_corecorr_and_SR = CVSR_Step(cvbasis,reloption,ccsdtkeyword,auxbasis,pnooption,scfsetting,extrainputkeyword,orcadir,blocks,numcores,charge,mult,fragment,calc_label)
-                
-            
+                calc_label=calc_label+"CVSR_stepDKH"
+                print("Doing CVSR_Step with Relativistic Option: {} and CV-basis: {}".format(reloption,self.CVbasis))
+                E_corecorr_and_SR = self.CVSR_Step(current_coords, elems, reloption,calc_label)
         else:
             print("")
             print("Core-Valence Scalar Relativistic Correction is off!")
@@ -548,7 +597,6 @@ maxiter 150\nend
         ############################################################
         #FINAL RESULT
         ############################################################
-        #Combining E_SCF_CBS, E_corr_CBS + SO + CV+SR
         print("")
         print("")
 
@@ -558,37 +606,38 @@ maxiter 150\nend
             #NOTE: We need to do separate extrapolation of corrCCSD_CBS and triples_CBS
             #CCSD(T)/CBS
             E_CC_CBS = E_SCF_CBS + E_corr_CBS + E_SO + E_corecorr_and_SR
+            print("CCSD(T)/CBS energy :", E_CC_CBS, "Eh")
             #FCI/CBS
             E_FCI_CBS = FCI_extrapolation([E_SCF_CBS, E_corrCCSD_CBS, E_corrCCT_CBS])
+            E_FCIcorrection = E_FCI_CBS-E_CC_CBS
             E_FINAL = E_FCI_CBS
-            E_dict = {'Total_E' : E_FINAL, 'E_FCI_CBS':E_FCI_CBS, 'E_CC_CBS':E_CC_CBS, 'E_SCF_CBS' : E_SCF_CBS, 'E_corrCCSD_CBS': E_corrCCSD_CBS, 
-                'E_corrCCT_CBS':E_corrCCT_CBS, 'E_corr_CBS' : E_corr_CBS, 'E_SO' : E_SO, 'E_corecorr_and_SR' : E_corecorr_and_SR}
-
-            print("CCSD(T)/CBS energy :", E_CC_CBS, "Eh")
-            print("Final FCI/CBS energy :", E_FCI_CBS, "Eh")
+            E_dict = {'Total_E' : E_FINAL, 'E_FCI_CBS': E_FCI_CBS, 'E_CC_CBS': E_CC_CBS, 'E_SCF_CBS' : E_SCF_CBS, 'E_corrCCSD_CBS': E_corrCCSD_CBS, 
+                'E_corrCCT_CBS': E_corrCCT_CBS, 'E_corr_CBS' : E_corr_CBS, 'E_SO' : E_SO, 'E_corecorr_and_SR' : E_corecorr_and_SR, 'E_FCIcorrection': E_FCIcorrection}
+            print("FCI correction:", E_FCIcorrection, "Eh")
+            print("FCI/CBS energy :", E_FCI_CBS, "Eh")
             print("")
-            print("Contributions:")
-            print("--------------")
-            print("E_SCF_CBS : ", E_SCF_CBS)
-            print("E_corr_CBS : ", E_corr_CBS)
-            print("E_corrCCSD_CBS : ", E_corrCCSD_CBS)
-            print("E_corrCCT_CBS : ", E_corrCCT_CBS)
-            print("Spin-orbit coupling : ", E_SO, "Eh")
-            print("E_corecorr_and_SR : ", E_corecorr_and_SR, "Eh")
 
         else:
             E_CC_CBS = E_SCF_CBS + E_corr_CBS + E_SO + E_corecorr_and_SR
+            print("CCSD(T)/CBS energy :", E_CC_CBS, "Eh")
             E_FINAL = E_CC_CBS
-            E_dict = {'Total_E' : E_FINAL, 'E_CC_CBS':E_CC_CBS, 'E_SCF_CBS' : E_SCF_CBS, 'E_corr_CBS' : E_corr_CBS, 'E_SO' : E_SO, 'E_corecorr_and_SR' : E_corecorr_and_SR}
-            print("Final CCSD(T)/CBS energy :", E_FINAL, "Eh")
-            print("")
-            print("Contributions:")
-            print("--------------")
-            print("E_SCF_CBS : ", E_SCF_CBS)
-            print("E_corr_CBS : ", E_corr_CBS)
-            print("Spin-orbit coupling : ", E_SO, "Eh")
-            print("E_corecorr_and_SR : ", E_corecorr_and_SR, "Eh")
+            E_dict = {'Total_E' : E_FINAL, 'E_CC_CBS': E_CC_CBS, 'E_SCF_CBS' : E_SCF_CBS, 'E_corrCCSD_CBS': E_corrCCSD_CBS, 'E_corrCCT_CBS': E_corrCCT_CBS, 
+                'E_corr_CBS' : E_corr_CBS, 'E_SO' : E_SO, 'E_corecorr_and_SR' : E_corecorr_and_SR}
+
+        print("Final energy :", E_FINAL, "Eh")
+        print("")
+        print("Contributions:")
+        print("--------------")
+        print("E_SCF_CBS : ", E_SCF_CBS, "Eh")
+        print("E_corr_CBS : ", E_corr_CBS, "Eh")
+        print("E_corrCCSD_CBS : ", E_corrCCSD_CBS, "Eh")
+        print("E_corrCCT_CBS : ", E_corrCCT_CBS, "Eh")
+        print("Spin-orbit coupling : ", E_SO, "Eh")
+        print("E_corecorr_and_SR : ", E_corecorr_and_SR, "Eh")
         
+
+        #Setting energy_components as an accessible attribute
+        self.energy_components=E_dict
 
 
         #Cleanup GBW file. Full cleanup ??
@@ -596,37 +645,10 @@ maxiter 150\nend
         os.remove(self.ccsdt_1.filename+'.gbw')
 
         #return final energy and also dictionary with energy components
+        #TODO: remove E_dict
         return E_FINAL, E_dict
 
     
-
-#############################
-# SPECIAL CALCULATION JOBS
-#############################
-
-
-
-#Core-Valence ScalarRelativistic Step
-def CVSR_Step(cvbasis,reloption,ccsdtkeyword,auxbasis,pnooption,scfsetting,extrainputkeyword,orcadir,blocks,numcores,charge,mult,fragment,calc_label):
-    
-    ccsdt_mtsmall_NoFC_line="! {} {} {}   nofrozencore {} {} {} {}".format(ccsdtkeyword,reloption,cvbasis,auxbasis,pnooption,scfsetting,extrainputkeyword)
-    ccsdt_mtsmall_FC_line="! {} {}  {} {} {} {}".format(ccsdtkeyword,cvbasis,auxbasis,pnooption,scfsetting,extrainputkeyword)
-
-    ccsdt_mtsmall_NoFC = interfaces.interface_ORCA.ORCATheory(orcadir=orcadir, orcasimpleinput=ccsdt_mtsmall_NoFC_line, orcablocks=blocks, numcores=numcores, charge=charge, mult=mult)
-    ccsdt_mtsmall_FC = interfaces.interface_ORCA.ORCATheory(orcadir=orcadir, orcasimpleinput=ccsdt_mtsmall_FC_line, orcablocks=blocks, numcores=numcores, charge=charge, mult=mult)
-
-    energy_ccsdt_mtsmall_nofc = ash.Singlepoint(fragment=fragment, theory=ccsdt_mtsmall_NoFC)
-    shutil.copyfile(ccsdt_mtsmall_NoFC.filename+'.out', './' + calc_label + 'CCSDT_MTsmall_NoFC_DKH' + '.out')
-    energy_ccsdt_mtsmall_fc = ash.Singlepoint(fragment=fragment, theory=ccsdt_mtsmall_FC)
-    shutil.copyfile(ccsdt_mtsmall_NoFC.filename+'.out', './' + calc_label + 'CCSDT_MTsmall_FC_noDKH' + '.out')
-
-    #Core-correlation is total energy difference between NoFC-DKH and FC-norel
-    E_corecorr_and_SR = energy_ccsdt_mtsmall_nofc - energy_ccsdt_mtsmall_fc
-    print("E_corecorr_and_SR:", E_corecorr_and_SR)
-    return E_corecorr_and_SR
-
-
-
 ############################
 # EXTRAPOLATION FUNCTIONS
 #############################

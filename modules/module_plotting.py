@@ -17,6 +17,7 @@ class BC:
 
 def load_matplotlib():
     print("Trying to load Matplotlib")
+    global matplotlib
     try:
         import matplotlib
     except:
@@ -39,15 +40,112 @@ def Gaussian(x, mu, strength, sigma):
     return bandshape
 
 
-#reactionprofile_plot
+
+class ASH_plot():
+    def __init__(self, figuretitle='Plottyplot', num_subplots=1, dpi=200, imageformat='png', figsize=(9,5),
+        x_axislabel='X-axis', y_axislabel='Energy (X)', x_axislabels=None, y_axislabels=None, title='Plot-title', subplot_titles=None):
+        print_line_with_mainheader("ASH_energy_plot")
+
+        load_matplotlib() #Load Matplotlib
+        #global matplotlib
+        print(matplotlib)
+        self.num_subplots=num_subplots
+        self.imageformat=imageformat
+        self.dpi=dpi
+        self.figuretitle=figuretitle
+        self.subplot_titles=subplot_titles
+        self.x_axislabel=x_axislabel
+        self.y_axislabel=y_axislabel
+        #For multi-subplots
+        self.x_axislabels=x_axislabels
+        self.y_axislabels=y_axislabels
+
+        print("Subplots:", self.num_subplots)
+        print("Figure size:", figsize)
+
+        if self.num_subplots > 1:
+            print(BC.WARNING, "Note: For multiple subplots use:\n ASH_plot(x_axislabels=['X1','X2','X3], y_axislabels=['Y1','Y2','Y3'], subplot_titles='Title1,'Title2','Title3']", BC.END)
+        else:
+            print("X-axis label:", x_axislabel)
+            print("Y-axis label:", y_axislabel)
+            print("Title:", title)
+
+        if self.num_subplots == 1:
+            self.fig, ax = matplotlib.pyplot.subplots(figsize=figsize)
+            self.axs=[ax]
+            self.x_axislabels=x_axislabels
+            self.y_axislabels=y_axislabels
+        elif self.num_subplots == 2:
+            self.fig, self.axs = matplotlib.pyplot.subplots(2, 1, figsize=figsize)
+            self.axiscount=0
+        elif self.num_subplots == 3:
+            self.plotlistnames=['upleft','upright','low']
+            self.fig, axs_dict = matplotlib.pyplot.subplot_mosaic([['upleft', 'upright'],
+                               ['low', 'low']])
+            self.axs=[axs_dict['upleft'],axs_dict['upright'],axs_dict['low']]
+            self.axiscount=0
+        elif self.num_subplots == 4:
+            self.fig, axs = matplotlib.pyplot.subplots(2, 2, figsize=figsize)  # a figure with a 2x2 grid of Axes
+            self.axs=axs[0]
+            self.axiscount=0
+
+        self.addplotcount=0
+
+    def addseries(self,subplot, surfacedictionary=None, x_list=None, y_list=None, label='Series', color='blue', pointsize=40, 
+                    scatter=True, line=True, scatter_linewidth=2, line_linewidth=1, marker='o'):
+        print("Adding new series to ASH_plot object")
+        self.addplotcount+=1
+        curraxes=self.axs[subplot]
+                
+        if surfacedictionary == None and x_list == None:
+            print("Provide either surfacedictionary or x_list")
+            exit()
+        if surfacedictionary != None and x_list != None:
+            print("Provide either surfacedictionary or x_list")
+            exit()
+
+        if surfacedictionary != None:
+            print("Here. Not ready")
+            exit()
+
+        elif x_list != None:
+            x=x_list
+            y=y_list
+
+        #Scatterplot
+        if scatter is True:
+            print("x:", x)
+            print("y:", y)
+            curraxes.scatter(x,y, color=color, marker = marker,  s=pointsize, linewidth=scatter_linewidth, label=label)
+        #Lineplot
+        if line is True:
+            curraxes.plot(x, y, linestyle='-', color=color, linewidth=line_linewidth, label=label)
+        
+        #Title/axis options for 1 vs multiple subplots
+        if self.num_subplots == 1:
+            curraxes.set_xlabel(self.x_axislabel)  # Add an x-label to the axes.
+            curraxes.set_ylabel(self.y_axislabel)  # Add a y-label to the axes.
+            curraxes.set_title(self.figuretitle)  # Add a title to the axes if provided
+        else:
+            if self.x_axislabels == None:
+                print(BC.FAIL, "For multiple subplots, self.x_axislabels and self.y_axislabel must be set.", BC.END)
+                exit()
+            curraxes.set_xlabel(self.x_axislabels[subplot])  # Add an x-label to the axes.
+            curraxes.set_ylabel(self.y_axislabels[subplot])  # Add a y-label to the axes.
+            curraxes.set_title(self.subplot_titles[subplot])  # Add a title to the axes if provided
+            
+        curraxes.legend(shadow=True, fontsize='small');  # Add a legend.
+    def savefig(self, filename):
+        matplotlib.pyplot.savefig(filename+'.'+self.imageformat, format=self.imageformat, dpi=self.dpi)
+
+#Simple reactionprofile_plot function
 #Input: dictionary of (X,Y): energy   entries 
-def reactionprofile_plot(surfacedictionary, finalunit='',label='Label', x_axislabel='Coord', y_axislabel='Energy', dpi=200, 
+def reactionprofile_plot(surfacedictionary, finalunit='',label='Label', x_axislabel='Coord', y_axislabel='Energy', dpi=200, mode='pyplot',
                          imageformat='png', RelativeEnergy=True, pointsize=40, scatter_linewidth=2, line_linewidth=1, color='blue' ):
 
     print_line_with_mainheader("reactionprofile_plot")
 
     plt = load_matplotlib()
-
 
     conversionfactor = { 'kcal/mol' : 627.50946900, 'kcalpermol' : 627.50946900, 'kJ/mol' : 2625.499638, 'kJpermol' : 2625.499638, 
                         'eV' : 27.211386245988, 'cm-1' : 219474.6313702 }
@@ -73,16 +171,27 @@ def reactionprofile_plot(surfacedictionary, finalunit='',label='Label', x_axisla
     print("Coords:", coords)
     print("Relative energies({}): {}".format(finalunit,finalvalues))
     
-    plt.scatter(coords, finalvalues, color=color, marker = 'o',  s=pointsize, linewidth=scatter_linewidth )
-    plt.plot(coords, finalvalues, linestyle='-', color=color, linewidth=line_linewidth, label=label)
+    if mode == 'pyplot':
+        plt.close() #Clear memory of previous plots
+        plt.scatter(coords, finalvalues, color=color, marker = 'o',  s=pointsize, linewidth=scatter_linewidth )
+        plt.plot(coords, finalvalues, linestyle='-', color=color, linewidth=line_linewidth, label=label)
 
-    plt.title(label)
-    plt.xlabel(x_axislabel)
-    plt.ylabel('{} ({})'.format(y_axislabel,finalunit))
-    plt.savefig('Plot{}.{}'.format(label,imageformat), format=imageformat, dpi=dpi)
-    plt.legend(shadow=True, fontsize='small')
-    print("Created file: Plot{}.{}".format(label,imageformat))
-
+        plt.title(label)
+        plt.xlabel(x_axislabel)
+        plt.ylabel('{} ({})'.format(y_axislabel,finalunit))
+        plt.savefig('Plot{}.{}'.format(label,imageformat), format=imageformat, dpi=dpi)
+        plt.legend(shadow=True, fontsize='small')
+        print("Created file: Plot{}.{}".format(label,imageformat))
+    else:
+        #OO style
+        fig, ax = plt.subplots(figsize=(5, 2.7), layout='constrained')
+        #ax.plot(x, x, label='linear')  # Plot some data on the axes.
+        #ax.plot(x, x**2, label='quadratic')  # Plot more data on the axes...
+        #ax.plot(x, x**3, label='cubic')  # ... and some more.
+        ax.set_xlabel(x_axislabel)  # Add an x-label to the axes.
+        ax.set_ylabel('{} ({})'.format(y_axislabel,finalunit))  # Add a y-label to the axes.
+        ax.set_title(label)  # Add a title to the axes.
+        ax.legend(shadow=True, fontsize='small');  # Add a legend.
 
 
 #contourplot

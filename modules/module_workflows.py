@@ -9,24 +9,38 @@ import math
 import time
 import constants
 import ash
+from ash import Singlepoint
 import dictionaries_lists
 import modules.module_coords
 import interfaces.interface_geometric
 import interfaces.interface_crest
 from functions.functions_general import BC,print_time_rel,print_line_with_mainheader,pygrep
 import ash_header
+from modules.module_singlepoint import Singlepoint_fragments
 import settings_ash
-import modules.module_highlevel_workflows
+from modules.module_highlevel_workflows import CC_CBS_Theory
 import functions.functions_elstructure
+from modules.module_plotting import ASH_plot
+
+#Simple class to keep track of results
+class ProjectResults():
+    def __init__(self,name=None):
+        self.name=name
+        print("Creating ProjectResults object.")
+
+    def printall(self):
+        print("Printing all defined attributes of object:", self.name)
+        for i,j in self.__dict__.items():
+            print("{} : {}".format(i,j))
 
 
-def ReactionEnergy(stoichiometry=None, list_of_fragments=None, list_of_energies=None, unit='kcal/mol', label=None, reference=None):
+def ReactionEnergy(list_of_energies=None, stoichiometry=None, list_of_fragments=None, unit='kcal/mol', label=None, reference=None, silent=False):
     """Calculate reaction energy from list of energies (or energies from list of fragments) and stoichiometry
 
     Args:
+        list_of_energies ([type], optional): A list of total energies in hartrees. Defaults to None.
         stoichiometry (list, optional): A list of integers, e.g. [-1,-1,1,1]. Defaults to None.
         list_of_fragments (list, optional): A list of ASH fragments . Defaults to None.
-        list_of_energies ([type], optional): A list of total energies in hartrees. Defaults to None.
         unit (str, optional): Unit for relative energy. Defaults to 'kcal/mol'.
         label (string, optional): Optional label for energy. Defaults to None.
         reference (float, optional): Optional shift-parameter of energy Defaults to None.
@@ -65,12 +79,14 @@ def ReactionEnergy(stoichiometry=None, list_of_fragments=None, list_of_energies=
         reaction_energy=(product_energy-reactant_energy)*conversionfactor[unit]
         if reference is None:
             error=None
-            print(BC.BOLD, "Reaction_energy({}): {} {}".format(label,BC.OKGREEN,reaction_energy, unit), BC.END)
+            if silent is False:
+                print(BC.BOLD, "Reaction_energy({}): {} {} {}".format(label,BC.OKGREEN,reaction_energy, unit), BC.END)
         else:
             error=reaction_energy-reference
-            print(BC.BOLD, "Reaction_energy({}): {} {} {} (Error: {}) {}".format(label,BC.OKGREEN,reaction_energy, unit, error, BC.END))
+            if silent is False:
+                print(BC.BOLD, "Reaction_energy({}): {} {} {} (Error: {})".format(label,BC.OKGREEN,reaction_energy, unit, error), BC.END)
     else:
-        print("No list of total energies provided. Using internal energy of each fragment instead.")
+        print("\nNo list of total energies provided. Using internal energy of each fragment instead.")
         print("")
         for i,stoich in enumerate(stoichiometry):
             if stoich < 0:
@@ -80,10 +96,12 @@ def ReactionEnergy(stoichiometry=None, list_of_fragments=None, list_of_energies=
         reaction_energy=(product_energy-reactant_energy)*conversionfactor[unit]
         if reference is None:
             error=None
-            print(BC.BOLD, "Reaction_energy({}): {} {}".format(label,BC.OKGREEN,reaction_energy, unit), BC.END)
+            if silent is False:
+                print(BC.BOLD, "Reaction_energy({}): {} {} {}".format(label,BC.OKGREEN,reaction_energy, unit), BC.END)
         else:
             error=reaction_energy-reference
-            print(BC.BOLD, "Reaction_energy({}): {} {} {} (Error: {})".format(label,BC.OKGREEN,reaction_energy, unit, error, BC.END))
+            if silent is False:
+                print(BC.BOLD, "Reaction_energy({}): {} {} {} (Error: {})".format(label,BC.OKGREEN,reaction_energy, unit, error), BC.END)
     return reaction_energy, error
 
 
@@ -224,15 +242,13 @@ def thermochemprotocol_single(fragment=None, Opt_theory=None, SP_theory=None, or
     print("-------------------------------------------------------------------------")
     print("THERMOCHEM PROTOCOL-single: Step 3. High-level single-point calculation")
     print("-------------------------------------------------------------------------")
-    #Workflow (callable function) or ORCATheory object
-    #if callable(SP_theory) is True:
-    #    FinalE, componentsdict = SP_theory(fragment=fragment, charge=fragment.charge,
-    #                mult=fragment.mult, orcadir=orcadir, numcores=numcores, memory=memory, workflow_args=workflow_args)
-    #elif SP_theory.__class__.__name__ == "ORCATheory":
-        #Adding charge and mult to theory object, taken from each fragment object
+
     SP_theory.charge = fragment.charge
     SP_theory.mult = fragment.mult
     FinalE = ash.Singlepoint(fragment=fragment, theory=SP_theory)
+    #Get energy components
+    if isinstance(SP_theory,CC_CBS_Theory):
+        componentsdict=SP_theory.energy_components
 
     SP_theory.cleanup()
 
@@ -308,15 +324,16 @@ def thermochemprotocol_reaction(Opt_theory=None, SP_theory=None, fraglist=None, 
     ReactionEnergy(stoichiometry=stoichiometry, list_of_fragments=fraglist, list_of_energies=ZPVE_Energies, unit='kcalpermol', label='ΔZPVE')
     ReactionEnergy(stoichiometry=stoichiometry, list_of_fragments=fraglist, list_of_energies=Hcorr_Energies, unit='kcalpermol', label='ΔHcorr')
     ReactionEnergy(stoichiometry=stoichiometry, list_of_fragments=fraglist, list_of_energies=Gcorr_Energies, unit='kcalpermol', label='ΔGcorr')
+
     #Contributions to CCSD(T) energies
     if 'E_SCF_CBS' in componentsdict:
         scf_parts=[dict['E_SCF_CBS'] for dict in list_of_dicts]
         ReactionEnergy(stoichiometry=stoichiometry, list_of_fragments=fraglist, list_of_energies=scf_parts, unit='kcalpermol', label='ΔSCF')
-    if 'E_CCSDcorr_CBS' in componentsdict:
-        ccsd_parts=[dict['E_CCSDcorr_CBS'] for dict in list_of_dicts]
+    if 'E_corrCCSD_CBS' in componentsdict:
+        ccsd_parts=[dict['E_corrCCSD_CBS'] for dict in list_of_dicts]
         ReactionEnergy(stoichiometry=stoichiometry, list_of_fragments=fraglist, list_of_energies=ccsd_parts, unit='kcalpermol', label='ΔCCSD')
-    if 'E_triplescorr_CBS' in componentsdict:
-        triples_parts=[dict['E_triplescorr_CBS'] for dict in list_of_dicts]
+    if 'E_corrCCT_CBS' in componentsdict:
+        triples_parts=[dict['E_corrCCT_CBS'] for dict in list_of_dicts]
         ReactionEnergy(stoichiometry=stoichiometry, list_of_fragments=fraglist, list_of_energies=triples_parts, unit='kcalpermol', label='Δ(T)')
     if 'E_corr_CBS' in componentsdict:
         valencecorr_parts=[dict['E_corr_CBS'] for dict in list_of_dicts]
@@ -327,7 +344,9 @@ def thermochemprotocol_reaction(Opt_theory=None, SP_theory=None, fraglist=None, 
     if 'E_corecorr_and_SR' in componentsdict:
         CV_SR_parts=[dict['E_corecorr_and_SR'] for dict in list_of_dicts]
         ReactionEnergy(stoichiometry=stoichiometry, list_of_fragments=fraglist, list_of_energies=CV_SR_parts, unit='kcalpermol', label='ΔCV+SR')
-    
+    if 'E_FCIcorrection' in componentsdict:
+        fcicorr_parts=[dict['E_FCIcorrection'] for dict in list_of_dicts]
+        ReactionEnergy(stoichiometry=stoichiometry, list_of_fragments=fraglist, list_of_energies=fcicorr_parts, unit='kcalpermol', label='ΔFCIcorr')
     print("")
     print(BC.WARNING, BC.BOLD, "------------THERMOCHEM PROTOCOL END-------------", BC.END)
     #print_time_rel(ash_header.init_time,modulename='Entire thermochemprotocol')
@@ -599,4 +618,424 @@ def calc_xyzfiles(xyzdir=None, theory=None, Opt=False, Freq=False, charge=None, 
     
     if Opt is True:
         print("\n\nXYZ-files with optimized coordinates can be found in:", finalxyzdir)
-    
+
+    return energies
+
+
+def Reaction_Highlevel_Analysis(fraglist=None, stoichiometry=None, numcores=1, memory=7000, reactionlabel='Reactionlabel',
+                                def2_family=True, cc_family=True, aug_cc_family=False, F12_family=True, DLPNO=False, extrapolation=True, highest_cardinal=6,
+                                plot=True ):
+    """Function to perform high-level CCSD(T) calculations for a reaction with associated plots.
+       Performs CCSD(T) with cc and def2 basis sets, CCSD(T)-F12 and CCSD(T)/CBS extrapolations
+
+    Args:
+        fragment ([type], optional): [description]. Defaults to None.
+        fraglist ([type], optional): [description]. Defaults to None.
+        stoichiometry ([type], optional): [description]. Defaults to None.
+        numcores (int, optional): [description]. Defaults to 1.
+        memory (int, optional): [description]. Defaults to 7000.
+        reactionlabel (str, optional): [description]. Defaults to 'Reactionlabel'.
+        def2_family (bool, optional): [description]. Defaults to True.
+        cc_family (bool, optional): [description]. Defaults to True.
+        F12_family (bool, optional): [description]. Defaults to True.
+        highest_cardinal (int, optional): [description]. Defaults to 5.
+        plot (Boolean): whether to plot the results or not (requires Matplotlib). Defaults to True. 
+    """
+    elements_involved=[]
+    for frag in fraglist:
+        if frag.charge ==None or frag.mult ==None or frag.label == None:
+            print("All fragments provided must have charge, mult defined and a label.")
+            print("Example: N2=Fragment(xyzfile='n2.xyz', charge=0, mult=1, label='N2'")
+            exit()
+        elements_involved=elements_involved+frag.elems
+
+    #Combined list of all elements involved in the species of the reaction
+    elements_involved=list(set(elements_involved))
+    specieslist=fraglist
+    ###################################################
+    # Do single-basis CCSD(T) calculations: def2 family
+    ###################################################
+    if def2_family is True:
+        print("Now running through single-basis CCSD(T) calculations with def2 family")
+
+        #Storing the results in a ProjectResults object
+        CCSDT_def2_bases_proj = ProjectResults('CCSDT_def2_bases')
+        CCSDT_def2_bases_proj.energy_dict={}
+        CCSDT_def2_bases_proj.reaction_energy_dict={}
+        CCSDT_def2_bases_proj.reaction_energy_list=[]
+
+        #Dict to store energies of species. Uses fragment label that has to be defined above for each
+        CCSDT_def2_bases_proj.species_energies_dict={}
+        for species in specieslist:
+            CCSDT_def2_bases_proj.species_energies_dict[species.label]=[]
+
+
+        #Define basis-sets and labels
+        CCSDT_def2_bases_proj.cardinals=[2,3,4]
+        CCSDT_def2_bases_proj.labels=[]
+
+        #For loop that iterates over basis sets
+        for cardinal in CCSDT_def2_bases_proj.cardinals:
+            label=cardinal
+            CCSDT_def2_bases_proj.labels.append(label)
+            #Define theory level
+            cc = CC_CBS_Theory(elements=elements_involved, cardinals = [cardinal], basisfamily="def2", DLPNO=DLPNO, numcores=numcores, memory=memory)
+            #Single-point calcs on all fragments
+            energies=Singlepoint_fragments(fragments=specieslist, theory=cc)
+            for species,e in zip(specieslist,energies):
+                CCSDT_def2_bases_proj.species_energies_dict[species.label].append(e)
+
+            #Storing total energies of all species in dict
+            CCSDT_def2_bases_proj.energy_dict[label]=energies
+
+            #Store reaction energy in dict
+            reaction_energy, unused = ReactionEnergy(stoichiometry=stoichiometry, list_of_energies=energies, unit='kcal/mol', label=reactionlabel, silent=False)
+            CCSDT_def2_bases_proj.reaction_energy_dict[label]=reaction_energy
+            CCSDT_def2_bases_proj.reaction_energy_list.append(reaction_energy)
+
+        #Print results
+        CCSDT_def2_bases_proj.printall()
+
+    ###################################################
+    # Do single-basis CCSD(T) calculations: cc family
+    ###################################################
+    if cc_family is True:
+        print("Now running through single-basis CCSD(T) calculations with cc family")
+
+        #Storing the results in a ProjectResults object
+        CCSDT_cc_bases_proj = ProjectResults('CCSDT_cc_bases')
+        CCSDT_cc_bases_proj.energy_dict={}
+        CCSDT_cc_bases_proj.reaction_energy_dict={}
+        CCSDT_cc_bases_proj.reaction_energy_list=[]
+
+        #Dict to store energies of species. Uses fragment label that has to be defined above for each
+        CCSDT_cc_bases_proj.species_energies_dict={}
+        for species in specieslist:
+            CCSDT_cc_bases_proj.species_energies_dict[species.label]=[]
+
+        #Define basis-sets and labels
+        CCSDT_cc_bases_proj.cardinals=list(range(2,highest_cardinal+1))
+        CCSDT_cc_bases_proj.labels=[]
+
+        #For loop that iterates over basis sets
+        for cardinal in CCSDT_cc_bases_proj.cardinals:
+            label=cardinal
+            CCSDT_cc_bases_proj.labels.append(label)
+            #Define theory level
+            cc = CC_CBS_Theory(elements=elements_involved, cardinals = [cardinal], basisfamily="cc", DLPNO=DLPNO, numcores=numcores, memory=memory)
+            #Single-point calcs on all fragments
+            energies=Singlepoint_fragments(fragments=specieslist, theory=cc)
+            for species,e in zip(specieslist,energies):
+                CCSDT_cc_bases_proj.species_energies_dict[species.label].append(e)
+
+            #Storing total energies of all species in dict
+            CCSDT_cc_bases_proj.energy_dict[label]=energies
+
+            #Store reaction energy in dict
+            reaction_energy, unused = ReactionEnergy(stoichiometry=stoichiometry, list_of_energies=energies, unit='kcal/mol', label=reactionlabel, silent=False)
+            CCSDT_cc_bases_proj.reaction_energy_dict[label]=reaction_energy
+            CCSDT_cc_bases_proj.reaction_energy_list.append(reaction_energy)
+
+        #Print results
+        CCSDT_cc_bases_proj.printall()
+
+    ###################################################
+    # Do single-basis CCSD(T) calculations: aug_cc family
+    ###################################################
+    if aug_cc_family is True:
+        print("Now running through single-basis CCSD(T) calculations with aug_cc family")
+
+        #Storing the results in a ProjectResults object
+        CCSDT_aug_cc_bases_proj = ProjectResults('CCSDT_aug_cc_bases')
+        CCSDT_aug_cc_bases_proj.energy_dict={}
+        CCSDT_aug_cc_bases_proj.reaction_energy_dict={}
+        CCSDT_aug_cc_bases_proj.reaction_energy_list=[]
+
+        #Dict to store energies of species. Uses fragment label that has to be defined above for each
+        CCSDT_aug_cc_bases_proj.species_energies_dict={}
+        for species in specieslist:
+            CCSDT_aug_cc_bases_proj.species_energies_dict[species.label]=[]
+
+        #Define basis-sets and labels
+        CCSDT_aug_cc_bases_proj.cardinals=list(range(2,highest_cardinal+1))
+        CCSDT_aug_cc_bases_proj.labels=[]
+
+        #For loop that iterates over basis sets
+        for cardinal in CCSDT_aug_cc_bases_proj.cardinals:
+            label=cardinal
+            CCSDT_aug_cc_bases_proj.labels.append(label)
+            #Define theory level
+            cc = CC_CBS_Theory(elements=elements_involved, cardinals = [cardinal], basisfamily="aug-cc", DLPNO=DLPNO, numcores=numcores, memory=memory)
+            #Single-point calcs on all fragments
+            energies=Singlepoint_fragments(fragments=specieslist, theory=cc)
+            for species,e in zip(specieslist,energies):
+                CCSDT_aug_cc_bases_proj.species_energies_dict[species.label].append(e)
+
+            #Storing total energies of all species in dict
+            CCSDT_aug_cc_bases_proj.energy_dict[label]=energies
+
+            #Store reaction energy in dict
+            reaction_energy, unused = ReactionEnergy(stoichiometry=stoichiometry, list_of_energies=energies, unit='kcal/mol', label=reactionlabel, silent=False)
+            CCSDT_aug_cc_bases_proj.reaction_energy_dict[label]=reaction_energy
+            CCSDT_aug_cc_bases_proj.reaction_energy_list.append(reaction_energy)
+
+        #Print results
+        CCSDT_aug_cc_bases_proj.printall()
+
+
+
+
+    ###########################################
+    # Do single-basis CCSD(T)-F12 calculations
+    ###########################################
+    if F12_family is True:
+        print("Now running through single-basis CCSD(T)-F12 calculations")
+
+        #Storing the results in a ProjectResults object
+        CCSDTF12_bases_proj = ProjectResults('CCSDTF12_bases')
+        CCSDTF12_bases_proj.energy_dict={}
+        CCSDTF12_bases_proj.reaction_energy_dict={}
+        CCSDTF12_bases_proj.reaction_energy_list=[]
+
+        #Dict to store energies of species. Uses fragment label that has to be defined above for each
+        CCSDTF12_bases_proj.species_energies_dict={}
+        for species in specieslist:
+            CCSDTF12_bases_proj.species_energies_dict[species.label]=[]
+
+        #Define basis-sets and labels
+        CCSDTF12_bases_proj.cardinals=[2,3,4]
+        CCSDTF12_bases_proj.labels=[]
+
+        #For loop that iterates over basis sets
+        for cardinal in CCSDTF12_bases_proj.cardinals:
+            label=str(cardinal)
+            CCSDTF12_bases_proj.labels.append(label)
+            #Define theory level
+            cc = CC_CBS_Theory(elements=elements_involved, cardinals = [cardinal], basisfamily="cc-f12", F12=True, DLPNO=DLPNO, numcores=numcores, memory=memory)
+            #Single-point calcs on all fragments
+            energies=Singlepoint_fragments(fragments=specieslist, theory=cc)
+            for species,e in zip(specieslist,energies):
+                CCSDTF12_bases_proj.species_energies_dict[species.label].append(e)
+
+            #Storing total energies of all species in dict
+            CCSDTF12_bases_proj.energy_dict[label]=energies
+
+            #Store reaction energy in dict
+            reaction_energy, unused = ReactionEnergy(stoichiometry=stoichiometry, list_of_energies=energies, unit='kcal/mol', label=reactionlabel, silent=False)
+            CCSDTF12_bases_proj.reaction_energy_dict[label]=reaction_energy
+            CCSDTF12_bases_proj.reaction_energy_list.append(reaction_energy)
+
+        print()
+        #Print results
+        CCSDTF12_bases_proj.printall()
+
+    #################################################
+    # Do CCSD(T)/CBS extrapolations with cc family
+    #################################################
+    if extrapolation is True:
+        print("Now running through extrapolation CCSD(T) cc calculations")
+
+        #Storing the results in a ProjectResults object
+        CCSDTextrap_proj = ProjectResults('CCSDT_extrap')
+        CCSDTextrap_proj.energy_dict={}
+        CCSDTextrap_proj.reaction_energy_dict={}
+        CCSDTextrap_proj.reaction_energy_list=[]
+
+        #Dict to store energies of species. Uses fragment label that has to be defined above for each
+        CCSDTextrap_proj.species_energies_dict={}
+        for species in specieslist:
+            CCSDTextrap_proj.species_energies_dict[species.label]=[]
+
+        #Define basis-sets and labels
+        if highest_cardinal == 6:
+            CCSDTextrap_proj.cardinals=[[2,3],[3,4],[4,5],[5,6]]
+        elif highest_cardinal == 5:
+            CCSDTextrap_proj.cardinals=[[2,3],[3,4],[4,5]]
+        else:
+            CCSDTextrap_proj.cardinals=[[2,3],[3,4]]
+        CCSDTextrap_proj.labels=[]
+
+        #For loop that iterates over basis sets
+        for cardinals in CCSDTextrap_proj.cardinals:
+            label=str(cardinal)
+            CCSDTextrap_proj.labels.append(label)
+            #Define theory level
+            cc = CC_CBS_Theory(elements=elements_involved, cardinals = cardinals, basisfamily="cc", DLPNO=DLPNO, numcores=numcores, memory=memory)
+            #Single-point calcs on all fragments
+            energies=Singlepoint_fragments(fragments=specieslist, theory=cc)
+            for species,e in zip(specieslist,energies):
+                CCSDTextrap_proj.species_energies_dict[species.label].append(e)
+
+            #Storing total energies of all species in dict
+            CCSDTextrap_proj.energy_dict[label]=energies
+
+            #Store reaction energy in dict
+            reaction_energy, unused = ReactionEnergy(stoichiometry=stoichiometry, list_of_energies=energies, unit='kcal/mol', label=reactionlabel, silent=False)
+            CCSDTextrap_proj.reaction_energy_dict[label]=reaction_energy
+            CCSDTextrap_proj.reaction_energy_list.append(reaction_energy)
+
+        print()
+        #Print results
+        CCSDTextrap_proj.printall()
+
+
+    #################################################
+    # Do CCSD(T)/CBS extrapolations with aug_cc family
+    #################################################
+    if extrapolation is True:
+        if aug_cc_family is True:
+            print("Now running through extrapolation CCSD(T) aug_cc calculations")
+
+            #Storing the results in a ProjectResults object
+            CCSDTextrapaugcc_proj = ProjectResults('CCSDT_extrap_augcc')
+            CCSDTextrapaugcc_proj.energy_dict={}
+            CCSDTextrapaugcc_proj.reaction_energy_dict={}
+            CCSDTextrapaugcc_proj.reaction_energy_list=[]
+
+            #Dict to store energies of species. Uses fragment label that has to be defined above for each
+            CCSDTextrapaugcc_proj.species_energies_dict={}
+            for species in specieslist:
+                CCSDTextrapaugcc_proj.species_energies_dict[species.label]=[]
+
+            #Define basis-sets and labels
+            if highest_cardinal == 6:
+                CCSDTextrapaugcc_proj.cardinals=[[2,3],[3,4],[4,5],[5,6]]
+            elif highest_cardinal == 5:
+                CCSDTextrapaugcc_proj.cardinals=[[2,3],[3,4],[4,5]]
+            else:
+                CCSDTextrapaugcc_proj.cardinals=[[2,3],[3,4]]
+            CCSDTextrapaugcc_proj.labels=[]
+
+            #For loop that iterates over basis sets
+            for cardinals in CCSDTextrapaugcc_proj.cardinals:
+                label=str(cardinal)
+                CCSDTextrapaugcc_proj.labels.append(label)
+                #Define theory level
+                cc = CC_CBS_Theory(elements=elements_involved, cardinals = cardinals, basisfamily="aug-cc", DLPNO=DLPNO, numcores=numcores, memory=memory)
+                #Single-point calcs on all fragments
+                energies=Singlepoint_fragments(fragments=specieslist, theory=cc)
+                for species,e in zip(specieslist,energies):
+                    CCSDTextrapaugcc_proj.species_energies_dict[species.label].append(e)
+
+                #Storing total energies of all species in dict
+                CCSDTextrapaugcc_proj.energy_dict[label]=energies
+
+                #Store reaction energy in dict
+                reaction_energy, unused = ReactionEnergy(stoichiometry=stoichiometry, list_of_energies=energies, unit='kcal/mol', label=reactionlabel, silent=False)
+                CCSDTextrapaugcc_proj.reaction_energy_dict[label]=reaction_energy
+                CCSDTextrapaugcc_proj.reaction_energy_list.append(reaction_energy)
+
+            print()
+            #Print results
+            CCSDTextrapaugcc_proj.printall()
+
+
+
+
+    ###################################################
+    # Do CCSD(T)/CBS extrapolations with def2 family
+    ###################################################
+    if extrapolation is True:
+        print("Now running through extrapolation CCSD(T) calculations")
+
+        #Storing the results in a ProjectResults object
+        CCSDTextrapdef2_proj = ProjectResults('CCSDT_extrapdef2')
+        CCSDTextrapdef2_proj.energy_dict={}
+        CCSDTextrapdef2_proj.reaction_energy_dict={}
+        CCSDTextrapdef2_proj.reaction_energy_list=[]
+
+        #Dict to store energies of species. Uses fragment label that has to be defined above for each
+        CCSDTextrapdef2_proj.species_energies_dict={}
+        for species in specieslist:
+            CCSDTextrapdef2_proj.species_energies_dict[species.label]=[]
+
+        #Define basis-sets and labels
+        CCSDTextrapdef2_proj.cardinals=[[2,3],[3,4]]
+        CCSDTextrapdef2_proj.labels=[]
+
+        #For loop that iterates over basis sets
+        for cardinals in CCSDTextrapdef2_proj.cardinals:
+            label=str(cardinal)
+            CCSDTextrapdef2_proj.labels.append(label)
+            #Define theory level
+            cc = CC_CBS_Theory(elements=elements_involved, cardinals = cardinals, basisfamily="def2", DLPNO=DLPNO, numcores=numcores, memory=memory)
+            #Single-point calcs on all fragments
+            energies=Singlepoint_fragments(fragments=specieslist, theory=cc)
+            for species,e in zip(specieslist,energies):
+                CCSDTextrapdef2_proj.species_energies_dict[species.label].append(e)
+
+            #Storing total energies of all species in dict
+            CCSDTextrapdef2_proj.energy_dict[label]=energies
+
+            #Store reaction energy in dict
+            reaction_energy, unused = ReactionEnergy(stoichiometry=stoichiometry, list_of_energies=energies, unit='kcal/mol', label=reactionlabel, silent=False)
+            CCSDTextrapdef2_proj.reaction_energy_dict[label]=reaction_energy
+            CCSDTextrapdef2_proj.reaction_energy_list.append(reaction_energy)
+
+        print()
+        #Print results
+        CCSDTextrapdef2_proj.printall()
+
+
+
+    ################
+    #Plotting
+    ###############
+    if plot is True:
+        #Energy plot for each species:
+        for species in specieslist:
+            specieslabel=species.label
+            eplot = ASH_plot('{} energy plot'.format(specieslabel), num_subplots=1, x_axislabel="Cardinal", y_axislabel='Energy (Eh)', title='{} Energy'.format(specieslabel))
+            if cc_family is True:
+                eplot.addseries(0, x_list=CCSDT_cc_bases_proj.cardinals, y_list=CCSDT_cc_bases_proj.species_energies_dict[specieslabel], label='cc-pVnZ', color='lightblue')
+            if aug_cc_family is True:
+                eplot.addseries(0, x_list=CCSDT_aug_cc_bases_proj.cardinals, y_list=CCSDT_aug_cc_bases_proj.species_energies_dict[specieslabel], label='aug-cc-pVnZ', color='blue')
+            if def2_family is True:
+                eplot.addseries(0, x_list=CCSDT_def2_bases_proj.cardinals, y_list=CCSDT_def2_bases_proj.species_energies_dict[specieslabel], label='def2-nVP', color='red')
+            if F12_family is True:
+                eplot.addseries(0, x_list=CCSDTF12_bases_proj.cardinals, y_list=CCSDTF12_bases_proj.species_energies_dict[specieslabel], label='cc-pVnZ-F12', color='purple')
+            if extrapolation is True:
+                eplot.addseries(0, x_list=[2.5], y_list=CCSDTextrap_proj.species_energies_dict[specieslabel][0], label='CBS-cc-23', line=False,  marker='x', color='gray')
+                eplot.addseries(0, x_list=[3.5], y_list=CCSDTextrap_proj.species_energies_dict[specieslabel][1], label='CBS-cc-34', line=False, marker='x', color='green')
+                if aug_cc_family is True:
+                    eplot.addseries(0, x_list=[2.5], y_list=CCSDTextrapaugcc_proj.species_energies_dict[specieslabel][0], label='CBS-aug-cc-23', line=False,  marker='x', color='brown')
+                    eplot.addseries(0, x_list=[3.5], y_list=CCSDTextrapaugcc_proj.species_energies_dict[specieslabel][1], label='CBS-aug-cc-34', line=False, marker='x', color='lightgreen') 
+                if highest_cardinal > 4:
+                    eplot.addseries(0, x_list=[4.5], y_list=CCSDTextrap_proj.species_energies_dict[specieslabel][2], label='CBS-cc-45', line=False, marker='x', color='black')
+                    if aug_cc_family is True:
+                        eplot.addseries(0, x_list=[4.5], y_list=CCSDTextrapaugcc_proj.species_energies_dict[specieslabel][2], label='CBS-aug-cc-45', line=False, marker='x', color='silver')
+                    if highest_cardinal > 5:
+                        eplot.addseries(0, x_list=[5.5], y_list=CCSDTextrap_proj.species_energies_dict[specieslabel][3], label='CBS-cc-56', line=False, marker='x', color='orange')
+                        if aug_cc_family is True:
+                            eplot.addseries(0, x_list=[5.5], y_list=CCSDTextrapaugcc_proj.species_energies_dict[specieslabel][3], label='CBS-aug-cc-56', line=False, marker='x', color='maroon')
+                eplot.addseries(0, x_list=[2.5], y_list=CCSDTextrapdef2_proj.species_energies_dict[specieslabel][0], label='CBS-def2-23', line=False,  marker='x', color='cyan')
+                eplot.addseries(0, x_list=[3.5], y_list=CCSDTextrapdef2_proj.species_energies_dict[specieslabel][1], label='CBS-def2-34', line=False, marker='x', color='pink')
+            eplot.savefig('{}_Energy'.format(specieslabel))
+
+        #Reaction energy plot
+        reactionenergyplot = ASH_plot('{}'.format(reactionlabel), num_subplots=1, x_axislabel="Cardinal", y_axislabel='Energy ({})'.format(reactionlabel), title='{}'.format(reactionlabel))
+        if cc_family is True:
+            reactionenergyplot.addseries(0, x_list = CCSDT_cc_bases_proj.cardinals, y_list=CCSDT_cc_bases_proj.reaction_energy_list, label='cc-pVnZ', color='blue')
+        if aug_cc_family is True:
+            reactionenergyplot.addseries(0, x_list=CCSDT_aug_cc_bases_proj.cardinals, y_list=CCSDT_aug_cc_bases_proj.reaction_energy_list, label='aug-cc-pVnZ', color='lightblue')
+        if def2_family is True:
+            reactionenergyplot.addseries(0, x_list = CCSDT_def2_bases_proj.cardinals, y_list=CCSDT_def2_bases_proj.reaction_energy_list, label='def2-nVP', color='red')
+        if F12_family is True:
+            reactionenergyplot.addseries(0, x_list = CCSDTF12_bases_proj.cardinals, y_list=CCSDTF12_bases_proj.reaction_energy_list, label='cc-pVnZ-F12', color='purple')
+        if extrapolation is True:
+            reactionenergyplot.addseries(0, x_list=[2.5], y_list=CCSDTextrap_proj.reaction_energy_list[0], label='CBS-cc-23', line=False,  marker='x', color='gray')
+            reactionenergyplot.addseries(0, x_list=[3.5], y_list=CCSDTextrap_proj.reaction_energy_list[1], label='CBS-cc-34', line=False, marker='x', color='green')
+            if aug_cc_family is True:
+                reactionenergyplot.addseries(0, x_list=[2.5], y_list=CCSDTextrapaugcc_proj.reaction_energy_list[0], label='CBS-aug-cc-23', line=False,  marker='x', color='brown')
+                reactionenergyplot.addseries(0, x_list=[3.5], y_list=CCSDTextrapaugcc_proj.reaction_energy_list[1], label='CBS-aug-cc-34', line=False, marker='x', color='lightgreen')
+            if highest_cardinal > 4:
+                reactionenergyplot.addseries(0, x_list=[4.5], y_list=CCSDTextrap_proj.reaction_energy_list[2], label='CBS-cc-45', line=False, marker='x', color='black')
+                if aug_cc_family is True:
+                    reactionenergyplot.addseries(0, x_list=[4.5], y_list=CCSDTextrapaugcc_proj.reaction_energy_list[2], label='CBS-aug-cc-45', line=False, marker='x', color='silver')
+                if highest_cardinal > 5:
+                    reactionenergyplot.addseries(0, x_list=[5.5], y_list=CCSDTextrap_proj.reaction_energy_list[3], label='CBS-cc-56', line=False, marker='x', color='orange')
+                    if aug_cc_family is True:
+                        reactionenergyplot.addseries(0, x_list=[5.5], y_list=CCSDTextrapaugcc_proj.reaction_energy_list[3], label='CBS-aug-cc-56', line=False, marker='x', color='maroon')
+            reactionenergyplot.addseries(0, x_list=[2.5], y_list=CCSDTextrapdef2_proj.reaction_energy_list[0], label='CBS-def2-23', line=False, marker='x', color='cyan')
+            reactionenergyplot.addseries(0, x_list=[3.5], y_list=CCSDTextrapdef2_proj.reaction_energy_list[1], label='CBS-def2-34', line=False, marker='x', color='pink')
+        reactionenergyplot.savefig('Reaction energy')

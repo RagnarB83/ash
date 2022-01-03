@@ -38,7 +38,7 @@ from modules.module_coords import remove_atoms_from_system_CHARMM, add_atoms_to_
 
 # Singlepoint
 import modules.module_singlepoint
-from modules.module_singlepoint import Singlepoint, newSinglepoint, ZeroTheory
+from modules.module_singlepoint import Singlepoint, newSinglepoint, ZeroTheory, Singlepoint_fragments, Singlepoint_theories
 
 # Parallel
 import functions.functions_parallel
@@ -111,9 +111,14 @@ import modules.module_workflows
 import modules.module_highlevel_workflows
 from modules.module_highlevel_workflows import CC_CBS_Theory
 from modules.module_workflows import ReactionEnergy, thermochemprotocol_reaction, thermochemprotocol_single, \
-    confsampler_protocol, auto_active_space, calc_xyzfiles
+    confsampler_protocol, auto_active_space, calc_xyzfiles, ProjectResults, Reaction_Highlevel_Analysis
 import modules.module_benchmarking
 from modules.module_benchmarking import run_benchmark
+
+
+#Plotting
+import modules.module_plotting
+from modules.module_plotting import reactionprofile_plot, contourplot, plot_Spectrum, MOplot_vertical, ASH_plot
 
 # Other
 import interfaces.interface_crest
