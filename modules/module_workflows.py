@@ -246,6 +246,9 @@ def thermochemprotocol_single(fragment=None, Opt_theory=None, SP_theory=None, or
     SP_theory.charge = fragment.charge
     SP_theory.mult = fragment.mult
     FinalE = ash.Singlepoint(fragment=fragment, theory=SP_theory)
+    #Get energy components
+    if isinstance(SP_theory,CC_CBS_Theory):
+        componentsdict=SP_theory.energy_components
 
     SP_theory.cleanup()
 
@@ -326,8 +329,8 @@ def thermochemprotocol_reaction(Opt_theory=None, SP_theory=None, fraglist=None, 
     if 'E_SCF_CBS' in componentsdict:
         scf_parts=[dict['E_SCF_CBS'] for dict in list_of_dicts]
         ReactionEnergy(stoichiometry=stoichiometry, list_of_fragments=fraglist, list_of_energies=scf_parts, unit='kcalpermol', label='ΔSCF')
-    if 'E_CCSDcorr_CBS' in componentsdict:
-        ccsd_parts=[dict['E_CCSDcorr_CBS'] for dict in list_of_dicts]
+    if 'E_corrCCSD_CBS' in componentsdict:
+        ccsd_parts=[dict['E_corrCCSD_CBS'] for dict in list_of_dicts]
         ReactionEnergy(stoichiometry=stoichiometry, list_of_fragments=fraglist, list_of_energies=ccsd_parts, unit='kcalpermol', label='ΔCCSD')
     if 'E_corrCCT_CBS' in componentsdict:
         triples_parts=[dict['E_corrCCT_CBS'] for dict in list_of_dicts]
