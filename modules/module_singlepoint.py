@@ -73,9 +73,83 @@ def Singlepoint(fragment=None, theory=None, Grad=False):
 
         print("Energy: ", energy)
         #Now adding total energy to fragment
-        fragment.energy=energy
+        fragment.set_energy(energy)
         print_time_rel(module_init_time, modulename='Singlepoint', moduleindex=1)
         return energy
+
+
+
+#Single-point energy function that runs calculations on 1 fragment using multiple theories. Returns a list of energies.
+def Singlepoint_theories(theories=None, fragment=None, ):
+    print_line_with_mainheader("Singlepoint_theories function")
+
+    print("Will run single-point calculation on the fragment with multiple theories and return a list of energies")
+
+    energies=[]
+
+    #Looping through fragmengs
+    for theory in theories:
+        
+        #Running single-point
+        energy = ash.Singlepoint(theory=theory, fragment=fragment)
+        
+        print("Theory Label: {} Energy: {} Eh".format(theory.label, energy))
+        theory.cleanup()
+        energies.append(energy)
+
+    print("\n{:20} {:>7} {:>7} {:>20}".format("Theory Label", "Charge","Mult", "Energy(Eh)"))
+    print("-"*70)
+    for t, e in zip(theories,energies):
+        print("{:20} {:>7} {:>7} {:>20.10f}".format(t.label, fragment.charge, fragment.mult, e))
+    print()
+    return energies
+
+
+#Single-point energy function that runs calculations on multiple fragments. Returns a list of energies.
+#Assuming fragments have charge,mult info defined.
+def Singlepoint_fragments(theory=None, fragments=None, ):
+    print_line_with_mainheader("Singlepoint_fragments function")
+
+    print("Will run single-point calculation on each fragment and return a list of energies")
+    print("Theory:", theory)
+
+    energies=[];filenames=[]
+
+    #Looping through fragmengs
+    for frag in fragments:
+
+        if frag.charge == None or frag.mult == None:
+            print(BC.FAIL,"Error: no charge/mult information associated with fragment.", BC.END)
+            exit()
+        #Setting charge/mult for theory from fragment
+        theory.charge=frag.charge; theory.mult=frag.mult
+        
+        #Running single-point
+        energy = ash.Singlepoint(theory=theory, fragment=frag)
+        
+        print("Fragment {} . Label: {} Energy: {} Eh".format(frag.formula, frag.label, energy))
+        theory.cleanup()
+        energies.append(energy)
+        #Adding energy as the fragment attribute
+        frag.set_energy(energy)
+        print("")
+    
+    #Setting charge/mult of theory to None in case used again
+    theory.charge=None; theory.mult=None
+    print("{:10} {:10} {:>7} {:>7} {:>20}".format("Formula", "Label", "Charge","Mult", "Energy(Eh)"))
+    print("-"*70)
+    for frag, e in zip(fragments,energies):
+        if frag.label==None:
+            label="None"
+        else:
+            label=frag.label
+        print("{:10} {:10} {:>7} {:>7} {:>20.10f}".format(frag.formula, label, frag.charge, frag.mult, e))
+    print()
+    return energies
+
+
+
+
 
 
 

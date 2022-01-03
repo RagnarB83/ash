@@ -523,7 +523,7 @@ def xtbVEAgrab(file):
     return VIP
 
 # Run xTB single-point job
-def run_xtb_SP_serial(xtbdir, xtbmethod, xyzfile, charge, mult, Grad=False, Opt=True, maxiter=500, electronic_temp=300, accuracy=0.1, solvent=None):
+def run_xtb_SP_serial(xtbdir, xtbmethod, xyzfile, charge, mult, Grad=False, Opt=False, maxiter=500, electronic_temp=300, accuracy=0.1, solvent=None):
     
     if solvent != None:
         solvent_line=""

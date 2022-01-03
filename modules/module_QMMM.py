@@ -142,7 +142,9 @@ class QMMMTheory:
                 exit(1)
         else:
             print("Reading in charges")
-            assert len(charges) == len(fragment.atomlist), "Number of charges not matching number of fragment atoms"
+            if len(charges) != len(fragment.atomlist):
+                print(BC.FAIL,"Number of charges not matching number of fragment atoms. Exiting.",BC.END)
+                exit()
             self.charges=charges
         
         if len(self.charges) == 0:
