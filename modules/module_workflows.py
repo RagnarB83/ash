@@ -622,7 +622,7 @@ def calc_xyzfiles(xyzdir=None, theory=None, Opt=False, Freq=False, charge=None, 
     return energies
 
 
-def Reaction_Highlevel_Analysis(fraglist=None, stoichiometry=None, numcores=1, memory=7000, reactionlabel='Reactionlabel',
+def Reaction_Highlevel_Analysis(fraglist=None, stoichiometry=None, numcores=1, memory=7000, reactionlabel='Reactionlabel', energy_unit='kcal/mol',
                                 def2_family=True, cc_family=True, aug_cc_family=False, F12_family=True, DLPNO=False, extrapolation=True, highest_cardinal=6,
                                 plot=True ):
     """Function to perform high-level CCSD(T) calculations for a reaction with associated plots.
@@ -635,6 +635,7 @@ def Reaction_Highlevel_Analysis(fraglist=None, stoichiometry=None, numcores=1, m
         numcores (int, optional): [description]. Defaults to 1.
         memory (int, optional): [description]. Defaults to 7000.
         reactionlabel (str, optional): [description]. Defaults to 'Reactionlabel'.
+        energy_unit (str): Energy unit for ReactionEnergy. Options: 'kcal/mol', 'kJ/mol', 'eV', 'cm-1'. Default: 'kcal/mol'
         def2_family (bool, optional): [description]. Defaults to True.
         cc_family (bool, optional): [description]. Defaults to True.
         F12_family (bool, optional): [description]. Defaults to True.
@@ -689,7 +690,7 @@ def Reaction_Highlevel_Analysis(fraglist=None, stoichiometry=None, numcores=1, m
             CCSDT_def2_bases_proj.energy_dict[label]=energies
 
             #Store reaction energy in dict
-            reaction_energy, unused = ReactionEnergy(stoichiometry=stoichiometry, list_of_energies=energies, unit='kcal/mol', label=reactionlabel, silent=False)
+            reaction_energy, unused = ReactionEnergy(stoichiometry=stoichiometry, list_of_energies=energies, unit=energy_unit, label=reactionlabel, silent=False)
             CCSDT_def2_bases_proj.reaction_energy_dict[label]=reaction_energy
             CCSDT_def2_bases_proj.reaction_energy_list.append(reaction_energy)
 
@@ -775,7 +776,7 @@ def Reaction_Highlevel_Analysis(fraglist=None, stoichiometry=None, numcores=1, m
             CCSDT_aug_cc_bases_proj.energy_dict[label]=energies
 
             #Store reaction energy in dict
-            reaction_energy, unused = ReactionEnergy(stoichiometry=stoichiometry, list_of_energies=energies, unit='kcal/mol', label=reactionlabel, silent=False)
+            reaction_energy, unused = ReactionEnergy(stoichiometry=stoichiometry, list_of_energies=energies, unit=energy_unit, label=reactionlabel, silent=False)
             CCSDT_aug_cc_bases_proj.reaction_energy_dict[label]=reaction_energy
             CCSDT_aug_cc_bases_proj.reaction_energy_list.append(reaction_energy)
 
@@ -821,7 +822,7 @@ def Reaction_Highlevel_Analysis(fraglist=None, stoichiometry=None, numcores=1, m
             CCSDTF12_bases_proj.energy_dict[label]=energies
 
             #Store reaction energy in dict
-            reaction_energy, unused = ReactionEnergy(stoichiometry=stoichiometry, list_of_energies=energies, unit='kcal/mol', label=reactionlabel, silent=False)
+            reaction_energy, unused = ReactionEnergy(stoichiometry=stoichiometry, list_of_energies=energies, unit=energy_unit, label=reactionlabel, silent=False)
             CCSDTF12_bases_proj.reaction_energy_dict[label]=reaction_energy
             CCSDTF12_bases_proj.reaction_energy_list.append(reaction_energy)
 
@@ -870,7 +871,7 @@ def Reaction_Highlevel_Analysis(fraglist=None, stoichiometry=None, numcores=1, m
             CCSDTextrap_proj.energy_dict[label]=energies
 
             #Store reaction energy in dict
-            reaction_energy, unused = ReactionEnergy(stoichiometry=stoichiometry, list_of_energies=energies, unit='kcal/mol', label=reactionlabel, silent=False)
+            reaction_energy, unused = ReactionEnergy(stoichiometry=stoichiometry, list_of_energies=energies, unit=energy_unit, label=reactionlabel, silent=False)
             CCSDTextrap_proj.reaction_energy_dict[label]=reaction_energy
             CCSDTextrap_proj.reaction_energy_list.append(reaction_energy)
 
@@ -921,7 +922,7 @@ def Reaction_Highlevel_Analysis(fraglist=None, stoichiometry=None, numcores=1, m
                 CCSDTextrapaugcc_proj.energy_dict[label]=energies
 
                 #Store reaction energy in dict
-                reaction_energy, unused = ReactionEnergy(stoichiometry=stoichiometry, list_of_energies=energies, unit='kcal/mol', label=reactionlabel, silent=False)
+                reaction_energy, unused = ReactionEnergy(stoichiometry=stoichiometry, list_of_energies=energies, unit=energy_unit, label=reactionlabel, silent=False)
                 CCSDTextrapaugcc_proj.reaction_energy_dict[label]=reaction_energy
                 CCSDTextrapaugcc_proj.reaction_energy_list.append(reaction_energy)
 
@@ -968,7 +969,7 @@ def Reaction_Highlevel_Analysis(fraglist=None, stoichiometry=None, numcores=1, m
             CCSDTextrapdef2_proj.energy_dict[label]=energies
 
             #Store reaction energy in dict
-            reaction_energy, unused = ReactionEnergy(stoichiometry=stoichiometry, list_of_energies=energies, unit='kcal/mol', label=reactionlabel, silent=False)
+            reaction_energy, unused = ReactionEnergy(stoichiometry=stoichiometry, list_of_energies=energies, unit=energy_unit, label=reactionlabel, silent=False)
             CCSDTextrapdef2_proj.reaction_energy_dict[label]=reaction_energy
             CCSDTextrapdef2_proj.reaction_energy_list.append(reaction_energy)
 
@@ -987,9 +988,9 @@ def Reaction_Highlevel_Analysis(fraglist=None, stoichiometry=None, numcores=1, m
             specieslabel=species.label
             eplot = ASH_plot('{} energy plot'.format(specieslabel), num_subplots=1, x_axislabel="Cardinal", y_axislabel='Energy (Eh)', title='{} Energy'.format(specieslabel))
             if cc_family is True:
-                eplot.addseries(0, x_list=CCSDT_cc_bases_proj.cardinals, y_list=CCSDT_cc_bases_proj.species_energies_dict[specieslabel], label='cc-pVnZ', color='lightblue')
+                eplot.addseries(0, x_list=CCSDT_cc_bases_proj.cardinals, y_list=CCSDT_cc_bases_proj.species_energies_dict[specieslabel], label='cc-pVnZ', color='blue')
             if aug_cc_family is True:
-                eplot.addseries(0, x_list=CCSDT_aug_cc_bases_proj.cardinals, y_list=CCSDT_aug_cc_bases_proj.species_energies_dict[specieslabel], label='aug-cc-pVnZ', color='blue')
+                eplot.addseries(0, x_list=CCSDT_aug_cc_bases_proj.cardinals, y_list=CCSDT_aug_cc_bases_proj.species_energies_dict[specieslabel], label='aug-cc-pVnZ', color='lightblue')
             if def2_family is True:
                 eplot.addseries(0, x_list=CCSDT_def2_bases_proj.cardinals, y_list=CCSDT_def2_bases_proj.species_energies_dict[specieslabel], label='def2-nVP', color='red')
             if F12_family is True:
@@ -1013,7 +1014,7 @@ def Reaction_Highlevel_Analysis(fraglist=None, stoichiometry=None, numcores=1, m
             eplot.savefig('{}_Energy'.format(specieslabel))
 
         #Reaction energy plot
-        reactionenergyplot = ASH_plot('{}'.format(reactionlabel), num_subplots=1, x_axislabel="Cardinal", y_axislabel='Energy ({})'.format(reactionlabel), title='{}'.format(reactionlabel))
+        reactionenergyplot = ASH_plot('{}'.format(reactionlabel), num_subplots=1, x_axislabel="Cardinal", y_axislabel='Energy ({})'.format(energy_unit), title='{}'.format(reactionlabel))
         if cc_family is True:
             reactionenergyplot.addseries(0, x_list = CCSDT_cc_bases_proj.cardinals, y_list=CCSDT_cc_bases_proj.reaction_energy_list, label='cc-pVnZ', color='blue')
         if aug_cc_family is True:

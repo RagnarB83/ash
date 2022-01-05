@@ -630,8 +630,10 @@ class Fragment:
         printdebug("len(self.fragmenttype_labels): ", len(self.fragmenttype_labels))
         printdebug("len(self.atomtypes): ", len(self.atomtypes))
 
-        assert len(self.atomlist) == len(self.elems) == len(self.coords) == len(self.atomcharges) == len(
-            self.fragmenttype_labels) == len(self.atomtypes), "Missing entries in list"
+        if (len(self.atomlist) == len(self.elems) == len(self.coords) == len(self.atomcharges) == len(self.fragmenttype_labels) == len(self.atomtypes)) is False:
+            print(BC.FAIL,"Error. Missing entries in list.")
+            print("This should not have happened. File a bugreport", BC.END)
+            exit()
         with open(filename, 'w') as outfile:
             outfile.write("Fragment: \n")
             outfile.write("Num atoms: {}\n".format(self.numatoms))
@@ -816,7 +818,9 @@ def reformat_element(elem, isatomnum=False):
 def remove_zero_charges(charges, coords):
     newcharges = []
     newcoords = []
-    assert len(charges) == len(coords)
+    if len(charges) != len(coords):
+        print(BC.FAIL,"Something went wrong in remove_zero_charges. File a bug report", BC.END)
+        exit()
     for charge, coord in zip(charges, coords):
         if charge != 0.0:
             newcharges.append(charge)
@@ -1381,8 +1385,12 @@ def read_xyzfile(filename):
                         el = reformat_element(line.split()[0])
                         elems.append(el)
                     coords.append([float(line.split()[1]), float(line.split()[2]), float(line.split()[3])])
-    assert len(coords) == numatoms, "Number of coordinates does not match header line"
-    assert len(coords) == len(elems), "Number of coordinates does not match elements."
+    if len(coords) != numatoms:
+        print(BC.FAIL,"Error: Number of coordinates in XYZ-file: {} does not match header line. Exiting.".format(filename))
+        exit()
+    if len(coords) != len(elems):
+        print("Number of coordinates does not match elements. Something wrong with XYZ-file?: ", filename)
+        exit()
     return elems, coords
 
 
@@ -1680,7 +1688,9 @@ def read_gromacsfile(grofile):
                 # Converting from nm to Ang
                 coords.append([10 * coords_x, 10 * coords_y, 10 * coords_z])
     npcoords=reformat_list_to_array(coords)    
-    assert len(npcoords) == len(elems), "Num coords not equal to num elems. Parsing failed. BUG!"
+    if len(npcoords) != len(elems):
+        print(BC.FAIL,"Num coords not equal to num elems. Parsing of Gromacsfile: {} failed. BUG!".format(grofile))
+        exit()
     return elems, npcoords, box_dims
 
 
@@ -1736,7 +1746,9 @@ def read_ambercoordinates(prmtopfile=None, inpcrdfile=None):
                         elems += [reformat_element(int(i), isatomnum=True) for i in line.split()]
             if '%FLAG ATOMIC_NUMBER' in line:
                 grab_atomnumber = True
-    assert len(coords) == len(elems), "Num coords not equal to num elems. Parsing failed. BUG!"
+    if len(coords) != len(elems):
+        print(BC.FAIL,"Num coords not equal to num elems. Parsing of Amber files: {} and {} failed. BUG!".format(prmtopfile,inpcrddfile), BC.END)
+        exit()
     return elems, coords, box_dims
 
 
@@ -1775,9 +1787,8 @@ def write_pdbfile(fragment, outputname="ASHfragment", openmmobject=None, atomnam
     if len(atomnames) > 99999:
         print("System larger than 99999 atoms. Will use hexadecimal notation for atom indices 100K and larger. ")
 
-    try:
-        assert len(atomnames) == len(coords) == len(resnames) == len(residlabels) == len(segmentlabels)
-    except AssertionError:
+    if (len(atomnames) == len(coords) == len(resnames) == len(residlabels) == len(segmentlabels)) is False:
+        print(BC.FAIL,"Something went wrong in write_pdbfile. Exiting. File a bug report.", BC.END)
         print("ERROR: Problem with lists...")
         print("len: atomnames", len(atomnames))
         print("len: coords", len(coords))
