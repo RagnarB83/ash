@@ -88,35 +88,37 @@ class ASH_plot():
             self.axs=[axs[0][0],axs[0][1], axs[1][0], axs[1][1]]
             self.axiscount=0
 
-        print("self.axs:", self.axs)
         self.addplotcount=0
 
     def addseries(self,subplot, surfacedictionary=None, x_list=None, y_list=None, label='Series', color='blue', pointsize=40, 
-                    scatter=True, line=True, scatter_linewidth=2, line_linewidth=1, marker='o'):
+                    scatter=True, line=True, scatter_linewidth=2, line_linewidth=1, marker='o', legend=True):
         print("Adding new series to ASH_plot object")
         self.addplotcount+=1
         curraxes=self.axs[subplot]
-                
-        if surfacedictionary == None and x_list == None:
-            print("Provide either surfacedictionary or x_list")
-            exit()
-        if surfacedictionary != None and x_list != None:
-            print("Provide either surfacedictionary or x_list")
-            exit()
+        
+        #Using x_list and y_list unless not provided
+        if surfacedictionary == None:
+            #If Python lists
+            if (type(x_list) != list and type(x_list) != np.ndarray) or ((type(y_list) != list and type(y_list) != np.ndarray)):
+                print(BC.FAIL,"Please provide either a valid x_list and y_list (can be Python lists or Numpy arrays) or a surfacedictionary (Python dict)", BC.END)
+                exit()
+            else:
+                x=list(x_list);y=list(y_list)
 
+        #Alernative dictionary option
         if surfacedictionary != None:
-            print("Here. Not ready")
-            exit()
+            print("Using provided surfacedictionary")
+            x=[];y=[]
+            #Sorting keys dictionary before grabbing so that line-plot is correct
+            for key in sorted(surfacedictionary.keys()):
+                x.append(key)
+                y.append(surfacedictionary[key])
 
-        elif x_list != None:
-            x=x_list
-            y=y_list
 
         #Scatterplot
         if scatter is True:
             print("x:", x)
             print("y:", y)
-            print("marker:", marker)
             curraxes.scatter(x,y, color=color, marker = marker,  s=pointsize, linewidth=scatter_linewidth, label=label)
         #Lineplot
         if line is True:
@@ -135,8 +137,8 @@ class ASH_plot():
             curraxes.set_ylabel(self.y_axislabels[subplot])  # Add a y-label to the axes.
             if self.subplot_titles != None:
                 curraxes.set_title(self.subplot_titles[subplot])  # Add a title to the axes if provided
-            
-        curraxes.legend(shadow=True, fontsize='small')  # Add a legend.
+        if legend is True:
+            curraxes.legend(shadow=True, fontsize='small')  # Add a legend.
     #def showplot(self):
     #NOTE: Disabled until we support more backends
     #    matplotlib.pyplot.show()
@@ -196,9 +198,6 @@ def reactionprofile_plot(surfacedictionary, finalunit='',label='Label', x_axisla
     else:
         #OO style
         fig, ax = plt.subplots(figsize=(5, 2.7), layout='constrained')
-        #ax.plot(x, x, label='linear')  # Plot some data on the axes.
-        #ax.plot(x, x**2, label='quadratic')  # Plot more data on the axes...
-        #ax.plot(x, x**3, label='cubic')  # ... and some more.
         ax.set_xlabel(x_axislabel)  # Add an x-label to the axes.
         ax.set_ylabel('{} ({})'.format(y_axislabel,finalunit))  # Add a y-label to the axes.
         ax.set_title(label)  # Add a title to the axes.
