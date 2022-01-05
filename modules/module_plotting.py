@@ -23,6 +23,7 @@ def load_matplotlib():
     except:
         print("Loading MatplotLib failed. Probably not installed. Please install using conda: conda install matplotlib or pip: pip install matplotlib")
         exit()
+    print("Matplotlib loaded")
     matplotlib.use('Agg')
     import matplotlib.pyplot as plt 
     return plt
@@ -47,8 +48,6 @@ class ASH_plot():
         print_line_with_mainheader("ASH_energy_plot")
 
         load_matplotlib() #Load Matplotlib
-        #global matplotlib
-        print(matplotlib)
         self.num_subplots=num_subplots
         self.imageformat=imageformat
         self.dpi=dpi
@@ -86,9 +85,10 @@ class ASH_plot():
             self.axiscount=0
         elif self.num_subplots == 4:
             self.fig, axs = matplotlib.pyplot.subplots(2, 2, figsize=figsize)  # a figure with a 2x2 grid of Axes
-            self.axs=axs[0]
+            self.axs=[axs[0][0],axs[0][1], axs[1][0], axs[1][1]]
             self.axiscount=0
 
+        print("self.axs:", self.axs)
         self.addplotcount=0
 
     def addseries(self,subplot, surfacedictionary=None, x_list=None, y_list=None, label='Series', color='blue', pointsize=40, 
@@ -116,6 +116,7 @@ class ASH_plot():
         if scatter is True:
             print("x:", x)
             print("y:", y)
+            print("marker:", marker)
             curraxes.scatter(x,y, color=color, marker = marker,  s=pointsize, linewidth=scatter_linewidth, label=label)
         #Lineplot
         if line is True:
@@ -128,15 +129,25 @@ class ASH_plot():
             curraxes.set_title(self.figuretitle)  # Add a title to the axes if provided
         else:
             if self.x_axislabels == None:
-                print(BC.FAIL, "For multiple subplots, self.x_axislabels and self.y_axislabel must be set.", BC.END)
+                print(BC.FAIL, "For multiple subplots, x_axislabels and y_axislabels must be set.", BC.END)
                 exit()
             curraxes.set_xlabel(self.x_axislabels[subplot])  # Add an x-label to the axes.
             curraxes.set_ylabel(self.y_axislabels[subplot])  # Add a y-label to the axes.
-            curraxes.set_title(self.subplot_titles[subplot])  # Add a title to the axes if provided
+            if self.subplot_titles != None:
+                curraxes.set_title(self.subplot_titles[subplot])  # Add a title to the axes if provided
             
-        curraxes.legend(shadow=True, fontsize='small');  # Add a legend.
-    def savefig(self, filename):
-        matplotlib.pyplot.savefig(filename+'.'+self.imageformat, format=self.imageformat, dpi=self.dpi)
+        curraxes.legend(shadow=True, fontsize='small')  # Add a legend.
+    #def showplot(self):
+    #NOTE: Disabled until we support more backends
+    #    matplotlib.pyplot.show()
+    def savefig(self, filename, imageformat=None, dpi=None):
+        if imageformat == None:
+            imageformat = self.imageformat
+        if dpi == None:
+            dpi = self.dpi
+        file=filename+'.'+imageformat
+        print("\nSaving plot to file: {} with resolution: {} ".format(file,dpi))
+        matplotlib.pyplot.savefig(file, format=imageformat, dpi=self.dpi)
 
 #Simple reactionprofile_plot function
 #Input: dictionary of (X,Y): energy   entries 
