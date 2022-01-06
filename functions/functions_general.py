@@ -38,6 +38,13 @@ else:
 # TODO: Avoid reloading
 julia_loaded = False
 
+#General function to exit ASH
+#NOTE: By default we exit with errorcode 1
+def ashexit(errormessage=None, code=1):
+    print(BC.FAIL,"ASH exiting with code:", code, BC.END)
+    if errormessage != None:
+        print(BC.FAIL,"Error message:", errormessage, BC.END)
+    raise SystemExit(code)
 
 def load_julia_interface():
     print("Calling Julia interface")
