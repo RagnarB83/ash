@@ -354,10 +354,10 @@ def writestringtofile(string, file):
 
 
 # Write a Python list to file simply
-def writelisttofile(pylist, file):
+def writelisttofile(pylist, file, separator=" "):
     with open(file, 'w') as f:
         for l in pylist:
-            f.write(str(l) + ' ')
+            f.write(str(l) + separator)
     print("Wrote list to file:", file)
 
 

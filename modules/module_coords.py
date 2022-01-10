@@ -1392,6 +1392,19 @@ def read_xyzfile(filename):
         exit()
     return elems, coords
 
+#Read all XYZ-files from directory
+#Return fragment list
+def read_xyzfiles(xyzdir,readchargemult=False, label_from_filename=True):
+    import glob
+    filenames=[];fragments=[]
+    for file in glob.glob(xyzdir+'/*.xyz'):
+        filename=os.path.basename(file)
+        filenames.append(filename)
+        print("\n\nXYZ-file:", filename)
+        #Creating new fragment, reading charge/mult and using filename as fragment label
+        mol=ash.Fragment(xyzfile=file, readchargemult=readchargemult, label=filename)
+        fragments.append(mol)
+    return fragments
 
 def set_coordinates(atoms, V, title="", decimals=8):
     """

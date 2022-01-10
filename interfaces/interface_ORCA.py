@@ -36,6 +36,9 @@ class ORCATheory:
             print("orcasimpleinput should only contain information on electronic-structure method (e.g. functional), basis set, grid, SCF convergence etc.")
             exit()
 
+        #Counter for how often ORCATheory.run is called
+        self.ORCAruncalls=0
+
         #Label to distinguish different ORCA objects
         self.label=label
 
@@ -240,6 +243,7 @@ class ORCATheory:
     def run(self, current_coords=None, current_MM_coords=None, MMcharges=None, qm_elems=None,
             elems=None, Grad=False, Hessian=False, PC=False, numcores=None, label=None ):
         module_init_time=time.time()
+        self.ORCAruncalls+=1
         print(BC.OKBLUE,BC.BOLD, "------------RUNNING ORCA INTERFACE-------------", BC.END)
         #Coords provided to run or else taken from initialization.
         #if len(current_coords) != 0:

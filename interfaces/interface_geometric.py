@@ -55,6 +55,7 @@ def geomeTRICOptimizer(theory=None,fragment=None, coordsystem='tric', frozenatom
         return energy
         #E = self.theory.run(current_coords=fragment.coords, elems=fragment.elems, Grad=False)
 
+
     #Checking charge/mult information of theory unless QM/MM
     theory_chargemult_change=False
     if not isinstance(theory,QMMMTheory):
@@ -235,9 +236,10 @@ def geomeTRICOptimizer(theory=None,fragment=None, coordsystem='tric', frozenatom
             self.print_atoms_list=print_atoms_list
             
             
-        #Defining calculator
+        #TODO: geometric will regularly do ClearCalcs in an optimization
         def clearCalcs(self):
-            print("ClearCalcs option chosen by geomeTRIC. Not sure why")
+            print("geomeTRIC: ClearCalcs.")
+        #Defining calculator
         def calc(self,coords,tmp, read_data=None):
             #Note: tmp and read_data not used. Needed for geomeTRIC version compatibility
             print("Convergence criteria:", conv_criteria)
@@ -440,9 +442,6 @@ def geomeTRICOptimizer(theory=None,fragment=None, coordsystem='tric', frozenatom
     print("convergence_setting:", convergence_setting)
     print("conv_criteria:", conv_criteria)
 
-
-
-
     #Defining ASHengineclass engine object containing geometry and theory. ActiveRegion boolean passed.
     #Also now passing list of atoms to print in each step.
     ashengine = ASHengineclass(mol_geometric_frag,theory, ActiveRegion=ActiveRegion, actatoms=actatoms, print_atoms_list=print_atoms_list)
@@ -471,9 +470,7 @@ def geomeTRICOptimizer(theory=None,fragment=None, coordsystem='tric', frozenatom
 
     fragment.set_energy(finalenergy)
     print("Final optimized energy:",  finalenergy)
-    #
-    #print("fragment.elems: ", fragment.elems)
-    #print("ashengine.full_current_coords : ", ashengine.full_current_coords)
+
     #Replacing coordinates in fragment
     fragment.replace_coords(fragment.elems,ashengine.full_current_coords, conn=False)
     
@@ -485,7 +482,7 @@ def geomeTRICOptimizer(theory=None,fragment=None, coordsystem='tric', frozenatom
         write_XYZ_for_atoms(fragment.coords, fragment.elems, actatoms, "Fragment-optimized_Active")
 
     #Printing internal coordinate table
-    #TODO: Make a lot better
+    #TODO: Improve
     print_internal_coordinate_table(fragment,actatoms=print_atoms_list)
 
     #If we changed theory charge/mult information. Change back

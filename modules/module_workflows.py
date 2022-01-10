@@ -5,22 +5,18 @@ Contains functions defining multi-step workflows
 import os
 import subprocess as sp
 import shutil
-import math
 import time
-import constants
 import ash
-from ash import Singlepoint
-import dictionaries_lists
-import modules.module_coords
+#from ash import Singlepoint
 import interfaces.interface_geometric
 import interfaces.interface_crest
 from functions.functions_general import BC,print_time_rel,print_line_with_mainheader,pygrep
-import ash_header
-from modules.module_singlepoint import Singlepoint_fragments
-import settings_ash
+#from modules.module_singlepoint import Singlepoint_fragments
 from modules.module_highlevel_workflows import CC_CBS_Theory
+from modules.module_coords import read_xyzfiles
 import functions.functions_elstructure
 from modules.module_plotting import ASH_plot
+from modules.module_singlepoint import ReactionEnergy
 
 #Simple class to keep track of results
 class ProjectResults():
@@ -33,76 +29,6 @@ class ProjectResults():
         for i,j in self.__dict__.items():
             print("{} : {}".format(i,j))
 
-
-def ReactionEnergy(list_of_energies=None, stoichiometry=None, list_of_fragments=None, unit='kcal/mol', label=None, reference=None, silent=False):
-    """Calculate reaction energy from list of energies (or energies from list of fragments) and stoichiometry
-
-    Args:
-        list_of_energies ([type], optional): A list of total energies in hartrees. Defaults to None.
-        stoichiometry (list, optional): A list of integers, e.g. [-1,-1,1,1]. Defaults to None.
-        list_of_fragments (list, optional): A list of ASH fragments . Defaults to None.
-        unit (str, optional): Unit for relative energy. Defaults to 'kcal/mol'.
-        label (string, optional): Optional label for energy. Defaults to None.
-        reference (float, optional): Optional shift-parameter of energy Defaults to None.
-
-    Returns:
-        tuple : energy and error in chosen unit
-    """
-    conversionfactor = { 'kcal/mol' : 627.50946900, 'kcalpermol' : 627.50946900, 'kJ/mol' : 2625.499638, 'kJpermol' : 2625.499638, 
-                        'eV' : 27.211386245988, 'cm-1' : 219474.6313702 }
-    if label is None:
-        label=''
-    #print(BC.OKBLUE,BC.BOLD, "ReactionEnergy function. Unit:", unit, BC.END)
-    reactant_energy=0.0 #hartree
-    product_energy=0.0 #hartree
-    if stoichiometry is None:
-        print("stoichiometry list is required")
-        exit(1)
-
-
-
-    #List of energies option
-    if list_of_energies is not None:
-
-        if len(list_of_energies) != len(stoichiometry):
-            print("Number of energies not equal to number of stoichiometry values")
-            print("Check ")
-
-        #print("List of total energies provided (Eh units assumed).")
-        #print("list_of_energies:", list_of_energies)
-        #print("stoichiometry:", stoichiometry)
-        for i,stoich in enumerate(stoichiometry):
-            if stoich < 0:
-                reactant_energy=reactant_energy+list_of_energies[i]*abs(stoich)
-            if stoich > 0:
-                product_energy=product_energy+list_of_energies[i]*abs(stoich)
-        reaction_energy=(product_energy-reactant_energy)*conversionfactor[unit]
-        if reference is None:
-            error=None
-            if silent is False:
-                print(BC.BOLD, "Reaction_energy({}): {} {} {}".format(label,BC.OKGREEN,reaction_energy, unit), BC.END)
-        else:
-            error=reaction_energy-reference
-            if silent is False:
-                print(BC.BOLD, "Reaction_energy({}): {} {} {} (Error: {})".format(label,BC.OKGREEN,reaction_energy, unit, error), BC.END)
-    else:
-        print("\nNo list of total energies provided. Using internal energy of each fragment instead.")
-        print("")
-        for i,stoich in enumerate(stoichiometry):
-            if stoich < 0:
-                reactant_energy=reactant_energy+list_of_fragments[i].energy*abs(stoich)
-            if stoich > 0:
-                product_energy=product_energy+list_of_fragments[i].energy*abs(stoich)
-        reaction_energy=(product_energy-reactant_energy)*conversionfactor[unit]
-        if reference is None:
-            error=None
-            if silent is False:
-                print(BC.BOLD, "Reaction_energy({}): {} {} {}".format(label,BC.OKGREEN,reaction_energy, unit), BC.END)
-        else:
-            error=reaction_energy-reference
-            if silent is False:
-                print(BC.BOLD, "Reaction_energy({}): {} {} {} (Error: {})".format(label,BC.OKGREEN,reaction_energy, unit, error), BC.END)
-    return reaction_energy, error
 
 
 
@@ -349,7 +275,6 @@ def thermochemprotocol_reaction(Opt_theory=None, SP_theory=None, fraglist=None, 
         ReactionEnergy(stoichiometry=stoichiometry, list_of_fragments=fraglist, list_of_energies=fcicorr_parts, unit='kcalpermol', label='ΔFCIcorr')
     print("")
     print(BC.WARNING, BC.BOLD, "------------THERMOCHEM PROTOCOL END-------------", BC.END)
-    #print_time_rel(ash_header.init_time,modulename='Entire thermochemprotocol')
     print_time_rel(module_init_time, modulename='thermochemprotocol_reaction', moduleindex=0)
 
 
@@ -529,23 +454,31 @@ def auto_active_space(fragment=None, orcadir=None, basis="def2-SVP", scalar_rel=
     return spaces_dict
 
 
+
 #Simple function to run calculations (SP or OPT) on collection of XYZ-files
 #Assuming XYZ-files have charge,mult info in header, or if single global charge,mult, apply that
 #NOTE: Maybe change to opt_theory and SP_theory. If both are set: then first Opt using opt_theory then HL-SP using SP_theory.
 #If only opt_theory set then second SP step skipped, if only SP_theory set then we skip the first Opt-step
 # TODO: Add parallelization. Requires some rewriting 
-def calc_xyzfiles(xyzdir=None, theory=None, Opt=False, Freq=False, charge=None, mult=None, xtb_preopt=False ):
-    import glob
+def calc_xyzfiles(xyzdir=None, theory=None, HL_theory=None, Opt=False, Freq=False, charge=None, mult=None, xtb_preopt=False ):
     print_line_with_mainheader("calc_xyzfiles function")
 
     #Checkf if xyz-directory exists
     if os.path.isdir(xyzdir) is False:
         print("XYZ directory does not exist. Check that dirname is complete, has been copied to scratch. You may have to use full path to dir")
         exit()
+    #Whether we have an extra high-level single-point step after Optimization
+    if HL_theory != None:
+        Highlevel=True
+    else:
+        Highlevel=False
+
 
     print("XYZ directory:", xyzdir)
-    print("Theory:", theory)
+    print("Theory:", theory.__class__.__name__)
     print("Optimization:", Opt)
+    if Opt is True:
+        print("Highlevel Theory SP after Opt:", HL_theory.__class__.__name__)
     print("Global charge/mult options:", charge, mult)
     print("xTB preoptimization", xtb_preopt)
     if charge == None or mult == None:
@@ -554,7 +487,10 @@ def calc_xyzfiles(xyzdir=None, theory=None, Opt=False, Freq=False, charge=None, 
     else:
         readchargemult=False
 
-    energies=[];filenames=[];fragments=[];finalxyzdir="optimized_xyzfiles"
+    energies=[]
+    hlenergies=[]
+    optenergies=[]
+    finalxyzdir="optimized_xyzfiles"
     #Remove old dir if present
     try:
         shutil.rmtree(finalxyzdir)
@@ -563,55 +499,68 @@ def calc_xyzfiles(xyzdir=None, theory=None, Opt=False, Freq=False, charge=None, 
     #Create new directory with optimized geometries
     os.mkdir(finalxyzdir)
 
-    #Looping through XYZ-files
-    for file in glob.glob(xyzdir+'/*.xyz'):
-        filename=os.path.basename(file)
-        filenames.append(filename)
-        print("\n\nXYZ-file:", filename)
-        mol=ash.Fragment(xyzfile=file, readchargemult=readchargemult)
-        fragments.append(mol)
+    #Looping through XYZ-files to get fragments
+    fragments =read_xyzfiles(xyzdir,readchargemult=readchargemult, label_from_filename=True)
 
+    #List of original filenames
+    filenames=[frag.label for frag in fragments]
+
+    #Now looping over fragments
+    for fragment in fragments:
+        filename=fragment.label
+        print("filename:", filename)
         #Charge/mult from fragment
         if charge == None and mult ==None:
-    	    theory.charge=mol.charge; theory.mult=mol.mult
+    	    theory.charge=fragment.charge; theory.mult=fragment.mult
         #Global charge/mult keywords (rare)
         else:
-            theory.charge=charge; theory.mult=mult; mol.charge=charge; mol.mult=mult
+            theory.charge=charge; theory.mult=mult; fragment.charge=charge; fragment.mult=mult
         #Do Optimization or Singlepoint
         if Opt is True:
             if xtb_preopt is True:
                 print("xTB Pre-optimization is active. Will first call xTB directly to do pre-optimization before actual optimization!")
                 #Defining temporary xtBtheory
                 xtbcalc=ash.xTBTheory(charge=theory.charge,mult=theory.mult, numcores=theory.numcores)
-                #Run direct xtb optimization. This will update fragment mol.
-                xtbcalc.Opt(fragment=mol)
+                #Run direct xtb optimization. This will update fragment.
+                xtbcalc.Opt(fragment=fragment)
                 xtbcalc.cleanup()
             
-            energy = interfaces.interface_geometric.geomeTRICOptimizer(theory=theory, fragment=mol, coordsystem='tric')
+            #Now doing actual OPT
+            optenergy = interfaces.interface_geometric.geomeTRICOptimizer(theory=theory, fragment=fragment, coordsystem='tric')
+            theory.cleanup()
+            energy=optenergy
+            optenergies.append(optenergy)
             #Rename optimized XYZ-file
             filenamestring_suffix="" #nothing for now
-            os.rename("Fragment-optimized.xyz",os.path.splitext(filename)[0]+filenamestring_suffix+".xyz")
-            shutil.copy(os.path.splitext(filename)[0]+filenamestring_suffix+".xyz",finalxyzdir)
+            os.rename("Fragment-optimized.xyz",os.path.splitext(fragment.label)[0]+filenamestring_suffix+".xyz")
+            shutil.copy(os.path.splitext(fragment.label)[0]+filenamestring_suffix+".xyz",finalxyzdir)
 
             #Freq job after OPt
             if Freq is True:
-                print("not ready")
-                exit()
-
-
+                print("Performing Numerical Frequency job on Optimized fragment.")
+                thermochem = ash.NumFreq(fragment=fragment, theory=theory, npoint=2, displacement=0.005, numcores=theory.numcores, runmode='serial')
+                theory.cleanup()
+            if Highlevel is True:
+                print("Performing Highlevel on Optimized fragment.")
+                hlenergy = ash.Singlepoint(theory=HL_theory, fragment=fragment)
+                energy=hlenergy
+                hlenergies.append(hlenergy)
+                HL_theory.cleanup()
         else:
-            energy = ash.Singlepoint(theory=theory, fragment=mol)
+            energy = ash.Singlepoint(theory=theory, fragment=fragment)
+            theory.cleanup()
         
-        print("Energy of file {} : {} Eh".format(file, energy))
-        theory.cleanup()
         energies.append(energy)
+        print("Energy of file {} : {} Eh".format(fragment.label, energy))
         print("")
 
     #TODO: Collect things in dictionary before printing table
     # Then we can sort the items in an intelligent way before printing
-
-
-    print("{:30} {:>7} {:>7} {:>20}".format("XYZ-file","Charge","Mult", "Energy(Eh)"))
+    #TODO: if Freq is True, print E+ZPE, H, G, ZPE, Hcorr, Gcorr
+    print("optenergies:", optenergies)
+    print("hlenergies:", hlenergies)
+    print("Final energies", energies)
+    print("\n{:30} {:>7} {:>7} {:>20}".format("XYZ-file","Charge","Mult", "Energy(Eh)"))
     print("-"*70)
     for xyzfile, frag, e in zip(filenames, fragments,energies):
         print("{:30} {:>7} {:>7} {:>20.10f}".format(xyzfile,frag.charge, frag.mult, e))
@@ -682,7 +631,7 @@ def Reaction_Highlevel_Analysis(fraglist=None, stoichiometry=None, numcores=1, m
             #Define theory level
             cc = CC_CBS_Theory(elements=elements_involved, cardinals = [cardinal], basisfamily="def2", DLPNO=DLPNO, numcores=numcores, memory=memory)
             #Single-point calcs on all fragments
-            energies=Singlepoint_fragments(fragments=specieslist, theory=cc)
+            energies=ash.Singlepoint_fragments(fragments=specieslist, theory=cc)
             for species,e in zip(specieslist,energies):
                 CCSDT_def2_bases_proj.species_energies_dict[species.label].append(e)
 
@@ -725,7 +674,7 @@ def Reaction_Highlevel_Analysis(fraglist=None, stoichiometry=None, numcores=1, m
             #Define theory level
             cc = CC_CBS_Theory(elements=elements_involved, cardinals = [cardinal], basisfamily="cc", DLPNO=DLPNO, numcores=numcores, memory=memory)
             #Single-point calcs on all fragments
-            energies=Singlepoint_fragments(fragments=specieslist, theory=cc)
+            energies=ash.Singlepoint_fragments(fragments=specieslist, theory=cc)
             for species,e in zip(specieslist,energies):
                 CCSDT_cc_bases_proj.species_energies_dict[species.label].append(e)
 
@@ -768,7 +717,7 @@ def Reaction_Highlevel_Analysis(fraglist=None, stoichiometry=None, numcores=1, m
             #Define theory level
             cc = CC_CBS_Theory(elements=elements_involved, cardinals = [cardinal], basisfamily="aug-cc", DLPNO=DLPNO, numcores=numcores, memory=memory)
             #Single-point calcs on all fragments
-            energies=Singlepoint_fragments(fragments=specieslist, theory=cc)
+            energies=ash.Singlepoint_fragments(fragments=specieslist, theory=cc)
             for species,e in zip(specieslist,energies):
                 CCSDT_aug_cc_bases_proj.species_energies_dict[species.label].append(e)
 
@@ -814,7 +763,7 @@ def Reaction_Highlevel_Analysis(fraglist=None, stoichiometry=None, numcores=1, m
             #Define theory level
             cc = CC_CBS_Theory(elements=elements_involved, cardinals = [cardinal], basisfamily="cc-f12", F12=True, DLPNO=DLPNO, numcores=numcores, memory=memory)
             #Single-point calcs on all fragments
-            energies=Singlepoint_fragments(fragments=specieslist, theory=cc)
+            energies=ash.Singlepoint_fragments(fragments=specieslist, theory=cc)
             for species,e in zip(specieslist,energies):
                 CCSDTF12_bases_proj.species_energies_dict[species.label].append(e)
 
@@ -863,7 +812,7 @@ def Reaction_Highlevel_Analysis(fraglist=None, stoichiometry=None, numcores=1, m
             #Define theory level
             cc = CC_CBS_Theory(elements=elements_involved, cardinals = cardinals, basisfamily="cc", DLPNO=DLPNO, numcores=numcores, memory=memory)
             #Single-point calcs on all fragments
-            energies=Singlepoint_fragments(fragments=specieslist, theory=cc)
+            energies=ash.Singlepoint_fragments(fragments=specieslist, theory=cc)
             for species,e in zip(specieslist,energies):
                 CCSDTextrap_proj.species_energies_dict[species.label].append(e)
 
@@ -914,7 +863,7 @@ def Reaction_Highlevel_Analysis(fraglist=None, stoichiometry=None, numcores=1, m
                 #Define theory level
                 cc = CC_CBS_Theory(elements=elements_involved, cardinals = cardinals, basisfamily="aug-cc", DLPNO=DLPNO, numcores=numcores, memory=memory)
                 #Single-point calcs on all fragments
-                energies=Singlepoint_fragments(fragments=specieslist, theory=cc)
+                energies=ash.Singlepoint_fragments(fragments=specieslist, theory=cc)
                 for species,e in zip(specieslist,energies):
                     CCSDTextrapaugcc_proj.species_energies_dict[species.label].append(e)
 
@@ -961,7 +910,7 @@ def Reaction_Highlevel_Analysis(fraglist=None, stoichiometry=None, numcores=1, m
             #Define theory level
             cc = CC_CBS_Theory(elements=elements_involved, cardinals = cardinals, basisfamily="def2", DLPNO=DLPNO, numcores=numcores, memory=memory)
             #Single-point calcs on all fragments
-            energies=Singlepoint_fragments(fragments=specieslist, theory=cc)
+            energies=ash.Singlepoint_fragments(fragments=specieslist, theory=cc)
             for species,e in zip(specieslist,energies):
                 CCSDTextrapdef2_proj.species_energies_dict[species.label].append(e)
 
