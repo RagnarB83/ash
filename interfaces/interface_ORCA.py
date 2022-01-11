@@ -17,7 +17,7 @@ import settings_ash
 #ORCA Theory object. Fragment object is optional. Only used for single-points.
 class ORCATheory:
     def __init__(self, orcadir=None, fragment=None, charge=None, mult=None, orcasimpleinput='', printlevel=2, extrabasisatoms=None, extrabasis=None, TDDFT=False, TDDFTroots=5, FollowRoot=1,
-                 orcablocks='', extraline='', brokensym=None, HSmult=None, atomstoflip=None, numcores=1, nprocs=None, label=None, moreadfile=None, autostart=True, propertyblock=None):
+                 orcablocks='', extraline='', first_iteration_input=None, brokensym=None, HSmult=None, atomstoflip=None, numcores=1, nprocs=None, label=None, moreadfile=None, autostart=True, propertyblock=None):
         print_line_with_mainheader("ORCATheory initialization")
 
         #Making sure we have a working ORCA location
@@ -35,6 +35,9 @@ class ORCATheory:
             print(BC.FAIL,"Error. orcasimpleinput variable can not contain ORCA job-directives like: Opt, Freq, Numfreq", BC.END)
             print("orcasimpleinput should only contain information on electronic-structure method (e.g. functional), basis set, grid, SCF convergence etc.")
             exit()
+
+        #Counter for how often ORCATheory.run is called
+        self.runcalls=0
 
         #Label to distinguish different ORCA objects
         self.label=label
@@ -98,6 +101,11 @@ class ORCATheory:
         self.orcasimpleinput=orcasimpleinput
         self.orcablocks=orcablocks
 
+        #Input-lines only for first run call
+        if first_iteration_input != None:
+            self.first_iteration_input = first_iteration_input
+        else:
+            self.first_iteration_input=""
 
         #BROKEN SYM OPTIONS
         self.brokensym=brokensym
@@ -240,6 +248,7 @@ class ORCATheory:
     def run(self, current_coords=None, current_MM_coords=None, MMcharges=None, qm_elems=None,
             elems=None, Grad=False, Hessian=False, PC=False, numcores=None, label=None ):
         module_init_time=time.time()
+        self.runcalls+=1
         print(BC.OKBLUE,BC.BOLD, "------------RUNNING ORCA INTERFACE-------------", BC.END)
         #Coords provided to run or else taken from initialization.
         #if len(current_coords) != 0:
@@ -282,11 +291,18 @@ class ORCATheory:
                 end
                 """.format(self.TDDFTroots, self.FollowRoot)
 
+        #If 1st runcall, add this to inputfile
+        if self.runcalls == 1:
+            #first_iteration_input
+            extraline=self.extraline+"\n"+self.first_iteration_input
+        else:
+            extraline=self.extraline
+
 
         print("Creating inputfile:", self.filename+'.inp')
         print("ORCA input:")
         print(self.orcasimpleinput)
-        print(self.extraline)
+        print(extraline)
         print(self.orcablocks)
         print("Charge: {}  Mult: {}".format(self.charge, self.mult))
         #Printing extra options chosen:
@@ -306,21 +322,21 @@ class ORCATheory:
             create_orca_pcfile(self.filename, current_MM_coords, MMcharges)
             if self.brokensym == True:
                 create_orca_input_pc(self.filename, qm_elems, current_coords, self.orcasimpleinput, self.orcablocks,
-                                        self.charge, self.mult, extraline=self.extraline, HSmult=self.HSmult, Grad=Grad, Hessian=Hessian, moreadfile=self.moreadfile,
+                                        self.charge, self.mult, extraline=extraline, HSmult=self.HSmult, Grad=Grad, Hessian=Hessian, moreadfile=self.moreadfile,
                                      atomstoflip=qmatomstoflip, extrabasisatoms=qmatoms_extrabasis, extrabasis=self.extrabasis, propertyblock=self.propertyblock)
             else:
                 create_orca_input_pc(self.filename, qm_elems, current_coords, self.orcasimpleinput, self.orcablocks,
-                                        self.charge, self.mult, extraline=self.extraline, Grad=Grad, Hessian=Hessian, moreadfile=self.moreadfile,
+                                        self.charge, self.mult, extraline=extraline, Grad=Grad, Hessian=Hessian, moreadfile=self.moreadfile,
                                         extrabasisatoms=qmatoms_extrabasis, extrabasis=self.extrabasis, propertyblock=self.propertyblock)
         else:
             if self.brokensym == True:
                 create_orca_input_plain(self.filename, qm_elems, current_coords, self.orcasimpleinput,self.orcablocks,
-                                        self.charge,self.mult, extraline=self.extraline, HSmult=self.HSmult, Grad=Grad, Hessian=Hessian, moreadfile=self.moreadfile,
+                                        self.charge,self.mult, extraline=extraline, HSmult=self.HSmult, Grad=Grad, Hessian=Hessian, moreadfile=self.moreadfile,
                                      atomstoflip=qmatomstoflip, extrabasisatoms=qmatoms_extrabasis, extrabasis=self.extrabasis, propertyblock=self.propertyblock, 
                                      ghostatoms=self.ghostatoms, dummyatoms=self.dummyatoms)
             else:
                 create_orca_input_plain(self.filename, qm_elems, current_coords, self.orcasimpleinput,self.orcablocks,
-                                        self.charge,self.mult, extraline=self.extraline, Grad=Grad, Hessian=Hessian, moreadfile=self.moreadfile,
+                                        self.charge,self.mult, extraline=extraline, Grad=Grad, Hessian=Hessian, moreadfile=self.moreadfile,
                                         extrabasisatoms=qmatoms_extrabasis, extrabasis=self.extrabasis, propertyblock=self.propertyblock,
                                         ghostatoms=self.ghostatoms, dummyatoms=self.dummyatoms)
 

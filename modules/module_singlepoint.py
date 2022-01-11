@@ -8,7 +8,7 @@
 import numpy as np
 import time
 import ash
-from functions.functions_general import BC,blankline,print_time_rel,print_line_with_mainheader
+from functions.functions_general import BC,print_time_rel,print_line_with_mainheader
 
 #Single-point energy function
 def Singlepoint(fragment=None, theory=None, Grad=False):
@@ -97,25 +97,51 @@ def Singlepoint_theories(theories=None, fragment=None, ):
         theory.cleanup()
         energies.append(energy)
 
-    print("\n{:20} {:>7} {:>7} {:>20}".format("Theory Label", "Charge","Mult", "Energy(Eh)"))
-    print("-"*70)
-    for t, e in zip(theories,energies):
-        print("{:20} {:>7} {:>7} {:>20.10f}".format(t.label, fragment.charge, fragment.mult, e))
-    print()
+    #Printing final table
+    print_theories_table(theories,energies,fragment)
     return energies
 
+#Pretty table of fragments and theories
+def print_theories_table(theories,energies,fragment):
+    print()
+    print("="*70)
+    print("Singlepoint_theories: Table of energies of each theory:")
+    print("="*70)
+
+    print("\n{:15} {:15} {:>7} {:>7} {:>20}".format("Theory class", "Theory Label", "Charge","Mult", "Energy(Eh)"))
+    print("-"*70)
+    for t, e in zip(theories,energies):
+        print("{:15} {:15} {:>7} {:>7} {:>20.10f}".format(t.__class__.__name__, t.label, fragment.charge, fragment.mult, e))
+    print()
+
+#Pretty table of fragments and energies
+def print_fragments_table(fragments,energies,tabletitle="Singlepoint_fragments: "):
+    print()
+    print("="*60)
+    print("{}Table of energies of each fragment:".format(tabletitle))
+    print("="*60)
+    print("{:10} {:10} {:>7} {:>7} {:>20}".format("Formula", "Label", "Charge","Mult", "Energy(Eh)"))
+    print("-"*60)
+    for frag, e in zip(fragments,energies):
+        if frag.label==None:
+            label="None"
+        else:
+            label=frag.label
+        print("{:10} {:10} {:>7} {:>7} {:>20.10f}".format(frag.formula, label, frag.charge, frag.mult, e))
+    print()
 
 #Single-point energy function that runs calculations on multiple fragments. Returns a list of energies.
 #Assuming fragments have charge,mult info defined.
-def Singlepoint_fragments(theory=None, fragments=None, ):
+#If stoichiometry provided then print reaction energy
+def Singlepoint_fragments(theory=None, fragments=None, stoichiometry=None):
     print_line_with_mainheader("Singlepoint_fragments function")
 
     print("Will run single-point calculation on each fragment and return a list of energies")
-    print("Theory:", theory)
+    print("Theory:", theory.__class__.__name__)
 
     energies=[];filenames=[]
 
-    #Looping through fragmengs
+    #Looping through fragments
     for frag in fragments:
 
         if frag.charge == None or frag.mult == None:
@@ -133,27 +159,63 @@ def Singlepoint_fragments(theory=None, fragments=None, ):
         #Adding energy as the fragment attribute
         frag.set_energy(energy)
         print("")
-    
+
     #Setting charge/mult of theory to None in case used again
     theory.charge=None; theory.mult=None
-    print("{:10} {:10} {:>7} {:>7} {:>20}".format("Formula", "Label", "Charge","Mult", "Energy(Eh)"))
-    print("-"*70)
-    for frag, e in zip(fragments,energies):
-        if frag.label==None:
-            label="None"
-        else:
-            label=frag.label
-        print("{:10} {:10} {:>7} {:>7} {:>20.10f}".format(frag.formula, label, frag.charge, frag.mult, e))
-    print()
+
+    #Print table
+    print_fragments_table(fragments,energies)
+    
+    #Printing reaction energy if stoichiometry was provided
+    if stoichiometry != None:
+        print("Stoichiometry provided:", stoichiometry)
+        ReactionEnergy(list_of_energies=energies, stoichiometry=stoichiometry, list_of_fragments=fragments, unit='kcal/mol', label='ΔE')
     return energies
 
 
+#Single-point energy function that runs calculations on multiple fragments. Returns a list of energies.
+#Assuming fragments have charge,mult info defined.
+def Singlepoint_fragments_and_theories(theories=None, fragments=None, stoichiometry=None):
 
+    print_line_with_mainheader("Singlepoint_fragments_and_theories")
 
+    #List of lists
+    all_energies=[]
 
+    #Looping over theories and getting energies for list of fragments
+    for theory in theories:
+        energies=Singlepoint_fragments(theory=theory, fragments=fragments, stoichiometry=stoichiometry )
+        all_energies.append(energies)
 
+    print("\n")
+    print("SINGLEPOINT_FRAGMENTS_AND_THEORIES ALL DONE")
+    print("\n")
+    print("="*60)
+    print("Singlepoint_fragments_and_theories: FINAL RESULTS")
+    print("="*60)
+    #Table
+    for t,elist in zip(theories,all_energies):
+        print("\nTheory:", t.__class__.__name__)
+        print("Label:", t.label)
+        print_fragments_table(fragments,energies,tabletitle="")
+        #Reaction energy if stoichiometry provided
+        if stoichiometry != None:
+            print("Stoichiometry provided:", stoichiometry)
+            ReactionEnergy(list_of_energies=elist, stoichiometry=stoichiometry, list_of_fragments=fragments, unit='kcal/mol', label='{}'.format(t.label))
+
+                
+            print("_"*60)
+    print("\nFinal list of list of total energies:", all_energies)
+
+    if stoichiometry != None:
+        print("Final reaction energies:")
+        for elist,t in zip(all_energies,theories):
+            ReactionEnergy(list_of_energies=elist, stoichiometry=stoichiometry, list_of_fragments=fragments, unit='kcal/mol', label='{}'.format(t.label))
+    print()
+    return all_energies
 
 #Single-point energy function that communicates via fragment
+#NOTE: NOT SURE IF WE WANT TO GO THIS ROUTE
 def newSinglepoint(fragment=None, theory=None, Grad=False):
     """Singlepoint function: runs a single-point energy calculation using ASH theory and ASH fragment.
 
@@ -167,6 +229,7 @@ def newSinglepoint(fragment=None, theory=None, Grad=False):
         or
         float,np.array : Energy and gradient array
     """
+    exit()
     module_init_time=time.time()
     print("")
     if fragment is None or theory is None:
@@ -230,3 +293,71 @@ class ZeroTheory:
             return self.energy
         else:
             return self.energy,self.gradient
+
+
+
+def ReactionEnergy(list_of_energies=None, stoichiometry=None, list_of_fragments=None, unit='kcal/mol', label=None, reference=None, silent=False):
+    """Calculate reaction energy from list of energies (or energies from list of fragments) and stoichiometry
+
+    Args:
+        list_of_energies ([type], optional): A list of total energies in hartrees. Defaults to None.
+        stoichiometry (list, optional): A list of integers, e.g. [-1,-1,1,1]. Defaults to None.
+        list_of_fragments (list, optional): A list of ASH fragments . Defaults to None.
+        unit (str, optional): Unit for relative energy. Defaults to 'kcal/mol'.
+        label (string, optional): Optional label for energy. Defaults to None.
+        reference (float, optional): Optional shift-parameter of energy Defaults to None.
+
+    Returns:
+        tuple : energy and error in chosen unit
+    """
+    conversionfactor = { 'kcal/mol' : 627.50946900, 'kcalpermol' : 627.50946900, 'kJ/mol' : 2625.499638, 'kJpermol' : 2625.499638, 
+                        'eV' : 27.211386245988, 'cm-1' : 219474.6313702 }
+    if label is None:
+        label=''
+    reactant_energy=0.0 #hartree
+    product_energy=0.0 #hartree
+    if stoichiometry is None:
+        print("stoichiometry list is required")
+        exit(1)
+
+
+    #List of energies option
+    if list_of_energies is not None:
+
+        if len(list_of_energies) != len(stoichiometry):
+            print("Number of energies not equal to number of stoichiometry values")
+            print("Check ")
+
+        for i,stoich in enumerate(stoichiometry):
+            if stoich < 0:
+                reactant_energy=reactant_energy+list_of_energies[i]*abs(stoich)
+            if stoich > 0:
+                product_energy=product_energy+list_of_energies[i]*abs(stoich)
+        reaction_energy=(product_energy-reactant_energy)*conversionfactor[unit]
+        if reference is None:
+            error=None
+            if silent is False:
+                print(BC.BOLD, "Reaction_energy({}): {} {} {}".format(label,BC.OKGREEN,reaction_energy, unit), BC.END)
+        else:
+            error=reaction_energy-reference
+            if silent is False:
+                print(BC.BOLD, "Reaction_energy({}): {} {} {} (Error: {})".format(label,BC.OKGREEN,reaction_energy, unit, error), BC.END)
+    else:
+        print("\nNo list of total energies provided. Using internal energy of each fragment instead.")
+        print("")
+        for i,stoich in enumerate(stoichiometry):
+            if stoich < 0:
+                reactant_energy=reactant_energy+list_of_fragments[i].energy*abs(stoich)
+            if stoich > 0:
+                product_energy=product_energy+list_of_fragments[i].energy*abs(stoich)
+        reaction_energy=(product_energy-reactant_energy)*conversionfactor[unit]
+        if reference is None:
+            error=None
+            if silent is False:
+                print(BC.BOLD, "Reaction_energy({}): {} {} {}".format(label,BC.OKGREEN,reaction_energy, unit), BC.END)
+        else:
+            error=reaction_energy-reference
+            if silent is False:
+                print(BC.BOLD, "Reaction_energy({}): {} {} {} (Error: {})".format(label,BC.OKGREEN,reaction_energy, unit, error), BC.END)
+    return reaction_energy, error
+

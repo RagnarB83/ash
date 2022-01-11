@@ -11,8 +11,8 @@ import ash
 import constants
 
 ashpath = os.path.dirname(ash.__file__)
-from functions.functions_general import BC, print_time_rel, listdiff, printdebug, print_line_with_mainheader, \
-    print_line_with_subheader1, print_line_with_subheader2, isint
+from functions.functions_general import BC, ashexit, print_time_rel, listdiff, printdebug, print_line_with_mainheader, \
+    print_line_with_subheader1, print_line_with_subheader2, isint, writelisttofile
 from functions.functions_elstructure import DDEC_calc, DDEC_to_LJparameters
 from modules.module_coords import Fragment, write_pdbfile, distance_between_atoms, list_of_masses, write_xyzfile, \
     change_origin_to_centroid, get_centroid
@@ -1914,7 +1914,7 @@ def OpenMM_Opt(fragment=None, theory=None, maxiter=1000, tolerance=1, enforcePer
 
 def OpenMM_Modeller(pdbfile=None, forcefield=None, xmlfile=None, waterxmlfile=None, watermodel=None, pH=7.0,
                     solvent_padding=10.0, solvent_boxdims=None, extraxmlfile=None, residue_variants=None,
-                    ionicstrength=0.1, pos_iontype='Na+', neg_iontype='Cl-'):
+                    ionicstrength=0.1, pos_iontype='Na+', neg_iontype='Cl-', use_higher_occupancy=False):
     module_init_time = time.time()
     print_line_with_mainheader("OpenMM Modeller")
     try:
@@ -1946,6 +1946,11 @@ def OpenMM_Modeller(pdbfile=None, forcefield=None, xmlfile=None, waterxmlfile=No
         print("System size: {} atoms\n".format(len(modeller.getPositions())))
 
     # https://github.com/openmm/openmm/wiki/Frequently-Asked-Questions#template
+
+
+    if residue_variants == None:
+        residue_variants={}
+
 
     # Water model. May be overridden by forcefield below
     if watermodel == "tip3p":
@@ -1988,6 +1993,7 @@ def OpenMM_Modeller(pdbfile=None, forcefield=None, xmlfile=None, waterxmlfile=No
         print("You must provide a forcefield or xmlfile keyword!")
         exit()
 
+    print("PDBfile:", pdbfile)
     print("Forcefield:", forcefield)
     print("XMfile:", xmlfile)
     print("Water model:", watermodel)
@@ -2006,9 +2012,22 @@ def OpenMM_Modeller(pdbfile=None, forcefield=None, xmlfile=None, waterxmlfile=No
             exit()
         forcefield = openmm_app.forcefield.ForceField(xmlfile, waterxmlfile, extraxmlfile)
 
+
+    print("\nNow checking PDB-file for alternate locations, i.e. multiple occupancies:")
+
+    
+    #Check PDB-file whether it contains alternate locations of residue atoms (multiple occupations)
+    #Default behaviour: 
+    # - if no multiple occupancies return input PDBfile and go on
+    # - if multiple occupancies, print list of residues and tell user to fix them. Exiting
+    # - if use_higher_occupancy is set to True, user higher occupancy location, write new PDB_file and use
+    pdbfile=find_alternate_locations_residues(pdbfile, use_higher_occupancy=use_higher_occupancy)
+
+    print("Using PDB-file", pdbfile)
+
     # Fix basic mistakes in PDB by PDBFixer
     # This will e.g. fix bad terminii
-    print("Running PDBFixer")
+    print("\nRunning PDBFixer")
     fixer = pdbfixer.PDBFixer(pdbfile)
     fixer.findMissingResidues()
     print("Found missing residues:", fixer.missingResidues)
@@ -2023,7 +2042,8 @@ def OpenMM_Modeller(pdbfile=None, forcefield=None, xmlfile=None, waterxmlfile=No
 
     openmm_app.PDBFile.writeFile(fixer.topology, fixer.positions, open('system_afterfixes.pdb', 'w'))
     print("PDBFixer done.")
-    print(BC.WARNING,"Warning: PDBFixer can create unreasonable orientations of residues if residues are missing or multiple thermal copies were present.",BC.END)
+    print(BC.WARNING,"Warning: PDBFixer can create unreasonable orientations of residues if residues are missing or multiple occupancies are present.\n \
+    You should inspect the created PDB-file to be sure.",BC.END)
     print("Wrote PDBfile: system_afterfixes.pdb")
 
     # Load fixed PDB-file and create Modeller object
@@ -2140,6 +2160,7 @@ def OpenMM_Modeller(pdbfile=None, forcefield=None, xmlfile=None, waterxmlfile=No
         f.write(serialized_system)
     
     print("\n\nFiles written to disk:")
+    print("system_afteratlocfixes.pdb")
     print("system_afterfixes.pdb")
     print("system_afterfixes2.pdb")
     print("system_afterH.pdb")
@@ -2152,14 +2173,15 @@ def OpenMM_Modeller(pdbfile=None, forcefield=None, xmlfile=None, waterxmlfile=No
     print("{}   (System XML file)".format(systemxmlfile))
     print(BC.OKGREEN,"\n\n OpenMM_Modeller done! System has been fully set up\n",BC.END)
     print("To use this system setup to define a future OpenMMTheory object you can either do:\n")
-    print(BC.OKMAGENTA,"1. Use full system XML-file:\n",BC.END, \
-        "omm = OpenMMTheory(xmlsystemfile=\"system_full.xml\", pdbfile=\"finalsystem.pdb\", periodic=True)\n",BC.END)
 
-    print(BC.OKMAGENTA,"2. Define using separate forcefield XML files:",BC.END)
+    print(BC.OKMAGENTA,"1. Define using separate forcefield XML files:",BC.END)
     if extraxmlfile is None:
         print("omm = OpenMMTheory(xmlfiles=[{}, {}], pdbfile=\"finalsystem.pdb\", periodic=True)".format(xmlfile,waterxmlfile),BC.END)
     else:
         print("omm = OpenMMTheory(xmlfiles=[\"{}\", \"{}\", \"{}\"], pdbfile=\"finalsystem.pdb\", periodic=True)".format(xmlfile,waterxmlfile,extraxmlfile),BC.END)
+
+    print(BC.OKMAGENTA,"2. Use full system XML-file (NOT RECOMMENDED USUALLY):\n",BC.END, \
+        "omm = OpenMMTheory(xmlsystemfile=\"system_full.xml\", pdbfile=\"finalsystem.pdb\", periodic=True)\n",BC.END)
     print_time_rel(module_init_time, modulename="OpenMM_Modeller", moduleindex=1)
     
     #Return openmmobject. Could be used directly
@@ -3300,3 +3322,108 @@ def print_current_step_info(step,state,openmmobject):
     print("="*50)
     
 
+#CHECKING PDB-FILE FOR multiple occupations.
+#Default behaviour: 
+# - if no multiple occupancies return input PDBfile and go on
+# - if multiple occupancies, print list of residues and tell user to fix them. Exiting
+# - if use_higher_occupancy is set to True, user higher occupancy location, write new PDB_file and use
+
+def find_alternate_locations_residues(pdbfile, use_higher_occupancy=False):
+    if use_higher_occupancy is True:
+        print("Will keep higher occupancy atoms for alternate locations")
+    
+    #List of ATOM/HETATM lines to grab from PDB-file
+    pdb_atomlines=[]
+    #Dict of residues with alternate location labels
+    bad_resids_dict={}
+
+    #Alternate location dict for atoms found
+    altloc_dict={}
+
+    #Looping through PDB-file
+    with open(pdbfile) as pfile:
+        for line in pfile:
+            #Only keep ATOM/HETATM lines
+            if line.startswith("ATOM") or line.startswith("HETATM"):
+                altloc=line[16]
+                #Adding info to dicts and adding marker if alternate location info present for atom
+                if altloc != " ":
+                    chain=line[21:22]
+                    #New dict item with chain as key
+                    if chain not in bad_resids_dict:
+                        bad_resids_dict[chain] = []
+                    resid=int(line[22:26].replace(" ", ""))
+                    resname=line[17:20].replace(" ", "")
+                    residue=resname+str(resid)
+                    atomname=line[12:16].replace(" ","")
+                    occupancy=float(line[54:60])
+                    #Atomstring contains only the atom-information (not alt-location label)
+                    atomstring=chain+"_"+resname+"_"+str(resid)+"_"+atomname
+                    #Adding residue to dict
+                    if residue not in bad_resids_dict[chain]:
+                        bad_resids_dict[chain].append(residue)
+                    #Adding atom-info to dict
+                    altloc_dict[(atomstring,altloc)]=[altloc,occupancy,line]
+                    #Adding atomstring to list as a marker
+                    if ["REPLACE_",atomstring] not in pdb_atomlines:
+                        pdb_atomlines.append(["REPLACE_",atomstring])
+                #Use unmodifed ATOM line
+                else:
+                    pdb_atomlines.append(line)
+    #For debugging
+    #for k,v in altloc_dict.items():
+    #    print(k, v)
+    def find_index_of_sublist_with_max_col(l,index):
+        max=0
+        result=None
+        for i,s in enumerate(l):
+            if s[index] > max:
+                max=s[index]
+                result=i
+        return result
+    
+    #Now going through pdb_atomlines, finding marker and looking up the best occupancy atom from altloc_dict
+    finalpdblines=[]
+    for pdbline in pdb_atomlines:
+        if pdbline[0]== "REPLACE_":
+            print("Alernate locations for atom:", pdbline[1])
+            options=[]
+            #Looping through altloc_dict items
+            for i,j in altloc_dict.items():
+                #Matching atomstring
+                if i[0] == pdbline[1]:
+                    options.append([j[0],j[1],j[2]])
+            for l in options: print(l)
+            #Get max occupancy item
+            ind = find_index_of_sublist_with_max_col(options,1)
+            fline = options[ind][2][:16] + " " + options[ind][2][16 + 1:]
+            print(f"Choosing line {fline} based on occupancy {options[ind][1]}.")
+            if fline not in finalpdblines:
+                finalpdblines.append(fline)
+        else:
+            finalpdblines.append(pdbline)
+
+    if len(bad_resids_dict) > 0:
+        print(BC.WARNING,"\nFound residues in PDB-file that have alternate location labels i.e. multiple occupancies:", BC.END)
+        for chain,residues in bad_resids_dict.items():
+            print(f"\nChain {chain}:")
+            for res in residues:
+                print(res)
+        print(BC.WARNING,"These residues should be manually inspected and fixed in the PDB-file before continuing", BC.END)
+        #if alternatelocation_label != None:
+        #    print(BC.WARNING,"\nalternatelocation_label option chosen. Will choose form {} and go on.\n".format(alternatelocation_label), BC.END)
+        #    writelisttofile(pdb_atomlines, "system_afteratlocfixes.pdb", separator="")
+        #    return "system_afteratlocfixes.pdb"
+        if use_higher_occupancy is True:
+            print(BC.WARNING,"\n Use higher-occupancy location opton was selected, so continuing.", BC.END)
+            writelisttofile(finalpdblines, "system_afteratlocfixes.pdb", separator="")
+            return "system_afteratlocfixes.pdb"
+        else:
+            print(BC.WARNING,"You should delete either the labelled A or B location of the residue-atom/atoms and then remove the A/B label from column 17 in the file")
+            print("Alternatively, you can choose use_higher_occupancy=True keyword in OpenMM_Modeller and ASH will keep the higher occupied form and go on ", BC.END)
+            print("Make sure that there is always an A or B form present.")
+            print(BC.FAIL,"Exiting.", BC.END)
+            ashexit()
+    #Returning original pdbfile if all OK        
+
+    return pdbfile

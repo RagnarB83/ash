@@ -7,7 +7,7 @@ import sys
 
 import settings_ash
 import ash
-from functions.functions_general import BC, print_time_tot_color, timingsobject, print_line_with_mainheader, \
+from functions.functions_general import ashexit, BC, print_time_tot_color, timingsobject, print_line_with_mainheader, \
     print_line_with_subheader1
 
 programversion = 0.2
@@ -43,6 +43,14 @@ def print_header():
         print_logo()
 
     print("ASH path:", settings_ash.ashpath)
+    
+    #Check Python version
+    pythonversion=(sys.version_info[0],sys.version_info[1],sys.version_info[2])
+    print("Python version: {}.{}.{}".format(pythonversion[0],pythonversion[1],pythonversion[2]))
+    if pythonversion < (3,6,0):
+      print("ASH requires Python version 3.6.0 or higher")
+      ashexit()
+    
     print("\nASH Settings after reading defaults and ~/ash_user_settings.ini : ")
     # print(settings_ash.settings_dict)
     for key, val in settings_ash.settings_dict.items():
@@ -150,13 +158,3 @@ def print_logo():
     print(f"{BC.WARNING}Git commit version: {git_commit_number}{BC.END}".center(80))
     print(f"{BC.OKGREEN}{'-' * 80}{BC.END}")
     print(f"{BC.OKGREEN}{'-' * 80}{BC.END}")
-
-    # print(BC.OKGREEN, ascii_banner_center, BC.END)
-    # print(BC.OKGREEN, ascii_tree, BC.END)
-    # print(BC.WARNING, "A COMPCHEM AND QM/MM ENVIRONMENT".center(80), BC.END)
-    # print(BC.WARNING, BC.BOLD, f"Version: {programversion}".center(80), BC.END)
-    # print(BC.WARNING, f"Git commit version: {git_commit_number}".center(80), BC.END)
-    # print(BC.OKGREEN, "-" * 80, BC.END)
-    # print(BC.OKGREEN, "-" * 80, BC.END)
-    #
-    #

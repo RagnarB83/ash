@@ -8,7 +8,7 @@ import numpy as np
 import os
 import subprocess as sp
 
-from functions.functions_general import isint, listdiff, print_time_rel, BC, printdebug, print_line_with_mainheader, \
+from functions.functions_general import ashexit, isint, listdiff, print_time_rel, BC, printdebug, print_line_with_mainheader, \
     print_line_with_subheader1, print_line_with_subheader1_end, print_line_with_subheader2, writelisttofile, pygrep2, load_julia_interface
 import dictionaries_lists
 import settings_ash
@@ -125,8 +125,7 @@ class Fragment:
             self.label = xyzfile.split('/')[-1].split('.')[0]
             self.read_xyzfile(xyzfile, readchargemult=readchargemult, conncalc=conncalc)
         else:
-            print(BC.FAIL,"Fragment requires some kind of valid coordinates input!", BC.END)
-            exit()
+            ashexit(errormessage="Fragment requires some kind of valid coordinates input!")
         # Label for fragment (string). Useful for distinguishing different fragments
         # This overrides label-definitions above (self.label=xyzfile etc)
         if label is not None:
@@ -1393,6 +1392,19 @@ def read_xyzfile(filename):
         exit()
     return elems, coords
 
+#Read all XYZ-files from directory
+#Return fragment list
+def read_xyzfiles(xyzdir,readchargemult=False, label_from_filename=True):
+    import glob
+    filenames=[];fragments=[]
+    for file in glob.glob(xyzdir+'/*.xyz'):
+        filename=os.path.basename(file)
+        filenames.append(filename)
+        print("\n\nXYZ-file:", filename)
+        #Creating new fragment, reading charge/mult and using filename as fragment label
+        mol=ash.Fragment(xyzfile=file, readchargemult=readchargemult, label=filename)
+        fragments.append(mol)
+    return fragments
 
 def set_coordinates(atoms, V, title="", decimals=8):
     """

@@ -117,10 +117,10 @@ class xTBTheory:
                     print("settings_ash.settings_dict:", settings_ash.settings_dict)
                     self.xtbdir=settings_ash.settings_dict["xtbdir"]
                 except:
-                    print(BC.FAIL,"Found no xtbdir variable in settings_ash module either.",BC.END)
+                    print(BC.WARNING,"Found no xtbdir variable in settings_ash module either.",BC.END)
                     try:
                         self.xtbdir = os.path.dirname(shutil.which('xtb'))
-                        print("Found xtb in path. Setting xtbdir to:", self.xtbdir)
+                        print(BC.OKGREEN,"Found xtb in path. Setting xtbdir to:", self.xtbdir, BC.END)
                     except:
                         print("Found no xtb executable in path. Exiting... ")
                         exit()
