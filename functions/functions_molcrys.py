@@ -1,5 +1,5 @@
 import numpy as np
-from functions.functions_general import blankline,uniq,printdebug,print_time_rel_and_tot,print_time_rel,BC, load_julia_interface
+from functions.functions_general import ashexit, blankline,uniq,printdebug,print_time_rel_and_tot,print_time_rel,BC, load_julia_interface
 import modules.module_coords
 import interfaces.interface_ORCA
 import interfaces.interface_xtb
@@ -242,7 +242,7 @@ def frag_define(orthogcoords,elems,cell_vectors,fragments,cell_angles=None, cell
                             continue
             #else:
             #    print("oops WTF!! what is going on")
-            #    exit()
+            #    ashexit()
     print("")
 
     # Too many fragments in fragment.fraglist because we are counting every frag with an atom inside the cell.
@@ -351,7 +351,7 @@ def cellparamtovectors(cell_length,cell_angles):
         cell_vectors=[[cell_length[0], 0.0, 0.0], [0.0, cell_length[1], 0.0],[0.0, 0.0, cell_length[2]]]
     else:
         print("Need to finish this")
-        exit()
+        ashexit()
     return cell_vectors
 
 #https://github.com/ghevcoul/coordinateTransform/blob/master/coordinateTransform.py
@@ -376,7 +376,7 @@ def fract_to_orthogonal(cellvectors, fraccoords):
 
 def orthogonal_to_fractional(cellvectors, orthogcoords):
     print("function not tested")
-    exit()
+    ashexit()
     def det3(mat):
         return ((mat[0][0] * mat[1][1] * mat[2][2]) + (mat[0][1] * mat[1][2] * mat[2][0]) + (
                     mat[0][2] * mat[1][0] * mat[2][1]) - (mat[0][2] * mat[1][1] * mat[2][0]) - (
@@ -473,7 +473,7 @@ def cell_extend_frag(cellvectors, coords,elems,cellextpars):
 #TODO: Delete
 def old_cell_extend_frag(cellvectors, coords,elems,cellextpars):
     print("don't use")
-    exit()
+    ashexit()
     printdebug("cellextpars:", cellextpars)
     numcells=np.prod(cellextpars)
     # cellextpars: e.g. [2,2,2]
@@ -494,7 +494,7 @@ def old_cell_extend_frag(cellvectors, coords,elems,cellextpars):
     #permutations = permutations.sort(key=lambda x: x[0])
     print(permutations)
     print(len(permutations))
-    exit()
+    ashexit()
     #print("permutations:", permutations)
     #print("cellvectors:", cellvectors)
     extended = np.zeros((len(coords) * numcells, 3))
@@ -671,7 +671,7 @@ def read_ciffile(file):
     if '_atom_site_Wyckoff_symbol' in atomsitecolumns:
         print("Wyckoff_symbols found in CIF-file. We do not handle this correctly. Exiting.")
         print("Please use another format than CIF-file, e.g. XTL.")
-        exit()
+        ashexit()
 
 
     #Removing any numbers from atomlabels in order to get element information
@@ -691,13 +691,13 @@ def read_ciffile(file):
             print("Found no valid element list from CIF file in either 1st or 2nd column. Check CIF-file format")
             print("firstcolumn: ", firstcolumn)
             print("secondcolumns: ", secondcolumns)
-            exit()
+            ashexit()
 
     print("Symmetry operations found in CIF:", symmops)
     print("coords : ", coords)
     if len(coords) == 0:
         print("Found zero coordinates in CIF-file: {}. Something wrong with file. Exiting...".format(file))
-        exit()
+        ashexit()
     print("Cell parameters:", cell_a, cell_b, cell_c, cell_alpha, cell_beta, cell_gamma)
     return [cell_a, cell_b, cell_c],[cell_alpha, cell_beta, cell_gamma],atomlabels,elems,coords,symmops,cellunits
 
@@ -932,7 +932,7 @@ def remove_partial_fragments(coords,elems,sphereradius,fragmentobjects, scale=No
                 Juliafunctions=load_julia_interface()
             except:
                 print("Problem loading Julia")
-                exit()
+                ashexit()
             #Get list of fragments for all surfaceatoms
             fraglist_temp = Juliafunctions.calc_fraglist_for_atoms(surfaceatoms,coords, elems, 99, scale, tol,modules.module_coords.eldict_covrad)
             # Converting from numpy to list of lists
@@ -971,7 +971,7 @@ def remove_partial_fragments(coords,elems,sphereradius,fragmentobjects, scale=No
     #print("len(found_atoms)", len(found_atoms))
     #print("len(flat_fraglist)", len(flat_fraglist))
     #print("final counted atoms:", count)
-    #exit()
+    #ashexit()
     #Going through found frags. If nuccharge of frag does not match known nuccharge it goes to deletionlist
     nuccharges=[fragmentobject.Nuccharge for fragmentobject in fragmentobjects]
     #18June 2020 update. Adding masses as another discriminator.
@@ -1015,17 +1015,17 @@ def reordercluster(fragment,fragmenttype,code_version='py'):
     #exit()
     if len(fraglists) == 0:
         print(BC.FAIL, "Fragment lists for fragment-type are empty. Makes no sense (too small cluster radius?!). Exiting...", BC.END)
-        exit(1)
+        ashexit()
     
     timestampA=time.time()
     if code_version=='julia':
         print("Calling reorder_cluster_julia")
-        exit()
+        ashexit()
         try:
             Juliafunctions=load_julia_interface()
         except:
             print("Problem loading Julia")
-            exit()
+            ashexit()
         #print(fragmenttype.clusterfraglist[5])
         #Converting from 0-based to 1-based indexing before passing to Julia
         jul_fraglists=[[number+1 for number in group] for group in fraglists]
@@ -1035,7 +1035,7 @@ def reordercluster(fragment,fragmenttype,code_version='py'):
         fragmenttype.clusterfraglist=[[number-1 for number in group] for group in new_jul_fraglists]
         #print("After. fragmenttype.clusterfraglist:", fragmenttype.clusterfraglist)
         #print(fragmenttype.clusterfraglist[236])
-        exit()
+        ashexit()
         print_time_rel(timestampA, modulename='reorder_cluster julia')
     elif code_version=='py':
         print("Calling reorder_cluster py")
@@ -1063,7 +1063,7 @@ def reordercluster(fragment,fragmenttype,code_version='py'):
                 fragmenttype.clusterfraglist[fragindex]=neworderfrag
 
         #print("After. fragmenttype.clusterfraglist:", fragmenttype.clusterfraglist)
-        #exit()
+        #ashexit()
         #print(fragmenttype.clusterfraglist[236])
         print_time_rel(timestampA, modulename='reorder_cluster py')
 #Updating pointcharges of fragment
@@ -1372,7 +1372,7 @@ def choose_shortrangemodel(Cluster,shortrangemodel,fragmentobjects,QMtheory,main
         Cluster.atomtypes=atomtypelist
     else:
         print("Undefined shortrangemodel")
-        exit()
+        ashexit()
 
     #Create full atomtypelist to be added to Cluster object
     #atomtypelist = [item for frag in fragmentobjects for item in frag.atomtypelist]
@@ -1396,6 +1396,6 @@ def choose_shortrangemodel(Cluster,shortrangemodel,fragmentobjects,QMtheory,main
     if None in full_list:
         print("problem")
         print(full_list)
-        exit()
+        ashexit()
     Cluster.atomtypes=full_list
     #print("Cluster.atomtypes:", Cluster.atomtypes)

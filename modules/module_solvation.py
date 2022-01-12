@@ -9,7 +9,7 @@ CheckpointTime = time.time()
 import os
 import sys
 import functions.functions_solv
-from functions.functions_general import blankline,BC,listdiff,print_time_rel_and_tot,print_line_with_mainheader,print_line_with_subheader1
+from functions.functions_general import blankline,BC,listdiff,print_time_rel_and_tot,print_line_with_mainheader,print_line_with_subheader1, ashexit
 from modules.module_coords import read_chemshellfragfile_xyz
 from interfaces.interface_ORCA import run_inputfiles_in_parallel,finalenergiesgrab,run_orca_SP_ORCApar
 import settings_solvation
@@ -92,7 +92,7 @@ def solvshell ( orcadir='', NumCores='', calctype='', orcasimpleinput_LL='',
         solvsphere=functions_solv.read_md_variables_fileA(mdvarfile)
     else:
         print("unknown calctype for md-read")
-        exit()
+        ashexit()
     print("Solvsphere Object defined.")
     print("Solvsphere atoms:", solvsphere.numatoms)
 
@@ -873,7 +873,7 @@ def LRPolsnapshotcalc(args):
     if len(qmatoms_LR2)+len(peatoms_LR2)+len(mmatoms_LR2) != len(solvsphere.allatoms):
         print("QM + MM + PE atoms ({})not equal to total numatoms({})".format(len(qmatoms_LR2)+len(peatoms_LR2)+len(mmatoms_LR2),
                                                                               len(solvsphere.allatoms)))
-        exit()
+        ashexit()
 
     # Define Psi4 QMregion
     Psi4QMpart_A_LR1 = ash.Psi4Theory(charge=solvsphere.ChargeA, mult=solvsphere.MultA, label=snapshot+'A_LR1',

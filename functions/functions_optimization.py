@@ -1,6 +1,6 @@
 import numpy as np
 import constants
-from functions.functions_general import blankline,print_time_rel_and_tot,BC
+from functions.functions_general import ashexit, blankline,print_time_rel_and_tot,BC
 from modules.module_coords import print_coords_all,write_xyzfile
 import time
 import os
@@ -60,7 +60,7 @@ def SimpleOpt(fragment=None, theory='', optimizer='', maxiter=50, frozen_atoms=N
         except:
             print("Found no fragment in theory object either.")
             print("Exiting...")
-            exit()
+            ashexit()
     if frozen_atoms is None:
         frozen_atoms=[]
 
@@ -102,7 +102,7 @@ def SimpleOpt(fragment=None, theory='', optimizer='', maxiter=50, frozen_atoms=N
         print(GetFIREParam(time_step))
     else:
         print("Unknown optimizer")
-        exit()
+        ashexit()
     print("Tolerances:  RMSG: {}  MaxG: {}  Eh/Bohr".format(RMSGtolerance, MaxGtolerance))
     #Name of trajectory file
     trajname="opt-trajectory.xyz"
@@ -215,7 +215,7 @@ def SimpleOpt(fragment=None, theory='', optimizer='', maxiter=50, frozen_atoms=N
 
         elif optimizer=='NR':
             print("disabled")
-            exit()
+            ashexit()
             #Identity matrix
             Hess_approx=np.identity(3*len(current_coords))
             #TODO: Not active
@@ -247,7 +247,7 @@ def SimpleOpt(fragment=None, theory='', optimizer='', maxiter=50, frozen_atoms=N
                     reset_opt = True
         else:
             print("Optimizer option not supported.")
-            exit()
+            ashexit()
         #Take the actual step
         #Todo: Implement maxmove-scaling here if step too large
         current_coords=current_coords+step
@@ -427,7 +427,7 @@ def newton_raphson(coords, Gradient,Hessian):
     print("Grad:", Grad)
     bla = Hessian_inv*Grad
     print(bla)
-    exit()
+    ashexit()
     #newcoords = coords - Hessian_inv*Grad
     #return newcoords
 #########################
@@ -449,7 +449,7 @@ def BernyOpt(theory,fragment):
         print(BC.FAIL,"pyberny module not found!", BC.END)
         print(BC.WARNING,"Either install pyberny using pip:\n pip install pyberny\n "
                          "or manually from Github (https://github.com/jhrmnn/pyberny)", BC.END)
-        exit(9)
+        ashexit(code=9)
     print("See: https://github.com/jhrmnn/pyberny")
     elems=fragment.elems
     coords=fragment.coords

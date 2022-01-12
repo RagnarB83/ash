@@ -1,4 +1,4 @@
-from functions.functions_general import BC, print_time_rel
+from functions.functions_general import ashexit, BC, print_time_rel
 import subprocess as sp
 import os
 
@@ -56,7 +56,7 @@ class MRCCTheory:
         #TODO: No qm/MM yet. need to check if possible in MRCC
         if Grad==True:
             print("Grad not ready")
-            exit()
+            ashexit()
             write_mrcc_input(self.mrccinput,self.charge,self.mult,qm_elems,current_coords)
             run_mrcc(self.mrccdir,self.filename+'.out')
             self.energy=grab_energy_mrcc(self.filename+'.out')
@@ -117,7 +117,7 @@ def grab_energy_mrcc(outfile):
     #    energy=float(final.split()[-1])
     #except:
     #    print("Problem reading energy from MRCC outputfile. Check:", outfile)
-    #    exit()
+    #    ashexit()
     return energy
 
 

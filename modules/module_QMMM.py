@@ -5,7 +5,7 @@ import math
 
 #functions related to QM/MM
 import modules.module_coords
-from functions.functions_general import BC,blankline,listdiff,print_time_rel,printdebug,print_line_with_mainheader,writelisttofile
+from functions.functions_general import ashexit, BC,blankline,listdiff,print_time_rel,printdebug,print_line_with_mainheader,writelisttofile
 import settings_ash
 
 #QM/MM theory object.
@@ -64,7 +64,7 @@ class QMMMTheory:
                 print("{} active atoms, {} frozen atoms".format(len(self.actatoms), len(self.frozenatoms)))
             else:
                 print("active_atoms and frozen_atoms can not be both defined")
-                exit(1)
+                ashexit()
             
             #print("List of all atoms:", self.allatoms)
             print("QM region ({} atoms): {}".format(len(self.qmatoms),self.qmatoms))
@@ -84,7 +84,7 @@ class QMMMTheory:
             #        self.hybridatomlabels.append('MM')
         else:
             print("Fragment has not been defined for QM/MM. Exiting")
-            exit(1)
+            ashexit()
 
         #Flag to check whether QMCharges have been zeroed in self.charges_qmregionzeroed list
         self.QMChargesZeroed=False
@@ -139,17 +139,17 @@ class QMMMTheory:
                         
             else:
                 print("Unrecognized MM theory for QMMMTheory")
-                exit(1)
+                ashexit()
         else:
             print("Reading in charges")
             if len(charges) != len(fragment.atomlist):
                 print(BC.FAIL,"Number of charges not matching number of fragment atoms. Exiting.",BC.END)
-                exit()
+                ashexit()
             self.charges=charges
         
         if len(self.charges) == 0:
             print("No charges present in QM/MM object. Exiting...")
-            exit()
+            ashexit()
         
         
         #CHARGES DEFINED FOR OBJECT:
@@ -188,7 +188,7 @@ class QMMMTheory:
                 print("")
                 print(BC.FAIL,"Number of atoms in fragment ({}) and MMtheory object differ ({})".format(fragment.numatoms,mm_theory.numatoms),BC.END)
                 print(BC.FAIL,"This does not make sense. Check coordinates and forcefield files. Exiting...", BC.END)
-                exit()
+                ashexit()
 
             #Add possible exception for QM-QM atoms here.
             #Maybe easier to just just set charges to 0. LJ for QM-QM still needs to be done by MM code
@@ -494,7 +494,7 @@ class QMMMTheory:
                 self.qmcoords = np.append(self.qmcoords,np.array([linkatoms_dict[pair]]), axis=0)
                 #print("self.qmcoords :", self.qmcoords)
                 #print(len(self.qmcoords))
-                #exit()
+                #ashexit()
                 #Linkatom indices for book-keeping
                 linkatoms_indices.append(len(self.qmcoords)-1)
                 printdebug("linkatoms_indices: ", linkatoms_indices)
@@ -602,7 +602,7 @@ class QMMMTheory:
                     self.PCgradient = np.zeros((len(self.mmatoms), 3))
                 else:
                     print("grad. mech embedding. not ready")
-                    exit()
+                    ashexit()
                     self.QMenergy, self.QMgradient = self.qm_theory.run(current_coords=self.qmcoords,
                                                       current_MM_coords=self.pointchargecoords, MMcharges=self.pointcharges,
                                                       qm_elems=current_qmelems, Grad=True, PC=False, numcores=numcores)
@@ -615,7 +615,7 @@ class QMMMTheory:
                                                       qm_elems=current_qmelems, Grad=False, PC=PC, numcores=numcores)
                 else:
                     print("mech true", not ready)
-                    exit()
+                    ashexit()
 
 
         elif self.qm_theory_name == "xTBTheory":
@@ -639,10 +639,10 @@ class QMMMTheory:
 
         elif self.qm_theory_name == "DaltonTheory":
             print("not yet implemented")
-            exit(1)
+            ashexit()
         elif self.qm_theory_name == "NWChemtheory":
             print("not yet implemented")
-            exit(1)
+            ashexit()
         elif self.qm_theory_name == "None":
             print("No QMtheory. Skipping QM calc")
             self.QMenergy=0.0;self.linkatoms=False;self.PCgradient=np.array([0.0, 0.0, 0.0])
@@ -652,7 +652,7 @@ class QMMMTheory:
             self.QMgradient=np.array([0.0, 0.0, 0.0])
         else:
             print("invalid QM theory")
-            exit(1)
+            ashexit()
         print_time_rel(CheckpointTime, modulename='QM step', moduleindex=2)
         CheckpointTime = time.time()
 
@@ -793,7 +793,7 @@ class QMMMTheory:
                     print("Using MM on full system. Charges for QM region {} have been set to zero ".format(self.qmatoms))
             else:
                 print("QMCharges have not been zeroed")
-                exit(1)
+                ashexit()
             #printdebug("Charges for full system is: ", self.charges)
             #Todo: Need to make sure OpenMM skips QM-QM Lj interaction => Exclude
             #Todo: Need to have OpenMM skip frozen region interaction for speed  => => Exclude
@@ -909,7 +909,7 @@ class QMMMTheory:
 
 def microiter_QM_MM_OPT_v1(theory=None, fragment=None, chargemodel=None, qmregion=None, activeregion=None, bufferregion=None):
     
-    exit()
+    ashexit()
     #1. Calculate single-point QM/MM job and get charges. Maybe get gradient to judge convergence ?
     energy=Singlepoint(theory=theory,fragment=fragment)
     #grab charges
@@ -925,10 +925,10 @@ def microiter_QM_MM_OPT_v1(theory=None, fragment=None, chargemodel=None, qmregio
 #frozen-density micro-iterative QM/MM
 def microiter_QM_MM_OPT_v2(theory=None, fragment=None, maxiter=500, qmregion=None, activeregion=None, bufferregion=None,xtbdir=None,xtbmethod='GFN2-xTB'):
     sdf="dsds"
-    exit()
+    ashexit()
 #xtb instead of charges
 def microiter_QM_MM_OPT_v3(theory=None, fragment=None, maxiter=500, qmregion=None, activeregion=None, bufferregion=None,xtbdir=None,xtbmethod='GFN2-xTB'):
-    exit()
+    ashexit()
     #Make copy of orig theory
     orig_theory=copy.deepcopy(theory)
     # TODO: If BS-spinflipping, use Hsmult instead of regular mul6
@@ -1088,13 +1088,13 @@ def actregiondefine(pdbfile=None, mmtheory=None, fragment=None, radius=None, ori
     #Checking if proper information has been provided
     if radius == None or originatom == None:
         print("actregiondefine requires radius and originatom keyword arguments")
-        exit()
+        ashexit()
     if pdbfile == None and fragment == None:
         print("actregiondefine requires either fragment or pdbfile arguments (for coordinates)")
-        exit()
+        ashexit()
     if pdbfile == None and mmtheory == None:
         print("actregiondefine requires either pdbfile or mmtheory arguments (for residue topology information)")
-        exit()
+        ashexit()
     #Creating fragment from pdbfile 
     if fragment == None:
         print("No ASH fragment provided. Creating ASH fragment from PDBfile")
@@ -1107,10 +1107,10 @@ def actregiondefine(pdbfile=None, mmtheory=None, fragment=None, radius=None, ori
     if mmtheory != None:
         if mmtheory.__class__.__name__ == "NonBondedTheory":
             print("MMtheory: NonBondedTheory currently not supported.")
-            exit()
+            ashexit()
         if not mmtheory.resids :
             print(BC.FAIL,"mmtheory.resids list is empty! Something wrong with OpenMMTheory setup. Exiting",BC.END)
-            exit()
+            ashexit()
         #Defining list of residue from OpenMMTheory object 
         resids=mmtheory.resids
     else:
@@ -1119,8 +1119,8 @@ def actregiondefine(pdbfile=None, mmtheory=None, fragment=None, radius=None, ori
         #NOTE: Call grab_resids_from_pdbfile
         resids = grab_resids_from_pdbfile()
         print("Not ready yet")
-        exit()
-        exit()
+        ashexit()
+        ashexit()
 
     origincoords=fragment.coords[originatom]
     act_indices=[]

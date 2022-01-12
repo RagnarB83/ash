@@ -8,7 +8,7 @@
 import numpy as np
 import time
 import ash
-from functions.functions_general import BC,print_time_rel,print_line_with_mainheader
+from functions.functions_general import ashexit, BC,print_time_rel,print_line_with_mainheader
 
 #Single-point energy function
 def Singlepoint(fragment=None, theory=None, Grad=False):
@@ -28,7 +28,7 @@ def Singlepoint(fragment=None, theory=None, Grad=False):
     module_init_time=time.time()
     if fragment is None or theory is None:
         print(BC.FAIL,"Singlepoint requires a fragment and a theory object",BC.END)
-        exit(1)
+        ashexit()
     coords=fragment.coords
     elems=fragment.elems
 
@@ -58,7 +58,7 @@ def Singlepoint(fragment=None, theory=None, Grad=False):
                 theory_chargemult_change=True
             else:
                 print(BC.FAIL,"No charge/mult information present. Exiting.",BC.END)
-                exit()
+                ashexit()
         energy = theory.run(current_coords=coords, elems=elems)
 
         #If we changed theory charge/mult information. Change back
@@ -146,7 +146,7 @@ def Singlepoint_fragments(theory=None, fragments=None, stoichiometry=None):
 
         if frag.charge == None or frag.mult == None:
             print(BC.FAIL,"Error: no charge/mult information associated with fragment.", BC.END)
-            exit()
+            ashexit()
         #Setting charge/mult for theory from fragment
         theory.charge=frag.charge; theory.mult=frag.mult
         
@@ -229,17 +229,17 @@ def newSinglepoint(fragment=None, theory=None, Grad=False):
         or
         float,np.array : Energy and gradient array
     """
-    exit()
+    ashexit()
     module_init_time=time.time()
     print("")
     if fragment is None or theory is None:
         print(BC.FAIL,"Singlepoint requires a fragment and a theory object",BC.END)
-        exit(1)
+        ashexit()
     
     #Case QM/MM: we don't pass whole fragment?
     if isinstance(theory, ash.QMMMTheory):
         print("this is QM/MM. not ready")
-        exit()
+        ashexit()
     #Regular single-point
     else:
         # Run a single-point energy job with gradient
@@ -318,7 +318,7 @@ def ReactionEnergy(list_of_energies=None, stoichiometry=None, list_of_fragments=
     product_energy=0.0 #hartree
     if stoichiometry is None:
         print("stoichiometry list is required")
-        exit(1)
+        ashexit()
 
 
     #List of energies option

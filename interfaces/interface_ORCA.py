@@ -6,7 +6,7 @@ import multiprocessing as mp
 import numpy as np
 
 import modules.module_coords
-from functions.functions_general import blankline,insert_line_into_file,BC,print_time_rel, print_line_with_mainheader
+from functions.functions_general import ashexit, blankline,insert_line_into_file,BC,print_time_rel, print_line_with_mainheader
 from modules.module_singlepoint import Singlepoint
 import functions.functions_elstructure
 import constants
@@ -34,7 +34,7 @@ class ORCATheory:
         if ' OPT' in orcasimpleinput.upper() or ' FREQ' in orcasimpleinput.upper() :
             print(BC.FAIL,"Error. orcasimpleinput variable can not contain ORCA job-directives like: Opt, Freq, Numfreq", BC.END)
             print("orcasimpleinput should only contain information on electronic-structure method (e.g. functional), basis set, grid, SCF convergence etc.")
-            exit()
+            ashexit()
 
         #Counter for how often ORCATheory.run is called
         self.runcalls=0
@@ -112,7 +112,7 @@ class ORCATheory:
         self.HSmult=HSmult
         if type(atomstoflip) is int:
             print(BC.FAIL,"Error: atomstoflip should be list of integers (e.g. [0] or [2,3,5]), not a single integer.", BC.END)
-            exit(1)
+            ashexit()
         if atomstoflip != None:
             self.atomstoflip=atomstoflip
         else:
@@ -180,7 +180,7 @@ class ORCATheory:
             print("No fragment provided to Opt.")
             if self.fragment == None:
                 print("No fragment associated with ORCATheory object either. Exiting")
-                exit()
+                ashexit()
             else:
                 current_coords=self.fragment.coords
                 elems=self.fragment.elems
@@ -227,10 +227,10 @@ class ORCATheory:
                 self.fragment.replace_coords(self.fragment.elems,opt_coords)
             else:
                 print("ORCA optimization failed to converge. Check ORCA output")
-                exit()
+                ashexit()
         else:
             print("Something happened with ORCA job. Check ORCA output")
-            exit()
+            ashexit()
 
         print("ORCA optimized energy:", self.energy)
         print("ASH fragment updated:", self.fragment)
@@ -387,7 +387,7 @@ class ORCATheory:
             print(BC.FAIL,"Problem with ORCA run", BC.END)
             print(BC.OKBLUE,BC.BOLD, "------------ENDING ORCA-INTERFACE-------------", BC.END)
             print_time_rel(module_init_time, modulename='ORCA run', moduleindex=2)
-            exit(1)
+            ashexit()
 
 ###############################################
 #CHECKS FOR ORCA program
@@ -410,7 +410,7 @@ def check_ORCA_location(orcadir):
                 print(BC.OKGREEN,"Found orca binary in PATH. Using the following directory:", finalorcadir, BC.END)
             except TypeError:
                 print(BC.FAIL,"Found no orca binary in PATH environment variable either. Giving up.", BC.END)
-                exit()
+                ashexit()
     return finalorcadir
 
 def check_ORCAbinary(orcadir):
@@ -426,7 +426,7 @@ def check_ORCAbinary(orcadir):
         return True
     else:
         print(BC.FAIL,"Problem: ORCA binary: {} does not work. Exiting!".format(orcadir+'/orca'), BC.END)
-        exit()
+        ashexit()
 
 ###############################################
 #CHECKS FOR OPENMPI
@@ -438,7 +438,7 @@ def check_OpenMPI():
         openmpibindir = os.path.dirname(shutil.which('mpirun'))
     except:
         print("No mpirun found in PATH. Make sure to add OpenMPI to PATH in your environment/jobscript")
-        exit()
+        ashexit()
     print("OpenMPI binary directory found:", openmpibindir)
     #Test that mpirun is executable and grab OpenMPI version number for printout
     test_OpenMPI()
@@ -541,7 +541,7 @@ def ORCAfinalenergygrab(file, errors='ignore'):
                 if "Wavefunction not fully converged!" in line:
                     print("ORCA WF not fully converged!")
                     print("Not using energy. Modify ORCA settings")
-                    exit()
+                    ashexit()
                 else:
                     #Changing: sometimes ORCA adds info to the right of energy
                     #Energy=float(line.split()[-1])
@@ -1427,7 +1427,7 @@ def grabatomcharges_ORCA(chargemodel,outputfile):
                     grab=True
     else:
         print("Unknown chargemodel. Exiting...")
-        exit()
+        ashexit()
     return charges
 
 
@@ -1606,7 +1606,7 @@ def counterpoise_calculation_ORCA(fragments=None, theory=None, monomer1_indices=
     
     if theory == None and fragments == None:
         print("theory and list of ASH fragments required")
-        exit()
+        ashexit()
     if monomer1_indices==None or monomer2_indices == None:
         print("Error: monomer1_indices and monomer2_indices need to be set")
         print("These are lists of atom indices indicating monomer1 and monomer2 in dimer fragment")
@@ -1622,7 +1622,7 @@ H    3.867602049  -0.375336206  -1.264612649
 H    2.453295744  -1.445998564  -1.389381355
         """)
         print("")
-        exit()
+        ashexit()
 
     print("monomer1_indices:", monomer1_indices)
     print("monomer2_indices:", monomer2_indices)
@@ -1637,7 +1637,7 @@ H    2.453295744  -1.445998564  -1.389381355
 
     if len(monomer1_indices+monomer2_indices) != dimer.numatoms:
         print("Error: Something wrong with monomer1_indices or monomer2_indices. Don't add up ({}) to number of atoms in dimer ({})".format(len(monomer1_indices+monomer2_indices),dimer.numatoms))
-        exit()
+        ashexit()
 
     fragments_indices.remove(dimer_index)
 
@@ -1788,7 +1788,7 @@ def ORCA_External_Optimizer(fragment=None, theory=None, orcadir=None):
     print_line_with_mainheader("ORCA_External_Optimizer")
     if fragment == None or theory == None:
         print("ORCA_External_Optimizer requires fragment and theory keywords")
-        exit()
+        ashexit()
 
     #Adding orcadir to PATH. Only required if ORCA not in PATH already
     if orcadir != None:
@@ -1826,11 +1826,11 @@ def ORCA_External_Optimizer(fragment=None, theory=None, orcadir=None):
     #Check if ORCA finished
     if checkORCAfinished(basename+'.out') is not True:
         print("Something failed about external ORCA job")
-        exit()
+        ashexit()
     #Check if optimization completed
     if checkORCAOptfinished(basename+'.out') is not True:
         print("ORCA external optimization failed. Check outputfile:", basename+'.out')
-        exit()
+        ashexit()
     print("ORCA external optimization finished")
 
     #Grabbing final geometry to update fragment object

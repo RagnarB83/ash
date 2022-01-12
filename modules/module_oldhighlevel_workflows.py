@@ -8,6 +8,7 @@ import math
 import dictionaries_lists
 import interfaces.interface_ORCA
 from functions.functions_elstructure import check_cores_vs_electrons, num_core_electrons
+from functions.functions_general import ashexit
 
 
 #Note: Inner-shell correlation information: https://webhome.weizmann.ac.il/home/comartin/preprints/w1/node6.html
@@ -104,7 +105,7 @@ end
     #ROHF option in ORCA requires dual-job. to be finished.
     elif HFreference == 'ROHF':
         print("ROHF reference is not yet available")
-        exit()
+        ashexit()
     #QRO option is similar to ROHF. Recommended. Same as used by ORCA in DLPNO-CC.
     elif HFreference == 'QRO':
         print("HF reference = QRO chosen. Will use QROs for open-shell species)")
@@ -320,7 +321,7 @@ end
     #ROHF option in ORCA requires dual-job. to be finished.
     elif HFreference == 'ROHF':
         print("ROHF reference is not yet available")
-        exit()
+        ashexit()
     #QRO option is similar to ROHF. Recommended. Same as used by ORCA in DLPNO-CC.
     elif HFreference == 'QRO':
         print("HF reference = QRO chosen. Will use QROs for open-shell species)")
@@ -994,7 +995,7 @@ end
     if T1 is True:
         
         print("test...")
-        exit()
+        ashexit()
         ccsdtkeyword='DLPNO-CCSD(T1)'
     else:
         ccsdtkeyword='DLPNO-CCSD(T)-F12'
@@ -1135,7 +1136,7 @@ def DLPNO_W2theory(fragment=None, charge=None, orcadir=None, mult=None, stabilit
     print("DLPNO_W2theory PROTOCOL")
     print("-----------------------------")
     print("Not active yet")
-    exit()
+    ashexit()
     calc_label = "Frag" + str(fragment.formula) + "_" + str(fragment.charge) + "_"
     print("Calculation label: ", calc_label)
 
@@ -1437,7 +1438,7 @@ end
             #DLPNO-F12 or not
             if F12 is True:
                 print("Note: not supported yet ")
-                exit()
+                ashexit()
                 ccsdtkeyword='DLPNO-CCSD(T)-F12'
             else:
                 ccsdtkeyword='DLPNO-CCSD(T)'
@@ -1455,7 +1456,7 @@ end
         if F12 is True:
             ccsdtkeyword='CCSD(T)-F12'
             print("Note: not supported yet ")
-            exit()
+            ashexit()
         else:
             ccsdtkeyword='CCSD(T)'
 
@@ -1496,7 +1497,7 @@ end
         extrainputkeyword = extrainputkeyword + ' X2C '
         auxbasis='cc-pV5Z/C'
         print("Not ready")
-        exit()
+        ashexit()
 
     #Possible DFT reference (functional name)
     #NOTE: Hardcoding RIJCOSX SARC/J defgrid3 for now
@@ -2283,7 +2284,7 @@ def choose_inputlines_from_basisfamily(cardinals,basisfamily,ccsdtkeyword,auxbas
         ccsdt_2_line="! {} aug-cc-pwCV5Z-DK {} {} {} {}".format(ccsdtkeyword, auxbasis, pnokeyword, scfsetting,extrainputkeyword)
     else:
         print("Unknown basisfamily or cardinals chosen...")
-        exit()
+        ashexit()
     return ccsdt_1_line,ccsdt_2_line
 
 
@@ -2442,7 +2443,7 @@ def Extrapolation_W1_SCF_2point(E):
     Note: Reading list backwards
     """
     print("This has not been tested. Proceed with caution")
-    exit()
+    ashexit()
     SCF_CBS = E[-1]+(E[-1]-E[-2])/((4/3)**5 - 1)
     return SCF_CBS
 

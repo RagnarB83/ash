@@ -1,7 +1,7 @@
 import numpy as np
 import math
 from operator import itemgetter
-
+from functions.functions_general import ashexit
 
 #from ase import Atoms
 #from ase.calculators.lj import LennardJones as LJ
@@ -15,7 +15,7 @@ def attach_safires_to_ASE(atoms=None, dyn=None, safires_solvent_atomsnum=3,
                             safires_solute=None, safires_inner_region=None ):
     if safires_solute == None or safires_inner_region == None:
         print("Safires requires safires_solute and safires_inner_region lists to be defined")
-        exit()
+        ashexit()
     print("SAFIRES")
     print("Solute region:", safires_solute)
     print("Inner region:", safires_inner_region)

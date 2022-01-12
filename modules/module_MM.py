@@ -2,7 +2,7 @@ import numpy as np
 import time
 
 from modules.module_coords import distance
-from functions.functions_general import blankline,print_time_rel,BC, load_julia_interface
+from functions.functions_general import ashexit, blankline,print_time_rel,BC, load_julia_interface
 import constants
 import ash
 
@@ -98,7 +98,7 @@ class NonBondedTheory:
                 print("Using arithmetic rule for epsilon")
         else:
             print("Unknown combination rule. Exiting")
-            exit()
+            ashexit()
 
         #A large system has many atomtypes. Creating list of unique atomtypes to simplify loop
         CheckpointTime = time.time()
@@ -193,13 +193,13 @@ class NonBondedTheory:
             #    print("Make sure Julia is installed and PyJulia module available")
             #    print("Also, are you using python3_ash ?")
             #    print("Alternatively, use codeversion='py' argument to NonBondedTheory to use slower Python version for array creation")
-            #    exit(9)
+            #    ashexit()
             print("Loading Julia")
             try:
                 Juliafunctions=load_julia_interface()
             except:
                 print("Problem loading Julia")
-                exit()
+                ashexit()
             # Do pairpot array for whole system
             if len(actatoms) == 0:
                 print("Calculating pairpotential array for whole system")
@@ -239,7 +239,7 @@ class NonBondedTheory:
                         self.epsij[i, j] = self.LJpairpotdict[(self.atomtypes[j], self.atomtypes[i])][1]
         else:
             print("unknown codeversion")
-            exit()
+            ashexit()
 
         if self.printlevel >= 2:
             #print("self.sigmaij ({}) : {}".format(len(self.sigmaij), self.sigmaij))
@@ -265,7 +265,7 @@ class NonBondedTheory:
         module_init_time=time.time()
         if current_coords is None:
             print("No current_coords argument. Exiting...")
-            exit()
+            ashexit()
         CheckpointTime = time.time()
         #If qmatoms list provided to run (probably by QM/MM object) then we are doing QM/MM
         #QM-QM pairs will be skipped in LJ
@@ -328,7 +328,7 @@ class NonBondedTheory:
         #Combined Coulomb+LJ Python version. Slow
         elif self.codeversion=='py_comb':
             print("not active")
-            exit()
+            ashexit()
             self.MMenergy, self.MMgradient = LJCoulpy(current_coords, self.atomtypes, charges, self.LJpairpotentials,
                                                           connectivity=connectivity)
         elif self.codeversion=='f2py':
@@ -364,7 +364,7 @@ class NonBondedTheory:
                 print("Make sure Julia is installed and PyJulia module available")
                 print("Also, are you using python3_ash ?")
                 print("Alternatively, use codeversion='py' argument to NonBondedTheory to use slower Python version for array creation")
-                exit(9)
+                ashexit()
 
             print_time_rel(CheckpointTime, modulename="from run to just before calling ")
             self.MMEnergy, self.MMGradient, self.LJenergy, self.Coulombchargeenergy =\
@@ -372,7 +372,7 @@ class NonBondedTheory:
             print_time_rel(CheckpointTime, modulename="from run to done julia")
         else:
             print("Unknown version of MM code")
-            exit(1)
+            ashexit()
 
         if self.printlevel >= 2:
             print("Lennard-Jones Energy (au):", self.LJenergy)
@@ -477,7 +477,7 @@ def MMforcefield_read(file):
                     sigma_ij=float(line.split()[3])
                     eps_ij=float(line.split()[4])
                     print("This is incomplete. Exiting")
-                    exit()
+                    ashexit()
                     # TODO: Need to finish this. Should replace LennardJonespairpotentials later
     return MM_forcefield
 

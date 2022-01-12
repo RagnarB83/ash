@@ -5,8 +5,8 @@ fragedit.py
 """
 import sys
 import numpy as np
-#Standalone script to grab subcoordinates
 
+#Standalone script to grab subcoordinates
 #Function to reformat element string to be correct('cu' or 'CU' become 'Cu')
 #Can also convert atomic-number (isatomnum flag)
 def reformat_element(elem,isatomnum=False):
@@ -184,7 +184,7 @@ elif '.ygg' in fragfile:
 else:
     print("Unknown file format. Only .xyz and .ygg files currently supported")
     print("")
-    exit()
+    exit(1)
 # PDB-file could be a bit tricky to support. Should we use element-column or atomname column?
 #elif '.pdb' in fragfile:
 #    elems,coords=read_pdbfile(fragfile)
@@ -199,7 +199,7 @@ try:
     print("atomslist:", atomslist)
 except IndexError:
     print("Please provide file containing atom indices as 2nd argument")
-    exit()
+    exit(1)
 #Indexing argument
 try:
     extraarg=sys.argv[3]

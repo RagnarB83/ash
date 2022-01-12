@@ -8,7 +8,7 @@ import time
 
 
 import ash
-from functions.functions_general import blankline,print_time_rel
+from functions.functions_general import ashexit, blankline,print_time_rel
 
 #This makes Knarr part of python path
 #Recommended way?
@@ -210,7 +210,7 @@ class KnarrCalculator:
         elif self.runmode=='parallel':
             print("parallel is not yet done")
             print("")
-            exit()
+            ashexit()
         path.SetForces(F)
         path.SetEnergy(E)
         #Forcecalls
@@ -274,7 +274,7 @@ def NEB(reactant=None, product=None, theory=None, images=None, interpolation=Non
 
     if reactant==None or product==None or theory==None:
         print("You need to provide reactant and product fragment and a theory to NEB")
-        exit()
+        ashexit()
 
     print("Launching Knarr program")
     blankline()
@@ -338,7 +338,7 @@ def NEB(reactant=None, product=None, theory=None, images=None, interpolation=Non
         print("Active Region option Active. Passing only active-region coordinates to Knarr.")
         if actatoms is None:
             print("add actatoms argument to NEB for ActiveRegion True")
-            exit(1)
+            ashexit()
         R_actcoords, R_actelems = reactant.get_coords_for_atoms(actatoms)
         P_actcoords, P_actelems = product.get_coords_for_atoms(actatoms)
         new_reactant = ash.Fragment(coords=R_actcoords, elems=R_actelems)

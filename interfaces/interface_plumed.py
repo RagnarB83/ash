@@ -5,7 +5,7 @@ import re
 import time
 import glob
 
-from functions.functions_general import natural_sort, print_line_with_mainheader,print_time_rel
+from functions.functions_general import ashexit, natural_sort, print_line_with_mainheader,print_time_rel
 
 #Interface to Plumed
 #PLUMED_ASH class
@@ -20,12 +20,12 @@ class plumed_ASH():
 
         if dynamics_program == None:
             print("Please specify dynamics program: e.g. dynamics_program=\"ASE\" or dynamics_program=\"OpenMM\"" )
-            exit()
+            ashexit()
         # Making sure both Plumed kernel and Python wrappers are available
         if path_to_plumed_kernel == None:
             print("plumed_MD requires path_to_plumed_kernel argument to be set")
             print("Should point to: /path/to/libplumedKernel.so or /path/to/libplumedKernel.dylib")
-            exit()
+            ashexit()
         #Path to Plumed (used by MTD_analyze)
         if '.dylib' in path_to_plumed_kernel:
             self.path_to_plumed=path_to_plumed_kernel.replace("/lib/libplumedKernel.dylib","")
@@ -36,10 +36,10 @@ class plumed_ASH():
             import plumed
         except:
             print("Found no plumed library. Install via: pip install plumed")
-            exit()
+            ashexit()
         if timestep==None:
             print("timestep= needs to be provided to plumed object")
-            exit()
+            ashexit()
         self.plumed=plumed
         self.plumedobj=self.plumed.Plumed(kernel=path_to_plumed_kernel)
 
@@ -73,7 +73,7 @@ class plumed_ASH():
             self.plumed_time_unit="ps"
         else:
             print("unknown dynamics_program. Exiting")
-            exit()
+            ashexit()
         self.plumedobj.cmd("readInputLine","UNITS LENGTH={} ENERGY={} TIME={}".format(self.plumed_length_unit,self.plumed_energy_unit,self.plumed_time_unit))
         self.CV1_type=CV1_type
         self.CV2_type=CV2_type
@@ -101,7 +101,7 @@ class plumed_ASH():
             print("Gaussian sigma for CV1: {} {}".format(sigma1,"rad"))
         else:
             print("unknown CV1 type. Exiting")
-            exit()
+            ashexit()
         if self.CV2_type != None:
             if self.CV2_type.upper() == "DISTANCE" or self.CV2_type.upper() == "RMSD":
                 print("Gaussian sigma for CV2: {} {}".format(sigma2,self.plumed_length_unit))
@@ -109,7 +109,7 @@ class plumed_ASH():
                 print("Gaussian sigma for CV2: {} {}".format(sigma2,"rad"))
             else:
                 print("unknown CV2 type. Exiting")
-                exit()     
+                ashexit()     
         print("Bias factor:", biasfactor)
         print("Timestep: {} {}".format(timestep, self.plumed_time_unit))
         print("")
@@ -142,7 +142,7 @@ class plumed_ASH():
             #Multiple walker option. Not confirmed to work
             if numwalkers != None:
                 print("not ready")
-                exit()
+                ashexit()
                 self.plumedobj.cmd("readInputLine",str(numwalkers))
                 self.plumedobj.cmd("readInputLine","WALKERS_ID=SET_WALKERID") #NOTE: How to set this??
                 self.plumedobj.cmd("readInputLine","WALKERS_DIR=../")
@@ -150,7 +150,7 @@ class plumed_ASH():
             self.plumedobj.cmd("readInputLine","PRINT STRIDE={} ARG={},MTD.bias FILE={}".format(stride_num, CV_string, colvar_file))
         else:
             print("bias_type not implemented")
-            exit()
+            ashexit()
         #Write Plumed info file
         with open ("plumed_ash.info", 'w') as pfile:
             pfile.write("path_to_plumed {}\n".format(self.path_to_plumed))
@@ -281,12 +281,12 @@ def MTD_analyze(plumed_ash_object=None, path_to_plumed=None, Plot_To_Screen=Fals
         print("No Plumed_ASH object provided or plumed_ash.info file. Trying to get information via keywords")
         if CV1_type==None or temperature==None:
             print("give CV1_type and temperature")
-            exit()
+            ashexit()
         #Run Plumed script to get fes.dat from HILLS
         #Setting PATH and LD_LIBRARY_PATH for PLUMED. LD-lib path to C library may also be required
         if path_to_plumed==None:
             print("Set path_to_plumed argument. Example: MTD_analyze(path_to_plumed=/home/bjornsson/plumed-install)")
-            exit()
+            ashexit()
 
 
     #Dict of energy conversions: Energy-unit to kcal/mol
@@ -327,7 +327,7 @@ def MTD_analyze(plumed_ash_object=None, path_to_plumed=None, Plot_To_Screen=Fals
         elif CV2_type.upper() == 'RMSD' or CV2_type.upper()=='DISTANCE':
             finalcvunit_2='Å'
         else:
-            print("unknown. exiting");exit()
+            print("unknown. exiting");ashexit()
         print("Final CV2 units:", finalcvunit_2)
         if finalcvunit_2 != finalcvunit_1:
             print("differ. possible problem")
@@ -358,7 +358,7 @@ def MTD_analyze(plumed_ash_object=None, path_to_plumed=None, Plot_To_Screen=Fals
             MultipleWalker=False
         except FileNotFoundError:
             print("Found no HILLS.X or HILLS file. Exiting...")
-            exit()
+            ashexit()
 
 
     #The plumed sum_hills command that is run.
@@ -513,7 +513,7 @@ def MTD_analyze(plumed_ash_object=None, path_to_plumed=None, Plot_To_Screen=Fals
                             colvar2_value.append(float(line.split()[2]))
                         else:
                             print("unknown format of COLVAR file. More than 2 CVs ??")
-                            exit()
+                            ashexit()
                     except:
                         pass
 

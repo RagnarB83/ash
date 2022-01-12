@@ -3,7 +3,7 @@ from interfaces.interface_ORCA import checkORCAfinished,finalenergiesgrab,create
 import time
 import constants
 from interfaces.interface_xtb import xtbfinalenergygrab,xtbVIPgrab
-from functions.functions_general import listdiff,blankline
+from functions.functions_general import ashexit, listdiff,blankline
 from modules.module_coords import get_molecule_members_loop,read_chemshellfragfile_xyz
 
 def TestModerunAB():
@@ -24,6 +24,7 @@ def TestModerunA():
 
 def exit_solvshell():
     print("Solvshell exited ")
+    ashexit()
 
 # Define System Class. Useful for storing information about the system
 class SystemA:
@@ -191,7 +192,7 @@ def grab_energies_output_xtb(xtbmethod, inpfiles):
             VIP = xtbVIPgrab(outfile)
         else:
             print("Unknown xtboption")
-            exit()
+            ashexit()
         if 'snapA' in snapbase:
             AsnapsABenergy[snapbase]=VIP
             AllsnapsABenergy[snapbase] = VIP
@@ -248,7 +249,7 @@ def create_AB_inputfiles_xtb(solute_atoms, solvent_atoms, solvsphere, snapshots,
         if len(mmatoms)+len(qmatoms) != len(coords):
             print("MM atoms: {} and QM atoms: {} . Sum: {} . Differs from total number {}".format(len(mmatoms),len(qmatoms), len(mmatoms)+len(qmatoms), len(coords)))
             print("Exiting...")
-            exit()
+            ashexit()
         # Create XYZ file containing solute coordinates and point to pointchargefile containing solvent coordinates and charges
         #Possible: Write charge and mult to XYZ file header
         create_xtb_pcfile(name+identifier, mmregion_elems, mmregion_coords, solventunitcharges)
@@ -288,7 +289,7 @@ def create_AB_inputfiles_ORCA(solute_atoms, solvent_atoms, solvsphere, snapshots
         if len(mmatoms)+len(qmatoms) != len(coords):
             print("MM atoms: {} and QM atoms: {} . Sum: {} . Differs from total number {}".format(len(mmatoms),len(qmatoms), len(mmatoms)+len(qmatoms), len(coords)))
             print("Exiting...")
-            exit()
+            ashexit()
         # Create ORCA inputfile containing solute coordinates and point to pointchargefile containing solvent coordinates and charges
         inpname_AB = fragfile.split('.')[0] + '_StateAB'+identifier
         if bulkcorr==True:
@@ -455,7 +456,7 @@ def repsnaplist (estimtype, estimnum, IPdict):
                 repsnaps_dict[i[0]]=i[1]
     elif estimtype == "numalt":
         print("not coded yet")
-        exit()
+        ashexit()
     return repsnaps_dict
 
 

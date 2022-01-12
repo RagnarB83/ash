@@ -14,7 +14,7 @@ import shutil
 import constants
 import math
 from interfaces.interface_ORCA import checkORCAfinished,scfenergygrab,tddftgrab,orbitalgrab,run_orca_plot,grabEOMIPs,check_stability_in_output
-from functions.functions_general import writestringtofile,BC,blankline,isint,print_time_rel
+from functions.functions_general import ashexit, writestringtofile,BC,blankline,isint,print_time_rel
 from functions.functions_elstructure import HOMOnumbercalc,modosplot,write_cube_diff,read_cube
 
 class bcolors:
@@ -46,7 +46,7 @@ def readfile(filename):
     f.close()
   except IOError:
     print('File {} does not exist!'.format(filename))
-    sys.exit(12)
+    ashexit()
   return out
 
 #Get Atomic overlap matrix from GBW file
@@ -74,7 +74,7 @@ def get_smat_from_gbw(file1, file2='', orcadir=None):
       proc=sp.Popen(string,shell=True,stdout=sp.PIPE,stderr=sp.PIPE)
     except OSError:
       print('Call has had some serious problems:',OSError)
-      sys.exit(89)
+      ashexit()
     comm=proc.communicate()
     #Python 3 decoding necessary
     comm=comm[0].decode('utf-8')
@@ -119,7 +119,7 @@ def get_MO_from_gbw(filename,restr,frozencore,orcadir):
       proc=sp.Popen(string,shell=True,stdout=sp.PIPE,stderr=sp.PIPE)
     except OSError:
       print('Call have had some serious problems:',OSError)
-      sys.exit(80)
+      ashexit()
     comm=proc.communicate()
     #Python 3 decoding necessary
     comm=comm[0].decode('utf-8')
@@ -143,7 +143,7 @@ def get_MO_from_gbw(filename,restr,frozencore,orcadir):
       iline+=1
       if len(data)<=iline:
         print('MOs not found!')
-        sys.exit(81)
+        ashexit()
       line=data[iline]
       if 'FRAGMENT A MOs MATRIX' in line:
         break
@@ -369,17 +369,17 @@ def get_dets_from_cis(logfile,cisfilename,restr,mults,gscharge,gsmult,totnucchar
       print(header)
       if infos['NOA']!=header[1]-header[0]+1:
         print('Number of orbitals in %s not consistent' % filename)
-        sys.exit(82)
+        ashexit()
       if infos['NVA']!=header[3]-header[2]+1:
         print('Number of orbitals in %s not consistent' % filename)
-        sys.exit(83)
+        ashexit()
       if not restr:
         if infos['NOB']!=header[5]-header[4]+1:
           print('Number of orbitals in %s not consistent' % filename)
-          sys.exit(84)
+          ashexit()
         if infos['NVB']!=header[7]-header[6]+1:
           print('Number of orbitals in %s not consistent' % filename)
-          sys.exit(85)
+          ashexit()
       if no_tda:
         nstates_onfile=nvec/2
       else:
@@ -967,7 +967,7 @@ def grab_dets_from_MRCI_output(file, SORCI=False):
     with open(file) as f:
         for line in f:
             if 'Program Version 4.2.1 -  RELEASE' in line:
-                sys.exit('MRCI-determinant read will not work for ORCA 4.2.1 and older!')
+                ashexit(errormessage='MRCI-determinant read will not work for ORCA 4.2.1 and older!')
             if 'Total number of orbitals            ...' in line:
                 totorbitals=int(line.split()[-1])
                 #print("totorbitals:", totorbitals)
@@ -1100,7 +1100,7 @@ def grab_dets_from_MRCI_output(file, SORCI=False):
                         #print("particle_indices:", particle_indices)                                                    
                     else:
                         print("Bad line. exiting")
-                        exit()    
+                        ashexit()    
                         
                 if '[' in line and 'CFG' not in line:
                     dummycount+=1
@@ -1408,7 +1408,7 @@ def grab_dets_from_MRCI_output(file, SORCI=False):
                     assert len(det_tuple) == totorbitals, "Orbital tuple ({}) not matching total number of orbitals ({})".format(len(det_tuple),totorbitals)
                     #if len(det_tuple) == 22:
                     #    print("problem")
-                    #    exit()
+                    #    ashexit()
                     #if len(det_tuple) != totorbitals:
                     #    print("XXXXXXXXX")
                     
@@ -1418,7 +1418,7 @@ def grab_dets_from_MRCI_output(file, SORCI=False):
                     state.determinants[det_tuple] = coeff
                     #print("state.determinants :", state.determinants)
                     #if dummycount == 7416:
-                    #    exit()
+                    #    ashexit()
 
 
                     #CASE: CFG contains only 2 and 0s. That means a situation where CFG and Det is same thing
@@ -1567,7 +1567,7 @@ def PhotoElectronSpectrum(theory=None, fragment=None, Initialstate_charge=None, 
     if CAS is True and MRCI is True:
         print("Both CAS and MRCI can not both be True!")
         print("You must previously optimize orbitals (e.g. with CASSCF) and feed into MRCI")
-        exit(1)
+        ashexit()
 
     if CAS is True:
         print("CASSCF option active!")
@@ -1584,7 +1584,7 @@ def PhotoElectronSpectrum(theory=None, fragment=None, Initialstate_charge=None, 
 
     if Initialstate_charge is None or Initialstate_mult is None or Ionizedstate_charge is None or Ionizedstate_mult is None:
         print("Provide charge and spin multiplicity of initial and ionized state: Initialstate_charge, Initialstate_mult, Ionizedstate_charge,Ionizedstate_mult ")
-        exit(1)
+        ashexit()
 
     print("Densities option is: ", Densities, "(options are: SCF, All, None)")
     if Densities == 'SCF':
@@ -1670,7 +1670,7 @@ def PhotoElectronSpectrum(theory=None, fragment=None, Initialstate_charge=None, 
             print(bcolors.OKBLUE, "StateF_2: Numionstates=", Finalstates[1].numionstates, bcolors.ENDC)
         else:
             print("More than Two spin multiplicities are now allowed in Ionizedstate_mult argument")
-            exit(1)
+            ashexit()
 
     else:
         print("Unknown type for Ionizedstate_mult value. Should be integer or list of integers")
@@ -1807,7 +1807,7 @@ def PhotoElectronSpectrum(theory=None, fragment=None, Initialstate_charge=None, 
             stability = check_stability_in_output(theory.filename+'.out')
             if stability is False and check_stability is True:
                 print("PES: Unstable initial state. Exiting...")
-                exit()
+                ashexit()
             
         #Create Cube file of electron/spin density using orca_plot for INITIAL STATE
         if Densities == 'SCF' or Densities =='All':
@@ -1882,7 +1882,7 @@ def PhotoElectronSpectrum(theory=None, fragment=None, Initialstate_charge=None, 
                 stateI.restricted = True
             else:
                 print("hmmm")
-                exit()
+                ashexit()
 
 
         #########################
@@ -2134,7 +2134,7 @@ def PhotoElectronSpectrum(theory=None, fragment=None, Initialstate_charge=None, 
                 stability = check_stability_in_output(theory.filename+'.out')
                 if stability is False and check_stability is True:
                     print("PES: Unstable final state. Exiting...")
-                    exit()
+                    ashexit()
                 
                 
                 fstate.energy = scfenergygrab(theory.filename+'.out')
@@ -2161,7 +2161,7 @@ def PhotoElectronSpectrum(theory=None, fragment=None, Initialstate_charge=None, 
                     fstate.restricted = True
                 else:
                     print("hmmm")
-                    exit()
+                    ashexit()
 
 
                 #Create Cube file of electron/spin density using orca_plot for FINAL STATE
@@ -2186,7 +2186,7 @@ def PhotoElectronSpectrum(theory=None, fragment=None, Initialstate_charge=None, 
             print("All SCF and TDDFT calculations done (unless Densities=All)!")
     else:
         print("Theory not supported for PhotoElectronSpectrum")
-        exit(1)
+        ashexit()
 
     blankline()
     blankline()
@@ -2442,7 +2442,7 @@ def PhotoElectronSpectrum(theory=None, fragment=None, Initialstate_charge=None, 
                 # Check if binary exists
                 if os.path.exists(path_wfoverlap) is False:
                     print("Path {} does NOT exist !".format(path_wfoverlap))
-                    exit()
+                    ashexit()
 
                 print("Running WFOverlap to calculate Dyson norms for Finalstate with mult: ", fstate.mult)
                 # WFOverlap calculation needs files: AO_overl, mos_init, mos_final, dets_final, dets_init
@@ -2689,7 +2689,7 @@ def plot_PES_Spectrum(IPs=None, dysonnorms=None, mos_alpha=None, mos_beta=None, 
     
     if IPs is None or dysonnorms is None:
         print("plot_PES_Spectrum requires IPs and dysonnorms variables")
-        exit(1)
+        ashexit()
 
     assert len(IPs) == len(dysonnorms), "List of Dysonnorms not same size as list of IPs." 
 

@@ -7,7 +7,7 @@ import time
 
 import ash
 import modules.module_coords
-from functions.functions_general import isint,isfloat,is_same_sign,BC,print_time_rel,pygrep
+from functions.functions_general import ashexit, isint,isfloat,is_same_sign,BC,print_time_rel,pygrep
 from functions.functions_elstructure import check_cores_vs_electrons, num_core_electrons
 from interfaces.interface_ORCA import ORCATheory, grab_EFG_from_ORCA_output
 from modules.module_highlevel_workflows import CC_CBS_Theory
@@ -112,7 +112,7 @@ def read_referencedata_file(benchmarksetpath):
             print("index:", index)
             print("numentries:", numentries)
             print("Reaction lines does not match indices or number of entries in header. Mistake in file?!")
-            exit()
+            ashexit()
     return database_dict
 
 #Read Property benchmark-set reference file ("Reference_data") inside indicated directory 
@@ -170,7 +170,7 @@ def read_referencedata_property_file(benchmarksetpath):
             print("index:", index)
             print("numentries:", numentries)
             print("System lines does not match indices or number of entries in header. Mistake in file?!")
-            exit()
+            ashexit()
     return database_dict
 
     
@@ -210,7 +210,7 @@ def get_reaction_string(filenames, stoichiometry):
 # Use both for benchmark and also for end of optimizations
 def run_geobenchmark(set=None, theory=None, orcadir=None, numcores=None):
     print("not ready")
-    exit()
+    ashexit()
 
 
 #run_benchmark
@@ -291,7 +291,7 @@ def run_benchmark(set=None, theory=None, numcores=None, reuseorbs=False, correct
         #Exit if non-energetic property and not ORCATheory
         if theory.__class__.__name__ != "ORCATheory":
             print("Only ORCATheory supported for non-energetic property in run_benchmark!")
-            exit()
+            ashexit()
 
         for systemindex in database_dict:
             system=database_dict[systemindex]
