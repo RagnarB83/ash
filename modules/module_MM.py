@@ -12,6 +12,9 @@ class NonBondedTheory:
     def __init__(self, atomtypes=None, forcefield=None, charges = None, LJcombrule='geometric',
                  codeversion=None, printlevel=2):
 
+        #Indicate that this is a MMtheory
+        self.theorytype="MM"
+
         #If codeversion not explicity asked for then we go for defaults (that may have changed if Julia interface failed)
         if codeversion == None:
             codeversion=ash.settings_ash.settings_dict["nonbondedMM_code"]

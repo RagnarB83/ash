@@ -9,6 +9,10 @@ import modules.module_coords
 class DaltonTheory:
     def __init__(self, daltondir=None, filename='dalton', fragment=None, charge=None, mult=None, printlevel=2, numcores=1, pe=False, potfile='',
                  label=None, method=None, response=None, dalton_input=None, basis_name=None,basis_dir=None):
+
+        #Indicate that this is a QMtheory
+        self.theorytype="QM"
+
         if daltondir is None:
             print("No daltondir argument passed to DaltonTheory. Attempting to find daltondir variable inside settings_ash module")
             self.daltondir=settings_ash.settings_dict["daltondir"]

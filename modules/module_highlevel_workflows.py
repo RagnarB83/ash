@@ -50,6 +50,9 @@ class CC_CBS_Theory:
 
         print_line_with_mainheader("CC_CBS_Theory")
 
+        #Indicate that this is a QMtheory
+        self.theorytype="QM"
+
         #CHECKS to exit early 
         if elements == None:
             print(BC.FAIL, "\nCC_CBS_Theory requires a list of elements to be given in order to set up basis sets", BC.END)

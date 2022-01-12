@@ -20,6 +20,9 @@ class ORCATheory:
                  orcablocks='', extraline='', first_iteration_input=None, brokensym=None, HSmult=None, atomstoflip=None, numcores=1, nprocs=None, label=None, moreadfile=None, autostart=True, propertyblock=None):
         print_line_with_mainheader("ORCATheory initialization")
 
+        #Indicate that this is a QMtheory
+        self.theorytype="QM"
+
         #Making sure we have a working ORCA location
         print("Checking for ORCA location")
         self.orcadir = check_ORCA_location(orcadir)

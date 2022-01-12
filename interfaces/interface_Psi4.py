@@ -20,6 +20,10 @@ class Psi4Theory:
     def __init__(self, fragment=None, charge=None, mult=None, printsetting='False', psi4settings=None, psi4method=None,
                  runmode='library', psi4dir=None, pe=False, potfile='', filename='psi4_', label='psi4input',
                  psi4memory=3000, numcores=1, printlevel=2,fchkwrite=False):
+
+        #Indicate that this is a QMtheory
+        self.theorytype="QM"
+        
         #outputname='psi4output.dat'
         #Printlevel
         self.printlevel=printlevel

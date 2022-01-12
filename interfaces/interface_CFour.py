@@ -10,6 +10,10 @@ class CFourTheory:
                  #basis=None, method=None, reference='RHF', frozen_core='ON',
                 #memory=3100, , guessoption='MOREAD',propoption='OFF',cc_prog='ECC',scf_conv=10,lineq_conv=10,
                 #cc_maxcyc=300,symmetry='OFF',stabilityanalysis='OFF'):
+        
+        #Indicate that this is a QMtheory
+        self.theorytype="QM"
+        
         self.printlevel=printlevel
         self.charge=charge
         self.mult=mult
