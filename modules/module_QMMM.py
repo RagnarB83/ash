@@ -19,6 +19,9 @@ class QMMMTheory:
         timeA=time.time()
         print(BC.WARNING,BC.BOLD,"------------Defining QM/MM object-------------", BC.END)
 
+        #Indicate that this is a hybrid QM/MM type theory
+        self.theorytype="QM/MM"
+
         #External force energy. ALways zero except when using openmm_externalforce
         self.extforce_energy=0.0
 

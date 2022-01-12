@@ -260,6 +260,11 @@ class ORCATheory:
         else:
             current_coords=self.coords
 
+        #Checking if theory charge and mult has been set
+        if self.theory.charge == None or self.theory.mult == None:
+            print(BC.FAIL, "Error. charge and mult has not been defined for ORCATheory object", BC.END)
+            exit()
+
         #What elemlist to use. If qm_elems provided then QM/MM job, otherwise use elems list or self.elems
         if qm_elems is None:
             if elems is None:
