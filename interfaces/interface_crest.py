@@ -2,7 +2,7 @@ import os
 import time
 
 from modules.module_coords import split_multimolxyzfile
-from functions.functions_general import int_ranges, listdiff, print_line_with_subheader1,print_time_rel
+from functions.functions_general import ashexit, int_ranges, listdiff, print_line_with_subheader1,print_time_rel
 import subprocess as sp
 import ash
 

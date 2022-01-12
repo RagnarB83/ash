@@ -12,7 +12,7 @@ import shutil
 import copy
 import time
 import ash
-from functions.functions_general import frange, BC, print_line_with_mainheader,print_line_with_subheader1,print_time_rel
+from functions.functions_general import frange, BC, print_line_with_mainheader,print_line_with_subheader1,print_time_rel, ashexit
 import interfaces.interface_geometric
 from modules.module_freq import calc_rotational_constants
 import functions.functions_parallel
@@ -120,7 +120,7 @@ def calc_surface(fragment=None, theory=None, scantype='Unrelaxed', resultfile='s
     except FileExistsError:
         print("")
         print(BC.FAIL,"surface_xyzfiles, surface_fragfiles, surface_mofiles and surface_outfiles directories exist already in dir. Please remove them", BC.END)
-        exit()
+        ashexit()
 
     #PARALLEL CALCULATION
     if runmode=='parallel':
@@ -171,14 +171,14 @@ def calc_surface(fragment=None, theory=None, scantype='Unrelaxed', resultfile='s
                     print("totalnumpoints:", totalnumpoints)
             elif dimension == 1:
                 print("not ready")
-                exit()
+                ashexit()
         elif scantype=="Relaxed":
             print("not ready")
             if dimension == 2:
                 print("not ready")
             if dimension == 1:
                 print("not ready")
-            exit()
+            ashexit()
     #SERIAL CALCULATION
     elif runmode=='serial':
         print("Serial runmode")
@@ -386,7 +386,7 @@ def calc_surface_fromXYZ(xyzdir=None, theory=None, dimension=None, resultfile=No
     if read_mofiles == True:
         if mofilesdir == None:
             print("mofilesdir not set. Exiting")
-            exit()
+            ashexit()
     print("");print("")
     #Read dict from file. If file exists, read entries, if not, return empty dict
     surfacedictionary = read_surfacedict_from_file(resultfile, dimension=dimension)
@@ -409,7 +409,7 @@ def calc_surface_fromXYZ(xyzdir=None, theory=None, dimension=None, resultfile=No
         except FileExistsError:
             print("")
             print(BC.FAIL,"surface_xyzfiles directory exist already in dir. Please remove it", BC.END)
-            exit()
+            ashexit()
 
     #Create directory to keep track of surface outfiles for runmode=serial
     #Note: for runmode_parallel we have separate dirs for each surfacepoint where we have inputfile, outputfile and MOfile
@@ -420,7 +420,7 @@ def calc_surface_fromXYZ(xyzdir=None, theory=None, dimension=None, resultfile=No
         except FileExistsError:
             print("")
             print(BC.FAIL,"surface_outfiles or surface_mofiles directory exist already in dir. Please remove it", BC.END)
-            exit()
+            ashexit()
 
 
 
@@ -447,7 +447,7 @@ def calc_surface_fromXYZ(xyzdir=None, theory=None, dimension=None, resultfile=No
 
         if numcores == None:
             print("numcores argument required for parallel runmode")
-            exit()
+            ashexit()
 
         surfacepointfragments={}
         #Looping over XYZ files to get coordinates
@@ -479,7 +479,7 @@ def calc_surface_fromXYZ(xyzdir=None, theory=None, dimension=None, resultfile=No
                 print("relfile:", relfile)
                 if 'RC2' in relfile:
                     print(BC.FAIL,"RC2 information in filename string. Chosen dimension wrong or filename wrong. Exiting", BC.END)
-                    exit()
+                    ashexit()
                 #RC1_2.02.xyz
                 RCvalue1=float(relfile.replace('.xyz','').replace('RC1_',''))
                 print("XYZ-file: {}     RC1: {} ".format(relfile,RCvalue1))
@@ -531,7 +531,7 @@ def calc_surface_fromXYZ(xyzdir=None, theory=None, dimension=None, resultfile=No
             write_surfacedict_to_file(surfacedictionary,"surface_results.txt", dimension=dimension)
         elif scantype=='Relaxed':
             print("calc_surface_fromXYZ Relaxed option not possible in parallel mode yet. Exiting")
-            exit()
+            ashexit()
         
         
         
@@ -648,7 +648,7 @@ def calc_surface_fromXYZ(xyzdir=None, theory=None, dimension=None, resultfile=No
 
 def calc_numerical_gradient():
     print("TODO")
-    exit()
+    ashexit()
 
 
 
@@ -764,7 +764,7 @@ def write_surfacedict_to_file(surfacedict,file="surface_results.txt",dimension=N
     """
     if dimension == None:
         print("write_surfacedict_to_file: Dimension needs to be given")
-        exit()
+        ashexit()
     with open(file, 'w') as f:
         for d in surfacedict.items():
             if dimension==1:

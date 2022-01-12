@@ -6,7 +6,7 @@ import glob
 import time
 
 import modules.module_coords
-from functions.functions_general import BC,print_time_rel
+from functions.functions_general import ashexit, BC,print_time_rel
 
 
 #Psi4 Theory object. Fragment object is optional. Only used for single-points.
@@ -48,17 +48,17 @@ class Psi4Theory:
                 self.psi4path=shutil.which('psi4')
                 if self.psi4path==None:
                     print("Found no psi4 in path. Add Psi4 to Shell environment or provide psi4dir variable")
-                    exit()
+                    ashexit()
                 else:
                     print("Found psi4 in path:", self.psi4path)
 
         #Checking if method is defined
         if psi4method == None:
             print("psi4method not set. Exiting")
-            exit()
+            ashexit()
         if psi4settings == None:
             print("psi4settings dict not set. Exiting")
-            exit()
+            ashexit()
         #All valid Psi4 methods that can be arguments in energy() function
         self.psi4method=psi4method
         #Settings dict
@@ -130,7 +130,7 @@ class Psi4Theory:
             except:
                 print(BC.FAIL,"Problem importing psi4. Make sure psi4 has been installed as part of same Python as ASH", BC.END)
                 print(BC.WARNING,"If problematic, switch to inputfile based Psi4 interface instead.", BC.END)
-                exit(9)
+                ashexit(code=9)
             #Changing namespace may prevent crashes due to multiple jobs running at same time
             if self.label=='label':
                 psi4.core.IO.set_default_namespace("psi4job_ygg")
@@ -215,9 +215,9 @@ class Psi4Theory:
                         pass
                     else:
                         print(BC.FAIL, "Potfile: ", self.potfile, "does not exist!", BC.END)
-                        exit(1)
+                        ashexit()
                 except:
-                    exit(1)
+                    ashexit()
                 psi4.set_module_options('pe', {'potfile' : self.potfile})
                 self.psi4settings['pe'] = 'true'
 
@@ -290,9 +290,9 @@ class Psi4Theory:
                         pass
                     else:
                         print(BC.FAIL, "Potfile: ", self.potfile, "does not exist!", BC.END)
-                        exit(1)
+                        ashexit()
                 except:
-                    exit(1)
+                    ashexit()
 
             #Write inputfile
             with open(self.label+'.inp', 'w') as inputfile:
@@ -408,7 +408,7 @@ class Psi4Theory:
                 return self.energy
         else:
             print("Unknown Psi4 runmode")
-            exit()
+            ashexit()
 
 
 
@@ -456,5 +456,5 @@ def grabPsi4EandG(outfile, numatoms, Grad):
                     gradgrab = True
     if energy == None:
         print("Found no energy in Psi4 outputfile:", outfile)
-        exit()
+        ashexit()
     return energy, gradient

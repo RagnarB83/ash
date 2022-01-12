@@ -10,7 +10,7 @@ import ash
 #from ash import Singlepoint
 import interfaces.interface_geometric
 import interfaces.interface_crest
-from functions.functions_general import BC,print_time_rel,print_line_with_mainheader,pygrep
+from functions.functions_general import BC,print_time_rel,print_line_with_mainheader,pygrep, ashexit
 #from modules.module_singlepoint import Singlepoint_fragments
 from modules.module_highlevel_workflows import CC_CBS_Theory
 from modules.module_coords import read_xyzfiles
@@ -141,7 +141,7 @@ def thermochemprotocol_single(fragment=None, Opt_theory=None, SP_theory=None, or
         print("Example:")
         print("fragment.charge= 0; fragment.mult=1")
         print("Exiting...")
-        exit()
+        ashexit()
     #DFT Opt+Freq  and Single-point High-level workflow
     #Only Opt+Freq for molecules, not atoms
     print("-------------------------------------------------------------------------")
@@ -347,7 +347,7 @@ def auto_active_space(fragment=None, orcadir=None, basis="def2-SVP", scalar_rel=
     elif initial_orbitals == 'QRO' or initial_orbitals == 'DFT':
         print("not active")
         #
-        exit()
+        ashexit()
         steplabel='DFTQROorbs'
         print("Initial orbitals: DFT-QRO")
         print("Functional used:", functional)
@@ -466,7 +466,7 @@ def calc_xyzfiles(xyzdir=None, theory=None, HL_theory=None, Opt=False, Freq=Fals
     #Checkf if xyz-directory exists
     if os.path.isdir(xyzdir) is False:
         print("XYZ directory does not exist. Check that dirname is complete, has been copied to scratch. You may have to use full path to dir")
-        exit()
+        ashexit()
     #Whether we have an extra high-level single-point step after Optimization
     if HL_theory != None:
         Highlevel=True
@@ -596,7 +596,7 @@ def Reaction_Highlevel_Analysis(fraglist=None, stoichiometry=None, numcores=1, m
         if frag.charge ==None or frag.mult ==None or frag.label == None:
             print("All fragments provided must have charge, mult defined and a label.")
             print("Example: N2=Fragment(xyzfile='n2.xyz', charge=0, mult=1, label='N2'")
-            exit()
+            ashexit()
         elements_involved=elements_involved+frag.elems
 
     #Combined list of all elements involved in the species of the reaction

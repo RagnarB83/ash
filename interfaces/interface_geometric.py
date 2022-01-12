@@ -2,7 +2,7 @@ import numpy as np
 import constants
 from modules.module_QMMM import QMMMTheory
 from modules.module_coords import print_coords_all,print_coords_for_atoms,print_internal_coordinate_table,write_XYZ_for_atoms,write_xyzfile
-from functions.functions_general import blankline,BC,print_time_rel
+from functions.functions_general import ashexit, blankline,BC,print_time_rel
 import os
 import shutil
 import ash
@@ -39,14 +39,14 @@ def geomeTRICOptimizer(theory=None,fragment=None, coordsystem='tric', frozenatom
     module_init_time=time.time()
     if fragment==None:
         print("geomeTRIC requires fragment object")
-        exit()
+        ashexit()
     try:
         import geometric
     except:
         blankline()
         print(BC.FAIL,"geomeTRIC module not found!", BC.END)
         print(BC.WARNING,"Either install geomeTRIC using pip:\n pip install geometric\n or manually from Github (https://github.com/leeping/geomeTRIC)", BC.END)
-        exit(9)
+        ashexit(code=9)
 
     if fragment.numatoms == 1:
         print("System has 1 atoms.")
@@ -68,7 +68,7 @@ def geomeTRICOptimizer(theory=None,fragment=None, coordsystem='tric', frozenatom
                 theory_chargemult_change=True
             else:
                 print(BC.FAIL,"No charge/mult information present in theory or fragment. Exiting.",BC.END)
-                exit()
+                ashexit()
 
     if ActiveRegion == True and coordsystem == "tric":
         #TODO: Look into this more
@@ -99,7 +99,7 @@ def geomeTRICOptimizer(theory=None,fragment=None, coordsystem='tric', frozenatom
     #: Alternatively we could sort the actatoms list and qmatoms list in QM/MM object before doing anything. Need to check carefully though....
     #if is_integerlist_ordered(actatoms) is False:
     #    print("Problem. Actatoms list is not sorted in ascending order. Please sort this list (and possibly qmatoms list also))")
-    #    exit()
+    #    ashexit()
     
     #Function Convert constraints indices to actatom indices
     def constraints_indices_convert(con,actatoms):
@@ -437,7 +437,7 @@ def geomeTRICOptimizer(theory=None,fragment=None, coordsystem='tric', frozenatom
                      'convergence_dmax' : 1e-1 }
     else:
         print("Unknown convergence setting. Exiting...")
-        exit(1)
+        ashexit()
 
     print("convergence_setting:", convergence_setting)
     print("conv_criteria:", conv_criteria)

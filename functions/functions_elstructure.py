@@ -8,7 +8,7 @@ import shutil
 import constants
 import math
 import dictionaries_lists
-from functions.functions_general import isodd
+from functions.functions_general import ashexit, isoddfrom
 import interfaces.interface_ORCA
 from modules.module_coords import nucchargelist
 
@@ -193,9 +193,7 @@ def read_cube (cubefile):
             b = line.rstrip('\n').replace('  ', ' ').replace('  ', ' ').split(' ')
             b=list(filter(None, b))
             c =[float(i) for i in b]
-            #print("c is", c)
-            #exit()
-            #dbq = [float('%.5e' % i) for i in c]
+
             if len(c) >0:
                 vals.append(c)
         # when to begin reading gridpoints
@@ -370,23 +368,23 @@ def centroid_calc(rlowx,dx,nx,orgx,rlowy,dy,ny,orgy,rlowz,dz,nz,orgz,alldensvalu
     for i in range(1,nx+1):
         if (orgx+(i-1)*dx)<rlowx or (orgx+(i-1)*dx)>rhighx:
             print("If statement. Look into. x")
-            exit()
+            ashexit()
             continue
         for j in range(1,ny+1):
             if (orgy+(j-1)*dy)<rlowy or (orgy+(j-1)*dy)>rhighy:
                 print("If statement. Look into. y")
-                exit()
+                ashexit()
                 continue
             for k in range(1,nz+1):
                 if (orgz+(k-1)*dz)<rlowz or (orgz+(k-1)*dz)>rhighz:
                     print("If statement. Look into. z")
-                    exit()
+                    ashexit()
                     continue
                 #print("i,j,k is", i,j,k)
                 valtmp=alldensvalues[vcount]
                 if valtmp<rlowv or valtmp>rhighv:
                     print("If statement. Look into. v")
-                    exit()
+                    ashexit()
                     continue
                 if valtmp>0:
                     sumuppos=sumuppos+valtmp
@@ -469,7 +467,7 @@ def DDEC_calc(elems=None, theory=None, gbwfile=None, numcores=1, DDECmodel='DDEC
         print("Compile using gfortran or ifort:")
         print("gfortran -O3 edflib.f90 edflib-pbe0.f90 molden2aim.f90 -o molden2aim.exe")
         print("ifort -O3 edflib.f90 edflib-pbe0.f90 molden2aim.f90 -o molden2aim.exe")
-        exit()
+        ashexit()
     else:
         print("Found molden2aim.exe: ", molden2aim)
         
@@ -488,7 +486,7 @@ def DDEC_calc(elems=None, theory=None, gbwfile=None, numcores=1, DDECmodel='DDEC
     if chargemolbinarydir is None:
         print("chargemolbinarydir is not defined.")
         print("Please provide path as argument to DDEC_calc or put the location inside the $PATH variable on your Unix/Linux OS.")
-        exit()
+        ashexit()
 
     #Defining Chargemoldir (main dir) as 3-up from binary dir
     var=os.path.split(chargemolbinarydir)[0]
@@ -499,10 +497,10 @@ def DDEC_calc(elems=None, theory=None, gbwfile=None, numcores=1, DDECmodel='DDEC
 
     if theory is None :
         print("DDEC_calc requires theory, keyword argument")
-        exit(1)
+        ashexit()
     if theory.__class__.__name__ != "ORCATheory":
         print("Only ORCA is supported as theory in DDEC_calc currently")
-        exit(1)
+        ashexit()
 
     # What DDEC charge model to use. Jorgensen paper uses DDEC3. DDEC6 is the newer recommended chargemodel
     print("DDEC model:", DDECmodel)
@@ -858,7 +856,7 @@ def DDEC_to_LJparameters(elems, molmoms, voldict, scale_polarH=False):
     #Accounting for polar H. This could be set to zero as in Jorgensen paper
     if scale_polarH is True:
         print("Scaling og polar H not implemented yet")
-        exit()
+        ashexit()
         for count,el in enumerate(elems):
             if el == 'H':
                 bla=""

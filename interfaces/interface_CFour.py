@@ -1,5 +1,5 @@
 import subprocess as sp
-from functions.functions_general import BC, pygrep, print_time_rel
+from functions.functions_general import ashexit, BC, pygrep, print_time_rel
 import shutil
 import settings_ash
 
@@ -58,7 +58,7 @@ class CFourTheory:
                 self.specialbasis = specialbasis
             else:
                 print("basis option is: SPECIAL (default) but no specialbasis dictionary provided. Please provide this (specialbasis keyword).")
-                exit()
+                ashexit()
         else:
             self.specialbasis=[]
         
@@ -80,7 +80,7 @@ class CFourTheory:
                 print("Found xcfour in path. Setting cfourdir.")
             except:
                 print("Found no xcfour executable in path. Exiting... ")
-                exit()
+                ashexit()
         else:
             self.cfourdir = cfourdir
         
@@ -110,7 +110,7 @@ class CFourTheory:
             energy=float(energystringlist[-2])
         except:
             print("Problem reading energy from Cfour outputfile. Check:", self.filename+'.out')
-            exit()
+            ashexit()
         return energy
     def cfour_grabgradient(self):
         atomcount=0

@@ -86,9 +86,9 @@ class Fragment:
             print("Creating Diatomic Fragment from formula and diatomic_bondlength")
             if diatomic_bondlength == None:
                 print(BC.FAIL,"diatomic option requires diatomic_bondlength to be set. Exiting!", BC.END)
-                exit()
+                ashexit()
             self.elems=molformulatolist(diatomic)
-            self.coords = reformat_list_to_array([[0.0,0.0,0.0],[0.0,0.0,diatomic_bondlength]])
+            self.coords = reformat_list_to_array([[0.0,0.0,0.0],[0.0,0.0,float(diatomic_bondlength)]])
             self.update_attributes()
         # If coordsstring given, read elems and coords from it
         elif coordsstring is not None:
@@ -108,7 +108,7 @@ class Fragment:
             print("Reading Amber INPCRD file")
             if amber_prmtopfile is None:
                 print("amber_prmtopfile argument must be provided as well!")
-                exit()
+                ashexit()
             self.read_amberfile(inpcrdfile=amber_inpcrdfile, prmtopfile=amber_prmtopfile, conncalc=conncalc)
         elif chemshellfile is not None:
             self.label = chemshellfile.split('/')[-1].split('.')[0]
@@ -135,10 +135,10 @@ class Fragment:
         print("Creating/Updating fragment attributes...")
         if len(self.coords) == 0:
             print("No coordinates in fragment. Something went wrong. Exiting.")
-            exit()
+            ashexit()
         if type(self.coords) != np.ndarray:
             print("self.coords is not a numpy array. Something is wrong. Exiting.")
-            exit()
+            ashexit()
         self.nuccharge = nucchargelist(self.elems)
         self.numatoms = len(self.coords)
         self.atomlist = list(range(0, self.numatoms))
@@ -259,7 +259,7 @@ class Fragment:
                 Juliafunctions = load_julia_interface()
             except:
                 print("Problem loading Julia")
-                exit()
+                ashexit()
             final_list = Juliafunctions.get_connected_atoms_forlist_julia(self.coords, self.elems, scale, tol,
                                                                           eldict_covrad, Hatoms)
         #print("final_list: ", str(final_list).strip("[]"))
@@ -276,7 +276,7 @@ class Fragment:
             print("Starting atom for water fragment is not oxygen!")
             print("Make sure starting index ({}) is correct".format(starting_index))
             print("Also note that water fragments must have O H H order!")
-            exit()
+            ashexit()
         constraints=[]
         for i in range(starting_index, self.numatoms):
             if self.elems[i] == "O":
@@ -332,7 +332,7 @@ class Fragment:
             # NOTE: boxdims not used. Could be set as fragment variable ?
         except FileNotFoundError:
             print("File {} or {} not found".format(prmtopfile, inpcrdfile))
-            exit()
+            ashexit()
         self.coords = reformat_list_to_array(coords)
         self.elems = elems
         self.update_attributes()
@@ -348,7 +348,7 @@ class Fragment:
             # NOTE: boxdims not used. Could be set as fragment variable ?
         except FileNotFoundError:
             print("File '{}' not found".format(filename))
-            exit()
+            ashexit()
         self.coords = coords
         self.elems = elems
         self.update_attributes()
@@ -358,7 +358,7 @@ class Fragment:
     # Read CHARMM? coordinate file?
     def read_charmmfile(self, filename, conncalc=False):
         print("not implemented yet")
-        exit()
+        ashexit()
 
     # Read Chemshell fragment file (.c ending)
     def read_chemshellfile(self, filename, conncalc=False, scale=None, tol=None):
@@ -368,7 +368,7 @@ class Fragment:
             elems, coords = read_chemshellfragfile_xyz(filename)
         except FileNotFoundError:
             print("File '{}' not found.".format(filename))
-            exit()
+            ashexit()
         self.coords = coords
         self.elems = elems
         self.update_attributes()
@@ -420,7 +420,7 @@ class Fragment:
         self.coords = reformat_list_to_array(coords)
         if self.numatoms != len(self.coords):
             print("Number of atoms in header not equal to number of coordinate-lines. Check XYZ file!")
-            exit()
+            ashexit()
         self.update_attributes()
         if conncalc is True:
             self.calc_connectivity(scale=scale, tol=tol)
@@ -522,7 +522,7 @@ class Fragment:
             print("self.connectivity:", self.connectivity)
             print("conn_number_sum:", conn_number_sum)
             print("self numatoms", self.numatoms)
-            exit()
+            ashexit()
         self.connected_atoms_number = conn_number_sum
 
     def update_atomcharges(self, charges):
@@ -632,7 +632,7 @@ class Fragment:
         if (len(self.atomlist) == len(self.elems) == len(self.coords) == len(self.atomcharges) == len(self.fragmenttype_labels) == len(self.atomtypes)) is False:
             print(BC.FAIL,"Error. Missing entries in list.")
             print("This should not have happened. File a bugreport", BC.END)
-            exit()
+            ashexit()
         with open(filename, 'w') as outfile:
             outfile.write("Fragment: \n")
             outfile.write("Num atoms: {}\n".format(self.numatoms))
@@ -680,7 +680,7 @@ class Fragment:
                 if n == 0:
                     if 'Fragment:' not in line:
                         print("This is not a valid ASH fragment file. Exiting.")
-                        exit()
+                        ashexit()
                 if 'Num atoms:' in line:
                     numatoms = int(line.split()[-1])
                 if coordgrab is True:
@@ -744,7 +744,7 @@ def reformat_list_to_array(l):
         #Checking if input l is list of lists or not
         if any(isinstance(el, list) for el in l) is False:
             print(BC.FAIL,"Error (reformat_list_to_array): input should be a list of lists, not just a list", BC.END)
-            exit()
+            ashexit()
         newl = np.array(l)
         return newl
 
@@ -809,7 +809,7 @@ def reformat_element(elem, isatomnum=False):
             print("Element-string: {} not found in element-dictionary!".format(elem))
             print("This is not a valid element as defined in ASH source-file: dictionaries_lists.py")
             print("Fix element-information in coordinate-file.")
-            exit()
+            ashexit()
     return el_correct
 
 
@@ -819,7 +819,7 @@ def remove_zero_charges(charges, coords):
     newcoords = []
     if len(charges) != len(coords):
         print(BC.FAIL,"Something went wrong in remove_zero_charges. File a bug report", BC.END)
-        exit()
+        ashexit()
     for charge, coord in zip(charges, coords):
         if charge != 0.0:
             newcharges.append(charge)
@@ -1074,7 +1074,7 @@ def change_origin_to_centroid(fullcoords, subsetcoords=None, subsetatoms=None):
 def get_solvshell_origin():
     print("to finish")
     # TODO: finish get_solvshell_origin
-    exit()
+    ashexit()
 
 
 # Determine threshold for whether atoms are connected or not based on covalent radii for pair of atoms
@@ -1209,7 +1209,7 @@ def get_molecule_members_loop_np2(coords, elems, loopnumber, scale, tol, atomind
         # Get list of lists of connatoms for each member
         newmembers = [get_connected_atoms_np(coords, elems, scale, tol, k) for k in membs]
         # print("newmembers:", newmembers)
-        # exit()
+        # ashexit()
         # Get a unique flat list
         trimmed_flat = np.unique([item for sublist in newmembers for item in sublist]).tolist()
         # print("trimmed_flat:", trimmed_flat)
@@ -1218,11 +1218,11 @@ def get_molecule_members_loop_np2(coords, elems, loopnumber, scale, tol, atomind
         # Check if new atoms not previously found
         membs = listdiff(trimmed_flat, finalmembs)
         # print("membs:", membs)
-        # exit()
+        # ashexit()
         # Exit loop if nothing new found
         if len(membs) == 0:
             # print("exiting...")
-            # exit()
+            # ashexit()
             return finalmembs
         # print("type of membs:", type(membs))
         # print("type of finalmembs:", type(finalmembs))
@@ -1230,11 +1230,11 @@ def get_molecule_members_loop_np2(coords, elems, loopnumber, scale, tol, atomind
         # print("finalmembs ", finalmembs)
         finalmembs = np.unique(finalmembs).tolist()
         # print("finalmembs ", finalmembs)
-        # exit()
+        # ashexit()
         # print("finalmembs:", finalmembs)
         # print("----------")
         # ash.print_time_rel(timestampA, modulename='finalmembs  py')
-        # exit()
+        # ashexit()
     return finalmembs
 
 
@@ -1269,7 +1269,7 @@ def get_molecule_members_loop(coords, elems, loopnumber, scale, tol, atomindex='
 def get_molecule_members_fixed(coords, elems, scale, tol, atomindex='', members=None):
     print("Disabled")
     print("not so efficient")
-    exit()
+    ashexit()
     if members is None:
         members = [atomindex]
         connatoms = get_connected_atoms(coords, elems, scale, tol, atomindex)
@@ -1386,10 +1386,10 @@ def read_xyzfile(filename):
                     coords.append([float(line.split()[1]), float(line.split()[2]), float(line.split()[3])])
     if len(coords) != numatoms:
         print(BC.FAIL,"Error: Number of coordinates in XYZ-file: {} does not match header line. Exiting.".format(filename))
-        exit()
+        ashexit()
     if len(coords) != len(elems):
         print("Number of coordinates does not match elements. Something wrong with XYZ-file?: ", filename)
-        exit()
+        ashexit()
     return elems, coords
 
 #Read all XYZ-files from directory
@@ -1528,7 +1528,7 @@ def split_multimolxyzfile(file, writexyz=False, skipindex=1):
                         molcounter += 1
                         titlegrab = True
                         coordgrab = False
-                        # exit()
+                        # ashexit()
     return all_elems, all_coords, all_titles
 
 
@@ -1576,7 +1576,7 @@ def conv_atomtypes_elems(atomtype):
         except:
             print("Atomtype: '{}' not recognized either as valid atomtype or element. Exiting.".format(atomtype))
             print("You might have to modify the atomtype/element information in coordinate file you're reading in.")
-            exit()
+            ashexit()
 
 
 # READ PDBfile
@@ -1627,17 +1627,17 @@ def read_pdbfile(filename, use_atomnames_as_elements=False):
                             print(
                                 "Either fix element-column (columns 77-78) or try to use to read element-information from atomname-column:")
                             print(" Fragment(pdbfile='X', use_atomnames_as_elements=True) ")
-                            exit()
+                            ashexit()
                     # self.coords.append([float(line.split()[6]), float(line.split()[7]), float(line.split()[8])])
                     # elemcol.append(line.split()[-1])
                     # residuelist.append(line.split()[3])
                     # atom_name.append(line.split()[3])
                 # if 'HETATM' in line:
                 #    print("HETATM line in file found. Please rename to ATOM")
-                #    exit()
+                #    ashexit()
     except FileNotFoundError:
         print("File '{}' does not exist!".format(filename))
-        exit()
+        ashexit()
     # Create numpy array
     coords_np = reformat_list_to_array(coords)
 
@@ -1646,7 +1646,7 @@ def read_pdbfile(filename, use_atomnames_as_elements=False):
         print("len elemcol", len(elemcol))
         print("did not find same number of elements as coordinates")
         print("Need to define elements in some other way")
-        exit()
+        ashexit()
     else:
         elems = elemcol
     return elems, coords_np
@@ -1702,7 +1702,7 @@ def read_gromacsfile(grofile):
     npcoords=reformat_list_to_array(coords)    
     if len(npcoords) != len(elems):
         print(BC.FAIL,"Num coords not equal to num elems. Parsing of Gromacsfile: {} failed. BUG!".format(grofile))
-        exit()
+        ashexit()
     return elems, npcoords, box_dims
 
 
@@ -1760,7 +1760,7 @@ def read_ambercoordinates(prmtopfile=None, inpcrdfile=None):
                 grab_atomnumber = True
     if len(coords) != len(elems):
         print(BC.FAIL,"Num coords not equal to num elems. Parsing of Amber files: {} and {} failed. BUG!".format(prmtopfile,inpcrddfile), BC.END)
-        exit()
+        ashexit()
     return elems, coords, box_dims
 
 
@@ -1808,7 +1808,7 @@ def write_pdbfile(fragment, outputname="ASHfragment", openmmobject=None, atomnam
         print("len: residlabels", len(residlabels))
         print("len: segmentlabels", len(segmentlabels))
         print("len elems:", len(elems))
-        exit()
+        ashexit()
 
     with open(outputname + '.pdb', 'w') as pfile:
         for count, (atomname, c, resname, resid, seg, el) in enumerate(
@@ -1879,7 +1879,7 @@ def nucchargelist(ellist):
         except KeyError:
             print("Unknown element: '{}' found in element-list".format(e))
             print("Check coordinate-file. Exiting.")
-            exit()
+            ashexit()
         totnuccharge += atcharge
     return totnuccharge
 
@@ -2092,7 +2092,7 @@ def hungarian_julia(A, B):
             Juliafunctions = load_julia_interface()
         except:
             print("Problem loading Julia.")
-            exit()
+            ashexit()
         assignment, cost = Juliafunctions.Hungarian.hungarian(distances)
 
         # ash.print_time_rel(timestampA, modulename='julia hungarian')
@@ -2105,7 +2105,7 @@ def hungarian_julia(A, B):
     except:
         print("Problem running Julia Hungarian function. Trying scipy instead.")
 
-        exit()
+        ashexit()
 
         final_assignment = scipy_hungarian(A, B)
 
@@ -2319,7 +2319,7 @@ def QMregionfragexpand(fragment=None, initial_atoms=None, radius=None):
     tol = settings_ash.settings_dict["tol"]
     if fragment is None or initial_atoms is None or radius is None:
         print("Provide fragment, initial_atoms and radius keyword arguments to QMregionfragexpand!")
-        exit()
+        ashexit()
     subsetelems = [fragment.elems[i] for i in initial_atoms]
     # subsetcoords=[fragment.coords[i]for i in initial_atoms ]
     subsetcoords = np.take(fragment.coords, initial_atoms, axis=0)
@@ -2347,7 +2347,7 @@ def QMregionfragexpand(fragment=None, initial_atoms=None, radius=None):
                     # If stored connectivity
                     else:
                         for q in fragment.connectivity:
-                            # exit()
+                            # ashexit()
                             if index in q:
                                 wholemol = q
                                 break
@@ -2401,7 +2401,7 @@ def get_boundary_atoms(qmatoms, coords, elems, scale, tol, excludeboundaryatomli
             print(BC.FAIL,
                   "Problem. Found more than 1 boundaryatom for QM-atom {} . This is not allowed".format(qmatoms),
                   BC.END)
-            exit()
+            ashexit()
         elif len(boundaryatom) == 1:
 
             # Warn if QM-MM boundary is not a plain-vanilla C-C bond
@@ -2415,7 +2415,7 @@ def get_boundary_atoms(qmatoms, coords, elems, scale, tol, excludeboundaryatomli
                           "Make sure you know what you are doing (also note that ASH counts atoms from 0 not 1). Exiting.",
                           BC.END)
                     print(BC.WARNING, "To override exit, add: unusualboundary=True  to QMMMTheory object ", BC.END)
-                    exit()
+                    ashexit()
 
             # Adding to dict
             qm_mm_boundary_dict[qmatom] = boundaryatom[0]
@@ -2700,7 +2700,7 @@ def remove_atoms_from_system_CHARMM(fragment=None, psffile=None, topfile=None, a
     if fragment is None or psffile is None or topfile is None or atomindices is None:
         print("Error: remove_atoms_from_system requires keyword arguments:")
         print("fragment, psffile, topfile, atomindices")
-        exit()
+        ashexit()
 
     if psfgendir is None:
         print(BC.WARNING,
@@ -2711,7 +2711,7 @@ def remove_atoms_from_system_CHARMM(fragment=None, psffile=None, topfile=None, a
             psfgendir = settings_ash.settings_dict["psfgendir"]
         except:
             print(BC.FAIL, "Found no psfgendir variable in settings_ash module or in $PATH. Exiting.", BC.END)
-            exit()
+            ashexit()
 
     print("Atoms to be deleted (0-based indexing):", atomindices)
     for a in atomindices:
@@ -2785,7 +2785,7 @@ def add_atoms_to_PSF(resgroup=None, topfile=None, psffile=None, psfgendir=None, 
         print("Chosen resgroup: {} not in topfile: {}".format(resgroup, topfile))
         print("Add residuegroup to topology file first!")
         print("Exiting.")
-        exit()
+        ashexit()
 
     print("numatoms_in_resgroup: ", numatoms_in_resgroup)
     print("num_added_atoms: ", num_added_atoms)
@@ -2793,7 +2793,7 @@ def add_atoms_to_PSF(resgroup=None, topfile=None, psffile=None, psfgendir=None, 
         print("Number of ATOM entries in resgroup in {} not equal to number of added atom-coordinatese.")
         print("Wrong RESgroup chosen or missing coordinates?")
         print("Exiting")
-        exit()
+        ashexit()
 
     # Dummy segmentname. Can't be something existing. Using ADD1, ADD2 etc.
     matches = pygrep2("ADD", psffile)
@@ -2827,7 +2827,7 @@ def add_atoms_to_system_CHARMM(fragment=None, added_atoms_coordstring=None, resg
     if fragment is None or psffile is None or topfile is None or added_atoms_coordstring is None or resgroup is None:
         print("Error: add_atoms_to_system_CHARMM requires keyword arguments:")
         print("fragment, psffile, topfile, added_atoms_coordstring, resgroup")
-        exit()
+        ashexit()
 
     if psfgendir is None:
         print(BC.WARNING,
@@ -2838,7 +2838,7 @@ def add_atoms_to_system_CHARMM(fragment=None, added_atoms_coordstring=None, resg
             psfgendir = settings_ash.settings_dict["psfgendir"]
         except:
             print(BC.FAIL, "Found no psfgendir variable in settings_ash module or in $PATH. Exiting.", BC.END)
-            exit()
+            ashexit()
 
     # Adding coordinates to fragment
     added_atoms_coords_list = added_atoms_coordstring.split('\n')
@@ -2894,13 +2894,13 @@ def getwaterconstraintslist(openmmtheoryobject=None, atomlist=None, watermodel='
     print("Inside getwaterconstraintslist")
     if openmmtheoryobject==None or atomlist==None:
         print("getwaterconstraintslist requires openmmtheoryobject and atomlist to be set ")
-        exit()
+        ashexit()
     if watermodel == 'tip3p' or watermodel == 'spc':
         #oxygenlabels = ['OT', 'OW', 'OWT3']
         water_resname = ['HOH','WAT','TIP']
     else:
         print("unknown watermodel")
-        exit()
+        ashexit()
 
     atomtypes=openmmtheoryobject.atomtypes
     resnames=openmmtheoryobject.resnames
@@ -2951,4 +2951,4 @@ def check_multiplicity(elems,charge,mult):
     if result[0] != result[1]:
         print("The spin multiplicity {} ({} unpaired electrons) is incompatible with the total number of electrons {}".format(mult,unpaired_electrons,num_electrons))
         print("Now exiting!")
-        exit()
+        ashexit()

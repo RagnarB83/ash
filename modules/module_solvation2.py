@@ -11,7 +11,7 @@ import os
 import sys
 
 import functions.functions_solv
-from functions.functions_general import blankline,BC,listdiff,print_time_rel_and_tot,print_line_with_mainheader,print_line_with_subheader1
+from functions.functions_general import blankline,BC,listdiff,print_time_rel_and_tot,print_line_with_mainheader,print_line_with_subheader1, ashexit
 from module_coords import read_fragfile_xyz
 from interface_ORCA import run_inputfiles_in_parallel,finalenergiesgrab,run_orca_SP_ORCApar
 import settings_solvation
@@ -94,7 +94,7 @@ def solvshell_v2 ( orcadir='', NumCores=None, calctype='', orcasimpleinput_LL=''
         solvsphere=read_md_variables_fileA(mdvarfile)
     else:
         print("unknown calctype for md-read")
-        exit()
+        ashexit()
     print("Solvsphere Object defined.")
     print("Solvsphere atoms:", solvsphere.numatoms)
 
@@ -834,7 +834,7 @@ def Polsnapshotcalc(args):
     if len(qmatoms)+len(peatoms)+len(mmatoms) != len(solvsphere.allatoms):
         print("QM + MM + PE atoms ({})not equal to total numatoms({})".format(len(qmatoms)+len(peatoms)+len(mmatoms),
                                                                               len(solvsphere.allatoms)))
-        exit()
+        ashexit()
 
     # Define Psi4 QMregion
     Psi4QMpart_A = ash.Psi4Theory(charge=solvsphere.ChargeA, mult=solvsphere.MultA, label=snapshot+'A',

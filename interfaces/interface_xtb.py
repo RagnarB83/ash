@@ -8,7 +8,7 @@ import time
 import constants
 import settings_solvation
 import settings_ash
-from functions.functions_general import blankline,reverse_lines, print_time_rel,BC, print_line_with_mainheader
+from functions.functions_general import ashexit, blankline,reverse_lines, print_time_rel,BC, print_line_with_mainheader
 import modules.module_coords
 from modules.module_coords import elemstonuccharges, check_multiplicity
 
@@ -84,7 +84,7 @@ class xTBTheory:
 
             except:
                 print("Problem importing xTB library. Have you installed : conda install xtb-python ?")
-                exit(9)
+                ashexit(code=9)
             self.Calculator=Calculator
             self.Param=Param
             self.VERBOSITY_MINIMAL=VERBOSITY_MINIMAL
@@ -104,7 +104,7 @@ class xTBTheory:
                 print("Problem importing xTB library. Check that the library dir (containing libxtb.so) is available in LD_LIBRARY_PATH.")
                 print("e.g. export LD_LIBRARY_PATH=/path/to/xtb_6.X.X/lib64:$LD_LIBRARY_PATH")
                 print("Or that the MKL library is available and loaded")
-                exit(9)
+                ashexit(code=9)
             from ctypes import c_int, c_double
             #Needed for complete interface?:
             # from ctypes import Structure, c_int, c_double, c_bool, c_char_p, c_char, POINTER, cdll, CDLL
@@ -123,12 +123,12 @@ class xTBTheory:
                         print(BC.OKGREEN,"Found xtb in path. Setting xtbdir to:", self.xtbdir, BC.END)
                     except:
                         print("Found no xtb executable in path. Exiting... ")
-                        exit()
+                        ashexit()
             else:
                 self.xtbdir = xtbdir
         else:
             print("unknown runmode. exiting")
-            exit(1)
+            ashexit()
 
     #Cleanup after run.
     def cleanup(self):
@@ -144,7 +144,7 @@ class xTBTheory:
     def check_charge_mult(self):
         if self.charge == None or self.mult==None:
             print("Charge and mult has not been set yet. Exiting.")
-            exit()
+            ashexit()
     #Do an xTB-optimization instead of ASH optimization. Useful for gas-phase chemistry (avoids too much ASH printout
     def Opt(self, fragment=None, Grad=None, Hessian=None, numcores=None, label=None):
         module_init_time=time.time()
@@ -154,7 +154,7 @@ class xTBTheory:
             print("No fragment provided to xTB Opt.")
             if self.fragment == None:
                 print("No fragment associated with xTBTheory object either. Exiting")
-                exit()
+                ashexit()
             else:
                 current_coords=self.fragment.coords
                 elems=self.fragment.elems
@@ -202,7 +202,7 @@ class xTBTheory:
             #Regardless take coordinates and go on. Possibly abort if xtb completely
         else:
             print("Only runmode='inputfile allowed for xTBTheory.Opt(). Exiting")
-            exit()
+            ashexit()
             #Update coordinates in someway
         print("ASH fragment updated:", self.fragment)
         self.fragment.print_coords()
@@ -344,7 +344,7 @@ class xTBTheory:
                 param_method=self.Param.IPEAxTB
             else:
                 print("unknown xtbmethod")
-                exit()
+                ashexit()
 
             #Creating calculator using Hamiltonian and coordinates
             #Setting charge and mult
@@ -396,7 +396,7 @@ class xTBTheory:
                     #pcgrad
                     #get pcgrad
                     print("pc grad is not yet implemented. ")
-                    exit()
+                    ashexit()
                     print("------------ENDING XTB-INTERFACE-------------")
                     print_time_rel(module_init_time, modulename='xTBlib run', moduleindex=2)
                     return self.energy, self.grad, self.pcgrad
@@ -420,7 +420,7 @@ class xTBTheory:
                 print("Pointcharge-embedding on but xtb-runmode is library!")
                 print("The xtb library-interface is not yet ready for QM/MM calculations")
                 print("Use runmode='inputfile' for now")
-                exit(1)
+                ashexit()
 
 
             #Hard-coded options. Todo: revisit
@@ -452,7 +452,7 @@ class xTBTheory:
                 results = self.xtbobject.GFN2Calculation(*args)
             else:
                 print("Unknown xtbmethod.")
-                exit()
+                ashexit()
             print("------------xTB calculation done-------------")
             if Grad==True:
                 self.energy = float(results['energy'])
@@ -470,7 +470,7 @@ class xTBTheory:
                 return self.energy
         else:
             print("Unknown option to xTB interface")
-            exit()
+            ashexit()
 
 
 
@@ -545,7 +545,7 @@ def run_xtb_SP_serial(xtbdir, xtbmethod, xyzfile, charge, mult, Grad=False, Opt=
         xtbflag = 0
     else:
         print("Unknown xtbmethod chosen. Exiting...")
-        exit()
+        ashexit()
     
     if Grad==True:
         command_list=[xtbdir + '/xtb', basename+'.xyz', '--gfn', str(xtbflag), '--grad', '--chrg', str(charge), '--uhf', str(uhf), '--iterations', str(maxiter),

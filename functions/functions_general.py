@@ -59,7 +59,7 @@ def load_julia_interface():
         except TypeError:
             print("Problem. No julia binary found in PATH environment variable.")
             print("Make sure the path to Julia's bin directory is available in your shell-configuration or jobscript")
-            exit()
+            ashexit()
         # print("julia loaded false")
         # from julia.api import Julia
         # jl = Julia(compiled_modules=False)
@@ -302,7 +302,7 @@ def islist(l):
 #        f.close()
 #    except IOError:
 #        print('File %s does not exist!' % (filename))
-#        exit(12)
+#        ashexit()
 #    return out
 
 
@@ -325,7 +325,7 @@ def read_intlist_from_file(filename, offset=0):
                         intlist.append(int(l) + offset)
     except FileNotFoundError:
         print(f"File '{filename}' does not exists!")
-        exit()
+        ashexit()
     intlist.sort()
     return intlist
 
@@ -342,7 +342,7 @@ def read_floatlist_from_file(filename):
                         floatlist.append(float(l))
     except FileNotFoundError:
         print(f"File '{filename}' does not exists!")
-        exit()
+        ashexit()
     floatlist.sort()
     return floatlist
 

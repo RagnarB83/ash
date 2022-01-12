@@ -4,7 +4,7 @@ Spinprojection module:
 class SpinProjectionTheory
 
 """
-from functions.functions_general import BC
+from functions.functions_general import BC, ashexit
 import interfaces.interface_ORCA
 import constants
 import functions.functions_elstructure
@@ -29,7 +29,7 @@ class SpinProjectionTheory:
         if self.jobtype == "Yamaguchi" or self.jobtype =="Noodleman" or self.jobtype=="Bencini":
             if localspins == None:
                 print("Yamaguchi/Noodleman/Bencini spin projection requires localspins keyword (list of local spins). Exiting.")
-                exit()
+                ashexit()
             else:
                 self.Spin_A=localspins[0]
                 self.Spin_B=localspins[1]
@@ -37,7 +37,7 @@ class SpinProjectionTheory:
                 self.Spin_LS=abs(self.Spin_A-self.Spin_B)
         else:
             print("Unknown option")
-            exit()
+            ashexit()
 
     
     #Run function. Takes coords, elems etc. arguments and computes E or E+G.

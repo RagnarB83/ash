@@ -5,7 +5,7 @@ import sys
 import time
 
 import ash
-from functions.functions_general import BC,blankline,print_line_with_mainheader,print_line_with_subheader1
+from functions.functions_general import ashexit, BC,blankline,print_line_with_mainheader,print_line_with_subheader1
 
 #Various calculation-functions run in parallel
 
@@ -136,12 +136,12 @@ def Singlepoint_parallel(fragments=None, fragmentfiles=None, theories=None, numc
 
     if fragments == None and fragmentfiles == None:
         print(BC.FAIL,"Singlepoint_parallel requires a list of ASH fragments or a list of fragmentfilenames",BC.END)
-        exit(1)
+        ashexit()
     if theories == None or numcores == None :
         print("theories:", theories)
         print("numcores:", numcores)
         print(BC.FAIL,"Singlepoint_parallel requires a theory object and a numcores value",BC.END)
-        exit(1)
+        ashexit()
 
     blankline()
     print_line_with_subheader1("Singlepoint_parallel function")
@@ -169,7 +169,7 @@ def Singlepoint_parallel(fragments=None, fragmentfiles=None, theories=None, numc
         print(BC.FAIL,"Exception message:", message, BC.END)
         pool.terminate()
         event.set()
-        exit()
+        ashexit()
         #print("Setting event")
         #event.set()
         #print("XXXXX")
@@ -229,7 +229,7 @@ def Singlepoint_parallel(fragments=None, fragmentfiles=None, theories=None, numc
     else:
         print("Multiple theories and multiple fragments provided.")
         print("This is not supported. Exiting...")
-        exit(1)
+        ashexit()
 
     pool.close()
     pool.join()
@@ -429,7 +429,7 @@ def get_size(obj, seen=None):
 #     else:
 #         print("Unknown object passed")
 #         kill_all_mp_processes()
-#         exit()
+#         ashexit()
 #     print("Fragment:", fragment)
 
 #     #Making label flexible. Can be tuple but inputfilename is converted to string below
@@ -444,10 +444,10 @@ def get_size(obj, seen=None):
 #         event.set()
 #         print("after event")
 #         print("event is_set: ", event.is_set())
-#         exit()
+#         ashexit()
 #         #sys.exit()
 #         #kill_all_mp_processes()
-#         #exit()
+#         #ashexit()
 
 #     #Using label (could be tuple) to create a labelstring which is used to name worker directories
 #     # Tuple-label (1 or 2 element) used by calc_surface functions.
@@ -498,12 +498,12 @@ def get_size(obj, seen=None):
 #             print("moreadfile_path:", moreadfile_path)
 #         print("not finished. exiting")
 #         kill_all_mp_processes()
-#         exit()
+#         ashexit()
 #     else:
 #         if mofilesdir != None:
 #             print("moreadfile option not ready for this Theory. exiting")
 #             kill_all_mp_processes()
-#             exit()
+#             ashexit()
 
 #     #Creating new dir and running calculation inside
 #     os.mkdir('Pooljob_'+labelstring)

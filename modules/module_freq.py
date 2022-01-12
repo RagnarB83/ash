@@ -4,7 +4,7 @@ import shutil
 import os
 import copy
 import time
-from functions.functions_general import listdiff, clean_number,blankline,BC,print_time_rel
+from functions.functions_general import ashexit, listdiff, clean_number,blankline,BC,print_time_rel
 import modules.module_coords
 import interfaces.interface_ORCA
 import constants
@@ -39,7 +39,7 @@ def AnFreq(fragment=None, theory=None, numcores=1, temp=298.15, pressure=1.0):
         
     else:
         print("Analytical frequencies not available for theory. Exiting.")
-        exit()
+        ashexit()
 
 
 #Numerical frequencies function
@@ -69,7 +69,7 @@ def NumFreq(fragment=None, theory=None, npoint=1, displacement=0.005, hessatoms=
         if len(hessatoms_masses) != len(hessatoms):
             print(BC.FAIL,"Error: Number of provided masses (hessatoms_masses keyword) is not equal to number of Hessian-atoms.")
             print("Check input masses!",BC.END)
-            exit()
+            ashexit()
     
     displacement_bohr = displacement * constants.ang2bohr
 
@@ -84,7 +84,7 @@ def NumFreq(fragment=None, theory=None, npoint=1, displacement=0.005, hessatoms=
         print("Two-point formula used (central difference)")
     else:
         print("Unknown npoint option. npoint should be set to 1 (one-point) or 2 (two-point formula).")
-        exit()
+        ashexit()
     if runmode=="serial":
         print("Numfreq running in serial mode")
     elif runmode=="parallel":
@@ -231,7 +231,7 @@ def NumFreq(fragment=None, theory=None, npoint=1, displacement=0.005, hessatoms=
                 except:
                     print("Parallel QM/MM Numerical Frequencies require the ray library.")
                     print("Please install ray : pip install ray")
-                    exit(1)
+                    ashexit()
                 
                 if theory.mm_theory == "NonBondedTheory":
                     #Do pairpotentials before we begin if NonBondedTheoyr
@@ -364,7 +364,7 @@ def NumFreq(fragment=None, theory=None, npoint=1, displacement=0.005, hessatoms=
                     hessindex+=1
                 else:
                     print("Something bad happened")
-                    exit()
+                    ashexit()
     blankline()
 
     #Symmetrize Hessian by taking average of matrix and transpose
@@ -534,7 +534,7 @@ def printfreqs(vfreq,numatoms):
             print("realpart:", realpart)
             print("imagpart:", imagpart)
             print("This should not have happened")
-            exit()
+            ashexit()
         if mode < TRmodenum:
             line=line+" (TR mode)"
         print(line)
@@ -610,7 +610,7 @@ def printnormalmodecompositions(option,TRmodenum,vfreq,numatoms,elems,evectors,a
         atom=int(option)
         if atom > numatoms-1:
             print(bcolors.FAIL, "Atom index does not exist. Note: Numbering starts from 0", bcolors.ENDC)
-            exit()
+            ashexit()
         line = "{:>4}{:>14}      {:45}".format("Mode", "Freq(cm**-1)", atomlist[atom])
         print(line)
         for mode in range(0,3*numatoms):
@@ -636,7 +636,7 @@ def printnormalmodecompositions(option,TRmodenum,vfreq,numatoms,elems,evectors,a
         for at in selatoms:
             if at > numatoms-1:
                 print(bcolors.FAIL,"Atom index does not exist. Note: Numbering starts from 0",bcolors.ENDC)
-                exit()
+                ashexit()
             grouplist.append(atomlist[at])
         simpgrouplist='_'.join(grouplist)
         grouplist=', '.join(grouplist)
@@ -1140,7 +1140,7 @@ Thus, these vectors are normalized but *not* orthogonal"""
                 else:
                     print("problem")
                     print("hessdim - j : ", hessdim - j)
-                    exit()
+                    ashexit()
 
             if chunk == chunks - 1:
                 #print("b last chunk is", chunk)
@@ -1353,7 +1353,7 @@ def isotope_change_Hessian(hessfile=None, hessian=None, elems=None, masses=None,
         masses_mod = [m if el !="H" else modmass for m,el in zip(masses,elems)]
     else:
         print("unknown isotope_change")
-        exit()
+        ashexit()
     print("masses_mod:", masses_mod)
 
     #Regular mass-weighted Hessian

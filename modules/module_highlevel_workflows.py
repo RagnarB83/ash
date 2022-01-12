@@ -9,7 +9,7 @@ import copy
 import dictionaries_lists
 import interfaces.interface_ORCA
 from functions.functions_elstructure import num_core_electrons, check_cores_vs_electrons
-from functions.functions_general import BC, print_line_with_mainheader
+from functions.functions_general import ashexit, BC, print_line_with_mainheader
 from modules.module_coords import elemlisttoformula, nucchargelist,elematomnumbers
 
 
@@ -55,7 +55,7 @@ class CC_CBS_Theory:
             print(BC.FAIL, "\nCC_CBS_Theory requires a list of elements to be given in order to set up basis sets", BC.END)
             print("Example: CC_CBS_Theory(elements=['C','Fe','S','H','Mo'], basisfamily='def2',cardinals=[2,3], ...")
             print("Should be a list containing all elements that a fragment might contain")
-            exit()
+            ashexit()
         else:
             #Removing redundant symbols (in case fragment.elems list was passed for example)
             elements = list(set(elements))
@@ -64,13 +64,13 @@ class CC_CBS_Theory:
         if F12 == False and basisfamily == "cc-f12":
             print(BC.FAIL,"Basisfamily cc-f12 chosen but F12 is not active.")
             print("To use F12 instead of extrapolation set: F12=True, basisfamily='cc-f12', cardinals=[X] (i.e. single cardinal)",BC.END)
-            exit()
+            ashexit()
         if F12 is True and 'f12' not in basisfamily:
             print(BC.FAIL,"F12 option chosen but an F12-basisfamily was not chosen. Choose basisfamily='cc-f12'",BC.END)
-            exit()
+            ashexit()
         if F12 is True and len(cardinals) != 1:
             print(BC.FAIL,"For F12 calculations, set cardinals=[X] i.e. a list of one integer.", BC.END)
-            exit()
+            ashexit()
 
         #Check if only 1 cardinal was chosen: meaning no extrapolation and just a single 
         if len(cardinals) == 1:
@@ -224,7 +224,7 @@ maxiter 150\nend
             'ma-def2-zora','ma-def2-dkh', 'cc-CV-dk', 'cc-CV-dkh', 'aug-cc-CV-dk', 'aug-cc-CV-dkh']:
                 print("Relativity option is None but a relativistic basis set family chosen:", self.basisfamily)
                 print("You probably want relativity keyword argument set to DKH or ZORA (relativity=\"NoRel\" option possible also but not recommended)")
-                exit()
+                ashexit()
             self.extrainputkeyword = self.extrainputkeyword + '  '
         elif self.relativity == "NoRel":
             self.extrainputkeyword = self.extrainputkeyword + '  '
@@ -235,7 +235,7 @@ maxiter 150\nend
         elif self.relativity == 'X2C':
             self.extrainputkeyword = self.extrainputkeyword + ' X2C '
             print("Not ready")
-            exit()
+            ashexit()
 
         #Possible DFT reference (functional name) NOTE: Hardcoding RIJCOSX SARC/J defgrid3 for now
         if self.DFTreference != None:
@@ -413,11 +413,11 @@ maxiter 150\nend
 
         if self.charge == None or self.mult == None:
             print(BC.FAIL,"Charge and mult attributes are required when running CC_CBS_Theory", BC.END)
-            exit()
+            ashexit()
 
         if Grad == True:
             print(BC.FAIL,"No gradient available for CC_CBS_Theory yet! Exiting", BC.END)
-            exit()
+            ashexit()
 
         #Checking that there is a basis set defined for each element provided here
         #NOTE: ORCA will use default SVP basis set if basis set not defined for element
@@ -426,7 +426,7 @@ maxiter 150\nend
                 print("Error. No basis-set definition available for element: {}".format(element))
                 print("Make sure to pass a list of all elements of molecule/benchmark-database when creating CC_CBS_Theory object")
                 print("Example: CC_CBS_Theory(elements=[\"{}\" ] ".format(element))
-                exit() 
+                ashexit() 
 
 
 
@@ -797,7 +797,7 @@ def Extrapolation_W1_SCF_2point(E):
     Note: Reading list backwards
     """
     print("This has not been tested. Proceed with caution")
-    exit()
+    ashexit()
     SCF_CBS = E[-1]+(E[-1]-E[-2])/((4/3)**5 - 1)
     return SCF_CBS
 
@@ -885,7 +885,7 @@ def Extrapolation_W2_triples(E):
 #NOTE: analogous function to basis_for_element but chooses F12 basis sets where available
 def F12basis_for_element(element,basisfamily,cardinal):
     print("Not ready yet")
-    exit()
+    ashexit()
 
 #NOTE: Should we use the cc-pVn(+d)Z basis sets for Na-AR ???
 #Note: return basisname and ECPname (None if no ECP)
@@ -908,7 +908,7 @@ def basis_for_element(element,basisfamily,cardinal):
 
     if basisfamily not in basisfamilies:
         print(BC.FAIL,"Unknown basisfamily. Exiting",BC.END)
-        exit()
+        ashexit()
     #CORRELATION CONSISTENT BASIS SETS: Non-relativistic all-electron until beyond Kr when we use cc-PP basis sets
     if basisfamily == "cc":
         cardlabels={2:'D',3:'T',4:'Q',5:"5",6:"6"}
@@ -917,13 +917,13 @@ def basis_for_element(element,basisfamily,cardinal):
         #Special cases: cc-pV6Z only for specific light elements
         if cardinal == 6 and element not in ['H','He','Be','B','C','N','O','F','Ne','Al','Si','P','S','Cl','Ar']:
             print(BC.FAIL,"cc-pV6Z basis set only available for H-He,Be-Ne,Al-Ar. Take a look at literature.",BC.END)
-            exit()
+            ashexit()
 
         if atomnumber <= 18 :
             return ("cc-pV{}Z".format(cardlabel), None)
         elif atomnumber == 19 :
             print("cc basis set for K is missing in ORCA. Take a look at literature.")
-            exit()
+            ashexit()
         elif 20 <= atomnumber <= 36   : #Ca-Kr. Note: K missing
             return ("cc-pV{}Z".format(cardlabel), None)        
         elif 38 <= atomnumber <= 54   : #Sr-Xe. Note: Rb missing
@@ -939,13 +939,13 @@ def basis_for_element(element,basisfamily,cardinal):
         #Special cases: cc-pV6Z only for specific light elements
         if cardinal == 6 and element not in ['H','He','Be','B','C','N','O','F','Ne','Al','Si','P','S','Cl','Ar']:
             print(BC.FAIL,"cc-pV6Z basis set only available for H-He,Be-Ne,Al-Ar. Take a look at literature.",BC.END)
-            exit()
+            ashexit()
 
         if atomnumber <= 18 :
             return ("aug-cc-pV{}Z".format(cardlabel), None)
         elif atomnumber == 19 :
             print("cc basis set for K is missing in ORCA. Take a look at literature.")
-            exit()
+            ashexit()
         elif 20 <= atomnumber <= 36   : #Ca-Kr. Note: K missing
             return ("aug-cc-pV{}Z".format(cardlabel), None)        
         elif 38 <= atomnumber <= 54   : #Sr-Xe. Note: Rb missing
@@ -962,14 +962,14 @@ def basis_for_element(element,basisfamily,cardinal):
         # No cc-pV6Z-DK basis available
         if cardinal == 6:
             print(BC.FAIL,"cc-pV6Z-DK basis set not available",BC.END)
-            exit()
+            ashexit()
 
         #Going through atomnumbers
         if atomnumber <= 18 :
             return ("cc-pV{}Z-DK".format(cardlabel), None)
         elif atomnumber == 19 or atomnumber == 20:
             print(BC.FAIL,"cc-dkh basis sets for K and Ca is missing in ORCA. Take a look at literature.",BC.END)
-            exit()
+            ashexit()
         elif 21 <= atomnumber <= 36   : #Sc-Kr.
             return ("cc-pV{}Z".format(cardlabel), None)
         elif cardinal == 3:
@@ -984,7 +984,7 @@ def basis_for_element(element,basisfamily,cardinal):
                 return ("cc-pV{}Z-DK".format(cardlabel), None)
         elif cardinal == 5 and atomnumber > 36:
             print(BC.FAIL,"cc-pV5Z-DK basis sets for elements beyond Kr is missing in ORCA. Take a look at literature.",BC.END)
-            exit()
+            ashexit()
 
     elif basisfamily == "aug-cc-dkh" or basisfamily == "aug-cc-dk":
         cardlabels={2:'D',3:'T',4:'Q',5:"5",6:"6"}
@@ -992,14 +992,14 @@ def basis_for_element(element,basisfamily,cardinal):
         # No aug-cc-pV6Z-DK basis available
         if cardinal == 6:
             print(BC.FAIL,"aug-cc-pV6Z-DK basis set not available",BC.END)
-            exit()
+            ashexit()
 
         #Going through atomnumbers
         if atomnumber <= 18 :
             return ("aug-cc-pV{}Z-DK".format(cardlabel), None)
         elif atomnumber == 19 or atomnumber == 20:
             print(BC.FAIL,"cc-dkh basis sets for K and Ca is missing in ORCA. Take a look at literature.",BC.END)
-            exit()
+            ashexit()
         elif 21 <= atomnumber <= 36   : #Sc-Kr.
             return ("aug-cc-pV{}Z".format(cardlabel), None)
         elif cardinal == 3:
@@ -1014,7 +1014,7 @@ def basis_for_element(element,basisfamily,cardinal):
                 return ("aug-cc-pV{}Z-DK".format(cardlabel), None)
         elif cardinal == 5 and atomnumber > 36:
             print(BC.FAIL,"aug-cc-pV5Z-DK basis sets for elements beyond Kr is missing in ORCA. Take a look at literature.",BC.END)
-            exit()
+            ashexit()
 
     #Core-valence cc-basis sets (cc-pCVnZ or cc-pwCVnZ)
     elif basisfamily == "cc-CV":
@@ -1024,13 +1024,13 @@ def basis_for_element(element,basisfamily,cardinal):
         #Special cases: cc-pV6Z only for specific light elements
         if cardinal == 6:
             print(BC.FAIL,"cc-pwCV6Z basis set not available.",BC.END)
-            exit()
+            ashexit()
 
         if atomnumber <= 18 :
             return ("cc-pwCV{}Z".format(cardlabel), None)
         elif atomnumber == 19 :
             print("cc-CV basis set for K is missing in ORCA. Take a look at literature.")
-            exit()
+            ashexit()
         elif atomnumber == 20:
             #NOTE: There is also a cc-pwCVDZ-PP version
             return ("cc-pwCV{}Z".format(cardlabel), None)     
@@ -1054,13 +1054,13 @@ def basis_for_element(element,basisfamily,cardinal):
         #Special cases: cc-pV6Z only for specific light elements
         if cardinal == 6:
             print(BC.FAIL,"aug-cc-pwCV6Z basis set not available.",BC.END)
-            exit()
+            ashexit()
 
         if atomnumber <= 18 :
             return ("aug-cc-pwCV{}Z".format(cardlabel), None)
         elif atomnumber == 19 :
             print("aug-cc-CV basis set for K is missing in ORCA. Take a look at literature.")
-            exit()
+            ashexit()
         elif atomnumber == 20:
             #NOTE: There is also a cc-pwCVDZ-PP version
             return ("aug-cc-pwCV{}Z".format(cardlabel), None)     
@@ -1086,7 +1086,7 @@ def basis_for_element(element,basisfamily,cardinal):
         #Special cases: cc-pV6Z only for specific light elements
         if cardinal == 6:
             print(BC.FAIL,"cc-pwCV6Z-DK basis set not available.",BC.END)
-            exit()
+            ashexit()
 
         if atomnumber <= 4 :
             return ("cc-pwCV{}Z-DK".format(cardlabel), None)
@@ -1104,7 +1104,7 @@ def basis_for_element(element,basisfamily,cardinal):
             return ("cc-pV{}Z-DK".format(cardlabel), None)
         elif atomnumber == 19:
             print("cc-CV-dkh basis set for K is missing in ORCA. Take a look at literature.")
-            exit() 
+            ashexit() 
         elif 20 <= atomnumber <= 30: #Ca-Zn.
             return ("cc-pwCV{}Z-DK".format(cardlabel), None)
         elif 39 <= atomnumber <= 54 and cardinal > 2:
@@ -1126,14 +1126,14 @@ def basis_for_element(element,basisfamily,cardinal):
         # No cc-pV6Z-DK basis available
         if cardinal == 6:
             print(BC.FAIL,"cc-pV6Z-DK/cc-pwCV6Z basis sets not available",BC.END)
-            exit()
+            ashexit()
 
         #Going through atomnumbers
         if atomnumber <= 18 :
             return (prefix+"cc-pV{}Z-DK".format(cardlabel), None)
         elif atomnumber == 19 or atomnumber == 20:
             print(BC.FAIL,"cc-dkh basis sets for K and Ca is missing in ORCA. Take a look at literature.",BC.END)
-            exit()
+            ashexit()
         elif 21 <= atomnumber <= 30   : #Sc-Zn
             return ("cc-pwCV{}Z".format(cardlabel), None) #Skipping aug here anyway
         elif cardinal == 3:
@@ -1148,7 +1148,7 @@ def basis_for_element(element,basisfamily,cardinal):
                 return (prefix+"cc-pV{}Z-DK".format(cardlabel), None)
         elif cardinal == 5 and atomnumber > 36:
             print(BC.FAIL,"cc-pV5Z-DK basis sets for elements beyond Kr is missing in ORCA. Take a look at literature.",BC.END)
-            exit()
+            ashexit()
 
 
     #Core-valence cc-basis sets (cc-pCVnZ or cc-pwCVnZ) for DKH
@@ -1159,7 +1159,7 @@ def basis_for_element(element,basisfamily,cardinal):
         #Special cases: cc-pV6Z only for specific light elements
         if cardinal == 6:
             print(BC.FAIL,"aug-cc-pwCV6Z-DK basis set not available.",BC.END)
-            exit()
+            ashexit()
 
         if atomnumber <= 4 :
             return ("aug-cc-pwCV{}Z-DK".format(cardlabel), None)
@@ -1177,7 +1177,7 @@ def basis_for_element(element,basisfamily,cardinal):
             return ("aug-cc-pV{}Z-DK".format(cardlabel), None)
         elif atomnumber == 19:
             print("aug-cc-CV-dkh basis set for K is missing in ORCA. Take a look at literature.")
-            exit() 
+            ashexit() 
         elif 20 <= atomnumber <= 30: #Ca-Zn.
             return ("aug-cc-pwCV{}Z-DK".format(cardlabel), None)
         elif 39 <= atomnumber <= 54 and cardinal == 3:
@@ -1194,7 +1194,7 @@ def basis_for_element(element,basisfamily,cardinal):
     elif basisfamily == "def2-x2c":
         if cardinal > 4:
             print(BC.FAIL,"def2-x2c basis sets only available up to QZ level", BC.END)
-            exit()
+            ashexit()
         cardlabels={2:'SVP',3:'TZVPP',4:'QZVPP'}
         cardlabel=cardlabels[cardinal]
         if atomnumber <= 36 :
@@ -1204,7 +1204,7 @@ def basis_for_element(element,basisfamily,cardinal):
     elif basisfamily == "def2":
         if cardinal > 4:
             print(BC.FAIL,"def2 basis sets only available up to QZ level", BC.END)
-            exit()
+            ashexit()
         cardlabels={2:'SVP',3:'TZVPP',4:'QZVPP'}
         cardlabel=cardlabels[cardinal]
         if atomnumber <= 36 :
@@ -1215,7 +1215,7 @@ def basis_for_element(element,basisfamily,cardinal):
     elif basisfamily == "ma-def2":
         if cardinal > 4:
             print(BC.FAIL,"ma-def2 basis sets only available up to QZ level", BC.END)
-            exit()
+            ashexit()
         cardlabels={2:'SVP',3:'TZVPP',4:'QZVPP'}
         cardlabel=cardlabels[cardinal]
         if atomnumber <= 36 :
@@ -1227,7 +1227,7 @@ def basis_for_element(element,basisfamily,cardinal):
     elif basisfamily == "def2-zora":
         if cardinal > 4:
             print(BC.FAIL,"def2-ZORA basis sets only available up to QZ level", BC.END)
-            exit()
+            ashexit()
         cardlabels={2:'SVP',3:'TZVPP',4:'QZVPP'}
         cardlabel=cardlabels[cardinal]
         if atomnumber <= 36 :
@@ -1239,7 +1239,7 @@ def basis_for_element(element,basisfamily,cardinal):
     elif basisfamily == "def2-dkh":
         if cardinal > 4:
             print(BC.FAIL,"def2-DKH basis sets only available up to QZ level", BC.END)
-            exit()
+            ashexit()
         cardlabels={2:'SVP',3:'TZVPP',4:'QZVPP'}
         cardlabel=cardlabels[cardinal]
         if atomnumber <= 36 :
@@ -1251,7 +1251,7 @@ def basis_for_element(element,basisfamily,cardinal):
     elif basisfamily == "ma-def2-zora":
         if cardinal > 4:
             print(BC.FAIL,"ma-def2-ZORA basis sets only available up to QZ level", BC.END)
-            exit()
+            ashexit()
         cardlabels={2:'SVP',3:'TZVPP',4:'QZVPP'}
         cardlabel=cardlabels[cardinal]
         if atomnumber <= 36 :
@@ -1260,7 +1260,7 @@ def basis_for_element(element,basisfamily,cardinal):
     elif basisfamily == "ma-def2-dkh":
         if cardinal > 4:
             print(BC.FAIL,"ma-def2-DKH basis sets only available up to QZ level", BC.END)
-            exit()
+            ashexit()
         cardlabels={2:'SVP',3:'TZVPP',4:'QZVPP'}
         cardlabel=cardlabels[cardinal]
         if atomnumber <= 36 :
@@ -1271,13 +1271,13 @@ def basis_for_element(element,basisfamily,cardinal):
         #Special cases: cc-pV6Z only for specific light elements
         if cardinal > 4:
             print(BC.FAIL,"cc-pVnZ-F12 basis set only available up to QZ level.",BC.END)
-            exit()
+            ashexit()
 
         if atomnumber <= 18 :
             return ("cc-pV{}Z-F12".format(cardlabel), None)
         elif 19 <= atomnumber <= 30 :
             print("cc-F12 basis set missing for K-Zn. Take a look at literature to see if this has changed.")
-            exit()
+            ashexit()
         elif 31 <= atomnumber <= 36   : #Ga-Kr.
             return ("cc-pV{}Z-PP-F12".format(cardlabel), "SK-MCDHF-RSC")        
         elif 49 <= atomnumber <= 54   : #In-Xe.
@@ -1286,7 +1286,7 @@ def basis_for_element(element,basisfamily,cardinal):
             return ("cc-pV{}Z-PP-F12".format(cardlabel), "SK-MCDHF-RSC")
 
     print(BC.FAIL,"There is probably no {} {}Z basis set available for element {} in ORCA. Exiting.".format(basisfamily, cardinal, element), BC.END)
-    exit()
+    ashexit()
 
 
 #OLd ideas:

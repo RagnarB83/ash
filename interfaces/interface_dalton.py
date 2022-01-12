@@ -3,7 +3,7 @@ import os
 import glob
 
 import settings_ash
-from functions.functions_general import BC,print_time_rel
+from functions.functions_general import ashexit, BC,print_time_rel
 import modules.module_coords
 
 class DaltonTheory:
@@ -19,7 +19,7 @@ class DaltonTheory:
             self.basis_name=basis_name
         else:
             print("Please provide basis_name to DaltonTheory object")
-            exit()
+            ashexit()
 
         self.filename=filename
 
@@ -160,5 +160,5 @@ class DaltonTheory:
         
         if self.energy==0.0:
             print("Problem. Energy not found in output:", self.filename+'.out')
-            exit()
+            ashexit()
         return self.energy

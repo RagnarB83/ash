@@ -1,6 +1,6 @@
 import time
 
-from functions.functions_general import BC,print_time_rel
+from functions.functions_general import ashexit, BC,print_time_rel
 import modules.module_coords
 
 #PySCF Theory object. Fragment object is optional. Only used for single-points.
@@ -82,7 +82,7 @@ class PySCFTheory:
             import pyscf
         except:
             print(BC.FAIL, "Problem importing pyscf. Make sure pyscf has been installed: pip install pyscf", BC.END)
-            exit(9)
+            ashexit(code=9)
         #PySCF scratch dir. Todo: Need to adapt
         #print("Setting PySCF scratchdir to ", os.getcwd())
 
@@ -119,9 +119,9 @@ class PySCFTheory:
                     pass
                 else:
                     print(BC.FAIL, "Potfile: ", self.potfile, "does not exist!", BC.END)
-                    exit()
+                    ashexit()
             except:
-                exit()
+                ashexit()
 
             # TODO: Adapt to RKS vs. UKS etc.
             mf = solvent.PE(scf.RKS(mol), self.potfile)

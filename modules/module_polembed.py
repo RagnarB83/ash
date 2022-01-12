@@ -3,7 +3,7 @@ import shutil
 import time
 import numpy as np
 
-from functions.functions_general import BC,blankline,print_time_rel
+from functions.functions_general import BC,blankline,print_time_rel, ashexit
 import modules.module_coords
 
 #Polarizable Embedding theory object.
@@ -32,7 +32,7 @@ class PolEmbedTheory:
         if self.pot_option=='LoProp':
             if daltondir is None:
                 print("LoProp option chosen. This requires daltondir variable")
-                exit()
+                ashexit()
 
 
         if pdbfile is not None:
@@ -117,7 +117,7 @@ class PolEmbedTheory:
                 except:
                     print("Pyframe not found. Install pyframe via pip (https://pypi.org/project/PyFraME):")
                     print("pip install pyframe")
-                    exit(9)
+                    ashexit(code=9)
                 #Create dummy pdb-file if PDB-file not provided
                 if pdbfile is None:
                     modules.module_coords.write_pdbfile_dummy(self.elems, self.coords, self.potfilename, self.hybridatomlabels, self.residlabels)
@@ -153,7 +153,7 @@ class PolEmbedTheory:
                 elif self.pot_option=='Protein-SEP':
                     file=pdbfile
                     print("Pot option: Protein-SEP")
-                    exit()
+                    ashexit()
                     system = pyframe.MolecularSystem(input_file=file)
                     Polregion = system.get_fragments_by_name(names=[self.PElabel_pyframe])
                     NonPolregion = system.get_fragments_by_name(names=['WAT'])
@@ -191,7 +191,7 @@ class PolEmbedTheory:
                     print("Created potfile (via Dalton and LoProp): ", self.potfile)
                 else:
                     print("Invalid option")
-                    exit()
+                    ashexit()
                 #Copying pyframe-created potfile from dir:
                 shutil.copyfile(self.potfilename+'/' + self.potfilename+'.pot', './'+self.potfilename+'.pot')
 
@@ -248,7 +248,7 @@ class PolEmbedTheory:
 
                 else:
                     print("Other pot options not yet available")
-                    exit()
+                    ashexit()
         else:
             print("Pot creation is off for this object. Assuming potfile has been provided")
             self.potfile=potfilename+'.pot'
@@ -298,10 +298,10 @@ class PolEmbedTheory:
 
         elif self.qm_theory_name == "ORCATheory":
             print("not available for ORCATheory")
-            exit()
+            ashexit()
         else:
             print("invalid QM theory")
-            exit()
+            ashexit()
 
         #Todo: self.MM_Energy from PolEmbed calc?
         self.MMEnergy=0

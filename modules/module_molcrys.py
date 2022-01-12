@@ -1,6 +1,6 @@
 import numpy as np
 import modules.module_coords
-from functions.functions_general import print_time_rel_and_tot,print_time_rel,blankline,printdebug,BC,uniq
+from functions.functions_general import ashexit, print_time_rel_and_tot,print_time_rel,blankline,printdebug,BC,uniq
 from interfaces.interface_ORCA import grabatomcharges_ORCA,chargemodel_select
 import interfaces.interface_ORCA
 from interfaces.interface_xtb import grabatomcharges_xTB
@@ -125,7 +125,7 @@ def molcrys(cif_file=None, xtl_file=None, xyz_file=None, cell_length=None, cell_
         if shiftasymmunit is True:
             print("Shifting asymmetric unit")
             print("not ready")
-            exit()
+            ashexit()
             shift=[-0.3,-0.3,-0.3]
             asymmcoords=functions.functions_molcrys.shift_fractcoords(asymmcoords,shift)
 
@@ -204,7 +204,7 @@ def molcrys(cif_file=None, xtl_file=None, xyz_file=None, cell_length=None, cell_
         #Need to read cell_lengths and cell_angles also
         if cell_length is None or cell_angles is None:
             print("cell_length/cell_angles is not defined. This is needed for XYZ-file option.")
-            exit()
+            ashexit()
         blankline()
         
         #Calculating cell vectors.
@@ -221,7 +221,7 @@ def molcrys(cif_file=None, xtl_file=None, xyz_file=None, cell_length=None, cell_
 
     else:
         print("Neither CIF-file, XTL-file or XYZ-file passed to molcrys. Exiting...")
-        exit(1)
+        ashexit()
 
 
 
@@ -308,7 +308,7 @@ def molcrys(cif_file=None, xtl_file=None, xyz_file=None, cell_length=None, cell_
         if checkflag == 1:
             print("Automatic connectivity failed. Make sure that the fragment definitions are correct, "
                   "that the cell is not missing atoms or that it contains extra atoms")
-            exit(1)
+            ashexit()
     else:
         chosenscale=settings_ash.settings_dict["scale"]
         chosentol=settings_ash.settings_dict["tol"]
@@ -320,7 +320,7 @@ def molcrys(cif_file=None, xtl_file=None, xyz_file=None, cell_length=None, cell_
         if checkflag == 0:
             print(BC.OKMAGENTA, "A miracle occurred! Fragment assignment succeeded!", BC.END)
         else:
-            exit(1)
+            ashexit()
 
 
     print_time_rel_and_tot(currtime, origtime, modulename='frag_define')
@@ -346,7 +346,7 @@ def molcrys(cif_file=None, xtl_file=None, xyz_file=None, cell_length=None, cell_
 
         if len(tempcluster_coords) == 0:
             print(BC.FAIL,"After removing all partial fragments, the Cluster fragment is empty. Something went wrong. Exiting.", BC.END)
-            exit(1)
+            ashexit()
     elif cluster_type == 'supercell':
         #Super-cell instead of sphere. Advantage: If unitcell is well-behaved then we will have no dipole problem when we cut a sphere.
         #Disadvantage, we could have partial fragment at boundary. 
@@ -358,7 +358,7 @@ def molcrys(cif_file=None, xtl_file=None, xyz_file=None, cell_length=None, cell_
         
     else:
         print("unknown cluster_type")
-        exit()
+        ashexit()
 
 
 
@@ -466,7 +466,7 @@ def molcrys(cif_file=None, xtl_file=None, xyz_file=None, cell_length=None, cell_
         functions.functions_molcrys.gasfragcalc_xTB(fragmentobjects,Cluster,chargemodel,theory.xtbdir,theory.xtbmethod,numcores)
     else:
         print("Unsupported theory for charge-calculations in MolCrys. Options are: ORCATheory or xTBTheory")
-        exit(1)
+        ashexit()
     print_time_rel_and_tot(currtime, origtime, modulename="gasfragcalc")
     currtime=time.time()
     print("Atom charge assignments in Cluster done!")

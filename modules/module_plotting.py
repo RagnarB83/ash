@@ -1,5 +1,5 @@
 import numpy as np
-from functions.functions_general import print_line_with_mainheader,print_line_with_subheader1
+from functions.functions_general import print_line_with_mainheader,print_line_with_subheader1,ashexit
 
 #repeated here so that plotting can be stand-alone
 class BC:
@@ -22,7 +22,7 @@ def load_matplotlib():
         import matplotlib
     except:
         print("Loading MatplotLib failed. Probably not installed. Please install using conda: conda install matplotlib or pip: pip install matplotlib")
-        exit()
+        ashexit()
     print("Matplotlib loaded")
     matplotlib.use('Agg')
     import matplotlib.pyplot as plt 
@@ -101,7 +101,7 @@ class ASH_plot():
             #If Python lists
             if (type(x_list) != list and type(x_list) != np.ndarray) or ((type(y_list) != list and type(y_list) != np.ndarray)):
                 print(BC.FAIL,"Please provide either a valid x_list and y_list (can be Python lists or Numpy arrays) or a surfacedictionary (Python dict)", BC.END)
-                exit()
+                ashexit()
             else:
                 x=list(x_list);y=list(y_list)
 
@@ -132,7 +132,7 @@ class ASH_plot():
         else:
             if self.x_axislabels == None:
                 print(BC.FAIL, "For multiple subplots, x_axislabels and y_axislabels must be set.", BC.END)
-                exit()
+                ashexit()
             curraxes.set_xlabel(self.x_axislabels[subplot])  # Add an x-label to the axes.
             curraxes.set_ylabel(self.y_axislabels[subplot])  # Add a y-label to the axes.
             if self.subplot_titles != None:
@@ -312,7 +312,7 @@ def contourplot(surfacedictionary, label='Label',x_axislabel='Coord', y_axislabe
             #Probably related to what happens when interpolated value is right on edge of range. If it falls right on then a zero may get added.
             # mode='nearest' seems to give the value instead
             print("problem. zero value exiting")
-            exit()
+            ashexit()
             
         Y = zoom(Y, pw, mode='nearest')
         Z = zoom(Z, pw, mode='nearest')
@@ -359,7 +359,7 @@ def plot_Spectrum(xvalues=None, yvalues=None, plotname='Spectrum', range=None, u
     print_line_with_mainheader("plot_Spectrum")
     if xvalues is None or yvalues is None:
         print("plot_Spectrum requires xvalues and yvalues variables")
-        exit(1)
+        ashexit()
     assert len(xvalues) == len(yvalues), "List of yvalues not same size as list of xvalues." 
 
     start=range[0]
@@ -374,7 +374,7 @@ def plot_Spectrum(xvalues=None, yvalues=None, plotname='Spectrum', range=None, u
     print("yvalues ({}): {}".format(len(yvalues),yvalues))
     if len(xvalues) == 0:
         print("X-values list length zero. Exiting.")
-        exit()
+        ashexit()
 
     #########################
     # Plot spectra.
@@ -476,7 +476,7 @@ def MOplot_vertical(mos_dict, pointsize=4000, linewidth=2, label="Label", yrange
 
 def sdfdsf(mos_alpha=None, mos_beta=None, plotname='MO-plot', start=None, finish=None, broadening=0.1, points=10000, hftyp_I=None, matplotlib=True, imageformat='png'):
     print("todo??")
-    exit()
+    ashexit()
  
     blankline()
     print(bcolors.OKGREEN,"-------------------------------------------------------------------",bcolors.ENDC)

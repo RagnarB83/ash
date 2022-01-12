@@ -5,7 +5,7 @@ import copy
 import multiprocessing as mp
 
 import constants
-from functions.functions_general import print_line_with_mainheader, print_time_rel, printdebug
+from functions.functions_general import ashexit, print_line_with_mainheader, print_time_rel, printdebug
 from modules.module_singlepoint import Singlepoint
 from interfaces.interface_safires import attach_safires_to_ASE
 
@@ -45,15 +45,15 @@ def Dynamics_ASE(fragment=None, PBC=False, theory=None, temperature=300, timeste
     except:
         print("problem importing ase library. is ase installed?")
         print("Try: pip install ase")
-        exit()
+        ashexit(code=9)
 
     #Print simulation info
     if simulation_steps == None and simulation_time == None:
         print("Either simulation_steps or simulation_time needs to be set")
-        exit()
+        ashexit()
     if fragment == None:
         print("No fragment object. Exiting")
-        exit()
+        ashexit()
     if simulation_time != None:
         simulation_steps=simulation_time/timestep
     if simulation_steps != None:
@@ -171,7 +171,7 @@ def Dynamics_ASE(fragment=None, PBC=False, theory=None, temperature=300, timeste
         import gpaw
         FixBondLengths_gpaw=gpaw.utilities.watermodel.FixBondLengthsWaterModel
         print("To be finished")
-        exit()
+        ashexit()
         def rigid(atoms):
             rattle = ([(3 * i + j, 3 * i + (j + 1) % 3)
                                 for i in range(len(atoms) // 3)
@@ -243,7 +243,7 @@ def Dynamics_ASE(fragment=None, PBC=False, theory=None, temperature=300, timeste
         print("Nose-Hoover thermostat using ASE NPT class")
         print("Disabled")
         #
-        exit()
+        ashexit()
         #Adding dummy box : https://gitlab.com/ase/ase/-/issues/942
         atoms.set_cell((1, 1, 1))
         #atoms.center()
@@ -252,7 +252,7 @@ def Dynamics_ASE(fragment=None, PBC=False, theory=None, temperature=300, timeste
                 pfactor=None)
     else:
         print("Unknown thermostat/barostat. Exiting")
-        exit()
+        ashexit()
 
 
     def printenergy(a):
@@ -293,7 +293,7 @@ def Dynamics_ASE(fragment=None, PBC=False, theory=None, temperature=300, timeste
 
     if multiple_walkers == True:
         if numwalkers==1:
-            print("Please provide number of walkers by numwalkers keyword argument");exit()
+            print("Please provide number of walkers by numwalkers keyword argument");ashexit()
         else:
             print("Multiple walker dynamics enabled. Will launch {} walkers".format(numwalkers))
 
@@ -308,7 +308,7 @@ def Dynamics_ASE(fragment=None, PBC=False, theory=None, temperature=300, timeste
                 print("Exception message:", message)
                 pool.terminate()
                 event.set()
-                exit()
+                ashexit()
             print("Launching")
             pool.apply_async(dynamics_walker, kwds=dict(atomsobj=atoms, simulation_steps=simulation_steps), error_callback=Terminate_Pool_processes)
 
@@ -330,7 +330,7 @@ def dynamics_walker(dynobj=None, atomsobj=None, simulation_steps=None):
     print("dynobj:", dynobj)
     print("simulation_steps:", simulation_steps)
     print("atomsobj", atomsobj)
-    exit()
+    ashexit()
     dyn=copy.deepcopy(dynobj)
     dyn.run(simulation_steps)
 
