@@ -317,7 +317,7 @@ maxiter 150\nend
 
 
     #Core-Valence ScalarRelativistic Step
-    def CVSR_Step(self, current_coords, elems, reloption,calc_label):
+    def CVSR_Step(self, current_coords, elems, reloption,calc_label, numcores):
 
         #Note: if reloption=='DKH' then we do DKH in NoFC and not in FC
         # if reloption=='' then no relativity
@@ -330,10 +330,10 @@ maxiter 150\nend
         ccsdt_mtsmall_FC = interfaces.interface_ORCA.ORCATheory(orcadir=self.orcadir, orcasimpleinput=ccsdt_mtsmall_FC_line, orcablocks=self.blocks, numcores=self.numcores, charge=self.charge, mult=self.mult)
 
         #Run
-        energy_ccsdt_mtsmall_nofc = ccsdt_mtsmall_NoFC.run(elems=elems, current_coords=current_coords)
+        energy_ccsdt_mtsmall_nofc = ccsdt_mtsmall_NoFC.run(elems=elems, current_coords=current_coords, numcores=numcores)
         shutil.copyfile(ccsdt_mtsmall_NoFC.filename+'.out', './' + calc_label + 'CCSDT_MTsmall_NoFC_DKH' + '.out')
         
-        energy_ccsdt_mtsmall_fc = ccsdt_mtsmall_FC.run(elems=elems, current_coords=current_coords)
+        energy_ccsdt_mtsmall_fc = ccsdt_mtsmall_FC.run(elems=elems, current_coords=current_coords, numcores=numcores)
         shutil.copyfile(ccsdt_mtsmall_NoFC.filename+'.out', './' + calc_label + 'CCSDT_MTsmall_FC_noDKH' + '.out')
 
         #Core-correlation is total energy difference between NoFC-DKH and FC-norel
@@ -343,7 +343,7 @@ maxiter 150\nend
 
 
     # Do 2 calculations with different DLPNO thresholds and extrapolate
-    def PNOExtrapolationStep(self,elems=None, current_coords=None, theory=None, calc_label=None):
+    def PNOExtrapolationStep(self,elems=None, current_coords=None, theory=None, calc_label=None, numcores=None):
         #elems=None, current_coords=None, theory=None, pnoextrapolation=None, DLPNO=None, F12=None, calc_label=None
         print("Inside PNOExtrapolationStep")
         #Adding TCutPNO option X
@@ -375,7 +375,7 @@ maxiter 150\nend
         
         theory.orcablocks = PNOXblocks
         
-        theory.run(elems=elems, current_coords=current_coords)
+        theory.run(elems=elems, current_coords=current_coords, numcores=numcores)
         PNOcalcX_dict = interfaces.interface_ORCA.grab_HF_and_corr_energies(theory.filename+'.out', DLPNO=self.DLPNO,F12=self.F12)
         shutil.copyfile(theory.filename+'.out', './' + calc_label + '_PNOX' + '.out')
         print("PNOcalcX:", PNOcalcX_dict)
@@ -383,7 +383,7 @@ maxiter 150\nend
 
         theory.orcablocks = PNOYblocks
         #ash.Singlepoint(fragment=fragment, theory=theory)
-        theory.run(elems=elems, current_coords=current_coords)
+        theory.run(elems=elems, current_coords=current_coords, numcores=numcores)
         PNOcalcY_dict = interfaces.interface_ORCA.grab_HF_and_corr_energies(theory.filename+'.out', DLPNO=self.DLPNO,F12=self.F12)
         shutil.copyfile(theory.filename+'.out', './' + calc_label + '_PNOY' + '.out')
         print("PNOcalcY:", PNOcalcY_dict)
@@ -462,9 +462,16 @@ maxiter 150\nend
         formula=elemlisttoformula(elems)
         calc_label = "Frag_" + str(formula) + "_" + str(self.charge) + "_" + str(self.mult) + "_"
         print("Initial Calculation label: ", calc_label)
-        
+
+
+        #CONTROLLING NUMCORES
+        #If numcores not provided to run, use self.numcores
+        if numcores == None:
+            numcores=self.numcores
+
         #Reduce numcores if required
-        numcores = check_cores_vs_electrons(elems,self.numcores,self.charge)
+        #NOTE: self.numcores is thus ignored if check_cores_vs_electrons reduces value based on system-size
+        numcores = check_cores_vs_electrons(elems,numcores,self.charge)
 
 
         # EXTRAPOLATION TO PNO LIMIT BY 2 PNO calculations
@@ -476,14 +483,14 @@ maxiter 150\nend
             print("="*70)
             #SINGLE F12 EXPLICIT CORRELATION JOB or if only 1 cardinal was provided
             if self.singlebasis is True:
-                E_SCF_1, E_corrCCSD_1, E_corrCCT_1,E_corrCC_1 = self.PNOExtrapolationStep(elems=elems, current_coords=current_coords, theory=self.ccsdt_1, calc_label=calc_label+'cardinal1')
+                E_SCF_1, E_corrCCSD_1, E_corrCCT_1,E_corrCC_1 = self.PNOExtrapolationStep(elems=elems, current_coords=current_coords, theory=self.ccsdt_1, calc_label=calc_label+'cardinal1', numcores=numcores)
             #REGULAR EXTRAPOLATION WITH 2 THEORIES
             else:
-                E_SCF_1, E_corrCCSD_1, E_corrCCT_1,E_corrCC_1 = self.PNOExtrapolationStep(elems=elems, current_coords=current_coords, theory=self.ccsdt_1, calc_label=calc_label+'cardinal1')
+                E_SCF_1, E_corrCCSD_1, E_corrCCT_1,E_corrCC_1 = self.PNOExtrapolationStep(elems=elems, current_coords=current_coords, theory=self.ccsdt_1, calc_label=calc_label+'cardinal1', numcores=numcores)
                 print("="*70)
                 print("Basis-1 job done. Now doing Basis-2 job: Family: {} Cardinal: {} ".format(self.basisfamily, self.cardinals[1]))
                 print("="*70)
-                E_SCF_2, E_corrCCSD_2, E_corrCCT_2,E_corrCC_2 = self.PNOExtrapolationStep(elems=elems, current_coords=current_coords, theory=self.ccsdt_2, calc_label=calc_label+'cardinal2')
+                E_SCF_2, E_corrCCSD_2, E_corrCCT_2,E_corrCC_2 = self.PNOExtrapolationStep(elems=elems, current_coords=current_coords, theory=self.ccsdt_2, calc_label=calc_label+'cardinal2', numcores=numcores)
                 scf_energies = [E_SCF_1, E_SCF_2]
                 ccsdcorr_energies = [E_corrCCSD_1, E_corrCCSD_2]
                 triplescorr_energies = [E_corrCCT_1, E_corrCCT_2]
@@ -503,7 +510,7 @@ maxiter 150\nend
             #SINGLE BASIS CORRELATION JOB
             if self.singlebasis is True:
 
-                self.ccsdt_1.run(elems=elems, current_coords=current_coords)
+                self.ccsdt_1.run(elems=elems, current_coords=current_coords, numcores=numcores)
                 CCSDT_1_dict = interfaces.interface_ORCA.grab_HF_and_corr_energies(self.ccsdt_1.filename+'.out', DLPNO=self.DLPNO, F12=self.F12)
                 shutil.copyfile(self.ccsdt_1.filename+'.out', './' + calc_label + 'CCSDT_1' + '.out')
                 print("CCSDT_1_dict:", CCSDT_1_dict)
@@ -513,12 +520,12 @@ maxiter 150\nend
                 E_corrCCT_CBS = CCSDT_1_dict['CCSD(T)_corr']
             #REGULAR EXTRAPOLATION WITH 2 THEORIES
             else:
-                self.ccsdt_1.run(elems=elems, current_coords=current_coords)
+                self.ccsdt_1.run(elems=elems, current_coords=current_coords, numcores=numcores)
                 CCSDT_1_dict = interfaces.interface_ORCA.grab_HF_and_corr_energies(self.ccsdt_1.filename+'.out', DLPNO=self.DLPNO)
                 shutil.copyfile(self.ccsdt_1.filename+'.out', './' + calc_label + 'CCSDT_1' + '.out')
                 print("CCSDT_1_dict:", CCSDT_1_dict)
 
-                self.ccsdt_2.run(elems=elems, current_coords=current_coords)
+                self.ccsdt_2.run(elems=elems, current_coords=current_coords, numcores=numcores)
                 CCSDT_2_dict = interfaces.interface_ORCA.grab_HF_and_corr_energies(self.ccsdt_2.filename+'.out', DLPNO=self.DLPNO)
                 shutil.copyfile(self.ccsdt_2.filename+'.out', './' + calc_label + 'CCSDT_2' + '.out')
                 print("CCSDT_2_dict:", CCSDT_2_dict)
@@ -568,12 +575,12 @@ maxiter 150\nend
                 reloption=" "
                 calc_label=calc_label+"CV_"
                 print("Doing CVSR_Step with No Scalar Relativity and CV-basis: {}".format(self.CVbasis))
-                E_corecorr_and_SR = self.CVSR_Step(current_coords, elems, reloption,calc_label)
+                E_corecorr_and_SR = self.CVSR_Step(current_coords, elems, reloption,calc_label,numcores)
             else:
                 reloption="DKH"
                 calc_label=calc_label+"CVSR_stepDKH"
                 print("Doing CVSR_Step with Relativistic Option: {} and CV-basis: {}".format(reloption,self.CVbasis))
-                E_corecorr_and_SR = self.CVSR_Step(current_coords, elems, reloption,calc_label)
+                E_corecorr_and_SR = self.CVSR_Step(current_coords, elems, reloption,calc_label,numcores)
         else:
             print("")
             print("Core-Valence Scalar Relativistic Correction is off!")
