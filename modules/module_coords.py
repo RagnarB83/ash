@@ -1794,7 +1794,8 @@ def write_pdbfile(fragment, outputname="ASHfragment", openmmobject=None, atomnam
         residlabels = fragment.numatoms * [1]
     # Note: choosing to make segment ID 3-letter-string (and then space)
     if segmentlabels is None:
-        segmentlabels = fragment.numatoms * ['SEG']
+        segmentlabels = fragment.numatoms * ['   ']
+        #segmentlabels = fragment.numatoms * ['SEG']
 
     if len(atomnames) > 99999:
         print("System larger than 99999 atoms. Will use hexadecimal notation for atom indices 100K and larger. ")
@@ -1828,9 +1829,12 @@ def write_pdbfile(fragment, outputname="ASHfragment", openmmobject=None, atomnam
             # Using last 4 letters of atomnmae
             atomnamestring = atomname[-4:]
             # Using string format from: cupnet.net/pdb-format/
-            line = "{:6s}{:5s} {:^4s}{:1s}{:3s} {:1s}{:5d}{:1s}  {:8.3f}{:8.3f}{:8.3f}{:6.2f}{:6.2f}      {:4s}{:2s}".format(
+            line = "{:6s}{:>5s} {:^4s}{:1s}{:3s}{:1s}{:5d}{:1s}   {:8.3f}{:8.3f}{:8.3f}{:6.2f}{:6.2f}      {:4s}{:>2s}".format(
                 'ATOM', atomindexstring, atomnamestring, '', resname, '', resid, '', c[0], c[1], c[2], 1.0, 0.00,
                 seg[0:3], el, '')
+            #print(line)
+            #print("ATOM      1  N   MET A   1      -4.023 -14.590  -3.242  1.00 10.20           N")
+            #exit()
             pfile.write(line + '\n')
     print("Wrote PDB file: ", outputname + '.pdb')
 
