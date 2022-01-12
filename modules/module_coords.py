@@ -838,33 +838,35 @@ def print_internal_coordinate_table(fragment, actatoms=None):
         actatoms = []
         chosen_coords = fragment.coords
         chosen_elems = fragment.elems
+    
+    #NOTE: Changing so that we calculate connectivity always regardless of availability. 
     # If no connectivity in fragment then recalculate it for actatoms only
-    if len(fragment.connectivity) == 0:
-        print("Connectivity needs to be calculated")
+    #if len(fragment.connectivity) == 0:
+    print("Connectivity needs to be calculated")
 
-        if len(actatoms) > 0:
-            chosen_coords = np.take(fragment.coords, actatoms, axis=0)
-            chosen_elems = [fragment.elems[i] for i in actatoms]
-        else:
-            chosen_coords = fragment.coords
-            chosen_elems = fragment.elems
-
-        conndepth = 99
-        scale = settings_ash.settings_dict["scale"]
-        tol = settings_ash.settings_dict["tol"]
-        try:
-            Juliafunctions = load_julia_interface()
-            connectivity = Juliafunctions.calc_connectivity(chosen_coords, chosen_elems, conndepth, scale, tol,
-                                                            eldict_covrad)
-        except:
-            print("Problem importing PyJulia (import julia). Trying py-version instead.")
-            connectivity = calc_conn_py(chosen_coords, chosen_elems, conndepth, scale, tol)
-        print("Connectivity calculation complete.")
+    if len(actatoms) > 0:
+        chosen_coords = np.take(fragment.coords, actatoms, axis=0)
+        chosen_elems = [fragment.elems[i] for i in actatoms]
     else:
-        print("Using precalculated connectivity")
-        connectivity = fragment.connectivity
         chosen_coords = fragment.coords
         chosen_elems = fragment.elems
+
+    conndepth = 99
+    scale = settings_ash.settings_dict["scale"]
+    tol = settings_ash.settings_dict["tol"]
+    try:
+        Juliafunctions = load_julia_interface()
+        connectivity = Juliafunctions.calc_connectivity(chosen_coords, chosen_elems, conndepth, scale, tol,
+                                                        eldict_covrad)
+    except:
+        print("Problem importing PyJulia (import julia). Trying py-version instead.")
+        connectivity = calc_conn_py(chosen_coords, chosen_elems, conndepth, scale, tol)
+    print("Connectivity calculation complete.")
+    #else:
+    #    print("Using precalculated connectivity")
+    #    connectivity = fragment.connectivity
+    #    chosen_coords = fragment.coords
+    #    chosen_elems = fragment.elems
 
     # Looping over connected fragments
     bondpairsdict = {}
