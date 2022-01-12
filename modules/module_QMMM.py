@@ -232,50 +232,46 @@ class QMMMTheory:
             if self.mm_theory_name == "OpenMMTheory":
                 self.mm_theory.remove_constraints_for_atoms(self.qmatoms)
 
-                
-                #Remove bonded interactions in MM part. Only in OpenMM. Assuming they were never defined in NonbondedTHeory
-                
-                if self.mm_theory_name == "OpenMMTheory":
-                    print("Removing bonded terms for QM-region in MMtheory")
-                    self.mm_theory.modify_bonded_forces(self.qmatoms)
+            #Remove bonded interactions in MM part. Only in OpenMM. Assuming they were never defined in NonbondedTHeory
+                print("Removing bonded terms for QM-region in MMtheory")
+                self.mm_theory.modify_bonded_forces(self.qmatoms)
 
-                    #NOTE: Temporary. Adding exceptions for nonbonded QM atoms. Will ignore QM-QM Coulomb and LJ interactions. 
-                    #NOTE: For QM-MM interactions Coulomb charges are zeroed below (update_charges and delete_exceptions)
-                    print("Removing nonbonded terms for QM-region in MMtheory (QM-QM interactions)")
-                    self.mm_theory.addexceptions(self.qmatoms)
+                #NOTE: Temporary. Adding exceptions for nonbonded QM atoms. Will ignore QM-QM Coulomb and LJ interactions. 
+                #NOTE: For QM-MM interactions Coulomb charges are zeroed below (update_charges and delete_exceptions)
+                print("Removing nonbonded terms for QM-region in MMtheory (QM-QM interactions)")
+                self.mm_theory.addexceptions(self.qmatoms)
                 
-                #Change charges
-                # Keeping self.charges as originally defined.
-                #Setting QM charges to 0 since electrostatic embedding
-                #and Charge-shift QM-MM boundary
+            #Change charges
+            # Keeping self.charges as originally defined.
+            #Setting QM charges to 0 since electrostatic embedding
+            #and Charge-shift QM-MM boundary
                 
-                #Zero QM charges
-                #TODO: DO here or inside run instead?? Needed for MM code.
-                self.ZeroQMCharges() #Modifies self.charges_qmregionzeroed
-                print("length of self.charges_qmregionzeroed :", len(self.charges_qmregionzeroed))
+            #Zero QM charges
+            #TODO: DO here or inside run instead?? Needed for MM code.
+            self.ZeroQMCharges() #Modifies self.charges_qmregionzeroed
+            print("length of self.charges_qmregionzeroed :", len(self.charges_qmregionzeroed))
                 
-                #TODO: make sure this works for OpenMM and for NonBondedTheory
-                # Updating charges in MM object. 
-                self.mm_theory.update_charges(self.qmatoms,[0.0 for i in self.qmatoms])
-                if self.mm_theory_name == "OpenMMTheory":
-                    #Deleting Coulomb exception interactions involving QM and MM atoms
-                    self.mm_theory.delete_exceptions(self.qmatoms)
-                
-                print("Charges of QM atoms set to 0 (since Electrostatic Embedding):")
+            #TODO: make sure this works for OpenMM and for NonBondedTheory
+            # Updating charges in MM object. 
+            self.mm_theory.update_charges(self.qmatoms,[0.0 for i in self.qmatoms])
 
+            if self.mm_theory_name == "OpenMMTheory":
+                #Deleting Coulomb exception interactions involving QM and MM atoms
+                self.mm_theory.delete_exceptions(self.qmatoms)
                 #Option to create OpenMM externalforce that handles full system
                 if openmm_externalforce == True:
                     print("openmm_externalforce is True")
                     print("Creating new OpenMM custom external force")
                     self.openmm_externalforceobject = self.mm_theory.add_custom_external_force()
 
-                if self.printlevel > 3:
-                    for i in self.allatoms:
-                        if i in self.qmatoms:
-                            print("QM atom {} ({}) charge: {}".format(i, self.elems[i], self.charges_qmregionzeroed[i]))
-                        else:
-                            print("MM atom {} ({}) charge: {}".format(i, self.elems[i], self.charges_qmregionzeroed[i]))
-                blankline()
+            print("Charges of QM atoms set to 0 (since Electrostatic Embedding):")
+            if self.printlevel > 3:
+                for i in self.allatoms:
+                    if i in self.qmatoms:
+                        print("QM atom {} ({}) charge: {}".format(i, self.elems[i], self.charges_qmregionzeroed[i]))
+                    else:
+                        print("MM atom {} ({}) charge: {}".format(i, self.elems[i], self.charges_qmregionzeroed[i]))
+            blankline()
         else:
             #Case: No actual MM theory but we still want to zero charges for QM elstate embedding calculation
             #TODO: Remove option for no MM theory or keep this ??
