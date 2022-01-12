@@ -542,8 +542,8 @@ class QMMMTheory:
             #If no linkatoms then use original self.qmelems
             current_qmelems = self.qmelems
             #If no linkatoms then self.pointcharges are just original charges with QM-region zeroed
-            #print("self.mmatoms:", self.mmatoms)
-            #print("self.charges_qmregionzeroed: ", self.charges_qmregionzeroed)
+            print("self.mmatoms:", self.mmatoms)
+            print("self.charges_qmregionzeroed: ", self.charges_qmregionzeroed)
             self.pointcharges=[self.charges_qmregionzeroed[i] for i in self.mmatoms]
             #If no linkatoms MM coordinates are the same
             self.pointchargecoords=self.mmcoords
