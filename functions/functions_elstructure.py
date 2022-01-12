@@ -8,7 +8,7 @@ import shutil
 import constants
 import math
 import dictionaries_lists
-from functions.functions_general import ashexit, isoddfrom
+from functions.functions_general import ashexit, isodd
 import interfaces.interface_ORCA
 from modules.module_coords import nucchargelist
 
