@@ -7,6 +7,9 @@ class MRCCTheory:
     def __init__(self, mrccdir=None, filename='mrcc', fragment=None, charge=None, mult=None, printlevel=2,
                 mrccinput=None, numcores=1):
 
+        #Indicate that this is a QMtheory
+        self.theorytype="QM"
+
         #Printlevel
         self.printlevel=printlevel
         self.filename=filename

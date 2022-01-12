@@ -48,17 +48,17 @@ def Singlepoint(fragment=None, theory=None, Grad=False):
         print("Doing single-point Energy job on fragment. Formula: {} Label: {} ".format(fragment.prettyformula,fragment.label))
 
         #Check if charge/mult has been defined in theory. Otherwise grab from fragment
-        #TODO: Would be good to also check that theory is a QM-theory. Define as attribute?
-        if theory.charge == None and theory.mult == None:
-            print(BC.WARNING,"Warning: There is no charge or mult defined in theory",BC.END)
-            if fragment.charge != None and fragment.mult != None:
-                print(BC.WARNING,"Fragment contains charge/mult information: Charge: {} Mult: {} Using this instead".format(fragment.charge,fragment.mult), BC.END)
-                print(BC.WARNING,"Make sure this is what you want!", BC.END)
-                theory.charge=fragment.charge; theory.mult=fragment.mult
-                theory_chargemult_change=True
-            else:
-                print(BC.FAIL,"No charge/mult information present. Exiting.",BC.END)
-                ashexit()
+        if theory.theorytype == "QM":
+            if theory.charge == None and theory.mult == None:
+                print(BC.WARNING,"Warning: There is no charge or mult defined in theory",BC.END)
+                if fragment.charge != None and fragment.mult != None:
+                    print(BC.WARNING,"Fragment contains charge/mult information: Charge: {} Mult: {} Using this instead".format(fragment.charge,fragment.mult), BC.END)
+                    print(BC.WARNING,"Make sure this is what you want!", BC.END)
+                    theory.charge=fragment.charge; theory.mult=fragment.mult
+                    theory_chargemult_change=True
+                else:
+                    print(BC.FAIL,"No charge/mult information present. Exiting.",BC.END)
+                    ashexit()
         energy = theory.run(current_coords=coords, elems=elems)
 
         #If we changed theory charge/mult information. Change back

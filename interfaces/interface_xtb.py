@@ -23,6 +23,9 @@ class xTBTheory:
     def __init__(self, xtbdir=None, fragment=None, charge=None, mult=None, xtbmethod='GFN1', runmode='inputfile', numcores=1, printlevel=2, filename='xtb_',
                  maxiter=500, electronic_temp=300, label=None, accuracy=0.1, hardness_PC=1000, solvent=None):
 
+        #Indicate that this is a QMtheory
+        self.theorytype="QM"
+
         #SOlvent
         #TODO: Only available for inputfile interface right now
         if solvent != None:

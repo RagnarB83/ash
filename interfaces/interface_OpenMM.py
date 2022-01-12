@@ -42,6 +42,10 @@ class OpenMMTheory:
         print_line_with_mainheader("OpenMM Theory")
 
         module_init_time = time.time()
+
+        #Indicate that this is a MMtheory
+        self.theorytype="MM"
+
         # OPEN MM load
         try:
             import openmm

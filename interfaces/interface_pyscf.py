@@ -10,7 +10,9 @@ class PySCFTheory:
     def __init__(self, fragment='', charge='', mult='', printsetting='False', printlevel=2, pyscfbasis='', pyscffunctional='',
                  pe=False, potfile='', filename='pyscf', pyscfmemory=3100, numcores=1):
 
-
+        #Indicate that this is a QMtheory
+        self.theorytype="QM"
+        
         #Printlevel
         self.printlevel=printlevel
 
