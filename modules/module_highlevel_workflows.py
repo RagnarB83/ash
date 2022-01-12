@@ -649,7 +649,7 @@ maxiter 150\nend
 
         #return final energy and also dictionary with energy components
         #TODO: remove E_dict
-        return E_FINAL, E_dict
+        return E_FINAL
 
     
 ############################

@@ -48,6 +48,7 @@ def Singlepoint(fragment=None, theory=None, Grad=False):
         print("Doing single-point Energy job on fragment. Formula: {} Label: {} ".format(fragment.prettyformula,fragment.label))
 
         #Check if charge/mult has been defined in theory. Otherwise grab from fragment
+        #Check if QM theory
         if theory.theorytype == "QM":
             if theory.charge == None and theory.mult == None:
                 print(BC.WARNING,"Warning: There is no charge or mult defined in theory",BC.END)
@@ -59,14 +60,22 @@ def Singlepoint(fragment=None, theory=None, Grad=False):
                 else:
                     print(BC.FAIL,"No charge/mult information present. Exiting.",BC.END)
                     ashexit()
+        #If QM/MM theory (QMMMTheory or PolembedTheory), currently do nothing with respect to charge/mult.
+        #The sub-QMtheory should have this defined.
+        elif theory.theorytype=="QM/MM":
+            pass
+        elif theory.theorytype=="MM":
+            pass
+
+        #Run
         energy = theory.run(current_coords=coords, elems=elems)
 
         #If we changed theory charge/mult information. Change back
         if theory_chargemult_change is True:
             theory.charge=None; theory.mult=None
 
-        #Some theories like CC_CBS_Theory may return both energy and energy componentsdict as a tuple
-        #TODO: avoid this nasty fix
+        #Previously some theories like CC_CBS_Theory returned energy and componentsdict as a tuple
+        #TODO: This can probably be deleted soon.
         if type(energy) is tuple:
             componentsdict=energy[1]
             energy=energy[0]

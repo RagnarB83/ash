@@ -15,6 +15,10 @@ class PolEmbedTheory:
                  potfilename='System', pot_option=None, pyframe=False, PElabel_pyframe='MM', daltondir=None, pdbfile=None):
         module_init_time=time.time()
         print(BC.WARNING,BC.BOLD,"------------Defining PolEmbedTheory object-------------", BC.END)
+
+        #Indicate that this is a hybrid QM/MM type theory (like QMMMTheory)
+        self.theorytype="QM/MM"
+
         self.pot_create=pot_create
         self.pyframe=pyframe
         self.pot_option=pot_option
