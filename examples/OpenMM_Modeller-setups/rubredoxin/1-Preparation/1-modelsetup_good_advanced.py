@@ -14,4 +14,6 @@ residue_variants={'A':{6:'CYX',9:'CYX',39:'CYX',42:'CYX'}}
 # Setting up system via Modeller
 OpenMM_Modeller(pdbfile=pdbfile, forcefield='CHARMM36',
     extraxmlfile=extraxmlfile, watermodel="tip3p", pH=7.0, solvent_padding=10.0,
-    ionicstrength=0.1, pos_iontype='Na+', neg_iontype='Cl-', residue_variants=residue_variants)
+    ionicstrength=0.1, pos_iontype='Na+', neg_iontype='Cl-', residue_variants=residue_variants, use_higher_occupancy=True)
+
+#NOTE: This script will give a correct system setup for 2dsx.pdb, showing more options available to OpenMM_Modeller. 

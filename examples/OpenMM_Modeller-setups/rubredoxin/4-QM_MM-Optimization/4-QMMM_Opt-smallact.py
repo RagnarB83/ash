@@ -15,7 +15,7 @@ omm = OpenMMTheory(xmlfiles=["charmm36.xml", "charmm36/water.xml", "./specialres
             platform='CPU', numcores=numcores, autoconstraints=None, rigidwater=False)
 
 #QM theory: r2SCAN-3c DFT-composite method using ORCA
-orca = ORCATheory(charge=-1, mult=6, orcasimpleinput="! r2SCAN-3c tightscf", numcores=numcores)
+orca = ORCATheory(charge=-1, mult=6, orcasimpleinput="! r2SCAN-3c tightscf", numcores=1)
 #QM/MM theory
 qmmm = QMMMTheory(qm_theory=orca, mm_theory=omm, fragment=fragment,
         embedding="Elstat", qmatoms=qmatoms, printlevel=1)

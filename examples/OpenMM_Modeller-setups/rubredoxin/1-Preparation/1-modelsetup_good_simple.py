@@ -13,4 +13,6 @@ residue_variants={'A':{6:'CYX',9:'CYX',39:'CYX',42:'CYX'}}
 
 # Setting up system via Modeller
 OpenMM_Modeller(pdbfile=pdbfile, forcefield='CHARMM36',
-    extraxmlfile=extraxmlfile, residue_variants=residue_variants)
+    extraxmlfile=extraxmlfile, residue_variants=residue_variants, use_higher_occupancy=True)
+
+#NOTE: This script will give a correct system setup for 2dsx.pdb with reasonable system setup defaults
