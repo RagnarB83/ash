@@ -10,7 +10,7 @@ import ash
 from functions.functions_general import ashexit, BC, print_time_tot_color, timingsobject, print_line_with_mainheader, \
     print_line_with_subheader1
 
-programversion = 0.2
+programversion = 0.5
 
 
 # ASH footer
@@ -37,7 +37,6 @@ def print_header():
     # Initializes time
     global init_time
     init_time = time.time()
-
     # Comment out to skip printing of header
     if settings_ash.settings_dict["print_logo"] is True:
         print_logo()
@@ -47,19 +46,19 @@ def print_header():
     #Check Python version
     pythonversion=(sys.version_info[0],sys.version_info[1],sys.version_info[2])
     print("Python version: {}.{}.{}".format(pythonversion[0],pythonversion[1],pythonversion[2]))
+    print("Python interpreter:", sys.executable)
     if pythonversion < (3,6,0):
       print("ASH requires Python version 3.6.0 or higher")
       ashexit()
     
     print("\nASH Settings after reading defaults and ~/ash_user_settings.ini : ")
+    print("See https://ash.readthedocs.io/en/latest/basics.html#ash-settings on how to change settings.")
     # print(settings_ash.settings_dict)
     for key, val in settings_ash.settings_dict.items():
         print("\t", key, ": ", val)
-    print("\nSetting initial time\n")
-    print("Note: ASH uses ANSI escape sequences for displaying color. Use less -R to display")
-    print("or set LESS=-R environment variable")
-    print()
-    print("To turn off escape sequences, set: 'use_ANSI_color = False' in")
+
+    print("\nNote: ASH can use ANSI escape sequences for displaying color. Use e.g. less -R to display")
+    print("To turn on/off escape sequences, set: 'use_ANSI_color = False' in")
     print("~/ash_user_settings.ini")
     print()
 
@@ -153,8 +152,8 @@ def print_logo():
     # print(BC.OKBLUE,ascii_banner2,BC.END)
     print(f"{BC.OKGREEN}{ascii_banner_center}{BC.END}")
     print(f"{BC.OKGREEN}{ascii_tree}{BC.END}")
-    print(f"{BC.WARNING}A COMPCHEM AND QM/MM ENVIRONMENT{BC.END}".center(80))
-    print(f"{BC.WARNING}{BC.BOLD}Version: {programversion}{BC.END}".center(80))
-    print(f"{BC.WARNING}Git commit version: {git_commit_number}{BC.END}".center(80))
+    print(f"{BC.WARNING}A MULTISCALE MODELLING PROGRAM{BC.END}".center(90))
+    print(f"{BC.WARNING}{BC.BOLD}Version: {programversion}{BC.END}".center(95))
+    print(f"{BC.WARNING}Git commit version: {git_commit_number}{BC.END}".center(90))
     print(f"{BC.OKGREEN}{'-' * 80}{BC.END}")
     print(f"{BC.OKGREEN}{'-' * 80}{BC.END}")

@@ -2017,7 +2017,7 @@ def OpenMM_Modeller(pdbfile=None, forcefield=None, xmlfile=None, waterxmlfile=No
         forcefield = openmm_app.forcefield.ForceField(xmlfile, waterxmlfile, extraxmlfile)
 
 
-    print("\nNow checking PDB-file for alternate locations, i.e. multiple occupancies:")
+    print("\nNow checking PDB-file for alternate locations, i.e. multiple occupancies:\n")
 
     
     #Check PDB-file whether it contains alternate locations of residue atoms (multiple occupations)
@@ -2143,10 +2143,10 @@ def OpenMM_Modeller(pdbfile=None, forcefield=None, xmlfile=None, waterxmlfile=No
     # Create ASH fragment
     fragment = Fragment(pdbfile="system_afterions.pdb")
     # Write to disk
-    fragment.print_system(filename="fragment.ygg")
-    fragment.write_xyzfile(xyzfilename="fragment.xyz")
+    fragment.print_system(filename="finalsystem.ygg")
+    fragment.write_xyzfile(xyzfilename="finalsystem.xyz")
 
-    print("OpenMM_Modeller used the following XML-files to define system:")
+    print("\nOpenMM_Modeller used the following XML-files to define system:")
     print("General forcefield XML file:", xmlfile)
     print("Solvent forcefield XML file:", waterxmlfile)
     print("Extra forcefield XML file:", extraxmlfile)
@@ -2175,8 +2175,9 @@ def OpenMM_Modeller(pdbfile=None, forcefield=None, xmlfile=None, waterxmlfile=No
     print("finalsystem.ygg  (ASH fragment file)")
     print("finalsystem.xyz   (XYZ coordinate file)")
     print("{}   (System XML file)".format(systemxmlfile))
-    print(BC.OKGREEN,"\n\n OpenMM_Modeller done! System has been fully set up\n",BC.END)
-    print("To use this system setup to define a future OpenMMTheory object you can either do:\n")
+    print(BC.OKGREEN,"\n\n OpenMM_Modeller done! System has been fully set up!\n",BC.END)
+    print(BC.WARNING,"Strongly recommended: Check finalsystem.pdb carefully for correctness!", BC.END)
+    print("\nTo use this system setup to define a future OpenMMTheory object you can either do:\n")
 
     print(BC.OKMAGENTA,"1. Define using separate forcefield XML files:",BC.END)
     if extraxmlfile is None:
@@ -2190,8 +2191,6 @@ def OpenMM_Modeller(pdbfile=None, forcefield=None, xmlfile=None, waterxmlfile=No
     
     #Return openmmobject. Could be used directly
     return openmmobject
-    # Return forcefield object,  topology object and ASH fragment
-    #return forcefield, modeller.topology, fragment
 
 
 def MDtraj_import_():
@@ -3389,19 +3388,24 @@ def find_alternate_locations_residues(pdbfile, use_higher_occupancy=False):
     #Now going through pdb_atomlines, finding marker and looking up the best occupancy atom from altloc_dict
     finalpdblines=[]
     for pdbline in pdb_atomlines:
+
         if pdbline[0]== "REPLACE_":
-            print("Alernate locations for atom:", pdbline[1])
+            print("Alternate locations for atom:", pdbline[1])
             options=[]
             #Looping through altloc_dict items
             for i,j in altloc_dict.items():
                 #Matching atomstring
                 if i[0] == pdbline[1]:
                     options.append([j[0],j[1],j[2]])
-            for l in options: print(l)
+            for l in options:
+                pdblinestring=''.join(map(str,l[2:]))
+                print(pdblinestring)
             #Get max occupancy item
             ind = find_index_of_sublist_with_max_col(options,1)
             fline = options[ind][2][:16] + " " + options[ind][2][16 + 1:]
-            print(f"Choosing line {fline} based on occupancy {options[ind][1]}.")
+            #print(f"Choosing line {fline} based on occupancy {options[ind][1]}.")
+            print(f"Choosing line with occupancy {options[ind][1]}.")
+            print("-"*90)
             if fline not in finalpdblines:
                 finalpdblines.append(fline)
         else:
@@ -3413,7 +3417,7 @@ def find_alternate_locations_residues(pdbfile, use_higher_occupancy=False):
             print(f"\nChain {chain}:")
             for res in residues:
                 print(res)
-        print(BC.WARNING,"These residues should be manually inspected and fixed in the PDB-file before continuing", BC.END)
+        print(BC.WARNING,"\nThese residues should be manually inspected and fixed in the PDB-file before continuing", BC.END)
         #if alternatelocation_label != None:
         #    print(BC.WARNING,"\nalternatelocation_label option chosen. Will choose form {} and go on.\n".format(alternatelocation_label), BC.END)
         #    writelisttofile(pdb_atomlines, "system_afteratlocfixes.pdb", separator="")

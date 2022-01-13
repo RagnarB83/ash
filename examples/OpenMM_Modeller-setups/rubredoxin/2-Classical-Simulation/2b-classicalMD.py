@@ -16,9 +16,14 @@ omm = OpenMMTheory(xmlfiles=["charmm36.xml", "charmm36/water.xml", "./specialres
 #MM minimization for 100 steps
 OpenMM_Opt(fragment=fragment, theory=omm, maxiter=100, tolerance=1)
 
-#Classical MD simulation for 10 ps
-OpenMM_MD(fragment=fragment, theory=omm, timestep=0.001, simulation_time=5, traj_frequency=10, temperature=300,
+#NPT simulation until density and volume converges
+OpenMM_box_relaxation(fragment=fragment, theory=omm, datafilename="nptsim.csv", numsteps_per_NPT=10000,
+                        volume_threshold=1.0, density_threshold=0.001, temperature=300, timestep=0.004,
+                        traj_frequency=100, trajfilename='relaxbox_NPT', trajectory_file_option='DCD', coupling_frequency=1)
+
+#NVT MD simulation for 1 ns
+OpenMM_MD(fragment=fragment, theory=omm, timestep=0.004, simulation_time=1000, traj_frequency=1000, temperature=300,
     integrator='LangevinMiddleIntegrator', coupling_frequency=1, trajectory_file_option='DCD')
 
-#Re-image trajectory so that protein is in middle
-MDtraj_imagetraj("trajectory.dcd", "final_MDfrag_laststep.pdb", format='DCD')
+#Note. This script will run a classical MD simulation for 1 ns. You may want to submit to the cluster instead.
+#NOTE: Change platofrm to 'OpenCL' or 'CUDA' if GPU cores are available (much faster).
