@@ -1832,6 +1832,7 @@ def OpenMM_Opt(fragment=None, theory=None, maxiter=1000, tolerance=1, enforcePer
         print("Only OpenMMTheory allowed in OpenMM_Opt. Exiting.")
         ashexit()
 
+    print("Number of atoms:", fragment.numatoms)
     print("Max iterations:", maxiter)
     print("Energy tolerance:", tolerance)
 
@@ -2691,6 +2692,7 @@ class OpenMM_MDclass:
         print("OpenMM rigidwater constraints:", self.openmmobject.rigidwater)
         print("User Constraints:", self.openmmobject.user_constraints)
         print("User Restraints:", self.openmmobject.user_restraints)
+        print("Number of atoms:", self.fragment.numatoms)
         print("Number of frozen atoms:", len(self.openmmobject.user_frozen_atoms))
         if len(self.openmmobject.user_frozen_atoms) < 50:
              print("Frozen atoms", self.openmmobject.user_frozen_atoms)
