@@ -33,9 +33,9 @@ class CC_CBS_Theory:
         CCSD(T)/CBS frozencore workflow
 
         :param elements: list of element symbols
-        :param charge: Charge of fragment (to be replaced)?
+        :param charge: Charge of fragment (will override fragment charge attribute).
+        :param mult: Multiplicity of fragment (will override fragment mult attribute).
         :param orcadir: ORCA directory
-        :param mult: Multiplicity of fragment (to be replaced)?
         :param stabilityanalysis: stability analysis on or off.
         :param numcores: number of cores
         :param memory: Memory in MB
@@ -120,6 +120,8 @@ class CC_CBS_Theory:
         print("Cardinals chosen:", self.cardinals)
         print("Basis set family chosen:", self.basisfamily)
         print("Elements involved:", self.elements)
+        print("Charge defined:", self.charge)
+        print("Multiplicity defined:", self.mult)
         print("Number of cores: ", self.numcores)
         print("Maxcore setting: ", self.memory, "MB")
         print("SCF setting: ", self.scfsetting)
@@ -414,9 +416,12 @@ maxiter 150\nend
     #TODO: coords and elems vs. fragment issue
     def run(self, current_coords=None, elems=None, Grad=False, numcores=None):
 
+        print(BC.OKBLUE,BC.BOLD, "------------RUNNING CC_CBS_Theory-------------", BC.END)
         if self.charge == None or self.mult == None:
             print(BC.FAIL,"Charge and mult attributes are required when running CC_CBS_Theory", BC.END)
             ashexit()
+        print(f"Charge: {self.charge} Mult: {self.mult}")
+
 
         if Grad == True:
             print(BC.FAIL,"No gradient available for CC_CBS_Theory yet! Exiting", BC.END)
