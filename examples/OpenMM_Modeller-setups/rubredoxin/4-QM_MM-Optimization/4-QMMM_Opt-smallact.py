@@ -11,7 +11,7 @@ lastpdbfile="final_MDfrag_laststep_imaged.pdb"
 fragment=Fragment(pdbfile=lastpdbfile)
 
 #Creating new OpenMM object from OpenMM XML files (built-in CHARMM36 and a user-defined one)
-omm = OpenMMTheory(xmlfiles=["charmm36.xml", "charmm36/water.xml", "./specialresidue.xml"], pdbfile="finalsystem.pdb", periodic=True,
+omm = OpenMMTheory(xmlfiles=["charmm36.xml", "charmm36/water.xml", "./specialresidue.xml"], pdbfile=lastpdbfile, periodic=True,
             platform='CPU', numcores=numcores, autoconstraints=None, rigidwater=False)
 
 #QM theory: r2SCAN-3c DFT-composite method using ORCA
