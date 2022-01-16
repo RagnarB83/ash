@@ -373,9 +373,15 @@ class ORCATheory:
             self.energy=ORCAfinalenergygrab(outfile)
             print("ORCA energy:", self.energy)
 
+            #Grab timings from ORCA output
+            orca_timings = ORCAtimingsgrab(outfile)
+            #print("orca_timings:", orca_timings)
             if Grad == True:
                 self.grad=ORCAgradientgrab(engradfile)
                 if PC == True:
+                    #Print time to calculate ORCA QM-PC gradient
+                    if "pc_gradient" in orca_timings:
+                        print("Time calculating QM-Pointcharge gradient: {} seconds".format(orca_timings["pc_gradient"]))
                     #Grab pointcharge gradient. i.e. gradient on MM atoms from QM-MM elstat interaction.
                     self.pcgrad=ORCApcgradientgrab(pcgradfile)
                     print(BC.OKBLUE,BC.BOLD,"------------ENDING ORCA-INTERFACE-------------", BC.END)
@@ -555,6 +561,48 @@ def ORCAfinalenergygrab(file, errors='ignore'):
                     #Energy=float(line.split()[-1])
                     Energy=float(line.split()[4])
     return Energy
+
+
+#Grab ORCA timings. Return dictionary
+def ORCAtimingsgrab(file):
+    timings={} #in seconds
+    try:
+        with open(file) as f:
+            for line in f:
+                if 'Calculating one electron integrals' in line:
+                    one_elec_integrals=float(line.split()[-2].replace("(",""))
+                    timings["one_elec_integrals"]= one_elec_integrals
+                if 'SCF Gradient evaluation         ...' in line:
+                    time_scfgrad=float(line.split()[4])
+                    timings["time_scfgrad"]=time_scfgrad
+                if 'SCF iterations                  ...' in line:
+                    time_scfiterations=float(line.split()[3])
+                    timings["time_scfiterations"]=time_scfiterations
+                if 'GTO integral calculation        ...' in line:
+                    time_gtointegrals=float(line.split()[4])
+                    timings["time_gtointegrals"]=time_gtointegrals
+                if 'SCF Gradient evaluation         ...' in line:
+                    time_scfgrad=float(line.split()[4])
+                    timings["time_scfgrad"]=time_scfgrad
+                if 'Sum of individual times         ...:' in line:
+                    total_time=float(line.split()[4])
+                    timings["total_time"]=total_time
+                if 'One electron gradient       ....' in line:
+                    one_elec_gradient=float(line.split()[4])
+                    timings["one_elec_gradient"]=one_elec_gradient
+                if 'RI-J Coulomb gradient       ....' in line:
+                    rij_coulomb_gradient=float(line.split()[4])
+                    timings["rij_coulomb_gradient"]=rij_coulomb_gradient
+                if 'XC gradient                 ....' in line:
+                    xc_gradient=float(line.split()[3])
+                    timings["xc_gradient"]=xc_gradient
+                if 'Point charge gradient       ....' in line:
+                    pc_gradient=float(line.split()[4])
+                    timings["pc_gradient"]=pc_gradient
+    except:
+        pass
+    return timings
+
 
 
 #Grab gradient from ORCA engrad file

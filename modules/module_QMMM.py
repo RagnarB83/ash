@@ -33,6 +33,19 @@ class QMMMTheory:
         #NOTE: affects runmode
         self.openmm_externalforce=openmm_externalforce
 
+        #Theory level definitions
+        self.printlevel=printlevel
+        print("self.printlevel: ", self.printlevel)
+        self.qm_theory=qm_theory
+        self.qm_theory_name = self.qm_theory.__class__.__name__
+        self.mm_theory=mm_theory
+        self.mm_theory_name = self.mm_theory.__class__.__name__
+        if self.mm_theory_name == "str":
+            self.mm_theory_name="None"
+
+        print("QM-theory:", self.qm_theory_name)
+        print("MM-theory:", self.mm_theory_name)
+
         #If fragment object has been defined
         #This probably needs to be always true
         if fragment is not None:
@@ -48,26 +61,28 @@ class QMMMTheory:
             self.qmatoms = sorted(qmatoms)
             self.mmatoms=listdiff(self.allatoms,self.qmatoms)
 
-            # FROZEN AND ACTIVE ATOMS
-            if actatoms is None and frozenatoms is None:
-                #print("Actatoms/frozenatoms list not passed to QM/MM object. Will do all frozen interactions in MM (expensive).")
-                print("All {} atoms active, no atoms frozen in QM/MM definition (may not be frozen in optimizer)".format(len(self.allatoms)))
-                self.actatoms=self.allatoms
-                self.frozenatoms=[]
-            elif actatoms is not None and frozenatoms is None:
-                print("Actatoms list passed to QM/MM object. Will skip all frozen interactions in MM.")
-                #Sorting actatoms list
-                self.actatoms = sorted(actatoms)
-                self.frozenatoms = listdiff(self.allatoms, self.actatoms)
-                print("{} active atoms, {} frozen atoms".format(len(self.actatoms), len(self.frozenatoms)))
-            elif frozenatoms is not None and actatoms is None:
-                print("Frozenatoms list passed to QM/MM object. Will skip all frozen interactions in MM.")
-                self.frozenatoms = sorted(frozenatoms)
-                self.actatoms = listdiff(self.allatoms, self.frozenatoms)
-                print("{} active atoms, {} frozen atoms".format(len(self.actatoms), len(self.frozenatoms)))
-            else:
-                print("active_atoms and frozen_atoms can not be both defined")
-                ashexit()
+            # FROZEN AND ACTIVE ATOM REGIONS for NonbondedTheory
+            if self.mm_theory_name == "NonBondedTheory":
+                #NOTE: To be looked at. actatoms and frozenatoms have no meaning in OpenMMTHeory. NonbondedTheory, however.
+                if actatoms is None and frozenatoms is None:
+                    #print("Actatoms/frozenatoms list not passed to QM/MM object. Will do all frozen interactions in MM (expensive).")
+                    #print("All {} atoms active, no atoms frozen in QM/MM definition (may not be frozen in optimizer)".format(len(self.allatoms)))
+                    self.actatoms=self.allatoms
+                    self.frozenatoms=[]
+                elif actatoms is not None and frozenatoms is None:
+                    print("Actatoms list passed to QM/MM object. Will skip all frozen interactions in MM.")
+                    #Sorting actatoms list
+                    self.actatoms = sorted(actatoms)
+                    self.frozenatoms = listdiff(self.allatoms, self.actatoms)
+                    print("{} active atoms, {} frozen atoms".format(len(self.actatoms), len(self.frozenatoms)))
+                elif frozenatoms is not None and actatoms is None:
+                    print("Frozenatoms list passed to QM/MM object. Will skip all frozen interactions in MM.")
+                    self.frozenatoms = sorted(frozenatoms)
+                    self.actatoms = listdiff(self.allatoms, self.frozenatoms)
+                    print("{} active atoms, {} frozen atoms".format(len(self.actatoms), len(self.frozenatoms)))
+                else:
+                    print("active_atoms and frozen_atoms can not be both defined")
+                    ashexit()
             
             #print("List of all atoms:", self.allatoms)
             print("QM region ({} atoms): {}".format(len(self.qmatoms),self.qmatoms))
@@ -89,24 +104,9 @@ class QMMMTheory:
             print("Fragment has not been defined for QM/MM. Exiting")
             ashexit()
 
-        #Flag to check whether QMCharges have been zeroed in self.charges_qmregionzeroed list
-        self.QMChargesZeroed=False
-
-        #Theory level definitions
-        self.printlevel=printlevel
-        print("self.printlevel: ", self.printlevel)
-        self.qm_theory=qm_theory
-        self.qm_theory_name = self.qm_theory.__class__.__name__
-        
         #Setting QM/MM qmatoms in QMtheory also (used for Spin-flipping currently)
         self.qm_theory.qmatoms=self.qmatoms
-        
-        self.mm_theory=mm_theory
-        self.mm_theory_name = self.mm_theory.__class__.__name__
-        if self.mm_theory_name == "str":
-            self.mm_theory_name="None"
-        print("QM-theory:", self.qm_theory_name)
-        print("MM-theory:", self.mm_theory_name)
+
         
         #Setting numcores of object.
         #This will be when calling QMtheory and probably MMtheory
@@ -154,7 +154,10 @@ class QMMMTheory:
             print("No charges present in QM/MM object. Exiting...")
             ashexit()
         
-        
+
+        #Flag to check whether QMCharges have been zeroed in self.charges_qmregionzeroed list
+        self.QMChargesZeroed=False
+
         #CHARGES DEFINED FOR OBJECT:
         #Self.charges are original charges that are defined above (on input, from OpenMM or from NonBondedTheory)
         #self.charges_qmregionzeroed is self.charges but with 0-value for QM-atoms
@@ -195,12 +198,12 @@ class QMMMTheory:
 
             #Add possible exception for QM-QM atoms here.
             #Maybe easier to just just set charges to 0. LJ for QM-QM still needs to be done by MM code
-            if self.mm_theory_name == "OpenMMTheory":
-                       
-                print("Now adding exceptions for frozen atoms")
-                if len(self.frozenatoms) > 0:
-                    print("Here adding exceptions for OpenMM")
-                    print("Frozen-atom exceptions currently inactive...")
+            #if self.mm_theory_name == "OpenMMTheory":
+            #           
+                #print("Now adding exceptions for frozen atoms")
+                #if len(self.frozenatoms) > 0:
+                #    print("Here adding exceptions for OpenMM")
+                #    print("Frozen-atom exceptions currently inactive...")
                     #print("Num frozen atoms: ", len(self.frozenatoms))
                     #Disabling for now, since so bloody slow. Need to speed up
                     #mm_theory.addexceptions(self.frozenatoms)
