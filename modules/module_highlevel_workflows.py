@@ -225,7 +225,7 @@ maxiter 150\nend
 
         #SCALAR RELATIVITY HAMILTONIAN
         if self.relativity == None:
-            if self.basisfamily in ['cc-dkh', 'aug-cc-dkh', 'cc-dk', 'aug-cc-dk', 'def2-zora', 'def2-dkh', 
+            if self.basisfamily in ['cc-dkh', 'aug-cc-dkh', 'cc-dk', 'aug-cc-dk', 'def2-zora', 'def2-dkh', 'cc-CV_3dTM-cc_L', 'aug-cc-CV_3dTM-cc_L'
             'ma-def2-zora','ma-def2-dkh', 'cc-CV-dk', 'cc-CV-dkh', 'aug-cc-CV-dk', 'aug-cc-CV-dkh']:
                 print("Relativity option is None but a relativistic basis set family chosen:", self.basisfamily)
                 print("You probably want relativity keyword argument set to DKH or ZORA (relativity=\"NoRel\" option possible also but not recommended)")
