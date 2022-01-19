@@ -986,7 +986,7 @@ def basis_for_element(element,basisfamily,cardinal):
             print(BC.FAIL,"cc-dkh basis sets for K and Ca is missing in ORCA. Take a look at literature.",BC.END)
             ashexit()
         elif 21 <= atomnumber <= 36   : #Sc-Kr.
-            return ("cc-pV{}Z".format(cardlabel), None)
+            return ("cc-pV{}Z-DK".format(cardlabel), None)
         elif cardinal == 3:
             if 39 <= atomnumber <= 54: #Y-Xe for cc-pVTZ-DK
                 return ("cc-pV{}Z-DK".format(cardlabel), None)
@@ -1016,7 +1016,7 @@ def basis_for_element(element,basisfamily,cardinal):
             print(BC.FAIL,"cc-dkh basis sets for K and Ca is missing in ORCA. Take a look at literature.",BC.END)
             ashexit()
         elif 21 <= atomnumber <= 36   : #Sc-Kr.
-            return ("aug-cc-pV{}Z".format(cardlabel), None)
+            return ("aug-cc-pV{}Z-DK".format(cardlabel), None)
         elif cardinal == 3:
             if 39 <= atomnumber <= 54: #Y-Xe for cc-pVTZ-DK
                 return ("aug-cc-pV{}Z-DK".format(cardlabel), None)
