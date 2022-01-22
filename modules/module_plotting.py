@@ -152,7 +152,9 @@ class ASH_plot():
         matplotlib.pyplot.savefig(file, format=imageformat, dpi=self.dpi)
 
 #Simple reactionprofile_plot function
-#Input: dictionary of (X,Y): energy   entries 
+#Input: dictionary of (X,Y): energy   entries
+#NOTE: Partially deprecated thanks to ASHplot. Relative energy option is useful though. 
+#TODO: Keep but call ASHplot here instead of doing separate plotting 
 def reactionprofile_plot(surfacedictionary, finalunit='',label='Label', x_axislabel='Coord', y_axislabel='Energy', dpi=200, mode='pyplot',
                          imageformat='png', RelativeEnergy=True, pointsize=40, scatter_linewidth=2, line_linewidth=1, color='blue' ):
 

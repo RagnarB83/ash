@@ -1,18 +1,49 @@
 import os
 import time
+import shutil
 
 from modules.module_coords import split_multimolxyzfile
-from functions.functions_general import ashexit, int_ranges, listdiff, print_line_with_subheader1,print_time_rel
+from functions.functions_general import ashexit, BC, int_ranges, listdiff, print_line_with_subheader1,print_time_rel
 import subprocess as sp
 import ash
 
 
 #Very simple crest interface
-def call_crest(fragment=None, xtbmethod=None, crestdir=None,charge=None, mult=None, solvent=None, energywindow=6, numcores=1, 
+def call_crest(fragment=None, xtbmethod=None, crestdir=None, charge=None, mult=None, solvent=None, energywindow=6, numcores=1, 
                constrained_atoms=None, forceconstant_constraint=0.5):
     print_line_with_subheader1("call_crest")
     module_init_time=time.time()
-    
+    if crestdir == None:
+        print(BC.WARNING, "No crestdir argument passed to call_crest. Attempting to find crestdir variable inside settings_ash", BC.END)
+        try:
+            print("settings_ash.settings_dict:", settings_ash.settings_dict)
+            crestdir=settings_ash.settings_dict["crestdir"]
+        except:
+            print(BC.WARNING,"Found no crestdir variable in settings_ash module either.",BC.END)
+            try:
+                crestdir = os.path.dirname(shutil.which('crest'))
+                print(BC.OKGREEN,"Found crest in path. Setting crestdir to:", crestdir, BC.END)
+            except:
+                print("Found no crest executable in path. Exiting... ")
+                ashexit()
+
+    #Use charge/mult from frag if charge/mult keywords not set
+    if charge == None and mult == None:
+        print(BC.WARNING,"Warning: No charge/mult was defined for call_crest. Checking fragment.",BC.END)
+        if fragment.charge != None and fragment.mult != None:
+            print(BC.WARNING,"Fragment contains charge/mult information: Charge: {} Mult: {} Using this instead".format(fragment.charge,fragment.mult), BC.END)
+            print(BC.WARNING,"Make sure this is what you want!", BC.END)
+            charge=fragment.charge; mult=fragment.mult
+            theory_chargemult_change=True
+        else:
+            print(BC.FAIL,"No charge/mult information present in fragment either. Exiting.",BC.END)
+            ashexit()
+
+
+    try:
+        shutil.rmtree('crest-calc')
+    except:
+        pass
     os.mkdir('crest-calc')
     os.chdir('crest-calc')
 
@@ -60,6 +91,13 @@ def call_crest(fragment=None, xtbmethod=None, crestdir=None,charge=None, mult=No
 
     os.chdir('..')
     print_time_rel(module_init_time, modulename='crest run', moduleindex=0)
+
+    #Get conformers
+    list_conformers, list_xtb_energies = get_crest_conformers()
+
+
+    return list_conformers, list_xtb_energies
+
 
 #Grabbing crest conformers. Goes inside rest-calc dir and finds file called crest_conformers.xyz
 #Creating ASH fragments for each conformer
