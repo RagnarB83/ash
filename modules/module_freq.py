@@ -4,7 +4,7 @@ import shutil
 import os
 import copy
 import time
-from functions.functions_general import ashexit, listdiff, clean_number,blankline,BC,print_time_rel
+from functions.functions_general import ashexit, listdiff, clean_number,blankline,BC,print_time_rel, print_line_with_mainheader
 import modules.module_coords
 import interfaces.interface_ORCA
 import constants
@@ -31,11 +31,11 @@ def AnFreq(fragment=None, theory=None, numcores=1, temp=298.15, pressure=1.0):
         frequencies = interfaces.interface_ORCA.ORCAfrequenciesgrab(theory.filename+".hess")
         
         hessatoms=list(range(0,fragment.numatoms))
-        Thermochemistry = thermochemcalc(frequencies,hessatoms, fragment, theory.mult, temp=temp,pressure=pressure)
-        
+        Thermochem_dict = thermochemcalc(frequencies,hessatoms, fragment, theory.mult, temp=temp,pressure=pressure)
+
         print(BC.WARNING, BC.BOLD, "------------ANALYTICAL FREQUENCIES END-------------", BC.END)
         print_time_rel(module_init_time, modulename='AnFreq', moduleindex=1)
-        return Thermochemistry
+        return Thermochem_dict
         
     else:
         print("Analytical frequencies not available for theory. Exiting.")
@@ -48,6 +48,23 @@ def AnFreq(fragment=None, theory=None, numcores=1, temp=298.15, pressure=1.0):
 def NumFreq(fragment=None, theory=None, npoint=1, displacement=0.005, hessatoms=None, numcores=1, runmode='serial', temp=298.15, pressure=1.0, hessatoms_masses=None):
     module_init_time=time.time()
     print(BC.WARNING, BC.BOLD, "------------NUMERICAL FREQUENCIES-------------", BC.END)
+
+
+    #Checking charge/mult information of theory unless QM/MM
+    theory_chargemult_change=False
+    if not isinstance(theory,ash.QMMMTheory):
+        if theory.charge == None and theory.mult == None:
+            print(BC.WARNING,"Warning: There is no charge or mult defined in theory",BC.END)
+            if fragment.charge != None and fragment.mult != None:
+                print(BC.WARNING,"Fragment contains charge/mult information: Charge: {} Mult: {} Using this instead".format(fragment.charge,fragment.mult), BC.END)
+                print(BC.WARNING,"Warning: Make sure this is what you want!", BC.END)
+                theory.charge=fragment.charge; theory.mult=fragment.mult
+                theory_chargemult_change=True
+            else:
+                print(BC.FAIL,"No charge/mult information present in theory or fragment. Exiting.",BC.END)
+                ashexit()
+
+
     shutil.rmtree('Numfreq_dir', ignore_errors=True)
     os.mkdir('Numfreq_dir')
     os.chdir('Numfreq_dir')
@@ -439,7 +456,12 @@ def NumFreq(fragment=None, theory=None, npoint=1, displacement=0.005, hessatoms=
     print(BC.WARNING, BC.BOLD, "------------NUMERICAL FREQUENCIES END-------------", BC.END)
 
     #Thermochemistry object. Should contain frequencies, zero-point energy, enthalpycorr, gibbscorr, etc.
-    
+
+
+    #If we changed theory charge/mult information. Change back
+    if theory_chargemult_change is True:
+        theory.charge=None; theory.mult=None
+
     #Return to ..
     os.chdir('..')
     print_time_rel(module_init_time, modulename='NumFreq', moduleindex=1)
@@ -1380,3 +1402,53 @@ def isotope_change_Hessian(hessfile=None, hessian=None, elems=None, masses=None,
     print("ZPE_2 (kcal/mol):", ZPE_2)
     
     #What else?
+
+
+#Get atoms that contribute most to specific mode of Hessian
+#Example: get atoms (atom indices) most involved in imaginary mode of transition state
+#TODO: Support partial Hessian
+def get_dominant_atoms_in_mode(mode,fragment=None, threshold=0.3):
+    
+    print_line_with_mainheader("get_dominant_atoms_in_mode")
+    print("Threshold:", threshold)
+    #Get hessian from fragment
+    hessian=fragment.hessian
+
+    #allatoms=list(range(0,fragment.numatoms))
+    #numatoms=fragment.numatoms
+    #Partial Hessian or no
+    #if hessatoms != None:
+    #    hessmasses = modules.module_coords.get_partial_list(allatoms, hessatoms, fragment.list_of_masses)
+
+        # Get partial matrix by deleting atoms not present in list.
+    #    hesselems = modules.module_coords.get_partial_list(allatoms, hessatoms, fragment.elems)
+    #else:
+    hessmasses=fragment.list_of_masses
+    hesselems=fragment.elems
+
+    #Diagonalize Hessian
+    frequencies, nmodes, numatoms, elems, evectors, atomlist, masses = diagonalizeHessian(hessian,hessmasses,hesselems)
+
+    #Get full list of atom contributions to mode
+    normcomplist_for_mode = normalmodecomp_all(mode,fragment,frequencies,evectors)
+
+    dominant_atoms=[normcomplist_for_mode.index(i) for i in normcomplist_for_mode if i > threshold]
+    print(f"Dominant atoms in mode {mode}: {dominant_atoms}\n")
+    return dominant_atoms
+
+# Simple function to getnormal mode composition factors for all atoms for a specific mode only
+def normalmodecomp_all(mode,fragment,vfreq,evectors, silent=False):
+    numatoms=fragment.numatoms
+
+    normcomplist=[]
+    vib=clean_number(vfreq[mode])
+    for n in range(0, numatoms):
+        normcomp=normalmodecomp(evectors,mode,n)
+        normcomplist.append(normcomp)
+    normcompstring=['{:.6f}'.format(x) for x in normcomplist]
+    line = "{:>3d}   {:>9.4f}        {}".format(mode, vib, '   '.join(normcompstring))
+    if silent is False:
+        print(line)
+
+    #Returning normcomplist, a list of atomic contributions for each atom
+    return normcomplist

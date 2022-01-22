@@ -45,7 +45,7 @@ import functions.functions_parallel
 from functions.functions_parallel import Singlepoint_parallel, run_QMMM_SP_in_parallel
 
 # Freq
-from modules.module_freq import AnFreq, NumFreq, approximate_full_Hessian_from_smaller, calc_rotational_constants
+from modules.module_freq import AnFreq, NumFreq, approximate_full_Hessian_from_smaller, calc_rotational_constants,get_dominant_atoms_in_mode
 
 # Constants
 import constants
