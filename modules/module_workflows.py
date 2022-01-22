@@ -281,7 +281,7 @@ def thermochemprotocol_reaction(Opt_theory=None, SP_theory=None, fraglist=None, 
 
 def auto_active_space(fragment=None, orcadir=None, basis="def2-SVP", scalar_rel=None, charge=None, mult=None, 
     initial_orbitals='MP2', functional='TPSS', smeartemp=5000, tgen=1e-1, selection_thresholds=[1.999,0.001],
-    numcores=1):
+    numcores=1, memory=9000):
     print_line_with_mainheader("auto_active_space function")
     print("Will do N-step orbital selection scheme")
     print("basis:", basis)
@@ -385,7 +385,7 @@ def auto_active_space(fragment=None, orcadir=None, basis="def2-SVP", scalar_rel=
     #2b. Read orbitals into ICE-CI calculation
     orcasimpleinput="! CASSCF  {} {} MOREAD ".format(basis, scalar_rel_keyword)
     orcablocks="""
-    %maxcore 5000
+    %maxcore {}
     %moinp \"{}\"
     %casscf
     gtol 99999
@@ -397,7 +397,7 @@ def auto_active_space(fragment=None, orcadir=None, basis="def2-SVP", scalar_rel=
     maxiter 200
     end
     end
-    """.format(init_orbitals,numelectrons,numorbitals,tgen)
+    """.format(memory,init_orbitals,numelectrons,numorbitals,tgen)
     ORCAcalc_2 = ash.ORCATheory(orcadir=orcadir, charge=charge, mult=mult, orcasimpleinput=orcasimpleinput, orcablocks=orcablocks,
                                 numcores=numcores)
     ash.Singlepoint(theory=ORCAcalc_2,fragment=fragment)
@@ -499,7 +499,7 @@ def calc_xyzfiles(xyzdir=None, theory=None, HL_theory=None, Opt=False, Freq=Fals
     #Create new directory with optimized geometries
     os.mkdir(finalxyzdir)
 
-    #Looping through XYZ-files to get fragments
+    #Reading XYZ-files to get list of fragments
     fragments =read_xyzfiles(xyzdir,readchargemult=readchargemult, label_from_filename=True)
 
     #List of original filenames
@@ -989,3 +989,52 @@ def Reaction_Highlevel_Analysis(fraglist=None, stoichiometry=None, numcores=1, m
             reactionenergyplot.addseries(0, x_list=[2.5], y_list=CCSDTextrapdef2_proj.reaction_energy_list[0], label='CBS-def2-23', line=False, marker='x', color='cyan')
             reactionenergyplot.addseries(0, x_list=[3.5], y_list=CCSDTextrapdef2_proj.reaction_energy_list[1], label='CBS-def2-34', line=False, marker='x', color='pink')
         reactionenergyplot.savefig('Reaction energy')
+
+
+#NOTE: not ready
+def BrokenSymmetryCalculator(theory=None, fragment=None, Opt=False, flip_atoms=None, BS_flip_options=None):
+
+    if theory == None or fragment == None or flip_atoms == None or BS_flip_options==None:
+        print("Please set theory, fragment, flip_atoms and BS_flip_options keywords")
+        exit()
+
+    #Getting full-system atom numbers for each BS-flip
+    atomstoflip=[flip_atoms[i-1] for i in BSflip]
+    orcaobject = ORCATheory(orcadir=orcadir, charge=charge,mult=mult, orcasimpleinput=ORCAinpline, orcablocks=ORCAblocklines,
+                        brokensym=brokensym, HSmult=HSmult, atomstoflip=atomstoflip, nprocs=numcores, extrabasisatoms=extrabasisatoms,
+                        extrabasis="ZORA-def2-TZVP")
+
+
+
+
+    #Looping over BS-flips
+    for BSflip in BS_flip_options:
+        calclabel=f'mult{mult}_BSflip {"_".join(map(str,BSflip))}'
+
+        #Making a copy of ORCAobject (otherwise BS-flip won't work)
+        orcacalc = copy.copy(orcaobject)
+
+        # QM/MM OBJECT
+        #qmmmobject_trunc = QMMMTheory(qm_theory=orcacalc, mm_theory=openmmobject, fragment=frag, embedding="Elstat", qmatoms=qmatoms, printlevel=2,
+        #    TruncatedPC=True, TruncPCRadius=55, TruncatedPC_recalc_iter=50)
+
+        # QM/MM with no TruncPC approximation. No BS, will read previous orbital file
+        #qmmmobject_notrunc = QMMMTheory(qm_theory=orcacalc, mm_theory=openmmobject, fragment=frag, embedding="Elstat", qmatoms=qmatoms, printlevel=2)
+
+
+        #OPT with TruncPC approximation
+        geomeTRICOptimizer(theory=theory, fragment=frag, ActiveRegion=True, actatoms=actatoms, maxiter=500, coordsystem='hdlc')
+
+        #Preserve geometry
+        os.rename('Fragment-optimized.xyz', f'Fragment_{calclabel}_truncopt.xyz')
+
+        #Opt without TruncPC approximation
+        geomeTRICOptimizer(theory=qmmmobject_notrunc, fragment=frag, ActiveRegion=True, actatoms=actatoms, maxiter=500, coordsystem='hdlc')
+
+        #Preserve geometry and ORCA output
+        os.rename('Fragment-optimized.xyz', f'Fragment_{calclabel}_notrunc.xyz')
+        os.rename('orca.out', f'orca_{calclabel}_notrunc.out')
+        os.rename('orca.gbw', f'orca_{calclabel}_notrunc.gbw')
+
+        #create final pdb file
+        write_pdbfile(frag, outputname=f'Fragment_BSflip_{calclabel}_notrunc',openmmobject=openmmobject)

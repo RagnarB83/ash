@@ -265,7 +265,7 @@ class KnarrCalculator:
 
 
 #ASH NEB function. Calls Knarr
-def NEB(reactant=None, product=None, theory=None, images=None, interpolation=None, CI=None, free_end=None,
+def NEB(reactant=None, product=None, theory=None, images=None, interpolation=None, CI=None, free_end=None, restart_file=None,
         conv_type=None, tol_scale=None, tol_max_fci=None, tol_rms_fci=None, tol_max_f=None, tol_rms_f=None,
         tol_turn_on_ci=None, ActiveRegion=False, actatoms=None, runmode='serial', printlevel=1,
         idpp_maxiter=None):
@@ -378,18 +378,23 @@ def NEB(reactant=None, product=None, theory=None, images=None, interpolation=Non
                                    ndof=numatoms * 3, constraints=constr, pbc=False)
 
 
-    # Generate path via Knarr_pathgenerator. ActiveRegion used to prevent RMSD alignment if doing actregion QM/MM etc.
-    Knarr_pathgenerator(neb_settings, path_parameters, react, prod, ActiveRegion)
-    blankline()
-    print("Initial path generation done!")
-    print("Reading initial path")
-    #Reading initial path from XYZ file. Hardcoded as knarr_path.xyz
-    rp, ndim, nim, symb = ReadTraj("knarr_path.xyz")
-    path = InitializePathObject(nim, react)
-    path.SetCoords(rp)
-
+    if restart_file == None:
+        print("Creating interpolated path.")
+        # Generate path via Knarr_pathgenerator. ActiveRegion used to prevent RMSD alignment if doing actregion QM/MM etc.
+        Knarr_pathgenerator(neb_settings, path_parameters, react, prod, ActiveRegion)
+        blankline()
+        print("Initial path generation done!")
+        print("Reading initial path")
+        #Reading initial path from XYZ file. Hardcoded as knarr_path.xyz
+        rp, ndim, nim, symb = ReadTraj("knarr_path.xyz")
+        path = InitializePathObject(nim, react)
+        path.SetCoords(rp)
+    else:
+        #Reading user-defined path from XYZ file. Hardcoded as knarr_path.xyz
+        rp, ndim, nim, symb = ReadTraj(restart_file)
+        path = InitializePathObject(nim, react)
+        path.SetCoords(rp)
     print("Starting NEB")
-
     #Setting printlevel of theory during E+Grad steps  1=very-little, 2=more, 3=lots, 4=verymuch
     print("NEB printlevel is:", printlevel)
     theory.printlevel=printlevel
