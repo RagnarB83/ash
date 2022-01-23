@@ -11,7 +11,7 @@ import ash
 from functions.functions_general import ashexit, BC,print_time_rel,print_line_with_mainheader
 
 #Single-point energy function
-def Singlepoint(fragment=None, theory=None, Grad=False):
+def Singlepoint(fragment=None, theory=None, Grad=False, charge=None, mult=None):
     """Singlepoint function: runs a single-point energy calculation using ASH theory and ASH fragment.
 
     Args:
@@ -32,47 +32,36 @@ def Singlepoint(fragment=None, theory=None, Grad=False):
     coords=fragment.coords
     elems=fragment.elems
 
-    #Flag whether we have changed charge/mult of theory
-    theory_chargemult_change=False
+    #Check if charge/mult has been provided. Otherwise try to grab from fragment
+    #Check if QM theory
+    if theory.theorytype == "QM" or theory.theorytype=="QM/MM":
+        if charge == None or mult == None:
+            print(BC.WARNING,"Warning: Charge/mult was not provided to Singlepoint",BC.END)
+            if fragment.charge != None and fragment.mult != None:
+                print(BC.WARNING,"Fragment contains charge/mult information: Charge: {} Mult: {} Using this instead".format(fragment.charge,fragment.mult), BC.END)
+                print(BC.WARNING,"Make sure this is what you want!", BC.END)
+                charge=fragment.charge; mult=fragment.mult
+            else:
+                print(BC.FAIL,"No charge/mult information present in fragment either. Exiting.",BC.END)
+                ashexit()
+    elif theory.theorytype=="MM":
+        #Setting charge/mult to None if MM
+        charge=None; mult=None
+
 
     # Run a single-point energy job with gradient
     if Grad ==True:
         print(BC.WARNING,"Doing single-point Energy+Gradient job on fragment. Formula: {} Label: {} ".format(fragment.prettyformula,fragment.label), BC.END)
         # An Energy+Gradient calculation where we change the number of cores to 12
-        energy,gradient= theory.run(current_coords=coords, elems=elems, Grad=True)
+        energy,gradient= theory.run(current_coords=coords, elems=elems, Grad=True, charge=charge, mult=mult)
         print("Energy: ", energy)
         print_time_rel(module_init_time, modulename='Singlepoint', moduleindex=1)
         return energy,gradient
     # Run a single-point energy job without gradient (default)
     else:
         print("Doing single-point Energy job on fragment. Formula: {} Label: {} ".format(fragment.prettyformula,fragment.label))
-
-        #Check if charge/mult has been defined in theory. Otherwise grab from fragment
-        #Check if QM theory
-        if theory.theorytype == "QM":
-            if theory.charge == None and theory.mult == None:
-                print(BC.WARNING,"Warning: There is no charge or mult defined in theory",BC.END)
-                if fragment.charge != None and fragment.mult != None:
-                    print(BC.WARNING,"Fragment contains charge/mult information: Charge: {} Mult: {} Using this instead".format(fragment.charge,fragment.mult), BC.END)
-                    print(BC.WARNING,"Make sure this is what you want!", BC.END)
-                    theory.charge=fragment.charge; theory.mult=fragment.mult
-                    theory_chargemult_change=True
-                else:
-                    print(BC.FAIL,"No charge/mult information present. Exiting.",BC.END)
-                    ashexit()
-        #If QM/MM theory (QMMMTheory or PolembedTheory), currently do nothing with respect to charge/mult.
-        #The sub-QMtheory should have this defined.
-        elif theory.theorytype=="QM/MM":
-            pass
-        elif theory.theorytype=="MM":
-            pass
-
         #Run
-        energy = theory.run(current_coords=coords, elems=elems)
-
-        #If we changed theory charge/mult information. Change back
-        if theory_chargemult_change is True:
-            theory.charge=None; theory.mult=None
+        energy = theory.run(current_coords=coords, elems=elems, charge=charge, mult=mult)
 
         #Previously some theories like CC_CBS_Theory returned energy and componentsdict as a tuple
         #TODO: This can probably be deleted soon.
@@ -89,7 +78,8 @@ def Singlepoint(fragment=None, theory=None, Grad=False):
 
 
 #Single-point energy function that runs calculations on 1 fragment using multiple theories. Returns a list of energies.
-def Singlepoint_theories(theories=None, fragment=None, ):
+#TODO: allow Grad option?
+def Singlepoint_theories(theories=None, fragment=None, charge=None, mult=None):
     print_line_with_mainheader("Singlepoint_theories function")
 
     print("Will run single-point calculation on the fragment with multiple theories and return a list of energies")
@@ -98,9 +88,24 @@ def Singlepoint_theories(theories=None, fragment=None, ):
 
     #Looping through fragmengs
     for theory in theories:
-        
-        #Running single-point
-        energy = ash.Singlepoint(theory=theory, fragment=fragment)
+        #Check if charge/mult has been provided. Otherwise try to grab from fragment
+        #Check if QM theory
+        if theory.theorytype == "QM" or theory.theorytype=="QM/MM":
+            if charge == None or mult == None:
+                print(BC.WARNING,"Warning: Charge/mult was not provided to Singlepoint_theories",BC.END)
+                if fragment.charge != None and fragment.mult != None:
+                    print(BC.WARNING,"Fragment contains charge/mult information: Charge: {} Mult: {} Using this instead".format(fragment.charge,fragment.mult), BC.END)
+                    print(BC.WARNING,"Make sure this is what you want!", BC.END)
+                    charge=fragment.charge; mult=fragment.mult
+                else:
+                    print(BC.FAIL,"No charge/mult information present in fragment either. Exiting.",BC.END)
+                    ashexit()
+        elif theory.theorytype=="MM":
+            #Setting charge/mult to None if MM
+            charge=None; mult=None
+
+        #Running single-point. 
+        energy = ash.Singlepoint(theory=theory, fragment=fragment, charge=charge, mult=mult)
         
         print("Theory Label: {} Energy: {} Eh".format(theory.label, energy))
         theory.cleanup()
@@ -154,13 +159,13 @@ def Singlepoint_fragments(theory=None, fragments=None, stoichiometry=None):
     for frag in fragments:
 
         if frag.charge == None or frag.mult == None:
-            print(BC.FAIL,"Error: no charge/mult information associated with fragment.", BC.END)
+            print(BC.FAIL,"Error: Singlepoint_fragments requires charge/mult information to be associated with each fragment.", BC.END)
             ashexit()
-        #Setting charge/mult for theory from fragment
-        theory.charge=frag.charge; theory.mult=frag.mult
+        #Setting charge/mult  from fragment
+        charge=frag.charge; mult=frag.mult
         
         #Running single-point
-        energy = ash.Singlepoint(theory=theory, fragment=frag)
+        energy = ash.Singlepoint(theory=theory, fragment=frag, charge=charge, mult=mult)
         
         print("Fragment {} . Label: {} Energy: {} Eh".format(frag.formula, frag.label, energy))
         theory.cleanup()

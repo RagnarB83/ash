@@ -15,6 +15,7 @@ import settings_ash
 
 
 #ORCA Theory object. Fragment object is optional. Only used for single-points.
+#TODO: Remove charge/mult from init
 class ORCATheory:
     def __init__(self, orcadir=None, fragment=None, charge=None, mult=None, orcasimpleinput='', printlevel=2, extrabasisatoms=None, extrabasis=None, TDDFT=False, TDDFTroots=5, FollowRoot=1,
                  orcablocks='', extraline='', first_iteration_input=None, brokensym=None, HSmult=None, atomstoflip=None, numcores=1, nprocs=None, label=None, moreadfile=None, autostart=True, propertyblock=None):
@@ -85,6 +86,7 @@ class ORCATheory:
             self.elems=fragment.elems
         #print("frag elems", self.fragment.elems)
 
+        #TODO: Remove
         if charge!=None:
             self.charge=int(charge)
         else:
@@ -141,8 +143,6 @@ class ORCATheory:
             print("")
             print("Creating ORCA object")
             print("ORCA dir:", self.orcadir)
-            #if molcrys then there is not charge and mult available
-            #print("Charge: {} Mult: {}".format(self.charge,self.mult))
             print(self.orcasimpleinput)
             print(self.orcablocks)
         print("\nORCATheory object created!")
@@ -172,12 +172,16 @@ class ORCATheory:
             pass
 
     #Do an ORCA-optimization instead of ASH optimization. Useful for gas-phase chemistry when ORCA-optimizer is better than geomeTRIC
-    def Opt(self, fragment=None, Grad=None, Hessian=None, numcores=None, label=None):
+    def Opt(self, fragment=None, Grad=None, Hessian=None, numcores=None, label=None, charge=None, mult=None):
 
         module_init_time=time.time()
         print(BC.OKBLUE,BC.BOLD, "------------RUNNING INTERNAL ORCA OPTIMIZATION-------------", BC.END)
         #Coords provided to run or else taken from initialization.
         #if len(current_coords) != 0:
+
+        if charge == None or mult == None:
+            print(BC.FAIL, "Error. charge and mult has not been defined for ORCATheory.Opt method", BC.END)
+            ashexit()
 
         if fragment == None:
             print("No fragment provided to Opt.")
@@ -207,12 +211,12 @@ class ORCATheory:
         print(self.orcasimpleinput)
         print(self.extraline)
         print(self.orcablocks)
-        print("Charge: {}  Mult: {}".format(self.charge, self.mult))
+        print("Charge: {}  Mult: {}".format(charge, mult))
 
 
         #TODO: Make more general
         create_orca_input_plain(self.filename, elems, current_coords, self.orcasimpleinput,self.orcablocks,
-                                self.charge, self.mult, extraline=self.extraline, HSmult=self.HSmult, moreadfile=self.moreadfile)
+                                charge, mult, extraline=self.extraline, HSmult=self.HSmult, moreadfile=self.moreadfile)
         print(BC.OKGREEN, "ORCA Calculation started.", BC.END)
         run_orca_SP_ORCApar(self.orcadir, self.filename + '.inp', numcores=numcores)
         print(BC.OKGREEN, "ORCA Calculation done.", BC.END)
@@ -248,8 +252,8 @@ class ORCATheory:
         return 
 
     #Run function. Takes coords, elems etc. arguments and computes E or E+G.
-    def run(self, current_coords=None, current_MM_coords=None, MMcharges=None, qm_elems=None,
-            elems=None, Grad=False, Hessian=False, PC=False, numcores=None, label=None ):
+    def run(self, current_coords=None, charge=None, mult=None, current_MM_coords=None, MMcharges=None, qm_elems=None,
+            elems=None, Grad=False, Hessian=False, PC=False, numcores=None, label=None):
         module_init_time=time.time()
         self.runcalls+=1
         print(BC.OKBLUE,BC.BOLD, "------------RUNNING ORCA INTERFACE-------------", BC.END)
@@ -261,9 +265,13 @@ class ORCATheory:
             current_coords=self.coords
 
         #Checking if theory charge and mult has been set
-        if self.charge == None or self.mult == None:
-            print(BC.FAIL, "Error. charge and mult has not been defined for ORCATheory object", BC.END)
+        if charge == None or mult == None:
+            print(BC.FAIL, "Error. charge and mult has not been defined for ORCATheory.Opt method", BC.END)
             ashexit()
+
+        #elif self.charge == None or self.mult == None:
+        #    print(BC.FAIL, "Error. charge and mult has not been defined for ORCATheory object", BC.END)
+        #    ashexit()
 
         #What elemlist to use. If qm_elems provided then QM/MM job, otherwise use elems list or self.elems
         if qm_elems is None:
@@ -312,7 +320,7 @@ class ORCATheory:
         print(self.orcasimpleinput)
         print(extraline)
         print(self.orcablocks)
-        print("Charge: {}  Mult: {}".format(self.charge, self.mult))
+        print("Charge: {}  Mult: {}".format(charge, mult))
         #Printing extra options chosen:
         if self.brokensym==True:
             print("Brokensymmetry SpinFlipping on! HSmult: {}.".format(self.HSmult))
@@ -330,21 +338,21 @@ class ORCATheory:
             create_orca_pcfile(self.filename, current_MM_coords, MMcharges)
             if self.brokensym == True:
                 create_orca_input_pc(self.filename, qm_elems, current_coords, self.orcasimpleinput, self.orcablocks,
-                                        self.charge, self.mult, extraline=extraline, HSmult=self.HSmult, Grad=Grad, Hessian=Hessian, moreadfile=self.moreadfile,
+                                        charge, mult, extraline=extraline, HSmult=self.HSmult, Grad=Grad, Hessian=Hessian, moreadfile=self.moreadfile,
                                      atomstoflip=qmatomstoflip, extrabasisatoms=qmatoms_extrabasis, extrabasis=self.extrabasis, propertyblock=self.propertyblock)
             else:
                 create_orca_input_pc(self.filename, qm_elems, current_coords, self.orcasimpleinput, self.orcablocks,
-                                        self.charge, self.mult, extraline=extraline, Grad=Grad, Hessian=Hessian, moreadfile=self.moreadfile,
+                                        charge, mult, extraline=extraline, Grad=Grad, Hessian=Hessian, moreadfile=self.moreadfile,
                                         extrabasisatoms=qmatoms_extrabasis, extrabasis=self.extrabasis, propertyblock=self.propertyblock)
         else:
             if self.brokensym == True:
                 create_orca_input_plain(self.filename, qm_elems, current_coords, self.orcasimpleinput,self.orcablocks,
-                                        self.charge,self.mult, extraline=extraline, HSmult=self.HSmult, Grad=Grad, Hessian=Hessian, moreadfile=self.moreadfile,
+                                        charge,mult, extraline=extraline, HSmult=self.HSmult, Grad=Grad, Hessian=Hessian, moreadfile=self.moreadfile,
                                      atomstoflip=qmatomstoflip, extrabasisatoms=qmatoms_extrabasis, extrabasis=self.extrabasis, propertyblock=self.propertyblock, 
                                      ghostatoms=self.ghostatoms, dummyatoms=self.dummyatoms)
             else:
                 create_orca_input_plain(self.filename, qm_elems, current_coords, self.orcasimpleinput,self.orcablocks,
-                                        self.charge,self.mult, extraline=extraline, Grad=Grad, Hessian=Hessian, moreadfile=self.moreadfile,
+                                        charge,mult, extraline=extraline, Grad=Grad, Hessian=Hessian, moreadfile=self.moreadfile,
                                         extrabasisatoms=qmatoms_extrabasis, extrabasis=self.extrabasis, propertyblock=self.propertyblock,
                                         ghostatoms=self.ghostatoms, dummyatoms=self.dummyatoms)
 

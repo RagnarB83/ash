@@ -1238,8 +1238,8 @@ class OpenMMTheory:
             dof -= 3
         self.dof=dof
 
-
-    def run(self, current_coords=None, elems=None, Grad=False, fragment=None, qmatoms=None, label=None):
+    #NOTE: Adding charge/mult here temporarily to  be consistent with QM_theories. Not used
+    def run(self, current_coords=None, elems=None, Grad=False, fragment=None, qmatoms=None, label=None, charge=None, mult=None):
         module_init_time = time.time()
         timeA = time.time()
         # timeA = time.time()

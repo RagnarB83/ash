@@ -47,7 +47,7 @@ class xTBTheory:
 
         #Printlevel
         self.printlevel=printlevel
-
+        self.verbosity=printlevel-1
         #Label to distinguish different xtb objects
         self.label=label
 
@@ -90,7 +90,7 @@ class xTBTheory:
                 ashexit(code=9)
             self.Calculator=Calculator
             self.Param=Param
-            self.VERBOSITY_MINIMAL=VERBOSITY_MINIMAL
+
             # Creating variable and setting to None. Replaced by run
             self.calcobject=None
             print("xTB method:", self.xtbmethod)
@@ -149,7 +149,7 @@ class xTBTheory:
             print("Charge and mult has not been set yet. Exiting.")
             ashexit()
     #Do an xTB-optimization instead of ASH optimization. Useful for gas-phase chemistry (avoids too much ASH printout
-    def Opt(self, fragment=None, Grad=None, Hessian=None, numcores=None, label=None):
+    def Opt(self, fragment=None, Grad=None, Hessian=None, numcores=None, label=None, charge=None, mult=None):
         module_init_time=time.time()
         print(BC.OKBLUE,BC.BOLD, "------------RUNNING INTERNAL xTB OPTIMIZATION-------------", BC.END)
 
@@ -219,10 +219,20 @@ class xTBTheory:
         return 
 
 
-    def run(self, current_coords=None, current_MM_coords=None, MMcharges=None, qm_elems=None,
-                elems=None, Grad=False, PC=False, numcores=None, label=None):
+    def run(self, current_coords=None, current_MM_coords=None, MMcharges=None, qm_elems=None, printlevel=None,
+                elems=None, Grad=False, PC=False, numcores=None, label=None, charge=None, mult=None):
         module_init_time=time.time()
 
+
+        # #Verbosity change. May be changed in run (e.g. by Numfreq)
+        # if printlevel != None:
+        #     if printlevel< 2:
+        #         self.verbosity=0
+        #         print("setting verb to 0")
+        #     else:
+        #         self.verbosity=1
+        # else:
+        #     self.verbosity=self.printlevel-1
 
         if MMcharges is None:
             MMcharges=[]
@@ -358,7 +368,7 @@ class xTBTheory:
             if self.calcobject == None:
                 print("Creating new xTB calc object")
                 self.calcobject = self.Calculator(param_method, qm_elems_numbers, coords_au, charge=self.charge, uhf=self.mult-1)
-                self.calcobject.set_verbosity(self.VERBOSITY_MINIMAL)
+                self.calcobject.set_verbosity(self.verbosity)
                 self.calcobject.set_electronic_temperature(self.electronic_temp)
                 self.calcobject.set_max_iterations(self.maxiter)
                 self.calcobject.set_accuracy(self.accuracy)
