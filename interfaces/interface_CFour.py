@@ -3,9 +3,10 @@ from functions.functions_general import ashexit, BC, pygrep, print_time_rel
 import shutil
 import settings_ash
 
+
 #CFour Theory object. Fragment object is optional. Used??
 class CFourTheory:
-    def __init__(self, cfourdir=None,fragment=None, charge=None, mult=None, printlevel=2, cfouroptions=None,numcores=1,
+    def __init__(self, cfourdir=None,fragment=None, printlevel=2, cfouroptions=None,numcores=1,
                  filename='cfourjob',specialbasis=None, ash_basisfile='def2-SVP'):
                  #basis=None, method=None, reference='RHF', frozen_core='ON',
                 #memory=3100, , guessoption='MOREAD',propoption='OFF',cc_prog='ECC',scf_conv=10,lineq_conv=10,
@@ -15,8 +16,6 @@ class CFourTheory:
         self.theorytype="QM"
         
         self.printlevel=printlevel
-        self.charge=charge
-        self.mult=mult
         self.numcores=numcores
         self.filename=filename
         
@@ -147,6 +146,9 @@ class CFourTheory:
 
         print(BC.OKBLUE, BC.BOLD, "------------RUNNING CFOUR INTERFACE-------------", BC.END)
 
+        if charge == None or mult == None:
+            print(BC.FAIL, "Error. charge and mult has not been defined for CFourTheory.run", BC.END)
+            ashexit()
 
         # Coords provided to run or else taken from initialization.
         # if len(current_coords) != 0:
@@ -173,7 +175,7 @@ class CFourTheory:
                 inpfile.write("""*CFOUR(CALC={},BASIS={},COORD=CARTESIAN,REF={},CHARGE={}\nMULT={},FROZEN_CORE={},MEM_UNIT={},MEMORY={},SCF_MAXCYC={}\n\
 GUESS={},PROP={},CC_PROG={},SCF_CONV={}\n\
 LINEQ_CONV={},CC_MAXCYC={},SYMMETRY={},HFSTABILITY={},DERIV_LEVEL=1)\n\n""".format(
-                    self.method,self.basis,self.reference,self.charge,self.mult,self.frozen_core,self.memory_unit,self.memory,self.scf_maxcyc,self.guessoption,self.propoption,
+                    self.method,self.basis,self.reference,charge,mult,self.frozen_core,self.memory_unit,self.memory,self.scf_maxcyc,self.guessoption,self.propoption,
                     self.cc_prog,self.scf_conv,self.lineq_conv,self.cc_maxcyc,self.symmetry,self.stabilityanalysis))
                 for el in qm_elems:
                     inpfile.write("{}:{}\n".format(el.upper(),self.specialbasis[el]))
@@ -191,7 +193,7 @@ LINEQ_CONV={},CC_MAXCYC={},SYMMETRY={},HFSTABILITY={},DERIV_LEVEL=1)\n\n""".form
                 inpfile.write("""*CFOUR(CALC={},BASIS={},COORD=CARTESIAN,REF={},CHARGE={}\nMULT={},FROZEN_CORE={},MEM_UNIT={},MEMORY={},SCF_MAXCYC={}\n\
 GUESS={},PROP={},CC_PROG={},SCF_CONV={}\n\
 LINEQ_CONV={},CC_MAXCYC={},SYMMETRY={},HFSTABILITY={})\n\n""".format(
-                    self.method,self.basis,self.reference,self.charge,self.mult,self.frozen_core,self.memory_unit,self.memory,self.scf_maxcyc,self.guessoption,self.propoption,
+                    self.method,self.basis,self.reference,charge,mult,self.frozen_core,self.memory_unit,self.memory,self.scf_maxcyc,self.guessoption,self.propoption,
                     self.cc_prog,self.scf_conv,self.lineq_conv,self.cc_maxcyc,self.symmetry,self.stabilityanalysis))
                 #for specbas in self.specialbasis.items():
                 for el in qm_elems:

@@ -6,6 +6,7 @@ import time
 import os
 import shutil
 import ash
+from modules.module_coords import check_charge_mult
 
 #Root mean square of numpy array, e.g. gradient
 def RMS_G(grad):
@@ -48,7 +49,7 @@ def write_xyz_trajectory(file, coords, elems, titleline):
 # Interface DL-FIND (internal coords, HDLC etc.): https://www.chemshell.org/dl-find
 
 #ASH Cartesian Optimizer function for basic usage
-def SimpleOpt(fragment=None, theory='', optimizer='', maxiter=50, frozen_atoms=None, RMSGtolerance=0.0001, MaxGtolerance=0.0003, FIRE_timestep=0.00009):
+def SimpleOpt(fragment=None, theory='', charge=None, mult=None, optimizer='', maxiter=50, frozen_atoms=None, RMSGtolerance=0.0001, MaxGtolerance=0.0003, FIRE_timestep=0.00009):
     if fragment is not None:
         pass
     else:
@@ -63,6 +64,9 @@ def SimpleOpt(fragment=None, theory='', optimizer='', maxiter=50, frozen_atoms=N
             ashexit()
     if frozen_atoms is None:
         frozen_atoms=[]
+
+    #Check charge/mult
+    charge,mult = check_charge_mult(charge, mult, theory, fragment, "SimpleOpt")
 
     #List of active vs. frozen labels
     actfrozen_labels=[]
@@ -131,7 +135,7 @@ def SimpleOpt(fragment=None, theory='', optimizer='', maxiter=50, frozen_atoms=N
         blankline()
 
         #Running E+G theory job.
-        E, Grad = theory.run(current_coords=current_coords, elems=fragment.elems, Grad=True)
+        E, Grad = theory.run(current_coords=current_coords, elems=fragment.elems, Grad=True, charge=charge, mult=mult)
         #print("E,", E)
         #print("Grad,", Grad)
 
@@ -164,7 +168,7 @@ def SimpleOpt(fragment=None, theory='', optimizer='', maxiter=50, frozen_atoms=N
             print(BC.OKGREEN,"Geometry optimization Converged!",BC.END)
             write_xyz_trajectory(trajname, current_coords, elems, E)
 
-            # Updating energy and coordinates of Yggdrasill fragment before ending
+            # Updating energy and coordinates of ASH fragment before ending
             fragment.set_energy(E)
             print("Final optimized energy:", fragment.energy)
             fragment.replace_coords(elems, current_coords, conn=False)
@@ -232,7 +236,7 @@ def SimpleOpt(fragment=None, theory='', optimizer='', maxiter=50, frozen_atoms=N
                 #Store original atomic forces (in eV/Å)
                 keepf=np.copy(forces_evAng)
                 keepr = np.copy(current_coords)
-                step = TakeFDStep(theory, current_coords, LBFGS_parameters["fd_step"], forces_evAng, fragment.elems)
+                step = TakeFDStep(theory, current_coords, LBFGS_parameters["fd_step"], forces_evAng, fragment.elems, charge, mult)
 
             else:
                 print("Doing LBFGS Update")
@@ -282,8 +286,8 @@ LBFGS_parameters = {'fd_step' : 0.001, 'lbfgs_memory' : 20, 'lbfgs_damping' : 1.
 SD_parameters = {'sd_step' : 0.001}
 
 # Author: Vilhjalmur Asgeirsson, 2019
-#Modified to fit Yggdrasill
-def TakeFDStep(theory, current_coords, fd_step, forces, elems):
+#Modified to fit ASH
+def TakeFDStep(theory, current_coords, fd_step, forces, elems, charge, mult):
     # keep config / forces
     current_forces = np.copy(forces)
     #Current config is in Å
@@ -295,7 +299,7 @@ def TakeFDStep(theory, current_coords, fd_step, forces, elems):
     new_config = current_config + step
 
     # Compute forces and energy at new step
-    E, Grad = theory.run(current_coords=new_config, elems=elems, Grad=True)
+    E, Grad = theory.run(current_coords=new_config, elems=elems, Grad=True, charge=charge, mult=mult)
 
     # Restore previous values and store new forces
     new_forces = Grad*(-1)*constants.hartoeV/constants.bohr2ang
@@ -439,9 +443,11 @@ def newton_raphson(coords, Gradient,Hessian):
 #Todo: Add active-region option like geometric
 ########################
 
-def BernyOpt(theory,fragment):
+def BernyOpt(theory,fragment, charge, mult):
     blankline()
     print("Beginning Py-Berny Optimization")
+    #Check charge/mult
+    charge,mult = check_charge_mult(charge, mult, theory, fragment, "BernyOpt")
     try:
         from berny import Berny, geomlib
     except:
@@ -457,10 +463,10 @@ def BernyOpt(theory,fragment):
     optimizer = Berny(geomlib.Geometry(fragment.elems,fragment.coords))
     for geom in optimizer:
         # get energy and gradients for geom
-        E, Grad = theory.run(current_coords=geom.coords, elems=elems, Grad=True)
+        E, Grad = theory.run(current_coords=geom.coords, elems=elems, Grad=True, charge=charge, mult=mult)
         optimizer.send((E,Grad))
     print("BernyOpt Geometry optimization converged!")
-    #Updating energy and coordinates of Yggdrasill fragment before ending
+    #Updating energy and coordinates of ASH fragment before ending
     fragment.set_energy(E)
     print("Final optimized energy:",  fragment.energy)
     fragment.replace_coords(elems,geom.coords)

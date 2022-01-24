@@ -579,5 +579,6 @@ class Timings:
         print("{:35}{:>20.2f}{:>10}".format("Total walltime", totalwalltime, 100.0))
 
 
+
 # Creating object
 timingsobject = Timings()

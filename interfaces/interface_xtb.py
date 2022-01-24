@@ -10,7 +10,7 @@ import settings_solvation
 import settings_ash
 from functions.functions_general import ashexit, blankline,reverse_lines, print_time_rel,BC, print_line_with_mainheader
 import modules.module_coords
-from modules.module_coords import elemstonuccharges, check_multiplicity
+from modules.module_coords import elemstonuccharges, check_multiplicity, check_charge_mult
 
 
 #Now supports 2 runmodes: 'library' (fast Python C-API) or 'inputfile'
@@ -158,16 +158,21 @@ class xTBTheory:
         #
         current_coords=self.fragment.coords
         elems=self.fragment.elems
+
         #Check charge/mult
-        if charge == None or mult == None:
-            print(BC.WARNING,"Warning: Charge/mult was not provided to xTBTheory.Opt",BC.END)
-            if self.fragment.charge != None and self.fragment.mult != None:
-                print(BC.WARNING,"Fragment contains charge/mult information: Charge: {} Mult: {} Using this instead".format(fragment.charge,fragment.mult), BC.END)
-                print(BC.WARNING,"Make sure this is what you want!", BC.END)
-                charge=self.fragment.charge; mult=self.fragment.mult
-            else:
-                print(BC.FAIL,"No charge/mult information present in fragment either. Exiting.",BC.END)
-                ashexit()
+        #if charge == None or mult == None:
+        #    print(BC.WARNING,"Warning: Charge/mult was not provided to xTBTheory.Opt",BC.END)
+        #    if self.fragment.charge != None and self.fragment.mult != None:
+        #        print(BC.WARNING,"Fragment contains charge/mult information: Charge: {} Mult: {} Using this instead".format(fragment.charge,fragment.mult), BC.END)
+        #        print(BC.WARNING,"Make sure this is what you want!", BC.END)
+        #        charge=self.fragment.charge; mult=self.fragment.mult
+        #    else:
+        #        print(BC.FAIL,"No charge/mult information present in fragment either. Exiting.",BC.END)
+        #        ashexit()
+        #Check charge/mult
+        charge,mult = check_charge_mult(charge, mult, self, fragment, "xTBTheory.Opt")
+
+
 
         if numcores==None:
             numcores=self.numcores
@@ -249,16 +254,10 @@ class xTBTheory:
         else:
             current_coords=self.coords
 
-        #Check charge/mult
+        #Checking if charge and mult has been provided
         if charge == None or mult == None:
-            print(BC.WARNING,"Warning: Charge/mult was not provided to xTBTheory.Opt",BC.END)
-            if self.fragment.charge != None and self.fragment.mult != None:
-                print(BC.WARNING,"Fragment contains charge/mult information: Charge: {} Mult: {} Using this instead".format(fragment.charge,fragment.mult), BC.END)
-                print(BC.WARNING,"Make sure this is what you want!", BC.END)
-                charge=self.fragment.charge; mult=self.fragment.mult
-            else:
-                print(BC.FAIL,"No charge/mult information present in fragment either. Exiting.",BC.END)
-                ashexit()
+            print(BC.FAIL, "Error. charge and mult has not been defined for xTBTheory.run method", BC.END)
+            ashexit()
 
         #What elemlist to use. If qm_elems provided then QM/MM job, otherwise use elems list or self.elems
         if qm_elems is None:

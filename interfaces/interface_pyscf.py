@@ -7,7 +7,7 @@ import modules.module_coords
 #PySCF runmode: Library only
 # PE: Polarizable embedding (CPPE). Not completely active in PySCF 1.7.1. Bugfix required I think
 class PySCFTheory:
-    def __init__(self, fragment='', charge='', mult='', printsetting='False', printlevel=2, pyscfbasis='', pyscffunctional='',
+    def __init__(self, fragment='', printsetting='False', printlevel=2, pyscfbasis='', pyscffunctional='',
                  pe=False, potfile='', filename='pyscf', pyscfmemory=3100, numcores=1):
 
         #Indicate that this is a QMtheory
@@ -31,11 +31,6 @@ class PySCFTheory:
             self.fragment=fragment
             self.coords=fragment.coords
             self.elems=fragment.elems
-        #print("frag elems", self.fragment.elems)
-        if charge!='':
-            self.charge=int(charge)
-        if mult!='':
-            self.mult=int(mult)
         self.pyscfbasis=pyscfbasis
         self.pyscffunctional=pyscffunctional
     #Cleanup after run.
@@ -57,8 +52,12 @@ class PySCFTheory:
             numcores=self.numcores
 
 
-
         print(BC.OKBLUE,BC.BOLD, "------------RUNNING PYSCF INTERFACE-------------", BC.END)
+
+        #Checking if charge and mult has been provided
+        if charge == None or mult == None:
+            print(BC.FAIL, "Error. charge and mult has not been defined for PYSCFTheory.run method", BC.END)
+            ashexit()
 
         #If pe and potfile given as run argument
         if pe is not False:
@@ -105,8 +104,8 @@ class PySCFTheory:
         coords_string=modules.module_coords.create_coords_string(qm_elems,current_coords)
         mol.atom = coords_string
         mol.symmetry = 1
-        mol.charge = self.charge
-        mol.spin = self.mult-1
+        mol.charge = charge
+        mol.spin = mult-1
         #PYSCF basis object: https://sunqm.github.io/pyscf/tutorial.html
         #Object can be string ('def2-SVP') or a dict with element-specific keys and values
         mol.basis=self.pyscfbasis

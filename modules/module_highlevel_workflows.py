@@ -11,7 +11,7 @@ import interfaces.interface_ORCA
 from functions.functions_elstructure import num_core_electrons, check_cores_vs_electrons
 from functions.functions_general import ashexit, BC, print_line_with_mainheader
 from modules.module_coords import elemlisttoformula, nucchargelist,elematomnumbers
-
+from modules.module_coords import check_charge_mult
 
 # Allowed basis set families. Accessed by function basis_for_element and extrapolation
 basisfamilies=['cc','aug-cc','cc-dkh','cc-dk','aug-cc-dkh','aug-cc-dk','def2','ma-def2','def2-zora', 'def2-dkh',
@@ -24,7 +24,7 @@ basisfamilies=['cc','aug-cc','cc-dkh','cc-dk','aug-cc-dkh','aug-cc-dk','def2','m
 #alpha and beta can be manually set. If not set then they are picked based on basisfamily
 #NOTE: List of elements are required here
 class CC_CBS_Theory:
-    def __init__(self, elements=None, cardinals = [2,3], basisfamily="def2", relativity=None, charge=None, mult=None, orcadir=None, 
+    def __init__(self, elements=None, cardinals = [2,3], basisfamily="def2", relativity=None, orcadir=None, 
            stabilityanalysis=False, numcores=1, CVSR=False, CVbasis="W1-mtsmall", F12=False, Openshellreference=None, DFTreference=None, DFT_RI=False, auxbasis="autoaux-max",
                         DLPNO=False, memory=5000, pnosetting='extrapolation', pnoextrapolation=[6,7], FullLMP2Guess=False, T1=True, scfsetting='TightSCF',
                         alpha=None, beta=None, extrainputkeyword='', extrablocks='', FCI=False, guessmode='Cmatrix', atomicSOcorrection=False):
@@ -33,8 +33,6 @@ class CC_CBS_Theory:
         CCSD(T)/CBS frozencore workflow
 
         :param elements: list of element symbols
-        :param charge: Charge of fragment (will override fragment charge attribute).
-        :param mult: Multiplicity of fragment (will override fragment mult attribute).
         :param orcadir: ORCA directory
         :param stabilityanalysis: stability analysis on or off.
         :param numcores: number of cores
@@ -89,8 +87,6 @@ class CC_CBS_Theory:
         self.cardinals = cardinals
         self.basisfamily = basisfamily
         self.relativity = relativity
-        self.charge = charge
-        self.mult = mult
         self.stabilityanalysis=stabilityanalysis
         self.numcores=numcores
         self.CVSR=CVSR
@@ -120,8 +116,6 @@ class CC_CBS_Theory:
         print("Cardinals chosen:", self.cardinals)
         print("Basis set family chosen:", self.basisfamily)
         print("Elements involved:", self.elements)
-        print("Charge defined:", self.charge)
-        print("Multiplicity defined:", self.mult)
         print("Number of cores: ", self.numcores)
         print("Maxcore setting: ", self.memory, "MB")
         print("SCF setting: ", self.scfsetting)
@@ -307,11 +301,11 @@ maxiter 150\nend
         ##########################################################################################
         if self.singlebasis is True:
             #For single-basis CCSD(T) or single-basis F12 calculations
-            self.ccsdt_1 = interfaces.interface_ORCA.ORCATheory(orcadir=self.orcadir, orcasimpleinput=self.ccsdt_line, orcablocks=self.blocks1, numcores=self.numcores, charge=self.charge, mult=self.mult)
+            self.ccsdt_1 = interfaces.interface_ORCA.ORCATheory(orcadir=self.orcadir, orcasimpleinput=self.ccsdt_line, orcablocks=self.blocks1, numcores=self.numcores)
         else:
             #Extrapolations
-            self.ccsdt_1 = interfaces.interface_ORCA.ORCATheory(orcadir=self.orcadir, orcasimpleinput=self.ccsdt_line, orcablocks=self.blocks1, numcores=self.numcores, charge=self.charge, mult=self.mult)
-            self.ccsdt_2 = interfaces.interface_ORCA.ORCATheory(orcadir=self.orcadir, orcasimpleinput=self.ccsdt_line, orcablocks=self.blocks2, numcores=self.numcores, charge=self.charge, mult=self.mult)
+            self.ccsdt_1 = interfaces.interface_ORCA.ORCATheory(orcadir=self.orcadir, orcasimpleinput=self.ccsdt_line, orcablocks=self.blocks1, numcores=self.numcores)
+            self.ccsdt_2 = interfaces.interface_ORCA.ORCATheory(orcadir=self.orcadir, orcasimpleinput=self.ccsdt_line, orcablocks=self.blocks2, numcores=self.numcores)
 
 
     def cleanup(self):
@@ -319,7 +313,7 @@ maxiter 150\nend
 
 
     #Core-Valence ScalarRelativistic Step
-    def CVSR_Step(self, current_coords, elems, reloption,calc_label, numcores):
+    def CVSR_Step(self, current_coords, elems, reloption,calc_label, numcores, charge=None, mult=None):
 
         #Note: if reloption=='DKH' then we do DKH in NoFC and not in FC
         # if reloption=='' then no relativity
@@ -328,14 +322,14 @@ maxiter 150\nend
         ccsdt_mtsmall_NoFC_line="! {} {} {}   nofrozencore {} {} {} {}".format(self.ccsdtkeyword,reloption,self.CVbasis,self.auxbasiskeyword,self.pnokeyword,self.scfsetting,self.extrainputkeyword)
         ccsdt_mtsmall_FC_line="! {} {}  {} {} {} {}".format(self.ccsdtkeyword,self.CVbasis,self.auxbasiskeyword,self.pnokeyword,self.scfsetting,self.extrainputkeyword)
 
-        ccsdt_mtsmall_NoFC = interfaces.interface_ORCA.ORCATheory(orcadir=self.orcadir, orcasimpleinput=ccsdt_mtsmall_NoFC_line, orcablocks=self.blocks, numcores=self.numcores, charge=self.charge, mult=self.mult)
-        ccsdt_mtsmall_FC = interfaces.interface_ORCA.ORCATheory(orcadir=self.orcadir, orcasimpleinput=ccsdt_mtsmall_FC_line, orcablocks=self.blocks, numcores=self.numcores, charge=self.charge, mult=self.mult)
+        ccsdt_mtsmall_NoFC = interfaces.interface_ORCA.ORCATheory(orcadir=self.orcadir, orcasimpleinput=ccsdt_mtsmall_NoFC_line, orcablocks=self.blocks, numcores=self.numcores)
+        ccsdt_mtsmall_FC = interfaces.interface_ORCA.ORCATheory(orcadir=self.orcadir, orcasimpleinput=ccsdt_mtsmall_FC_line, orcablocks=self.blocks, numcores=self.numcores)
 
         #Run
-        energy_ccsdt_mtsmall_nofc = ccsdt_mtsmall_NoFC.run(elems=elems, current_coords=current_coords, numcores=numcores)
+        energy_ccsdt_mtsmall_nofc = ccsdt_mtsmall_NoFC.run(elems=elems, current_coords=current_coords, numcores=numcores, charge=charge, mult=mult)
         shutil.copyfile(ccsdt_mtsmall_NoFC.filename+'.out', './' + calc_label + 'CCSDT_MTsmall_NoFC_DKH' + '.out')
         
-        energy_ccsdt_mtsmall_fc = ccsdt_mtsmall_FC.run(elems=elems, current_coords=current_coords, numcores=numcores)
+        energy_ccsdt_mtsmall_fc = ccsdt_mtsmall_FC.run(elems=elems, current_coords=current_coords, numcores=numcores, charge=charge, mult=mult)
         shutil.copyfile(ccsdt_mtsmall_NoFC.filename+'.out', './' + calc_label + 'CCSDT_MTsmall_FC_noDKH' + '.out')
 
         #Core-correlation is total energy difference between NoFC-DKH and FC-norel
@@ -345,7 +339,7 @@ maxiter 150\nend
 
 
     # Do 2 calculations with different DLPNO thresholds and extrapolate
-    def PNOExtrapolationStep(self,elems=None, current_coords=None, theory=None, calc_label=None, numcores=None):
+    def PNOExtrapolationStep(self,elems=None, current_coords=None, theory=None, calc_label=None, numcores=None, charge=None, mult=None):
         #elems=None, current_coords=None, theory=None, pnoextrapolation=None, DLPNO=None, F12=None, calc_label=None
         print("Inside PNOExtrapolationStep")
         #Adding TCutPNO option X
@@ -377,7 +371,7 @@ maxiter 150\nend
         
         theory.orcablocks = PNOXblocks
         
-        theory.run(elems=elems, current_coords=current_coords, numcores=numcores)
+        theory.run(elems=elems, current_coords=current_coords, numcores=numcores, charge=charge, mult=mult)
         PNOcalcX_dict = interfaces.interface_ORCA.grab_HF_and_corr_energies(theory.filename+'.out', DLPNO=self.DLPNO,F12=self.F12)
         shutil.copyfile(theory.filename+'.out', './' + calc_label + '_PNOX' + '.out')
         print("PNOcalcX:", PNOcalcX_dict)
@@ -385,7 +379,7 @@ maxiter 150\nend
 
         theory.orcablocks = PNOYblocks
         #ash.Singlepoint(fragment=fragment, theory=theory)
-        theory.run(elems=elems, current_coords=current_coords, numcores=numcores)
+        theory.run(elems=elems, current_coords=current_coords, numcores=numcores, charge=charge, mult=mult)
         PNOcalcY_dict = interfaces.interface_ORCA.grab_HF_and_corr_energies(theory.filename+'.out', DLPNO=self.DLPNO,F12=self.F12)
         shutil.copyfile(theory.filename+'.out', './' + calc_label + '_PNOY' + '.out')
         print("PNOcalcY:", PNOcalcY_dict)
@@ -414,13 +408,14 @@ maxiter 150\nend
 
     #NOTE: TODO: PC info ??
     #TODO: coords and elems vs. fragment issue
-    def run(self, current_coords=None, elems=None, Grad=False, numcores=None):
+    def run(self, current_coords=None, elems=None, Grad=False, numcores=None, charge=None, mult=None):
 
         print(BC.OKBLUE,BC.BOLD, "------------RUNNING CC_CBS_Theory-------------", BC.END)
-        if self.charge == None or self.mult == None:
-            print(BC.FAIL,"Charge and mult attributes are required when running CC_CBS_Theory", BC.END)
+
+        #Checking if charge and mult has been provided
+        if charge == None or mult == None:
+            print(BC.FAIL, "Error. charge and mult has not been defined for ORCATheory.run method", BC.END)
             ashexit()
-        print(f"Charge: {self.charge} Mult: {self.mult}")
 
 
         if Grad == True:
@@ -436,21 +431,9 @@ maxiter 150\nend
                 print("Example: CC_CBS_Theory(elements=[\"{}\" ] ".format(element))
                 ashexit() 
 
-
-
-
-
-        #if charge/mult was changed (e.g. when running benchmarking, multiple jobs) then  ccsdt_1 and ccsdt_2 object need to be updated
-        #NOTE: Perhaps we should have a ASHtheory method that changes charge/mult (and subtheories)
-        self.ccsdt_1.charge=self.charge
-        self.ccsdt_1.mult=self.mult
-        if self.singlebasis is False:
-            self.ccsdt_2.charge=self.charge
-            self.ccsdt_2.mult=self.mult
-
         #Number of atoms and number of electrons
         numatoms=len(elems)
-        numelectrons = int(nucchargelist(elems) - self.charge)
+        numelectrons = int(nucchargelist(elems) - charge)
 
         #if 1-electron species like Hydrogen atom then we either need to code special HF-based procedure or just hardcode values
         #Currently hardcoding H-atom case. Replace with proper extrapolated value later.
@@ -465,7 +448,7 @@ maxiter 150\nend
 
         #Defining initial label here based on element and charge/mult of system
         formula=elemlisttoformula(elems)
-        calc_label = "Frag_" + str(formula) + "_" + str(self.charge) + "_" + str(self.mult) + "_"
+        calc_label = "Frag_" + str(formula) + "_" + str(charge) + "_" + str(mult) + "_"
         print("Initial Calculation label: ", calc_label)
 
 
@@ -476,7 +459,7 @@ maxiter 150\nend
 
         #Reduce numcores if required
         #NOTE: self.numcores is thus ignored if check_cores_vs_electrons reduces value based on system-size
-        numcores = check_cores_vs_electrons(elems,numcores,self.charge)
+        numcores = check_cores_vs_electrons(elems,numcores,charge)
 
 
         # EXTRAPOLATION TO PNO LIMIT BY 2 PNO calculations
@@ -488,14 +471,14 @@ maxiter 150\nend
             print("="*70)
             #SINGLE F12 EXPLICIT CORRELATION JOB or if only 1 cardinal was provided
             if self.singlebasis is True:
-                E_SCF_1, E_corrCCSD_1, E_corrCCT_1,E_corrCC_1 = self.PNOExtrapolationStep(elems=elems, current_coords=current_coords, theory=self.ccsdt_1, calc_label=calc_label+'cardinal1', numcores=numcores)
+                E_SCF_1, E_corrCCSD_1, E_corrCCT_1,E_corrCC_1 = self.PNOExtrapolationStep(elems=elems, current_coords=current_coords, theory=self.ccsdt_1, calc_label=calc_label+'cardinal1', numcores=numcores, charge=charge, mult=mult)
             #REGULAR EXTRAPOLATION WITH 2 THEORIES
             else:
-                E_SCF_1, E_corrCCSD_1, E_corrCCT_1,E_corrCC_1 = self.PNOExtrapolationStep(elems=elems, current_coords=current_coords, theory=self.ccsdt_1, calc_label=calc_label+'cardinal1', numcores=numcores)
+                E_SCF_1, E_corrCCSD_1, E_corrCCT_1,E_corrCC_1 = self.PNOExtrapolationStep(elems=elems, current_coords=current_coords, theory=self.ccsdt_1, calc_label=calc_label+'cardinal1', numcores=numcores, charge=charge, mult=mult)
                 print("="*70)
                 print("Basis-1 job done. Now doing Basis-2 job: Family: {} Cardinal: {} ".format(self.basisfamily, self.cardinals[1]))
                 print("="*70)
-                E_SCF_2, E_corrCCSD_2, E_corrCCT_2,E_corrCC_2 = self.PNOExtrapolationStep(elems=elems, current_coords=current_coords, theory=self.ccsdt_2, calc_label=calc_label+'cardinal2', numcores=numcores)
+                E_SCF_2, E_corrCCSD_2, E_corrCCT_2,E_corrCC_2 = self.PNOExtrapolationStep(elems=elems, current_coords=current_coords, theory=self.ccsdt_2, calc_label=calc_label+'cardinal2', numcores=numcores, charge=charge, mult=mult)
                 scf_energies = [E_SCF_1, E_SCF_2]
                 ccsdcorr_energies = [E_corrCCSD_1, E_corrCCSD_2]
                 triplescorr_energies = [E_corrCCT_1, E_corrCCT_2]
@@ -515,7 +498,7 @@ maxiter 150\nend
             #SINGLE BASIS CORRELATION JOB
             if self.singlebasis is True:
 
-                self.ccsdt_1.run(elems=elems, current_coords=current_coords, numcores=numcores)
+                self.ccsdt_1.run(elems=elems, current_coords=current_coords, numcores=numcores, charge=charge, mult=mult)
                 CCSDT_1_dict = interfaces.interface_ORCA.grab_HF_and_corr_energies(self.ccsdt_1.filename+'.out', DLPNO=self.DLPNO, F12=self.F12)
                 shutil.copyfile(self.ccsdt_1.filename+'.out', './' + calc_label + 'CCSDT_1' + '.out')
                 print("CCSDT_1_dict:", CCSDT_1_dict)
@@ -525,12 +508,12 @@ maxiter 150\nend
                 E_corrCCT_CBS = CCSDT_1_dict['CCSD(T)_corr']
             #REGULAR EXTRAPOLATION WITH 2 THEORIES
             else:
-                self.ccsdt_1.run(elems=elems, current_coords=current_coords, numcores=numcores)
+                self.ccsdt_1.run(elems=elems, current_coords=current_coords, numcores=numcores, charge=charge, mult=mult)
                 CCSDT_1_dict = interfaces.interface_ORCA.grab_HF_and_corr_energies(self.ccsdt_1.filename+'.out', DLPNO=self.DLPNO)
                 shutil.copyfile(self.ccsdt_1.filename+'.out', './' + calc_label + 'CCSDT_1' + '.out')
                 print("CCSDT_1_dict:", CCSDT_1_dict)
 
-                self.ccsdt_2.run(elems=elems, current_coords=current_coords, numcores=numcores)
+                self.ccsdt_2.run(elems=elems, current_coords=current_coords, numcores=numcores, charge=charge, mult=mult)
                 CCSDT_2_dict = interfaces.interface_ORCA.grab_HF_and_corr_energies(self.ccsdt_2.filename+'.out', DLPNO=self.DLPNO)
                 shutil.copyfile(self.ccsdt_2.filename+'.out', './' + calc_label + 'CCSDT_2' + '.out')
                 print("CCSDT_2_dict:", CCSDT_2_dict)
@@ -580,12 +563,12 @@ maxiter 150\nend
                 reloption=" "
                 calc_label=calc_label+"CV_"
                 print("Doing CVSR_Step with No Scalar Relativity and CV-basis: {}".format(self.CVbasis))
-                E_corecorr_and_SR = self.CVSR_Step(current_coords, elems, reloption,calc_label,numcores)
+                E_corecorr_and_SR = self.CVSR_Step(current_coords, elems, reloption,calc_label,numcores, charge=charge, mult=mult)
             else:
                 reloption="DKH"
                 calc_label=calc_label+"CVSR_stepDKH"
                 print("Doing CVSR_Step with Relativistic Option: {} and CV-basis: {}".format(reloption,self.CVbasis))
-                E_corecorr_and_SR = self.CVSR_Step(current_coords, elems, reloption,calc_label,numcores)
+                E_corecorr_and_SR = self.CVSR_Step(current_coords, elems, reloption,calc_label,numcores, charge=charge, mult=mult)
         else:
             print("")
             print("Core-Valence Scalar Relativistic Correction is off!")
@@ -596,7 +579,7 @@ maxiter 150\nend
         ############################################################
         if numatoms == 1 and self.atomicSOcorrection is True:
             print("Fragment is an atom. Looking up atomic spin-orbit splitting value")
-            if self.charge == 0:
+            if charge == 0:
                 print("Charge of atom is zero. Looking up in neutral dict")
                 try:
                     E_SO = dictionaries_lists.atom_spinorbitsplittings[elems[0]] / constants.hartocm

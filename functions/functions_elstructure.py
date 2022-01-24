@@ -555,14 +555,13 @@ cnvkdiis false
 end"""
 
         #Creating ORCA object for  element
-        ORCASPcalculation = interfaces.interface_ORCA.ORCATheory(orcadir=theory.orcadir, charge=0,
-                                           mult=spindictionary[el], orcasimpleinput=theory.orcasimpleinput,
+        ORCASPcalculation = interfaces.interface_ORCA.ORCATheory(orcadir=theory.orcadir, orcasimpleinput=theory.orcasimpleinput,
                                            orcablocks=theory.orcablocks, extraline=scfextrasettingsstring)
 
         #Element coordinates
         Elfrag = ash.Fragment(elems=[el], coords=[[0.0,0.0,0.0]])
         print("Elfrag dict ", Elfrag.__dict__)
-        ash.Singlepoint(theory=ORCASPcalculation,fragment=Elfrag)
+        ash.Singlepoint(theory=ORCASPcalculation,fragment=Elfrag, charge=0, mult=spindictionary[el])
         #Preserve outputfile and GBW file for each element
         shutil.copyfile(ORCASPcalculation.filename+'.out', './' + str(el) + '.out')
         shutil.copyfile(ORCASPcalculation.filename+'.gbw', './' + str(el) + '.gbw')

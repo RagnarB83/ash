@@ -36,6 +36,7 @@ class ORCATheory:
         #Checking if user added Opt, Freq keywords
         if ' OPT' in orcasimpleinput.upper() or ' FREQ' in orcasimpleinput.upper() :
             print(BC.FAIL,"Error. orcasimpleinput variable can not contain ORCA job-directives like: Opt, Freq, Numfreq", BC.END)
+            print("String:", orcasimpleinput.upper())
             print("orcasimpleinput should only contain information on electronic-structure method (e.g. functional), basis set, grid, SCF convergence etc.")
             ashexit()
 
@@ -1648,8 +1649,8 @@ def grab_EFG_from_ORCA_output(filename):
                 efg_values=[float(line.split()[-3]),float(line.split()[-2]),float(line.split()[-1])]
                 return efg_values
 
-
-def counterpoise_calculation_ORCA(fragments=None, theory=None, monomer1_indices=None, monomer2_indices=None):
+#Charge/mult must be in fragments
+def counterpoise_calculation_ORCA(fragments=None, theory=None, monomer1_indices=None, monomer2_indices=None, charge=None, mult=None):
     print_line_with_mainheader("COUNTERPOISE CORRECTION JOB")
     print("\n Boys-Bernardi counterpoise correction\n")
     
@@ -1678,7 +1679,12 @@ H    2.453295744  -1.445998564  -1.389381355
     print("")
     #list of fragment indices
     fragments_indices=[i for i in range(0,len(fragments))]
-    
+
+    for frag in fragments:
+        if frag.charge == None:
+            print("Charge/mult information not present in all fragments")
+            ashexit()
+
     #Determine what is dimer and monomers in list of fragments
     numatoms_all=[fragment.numatoms for fragment in fragments]
     dimer_index = numatoms_all.index(max(numatoms_all))

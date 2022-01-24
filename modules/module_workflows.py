@@ -17,8 +17,9 @@ from modules.module_coords import read_xyzfiles
 import functions.functions_elstructure
 from modules.module_plotting import ASH_plot
 from modules.module_singlepoint import ReactionEnergy
+from modules.module_coords import check_charge_mult
 
-#Simple class to keep track of results
+#Simple class to keep track of results. To be extended
 class ProjectResults():
     def __init__(self,name=None):
         self.name=name
@@ -54,7 +55,10 @@ def confsampler_protocol(fragment=None, crestdir=None, xtbmethod='GFN2-xTB', MLt
     print("="*50)
     print("CONFSAMPLER FUNCTION")
     print("="*50)
-    
+
+    #Check charge/mult
+    charge,mult = check_charge_mult(charge, mult, MLtheory, fragment, "confsampler_protocol")
+
     #1. Calling crest
     #call_crest(fragment=molecule, xtbmethod='GFN2-xTB', crestdir=crestdir, charge=charge, mult=mult, solvent='H2O', energywindow=6 )
     interfaces.interface_crest.call_crest(fragment=fragment, xtbmethod=xtbmethod, crestdir=crestdir, charge=charge, mult=mult, numcores=numcores)
@@ -74,7 +78,7 @@ def confsampler_protocol(fragment=None, crestdir=None, xtbmethod='GFN2-xTB', MLt
     for index,conformer in enumerate(list_conformer_frags):
         print("")
         print("Performing ML Geometry Optimization for Conformer ", index)
-        interfaces.interface_geometric.geomeTRICOptimizer(fragment=conformer, theory=MLtheory, coordsystem='tric')
+        interfaces.interface_geometric.geomeTRICOptimizer(fragment=conformer, theory=MLtheory, coordsystem='tric', charge=charge, mult=mult)
         ML_energies.append(conformer.energy)
         #Saving ASH fragment and XYZ file for each ML-optimized conformer
         os.rename('Fragment-optimized.ygg', 'Conformer{}_ML.ygg'.format(index))
@@ -89,7 +93,7 @@ def confsampler_protocol(fragment=None, crestdir=None, xtbmethod='GFN2-xTB', MLt
     for index,conformer in enumerate(list_conformer_frags):
         print("")
         print("Performing High-level calculation for ML-optimized Conformer ", index)
-        HLenergy = ash.Singlepoint(theory=HLtheory, fragment=conformer)
+        HLenergy = ash.Singlepoint(theory=HLtheory, fragment=conformer, charge=charge, mult=mult)
 
         HL_energies.append(HLenergy)
 
@@ -132,16 +136,11 @@ def confsampler_protocol(fragment=None, crestdir=None, xtbmethod='GFN2-xTB', MLt
 
 # opt+freq+HL protocol for single species
 def thermochemprotocol_single(fragment=None, Opt_theory=None, SP_theory=None, orcadir=None, numcores=None, memory=5000,
-                       analyticHessian=True, temp=298.15, pressure=1.0):
+                       analyticHessian=True, temp=298.15, pressure=1.0, charge=None, mult=None):
     module_init_time=time.time()
     print(BC.WARNING, BC.BOLD, "------------THERMOCHEM PROTOCOL (single-species)-------------", BC.END)
-    if fragment.charge == None:
-        print("1st. Fragment: {}".format(fragment.__dict__))
-        print("No charge/mult information present in fragment. Each fragment in provided fraglist must have charge/mult information defined.")
-        print("Example:")
-        print("fragment.charge= 0; fragment.mult=1")
-        print("Exiting...")
-        ashexit()
+    #Check charge/mult
+    charge,mult = check_charge_mult(charge, mult, Opt_theory, fragment, "thermochemprotocol_single")
     #DFT Opt+Freq  and Single-point High-level workflow
     #Only Opt+Freq for molecules, not atoms
     print("-------------------------------------------------------------------------")
@@ -149,18 +148,15 @@ def thermochemprotocol_single(fragment=None, Opt_theory=None, SP_theory=None, or
     print("-------------------------------------------------------------------------")
     if fragment.numatoms != 1:
         #DFT-opt
-        #Adding charge and mult to theory object, taken from each fragment object
-        Opt_theory.charge = fragment.charge
-        Opt_theory.mult = fragment.mult
-        interfaces.interface_geometric.geomeTRICOptimizer(theory=Opt_theory,fragment=fragment)
+        interfaces.interface_geometric.geomeTRICOptimizer(theory=Opt_theory,fragment=fragment, charge=charge, mult=mult)
         print("-------------------------------------------------------------------------")
         print("THERMOCHEM PROTOCOL-single: Step 2. Frequency calculation")
         print("-------------------------------------------------------------------------")
         #DFT-FREQ
         if analyticHessian == True:
-            thermochem = ash.AnFreq(fragment=fragment, theory=Opt_theory, numcores=numcores)                
+            thermochem = ash.AnFreq(fragment=fragment, theory=Opt_theory, numcores=numcores, charge=charge, mult=mult)                
         else:
-            thermochem = ash.NumFreq(fragment=fragment, theory=Opt_theory, npoint=2, runmode='serial')
+            thermochem = ash.NumFreq(fragment=fragment, theory=Opt_theory, npoint=2, runmode='serial', charge=charge, mult=mult)
     else:
         #Setting thermoproperties for atom
         thermochem = thermochemcalc([],atoms,fragment, fragment.mult, temp=temp,pressure=pressure)
@@ -169,9 +165,7 @@ def thermochemprotocol_single(fragment=None, Opt_theory=None, SP_theory=None, or
     print("THERMOCHEM PROTOCOL-single: Step 3. High-level single-point calculation")
     print("-------------------------------------------------------------------------")
 
-    SP_theory.charge = fragment.charge
-    SP_theory.mult = fragment.mult
-    FinalE = ash.Singlepoint(fragment=fragment, theory=SP_theory)
+    FinalE = ash.Singlepoint(fragment=fragment, theory=SP_theory, charge=charge, mult=mult)
     #Get energy components
     if isinstance(SP_theory,CC_CBS_Theory):
         componentsdict=SP_theory.energy_components
@@ -216,7 +210,7 @@ def thermochemprotocol_reaction(Opt_theory=None, SP_theory=None, fraglist=None, 
     for species in fraglist:
         #Get energy and components for species
         FinalE, componentsdict, thermochem = thermochemprotocol_single(fragment=species, Opt_theory=Opt_theory, SP_theory=SP_theory, orcadir=orcadir, numcores=numcores, memory=memory,
-                       analyticHessian=analyticHessian, temp=temp, pressure=pressure)
+                       analyticHessian=analyticHessian, temp=temp, pressure=pressure, charge=species.charge, mult=species.mult)
         
         print("FinalE:", FinalE)
         print("componentsdict", componentsdict)
@@ -312,9 +306,9 @@ def auto_active_space(fragment=None, orcadir=None, basis="def2-SVP", scalar_rel=
         natorbs true
         end
         """
-        ORCAcalc_1 = ash.ORCATheory(orcadir=orcadir, charge=charge, mult=mult, orcasimpleinput=orcasimpleinput, orcablocks=orcablocks,
+        ORCAcalc_1 = ash.ORCATheory(orcadir=orcadir, orcasimpleinput=orcasimpleinput, orcablocks=orcablocks,
                                     numcores=numcores)
-        ash.Singlepoint(theory=ORCAcalc_1,fragment=fragment)
+        ash.Singlepoint(theory=ORCAcalc_1,fragment=fragment, charge=charge, mult=mult)
         init_orbitals=ORCAcalc_1.filename+'.mp2nat'
 
         step1occupations=ash.interfaces.interface_ORCA.MP2_natocc_grab(ORCAcalc_1.filename+'.out')
@@ -332,9 +326,9 @@ def auto_active_space(fragment=None, orcadir=None, basis="def2-SVP", scalar_rel=
         Smeartemp {}
         end
         """.format(smeartemp)
-        ORCAcalc_1 = ash.ORCATheory(orcadir=orcadir, charge=charge, mult=mult, orcasimpleinput=orcasimpleinput, orcablocks=orcablocks,
+        ORCAcalc_1 = ash.ORCATheory(orcadir=orcadir, orcasimpleinput=orcasimpleinput, orcablocks=orcablocks,
                                     numcores=numcores)
-        ash.Singlepoint(theory=ORCAcalc_1,fragment=fragment)
+        ash.Singlepoint(theory=ORCAcalc_1,fragment=fragment, charge=charge, mult=mult)
         step1occupations=ash.interfaces.interface_ORCA.SCF_FODocc_grab(ORCAcalc_1.filename+'.out')
         print("FOD occupations:", step1occupations)
         #FOD occupations are unrestricted.
@@ -358,9 +352,9 @@ def auto_active_space(fragment=None, orcadir=None, basis="def2-SVP", scalar_rel=
         maxiter 800
         end
         """
-        ORCAcalc_1 = ash.ORCATheory(orcadir=orcadir, charge=charge, mult=mult, orcasimpleinput=orcasimpleinput, orcablocks=orcablocks,
+        ORCAcalc_1 = ash.ORCATheory(orcadir=orcadir, orcasimpleinput=orcasimpleinput, orcablocks=orcablocks,
                                     numcores=numcores)
-        ash.Singlepoint(theory=ORCAcalc_1,fragment=fragment)
+        ash.Singlepoint(theory=ORCAcalc_1,fragment=fragment, charge=charge, mult=mult)
         step1occupations,qroenergies=ash.interfaces.interface_ORCA.QRO_occ_energies_grab(ORCAcalc_1.filename+'.out')
         print("occupations:", step1occupations)
         print("qroenergies:", qroenergies)
@@ -398,9 +392,9 @@ def auto_active_space(fragment=None, orcadir=None, basis="def2-SVP", scalar_rel=
     end
     end
     """.format(memory,init_orbitals,numelectrons,numorbitals,tgen)
-    ORCAcalc_2 = ash.ORCATheory(orcadir=orcadir, charge=charge, mult=mult, orcasimpleinput=orcasimpleinput, orcablocks=orcablocks,
+    ORCAcalc_2 = ash.ORCATheory(orcadir=orcadir, orcasimpleinput=orcasimpleinput, orcablocks=orcablocks,
                                 numcores=numcores)
-    ash.Singlepoint(theory=ORCAcalc_2,fragment=fragment)
+    ash.Singlepoint(theory=ORCAcalc_2,fragment=fragment, charge=charge, mult=mult)
 
     ICEnatoccupations=ash.interfaces.interface_ORCA.CASSCF_natocc_grab(ORCAcalc_2.filename+'.out')
 
@@ -481,6 +475,7 @@ def calc_xyzfiles(xyzdir=None, theory=None, HL_theory=None, Opt=False, Freq=Fals
         print("Highlevel Theory SP after Opt:", HL_theory.__class__.__name__)
     print("Global charge/mult options:", charge, mult)
     print("xTB preoptimization", xtb_preopt)
+
     if charge == None or mult == None:
         print("Charge/mult options are None. This means that XYZ-files must have charge/mult information in their header\n\n")
         readchargemult=True
@@ -509,24 +504,21 @@ def calc_xyzfiles(xyzdir=None, theory=None, HL_theory=None, Opt=False, Freq=Fals
     for fragment in fragments:
         filename=fragment.label
         print("filename:", filename)
-        #Charge/mult from fragment
-        if charge == None and mult ==None:
-    	    theory.charge=fragment.charge; theory.mult=fragment.mult
         #Global charge/mult keywords (rare)
-        else:
-            theory.charge=charge; theory.mult=mult; fragment.charge=charge; fragment.mult=mult
+        if charge != None and mult != None:
+            fragment.charge=charge; fragment.mult=mult
         #Do Optimization or Singlepoint
         if Opt is True:
             if xtb_preopt is True:
                 print("xTB Pre-optimization is active. Will first call xTB directly to do pre-optimization before actual optimization!")
                 #Defining temporary xtBtheory
-                xtbcalc=ash.xTBTheory(charge=theory.charge,mult=theory.mult, numcores=theory.numcores)
+                xtbcalc=ash.xTBTheory(numcores=theory.numcores)
                 #Run direct xtb optimization. This will update fragment.
-                xtbcalc.Opt(fragment=fragment)
+                xtbcalc.Opt(fragment=fragment, charge=fragment.charge, mult=fragment.mult)
                 xtbcalc.cleanup()
             
             #Now doing actual OPT
-            optenergy = interfaces.interface_geometric.geomeTRICOptimizer(theory=theory, fragment=fragment, coordsystem='tric')
+            optenergy = interfaces.interface_geometric.geomeTRICOptimizer(theory=theory, fragment=fragment, coordsystem='tric', charge=fragment.charge, mult=fragment.mult)
             theory.cleanup()
             energy=optenergy
             optenergies.append(optenergy)
@@ -538,16 +530,16 @@ def calc_xyzfiles(xyzdir=None, theory=None, HL_theory=None, Opt=False, Freq=Fals
             #Freq job after OPt
             if Freq is True:
                 print("Performing Numerical Frequency job on Optimized fragment.")
-                thermochem = ash.NumFreq(fragment=fragment, theory=theory, npoint=2, displacement=0.005, numcores=theory.numcores, runmode='serial')
+                thermochem = ash.NumFreq(fragment=fragment, theory=theory, npoint=2, displacement=0.005, numcores=theory.numcores, runmode='serial', charge=fragment.charge, mult=fragment.mult)
                 theory.cleanup()
             if Highlevel is True:
                 print("Performing Highlevel on Optimized fragment.")
-                hlenergy = ash.Singlepoint(theory=HL_theory, fragment=fragment)
+                hlenergy = ash.Singlepoint(theory=HL_theory, fragment=fragment, charge=fragment.charge, mult=fragment.mult)
                 energy=hlenergy
                 hlenergies.append(hlenergy)
                 HL_theory.cleanup()
         else:
-            energy = ash.Singlepoint(theory=theory, fragment=fragment)
+            energy = ash.Singlepoint(theory=theory, fragment=fragment, charge=fragment.charge, mult=fragment.mult)
             theory.cleanup()
         
         energies.append(energy)
@@ -992,19 +984,20 @@ def Reaction_Highlevel_Analysis(fraglist=None, stoichiometry=None, numcores=1, m
 
 
 #NOTE: not ready
-def BrokenSymmetryCalculator(theory=None, fragment=None, Opt=False, flip_atoms=None, BS_flip_options=None):
+def BrokenSymmetryCalculator(theory=None, fragment=None, Opt=False, flip_atoms=None, BS_flip_options=None, charge=None, mult=None):
 
     if theory == None or fragment == None or flip_atoms == None or BS_flip_options==None:
         print("Please set theory, fragment, flip_atoms and BS_flip_options keywords")
         exit()
 
+    #Check charge/mult
+    charge,mult = check_charge_mult(charge, mult, theory, fragment, "BrokenSymmetryCalculator")
+
     #Getting full-system atom numbers for each BS-flip
     atomstoflip=[flip_atoms[i-1] for i in BSflip]
-    orcaobject = ORCATheory(orcadir=orcadir, charge=charge,mult=mult, orcasimpleinput=ORCAinpline, orcablocks=ORCAblocklines,
+    orcaobject = ORCATheory(orcadir=orcadir, orcasimpleinput=ORCAinpline, orcablocks=ORCAblocklines,
                         brokensym=brokensym, HSmult=HSmult, atomstoflip=atomstoflip, nprocs=numcores, extrabasisatoms=extrabasisatoms,
                         extrabasis="ZORA-def2-TZVP")
-
-
 
 
     #Looping over BS-flips
@@ -1023,13 +1016,13 @@ def BrokenSymmetryCalculator(theory=None, fragment=None, Opt=False, flip_atoms=N
 
 
         #OPT with TruncPC approximation
-        geomeTRICOptimizer(theory=theory, fragment=frag, ActiveRegion=True, actatoms=actatoms, maxiter=500, coordsystem='hdlc')
+        geomeTRICOptimizer(theory=theory, fragment=frag, ActiveRegion=True, actatoms=actatoms, maxiter=500, coordsystem='hdlc', charge=charge, mult=mult)
 
         #Preserve geometry
         os.rename('Fragment-optimized.xyz', f'Fragment_{calclabel}_truncopt.xyz')
 
         #Opt without TruncPC approximation
-        geomeTRICOptimizer(theory=qmmmobject_notrunc, fragment=frag, ActiveRegion=True, actatoms=actatoms, maxiter=500, coordsystem='hdlc')
+        geomeTRICOptimizer(theory=qmmmobject_notrunc, fragment=frag, ActiveRegion=True, actatoms=actatoms, maxiter=500, coordsystem='hdlc', charge=charge, mult=mult)
 
         #Preserve geometry and ORCA output
         os.rename('Fragment-optimized.xyz', f'Fragment_{calclabel}_notrunc.xyz')

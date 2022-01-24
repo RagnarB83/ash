@@ -9,6 +9,7 @@ import time
 
 import ash
 from functions.functions_general import ashexit, blankline,print_time_rel
+from modules.module_coords import check_charge_mult
 
 #This makes Knarr part of python path
 #Recommended way?
@@ -113,13 +114,15 @@ def coords_to_Knarr(coords):
 #Wrapper around ASH object
 class KnarrCalculator:
     def __init__(self,theory,fragment1,fragment2,runmode='serial',printlevel=None, ActiveRegion=False, actatoms=None,
-                 full_fragment_reactant=None, full_fragment_product=None, numimages=None, FreeEnd=False ):
+                 full_fragment_reactant=None, full_fragment_product=None, numimages=None, FreeEnd=False, charge=None, mult=None ):
         self.FreeEnd=FreeEnd
         self.numimages=numimages
         self.printlevel=printlevel
         self.forcecalls=0
         self.iterations=0
         self.theory=theory
+        self.charge=charge
+        self.mult=mult
         #ASH fragments for reactant and product
         #Used for element list and keep track of full system if QM/MM
         self.fragment1=fragment1
@@ -186,7 +189,7 @@ class KnarrCalculator:
                     self.full_coords_images_dict[image_number] = copy.deepcopy(full_current_image_coords)
 
                     #EnGrad calculation on full system
-                    En_image, Grad_image_full = self.theory.run(current_coords=full_current_image_coords,
+                    En_image, Grad_image_full = self.theory.run(current_coords=full_current_image_coords, charge=self.charge, mult=self.mult,
                                                                 elems=self.full_fragment_reactant.elems, Grad=True)
                     print("Energy of image {} is : {}".format(image_number,En_image))
                     #Trim Full gradient down to only act-atoms gradient
@@ -196,7 +199,7 @@ class KnarrCalculator:
                     self.energies_dict[image_number] = En_image
 
                 else:
-                    En_image, Grad_image = self.theory.run(current_coords=image_coords, elems=self.fragment1.elems, Grad=True)
+                    En_image, Grad_image = self.theory.run(current_coords=image_coords, elems=self.fragment1.elems, Grad=True, charge=self.charge, mult=self.mult,)
                     #Keeping track of energies for each image in a dict
                     self.energies_dict[image_number] = En_image
 
@@ -268,7 +271,7 @@ class KnarrCalculator:
 def NEB(reactant=None, product=None, theory=None, images=None, interpolation=None, CI=None, free_end=None, restart_file=None,
         conv_type=None, tol_scale=None, tol_max_fci=None, tol_rms_fci=None, tol_max_f=None, tol_rms_f=None,
         tol_turn_on_ci=None, ActiveRegion=False, actatoms=None, runmode='serial', printlevel=1,
-        idpp_maxiter=None):
+        idpp_maxiter=None, charge=None, mult=None):
 
     module_init_time=time.time()
 
@@ -285,6 +288,9 @@ def NEB(reactant=None, product=None, theory=None, images=None, interpolation=Non
     PrintDivider()
     PrintDivider()
     numatoms = reactant.numatoms
+
+    #Check charge/mult
+    charge,mult = check_charge_mult(charge, mult, theory, reactant, "NEB")
 
     #Override some default settings if requested
     #Default is; NEB-CI, IDPP interpolation, 6 images
@@ -347,7 +353,7 @@ def NEB(reactant=None, product=None, theory=None, images=None, interpolation=Non
         #Create Knarr calculator from ASH theory.
         calculator = KnarrCalculator(theory, fragment1=new_reactant, fragment2=new_product, runmode=runmode,
                                      ActiveRegion=True, actatoms=actatoms, full_fragment_reactant=reactant,
-                                     full_fragment_product=product,numimages=images )
+                                     full_fragment_product=product,numimages=images, charge=charge, mult=mult )
 
         # Symbols list for Knarr
         Knarr_symbols = [y for y in new_reactant.elems for i in range(3)]
@@ -366,7 +372,7 @@ def NEB(reactant=None, product=None, theory=None, images=None, interpolation=Non
     else:
         #Create Knarr calculator from ASH theory
         calculator = KnarrCalculator(theory, fragment1=reactant, fragment2=product,
-                                     ActiveRegion=False, runmode=runmode,numimages=images)
+                                     ActiveRegion=False, runmode=runmode,numimages=images, charge=charge, mult=mult )
 
         # Symbols list for Knarr
         Knarr_symbols = [y for y in reactant.elems for i in range(3)]
@@ -430,7 +436,7 @@ def NEB(reactant=None, product=None, theory=None, images=None, interpolation=Non
                     full_saddleimage_coords[i] = curr_c
 
             #Creating new ASH fragment for Full Saddle-point geometry
-            Saddlepoint_fragment = ash.Fragment(coords=full_saddleimage_coords, elems=reactant.elems, connectivity=reactant.connectivity)
+            Saddlepoint_fragment = ash.Fragment(coords=full_saddleimage_coords, elems=reactant.elems, connectivity=reactant.connectivity, charge=charge, mult=mult)
             Saddlepoint_fragment.set_energy(saddle_energy)
             #Adding atomtypes and charges if present.
             Saddlepoint_fragment.update_atomcharges(reactant.atomcharges)
@@ -447,7 +453,7 @@ def NEB(reactant=None, product=None, theory=None, images=None, interpolation=Non
             saddle_coords=np.reshape(saddle_coords_1d, (numatoms, 3))
             saddle_energy = path.GetEnergy()[CI]
             #Creating new ASH fragment
-            Saddlepoint_fragment = ash.Fragment(coords=saddle_coords, elems=reactant.elems, connectivity=reactant.connectivity)
+            Saddlepoint_fragment = ash.Fragment(coords=saddle_coords, elems=reactant.elems, connectivity=reactant.connectivity, charge=charge, mult=mult)
             Saddlepoint_fragment.set_energy(saddle_energy)
             #Writing out Saddlepoint fragment file and XYZ file
             Saddlepoint_fragment.print_system(filename='Saddlepoint-optimized.ygg')

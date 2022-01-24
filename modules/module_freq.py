@@ -6,20 +6,23 @@ import copy
 import time
 from functions.functions_general import ashexit, listdiff, clean_number,blankline,BC,print_time_rel, print_line_with_mainheader
 import modules.module_coords
+from modules.module_coords import check_charge_mult
 import interfaces.interface_ORCA
 import constants
 import ash
 
 #Analytical frequencies function
 #Only works for ORCAtheory at the moment
-def AnFreq(fragment=None, theory=None, numcores=1, temp=298.15, pressure=1.0):
+def AnFreq(fragment=None, theory=None, charge=None, mult=None, numcores=1, temp=298.15, pressure=1.0):
     module_init_time=time.time()
     print(BC.WARNING, BC.BOLD, "------------ANALYTICAL FREQUENCIES-------------", BC.END)
     if theory.__class__.__name__ == "ORCATheory":
         print("Requesting analytical Hessian calculation from ORCATheory")
         print("")
+        #Check charge/mult
+        charge,mult = check_charge_mult(charge, mult, theory, fragment, "AnFreq")
         #Do single-point ORCA Anfreq job
-        energy = theory.run(current_coords=fragment.coords, elems=fragment.elems, Hessian=True, numcores=numcores)
+        energy = theory.run(current_coords=fragment.coords, elems=fragment.elems, charge=charge, mult=mult, Hessian=True, numcores=numcores)
         #Grab Hessian
         hessian = interfaces.interface_ORCA.Hessgrab(theory.filename+".hess")
         #Add Hessian to fragment
@@ -31,7 +34,7 @@ def AnFreq(fragment=None, theory=None, numcores=1, temp=298.15, pressure=1.0):
         frequencies = interfaces.interface_ORCA.ORCAfrequenciesgrab(theory.filename+".hess")
         
         hessatoms=list(range(0,fragment.numatoms))
-        Thermochem_dict = thermochemcalc(frequencies,hessatoms, fragment, theory.mult, temp=temp,pressure=pressure)
+        Thermochem_dict = thermochemcalc(frequencies,hessatoms, fragment, mult, temp=temp,pressure=pressure)
 
         print(BC.WARNING, BC.BOLD, "------------ANALYTICAL FREQUENCIES END-------------", BC.END)
         print_time_rel(module_init_time, modulename='AnFreq', moduleindex=1)
@@ -45,25 +48,13 @@ def AnFreq(fragment=None, theory=None, numcores=1, temp=298.15, pressure=1.0):
 #Numerical frequencies function
 #NOTE: displacement was set to 0.0005 Angstrom
 #ORCA uses 0.005 Bohr = 0.0026458861 Ang, CHemshell uses 0.01 Bohr = 0.00529 Ang
-def NumFreq(fragment=None, theory=None, npoint=2, displacement=0.005, hessatoms=None, numcores=1, runmode='serial', 
+def NumFreq(fragment=None, theory=None, charge=None, mult=None, npoint=2, displacement=0.005, hessatoms=None, numcores=1, runmode='serial', 
         temp=298.15, pressure=1.0, hessatoms_masses=None, printlevel=1):
     module_init_time=time.time()
     print(BC.WARNING, BC.BOLD, "------------NUMERICAL FREQUENCIES-------------", BC.END)
 
-
-    #Checking charge/mult information of theory unless QM/MM
-    theory_chargemult_change=False
-    if not isinstance(theory,ash.QMMMTheory):
-        if theory.charge == None and theory.mult == None:
-            print(BC.WARNING,"Warning: There is no charge or mult defined in theory",BC.END)
-            if fragment.charge != None and fragment.mult != None:
-                print(BC.WARNING,"Fragment contains charge/mult information: Charge: {} Mult: {} Using this instead".format(fragment.charge,fragment.mult), BC.END)
-                print(BC.WARNING,"Warning: Make sure this is what you want!", BC.END)
-                theory.charge=fragment.charge; theory.mult=fragment.mult
-                theory_chargemult_change=True
-            else:
-                print(BC.FAIL,"No charge/mult information present in theory or fragment. Exiting.",BC.END)
-                ashexit()
+    #Check charge/mult
+    charge,mult = check_charge_mult(charge, mult, theory, fragment, "NumFreq")
 
 
     shutil.rmtree('Numfreq_dir', ignore_errors=True)
@@ -195,7 +186,7 @@ def NumFreq(fragment=None, theory=None, npoint=2, displacement=0.005, hessatoms=
                 print(calclabel)
                 #print("Displacing Atom:{} Coord:{} Direction:{}".format(disp[0],disp[1],disp[2]))
             theory.printlevel=printlevel
-            energy, gradient = theory.run(current_coords=geo, elems=elems, Grad=True, numcores=numcores)
+            energy, gradient = theory.run(current_coords=geo, elems=elems, Grad=True, numcores=numcores, charge=charge, mult=mult)
             #Adding gradient to dictionary for AtomNCoordPDirectionm
             displacement_grad_dictionary[disp] = gradient
     elif runmode == 'parallel':
@@ -418,9 +409,9 @@ def NumFreq(fragment=None, theory=None, npoint=2, displacement=0.005, hessatoms=
 
     #Get and print out thermochemistry
     if theory.__class__.__name__ == "QMMMTheory":
-        freqoutputdict = thermochemcalc(frequencies,hessatoms, fragment, theory.qm_theory.mult, temp=temp,pressure=pressure)
+        freqoutputdict = thermochemcalc(frequencies,hessatoms, fragment, mult, temp=temp,pressure=pressure)
     else:
-        freqoutputdict = thermochemcalc(frequencies,hessatoms, fragment, theory.mult, temp=temp,pressure=pressure)
+        freqoutputdict = thermochemcalc(frequencies,hessatoms, fragment, mult, temp=temp,pressure=pressure)
 
 
     #Add Hessian to fragment
@@ -453,9 +444,7 @@ def NumFreq(fragment=None, theory=None, npoint=2, displacement=0.005, hessatoms=
     freqoutputdict['hessian'] = hessian
     freqoutputdict['evectors'] = evectors
     freqoutputdict['nmodes'] = nmodes
-    #If we changed theory charge/mult information. Change back
-    if theory_chargemult_change is True:
-        theory.charge=None; theory.mult=None
+
 
     #Return to ..
     os.chdir('..')
@@ -1284,16 +1273,19 @@ def calc_rotational_constants(frag, printlevel=2):
 
 
 def calc_model_Hessian_ORCA(fragment,model='Almloef'):
+
+
     #Run ORCA dummy job to get Almloef/Lindh/Schlegel Hessian
-    orcasimple="! hf noiter opt"
+    orcasimple="! hf"
+    extraline="!noiter opt"
     orcablocks="""
     %geom
     maxiter 1
     inhess {}
     end
 """.format(model)
-    orcadummycalc=interfaces.interface_ORCA.ORCATheory(orcasimpleinput=orcasimple,orcablocks=orcablocks,charge=0,mult=1)
-    ash.Singlepoint(theory=orcadummycalc, fragment=fragment)
+    orcadummycalc=interfaces.interface_ORCA.ORCATheory(orcasimpleinput=orcasimple,orcablocks=orcablocks, extraline=extraline)
+    ash.Singlepoint(theory=orcadummycalc, fragment=fragment, charge=0, mult=1)
     #Read orca-input.opt containing Hessian under hessian_approx
     hesstake=False
     j=0

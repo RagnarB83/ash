@@ -2958,3 +2958,22 @@ def check_multiplicity(elems,charge,mult):
         print("The spin multiplicity {} ({} unpaired electrons) is incompatible with the total number of electrons {}".format(mult,unpaired_electrons,num_electrons))
         print("Now exiting!")
         ashexit()
+
+#Check if charge/mult variables are not None. If None check fragment
+def check_charge_mult(charge, mult, theory, fragment, jobtype):
+
+    #Check if QM or QM/MM theory
+    if theory.theorytype == "QM" or theory.theorytype=="QM/MM":
+        if charge == None or mult == None:
+            print(BC.WARNING,f"Warning: Charge/mult was not provided to {jobtype}",BC.END)
+            if fragment.charge != None and fragment.mult != None:
+                print(BC.WARNING,"Fragment contains charge/mult information: Charge: {} Mult: {} Using this instead".format(fragment.charge,fragment.mult), BC.END)
+                print(BC.WARNING,"Make sure this is what you want!", BC.END)
+                charge=fragment.charge; mult=fragment.mult
+            else:
+                print(BC.FAIL,"No charge/mult information present in fragment either. Exiting.",BC.END)
+                ashexit()
+    elif theory.theorytype=="MM":
+        #Setting charge/mult to None if MM
+        charge=None; mult=None
+    return charge,mult

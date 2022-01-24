@@ -15,7 +15,7 @@ from functions.functions_general import ashexit, BC, print_time_rel, listdiff, p
     print_line_with_subheader1, print_line_with_subheader2, isint, writelisttofile
 from functions.functions_elstructure import DDEC_calc, DDEC_to_LJparameters
 from modules.module_coords import Fragment, write_pdbfile, distance_between_atoms, list_of_masses, write_xyzfile, \
-    change_origin_to_centroid, get_centroid
+    change_origin_to_centroid, get_centroid, check_charge_mult
 from modules.module_MM import UFF_modH_dict, MMforcefield_read
 from interfaces.interface_xtb import xTBTheory, grabatomcharges_xTB
 from interfaces.interface_ORCA import ORCATheory, grabatomcharges_ORCA, chargemodel_select
@@ -2540,12 +2540,12 @@ def basic_atom_charges_ORCA(fragment=None, charge=None, mult=None, orcatheory=No
         print("orcatheory not provided. Will do r2SCAN/def2-SVP single-point calculation")
         orcasimpleinput = "! r2SCAN def2-SVP tightscf "
         orcablocks = "%scf maxiter 300 end"
-        orcatheory = ORCATheory(fragment=fragment, charge=charge, mult=mult, orcasimpleinput=orcasimpleinput,
+        orcatheory = ORCATheory(fragment=fragment, orcasimpleinput=orcasimpleinput,
                                 orcablocks=orcablocks, numcores=numcores)
     if chargemodel == 'CM5':
         orcatheory.extraline = chargemodel_select(chargemodel)
     # Run ORCA calculation
-    Singlepoint(theory=orcatheory, fragment=fragment)
+    Singlepoint(theory=orcatheory, fragment=fragment, charge=charge, mult=mult)
     if 'DDEC' not in chargemodel:
         atomcharges = grabatomcharges_ORCA(chargemodel, orcatheory.filename + '.out')
         atompropdict['charges'] = atomcharges
@@ -2595,13 +2595,13 @@ def read_NPT_statefile(npt_output):
 def OpenMM_MD(fragment=None, theory=None, timestep=0.004, simulation_steps=None, simulation_time=None,
               traj_frequency=1000, temperature=300, integrator='LangevinMiddleIntegrator',
               barostat=None, pressure=1, trajectory_file_option='DCD', trajfilename='trajectory',
-              coupling_frequency=1,
+              coupling_frequency=1, charge=None, mult=None,
               anderson_thermostat=False,
               enforcePeriodicBox=True, dummyatomrestraint=False, center_on_atoms=None, solute_indices=None,
               datafilename=None, dummy_MM=False, plumed_object=None, add_center_force=False,
               center_force_atoms=None, centerforce_constant=1.0, barostat_frequency=25, specialbox=False):
     print_line_with_mainheader("OpenMM MD wrapper function")
-    md = OpenMM_MDclass(fragment=fragment, theory=theory, timestep=timestep,
+    md = OpenMM_MDclass(fragment=fragment, theory=theory, charge=charge, mult=mult, timestep=timestep,
                         traj_frequency=traj_frequency, temperature=temperature, integrator=integrator,
                         barostat=barostat, pressure=pressure, trajectory_file_option=trajectory_file_option,
                         coupling_frequency=coupling_frequency, anderson_thermostat=anderson_thermostat,
@@ -2620,7 +2620,7 @@ def OpenMM_MD(fragment=None, theory=None, timestep=0.004, simulation_steps=None,
 
 
 class OpenMM_MDclass:
-    def __init__(self, fragment=None, theory=None, timestep=0.004,
+    def __init__(self, fragment=None, theory=None, charge=None, mult=None, timestep=0.004,
                  traj_frequency=1000, temperature=300, integrator='LangevinMiddleIntegrator',
                  barostat=None, pressure=1, trajectory_file_option='DCD', trajfilename='trajectory',
                  coupling_frequency=1,
@@ -2638,6 +2638,9 @@ class OpenMM_MDclass:
             ashexit()
         else:
             self.fragment = fragment
+
+        #Check charge/mult
+        self.charge, self.mult = check_charge_mult(charge, mult, theory, fragment, "OpenMM_MD")
 
         #External QM option off by default
         self.externalqm=False
@@ -3036,7 +3039,7 @@ class OpenMM_MDclass:
                 # Run QM/MM step to get full system QM+PC gradient.
                 # Updates OpenMM object with QM-PC forces
                 self.QM_MM_object.run(current_coords=current_coords, elems=self.fragment.elems, Grad=True,
-                                      exit_after_customexternalforce_update=True)
+                                      exit_after_customexternalforce_update=True, charge=self.charge, mult=self.mult)
                 print_time_rel(checkpoint, modulename="QM/MM run", moduleindex=2)
                 # NOTE: Think about energy correction (currently skipped above)
                 # Now take OpenMM step (E+G + displacement etc.)
@@ -3094,7 +3097,7 @@ class OpenMM_MDclass:
 
                 # Run QM step to get full system QM gradient.
                 # Updates OpenMM object with QM forces
-                energy,gradient=self.qmtheory.run(current_coords=current_coords, elems=self.fragment.elems, Grad=True)
+                energy,gradient=self.qmtheory.run(current_coords=current_coords, elems=self.fragment.elems, Grad=True, charge=charge, mult=mult)
                 print("energy:", energy)
                 print_time_rel(checkpoint, modulename="QM run", moduleindex=2)
 

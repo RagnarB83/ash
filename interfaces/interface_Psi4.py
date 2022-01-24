@@ -17,7 +17,7 @@ from functions.functions_general import ashexit, BC,print_time_rel
 #printsetting is by default set to 'File. Change to something else for stdout print
 # PE: Polarizable embedding (CPPE). Pass pe_modulesettings dict as well
 class Psi4Theory:
-    def __init__(self, fragment=None, charge=None, mult=None, printsetting='False', psi4settings=None, psi4method=None,
+    def __init__(self, fragment=None, printsetting='False', psi4settings=None, psi4method=None,
                  runmode='library', psi4dir=None, pe=False, potfile='', filename='psi4_', label='psi4input',
                  psi4memory=3000, numcores=1, printlevel=2,fchkwrite=False):
 
@@ -73,12 +73,6 @@ class Psi4Theory:
             self.coords=fragment.coords
             self.elems=fragment.elems
         #print("frag elems", self.fragment.elems)
-        if charge is not None:
-            self.charge=int(charge)
-        if mult is not None:
-            self.mult=int(mult)
-
-
         #DFT-specific. Remove? Marked for deletion
         #self.psi4functional=psi4functional
 
@@ -102,6 +96,11 @@ class Psi4Theory:
             numcores=self.numcores
 
         print(BC.OKBLUE,BC.BOLD, "------------RUNNING PSI4 INTERFACE-------------", BC.END)
+
+        #Checking if charge and mult has been provided
+        if charge == None or mult == None:
+            print(BC.FAIL, "Error. charge and mult has not been defined for Psi4Theory.run method", BC.END)
+            ashexit()
 
         #If pe and potfile given as run argument
         if pe is not False:
@@ -159,8 +158,8 @@ class Psi4Theory:
                 fix_com=True,
                 fix_orientation=True,
                 fix_symmetry='c1',
-                molecular_charge=self.charge,
-                molecular_multiplicity=self.mult,
+                molecular_charge=charge,
+                molecular_multiplicity=mult,
                 geom=current_coords)
             psi4.activate(psi4molfrag)
 
@@ -181,12 +180,12 @@ class Psi4Theory:
             psi4.set_memory(str(self.psi4memory)+' MB')
 
             #Changing charge and multiplicity
-            #psi4molfrag.set_molecular_charge(self.charge)
-            #psi4molfrag.set_multiplicity(self.mult)
+            #psi4molfrag.set_molecular_charge(charge)
+            #psi4molfrag.set_multiplicity(mult)
 
             #Setting RKS or UKS reference
             #For now, RKS always if mult 1 Todo: Make more flexible
-            if self.mult == 1:
+            if mult == 1:
                 self.psi4settings['reference'] = 'RHF'
             else:
                 self.psi4settings['reference'] = 'UHF'
@@ -303,7 +302,7 @@ class Psi4Theory:
                 inputfile.write('psi4_io.set_default_path(\'{}\')\n'.format(os.getcwd()))
                 inputfile.write('memory {} MB\n'.format(self.psi4memory))
                 inputfile.write('molecule molfrag {\n')
-                inputfile.write(str(self.charge)+' '+str(self.mult)+'\n')
+                inputfile.write(str(charge)+' '+str(mult)+'\n')
                 for el,c in zip(qm_elems, current_coords):
                     inputfile.write(el+' '+str(c[0])+' '+str(c[1])+' '+str(c[2])+'\n')
                 inputfile.write('symmetry c1\n')
@@ -326,7 +325,7 @@ class Psi4Theory:
                 for key,val in self.psi4settings.items():
                     inputfile.write(key+' '+val+'\n')
                 #Setting RKS or UKS reference. For now, RKS always if mult 1 Todo: Make more flexible
-                if self.mult == 1:
+                if mult == 1:
                     self.psi4settings['reference'] = 'RHF'
                 else:
                     inputfile.write('reference UHF \n')

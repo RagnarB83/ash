@@ -264,7 +264,7 @@ class NonBondedTheory:
 
     # current_coords is now used for full_coords, charges for full coords
     def run(self, current_coords=None, elems=None, charges=None, connectivity=None,
-            Coulomb=True, Grad=True, qmatoms=None, actatoms=None, frozenatoms=None):
+            Coulomb=True, Grad=True, qmatoms=None, actatoms=None, frozenatoms=None, charge=None, mult=None):
         module_init_time=time.time()
         if current_coords is None:
             print("No current_coords argument. Exiting...")

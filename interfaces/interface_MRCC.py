@@ -4,7 +4,7 @@ import os
 
 #MRCC Theory object. Fragment object is optional. Used??
 class MRCCTheory:
-    def __init__(self, mrccdir=None, filename='mrcc', fragment=None, charge=None, mult=None, printlevel=2,
+    def __init__(self, mrccdir=None, filename='mrcc', fragment=None, printlevel=2,
                 mrccinput=None, numcores=1):
 
         #Indicate that this is a QMtheory
@@ -14,8 +14,6 @@ class MRCCTheory:
         self.printlevel=printlevel
         self.filename=filename
         self.mrccdir=mrccdir
-        self.charge=charge
-        self.mult=mult
         self.mrccinput=mrccinput
         self.numcores=numcores
 
@@ -33,6 +31,10 @@ class MRCCTheory:
             numcores = self.numcores
 
         print(BC.OKBLUE, BC.BOLD, "------------RUNNING MRCC INTERFACE-------------", BC.END)
+        #Checking if charge and mult has been provided
+        if charge == None or mult == None:
+            print(BC.FAIL, "Error. charge and mult has not been defined for MRCCTheory.run method", BC.END)
+            ashexit()
 
         print("Running MRCC object. Will use threads if OMP_NUM_THREADS and MKL_NUM_THREAD environment variables")
         print("OMP_NUM_TREADS :", os.environ['OMP_NUM_THREADS'])
@@ -61,12 +63,12 @@ class MRCCTheory:
         if Grad==True:
             print("Grad not ready")
             ashexit()
-            write_mrcc_input(self.mrccinput,self.charge,self.mult,qm_elems,current_coords)
+            write_mrcc_input(self.mrccinput,charge,mult,qm_elems,current_coords)
             run_mrcc(self.mrccdir,self.filename+'.out')
             self.energy=grab_energy_mrcc(self.filename+'.out')
             self.gradient = grab_gradient_mrcc()
         else:
-            write_mrcc_input(self.mrccinput,self.charge,self.mult,qm_elems,current_coords)
+            write_mrcc_input(self.mrccinput,charge,mult,qm_elems,current_coords)
             run_mrcc(self.mrccdir,self.filename+'.out')
             self.energy=grab_energy_mrcc(self.filename+'.out')
 

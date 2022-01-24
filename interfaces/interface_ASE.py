@@ -8,18 +8,20 @@ import constants
 from functions.functions_general import ashexit, print_line_with_mainheader, print_time_rel, printdebug
 from modules.module_singlepoint import Singlepoint
 from interfaces.interface_safires import attach_safires_to_ASE
+from modules.module_coords import check_charge_mult
 
 #Interface to limited parts of ASE
-
-
 def Dynamics_ASE(fragment=None, PBC=False, theory=None, temperature=300, timestep=None, thermostat=None, simulation_steps=None, simulation_time=None,
                  barostat=None, trajectoryname="Trajectory_ASE", traj_frequency=1, coupling_freq=0.002, frozen_atoms=None, frozen_bonds=None,
                  frozen_angles=None, frozen_dihedrals=None, plumed_object=None, multiple_walkers=False, numwalkers=None,
                  ttime_nosehoover=5, safires=False, safires_solute=None, safires_inner_region=None, safires_solvent_atomsnum=3,
-                 gpaw_rattle_constraints=False):
+                 gpaw_rattle_constraints=False, charge=None, mult=None):
     module_init_time = time.time()
     print_line_with_mainheader("ASE MOLECULAR DYNAMICS")
-    
+
+    #Check charge/mult
+    charge,mult = check_charge_mult(charge, mult, theory, fragment, "Dynamics_ASE")
+
     #Delete old
     try:
         os.remove('md.log')
@@ -81,7 +83,7 @@ def Dynamics_ASE(fragment=None, PBC=False, theory=None, temperature=300, timeste
         pass
 
     class ASHcalc(Calculator):
-        def __init__(self, fragment=None, theory=None, plumed=None):
+        def __init__(self, fragment=None, theory=None, plumed=None, charge=None, mult=None):
             self.gradientcalls=0
             self.fragment=fragment
             self.theory=theory
@@ -91,6 +93,8 @@ def Dynamics_ASE(fragment=None, PBC=False, theory=None, temperature=300, timeste
             self.atoms=None
             self.forces=[]
             self.plumedobj=plumed
+            self.charge=charge
+            self.mult=mult
         def get_potential_energy(self, atomsobj):
             return self.potenergy
         def get_forces(self, atomsobj):
@@ -114,7 +118,7 @@ def Dynamics_ASE(fragment=None, PBC=False, theory=None, temperature=300, timeste
             self.fragment.coords=copy.copy(atomsobj.positions)
             #print("Current coordinates:", self.fragment.coords)
             #Calculate E+G
-            energy, gradient = Singlepoint(theory=self.theory, fragment=self.fragment, Grad=True)
+            energy, gradient = Singlepoint(theory=self.theory, fragment=self.fragment, Grad=True, charge=self.charge, mult=self.mult)
             #Converting E and G from Eh and Eh/Bohr to ASE units: eV and eV/Angstrom
             self.potenergy=energy*constants.hartoeV
             print("units.Hartree:", units.Hartree)
@@ -160,7 +164,7 @@ def Dynamics_ASE(fragment=None, PBC=False, theory=None, temperature=300, timeste
 
     #ASH calculator for ASE
     print("Creating ASH-ASE calculator")
-    calc= ASHcalc(fragment=fragment, theory=theory, plumed=plumed_object)
+    calc= ASHcalc(fragment=fragment, theory=theory, plumed=plumed_object, charge=charge, mult=mult)
     atoms.calc = calc
 
     #CONSTRAINTS AND FROZEN ATOMS

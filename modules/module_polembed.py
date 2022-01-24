@@ -257,7 +257,7 @@ class PolEmbedTheory:
             print("Pot creation is off for this object. Assuming potfile has been provided")
             self.potfile=potfilename+'.pot'
         print_time_rel(module_init_time, modulename='PolEmbedTheory creation')
-    def run(self, current_coords=None, elems=None, Grad=False, numcores=1, potfile=None, restart=False):
+    def run(self, current_coords=None, elems=None, Grad=False, numcores=1, potfile=None, restart=False, charge=None, mult=None):
     
         module_init_time=time.time()
 

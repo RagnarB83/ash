@@ -1694,8 +1694,6 @@ def PhotoElectronSpectrum(theory=None, fragment=None, Initialstate_charge=None, 
         #########################
         #INITIAL STATE
         ########################
-        theory.charge=stateI.charge
-        theory.mult=stateI.mult
         theory.extraline=theory.extraline+"%method\n"+"frozencore FC_NONE\n"+"end\n"
 
         if CAS is True:
@@ -1803,7 +1801,7 @@ def PhotoElectronSpectrum(theory=None, fragment=None, Initialstate_charge=None, 
 
         if EOM is not True:
             print(bcolors.OKGREEN, "Calculating Initial State SCF.",bcolors.ENDC)
-            finalsinglepointenergy = ash.Singlepoint(fragment=fragment, theory=theory)
+            finalsinglepointenergy = ash.Singlepoint(fragment=fragment, theory=theory, charge=Initialstate_charge, mult=Initialstate_mult)
             stability = check_stability_in_output(theory.filename+'.out')
             if stability is False and check_stability is True:
                 print("PES: Unstable initial state. Exiting...")
@@ -1932,7 +1930,7 @@ def PhotoElectronSpectrum(theory=None, fragment=None, Initialstate_charge=None, 
                     print("Will use file {} as guess GBW file for this Final state.".format(initialorbitalfiles[findex + 1]))
                     shutil.copyfile(initialorbitalfiles[findex + 1], theory.filename + '.gbw')
 
-                energy = ash.Singlepoint(fragment=fragment, theory=theory)
+                energy = ash.Singlepoint(fragment=fragment, theory=theory, charge=fstate.charge, mult=fstate.mult)
                 stateI.energy= energy
 
 
@@ -2004,9 +2002,6 @@ def PhotoElectronSpectrum(theory=None, fragment=None, Initialstate_charge=None, 
 
 
             print(bcolors.OKGREEN, "Calculating Final State CASSCF Spin Multiplicities: ", [f.mult for f in Finalstates], bcolors.ENDC)
-            theory.charge = Finalstates[0].charge
-            #Changing to first Finalstate-mult just to satisfy ORCA.
-            theory.mult = Finalstates[0].mult
 
             if initialorbitalfiles is not None:
                 print("not tested for CASSCF...")
@@ -2014,7 +2009,7 @@ def PhotoElectronSpectrum(theory=None, fragment=None, Initialstate_charge=None, 
                 print("Will use file {} as guess GBW file for this Final state.".format(initialorbitalfiles[findex + 1]))
                 shutil.copyfile(initialorbitalfiles[findex + 1], theory.filename + '.gbw')
 
-            ash.Singlepoint(fragment=fragment, theory=theory)
+            ash.Singlepoint(fragment=fragment, theory=theory, charge=Finalstates[0].charge, mult=Finalstates[0].mult)
 
             #Getting state-energies of all states for each spin multiplicity (state-averaged calculation)
             fstates_dict = casscf_state_energies_grab(theory.filename+'.out')
@@ -2077,9 +2072,6 @@ def PhotoElectronSpectrum(theory=None, fragment=None, Initialstate_charge=None, 
             theory.orcablocks = theory.orcablocks.replace('\n\n', '\n')
 
             print(bcolors.OKGREEN, "Calculating Final State MRCI Spin Multiplicities: ", [f.mult for f in Finalstates], bcolors.ENDC)
-            theory.charge = Finalstates[0].charge
-            #Changing to first Finalstate-mult just to satisfy ORCA.
-            theory.mult = Finalstates[0].mult
 
             if initialorbitalfiles is not None:
                 print("not tested for MRCI...")
@@ -2087,7 +2079,7 @@ def PhotoElectronSpectrum(theory=None, fragment=None, Initialstate_charge=None, 
                 print("Will use file {} as guess GBW file for this Final state.".format(initialorbitalfiles[findex + 1]))
                 shutil.copyfile(initialorbitalfiles[findex + 1], theory.filename + '.gbw')
 
-            ash.Singlepoint(fragment=fragment, theory=theory)
+            ash.Singlepoint(fragment=fragment, theory=theory, charge=Finalstates[0].charge, mult=Finalstates[0].mult)
 
             #Getting state-energies of all states for each spin multiplicity. MRCI vs. SORCI
             if SORCI is True:
@@ -2122,15 +2114,13 @@ def PhotoElectronSpectrum(theory=None, fragment=None, Initialstate_charge=None, 
 
             for findex,fstate in enumerate(Finalstates):
                 print(bcolors.OKGREEN, "Calculating Final State SCF + TDDFT. Spin Multiplicity: ", fstate.mult, bcolors.ENDC)
-                theory.charge=fstate.charge
-                theory.mult=fstate.mult
                 if initialorbitalfiles is not None:
                     print("initialorbitalfiles keyword provided.")
                     print("Will use file {} as guess GBW file for this Final state.".format(initialorbitalfiles[findex+1]))
                     shutil.copyfile(initialorbitalfiles[findex+1], theory.filename + '.gbw')
 
 
-                ash.Singlepoint(fragment=fragment, theory=theory)
+                ash.Singlepoint(fragment=fragment, theory=theory, charge=fstate.charge, mult=fstate.mult)
                 stability = check_stability_in_output(theory.filename+'.out')
                 if stability is False and check_stability is True:
                     print("PES: Unstable final state. Exiting...")
@@ -2578,8 +2568,6 @@ def PhotoElectronSpectrum(theory=None, fragment=None, Initialstate_charge=None, 
 
             for findex, fstate in enumerate(Finalstates):
                 print(bcolors.OKGREEN, "Calculating Final State SCF + TDDFT DENSITY CALCULATION. Spin Multiplicity: ", fstate.mult, bcolors.ENDC)
-                theory.charge = fstate.charge
-                theory.mult = fstate.mult
                 shutil.copyfile('../'+'Final_State_mult' + str(fstate.mult) + '.gbw','Final_State_mult' + str(fstate.mult) + '.gbw')
                 os.rename('Final_State_mult' + str(fstate.mult) + '.gbw', theory.filename + '.gbw')
 
@@ -2608,7 +2596,7 @@ def PhotoElectronSpectrum(theory=None, fragment=None, Initialstate_charge=None, 
                         theory.orcablocks=theory.orcablocks.replace("stabperform true", "stabperform false")
 
 
-                    ash.Singlepoint(fragment=fragment, theory=theory)
+                    ash.Singlepoint(fragment=fragment, theory=theory, charge=fstate.charge, mult=fstate.mult)
                     # TDDFT state done. Renaming cisp and cisr files
                     os.rename(theory.filename+'.cisp', 'Final_State_mult' + str(fstate.mult)+'TDDFTstate_'+str(tddftstate)+'.cisp')
                     os.rename(theory.filename+'.cisr', 'Final_State_mult' + str(fstate.mult)+'TDDFTstate_'+str(tddftstate)+'.cisr')
@@ -2843,9 +2831,7 @@ def potential_adjustor_DFT(theory=None, fragment=None, Initialstate_charge=None,
     print("Potential-adjustor DFT")
     print("="*30)
     #Calculate initial state with N electron (e.g. neutral)
-    theory.charge=Initialstate_charge
-    theory.mult=Initialstate_mult
-    E_N = ash.Singlepoint(fragment=fragment, theory=theory)
+    E_N = ash.Singlepoint(fragment=fragment, theory=theory, charge=Initialstate_charge, mult=Initialstate_mult)
     
     #Orbitals in eV
     occorbs_alpha, occorbs_beta, hftyp = orbitalgrab(theory.filename+'.out')
@@ -2854,9 +2840,7 @@ def potential_adjustor_DFT(theory=None, fragment=None, Initialstate_charge=None,
     print("occorbs_beta (eV): ", occorbs_beta)
     
     #Calculate ionized state (N-1)
-    theory.charge = Ionizedstate_charge
-    theory.mult = Ionizedstate_mult
-    E_Nmin1 = ash.Singlepoint(fragment=fragment, theory=theory)
+    E_Nmin1 = ash.Singlepoint(fragment=fragment, theory=theory, charge=Ionizedstate_charge, mult=Ionizedstate_mult)
     
     #delta-SCF IP in eV
     print("")

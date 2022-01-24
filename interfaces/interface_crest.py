@@ -6,7 +6,7 @@ from modules.module_coords import split_multimolxyzfile
 from functions.functions_general import ashexit, BC, int_ranges, listdiff, print_line_with_subheader1,print_time_rel
 import subprocess as sp
 import ash
-
+from modules.module_coords import check_charge_mult
 
 #Very simple crest interface
 def call_crest(fragment=None, xtbmethod=None, crestdir=None, charge=None, mult=None, solvent=None, energywindow=6, numcores=1, 
@@ -34,11 +34,9 @@ def call_crest(fragment=None, xtbmethod=None, crestdir=None, charge=None, mult=N
             print(BC.WARNING,"Fragment contains charge/mult information: Charge: {} Mult: {} Using this instead".format(fragment.charge,fragment.mult), BC.END)
             print(BC.WARNING,"Make sure this is what you want!", BC.END)
             charge=fragment.charge; mult=fragment.mult
-            theory_chargemult_change=True
         else:
             print(BC.FAIL,"No charge/mult information present in fragment either. Exiting.",BC.END)
             ashexit()
-
 
     try:
         shutil.rmtree('crest-calc')

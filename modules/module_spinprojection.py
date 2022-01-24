@@ -41,7 +41,7 @@ class SpinProjectionTheory:
 
     
     #Run function. Takes coords, elems etc. arguments and computes E or E+G.
-    def run(self, current_coords=None, elems=None, Grad=False, Hessian=False, PC=False, numcores=None, label=None ):
+    def run(self, current_coords=None, elems=None, Grad=False, Hessian=False, PC=False, numcores=None, label=None, charge=None, mult=None ):
         module_init_time=time.time()
         print(BC.OKBLUE,BC.BOLD, "------------RUNNING SPINPROJECTIONTHEORY INTERFACE-------------", BC.END)
 
@@ -54,8 +54,8 @@ class SpinProjectionTheory:
             self.theory2.moreadfile=self.theory1.filename+".gbw"
         
         #RUNNING both theories
-        HSenergy = self.theory1.run(current_coords=current_coords, elems=elems, PC=PC, numcores=numcores, Grad=Grad)
-        BSenergy = self.theory2.run(current_coords=current_coords, elems=elems, PC=PC, numcores=numcores, Grad=Grad)
+        HSenergy = self.theory1.run(current_coords=current_coords, elems=elems, PC=PC, numcores=numcores, Grad=Grad, charge=charge, mult=mult)
+        BSenergy = self.theory2.run(current_coords=current_coords, elems=elems, PC=PC, numcores=numcores, Grad=Grad, charge=charge, mult=mult)
 
         #Some theories like CC_CBS_Theory may return both energy and energy componentsdict as a tuple
         #TODO: avoid this nasty fix
