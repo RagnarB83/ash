@@ -10,6 +10,12 @@ import time
 import ash
 from functions.functions_general import ashexit, BC,print_time_rel,print_line_with_mainheader
 
+
+#Single-point energy function
+def Singlepoint_gradient(fragment=None, theory=None, charge=None, mult=None):
+    energy, gradient = Singlepoint(fragment=fragment, theory=theory, Grad=True, charge=charge, mult=mult)
+    return energy, gradient
+
 #Single-point energy function
 def Singlepoint(fragment=None, theory=None, Grad=False, charge=None, mult=None):
     """Singlepoint function: runs a single-point energy calculation using ASH theory and ASH fragment.
@@ -18,7 +24,9 @@ def Singlepoint(fragment=None, theory=None, Grad=False, charge=None, mult=None):
         fragment (ASH fragment, optional): An ASH fragment. Defaults to None.
         theory (ASH theory, optional): Any valid ASH theory. Defaults to None.
         Grad (bool, optional): Do gradient or not Defaults to False.
-
+        charge (int, optional): Specify charge of system. Overrides fragment charge information.
+        mult (int, optional): Specify mult of system. Overrides fragment charge information.
+        
     Returns:
         float: Energy
         or

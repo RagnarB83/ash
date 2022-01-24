@@ -15,9 +15,8 @@ import settings_ash
 
 
 #ORCA Theory object. Fragment object is optional. Only used for single-points.
-#TODO: Remove charge/mult from init
 class ORCATheory:
-    def __init__(self, orcadir=None, fragment=None, charge=None, mult=None, orcasimpleinput='', printlevel=2, extrabasisatoms=None, extrabasis=None, TDDFT=False, TDDFTroots=5, FollowRoot=1,
+    def __init__(self, orcadir=None, fragment=None, orcasimpleinput='', printlevel=2, extrabasisatoms=None, extrabasis=None, TDDFT=False, TDDFTroots=5, FollowRoot=1,
                  orcablocks='', extraline='', first_iteration_input=None, brokensym=None, HSmult=None, atomstoflip=None, numcores=1, nprocs=None, label=None, moreadfile=None, autostart=True, propertyblock=None):
         print_line_with_mainheader("ORCATheory initialization")
 
@@ -85,16 +84,6 @@ class ORCATheory:
             self.coords=fragment.coords
             self.elems=fragment.elems
         #print("frag elems", self.fragment.elems)
-
-        #TODO: Remove
-        if charge!=None:
-            self.charge=int(charge)
-        else:
-            self.charge=None
-        if mult!=None:
-            self.mult=int(mult)
-        else:
-            self.mult=None
         
         #Adding NoAutostart keyword to extraline if requested
         if self.autostart == False:
@@ -264,14 +253,10 @@ class ORCATheory:
         else:
             current_coords=self.coords
 
-        #Checking if theory charge and mult has been set
+        #Checking if charge and mult has been provided
         if charge == None or mult == None:
-            print(BC.FAIL, "Error. charge and mult has not been defined for ORCATheory.Opt method", BC.END)
+            print(BC.FAIL, "Error. charge and mult has not been defined for ORCATheory.run method", BC.END)
             ashexit()
-
-        #elif self.charge == None or self.mult == None:
-        #    print(BC.FAIL, "Error. charge and mult has not been defined for ORCATheory object", BC.END)
-        #    ashexit()
 
         #What elemlist to use. If qm_elems provided then QM/MM job, otherwise use elems list or self.elems
         if qm_elems is None:
@@ -1848,16 +1833,31 @@ def create_ASH_otool(basename=None, theoryfile=None, scriptlocation=None):
 
 # Using ORCA as External Optimizer for ASH
 #Will only work for theories that can be pickled: not OpenMMTheory, probably not QMMMTheory
-def ORCA_External_Optimizer(fragment=None, theory=None, orcadir=None):
+def ORCA_External_Optimizer(fragment=None, theory=None, orcadir=None, charge=None, mult=None):
     print_line_with_mainheader("ORCA_External_Optimizer")
     if fragment == None or theory == None:
         print("ORCA_External_Optimizer requires fragment and theory keywords")
         ashexit()
 
+    if charge == None or mult == None:
+        print(BC.WARNING,"Warning: Charge/mult was not provided to ORCA_External_Optimizer",BC.END)
+        if fragment.charge != None and fragment.mult != None:
+            print(BC.WARNING,"Fragment contains charge/mult information: Charge: {} Mult: {} Using this instead".format(fragment.charge,fragment.mult), BC.END)
+            print(BC.WARNING,"Make sure this is what you want!", BC.END)
+            charge=fragment.charge; mult=fragment.mult
+        else:
+            print(BC.FAIL,"No charge/mult information present in fragment either. Exiting.",BC.END)
+            ashexit()
+
+    #Making sure we have a working ORCA location
+    print("Checking for ORCA location")
+    orcadir = check_ORCA_location(orcadir)
+    #Making sure ORCA binary works (and is not orca the screenreader)
+    check_ORCAbinary(orcadir)
     #Adding orcadir to PATH. Only required if ORCA not in PATH already
     if orcadir != None:
         os.environ["PATH"] += os.pathsep + orcadir
-    
+
     #Pickle for serializing theory object
     import pickle
 
@@ -1881,7 +1881,7 @@ def ORCA_External_Optimizer(fragment=None, theory=None, orcadir=None):
     with open(basename+".inp", 'w') as o:
         o.write("! ExtOpt Opt\n")
         o.write("\n")
-        o.write("*xyzfile {} {} {}\n".format(theory.charge,theory.mult,xyzfile))
+        o.write("*xyzfile {} {} {}\n".format(charge,mult,xyzfile))
     
     #Call ORCA to do geometry optimization
     with open(basename+'.out', 'w') as ofile:
