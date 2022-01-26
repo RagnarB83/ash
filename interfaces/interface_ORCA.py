@@ -8,6 +8,7 @@ import numpy as np
 import modules.module_coords
 from functions.functions_general import ashexit, blankline,insert_line_into_file,BC,print_time_rel, print_line_with_mainheader
 from modules.module_singlepoint import Singlepoint
+from modules.module_coords import check_charge_mult
 import functions.functions_elstructure
 import constants
 import settings_ash
@@ -169,24 +170,28 @@ class ORCATheory:
         #Coords provided to run or else taken from initialization.
         #if len(current_coords) != 0:
 
-        if charge == None or mult == None:
-            print(BC.FAIL, "Error. charge and mult has not been defined for ORCATheory.Opt method", BC.END)
-            ashexit()
+
 
         if fragment == None:
             print("No fragment provided to Opt.")
             if self.fragment == None:
                 print("No fragment associated with ORCATheory object either. Exiting")
                 ashexit()
-            else:
-                current_coords=self.fragment.coords
-                elems=self.fragment.elems
         else:
             print("Fragment provided to Opt")
             self.fragment=fragment
 
+        
         current_coords=self.fragment.coords
         elems=self.fragment.elems
+        #Check charge/mult
+        charge,mult = check_charge_mult(charge, mult, self, self.fragment, "ORCATheory.Opt")
+
+        if charge == None or mult == None:
+            print(BC.FAIL, "Error. charge and mult has not been defined for ORCATheory.Opt method", BC.END)
+            ashexit()
+
+
 
         if numcores==None:
             numcores=self.numcores

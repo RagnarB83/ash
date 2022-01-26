@@ -37,8 +37,11 @@ class MRCCTheory:
             ashexit()
 
         print("Running MRCC object. Will use threads if OMP_NUM_THREADS and MKL_NUM_THREAD environment variables")
-        print("OMP_NUM_TREADS :", os.environ['OMP_NUM_THREADS'])
-        print("MKL_NUM_TREADS :", os.environ['MKL_NUM_THREADS'])
+        #TODO: Need to finish parallelization
+        if 'OMP_NUM_THREADS' in os.environ:
+            print("OMP_NUM_TREADS :", os.environ['OMP_NUM_THREADS'])
+        if 'MKL_NUM_THREADS' in os.environ:
+            print("MKL_NUM_TREADS :", os.environ['MKL_NUM_THREADS'])
         print("Job label:", label)
         print("Creating inputfile: MINP")
         print("MRCC input:")

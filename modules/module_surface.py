@@ -406,6 +406,9 @@ def calc_surface_fromXYZ(xyzdir=None, theory=None, charge=None, mult=None, dimen
 
     #Points
     totalnumpoints=len(glob.glob(xyzdir+'/*.xyz'))
+    if totalnumpoints == 0:
+        print("Found no XYZ-files in directory. Exiting")
+        ashexit()
     print("totalnumpoints:", totalnumpoints)
     if len(surfacedictionary) == totalnumpoints:
         print("Surface dictionary size {} matching total number of XYZ files {}. We should have all data".format(len(surfacedictionary),totalnumpoints))
