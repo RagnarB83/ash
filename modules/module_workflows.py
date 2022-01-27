@@ -169,7 +169,8 @@ def thermochemprotocol_single(fragment=None, Opt_theory=None, SP_theory=None, or
     #Get energy components
     if isinstance(SP_theory,CC_CBS_Theory):
         componentsdict=SP_theory.energy_components
-
+    else:
+        componentsdict={}
     SP_theory.cleanup()
 
     print_time_rel(module_init_time, modulename='thermochemprotocol_single', moduleindex=0)

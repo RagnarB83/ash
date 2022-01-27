@@ -4,10 +4,11 @@ Spinprojection module:
 class SpinProjectionTheory
 
 """
-from functions.functions_general import BC, ashexit
+from functions.functions_general import BC, ashexit, print_time_rel
 import interfaces.interface_ORCA
 import constants
 import functions.functions_elstructure
+import time
 
 class SpinProjectionTheory:
     """ASH SpinProjection theory.
@@ -15,8 +16,9 @@ class SpinProjectionTheory:
     Spinprojections: Noodleman, Yamaguchi, Bencini
     """
     def __init__(self, theory1=None, theory2=None, printlevel=2, reuseorbs=True,
-                 label=None, jobtype=None, localspins=None):
+                 label=None, jobtype=None, localspins=None, charge_1=None, mult_1=None, charge_2=None, mult_2=None):
         print("Creating SpinProjectionTheory object. Jobtype: ", jobtype)
+        self.theorytype="QM"
         self.theory1=theory1
         self.theory2=theory2
         self.printlevel=printlevel
@@ -25,6 +27,12 @@ class SpinProjectionTheory:
         #This is an inputfilename that may be set externally (Singlepoint_par)
         self.filename="X"
         
+        #This is the exception where charge/mult is part of the theory
+        self.charge_1=charge_1
+        self.charge_2=charge_2
+        self.mult_1=mult_1
+        self.mult_2=mult_2
+
         self.jobtype=jobtype
         if self.jobtype == "Yamaguchi" or self.jobtype =="Noodleman" or self.jobtype=="Bencini":
             if localspins == None:
@@ -45,7 +53,9 @@ class SpinProjectionTheory:
         module_init_time=time.time()
         print(BC.OKBLUE,BC.BOLD, "------------RUNNING SPINPROJECTIONTHEORY INTERFACE-------------", BC.END)
 
-        
+        #Only ti
+
+
         #Changing inputfilename of theory1 and theory2. Must be done here
         self.theory1.filename=self.filename+"spinprojtheory1"
         self.theory2.filename=self.filename+"spinprojtheory2"
@@ -54,8 +64,8 @@ class SpinProjectionTheory:
             self.theory2.moreadfile=self.theory1.filename+".gbw"
         
         #RUNNING both theories
-        HSenergy = self.theory1.run(current_coords=current_coords, elems=elems, PC=PC, numcores=numcores, Grad=Grad, charge=charge, mult=mult)
-        BSenergy = self.theory2.run(current_coords=current_coords, elems=elems, PC=PC, numcores=numcores, Grad=Grad, charge=charge, mult=mult)
+        HSenergy = self.theory1.run(current_coords=current_coords, elems=elems, PC=PC, numcores=numcores, Grad=Grad, charge=self.charge_1, mult=self.mult_1)
+        BSenergy = self.theory2.run(current_coords=current_coords, elems=elems, PC=PC, numcores=numcores, Grad=Grad, charge=self.charge_2, mult=self.mult_2)
 
         #Some theories like CC_CBS_Theory may return both energy and energy componentsdict as a tuple
         #TODO: avoid this nasty fix
@@ -68,9 +78,9 @@ class SpinProjectionTheory:
 
         #Grab S2 expectation values. Used by Yamaguchi
         if self.theory1.__class__.__name__ == "ORCATheory":
-            HS_S2=interface_ORCA.grab_spin_expect_values_ORCA(self.theory1.filename+'.out')
+            HS_S2=interfaces.interface_ORCA.grab_spin_expect_values_ORCA(self.theory1.filename+'.out')
         if self.theory2.__class__.__name__ == "ORCATheory":
-            BS_S2=interface_ORCA.grab_spin_expect_values_ORCA(self.theory2.filename+'.out')
+            BS_S2=interfaces.interface_ORCA.grab_spin_expect_values_ORCA(self.theory2.filename+'.out')
         #ONly problem is if we grab S2 values in CCSD(T) job we get the (wrong?) CCSD(T) S2 values instead of CCSD S2 values (as used in paper by Stanton,Chan)
         if self.theory1.__class__.__name__ == "CFourTheory":
             HS_S2=self.theory1.cfour_grab_spinexpect()
@@ -83,8 +93,8 @@ class SpinProjectionTheory:
         print("Spin Hamiltonian form: H= -2J*S_A*S_B")
         print("Local spins are: S_A = {}  S_B = {}".format(self.Spin_A,self.Spin_B))
         print("Assuming theory1 is High-spin state and theory2 is low-spin Broken-symmetry state.")
-        print("High-spin state (M_S = {}) energy: {}".format((self.theory1.mult-1)/2, HSenergy))
-        print("Broken-symmetry state (M_S = {}) energy: {}".format((self.theory2.mult-1)/2, BSenergy))
+        print("High-spin state (M_S = {}) energy: {}".format((self.mult_1-1)/2, HSenergy))
+        print("Broken-symmetry state (M_S = {}) energy: {}".format((self.mult_2-1)/2, BSenergy))
         print("Direct naive energy difference: {} Eh, {} kcal/mol, {} cm-1".format(HSenergy-BSenergy,(HSenergy-BSenergy)*constants.harkcal,(HSenergy-BSenergy)*constants.hartocm))
         print("<S**2>(High-Spin):", HS_S2)
         print("<S**2>(BS):", BS_S2)
@@ -96,13 +106,13 @@ class SpinProjectionTheory:
         
         #Calculate J using the HS/BS energies and either spin-expectation values or total spin
         if self.jobtype == "Yamaguchi":
-            J=functions_elstructure.Jcoupling_Yamaguchi(HSenergy,BSenergy,HS_S2,BS_S2)
+            J=functions.functions_elstructure.Jcoupling_Yamaguchi(HSenergy,BSenergy,HS_S2,BS_S2)
         #Strong-interaction limit (bond-formation)
         elif self.jobtype == "Bencini":
-            J=functions_elstructure.Jcoupling_Bencini(HSenergy,BSenergy,self.Spin_HS)
+            J=functions.functions_elstructure.Jcoupling_Bencini(HSenergy,BSenergy,self.Spin_HS)
         #Weak-interaction limit (little overlap betwen orbitals)
         elif self.jobtype == "Noodleman":
-            J=functions_elstructure.Jcoupling_Noodleman(HSenergy,BSenergy,self.Spin_HS)
+            J=functions.functions_elstructure.Jcoupling_Noodleman(HSenergy,BSenergy,self.Spin_HS)
 
         #Now  calculate new E of LS state from J
         #Projected energy of low-spin state

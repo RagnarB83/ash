@@ -1488,7 +1488,9 @@ def grabatomcharges_ORCA(chargemodel,outputfile):
 
 # Wrapper around interactive orca_plot
 # Todo: add TDDFT difference density, natural orbitals, MDCI spin density?
-def run_orca_plot(orcadir, filename, option, gridvalue=40,densityfilename=None, mo_operator=0, mo_number=None):
+def run_orca_plot(filename, option, orcadir=None, gridvalue=40,densityfilename=None, mo_operator=0, mo_number=None):
+
+    orcadir = check_ORCA_location(orcadir)
     # Always creating Cube file (5,7 option)
     #Always setting grid (4,gridvalue option)
     #Always choosing a plot (2,X) option:
@@ -1820,7 +1822,7 @@ def print_gradient_in_ORCAformat(energy,gradient,basename):
             for gg in g:
                 f.write("{}\n".format(gg))
 
-def create_ASH_otool(basename=None, theoryfile=None, scriptlocation=None):
+def create_ASH_otool(basename=None, theoryfile=None, scriptlocation=None, charge=None, mult=None):
     import stat
     with open(scriptlocation+"/otool_external", 'w') as otool:
         otool.write("#!/usr/bin/env python3\n")
@@ -1836,7 +1838,7 @@ def create_ASH_otool(basename=None, theoryfile=None, scriptlocation=None):
         otool.write("theory = pickle.load(open(\"{}\", \"rb\" ))\n".format(theoryfile))
         #otool.write("theory=ZeroTheory()\n")
         #otool.write("theory=ZeroTheory()\n")
-        otool.write("energy,gradient=Singlepoint(theory=theory,fragment=frag,Grad=True)\n")
+        otool.write("energy,gradient=Singlepoint(theory=theory,fragment=frag,Grad=True, charge={}, mult={})\n".format(charge,mult))
         otool.write("print(gradient)\n")
         otool.write("ash.interfaces.interface_ORCA.print_gradient_in_ORCAformat(energy,gradient,\"{}\")\n".format(basename))
     st = os.stat(scriptlocation+"/otool_external")
@@ -1882,7 +1884,7 @@ def ORCA_External_Optimizer(fragment=None, theory=None, orcadir=None, charge=Non
     basename = "ORCAEXTERNAL"
     scriptlocation="."
     os.environ["PATH"] += os.pathsep + "."
-    create_ASH_otool(basename=basename, theoryfile=theoryfilename, scriptlocation=scriptlocation)
+    create_ASH_otool(basename=basename, theoryfile=theoryfilename, scriptlocation=scriptlocation, charge=charge, mult=mult)
 
     #Create XYZ-file for ORCA-Extopt
     xyzfile="ASH-xyzfile.xyz"

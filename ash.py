@@ -104,7 +104,7 @@ from interfaces.interface_geometric import geomeTRICOptimizer
 
 # PES
 import modules.module_PES
-from modules.module_PES import PhotoElectronSpectrum
+from modules.module_PES import PhotoElectronSpectrum, potential_adjustor_DFT
 
 # Workflows, benchmarking etc
 import modules.module_workflows
