@@ -212,6 +212,9 @@ maxiter 150\nend
             basis2_block=basis2_block+"\nend"
             self.blocks2= self.blocks +basis2_block
 
+        #MOdifying self.blocks to add finalauxbasis. Used by CVSR only
+        self.blocks=self.blocks+"%basis {} end".format(finalauxbasis)
+
 
         ###################
         #SIMPLE-INPUT LINE
@@ -291,6 +294,7 @@ maxiter 150\nend
         else:
             #For regular calculation we do not set a mainbasis-keyword
             self.mainbasiskeyword=""
+
 
 
         #Final simple-input line
@@ -442,9 +446,14 @@ maxiter 150\nend
             print("Assuming hydrogen atom and skipping calculation")
             E_total = -0.500000
             print("Using hardcoded value: ", E_total)
-            E_dict = {'Total_E': E_total, 'E_SCF_CBS': E_total, 'E_CC_CBS': E_total, 'E_FCI_CBS': E_total, 'E_CCSDcorr_CBS': 0.0, 
-                    'E_corrCCT_CBS': 0.0, 'E_corr_CBS' : 0.0, 'E_corecorr_and_SR': 0.0, 'E_SO': 0.0, 'E_FCIcorrection': 0.0}
-            return E_total, E_dict
+            if self.FCI is True:
+                E_dict = {'Total_E': E_total, 'E_SCF_CBS': E_total, 'E_CC_CBS': E_total, 'E_FCI_CBS': E_total, 'E_corrCCSD_CBS': 0.0, 
+                        'E_corrCCT_CBS': 0.0, 'E_corr_CBS' : 0.0, 'E_corecorr_and_SR': 0.0, 'E_SO': 0.0, 'E_FCIcorrection': 0.0}
+            else:
+                E_dict = {'Total_E': E_total, 'E_SCF_CBS': E_total, 'E_CC_CBS': E_total, 'E_FCI_CBS': E_total, 'E_corrCCSD_CBS': 0.0, 
+                        'E_corrCCT_CBS': 0.0, 'E_corr_CBS' : 0.0, 'E_corecorr_and_SR': 0.0, 'E_SO': 0.0}
+            self.energy_components=E_dict
+            return E_total
 
         #Defining initial label here based on element and charge/mult of system
         formula=elemlisttoformula(elems)
