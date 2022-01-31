@@ -52,7 +52,7 @@ def geomeTRICOptimizer(theory=None, fragment=None, charge=None, mult=None, coord
         ashexit(code=9)
 
     #Check charge/mult
-    charge,mult = check_charge_mult(charge, mult, theory, fragment, "geomeTRICOptimizer")
+    charge,mult = check_charge_mult(charge, mult, theory.theorytype, fragment, "geomeTRICOptimizer")
 
     if fragment.numatoms == 1:
         print("System has 1 atoms.")

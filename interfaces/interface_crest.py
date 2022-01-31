@@ -27,16 +27,8 @@ def call_crest(fragment=None, xtbmethod=None, crestdir=None, charge=None, mult=N
                 print("Found no crest executable in path. Exiting... ")
                 ashexit()
 
-    #Use charge/mult from frag if charge/mult keywords not set
-    if charge == None and mult == None:
-        print(BC.WARNING,"Warning: No charge/mult was defined for call_crest. Checking fragment.",BC.END)
-        if fragment.charge != None and fragment.mult != None:
-            print(BC.WARNING,"Fragment contains charge/mult information: Charge: {} Mult: {} Using this instead".format(fragment.charge,fragment.mult), BC.END)
-            print(BC.WARNING,"Make sure this is what you want!", BC.END)
-            charge=fragment.charge; mult=fragment.mult
-        else:
-            print(BC.FAIL,"No charge/mult information present in fragment either. Exiting.",BC.END)
-            ashexit()
+    #Check charge/mult
+    charge,mult = check_charge_mult(charge, mult, "QM", fragment, "call_crest")
 
     try:
         shutil.rmtree('crest-calc')

@@ -20,7 +20,7 @@ def AnFreq(fragment=None, theory=None, charge=None, mult=None, numcores=1, temp=
         print("Requesting analytical Hessian calculation from ORCATheory")
         print("")
         #Check charge/mult
-        charge,mult = check_charge_mult(charge, mult, theory, fragment, "AnFreq")
+        charge,mult = check_charge_mult(charge, mult, theory.theorytype, fragment, "AnFreq")
         #Do single-point ORCA Anfreq job
         energy = theory.run(current_coords=fragment.coords, elems=fragment.elems, charge=charge, mult=mult, Hessian=True, numcores=numcores)
         #Grab Hessian
@@ -54,7 +54,7 @@ def NumFreq(fragment=None, theory=None, charge=None, mult=None, npoint=2, displa
     print(BC.WARNING, BC.BOLD, "------------NUMERICAL FREQUENCIES-------------", BC.END)
 
     #Check charge/mult
-    charge,mult = check_charge_mult(charge, mult, theory, fragment, "NumFreq")
+    charge,mult = check_charge_mult(charge, mult, theory.theorytype, fragment, "NumFreq")
 
 
     shutil.rmtree('Numfreq_dir', ignore_errors=True)

@@ -2976,10 +2976,11 @@ def check_multiplicity(elems,charge,mult):
         ashexit()
 
 #Check if charge/mult variables are not None. If None check fragment
-def check_charge_mult(charge, mult, theory, fragment, jobtype):
+#Only done for QM theories not MM. Passing theorytype string (e.g. from theory.theorytype if available)
+def check_charge_mult(charge, mult, theorytype, fragment, jobtype):
 
     #Check if QM or QM/MM theory
-    if theory.theorytype == "QM" or theory.theorytype=="QM/MM":
+    if theorytype == "QM" or theorytype=="QM/MM":
         if charge == None or mult == None:
             print(BC.WARNING,f"Warning: Charge/mult was not provided to {jobtype}",BC.END)
             if fragment.charge != None and fragment.mult != None:
@@ -2989,7 +2990,7 @@ def check_charge_mult(charge, mult, theory, fragment, jobtype):
             else:
                 print(BC.FAIL,"No charge/mult information present in fragment either. Exiting.",BC.END)
                 ashexit()
-    elif theory.theorytype=="MM":
+    elif theorytype=="MM":
         #Setting charge/mult to None if MM
         charge=None; mult=None
     return charge,mult

@@ -58,7 +58,7 @@ def confsampler_protocol(fragment=None, crestdir=None, xtbmethod='GFN2-xTB', MLt
     print("="*50)
 
     #Check charge/mult
-    charge,mult = check_charge_mult(charge, mult, MLtheory, fragment, "confsampler_protocol")
+    charge,mult = check_charge_mult(charge, mult, MLtheory.theorytype, fragment, "confsampler_protocol")
 
     #1. Calling crest
     #call_crest(fragment=molecule, xtbmethod='GFN2-xTB', crestdir=crestdir, charge=charge, mult=mult, solvent='H2O', energywindow=6 )
@@ -141,7 +141,7 @@ def thermochemprotocol_single(fragment=None, Opt_theory=None, SP_theory=None, nu
     module_init_time=time.time()
     print(BC.WARNING, BC.BOLD, "------------THERMOCHEM PROTOCOL (single-species)-------------", BC.END)
     #Check charge/mult
-    charge,mult = check_charge_mult(charge, mult, Opt_theory, fragment, "thermochemprotocol_single")
+    charge,mult = check_charge_mult(charge, mult, Opt_theory.theorytype, fragment, "thermochemprotocol_single")
     #DFT Opt+Freq  and Single-point High-level workflow
     #Only Opt+Freq for molecules, not atoms
     print("-------------------------------------------------------------------------")
@@ -290,7 +290,12 @@ def thermochemprotocol_reaction(Opt_theory=None, SP_theory=None, fraglist=None, 
 def auto_active_space(fragment=None, orcadir=None, basis="def2-SVP", scalar_rel=None, charge=None, mult=None, 
     initial_orbitals='MP2', functional='TPSS', smeartemp=5000, tgen=1e-1, selection_thresholds=[1.999,0.001],
     numcores=1, memory=9000):
+
     print_line_with_mainheader("auto_active_space function")
+
+    #Check charge/mult
+    charge,mult = check_charge_mult(charge, mult, "QM", fragment, "auto_active_space")
+
     print("Will do N-step orbital selection scheme")
     print("basis:", basis)
     print("scalar_rel:", scalar_rel)
@@ -1005,7 +1010,7 @@ def BrokenSymmetryCalculator(theory=None, fragment=None, Opt=False, flip_atoms=N
         exit()
 
     #Check charge/mult
-    charge,mult = check_charge_mult(charge, mult, theory, fragment, "BrokenSymmetryCalculator")
+    charge,mult = check_charge_mult(charge, mult, theory.theorytype, fragment, "BrokenSymmetryCalculator")
 
     #Getting full-system atom numbers for each BS-flip
     atomstoflip=[flip_atoms[i-1] for i in BSflip]

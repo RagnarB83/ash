@@ -185,7 +185,7 @@ class ORCATheory:
         current_coords=self.fragment.coords
         elems=self.fragment.elems
         #Check charge/mult
-        charge,mult = check_charge_mult(charge, mult, self, self.fragment, "ORCATheory.Opt")
+        charge,mult = check_charge_mult(charge, mult, self.theorytype, self.fragment, "ORCATheory.Opt")
 
         if charge == None or mult == None:
             print(BC.FAIL, "Error. charge and mult has not been defined for ORCATheory.Opt method", BC.END)

@@ -66,7 +66,7 @@ def SimpleOpt(fragment=None, theory='', charge=None, mult=None, optimizer='', ma
         frozen_atoms=[]
 
     #Check charge/mult
-    charge,mult = check_charge_mult(charge, mult, theory, fragment, "SimpleOpt")
+    charge,mult = check_charge_mult(charge, mult, theory.theorytype, fragment, "SimpleOpt")
 
     #List of active vs. frozen labels
     actfrozen_labels=[]
@@ -447,7 +447,7 @@ def BernyOpt(theory,fragment, charge, mult):
     blankline()
     print("Beginning Py-Berny Optimization")
     #Check charge/mult
-    charge,mult = check_charge_mult(charge, mult, theory, fragment, "BernyOpt")
+    charge,mult = check_charge_mult(charge, mult, theory.theorytype, fragment, "BernyOpt")
     try:
         from berny import Berny, geomlib
     except:

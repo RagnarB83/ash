@@ -41,7 +41,7 @@ def Singlepoint(fragment=None, theory=None, Grad=False, charge=None, mult=None):
     elems=fragment.elems
 
     #Check charge/mult
-    charge,mult = check_charge_mult(charge, mult, theory, fragment, "Singlepoint")
+    charge,mult = check_charge_mult(charge, mult, theory.theorytype, fragment, "Singlepoint")
 
 
     # Run a single-point energy job with gradient
@@ -84,7 +84,7 @@ def Singlepoint_theories(theories=None, fragment=None, charge=None, mult=None):
     #Looping through fragmengs
     for theory in theories:
         #Check charge/mult
-        charge,mult = check_charge_mult(charge, mult, theory, fragment, "Singlepoint_theories")
+        charge,mult = check_charge_mult(charge, mult, theory.theorytype, fragment, "Singlepoint_theories")
 
         #Running single-point. 
         energy = ash.Singlepoint(theory=theory, fragment=fragment, charge=charge, mult=mult)

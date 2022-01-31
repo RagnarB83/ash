@@ -290,7 +290,7 @@ def NEB(reactant=None, product=None, theory=None, images=None, interpolation=Non
     numatoms = reactant.numatoms
 
     #Check charge/mult
-    charge,mult = check_charge_mult(charge, mult, theory, reactant, "NEB")
+    charge,mult = check_charge_mult(charge, mult, theory.theorytype, reactant, "NEB")
 
     #Override some default settings if requested
     #Default is; NEB-CI, IDPP interpolation, 6 images
