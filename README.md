@@ -23,14 +23,13 @@ F 0.0 0.0 1.0
 HF_frag=Fragment(coordsstring=coords)
 
 #Alternative: Create fragment from XYZ-file
-HF_frag=Fragment(xyzfile="hf.xyz")
+HF_frag=Fragment(xyzfile="hf.xyz", charge=0, mult=1)
 
 #ORCA settings
-orcadir='/opt/orca_5.0.0'
 input="! r2SCAN def2-SVP def2/J tightscf"
 blocks="%scf maxiter 200 end"
 #ORCA theory object
-ORCAcalc = ORCATheory(orcadir=orcadir, fragment=HF_frag, charge=0, mult=1,
+ORCAcalc = ORCATheory(fragment=HF_frag,
                          	orcasimpleinput=input, orcablocks=blocks)
 #Call optimizer with ORCAtheory object and fragment
 geomeTRICOptimizer(ORCAcalc,HF_frag)

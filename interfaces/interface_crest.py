@@ -99,7 +99,7 @@ def call_crest(fragment=None, xtbmethod=None, crestdir=None, charge=None, mult=N
 
 #Grabbing crest conformers. Goes inside rest-calc dir and finds file called crest_conformers.xyz
 #Creating ASH fragments for each conformer
-def get_crest_conformers(crest_calcdir='crest-calc',conf_file="crest_conformers.xyz"):
+def get_crest_conformers(crest_calcdir='crest-calc',conf_file="crest_conformers.xyz", charge=None, mult=None):
     print("")
     print("Now finding Crest conformers and creating ASH fragments...")
     os.chdir(crest_calcdir)
@@ -114,7 +114,7 @@ def get_crest_conformers(crest_calcdir='crest-calc',conf_file="crest_conformers.
         list_xtb_energies.append(en)
 
     for els,cs in zip(all_elems,all_coords):
-        conf = ash.Fragment(elems=els, coords=cs)
+        conf = ash.Fragment(elems=els, coords=cs, charge=charge, mult=mult)
         list_conformers.append(conf)
 
     os.chdir('..')

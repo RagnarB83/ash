@@ -28,15 +28,15 @@ class Fragment:
 
         #print_line_with_mainheader("Fragment")
 
+        #Defining initial charge/mult attributes. Will be redefined
+        self.charge=None
+        self.mult=None
+
         # Setting initial dummy label. Possibly redefined below, either when reading in file or by label keyword
         self.label = None
 
         # Printlevel. Default: 2 (slightly verbose)
         self.printlevel = printlevel
-
-        # Optional charge and mult attributes of fragment.
-        self.charge = charge
-        self.mult = mult
 
         if self.printlevel >= 2:
             print_line_with_subheader1("New ASH fragment")
@@ -69,19 +69,16 @@ class Fragment:
             # self.coords=np.array([list(i) for i in coords])
             self.coords = reformat_list_to_array(coords)
             self.elems = elems
-            self.update_attributes()
+            #self.update_attributes()
             # If connectivity passed
             if connectivity is not None:
                 conncalc = False
                 self.connectivity = connectivity
-            # If connectivity requested (default for new frags)
-            if conncalc is True:
-                self.calc_connectivity(scale=scale, tol=tol)
         elif atom is not None:
             print("Creating Atom Fragment")
             self.elems=[atom]
             self.coords = reformat_list_to_array([[0.0,0.0,0.0]])
-            self.update_attributes()
+            #self.update_attributes()
         elif diatomic is not None:
             print("Creating Diatomic Fragment from formula and diatomic_bondlength")
             if diatomic_bondlength == None:
@@ -89,7 +86,7 @@ class Fragment:
                 ashexit()
             self.elems=molformulatolist(diatomic)
             self.coords = reformat_list_to_array([[0.0,0.0,0.0],[0.0,0.0,float(diatomic_bondlength)]])
-            self.update_attributes()
+            #self.update_attributes()
         # If coordsstring given, read elems and coords from it
         elif coordsstring is not None:
             self.add_coords_from_string(coordsstring, scale=scale, tol=tol, conncalc=conncalc)
@@ -123,13 +120,28 @@ class Fragment:
             if '.xyz' not in databasefile:
                 xyzfile=databasepath+databasefile+'.xyz'
             self.label = xyzfile.split('/')[-1].split('.')[0]
-            self.read_xyzfile(xyzfile, readchargemult=readchargemult, conncalc=conncalc)
+            #Always read charge/mult
+            self.read_xyzfile(xyzfile, readchargemult=True, conncalc=conncalc)
         else:
             ashexit(errormessage="Fragment requires some kind of valid coordinates input!")
         # Label for fragment (string). Useful for distinguishing different fragments
         # This overrides label-definitions above (self.label=xyzfile etc)
         if label is not None:
             self.label = label
+
+        # Now set charge and mult attributes of fragment from keyword arg unless None. Will override readchargemult option above if used
+        if charge != None: 
+            self.charge = charge
+        if mult != None:
+            self.mult = mult
+
+        #Now update attributes after defining coordinates, getting charge, mult
+        self.update_attributes()
+        if conncalc is True:
+            if len(self.connectivity) > 0:
+                self.calc_connectivity(scale=scale, tol=tol)
+
+
 
     def update_attributes(self):
         print("Creating/Updating fragment attributes...")
@@ -199,9 +211,9 @@ class Fragment:
         # Converting list of lists to numpy array
         self.coords = reformat_list_to_array(tempcoords)
         self.label = ''.join(self.elems)
-        self.update_attributes()
-        if conncalc is True:
-            self.calc_connectivity(scale=scale, tol=tol)
+        #self.update_attributes()
+        #if conncalc is True:
+        #    self.calc_connectivity(scale=scale, tol=tol)
 
     # Replace coordinates by providing elems and coords lists. Optional: recalculate connectivity
     def replace_coords(self, elems, coords, conn=False, scale=None, tol=None):
@@ -335,9 +347,9 @@ class Fragment:
             ashexit()
         self.coords = reformat_list_to_array(coords)
         self.elems = elems
-        self.update_attributes()
-        if conncalc is True:
-            self.calc_connectivity(scale=scale, tol=tol)
+        #self.update_attributes()
+        #if conncalc is True:
+        #    self.calc_connectivity(scale=scale, tol=tol)
 
     # Read GROMACS coordinates file
     def read_grofile(self, filename, conncalc=False, scale=None, tol=None):
@@ -351,9 +363,9 @@ class Fragment:
             ashexit()
         self.coords = coords
         self.elems = elems
-        self.update_attributes()
-        if conncalc is True:
-            self.calc_connectivity(scale=scale, tol=tol)
+        #self.update_attributes()
+        #if conncalc is True:
+        #    self.calc_connectivity(scale=scale, tol=tol)
 
     # Read CHARMM? coordinate file?
     def read_charmmfile(self, filename, conncalc=False):
@@ -371,12 +383,12 @@ class Fragment:
             ashexit()
         self.coords = coords
         self.elems = elems
-        self.update_attributes()
-        if conncalc is True:
-            self.calc_connectivity(scale=scale, tol=tol)
-        else:
-            # Read connectivity list
-            print("Note: Not reading connectivity from file.")
+        #self.update_attributes()
+        #if conncalc is True:
+        #    self.calc_connectivity(scale=scale, tol=tol)
+        #else:
+        #    # Read connectivity list
+        #    print("Note: Not reading connectivity from file.")
 
     # Read PDB file
     def read_pdbfile(self, filename, conncalc=True, scale=None, tol=None, use_atomnames_as_elements=False):
@@ -385,9 +397,9 @@ class Fragment:
 
         self.elems, self.coords = read_pdbfile(filename, use_atomnames_as_elements=use_atomnames_as_elements)
 
-        self.update_attributes()
-        if conncalc is True:
-            self.calc_connectivity(scale=scale, tol=tol)
+        #self.update_attributes()
+        #if conncalc is True:
+        #    self.calc_connectivity(scale=scale, tol=tol)
 
     # Read XYZ file
     # TODO:
@@ -401,8 +413,14 @@ class Fragment:
                     self.numatoms = int(line.split()[0])
                 elif count == 1:
                     if readchargemult is True:
-                        self.charge = int(line.split()[0])
-                        self.mult = int(line.split()[1])
+                        print("Reading charge/mult from file header.")
+                        try:
+                            self.charge = int(line.split()[0])
+                            self.mult = int(line.split()[1])
+                        except ValueError:
+                            print(f"Error: XYZ-file {filename} does not have a valid charge/mult in 2nd-line of header:")
+                            print("Line:", line)
+                            ashexit()
                 elif count > 1:
                     if len(line) > 3:
                         # Grabbing element and reformatting
@@ -421,9 +439,7 @@ class Fragment:
         if self.numatoms != len(self.coords):
             print("Number of atoms in header not equal to number of coordinate-lines. Check XYZ file!")
             ashexit()
-        self.update_attributes()
-        if conncalc is True:
-            self.calc_connectivity(scale=scale, tol=tol)
+
 
     def set_energy(self, energy):
         self.energy = float(energy)

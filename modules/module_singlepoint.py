@@ -113,17 +113,17 @@ def print_theories_table(theories,energies,fragment):
 #Pretty table of fragments and energies
 def print_fragments_table(fragments,energies,tabletitle="Singlepoint_fragments: "):
     print()
-    print("="*60)
+    print("="*70)
     print("{}Table of energies of each fragment:".format(tabletitle))
-    print("="*60)
-    print("{:10} {:10} {:>7} {:>7} {:>20}".format("Formula", "Label", "Charge","Mult", "Energy(Eh)"))
-    print("-"*60)
+    print("="*70)
+    print("{:10} {:<20} {:>7} {:>7} {:>20}".format("Formula", "Label", "Charge","Mult", "Energy(Eh)"))
+    print("-"*70)
     for frag, e in zip(fragments,energies):
         if frag.label==None:
             label="None"
         else:
             label=frag.label
-        print("{:10} {:10} {:>7} {:>7} {:>20.10f}".format(frag.formula, label, frag.charge, frag.mult, e))
+        print("{:10} {:<20} {:>7} {:>7} {:>20.10f}".format(frag.formula, label, frag.charge, frag.mult, e))
     print()
 
 #Single-point energy function that runs calculations on multiple fragments. Returns a list of energies.

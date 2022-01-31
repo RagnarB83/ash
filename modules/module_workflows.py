@@ -38,7 +38,7 @@ class ProjectResults():
 
 #Provide crest/xtb info, MLtheory object (e.g. ORCA), HLtheory object (e.g. ORCA)
 def confsampler_protocol(fragment=None, crestdir=None, xtbmethod='GFN2-xTB', MLtheory=None, 
-                         HLtheory=None, orcadir=None, numcores=1, charge=None, mult=None):
+                         HLtheory=None, numcores=1, charge=None, mult=None):
     """[summary]
 
     Args:
@@ -65,7 +65,7 @@ def confsampler_protocol(fragment=None, crestdir=None, xtbmethod='GFN2-xTB', MLt
     interfaces.interface_crest.call_crest(fragment=fragment, xtbmethod=xtbmethod, crestdir=crestdir, charge=charge, mult=mult, numcores=numcores)
 
     #2. Grab low-lying conformers from crest_conformers.xyz as list of ASH fragments.
-    list_conformer_frags, xtb_energies = interfaces.interface_crest.get_crest_conformers()
+    list_conformer_frags, xtb_energies = interfaces.interface_crest.get_crest_conformers(charge=charge, mult=mult)
 
     print("list_conformer_frags:", list_conformer_frags)
     print("")
@@ -136,7 +136,7 @@ def confsampler_protocol(fragment=None, crestdir=None, xtbmethod='GFN2-xTB', MLt
     
 
 # opt+freq+HL protocol for single species
-def thermochemprotocol_single(fragment=None, Opt_theory=None, SP_theory=None, orcadir=None, numcores=None, memory=5000,
+def thermochemprotocol_single(fragment=None, Opt_theory=None, SP_theory=None, numcores=None, memory=5000,
                        analyticHessian=True, temp=298.15, pressure=1.0, charge=None, mult=None):
     module_init_time=time.time()
     print(BC.WARNING, BC.BOLD, "------------THERMOCHEM PROTOCOL (single-species)-------------", BC.END)
@@ -180,7 +180,7 @@ def thermochemprotocol_single(fragment=None, Opt_theory=None, SP_theory=None, or
 
 #Thermochemistry protocol. Take list of fragments, stoichiometry, and 2 theory levels
 #Requires orcadir, and Opt_theory level (typically an ORCATheory object), SP_theory (either ORCATTheory or workflow.
-def thermochemprotocol_reaction(Opt_theory=None, SP_theory=None, fraglist=None, stoichiometry=None, orcadir=None, numcores=1, memory=5000,
+def thermochemprotocol_reaction(Opt_theory=None, SP_theory=None, fraglist=None, stoichiometry=None, numcores=1, memory=5000,
                        analyticHessian=True, temp=298.15, pressure=1.0):
     """[summary]
 
@@ -189,7 +189,6 @@ def thermochemprotocol_reaction(Opt_theory=None, SP_theory=None, fraglist=None, 
         SP_theory (ASH theory, optional): ASH theory for Single-points. Defaults to None.
         fraglist (list, optional): List of ASH fragments. Defaults to None.
         stoichiometry (list, optional): list of integers defining stoichiometry. Defaults to None.
-        orcadir (str, optional): Path to ORCA. Defaults to None.
         numcores (int, optional): Number of cores. Defaults to 1.
         memory (int, optional): Memory in MB (ORCA). Defaults to 5000.
         analyticHessian (bool, optional): Analytical Hessian or not. Defaults to True.
@@ -213,7 +212,7 @@ def thermochemprotocol_reaction(Opt_theory=None, SP_theory=None, fraglist=None, 
         #Get energy and components for species
         print("species:", species)
         print(species.__dict__)
-        FinalE, componentsdict, thermochem = thermochemprotocol_single(fragment=species, Opt_theory=Opt_theory, SP_theory=SP_theory, orcadir=orcadir, numcores=numcores, memory=memory,
+        FinalE, componentsdict, thermochem = thermochemprotocol_single(fragment=species, Opt_theory=Opt_theory, SP_theory=SP_theory, numcores=numcores, memory=memory,
                        analyticHessian=analyticHessian, temp=temp, pressure=pressure, charge=species.charge, mult=species.mult)
         
         print("FinalE:", FinalE)

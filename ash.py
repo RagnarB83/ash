@@ -34,7 +34,7 @@ import modules.module_coords
 from modules.module_coords import get_molecules_from_trajectory, eldict_covrad, write_pdbfile, Fragment, read_xyzfile, \
     write_xyzfile, make_cluster_from_box, read_ambercoordinates, read_gromacsfile
 from modules.module_coords import remove_atoms_from_system_CHARMM, add_atoms_to_system_CHARMM, getwaterconstraintslist,\
-    QMregionfragexpand
+    QMregionfragexpand, read_xyzfiles
 
 # Singlepoint
 import modules.module_singlepoint

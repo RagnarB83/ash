@@ -7,7 +7,7 @@ methane=Fragment(xyzfile="methane.xyz", charge=0, mult=1)
 C=Fragment(atom="C", charge=0, mult=3)
 H=Fragment(atom="H", charge=0, mult=2)
 fragments=[methane,C,H] #Combining into a list
-stoichiometry=[-1,1,4] #Defining stoichiometry of reaction 
+stoichiometry=[-1,1,4] #Defining stoichiometry of reaction, here atomization reaction
 
 #Define Theories
 DFTopt=ORCATheory(orcasimpleinput="!r2scan-3c", numcores=numcores)
