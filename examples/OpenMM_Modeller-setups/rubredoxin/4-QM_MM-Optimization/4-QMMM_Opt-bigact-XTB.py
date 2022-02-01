@@ -15,7 +15,7 @@ omm = OpenMMTheory(xmlfiles=["charmm36.xml", "charmm36/water.xml", "./specialres
             platform='CPU', numcores=numcores, autoconstraints=None, rigidwater=False)
 
 #QM theory
-xtbobject = xTBTheory(charge=-1, mult=6, xtbmethod="GFN1", numcores=numcores)
+xtbobject = xTBTheory(xtbmethod="GFN1", numcores=numcores)
 #QM/MM theory
 qmmm = QMMMTheory(qm_theory=xtbobject, mm_theory=omm, fragment=fragment,
         embedding="Elstat", qmatoms=qmatoms, printlevel=1)
@@ -30,4 +30,5 @@ waterconlist = getwaterconstraintslist(openmmtheoryobject=omm, atomlist=actatoms
 waterconstraints = {'bond': waterconlist}
 
 #Calling geomeTRICOptimizer with defined constraints
-geomeTRICOptimizer(fragment=fragment, theory=qmmm, ActiveRegion=True, actatoms=actatoms, maxiter=200, constraints=waterconstraints)
+geomeTRICOptimizer(fragment=fragment, theory=qmmm, ActiveRegion=True, actatoms=actatoms, maxiter=200, constraints=waterconstraints,
+        charge=-1, mult=6)

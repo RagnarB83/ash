@@ -15,7 +15,7 @@ omm = OpenMMTheory(xmlfiles=["charmm36.xml", "charmm36/water.xml", "./specialres
             platform='CPU', numcores=numcores, autoconstraints=None, rigidwater=False)
 
 #QM theory
-xtbobject = xTBTheory(charge=-1, mult=6, xtbmethod="GFN1", numcores=numcores)
+xtbobject = xTBTheory(xtbmethod="GFN1", numcores=numcores)
 #QM/MM theory
 qmmm = QMMMTheory(qm_theory=xtbobject, mm_theory=omm, fragment=fragment,
         embedding="Elstat", qmatoms=qmatoms, printlevel=1)
@@ -23,4 +23,5 @@ qmmm = QMMMTheory(qm_theory=xtbobject, mm_theory=omm, fragment=fragment,
 # QM/MM geometry optimization
 #Defining active region as QM-region
 actatoms=qmatoms
-geomeTRICOptimizer(fragment=fragment, theory=qmmm, ActiveRegion=True, actatoms=actatoms, maxiter=200)
+geomeTRICOptimizer(fragment=fragment, theory=qmmm, ActiveRegion=True, actatoms=actatoms, maxiter=200,
+        charge=-1, mult=6)

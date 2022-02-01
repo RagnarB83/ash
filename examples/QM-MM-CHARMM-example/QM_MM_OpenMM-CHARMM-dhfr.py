@@ -17,13 +17,12 @@ openmmobject = OpenMMTheory(psffile=psffile, CHARMMfiles=True, charmmtopfile=top
 
 
 #Creating ORCATheory object
-orcadir="/Applications/orca_4_2_1_macosx_openmpi314"
 ORCAinpline="! HF-3c tightscf"
 ORCAblocklines="""
 %maxcore 2000
 """
 #Create ORCA QM object. Attaching numcores so that ORCA runs in parallel
-orcaobject = ORCATheory(orcadir=orcadir, charge=0,mult=1, orcasimpleinput=ORCAinpline,
+orcaobject = ORCATheory(orcasimpleinput=ORCAinpline,
                         orcablocks=ORCAblocklines, numcores=numcores)
 
 #act and qmatoms lists. Defines QM-region (atoms described by QM) and Active-region (atoms allowed to move)
@@ -39,4 +38,4 @@ qmmmobject = QMMMTheory(qm_theory=orcaobject, mm_theory=openmmobject, printlevel
 
 #Run geometry optimization using geomeTRIC optimizer and HDLC coordinates. Using active region.
 geomeTRICOptimizer(theory=qmmmobject, fragment=frag, ActiveRegion=True, actatoms=actatoms,
-                    maxiter=500, coordsystem='hdlc')
+                    maxiter=500, coordsystem='hdlc', charge=0,mult=1)

@@ -10,11 +10,9 @@ sphereradius=12
 numcores=1
 
 #Theory level for charge iterations
-orcadir='/Applications/orca_4_2_1_macosx_openmpi314'
 orcasimpleinput="! BP86 def2-SVP def2/J Grid5 Finalgrid6 tightscf"
 orcablocks="%scf maxiter 200 end"
 ORCAcalc = ORCATheory(
-        orcadir=orcadir,
         orcasimpleinput=orcasimpleinput,
         orcablocks=orcablocks,
         numcores=numcores,
@@ -78,12 +76,9 @@ Cluster_FF=MMforcefield_read('Cluster_forcefield.ff')
 
 #Defining, QM, MM and QM/MM theory levels for Optimization
 #If same theory as used in molcrys, then orcadir, orcasimpleinput and orcablocks can be commented out/deleted.
-orcasimpleinput="! BP86 def2-SVP def2/J Grid5 Finalgrid6 tightscf"
+orcasimpleinput="! BP86 def2-SVP def2/J tightscf"
 orcablocks="%scf maxiter 200 end"
 ORCAQMpart = ORCATheory(
-        orcadir=orcadir,
-        charge=charge,
-        mult=mult,
         orcasimpleinput=orcasimpleinput,
         orcablocks=orcablocks,
         )
@@ -111,4 +106,6 @@ geomeTRICOptimizer(
         maxiter=170,
         ActiveRegion=True,
         actatoms=Centralmainfrag,
+        charge=charge,
+        mult=mult,
         )
