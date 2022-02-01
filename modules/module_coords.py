@@ -654,6 +654,10 @@ class Fragment:
             outfile.write("Num atoms: {}\n".format(self.numatoms))
             outfile.write("Formula: {}\n".format(self.formula))
             outfile.write("Energy: {}\n".format(self.energy))
+            if self.charge != None:
+                outfile.write("charge : {}\n".format(self.charge))
+            if self.mult != None:
+                outfile.write("mult : {}\n".format(self.mult))
             outfile.write("\n")
             outfile.write(
                 " Index    Atom         x                  y                  z               charge        fragment-type        atom-type\n")
@@ -699,6 +703,10 @@ class Fragment:
                         ashexit()
                 if 'Num atoms:' in line:
                     numatoms = int(line.split()[-1])
+                if 'charge' in line:
+                    self.charge=int(line.split()[-1])
+                if 'mult' in line:
+                    self.mult=int(line.split()[-1])
                 if coordgrab is True:
                     # If end of coords section
                     if '===============' in line:
