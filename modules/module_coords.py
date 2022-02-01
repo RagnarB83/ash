@@ -703,9 +703,9 @@ class Fragment:
                         ashexit()
                 if 'Num atoms:' in line:
                     numatoms = int(line.split()[-1])
-                if 'charge' in line:
+                if 'charge :' in line:
                     self.charge=int(line.split()[-1])
-                if 'mult' in line:
+                if 'mult :' in line:
                     self.mult=int(line.split()[-1])
                 if coordgrab is True:
                     # If end of coords section
