@@ -15,7 +15,7 @@ omm = OpenMMTheory(xmlfiles=["charmm36.xml", "charmm36/water.xml", "./specialres
             platform='CPU', numcores=numcores, autoconstraints=None, rigidwater=False)
 
 #QM theory
-orca = ORCATheory(charge=-1, mult=6, orcasimpleinput="! r2SCAN-3c tightscf", numcores=1)
+orca = ORCATheory(orcasimpleinput="! r2SCAN-3c tightscf", numcores=1)
 #QM/MM theory
 qmmm = QMMMTheory(qm_theory=orca, mm_theory=omm, fragment=fragment,
         embedding="Elstat", qmatoms=qmatoms, printlevel=1)
@@ -30,4 +30,5 @@ waterconlist = getwaterconstraintslist(openmmtheoryobject=omm, atomlist=actatoms
 waterconstraints = {'bond': waterconlist}
 
 #Calling geomeTRICOptimizer with defined constraints
-geomeTRICOptimizer(fragment=fragment, theory=qmmm, ActiveRegion=True, actatoms=actatoms, maxiter=200, constraints=waterconstraints)
+geomeTRICOptimizer(fragment=fragment, theory=qmmm, ActiveRegion=True, actatoms=actatoms, maxiter=200, constraints=waterconstraints,
+        charge=-1, mult=6)

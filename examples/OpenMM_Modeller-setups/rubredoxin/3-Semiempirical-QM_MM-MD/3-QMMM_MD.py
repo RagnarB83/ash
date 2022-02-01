@@ -15,14 +15,14 @@ omm = OpenMMTheory(xmlfiles=["charmm36.xml", "charmm36/water.xml", "./specialres
             platform='CPU', numcores=numcores, autoconstraints='HBonds',  rigidwater=True)
 
 #QM theory
-xtbobject = xTBTheory(charge=-1, mult=6, xtbmethod="GFN1", numcores=numcores)
+xtbobject = xTBTheory(xtbmethod="GFN1", numcores=numcores)
 #QM/MM theory
 qmmm = QMMMTheory(qm_theory=xtbobject, mm_theory=omm, fragment=fragment,
         embedding="Elstat", qmatoms=qmatoms, printlevel=1)
 
 #QM/MM MD simulation for 5 ps
 OpenMM_MD(fragment=fragment, theory=qmmm, timestep=0.001, simulation_time=5, traj_frequency=50, temperature=300,
-    integrator='LangevinMiddleIntegrator', coupling_frequency=1, trajectory_file_option='DCD')
+    integrator='LangevinMiddleIntegrator', coupling_frequency=1, trajectory_file_option='DCD', charge=-1, mult=6)
 
 #Re-image trajectory so that protein is in middle
 MDtraj_imagetraj("trajectory.dcd", "final_MDfrag_laststep.pdb", format='DCD')
