@@ -504,7 +504,7 @@ def molcrys(cif_file=None, xtl_file=None, xyz_file=None, cell_length=None, cell_
             #Adding UKS keyword if not already present for case AF-coupled BS-singlet to prevent RKS/RHF.
             if 'UKS' not in theory.orcasimpleinput:
                 theory.orcasimpleinput=theory.orcasimpleinput+' UKS'
-        QMtheory = interfaces.interface_ORCA.ORCATheory(orcadir=theory.orcadir, charge=fragmentobjects[0].Charge, mult=fragmentobjects[0].Mult,
+        QMtheory = interfaces.interface_ORCA.ORCATheory(orcadir=theory.orcadir,
                               orcasimpleinput=theory.orcasimpleinput,
                               orcablocks=theory.orcablocks, extraline=chargemodelline)
         #COPY LAST mainfrag orbitals here: called lastorbitals.gbw from gasfragcalc (mainfrag)
@@ -512,7 +512,7 @@ def molcrys(cif_file=None, xtl_file=None, xyz_file=None, cell_length=None, cell_
         shutil.copyfile('lastorbitals.gbw', QMtheory.filename+'.gbw')
 
     elif theory.__class__.__name__ == "xTBTheory":
-        QMtheory = interfaces.interface_xtb.xTBTheory(xtbdir=theory.xtbdir, charge=fragmentobjects[0].Charge, mult=fragmentobjects[0].Mult, xtbmethod=theory.xtbmethod)
+        QMtheory = interfaces.interface_xtb.xTBTheory(xtbdir=theory.xtbdir, xtbmethod=theory.xtbmethod)
 
     print("QMtheory:", QMtheory)
     print(QMtheory.__dict__)
@@ -547,7 +547,7 @@ def molcrys(cif_file=None, xtl_file=None, xyz_file=None, cell_length=None, cell_
         # Run ORCA QM/MM calculation with charge-model info
         QMMM_SP_calculation = ash.QMMMTheory(fragment=Cluster, qm_theory=QMtheory, qmatoms=Centralmainfrag,
                                              charges=Cluster.atomcharges, embedding='Elstat')
-        QMMM_SP_calculation.run(numcores=numcores)
+        QMMM_SP_calculation.run(numcores=numcores, charge=fragmentobjects[0].Charge, mult=fragmentobjects[0].Mult)
 
         #Keeping the GBWfile
         if theory.__class__.__name__ == "ORCATheory":

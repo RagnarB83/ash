@@ -6,7 +6,7 @@ import time
 
 import ash
 from functions.functions_general import ashexit, BC,blankline,print_line_with_mainheader,print_line_with_subheader1
-
+from modules.module_coords import check_charge_mult
 #Various calculation-functions run in parallel
 
 
@@ -67,13 +67,9 @@ def Single_par(fragment=None, fragmentfile=None, theory=None, label=None, mofile
         #Label is not tuple. String or single number
         labelstring=str(label).replace('.','_')
 
-    #Charge and mult to use for fragment
-    #If fragment contains charge/mult information then use that instead of whatever is initially defined in theory
-    if fragment.charge != None:
-        print("Reading charge and mult information from fragment. Charge: {} Mult: {}".format(fragment.charge,fragment.mult))
-        theory.charge=fragment.charge
-        theory.mult=fragment.mult
 
+    #Check charge/mult
+    charge,mult = check_charge_mult(charge, mult, theory.theorytype, fragment, "Single_par")
 
     #Creating separate inputfilename using label
     #Removing . in inputfilename as ORCA can get confused
@@ -102,7 +98,7 @@ def Single_par(fragment=None, fragmentfile=None, theory=None, label=None, mofile
     print(BC.WARNING,"Doing single-point Energy job on fragment. Formula: {} Label: {} ".format(fragment.prettyformula,fragment.label), BC.END)
     print("\n\nProcess ID {} is running calculation with label: {} \n\n".format(mp.current_process(),label))
 
-    energy = theory.run(current_coords=fragment.coords, elems=fragment.elems, label=label)
+    energy = theory.run(current_coords=fragment.coords, elems=fragment.elems, label=label, charge=charge, mult=mult)
 
     #Some theories like CC_CBS_Theory may return both energy and energy componentsdict as a tuple
     #TODO: avoid this nasty fix

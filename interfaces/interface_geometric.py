@@ -1,12 +1,14 @@
 import numpy as np
 import constants
-from modules.module_QMMM import QMMMTheory
-from modules.module_coords import print_coords_all,print_coords_for_atoms,print_internal_coordinate_table,write_XYZ_for_atoms,write_xyzfile
-from functions.functions_general import ashexit, blankline,BC,print_time_rel
 import os
 import shutil
-import ash
 import time
+
+from modules.module_QMMM import QMMMTheory
+from modules.module_coords import print_coords_all,print_coords_for_atoms,print_internal_coordinate_table,write_XYZ_for_atoms,write_xyzfile
+from functions.functions_general import ashexit, blankline,BC,print_time_rel,print_line_with_mainheader
+import ash
+from modules.module_coords import check_charge_mult
 
 ################################################
 # Interface to geomeTRIC Optimization Library
@@ -26,7 +28,7 @@ def fullindex_to_actindex(fullindex,actatoms):
 
 
 
-def geomeTRICOptimizer(theory=None,fragment=None, coordsystem='tric', frozenatoms=None, constraintsinputfile=None, constraints=None, 
+def geomeTRICOptimizer(theory=None, fragment=None, charge=None, mult=None, coordsystem='tric', frozenatoms=None, constraintsinputfile=None, constraints=None, 
                        constrainvalue=False, maxiter=50, ActiveRegion=False, actatoms=None, convergence_setting=None, conv_criteria=None,
                        print_atoms_list=None):
     """
@@ -36,6 +38,7 @@ def geomeTRICOptimizer(theory=None,fragment=None, coordsystem='tric', frozenatom
     Active-atom coords (e.g. only QM region) are only provided to geomeTRIC during optimization while rest is frozen.
     Needed as discussed here: https://github.com/leeping/geomeTRIC/commit/584869707aca1dbeabab6fe873fdf139d384ca66#diff-2af7dd72b77dac63cea64c052a549fe0
     """
+    print_line_with_mainheader("geomeTRICOptimizer")
     module_init_time=time.time()
     if fragment==None:
         print("geomeTRIC requires fragment object")
@@ -48,27 +51,17 @@ def geomeTRICOptimizer(theory=None,fragment=None, coordsystem='tric', frozenatom
         print(BC.WARNING,"Either install geomeTRIC using pip:\n pip install geometric\n or manually from Github (https://github.com/leeping/geomeTRIC)", BC.END)
         ashexit(code=9)
 
+    #Check charge/mult
+    charge,mult = check_charge_mult(charge, mult, theory.theorytype, fragment, "geomeTRICOptimizer")
+
     if fragment.numatoms == 1:
         print("System has 1 atoms.")
         print("Doing single-point energy calculation instead")
-        energy = ash.Singlepoint(fragment=fragment, theory=theory)
+        energy = ash.Singlepoint(fragment=fragment, theory=theory, charge=charge, mult=mult)
         return energy
         #E = self.theory.run(current_coords=fragment.coords, elems=fragment.elems, Grad=False)
 
 
-    #Checking charge/mult information of theory unless QM/MM
-    theory_chargemult_change=False
-    if not isinstance(theory,QMMMTheory):
-        if theory.charge == None and theory.mult == None:
-            print(BC.WARNING,"Warning: There is no charge or mult defined in theory",BC.END)
-            if fragment.charge != None and fragment.mult != None:
-                print(BC.WARNING,"Fragment contains charge/mult information: Charge: {} Mult: {} Using this instead".format(fragment.charge,fragment.mult), BC.END)
-                print(BC.WARNING,"Warning: Make sure this is what you want!", BC.END)
-                theory.charge=fragment.charge; theory.mult=fragment.mult
-                theory_chargemult_change=True
-            else:
-                print(BC.FAIL,"No charge/mult information present in theory or fragment. Exiting.",BC.END)
-                ashexit()
 
     if ActiveRegion == True and coordsystem == "tric":
         #TODO: Look into this more
@@ -218,7 +211,7 @@ def geomeTRICOptimizer(theory=None,fragment=None, coordsystem='tric', frozenatom
 
     #Defining ASH engine class used to communicate with geomeTRIC
     class ASHengineclass:
-        def __init__(self,geometric_molf, theory, ActiveRegion=False, actatoms=None,print_atoms_list=None):
+        def __init__(self,geometric_molf, theory, ActiveRegion=False, actatoms=None,print_atoms_list=None, charge=None, mult=None):
             #Defining M attribute of engine object as geomeTRIC Molecule object
             self.M=geometric_molf
             #Defining theory from argument
@@ -234,6 +227,8 @@ def geomeTRICOptimizer(theory=None,fragment=None, coordsystem='tric', frozenatom
             self.actatoms=actatoms
             #Print-list atoms (set above)
             self.print_atoms_list=print_atoms_list
+            self.charge=charge
+            self.mult=mult
             
             
         #TODO: geometric will regularly do ClearCalcs in an optimization
@@ -262,14 +257,6 @@ def geomeTRICOptimizer(theory=None,fragment=None, coordsystem='tric', frozenatom
                     full_coords[act_i] = curr_i
                 print_time_rel(timeA, modulename='geometric ASHcalc.calc replacing act-region', moduleindex=2)
                 timeA=time.time()
-                #for i, c in enumerate(full_coords):
-                #    if i in self.actatoms:
-                #        #Silly. Pop-ing first coord from currcoords until done
-                #        curr_c, currcoords = currcoords[0], currcoords[1:]
-                #        full_coords[i] = curr_c
-
-                
-                
                 self.full_current_coords = full_coords
                 
                 #Write out fragment with updated coordinates for the purpose of doing restart
@@ -290,7 +277,7 @@ def geomeTRICOptimizer(theory=None,fragment=None, coordsystem='tric', frozenatom
                 timeA=time.time()
                 print("Note: printed only print_atoms_list (this is not necessary all active atoms) ")
                 #Request Engrad calc for full system
-                E, Grad = self.theory.run(current_coords=self.full_current_coords, elems=fragment.elems, Grad=True, label='Iter'+str(self.iteration_count))
+                E, Grad = self.theory.run(current_coords=self.full_current_coords, elems=fragment.elems, charge=self.charge, mult=self.mult, Grad=True, label='Iter'+str(self.iteration_count))
                 print_time_rel(timeA, modulename='geometric ASHcalc.calc theory.run', moduleindex=2)
                 timeA=time.time()
                 #Trim Full gradient down to only act-atoms gradient
@@ -321,7 +308,8 @@ def geomeTRICOptimizer(theory=None,fragment=None, coordsystem='tric', frozenatom
                 print("")
                 print("Note: printed only print_atoms_list (this is not necessary all atoms) ")
                 
-                E,Grad=self.theory.run(current_coords=currcoords, elems=self.M.elem, Grad=True, label='Iter'+str(self.iteration_count))
+                E,Grad=self.theory.run(current_coords=currcoords, elems=self.M.elem, charge=self.charge, mult=self.mult,
+                                    Grad=True, label='Iter'+str(self.iteration_count))
                 self.iteration_count += 1
                 self.energy = E
                 return {'energy': E, 'gradient': Grad.flatten()}
@@ -444,7 +432,7 @@ def geomeTRICOptimizer(theory=None,fragment=None, coordsystem='tric', frozenatom
 
     #Defining ASHengineclass engine object containing geometry and theory. ActiveRegion boolean passed.
     #Also now passing list of atoms to print in each step.
-    ashengine = ASHengineclass(mol_geometric_frag,theory, ActiveRegion=ActiveRegion, actatoms=actatoms, print_atoms_list=print_atoms_list)
+    ashengine = ASHengineclass(mol_geometric_frag,theory, ActiveRegion=ActiveRegion, actatoms=actatoms, print_atoms_list=print_atoms_list, charge=charge, mult=mult)
     #Defining args object, containing engine object
     args=geomeTRICArgsObject(ashengine,constraintsfile,coordsys=coordsystem, maxiter=maxiter, conv_criteria=conv_criteria)
 
@@ -485,9 +473,6 @@ def geomeTRICOptimizer(theory=None,fragment=None, coordsystem='tric', frozenatom
     #TODO: Improve
     print_internal_coordinate_table(fragment,actatoms=print_atoms_list)
 
-    #If we changed theory charge/mult information. Change back
-    if theory_chargemult_change is True:
-        theory.charge=None; theory.mult=None
 
     blankline()
     #Now returning final energy

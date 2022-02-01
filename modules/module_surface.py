@@ -16,9 +16,10 @@ from functions.functions_general import frange, BC, print_line_with_mainheader,p
 import interfaces.interface_geometric
 from modules.module_freq import calc_rotational_constants
 import functions.functions_parallel
+from modules.module_coords import check_charge_mult
 
 # TODO: Finish parallelize surfacepoint calculations
-def calc_surface(fragment=None, theory=None, scantype='Unrelaxed', resultfile='surface_results.txt', keepoutputfiles=True, keepmofiles=False,
+def calc_surface(fragment=None, theory=None, charge=None, mult=None, scantype='Unrelaxed', resultfile='surface_results.txt', keepoutputfiles=True, keepmofiles=False,
                  runmode='serial', coordsystem='dlc', maxiter=50, extraconstraints=None, convergence_setting=None, 
                  ActiveRegion=False, actatoms=None, **kwargs):
     """Calculate 1D/2D surface
@@ -41,6 +42,10 @@ def calc_surface(fragment=None, theory=None, scantype='Unrelaxed', resultfile='s
     """
     module_init_time=time.time()
     print_line_with_mainheader("CALC_SURFACE FUNCTION")
+
+    #Check charge/mult
+    charge,mult = check_charge_mult(charge, mult, theory.theorytype, fragment, "calc_surface")
+
     if 'numcores' in kwargs:
         numcores = kwargs['numcores']
     #Getting reaction coordinates and checking if 1D or 2D
@@ -156,12 +161,12 @@ def calc_surface(fragment=None, theory=None, scantype='Unrelaxed', resultfile='s
                             shutil.move("RC1_"+str(RCvalue1)+"-RC2_"+str(RCvalue2)+".xyz", "surface_xyzfiles/RC1_"+str(RCvalue1)+"-RC2_"+str(RCvalue2)+".xyz")
                             surfacepointfragments[(RCvalue1,RCvalue2)] = newfrag
                             #Single-point ORCA calculation on adjusted geometry
-                            #energy = ash.Singlepoint(fragment=fragment, theory=theory)
+                            #energy = ash.Singlepoint(fragment=fragment, theory=theory, charge=charge, mult=mult)
                 print("surfacepointfragments:", surfacepointfragments)
                 #TODO: sort this list??
                 surfacepointfragments_lists = list(surfacepointfragments.values())
                 print("surfacepointfragments_lists: ", surfacepointfragments_lists)
-                surfacedictionary = functions_parallel.Singlepoint_parallel(fragments=surfacepointfragments_lists, theories=[theory], numcores=numcores)
+                surfacedictionary = functions.functions_parallel.Singlepoint_parallel(fragments=surfacepointfragments_lists, theories=[theory], numcores=numcores)
                 print("Parallel calculation done!")
                 print("surfacedictionary:", surfacedictionary)
 
@@ -202,7 +207,7 @@ def calc_surface(fragment=None, theory=None, scantype='Unrelaxed', resultfile='s
                             print("x allconstraints:", allconstraints)
                             #Running zero-theory with optimizer just to set geometry
                             interfaces.interface_geometric.geomeTRICOptimizer(fragment=fragment, theory=zerotheory, maxiter=maxiter, coordsystem=coordsystem, 
-                            constraints=allconstraints, constrainvalue=True, convergence_setting=convergence_setting,
+                            constraints=allconstraints, constrainvalue=True, convergence_setting=convergence_setting, charge=charge, mult=mult,
                             ActiveRegion=ActiveRegion, actatoms=actatoms)
                             
                             #Write geometry to disk
@@ -212,7 +217,7 @@ def calc_surface(fragment=None, theory=None, scantype='Unrelaxed', resultfile='s
                             shutil.move("RC1_"+str(RCvalue1)+"-RC2_"+str(RCvalue2)+".ygg", "surface_fragfiles/RC1_"+str(RCvalue1)+"-RC2_"+str(RCvalue2)+".ygg")
                             #Single-point ORCA calculation on adjusted geometry
                             if theory is not None:
-                                energy = ash.Singlepoint(fragment=fragment, theory=theory)
+                                energy = ash.Singlepoint(fragment=fragment, theory=theory, charge=charge, mult=mult)
                                 print("RCvalue1: {} RCvalue2: {} Energy: {}".format(RCvalue1,RCvalue2, energy))
                                 if keepoutputfiles == True:
                                     shutil.copyfile(theory.filename+'.out', 'surface_outfiles/'+str(theory.filename)+'_'+pointlabel+'.out')
@@ -243,7 +248,7 @@ def calc_surface(fragment=None, theory=None, scantype='Unrelaxed', resultfile='s
                         print("allconstraints:", allconstraints)
                         #Running zero-theory with optimizer just to set geometry
                         interfaces.interface_geometric.geomeTRICOptimizer(fragment=fragment, theory=zerotheory, maxiter=maxiter, coordsystem=coordsystem, 
-                        constraints=allconstraints, constrainvalue=True, convergence_setting=convergence_setting,
+                        constraints=allconstraints, constrainvalue=True, convergence_setting=convergence_setting, charge=charge, mult=mult,
                         ActiveRegion=ActiveRegion, actatoms=actatoms)
                         
                         #Write geometry to disk: RC1_2.02.xyz
@@ -252,7 +257,7 @@ def calc_surface(fragment=None, theory=None, scantype='Unrelaxed', resultfile='s
                         shutil.move("RC1_"+str(RCvalue1)+".xyz", "surface_xyzfiles/"+"RC1_"+str(RCvalue1)+".xyz")
                         shutil.move("RC1_"+str(RCvalue1)+".ygg", "surface_fragfiles/"+"RC1_"+str(RCvalue1)+".ygg")
                         #Single-point ORCA calculation on adjusted geometry
-                        energy = ash.Singlepoint(fragment=fragment, theory=theory)
+                        energy = ash.Singlepoint(fragment=fragment, theory=theory, charge=charge, mult=mult)
                         print("RCvalue1: {} Energy: {}".format(RCvalue1,energy))
                         if keepoutputfiles == True:
                             shutil.copyfile(theory.filename+'.out', 'surface_outfiles/'+str(theory.filename)+'_'+pointlabel+'.out')
@@ -284,7 +289,7 @@ def calc_surface(fragment=None, theory=None, scantype='Unrelaxed', resultfile='s
                             print("allconstraints:", allconstraints)
                             #Running 
                             energy = interfaces.interface_geometric.geomeTRICOptimizer(fragment=fragment, theory=theory, maxiter=maxiter, coordsystem=coordsystem, 
-                            constraints=allconstraints, constrainvalue=True, convergence_setting=convergence_setting,
+                            constraints=allconstraints, constrainvalue=True, convergence_setting=convergence_setting, charge=charge, mult=mult,
                             ActiveRegion=ActiveRegion, actatoms=actatoms)
                             print("RCvalue1: {} RCvalue2: {} Energy: {}".format(RCvalue1,RCvalue2, energy))
                             if keepoutputfiles == True:
@@ -319,7 +324,7 @@ def calc_surface(fragment=None, theory=None, scantype='Unrelaxed', resultfile='s
                         print("allconstraints:", allconstraints)
                         #Running zero-theory with optimizer just to set geometry
                         energy = interfaces.interface_geometric.geomeTRICOptimizer(fragment=fragment, theory=theory, maxiter=maxiter, coordsystem=coordsystem, 
-                        constraints=allconstraints, constrainvalue=True, convergence_setting=convergence_setting,
+                        constraints=allconstraints, constrainvalue=True, convergence_setting=convergence_setting, charge=charge, mult=mult,
                         ActiveRegion=ActiveRegion, actatoms=actatoms)
                         print("RCvalue1: {} Energy: {}".format(RCvalue1, energy))
                         if keepoutputfiles == True:
@@ -345,7 +350,7 @@ def calc_surface(fragment=None, theory=None, scantype='Unrelaxed', resultfile='s
 #Both unrelaxed (single-point) and relaxed (opt) is now possible
 # Parallelization and MOREAD complete
 # TODO: Parallelization and Relaxed mode
-def calc_surface_fromXYZ(xyzdir=None, theory=None, dimension=None, resultfile=None, scantype='Unrelaxed',runmode='serial',
+def calc_surface_fromXYZ(xyzdir=None, theory=None, charge=None, mult=None, dimension=None, resultfile=None, scantype='Unrelaxed',runmode='serial',
                          coordsystem='dlc', maxiter=50, extraconstraints=None, convergence_setting=None, numcores=None,
                          RC1_type=None, RC2_type=None, RC1_indices=None, RC2_indices=None, keepoutputfiles=True, keepmofiles=False,
                          read_mofiles=False, mofilesdir=None):
@@ -373,6 +378,12 @@ def calc_surface_fromXYZ(xyzdir=None, theory=None, dimension=None, resultfile=No
     """
     module_init_time=time.time()
     print_line_with_mainheader("CALC_SURFACE_FROMXYZ FUNCTION")
+
+    #Checking if charge and mult has been provided
+    if charge == None or mult == None:
+        print(BC.FAIL, "Error. charge and mult has not been defined for calc_surface_fromXYZ", BC.END)
+        ashexit()
+
     print("XYZdir:", xyzdir)
     print("Theory:", theory)
     print("Dimension:", dimension)
@@ -395,6 +406,9 @@ def calc_surface_fromXYZ(xyzdir=None, theory=None, dimension=None, resultfile=No
 
     #Points
     totalnumpoints=len(glob.glob(xyzdir+'/*.xyz'))
+    if totalnumpoints == 0:
+        print("Found no XYZ-files in directory. Exiting")
+        ashexit()
     print("totalnumpoints:", totalnumpoints)
     if len(surfacedictionary) == totalnumpoints:
         print("Surface dictionary size {} matching total number of XYZ files {}. We should have all data".format(len(surfacedictionary),totalnumpoints))
@@ -567,7 +581,7 @@ def calc_surface_fromXYZ(xyzdir=None, theory=None, dimension=None, resultfile=No
                     mol=ash.Fragment(xyzfile=file)
                     if scantype=="Unrelaxed":
 
-                        energy = ash.Singlepoint(theory=theory, fragment=mol)
+                        energy = ash.Singlepoint(theory=theory, fragment=mol, charge=charge, mult=mult)
                     elif scantype=="Relaxed":
                         #Now setting constraints
                         allconstraints = set_constraints(dimension=2, RCvalue1=RCvalue1, RCvalue2=RCvalue2, extraconstraints=extraconstraints,
@@ -575,7 +589,7 @@ def calc_surface_fromXYZ(xyzdir=None, theory=None, dimension=None, resultfile=No
                         print("allconstraints:", allconstraints)
                         energy = interfaces.interface_geometric.geomeTRICOptimizer(fragment=mol, theory=theory, 
                                                     maxiter=maxiter, coordsystem=coordsystem, constraints=allconstraints, constrainvalue=True, 
-                                                    convergence_setting=convergence_setting)
+                                                    convergence_setting=convergence_setting, charge=charge, mult=mult)
                         #Write geometry to disk in dir : surface_xyzfiles
                         fragment.write_xyzfile(xyzfilename="RC1_"+str(RCvalue1)+"-RC2_"+str(RCvalue2)+".xyz")
                         fragment.print_system(filename="RC1_"+str(RCvalue1)+"-RC2_"+str(RCvalue2)+".ygg")
@@ -615,7 +629,7 @@ def calc_surface_fromXYZ(xyzdir=None, theory=None, dimension=None, resultfile=No
                 if (RCvalue1) not in surfacedictionary:
                     mol=ash.Fragment(xyzfile=file)
                     if scantype=="Unrelaxed":
-                        energy = ash.Singlepoint(theory=theory, fragment=mol)
+                        energy = ash.Singlepoint(theory=theory, fragment=mol, charge=charge, mult=mult)
                     elif scantype=="Relaxed":
                         #Now setting constraints
                         allconstraints = set_constraints(dimension=1, RCvalue1=RCvalue1, extraconstraints=extraconstraints,
@@ -623,7 +637,7 @@ def calc_surface_fromXYZ(xyzdir=None, theory=None, dimension=None, resultfile=No
                         print("allconstraints:", allconstraints)
                         energy = interfaces.interface_geometric.geomeTRICOptimizer(fragment=mol, theory=theory, 
                                                     maxiter=maxiter, coordsystem=coordsystem, constraints=allconstraints, constrainvalue=True, 
-                                                    convergence_setting=convergence_setting)
+                                                    convergence_setting=convergence_setting, charge=charge, mult=mult)
                         #Write geometry to disk in dir : surface_xyzfiles
                         fragment.write_xyzfile(xyzfilename="RC1_"+str(RCvalue1)+".xyz")
                         fragment.print_system(filename="RC1_"+str(RCvalue1)+".ygg")

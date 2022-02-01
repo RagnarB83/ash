@@ -7,18 +7,17 @@ def test_fragread():
     H 0.0 0.0 0.0
     F 0.0 0.0 1.0
     """
+    HF_frag=Fragment(coordsstring=fragcoords)
     ####################################################
-    #Creation of empty fragment and add coords
-    HF_frag=Fragment()
-
-    #Add coordinates to fragment
-    HF_frag.add_coords_from_string(fragcoords)
-    
-    ###########################################
     #From lists
     elems=['H', 'Cl']
     coords=[[0.0, 0.0, 0.0], [0.0, 0.0, 0.9]]
     HCl_frag=Fragment(elems=elems,coords=coords)
+    ##############################
+    #From np array
+    elems2=['H', 'Cl']
+    coords2=np.array([[0.0, 0.0, 0.0], [0.0, 0.0, 0.9]])
+    HCl_frag_np=Fragment(elems=elems2,coords=coords2)
     ##############################
     #From XYZ file
     HI_frag = Fragment(xyzfile="xyzfiles/hi.xyz")
@@ -44,6 +43,7 @@ def test_fragread():
     assert HI_frag.numatoms == 2, "Number of atoms is not correct"
     assert HF_frag.numatoms == 2, "Number of atoms is not correct"
     assert HCl_frag.numatoms == 2, "Number of atoms is not correct"
+    assert HCl_frag_np.numatoms == 2, "Number of atoms is not correct"
 
 def test_fragread_files():
     #Creating fragment, write to disk and read-in again

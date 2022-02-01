@@ -8,6 +8,7 @@ import numpy as np
 import modules.module_coords
 from functions.functions_general import ashexit, blankline,insert_line_into_file,BC,print_time_rel, print_line_with_mainheader
 from modules.module_singlepoint import Singlepoint
+from modules.module_coords import check_charge_mult
 import functions.functions_elstructure
 import constants
 import settings_ash
@@ -16,7 +17,7 @@ import settings_ash
 
 #ORCA Theory object. Fragment object is optional. Only used for single-points.
 class ORCATheory:
-    def __init__(self, orcadir=None, fragment=None, charge=None, mult=None, orcasimpleinput='', printlevel=2, extrabasisatoms=None, extrabasis=None, TDDFT=False, TDDFTroots=5, FollowRoot=1,
+    def __init__(self, orcadir=None, fragment=None, orcasimpleinput='', printlevel=2, extrabasisatoms=None, extrabasis=None, TDDFT=False, TDDFTroots=5, FollowRoot=1,
                  orcablocks='', extraline='', first_iteration_input=None, brokensym=None, HSmult=None, atomstoflip=None, numcores=1, nprocs=None, label=None, moreadfile=None, autostart=True, propertyblock=None):
         print_line_with_mainheader("ORCATheory initialization")
 
@@ -36,6 +37,7 @@ class ORCATheory:
         #Checking if user added Opt, Freq keywords
         if ' OPT' in orcasimpleinput.upper() or ' FREQ' in orcasimpleinput.upper() :
             print(BC.FAIL,"Error. orcasimpleinput variable can not contain ORCA job-directives like: Opt, Freq, Numfreq", BC.END)
+            print("String:", orcasimpleinput.upper())
             print("orcasimpleinput should only contain information on electronic-structure method (e.g. functional), basis set, grid, SCF convergence etc.")
             ashexit()
 
@@ -84,15 +86,6 @@ class ORCATheory:
             self.coords=fragment.coords
             self.elems=fragment.elems
         #print("frag elems", self.fragment.elems)
-
-        if charge!=None:
-            self.charge=int(charge)
-        else:
-            self.charge=None
-        if mult!=None:
-            self.mult=int(mult)
-        else:
-            self.mult=None
         
         #Adding NoAutostart keyword to extraline if requested
         if self.autostart == False:
@@ -141,8 +134,6 @@ class ORCATheory:
             print("")
             print("Creating ORCA object")
             print("ORCA dir:", self.orcadir)
-            #if molcrys then there is not charge and mult available
-            #print("Charge: {} Mult: {}".format(self.charge,self.mult))
             print(self.orcasimpleinput)
             print(self.orcablocks)
         print("\nORCATheory object created!")
@@ -172,27 +163,35 @@ class ORCATheory:
             pass
 
     #Do an ORCA-optimization instead of ASH optimization. Useful for gas-phase chemistry when ORCA-optimizer is better than geomeTRIC
-    def Opt(self, fragment=None, Grad=None, Hessian=None, numcores=None, label=None):
+    def Opt(self, fragment=None, Grad=None, Hessian=None, numcores=None, label=None, charge=None, mult=None):
 
         module_init_time=time.time()
         print(BC.OKBLUE,BC.BOLD, "------------RUNNING INTERNAL ORCA OPTIMIZATION-------------", BC.END)
         #Coords provided to run or else taken from initialization.
         #if len(current_coords) != 0:
 
+
+
         if fragment == None:
             print("No fragment provided to Opt.")
             if self.fragment == None:
                 print("No fragment associated with ORCATheory object either. Exiting")
                 ashexit()
-            else:
-                current_coords=self.fragment.coords
-                elems=self.fragment.elems
         else:
             print("Fragment provided to Opt")
             self.fragment=fragment
 
+        
         current_coords=self.fragment.coords
         elems=self.fragment.elems
+        #Check charge/mult
+        charge,mult = check_charge_mult(charge, mult, self.theorytype, self.fragment, "ORCATheory.Opt")
+
+        if charge == None or mult == None:
+            print(BC.FAIL, "Error. charge and mult has not been defined for ORCATheory.Opt method", BC.END)
+            ashexit()
+
+
 
         if numcores==None:
             numcores=self.numcores
@@ -207,12 +206,12 @@ class ORCATheory:
         print(self.orcasimpleinput)
         print(self.extraline)
         print(self.orcablocks)
-        print("Charge: {}  Mult: {}".format(self.charge, self.mult))
+        print("Charge: {}  Mult: {}".format(charge, mult))
 
 
         #TODO: Make more general
         create_orca_input_plain(self.filename, elems, current_coords, self.orcasimpleinput,self.orcablocks,
-                                self.charge, self.mult, extraline=self.extraline, HSmult=self.HSmult, moreadfile=self.moreadfile)
+                                charge, mult, extraline=self.extraline, HSmult=self.HSmult, moreadfile=self.moreadfile)
         print(BC.OKGREEN, "ORCA Calculation started.", BC.END)
         run_orca_SP_ORCApar(self.orcadir, self.filename + '.inp', numcores=numcores)
         print(BC.OKGREEN, "ORCA Calculation done.", BC.END)
@@ -248,8 +247,8 @@ class ORCATheory:
         return 
 
     #Run function. Takes coords, elems etc. arguments and computes E or E+G.
-    def run(self, current_coords=None, current_MM_coords=None, MMcharges=None, qm_elems=None,
-            elems=None, Grad=False, Hessian=False, PC=False, numcores=None, label=None ):
+    def run(self, current_coords=None, charge=None, mult=None, current_MM_coords=None, MMcharges=None, qm_elems=None,
+            elems=None, Grad=False, Hessian=False, PC=False, numcores=None, label=None):
         module_init_time=time.time()
         self.runcalls+=1
         print(BC.OKBLUE,BC.BOLD, "------------RUNNING ORCA INTERFACE-------------", BC.END)
@@ -260,9 +259,9 @@ class ORCATheory:
         else:
             current_coords=self.coords
 
-        #Checking if theory charge and mult has been set
-        if self.charge == None or self.mult == None:
-            print(BC.FAIL, "Error. charge and mult has not been defined for ORCATheory object", BC.END)
+        #Checking if charge and mult has been provided
+        if charge == None or mult == None:
+            print(BC.FAIL, "Error. charge and mult has not been defined for ORCATheory.run method", BC.END)
             ashexit()
 
         #What elemlist to use. If qm_elems provided then QM/MM job, otherwise use elems list or self.elems
@@ -312,7 +311,7 @@ class ORCATheory:
         print(self.orcasimpleinput)
         print(extraline)
         print(self.orcablocks)
-        print("Charge: {}  Mult: {}".format(self.charge, self.mult))
+        print("Charge: {}  Mult: {}".format(charge, mult))
         #Printing extra options chosen:
         if self.brokensym==True:
             print("Brokensymmetry SpinFlipping on! HSmult: {}.".format(self.HSmult))
@@ -330,21 +329,21 @@ class ORCATheory:
             create_orca_pcfile(self.filename, current_MM_coords, MMcharges)
             if self.brokensym == True:
                 create_orca_input_pc(self.filename, qm_elems, current_coords, self.orcasimpleinput, self.orcablocks,
-                                        self.charge, self.mult, extraline=extraline, HSmult=self.HSmult, Grad=Grad, Hessian=Hessian, moreadfile=self.moreadfile,
+                                        charge, mult, extraline=extraline, HSmult=self.HSmult, Grad=Grad, Hessian=Hessian, moreadfile=self.moreadfile,
                                      atomstoflip=qmatomstoflip, extrabasisatoms=qmatoms_extrabasis, extrabasis=self.extrabasis, propertyblock=self.propertyblock)
             else:
                 create_orca_input_pc(self.filename, qm_elems, current_coords, self.orcasimpleinput, self.orcablocks,
-                                        self.charge, self.mult, extraline=extraline, Grad=Grad, Hessian=Hessian, moreadfile=self.moreadfile,
+                                        charge, mult, extraline=extraline, Grad=Grad, Hessian=Hessian, moreadfile=self.moreadfile,
                                         extrabasisatoms=qmatoms_extrabasis, extrabasis=self.extrabasis, propertyblock=self.propertyblock)
         else:
             if self.brokensym == True:
                 create_orca_input_plain(self.filename, qm_elems, current_coords, self.orcasimpleinput,self.orcablocks,
-                                        self.charge,self.mult, extraline=extraline, HSmult=self.HSmult, Grad=Grad, Hessian=Hessian, moreadfile=self.moreadfile,
+                                        charge,mult, extraline=extraline, HSmult=self.HSmult, Grad=Grad, Hessian=Hessian, moreadfile=self.moreadfile,
                                      atomstoflip=qmatomstoflip, extrabasisatoms=qmatoms_extrabasis, extrabasis=self.extrabasis, propertyblock=self.propertyblock, 
                                      ghostatoms=self.ghostatoms, dummyatoms=self.dummyatoms)
             else:
                 create_orca_input_plain(self.filename, qm_elems, current_coords, self.orcasimpleinput,self.orcablocks,
-                                        self.charge,self.mult, extraline=extraline, Grad=Grad, Hessian=Hessian, moreadfile=self.moreadfile,
+                                        charge,mult, extraline=extraline, Grad=Grad, Hessian=Hessian, moreadfile=self.moreadfile,
                                         extrabasisatoms=qmatoms_extrabasis, extrabasis=self.extrabasis, propertyblock=self.propertyblock,
                                         ghostatoms=self.ghostatoms, dummyatoms=self.dummyatoms)
 
@@ -1489,7 +1488,9 @@ def grabatomcharges_ORCA(chargemodel,outputfile):
 
 # Wrapper around interactive orca_plot
 # Todo: add TDDFT difference density, natural orbitals, MDCI spin density?
-def run_orca_plot(orcadir, filename, option, gridvalue=40,densityfilename=None, mo_operator=0, mo_number=None):
+def run_orca_plot(filename, option, orcadir=None, gridvalue=40,densityfilename=None, mo_operator=0, mo_number=None):
+
+    orcadir = check_ORCA_location(orcadir)
     # Always creating Cube file (5,7 option)
     #Always setting grid (4,gridvalue option)
     #Always choosing a plot (2,X) option:
@@ -1655,8 +1656,8 @@ def grab_EFG_from_ORCA_output(filename):
                 efg_values=[float(line.split()[-3]),float(line.split()[-2]),float(line.split()[-1])]
                 return efg_values
 
-
-def counterpoise_calculation_ORCA(fragments=None, theory=None, monomer1_indices=None, monomer2_indices=None):
+#Charge/mult must be in fragments
+def counterpoise_calculation_ORCA(fragments=None, theory=None, monomer1_indices=None, monomer2_indices=None, charge=None, mult=None):
     print_line_with_mainheader("COUNTERPOISE CORRECTION JOB")
     print("\n Boys-Bernardi counterpoise correction\n")
     
@@ -1685,7 +1686,12 @@ H    2.453295744  -1.445998564  -1.389381355
     print("")
     #list of fragment indices
     fragments_indices=[i for i in range(0,len(fragments))]
-    
+
+    for frag in fragments:
+        if frag.charge == None:
+            print("Charge/mult information not present in all fragments")
+            ashexit()
+
     #Determine what is dimer and monomers in list of fragments
     numatoms_all=[fragment.numatoms for fragment in fragments]
     dimer_index = numatoms_all.index(max(numatoms_all))
@@ -1816,7 +1822,7 @@ def print_gradient_in_ORCAformat(energy,gradient,basename):
             for gg in g:
                 f.write("{}\n".format(gg))
 
-def create_ASH_otool(basename=None, theoryfile=None, scriptlocation=None):
+def create_ASH_otool(basename=None, theoryfile=None, scriptlocation=None, charge=None, mult=None):
     import stat
     with open(scriptlocation+"/otool_external", 'w') as otool:
         otool.write("#!/usr/bin/env python3\n")
@@ -1832,7 +1838,7 @@ def create_ASH_otool(basename=None, theoryfile=None, scriptlocation=None):
         otool.write("theory = pickle.load(open(\"{}\", \"rb\" ))\n".format(theoryfile))
         #otool.write("theory=ZeroTheory()\n")
         #otool.write("theory=ZeroTheory()\n")
-        otool.write("energy,gradient=Singlepoint(theory=theory,fragment=frag,Grad=True)\n")
+        otool.write("energy,gradient=Singlepoint(theory=theory,fragment=frag,Grad=True, charge={}, mult={})\n".format(charge,mult))
         otool.write("print(gradient)\n")
         otool.write("ash.interfaces.interface_ORCA.print_gradient_in_ORCAformat(energy,gradient,\"{}\")\n".format(basename))
     st = os.stat(scriptlocation+"/otool_external")
@@ -1840,16 +1846,31 @@ def create_ASH_otool(basename=None, theoryfile=None, scriptlocation=None):
 
 # Using ORCA as External Optimizer for ASH
 #Will only work for theories that can be pickled: not OpenMMTheory, probably not QMMMTheory
-def ORCA_External_Optimizer(fragment=None, theory=None, orcadir=None):
+def ORCA_External_Optimizer(fragment=None, theory=None, orcadir=None, charge=None, mult=None):
     print_line_with_mainheader("ORCA_External_Optimizer")
     if fragment == None or theory == None:
         print("ORCA_External_Optimizer requires fragment and theory keywords")
         ashexit()
 
+    if charge == None or mult == None:
+        print(BC.WARNING,"Warning: Charge/mult was not provided to ORCA_External_Optimizer",BC.END)
+        if fragment.charge != None and fragment.mult != None:
+            print(BC.WARNING,"Fragment contains charge/mult information: Charge: {} Mult: {} Using this instead".format(fragment.charge,fragment.mult), BC.END)
+            print(BC.WARNING,"Make sure this is what you want!", BC.END)
+            charge=fragment.charge; mult=fragment.mult
+        else:
+            print(BC.FAIL,"No charge/mult information present in fragment either. Exiting.",BC.END)
+            ashexit()
+
+    #Making sure we have a working ORCA location
+    print("Checking for ORCA location")
+    orcadir = check_ORCA_location(orcadir)
+    #Making sure ORCA binary works (and is not orca the screenreader)
+    check_ORCAbinary(orcadir)
     #Adding orcadir to PATH. Only required if ORCA not in PATH already
     if orcadir != None:
         os.environ["PATH"] += os.pathsep + orcadir
-    
+
     #Pickle for serializing theory object
     import pickle
 
@@ -1863,7 +1884,7 @@ def ORCA_External_Optimizer(fragment=None, theory=None, orcadir=None):
     basename = "ORCAEXTERNAL"
     scriptlocation="."
     os.environ["PATH"] += os.pathsep + "."
-    create_ASH_otool(basename=basename, theoryfile=theoryfilename, scriptlocation=scriptlocation)
+    create_ASH_otool(basename=basename, theoryfile=theoryfilename, scriptlocation=scriptlocation, charge=charge, mult=mult)
 
     #Create XYZ-file for ORCA-Extopt
     xyzfile="ASH-xyzfile.xyz"
@@ -1873,7 +1894,7 @@ def ORCA_External_Optimizer(fragment=None, theory=None, orcadir=None):
     with open(basename+".inp", 'w') as o:
         o.write("! ExtOpt Opt\n")
         o.write("\n")
-        o.write("*xyzfile {} {} {}\n".format(theory.charge,theory.mult,xyzfile))
+        o.write("*xyzfile {} {} {}\n".format(charge,mult,xyzfile))
     
     #Call ORCA to do geometry optimization
     with open(basename+'.out', 'w') as ofile:

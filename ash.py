@@ -34,7 +34,7 @@ import modules.module_coords
 from modules.module_coords import get_molecules_from_trajectory, eldict_covrad, write_pdbfile, Fragment, read_xyzfile, \
     write_xyzfile, make_cluster_from_box, read_ambercoordinates, read_gromacsfile
 from modules.module_coords import remove_atoms_from_system_CHARMM, add_atoms_to_system_CHARMM, getwaterconstraintslist,\
-    QMregionfragexpand
+    QMregionfragexpand, read_xyzfiles
 
 # Singlepoint
 import modules.module_singlepoint
@@ -45,7 +45,7 @@ import functions.functions_parallel
 from functions.functions_parallel import Singlepoint_parallel, run_QMMM_SP_in_parallel
 
 # Freq
-from modules.module_freq import AnFreq, NumFreq, approximate_full_Hessian_from_smaller, calc_rotational_constants,get_dominant_atoms_in_mode
+from modules.module_freq import AnFreq, NumFreq, approximate_full_Hessian_from_smaller, calc_rotational_constants,get_dominant_atoms_in_mode, write_normalmode
 
 # Constants
 import constants
@@ -104,14 +104,14 @@ from interfaces.interface_geometric import geomeTRICOptimizer
 
 # PES
 import modules.module_PES
-from modules.module_PES import PhotoElectronSpectrum
+from modules.module_PES import PhotoElectronSpectrum, potential_adjustor_DFT
 
 # Workflows, benchmarking etc
 import modules.module_workflows
 import modules.module_highlevel_workflows
 from modules.module_highlevel_workflows import CC_CBS_Theory
 from modules.module_workflows import ReactionEnergy, thermochemprotocol_reaction, thermochemprotocol_single, \
-    confsampler_protocol, auto_active_space, calc_xyzfiles, ProjectResults, Reaction_Highlevel_Analysis
+    confsampler_protocol, auto_active_space, calc_xyzfiles, ProjectResults, Reaction_Highlevel_Analysis, FormationEnthalpy
 import modules.module_benchmarking
 from modules.module_benchmarking import run_benchmark
 

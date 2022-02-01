@@ -12,12 +12,13 @@ import settings_ash
 #Required at init: qm_theory and qmatoms. Fragment not. Can come later
 #TODO NOTE: If we add init arguments, remember to update Numfreq QMMM option as it depends on the keywords
 class QMMMTheory:
-    def __init__(self, qm_theory=None, qmatoms=None, fragment=None, mm_theory=None , charges=None,
+    def __init__(self, qm_theory=None, qmatoms=None, fragment=None, mm_theory=None, charges=None,
                  embedding="Elstat", printlevel=2, numcores=1, actatoms=None, frozenatoms=None, excludeboundaryatomlist=None,
                  unusualboundary=False, openmm_externalforce=False, TruncatedPC=False, TruncPCRadius=35, TruncatedPC_recalc_iter=50):
         module_init_time=time.time()
         timeA=time.time()
-        print(BC.WARNING,BC.BOLD,"------------Defining QM/MM object-------------", BC.END)
+        print_line_with_mainheader("QM/MM Theory")
+        #print(BC.WARNING,BC.BOLD,"------------Defining QM/MM object-------------", BC.END)
 
         #Indicate that this is a hybrid QM/MM type theory
         self.theorytype="QM/MM"
@@ -440,13 +441,20 @@ class QMMMTheory:
         self.PCgradient=self.newfullPCgradient
 
 
-    def run(self, current_coords=None, elems=None, Grad=False, numcores=1, exit_after_customexternalforce_update=False, label=None):
+    def run(self, current_coords=None, elems=None, Grad=False, numcores=1, exit_after_customexternalforce_update=False, label=None, charge=None, mult=None):
         module_init_time=time.time()
         CheckpointTime = time.time()
         if self.printlevel >= 2:
             print(BC.WARNING, BC.BOLD, "------------RUNNING QM/MM MODULE-------------", BC.END)
             print("QM Module:", self.qm_theory_name)
             print("MM Module:", self.mm_theory_name)
+
+        #Checking if charge and mult has been provided
+        if charge == None or mult == None:
+            print(BC.FAIL, "Error. charge and mult has not been defined for QMMMTheory.run method", BC.END)
+            ashexit()
+
+
 
         #If no coords provided to run (from Optimizer or NumFreq or MD) then use coords associated with object.
         #if len(current_coords) != 0:
@@ -576,16 +584,16 @@ class QMMMTheory:
                     self.QMenergy, self.QMgradient, self.PCgradient = self.qm_theory.run(current_coords=self.qmcoords,
                                                                                          current_MM_coords=self.pointchargecoords,
                                                                                          MMcharges=self.pointcharges,
-                                                                                         qm_elems=current_qmelems,
+                                                                                         qm_elems=current_qmelems, charge=charge, mult=mult,
                                                                                          Grad=True, PC=True, numcores=numcores)
                 else:
                     self.QMenergy, self.QMgradient = self.qm_theory.run(current_coords=self.qmcoords,
                                                       current_MM_coords=self.pointchargecoords, MMcharges=self.pointcharges,
-                                                      qm_elems=current_qmelems, Grad=True, PC=False, numcores=numcores)
+                                                      qm_elems=current_qmelems, Grad=True, PC=False, numcores=numcores, charge=charge, mult=mult)
             else:
                 self.QMenergy = self.qm_theory.run(current_coords=self.qmcoords,
                                                       current_MM_coords=self.pointchargecoords, MMcharges=self.pointcharges,
-                                                      qm_elems=current_qmelems, Grad=False, PC=PC, numcores=numcores)
+                                                      qm_elems=current_qmelems, Grad=False, PC=PC, numcores=numcores, charge=charge, mult=mult)
         elif self.qm_theory_name == "Psi4Theory":
             #Calling Psi4 theory, providing current QM and MM coordinates.
             if Grad==True:
@@ -596,7 +604,7 @@ class QMMMTheory:
                     self.QMenergy, self.QMgradient = self.qm_theory.run(current_coords=self.qmcoords,
                                                                                          current_MM_coords=self.pointchargecoords,
                                                                                          MMcharges=self.pointcharges,
-                                                                                         qm_elems=current_qmelems,
+                                                                                         qm_elems=current_qmelems, charge=charge, mult=mult,
                                                                                          Grad=True, PC=True, numcores=numcores)
                     #Creating zero-gradient array
                     self.PCgradient = np.zeros((len(self.mmatoms), 3))
@@ -604,14 +612,14 @@ class QMMMTheory:
                     print("grad. mech embedding. not ready")
                     ashexit()
                     self.QMenergy, self.QMgradient = self.qm_theory.run(current_coords=self.qmcoords,
-                                                      current_MM_coords=self.pointchargecoords, MMcharges=self.pointcharges,
+                                                      current_MM_coords=self.pointchargecoords, MMcharges=self.pointcharges, charge=charge, mult=mult,
                                                       qm_elems=current_qmelems, Grad=True, PC=False, numcores=numcores)
             else:
                 print("grad false.")
                 if PC == True:
                     print("PC embed true. not ready")
                     self.QMenergy = self.qm_theory.run(current_coords=self.qmcoords,
-                                                      current_MM_coords=self.pointchargecoords, MMcharges=self.pointcharges,
+                                                      current_MM_coords=self.pointchargecoords, MMcharges=self.pointcharges, charge=charge, mult=mult,
                                                       qm_elems=current_qmelems, Grad=False, PC=PC, numcores=numcores)
                 else:
                     print("mech true", not ready)
@@ -625,15 +633,15 @@ class QMMMTheory:
                     self.QMenergy, self.QMgradient, self.PCgradient = self.qm_theory.run(current_coords=self.qmcoords,
                                                                                          current_MM_coords=self.pointchargecoords,
                                                                                          MMcharges=self.pointcharges,
-                                                                                         qm_elems=current_qmelems,
+                                                                                         qm_elems=current_qmelems, charge=charge, mult=mult,
                                                                                          Grad=True, PC=True, numcores=numcores)
                 else:
                     self.QMenergy, self.QMgradient = self.qm_theory.run(current_coords=self.qmcoords,
-                                                      current_MM_coords=self.pointchargecoords, MMcharges=self.pointcharges,
+                                                      current_MM_coords=self.pointchargecoords, MMcharges=self.pointcharges, charge=charge, mult=mult,
                                                       qm_elems=current_qmelems, Grad=True, PC=False, numcores=numcores)
             else:
                 self.QMenergy = self.qm_theory.run(current_coords=self.qmcoords,
-                                                      current_MM_coords=self.pointchargecoords, MMcharges=self.pointcharges,
+                                                      current_MM_coords=self.pointchargecoords, MMcharges=self.pointcharges, charge=charge, mult=mult,
                                                       qm_elems=current_qmelems, Grad=False, PC=PC, numcores=numcores)
 
 
@@ -927,12 +935,12 @@ def microiter_QM_MM_OPT_v2(theory=None, fragment=None, maxiter=500, qmregion=Non
     sdf="dsds"
     ashexit()
 #xtb instead of charges
-def microiter_QM_MM_OPT_v3(theory=None, fragment=None, maxiter=500, qmregion=None, activeregion=None, bufferregion=None,xtbdir=None,xtbmethod='GFN2-xTB'):
+def microiter_QM_MM_OPT_v3(theory=None, fragment=None, maxiter=500, qmregion=None, activeregion=None, bufferregion=None,xtbdir=None,xtbmethod='GFN2-xTB', charge=None, mult=None):
     ashexit()
     #Make copy of orig theory
     orig_theory=copy.deepcopy(theory)
     # TODO: If BS-spinflipping, use Hsmult instead of regular mul6
-    xtbtheory=xTBTheory(xtbdir=None, charge=theory.qm_theory.charge, mult=theory.qm_theory.mult, xtbmethod=xtbmethod, 
+    xtbtheory=xTBTheory(xtbdir=None, charge=charge, mult=mult, xtbmethod=xtbmethod, 
                         runmode='inputfile', numcores=1, printlevel=2)
     ll_theory=copy.deepcopy(theory)
     ll_theory.qm_theory=xtbtheory
@@ -953,7 +961,7 @@ def microiter_QM_MM_OPT_v3(theory=None, fragment=None, maxiter=500, qmregion=Non
         oldHLenergy=Hlenergy
         print("oldHLenergy:", oldHLenergy)
         #New Macro-iteration step
-        HLenergy,HLgrad=Singlepoint(theory=orig_theory,fragment=fragment,Grad=True)
+        HLenergy,HLgrad=Singlepoint(theory=orig_theory,fragment=fragment,Grad=True, charge=charge, mult=mult)
         print("HLenergy:", HLenergy)
         #Check if HLgrad matches convergence critera for gradient?
         if macroiteration > 0:
@@ -966,19 +974,19 @@ def microiter_QM_MM_OPT_v3(theory=None, fragment=None, maxiter=500, qmregion=Non
                 return
             #Make step using Hlgrad
             
-        LLenergy,LLgrad=Singlepoint(theory=ll_theory,fragment=fragment,Grad=True)
+        LLenergy,LLgrad=Singlepoint(theory=ll_theory,fragment=fragment,Grad=True, charge=charge, mult=mult)
         #Compare gradient, calculate G0 correction
 
         print("Now starting low-level theory QM/MM microtierative optimization")
         print("activeregion:", activeregion)
         print("ll_theory qm theory:", ll_theory.qm_theory)
         bla=geomeTRICOptimizer(theory=ll_theory,fragment=fragment, coordsystem='hdlc', maxiter=200, ActiveRegion=True, actatoms=activeregion, 
-                            conv_criteria=loose_conv_criteria)
+                            conv_criteria=loose_conv_criteria, charge=charge, mult=mult)
         print("Now starting finallevel theory QM/MM microtierative optimization")
         print("act_original:", act_original)
         print("orig_theory qm theory:", orig_theory.qm_theory)
         final=geomeTRICOptimizer(theory=orig_theory,fragment=fragment, coordsystem='hdlc', maxiter=200, ActiveRegion=True, actatoms=act_original, 
-                            conv_criteria=final_conv_criteria)
+                            conv_criteria=final_conv_criteria, charge=charge, mult=mult)
         print("Micro-iterative QM/MM opt complete !")
     return final
     

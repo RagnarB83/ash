@@ -1,2 +1,2 @@
 Collection of XYZ-files of simple molecules for quick use. Example:  n2 = Fragment(databasefile="n2.xyz")
-Charge and multiplicity present in 2nd header line. Example usage: Fragment(databasefile="n2.xyz", readchargemult=True)
+Charge and multiplicity should be present in 2nd header line. Charge/mult will be read by ASH.

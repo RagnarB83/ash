@@ -10,7 +10,7 @@ import settings_solvation
 import settings_ash
 from functions.functions_general import ashexit, blankline,reverse_lines, print_time_rel,BC, print_line_with_mainheader
 import modules.module_coords
-from modules.module_coords import elemstonuccharges, check_multiplicity
+from modules.module_coords import elemstonuccharges, check_multiplicity, check_charge_mult
 
 
 #Now supports 2 runmodes: 'library' (fast Python C-API) or 'inputfile'
@@ -20,7 +20,7 @@ from modules.module_coords import elemstonuccharges, check_multiplicity
 
 
 class xTBTheory:
-    def __init__(self, xtbdir=None, fragment=None, charge=None, mult=None, xtbmethod='GFN1', runmode='inputfile', numcores=1, printlevel=2, filename='xtb_',
+    def __init__(self, xtbdir=None, fragment=None, xtbmethod='GFN1', runmode='inputfile', numcores=1, printlevel=2, filename='xtb_',
                  maxiter=500, electronic_temp=300, label=None, accuracy=0.1, hardness_PC=1000, solvent=None):
 
         #Indicate that this is a QMtheory
@@ -47,7 +47,7 @@ class xTBTheory:
 
         #Printlevel
         self.printlevel=printlevel
-
+        self.verbosity=printlevel-1
         #Label to distinguish different xtb objects
         self.label=label
 
@@ -57,8 +57,6 @@ class xTBTheory:
             self.fragment=fragment
             self.coords=fragment.coords
             self.elems=fragment.elems
-        self.charge=charge
-        self.mult=mult
         self.filename=filename
         self.xtbmethod=xtbmethod
         self.maxiter=maxiter
@@ -90,7 +88,7 @@ class xTBTheory:
                 ashexit(code=9)
             self.Calculator=Calculator
             self.Param=Param
-            self.VERBOSITY_MINIMAL=VERBOSITY_MINIMAL
+
             # Creating variable and setting to None. Replaced by run
             self.calcobject=None
             print("xTB method:", self.xtbmethod)
@@ -144,12 +142,8 @@ class xTBTheory:
                 os.remove(file)
             except:
                 pass
-    def check_charge_mult(self):
-        if self.charge == None or self.mult==None:
-            print("Charge and mult has not been set yet. Exiting.")
-            ashexit()
     #Do an xTB-optimization instead of ASH optimization. Useful for gas-phase chemistry (avoids too much ASH printout
-    def Opt(self, fragment=None, Grad=None, Hessian=None, numcores=None, label=None):
+    def Opt(self, fragment=None, Grad=None, Hessian=None, numcores=None, label=None, charge=None, mult=None):
         module_init_time=time.time()
         print(BC.OKBLUE,BC.BOLD, "------------RUNNING INTERNAL xTB OPTIMIZATION-------------", BC.END)
 
@@ -158,15 +152,27 @@ class xTBTheory:
             if self.fragment == None:
                 print("No fragment associated with xTBTheory object either. Exiting")
                 ashexit()
-            else:
-                current_coords=self.fragment.coords
-                elems=self.fragment.elems
         else:
             print("Fragment provided to Opt")
             self.fragment=fragment
-
+        #
         current_coords=self.fragment.coords
         elems=self.fragment.elems
+
+        #Check charge/mult
+        #if charge == None or mult == None:
+        #    print(BC.WARNING,"Warning: Charge/mult was not provided to xTBTheory.Opt",BC.END)
+        #    if self.fragment.charge != None and self.fragment.mult != None:
+        #        print(BC.WARNING,"Fragment contains charge/mult information: Charge: {} Mult: {} Using this instead".format(fragment.charge,fragment.mult), BC.END)
+        #        print(BC.WARNING,"Make sure this is what you want!", BC.END)
+        #        charge=self.fragment.charge; mult=self.fragment.mult
+        #    else:
+        #        print(BC.FAIL,"No charge/mult information present in fragment either. Exiting.",BC.END)
+        #        ashexit()
+        #Check charge/mult
+        charge,mult = check_charge_mult(charge, mult, self.theorytype, fragment, "xTBTheory.Opt")
+
+
 
         if numcores==None:
             numcores=self.numcores
@@ -174,10 +180,9 @@ class xTBTheory:
 
         if self.printlevel >= 2:
             print("Creating inputfile:", self.filename+'.xyz')
-        #Check if charge/mult set
-        self.check_charge_mult()
+
         #Check if mult is sensible
-        check_multiplicity(elems,self.charge,self.mult)
+        check_multiplicity(elems,charge,mult)
         if self.runmode=='inputfile':
             #Write xyz_file
             modules.module_coords.write_xyzfile(elems, current_coords, self.filename, printlevel=self.printlevel)
@@ -189,7 +194,7 @@ class xTBTheory:
                 print("...")
 
             
-            run_xtb_SP_serial(self.xtbdir, self.xtbmethod, self.filename + '.xyz', self.charge, self.mult, 
+            run_xtb_SP_serial(self.xtbdir, self.xtbmethod, self.filename + '.xyz', charge, mult, 
                                       Opt=True, maxiter=self.maxiter, electronic_temp=self.electronic_temp, accuracy=self.accuracy)
 
             if self.printlevel >= 2:
@@ -219,10 +224,20 @@ class xTBTheory:
         return 
 
 
-    def run(self, current_coords=None, current_MM_coords=None, MMcharges=None, qm_elems=None,
-                elems=None, Grad=False, PC=False, numcores=None, label=None):
+    def run(self, current_coords=None, current_MM_coords=None, MMcharges=None, qm_elems=None, printlevel=None,
+                elems=None, Grad=False, PC=False, numcores=None, label=None, charge=None, mult=None):
         module_init_time=time.time()
 
+
+        # #Verbosity change. May be changed in run (e.g. by Numfreq)
+        # if printlevel != None:
+        #     if printlevel< 2:
+        #         self.verbosity=0
+        #         print("setting verb to 0")
+        #     else:
+        #         self.verbosity=1
+        # else:
+        #     self.verbosity=self.printlevel-1
 
         if MMcharges is None:
             MMcharges=[]
@@ -239,6 +254,11 @@ class xTBTheory:
         else:
             current_coords=self.coords
 
+        #Checking if charge and mult has been provided
+        if charge == None or mult == None:
+            print(BC.FAIL, "Error. charge and mult has not been defined for xTBTheory.run method", BC.END)
+            ashexit()
+
         #What elemlist to use. If qm_elems provided then QM/MM job, otherwise use elems list or self.elems
         if qm_elems is None:
             if elems is None:
@@ -249,7 +269,7 @@ class xTBTheory:
         #Since xTB will stupidly run even when number of unp. electrons and num-electrons don't match
         #we wil this little test here
         timeA=time.time()
-        check_multiplicity(qm_elems,self.charge,self.mult)
+        check_multiplicity(qm_elems,charge,mult)
         print_time_rel(timeA, modulename='check_multiplicity', moduleindex=2)
         if self.runmode=='inputfile':
             if self.printlevel >=2:
@@ -278,18 +298,18 @@ class xTBTheory:
                 if PC==True:
                     print("PC is true")
                     create_xtb_pcfile_general(current_MM_coords, MMcharges, hardness=self.hardness)
-                    run_xtb_SP_serial(self.xtbdir, self.xtbmethod, self.filename + '.xyz', self.charge, self.mult, 
+                    run_xtb_SP_serial(self.xtbdir, self.xtbmethod, self.filename + '.xyz', charge, mult, 
                                       Grad=True, maxiter=self.maxiter, electronic_temp=self.electronic_temp, accuracy=self.accuracy)
                 else:
-                    run_xtb_SP_serial(self.xtbdir, self.xtbmethod, self.filename + '.xyz', self.charge, self.mult, maxiter=self.maxiter,
+                    run_xtb_SP_serial(self.xtbdir, self.xtbmethod, self.filename + '.xyz', charge, mult, maxiter=self.maxiter,
                                   Grad=True, electronic_temp=self.electronic_temp, accuracy=self.accuracy, solvent=self.solvent_line)
             else:
                 if PC==True:
                     create_xtb_pcfile_general(current_MM_coords, MMcharges, hardness=self.hardness)
-                    run_xtb_SP_serial(self.xtbdir, self.xtbmethod, self.filename + '.xyz', self.charge, self.mult, maxiter=self.maxiter,
+                    run_xtb_SP_serial(self.xtbdir, self.xtbmethod, self.filename + '.xyz', charge, mult, maxiter=self.maxiter,
                                       electronic_temp=self.electronic_temp, accuracy=self.accuracy, solvent=self.solvent_line)
                 else:
-                    run_xtb_SP_serial(self.xtbdir, self.xtbmethod, self.filename + '.xyz', self.charge, self.mult, maxiter=self.maxiter,
+                    run_xtb_SP_serial(self.xtbdir, self.xtbmethod, self.filename + '.xyz', charge, mult, maxiter=self.maxiter,
                                       electronic_temp=self.electronic_temp, accuracy=self.accuracy, solvent=self.solvent_line)
 
             if self.printlevel >= 2:
@@ -357,8 +377,8 @@ class xTBTheory:
             #first run call: create new object containing coordinates and settings
             if self.calcobject == None:
                 print("Creating new xTB calc object")
-                self.calcobject = self.Calculator(param_method, qm_elems_numbers, coords_au, charge=self.charge, uhf=self.mult-1)
-                self.calcobject.set_verbosity(self.VERBOSITY_MINIMAL)
+                self.calcobject = self.Calculator(param_method, qm_elems_numbers, coords_au, charge=charge, uhf=mult-1)
+                self.calcobject.set_verbosity(self.verbosity)
                 self.calcobject.set_electronic_temperature(self.electronic_temp)
                 self.calcobject.set_max_iterations(self.maxiter)
                 self.calcobject.set_accuracy(self.accuracy)

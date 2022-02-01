@@ -11,6 +11,7 @@ from functions.functions_general import ashexit, isint,isfloat,is_same_sign,BC,p
 from functions.functions_elstructure import check_cores_vs_electrons, num_core_electrons
 from interfaces.interface_ORCA import ORCATheory, grab_EFG_from_ORCA_output
 from modules.module_highlevel_workflows import CC_CBS_Theory
+from modules.module_coords import check_charge_mult
 
 #Reaction class. Used for benchmarking
 class Reaction:
@@ -310,16 +311,16 @@ def run_benchmark(set=None, theory=None, numcores=None, reuseorbs=False, correct
             frag = ash.Fragment(xyzfile=benchmarksetpath+system.filename+'.xyz', readchargemult=True, conncalc=False)
             
             #Modifying theory object
-            theory.charge=frag.charge
-            theory.mult=frag.mult
+            charge=frag.charge
+            mult=frag.mult
             #Reducing numcores if few electrons, otherwise original value
-            theory.numcores = check_cores_vs_electrons(frag.elems,numcores,theory.charge)
+            theory.numcores = check_cores_vs_electrons(frag.elems,numcores,charge)
             
             #Case EFG
             if property == 'EFG':
                 Proptype='EFG'
                 theory.propertyblock="\n%eprnmr\nnuclei = {} {{ fgrad }} \nend\n".format(system.atomindex+1)
-                energy = ash.Singlepoint(fragment=frag, theory=theory)
+                energy = ash.Singlepoint(fragment=frag, theory=theory, charge=charge, mult=mult)
 
                 efg =grab_EFG_from_ORCA_output(theory.filename+'.out')
                 print("efg:", efg)
@@ -330,7 +331,7 @@ def run_benchmark(set=None, theory=None, numcores=None, reuseorbs=False, correct
                 Proptype='Mossbauer'
                 theory.propertyblock="\n%eprnmr\nnuclei = all Fe {rho,fgrad}\n"
                 
-                energy = ash.Singlepoint(fragment=frag, theory=theory)
+                energy = ash.Singlepoint(fragment=frag, theory=theory, charge=charge, mult=mult)
 
                 #grab_Mossbauer_from_ORCA_output(theory.filename)
 
@@ -339,7 +340,7 @@ def run_benchmark(set=None, theory=None, numcores=None, reuseorbs=False, correct
                 Proptype='NMR'
                 theory.propertyblock="\n%eprnmr\nnuclei = all {} {fgrad}\n".format(property_element)
 
-                energy = ash.Singlepoint(fragment=frag, theory=theory)
+                energy = ash.Singlepoint(fragment=frag, theory=theory, charge=charge, mult=mult)
 
                 #grab_NMRshielding_from_ORCA_output(theory.filename)
             else:
@@ -398,12 +399,12 @@ def run_benchmark(set=None, theory=None, numcores=None, reuseorbs=False, correct
                 frag = ash.Fragment(xyzfile=benchmarksetpath+file+'.xyz', readchargemult=True, conncalc=False)
                 # Setting charge and mult for theory
                 if theory is not None:
-                    theory.charge=frag.charge
-                    theory.mult=frag.mult
+                    charge=frag.charge
+                    mult=frag.mult
                     #Reducing numcores if few electrons, otherwise original value
-                    theory.numcores = check_cores_vs_electrons(frag.elems,numcores,theory.charge)
+                    theory.numcores = check_cores_vs_electrons(frag.elems,numcores,charge)
                     
-                    energy = ash.Singlepoint(fragment=frag, theory=theory)
+                    energy = ash.Singlepoint(fragment=frag, theory=theory, charge=charge, mult=mult)
                     
                     all_calc_energies[file] = energy
                     reaction.totalenergies.append(energy)

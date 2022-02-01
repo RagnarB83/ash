@@ -6,7 +6,7 @@ from modules.module_coords import split_multimolxyzfile
 from functions.functions_general import ashexit, BC, int_ranges, listdiff, print_line_with_subheader1,print_time_rel
 import subprocess as sp
 import ash
-
+from modules.module_coords import check_charge_mult
 
 #Very simple crest interface
 def call_crest(fragment=None, xtbmethod=None, crestdir=None, charge=None, mult=None, solvent=None, energywindow=6, numcores=1, 
@@ -27,18 +27,8 @@ def call_crest(fragment=None, xtbmethod=None, crestdir=None, charge=None, mult=N
                 print("Found no crest executable in path. Exiting... ")
                 ashexit()
 
-    #Use charge/mult from frag if charge/mult keywords not set
-    if charge == None and mult == None:
-        print(BC.WARNING,"Warning: No charge/mult was defined for call_crest. Checking fragment.",BC.END)
-        if fragment.charge != None and fragment.mult != None:
-            print(BC.WARNING,"Fragment contains charge/mult information: Charge: {} Mult: {} Using this instead".format(fragment.charge,fragment.mult), BC.END)
-            print(BC.WARNING,"Make sure this is what you want!", BC.END)
-            charge=fragment.charge; mult=fragment.mult
-            theory_chargemult_change=True
-        else:
-            print(BC.FAIL,"No charge/mult information present in fragment either. Exiting.",BC.END)
-            ashexit()
-
+    #Check charge/mult
+    charge,mult = check_charge_mult(charge, mult, "QM", fragment, "call_crest")
 
     try:
         shutil.rmtree('crest-calc')
@@ -101,7 +91,7 @@ def call_crest(fragment=None, xtbmethod=None, crestdir=None, charge=None, mult=N
 
 #Grabbing crest conformers. Goes inside rest-calc dir and finds file called crest_conformers.xyz
 #Creating ASH fragments for each conformer
-def get_crest_conformers(crest_calcdir='crest-calc',conf_file="crest_conformers.xyz"):
+def get_crest_conformers(crest_calcdir='crest-calc',conf_file="crest_conformers.xyz", charge=None, mult=None):
     print("")
     print("Now finding Crest conformers and creating ASH fragments...")
     os.chdir(crest_calcdir)
@@ -116,7 +106,7 @@ def get_crest_conformers(crest_calcdir='crest-calc',conf_file="crest_conformers.
         list_xtb_energies.append(en)
 
     for els,cs in zip(all_elems,all_coords):
-        conf = ash.Fragment(elems=els, coords=cs)
+        conf = ash.Fragment(elems=els, coords=cs, charge=charge, mult=mult)
         list_conformers.append(conf)
 
     os.chdir('..')

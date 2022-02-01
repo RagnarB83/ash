@@ -6,20 +6,23 @@ import copy
 import time
 from functions.functions_general import ashexit, listdiff, clean_number,blankline,BC,print_time_rel, print_line_with_mainheader
 import modules.module_coords
+from modules.module_coords import check_charge_mult
 import interfaces.interface_ORCA
 import constants
 import ash
 
 #Analytical frequencies function
 #Only works for ORCAtheory at the moment
-def AnFreq(fragment=None, theory=None, numcores=1, temp=298.15, pressure=1.0):
+def AnFreq(fragment=None, theory=None, charge=None, mult=None, numcores=1, temp=298.15, pressure=1.0):
     module_init_time=time.time()
     print(BC.WARNING, BC.BOLD, "------------ANALYTICAL FREQUENCIES-------------", BC.END)
     if theory.__class__.__name__ == "ORCATheory":
         print("Requesting analytical Hessian calculation from ORCATheory")
         print("")
+        #Check charge/mult
+        charge,mult = check_charge_mult(charge, mult, theory.theorytype, fragment, "AnFreq")
         #Do single-point ORCA Anfreq job
-        energy = theory.run(current_coords=fragment.coords, elems=fragment.elems, Hessian=True, numcores=numcores)
+        energy = theory.run(current_coords=fragment.coords, elems=fragment.elems, charge=charge, mult=mult, Hessian=True, numcores=numcores)
         #Grab Hessian
         hessian = interfaces.interface_ORCA.Hessgrab(theory.filename+".hess")
         #Add Hessian to fragment
@@ -31,7 +34,7 @@ def AnFreq(fragment=None, theory=None, numcores=1, temp=298.15, pressure=1.0):
         frequencies = interfaces.interface_ORCA.ORCAfrequenciesgrab(theory.filename+".hess")
         
         hessatoms=list(range(0,fragment.numatoms))
-        Thermochem_dict = thermochemcalc(frequencies,hessatoms, fragment, theory.mult, temp=temp,pressure=pressure)
+        Thermochem_dict = thermochemcalc(frequencies,hessatoms, fragment, mult, temp=temp,pressure=pressure)
 
         print(BC.WARNING, BC.BOLD, "------------ANALYTICAL FREQUENCIES END-------------", BC.END)
         print_time_rel(module_init_time, modulename='AnFreq', moduleindex=1)
@@ -45,24 +48,13 @@ def AnFreq(fragment=None, theory=None, numcores=1, temp=298.15, pressure=1.0):
 #Numerical frequencies function
 #NOTE: displacement was set to 0.0005 Angstrom
 #ORCA uses 0.005 Bohr = 0.0026458861 Ang, CHemshell uses 0.01 Bohr = 0.00529 Ang
-def NumFreq(fragment=None, theory=None, npoint=1, displacement=0.005, hessatoms=None, numcores=1, runmode='serial', temp=298.15, pressure=1.0, hessatoms_masses=None):
+def NumFreq(fragment=None, theory=None, charge=None, mult=None, npoint=2, displacement=0.005, hessatoms=None, numcores=1, runmode='serial', 
+        temp=298.15, pressure=1.0, hessatoms_masses=None, printlevel=1):
     module_init_time=time.time()
     print(BC.WARNING, BC.BOLD, "------------NUMERICAL FREQUENCIES-------------", BC.END)
 
-
-    #Checking charge/mult information of theory unless QM/MM
-    theory_chargemult_change=False
-    if not isinstance(theory,ash.QMMMTheory):
-        if theory.charge == None and theory.mult == None:
-            print(BC.WARNING,"Warning: There is no charge or mult defined in theory",BC.END)
-            if fragment.charge != None and fragment.mult != None:
-                print(BC.WARNING,"Fragment contains charge/mult information: Charge: {} Mult: {} Using this instead".format(fragment.charge,fragment.mult), BC.END)
-                print(BC.WARNING,"Warning: Make sure this is what you want!", BC.END)
-                theory.charge=fragment.charge; theory.mult=fragment.mult
-                theory_chargemult_change=True
-            else:
-                print(BC.FAIL,"No charge/mult information present in theory or fragment. Exiting.",BC.END)
-                ashexit()
+    #Check charge/mult
+    charge,mult = check_charge_mult(charge, mult, theory.theorytype, fragment, "NumFreq")
 
 
     shutil.rmtree('Numfreq_dir', ignore_errors=True)
@@ -81,7 +73,6 @@ def NumFreq(fragment=None, theory=None, npoint=1, displacement=0.005, hessatoms=
         hessatoms=allatoms
     #Making sure hessatoms list is sorted
     hessatoms.sort()
-
     if hessatoms_masses != None:
         if len(hessatoms_masses) != len(hessatoms):
             print(BC.FAIL,"Error: Number of provided masses (hessatoms_masses keyword) is not equal to number of Hessian-atoms.")
@@ -130,13 +121,13 @@ def NumFreq(fragment=None, theory=None, npoint=1, displacement=0.005, hessatoms=
                 current_coords_array[atom_index,coord_index]=val+displacement
                 y = current_coords_array.copy()
                 list_of_displaced_geos.append(y)
-                list_of_displacements.append([atom_index, coord_index, '+'])
+                list_of_displacements.append((atom_index, coord_index, '+'))
                 if npoint == 2:
                     #Displacing  - direction
                     current_coords_array[atom_index,coord_index]=val-displacement
                     y = current_coords_array.copy()
                     list_of_displaced_geos.append(y)
-                    list_of_displacements.append([atom_index, coord_index, '-'])
+                    list_of_displacements.append((atom_index, coord_index, '-'))
                 #Displacing back
                 current_coords_array[atom_index, coord_index] = val
 
@@ -163,7 +154,8 @@ def NumFreq(fragment=None, theory=None, npoint=1, displacement=0.005, hessatoms=
             drection = disp[2]
             # displacement_jobname='Numfreq-Disp-'+'Atom'+str(atom_disp)+crd+drection
             #print("Displacing Atom: {} Coordinate: {} Direction: {}".format(atom_disp, crd, drection))
-            calclabel = 'Atom: {} Coord: {} Direction: {}'.format(atom_disp, crd, drection)
+            #calclabel2 = 'Atom: {} Coord: {} Direction: {}'.format(atom_disp, crd, drection)
+            calclabel="Atom: {} Coord: {} Direction: {}".format(str(atom_disp),str(crd),str(drection))
         list_of_labels.append(calclabel)
 
     assert len(list_of_labels) == len(list_of_displaced_geos), "something is wrong"
@@ -178,10 +170,11 @@ def NumFreq(fragment=None, theory=None, npoint=1, displacement=0.005, hessatoms=
     #RUNNING displacements
     displacement_grad_dictionary = {}
     if runmode == 'serial':
+        print("Runmode: serial")
         #Looping over geometries and running.
         #   key: AtomNCoordPDirectionm   where N=atomnumber, P=x,y,z and direction m: + or -
         #   value: gradient
-        for numdisp,(label, geo) in enumerate(zip(list_of_labels,list_of_displaced_geos)):
+        for numdisp,(disp,label, geo) in enumerate(zip(list_of_displacements,list_of_labels,list_of_displaced_geos)):
             if label == 'Originalgeo':
                 calclabel = 'Originalgeo'
                 print("Doing original geometry calc.")
@@ -189,11 +182,13 @@ def NumFreq(fragment=None, theory=None, npoint=1, displacement=0.005, hessatoms=
                 calclabel=label
                 #for index,(el,coord) in enumerate(zip(elems,coords))
                 #displacement_jobname='Numfreq-Disp-'+'Atom'+str(atom_disp)+crd+drection
-                print("Running displacement: {} / {}".format(numdisp,len(list_of_labels)))
-                print("Displacing {}".format(calclabel))
-            energy, gradient = theory.run(current_coords=geo, elems=elems, Grad=True, numcores=numcores)
+                print("Running displacement: {} / {}".format(numdisp+1,len(list_of_labels)))
+                print(calclabel)
+                #print("Displacing Atom:{} Coord:{} Direction:{}".format(disp[0],disp[1],disp[2]))
+            theory.printlevel=printlevel
+            energy, gradient = theory.run(current_coords=geo, elems=elems, Grad=True, numcores=numcores, charge=charge, mult=mult)
             #Adding gradient to dictionary for AtomNCoordPDirectionm
-            displacement_grad_dictionary[calclabel] = gradient
+            displacement_grad_dictionary[disp] = gradient
     elif runmode == 'parallel':
 
         import multiprocessing as mp
@@ -311,78 +306,67 @@ def NumFreq(fragment=None, theory=None, npoint=1, displacement=0.005, hessatoms=
             energy=result[1]
             gradient=result[2]
             displacement_grad_dictionary[calclabel] = gradient
-
+    else:
+        print("Unknown runmode.")
+        ashexit()
     print("Displacement calculations done.")
-    #print("displacement_grad_dictionary:", displacement_grad_dictionary)
-    #If partial Hessian remove non-hessatoms part of gradient:
-    #Get partial matrix by deleting atoms not present in list.
-    if npoint == 1:
-        original_grad=get_partial_matrix(allatoms, hessatoms, displacement_grad_dictionary['Originalgeo'])
-        original_grad_1d = np.ravel(original_grad)
-    #Initialize Hessian
+
+    #Initialize empty Hessian
     hesslength=3*len(hessatoms)
     hessian=np.zeros((hesslength,hesslength))
 
-
     #Onepoint-formula Hessian
     if npoint == 1:
+        print("Assemble one-point Hessian")
+        #First, grab original geometry gradient
+        #If partial Hessian remove non-hessatoms part of gradient:
+        #Get partial matrix by deleting atoms not present in list.
+        original_grad=get_partial_matrix(allatoms, hessatoms, displacement_grad_dictionary['Originalgeo'])
+        original_grad_1d = np.ravel(original_grad)
+        
         #Starting index for Hessian array
-        index=0
-        #Getting displacements as keys from dictionary and sort
-        dispkeys = list(displacement_grad_dictionary.keys())
-        #Sort seems to sort it correctly w.r.t. atomnumber,x,y,z and +/-
-        dispkeys.sort()
-        #print("dispkeys:", dispkeys)
-        #for displacement, grad in displacement_grad_dictionary.items():
-        for dispkey in dispkeys:
-            grad=displacement_grad_dictionary[dispkey]
-            #Skipping original geo
-            if dispkey != 'Originalgeo':
-                #Getting grad as numpy matrix and converting to 1d
+        hessindex=0
+        #Loop over Hessian atoms and grab each gradient component. Calculate Hessian component and add to matrix
+        #for atomindex in range(0,len(hessatoms)):
+        for atomindex in hessatoms:
+            #Iterate over x,y,z components
+            for crd in [0,1,2]:
+                #Looking up each gradient for atomindex, crd-component(x=0,y=1 or z=2) and '+' 
+                grad_pos=displacement_grad_dictionary[(atomindex,crd,'+')]
+                 #Getting grad as numpy matrix and converting to 1d
                 # If partial Hessian remove non-hessatoms part of gradient:
-                grad = get_partial_matrix(allatoms, hessatoms, grad)
-                grad_1d = np.ravel(grad)
-                Hessrow=(grad_1d - original_grad_1d)/displacement_bohr
-                hessian[index,:]=Hessrow
-                index+=1
+                grad_pos = get_partial_matrix(allatoms, hessatoms, grad_pos)
+                grad_pos_1d = np.ravel(grad_pos)
+                Hessrow=(grad_pos_1d - original_grad_1d)/displacement_bohr
+                hessian[hessindex,:]=Hessrow
+                grad_pos_1d=0
+                hessindex+=1
     #Twopoint-formula Hessian. pos and negative directions come in order
     elif npoint == 2:
-        count=0; hessindex=0
-        #Getting displacements as keys from dictionary and sort
-        dispkeys = list(displacement_grad_dictionary.keys())
-        #Sort seems to sort it correctly w.r.t. atomnumber,x,y,z and +/-
-        dispkeys.sort()
-        #print("dispkeys:", dispkeys)
-        #for file in freqinputfiles:
-        #for displacement, grad in testdict.items():
-        for dispkey in dispkeys:
-            if dispkey != 'Originalgeo':
-                count+=1
-                if count == 1:
-                    grad_pos=displacement_grad_dictionary[dispkey]
-                    #print("pos I hope")
-                    #print("dispkey:", dispkey)
-                    # If partial Hessian remove non-hessatoms part of gradient:
-                    grad_pos = get_partial_matrix(allatoms, hessatoms, grad_pos)
-                    grad_pos_1d = np.ravel(grad_pos)
-                elif count == 2:
-                    grad_neg=displacement_grad_dictionary[dispkey]
-                    #print("neg I hope")
-                    #print("dispkey:", dispkey)
-                    #Getting grad as numpy matrix and converting to 1d
-                    # If partial Hessian remove non-hessatoms part of gradient:
-                    grad_neg = get_partial_matrix(allatoms, hessatoms, grad_neg)
-                    grad_neg_1d = np.ravel(grad_neg)
-                    Hessrow=(grad_pos_1d - grad_neg_1d)/(2*displacement_bohr)
-                    hessian[hessindex,:]=Hessrow
-                    grad_pos_1d=0
-                    grad_neg_1d=0
-                    count=0
-                    hessindex+=1
-                else:
-                    print("Something bad happened")
-                    ashexit()
-    blankline()
+        print("Assemble two-point Hessian")
+        hessindex=0
+        #Loop over Hessian atoms and grab each gradient component. Calculate Hessian component and add to matrix
+        #for atomindex in range(0,len(hessatoms)):
+        for atomindex in hessatoms:
+            #Iterate over x,y,z components
+            for crd in [0,1,2]:
+                #Looking up each gradient for atomindex, crd-component(x=0,y=1 or z=2) and '+' 
+                grad_pos=displacement_grad_dictionary[(atomindex,crd,'+')]
+                #Looking up each gradient for atomindex, crd-component(x=0,y=1 or z=2) and '-' 
+                grad_neg=displacement_grad_dictionary[(atomindex,crd,'-')]
+                 #Getting grad as numpy matrix and converting to 1d
+                # If partial Hessian remove non-hessatoms part of gradient:
+                grad_pos = get_partial_matrix(allatoms, hessatoms, grad_pos)
+                grad_pos_1d = np.ravel(grad_pos)
+                grad_neg = get_partial_matrix(allatoms, hessatoms, grad_neg)
+                grad_neg_1d = np.ravel(grad_neg)
+                Hessrow=(grad_pos_1d - grad_neg_1d)/(2*displacement_bohr)
+                hessian[hessindex,:]=Hessrow
+                grad_pos_1d=0
+                grad_neg_1d=0
+                hessindex+=1
+
+    print()
 
     #Symmetrize Hessian by taking average of matrix and transpose
     symm_hessian=(hessian+hessian.transpose())/2
@@ -423,11 +407,11 @@ def NumFreq(fragment=None, theory=None, npoint=1, displacement=0.005, hessatoms=
 
     print("Now doing thermochemistry")
 
-    #Print out thermochemistry
+    #Get and print out thermochemistry
     if theory.__class__.__name__ == "QMMMTheory":
-        Thermochemistry = thermochemcalc(frequencies,hessatoms, fragment, theory.qm_theory.mult, temp=temp,pressure=pressure)
+        freqoutputdict = thermochemcalc(frequencies,hessatoms, fragment, mult, temp=temp,pressure=pressure)
     else:
-        Thermochemistry = thermochemcalc(frequencies,hessatoms, fragment, theory.mult, temp=temp,pressure=pressure)
+        freqoutputdict = thermochemcalc(frequencies,hessatoms, fragment, mult, temp=temp,pressure=pressure)
 
 
     #Add Hessian to fragment
@@ -455,17 +439,17 @@ def NumFreq(fragment=None, theory=None, npoint=1, displacement=0.005, hessatoms=
     blankline()
     print(BC.WARNING, BC.BOLD, "------------NUMERICAL FREQUENCIES END-------------", BC.END)
 
-    #Thermochemistry object. Should contain frequencies, zero-point energy, enthalpycorr, gibbscorr, etc.
+    #freqoutputdict object. Should contain frequencies, zero-point energy, enthalpycorr, gibbscorr, etc.
 
+    freqoutputdict['hessian'] = hessian
+    freqoutputdict['evectors'] = evectors
+    freqoutputdict['nmodes'] = nmodes
 
-    #If we changed theory charge/mult information. Change back
-    if theory_chargemult_change is True:
-        theory.charge=None; theory.mult=None
 
     #Return to ..
     os.chdir('..')
     print_time_rel(module_init_time, modulename='NumFreq', moduleindex=1)
-    return Thermochemistry
+    return freqoutputdict
 
 
 
@@ -491,6 +475,7 @@ def get_partial_matrix(allatoms,hessatoms,matrix):
 
 #Taken from Hess-tool on 21st Dec 2019. Modified to read in Hessian array instead of ORCA-hessfile
 def diagonalizeHessian(hessian, masses, elems):
+    print("Diagonalizing Hessian")
     # Grab masses, elements and numatoms from Hessianfile
     #masses, elems, numatoms = masselemgrab(hessfile)
     numatoms=len(elems)
@@ -534,7 +519,9 @@ def calcfreq(evalues):
     return vfreq
 
 
-# Function to print normal mode composition factors for all atoms, element-groups, specific atom groups or specific atoms
+#NOTE: THIS IS NOT CORRECT
+#TODO: Need to identify SP mode
+#FOR SADDLEPOINT, the SP mode will be the largest imaginary mode, hence mode 0.
 def printfreqs(vfreq,numatoms):
     if numatoms == 2:
         TRmodenum=5
@@ -701,7 +688,8 @@ def normalmodecomp(evectors,j,a):
 # Write normal mode as XYZ-trajectory.
 # Read in normalmode vectors from diagonalized mass-weighted Hessian after unweighting.
 # Print out XYZ-trajectory of mode
-def write_normalmodeXYZ(nmodes,Rcoords,modenumber,elems):
+
+def write_normalmode(modenumber,fragment=None, nmodes=None):
     if modenumber > len(nmodes):
         print("Modenumber is larger than number of normal modes. Exiting. (Note: We count from 0.)")
         return
@@ -709,9 +697,13 @@ def write_normalmodeXYZ(nmodes,Rcoords,modenumber,elems):
         # Modenumber: number mode (starting from 0)
         modechosen=nmodes[modenumber]
 
+    
+    Rcoords=fragment.coords
+    elems=fragment.coords
     # hessatoms: list of atoms involved in Hessian. Usually all atoms. Unnecessary unless QM/MM?
     # Going to disable hessatoms as an argument for now but keep it in the code like this:
-    hessatoms=list(range(1,len(elems)))
+    hessatoms=list(range(0,len(elems)))
+    numatoms=len(hessatoms)
 
     #Creating dictionary of displaced atoms and chosen mode coordinates
     modedict = {}
@@ -722,12 +714,12 @@ def write_normalmodeXYZ(nmodes,Rcoords,modenumber,elems):
     f = open('Mode'+str(modenumber)+'.xyz','w')
     # Displacement array
     dx = np.array([0.0,-0.1,-0.2,-0.3,-0.4,-0.5,-0.6,-0.7,-0.8,-0.9,-1.0,-0.9,-0.8,-0.7,-0.6,-0.5,-0.4,-0.3,-0.2,-0.1,0.0,0.1,0.2,0.3,0.4,0.5,0.6,0.7,0.8,0.9,1.0,0.9,0.8,0.7,0.6,0.4,0.3,0.2,0.1,0.0])
-    dim=len(modechosen)
+    #dim=len(modechosen)
     for k in range(0,len(dx)):
         f.write('%i\n\n' % len(hessatoms))
         for j,w in zip(range(0,numatoms),Rcoords):
-            if j+1 in hessatoms:
-                f.write('%s %12.8f %12.8f %12.8f  \n' % (elems[j], (dx[k]*modedict[j+1][0]+w[0]), (dx[k]*modedict[j+1][1]+w[1]), (dx[k]*modedict[j+1][2]+w[2])))
+            if j in hessatoms:
+                f.write('%s %12.8f %12.8f %12.8f  \n' % (elems[j], (dx[k]*modedict[j][0]+w[0]), (dx[k]*modedict[j][1]+w[1]), (dx[k]*modedict[j][2]+w[2])))
     f.close()
     print("All done. File Mode%s.xyz has been created!" % (modenumber))
 
@@ -995,6 +987,7 @@ def thermochemcalc(vfreq,atoms,fragment, multiplicity, temp=298.15,pressure=1.0)
 
 #From Hess-tool.py: Copied 13 May 2020
 #Print dummy ORCA outputfile using coordinates and normal modes. Used for visualization of modes in Chemcraft
+#TODO: Needs fix for TS mode
 def printdummyORCAfile(elems,coords,vfreq,evectors,nmodes,hessfile):
     orca_header = """                                 *****************
                                  * O   R   C   A *
@@ -1280,16 +1273,19 @@ def calc_rotational_constants(frag, printlevel=2):
 
 
 def calc_model_Hessian_ORCA(fragment,model='Almloef'):
+
+
     #Run ORCA dummy job to get Almloef/Lindh/Schlegel Hessian
-    orcasimple="! hf noiter opt"
+    orcasimple="! hf"
+    extraline="!noiter opt"
     orcablocks="""
     %geom
     maxiter 1
     inhess {}
     end
 """.format(model)
-    orcadummycalc=interfaces.interface_ORCA.ORCATheory(orcasimpleinput=orcasimple,orcablocks=orcablocks,charge=0,mult=1)
-    ash.Singlepoint(theory=orcadummycalc, fragment=fragment)
+    orcadummycalc=interfaces.interface_ORCA.ORCATheory(orcasimpleinput=orcasimple,orcablocks=orcablocks, extraline=extraline)
+    ash.Singlepoint(theory=orcadummycalc, fragment=fragment, charge=0, mult=1)
     #Read orca-input.opt containing Hessian under hessian_approx
     hesstake=False
     j=0

@@ -17,8 +17,10 @@ from modules.module_coords import read_xyzfiles
 import functions.functions_elstructure
 from modules.module_plotting import ASH_plot
 from modules.module_singlepoint import ReactionEnergy
+from modules.module_coords import check_charge_mult
+from modules.module_freq import thermochemcalc
 
-#Simple class to keep track of results
+#Simple class to keep track of results. To be extended
 class ProjectResults():
     def __init__(self,name=None):
         self.name=name
@@ -36,7 +38,7 @@ class ProjectResults():
 
 #Provide crest/xtb info, MLtheory object (e.g. ORCA), HLtheory object (e.g. ORCA)
 def confsampler_protocol(fragment=None, crestdir=None, xtbmethod='GFN2-xTB', MLtheory=None, 
-                         HLtheory=None, orcadir=None, numcores=1, charge=None, mult=None):
+                         HLtheory=None, numcores=1, charge=None, mult=None):
     """[summary]
 
     Args:
@@ -54,13 +56,16 @@ def confsampler_protocol(fragment=None, crestdir=None, xtbmethod='GFN2-xTB', MLt
     print("="*50)
     print("CONFSAMPLER FUNCTION")
     print("="*50)
-    
+
+    #Check charge/mult
+    charge,mult = check_charge_mult(charge, mult, MLtheory.theorytype, fragment, "confsampler_protocol")
+
     #1. Calling crest
     #call_crest(fragment=molecule, xtbmethod='GFN2-xTB', crestdir=crestdir, charge=charge, mult=mult, solvent='H2O', energywindow=6 )
     interfaces.interface_crest.call_crest(fragment=fragment, xtbmethod=xtbmethod, crestdir=crestdir, charge=charge, mult=mult, numcores=numcores)
 
     #2. Grab low-lying conformers from crest_conformers.xyz as list of ASH fragments.
-    list_conformer_frags, xtb_energies = interfaces.interface_crest.get_crest_conformers()
+    list_conformer_frags, xtb_energies = interfaces.interface_crest.get_crest_conformers(charge=charge, mult=mult)
 
     print("list_conformer_frags:", list_conformer_frags)
     print("")
@@ -74,7 +79,7 @@ def confsampler_protocol(fragment=None, crestdir=None, xtbmethod='GFN2-xTB', MLt
     for index,conformer in enumerate(list_conformer_frags):
         print("")
         print("Performing ML Geometry Optimization for Conformer ", index)
-        interfaces.interface_geometric.geomeTRICOptimizer(fragment=conformer, theory=MLtheory, coordsystem='tric')
+        interfaces.interface_geometric.geomeTRICOptimizer(fragment=conformer, theory=MLtheory, coordsystem='tric', charge=charge, mult=mult)
         ML_energies.append(conformer.energy)
         #Saving ASH fragment and XYZ file for each ML-optimized conformer
         os.rename('Fragment-optimized.ygg', 'Conformer{}_ML.ygg'.format(index))
@@ -89,7 +94,7 @@ def confsampler_protocol(fragment=None, crestdir=None, xtbmethod='GFN2-xTB', MLt
     for index,conformer in enumerate(list_conformer_frags):
         print("")
         print("Performing High-level calculation for ML-optimized Conformer ", index)
-        HLenergy = ash.Singlepoint(theory=HLtheory, fragment=conformer)
+        HLenergy = ash.Singlepoint(theory=HLtheory, fragment=conformer, charge=charge, mult=mult)
 
         HL_energies.append(HLenergy)
 
@@ -131,17 +136,12 @@ def confsampler_protocol(fragment=None, crestdir=None, xtbmethod='GFN2-xTB', MLt
     
 
 # opt+freq+HL protocol for single species
-def thermochemprotocol_single(fragment=None, Opt_theory=None, SP_theory=None, orcadir=None, numcores=None, memory=5000,
-                       analyticHessian=True, temp=298.15, pressure=1.0):
+def thermochemprotocol_single(fragment=None, Opt_theory=None, SP_theory=None, numcores=None, memory=5000,
+                       analyticHessian=True, temp=298.15, pressure=1.0, charge=None, mult=None):
     module_init_time=time.time()
     print(BC.WARNING, BC.BOLD, "------------THERMOCHEM PROTOCOL (single-species)-------------", BC.END)
-    if fragment.charge == None:
-        print("1st. Fragment: {}".format(fragment.__dict__))
-        print("No charge/mult information present in fragment. Each fragment in provided fraglist must have charge/mult information defined.")
-        print("Example:")
-        print("fragment.charge= 0; fragment.mult=1")
-        print("Exiting...")
-        ashexit()
+    #Check charge/mult
+    charge,mult = check_charge_mult(charge, mult, Opt_theory.theorytype, fragment, "thermochemprotocol_single")
     #DFT Opt+Freq  and Single-point High-level workflow
     #Only Opt+Freq for molecules, not atoms
     print("-------------------------------------------------------------------------")
@@ -149,33 +149,29 @@ def thermochemprotocol_single(fragment=None, Opt_theory=None, SP_theory=None, or
     print("-------------------------------------------------------------------------")
     if fragment.numatoms != 1:
         #DFT-opt
-        #Adding charge and mult to theory object, taken from each fragment object
-        Opt_theory.charge = fragment.charge
-        Opt_theory.mult = fragment.mult
-        interfaces.interface_geometric.geomeTRICOptimizer(theory=Opt_theory,fragment=fragment)
+        interfaces.interface_geometric.geomeTRICOptimizer(theory=Opt_theory,fragment=fragment, charge=charge, mult=mult)
         print("-------------------------------------------------------------------------")
         print("THERMOCHEM PROTOCOL-single: Step 2. Frequency calculation")
         print("-------------------------------------------------------------------------")
         #DFT-FREQ
         if analyticHessian == True:
-            thermochem = ash.AnFreq(fragment=fragment, theory=Opt_theory, numcores=numcores)                
+            thermochem = ash.AnFreq(fragment=fragment, theory=Opt_theory, numcores=numcores, charge=charge, mult=mult)                
         else:
-            thermochem = ash.NumFreq(fragment=fragment, theory=Opt_theory, npoint=2, runmode='serial')
+            thermochem = ash.NumFreq(fragment=fragment, theory=Opt_theory, npoint=2, runmode='serial', charge=charge, mult=mult)
     else:
         #Setting thermoproperties for atom
-        thermochem = thermochemcalc([],atoms,fragment, fragment.mult, temp=temp,pressure=pressure)
+        thermochem = thermochemcalc([],[0],fragment, fragment.mult, temp=temp,pressure=pressure)
         
     print("-------------------------------------------------------------------------")
     print("THERMOCHEM PROTOCOL-single: Step 3. High-level single-point calculation")
     print("-------------------------------------------------------------------------")
 
-    SP_theory.charge = fragment.charge
-    SP_theory.mult = fragment.mult
-    FinalE = ash.Singlepoint(fragment=fragment, theory=SP_theory)
+    FinalE = ash.Singlepoint(fragment=fragment, theory=SP_theory, charge=charge, mult=mult)
     #Get energy components
     if isinstance(SP_theory,CC_CBS_Theory):
         componentsdict=SP_theory.energy_components
-
+    else:
+        componentsdict={}
     SP_theory.cleanup()
 
     print_time_rel(module_init_time, modulename='thermochemprotocol_single', moduleindex=0)
@@ -184,7 +180,7 @@ def thermochemprotocol_single(fragment=None, Opt_theory=None, SP_theory=None, or
 
 #Thermochemistry protocol. Take list of fragments, stoichiometry, and 2 theory levels
 #Requires orcadir, and Opt_theory level (typically an ORCATheory object), SP_theory (either ORCATTheory or workflow.
-def thermochemprotocol_reaction(Opt_theory=None, SP_theory=None, fraglist=None, stoichiometry=None, orcadir=None, numcores=1, memory=5000,
+def thermochemprotocol_reaction(Opt_theory=None, SP_theory=None, fraglist=None, stoichiometry=None, numcores=1, memory=5000,
                        analyticHessian=True, temp=298.15, pressure=1.0):
     """[summary]
 
@@ -193,7 +189,6 @@ def thermochemprotocol_reaction(Opt_theory=None, SP_theory=None, fraglist=None, 
         SP_theory (ASH theory, optional): ASH theory for Single-points. Defaults to None.
         fraglist (list, optional): List of ASH fragments. Defaults to None.
         stoichiometry (list, optional): list of integers defining stoichiometry. Defaults to None.
-        orcadir (str, optional): Path to ORCA. Defaults to None.
         numcores (int, optional): Number of cores. Defaults to 1.
         memory (int, optional): Memory in MB (ORCA). Defaults to 5000.
         analyticHessian (bool, optional): Analytical Hessian or not. Defaults to True.
@@ -215,8 +210,10 @@ def thermochemprotocol_reaction(Opt_theory=None, SP_theory=None, fraglist=None, 
     #Looping over species in fraglist
     for species in fraglist:
         #Get energy and components for species
-        FinalE, componentsdict, thermochem = thermochemprotocol_single(fragment=species, Opt_theory=Opt_theory, SP_theory=SP_theory, orcadir=orcadir, numcores=numcores, memory=memory,
-                       analyticHessian=analyticHessian, temp=temp, pressure=pressure)
+        print("species:", species)
+        print(species.__dict__)
+        FinalE, componentsdict, thermochem = thermochemprotocol_single(fragment=species, Opt_theory=Opt_theory, SP_theory=SP_theory, numcores=numcores, memory=memory,
+                       analyticHessian=analyticHessian, temp=temp, pressure=pressure, charge=species.charge, mult=species.mult)
         
         print("FinalE:", FinalE)
         print("componentsdict", componentsdict)
@@ -236,53 +233,69 @@ def thermochemprotocol_reaction(Opt_theory=None, SP_theory=None, fraglist=None, 
         
     print("")
     print("")
+    #Final reaction energy and components dictionary
+    finaldict={}
     print("FINAL REACTION ENERGY:")
     print("Enthalpy and Gibbs Energies for  T={} and P={}".format(temp,pressure))
-    print("----------------------------------------------")
-    ReactionEnergy(stoichiometry=stoichiometry, list_of_fragments=fraglist, list_of_energies=FinalEnergies_el, unit='kcalpermol', label='Total ΔE_el')
-    ReactionEnergy(stoichiometry=stoichiometry, list_of_fragments=fraglist, list_of_energies=FinalEnergies_zpve, unit='kcalpermol', label='Total Δ(E+ZPVE)')
-    ReactionEnergy(stoichiometry=stoichiometry, list_of_fragments=fraglist, list_of_energies=FinalEnthalpies, unit='kcalpermol', label='Total ΔH')
-    ReactionEnergy(stoichiometry=stoichiometry, list_of_fragments=fraglist, list_of_energies=FinalFreeEnergies, unit='kcalpermol', label='Total ΔG')
-    print("----------------------------------------------")
+    print("-"*80)
+    deltaE=ReactionEnergy(stoichiometry=stoichiometry, list_of_fragments=fraglist, list_of_energies=FinalEnergies_el, unit='kcalpermol', label='Total ΔE_el')[0]
+    deltaE_0=ReactionEnergy(stoichiometry=stoichiometry, list_of_fragments=fraglist, list_of_energies=FinalEnergies_zpve, unit='kcalpermol', label='Total Δ(E+ZPVE)')[0]
+    deltaH=ReactionEnergy(stoichiometry=stoichiometry, list_of_fragments=fraglist, list_of_energies=FinalEnthalpies, unit='kcalpermol', label='Total ΔH(T={}'.format(temp))[0]
+    deltaG=ReactionEnergy(stoichiometry=stoichiometry, list_of_fragments=fraglist, list_of_energies=FinalFreeEnergies, unit='kcalpermol', label='Total ΔG(T={}'.format(temp))[0]
+    print("-"*80)
     print("Individual contributions")
     #Print individual contributions if available
     #ZPVE, Hcorr, gcorr
-    ReactionEnergy(stoichiometry=stoichiometry, list_of_fragments=fraglist, list_of_energies=ZPVE_Energies, unit='kcalpermol', label='ΔZPVE')
-    ReactionEnergy(stoichiometry=stoichiometry, list_of_fragments=fraglist, list_of_energies=Hcorr_Energies, unit='kcalpermol', label='ΔHcorr')
-    ReactionEnergy(stoichiometry=stoichiometry, list_of_fragments=fraglist, list_of_energies=Gcorr_Energies, unit='kcalpermol', label='ΔGcorr')
-
+    deltaZPVE=ReactionEnergy(stoichiometry=stoichiometry, list_of_fragments=fraglist, list_of_energies=ZPVE_Energies, unit='kcalpermol', label='ΔZPVE')[0]
+    deltaHcorr=ReactionEnergy(stoichiometry=stoichiometry, list_of_fragments=fraglist, list_of_energies=Hcorr_Energies, unit='kcalpermol', label='ΔHcorr')[0]
+    deltaGcorr=ReactionEnergy(stoichiometry=stoichiometry, list_of_fragments=fraglist, list_of_energies=Gcorr_Energies, unit='kcalpermol', label='ΔGcorr')[0]
+    print("-"*80)
+    finaldict={'deltaE':deltaE, 'deltaE_0':deltaE_0, 'deltaH':deltaH, 'deltaG':deltaG, 'deltaZPVE':deltaZPVE, 'deltaHcorr':deltaHcorr, 'deltaGcorr':deltaGcorr}
     #Contributions to CCSD(T) energies
     if 'E_SCF_CBS' in componentsdict:
         scf_parts=[dict['E_SCF_CBS'] for dict in list_of_dicts]
-        ReactionEnergy(stoichiometry=stoichiometry, list_of_fragments=fraglist, list_of_energies=scf_parts, unit='kcalpermol', label='ΔSCF')
+        deltaSCF=ReactionEnergy(stoichiometry=stoichiometry, list_of_fragments=fraglist, list_of_energies=scf_parts, unit='kcalpermol', label='ΔSCF')[0]
+        finaldict['deltaSCF']=deltaSCF
     if 'E_corrCCSD_CBS' in componentsdict:
         ccsd_parts=[dict['E_corrCCSD_CBS'] for dict in list_of_dicts]
-        ReactionEnergy(stoichiometry=stoichiometry, list_of_fragments=fraglist, list_of_energies=ccsd_parts, unit='kcalpermol', label='ΔCCSD')
+        delta_CCSDcorr=ReactionEnergy(stoichiometry=stoichiometry, list_of_fragments=fraglist, list_of_energies=ccsd_parts, unit='kcalpermol', label='ΔCCSD')[0]
+        finaldict['delta_CCSDcorr']=delta_CCSDcorr
     if 'E_corrCCT_CBS' in componentsdict:
         triples_parts=[dict['E_corrCCT_CBS'] for dict in list_of_dicts]
-        ReactionEnergy(stoichiometry=stoichiometry, list_of_fragments=fraglist, list_of_energies=triples_parts, unit='kcalpermol', label='Δ(T)')
+        delta_Tcorr=ReactionEnergy(stoichiometry=stoichiometry, list_of_fragments=fraglist, list_of_energies=triples_parts, unit='kcalpermol', label='Δ(T)')[0]
+        finaldict['delta_Tcorr']=delta_Tcorr
     if 'E_corr_CBS' in componentsdict:
         valencecorr_parts=[dict['E_corr_CBS'] for dict in list_of_dicts]
-        ReactionEnergy(stoichiometry=stoichiometry, list_of_fragments=fraglist, list_of_energies=valencecorr_parts, unit='kcalpermol', label='ΔCCSD+Δ(T) corr')
+        delta_CC_corr=ReactionEnergy(stoichiometry=stoichiometry, list_of_fragments=fraglist, list_of_energies=valencecorr_parts, unit='kcalpermol', label='ΔCCSD+Δ(T) corr')[0]
+        finaldict['delta_CC_corr']=delta_CC_corr
     if 'E_SO' in componentsdict:
         SO_parts=[dict['E_SO'] for dict in list_of_dicts]
-        ReactionEnergy(stoichiometry=stoichiometry, list_of_fragments=fraglist, list_of_energies=SO_parts, unit='kcalpermol', label='ΔSO')
+        delta_SO_corr=ReactionEnergy(stoichiometry=stoichiometry, list_of_fragments=fraglist, list_of_energies=SO_parts, unit='kcalpermol', label='ΔSO')[0]
+        finaldict['delta_SO_corr']=delta_SO_corr
     if 'E_corecorr_and_SR' in componentsdict:
         CV_SR_parts=[dict['E_corecorr_and_SR'] for dict in list_of_dicts]
-        ReactionEnergy(stoichiometry=stoichiometry, list_of_fragments=fraglist, list_of_energies=CV_SR_parts, unit='kcalpermol', label='ΔCV+SR')
+        delta_CVSR_corr=ReactionEnergy(stoichiometry=stoichiometry, list_of_fragments=fraglist, list_of_energies=CV_SR_parts, unit='kcalpermol', label='ΔCV+SR')[0]
+        finaldict['delta_CVSR_corr']=delta_CVSR_corr
     if 'E_FCIcorrection' in componentsdict:
         fcicorr_parts=[dict['E_FCIcorrection'] for dict in list_of_dicts]
-        ReactionEnergy(stoichiometry=stoichiometry, list_of_fragments=fraglist, list_of_energies=fcicorr_parts, unit='kcalpermol', label='ΔFCIcorr')
+        delta_FCI_corr=ReactionEnergy(stoichiometry=stoichiometry, list_of_fragments=fraglist, list_of_energies=fcicorr_parts, unit='kcalpermol', label='ΔFCIcorr')[0]
+        finaldict['delta_FCI_corr']=delta_FCI_corr
+    print("-"*80)
     print("")
     print(BC.WARNING, BC.BOLD, "------------THERMOCHEM PROTOCOL END-------------", BC.END)
     print_time_rel(module_init_time, modulename='thermochemprotocol_reaction', moduleindex=0)
 
-
+    return finaldict
 
 def auto_active_space(fragment=None, orcadir=None, basis="def2-SVP", scalar_rel=None, charge=None, mult=None, 
     initial_orbitals='MP2', functional='TPSS', smeartemp=5000, tgen=1e-1, selection_thresholds=[1.999,0.001],
     numcores=1, memory=9000):
+
     print_line_with_mainheader("auto_active_space function")
+
+    #Check charge/mult
+    charge,mult = check_charge_mult(charge, mult, "QM", fragment, "auto_active_space")
+
     print("Will do N-step orbital selection scheme")
     print("basis:", basis)
     print("scalar_rel:", scalar_rel)
@@ -312,9 +325,9 @@ def auto_active_space(fragment=None, orcadir=None, basis="def2-SVP", scalar_rel=
         natorbs true
         end
         """
-        ORCAcalc_1 = ash.ORCATheory(orcadir=orcadir, charge=charge, mult=mult, orcasimpleinput=orcasimpleinput, orcablocks=orcablocks,
+        ORCAcalc_1 = ash.ORCATheory(orcadir=orcadir, orcasimpleinput=orcasimpleinput, orcablocks=orcablocks,
                                     numcores=numcores)
-        ash.Singlepoint(theory=ORCAcalc_1,fragment=fragment)
+        ash.Singlepoint(theory=ORCAcalc_1,fragment=fragment, charge=charge, mult=mult)
         init_orbitals=ORCAcalc_1.filename+'.mp2nat'
 
         step1occupations=ash.interfaces.interface_ORCA.MP2_natocc_grab(ORCAcalc_1.filename+'.out')
@@ -332,9 +345,9 @@ def auto_active_space(fragment=None, orcadir=None, basis="def2-SVP", scalar_rel=
         Smeartemp {}
         end
         """.format(smeartemp)
-        ORCAcalc_1 = ash.ORCATheory(orcadir=orcadir, charge=charge, mult=mult, orcasimpleinput=orcasimpleinput, orcablocks=orcablocks,
+        ORCAcalc_1 = ash.ORCATheory(orcadir=orcadir, orcasimpleinput=orcasimpleinput, orcablocks=orcablocks,
                                     numcores=numcores)
-        ash.Singlepoint(theory=ORCAcalc_1,fragment=fragment)
+        ash.Singlepoint(theory=ORCAcalc_1,fragment=fragment, charge=charge, mult=mult)
         step1occupations=ash.interfaces.interface_ORCA.SCF_FODocc_grab(ORCAcalc_1.filename+'.out')
         print("FOD occupations:", step1occupations)
         #FOD occupations are unrestricted.
@@ -358,9 +371,9 @@ def auto_active_space(fragment=None, orcadir=None, basis="def2-SVP", scalar_rel=
         maxiter 800
         end
         """
-        ORCAcalc_1 = ash.ORCATheory(orcadir=orcadir, charge=charge, mult=mult, orcasimpleinput=orcasimpleinput, orcablocks=orcablocks,
+        ORCAcalc_1 = ash.ORCATheory(orcadir=orcadir, orcasimpleinput=orcasimpleinput, orcablocks=orcablocks,
                                     numcores=numcores)
-        ash.Singlepoint(theory=ORCAcalc_1,fragment=fragment)
+        ash.Singlepoint(theory=ORCAcalc_1,fragment=fragment, charge=charge, mult=mult)
         step1occupations,qroenergies=ash.interfaces.interface_ORCA.QRO_occ_energies_grab(ORCAcalc_1.filename+'.out')
         print("occupations:", step1occupations)
         print("qroenergies:", qroenergies)
@@ -398,9 +411,9 @@ def auto_active_space(fragment=None, orcadir=None, basis="def2-SVP", scalar_rel=
     end
     end
     """.format(memory,init_orbitals,numelectrons,numorbitals,tgen)
-    ORCAcalc_2 = ash.ORCATheory(orcadir=orcadir, charge=charge, mult=mult, orcasimpleinput=orcasimpleinput, orcablocks=orcablocks,
+    ORCAcalc_2 = ash.ORCATheory(orcadir=orcadir, orcasimpleinput=orcasimpleinput, orcablocks=orcablocks,
                                 numcores=numcores)
-    ash.Singlepoint(theory=ORCAcalc_2,fragment=fragment)
+    ash.Singlepoint(theory=ORCAcalc_2,fragment=fragment, charge=charge, mult=mult)
 
     ICEnatoccupations=ash.interfaces.interface_ORCA.CASSCF_natocc_grab(ORCAcalc_2.filename+'.out')
 
@@ -481,6 +494,7 @@ def calc_xyzfiles(xyzdir=None, theory=None, HL_theory=None, Opt=False, Freq=Fals
         print("Highlevel Theory SP after Opt:", HL_theory.__class__.__name__)
     print("Global charge/mult options:", charge, mult)
     print("xTB preoptimization", xtb_preopt)
+
     if charge == None or mult == None:
         print("Charge/mult options are None. This means that XYZ-files must have charge/mult information in their header\n\n")
         readchargemult=True
@@ -509,24 +523,21 @@ def calc_xyzfiles(xyzdir=None, theory=None, HL_theory=None, Opt=False, Freq=Fals
     for fragment in fragments:
         filename=fragment.label
         print("filename:", filename)
-        #Charge/mult from fragment
-        if charge == None and mult ==None:
-    	    theory.charge=fragment.charge; theory.mult=fragment.mult
         #Global charge/mult keywords (rare)
-        else:
-            theory.charge=charge; theory.mult=mult; fragment.charge=charge; fragment.mult=mult
+        if charge != None and mult != None:
+            fragment.charge=charge; fragment.mult=mult
         #Do Optimization or Singlepoint
         if Opt is True:
             if xtb_preopt is True:
                 print("xTB Pre-optimization is active. Will first call xTB directly to do pre-optimization before actual optimization!")
                 #Defining temporary xtBtheory
-                xtbcalc=ash.xTBTheory(charge=theory.charge,mult=theory.mult, numcores=theory.numcores)
+                xtbcalc=ash.xTBTheory(numcores=theory.numcores)
                 #Run direct xtb optimization. This will update fragment.
-                xtbcalc.Opt(fragment=fragment)
+                xtbcalc.Opt(fragment=fragment, charge=fragment.charge, mult=fragment.mult)
                 xtbcalc.cleanup()
             
             #Now doing actual OPT
-            optenergy = interfaces.interface_geometric.geomeTRICOptimizer(theory=theory, fragment=fragment, coordsystem='tric')
+            optenergy = interfaces.interface_geometric.geomeTRICOptimizer(theory=theory, fragment=fragment, coordsystem='tric', charge=fragment.charge, mult=fragment.mult)
             theory.cleanup()
             energy=optenergy
             optenergies.append(optenergy)
@@ -538,16 +549,16 @@ def calc_xyzfiles(xyzdir=None, theory=None, HL_theory=None, Opt=False, Freq=Fals
             #Freq job after OPt
             if Freq is True:
                 print("Performing Numerical Frequency job on Optimized fragment.")
-                thermochem = ash.NumFreq(fragment=fragment, theory=theory, npoint=2, displacement=0.005, numcores=theory.numcores, runmode='serial')
+                thermochem = ash.NumFreq(fragment=fragment, theory=theory, npoint=2, displacement=0.005, numcores=theory.numcores, runmode='serial', charge=fragment.charge, mult=fragment.mult)
                 theory.cleanup()
             if Highlevel is True:
                 print("Performing Highlevel on Optimized fragment.")
-                hlenergy = ash.Singlepoint(theory=HL_theory, fragment=fragment)
+                hlenergy = ash.Singlepoint(theory=HL_theory, fragment=fragment, charge=fragment.charge, mult=fragment.mult)
                 energy=hlenergy
                 hlenergies.append(hlenergy)
                 HL_theory.cleanup()
         else:
-            energy = ash.Singlepoint(theory=theory, fragment=fragment)
+            energy = ash.Singlepoint(theory=theory, fragment=fragment, charge=fragment.charge, mult=fragment.mult)
             theory.cleanup()
         
         energies.append(energy)
@@ -992,19 +1003,20 @@ def Reaction_Highlevel_Analysis(fraglist=None, stoichiometry=None, numcores=1, m
 
 
 #NOTE: not ready
-def BrokenSymmetryCalculator(theory=None, fragment=None, Opt=False, flip_atoms=None, BS_flip_options=None):
+def BrokenSymmetryCalculator(theory=None, fragment=None, Opt=False, flip_atoms=None, BS_flip_options=None, charge=None, mult=None):
 
     if theory == None or fragment == None or flip_atoms == None or BS_flip_options==None:
         print("Please set theory, fragment, flip_atoms and BS_flip_options keywords")
         exit()
 
+    #Check charge/mult
+    charge,mult = check_charge_mult(charge, mult, theory.theorytype, fragment, "BrokenSymmetryCalculator")
+
     #Getting full-system atom numbers for each BS-flip
     atomstoflip=[flip_atoms[i-1] for i in BSflip]
-    orcaobject = ORCATheory(orcadir=orcadir, charge=charge,mult=mult, orcasimpleinput=ORCAinpline, orcablocks=ORCAblocklines,
+    orcaobject = ORCATheory(orcadir=orcadir, orcasimpleinput=ORCAinpline, orcablocks=ORCAblocklines,
                         brokensym=brokensym, HSmult=HSmult, atomstoflip=atomstoflip, nprocs=numcores, extrabasisatoms=extrabasisatoms,
                         extrabasis="ZORA-def2-TZVP")
-
-
 
 
     #Looping over BS-flips
@@ -1023,13 +1035,13 @@ def BrokenSymmetryCalculator(theory=None, fragment=None, Opt=False, flip_atoms=N
 
 
         #OPT with TruncPC approximation
-        geomeTRICOptimizer(theory=theory, fragment=frag, ActiveRegion=True, actatoms=actatoms, maxiter=500, coordsystem='hdlc')
+        geomeTRICOptimizer(theory=theory, fragment=frag, ActiveRegion=True, actatoms=actatoms, maxiter=500, coordsystem='hdlc', charge=charge, mult=mult)
 
         #Preserve geometry
         os.rename('Fragment-optimized.xyz', f'Fragment_{calclabel}_truncopt.xyz')
 
         #Opt without TruncPC approximation
-        geomeTRICOptimizer(theory=qmmmobject_notrunc, fragment=frag, ActiveRegion=True, actatoms=actatoms, maxiter=500, coordsystem='hdlc')
+        geomeTRICOptimizer(theory=qmmmobject_notrunc, fragment=frag, ActiveRegion=True, actatoms=actatoms, maxiter=500, coordsystem='hdlc', charge=charge, mult=mult)
 
         #Preserve geometry and ORCA output
         os.rename('Fragment-optimized.xyz', f'Fragment_{calclabel}_notrunc.xyz')
@@ -1038,3 +1050,34 @@ def BrokenSymmetryCalculator(theory=None, fragment=None, Opt=False, flip_atoms=N
 
         #create final pdb file
         write_pdbfile(frag, outputname=f'Fragment_BSflip_{calclabel}_notrunc',openmmobject=openmmobject)
+
+
+#From total atomization energy (either 0 K or 298 K) calculate enthalpy of formation
+def FormationEnthalpy(TAE, fragments, stoichiometry, RT=False):
+    #From ATCT
+    deltaHF_atoms_exp_0K={'H':51.6333652, 'C':170.02820267686425, 'N':112.4710803, 'O':58.99713193, 'F':18.46510516, 'Si':107.67925430210326, 'Cl':28.59010516, 'Br':28.18283939}
+    deltaHF_atoms_exp_298K={'H':52.10277247, 'C':171.33914913957935, 'N':112.916348, 'O':59.56716061, 'F':18.96845124, 'Si':108.71414913957935, 'Cl':28.97418738, 'Br':26.73398662}
+    print("\nFormationEnthalpy function")
+    print("RT is:", RT)
+    if RT is True:
+        print("Assuming T=298.15 K. Using atomic experimental enthalpies of formation at 298.15 K.")
+        print("deltaHF_atoms_exp_298K:", deltaHF_atoms_exp_298K)
+        deltaHF_atoms_exp=deltaHF_atoms_exp_298K
+    else:
+        print("Assuming T=0 K. Using atomic experimental enthalpies of formation at 0 K.")
+        print("deltaHF_atoms_exp_0K:", deltaHF_atoms_exp_0K)
+        deltaHF_atoms_exp=deltaHF_atoms_exp_0K
+    
+    #Looping over fragments and stoichiometry lists
+    sum_of_exp_Hf_atoms=0.0
+    for frag,stoich in zip(fragments,stoichiometry):
+        if len(frag.elems) == 1:
+            sum_of_exp_Hf_atoms+=(deltaHF_atoms_exp[frag.elems[0]])*stoich
+    print("sum_of_exp_Hf_atoms:", sum_of_exp_Hf_atoms)
+    print()
+    deltaH_form=sum_of_exp_Hf_atoms-TAE
+    if RT is True:
+        print("DeltaH_form (298 K):", deltaH_form)
+    else:
+        print("DeltaH_form (0 K):", deltaH_form)
+    return deltaH_form
