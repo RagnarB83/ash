@@ -290,14 +290,14 @@ class PolEmbedTheory:
             #Calling Psi4 theory, providing current QM and MM coordinates.
             #Currently doing SP case only without Grad
 
-            self.QMEnergy = self.qm_theory.run(current_coords=self.qmcoords, qm_elems=self.qmelems, Grad=False,
+            self.QMEnergy = self.qm_theory.run(current_coords=self.qmcoords, qm_elems=self.qmelems, Grad=False, charge=charge, mult=mult,
                                                numcores=numcores, pe=True, potfile=self.potfile, restart=restart)
         elif self.qm_theory_name == "DaltonTheory":
             print("self.potfile:", self.potfile)
-            self.QMEnergy = self.qm_theory.run(current_coords=self.qmcoords, qm_elems=self.qmelems, Grad=False,
+            self.QMEnergy = self.qm_theory.run(current_coords=self.qmcoords, qm_elems=self.qmelems, Grad=False, charge=charge, mult=mult,
                                                numcores=numcores, pe=True, potfile=self.potfile, restart=restart)
         elif self.qm_theory_name == "PySCFTheory":
-            self.QMEnergy = self.qm_theory.run(current_coords=self.qmcoords, qm_elems=self.qmelems, Grad=False,
+            self.QMEnergy = self.qm_theory.run(current_coords=self.qmcoords, qm_elems=self.qmelems, Grad=False, charge=charge, mult=mult,
                                                numcores=numcores, pe=True, potfile=self.potfile, restart=restart)
 
         elif self.qm_theory_name == "ORCATheory":
