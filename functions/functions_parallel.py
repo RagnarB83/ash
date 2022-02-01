@@ -13,7 +13,7 @@ from modules.module_coords import check_charge_mult
 #Stripped down version of Singlepoint functffragment_fileion for Singlepoint_parallel.
 #NOTE: Version intended for apply_async
 #TODO: This function may still be a bit ORCA-centric. Needs to be generalized 
-def Single_par(fragment=None, fragmentfile=None, theory=None, label=None, mofilesdir=None, event=None):
+def Single_par(fragment=None, fragmentfile=None, theory=None, label=None, mofilesdir=None, event=None, charge=None, mult=None):
 
     #Creating new copy of theory to prevent Brokensym feature from being deactivated by each run
     #NOTE: Alternatively we can add an if-statement inside orca.run
@@ -68,7 +68,7 @@ def Single_par(fragment=None, fragmentfile=None, theory=None, label=None, mofile
         labelstring=str(label).replace('.','_')
 
 
-    #Check charge/mult
+    #Check charge/mult.
     charge,mult = check_charge_mult(charge, mult, theory.theorytype, fragment, "Single_par")
 
     #Creating separate inputfilename using label
