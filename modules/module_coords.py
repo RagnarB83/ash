@@ -71,7 +71,7 @@ class Fragment:
             self.elems = elems
             #self.update_attributes()
             # If connectivity passed
-            if connectivity is not None:
+            if connectivity != None:
                 conncalc = False
                 self.connectivity = connectivity
         elif atom is not None:
@@ -138,7 +138,7 @@ class Fragment:
         #Now update attributes after defining coordinates, getting charge, mult
         self.update_attributes()
         if conncalc is True:
-            if len(self.connectivity) > 0:
+            if len(self.connectivity) == 0:
                 self.calc_connectivity(scale=scale, tol=tol)
 
 
