@@ -443,7 +443,7 @@ def newton_raphson(coords, Gradient,Hessian):
 #Todo: Add active-region option like geometric
 ########################
 
-def BernyOpt(theory,fragment, charge, mult):
+def BernyOpt(theory,fragment, charge=None, mult=None):
     blankline()
     print("Beginning Py-Berny Optimization")
     #Check charge/mult
