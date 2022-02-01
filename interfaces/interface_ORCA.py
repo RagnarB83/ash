@@ -6,7 +6,7 @@ import multiprocessing as mp
 import numpy as np
 
 import modules.module_coords
-from functions.functions_general import ashexit, blankline,insert_line_into_file,BC,print_time_rel, print_line_with_mainheader
+from functions.functions_general import ashexit, blankline,insert_line_into_file,BC,print_time_rel, print_line_with_mainheader, pygrep2
 from modules.module_singlepoint import Singlepoint
 from modules.module_coords import check_charge_mult
 import functions.functions_elstructure
@@ -18,7 +18,8 @@ import settings_ash
 #ORCA Theory object. Fragment object is optional. Only used for single-points.
 class ORCATheory:
     def __init__(self, orcadir=None, fragment=None, orcasimpleinput='', printlevel=2, extrabasisatoms=None, extrabasis=None, TDDFT=False, TDDFTroots=5, FollowRoot=1,
-                 orcablocks='', extraline='', first_iteration_input=None, brokensym=None, HSmult=None, atomstoflip=None, numcores=1, nprocs=None, label=None, moreadfile=None, autostart=True, propertyblock=None):
+                 orcablocks='', extraline='', first_iteration_input=None, brokensym=None, HSmult=None, atomstoflip=None, numcores=1, nprocs=None, label=None, moreadfile=None, 
+                 autostart=True, propertyblock=None, keep_each_run_output=False, print_population_analysis=False):
         print_line_with_mainheader("ORCATheory initialization")
 
         #Indicate that this is a QMtheory
@@ -43,6 +44,12 @@ class ORCATheory:
 
         #Counter for how often ORCATheory.run is called
         self.runcalls=0
+
+        #Whether to keep the ORCA outputfile for each run
+        self.keep_each_run_output=keep_each_run_output
+
+        #Print population_analysis in each run
+        self.print_population_analysis=print_population_analysis
 
         #Label to distinguish different ORCA objects
         self.label=label
@@ -368,39 +375,60 @@ class ORCATheory:
         outfile=self.filename+'.out'
         engradfile=self.filename+'.engrad'
         pcgradfile=self.filename+'.pcgrad'
-        if checkORCAfinished(outfile) == True:
-            self.energy=ORCAfinalenergygrab(outfile)
-            print("ORCA energy:", self.energy)
 
-            #Grab timings from ORCA output
-            orca_timings = ORCAtimingsgrab(outfile)
-            #print("orca_timings:", orca_timings)
-            if Grad == True:
-                self.grad=ORCAgradientgrab(engradfile)
-                if PC == True:
-                    #Print time to calculate ORCA QM-PC gradient
-                    if "pc_gradient" in orca_timings:
-                        print("Time calculating QM-Pointcharge gradient: {} seconds".format(orca_timings["pc_gradient"]))
-                    #Grab pointcharge gradient. i.e. gradient on MM atoms from QM-MM elstat interaction.
-                    self.pcgrad=ORCApcgradientgrab(pcgradfile)
-                    print(BC.OKBLUE,BC.BOLD,"------------ENDING ORCA-INTERFACE-------------", BC.END)
-                    print_time_rel(module_init_time, modulename='ORCA run', moduleindex=2)
-                    return self.energy, self.grad, self.pcgrad
-                else:
-                    print(BC.OKBLUE,BC.BOLD,"------------ENDING ORCA-INTERFACE-------------", BC.END)
-                    print_time_rel(module_init_time, modulename='ORCA run', moduleindex=2)
-                    return self.energy, self.grad
+        #Keep outputfile from each run if requested
+        if self.keep_each_run_output is True:
+            print("\nkeep_each_run_output is True")
+            print("Copying {} to {}".format(self.filename+'.out', self.filename+'_run{}'.format(self.runcalls)+'.out'))
+            shutil.copy(self.filename+'.out', self.filename+'_run{}'.format(self.runcalls)+'.out')
 
-            else:
-                print("Single-point ORCA energy:", self.energy)
-                print(BC.OKBLUE,BC.BOLD,"------------ENDING ORCA-INTERFACE-------------", BC.END)
-                print_time_rel(module_init_time, modulename='ORCA run', moduleindex=2)
-                return self.energy
-        else:
+        #Check if ORCA finished or not. Exiting if so
+        if checkORCAfinished(outfile) is False:
             print(BC.FAIL,"Problem with ORCA run", BC.END)
             print(BC.OKBLUE,BC.BOLD, "------------ENDING ORCA-INTERFACE-------------", BC.END)
             print_time_rel(module_init_time, modulename='ORCA run', moduleindex=2)
             ashexit()
+
+        #Print population analysis in each run if requested
+        if self.print_population_analysis is True:
+            print("\nPrinting Population analysis:")
+            print("-"*30)
+            print("Spin populations:")
+            charges = grabatomcharges_ORCA("Mulliken",self.filename+'.out')
+            spinpops = grabspinpop_ORCA("Mulliken",self.filename+'.out')
+            print("{:<2} {:<2}  {:>10} {:>10}".format(" ", " ", "Charge", "Spinpop"))
+            for i,(el, ch, sp) in enumerate(zip(elems,charges, spinpops)):
+                print("{:<2} {:<2}: {:>10} {:>10}".format(i,el,ch,sp))
+
+        #Grab energy
+        self.energy=ORCAfinalenergygrab(outfile)
+        print("\nORCA energy:", self.energy)
+
+        #Grab timings from ORCA output
+        orca_timings = ORCAtimingsgrab(outfile)
+
+        if Grad == True:
+            self.grad=ORCAgradientgrab(engradfile)
+            if PC == True:
+                #Print time to calculate ORCA QM-PC gradient
+                if "pc_gradient" in orca_timings:
+                    print("Time calculating QM-Pointcharge gradient: {} seconds".format(orca_timings["pc_gradient"]))
+                #Grab pointcharge gradient. i.e. gradient on MM atoms from QM-MM elstat interaction.
+                self.pcgrad=ORCApcgradientgrab(pcgradfile)
+                print(BC.OKBLUE,BC.BOLD,"------------ENDING ORCA-INTERFACE-------------", BC.END)
+                print_time_rel(module_init_time, modulename='ORCA run', moduleindex=2)
+                return self.energy, self.grad, self.pcgrad
+            else:
+                print(BC.OKBLUE,BC.BOLD,"------------ENDING ORCA-INTERFACE-------------", BC.END)
+                print_time_rel(module_init_time, modulename='ORCA run', moduleindex=2)
+                return self.energy, self.grad
+
+        else:
+            print("Single-point ORCA energy:", self.energy)
+            print(BC.OKBLUE,BC.BOLD,"------------ENDING ORCA-INTERFACE-------------", BC.END)
+            print_time_rel(module_init_time, modulename='ORCA run', moduleindex=2)
+            return self.energy
+
 
 ###############################################
 #CHECKS FOR ORCA program
@@ -1376,10 +1404,44 @@ def chargemodel_select(chargemodel):
 
     return extraline
 
+#Grabbing spin populations
+def grabspinpop_ORCA(chargemodel,outputfile):
+    grab=False
+    coordgrab=False
+    spinpops=[]
+
+    if chargemodel == "Mulliken":
+        with open(outputfile) as ofile:
+            for line in ofile:
+                if grab==True:
+                    if 'Sum of atomic' in line:
+                        grab=False
+                    elif '------' not in line:
+                        spinpops.append(float(line.split()[-1]))
+                if 'MULLIKEN ATOMIC CHARGES' in line:
+                    grab=True
+    elif chargemodel == "Loewdin":
+        with open(outputfile) as ofile:
+            for line in ofile:
+                if grab==True:
+                    if 'Sum of atomic' in line:
+                        grab=False
+                    elif len(line.replace(' ','')) < 2:
+                        grab=False
+                    elif '------' not in line:
+                        spinpops.append(float(line.split()[-1]))
+                if 'LOEWDIN ATOMIC CHARGES' in line:
+                    grab=True
+    else:
+        print("Unknown chargemodel. Exiting...")
+        ashexit()
+    return spinpops
+
 def grabatomcharges_ORCA(chargemodel,outputfile):
     grab=False
     coordgrab=False
     charges=[]
+
 
     if chargemodel=="NPA" or chargemodel=="NBO":
         print("Warning: NPA/NBO charge-option in ORCA requires setting environment variable NBOEXE:")
@@ -1453,9 +1515,14 @@ def grabatomcharges_ORCA(chargemodel,outputfile):
                     if 'Sum of atomic' in line:
                         grab=False
                     elif '------' not in line:
-                        charges.append(float(line.split()[-1]))
+                        charges.append(float(line.split()[column]))
                 if 'MULLIKEN ATOMIC CHARGES' in line:
                     grab=True
+                    if 'SPIN POPULATIONS' in line:
+                        column=-2
+                    else:
+                        column=-1
+
     elif chargemodel == "Loewdin":
         with open(outputfile) as ofile:
             for line in ofile:
@@ -1465,9 +1532,13 @@ def grabatomcharges_ORCA(chargemodel,outputfile):
                     elif len(line.replace(' ','')) < 2:
                         grab=False
                     elif '------' not in line:
-                        charges.append(float(line.split()[-1]))
+                        charges.append(float(line.split()[column]))
                 if 'LOEWDIN ATOMIC CHARGES' in line:
                     grab=True
+                    if 'SPIN POPULATIONS' in line:
+                        column=-2
+                    else:
+                        column=-1
     elif chargemodel == "IAO":
         with open(outputfile) as ofile:
             for line in ofile:
