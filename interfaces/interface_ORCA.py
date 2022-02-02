@@ -19,7 +19,7 @@ import settings_ash
 class ORCATheory:
     def __init__(self, orcadir=None, fragment=None, orcasimpleinput='', printlevel=2, extrabasisatoms=None, extrabasis=None, TDDFT=False, TDDFTroots=5, FollowRoot=1,
                  orcablocks='', extraline='', first_iteration_input=None, brokensym=None, HSmult=None, atomstoflip=None, numcores=1, nprocs=None, label=None, moreadfile=None, 
-                 autostart=True, propertyblock=None, keep_each_run_output=False, print_population_analysis=False):
+                 autostart=True, propertyblock=None, keep_each_run_output=False, print_population_analysis=False, filename="orca"):
         print_line_with_mainheader("ORCATheory initialization")
 
         #Indicate that this is a QMtheory
@@ -55,7 +55,7 @@ class ORCATheory:
         self.label=label
 
         #Create inputfile with generic name
-        self.filename="orca"
+        self.filename=filename
 
         #MOREAD-file
         self.moreadfile=moreadfile
@@ -381,7 +381,7 @@ class ORCATheory:
             print("\nkeep_each_run_output is True")
             print("Copying {} to {}".format(self.filename+'.out', self.filename+'_run{}'.format(self.runcalls)+'.out'))
             shutil.copy(self.filename+'.out', self.filename+'_run{}'.format(self.runcalls)+'.out')
-            
+
         #Always make copy of last output file
         shutil.copy(self.filename+'.out', self.filename+'_last.out')
 
