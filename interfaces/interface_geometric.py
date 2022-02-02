@@ -262,6 +262,7 @@ def geomeTRICOptimizer(theory=None, fragment=None, charge=None, mult=None, coord
                 #Write out fragment with updated coordinates for the purpose of doing restart
                 fragment.replace_coords(fragment.elems, self.full_current_coords, conn=False)
                 fragment.print_system(filename='Fragment-currentgeo.ygg')
+                fragment.write_xyzfile(xyzfilename="Fragment-currentgeo.xyz")
                 print_time_rel(timeA, modulename='geometric ASHcalc.calc replacecoords and printsystem', moduleindex=2)
                 timeA=time.time()
 
