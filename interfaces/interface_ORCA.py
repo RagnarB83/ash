@@ -381,6 +381,9 @@ class ORCATheory:
             print("\nkeep_each_run_output is True")
             print("Copying {} to {}".format(self.filename+'.out', self.filename+'_run{}'.format(self.runcalls)+'.out'))
             shutil.copy(self.filename+'.out', self.filename+'_run{}'.format(self.runcalls)+'.out')
+            
+        #Always make copy of last output file
+        shutil.copy(self.filename+'.out', self.filename+'_last.out')
 
         #Check if ORCA finished or not. Exiting if so
         if checkORCAfinished(outfile) is False:
