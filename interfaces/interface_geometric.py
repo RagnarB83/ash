@@ -448,7 +448,8 @@ def geomeTRICOptimizer(theory=None, fragment=None, charge=None, mult=None, coord
         if theory.TruncatedPC is True:
             print("Truncated PC approximation was active. Doing final energy calculation with full PC environment")
             theory.TruncatedPC=False
-            finalenergy, finalgrad = theory.run(current_coords=ashengine.full_current_coords, elems=fragment.elems, Grad=True, label='FinalIter')
+            finalenergy, finalgrad = theory.run(current_coords=ashengine.full_current_coords, elems=fragment.elems, 
+                Grad=True, label='FinalIter', charge=charge, mult=mult)
         else:
             finalenergy=ashengine.energy
     else:
