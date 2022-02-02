@@ -400,7 +400,7 @@ class ORCATheory:
             charges = grabatomcharges_ORCA("Mulliken",self.filename+'.out')
             spinpops = grabspinpop_ORCA("Mulliken",self.filename+'.out')
             print("{:<2} {:<2}  {:>10} {:>10}".format(" ", " ", "Charge", "Spinpop"))
-            for i,(el, ch, sp) in enumerate(zip(elems,charges, spinpops)):
+            for i,(el, ch, sp) in enumerate(zip(qm_elems,charges, spinpops)):
                 print("{:<2} {:<2}: {:>10} {:>10}".format(i,el,ch,sp))
 
         #Grab energy

@@ -361,7 +361,7 @@ def calc_surface_fromXYZ(xyzdir=None, theory=None, charge=None, mult=None, dimen
         theory (ASH theory, optional): ASH theory object. Defaults to None.
         dimension (int, optional): Dimension of surface. Defaults to None.
         resultfile (str, optional): Name of resultfile. Defaults to None.
-        scantype (str, optional): Tyep of scan: 'Unrelaxed' or 'Relaxed' Defaults to 'Unrelaxed'.
+        scantype (str, optional): Type of scan: 'Unrelaxed' or 'Relaxed' Defaults to 'Unrelaxed'.
         runmode (str, optional): Runmode: 'serial' or 'parallel'. Defaults to 'serial'.
         coordsystem (str, optional): Coordinate system for geomeTRICOptimizer. Defaults to 'dlc'.
         maxiter (int, optional): Max number of iterations for geomeTRICOptimizer. Defaults to 50.
