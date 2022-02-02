@@ -316,8 +316,8 @@ class QMMMTheory:
     def ShiftMMCharges(self):
         timeA=time.time()
         print("Shifting MM charges at QM-MM boundary.")
-        print("len self.charges_qmregionzeroed: ", len(self.charges_qmregionzeroed))
-        print("len self.charges: ", len(self.charges))
+        #print("len self.charges_qmregionzeroed: ", len(self.charges_qmregionzeroed))
+        #print("len self.charges: ", len(self.charges))
         
         #Create self.pointcharges list
         self.pointcharges=copy.copy(self.charges_qmregionzeroed)
