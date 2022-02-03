@@ -14,11 +14,16 @@ import settings_ash
 class QMMMTheory:
     def __init__(self, qm_theory=None, qmatoms=None, fragment=None, mm_theory=None, charges=None,
                  embedding="Elstat", printlevel=2, numcores=1, actatoms=None, frozenatoms=None, excludeboundaryatomlist=None,
-                 unusualboundary=False, openmm_externalforce=False, TruncatedPC=False, TruncPCRadius=35, TruncatedPC_recalc_iter=50):
+                 unusualboundary=False, openmm_externalforce=False, TruncatedPC=False, TruncPCRadius=35, TruncatedPC_recalc_iter=50,
+                qm_charge=None, qm_mult=None):
         module_init_time=time.time()
         timeA=time.time()
         print_line_with_mainheader("QM/MM Theory")
         #print(BC.WARNING,BC.BOLD,"------------Defining QM/MM object-------------", BC.END)
+
+        #Defining charge/mult of QM-region
+        self.qm_charge=qm_charge
+        self.qm_mult=qm_mult
 
         #Indicate that this is a hybrid QM/MM type theory
         self.theorytype="QM/MM"
@@ -449,11 +454,20 @@ class QMMMTheory:
             print("QM Module:", self.qm_theory_name)
             print("MM Module:", self.mm_theory_name)
 
+        #OPTION: QM-region charge/mult from QMMMTheory definition
+        #PRIORITY ??
+        if self.qm_charge != None:
+            print("Charge provided from QMMMTheory object: ", self.qm_charge)
+            charge=self.qm_charge
+        if self.qm_mult != None:
+            print("Mult provided from QMMMTheory object: ", self.qm_mult)
+            mult=self.qm_mult
+
         #Checking if charge and mult has been provided
         if charge == None or mult == None:
             print(BC.FAIL, "Error. charge and mult has not been defined for QMMMTheory.run method", BC.END)
             ashexit()
-
+        print("QM-region charge: {} mult:{}".format(charge,mult))
 
 
         #If no coords provided to run (from Optimizer or NumFreq or MD) then use coords associated with object.
