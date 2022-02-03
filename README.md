@@ -1,8 +1,8 @@
 
 <img src="ash-simple-logo-letterbig.png" alt="drawing" width="300" align="right"/>
 
- # Ash: a computational chemistry environment
-Ash is a Python-based computational chemistry and QM/MM environment, primarily for molecular calculations
+ # ASH: a computational chemistry environment
+ASH is a Python-based computational chemistry and QM/MM environment, primarily for molecular calculations
 in the gas phase, explicit solution, crystal or protein environment. Can do single-point calculations,
 geometry optimizations, surface scans, molecular dynamics, numerical frequencies etc. using a MM, QM or QM/MM Hamiltonian.
 Interfaces to popular QM codes: ORCA, xTB, Psi4, PySCF, Dalton, CFour, MRCC.

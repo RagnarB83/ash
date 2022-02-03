@@ -284,7 +284,12 @@ class ORCATheory:
             print("QM atoms :", self.qmatoms)
             qmatoms_extrabasis=[self.qmatoms.index(i) for i in self.extrabasisatoms]
             #new QM-region indices for atomstoflip if QM/MM
-            qmatomstoflip=[self.qmatoms.index(i) for i in self.atomstoflip]
+            try:
+                qmatomstoflip=[self.qmatoms.index(i) for i in self.atomstoflip]
+            except ValueError:
+                print("Atoms to flip:", self.atomstoflip)
+                print("Error: Atoms to flip are not all in QM-region")
+                ashexit()
         else:
             qmatomstoflip=self.atomstoflip
             qmatoms_extrabasis=self.extrabasisatoms
@@ -322,6 +327,13 @@ class ORCATheory:
         #Printing extra options chosen:
         if self.brokensym==True:
             print("Brokensymmetry SpinFlipping on! HSmult: {}.".format(self.HSmult))
+            if self.HSmult == None:
+                print("Error:HSmult keyword in ORCATheory has not been set. This is required. Exiting.")
+                ashexit()
+            if len(qmatomstoflip) == 0:
+                print("Error: atomstoflip keyword needs to be set. This is required. Exiting.")
+                ashexit()
+
             for flipatom,qmflipatom in zip(self.atomstoflip,qmatomstoflip):
                 print("Flipping atom: {} QMregionindex: {} Element: {}".format(flipatom, qmflipatom, qm_elems[qmflipatom]))
         if self.extrabasis != "":
