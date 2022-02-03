@@ -14,7 +14,7 @@ import settings_ash
 class QMMMTheory:
     def __init__(self, qm_theory=None, qmatoms=None, fragment=None, mm_theory=None, charges=None,
                  embedding="Elstat", printlevel=2, numcores=1, actatoms=None, frozenatoms=None, excludeboundaryatomlist=None,
-                 unusualboundary=False, openmm_externalforce=False, TruncatedPC=False, TruncPCRadius=35, TruncatedPC_recalc_iter=50,
+                 unusualboundary=False, openmm_externalforce=False, TruncatedPC=False, TruncPCRadius=55, TruncatedPC_recalc_iter=50,
                 qm_charge=None, qm_mult=None):
         module_init_time=time.time()
         timeA=time.time()

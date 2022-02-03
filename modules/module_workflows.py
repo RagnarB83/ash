@@ -1053,12 +1053,13 @@ def BrokenSymmetryCalculator(theory=None, fragment=None, Opt=False, flip_atoms=N
 
 
 #From total atomization energy (either 0 K or 298 K) calculate enthalpy of formation
-def FormationEnthalpy(TAE, fragments, stoichiometry, RT=False):
+def FormationEnthalpy(TAE, fragments, stoichiometry, RT=False, deltaHF_atoms_dict=None ):
     #From ATCT
     deltaHF_atoms_exp_0K={'H':51.6333652, 'C':170.02820267686425, 'N':112.4710803, 'O':58.99713193, 'F':18.46510516, 'Si':107.67925430210326, 'Cl':28.59010516, 'Br':28.18283939}
     deltaHF_atoms_exp_298K={'H':52.10277247, 'C':171.33914913957935, 'N':112.916348, 'O':59.56716061, 'F':18.96845124, 'Si':108.71414913957935, 'Cl':28.97418738, 'Br':26.73398662}
     print("\nFormationEnthalpy function")
     print("RT is:", RT)
+    
     if RT is True:
         print("Assuming T=298.15 K. Using atomic experimental enthalpies of formation at 298.15 K.")
         print("deltaHF_atoms_exp_298K:", deltaHF_atoms_exp_298K)
@@ -1067,7 +1068,16 @@ def FormationEnthalpy(TAE, fragments, stoichiometry, RT=False):
         print("Assuming T=0 K. Using atomic experimental enthalpies of formation at 0 K.")
         print("deltaHF_atoms_exp_0K:", deltaHF_atoms_exp_0K)
         deltaHF_atoms_exp=deltaHF_atoms_exp_0K
-    
+
+    #Replace deltaHF_atoms_dict entries with user-values:
+    if deltaHF_atoms_dict != None:
+        print("Additional deltaHF dictionary provided. Replacing.")
+        for i in deltaHF_atoms_dict.items():
+            deltaHF_atoms_exp[i[0]]=i[1]
+
+
+    print("deltaHF_atoms_exp:", deltaHF_atoms_exp)
+
     #Looping over fragments and stoichiometry lists
     sum_of_exp_Hf_atoms=0.0
     for frag,stoich in zip(fragments,stoichiometry):
