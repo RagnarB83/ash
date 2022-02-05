@@ -414,8 +414,7 @@ def NumFreq(fragment=None, theory=None, charge=None, mult=None, npoint=2, displa
         freqoutputdict = thermochemcalc(frequencies,hessatoms, fragment, mult, temp=temp,pressure=pressure)
 
 
-    #Add Hessian to fragment
-    fragment.hessian=hessian
+
 
     #Write Hessian to file
     with open("Hessian", 'w') as hfile:
@@ -444,6 +443,9 @@ def NumFreq(fragment=None, theory=None, charge=None, mult=None, npoint=2, displa
     freqoutputdict['hessian'] = hessian
     freqoutputdict['evectors'] = evectors
     freqoutputdict['nmodes'] = nmodes
+
+    #Add things to fragment
+    fragment.hessian=hessian #Hessian
 
 
     #Return to ..
@@ -685,25 +687,23 @@ def normalmodecomp(evectors,j,a):
     esq_ja.append(esq_j[a*3+0]);esq_ja.append(esq_j[a*3+1]);esq_ja.append(esq_j[a*3+2])
     return sum(esq_ja)
 
-# Write normal mode as XYZ-trajectory.
+# Write normal mode as XYZ-trajectory (with only Hessatoms or Allatoms shown)
 # Read in normalmode vectors from diagonalized mass-weighted Hessian after unweighting.
 # Print out XYZ-trajectory of mode
-
-def write_normalmode(modenumber,fragment=None, nmodes=None):
-    if modenumber > len(nmodes):
+#TODO: Get rid of hessatoms keyword argument and perhaps nmodes as well. Get from fragment instead ???
+def write_normalmode(modenumber,fragment=None, nmodes=None, hessatoms=None):
+    if modenumber >= len(nmodes):
         print("Modenumber is larger than number of normal modes. Exiting. (Note: We count from 0.)")
         return
     else:
         # Modenumber: number mode (starting from 0)
         modechosen=nmodes[modenumber]
 
-    
-    Rcoords=fragment.coords
-    elems=fragment.coords
-    # hessatoms: list of atoms involved in Hessian. Usually all atoms. Unnecessary unless QM/MM?
-    # Going to disable hessatoms as an argument for now but keep it in the code like this:
-    hessatoms=list(range(0,len(elems)))
-    numatoms=len(hessatoms)
+    print("Mode chosen:", modechosen)
+
+    # hessatoms: list of atoms involved in Hessian. All atoms unless hessatoms list provided.
+    if hessatoms == None:
+        hessatoms=list(range(0,len(elems)))
 
     #Creating dictionary of displaced atoms and chosen mode coordinates
     modedict = {}
@@ -711,17 +711,31 @@ def write_normalmode(modenumber,fragment=None, nmodes=None):
     modechosen=modechosen.tolist()
     for fo in range(0,len(hessatoms)):
         modedict[hessatoms[fo]] = [modechosen.pop(0),modechosen.pop(0),modechosen.pop(0)]
+
+    #Opening two Modefiles (hessatom-coordinates) and fullatom coordinates
     f = open('Mode'+str(modenumber)+'.xyz','w')
+    f_full = open('Mode'+str(modenumber)+'_full.xyz','w')
     # Displacement array
     dx = np.array([0.0,-0.1,-0.2,-0.3,-0.4,-0.5,-0.6,-0.7,-0.8,-0.9,-1.0,-0.9,-0.8,-0.7,-0.6,-0.5,-0.4,-0.3,-0.2,-0.1,0.0,0.1,0.2,0.3,0.4,0.5,0.6,0.7,0.8,0.9,1.0,0.9,0.8,0.7,0.6,0.4,0.3,0.2,0.1,0.0])
-    #dim=len(modechosen)
+
+    #Looping over displacement
     for k in range(0,len(dx)):
+        hessatomindex=0
         f.write('%i\n\n' % len(hessatoms))
-        for j,w in zip(range(0,numatoms),Rcoords):
+        f_full.write('%i\n\n' % fragment.numatoms)
+        #Looping over coordinates
+        for j,w in zip(range(0,fragment.numatoms),fragment.coords):
+            #Writing hessatom displacement to both files
             if j in hessatoms:
-                f.write('%s %12.8f %12.8f %12.8f  \n' % (elems[j], (dx[k]*modedict[j][0]+w[0]), (dx[k]*modedict[j][1]+w[1]), (dx[k]*modedict[j][2]+w[2])))
+                f.write("{} {:12.8f} {:12.8f} {:12.8f}  \n".format(fragment.elems[j], dx[k]*modedict[hessatomindex][0]+w[0], dx[k]*modedict[hessatomindex][1]+w[1], dx[k]*modedict[hessatomindex][2]+w[2]))
+                f_full.write("{} {:12.8f} {:12.8f} {:12.8f}  \n".format(fragment.elems[j], dx[k]*modedict[hessatomindex][0]+w[0], dx[k]*modedict[hessatomindex][1]+w[1], dx[k]*modedict[hessatomindex][2]+w[2]))
+            #Writing non-hessatom displacement to full file only
+            else:
+                f_full.write("{} {:12.8f} {:12.8f} {:12.8f}  \n".format(fragment.elems[j], w[0], w[1], +w[2]))
+            hessatomindex+=1
     f.close()
-    print("All done. File Mode%s.xyz has been created!" % (modenumber))
+    print("All done. Files Mode{}.xyz and Mode{}_full.xyz have been created!".format(modenumber,modenumber))
+
 
 # Compare the similarity of normal modes by cosine similarity (normalized dot product of normal mode vectors).
 #Useful for isotope-substitutions. From Hess-tool.
@@ -1432,7 +1446,7 @@ def get_dominant_atoms_in_mode(mode,fragment=None, threshold=0.3):
     print(f"Dominant atoms in mode {mode}: {dominant_atoms}\n")
     return dominant_atoms
 
-# Simple function to getnormal mode composition factors for all atoms for a specific mode only
+# Simple function to get normal mode composition factors for all atoms for a specific mode only
 def normalmodecomp_all(mode,fragment,vfreq,evectors, silent=False):
     numatoms=fragment.numatoms
 
