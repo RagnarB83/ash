@@ -34,11 +34,19 @@ def AnFreq(fragment=None, theory=None, charge=None, mult=None, numcores=1, temp=
         frequencies = interfaces.interface_ORCA.ORCAfrequenciesgrab(theory.filename+".hess")
         
         hessatoms=list(range(0,fragment.numatoms))
-        Thermochem_dict = thermochemcalc(frequencies,hessatoms, fragment, mult, temp=temp,pressure=pressure)
+        freqoutputdict = thermochemcalc(frequencies,hessatoms, fragment, mult, temp=temp,pressure=pressure)
+
+        #freqoutputdict object. Should contain frequencies, zero-point energy, enthalpycorr, gibbscorr, etc.
+        freqoutputdict['hessian'] = hessian
+        
+        #TODO: To add once we diagonalize 
+        #freqoutputdict['evectors'] = evectors
+        #freqoutputdict['nmodes'] = nmodes
+        #freqoutputdict['hessatoms'] = hessatoms
 
         print(BC.WARNING, BC.BOLD, "------------ANALYTICAL FREQUENCIES END-------------", BC.END)
         print_time_rel(module_init_time, modulename='AnFreq', moduleindex=1)
-        return Thermochem_dict
+        return freqoutputdict
         
     else:
         print("Analytical frequencies not available for theory. Exiting.")
@@ -317,7 +325,7 @@ def NumFreq(fragment=None, theory=None, charge=None, mult=None, npoint=2, displa
 
     #Onepoint-formula Hessian
     if npoint == 1:
-        print("Assemble one-point Hessian")
+        print("Assembling the one-point Hessian")
         #First, grab original geometry gradient
         #If partial Hessian remove non-hessatoms part of gradient:
         #Get partial matrix by deleting atoms not present in list.
@@ -343,7 +351,7 @@ def NumFreq(fragment=None, theory=None, charge=None, mult=None, npoint=2, displa
                 hessindex+=1
     #Twopoint-formula Hessian. pos and negative directions come in order
     elif npoint == 2:
-        print("Assemble two-point Hessian")
+        print("Assembling the two-point Hessian")
         hessindex=0
         #Loop over Hessian atoms and grab each gradient component. Calculate Hessian component and add to matrix
         #for atomindex in range(0,len(hessatoms)):
@@ -405,7 +413,11 @@ def NumFreq(fragment=None, theory=None, charge=None, mult=None, npoint=2, displa
     #Print out Freq output. Maybe print normal mode compositions here instead???
     printfreqs(frequencies,len(hessatoms))
 
-    print("Now doing thermochemistry")
+    print("\n\n")
+    print("Normal mode composition factors by element")
+    printfreqs_and_nm_elem_comps(frequencies,fragment,evectors,hessatoms)
+
+    print("\nNow doing thermochemistry")
 
     #Get and print out thermochemistry
     if theory.__class__.__name__ == "QMMMTheory":
@@ -414,8 +426,7 @@ def NumFreq(fragment=None, theory=None, charge=None, mult=None, npoint=2, displa
         freqoutputdict = thermochemcalc(frequencies,hessatoms, fragment, mult, temp=temp,pressure=pressure)
 
 
-    #Add Hessian to fragment
-    fragment.hessian=hessian
+
 
     #Write Hessian to file
     with open("Hessian", 'w') as hfile:
@@ -440,10 +451,13 @@ def NumFreq(fragment=None, theory=None, charge=None, mult=None, npoint=2, displa
     print(BC.WARNING, BC.BOLD, "------------NUMERICAL FREQUENCIES END-------------", BC.END)
 
     #freqoutputdict object. Should contain frequencies, zero-point energy, enthalpycorr, gibbscorr, etc.
-
     freqoutputdict['hessian'] = hessian
     freqoutputdict['evectors'] = evectors
     freqoutputdict['nmodes'] = nmodes
+    freqoutputdict['hessatoms'] = hessatoms
+
+    #Add things to fragment
+    fragment.hessian=hessian #Hessian
 
 
     #Return to ..
@@ -549,218 +563,6 @@ def printfreqs(vfreq,numatoms):
         print(line)
         #print("vib:", vib)
         #print("type of vib", type(vib))
-
-
-# Function to print normal mode composition factors for all atoms, element-groups, specific atom groups or specific atoms
-def printnormalmodecompositions(option,TRmodenum,vfreq,numatoms,elems,evectors,atomlist):
-    # Normalmodecomposition factors for mode j and atom a
-    freqs=[]
-    # If one set of normal atom compositions (1 atom or 1 group)
-    comps=[]
-    # If multiple (case: all or elements)
-    allcomps=[]
-    # Change TRmodenum to 5 if diatomic molecule since linear case
-    if numatoms==2:
-        TRmodenum=5
-
-    if option=="all":
-        # Case: All atoms
-        line = "{:>4}{:>14}      {:}".format("Mode", "Freq(cm**-1)", '       '.join(atomlist))
-        print(line)
-        for mode in range(0,3*numatoms):
-            normcomplist=[]
-            if mode < TRmodenum:
-                line = "{:>3d}   {:>9.4f}".format(mode,0.000)
-                print(line)
-            else:
-                vib=clean_number(vfreq[mode])
-                freqs.append(float(vib))
-                for n in range(0, numatoms):
-                    normcomp=normalmodecomp(evectors,mode,n)
-                    normcomplist.append(normcomp)
-                allcomps.append(normcomplist)
-                normcomplist=['{:.6f}'.format(x) for x in normcomplist]
-                line = "{:>3d}   {:>9.4f}        {}".format(mode, vib, '   '.join(normcomplist))
-                print(line)
-    elif option=="elements":
-        # Case: By elements
-        uniqelems=[]
-        for i in elems:
-            if i not in uniqelems:
-                uniqelems.append(i)
-        line = "{:>4}{:>14}      {:45}".format("Mode", "Freq(cm**-1)", '         '.join(uniqelems))
-        print(line)
-        for mode in range(0,3*numatoms):
-            normcomplist=[]
-            if mode < TRmodenum:
-                line = "{:>3d}   {:>9.4f}".format(mode,0.000)
-                print(line)
-            else:
-                vib=clean_number(vfreq[mode])
-                freqs.append(float(vib))
-                for n in range(0,numatoms):
-                    normcomp=normalmodecomp(evectors,mode,n)
-                    normcomplist.append(normcomp)
-                elementnormcomplist=[]
-                # Sum components together
-                for u in uniqelems:
-                    elcompsum=0.0
-                    elindices=[i for i, j in enumerate(elems) if j == u]
-                    for h in elindices:
-                        elcompsum=float(elcompsum+float(normcomplist[h]))
-                    elementnormcomplist.append(elcompsum)
-                # print(elementnormcomplist)
-                allcomps.append(elementnormcomplist)
-                elementnormcomplist=['{:.6f}'.format(x) for x in elementnormcomplist]
-                line = "{:>3d}   {:>9.4f}        {}".format(mode, vib, '   '.join(elementnormcomplist))
-                print(line)
-    elif isint(option)==True:
-        # Case: Specific atom
-        atom=int(option)
-        if atom > numatoms-1:
-            print(bcolors.FAIL, "Atom index does not exist. Note: Numbering starts from 0", bcolors.ENDC)
-            ashexit()
-        line = "{:>4}{:>14}      {:45}".format("Mode", "Freq(cm**-1)", atomlist[atom])
-        print(line)
-        for mode in range(0,3*numatoms):
-            normcomplist=[]
-            if mode < TRmodenum:
-                line = "{:>3d}   {:>9.4f}".format(mode,0.000)
-                print(line)
-            else:
-                vib=clean_number(vfreq[mode])
-                freqs.append(float(vib))
-                for n in range(0, numatoms):
-                    normcomp=normalmodecomp(evectors,mode,n)
-                    normcomplist.append(normcomp)
-                comps.append(normcomplist[atom])
-                normcomplist=['{:.6f}'.format(x) for x in normcomplist]
-                line = "{:>3d}   {:>9.4f}        {}".format(mode, vib, normcomplist[atom])
-                print(line)
-    elif len(option.split(",")) > 1:
-        # Case: Chemical group defined as list of atoms
-        selatoms = option.split(",")
-        selatoms=[int(i) for i in selatoms]
-        grouplist=[]
-        for at in selatoms:
-            if at > numatoms-1:
-                print(bcolors.FAIL,"Atom index does not exist. Note: Numbering starts from 0",bcolors.ENDC)
-                ashexit()
-            grouplist.append(atomlist[at])
-        simpgrouplist='_'.join(grouplist)
-        grouplist=', '.join(grouplist)
-        line = "{}   {}    {}".format("Mode", "Freq(cm**-1)", "Group("+grouplist+")")
-        print(line)
-        for mode in range(0,3*numatoms):
-            normcomplist=[]
-            if mode < TRmodenum:
-                line = "{:>3d}   {:>9.4f}".format(mode,0.000)
-                print(line)
-            else:
-                vib=clean_number(vfreq[mode])
-                freqs.append(float(vib))
-                for n in range(0,numatoms):
-                    normcomp=normalmodecomp(evectors,mode,n)
-                    normcomplist.append(normcomp)
-                # normcomplist=['{:.6f}'.format(x) for x in normcomplist]
-                groupnormcomplist=[]
-                for q in selatoms:
-                    groupnormcomplist.append(normcomplist[q])
-                comps.append(sum(groupnormcomplist))
-                sumgroupnormcomplist='{:.6f}'.format(sum(groupnormcomplist))
-                line = "{:>3d}   {:9.4f}        {}".format(mode, vib, sumgroupnormcomplist)
-                print(line)
-    else:
-        print("Something went wrong")
-
-    return allcomps,comps,freqs
-
-
-#Give normal mode composition factors for mode j and atom a
-def normalmodecomp(evectors,j,a):
-    #square elements of mode j
-    esq_j=[i ** 2 for i in evectors[j]]
-    #Squared elements of atom a in mode j
-    esq_ja=[]
-    esq_ja.append(esq_j[a*3+0]);esq_ja.append(esq_j[a*3+1]);esq_ja.append(esq_j[a*3+2])
-    return sum(esq_ja)
-
-# Write normal mode as XYZ-trajectory.
-# Read in normalmode vectors from diagonalized mass-weighted Hessian after unweighting.
-# Print out XYZ-trajectory of mode
-
-def write_normalmode(modenumber,fragment=None, nmodes=None):
-    if modenumber > len(nmodes):
-        print("Modenumber is larger than number of normal modes. Exiting. (Note: We count from 0.)")
-        return
-    else:
-        # Modenumber: number mode (starting from 0)
-        modechosen=nmodes[modenumber]
-
-    
-    Rcoords=fragment.coords
-    elems=fragment.coords
-    # hessatoms: list of atoms involved in Hessian. Usually all atoms. Unnecessary unless QM/MM?
-    # Going to disable hessatoms as an argument for now but keep it in the code like this:
-    hessatoms=list(range(0,len(elems)))
-    numatoms=len(hessatoms)
-
-    #Creating dictionary of displaced atoms and chosen mode coordinates
-    modedict = {}
-    # Convert ndarray to list for convenience
-    modechosen=modechosen.tolist()
-    for fo in range(0,len(hessatoms)):
-        modedict[hessatoms[fo]] = [modechosen.pop(0),modechosen.pop(0),modechosen.pop(0)]
-    f = open('Mode'+str(modenumber)+'.xyz','w')
-    # Displacement array
-    dx = np.array([0.0,-0.1,-0.2,-0.3,-0.4,-0.5,-0.6,-0.7,-0.8,-0.9,-1.0,-0.9,-0.8,-0.7,-0.6,-0.5,-0.4,-0.3,-0.2,-0.1,0.0,0.1,0.2,0.3,0.4,0.5,0.6,0.7,0.8,0.9,1.0,0.9,0.8,0.7,0.6,0.4,0.3,0.2,0.1,0.0])
-    #dim=len(modechosen)
-    for k in range(0,len(dx)):
-        f.write('%i\n\n' % len(hessatoms))
-        for j,w in zip(range(0,numatoms),Rcoords):
-            if j in hessatoms:
-                f.write('%s %12.8f %12.8f %12.8f  \n' % (elems[j], (dx[k]*modedict[j][0]+w[0]), (dx[k]*modedict[j][1]+w[1]), (dx[k]*modedict[j][2]+w[2])))
-    f.close()
-    print("All done. File Mode%s.xyz has been created!" % (modenumber))
-
-# Compare the similarity of normal modes by cosine similarity (normalized dot product of normal mode vectors).
-#Useful for isotope-substitutions. From Hess-tool.
-def comparenormalmodes(hessianA,hessianB,massesA,massesB):
-    numatoms=len(massesA)
-    # Massweight Hessians
-    mwhessianA, massmatrixA = massweight(hessianA, massesA, numatoms)
-    mwhessianB, massmatrixB = massweight(hessianB, massesB, numatoms)
-
-    # Diagonalize mass-weighted Hessian
-    evaluesA, evectorsA = la.eigh(mwhessianA)
-    evaluesB, evectorsB = la.eigh(mwhessianB)
-    evectorsA = np.transpose(evectorsA)
-    evectorsB = np.transpose(evectorsB)
-
-    # Calculate frequencies from eigenvalues
-    vfreqA = calcfreq(evaluesA)
-    vfreqB = calcfreq(evaluesB)
-
-    print("")
-    # Unweight eigenvectors to get normal modes
-    nmodesA = np.dot(evectorsA, massmatrixA)
-    nmodesB = np.dot(evectorsB, massmatrixB)
-    line = "{:>4}".format("Mode  Freq-A(cm**-1)  Freq-B(cm**-1)    Cosine-similarity")
-    print(line)
-    for mode in range(0, 3 * numatoms):
-        if mode < TRmodenum:
-            line = "{:>3d}   {:>9.4f}       {:>9.4f}".format(mode, 0.000, 0.000)
-            print(line)
-        else:
-            vibA = clean_number(vfreqA[mode])
-            vibB = clean_number(vfreqB[mode])
-            cos_sim = np.dot(nmodesA[mode], nmodesB[mode]) / (
-                        np.linalg.norm(nmodesA[mode]) * np.linalg.norm(nmodesB[mode]))
-            if abs(cos_sim) < 0.9:
-                line = "{:>3d}   {:>9.4f}       {:>9.4f}          {:.3f} {}".format(mode, vibA, vibB, cos_sim, "<------")
-            else:
-                line = "{:>3d}   {:>9.4f}       {:>9.4f}          {:.3f}".format(mode, vibA, vibB, cos_sim)
-            print(line)
 
 
 
@@ -1400,6 +1202,121 @@ def isotope_change_Hessian(hessfile=None, hessian=None, elems=None, masses=None,
     #What else?
 
 
+
+
+
+
+
+#####################################
+# NORMALMODE COMPOSITION ANALYSIS
+#####################################
+
+#Get normal mode composition factors for mode j and atom a
+def normalmodecomp(evectors,j,a):
+    #print("insidenormalmodecomp ")
+    #print("evectors", evectors)
+    #print("j:", j)
+    #print("a:", a)
+    #square elements of mode j
+    esq_j=[i ** 2 for i in evectors[j]]
+    #Squared elements of atom a in mode j
+    esq_ja=[]
+    esq_ja.append(esq_j[a*3+0]);esq_ja.append(esq_j[a*3+1]);esq_ja.append(esq_j[a*3+2])
+    return sum(esq_ja)
+
+
+# Get normal mode composition factors for all atoms for a specific mode only
+def normalmodecomp_all(mode,fragment,evectors):
+    #print("inside normalmodecomp_all")
+    #print("mode x ", mode)
+    #print(evectors)
+    numatoms=fragment.numatoms
+
+    normcomplist=[]
+    #vib=clean_number(vfreq[mode])
+    for n in range(0, numatoms):
+        normcomp=normalmodecomp(evectors,mode,n)
+        normcomplist.append(normcomp)
+    normcompstring=['{:.6f}'.format(x) for x in normcomplist]
+    #line = "{:>3d}   {:>9.4f}        {}".format(mode, vib, '   '.join(normcompstring))
+    #if silent is False:
+    #    print(line)
+
+    #Returning normcomplist, a list of atomic contributions for each atom
+    return normcomplist
+
+#Function to print frequencies and also elemental normal mode composition
+def printfreqs_and_nm_elem_comps(vfreq,fragment,evectors,hessatoms):
+    numatoms=len(hessatoms)
+    if numatoms == 2:
+        TRmodenum=5
+    else:
+        TRmodenum=6
+    line = "{:<6}{:<16}{:<18}".format("Mode", "Freq(cm**-1)", "Elemental composition factors")
+    print(line)
+    for mode in range(0,3*numatoms):
+        #Get elemental normalmode comps
+        normmodecompelemsdict = normalmodecomp_permode_by_elems(mode,fragment,vfreq,evectors)
+        normmodecompelemsdict_list=[f'{k}: {v:.2f}' for k,v in normmodecompelemsdict.items()]
+        normmodecompelemsdict_string='   '.join(normmodecompelemsdict_list)
+        #print("normmodecompelemsdict_list:", normmodecompelemsdict_list)
+        #print("normmodecompelemsdict:", normmodecompelemsdict)
+        realpart=vfreq[mode].real
+        imagpart=vfreq[mode].imag
+        if mode < TRmodenum:
+            line=line+" (TR mode)"
+        if realpart == 0.0:
+            vib=imagpart
+            line = "{:>3d}   {:>9.4f}i    {}".format(mode, vib, normmodecompelemsdict_string)
+        elif imagpart == 0.0:
+            vib=clean_number(vfreq[mode])
+            line = "{:>3d}   {:>9.4f}     {}".format(mode, vib, normmodecompelemsdict_string)
+        else:
+            print("vfreq[mode]:", vfreq[mode])
+            print("realpart:", realpart)
+            print("imagpart:", imagpart)
+            print("This should not have happened")
+            ashexit()
+
+        print(line)
+
+
+
+def normalmodecomp_permode_by_elems(mode,fragment,vfreq,evectors, silent=False):
+    #print("normalmodecomp_permode_by_elems------------")
+    #print("mode:", mode)
+    #print(vfreq)
+    #print(evectors)
+    normcomplist = normalmodecomp_all(mode,fragment,evectors)
+    #print("normcomplist:", normcomplist)
+    elementnormcomplist=[]
+
+    # Sum components together
+    uniqelems=[]
+    #allcomps=[]
+    for i in fragment.elems:
+        if i not in uniqelems:
+            uniqelems.append(i)
+    #print("uniqelems:", uniqelems)
+    #Dict to store results
+    normmodecompelemsdict={}
+    for u in uniqelems:
+        elcompsum=0.0
+        elindices=[i for i, j in enumerate(fragment.elems) if j == u]
+        for h in elindices:
+            elcompsum=float(elcompsum+float(normcomplist[h]))
+        elementnormcomplist.append(elcompsum)
+        normmodecompelemsdict[u] = elcompsum
+    #print(elementnormcomplist)
+    #allcomps.append(elementnormcomplist)
+    #print("allcomps:", allcomps)
+    #elementnormcomplist=['{:.6f}'.format(x) for x in elementnormcomplist]
+    #print("elementnormcomplist:", elementnormcomplist)
+    #exit()
+    #line = "{:>3d}   {:>9.4f}        {}".format(mode, vib, '   '.join(elementnormcomplist))
+    #print(line)
+    return normmodecompelemsdict
+
 #Get atoms that contribute most to specific mode of Hessian
 #Example: get atoms (atom indices) most involved in imaginary mode of transition state
 #TODO: Support partial Hessian
@@ -1426,25 +1343,235 @@ def get_dominant_atoms_in_mode(mode,fragment=None, threshold=0.3):
     frequencies, nmodes, numatoms, elems, evectors, atomlist, masses = diagonalizeHessian(hessian,hessmasses,hesselems)
 
     #Get full list of atom contributions to mode
-    normcomplist_for_mode = normalmodecomp_all(mode,fragment,frequencies,evectors)
+    normcomplist_for_mode = normalmodecomp_all(mode,fragment,evectors)
 
     dominant_atoms=[normcomplist_for_mode.index(i) for i in normcomplist_for_mode if i > threshold]
     print(f"Dominant atoms in mode {mode}: {dominant_atoms}\n")
     return dominant_atoms
 
-# Simple function to getnormal mode composition factors for all atoms for a specific mode only
-def normalmodecomp_all(mode,fragment,vfreq,evectors, silent=False):
-    numatoms=fragment.numatoms
 
-    normcomplist=[]
-    vib=clean_number(vfreq[mode])
-    for n in range(0, numatoms):
-        normcomp=normalmodecomp(evectors,mode,n)
-        normcomplist.append(normcomp)
-    normcompstring=['{:.6f}'.format(x) for x in normcomplist]
-    line = "{:>3d}   {:>9.4f}        {}".format(mode, vib, '   '.join(normcompstring))
-    if silent is False:
+#TODO: Rewrite and make more modular
+# Function to print normal mode composition factors for all atoms, element-groups, specific atom groups or specific atoms
+def printnormalmodecompositions(option,TRmodenum,vfreq,numatoms,elems,evectors,atomlist):
+    # Normalmodecomposition factors for mode j and atom a
+    freqs=[]
+    # If one set of normal atom compositions (1 atom or 1 group)
+    comps=[]
+    # If multiple (case: all or elements)
+    allcomps=[]
+    # Change TRmodenum to 5 if diatomic molecule since linear case
+    if numatoms==2:
+        TRmodenum=5
+
+    if option=="all":
+        # Case: All atoms
+        line = "{:>4}{:>14}      {:}".format("Mode", "Freq(cm**-1)", '       '.join(atomlist))
         print(line)
+        for mode in range(0,3*numatoms):
+            normcomplist=[]
+            if mode < TRmodenum:
+                line = "{:>3d}   {:>9.4f}".format(mode,0.000)
+                print(line)
+            else:
+                vib=clean_number(vfreq[mode])
+                freqs.append(float(vib))
+                for n in range(0, numatoms):
+                    normcomp=normalmodecomp(evectors,mode,n)
+                    normcomplist.append(normcomp)
+                allcomps.append(normcomplist)
+                normcomplist=['{:.6f}'.format(x) for x in normcomplist]
+                line = "{:>3d}   {:>9.4f}        {}".format(mode, vib, '   '.join(normcomplist))
+                print(line)
+    elif option=="elements":
+        # Case: By elements
+        uniqelems=[]
+        for i in elems:
+            if i not in uniqelems:
+                uniqelems.append(i)
+        line = "{:>4}{:>14}      {:45}".format("Mode", "Freq(cm**-1)", '         '.join(uniqelems))
+        print(line)
+        for mode in range(0,3*numatoms):
+            normcomplist=[]
+            if mode < TRmodenum:
+                line = "{:>3d}   {:>9.4f}".format(mode,0.000)
+                print(line)
+            else:
+                vib=clean_number(vfreq[mode])
+                freqs.append(float(vib))
+                for n in range(0,numatoms):
+                    normcomp=normalmodecomp(evectors,mode,n)
+                    normcomplist.append(normcomp)
+                elementnormcomplist=[]
+                # Sum components together
+                for u in uniqelems:
+                    elcompsum=0.0
+                    elindices=[i for i, j in enumerate(elems) if j == u]
+                    for h in elindices:
+                        elcompsum=float(elcompsum+float(normcomplist[h]))
+                    elementnormcomplist.append(elcompsum)
+                # print(elementnormcomplist)
+                allcomps.append(elementnormcomplist)
+                elementnormcomplist=['{:.6f}'.format(x) for x in elementnormcomplist]
+                line = "{:>3d}   {:>9.4f}        {}".format(mode, vib, '   '.join(elementnormcomplist))
+                print(line)
+    elif isint(option)==True:
+        # Case: Specific atom
+        atom=int(option)
+        if atom > numatoms-1:
+            print(bcolors.FAIL, "Atom index does not exist. Note: Numbering starts from 0", bcolors.ENDC)
+            ashexit()
+        line = "{:>4}{:>14}      {:45}".format("Mode", "Freq(cm**-1)", atomlist[atom])
+        print(line)
+        for mode in range(0,3*numatoms):
+            normcomplist=[]
+            if mode < TRmodenum:
+                line = "{:>3d}   {:>9.4f}".format(mode,0.000)
+                print(line)
+            else:
+                vib=clean_number(vfreq[mode])
+                freqs.append(float(vib))
+                for n in range(0, numatoms):
+                    normcomp=normalmodecomp(evectors,mode,n)
+                    normcomplist.append(normcomp)
+                comps.append(normcomplist[atom])
+                normcomplist=['{:.6f}'.format(x) for x in normcomplist]
+                line = "{:>3d}   {:>9.4f}        {}".format(mode, vib, normcomplist[atom])
+                print(line)
+    elif len(option.split(",")) > 1:
+        # Case: Chemical group defined as list of atoms
+        selatoms = option.split(",")
+        selatoms=[int(i) for i in selatoms]
+        grouplist=[]
+        for at in selatoms:
+            if at > numatoms-1:
+                print(bcolors.FAIL,"Atom index does not exist. Note: Numbering starts from 0",bcolors.ENDC)
+                ashexit()
+            grouplist.append(atomlist[at])
+        simpgrouplist='_'.join(grouplist)
+        grouplist=', '.join(grouplist)
+        line = "{}   {}    {}".format("Mode", "Freq(cm**-1)", "Group("+grouplist+")")
+        print(line)
+        for mode in range(0,3*numatoms):
+            normcomplist=[]
+            if mode < TRmodenum:
+                line = "{:>3d}   {:>9.4f}".format(mode,0.000)
+                print(line)
+            else:
+                vib=clean_number(vfreq[mode])
+                freqs.append(float(vib))
+                for n in range(0,numatoms):
+                    normcomp=normalmodecomp(evectors,mode,n)
+                    normcomplist.append(normcomp)
+                # normcomplist=['{:.6f}'.format(x) for x in normcomplist]
+                groupnormcomplist=[]
+                for q in selatoms:
+                    groupnormcomplist.append(normcomplist[q])
+                comps.append(sum(groupnormcomplist))
+                sumgroupnormcomplist='{:.6f}'.format(sum(groupnormcomplist))
+                line = "{:>3d}   {:9.4f}        {}".format(mode, vib, sumgroupnormcomplist)
+                print(line)
+    else:
+        print("Something went wrong")
 
-    #Returning normcomplist, a list of atomic contributions for each atom
-    return normcomplist
+    return allcomps,comps,freqs
+
+
+
+
+
+
+# Write normal mode as XYZ-trajectory (with only Hessatoms or Allatoms shown)
+# Read in normalmode vectors from diagonalized mass-weighted Hessian after unweighting.
+# Print out XYZ-trajectory of mode
+#NOTE: Now using freqdict (what Numfreq/Anfreq returns) and grabbing all info from there
+#NOTE: Store this in fragment instead??
+def write_normalmode(modenumber,fragment=None, freqdict=None):
+    print_line_with_mainheader("write_normalmode")
+    print("Printing mode:", modenumber)
+    if freqdict == None:
+        print("freqdict keyword needs to be set and point to a valid Numfreq/Anfreq frequency dictionary")
+        ashexit()
+    nmodes=freqdict['nmodes']
+    hessatoms=freqdict['hessatoms']
+    if modenumber >= len(nmodes):
+        print("Modenumber is larger than number of normal modes. Exiting. (Note: We count from 0.)")
+        return
+    else:
+        # Modenumber: number mode (starting from 0)
+        modechosen=nmodes[modenumber]
+
+    # hessatoms: list of atoms involved in Hessian. All atoms unless hessatoms list provided.
+    if hessatoms == None:
+        hessatoms=list(range(0,len(elems)))
+
+    #Creating dictionary of displaced atoms and chosen mode coordinates
+    modedict = {}
+    # Convert ndarray to list for convenience
+    modechosen=modechosen.tolist()
+    for fo in range(0,len(hessatoms)):
+        modedict[hessatoms[fo]] = [modechosen.pop(0),modechosen.pop(0),modechosen.pop(0)]
+
+    #Opening two Modefiles (hessatom-coordinates) and fullatom coordinates
+    f = open('Mode'+str(modenumber)+'.xyz','w')
+    f_full = open('Mode'+str(modenumber)+'_full.xyz','w')
+    # Displacement array
+    dx = np.array([0.0,-0.1,-0.2,-0.3,-0.4,-0.5,-0.6,-0.7,-0.8,-0.9,-1.0,-0.9,-0.8,-0.7,-0.6,-0.5,-0.4,-0.3,-0.2,-0.1,0.0,0.1,0.2,0.3,0.4,0.5,0.6,0.7,0.8,0.9,1.0,0.9,0.8,0.7,0.6,0.4,0.3,0.2,0.1,0.0])
+
+    #Looping over displacement
+    for k in range(0,len(dx)):
+        hessatomindex=0
+        f.write('%i\n\n' % len(hessatoms))
+        f_full.write('%i\n\n' % fragment.numatoms)
+        #Looping over coordinates
+        for j,w in zip(range(0,fragment.numatoms),fragment.coords):
+            #Writing hessatom displacement to both files
+            if j in hessatoms:
+                f.write("{} {:12.8f} {:12.8f} {:12.8f}  \n".format(fragment.elems[j], dx[k]*modedict[hessatomindex][0]+w[0], dx[k]*modedict[hessatomindex][1]+w[1], dx[k]*modedict[hessatomindex][2]+w[2]))
+                f_full.write("{} {:12.8f} {:12.8f} {:12.8f}  \n".format(fragment.elems[j], dx[k]*modedict[hessatomindex][0]+w[0], dx[k]*modedict[hessatomindex][1]+w[1], dx[k]*modedict[hessatomindex][2]+w[2]))
+            #Writing non-hessatom displacement to full file only
+            else:
+                f_full.write("{} {:12.8f} {:12.8f} {:12.8f}  \n".format(fragment.elems[j], w[0], w[1], +w[2]))
+            hessatomindex+=1
+    f.close()
+    print("All done. Files Mode{}.xyz and Mode{}_full.xyz have been created!".format(modenumber,modenumber))
+
+
+# Compare the similarity of normal modes by cosine similarity (normalized dot product of normal mode vectors).
+#Useful for isotope-substitutions. From Hess-tool.
+def comparenormalmodes(hessianA,hessianB,massesA,massesB):
+    numatoms=len(massesA)
+    # Massweight Hessians
+    mwhessianA, massmatrixA = massweight(hessianA, massesA, numatoms)
+    mwhessianB, massmatrixB = massweight(hessianB, massesB, numatoms)
+
+    # Diagonalize mass-weighted Hessian
+    evaluesA, evectorsA = la.eigh(mwhessianA)
+    evaluesB, evectorsB = la.eigh(mwhessianB)
+    evectorsA = np.transpose(evectorsA)
+    evectorsB = np.transpose(evectorsB)
+
+    # Calculate frequencies from eigenvalues
+    vfreqA = calcfreq(evaluesA)
+    vfreqB = calcfreq(evaluesB)
+
+    print("")
+    # Unweight eigenvectors to get normal modes
+    nmodesA = np.dot(evectorsA, massmatrixA)
+    nmodesB = np.dot(evectorsB, massmatrixB)
+    line = "{:>4}".format("Mode  Freq-A(cm**-1)  Freq-B(cm**-1)    Cosine-similarity")
+    print(line)
+    for mode in range(0, 3 * numatoms):
+        if mode < TRmodenum:
+            line = "{:>3d}   {:>9.4f}       {:>9.4f}".format(mode, 0.000, 0.000)
+            print(line)
+        else:
+            vibA = clean_number(vfreqA[mode])
+            vibB = clean_number(vfreqB[mode])
+            cos_sim = np.dot(nmodesA[mode], nmodesB[mode]) / (
+                        np.linalg.norm(nmodesA[mode]) * np.linalg.norm(nmodesB[mode]))
+            if abs(cos_sim) < 0.9:
+                line = "{:>3d}   {:>9.4f}       {:>9.4f}          {:.3f} {}".format(mode, vibA, vibB, cos_sim, "<------")
+            else:
+                line = "{:>3d}   {:>9.4f}       {:>9.4f}          {:.3f}".format(mode, vibA, vibB, cos_sim)
+            print(line)
+
