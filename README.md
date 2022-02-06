@@ -19,20 +19,20 @@ coords="""
 H 0.0 0.0 0.0
 F 0.0 0.0 1.0
 """
-#Create fragment from string
-HF_frag=Fragment(coordsstring=coords)
+#Create fragment from multi-line string
+HF_frag=Fragment(coordsstring=coords, charge=0, mult=1)
 
 #Alternative: Create fragment from XYZ-file
 HF_frag=Fragment(xyzfile="hf.xyz", charge=0, mult=1)
 
-#ORCA settings
+#Define ORCA theory settings strings
 input="! r2SCAN def2-SVP def2/J tightscf"
 blocks="%scf maxiter 200 end"
-#ORCA theory object
-ORCAcalc = ORCATheory(fragment=HF_frag,
-                         	orcasimpleinput=input, orcablocks=blocks)
-#Call optimizer with ORCAtheory object and fragment
-geomeTRICOptimizer(ORCAcalc,HF_frag)
+#Define ORCA theory object
+ORCAcalc = ORCATheory(orcasimpleinput=input, orcablocks=blocks)
+
+#Call optimizer with ORCAtheory object and fragment as input
+geomeTRICOptimizer(theory=ORCAcalc,fragment=HF_frag)
 
 
 
