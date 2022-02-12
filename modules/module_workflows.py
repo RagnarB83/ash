@@ -6,11 +6,13 @@ import os
 import subprocess as sp
 import shutil
 import time
+import copy
+
 import ash
 #from ash import Singlepoint
 import interfaces.interface_geometric
 import interfaces.interface_crest
-from functions.functions_general import BC,print_time_rel,print_line_with_mainheader,pygrep, ashexit
+from functions.functions_general import BC,print_time_rel,print_line_with_mainheader,pygrep, ashexit,n_max_values
 #from modules.module_singlepoint import Singlepoint_fragments
 from modules.module_highlevel_workflows import CC_CBS_Theory
 from modules.module_coords import read_xyzfiles
@@ -1091,3 +1093,239 @@ def FormationEnthalpy(TAE, fragments, stoichiometry, RT=False, deltaHF_atoms_dic
     else:
         print("DeltaH_form (0 K):", deltaH_form)
     return deltaH_form
+
+#Finding non-Aufbau configurations via STEP levelshifting. Using either orbital occupation ordering for finding states or TDDFT
+def AutoNonAufbau(fragment=None, theory=None, states=3, TDDFT=False, spin="alpha", epsilon=0.1, maxiter=500):
+
+    print_line_with_mainheader("AutoNonAufbau")
+
+    #epsilon is shift parameter from Herbert paper. 0.1 was recommended
+
+    #spin can be alpha/beta
+    if spin not in ["alpha", "beta"]:
+        print("problem")
+        ashexit()
+
+    #Removing old orbital files
+    theory.cleanup()
+
+    #First the regular calculation
+    print("Now doing regular SCF calculation")
+    if TDDFT is True:
+        print("Doing TDDFT on top as well")
+        originalblocks=copy.copy(theory.orcablocks)
+        blocks_with_ttddft=theory.orcablocks+f"%tddft nroots {states} end"
+        theory.orcablocks=blocks_with_ttddft
+    E_GS=ash.Singlepoint(fragment=fragment, theory=theory)
+
+    #Keep copy of GS file
+    GS_GBW=theory.filename+'_GS.gbw'
+    shutil.copy(theory.filename+'.gbw', GS_GBW)
+    shutil.copy(theory.filename+'.out', theory.filename+'_GS.out')
+    #Read TDDFT output if requested
+    if TDDFT is True:
+        #TDDFT transition energies
+        transition_energies = interfaces.interface_ORCA.tddftgrab(theory.filename+".out")
+        print("TDDFT transition_energies (eV):", transition_energies)
+        #Now removing TDDFT from blocks for future SCF calcs
+        theory.orcablocks=originalblocks
+        #Making sure to take GS energy not from FINAL SINGLEPOINT ENERGY since ORCA annoyingly adds the transition energy
+        E_GS = float(pygrep("E(SCF)  =",theory.filename+'.out')[2])
+        tddft_pairs = interfaces.interface_ORCA.tddft_orbitalpairs_grab(theory.filename+".out")
+        print("TDDFT orbital pairs per state:", tddft_pairs)
+
+    #Read MO-energies
+    mo_dict = interfaces.interface_ORCA.MolecularOrbitalGrab(theory.filename+".out")
+    print("mo_dict:", mo_dict)
+
+    #MO numbers of the HOMO and the first LUMO for alpha and beta sets
+    homo_number_alpha=len(mo_dict["occ_alpha"])-1
+    lumo_number_alpha=len(mo_dict["occ_alpha"])
+    homo_number_beta=len(mo_dict["occ_beta"])-1
+    lumo_number_beta=len(mo_dict["occ_beta"])
+    #print("\nHOMO (alpha):", homo_number_alpha)
+    #print("LUMO (alpha):", lumo_number_alpha)
+    #print("HOMO (beta):", homo_number_alpha)
+    #print("LUMO (beta):", lumo_number_beta)
+    #print(f"HOMO-LUMO gap(alpha): {homo_lumo_gap_alpha} eV")
+    #print(f"HOMO-LUMO gap(beta): {homo_lumo_gap_beta} eV")
+
+
+    excited_state_energies=[]
+    states_dict={}
+    print()
+    #Looping over how many states we want
+    for state in range(0,states):
+        print("="*90)
+        print("Now running excited state SCF:", state)
+        print("="*90)
+        #Choosing what orbital to rotate. Using TDDFT or just looping over orbitals
+        if TDDFT is True:
+            print("TDDFT selection scheme active!")
+            orbpairs=tddft_pairs[state+1]
+            print("TDDFT excitation orbital pairs:", orbpairs)
+            weights=[i[2] for i in orbpairs]
+            print("weights:", weights)
+            largest_indices=n_max_values(weights,num=4)
+            print("largest_indices:", largest_indices)
+            maxweight=weights[largest_indices[0]]
+            maxweight_2nd=weights[largest_indices[1]]
+            maxweight_index=largest_indices[0]
+            maxweight_index_2nd=largest_indices[1]
+            print("maxweight:", maxweight)
+            print("maxweight_2nd:", maxweight_2nd)
+            #If one orbital pair has majority then we only use that one
+            if maxweight > 0.5:
+                multiple_pairs=False
+                orbpairA=orbpairs[maxweight_index]
+                print("Maximum weight TDDFT excitation orbital pair:", orbpairA)
+            #Otherwise we take 2 that are probably a joint alpha-beta excitation pair
+            #If more contribute then it's probably too complicated to find this way anyway
+            else:
+                multiple_pairs=True
+                orbpairA=orbpairs[maxweight_index]
+                orbpairB=orbpairs[maxweight_index_2nd]
+                print("Large weight TDDFT excitation orbital pair:", orbpairA)
+                print("Large weight TDDFT excitation orbital pair:", orbpairB)
+
+            #Setting spin based on label in TDDFT excitation
+            #And getting orbital number
+            if 'a' in orbpairA[0]:
+                spinvar_A=0
+                orbpair_occ_A=int(orbpairA[0].replace("a",""))
+                orbpair_unocc_A=int(orbpairA[1].replace("a",""))
+            elif 'b' in orbpairA[0]:
+                spinvar_A=1
+                orbpair_occ_A=int(orbpairA[0].replace("b",""))
+                orbpair_unocc_A=int(orbpairA[1].replace("b",""))
+            #Defining MO rotation line for first pair
+            print(f"Will rotate occupied orbitals: {orbpair_occ_A} and virtual orbital: {orbpair_unocc_A} in spin manifold {spinvar_A}")
+            rotatelineA=f"rotate {{{orbpair_occ_A},{orbpair_unocc_A},90,{spinvar_A},{spinvar_A}}} end"
+            
+            #List of of occorbs
+            occ_orb_list=[orbpair_occ_A]
+            unocc_orb_list=[orbpair_unocc_A]
+            spinvar_list=[spinvar_A]
+            #If multiple pairs then define the second one, otherewise set to empty string
+            if multiple_pairs is True:
+                if 'a' in orbpairB[0]:
+                    spinvar_B=0
+                    orbpair_occ_B=int(orbpairB[0].replace("a",""))
+                    orbpair_unocc_B=int(orbpairB[1].replace("a",""))
+                elif 'b' in orbpairB[0]:
+                    spinvar_B=1
+                    orbpair_occ_B=int(orbpairB[0].replace("b",""))
+                    orbpair_unocc_B=int(orbpairB[1].replace("b",""))
+                print(f"Will rotate occupied orbitals: {orbpair_occ_B} and virtual orbital: {orbpair_unocc_B} in spin manifold {spinvar_B}")
+                rotatelineB=f"rotate {{{orbpair_occ_B},{orbpair_unocc_B},90,{spinvar_B},{spinvar_B}}} end"
+                #Adding to list
+                occ_orb_list.append(orbpair_occ_B)
+                unocc_orb_list.append(orbpair_unocc_B)
+                spinvar_list.append(spinvar_B)
+            else:
+                rotatelineB=""
+            
+
+            #NOTE: Need to define HOMO-LUMO gap here for levelshift
+            print("NOT READY")
+            ashexit()
+
+
+
+        else:
+            print("Simple MO selection scheme")
+
+            #Determing HOMO-LUMO for the specific LUMO chosen
+            if spin == "alpha":
+                spinvar=0
+                #Choosing HOMO and LUMO numbers from alpha set
+                homo_number=homo_number_alpha
+                lumo_number=lumo_number_alpha
+                #Choosing the occupied orbital MO to be the HOMO
+                chosen_occorb=homo_number
+                print("chosen_occorb:", chosen_occorb)
+                #Choosing the virtual orbital to be one of the LUMOs
+                chosen_virtorb=lumo_number+state
+                print("chosen_virtorb:", chosen_virtorb)
+                # Getting specific lumo-number index in the unoccupied list
+                chosen_virtorb_index=chosen_virtorb-lumo_number
+                print("chosen_virtorb_index:", chosen_virtorb_index)
+                homo_lumo_gap=(mo_dict["occ_alpha"][-1]-mo_dict["unocc_alpha"][chosen_virtorb_index])/27.211399
+            elif spin =="beta":
+                spinvar=1
+                #Choosing HOMO and LUMO numbers from alpha set
+                homo_number=homo_number_beta
+                lumo_number=lumo_number_beta
+                #Choosing the occupied orbital MO to be the HOMO
+                chosen_occorb=homo_number
+                print("chosen_occorb:", chosen_occorb)
+                #Choosing the virtual orbital to be one of the LUMOs
+                chosen_virtorb=lumo_number+state
+                print("chosen_virtorb:", chosen_virtorb)
+                # Getting specific lumo-number index in the unoccupied list
+                chosen_virtorb_index=chosen_virtorb-lumo_number
+                print("chosen_virtorb_index:", chosen_virtorb_index)
+                homo_lumo_gap=(mo_dict["occ_beta"][-1]-mo_dict["unocc_beta"][chosen_virtorb_index])/27.211399
+            print("homo_lumo_gap:", homo_lumo_gap)
+            print(f"Will rotate orbital {chosen_occorb} (HOMO) and orbital {chosen_virtorb}")
+
+            rotatelineA=f"rotate {{{chosen_occorb},{chosen_virtorb},90,{spinvar},{spinvar}}} end"
+            #No 2nd rotation line for simple MO selectin scheme
+            rotatelineB=""
+            #List of of occorb/unoccorb lists
+            occ_orb_list=[chosen_occorb]
+            unocc_orb_list=[chosen_virtorb]
+            spinvar_list=[spinvar]
+        #Lshift
+        lshift=abs(homo_lumo_gap)+epsilon #TODO: change homo-lumo gap depending on which orbital is chosen?
+        print("lshift:", lshift)
+
+        #Rotating orb
+        theory.extraline=f"""!Normalprint notrah nodamp
+    %scf
+    maxiter {maxiter}
+    {rotatelineA}
+    {rotatelineB}
+    cnvshift true
+    lshift {lshift}
+    end
+        """
+        #Now new SP with previous orbitals, SCF rotation and levelshift
+        theory.moreadfile=GS_GBW
+        print("Now doing SCF calculation with rotated MOs and levelshift")
+        E_ES=ash.Singlepoint(fragment=fragment, theory=theory)
+        print("GS/ES state energy gap: {} eV".format((E_ES-E_GS)*27.211399))
+        if abs((E_ES-E_GS)*27.211399) > 0.04:
+            print("Found something different than ground state")
+            if (E_ES-E_GS)*27.211399 > 0.04:
+                print("Converged SCF energy higher than ground-state SCF. Found new excited state SCF solution !")
+            elif (E_ES-E_GS)*27.211399 < 0.04:
+                print((E_ES-E_GS)*27.211399)
+                print("Converged SCF energy lower than initial state SCF. Looks like we found a new groundstate!")
+        else:
+            print("GS/ES state energy gap smaller than 0.04 eV. Presumably found the original SCF again.")
+        #Keeping copy of outputfile and GBW file
+        shutil.copy(theory.filename+'.out', theory.filename+f'ES_SCF{state}.out')
+        shutil.copy(theory.filename+'.gbw', theory.filename+f'ES_SCF{state}.gbw')
+
+        excited_state_energies.append(E_ES)
+        #Adding all info to dict
+        states_dict[state] = [E_ES,occ_orb_list,unocc_orb_list,spinvar_list,homo_lumo_gap,lshift]        
+
+    #Collecting energies
+    print()
+    print("states_dict:", states_dict)
+    print()
+    print(f"Ground-state SCF energy: {E_GS} Eh")
+    if TDDFT is True:
+        print("TDDFT transition energies:", transition_energies)
+
+    print("-"*5)
+    for state in range(0,states):
+        print(f"Excited-state SCF energy {state}: {states_dict[state][0]} Eh")
+        print(f"Excited-state SCF transition energy: {(states_dict[state][0]-E_GS)*27.211399} eV")
+        print(f"Excited-state SCF orbital rotation: Occ:{states_dict[state][1]} Virt:{states_dict[state][2]}")
+        print(f"Rotation in spin manifold: ", states_dict[state][3])
+        print(f"Excited-state SCF HOMO-LUMO gap: {states_dict[state][4]}")
+        print(f"Excited-state SCF Levelshift chosen: {states_dict[state][5]}")
+        print("-"*5)

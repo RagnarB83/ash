@@ -807,6 +807,31 @@ def tddftgrab(file):
                     tddftgrab=True
     return tddftstates
 
+#Grab TDDFT orbital pairs from ORCA output
+def tddft_orbitalpairs_grab(file):
+    tddftstates=[]
+    tddft=True
+    tddftgrab=False
+    stategrab=False
+    states_dict={}
+    if tddft==True:
+        with open(file) as f:
+            for line in f:
+                if tddftgrab==True:
+                    if 'STATE' in line:
+                        stategrab=True
+                        state=int(line.split()[1].replace(":",""))
+                        states_dict[state]=[]
+                    if stategrab is True:
+                        if '->' in line:
+                            orb_occ=line.split()[0]
+                            orb_unocc=line.split()[2]
+                            weight=float(line.split()[4])
+                            states_dict[state].append((orb_occ,orb_unocc,weight))
+                if 'the weight of the individual excitations' in line:
+                    tddftgrab=True
+    return states_dict
+
 #Grab energies from unrelaxed scan in ORCA (paras block type)
 def grabtrajenergies(filename):
     fullpes="unset"
