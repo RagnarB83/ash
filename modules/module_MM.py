@@ -358,7 +358,6 @@ class NonBondedTheory:
         elif self.codeversion=='julia':
             if self.printlevel >= 2:
                 print("Using fast Julia version, v1")
-            # Necessary for statically linked libpython
             try:
                 Juliafunctions=load_julia_interface()
             except:

@@ -46,8 +46,12 @@ def ashexit(errormessage=None, code=1):
         print(BC.FAIL,"Error message:", errormessage, BC.END)
     raise SystemExit(code)
 
-def load_julia_interface():
+def load_julia_interface(library="pyjulia"):
     print("Calling Julia interface")
+
+    # pythoncall or pyjulia
+    print("Library:", library)
+
     global julia_loaded
     global JuliaMain
     if julia_loaded is False:
@@ -63,19 +67,29 @@ def load_julia_interface():
         # print("julia loaded false")
         # from julia.api import Julia
         # jl = Julia(compiled_modules=False)
-        print("Now loading PyJulia next. This will fail if :\n\
-            - PyJulia Python package has not been installed\n\
-            - Julia PyCall has not been installed\n\
-            - Julia Hungarian package has not been installed")
-        from julia import Main as JuliaMain
+
+        print("Loading a Python/Julia interface library")
+        print("Now trying pythoncall/juliacall package. This will fail if :\n\
+                - Juliacall Pythonpackage package has not been installed (via pip)\n\
+                - PythonCall julia packages has not been installed (via Julia Pkg)\n\
+                - Julia Hungarian package has not been installed")
+        try:
+            from juliacall import Main as JuliaMain
+        except:
+            print("juliacall loading failed.")
+            print("Now trying PyJulia. This will fail if :\n\
+                - PyJulia Python package has not been installed\n\
+                - Julia PyCall has not been installed\n\
+                - Julia Hungarian package has not been installed")
+            try:
+                from julia import Main as JuliaMain
+            except:
+                print("PyJulia interface failed.")
+                ashexit()
+        #
         JuliaMain.include(ashpath + "/functions/functions_julia.jl")
         julia_loaded = True
         print("Julia interface successfully loaded")
-    # else:
-    #    print("Julia loaded true")
-    # print("JuliaMain:", JuliaMain)
-    # print("JuliaMain include:", JuliaMain.include)
-    # print(JuliaMain.__dict__)
     return JuliaMain.Juliafunctions
 
 
