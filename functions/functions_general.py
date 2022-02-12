@@ -182,6 +182,27 @@ def frange(start, stop=None, step=None, rounddigits=4):
         count += 1
 
 
+#Function to find n highest max values and indices
+#Quite ugly
+def n_max_values(l,num):
+    maxweight=max(l)
+    maxweight_index=l.index(max(l))
+    current_indices=[maxweight_index]
+    #Looping over
+
+    for step in range(1,num):
+        current_highest_val=0.0
+        for index,weight in enumerate(l):
+            if index in current_indices: #Skipping previously found max
+                pass
+            else:
+                if weight > current_highest_val:
+                    current_highest_val=weight
+                    current_highest_index=index
+        current_indices.append(current_highest_index)
+    return current_indices
+
+
 # FUNCTIONS TO PRINT MODULE AND SUBMODULE HEADERS
 
 # mainmodule header
