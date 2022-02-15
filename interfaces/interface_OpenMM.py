@@ -2186,7 +2186,7 @@ def OpenMM_Modeller(pdbfile=None, forcefield=None, xmlfile=None, waterxmlfile=No
     else:
         print("omm = OpenMMTheory(xmlfiles=[\"{}\", \"{}\", \"{}\"], pdbfile=\"finalsystem.pdb\", periodic=True)".format(xmlfile,waterxmlfile,extraxmlfile),BC.END)
 
-    print(BC.OKMAGENTA,"2. Use full system XML-file (NOT RECOMMENDED USUALLY):\n",BC.END, \
+    print(BC.OKMAGENTA,"2. Use full system XML-file (USUALLY NOT RECOMMENDED ):\n",BC.END, \
         "omm = OpenMMTheory(xmlsystemfile=\"system_full.xml\", pdbfile=\"finalsystem.pdb\", periodic=True)\n",BC.END)
     print_time_rel(module_init_time, modulename="OpenMM_Modeller", moduleindex=1)
     
