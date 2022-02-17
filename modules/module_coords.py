@@ -2985,13 +2985,30 @@ def check_multiplicity(elems,charge,mult):
 
 #Check if charge/mult variables are not None. If None check fragment
 #Only done for QM theories not MM. Passing theorytype string (e.g. from theory.theorytype if available)
-def check_charge_mult(charge, mult, theorytype, fragment, jobtype):
-
+def check_charge_mult(charge, mult, theorytype, fragment, jobtype, theory=None):
     #Check if QM or QM/MM theory
-    if theorytype == "QM" or theorytype=="QM/MM":
+    if theorytype == "QM":
         if charge == None or mult == None:
             print(BC.WARNING,f"Warning: Charge/mult was not provided to {jobtype}",BC.END)
             if fragment.charge != None and fragment.mult != None:
+                print(BC.WARNING,"Fragment contains charge/mult information: Charge: {} Mult: {} Using this instead".format(fragment.charge,fragment.mult), BC.END)
+                print(BC.WARNING,"Make sure this is what you want!", BC.END)
+                charge=fragment.charge; mult=fragment.mult
+            else:
+                print(BC.FAIL,"No charge/mult information present in fragment either. Exiting.",BC.END)
+                ashexit()
+    elif theorytype=="QM/MM":
+
+        #Note: theory needs to be set
+        if charge == None or mult == None:
+            print(BC.WARNING,f"Warning: Charge/mult was not provided to {jobtype}",BC.END)
+            print("Checking if present in QM/MM object")
+            if theory.qm_charge != None and theory.qm_mult != None:
+                print("Found qm_charge and qm_mult attributes.")
+                charge=theory.qm_charge
+                mult=theory.qm_mult
+                print(f"Using charge={charge} and mult={mult}")
+            elif fragment.charge != None and fragment.mult != None:
                 print(BC.WARNING,"Fragment contains charge/mult information: Charge: {} Mult: {} Using this instead".format(fragment.charge,fragment.mult), BC.END)
                 print(BC.WARNING,"Make sure this is what you want!", BC.END)
                 charge=fragment.charge; mult=fragment.mult

@@ -1818,8 +1818,7 @@ def PhotoElectronSpectrum(theory=None, fragment=None, Initialstate_charge=None, 
             shutil.copyfile(theory.filename + '.eldens.cube', './' + 'Init_State' + '.eldens.cube')
 
             # Read Initial-state-SCF density Cube file into memory
-            rlowx, dx, nx, orgx, rlowy, dy, ny, orgy, rlowz, dz, nz, \
-            orgz, elems, molcoords, molcoords_ang, numatoms, filebase, initial_values = read_cube('Init_State.eldens.cube')
+            cubedict = read_cube('Init_State.eldens.cube')
 
             #Spin density (only if UHF). Otherwise orca_plot gets confused (takes difference between alpha-density and nothing)
             if stateI.hftyp == "UHF":
@@ -2418,11 +2417,13 @@ def PhotoElectronSpectrum(theory=None, fragment=None, Initialstate_charge=None, 
                 if Densities == 'SCF' or Densities == 'All':
                     os.chdir('Calculated_densities')
                     # Create difference density between Initial-SCF and Finalstate-SCFs
-                    rlowx2, dx2, nx2, orgx2, rlowy2, dy2, ny2, orgy2, rlowz2, dz2, \
-                    nz2, orgz2, elems2, molcoords2, molcoords_ang2, numatoms2, filebase2, finalstate_values = read_cube('Final_State_mult' + str(fstate.mult) + '.eldens.cube')
-                    print("init value 0:  ", initial_values[0])
-                    print("finalstate_values 0:  ", finalstate_values[0])
-                    write_cube_diff(numatoms, orgx, orgy, orgz, nx, dx, ny, dy, nz, dz, elems, molcoords, initial_values, finalstate_values,"Densdiff_SCFInit-SCFFinalmult"+str(fstate.mult))
+                    #rlowx2, dx2, nx2, orgx2, rlowy2, dy2, ny2, orgy2, rlowz2, dz2, \
+                    #nz2, orgz2, elems2, molcoords2, molcoords_ang2, numatoms2, filebase2, finalstate_values = read_cube('Final_State_mult' + str(fstate.mult) + '.eldens.cube')
+                    cubedict2 = read_cube('Final_State_mult' + str(fstate.mult) + '.eldens.cube')
+                    #print("init value 0:  ", initial_values[0])
+                    #print("finalstate_values 0:  ", finalstate_values[0])
+                    write_cube_diff(cubedict,cubedict2,"Densdiff_SCFInit-SCFFinalmult"+str(fstate.mult))
+
                     print("Wrote Cube file containing density difference between Initial State and Final State.")
                     os.chdir('..')
                 ###################
@@ -2613,10 +2614,12 @@ def PhotoElectronSpectrum(theory=None, fragment=None, Initialstate_charge=None, 
                     os.rename(theory.filename + '.eldens.cube', 'Final_State_mult' + str(fstate.mult)+'TDDFTstate_'+str(tddftstate)+'.eldens.cube')
 
                     final_dens = 'Final_State_mult' + str(fstate.mult)+'TDDFTstate_'+str(tddftstate)+'.eldens.cube'
-                    rlowx2, dx2, nx2, orgx2, rlowy2, dy2, ny2, orgy2, rlowz2, dz2, \
-                    nz2, orgz2, elems2, molcoords2, molcoords_ang2, numatoms2, filebase2, finalstate_values = read_cube(final_dens)
-                    write_cube_diff(numatoms, orgx, orgy, orgz, nx, dx, ny, dy, nz, dz, elems, molcoords, initial_values, finalstate_values,
-                            "Densdiff_SCFInit-TDDFTFinalmult" + str(fstate.mult)+'TDState'+str(tddftstate))
+                    #rlowx2, dx2, nx2, orgx2, rlowy2, dy2, ny2, orgy2, rlowz2, dz2, \
+                    #nz2, orgz2, elems2, molcoords2, molcoords_ang2, numatoms2, filebase2, finalstate_values = read_cube(final_dens)
+                    cubedict2 = read_cube(final_dens)
+                    #write_cube_diff(numatoms, orgx, orgy, orgz, nx, dx, ny, dy, nz, dz, elems, molcoords, initial_values, finalstate_values,
+                    #        "Densdiff_SCFInit-TDDFTFinalmult" + str(fstate.mult)+'TDState'+str(tddftstate))
+                    write_cube_diff(cubedict,cubedict2,"Densdiff_SCFInit-TDDFTFinalmult" + str(fstate.mult)+'TDState'+str(tddftstate))
                     print("Wrote Cube file containing density difference between Initial State and Final TDDFT State: ", tddftstate)
 
             os.chdir('..')

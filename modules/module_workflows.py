@@ -60,7 +60,7 @@ def confsampler_protocol(fragment=None, crestdir=None, xtbmethod='GFN2-xTB', MLt
     print("="*50)
 
     #Check charge/mult
-    charge,mult = check_charge_mult(charge, mult, MLtheory.theorytype, fragment, "confsampler_protocol")
+    charge,mult = check_charge_mult(charge, mult, MLtheory.theorytype, fragment, "confsampler_protocol", theory=MLtheory)
 
     #1. Calling crest
     #call_crest(fragment=molecule, xtbmethod='GFN2-xTB', crestdir=crestdir, charge=charge, mult=mult, solvent='H2O', energywindow=6 )
@@ -143,7 +143,7 @@ def thermochemprotocol_single(fragment=None, Opt_theory=None, SP_theory=None, nu
     module_init_time=time.time()
     print(BC.WARNING, BC.BOLD, "------------THERMOCHEM PROTOCOL (single-species)-------------", BC.END)
     #Check charge/mult
-    charge,mult = check_charge_mult(charge, mult, Opt_theory.theorytype, fragment, "thermochemprotocol_single")
+    charge,mult = check_charge_mult(charge, mult, Opt_theory.theorytype, fragment, "thermochemprotocol_single", theory=Opt_theory)
     #DFT Opt+Freq  and Single-point High-level workflow
     #Only Opt+Freq for molecules, not atoms
     print("-------------------------------------------------------------------------")
@@ -296,7 +296,7 @@ def auto_active_space(fragment=None, orcadir=None, basis="def2-SVP", scalar_rel=
     print_line_with_mainheader("auto_active_space function")
 
     #Check charge/mult
-    charge,mult = check_charge_mult(charge, mult, "QM", fragment, "auto_active_space")
+    charge,mult = check_charge_mult(charge, mult, "QM", fragment, "auto_active_space", theory=None)
 
     print("Will do N-step orbital selection scheme")
     print("basis:", basis)
@@ -1012,7 +1012,7 @@ def BrokenSymmetryCalculator(theory=None, fragment=None, Opt=False, flip_atoms=N
         exit()
 
     #Check charge/mult
-    charge,mult = check_charge_mult(charge, mult, theory.theorytype, fragment, "BrokenSymmetryCalculator")
+    charge,mult = check_charge_mult(charge, mult, theory.theorytype, fragment, "BrokenSymmetryCalculator", theory=theory)
 
     #Getting full-system atom numbers for each BS-flip
     atomstoflip=[flip_atoms[i-1] for i in BSflip]

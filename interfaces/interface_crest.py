@@ -28,7 +28,7 @@ def call_crest(fragment=None, xtbmethod=None, crestdir=None, charge=None, mult=N
                 ashexit()
 
     #Check charge/mult
-    charge,mult = check_charge_mult(charge, mult, "QM", fragment, "call_crest")
+    charge,mult = check_charge_mult(charge, mult, "QM", fragment, "call_crest", theory=None)
 
     try:
         shutil.rmtree('crest-calc')
