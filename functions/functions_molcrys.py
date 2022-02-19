@@ -204,10 +204,8 @@ def frag_define(orthogcoords,elems,cell_vectors,fragments,cell_angles=None, cell
         print("")
     print("here")
     #Sorting and trimming unassigned list of fragments
-    unassigned = np.array(unassigned, dtype=object)
-    unassigned = np.unique(unassigned)
-    print("here2")
-    unassigned = unassigned.tolist()
+    unassigned = np.array(unassigned, dtype=object) #Changed due to numpy deprecation warning
+    unassigned = np.unique(unassigned).tolist()
     print("Unassigned members", unassigned)
     exit()
     print("unassigned_formulas:", unassigned_formulas)
