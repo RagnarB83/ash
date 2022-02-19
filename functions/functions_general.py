@@ -49,7 +49,7 @@ def ashexit(errormessage=None, code=1):
 
 def load_pythoncall():
     print("Now trying pythoncall/juliacall package. This will fail if :\n\
-            - Juliacall Pythonpackage package has not been installed (via pip)\n\
+            - Juliacall Python package has not been installed (via pip)\n\
             - PythonCall julia packages has not been installed (via Julia Pkg)\n\
             - Julia Hungarian package has not been installed")
     from juliacall import Main as JuliaMain
