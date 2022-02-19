@@ -937,9 +937,12 @@ def remove_partial_fragments(coords,elems,sphereradius,fragmentobjects, scale=No
             print("Now calling Julia function")
             fraglist_temp = Juliafunctions.calc_fraglist_for_atoms_julia(surfaceatoms,coords, elems, 99, scale, tol,modules.module_coords.eldict_covrad)
             print("fraglist_temp", fraglist_temp)
+            print("YYY")
             # Converting from numpy to list of lists
             for sublist in fraglist_temp:
+                print("sublist", sublist)
                 fraglist.append(list(sublist))
+            print("xxx here")
         except:
             print(BC.FAIL, "Problem importing Julia interface or loading function", BC.END)
             print("Make sure Julia is installed and Python-Julia interface has been installed")
