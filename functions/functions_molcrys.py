@@ -933,6 +933,8 @@ def remove_partial_fragments(coords,elems,sphereradius,fragmentobjects, scale=No
         # Converting from numpy to list of lists
         for sublist in fraglist_temp:
             fraglist.append(list(sublist))
+        print("fraglist:", fraglist)
+        exit()
         try:
             # Import Julia
             print("Loading Julia")
