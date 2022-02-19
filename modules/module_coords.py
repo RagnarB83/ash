@@ -463,7 +463,7 @@ class Fragment:
     def calc_connectivity(self, conndepth=99, scale=None, tol=None, codeversion=None):
         print("Calculating connectivity.")
         # If codeversion not requested we go to default
-        if codeversion is None:
+        if codeversion == None:
             codeversion = settings_ash.settings_dict["connectivity_code"]
             print("Codeversion not set. Using default setting: ", codeversion)
 
@@ -498,7 +498,7 @@ class Fragment:
 
         # Calculate connectivity by looping over all atoms
         timestampA = time.time()
-
+        print("codeversion:", codeversion)
         if codeversion == 'py':
             print("Calculating connectivity of fragment using py.")
             timestampB = time.time()
