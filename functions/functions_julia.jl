@@ -22,16 +22,16 @@ function testJuliafunction(d)
     return 
 end
 
-#NOTES:
-#The conversions we do may not be necessary and could slow things down a bit.
-#The PythonCall wrapping of objects should not require the conversions.
-#However, some problems with the dictionaries etc. To be revisited
-
 
 ########################################################################################################################
 # WRAPPER JULIA FUNCTIONS that are called by the Python. All conversions carried out here before calling Julia functions
 #NOTE: All other functions only work with Julia types (no wrapping)
 ########################################################################################################################
+#NOTES:
+#The conversions we do in the wrapper functions may not be necessary and could slow things down a bit.
+#The PythonCall wrapping of objects should not require the conversions.
+#However, some problems with the dictionaries etc. To be revisited
+
 #Connectivity (fraglists) for whole fragment
 function calc_connectivity(coords,elems,conndepth,scale, tol,eldict_covrad)
     println("Calling calc_connectivity (pythoncall/juliacall)")

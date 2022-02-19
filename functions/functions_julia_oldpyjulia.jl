@@ -9,6 +9,18 @@ using Hungarian
 # This Julia interfaced only intended for PyJulia (not PythonCall)
 ########################################################################
 
+# Simple test function
+function testJuliafunction(d)
+    println("This is testJuliafunction")
+    println("Python variable read-in: ", d)
+    println("Type :", typeof(d))
+    #println("Now converting")
+    #d_conv=pyconvert(Dict, d)
+    #println("Converted d:", d_conv)
+    #println("Type:", typeof(d_conv))
+    #println("juld [dss]", juld["dss"])
+    return 
+end
 
 ########################################################################################################################
 # WRAPPER JULIA FUNCTIONS that are callable by the Python

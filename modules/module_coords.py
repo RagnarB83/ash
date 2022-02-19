@@ -468,8 +468,8 @@ class Fragment:
             print("Codeversion not set. Using default setting: ", codeversion)
 
         # Overriding with py version if molecule is small. Faster than calling julia.
-        if len(self.coords) < 10000:
-            print("Small system. Using py version.")
+        if len(self.coords) < 1000:
+            print(f"Small system ({len(self.coords)} atoms). Using py version.")
             codeversion = 'py'
         elif len(self.coords) > 10000:
             if self.printlevel >= 2:
