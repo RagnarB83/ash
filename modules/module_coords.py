@@ -499,6 +499,7 @@ class Fragment:
         # Calculate connectivity by looping over all atoms
         timestampA = time.time()
         print("codeversion:", codeversion)
+        print("julia")
         if codeversion == 'py':
             print("Calculating connectivity of fragment using py.")
             timestampB = time.time()
