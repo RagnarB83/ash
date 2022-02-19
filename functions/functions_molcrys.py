@@ -202,9 +202,11 @@ def frag_define(orthogcoords,elems,cell_vectors,fragments,cell_angles=None, cell
         print("Fragment {} ({}) has {} fraglists".format(fi, fragment.Name, len(fragment.fraglist)))
         print(fragment.fraglist)
         print("")
+    print("here")
     #Sorting and trimming unassigned list of fragments
     unassigned = np.unique(unassigned).tolist()
     print("Unassigned members", unassigned)
+    exit()
     print("unassigned_formulas:", unassigned_formulas)
     #Systemlist with remaining atoms
     print("systemlist:", systemlist)
