@@ -28,6 +28,7 @@ settings_dict["debugflag"] = False
 
 # Julia usage
 settings_dict["load_julia"] = False
+settings_dict["julia_library"] = "pythoncall" #pythoncall is default. pyjulia another option
 
 # Whether to use ANSI color escape sequences in output or not.
 settings_dict["use_ANSI_color"] = False
@@ -96,3 +97,4 @@ try_read_setting("print_full_timings", "bool")
 try_read_setting("print_logo", "bool")
 try_read_setting("debugflag", "bool")
 try_read_setting("load_julia", "bool")
+try_read_setting("julia_library", "string")

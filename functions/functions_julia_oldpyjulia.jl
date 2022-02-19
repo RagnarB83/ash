@@ -3,109 +3,82 @@ __precompile__()
 
 module Juliafunctions
 using Hungarian
-using PythonCall
-#using Profile
-#using BenchmarkTools
-#using PyCall
-#using Distances. Note: Use of Distances requires it to be added via Pkg manager
 
-#TODO: 
-# We are not utilizing Julia column-major much.
-#Tried for connectivity, no difference
-# Try maybe also for Lennard_jones? Pairpot arrays??
-# Read more:
-# https://julialang.org/blog/2013/09/fast-numeric/
 
-# Simple test function
-function testJuliafunction(d)
-    println("This is testJuliafunction")
-    println("Python variable read-in: ", d)
-    println("Type :", typeof(d))
-    #println("Now converting")
-    #d_conv=pyconvert(Dict, d)
-    #println("Converted d:", d_conv)
-    #println("Type:", typeof(d_conv))
-    #println("juld [dss]", juld["dss"])
-    return 
-end
-
-#NOTES:
-#The conversions we do may not be necessary and could slow things down a bit.
-#The PythonCall wrapping of objects should not require the conversions.
-#However, some problems with the dictionaries etc. To be revisited
+################################################
+# This file works with PyJulia (not PythonCall)
+################################################
 
 
 ########################################################################################################################
-# WRAPPER JULIA FUNCTIONS that are called by the Python. All conversions carried out here before calling Julia functions
-#NOTE: All other functions only work with Julia types (no wrapping)
+# WRAPPER JULIA FUNCTIONS that are called by the Python
+#NOTE: All other functions are internal Julia-to-Julia
 ########################################################################################################################
 #Connectivity (fraglists) for whole fragment
 function calc_connectivity(coords,elems,conndepth,scale, tol,eldict_covrad)
-    println("Calling calc_connectivity (pythoncall/juliacall)")
-    #PythonCall to Julia conversion
-    coords=pyconvert(Array,coords)
-    elems=pyconvert(Array,elems)
-    eldict_covrad=pyconvert(Dict,eldict_covrad)
+    println("Calling calc_connectivity (pyjulia)")
+    # Julia conversion
+    eldict_covrad_jul=convert(Dict{String,Float64}, eldict_covrad)
 	#0-index based atomlist
 	atomlist=[0:length(elems)-1;]
-	return calc_fraglist_for_atoms(atomlist,coords, elems, conndepth, scale, tol,eldict_covrad)
+	return calc_fraglist_for_atoms(atomlist,coords, elems, conndepth, scale, tol,eldict_covrad_jul)
 end
 
 
 #Wrapper function for calc_fraglist_for_atoms_wrapper
 function calc_fraglist_for_atoms_julia(atomlist,coords, elems, conndepth, scale, tol,eldict_covrad)
-    println("Calling calc_fraglist_for_atoms_julia (pythoncall/juliacall)")
-    #PythonCall to Julia conversion
-    atomlist=pyconvert(Array,atomlist)
-    coords=pyconvert(Array,coords)
-    elems=pyconvert(Array,elems)
-    eldict_covrad=pyconvert(Dict,eldict_covrad)
-    fraglist = calc_fraglist_for_atoms(atomlist,coords, elems, conndepth, scale, tol,eldict_covrad)
+    println("Calling calc_fraglist_for_atoms_julia (pyjulia)")
+    #Julia conversion
+	eldict_covrad_jul=convert(Dict{String,Float64}, eldict_covrad)
+
+    fraglist = calc_fraglist_for_atoms(atomlist,coords, elems, conndepth, scale, tol,eldict_covrad_jul)
     return fraglist
 end
 
 function pairpot_full_julia(numatoms,atomtypes,LJpydict,qmatoms)
-    println("Calling pairpot_full_julia (pythoncall/juliacall)")
-    atomtypes=pyconvert(Array,atomtypes)
-    LJpydict=pyconvert(Dict{Tuple{String,String},Array{Float64,1}},LJpydict)
-    qmatoms=pyconvert(Array,qmatoms)
-    sigmaij, epsij = pairpot_full(numatoms,atomtypes,LJpydict,qmatoms)
+    println("Calling pairpot_full_julia (pyjulia)")
+    LJdict=convert(Dict{Tuple{String,String},Array{Float64,1}}, LJpydict)
+    sigmaij, epsij = pairpot_full(numatoms,atomtypes,LJdict,qmatoms)
     return sigmaij,epsij
 end
 
 function pairpot_active_julia(numatoms,atomtypes,LJpydict,qmatoms,actatoms)
-    println("Calling pairpot_active_julia (pythoncall/juliacall)")
-    atomtypes=pyconvert(Array,atomtypes)
-    LJpydict=pyconvert(Dict{Tuple{String,String},Array{Float64,1}},LJpydict)
-    qmatoms=pyconvert(Array,qmatoms)
-    actatoms=pyconvert(Array,actatoms)
-    sigmaij, epsij = pairpot_active(numatoms,atomtypes,LJpydict,qmatoms,actatoms)
+    println("Calling pairpot_active_julia (pyjulia)")
+    LJdict=convert(Dict{Tuple{String,String},Array{Float64,1}}, LJpydict)
+    sigmaij, epsij = pairpot_active(numatoms,atomtypes,LJdict,qmatoms,actatoms)
     return sigmaij,epsij
 end
 
 #Calling recommended LJCoulomb function
 function LJcoulomb_julia(charges,coords,epsij,sigmaij)
-    println("Calling LJcoulomb_julia (pythoncall/juliacall)")
-    charges=pyconvert(Array{Float64,1},charges)
-    coords=pyconvert(Array,coords)
-    epsij=pyconvert(Array,epsij)
-    sigmaij=pyconvert(Array,sigmaij)
+    println("Calling LJcoulomb_julia (pyjulia)")
     E, gradient, VLJ, VC = LJcoulombchargev1c(charges, coords, epsij, sigmaij)
-
     return E, gradient, VLJ, VC
 end
 
 #Reorder cluster with Julia
 function reorder_cluster_julia(elems,coords,fraglists)
-    println("Calling reorder_cluster_julia (pythoncall/juliacall)")
-    elems=pyconvert(Array,elems)
-    coords=pyconvert(Array,coords)
-    fraglists=pyconvert(Array,fraglists)
+    println("Calling reorder_cluster_julia (pyjulia)")
     newfraglists = reorder_cluster(elems,coords,fraglists)
     return newfraglists
 end
 
-#######################################################################################################################
+
+
+##############################################################################
+
+
+
+
+
+
+#Connectivity (fraglists) for whole fragment
+function calc_connectivity(coords,elems,conndepth,scale, tol,eldict_covrad)
+	#0-index based atomlist
+	atomlist=[0:length(elems)-1;]
+	return calc_fraglist_for_atoms(atomlist,coords, elems, conndepth, scale, tol,eldict_covrad)
+end
+
 
 #Get fraglist for list of atoms (called by molcrys directly). Using 0-based indexing until get_conn_atoms
 function calc_fraglist_for_atoms(atomlist,coords, elems, conndepth, scale, tol,eldict_covrad)
@@ -178,6 +151,7 @@ function distance_view(coords::Array{Float64,2},i::Int64,j::Int64)
             @fastmath dist = sqrt(r)
 			return dist
 end
+
 
 function get_molecule_members_julia(coords, elems, loopnumber, scale, tol, eldict_covrad, atomindex)
 	membs = Int64[]
@@ -334,6 +308,7 @@ function LJcoulombchargev1c(charges, coords, epsij, sigmaij)
     VLJ=0.0
     gradient = zeros(size(coords_b)[1], 3)
     constant=-1*(1/hartokcal)*bohr2ang*bohr2ang
+
     @inbounds for j in 1:num
         for i in j+1:num
             @inbounds sigma=sigmaij[j,i]
@@ -423,7 +398,7 @@ end
 # Avoided dict-lookup for both key-existence and value
 #https://stackoverflow.com/questions/58170034/how-do-i-check-if-a-dictionary-has-a-key-in-it-in-julia
 #frozenatoms option is slow
-function pairpot_full(numatoms,atomtypes,LJdict_jul,qmatoms)
+function pairpot_full(numatoms,atomtypes,LJdict,qmatoms)
     #Updating atom indices from 0 to 1 syntax
     qmatoms=[i+1 for i in qmatoms]
     sigmaij=zeros(numatoms, numatoms)
@@ -435,12 +410,12 @@ for i in 1:numatoms
             continue
         else
            #Checking if dict contains key, return value if so, otherwise nothing
-           v = get(LJdict_jul, (atomtypes[i],atomtypes[j]), nothing)
+           v = get(LJdict, (atomtypes[i],atomtypes[j]), nothing)
            if v !== nothing
              sigmaij[i, j] = v[1]
              epsij[i, j] =  v[2]
            else
-             v = get(LJdict_jul, (atomtypes[j],atomtypes[i]), nothing)
+             v = get(LJdict, (atomtypes[j],atomtypes[i]), nothing)
              if v !== nothing
                sigmaij[i, j] = v[1]
                epsij[i, j] =  v[2]
@@ -454,7 +429,7 @@ end
 
 #Modified pairpot that only does active atoms
 #Fills whole symmetric array just in case,i .e. ij and ji
-function pairpot_active(numatoms,atomtypes,LJdict_jul,qmatoms,actatoms)
+function pairpot_active(numatoms,atomtypes,LJdict,qmatoms,actatoms)
     #Updating atom indices from 0 to 1 syntax
     qmatoms=[i+1 for i in qmatoms]
     actatoms=[i+1 for i in actatoms]
@@ -467,14 +442,14 @@ function pairpot_active(numatoms,atomtypes,LJdict_jul,qmatoms,actatoms)
 			else
 			   #Checking if dict contains key, return value if so, otherwise nothing
 			   #Todo: what if we have v be value or 0 instead of nothing. Can then skip the if statement?
-			   v = get(LJdict_jul, (atomtypes[i],atomtypes[j]), nothing)
+			   v = get(LJdict, (atomtypes[i],atomtypes[j]), nothing)
 			   if v !== nothing
 				 sigmaij[i, j] = v[1]
 				 epsij[i, j] =  v[2]
 				 sigmaij[j, i] = v[1]
 				 epsij[j, i] =  v[2]
 			   else
-				 v = get(LJdict_jul, (atomtypes[j],atomtypes[i]), nothing)
+				 v = get(LJdict, (atomtypes[j],atomtypes[i]), nothing)
 				 if v !== nothing
 				   sigmaij[i, j] = v[1]
 				   epsij[i, j] =  v[2]
@@ -539,7 +514,7 @@ end
 #Note: Called by Python-ASH. Assumed that index-conversion has already been performed on fraglists
 #Note: Passing fragment as Python object is very slow
 #Using view for getting slices without copies
-function reorder_cluster(elems,coords,fraglists)
+function reorder_cluster_julia(elems,coords,fraglists)
     #Py->Julia index conversion in next lines
     elems_frag_ref = [elems[i] for i in fraglists[1,:]]
     coords_frag_ref = view(coords,fraglists[1,:],:)
@@ -558,6 +533,10 @@ function reorder_cluster(elems,coords,fraglists)
     end
     return fraglists
 end
+
+
+
+
 
 
 #End of Julia module

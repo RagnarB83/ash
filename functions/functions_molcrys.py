@@ -923,25 +923,25 @@ def remove_partial_fragments(coords,elems,sphereradius,fragmentobjects, scale=No
     count=0
     found_atoms=[]
     fraglist=[]
+
     if codeversion=='julia':
-        print("using julia for finding surface atoms")
+        print("Will use julia for finding surface atoms")
+
         try:
             # Import Julia
             print("Loading Julia")
-            try:
-                Juliafunctions=load_julia_interface()
-            except:
-                print("Problem loading Julia")
-                ashexit()
+            Juliafunctions=load_julia_interface()
+            print("Load successful")
             #Get list of fragments for all surfaceatoms
-            fraglist_temp = Juliafunctions.calc_fraglist_for_atoms(surfaceatoms,coords, elems, 99, scale, tol,modules.module_coords.eldict_covrad)
+            print("Now calling Julia function")
+            fraglist_temp = Juliafunctions.calc_fraglist_for_atoms_julia(surfaceatoms,coords, elems, 99, scale, tol,modules.module_coords.eldict_covrad)
+            print("fraglist_temp", fraglist_temp)
             # Converting from numpy to list of lists
             for sublist in fraglist_temp:
                 fraglist.append(list(sublist))
         except:
-            print(BC.FAIL, "Problem importing Pyjulia (import julia)", BC.END)
-            print("Make sure Julia is installed and PyJulia module available")
-            print("Also, are you using python3_ash ?")
+            print(BC.FAIL, "Problem importing Julia interface or loading function", BC.END)
+            print("Make sure Julia is installed and Python-Julia interface has been installed")
             print("")
             print(BC.FAIL, "Using py version instead (slow for large systems)", BC.END)
             for surfaceatom in surfaceatoms:
@@ -960,9 +960,6 @@ def remove_partial_fragments(coords,elems,sphereradius,fragmentobjects, scale=No
                 if members not in fraglist:
                     fraglist.append(members)
                     found_atoms+=members
-    #with open('fraglist', 'w') as gfile:
-    #    gfile.write('fraglist: {}'.format(fraglist))
-
 
     flat_fraglist = [item for sublist in fraglist for item in sublist]
     #Todo: remove?
@@ -994,6 +991,7 @@ def remove_partial_fragments(coords,elems,sphereradius,fragmentobjects, scale=No
         else:
             deletionlist+=frag
     deletionlist=np.unique(deletionlist).tolist()
+    print(f"deletionlist: {len(deletionlist)} atoms")
     #Deleting atoms in deletion list in reverse
     coords=np.delete(coords, list(reversed(deletionlist)), 0)
     for d in reversed(deletionlist):

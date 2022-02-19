@@ -186,17 +186,8 @@ class NonBondedTheory:
         print("self.codeversion:", self.codeversion)
         if self.codeversion=="julia":
             if self.printlevel >= 2:
-                print("Using PyJulia for fast sigmaij and epsij array creation")
-            # Necessary for statically linked libpython
-            #try:
-            #    from julia.api import Julia
-            #    from julia import Main
-            #except:
-            #   print("Problem importing Pyjulia (import julia)")
-            #    print("Make sure Julia is installed and PyJulia module available")
-            #    print("Also, are you using python3_ash ?")
-            #    print("Alternatively, use codeversion='py' argument to NonBondedTheory to use slower Python version for array creation")
-            #    ashexit()
+                print("Using Julia for fast sigmaij and epsij array creation")
+
             print("Loading Julia")
             try:
                 Juliafunctions=load_julia_interface()
@@ -207,7 +198,7 @@ class NonBondedTheory:
             if len(actatoms) == 0:
                 print("Calculating pairpotential array for whole system")
 
-                self.sigmaij, self.epsij = Juliafunctions.pairpot_full(self.numatoms, self.atomtypes, self.LJpairpotdict,qmatoms)
+                self.sigmaij, self.epsij = Juliafunctions.pairpot_full_julia(self.numatoms, self.atomtypes, self.LJpairpotdict,qmatoms)
             else:
             #    #or only for active region
                 print("Calculating pairpotential array for active region only")
@@ -217,8 +208,7 @@ class NonBondedTheory:
                 print("self.LJpairpotdict", self.LJpairpotdict)
                 print("qmatoms", qmatoms)
                 #print("actatoms", actatoms)
-                
-                self.sigmaij, self.epsij = Juliafunctions.pairpot_active(self.numatoms, self.atomtypes, self.LJpairpotdict, qmatoms, actatoms)
+                self.sigmaij, self.epsij = Juliafunctions.pairpot_active_julia(self.numatoms, self.atomtypes, self.LJpairpotdict, qmatoms, actatoms)
         # New for-loop for creating sigmaij and epsij arrays. Uses dict-lookup instead
         elif self.codeversion=="py":
             if self.printlevel >= 2:
@@ -362,15 +352,16 @@ class NonBondedTheory:
                 Juliafunctions=load_julia_interface()
             except:
                 print("Problem loading Julia")
-                print("Problem importing Pyjulia (import julia)")
-                print("Make sure Julia is installed and PyJulia module available")
-                print("Also, are you using python3_ash ?")
+                print("Problem importing Julia")
+                print("Make sure Julia is installed and Python-Julia module available")
                 print("Alternatively, use codeversion='py' argument to NonBondedTheory to use slower Python version for array creation")
                 ashexit()
 
             print_time_rel(CheckpointTime, modulename="from run to just before calling ")
             self.MMEnergy, self.MMGradient, self.LJenergy, self.Coulombchargeenergy =\
-                Juliafunctions.LJcoulombchargev1c(charges, current_coords, self.epsij, self.sigmaij, connectivity)
+                Juliafunctions.LJcoulomb_julia(charges, current_coords, self.epsij, self.sigmaij)
+            #Converting to numpy array 
+            self.MMGradient = np.asarray(self.MMGradient)
             print_time_rel(CheckpointTime, modulename="from run to done julia")
         else:
             print("Unknown version of MM code")

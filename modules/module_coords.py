@@ -468,7 +468,7 @@ class Fragment:
             print("Codeversion not set. Using default setting: ", codeversion)
 
         # Overriding with py version if molecule is small. Faster than calling julia.
-        if len(self.coords) < 100:
+        if len(self.coords) < 10000:
             print("Small system. Using py version.")
             codeversion = 'py'
         elif len(self.coords) > 10000:
@@ -506,6 +506,10 @@ class Fragment:
             print_time_rel(timestampB, modulename='calc connectivity py', moduleindex=4)
         elif codeversion == 'julia':
             print("Calculating connectivity of fragment using Julia.")
+            Juliafunctions = load_julia_interface()
+            fraglist_temp = Juliafunctions.calc_connectivity(self.coords, self.elems, conndepth, scale, tol,
+                                                                eldict_covrad)
+            print("fraglist_temp:", fraglist_temp)
             timestampB = time.time()
             try:
                 Juliafunctions = load_julia_interface()
@@ -517,8 +521,8 @@ class Fragment:
                     fraglist.append(list(sublist))
                 print_time_rel(timestampB, modulename='calc connectivity julia', moduleindex=4)
             except:
-                print(BC.FAIL, "Problem importing PyJulia (import julia).", BC.END)
-                print("Make sure Julia is installed and PyJulia module available, and that you are using python3_ash.")
+                print(BC.FAIL, "Problem importing Python-Julia interface.", BC.END)
+                print("Make sure Julia is installed and Python-Julia interface has been set up.")
                 print(BC.FAIL, "Using Python version instead (slow for large systems)", BC.END)
                 # Switching default to py since Julia did not load
                 settings_ash.settings_dict["connectivity_code"] = "py"
@@ -883,7 +887,7 @@ def print_internal_coordinate_table(fragment, actatoms=None):
         connectivity = Juliafunctions.calc_connectivity(chosen_coords, chosen_elems, conndepth, scale, tol,
                                                         eldict_covrad)
     except:
-        print("Problem importing PyJulia (import julia). Trying py-version instead.")
+        print("Problem importing Python-Julia interface. Trying py-version instead.")
         connectivity = calc_conn_py(chosen_coords, chosen_elems, conndepth, scale, tol)
     print("Connectivity calculation complete.")
     #else:
@@ -2103,7 +2107,6 @@ def scipy_hungarian(A, B):
 
 
 # Hungarian algorithm to reorder coordinates. Uses Julia to calculates distances between coordinate-arrays A and B and then Hungarian Julia package.
-# PyJulia needs to have been imported before (ash.py)
 def hungarian_julia(A, B):
     from scipy.spatial.distance import cdist
     from scipy.optimize import linear_sum_assignment

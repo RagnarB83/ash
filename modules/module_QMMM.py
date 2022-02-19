@@ -493,7 +493,7 @@ class QMMMTheory:
         if charge == None or mult == None:
             print(BC.FAIL, "Error. charge and mult has not been defined for QMMMTheory.run method", BC.END)
             ashexit()
-        print("QM-region charge: {} mult:{}".format(charge,mult))
+        print("QM-region Charge: {} Mult: {}".format(charge,mult))
 
 
         #If no coords provided to run (from Optimizer or NumFreq or MD) then use coords associated with object.
@@ -724,13 +724,17 @@ class QMMMTheory:
                     shutil.copyfile(self.qm_theory.filename+'.out', self.qm_theory.filename+'_trunc'+'.out')
                     shutil.copyfile(self.qm_theory.filename+'.engrad', self.qm_theory.filename+'_trunc'+'.engrad')
                     shutil.copyfile(self.qm_theory.filename+'.pcgrad', self.qm_theory.filename+'_trunc'+'.pcgrad')
-                    
-                    modules.module_coords.write_coords_all(self.PCgradient_trunc, [self.elems[i] for i in self.truncated_PC_region_indices], indices=self.truncated_PC_region_indices, 
-                        file="PCgradienttrunc_{}".format(label), description="PC gradienttrunc {} (au/Bohr):".format(label))
+                    print("len self.PCgradient_trunc", len(self.PCgradient_trunc))
+                    #print("len x ", len([self.elems[i] for i in self.truncated_PC_region_indices]))
+                    print("len elems", len(elems))
+                    print("len self.truncated_PC_region_indices", len(self.truncated_PC_region_indices))
+                    #modules.module_coords.write_coords_all(self.PCgradient_trunc, [self.elems[i] for i in self.truncated_PC_region_indices], indices=self.truncated_PC_region_indices, 
+                    #    file="PCgradienttrunc_{}".format(label), description="PC gradienttrunc {} (au/Bohr):".format(label))
                     self.PCgradient_trunc=copy.copy(self.PCgradient_trunc[0:-len(self.dipole_coords)])
                     self.original_correction_gradient=np.zeros((len(self.QM_gradient_FULL)+len(self.PC_gradient_FULL), 3))
                     print("len self.original_correction_gradient", len(self.original_correction_gradient))
                     qmcount=0;pccount=0
+                    print("self.truncated_PC_region_indices:", self.truncated_PC_region_indices)
                     for i in self.allatoms:
                         if i in self.qmatoms:
                             #print("self.QM_gradient_FULL[qmcount]:", self.QM_gradient_FULL[qmcount])
@@ -785,7 +789,7 @@ class QMMMTheory:
             print("len(self.allatoms):", len(self.allatoms))
             print("len self.QM_PC_gradient", len(self.QM_PC_gradient))
             modules.module_coords.write_coords_all(self.QM_PC_gradient, self.elems, indices=self.allatoms, file="QM_PC_gradient", description="QM_PC_gradient (au/Bohr):")
-            exit()
+            #exit()
             #if self.printlevel >= 2:
             #    modules.module_coords.write_coords_all(self.PCgradient, self.mmatoms, indices=self.allatoms, file="PCgradient", description="PC gradient (au/Bohr):")
 
@@ -935,6 +939,8 @@ class QMMMTheory:
             #Otherwise combine
             else:
                 #Now assemble full QM/MM gradient
+                print("len(self.QM_PC_gradient):", len(self.QM_PC_gradient))
+                print("len(self.MMgradient):", len(self.MMgradient))
                 assert len(self.QM_PC_gradient) == len(self.MMgradient)
                 self.QM_MM_gradient=self.QM_PC_gradient+self.MMgradient
 
