@@ -59,7 +59,8 @@ def load_pythoncall():
 def load_pyjulia():
     print("Now loading PyJulia. This will fail if :\n\
         - PyJulia Python package has not been installed\n\
-        - Julia PyCall package has not been installed\n")
+        - Julia PyCall package has not been installed\n\
+        - Julia Hungarian package has not been installed")
 
     from julia import Main as JuliaMain
     #NOTE: Reading old Pyjulia function file here instead.

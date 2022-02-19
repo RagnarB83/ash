@@ -927,16 +927,16 @@ def remove_partial_fragments(coords,elems,sphereradius,fragmentobjects, scale=No
 
     if codeversion=='julia':
         print("Will use julia for finding surface atoms")
-        Juliafunctions=load_julia_interface()
-        fraglist_temp = Juliafunctions.calc_fraglist_for_atoms_julia(surfaceatoms,coords, elems, 99, scale, tol,modules.module_coords.eldict_covrad)
-        print("fraglist_temp", fraglist_temp)
-        fraglist_temp = [list(i) for i in fraglist_temp]
-        print("After fraglist_temp", fraglist_temp)
-        # Converting from numpy to list of lists
-        for sublist in fraglist_temp:
-            fraglist.append(list(sublist))
-        print("fraglist:", fraglist)
-        exit()
+        #Juliafunctions=load_julia_interface()
+        #fraglist_temp = Juliafunctions.calc_fraglist_for_atoms_julia(surfaceatoms,coords, elems, 99, scale, tol,modules.module_coords.eldict_covrad)
+        #print("fraglist_temp", fraglist_temp)
+        #fraglist_temp = [list(i) for i in fraglist_temp]
+        #print("After fraglist_temp", fraglist_temp)
+        ## Converting from numpy to list of lists
+        #for sublist in fraglist_temp:
+        #    fraglist.append(list(sublist))
+        #print("fraglist:", fraglist)
+        #exit()
         try:
             # Import Julia
             print("Loading Julia")
