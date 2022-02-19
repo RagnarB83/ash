@@ -48,7 +48,7 @@ def geomeTRICOptimizer(theory=None, fragment=None, charge=None, mult=None, coord
     except:
         blankline()
         print(BC.FAIL,"geomeTRIC module not found!", BC.END)
-        print(BC.WARNING,"Either install geomeTRIC using pip:\n pip install geometric\n or manually from Github (https://github.com/leeping/geomeTRIC)", BC.END)
+        print(BC.WARNING,"Either install geomeTRIC using pip:\n conda install geometric\n or \n pip install geometric\n or manually from Github (https://github.com/leeping/geomeTRIC)", BC.END)
         ashexit(code=9)
 
     #Check charge/mult

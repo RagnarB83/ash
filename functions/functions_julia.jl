@@ -4,17 +4,10 @@ __precompile__()
 module Juliafunctions
 using Hungarian
 using PythonCall
-#using Profile
-#using BenchmarkTools
-#using PyCall
-#using Distances. Note: Use of Distances requires it to be added via Pkg manager
 
-#TODO: 
-# We are not utilizing Julia column-major much.
-#Tried for connectivity, no difference
-# Try maybe also for Lennard_jones? Pairpot arrays??
-# Read more:
-# https://julialang.org/blog/2013/09/fast-numeric/
+########################################################################
+# This Julia interfaced only intended for PythonCall (not PyJulia)
+########################################################################
 
 # Simple test function
 function testJuliafunction(d)
@@ -112,6 +105,15 @@ function reorder_cluster_julia(elems,coords,fraglists)
 end
 
 #######################################################################################################################
+# JULIA functions not intended to be called by Python:
+########################################################
+
+#TODO: 
+# We are not utilizing Julia column-major much.
+#Tried for connectivity, no difference
+# Try maybe also for Lennard_jones? Pairpot arrays??
+# Read more:
+# https://julialang.org/blog/2013/09/fast-numeric/
 
 #Get fraglist for list of atoms (called by molcrys directly). Using 0-based indexing until get_conn_atoms
 function calc_fraglist_for_atoms(atomlist,coords, elems, conndepth, scale, tol,eldict_covrad)

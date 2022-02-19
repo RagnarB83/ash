@@ -5,13 +5,13 @@ module Juliafunctions
 using Hungarian
 
 
-################################################
-# This file works with PyJulia (not PythonCall)
-################################################
+########################################################################
+# This Julia interfaced only intended for PyJulia (not PythonCall)
+########################################################################
 
 
 ########################################################################################################################
-# WRAPPER JULIA FUNCTIONS that are called by the Python
+# WRAPPER JULIA FUNCTIONS that are callable by the Python
 #NOTE: All other functions are internal Julia-to-Julia
 ########################################################################################################################
 #Connectivity (fraglists) for whole fragment
@@ -63,14 +63,9 @@ function reorder_cluster_julia(elems,coords,fraglists)
     return newfraglists
 end
 
-
-
-##############################################################################
-
-
-
-
-
+########################################################################################################################
+# JULIA functions not intended to be called by Python:
+########################################################
 
 #Connectivity (fraglists) for whole fragment
 function calc_connectivity(coords,elems,conndepth,scale, tol,eldict_covrad)
