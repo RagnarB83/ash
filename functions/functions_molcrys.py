@@ -202,7 +202,7 @@ def frag_define(orthogcoords,elems,cell_vectors,fragments,cell_angles=None, cell
     print("Unassigned members", unassigned)
     print("unassigned_formulas:", unassigned_formulas)
     #Systemlist with remaining atoms
-    print("systemlist:", systemlist)
+    #print("systemlist:", systemlist)
     print("Systemlist length:", len(systemlist))
     blankline()
     #print_time_rel_and_tot(currtime, origtime, modulename='molcrys_frag_define_step1', moduleindex=4)

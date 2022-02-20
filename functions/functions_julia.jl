@@ -54,13 +54,8 @@ function calc_fraglist_for_atoms_julia(atomlist,coords, elems, conndepth, scale,
     elems=pyconvert(Array,elems)
     eldict_covrad=pyconvert(Dict,eldict_covrad)
     fraglist = calc_fraglist_for_atoms(atomlist,coords, elems, conndepth, scale, tol,eldict_covrad)
-    println("fraglist", fraglist)
-    println("type fraglist", typeof(fraglist))
     #Convert fraglist
-    #finalfraglist=pylist(fraglist)
     finalfraglist=fraglist
-    println("finalfraglist:", finalfraglist)
-    println("type finalfraglist", typeof(finalfraglist))
     return finalfraglist
 end
 
