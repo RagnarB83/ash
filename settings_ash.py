@@ -46,6 +46,7 @@ settings_dict["conndepth"] = 10
 settings_dict["connectivity_code"] = "julia"
 settings_dict["nonbondedMM_code"] = "julia"
 
+print("settings_dict conn code", settings_dict["connectivity_code"])
 # Exit command
 settings_dict["print_exit_footer"] = True
 settings_dict["print_full_timings"] = True
@@ -98,3 +99,5 @@ try_read_setting("print_logo", "bool")
 try_read_setting("debugflag", "bool")
 try_read_setting("load_julia", "bool")
 try_read_setting("julia_library", "string")
+
+print("settings_dict conn code", settings_dict["connectivity_code"])
