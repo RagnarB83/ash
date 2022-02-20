@@ -377,12 +377,12 @@ def molcrys(cif_file=None, xtl_file=None, xyz_file=None, cell_length=None, cell_
     print("Creating new Cluster fragment:")
     Cluster=ash.Fragment(elems=cluster_elems, coords=cluster_coords, scale=chosenscale, tol=chosentol, conncalc=True)
     
-    print_time_rel_and_tot(currtime, origtime, modulename='create Cluster fragment')
+    #print_time_rel_and_tot(currtime, origtime, modulename='create Cluster fragment')
     currtime=time.time()
     Cluster.print_system("Cluster-first.ygg")
     Cluster.write_xyzfile(xyzfilename="Cluster-first.xyz")
     print("Cluster size: ", Cluster.numatoms, "atoms")
-    print_time_rel_and_tot(currtime, origtime, modulename='print Cluster system')
+    #print_time_rel_and_tot(currtime, origtime, modulename='print Cluster system')
     currtime=time.time()
     
     # Going through found frags and identify mainfrags and counterfrags
@@ -396,7 +396,7 @@ def molcrys(cif_file=None, xtl_file=None, xyz_file=None, cell_length=None, cell_
                 fragmentobject.add_clusterfraglist(frag)
 
     printdebug(fragmentobjects[0].clusterfraglist)
-    print_time_rel_and_tot(currtime, origtime, modulename='fragment identification')
+    #print_time_rel_and_tot(currtime, origtime, modulename='fragment identification')
     currtime=time.time()
     #TODO: Reorder cluster with reflections also
 
