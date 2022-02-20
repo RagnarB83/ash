@@ -529,7 +529,7 @@ def molcrys(cif_file=None, xtl_file=None, xyz_file=None, cell_length=None, cell_
 
     blankline()
 
-    print_time_rel_and_tot(currtime, origtime, modulename="stuff before SP-loop")
+    #print_time_rel_and_tot(currtime, origtime, modulename="stuff before SP-loop")
     currtime=time.time()
     #SP-LOOP FOR MAINFRAG
     for SPLoopNum in range(0,SPLoopMaxIter):
@@ -609,7 +609,7 @@ def molcrys(cif_file=None, xtl_file=None, xyz_file=None, cell_length=None, cell_
     else:
         functions.functions_molcrys.choose_shortrangemodel(Cluster,shortrangemodel,fragmentobjects,QMtheory,"dummy",numcores,LJHparameters)
 
-    print_time_rel_and_tot(currtime, origtime, modulename="LJ stuff done")
+    #print_time_rel_and_tot(currtime, origtime, modulename="LJ stuff done")
     currtime=time.time()
 
 
@@ -641,7 +641,6 @@ def molcrys(cif_file=None, xtl_file=None, xyz_file=None, cell_length=None, cell_
     Cluster.print_system('Cluster.ygg')
     #Cleanup
     #QMMM_SP_calculation.qm_theory.cleanup()
-    print_time_rel_and_tot(currtime, origtime, modulename="final stuff")
     currtime=time.time()
 
     print_time_rel(module_init_time, modulename='Molcrys', moduleindex=0)

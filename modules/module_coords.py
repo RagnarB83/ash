@@ -2444,7 +2444,7 @@ def get_boundary_atoms(qmatoms, coords, elems, scale, tol, excludeboundaryatomli
             # Adding to dict
             qm_mm_boundary_dict[qmatom] = boundaryatom[0]
     print("qm_mm_boundary_dict:", qm_mm_boundary_dict)
-    print_time_rel(timeA, modulename="get_boundary_atoms")
+    #print_time_rel(timeA, modulename="get_boundary_atoms")
     return qm_mm_boundary_dict
 
 

@@ -85,7 +85,7 @@ def load_julia_interface(julia_library=None):
     #Only load if not loaded before
     if julia_loaded is False:
         print("Now loading Julia interface.")
-
+        currtime=time.time()
         #Checking for Julia binary in PATH
         print("This requires a Julia installation available in PATH")
         try:
@@ -117,7 +117,7 @@ def load_julia_interface(julia_library=None):
             print("Unknown Julia library")
             ashexit()
         julia_loaded = True  #Means an attempt was made to load Julia.
-
+        print_time_rel(currtime, modulename='loading julia interface', moduleindex=4)
     return JuliaMain.Juliafunctions
 
 
