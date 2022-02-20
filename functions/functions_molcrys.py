@@ -96,18 +96,12 @@ def frag_define(orthogcoords,elems,cell_vectors,fragments,cell_angles=None, cell
     # so that we have no dangling bonds for center unitcell
     print("Creating extended (3x3x3) unit cell for fragment identification")
     temp_extended_coords, temp_extended_elems = cell_extend_frag_withcenter(cell_vectors, orthogcoords, elems)
-    
-    print("len temp_extended_coords", len(temp_extended_coords))
-    print("len temp_extended_elems", len(temp_extended_elems))
-    
+
     # Write XYZ-file with orthogonal coordinates for 3x3xcell
     modules.module_coords.write_xyzfile(temp_extended_elems, temp_extended_coords, "temp_cell_extended_coords-beforedel")
     
     #Delete duplicate entries. May happen if atoms are right on boundary
     temp_extended_coords, temp_extended_elems = delete_clashing_atoms(temp_extended_coords,orthogcoords,temp_extended_elems,elems)
-
-    print("len temp_extended_coords", len(temp_extended_coords))
-    print("len temp_extended_elems", len(temp_extended_elems))
     
     # Write XYZ-file with orthogonal coordinates for 3x3xcell
     modules.module_coords.write_xyzfile(temp_extended_elems, temp_extended_coords, "temp_cell_extended_coords-afterdel")
@@ -695,7 +689,6 @@ def read_ciffile(file):
             ashexit()
 
     print("Symmetry operations found in CIF:", symmops)
-    print("coords : ", coords)
     if len(coords) == 0:
         print("Found zero coordinates in CIF-file: {}. Something wrong with file. Exiting...".format(file))
         ashexit()
@@ -891,7 +884,9 @@ def create_MMcluster(orthogcoords,elems,cell_vectors,sphereradius):
     #List of Bools, duplicates are True
     #NOTE: Problem, way too slow 
     print("Starting filter duplicate. This step is currently slow. To be fixed")
+    timestampA=time.time()
     dupls=np.array(filter_duplicate(extended_coords))
+    print_time_rel(timestampA, modulename='filter duplicate', moduleindex=4)
     #Deleting atoms in duplication list in reverse
     extended_coords=np.delete(extended_coords, list(reversed(dupls)), 0)
     for d in reversed(dupls):
@@ -993,7 +988,7 @@ def remove_partial_fragments(coords,elems,sphereradius,fragmentobjects, scale=No
         else:
             deletionlist+=frag
     deletionlist=np.unique(deletionlist).tolist()
-    print(f"deletionlist: {len(deletionlist)} atoms")
+    print(f"Atoms to delete: {len(deletionlist)} atoms")
     #Deleting atoms in deletion list in reverse
     coords=np.delete(coords, list(reversed(deletionlist)), 0)
     for d in reversed(deletionlist):

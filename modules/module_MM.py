@@ -356,12 +356,12 @@ class NonBondedTheory:
                 print("Alternatively, use codeversion='py' argument to NonBondedTheory to use slower Python version for array creation")
                 ashexit()
 
-            print_time_rel(CheckpointTime, modulename="from run to just before calling ")
+            #print_time_rel(CheckpointTime, modulename="NonBondedTheory:from run to just before calling ")
             self.MMEnergy, self.MMGradient, self.LJenergy, self.Coulombchargeenergy =\
                 Juliafunctions.LJcoulomb_julia(charges, current_coords, self.epsij, self.sigmaij)
             #Converting to numpy array 
             self.MMGradient = np.asarray(self.MMGradient)
-            print_time_rel(CheckpointTime, modulename="from run to done julia")
+            #print_time_rel(CheckpointTime, modulename="NonBondedTheoryfrom run to done julia")
         else:
             print("Unknown version of MM code")
             ashexit()

@@ -45,8 +45,6 @@ settings_dict["tol"] = 0.1
 settings_dict["conndepth"] = 10
 settings_dict["connectivity_code"] = "julia"
 settings_dict["nonbondedMM_code"] = "julia"
-
-print("settings_dict conn code", settings_dict["connectivity_code"])
 # Exit command
 settings_dict["print_exit_footer"] = True
 settings_dict["print_full_timings"] = True
@@ -79,7 +77,7 @@ def try_read_setting(stringvalue, datatype):
         pass
         # print("EXCEPTION!!!!. stringvalue:", stringvalue)
 
-
+#NOTE: Warning. If user added quotation marks around string then things go awry. Look into
 # Keywords to look up in ash_user_settings.ini
 try_read_setting("orcadir", "string")
 try_read_setting("daltondir", "string")
@@ -99,5 +97,3 @@ try_read_setting("print_logo", "bool")
 try_read_setting("debugflag", "bool")
 try_read_setting("load_julia", "bool")
 try_read_setting("julia_library", "string")
-
-print("settings_dict conn code", settings_dict["connectivity_code"])

@@ -129,8 +129,6 @@ def molcrys(cif_file=None, xtl_file=None, xyz_file=None, cell_length=None, cell_
             shift=[-0.3,-0.3,-0.3]
             asymmcoords=functions.functions_molcrys.shift_fractcoords(asymmcoords,shift)
 
-        print("asymmcoords:", asymmcoords)
-        print("asymmcoords length", len(asymmcoords))
         #Checking if cellunits is None or integer. If none then "_cell_formula_units" not in CIF-file and then unitcell should already be filled
         if cellunits is None:
             print("Unitcell is full (based on lack of cell_formula_units_Z line in CIF-file). Not applying symmetry operations")
@@ -235,7 +233,6 @@ def molcrys(cif_file=None, xtl_file=None, xyz_file=None, cell_length=None, cell_
     
     #Converting orthogcoords to numpy array for better performance
     orthogcoords=np.array(orthogcoords)
-    print("orthogcoords:", orthogcoords)
 
     modules.module_coords.write_xyzfile(elems,orthogcoords,"cell_orthog-original")
     
@@ -417,9 +414,6 @@ def molcrys(cif_file=None, xtl_file=None, xyz_file=None, cell_length=None, cell_
     print_time_rel_and_tot(currtime, origtime, modulename='reorder fraglists')
     currtime=time.time()
     #TODO: after removing partial fragments and getting connectivity etc. Would be good to make MM cluster neutral
-
-    print("fragmentobjects:", fragmentobjects)
-    print(len(fragmentobjects))
 
     #Add fragmentobject-info to Cluster fragment
     #Old slow code:
