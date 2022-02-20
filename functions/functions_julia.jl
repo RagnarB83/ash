@@ -57,7 +57,8 @@ function calc_fraglist_for_atoms_julia(atomlist,coords, elems, conndepth, scale,
     println("fraglist", fraglist)
     println("type fraglist", typeof(fraglist))
     #Convert fraglist
-    finalfraglist=pylist(fraglist)
+    #finalfraglist=pylist(fraglist)
+    finalfraglist=fraglist
     println("finalfraglist:", finalfraglist)
     println("type finalfraglist", typeof(finalfraglist))
     return finalfraglist

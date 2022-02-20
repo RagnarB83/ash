@@ -60,6 +60,7 @@ def load_pyjulia():
     print("Now loading PyJulia. This will fail if :\n\
         - PyJulia Python package has not been installed\n\
         - Julia PyCall package has not been installed\n\
+        - python-jl/python3_ash interpreter not used (necessary for static libpython)\n\
         - Julia Hungarian package has not been installed")
 
     from julia import Main as JuliaMain
