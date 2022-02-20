@@ -42,7 +42,6 @@ class QMMMTheory:
 
         #Theory level definitions
         self.printlevel=printlevel
-        print("self.printlevel: ", self.printlevel)
         self.qm_theory=qm_theory
         self.qm_theory_name = self.qm_theory.__class__.__name__
         self.mm_theory=mm_theory
@@ -287,7 +286,6 @@ class QMMMTheory:
             #Case: No actual MM theory but we still want to zero charges for QM elstate embedding calculation
             #TODO: Remove option for no MM theory or keep this ??
             self.ZeroQMCharges() #Modifies self.charges_qmregionzeroed
-            print("length of self.charges_qmregionzeroed :", len(self.charges_qmregionzeroed))
         print_time_rel(module_init_time, modulename='QM/MM object creation', moduleindex=2)
     #From QM1:MM1 boundary dict, get MM1:MMx boundary dict (atoms connected to MM1)
     def get_MMboundary(self,scale,tol):

@@ -28,7 +28,7 @@ end
 #NOTE: All other functions only work with Julia types (no wrapping)
 ########################################################################################################################
 #NOTES:
-#The conversions we do in the wrapper functions may not be necessary and could slow things down a bit.
+#The conversions we do in the wrapper functions (via PythonCall pyconvert) may not be necessary and could slow things down a bit.
 #The PythonCall wrapping of objects should not require the conversions.
 #However, some problems with the dictionaries etc. To be revisited
 
@@ -86,7 +86,6 @@ function LJcoulomb_julia(charges,coords,epsij,sigmaij)
     epsij=pyconvert(Array,epsij)
     sigmaij=pyconvert(Array,sigmaij)
     E, gradient, VLJ, VC = LJcoulombchargev1c(charges, coords, epsij, sigmaij)
-
     return E, gradient, VLJ, VC
 end
 
