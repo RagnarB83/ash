@@ -30,7 +30,9 @@ end
 function calc_connectivity(coords,elems,conndepth,scale, tol,eldict_covrad)
     println("Calling calc_connectivity (pyjulia)")
     # Julia conversion
+    println("type eldict_covrad", typeof(eldict_covrad))
     eldict_covrad_jul=convert(Dict{String,Float64}, eldict_covrad)
+    println("type eldict_covrad_jul", typeof(eldict_covrad_jul))
 	#0-index based atomlist
 	atomlist=[0:length(elems)-1;]
 	return calc_fraglist_for_atoms(atomlist,coords, elems, conndepth, scale, tol,eldict_covrad_jul)
@@ -40,8 +42,10 @@ end
 #Wrapper function for calc_fraglist_for_atoms_wrapper
 function calc_fraglist_for_atoms_julia(atomlist,coords, elems, conndepth, scale, tol,eldict_covrad)
     println("Calling calc_fraglist_for_atoms_julia (pyjulia)")
+    println("type eldict_covrad", typeof(eldict_covrad))
     #Julia conversion
 	eldict_covrad_jul=convert(Dict{String,Float64}, eldict_covrad)
+    println("type eldict_covrad_jul", typeof(eldict_covrad_jul))
 
     fraglist = calc_fraglist_for_atoms(atomlist,coords, elems, conndepth, scale, tol,eldict_covrad_jul)
     return fraglist
@@ -81,6 +85,7 @@ end
 
 #Connectivity (fraglists) for whole fragment
 function calc_connectivity(coords,elems,conndepth,scale, tol,eldict_covrad)
+    println("1 type eldict_covrad", typeof(eldict_covrad))
 	#0-index based atomlist
 	atomlist=[0:length(elems)-1;]
 	return calc_fraglist_for_atoms(atomlist,coords, elems, conndepth, scale, tol,eldict_covrad)
@@ -89,6 +94,7 @@ end
 
 #Get fraglist for list of atoms (called by molcrys directly). Using 0-based indexing until get_conn_atoms
 function calc_fraglist_for_atoms(atomlist,coords, elems, conndepth, scale, tol,eldict_covrad)
+    println("2 type eldict_covrad", typeof(eldict_covrad))
     found_atoms = Int64[]
 	#List of lists
 	fraglist = Array{Int64}[]
@@ -102,6 +108,65 @@ function calc_fraglist_for_atoms(atomlist,coords, elems, conndepth, scale, tol,e
 		end
 	end
 	return fraglist
+end
+
+function get_molecule_members_julia(coords, elems, loopnumber, scale, tol, eldict_covrad, atomindex)
+    println("3 type eldict_covrad", typeof(eldict_covrad))
+	membs = Int64[]
+	membs = get_connected_atoms_julia(coords, elems, eldict_covrad, scale, tol, atomindex)
+	finalmembs = membs
+	for i in 1:loopnumber
+		# Get list of lists of connatoms for each member
+		newmembers = Int64[]
+		for k in membs
+			new = get_connected_atoms_julia(coords, elems, eldict_covrad, scale, tol, k)
+			newmembers = [newmembers;new]
+		end
+		# Get a unique flat list
+		trimmed_flat = sort(unique(newmembers))
+		# Check if new atoms not previously found
+		membs = setdiff(trimmed_flat, finalmembs)
+		if length(membs) == 0
+			return finalmembs
+		end
+		finalmembs = [finalmembs;membs]
+		finalmembs = sort(unique(finalmembs))
+	end
+	return finalmembs
+end
+
+# Get list of connected atoms
+#NOTE: This function is not optimized!
+function get_connected_atoms_forlist_julia(coords::Array{Float64,2}, elems::Array{String,1}, scale::Float64,tol::Float64,
+    eldict_covrad, atomlist::Array{Int64,1})
+    println("get_connected_atoms_forlist_julia")
+    println("4 type eldict_covrad", typeof(eldict_covrad))
+    finallist = Array{Int64}[]
+    @inbounds for atomindex in atomlist
+        conn = get_connected_atoms_julia(coords, elems, eldict_covrad, scale, tol, atomindex)
+        #newmembers = [newmembers;[new]]
+        push!(finallist,conn)
+        #newmembers=vcat(newmembers,new)
+    end
+    return finallist
+end
+
+#Here accessing Julia arrays. Switching from 0-based to 1-based indexing here
+function get_connected_atoms_julia(coords::Array{Float64,2}, elems::Array{String,1},
+    eldict_covrad::Dict{String,Float64},scale::Float64,tol::Float64, atomindex::Int64)
+    println("5 type eldict_covrad", typeof(eldict_covrad))
+    connatoms = Int64[]
+    @inbounds elem_ref=elems[atomindex+1]
+    @inbounds for i=1:length(elems)
+			@inbounds dist = distance(coords,i,atomindex+1)
+			#dist = euclidean(coords[i],coords[atomindex+1])
+			#dist = euclidean(view(coords,i,:),view(coords,atomindex+1,:))
+			@fastmath @inbounds rad_dist = scale*(eldict_covrad[elems[i]]+eldict_covrad[elem_ref]) + tol
+        	if dist < rad_dist
+            	@inbounds @fastmath push!(connatoms, i-1)
+			end
+	end
+    return connatoms
 end
 
 #Various distance functions
@@ -160,61 +225,7 @@ function distance_view(coords::Array{Float64,2},i::Int64,j::Int64)
 end
 
 
-function get_molecule_members_julia(coords, elems, loopnumber, scale, tol, eldict_covrad, atomindex)
-	membs = Int64[]
-	membs = get_connected_atoms_julia(coords, elems, eldict_covrad, scale, tol, atomindex)
-	finalmembs = membs
-	for i in 1:loopnumber
-		# Get list of lists of connatoms for each member
-		newmembers = Int64[]
-		for k in membs
-			new = get_connected_atoms_julia(coords, elems, eldict_covrad, scale, tol, k)
-			newmembers = [newmembers;new]
-		end
-		# Get a unique flat list
-		trimmed_flat = sort(unique(newmembers))
-		# Check if new atoms not previously found
-		membs = setdiff(trimmed_flat, finalmembs)
-		if length(membs) == 0
-			return finalmembs
-		end
-		finalmembs = [finalmembs;membs]
-		finalmembs = sort(unique(finalmembs))
-	end
-	return finalmembs
-end
 
-# Get list of connected atoms
-#NOTE: This function is not optimized!
-function get_connected_atoms_forlist_julia(coords::Array{Float64,2}, elems::Array{String,1}, scale::Float64,tol::Float64,
-    eldict_covrad, atomlist::Array{Int64,1})
-    println("get_connected_atoms_forlist_julia")
-    finallist = Array{Int64}[]
-    @inbounds for atomindex in atomlist
-        conn = get_connected_atoms_julia(coords, elems, eldict_covrad, scale, tol, atomindex)
-        #newmembers = [newmembers;[new]]
-        push!(finallist,conn)
-        #newmembers=vcat(newmembers,new)
-    end
-    return finallist
-end
-
-#Here accessing Julia arrays. Switching from 0-based to 1-based indexing here
-function get_connected_atoms_julia(coords::Array{Float64,2}, elems::Array{String,1},
-    eldict_covrad::Dict{String,Float64},scale::Float64,tol::Float64, atomindex::Int64)
-    connatoms = Int64[]
-    @inbounds elem_ref=elems[atomindex+1]
-    @inbounds for i=1:length(elems)
-			@inbounds dist = distance(coords,i,atomindex+1)
-			#dist = euclidean(coords[i],coords[atomindex+1])
-			#dist = euclidean(view(coords,i,:),view(coords,atomindex+1,:))
-			@fastmath @inbounds rad_dist = scale*(eldict_covrad[elems[i]]+eldict_covrad[elem_ref]) + tol
-        	if dist < rad_dist
-            	@inbounds @fastmath push!(connatoms, i-1)
-			end
-	end
-    return connatoms
-end
 
 
 #Just Coulomb function. Adapted from LJcoulombchargev1c

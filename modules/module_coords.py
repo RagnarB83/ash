@@ -507,10 +507,6 @@ class Fragment:
             print_time_rel(timestampB, modulename='calc connectivity py', moduleindex=4)
         elif codeversion == 'julia':
             print("Calculating connectivity of fragment using Julia.")
-            Juliafunctions = load_julia_interface()
-            fraglist_temp = Juliafunctions.calc_connectivity(self.coords, self.elems, conndepth, scale, tol,
-                                                                eldict_covrad)
-            print("fraglist_temp:", fraglist_temp)
             timestampB = time.time()
             try:
                 Juliafunctions = load_julia_interface()
