@@ -925,40 +925,8 @@ def remove_partial_fragments(coords,elems,sphereradius,fragmentobjects, scale=No
     found_atoms=[]
     fraglist=[]
 
-
-    print("Loading Julia")
-    Juliafunctions=load_julia_interface()
-    print("Load successful")
-    #Get list of fragments for all surfaceatoms
-    print("Now calling Julia function")
-    fraglist_temp = Juliafunctions.calc_fraglist_for_atoms_julia(surfaceatoms,coords, elems, 99, scale, tol,modules.module_coords.eldict_covrad)
-    print("fraglist_temp:", fraglist_temp)
-    print("fraglist_temp 0", fraglist_temp[0])
-    bla=fraglist_temp[0]
-    print("bla:", bla)
-    print("type bla", type(bla))
-    blalist=list(bla)
-    print("blalist:", blalist)
-    print("type blalist", type(blalist))
-    #TODO: Necessary. Can we change return of Julia function instead??
-    fraglist_temp = [list(i) for i in fraglist_temp]
-    print("fraglist_temp", fraglist_temp)
-    exit()
-
-
-
     if codeversion=='julia':
         print("Will use julia for finding surface atoms")
-        #Juliafunctions=load_julia_interface()
-        #fraglist_temp = Juliafunctions.calc_fraglist_for_atoms_julia(surfaceatoms,coords, elems, 99, scale, tol,modules.module_coords.eldict_covrad)
-        #print("fraglist_temp", fraglist_temp)
-        #fraglist_temp = [list(i) for i in fraglist_temp]
-        #print("After fraglist_temp", fraglist_temp)
-        ## Converting from numpy to list of lists
-        #for sublist in fraglist_temp:
-        #    fraglist.append(list(sublist))
-        #print("fraglist:", fraglist)
-        #exit()
         try:
             # Import Julia
             print("Loading Julia")
@@ -967,10 +935,8 @@ def remove_partial_fragments(coords,elems,sphereradius,fragmentobjects, scale=No
             #Get list of fragments for all surfaceatoms
             print("Now calling Julia function")
             fraglist_temp = Juliafunctions.calc_fraglist_for_atoms_julia(surfaceatoms,coords, elems, 99, scale, tol,modules.module_coords.eldict_covrad)
-            print("fraglist_temp:", fraglist_temp)
             #TODO: Necessary. Can we change return of Julia function instead??
             fraglist_temp = [list(i) for i in fraglist_temp]
-            print("fraglist_temp", fraglist_temp)
 
             # Converting from numpy to list of lists
             for sublist in fraglist_temp:

@@ -512,7 +512,6 @@ class Fragment:
                 Juliafunctions = load_julia_interface()
                 fraglist_temp = Juliafunctions.calc_connectivity(self.coords, self.elems, conndepth, scale, tol,
                                                                  eldict_covrad)
-                print("fraglist_temp:", fraglist_temp)
                 fraglist = []
                 # Converting from numpy to list of lists
                 for sublist in fraglist_temp:
@@ -525,7 +524,6 @@ class Fragment:
                 # Switching default to py since Julia did not load
                 settings_ash.settings_dict["connectivity_code"] = "py"
                 fraglist = calc_conn_py(self.coords, self.elems, conndepth, scale, tol)
-        print("fraglist x4:", fraglist)
         self.connectivity = fraglist
         # Calculate number of atoms in connectivity list of lists
         conn_number_sum = 0
