@@ -420,11 +420,11 @@ def molcrys(cif_file=None, xtl_file=None, xyz_file=None, cell_length=None, cell_
     #Cluster.old_add_fragment_type_info(fragmentobjects)
     Cluster.add_fragment_type_info(fragmentobjects)
 
-    print_time_rel_and_tot(currtime, origtime, modulename='Cluster fragment type info')
+    #print_time_rel_and_tot(currtime, origtime, modulename='Cluster fragment type info')
     currtime=time.time()
     #Cluster is now almost complete, only charges missing. Print info to file
-    print(Cluster.print_system("Cluster-info-nocharges.ygg"))
-    print_time_rel_and_tot(currtime, origtime, modulename='Cluster print system')
+    Cluster.print_system("Cluster-info-nocharges.ygg")
+    #print_time_rel_and_tot(currtime, origtime, modulename='Cluster print system')
     currtime=time.time()
     # Create dirs to keep track of various files before QM calculations begin
     try:
@@ -597,7 +597,7 @@ def molcrys(cif_file=None, xtl_file=None, xyz_file=None, cell_length=None, cell_
 
     print(BC.OKMAGENTA,"Molcrys Charge-Iteration done!",BC.END)
     print("")
-    print_time_rel_and_tot(currtime, origtime, modulename="SP iteration done")
+    print_time_rel_and_tot(currtime, origtime, modulename="Molcrys: SP iterations")
     currtime=time.time()
     
     #Now that charges are converged (for mainfrag and counterfrags ???).
