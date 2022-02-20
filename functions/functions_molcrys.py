@@ -933,6 +933,7 @@ def remove_partial_fragments(coords,elems,sphereradius,fragmentobjects, scale=No
     print("Now calling Julia function")
     fraglist_temp = Juliafunctions.calc_fraglist_for_atoms_julia(surfaceatoms,coords, elems, 99, scale, tol,modules.module_coords.eldict_covrad)
     print("fraglist_temp:", fraglist_temp)
+    print("fraglist_temp 0", fraglist_temp[0])
     #TODO: Necessary. Can we change return of Julia function instead??
     fraglist_temp = [list(i) for i in fraglist_temp]
     print("fraglist_temp", fraglist_temp)
