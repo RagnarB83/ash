@@ -203,9 +203,8 @@ class NonBondedTheory:
             #    #or only for active region
                 print("Calculating pairpotential array for active region only")
                 #pairpot_active(numatoms,atomtypes,LJpydict,qmatoms,actatoms)
-                print("self.numatoms", self.numatoms)
+                print("Numatoms:", self.numatoms)
                 #print("self.atomtypes", self.atomtypes)
-                print("self.LJpairpotdict", self.LJpairpotdict)
                 print("qmatoms", qmatoms)
                 #print("actatoms", actatoms)
                 self.sigmaij, self.epsij = Juliafunctions.pairpot_active_julia(self.numatoms, self.atomtypes, self.LJpairpotdict, qmatoms, actatoms)

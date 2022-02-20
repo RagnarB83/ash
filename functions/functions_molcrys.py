@@ -211,7 +211,7 @@ def frag_define(orthogcoords,elems,cell_vectors,fragments,cell_angles=None, cell
     print("systemlist:", systemlist)
     print("Systemlist length:", len(systemlist))
     blankline()
-    print_time_rel_and_tot(currtime, origtime, modulename='molcrys_frag_define_step1')
+    print_time_rel_and_tot(currtime, origtime, modulename='molcrys_frag_define_step1', moduleindex=4)
     currtime=time.time()
 
     #2.  Using extended cell find connected members of unassigned fragments
@@ -257,7 +257,7 @@ def frag_define(orthogcoords,elems,cell_vectors,fragments,cell_angles=None, cell
 
     print("Systemlist ({}) remaining: {}".format(len(systemlist), systemlist))
 
-    print_time_rel_and_tot(currtime, origtime, modulename='molcrys_frag_define_step2')
+    print_time_rel_and_tot(currtime, origtime, modulename='molcrys_frag_define_step2', moduleindex=4)
     currtime=time.time()
     #3.  Going through fragment fraglists. Finding atoms that belong to another cell (i.e. large atom index).
     # Finding equivalent atom positions inside original cell
@@ -290,7 +290,7 @@ def frag_define(orthogcoords,elems,cell_vectors,fragments,cell_angles=None, cell
             sorted_mfrag = sorted(mfrag)
             fragment.fraglist[fragindex] = sorted_mfrag
 
-    print_time_rel_and_tot(currtime, origtime, modulename='molcrys_frag_define_step3a')
+    print_time_rel_and_tot(currtime, origtime, modulename='molcrys_frag_define_step3a', moduleindex=4)
     currtime=time.time()
 
     #Because every fragment with an atom inside original cell in step 2 gets added
@@ -1036,7 +1036,7 @@ def reordercluster(fragment,fragmenttype,code_version='py'):
         #print("After. fragmenttype.clusterfraglist:", fragmenttype.clusterfraglist)
         #print(fragmenttype.clusterfraglist[236])
         ashexit()
-        print_time_rel(timestampA, modulename='reorder_cluster julia')
+        print_time_rel(timestampA, modulename='reorder_cluster julia', moduleindex=4)
     elif code_version=='py':
         print("Calling reorder_cluster py")
         print("Now trying to importing scipy")
@@ -1065,7 +1065,7 @@ def reordercluster(fragment,fragmenttype,code_version='py'):
         #print("After. fragmenttype.clusterfraglist:", fragmenttype.clusterfraglist)
         #ashexit()
         #print(fragmenttype.clusterfraglist[236])
-        print_time_rel(timestampA, modulename='reorder_cluster py')
+        print_time_rel(timestampA, modulename='reorder_cluster py', moduleindex=4)
 #Updating pointcharges of fragment
 def pointchargeupdate(fragment,fragmenttype,chargelist):
     #print("fragment:", fragment)
@@ -1124,7 +1124,7 @@ def gasfragcalc_ORCA(fragmentobjects,Cluster,chargemodel,orcadir,orcasimpleinput
         #print(gasfrag.__dict__)
         #Creating ORCA theory object with fragment
 
-        print_time_rel_and_tot(currtime, origtime, modulename='prep stuff')
+        print_time_rel_and_tot(currtime, origtime, modulename='gasfragcalc_ORCA prep stuff')
         currtime = time.time()
         #Assuming mainfrag is fragmentobject 0 and only mainfrag can be Broken-symmetry
         if id == 0:
@@ -1144,7 +1144,7 @@ def gasfragcalc_ORCA(fragmentobjects,Cluster,chargemodel,orcadir,orcasimpleinput
         #print(ORCASPcalculation.__dict__)
         #Run ORCA calculation with charge-model info
         ORCASPcalculation.run(numcores=NUMPROC, charge=fragmentobject.Charge, mult=fragmentobject.Mult)
-        print_time_rel_and_tot(currtime, origtime, modulename='orca run')
+        print_time_rel_and_tot(currtime, origtime, modulename='gasfragcalc_ORCA orca run', moduleindex=4)
         currtime = time.time()
 
         if chargemodel == 'DDEC3' or chargemodel == 'DDEC6':
@@ -1163,7 +1163,7 @@ def gasfragcalc_ORCA(fragmentobjects,Cluster,chargemodel,orcadir,orcasimpleinput
         else:
             #Grab atomic charges for fragment.
             atomcharges=interfaces.interface_ORCA.grabatomcharges_ORCA(chargemodel,ORCASPcalculation.filename+'.out')
-            print_time_rel_and_tot(currtime, origtime, modulename='grabatomcharges')
+            print_time_rel_and_tot(currtime, origtime, modulename='gasfragcalc_ORCA grabatomcharges', moduleindex=4)
             currtime = time.time()
 
         print("Elements:", gasfrag.elems)
@@ -1174,11 +1174,11 @@ def gasfragcalc_ORCA(fragmentobjects,Cluster,chargemodel,orcadir,orcasimpleinput
         fragmentobject.add_charges(atomcharges)
         
 
-        print_time_rel_and_tot(currtime, origtime, modulename='fragmentobject add charges')
+        print_time_rel_and_tot(currtime, origtime, modulename='gasfragcalc_ORCA fragmentobject add charges', moduleindex=4)
         currtime = time.time()
         #Assign pointcharges to each atom of MM cluster.
         pointchargeupdate(Cluster,fragmentobject,atomcharges)
-        print_time_rel_and_tot(currtime, origtime, modulename='pointchargeupdate')
+        print_time_rel_and_tot(currtime, origtime, modulename='gasfragcalc_ORCA pointchargeupdate', moduleindex=4)
         currtime = time.time()
         #Keep backup of ORCA outputfile and GBW file
         shutil.copy(ORCASPcalculation.filename + '.out', fragmentobject.Name + '.out')
@@ -1188,11 +1188,11 @@ def gasfragcalc_ORCA(fragmentobjects,Cluster,chargemodel,orcadir,orcasimpleinput
             shutil.copy(ORCASPcalculation.filename + '.gbw', 'lastorbitals.gbw')
         #Keeping copy of each fragment GBW file: fragment0.gbw, fragment1.gbw etc.
         shutil.copy(ORCASPcalculation.filename + '.gbw', 'fragment{}.gbw'.format(id))
-        print_time_rel_and_tot(currtime, origtime, modulename='shutil stuff')
+        print_time_rel_and_tot(currtime, origtime, modulename='gasfragcalc_ORCA shutil stuff', moduleindex=4)
         currtime = time.time()
         #Clean up ORCA job.
         ORCASPcalculation.cleanup()
-        print_time_rel_and_tot(currtime, origtime, modulename='orca cleanup')
+        print_time_rel_and_tot(currtime, origtime, modulename='gasfragcalc_ORCA orca cleanup', moduleindex=4)
         currtime = time.time()
         blankline()
 

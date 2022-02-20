@@ -502,12 +502,10 @@ class Fragment:
         print("julia")
         if codeversion == 'py':
             print("Calculating connectivity of fragment using py.")
-            timestampB = time.time()
             fraglist = calc_conn_py(self.coords, self.elems, conndepth, scale, tol)
-            print_time_rel(timestampB, modulename='calc connectivity py', moduleindex=4)
+            print_time_rel(timestampA, modulename='calc connectivity py', moduleindex=4)
         elif codeversion == 'julia':
             print("Calculating connectivity of fragment using Julia.")
-            timestampB = time.time()
             try:
                 Juliafunctions = load_julia_interface()
                 fraglist_temp = Juliafunctions.calc_connectivity(self.coords, self.elems, conndepth, scale, tol,
@@ -516,7 +514,7 @@ class Fragment:
                 # Converting from numpy to list of lists
                 for sublist in fraglist_temp:
                     fraglist.append(list(sublist))
-                print_time_rel(timestampB, modulename='calc connectivity julia', moduleindex=4)
+                print_time_rel(timestampA, modulename='calc connectivity julia', moduleindex=4)
             except:
                 print(BC.FAIL, "Problem importing Python-Julia interface.", BC.END)
                 print("Make sure Julia is installed and Python-Julia interface has been set up.")
@@ -524,6 +522,7 @@ class Fragment:
                 # Switching default to py since Julia did not load
                 settings_ash.settings_dict["connectivity_code"] = "py"
                 fraglist = calc_conn_py(self.coords, self.elems, conndepth, scale, tol)
+                print_time_rel(timestampA, modulename='calc connectivity py', moduleindex=4)
         self.connectivity = fraglist
         # Calculate number of atoms in connectivity list of lists
         conn_number_sum = 0
