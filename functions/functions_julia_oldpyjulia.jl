@@ -30,9 +30,7 @@ end
 function calc_connectivity(coords,elems,conndepth,scale, tol,eldict_covrad)
     println("Calling calc_connectivity (pyjulia)")
     # Julia conversion
-    println("type eldict_covrad", typeof(eldict_covrad))
     eldict_covrad_jul=convert(Dict{String,Float64}, eldict_covrad)
-    println("type eldict_covrad_jul", typeof(eldict_covrad_jul))
 	#0-index based atomlist
 	atomlist=[0:length(elems)-1;]
 	return calc_fraglist_for_atoms(atomlist,coords, elems, conndepth, scale, tol,eldict_covrad_jul)
@@ -42,10 +40,8 @@ end
 #Wrapper function for calc_fraglist_for_atoms_wrapper
 function calc_fraglist_for_atoms_julia(atomlist,coords, elems, conndepth, scale, tol,eldict_covrad)
     println("Calling calc_fraglist_for_atoms_julia (pyjulia)")
-    println("type eldict_covrad", typeof(eldict_covrad))
     #Julia conversion
 	eldict_covrad_jul=convert(Dict{String,Float64}, eldict_covrad)
-    println("type eldict_covrad_jul", typeof(eldict_covrad_jul))
 
     fraglist = calc_fraglist_for_atoms(atomlist,coords, elems, conndepth, scale, tol,eldict_covrad_jul)
     return fraglist
@@ -86,7 +82,6 @@ end
 
 #Get fraglist for list of atoms (called by molcrys directly). Using 0-based indexing until get_conn_atoms
 function calc_fraglist_for_atoms(atomlist,coords, elems, conndepth, scale, tol,eldict_covrad)
-    println("2 type eldict_covrad", typeof(eldict_covrad))
     found_atoms = Int64[]
 	#List of lists
 	fraglist = Array{Int64}[]
@@ -103,7 +98,6 @@ function calc_fraglist_for_atoms(atomlist,coords, elems, conndepth, scale, tol,e
 end
 
 function get_molecule_members_julia(coords, elems, loopnumber, scale, tol, eldict_covrad, atomindex)
-    println("3 type eldict_covrad", typeof(eldict_covrad))
 	membs = Int64[]
 	membs = get_connected_atoms_julia(coords, elems, eldict_covrad, scale, tol, atomindex)
 	finalmembs = membs
@@ -131,8 +125,6 @@ end
 #NOTE: This function is not optimized!
 function get_connected_atoms_forlist_julia(coords::Array{Float64,2}, elems::Array{String,1}, scale::Float64,tol::Float64,
     eldict_covrad, atomlist::Array{Int64,1})
-    println("get_connected_atoms_forlist_julia")
-    println("4 type eldict_covrad", typeof(eldict_covrad))
     finallist = Array{Int64}[]
     @inbounds for atomindex in atomlist
         conn = get_connected_atoms_julia(coords, elems, eldict_covrad, scale, tol, atomindex)
@@ -146,7 +138,6 @@ end
 #Here accessing Julia arrays. Switching from 0-based to 1-based indexing here
 function get_connected_atoms_julia(coords::Array{Float64,2}, elems::Array{String,1},
     eldict_covrad::Dict{String,Float64},scale::Float64,tol::Float64, atomindex::Int64)
-    println("5 type eldict_covrad", typeof(eldict_covrad))
     connatoms = Int64[]
     @inbounds elem_ref=elems[atomindex+1]
     @inbounds for i=1:length(elems)
