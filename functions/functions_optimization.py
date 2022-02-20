@@ -49,7 +49,7 @@ def write_xyz_trajectory(file, coords, elems, titleline):
 # Interface DL-FIND (internal coords, HDLC etc.): https://www.chemshell.org/dl-find
 
 #ASH Cartesian Optimizer function for basic usage
-def SimpleOpt(fragment=None, theory='', charge=None, mult=None, optimizer='', maxiter=50, frozen_atoms=None, RMSGtolerance=0.0001, MaxGtolerance=0.0003, FIRE_timestep=0.00009):
+def SimpleOpt(fragment=None, theory=None, charge=None, mult=None, optimizer='', maxiter=50, frozen_atoms=None, RMSGtolerance=0.0001, MaxGtolerance=0.0003, FIRE_timestep=0.00009):
     if fragment is not None:
         pass
     else:
@@ -66,7 +66,7 @@ def SimpleOpt(fragment=None, theory='', charge=None, mult=None, optimizer='', ma
         frozen_atoms=[]
 
     #Check charge/mult
-    charge,mult = check_charge_mult(charge, mult, theory.theorytype, fragment, "SimpleOpt")
+    charge,mult = check_charge_mult(charge, mult, theory.theorytype, fragment, "SimpleOpt", theory=theory)
 
     #List of active vs. frozen labels
     actfrozen_labels=[]
@@ -447,7 +447,7 @@ def BernyOpt(theory,fragment, charge=None, mult=None):
     blankline()
     print("Beginning Py-Berny Optimization")
     #Check charge/mult
-    charge,mult = check_charge_mult(charge, mult, theory.theorytype, fragment, "BernyOpt")
+    charge,mult = check_charge_mult(charge, mult, theory.theorytype, fragment, "BernyOpt", theory=theory)
     try:
         from berny import Berny, geomlib
     except:

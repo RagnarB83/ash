@@ -44,7 +44,7 @@ def calc_surface(fragment=None, theory=None, charge=None, mult=None, scantype='U
     print_line_with_mainheader("CALC_SURFACE FUNCTION")
 
     #Check charge/mult
-    charge,mult = check_charge_mult(charge, mult, theory.theorytype, fragment, "calc_surface")
+    charge,mult = check_charge_mult(charge, mult, theory.theorytype, fragment, "calc_surface", theory=theory)
 
     if 'numcores' in kwargs:
         numcores = kwargs['numcores']

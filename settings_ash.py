@@ -28,6 +28,7 @@ settings_dict["debugflag"] = False
 
 # Julia usage
 settings_dict["load_julia"] = False
+settings_dict["julia_library"] = "pythoncall" #pythoncall is default. pyjulia another option
 
 # Whether to use ANSI color escape sequences in output or not.
 settings_dict["use_ANSI_color"] = False
@@ -44,7 +45,6 @@ settings_dict["tol"] = 0.1
 settings_dict["conndepth"] = 10
 settings_dict["connectivity_code"] = "julia"
 settings_dict["nonbondedMM_code"] = "julia"
-
 # Exit command
 settings_dict["print_exit_footer"] = True
 settings_dict["print_full_timings"] = True
@@ -77,7 +77,7 @@ def try_read_setting(stringvalue, datatype):
         pass
         # print("EXCEPTION!!!!. stringvalue:", stringvalue)
 
-
+#NOTE: Warning. If user added quotation marks around string then things go awry. Look into
 # Keywords to look up in ash_user_settings.ini
 try_read_setting("orcadir", "string")
 try_read_setting("daltondir", "string")
@@ -96,3 +96,4 @@ try_read_setting("print_full_timings", "bool")
 try_read_setting("print_logo", "bool")
 try_read_setting("debugflag", "bool")
 try_read_setting("load_julia", "bool")
+try_read_setting("julia_library", "string")

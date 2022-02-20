@@ -61,7 +61,7 @@ from modules.module_surface import calc_surface, calc_surface_fromXYZ, read_surf
     write_surfacedict_to_file
 
 # QMcode interfaces
-from interfaces.interface_ORCA import ORCATheory, counterpoise_calculation_ORCA, ORCA_External_Optimizer
+from interfaces.interface_ORCA import ORCATheory, counterpoise_calculation_ORCA, ORCA_External_Optimizer, run_orca_plot
 import interfaces.interface_ORCA
 
 from interfaces.interface_Psi4 import Psi4Theory
@@ -138,10 +138,11 @@ if settings_ash.settings_dict["print_exit_footer"] is True:
     if settings_ash.settings_dict["print_full_timings"] is True:
         atexit.register(ash_header.print_timings)
 
-# Julia dependency. Load in the beginning or not
+# Julia dependency. Load in the beginning or not. 
+#As both PyJulia and PythonCall are a bit slow to load, it is best to only load when needed (current behaviour)
 if settings_ash.settings_dict["load_julia"] is True:
     try:
-        print("Import PyJulia interface and loading functions")
+        print("Importing Julia interface and loading functions")
         Juliafunctions = load_julia_interface()
         # Hungarian package needs to be installed
         # try:
@@ -150,11 +151,10 @@ if settings_ash.settings_dict["load_julia"] is True:
         #    print("Problem loading Julia packages: Hungarian")
 
     except ImportError:
-        print("Problem importing Pyjulia")
+        print("Problem importing Julia interface")
         print(
-            "Make sure Julia is installed, PyJulia within Python, Pycall within Julia, Julia packages have been "
-            "installed and you are using python3_ash")
-        print("The python3_ash executable is present in your ASH directory (do chmod +x python3_ash)")
+            "Make sure Julia is installed, Pythoncall/juliacall and the required Julia packages have been "
+            "installed.")
         print("Proceeding. Slower Python routines will used instead when possible")
         # Connectivity code in Fragment
         settings_ash.settings_dict["connectivity_code"] = "py"

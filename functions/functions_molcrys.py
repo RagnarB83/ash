@@ -89,25 +89,19 @@ def frag_define(orthogcoords,elems,cell_vectors,fragments,cell_angles=None, cell
 
     blankline()
     print(BC.OKBLUE, BC.BOLD,"Frag_Define: Defining fragments of unit cell", BC.END)
-    origtime=time.time()
-    currtime=time.time()
+    #origtime=time.time()
+    #currtime=time.time()
 
     # Extend unit cell in all directions with original cell in center,
     # so that we have no dangling bonds for center unitcell
     print("Creating extended (3x3x3) unit cell for fragment identification")
     temp_extended_coords, temp_extended_elems = cell_extend_frag_withcenter(cell_vectors, orthogcoords, elems)
-    
-    print("len temp_extended_coords", len(temp_extended_coords))
-    print("len temp_extended_elems", len(temp_extended_elems))
-    
+
     # Write XYZ-file with orthogonal coordinates for 3x3xcell
     modules.module_coords.write_xyzfile(temp_extended_elems, temp_extended_coords, "temp_cell_extended_coords-beforedel")
     
     #Delete duplicate entries. May happen if atoms are right on boundary
     temp_extended_coords, temp_extended_elems = delete_clashing_atoms(temp_extended_coords,orthogcoords,temp_extended_elems,elems)
-
-    print("len temp_extended_coords", len(temp_extended_coords))
-    print("len temp_extended_elems", len(temp_extended_elems))
     
     # Write XYZ-file with orthogonal coordinates for 3x3xcell
     modules.module_coords.write_xyzfile(temp_extended_elems, temp_extended_coords, "temp_cell_extended_coords-afterdel")
@@ -203,15 +197,16 @@ def frag_define(orthogcoords,elems,cell_vectors,fragments,cell_angles=None, cell
         print(fragment.fraglist)
         print("")
     #Sorting and trimming unassigned list of fragments
+    unassigned = np.array(unassigned, dtype=object) #Changed due to numpy deprecation warning
     unassigned = np.unique(unassigned).tolist()
     print("Unassigned members", unassigned)
     print("unassigned_formulas:", unassigned_formulas)
     #Systemlist with remaining atoms
-    print("systemlist:", systemlist)
+    #print("systemlist:", systemlist)
     print("Systemlist length:", len(systemlist))
     blankline()
-    print_time_rel_and_tot(currtime, origtime, modulename='molcrys_frag_define_step1')
-    currtime=time.time()
+    #print_time_rel_and_tot(currtime, origtime, modulename='molcrys_frag_define_step1', moduleindex=4)
+    #currtime=time.time()
 
     #2.  Using extended cell find connected members of unassigned fragments
     print(BC.OKBLUE,"Step 2. Using extended cell to find connected members of unassigned fragments",BC.END)
@@ -256,8 +251,8 @@ def frag_define(orthogcoords,elems,cell_vectors,fragments,cell_angles=None, cell
 
     print("Systemlist ({}) remaining: {}".format(len(systemlist), systemlist))
 
-    print_time_rel_and_tot(currtime, origtime, modulename='molcrys_frag_define_step2')
-    currtime=time.time()
+    #print_time_rel_and_tot(currtime, origtime, modulename='molcrys_frag_define_step2', moduleindex=4)
+    #currtime=time.time()
     #3.  Going through fragment fraglists. Finding atoms that belong to another cell (i.e. large atom index).
     # Finding equivalent atom positions inside original cell
     #Comparing all lists and removing identical lists created by Step 2
@@ -289,8 +284,8 @@ def frag_define(orthogcoords,elems,cell_vectors,fragments,cell_angles=None, cell
             sorted_mfrag = sorted(mfrag)
             fragment.fraglist[fragindex] = sorted_mfrag
 
-    print_time_rel_and_tot(currtime, origtime, modulename='molcrys_frag_define_step3a')
-    currtime=time.time()
+    #print_time_rel_and_tot(currtime, origtime, modulename='molcrys_frag_define_step3a', moduleindex=4)
+    #currtime=time.time()
 
     #Because every fragment with an atom inside original cell in step 2 gets added
     # we have duplicate fragments in fraglists, meaning we have to trim
@@ -694,7 +689,6 @@ def read_ciffile(file):
             ashexit()
 
     print("Symmetry operations found in CIF:", symmops)
-    print("coords : ", coords)
     if len(coords) == 0:
         print("Found zero coordinates in CIF-file: {}. Something wrong with file. Exiting...".format(file))
         ashexit()
@@ -890,7 +884,9 @@ def create_MMcluster(orthogcoords,elems,cell_vectors,sphereradius):
     #List of Bools, duplicates are True
     #NOTE: Problem, way too slow 
     print("Starting filter duplicate. This step is currently slow. To be fixed")
+    timestampA=time.time()
     dupls=np.array(filter_duplicate(extended_coords))
+    print_time_rel(timestampA, modulename='filter duplicate', moduleindex=4)
     #Deleting atoms in duplication list in reverse
     extended_coords=np.delete(extended_coords, list(reversed(dupls)), 0)
     for d in reversed(dupls):
@@ -923,25 +919,26 @@ def remove_partial_fragments(coords,elems,sphereradius,fragmentobjects, scale=No
     count=0
     found_atoms=[]
     fraglist=[]
+
     if codeversion=='julia':
-        print("using julia for finding surface atoms")
+        print("Will use julia for finding surface atoms")
         try:
             # Import Julia
             print("Loading Julia")
-            try:
-                Juliafunctions=load_julia_interface()
-            except:
-                print("Problem loading Julia")
-                ashexit()
+            Juliafunctions=load_julia_interface()
+            print("Load successful")
             #Get list of fragments for all surfaceatoms
-            fraglist_temp = Juliafunctions.calc_fraglist_for_atoms(surfaceatoms,coords, elems, 99, scale, tol,modules.module_coords.eldict_covrad)
+            print("Now calling Julia function")
+            fraglist_temp = Juliafunctions.calc_fraglist_for_atoms_julia(surfaceatoms,coords, elems, 99, scale, tol,modules.module_coords.eldict_covrad)
+            #TODO: Necessary. Can we change return of Julia function instead??
+            fraglist_temp = [list(i) for i in fraglist_temp]
+
             # Converting from numpy to list of lists
             for sublist in fraglist_temp:
                 fraglist.append(list(sublist))
         except:
-            print(BC.FAIL, "Problem importing Pyjulia (import julia)", BC.END)
-            print("Make sure Julia is installed and PyJulia module available")
-            print("Also, are you using python3_ash ?")
+            print(BC.FAIL, "Problem importing Julia interface or loading function", BC.END)
+            print("Make sure Julia is installed and Python-Julia interface has been installed")
             print("")
             print(BC.FAIL, "Using py version instead (slow for large systems)", BC.END)
             for surfaceatom in surfaceatoms:
@@ -960,9 +957,6 @@ def remove_partial_fragments(coords,elems,sphereradius,fragmentobjects, scale=No
                 if members not in fraglist:
                     fraglist.append(members)
                     found_atoms+=members
-    #with open('fraglist', 'w') as gfile:
-    #    gfile.write('fraglist: {}'.format(fraglist))
-
 
     flat_fraglist = [item for sublist in fraglist for item in sublist]
     #Todo: remove?
@@ -994,6 +988,7 @@ def remove_partial_fragments(coords,elems,sphereradius,fragmentobjects, scale=No
         else:
             deletionlist+=frag
     deletionlist=np.unique(deletionlist).tolist()
+    print(f"Atoms to delete: {len(deletionlist)} atoms")
     #Deleting atoms in deletion list in reverse
     coords=np.delete(coords, list(reversed(deletionlist)), 0)
     for d in reversed(deletionlist):
@@ -1036,7 +1031,7 @@ def reordercluster(fragment,fragmenttype,code_version='py'):
         #print("After. fragmenttype.clusterfraglist:", fragmenttype.clusterfraglist)
         #print(fragmenttype.clusterfraglist[236])
         ashexit()
-        print_time_rel(timestampA, modulename='reorder_cluster julia')
+        print_time_rel(timestampA, modulename='reorder_cluster julia', moduleindex=4)
     elif code_version=='py':
         print("Calling reorder_cluster py")
         print("Now trying to importing scipy")
@@ -1065,7 +1060,7 @@ def reordercluster(fragment,fragmenttype,code_version='py'):
         #print("After. fragmenttype.clusterfraglist:", fragmenttype.clusterfraglist)
         #ashexit()
         #print(fragmenttype.clusterfraglist[236])
-        print_time_rel(timestampA, modulename='reorder_cluster py')
+        print_time_rel(timestampA, modulename='reorder_cluster py', moduleindex=4)
 #Updating pointcharges of fragment
 def pointchargeupdate(fragment,fragmenttype,chargelist):
     #print("fragment:", fragment)
@@ -1124,7 +1119,7 @@ def gasfragcalc_ORCA(fragmentobjects,Cluster,chargemodel,orcadir,orcasimpleinput
         #print(gasfrag.__dict__)
         #Creating ORCA theory object with fragment
 
-        print_time_rel_and_tot(currtime, origtime, modulename='prep stuff')
+        #print_time_rel_and_tot(currtime, origtime, modulename='gasfragcalc_ORCA prep stuff')
         currtime = time.time()
         #Assuming mainfrag is fragmentobject 0 and only mainfrag can be Broken-symmetry
         if id == 0:
@@ -1144,7 +1139,7 @@ def gasfragcalc_ORCA(fragmentobjects,Cluster,chargemodel,orcadir,orcasimpleinput
         #print(ORCASPcalculation.__dict__)
         #Run ORCA calculation with charge-model info
         ORCASPcalculation.run(numcores=NUMPROC, charge=fragmentobject.Charge, mult=fragmentobject.Mult)
-        print_time_rel_and_tot(currtime, origtime, modulename='orca run')
+        #print_time_rel_and_tot(currtime, origtime, modulename='gasfragcalc_ORCA orca run', moduleindex=4)
         currtime = time.time()
 
         if chargemodel == 'DDEC3' or chargemodel == 'DDEC6':
@@ -1163,7 +1158,7 @@ def gasfragcalc_ORCA(fragmentobjects,Cluster,chargemodel,orcadir,orcasimpleinput
         else:
             #Grab atomic charges for fragment.
             atomcharges=interfaces.interface_ORCA.grabatomcharges_ORCA(chargemodel,ORCASPcalculation.filename+'.out')
-            print_time_rel_and_tot(currtime, origtime, modulename='grabatomcharges')
+            #print_time_rel_and_tot(currtime, origtime, modulename='gasfragcalc_ORCA grabatomcharges', moduleindex=4)
             currtime = time.time()
 
         print("Elements:", gasfrag.elems)
@@ -1174,11 +1169,11 @@ def gasfragcalc_ORCA(fragmentobjects,Cluster,chargemodel,orcadir,orcasimpleinput
         fragmentobject.add_charges(atomcharges)
         
 
-        print_time_rel_and_tot(currtime, origtime, modulename='fragmentobject add charges')
+        #print_time_rel_and_tot(currtime, origtime, modulename='gasfragcalc_ORCA fragmentobject add charges', moduleindex=4)
         currtime = time.time()
         #Assign pointcharges to each atom of MM cluster.
         pointchargeupdate(Cluster,fragmentobject,atomcharges)
-        print_time_rel_and_tot(currtime, origtime, modulename='pointchargeupdate')
+        #print_time_rel_and_tot(currtime, origtime, modulename='gasfragcalc_ORCA pointchargeupdate', moduleindex=4)
         currtime = time.time()
         #Keep backup of ORCA outputfile and GBW file
         shutil.copy(ORCASPcalculation.filename + '.out', fragmentobject.Name + '.out')
@@ -1188,12 +1183,12 @@ def gasfragcalc_ORCA(fragmentobjects,Cluster,chargemodel,orcadir,orcasimpleinput
             shutil.copy(ORCASPcalculation.filename + '.gbw', 'lastorbitals.gbw')
         #Keeping copy of each fragment GBW file: fragment0.gbw, fragment1.gbw etc.
         shutil.copy(ORCASPcalculation.filename + '.gbw', 'fragment{}.gbw'.format(id))
-        print_time_rel_and_tot(currtime, origtime, modulename='shutil stuff')
-        currtime = time.time()
+        #print_time_rel_and_tot(currtime, origtime, modulename='gasfragcalc_ORCA shutil stuff', moduleindex=4)
+        #currtime = time.time()
         #Clean up ORCA job.
         ORCASPcalculation.cleanup()
-        print_time_rel_and_tot(currtime, origtime, modulename='orca cleanup')
-        currtime = time.time()
+        #print_time_rel_and_tot(currtime, origtime, modulename='gasfragcalc_ORCA orca cleanup', moduleindex=4)
+        #currtime = time.time()
         blankline()
 
 #Calculate atomic charges for each fragment of Cluster. Assign charges to Cluster object via pointchargeupdate

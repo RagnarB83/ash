@@ -129,8 +129,6 @@ def molcrys(cif_file=None, xtl_file=None, xyz_file=None, cell_length=None, cell_
             shift=[-0.3,-0.3,-0.3]
             asymmcoords=functions.functions_molcrys.shift_fractcoords(asymmcoords,shift)
 
-        print("asymmcoords:", asymmcoords)
-        print("asymmcoords length", len(asymmcoords))
         #Checking if cellunits is None or integer. If none then "_cell_formula_units" not in CIF-file and then unitcell should already be filled
         if cellunits is None:
             print("Unitcell is full (based on lack of cell_formula_units_Z line in CIF-file). Not applying symmetry operations")
@@ -235,7 +233,6 @@ def molcrys(cif_file=None, xtl_file=None, xyz_file=None, cell_length=None, cell_
     
     #Converting orthogcoords to numpy array for better performance
     orthogcoords=np.array(orthogcoords)
-    print("orthogcoords:", orthogcoords)
 
     modules.module_coords.write_xyzfile(elems,orthogcoords,"cell_orthog-original")
     
@@ -380,12 +377,12 @@ def molcrys(cif_file=None, xtl_file=None, xyz_file=None, cell_length=None, cell_
     print("Creating new Cluster fragment:")
     Cluster=ash.Fragment(elems=cluster_elems, coords=cluster_coords, scale=chosenscale, tol=chosentol, conncalc=True)
     
-    print_time_rel_and_tot(currtime, origtime, modulename='create Cluster fragment')
+    #print_time_rel_and_tot(currtime, origtime, modulename='create Cluster fragment')
     currtime=time.time()
     Cluster.print_system("Cluster-first.ygg")
     Cluster.write_xyzfile(xyzfilename="Cluster-first.xyz")
     print("Cluster size: ", Cluster.numatoms, "atoms")
-    print_time_rel_and_tot(currtime, origtime, modulename='print Cluster system')
+    #print_time_rel_and_tot(currtime, origtime, modulename='print Cluster system')
     currtime=time.time()
     
     # Going through found frags and identify mainfrags and counterfrags
@@ -399,7 +396,7 @@ def molcrys(cif_file=None, xtl_file=None, xyz_file=None, cell_length=None, cell_
                 fragmentobject.add_clusterfraglist(frag)
 
     printdebug(fragmentobjects[0].clusterfraglist)
-    print_time_rel_and_tot(currtime, origtime, modulename='fragment identification')
+    #print_time_rel_and_tot(currtime, origtime, modulename='fragment identification')
     currtime=time.time()
     #TODO: Reorder cluster with reflections also
 
@@ -418,19 +415,16 @@ def molcrys(cif_file=None, xtl_file=None, xyz_file=None, cell_length=None, cell_
     currtime=time.time()
     #TODO: after removing partial fragments and getting connectivity etc. Would be good to make MM cluster neutral
 
-    print("fragmentobjects:", fragmentobjects)
-    print(len(fragmentobjects))
-
     #Add fragmentobject-info to Cluster fragment
     #Old slow code:
     #Cluster.old_add_fragment_type_info(fragmentobjects)
     Cluster.add_fragment_type_info(fragmentobjects)
 
-    print_time_rel_and_tot(currtime, origtime, modulename='Cluster fragment type info')
+    #print_time_rel_and_tot(currtime, origtime, modulename='Cluster fragment type info')
     currtime=time.time()
     #Cluster is now almost complete, only charges missing. Print info to file
-    print(Cluster.print_system("Cluster-info-nocharges.ygg"))
-    print_time_rel_and_tot(currtime, origtime, modulename='Cluster print system')
+    Cluster.print_system("Cluster-info-nocharges.ygg")
+    #print_time_rel_and_tot(currtime, origtime, modulename='Cluster print system')
     currtime=time.time()
     # Create dirs to keep track of various files before QM calculations begin
     try:
@@ -535,7 +529,7 @@ def molcrys(cif_file=None, xtl_file=None, xyz_file=None, cell_length=None, cell_
 
     blankline()
 
-    print_time_rel_and_tot(currtime, origtime, modulename="stuff before SP-loop")
+    #print_time_rel_and_tot(currtime, origtime, modulename="stuff before SP-loop")
     currtime=time.time()
     #SP-LOOP FOR MAINFRAG
     for SPLoopNum in range(0,SPLoopMaxIter):
@@ -603,7 +597,7 @@ def molcrys(cif_file=None, xtl_file=None, xyz_file=None, cell_length=None, cell_
 
     print(BC.OKMAGENTA,"Molcrys Charge-Iteration done!",BC.END)
     print("")
-    print_time_rel_and_tot(currtime, origtime, modulename="SP iteration done")
+    print_time_rel_and_tot(currtime, origtime, modulename="Molcrys: SP iterations")
     currtime=time.time()
     
     #Now that charges are converged (for mainfrag and counterfrags ???).
@@ -615,7 +609,7 @@ def molcrys(cif_file=None, xtl_file=None, xyz_file=None, cell_length=None, cell_
     else:
         functions.functions_molcrys.choose_shortrangemodel(Cluster,shortrangemodel,fragmentobjects,QMtheory,"dummy",numcores,LJHparameters)
 
-    print_time_rel_and_tot(currtime, origtime, modulename="LJ stuff done")
+    #print_time_rel_and_tot(currtime, origtime, modulename="LJ stuff done")
     currtime=time.time()
 
 
@@ -647,7 +641,6 @@ def molcrys(cif_file=None, xtl_file=None, xyz_file=None, cell_length=None, cell_
     Cluster.print_system('Cluster.ygg')
     #Cleanup
     #QMMM_SP_calculation.qm_theory.cleanup()
-    print_time_rel_and_tot(currtime, origtime, modulename="final stuff")
     currtime=time.time()
 
     print_time_rel(module_init_time, modulename='Molcrys', moduleindex=0)

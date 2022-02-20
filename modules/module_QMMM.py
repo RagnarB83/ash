@@ -2,6 +2,7 @@ import copy
 import time
 import numpy as np
 import math
+import shutil
 
 #functions related to QM/MM
 import modules.module_coords
@@ -14,7 +15,7 @@ import settings_ash
 class QMMMTheory:
     def __init__(self, qm_theory=None, qmatoms=None, fragment=None, mm_theory=None, charges=None,
                  embedding="Elstat", printlevel=2, numcores=1, actatoms=None, frozenatoms=None, excludeboundaryatomlist=None,
-                 unusualboundary=False, openmm_externalforce=False, TruncatedPC=False, TruncPCRadius=55, TruncatedPC_recalc_iter=50,
+                 unusualboundary=False, openmm_externalforce=False, TruncatedPC=False, TruncPCRadius=55, TruncatedPC_recalc_iter=50, TruncPCcorrection_option="addition",
                 qm_charge=None, qm_mult=None):
         module_init_time=time.time()
         timeA=time.time()
@@ -93,7 +94,7 @@ class QMMMTheory:
             #print("List of all atoms:", self.allatoms)
             print("QM region ({} atoms): {}".format(len(self.qmatoms),self.qmatoms))
             print("MM region ({} atoms)".format(len(self.mmatoms)))
-            print_time_rel(timeA, modulename="Region setup")
+            #print_time_rel(timeA, modulename="Region setup")
             timeA=time.time()
             #print("MM region", self.mmatoms)
             blankline()
@@ -186,6 +187,7 @@ class QMMMTheory:
         self.TruncatedPCcalls=0
         self.TruncatedPCflag=False
         self.TruncatedPC_recalc_iter=TruncatedPC_recalc_iter
+        self.TruncPCcorrection_option=TruncPCcorrection_option
 
         if self.TruncatedPC is True:
             print("Truncated PC approximation in QM/MM is active.")
@@ -407,7 +409,7 @@ class QMMMTheory:
     #TruncatedPCfunction control flow for pointcharge field passed to QM program
     def TruncatedPCfunction(self):
         self.TruncatedPCcalls+=1
-        print("Activating TruncatedPC approximation!")
+        print("TruncatedPC approximation!")
         if self.TruncatedPCcalls == 1:
             self.TruncatedPCflag=False
             print("This is first QM/MM run. Will use full PC field in this iteration")
@@ -436,13 +438,37 @@ class QMMMTheory:
         #Only unique and sorting:
         self.truncated_PC_region_indices = np.unique(region_indices).tolist()
 
-    #This update the calculated truncated PC gradient to be full-system gradient
+    def TruncPC_add_full_grad_contribution(self,index,gradcont):
+        print("Inside TruncPC_add_full_grad_contribution")
+        print("index:", index)
+        print("gradcont:", gradcont)
+        #exit()
+        #self.original_correction_gradient=[]
+        if self.TruncPCcorrection_option =="addition":
+            print("Option: addition")
+            newgradcont=gradcont+self.original_correction_gradient[index]
+            print("newgradcont:", newgradcont)
+            return newgradcont
+        elif self.TruncPCcorrection_option =="scaling":
+            print("Option: addition")
+            #Multiplying
+            newgradcont=gradcont*self.original_correction_gradient[index]
+            print("newgradcont:", newgradcont)
+            return newgradcont
+        else:
+            print("Option: None")
+            #nothing
+            return gradcont
+
+
+    #This updates the calculated truncated PC gradient to be full-system gradient
     #by combining with the original 1st step gradient
     def TruncatedPCgradientupdate(self):
         self.newfullPCgradient=copy.copy(self.full_PCgradient)
         print("self.newfullPCgradient len:", len(self.newfullPCgradient))
         for count,trunc_index in enumerate(self.truncated_PC_region_indices):
-            self.newfullPCgradient[trunc_index]=self.PCgradient[count]
+            #self.newfullPCgradient[trunc_index]=self.PCgradient[count]
+            self.newfullPCgradient[trunc_index]=self.TruncPC_add_full_grad_contribution(trunc_index,self.PCgradient[count])
         self.PCgradient=self.newfullPCgradient
 
 
@@ -467,7 +493,7 @@ class QMMMTheory:
         if charge == None or mult == None:
             print(BC.FAIL, "Error. charge and mult has not been defined for QMMMTheory.run method", BC.END)
             ashexit()
-        print("QM-region charge: {} mult:{}".format(charge,mult))
+        print("QM-region Charge: {} Mult: {}".format(charge,mult))
 
 
         #If no coords provided to run (from Optimizer or NumFreq or MD) then use coords associated with object.
@@ -590,16 +616,22 @@ class QMMMTheory:
             self.QMenergy=0.0
         
         print_time_rel(CheckpointTime, modulename='QM/MM run prep', moduleindex=2)
-
-        if self.qm_theory_name=="ORCATheory":
+        print("Num PCs in trunc:", len(self.pointcharges))
+        #TODO: Remove checking for QMTheory here. Just run and have QM-interface complain if something not implemented
+        if self.qm_theory_name=="ORCATheory" or self.qm_theory_name == "xTBTheory":
             #Calling ORCA theory, providing current QM and MM coordinates.
             if Grad==True:
                 if PC==True:
+
                     self.QMenergy, self.QMgradient, self.PCgradient = self.qm_theory.run(current_coords=self.qmcoords,
                                                                                          current_MM_coords=self.pointchargecoords,
                                                                                          MMcharges=self.pointcharges,
                                                                                          qm_elems=current_qmelems, charge=charge, mult=mult,
                                                                                          Grad=True, PC=True, numcores=numcores)
+                    shutil.copyfile(self.qm_theory.filename+'.out', self.qm_theory.filename+'_full'+'.out')
+                    shutil.copyfile(self.qm_theory.filename+'.engrad', self.qm_theory.filename+'_full'+'.engrad')
+                    shutil.copyfile(self.qm_theory.filename+'.pcgrad', self.qm_theory.filename+'_full'+'.pcgrad')
+                    modules.module_coords.write_coords_all(self.PCgradient, self.mmelems, indices=self.mmatoms, file="PCgradientorig_{}".format(label), description="PC gradient orig{} (au/Bohr):".format(label))
                 else:
                     self.QMenergy, self.QMgradient = self.qm_theory.run(current_coords=self.qmcoords,
                                                       current_MM_coords=self.pointchargecoords, MMcharges=self.pointcharges,
@@ -638,38 +670,8 @@ class QMMMTheory:
                 else:
                     print("mech true", not ready)
                     ashexit()
-
-
-        elif self.qm_theory_name == "xTBTheory":
-            #Calling xTB theory, providing current QM and MM coordinates.
-            if Grad==True:
-                if PC==True:
-                    self.QMenergy, self.QMgradient, self.PCgradient = self.qm_theory.run(current_coords=self.qmcoords,
-                                                                                         current_MM_coords=self.pointchargecoords,
-                                                                                         MMcharges=self.pointcharges,
-                                                                                         qm_elems=current_qmelems, charge=charge, mult=mult,
-                                                                                         Grad=True, PC=True, numcores=numcores)
-                else:
-                    self.QMenergy, self.QMgradient = self.qm_theory.run(current_coords=self.qmcoords,
-                                                      current_MM_coords=self.pointchargecoords, MMcharges=self.pointcharges, charge=charge, mult=mult,
-                                                      qm_elems=current_qmelems, Grad=True, PC=False, numcores=numcores)
-            else:
-                self.QMenergy = self.qm_theory.run(current_coords=self.qmcoords,
-                                                      current_MM_coords=self.pointchargecoords, MMcharges=self.pointcharges, charge=charge, mult=mult,
-                                                      qm_elems=current_qmelems, Grad=False, PC=PC, numcores=numcores)
-
-
-        elif self.qm_theory_name == "DaltonTheory":
-            print("not yet implemented")
-            ashexit()
-        elif self.qm_theory_name == "NWChemtheory":
-            print("not yet implemented")
-            ashexit()
-        elif self.qm_theory_name == "None":
+        elif self.qm_theory_name == "None" or self.qm_theory_name == "ZeroTheory":
             print("No QMtheory. Skipping QM calc")
-            self.QMenergy=0.0;self.linkatoms=False;self.PCgradient=np.array([0.0, 0.0, 0.0])
-            self.QMgradient=np.array([0.0, 0.0, 0.0])
-        elif self.qm_theory_name == "ZeroTheory":
             self.QMenergy=0.0;self.linkatoms=False;self.PCgradient=np.array([0.0, 0.0, 0.0])
             self.QMgradient=np.array([0.0, 0.0, 0.0])
         else:
@@ -682,25 +684,12 @@ class QMMMTheory:
         # Do linkatom force projections in the end
         #UPDATE: Do MM step in the end now so that we have options for OpenMM extern force
         if Grad == True:
-            #TRUNCATED PC Option:
-            #Taking calculated truncated PC gradient (self.PCgradient) and combining with original-calculated (e.g. first Opt-step) full PC gradient 
-            if self.TruncatedPC is True:
-                #If Truncated PC was used in this iteration
-                if self.TruncatedPCflag is True:
-                    CheckpointTime = time.time()
-                    self.TruncatedPCgradientupdate()
-                    print_time_rel(CheckpointTime, modulename='trunc pcgrad update', moduleindex=3)
-                else:
-                    #Full PC gradient was used in this iteration. Storing full PC gradient.
-                    self.full_PCgradient=copy.copy(self.PCgradient)
 
             #assert len(self.allatoms) == len(self.MMgradient)
             
             #Defining QMgradient without linkatoms if present
             if self.linkatoms==True:
                 self.QMgradient_wo_linkatoms=self.QMgradient[0:-num_linkatoms] #remove linkatoms
-                #Sanity check
-                assert len(self.QMgradient_wo_linkatoms) + len(self.PCgradient) - len(self.dipole_charges)  == len(self.allatoms)
             else:
                 self.QMgradient_wo_linkatoms=self.QMgradient
 
@@ -708,6 +697,78 @@ class QMMMTheory:
             #    modules.module_coords.write_coords_all(self.QMgradient_wo_linkatoms, self.qmelems, indices=self.allatoms, file="QMgradient_wo_linkatoms", description="QM+ gradient withoutlinkatoms (au/Bohr):")
 
 
+            #TRUNCATED PC Option:
+            #Taking calculated truncated PC gradient (self.PCgradient) and combining with original-calculated (e.g. first Opt-step) full PC gradient 
+            if self.TruncatedPC is True:
+                #If Truncated PC was used in this iteration
+                if self.TruncatedPCflag is True:
+                    CheckpointTime = time.time()
+                    self.TruncatedPCgradientupdate()
+                    #NOTE:
+                    #Get modified QMgradient and PCgradient here
+                    print_time_rel(CheckpointTime, modulename='trunc pcgrad update', moduleindex=3)
+                else:
+                    #Full PC gradient was used in this iteration. Storing full QM and PC gradient.
+                    #NOTE: Skipping dipole charge gradient in PCgradient
+                    self.QM_gradient_FULL=copy.copy(self.QMgradient_wo_linkatoms)
+                    self.PC_gradient_FULL=copy.copy(self.PCgradient[0:-len(self.dipole_coords)])
+                    # Calculating QM+PC gradient with truncated region
+                    pointcharges_trunc=[self.pointcharges[i] for i in self.truncated_PC_region_indices]
+                    pointchargecoords_trunc=np.take(self.pointchargecoords, self.truncated_PC_region_indices, axis=0)
+                    print("Num PCs in trunc:", len(pointcharges_trunc))
+                    self.QMenergy_trunc, self.QMgradient_trunc, self.PCgradient_trunc = self.qm_theory.run(current_coords=self.qmcoords,
+                                                                                         current_MM_coords=pointchargecoords_trunc,
+                                                                                         MMcharges=pointcharges_trunc,
+                                                                                         qm_elems=current_qmelems, charge=charge, mult=mult,
+                                                                                         Grad=True, PC=True, numcores=numcores)
+                    shutil.copyfile(self.qm_theory.filename+'.out', self.qm_theory.filename+'_trunc'+'.out')
+                    shutil.copyfile(self.qm_theory.filename+'.engrad', self.qm_theory.filename+'_trunc'+'.engrad')
+                    shutil.copyfile(self.qm_theory.filename+'.pcgrad', self.qm_theory.filename+'_trunc'+'.pcgrad')
+                    print("len self.PCgradient_trunc", len(self.PCgradient_trunc))
+                    #print("len x ", len([self.elems[i] for i in self.truncated_PC_region_indices]))
+                    print("len elems", len(elems))
+                    print("len self.truncated_PC_region_indices", len(self.truncated_PC_region_indices))
+                    #modules.module_coords.write_coords_all(self.PCgradient_trunc, [self.elems[i] for i in self.truncated_PC_region_indices], indices=self.truncated_PC_region_indices, 
+                    #    file="PCgradienttrunc_{}".format(label), description="PC gradienttrunc {} (au/Bohr):".format(label))
+                    self.PCgradient_trunc=copy.copy(self.PCgradient_trunc[0:-len(self.dipole_coords)])
+                    self.original_correction_gradient=np.zeros((len(self.QM_gradient_FULL)+len(self.PC_gradient_FULL), 3))
+                    print("len self.original_correction_gradient", len(self.original_correction_gradient))
+                    qmcount=0;pccount=0
+                    print("self.truncated_PC_region_indices:", self.truncated_PC_region_indices)
+                    for i in self.allatoms:
+                        if i in self.qmatoms:
+                            #print("self.QM_gradient_FULL[qmcount]:", self.QM_gradient_FULL[qmcount])
+                            #print("self.QMgradient_trunc[qmcount]:", self.QMgradient_trunc[qmcount])
+                            if self.TruncPCcorrection_option == "addition":
+                                self.original_correction_gradient[i] = self.QM_gradient_FULL[qmcount] - self.QMgradient_trunc[qmcount]
+                            elif self.TruncPCcorrection_option == "scaling":
+                                self.original_correction_gradient[i] = self.QM_gradient_FULL[qmcount] / self.QMgradient_trunc[qmcount]
+                            else:
+                                self.original_correction_gradient[i] = 0.0
+                                exit()
+                            #print("QM. After trunc subtraction:", self.original_correction_gradient[i])
+                            qmcount+=1
+                        elif i in self.truncated_PC_region_indices:
+                            #print("self.PC_gradient_FULL[pccount]:", self.PC_gradient_FULL[pccount])
+                            #print("self.PCgradient_trunc[pccount]:", self.PCgradient_trunc[pccount])
+                            if self.TruncPCcorrection_option == "addition":
+                                self.original_correction_gradient[i] = self.PC_gradient_FULL[pccount] - self.PCgradient_trunc[pccount]
+                            elif self.TruncPCcorrection_option == "scaling":
+                                self.original_correction_gradient[i] = self.PC_gradient_FULL[pccount] / self.PCgradient_trunc[pccount]
+                            else:
+                                self.original_correction_gradient[i] = 0.0
+                                exit()
+                            #print("PC. After trunc subtraction:", self.original_correction_gradient[i])
+                            pccount += 1
+                        else:
+                            #print("hmm")
+                            #print("i:", i)
+                            self.original_correction_gradient[i] = 0.0
+
+                    print("original_correction_gradient:", self.original_correction_gradient)
+                    print("len orig corr", len(self.original_correction_gradient))
+                    modules.module_coords.write_coords_all(self.original_correction_gradient, self.elems, indices=self.allatoms, file="self.original_correction_gradient", description="self.original_correction_gradient (au/Bohr):")
+                    #exit()
             #Initialize QM_PC gradient (has full system size) and fill up
             #TODO: This can be made more efficient
             self.QM_PC_gradient = np.zeros((len(self.allatoms), 3))
@@ -723,8 +784,12 @@ class QMMMTheory:
                     pccount += 1
             assert qmcount == len(self.qmatoms)
             assert pccount == len(self.mmatoms)           
-
-
+            assert qmcount+pccount == len(self.allatoms)
+            print(" qmcount+pccount:", qmcount+pccount)
+            print("len(self.allatoms):", len(self.allatoms))
+            print("len self.QM_PC_gradient", len(self.QM_PC_gradient))
+            modules.module_coords.write_coords_all(self.QM_PC_gradient, self.elems, indices=self.allatoms, file="QM_PC_gradient", description="QM_PC_gradient (au/Bohr):")
+            #exit()
             #if self.printlevel >= 2:
             #    modules.module_coords.write_coords_all(self.PCgradient, self.mmatoms, indices=self.allatoms, file="PCgradient", description="PC gradient (au/Bohr):")
 
@@ -874,6 +939,8 @@ class QMMMTheory:
             #Otherwise combine
             else:
                 #Now assemble full QM/MM gradient
+                print("len(self.QM_PC_gradient):", len(self.QM_PC_gradient))
+                print("len(self.MMgradient):", len(self.MMgradient))
                 assert len(self.QM_PC_gradient) == len(self.MMgradient)
                 self.QM_MM_gradient=self.QM_PC_gradient+self.MMgradient
 

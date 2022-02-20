@@ -170,7 +170,7 @@ class xTBTheory:
         #        print(BC.FAIL,"No charge/mult information present in fragment either. Exiting.",BC.END)
         #        ashexit()
         #Check charge/mult
-        charge,mult = check_charge_mult(charge, mult, self.theorytype, fragment, "xTBTheory.Opt")
+        charge,mult = check_charge_mult(charge, mult, self.theorytype, fragment, "xTBTheory.Opt", theory=self)
 
 
 

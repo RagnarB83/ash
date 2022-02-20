@@ -21,6 +21,11 @@ conda install -c conda-forge matplotlib
 conda install -c psi4 psi4 
 
 #Required pip packages (make sure which pip points to conda environment)
+
+#PythonCall/Julicall interface (recommened)
+pip3 install juliacall
+
+#PyJulia interface (not recommended). Alternative to PythonCall/JuliaCall
 pip3 install julia
 
 #Optional pip packages(MD)

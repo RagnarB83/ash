@@ -2640,7 +2640,7 @@ class OpenMM_MDclass:
             self.fragment = fragment
 
         #Check charge/mult
-        self.charge, self.mult = check_charge_mult(charge, mult, theory.theorytype, fragment, "OpenMM_MD")
+        self.charge, self.mult = check_charge_mult(charge, mult, theory.theorytype, fragment, "OpenMM_MD", theory=theory)
 
         #External QM option off by default
         self.externalqm=False

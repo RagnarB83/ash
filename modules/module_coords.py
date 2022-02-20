@@ -463,13 +463,13 @@ class Fragment:
     def calc_connectivity(self, conndepth=99, scale=None, tol=None, codeversion=None):
         print("Calculating connectivity.")
         # If codeversion not requested we go to default
-        if codeversion is None:
+        if codeversion == None:
             codeversion = settings_ash.settings_dict["connectivity_code"]
             print("Codeversion not set. Using default setting: ", codeversion)
 
         # Overriding with py version if molecule is small. Faster than calling julia.
-        if len(self.coords) < 100:
-            print("Small system. Using py version.")
+        if len(self.coords) < 1000:
+            print(f"Small system ({len(self.coords)} atoms). Using py version.")
             codeversion = 'py'
         elif len(self.coords) > 10000:
             if self.printlevel >= 2:
@@ -498,15 +498,14 @@ class Fragment:
 
         # Calculate connectivity by looping over all atoms
         timestampA = time.time()
-
+        print("codeversion:", codeversion)
+        print("julia")
         if codeversion == 'py':
             print("Calculating connectivity of fragment using py.")
-            timestampB = time.time()
             fraglist = calc_conn_py(self.coords, self.elems, conndepth, scale, tol)
-            print_time_rel(timestampB, modulename='calc connectivity py', moduleindex=4)
+            print_time_rel(timestampA, modulename='calc connectivity py', moduleindex=4)
         elif codeversion == 'julia':
             print("Calculating connectivity of fragment using Julia.")
-            timestampB = time.time()
             try:
                 Juliafunctions = load_julia_interface()
                 fraglist_temp = Juliafunctions.calc_connectivity(self.coords, self.elems, conndepth, scale, tol,
@@ -515,19 +514,15 @@ class Fragment:
                 # Converting from numpy to list of lists
                 for sublist in fraglist_temp:
                     fraglist.append(list(sublist))
-                print_time_rel(timestampB, modulename='calc connectivity julia', moduleindex=4)
+                print_time_rel(timestampA, modulename='calc connectivity julia', moduleindex=4)
             except:
-                print(BC.FAIL, "Problem importing PyJulia (import julia).", BC.END)
-                print("Make sure Julia is installed and PyJulia module available, and that you are using python3_ash.")
+                print(BC.FAIL, "Problem importing Python-Julia interface.", BC.END)
+                print("Make sure Julia is installed and Python-Julia interface has been set up.")
                 print(BC.FAIL, "Using Python version instead (slow for large systems)", BC.END)
                 # Switching default to py since Julia did not load
                 settings_ash.settings_dict["connectivity_code"] = "py"
                 fraglist = calc_conn_py(self.coords, self.elems, conndepth, scale, tol)
-
-        if self.printlevel >= 2:
-            pass
-            # print_time_rel(timestampA, modulename='calc connectivity full')
-        # flat_fraglist = [item for sublist in fraglist for item in sublist]
+                print_time_rel(timestampA, modulename='calc connectivity py', moduleindex=4)
         self.connectivity = fraglist
         # Calculate number of atoms in connectivity list of lists
         conn_number_sum = 0
@@ -883,7 +878,7 @@ def print_internal_coordinate_table(fragment, actatoms=None):
         connectivity = Juliafunctions.calc_connectivity(chosen_coords, chosen_elems, conndepth, scale, tol,
                                                         eldict_covrad)
     except:
-        print("Problem importing PyJulia (import julia). Trying py-version instead.")
+        print("Problem importing Python-Julia interface. Trying py-version instead.")
         connectivity = calc_conn_py(chosen_coords, chosen_elems, conndepth, scale, tol)
     print("Connectivity calculation complete.")
     #else:
@@ -2103,7 +2098,6 @@ def scipy_hungarian(A, B):
 
 
 # Hungarian algorithm to reorder coordinates. Uses Julia to calculates distances between coordinate-arrays A and B and then Hungarian Julia package.
-# PyJulia needs to have been imported before (ash.py)
 def hungarian_julia(A, B):
     from scipy.spatial.distance import cdist
     from scipy.optimize import linear_sum_assignment
@@ -2450,7 +2444,7 @@ def get_boundary_atoms(qmatoms, coords, elems, scale, tol, excludeboundaryatomli
             # Adding to dict
             qm_mm_boundary_dict[qmatom] = boundaryatom[0]
     print("qm_mm_boundary_dict:", qm_mm_boundary_dict)
-    print_time_rel(timeA, modulename="get_boundary_atoms")
+    #print_time_rel(timeA, modulename="get_boundary_atoms")
     return qm_mm_boundary_dict
 
 
@@ -2985,13 +2979,30 @@ def check_multiplicity(elems,charge,mult):
 
 #Check if charge/mult variables are not None. If None check fragment
 #Only done for QM theories not MM. Passing theorytype string (e.g. from theory.theorytype if available)
-def check_charge_mult(charge, mult, theorytype, fragment, jobtype):
-
+def check_charge_mult(charge, mult, theorytype, fragment, jobtype, theory=None):
     #Check if QM or QM/MM theory
-    if theorytype == "QM" or theorytype=="QM/MM":
+    if theorytype == "QM":
         if charge == None or mult == None:
             print(BC.WARNING,f"Warning: Charge/mult was not provided to {jobtype}",BC.END)
             if fragment.charge != None and fragment.mult != None:
+                print(BC.WARNING,"Fragment contains charge/mult information: Charge: {} Mult: {} Using this instead".format(fragment.charge,fragment.mult), BC.END)
+                print(BC.WARNING,"Make sure this is what you want!", BC.END)
+                charge=fragment.charge; mult=fragment.mult
+            else:
+                print(BC.FAIL,"No charge/mult information present in fragment either. Exiting.",BC.END)
+                ashexit()
+    elif theorytype=="QM/MM":
+
+        #Note: theory needs to be set
+        if charge == None or mult == None:
+            print(BC.WARNING,f"Warning: Charge/mult was not provided to {jobtype}",BC.END)
+            print("Checking if present in QM/MM object")
+            if theory.qm_charge != None and theory.qm_mult != None:
+                print("Found qm_charge and qm_mult attributes.")
+                charge=theory.qm_charge
+                mult=theory.qm_mult
+                print(f"Using charge={charge} and mult={mult}")
+            elif fragment.charge != None and fragment.mult != None:
                 print(BC.WARNING,"Fragment contains charge/mult information: Charge: {} Mult: {} Using this instead".format(fragment.charge,fragment.mult), BC.END)
                 print(BC.WARNING,"Make sure this is what you want!", BC.END)
                 charge=fragment.charge; mult=fragment.mult

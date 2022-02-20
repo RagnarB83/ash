@@ -46,16 +46,47 @@ def ashexit(errormessage=None, code=1):
         print(BC.FAIL,"Error message:", errormessage, BC.END)
     raise SystemExit(code)
 
-def load_julia_interface(library="pyjulia"):
-    print("Calling Julia interface")
 
-    # pythoncall or pyjulia
-    print("Library:", library)
+def load_pythoncall():
+    print("Now trying pythoncall/juliacall package. This will fail if :\n\
+            - Juliacall Python package has not been installed (via pip)\n\
+            - PythonCall julia packages has not been installed (via Julia Pkg)\n\
+            - Julia Hungarian package has not been installed")
+    from juliacall import Main as JuliaMain
+    JuliaMain.include(ashpath + "/functions/functions_julia.jl")
+    return JuliaMain
 
+def load_pyjulia():
+    print("Now loading PyJulia. This will fail if :\n\
+        - PyJulia Python package has not been installed\n\
+        - Julia PyCall package has not been installed\n\
+        - python-jl/python3_ash interpreter not used (necessary for static libpython)\n\
+        - Julia Hungarian package has not been installed")
+
+    from julia import Main as JuliaMain
+    #NOTE: Reading old Pyjulia function file here instead.
+    JuliaMain.include(ashpath + "/functions/functions_julia_oldpyjulia.jl")
+    return JuliaMain
+
+def load_julia_interface(julia_library=None):
+    print("\nCalling Julia interface")
+
+    #If not set (rare) then get the settings_ash value
+    if julia_library == None:
+        julia_library=settings_ash.settings_dict["julia_library"]
+
+    print("Note: PythonCall/Juliacall is recommended (default). PyJulia interface is less stable.")
+    # Loading pythoncall or pyjulia
+    print("Library is set to:", julia_library)
+    #Global variables
     global julia_loaded
     global JuliaMain
+
+    #Only load if not loaded before
     if julia_loaded is False:
         print("Now loading Julia interface.")
+        currtime=time.time()
+        #Checking for Julia binary in PATH
         print("This requires a Julia installation available in PATH")
         try:
             juliapath=os.path.dirname(shutil.which('julia'))
@@ -64,32 +95,29 @@ def load_julia_interface(library="pyjulia"):
             print("Problem. No julia binary found in PATH environment variable.")
             print("Make sure the path to Julia's bin directory is available in your shell-configuration or jobscript")
             ashexit()
-        # print("julia loaded false")
-        # from julia.api import Julia
-        # jl = Julia(compiled_modules=False)
 
+        #Importing the necessary interface library
         print("Loading a Python/Julia interface library")
-        print("Now trying pythoncall/juliacall package. This will fail if :\n\
-                - Juliacall Pythonpackage package has not been installed (via pip)\n\
-                - PythonCall julia packages has not been installed (via Julia Pkg)\n\
-                - Julia Hungarian package has not been installed")
-        try:
-            from juliacall import Main as JuliaMain
-        except:
-            print("juliacall loading failed.")
-            print("Now trying PyJulia. This will fail if :\n\
-                - PyJulia Python package has not been installed\n\
-                - Julia PyCall has not been installed\n\
-                - Julia Hungarian package has not been installed")
+        if julia_library == "pythoncall":
+            print("Library: pythoncall/juliacall")
             try:
-                from julia import Main as JuliaMain
+                JuliaMain = load_pythoncall()
+                print("Julia interface successfully loaded")
             except:
-                print("PyJulia interface failed.")
+                print("Problem loading pythoncall/juliacall.")
                 ashexit()
-        #
-        JuliaMain.include(ashpath + "/functions/functions_julia.jl")
-        julia_loaded = True
-        print("Julia interface successfully loaded")
+        elif julia_library == "pyjulia":
+            try:
+                JuliaMain = load_pyjulia()
+                print("Julia interface successfully loaded")
+            except:
+                print("Problem loading pyjulia")
+                ashexit()
+        else:
+            print("Unknown Julia library")
+            ashexit()
+        julia_loaded = True  #Means an attempt was made to load Julia.
+        print_time_rel(currtime, modulename='loading julia interface', moduleindex=4)
     return JuliaMain.Juliafunctions
 
 

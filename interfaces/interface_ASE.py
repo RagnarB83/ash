@@ -20,7 +20,7 @@ def Dynamics_ASE(fragment=None, PBC=False, theory=None, temperature=300, timeste
     print_line_with_mainheader("ASE MOLECULAR DYNAMICS")
 
     #Check charge/mult
-    charge,mult = check_charge_mult(charge, mult, theory.theorytype, fragment, "Dynamics_ASE")
+    charge,mult = check_charge_mult(charge, mult, theory.theorytype, fragment, "Dynamics_ASE", theory=theory)
 
     #Delete old
     try:

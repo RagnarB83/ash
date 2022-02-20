@@ -48,11 +48,11 @@ def geomeTRICOptimizer(theory=None, fragment=None, charge=None, mult=None, coord
     except:
         blankline()
         print(BC.FAIL,"geomeTRIC module not found!", BC.END)
-        print(BC.WARNING,"Either install geomeTRIC using pip:\n pip install geometric\n or manually from Github (https://github.com/leeping/geomeTRIC)", BC.END)
+        print(BC.WARNING,"Either install geomeTRIC using pip:\n conda install geometric\n or \n pip install geometric\n or manually from Github (https://github.com/leeping/geomeTRIC)", BC.END)
         ashexit(code=9)
 
     #Check charge/mult
-    charge,mult = check_charge_mult(charge, mult, theory.theorytype, fragment, "geomeTRICOptimizer")
+    charge,mult = check_charge_mult(charge, mult, theory.theorytype, fragment, "geomeTRICOptimizer", theory=theory)
 
     if fragment.numatoms == 1:
         print("System has 1 atoms.")
@@ -243,7 +243,7 @@ def geomeTRICOptimizer(theory=None, fragment=None, charge=None, mult=None, coord
             #Need to combine with rest of full-system coords
             timeA=time.time()
             self.M.xyzs[0] = coords.reshape(-1, 3) * constants.bohr2ang
-            print_time_rel(timeA, modulename='geometric ASHcalc.calc reshape', moduleindex=2)
+            #print_time_rel(timeA, modulename='geometric ASHcalc.calc reshape', moduleindex=2)
             timeA=time.time()
             currcoords=self.M.xyzs[0]
             #Special act-region (for QM/MM) since GeomeTRIC does not handle huge system and constraints
@@ -255,7 +255,7 @@ def geomeTRICOptimizer(theory=None, fragment=None, charge=None, mult=None, coord
                 #Replacing act-region coordinates in full_coords with coords from currcoords
                 for act_i,curr_i in zip(self.actatoms,currcoords):
                     full_coords[act_i] = curr_i
-                print_time_rel(timeA, modulename='geometric ASHcalc.calc replacing act-region', moduleindex=2)
+                #print_time_rel(timeA, modulename='geometric ASHcalc.calc replacing act-region', moduleindex=2)
                 timeA=time.time()
                 self.full_current_coords = full_coords
                 
@@ -263,7 +263,7 @@ def geomeTRICOptimizer(theory=None, fragment=None, charge=None, mult=None, coord
                 fragment.replace_coords(fragment.elems, self.full_current_coords, conn=False)
                 fragment.print_system(filename='Fragment-currentgeo.ygg')
                 fragment.write_xyzfile(xyzfilename="Fragment-currentgeo.xyz")
-                print_time_rel(timeA, modulename='geometric ASHcalc.calc replacecoords and printsystem', moduleindex=2)
+                #print_time_rel(timeA, modulename='geometric ASHcalc.calc replacecoords and printsystem', moduleindex=2)
                 timeA=time.time()
 
                 #PRINTING TO OUTPUT SPECIFIC GEOMETRY IN EACH GEOMETRIC ITERATION (now: self.print_atoms_list)
@@ -274,16 +274,16 @@ def geomeTRICOptimizer(theory=None, fragment=None, charge=None, mult=None, coord
                 #print_atoms_list
                 #Previously act: print_coords_for_atoms(self.full_current_coords, fragment.elems, self.actatoms)
                 print_coords_for_atoms(self.full_current_coords, fragment.elems, self.print_atoms_list)
-                print_time_rel(timeA, modulename='geometric ASHcalc.calc printcoords atoms', moduleindex=2)
+                #print_time_rel(timeA, modulename='geometric ASHcalc.calc printcoords atoms', moduleindex=2)
                 timeA=time.time()
                 print("Note: printed only print_atoms_list (this is not necessary all active atoms) ")
                 #Request Engrad calc for full system
                 E, Grad = self.theory.run(current_coords=self.full_current_coords, elems=fragment.elems, charge=self.charge, mult=self.mult, Grad=True, label='Iter'+str(self.iteration_count))
-                print_time_rel(timeA, modulename='geometric ASHcalc.calc theory.run', moduleindex=2)
+                #print_time_rel(timeA, modulename='geometric ASHcalc.calc theory.run', moduleindex=2)
                 timeA=time.time()
                 #Trim Full gradient down to only act-atoms gradient
                 Grad_act = np.array([Grad[i] for i in self.actatoms])
-                print_time_rel(timeA, modulename='geometric ASHcalc.calc trim full gradient', moduleindex=2)
+                #print_time_rel(timeA, modulename='geometric ASHcalc.calc trim full gradient', moduleindex=2)
                 timeA=time.time()
                 self.energy = E
 
@@ -294,7 +294,7 @@ def geomeTRICOptimizer(theory=None, fragment=None, charge=None, mult=None, coord
                     for el,cor in zip(fragment.elems,self.full_current_coords):
                         trajfile.write(el + "  " + str(cor[0]) + " " + str(cor[1]) + " " + str(cor[2]) +
                                        "\n")
-                print_time_rel(timeA, modulename='geometric ASHcalc.calc writetraj full', moduleindex=2)
+                #print_time_rel(timeA, modulename='geometric ASHcalc.calc writetraj full', moduleindex=2)
                 timeA=time.time()
                 self.iteration_count += 1
                 return {'energy': E, 'gradient': Grad_act.flatten()}
