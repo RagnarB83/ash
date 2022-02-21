@@ -1910,7 +1910,7 @@ def PhotoElectronSpectrum(theory=None, fragment=None, Initialstate_charge=None, 
             FinalIPs=[]
             fstates_dict={}
             for fstate in Finalstates:
-                print(bcolors.OKGREEN, "Calculating Final State (mult {}) via IP-EOM-CCSD: ".format(fstate.mult), bcolors.ENDC)
+                print(bcolors.OKGREEN, "Calculating IPs directly via IP-EOM-CCSD. ", bcolors.ENDC)
                 if fstate.mult > stateI.mult:
                     print("Final state mult {}, setting DoBeta true".format(fstate.mult))
                     Electron_ion_line='DoBeta true'
@@ -1928,8 +1928,8 @@ def PhotoElectronSpectrum(theory=None, fragment=None, Initialstate_charge=None, 
                     print("initialorbitalfiles keyword provided.")
                     print("Will use file {} as guess GBW file for this Final state.".format(initialorbitalfiles[findex + 1]))
                     shutil.copyfile(initialorbitalfiles[findex + 1], theory.filename + '.gbw')
-
-                energy = ash.Singlepoint(fragment=fragment, theory=theory, charge=fstate.charge, mult=fstate.mult)
+                #NOTE: Using initial state charge/mult here because EOM
+                energy = ash.Singlepoint(fragment=fragment, theory=theory, charge=Initialstate_charge, mult=Initialstate_mult)
                 stateI.energy= energy
 
 
