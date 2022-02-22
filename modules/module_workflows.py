@@ -1107,6 +1107,10 @@ def AutoNonAufbau(fragment=None, theory=None, num_occ_orbs=1, num_virt_orbs=3, s
 
     print_line_with_mainheader("AutoNonAufbau")
 
+    if isinstance(theory,ash.ORCATheory) is False:
+        print("AutoNonAufbau only works with ORCATheory objects")
+        exit()
+
     #NOTE: Skipping multiplicities for now as too complicated and inconsistent
     #if multiplicities not set
     #if multiplicities == None:
@@ -1214,8 +1218,11 @@ def AutoNonAufbau(fragment=None, theory=None, num_occ_orbs=1, num_virt_orbs=3, s
 
     #States to calculate
     calculated_states=[]
+
+
+
     #Looping over num occupied orbitals chosen
-    s_ind=0
+    s_ind=1
     for o in range(0,num_occ_orbs):
         #Looping over num occupied orbitals chosen
         for v in range(0,num_virt_orbs):
@@ -1377,7 +1384,7 @@ def AutoNonAufbau(fragment=None, theory=None, num_occ_orbs=1, num_virt_orbs=3, s
 
         #excited_state_energies.append(E_ES)
         #Adding all info to dict
-        states_dict[state_index] = [E_ES,occ_orb_list,unocc_orb_list,spinvar_list,homo_lumo_gap,lshift, cfg.mult]        
+        states_dict[state_index] = [E_ES,occ_orb_list,unocc_orb_list,spinvar_list,homo_lumo_gap,lshift, cfg.mult, theory.filename+f'ES_SCF{state_index}_mult{cfg.mult}_spinset{cfg.spinset}.gbw' ] 
 
     #Collecting energies
     print()
@@ -1400,3 +1407,48 @@ def AutoNonAufbau(fragment=None, theory=None, num_occ_orbs=1, num_virt_orbs=3, s
         print(f"Excited-state SCF HOMO-LUMO gap: {states_dict[state_index][4]} Eh ({states_dict[state_index][4]*27.211399}) eV: ")
         print(f"Excited-state SCF Levelshift chosen: {states_dict[state_index][5]}")
         print("-"*5)
+
+
+    #Adding ground-state to state-dictionary with key 0
+    states_dict[0]=[E_GS, [0], [0], [0], 0.0, 0.0, fragment.mult, GS_GBW]
+
+
+    #TODO: Need to truncate dictionary so that it only includes unique states or at least not states that fell back to GS
+
+    return states_dict
+
+#Optimizer for excited-state SCF solutions with ORCA
+#NOTE: Requires dictionary result from AutoNonAufbau
+def ExcitedStateSCFOptimizer(theory=None, fragment=None, autononaufbaudict=None, state=1, charge=None, mult=None, maxiter=500, Freq=False, extrashift=0.0):
+
+    print_line_with_mainheader("ExcitedStateOptimizer")
+
+    if isinstance(theory,ash.ORCATheory) is False:
+        print("ExcitedStateOptimizer only works with ORCATheory objects")
+        exit()
+    print("AutoNonAufbau dictionary:", autononaufbaudict)
+    print("State chosen:", state)
+    #Get GBW-file for chosen state
+    gbwfile=autononaufbaudict[state][7]
+    path=os.getcwd()
+    theory.moreadfile=path+'/'+gbwfile
+    print("theory.moreadfile:", theory.moreadfile)
+    #Modify theory level shift for chosen state
+    lshift=autononaufbaudict[state][5]+extrashift
+
+    theory.extraline=f"""!Normalprint  nodamp
+    %scf
+    maxiter {maxiter}
+    cnvshift true
+    lshift {lshift}
+    shifterr 0.0005
+    end
+        """.format(maxiter, lshift )
+    print("Will now run optimization on excited state no:", state)
+
+    optenergy = ash.geomeTRICOptimizer(theory=theory, fragment=fragment, charge=charge, mult=mult)
+
+    #Excited state frequencies
+    if Freq:
+        print("Freq true. Doing excited state numerical frequencies")
+        thermochem = ash.NumFreq(fragment=fragment, theory=theory, npoint=2, runmode='serial', charge=charge, mult=mult)
