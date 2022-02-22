@@ -10,7 +10,7 @@ import ash
 from functions.functions_general import ashexit, BC, print_time_tot_color, timingsobject, print_line_with_mainheader, \
     print_line_with_subheader1
 
-programversion = 0.5
+programversion = "0.8dev"
 
 
 # ASH footer
@@ -37,9 +37,25 @@ def print_header():
     # Initializes time
     global init_time
     init_time = time.time()
-    # Comment out to skip printing of header
+    #########################################
+    # Print main header w/wo logo
+    #########################################
+    # Getting commit version number from file VERSION (updated by ashpull) inside module dir
+    try:
+        with open(os.path.dirname(ash.__file__) + "/VERSION") as f:
+            git_commit_number = int(f.readline())
+    except:
+        git_commit_number = "Unknown"
+
+    print(f"{BC.OKGREEN}{'-' * 80}{BC.END}")
+    print(f"{BC.OKGREEN}{'-' * 80}{BC.END}")
     if settings_ash.settings_dict["print_logo"] is True:
         print_logo()
+    print(f"{BC.WARNING}A MULTISCALE MODELLING PROGRAM{BC.END}".center(90))
+    print(f"{BC.WARNING}{BC.BOLD}Version: {programversion}{BC.END}".center(95))
+    print(f"{BC.WARNING}Git commit version: {git_commit_number}{BC.END}".center(90))
+    print(f"{BC.OKGREEN}{'-' * 80}{BC.END}")
+    print(f"{BC.OKGREEN}{'-' * 80}{BC.END}")
 
     print("ASH path:", settings_ash.ashpath)
     
@@ -76,12 +92,7 @@ def print_header():
 
 
 def print_logo():
-    # Getting commit version number from file VERSION (updated by ashpull) inside module dir
-    try:
-        with open(os.path.dirname(ash.__file__) + "/VERSION") as f:
-            git_commit_number = int(f.readline())
-    except:
-        git_commit_number = "Unknown"
+
 
     # http://asciiflow.com
     # https://textik.com/#91d6380098664f89
@@ -146,14 +157,8 @@ def print_logo():
                    ▓      \    ▀    ╙µ  ⌡                                       
                                      └                                                                                                                      
     """
-    print(f"{BC.OKGREEN}{'-' * 80}{BC.END}")
-    print(f"{BC.OKGREEN}{'-' * 80}{BC.END}")
     # print(BC.OKBLUE,ascii_banner3,BC.END)
     # print(BC.OKBLUE,ascii_banner2,BC.END)
     print(f"{BC.OKGREEN}{ascii_banner_center}{BC.END}")
     print(f"{BC.OKGREEN}{ascii_tree}{BC.END}")
-    print(f"{BC.WARNING}A MULTISCALE MODELLING PROGRAM{BC.END}".center(90))
-    print(f"{BC.WARNING}{BC.BOLD}Version: {programversion}{BC.END}".center(95))
-    print(f"{BC.WARNING}Git commit version: {git_commit_number}{BC.END}".center(90))
-    print(f"{BC.OKGREEN}{'-' * 80}{BC.END}")
-    print(f"{BC.OKGREEN}{'-' * 80}{BC.END}")
+

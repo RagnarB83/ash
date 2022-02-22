@@ -23,7 +23,7 @@ from modules.module_singlepoint import Singlepoint
 
 
 class OpenMMTheory:
-    def __init__(self, printlevel=2, platform='CPU', numcores=None, Modeller=False, forcefield=None, topology=None,
+    def __init__(self, printlevel=2, platform='CPU', numcores=None, topoforce=False, forcefield=None, topology=None,
                  CHARMMfiles=False, psffile=None, charmmtopfile=None, charmmprmfile=None,
                  GROMACSfiles=False, gromacstopfile=None, grofile=None, gromacstopdir=None,
                  Amberfiles=False, amberprmtopfile=None,
@@ -32,8 +32,8 @@ class OpenMMTheory:
                  xmlsystemfile=None,
                  do_energy_decomposition=False,
                  periodic=False, charmm_periodic_cell_dimensions=None, customnonbondedforce=False,
-                 periodic_nonbonded_cutoff=12, dispersion_correction=True,
-                 switching_function_distance=10,
+                 periodic_nonbonded_cutoff=12.0, dispersion_correction=True,
+                 switching_function_distance=10.0,
                  ewalderrortolerance=5e-4, PMEparameters=None,
                  delete_QM1_MM1_bonded=False, applyconstraints_in_run=False,
                  constraints=None, restraints=None, frozen_atoms=None, fragment=None, dummysystem=False,
@@ -290,8 +290,8 @@ class OpenMMTheory:
             # TODO: Define segmentnames, atomtypes, atomnames??
 
 
-        elif Modeller is True:
-            print("Using forcefield info from Modeller.")
+        elif topoforce is True:
+            print("Using forcefield info from topology and forcefield keyword.")
             self.topology = topology
             self.forcefield = forcefield
 
@@ -388,7 +388,7 @@ class OpenMMTheory:
             #Load PDB-file and create topology
             pdb = openmm.app.PDBFile("frag.pdb")
             self.topology = pdb.topology
-            print("xmlfiles:", xmlfiles)
+
             #Create dummy XML file
             xmlfile = write_xmlfile_nonbonded(filename="dummy.xml", resnames=["DUM"], atomnames_per_res=[atomnames_full], atomtypes_per_res=[fragment.elems],
                                             elements_per_res=[fragment.elems], masses_per_res=[fragment.masses],
@@ -412,6 +412,10 @@ class OpenMMTheory:
 
             #Defining some things. resids is used by actregiondefine
             self.resids = [i.residue.index for i in self.topology.atoms()]
+
+
+
+
         # NOW CREATE SYSTEM UNLESS already created (xmlsystemfile)
         if self.system is None:
             # Periodic or non-periodic ystem
@@ -526,7 +530,6 @@ class OpenMMTheory:
                     elif isinstance(force, openmm.NonbondedForce):
 
                         # Turn Dispersion correction on/off depending on user
-                        # NOTE: Default: False   To be revisited
                         force.setUseDispersionCorrection(dispersion_correction)
 
                         # Modify PME Parameters if desired
