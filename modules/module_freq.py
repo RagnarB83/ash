@@ -196,7 +196,7 @@ def NumFreq(fragment=None, theory=None, charge=None, mult=None, npoint=2, displa
             theory.printlevel=printlevel
             energy, gradient = theory.run(current_coords=geo, elems=elems, Grad=True, numcores=numcores, charge=charge, mult=mult)
             #Keep ORCA outputfile for each displacement
-            shutil.copy(theory.filename+'.out', theory.filename+'disp_'+numdisp+'.out')
+            shutil.copy(theory.filename+'.out', theory.filename+'disp_'+str(numdisp)+'.out')
 
             #Adding gradient to dictionary for AtomNCoordPDirectionm
             displacement_grad_dictionary[disp] = gradient

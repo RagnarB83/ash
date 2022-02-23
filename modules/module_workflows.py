@@ -1134,7 +1134,7 @@ def AutoNonAufbau(fragment=None, theory=None, num_occ_orbs=1, num_virt_orbs=3, s
     print("TDDFT:", TDDFT)
     print("stability_analysis_GS:", stability_analysis_GS)
     print("Epsilon:", epsilon)
-    print("manual_levelshift:", manual_levelshift)
+    print("Manual levelshift:", manual_levelshift)
 
 
     #epsilon is shift parameter from Herbert paper. 0.1 was recommended
@@ -1349,7 +1349,7 @@ def AutoNonAufbau(fragment=None, theory=None, num_occ_orbs=1, num_virt_orbs=3, s
             lshift=manual_levelshift
         else:
             lshift=abs(homo_lumo_gap)+epsilon
-        print("lshift:", lshift)
+        print("Levelshift:", lshift)
 
         #Rotating orb
         theory.extraline=f"""!Normalprint  nodamp
@@ -1395,6 +1395,8 @@ def AutoNonAufbau(fragment=None, theory=None, num_occ_orbs=1, num_virt_orbs=3, s
         print("TDDFT transition energies:", transition_energies)
 
     print("-"*5)
+    final_state_dict={}
+    uniquestatecount=1
     for state in calculated_states:
         state_index=state[0]
         cfg=state[1]
@@ -1408,17 +1410,26 @@ def AutoNonAufbau(fragment=None, theory=None, num_occ_orbs=1, num_virt_orbs=3, s
         print(f"Excited-state SCF Levelshift chosen: {states_dict[state_index][5]}")
         print("-"*5)
 
+        #Only keep states that did not fall back to GS. 
+        # Currently keeping states with identical energy as they could be a member of a degenerate state.
+        if (states_dict[state_index][0]-E_GS)*27.211399 > 0.04:
+            final_state_dict[uniquestatecount] = states_dict[state_index]
+            uniquestatecount+=1
 
     #Adding ground-state to state-dictionary with key 0
     states_dict[0]=[E_GS, [0], [0], [0], 0.0, 0.0, fragment.mult, GS_GBW]
+    final_state_dict[0]=[E_GS, [0], [0], [0], 0.0, 0.0, fragment.mult, GS_GBW]
 
+    print()
+    print("Final list of SCF states (excluding calculations that fell back to Groundstate):")
+    print()
+    print(final_state_dict)
 
-    #TODO: Need to truncate dictionary so that it only includes unique states or at least not states that fell back to GS
+    return final_state_dict
 
-    return states_dict
-
-#Optimizer for excited-state SCF solutions with ORCA
+#Geometry Optimizer for excited-state SCF solutions with ORCA
 #NOTE: Requires dictionary result from AutoNonAufbau
+#TODO: Future, wr
 def ExcitedStateSCFOptimizer(theory=None, fragment=None, autononaufbaudict=None, state=1, charge=None, mult=None, maxiter=500, Freq=False, extrashift=0.0):
 
     print_line_with_mainheader("ExcitedStateOptimizer")
