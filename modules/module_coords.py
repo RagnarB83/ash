@@ -228,12 +228,6 @@ class Fragment:
         if conn is True:
             self.calc_connectivity(scale=scale, tol=tol)
 
-    def delete_coords(self):
-        # TODO: Should we allow this? We can not update attributes so current fragment info is all wrong after running
-        self.coords = np.zeros((0, 3))
-        self.elems = []
-        self.connectivity = []
-        # self.update_attributes()
 
     # Get list of atom-indices for specific elements or groups
     # Atom indices except those provided
