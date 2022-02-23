@@ -50,7 +50,6 @@ def readfile(filename):
   return out
 
 #Get Atomic overlap matrix from GBW file
-#From SHARC
 def saveAOmatrix(file, orcadir=None):
     NAO,Smat=get_smat_from_gbw(file, orcadir=orcadir)
     string='%i %i\n' % (NAO,NAO)
@@ -62,7 +61,7 @@ def saveAOmatrix(file, orcadir=None):
     with open(outfile, 'w') as ofile:
         ofile.write(string)
 
-#Get smat from GBW. Converted to Python3 From Python2 function in SHARC
+#Get smat from GBW.
 def get_smat_from_gbw(file1, file2='', orcadir=None):
 
     if not file2:
@@ -110,7 +109,7 @@ def get_smat_from_gbw(file1, file2='', orcadir=None):
 
     return NAO,ao_ovl
 
-#Get MO coefficients from GBW file. Converted to Python3 From Python2 function in SHARC
+#Get MO coefficients from GBW file.
 def get_MO_from_gbw(filename,restr,frozencore,orcadir):
 
     # run orca_fragovl
@@ -312,7 +311,6 @@ def get_dets_from_single(logfile,restr,gscharge,gsmult,totnuccharge,frozencore):
 
 
 #Get determinants from ORCA cisfile.
-#Converted to Python3 from function in SHARC
 def get_dets_from_cis(logfile,cisfilename,restr,mults,gscharge,gsmult,totnuccharge,nstates_to_extract,nstates_to_skip,no_tda,frozencore,wfthres):
     print("Inside get_dets_from_cis")
     print("")
@@ -2318,7 +2316,7 @@ def PhotoElectronSpectrum(theory=None, fragment=None, Initialstate_charge=None, 
 
 
 
-            # Threshold for WF. SHARC set it to 2.0
+            # Threshold for WF.
             wfthres = 2.0
 
             if CAS is True:

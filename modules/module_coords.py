@@ -228,12 +228,6 @@ class Fragment:
         if conn is True:
             self.calc_connectivity(scale=scale, tol=tol)
 
-    def delete_coords(self):
-        # TODO: Should we allow this? We can not update attributes so current fragment info is all wrong after running
-        self.coords = np.zeros((0, 3))
-        self.elems = []
-        self.connectivity = []
-        # self.update_attributes()
 
     # Get list of atom-indices for specific elements or groups
     # Atom indices except those provided
@@ -2052,6 +2046,8 @@ def rmsd(V, W):
 # Turbomol coord->xyz
 def coord2xyz(inputfile):
     """convert TURBOMOLE coordfile to xyz"""
+    coords=[]
+    elems=[]
     with open(inputfile, 'r') as f:
         coord = f.readlines()
         x = []
@@ -2059,18 +2055,44 @@ def coord2xyz(inputfile):
         z = []
         atom = []
         for line in coord[1:-1]:
-            x.append(float(line.split()[0]) * constants.bohr2ang)
-            y.append(float(line.split()[1]) * constants.bohr2ang)
-            z.append(float(line.split()[2]) * constants.bohr2ang)
+            x=float(line.split()[0]) * constants.bohr2ang
+            y=float(line.split()[1]) * constants.bohr2ang
+            z=float(line.split()[2]) * constants.bohr2ang
             el = reformat_element(str(line.split()[3]))
-            atom.append(el)
-        for item in atom:
-            if len(item) == 1:
-                atom[atom.index(item)] = item.replace(item[0], item[0].upper())
-            if len(item) >= 2:
-                atom[atom.index(item)] = item.replace(item, item[0].upper() + item[1:].lower())
-        # natoms = int(len(coord[1:-1]))
-        return atom, np.array(x), np.array(y), np.array(z)
+            elems.append(el)
+            coords.append([x,y,z])
+    print("coords:", coords)
+    print("elems", elems)
+    numatoms=len(elems)
+    with open("fromcoord.xyz", 'w') as cfile:
+        cfile.write(f"{numatoms}\n")
+        cfile.write(f"title\n")
+        for e,c in zip(elems,coords):
+            cfile.write(" {:13} {:20.16f} {:20.16f} {:20.16f}\n".format(e,c[0],c[1],c[2]))
+    return
+
+# Turbomole xyz->coord
+def xyz2coord(inputfile):
+    """convert xyz to TURBOMOLE coordfile"""
+    coords=[]
+    elems=[]
+    with open(inputfile, 'r') as f:
+        for i,line in enumerate(f):
+            if i > 1:
+                x=float(line.split()[1]) / constants.bohr2ang
+                y=float(line.split()[2]) / constants.bohr2ang
+                z=float(line.split()[3]) / constants.bohr2ang
+                el = reformat_element(str(line.split()[0]))
+                elems.append(el)
+                coords.append([x,y,z])
+    with open("coord", 'w') as cfile:
+        cfile.write(f"$coord\n")
+        for e,c in zip(elems,coords):
+            cfile.write("   {:20.16f} {:20.16f} {:20.16f} {:>13}\n".format(c[0],c[1],c[2],e))
+        cfile.write(f"$end\n")
+
+
+    return
 
 
 # Get partial list by deleting elements not present in provided list of indices.
