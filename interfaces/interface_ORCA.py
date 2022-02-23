@@ -2030,3 +2030,31 @@ def ORCA_External_Optimizer(fragment=None, theory=None, orcadir=None, charge=Non
     print("Final energy from external ORCA optimization:", energy)
 
     return energy
+
+def make_molden_file_ORCA(GBWfile, orcadir=None):
+    print_line_with_mainheader("make_molden_file_ORCA")
+
+    #Check for ORCA dir
+    orcadir = check_ORCA_location(orcadir)
+
+    print("Inputfile:", GBWfile) 
+    #GBWfile should be ORCA file. Can be SCF GBW (.gbw) or natural orbital WF file (.nat)
+
+    #Renaming file if GBW extension as orca_mkl needs it
+    if '.gbw' not in GBWfile:
+        newfile=GBWfile+'.gbw'
+        print("Making copy of file:", newfile)
+        shutil.copy(GBWfile,newfile)
+    else:
+        newfile=GBWfile
+
+    #Now removing suffix
+    GBWfile_noext=newfile.split('.gbw')[0]
+    print("GBWfile_noext:", GBWfile_noext)
+    #Create molden file from el.gbw
+    print("Calling orca_2mkl to create molden file:")
+    sp.call([orcadir+'/orca_2mkl', GBWfile_noext, '-molden'])
+    moldenfile=GBWfile_noext+'.molden.input'
+    print("Created molden file:", moldenfile)
+
+    return moldenfile
