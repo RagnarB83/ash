@@ -3,7 +3,7 @@ import os
 import shutil
 
 from interfaces.interface_ORCA import make_molden_file_ORCA
-from functions.functions_general import BC,ashexit
+from functions.functions_general import BC,ashexit, writestringtofile
 """
     Interface to the Multiwfn program
 """
