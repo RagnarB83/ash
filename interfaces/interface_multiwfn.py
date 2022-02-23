@@ -1,4 +1,6 @@
 import subprocess as sp
+import os
+import shutil
 
 from interfaces.interface_ORCA import make_molden_file_ORCA
 from functions.functions_general import BC,ashexit
@@ -19,7 +21,7 @@ from functions.functions_general import BC,ashexit
 def multiwfn_run(inputfile, option='density', multiwfndir=None, grid=3):
 
     if multiwfndir == None:
-        print(BC.WARNING, "No multiwfndir argument passed to call_crest. Attempting to find multiwfndir variable inside settings_ash", BC.END)
+        print(BC.WARNING, "No multiwfndir argument passed to multiwfn_run. Attempting to find multiwfndir variable inside settings_ash", BC.END)
         try:
             print("settings_ash.settings_dict:", settings_ash.settings_dict)
             multiwfndir=settings_ash.settings_dict["multiwfndir"]
