@@ -626,9 +626,9 @@ class QMMMTheory:
                                                                                          MMcharges=self.pointcharges,
                                                                                          qm_elems=current_qmelems, charge=charge, mult=mult,
                                                                                          Grad=True, PC=True, numcores=numcores)
-                    shutil.copyfile(self.qm_theory.filename+'.out', self.qm_theory.filename+'_full'+'.out')
-                    shutil.copyfile(self.qm_theory.filename+'.engrad', self.qm_theory.filename+'_full'+'.engrad')
-                    shutil.copyfile(self.qm_theory.filename+'.pcgrad', self.qm_theory.filename+'_full'+'.pcgrad')
+                    #shutil.copyfile(self.qm_theory.filename+'.out', self.qm_theory.filename+'_full'+'.out')
+                    #shutil.copyfile(self.qm_theory.filename+'.engrad', self.qm_theory.filename+'_full'+'.engrad')
+                    #shutil.copyfile(self.qm_theory.filename+'.pcgrad', self.qm_theory.filename+'_full'+'.pcgrad')
                     modules.module_coords.write_coords_all(self.PCgradient, self.mmelems, indices=self.mmatoms, file="PCgradientorig_{}".format(label), description="PC gradient orig{} (au/Bohr):".format(label))
                 else:
                     self.QMenergy, self.QMgradient = self.qm_theory.run(current_coords=self.qmcoords,
