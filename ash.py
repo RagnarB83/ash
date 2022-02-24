@@ -52,7 +52,11 @@ import constants
 
 # functions related to electronic structure
 import functions.functions_elstructure
+from functions.functions_elstructure import read_cube, write_cube_diff
 
+#multiwfn interface
+import interfaces.interface_multiwfn
+from interfaces.interface_multiwfn import multiwfn_run
 # Spinprojection
 from modules.module_spinprojection import SpinProjectionTheory
 

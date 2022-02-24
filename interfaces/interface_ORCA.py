@@ -591,6 +591,7 @@ def checkORCAOptfinished(file):
 
 #Grab Final single point energy. Ignoring possible encoding errors in file
 def ORCAfinalenergygrab(file, errors='ignore'):
+    Energy=None
     with open(file) as f:
         for line in f:
             if 'FINAL SINGLE POINT ENERGY' in line:
@@ -602,6 +603,11 @@ def ORCAfinalenergygrab(file, errors='ignore'):
                     #Changing: sometimes ORCA adds info to the right of energy
                     #Energy=float(line.split()[-1])
                     Energy=float(line.split()[4])
+    if Energy == None:
+        print(BC.FAIL,"ASH found no energy in file:", file, BC.END)
+        print(BC.FAIL,"Something went wrong with ORCA run. Check ORCA outputfile:", file, BC.END)
+        print(BC.OKBLUE,BC.BOLD, "------------ENDING ORCA-INTERFACE-------------", BC.END)
+        ashexit()
     return Energy
 
 
