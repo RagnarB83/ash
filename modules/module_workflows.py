@@ -314,7 +314,9 @@ def auto_active_space(fragment=None, orcadir=None, basis="def2-SVP", scalar_rel=
     else:
         scalar_rel_keyword=scalar_rel
 
-
+    #extrablocks
+    if extrablocks == None:
+        extrablocks=""
 
     print("")
     #NOTE: Ideas: Insted of UHF-MP2 step. DFT-SCF and then MP2 natural orbitals from unrelaxed/relaxed density on top?
