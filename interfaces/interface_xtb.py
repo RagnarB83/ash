@@ -84,7 +84,7 @@ class xTBTheory:
 
 
             except:
-                print("Problem importing xTB library. Have you installed : conda install xtb-python ?")
+                print("Problem importing xTB library. Have you installed : conda install -c conda-forge xtb-python  ?")
                 ashexit(code=9)
             self.Calculator=Calculator
             self.Param=Param

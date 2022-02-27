@@ -479,7 +479,7 @@ class QMMMTheory:
             print("MM Module:", self.mm_theory_name)
 
         #OPTION: QM-region charge/mult from QMMMTheory definition
-        #PRIORITY ??
+        #If qm_charge/qm_mult defined then we use. Otherwise charge/mult may have been defined by jobtype-function and passed on via run
         if self.qm_charge != None:
             print("Charge provided from QMMMTheory object: ", self.qm_charge)
             charge=self.qm_charge
@@ -487,7 +487,7 @@ class QMMMTheory:
             print("Mult provided from QMMMTheory object: ", self.qm_mult)
             mult=self.qm_mult
 
-        #Checking if charge and mult has been provided
+        #Checking if charge and mult has been provided. Exit if not.
         if charge == None or mult == None:
             print(BC.FAIL, "Error. charge and mult has not been defined for QMMMTheory.run method", BC.END)
             ashexit()
