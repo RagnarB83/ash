@@ -3100,7 +3100,7 @@ class OpenMM_MDclass:
 
                 # Run QM step to get full system QM gradient.
                 # Updates OpenMM object with QM forces
-                energy,gradient=self.qmtheory.run(current_coords=current_coords, elems=self.fragment.elems, Grad=True, charge=charge, mult=mult)
+                energy,gradient=self.qmtheory.run(current_coords=current_coords, elems=self.fragment.elems, Grad=True, charge=self.charge, mult=self.mult)
                 print("energy:", energy)
                 print_time_rel(checkpoint, modulename="QM run", moduleindex=2)
 
