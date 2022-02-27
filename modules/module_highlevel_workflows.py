@@ -24,7 +24,7 @@ basisfamilies=['cc','aug-cc','cc-dkh','cc-dk','aug-cc-dkh','aug-cc-dk','def2','m
 #alpha and beta can be manually set. If not set then they are picked based on basisfamily
 #NOTE: List of elements are required here
 class CC_CBS_Theory:
-    def __init__(self, elements=None, cardinals = [2,3], basisfamily="def2", relativity=None, orcadir=None, 
+    def __init__(self, elements=None, cardinals = None, basisfamily=None, relativity=None, orcadir=None, 
            stabilityanalysis=False, numcores=1, CVSR=False, CVbasis="W1-mtsmall", F12=False, Openshellreference=None, DFTreference=None, DFT_RI=False, auxbasis="autoaux-max",
                         DLPNO=False, memory=5000, pnosetting='extrapolation', pnoextrapolation=[6,7], FullLMP2Guess=False, T1=True, scfsetting='TightSCF',
                         alpha=None, beta=None, extrainputkeyword='', extrablocks='', FCI=False, guessmode='Cmatrix', atomicSOcorrection=False):

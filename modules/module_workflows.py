@@ -291,7 +291,7 @@ def thermochemprotocol_reaction(Opt_theory=None, SP_theory=None, fraglist=None, 
 
 def auto_active_space(fragment=None, orcadir=None, basis="def2-SVP", scalar_rel=None, charge=None, mult=None, 
     initial_orbitals='MP2', functional='TPSS', smeartemp=5000, tgen=1e-1, selection_thresholds=[1.999,0.001],
-    numcores=1, memory=9000):
+    numcores=1, memory=9000, extrablocks=None):
 
     print_line_with_mainheader("auto_active_space function")
 
@@ -307,15 +307,20 @@ def auto_active_space(fragment=None, orcadir=None, basis="def2-SVP", scalar_rel=
     print("2. ICE-CI Orbital Step")
     print("ICE-CI tgen:", tgen)
     print("Numcores:", numcores)
+    print("Extra blocks:", extrablocks)
     #1. Converge an RI-MP2 natural orbital calculation
     if scalar_rel == None:
         scalar_rel_keyword=""
     else:
         scalar_rel_keyword=scalar_rel
 
+
+
     print("")
-    #NOTE: Ideas: Insted of UHF-MP2 step. DFT-SCF and then MP2 natural orbitals from unrelaxed density on top?
+    #NOTE: Ideas: Insted of UHF-MP2 step. DFT-SCF and then MP2 natural orbitals from unrelaxed/relaxed density on top?
+    #FULL double-hybrid natural orbitals??
     if initial_orbitals == 'MP2':
+        print("Initial orbitals: MP2")
         steplabel='MP2natorbs'
         orcasimpleinput="! RI-MP2 autoaux tightscf {} {} ".format(basis, scalar_rel_keyword)
         orcablocks="""
@@ -323,20 +328,22 @@ def auto_active_space(fragment=None, orcadir=None, basis="def2-SVP", scalar_rel=
         maxiter 800
         end
         %mp2
-        density unrelaxed
+        density relaxed
         natorbs true
         end
-        """
+        {}
+        """.format(extrablocks)
         ORCAcalc_1 = ash.ORCATheory(orcadir=orcadir, orcasimpleinput=orcasimpleinput, orcablocks=orcablocks,
                                     numcores=numcores)
         ash.Singlepoint(theory=ORCAcalc_1,fragment=fragment, charge=charge, mult=mult)
+        shutil.copy(ORCAcalc_1.filename+'.out', ORCAcalc_1.filename+'_MP2natorbs.out')
         init_orbitals=ORCAcalc_1.filename+'.mp2nat'
 
         step1occupations=ash.interfaces.interface_ORCA.MP2_natocc_grab(ORCAcalc_1.filename+'.out')
         print("MP2natoccupations:", step1occupations)
     elif initial_orbitals == 'FOD':
-        steplabel='FODorbs'
         print("Initial orbitals: FOD-DFT")
+        steplabel='FODorbs'
         print("Functional used:", functional)
         print("Smear temperature: {} K".format(smeartemp))
         #Enforcing UKS so that we get QROs even for S=0
@@ -346,10 +353,12 @@ def auto_active_space(fragment=None, orcadir=None, basis="def2-SVP", scalar_rel=
         maxiter 800
         Smeartemp {}
         end
-        """.format(smeartemp)
+        {}
+        """.format(smeartemp, extrablocks)
         ORCAcalc_1 = ash.ORCATheory(orcadir=orcadir, orcasimpleinput=orcasimpleinput, orcablocks=orcablocks,
                                     numcores=numcores)
         ash.Singlepoint(theory=ORCAcalc_1,fragment=fragment, charge=charge, mult=mult)
+        shutil.copy(ORCAcalc_1.filename+'.out', ORCAcalc_1.filename+'_FOD_DFTorbs.out')
         step1occupations=ash.interfaces.interface_ORCA.SCF_FODocc_grab(ORCAcalc_1.filename+'.out')
         print("FOD occupations:", step1occupations)
         #FOD occupations are unrestricted.
@@ -412,7 +421,8 @@ def auto_active_space(fragment=None, orcadir=None, basis="def2-SVP", scalar_rel=
     maxiter 200
     end
     end
-    """.format(memory,init_orbitals,numelectrons,numorbitals,tgen)
+    {}
+    """.format(memory,init_orbitals,numelectrons,numorbitals,tgen, extrablocks)
     ORCAcalc_2 = ash.ORCATheory(orcadir=orcadir, orcasimpleinput=orcasimpleinput, orcablocks=orcablocks,
                                 numcores=numcores)
     ash.Singlepoint(theory=ORCAcalc_2,fragment=fragment, charge=charge, mult=mult)
