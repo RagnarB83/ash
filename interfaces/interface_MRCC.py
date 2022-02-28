@@ -1,6 +1,7 @@
 from functions.functions_general import ashexit, BC, print_time_rel,print_line_with_mainheader
 import subprocess as sp
 import os
+import shutil
 import time
 
 #MRCC Theory object. Fragment object is optional. Used??
