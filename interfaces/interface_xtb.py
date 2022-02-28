@@ -113,7 +113,7 @@ class xTBTheory:
             self.c_double = c_double
         elif self.runmode=='inputfile':
             if xtbdir == None:
-                print(BC.WARNING, "No xtbdir argument passed to xTBTheory. Attempting to find xTBTheory variable inside settings_ash", BC.END)
+                print(BC.WARNING, "No xtbdir argument passed to xTBTheory. Attempting to find xtbdir variable inside settings_ash", BC.END)
                 try:
                     print("settings_ash.settings_dict:", settings_ash.settings_dict)
                     self.xtbdir=settings_ash.settings_dict["xtbdir"]
