@@ -1,11 +1,34 @@
-from functions.functions_general import ashexit, BC, print_time_rel
+from functions.functions_general import ashexit, BC, print_time_rel,print_line_with_mainheader
 import subprocess as sp
 import os
+import time
 
 #MRCC Theory object. Fragment object is optional. Used??
 class MRCCTheory:
     def __init__(self, mrccdir=None, filename='mrcc', fragment=None, printlevel=2,
                 mrccinput=None, numcores=1):
+        print_line_with_mainheader("MRCCTheory initialization")
+
+        if mrccinput is None:
+            print("MRCCTheory requires a mrccinput keyword")
+            ashexit()
+
+        if mrccdir == None:
+            print(BC.WARNING, "No mrccdir argument passed to MRCCTheory. Attempting to find mrccdir variable inside settings_ash", BC.END)
+            try:
+                print("settings_ash.settings_dict:", settings_ash.settings_dict)
+                self.mrccdir=settings_ash.settings_dict["mrccdir"]
+            except:
+                print(BC.WARNING,"Found no mrccdir variable in settings_ash module either.",BC.END)
+                try:
+                    self.mrccdir = os.path.dirname(shutil.which('dmrcc'))
+                    print(BC.OKGREEN,"Found dmrcc in PATH. Setting mrccdir to:", self.mrccdir, BC.END)
+                except:
+                    print(BC.FAIL,"Found no dmrcc executable in PATH. Exiting... ", BC.END)
+                    ashexit()
+        else:
+            self.mrccdir = mrccdir
+
 
         #Indicate that this is a QMtheory
         self.theorytype="QM"
@@ -18,15 +41,16 @@ class MRCCTheory:
         self.numcores=numcores
 
 
-    #TODO: Parallelization is enabled most easily by OMP_NUM_THREADS AND MKL_NUM_THREADS. NOt sure if we can control this here
 
+
+    #TODO: Parallelization is enabled most easily by OMP_NUM_THREADS AND MKL_NUM_THREADS. NOt sure if we can control this here
 
 
     # Run function. Takes coords, elems etc. arguments and computes E or E+G.
     def run(self, current_coords=None, current_MM_coords=None, MMcharges=None, qm_elems=None,
             elems=None, Grad=False, PC=False, numcores=None, restart=False, label=None,
             charge=None, mult=None):
-
+        module_init_time=time.time()
         if numcores == None:
             numcores = self.numcores
 
