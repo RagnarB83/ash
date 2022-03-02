@@ -117,7 +117,7 @@ def Single_par(fragment=None, fragmentfile=None, theory=None, label=None, mofile
 #PARALLEL Single-point energy function
 #will run over fragments or fragmentfiles, over theories or both
 #mofilesdir. Directory containing MO-files (GBW files for ORCA). Usef for multiple fragment option
-def Singlepoint_parallel(fragments=None, fragmentfiles=None, theories=None, numcores=None, mofilesdir=None):
+def Singlepoint_parallel(fragments=None, fragmentfiles=None, theories=None, numcores=None, mofilesdir=None, allow_theory_parallelization=False):
     print("")
     '''
     The Singlepoint_parallel function carries out multiple single-point calculations in a parallel fashion
@@ -177,6 +177,25 @@ def Singlepoint_parallel(fragments=None, fragmentfiles=None, theories=None, numc
         #event.set()
 
 
+    print(BC.WARNING,"Singlepoint_parallel numcores set to:", numcores, BC.END)
+    print(BC.WARNING,f"ASH will run {numcores} jobs simultaneously", numcores, BC.END)
+
+    #Whether to allow theory parallelization or not
+    if theory.numcores != 1:
+        print(BC.WARNING,"WARNING: Theory numcores set to:", theory.numcores, BC.END)
+        if allow_theory_parallelization is True:
+            totnumcores=numcores*theory.numcores
+            print(BC.WARNING,f"Each job can use {theory.numcores} CPU cores, thus up to {totnumcores} CPU cores can be running simultaneously. Make sure that many slots are available.", BC.END)
+        else:
+            print("allow_theory_parallelization is False. Now turning off theory.parallelization (setting theory numcores to 1)")
+            print("This can be overriden by: Singlepoint_parallel(allow_theory_parallelization=True)")
+            theory.numcores=1
+
+
+    #NOTE: Python 3.8 and higher use spawn in MacOS. Leads to ash import problems
+    #NOTE: Unix/Linux uses fork which seems better behaved
+
+
     #Case: 1 theory, multiple fragments
     results=[]
     if len(theories) == 1:
@@ -185,18 +204,7 @@ def Singlepoint_parallel(fragments=None, fragmentfiles=None, theories=None, numc
         print("")
         print("Launching multiprocessing pool.map:")
 
-        #Change theory numcores to 1 since we are running ASH in parallel
-        #NOTE: Alternative to exit here instead ??
-        if theory.numcores != 1:
-            totnumcores=numcores*theory.numcores
-            print(BC.WARNING,"WARNING: Theory numcores set to:", theory.numcores, BC.END)
-            print(BC.WARNING,"WARNING: Singlepoint_parallel numcores set to:", numcores, BC.END)
-            print(BC.WARNING,f"WARNING: Job can use up to {totnumcores} simultaneously :", BC.END)
-            #print(BC.WARNING,"Since ASH is running in parallel we will now turn off Theory Parallelization",BC.END)
-            #theory.numcores=1
 
-        #NOTE: Python 3.8 and higher use spawn in MacOS. Leads to ash import problems
-        #NOTE: Unix/Linux uses fork which seems better behaved
 
         #Passing list of fragments
         if len(fragments) > 0:
