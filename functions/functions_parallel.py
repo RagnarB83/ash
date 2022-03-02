@@ -188,9 +188,12 @@ def Singlepoint_parallel(fragments=None, fragmentfiles=None, theories=None, numc
         #Change theory numcores to 1 since we are running ASH in parallel
         #NOTE: Alternative to exit here instead ??
         if theory.numcores != 1:
-            print(BC.WARNING,"Theory numcores set to:", theory.numcores, BC.END)
-            print(BC.WARNING,"Since ASH is running in parallel we will now turn off Theory Parallelization",BC.END)
-            theory.numcores=1
+            totnumcores=numcores*theory.numcores
+            print(BC.WARNING,"WARNING: Theory numcores set to:", theory.numcores, BC.END)
+            print(BC.WARNING,"WARNING: Singlepoint_parallel numcores set to:", numcores, BC.END)
+            print(BC.WARNING,f"WARNING: Job can use up to {totnumcores} simultaneously :", BC.END)
+            #print(BC.WARNING,"Since ASH is running in parallel we will now turn off Theory Parallelization",BC.END)
+            #theory.numcores=1
 
         #NOTE: Python 3.8 and higher use spawn in MacOS. Leads to ash import problems
         #NOTE: Unix/Linux uses fork which seems better behaved
