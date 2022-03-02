@@ -55,6 +55,9 @@ def multiwfn_run(inputfile, option='density', mrccoutputfile=None, multiwfndir=N
         with open("mwfnoptions") as input:
             sp.run([multiwfndir+'/Multiwfn', "mrcc.molden"], stdin=input)
 
+        #Writes: mrccnew.molden a proper Molden WF file for MRCC WF. Now we can proceed
+        option="density"
+        inputfile="mrccnew.molden"
     else:
         frozen_orbs=None
     
