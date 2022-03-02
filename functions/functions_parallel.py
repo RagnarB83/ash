@@ -193,17 +193,18 @@ def Singlepoint_parallel(fragments=None, fragmentfiles=None, theories=None, numc
         print("Launching multiprocessing pool.map:")
 
         print(BC.WARNING,"Singlepoint_parallel numcores set to:", numcores, BC.END)
-        print(BC.WARNING,f"ASH will run {numcores} jobs simultaneously", numcores, BC.END)
+        print(BC.WARNING,f"ASH will run {numcores} jobs simultaneously", BC.END)
 
         #Whether to allow theory parallelization or not
         if theory.numcores != 1:
             print(BC.WARNING,"WARNING: Theory numcores set to:", theory.numcores, BC.END)
             if allow_theory_parallelization is True:
                 totnumcores=numcores*theory.numcores
+                print(BC.WARNING,"allow_theory_parallelization is True.", BC.END)
                 print(BC.WARNING,f"Each job can use {theory.numcores} CPU cores, thus up to {totnumcores} CPU cores can be running simultaneously. Make sure that many slots are available.", BC.END)
             else:
-                print("allow_theory_parallelization is False. Now turning off theory.parallelization (setting theory numcores to 1)")
-                print("This can be overriden by: Singlepoint_parallel(allow_theory_parallelization=True)")
+                print(BC.WARNING,"allow_theory_parallelization is False. Now turning off theory.parallelization (setting theory numcores to 1)", BC.END)
+                print(BC.WARNING,"This can be overriden by: Singlepoint_parallel(allow_theory_parallelization=True)\n", BC.END)
                 theory.numcores=1
 
 
