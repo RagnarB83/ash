@@ -18,7 +18,7 @@ from functions.functions_general import BC,ashexit, writestringtofile, pygrep
 #ORCA interface can create Molden file from GBW
 #make_molden_file_ORCA
 
-def multiwfn_run(inputfile, option='density', mrccoutputfile=None, multiwfndir=None, grid=3):
+def multiwfn_run(inputfile, option='density', mrccoutputfile=None, mrccdensityfile=None, multiwfndir=None, grid=3):
     originputfile=inputfile
     originputbasename=os.path.splitext(originputfile)[0]
     print("originputbasename:", originputbasename)
@@ -53,9 +53,8 @@ def multiwfn_run(inputfile, option='density', mrccoutputfile=None, multiwfndir=N
         #Rename MRCC Molden file to mrcc.molden
         os.rename(inputfile, "mrcc.molden")
 
-        #First Multiwfn call
-        #This writes the input-code file that interacts with the Multiwfn program for the chosen option
-        write_multiwfn_input_option(option=option, grid=grid, frozenorbitals=frozen_orbs)
+        #First Multiwfn call. Create new Moldenfile based on correlated density
+        write_multiwfn_input_option(option=option, grid=grid, frozenorbitals=frozen_orbs, densityfile=mrccdensityfile)
         with open("mwfnoptions") as input:
             sp.run([multiwfndir+'/Multiwfn', "mrcc.molden"], stdin=input)
 
@@ -86,7 +85,7 @@ def multiwfn_run(inputfile, option='density', mrccoutputfile=None, multiwfndir=N
 
 
 #This function creates an inputfile of numbers that defines what Multiwfn does
-def write_multiwfn_input_option(option=None, grid=3, frozenorbitals=None):
+def write_multiwfn_input_option(option=None, grid=3, frozenorbitals=None, densityfile=None):
     #Create input formula as file
     if option == 'density':
         denstype=1
@@ -112,13 +111,16 @@ q
         """
     elif option =="mrcc-density":
         if frozenorbitals == None:
-            print("mrccdensity requires frozenrobitals")
+            print("mrccdensity requires frozenorbitals")
+            ashexit()
+        if densityfile == None:
+            print("mrccdensity requires densityfile")
             ashexit()
         #ASSUMES presence of file CCDENSITIES
         #Will write file: mrccnew.molden
         inputformula=f"""1000
 97
-./CCDENSITIES
+./{densityfile}
 {frozenorbitals}
 100
 2
