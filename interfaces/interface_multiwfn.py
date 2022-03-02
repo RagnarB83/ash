@@ -19,6 +19,9 @@ from functions.functions_general import BC,ashexit, writestringtofile, pygrep
 #make_molden_file_ORCA
 
 def multiwfn_run(inputfile, option='density', mrccoutputfile=None, multiwfndir=None, grid=3):
+    originputfile=inputfile
+    originputbasename=os.path.splitext(originputfile)[0]
+    print("originputbasename:", originputbasename)
     if multiwfndir == None:
         print(BC.WARNING, "No multiwfndir argument passed to multiwfn_run. Attempting to find multiwfndir variable inside settings_ash", BC.END)
         try:
@@ -38,6 +41,7 @@ def multiwfn_run(inputfile, option='density', mrccoutputfile=None, multiwfndir=N
 
     #MRCC density
     if option=="mrcc-density":
+
         if mrccoutputfile == None:
             print("MRCC outputfile should also be provided")
             ashexit()
@@ -72,7 +76,7 @@ def multiwfn_run(inputfile, option='density', mrccoutputfile=None, multiwfndir=N
     #Read output
     if option =="density":
         outputfile="density.cub"
-        finaloutputfile=inputfile+'_mwfn.cube'
+        finaloutputfile=originputbasename+'_mwfn.cube'
         os.rename(outputfile, finaloutputfile)
         print("Electron density outputfile written:", finaloutputfile)
         return finaloutputfile
