@@ -52,8 +52,8 @@ def multiwfn_run(inputfile, option='density', mrccoutputfile=None, multiwfndir=N
         #First Multiwfn call
         #This writes the input-code file that interacts with the Multiwfn program for the chosen option
         write_multiwfn_input_option(option=option, grid=grid, frozenorbitals=frozen_orbs)
-
-        sp.run([multiwfndir+'/Multiwfn', "mrcc.molden"], stdin=input)
+        with open("mwfnoptions") as input:
+            sp.run([multiwfndir+'/Multiwfn', "mrcc.molden"], stdin=input)
 
     else:
         frozen_orbs=None
@@ -61,10 +61,10 @@ def multiwfn_run(inputfile, option='density', mrccoutputfile=None, multiwfndir=N
     #This writes the input-code file that interacts with the Multiwfn program for the chosen option
     write_multiwfn_input_option(option=option, grid=grid)
 
-    input = open('mwfnoptions')
     #Run
     #sp.call([multiwfndir+'/Multiwfn', inputfile, '<', "mwfnoptions"])
-    sp.run([multiwfndir+'/Multiwfn', inputfile], stdin=input)
+    with open("mwfnoptions") as input:
+        sp.run([multiwfndir+'/Multiwfn', inputfile], stdin=input)
 
     #Read output
     if option =="density":
