@@ -19,7 +19,6 @@ from functions.functions_general import BC,ashexit, writestringtofile, pygrep
 #make_molden_file_ORCA
 
 def multiwfn_run(inputfile, option='density', mrccoutputfile=None, multiwfndir=None, grid=3):
-
     if multiwfndir == None:
         print(BC.WARNING, "No multiwfndir argument passed to multiwfn_run. Attempting to find multiwfndir variable inside settings_ash", BC.END)
         try:
@@ -46,7 +45,19 @@ def multiwfn_run(inputfile, option='density', mrccoutputfile=None, multiwfndir=N
         print("Core electrons found in outputfile:", core_electrons)
         frozen_orbs = int(core_electrons/2)
         print("Frozen orbitals:", frozen_orbs)
+        
+        #Rename MRCC Molden file to mrcc.molden
+        os.rename(inputfile, "mrcc.molden")
 
+        #First Multiwfn call
+        #This writes the input-code file that interacts with the Multiwfn program for the chosen option
+        write_multiwfn_input_option(option=option, grid=grid, frozenorbitals=frozen_orbs)
+
+        sp.run([multiwfndir+'/Multiwfn', "mrcc.molden"], stdin=input)
+
+    else:
+        frozen_orbs=None
+    
     #This writes the input-code file that interacts with the Multiwfn program for the chosen option
     write_multiwfn_input_option(option=option, grid=grid)
 
@@ -68,7 +79,7 @@ def multiwfn_run(inputfile, option='density', mrccoutputfile=None, multiwfndir=N
 
 
 #This function creates an inputfile of numbers that defines what Multiwfn does
-def write_multiwfn_input_option(option=None, grid=3):
+def write_multiwfn_input_option(option=None, grid=3, frozenorbitals=None):
     #Create input formula as file
     if option == 'density':
         denstype=1
@@ -93,12 +104,15 @@ y
 q
         """
     elif option =="mrcc-density":
+        if frozenorbitals == None:
+            print("mrccdensity requires frozenrobitals")
+            ashexit()
         #ASSUMES presence of file CCDENSITIES
         #Will write file: mrccnew.molden
         inputformula=f"""1000
 97
 ./CCDENSITIES
-3
+{frozenorbitals}
 100
 2
 6
