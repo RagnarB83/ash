@@ -3,7 +3,7 @@ import os
 import shutil
 
 from interfaces.interface_ORCA import make_molden_file_ORCA
-from functions.functions_general import BC,ashexit, writestringtofile
+from functions.functions_general import BC,ashexit, writestringtofile, pygrep
 """
     Interface to the Multiwfn program
 """
@@ -18,7 +18,7 @@ from functions.functions_general import BC,ashexit, writestringtofile
 #ORCA interface can create Molden file from GBW
 #make_molden_file_ORCA
 
-def multiwfn_run(inputfile, option='density', multiwfndir=None, grid=3):
+def multiwfn_run(inputfile, option='density', mrccoutputfile=None, multiwfndir=None, grid=3):
 
     if multiwfndir == None:
         print(BC.WARNING, "No multiwfndir argument passed to multiwfn_run. Attempting to find multiwfndir variable inside settings_ash", BC.END)
@@ -36,6 +36,16 @@ def multiwfn_run(inputfile, option='density', multiwfndir=None, grid=3):
     
     print("multiwfndir:", multiwfndir)
     print("Inputfile:", inputfile) #Inputfile is typically a Molden file
+
+    #MRCC density
+    if option=="mrcc-density":
+        if mrccoutputfile == None:
+            print("MRCC outputfile should also be provided")
+            ashexit()
+        core_electrons = int(pygrep("Number of core electrons:",mrccoutputfile)[-1])
+        print("Core electrons found in outputfile:", core_electrons)
+        frozen_orbs = int(core_electrons/2)
+        print("Frozen orbitals:", frozen_orbs)
 
     #This writes the input-code file that interacts with the Multiwfn program for the chosen option
     write_multiwfn_input_option(option=option, grid=grid)
@@ -73,6 +83,28 @@ def write_multiwfn_input_option(option=None, grid=3):
 {writeoutput}
 0
 q
+        """
+    elif option == 'hirshfeld':        
+        inputformula=f"""7
+1
+1
+y
+0
+q
+        """
+    elif option =="mrcc-density":
+        #ASSUMES presence of file CCDENSITIES
+        #Will write file: mrccnew.molden
+        inputformula=f"""1000
+97
+./CCDENSITIES
+3
+100
+2
+6
+mrccnew.molden
+q
+
         """
     elif option == 'hirshfeld':        
         inputformula=f"""7
