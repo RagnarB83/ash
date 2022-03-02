@@ -51,7 +51,7 @@ def multiwfn_run(inputfile, option='density', mrccoutputfile=None, mrccdensityfi
         print("Frozen orbitals:", frozen_orbs)
         
         #Rename MRCC Molden file to mrcc.molden
-        shutil.copy((inputfile, "mrcc.molden")
+        shutil.copy(inputfile, "mrcc.molden")
 
         #First Multiwfn call. Create new Moldenfile based on correlated density
         write_multiwfn_input_option(option=option, grid=grid, frozenorbitals=frozen_orbs, densityfile=mrccdensityfile)
