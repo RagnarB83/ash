@@ -2105,8 +2105,8 @@ def grab_coordinates_from_ORCA_output(filename):
                 elif len(line) < 10:
        	       	    grab=False
             if 'CARTESIAN COORDINATES (ANGSTROEM)' in line:
-                if opt == True:
-                    if opt_converged=True:
+                if opt is True:
+                    if opt_converged is True:
                         grab=True
                 else:
                     grab=True
