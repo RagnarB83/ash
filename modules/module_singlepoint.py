@@ -107,7 +107,7 @@ def print_theories_table(theories,energies,fragment):
     print("\n{:15} {:15} {:>7} {:>7} {:>20}".format("Theory class", "Theory Label", "Charge","Mult", "Energy(Eh)"))
     print("-"*70)
     for t, e in zip(theories,energies):
-        print("{:15} {:15} {:>7} {:>7} {:>20.10f}".format(t.__class__.__name__, t.label, fragment.charge, fragment.mult, e))
+        print("{:15} {:15} {:>7} {:>7} {:>20.10f}".format(t.__class__.__name__, str(t.label), fragment.charge, fragment.mult, e))
     print()
 
 #Pretty table of fragments and energies
