@@ -2086,11 +2086,17 @@ def run_orca_mapspc(filename, option, start=0.0, end=100, unit='eV', broadening=
 
 #Simple function to get elems and coordinates from ORCA outputfile
 def grab_coordinates_from_ORCA_output(filename):
+    opt=False
+    opt_converged=False
     grab=False
     elems=[]
     coords=[]
     with open(filename) as f:
         for line in f:
+            if 'Geometry Optimization Run' in line:
+                opt=True
+            if 'FINAL ENERGY EVALUATION AT THE STATIONARY POINT' in line:
+                opt_converged=True
             if grab is True:
                 if len(line) >35:
                     elems.append(line.split()[0])
@@ -2099,6 +2105,10 @@ def grab_coordinates_from_ORCA_output(filename):
                 elif len(line) < 10:
        	       	    grab=False
             if 'CARTESIAN COORDINATES (ANGSTROEM)' in line:
-                grab=True
+                if opt == True:
+                    if opt_converged=True:
+                        grab=True
+                else:
+                    grab=True
     npcoords=np.array(coords)
     return elems, npcoords
