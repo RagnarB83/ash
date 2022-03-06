@@ -436,6 +436,7 @@ def write_datafile(x, y, filename="new.dat", separator="     "):
         print(f"Error:Length of x ({len(x)}) and y {len(y)} are different!")
         ashexit()
     with open(filename, 'w') as f:
+        f.write("# Created by ASH\n")
         for i,j in zip(x,y):
             f.write(f"{i}{separator}{j}\n")
     print("Wrote new datafile:", filename)

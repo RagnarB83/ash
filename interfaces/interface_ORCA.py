@@ -2083,3 +2083,22 @@ def run_orca_mapspc(filename, option, start=0.0, end=100, unit='eV', broadening=
 
     orcadir = check_ORCA_location(orcadir)
     p = sp.run([orcadir + '/orca_mapspc', filename, option, f"-{unit}" f"-w{broadening}", f"-n{points}"], encoding='ascii')
+
+#Simple function to get elems and coordinates from ORCA outputfile
+def grab_coordinates_from_ORCA_output(filename):
+    grab=False
+    elems=[]
+    coords=[]
+    with open(filename) as f:
+        for line in f:
+            if grab is True:
+                if len(line) >35:
+                    elems.append(line.split()[0])
+                    c_x=float(line.split()[1]); c_y=float(line.split()[2]); c_z=float(line.split()[3])
+                    coords.append([c_x, c_y, c_z])
+                elif len(line) < 10:
+       	       	    grab=False
+            if 'CARTESIAN COORDINATES (ANGSTROEM)' in line:
+                grab=True
+    npcoords=np.array(coords)
+    return elems, npcoords
