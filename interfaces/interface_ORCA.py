@@ -2064,3 +2064,22 @@ def make_molden_file_ORCA(GBWfile, orcadir=None):
     print("Created molden file:", moldenfile)
 
     return moldenfile
+
+
+
+# Simple Wrapper around orca_mapspc
+def run_orca_mapspc(filename, option, start=0.0, end=100, unit='eV', broadening=1.0, points=5000, orcadir=None):
+
+    print("-"*30)
+    print("run_orca_mapspc function")
+    print("-"*30)
+    print(f"option: {option}")
+    print(f"start: {start}")
+    print(f"end: {end}")
+    print(f"unit: {unit}")
+    print(f"broadening: {broadening}")
+    print(f"points: {points}")
+    print(f"orcadir: {orcadir}")
+
+    orcadir = check_ORCA_location(orcadir)
+    p = sp.run([orcadir + '/orca_mapspc', filename, option, f"-{unit}" f"-w{broadening}", f"-n{points}"], encoding='ascii')
