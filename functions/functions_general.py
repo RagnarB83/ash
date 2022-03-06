@@ -426,7 +426,8 @@ def read_datafile(filename, separator=None):
                     y.append(float(line.split(separator)[1]))
     if len(x) != len(y):
         print(f"Warning:Length of x ({len(x)}) and y {len(y)} are different!")
-    return x,y
+
+    return np.array(x),np.array(y)
 
 #Write simple datafile
 # Separator is Python default whitespace.
