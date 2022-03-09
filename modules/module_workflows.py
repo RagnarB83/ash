@@ -155,6 +155,11 @@ def thermochemprotocol_single(fragment=None, Opt_theory=None, SP_theory=None, nu
         print("-------------------------------------------------------------------------")
         print("THERMOCHEM PROTOCOL-single: Step 2. Frequency calculation")
         print("-------------------------------------------------------------------------")
+        
+        #Checking analyticHessian and Theory
+        if analyticHessian is True and isinstance(Opt_theory,ash.ORCATheory) is False: 
+            analyticHessian=False
+
         #DFT-FREQ
         if analyticHessian == True:
             thermochem = ash.AnFreq(fragment=fragment, theory=Opt_theory, numcores=numcores, charge=charge, mult=mult)                
