@@ -332,9 +332,11 @@ maxiter 150\nend
         #Run
         energy_ccsdt_mtsmall_nofc = ccsdt_mtsmall_NoFC.run(elems=elems, current_coords=current_coords, numcores=numcores, charge=charge, mult=mult)
         shutil.copyfile(ccsdt_mtsmall_NoFC.filename+'.out', './' + calc_label + 'CCSDT_MTsmall_NoFC_DKH' + '.out')
+        shutil.copyfile(ccsdt_mtsmall_NoFC.filename+'.gbw', './' + calc_label + 'CCSDT_MTsmall_NoFC_DKH' + '.gbw')
         
         energy_ccsdt_mtsmall_fc = ccsdt_mtsmall_FC.run(elems=elems, current_coords=current_coords, numcores=numcores, charge=charge, mult=mult)
         shutil.copyfile(ccsdt_mtsmall_NoFC.filename+'.out', './' + calc_label + 'CCSDT_MTsmall_FC_noDKH' + '.out')
+        shutil.copyfile(ccsdt_mtsmall_NoFC.filename+'.gbw', './' + calc_label + 'CCSDT_MTsmall_FC_noDKH' + '.gbw')
 
         #Core-correlation is total energy difference between NoFC-DKH and FC-norel
         E_corecorr_and_SR = energy_ccsdt_mtsmall_nofc - energy_ccsdt_mtsmall_fc
@@ -378,6 +380,7 @@ maxiter 150\nend
         theory.run(elems=elems, current_coords=current_coords, numcores=numcores, charge=charge, mult=mult)
         PNOcalcX_dict = interfaces.interface_ORCA.grab_HF_and_corr_energies(theory.filename+'.out', DLPNO=self.DLPNO,F12=self.F12)
         shutil.copyfile(theory.filename+'.out', './' + calc_label + '_PNOX' + '.out')
+        shutil.copyfile(theory.filename+'.gbw', './' + calc_label + '_PNOX' + '.gbw')
         print("PNOcalcX:", PNOcalcX_dict)
 
 
@@ -386,6 +389,7 @@ maxiter 150\nend
         theory.run(elems=elems, current_coords=current_coords, numcores=numcores, charge=charge, mult=mult)
         PNOcalcY_dict = interfaces.interface_ORCA.grab_HF_and_corr_energies(theory.filename+'.out', DLPNO=self.DLPNO,F12=self.F12)
         shutil.copyfile(theory.filename+'.out', './' + calc_label + '_PNOY' + '.out')
+        shutil.copyfile(theory.filename+'.gbw', './' + calc_label + '_PNOY' + '.gbw')
         print("PNOcalcY:", PNOcalcY_dict)
         
         #Setting theory.orcablocks back to original
@@ -510,6 +514,7 @@ maxiter 150\nend
                 self.ccsdt_1.run(elems=elems, current_coords=current_coords, numcores=numcores, charge=charge, mult=mult)
                 CCSDT_1_dict = interfaces.interface_ORCA.grab_HF_and_corr_energies(self.ccsdt_1.filename+'.out', DLPNO=self.DLPNO, F12=self.F12)
                 shutil.copyfile(self.ccsdt_1.filename+'.out', './' + calc_label + 'CCSDT_1' + '.out')
+                shutil.copyfile(self.ccsdt_1.filename+'.gbw', './' + calc_label + 'CCSDT_1' + '.gbw')
                 print("CCSDT_1_dict:", CCSDT_1_dict)
                 E_SCF_CBS = CCSDT_1_dict['HF']
                 E_corr_CBS = CCSDT_1_dict['full_corr']
@@ -520,11 +525,13 @@ maxiter 150\nend
                 self.ccsdt_1.run(elems=elems, current_coords=current_coords, numcores=numcores, charge=charge, mult=mult)
                 CCSDT_1_dict = interfaces.interface_ORCA.grab_HF_and_corr_energies(self.ccsdt_1.filename+'.out', DLPNO=self.DLPNO)
                 shutil.copyfile(self.ccsdt_1.filename+'.out', './' + calc_label + 'CCSDT_1' + '.out')
+                shutil.copyfile(self.ccsdt_1.filename+'.gbw', './' + calc_label + 'CCSDT_1' + '.gbw')
                 print("CCSDT_1_dict:", CCSDT_1_dict)
 
                 self.ccsdt_2.run(elems=elems, current_coords=current_coords, numcores=numcores, charge=charge, mult=mult)
                 CCSDT_2_dict = interfaces.interface_ORCA.grab_HF_and_corr_energies(self.ccsdt_2.filename+'.out', DLPNO=self.DLPNO)
                 shutil.copyfile(self.ccsdt_2.filename+'.out', './' + calc_label + 'CCSDT_2' + '.out')
+                shutil.copyfile(self.ccsdt_2.filename+'.gbw', './' + calc_label + 'CCSDT_2' + '.gbw')
                 print("CCSDT_2_dict:", CCSDT_2_dict)
 
                 #List of all SCF energies (DZ,TZ,QZ), all CCSD-corr energies (DZ,TZ,QZ) and all (T) corr energies (DZ,TZ)

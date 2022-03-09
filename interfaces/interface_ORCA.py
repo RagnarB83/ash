@@ -2085,6 +2085,7 @@ def run_orca_mapspc(filename, option, start=0.0, end=100, unit='eV', broadening=
     p = sp.run([orcadir + '/orca_mapspc', filename, option, f"-{unit}" f"-w{broadening}", f"-n{points}"], encoding='ascii')
 
 #Simple function to get elems and coordinates from ORCA outputfile
+#Should read both single-point and optimization jobs correctly
 def grab_coordinates_from_ORCA_output(filename):
     opt=False
     opt_converged=False
