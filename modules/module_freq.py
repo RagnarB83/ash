@@ -195,8 +195,13 @@ def NumFreq(fragment=None, theory=None, charge=None, mult=None, npoint=2, displa
                 #print("Displacing Atom:{} Coord:{} Direction:{}".format(disp[0],disp[1],disp[2]))
             theory.printlevel=printlevel
             energy, gradient = theory.run(current_coords=geo, elems=elems, Grad=True, numcores=numcores, charge=charge, mult=mult)
-            #Keep ORCA outputfile for each displacement
-            shutil.copy(theory.filename+'.out', theory.filename+'disp_'+str(numdisp)+'.out')
+            #Keep QM outputfile for each displacement
+            if self.theorytype == "QM"
+                shutil.copy(theory.filename+'.out', theory.filename+'disp_'+str(numdisp)+'.out')
+            elif self.theorytype == "QM/MM":
+                shutil.copy(theory.qm_theory.filename+'.out', theory.qm_theory.filename+'disp_'+str(numdisp)+'.out')
+            else:
+                print("Warning. Unknown theorytype")
 
             #Adding gradient to dictionary for AtomNCoordPDirectionm
             displacement_grad_dictionary[disp] = gradient
