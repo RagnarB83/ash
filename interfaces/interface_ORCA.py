@@ -2064,3 +2064,52 @@ def make_molden_file_ORCA(GBWfile, orcadir=None):
     print("Created molden file:", moldenfile)
 
     return moldenfile
+
+
+
+# Simple Wrapper around orca_mapspc
+def run_orca_mapspc(filename, option, start=0.0, end=100, unit='eV', broadening=1.0, points=5000, orcadir=None):
+
+    print("-"*30)
+    print("run_orca_mapspc function")
+    print("-"*30)
+    print(f"option: {option}")
+    print(f"start: {start}")
+    print(f"end: {end}")
+    print(f"unit: {unit}")
+    print(f"broadening: {broadening}")
+    print(f"points: {points}")
+    print(f"orcadir: {orcadir}")
+
+    orcadir = check_ORCA_location(orcadir)
+    p = sp.run([orcadir + '/orca_mapspc', filename, option, f"-{unit}" f"-w{broadening}", f"-n{points}"], encoding='ascii')
+
+#Simple function to get elems and coordinates from ORCA outputfile
+#Should read both single-point and optimization jobs correctly
+def grab_coordinates_from_ORCA_output(filename):
+    opt=False
+    opt_converged=False
+    grab=False
+    elems=[]
+    coords=[]
+    with open(filename) as f:
+        for line in f:
+            if 'Geometry Optimization Run' in line:
+                opt=True
+            if 'FINAL ENERGY EVALUATION AT THE STATIONARY POINT' in line:
+                opt_converged=True
+            if grab is True:
+                if len(line) >35:
+                    elems.append(line.split()[0])
+                    c_x=float(line.split()[1]); c_y=float(line.split()[2]); c_z=float(line.split()[3])
+                    coords.append([c_x, c_y, c_z])
+                elif len(line) < 10:
+       	       	    grab=False
+            if 'CARTESIAN COORDINATES (ANGSTROEM)' in line:
+                if opt is True:
+                    if opt_converged is True:
+                        grab=True
+                else:
+                    grab=True
+    npcoords=np.array(coords)
+    return elems, npcoords

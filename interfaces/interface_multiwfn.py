@@ -3,7 +3,7 @@ import os
 import shutil
 
 from interfaces.interface_ORCA import make_molden_file_ORCA
-from functions.functions_general import BC,ashexit, writestringtofile
+from functions.functions_general import BC,ashexit, writestringtofile, pygrep
 """
     Interface to the Multiwfn program
 """
@@ -18,8 +18,10 @@ from functions.functions_general import BC,ashexit, writestringtofile
 #ORCA interface can create Molden file from GBW
 #make_molden_file_ORCA
 
-def multiwfn_run(inputfile, option='density', multiwfndir=None, grid=3):
-
+def multiwfn_run(inputfile, option='density', mrccoutputfile=None, mrccdensityfile=None, multiwfndir=None, grid=3):
+    originputfile=inputfile
+    originputbasename=os.path.splitext(originputfile)[0]
+    print("originputbasename:", originputbasename)
     if multiwfndir == None:
         print(BC.WARNING, "No multiwfndir argument passed to multiwfn_run. Attempting to find multiwfndir variable inside settings_ash", BC.END)
         try:
@@ -37,18 +39,43 @@ def multiwfn_run(inputfile, option='density', multiwfndir=None, grid=3):
     print("multiwfndir:", multiwfndir)
     print("Inputfile:", inputfile) #Inputfile is typically a Molden file
 
+    #MRCC density
+    if option=="mrcc-density":
+
+        if mrccoutputfile == None:
+            print("MRCC outputfile should also be provided")
+            ashexit()
+        core_electrons = int(pygrep("Number of core electrons:",mrccoutputfile)[-1])
+        print("Core electrons found in outputfile:", core_electrons)
+        frozen_orbs = int(core_electrons/2)
+        print("Frozen orbitals:", frozen_orbs)
+        
+        #Rename MRCC Molden file to mrcc.molden
+        shutil.copy(inputfile, "mrcc.molden")
+
+        #First Multiwfn call. Create new Moldenfile based on correlated density
+        write_multiwfn_input_option(option=option, grid=grid, frozenorbitals=frozen_orbs, densityfile=mrccdensityfile)
+        with open("mwfnoptions") as input:
+            sp.run([multiwfndir+'/Multiwfn', "mrcc.molden"], stdin=input)
+
+        #Writes: mrccnew.molden a proper Molden WF file for MRCC WF. Now we can proceed
+        option="density"
+        inputfile="mrccnew.molden"
+    else:
+        frozen_orbs=None
+    
     #This writes the input-code file that interacts with the Multiwfn program for the chosen option
     write_multiwfn_input_option(option=option, grid=grid)
 
-    input = open('mwfnoptions')
     #Run
     #sp.call([multiwfndir+'/Multiwfn', inputfile, '<', "mwfnoptions"])
-    sp.run([multiwfndir+'/Multiwfn', inputfile], stdin=input)
+    with open("mwfnoptions") as input:
+        sp.run([multiwfndir+'/Multiwfn', inputfile], stdin=input)
 
     #Read output
     if option =="density":
         outputfile="density.cub"
-        finaloutputfile=inputfile+'_mwfn.cube'
+        finaloutputfile=originputbasename+'_mwfn.cube'
         os.rename(outputfile, finaloutputfile)
         print("Electron density outputfile written:", finaloutputfile)
         return finaloutputfile
@@ -58,7 +85,7 @@ def multiwfn_run(inputfile, option='density', multiwfndir=None, grid=3):
 
 
 #This function creates an inputfile of numbers that defines what Multiwfn does
-def write_multiwfn_input_option(option=None, grid=3):
+def write_multiwfn_input_option(option=None, grid=3, frozenorbitals=None, densityfile=None):
     #Create input formula as file
     if option == 'density':
         denstype=1
@@ -73,6 +100,34 @@ def write_multiwfn_input_option(option=None, grid=3):
 {writeoutput}
 0
 q
+        """
+    elif option == 'hirshfeld':        
+        inputformula=f"""7
+1
+1
+y
+0
+q
+        """
+    elif option =="mrcc-density":
+        if frozenorbitals == None:
+            print("mrccdensity requires frozenorbitals")
+            ashexit()
+        if densityfile == None:
+            print("mrccdensity requires densityfile")
+            ashexit()
+        #ASSUMES presence of file CCDENSITIES
+        #Will write file: mrccnew.molden
+        inputformula=f"""1000
+97
+./{densityfile}
+{frozenorbitals}
+100
+2
+6
+mrccnew.molden
+q
+
         """
     elif option == 'hirshfeld':        
         inputformula=f"""7

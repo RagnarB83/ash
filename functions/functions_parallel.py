@@ -190,7 +190,7 @@ def Singlepoint_parallel(fragments=None, fragmentfiles=None, theories=None, numc
         theory = theories[0]
         print("Case: Multiple fragments but one theory")
         print("")
-        print("Launching multiprocessing pool.map:")
+        print("Launching multiprocessing pool.apply_async:")
 
         print(BC.WARNING,"Singlepoint_parallel numcores set to:", numcores, BC.END)
         print(BC.WARNING,f"ASH will run {numcores} jobs simultaneously", BC.END)

@@ -410,6 +410,39 @@ def read_floatlist_from_file(filename):
     return floatlist
 
 
+#Read simple datafile (e.g. .dat and .stk files from ORCA). 
+# Separator is Python default whitespace.
+def read_datafile(filename, separator=None):
+    x=[]
+    y=[]
+    with open(filename) as f:
+        for line in f:
+            if '#' not in line:
+                if separator == None:
+                    x.append(float(line.split()[0]))
+                    y.append(float(line.split()[1]))
+                else:
+                    x.append(float(line.split(separator)[0]))
+                    y.append(float(line.split(separator)[1]))
+    if len(x) != len(y):
+        print(f"Warning:Length of x ({len(x)}) and y {len(y)} are different!")
+
+    return np.array(x),np.array(y)
+
+#Write simple datafile
+# Separator is Python default whitespace.
+def write_datafile(x, y, filename="new.dat", separator="     "):
+    if len(x) != len(y):
+        print(f"Error:Length of x ({len(x)}) and y {len(y)} are different!")
+        ashexit()
+    with open(filename, 'w') as f:
+        f.write("# Created by ASH\n")
+        for i,j in zip(x,y):
+            f.write(f"{i}{separator}{j}\n")
+    print("Wrote new datafile:", filename)
+
+
+
 # Write a string to file simply
 def writestringtofile(string, file):
     with open(file, 'w') as f:
