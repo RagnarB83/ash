@@ -196,7 +196,7 @@ def NumFreq(fragment=None, theory=None, charge=None, mult=None, npoint=2, displa
             theory.printlevel=printlevel
             energy, gradient = theory.run(current_coords=geo, elems=elems, Grad=True, numcores=numcores, charge=charge, mult=mult)
             #Keep QM outputfile for each displacement
-            if self.theorytype == "QM"
+            if self.theorytype == "QM":
                 shutil.copy(theory.filename+'.out', theory.filename+'disp_'+str(numdisp)+'.out')
             elif self.theorytype == "QM/MM":
                 shutil.copy(theory.qm_theory.filename+'.out', theory.qm_theory.filename+'disp_'+str(numdisp)+'.out')
