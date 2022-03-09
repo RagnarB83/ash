@@ -196,9 +196,9 @@ def NumFreq(fragment=None, theory=None, charge=None, mult=None, npoint=2, displa
             theory.printlevel=printlevel
             energy, gradient = theory.run(current_coords=geo, elems=elems, Grad=True, numcores=numcores, charge=charge, mult=mult)
             #Keep QM outputfile for each displacement
-            if self.theorytype == "QM":
+            if theory.theorytype == "QM":
                 shutil.copy(theory.filename+'.out', theory.filename+'disp_'+str(numdisp)+'.out')
-            elif self.theorytype == "QM/MM":
+            elif theory.theorytype == "QM/MM":
                 shutil.copy(theory.qm_theory.filename+'.out', theory.qm_theory.filename+'disp_'+str(numdisp)+'.out')
             else:
                 print("Warning. Unknown theorytype")
@@ -423,7 +423,7 @@ def NumFreq(fragment=None, theory=None, charge=None, mult=None, npoint=2, displa
 
     print("\n\n")
     print("Normal mode composition factors by element")
-    printfreqs_and_nm_elem_comps(frequencies,fragment,evectors,hessatoms)
+    printfreqs_and_nm_elem_comps(frequencies,fragment,evectors,hessatoms=hessatoms)
 
     print("\nNow doing thermochemistry")
 
@@ -1234,12 +1234,14 @@ def normalmodecomp(evectors,j,a):
 
 
 # Get normal mode composition factors for all atoms for a specific mode only
-def normalmodecomp_all(mode,fragment,evectors):
+def normalmodecomp_all(mode,fragment,evectors, hessatoms=None):
     #print("inside normalmodecomp_all")
     #print("mode x ", mode)
     #print(evectors)
-    numatoms=fragment.numatoms
-
+    if hessatoms == None:
+        numatoms=fragment.numatoms
+    else:
+        numatoms=len(hessatoms)
     normcomplist=[]
     #vib=clean_number(vfreq[mode])
     for n in range(0, numatoms):
@@ -1254,7 +1256,8 @@ def normalmodecomp_all(mode,fragment,evectors):
     return normcomplist
 
 #Function to print frequencies and also elemental normal mode composition
-def printfreqs_and_nm_elem_comps(vfreq,fragment,evectors,hessatoms):
+def printfreqs_and_nm_elem_comps(vfreq,fragment,evectors,hessatoms=None):
+    #print("printfreqs_and_nm_elem_comps:")
     numatoms=len(hessatoms)
     if numatoms == 2:
         TRmodenum=5
@@ -1264,7 +1267,7 @@ def printfreqs_and_nm_elem_comps(vfreq,fragment,evectors,hessatoms):
     print(line)
     for mode in range(0,3*numatoms):
         #Get elemental normalmode comps
-        normmodecompelemsdict = normalmodecomp_permode_by_elems(mode,fragment,vfreq,evectors)
+        normmodecompelemsdict = normalmodecomp_permode_by_elems(mode,fragment,vfreq,evectors, hessatoms=hessatoms)
         normmodecompelemsdict_list=[f'{k}: {v:.2f}' for k,v in normmodecompelemsdict.items()]
         normmodecompelemsdict_string='   '.join(normmodecompelemsdict_list)
         #print("normmodecompelemsdict_list:", normmodecompelemsdict_list)
@@ -1290,27 +1293,32 @@ def printfreqs_and_nm_elem_comps(vfreq,fragment,evectors,hessatoms):
 
 
 
-def normalmodecomp_permode_by_elems(mode,fragment,vfreq,evectors, silent=False):
+def normalmodecomp_permode_by_elems(mode,fragment,vfreq,evectors, silent=False, hessatoms=None):
     #print("normalmodecomp_permode_by_elems------------")
     #print("mode:", mode)
     #print(vfreq)
     #print(evectors)
-    normcomplist = normalmodecomp_all(mode,fragment,evectors)
+    #print("hessatoms:", hessatoms)
+    normcomplist = normalmodecomp_all(mode,fragment,evectors, hessatoms=hessatoms)
     #print("normcomplist:", normcomplist)
     elementnormcomplist=[]
 
     # Sum components together
+
+    if hessatoms != None:
+        hesselems=[fragment.elems[i] for i in hessatoms]
+    else:
+        hesselems=fragment.elems
+
     uniqelems=[]
-    #allcomps=[]
-    for i in fragment.elems:
+    for i in hesselems:
         if i not in uniqelems:
             uniqelems.append(i)
-    #print("uniqelems:", uniqelems)
     #Dict to store results
     normmodecompelemsdict={}
     for u in uniqelems:
         elcompsum=0.0
-        elindices=[i for i, j in enumerate(fragment.elems) if j == u]
+        elindices=[i for i, j in enumerate(hesselems) if j == u]
         for h in elindices:
             elcompsum=float(elcompsum+float(normcomplist[h]))
         elementnormcomplist.append(elcompsum)
@@ -1328,7 +1336,7 @@ def normalmodecomp_permode_by_elems(mode,fragment,vfreq,evectors, silent=False):
 #Get atoms that contribute most to specific mode of Hessian
 #Example: get atoms (atom indices) most involved in imaginary mode of transition state
 #TODO: Support partial Hessian
-def get_dominant_atoms_in_mode(mode,fragment=None, threshold=0.3):
+def get_dominant_atoms_in_mode(mode,fragment=None, threshold=0.3, hessatoms=None):
     
     print_line_with_mainheader("get_dominant_atoms_in_mode")
     print("Threshold:", threshold)
@@ -1351,7 +1359,7 @@ def get_dominant_atoms_in_mode(mode,fragment=None, threshold=0.3):
     frequencies, nmodes, numatoms, elems, evectors, atomlist, masses = diagonalizeHessian(hessian,hessmasses,hesselems)
 
     #Get full list of atom contributions to mode
-    normcomplist_for_mode = normalmodecomp_all(mode,fragment,evectors)
+    normcomplist_for_mode = normalmodecomp_all(mode,fragment,evectors, hessatoms=hessatoms)
 
     dominant_atoms=[normcomplist_for_mode.index(i) for i in normcomplist_for_mode if i > threshold]
     print(f"Dominant atoms in mode {mode}: {dominant_atoms}\n")
