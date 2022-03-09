@@ -867,12 +867,17 @@ def print_internal_coordinate_table(fragment, actatoms=None):
     conndepth = 99
     scale = settings_ash.settings_dict["scale"]
     tol = settings_ash.settings_dict["tol"]
-    try:
-        Juliafunctions = load_julia_interface()
-        connectivity = Juliafunctions.calc_connectivity(chosen_coords, chosen_elems, conndepth, scale, tol,
-                                                        eldict_covrad)
-    except:
-        print("Problem importing Python-Julia interface. Trying py-version instead.")
+
+    if fragment.numatoms > 1000:
+        try:
+            Juliafunctions = load_julia_interface()
+            connectivity = Juliafunctions.calc_connectivity(chosen_coords, chosen_elems, conndepth, scale, tol,
+                                                            eldict_covrad)
+        except:
+            print("Problem importing Python-Julia interface. Trying py-version instead.")
+            connectivity = calc_conn_py(chosen_coords, chosen_elems, conndepth, scale, tol)
+    else:
+        #PyTHON connectivity
         connectivity = calc_conn_py(chosen_coords, chosen_elems, conndepth, scale, tol)
     print("Connectivity calculation complete.")
     #else:
