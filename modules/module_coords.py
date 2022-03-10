@@ -10,12 +10,52 @@ import subprocess as sp
 
 from functions.functions_general import ashexit, isint, listdiff, print_time_rel, BC, printdebug, print_line_with_mainheader, \
     print_line_with_subheader1, print_line_with_subheader1_end, print_line_with_subheader2, writelisttofile, pygrep2, load_julia_interface
+#from modules.module_singlepoint import ReactionEnergy
 import dictionaries_lists
 import settings_ash
 import constants
 import ash
 
 ashpath = os.path.dirname(ash.__file__)
+
+#ASH Reaction class: connects list of ASH fragments and stoichiometry
+#TODO: Check that the charge and multiplicity is consistent with formula. Maybe do in fragment instead?
+#TODO: Check charge on both sides of reaction. Warning if different.
+#TODO: Check if mult is different on both sides of reaction. Print warning
+
+#FUNCTIONS that could interact with Reaction class: 
+# Singlepoint_reaction ?, 
+# thermochemprotocol_reaction ?
+# Optimizer ? Probably not
+
+class Reaction:
+    def __init__(self, fragments, stoichiometry, label=None):
+        print_line_with_subheader1("New ASH reaction")
+
+        #Reading fragments and checking for charge/mult
+        self.fragments=fragments
+        self.check_fragments()
+        self.stoichiometry = stoichiometry
+        #List of all elements in reaction
+        self.elements = [item for sublist in [frag.elems for frag in fragments] for item in sublist]
+
+        self.label=label
+
+        #List of energies for each fragment
+        self.energies = []
+        #Reaction energy
+        self.reaction_energy=None
+
+    def check_fragments(self):
+        for frag in self.fragments:
+            if frag.charge == None or frag.mult == None:
+                print("Error: Missing charge/mult information in fragment:",frag.formula)
+                ashexit()
+    def calculate_reaction_energy(self):
+        if len(self.energies) == len(self.fragments):
+            self.reaction_energy = ReactionEnergy(list_of_energies=self.energies, stoichiometry=self.stoichiometry, unit='kcal/mol', silent=True)
+        else:
+            print("Warning. Could not calculate reaction energy as we are missing energies for fragments")
 
 
 # ASH Fragment class

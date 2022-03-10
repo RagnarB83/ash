@@ -187,13 +187,14 @@ def thermochemprotocol_single(fragment=None, Opt_theory=None, SP_theory=None, nu
 
 #Thermochemistry protocol. Take list of fragments, stoichiometry, and 2 theory levels
 #Requires orcadir, and Opt_theory level (typically an ORCATheory object), SP_theory (either ORCATTheory or workflow.
-def thermochemprotocol_reaction(Opt_theory=None, SP_theory=None, fraglist=None, stoichiometry=None, numcores=1, memory=5000,
+def thermochemprotocol_reaction(Opt_theory=None, SP_theory=None, reaction=None, fraglist=None, stoichiometry=None, numcores=1, memory=5000,
                        analyticHessian=True, temp=298.15, pressure=1.0):
     """[summary]
 
     Args:
         Opt_theory (ASH theory, optional): ASH theory for optimizations. Defaults to None.
         SP_theory (ASH theory, optional): ASH theory for Single-points. Defaults to None.
+        reaction (ASH reaction): ASH reaction object. Defaults to None.
         fraglist (list, optional): List of ASH fragments. Defaults to None.
         stoichiometry (list, optional): list of integers defining stoichiometry. Defaults to None.
         numcores (int, optional): Number of cores. Defaults to 1.
@@ -206,6 +207,11 @@ def thermochemprotocol_reaction(Opt_theory=None, SP_theory=None, fraglist=None, 
     print("")
     print(BC.WARNING, BC.BOLD, "------------THERMOCHEM PROTOCOL (reaction)-------------", BC.END)
     print("")
+    # Reaction input
+    if reaction != None:
+        fraglist = reaction.fragments
+        stoichiometry = reaction.stoichiometry
+
     print("Running thermochemprotocol function for fragment list:")
     for i,frag in enumerate(fraglist):
         print("Fragment {} Formula: {}  Label: {}".format(i,frag.prettyformula,frag.label))
