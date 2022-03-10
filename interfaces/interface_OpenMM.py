@@ -2157,7 +2157,7 @@ def OpenMM_Modeller(pdbfile=None, forcefield=None, xmlfile=None, waterxmlfile=No
 
     #Creating new OpenMM object from forcefield so that we can write out system XMLfile
     print("Creating temporary OpenMMTheory object")
-    openmmobject =OpenMMTheory(platform='CPU', Modeller=True, forcefield=forcefield, 
+    openmmobject =OpenMMTheory(platform='CPU', forcefield=forcefield, topoforce=True,
                         topology=modeller.topology, pdbfile=None, periodic=True,
                         autoconstraints='HBonds', rigidwater=True)
     #Write out System XMLfile    
