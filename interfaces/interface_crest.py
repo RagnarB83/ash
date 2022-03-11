@@ -1,9 +1,10 @@
 import os
 import time
+import sys
 import shutil
 
 from modules.module_coords import split_multimolxyzfile
-from functions.functions_general import ashexit, BC, int_ranges, listdiff, print_line_with_subheader1,print_time_rel
+from functions.functions_general import ashexit, BC, int_ranges, listdiff, print_line_with_subheader1,print_time_rel, pygrep
 import subprocess as sp
 import ash
 from modules.module_coords import check_charge_mult
@@ -71,12 +72,14 @@ def call_crest(fragment=None, xtbmethod=None, crestdir=None, charge=None, mult=N
     else:
         print("Using default GFN2-xTB")
         xtbflag=2
+
+
     #GBSA solvation or not
     if solvent is None:
         process = sp.run([crestdir + '/crest', 'initial.xyz', '-T', str(numcores), '-gfn'+str(xtbflag), '-ewin', str(energywindow), '-chrg', str(charge), '-uhf', str(mult-1)])
     else:
         process = sp.run([crestdir + '/crest', 'initial.xyz','-T', str(numcores),  '-gfn' + str(xtbflag), '-ewin', str(energywindow), '-chrg', str(charge),'-gbsa', str(solvent),
-             str(charge), '-uhf', str(mult - 1)])
+            str(charge), '-uhf', str(mult - 1)])
 
 
     os.chdir('..')
@@ -87,6 +90,76 @@ def call_crest(fragment=None, xtbmethod=None, crestdir=None, charge=None, mult=N
 
 
     return list_conformers, list_xtb_energies
+
+
+
+
+
+#Very simple crest interface for entropy calculations
+def call_crest_entropy(fragment=None, crestdir=None, charge=None, mult=None, numcores=1):
+    print_line_with_subheader1("call_crest")
+    module_init_time=time.time()
+    if crestdir == None:
+        print(BC.WARNING, "No crestdir argument passed to call_crest. Attempting to find crestdir variable inside settings_ash", BC.END)
+        try:
+            print("settings_ash.settings_dict:", settings_ash.settings_dict)
+            crestdir=settings_ash.settings_dict["crestdir"]
+        except:
+            print(BC.WARNING,"Found no crestdir variable in settings_ash module either.",BC.END)
+            try:
+                crestdir = os.path.dirname(shutil.which('crest'))
+                print(BC.OKGREEN,"Found crest in path. Setting crestdir to:", crestdir, BC.END)
+            except:
+                print("Found no crest executable in path. Exiting... ")
+                ashexit()
+
+    #Check charge/mult
+    charge,mult = check_charge_mult(charge, mult, "QM", fragment, "call_crest", theory=None)
+
+    try:
+        shutil.rmtree('crest-calc')
+    except:
+        pass
+    os.mkdir('crest-calc')
+    os.chdir('crest-calc')
+
+
+    #Create XYZ file from fragment (for generality)
+    fragment.write_xyzfile(xyzfilename="initial.xyz")
+
+
+    print("Running crest with entropy option")
+    outputfile="crest-ash.out"
+    logfile = open(outputfile, 'w')
+    #Using POpen and piping like this we can write to stdout and a logfile
+    process = sp.Popen([crestdir + '/crest', 'initial.xyz', '--entropy', '-T', str(numcores), '-chrg', str(charge), '-uhf', str(mult-1)], 
+        stdout=sp.PIPE, stderr=sp.STDOUT, universal_newlines=True)
+    for line in process.stdout:
+        sys.stdout.write(line)
+        logfile.write(line)
+    process.wait()
+    logfile.close()
+    #TODO: Grab stuff from output
+    Sconf = pygrep("   Sconf   =", outputfile)[-1]
+    dSrrho = pygrep(" + δSrrho  =", outputfile)[-1]
+    Stot = pygrep(" = S(total)  =", outputfile)[-1]
+    H_T_0_corr = pygrep("   H(T)-H(0) =", outputfile)[-1]
+    G_tot = pygrep(" = G(total)  =", outputfile)[-2]
+    entropydict={'Sconf':Sconf,'dSrrho':dSrrho,'Stot':Stot,'H_T_0_corr':H_T_0_corr,'G_tot':G_tot}
+
+    print("Stot:", Stot)
+    print("entropydict:", entropydict)
+    os.chdir('..')
+    print_time_rel(module_init_time, modulename='crest run', moduleindex=0)
+
+
+
+
+    return entropydict
+
+
+
+
 
 
 #Grabbing crest conformers. Goes inside rest-calc dir and finds file called crest_conformers.xyz
