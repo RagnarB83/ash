@@ -51,9 +51,9 @@ class Reaction:
             if frag.charge == None or frag.mult == None:
                 print("Error: Missing charge/mult information in fragment:",frag.formula)
                 ashexit()
-    def calculate_reaction_energy(self):
+    def calculate_reaction_energy(self, unit='kcal/mol'):
         if len(self.energies) == len(self.fragments):
-            self.reaction_energy = ReactionEnergy(list_of_energies=self.energies, stoichiometry=self.stoichiometry, unit='kcal/mol', silent=True)
+            self.reaction_energy = ash.ReactionEnergy(list_of_energies=self.energies, stoichiometry=self.stoichiometry, unit=unit, silent=False, label=self.label)[0]
         else:
             print("Warning. Could not calculate reaction energy as we are missing energies for fragments")
 

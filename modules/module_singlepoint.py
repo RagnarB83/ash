@@ -207,6 +207,35 @@ def Singlepoint_fragments_and_theories(theories=None, fragments=None, stoichiome
     print()
     return all_energies
 
+
+#Single-point energy function that runs calculations on an ASH reaction object
+#Assuming fragments have charge,mult info defined.
+def Singlepoint_reaction(theory=None, reaction=None, unit='kcal/mol' ):
+    print_line_with_mainheader("Singlepoint_reaction function")
+
+    print("Will run single-point calculation on each fragment defined in reaction and return the reaction energy")
+    print("Theory:", theory.__class__.__name__)
+
+    #Looping through fragments defined in Reaction object
+    for frag in reaction.fragments:
+        
+        #Running single-point
+        energy = ash.Singlepoint(theory=theory, fragment=frag, charge=frag.charge, mult=frag.mult)
+        print("Fragment {} . Label: {} Energy: {} Eh".format(frag.formula, frag.label, energy))
+        theory.cleanup()
+        reaction.energies.append(energy)
+        #Adding energy as the fragment attribute
+        frag.set_energy(energy)
+        print("")
+
+    #Print table
+    print_fragments_table(reaction.fragments,reaction.energies, tabletitle="Singlepoint_reaction: ")
+
+    reaction.calculate_reaction_energy(unit=unit)
+    
+    return reaction.reaction_energy
+
+
 #Single-point energy function that communicates via fragment
 #NOTE: NOT SURE IF WE WANT TO GO THIS ROUTE
 def newSinglepoint(fragment=None, theory=None, Grad=False):

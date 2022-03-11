@@ -38,7 +38,8 @@ from modules.module_coords import remove_atoms_from_system_CHARMM, add_atoms_to_
 
 # Singlepoint
 import modules.module_singlepoint
-from modules.module_singlepoint import Singlepoint, newSinglepoint, ZeroTheory, Singlepoint_fragments, Singlepoint_theories, Singlepoint_fragments_and_theories
+from modules.module_singlepoint import Singlepoint, newSinglepoint, ZeroTheory, Singlepoint_fragments,\
+     Singlepoint_theories, Singlepoint_fragments_and_theories, Singlepoint_reaction
 
 # Parallel
 import functions.functions_parallel
@@ -128,7 +129,7 @@ from modules.module_plotting import reactionprofile_plot, contourplot, plot_Spec
 
 # Other
 import interfaces.interface_crest
-from interfaces.interface_crest import call_crest, get_crest_conformers
+from interfaces.interface_crest import call_crest, call_crest_entropy, get_crest_conformers
 
 # Initialize settings
 import settings_ash
