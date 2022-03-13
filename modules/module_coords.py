@@ -908,7 +908,7 @@ def print_internal_coordinate_table(fragment, actatoms=None):
     scale = settings_ash.settings_dict["scale"]
     tol = settings_ash.settings_dict["tol"]
 
-    if fragment.numatoms > 1000:
+    if len(chosen_coords) > 1000:
         try:
             Juliafunctions = load_julia_interface()
             connectivity = Juliafunctions.calc_connectivity(chosen_coords, chosen_elems, conndepth, scale, tol,
