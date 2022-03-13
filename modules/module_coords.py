@@ -2507,7 +2507,7 @@ def get_boundary_atoms(qmatoms, coords, elems, scale, tol, excludeboundaryatomli
 
             # Warn if QM-MM boundary is not a plain-vanilla C-C bond
             if elems[qmatom] != "C" or elems[boundaryatom[0]] != "C":
-                print(BC.WARNING, "Warning: QM-MM boundary contains non-ideal C-C scenarios:", BC.END)
+                print(BC.WARNING, "Warning: QM-MM boundary is not the ideal C-C scenario:", BC.END)
                 print(BC.WARNING,
                       "QM-MM boundary: {}({}) - {}({})".format(elems[qmatom], qmatom, elems[boundaryatom[0]],
                                                                boundaryatom[0]), BC.END)
