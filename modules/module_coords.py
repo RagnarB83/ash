@@ -980,9 +980,16 @@ def isElementList(list):
 
 
 # From lists of coords,elems and atom indices, print coords with elem
-def print_coords_for_atoms(coords, elems, members):
-    for m in members:
-        print("{:>4} {:>12.8f}  {:>12.8f}  {:>12.8f}".format(elems[m], coords[m][0], coords[m][1], coords[m][2]))
+def print_coords_for_atoms(coords, elems, members, labels=None):
+    if labels != None:
+        if len(labels) != len(members):
+            print("Problem. Length of Labels note equal to length of members list")
+            ashexit()
+    label=""
+    for i,m in enumerate(members):
+        if labels != None:
+            label=labels[i]
+        print("{:>4} {:>4} {:>12.8f}  {:>12.8f}  {:>12.8f}".format(label,elems[m], coords[m][0], coords[m][1], coords[m][2]))
 
 
 # From lists of coords,elems and atom indices, write XYZ file coords with elem
@@ -2472,7 +2479,7 @@ def get_boundary_atoms(qmatoms, coords, elems, scale, tol, excludeboundaryatomli
 
     qm_mm_boundary_dict = {}
     for qmatom in qmatoms:
-        # print("qmatom:", qmatom)
+        #print("qmatom:", qmatom)
         # Option below to skip creating boundaryatom pair (and subsequent linkatoms) if atom index is flagged
         # Applies to rare case where QM atom is bonded to MM atom but we don't want a linkatom.
         # Example: bridging sulfide in Cys that connects to Fe4S4 and H-cluster.
@@ -2482,22 +2489,25 @@ def get_boundary_atoms(qmatoms, coords, elems, scale, tol, excludeboundaryatomli
             continue
 
         connatoms = get_connected_atoms(coords, elems, scale, tol, qmatom)
-        # print("connatoms:", connatoms)
+        #print("connatoms:", connatoms)
         # Find connected atoms that are not in QM-atoms
         boundaryatom = listdiff(connatoms, qmatoms)
-        # print("boundaryatom:", boundaryatom)
+        #print("boundaryatom:", boundaryatom)
 
         if len(boundaryatom) > 1:
-            print("Boundaryatom : ", boundaryatom)
+
             print(BC.FAIL,
-                  "Problem. Found more than 1 boundaryatom for QM-atom {} . This is not allowed".format(qmatoms),
+                  "Problem. Found more than 1 boundaryatom for QM-atom {} . This is not allowed".format(qmatom),
                   BC.END)
+            print("QM atom : ", qmatom)
+            print("Boundaryatoms : ", boundaryatom)
+            print("Please define the QM-region so that only 1 linkatom would be required.")
             ashexit()
         elif len(boundaryatom) == 1:
 
             # Warn if QM-MM boundary is not a plain-vanilla C-C bond
             if elems[qmatom] != "C" or elems[boundaryatom[0]] != "C":
-                print(BC.WARNING, "Warning: QM-MM boundary is not the ideal C-C scenario.", BC.END)
+                print(BC.WARNING, "Warning: QM-MM boundary contains non-ideal C-C scenarios:", BC.END)
                 print(BC.WARNING,
                       "QM-MM boundary: {}({}) - {}({})".format(elems[qmatom], qmatom, elems[boundaryatom[0]],
                                                                boundaryatom[0]), BC.END)
