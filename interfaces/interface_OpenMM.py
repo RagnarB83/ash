@@ -2052,6 +2052,7 @@ def OpenMM_Modeller(pdbfile=None, forcefield=None, xmlfile=None, waterxmlfile=No
     print("Found missing terminals:", fixer.missingTerminals)
     fixer.addMissingAtoms()
     print("Added missing atoms.")
+    #exit()
 
     openmm_app.PDBFile.writeFile(fixer.topology, fixer.positions, open('system_afterfixes.pdb', 'w'))
     print("PDBFixer done.")

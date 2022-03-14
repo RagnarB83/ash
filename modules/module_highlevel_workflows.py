@@ -142,6 +142,13 @@ class CC_CBS_Theory:
         # BLOCK-INPUT
         ######################################################
 
+        #Enabling AutoAux for DKH whenna
+        #NOTE: Only strictly necessary when doing 1-center approximation. 
+        # Hopefully not too expensive. Should be robust.
+        #See https://orcaforum.kofo.mpg.de/viewtopic.php?f=11&t=1392&start=10#p38051
+        if self.relativity == 'DKH' and stabilityanalysis is True:
+            extrablocks=extrablocks+"%rel \n DKH1CAUTOAUX true \nend"
+
         #Block input for SCF/MDCI block options.
         #Disabling FullLMP2 guess in general as not available for open-shell
         #Adding memory and extrablocks.
@@ -163,6 +170,7 @@ maxiter 150\nend
                 print("Stability analysis and relativity requires 1-center approximation")
                 print("Turning on")
                 self.blocks = self.blocks + "\n%rel onecenter true end"
+
 
 
         #AUXBASIS choice
@@ -228,6 +236,9 @@ maxiter 150\nend
                 print("You probably want relativity keyword argument set to DKH or ZORA (relativity=\"NoRel\" option possible also but not recommended)")
                 ashexit()
             self.extrainputkeyword = self.extrainputkeyword + '  '
+
+
+
         elif self.relativity == "NoRel":
             self.extrainputkeyword = self.extrainputkeyword + '  '
         elif self.relativity == 'DKH':
