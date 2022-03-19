@@ -493,7 +493,7 @@ def check_OpenMPI():
     try:
         openmpibindir = os.path.dirname(shutil.which('mpirun'))
     except:
-        print("No mpirun found in PATH. Make sure to add OpenMPI to PATH in your environment/jobscript")
+        print(BC.FAIL,"No mpirun found in PATH. Make sure to add OpenMPI to PATH in your environment/jobscript", BC.END)
         ashexit()
     print("OpenMPI binary directory found:", openmpibindir)
     #Test that mpirun is executable and grab OpenMPI version number for printout
