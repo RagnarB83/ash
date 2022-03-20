@@ -622,7 +622,7 @@ def grab_ORCA_errors(filename):
 
     errors=[]
     #Lines that are not errors
-    ignore_lines=['   Startup', ' DIIS', 'sum of PNO error']
+    ignore_lines=['   Startup', ' DIIS', 'sum of PNO error', '  Last DIIS Error']
     for err in error_lines:
         false_positive = any(err.startswith(ign) for ign in ignore_lines)
         if false_positive is False:
