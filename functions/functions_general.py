@@ -170,13 +170,14 @@ def pygrep(string, file):
 
 
 # Multiple match version. Replace pygrep ?
-def pygrep2(string, file):
+def pygrep2(string, file, print_output=False):
     l = []
     with open(file) as f:
         for line in f:
             if string in line:
-                l.append(string)
-
+                l.append(line)
+    if print_output is True:
+        print(*l)
     return l
 
 

@@ -6,7 +6,7 @@ import multiprocessing as mp
 import numpy as np
 
 import modules.module_coords
-from functions.functions_general import ashexit, blankline,insert_line_into_file,BC,print_time_rel, print_line_with_mainheader, pygrep2
+from functions.functions_general import ashexit, blankline,insert_line_into_file,BC,print_time_rel, print_line_with_mainheader, pygrep2, pygrep
 from modules.module_singlepoint import Singlepoint
 from modules.module_coords import check_charge_mult
 import functions.functions_elstructure
@@ -19,7 +19,7 @@ import settings_ash
 class ORCATheory:
     def __init__(self, orcadir=None, fragment=None, orcasimpleinput='', printlevel=2, extrabasisatoms=None, extrabasis=None, TDDFT=False, TDDFTroots=5, FollowRoot=1,
                  orcablocks='', extraline='', first_iteration_input=None, brokensym=None, HSmult=None, atomstoflip=None, numcores=1, nprocs=None, label=None, moreadfile=None, 
-                 autostart=True, propertyblock=None, keep_each_run_output=False, print_population_analysis=False, filename="orca"):
+                 autostart=True, propertyblock=None, keep_each_run_output=False, print_population_analysis=False, filename="orca", check_for_errors=True, check_for_warnings=True):
         print_line_with_mainheader("ORCATheory initialization")
 
         #Indicate that this is a QMtheory
@@ -41,6 +41,11 @@ class ORCATheory:
             print("String:", orcasimpleinput.upper())
             print("orcasimpleinput should only contain information on electronic-structure method (e.g. functional), basis set, grid, SCF convergence etc.")
             ashexit()
+
+        #Whether to check ORCA outputfile for errors and warnings or not
+        #Generally recommended. Could be disabled to speed up I/O a tiny bit
+        self.check_for_errors=check_for_errors
+        self.check_for_warnings=check_for_warnings
 
         #Counter for how often ORCATheory.run is called
         self.runcalls=0
@@ -373,7 +378,7 @@ class ORCATheory:
         #if Grad == True:
         #    run_orca_SP_ORCApar(self.orcadir, self.filename + '.inp', numcores=numcores, Grad=True)
         #else:
-        run_orca_SP_ORCApar(self.orcadir, self.filename + '.inp', numcores=numcores)
+        run_orca_SP_ORCApar(self.orcadir, self.filename + '.inp', numcores=numcores, check_for_errors=self.check_for_errors, check_for_warnings=self.check_for_warnings)
         print(BC.OKGREEN, "ORCA Calculation done.", BC.END)
 
         #Now that we have possibly run a BS-DFT calculation, turning Brokensym off for future calcs (opt, restart, etc.)
@@ -552,11 +557,7 @@ def run_orca_SP(list):
 # Run ORCA single-point job using ORCA parallelization. Will add pal-block if numcores >1.
 # Takes possible Grad boolean argument.
 
-def run_orca_SP_ORCApar(orcadir, inpfile, numcores=1):
-    #if Grad==True:
-    #    with open(inpfile) as ifile:
-    #        insert_line_into_file(inpfile, '!', '! Engrad')
-    #Add pal block to inputfile before running. Adding after '!' line. Should work for regular, new_job and compound job.
+def run_orca_SP_ORCApar(orcadir, inpfile, numcores=1, check_for_warnings=True, check_for_errors=True):
     if numcores>1:
         palstring='%pal nprocs {} end'.format(numcores)
         with open(inpfile) as ifile:
@@ -565,7 +566,70 @@ def run_orca_SP_ORCApar(orcadir, inpfile, numcores=1):
     basename = inpfile.replace('.inp','')
     with open(basename+'.out', 'w') as ofile:
         #process = sp.run([orcadir + '/orca', basename+'.inp'], check=True, stdout=ofile, stderr=ofile, universal_newlines=True)
-        process = sp.run([orcadir + '/orca', inpfile], check=True, stdout=ofile, stderr=ofile, universal_newlines=True)
+        print("Calling ORCA as Python subprocess")
+        try:
+            process = sp.run([orcadir + '/orca', inpfile], check=True, stdout=ofile, stderr=ofile, universal_newlines=True)
+            print("ORCA run completed.")
+            print()
+            if check_for_errors:
+                grab_ORCA_errors(basename+'.out')
+            if check_for_warnings:
+                grab_ORCA_warnings(basename+'.out')
+        except Exception as e:
+            print("Subprocess error! Exception message:", e)
+            #We get an exception if 
+            print(BC.FAIL,"ASH encountered a problem when running ORCA. Something went wrong, most likely ORCA ran into an error.",BC.END)
+            print(BC.FAIL,f"Please check the ORCA outputfile: {basename+'.out'} for error messages", BC.END)
+            print()
+            if check_for_errors:
+                grab_ORCA_errors(basename+'.out')
+            if check_for_warnings:
+                grab_ORCA_warnings(basename+'.out')
+            ashexit()
+
+def grab_ORCA_warnings(filename):
+    warning_lines=[]
+    #Error-words to search for
+    #TODO: Avoid searching though file multiple times.
+    #TODO: Write pygrep version that supports list of search-strings
+    warning_strings=['WARNING', 'warning', 'Warning']
+    for warnstring in warning_strings:
+        warn_l = pygrep2(warnstring, filename)
+        warning_lines+=warn_l
+
+    warnings=[]
+    #Lines that are not useful warnings
+    ignore_lines=['                       Please study these wa','                                        WARNINGS']
+    for warn in warning_lines:
+        false_positive = any(warn.startswith(ign) for ign in ignore_lines)
+        if false_positive is False:
+            warnings.append(warn)
+    if len(warnings):
+        print("Found warning messages in ORCA outputfile:")
+        print(*warnings)
+
+def grab_ORCA_errors(filename):
+    error_lines=[]
+    #Error-words to search for
+    #TODO: Avoid searching though file multiple times.
+    #TODO: Write pygrep version that supports list of search-strings
+    error_strings=['error', 'Error', 'ERROR', 'aborting']
+    for errstring in error_strings:
+        error_l = pygrep2(errstring, filename)
+        for e in error_l:
+            if e not in error_lines:
+                error_lines.append(e)
+
+    errors=[]
+    #Lines that are not errors
+    ignore_lines=['   Startup', ' DIIS', 'sum of PNO error']
+    for err in error_lines:
+        false_positive = any(err.startswith(ign) for ign in ignore_lines)
+        if false_positive is False:
+            errors.append(err)
+    if len(errors):
+        print("Found error messages in ORCA outputfile:")
+        print(*errors)
 
 #Check if ORCA finished.
 #Todo: Use reverse-read instead to speed up?

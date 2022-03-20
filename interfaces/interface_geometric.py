@@ -438,7 +438,7 @@ class ASHengineclass:
             print_coords_for_atoms(self.full_current_coords, self.fragment.elems, self.print_atoms_list)
             #print_time_rel(timeA, modulename='geometric ASHcalc.calc printcoords atoms', moduleindex=2)
             timeA=time.time()
-            print("Note: printed only print_atoms_list (this is not necessary all active atoms) ")
+            print("Note: Only print_atoms_list region printed above")
             #Request Engrad calc for full system
 
             E, Grad = self.theory.run(current_coords=self.full_current_coords, elems=self.fragment.elems, charge=self.charge, mult=self.mult, Grad=True, label='Iter'+str(self.iteration_count))
