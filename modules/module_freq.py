@@ -645,12 +645,9 @@ def thermochemcalc(vfreq,atoms,fragment, multiplicity, temp=298.15,pressure=1.0)
         vibenergycorr=E_vib-zpve
 
         #Vibrational entropy via RRHO.
-        #TODO: Add Grimme QRRHO and otherss
-        S_vib=0.0
-        for vibtemp in vibtemps:
-            S_vib+=constants.R_gasconst*(vibtemp/temp)/(math.exp(vibtemp/temp) - 1) - constants.R_gasconst*math.log(1-math.exp(-1*vibtemp/temp))
-        TS_vib=S_vib*temp
-        
+        #TODO: Add Grimme QRRHO and others
+        #TODO: add functions for other contributions
+        TS_vib = S_vib(freqs,temp)
     else:
         zpve=0.0
         E_vib=0.0
@@ -1591,3 +1588,14 @@ def comparenormalmodes(hessianA,hessianB,massesA,massesB):
                 line = "{:>3d}   {:>9.4f}       {:>9.4f}          {:.3f}".format(mode, vibA, vibB, cos_sim)
             print(line)
 
+#TODO: cleanup and use in thermochemcalc
+def S_vib(freqs,T):
+    vibtemps = [(f*constants.c*constants.h_planck_hartreeseconds)/constants.R_gasconst for f in freqs]
+    #Vibrational entropy via RRHO.
+    S_vib=0.0
+    for vibtemp in vibtemps:
+        S_vib+=constants.R_gasconst*(vibtemp/T)/(math.exp(vibtemp/T) - 1) - constants.R_gasconst*math.log(1-math.exp(-1*vibtemp/T))
+    TS_vib=S_vib*T
+    #print(f"TS_vib: {TS_vib} Eh")
+    #print(f"TS_vib: {TS_vib*constants.hartokcal} kcal/mol")
+    return TS_vib
