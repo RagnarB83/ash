@@ -136,9 +136,9 @@ class OpenMMTheory:
             if numcores is not None:
                 print("Numcores variable provided to OpenMM object. Will use {} cores with OpenMM".format(numcores))
                 self.properties["Threads"] = str(numcores)
-                print("Warning: Linux may ignore this user-setting and go with OPENMM_CPU_THREADS variable instead if set.")
+                print(BC.WARNING,"Warning: Linux may ignore this user-setting and go with OPENMM_CPU_THREADS variable instead if set.",BC.END)
                 print("If OPENMM_CPU_THREADS was not set in jobscript, physical cores will probably be used.")
-                print("To be safe: check the running process on the node")
+                print("To be safe: check the running process on the node",BC.END)
             else:
                 print("No numcores variable provided to OpenMM object")
                 print("Checking if OPENMM_CPU_THREADS shell variable is present")
@@ -2751,9 +2751,9 @@ class OpenMM_MDclass:
             if solute_indices == None:
                 print("Dummyatomrestraint requires solute_indices to be set")
                 ashexit()
-            print("Warning: Using dummyatomrestraints. This means that we will add a dummy atom to topology and OpenMM coordinates")
+            print(BC.WARNING,"Warning: Using dummyatomrestraints. This means that we will add a dummy atom to topology and OpenMM coordinates")
             print("We do not add the dummy atom to ASH-fragment")
-            print("Affects visualization of trajectory (make sure to use PDB-file that contains the dummy-atom, printed in the end)")
+            print("Affects visualization of trajectory (make sure to use PDB-file that contains the dummy-atom, printed in the end)",BC.END)
             #Should be centroid of solute or something rather
             solute_coords = np.take(self.fragment.coords, solute_indices, axis=0)
             dummypos=get_centroid(solute_coords)
