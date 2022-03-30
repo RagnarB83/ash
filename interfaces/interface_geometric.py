@@ -193,8 +193,8 @@ class GeomeTRICOptimizerClass:
 
                 #Check that the actatoms list does not contain atom indices higher than the number of atoms
                 largest_atom_index=max(self.actatoms)
-                if largest_atom_index > fragment.numatoms:
-                    print(BC.FAIL,f"Found active-atom index ({largest_atom_index}) that is larger than the number of atoms of system ({fragment.numatoms})!",BC.END)
+                if largest_atom_index >= fragment.numatoms:
+                    print(BC.FAIL,f"Found active-atom index ({largest_atom_index}) that is larger or equal (>=) than the number of atoms of system ({fragment.numatoms})!",BC.END)
                     print(BC.FAIL,"This does not make sense. Please provide a correct actatoms list. Exiting.",BC.END)
                     ashexit()
                 #Get active region coordinates and elements
