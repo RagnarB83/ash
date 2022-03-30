@@ -44,7 +44,9 @@ def Gaussian(x, mu, strength, sigma):
 
 class ASH_plot():
     def __init__(self, figuretitle='Plottyplot', num_subplots=1, dpi=200, imageformat='png', figsize=(9,5),
-        x_axislabel='X-axis', y_axislabel='Energy (X)', x_axislabels=None, y_axislabels=None, title='Plot-title', subplot_titles=None):
+        x_axislabel='X-axis', y_axislabel='Energy (X)', x_axislabels=None, y_axislabels=None, title='Plot-title', 
+        subplot_titles=None, invert_x_axis=False, invert_y_axis=False, xlimit=None, ylimit=None,
+        legend_pos=None):
         print_line_with_mainheader("ASH_energy_plot")
 
         load_matplotlib() #Load Matplotlib
@@ -58,9 +60,12 @@ class ASH_plot():
         #For multi-subplots
         self.x_axislabels=x_axislabels
         self.y_axislabels=y_axislabels
+        #Legend position
+        self.legend_pos=legend_pos
 
         print("Subplots:", self.num_subplots)
         print("Figure size:", figsize)
+
 
         if self.num_subplots > 1:
             print(BC.WARNING, "Note: For multiple subplots use:\n ASH_plot(x_axislabels=['X1','X2','X3], y_axislabels=['Y1','Y2','Y3'], subplot_titles='Title1,'Title2','Title3']", BC.END)
@@ -69,11 +74,26 @@ class ASH_plot():
             print("Y-axis label:", y_axislabel)
             print("Title:", title)
 
+
+
         if self.num_subplots == 1:
             self.fig, ax = matplotlib.pyplot.subplots(figsize=figsize)
             self.axs=[ax]
             self.x_axislabels=x_axislabels
             self.y_axislabels=y_axislabels
+
+            #Invert axis if requested
+            if invert_x_axis:
+                self.axs[0].invert_xaxis()
+            if invert_y_axis:
+                self.axs[0].invert_yaxis()
+
+            #X-limit and y-limit
+            if xlimit != None:
+                self.axs[0].set_xlim(xlimit[0], xlimit[1])
+            if ylimit != None:
+                self.axs[0].set_ylim(ylimit[0], ylimit[1])
+
         elif self.num_subplots == 2:
             self.fig, self.axs = matplotlib.pyplot.subplots(2, 1, figsize=figsize)
             self.axiscount=0
@@ -89,6 +109,7 @@ class ASH_plot():
             self.axiscount=0
 
         self.addplotcount=0
+        
 
     def addseries(self,subplot, surfacedictionary=None, x_list=None, y_list=None, label='Series', color='blue', pointsize=40, 
                     scatter=True, line=True, scatter_linewidth=2, line_linewidth=1, marker='o', legend=True):
@@ -143,13 +164,20 @@ class ASH_plot():
     #NOTE: Disabled until we support more backends
     #    matplotlib.pyplot.show()
     def savefig(self, filename, imageformat=None, dpi=None):
+
+        #Change legend position
+        #https://stackoverflow.com/questions/4700614/how-to-put-the-legend-outside-the-plot-in-matplotlib
+        if self.num_subplots == 1:
+            if self.legend_pos != None:
+                self.axs[0].legend(loc='center left', bbox_to_anchor=(self.legend_pos[0], self.legend_pos[1]))
+
         if imageformat == None:
             imageformat = self.imageformat
         if dpi == None:
             dpi = self.dpi
         file=filename+'.'+imageformat
         print("\nSaving plot to file: {} with resolution: {} ".format(file,dpi))
-        matplotlib.pyplot.savefig(file, format=imageformat, dpi=self.dpi)
+        matplotlib.pyplot.savefig(file, format=imageformat, dpi=self.dpi, bbox_inches = "tight")
 
 #Simple reactionprofile_plot function
 #Input: dictionary of (X,Y): energy   entries

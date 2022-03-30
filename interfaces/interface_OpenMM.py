@@ -136,9 +136,9 @@ class OpenMMTheory:
             if numcores is not None:
                 print("Numcores variable provided to OpenMM object. Will use {} cores with OpenMM".format(numcores))
                 self.properties["Threads"] = str(numcores)
-                print("Warning: Linux may ignore this user-setting and go with OPENMM_CPU_THREADS variable instead if set.")
+                print(BC.WARNING,"Warning: Linux may ignore this user-setting and go with OPENMM_CPU_THREADS variable instead if set.",BC.END)
                 print("If OPENMM_CPU_THREADS was not set in jobscript, physical cores will probably be used.")
-                print("To be safe: check the running process on the node")
+                print("To be safe: check the running process on the node",BC.END)
             else:
                 print("No numcores variable provided to OpenMM object")
                 print("Checking if OPENMM_CPU_THREADS shell variable is present")
@@ -1870,8 +1870,8 @@ def OpenMM_Opt(fragment=None, theory=None, maxiter=1000, tolerance=1, enforcePer
             openmmobject.autoconstraints is not None and len(openmmobject.user_frozen_atoms) != 0):
         print(
             f"{BC.WARNING}WARNING: Frozen_atoms options selected but there are general constraints defined in{BC.END} "
-            f"{BC.WARNING}the OpenMM object (either rigidwater=True or autoconstraints is not None){BC.END}"
-            f"{BC.WARNING}\nOpenMM will crash if constraints and frozen atoms involve the same atoms{BC.END}")
+            f"{BC.WARNING}the OpenMM object (either rigidwater=True or autoconstraints is not None)\n{BC.END}"
+            f"{BC.WARNING}OpenMM will crash if constraints and frozen atoms involve the same atoms{BC.END}")
 
 
     openmmobject.set_simulation_parameters(timestep=0.001, temperature=1, integrator='VerletIntegrator')
@@ -2052,6 +2052,7 @@ def OpenMM_Modeller(pdbfile=None, forcefield=None, xmlfile=None, waterxmlfile=No
     print("Found missing terminals:", fixer.missingTerminals)
     fixer.addMissingAtoms()
     print("Added missing atoms.")
+    #exit()
 
     openmm_app.PDBFile.writeFile(fixer.topology, fixer.positions, open('system_afterfixes.pdb', 'w'))
     print("PDBFixer done.")
@@ -2224,7 +2225,7 @@ def MDtraj_imagetraj(trajectory, pdbtopology, format='DCD', unitcell_lengths=Non
     mdtraj = MDtraj_import_()
 
     # Load trajectory
-    print("Loading trajecory using mdtraj.")
+    print("Loading trajectory using mdtraj.")
     traj = mdtraj.load(trajectory, top=pdbtopology)
 
     #Also load the pdbfile as a trajectory-snapshot (in addition to being topology)
@@ -2750,9 +2751,9 @@ class OpenMM_MDclass:
             if solute_indices == None:
                 print("Dummyatomrestraint requires solute_indices to be set")
                 ashexit()
-            print("Warning: Using dummyatomrestraints. This means that we will add a dummy atom to topology and OpenMM coordinates")
+            print(BC.WARNING,"Warning: Using dummyatomrestraints. This means that we will add a dummy atom to topology and OpenMM coordinates")
             print("We do not add the dummy atom to ASH-fragment")
-            print("Affects visualization of trajectory (make sure to use PDB-file that contains the dummy-atom, printed in the end)")
+            print("Affects visualization of trajectory (make sure to use PDB-file that contains the dummy-atom, printed in the end)",BC.END)
             #Should be centroid of solute or something rather
             solute_coords = np.take(self.fragment.coords, solute_indices, axis=0)
             dummypos=get_centroid(solute_coords)
@@ -3270,6 +3271,12 @@ def OpenMM_box_relaxation(fragment=None, theory=None, datafilename="nptsim.csv",
     print("Density threshold:", density_threshold)
     print("Volume threshold:", volume_threshold)
     print("Intermediate MD trajectory data file:", datafilename)
+
+    if len(theory.user_frozen_atoms) > 0:
+        print("Frozen_atoms:", theory.user_frozen_atoms)
+        print(BC.WARNING,"OpenMM object has frozen atoms defined. This is known to cause strange issues for NPT simulations.",BC.END)
+        print(BC.WARNING,"Check the results carefully!",BC.END)
+
 
     # Starting parameters
     steps = 0

@@ -346,7 +346,6 @@ class QMMMTheory:
                 MM1charge_fract = MM1charge / len(self.MMboundarydict[i])
                 #print("MM1charge_fract :", MM1charge_fract)
 
-                #TODO: Should charges be updated for MM program also ?
                 #Putting the fractional charge on each MM2 atom
                 for MMx in self.MMboundarydict[i]:
                     #print("MMx : ", MMx)
@@ -583,10 +582,8 @@ class QMMMTheory:
 
             #Adding dipole charge coords to MM coords (given to QM code) and defining pointchargecoords
             print("Adding {} dipole charges to PC environment".format(len(self.dipole_charges)))
-            #self.pointchargecoords=self.mmcoords+self.dipole_coords
             self.pointchargecoords=np.append(self.mmcoords,np.array(self.dipole_coords), axis=0)
             #Adding dipole charges to MM charges list (given to QM code)
-            #TODO: Rename as pcharges list so as not to confuse with what MM code sees??
             self.pointcharges=self.pointcharges+self.dipole_charges
             print("Number of pointcharges after dipole addition: ", len(self.pointcharges))
         else:
