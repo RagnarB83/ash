@@ -188,7 +188,16 @@ class GeomeTRICOptimizerClass:
                 #Sorting list, otherwise trouble
                 self.actatoms.sort()
                 print("Active Region option Active. Passing only active-region coordinates to geomeTRIC.")
+                print("Active atoms list:", self.actatoms)
                 print("Number of active atoms:", len(self.actatoms))
+
+                #Check that the actatoms list does not contain atom indices higher than the number of atoms
+                largest_atom_index=max(self.actatoms)
+                if largest_atom_index > fragment.numatoms:
+                    print(BC.FAIL,f"Found active-atom index ({largest_atom_index}) that is larger than the number of atoms of system ({fragment.numatoms})!",BC.END)
+                    print(BC.FAIL,"This does not make sense. Please provide a correct actatoms list. Exiting.",BC.END)
+                    ashexit()
+                #Get active region coordinates and elements
                 actcoords, actelems = fragment.get_coords_for_atoms(self.actatoms)
                 
                 #Writing act-region coords (only) of ASH fragment to disk as XYZ file and reading into geomeTRIC

@@ -1870,8 +1870,8 @@ def OpenMM_Opt(fragment=None, theory=None, maxiter=1000, tolerance=1, enforcePer
             openmmobject.autoconstraints is not None and len(openmmobject.user_frozen_atoms) != 0):
         print(
             f"{BC.WARNING}WARNING: Frozen_atoms options selected but there are general constraints defined in{BC.END} "
-            f"{BC.WARNING}the OpenMM object (either rigidwater=True or autoconstraints is not None){BC.END}"
-            f"{BC.WARNING}\nOpenMM will crash if constraints and frozen atoms involve the same atoms{BC.END}")
+            f"{BC.WARNING}the OpenMM object (either rigidwater=True or autoconstraints is not None)\n{BC.END}"
+            f"{BC.WARNING}OpenMM will crash if constraints and frozen atoms involve the same atoms{BC.END}")
 
 
     openmmobject.set_simulation_parameters(timestep=0.001, temperature=1, integrator='VerletIntegrator')
@@ -2225,7 +2225,7 @@ def MDtraj_imagetraj(trajectory, pdbtopology, format='DCD', unitcell_lengths=Non
     mdtraj = MDtraj_import_()
 
     # Load trajectory
-    print("Loading trajecory using mdtraj.")
+    print("Loading trajectory using mdtraj.")
     traj = mdtraj.load(trajectory, top=pdbtopology)
 
     #Also load the pdbfile as a trajectory-snapshot (in addition to being topology)
@@ -3271,6 +3271,12 @@ def OpenMM_box_relaxation(fragment=None, theory=None, datafilename="nptsim.csv",
     print("Density threshold:", density_threshold)
     print("Volume threshold:", volume_threshold)
     print("Intermediate MD trajectory data file:", datafilename)
+
+    if len(theory.user_frozen_atoms) > 0:
+        print("Frozen_atoms:", theory.user_frozen_atoms)
+        print(BC.WARNING,"OpenMM object has frozen atoms defined. This is known to cause strange issues for NPT simulations.",BC.END)
+        print(BC.WARNING,"Check the results carefully!",BC.END)
+
 
     # Starting parameters
     steps = 0
