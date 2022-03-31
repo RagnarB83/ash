@@ -32,6 +32,7 @@ end
 #The PythonCall wrapping of objects should not require the conversions.
 #However, some problems with the dictionaries etc. To be revisited
 
+
 #Connectivity (fraglists) for whole fragment
 function calc_connectivity(coords,elems,conndepth,scale, tol,eldict_covrad)
     println("Calling calc_connectivity (pythoncall/juliacall)")
