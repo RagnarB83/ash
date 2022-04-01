@@ -54,33 +54,38 @@ def AnFreq(fragment=None, theory=None, charge=None, mult=None, numcores=1, temp=
 
 
 #Numerical frequencies function
-#NOTE: displacement was set to 0.0005 Angstrom
 #ORCA uses 0.005 Bohr = 0.0026458861 Ang, CHemshell uses 0.01 Bohr = 0.00529 Ang
 def NumFreq(fragment=None, theory=None, charge=None, mult=None, npoint=2, displacement=0.005, hessatoms=None, numcores=1, runmode='serial', 
         temp=298.15, pressure=1.0, hessatoms_masses=None, printlevel=1):
     module_init_time=time.time()
     print(BC.WARNING, BC.BOLD, "------------NUMERICAL FREQUENCIES-------------", BC.END)
 
+    #Basic check
+    if fragment is None or theory is None:
+        print("NumFreq requires a fragment and a theory object")
+        ashexit()
+
     #Check charge/mult
     charge,mult = check_charge_mult(charge, mult, theory.theorytype, fragment, "NumFreq", theory=theory)
 
-
+    #Creating directory
     shutil.rmtree('Numfreq_dir', ignore_errors=True)
     os.mkdir('Numfreq_dir')
     os.chdir('Numfreq_dir')
     print("Creating separate directory for displacement calculations: Numfreq_dir ")
-    if fragment is None or theory is None:
-        print("NumFreq requires a fragment and a theory object")
+    
 
     coords=fragment.coords
     elems=copy.deepcopy(fragment.elems)
     numatoms=len(elems)
-    #Hessatoms list is allatoms (if not defined), otherwise the atoms provided and thus a partial Hessian is calculated.
+    #Hessatoms list is allatoms (if hessatoms list not provided)
+    #If hessatoms provided we do a partial Hessian
     allatoms=list(range(0,numatoms))
     if hessatoms is None:
         hessatoms=allatoms
     #Making sure hessatoms list is sorted
     hessatoms.sort()
+    #Optional hessatoms_masses list
     if hessatoms_masses != None:
         if len(hessatoms_masses) != len(hessatoms):
             print(BC.FAIL,"Error: Number of provided masses (hessatoms_masses keyword) is not equal to number of Hessian-atoms.")
@@ -93,7 +98,7 @@ def NumFreq(fragment=None, theory=None, charge=None, mult=None, npoint=2, displa
     print("System size:", numatoms)
     print("Hessian atoms:", hessatoms)
     if hessatoms != allatoms:
-        print("This is a partial Hessian.")
+        print("This is a partial Hessian job.")
     if npoint ==  1:
         print("One-point formula used (forward difference)")
     elif npoint == 2:
