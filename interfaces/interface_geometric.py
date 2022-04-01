@@ -5,6 +5,7 @@ import shutil
 import time
 
 from modules.module_QMMM import QMMMTheory
+from interfaces.interface_OpenMM import OpenMMTheory
 from modules.module_coords import print_coords_all,print_coords_for_atoms,print_internal_coordinate_table,write_XYZ_for_atoms,write_xyzfile
 from functions.functions_general import ashexit, blankline,BC,print_time_rel,print_line_with_mainheader
 import ash
@@ -100,20 +101,20 @@ class GeomeTRICOptimizerClass:
             print("Max iterations: ", self.maxiter)
             print("Constraints: ", self.constraints)
 
-            #Clean-up
-            try:
-                os.remove('geometric_OPTtraj.log')
-                os.remove('geometric_OPTtraj.xyz')
-                os.remove('geometric_OPTtraj_Full.xyz')
-                os.remove('constraints.txt')
-                os.remove('initialxyzfiletric.xyz')
-                shutil.rmtree('geometric_OPTtraj.tmp')
-                shutil.rmtree('dummyprefix.tmp')
-                os.remove('dummyprefix.log')
-            except:
-                pass
-            
-
+            #Clean-up before we begin
+            tmpfiles=['geometric_OPTtraj.log','geometric_OPTtraj.xyz','geometric_OPTtraj_Full.xyz','geometric_OPTtraj_QMregion.xyz', 'optimization_energies.log',
+                'constraints.txt','initialxyzfiletric.xyz','geometric_OPTtraj.tmp','dummyprefix.tmp','dummyprefix.log','Fragment-optimized.ygg','Fragment-optimized.xyz',
+                'Fragment-optimized_Active.xyz','geometric_OPTtraj-PDB.pdb']
+            for tmpfile in tmpfiles:
+                try:
+                    shutil.rmtree(tmpfile)
+                except FileNotFoundError:
+                    pass
+                except NotADirectoryError:
+                    os.remove(tmpfile)
+                else:
+                    pass
+    
             #NOTE: We are now sorting actatoms and qmatoms list both here and in QM/MM object
             #: Alternatively we could sort the actatoms list and qmatoms list in QM/MM object before doing anything. Need to check carefully though....
             #if is_integerlist_ordered(actatoms) is False:
@@ -405,6 +406,44 @@ class ASHengineclass:
     #TODO: geometric will regularly do ClearCalcs in an optimization
     def clearCalcs(self):
         print("geomeTRIC: ClearCalcs.")
+
+    #Writing out trajectory file for full system in case of ActiveRegion. Note: Actregion coordinates are done done by GeomeTRIC
+    def write_trajectory_full(self):
+        print("Writing trajectory for Full system to file: geometric_OPTtraj_Full.xyz")
+        with open("geometric_OPTtraj_Full.xyz", "a") as trajfile:
+            trajfile.write(str(self.fragment.numatoms)+"\n")
+            trajfile.write("Iteration {} Energy {} \n".format(self.iteration_count,self.energy))
+            for el,cor in zip(self.fragment.elems,self.full_current_coords):
+                trajfile.write(el + "  " + str(cor[0]) + " " + str(cor[1]) + " " + str(cor[2]) +
+                            "\n")
+    #QM/MM: Writing out trajectory file for QM-region if QM/MM.
+    def write_trajectory_qmregion(self):
+        print("Writing trajectory for QM-region to file: geometric_OPTtraj_QMregion.xyz")
+        with open("geometric_OPTtraj_QMregion.xyz", "a") as trajfile:
+            trajfile.write(str(len(self.theory.qmatoms))+"\n")
+            trajfile.write("Iteration {} Energy {} \n".format(self.iteration_count,self.energy))
+            qm_coords, qm_elems = self.fragment.get_coords_for_atoms(self.theory.qmatoms)
+            for el,cor in zip(qm_elems,qm_coords):
+                trajfile.write(el + "  " + str(cor[0]) + " " + str(cor[1]) + " " + str(cor[2]) +
+                            "\n")
+    def write_energy_logfile(self):
+        #QM/MM: Writing out logfile containing QM-energy, MM-energy, QM/MM-energy
+        print("Writing logfile with energies: optimization_energies.log")
+        with open("optimization_energies.log", "a") as trajfile:
+            if self.iteration_count == 0:
+                trajfile.write(f"Iteration QM-energy       (Eh) MM-Energy (Eh)  QM/MM-Energy (Eh)\n")
+            trajfile.write(f"{self.iteration_count}         {self.theory.QMenergy} {self.theory.MMenergy} {self.theory.QM_MM_energy}\n")
+
+    def write_pdbtrajectory(self):
+        print("Writing PDB-trajectory to file: geometric_OPTtraj-PDB.pdb")
+        pdbtrajectoryfile="geometric_OPTtraj-PDB.pdb"
+        # Get OpenMM positions
+        state = self.theory.mm_theory.simulation.context.getState(getEnergy=False, getPositions=True, getForces=False,enforcePeriodicBox=True)
+        print("here2")
+        newpos = state.getPositions()
+        print("here3")
+        self.theory.mm_theory.openmm.app.PDBFile.writeFile(self.theory.mm_theory.topology, newpos, file=open(pdbtrajectoryfile, 'a'))
+
     #Defining calculator
     def calc(self,coords,tmp, read_data=None):
         #Note: tmp and read_data not used. Needed for geomeTRIC version compatibility
@@ -459,13 +498,20 @@ class ASHengineclass:
             timeA=time.time()
             self.energy = E
 
-            #Writing out trajectory file for full system. Act system done by GeomeTRIC
-            with open("geometric_OPTtraj_Full.xyz", "a") as trajfile:
-                trajfile.write(str(self.fragment.numatoms)+"\n")
-                trajfile.write("Iteration {} Energy {} \n".format(self.iteration_count,self.energy))
-                for el,cor in zip(self.fragment.elems,self.full_current_coords):
-                    trajfile.write(el + "  " + str(cor[0]) + " " + str(cor[1]) + " " + str(cor[2]) +
-                                "\n")
+            #Now writing trajectory for full system
+            self.write_trajectory_full()
+            
+            #Case QM/MM:
+            if isinstance(self.theory,QMMMTheory):
+                #Writing trajectory for QM-region only
+                self.write_trajectory_qmregion()
+                #Writing logfile with QM,MM and QM/MM energies
+                self.write_energy_logfile()
+
+                #Case MMtheory is OpenMM: Write out PDB-trajectory via OpenMM
+                if isinstance(self.theory.mm_theory,OpenMMTheory):
+                    self.write_pdbtrajectory()
+
             #print_time_rel(timeA, modulename='geometric ASHcalc.calc writetraj full', moduleindex=2)
             timeA=time.time()
             self.iteration_count += 1

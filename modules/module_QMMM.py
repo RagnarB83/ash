@@ -787,9 +787,9 @@ class QMMMTheory:
             assert qmcount == len(self.qmatoms)
             assert pccount == len(self.mmatoms)           
             assert qmcount+pccount == len(self.allatoms)
-            print(" qmcount+pccount:", qmcount+pccount)
-            print("len(self.allatoms):", len(self.allatoms))
-            print("len self.QM_PC_gradient", len(self.QM_PC_gradient))
+            #print(" qmcount+pccount:", qmcount+pccount)
+            #print("len(self.allatoms):", len(self.allatoms))
+            #print("len self.QM_PC_gradient", len(self.QM_PC_gradient))
             modules.module_coords.write_coords_all(self.QM_PC_gradient, self.elems, indices=self.allatoms, file="QM_PC_gradient", description="QM_PC_gradient (au/Bohr):")
             #exit()
             #if self.printlevel >= 2:
