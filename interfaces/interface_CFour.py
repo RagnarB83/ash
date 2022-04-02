@@ -5,9 +5,9 @@ import os
 import settings_ash
 
 
-#CFour Theory object. Fragment object is optional. Used??
+#CFour Theory object.
 class CFourTheory:
-    def __init__(self, cfourdir=None,fragment=None, printlevel=2, cfouroptions=None,numcores=1,
+    def __init__(self, cfourdir=None, printlevel=2, cfouroptions=None,numcores=1,
                  filename='cfourjob',specialbasis=None, ash_basisfile='def2-SVP'):
                  #basis=None, method=None, reference='RHF', frozen_core='ON',
                 #memory=3100, , guessoption='MOREAD',propoption='OFF',cc_prog='ECC',scf_conv=10,lineq_conv=10,
@@ -139,7 +139,7 @@ class CFourTheory:
         return S2
 
     # Run function. Takes coords, elems etc. arguments and computes E or E+G.
-    def run(self, fragment=None, current_coords=None, current_MM_coords=None, MMcharges=None, qm_elems=None,
+    def run(self, current_coords=None, current_MM_coords=None, MMcharges=None, qm_elems=None,
             elems=None, Grad=False, PC=False, numcores=None, restart=False, label=None, charge=None, mult=None):
 
         if numcores == None:
@@ -151,17 +151,18 @@ class CFourTheory:
             print(BC.FAIL, "Error. charge and mult has not been defined for CFourTheory.run", BC.END)
             ashexit()
 
-        # Coords provided to run or else taken from initialization.
-        # if len(current_coords) != 0:
+        #Coords provided to run
         if current_coords is not None:
             pass
         else:
-            current_coords = self.coords
+            print("no current_coords")
+            ashexit()
 
-        # What elemlist to use. If qm_elems provided then QM/MM job, otherwise use elems list or self.elems
+        #What elemlist to use. If qm_elems provided then QM/MM job, otherwise use elems list
         if qm_elems is None:
             if elems is None:
-                qm_elems = self.elems
+                print("No elems provided")
+                ashexit()
             else:
                 qm_elems = elems
 

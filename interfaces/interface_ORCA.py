@@ -15,9 +15,9 @@ import settings_ash
 
 
 
-#ORCA Theory object. Fragment object is optional. Only used for single-points.
+#ORCA Theory object.
 class ORCATheory:
-    def __init__(self, orcadir=None, fragment=None, orcasimpleinput='', printlevel=2, extrabasisatoms=None, extrabasis=None, TDDFT=False, TDDFTroots=5, FollowRoot=1,
+    def __init__(self, orcadir=None, orcasimpleinput='', printlevel=2, extrabasisatoms=None, extrabasis=None, TDDFT=False, TDDFTroots=5, FollowRoot=1,
                  orcablocks='', extraline='', first_iteration_input=None, brokensym=None, HSmult=None, atomstoflip=None, numcores=1, nprocs=None, label=None, moreadfile=None, 
                  autostart=True, propertyblock=None, keep_each_run_output=False, print_population_analysis=False, filename="orca", check_for_errors=True, check_for_warnings=True):
         print_line_with_mainheader("ORCATheory initialization")
@@ -93,11 +93,6 @@ class ORCATheory:
         #Property block. Added after coordinates unless None
         self.propertyblock=propertyblock
 
-        if fragment != None:
-            self.fragment=fragment
-            self.coords=fragment.coords
-            self.elems=fragment.elems
-        #print("frag elems", self.fragment.elems)
         
         #Adding NoAutostart keyword to extraline if requested
         if self.autostart == False:
@@ -186,18 +181,15 @@ class ORCATheory:
 
         if fragment == None:
             print("No fragment provided to Opt.")
-            if self.fragment == None:
-                print("No fragment associated with ORCATheory object either. Exiting")
-                ashexit()
+            ashexit()
         else:
             print("Fragment provided to Opt")
-            self.fragment=fragment
 
         
-        current_coords=self.fragment.coords
-        elems=self.fragment.elems
+        current_coords=fragment.coords
+        elems=fragment.elems
         #Check charge/mult
-        charge,mult = check_charge_mult(charge, mult, self.theorytype, self.fragment, "ORCATheory.Opt", theory=self)
+        charge,mult = check_charge_mult(charge, mult, self.theorytype, fragment, "ORCATheory.Opt", theory=self)
 
         if charge == None or mult == None:
             print(BC.FAIL, "Error. charge and mult has not been defined for ORCATheory.Opt method", BC.END)
@@ -238,7 +230,7 @@ class ORCATheory:
                 opt_elems,opt_coords = modules.module_coords.read_xyzfile(self.filename+'.xyz')
                 print(opt_coords)
                 
-                self.fragment.replace_coords(self.fragment.elems,opt_coords)
+                fragment.replace_coords(fragment.elems,opt_coords)
             else:
                 print("ORCA optimization failed to converge. Check ORCA output")
                 ashexit()
@@ -247,14 +239,14 @@ class ORCATheory:
             ashexit()
 
         print("ORCA optimized energy:", self.energy)
-        print("ASH fragment updated:", self.fragment)
-        self.fragment.print_coords()
+        print("ASH fragment updated:", fragment)
+        fragment.print_coords()
         #Writing out fragment file and XYZ file
-        self.fragment.print_system(filename='Fragment-optimized.ygg')
-        self.fragment.write_xyzfile(xyzfilename='Fragment-optimized.xyz')
+        fragment.print_system(filename='Fragment-optimized.ygg')
+        fragment.write_xyzfile(xyzfilename='Fragment-optimized.xyz')
 
         #Printing internal coordinate table
-        modules.module_coords.print_internal_coordinate_table(self.fragment)
+        modules.module_coords.print_internal_coordinate_table(fragment)
         print_time_rel(module_init_time, modulename='ORCA Opt-run', moduleindex=2)
         return 
 
@@ -264,22 +256,24 @@ class ORCATheory:
         module_init_time=time.time()
         self.runcalls+=1
         print(BC.OKBLUE,BC.BOLD, "------------RUNNING ORCA INTERFACE-------------", BC.END)
-        #Coords provided to run or else taken from initialization.
-        #if len(current_coords) != 0:
+
+        #Coords provided to run
         if current_coords is not None:
             pass
         else:
-            current_coords=self.coords
+            print("no current_coords")
+            ashexit()
 
         #Checking if charge and mult has been provided
         if charge == None or mult == None:
             print(BC.FAIL, "Error. charge and mult has not been defined for ORCATheory.run method", BC.END)
             ashexit()
 
-        #What elemlist to use. If qm_elems provided then QM/MM job, otherwise use elems list or self.elems
+        #What elemlist to use. If qm_elems provided then QM/MM job, otherwise use elems list
         if qm_elems is None:
             if elems is None:
-                qm_elems=self.elems
+                print("No elems provided")
+                ashexit()
             else:
                 qm_elems = elems
 

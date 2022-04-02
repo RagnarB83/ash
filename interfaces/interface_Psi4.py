@@ -9,7 +9,7 @@ import modules.module_coords
 from functions.functions_general import ashexit, BC,print_time_rel
 
 
-#Psi4 Theory object. Fragment object is optional. Only used for single-points.
+#Psi4 Theory object.
 #PSI4 runmode:
 #   : library means that ASH will load Psi4 libraries and run psi4 directly
 #   : inputfile means that ASH will create Psi4 inputfile and run a separate psi4 executable
@@ -17,7 +17,7 @@ from functions.functions_general import ashexit, BC,print_time_rel
 #printsetting is by default set to 'File. Change to something else for stdout print
 # PE: Polarizable embedding (CPPE). Pass pe_modulesettings dict as well
 class Psi4Theory:
-    def __init__(self, fragment=None, printsetting='False', psi4settings=None, psi4method=None,
+    def __init__(self, printsetting='False', psi4settings=None, psi4method=None,
                  runmode='library', psi4dir=None, pe=False, potfile='', filename='psi4_', label='psi4input',
                  psi4memory=3000, numcores=1, printlevel=2,fchkwrite=False):
 
@@ -68,11 +68,6 @@ class Psi4Theory:
         #Settings dict
         self.psi4settings=psi4settings
 
-        if fragment is not None:
-            self.fragment=fragment
-            self.coords=fragment.coords
-            self.elems=fragment.elems
-        #print("frag elems", self.fragment.elems)
         #DFT-specific. Remove? Marked for deletion
         #self.psi4functional=psi4functional
 
@@ -108,17 +103,18 @@ class Psi4Theory:
         if potfile != '':
             self.potfile=potfile
 
-        #Coords provided to run or else taken from initialization.
-        #if len(current_coords) != 0:
+        #Coords provided to run
         if current_coords is not None:
             pass
         else:
-            current_coords=self.coords
+            print("no current_coords")
+            ashexit()
 
-        #What elemlist to use. If qm_elems provided then QM/MM job, otherwise use elems list or self.elems
+        #What elemlist to use. If qm_elems provided then QM/MM job, otherwise use elems list
         if qm_elems is None:
             if elems is None:
-                qm_elems=self.elems
+                print("No elems provided")
+                ashexit()
             else:
                 qm_elems = elems
 
