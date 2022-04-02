@@ -7,7 +7,7 @@ import modules.module_coords
 #PySCF runmode: Library only
 # PE: Polarizable embedding (CPPE). Not completely active in PySCF 1.7.1. Bugfix required I think
 class PySCFTheory:
-    def __init__(self, printsetting='False', printlevel=2, pyscfbasis='', pyscffunctional='',
+    def __init__(self, printsetting=False, printlevel=2, pyscfbasis='', pyscffunctional='',
                  pe=False, potfile='', filename='pyscf', pyscfmemory=3100, numcores=1):
 
         #Indicate that this is a QMtheory

@@ -17,9 +17,9 @@ from functions.functions_general import ashexit, BC,print_time_rel
 #printsetting is by default set to 'File. Change to something else for stdout print
 # PE: Polarizable embedding (CPPE). Pass pe_modulesettings dict as well
 class Psi4Theory:
-    def __init__(self, printsetting='False', psi4settings=None, psi4method=None,
-                 runmode='library', psi4dir=None, pe=False, potfile='', filename='psi4_', label='psi4input',
-                 psi4memory=3000, numcores=1, printlevel=2,fchkwrite=False):
+    def __init__(self, psi4dir=None, runmode='library', printsetting=False, psi4settings=None, psi4method=None,
+                pe=False, potfile='', filename='psi4_', label=None,
+                psi4memory=3000, numcores=1, printlevel=2,fchkwrite=False):
 
         #Indicate that this is a QMtheory
         self.theorytype="QM"
@@ -131,10 +131,10 @@ class Psi4Theory:
                 print(BC.WARNING,"If problematic, switch to inputfile based Psi4 interface instead.", BC.END)
                 ashexit(code=9)
             #Changing namespace may prevent crashes due to multiple jobs running at same time
-            if self.label=='label':
+            if self.filename=='psi4_':
                 psi4.core.IO.set_default_namespace("psi4job_ygg")
             else:
-                psi4.core.IO.set_default_namespace(self.label)
+                psi4.core.IO.set_default_namespace(self.filename)
 
             #Printing to stdout or not:
             if self.printsetting:
@@ -294,7 +294,7 @@ class Psi4Theory:
                     ashexit()
 
             #Write inputfile
-            with open(self.label+'.inp', 'w') as inputfile:
+            with open(self.filename+'.inp', 'w') as inputfile:
                 inputfile.write('psi4_io.set_default_path(\'{}\')\n'.format(os.getcwd()))
                 inputfile.write('memory {} MB\n'.format(self.psi4memory))
                 inputfile.write('molecule molfrag {\n')
@@ -365,20 +365,20 @@ class Psi4Theory:
                 if self.fchkwrite == True:
                     inputfile.write('#Fchk write\n')
                     inputfile.write('fchk_writer = psi4.FCHKWriter(wfn)\n')
-                    inputfile.write('fchk_writer.write(\'{}.fchk\')\n'.format(self.label))
+                    inputfile.write('fchk_writer.write(\'{}.fchk\')\n'.format(self.filename))
         
 
 
-            print("Running inputfile:", self.label+'.inp')
+            print("Running inputfile:", self.filename+'.inp')
             #Running inputfile
-            with open(self.label + '.out', 'w') as ofile:
+            with open(self.filename + '.out', 'w') as ofile:
                 #Psi4 -m option for saving 180 file
                 print("numcores:", numcores)
-                process = sp.run(['psi4', '-m', '-i', self.label + '.inp', '-o', self.label + '.out', '-n', '{}'.format(str(numcores)) ], check=True, stdout=ofile, stderr=ofile, universal_newlines=True)
+                process = sp.run(['psi4', '-m', '-i', self.filename + '.inp', '-o', self.filename + '.out', '-n', '{}'.format(str(numcores)) ], check=True, stdout=ofile, stderr=ofile, universal_newlines=True)
 
             #Keep restart file 180 as lastrestart.180
             try:
-                restartfile=glob.glob(self.label+'*180.npy')[0]
+                restartfile=glob.glob(self.filename+'*180.npy')[0]
                 print("restartfile:", restartfile)
                 print("Psi4 Done. Renaming {} to lastrestart.180.npy".format(restartfile))
                 os.rename(restartfile, 'lastrestart.180.npy')
@@ -391,7 +391,7 @@ class Psi4Theory:
                 os.remove(wffile)
 
             #Grab energy and possibly gradient
-            self.energy, self.gradient = grabPsi4EandG(self.label + '.out', len(qm_elems), Grad)
+            self.energy, self.gradient = grabPsi4EandG(self.filename + '.out', len(qm_elems), Grad)
 
             #TODO: write in error handling here
 
