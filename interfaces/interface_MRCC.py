@@ -4,9 +4,9 @@ import os
 import shutil
 import time
 
-#MRCC Theory object. Fragment object is optional. Used??
+#MRCC Theory object.
 class MRCCTheory:
-    def __init__(self, mrccdir=None, filename='mrcc', fragment=None, printlevel=2,
+    def __init__(self, mrccdir=None, filename='mrcc', printlevel=2,
                 mrccinput=None, numcores=1):
         print_line_with_mainheader("MRCCTheory initialization")
 
@@ -72,17 +72,18 @@ class MRCCTheory:
         print("MRCC input:")
         print(self.mrccinput)
 
-        # Coords provided to run or else taken from initialization.
-        # if len(current_coords) != 0:
+        #Coords provided to run
         if current_coords is not None:
             pass
         else:
-            current_coords = self.coords
+            print("no current_coords")
+            ashexit()
 
-        # What elemlist to use. If qm_elems provided then QM/MM job, otherwise use elems list or self.elems
+        #What elemlist to use. If qm_elems provided then QM/MM job, otherwise use elems list
         if qm_elems is None:
             if elems is None:
-                qm_elems = self.elems
+                print("No elems provided")
+                ashexit()
             else:
                 qm_elems = elems
 

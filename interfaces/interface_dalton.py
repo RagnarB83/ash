@@ -7,7 +7,7 @@ from functions.functions_general import ashexit, BC,print_time_rel
 import modules.module_coords
 
 class DaltonTheory:
-    def __init__(self, daltondir=None, filename='dalton', fragment=None, printlevel=2, numcores=1, pe=False, potfile='',
+    def __init__(self, daltondir=None, filename='dalton', printlevel=2, numcores=1, pe=False, potfile='',
                  label=None, method=None, response=None, dalton_input=None, basis_name=None,basis_dir=None):
 
         #Indicate that this is a QMtheory
@@ -48,12 +48,6 @@ class DaltonTheory:
         
         self.pe=pe
         
-        #Optional linking of coords to theory object, not necessary. TODO: Delete
-        if fragment != None:
-            self.fragment=fragment
-            self.coords=fragment.coords
-            self.elems=fragment.elems
-        #print("frag elems", self.fragment.elems)
         print("Note: Dalton assumes mult=1 for even electrons and mult=2 for odd electrons.")
         if self.printlevel >=2:
             print("")
@@ -86,17 +80,19 @@ class DaltonTheory:
         if charge == None or mult == None:
             print(BC.FAIL, "Error. charge and mult has not been defined for DaltonTheory.run", BC.END)
             ashexit()
-        #Coords provided to run or else taken from initialization.
-        #if len(current_coords) != 0:
+
+        #Coords provided to run
         if current_coords is not None:
             pass
         else:
-            current_coords=self.coords
+            print("no current_coords")
+            ashexit()
 
-        #What elemlist to use. If qm_elems provided then QM/MM job, otherwise use elems list or self.elems
+        #What elemlist to use. If qm_elems provided then QM/MM job, otherwise use elems list
         if qm_elems is None:
             if elems is None:
-                qm_elems=self.elems
+                print("No elems provided")
+                ashexit()
             else:
                 qm_elems = elems
 

@@ -3,11 +3,11 @@ import time
 from functions.functions_general import ashexit, BC,print_time_rel
 import modules.module_coords
 
-#PySCF Theory object. Fragment object is optional. Only used for single-points.
+#PySCF Theory object.
 #PySCF runmode: Library only
 # PE: Polarizable embedding (CPPE). Not completely active in PySCF 1.7.1. Bugfix required I think
 class PySCFTheory:
-    def __init__(self, fragment='', printsetting='False', printlevel=2, pyscfbasis='', pyscffunctional='',
+    def __init__(self, printsetting='False', printlevel=2, pyscfbasis='', pyscffunctional='',
                  pe=False, potfile='', filename='pyscf', pyscfmemory=3100, numcores=1):
 
         #Indicate that this is a QMtheory
@@ -26,11 +26,6 @@ class PySCFTheory:
         #Potfile from user or passed on via QM/MM Theory object ?
         self.potfile=potfile
 
-
-        if fragment != '':
-            self.fragment=fragment
-            self.coords=fragment.coords
-            self.elems=fragment.elems
         self.pyscfbasis=pyscfbasis
         self.pyscffunctional=pyscffunctional
     #Cleanup after run.
@@ -65,17 +60,18 @@ class PySCFTheory:
         if potfile is not None:
             self.potfile=potfile
 
-        #Coords provided to run or else taken from initialization.
-        #if len(current_coords) != 0:
+        #Coords provided to run
         if current_coords is not None:
             pass
         else:
-            current_coords=self.coords
+            print("no current_coords")
+            ashexit()
 
-        #What elemlist to use. If qm_elems provided then QM/MM job, otherwise use elems list or self.elems
+        #What elemlist to use. If qm_elems provided then QM/MM job, otherwise use elems list
         if qm_elems is None:
             if elems is None:
-                qm_elems=self.elems
+                print("No elems provided")
+                ashexit()
             else:
                 qm_elems = elems
 

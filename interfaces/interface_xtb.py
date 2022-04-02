@@ -1,5 +1,4 @@
 import os
-import sys
 import shutil
 import numpy as np
 import subprocess as sp
@@ -20,7 +19,7 @@ from modules.module_coords import elemstonuccharges, check_multiplicity, check_c
 
 
 class xTBTheory:
-    def __init__(self, xtbdir=None, fragment=None, xtbmethod='GFN1', runmode='inputfile', numcores=1, printlevel=2, filename='xtb_',
+    def __init__(self, xtbdir=None, xtbmethod='GFN1', runmode='inputfile', numcores=1, printlevel=2, filename='xtb_',
                  maxiter=500, electronic_temp=300, label=None, accuracy=0.1, hardness_PC=1000, solvent=None):
 
         #Indicate that this is a QMtheory
@@ -38,13 +37,6 @@ class xTBTheory:
         #Accuracy (0.1 it quite tight)
         self.accuracy=accuracy
 
-        if fragment != None:
-            self.fragment=fragment
-            self.coords=fragment.coords
-            self.elems=fragment.elems
-        else:
-            self.fragment=None
-
         #Printlevel
         self.printlevel=printlevel
         self.verbosity=printlevel-1
@@ -53,10 +45,6 @@ class xTBTheory:
 
 
         self.numcores=numcores
-        if fragment != None:
-            self.fragment=fragment
-            self.coords=fragment.coords
-            self.elems=fragment.elems
         self.filename=filename
         self.xtbmethod=xtbmethod
         self.maxiter=maxiter
@@ -78,11 +66,7 @@ class xTBTheory:
             print("Using new library-based xTB interface")
             print("Importing xtb-python library")
             try:
-                #
-                from xtb.libxtb import VERBOSITY_MINIMAL
                 from xtb.interface import Calculator, Param
-
-
             except:
                 print("Problem importing xTB library. Have you installed : conda install -c conda-forge xtb-python  ?")
                 ashexit(code=9)
@@ -148,27 +132,14 @@ class xTBTheory:
         print(BC.OKBLUE,BC.BOLD, "------------RUNNING INTERNAL xTB OPTIMIZATION-------------", BC.END)
 
         if fragment == None:
-            print("No fragment provided to xTB Opt.")
-            if self.fragment == None:
-                print("No fragment associated with xTBTheory object either. Exiting")
-                ashexit()
+            print("No fragment provided to xTB Opt. Exiting")
+            ashexit()
         else:
             print("Fragment provided to Opt")
-            self.fragment=fragment
         #
-        current_coords=self.fragment.coords
-        elems=self.fragment.elems
+        current_coords=fragment.coords
+        elems=fragment.elems
 
-        #Check charge/mult
-        #if charge == None or mult == None:
-        #    print(BC.WARNING,"Warning: Charge/mult was not provided to xTBTheory.Opt",BC.END)
-        #    if self.fragment.charge != None and self.fragment.mult != None:
-        #        print(BC.WARNING,"Fragment contains charge/mult information: Charge: {} Mult: {} Using this instead".format(fragment.charge,fragment.mult), BC.END)
-        #        print(BC.WARNING,"Make sure this is what you want!", BC.END)
-        #        charge=self.fragment.charge; mult=self.fragment.mult
-        #    else:
-        #        print(BC.FAIL,"No charge/mult information present in fragment either. Exiting.",BC.END)
-        #        ashexit()
         #Check charge/mult
         charge,mult = check_charge_mult(charge, mult, self.theorytype, fragment, "xTBTheory.Opt", theory=self)
 
@@ -203,7 +174,7 @@ class xTBTheory:
             print("Grabbing optimized coordinates")
             #Grab optimized coordinates from filename.xyz
             opt_elems,opt_coords = modules.module_coords.read_xyzfile("xtbopt.xyz")
-            self.fragment.replace_coords(self.fragment.elems,opt_coords)
+            fragment.replace_coords(fragment.elems,opt_coords)
 
             return
             #TODO: Check if xtB properly converged or not 
@@ -212,14 +183,14 @@ class xTBTheory:
             print("Only runmode='inputfile allowed for xTBTheory.Opt(). Exiting")
             ashexit()
             #Update coordinates in someway
-        print("ASH fragment updated:", self.fragment)
-        self.fragment.print_coords()
+        print("ASH fragment updated:", fragment)
+        fragment.print_coords()
         #Writing out fragment file and XYZ file
-        self.fragment.print_system(filename='Fragment-optimized.ygg')
-        self.fragment.write_xyzfile(xyzfilename='Fragment-optimized.xyz')
+        fragment.print_system(filename='Fragment-optimized.ygg')
+        fragment.write_xyzfile(xyzfilename='Fragment-optimized.xyz')
 
         #Printing internal coordinate table
-        modules.module_coords.print_internal_coordinate_table(self.fragment)
+        modules.module_coords.print_internal_coordinate_table(fragment)
         print_time_rel(module_init_time, modulename='xtB Opt-run', moduleindex=2)
         return 
 
@@ -247,22 +218,24 @@ class xTBTheory:
 
         if self.printlevel >= 2:
             print("------------STARTING XTB INTERFACE-------------")
-        #Coords provided to run or else taken from initialization.
-        #if len(current_coords) != 0:
+
+        #Coords provided to run
         if current_coords is not None:
             pass
         else:
-            current_coords=self.coords
+            print("no current_coords")
+            ashexit()
 
         #Checking if charge and mult has been provided
         if charge == None or mult == None:
             print(BC.FAIL, "Error. charge and mult has not been defined for xTBTheory.run method", BC.END)
             ashexit()
 
-        #What elemlist to use. If qm_elems provided then QM/MM job, otherwise use elems list or self.elems
+        #What elemlist to use. If qm_elems provided then QM/MM job, otherwise use elems list
         if qm_elems is None:
             if elems is None:
-                qm_elems=self.elems
+                print("No elems provided")
+                ashexit()
             else:
                 qm_elems = elems
 
@@ -285,7 +258,6 @@ class xTBTheory:
             #self.cleanup()
             #Todo: xtbrestart possibly. needs to be optional
             modules.module_coords.write_xyzfile(qm_elems, current_coords, self.filename,printlevel=self.printlevel)
-
 
 
             #Run inputfile.
@@ -543,7 +515,7 @@ def xtbVEAgrab(file):
         for line in f:
             if 'delta SCC EA' in line:
                 VEA=float(line.split()[-1])
-    return VIP
+    return VEA
 
 # Run xTB single-point job
 def run_xtb_SP_serial(xtbdir, xtbmethod, xyzfile, charge, mult, Grad=False, Opt=False, maxiter=500, electronic_temp=300, accuracy=0.1, solvent=None):

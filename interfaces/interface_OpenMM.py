@@ -2150,9 +2150,8 @@ def OpenMM_Modeller(pdbfile=None, forcefield=None, xmlfile=None, waterxmlfile=No
     write_pdbfile_openMM(modeller.topology, modeller.positions, "finalsystem.pdb")
     print_systemsize()
 
-    # Create ASH fragment
+    # Create ASH fragment and write to disk
     fragment = Fragment(pdbfile="system_afterions.pdb")
-    # Write to disk
     fragment.print_system(filename="finalsystem.ygg")
     fragment.write_xyzfile(xyzfilename="finalsystem.xyz")
 
@@ -2166,7 +2165,8 @@ def OpenMM_Modeller(pdbfile=None, forcefield=None, xmlfile=None, waterxmlfile=No
     openmmobject =OpenMMTheory(platform='CPU', forcefield=forcefield, topoforce=True,
                         topology=modeller.topology, pdbfile=None, periodic=True,
                         autoconstraints='HBonds', rigidwater=True)
-    #Write out System XMLfile    
+    #Write out System XMLfile
+    #TODO: Disable ?
     systemxmlfile="system_full.xml"
 
     serialized_system = openmm.XmlSerializer.serialize(openmmobject.system)
