@@ -579,7 +579,9 @@ class QMMMTheory:
             print("Number of pointcharges for MM system: ", len(self.pointcharges))
             #Set 
             self.SetDipoleCharges() #Creates self.dipole_charges and self.dipole_coords
-
+            print("self.dipole_charges:", self.dipole_charges)
+            print("self.dipole_coords:", self.dipole_coords)
+            #exit()
             #Adding dipole charge coords to MM coords (given to QM code) and defining pointchargecoords
             print("Adding {} dipole charges to PC environment".format(len(self.dipole_charges)))
             self.pointchargecoords=np.append(self.mmcoords,np.array(self.dipole_coords), axis=0)
@@ -718,29 +720,52 @@ class QMMMTheory:
                     pointcharges_trunc=[self.pointcharges[i] for i in self.truncated_PC_region_indices]
                     pointchargecoords_trunc=np.take(self.pointchargecoords, self.truncated_PC_region_indices, axis=0)
                     print("Num PCs in trunc:", len(pointcharges_trunc))
+                    print("Now calculating QM/MM gradient with truncated region")
                     self.QMenergy_trunc, self.QMgradient_trunc, self.PCgradient_trunc = self.qm_theory.run(current_coords=self.qmcoords,
                                                                                          current_MM_coords=pointchargecoords_trunc,
                                                                                          MMcharges=pointcharges_trunc,
                                                                                          qm_elems=current_qmelems, charge=charge, mult=mult,
                                                                                          Grad=True, PC=True, numcores=numcores)
-                    shutil.copyfile(self.qm_theory.filename+'.out', self.qm_theory.filename+'_trunc'+'.out')
-                    shutil.copyfile(self.qm_theory.filename+'.engrad', self.qm_theory.filename+'_trunc'+'.engrad')
-                    shutil.copyfile(self.qm_theory.filename+'.pcgrad', self.qm_theory.filename+'_trunc'+'.pcgrad')
+                    try:
+                        shutil.copyfile(self.qm_theory.filename+'.out', self.qm_theory.filename+'_trunc'+'.out')
+                        shutil.copyfile(self.qm_theory.filename+'.engrad', self.qm_theory.filename+'_trunc'+'.engrad')
+                        shutil.copyfile(self.qm_theory.filename+'.pcgrad', self.qm_theory.filename+'_trunc'+'.pcgrad')
+                    except:
+                        pass
                     print("len self.PCgradient_trunc", len(self.PCgradient_trunc))
+                    print("self.PCgradient_trunc:", self.PCgradient_trunc)
+                    print("------")
                     #print("len x ", len([self.elems[i] for i in self.truncated_PC_region_indices]))
                     print("len elems", len(elems))
                     print("len self.truncated_PC_region_indices", len(self.truncated_PC_region_indices))
                     #modules.module_coords.write_coords_all(self.PCgradient_trunc, [self.elems[i] for i in self.truncated_PC_region_indices], indices=self.truncated_PC_region_indices, 
                     #    file="PCgradienttrunc_{}".format(label), description="PC gradienttrunc {} (au/Bohr):".format(label))
-                    self.PCgradient_trunc=copy.copy(self.PCgradient_trunc[0:-len(self.dipole_coords)])
+                    print("len self.dipole_coords:", len(self.dipole_coords))
+                    print("self.dipole_coords:", self.dipole_coords)
+
+
+                    self.PCgradient_trunc=copy.copy(self.PCgradient_trunc)
+                    #self.PCgradient_trunc=copy.copy(self.PCgradient_trunc[0:-len(self.dipole_coords)])
+                    #print("AFTER dipoloe remove len self.PCgradient_trunc", len(self.PCgradient_trunc))
+                    print("self.PCgradient_trunc:", self.PCgradient_trunc)
+                    print("len self.PCgradient_trunc", len(self.PCgradient_trunc))
+                    print("="*20)
+
+                    #exit()
                     self.original_correction_gradient=np.zeros((len(self.QM_gradient_FULL)+len(self.PC_gradient_FULL), 3))
                     print("len self.original_correction_gradient", len(self.original_correction_gradient))
                     qmcount=0;pccount=0
                     print("self.truncated_PC_region_indices:", self.truncated_PC_region_indices)
+                    print("len self.truncated_PC_region_indices:", len(self.truncated_PC_region_indices))
                     for i in self.allatoms:
+                        print("=========")
+                        print("i:", i)
+                        print("qmcount:", qmcount)
+                        print("pccount:", pccount)
+                        print("=========")
                         if i in self.qmatoms:
-                            #print("self.QM_gradient_FULL[qmcount]:", self.QM_gradient_FULL[qmcount])
-                            #print("self.QMgradient_trunc[qmcount]:", self.QMgradient_trunc[qmcount])
+                            print("self.QM_gradient_FULL[qmcount]:", self.QM_gradient_FULL[qmcount])
+                            print("self.QMgradient_trunc[qmcount]:", self.QMgradient_trunc[qmcount])
                             if self.TruncPCcorrection_option == "addition":
                                 self.original_correction_gradient[i] = self.QM_gradient_FULL[qmcount] - self.QMgradient_trunc[qmcount]
                             elif self.TruncPCcorrection_option == "scaling":
@@ -748,11 +773,17 @@ class QMMMTheory:
                             else:
                                 self.original_correction_gradient[i] = 0.0
                                 exit()
-                            #print("QM. After trunc subtraction:", self.original_correction_gradient[i])
+                            print("QM. After trunc subtraction:", self.original_correction_gradient[i])
                             qmcount+=1
                         elif i in self.truncated_PC_region_indices:
-                            #print("self.PC_gradient_FULL[pccount]:", self.PC_gradient_FULL[pccount])
+                            print("self.truncated_PC_region_indices:", self.truncated_PC_region_indices)
+                            print("self.PC_gradient_FULL[pccount]:", self.PC_gradient_FULL[pccount])
                             #print("self.PCgradient_trunc[pccount]:", self.PCgradient_trunc[pccount])
+                            print("pccount:", pccount)
+                            print("i:", i)
+                            print("len self.PCgradient_trunc:", len(self.PCgradient_trunc))
+                            print("len self.original_correction_gradient[i]:", len(self.original_correction_gradient[i]))
+                            print("len self.PC_gradient_FULL:", len(self.PC_gradient_FULL))
                             if self.TruncPCcorrection_option == "addition":
                                 self.original_correction_gradient[i] = self.PC_gradient_FULL[pccount] - self.PCgradient_trunc[pccount]
                             elif self.TruncPCcorrection_option == "scaling":
