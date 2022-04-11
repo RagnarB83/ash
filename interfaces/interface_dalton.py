@@ -7,8 +7,9 @@ from functions.functions_general import ashexit, BC,print_time_rel
 import modules.module_coords
 
 class DaltonTheory:
-    def __init__(self, daltondir=None, filename='dalton', printlevel=2, numcores=1, pe=False, potfile='',
-                 label=None, method=None, response=None, dalton_input=None, basis_name=None,basis_dir=None):
+    def __init__(self, daltondir=None, filename='dalton', printlevel=2, 
+                numcores=1, pe=False, potfile='', label=None, dalton_input=None, 
+                basis_name=None, basis_dir=None):
 
         #Indicate that this is a QMtheory
         self.theorytype="QM"

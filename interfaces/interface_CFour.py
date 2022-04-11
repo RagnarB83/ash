@@ -7,11 +7,8 @@ import settings_ash
 
 #CFour Theory object.
 class CFourTheory:
-    def __init__(self, cfourdir=None, printlevel=2, cfouroptions=None,numcores=1,
-                 filename='cfourjob',specialbasis=None, ash_basisfile='def2-SVP'):
-                 #basis=None, method=None, reference='RHF', frozen_core='ON',
-                #memory=3100, , guessoption='MOREAD',propoption='OFF',cc_prog='ECC',scf_conv=10,lineq_conv=10,
-                #cc_maxcyc=300,symmetry='OFF',stabilityanalysis='OFF'):
+    def __init__(self, cfourdir=None, printlevel=2, cfouroptions=None, numcores=1,
+                 filename='cfourjob', specialbasis=None, ash_basisfile='def2-SVP'):
         
         #Indicate that this is a QMtheory
         self.theorytype="QM"
