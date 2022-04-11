@@ -438,10 +438,9 @@ class ASHengineclass:
         print("Writing PDB-trajectory to file: geometric_OPTtraj-PDB.pdb")
         pdbtrajectoryfile="geometric_OPTtraj-PDB.pdb"
         # Get OpenMM positions
+        #STILL problem with PBC
         state = self.theory.mm_theory.simulation.context.getState(getEnergy=False, getPositions=True, getForces=False,enforcePeriodicBox=True)
-        print("here2")
         newpos = state.getPositions()
-        print("here3")
         self.theory.mm_theory.openmm.app.PDBFile.writeFile(self.theory.mm_theory.topology, newpos, file=open(pdbtrajectoryfile, 'a'))
 
     #Defining calculator
@@ -497,6 +496,8 @@ class ASHengineclass:
             #print_time_rel(timeA, modulename='geometric ASHcalc.calc trim full gradient', moduleindex=2)
             timeA=time.time()
             self.energy = E
+
+            print("Writing trajectory for Active Region to file: geometric_OPTtraj.xyz")
 
             #Now writing trajectory for full system
             self.write_trajectory_full()
