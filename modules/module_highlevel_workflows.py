@@ -495,7 +495,9 @@ maxiter 150\nend
             print("="*70)
             #SINGLE F12 EXPLICIT CORRELATION JOB or if only 1 cardinal was provided
             if self.singlebasis is True:
-                E_SCF_1, E_corrCCSD_1, E_corrCCT_1,E_corrCC_1 = self.PNOExtrapolationStep(elems=elems, current_coords=current_coords, theory=self.ccsdt_1, calc_label=calc_label+'cardinal1', numcores=numcores, charge=charge, mult=mult)
+                #Note: naming as CBS despite single-basis
+                E_SCF_CBS, E_corrCCSD_CBS, E_corrCCT_CBS,E_corr_CBS = self.PNOExtrapolationStep(elems=elems, current_coords=current_coords, theory=self.ccsdt_1, calc_label=calc_label+'cardinal1', numcores=numcores, charge=charge, mult=mult)
+
             #REGULAR EXTRAPOLATION WITH 2 THEORIES
             else:
                 E_SCF_1, E_corrCCSD_1, E_corrCCT_1,E_corrCC_1 = self.PNOExtrapolationStep(elems=elems, current_coords=current_coords, theory=self.ccsdt_1, calc_label=calc_label+'cardinal1', numcores=numcores, charge=charge, mult=mult)
@@ -702,8 +704,8 @@ def Extrapolation_twopoint(scf_energies, corr_energies, cardinals, basis_family,
     #Dictionary of extrapolation parameters. Key: Basisfamilyandcardinals Value: list: [alpha, beta]
     #Added default value of beta=3.0 (theoretical value), alpha=3.9
     extrapolation_parameters_dict = { 'cc_23' : [4.42, 2.460], 'aug-cc_23' : [4.30, 2.510], 'cc_34' : [5.46, 3.050], 'aug-cc_34' : [5.790, 3.050],
-    'def2_23' : [10.390,2.4], 'def2_34' : [7.880,2.970], 'pc_23' : [7.02, 2.01], 'pc_34': [9.78, 4.09],  'ma-def2_23' : [10.390,2.4], 
-    'ma-def2_34' : [7.880,2.970], 'default' : [3.9,3.0]}
+    'def2_23' : [10.390,2.4],  'def2_34' : [7.880,2.970], 'pc_23' : [7.02, 2.01], 'pc_34': [9.78, 4.09],  'ma-def2_23' : [10.390,2.4], 
+    'ma-def2_34' : [7.880,2.970], 'default' : [3.9,3.0], 'default_23' : [3.9,2.4]}
 
     #NOTE: pc-n family uses different numbering. pc-1 is DZ(cardinal 2), pc-2 is TZ(cardinal 3), pc-4 is QZ(cardinal 4).
     if basis_family=='cc' and all(x in cardinals for x in [2, 3]):
@@ -711,6 +713,10 @@ def Extrapolation_twopoint(scf_energies, corr_energies, cardinals, basis_family,
     #Note: assuming extrapolation parameters are transferable here
     elif basis_family=='cc-dk' and all(x in cardinals for x in [2, 3]):
         extrap_dict_key='cc_23'
+    elif basis_family=='cc-CV_3dTM-cc_L' and all(x in cardinals for x in [2, 3]):
+        extrap_dict_key='cc_23'
+    elif basis_family=='cc-CV_3dTM-cc_L' and all(x in cardinals for x in [3, 4]):
+        extrap_dict_key='cc_34'
     elif basis_family=='aug-cc' and all(x in cardinals for x in [2, 3]):
         extrap_dict_key='aug-cc_23'
         #Note: assuming extrapolation parameters are transferable here
@@ -729,25 +735,25 @@ def Extrapolation_twopoint(scf_energies, corr_energies, cardinals, basis_family,
     elif basis_family=='def2' and all(x in cardinals for x in [2, 3]):
         extrap_dict_key='def2_23'
     #Note: assuming extrapolation parameters are transferable here
-    elif basis_family=='def2-dk' and all(x in cardinals for x in [2, 3]):
+    elif basis_family=='def2-dkh' and all(x in cardinals for x in [2, 3]):
         extrap_dict_key='def2_23'
     elif basis_family=='def2' and all(x in cardinals for x in [3, 4]):
         extrap_dict_key='def2_34'
     #Note: assuming extrapolation parameters are transferable here
-    elif basis_family=='def2-dk' and all(x in cardinals for x in [3, 4]):
+    elif basis_family=='def2-dkh' and all(x in cardinals for x in [3, 4]):
         extrap_dict_key='def2_34'
     elif basis_family=='ma-def2' and all(x in cardinals for x in [2, 3]):
         extrap_dict_key='ma-def2_23'
         print("Warning. ma-def2 family. Using extrapolation parameters from def2 family. UNTESTED!")
     #Note: assuming extrapolation parameters are transferable here
-    elif basis_family=='ma-def2-dk' and all(x in cardinals for x in [2, 3]):
+    elif basis_family=='ma-def2-dkh' and all(x in cardinals for x in [2, 3]):
         extrap_dict_key='ma-def2_23'
         print("Warning. ma-def2 family. Using extrapolation parameters from def2 family. UNTESTED!")
     elif basis_family=='ma-def2' and all(x in cardinals for x in [3, 4]):
         extrap_dict_key='ma-def2_34'
         print("Warning. ma-def2 family. Using extrapolation parameters from def2 family. UNTESTED!")
     #Note: assuming extrapolation parameters are transferable here
-    elif basis_family=='ma-def2-dk' and all(x in cardinals for x in [3, 4]):
+    elif basis_family=='ma-def2-dkh' and all(x in cardinals for x in [3, 4]):
         extrap_dict_key='ma-def2_34'
         print("Warning. ma-def2 family. Using extrapolation parameters from def2 family. UNTESTED!")
     elif basis_family=='pc' and all(x in cardinals for x in [2, 3]):
@@ -757,8 +763,21 @@ def Extrapolation_twopoint(scf_energies, corr_energies, cardinals, basis_family,
     else:
         print("WARNING: Unknown basis set family")
         extrap_dict_key='default'
-        print("Using default settings: alpha: {} , beta: {}".format(extrapolation_parameters_dict[extrap_dict_key][0], extrapolation_parameters_dict[extrap_dict_key][1]))
-        extrap_dict_key='default'
+
+        if all(x in cardinals for x in [2, 3]):
+            #For 2/3 extrapolations beta=2.4 is clearly better
+            extrap_dict_key="default_23"
+            print("This is a 2/3 extrapolation, choosing beta=2.4.")
+            print("Warning, choosing beta=2.4.")
+            #'default_23' : [3.9,2.4]
+        else:
+            print("This is a 3/4 or higher extrapolation, choosing beta=3.0.")
+            #For 3/4 extrapolations or higher we are close to 3.0 theoretical value
+            #'default' : [3.9,3.0],
+            extrap_dict_key='default'
+        print("Using settings: alpha: {} , beta: {}".format(extrapolation_parameters_dict[extrap_dict_key][0], 
+            extrapolation_parameters_dict[extrap_dict_key][1]))
+
     
     #Override settings if desired
     print("\nExtrapolation parameters:")
