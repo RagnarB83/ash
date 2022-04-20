@@ -342,6 +342,12 @@ def is_string_float_withdecimal(s):
         return False
 
 
+#Search list of lists. Returns list-index if match
+def search_list_of_lists_for_index(i,l):
+    for c,f in enumerate(l):
+        if i in f:
+            return c
+
 # Check if list of integers is sorted or not.
 def is_integerlist_ordered(list):
     list_s = sorted(list)

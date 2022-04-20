@@ -6,7 +6,7 @@ import multiprocessing as mp
 import numpy as np
 
 import modules.module_coords
-from functions.functions_general import ashexit, blankline,insert_line_into_file,BC,print_time_rel, print_line_with_mainheader, pygrep2, pygrep
+from functions.functions_general import ashexit, blankline,insert_line_into_file,BC,print_time_rel, print_line_with_mainheader, pygrep2, pygrep, search_list_of_lists_for_index
 from modules.module_singlepoint import Singlepoint
 from modules.module_coords import check_charge_mult
 import functions.functions_elstructure
@@ -19,7 +19,8 @@ import settings_ash
 class ORCATheory:
     def __init__(self, orcadir=None, orcasimpleinput='', printlevel=2, extrabasisatoms=None, extrabasis=None, TDDFT=False, TDDFTroots=5, FollowRoot=1,
                  orcablocks='', extraline='', first_iteration_input=None, brokensym=None, HSmult=None, atomstoflip=None, numcores=1, nprocs=None, label=None, moreadfile=None, 
-                 autostart=True, propertyblock=None, keep_each_run_output=False, print_population_analysis=False, filename="orca", check_for_errors=True, check_for_warnings=True):
+                 autostart=True, propertyblock=None, keep_each_run_output=False, print_population_analysis=False, filename="orca", check_for_errors=True, check_for_warnings=True,
+                 fragment_indices=None):
         print_line_with_mainheader("ORCATheory initialization")
 
         #Indicate that this is a QMtheory
@@ -132,7 +133,9 @@ class ORCATheory:
         self.ghostatoms = [] #Adds ":" in front of element in coordinate block. Have basis functions and grid points
         self.dummyatoms = [] #Adds DA instead of element. No real atom
 
-        
+        # For ORCA calculations that define fragments within molecule
+        self.fragment_indices = fragment_indices
+
         # self.qmatoms need to be set for Flipspin to work for QM/MM job.
         #Overwritten by QMMMtheory, used in Flip-spin
         self.qmatoms=[]
@@ -277,8 +280,15 @@ class ORCATheory:
             else:
                 qm_elems = elems
 
-        #If QM/MM then extrabasisatoms and atomstoflip have to be updated
+        #If QM/MM then atomindices lists like extrabasisatoms, atomstoflip and fragment_indices have to be updated
         if len(self.qmatoms) != 0:
+
+            #Fragment indices need to be updated if QM/MM
+            if self.fragment_indices != None:
+                fragment_indices=[]
+                for f in self.fragment_indices:
+                    temp = [self.qmatoms.index(i) for i in f]
+                    fragment_indices.append(temp)
             #extrabasisatomindices if QM/MM
             print("QM atoms :", self.qmatoms)
             qmatoms_extrabasis=[self.qmatoms.index(i) for i in self.extrabasisatoms]
@@ -292,6 +302,7 @@ class ORCATheory:
         else:
             qmatomstoflip=self.atomstoflip
             qmatoms_extrabasis=self.extrabasisatoms
+            fragment_indices=self.fragment_indices
         
         if numcores==None:
             numcores=self.numcores
@@ -341,29 +352,34 @@ class ORCATheory:
             print("Dummy atoms defined:", self.dummyatoms)
         if self.ghostatoms:
             print("Ghost atoms defined:", self.ghostatoms)
-
+        if self.fragment_indices:
+            print("List of fragment indices defined:", fragment_indices)
         if PC==True:
             print("Pointcharge embedding is on!")
             create_orca_pcfile(self.filename, current_MM_coords, MMcharges)
             if self.brokensym == True:
                 create_orca_input_pc(self.filename, qm_elems, current_coords, self.orcasimpleinput, self.orcablocks,
                                         charge, mult, extraline=extraline, HSmult=self.HSmult, Grad=Grad, Hessian=Hessian, moreadfile=self.moreadfile,
-                                     atomstoflip=qmatomstoflip, extrabasisatoms=qmatoms_extrabasis, extrabasis=self.extrabasis, propertyblock=self.propertyblock)
+                                     atomstoflip=qmatomstoflip, extrabasisatoms=qmatoms_extrabasis, extrabasis=self.extrabasis, propertyblock=self.propertyblock,
+                                     fragment_indices=fragment_indices)
             else:
                 create_orca_input_pc(self.filename, qm_elems, current_coords, self.orcasimpleinput, self.orcablocks,
                                         charge, mult, extraline=extraline, Grad=Grad, Hessian=Hessian, moreadfile=self.moreadfile,
-                                        extrabasisatoms=qmatoms_extrabasis, extrabasis=self.extrabasis, propertyblock=self.propertyblock)
+                                        extrabasisatoms=qmatoms_extrabasis, extrabasis=self.extrabasis, propertyblock=self.propertyblock,
+                                        fragment_indices=fragment_indices)
         else:
             if self.brokensym == True:
                 create_orca_input_plain(self.filename, qm_elems, current_coords, self.orcasimpleinput,self.orcablocks,
                                         charge,mult, extraline=extraline, HSmult=self.HSmult, Grad=Grad, Hessian=Hessian, moreadfile=self.moreadfile,
                                      atomstoflip=qmatomstoflip, extrabasisatoms=qmatoms_extrabasis, extrabasis=self.extrabasis, propertyblock=self.propertyblock, 
-                                     ghostatoms=self.ghostatoms, dummyatoms=self.dummyatoms)
+                                     ghostatoms=self.ghostatoms, dummyatoms=self.dummyatoms,
+                                     fragment_indices=fragment_indices)
             else:
                 create_orca_input_plain(self.filename, qm_elems, current_coords, self.orcasimpleinput,self.orcablocks,
                                         charge,mult, extraline=extraline, Grad=Grad, Hessian=Hessian, moreadfile=self.moreadfile,
                                         extrabasisatoms=qmatoms_extrabasis, extrabasis=self.extrabasis, propertyblock=self.propertyblock,
-                                        ghostatoms=self.ghostatoms, dummyatoms=self.dummyatoms)
+                                        ghostatoms=self.ghostatoms, dummyatoms=self.dummyatoms,
+                                        fragment_indices=fragment_indices)
 
         #Run inputfile using ORCA parallelization. Take numcores argument.
         #print(BC.OKGREEN, "------------Running ORCA calculation-------------", BC.END)
@@ -1384,7 +1400,8 @@ def create_orca_inputVIEcomp_gas(name, name2, elems, coords, orcasimpleinput, or
 #Create PC-embedded ORCA inputfile from elems,coords, input, charge, mult,pointcharges
 #Allows for extraline that could be another '!' line or block-inputline.
 def create_orca_input_pc(name,elems,coords,orcasimpleinput,orcablockinput,charge,mult, Grad=False, extraline='',
-                         HSmult=None, atomstoflip=None, Hessian=False, extrabasisatoms=None, extrabasis=None, moreadfile=None, propertyblock=None):
+                         HSmult=None, atomstoflip=None, Hessian=False, extrabasisatoms=None, extrabasis=None, 
+                         moreadfile=None, propertyblock=None, fragment_indices=None):
     if extrabasisatoms is None:
         extrabasisatoms=[]
     pcfile=name+'.pc'
@@ -1414,9 +1431,17 @@ def create_orca_input_pc(name,elems,coords,orcasimpleinput,orcablockinput,charge
         else:
             orcafile.write('*xyz {} {}\n'.format(charge,mult))
         #Writing coordinates. Adding extrabasis keyword for atom if option active
+        print("len elems:", len(elems))
+        print("len coords:", len(coords))
         for i,(el,c) in enumerate(zip(elems,coords)):
             if i in extrabasisatoms:
-                orcafile.write('{} {} {} {} newgto \"{}\" end\n'.format(el,c[0], c[1], c[2], extrabasis))                
+                orcafile.write('{} {} {} {} newgto \"{}\" end\n'.format(el,c[0], c[1], c[2], extrabasis))
+            #Adding fragment specification
+            elif fragment_indices != None:
+                fragmentindex= search_list_of_lists_for_index(i,fragment_indices)
+                #To prevent linkatoms:
+                if fragmentindex != None:
+                    orcafile.write('{} {} {} {} \n'.format(f"{el}({fragmentindex+1})", c[0], c[1], c[2]))                
             else:
                 orcafile.write('{} {} {} {} \n'.format(el,c[0], c[1], c[2]))
         orcafile.write('*\n')
@@ -1424,10 +1449,9 @@ def create_orca_input_pc(name,elems,coords,orcasimpleinput,orcablockinput,charge
             orcafile.write(propertyblock)
 #Create simple ORCA inputfile from elems,coords, input, charge, mult,pointcharges
 #Allows for extraline that could be another '!' line or block-inputline.
-
 def create_orca_input_plain(name,elems,coords,orcasimpleinput,orcablockinput,charge,mult, Grad=False, Hessian=False, extraline='',
                             HSmult=None, atomstoflip=None, extrabasis=None, extrabasisatoms=None, moreadfile=None, propertyblock=None, 
-                            ghostatoms=None, dummyatoms=None):
+                            ghostatoms=None, dummyatoms=None,fragment_indices=None):
     if extrabasisatoms == None:
         extrabasisatoms=[]
     if ghostatoms == None:
@@ -1471,6 +1495,10 @@ def create_orca_input_plain(name,elems,coords,orcasimpleinput,orcablockinput,cha
                 orcafile.write('{}{} {} {} {} \n'.format(el,":", c[0], c[1], c[2]))
             elif i in dummyatoms:
                 orcafile.write('{} {} {} {} \n'.format("DA", c[0], c[1], c[2]))
+            #Adding fragment specification
+            elif fragment_indices != None:
+                fragmentindex= search_list_of_lists_for_index(i,fragment_indices)
+                orcafile.write('{} {} {} {} \n'.format(f"{el}({fragmentindex+1})", c[0], c[1], c[2]))
             else:
                 orcafile.write('{} {} {} {} \n'.format(el,c[0], c[1], c[2]))
         orcafile.write('*\n')
