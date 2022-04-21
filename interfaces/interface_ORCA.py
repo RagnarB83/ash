@@ -289,6 +289,8 @@ class ORCATheory:
                 for f in self.fragment_indices:
                     temp = [self.qmatoms.index(i) for i in f]
                     fragment_indices.append(temp)
+            else:
+                fragment_indices=self.fragment_indices
             #extrabasisatomindices if QM/MM
             print("QM atoms :", self.qmatoms)
             qmatoms_extrabasis=[self.qmatoms.index(i) for i in self.extrabasisatoms]
@@ -1431,8 +1433,6 @@ def create_orca_input_pc(name,elems,coords,orcasimpleinput,orcablockinput,charge
         else:
             orcafile.write('*xyz {} {}\n'.format(charge,mult))
         #Writing coordinates. Adding extrabasis keyword for atom if option active
-        print("len elems:", len(elems))
-        print("len coords:", len(coords))
         for i,(el,c) in enumerate(zip(elems,coords)):
             if i in extrabasisatoms:
                 orcafile.write('{} {} {} {} newgto \"{}\" end\n'.format(el,c[0], c[1], c[2], extrabasis))
