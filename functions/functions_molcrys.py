@@ -1113,8 +1113,7 @@ def gasfragcalc_ORCA(fragmentobjects,Cluster,chargemodel,orcadir,orcasimpleinput
 
         print("Defined gasfrag:", gasfrag)
         
-        
-        
+
         
         #print(gasfrag.__dict__)
         #Creating ORCA theory object with fragment
@@ -1124,21 +1123,22 @@ def gasfragcalc_ORCA(fragmentobjects,Cluster,chargemodel,orcadir,orcasimpleinput
         #Assuming mainfrag is fragmentobject 0 and only mainfrag can be Broken-symmetry
         if id == 0:
             if brokensym==True:
-                ORCASPcalculation = interfaces.interface_ORCA.ORCATheory(orcadir=orcadir, fragment=gasfrag,
-                                       orcasimpleinput=orcasimpleinput,
+                ORCASPcalculation = interfaces.interface_ORCA.ORCATheory(orcadir=orcadir,
+                                       orcasimpleinput=orcasimpleinput, numcores=NUMPROC,
                                        orcablocks=orcablocks, extraline=chargemodelline, brokensym=brokensym, HSmult=HSmult, atomstoflip=atomstoflip)
             else:
-                ORCASPcalculation = interfaces.interface_ORCA.ORCATheory(orcadir=orcadir, fragment=gasfrag,
-                                       orcasimpleinput=orcasimpleinput,
+                ORCASPcalculation = interfaces.interface_ORCA.ORCATheory(orcadir=orcadir,
+                                       orcasimpleinput=orcasimpleinput, numcores=NUMPROC,
                                        orcablocks=orcablocks, extraline=chargemodelline)
         else:
-            ORCASPcalculation = interfaces.interface_ORCA.ORCATheory(orcadir=orcadir, fragment=gasfrag,
-                                           orcasimpleinput=orcasimpleinput,
+            ORCASPcalculation = interfaces.interface_ORCA.ORCATheory(orcadir=orcadir,
+                                           orcasimpleinput=orcasimpleinput, numcores=NUMPROC,
                                            orcablocks=orcablocks, extraline=chargemodelline)
         print("ORCASPcalculation:", ORCASPcalculation)
         #print(ORCASPcalculation.__dict__)
         #Run ORCA calculation with charge-model info
-        ORCASPcalculation.run(numcores=NUMPROC, charge=fragmentobject.Charge, mult=fragmentobject.Mult)
+        #ORCASPcalculation.run(numcores=NUMPROC, charge=fragmentobject.Charge, mult=fragmentobject.Mult)
+        ash.Singlepoint(theory=ORCASPcalculation, fragment=gasfrag, charge=fragmentobject.Charge,mult=fragmentobject.Mult)
         #print_time_rel_and_tot(currtime, origtime, modulename='gasfragcalc_ORCA orca run', moduleindex=4)
         currtime = time.time()
 
@@ -1212,13 +1212,13 @@ def gasfragcalc_xTB(fragmentobjects,Cluster,chargemodel,xtbdir,xtbmethod,NUMPROC
         #print("Defined gasfrag:", gasfrag)
         #print(gasfrag.__dict__)
         #Creating xTB theory object with fragment
-        xTBSPcalculation = ash.xTBTheory(xtbdir=xtbdir, fragment=gasfrag, xtbmethod=xtbmethod)
+        xTBSPcalculation = ash.xTBTheory(xtbdir=xtbdir,xtbmethod=xtbmethod)
 
         print("xTBSPcalculation:", xTBSPcalculation)
         print(xTBSPcalculation.__dict__)
         #Run xTB calculation with charge-model info
-        xTBSPcalculation.run(numcores=NUMPROC, charge=fragmentobject.Charge, mult=fragmentobject.Mult)
-
+        #xTBSPcalculation.run(numcores=NUMPROC, charge=fragmentobject.Charge, mult=fragmentobject.Mult)
+        ash.Singlepoint(theory=xTBSPcalculation, fragment=gasfrag, charge=fragmentobject.Charge, mult=fragmentobject.Mult)
 
         #Grab atomic charges for fragment.
 
