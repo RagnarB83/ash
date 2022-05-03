@@ -26,7 +26,7 @@ basisfamilies=['cc','aug-cc','cc-dkh','cc-dk','aug-cc-dkh','aug-cc-dk','def2','m
 class CC_CBS_Theory:
     def __init__(self, elements=None, cardinals = None, basisfamily=None, relativity=None, orcadir=None, 
            stabilityanalysis=False, numcores=1, CVSR=False, CVbasis="W1-mtsmall", F12=False, Openshellreference=None, DFTreference=None, DFT_RI=False, auxbasis="autoaux-max",
-                        DLPNO=False, memory=5000, pnosetting='extrapolation', pnoextrapolation=[6,7], FullLMP2Guess=False, T1=True, scfsetting='TightSCF',
+                        DLPNO=False, memory=5000, pnosetting='extrapolation', pnoextrapolation=[6,7], FullLMP2Guess=False, T1=False, scfsetting='TightSCF',
                         alpha=None, beta=None, extrainputkeyword='', extrablocks='', FCI=False, guessmode='Cmatrix', atomicSOcorrection=False):
         """
         WORK IN PROGRESS

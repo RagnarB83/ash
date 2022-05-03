@@ -801,7 +801,6 @@ class QMMMTheory:
                 self.QMgradient_wo_linkatoms = QMgradient_wo_linkatoms
                 self.PCgradient = PCgradient
 
-
             #Initialize QM_PC gradient (has full system size) and fill up
             #TODO: This can be made more efficient
             self.QM_PC_gradient = np.zeros((len(self.allatoms), 3))
@@ -830,10 +829,6 @@ class QMMMTheory:
 
             #if self.printlevel >= 2:
             #    modules.module_coords.write_coords_all(self.QM_PC_gradient, self.elems, indices=self.allatoms, file="QM+PCgradient_before_linkatomproj", description="QM+PC gradient before linkatomproj (au/Bohr):")
-
-
-
-
 
 
             #LINKATOM FORCE PROJECTION
@@ -884,9 +879,11 @@ class QMMMTheory:
                     self.QM_PC_gradient[fullatomindex_qm] = newQgrad
                     self.QM_PC_gradient[fullatomindex_mm] = newMgrad                    
 
-        print_time_rel(CheckpointTime, modulename='QM/MM gradient prepare', moduleindex=2)
-        CheckpointTime = time.time()
-
+            print_time_rel(CheckpointTime, modulename='QM/MM gradient prepare', moduleindex=2)
+            CheckpointTime = time.time()
+        else:
+            #No Grad
+            self.QMenergy = QMenergy
 
         #if self.printlevel >= 2:
         #    modules.module_coords.write_coords_all(self.QM_PC_gradient, self.elems, indices=self.allatoms, file="QM+PCgradient", description="QM+PC gradient (au/Bohr):")
