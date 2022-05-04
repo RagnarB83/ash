@@ -74,7 +74,18 @@ def NumFreq(fragment=None, theory=None, charge=None, mult=None, npoint=2, displa
     os.chdir('Numfreq_dir')
     print("Creating separate directory for displacement calculations: Numfreq_dir ")
     
-
+    #ORCA-specific: Copy old GBW file from .. dir 
+    try:
+        if theory.theorytype == "QM":
+            if isinstance(theory,interfaces.interface_ORCA.ORCATheory):
+                print("Copying GBW file into Numfreq_dir")
+                shutil.copy("../"+theory.filename+'.gbw', './'+theory.filename+'.gbw')
+        elif theory.theorytype == "QM/MM":
+            if isinstance(theory.qm_theory,interfaces.interface_ORCA.ORCATheory):
+                print("Copying GBW file into Numfreq_dir")
+                shutil.copy('../'+theory.qm_theory.filename+'.gbw', './'+theory.qm_theory.filename+'.gbw')
+    except:
+        pass
     coords=fragment.coords
     elems=copy.deepcopy(fragment.elems)
     numatoms=len(elems)
