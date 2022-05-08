@@ -414,26 +414,6 @@ def EulerStep(velo, F, dt):
     return step, velo
 
 
-
-
-
-#NOT WORKING
-def newton_raphson(coords, Gradient,Hessian):
-    Hessian_inv=np.linalg.inv(Hessian)
-    #Convert to 1D array
-    Grad=Gradient.reshape(1,Gradient.size)
-    #print(Hessian_inv)
-    #print(Grad)
-    print("Hessian_inv", Hessian_inv)
-    print("")
-    print("Gradient:", Gradient)
-    print("")
-    print("Grad:", Grad)
-    bla = Hessian_inv*Grad
-    print(bla)
-    ashexit()
-    #newcoords = coords - Hessian_inv*Grad
-    #return newcoords
 #########################
 # PYBERNY Optimization interface.
 # Has internal coordinates

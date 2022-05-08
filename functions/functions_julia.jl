@@ -29,7 +29,7 @@ end
 ########################################################################################################################
 #NOTES:
 #The conversions we do in the wrapper functions (via PythonCall pyconvert) may not be necessary and could slow things down a bit.
-#The PythonCall wrapping of objects should not require the conversions.
+#The PythonCall wrapping of objects should in principle not require the conversions.
 #However, some problems with the dictionaries etc. To be revisited
 
 #Connectivity (fraglists) for whole fragment
@@ -99,16 +99,9 @@ function reorder_cluster_julia(elems,coords,fraglists)
     return newfraglists
 end
 
-#######################################################################################################################
+########################################################
 # JULIA functions not intended to be called by Python:
 ########################################################
-
-#TODO: 
-# We are not utilizing Julia column-major much.
-#Tried for connectivity, no difference
-# Try maybe also for Lennard_jones? Pairpot arrays??
-# Read more:
-# https://julialang.org/blog/2013/09/fast-numeric/
 
 #Get fraglist for list of atoms (called by molcrys directly). Using 0-based indexing until get_conn_atoms
 function calc_fraglist_for_atoms(atomlist,coords, elems, conndepth, scale, tol,eldict_covrad)

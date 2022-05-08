@@ -7,11 +7,25 @@ in the gas phase, explicit solution, crystal or protein environment. Can do sing
 geometry optimizations, surface scans, molecular dynamics, numerical frequencies etc. using a MM, QM or QM/MM Hamiltonian.
 Interfaces to popular QM codes: ORCA, xTB, Psi4, PySCF, Dalton, CFour, MRCC.
 
-Documentation: https://ash.readthedocs.io/en/latest
+**Documentation:**
+
+ https://ash.readthedocs.io/en/latest
 
 
+**Development:**
 
-Example:
+ASH welcomes any contributions.
+
+Ongoing priorities:
+- Improve documentation of code, write docstrings.
+- Write unit tests
+- Rewrite silly old code.
+- Reduce code redundancy.
+- Improve program documentation 
+
+
+**Example:**
+
 ```sh
 from ash import *
 
