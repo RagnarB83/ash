@@ -1597,7 +1597,7 @@ class OpenMMTheory:
                         force.setTorsionParameters(i, p1, p2, p3, p4, (0.0, 0.0))
                         numcustomtorsionterms_removed += 1
                         p1, p2, p3, p4, pars = force.getTorsionParameters(i)
-                        print("After p1: {} p2: {} p3: {} p4: {} pars {}".format(p1, p2, p3, p4, pars))
+                        printdebug("After p1: {} p2: {} p3: {} p4: {} pars {}".format(p1, p2, p3, p4, pars))
                 force.updateParametersInContext(self.simulation.context)
             elif isinstance(force, self.openmm.CMAPTorsionForce):
                 printdebug("CMAPTorsionForce force")
