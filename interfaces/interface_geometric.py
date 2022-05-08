@@ -135,7 +135,6 @@ class GeomeTRICOptimizerClass:
                     print("Converting constraints indices to active-region indices")
                     print("Constraints (actregion-indices):", self.constraints)
 
-
             #Delete constraintsfile unless asked for
             if constraintsinputfile is None:
                 try:
@@ -551,20 +550,17 @@ def constraints_indices_convert(con,actatoms):
     #Looping over constraints-class (bond,angle-dihedral)
     #list-item:
     for bc in bondcons:
-        #atomindex:
-        for i,bc_i in enumerate(bc):
-            #replacing
-            bc[i]=fullindex_to_actindex(bc_i,actatoms)
+        bc[0]=fullindex_to_actindex(bc[0],actatoms)
+        bc[1]=fullindex_to_actindex(bc[1],actatoms)
     for ac in anglecons:
-        #atomindex:
-        for j,ac_j in enumerate(ac):
-            #replacing
-            ac[j]=fullindex_to_actindex(ac_j,actatoms)
+        ac[0]=fullindex_to_actindex(ac[0],actatoms)
+        ac[1]=fullindex_to_actindex(ac[1],actatoms)
+        ac[2]=fullindex_to_actindex(ac[2],actatoms)
     for dc in dihedralcons:
-        #atomindex:
-        for k,dc_k in enumerate(dc):
-            #replacing
-            dc[k]=fullindex_to_actindex(dc_k,actatoms)
+        dc[0]=fullindex_to_actindex(dc[0],actatoms)
+        dc[1]=fullindex_to_actindex(dc[1],actatoms)
+        dc[2]=fullindex_to_actindex(dc[2],actatoms)
+        dc[3]=fullindex_to_actindex(dc[3],actatoms)
     return con
 
 
