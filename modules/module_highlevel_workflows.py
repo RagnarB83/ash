@@ -382,10 +382,18 @@ maxiter 150\nend
 
         #Keeping copy of original ORCA blocks of theory
         orcablocks_original=copy.copy(theory.orcablocks)
+
+
+
+
         #Add mdciblock to blocks of theory
         PNOXblocks = theory.orcablocks + mdciblockX
         PNOYblocks = theory.orcablocks + mdciblockY
         
+        #Switching guessmodes for SCF as PNO-extrapolation uses same basis and CMatrix fucks with the orbitals requiring 
+        PNOXblocks=PNOXblocks.replace("guessmode Cmatrix", "guessmode Fmatrix")
+        PNOYblocks=PNOYblocks.replace("guessmode Cmatrix", "guessmode Fmatrix")
+
         theory.orcablocks = PNOXblocks
         
         theory.run(elems=elems, current_coords=current_coords, numcores=numcores, charge=charge, mult=mult)
