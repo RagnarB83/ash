@@ -1954,14 +1954,14 @@ def PhotoElectronSpectrum(theory=None, fragment=None, Initialstate_charge=None, 
                 fstate.ionstates = fstates_dict[fstate.mult]
 
 
-                # Saveing GBW and CIS file
-                shutil.copyfile(theory.filename + '.gbw', './' + 'Final_State' + '.gbw')
-                shutil.copyfile(theory.filename + '.out', './' + 'Final_State' + '.out')
-                shutil.copyfile(theory.filename + '.inp', './' + 'Final_State' + '.inp')
+                # Saveing GBW and inp and outfiles
+                shutil.copyfile(theory.filename + '.gbw', './' + 'Final_State_mult' + str(fstate.mult)+'.gbw')
+                shutil.copyfile(theory.filename + '.out', './' + 'Final_State_mult' + str(fstate.mult)+'.out')
+                shutil.copyfile(theory.filename + '.inp', './' + 'Final_State_mult' + str(fstate.mult)+ '.inp')
 
                 #Each fstate linked with same GBW file and outfile
-                fstate.gbwfile = "Final_State" + ".gbw"
-                fstate.outfile = "Final_State" + ".out"
+                fstate.gbwfile = 'Final_State_mult' + str(fstate.mult)+'.gbw'
+                fstate.outfile = 'Final_State_mult' + str(fstate.mult)+'.out'
                 print("")
         
         
