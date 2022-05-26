@@ -5,9 +5,9 @@ import math
 import shutil
 
 #functions related to QM/MM
-import modules.module_coords
-from functions.functions_general import ashexit, BC,blankline,listdiff,print_time_rel,printdebug,print_line_with_mainheader,writelisttofile
-import settings_ash
+import ash.modules.module_coords
+from ash.functions.functions_general import ashexit, BC,blankline,listdiff,print_time_rel,printdebug,print_line_with_mainheader,writelisttofile
+import ash.settings_ash
 
 #QM/MM theory object.
 #Required at init: qm_theory and qmatoms. Fragment not. Can come later
@@ -221,16 +221,16 @@ class QMMMTheory:
             #Update: Tolerance modification to make sure we definitely catch connected atoms and get QM-MM boundary right.
             #Scale=1.0 and tol=0.1 fails for S-C bond in rubredoxin from a classical MD run
             #Bumping up a bit here
-            conn_scale=settings_ash.settings_dict["scale"]
-            conn_tolerance=settings_ash.settings_dict["tol"]+0.1
+            conn_scale=ash.settings_ash.settings_dict["scale"]
+            conn_tolerance=ash.settings_ash.settings_dict["tol"]+0.1
 
 
             #If QM-MM boundary issue and ASH exits then printing QM-coordinates is useful
             print("QM-region coordinates (before linkatoms):")
-            modules.module_coords.print_coords_for_atoms(self.coords, self.elems, self.qmatoms, labels=self.qmatoms)
+            ash.modules.module_coords.print_coords_for_atoms(self.coords, self.elems, self.qmatoms, labels=self.qmatoms)
             print()
 
-            self.boundaryatoms = modules.module_coords.get_boundary_atoms(self.qmatoms, self.coords, self.elems, conn_scale, 
+            self.boundaryatoms = ash.modules.module_coords.get_boundary_atoms(self.qmatoms, self.coords, self.elems, conn_scale, 
                 conn_tolerance, excludeboundaryatomlist=excludeboundaryatomlist, unusualboundary=unusualboundary)
             if len(self.boundaryatoms) >0:
                 print("Found covalent QM-MM boundary. Linkatoms option set to True")
@@ -300,7 +300,7 @@ class QMMMTheory:
         #Creating dictionary for each MM1 atom and its connected atoms: MM2-4
         self.MMboundarydict={}
         for (QM1atom,MM1atom) in self.boundaryatoms.items():
-            connatoms = modules.module_coords.get_connected_atoms(self.coords, self.elems, scale,tol, MM1atom)
+            connatoms = ash.modules.module_coords.get_connected_atoms(self.coords, self.elems, scale,tol, MM1atom)
             #Deleting QM-atom from connatoms list
             connatoms.remove(QM1atom)
             self.MMboundarydict[MM1atom] = connatoms
@@ -357,7 +357,7 @@ class QMMMTheory:
     def get_dipole_charge(self,delq,direction,mm1index,mm2index):
         #timeA=time.time()
         #Distance between MM1 and MM2
-        MM_distance = modules.module_coords.distance_between_atoms(fragment=self.fragment, atom1=mm1index, atom2=mm2index)
+        MM_distance = ash.modules.module_coords.distance_between_atoms(fragment=self.fragment, atom1=mm1index, atom2=mm2index)
         #Coordinates
         mm1coords=np.array(self.fragment.coords[mm1index])
         mm2coords=np.array(self.fragment.coords[mm2index])
@@ -417,7 +417,7 @@ class QMMMTheory:
             self.TruncatedPC_recalc_flag=True
             print("This is first QM/MM run. Will calculate Full-Trunc correction in this step")
             #Origin coords point is center of QM-region
-            origincoords=modules.module_coords.get_centroid(self.qmcoords)
+            origincoords=ash.modules.module_coords.get_centroid(self.qmcoords)
             #Determine the indices associated with the truncated PC field once
             self.determine_truncatedPC_indices(origincoords)
             print("Truncated PC-region size: {} charges".format(len(self.truncated_PC_region_indices)))
@@ -435,7 +435,7 @@ class QMMMTheory:
             print(f"This is QM/MM run no. {self.TruncatedPCcalls}.  Will calculate Full-Trunc correction in this step")
             print("self.TruncatedPC_recalc_iter:", self.TruncatedPC_recalc_iter)
 
-            origincoords=modules.module_coords.get_centroid(self.qmcoords)
+            origincoords=ash.modules.module_coords.get_centroid(self.qmcoords)
             #Determine the indices associated with the truncated PC field once
             self.determine_truncatedPC_indices(origincoords)
             print("Truncated PC-region size: {} charges".format(len(self.truncated_PC_region_indices)))
@@ -458,7 +458,7 @@ class QMMMTheory:
     def determine_truncatedPC_indices(self,origincoords):
         region_indices=[]
         for index,allc in enumerate(self.pointchargecoords):
-            dist=modules.module_coords.distance(origincoords,allc)
+            dist=ash.modules.module_coords.distance(origincoords,allc)
             if dist < self.TruncPCRadius:
                 region_indices.append(index)
         #Only unique and sorting:
@@ -592,7 +592,7 @@ class QMMMTheory:
         #LINKATOMS
         #1. Get linkatoms coordinates
         if self.linkatoms==True:
-            linkatoms_dict = modules.module_coords.get_linkatom_positions(self.boundaryatoms,self.qmatoms, current_coords, self.elems)
+            linkatoms_dict = ash.modules.module_coords.get_linkatom_positions(self.boundaryatoms,self.qmatoms, current_coords, self.elems)
             printdebug("linkatoms_dict:", linkatoms_dict)
             #2. Add linkatom coordinates to qmcoords???
             print("Adding linkatom positions to QM coords")
@@ -754,7 +754,7 @@ class QMMMTheory:
                 QMgradient_wo_linkatoms=QMgradient
 
             #if self.printlevel >= 2:
-            #    modules.module_coords.write_coords_all(self.QMgradient_wo_linkatoms, self.qmelems, indices=self.allatoms, file="QMgradient_wo_linkatoms", description="QM+ gradient withoutlinkatoms (au/Bohr):")
+            #    ash.modules.module_coords.write_coords_all(self.QMgradient_wo_linkatoms, self.qmelems, indices=self.allatoms, file="QMgradient_wo_linkatoms", description="QM+ gradient withoutlinkatoms (au/Bohr):")
 
 
             #TRUNCATED PC Option:
@@ -820,15 +820,15 @@ class QMMMTheory:
             #print(" qmcount+pccount:", qmcount+pccount)
             #print("len(self.allatoms):", len(self.allatoms))
             #print("len self.QM_PC_gradient", len(self.QM_PC_gradient))
-            modules.module_coords.write_coords_all(self.QM_PC_gradient, self.elems, indices=self.allatoms, file="QM_PC_gradient", description="QM_PC_gradient (au/Bohr):")
+            ash.modules.module_coords.write_coords_all(self.QM_PC_gradient, self.elems, indices=self.allatoms, file="QM_PC_gradient", description="QM_PC_gradient (au/Bohr):")
 
             #if self.printlevel >= 2:
-            #    modules.module_coords.write_coords_all(self.PCgradient, self.mmatoms, indices=self.allatoms, file="PCgradient", description="PC gradient (au/Bohr):")
+            #    ash.modules.module_coords.write_coords_all(self.PCgradient, self.mmatoms, indices=self.allatoms, file="PCgradient", description="PC gradient (au/Bohr):")
 
 
 
             #if self.printlevel >= 2:
-            #    modules.module_coords.write_coords_all(self.QM_PC_gradient, self.elems, indices=self.allatoms, file="QM+PCgradient_before_linkatomproj", description="QM+PC gradient before linkatomproj (au/Bohr):")
+            #    ash.modules.module_coords.write_coords_all(self.QM_PC_gradient, self.elems, indices=self.allatoms, file="QM+PCgradient_before_linkatomproj", description="QM+PC gradient before linkatomproj (au/Bohr):")
 
 
             #LINKATOM FORCE PROJECTION
@@ -886,7 +886,7 @@ class QMMMTheory:
             self.QMenergy = QMenergy
 
         #if self.printlevel >= 2:
-        #    modules.module_coords.write_coords_all(self.QM_PC_gradient, self.elems, indices=self.allatoms, file="QM+PCgradient", description="QM+PC gradient (au/Bohr):")
+        #    ash.modules.module_coords.write_coords_all(self.QM_PC_gradient, self.elems, indices=self.allatoms, file="QM+PCgradient", description="QM+PC gradient (au/Bohr):")
 
 
 
@@ -985,28 +985,28 @@ class QMMMTheory:
                 print("Printlevel >=3: Printing all gradients to disk")
                 #print("QM gradient (au/Bohr):")
                 #module_coords.print_coords_all(self.QMgradient, self.qmelems, self.qmatoms)
-                modules.module_coords.write_coords_all(self.QMgradient_wo_linkatoms, self.qmelems, indices=self.qmatoms, file="QMgradient-without-linkatoms_{}".format(label), description="QM gradient w/o linkatoms {} (au/Bohr):".format(label))
+                ash.modules.module_coords.write_coords_all(self.QMgradient_wo_linkatoms, self.qmelems, indices=self.qmatoms, file="QMgradient-without-linkatoms_{}".format(label), description="QM gradient w/o linkatoms {} (au/Bohr):".format(label))
                 
                 #Writing QM+Linkatoms gradient
-                modules.module_coords.write_coords_all(self.QMgradient, self.qmelems+['L' for i in range(self.num_linkatoms)], indices=self.qmatoms+[0 for i in range(self.num_linkatoms)], file="QMgradient-with-linkatoms_{}".format(label), description="QM gradient with linkatoms {} (au/Bohr):".format(label))
+                ash.modules.module_coords.write_coords_all(self.QMgradient, self.qmelems+['L' for i in range(self.num_linkatoms)], indices=self.qmatoms+[0 for i in range(self.num_linkatoms)], file="QMgradient-with-linkatoms_{}".format(label), description="QM gradient with linkatoms {} (au/Bohr):".format(label))
                 
                 #blankline()
                 #print("PC gradient (au/Bohr):")
                 #module_coords.print_coords_all(self.PCgradient, self.mmelems, self.mmatoms)
-                modules.module_coords.write_coords_all(self.PCgradient, self.mmelems, indices=self.mmatoms, file="PCgradient_{}".format(label), description="PC gradient {} (au/Bohr):".format(label))
+                ash.modules.module_coords.write_coords_all(self.PCgradient, self.mmelems, indices=self.mmatoms, file="PCgradient_{}".format(label), description="PC gradient {} (au/Bohr):".format(label))
                 #blankline()
                 #print("QM+PC gradient (au/Bohr):")
                 #module_coords.print_coords_all(self.QM_PC_gradient, self.elems, self.allatoms)
-                modules.module_coords.write_coords_all(self.QM_PC_gradient, self.elems, indices=self.allatoms, file="QM+PCgradient_{}".format(label), description="QM+PC gradient {} (au/Bohr):".format(label))
+                ash.modules.module_coords.write_coords_all(self.QM_PC_gradient, self.elems, indices=self.allatoms, file="QM+PCgradient_{}".format(label), description="QM+PC gradient {} (au/Bohr):".format(label))
                 #blankline()
                 #print("MM gradient (au/Bohr):")
                 #module_coords.print_coords_all(self.MMgradient, self.elems, self.allatoms)
-                modules.module_coords.write_coords_all(self.MMgradient, self.elems, indices=self.allatoms, file="MMgradient_{}".format(label), description="MM gradient {} (au/Bohr):".format(label))
+                ash.modules.module_coords.write_coords_all(self.MMgradient, self.elems, indices=self.allatoms, file="MMgradient_{}".format(label), description="MM gradient {} (au/Bohr):".format(label))
                 #blankline()
                 #print("Total QM/MM gradient (au/Bohr):")
                 #print("")
                 #module_coords.print_coords_all(self.QM_MM_gradient, self.elems,self.allatoms)
-                modules.module_coords.write_coords_all(self.QM_MM_gradient, self.elems, indices=self.allatoms, file="QM_MMgradient_{}".format(label), description="QM/MM gradient {} (au/Bohr):".format(label))
+                ash.modules.module_coords.write_coords_all(self.QM_MM_gradient, self.elems, indices=self.allatoms, file="QM_MMgradient_{}".format(label), description="QM/MM gradient {} (au/Bohr):".format(label))
             if self.printlevel >= 2:
                 print(BC.WARNING,BC.BOLD,"------------ENDING QM/MM MODULE-------------",BC.END)
                 print_time_rel(module_init_time, modulename='QM/MM run', moduleindex=2)
@@ -1114,9 +1114,9 @@ def linkatom_force_fix(Qcoord, Mcoord, Lcoord, Qgrad,Mgrad,Lgrad):
     printdebug("Mcoord:", Mcoord)
     printdebug("Lcoord:", Lcoord)
     #QM1-L and QM1-MM1 distances
-    QLdistance=modules.module_coords.distance(Qcoord,Lcoord)
+    QLdistance=ash.modules.module_coords.distance(Qcoord,Lcoord)
     printdebug("QLdistance:", QLdistance)
-    MQdistance=modules.module_coords.distance(Mcoord,Qcoord)
+    MQdistance=ash.modules.module_coords.distance(Mcoord,Qcoord)
     printdebug("MQdistance:", MQdistance)
     #B and C: a 3x3 arrays
     B=np.zeros([3,3])
@@ -1253,7 +1253,7 @@ def actregiondefine(pdbfile=None, mmtheory=None, fragment=None, radius=None, ori
     for index,allc in enumerate(fragment.coords):
         #print("index:", index)
         #print("allc:", allc)
-        dist=modules.module_coords.distance(origincoords,allc)
+        dist=ash.modules.module_coords.distance(origincoords,allc)
         if dist < radius:
             #print("DIST!!")
             #print("index:", index)
@@ -1280,7 +1280,7 @@ def actregiondefine(pdbfile=None, mmtheory=None, fragment=None, radius=None, ori
     print("Active-region indices written to file: active_atoms")
     print("The active_atoms list  can be read-into Python script like this:	 actatoms = read_intlist_from_file(\"active_atoms\")")
     #Print XYZ file with active region shown
-    modules.module_coords.write_XYZ_for_atoms(fragment.coords,fragment.elems, act_indices, "ActiveRegion")
+    ash.modules.module_coords.write_XYZ_for_atoms(fragment.coords,fragment.elems, act_indices, "ActiveRegion")
     print("Wrote Active region XYZfile: ActiveRegion.xyz  (inspect with visualization program)")
     return act_indices
 

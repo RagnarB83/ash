@@ -1,9 +1,9 @@
 import os
 import sys
-import ash
 import configparser
 from pathlib import Path
 
+import ash
 parser = configparser.ConfigParser()
 userhome = str(Path.home()) #Path to user's home dir
 ashpath = os.path.dirname(ash.__file__) #Path to ASH

@@ -1,10 +1,10 @@
 import numpy as np
 import time
 
-from modules.module_coords import distance
-from functions.functions_general import ashexit, blankline,print_time_rel,BC, load_julia_interface
-import constants
-import ash
+from ash.modules.module_coords import distance
+from ash.functions.functions_general import ashexit, blankline,print_time_rel,BC, load_julia_interface
+import ash.constants
+#import ash
 
 
 # Simple nonbonded MM theory. Charges and LJ-potentials
@@ -303,7 +303,7 @@ class NonBondedTheory:
                 self.Coulombchargeenergy, self.Coulombchargegradient  = coulombcharge(charges, current_coords)
                 if self.printlevel >= 2:
                     print("Coulomb Energy (au):", self.Coulombchargeenergy)
-                    print("Coulomb Energy (kcal/mol):", self.Coulombchargeenergy * constants.harkcal)
+                    print("Coulomb Energy (kcal/mol):", self.Coulombchargeenergy * ash.constants.harkcal)
                     print("")
                     #print("self.Coulombchargegradient:", self.Coulombchargegradient)
                 blankline()
@@ -313,7 +313,7 @@ class NonBondedTheory:
                 #self.LJenergy,self.LJgradient = LennardJones(full_coords,self.atomtypes, self.LJpairpotentials, connectivity=connectivity)
                 self.LJenergy,self.LJgradient = LennardJones(current_coords,self.epsij,self.sigmaij)
                 #print("Lennard-Jones Energy (au):", self.LJenergy)
-                #print("Lennard-Jones Energy (kcal/mol):", self.LJenergy*constants.harkcal)
+                #print("Lennard-Jones Energy (kcal/mol):", self.LJenergy*ash.constants.harkcal)
             self.MMEnergy = self.Coulombchargeenergy+self.LJenergy
             if Grad==True:
                 self.MMGradient = self.Coulombchargegradient+self.LJgradient
@@ -368,9 +368,9 @@ class NonBondedTheory:
 
         if self.printlevel >= 2:
             print("Lennard-Jones Energy (au):", self.LJenergy)
-            print("Lennard-Jones Energy (kcal/mol):", self.LJenergy * constants.harkcal)
+            print("Lennard-Jones Energy (kcal/mol):", self.LJenergy * ash.constants.harkcal)
             print("Coulomb Energy (au):", self.Coulombchargeenergy)
-            print("Coulomb Energy (kcal/mol):", self.Coulombchargeenergy * constants.harkcal)
+            print("Coulomb Energy (kcal/mol):", self.Coulombchargeenergy * ash.constants.harkcal)
             print("MM Energy:", self.MMEnergy)
         if self.printlevel >= 3:
             print("self.MMGradient:", self.MMGradient)
@@ -612,10 +612,10 @@ def LennardJones(coords, epsij, sigmaij, connectivity=None, qmatoms=None):
                     gradient[i] += gr
                     gradient[j] -= gr
     #Convert gradient from kcal/mol per Å to hartree/Bohr
-    final_gradient=gradient * (1/constants.harkcal) / constants.ang2bohr
+    final_gradient=gradient * (1/ash.constants.harkcal) / ash.constants.ang2bohr
     #print("LJ gradient (hartree/Bohr):", final_gradient)
     #Converg energy from kcal/mol to hartree
-    final_energy=energy*(1/constants.harkcal)
+    final_energy=energy*(1/ash.constants.harkcal)
     print("LJ energy (hartree)", final_energy)
 
     return final_energy,final_gradient
@@ -624,7 +624,7 @@ def LennardJones(coords, epsij, sigmaij, connectivity=None, qmatoms=None):
 #Coulomb energy and gradient in Bohrs
 def coulombcharge(charges, coords):
     #Converting list to numpy array and converting to bohr
-    coords_b=np.array(coords)*constants.ang2bohr
+    coords_b=np.array(coords)*ash.constants.ang2bohr
     #Coulomb energy
     energy=0
     #Initialize Coulomb gradient
@@ -713,12 +713,12 @@ def LJCoulpy(coords,atomtypes, charges, LJPairpotentials, connectivity=None):
                                 sigma=l[2]
                                 eps=l[3]
                                 #pairdistance = distance(coords[i], coords[j])
-                                pairdistance=pairdistance_b*constants.bohr2ang
+                                pairdistance=pairdistance_b*ash.constants.bohr2ang
                                 #print("sigma, eps, pairdistance", sigma,eps,pairdistance)
                                 V_LJ=4*eps*((sigma/pairdistance)**12-(sigma/pairdistance)**6)
-                                #print("V_LJ: {} kcal/mol  V_LJ: {} au:".format(V_LJ,V_LJ/constants.harkcal))
+                                #print("V_LJ: {} kcal/mol  V_LJ: {} au:".format(V_LJ,V_LJ/ash.constants.harkcal))
                                 LJenergy+=V_LJ
-                                #print("energy: {} kcal/mol  energy: {} au:".format(energy, energy / constants.harkcal))
+                                #print("energy: {} kcal/mol  energy: {} au:".format(energy, energy / ash.constants.harkcal))
                                 #print("------------------------------")
                                 #Typo in http://localscf.com/localscf.com/LJPotential.aspx.html ??
                                 #Using http://www.courses.physics.helsinki.fi/fys/moldyn/lectures/L4.pdf
@@ -733,10 +733,10 @@ def LJCoulpy(coords,atomtypes, charges, LJPairpotentials, connectivity=None):
                                 LJgradient[i] += gr
                                 LJgradient[j] -= gr
     #Convert gradient from kcal/mol per Å to hartree/Bohr
-    LJfinal_gradient=LJgradient * (1/constants.harkcal) / constants.ang2bohr
+    LJfinal_gradient=LJgradient * (1/ash.constants.harkcal) / ash.constants.ang2bohr
     #print("LJ gradient (hartree/Bohr):", LJfinal_gradient)
     #Converg energy from kcal/mol to hartree
-    LJfinal_energy=LJenergy*(1/constants.harkcal)
+    LJfinal_energy=LJenergy*(1/ash.constants.harkcal)
     print("LJ energy (hartree)", LJfinal_energy)
 
     #Coulomb

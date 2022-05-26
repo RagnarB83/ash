@@ -16,3 +16,4 @@ unused
 __pycache__
 set_environment_ash.sh
 .env
+modules/__pycache__

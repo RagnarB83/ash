@@ -17,20 +17,22 @@ echo "Python3 path: $path_to_python3_dir"
 echo "Julia path: $path_to_julia_dir"
 echo ""
 
-thisdir=$PWD
+#The parent dir containing the ash dir
+ash_parent_dir=$(dirname "$PWD")
+ash_dir=$PWD
 
 
 #Create set_environment_ash.sh file
 echo "Creating set_environent_ash.sh script"
 echo "#!/bin/bash" > set_environment_ash.sh
 echo "ulimit -s unlimited" >> set_environment_ash.sh
-echo "export ASHPATH=${thisdir}" >> set_environment_ash.sh
+echo "export ASHPATH=${ash_parent_dir}" >> set_environment_ash.sh
 echo "export python3path=${path_to_python3_dir}" >> set_environment_ash.sh
 echo "export JULIAPATH=${path_to_julia_dir}" >> set_environment_ash.sh
-#echo "export JULIA_DEPOT_PATH=${thisdir}/julia-python-bundle" >> set_environment_ash.sh
-echo "export PYTHONPATH=\$ASHPATH:\$ASHPATH/lib:\$PYTHONPATH" >> set_environment_ash.sh
+#echo "export JULIA_DEPOT_PATH=${ash_dir}/julia-python-bundle" >> set_environment_ash.sh
+echo "export PYTHONPATH=\$ASHPATH:\$ASHPATH/ash/lib:\$PYTHONPATH" >> set_environment_ash.sh
 echo "export PATH=\$python3path:\$ASHPATH:\$JULIAPATH:\$PATH" >> set_environment_ash.sh
-echo "export LD_LIBRARY_PATH=\$ASHPATH/lib:\$LD_LIBRARY_PATH" >> set_environment_ash.sh
+echo "export LD_LIBRARY_PATH=\$ASHPATH/ash/lib:\$LD_LIBRARY_PATH" >> set_environment_ash.sh
 
 
 echo "Installation of ASH was successful!"

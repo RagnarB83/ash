@@ -1,10 +1,11 @@
 import statistics
-from interfaces.interface_ORCA import checkORCAfinished,finalenergiesgrab,create_orca_inputVIEcomp_pc,create_orca_inputVIEcomp_gas,create_orca_inputVIE_pc
 import time
-import constants
-from interfaces.interface_xtb import xtbfinalenergygrab,xtbVIPgrab
-from functions.functions_general import ashexit, listdiff,blankline
-from modules.module_coords import get_molecule_members_loop,read_chemshellfragfile_xyz
+
+from ash.interfaces.interface_ORCA import checkORCAfinished,finalenergiesgrab,create_orca_inputVIEcomp_pc,create_orca_inputVIEcomp_gas,create_orca_inputVIE_pc
+import ash.constants
+from ash.interfaces.interface_xtb import xtbfinalenergygrab,xtbVIPgrab
+from ash.functions.functions_general import ashexit, listdiff,blankline
+from ash.modules.module_coords import get_molecule_members_loop,read_chemshellfragfile_xyz
 
 def TestModerunAB():
     snapslist = ['60000', '60400', '60800', '61200', '61600', '62000']
@@ -160,7 +161,7 @@ def grab_energies_output_ORCA(inpfiles):
         done=checkORCAfinished(outfile)
         if done==True:
             energies=finalenergiesgrab(outfile)
-            delta_AB=(energies[1]-energies[0])*constants.hartoeV
+            delta_AB=(energies[1]-energies[0])*ash.constants.hartoeV
             if 'snapA' in snapbase:
                 AsnapsABenergy[snapbase]=delta_AB
             elif 'snapB' in snapbase:
@@ -186,7 +187,7 @@ def grab_energies_output_xtb(xtbmethod, inpfiles):
             outfileB = basename+'_StateB.out'
             energyA=xtbfinalenergygrab(outfileA)
             energyB = xtbfinalenergygrab(outfileB)
-            VIP=(energyB-energyA)*constants.hartoeV
+            VIP=(energyB-energyA)*ash.constants.hartoeV
         elif 'VIP' in xtbmethod.upper():
             outfile = snap.replace('.xyz', '.out')
             VIP = xtbVIPgrab(outfile)
@@ -416,7 +417,7 @@ def read_fragfile_xyz(fragfile):
             if 'block = connectivity' in line:
                 grabcoords=False
             if grabcoords==True:
-                coords.append([float(i)*constants.bohr2ang for i in line.split()[1:]])
+                coords.append([float(i)*ash.constants.bohr2ang for i in line.split()[1:]])
                 elems.append(line.split()[0])
             if 'block = coordinates records ' in line:
                 #numatoms=int(line.split()[-1])
@@ -503,8 +504,8 @@ def print_redox_output_state(state, solvsphere, orca_LL, orca_HL, snapshots, ave
     print("High-level reduction energy is : {} eV.".format(HLreductionenergy))
 
     if state == "AB":
-        print("SHE: {} V".format(constants.SHE))
-        print("Final Redox Potential (vs. SHE) at HL-level: {}".format(-1*HLreductionenergy-constants.SHE))
+        print("SHE: {} V".format(ash.constants.SHE))
+        print("Final Redox Potential (vs. SHE) at HL-level: {}".format(-1*HLreductionenergy-ash.constants.SHE))
 
     return
 

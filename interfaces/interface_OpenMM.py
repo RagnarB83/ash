@@ -4,22 +4,21 @@ import time
 import traceback
 import io
 import copy
-
 import numpy as np
 
-import ash
-import constants
+#import ash
+import ash.constants
 
 ashpath = os.path.dirname(ash.__file__)
-from functions.functions_general import ashexit, BC, print_time_rel, listdiff, printdebug, print_line_with_mainheader, \
+from ash.functions.functions_general import ashexit, BC, print_time_rel, listdiff, printdebug, print_line_with_mainheader, \
     print_line_with_subheader1, print_line_with_subheader2, isint, writelisttofile
-from functions.functions_elstructure import DDEC_calc, DDEC_to_LJparameters
-from modules.module_coords import Fragment, write_pdbfile, distance_between_atoms, list_of_masses, write_xyzfile, \
+from ash.functions.functions_elstructure import DDEC_calc, DDEC_to_LJparameters
+from ash.modules.module_coords import Fragment, write_pdbfile, distance_between_atoms, list_of_masses, write_xyzfile, \
     change_origin_to_centroid, get_centroid, check_charge_mult
-from modules.module_MM import UFF_modH_dict, MMforcefield_read
-from interfaces.interface_xtb import xTBTheory, grabatomcharges_xTB
-from interfaces.interface_ORCA import ORCATheory, grabatomcharges_ORCA, chargemodel_select
-from modules.module_singlepoint import Singlepoint
+from ash.modules.module_MM import UFF_modH_dict, MMforcefield_read
+from ash.interfaces.interface_xtb import xTBTheory, grabatomcharges_xTB
+from ash.interfaces.interface_ORCA import ORCATheory, grabatomcharges_ORCA, chargemodel_select
+from ash.modules.module_singlepoint import Singlepoint
 
 
 class OpenMMTheory:
@@ -1219,7 +1218,7 @@ class OpenMMTheory:
         print('-' * 56)
         print('%-20s | %15.2f | %15.2f' % ('Sumcomponents', sumofallcomponents, sumofallcomponents / 4.184))
         print("")
-        print('%-20s | %15.2f | %15.2f' % ('Total', self.energy * constants.hartokj, self.energy * constants.harkcal))
+        print('%-20s | %15.2f | %15.2f' % ('Total', self.energy * ash.constants.hartokj, self.energy * ash.constants.harkcal))
 
         print("")
         print("")
@@ -1315,23 +1314,23 @@ class OpenMMTheory:
         print("Calling OpenMM getState.")
         if Grad is True:
             state = self.simulation.context.getState(getEnergy=True, getForces=True)
-            self.energy = state.getPotentialEnergy().value_in_unit(self.unit.kilojoule_per_mole) / constants.hartokj
+            self.energy = state.getPotentialEnergy().value_in_unit(self.unit.kilojoule_per_mole) / ash.constants.hartokj
             self.gradient = np.array(state.getForces(asNumpy=True) / factor)
         else:
             state = self.simulation.context.getState(getEnergy=True, getForces=False)
-            self.energy = state.getPotentialEnergy().value_in_unit(self.unit.kilojoule_per_mole) / constants.hartokj
+            self.energy = state.getPotentialEnergy().value_in_unit(self.unit.kilojoule_per_mole) / ash.constants.hartokj
 
         print_time_rel(timeA, modulename="OpenMM getState")
         # timeA = time.time()
         print("OpenMM Energy:", self.energy, "Eh")
-        print("OpenMM Energy:", self.energy * constants.harkcal, "kcal/mol")
+        print("OpenMM Energy:", self.energy * ash.constants.harkcal, "kcal/mol")
 
         # Do energy components or not. Can be turned off for e.g. MM MD simulation
         if self.do_energy_decomposition is True:
             self.printEnergyDecomposition()
 
         print("self.energy : ", self.energy, "Eh")
-        print("Energy:", self.energy * constants.harkcal, "kcal/mol")
+        print("Energy:", self.energy * ash.constants.harkcal, "kcal/mol")
         # print("Grad is", Grad)
         # print("self.gradient:", self.gradient)
 
@@ -1886,7 +1885,7 @@ def OpenMM_Opt(fragment=None, theory=None, maxiter=1000, tolerance=1, enforcePer
     state = openmmobject.simulation.context.getState(getEnergy=True, getForces=True,
                                                      enforcePeriodicBox=enforcePeriodicBox)
     print("Initial potential energy is: {} Eh".format(
-        state.getPotentialEnergy().value_in_unit_system(openmmobject.unit.md_unit_system) / constants.hartokj))
+        state.getPotentialEnergy().value_in_unit_system(openmmobject.unit.md_unit_system) / ash.constants.hartokj))
     kjmolnm_to_atomic_factor = -49614.752589207
     forces_init = np.array(state.getForces(asNumpy=True)) / kjmolnm_to_atomic_factor
     rms_force = np.sqrt(sum(n * n for n in forces_init.flatten()) / len(forces_init.flatten()))
@@ -1901,7 +1900,7 @@ def OpenMM_Opt(fragment=None, theory=None, maxiter=1000, tolerance=1, enforcePer
     state = openmmobject.simulation.context.getState(getEnergy=True, getPositions=True, getForces=True,
                                                      enforcePeriodicBox=enforcePeriodicBox)
     print("Potential energy is: {} Eh".format(
-        state.getPotentialEnergy().value_in_unit_system(openmmobject.unit.md_unit_system) / constants.hartokj))
+        state.getPotentialEnergy().value_in_unit_system(openmmobject.unit.md_unit_system) / ash.constants.hartokj))
     forces_final = np.array(state.getForces(asNumpy=True)) / kjmolnm_to_atomic_factor
     rms_force = np.sqrt(sum(n * n for n in forces_final.flatten()) / len(forces_final.flatten()))
     print("RMS force: {} Eh/Bohr".format(rms_force))
@@ -3327,7 +3326,7 @@ def calc_kinetic_energy(velocities,dof):
     kin=0.0
     for v in velocities:
         kin+=0.5*np.dot(v,v)
-    return 2*kin / (dof*constants.BOLTZ)
+    return 2*kin / (dof*ash.constants.BOLTZ)
 
 #Used in OpenMM_MD when doing simulation step-by-step (e.g. QM/MM MD)
 def print_current_step_info(step,state,openmmobject):

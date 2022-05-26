@@ -4,9 +4,9 @@ import os
 import sys
 import time
 
-import ash
-from functions.functions_general import ashexit, BC,blankline,print_line_with_mainheader,print_line_with_subheader1
-from modules.module_coords import check_charge_mult
+#import ash
+from ash.functions.functions_general import ashexit, BC,blankline,print_line_with_mainheader,print_line_with_subheader1
+from ash.modules.module_coords import check_charge_mult
 #Various calculation-functions run in parallel
 
 

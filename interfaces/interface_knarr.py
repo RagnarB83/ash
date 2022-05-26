@@ -8,8 +8,8 @@ import time
 
 
 import ash
-from functions.functions_general import ashexit, blankline,print_time_rel
-from modules.module_coords import check_charge_mult
+from ash.functions.functions_general import ashexit, blankline,print_time_rel
+from ash.modules.module_coords import check_charge_mult
 
 #This makes Knarr part of python path
 #Recommended way?

@@ -5,7 +5,7 @@ def test_ORCA_SP():
     Simple Singlepoint ORCA calculation with charge/mult in fragment
     """
     #ORCA
-    orcasimpleinput="! BP86 def2-SVP tightscf"
+    orcasimpleinput="! BP86 def2-SVP tightscf notrah"
     orcablocks="%scf maxiter 200 end"
 
     fragcoords="""
@@ -16,9 +16,9 @@ def test_ORCA_SP():
     #Add coordinates to fragment
     HF_frag=Fragment(coordsstring=fragcoords, charge=0, mult=1)
 
-    ORCASPcalculation = ORCATheory(fragment=HF_frag, orcasimpleinput=orcasimpleinput, orcablocks=orcablocks)
+    ORCASPcalculation = ORCATheory(orcasimpleinput=orcasimpleinput, orcablocks=orcablocks)
 
-    energy = Singlepoint(fragment=HF_frag, theory=ORCASPcalculation)
+    energy = Singlepoint(theory=ORCASPcalculation, fragment=HF_frag)
 
     #Clean up
     ORCASPcalculation.cleanup()
@@ -33,7 +33,7 @@ def test_ORCA_SP2():
     Simple Singlepoint ORCA calculation with charge/mult in Singlepoint function
     """
     #ORCA
-    orcasimpleinput="! BP86 def2-SVP tightscf"
+    orcasimpleinput="! BP86 def2-SVP tightscf notrah"
     orcablocks="%scf maxiter 200 end"
 
     fragcoords="""
@@ -44,9 +44,9 @@ def test_ORCA_SP2():
     #Add coordinates to fragment
     HF_frag=Fragment(coordsstring=fragcoords)
 
-    ORCASPcalculation = ORCATheory(fragment=HF_frag, orcasimpleinput=orcasimpleinput, orcablocks=orcablocks)
+    ORCASPcalculation = ORCATheory(orcasimpleinput=orcasimpleinput, orcablocks=orcablocks)
 
-    energy = Singlepoint(fragment=HF_frag, theory=ORCASPcalculation, charge=0, mult=1)
+    energy = Singlepoint(theory=ORCASPcalculation, fragment=HF_frag, charge=0, mult=1)
 
     #Clean up
     ORCASPcalculation.cleanup()
@@ -61,8 +61,14 @@ def test_ORCA_BS_SP():
     Singlepoint Broken-symmetry ORCA calculation with charge/mult in fragment
     """
     #ORCA
-    orcasimpleinput="! BP86 def2-SVP  tightscf"
-    orcablocks="%scf maxiter 200 end"
+    orcasimpleinput="! BP86 def2-SVP  tightscf notrah slowconv"
+    orcablocks="""
+    %scf
+    maxiter 500
+    diismaxeq 20
+    directresetfreq 1
+    end
+    """
 
     fragcoords="""
     Fe 0.0 0.0 0.0
@@ -71,19 +77,15 @@ def test_ORCA_BS_SP():
 
     #Add coordinates to fragment
     Fe2_frag=Fragment(coordsstring=fragcoords, charge=6, mult=1)
-
-
-
     ORCABScalc = ORCATheory(orcasimpleinput=orcasimpleinput, orcablocks=orcablocks,
                                     brokensym=True, HSmult=11, atomstoflip=[1])
-
     #Simple Energy SP calc
     energy = Singlepoint(fragment=Fe2_frag, theory=ORCABScalc)
-
+    print("energy:", energy)
     #Clean up
     ORCABScalc.cleanup()
 
     #Reference energy
     ref=-2521.60831655367
-    threshold=1e-9
+    threshold=1e-6
     assert abs(energy-ref) < threshold, "Energy-error above threshold"

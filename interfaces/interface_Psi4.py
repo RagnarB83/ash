@@ -5,8 +5,8 @@ import subprocess as sp
 import glob
 import time
 
-import modules.module_coords
-from functions.functions_general import ashexit, BC,print_time_rel
+import ash.modules.module_coords
+from ash.functions.functions_general import ashexit, BC,print_time_rel
 
 
 #Psi4 Theory object.
@@ -150,7 +150,7 @@ class Psi4Theory:
 
             #Creating Psi4 molecule object using lists and manual information
             psi4molfrag = psi4.core.Molecule.from_arrays(
-                elez=modules.module_coords.elemstonuccharges(qm_elems),
+                elez=ash.modules.module_coords.elemstonuccharges(qm_elems),
                 fix_com=True,
                 fix_orientation=True,
                 fix_symmetry='c1',

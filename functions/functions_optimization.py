@@ -1,12 +1,14 @@
 import numpy as np
-import constants
-from functions.functions_general import ashexit, blankline,print_time_rel_and_tot,BC
-from modules.module_coords import print_coords_all,write_xyzfile
 import time
 import os
 import shutil
-import ash
-from modules.module_coords import check_charge_mult
+
+import ash.constants
+from ash.functions.functions_general import ashexit, blankline,print_time_rel_and_tot,BC
+from ash.modules.module_coords import print_coords_all,write_xyzfile
+from ash.modules.module_coords import check_charge_mult
+#import ash
+
 
 #Root mean square of numpy array, e.g. gradient
 def RMS_G(grad):
@@ -148,7 +150,7 @@ def SimpleOpt(fragment=None, theory=None, charge=None, mult=None, optimizer='', 
                     Grad[num]=[0.0,0.0,0.0]
         #print("Grad (after frozen constraints)", Grad)
         #Converting to atomic forces in eV/Angstrom. Used by Knarr
-        forces_evAng=Grad * (-1) * constants.hartoeV / constants.bohr2ang
+        forces_evAng=Grad * (-1) * ash.constants.hartoeV / ash.constants.bohr2ang
         blankline()
         print("Step: {}    Energy: {} Eh.".format(step, E))
         if print_option=='Big':
@@ -274,7 +276,7 @@ def steepest_descent(coords, Gradient,scaling):
 
 #Normalized forces
 def steepest_descent2(coords, Gradient, scaling):
-    current_forces=Gradient * (-1) * constants.hartoeV / constants.bohr2ang
+    current_forces=Gradient * (-1) * ash.constants.hartoeV / ash.constants.bohr2ang
     Fu = current_forces / np.linalg.norm(current_forces)
     step = scaling * Fu
     new_config = coords + step
@@ -302,7 +304,7 @@ def TakeFDStep(theory, current_coords, fd_step, forces, elems, charge, mult):
     E, Grad = theory.run(current_coords=new_config, elems=elems, Grad=True, charge=charge, mult=mult)
 
     # Restore previous values and store new forces
-    new_forces = Grad*(-1)*constants.hartoeV/constants.bohr2ang
+    new_forces = Grad*(-1)*ash.constants.hartoeV/ash.constants.bohr2ang
     new_forces_unflat=new_forces.reshape(len(new_forces)*3,-1)
     current_forces_unflat=current_forces.reshape(len(current_forces)*3,-1)
     Fu_unflat=Fu.reshape(len(Fu)*3,-1)

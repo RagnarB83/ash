@@ -8,13 +8,13 @@ import numpy as np
 import os
 import subprocess as sp
 
-from functions.functions_general import ashexit, isint, listdiff, print_time_rel, BC, printdebug, print_line_with_mainheader, \
+from ash.functions.functions_general import ashexit, isint, listdiff, print_time_rel, BC, printdebug, print_line_with_mainheader, \
     print_line_with_subheader1, print_line_with_subheader1_end, print_line_with_subheader2, writelisttofile, pygrep2, load_julia_interface
-#from modules.module_singlepoint import ReactionEnergy
-import dictionaries_lists
-import settings_ash
-import constants
-import ash
+#from ash.modules.module_singlepoint import ReactionEnergy
+import ash.dictionaries_lists
+import ash.settings_ash
+import ash.constants
+#import ash
 
 ashpath = os.path.dirname(ash.__file__)
 
@@ -286,8 +286,8 @@ class Fragment:
     # Get list of lists of bonds. Used for X-H constraints for example
     def get_XH_indices(self, conncode='julia'):
         timestamp = time.time()
-        scale = settings_ash.settings_dict["scale"]
-        tol = settings_ash.settings_dict["tol"]
+        scale = ash.settings_ash.settings_dict["scale"]
+        tol = ash.settings_ash.settings_dict["tol"]
         Hatoms = self.get_atomindices_for_element('H')
         # Hatoms=[1,2,3,5]
         #print("H Atoms: ", str(Hatoms).strip("[]"))
@@ -498,7 +498,7 @@ class Fragment:
         print("Calculating connectivity.")
         # If codeversion not requested we go to default
         if codeversion == None:
-            codeversion = settings_ash.settings_dict["connectivity_code"]
+            codeversion = ash.settings_ash.settings_dict["connectivity_code"]
             print("Codeversion not set. Using default setting: ", codeversion)
 
         # Overriding with py version if molecule is small. Faster than calling julia.
@@ -511,8 +511,8 @@ class Fragment:
 
         if scale is None:
             try:
-                scale = settings_ash.settings_dict["scale"]
-                tol = settings_ash.settings_dict["tol"]
+                scale = ash.settings_ash.settings_dict["scale"]
+                tol = ash.settings_ash.settings_dict["tol"]
                 if self.printlevel >= 2:
                     print("Using global scale and tol parameters from settings_ash. Scale: {}, Tol: {} ".format(scale,
                                                                                                                tol))
@@ -554,7 +554,7 @@ class Fragment:
                 print("Make sure Julia is installed and Python-Julia interface has been set up.")
                 print(BC.FAIL, "Using Python version instead (slow for large systems)", BC.END)
                 # Switching default to py since Julia did not load
-                settings_ash.settings_dict["connectivity_code"] = "py"
+                ash.settings_ash.settings_dict["connectivity_code"] = "py"
                 fraglist = calc_conn_py(self.coords, self.elems, conndepth, scale, tol)
                 print_time_rel(timestampA, modulename='calc connectivity py', moduleindex=4)
         self.connectivity = fraglist
@@ -854,10 +854,10 @@ eldict_covrad['M'] = 0.0
 # Can also convert atomic-number (isatomnum flag)
 def reformat_element(elem, isatomnum=False):
     if isatomnum is True:
-        el_correct = dictionaries_lists.element_dict_atnum[elem].symbol
+        el_correct = ash.dictionaries_lists.element_dict_atnum[elem].symbol
     else:
         try:
-            el_correct = dictionaries_lists.element_dict_atname[elem.lower()].symbol
+            el_correct = ash.dictionaries_lists.element_dict_atname[elem.lower()].symbol
         except KeyError:
             print("Element-string: {} not found in element-dictionary!".format(elem))
             print("This is not a valid element as defined in ASH source-file: dictionaries_lists.py")
@@ -905,8 +905,8 @@ def print_internal_coordinate_table(fragment, actatoms=None):
         chosen_elems = fragment.elems
 
     conndepth = 99
-    scale = settings_ash.settings_dict["scale"]
-    tol = settings_ash.settings_dict["tol"]
+    scale = ash.settings_ash.settings_dict["scale"]
+    tol = ash.settings_ash.settings_dict["tol"]
 
     if len(chosen_coords) > 1000:
         try:
@@ -932,8 +932,8 @@ def print_internal_coordinate_table(fragment, actatoms=None):
     for conn_fragment in connectivity:
         # Looping over atom indices in fragment
         for atom in conn_fragment:
-            connatoms = get_connected_atoms(chosen_coords, chosen_elems, settings_ash.settings_dict["scale"],
-                                            settings_ash.settings_dict["tol"], atom)
+            connatoms = get_connected_atoms(chosen_coords, chosen_elems, ash.settings_ash.settings_dict["scale"],
+                                            ash.settings_ash.settings_dict["tol"], atom)
             for conn_i in connatoms:
                 #dist = distance_between_atoms(fragment=fragment, atom1=atom, atom2=conn_i)
                 dist = distance(chosen_coords[atom], chosen_coords[conn_i])
@@ -1613,7 +1613,7 @@ def read_chemshellfragfile_xyz(fragfile):
             if 'block = connectivity' in line:
                 grabcoords = False
             if grabcoords is True:
-                coords.append([float(i) * constants.bohr2ang for i in line.split()[1:]])
+                coords.append([float(i) * ash.constants.bohr2ang for i in line.split()[1:]])
                 el = reformat_element(line.split()[0])
                 elems.append(el)
             if 'block = coordinates records ' in line:
@@ -1633,7 +1633,7 @@ def conv_atomtypes_elems(atomtype):
         [str]: [description]
     """
     try:
-        element = dictionaries_lists.atomtypes_dict[atomtype]
+        element = ash.dictionaries_lists.atomtypes_dict[atomtype]
         return element
     except:
         # Assume correct element but could be wrongly formatted (e.g. FE instead of Fe) so reformatting
@@ -1677,7 +1677,7 @@ def read_pdbfile(filename, use_atomnames_as_elements=False):
                     # elem=elem.replace('\n','')
                     # Option to use atomnamecolumn for element information instead of element-column
                     if use_atomnames_as_elements is True:
-                        elem_name = dictionaries_lists.atomtypes_dict[atom_name]
+                        elem_name = ash.dictionaries_lists.atomtypes_dict[atom_name]
                         elemcol.append(elem_name)
                     else:
                         if len(elem) != 0:
@@ -2107,9 +2107,9 @@ def coord2xyz(inputfile):
         z = []
         atom = []
         for line in coord[1:-1]:
-            x=float(line.split()[0]) * constants.bohr2ang
-            y=float(line.split()[1]) * constants.bohr2ang
-            z=float(line.split()[2]) * constants.bohr2ang
+            x=float(line.split()[0]) * ash.constants.bohr2ang
+            y=float(line.split()[1]) * ash.constants.bohr2ang
+            z=float(line.split()[2]) * ash.constants.bohr2ang
             el = reformat_element(str(line.split()[3]))
             elems.append(el)
             coords.append([x,y,z])
@@ -2131,9 +2131,9 @@ def xyz2coord(inputfile):
     with open(inputfile, 'r') as f:
         for i,line in enumerate(f):
             if i > 1:
-                x=float(line.split()[1]) / constants.bohr2ang
-                y=float(line.split()[2]) / constants.bohr2ang
-                z=float(line.split()[3]) / constants.bohr2ang
+                x=float(line.split()[1]) / ash.constants.bohr2ang
+                y=float(line.split()[2]) / ash.constants.bohr2ang
+                z=float(line.split()[3]) / ash.constants.bohr2ang
                 el = reformat_element(str(line.split()[0]))
                 elems.append(el)
                 coords.append([x,y,z])
@@ -2413,8 +2413,8 @@ AXIS_REFLECTIONS = np.array([
 # Used by molcrys. Similar to get_solvshell function in functions_solv.py
 def QMregionfragexpand(fragment=None, initial_atoms=None, radius=None):
     # If needed (connectivity ==0):
-    scale = settings_ash.settings_dict["scale"]
-    tol = settings_ash.settings_dict["tol"]
+    scale = ash.settings_ash.settings_dict["scale"]
+    tol = ash.settings_ash.settings_dict["tol"]
     if fragment is None or initial_atoms is None or radius is None:
         print("Provide fragment, initial_atoms and radius keyword arguments to QMregionfragexpand!")
         ashexit()
@@ -2809,7 +2809,7 @@ def remove_atoms_from_system_CHARMM(fragment=None, psffile=None, topfile=None, a
               "variable inside settings_ash.",
               BC.END)
         try:
-            psfgendir = settings_ash.settings_dict["psfgendir"]
+            psfgendir = ash.settings_ash.settings_dict["psfgendir"]
         except:
             print(BC.FAIL, "Found no psfgendir variable in settings_ash module or in $PATH. Exiting.", BC.END)
             ashexit()
@@ -2936,7 +2936,7 @@ def add_atoms_to_system_CHARMM(fragment=None, added_atoms_coordstring=None, resg
               "psfgendir variable inside settings_ash.",
               BC.END)
         try:
-            psfgendir = settings_ash.settings_dict["psfgendir"]
+            psfgendir = ash.settings_ash.settings_dict["psfgendir"]
         except:
             print(BC.FAIL, "Found no psfgendir variable in settings_ash module or in $PATH. Exiting.", BC.END)
             ashexit()

@@ -4,25 +4,25 @@
 # For now only the snapshot-part. Will read snapshots from QM/MM MD Tcl-Chemshell run.
 import numpy as np
 import time
-
-beginTime = time.time()
-CheckpointTime = time.time()
-import os
-import sys
-
-import functions.functions_solv
-from functions.functions_general import blankline,BC,listdiff,print_time_rel_and_tot,print_line_with_mainheader,print_line_with_subheader1, ashexit
-from module_coords import read_fragfile_xyz
-from interface_ORCA import run_inputfiles_in_parallel,finalenergiesgrab,run_orca_SP_ORCApar
-import settings_solvation
-import constants
 import statistics
 import shutil
-import ash
+import os
+import sys
 import multiprocessing as mp
 import glob
 
+import ash.functions.functions_solv
+from ash.functions.functions_general import blankline,BC,listdiff,print_time_rel_and_tot,print_line_with_mainheader,print_line_with_subheader1, ashexit
+from ash.module_coords import read_fragfile_xyz
+from ash.interface_ORCA import run_inputfiles_in_parallel,finalenergiesgrab,run_orca_SP_ORCApar
+import ash.settings_solvation
+import ash.constants
 
+#import ash
+
+
+beginTime = time.time()
+CheckpointTime = time.time()
 #NEW SOLVSHELL VERSION. PolEmbedding used from beginning
 def solvshell_v2 ( orcadir='', NumCores=None, calctype='', orcasimpleinput_LL='',
         orcablockinput_LL='', orcasimpleinput_HL='', orcablockinput_HL='',
@@ -267,8 +267,8 @@ def solvshell_v2 ( orcadir='', NumCores=None, calctype='', orcasimpleinput_LL=''
         print("Entering dir:", os.getcwd())
 
         print("Doing BulkCorrection on representative snapshots. Creating inputfiles...")
-        print("Using hollow bulk sphere:", settings_solvation.bulksphere.pathtofile)
-        print("Number of added bulk point charges:", settings_solvation.bulksphere.numatoms)
+        print("Using hollow bulk sphere:", ash.settings_solvation.bulksphere.pathtofile)
+        print("Number of added bulk point charges:", ash.settings_solvation.bulksphere.numatoms)
         bulkcorr=True
         identifiername='_Bulk_LL'
         print("repsnaplistA:", repsnaplistA)
@@ -690,14 +690,14 @@ def solvshell_v2 ( orcadir='', NumCores=None, calctype='', orcasimpleinput_LL=''
         #GRAB output
         gasA_stateA_LL=finalenergiesgrab('gas-molA_StateAB_Gas_LL.out')[0]
         gasA_stateB_LL=finalenergiesgrab('gas-molA_StateAB_Gas_LL.out')[1]
-        gasA_VIE_LL=(gasA_stateB_LL-gasA_stateA_LL)*constants.hartoeV
+        gasA_VIE_LL=(gasA_stateB_LL-gasA_stateA_LL)*ash.constants.hartoeV
         print("gasA_VIE_LL:", gasA_VIE_LL)
 
         if calctype == "redox":
             gasB_stateA_LL=finalenergiesgrab('gas-molB_StateAB_Gas_LL.out')[0]
             gasB_stateB_LL=finalenergiesgrab('gas-molB_StateAB_Gas_LL.out')[1]
-            gasB_VIE_LL=(gasA_stateB_LL-gasB_stateB_LL)*constants.hartoeV
-            gasAB_AIE_LL=(gasB_stateB_LL-gasA_stateA_LL)*constants.hartoeV
+            gasB_VIE_LL=(gasA_stateB_LL-gasB_stateB_LL)*ash.constants.hartoeV
+            gasAB_AIE_LL=(gasB_stateB_LL-gasA_stateA_LL)*ash.constants.hartoeV
 
             print("gasB_VIE_LL:", gasB_VIE_LL)
             print("gasAB_AIE_LL:", gasAB_AIE_LL)
@@ -707,18 +707,18 @@ def solvshell_v2 ( orcadir='', NumCores=None, calctype='', orcasimpleinput_LL=''
         if calctype == "redox":
             gasA_stateA_HL=finalenergiesgrab('gas-molA_StateAB_Gas_HL.out')[0]
             gasA_stateB_HL=finalenergiesgrab('gas-molA_StateAB_Gas_HL.out')[1]
-            gasA_VIE_HL=(gasA_stateB_HL-gasA_stateA_HL)*constants.hartoeV
+            gasA_VIE_HL=(gasA_stateB_HL-gasA_stateA_HL)*ash.constants.hartoeV
             gasB_stateA_HL=finalenergiesgrab('gas-molB_StateAB_Gas_HL.out')[0]
             gasB_stateB_HL=finalenergiesgrab('gas-molB_StateAB_Gas_HL.out')[1]
-            gasB_VIE_HL=(gasA_stateB_HL-gasB_stateB_HL)*constants.hartoeV
-            gasAB_AIE_HL=(gasB_stateB_HL-gasA_stateA_HL)*constants.hartoeV
+            gasB_VIE_HL=(gasA_stateB_HL-gasB_stateB_HL)*ash.constants.hartoeV
+            gasAB_AIE_HL=(gasB_stateB_HL-gasA_stateA_HL)*ash.constants.hartoeV
             print("gasA_VIE_HL:", gasA_VIE_HL)
             print("gasB_VIE_HL:", gasB_VIE_HL)
             print("gasAB_AIE_HL:", gasAB_AIE_HL)
         else:
             gasA_stateA_HL=finalenergiesgrab('gas-molA_StateAB_Gas_HL.out')[0]
             gasA_stateB_HL=finalenergiesgrab('gas-molA_StateAB_Gas_HL.out')[1]
-            gasA_VIE_HL=(gasA_stateB_HL-gasA_stateA_HL)*constants.hartoeV
+            gasA_VIE_HL=(gasA_stateB_HL-gasA_stateA_HL)*ash.constants.hartoeV
             print("gasA_VIE_HL:", gasA_VIE_HL)
 
 
@@ -815,10 +815,10 @@ def Polsnapshotcalc(args):
     # Defining QM and PE regions
     PEsolvshell = get_solvshell(solvsphere, snap_frag.elems, snap_frag.coords, LRPolRegion, solute_elems,
                                   solute_coords,
-                                  settings_solvation.scale, settings_solvation.tol)
+                                  ash.settings_solvation.scale, ash.settings_solvation.tol)
     qm_solvshell = get_solvshell(solvsphere, snap_frag.elems, snap_frag.coords, PolQMRegion, solute_elems,
                                   solute_coords,
-                                  settings_solvation.scale, settings_solvation.tol)
+                                  ash.settings_solvation.scale, ash.settings_solvation.tol)
     qmatoms = solvsphere.soluteatomsA + qm_solvshell #QMatoms. solute + possible QM solvshell
     peatoms = listdiff(PEsolvshell, qmatoms )  # Polarizable atoms, except QM shell
     mmatoms = listdiff(solvsphere.allatoms, qmatoms + peatoms)  # Nonpolarizable atoms
@@ -870,7 +870,7 @@ def Polsnapshotcalc(args):
               snapshot, LRPolRegion, solvsphere.ChargeB, solvsphere.MultB), BC.END)
     PolEmbedEnergyB = PolEmbed_SP_B.run(potfile=snapshot+'System.pot', numcores=NumCoresPsi4, restart=True)
 
-    PolEmbedEnergyAB = (PolEmbedEnergyB - PolEmbedEnergyA) * constants.hartoeV
+    PolEmbedEnergyAB = (PolEmbedEnergyB - PolEmbedEnergyA) * ash.constants.hartoeV
 
     #Going up one dir
     os.chdir('..')

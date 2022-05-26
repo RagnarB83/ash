@@ -4,12 +4,12 @@ import numpy as np
 import subprocess as sp
 import time
 
-import constants
-import settings_solvation
-import settings_ash
-from functions.functions_general import ashexit, blankline,reverse_lines, print_time_rel,BC, print_line_with_mainheader
-import modules.module_coords
-from modules.module_coords import elemstonuccharges, check_multiplicity, check_charge_mult
+import ash.constants
+import ash.settings_solvation
+import ash.settings_ash
+from ash.functions.functions_general import ashexit, blankline,reverse_lines, print_time_rel,BC, print_line_with_mainheader
+import ash.modules.module_coords
+from ash.modules.module_coords import elemstonuccharges, check_multiplicity, check_charge_mult
 
 
 #Now supports 2 runmodes: 'library' (fast Python C-API) or 'inputfile'
@@ -83,8 +83,8 @@ class xTBTheory:
             # Load xtB library and ctypes datatypes that run uses
             try:
                 #import xtb_interface_library
-                import interfaces.interface_xtb_library
-                self.xtbobject = interfaces.interface_xtb_library.XTBLibrary()
+                import ash.interfaces.interface_xtb_library
+                self.xtbobject = ash.interfaces.interface_xtb_library.XTBLibrary()
             except:
                 print("Problem importing xTB library. Check that the library dir (containing libxtb.so) is available in LD_LIBRARY_PATH.")
                 print("e.g. export LD_LIBRARY_PATH=/path/to/xtb_6.X.X/lib64:$LD_LIBRARY_PATH")
@@ -99,10 +99,10 @@ class xTBTheory:
             if xtbdir == None:
                 print(BC.WARNING, "No xtbdir argument passed to xTBTheory. Attempting to find xtbdir variable inside settings_ash", BC.END)
                 try:
-                    print("settings_ash.settings_dict:", settings_ash.settings_dict)
-                    self.xtbdir=settings_ash.settings_dict["xtbdir"]
+                    print("settings_ash.settings_dict:", ash.settings_ash.settings_dict)
+                    self.xtbdir=ash.settings_ash.settings_dict["xtbdir"]
                 except:
-                    print(BC.WARNING,"Found no xtbdir variable in settings_ash module either.",BC.END)
+                    print(BC.WARNING,"Found no xtbdir variable in ash.settings_ash module either.",BC.END)
                     try:
                         self.xtbdir = os.path.dirname(shutil.which('xtb'))
                         print(BC.OKGREEN,"Found xtb in path. Setting xtbdir to:", self.xtbdir, BC.END)
@@ -156,7 +156,7 @@ class xTBTheory:
         check_multiplicity(elems,charge,mult)
         if self.runmode=='inputfile':
             #Write xyz_file
-            modules.module_coords.write_xyzfile(elems, current_coords, self.filename, printlevel=self.printlevel)
+            ash.modules.module_coords.write_xyzfile(elems, current_coords, self.filename, printlevel=self.printlevel)
 
             #Run inputfile.
             if self.printlevel >= 2:
@@ -173,7 +173,7 @@ class xTBTheory:
 
             print("Grabbing optimized coordinates")
             #Grab optimized coordinates from filename.xyz
-            opt_elems,opt_coords = modules.module_coords.read_xyzfile("xtbopt.xyz")
+            opt_elems,opt_coords = ash.modules.module_coords.read_xyzfile("xtbopt.xyz")
             fragment.replace_coords(fragment.elems,opt_coords)
 
             return
@@ -190,7 +190,7 @@ class xTBTheory:
         fragment.write_xyzfile(xyzfilename='Fragment-optimized.xyz')
 
         #Printing internal coordinate table
-        modules.module_coords.print_internal_coordinate_table(fragment)
+        ash.modules.module_coords.print_internal_coordinate_table(fragment)
         print_time_rel(module_init_time, modulename='xtB Opt-run', moduleindex=2)
         return 
 
@@ -257,7 +257,7 @@ class xTBTheory:
 
             #self.cleanup()
             #Todo: xtbrestart possibly. needs to be optional
-            modules.module_coords.write_xyzfile(qm_elems, current_coords, self.filename,printlevel=self.printlevel)
+            ash.modules.module_coords.write_xyzfile(qm_elems, current_coords, self.filename,printlevel=self.printlevel)
 
 
             #Run inputfile.
@@ -315,7 +315,7 @@ class xTBTheory:
         elif self.runmode =='library':
             print("------------Running xTB (library)-------------")
             #Converting Angstroms to Bohr
-            coords_au=np.array(current_coords)*constants.ang2bohr
+            coords_au=np.array(current_coords)*ash.constants.ang2bohr
             #Converting element-symbols to nuclear charges
             qm_elems_numbers=np.array(elemstonuccharges(qm_elems))
             assert len(coords_au) == len(qm_elems_numbers)
@@ -369,7 +369,7 @@ class xTBTheory:
                 #print(MMcharges)
                 #print("num MM coords", len(current_MM_coords))
                 #print(current_MM_coords)
-                MMcoords_au=np.array(current_MM_coords)*constants.ang2bohr
+                MMcoords_au=np.array(current_MM_coords)*ash.constants.ang2bohr
                 #print(MMcoords_au)
                 #NOTE: Are these element nuclear charges or what ?
                 numbers=np.array([9999 for i in MMcharges])
@@ -434,10 +434,10 @@ class xTBTheory:
             #Using the xtbobject previously defined
             num_qmatoms=len(current_coords)
             #num_mmatoms=len(MMcharges)
-            nuc_charges=np.array(modules.module_coords.elemstonuccharges(qm_elems), dtype=self.c_int)
+            nuc_charges=np.array(ash.modules.module_coords.elemstonuccharges(qm_elems), dtype=self.c_int)
 
             #Converting coords to numpy-array and then to Bohr.
-            current_coords_bohr=np.array(current_coords)*constants.ang2bohr
+            current_coords_bohr=np.array(current_coords)*ash.constants.ang2bohr
             positions=np.array(current_coords_bohr, dtype=self.c_double)
             args = (num_qmatoms, nuc_charges, positions, options, 0.0, 0, "-")
             print("------------Running xTB-------------")
@@ -577,9 +577,9 @@ def run_gfnxtb_SPVIE_multiproc(line):
     chargeB=line.split()[4]
     uhfB=line.split()[5]
     with open(basename+'_StateA.out', 'w') as ofile:
-        process = sp.run([settings_solvation.xtbdir + '/xtb', xyzfile, '--gfn', gfnoption, '--chrg', chargeA, '--uhf', uhfA ], check=True, stdout=ofile, stderr=ofile, universal_newlines=True)
+        process = sp.run([ash.settings_solvation.xtbdir + '/xtb', xyzfile, '--gfn', gfnoption, '--chrg', chargeA, '--uhf', uhfA ], check=True, stdout=ofile, stderr=ofile, universal_newlines=True)
     with open(basename+'_StateB.out', 'w') as ofile:
-        process = sp.run([settings_solvation.xtbdir + '/xtb', xyzfile, '--gfn', gfnoption, '--chrg', chargeB, '--uhf', uhfB ], check=True, stdout=ofile, stderr=ofile, universal_newlines=True)
+        process = sp.run([ash.settings_solvation.xtbdir + '/xtb', xyzfile, '--gfn', gfnoption, '--chrg', chargeB, '--uhf', uhfB ], check=True, stdout=ofile, stderr=ofile, universal_newlines=True)
     os.chdir('..')
 
 # Run xTB VIP single-point job (for multiprocessing execution)
@@ -599,7 +599,7 @@ def run_xtb_VIP_multiproc(line):
     uhfseg2=line.split()[4]
     ipseg=line.split()[5]
     with open(basename+'.out', 'w') as ofile:
-        process = sp.run([settings_solvation.xtbdir + '/xtb', xyzfile, chargeseg1, chargeseg2, uhfseg1, uhfseg2, ipseg], check=True, stdout=ofile, stderr=ofile, universal_newlines=True)
+        process = sp.run([ash.settings_solvation.xtbdir + '/xtb', xyzfile, chargeseg1, chargeseg2, uhfseg1, uhfseg2, ipseg], check=True, stdout=ofile, stderr=ofile, universal_newlines=True)
     os.chdir('..')
 
 #Using IPEA-xtB method for IP calculations
@@ -607,7 +607,7 @@ def run_xtb_VIP(xyzfile, charge, mult):
     basename = xyzfile.split('.')[0]
     uhf=mult-1
     with open(basename+'.out', 'w') as ofile:
-        process = sp.run([settings_solvation.xtbdir + '/xtb', basename+'.xyz', '--vip', '--chrg', str(charge), '--uhf', str(uhf) ], check=True, stdout=ofile, universal_newlines=True)
+        process = sp.run([ash.settings_solvation.xtbdir + '/xtb', basename+'.xyz', '--vip', '--chrg', str(charge), '--uhf', str(uhf) ], check=True, stdout=ofile, universal_newlines=True)
 
 
 #def run_inputfile_xtb(xyzfile, xtbmethod, chargeA, multA, chargeB, multB):
@@ -622,7 +622,7 @@ def run_xtb_VIP(xyzfile, charge, mult):
 def run_inputfiles_in_parallel_xtb(xyzfiles, xtbmethod, chargeA, multA, chargeB, multB):
     import multiprocessing as mp
     blankline()
-    NumCoresToUse=settings_solvation.NumCores
+    NumCoresToUse=ash.settings_solvation.NumCores
     print("Launching xTB jobs in parallel")
     print("OMP_NUM_THREADS:", os.environ['OMP_NUM_THREADS'])
     xTBCoresRestriction = False
@@ -684,7 +684,7 @@ def create_xtb_pcfile_solvent(name,elems,coords,solventunitcharges,bulkcorr=Fals
     #Creating list of pointcharges based on solventunitcharges and number of elements provided
     #Modifying
     pchargelist=solventunitcharges*int(len(elems)/len(solventunitcharges))
-    bohr2ang=constants.bohr2ang
+    bohr2ang=ash.constants.bohr2ang
     hardness=200
     #https://xtb-docs.readthedocs.io/en/latest/pcem.html
     with open(name+'.pc', 'w') as pcfile:
@@ -696,7 +696,7 @@ def create_xtb_pcfile_solvent(name,elems,coords,solventunitcharges,bulkcorr=Fals
 #General xtb pointchargefile creation
 #Using ORCA-style format: pc-coords in Å
 def create_xtb_pcfile_general(coords,pchargelist,hardness=1000):
-    bohr2ang=constants.bohr2ang
+    bohr2ang=ash.constants.bohr2ang
     #https://xtb-docs.readthedocs.io/en/latest/pcem.html
     with open('pcharge', 'w') as pcfile:
         pcfile.write(str(len(pchargelist))+'\n')

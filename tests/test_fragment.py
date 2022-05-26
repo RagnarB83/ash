@@ -30,8 +30,6 @@ def test_fragread():
     coords=[[0.0, 0.0, 0.0], [0.0, 0.0, 1.1]]
     HCl_frag.replace_coords(elems,coords)
     ##############################
-    # Delete coordinates
-    HF_frag.delete_coords()
 
     #########################
     #Recalculate connectivity

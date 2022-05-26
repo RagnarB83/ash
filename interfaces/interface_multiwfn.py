@@ -2,8 +2,8 @@ import subprocess as sp
 import os
 import shutil
 
-from interfaces.interface_ORCA import make_molden_file_ORCA
-from functions.functions_general import BC,ashexit, writestringtofile, pygrep
+from ash.interfaces.interface_ORCA import make_molden_file_ORCA
+from ash.functions.functions_general import BC,ashexit, writestringtofile, pygrep
 """
     Interface to the Multiwfn program
 """

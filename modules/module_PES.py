@@ -8,14 +8,14 @@ import subprocess as sp
 import struct
 import copy
 import time
-
-import ash
 import shutil
-import constants
 import math
-from interfaces.interface_ORCA import checkORCAfinished,scfenergygrab,tddftgrab,orbitalgrab,run_orca_plot,grabEOMIPs,check_stability_in_output
-from functions.functions_general import ashexit, writestringtofile,BC,blankline,isint,islist,print_time_rel
-from functions.functions_elstructure import HOMOnumbercalc,modosplot,write_cube_diff,read_cube
+
+#import ash
+from ash.interfaces.interface_ORCA import checkORCAfinished,scfenergygrab,tddftgrab,orbitalgrab,run_orca_plot,grabEOMIPs,check_stability_in_output
+from ash.functions.functions_general import ashexit, writestringtofile,BC,blankline,isint,islist,print_time_rel
+from ash.functions.functions_elstructure import HOMOnumbercalc,modosplot,write_cube_diff,read_cube
+import ash.constants
 
 class bcolors:
     HEADER = '\033[95m' ; OKBLUE = '\033[94m'; OKGREEN = '\033[92m'; OKMAGENTA= '\033[95m'; WARNING = '\033[93m'; FAIL = '\033[91m'; ENDC = '\033[0m'; BOLD = '\033[1m'; UNDERLINE = '\033[4m'
@@ -1944,7 +1944,7 @@ def PhotoElectronSpectrum(theory=None, fragment=None, Initialstate_charge=None, 
                 
                 
                 #State_energies are Inititial-state energy + transition energy
-                state_energies=[IP/constants.hartoeV + stateI.energy for IP in IPs]
+                state_energies=[IP/ash.constants.hartoeV + stateI.energy for IP in IPs]
                 
                 #Equating the dominant singles amplitudes with dysonnorms.
                 
@@ -2188,7 +2188,7 @@ def PhotoElectronSpectrum(theory=None, fragment=None, Initialstate_charge=None, 
         for fstate in Finalstates:
             fstate.ionstates = fstates_dict[fstate.mult]
             for ionstate in fstate.ionstates:
-                fstate.IPs.append((ionstate-stateI.energy)*constants.hartoeV)
+                fstate.IPs.append((ionstate-stateI.energy)*ash.constants.hartoeV)
             print("Mult: {} IPs: {}".format(fstate.mult,fstate.IPs))
             FinalIPs = FinalIPs + fstate.IPs
             Finalionstates = Finalionstates + fstate.ionstates
@@ -2213,7 +2213,7 @@ def PhotoElectronSpectrum(theory=None, fragment=None, Initialstate_charge=None, 
             print("---------------------------------------------------------------------------")
             print("Now going through SCF energy and TDDFT transitions for FinalState mult: ", fstate.mult)
             # 1st vertical IP via deltaSCF
-            GSIP=(fstate.energy-stateI.energy)*constants.hartoeV
+            GSIP=(fstate.energy-stateI.energy)*ash.constants.hartoeV
             fstate.GSIP=GSIP
             print(bcolors.OKBLUE,"Initial Final State SCF energy:", fstate.energy, "au", bcolors.ENDC)
             print(bcolors.OKBLUE,"1st vertical IP (delta-SCF):", fstate.GSIP,bcolors.ENDC)
@@ -2225,8 +2225,8 @@ def PhotoElectronSpectrum(theory=None, fragment=None, Initialstate_charge=None, 
             fstate.IPs.append(fstate.GSIP)
             fstate.ionstates.append(fstate.energy)
             for e in fstate.TDtransitionenergies:
-                fstate.ionstates.append(e / constants.hartoeV + fstate.energy)
-                fstate.IPs.append((e / constants.hartoeV + fstate.energy - stateI.energy) * constants.hartoeV)
+                fstate.ionstates.append(e / ash.constants.hartoeV + fstate.energy)
+                fstate.IPs.append((e / ash.constants.hartoeV + fstate.energy - stateI.energy) * ash.constants.hartoeV)
             print("")
             print(bcolors.OKBLUE, "TDDFT-derived IPs (eV), delta-SCF IP plus TDDFT transition energies:\n", bcolors.ENDC, fstate.IPs)
             print(bcolors.OKBLUE, "Ion-state energies (au):\n", bcolors.ENDC, fstate.ionstates)
@@ -2847,7 +2847,7 @@ def potential_adjustor_DFT(theory=None, fragment=None, Initialstate_charge=None,
     print("")
     print("-"*60)
     print("")
-    deltaE=(E_N-E_Nmin1)*constants.hartoeV
+    deltaE=(E_N-E_Nmin1)*ash.constants.hartoeV
     print("deltaE (IP) : {} eV".format(deltaE))
     #deltaPA for HOMO
     HOMO_index=HOMOnumber(fragment.nuccharge,Initialstate_charge,Initialstate_mult)

@@ -1,5 +1,5 @@
 import numpy as np
-from functions.functions_general import print_line_with_mainheader,print_line_with_subheader1,ashexit
+from ash.functions.functions_general import print_line_with_mainheader,print_line_with_subheader1,ashexit
 
 #repeated here so that plotting can be stand-alone
 class BC:

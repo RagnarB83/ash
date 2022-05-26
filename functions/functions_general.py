@@ -1,4 +1,4 @@
-import settings_ash
+
 import os
 import numpy as np
 import time
@@ -6,10 +6,11 @@ from functools import wraps
 import math
 import shutil
 
+import ash.settings_ash
 from ash import ashpath
 
 # ANSI colors: http://jafrog.com/2013/11/23/colors-in-terminal.html
-if settings_ash.settings_dict["use_ANSI_color"] is True:
+if ash.settings_ash.settings_dict["use_ANSI_color"] is True:
     class BC:
         HEADER = '\033[95m'
         OKBLUE = '\033[94m'
@@ -73,7 +74,7 @@ def load_julia_interface(julia_library=None):
 
     #If not set (rare) then get the settings_ash value
     if julia_library == None:
-        julia_library=settings_ash.settings_dict["julia_library"]
+        julia_library=ash.settings_ash.settings_dict["julia_library"]
 
     print("Note: PythonCall/Juliacall is recommended (default). PyJulia interface is less stable.")
     # Loading pythoncall or pyjulia
@@ -143,7 +144,7 @@ def int_ranges(nums):
 
 # Debug print. Behaves like print but reads global debug var first
 def printdebug(string, var=''):
-    if settings_ash.settings_dict["debugflag"] is True:
+    if ash.settings_ash.settings_dict["debugflag"] is True:
         print(BC.OKRED, string, var, BC.END)
 
 
