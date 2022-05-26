@@ -1,17 +1,12 @@
 import os
 import sys
 import ash
-import functions.functions_general
-import time
 import configparser
-import distutils
-import distutils.util
-
-parser = configparser.ConfigParser()
 from pathlib import Path
 
-userhome = str(Path.home())
-ashpath = os.path.dirname(ash.__file__)
+parser = configparser.ConfigParser()
+userhome = str(Path.home()) #Path to user's home dir
+ashpath = os.path.dirname(ash.__file__) #Path to ASH
 
 # Check if interactive session
 interactive_session = bool(getattr(sys, 'ps1', sys.flags.interactive))
@@ -23,7 +18,6 @@ interactive_session = bool(getattr(sys, 'ps1', sys.flags.interactive))
 settings_dict = {}
 
 # Settings will be overriden by ash_user_settings file variables if present
-
 settings_dict["debugflag"] = False
 
 # Julia usage
@@ -75,7 +69,6 @@ def try_read_setting(stringvalue, datatype):
             settings_dict[stringvalue] = parser.get("Settings", stringvalue)
     except:
         pass
-        # print("EXCEPTION!!!!. stringvalue:", stringvalue)
 
 #NOTE: Warning. If user added quotation marks around string then things go awry. Look into
 # Keywords to look up in ash_user_settings.ini

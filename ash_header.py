@@ -10,7 +10,7 @@ import ash
 from functions.functions_general import ashexit, BC, print_time_tot_color, timingsobject, print_line_with_mainheader, \
     print_line_with_subheader1
 
-programversion = "0.8dev"
+programversion = "0.9dev"
 
 
 # ASH footer

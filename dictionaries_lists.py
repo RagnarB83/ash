@@ -1,6 +1,7 @@
 """
 Various lists and dictionaries of elements etc.
 """
+
 # List of elements
 elements = ['H', 'He', 'Li', 'Be', 'B', 'C', 'N', 'O', 'F', 'Ne', 'Na', 'Mg', 'Al', 'Si', 'P', 'S', 'Cl', 'Ar', 'K',
             'Ca', 'Sc', 'Ti', 'V', 'Cr', 'Mn', 'Fe', 'Co', 'Ni', 'Cu', 'Zn', 'Ga', 'Ge', 'As', 'Se', 'Br', 'Kr', 'Rb',
@@ -124,7 +125,7 @@ element_dict_atnum = {1: Element('hydrogen', 'H', 1), 2: Element('helium', 'He',
                       77: Element('iridium', 'Ir', 77), 78: Element('platinum', 'Pt', 78),
                       79: Element('gold', 'Au', 79), 80: Element('mercury', 'Hg', 80)}
 
-# Spin multiplicities of all element atoms
+# Ground-state spin multiplicities of all elements
 atom_spinmults = {'H': 2, 'He': 1, 'Li': 2, 'Be': 1, 'B': 2, 'C': 3, 'N': 4, 'O': 3, 'F': 2, 'Ne': 1, 'Na': 2, 'Mg': 1,
                   'Al': 2, 'Si': 3, 'P': 4, 'S': 3, 'Cl': 2, 'Ar': 1, 'K': 2, 'Ca': 1, 'Sc': 2, 'Ti': 3, 'V': 4,
                   'Cr': 7, 'Mn': 6, 'Fe': 5, 'Co': 4, 'Ni': 3, 'Cu': 2, 'Zn': 1, 'Ga': 2, 'Ge': 3, 'As': 4, 'Se': 3,
@@ -148,7 +149,7 @@ atommasses = [1.00794, 4.002602, 6.94, 9.0121831, 10.81, 12.01070, 14.00670, 15.
               200.592, 204.38, 207.2, 208.9804, 209, 210, 222, 223, 226, 227, 232.0377, 231.03588, 238.02891, 237, 244,
               243, 247, 247, 251, 252, 257, 258, 259, 262]
 
-# Core electrons for elements in ORCA
+# Core electron definitions for all elements in ORCA. Used in frozen-core post-HF methods
 atom_core_electrons = {'H': 0, 'He': 0, 'Li': 0, 'Be': 0, 'B': 2, 'C': 2, 'N': 2, 'O': 2, 'F': 2, 'Ne': 2,
                        'Na': 2, 'Mg': 2, 'Al': 10, 'Si': 10, 'P': 10, 'S': 10, 'Cl': 10, 'Ar': 10,
                        'K': 10, 'Ca': 10, 'Sc': 10, 'Ti': 10, 'V': 10, 'Cr': 10, 'Mn': 10, 'Fe': 10, 'Co': 10,

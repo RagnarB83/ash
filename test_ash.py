@@ -1,6 +1,6 @@
 from ash import *
 
-#Create H2O fragment
+#Define coordinate string
 coords="""
 O       -1.377626260      0.000000000     -1.740199718
 H       -1.377626260      0.759337000     -1.144156718

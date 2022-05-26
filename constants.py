@@ -1,6 +1,5 @@
 """
 Conversion factors
-
 """
 # hartree conversions
 # harkcal = 627.50946900
@@ -40,8 +39,6 @@ AVOGADRO=6.02214076e23
 RGAS=BOLTZMANN*AVOGADRO # J/(mol K)
 KILO=1e3 # grams
 BOLTZ=RGAS/KILO # kJ/(mol K)
-
-
 
 # speed of light in cm/s
 c = 2.99792458e10
