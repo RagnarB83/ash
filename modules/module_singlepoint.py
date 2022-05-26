@@ -87,7 +87,7 @@ def Singlepoint_theories(theories=None, fragment=None, charge=None, mult=None):
         charge,mult = check_charge_mult(charge, mult, theory.theorytype, fragment, "Singlepoint_theories", theory=theory)
 
         #Running single-point. 
-        energy = ash.Singlepoint(theory=theory, fragment=fragment, charge=charge, mult=mult)
+        energy = Singlepoint(theory=theory, fragment=fragment, charge=charge, mult=mult)
         
         print("Theory Label: {} Energy: {} Eh".format(theory.label, energy))
         theory.cleanup()
@@ -147,7 +147,7 @@ def Singlepoint_fragments(theory=None, fragments=None, stoichiometry=None):
         charge=frag.charge; mult=frag.mult
         
         #Running single-point
-        energy = ash.Singlepoint(theory=theory, fragment=frag, charge=charge, mult=mult)
+        energy = Singlepoint(theory=theory, fragment=frag, charge=charge, mult=mult)
         
         print("Fragment {} . Label: {} Energy: {} Eh".format(frag.formula, frag.label, energy))
         theory.cleanup()
@@ -220,7 +220,7 @@ def Singlepoint_reaction(theory=None, reaction=None, unit='kcal/mol'):
     for frag in reaction.fragments:
         
         #Running single-point
-        energy = ash.Singlepoint(theory=theory, fragment=frag, charge=frag.charge, mult=frag.mult)
+        energy = Singlepoint(theory=theory, fragment=frag, charge=frag.charge, mult=frag.mult)
         print("Fragment {} . Label: {} Energy: {} Eh".format(frag.formula, frag.label, energy))
         theory.cleanup()
         reaction.energies.append(energy)
