@@ -7,9 +7,9 @@
     """
 import numpy as np
 import time
-import ash
-from functions.functions_general import ashexit, BC,print_time_rel,print_line_with_mainheader
-from modules.module_coords import check_charge_mult
+#import ash
+from ash.functions.functions_general import ashexit, BC,print_time_rel,print_line_with_mainheader
+from ash.modules.module_coords import check_charge_mult
 
 #Single-point energy function
 def Singlepoint_gradient(fragment=None, theory=None, charge=None, mult=None):

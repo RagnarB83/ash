@@ -1,7 +1,7 @@
 from ash import *
 
 def test_chargemult():
-    #Testing multiple ways of creating/modifying fragments.
+    #Testing charge/mult definitions
 
     fragcoords="""
     H 0.0 0.0 0.0

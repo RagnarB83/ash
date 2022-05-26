@@ -1,15 +1,15 @@
 import numpy as np
-import constants
 import os
 import shutil
 import time
 
-from modules.module_QMMM import QMMMTheory
-from interfaces.interface_OpenMM import OpenMMTheory
-from modules.module_coords import print_coords_all,print_coords_for_atoms,print_internal_coordinate_table,write_XYZ_for_atoms,write_xyzfile
-from functions.functions_general import ashexit, blankline,BC,print_time_rel,print_line_with_mainheader
-import ash
-from modules.module_coords import check_charge_mult
+import ash.constants
+from ash.modules.module_QMMM import QMMMTheory
+from ash.interfaces.interface_OpenMM import OpenMMTheory
+from ash.modules.module_coords import print_coords_all,print_coords_for_atoms,print_internal_coordinate_table,write_XYZ_for_atoms,write_xyzfile
+from ash.functions.functions_general import ashexit, blankline,BC,print_time_rel,print_line_with_mainheader
+#import ash
+from ash.modules.module_coords import check_charge_mult
 
 ################################################
 # Interface to geomeTRIC Optimization Library
@@ -450,7 +450,7 @@ class ASHengineclass:
         #Updating coords in object
         #Need to combine with rest of full-system coords
         timeA=time.time()
-        self.M.xyzs[0] = coords.reshape(-1, 3) * constants.bohr2ang
+        self.M.xyzs[0] = coords.reshape(-1, 3) * ash.constants.bohr2ang
         #print_time_rel(timeA, modulename='geometric ASHcalc.calc reshape', moduleindex=2)
         timeA=time.time()
         currcoords=self.M.xyzs[0]

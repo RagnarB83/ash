@@ -17,38 +17,22 @@ echo "Python3 path: $path_to_python3_dir"
 echo "Julia path: $path_to_julia_dir"
 echo ""
 
-thisdir=$PWD
+#The parent dir containing the ash dir
+ash_parent_dir=$(dirname "$PWD")
+ash_dir=$PWD
 
-#Commented out python3_ash since pyjulia specific
-# Change python3 to be used in python3_ash to the Conda.jl python3
-#echo "Creating python3_ash script:"
-#NOTE: This is not really necessary if set_environment_ash.sh is set
-#sed -i "s:/usr/bin/env python3:/usr/bin/env ${path_to_python3_dir}/python3:g" python3_ash
-#echo "#!/usr/bin/env ${path_to_python3_dir}/python3" > python3_ash
-#echo "# -*- coding: utf-8 -*-" >> python3_ash
-#echo "#Note: python-jl fix so that PyJulia works without problems" >> python3_ash
-#echo "#Note: This file needs to be made executable: chmod +x python3_ash" >> python3_ash
-#echo "import sys" >> python3_ash
-#echo "import re" >> python3_ash
-#echo "" >> python3_ash
-#echo "from julia.python_jl import main" >> python3_ash
-#echo "if __name__ == '__main__':" >> python3_ash
-#echo "    sys.argv[0] = re.sub(r'(-script\.pyw|\.exe)?$', '', sys.argv[0])" >> python3_ash
-#echo "    sys.exit(main())" >> python3_ash
-#Making python3_ash executable
-#chmod uog+x python3_ash
 
 #Create set_environment_ash.sh file
 echo "Creating set_environent_ash.sh script"
 echo "#!/bin/bash" > set_environment_ash.sh
 echo "ulimit -s unlimited" >> set_environment_ash.sh
-echo "export ASHPATH=${thisdir}" >> set_environment_ash.sh
+echo "export ASHPATH=${ash_parent_dir}" >> set_environment_ash.sh
 echo "export python3path=${path_to_python3_dir}" >> set_environment_ash.sh
 echo "export JULIAPATH=${path_to_julia_dir}" >> set_environment_ash.sh
-#echo "export JULIA_DEPOT_PATH=${thisdir}/julia-python-bundle" >> set_environment_ash.sh
-echo "export PYTHONPATH=\$ASHPATH:\$ASHPATH/lib:\$PYTHONPATH" >> set_environment_ash.sh
+#echo "export JULIA_DEPOT_PATH=${ash_dir}/julia-python-bundle" >> set_environment_ash.sh
+echo "export PYTHONPATH=\$ASHPATH:\$ASHPATH/ash/lib:\$PYTHONPATH" >> set_environment_ash.sh
 echo "export PATH=\$python3path:\$ASHPATH:\$JULIAPATH:\$PATH" >> set_environment_ash.sh
-echo "export LD_LIBRARY_PATH=\$ASHPATH/lib:\$LD_LIBRARY_PATH" >> set_environment_ash.sh
+echo "export LD_LIBRARY_PATH=\$ASHPATH/ash/lib:\$LD_LIBRARY_PATH" >> set_environment_ash.sh
 
 
 echo "Installation of ASH was successful!"

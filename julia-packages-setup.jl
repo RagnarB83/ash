@@ -1,9 +1,9 @@
 #Simple Julia script that sets up the necessary dependencies for ASH.
 #Needs to be run just once
+#IN PROGRESS
 using Pkg
 
-
-
+#PythonCall alternative
 
 #Julia-Python interface: https://github.com/JuliaPy/PyCall.jl
 #Pkg.add("PyCall")
@@ -29,4 +29,3 @@ Pkg.add("Hungarian")
 #create_sysimage([:Glob, :Plots, :GLM, :DataFrames], 
 #                 sysimage_path = "jexio_deps.so")
 
-exit()

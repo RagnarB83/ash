@@ -1,17 +1,18 @@
 #High-level WFT workflows
 import numpy as np
 import os
-import ash
 import shutil
-import constants
 import math
 import copy
-import dictionaries_lists
-import interfaces.interface_ORCA
-from functions.functions_elstructure import num_core_electrons, check_cores_vs_electrons
-from functions.functions_general import ashexit, BC, print_line_with_mainheader
-from modules.module_coords import elemlisttoformula, nucchargelist,elematomnumbers
-from modules.module_coords import check_charge_mult
+
+#import ash
+import ash.constants
+import ash.dictionaries_lists
+import ash.interfaces.interface_ORCA
+from ash.functions.functions_elstructure import num_core_electrons, check_cores_vs_electrons
+from ash.functions.functions_general import ashexit, BC, print_line_with_mainheader
+from ash.modules.module_coords import elemlisttoformula, nucchargelist,elematomnumbers
+from ash.modules.module_coords import check_charge_mult
 
 # Allowed basis set families. Accessed by function basis_for_element and extrapolation
 basisfamilies=['cc','aug-cc','cc-dkh','cc-dk','aug-cc-dkh','aug-cc-dk','def2','ma-def2','def2-zora', 'def2-dkh',
@@ -316,11 +317,11 @@ maxiter 150\nend
         ##########################################################################################
         if self.singlebasis is True:
             #For single-basis CCSD(T) or single-basis F12 calculations
-            self.ccsdt_1 = interfaces.interface_ORCA.ORCATheory(orcadir=self.orcadir, orcasimpleinput=self.ccsdt_line, orcablocks=self.blocks1, numcores=self.numcores)
+            self.ccsdt_1 = ash.interfaces.interface_ORCA.ORCATheory(orcadir=self.orcadir, orcasimpleinput=self.ccsdt_line, orcablocks=self.blocks1, numcores=self.numcores)
         else:
             #Extrapolations
-            self.ccsdt_1 = interfaces.interface_ORCA.ORCATheory(orcadir=self.orcadir, orcasimpleinput=self.ccsdt_line, orcablocks=self.blocks1, numcores=self.numcores)
-            self.ccsdt_2 = interfaces.interface_ORCA.ORCATheory(orcadir=self.orcadir, orcasimpleinput=self.ccsdt_line, orcablocks=self.blocks2, numcores=self.numcores)
+            self.ccsdt_1 = ash.interfaces.interface_ORCA.ORCATheory(orcadir=self.orcadir, orcasimpleinput=self.ccsdt_line, orcablocks=self.blocks1, numcores=self.numcores)
+            self.ccsdt_2 = ash.interfaces.interface_ORCA.ORCATheory(orcadir=self.orcadir, orcasimpleinput=self.ccsdt_line, orcablocks=self.blocks2, numcores=self.numcores)
 
 
     def cleanup(self):
@@ -337,8 +338,8 @@ maxiter 150\nend
         ccsdt_mtsmall_NoFC_line="! {} {} {}   nofrozencore {} {} {} {}".format(self.ccsdtkeyword,reloption,self.CVbasis,self.auxbasiskeyword,self.pnokeyword,self.scfsetting,self.extrainputkeyword)
         ccsdt_mtsmall_FC_line="! {} {}  {} {} {} {}".format(self.ccsdtkeyword,self.CVbasis,self.auxbasiskeyword,self.pnokeyword,self.scfsetting,self.extrainputkeyword)
 
-        ccsdt_mtsmall_NoFC = interfaces.interface_ORCA.ORCATheory(orcadir=self.orcadir, orcasimpleinput=ccsdt_mtsmall_NoFC_line, orcablocks=self.blocks, numcores=self.numcores)
-        ccsdt_mtsmall_FC = interfaces.interface_ORCA.ORCATheory(orcadir=self.orcadir, orcasimpleinput=ccsdt_mtsmall_FC_line, orcablocks=self.blocks, numcores=self.numcores)
+        ccsdt_mtsmall_NoFC = ash.interfaces.interface_ORCA.ORCATheory(orcadir=self.orcadir, orcasimpleinput=ccsdt_mtsmall_NoFC_line, orcablocks=self.blocks, numcores=self.numcores)
+        ccsdt_mtsmall_FC = ash.interfaces.interface_ORCA.ORCATheory(orcadir=self.orcadir, orcasimpleinput=ccsdt_mtsmall_FC_line, orcablocks=self.blocks, numcores=self.numcores)
 
         #Run
         energy_ccsdt_mtsmall_nofc = ccsdt_mtsmall_NoFC.run(elems=elems, current_coords=current_coords, numcores=numcores, charge=charge, mult=mult)
@@ -397,7 +398,7 @@ maxiter 150\nend
         theory.orcablocks = PNOXblocks
         
         theory.run(elems=elems, current_coords=current_coords, numcores=numcores, charge=charge, mult=mult)
-        PNOcalcX_dict = interfaces.interface_ORCA.grab_HF_and_corr_energies(theory.filename+'.out', DLPNO=self.DLPNO,F12=self.F12)
+        PNOcalcX_dict = ash.interfaces.interface_ORCA.grab_HF_and_corr_energies(theory.filename+'.out', DLPNO=self.DLPNO,F12=self.F12)
         shutil.copyfile(theory.filename+'.out', './' + calc_label + '_PNOX' + '.out')
         shutil.copyfile(theory.filename+'.gbw', './' + calc_label + '_PNOX' + '.gbw')
         print("PNOcalcX:", PNOcalcX_dict)
@@ -406,7 +407,7 @@ maxiter 150\nend
         theory.orcablocks = PNOYblocks
         #ash.Singlepoint(fragment=fragment, theory=theory)
         theory.run(elems=elems, current_coords=current_coords, numcores=numcores, charge=charge, mult=mult)
-        PNOcalcY_dict = interfaces.interface_ORCA.grab_HF_and_corr_energies(theory.filename+'.out', DLPNO=self.DLPNO,F12=self.F12)
+        PNOcalcY_dict = ash.interfaces.interface_ORCA.grab_HF_and_corr_energies(theory.filename+'.out', DLPNO=self.DLPNO,F12=self.F12)
         shutil.copyfile(theory.filename+'.out', './' + calc_label + '_PNOY' + '.out')
         shutil.copyfile(theory.filename+'.gbw', './' + calc_label + '_PNOY' + '.gbw')
         print("PNOcalcY:", PNOcalcY_dict)
@@ -533,7 +534,7 @@ maxiter 150\nend
             if self.singlebasis is True:
 
                 self.ccsdt_1.run(elems=elems, current_coords=current_coords, numcores=numcores, charge=charge, mult=mult)
-                CCSDT_1_dict = interfaces.interface_ORCA.grab_HF_and_corr_energies(self.ccsdt_1.filename+'.out', DLPNO=self.DLPNO, F12=self.F12)
+                CCSDT_1_dict = ash.interfaces.interface_ORCA.grab_HF_and_corr_energies(self.ccsdt_1.filename+'.out', DLPNO=self.DLPNO, F12=self.F12)
                 shutil.copyfile(self.ccsdt_1.filename+'.out', './' + calc_label + 'CCSDT_1' + '.out')
                 shutil.copyfile(self.ccsdt_1.filename+'.gbw', './' + calc_label + 'CCSDT_1' + '.gbw')
                 print("CCSDT_1_dict:", CCSDT_1_dict)
@@ -544,13 +545,13 @@ maxiter 150\nend
             #REGULAR EXTRAPOLATION WITH 2 THEORIES
             else:
                 self.ccsdt_1.run(elems=elems, current_coords=current_coords, numcores=numcores, charge=charge, mult=mult)
-                CCSDT_1_dict = interfaces.interface_ORCA.grab_HF_and_corr_energies(self.ccsdt_1.filename+'.out', DLPNO=self.DLPNO)
+                CCSDT_1_dict = ash.interfaces.interface_ORCA.grab_HF_and_corr_energies(self.ccsdt_1.filename+'.out', DLPNO=self.DLPNO)
                 shutil.copyfile(self.ccsdt_1.filename+'.out', './' + calc_label + 'CCSDT_1' + '.out')
                 shutil.copyfile(self.ccsdt_1.filename+'.gbw', './' + calc_label + 'CCSDT_1' + '.gbw')
                 print("CCSDT_1_dict:", CCSDT_1_dict)
 
                 self.ccsdt_2.run(elems=elems, current_coords=current_coords, numcores=numcores, charge=charge, mult=mult)
-                CCSDT_2_dict = interfaces.interface_ORCA.grab_HF_and_corr_energies(self.ccsdt_2.filename+'.out', DLPNO=self.DLPNO)
+                CCSDT_2_dict = ash.interfaces.interface_ORCA.grab_HF_and_corr_energies(self.ccsdt_2.filename+'.out', DLPNO=self.DLPNO)
                 shutil.copyfile(self.ccsdt_2.filename+'.out', './' + calc_label + 'CCSDT_2' + '.out')
                 shutil.copyfile(self.ccsdt_2.filename+'.gbw', './' + calc_label + 'CCSDT_2' + '.gbw')
                 print("CCSDT_2_dict:", CCSDT_2_dict)
@@ -619,7 +620,7 @@ maxiter 150\nend
             if charge == 0:
                 print("Charge of atom is zero. Looking up in neutral dict")
                 try:
-                    E_SO = dictionaries_lists.atom_spinorbitsplittings[elems[0]] / constants.hartocm
+                    E_SO = ash.dictionaries_lists.atom_spinorbitsplittings[elems[0]] / ash.constants.hartocm
                 except KeyError:
                     print("Found no SO value for atom. Will set to 0.0 and continue")
                     E_SO = 0.0

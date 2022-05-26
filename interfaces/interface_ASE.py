@@ -4,11 +4,11 @@ import os
 import copy
 import multiprocessing as mp
 
-import constants
-from functions.functions_general import ashexit, print_line_with_mainheader, print_time_rel, printdebug
-from modules.module_singlepoint import Singlepoint
-from interfaces.interface_safires import attach_safires_to_ASE
-from modules.module_coords import check_charge_mult
+import ash.constants
+from ash.functions.functions_general import ashexit, print_line_with_mainheader, print_time_rel, printdebug
+from ash.modules.module_singlepoint import Singlepoint
+from ash.interfaces.interface_safires import attach_safires_to_ASE
+from ash.modules.module_coords import check_charge_mult
 
 #Interface to limited parts of ASE
 def Dynamics_ASE(fragment=None, PBC=False, theory=None, temperature=300, timestep=None, thermostat=None, simulation_steps=None, simulation_time=None,
@@ -120,7 +120,7 @@ def Dynamics_ASE(fragment=None, PBC=False, theory=None, temperature=300, timeste
             #Calculate E+G
             energy, gradient = Singlepoint(theory=self.theory, fragment=self.fragment, Grad=True, charge=self.charge, mult=self.mult)
             #Converting E and G from Eh and Eh/Bohr to ASE units: eV and eV/Angstrom
-            self.potenergy=energy*constants.hartoeV
+            self.potenergy=energy*ash.constants.hartoeV
             print("units.Hartree:", units.Hartree)
             print("units.Bohr:", units.Bohr)
             self.forces=-gradient* units.Hartree / units.Bohr

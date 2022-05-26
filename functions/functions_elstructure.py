@@ -1,16 +1,17 @@
 import numpy as np
-import modules.module_coords
+import math
+import shutil
 import os
 import glob
-import ash
 import subprocess as sp
-import shutil
-import constants
-import math
-import dictionaries_lists
-from functions.functions_general import ashexit, isodd
-import interfaces.interface_ORCA
-from modules.module_coords import nucchargelist
+
+#import ash
+import ash.constants
+import ash.modules.module_coords
+import ash.dictionaries_lists
+from ash.functions.functions_general import ashexit, isodd
+import ash.interfaces.interface_ORCA
+from ash.modules.module_coords import nucchargelist
 
 #CM5. from https://github.com/patrickmelix/CM5-calculator/blob/master/cm5calculator.py
 
@@ -72,7 +73,7 @@ _DNO = -0.0346
 def distance_matrix_from_coords(coords):
     distmatrix=[]
     for i in coords:
-        dist_row=[modules.module_coords.distance(i,j) for j in coords]
+        dist_row=[ash.modules.module_coords.distance(i,j) for j in coords]
         distmatrix.append(dist_row)
     return distmatrix
             
@@ -577,7 +578,7 @@ cnvkdiis false
 end"""
 
         #Creating ORCA object for  element
-        ORCASPcalculation = interfaces.interface_ORCA.ORCATheory(orcadir=theory.orcadir, orcasimpleinput=theory.orcasimpleinput,
+        ORCASPcalculation = ash.interfaces.interface_ORCA.ORCATheory(orcadir=theory.orcadir, orcasimpleinput=theory.orcasimpleinput,
                                            orcablocks=theory.orcablocks, extraline=scfextrasettingsstring)
 
         #Element coordinates
@@ -838,17 +839,17 @@ def DDEC_to_LJparameters(elems, molmoms, voldict, scale_polarH=False):
     Radii_vdw_free=[]
     for count,el in enumerate(elems):
         print("el :", el, "count:", count)
-        atmnumber=modules.module_coords.elematomnumbers[el.lower()]
+        atmnumber=ash.modules.module_coords.elematomnumbers[el.lower()]
         print("atmnumber:", atmnumber)
-        Radii_vdw_free.append(dictionaries_lists.elems_C6_polz[atmnumber].Rvdw_ang)
+        Radii_vdw_free.append(ash.dictionaries_lists.elems_C6_polz[atmnumber].Rvdw_ang)
         print("Radii_vdw_free:", Radii_vdw_free)
         volratio=molmoms[count]/voldict[el]
         print("volratio:", volratio)
-        C6inkcal=constants.harkcal*(dictionaries_lists.elems_C6_polz[atmnumber].C6**(1/6)* constants.bohr2ang)**6
+        C6inkcal=ash.constants.harkcal*(ash.dictionaries_lists.elems_C6_polz[atmnumber].C6**(1/6)* ash.constants.bohr2ang)**6
         print("C6inkcal:", C6inkcal)
         B_i=C6inkcal*(volratio**2)
         print("B_i:", B_i)
-        Raim_i=volratio**(1/3)*dictionaries_lists.elems_C6_polz[atmnumber].Rvdw_ang
+        Raim_i=volratio**(1/3)*ash.dictionaries_lists.elems_C6_polz[atmnumber].Rvdw_ang
         print("Raim_i:", Raim_i)
         A_i=0.5*B_i*(2*Raim_i)**6
         print("A_i:", A_i)
@@ -896,9 +897,9 @@ def DDEC_to_LJparameters(elems, molmoms, voldict, scale_polarH=False):
 #Get number of core electrons for list of elements
 def num_core_electrons(elems):
     sum=0
-    #formula_list = modules.module_coords.molformulatolist(fragment.formula)
+    #formula_list = ash.modules.module_coords.molformulatolist(fragment.formula)
     for i in elems:
-        cels = dictionaries_lists.atom_core_electrons[i]
+        cels = ash.dictionaries_lists.atom_core_electrons[i]
         sum+=cels
     return sum
 
@@ -938,8 +939,8 @@ def check_cores_vs_electrons(elems,numcores,charge):
 def Jcoupling_Yamaguchi(HSenergy,BSenergy,HS_S2,BS_S2):
     print("Yamaguchi spin projection")
     J=-1*(HSenergy-BSenergy)/(HS_S2-BS_S2)
-    J_kcal=J*constants.harkcal
-    J_cm=J*constants.hartocm
+    J_kcal=J*ash.constants.harkcal
+    J_cm=J*ash.constants.hartocm
     print("J coupling constant: {} Eh".format(J))
     print("J coupling constant: {} kcal/Mol".format(J_kcal))
     print("J coupling constant: {} cm**-1".format(J_cm))            
@@ -948,8 +949,8 @@ def Jcoupling_Yamaguchi(HSenergy,BSenergy,HS_S2,BS_S2):
 def Jcoupling_Bencini(HSenergy,BSenergy,smax):
     print("Bencini spin projection")
     J=-1*(HSenergy-BSenergy)/(smax*(smax+1))
-    J_kcal=J*constants.harkcal
-    J_cm=J*constants.hartocm
+    J_kcal=J*ash.constants.harkcal
+    J_cm=J*ash.constants.hartocm
     print("Smax : ", smax)
     print("J coupling constant: {} Eh".format(J))
     print("J coupling constant: {} kcal/Mol".format(J_kcal))
@@ -959,8 +960,8 @@ def Jcoupling_Bencini(HSenergy,BSenergy,smax):
 def Jcoupling_Noodleman(HSenergy,BSenergy,smax):
     print("Noodleman spin projection")
     J=-1*(HSenergy-BSenergy)/(smax)**2
-    J_kcal=J*constants.harkcal
-    J_cm=J*constants.hartocm
+    J_kcal=J*ash.constants.harkcal
+    J_cm=J*ash.constants.hartocm
     print("Smax : ", smax)
     print("J coupling constant: {} Eh".format(J))
     print("J coupling constant: {} kcal/Mol".format(J_kcal))

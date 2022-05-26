@@ -11,7 +11,7 @@
 #Download Julia or not (otherwise a julia tar.gz file is needed)
 download_julia=true
 
-#Julia version to download/use (1.6.1 is recommended)
+#Julia version to download/use
 juliaversion="1.6.1"
 
 #Path to Python3 executable can be set below (uncomment first). If not set, script will try to find python3 in PATH
@@ -171,7 +171,6 @@ $pipcommand install geometric $piparg
 #PyJulia. Julia needs to be available
 $pipcommand install julia $piparg
 
-
 #elif [ $use_julia_conda = true ]
 #then
 #  $thisdir/julia-${juliaversion}/bin/julia julia-conda-setup.jl
@@ -179,26 +178,6 @@ $pipcommand install julia $piparg
    #Problem. Not working well
 #  path_to_python3_dir=$thisdir/julia-python-bundle/conda/3/bin/python3
 #fi
-
-
-#Commented out python3_ash. Pyjulia specific.
-# Change python3 to be used in python3_ash to the Conda.jl python3
-#echo "Step 4. Modifying python3_ash binary"
-#NOTE: This is not really necessary if set_environment_ash.sh is set
-#sed -i "s:/usr/bin/env python3:/usr/bin/env ${path_to_python3_dir}/python3:g" python3_ash
-#echo "#!/usr/bin/env ${path_to_python3_dir}/python3" > python3_ash
-#echo "# -*- coding: utf-8 -*-" >> python3_ash
-#echo "#Note: python-jl fix so that PyJulia works without problems" >> python3_ash
-#echo "#Note: This file needs to be made executable: chmod +x python3_ash" >> python3_ash
-#echo "import sys" >> python3_ash
-#echo "import re" >> python3_ash
-#echo "" >> python3_ash
-#echo "from julia.python_jl import main" >> python3_ash
-#echo "if __name__ == '__main__':" >> python3_ash
-#echo "    sys.argv[0] = re.sub(r'(-script\.pyw|\.exe)?$', '', sys.argv[0])" >> python3_ash
-#echo "    sys.exit(main())" >> python3_ash
-#Making python3_ash executable
-#chmod uog+x python3_ash
 
 #Create set_environment_ash.sh file
 echo "Step 5. Creating set_environent_ash.sh script"

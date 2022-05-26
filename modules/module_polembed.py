@@ -3,8 +3,8 @@ import shutil
 import time
 import numpy as np
 
-from functions.functions_general import BC,blankline,print_time_rel, ashexit
-import modules.module_coords
+from ash.functions.functions_general import BC,blankline,print_time_rel, ashexit
+import ash.modules.module_coords
 
 #Polarizable Embedding theory object.
 #Required at init: qm_theory and qmatoms, X, Y
@@ -124,7 +124,7 @@ class PolEmbedTheory:
                     ashexit(code=9)
                 #Create dummy pdb-file if PDB-file not provided
                 if pdbfile is None:
-                    modules.module_coords.write_pdbfile_dummy(self.elems, self.coords, self.potfilename, self.hybridatomlabels, self.residlabels)
+                    ash.modules.module_coords.write_pdbfile_dummy(self.elems, self.coords, self.potfilename, self.hybridatomlabels, self.residlabels)
                     file=self.potfilename+'.pdb'
                 #Pyframe
                 if self.pot_option=='SEP':

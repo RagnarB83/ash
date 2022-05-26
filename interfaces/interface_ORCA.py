@@ -5,13 +5,13 @@ import time
 import multiprocessing as mp
 import numpy as np
 
-import modules.module_coords
-from functions.functions_general import ashexit, blankline,insert_line_into_file,BC,print_time_rel, print_line_with_mainheader, pygrep2, pygrep, search_list_of_lists_for_index
-from modules.module_singlepoint import Singlepoint
-from modules.module_coords import check_charge_mult
-import functions.functions_elstructure
-import constants
-import settings_ash
+import ash.modules.module_coords
+from ash.functions.functions_general import ashexit, blankline,insert_line_into_file,BC,print_time_rel, print_line_with_mainheader, pygrep2, pygrep, search_list_of_lists_for_index
+from ash.modules.module_singlepoint import Singlepoint
+from ash.modules.module_coords import check_charge_mult
+import ash.functions.functions_elstructure
+import ash.constants
+import ash.settings_ash
 
 
 
@@ -230,7 +230,7 @@ class ORCATheory:
                 print("ORCA geometry optimization finished")
                 self.energy=ORCAfinalenergygrab(outfile)
                 #Grab optimized coordinates from filename.xyz
-                opt_elems,opt_coords = modules.module_coords.read_xyzfile(self.filename+'.xyz')
+                opt_elems,opt_coords = ash.modules.module_coords.read_xyzfile(self.filename+'.xyz')
                 print(opt_coords)
                 
                 fragment.replace_coords(fragment.elems,opt_coords)
@@ -249,7 +249,7 @@ class ORCATheory:
         fragment.write_xyzfile(xyzfilename='Fragment-optimized.xyz')
 
         #Printing internal coordinate table
-        modules.module_coords.print_internal_coordinate_table(fragment)
+        ash.modules.module_coords.print_internal_coordinate_table(fragment)
         print_time_rel(module_init_time, modulename='ORCA Opt-run', moduleindex=2)
         return 
 
@@ -473,7 +473,7 @@ def check_ORCA_location(orcadir):
     else:
         print(BC.WARNING, "No orcadir argument passed to ORCATheory. Attempting to find orcadir variable in ASH settings file (~/ash_user_settings.ini)", BC.END)
         try:
-            finalorcadir=settings_ash.settings_dict["orcadir"]
+            finalorcadir=ash.settings_ash.settings_dict["orcadir"]
             print(BC.OKGREEN,"Using orcadir path provided from ASH settings file (~/ash_user_settings.ini): ", finalorcadir, BC.END)
         except KeyError:
             print(BC.WARNING,"Found no orcadir variable in ASH settings file either.",BC.END)
@@ -1103,7 +1103,7 @@ def grabcoordsfromhessfile(hessfile):
         for line in hfile:
             if cartgrab==True:
                 count=count+1
-                elem=line.split()[0]; x_c=constants.bohr2ang*float(line.split()[2]);y_c=constants.bohr2ang*float(line.split()[3]);z_c=constants.bohr2ang*float(line.split()[4])
+                elem=line.split()[0]; x_c=ash.constants.bohr2ang*float(line.split()[2]);y_c=ash.constants.bohr2ang*float(line.split()[3]);z_c=ash.constants.bohr2ang*float(line.split()[4])
                 elements.append(elem)
                 coords.append([x_c,y_c,z_c])
                 if count == numatoms:
@@ -1179,13 +1179,13 @@ def write_ORCA_Hessfile(hessian, coords, elems, masses, hessatoms,outputname):
         #print("mass:", mass)
         #print(str(elems[atom]))
         #print(str(mass))
-        #print(str(coords[atom][0]/constants.bohr2ang))
-        #print(str(coords[atom][1]/constants.bohr2ang))
-        #print(str(coords[atom][2]/constants.bohr2ang))
-        #orcahessfile.write(" "+str(elems[atom])+'    '+str(mass)+"  "+str(coords[atom][0]/constants.bohr2ang)+
-        #                   " "+str(coords[atom][1]/constants.bohr2ang)+" "+str(coords[atom][2]/constants.bohr2ang)+"\n")
-        orcahessfile.write(" "+el+'    '+str(mass)+"  "+str(coord[0]/constants.bohr2ang)+
-                           " "+str(coord[1]/constants.bohr2ang)+" "+str(coord[2]/constants.bohr2ang)+"\n")
+        #print(str(coords[atom][0]/ash.constants.bohr2ang))
+        #print(str(coords[atom][1]/ash.constants.bohr2ang))
+        #print(str(coords[atom][2]/ash.constants.bohr2ang))
+        #orcahessfile.write(" "+str(elems[atom])+'    '+str(mass)+"  "+str(coords[atom][0]/ash.constants.bohr2ang)+
+        #                   " "+str(coords[atom][1]/ash.constants.bohr2ang)+" "+str(coords[atom][2]/ash.constants.bohr2ang)+"\n")
+        orcahessfile.write(" "+el+'    '+str(mass)+"  "+str(coord[0]/ash.constants.bohr2ang)+
+                           " "+str(coord[1]/ash.constants.bohr2ang)+" "+str(coord[2]/ash.constants.bohr2ang)+"\n")
     orcahessfile.write("\n")
     orcahessfile.write("\n")
     orcahessfile.close()
@@ -1637,8 +1637,8 @@ def grabatomcharges_ORCA(chargemodel,outputfile):
                     charges=[]
                     grab=True
         print("Hirshfeld charges :", charges)
-        atomicnumbers=modules.module_coords.elemstonuccharges(elems)
-        charges = functions.functions_elstructure.calc_cm5(atomicnumbers, coords, charges)
+        atomicnumbers=ash.modules.module_coords.elemstonuccharges(elems)
+        charges = ash.functions.functions_elstructure.calc_cm5(atomicnumbers, coords, charges)
         print("CM5 charges :", list(charges))
     elif chargemodel == "Mulliken":
         with open(outputfile) as ofile:
@@ -1947,7 +1947,7 @@ H    2.453295744  -1.445998564  -1.389381355
     print("\nRunning monomer2 calculation")
     monomer2_energy=Singlepoint(theory=theory,fragment=monomer2)
     theory.cleanup()
-    print("\nUncorrected binding energy: {} kcal/mol".format((dimer_energy - monomer1_energy-monomer2_energy)*constants.hartokcal))
+    print("\nUncorrected binding energy: {} kcal/mol".format((dimer_energy - monomer1_energy-monomer2_energy)*ash.constants.hartokcal))
     
     #Monomer calcs at dimer geometry
     print("\nRunning monomers at dimer geometry via dummy atoms")
@@ -1997,8 +1997,8 @@ H    2.453295744  -1.445998564  -1.389381355
     print("Sum of monomers at dimer geometry with dimer basis: {} Eh".format(monomer1_in_dimer_dimerbasis_energy+monomer2_in_dimer_dimerbasis_energy))
 
     #
-    deltaE_unc=(dimer_energy - monomer1_energy-monomer2_energy)*constants.hartokcal
-    counterpoise_corr=-1*(monomer1_in_dimer_dimerbasis_energy-monomer1_in_dimergeo_energy+monomer2_in_dimer_dimerbasis_energy-monomer2_in_dimergeo_energy)*constants.hartokcal
+    deltaE_unc=(dimer_energy - monomer1_energy-monomer2_energy)*ash.constants.hartokcal
+    counterpoise_corr=-1*(monomer1_in_dimer_dimerbasis_energy-monomer1_in_dimergeo_energy+monomer2_in_dimer_dimerbasis_energy-monomer2_in_dimergeo_energy)*ash.constants.hartokcal
     print("counterpoise_corr: {} kcal/mol".format(counterpoise_corr))
     deltaE_corrected=deltaE_unc+counterpoise_corr
 
@@ -2114,7 +2114,7 @@ def ORCA_External_Optimizer(fragment=None, theory=None, orcadir=None, charge=Non
     print("ORCA external optimization finished")
 
     #Grabbing final geometry to update fragment object
-    elems,coords=modules.module_coords.read_xyzfile(basename+".xyz")
+    elems,coords=ash.modules.module_coords.read_xyzfile(basename+".xyz")
     fragment.coords=coords
 
     #Grabbing final energy

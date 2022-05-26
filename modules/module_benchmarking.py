@@ -5,13 +5,13 @@ import os
 import math
 import time
 
-import ash
-import modules.module_coords
-from functions.functions_general import ashexit, isint,isfloat,is_same_sign,BC,print_time_rel,pygrep
-from functions.functions_elstructure import check_cores_vs_electrons, num_core_electrons
-from interfaces.interface_ORCA import ORCATheory, grab_EFG_from_ORCA_output
-from modules.module_highlevel_workflows import CC_CBS_Theory
-from modules.module_coords import check_charge_mult
+#import ash
+#import ash.modules.module_coords
+from ash.functions.functions_general import ashexit, isint,isfloat,is_same_sign,BC,print_time_rel,pygrep
+from ash.functions.functions_elstructure import check_cores_vs_electrons, num_core_electrons
+from ash.interfaces.interface_ORCA import ORCATheory, grab_EFG_from_ORCA_output
+from ash.modules.module_highlevel_workflows import CC_CBS_Theory
+from ash.modules.module_coords import check_charge_mult
 
 #Reaction class. Used for benchmarking
 class Reaction:

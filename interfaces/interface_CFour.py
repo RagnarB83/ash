@@ -1,8 +1,9 @@
 import subprocess as sp
-from functions.functions_general import ashexit, BC, pygrep, print_time_rel
 import shutil
 import os
-import settings_ash
+
+from ash.functions.functions_general import ashexit, BC, pygrep, print_time_rel
+import ash.settings_ash
 
 
 #CFour Theory object.
@@ -66,8 +67,8 @@ class CFourTheory:
         #Copying ASH basis file to dir if requested
         if ash_basisfile != None:
             #ash_basisfile
-            print("Copying ASH basis-file {} from {} to current directory".format(ash_basisfile,settings_ash.ashpath+'/basis-sets/cfour/'))
-            shutil.copyfile(settings_ash.ashpath+'/basis-sets/cfour/'+ash_basisfile, 'GENBAS')
+            print("Copying ASH basis-file {} from {} to current directory".format(ash_basisfile,ash.settings_ash.ashpath+'/basis-sets/cfour/'))
+            shutil.copyfile(ash.settings_ash.ashpath+'/basis-sets/cfour/'+ash_basisfile, 'GENBAS')
 
 
 

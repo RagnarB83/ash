@@ -4,10 +4,10 @@ Spinprojection module:
 class SpinProjectionTheory
 
 """
-from functions.functions_general import BC, ashexit, print_time_rel
-import interfaces.interface_ORCA
-import constants
-import functions.functions_elstructure
+from ash.functions.functions_general import BC, ashexit, print_time_rel
+import ash.interfaces.interface_ORCA
+import ash.constants
+import ash.functions.functions_elstructure
 import time
 
 class SpinProjectionTheory:
@@ -78,9 +78,9 @@ class SpinProjectionTheory:
 
         #Grab S2 expectation values. Used by Yamaguchi
         if self.theory1.__class__.__name__ == "ORCATheory":
-            HS_S2=interfaces.interface_ORCA.grab_spin_expect_values_ORCA(self.theory1.filename+'.out')
+            HS_S2=ash.interfaces.interface_ORCA.grab_spin_expect_values_ORCA(self.theory1.filename+'.out')
         if self.theory2.__class__.__name__ == "ORCATheory":
-            BS_S2=interfaces.interface_ORCA.grab_spin_expect_values_ORCA(self.theory2.filename+'.out')
+            BS_S2=ash.interfaces.interface_ORCA.grab_spin_expect_values_ORCA(self.theory2.filename+'.out')
         #ONly problem is if we grab S2 values in CCSD(T) job we get the (wrong?) CCSD(T) S2 values instead of CCSD S2 values (as used in paper by Stanton,Chan)
         if self.theory1.__class__.__name__ == "CFourTheory":
             HS_S2=self.theory1.cfour_grab_spinexpect()
@@ -95,7 +95,7 @@ class SpinProjectionTheory:
         print("Assuming theory1 is High-spin state and theory2 is low-spin Broken-symmetry state.")
         print("High-spin state (M_S = {}) energy: {}".format((self.mult_1-1)/2, HSenergy))
         print("Broken-symmetry state (M_S = {}) energy: {}".format((self.mult_2-1)/2, BSenergy))
-        print("Direct naive energy difference: {} Eh, {} kcal/mol, {} cm-1".format(HSenergy-BSenergy,(HSenergy-BSenergy)*constants.harkcal,(HSenergy-BSenergy)*constants.hartocm))
+        print("Direct naive energy difference: {} Eh, {} kcal/mol, {} cm-1".format(HSenergy-BSenergy,(HSenergy-BSenergy)*ash.constants.harkcal,(HSenergy-BSenergy)*ash.constants.hartocm))
         print("<S**2>(High-Spin):", HS_S2)
         print("<S**2>(BS):", BS_S2)
         if BSenergy < HSenergy:
@@ -106,13 +106,13 @@ class SpinProjectionTheory:
         
         #Calculate J using the HS/BS energies and either spin-expectation values or total spin
         if self.jobtype == "Yamaguchi":
-            J=functions.functions_elstructure.Jcoupling_Yamaguchi(HSenergy,BSenergy,HS_S2,BS_S2)
+            J=ash.functions.functions_elstructure.Jcoupling_Yamaguchi(HSenergy,BSenergy,HS_S2,BS_S2)
         #Strong-interaction limit (bond-formation)
         elif self.jobtype == "Bencini":
-            J=functions.functions_elstructure.Jcoupling_Bencini(HSenergy,BSenergy,self.Spin_HS)
+            J=ash.functions.functions_elstructure.Jcoupling_Bencini(HSenergy,BSenergy,self.Spin_HS)
         #Weak-interaction limit (little overlap betwen orbitals)
         elif self.jobtype == "Noodleman":
-            J=functions.functions_elstructure.Jcoupling_Noodleman(HSenergy,BSenergy,self.Spin_HS)
+            J=ash.functions.functions_elstructure.Jcoupling_Noodleman(HSenergy,BSenergy,self.Spin_HS)
 
         #Now  calculate new E of LS state from J
         #Projected energy of low-spin state

@@ -1,8 +1,9 @@
-from functions.functions_general import ashexit, BC, print_time_rel,print_line_with_mainheader
 import subprocess as sp
 import os
 import shutil
 import time
+
+from ash.functions.functions_general import ashexit, BC, print_time_rel,print_line_with_mainheader
 
 #MRCC Theory object.
 class MRCCTheory:

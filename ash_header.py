@@ -5,12 +5,12 @@ import time
 import os
 import sys
 
-import settings_ash
-import ash
-from functions.functions_general import ashexit, BC, print_time_tot_color, timingsobject, print_line_with_mainheader, \
+import ash.settings_ash
+#import ash
+from ash.functions.functions_general import ashexit, BC, print_time_tot_color, timingsobject, print_line_with_mainheader, \
     print_line_with_subheader1
 
-programversion = "0.8dev"
+programversion = "0.9dev"
 
 
 # ASH footer
@@ -49,7 +49,7 @@ def print_header():
 
     print(f"{BC.OKGREEN}{'-' * 80}{BC.END}")
     print(f"{BC.OKGREEN}{'-' * 80}{BC.END}")
-    if settings_ash.settings_dict["print_logo"] is True:
+    if ash.settings_ash.settings_dict["print_logo"] is True:
         print_logo()
     print(f"{BC.WARNING}A MULTISCALE MODELLING PROGRAM{BC.END}".center(90))
     print(f"{BC.WARNING}{BC.BOLD}Version: {programversion}{BC.END}".center(95))
@@ -57,7 +57,7 @@ def print_header():
     print(f"{BC.OKGREEN}{'-' * 80}{BC.END}")
     print(f"{BC.OKGREEN}{'-' * 80}{BC.END}")
 
-    print("ASH path:", settings_ash.ashpath)
+    print("ASH path:", ash.settings_ash.ashpath)
     
     #Check Python version
     pythonversion=(sys.version_info[0],sys.version_info[1],sys.version_info[2])
@@ -69,8 +69,8 @@ def print_header():
     
     print("\nASH Settings after reading defaults and ~/ash_user_settings.ini : ")
     print("See https://ash.readthedocs.io/en/latest/basics.html#ash-settings on how to change settings.")
-    # print(settings_ash.settings_dict)
-    for key, val in settings_ash.settings_dict.items():
+    # print(ash.settings_ash.settings_dict)
+    for key, val in ash.settings_ash.settings_dict.items():
         print("\t", key, ": ", val)
 
     print("\nNote: ASH can use ANSI escape sequences for displaying color. Use e.g. less -R to display")
@@ -78,22 +78,22 @@ def print_header():
     print("~/ash_user_settings.ini")
     print()
 
-    # Print input script unless interactive session
-    if settings_ash.settings_dict["print_input"] is True:
-        if settings_ash.interactive_session is False:
-            inputfilepath = os.getcwd() + "/" + sys.argv[0]
-            print("Input script:", inputfilepath)
-            print(f"{BC.WARNING}{'=' * 80}")
-            with open(inputfilepath) as f:
-                for line in f:
-                    print("   >", line, end="")
-            print(f"{BC.WARNING}{'=' * 80}",BC.END)
-            print()
+    # Print input script unless interactive session or pytest
+    if ash.settings_ash.settings_dict["print_input"] is True:
+        if ash.settings_ash.interactive_session is False:
+            #Ignore if pytest is active
+            if "pytest" not in sys.modules:
+                inputfilepath = os.getcwd() + "/" + sys.argv[0]
+                print("Input script:", inputfilepath)
+                print(f"{BC.WARNING}{'=' * 80}")
+                with open(inputfilepath) as f:
+                    for line in f:
+                        print("   >", line, end="")
+                print(f"{BC.WARNING}{'=' * 80}",BC.END)
+                print()
 
 
 def print_logo():
-
-
     # http://asciiflow.com
     # https://textik.com/#91d6380098664f89
     # https://www.gridsagegames.com/rexpaint/

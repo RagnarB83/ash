@@ -2,9 +2,9 @@ import subprocess as sp
 import os
 import glob
 
-import settings_ash
-from functions.functions_general import ashexit, BC,print_time_rel
-import modules.module_coords
+import ash.settings_ash
+from ash.functions.functions_general import ashexit, BC,print_time_rel
+import ash.modules.module_coords
 
 class DaltonTheory:
     def __init__(self, daltondir=None, filename='dalton', printlevel=2, 
@@ -16,7 +16,7 @@ class DaltonTheory:
 
         if daltondir is None:
             print("No daltondir argument passed to DaltonTheory. Attempting to find daltondir variable inside settings_ash module")
-            self.daltondir=settings_ash.settings_dict["daltondir"]
+            self.daltondir=ash.settings_ash.settings_dict["daltondir"]
         else:
             self.daltondir = daltondir
 

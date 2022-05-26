@@ -8,15 +8,15 @@ beginTime = time.time()
 CheckpointTime = time.time()
 import os
 import sys
-import functions.functions_solv
-from functions.functions_general import blankline,BC,listdiff,print_time_rel_and_tot,print_line_with_mainheader,print_line_with_subheader1, ashexit
-from modules.module_coords import read_chemshellfragfile_xyz
-from interfaces.interface_ORCA import run_inputfiles_in_parallel,finalenergiesgrab,run_orca_SP_ORCApar
-import settings_solvation
-import constants
+import ash.functions.functions_solv
+from ash.functions.functions_general import blankline,BC,listdiff,print_time_rel_and_tot,print_line_with_mainheader,print_line_with_subheader1, ashexit
+from ash.modules.module_coords import read_chemshellfragfile_xyz
+from ash.interfaces.interface_ORCA import run_inputfiles_in_parallel,finalenergiesgrab,run_orca_SP_ORCApar
+import ash.settings_solvation
+import ash.constants
 import statistics
 import shutil
-import ash
+#import ash
 import multiprocessing as mp
 import glob
 
@@ -37,7 +37,7 @@ def solvshell ( orcadir='', NumCores='', calctype='', orcasimpleinput_LL='',
     programdir=os.path.dirname(ash.__file__)
     programversion=0.1
     blankline()
-    functions_solv.print_solvshell_header(programversion,programdir)
+    ash.functions.functions_solv.print_solvshell_header(programversion,programdir)
 
 
     calcdir=os.getcwd()
@@ -73,7 +73,7 @@ def solvshell ( orcadir='', NumCores='', calctype='', orcasimpleinput_LL='',
     print("-----------------------------------")
 
     #Load some global settings and making orcadir global
-    settings_solvation.init(programdir,orcadir,NumCores)
+    ash.settings_solvation.init(programdir,orcadir,NumCores)
 
     blankline()
     print_line_with_mainheader("CALCULATION TYPE: {}".format(calctype.upper()))
@@ -87,9 +87,9 @@ def solvshell ( orcadir='', NumCores='', calctype='', orcasimpleinput_LL='',
     #Create system object with information about the system (charge,mult of states A, B, forcefield, snapshotlist etc.)
     #Attributes: name, chargeA, multA, chargeB, multB, solutetypesA, solutetypesB, solventtypes, snapslist, snapshotsA, snapshotsB
     if calctype=="redox":
-        solvsphere=functions_solv.read_md_variables_fileAB(mdvarfile)
+        solvsphere=ash.functions.functions_solv.read_md_variables_fileAB(mdvarfile)
     elif calctype=="vie":
-        solvsphere=functions_solv.read_md_variables_fileA(mdvarfile)
+        solvsphere=ash.functions.functions_solv.read_md_variables_fileA(mdvarfile)
     else:
         print("unknown calctype for md-read")
         ashexit()
@@ -112,9 +112,9 @@ def solvshell ( orcadir='', NumCores='', calctype='', orcasimpleinput_LL='',
     #Temporary redefinition of lists for easier faster test runs
     if Testmode == True:
         if calctype=='redox':
-            solvsphere.snapslist, solvsphere.snapshotsA, solvsphere.snapshotsB, solvsphere.snapshots = functions_solv.TestModerunAB()
+            solvsphere.snapslist, solvsphere.snapshotsA, solvsphere.snapshotsB, solvsphere.snapshots = ash.functions.functions_solv.TestModerunAB()
         elif calctype=='vie':
-            solvsphere.snapslist, solvsphere.snapshotsA, solvsphere.snapshots = functions_solv.TestModerunA()
+            solvsphere.snapslist, solvsphere.snapshotsA, solvsphere.snapshots = ash.functions.functions_solv.TestModerunA()
 
     #Get solvent pointcharges for solvent-unit. e.g. [-0.8, 0.4, 0.4] for TIP3P, assuming [O, H, H] order
     # Later use dictionary or object or something for this
@@ -128,7 +128,7 @@ def solvshell ( orcadir='', NumCores='', calctype='', orcasimpleinput_LL='',
     else:
         print("Unknown solvent")
         solventunitcharges=[]
-        functions_solv.exit_solvshell()
+        ash.functions.functions_solv.exit_solvshell()
 
     blankline()
 
@@ -155,7 +155,7 @@ def solvshell ( orcadir='', NumCores='', calctype='', orcasimpleinput_LL='',
     identifiername = '_LL'
     solute_atoms=solvsphere.soluteatomsA
     solvent_atoms=solvsphere.solventatoms
-    snapshotinpfiles = functions_solv.create_AB_inputfiles_ORCA(solute_atoms, solvent_atoms, solvsphere, solvsphere.snapshots,
+    snapshotinpfiles = ash.functions.functions_solv.create_AB_inputfiles_ORCA(solute_atoms, solvent_atoms, solvsphere, solvsphere.snapshots,
                                                       orcasimpleinput_LL, orcablockinput_LL, solventunitcharges, identifiername)
     if calctype == "redox":
         print("There are {} snapshots for A trajectory.".format(len(solvsphere.snapshotsA)))
@@ -213,9 +213,9 @@ def solvshell ( orcadir='', NumCores='', calctype='', orcasimpleinput_LL='',
     print("Representative snapshot method:", repsnapmethod)
     print("Representative snapshot number:", repsnapnumber)
     #Creating dictionaries:
-    repsnapsA=functions_solv.repsnaplist(repsnapmethod, repsnapnumber, AsnapsABenergy)
+    repsnapsA=ash.functions.functions_solv.repsnaplist(repsnapmethod, repsnapnumber, AsnapsABenergy)
     if calctype=="redox":
-        repsnapsB=functions_solv.repsnaplist(repsnapmethod, repsnapnumber, BsnapsABenergy)
+        repsnapsB=ash.functions.functions_solv.repsnaplist(repsnapmethod, repsnapnumber, BsnapsABenergy)
     #Combined list of repsnaps
     print("Representative snapshots for each trajectory")
     blankline()
@@ -284,15 +284,15 @@ def solvshell ( orcadir='', NumCores='', calctype='', orcasimpleinput_LL='',
         print("Entering dir:", os.getcwd())
 
         print("Doing BulkCorrection on representative snapshots. Creating inputfiles...")
-        print("Using hollow bulk sphere:", settings_solvation.bulksphere.pathtofile)
-        print("Number of added bulk point charges:", settings_solvation.bulksphere.numatoms)
+        print("Using hollow bulk sphere:", ash.settings_solvation.bulksphere.pathtofile)
+        print("Number of added bulk point charges:", ash.settings_solvation.bulksphere.numatoms)
         bulkcorr=True
         identifiername='_Bulk_LL'
         print("repsnaplistA:", repsnaplistA)
         if calctype == "redox":
             print("repsnaplistB:", repsnaplistB)
         blankline()
-        bulkinpfiles = functions_solv.create_AB_inputfiles_ORCA(solute_atoms, solvent_atoms, solvsphere, totrepsnaps,
+        bulkinpfiles = ash.functions.functions_solv.create_AB_inputfiles_ORCA(solute_atoms, solvent_atoms, solvsphere, totrepsnaps,
                                                          orcasimpleinput_LL, orcablockinput_LL, solventunitcharges, identifiername, None, bulkcorr)
 
         # RUN BULKCORRECTION INPUTFILES
@@ -402,7 +402,7 @@ def solvshell ( orcadir='', NumCores='', calctype='', orcasimpleinput_LL='',
         # PART 1
         #Create inputfiles of repsnapshots with increased QM regions
         identifiername='_SR_LL'
-        SRPolinpfiles = functions_solv.create_AB_inputfiles_ORCA(solute_atoms, solvent_atoms, solvsphere, totrepsnaps,
+        SRPolinpfiles = ash.functions.functions_solv.create_AB_inputfiles_ORCA(solute_atoms, solvent_atoms, solvsphere, totrepsnaps,
                                                          orcasimpleinput_SRPOL, orcablockinput_SRPOL, solventunitcharges,
                                                           identifiername, SRPolShell, False, solvbasis)
 
@@ -437,7 +437,7 @@ def solvshell ( orcadir='', NumCores='', calctype='', orcasimpleinput_LL='',
             print("orcasimpleinput_SRPOL is different")
             print("Need to recalculate repsnapshots at SRPOL level of theory using regular QM-region")
             identifiername = '_SR_LL_Region1'
-            SRPolinpfiles_Region1 = functions_solv.create_AB_inputfiles_ORCA(solute_atoms, solvent_atoms, solvsphere, totrepsnaps,
+            SRPolinpfiles_Region1 = ash.functions.functions_solv.create_AB_inputfiles_ORCA(solute_atoms, solvent_atoms, solvsphere, totrepsnaps,
                                                          orcasimpleinput_SRPOL, orcablockinput_SRPOL, solventunitcharges,
                                                           identifiername, None, False, solvbasis)
             #Run the inputfiles
@@ -681,10 +681,10 @@ def solvshell ( orcadir='', NumCores='', calctype='', orcasimpleinput_LL='',
             gaslist=gaslistA
         identifiername='_Gas_LL'
         #create_AB_inputfiles_onelist
-        gasinpfiles_LL = functions_solv.create_AB_inputfiles_ORCA(solute_atoms, [], solvsphere, gaslist,orcasimpleinput_LL,
+        gasinpfiles_LL = ash.functions.functions_solv.create_AB_inputfiles_ORCA(solute_atoms, [], solvsphere, gaslist,orcasimpleinput_LL,
                                                        orcablockinput_LL, solventunitcharges, identifiername)
         identifiername='_Gas_HL'
-        gasinpfiles_HL = functions_solv.create_AB_inputfiles_ORCA(solute_atoms, [], solvsphere, gaslist,orcasimpleinput_HL,
+        gasinpfiles_HL = ash.functions.functions_solv.create_AB_inputfiles_ORCA(solute_atoms, [], solvsphere, gaslist,orcasimpleinput_HL,
                                                        orcablockinput_HL, solventunitcharges, identifiername)
 
         print("Created inputfiles:")
@@ -705,14 +705,14 @@ def solvshell ( orcadir='', NumCores='', calctype='', orcasimpleinput_LL='',
         #GRAB output
         gasA_stateA_LL=finalenergiesgrab('gas-molA_StateAB_Gas_LL.out')[0]
         gasA_stateB_LL=finalenergiesgrab('gas-molA_StateAB_Gas_LL.out')[1]
-        gasA_VIE_LL=(gasA_stateB_LL-gasA_stateA_LL)*constants.hartoeV
+        gasA_VIE_LL=(gasA_stateB_LL-gasA_stateA_LL)*ash.constants.hartoeV
         print("gasA_VIE_LL:", gasA_VIE_LL)
 
         if calctype == "redox":
             gasB_stateA_LL=finalenergiesgrab('gas-molB_StateAB_Gas_LL.out')[0]
             gasB_stateB_LL=finalenergiesgrab('gas-molB_StateAB_Gas_LL.out')[1]
-            gasB_VIE_LL=(gasA_stateB_LL-gasB_stateB_LL)*constants.hartoeV
-            gasAB_AIE_LL=(gasB_stateB_LL-gasA_stateA_LL)*constants.hartoeV
+            gasB_VIE_LL=(gasA_stateB_LL-gasB_stateB_LL)*ash.constants.hartoeV
+            gasAB_AIE_LL=(gasB_stateB_LL-gasA_stateA_LL)*ash.constants.hartoeV
 
             print("gasB_VIE_LL:", gasB_VIE_LL)
             print("gasAB_AIE_LL:", gasAB_AIE_LL)
@@ -722,18 +722,18 @@ def solvshell ( orcadir='', NumCores='', calctype='', orcasimpleinput_LL='',
         if calctype == "redox":
             gasA_stateA_HL=finalenergiesgrab('gas-molA_StateAB_Gas_HL.out')[0]
             gasA_stateB_HL=finalenergiesgrab('gas-molA_StateAB_Gas_HL.out')[1]
-            gasA_VIE_HL=(gasA_stateB_HL-gasA_stateA_HL)*constants.hartoeV
+            gasA_VIE_HL=(gasA_stateB_HL-gasA_stateA_HL)*ash.constants.hartoeV
             gasB_stateA_HL=finalenergiesgrab('gas-molB_StateAB_Gas_HL.out')[0]
             gasB_stateB_HL=finalenergiesgrab('gas-molB_StateAB_Gas_HL.out')[1]
-            gasB_VIE_HL=(gasA_stateB_HL-gasB_stateB_HL)*constants.hartoeV
-            gasAB_AIE_HL=(gasB_stateB_HL-gasA_stateA_HL)*constants.hartoeV
+            gasB_VIE_HL=(gasA_stateB_HL-gasB_stateB_HL)*ash.constants.hartoeV
+            gasAB_AIE_HL=(gasB_stateB_HL-gasA_stateA_HL)*ash.constants.hartoeV
             print("gasA_VIE_HL:", gasA_VIE_HL)
             print("gasB_VIE_HL:", gasB_VIE_HL)
             print("gasAB_AIE_HL:", gasAB_AIE_HL)
         else:
             gasA_stateA_HL=finalenergiesgrab('gas-molA_StateAB_Gas_HL.out')[0]
             gasA_stateB_HL=finalenergiesgrab('gas-molA_StateAB_Gas_HL.out')[1]
-            gasA_VIE_HL=(gasA_stateB_HL-gasA_stateA_HL)*constants.hartoeV
+            gasA_VIE_HL=(gasA_stateB_HL-gasA_stateA_HL)*ash.constants.hartoeV
             print("gasA_VIE_HL:", gasA_VIE_HL)
 
 
@@ -755,17 +755,17 @@ def solvshell ( orcadir='', NumCores='', calctype='', orcasimpleinput_LL='',
             blankline()
             print_line_with_subheader1("Trajectory A")
 
-            functions_solv.print_redox_output_state("A", solvsphere, orcasimpleinput_LL, orcasimpleinput_HL, solvsphere.snapshotsA, ave_trajA, stdev_trajA,
+            ash.functions.functions_solv.print_redox_output_state("A", solvsphere, orcasimpleinput_LL, orcasimpleinput_HL, solvsphere.snapshotsA, ave_trajA, stdev_trajA,
                                      repsnap_ave_trajA, repsnap_stdev_trajA, repsnaplistA, Bulk_ave_trajA, Bulk_stdev_trajA, Bulkcorr_mean_A,
                                      SRPol_ave_trajA, SRPol_stdev_trajA, SRPolcorr_mean_A, LRPol_ave_trajA_Region1, LRPol_ave_trajA_Region2,
                                      LRPol_stdev_trajA_Region1, LRPol_stdev_trajA_Region2, LRPolcorr_mean_A, gasA_VIE_LL, gasA_VIE_HL)
             print_line_with_subheader1("Trajectory B")
-            functions_solv.print_redox_output_state("B", solvsphere, orcasimpleinput_LL, orcasimpleinput_HL, solvsphere.snapshotsB, ave_trajB, stdev_trajB,
+            ash.functions.functions_solv.print_redox_output_state("B", solvsphere, orcasimpleinput_LL, orcasimpleinput_HL, solvsphere.snapshotsB, ave_trajB, stdev_trajB,
                                      repsnap_ave_trajB, repsnap_stdev_trajB, repsnaplistB, Bulk_ave_trajB, Bulk_stdev_trajB, Bulkcorr_mean_B,
                                      SRPol_ave_trajB, SRPol_stdev_trajB, SRPolcorr_mean_B, LRPol_ave_trajB_Region1, LRPol_ave_trajB_Region2,
                                      LRPol_stdev_trajB_Region1, LRPol_stdev_trajB_Region2, LRPolcorr_mean_B, gasB_VIE_LL, gasB_VIE_HL)
             print_line_with_subheader1("Final Average")
-            functions_solv.print_redox_output_state("AB", solvsphere, orcasimpleinput_LL, orcasimpleinput_HL, solvsphere.snapshots, ave_trajAB, stdev_trajAB,
+            ash.functions.functions_solv.print_redox_output_state("AB", solvsphere, orcasimpleinput_LL, orcasimpleinput_HL, solvsphere.snapshots, ave_trajAB, stdev_trajAB,
                                      repsnap_ave_trajAB, repsnap_stdev_trajAB, repsnaplistAB, Bulk_ave_trajAB, Bulk_stdev_trajAB, Bulkcorr_mean_AB,
                                      SRPol_ave_trajAB, SRPol_stdev_trajAB, SRPolcorr_mean_AB, LRPol_ave_trajAB_Region1, LRPol_ave_trajAB_Region2,
                                      LRPol_stdev_trajAB_Region1, LRPol_stdev_trajAB_Region2, LRPolcorr_mean_AB, gasAB_AIE_LL, gasAB_AIE_HL)
@@ -774,7 +774,7 @@ def solvshell ( orcadir='', NumCores='', calctype='', orcasimpleinput_LL='',
             blankline()
             print_line_with_subheader1("Trajectory A")
 
-            functions_solv.print_redox_output_state("A", solvsphere, orcasimpleinput_LL, orcasimpleinput_HL, solvsphere.snapshotsA, ave_trajA, stdev_trajA,
+            ash.functions.functions_solv.print_redox_output_state("A", solvsphere, orcasimpleinput_LL, orcasimpleinput_HL, solvsphere.snapshotsA, ave_trajA, stdev_trajA,
                                      repsnap_ave_trajA, repsnap_stdev_trajA, repsnaplistA, Bulk_ave_trajA, Bulk_stdev_trajA, Bulkcorr_mean_A,
                                      SRPol_ave_trajA, SRPol_stdev_trajA, SRPolcorr_mean_A, LRPol_ave_trajA_Region1, LRPol_ave_trajA_Region2,
                                      LRPol_stdev_trajA_Region1, LRPol_stdev_trajA_Region2, LRPolcorr_mean_A, gasA_VIE_LL, gasA_VIE_HL)
@@ -783,7 +783,7 @@ def solvshell ( orcadir='', NumCores='', calctype='', orcasimpleinput_LL='',
     blankline()
     blankline()
     print_time_rel_and_tot(CheckpointTime, beginTime, 'final output')
-    functions_solv.print_solvshell_footer()
+    ash.functions.functions_solv.print_solvshell_footer()
 
     #Clean-up files
     #Snapshot frag files
@@ -837,21 +837,21 @@ def LRPolsnapshotcalc(args):
     #qmatoms_LR1_coords = [snap_frag.coords[i] for i in qmatoms_LR1]
     qmatoms_LR1_coords = np.take(snap_frag.coords,qmatoms_LR1,axis=0)
     #Typically LRPolRegion1=0 i.e. nonpolarizable MM
-    PEsolvshell_LR1 = functions_solv.get_solvshell(solvsphere, snap_frag.elems, snap_frag.coords, LRPolRegion1, qmatoms_LR1_elems,
+    PEsolvshell_LR1 = ash.functions.functions_solv.get_solvshell(solvsphere, snap_frag.elems, snap_frag.coords, LRPolRegion1, qmatoms_LR1_elems,
                                   qmatoms_LR1_coords,
-                                  settings_solvation.scale, settings_solvation.tol)
+                                  ash.settings_solvation.scale, ash.settings_solvation.tol)
     peatoms_LR1 = PEsolvshell_LR1  # Polarizable atoms
     mmatoms_LR1 = listdiff(solvsphere.allatoms, qmatoms_LR1 + peatoms_LR1)  # Nonpolarizable atoms
 
     #Region 2 calcs. QM, PE and MM
     #QM solvshell in LR2 region. i.e. accounting for shortrangepol by QM at same time
     #Typically LRPolregion2=20  i.e 20 Åpolarizable region
-    PEsolvshell_LR2 = functions_solv.get_solvshell(solvsphere, snap_frag.elems, snap_frag.coords, LRPolRegion2, solute_elems,
+    PEsolvshell_LR2 = ash.functions.functions_solv.get_solvshell(solvsphere, snap_frag.elems, snap_frag.coords, LRPolRegion2, solute_elems,
                                   solute_coords,
-                                  settings_solvation.scale, settings_solvation.tol)
-    qm_solvshell_LR2 = functions_solv.get_solvshell(solvsphere, snap_frag.elems, snap_frag.coords, LRPolQMRegion, solute_elems,
+                                  ash.settings_solvation.scale, ash.settings_solvation.tol)
+    qm_solvshell_LR2 = ash.functions.functions_solv.get_solvshell(solvsphere, snap_frag.elems, snap_frag.coords, LRPolQMRegion, solute_elems,
                                   solute_coords,
-                                  settings_solvation.scale, settings_solvation.tol)
+                                  ash.settings_solvation.scale, ash.settings_solvation.tol)
     qmatoms_LR2 = solvsphere.soluteatomsA + qm_solvshell_LR2 #QMatoms. solute + possible QM solvshell
     peatoms_LR2 = listdiff(PEsolvshell_LR2, qmatoms_LR2 )  # Polarizable atoms, except QM shell
     mmatoms_LR2 = listdiff(solvsphere.allatoms, qmatoms_LR2 + peatoms_LR2)  # Nonpolarizable atoms
@@ -938,8 +938,8 @@ def LRPolsnapshotcalc(args):
               snapshot, LRPolRegion2, solvsphere.ChargeB, solvsphere.MultB), BC.END)
     PolEmbedEnergyB_LR2 = PolEmbed_SP_B_LR2.run(potfile=snapshot+'System_LR2.pot', numcores=NumCoresPsi4, restart=True)
 
-    PolEmbedEnergyAB_LR1 = (PolEmbedEnergyB_LR1 - PolEmbedEnergyA_LR1) * constants.hartoeV
-    PolEmbedEnergyAB_LR2 = (PolEmbedEnergyB_LR2 - PolEmbedEnergyA_LR2) * constants.hartoeV
+    PolEmbedEnergyAB_LR1 = (PolEmbedEnergyB_LR1 - PolEmbedEnergyA_LR1) * ash.constants.hartoeV
+    PolEmbedEnergyAB_LR2 = (PolEmbedEnergyB_LR2 - PolEmbedEnergyA_LR2) * ash.constants.hartoeV
 
     #Returning list of snapshotname and energies for both regions
     return [snapshot, PolEmbedEnergyAB_LR1, PolEmbedEnergyAB_LR2]

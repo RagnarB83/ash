@@ -2,11 +2,11 @@ import os
 import shutil
 import subprocess as sp
 
-from modules.module_coords import check_charge_mult,xyz2coord
-from interfaces.interface_geometric import geomeTRICOptimizer
-from modules.module_freq import NumFreq
-from modules.module_singlepoint import Singlepoint
-from functions.functions_general import print_line_with_subheader1,BC,ashexit,writestringtofile,isodd
+from ash.modules.module_coords import check_charge_mult,xyz2coord
+from ash.interfaces.interface_geometric import geomeTRICOptimizer
+from ash.modules.module_freq import NumFreq
+from ash.modules.module_singlepoint import Singlepoint
+from ash.functions.functions_general import print_line_with_subheader1,BC,ashexit,writestringtofile,isodd
 #Various electron chemistry
 #DEA/DI
 
@@ -105,8 +105,8 @@ def call_QCxMS(fragment=None, qcxmsdir=None, xtbmethod=None, charge=None, mult=N
     if qcxmsdir == None:
         print(BC.WARNING, "No qcxmsdir argument passed to call_crest. Attempting to find qcxmsdir variable inside settings_ash", BC.END)
         try:
-            print("settings_ash.settings_dict:", settings_ash.settings_dict)
-            qcxmsdir=settings_ash.settings_dict["qcxmsdir"]
+            print("ash.settings_ash.settings_dict:", ash.settings_ash.settings_dict)
+            qcxmsdir=ash.settings_ash.settings_dict["qcxmsdir"]
         except:
             print(BC.WARNING,"Found no qcxmsdir variable in settings_ash module either.",BC.END)
             try:

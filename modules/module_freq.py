@@ -4,12 +4,13 @@ import shutil
 import os
 import copy
 import time
-from functions.functions_general import ashexit, listdiff, clean_number,blankline,BC,print_time_rel, print_line_with_mainheader
-import modules.module_coords
-from modules.module_coords import check_charge_mult
-import interfaces.interface_ORCA
-import constants
-import ash
+
+from ash.functions.functions_general import ashexit, listdiff, clean_number,blankline,BC,print_time_rel, print_line_with_mainheader
+import ash.modules.module_coords
+from ash.modules.module_coords import check_charge_mult
+import ash.interfaces.interface_ORCA
+import ash.constants
+#import ash
 
 #Analytical frequencies function
 #Only works for ORCAtheory at the moment
@@ -24,14 +25,14 @@ def AnFreq(fragment=None, theory=None, charge=None, mult=None, numcores=1, temp=
         #Do single-point ORCA Anfreq job
         energy = theory.run(current_coords=fragment.coords, elems=fragment.elems, charge=charge, mult=mult, Hessian=True, numcores=numcores)
         #Grab Hessian
-        hessian = interfaces.interface_ORCA.Hessgrab(theory.filename+".hess")
+        hessian = ash.interfaces.interface_ORCA.Hessgrab(theory.filename+".hess")
         #Add Hessian to fragment
         fragment.hessian=hessian
         
         #TODO: diagonalize it ourselves. Need to finish projection
         
         # For now, we grab frequencies from ORCA Hessian file
-        frequencies = interfaces.interface_ORCA.ORCAfrequenciesgrab(theory.filename+".hess")
+        frequencies = ash.interfaces.interface_ORCA.ORCAfrequenciesgrab(theory.filename+".hess")
         
         hessatoms=list(range(0,fragment.numatoms))
         freqoutputdict = thermochemcalc(frequencies,hessatoms, fragment, mult, temp=temp,pressure=pressure)
@@ -77,11 +78,11 @@ def NumFreq(fragment=None, theory=None, charge=None, mult=None, npoint=2, displa
     #ORCA-specific: Copy old GBW file from .. dir 
     try:
         if theory.theorytype == "QM":
-            if isinstance(theory,interfaces.interface_ORCA.ORCATheory):
+            if isinstance(theory,ash.interfaces.interface_ORCA.ORCATheory):
                 print("Copying GBW file into Numfreq_dir")
                 shutil.copy("../"+theory.filename+'.gbw', './'+theory.filename+'.gbw')
         elif theory.theorytype == "QM/MM":
-            if isinstance(theory.qm_theory,interfaces.interface_ORCA.ORCATheory):
+            if isinstance(theory.qm_theory,ash.interfaces.interface_ORCA.ORCATheory):
                 print("Copying GBW file into Numfreq_dir")
                 shutil.copy('../'+theory.qm_theory.filename+'.gbw', './'+theory.qm_theory.filename+'.gbw')
     except:
@@ -103,7 +104,7 @@ def NumFreq(fragment=None, theory=None, charge=None, mult=None, npoint=2, displa
             print("Check input masses!",BC.END)
             ashexit()
     
-    displacement_bohr = displacement * constants.ang2bohr
+    displacement_bohr = displacement * ash.constants.ang2bohr
 
     print("Starting Numerical Frequencies job for fragment")
     print("System size:", numatoms)
@@ -130,7 +131,7 @@ def NumFreq(fragment=None, theory=None, charge=None, mult=None, npoint=2, displa
     current_coords_array=np.array(coords)
 
     print("Printing hessatoms geometry...")
-    modules.module_coords.print_coords_for_atoms(coords,elems,hessatoms)
+    ash.modules.module_coords.print_coords_for_atoms(coords,elems,hessatoms)
     blankline()
 
     #Looping over each atom and each coordinate to create displaced geometries
@@ -189,7 +190,7 @@ def NumFreq(fragment=None, theory=None, charge=None, mult=None, npoint=2, displa
     for label, dispgeo in zip(list_of_labels,list_of_displaced_geos):
         filelabel=label.replace(' ','').replace(':','')
         list_of_filelabels.append(filelabel)
-        modules.module_coords.write_xyzfile(elems=elems, coords=dispgeo,name=filelabel)
+        ash.modules.module_coords.write_xyzfile(elems=elems, coords=dispgeo,name=filelabel)
 
     #RUNNING displacements
     displacement_grad_dictionary = {}
@@ -294,7 +295,7 @@ def NumFreq(fragment=None, theory=None, charge=None, mult=None, npoint=2, displa
                     # Numcores can be used. We can launch ORCA-OpenMPI in parallel it seems.
                     # Only makes sense if we have may more cores available than displacements
                     print("a")
-                    elems, coords = modules.module_coords.read_xyzfile(filelabel + '.xyz')
+                    elems, coords = ash.modules.module_coords.read_xyzfile(filelabel + '.xyz')
                     print("b")
                     dispdir = label.replace(' ', '')
                     os.mkdir(dispdir)
@@ -412,11 +413,11 @@ def NumFreq(fragment=None, theory=None, charge=None, mult=None, npoint=2, displa
 
     #Diagonalize mass-weighted Hessian
     # Get partial matrix by deleting atoms not present in list.
-    hesselems = modules.module_coords.get_partial_list(allatoms, hessatoms, elems)
+    hesselems = ash.modules.module_coords.get_partial_list(allatoms, hessatoms, elems)
 
     #Use input masses if given, otherwise take from frament
     if hessatoms_masses == None:
-        hessmasses = modules.module_coords.get_partial_list(allatoms, hessatoms, fragment.list_of_masses)
+        hessmasses = ash.modules.module_coords.get_partial_list(allatoms, hessatoms, fragment.list_of_masses)
     else:
         hessmasses=hessatoms_masses
     
@@ -462,7 +463,7 @@ def NumFreq(fragment=None, theory=None, charge=None, mult=None, npoint=2, displa
         print("Wrote Hessian to file: Hessian")
     #Write ORCA-style Hessian file. Hardcoded filename here. Change?
     #Note: Passing hesscords here instead of coords. Change?
-    interfaces.interface_ORCA.write_ORCA_Hessfile(hessian, hesscoords, hesselems, hessmasses, hessatoms, "orcahessfile.hess")
+    ash.interfaces.interface_ORCA.write_ORCA_Hessfile(hessian, hesscoords, hesselems, hessmasses, hessatoms, "orcahessfile.hess")
     print("Wrote ORCA-style Hessian file: orcahessfile.hess")
 
     #Create dummy-ORCA file with frequencies and normal modes
@@ -546,11 +547,11 @@ def massweight(matrix,masses,numatoms):
 
 # Calculate frequencies from eigenvalus
 def calcfreq(evalues):
-    hartree2j = constants.hartree2j
-    bohr2m = constants.bohr2m
-    amu2kg = constants.amu2kg
-    c = constants.c
-    pi = constants.pi
+    hartree2j = ash.constants.hartree2j
+    bohr2m = ash.constants.bohr2m
+    amu2kg = ash.constants.amu2kg
+    c = ash.constants.c
+    pi = ash.constants.pi
     evalues_si = [val*hartree2j/bohr2m/bohr2m/amu2kg for val in evalues]
     vfreq_hz = [1/(2*pi)*np.sqrt(np.complex_(val)) for val in evalues_si]
     vfreq = [val/c for val in vfreq_hz]
@@ -645,19 +646,19 @@ def thermochemcalc(vfreq,atoms,fragment, multiplicity, temp=298.15,pressure=1.0)
                     print("Mode {} with frequency {} is negative. Skipping in thermochemistry".format(mode,vib))
                 else:
                     freqs.append(float(vib))
-                    freq_Hz=vib*constants.c
-                    vibtemp=(constants.h_planck_hartreeseconds * freq_Hz) / constants.R_gasconst
+                    freq_Hz=vib*ash.constants.c
+                    vibtemp=(ash.constants.h_planck_hartreeseconds * freq_Hz) / ash.constants.R_gasconst
                     vibtemps.append(vibtemp)
 
         #Zero-point vibrational energy
-        zpve=sum([i*constants.halfhcfactor for i in freqs])
+        zpve=sum([i*ash.constants.halfhcfactor for i in freqs])
 
         #Thermal vibrational energy
         sumb=0.0
         for v in vibtemps:
             #print(v*(0.5+(1/(np.exp((v/temp) - 1)))))
             sumb=sumb+v*(0.5+(1/(np.exp((v/temp) - 1))))
-        E_vib=sumb*constants.R_gasconst
+        E_vib=sumb*ash.constants.R_gasconst
         vibenergycorr=E_vib-zpve
 
         #Vibrational entropy via RRHO.
@@ -680,13 +681,13 @@ def thermochemcalc(vfreq,atoms,fragment, multiplicity, temp=298.15,pressure=1.0)
         rinertia = list(inertia(elems,coords,center))
         print("Moments of inertia (amu Å^2):", rinertia)
         #Changing units to m and kg
-        I=np.array(rinertia)*constants.amu2kg*constants.ang2m**2
+        I=np.array(rinertia)*ash.constants.amu2kg*ash.constants.ang2m**2
 
         #Rotational temperatures
         #k_b_JK or R_JK
-        rot_temps_x=constants.h_planck**2 / (8*math.pi**2 * constants.k_b_JK * I[0])
-        rot_temps_y=constants.h_planck**2 / (8*math.pi**2 * constants.k_b_JK * I[1])
-        rot_temps_z=constants.h_planck**2 / (8*math.pi**2 * constants.k_b_JK * I[2])
+        rot_temps_x=ash.constants.h_planck**2 / (8*math.pi**2 * ash.constants.k_b_JK * I[0])
+        rot_temps_y=ash.constants.h_planck**2 / (8*math.pi**2 * ash.constants.k_b_JK * I[1])
+        rot_temps_z=ash.constants.h_planck**2 / (8*math.pi**2 * ash.constants.k_b_JK * I[2])
         print("Rotational temperatures: {}, {}, {} K".format(rot_temps_x,rot_temps_y,rot_temps_z))
         #Rotational constants
         rotconstants = calc_rotational_constants(fragment, printlevel=1)
@@ -700,15 +701,15 @@ def thermochemcalc(vfreq,atoms,fragment, multiplicity, temp=298.15,pressure=1.0)
             #Symmetry number
             sigma_r=1.0
             q_r=(1/sigma_r)*(temp/(rot_temps_x))
-            S_rot=constants.R_gasconst*(math.log(q_r)+1.0)
-            E_rot=constants.R_gasconst*temp
+            S_rot=ash.constants.R_gasconst*(math.log(q_r)+1.0)
+            E_rot=ash.constants.R_gasconst*temp
         else:
             #Nonlinear case
             #Symmetry number hardcoded. TODO: properly
             sigma_r=2.0
             q_r=(math.pi**(1/2) / sigma_r ) * (temp**(3/2)) / ((rot_temps_x*rot_temps_y*rot_temps_z)**(1/2))
-            S_rot=constants.R_gasconst*(math.log(q_r)+1.5)
-            E_rot=1.5*constants.R_gasconst*temp
+            S_rot=ash.constants.R_gasconst*(math.log(q_r)+1.5)
+            E_rot=1.5*ash.constants.R_gasconst*temp
         TS_rot=temp*S_rot
     else:
         E_rot=0.0
@@ -717,7 +718,7 @@ def thermochemcalc(vfreq,atoms,fragment, multiplicity, temp=298.15,pressure=1.0)
     ###################
     #TRANSLATIONAL PART
     ###################
-    E_trans=1.5*constants.R_gasconst*temp
+    E_trans=1.5*ash.constants.R_gasconst*temp
     
     #R gas constant in kcal/molK
     R_kcalpermolK=1.987E-3
@@ -728,20 +729,20 @@ def thermochemcalc(vfreq,atoms,fragment, multiplicity, temp=298.15,pressure=1.0)
     qtrans=(factor*temp**2.5*totalmass**1.5)/pressure
     S_trans=R_kcalpermolK*(math.log(qtrans)+2.5)
     
-    TS_trans=temp*S_trans/constants.harkcal #Energy term converted to Eh
+    TS_trans=temp*S_trans/ash.constants.harkcal #Energy term converted to Eh
 
     #######################
     #Electronic entropy
     #######################
     q_el=multiplicity
-    S_el=constants.R_gasconst*math.log(q_el)
+    S_el=ash.constants.R_gasconst*math.log(q_el)
     TS_el=temp*S_el
 
     #######################
     # Thermodynamic corrections
     #######################
     E_tot = E_vib + E_trans + E_rot
-    Hcorr = E_vib + E_trans + E_rot + constants.R_gasconst*temp
+    Hcorr = E_vib + E_trans + E_rot + ash.constants.R_gasconst*temp
     TS_tot = TS_el + TS_trans + TS_rot + TS_vib
     Gcorr = Hcorr - TS_tot
 
@@ -1032,7 +1033,7 @@ def get_center(elems,coords):
     xcom,ycom,zcom = 0,0,0
     totmass = 0
     for el,coord in zip(elems,coords):
-        mass = modules.module_coords.atommasses[modules.module_coords.elematomnumbers[el.lower()]-1]
+        mass = ash.modules.module_coords.atommasses[ash.modules.module_coords.elematomnumbers[el.lower()]-1]
         xcom += float(mass)*float(coord[0])
         ycom += float(mass)*float(coord[1])
         zcom += float(mass)*float(coord[2])
@@ -1054,7 +1055,7 @@ def inertia(elems,coords,center):
     Iyz = 0.
 
     for index,(el,coord) in enumerate(zip(elems,coords)):
-        mass = modules.module_coords.atommasses[modules.module_coords.elematomnumbers[el.lower()]-1]
+        mass = ash.modules.module_coords.atommasses[ash.modules.module_coords.elematomnumbers[el.lower()]-1]
         x = coord[0] - xcom
         y = coord[1] - ycom
         z = coord[2] - zcom
@@ -1085,7 +1086,7 @@ def calc_rotational_constants(frag, printlevel=2):
             rot_ghz=5.053791E5/(inertval*1000)
             rot_constants.append(rot_ghz)
     
-    rot_constants_cm = [i*constants.GHztocm for i in rot_constants]
+    rot_constants_cm = [i*ash.constants.GHztocm for i in rot_constants]
     if printlevel >= 2:
         print("Moments of inertia (amu A^2 ):", rinertia)
         print("Rotational constants (GHz):", rot_constants)
@@ -1107,7 +1108,7 @@ def calc_model_Hessian_ORCA(fragment,model='Almloef'):
     inhess {}
     end
 """.format(model)
-    orcadummycalc=interfaces.interface_ORCA.ORCATheory(orcasimpleinput=orcasimple,orcablocks=orcablocks, extraline=extraline)
+    orcadummycalc=ash.interfaces.interface_ORCA.ORCATheory(orcasimpleinput=orcasimple,orcablocks=orcablocks, extraline=extraline)
     ash.Singlepoint(theory=orcadummycalc, fragment=fragment, charge=0, mult=1)
     #Read orca-input.opt containing Hessian under hessian_approx
     hesstake=False
@@ -1360,10 +1361,10 @@ def get_dominant_atoms_in_mode(mode,fragment=None, threshold=0.3, hessatoms=None
     #numatoms=fragment.numatoms
     #Partial Hessian or no
     #if hessatoms != None:
-    #    hessmasses = modules.module_coords.get_partial_list(allatoms, hessatoms, fragment.list_of_masses)
+    #    hessmasses = ash.modules.module_coords.get_partial_list(allatoms, hessatoms, fragment.list_of_masses)
 
         # Get partial matrix by deleting atoms not present in list.
-    #    hesselems = modules.module_coords.get_partial_list(allatoms, hessatoms, fragment.elems)
+    #    hesselems = ash.modules.module_coords.get_partial_list(allatoms, hessatoms, fragment.elems)
     #else:
     hessmasses=fragment.list_of_masses
     hesselems=fragment.elems
@@ -1606,12 +1607,12 @@ def comparenormalmodes(hessianA,hessianB,massesA,massesB):
 
 #TODO: cleanup and use in thermochemcalc
 def S_vib(freqs,T):
-    vibtemps = [(f*constants.c*constants.h_planck_hartreeseconds)/constants.R_gasconst for f in freqs]
+    vibtemps = [(f*ash.constants.c*ash.constants.h_planck_hartreeseconds)/ash.constants.R_gasconst for f in freqs]
     #Vibrational entropy via RRHO.
     S_vib=0.0
     for vibtemp in vibtemps:
-        S_vib+=constants.R_gasconst*(vibtemp/T)/(math.exp(vibtemp/T) - 1) - constants.R_gasconst*math.log(1-math.exp(-1*vibtemp/T))
+        S_vib+=ash.constants.R_gasconst*(vibtemp/T)/(math.exp(vibtemp/T) - 1) - ash.constants.R_gasconst*math.log(1-math.exp(-1*vibtemp/T))
     TS_vib=S_vib*T
     #print(f"TS_vib: {TS_vib} Eh")
-    #print(f"TS_vib: {TS_vib*constants.hartokcal} kcal/mol")
+    #print(f"TS_vib: {TS_vib*ash.constants.hartokcal} kcal/mol")
     return TS_vib

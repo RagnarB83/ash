@@ -8,19 +8,19 @@ import shutil
 import time
 import copy
 
-import ash
+#import ash
 #from ash import Singlepoint
-import interfaces.interface_geometric
-import interfaces.interface_crest
-from functions.functions_general import BC,print_time_rel,print_line_with_mainheader,pygrep, ashexit,n_max_values
-#from modules.module_singlepoint import Singlepoint_fragments
-from modules.module_highlevel_workflows import CC_CBS_Theory
-from modules.module_coords import read_xyzfiles
-import functions.functions_elstructure
-from modules.module_plotting import ASH_plot
-from modules.module_singlepoint import ReactionEnergy
-from modules.module_coords import check_charge_mult
-from modules.module_freq import thermochemcalc
+import ash.interfaces.interface_geometric
+import ash.interfaces.interface_crest
+from ash.functions.functions_general import BC,print_time_rel,print_line_with_mainheader,pygrep, ashexit,n_max_values
+#from ash.modules.module_singlepoint import Singlepoint_fragments
+from ash.modules.module_highlevel_workflows import CC_CBS_Theory
+from ash.modules.module_coords import read_xyzfiles
+import ash.functions.functions_elstructure
+from ash.modules.module_plotting import ASH_plot
+from ash.modules.module_singlepoint import ReactionEnergy
+from ash.modules.module_coords import check_charge_mult
+from ash.modules.module_freq import thermochemcalc
 
 #Simple class to keep track of results. To be extended
 class ProjectResults():
@@ -64,10 +64,10 @@ def confsampler_protocol(fragment=None, crestdir=None, xtbmethod='GFN2-xTB', MLt
 
     #1. Calling crest
     #call_crest(fragment=molecule, xtbmethod='GFN2-xTB', crestdir=crestdir, charge=charge, mult=mult, solvent='H2O', energywindow=6 )
-    interfaces.interface_crest.call_crest(fragment=fragment, xtbmethod=xtbmethod, crestdir=crestdir, charge=charge, mult=mult, numcores=numcores)
+    ash.interfaces.interface_crest.call_crest(fragment=fragment, xtbmethod=xtbmethod, crestdir=crestdir, charge=charge, mult=mult, numcores=numcores)
 
     #2. Grab low-lying conformers from crest_conformers.xyz as list of ASH fragments.
-    list_conformer_frags, xtb_energies = interfaces.interface_crest.get_crest_conformers(charge=charge, mult=mult)
+    list_conformer_frags, xtb_energies = ash.interfaces.interface_crest.get_crest_conformers(charge=charge, mult=mult)
 
     print("list_conformer_frags:", list_conformer_frags)
     print("")
@@ -81,7 +81,7 @@ def confsampler_protocol(fragment=None, crestdir=None, xtbmethod='GFN2-xTB', MLt
     for index,conformer in enumerate(list_conformer_frags):
         print("")
         print("Performing ML Geometry Optimization for Conformer ", index)
-        interfaces.interface_geometric.geomeTRICOptimizer(fragment=conformer, theory=MLtheory, coordsystem='tric', charge=charge, mult=mult)
+        ash.interfaces.interface_geometric.geomeTRICOptimizer(fragment=conformer, theory=MLtheory, coordsystem='tric', charge=charge, mult=mult)
         ML_energies.append(conformer.energy)
         #Saving ASH fragment and XYZ file for each ML-optimized conformer
         os.rename('Fragment-optimized.ygg', 'Conformer{}_ML.ygg'.format(index))
@@ -151,7 +151,7 @@ def thermochemprotocol_single(fragment=None, Opt_theory=None, SP_theory=None, nu
     print("-------------------------------------------------------------------------")
     if fragment.numatoms != 1:
         #DFT-opt
-        interfaces.interface_geometric.geomeTRICOptimizer(theory=Opt_theory,fragment=fragment, charge=charge, mult=mult)
+        ash.interfaces.interface_geometric.geomeTRICOptimizer(theory=Opt_theory,fragment=fragment, charge=charge, mult=mult)
         print("-------------------------------------------------------------------------")
         print("THERMOCHEM PROTOCOL-single: Step 2. Frequency calculation")
         print("-------------------------------------------------------------------------")
@@ -416,7 +416,7 @@ def auto_active_space(fragment=None, orcadir=None, basis="def2-SVP", scalar_rel=
     lower_threshold=selection_thresholds[1]
     print("Selecting size of active-space for ICE-CI step")
     print("Using orbital tresholds:", upper_threshold,lower_threshold )
-    numelectrons,numorbitals=functions.functions_elstructure.select_space_from_occupations(step1occupations, selection_thresholds=[upper_threshold,lower_threshold])
+    numelectrons,numorbitals=ash.functions.functions_elstructure.select_space_from_occupations(step1occupations, selection_thresholds=[upper_threshold,lower_threshold])
     print("Will use CAS size of CAS({},{}) for ICE-CI step".format(numelectrons,numorbitals))
 
     #2b. Read orbitals into ICE-CI calculation
@@ -467,12 +467,12 @@ def auto_active_space(fragment=None, orcadir=None, basis="def2-SVP", scalar_rel=
         print("{:<9} {:9.4f} {:9.4f}".format(index,step1occ,iceocc))
 
 
-    minimal_CAS=functions.functions_elstructure.select_space_from_occupations(ICEnatoccupations, selection_thresholds=[1.95,0.05])
-    medium1_CAS=functions.functions_elstructure.select_space_from_occupations(ICEnatoccupations, selection_thresholds=[1.98,0.02])
-    medium2_CAS=functions.functions_elstructure.select_space_from_occupations(ICEnatoccupations, selection_thresholds=[1.985,0.015])
-    medium3_CAS=functions.functions_elstructure.select_space_from_occupations(ICEnatoccupations, selection_thresholds=[1.99,0.01])
-    medium4_CAS=functions.functions_elstructure.select_space_from_occupations(ICEnatoccupations, selection_thresholds=[1.992,0.008])
-    large_CAS=functions.functions_elstructure.select_space_from_occupations(ICEnatoccupations, selection_thresholds=[1.995,0.005])
+    minimal_CAS=ash.functions.functions_elstructure.select_space_from_occupations(ICEnatoccupations, selection_thresholds=[1.95,0.05])
+    medium1_CAS=ash.functions.functions_elstructure.select_space_from_occupations(ICEnatoccupations, selection_thresholds=[1.98,0.02])
+    medium2_CAS=ash.functions.functions_elstructure.select_space_from_occupations(ICEnatoccupations, selection_thresholds=[1.985,0.015])
+    medium3_CAS=ash.functions.functions_elstructure.select_space_from_occupations(ICEnatoccupations, selection_thresholds=[1.99,0.01])
+    medium4_CAS=ash.functions.functions_elstructure.select_space_from_occupations(ICEnatoccupations, selection_thresholds=[1.992,0.008])
+    large_CAS=ash.functions.functions_elstructure.select_space_from_occupations(ICEnatoccupations, selection_thresholds=[1.995,0.005])
 
     spaces_dict={"minimal_CAS":minimal_CAS,"medium1_CAS":medium1_CAS,"medium2_CAS":medium2_CAS, "medium3_CAS":medium3_CAS, "medium4_CAS":medium4_CAS, "large_CAS":large_CAS  }
 
@@ -562,7 +562,7 @@ def calc_xyzfiles(xyzdir=None, theory=None, HL_theory=None, Opt=False, Freq=Fals
                 xtbcalc.cleanup()
             
             #Now doing actual OPT
-            optenergy = interfaces.interface_geometric.geomeTRICOptimizer(theory=theory, fragment=fragment, coordsystem='tric', charge=fragment.charge, mult=fragment.mult)
+            optenergy = ash.interfaces.interface_geometric.geomeTRICOptimizer(theory=theory, fragment=fragment, coordsystem='tric', charge=fragment.charge, mult=fragment.mult)
             theory.cleanup()
             energy=optenergy
             optenergies.append(optenergy)
@@ -1189,15 +1189,15 @@ def AutoNonAufbau(fragment=None, theory=None, num_occ_orbs=1, num_virt_orbs=3, s
     #Read TDDFT output if requested
     if TDDFT is True:
         #TDDFT transition energies
-        transition_energies = interfaces.interface_ORCA.tddftgrab(theory.filename+".out")
+        transition_energies = ash.interfaces.interface_ORCA.tddftgrab(theory.filename+".out")
         print("TDDFT transition_energies (eV):", transition_energies)
         #Making sure to take GS energy not from FINAL SINGLEPOINT ENERGY since ORCA annoyingly adds the transition energy
         E_GS = float(pygrep("E(SCF)  =",theory.filename+'.out')[2])
-        tddft_pairs = interfaces.interface_ORCA.tddft_orbitalpairs_grab(theory.filename+".out")
+        tddft_pairs = ash.interfaces.interface_ORCA.tddft_orbitalpairs_grab(theory.filename+".out")
         print("TDDFT orbital pairs per state:", tddft_pairs)
 
     #Read MO-energies
-    mo_dict = interfaces.interface_ORCA.MolecularOrbitalGrab(theory.filename+".out")
+    mo_dict = ash.interfaces.interface_ORCA.MolecularOrbitalGrab(theory.filename+".out")
     print("mo_dict:", mo_dict)
 
     #MO numbers of the HOMO and the first LUMO for alpha and beta sets

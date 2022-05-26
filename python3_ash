@@ -2,6 +2,7 @@
 # -*- coding: utf-8 -*-
 #Note: python-jl fix so that PyJulia works without problems
 #Note: This file needs to be made executable: chmod +x python3_ash
+#Note: Nasty fix (adds startup time). To be removed.
 import sys
 import re
 

@@ -1,7 +1,7 @@
 import time
 
-from functions.functions_general import ashexit, BC,print_time_rel
-import modules.module_coords
+from ash.functions.functions_general import ashexit, BC,print_time_rel
+import ash.modules.module_coords
 
 #PySCF Theory object.
 #PySCF runmode: Library only
@@ -97,7 +97,7 @@ class PySCFTheory:
         mol = gto.Mole()
         #Not very verbose system printing
         mol.verbose = 3
-        coords_string=modules.module_coords.create_coords_string(qm_elems,current_coords)
+        coords_string=ash.modules.module_coords.create_coords_string(qm_elems,current_coords)
         mol.atom = coords_string
         mol.symmetry = 1
         mol.charge = charge

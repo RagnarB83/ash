@@ -2,12 +2,12 @@ import os
 import time
 import sys
 import shutil
-
-from modules.module_coords import split_multimolxyzfile
-from functions.functions_general import ashexit, BC, int_ranges, listdiff, print_line_with_subheader1,print_time_rel, pygrep
 import subprocess as sp
-import ash
-from modules.module_coords import check_charge_mult
+
+from ash.modules.module_coords import split_multimolxyzfile
+from ash.functions.functions_general import ashexit, BC, int_ranges, listdiff, print_line_with_subheader1,print_time_rel, pygrep
+#import ash
+from ash.modules.module_coords import check_charge_mult
 
 #Very simple crest interface
 def call_crest(fragment=None, xtbmethod=None, crestdir=None, charge=None, mult=None, solvent=None, energywindow=6, numcores=1, 
