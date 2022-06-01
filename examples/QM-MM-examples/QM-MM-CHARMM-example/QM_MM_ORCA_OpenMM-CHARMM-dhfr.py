@@ -2,6 +2,7 @@ from ash import *
 
 numcores=1
 
+#Defining path to dir containing forcefield files and coordinates
 forcefielddir="./"
 psffile=forcefielddir+"step3_pbcsetup.psf"
 topfile=forcefielddir+"top_all36_prot.rtf"
@@ -13,7 +14,8 @@ frag = Fragment(xyzfile=xyzfile)
 
 #Creating OpenMM object
 openmmobject = OpenMMTheory(psffile=psffile, CHARMMfiles=True, charmmtopfile=topfile,
-    charmmprmfile=prmfile, periodic=True, charmm_periodic_cell_dimensions=[80.0, 80.0, 80.0, 90.0, 90.0, 90.0], do_energy_decomposition=True)
+    charmmprmfile=prmfile, periodic=True, charmm_periodic_cell_dimensions=[80.0, 80.0, 80.0, 90.0, 90.0, 90.0], 
+    do_energy_decomposition=True, autoconstraints=None, rigidwater=False)
 
 
 #Creating ORCATheory object

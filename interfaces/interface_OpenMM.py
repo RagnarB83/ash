@@ -1329,11 +1329,6 @@ class OpenMMTheory:
         if self.do_energy_decomposition is True:
             self.printEnergyDecomposition()
 
-        print("self.energy : ", self.energy, "Eh")
-        print("Energy:", self.energy * ash.constants.harkcal, "kcal/mol")
-        # print("Grad is", Grad)
-        # print("self.gradient:", self.gradient)
-
         print_line_with_subheader2("Ending OpenMM interface")
         print_time_rel(module_init_time, modulename="OpenMM run", moduleindex=2)
         if Grad is True:
