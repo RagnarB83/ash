@@ -176,14 +176,11 @@ class NonBondedTheory:
             print("Creating epsij and sigmaij arrays ({},{})".format(self.numatoms,self.numatoms))
             print("Will skip QM-QM ij pairs for qmatoms: ", qmatoms)
             print("Will skip frozen-frozen ij pairs")
-            print("len actatoms:", len(actatoms))
-            print("len frozenatoms:", len(frozenatoms))
         beginTime = time.time()
 
         CheckpointTime = time.time()
         # See speed-tests at /home/bjornsson/pairpot-test
 
-        print("self.codeversion:", self.codeversion)
         if self.codeversion=="julia":
             if self.printlevel >= 2:
                 print("Using Julia for fast sigmaij and epsij array creation")
