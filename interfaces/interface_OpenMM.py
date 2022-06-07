@@ -1921,7 +1921,8 @@ def OpenMM_Opt(fragment=None, theory=None, maxiter=1000, tolerance=1, enforcePer
 
 def OpenMM_Modeller(pdbfile=None, forcefield=None, xmlfile=None, waterxmlfile=None, watermodel=None, pH=7.0,
                     solvent_padding=10.0, solvent_boxdims=None, extraxmlfile=None, residue_variants=None,
-                    ionicstrength=0.1, pos_iontype='Na+', neg_iontype='Cl-', use_higher_occupancy=False):
+                    ionicstrength=0.1, pos_iontype='Na+', neg_iontype='Cl-', use_higher_occupancy=False,
+                    platform="CPU"):
     module_init_time = time.time()
     print_line_with_mainheader("OpenMM Modeller")
     try:
@@ -2155,8 +2156,8 @@ def OpenMM_Modeller(pdbfile=None, forcefield=None, xmlfile=None, waterxmlfile=No
     print("Extra forcefield XML file:", extraxmlfile)
 
     #Creating new OpenMM object from forcefield so that we can write out system XMLfile
-    print("Creating temporary OpenMMTheory object")
-    openmmobject =OpenMMTheory(platform='CPU', forcefield=forcefield, topoforce=True,
+    print("Creating OpenMMTheory object")
+    openmmobject =OpenMMTheory(platform=platform, forcefield=forcefield, topoforce=True,
                         topology=modeller.topology, pdbfile=None, periodic=True,
                         autoconstraints='HBonds', rigidwater=True)
     #Write out System XMLfile
@@ -2185,7 +2186,7 @@ def OpenMM_Modeller(pdbfile=None, forcefield=None, xmlfile=None, waterxmlfile=No
 
     print(BC.OKMAGENTA,"1. Define using separate forcefield XML files:",BC.END)
     if extraxmlfile is None:
-        print("omm = OpenMMTheory(xmlfiles=[{}, {}], pdbfile=\"finalsystem.pdb\", periodic=True)".format(xmlfile,waterxmlfile),BC.END)
+        print("omm = OpenMMTheory(xmlfiles=[\"{}\", \"{}\"], pdbfile=\"finalsystem.pdb\", periodic=True)".format(xmlfile,waterxmlfile),BC.END)
     else:
         print("omm = OpenMMTheory(xmlfiles=[\"{}\", \"{}\", \"{}\"], pdbfile=\"finalsystem.pdb\", periodic=True)".format(xmlfile,waterxmlfile,extraxmlfile),BC.END)
 
@@ -2194,7 +2195,7 @@ def OpenMM_Modeller(pdbfile=None, forcefield=None, xmlfile=None, waterxmlfile=No
     print_time_rel(module_init_time, modulename="OpenMM_Modeller", moduleindex=1)
     
     #Return openmmobject. Could be used directly
-    return openmmobject
+    return openmmobject, fragment
 
 
 def MDtraj_import_():
