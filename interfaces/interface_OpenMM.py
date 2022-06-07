@@ -2121,7 +2121,7 @@ def OpenMM_Modeller(pdbfile=None, forcefield=None, xmlfile=None, waterxmlfile=No
     print("Adding hydrogens for pH:", pH)
     print("Providing full list of residue_states", residue_states)
     print("Warning: OpenMM Modeller will fail in this step if residue information is missing")
-    modeller.addHydrogens(forcefield, pH=pH, variants=residue_states)
+    modeller.addHydrogens(forcefield, pH=pH, variants=residue_states, platform=platform)
     write_pdbfile_openMM(modeller.topology, modeller.positions, "system_afterH.pdb")
     print_systemsize()
 
