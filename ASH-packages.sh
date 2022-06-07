@@ -8,6 +8,7 @@ conda install -c conda-forge julia
 conda install -c conda-forge xtb
 
 #Optional: for extra MM and MD functionality
+conda install -c conda-forge pdbfixer
 conda install -c conda-forge plumed
 conda install -c conda-forge parmed
 conda install -c conda-forge mdanalysis
