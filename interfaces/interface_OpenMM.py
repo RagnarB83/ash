@@ -1,3 +1,4 @@
+from operator import truediv
 import os
 from sys import stdout
 import time
@@ -2459,7 +2460,8 @@ def solvate_small_molecule(fragment=None, charge=None, mult=None, watermodel=Non
 # Simple XML-writing function. Will only write nonbonded parameters
 def write_xmlfile_nonbonded(resnames=None, atomnames_per_res=None, atomtypes_per_res=None, elements_per_res=None,
                             masses_per_res=None, charges_per_res=None, sigmas_per_res=None,
-                            epsilons_per_res=None, filename="system.xml", coulomb14scale=0.833333, lj14scale=0.5, skip_nb=False):
+                            epsilons_per_res=None, filename="system.xml", coulomb14scale=0.833333, 
+                            lj14scale=0.5, skip_nb=False, charmm=False):
     print("Inside write_xml file")
     # resnames=["MOL1", "MOL2"]
     # atomnames_per_res=[["CM1","CM2","HX1","HX2"],["OT1","HT1","HT2"]]
@@ -2485,16 +2487,27 @@ def write_xmlfile_nonbonded(resnames=None, atomnames_per_res=None, atomtypes_per
                 atomtypelines.append(atomtypeline)
     # Create list of all nonbonded lines (unique)
     nonbondedlines = []
+    LJforcelines = []
     for resname, atomtypelist, chargelist, sigmalist, epsilonlist in zip(resnames, atomtypes_per_res, charges_per_res,
                                                                          sigmas_per_res, epsilons_per_res):
         print("atomtypelist:", atomtypelist)
         print("chargelist.", chargelist)
         print("sigmalist", sigmalist)
         for atype, charge, sigma, epsilon in zip(atomtypelist, chargelist, sigmalist, epsilonlist):
-            nonbondedline = "<Atom type=\"{}\" charge=\"{}\" sigma=\"{}\" epsilon=\"{}\"/>\n".format(atype, charge,
-                                                                                                     sigma, epsilon)
-            if nonbondedline not in nonbondedlines:
-                nonbondedlines.append(nonbondedline)
+            if charmm == True:
+                #LJ parameters zero here
+                nonbondedline = "<Atom type=\"{}\" charge=\"{}\" sigma=\"{}\" epsilon=\"{}\"/>\n".format(atype, charge,0.0, 0.0)
+                #Here we set LJ parameters
+                ljline = "<Atom type=\"{}\" sigma=\"{}\" epsilon=\"{}\"/>\n".format(atype, sigma, epsilon) 
+                if nonbondedline not in nonbondedlines:
+                    nonbondedlines.append(nonbondedline)
+                if ljline not in LJforcelines:
+                    LJforcelines.append(ljline)
+            else:
+                nonbondedline = "<Atom type=\"{}\" charge=\"{}\" sigma=\"{}\" epsilon=\"{}\"/>\n".format(atype, charge,
+                                                                                                        sigma, epsilon)
+                if nonbondedline not in nonbondedlines:
+                    nonbondedlines.append(nonbondedline)
 
     with open(filename, 'w') as xmlfile:
         xmlfile.write("<ForceField>\n")
@@ -2511,10 +2524,23 @@ def write_xmlfile_nonbonded(resnames=None, atomnames_per_res=None, atomtypes_per
             xmlfile.write("</Residue>\n")
         xmlfile.write("</Residues>\n")
         if skip_nb is False:
-            xmlfile.write("<NonbondedForce coulomb14scale=\"{}\" lj14scale=\"{}\">\n".format(coulomb14scale, lj14scale))
-            for nonbondedline in nonbondedlines:
-                xmlfile.write(nonbondedline)
-            xmlfile.write("</NonbondedForce>\n")
+
+            if charmm == True:
+                #Writing both Nonbnded force block and also LennardJonesForce block
+                xmlfile.write("<NonbondedForce coulomb14scale=\"{}\" lj14scale=\"{}\">\n".format(coulomb14scale, lj14scale))
+                for nonbondedline in nonbondedlines:
+                    xmlfile.write(nonbondedline)
+                xmlfile.write("</NonbondedForce>\n")
+                xmlfile.write("<LennardJonesForce lj14scale=\"{}\">\n".format(lj14scale))
+                for ljline in LJforcelines:
+                    xmlfile.write(ljline)
+                xmlfile.write("</LennardJonesForce>\n")
+            else:
+                #Only NonbondedForce block
+                xmlfile.write("<NonbondedForce coulomb14scale=\"{}\" lj14scale=\"{}\">\n".format(coulomb14scale, lj14scale))
+                for nonbondedline in nonbondedlines:
+                    xmlfile.write(nonbondedline)
+                xmlfile.write("</NonbondedForce>\n")
         xmlfile.write("</ForceField>\n")
     print("Wrote XML-file:", filename)
     return filename
@@ -2524,10 +2550,9 @@ def write_xmlfile_nonbonded(resnames=None, atomnames_per_res=None, atomtypes_per
 def basic_atomcharges_xTB(fragment=None, charge=None, mult=None, xtbmethod='GFN2'):
     print("Now calculating atom charges for fragment.")
     print("Using default xTB charges.")
-    calc = xTBTheory(fragment=fragment, charge=charge, runmode='inputfile',
-                     mult=mult, xtbmethod=xtbmethod)
+    calc = xTBTheory(runmode='inputfile',xtbmethod=xtbmethod)
 
-    Singlepoint(theory=calc, fragment=fragment)
+    Singlepoint(theory=calc, fragment=fragment, charge=charge, mult=mult)
     atomcharges = grabatomcharges_xTB()
     print("atomcharges:", atomcharges)
     print("fragment elems:", fragment.elems)
@@ -2544,7 +2569,7 @@ def basic_atom_charges_ORCA(fragment=None, charge=None, mult=None, orcatheory=No
         print("orcatheory not provided. Will do r2SCAN/def2-SVP single-point calculation")
         orcasimpleinput = "! r2SCAN def2-SVP tightscf "
         orcablocks = "%scf maxiter 300 end"
-        orcatheory = ORCATheory(fragment=fragment, orcasimpleinput=orcasimpleinput,
+        orcatheory = ORCATheory(orcasimpleinput=orcasimpleinput,
                                 orcablocks=orcablocks, numcores=numcores)
     if chargemodel == 'CM5':
         orcatheory.extraline = chargemodel_select(chargemodel)
@@ -3450,3 +3475,57 @@ def find_alternate_locations_residues(pdbfile, use_higher_occupancy=False):
     #Returning original pdbfile if all OK        
 
     return pdbfile
+
+#Function to get nonbonded model parameters for a metal cluster
+#TODO: Add option to symmetrize charges for similar atoms in residue
+def write_nonbonded_FF_for_ligand(xyzfile=None, charge=None, mult=None, coulomb14scale=1.0, lj14scale=1.0, 
+    charmm=True, charge_model="xTB", theory=None, LJ_model="UFF", resname="LIG"):
+    print_line_with_mainheader("OpenMM write_nonbonded_FF_for_ligand")
+
+    if charmm == True:
+        print("CHARMM option: True")
+        print("Will create XML file so that the Nonbonded Interaction is compatible with CHARMM.")
+
+    else:
+        print("CHARMM option: False")
+        print("Will create XML file in the regular way")
+
+    #Coulomb and LJ scaling. Needs to be FF compatible. CHARMM values below
+
+    #Creating ASH fragment
+    fragment=Fragment(xyzfile=xyzfile, charge=charge,mult=mult)
+
+    # Defining simple atomnames and atomtypes to be used for ligand
+    atomnames = [el + "Y" + str(i) for i, el in enumerate(fragment.elems)]
+    atomtypes = [el + "X" + str(i) for i, el in enumerate(fragment.elems)]
+
+    if charge_model == "xTB":
+        print("Using xTB charges")
+        charges = basic_atomcharges_xTB(fragment=fragment, charge=fragment.charge, mult=fragment.mult, xtbmethod='GFN2')
+    elif charge_model == "CM5_ORCA":
+        print("CM5_ORCA option chosen")
+        if theory == None: print("theory keyword required");ashexit()
+        atompropdict = basic_atom_charges_ORCA(fragment=fragment, charge=charge, mult=mult,
+                                               orcatheory=theory, chargemodel="CM5", numcores=theory.numcores)
+        charges = atompropdict['charges']
+    else:
+        print("Unknown nonbonded_pars option")
+        exit()
+
+    if LJ_model == "UFF":
+        # Basic UFF LJ parameters
+        # Converting r0 parameters from Ang to nm and to sigma
+        sigmas = [UFF_modH_dict[el][0] * 0.1 / (2 ** (1 / 6)) for el in fragment.elems]
+        # Convering epsilon from kcal/mol to kJ/mol
+        epsilons = [UFF_modH_dict[el][1] * 4.184 for el in fragment.elems]
+    else:
+        print("other LJ model not available")
+        ashexit()
+
+    # Creating XML-file for ligand
+    xmlfile = write_xmlfile_nonbonded(resnames=[resname], atomnames_per_res=[atomnames], atomtypes_per_res=[atomtypes],
+                                        elements_per_res=[fragment.elems], masses_per_res=[fragment.masses],
+                                        charges_per_res=[charges],
+                                        sigmas_per_res=[sigmas], epsilons_per_res=[epsilons], filename=resname+".xml",
+                                        coulomb14scale=coulomb14scale, lj14scale=lj14scale, charmm=charmm)
+    return xmlfile

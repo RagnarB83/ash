@@ -2767,7 +2767,7 @@ set startatoms false
                   set segname [lindex $line 1]
                   set resid [lindex $line 2]
                   set atomname [lindex $line 4]
-                 puts "[31m Deleting atom $atomname (segname  $segname,  resid is $resid) from PSF information!"
+                 puts "Deleting atom $atomname (segname  $segname,  resid is $resid) from PSF information!"
                  #PSFgen 1.6 delatom command
                  delatom $segname $resid $atomname
                 }}
