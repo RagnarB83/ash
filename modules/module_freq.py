@@ -214,9 +214,15 @@ def NumFreq(fragment=None, theory=None, charge=None, mult=None, npoint=2, displa
             energy, gradient = theory.run(current_coords=geo, elems=elems, Grad=True, numcores=numcores, charge=charge, mult=mult)
             #Keep QM outputfile for each displacement
             if theory.theorytype == "QM":
-                shutil.copy(theory.filename+'.out', theory.filename+'disp_'+str(numdisp)+'.out')
+                try:
+                    shutil.copy(theory.filename+'.out', theory.filename+'disp_'+str(numdisp)+'.out')
+                except:
+                    pass
             elif theory.theorytype == "QM/MM":
-                shutil.copy(theory.qm_theory.filename+'.out', theory.qm_theory.filename+'disp_'+str(numdisp)+'.out')
+                try:
+                    shutil.copy(theory.qm_theory.filename+'.out', theory.qm_theory.filename+'disp_'+str(numdisp)+'.out')
+                except:
+                    pass
             else:
                 print("Warning. Unknown theorytype")
 
@@ -1235,10 +1241,7 @@ def isotope_change_Hessian(hessfile=None, hessian=None, elems=None, masses=None,
 
 #Get normal mode composition factors for mode j and atom a
 def normalmodecomp(evectors,j,a):
-    #print("insidenormalmodecomp ")
-    #print("evectors", evectors)
-    #print("j:", j)
-    #print("a:", a)
+
     #square elements of mode j
     esq_j=[i ** 2 for i in evectors[j]]
     #Squared elements of atom a in mode j
@@ -1246,12 +1249,19 @@ def normalmodecomp(evectors,j,a):
     esq_ja.append(esq_j[a*3+0]);esq_ja.append(esq_j[a*3+1]);esq_ja.append(esq_j[a*3+2])
     return sum(esq_ja)
 
+#Get all normal mode composition factors for atom a
+def normalmodecomp_for_atom(evectors,atom):
+    factors = []
+    for j in range(0,len(evectors)):
+        factor = normalmodecomp(evectors,j,atom)
+        factors.append(factor)
+
+    print(factors)
+    return factors
 
 # Get normal mode composition factors for all atoms for a specific mode only
 def normalmodecomp_all(mode,fragment,evectors, hessatoms=None):
-    #print("inside normalmodecomp_all")
-    #print("mode x ", mode)
-    #print(evectors)
+
     if hessatoms == None:
         numatoms=fragment.numatoms
     else:
