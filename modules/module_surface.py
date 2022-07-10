@@ -226,7 +226,7 @@ def calc_surface(fragment=None, theory=None, charge=None, mult=None, scantype='U
                             surfacedictionary[(RCvalue1,RCvalue2)] = energy
 
                             #Writing dictionary to file
-                            write_surfacedict_to_file(surfacedictionary,"surface_results.txt", dimension=2)
+                            write_surfacedict_to_file(surfacedictionary,resultfile, dimension=2)
                             calc_rotational_constants(fragment)
                         else:
                             print("RC1, RC2 values in dict already. Skipping.")
@@ -265,7 +265,7 @@ def calc_surface(fragment=None, theory=None, charge=None, mult=None, scantype='U
                             shutil.copyfile(theory.filename+'.gbw', 'surface_mofiles/'+str(theory.filename)+'_'+pointlabel+'.gbw')
                         surfacedictionary[(RCvalue1)] = energy
                         #Writing dictionary to file
-                        write_surfacedict_to_file(surfacedictionary,"surface_results.txt", dimension=1)
+                        write_surfacedict_to_file(surfacedictionary,resultfile, dimension=1)
                         print("surfacedictionary:", surfacedictionary)
                         calc_rotational_constants(fragment)
                     else:
@@ -298,7 +298,7 @@ def calc_surface(fragment=None, theory=None, charge=None, mult=None, scantype='U
                                 shutil.copyfile(theory.filename+'.gbw', 'surface_mofiles/'+str(theory.filename)+'_'+pointlabel+'.gbw')
                             surfacedictionary[(RCvalue1,RCvalue2)] = energy
                             #Writing dictionary to file
-                            write_surfacedict_to_file(surfacedictionary,"surface_results.txt", dimension=2)
+                            write_surfacedict_to_file(surfacedictionary,resultfile, dimension=2)
                             calc_rotational_constants(fragment)
                             #Write geometry to disk
                             fragment.write_xyzfile(xyzfilename="RC1_"+str(RCvalue1)+"-RC2_"+str(RCvalue2)+".xyz")
@@ -333,7 +333,7 @@ def calc_surface(fragment=None, theory=None, charge=None, mult=None, scantype='U
                             shutil.copyfile(theory.filename+'.gbw', 'surface_mofiles/'+str(theory.filename)+'_'+pointlabel+'.gbw')
                         surfacedictionary[(RCvalue1)] = energy
                         #Writing dictionary to file
-                        write_surfacedict_to_file(surfacedictionary,"surface_results.txt", dimension=1)
+                        write_surfacedict_to_file(surfacedictionary,resultfile, dimension=1)
                         print("surfacedictionary:", surfacedictionary)
                         calc_rotational_constants(fragment)
                         #Write geometry to disk
@@ -350,7 +350,7 @@ def calc_surface(fragment=None, theory=None, charge=None, mult=None, scantype='U
 #Both unrelaxed (single-point) and relaxed (opt) is now possible
 # Parallelization and MOREAD complete
 # TODO: Parallelization and Relaxed mode
-def calc_surface_fromXYZ(xyzdir=None, theory=None, charge=None, mult=None, dimension=None, resultfile=None, scantype='Unrelaxed',runmode='serial',
+def calc_surface_fromXYZ(xyzdir=None, theory=None, charge=None, mult=None, dimension=None, resultfile='surface_results.txt', scantype='Unrelaxed',runmode='serial',
                          coordsystem='dlc', maxiter=50, extraconstraints=None, convergence_setting=None, numcores=None,
                          RC1_type=None, RC2_type=None, RC1_indices=None, RC2_indices=None, keepoutputfiles=True, keepmofiles=False,
                          read_mofiles=False, mofilesdir=None):
@@ -542,7 +542,7 @@ def calc_surface_fromXYZ(xyzdir=None, theory=None, charge=None, mult=None, dimen
 
             print("surfacedictionary:", surfacedictionary)
             #Write final surface to file
-            write_surfacedict_to_file(surfacedictionary,"surface_results.txt", dimension=dimension)
+            write_surfacedict_to_file(surfacedictionary,resultfile, dimension=dimension)
         elif scantype=='Relaxed':
             print("calc_surface_fromXYZ Relaxed option not possible in parallel mode yet. Exiting")
             ashexit()
@@ -604,7 +604,7 @@ def calc_surface_fromXYZ(xyzdir=None, theory=None, charge=None, mult=None, dimen
                     #theory.cleanup()
                     surfacedictionary[(RCvalue1,RCvalue2)] = energy
                     #Writing dictionary to file
-                    write_surfacedict_to_file(surfacedictionary,"surface_results.txt", dimension=2)
+                    write_surfacedict_to_file(surfacedictionary,resultfile, dimension=2)
                     print("surfacedictionary:", surfacedictionary)
                     calc_rotational_constants(mol)
                     print("")
@@ -651,7 +651,7 @@ def calc_surface_fromXYZ(xyzdir=None, theory=None, charge=None, mult=None, dimen
                     #theory.cleanup()
                     surfacedictionary[(RCvalue1)] = energy
                     #Writing dictionary to file
-                    write_surfacedict_to_file(surfacedictionary,"surface_results.txt", dimension=1)
+                    write_surfacedict_to_file(surfacedictionary,resultfile, dimension=1)
                     print("surfacedictionary:", surfacedictionary)
                     calc_rotational_constants(mol)
                     print("")            
@@ -741,7 +741,7 @@ def read_surfacedict_from_file(file, dimension=None):
     Returns:
         dict: Dictionary of surface-points with energies
     """
-    print("Attempting to read old results file...")
+    print("Attempting to read old results file:", file)
     dictionary = {}
     #If no file then return empty dict
     if os.path.isfile(file) is False:
