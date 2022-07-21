@@ -112,7 +112,7 @@ class ASH_plot():
         
 
     def addseries(self,subplot, surfacedictionary=None, x_list=None, y_list=None, label='Series', color='blue', pointsize=40, 
-                    scatter=True, line=True, scatter_linewidth=2, line_linewidth=1, marker='o', legend=True):
+                    scatter=True, line=True, scatter_linewidth=2, line_linewidth=1, marker='o', legend=True, x_scaling=1.0,y_scaling=1.0):
         print("Adding new series to ASH_plot object")
         self.addplotcount+=1
         curraxes=self.axs[subplot]
@@ -135,6 +135,9 @@ class ASH_plot():
                 x.append(key)
                 y.append(surfacedictionary[key])
 
+        #Optional scaling of x or y-values
+        x = [i*x_scaling for i in x]
+        y = [i*y_scaling for i in y]
 
         #Scatterplot
         if scatter is True:

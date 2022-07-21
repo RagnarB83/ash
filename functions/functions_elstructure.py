@@ -976,3 +976,56 @@ def select_space_from_occupations(occlist, selection_thresholds=[1.98,0.02]):
     numelectrons=round(sum(welloccorbs))
     numorbitals=len(welloccorbs)
     return [numelectrons,numorbitals]
+
+# Interface to XDM postg program
+#https://github.com/aoterodelaroza/postg
+def xdm_run(wfxfile=None, postgdir=None,a1=None, a2=None,functional=None):
+
+    if postgdir == None:
+        # Trying to find postgdir in path
+        print("postgdir keyword argument not provided to xdm_run. Trying to find postg in PATH")
+        try:
+            postgdir = os.path.dirname(shutil.which('postg'))
+            print("Found postg in path. Setting postgdir.")
+        except:
+            print("Found no postg executable in path. Exiting... ")
+            ashexit()
+
+    parameterdict= {'pw86pbe' : [0.7564,1.4545], 'b3lyp' : [0.6356, 1.5119],
+    'b3pw91' : [0.6002,1.4043], 'b3p86' : [1.0400, 0.3741], 'pbe0' : [0.4186,2.6791],
+    'camb3lyp' : [0.3248,2.8607], 'b97-1' : [0.1998,3.5367], 'bhandhlyp' : [0.5610, 1.9894],
+    'blyp' : [0.7647,0.8457],'pbe' : [0.4492,2.5517],'lcwpbe' : [1.0149, 0.6755],
+    'tpss' : [0.6612, 1.5111], 'b86bpbe' : [0.7443, 1.4072]}
+
+    if a1 == None or a2 == None:
+        print("a1/a2 parameters not given. Looking up functional in table")
+        print("Parameter table:", parameterdict)
+        a1, a2 = parameterdict[functional.lower()]
+        print(f"XDM a1: {a1}, a2: {a2}")
+    with open('xdm-postg.out', 'w') as ofile:
+        process = sp.run([postgdir+'/postg', str(a1), str(a2), str(wfxfile), str(functional) ], check=True, 
+            stdout=ofile, stderr=ofile, universal_newlines=True)
+
+    dispgrab=False
+    dispgradient=[]
+    with open('xdm-postg.out', 'r') as xdmfile:
+        for line in xdmfile:
+            #TODO: Grab Hirshfeld charges
+            #TODO: C6,C8, C10 coefficients, moments and volumes
+            if 'dispersion energy' in line:
+                dispenergy = float(line.split()[-1])
+            if 'dispersion force constant matrix' in line:
+                dispgrab=False
+            if dispgrab == True:
+                if '#' not in line:
+                    grad_x=-1*float(line.split()[1])
+                    grad_y=-1*float(line.split()[2])
+                    grad_z=-1*float(line.split()[3])
+                    dispgradient.append([grad_x,grad_y,grad_z])
+            if 'dispersion forces' in line:
+                dispgrab=True
+
+    dispgradient=np.array(dispgradient)
+    print("dispenergy:", dispenergy)
+    print("dispgradient:", dispgradient)
+    return dispenergy, dispgradient

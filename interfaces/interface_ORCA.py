@@ -9,7 +9,7 @@ import ash.modules.module_coords
 from ash.functions.functions_general import ashexit, blankline,insert_line_into_file,BC,print_time_rel, print_line_with_mainheader, pygrep2, pygrep, search_list_of_lists_for_index
 from ash.modules.module_singlepoint import Singlepoint
 from ash.modules.module_coords import check_charge_mult
-import ash.functions.functions_elstructure
+from ash.functions.functions_elstructure import xdm_run, calc_cm5
 import ash.constants
 import ash.settings_ash
 
@@ -20,7 +20,7 @@ class ORCATheory:
     def __init__(self, orcadir=None, orcasimpleinput='', printlevel=2, extrabasisatoms=None, extrabasis=None, TDDFT=False, TDDFTroots=5, FollowRoot=1,
                  orcablocks='', extraline='', first_iteration_input=None, brokensym=None, HSmult=None, atomstoflip=None, numcores=1, nprocs=None, label=None, moreadfile=None, 
                  autostart=True, propertyblock=None, keep_each_run_output=False, print_population_analysis=False, filename="orca", check_for_errors=True, check_for_warnings=True,
-                 fragment_indices=None):
+                 fragment_indices=None, xdm=False, xdm_a1=None, xdm_a2=None, xdm_func=None):
         print_line_with_mainheader("ORCATheory initialization")
 
         #Indicate that this is a QMtheory
@@ -139,7 +139,16 @@ class ORCATheory:
         # self.qmatoms need to be set for Flipspin to work for QM/MM job.
         #Overwritten by QMMMtheory, used in Flip-spin
         self.qmatoms=[]
-            
+        
+        #XDM: if True then we add !AIM to input
+        self.xdm=False
+        if xdm == True:
+            self.xdm=True
+            self.xdm_a1=xdm_a1
+            self.xdm_a2=xdm_a2
+            self.xdm_func=xdm_func
+            self.orcasimpleinput = self.orcasimpleinput + ' AIM'
+
         if self.printlevel >=2:
             print("")
             print("Creating ORCA object")
@@ -439,8 +448,20 @@ class ORCATheory:
         #Grab timings from ORCA output
         orca_timings = ORCAtimingsgrab(outfile)
 
+        #Initializing zero gradient array
+        self.grad = np.zeros((len(qm_elems), 3))
+
+        #XDM option: WFX file should have been created.
+        if self.xdm == True:
+            dispE,dispgrad = xdm_run(wfxfile=self.filename+'.wfx', a1=self.xdm_a1, a2=self.xdm_a2,functional=self.xdm_func)
+            print("XDM dispersion energy:", dispE)
+            self.energy = self.energy + dispE
+            print("DFT+XDM energy:", self.energy )
+            #TODO: dispgrad not yet done
+            self.grad = self.grad + dispgrad
         if Grad == True:
-            self.grad=ORCAgradientgrab(engradfile)
+            grad =ORCAgradientgrab(engradfile)
+            self.grad = self.grad + grad
             if PC == True:
                 #Print time to calculate ORCA QM-PC gradient
                 if "pc_gradient" in orca_timings:
@@ -460,6 +481,8 @@ class ORCATheory:
             print(BC.OKBLUE,BC.BOLD,"------------ENDING ORCA-INTERFACE-------------", BC.END)
             print_time_rel(module_init_time, modulename='ORCA run', moduleindex=2)
             return self.energy
+
+
 
 
 ###############################################
@@ -1638,7 +1661,7 @@ def grabatomcharges_ORCA(chargemodel,outputfile):
                     grab=True
         print("Hirshfeld charges :", charges)
         atomicnumbers=ash.modules.module_coords.elemstonuccharges(elems)
-        charges = ash.functions.functions_elstructure.calc_cm5(atomicnumbers, coords, charges)
+        charges = calc_cm5(atomicnumbers, coords, charges)
         print("CM5 charges :", list(charges))
     elif chargemodel == "Mulliken":
         with open(outputfile) as ofile:
