@@ -39,7 +39,6 @@ class MRCCTheory:
         #Printlevel
         self.printlevel=printlevel
         self.filename=filename
-        self.mrccdir=mrccdir
         self.mrccinput=mrccinput
         self.numcores=numcores
 
