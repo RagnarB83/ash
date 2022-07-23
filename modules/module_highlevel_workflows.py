@@ -10,7 +10,7 @@ import ash.constants
 import ash.dictionaries_lists
 import ash.interfaces.interface_ORCA
 from ash.functions.functions_elstructure import num_core_electrons, check_cores_vs_electrons
-from ash.functions.functions_general import ashexit, BC, print_line_with_mainheader
+from ash.functions.functions_general import ashexit, BC, print_line_with_mainheader, pygrep2, pygrep
 from ash.modules.module_coords import elemlisttoformula, nucchargelist,elematomnumbers
 from ash.modules.module_coords import check_charge_mult
 
@@ -24,10 +24,12 @@ basisfamilies=['cc','aug-cc','cc-dkh','cc-dk','aug-cc-dkh','aug-cc-dk','def2','m
 # Regular CC, DLPNO-CC, DLPNO-CC with PNO extrapolation etc.
 #alpha and beta can be manually set. If not set then they are picked based on basisfamily
 #NOTE: List of elements are required here
+
+#pnoextrapolation=[6,7]  pnoextrapolation=[1e-6,1e-7,1.5]   pnoextrapolation=[1e-6,3.33e-7,2.38]    
 class CC_CBS_Theory:
     def __init__(self, elements=None, cardinals = None, basisfamily=None, relativity=None, orcadir=None, 
            stabilityanalysis=False, numcores=1, CVSR=False, CVbasis="W1-mtsmall", F12=False, Openshellreference=None, DFTreference=None, DFT_RI=False, auxbasis="autoaux-max",
-                        DLPNO=False, memory=5000, pnosetting='extrapolation', pnoextrapolation=[6,7], FullLMP2Guess=False, T1=False, scfsetting='TightSCF',
+                        DLPNO=False, memory=5000, pnosetting='extrapolation', pnoextrapolation=[1e-6,1e-7,1.5], FullLMP2Guess=False, T1=False, T1correction=False, T1corrbasis_size='Large', scfsetting='TightSCF',
                         alpha=None, beta=None, extrainputkeyword='', extrablocks='', FCI=False, guessmode='Cmatrix', atomicSOcorrection=False):
         """
         WORK IN PROGRESS
@@ -100,6 +102,8 @@ class CC_CBS_Theory:
         self.pnosetting=pnosetting
         self.pnoextrapolation=pnoextrapolation
         self.T1=T1
+        self.T1correction=T1correction
+        self.T1corrbasis_size=T1corrbasis_size
         self.scfsetting=scfsetting
         self.alpha=alpha
         self.beta=beta
@@ -130,6 +134,7 @@ class CC_CBS_Theory:
         if self.DLPNO == True:
             print("PNO setting: ", self.pnosetting)
             print("T1 : ", self.T1)
+            print("T1correction : ", self.T1correction)
             print("FullLMP2Guess ", self.FullLMP2Guess)
             if self.pnosetting == "extrapolation":
                 print("pnoextrapolation:", self.pnoextrapolation)
@@ -327,15 +332,46 @@ maxiter 150\nend
     def cleanup(self):
         print("Cleanup called")
 
+    #T1 correction 
+    def T1correction_Step(self, current_coords, elems,calc_label, numcores, charge=None, mult=None, basis='Large'):
+        print("\nNow doing T1 correction. Getting T0 and T1 triples from a single calculation")
+
+        #Using basic theory line but changing from T0 to T1
+        ccsdt_T1_line=self.ccsdt_line.replace('CCSD(T)','CCSD(T1)')
+        #Using Large basis by default
+        if basis == 'Large':
+            blocks = self.blocks2
+        else:
+            blocks = self.blocks1 
+        #NOTE: PNO setting: Using default for now (NormalPNO). To be tested more
+
+
+        #Defining theory
+        ccsdt_T1 = ash.interfaces.interface_ORCA.ORCATheory(orcadir=self.orcadir, orcasimpleinput=ccsdt_T1_line, orcablocks=blocks, numcores=self.numcores)
+
+        #Run T1
+        unused = ccsdt_T1.run(elems=elems, current_coords=current_coords, numcores=numcores, charge=charge, mult=mult)
+        shutil.copyfile(ccsdt_T1.filename+'.out', './' + calc_label + 'CCSDT_T1' + '.out')
+        shutil.copyfile(ccsdt_T1.filename+'.gbw', './' + calc_label + 'CCSDT_T1' + '.gbw')
+
+        #Grab both T0 and T1 from T1 calculation
+        triples_T0 = float(pygrep('The Total Conventional (T0) is', ccsdt_T1.filename+'.out')[-1].split()[-1])
+        print("Triples T0 correlation energy:", triples_T0)
+        triples_T1 = float(pygrep('Triples Correction (T)                     ...', ccsdt_T1.filename+'.out')[-1].split()[-1])
+        print("Triples T1 correlation energy:", triples_T1)
+    
+        #T1 energy correction
+        E_T1corr = triples_T1 - triples_T0
+        print("T0->T1 correction:", E_T1corr)
+        return E_T1corr
 
     #Core-Valence ScalarRelativistic Step
+    #NOTE: Now no longer including relativity here. Best to include relativity from the beginning in all calculations and only do the CV as correction.
+    #NOTE: Too messy to manage otherwise
     def CVSR_Step(self, current_coords, elems, reloption,calc_label, numcores, charge=None, mult=None):
+        print("\nCVSR_Step")
 
-        #Note: if reloption=='DKH' then we do DKH in NoFC and not in FC
-        # if reloption=='' then no relativity
-        #TODO: Option to use DKH for both, consistent with other calculations if using DKH ??
-
-        ccsdt_mtsmall_NoFC_line="! {} {} {}   nofrozencore {} {} {} {}".format(self.ccsdtkeyword,reloption,self.CVbasis,self.auxbasiskeyword,self.pnokeyword,self.scfsetting,self.extrainputkeyword)
+        ccsdt_mtsmall_NoFC_line="! {} {} {}   nofrozencore {} {} {}".format(self.ccsdtkeyword,self.CVbasis,self.auxbasiskeyword,self.pnokeyword,self.scfsetting,self.extrainputkeyword)
         ccsdt_mtsmall_FC_line="! {} {}  {} {} {} {}".format(self.ccsdtkeyword,self.CVbasis,self.auxbasiskeyword,self.pnokeyword,self.scfsetting,self.extrainputkeyword)
 
         ccsdt_mtsmall_NoFC = ash.interfaces.interface_ORCA.ORCATheory(orcadir=self.orcadir, orcasimpleinput=ccsdt_mtsmall_NoFC_line, orcablocks=self.blocks, numcores=self.numcores)
@@ -343,12 +379,12 @@ maxiter 150\nend
 
         #Run
         energy_ccsdt_mtsmall_nofc = ccsdt_mtsmall_NoFC.run(elems=elems, current_coords=current_coords, numcores=numcores, charge=charge, mult=mult)
-        shutil.copyfile(ccsdt_mtsmall_NoFC.filename+'.out', './' + calc_label + 'CCSDT_MTsmall_NoFC_DKH' + '.out')
-        shutil.copyfile(ccsdt_mtsmall_NoFC.filename+'.gbw', './' + calc_label + 'CCSDT_MTsmall_NoFC_DKH' + '.gbw')
+        shutil.copyfile(ccsdt_mtsmall_NoFC.filename+'.out', './' + calc_label + 'CCSDT_MTsmall_NoFC' + '.out')
+        shutil.copyfile(ccsdt_mtsmall_NoFC.filename+'.gbw', './' + calc_label + 'CCSDT_MTsmall_NoFC' + '.gbw')
         
         energy_ccsdt_mtsmall_fc = ccsdt_mtsmall_FC.run(elems=elems, current_coords=current_coords, numcores=numcores, charge=charge, mult=mult)
-        shutil.copyfile(ccsdt_mtsmall_NoFC.filename+'.out', './' + calc_label + 'CCSDT_MTsmall_FC_noDKH' + '.out')
-        shutil.copyfile(ccsdt_mtsmall_NoFC.filename+'.gbw', './' + calc_label + 'CCSDT_MTsmall_FC_noDKH' + '.gbw')
+        shutil.copyfile(ccsdt_mtsmall_NoFC.filename+'.out', './' + calc_label + 'CCSDT_MTsmall_FC' + '.out')
+        shutil.copyfile(ccsdt_mtsmall_NoFC.filename+'.gbw', './' + calc_label + 'CCSDT_MTsmall_FC' + '.gbw')
 
         #Core-correlation is total energy difference between NoFC-DKH and FC-norel
         E_corecorr_and_SR = energy_ccsdt_mtsmall_nofc - energy_ccsdt_mtsmall_fc
@@ -363,7 +399,7 @@ maxiter 150\nend
         #Adding TCutPNO option X
         #TightPNO options for other thresholds
         mdciblockX="""\n%mdci
-    TCutPNO 1e-{}
+    TCutPNO {}
     TCutPairs 1e-5
     TCutDO 5e-3
     TCutMKN 1e-3
@@ -373,7 +409,7 @@ maxiter 150\nend
         #TCutPNO option Y
         #TightPNO options for other thresholds
         mdciblockY="""\n%mdci
-    TCutPNO 1e-{}
+    TCutPNO {}
     TCutPairs 1e-5
     TCutDO 5e-3
     TCutMKN 1e-3
@@ -401,8 +437,6 @@ maxiter 150\nend
         PNOcalcX_dict = ash.interfaces.interface_ORCA.grab_HF_and_corr_energies(theory.filename+'.out', DLPNO=self.DLPNO,F12=self.F12)
         shutil.copyfile(theory.filename+'.out', './' + calc_label + '_PNOX' + '.out')
         shutil.copyfile(theory.filename+'.gbw', './' + calc_label + '_PNOX' + '.gbw')
-        print("PNOcalcX:", PNOcalcX_dict)
-
 
         theory.orcablocks = PNOYblocks
         #ash.Singlepoint(fragment=fragment, theory=theory)
@@ -410,7 +444,7 @@ maxiter 150\nend
         PNOcalcY_dict = ash.interfaces.interface_ORCA.grab_HF_and_corr_energies(theory.filename+'.out', DLPNO=self.DLPNO,F12=self.F12)
         shutil.copyfile(theory.filename+'.out', './' + calc_label + '_PNOY' + '.out')
         shutil.copyfile(theory.filename+'.gbw', './' + calc_label + '_PNOY' + '.gbw')
-        print("PNOcalcY:", PNOcalcY_dict)
+        #print("PNOcalcY:", PNOcalcY_dict)
         
         #Setting theory.orcablocks back to original
         theory.orcablocks=orcablocks_original
@@ -421,10 +455,12 @@ maxiter 150\nend
         E_SCF = PNOcalcY_dict['HF']
         #Extrapolation CCSD part and (T) separately
         # NOTE: Is this correct??
-        E_corrCCSD_final = PNO_extrapolation([PNOcalcX_dict['CCSD_corr'],PNOcalcY_dict['CCSD_corr']])
-        E_corrCCT_final = PNO_extrapolation([PNOcalcX_dict['CCSD(T)_corr'],PNOcalcY_dict['CCSD(T)_corr']])
+        print("PNOcalcX_dict:", PNOcalcX_dict)
+        print("PNOcalcY_dict:", PNOcalcY_dict)
+        E_corrCCSD_final = PNO_extrapolation([PNOcalcX_dict['CCSD_corr'],PNOcalcY_dict['CCSD_corr']],self.pnoextrapolation[2])
+        E_corrCCT_final = PNO_extrapolation([PNOcalcX_dict['CCSD(T)_corr'],PNOcalcY_dict['CCSD(T)_corr']],self.pnoextrapolation[2])
         #Extrapolation of full correlation energy
-        E_corrCC_final = PNO_extrapolation([PNOcalcX_dict['full_corr'],PNOcalcY_dict['full_corr']])
+        E_corrCC_final = PNO_extrapolation([PNOcalcX_dict['full_corr'],PNOcalcY_dict['full_corr']],self.pnoextrapolation[2])
 
         print("PNO extrapolated CCSD correlation energy:", E_corrCCSD_final, "Eh")
         print("PNO extrapolated triples correlation energy:", E_corrCCT_final, "Eh")
@@ -472,9 +508,9 @@ maxiter 150\nend
             print("Using hardcoded value: ", E_total)
             if self.FCI is True:
                 E_dict = {'Total_E': E_total, 'E_SCF_CBS': E_total, 'E_CC_CBS': E_total, 'E_FCI_CBS': E_total, 'E_corrCCSD_CBS': 0.0, 
-                        'E_corrCCT_CBS': 0.0, 'E_corr_CBS' : 0.0, 'E_corecorr_and_SR': 0.0, 'E_SO': 0.0, 'E_FCIcorrection': 0.0}
+                        'E_corrCCT_CBS': 0.0, 'E_corr_CBS' : 0.0, 'E_corecorr_and_SR': 0.0, 'E_SO': 0.0, 'E_FCIcorrection': 0.0, 'T1energycorr': 0.0}
             else:
-                E_dict = {'Total_E': E_total, 'E_SCF_CBS': E_total, 'E_CC_CBS': E_total, 'E_FCI_CBS': E_total, 'E_corrCCSD_CBS': 0.0, 
+                E_dict = {'Total_E': E_total, 'E_SCF_CBS': E_total, 'E_CC_CBS': E_total, 'E_FCI_CBS': E_total, 'E_corrCCSD_CBS': 0.0, 'T1energycorr': 0.0,
                         'E_corrCCT_CBS': 0.0, 'E_corr_CBS' : 0.0, 'E_corecorr_and_SR': 0.0, 'E_SO': 0.0}
             self.energy_components=E_dict
             return E_total
@@ -577,11 +613,20 @@ maxiter 150\nend
                 #BASIS SET EXTRAPOLATION of SCF and full correlation energies
                 E_SCF_CBS, E_corr_CBS = Extrapolation_twopoint(scf_energies, corr_energies, self.cardinals, self.basisfamily, alpha=self.alpha, beta=self.beta) #2-point extrapolation
 
-        print("E_SCF_CBS:", E_SCF_CBS)
-        print("E_corr_CBS:", E_corr_CBS)
-        print("E_corrCCSD_CBS:", E_corrCCSD_CBS)
-        print("E_corrCCT_CBS:", E_corrCCT_CBS)
 
+        ############################################################
+        #T1 correction (only if T1correction = True and T1=False)
+        ############################################################
+        if self.T1 == False:
+            if self.T1correction == True:
+                T1energycorr = self.T1correction_Step(current_coords, elems, calc_label,numcores, charge=charge, mult=mult, basis=self.T1corrbasis_size)
+                #Adding T1 energy correction to E_corr_CBS and E_corrCCT_CBS
+                E_corr_CBS = E_corr_CBS + T1energycorr
+                E_corrCCT_CBS = E_corrCCT_CBS + T1energycorr
+            else:
+                T1energycorr = 0.0
+        else:
+            T1energycorr = 0.0
         ############################################################
         #Core-correlation + scalar relativistic as joint correction
         ############################################################
@@ -611,6 +656,13 @@ maxiter 150\nend
             print("")
             print("Core-Valence Scalar Relativistic Correction is off!")
             E_corecorr_and_SR=0.0
+
+        #Printing SCF and valence correlation energies (NOTE: contains T1 correction)
+        print("E_SCF_CBS:", E_SCF_CBS)
+        print("E_corr_CBS:", E_corr_CBS)
+        print("E_corrCCSD_CBS:", E_corrCCSD_CBS)
+        print("E_corrCCT_CBS:", E_corrCCT_CBS)
+
 
         ############################################################
         #Spin-orbit correction for atoms.
@@ -647,7 +699,7 @@ maxiter 150\nend
             E_FCI_CBS = FCI_extrapolation([E_SCF_CBS, E_corrCCSD_CBS, E_corrCCT_CBS])
             E_FCIcorrection = E_FCI_CBS-E_CC_CBS
             E_FINAL = E_FCI_CBS
-            E_dict = {'Total_E' : E_FINAL, 'E_FCI_CBS': E_FCI_CBS, 'E_CC_CBS': E_CC_CBS, 'E_SCF_CBS' : E_SCF_CBS, 'E_corrCCSD_CBS': E_corrCCSD_CBS, 
+            E_dict = {'Total_E' : E_FINAL, 'E_FCI_CBS': E_FCI_CBS, 'E_CC_CBS': E_CC_CBS, 'E_SCF_CBS' : E_SCF_CBS, 'E_corrCCSD_CBS': E_corrCCSD_CBS, 'T1energycorr' : T1energycorr,
                 'E_corrCCT_CBS': E_corrCCT_CBS, 'E_corr_CBS' : E_corr_CBS, 'E_SO' : E_SO, 'E_corecorr_and_SR' : E_corecorr_and_SR, 'E_FCIcorrection': E_FCIcorrection}
             print("FCI correction:", E_FCIcorrection, "Eh")
             print("FCI/CBS energy :", E_FCI_CBS, "Eh")
@@ -657,7 +709,7 @@ maxiter 150\nend
             E_CC_CBS = E_SCF_CBS + E_corr_CBS + E_SO + E_corecorr_and_SR
             print("CCSD(T)/CBS energy :", E_CC_CBS, "Eh")
             E_FINAL = E_CC_CBS
-            E_dict = {'Total_E' : E_FINAL, 'E_CC_CBS': E_CC_CBS, 'E_SCF_CBS' : E_SCF_CBS, 'E_corrCCSD_CBS': E_corrCCSD_CBS, 'E_corrCCT_CBS': E_corrCCT_CBS, 
+            E_dict = {'Total_E' : E_FINAL, 'E_CC_CBS': E_CC_CBS, 'E_SCF_CBS' : E_SCF_CBS, 'E_corrCCSD_CBS': E_corrCCSD_CBS, 'E_corrCCT_CBS': E_corrCCT_CBS, 'T1energycorr' : T1energycorr,
                 'E_corr_CBS' : E_corr_CBS, 'E_SO' : E_SO, 'E_corecorr_and_SR' : E_corecorr_and_SR}
 
         print("Final energy :", E_FINAL, "Eh")
@@ -668,6 +720,7 @@ maxiter 150\nend
         print("E_corr_CBS : ", E_corr_CBS, "Eh")
         print("E_corrCCSD_CBS : ", E_corrCCSD_CBS, "Eh")
         print("E_corrCCT_CBS : ", E_corrCCT_CBS, "Eh")
+        print("T1 energy correction : ", T1energycorr, "Eh")
         print("Spin-orbit coupling : ", E_SO, "Eh")
         print("E_corecorr_and_SR : ", E_corecorr_and_SR, "Eh")
         
@@ -690,14 +743,16 @@ maxiter 150\nend
 #############################
 
 #Bistoni PNO extrapolation: https://pubs.acs.org/doi/10.1021/acs.jctc.0c00344
-def PNO_extrapolation(E):
+def PNO_extrapolation(E,F):
     """ PNO extrapolation by Bistoni and coworkers
-    F is 1.5, good for both 5/6 and 6/7 extrapolations.
+    F = 1.5, good for both 5/6 and 6/7 extrapolations.
     where 5/6 and 6/7 refers to the X/Y TcutPNO threshold (10^-X and 10^-Y).
+    F = 2.38 for TCutPNO=1e-6 and 3.33e-7 (Drosou et al)
     Args:
-        E ([list]): list of 
+        E ([list]): list of energies
     """
-    F=1.5
+    print("PNO extrapolation using F value:", F)
+    #F=1.5
     E_C_PNO= E[0] + F*(E[1]-E[0])
     return E_C_PNO
 
