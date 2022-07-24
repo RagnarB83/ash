@@ -19,17 +19,23 @@ basisfamilies=['cc','aug-cc','cc-dkh','cc-dk','aug-cc-dkh','aug-cc-dk','def2','m
             'ma-def2-zora','ma-def2-dkh', 'cc-CV', 'aug-cc-CV', 'cc-CV-dkh', 'cc-CV-dk', 'aug-cc-CV-dkh', 'aug-cc-CV-dk',
             'cc-CV_3dTM-cc_L', 'aug-cc-CV_3dTM-cc_L', 'cc-f12', 'def2-x2c' ]
 
+#PNO threshold dictionaries
+LoosePNO_thresholds={'TCutPNO': 1e-6, 'TCutPairs': 1e-3, 'TCutDO': 2e-2, 'TCutMKN': 1e-3}
+NormalPNO_thresholds={'TCutPNO': 3.33e-7, 'TCutPairs': 1e-4, 'TCutDO': 1e-2, 'TCutMKN': 1e-3}
+TightPNO_thresholds={'TCutPNO': 1e-7, 'TCutPairs': 1e-5, 'TCutDO': 5e-3, 'TCutMKN': 1e-3}
+
 
 #Flexible CCSD(T)/CBS protocol class. Simple. No core-correlation, scalar relativistic or spin-orbit coupling for now.
 # Regular CC, DLPNO-CC, DLPNO-CC with PNO extrapolation etc.
 #alpha and beta can be manually set. If not set then they are picked based on basisfamily
 #NOTE: List of elements are required here
 
-#pnoextrapolation=[6,7]  pnoextrapolation=[1e-6,1e-7,1.5]   pnoextrapolation=[1e-6,3.33e-7,2.38]    
+#pnoextrapolation=[6,7]  pnoextrapolation=[1e-6,1e-7,1.5,'TightPNO']   pnoextrapolation=[1e-6,3.33e-7,2.38,'NormalPNO']    
 class CC_CBS_Theory:
-    def __init__(self, elements=None, cardinals = None, basisfamily=None, relativity=None, orcadir=None, 
-           stabilityanalysis=False, numcores=1, CVSR=False, CVbasis="W1-mtsmall", F12=False, Openshellreference=None, DFTreference=None, DFT_RI=False, auxbasis="autoaux-max",
-                        DLPNO=False, memory=5000, pnosetting='extrapolation', pnoextrapolation=[1e-6,1e-7,1.5], FullLMP2Guess=False, T1=False, T1correction=False, T1corrbasis_size='Large', scfsetting='TightSCF',
+    def __init__(self, elements=None, cardinals = None, basisfamily=None, relativity=None, orcadir=None, memory=5000, numcores=1, 
+           stabilityanalysis=False, CVSR=False, CVbasis="W1-mtsmall", F12=False, Openshellreference=None, DFTreference=None, DFT_RI=False, auxbasis="autoaux-max",
+                        DLPNO=False, pnosetting='NormalPNO', pnoextrapolation=[1e-6,1e-7,1.5,'NormalPNO'],
+                        FullLMP2Guess=False, T1=False, T1correction=False, T1corrbasis_size='Large', scfsetting='TightSCF',
                         alpha=None, beta=None, extrainputkeyword='', extrablocks='', FCI=False, guessmode='Cmatrix', atomicSOcorrection=False):
         """
         WORK IN PROGRESS
@@ -44,7 +50,7 @@ class CC_CBS_Theory:
         :param F12: True/False
         :param DLPNO: True/False  
         :param pnosetting: ORCA keyword: NormalPNO, LoosePNO, TightPNO or extrapolation
-        :param pnoextrapolation: list. e.g. [5,6]
+        :param pnoextrapolation: list. e.g. pnoextrapolation=[1e-6,1e-7,1.5,'TightPNO'] 
         ;param T1: Boolean (whether to do expensive iterative triples or not)
         :return: energy and dictionary with energy-components.
         """
@@ -392,36 +398,47 @@ maxiter 150\nend
         return E_corecorr_and_SR
 
 
-    # Do 2 calculations with different DLPNO thresholds and extrapolate
+    # Do 2 calculations with different DLPNO TCutPNO thresholds and extrapolate to PNO limit. Other threshold follow cutoff_setting
     def PNOExtrapolationStep(self,elems=None, current_coords=None, theory=None, calc_label=None, numcores=None, charge=None, mult=None):
-        #elems=None, current_coords=None, theory=None, pnoextrapolation=None, DLPNO=None, F12=None, calc_label=None
         print("Inside PNOExtrapolationStep")
-        #Adding TCutPNO option X
-        #TightPNO options for other thresholds
-        mdciblockX="""\n%mdci
-    TCutPNO {}
-    TCutPairs 1e-5
-    TCutDO 5e-3
-    TCutMKN 1e-3
-    end
         
-        """.format(self.pnoextrapolation[0])
+        cutoff_setting=self.pnoextrapolation[3]
+
+        if cutoff_setting == 'NormalPNO' : 
+            thresholdsetting= NormalPNO_thresholds
+        elif cutoff_setting == 'TightPNO' :
+            thresholdsetting= TightPNO_thresholds
+        elif cutoff_setting == 'LoosePNO' :
+            thresholdsetting= LoosePNO_thresholds
+        else:
+            thresholdsetting= NormalPNO_thresholds
+        
+        print("Cutoffsetting: ", cutoff_setting)
+        print("Using these general thresholds:")
+        print(f'TCutPairs: {thresholdsetting["TCutPairs"]:e}')
+        print(f'TCutDO: {thresholdsetting["TCutDO"]:e}')
+        print(f'TCutMKN: {thresholdsetting["TCutMKN"]:e}')
+        print("")
+        print(f"Running 2 TCutPNO calculations: {self.pnoextrapolation[0]:e} and {self.pnoextrapolation[1]:e}")
+
+        mdciblockX=f"""\n%mdci
+    TCutPNO {self.pnoextrapolation[0]}
+    TCutPairs {thresholdsetting["TCutPairs"]}
+    TCutDO {thresholdsetting["TCutDO"]}
+    TCutMKN {thresholdsetting["TCutMKN"]}
+    end
+        """
         #TCutPNO option Y
-        #TightPNO options for other thresholds
-        mdciblockY="""\n%mdci
-    TCutPNO {}
-    TCutPairs 1e-5
-    TCutDO 5e-3
-    TCutMKN 1e-3
+        mdciblockY=f"""\n%mdci
+    TCutPNO {self.pnoextrapolation[1]}
+    TCutPairs {thresholdsetting["TCutPairs"]}
+    TCutDO {thresholdsetting["TCutDO"]}
+    TCutMKN {thresholdsetting["TCutMKN"]}
     end
-        
-        """.format(self.pnoextrapolation[1])
+        """
 
         #Keeping copy of original ORCA blocks of theory
         orcablocks_original=copy.copy(theory.orcablocks)
-
-
-
 
         #Add mdciblock to blocks of theory
         PNOXblocks = theory.orcablocks + mdciblockX
@@ -534,22 +551,25 @@ maxiter 150\nend
         # EXTRAPOLATION TO PNO LIMIT BY 2 PNO calculations
         if self.pnosetting=="extrapolation":
             print("\nPNO Extrapolation option chosen.")
-            print("Will run 2 jobs with PNO thresholds TCutPNO : 1e-{} and 1e-{} for each basis set cardinal".format(self.pnoextrapolation[0],self.pnoextrapolation[1]))
+            print("Will run 2 jobs with PNO thresholds TCutPNO : {:e} and {:e} for each basis set cardinal".format(self.pnoextrapolation[0],self.pnoextrapolation[1]))
             print("="*70)
             print("Now doing Basis-1 job: Family: {} Cardinal: {} ".format(self.basisfamily, self.cardinals[0]))
             print("="*70)
             #SINGLE F12 EXPLICIT CORRELATION JOB or if only 1 cardinal was provided
             if self.singlebasis is True:
                 #Note: naming as CBS despite single-basis
-                E_SCF_CBS, E_corrCCSD_CBS, E_corrCCT_CBS,E_corr_CBS = self.PNOExtrapolationStep(elems=elems, current_coords=current_coords, theory=self.ccsdt_1, calc_label=calc_label+'cardinal1', numcores=numcores, charge=charge, mult=mult)
+                E_SCF_CBS, E_corrCCSD_CBS, E_corrCCT_CBS,E_corr_CBS = self.PNOExtrapolationStep(elems=elems, current_coords=current_coords, theory=self.ccsdt_1, calc_label=calc_label+'cardinal1', 
+                    numcores=numcores, charge=charge, mult=mult)
 
             #REGULAR EXTRAPOLATION WITH 2 THEORIES
             else:
-                E_SCF_1, E_corrCCSD_1, E_corrCCT_1,E_corrCC_1 = self.PNOExtrapolationStep(elems=elems, current_coords=current_coords, theory=self.ccsdt_1, calc_label=calc_label+'cardinal1', numcores=numcores, charge=charge, mult=mult)
+                E_SCF_1, E_corrCCSD_1, E_corrCCT_1,E_corrCC_1 = self.PNOExtrapolationStep(elems=elems, current_coords=current_coords, theory=self.ccsdt_1, calc_label=calc_label+'cardinal1', 
+                    numcores=numcores, charge=charge, mult=mult)
                 print("="*70)
                 print("Basis-1 job done. Now doing Basis-2 job: Family: {} Cardinal: {} ".format(self.basisfamily, self.cardinals[1]))
                 print("="*70)
-                E_SCF_2, E_corrCCSD_2, E_corrCCT_2,E_corrCC_2 = self.PNOExtrapolationStep(elems=elems, current_coords=current_coords, theory=self.ccsdt_2, calc_label=calc_label+'cardinal2', numcores=numcores, charge=charge, mult=mult)
+                E_SCF_2, E_corrCCSD_2, E_corrCCT_2,E_corrCC_2 = self.PNOExtrapolationStep(elems=elems, current_coords=current_coords, theory=self.ccsdt_2, calc_label=calc_label+'cardinal2',
+                    numcores=numcores, charge=charge, mult=mult)
                 scf_energies = [E_SCF_1, E_SCF_2]
                 ccsdcorr_energies = [E_corrCCSD_1, E_corrCCSD_2]
                 triplescorr_energies = [E_corrCCT_1, E_corrCCT_2]
