@@ -346,7 +346,10 @@ maxiter 150\nend
         ccsdt_T1_line=self.ccsdt_line.replace('CCSD(T)','CCSD(T1)')
         #Using Large basis by default
         if basis == 'Large':
-            blocks = self.blocks2
+            if self.singlebasis == True:
+                blocks = self.blocks1
+            else:
+                blocks = self.blocks2
         else:
             blocks = self.blocks1 
         #NOTE: PNO setting: Using default for now (NormalPNO). To be tested more
