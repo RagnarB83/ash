@@ -361,8 +361,18 @@ maxiter 150\nend
         shutil.copyfile(ccsdt_T1.filename+'.gbw', './' + calc_label + 'CCSDT_T1' + '.gbw')
 
         #Grab both T0 and T1 from T1 calculation
-        triples_T0 = float(pygrep('The Total Conventional (T0) is', ccsdt_T1.filename+'.out')[-1].split()[-1])
+        try:
+            #Applies to open-shell DLPNO-CC
+            triples_T0 = float(pygrep('The Total Conventional (T0) is', ccsdt_T1.filename+'.out')[-1].split()[-1])
+        except TypeError:
+            try:
+                #Applies to closed-shell DLPNO-CC
+                triples_T0 = float(pygrep('The Conventional (T0) is', ccsdt_T1.filename+'.out')[-1].split()[-1])
+            except TypeError:
+                #Applies when there are no triples (e.g. H2)
+                triples_T0=0.0
         print("Triples T0 correlation energy:", triples_T0)
+        
         triples_T1 = float(pygrep('Triples Correction (T)                     ...', ccsdt_T1.filename+'.out')[-1].split()[-1])
         print("Triples T1 correlation energy:", triples_T1)
     
