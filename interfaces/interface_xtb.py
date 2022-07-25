@@ -391,6 +391,14 @@ class xTBTheory:
                     #pcgrad
                     #get pcgrad
                     print("pc grad is not yet implemented. ")
+
+                    #_gradient = np.zeros((len(self), 3))
+                    #_lib.xtb_getGradient(self._env, self._res, _cast("double*", _gradient))
+                    #TODO: Create get_PCgradient function in the Python API
+                    #TODO: Wait for xtb-python to be updated to use xtb version 6.5.1
+                    self.pcgrad =res.get_PCgradient()
+                    print("self.pcgrad:", self.pcgrad)
+                    print("here")
                     ashexit()
                     print("------------ENDING XTB-INTERFACE-------------")
                     print_time_rel(module_init_time, modulename='xTBlib run', moduleindex=2)

@@ -297,7 +297,7 @@ def thermochemprotocol_reaction(Opt_theory=None, SP_theory=None, reaction=None, 
         finaldict['delta_CVSR_corr']=delta_CVSR_corr
     if 'T1energycorr' in componentsdict:
         T1corr_parts=[dict['T1energycorr'] for dict in list_of_dicts]
-        delta_T1_corr=ReactionEnergy(stoichiometry=stoichiometry, list_of_fragments=fraglist, list_of_energies=T1corr_parts, unit='kcal/mol', label='ΔT1corr')[0]
+        delta_T1_corr=ReactionEnergy(stoichiometry=stoichiometry, list_of_fragments=fraglist, list_of_energies=T1corr_parts, unit='kcal/mol', label='ΔΔT1corr')[0]
         finaldict['delta_T1_corr']=delta_T1_corr
     if 'E_FCIcorrection' in componentsdict:
         fcicorr_parts=[dict['E_FCIcorrection'] for dict in list_of_dicts]

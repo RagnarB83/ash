@@ -360,6 +360,8 @@ maxiter 150\nend
 
         #Run T1
         unused = ccsdt_T1.run(elems=elems, current_coords=current_coords, numcores=numcores, charge=charge, mult=mult)
+        print("ccsdt_T1.filename:", ccsdt_T1.filename)
+        print("calc_label:", calc_label)
         shutil.copyfile(ccsdt_T1.filename+'.out', './' + calc_label + 'CCSDT_T1' + '.out')
         shutil.copyfile(ccsdt_T1.filename+'.gbw', './' + calc_label + 'CCSDT_T1' + '.gbw')
 
