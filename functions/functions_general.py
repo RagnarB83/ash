@@ -142,12 +142,6 @@ def int_ranges(nums):
     return newstring
 
 
-# Debug print. Behaves like print but reads global debug var first
-def printdebug(string, var=''):
-    if ash.settings_ash.settings_dict["debugflag"] is True:
-        print(BC.OKRED, string, var, BC.END)
-
-
 def timefn(fn):
     @wraps(fn)
     def measure_time(*args, **kwargs):
@@ -234,6 +228,16 @@ def n_max_values(l,num):
 
 
 # FUNCTIONS TO PRINT MODULE AND SUBMODULE HEADERS
+
+
+# Printlevel?
+#def print_if_level(var, printlevel):
+#    if printlevel 
+
+# Debug print. Behaves like print but reads global debug var first
+def printdebug(string, var=''):
+    if ash.settings_ash.settings_dict["debugflag"] is True:
+        print(BC.OKRED, string, var, BC.END)
 
 # mainmodule header
 def print_line_with_mainheader(line):
@@ -524,15 +528,13 @@ def column(matrix, i):
 
 
 # Various function to print time of module/step. Will add time also to Timings object
-
-def print_time_rel(timestamp, modulename='Unknown', moduleindex=4):
+#Printing if currprintlevel 
+def print_time_rel(timestamp, modulename='Unknown', moduleindex=4, currprintlevel=1, currthreshold=1):
     secs = time.time() - timestamp
     mins = secs / 60
-    print_line_with_subheader2(
-        "Time to calculate step ({}): {:3.1f} seconds, {:3.1f} minutes.".format(modulename, secs, mins))
-    # print("-------------------------------------------------------------------")
-    # print("Time to calculate step ({}): {:3.1f} seconds, {:3.1f} minutes.".format(modulename, secs, mins))
-    # print("-------------------------------------------------------------------")
+    if currprintlevel >= currthreshold:
+        print_line_with_subheader2(
+            "Time to calculate step ({}): {:3.1f} seconds, {:3.1f} minutes.".format(modulename, secs, mins))
     # Adding time to Timings object
     timingsobject.add(modulename, secs, moduleindex=moduleindex)
 

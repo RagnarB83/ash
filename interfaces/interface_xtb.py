@@ -164,9 +164,9 @@ class xTBTheory:
                 print("Running xtB using {} cores".format(numcores))
                 print("...")
 
-            
             run_xtb_SP_serial(self.xtbdir, self.xtbmethod, self.filename + '.xyz', charge, mult, 
-                                      Opt=True, maxiter=self.maxiter, electronic_temp=self.electronic_temp, accuracy=self.accuracy)
+                                    Opt=True, maxiter=self.maxiter, electronic_temp=self.electronic_temp, 
+                                    accuracy=self.accuracy, printlevel=self.printlevel)
 
             if self.printlevel >= 2:
                 print("------------xTB calculation done-----")
@@ -243,7 +243,7 @@ class xTBTheory:
         #we wil this little test here
         timeA=time.time()
         check_multiplicity(qm_elems,charge,mult)
-        print_time_rel(timeA, modulename='check_multiplicity', moduleindex=2)
+        print_time_rel(timeA, modulename='check_multiplicity', moduleindex=2, currprintlevel=self.printlevel, currthreshold=1)
         if self.runmode=='inputfile':
             if self.printlevel >=2:
                 print("Using inputfile-based xTB interface")
@@ -266,22 +266,22 @@ class xTBTheory:
                 print("Running xtB using {} cores".format(self.numcores))
                 print("...")
             if Grad==True:
-                print("Grad is True")
+                #print("Grad is True")
                 if PC==True:
-                    print("PC is true")
+                    #print("PC is true")
                     create_xtb_pcfile_general(current_MM_coords, MMcharges, hardness=self.hardness)
-                    run_xtb_SP_serial(self.xtbdir, self.xtbmethod, self.filename + '.xyz', charge, mult, 
+                    run_xtb_SP_serial(self.xtbdir, self.xtbmethod, self.filename + '.xyz', charge, mult, printlevel=self.printlevel,
                                       Grad=True, maxiter=self.maxiter, electronic_temp=self.electronic_temp, accuracy=self.accuracy)
                 else:
-                    run_xtb_SP_serial(self.xtbdir, self.xtbmethod, self.filename + '.xyz', charge, mult, maxiter=self.maxiter,
+                    run_xtb_SP_serial(self.xtbdir, self.xtbmethod, self.filename + '.xyz', charge, mult, maxiter=self.maxiter, printlevel=self.printlevel,
                                   Grad=True, electronic_temp=self.electronic_temp, accuracy=self.accuracy, solvent=self.solvent_line)
             else:
                 if PC==True:
                     create_xtb_pcfile_general(current_MM_coords, MMcharges, hardness=self.hardness)
-                    run_xtb_SP_serial(self.xtbdir, self.xtbmethod, self.filename + '.xyz', charge, mult, maxiter=self.maxiter,
+                    run_xtb_SP_serial(self.xtbdir, self.xtbmethod, self.filename + '.xyz', charge, mult, maxiter=self.maxiter, printlevel=self.printlevel,
                                       electronic_temp=self.electronic_temp, accuracy=self.accuracy, solvent=self.solvent_line)
                 else:
-                    run_xtb_SP_serial(self.xtbdir, self.xtbmethod, self.filename + '.xyz', charge, mult, maxiter=self.maxiter,
+                    run_xtb_SP_serial(self.xtbdir, self.xtbmethod, self.filename + '.xyz', charge, mult, maxiter=self.maxiter, printlevel=self.printlevel,
                                       electronic_temp=self.electronic_temp, accuracy=self.accuracy, solvent=self.solvent_line)
 
             if self.printlevel >= 2:
@@ -295,7 +295,7 @@ class xTBTheory:
                     if self.printlevel >= 2:
                         print("xtb energy :", self.energy)
                         print("------------ENDING XTB-INTERFACE-------------")
-                    print_time_rel(module_init_time, modulename='xTB run', moduleindex=2)
+                    print_time_rel(module_init_time, modulename='xTB run', moduleindex=2, currprintlevel=self.printlevel, currthreshold=1)
                     return self.energy, self.grad, self.pcgrad
                 else:
                     if self.printlevel >= 2:
@@ -460,16 +460,13 @@ class xTBTheory:
             if Grad==True:
                 self.energy = float(results['energy'])
                 self.grad = results['gradient']
-                print("xtb energy:", self.energy)
-                #print("self.grad:", self.grad)
                 print("------------ENDING XTB-INTERFACE-------------")
-                print_time_rel(module_init_time, modulename='xTB run', moduleindex=2)
+                print_time_rel(module_init_time, modulename='xTB run', moduleindex=2, currprintlevel=self.printlevel, currthreshold=1)
                 return self.energy, self.grad
             else:
                 self.energy = float(results['energy'])
-                print("xtb energy:", self.energy)
                 print("------------ENDING XTB-INTERFACE-------------")
-                print_time_rel(module_init_time, modulename='xTB run', moduleindex=2)
+                print_time_rel(module_init_time, modulename='xTB run', moduleindex=2, currprintlevel=self.printlevel, currthreshold=1)
                 return self.energy
         else:
             print("Unknown option to xTB interface")
@@ -526,7 +523,7 @@ def xtbVEAgrab(file):
     return VEA
 
 # Run xTB single-point job
-def run_xtb_SP_serial(xtbdir, xtbmethod, xyzfile, charge, mult, Grad=False, Opt=False, maxiter=500, electronic_temp=300, accuracy=0.1, solvent=None):
+def run_xtb_SP_serial(xtbdir, xtbmethod, xyzfile, charge, mult, Grad=False, Opt=False, maxiter=500, electronic_temp=300, accuracy=0.1, solvent=None, printlevel=2):
     
     if solvent != None:
         solvent_line=""
@@ -559,7 +556,8 @@ def run_xtb_SP_serial(xtbdir, xtbmethod, xyzfile, charge, mult, Grad=False, Opt=
     else:
         command_list=[xtbdir + '/xtb', basename + '.xyz', '--gfn', str(xtbflag), '--chrg', str(charge), '--uhf', str(uhf), '--iterations', str(maxiter),
                       '--etemp', str(electronic_temp), '--acc', str(accuracy), '--input', 'xtbinput', str(solvent_line)]
-    print("Running xtb with these arguments:", command_list)
+    if printlevel > 1:
+        print("Running xtb with these arguments:", command_list)
     
     with open(basename+'.out', 'w') as ofile:
         process = sp.run(command_list, check=True, stdout=ofile, stderr=ofile, universal_newlines=True)

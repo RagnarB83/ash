@@ -2543,7 +2543,7 @@ def get_linkatom_positions(qm_mm_boundary_dict, qmatoms, coords, elems, linkatom
         linkatom_coords = list(qmatom_coords + (mmatom_coords - qmatom_coords) * (
                     linkatom_distance / distance(qmatom_coords, mmatom_coords)))
         linkatoms_dict[(dict_item[0], dict_item[1])] = linkatom_coords
-    print_time_rel(timeA, modulename="get_linkatom_positions")
+    #print_time_rel(timeA, modulename="get_linkatom_positions")
     return linkatoms_dict
 
 

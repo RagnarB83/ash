@@ -270,7 +270,7 @@ class KnarrCalculator:
 #ASH NEB function. Calls Knarr
 def NEB(reactant=None, product=None, theory=None, images=None, interpolation=None, CI=None, free_end=None, restart_file=None,
         conv_type=None, tol_scale=None, tol_max_fci=None, tol_rms_fci=None, tol_max_f=None, tol_rms_f=None,
-        tol_turn_on_ci=None, ActiveRegion=False, actatoms=None, runmode='serial', printlevel=1,
+        tol_turn_on_ci=None, ActiveRegion=False, actatoms=None, runmode='serial', printlevel=0,
         idpp_maxiter=None, charge=None, mult=None):
 
     module_init_time=time.time()
