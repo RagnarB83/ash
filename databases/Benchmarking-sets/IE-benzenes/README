@@ -16,3 +16,8 @@ I: 8.7580 +/- 0.0006
 Benzene:
 Average of two ZEKE measurements: 9.24384 ± 0.00006 and 9.24372 ± 0.00005 by Nemeth, G.I.; Selzle, H.L.; Schlag, E.W., Chem. Phys. Lett., 1993, 215, 151 and Chewter, L.A.; Sander, M.; Muller-Dethlefs, K.; Schalg, E.W., J. Chem. Phys., 1987, 86, 4737.
 I: 9.24378 +/- 0.00007
+
+
+#Corrections in corrections.txt
+Zero-point energy contributions to ionization energy in eV, calculated at B3LYP/def2-TZVP level of theory
+To be further scrutinized
