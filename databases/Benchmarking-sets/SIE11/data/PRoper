@@ -1,6 +1,6 @@
 #TESTSET_INFO
 #TESTSET_INFO Numentries: 11
-#TESTSET_INFO Unit: kcalpermol
+#TESTSET_INFO Unit: kcal/mol
 1   he  he+ he2+    1   1   -1  57.44
 2   nh3 nh3+    nh32+   1   1   -1  35.34
 3   h2o h2o+    h2o2+   1   1   -1  37.25

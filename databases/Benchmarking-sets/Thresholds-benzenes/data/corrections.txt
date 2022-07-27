@@ -1,0 +1,9 @@
+##################
+#TESTSET_INFO
+#TESTSET_INFO Numentries: 3
+#TESTSET_INFO Unit: eV
+#TESTSET_INFO Type: ZPE
+# ZPE corrections per reaction to be added to calculated reaction energies
+1 -0.163
+2 -0.147
+3 -0.136

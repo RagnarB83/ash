@@ -70,7 +70,7 @@ class OpenMMTheory:
         print_line_with_subheader1("Defining OpenMM object")
         # Printlevel
         self.printlevel = printlevel
-
+        print("self.printlevel:", self.printlevel)
         # Initialize system
         self.system = None
         
@@ -733,7 +733,6 @@ class OpenMMTheory:
         # NOTE: If self.system is modified then we have to remake self.simulation
         # self.simulation = simtk.openmm.app.simulation.Simulation(self.topology, self.system, self.integrator,self.platform)
         # self.simulation = self.simulationclass(self.topology, self.system, self.integrator,self.platform)
-
         print_time_rel(timeA, modulename="simulation setup")
         # timeA = time.time()
         print_time_rel(module_init_time, modulename="OpenMM object creation")
@@ -1246,14 +1245,16 @@ class OpenMMTheory:
         module_init_time = time.time()
         timeA = time.time()
         # timeA = time.time()
-        print_line_with_subheader1("Running Single-point OpenMM Interface")
+        if self.printlevel > 1:
+            print_line_with_subheader1("Running Single-point OpenMM Interface")
         # If no coords given to run then a single-point job probably (not part of Optimizer or MD which would supply
         # coords). Then try if fragment object was supplied.
         # Otherwise internal coords if they exist
         if current_coords is None:
             if fragment is None:
                 if len(self.coords) != 0:
-                    print("Using internal coordinates (from OpenMM object).")
+                    if self.printlevel > 1:
+                        print("Using internal coordinates (from OpenMM object).")
                     current_coords = self.coords
                 else:
                     print("Found no coordinates!")
@@ -1266,7 +1267,8 @@ class OpenMMTheory:
         # In fact forces will be all wrong. Thus checking before continuing
         # Constraints and frozen atoms have to instead by enforced by geomeTRICOptimizer, non-OpenMM dynamics module etc.
         defined_constraints=self.system.getNumConstraints()
-        print("Number of OpenMM system constraints defined:", defined_constraints)
+        if self.printlevel > 1:
+            print("Number of OpenMM system constraints defined:", defined_constraints)
 
         if self.autoconstraints != None or self.rigidwater==True:
             print(BC.FAIL,"OpenMM autoconstraints (HBonds,AllBonds,HAngles) in OpemmTheory are not compatible with OpenMMTheory.run()", BC.END)
@@ -1281,25 +1283,24 @@ class OpenMMTheory:
             print(BC.FAIL,"OpenMM constraints not zero. Exiting.",BC.END)
             ashexit()
 
-        print_time_rel(timeA, modulename="OpenMMTheory.run: constraints checking")
+        print_time_rel(timeA, modulename="OpenMMTheory.run: constraints checking", currprintlevel=self.printlevel, currthreshold=1)
         # Making sure coords is np array and not list-of-lists
         current_coords = np.array(current_coords)
         factor = -49614.752589207
-        print("Updating coordinates.")
+        if self.printlevel > 1: print("Updating coordinates.")
         timeA = time.time()
 
         # NOTE: THIS IS STILL RATHER SLOW
-
         current_coords_nm = current_coords * 0.1  # converting from Angstrom to nm
         pos = [self.Vec3(current_coords_nm[i, 0], current_coords_nm[i, 1], current_coords_nm[i, 2]) for i in
                range(len(current_coords_nm))] * self.unit.nanometer
         # pos = [self.Vec3(*v) for v in current_coords_nm] * self.unit.nanometer #slower
-        print_time_rel(timeA, modulename="Creating pos array")
+        print_time_rel(timeA, modulename="Creating pos array", currprintlevel=self.printlevel, currthreshold=1)
         timeA = time.time()
         # THIS IS THE SLOWEST PART. Probably nothing to be done
         self.simulation.context.setPositions(pos)
 
-        print_time_rel(timeA, modulename="Updating MM positions")
+        print_time_rel(timeA, modulename="Updating MM positions", currprintlevel=self.printlevel, currthreshold=1)
         timeA = time.time()
         # While these distance constraints should not matter, applying them makes the energy function agree with
         # previous benchmarking for bonded and nonbonded
@@ -1307,12 +1308,13 @@ class OpenMMTheory:
         # Using 1e-6 hardcoded value since how used in paper
         # NOTE: Weirdly, applyconstraints is True result in constraints for TIP3P disappearing
         if self.applyconstraints_in_run is True:
-            print("Applying constraints before calculating MM energy.")
+            if self.printlevel > 1: print("Applying constraints before calculating MM energy.")
             self.simulation.context.applyConstraints(1e-6)
-            print_time_rel(timeA, modulename="context: apply constraints")
+            print_time_rel(timeA, modulename="context: apply constraints", currprintlevel=self.printlevel, currthreshold=1)
             timeA = time.time()
 
-        print("Calling OpenMM getState.")
+        if self.printlevel > 1:
+            print("Calling OpenMM getState.")
         if Grad is True:
             state = self.simulation.context.getState(getEnergy=True, getForces=True)
             self.energy = state.getPotentialEnergy().value_in_unit(self.unit.kilojoule_per_mole) / ash.constants.hartokj
@@ -1320,18 +1322,19 @@ class OpenMMTheory:
         else:
             state = self.simulation.context.getState(getEnergy=True, getForces=False)
             self.energy = state.getPotentialEnergy().value_in_unit(self.unit.kilojoule_per_mole) / ash.constants.hartokj
+        
+        print_time_rel(timeA, modulename="OpenMM getState", currprintlevel=self.printlevel, currthreshold=1)
 
-        print_time_rel(timeA, modulename="OpenMM getState")
-        # timeA = time.time()
-        print("OpenMM Energy:", self.energy, "Eh")
-        print("OpenMM Energy:", self.energy * ash.constants.harkcal, "kcal/mol")
+        if self.printlevel > 1:
+            print("OpenMM Energy:", self.energy, "Eh")
+            print("OpenMM Energy:", self.energy * ash.constants.harkcal, "kcal/mol")
 
         # Do energy components or not. Can be turned off for e.g. MM MD simulation
         if self.do_energy_decomposition is True:
             self.printEnergyDecomposition()
-
-        print_line_with_subheader2("Ending OpenMM interface")
-        print_time_rel(module_init_time, modulename="OpenMM run", moduleindex=2)
+        if self.printlevel > 1:
+            print_line_with_subheader2("Ending OpenMM interface")
+        print_time_rel(module_init_time, modulename="OpenMM run", moduleindex=2, currprintlevel=self.printlevel, currthreshold=1)
         if Grad is True:
             return self.energy, self.gradient
         else:

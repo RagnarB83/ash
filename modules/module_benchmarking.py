@@ -5,7 +5,7 @@ import os
 import math
 import time
 
-#import ash
+import ash
 #import ash.modules.module_coords
 from ash.functions.functions_general import ashexit, isint,isfloat,is_same_sign,BC,print_time_rel,pygrep
 from ash.functions.functions_elstructure import check_cores_vs_electrons, num_core_electrons

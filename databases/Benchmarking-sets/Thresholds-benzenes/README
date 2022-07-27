@@ -1,18 +1,9 @@
-This dataset contains experimental 0 Kelvin adiabatic ionization energies of halo-benzenes (F, Cl, Br, I) and benzene.
-
-#Geometries
-B3LYP-D3/def2-TZVP optimized geometries
+This dataset contains experimental 
 
 
-#Experimental references
 
-Halobenzenes:  
-From one-photon mass-analyzed threshold ionization spectrometry by Kwon, C. H.; Kim, H. L.; Kim, M. S. J. Chem. Phys. 2002, 116, 10361-10371.
-F: 9.2032 +/- 0.0006
-Cl: 9.0728 +/- 0.0006
-Br: 8.9975 +/- 0.0006
-I: 8.7580 +/- 0.0006
-
-Benzene:
-Average of two ZEKE measurements: 9.24384 ± 0.00006 and 9.24372 ± 0.00005 by Nemeth, G.I.; Selzle, H.L.; Schlag, E.W., Chem. Phys. Lett., 1993, 215, 151 and Chewter, L.A.; Sander, M.; Muller-Dethlefs, K.; Schalg, E.W., J. Chem. Phys., 1987, 86, 4737.
-I: 9.24378 +/- 0.00007
+#Corrections (B3LYP-D3/def2-TZVP):
+C6H5Cl: -0.163
+C6H5Br: -0.147
+C6H5I: -0.136
+eV
