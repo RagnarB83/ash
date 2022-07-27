@@ -161,8 +161,10 @@ atom_core_electrons = {'H': 0, 'He': 0, 'Li': 0, 'Be': 0, 'B': 2, 'C': 2, 'N': 2
 
 # Spin-orbit splittings:
 # Currently only including neutral atoms. Data in cm-1 from : https://webhome.weizmann.ac.il/home/comartin/w1/so.txt
+#Br and I taken from https://cccbdb.nist.gov/elecspin.asp
 atom_spinorbitsplittings = {'H': 0.000, 'B': -10.17, 'C': -29.58, 'N': 0.00, 'O': -77.97, 'F': -134.70,
-                            'Al': -74.71, 'Si': -149.68, 'P': 0.00, 'S': -195.77, 'Cl': -294.12}
+                            'Al': -74.71, 'Si': -149.68, 'P': 0.00, 'S': -195.77, 'Cl': -294.12, 'Br':-1228.4, 'I':-2534.4}
+
 
 # List of transition metal elements (with d-electrons)
 tmlist = ['Sc', 'Ti', 'V', 'Cr', 'Mn', 'Fe', 'Co', 'Ni', 'Cu', 'Zn', 'Y', 'Zr', 'Nb', 'Mo', 'Tc', 'Ru', 'Rh', 'Pd',
