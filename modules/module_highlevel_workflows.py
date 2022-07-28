@@ -35,7 +35,7 @@ class CC_CBS_Theory:
     def __init__(self, elements=None, cardinals=None, basisfamily=None, relativity=None, orcadir=None, memory=5000, numcores=1, 
            stabilityanalysis=False, CVSR=False, CVbasis="W1-mtsmall", F12=False, Openshellreference=None, DFTreference=None, DFT_RI=False, auxbasis="autoaux-max",
                         DLPNO=False, pnosetting='NormalPNO', pnoextrapolation=[1e-6,1e-7,1.5,'TightPNO'],
-                        FullLMP2Guess=False, T1=False, T1correction=False, T1corrbasis_size='Large', scfsetting='TightSCF',
+                        FullLMP2Guess=False, T1=False, T1correction=False, T1corrbasis_size='Large', T1corrpnosetting='NormalPNO', scfsetting='TightSCF',
                         alpha=None, beta=None, extrainputkeyword='', extrablocks='', FCI=False, guessmode='Cmatrix', atomicSOcorrection=False):
         """
         WORK IN PROGRESS
@@ -110,6 +110,7 @@ class CC_CBS_Theory:
         self.T1=T1
         self.T1correction=T1correction
         self.T1corrbasis_size=T1corrbasis_size
+        self.T1corrpnosetting=T1corrpnosetting
         self.scfsetting=scfsetting
         self.alpha=alpha
         self.beta=beta
@@ -339,7 +340,7 @@ maxiter 150\nend
         print("Cleanup called")
 
     #T1 correction 
-    def T1correction_Step(self, current_coords, elems,calc_label, numcores, charge=None, mult=None, basis='Large'):
+    def T1correction_Step(self, current_coords, elems,calc_label, numcores, charge=None, mult=None, basis='Large', pnosetting='NormalPNO'):
         print("\nNow doing T1 correction. Getting T0 and T1 triples from a single calculation")
 
         #Using basic theory line but changing from T0 to T1
@@ -351,9 +352,15 @@ maxiter 150\nend
             else:
                 blocks = self.blocks2
         else:
-            blocks = self.blocks1 
-        #NOTE: PNO setting: Using default for now (NormalPNO). To be tested more
+            blocks = self.blocks1
 
+        #PNO setting to use for T1 correction
+        if pnosetting == 'NormalPNO':
+            ccsdt_T1_line= ccsdt_T1_line + ' NormalPNO '
+        elif pnosetting =='LoosePNO':
+            ccsdt_T1_line= ccsdt_T1_line + ' LoosePNO '
+        elif pnosetting =='TightPNO':
+            ccsdt_T1_line= ccsdt_T1_line + ' TightPNO '
 
         #Defining theory
         ccsdt_T1 = ash.interfaces.interface_ORCA.ORCATheory(orcadir=self.orcadir, orcasimpleinput=ccsdt_T1_line, orcablocks=blocks, numcores=self.numcores)
@@ -654,7 +661,8 @@ maxiter 150\nend
         ############################################################
         if self.T1 == False:
             if self.T1correction == True:
-                T1energycorr = self.T1correction_Step(current_coords, elems, calc_label,numcores, charge=charge, mult=mult, basis=self.T1corrbasis_size)
+                T1energycorr = self.T1correction_Step(current_coords, elems, calc_label,numcores, charge=charge, mult=mult, 
+                    basis=self.T1corrbasis_size, pnosetting=self.T1corrpnosetting)
                 #Adding T1 energy correction to E_corr_CBS and E_corrCCT_CBS
                 E_corr_CBS = E_corr_CBS + T1energycorr
                 E_corrCCT_CBS = E_corrCCT_CBS + T1energycorr
