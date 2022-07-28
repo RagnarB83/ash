@@ -32,9 +32,9 @@ TightPNO_thresholds={'TCutPNO': 1e-7, 'TCutPairs': 1e-5, 'TCutDO': 5e-3, 'TCutMK
 
 #pnoextrapolation=[6,7]  pnoextrapolation=[1e-6,1e-7,1.5,'TightPNO']   pnoextrapolation=[1e-6,3.33e-7,2.38,'NormalPNO']    
 class CC_CBS_Theory:
-    def __init__(self, elements=None, cardinals = None, basisfamily=None, relativity=None, orcadir=None, memory=5000, numcores=1, 
+    def __init__(self, elements=None, cardinals=None, basisfamily=None, relativity=None, orcadir=None, memory=5000, numcores=1, 
            stabilityanalysis=False, CVSR=False, CVbasis="W1-mtsmall", F12=False, Openshellreference=None, DFTreference=None, DFT_RI=False, auxbasis="autoaux-max",
-                        DLPNO=False, pnosetting='NormalPNO', pnoextrapolation=[1e-6,1e-7,1.5,'NormalPNO'],
+                        DLPNO=False, pnosetting='NormalPNO', pnoextrapolation=[1e-6,1e-7,1.5,'TightPNO'],
                         FullLMP2Guess=False, T1=False, T1correction=False, T1corrbasis_size='Large', scfsetting='TightSCF',
                         alpha=None, beta=None, extrainputkeyword='', extrablocks='', FCI=False, guessmode='Cmatrix', atomicSOcorrection=False):
         """
