@@ -39,27 +39,10 @@ class ORCA_CC_CBS_Theory:
             DLPNO=False, pnosetting='NormalPNO', pnoextrapolation=[1e-6,1e-7,1.5,'TightPNO'], FullLMP2Guess=False, 
             T1=False, T1correction=False, T1corrbasis_size='Large', T1corrpnosetting='NormalPNOreduced', 
             relativity=None, orcadir=None, FCI=False, atomicSOcorrection=False):
-        """
-        WORK IN PROGRESS
-        CCSD(T)/CBS frozencore workflow
-
-        :param elements: list of element symbols
-        :param orcadir: ORCA directory
-        :param stabilityanalysis: stability analysis on or off.
-        :param numcores: number of cores
-        :param memory: Memory in MB
-        :param scfsetting: ORCA keyword (e.g. NormalSCF, TightSCF, VeryTightSCF)
-        :param F12: True/False
-        :param DLPNO: True/False  
-        :param pnosetting: ORCA keyword: NormalPNO, LoosePNO, TightPNO or extrapolation
-        :param pnoextrapolation: list. e.g. pnoextrapolation=[1e-6,1e-7,1.5,'TightPNO'] 
-        ;param T1: Boolean (whether to do expensive iterative triples or not)
-        :return: energy and dictionary with energy-components.
-        """
 
         print_line_with_mainheader("CC_CBS_Theory")
 
-        #Indicate that this is a QMtheory
+        #Indicates that this is a QMtheory
         self.theorytype="QM"
 
         #CHECKS to exit early 
