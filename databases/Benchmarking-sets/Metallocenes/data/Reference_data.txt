@@ -1,0 +1,9 @@
+#TESTSET_INFO Numentries: 6
+#TESTSET_INFO Unit: eV
+#Data from   PBE0-D3/D4 geometries
+1   PBE0_CpV_Ch0_Mult4  PBE0_CpV_Ch1_Mult3 -1   1  6.700
+2   PBE0_CpCr_Ch0_Mult3 PBE0_CpCr_Ch1_Mult4    -1   1  5.529
+3   PBE0_CpMn_Ch0_Mult_6_D4 PBE0_CpMn_Ch1_Mult3_D4 -1 1 6.179
+4   PBE0_CpFe_Ch0_Mult1  PBE0_CpFe_Ch1_Mult2 -1   1  6.639
+5   PBE0_CpCo_Ch0_Mult2 PBE0_CpCo_Ch1_Mult1 -1   1  5.355
+6   PBE0_CpNi_Ch0_Mult3  PBE0_CpNi_Ch1_Mult2 -1   1  6.236
