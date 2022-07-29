@@ -1,0 +1,12 @@
+##################
+#TESTSET_INFO
+#TESTSET_INFO Numentries: 6
+#TESTSET_INFO Unit: eV
+#TESTSET_INFO Type: deltaGcorr
+# deltaG corrections (PBE0) per reaction to be added to calculated reaction energies
+1 0.0435
+2 0.0516
+3 0.1556
+4 -0.051
+5 0.223
+6 0.0466
