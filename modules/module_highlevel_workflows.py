@@ -22,21 +22,27 @@ basisfamilies=['cc','aug-cc','cc-dkh','cc-dk','aug-cc-dkh','aug-cc-dk','def2','m
 #PNO threshold dictionaries
 LoosePNO_thresholds={'TCutPNO': 1e-6, 'TCutPairs': 1e-3, 'TCutDO': 2e-2, 'TCutMKN': 1e-3}
 NormalPNO_thresholds={'TCutPNO': 3.33e-7, 'TCutPairs': 1e-4, 'TCutDO': 1e-2, 'TCutMKN': 1e-3}
+NormalPNOreduced_thresholds={'TCutPNO': 1e-6, 'TCutPairs': 1e-4, 'TCutDO': 1e-2, 'TCutMKN': 1e-3}
 TightPNO_thresholds={'TCutPNO': 1e-7, 'TCutPairs': 1e-5, 'TCutDO': 5e-3, 'TCutMKN': 1e-3}
 
 
-#Flexible CCSD(T)/CBS protocol class. Simple. No core-correlation, scalar relativistic or spin-orbit coupling for now.
+#Flexible CCSD(T)/CBS protocol class.
 # Regular CC, DLPNO-CC, DLPNO-CC with PNO extrapolation etc.
 #alpha and beta can be manually set. If not set then they are picked based on basisfamily
 #NOTE: List of elements are required here
 
 #pnoextrapolation=[6,7]  pnoextrapolation=[1e-6,1e-7,1.5,'TightPNO']   pnoextrapolation=[1e-6,3.33e-7,2.38,'NormalPNO']    
-class CC_CBS_Theory:
-    def __init__(self, elements=None, cardinals=None, basisfamily=None, relativity=None, orcadir=None, memory=5000, numcores=1, 
-           stabilityanalysis=False, CVSR=False, CVbasis="W1-mtsmall", F12=False, Openshellreference=None, DFTreference=None, DFT_RI=False, auxbasis="autoaux-max",
-                        DLPNO=False, pnosetting='NormalPNO', pnoextrapolation=[1e-6,1e-7,1.5,'TightPNO'],
-                        FullLMP2Guess=False, T1=False, T1correction=False, T1corrbasis_size='Large', T1corrpnosetting='NormalPNO', scfsetting='TightSCF',
-                        alpha=None, beta=None, extrainputkeyword='', extrablocks='', FCI=False, guessmode='Cmatrix', atomicSOcorrection=False):
+
+#NOTE: Temporary alias to maintain current compatibility. Will be changed when we introduce MRCC_CC_CBS_Theory 
+CC_CBS_Theory = ORCA_CC_CBS_Theory
+
+class ORCA_CC_CBS_Theory:
+    def __init__(self, elements=None, scfsetting='TightSCF', extrainputkeyword='', extrablocks='', guessmode='Cmatrix', memory=5000, numcores=1, 
+            cardinals=None, basisfamily=None, SCFextrapolation=True, alpha=None, beta=None, 
+            stabilityanalysis=False, CVSR=False, CVbasis="W1-mtsmall", F12=False, Openshellreference=None, DFTreference=None, DFT_RI=False, auxbasis="autoaux-max",
+            DLPNO=False, pnosetting='NormalPNO', pnoextrapolation=[1e-6,1e-7,1.5,'TightPNO'], FullLMP2Guess=False, 
+            T1=False, T1correction=False, T1corrbasis_size='Large', T1corrpnosetting='NormalPNOreduced', 
+            relativity=None, orcadir=None, FCI=False, atomicSOcorrection=False):
         """
         WORK IN PROGRESS
         CCSD(T)/CBS frozencore workflow
@@ -94,6 +100,9 @@ class CC_CBS_Theory:
         self.orcadir = orcadir
         self.elements=elements
         self.cardinals = cardinals
+        self.alpha=alpha
+        self.beta=beta
+        self.SCFextrapolation=SCFextrapolation
         self.basisfamily = basisfamily
         self.relativity = relativity
         self.stabilityanalysis=stabilityanalysis
@@ -112,8 +121,7 @@ class CC_CBS_Theory:
         self.T1corrbasis_size=T1corrbasis_size
         self.T1corrpnosetting=T1corrpnosetting
         self.scfsetting=scfsetting
-        self.alpha=alpha
-        self.beta=beta
+
         self.extrainputkeyword=extrainputkeyword
         self.extrablocks=extrablocks
         self.FullLMP2Guess=FullLMP2Guess
@@ -127,6 +135,7 @@ class CC_CBS_Theory:
         print("Settings:")
         print("Cardinals chosen:", self.cardinals)
         print("Basis set family chosen:", self.basisfamily)
+        print("SCFextrapolation:", self.SCFextrapolation)
         print("Elements involved:", self.elements)
         print("Number of cores: ", self.numcores)
         print("Maxcore setting: ", self.memory, "MB")
@@ -142,9 +151,12 @@ class CC_CBS_Theory:
             print("PNO setting: ", self.pnosetting)
             print("T1 : ", self.T1)
             print("T1correction : ", self.T1correction)
+            if self.T1correction == True:
+                print("T1corrbasis_size:", self.T1corrbasis_size)
+                print("T1corrpnosetting:", self.T1corrpnosetting)
             print("FullLMP2Guess ", self.FullLMP2Guess)
             if self.pnosetting == "extrapolation":
-                print("pnoextrapolation:", self.pnoextrapolation)
+                print("PNO extrapolation parameters:", self.pnoextrapolation)
             #Setting Full LMP2 to false in general for DLPNO
             dlpno_line="UseFullLMP2Guess {}".format(str(self.FullLMP2Guess).lower())
         print("")
@@ -356,11 +368,22 @@ maxiter 150\nend
 
         #PNO setting to use for T1 correction
         if pnosetting == 'NormalPNO':
-            ccsdt_T1_line= ccsdt_T1_line + ' NormalPNO '
+            thresholdsetting=NormalPNO_thresholds
+        elif pnosetting =='NormalPNOreduced':
+            thresholdsetting=NormalPNOreduced_thresholds
         elif pnosetting =='LoosePNO':
-            ccsdt_T1_line= ccsdt_T1_line + ' LoosePNO '
+            thresholdsetting=LoosePNO_thresholds
         elif pnosetting =='TightPNO':
-            ccsdt_T1_line= ccsdt_T1_line + ' TightPNO '
+            thresholdsetting=TightPNO_thresholds
+
+        mdciblock=f"""\n%mdci
+    TCutPNO {thresholdsetting['TCutPNO']}
+    TCutPairs {thresholdsetting["TCutPairs"]}
+    TCutDO {thresholdsetting["TCutDO"]}
+    TCutMKN {thresholdsetting["TCutMKN"]}
+    end
+        """
+        blocks = blocks + '\n' + mdciblock
 
         #Defining theory
         ccsdt_T1 = ash.interfaces.interface_ORCA.ORCATheory(orcadir=self.orcadir, orcasimpleinput=ccsdt_T1_line, orcablocks=blocks, numcores=self.numcores)
@@ -598,12 +621,15 @@ maxiter 150\nend
                 corr_energies = [E_corrCC_1, E_corrCC_2]
     
             #BASIS SET EXTRAPOLATION
-                E_SCF_CBS, E_corrCCSD_CBS = Extrapolation_twopoint(scf_energies, ccsdcorr_energies, self.cardinals, self.basisfamily, alpha=self.alpha, beta=self.beta) #2-point extrapolation
+                E_SCF_CBS, E_corrCCSD_CBS = Extrapolation_twopoint(scf_energies, ccsdcorr_energies, self.cardinals, self.basisfamily, 
+                    alpha=self.alpha, beta=self.beta, SCFextrapolation=self.SCFextrapolation) #2-point extrapolation
                 #Separate CCSD and (T) CBS energies
-                E_SCF_CBS, E_corrCCT_CBS = Extrapolation_twopoint(scf_energies, triplescorr_energies, self.cardinals, self.basisfamily, alpha=self.alpha, beta=self.beta) #2-point extrapolation
+                E_SCF_CBS, E_corrCCT_CBS = Extrapolation_twopoint(scf_energies, triplescorr_energies, self.cardinals, self.basisfamily, 
+                    alpha=self.alpha, beta=self.beta, SCFextrapolation=self.SCFextrapolation) #2-point extrapolation
 
                 #BASIS SET EXTRAPOLATION of SCF and full correlation energies
-                E_SCF_CBS, E_corr_CBS = Extrapolation_twopoint(scf_energies, corr_energies, self.cardinals, self.basisfamily, alpha=self.alpha, beta=self.beta) #2-point extrapolation
+                E_SCF_CBS, E_corr_CBS = Extrapolation_twopoint(scf_energies, corr_energies, self.cardinals, self.basisfamily, 
+                    alpha=self.alpha, beta=self.beta, SCFextrapolation=self.SCFextrapolation) #2-point extrapolation
 
         # OR no PNO extrapolation
         else:
@@ -648,12 +674,15 @@ maxiter 150\nend
                 print("corr_energies :", corr_energies)
             
             #BASIS SET EXTRAPOLATION
-                E_SCF_CBS, E_corrCCSD_CBS = Extrapolation_twopoint(scf_energies, ccsdcorr_energies, self.cardinals, self.basisfamily, alpha=self.alpha, beta=self.beta) #2-point extrapolation
+                E_SCF_CBS, E_corrCCSD_CBS = Extrapolation_twopoint(scf_energies, ccsdcorr_energies, self.cardinals, self.basisfamily, 
+                    alpha=self.alpha, beta=self.beta, SCFextrapolation=self.SCFextrapolation) #2-point extrapolation
                 #Separate CCSD and (T) CBS energies
-                E_SCF_CBS, E_corrCCT_CBS = Extrapolation_twopoint(scf_energies, triplescorr_energies, self.cardinals, self.basisfamily, alpha=self.alpha, beta=self.beta) #2-point extrapolation
+                E_SCF_CBS, E_corrCCT_CBS = Extrapolation_twopoint(scf_energies, triplescorr_energies, self.cardinals, self.basisfamily, 
+                    alpha=self.alpha, beta=self.beta, SCFextrapolation=self.SCFextrapolation) #2-point extrapolation
 
                 #BASIS SET EXTRAPOLATION of SCF and full correlation energies
-                E_SCF_CBS, E_corr_CBS = Extrapolation_twopoint(scf_energies, corr_energies, self.cardinals, self.basisfamily, alpha=self.alpha, beta=self.beta) #2-point extrapolation
+                E_SCF_CBS, E_corr_CBS = Extrapolation_twopoint(scf_energies, corr_energies, self.cardinals, self.basisfamily, 
+                    alpha=self.alpha, beta=self.beta, SCFextrapolation=self.SCFextrapolation) #2-point extrapolation
 
 
         ############################################################
@@ -799,7 +828,7 @@ def PNO_extrapolation(E,F):
     E_C_PNO= E[0] + F*(E[1]-E[0])
     return E_C_PNO
 
-def Extrapolation_twopoint(scf_energies, corr_energies, cardinals, basis_family, alpha=None, beta=None):
+def Extrapolation_twopoint(scf_energies, corr_energies, cardinals, basis_family, alpha=None, beta=None, SCFextrapolation=True):
     """
     Extrapolation function for general 2-point extrapolations
     :param scf_energies: list of SCF energies
@@ -903,17 +932,22 @@ def Extrapolation_twopoint(scf_energies, corr_energies, cardinals, basis_family,
     print("SCF energies are:", scf_energies[0], "and", scf_energies[1])
     print("Correlation energies are:", corr_energies[0], "and", corr_energies[1])
 
+    #Whether to skip SCF extrapolation or not
+    if SCFextrapolation == False:
+        print("SCF extrapolation is INACTIVE")
+        print(f"Using largest-basis (cardinal: {cardinals[1]}) calculated SCF energy instead")
+        SCFfinal = scf_energies[1]
+        print("SCF Final value is", SCFfinal)
+    else:
+        eX=math.exp(-1*alpha*math.sqrt(cardinals[0]))
+        eY=math.exp(-1*alpha*math.sqrt(cardinals[1]))
+        SCFfinal=(scf_energies[0]*eY-scf_energies[1]*eX)/(eY-eX)
+        print("SCF Extrapolated value is", SCFfinal)
+    #Correlation extrapolation
+    corr_final=(math.pow(cardinals[0],beta)*corr_energies[0] - math.pow(cardinals[1],beta) * corr_energies[1])/(math.pow(cardinals[0],beta)-math.pow(cardinals[1],beta))
+    print("Correlation Extrapolated value is", corr_final)
 
-    eX=math.exp(-1*alpha*math.sqrt(cardinals[0]))
-    eY=math.exp(-1*alpha*math.sqrt(cardinals[1]))
-    SCFextrap=(scf_energies[0]*eY-scf_energies[1]*eX)/(eY-eX)
-    corrextrap=(math.pow(cardinals[0],beta)*corr_energies[0] - math.pow(cardinals[1],beta) * corr_energies[1])/(math.pow(cardinals[0],beta)-math.pow(cardinals[1],beta))
-
-    print("SCF Extrapolated value is", SCFextrap)
-    print("Correlation Extrapolated value is", corrextrap)
-    #print("Total Extrapolated value is", SCFextrap+corrextrap)
-
-    return SCFextrap, corrextrap
+    return SCFfinal, corr_final
 
 
 
