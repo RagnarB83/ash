@@ -12,7 +12,6 @@ import ash.interfaces.interface_ORCA
 from ash.functions.functions_elstructure import num_core_electrons, check_cores_vs_electrons
 from ash.functions.functions_general import ashexit, BC, print_line_with_mainheader, pygrep2, pygrep
 from ash.modules.module_coords import elemlisttoformula, nucchargelist,elematomnumbers
-from ash.modules.module_coords import check_charge_mult
 
 # Allowed basis set families. Accessed by function basis_for_element and extrapolation
 basisfamilies=['cc','aug-cc','cc-dkh','cc-dk','aug-cc-dkh','aug-cc-dk','def2','ma-def2','def2-zora', 'def2-dkh',
@@ -26,11 +25,8 @@ NormalPNOreduced_thresholds={'TCutPNO': 1e-6, 'TCutPairs': 1e-4, 'TCutDO': 1e-2,
 TightPNO_thresholds={'TCutPNO': 1e-7, 'TCutPairs': 1e-5, 'TCutDO': 5e-3, 'TCutMKN': 1e-3}
 
 
-#Flexible CCSD(T)/CBS protocol class.
+#Flexible ORCA CCSD(T)/CBS protocol class.
 # Regular CC, DLPNO-CC, DLPNO-CC with PNO extrapolation etc.
-#alpha and beta can be manually set. If not set then they are picked based on basisfamily
-#NOTE: List of elements are required here
-
 #pnoextrapolation=[6,7]  pnoextrapolation=[1e-6,1e-7,1.5,'TightPNO']   pnoextrapolation=[1e-6,3.33e-7,2.38,'NormalPNO']    
 
 #NOTE: Temporary alias to maintain current compatibility. Will be changed when we introduce MRCC_CC_CBS_Theory 
