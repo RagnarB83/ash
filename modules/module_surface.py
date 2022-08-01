@@ -118,14 +118,34 @@ def calc_surface(fragment=None, theory=None, charge=None, mult=None, scantype='U
     
     #Create directory to keep track of surface XYZ files
     try:
-        os.mkdir('surface_xyzfiles') 
-        os.mkdir('surface_outfiles')
-        os.mkdir('surface_fragfiles')
-        os.mkdir('surface_mofiles')
-    except FileExistsError:
-        print("")
-        print(BC.FAIL,"surface_xyzfiles, surface_fragfiles, surface_mofiles and surface_outfiles directories exist already in dir. Please remove them", BC.END)
-        ashexit()
+        shutil.rmtree("surface_xyzfiles")
+    except:
+        pass
+    try:
+        shutil.rmtree("surface_outfiles")
+    except:
+        pass
+    try:
+        shutil.rmtree("surface_fragfiles")
+    except:
+        pass
+    try:
+        shutil.rmtree("surface_mofiles")
+    except:
+        pass
+    os.mkdir('surface_xyzfiles')
+    os.mkdir('surface_outfiles')
+    os.mkdir('surface_fragfiles')
+    os.mkdir('surface_mofiles')
+    #try:
+    #    os.mkdir('surface_xyzfiles') 
+    #    os.mkdir('surface_outfiles')
+    #    os.mkdir('surface_fragfiles')
+    #    os.mkdir('surface_mofiles')
+    #except FileExistsError:
+    #    print("")
+    #    print(BC.FAIL,"surface_xyzfiles, surface_fragfiles, surface_mofiles and surface_outfiles directories exist already in dir. Please remove them", BC.END)
+     #   ashexit()
 
     #PARALLEL CALCULATION
     if runmode=='parallel':
@@ -429,17 +449,23 @@ def calc_surface_fromXYZ(xyzdir=None, theory=None, charge=None, mult=None, dimen
     #Note: for runmode_parallel we have separate dirs for each surfacepoint where we have inputfile, outputfile and MOfile
     if runmode=='serial':
         try:
+            shutil.rmtree("'surface_outfiles'")
+        except:
+            pass
+        try:
             os.mkdir('surface_outfiles')
+        except FileExistsError:
+            print("")
+            #print(BC.FAIL,"surface_outfiles directory exist already in dir. Removing...", BC.END)
+            
+        try:
+            shutil.rmtree("'surface_mofiles'")
+        except:
+            pass
+        try:
             os.mkdir('surface_mofiles')
         except FileExistsError:
             print("")
-            print(BC.FAIL,"surface_outfiles or surface_mofiles directory exist already in dir. Please remove it", BC.END)
-            ashexit()
-
-
-
-
-
 
     #New Surfacepoint class to organize the data, at least for parallel mode
     #Using list to collect the Surfacepoint objects
