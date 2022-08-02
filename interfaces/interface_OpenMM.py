@@ -2123,13 +2123,25 @@ def OpenMM_Modeller(pdbfile=None, forcefield=None, xmlfile=None, waterxmlfile=No
     # This is were missing residue/atom errors will come
     print("")
     print("Adding hydrogens for pH:", pH)
-    print("Providing full list of residue_states", residue_states)
+    #print("Providing full list of residue_states", residue_states)
     print("Warning: OpenMM Modeller will fail in this step if residue information is missing")
-    modeller.addHydrogens(forcefield, pH=pH, variants=residue_states)
+    try:
+        modeller.addHydrogens(forcefield, pH=pH, variants=residue_states)
+    except ValueError as errormessage:
+        print(BC.FAIL,"\nError: OpenMM modeller.addHydrogens signalled a ValueError",BC.END)
+        print("This is a common error and suggests a problem in PDB-file or missing residue information in the forcefield.")
+        print("Non-standard inorganic/organic residues require providing an additional XML-file via extraxmlfile= option")
+        print("Note that C-terminii require the dangling O-atom to be named OXT ")
+        print("Read the ASH documentation or the OpenMM documentation on dealing with this problem.")
+        print("\nFull error message from OpenMM:")
+        print(errormessage)
+        print()
+        ashexit()
+
     write_pdbfile_openMM(modeller.topology, modeller.positions, "system_afterH.pdb")
     print_systemsize()
 
-    # Solvent
+    # Adding Solvent
     print("Adding solvent, watermodel:", watermodel)
     if solvent_boxdims is not None:
         print("Solvent boxdimension provided: {} Å".format(solvent_boxdims))

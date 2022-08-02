@@ -657,7 +657,7 @@ def grab_ORCA_errors(filename):
 
     errors=[]
     #Lines that are not errors
-    ignore_lines=['   Startup', ' DIIS', 'sum of PNO error', '  Last DIIS Error', '    DIIS-Error']
+    ignore_lines=['   Startup', ' DIIS', 'sum of PNO error', '  Last DIIS Error', '    DIIS-Error', ' Sum of total truncation errors', '  Sum of total UMP2 truncation', ' Warning: in a DFT calculation' ]
     for err in error_lines:
         false_positive = any(err.startswith(ign) for ign in ignore_lines)
         if false_positive is False:

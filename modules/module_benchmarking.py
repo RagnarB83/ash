@@ -421,6 +421,8 @@ def run_benchmark(set=None, theory=None, numcores=None, reuseorbs=False, correct
                 #List of all energies
                 energies.append(energy)
             print("")
+            print("Total energies:", energies)
+            print("Stoichiometry:", reaction.stoichiometry)
             reaction_energy, error = ash.ReactionEnergy(stoichiometry=reaction.stoichiometry, list_of_energies=energies, unit=unit, label=reactionindex, 
                                                         reference=reaction.refenergy)
             reaction.calcenergy = reaction_energy

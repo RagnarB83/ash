@@ -42,9 +42,8 @@ class MRCCTheory:
         self.mrccinput=mrccinput
         self.numcores=numcores
 
-
-
-
+    def cleanup():
+        print("MRCC cleanup not yet implemented.")
     #TODO: Parallelization is enabled most easily by OMP_NUM_THREADS AND MKL_NUM_THREADS. NOt sure if we can control this here
 
 
