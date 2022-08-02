@@ -256,14 +256,14 @@ maxiter 150\nend
 
             self.Calc1_basis_dict={}
             for elem in elements:
-                bas=basis_for_element(elem, basisfamily, cardinals[1])
+                bas=basis_for_element(elem, basisfamily, cardinals[0])
                 self.Calc1_basis_dict[elem] = bas
             print("Basis set definitions for each element:")
             print("Calc1_basis_dict:", self.Calc1_basis_dict)
 
             self.Calc2_basis_dict={}
             for elem in elements:
-                bas=basis_for_element(elem, basisfamily, cardinals[2])
+                bas=basis_for_element(elem, basisfamily, cardinals[1])
                 self.Calc2_basis_dict[elem] = bas
             print("Basis set definitions for each element:")
             print("Calc2_basis_dict", self.Calc2_basis_dict)
@@ -302,7 +302,7 @@ maxiter 150\nend
             #Single-basis calculation
             self.Calc1_basis_dict={}
             for elem in elements:
-                bas=basis_for_element(elem, basisfamily, cardinals[1])
+                bas=basis_for_element(elem, basisfamily, cardinals[0])
                 self.Calc1_basis_dict[elem] = bas
             print("Basis set definitions for each element:")
             print("Calc1_basis_dict:", self.Calc1_basis_dict)
