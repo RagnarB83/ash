@@ -3493,22 +3493,43 @@ def find_alternate_locations_residues(pdbfile, use_higher_occupancy=False):
 
 #Function to get nonbonded model parameters for a metal cluster
 #TODO: Add option to symmetrize charges for similar atoms in residue
-def write_nonbonded_FF_for_ligand(xyzfile=None, charge=None, mult=None, coulomb14scale=1.0, lj14scale=1.0, 
+def write_nonbonded_FF_for_ligand(fragment=None, xyzfile=None, charge=None, mult=None, coulomb14scale=1.0, lj14scale=1.0, 
     charmm=True, charge_model="xTB", theory=None, LJ_model="UFF", resname="LIG"):
     print_line_with_mainheader("OpenMM write_nonbonded_FF_for_ligand")
 
     if charmm == True:
         print("CHARMM option: True")
-        print("Will create XML file so that the Nonbonded Interaction is compatible with CHARMM.")
+        print("Will create XML file so that the Nonbonded Interaction is compatible with CHARMM.\n")
 
     else:
         print("CHARMM option: False")
-        print("Will create XML file in the regular way")
+        print("Will create XML file in the regular way\n")
 
     #Coulomb and LJ scaling. Needs to be FF compatible. CHARMM values below
 
     #Creating ASH fragment
-    fragment=Fragment(xyzfile=xyzfile, charge=charge,mult=mult)
+    if fragment != None:
+        if fragment.charge == None or fragment.mult == None:
+            print("No charge/mult information present in fragment")
+            if charge == None or mult == None:
+                print("No charge/mult info provided to function write_nonbonded_FF_for_ligand either.")
+                print("Exiting")
+                ashexit()
+            else:
+                fragment.charge=charge; fragment.mult=mult
+
+        #Charge
+    elif xyzfile != None:
+        if os.path.exists(xyzfile) == False:
+            print("XYZ-file does not exist. Exiting")
+            ashexit()
+        if charge == None or mult == None :
+            print("XYZ-file option requires charge and mult definition. Exiting.")
+            ashexit()
+        fragment=Fragment(xyzfile=xyzfile, charge=charge,mult=mult)
+    else:
+        print("Neither fragment or xyzfile was provided to write_nonbonded_FF_for_ligand")
+        ashexit()
 
     # Defining simple atomnames and atomtypes to be used for ligand
     atomnames = [el + "Y" + str(i) for i, el in enumerate(fragment.elems)]
@@ -3520,7 +3541,7 @@ def write_nonbonded_FF_for_ligand(xyzfile=None, charge=None, mult=None, coulomb1
     elif charge_model == "CM5_ORCA":
         print("CM5_ORCA option chosen")
         if theory == None: print("theory keyword required");ashexit()
-        atompropdict = basic_atom_charges_ORCA(fragment=fragment, charge=charge, mult=mult,
+        atompropdict = basic_atom_charges_ORCA(fragment=fragment, charge=fragment.charge, mult=fragment.mult,
                                                orcatheory=theory, chargemodel="CM5", numcores=theory.numcores)
         charges = atompropdict['charges']
     else:
