@@ -1,0 +1,28 @@
+<ForceField>
+<AtomTypes>
+<Type name="FeX0" class="FeX0" element="Fe" mass="55.845"/>
+<Type name="FeX1" class="FeX1" element="Fe" mass="55.845"/>
+<Type name="SX2" class="SX2" element="S" mass="32.065"/>
+<Type name="SX3" class="SX3" element="S" mass="32.065"/>
+</AtomTypes>
+<Residues>
+<Residue name="MCMtest">
+<Atom name="FeY0" type="FeX0"/>
+<Atom name="FeY1" type="FeX1"/>
+<Atom name="SY2" type="SX2"/>
+<Atom name="SY3" type="SX3"/>
+</Residue>
+</Residues>
+<NonbondedForce coulomb14scale="1.0" lj14scale="1.0">
+<Atom type="FeX0" charge="1.0271058194510412" sigma="0.0" epsilon="0.0"/>
+<Atom type="FeX1" charge="1.007310147382089" sigma="0.0" epsilon="0.0"/>
+<Atom type="SX2" charge="-0.013198936151894144" sigma="0.0" epsilon="0.0"/>
+<Atom type="SX3" charge="-0.02122203068123596" sigma="0.0" epsilon="0.0"/>
+</NonbondedForce>
+<LennardJonesForce lj14scale="1.0">
+<Atom type="FeX0" sigma="0.2594297067224668" epsilon="0.054392"/>
+<Atom type="FeX1" sigma="0.2594297067224668" epsilon="0.054392"/>
+<Atom type="SX2" sigma="0.3594776327696269" epsilon="1.146416"/>
+<Atom type="SX3" sigma="0.3594776327696269" epsilon="1.146416"/>
+</LennardJonesForce>
+</ForceField>
