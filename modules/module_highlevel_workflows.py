@@ -14,8 +14,8 @@ from ash.functions.functions_general import ashexit, BC, print_line_with_mainhea
 from ash.modules.module_coords import elemlisttoformula, nucchargelist,elematomnumbers
 
 # Allowed basis set families. Accessed by function basis_for_element and extrapolation
-basisfamilies=['cc','aug-cc','cc-dkh','cc-dk','aug-cc-dkh','aug-cc-dk','def2','ma-def2','def2-zora', 'def2-dkh',
-            'ma-def2-zora','ma-def2-dkh', 'cc-CV', 'aug-cc-CV', 'cc-CV-dkh', 'cc-CV-dk', 'aug-cc-CV-dkh', 'aug-cc-CV-dk',
+basisfamilies=['cc','aug-cc','cc-dkh','cc-dk','aug-cc-dkh','aug-cc-dk','def2','ma-def2','def2-zora', 'def2-dkh', 'def2-dk', 
+            'ma-def2-zora','ma-def2-dkh', 'ma-def2-dk', 'cc-CV', 'aug-cc-CV', 'cc-CV-dkh', 'cc-CV-dk', 'aug-cc-CV-dkh', 'aug-cc-CV-dk',
             'cc-CV_3dTM-cc_L', 'aug-cc-CV_3dTM-cc_L', 'cc-f12', 'def2-x2c' ]
 
 #PNO threshold dictionaries
@@ -328,7 +328,7 @@ maxiter 150\nend
 
         #SCALAR RELATIVITY HAMILTONIAN
         if self.relativity == None:
-            if self.basisfamily in ['cc-dkh', 'aug-cc-dkh', 'cc-dk', 'aug-cc-dk', 'def2-zora', 'def2-dkh', 'cc-CV_3dTM-cc_L', 'aug-cc-CV_3dTM-cc_L'
+            if self.basisfamily in ['cc-dkh', 'aug-cc-dkh', 'cc-dk', 'aug-cc-dk', 'def2-zora', 'def2-dkh', 'def2-dk', 'cc-CV_3dTM-cc_L', 'aug-cc-CV_3dTM-cc_L'
             'ma-def2-zora','ma-def2-dkh', 'cc-CV-dk', 'cc-CV-dkh', 'aug-cc-CV-dk', 'aug-cc-CV-dkh']:
                 print("Relativity option is None but a relativistic basis set family chosen:", self.basisfamily)
                 print("You probably want relativity keyword argument set to DKH or ZORA (relativity=\"NoRel\" option possible also but not recommended)")
@@ -1553,8 +1553,14 @@ def Extrapolation_twopoint_SCF(scf_energies, cardinals, basis_family, alpha=None
         extrap_dict_key='def2_23'
     elif basis_family=='def2' and all(x in cardinals for x in [3, 4]):
         extrap_dict_key='def2_34'
+    elif basis_family=='def2-dk' and all(x in cardinals for x in [2, 3]):
+        extrap_dict_key='def2_23'
+    elif basis_family=='def2' and all(x in cardinals for x in [3, 4]):
+        extrap_dict_key='def2_34'
     #Note: assuming extrapolation parameters are transferable here
     elif basis_family=='def2-dkh' and all(x in cardinals for x in [3, 4]):
+        extrap_dict_key='def2_34'
+    elif basis_family=='def2-dk' and all(x in cardinals for x in [3, 4]):
         extrap_dict_key='def2_34'
     elif basis_family=='ma-def2' and all(x in cardinals for x in [2, 3]):
         extrap_dict_key='ma-def2_23'
@@ -1853,7 +1859,6 @@ def basis_for_element(element,basisfamily,cardinal):
         [type]: [description]
     """
     atomnumber=elematomnumbers[element.lower()]
-
 
     if basisfamily not in basisfamilies:
         print(BC.FAIL,"Unknown basisfamily. Exiting",BC.END)
@@ -2185,7 +2190,7 @@ def basis_for_element(element,basisfamily,cardinal):
             #NOTE: Problem SARC QZ basis set not really available
             return ("SARC-ZORA-{}".format(cardlabel), None)
 
-    elif basisfamily == "def2-dkh":
+    elif basisfamily == "def2-dkh" or basisfamily == "def2-dk":
         if cardinal > 4:
             print(BC.FAIL,"def2-DKH basis sets only available up to QZ level", BC.END)
             ashexit()
@@ -2206,7 +2211,7 @@ def basis_for_element(element,basisfamily,cardinal):
         if atomnumber <= 36 :
             return ("ma-ZORA-def2-{}".format(cardlabel), None)
 
-    elif basisfamily == "ma-def2-dkh":
+    elif basisfamily == "ma-def2-dkh" or basisfamily == "ma-def2-dk":
         if cardinal > 4:
             print(BC.FAIL,"ma-def2-DKH basis sets only available up to QZ level", BC.END)
             ashexit()

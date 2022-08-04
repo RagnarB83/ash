@@ -229,8 +229,6 @@ def thermochemprotocol_reaction(Opt_theory=None, SP_theory=None, reaction=None, 
     #Looping over species in fraglist
     for species in fraglist:
         #Get energy and components for species
-        print("species:", species)
-        print(species.__dict__)
         FinalE, componentsdict, thermochem = thermochemprotocol_single(fragment=species, Opt_theory=Opt_theory, SP_theory=SP_theory, numcores=numcores, memory=memory,
                        analyticHessian=analyticHessian, temp=temp, pressure=pressure, charge=species.charge, mult=species.mult)
         
