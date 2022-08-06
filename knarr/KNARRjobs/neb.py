@@ -277,8 +277,8 @@ def DoNEB(path, calculator, neb, optimizer, second_run=False):
     # Start NEB optimization
     # --------------------------------------------------------------------------------
     print('\nStarting nudged elastic band optimization:')
-    print(' %4ls %4s  %9ls %5ls %7ls %9ls %8ls' %
-          ('it', 'dS', 'Energy', 'HEI', 'RMSF', 'MaxF', 'step'))
+    #print(' %4ls %4s  %9ls %5ls %7ls %9ls %8ls' %
+    #      ('it', 'dS', 'Energy', 'HEI', 'RMSF', 'MaxF', 'step'))
 
     for it in range(maxiter):
 
@@ -310,7 +310,6 @@ def DoNEB(path, calculator, neb, optimizer, second_run=False):
                 do_reparam = False
 
         if min_rmsd and not path.IsConstrained() and not path.IsTwoDee():
-            print("RB here. Calling path.MinRMSD")
             path.MinRMSD()
 
         # =======================================================
@@ -367,20 +366,38 @@ def DoNEB(path, calculator, neb, optimizer, second_run=False):
             maxf_noci = np.max(abs(freal_noci))
             rmsf_ci = RMS(path.GetNDofIm(), path.GetF()[ci * path.GetNDofIm():(ci + 1) * path.GetNDofIm()])
             maxf_ci = np.max(abs(path.GetF()[ci * path.GetNDofIm():(ci + 1) * path.GetNDofIm()]))
+            print("CI is active")
+            #print(f"Current freal_noci: {freal_noci}")
+            #print(f"Current rmsf_noci: {rmsf_noci} (tol_rms_fci: {tol_rms_fci})")
+            #print(f"Current maxf_noci: {maxf_noci} (tol_max_fci: {tol_max_fci})")
+            #print(f"Current rmsf_ci: {rmsf_ci} (tol_rms_f: {tol_rms_f})")
+            #print(f"Current maxf_ci: {maxf_ci} (tol_max_f: {tol_max_f})")
+
         else:
             rmsf = RMS(path.GetNDof(), freal_perp)
             maxf = np.max(abs(freal_perp))
+            print("CI is NOT active")
+            #print(' %4ls %4s  %9ls %5ls %7ls %9ls %8ls' %('it', 'dS', 'Energy', 'HEI', 'RMSF', 'MaxF', 'step'))
+            #print(f"Current RMS-F: {rmsf} (tol_rms_f: {tol_rms_f})")
+            #print(f"Current Max-F: {maxf} (tol_max_f: {tol_max_f})")
+
 
         # =======================================================
         # Output print
         # =======================================================
         if startci:
+            print('%4ls  %4s  %9ls %5ls %6ls %9ls %9ls %9ls %6ls' %
+                    ('it', 'dS', 'Energy', 'CI', 'RMSF', 'MaxF', 'RMSF_CI', 'MaxF_CI', 'step'))
+            print(f"Convergence thresholds:    {tol_rms_f:8.4f}  {tol_max_f:8.4f} {tol_rms_fci:8.4f} {tol_max_fci:8.4f}")
             print ("%4i %6.2lf  % 6.6lf %3li %8.4lf  %8.4lf %8.4lf %8.4lf %8.4lf"
                    % (it, s[-1], path.GetEnergy()[ci] - Ereactant, ci, rmsf_noci,
                       maxf_noci, rmsf_ci, maxf_ci, np.max(abs(step))))
 
         else:
             hei = np.argmax(path.GetEnergy())
+            print(' %4ls %4s  %9ls %5ls %7ls %9ls %8ls' %
+                ('it', 'dS', 'Energy', 'HEI', 'RMSF', 'MaxF', 'step'))
+            print(f"Convergence thresholds:     {tol_rms_f:8.4f}  {tol_max_f:8.4f}")
             print ("%4i %6.2lf  % 6.6lf %3li  %8.4lf  %8.4lf %8.4lf"
                    % (it, s[-1], path.GetEnergy()[hei] - Ereactant, hei, rmsf, maxf, np.max(abs(step))))
 
@@ -390,26 +407,37 @@ def DoNEB(path, calculator, neb, optimizer, second_run=False):
         # Check if calculation is converged...
         # =======================================================
         if doci:
+            #print("Now checking if calculation is converged. conv_type:", conv_type)
             if conv_type == 1:
+                #print("convtype 1")
                 if startci:
                     if tol_max_fci > maxf_ci and tol_rms_fci > rmsf_ci:
+                        #print("RB1x333")
                         converged = True
                 else:
                     if tol_max_fci > maxf and tol_rms_f > rmsf:
+                        #print("RB1x444")
                         converged = True
             else:
+                #print("convtype diff")
+                #print("startci:", startci)
                 if startci:
                     if (tol_max_fci > maxf_ci and tol_rms_fci > rmsf_ci) and \
                             (tol_max_f > maxf_noci and tol_rms_f > rmsf_noci):
+                        print("RB1x555")
                         converged = True
                 else:
+                    #print("RB1x666")
                     if (tol_max_fci > maxf and tol_rms_fci > rmsf):
+                        print("Now signalling convergence")
                         converged = True
         else:
+            #print("RB1x")
             if (tol_max_f > maxf and tol_rms_f > rmsf):
                 converged = True
 
         if it == maxiter - 1:
+            #print("RB yyZZ")
             stop_neb = True
             converged = False
 
@@ -419,6 +447,9 @@ def DoNEB(path, calculator, neb, optimizer, second_run=False):
         # =======================================================
         # Climbing image block
         # =======================================================
+        if startci != True:
+            print("Now checking if we should turn CI on")
+
         if (maxf < tol_turn_on_ci or tol_turn_on_ci == 0.0):
             if not startci and doci:
                 checkmax = np.argmax(path.GetEnergy())
@@ -429,10 +460,9 @@ def DoNEB(path, calculator, neb, optimizer, second_run=False):
                     ci = checkmax
                     if restart_on_ci:
                         reset_opt = True
-
+                    print(f"maxf:{maxf} < tol_turn_on_ci:{tol_turn_on_ci}")
                     print ('        Starting climbing image as image %i.\n' % ci),
-                    print('%4ls  %4s  %9ls %5ls %6ls %9ls %9ls %9ls %6ls' %
-                          ('it', 'dS', 'Energy', 'HEI', 'RMSF', 'MaxF', 'RMSF_CI', 'MaxF_CI', 'step'))
+
                     # print CI header here.
                     # print '%6s %4s %2s %10s %8s %13s %5s %11s  %11s %11s %13s' \
                     # % ("Optim.", "iter", "FC", "Objf", "dS", "maxE", "CI", "rmsF'(i)", "rmsF(CI)", "maxF'",
@@ -555,10 +585,10 @@ def DoNEB(path, calculator, neb, optimizer, second_run=False):
         PrintDivider()
         print('Summary:')
         PrintDivider()
-        print('%4ls %4ls %5ls %9ls %9ls' % ('Img.', 'dS', 'E', 'dE', 'MaxF'))
+        print('%4ls %4ls %5ls %9ls %9ls' % ('Img.', 'dS', 'E(Eh)', 'ΔE(kcal/mol)', 'MaxF'))
         for i in range(path.GetNim()):
-            print('% 2i % 6.2f % 6.4f % 6.4f % 6.6f' % (
-                i, s[i], path.GetEnergy()[i], path.GetEnergy()[i] - Ereactant,
+            print('% 2i % 6.2f % 6.5f % 6.4f % 6.6f' % (
+                i, s[i], path.GetEnergy()[i], 627.5096*(path.GetEnergy()[i] - Ereactant),
                 np.max(abs(freal_perp[i * path.GetNDofIm():(i + 1) * path.GetNDofIm()]))))
 
         WritePath(basename + "_MEP.xyz", path.GetNDimIm(), path.GetNim(), path.GetCoords(),
@@ -601,7 +631,8 @@ def DoNEB(path, calculator, neb, optimizer, second_run=False):
                      path.GetSymbols()[CI * path.GetNDimIm():(CI + 1) * path.GetNDimIm()],
                      path.GetCell(),
                      path.GetConstraints()[CI * path.GetNDimIm():(CI + 1) * path.GetNDimIm()])
-
+    else:
+        print("NEB is not yet converged. Doing next NEB iteration")
     if stop_neb:
         PrintMaxIter(maxiter)
         WritePath(basename + "_last_iter.xyz", path.GetNDimIm(), path.GetNim(), path.GetCoords(),
