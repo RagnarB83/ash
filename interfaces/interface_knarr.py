@@ -4,6 +4,7 @@ import numpy as np
 import sys
 import os
 import copy
+import shutil
 import time
 
 
@@ -230,11 +231,13 @@ class KnarrCalculator:
                 self.write_Full_MEP_Path(path, list_to_compute, E)
 
         #print("self.ISCION:", self.ISCION)
-        if self.iterations > 3 :
-            if self.ISCION is True:
-                print('%4ls  %4s  %9ls %5ls %6ls %9ls %9ls %9ls %6ls' % ('it', 'dS', 'Energy', 'HEI', 'RMSF', 'MaxF', 'RMSF_CI', 'MaxF_CI', 'step'))
-            else:
-                print(' %4ls %4s  %9ls %5ls %7ls %9ls %8ls' % ('it', 'dS', 'Energy', 'HEI', 'RMSF', 'MaxF', 'step'))
+        #if self.iterations > 3 :
+        #    if self.ISCION is True:
+        #        print("RB debug")
+        #        print('%4ls  %4s  %9ls %5ls %6ls %9ls %9ls %9ls %6ls' % ('it', 'dS', 'Energy', 'HEI', 'RMSF', 'MaxF', 'RMSF_CI', 'MaxF_CI', 'step'))
+        #    else:
+         #       print("RB debug")
+         #       print(' %4ls %4s  %9ls %5ls %7ls %9ls %8ls' % ('it', 'dS', 'Energy', 'HEI', 'RMSF', 'MaxF', 'step'))
 
     def write_Full_MEP_Path(self, path, list_to_compute, E):
         #Write out MEP for full coords in each iteration. Knarr writes out Active Part.
@@ -390,6 +393,8 @@ def NEB(reactant=None, product=None, theory=None, images=None, interpolation=Non
         Knarr_pathgenerator(neb_settings, path_parameters, react, prod, ActiveRegion)
         blankline()
         print("Initial path generation done!")
+        print("Saving initial path as : initial_guess_path.xyz")
+        shutil.copyfile("knarr_path.xyz","initial_guess_path.xyz")
         print("Reading initial path")
         #Reading initial path from XYZ file. Hardcoded as knarr_path.xyz
         rp, ndim, nim, symb = ReadTraj("knarr_path.xyz")
@@ -400,6 +405,7 @@ def NEB(reactant=None, product=None, theory=None, images=None, interpolation=Non
         rp, ndim, nim, symb = ReadTraj(restart_file)
         path = InitializePathObject(nim, react)
         path.SetCoords(rp)
+    
     print("Starting NEB")
     #Setting printlevel of theory during E+Grad steps  1=very-little, 2=more, 3=lots, 4=verymuch
     print("NEB printlevel is:", printlevel)
@@ -410,6 +416,8 @@ def NEB(reactant=None, product=None, theory=None, images=None, interpolation=Non
         theory.mm_theory.printlevel = printlevel
 
     #Now starting NEB from path object, using neb_settings and optimizer settings
+    print("neb_settings:", neb_settings)
+    print("optimizer:", optimizer)
     DoNEB(path, calculator, neb_settings, optimizer)
 
     #Todo: Check if DoNeb converged or not??

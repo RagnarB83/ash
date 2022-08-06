@@ -174,7 +174,7 @@ def QuaternionToMatrix(q):
 
 
 def MinimizeRotation(ndim, target, atoms, fixcenter=True):
-    print("RB. inside MinimizeRotation")
+    #print("RB. inside MinimizeRotation")
     atoms, da = TranslateToCentroid(ndim, atoms)
     target, dt = TranslateToCentroid(ndim, target)
 

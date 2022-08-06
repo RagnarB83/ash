@@ -848,13 +848,12 @@ maxiter 150\nend
                     ccsdcorr_energies = [CCSDT_1_dict['CCSD_corr'], CCSD_2_dict['CCSD_corr']]
                     triplescorr_energies = [CCSDT_0_dict['CCSD(T)_corr'], CCSDT_1_dict['CCSD(T)_corr']]
                     #Combining corr energies in a silly way
-                    corr_energies = list(np.array(ccsdcorr_energies)+np.array(triplescorr_energies))
+                    #corr_energies = list(np.array(ccsdcorr_energies)+np.array(triplescorr_energies))
 
                     print("")
                     print("scf_energies :", scf_energies)
                     print("ccsdcorr_energies :", ccsdcorr_energies)
                     print("triplescorr_energies :", triplescorr_energies)
-                    print("corr_energies :", corr_energies)
                     #BASIS SET EXTRAPOLATION
                     #SCF extrapolation. WIll be overridden inside function if self.SCFextrapolation==True
                     print("SCF extrapolation:")
@@ -892,7 +891,6 @@ maxiter 150\nend
                     print("scf_energies :", scf_energies)
                     print("ccsdcorr_energies :", ccsdcorr_energies)
                     print("triplescorr_energies :", triplescorr_energies)
-                    print("corr_energies :", corr_energies)
                     #BASIS SET EXTRAPOLATION
                     #SCF extrapolation. WIll be overridden inside function if self.SCFextrapolation==True
                     print("SCF extrapolation:")
@@ -905,9 +903,7 @@ maxiter 150\nend
                         beta=self.beta) #2-point extrapolation
                     print("(T) corr. extrapolation:")
                     E_corrCCT_CBS = Extrapolation_twopoint_corr(triplescorr_energies, self.cardinals, self.basisfamily, 
-                        beta=self.beta) #2-point extrapolation
-                    #E_corr_CBS = Extrapolation_twopoint_corr(corr_energies, self.cardinals, self.basisfamily, 
-                    #    beta=self.beta) #2-point extrapolation            
+                        beta=self.beta) #2-point extrapolation        
                     E_corr_CBS = E_corrCCSD_CBS + E_corrCCT_CBS
 
         ############################################################

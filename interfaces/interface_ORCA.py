@@ -267,7 +267,8 @@ class ORCATheory:
             elems=None, Grad=False, Hessian=False, PC=False, numcores=None, label=None):
         module_init_time=time.time()
         self.runcalls+=1
-        print(BC.OKBLUE,BC.BOLD, "------------RUNNING ORCA INTERFACE-------------", BC.END)
+        if self.printlevel >= 2:
+            print(BC.OKBLUE,BC.BOLD, "------------RUNNING ORCA INTERFACE-------------", BC.END)
 
         #Coords provided to run
         if current_coords is not None:
@@ -317,8 +318,10 @@ class ORCATheory:
         
         if numcores==None:
             numcores=self.numcores
-        print("Running ORCA object with {} cores available".format(numcores))
-        print("Job label:", label)
+        
+        if self.printlevel >= 2:
+            print("Running ORCA object with {} cores available".format(numcores))
+            print("Job label:", label)
 
         #TDDFT option
         #If gradient requested by Singlepoint(Grad=True) or Optimizer then TDDFT gradient is calculated instead
@@ -338,16 +341,17 @@ class ORCATheory:
         else:
             extraline=self.extraline
 
-
-        print("Creating inputfile:", self.filename+'.inp')
-        print("ORCA input:")
-        print(self.orcasimpleinput)
-        print(extraline)
-        print(self.orcablocks)
-        print("Charge: {}  Mult: {}".format(charge, mult))
+        if self.printlevel >= 2:
+            print("Creating inputfile:", self.filename+'.inp')
+            print("ORCA input:")
+            print(self.orcasimpleinput)
+            print(extraline)
+            print(self.orcablocks)
+            print("Charge: {}  Mult: {}".format(charge, mult))
         #Printing extra options chosen:
         if self.brokensym==True:
-            print("Brokensymmetry SpinFlipping on! HSmult: {}.".format(self.HSmult))
+            if self.printlevel >= 2:
+                print("Brokensymmetry SpinFlipping on! HSmult: {}.".format(self.HSmult))
             if self.HSmult == None:
                 print("Error:HSmult keyword in ORCATheory has not been set. This is required. Exiting.")
                 ashexit()
@@ -356,17 +360,23 @@ class ORCATheory:
                 ashexit()
 
             for flipatom,qmflipatom in zip(self.atomstoflip,qmatomstoflip):
-                print("Flipping atom: {} QMregionindex: {} Element: {}".format(flipatom, qmflipatom, qm_elems[qmflipatom]))
+                if self.printlevel >= 2:
+                    print("Flipping atom: {} QMregionindex: {} Element: {}".format(flipatom, qmflipatom, qm_elems[qmflipatom]))
         if self.extrabasis != "":
-            print("Using extra basis ({}) on QM-region indices : {}".format(self.extrabasis,qmatoms_extrabasis))
+            if self.printlevel >= 2:
+                print("Using extra basis ({}) on QM-region indices : {}".format(self.extrabasis,qmatoms_extrabasis))
         if self.dummyatoms:
-            print("Dummy atoms defined:", self.dummyatoms)
+            if self.printlevel >= 2:
+                print("Dummy atoms defined:", self.dummyatoms)
         if self.ghostatoms:
-            print("Ghost atoms defined:", self.ghostatoms)
+            if self.printlevel >= 2:
+                print("Ghost atoms defined:", self.ghostatoms)
         if self.fragment_indices:
-            print("List of fragment indices defined:", fragment_indices)
+            if self.printlevel >= 2:
+                print("List of fragment indices defined:", fragment_indices)
         if PC==True:
-            print("Pointcharge embedding is on!")
+            if self.printlevel >= 2:
+                print("Pointcharge embedding is on!")
             create_orca_pcfile(self.filename, current_MM_coords, MMcharges)
             if self.brokensym == True:
                 create_orca_input_pc(self.filename, qm_elems, current_coords, self.orcasimpleinput, self.orcablocks,
@@ -394,19 +404,22 @@ class ORCATheory:
 
         #Run inputfile using ORCA parallelization. Take numcores argument.
         #print(BC.OKGREEN, "------------Running ORCA calculation-------------", BC.END)
-        print(BC.OKGREEN, "ORCA Calculation started.", BC.END)
+        if self.printlevel >= 2:
+            print(BC.OKGREEN, "ORCA Calculation started.", BC.END)
         # Doing gradient or not. Disabling, doing above instead.
         #if Grad == True:
         #    run_orca_SP_ORCApar(self.orcadir, self.filename + '.inp', numcores=numcores, Grad=True)
         #else:
         run_orca_SP_ORCApar(self.orcadir, self.filename + '.inp', numcores=numcores, check_for_errors=self.check_for_errors, check_for_warnings=self.check_for_warnings)
-        print(BC.OKGREEN, "ORCA Calculation done.", BC.END)
+        if self.printlevel >= 1:
+            print(BC.OKGREEN, "ORCA Calculation done.", BC.END)
 
         #Now that we have possibly run a BS-DFT calculation, turning Brokensym off for future calcs (opt, restart, etc.)
         # using this theory object
         #TODO: Possibly use different flag for this???
         if self.brokensym==True:
-            print("ORCA Flipspin calculation done. Now turning off brokensym in ORCA object for possible future calculations")
+            if self.printlevel >= 2:
+                print("ORCA Flipspin calculation done. Now turning off brokensym in ORCA object for possible future calculations")
             self.brokensym=False
 
         #Check if finished. Grab energy and gradient
@@ -432,18 +445,20 @@ class ORCATheory:
 
         #Print population analysis in each run if requested
         if self.print_population_analysis is True:
-            print("\nPrinting Population analysis:")
-            print("-"*30)
-            print("Spin populations:")
-            charges = grabatomcharges_ORCA("Mulliken",self.filename+'.out')
-            spinpops = grabspinpop_ORCA("Mulliken",self.filename+'.out')
-            print("{:<2} {:<2}  {:>10} {:>10}".format(" ", " ", "Charge", "Spinpop"))
-            for i,(el, ch, sp) in enumerate(zip(qm_elems,charges, spinpops)):
-                print("{:<2} {:<2}: {:>10} {:>10}".format(i,el,ch,sp))
+            if self.printlevel >= 2:
+                print("\nPrinting Population analysis:")
+                print("-"*30)
+                print("Spin populations:")
+                charges = grabatomcharges_ORCA("Mulliken",self.filename+'.out')
+                spinpops = grabspinpop_ORCA("Mulliken",self.filename+'.out')
+                print("{:<2} {:<2}  {:>10} {:>10}".format(" ", " ", "Charge", "Spinpop"))
+                for i,(el, ch, sp) in enumerate(zip(qm_elems,charges, spinpops)):
+                    print("{:<2} {:<2}: {:>10} {:>10}".format(i,el,ch,sp))
 
         #Grab energy
         self.energy=ORCAfinalenergygrab(outfile)
-        print("\nORCA energy:", self.energy)
+        if self.printlevel >= 1:
+            print("\nORCA energy:", self.energy)
 
         #Grab timings from ORCA output
         orca_timings = ORCAtimingsgrab(outfile)
@@ -454,9 +469,11 @@ class ORCATheory:
         #XDM option: WFX file should have been created.
         if self.xdm == True:
             dispE,dispgrad = xdm_run(wfxfile=self.filename+'.wfx', a1=self.xdm_a1, a2=self.xdm_a2,functional=self.xdm_func)
-            print("XDM dispersion energy:", dispE)
+            if self.printlevel >= 2:
+                print("XDM dispersion energy:", dispE)
             self.energy = self.energy + dispE
-            print("DFT+XDM energy:", self.energy )
+            if self.printlevel >= 2:
+                print("DFT+XDM energy:", self.energy )
             #TODO: dispgrad not yet done
             self.grad = self.grad + dispgrad
         if Grad == True:
@@ -465,20 +482,23 @@ class ORCATheory:
             if PC == True:
                 #Print time to calculate ORCA QM-PC gradient
                 if "pc_gradient" in orca_timings:
-                    print("Time calculating QM-Pointcharge gradient: {} seconds".format(orca_timings["pc_gradient"]))
+                    if self.printlevel >= 2:
+                        print("Time calculating QM-Pointcharge gradient: {} seconds".format(orca_timings["pc_gradient"]))
                 #Grab pointcharge gradient. i.e. gradient on MM atoms from QM-MM elstat interaction.
                 self.pcgrad=ORCApcgradientgrab(pcgradfile)
                 print(BC.OKBLUE,BC.BOLD,"------------ENDING ORCA-INTERFACE-------------", BC.END)
                 print_time_rel(module_init_time, modulename='ORCA run', moduleindex=2)
                 return self.energy, self.grad, self.pcgrad
             else:
-                print(BC.OKBLUE,BC.BOLD,"------------ENDING ORCA-INTERFACE-------------", BC.END)
+                if self.printlevel >= 2:
+                    print(BC.OKBLUE,BC.BOLD,"------------ENDING ORCA-INTERFACE-------------", BC.END)
                 print_time_rel(module_init_time, modulename='ORCA run', moduleindex=2)
                 return self.energy, self.grad
 
         else:
-            print("Single-point ORCA energy:", self.energy)
-            print(BC.OKBLUE,BC.BOLD,"------------ENDING ORCA-INTERFACE-------------", BC.END)
+            if self.printlevel >= 2:
+                print("Single-point ORCA energy:", self.energy)
+                print(BC.OKBLUE,BC.BOLD,"------------ENDING ORCA-INTERFACE-------------", BC.END)
             print_time_rel(module_init_time, modulename='ORCA run', moduleindex=2)
             return self.energy
 
