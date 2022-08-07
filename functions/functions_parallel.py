@@ -13,20 +13,23 @@ from ash.modules.module_coords import check_charge_mult
 #Stripped down version of Singlepoint functffragment_fileion for Singlepoint_parallel.
 #NOTE: Version intended for apply_async
 #TODO: This function may still be a bit ORCA-centric. Needs to be generalized 
-def Single_par(fragment=None, fragmentfile=None, theory=None, label=None, mofilesdir=None, event=None, charge=None, mult=None, Grad=False):
+def Single_par(fragment=None, fragmentfile=None, theory=None, label=None, mofilesdir=None, event=None, charge=None, mult=None, Grad=False, printlevel=2):
 
     #Creating new copy of theory to prevent Brokensym feature from being deactivated by each run
     #NOTE: Alternatively we can add an if-statement inside orca.run
     theory=copy.deepcopy(theory)
 
-    print("Fragment:", fragment)
-    print("fragmentfile:", fragmentfile)
+    if printlevel >= 2:
+        print("Fragment:", fragment)
+        print("fragmentfile:", fragmentfile)
     if fragmentfile != None:
-        print("Reading fragmentfile from disk")
+        if printlevel >= 2:
+            print("Reading fragmentfile from disk")
         fragment=ash.Fragment(fragfile=fragmentfile)
 
     #Making label flexible. Can be tuple but inputfilename is converted to string below
-    print("label: {} (type {})".format(label,type(label)))
+    if printlevel >= 2:
+        print("label: {} (type {})".format(label,type(label)))
     if label == None:
         print("No label provided to fragment or theory objects. This is required to distinguish between calculations ")
         print("Exiting.")
@@ -42,13 +45,15 @@ def Single_par(fragment=None, fragmentfile=None, theory=None, label=None, mofile
             labelstring=str(str(label[0])+'_'+str(label[1])).replace('.','_')
         else:
             labelstring=str(str(label[0])).replace('.','_')
-        print("Labelstring:", labelstring)
+        if printlevel >= 2:
+            print("Labelstring:", labelstring)
         #RC1_0.9-RC2_170.0.xyz
         #orca_RC1_0.9RC2_170.0.gbw
         #TODO: what if tuple is only a single number???
 
         if mofilesdir != None:
-            print("Mofilesdir option.")
+            if printlevel >= 2:
+                print("Mofilesdir option.")
             if len(label) == 2:
                 moreadfile_path=mofilesdir+'/'+theory.filename+'_'+'RC1_'+str(label[0])+'-'+'RC2_'+str(label[1])
             else:
@@ -56,14 +61,16 @@ def Single_par(fragment=None, fragmentfile=None, theory=None, label=None, mofile
 
     #Label is not tuple. Not coming from calc_surface funcitons
     elif type(label) == float or type(label) == int:
-        print("Label is float or int")
+        if printlevel >= 2:
+            print("Label is float or int")
         #
         #Label is float or int. 
         if mofilesdir != None:
-            print("Mofilesdir option.")
+            if printlevel >= 2:
+                print("Mofilesdir option.")
             moreadfile_path=mofilesdir+'/'+theory.filename+'_'+'RC1_'+str(label[0])
     else:
-        print("Here. label.", label)
+        #print("Here. label.", label)
         #Label is not tuple. String or single number
         labelstring=str(label).replace('.','_')
 
@@ -80,7 +87,8 @@ def Single_par(fragment=None, fragmentfile=None, theory=None, label=None, mofile
         #theory.filename=labelstring
         if mofilesdir != None:
             theory.moreadfile=moreadfile_path+'.gbw'
-            print("Setting moreadfile to:", theory.moreadfile)
+            if printlevel >= 2:
+                print("Setting moreadfile to:", theory.moreadfile)
     elif theory.__class__.__name__ == "MRCCTheory":
         if mofilesdir != None:
             print("Case MRCC MOREADfile parallel")
@@ -96,11 +104,13 @@ def Single_par(fragment=None, fragmentfile=None, theory=None, label=None, mofile
     try:
         os.mkdir('Pooljob_'+labelstring)
     except:
-        print("Dir exists. continuing")
+        if printlevel >= 2:
+            print("Dir exists. continuing")
         pass
     os.chdir('Pooljob_'+labelstring)
-    print(BC.WARNING,"Doing single-point Energy job on fragment. Formula: {} Label: {} ".format(fragment.prettyformula,fragment.label), BC.END)
-    print("\n\nProcess ID {} is running calculation with label: {} \n\n".format(mp.current_process(),label))
+    if printlevel >= 2:
+        print(BC.WARNING,"Doing single-point Energy job on fragment. Formula: {} Label: {} ".format(fragment.prettyformula,fragment.label), BC.END)
+        print("\n\nProcess ID {} is running calculation with label: {} \n\n".format(mp.current_process(),label))
 
     if Grad == True:
         energy,gradient = theory.run(current_coords=fragment.coords, elems=fragment.elems, label=label, charge=charge, mult=mult, Grad=Grad)
@@ -114,7 +124,8 @@ def Single_par(fragment=None, fragmentfile=None, theory=None, label=None, mofile
         energy=energy[0]
 
     os.chdir('..')
-    print("Energy: ", energy)
+    if printlevel >= 2:
+        print("Energy: ", energy)
     # Now adding total energy to fragment
     fragment.energy = energy
     if Grad == True:
