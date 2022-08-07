@@ -536,7 +536,7 @@ def NEB(reactant=None, product=None, theory=None, images=7, interpolation=None, 
             CI = np.argmax(path.GetEnergy())
             saddle_coords_1d=path.GetCoords()[CI * path.GetNDimIm():(CI + 1) * path.GetNDimIm()]
             saddle_coords=np.reshape(saddle_coords_1d, (numatoms, 3))
-            saddle_energy = path.GetEnergy()[CI][0]*23.060541945329334
+            saddle_energy = path.GetEnergy()[CI][0]/23.060541945329334
             print("Creating new ASH fragment for saddlepoint geometry")
             #Creating new ASH fragment
             Saddlepoint_fragment = ash.Fragment(coords=saddle_coords, elems=reactant.elems, connectivity=reactant.connectivity, charge=charge, mult=mult)
