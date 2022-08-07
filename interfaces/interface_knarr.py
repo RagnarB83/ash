@@ -250,7 +250,7 @@ class KnarrCalculator:
                 #Convert ASH gradient to force and convert to ev/Ang instead of Eh/Bohr
                 force = -1 * np.reshape(Grad_image,(int(path.ndofIm),1)) * 51.42210665240553
                 print("force:", force)
-                print("im* path.ndimIm : (im + 1) * path.ndimIm:", im* path.ndimIm : (im + 1) * path.ndimIm)
+                #print("im bla", im* path.ndimIm : (im + 1) * path.ndimIm)
                 F[im* path.ndimIm : (im + 1) * path.ndimIm] = force
                 print("F:", F)
             print("Final self.energies_dict:", self.energies_dict)
