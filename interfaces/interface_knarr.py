@@ -230,7 +230,7 @@ class KnarrCalculator:
 
             #Launching multiple ASH E+Grad calculations in parallel
             en_dict,gradient_dict = ash.Singlepoint_parallel(fragments=all_image_fragments, theories=[self.theory], numcores=self.numcores, 
-                mofilesdir=None, allow_theory_parallelization=False, Grad=True)
+                mofilesdir=None, allow_theory_parallelization=False, Grad=True, printlevel=self.printlevel)
 
             #Keeping track of energies for each image in a dict
             for i in en_dict.keys():
@@ -388,7 +388,7 @@ def NEB(reactant=None, product=None, theory=None, images=None, interpolation=Non
         calculator = KnarrCalculator(theory, fragment1=new_reactant, fragment2=new_product, runmode=runmode, numcores=numcores,
                                      ActiveRegion=True, actatoms=actatoms, full_fragment_reactant=reactant,
                                      full_fragment_product=product,numimages=images, charge=charge, mult=mult,
-                                     FreeEnd=free_end)
+                                     FreeEnd=free_end, printlevel=printlevel)
 
         # Symbols list for Knarr
         Knarr_symbols = [y for y in new_reactant.elems for i in range(3)]
@@ -408,7 +408,7 @@ def NEB(reactant=None, product=None, theory=None, images=None, interpolation=Non
         #Create Knarr calculator from ASH theory
         calculator = KnarrCalculator(theory, fragment1=reactant, fragment2=product, numcores=numcores,
                                      ActiveRegion=False, runmode=runmode,numimages=images, charge=charge, mult=mult,
-                                     FreeEnd=free_end)
+                                     FreeEnd=free_end, printlevel=printlevel)
 
         # Symbols list for Knarr
         Knarr_symbols = [y for y in reactant.elems for i in range(3)]

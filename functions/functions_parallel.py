@@ -138,7 +138,7 @@ def Single_par(fragment=None, fragmentfile=None, theory=None, label=None, mofile
 #PARALLEL Single-point energy function
 #will run over fragments or fragmentfiles, over theories or both
 #mofilesdir. Directory containing MO-files (GBW files for ORCA). Usef for multiple fragment option
-def Singlepoint_parallel(fragments=None, fragmentfiles=None, theories=None, numcores=None, mofilesdir=None, allow_theory_parallelization=False, Grad=False):
+def Singlepoint_parallel(fragments=None, fragmentfiles=None, theories=None, numcores=None, mofilesdir=None, allow_theory_parallelization=False, Grad=False, printlevel=2):
     print("")
     '''
     The Singlepoint_parallel function carries out multiple single-point calculations in a parallel fashion
@@ -160,22 +160,26 @@ def Singlepoint_parallel(fragments=None, fragmentfiles=None, theories=None, numc
         print(BC.FAIL,"Singlepoint_parallel requires a theory object and a numcores value",BC.END)
         ashexit()
 
-    blankline()
-    print_line_with_subheader1("Singlepoint_parallel function")
-    print("Number of CPU cores available: ", numcores)
-    if fragments != None:
-        print("Number of fragments:", len(fragments))
+    print()
+    if printlevel => 2:
+        print_line_with_subheader1("Singlepoint_parallel function")
+        print("Number of CPU cores available: ", numcores)
+    if fragments != None:0
+        if printlevel => 2:
+            print("Number of fragments:", len(fragments))
     else:
         fragments=[]
     if fragmentfiles != None:
-        print("Number of fragmentfiles:", len(fragmentfiles))
+        if printlevel => 2:
+            print("Number of fragmentfiles:", len(fragmentfiles))
     else:
         fragmentfiles=[]
-    print("Number of theories:", len(theories))
-    print("Running single-point calculations in parallel")
-    print("Mofilesdir:", mofilesdir)
-    print(BC.WARNING, "Warning: Output from Singlepoint_parallel will be erratic due to simultaneous output from multiple workers", BC.END)
-    print("Launching multiprocessing and passing list of ASH fragments")
+    if printlevel => 2:
+        print("Number of theories:", len(theories))
+        print("Running single-point calculations in parallel")
+        print("Mofilesdir:", mofilesdir)
+        print(BC.WARNING, "Warning: Output from Singlepoint_parallel will be erratic due to simultaneous output from multiple workers", BC.END)
+        print("Launching multiprocessing and passing list of ASH fragments")
     pool = mp.Pool(numcores)
     manager = mp.Manager()
     event = manager.Event()
@@ -209,53 +213,69 @@ def Singlepoint_parallel(fragments=None, fragmentfiles=None, theories=None, numc
     results=[]
     if len(theories) == 1:
         theory = theories[0]
-        print("Case: Multiple fragments but one theory")
-        print("")
-        print("Launching multiprocessing pool.apply_async:")
+        if printlevel => 2:
+            print("Case: Multiple fragments but one theory")
+            print("")
+            print("Launching multiprocessing pool.apply_async:")
 
-        print(BC.WARNING,"Singlepoint_parallel numcores set to:", numcores, BC.END)
-        print(BC.WARNING,f"ASH will run {numcores} jobs simultaneously", BC.END)
+            print(BC.WARNING,"Singlepoint_parallel numcores set to:", numcores, BC.END)
+            print(BC.WARNING,f"ASH will run {numcores} jobs simultaneously", BC.END)
 
         #Whether to allow theory parallelization or not
         if theory.numcores != 1:
-            print(BC.WARNING,"WARNING: Theory numcores set to:", theory.numcores, BC.END)
+            if printlevel => 2:
+                print(BC.WARNING,"WARNING: Theory numcores set to:", theory.numcores, BC.END)
             if allow_theory_parallelization is True:
                 totnumcores=numcores*theory.numcores
-                print(BC.WARNING,"allow_theory_parallelization is True.", BC.END)
-                print(BC.WARNING,f"Each job can use {theory.numcores} CPU cores, thus up to {totnumcores} CPU cores can be running simultaneously. Make sure that many slots are available.", BC.END)
+                if printlevel => 2:
+                    print(BC.WARNING,"allow_theory_parallelization is True.", BC.END)
+                    print(BC.WARNING,f"Each job can use {theory.numcores} CPU cores, thus up to {totnumcores} CPU cores can be running simultaneously. Make sure that many slots are available.", BC.END)
             else:
-                print(BC.WARNING,"allow_theory_parallelization is False. Now turning off theory.parallelization (setting theory numcores to 1)", BC.END)
-                print(BC.WARNING,"This can be overriden by: Singlepoint_parallel(allow_theory_parallelization=True)\n", BC.END)
+                if printlevel => 2:
+                    print(BC.WARNING,"allow_theory_parallelization is False. Now turning off theory.parallelization (setting theory numcores to 1)", BC.END)
+                    print(BC.WARNING,"This can be overriden by: Singlepoint_parallel(allow_theory_parallelization=True)\n", BC.END)
                 theory.numcores=1
 
 
         #Passing list of fragments
         if len(fragments) > 0:
-            print("fragments:", fragments)
+            if printlevel => 2:
+                print("fragments:", fragments)
             for fragment in fragments:
-                print("fragment:", fragment)
-                results.append(pool.apply_async(Single_par, kwds=dict(theory=theory,fragment=fragment,label=fragment.label,mofilesdir=mofilesdir,event=event, Grad=Grad), error_callback=Terminate_Pool_processes))
+                if printlevel => 2:
+                    print("fragment:", fragment)
+                results.append(pool.apply_async(Single_par, kwds=dict(theory=theory,fragment=fragment,label=fragment.label,mofilesdir=mofilesdir,event=event, Grad=Grad, printlevel=printlevel), 
+                    error_callback=Terminate_Pool_processes))
         #Passing list of fragment files
         elif len(fragmentfiles) > 0:
-            print("Launching multiprocessing and passing list of ASH fragmentfiles")
+            if printlevel => 2:
+                print("Launching multiprocessing and passing list of ASH fragmentfiles")
             for fragmentfile in fragmentfiles:
-                print("fragmentfile:", fragmentfile)
-                results.append(pool.apply_async(Single_par, kwds=dict(theory=theory,fragmentfile=fragmentfile,label=fragmentfile,mofilesdir=mofilesdir,event=event, Grad=Grad), error_callback=Terminate_Pool_processes))
+                if printlevel => 2:
+                    print("fragmentfile:", fragmentfile)
+                results.append(pool.apply_async(Single_par, kwds=dict(theory=theory,fragmentfile=fragmentfile,label=fragmentfile,mofilesdir=mofilesdir,event=event, Grad=Grad, printlevel=printlevel), 
+                    error_callback=Terminate_Pool_processes))
     # Case: Multiple theories, 1 fragment
     elif len(fragments) == 1:
-        print("Case: Multiple theories but one fragment")
+        if printlevel => 2:
+            print("Case: Multiple theories but one fragment")
         fragment = fragments[0]
         #results = pool.map(Single_par, [[theory,fragment, theory.label, event] for theory in theories])
         for theory in theories:
-            print("theory:", theory)
-            results.append(pool.apply_async(Single_par, kwds=dict(theory=theory,fragment=fragment,label=fragment.label,mofilesdir=mofilesdir,event=event, Grad=Grad), error_callback=Terminate_Pool_processes))
+            if printlevel => 2:
+                print("theory:", theory)
+            results.append(pool.apply_async(Single_par, kwds=dict(theory=theory,fragment=fragment,label=fragment.label,mofilesdir=mofilesdir,event=event, Grad=Grad, printlevel=printlevel), 
+                error_callback=Terminate_Pool_processes))
     # Case: Multiple theories, 1 fragmentfile
     elif len(fragmentfiles) == 1:
-        print("Case: Multiple theories but one fragmentfile")
+        if printlevel => 2:
+            print("Case: Multiple theories but one fragmentfile")
         fragmentfile = fragmentfiles[0]
         for theory in theories:
-            print("theory:", theory)
-            results.append(pool.apply_async(Single_par, kwds=dict(theory=theory,fragmentfile=fragmentfile,label=fragmentfile,mofilesdir=mofilesdir,event=event, Grad=Grad), error_callback=Terminate_Pool_processes))
+            if printlevel => 2:
+                print("theory:", theory)
+            results.append(pool.apply_async(Single_par, kwds=dict(theory=theory,fragmentfile=fragmentfile,label=fragmentfile,mofilesdir=mofilesdir,event=event, Grad=Grad, printlevel=printlevel), 
+                error_callback=Terminate_Pool_processes))
     else:
         print("Multiple theories and multiple fragments provided.")
         print("This is not supported. Exiting...")
@@ -267,10 +287,12 @@ def Singlepoint_parallel(fragments=None, fragmentfiles=None, theories=None, numc
 
     #While loop that is only terminated if processes finished or exception occurred
     while True:
-        print("Pool multiprocessing underway....")
+        if printlevel => 2:
+            print("Pool multiprocessing underway....")
         time.sleep(3)
         if event.is_set():
-            print("Event has been set! Now terminating Pool processes")
+            if printlevel => 2:
+                print("Event has been set! Now terminating Pool processes")
             pool.terminate()
             break
 
