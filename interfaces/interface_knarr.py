@@ -246,7 +246,6 @@ class KnarrCalculator:
                 force = -1 * np.reshape(Grad_image,(int(path.ndofIm),1)) * 51.42210665240553
                 #print("im bla", im* path.ndimIm : (im + 1) * path.ndimIm)
                 F[im* path.ndimIm : (im + 1) * path.ndimIm] = force
-            print("Final self.energies_dict:", self.energies_dict)
 
         path.SetForces(F)
         path.SetEnergy(E)

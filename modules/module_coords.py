@@ -184,7 +184,8 @@ class Fragment:
 
 
     def update_attributes(self):
-        print("Creating/Updating fragment attributes...")
+        if self.printlevel >= 2:
+            print("Creating/Updating fragment attributes...")
         if len(self.coords) == 0:
             print("No coordinates in fragment. Something went wrong. Exiting.")
             ashexit()
