@@ -225,7 +225,7 @@ class KnarrCalculator:
                 #Getting 1D coords array from Knarr, converting to regular, crreating ASH fragment
                 image_coords_1d = path.GetCoords()[image_number * path.ndimIm : (image_number + 1) * path.ndimIm]
                 image_coords=np.reshape(image_coords_1d, (numatoms, 3))
-                frag=ash.Fragment(coords=image_coords, elems=self.fragment1.elems,charge=self.charge, mult=self.mult, label=str(image_number))
+                frag=ash.Fragment(coords=image_coords, elems=self.fragment1.elems,charge=self.charge, mult=self.mult, label=str(image_number), printlevel=self.printlevel)
                 all_image_fragments.append(frag)
 
             #Launching multiple ASH E+Grad calculations in parallel

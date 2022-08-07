@@ -76,7 +76,7 @@ def Single_par(fragment=None, fragmentfile=None, theory=None, label=None, mofile
 
 
     #Check charge/mult.
-    charge,mult = check_charge_mult(charge, mult, theory.theorytype, fragment, "Single_par", theory=theory)
+    charge,mult = check_charge_mult(charge, mult, theory.theorytype, fragment, "Single_par", theory=theory, printlevel=printlevel)
 
     #Creating separate inputfilename using label
     #Removing . in inputfilename as ORCA can get confused
