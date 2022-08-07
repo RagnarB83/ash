@@ -229,7 +229,7 @@ class KnarrCalculator:
 
             #Launching multiple ASH E+Grad calculations in parallel
             energy_dict,gradient_dict = ash.Singlepoint_parallel(fragments=all_image_fragments, theories=[self.theory], numcores=self.numcores, 
-                mofilesdir=None, allow_theory_parallelization=False)
+                mofilesdir=None, allow_theory_parallelization=False, Grad=True)
             print("energy_dict", energy_dict)
             print("gradient_dict:", gradient_dict)
             #En_image, Grad_image
