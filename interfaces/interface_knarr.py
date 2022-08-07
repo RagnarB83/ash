@@ -221,22 +221,39 @@ class KnarrCalculator:
             #Creating ASH fragment for all images
             all_image_fragments=[]
             for image_number in list_to_compute:
+                counter += 1
                 #Getting 1D coords array from Knarr, converting to regular, crreating ASH fragment
                 image_coords_1d = path.GetCoords()[image_number * path.ndimIm : (image_number + 1) * path.ndimIm]
                 image_coords=np.reshape(image_coords_1d, (numatoms, 3))
-                frag=ash.Fragment(coords=image_coords, elems=self.fragment1.elems,charge=self.charge, mult=self.mult, label="image"+str(image_number))
+                frag=ash.Fragment(coords=image_coords, elems=self.fragment1.elems,charge=self.charge, mult=self.mult, label=str(image_number))
                 all_image_fragments.append(frag)
 
             #Launching multiple ASH E+Grad calculations in parallel
-            energy_dict,gradient_dict = ash.Singlepoint_parallel(fragments=all_image_fragments, theories=[self.theory], numcores=self.numcores, 
+            en_dict,gradient_dict = ash.Singlepoint_parallel(fragments=all_image_fragments, theories=[self.theory], numcores=self.numcores, 
                 mofilesdir=None, allow_theory_parallelization=False, Grad=True)
-            print("energy_dict", energy_dict)
+            print("en_dict", en_dict)
             print("gradient_dict:", gradient_dict)
             #En_image, Grad_image
 
             #Keeping track of energies for each image in a dict
-            self.energies_dict[image_number] = En_image
-            ashexit()
+            for i in en_dict.keys():
+                im=int(i)
+                print("en_dict[im]:", en_dict[i])
+                En_image=en_dict[i]
+                #Keeping track of images in Eh
+                self.energies_dict[im] = En_image
+                #Knarr energy array for all images in eV
+                E[im]=En_image*27.211399
+                #Forces array for all images
+                Grad_image = gradient_dict[i]
+                print("Grad_image:", Grad_image)
+                #Convert ASH gradient to force and convert to ev/Ang instead of Eh/Bohr
+                force = -1 * np.reshape(Grad_image,(int(path.ndofIm),1)) * 51.42210665240553
+                print("force:", force)
+                print("im* path.ndimIm : (im + 1) * path.ndimIm:", im* path.ndimIm : (im + 1) * path.ndimIm)
+                F[im* path.ndimIm : (im + 1) * path.ndimIm] = force
+                print("F:", F)
+            print("Final self.energies_dict:", self.energies_dict)
 
         path.SetForces(F)
         path.SetEnergy(E)
