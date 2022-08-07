@@ -9,7 +9,7 @@ import time
 
 
 import ash
-from ash.functions.functions_general import ashexit,print_time_rel,print_line_with_mainheader, BC
+from ash.functions.functions_general import ashexit,print_time_rel,print_line_with_mainheader, BC,print_line_with_subheader1,print_line_with_subheader2
 from ash.modules.module_coords import check_charge_mult
 
 #This makes Knarr part of python path
@@ -301,7 +301,7 @@ class KnarrCalculator:
 
 
 #ASH NEB function. Calls Knarr
-def NEB(reactant=None, product=None, theory=None, images=None, interpolation=None, CI=None, free_end=False, restart_file=None,
+def NEB(reactant=None, product=None, theory=None, images=7, interpolation=None, CI=None, free_end=False, restart_file=None,
         conv_type=None, tol_scale=None, tol_max_fci=None, tol_rms_fci=None, tol_max_f=None, tol_rms_f=None,
         tol_turn_on_ci=None, ActiveRegion=False, actatoms=None, runmode='serial', numcores=1, printlevel=0,
         idpp_maxiter=None, charge=None, mult=None):
@@ -339,20 +339,16 @@ def NEB(reactant=None, product=None, theory=None, images=None, interpolation=Non
 
     #Check charge/mult
     charge,mult = check_charge_mult(charge, mult, theory.theorytype, reactant, "NEB", theory=theory)
-    print("\nLaunching Knarr")
-    print()
-    PrintDivider()
-    PrintDivider()
-    PrintHeader()
-    PrintCredit()
-    PrintDivider()
-    PrintDivider()
     numatoms = reactant.numatoms
 
+    #Number of total images that Knarr wants. images input referring to intermediate images is now consistent with ORCA
+    total_num_images=images+2
+    
+    #Setting number of images of Knarr
+    path_parameters["NIMAGES"]=total_num_images
+
     #Override some default settings if requested
-    #Default is; NEB-CI, IDPP interpolation, 6 images
-    if images is not None:
-        path_parameters["NIMAGES"]=images
+
     if interpolation is not None:
         path_parameters["INTERPOLATION"]=interpolation
     if idpp_maxiter is not None:
@@ -383,9 +379,22 @@ def NEB(reactant=None, product=None, theory=None, images=None, interpolation=Non
         neb_settings["MIN_RMSD"] = False
 
     print()
-    print("Active Knarr settings:")
+    print_line_with_subheader2("Active NEB settings:")
     print()
 
+    #images provided => Meaning intermediate images
+    print("Number of images chosen:", images)
+    print("Free_end option:", free_end)
+    if free_end == True:
+        print("Endpoints are free. Reactant and product geometries will also be active during NEB optimization.")
+        print(f"There are {total_num_images} active images including endpoints.")
+        print("Warning: Check that you have chosen an appropriate number of CPU cores if runmode=parallel")
+    else:
+        print("Endpoints are frozen. Reactant and product will only be calculated once in the beginning and then frozen.")
+        print(f"{images} intermediate images will active and calculated during each primary NEB iteration (first iteration excluded)")
+        print(f"There are {total_num_images} images including the frozen endpoints.")
+
+    print()
     print("Interpolation path parameters:\n", path_parameters)
     print()
     print("NEB parameters:\n", neb_settings)
@@ -410,7 +419,7 @@ def NEB(reactant=None, product=None, theory=None, images=None, interpolation=Non
         #Create Knarr calculator from ASH theory.
         calculator = KnarrCalculator(theory, fragment1=new_reactant, fragment2=new_product, runmode=runmode, numcores=numcores,
                                      ActiveRegion=True, actatoms=actatoms, full_fragment_reactant=reactant,
-                                     full_fragment_product=product,numimages=images, charge=charge, mult=mult,
+                                     full_fragment_product=product,numimages=total_num_images, charge=charge, mult=mult,
                                      FreeEnd=free_end, printlevel=printlevel)
 
         # Symbols list for Knarr
@@ -430,7 +439,7 @@ def NEB(reactant=None, product=None, theory=None, images=None, interpolation=Non
     else:
         #Create Knarr calculator from ASH theory
         calculator = KnarrCalculator(theory, fragment1=reactant, fragment2=product, numcores=numcores,
-                                     ActiveRegion=False, runmode=runmode,numimages=images, charge=charge, mult=mult,
+                                     ActiveRegion=False, runmode=runmode,numimages=total_num_images, charge=charge, mult=mult,
                                      FreeEnd=free_end, printlevel=printlevel)
 
         # Symbols list for Knarr
@@ -442,6 +451,15 @@ def NEB(reactant=None, product=None, theory=None, images=None, interpolation=Non
         prod = KNARRatom.atom.Atom(coords=coords_to_Knarr(product.coords), symbols=Knarr_symbols, ndim=numatoms * 3,
                                    ndof=numatoms * 3, constraints=constr, pbc=False)
 
+
+    print("\nLaunching Knarr")
+    print()
+    PrintDivider()
+    PrintDivider()
+    PrintHeader()
+    PrintCredit()
+    PrintDivider()
+    PrintDivider()
 
     if restart_file == None:
         print("Creating interpolated path.")

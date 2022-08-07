@@ -33,7 +33,7 @@ class ORCATheory:
         check_ORCAbinary(self.orcadir)
         #Checking OpenMPI
         if numcores != 1:
-            print(f"ORCA parallel job requested with numcores:{numcores}. Make sure that the correct OpenMPI version (for the ORCA version) is available in your environment")
+            print(f"ORCA parallel job requested with numcores: {numcores} . Make sure that the correct OpenMPI version (for the ORCA version) is available in your environment")
             check_OpenMPI()
 
         #Checking if user added Opt, Freq keywords
