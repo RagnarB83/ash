@@ -13,7 +13,7 @@ from ash.modules.module_coords import check_charge_mult
 #Stripped down version of Singlepoint functffragment_fileion for Singlepoint_parallel.
 #NOTE: Version intended for apply_async
 #TODO: This function may still be a bit ORCA-centric. Needs to be generalized 
-def Single_par(fragment=None, fragmentfile=None, theory=None, label=None, mofilesdir=None, event=None, charge=None, mult=None):
+def Single_par(fragment=None, fragmentfile=None, theory=None, label=None, mofilesdir=None, event=None, charge=None, mult=None, Grad=False):
 
     #Creating new copy of theory to prevent Brokensym feature from being deactivated by each run
     #NOTE: Alternatively we can add an if-statement inside orca.run
@@ -98,7 +98,10 @@ def Single_par(fragment=None, fragmentfile=None, theory=None, label=None, mofile
     print(BC.WARNING,"Doing single-point Energy job on fragment. Formula: {} Label: {} ".format(fragment.prettyformula,fragment.label), BC.END)
     print("\n\nProcess ID {} is running calculation with label: {} \n\n".format(mp.current_process(),label))
 
-    energy = theory.run(current_coords=fragment.coords, elems=fragment.elems, label=label, charge=charge, mult=mult)
+    if Grad == True:
+        energy,gradient = theory.run(current_coords=fragment.coords, elems=fragment.elems, label=label, charge=charge, mult=mult, Grad=Grad)
+    else:
+        energy = theory.run(current_coords=fragment.coords, elems=fragment.elems, label=label, charge=charge, mult=mult)
 
     #Some theories like CC_CBS_Theory may return both energy and energy componentsdict as a tuple
     #TODO: avoid this nasty fix
@@ -110,14 +113,17 @@ def Single_par(fragment=None, fragmentfile=None, theory=None, label=None, mofile
     print("Energy: ", energy)
     # Now adding total energy to fragment
     fragment.energy = energy
-    return (label,energy)
+    if Grad == True:
+        return (label,energy,gradient)
+    else:
+        return (label,energy)
 
 
 
 #PARALLEL Single-point energy function
 #will run over fragments or fragmentfiles, over theories or both
 #mofilesdir. Directory containing MO-files (GBW files for ORCA). Usef for multiple fragment option
-def Singlepoint_parallel(fragments=None, fragmentfiles=None, theories=None, numcores=None, mofilesdir=None, allow_theory_parallelization=False):
+def Singlepoint_parallel(fragments=None, fragmentfiles=None, theories=None, numcores=None, mofilesdir=None, allow_theory_parallelization=False, Grad=False):
     print("")
     '''
     The Singlepoint_parallel function carries out multiple single-point calculations in a parallel fashion
@@ -213,13 +219,13 @@ def Singlepoint_parallel(fragments=None, fragmentfiles=None, theories=None, numc
             print("fragments:", fragments)
             for fragment in fragments:
                 print("fragment:", fragment)
-                results.append(pool.apply_async(Single_par, kwds=dict(theory=theory,fragment=fragment,label=fragment.label,mofilesdir=mofilesdir,event=event), error_callback=Terminate_Pool_processes))
+                results.append(pool.apply_async(Single_par, kwds=dict(theory=theory,fragment=fragment,label=fragment.label,mofilesdir=mofilesdir,event=event, Grad=Grad), error_callback=Terminate_Pool_processes))
         #Passing list of fragment files
         elif len(fragmentfiles) > 0:
             print("Launching multiprocessing and passing list of ASH fragmentfiles")
             for fragmentfile in fragmentfiles:
                 print("fragmentfile:", fragmentfile)
-                results.append(pool.apply_async(Single_par, kwds=dict(theory=theory,fragmentfile=fragmentfile,label=fragmentfile,mofilesdir=mofilesdir,event=event), error_callback=Terminate_Pool_processes))
+                results.append(pool.apply_async(Single_par, kwds=dict(theory=theory,fragmentfile=fragmentfile,label=fragmentfile,mofilesdir=mofilesdir,event=event, Grad=Grad), error_callback=Terminate_Pool_processes))
     # Case: Multiple theories, 1 fragment
     elif len(fragments) == 1:
         print("Case: Multiple theories but one fragment")
@@ -227,14 +233,14 @@ def Singlepoint_parallel(fragments=None, fragmentfiles=None, theories=None, numc
         #results = pool.map(Single_par, [[theory,fragment, theory.label, event] for theory in theories])
         for theory in theories:
             print("theory:", theory)
-            results.append(pool.apply_async(Single_par, kwds=dict(theory=theory,fragment=fragment,label=fragment.label,mofilesdir=mofilesdir,event=event), error_callback=Terminate_Pool_processes))
+            results.append(pool.apply_async(Single_par, kwds=dict(theory=theory,fragment=fragment,label=fragment.label,mofilesdir=mofilesdir,event=event, Grad=Grad), error_callback=Terminate_Pool_processes))
     # Case: Multiple theories, 1 fragmentfile
     elif len(fragmentfiles) == 1:
         print("Case: Multiple theories but one fragmentfile")
         fragmentfile = fragmentfiles[0]
         for theory in theories:
             print("theory:", theory)
-            results.append(pool.apply_async(Single_par, kwds=dict(theory=theory,fragmentfile=fragmentfile,label=fragmentfile,mofilesdir=mofilesdir,event=event), error_callback=Terminate_Pool_processes))
+            results.append(pool.apply_async(Single_par, kwds=dict(theory=theory,fragmentfile=fragmentfile,label=fragmentfile,mofilesdir=mofilesdir,event=event, Grad=Grad), error_callback=Terminate_Pool_processes))
     else:
         print("Multiple theories and multiple fragments provided.")
         print("This is not supported. Exiting...")
@@ -256,16 +262,25 @@ def Singlepoint_parallel(fragments=None, fragmentfiles=None, theories=None, numc
     #Going through each result-object and adding to energy_dict if ready
     #This prevents hanging for ApplyResult.get() if Pool did not finish correctly
     energy_dict={}
-    for i,r in enumerate(results):
-        print("Result {} ready: {}".format(i, r.ready()))
-        if r.ready() == True:
-            energy_dict[r.get()[0]] = r.get()[1]
 
+    if Grad == True:
+        gradient_dict={}
+        for i,r in enumerate(results):
+            print("Result {} ready: {}".format(i, r.ready()))
+            if r.ready() == True:
+                energy_dict[r.get()[0]] = r.get()[1]
+                gradient_dict[r.get()[0]] = r.get()[2]
+
+        return energy_dict,gradient_dict
+    else:
+        for i,r in enumerate(results):
+            print("Result {} ready: {}".format(i, r.ready()))
+            if r.ready() == True:
+                energy_dict[r.get()[0]] = r.get()[1]
+        return energy_dict
     #Dict comprehension to get results from list of Pool-ApplyResult objects
     #energy_dict = {result.get()[0]: result.get()[1] for result in results}
     #print("energy_dict:", energy_dict)
-
-    return energy_dict
 
 
 #Functions to run each displacement in parallel NumFreq run.

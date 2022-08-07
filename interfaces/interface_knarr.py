@@ -9,7 +9,7 @@ import time
 
 
 import ash
-from ash.functions.functions_general import ashexit, blankline,print_time_rel
+from ash.functions.functions_general import ashexit,print_time_rel,print_line_with_mainheader
 from ash.modules.module_coords import check_charge_mult
 
 #This makes Knarr part of python path
@@ -112,15 +112,16 @@ def coords_to_Knarr(coords):
     coords_xyz_np=np.array(coords_xyz)
     return coords_xyz_np
 
-#Wrapper around ASH object
+#Wrapper around ASH object passed onto Knarr
 class KnarrCalculator:
-    def __init__(self,theory,fragment1,fragment2,runmode='serial',printlevel=None, ActiveRegion=False, actatoms=None,
+    def __init__(self,theory,fragment1,fragment2,runmode='serial',printlevel=None, ActiveRegion=False, actatoms=None, numcores=1,
                  full_fragment_reactant=None, full_fragment_product=None, numimages=None, FreeEnd=False, charge=None, mult=None ):
+        self.numcores=numcores
         self.FreeEnd=FreeEnd
         self.numimages=numimages
         self.printlevel=printlevel
         self.forcecalls=0
-        self.iterations=0
+        self.iterations=-2  #Starting from -2 as R and P done first
         self.theory=theory
         self.charge=charge
         self.mult=mult
@@ -135,38 +136,32 @@ class KnarrCalculator:
         self.ISCION=False
         self.ActiveRegion=ActiveRegion
         self.actatoms=actatoms
-        print("self.actatoms:", self.actatoms)
         self.full_coords_images_dict={}
         self.energies_dict={}
     def Compute(self,path, list_to_compute=None):
-        blankline()
-        self.iterations+=1
-        print("Calling KnarrCalculator.Compute")
-        print("NEB iteration:", self.iterations)
         if list_to_compute is None:
-            print("None. list_to_compute:", list_to_compute)
-            list_to_compute=[]
+            return
         else:
             list_to_compute=list(list_to_compute)
-        print("Computing images:", list_to_compute)
+            self.iterations+=1
+        print()
+        print("="*30)
+        print("NEB ITERATION:", self.iterations)
+        print("="*30)
+        print()
+        print(f"Images to be computed in this iteration: {list_to_compute}\n")
 
-        #
-
-        #print("self.iterations:", self.iterations)
         counter=0
         F = np.zeros(shape=(path.GetNDimIm() * path.GetNim(), 1))
         E = np.zeros(shape=(path.GetNim(), 1))
         numatoms=int(path.ndofIm/3)
 
         if self.runmode=='serial':
+            print("Starting NEB calculations in serial mode")
             for image_number in list_to_compute:
                 print("Computing image: ", image_number)
                 image_coords_1d = path.GetCoords()[image_number * path.ndimIm : (image_number + 1) * path.ndimIm]
                 image_coords=np.reshape(image_coords_1d, (numatoms, 3))
-                # Request Engrad calc
-                #Todo: Reduce printlevel for QM-theory here. Means that printlevel needs to be uniform accross all theories
-                #Todo: Use self.printlevel so that it can adjust from outside
-                blankline()
 
                 if self.ActiveRegion == True:
                     currcoords=image_coords
@@ -207,37 +202,63 @@ class KnarrCalculator:
 
                 counter += 1
                 #Energies array for all images
-                E[image_number]=En_image
+                En_eV=En_image*27.211399
+                E[image_number]=En_eV
                 #Forces array for all images
-                #Todo: Check units
-                F[image_number* path.ndimIm : (image_number + 1) * path.ndimIm] = -1 * np.reshape(Grad_image,(int(path.ndofIm),1))
+                #Convert ASH gradient to force and convert to ev/Ang instead of Eh/Bohr
+                force = -1 * np.reshape(Grad_image,(int(path.ndofIm),1)) * 51.42210665240553
+                F[image_number* path.ndimIm : (image_number + 1) * path.ndimIm] = force
         elif self.runmode=='parallel':
-            print("parallel is not yet done")
+            print("Starting NEB calculations in parallel mode")
+            print("Warning: NEB in parallel mode is a work in progress")
             print("")
+
+
+            if self.ActiveRegion == True:
+                print("not ready")
+                exit()
+
+            #Creating ASH fragment for all images
+            all_image_fragments=[]
+            for image_number in list_to_compute:
+                #Getting 1D coords array from Knarr, converting to regular, crreating ASH fragment
+                image_coords_1d = path.GetCoords()[image_number * path.ndimIm : (image_number + 1) * path.ndimIm]
+                image_coords=np.reshape(image_coords_1d, (numatoms, 3))
+                frag=ash.Fragment(coords=image_coords, elems=self.fragment1.elems,charge=self.charge, mult=self.mult)
+                all_image_fragments.append(frag)
+
+            #Launching multiple ASH E+Grad calculations in parallel
+            energy_dict,gradient_dict = ash.Singlepoint_parallel(fragments=all_image_fragments, theories=[self.theory], numcores=self.numcores, 
+                mofilesdir=None, allow_theory_parallelization=False)
+            print("energy_dict", energy_dict)
+            print("gradient_dict:", gradient_dict)
+            #En_image, Grad_image
+
+            #Keeping track of energies for each image in a dict
+            self.energies_dict[image_number] = En_image
             ashexit()
+
         path.SetForces(F)
         path.SetEnergy(E)
         #Forcecalls
         path.AddFC(counter)
-        blankline()
+        print("NEB iteration calculations done\n")
 
-        print("NEB iteration done")
-        print("Energies of images dict:", self.energies_dict)
-        blankline()
+        #Printing table of energies
+        for i in sorted(self.energies_dict.keys()):
+            if self.FreeEnd == False and (i == 0 or i == self.numimages-1):
+                print(f"Image: {i:<4}Energy:{self.energies_dict[i]:12.6f} (frozen)")
+            else:
+                print(f"Image: {i:<4}Energy:{self.energies_dict[i]:12.6f}")
+        print()
+
         #Write out full MEP path in each NEB iteration.
         if self.ActiveRegion is True:
             #if len(list_to_compute) > 2:
-            if self.iterations > 1:
+            if self.iterations > 0:
                 self.write_Full_MEP_Path(path, list_to_compute, E)
 
-        #print("self.ISCION:", self.ISCION)
-        #if self.iterations > 3 :
-        #    if self.ISCION is True:
-        #        print("RB debug")
-        #        print('%4ls  %4s  %9ls %5ls %6ls %9ls %9ls %9ls %6ls' % ('it', 'dS', 'Energy', 'HEI', 'RMSF', 'MaxF', 'RMSF_CI', 'MaxF_CI', 'step'))
-        #    else:
-         #       print("RB debug")
-         #       print(' %4ls %4s  %9ls %5ls %7ls %9ls %8ls' % ('it', 'dS', 'Energy', 'HEI', 'RMSF', 'MaxF', 'step'))
+
 
     def write_Full_MEP_Path(self, path, list_to_compute, E):
         #Write out MEP for full coords in each iteration. Knarr writes out Active Part.
@@ -271,19 +292,22 @@ class KnarrCalculator:
 
 
 #ASH NEB function. Calls Knarr
-def NEB(reactant=None, product=None, theory=None, images=None, interpolation=None, CI=None, free_end=None, restart_file=None,
+def NEB(reactant=None, product=None, theory=None, images=None, interpolation=None, CI=None, free_end=False, restart_file=None,
         conv_type=None, tol_scale=None, tol_max_fci=None, tol_rms_fci=None, tol_max_f=None, tol_rms_f=None,
-        tol_turn_on_ci=None, ActiveRegion=False, actatoms=None, runmode='serial', printlevel=0,
+        tol_turn_on_ci=None, ActiveRegion=False, actatoms=None, runmode='serial', numcores=1, printlevel=0,
         idpp_maxiter=None, charge=None, mult=None):
 
+    print_line_with_mainheader("Nudged elastic band calculation (via interface to KNARR)")
     module_init_time=time.time()
 
     if reactant==None or product==None or theory==None:
         print("You need to provide reactant and product fragment and a theory to NEB")
         ashexit()
 
-    print("Launching Knarr program")
-    blankline()
+    #Check charge/mult
+    charge,mult = check_charge_mult(charge, mult, theory.theorytype, reactant, "NEB", theory=theory)
+    print("\nLaunching Knarr")
+    print()
     PrintDivider()
     PrintDivider()
     PrintHeader()
@@ -291,9 +315,6 @@ def NEB(reactant=None, product=None, theory=None, images=None, interpolation=Non
     PrintDivider()
     PrintDivider()
     numatoms = reactant.numatoms
-
-    #Check charge/mult
-    charge,mult = check_charge_mult(charge, mult, theory.theorytype, reactant, "NEB", theory=theory)
 
     #Override some default settings if requested
     #Default is; NEB-CI, IDPP interpolation, 6 images
@@ -306,7 +327,7 @@ def NEB(reactant=None, product=None, theory=None, images=None, interpolation=Non
     if CI is not None:
         if CI is False:
             neb_settings["CLIMBING"]=False
-    if free_end is not None:
+    if free_end is True:
         neb_settings["FREE_END"] = True
     if conv_type is not None:
         neb_settings["CONV_TYPE"] = conv_type
@@ -328,16 +349,16 @@ def NEB(reactant=None, product=None, theory=None, images=None, interpolation=Non
         print("Active Region feature active. Setting RMSD-alignment in NEB to false (required).")
         neb_settings["MIN_RMSD"] = False
 
-    blankline()
+    print()
     print("Active Knarr settings:")
-    blankline()
+    print()
 
     print("Interpolation path parameters:\n", path_parameters)
-    blankline()
+    print()
     print("NEB parameters:\n", neb_settings)
-    blankline()
+    print()
     print("Optimizer parameters:\n", optimizer)
-    blankline()
+    print()
 
     #Zero-valued constraints list. We probably won't use constraints for now
     constr = np.zeros(shape=(numatoms * 3, 1))
@@ -354,9 +375,10 @@ def NEB(reactant=None, product=None, theory=None, images=None, interpolation=Non
         new_product = ash.Fragment(coords=P_actcoords, elems=P_actelems)
 
         #Create Knarr calculator from ASH theory.
-        calculator = KnarrCalculator(theory, fragment1=new_reactant, fragment2=new_product, runmode=runmode,
+        calculator = KnarrCalculator(theory, fragment1=new_reactant, fragment2=new_product, runmode=runmode, numcores=numcores,
                                      ActiveRegion=True, actatoms=actatoms, full_fragment_reactant=reactant,
-                                     full_fragment_product=product,numimages=images, charge=charge, mult=mult )
+                                     full_fragment_product=product,numimages=images, charge=charge, mult=mult,
+                                     FreeEnd=free_end)
 
         # Symbols list for Knarr
         Knarr_symbols = [y for y in new_reactant.elems for i in range(3)]
@@ -374,8 +396,9 @@ def NEB(reactant=None, product=None, theory=None, images=None, interpolation=Non
 
     else:
         #Create Knarr calculator from ASH theory
-        calculator = KnarrCalculator(theory, fragment1=reactant, fragment2=product,
-                                     ActiveRegion=False, runmode=runmode,numimages=images, charge=charge, mult=mult )
+        calculator = KnarrCalculator(theory, fragment1=reactant, fragment2=product, numcores=numcores,
+                                     ActiveRegion=False, runmode=runmode,numimages=images, charge=charge, mult=mult,
+                                     FreeEnd=free_end)
 
         # Symbols list for Knarr
         Knarr_symbols = [y for y in reactant.elems for i in range(3)]
@@ -391,11 +414,9 @@ def NEB(reactant=None, product=None, theory=None, images=None, interpolation=Non
         print("Creating interpolated path.")
         # Generate path via Knarr_pathgenerator. ActiveRegion used to prevent RMSD alignment if doing actregion QM/MM etc.
         Knarr_pathgenerator(neb_settings, path_parameters, react, prod, ActiveRegion)
-        blankline()
-        print("Initial path generation done!")
         print("Saving initial path as : initial_guess_path.xyz")
         shutil.copyfile("knarr_path.xyz","initial_guess_path.xyz")
-        print("Reading initial path")
+        print("\nReading initial path")
         #Reading initial path from XYZ file. Hardcoded as knarr_path.xyz
         rp, ndim, nim, symb = ReadTraj("knarr_path.xyz")
         path = InitializePathObject(nim, react)
@@ -410,7 +431,7 @@ def NEB(reactant=None, product=None, theory=None, images=None, interpolation=Non
     #Setting printlevel of theory during E+Grad steps  1=very-little, 2=more, 3=lots, 4=verymuch
     print("NEB printlevel is:", printlevel)
     theory.printlevel=printlevel
-    print("Theory print level set to:", theory.printlevel)
+    print("Theory print level will now be set to:", theory.printlevel)
     if theory.__class__.__name__ == "QMMMTheory":
         theory.qm_theory.printlevel = printlevel
         theory.mm_theory.printlevel = printlevel
@@ -418,9 +439,12 @@ def NEB(reactant=None, product=None, theory=None, images=None, interpolation=Non
     #Now starting NEB from path object, using neb_settings and optimizer settings
     print("neb_settings:", neb_settings)
     print("optimizer:", optimizer)
+
+    #############################
+    # CALLING NEB
+    #############################
     DoNEB(path, calculator, neb_settings, optimizer)
 
-    #Todo: Check if DoNeb converged or not??
 
     #Getting saddlepoint-structure and energy if CI-NEB
     if neb_settings["CLIMBING"] is True:
@@ -469,8 +493,11 @@ def NEB(reactant=None, product=None, theory=None, images=None, interpolation=Non
 
 
     print('KNARR successfully terminated')
-    blankline()
-    print("Please consider citing the following paper if you found the NEB module (from Knarr) useful: To be added")
+    print()
+    print("Please consider citing the following paper if you found the NEB module useful (from Knarr):")
+    print("Nudged elastic band method for molecular reactions using energy-weighted springs combined with eigenvector following\n \
+V. Ásgeirsson, B. Birgisson, R. Bjornsson, U. Becker, F. Neese, C: Riplinger,  H. Jónsson, J. Chem. Theory Comput. 2021,17, 4929–4945.\
+DOI: 10.1021/acs.jctc.1c00462")
 
     print_time_rel(module_init_time, modulename='Knarr-NEB run', moduleindex=1)
 

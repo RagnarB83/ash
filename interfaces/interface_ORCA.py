@@ -6,7 +6,7 @@ import multiprocessing as mp
 import numpy as np
 
 import ash.modules.module_coords
-from ash.functions.functions_general import ashexit, blankline,insert_line_into_file,BC,print_time_rel, print_line_with_mainheader, pygrep2, pygrep, search_list_of_lists_for_index
+from ash.functions.functions_general import ashexit,insert_line_into_file,BC,print_time_rel, print_line_with_mainheader, pygrep2, pygrep, search_list_of_lists_for_index
 from ash.modules.module_singlepoint import Singlepoint
 from ash.modules.module_coords import check_charge_mult
 from ash.functions.functions_elstructure import xdm_run, calc_cm5
@@ -233,7 +233,8 @@ class ORCATheory:
         print(BC.OKGREEN, "ORCA Calculation done.", BC.END)
 
         outfile=self.filename+'.out'
-        if checkORCAfinished(outfile) == True:
+        ORCAfinished,iter = checkORCAfinished(outfile)
+        if ORCAfinished == True:
             print("ORCA job finished")
             if checkORCAOptfinished(outfile) ==  True:
                 print("ORCA geometry optimization finished")
@@ -405,11 +406,8 @@ class ORCATheory:
         #Run inputfile using ORCA parallelization. Take numcores argument.
         #print(BC.OKGREEN, "------------Running ORCA calculation-------------", BC.END)
         if self.printlevel >= 2:
-            print(BC.OKGREEN, "ORCA Calculation started.", BC.END)
-        # Doing gradient or not. Disabling, doing above instead.
-        #if Grad == True:
-        #    run_orca_SP_ORCApar(self.orcadir, self.filename + '.inp', numcores=numcores, Grad=True)
-        #else:
+            print(BC.OKGREEN, "ORCA Calculation starting.", BC.END)
+
         run_orca_SP_ORCApar(self.orcadir, self.filename + '.inp', numcores=numcores, check_for_errors=self.check_for_errors, check_for_warnings=self.check_for_warnings)
         if self.printlevel >= 1:
             print(BC.OKGREEN, "ORCA Calculation done.", BC.END)
@@ -436,12 +434,15 @@ class ORCATheory:
         #Always make copy of last output file
         shutil.copy(self.filename+'.out', self.filename+'_last.out')
 
+        ORCAfinished,numiterations = checkORCAfinished(outfile)
         #Check if ORCA finished or not. Exiting if so
-        if checkORCAfinished(outfile) is False:
+        if ORCAfinished is False:
             print(BC.FAIL,"Problem with ORCA run", BC.END)
             print(BC.OKBLUE,BC.BOLD, "------------ENDING ORCA-INTERFACE-------------", BC.END)
             print_time_rel(module_init_time, modulename='ORCA run', moduleindex=2)
             ashexit()
+        if self.printlevel >= 1:
+            print(f"ORCA converged in {numiterations} iterations")
 
         #Print population analysis in each run if requested
         if self.print_population_analysis is True:
@@ -458,7 +459,7 @@ class ORCATheory:
         #Grab energy
         self.energy=ORCAfinalenergygrab(outfile)
         if self.printlevel >= 1:
-            print("\nORCA energy:", self.energy)
+            print("ORCA energy:", self.energy)
 
         #Grab timings from ORCA output
         orca_timings = ORCAtimingsgrab(outfile)
@@ -476,6 +477,9 @@ class ORCATheory:
                 print("DFT+XDM energy:", self.energy )
             #TODO: dispgrad not yet done
             self.grad = self.grad + dispgrad
+
+
+
         if Grad == True:
             grad =ORCAgradientgrab(engradfile)
             self.grad = self.grad + grad
@@ -487,19 +491,19 @@ class ORCATheory:
                 #Grab pointcharge gradient. i.e. gradient on MM atoms from QM-MM elstat interaction.
                 self.pcgrad=ORCApcgradientgrab(pcgradfile)
                 print(BC.OKBLUE,BC.BOLD,"------------ENDING ORCA-INTERFACE-------------", BC.END)
-                print_time_rel(module_init_time, modulename='ORCA run', moduleindex=2)
+                print_time_rel(module_init_time, modulename='ORCA run', moduleindex=2, currprintlevel=self.printlevel, currthreshold=1)
                 return self.energy, self.grad, self.pcgrad
             else:
                 if self.printlevel >= 2:
                     print(BC.OKBLUE,BC.BOLD,"------------ENDING ORCA-INTERFACE-------------", BC.END)
-                print_time_rel(module_init_time, modulename='ORCA run', moduleindex=2)
+                print_time_rel(module_init_time, modulename='ORCA run', moduleindex=2, currprintlevel=self.printlevel, currthreshold=1)
                 return self.energy, self.grad
 
         else:
             if self.printlevel >= 2:
                 print("Single-point ORCA energy:", self.energy)
                 print(BC.OKBLUE,BC.BOLD,"------------ENDING ORCA-INTERFACE-------------", BC.END)
-            print_time_rel(module_init_time, modulename='ORCA run', moduleindex=2)
+            print_time_rel(module_init_time, modulename='ORCA run', moduleindex=2, currprintlevel=self.printlevel, currthreshold=1)
             return self.energy
 
 
@@ -587,8 +591,7 @@ def run_inputfiles_in_parallel(orcadir, inpfiles, numcores):
     :param numcores: number of cores to use (integer)
     ;return: returns nothing. Outputfiles on disk parsed separately
     """
-    blankline()
-    print("Number of CPU cores: ", numcores)
+    print("\nNumber of CPU cores: ", numcores)
     print("Number of inputfiles:", len(inpfiles))
     print("Running snapshots in parallel")
     pool = mp.Pool(numcores)
@@ -621,11 +624,8 @@ def run_orca_SP_ORCApar(orcadir, inpfile, numcores=1, check_for_warnings=True, c
     basename = inpfile.replace('.inp','')
     with open(basename+'.out', 'w') as ofile:
         #process = sp.run([orcadir + '/orca', basename+'.inp'], check=True, stdout=ofile, stderr=ofile, universal_newlines=True)
-        print("Calling ORCA as Python subprocess")
         try:
             process = sp.run([orcadir + '/orca', inpfile], check=True, stdout=ofile, stderr=ofile, universal_newlines=True)
-            print("ORCA run completed.")
-            print()
             if check_for_errors:
                 grab_ORCA_errors(basename+'.out')
             if check_for_warnings:
@@ -654,7 +654,8 @@ def grab_ORCA_warnings(filename):
 
     warnings=[]
     #Lines that are not useful warnings
-    ignore_lines=['                       Please study these wa','                                        WARNINGS']
+    ignore_lines=['                       Please study these wa','                                        WARNINGS', 
+        ' Warning: in a DFT calculation', 'WARNING: Old DensityContainer' ]
     for warn in warning_lines:
         false_positive = any(warn.startswith(ign) for ign in ignore_lines)
         if false_positive is False:
@@ -677,7 +678,8 @@ def grab_ORCA_errors(filename):
 
     errors=[]
     #Lines that are not errors
-    ignore_lines=['   Startup', ' DIIS', 'sum of PNO error', '  Last DIIS Error', '    DIIS-Error', ' Sum of total truncation errors', '  Sum of total UMP2 truncation', ' Warning: in a DFT calculation' ]
+    ignore_lines=['   Startup', ' DIIS', 'sum of PNO error', '  Last DIIS Error', '    DIIS-Error', ' Sum of total truncation errors', 
+        '  Sum of total UMP2 truncation', ]
     for err in error_lines:
         false_positive = any(err.startswith(ign) for ign in ignore_lines)
         if false_positive is False:
@@ -689,13 +691,13 @@ def grab_ORCA_errors(filename):
 #Check if ORCA finished.
 #Todo: Use reverse-read instead to speed up?
 def checkORCAfinished(file):
+    iter=None
     with open(file) as f:
         for line in f:
             if 'SCF CONVERGED AFTER' in line:
                 iter=line.split()[-3]
-                print("ORCA converged in {} iterations".format(iter))
             if 'TOTAL RUN TIME:' in line:
-                return True
+                return True,iter
 def checkORCAOptfinished(file):
     converged=False
     with open(file) as f:
@@ -2147,7 +2149,8 @@ def ORCA_External_Optimizer(fragment=None, theory=None, orcadir=None, charge=Non
         process = sp.run(['orca', basename+'.inp'], check=True, stdout=ofile, stderr=ofile, universal_newlines=True)
 
     #Check if ORCA finished
-    if checkORCAfinished(basename+'.out') is not True:
+    ORCAfinished, iter = checkORCAfinished(basename+'.out')
+    if ORCAfinished is not True:
         print("Something failed about external ORCA job")
         ashexit()
     #Check if optimization completed

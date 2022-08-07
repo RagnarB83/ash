@@ -55,9 +55,9 @@ no_kb = False
 
 global energystring, forcestring
 
-energystring = 'Eh'
-forcestring = 'Eh/Bohr'
-lengthstring = 'A (?)'
+energystring = 'eV'
+forcestring = 'eV/Ang'
+lengthstring = 'A'
 
 global printlevel, output_extension
 
