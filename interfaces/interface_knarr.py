@@ -231,14 +231,10 @@ class KnarrCalculator:
             #Launching multiple ASH E+Grad calculations in parallel
             en_dict,gradient_dict = ash.Singlepoint_parallel(fragments=all_image_fragments, theories=[self.theory], numcores=self.numcores, 
                 mofilesdir=None, allow_theory_parallelization=False, Grad=True)
-            print("en_dict", en_dict)
-            print("gradient_dict:", gradient_dict)
-            #En_image, Grad_image
 
             #Keeping track of energies for each image in a dict
             for i in en_dict.keys():
                 im=int(i)
-                print("en_dict[im]:", en_dict[i])
                 En_image=en_dict[i]
                 #Keeping track of images in Eh
                 self.energies_dict[im] = En_image
@@ -246,13 +242,10 @@ class KnarrCalculator:
                 E[im]=En_image*27.211399
                 #Forces array for all images
                 Grad_image = gradient_dict[i]
-                print("Grad_image:", Grad_image)
                 #Convert ASH gradient to force and convert to ev/Ang instead of Eh/Bohr
                 force = -1 * np.reshape(Grad_image,(int(path.ndofIm),1)) * 51.42210665240553
-                print("force:", force)
                 #print("im bla", im* path.ndimIm : (im + 1) * path.ndimIm)
                 F[im* path.ndimIm : (im + 1) * path.ndimIm] = force
-                print("F:", F)
             print("Final self.energies_dict:", self.energies_dict)
 
         path.SetForces(F)

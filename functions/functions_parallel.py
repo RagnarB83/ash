@@ -93,7 +93,11 @@ def Single_par(fragment=None, fragmentfile=None, theory=None, label=None, mofile
             raise Exception()
 
     #Creating new dir and running calculation inside
-    os.mkdir('Pooljob_'+labelstring)
+    try:
+        os.mkdir('Pooljob_'+labelstring)
+    except:
+        print("Dir exists. continuing")
+        pass
     os.chdir('Pooljob_'+labelstring)
     print(BC.WARNING,"Doing single-point Energy job on fragment. Formula: {} Label: {} ".format(fragment.prettyformula,fragment.label), BC.END)
     print("\n\nProcess ID {} is running calculation with label: {} \n\n".format(mp.current_process(),label))
