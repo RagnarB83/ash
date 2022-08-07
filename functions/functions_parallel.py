@@ -268,9 +268,13 @@ def Singlepoint_parallel(fragments=None, fragmentfiles=None, theories=None, numc
         for i,r in enumerate(results):
             print("Result {} ready: {}".format(i, r.ready()))
             if r.ready() == True:
+                print("r.get()[0]", r.get()[0])
+                print("r.get()[1]", r.get()[1])
+                print("r.get()[2]", r.get()[2])
                 energy_dict[r.get()[0]] = r.get()[1]
                 gradient_dict[r.get()[0]] = r.get()[2]
-
+        print("energy_dict:", energy_dict)
+        print("gradient_dict:", gradient_dict)
         return energy_dict,gradient_dict
     else:
         for i,r in enumerate(results):
