@@ -9,7 +9,7 @@ import time
 
 
 import ash
-from ash.functions.functions_general import ashexit,print_time_rel,print_line_with_mainheader
+from ash.functions.functions_general import ashexit,print_time_rel,print_line_with_mainheader, BC
 from ash.modules.module_coords import check_charge_mult
 
 #This makes Knarr part of python path
@@ -310,8 +310,32 @@ def NEB(reactant=None, product=None, theory=None, images=None, interpolation=Non
     module_init_time=time.time()
 
     if reactant==None or product==None or theory==None:
-        print("You need to provide reactant and product fragment and a theory to NEB")
+        print(BC.FAIL,"You need to provide reactant and product fragment and a theory to NEB", BC.END)
         ashexit()
+
+    if runmode == 'serial' and numcores > 1:
+        print(BC.FAIL,"Runmode is 'serial' but numcores > 1. Set runmode to 'parallel' to have NEB parallelize over images", BC.END)
+        ashexit()
+    elif runmode == 'parallel' and numcores == 1:
+        print(BC.FAIL,"Runmode is 'parallel' but numcores == 1. You must provide more than 1 core to parallelize over images", BC.END)
+        print(BC.FAIL,"It is recommended to provide as many cores as there are images", BC.END)
+        ashexit()
+    elif runmode == 'parallel' and numcores > 1:
+        print(BC.WARNING,f"Runmode is 'parallel' and numcores == {numcores}.")
+        print(BC.WARNING,f"Will launch Energy+gradient calculations using Singlepoint_parallel using {numcores} cores.", BC.END)
+        if theory.numcores > 1:
+            print(BC.WARNING,f"Warning: Theory parallelization is active and will utilize: {theory.numcores}", BC.END)
+            print(BC.WARNING,f"The NEB images will run in parallel by Python multiprocessing {numcores} while each image E+Grad calculation is parallelized as well", BC.END)
+            print(BC.WARNING,f"Make sure that you have {numcores} x {theory.numcores} = {numcores*theory.numcores} available to this ASH job", BC.END)
+    elif runmode == 'serial' and numcores == 1:
+        print (BC.WARNING,"NEB runmode is serial, i.e. running one image after another.", BC.END)
+        if theory.numcores > 1:
+            print(BC.WARNING,f"Theory parallelization is active and will utilize: {theory.numcores}",BC.END)
+        else:
+            print(BC.WARNING,"Warning: Theory parallelization is not active either (provide numcores keyword to Theory object).",BC.END)
+    else:
+        print("Unknown runmode, continuing.")
+    print()
 
     #Check charge/mult
     charge,mult = check_charge_mult(charge, mult, theory.theorytype, reactant, "NEB", theory=theory)
@@ -454,6 +478,8 @@ def NEB(reactant=None, product=None, theory=None, images=None, interpolation=Non
     #############################
     DoNEB(path, calculator, neb_settings, optimizer)
 
+    print('KNARR successfully terminated')
+    print()
 
     #Getting saddlepoint-structure and energy if CI-NEB
     if neb_settings["CLIMBING"] is True:
@@ -499,10 +525,9 @@ def NEB(reactant=None, product=None, theory=None, images=None, interpolation=Non
             #Writing out Saddlepoint fragment file and XYZ file
             Saddlepoint_fragment.print_system(filename='Saddlepoint-optimized.ygg')
             Saddlepoint_fragment.write_xyzfile(xyzfilename='Saddlepoint-optimized.xyz')
+        print(f"Saddlepoint energy: {saddle_energy} Eh")
 
 
-    print('KNARR successfully terminated')
-    print()
     print("Please consider citing the following paper if you found the NEB module useful (from Knarr):")
     print("Nudged elastic band method for molecular reactions using energy-weighted springs combined with eigenvector following\n \
 V. Ásgeirsson, B. Birgisson, R. Bjornsson, U. Becker, F. Neese, C: Riplinger,  H. Jónsson, J. Chem. Theory Comput. 2021,17, 4929–4945.\
