@@ -490,7 +490,7 @@ def NEB(reactant=None, product=None, theory=None, images=None, interpolation=Non
             CI = np.argmax(path.GetEnergy())
             saddle_coords_1d=path.GetCoords()[CI * path.GetNDimIm():(CI + 1) * path.GetNDimIm()]
             saddle_coords=np.reshape(saddle_coords_1d, (numatoms, 3))
-            saddle_energy = path.GetEnergy()[CI][0]
+            saddle_energy = path.GetEnergy()[CI][0]*23.060541945329334
 
             #Combinining frozen region with optimized active-region for saddle-point
             # Defining full_coords as original coords temporarily
@@ -518,7 +518,8 @@ def NEB(reactant=None, product=None, theory=None, images=None, interpolation=Non
             CI = np.argmax(path.GetEnergy())
             saddle_coords_1d=path.GetCoords()[CI * path.GetNDimIm():(CI + 1) * path.GetNDimIm()]
             saddle_coords=np.reshape(saddle_coords_1d, (numatoms, 3))
-            saddle_energy = path.GetEnergy()[CI][0]
+            saddle_energy = path.GetEnergy()[CI][0]*23.060541945329334
+            print("Creating new ASH fragment for saddlepoint geometry")
             #Creating new ASH fragment
             Saddlepoint_fragment = ash.Fragment(coords=saddle_coords, elems=reactant.elems, connectivity=reactant.connectivity, charge=charge, mult=mult)
             Saddlepoint_fragment.set_energy(saddle_energy)
@@ -528,7 +529,7 @@ def NEB(reactant=None, product=None, theory=None, images=None, interpolation=Non
         print(f"Saddlepoint energy: {saddle_energy} Eh")
         print()
 
-    print("Please consider citing the following paper if you found the NEB module useful (from Knarr):")
+    print("\nThe Knarr-NEB code is based on work described in the following article. Please consider citing it:")
     print("Nudged elastic band method for molecular reactions using energy-weighted springs combined with eigenvector following\n \
 V. Ásgeirsson, B. Birgisson, R. Bjornsson, U. Becker, F. Neese, C: Riplinger,  H. Jónsson, J. Chem. Theory Comput. 2021,17, 4929–4945.\
 DOI: 10.1021/acs.jctc.1c00462")
