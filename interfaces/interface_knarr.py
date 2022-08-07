@@ -325,12 +325,12 @@ def NEB(reactant=None, product=None, theory=None, images=None, interpolation=Non
         print(BC.WARNING,f"Will launch Energy+gradient calculations using Singlepoint_parallel using {numcores} cores.", BC.END)
         if theory.numcores > 1:
             print(BC.WARNING,f"Warning: Theory parallelization is active and will utilize: {theory.numcores}", BC.END)
-            print(BC.WARNING,f"The NEB images will run in parallel by Python multiprocessing {numcores} while each image E+Grad calculation is parallelized as well", BC.END)
-            print(BC.WARNING,f"Make sure that you have {numcores} x {theory.numcores} = {numcores*theory.numcores} available to this ASH job", BC.END)
+            print(BC.WARNING,f"The NEB images will run in parallel by Python multiprocessing (using {numcores} cores) while each image E+Grad calculation is parallelized as well ({theory.numcoers} per image)", BC.END)
+            print(BC.WARNING,f"Make sure that you have {numcores} x {theory.numcores} = {numcores*theory.numcores} CPU cores available to this ASH job on the computing node", BC.END)
     elif runmode == 'serial' and numcores == 1:
         print (BC.WARNING,"NEB runmode is serial, i.e. running one image after another.", BC.END)
         if theory.numcores > 1:
-            print(BC.WARNING,f"Theory parallelization is active and will utilize: {theory.numcores}",BC.END)
+            print(BC.WARNING,f"Theory parallelization is active and will utilize: {theory.numcores} CPU cores per image.",BC.END)
         else:
             print(BC.WARNING,"Warning: Theory parallelization is not active either (provide numcores keyword to Theory object).",BC.END)
     else:
@@ -490,7 +490,7 @@ def NEB(reactant=None, product=None, theory=None, images=None, interpolation=Non
             CI = np.argmax(path.GetEnergy())
             saddle_coords_1d=path.GetCoords()[CI * path.GetNDimIm():(CI + 1) * path.GetNDimIm()]
             saddle_coords=np.reshape(saddle_coords_1d, (numatoms, 3))
-            saddle_energy = path.GetEnergy()[CI]
+            saddle_energy = path.GetEnergy()[CI][0]
 
             #Combinining frozen region with optimized active-region for saddle-point
             # Defining full_coords as original coords temporarily
@@ -518,7 +518,7 @@ def NEB(reactant=None, product=None, theory=None, images=None, interpolation=Non
             CI = np.argmax(path.GetEnergy())
             saddle_coords_1d=path.GetCoords()[CI * path.GetNDimIm():(CI + 1) * path.GetNDimIm()]
             saddle_coords=np.reshape(saddle_coords_1d, (numatoms, 3))
-            saddle_energy = path.GetEnergy()[CI]
+            saddle_energy = path.GetEnergy()[CI][0]
             #Creating new ASH fragment
             Saddlepoint_fragment = ash.Fragment(coords=saddle_coords, elems=reactant.elems, connectivity=reactant.connectivity, charge=charge, mult=mult)
             Saddlepoint_fragment.set_energy(saddle_energy)
@@ -526,7 +526,7 @@ def NEB(reactant=None, product=None, theory=None, images=None, interpolation=Non
             Saddlepoint_fragment.print_system(filename='Saddlepoint-optimized.ygg')
             Saddlepoint_fragment.write_xyzfile(xyzfilename='Saddlepoint-optimized.xyz')
         print(f"Saddlepoint energy: {saddle_energy} Eh")
-
+        print()
 
     print("Please consider citing the following paper if you found the NEB module useful (from Knarr):")
     print("Nudged elastic band method for molecular reactions using energy-weighted springs combined with eigenvector following\n \
