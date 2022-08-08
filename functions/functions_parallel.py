@@ -226,7 +226,7 @@ def Singlepoint_parallel(fragments=None, fragmentfiles=None, theories=None, numc
                 totnumcores=numcores*theory.numcores
                 if printlevel >= 2:
                     print(BC.WARNING,"allow_theory_parallelization is True.", BC.END)
-                    print(BC.WARNING,f"Each job can use {theory.numcores} CPU cores, thus up to {totnumcores} CPU cores can be running simultaneously. Make sure that many slots are available.", BC.END)
+                    print(BC.WARNING,f"Each job can use {theory.numcores} CPU cores, thus up to {totnumcores} CPU cores can be running simultaneously. Make sure that that's how many slots are available.", BC.END)
             else:
                 if printlevel >= 2:
                     print(BC.WARNING,"allow_theory_parallelization is False. Now turning off theory.parallelization (setting theory numcores to 1)", BC.END)
