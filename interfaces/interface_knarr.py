@@ -556,7 +556,8 @@ class KnarrCalculator:
 
             #Keeping track of energies for each image in a dict
             for i in en_dict.keys():
-                im=int(i)
+                #i is image_X
+                im=int(i.replace("image_",""))
                 En_image=en_dict[i]
                 #Keeping track of images in Eh
                 self.energies_dict[im] = En_image
