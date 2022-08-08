@@ -33,8 +33,8 @@ import KNARRatom.atom
 #These will be the reasonable defaults that can be overridden by special keywords in ASH NEB object
 #RB modified springconst from 10 to 5
 # Changed "IDPP_RMS_F": 0.005    and "IDPP_MAX_F": 0.01
-path_parameters = {"METHOD": "DOUBLE", "INTERPOLATION": "IDPP", "NIMAGES": 6,
-              "INSERT_CONFIG": None, "IDPP_MAX_ITER": 200,
+path_parameters = {"METHOD": "DOUBLE", "INTERPOLATION": "IDPP", "NIMAGES": 8,
+              "INSERT_CONFIG": None, "IDPP_MAX_ITER": 300,
               "IDPP_SPRINGCONST": 5.0, "IDPP_TIME_STEP": 0.01,
               "IDPP_MAX_MOVE": 0.1, "IDPP_MAX_F": 0.03, "IDPP_RMS_F": 0.005}
 
@@ -48,7 +48,7 @@ neb_settings = {"PATH": "neb.xyz",
               "FREE_END": False, "FREE_END_TYPE": 'PERP', "FREE_END_ENERGY": 0.0,
               "FREE_END_ENERGY2": 0.0, "FREE_END_KAPPA": 0.0,
               "CONV_TYPE": "ALL", "TOL_SCALE": 10, "TOL_MAX_FCI": 0.026, "TOL_RMS_FCI": 0.013,
-              "TOL_MAX_F": 0.026, "TOL_RMS_F": 0.013, "TOL_TURN_ON_CI": 1.0,
+              "TOL_MAX_F": 0.26, "TOL_RMS_F": 0.13, "TOL_TURN_ON_CI": 1.0,
               "ZOOM": False,
               "TOL_TURN_ON_ZOOM": 0.5,
               "REPARAM": 0, "TOL_REPARAM": 0.0,
@@ -68,10 +68,12 @@ optimizer = {"OPTIM_METHOD": "LBFGS", "MAX_ITER": 1000, "TOL_MAX_FORCE": 0.01,
 
 
 #ASH NEB function. Calls Knarr
-def NEB(reactant=None, product=None, theory=None, images=7, interpolation="IDPP", CI=True, free_end=False, restart_file=None,
-        conv_type="CIONLY", tol_scale=10, tol_max_fci=0.026, tol_rms_fci=0.013, tol_max_f=0.026, tol_rms_f=0.013,
-        tol_turn_on_ci=1.0, ActiveRegion=False, actatoms=None, runmode='serial', numcores=1, printlevel=0,
-        idpp_maxiter=200, charge=None, mult=None):
+def NEB(reactant=None, product=None, theory=None, images=8, CI=True, free_end=False, 
+        conv_type="ALL", tol_scale=10, tol_max_fci=0.026, tol_rms_fci=0.013, tol_max_f=0.26, tol_rms_f=0.13,
+        tol_turn_on_ci=1.0,  runmode='serial', numcores=1, 
+        charge=None, mult=None,printlevel=0, ActiveRegion=False, actatoms=None,
+        interpolation="IDPP", idpp_maxiter=300, 
+        restart_file=None, TS_guess_file=None, mofilesdir=None):
 
     print_line_with_mainheader("Nudged elastic band calculation (via interface to KNARR)")
     module_init_time=time.time()
@@ -116,6 +118,7 @@ def NEB(reactant=None, product=None, theory=None, images=7, interpolation="IDPP"
     #Set Knarr settings in dictionary
     path_parameters["INTERPOLATION"]=interpolation
     path_parameters["IDPP_MAX_ITER"] = idpp_maxiter
+    path_parameters["INSERT_CONFIG"] = TS_guess_file
     neb_settings["CLIMBING"]=CI
     neb_settings["FREE_END"] = free_end
     neb_settings["CONV_TYPE"] = conv_type
@@ -149,6 +152,9 @@ def NEB(reactant=None, product=None, theory=None, images=7, interpolation="IDPP"
         print(f"{images} intermediate images will active and calculated during each primary NEB iteration (first iteration excluded)")
         print(f"There are {total_num_images} images including the frozen endpoints.")
 
+    print("Restart file:", restart_file)
+    print("TS guess insertion file:", TS_guess_file)
+
     print()
     print("Interpolation path parameters:\n", path_parameters)
     print()
@@ -175,7 +181,7 @@ def NEB(reactant=None, product=None, theory=None, images=7, interpolation="IDPP"
         calculator = KnarrCalculator(theory, fragment1=new_reactant, fragment2=new_product, runmode=runmode, numcores=numcores,
                                      ActiveRegion=True, actatoms=actatoms, full_fragment_reactant=reactant,
                                      full_fragment_product=product,numimages=total_num_images, charge=charge, mult=mult,
-                                     FreeEnd=free_end, printlevel=printlevel)
+                                     FreeEnd=free_end, printlevel=printlevel,mofilesdir=mofilesdir)
 
         # Symbols list for Knarr
         Knarr_symbols = [y for y in new_reactant.elems for i in range(3)]
@@ -195,7 +201,7 @@ def NEB(reactant=None, product=None, theory=None, images=7, interpolation="IDPP"
         #Create Knarr calculator from ASH theory
         calculator = KnarrCalculator(theory, fragment1=reactant, fragment2=product, numcores=numcores,
                                      ActiveRegion=False, runmode=runmode,numimages=total_num_images, charge=charge, mult=mult,
-                                     FreeEnd=free_end, printlevel=printlevel)
+                                     FreeEnd=free_end, printlevel=printlevel,mofilesdir=mofilesdir)
 
         # Symbols list for Knarr
         Knarr_symbols = [y for y in reactant.elems for i in range(3)]
@@ -218,6 +224,11 @@ def NEB(reactant=None, product=None, theory=None, images=7, interpolation="IDPP"
 
     if restart_file == None:
         print("Creating interpolated path.")
+
+        if TS_guess_file != None:
+            print(f"A TS guess file: {TS_guess_file} was provided")
+            print("Will create in")
+
         # Generate path via Knarr_pathgenerator. ActiveRegion used to prevent RMSD alignment if doing actregion QM/MM etc.
         Knarr_pathgenerator(neb_settings, path_parameters, react, prod, ActiveRegion)
         print("Saving initial path as : initial_guess_path.xyz")
@@ -228,6 +239,8 @@ def NEB(reactant=None, product=None, theory=None, images=7, interpolation="IDPP"
         path = InitializePathObject(nim, react)
         path.SetCoords(rp)
     else:
+        print("Restart_file option active")
+        print(f"Restart-file: {restart_file} will be read and used as guess path instead of interpolation trajectory")
         #Reading user-defined path from XYZ file. Hardcoded as knarr_path.xyz
         rp, ndim, nim, symb = ReadTraj(restart_file)
         path = InitializePathObject(nim, react)
@@ -238,7 +251,7 @@ def NEB(reactant=None, product=None, theory=None, images=7, interpolation="IDPP"
     print("NEB printlevel is:", printlevel)
     theory.printlevel=printlevel
     print("Theory print level will now be set to:", theory.printlevel)
-    if theory.__class__.__name__ == "QMMMTheory":
+    if isinstance(theory, ash.QMMMTheory):
         theory.qm_theory.printlevel = printlevel
         theory.mm_theory.printlevel = printlevel
 
@@ -336,8 +349,8 @@ def Knarr_pathgenerator(nebsettings,path_parameters,react,prod,ActiveRegion):
         # check insertion
         insertion = path_parameters["INSERT_CONFIG"]
         if insertion is not None:
-            insertion = InitializeAtomObject(name="insertion", input_config=path_parameters["INSERT_CONFIG"],
-                                             pbc=main_control["PBC"])
+            #pbc=main_control["PBC"]
+            insertion = InitializeAtomObject(name="insertion", input_config=path_parameters["INSERT_CONFIG"])
             if insertion.GetSymbols() != react.GetSymbols():
                 raise ValueError("Insertion does not match reactant / product")
             path.SetInsertionConfig(insertion.GetCoords())
@@ -362,10 +375,11 @@ def coords_to_Knarr(coords):
 #Wrapper around ASH object passed onto Knarr
 class KnarrCalculator:
     def __init__(self,theory,fragment1,fragment2,runmode='serial',printlevel=None, ActiveRegion=False, actatoms=None, numcores=1,
-                 full_fragment_reactant=None, full_fragment_product=None, numimages=None, FreeEnd=False, charge=None, mult=None ):
+                 full_fragment_reactant=None, full_fragment_product=None, numimages=None, FreeEnd=False, charge=None, mult=None, mofilesdir=None ):
         self.numcores=numcores
         self.FreeEnd=FreeEnd
         self.numimages=numimages
+        self.mofilesdir=mofilesdir
         self.printlevel=printlevel
         self.forcecalls=0
         self.iterations=-2  #Starting from -2 as R and P done first
@@ -385,6 +399,14 @@ class KnarrCalculator:
         self.actatoms=actatoms
         self.full_coords_images_dict={}
         self.energies_dict={}
+        #Activating ORCA flag if theory or QM-region theory
+        self.ORCAused = False
+        if isinstance(self.theory, ash.ORCATheory):
+            self.ORCAused = True
+        elif isinstance(self.theory, ash.QMMMTheory):
+            if isinstance(self.theory.qm_theory, ash.ORCATheory):
+                self.ORCAused = True
+
     def Compute(self,path, list_to_compute=None):
         if list_to_compute is None:
             return
@@ -410,6 +432,43 @@ class KnarrCalculator:
                 image_coords_1d = path.GetCoords()[image_number * path.ndimIm : (image_number + 1) * path.ndimIm]
                 image_coords=np.reshape(image_coords_1d, (numatoms, 3))
 
+                #Reading initial set of orbitals if requested
+                if self.iterations == -1 or self.iterations == 0:
+                    if self.mofilesdir != None:
+                        if self.ORCAused == True:
+                            imagefile_name="current_image"+str(image_number)+".gbw" #The imagefile to look for
+                            path_to_imagefile=self.mofilesdir+"/"+imagefile_name #Full path to image file
+                            if self.printlevel >= 1:
+                                print(f"mofilesdir option active for iteration {self.iterations}. Looking inside {self.mofilesdir} for imagefile: {imagefile_name}")
+                            if os.path.exists(path_to_imagefile):
+                                if self.printlevel >= 1:
+                                    print(f"File {path_to_imagefile} DOES exist")
+                                shutil.copyfile(path_to_imagefile,"./"+imagefile_name)
+                            else:
+                                if self.printlevel >= 1:
+                                    print(f"File {path_to_imagefile} does NOT exist. Continuing.")
+                
+                #Handling GBW files for ORCATheory
+                if self.ORCAused == True:
+                    if self.printlevel >= 1:
+                        print("ORCATheory is being used")
+                    current_image_file="current_image"+str(image_number)+".gbw"
+                    if os.path.exists(current_image_file):
+                        if self.printlevel >= 1:
+                            print(f"File: {current_image_file} exists.")
+                            print(f"Copying {current_image_file} to orca.gbw to be used.")
+                        shutil.copyfile(current_image_file,"orca.gbw")
+                    else:
+                        if self.printlevel >= 1:
+                            print(f"current_image_file {current_image_file} DOES NOT exist")
+                        if os.path.exists("orca.gbw"):
+                            if self.printlevel >= 1:
+                                print("A file orca.gbw file does exist. Will use.")
+                        else:
+                            if self.printlevel >= 1:
+                                print("A file orca.gbw file DOES NOT exist. Will use ORCA/ORCATheory settings.")
+
+
                 if self.ActiveRegion == True:
                     currcoords=image_coords
                     # Defining full_coords as original coords temporarily
@@ -434,7 +493,13 @@ class KnarrCalculator:
                     #EnGrad calculation on full system
                     En_image, Grad_image_full = self.theory.run(current_coords=full_current_image_coords, charge=self.charge, mult=self.mult,
                                                                 elems=self.full_fragment_reactant.elems, Grad=True)
-                    print("Energy of image {} is : {}".format(image_number,En_image))
+
+                    if self.ORCAused == True:
+                        if self.printlevel >= 1:
+                            print(f"ORCA run done. Copying orca.gbw to {current_image_file} for next time")
+                        shutil.copyfile("orca.gbw",current_image_file)
+                    if self.printlevel >= 2:
+                        print("Energy of image {} is : {}".format(image_number,En_image))
                     #Trim Full gradient down to only act-atoms gradient
                     Grad_image = np.array([Grad_image_full[i] for i in self.actatoms])
 
@@ -442,7 +507,14 @@ class KnarrCalculator:
                     self.energies_dict[image_number] = En_image
 
                 else:
+                    
                     En_image, Grad_image = self.theory.run(current_coords=image_coords, elems=self.fragment1.elems, Grad=True, charge=self.charge, mult=self.mult,)
+                    
+                    if self.ORCAused == True:
+                        if self.printlevel >= 1:
+                            print(f"ORCA run done. Copying orca.gbw to {current_image_file} for next time")
+                        shutil.copyfile("orca.gbw",current_image_file)
+                    
                     #Keeping track of energies for each image in a dict
                     self.energies_dict[image_number] = En_image
 
@@ -476,8 +548,11 @@ class KnarrCalculator:
                 all_image_fragments.append(frag)
 
             #Launching multiple ASH E+Grad calculations in parallel
+            #TODO: mofilesdir behaviour has not been checked here
             en_dict,gradient_dict = ash.Singlepoint_parallel(fragments=all_image_fragments, theories=[self.theory], numcores=self.numcores, 
                 mofilesdir=None, allow_theory_parallelization=True, Grad=True, printlevel=self.printlevel)
+
+
 
             #Keeping track of energies for each image in a dict
             for i in en_dict.keys():

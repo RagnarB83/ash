@@ -202,9 +202,6 @@ def Singlepoint_parallel(fragments=None, fragmentfiles=None, theories=None, numc
         #event.set()
 
 
-
-
-
     #NOTE: Python 3.8 and higher use spawn in MacOS. Leads to ash import problems
     #NOTE: Unix/Linux uses fork which seems better behaved
 
@@ -313,9 +310,7 @@ def Singlepoint_parallel(fragments=None, fragmentfiles=None, theories=None, numc
             if r.ready() == True:
                 energy_dict[r.get()[0]] = r.get()[1]
         return energy_dict
-    #Dict comprehension to get results from list of Pool-ApplyResult objects
-    #energy_dict = {result.get()[0]: result.get()[1] for result in results}
-    #print("energy_dict:", energy_dict)
+
 
 
 #Functions to run each displacement in parallel NumFreq run.

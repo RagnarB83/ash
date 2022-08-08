@@ -18,7 +18,8 @@ import ash.settings_ash
 #ORCA Theory object.
 class ORCATheory:
     def __init__(self, orcadir=None, orcasimpleinput='', printlevel=2, extrabasisatoms=None, extrabasis=None, TDDFT=False, TDDFTroots=5, FollowRoot=1,
-                 orcablocks='', extraline='', first_iteration_input=None, brokensym=None, HSmult=None, atomstoflip=None, numcores=1, nprocs=None, label=None, moreadfile=None, 
+                 orcablocks='', extraline='', first_iteration_input=None, brokensym=None, HSmult=None, atomstoflip=None, numcores=1, nprocs=None, label=None, 
+                 moreadfile=None, moreadfile_always=False,
                  autostart=True, propertyblock=None, keep_each_run_output=False, print_population_analysis=False, filename="orca", check_for_errors=True, check_for_warnings=True,
                  fragment_indices=None, xdm=False, xdm_a1=None, xdm_a2=None, xdm_func=None):
         print_line_with_mainheader("ORCATheory initialization")
@@ -65,6 +66,7 @@ class ORCATheory:
 
         #MOREAD-file
         self.moreadfile=moreadfile
+        self.moreadfile_always=moreadfile_always
         #Autostart
         self.autostart=autostart
 
@@ -419,6 +421,16 @@ class ORCATheory:
             if self.printlevel >= 2:
                 print("ORCA Flipspin calculation done. Now turning off brokensym in ORCA object for possible future calculations")
             self.brokensym=False
+
+        #Now that we have possibly run a ORCA job with moreadfile we now turn the moreadfile option off as we probably want to use the 
+        if self.moreadfile != None:
+            print("First ORCATheory calculation finished.")
+            #Now either keeping moreadfile or removing it. Default: removing
+            if self.moreadfile_always == False:
+                print("Now turning moreadfile option off.")
+                self.moreadfile=None
+
+
 
         #Check if finished. Grab energy and gradient
         outfile=self.filename+'.out'
