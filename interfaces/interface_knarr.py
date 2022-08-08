@@ -564,7 +564,7 @@ class KnarrCalculator:
                                 if self.printlevel >= 1:
                                     print(f"File {path_to_imagefile} DOES exist")
                                     print(f"Copying file {path_to_imagefile} to dir {workerdir} as orca.gbw")
-                                shutil.copyfile(path_to_imagefile,workerdir+"/+"orca.gbw") #Copying to Pooljob_image_X as orca.gbw
+                                shutil.copyfile(path_to_imagefile,workerdir+"/"+"orca.gbw") #Copying to Pooljob_image_X as orca.gbw
                             else:
                                 if self.printlevel >= 1:
                                     print(f"File {path_to_imagefile} does NOT exist. Continuing.")
