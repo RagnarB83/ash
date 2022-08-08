@@ -553,7 +553,10 @@ class KnarrCalculator:
                     workerdir='Pooljob_'+"image_"+str(image_number) #Same name of dir that Singlepoint_parallel expects
                     if self.printlevel >= 1:
                         print(f"Creating worker directory: {workerdir}")
-                    os.mkdir(workerdir)
+                    try:
+                        os.mkdir(workerdir)
+                    except:
+                        pass
                     if self.mofilesdir != None:
                         if self.ORCAused == True:
                             imagefile_name="current_image"+str(image_number)+".gbw" #The imagefile to look for
