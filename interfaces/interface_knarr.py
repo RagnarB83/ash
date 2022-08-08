@@ -639,8 +639,7 @@ class KnarrCalculator:
 
         #Write out full MEP path in each NEB iteration.
         if self.ActiveRegion is True:
-            #if len(list_to_compute) > 2:
-            if self.iterations > 0:
+            if self.iterations >= 0:
                 self.write_Full_MEP_Path(path, list_to_compute, E)
         
         #END OF COMPUTE HERE
