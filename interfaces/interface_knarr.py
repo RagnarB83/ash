@@ -1,5 +1,5 @@
 #Non-intrusive interface to Knarr
-#Assumes that Knarr directory exists inside ASH (for now at least)
+#Assumes that Knarr directory exists inside ASH
 import numpy as np
 import sys
 import os
@@ -64,6 +64,253 @@ optimizer = {"OPTIM_METHOD": "LBFGS", "MAX_ITER": 1000, "TOL_MAX_FORCE": 0.01,
              "LBFGS_DAMP": 1.0,
              "FD_STEP": 0.001,
              "LINESEARCH": None}
+
+
+
+#ASH NEB function. Calls Knarr
+def NEB(reactant=None, product=None, theory=None, images=7, interpolation="IDPP", CI=True, free_end=False, restart_file=None,
+        conv_type="CIONLY", tol_scale=10, tol_max_fci=0.026, tol_rms_fci=0.013, tol_max_f=0.026, tol_rms_f=0.013,
+        tol_turn_on_ci=1.0, ActiveRegion=False, actatoms=None, runmode='serial', numcores=1, printlevel=0,
+        idpp_maxiter=200, charge=None, mult=None):
+
+    print_line_with_mainheader("Nudged elastic band calculation (via interface to KNARR)")
+    module_init_time=time.time()
+
+    if reactant==None or product==None or theory==None:
+        print(BC.FAIL,"You need to provide reactant and product fragment and a theory to NEB", BC.END)
+        ashexit()
+
+    if runmode == 'serial' and numcores > 1:
+        print(BC.FAIL,"Runmode is 'serial' but numcores > 1. Set runmode to 'parallel' to have NEB parallelize over images", BC.END)
+        ashexit()
+    elif runmode == 'parallel' and numcores == 1:
+        print(BC.FAIL,"Runmode is 'parallel' but numcores == 1. You must provide more than 1 core to parallelize over images", BC.END)
+        print(BC.FAIL,"It is recommended to provide as many cores as there are images", BC.END)
+        ashexit()
+    elif runmode == 'parallel' and numcores > 1:
+        print(BC.WARNING,f"Runmode is 'parallel' and numcores == {numcores}.")
+        print(BC.WARNING,f"Will launch Energy+gradient calculations using Singlepoint_parallel using {numcores} cores.", BC.END)
+        if theory.numcores > 1:
+            print(BC.WARNING,f"Warning: Theory parallelization is active and will utilize: {theory.numcores}", BC.END)
+            print(BC.WARNING,f"The NEB images will run in parallel by Python multiprocessing (using {numcores} cores) while each image E+Grad calculation is parallelized as well ({theory.numcoers} per image)", BC.END)
+            print(BC.WARNING,f"Make sure that you have {numcores} x {theory.numcores} = {numcores*theory.numcores} CPU cores available to this ASH job on the computing node", BC.END)
+    elif runmode == 'serial' and numcores == 1:
+        print (BC.WARNING,"NEB runmode is serial, i.e. running one image after another.", BC.END)
+        if theory.numcores > 1:
+            print(BC.WARNING,f"Theory parallelization is active and will utilize: {theory.numcores} CPU cores per image.",BC.END)
+        else:
+            print(BC.WARNING,"Warning: Theory parallelization is not active either (provide numcores keyword to Theory object).",BC.END)
+    else:
+        print("Unknown runmode, continuing.")
+    print()
+
+    #Check charge/mult
+    charge,mult = check_charge_mult(charge, mult, theory.theorytype, reactant, "NEB", theory=theory)
+    numatoms = reactant.numatoms
+
+    #Number of total images that Knarr wants. images input referring to intermediate images is now consistent with ORCA
+    total_num_images=images+2
+    
+
+
+    #Set Knarr settings in dictionary
+    path_parameters["INTERPOLATION"]=interpolation
+    path_parameters["IDPP_MAX_ITER"] = idpp_maxiter
+    neb_settings["CLIMBING"]=CI
+    neb_settings["FREE_END"] = free_end
+    neb_settings["CONV_TYPE"] = conv_type
+    neb_settings["TOL_SCALE"] = tol_scale
+    neb_settings["TOL_MAX_FCI"] = tol_max_fci
+    neb_settings["TOL_RMS_FCI"] = tol_rms_fci
+    neb_settings["TOL_MAX_F"] = tol_max_f
+    neb_settings["TOL_RMS_F"] = tol_rms_f
+    neb_settings["TOL_TURN_ON_CI"] = tol_turn_on_ci
+
+    #Setting number of images of Knarr
+    path_parameters["NIMAGES"]=total_num_images
+
+    if ActiveRegion is True:
+        print("Active Region feature active. Setting RMSD-alignment in NEB to false (required).")
+        neb_settings["MIN_RMSD"] = False
+
+    print()
+    print_line_with_subheader2("Active NEB settings:")
+    print()
+
+    #images provided => Meaning intermediate images
+    print("Number of images chosen:", images)
+    print("Free_end option:", free_end)
+    if free_end == True:
+        print("Endpoints have been chosen to be free. Reactant and product geometries will thus also be active during NEB optimization.")
+        print(f"There are {total_num_images} active images including endpoints.")
+        print("Warning: Check that you have chosen an appropriate number of CPU cores for runmode=parallel")
+    else:
+        print("Endpoints are frozen. Reactant and product will only be calculated once in the beginning and then frozen.")
+        print(f"{images} intermediate images will active and calculated during each primary NEB iteration (first iteration excluded)")
+        print(f"There are {total_num_images} images including the frozen endpoints.")
+
+    print()
+    print("Interpolation path parameters:\n", path_parameters)
+    print()
+    print("NEB parameters:\n", neb_settings)
+    print()
+    print("Optimizer parameters:\n", optimizer)
+    print()
+
+    #Zero-valued constraints list. We probably won't use constraints for now
+    constr = np.zeros(shape=(numatoms * 3, 1))
+
+    #ActiveRegion feature
+    if ActiveRegion==True:
+        print("Active Region option Active. Passing only active-region coordinates to Knarr.")
+        if actatoms is None:
+            print("add actatoms argument to NEB for ActiveRegion True")
+            ashexit()
+        R_actcoords, R_actelems = reactant.get_coords_for_atoms(actatoms)
+        P_actcoords, P_actelems = product.get_coords_for_atoms(actatoms)
+        new_reactant = ash.Fragment(coords=R_actcoords, elems=R_actelems)
+        new_product = ash.Fragment(coords=P_actcoords, elems=P_actelems)
+
+        #Create Knarr calculator from ASH theory.
+        calculator = KnarrCalculator(theory, fragment1=new_reactant, fragment2=new_product, runmode=runmode, numcores=numcores,
+                                     ActiveRegion=True, actatoms=actatoms, full_fragment_reactant=reactant,
+                                     full_fragment_product=product,numimages=total_num_images, charge=charge, mult=mult,
+                                     FreeEnd=free_end, printlevel=printlevel)
+
+        # Symbols list for Knarr
+        Knarr_symbols = [y for y in new_reactant.elems for i in range(3)]
+
+        # New numatoms and constraints for active-region system
+        numatoms = new_reactant.numatoms
+        constr = np.zeros(shape=(numatoms * 3, 1))
+
+        # Create KNARR Atom objects. Used in path generation
+        react = KNARRatom.atom.Atom(coords=coords_to_Knarr(new_reactant.coords), symbols=Knarr_symbols, ndim=numatoms * 3,
+                                    ndof=numatoms * 3, constraints=constr, pbc=False)
+        prod = KNARRatom.atom.Atom(coords=coords_to_Knarr(new_product.coords), symbols=Knarr_symbols, ndim=numatoms * 3,
+                                   ndof=numatoms * 3, constraints=constr, pbc=False)
+
+
+    else:
+        #Create Knarr calculator from ASH theory
+        calculator = KnarrCalculator(theory, fragment1=reactant, fragment2=product, numcores=numcores,
+                                     ActiveRegion=False, runmode=runmode,numimages=total_num_images, charge=charge, mult=mult,
+                                     FreeEnd=free_end, printlevel=printlevel)
+
+        # Symbols list for Knarr
+        Knarr_symbols = [y for y in reactant.elems for i in range(3)]
+
+        # Create KNARR Atom objects. Used in path generation
+        react = KNARRatom.atom.Atom(coords=coords_to_Knarr(reactant.coords), symbols=Knarr_symbols, ndim=numatoms * 3,
+                                    ndof=numatoms * 3, constraints=constr, pbc=False)
+        prod = KNARRatom.atom.Atom(coords=coords_to_Knarr(product.coords), symbols=Knarr_symbols, ndim=numatoms * 3,
+                                   ndof=numatoms * 3, constraints=constr, pbc=False)
+
+
+    print("\nLaunching Knarr")
+    print()
+    PrintDivider()
+    PrintDivider()
+    PrintHeader()
+    PrintCredit()
+    PrintDivider()
+    PrintDivider()
+
+    if restart_file == None:
+        print("Creating interpolated path.")
+        # Generate path via Knarr_pathgenerator. ActiveRegion used to prevent RMSD alignment if doing actregion QM/MM etc.
+        Knarr_pathgenerator(neb_settings, path_parameters, react, prod, ActiveRegion)
+        print("Saving initial path as : initial_guess_path.xyz")
+        shutil.copyfile("knarr_path.xyz","initial_guess_path.xyz")
+        print("\nReading initial path")
+        #Reading initial path from XYZ file. Hardcoded as knarr_path.xyz
+        rp, ndim, nim, symb = ReadTraj("knarr_path.xyz")
+        path = InitializePathObject(nim, react)
+        path.SetCoords(rp)
+    else:
+        #Reading user-defined path from XYZ file. Hardcoded as knarr_path.xyz
+        rp, ndim, nim, symb = ReadTraj(restart_file)
+        path = InitializePathObject(nim, react)
+        path.SetCoords(rp)
+    
+    print("Starting NEB")
+    #Setting printlevel of theory during E+Grad steps  1=very-little, 2=more, 3=lots, 4=verymuch
+    print("NEB printlevel is:", printlevel)
+    theory.printlevel=printlevel
+    print("Theory print level will now be set to:", theory.printlevel)
+    if theory.__class__.__name__ == "QMMMTheory":
+        theory.qm_theory.printlevel = printlevel
+        theory.mm_theory.printlevel = printlevel
+
+    #Now starting NEB from path object, using neb_settings and optimizer settings
+    print("neb_settings:", neb_settings)
+    print("optimizer:", optimizer)
+
+    #############################
+    # CALLING NEB
+    #############################
+    DoNEB(path, calculator, neb_settings, optimizer)
+
+    print('KNARR successfully terminated')
+    print()
+
+    #Getting saddlepoint-structure and energy if CI-NEB
+    if neb_settings["CLIMBING"] is True:
+        if ActiveRegion == True:
+            print("Getting saddlepoint geometry and creating new fragment for Full system")
+            print("Has not been confirmed to work...")
+            #Finding CI coords and energy
+            CI = np.argmax(path.GetEnergy())
+            saddle_coords_1d=path.GetCoords()[CI * path.GetNDimIm():(CI + 1) * path.GetNDimIm()]
+            saddle_coords=np.reshape(saddle_coords_1d, (numatoms, 3))
+            saddle_energy = path.GetEnergy()[CI][0]*23.060541945329334
+
+            #Combinining frozen region with optimized active-region for saddle-point
+            # Defining full_coords as original coords temporarily
+            full_saddleimage_coords = copy.deepcopy(reactant.coords)
+            # Replacing act-region coordinates with coords from currcoords
+            for i, c in enumerate(saddle_coords):
+                if i in actatoms:
+                    # Silly. Pop-ing first coord from currcoords until done
+                    curr_c, saddle_coords = saddle_coords[0], saddle_coords[1:]
+                    full_saddleimage_coords[i] = curr_c
+
+            #Creating new ASH fragment for Full Saddle-point geometry
+            Saddlepoint_fragment = ash.Fragment(coords=full_saddleimage_coords, elems=reactant.elems, connectivity=reactant.connectivity, charge=charge, mult=mult)
+            Saddlepoint_fragment.set_energy(saddle_energy)
+            #Adding atomtypes and charges if present.
+            Saddlepoint_fragment.update_atomcharges(reactant.atomcharges)
+            Saddlepoint_fragment.update_atomtypes(reactant.atomtypes)
+
+            #Writing out Saddlepoint fragment file and XYZ file
+            Saddlepoint_fragment.print_system(filename='Saddlepoint-optimized.ygg')
+            Saddlepoint_fragment.write_xyzfile(xyzfilename='Saddlepoint-optimized.xyz')
+
+        else:
+            #Finding CI coords and energy
+            CI = np.argmax(path.GetEnergy())
+            saddle_coords_1d=path.GetCoords()[CI * path.GetNDimIm():(CI + 1) * path.GetNDimIm()]
+            saddle_coords=np.reshape(saddle_coords_1d, (numatoms, 3))
+            saddle_energy = path.GetEnergy()[CI][0]/23.060541945329334
+            print("Creating new ASH fragment for saddlepoint geometry")
+            #Creating new ASH fragment
+            Saddlepoint_fragment = ash.Fragment(coords=saddle_coords, elems=reactant.elems, connectivity=reactant.connectivity, charge=charge, mult=mult)
+            Saddlepoint_fragment.set_energy(saddle_energy)
+            #Writing out Saddlepoint fragment file and XYZ file
+            Saddlepoint_fragment.print_system(filename='Saddlepoint-optimized.ygg')
+            Saddlepoint_fragment.write_xyzfile(xyzfilename='Saddlepoint-optimized.xyz')
+        print(f"Saddlepoint energy: {saddle_energy} Eh")
+        print()
+
+    print("\nThe Knarr-NEB code is based on work described in the following article. Please consider citing it:")
+    print("Nudged elastic band method for molecular reactions using energy-weighted springs combined with eigenvector following\n \
+V. Ásgeirsson, B. Birgisson, R. Bjornsson, U. Becker, F. Neese, C: Riplinger,  H. Jónsson, J. Chem. Theory Comput. 2021,17, 4929–4945.\
+DOI: 10.1021/acs.jctc.1c00462")
+
+    print_time_rel(module_init_time, modulename='Knarr-NEB run', moduleindex=1)
+
+    if neb_settings["CLIMBING"] is True:
+        return Saddlepoint_fragment
 
 #Path generator
 def Knarr_pathgenerator(nebsettings,path_parameters,react,prod,ActiveRegion):
@@ -298,261 +545,3 @@ class KnarrCalculator:
                     trajfile.write("Image {} Energy: {} \n".format(self.numimages-1,self.energies_dict[self.numimages-1]))
                     for el, corp in zip(self.full_fragment_product.elems, self.full_fragment_product.coords):
                         trajfile.write(el + "  " + str(corp[0]) + " " + str(corp[1]) + " " + str(corp[2]) + "\n")
-
-
-#ASH NEB function. Calls Knarr
-def NEB(reactant=None, product=None, theory=None, images=7, interpolation=None, CI=None, free_end=False, restart_file=None,
-        conv_type=None, tol_scale=None, tol_max_fci=None, tol_rms_fci=None, tol_max_f=None, tol_rms_f=None,
-        tol_turn_on_ci=None, ActiveRegion=False, actatoms=None, runmode='serial', numcores=1, printlevel=0,
-        idpp_maxiter=None, charge=None, mult=None):
-
-    print_line_with_mainheader("Nudged elastic band calculation (via interface to KNARR)")
-    module_init_time=time.time()
-
-    if reactant==None or product==None or theory==None:
-        print(BC.FAIL,"You need to provide reactant and product fragment and a theory to NEB", BC.END)
-        ashexit()
-
-    if runmode == 'serial' and numcores > 1:
-        print(BC.FAIL,"Runmode is 'serial' but numcores > 1. Set runmode to 'parallel' to have NEB parallelize over images", BC.END)
-        ashexit()
-    elif runmode == 'parallel' and numcores == 1:
-        print(BC.FAIL,"Runmode is 'parallel' but numcores == 1. You must provide more than 1 core to parallelize over images", BC.END)
-        print(BC.FAIL,"It is recommended to provide as many cores as there are images", BC.END)
-        ashexit()
-    elif runmode == 'parallel' and numcores > 1:
-        print(BC.WARNING,f"Runmode is 'parallel' and numcores == {numcores}.")
-        print(BC.WARNING,f"Will launch Energy+gradient calculations using Singlepoint_parallel using {numcores} cores.", BC.END)
-        if theory.numcores > 1:
-            print(BC.WARNING,f"Warning: Theory parallelization is active and will utilize: {theory.numcores}", BC.END)
-            print(BC.WARNING,f"The NEB images will run in parallel by Python multiprocessing (using {numcores} cores) while each image E+Grad calculation is parallelized as well ({theory.numcoers} per image)", BC.END)
-            print(BC.WARNING,f"Make sure that you have {numcores} x {theory.numcores} = {numcores*theory.numcores} CPU cores available to this ASH job on the computing node", BC.END)
-    elif runmode == 'serial' and numcores == 1:
-        print (BC.WARNING,"NEB runmode is serial, i.e. running one image after another.", BC.END)
-        if theory.numcores > 1:
-            print(BC.WARNING,f"Theory parallelization is active and will utilize: {theory.numcores} CPU cores per image.",BC.END)
-        else:
-            print(BC.WARNING,"Warning: Theory parallelization is not active either (provide numcores keyword to Theory object).",BC.END)
-    else:
-        print("Unknown runmode, continuing.")
-    print()
-
-    #Check charge/mult
-    charge,mult = check_charge_mult(charge, mult, theory.theorytype, reactant, "NEB", theory=theory)
-    numatoms = reactant.numatoms
-
-    #Number of total images that Knarr wants. images input referring to intermediate images is now consistent with ORCA
-    total_num_images=images+2
-    
-    #Setting number of images of Knarr
-    path_parameters["NIMAGES"]=total_num_images
-
-    #Override some default settings if requested
-
-    if interpolation is not None:
-        path_parameters["INTERPOLATION"]=interpolation
-    if idpp_maxiter is not None:
-        path_parameters["IDPP_MAX_ITER"] = idpp_maxiter
-    if CI is not None:
-        if CI is False:
-            neb_settings["CLIMBING"]=False
-    if free_end is True:
-        neb_settings["FREE_END"] = True
-    if conv_type is not None:
-        neb_settings["CONV_TYPE"] = conv_type
-    if tol_scale is not None:
-        neb_settings["TOL_SCALE"] = tol_scale
-    if tol_max_fci is not None:
-        neb_settings["TOL_MAX_FCI"] = tol_max_fci
-    if tol_rms_fci is not None:
-        neb_settings["TOL_RMS_FCI"] = tol_rms_fci
-    if tol_max_f is not None:
-        neb_settings["TOL_MAX_F"] = tol_max_f
-    if tol_rms_f is not None:
-        neb_settings["TOL_RMS_F"] = tol_rms_f
-    if tol_turn_on_ci is not None:
-        neb_settings["TOL_TURN_ON_CI"] = tol_turn_on_ci
-
-
-    if ActiveRegion is True:
-        print("Active Region feature active. Setting RMSD-alignment in NEB to false (required).")
-        neb_settings["MIN_RMSD"] = False
-
-    print()
-    print_line_with_subheader2("Active NEB settings:")
-    print()
-
-    #images provided => Meaning intermediate images
-    print("Number of images chosen:", images)
-    print("Free_end option:", free_end)
-    if free_end == True:
-        print("Endpoints are free. Reactant and product geometries will also be active during NEB optimization.")
-        print(f"There are {total_num_images} active images including endpoints.")
-        print("Warning: Check that you have chosen an appropriate number of CPU cores if runmode=parallel")
-    else:
-        print("Endpoints are frozen. Reactant and product will only be calculated once in the beginning and then frozen.")
-        print(f"{images} intermediate images will active and calculated during each primary NEB iteration (first iteration excluded)")
-        print(f"There are {total_num_images} images including the frozen endpoints.")
-
-    print()
-    print("Interpolation path parameters:\n", path_parameters)
-    print()
-    print("NEB parameters:\n", neb_settings)
-    print()
-    print("Optimizer parameters:\n", optimizer)
-    print()
-
-    #Zero-valued constraints list. We probably won't use constraints for now
-    constr = np.zeros(shape=(numatoms * 3, 1))
-
-    #ActiveRegion feature
-    if ActiveRegion==True:
-        print("Active Region option Active. Passing only active-region coordinates to Knarr.")
-        if actatoms is None:
-            print("add actatoms argument to NEB for ActiveRegion True")
-            ashexit()
-        R_actcoords, R_actelems = reactant.get_coords_for_atoms(actatoms)
-        P_actcoords, P_actelems = product.get_coords_for_atoms(actatoms)
-        new_reactant = ash.Fragment(coords=R_actcoords, elems=R_actelems)
-        new_product = ash.Fragment(coords=P_actcoords, elems=P_actelems)
-
-        #Create Knarr calculator from ASH theory.
-        calculator = KnarrCalculator(theory, fragment1=new_reactant, fragment2=new_product, runmode=runmode, numcores=numcores,
-                                     ActiveRegion=True, actatoms=actatoms, full_fragment_reactant=reactant,
-                                     full_fragment_product=product,numimages=total_num_images, charge=charge, mult=mult,
-                                     FreeEnd=free_end, printlevel=printlevel)
-
-        # Symbols list for Knarr
-        Knarr_symbols = [y for y in new_reactant.elems for i in range(3)]
-
-        # New numatoms and constraints for active-region system
-        numatoms = new_reactant.numatoms
-        constr = np.zeros(shape=(numatoms * 3, 1))
-
-        # Create KNARR Atom objects. Used in path generation
-        react = KNARRatom.atom.Atom(coords=coords_to_Knarr(new_reactant.coords), symbols=Knarr_symbols, ndim=numatoms * 3,
-                                    ndof=numatoms * 3, constraints=constr, pbc=False)
-        prod = KNARRatom.atom.Atom(coords=coords_to_Knarr(new_product.coords), symbols=Knarr_symbols, ndim=numatoms * 3,
-                                   ndof=numatoms * 3, constraints=constr, pbc=False)
-
-
-    else:
-        #Create Knarr calculator from ASH theory
-        calculator = KnarrCalculator(theory, fragment1=reactant, fragment2=product, numcores=numcores,
-                                     ActiveRegion=False, runmode=runmode,numimages=total_num_images, charge=charge, mult=mult,
-                                     FreeEnd=free_end, printlevel=printlevel)
-
-        # Symbols list for Knarr
-        Knarr_symbols = [y for y in reactant.elems for i in range(3)]
-
-        # Create KNARR Atom objects. Used in path generation
-        react = KNARRatom.atom.Atom(coords=coords_to_Knarr(reactant.coords), symbols=Knarr_symbols, ndim=numatoms * 3,
-                                    ndof=numatoms * 3, constraints=constr, pbc=False)
-        prod = KNARRatom.atom.Atom(coords=coords_to_Knarr(product.coords), symbols=Knarr_symbols, ndim=numatoms * 3,
-                                   ndof=numatoms * 3, constraints=constr, pbc=False)
-
-
-    print("\nLaunching Knarr")
-    print()
-    PrintDivider()
-    PrintDivider()
-    PrintHeader()
-    PrintCredit()
-    PrintDivider()
-    PrintDivider()
-
-    if restart_file == None:
-        print("Creating interpolated path.")
-        # Generate path via Knarr_pathgenerator. ActiveRegion used to prevent RMSD alignment if doing actregion QM/MM etc.
-        Knarr_pathgenerator(neb_settings, path_parameters, react, prod, ActiveRegion)
-        print("Saving initial path as : initial_guess_path.xyz")
-        shutil.copyfile("knarr_path.xyz","initial_guess_path.xyz")
-        print("\nReading initial path")
-        #Reading initial path from XYZ file. Hardcoded as knarr_path.xyz
-        rp, ndim, nim, symb = ReadTraj("knarr_path.xyz")
-        path = InitializePathObject(nim, react)
-        path.SetCoords(rp)
-    else:
-        #Reading user-defined path from XYZ file. Hardcoded as knarr_path.xyz
-        rp, ndim, nim, symb = ReadTraj(restart_file)
-        path = InitializePathObject(nim, react)
-        path.SetCoords(rp)
-    
-    print("Starting NEB")
-    #Setting printlevel of theory during E+Grad steps  1=very-little, 2=more, 3=lots, 4=verymuch
-    print("NEB printlevel is:", printlevel)
-    theory.printlevel=printlevel
-    print("Theory print level will now be set to:", theory.printlevel)
-    if theory.__class__.__name__ == "QMMMTheory":
-        theory.qm_theory.printlevel = printlevel
-        theory.mm_theory.printlevel = printlevel
-
-    #Now starting NEB from path object, using neb_settings and optimizer settings
-    print("neb_settings:", neb_settings)
-    print("optimizer:", optimizer)
-
-    #############################
-    # CALLING NEB
-    #############################
-    DoNEB(path, calculator, neb_settings, optimizer)
-
-    print('KNARR successfully terminated')
-    print()
-
-    #Getting saddlepoint-structure and energy if CI-NEB
-    if neb_settings["CLIMBING"] is True:
-        if ActiveRegion == True:
-            print("Getting saddlepoint geometry and creating new fragment for Full system")
-            print("Has not been confirmed to work...")
-            #Finding CI coords and energy
-            CI = np.argmax(path.GetEnergy())
-            saddle_coords_1d=path.GetCoords()[CI * path.GetNDimIm():(CI + 1) * path.GetNDimIm()]
-            saddle_coords=np.reshape(saddle_coords_1d, (numatoms, 3))
-            saddle_energy = path.GetEnergy()[CI][0]*23.060541945329334
-
-            #Combinining frozen region with optimized active-region for saddle-point
-            # Defining full_coords as original coords temporarily
-            full_saddleimage_coords = copy.deepcopy(reactant.coords)
-            # Replacing act-region coordinates with coords from currcoords
-            for i, c in enumerate(saddle_coords):
-                if i in actatoms:
-                    # Silly. Pop-ing first coord from currcoords until done
-                    curr_c, saddle_coords = saddle_coords[0], saddle_coords[1:]
-                    full_saddleimage_coords[i] = curr_c
-
-            #Creating new ASH fragment for Full Saddle-point geometry
-            Saddlepoint_fragment = ash.Fragment(coords=full_saddleimage_coords, elems=reactant.elems, connectivity=reactant.connectivity, charge=charge, mult=mult)
-            Saddlepoint_fragment.set_energy(saddle_energy)
-            #Adding atomtypes and charges if present.
-            Saddlepoint_fragment.update_atomcharges(reactant.atomcharges)
-            Saddlepoint_fragment.update_atomtypes(reactant.atomtypes)
-
-            #Writing out Saddlepoint fragment file and XYZ file
-            Saddlepoint_fragment.print_system(filename='Saddlepoint-optimized.ygg')
-            Saddlepoint_fragment.write_xyzfile(xyzfilename='Saddlepoint-optimized.xyz')
-
-        else:
-            #Finding CI coords and energy
-            CI = np.argmax(path.GetEnergy())
-            saddle_coords_1d=path.GetCoords()[CI * path.GetNDimIm():(CI + 1) * path.GetNDimIm()]
-            saddle_coords=np.reshape(saddle_coords_1d, (numatoms, 3))
-            saddle_energy = path.GetEnergy()[CI][0]/23.060541945329334
-            print("Creating new ASH fragment for saddlepoint geometry")
-            #Creating new ASH fragment
-            Saddlepoint_fragment = ash.Fragment(coords=saddle_coords, elems=reactant.elems, connectivity=reactant.connectivity, charge=charge, mult=mult)
-            Saddlepoint_fragment.set_energy(saddle_energy)
-            #Writing out Saddlepoint fragment file and XYZ file
-            Saddlepoint_fragment.print_system(filename='Saddlepoint-optimized.ygg')
-            Saddlepoint_fragment.write_xyzfile(xyzfilename='Saddlepoint-optimized.xyz')
-        print(f"Saddlepoint energy: {saddle_energy} Eh")
-        print()
-
-    print("\nThe Knarr-NEB code is based on work described in the following article. Please consider citing it:")
-    print("Nudged elastic band method for molecular reactions using energy-weighted springs combined with eigenvector following\n \
-V. Ásgeirsson, B. Birgisson, R. Bjornsson, U. Becker, F. Neese, C: Riplinger,  H. Jónsson, J. Chem. Theory Comput. 2021,17, 4929–4945.\
-DOI: 10.1021/acs.jctc.1c00462")
-
-    print_time_rel(module_init_time, modulename='Knarr-NEB run', moduleindex=1)
-
-    if neb_settings["CLIMBING"] is True:
-        return Saddlepoint_fragment

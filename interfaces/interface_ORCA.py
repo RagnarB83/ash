@@ -698,6 +698,7 @@ def checkORCAfinished(file):
                 iter=line.split()[-3]
             if 'TOTAL RUN TIME:' in line:
                 return True,iter
+    return False,None
 def checkORCAOptfinished(file):
     converged=False
     with open(file) as f:
