@@ -323,12 +323,14 @@ def displacement_QMrun(arglist):
     numcores = arglist[2]
     theory = arglist[3]
     label = arglist[4]
+    charge = arglist[5]
+    mult = arglist[6]
     dispdir=label.replace(' ','')
     os.mkdir(dispdir)
     os.chdir(dispdir)
     #Todo: Copy previous GBW file in here if ORCA, xtbrestart if xtb, etc.
     print("Running displacement: {}".format(label))
-    energy, gradient = theory.run(current_coords=geo, elems=elems, Grad=True, numcores=numcores)
+    energy, gradient = theory.run(current_coords=geo, elems=elems, Grad=True, numcores=numcores, charge=charge, mult=mult)
     print("Energy: ", energy)
     os.chdir('..')
     #Delete dir?
