@@ -170,7 +170,7 @@ def NEB(reactant=None, product=None, theory=None, images=8, CI=True, free_end=Fa
     if ActiveRegion==True:
         print("Active Region option Active. Passing only active-region coordinates to Knarr.")
         if actatoms is None:
-            print("add actatoms argument to NEB for ActiveRegion True")
+            print("You must include actatoms keyword (with list of atom indices) to NEB for ActiveRegion True")
             ashexit()
         R_actcoords, R_actelems = reactant.get_coords_for_atoms(actatoms)
         P_actcoords, P_actelems = product.get_coords_for_atoms(actatoms)
@@ -527,25 +527,16 @@ class KnarrCalculator:
                 #Convert ASH gradient to force and convert to ev/Ang instead of Eh/Bohr
                 force = -1 * np.reshape(Grad_image,(int(path.ndofIm),1)) * 51.42210665240553
                 F[image_number* path.ndimIm : (image_number + 1) * path.ndimIm] = force
+        #PARALLEL
         elif self.runmode=='parallel':
             print("Starting NEB calculations in parallel mode")
-            print("Warning: NEB in parallel mode is a work in progress")
             print("")
 
-
-            if self.ActiveRegion == True:
-                print("not ready")
-                exit()
-
-            #Creating ASH fragment for all images
-            all_image_fragments=[]
+            all_image_fragments=[] #List of ASH fragments that will be passed onto Singlepoint_parallel
+            
+            #Looping over images, creating fragments
             for image_number in list_to_compute:
                 counter += 1
-                #Getting 1D coords array from Knarr, converting to regular, crreating ASH fragment
-                image_coords_1d = path.GetCoords()[image_number * path.ndimIm : (image_number + 1) * path.ndimIm]
-                image_coords=np.reshape(image_coords_1d, (numatoms, 3))
-                frag=ash.Fragment(coords=image_coords, elems=self.fragment1.elems,charge=self.charge, mult=self.mult, label="image_"+str(image_number), printlevel=self.printlevel)
-                all_image_fragments.append(frag)
 
                 #Reading initial set of orbitals if requested, but only in teration -1 or 0 and copying to workerdir
                 if self.iterations == -1 or self.iterations == 0:
@@ -572,24 +563,61 @@ class KnarrCalculator:
                                 if self.printlevel >= 1:
                                     print(f"File {path_to_imagefile} does NOT exist. Continuing.")
 
-            #Launching multiple ASH E+Grad calculations in parallel
-            #TODO: mofilesdir behaviour has not been checked here
+
+                ################################################
+                #FRAGMENT HANDLING FOR ACTIVE-REGION AND FULL
+                ################################################
+                #Getting 1D coords array from Knarr, converting to regular, creating ASH fragment
+                image_coords_1d = path.GetCoords()[image_number * path.ndimIm : (image_number + 1) * path.ndimIm]
+                image_coords=np.reshape(image_coords_1d, (numatoms, 3))
+                if self.ActiveRegion == True:
+                    print("Warning: NEB-parallel with ActiveRegion is highly experimental")
+                    currcoords=image_coords
+                    # Defining full_coords as original coords temporarily
+                    #full_coords = self.full_fragment_reactant.coords
+                    #Creating deep copy of reactant coordinates as it will be modified
+                    full_coords = copy.deepcopy(self.full_fragment_reactant.coords)
+                    # Replacing act-region coordinates with coords from currcoords
+                    for i, c in enumerate(full_coords):
+                        if i in self.actatoms:
+                            # Silly. Pop-ing first coord from currcoords until done
+                            curr_c, currcoords = currcoords[0], currcoords[1:]
+                            full_coords[i] = curr_c
+                    full_current_image_coords = full_coords
+
+                    full_frag=ash.Fragment(coords=full_current_image_coords, elems=self.full_fragment_reactant.elems,charge=self.charge, mult=self.mult, label="image_"+str(image_number), printlevel=self.printlevel)
+                    all_image_fragments.append(full_frag)
+                else:
+                    #NO active region
+                    frag=ash.Fragment(coords=image_coords, elems=self.fragment1.elems,charge=self.charge, mult=self.mult, label="image_"+str(image_number), printlevel=self.printlevel)
+                    all_image_fragments.append(frag)
+
+            #Launching multiple ASH E+Grad calculations in parallel on list of ASH fragments: all_image_fragments
             en_dict,gradient_dict = ash.Singlepoint_parallel(fragments=all_image_fragments, theories=[self.theory], numcores=self.numcores, 
-                mofilesdir=None, allow_theory_parallelization=True, Grad=True, printlevel=self.printlevel)
-
-
+                allow_theory_parallelization=True, Grad=True, printlevel=self.printlevel)
 
             #Keeping track of energies for each image in a dict
             for i in en_dict.keys():
                 #i is image_X
                 im=int(i.replace("image_",""))
                 En_image=en_dict[i]
+                if self.printlevel >= 2:
+                    print("Energy of image {} is : {}".format(image_number,En_image))
+
                 #Keeping track of images in Eh
                 self.energies_dict[im] = En_image
                 #Knarr energy array for all images in eV
                 E[im]=En_image*27.211399
+
                 #Forces array for all images
-                Grad_image = gradient_dict[i]
+                #ActiveRegion: Trim Full gradient down to only act-atoms gradient
+                if self.ActiveRegion is True:
+                    Grad_image_full = gradient_dict[i]
+                    #Trimming gradient if active region
+                    Grad_image = np.array([Grad_image_full[i] for i in self.actatoms])
+                else:
+                    Grad_image = gradient_dict[i]
+
                 #Convert ASH gradient to force and convert to ev/Ang instead of Eh/Bohr
                 force = -1 * np.reshape(Grad_image,(int(path.ndofIm),1)) * 51.42210665240553
                 #print("im bla", im* path.ndimIm : (im + 1) * path.ndimIm)
@@ -614,7 +642,8 @@ class KnarrCalculator:
             #if len(list_to_compute) > 2:
             if self.iterations > 0:
                 self.write_Full_MEP_Path(path, list_to_compute, E)
-
+        
+        #END OF COMPUTE HERE
 
 
     def write_Full_MEP_Path(self, path, list_to_compute, E):
