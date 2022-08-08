@@ -314,7 +314,7 @@ def NumFreq(fragment=None, theory=None, charge=None, mult=None, npoint=2, displa
                     print("f")
                     # Todo: Copy previous GBW file in here if ORCA, xtbrestart if xtb, etc.
                     print("Running displacement: {}".format(label))
-                    energy, gradient = theory_shared.run(current_coords=coords, elems=elems, Grad=True, numcores=numcoresQM)
+                    energy, gradient = theory_shared.run(current_coords=coords, elems=elems, Grad=True, numcores=numcoresQM, charge=charge, mult=mult)
                     print("Energy: ", energy)
                     os.chdir('..')
                     # Delete dir?
