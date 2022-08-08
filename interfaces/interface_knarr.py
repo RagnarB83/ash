@@ -58,7 +58,7 @@ neb_settings = {"PATH": "neb.xyz",
               "LBFGS_REPARAM_ON_RESTART": False
               }
 
-optimizer = {"OPTIM_METHOD": "LBFGS", "MAX_ITER": 1000, "TOL_MAX_FORCE": 0.01,
+optimizer = {"OPTIM_METHOD": "LBFGS", "MAX_ITER": 200, "TOL_MAX_FORCE": 0.01,
              "TOL_RMS_FORCE": 0.005, "TIME_STEP": 0.01, "MAX_MOVE": 0.1, "RESTART_ON_SCALING": True,
              "LBFGS_MEMORY": 20,
              "LBFGS_DAMP": 1.0,
@@ -68,7 +68,7 @@ optimizer = {"OPTIM_METHOD": "LBFGS", "MAX_ITER": 1000, "TOL_MAX_FORCE": 0.01,
 
 
 #ASH NEB function. Calls Knarr
-def NEB(reactant=None, product=None, theory=None, images=8, CI=True, free_end=False, 
+def NEB(reactant=None, product=None, theory=None, images=8, CI=True, free_end=False, maxiter=100,
         conv_type="ALL", tol_scale=10, tol_max_fci=0.026, tol_rms_fci=0.013, tol_max_f=0.26, tol_rms_f=0.13,
         tol_turn_on_ci=1.0,  runmode='serial', numcores=1, 
         charge=None, mult=None,printlevel=0, ActiveRegion=False, actatoms=None,
@@ -94,7 +94,7 @@ def NEB(reactant=None, product=None, theory=None, images=8, CI=True, free_end=Fa
         print(BC.WARNING,f"Will launch Energy+gradient calculations using Singlepoint_parallel using {numcores} cores.", BC.END)
         if theory.numcores > 1:
             print(BC.WARNING,f"Warning: Theory parallelization is active and will utilize: {theory.numcores}", BC.END)
-            print(BC.WARNING,f"The NEB images will run in parallel by Python multiprocessing (using {numcores} cores) while each image E+Grad calculation is parallelized as well ({theory.numcoers} per image)", BC.END)
+            print(BC.WARNING,f"The NEB images will run in parallel by Python multiprocessing (using {numcores} cores) while each image E+Grad calculation is parallelized as well ({theory.numcores} per image)", BC.END)
             print(BC.WARNING,f"Make sure that you have {numcores} x {theory.numcores} = {numcores*theory.numcores} CPU cores available to this ASH job on the computing node", BC.END)
     elif runmode == 'serial' and numcores == 1:
         print (BC.WARNING,"NEB runmode is serial, i.e. running one image after another.", BC.END)
@@ -128,7 +128,7 @@ def NEB(reactant=None, product=None, theory=None, images=8, CI=True, free_end=Fa
     neb_settings["TOL_MAX_F"] = tol_max_f
     neb_settings["TOL_RMS_F"] = tol_rms_f
     neb_settings["TOL_TURN_ON_CI"] = tol_turn_on_ci
-
+    optimizer["MAX_ITER"] = maxiter
     #Setting number of images of Knarr
     path_parameters["NIMAGES"]=total_num_images
 
