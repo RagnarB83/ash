@@ -547,6 +547,26 @@ class KnarrCalculator:
                 frag=ash.Fragment(coords=image_coords, elems=self.fragment1.elems,charge=self.charge, mult=self.mult, label="image_"+str(image_number), printlevel=self.printlevel)
                 all_image_fragments.append(frag)
 
+                #Creating directories for each image beforehand and adding initial GBW-files for each image
+                workerdir='Pooljob_'+"image_"+str(image_number) #Same name of dir that Singlepoint_parallel expects
+                os.mkdir(workerdir)
+                #Reading initial set of orbitals if requested, but only in teration -1 or 0
+                if self.iterations == -1 or self.iterations == 0:
+                    if self.mofilesdir != None:
+                        if self.ORCAused == True:
+                            imagefile_name="current_image"+str(image_number)+".gbw" #The imagefile to look for
+                            path_to_imagefile=self.mofilesdir+"/"+imagefile_name #Full path to image file
+                            if self.printlevel >= 1:
+                                print(f"mofilesdir option active for iteration {self.iterations}. Looking inside {self.mofilesdir} for imagefile: {imagefile_name}")
+                            if os.path.exists(path_to_imagefile):
+                                if self.printlevel >= 1:
+                                    print(f"File {path_to_imagefile} DOES exist")
+                                    print(f"Copying file {path_to_imagefile} to dir {workerdir} as orca.gbw")
+                                shutil.copyfile(path_to_imagefile,"workerdir/"+"orca.gbw") #Copying to Pooljob_image_X as orca.gbw
+                            else:
+                                if self.printlevel >= 1:
+                                    print(f"File {path_to_imagefile} does NOT exist. Continuing.")
+
             #Launching multiple ASH E+Grad calculations in parallel
             #TODO: mofilesdir behaviour has not been checked here
             en_dict,gradient_dict = ash.Singlepoint_parallel(fragments=all_image_fragments, theories=[self.theory], numcores=self.numcores, 
