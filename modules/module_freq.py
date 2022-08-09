@@ -182,18 +182,27 @@ def NumFreq(fragment=None, theory=None, charge=None, mult=None, npoint=2, displa
             #calclabel2 = 'Atom: {} Coord: {} Direction: {}'.format(atom_disp, crd, drection)
             calclabel="Atom: {} Coord: {} Direction: {}".format(str(atom_disp),str(crd),str(drection))
         list_of_labels.append(calclabel)
+        
+
+
 
     assert len(list_of_labels) == len(list_of_displaced_geos), "something is wrong"
 
-    #Write all geometries to disk as XYZ-files
+    #Create ASH fragment and Write all geometries to disk as XYZ-files
     list_of_filelabels=[]
+    all_disp_fragments=[]
     for label, dispgeo in zip(list_of_labels,list_of_displaced_geos):
         filelabel=label.replace(' ','').replace(':','')
         list_of_filelabels.append(filelabel)
         ash.modules.module_coords.write_xyzfile(elems=elems, coords=dispgeo,name=filelabel)
 
+        #Creating ASH fragments with label
+        frag=ash.Fragment(coords=dispgeo, elems=elems,label=filelabel, printlevel=printlevel)
+        all_disp_fragments.append(frag)
+
     #RUNNING displacements
     displacement_grad_dictionary = {}
+    #TODO: Have serial use all_disp_fragments instead to be consistent with parallel
     if runmode == 'serial':
         print("Runmode: serial")
         #Looping over geometries and running.
@@ -229,6 +238,36 @@ def NumFreq(fragment=None, theory=None, charge=None, mult=None, npoint=2, displa
             #Adding gradient to dictionary for AtomNCoordPDirectionm
             displacement_grad_dictionary[disp] = gradient
     elif runmode == 'parallel':
+
+        if isinstance(theory,ash.QMMMTheory):
+            print("Numfreq in runmode parallel is not working with QM/MM at the moment.")
+            ashexit()
+            #NOTE: OpenMM can not be pickled. Possibly try enabling for MMTheory = NonbondedTheory
+        
+        print("Starting Numfreq calculations in parallel mode using Singlepoint_parallel")
+
+
+        #Launching multiple ASH E+Grad calculations in parallel on list of ASH fragments: all_image_fragments
+        en_dict,gradient_dict = ash.Singlepoint_parallel(fragments=all_disp_fragments, theories=[theory], numcores=numcores, 
+            allow_theory_parallelization=True, Grad=True, printlevel=printlevel)
+
+        print("en_dict:", en_dict)
+        print("gradient_dict:", gradient_dict)
+
+        #Keeping track of energies for each displacement in a dict
+        for i in en_dict.keys():
+            print("i:", i)
+            En_disp=en_dict[i]
+            print("En_disp:", En_disp)
+            Grad_disp = gradient_dict[i]
+            print("Grad_disp:", Grad_disp)
+            ashexit()
+        ashexit()
+
+
+
+    #OLD code below
+    elif runmode == 'parallel2':
 
         import multiprocessing as mp
         #import pickle4reducer
