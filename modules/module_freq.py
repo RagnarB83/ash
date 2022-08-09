@@ -197,7 +197,7 @@ def NumFreq(fragment=None, theory=None, charge=None, mult=None, npoint=2, displa
         ash.modules.module_coords.write_xyzfile(elems=elems, coords=dispgeo,name=filelabel)
 
         #Creating ASH fragments with label
-        frag=ash.Fragment(coords=dispgeo, elems=elems,label=filelabel, printlevel=printlevel)
+        frag=ash.Fragment(coords=dispgeo, elems=elems,label=filelabel, printlevel=printlevel, charge=charge, mult=mult)
         all_disp_fragments.append(frag)
 
     #RUNNING displacements
