@@ -182,18 +182,27 @@ def NumFreq(fragment=None, theory=None, charge=None, mult=None, npoint=2, displa
             #calclabel2 = 'Atom: {} Coord: {} Direction: {}'.format(atom_disp, crd, drection)
             calclabel="Atom: {} Coord: {} Direction: {}".format(str(atom_disp),str(crd),str(drection))
         list_of_labels.append(calclabel)
+        
+
+
 
     assert len(list_of_labels) == len(list_of_displaced_geos), "something is wrong"
 
-    #Write all geometries to disk as XYZ-files
+    #Create ASH fragment and Write all geometries to disk as XYZ-files
     list_of_filelabels=[]
-    for label, dispgeo in zip(list_of_labels,list_of_displaced_geos):
+    all_disp_fragments=[]
+    for label, dispgeo,disp in zip(list_of_labels,list_of_displaced_geos,list_of_displacements):
         filelabel=label.replace(' ','').replace(':','')
         list_of_filelabels.append(filelabel)
         ash.modules.module_coords.write_xyzfile(elems=elems, coords=dispgeo,name=filelabel)
 
+        #Creating ASH fragments with label
+        frag=ash.Fragment(coords=dispgeo, elems=elems,label=disp, printlevel=printlevel, charge=charge, mult=mult)
+        all_disp_fragments.append(frag)
+
     #RUNNING displacements
     displacement_grad_dictionary = {}
+    #TODO: Have serial use all_disp_fragments instead to be consistent with parallel
     if runmode == 'serial':
         print("Runmode: serial")
         #Looping over geometries and running.
@@ -229,6 +238,23 @@ def NumFreq(fragment=None, theory=None, charge=None, mult=None, npoint=2, displa
             #Adding gradient to dictionary for AtomNCoordPDirectionm
             displacement_grad_dictionary[disp] = gradient
     elif runmode == 'parallel':
+
+        if isinstance(theory,ash.QMMMTheory):
+            print("Numfreq in runmode='parallel' is not working with QM/MM at the moment.")
+            ashexit()
+            #NOTE: Because OpenMM can not be pickled. Possibly try enabling for MMTheory = NonbondedTheory
+        
+        print("Starting Numfreq calculations in parallel mode using Singlepoint_parallel")
+
+        #Launching multiple ASH E+Grad calculations in parallel on list of ASH fragments: all_image_fragments
+        en_dict,gradient_dict = ash.Singlepoint_parallel(fragments=all_disp_fragments, theories=[theory], numcores=numcores, 
+            allow_theory_parallelization=True, Grad=True, printlevel=printlevel)
+
+        #Gradient_dict is already correctly formatted
+        displacement_grad_dictionary = gradient_dict
+
+    #OLD code below. To be deleted probably. Attempts to avoid pickling problem
+    elif runmode == 'parallel2':
 
         import multiprocessing as mp
         #import pickle4reducer
@@ -352,6 +378,8 @@ def NumFreq(fragment=None, theory=None, charge=None, mult=None, npoint=2, displa
     else:
         print("Unknown runmode.")
         ashexit()
+    
+    ############################################
     print("Displacement calculations done.")
 
     #Initialize empty Hessian
@@ -387,6 +415,8 @@ def NumFreq(fragment=None, theory=None, charge=None, mult=None, npoint=2, displa
     #Twopoint-formula Hessian. pos and negative directions come in order
     elif npoint == 2:
         print("Assembling the two-point Hessian")
+        print("displacement_grad_dictionary:", displacement_grad_dictionary)
+
         hessindex=0
         #Loop over Hessian atoms and grab each gradient component. Calculate Hessian component and add to matrix
         #for atomindex in range(0,len(hessatoms)):
