@@ -262,7 +262,7 @@ def NumFreq(fragment=None, theory=None, charge=None, mult=None, npoint=2, displa
             Grad_disp = gradient_dict[i]
             print("Grad_disp:", Grad_disp)
             #Adding gradient to dictionary for AtomNCoordPDirectionm
-            displacement_grad_dictionary[disp] = Grad_disp
+            displacement_grad_dictionary[i] = Grad_disp
 
             print("x displacement_grad_dictionary:", displacement_grad_dictionary)
 
