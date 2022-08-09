@@ -264,7 +264,7 @@ def NumFreq(fragment=None, theory=None, charge=None, mult=None, npoint=2, displa
             #Adding gradient to dictionary for AtomNCoordPDirectionm
             displacement_grad_dictionary[disp] = Grad_disp
 
-
+            print("x displacement_grad_dictionary:", displacement_grad_dictionary)
 
     #OLD code below
     elif runmode == 'parallel2':
@@ -426,6 +426,8 @@ def NumFreq(fragment=None, theory=None, charge=None, mult=None, npoint=2, displa
     #Twopoint-formula Hessian. pos and negative directions come in order
     elif npoint == 2:
         print("Assembling the two-point Hessian")
+        print("displacement_grad_dictionary:", displacement_grad_dictionary)
+
         hessindex=0
         #Loop over Hessian atoms and grab each gradient component. Calculate Hessian component and add to matrix
         #for atomindex in range(0,len(hessatoms)):
