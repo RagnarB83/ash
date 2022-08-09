@@ -245,24 +245,15 @@ def NumFreq(fragment=None, theory=None, charge=None, mult=None, npoint=2, displa
             #NOTE: Because OpenMM can not be pickled. Possibly try enabling for MMTheory = NonbondedTheory
         
         print("Starting Numfreq calculations in parallel mode using Singlepoint_parallel")
-        print("list_of_displacements:", list_of_displacements)
-        #exit()
+
         #Launching multiple ASH E+Grad calculations in parallel on list of ASH fragments: all_image_fragments
         en_dict,gradient_dict = ash.Singlepoint_parallel(fragments=all_disp_fragments, theories=[theory], numcores=numcores, 
             allow_theory_parallelization=True, Grad=True, printlevel=printlevel)
 
-        #print("en_dict:", en_dict)
-        #print("gradient_dict:", gradient_dict)
-
+        #Gradient_dict is already correctly formatted
         displacement_grad_dictionary = gradient_dict
-        #Going through dictionary 
-        #for i in en_dict.keys():
-        #    Grad_disp = gradient_dict[i]
-        #    #Adding gradient to dictionary for AtomNCoordPDirectionm
-        #    displacement_grad_dictionary[i] = Grad_disp
 
-
-    #OLD code below
+    #OLD code below. To be deleted probably. Attempts to avoid pickling problem
     elif runmode == 'parallel2':
 
         import multiprocessing as mp
@@ -387,6 +378,8 @@ def NumFreq(fragment=None, theory=None, charge=None, mult=None, npoint=2, displa
     else:
         print("Unknown runmode.")
         ashexit()
+    
+    ############################################
     print("Displacement calculations done.")
 
     #Initialize empty Hessian
