@@ -191,13 +191,13 @@ def NumFreq(fragment=None, theory=None, charge=None, mult=None, npoint=2, displa
     #Create ASH fragment and Write all geometries to disk as XYZ-files
     list_of_filelabels=[]
     all_disp_fragments=[]
-    for label, dispgeo in zip(list_of_labels,list_of_displaced_geos):
+    for label, dispgeo,disp in zip(list_of_labels,list_of_displaced_geos,list_of_displacements):
         filelabel=label.replace(' ','').replace(':','')
         list_of_filelabels.append(filelabel)
         ash.modules.module_coords.write_xyzfile(elems=elems, coords=dispgeo,name=filelabel)
 
         #Creating ASH fragments with label
-        frag=ash.Fragment(coords=dispgeo, elems=elems,label=filelabel, printlevel=printlevel, charge=charge, mult=mult)
+        frag=ash.Fragment(coords=dispgeo, elems=elems,label=disp, printlevel=printlevel, charge=charge, mult=mult)
         all_disp_fragments.append(frag)
 
     #RUNNING displacements
@@ -240,13 +240,13 @@ def NumFreq(fragment=None, theory=None, charge=None, mult=None, npoint=2, displa
     elif runmode == 'parallel':
 
         if isinstance(theory,ash.QMMMTheory):
-            print("Numfreq in runmode parallel is not working with QM/MM at the moment.")
+            print("Numfreq in runmode='parallel' is not working with QM/MM at the moment.")
             ashexit()
-            #NOTE: OpenMM can not be pickled. Possibly try enabling for MMTheory = NonbondedTheory
+            #NOTE: Because OpenMM can not be pickled. Possibly try enabling for MMTheory = NonbondedTheory
         
         print("Starting Numfreq calculations in parallel mode using Singlepoint_parallel")
-
-
+        print("list_of_displacements:", list_of_displacements)
+        #exit()
         #Launching multiple ASH E+Grad calculations in parallel on list of ASH fragments: all_image_fragments
         en_dict,gradient_dict = ash.Singlepoint_parallel(fragments=all_disp_fragments, theories=[theory], numcores=numcores, 
             allow_theory_parallelization=True, Grad=True, printlevel=printlevel)
@@ -257,12 +257,12 @@ def NumFreq(fragment=None, theory=None, charge=None, mult=None, npoint=2, displa
         #Keeping track of energies for each displacement in a dict
         for i in en_dict.keys():
             print("i:", i)
-            En_disp=en_dict[i]
-            print("En_disp:", En_disp)
+            #En_disp=en_dict[i]
+            #print("En_disp:", En_disp)
             Grad_disp = gradient_dict[i]
             print("Grad_disp:", Grad_disp)
-            ashexit()
-        ashexit()
+            #Adding gradient to dictionary for AtomNCoordPDirectionm
+            displacement_grad_dictionary[disp] = Grad_disp
 
 
 
