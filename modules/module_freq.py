@@ -251,20 +251,16 @@ def NumFreq(fragment=None, theory=None, charge=None, mult=None, npoint=2, displa
         en_dict,gradient_dict = ash.Singlepoint_parallel(fragments=all_disp_fragments, theories=[theory], numcores=numcores, 
             allow_theory_parallelization=True, Grad=True, printlevel=printlevel)
 
-        print("en_dict:", en_dict)
-        print("gradient_dict:", gradient_dict)
+        #print("en_dict:", en_dict)
+        #print("gradient_dict:", gradient_dict)
 
-        #Keeping track of energies for each displacement in a dict
-        for i in en_dict.keys():
-            print("i:", i)
-            #En_disp=en_dict[i]
-            #print("En_disp:", En_disp)
-            Grad_disp = gradient_dict[i]
-            print("Grad_disp:", Grad_disp)
-            #Adding gradient to dictionary for AtomNCoordPDirectionm
-            displacement_grad_dictionary[i] = Grad_disp
+        displacement_grad_dictionary = gradient_dict
+        #Going through dictionary 
+        #for i in en_dict.keys():
+        #    Grad_disp = gradient_dict[i]
+        #    #Adding gradient to dictionary for AtomNCoordPDirectionm
+        #    displacement_grad_dictionary[i] = Grad_disp
 
-            print("x displacement_grad_dictionary:", displacement_grad_dictionary)
 
     #OLD code below
     elif runmode == 'parallel2':
