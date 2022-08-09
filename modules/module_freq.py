@@ -10,7 +10,6 @@ import ash.modules.module_coords
 from ash.modules.module_coords import check_charge_mult
 import ash.interfaces.interface_ORCA
 import ash.constants
-#import ash
 
 #Analytical frequencies function
 #Only works for ORCAtheory at the moment
@@ -183,9 +182,6 @@ def NumFreq(fragment=None, theory=None, charge=None, mult=None, npoint=2, displa
             calclabel="Atom: {} Coord: {} Direction: {}".format(str(atom_disp),str(crd),str(drection))
         list_of_labels.append(calclabel)
         
-
-
-
     assert len(list_of_labels) == len(list_of_displaced_geos), "something is wrong"
 
     #Create ASH fragment and Write all geometries to disk as XYZ-files
@@ -322,26 +318,15 @@ def NumFreq(fragment=None, theory=None, charge=None, mult=None, npoint=2, displa
                     print("label:", label)
                     print("filelabel:", filelabel)
                     print("theory_shared:", theory_shared)
-                    # print("theory_shared.qmatoms: ", theory_shared.qmatoms )
-                    print("xx")
                     # Numcores can be used. We can launch ORCA-OpenMPI in parallel it seems.
                     # Only makes sense if we have may more cores available than displacements
-                    print("a")
                     elems, coords = ash.modules.module_coords.read_xyzfile(filelabel + '.xyz')
-                    print("b")
                     dispdir = label.replace(' ', '')
                     os.mkdir(dispdir)
                     os.chdir(dispdir)
-                    print("d")
-                    # shutil.move('../' + filelabel + '.xyz', './' + filelabel + '.xyz')
-                    # Read XYZ-file from file
-                    print("e")
-
-                    print("f")
                     # Todo: Copy previous GBW file in here if ORCA, xtbrestart if xtb, etc.
                     print("Running displacement: {}".format(label))
                     energy, gradient = theory_shared.run(current_coords=coords, elems=elems, Grad=True, numcores=numcoresQM, charge=charge, mult=mult)
-                    print("Energy: ", energy)
                     os.chdir('..')
                     # Delete dir?
                     # os.remove(dispdir)
@@ -350,12 +335,6 @@ def NumFreq(fragment=None, theory=None, charge=None, mult=None, npoint=2, displa
                             zip(list_of_labels,list_of_filelabels)]
                 results = ray.get(result_ids)
             else:
-            
-                #result_ids = [f.remote(df_id) for _ in range(4)]
-
-                #results = pool.map(displacement_QMrun, [[geo, elems, numcoresQM, theory, label] for geo, label in
-                #                                        zip(list_of_displaced_geos, list_of_labels)])
-                #print(results)
                 results = pool.map(ash.functions.functions_parallel.displacement_QMMMrun, [[filelabel, numcoresQM, label, theory.fragment, theory.qm_theory, theory.mm_theory,
                                                         theory.actatoms, theory.qmatoms, theory.embedding, theory.charges, theory.printlevel,
                                                         theory.frozenatoms] for label,filelabel in zip(list_of_labels,list_of_filelabels)])
@@ -415,7 +394,6 @@ def NumFreq(fragment=None, theory=None, charge=None, mult=None, npoint=2, displa
     #Twopoint-formula Hessian. pos and negative directions come in order
     elif npoint == 2:
         print("Assembling the two-point Hessian")
-        print("displacement_grad_dictionary:", displacement_grad_dictionary)
 
         hessindex=0
         #Loop over Hessian atoms and grab each gradient component. Calculate Hessian component and add to matrix
