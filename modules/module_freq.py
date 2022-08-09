@@ -314,7 +314,7 @@ def NumFreq(fragment=None, theory=None, charge=None, mult=None, npoint=2, displa
                     print("f")
                     # Todo: Copy previous GBW file in here if ORCA, xtbrestart if xtb, etc.
                     print("Running displacement: {}".format(label))
-                    energy, gradient = theory_shared.run(current_coords=coords, elems=elems, Grad=True, numcores=numcoresQM)
+                    energy, gradient = theory_shared.run(current_coords=coords, elems=elems, Grad=True, numcores=numcoresQM, charge=charge, mult=mult)
                     print("Energy: ", energy)
                     os.chdir('..')
                     # Delete dir?
@@ -330,12 +330,16 @@ def NumFreq(fragment=None, theory=None, charge=None, mult=None, npoint=2, displa
                 #results = pool.map(displacement_QMrun, [[geo, elems, numcoresQM, theory, label] for geo, label in
                 #                                        zip(list_of_displaced_geos, list_of_labels)])
                 #print(results)
-                results = pool.map(functions.functions_parallel.displacement_QMMMrun, [[filelabel, numcoresQM, label, theory.fragment, theory.qm_theory, theory.mm_theory,
+                results = pool.map(ash.functions.functions_parallel.displacement_QMMMrun, [[filelabel, numcoresQM, label, theory.fragment, theory.qm_theory, theory.mm_theory,
                                                         theory.actatoms, theory.qmatoms, theory.embedding, theory.charges, theory.printlevel,
                                                         theory.frozenatoms] for label,filelabel in zip(list_of_labels,list_of_filelabels)])
         #Passing QM theory directly
         else:
-            results = pool.map(functions.functions_parallel.displacement_QMrun, [[geo, elems, numcoresQM, theory, label] for geo,label in zip(list_of_displaced_geos,list_of_labels)])
+
+
+            results = pool.map(ash.functions.functions_parallel.displacement_QMrun, [[geo, elems, numcoresQM, theory, label, charge, mult] for geo,label in zip(list_of_displaced_geos,list_of_labels)])
+        
+        
         pool.close()
 
         #Gathering results in dictionary

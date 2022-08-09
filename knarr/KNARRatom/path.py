@@ -77,7 +77,6 @@ class Path(Atom):
         ndim = self.GetNDimIm()
         nim = self.GetNim()
         newpath = np.zeros(shape=(ndim * nim, 1))
-
         for i in range(1, nim):
             target_coords = self.GetCoords()[(i - 1) * ndim:i * ndim].copy()
             prod_coords = self.GetCoords()[i * ndim:(i + 1) * ndim].copy()

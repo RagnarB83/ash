@@ -254,8 +254,10 @@ def DoNEB(path, calculator, neb, optimizer, second_run=False):
         #print("path.GetNim():", path.GetNim())
         calculator.Compute(path, list_to_compute=[0, path.GetNim() - 1])
         print('Energy of end points: ')
-        print('  Reactant: % 6.6f %s' % (path.GetEnergy()[0], KNARRsettings.energystring))
-        print('  Product : % 6.6f %s' % (path.GetEnergy()[path.GetNim() - 1], KNARRsettings.energystring))
+        #print('  Reactant: % 6.6f %s' % (path.GetEnergy()[0], KNARRsettings.energystring))
+        #print('  Product : % 6.6f %s' % (path.GetEnergy()[path.GetNim() - 1], KNARRsettings.energystring))
+        print('  Reactant: % 6.6f %s' % (0.03674930495120813*path.GetEnergy()[0], 'Eh'))
+        print('  Product : % 6.6f %s' % (0.03674930495120813*path.GetEnergy()[path.GetNim() - 1], 'Eh'))
 
         path.UpdateF()
         maxf_reactant = np.max(abs(path.GetF()[0:path.GetNDofIm()]))
@@ -277,11 +279,10 @@ def DoNEB(path, calculator, neb, optimizer, second_run=False):
     # Start NEB optimization
     # --------------------------------------------------------------------------------
     print('\nStarting nudged elastic band optimization:')
-    print(' %4ls %4s  %9ls %5ls %7ls %9ls %8ls' %
-          ('it', 'dS', 'Energy', 'HEI', 'RMSF', 'MaxF', 'step'))
+    #print(' %4ls %4s  %9ls %5ls %7ls %9ls %8ls' %
+    #      ('it', 'dS', 'Energy', 'HEI', 'RMSF', 'MaxF', 'step'))
 
     for it in range(maxiter):
-
         # =======================================================
         # Reparametrization and minimization of rmsd
         # =======================================================
@@ -295,7 +296,6 @@ def DoNEB(path, calculator, neb, optimizer, second_run=False):
                 s = ComputeLengthOfPath(path.GetNDim(), path.GetNim(), path.GetCoords())
                 tang = GetTangent(path.GetNDim(), path.GetNim(),
                                   path.GetCoords(), path.GetEnergy(), tangent_type)
-
                 if (startci):
                     newr = MakeReparametrizationWithCI(path.GetNDim(), path.GetNim(), ci, s,
                                                        path.GetCoords(), tang, interp_type)
@@ -308,16 +308,19 @@ def DoNEB(path, calculator, neb, optimizer, second_run=False):
                 print('\nReparametrization of path\n')
                 reset_opt = True
                 do_reparam = False
-
+        #RB: THIS CAN BE PROBLEMATIC to do in every step. Product geometry keeps changing. Bug?
         if min_rmsd and not path.IsConstrained() and not path.IsTwoDee():
-            print("RB here. Calling path.MinRMSD")
-            path.MinRMSD()
-
+            #RB change. Only do once
+            if it == 0:
+                print("Minimizing RMSD in this step")
+                path.MinRMSD()
         # =======================================================
         # Compute energy and gradient
         # =======================================================
         if free_end:
-            calculator.Compute(path)
+            #calculator.Compute(path)
+            #RB change:
+            calculator.Compute(path, list_to_compute=range(0, path.GetNim()))
             if it == 0 and not second_run:
                 Ereactant = path.GetEnergy()[0]
                 Eproduct = path.GetEnergy()[-1]
@@ -325,6 +328,7 @@ def DoNEB(path, calculator, neb, optimizer, second_run=False):
             calculator.Compute(path, list_to_compute=range(1, path.GetNim() - 1))
             path.SetEnergy(Ereactant, x=0)
             path.SetEnergy(Eproduct, x=path.GetNim() - 1)
+
 
         path.UpdateR()
         path.UpdateF()
@@ -356,6 +360,7 @@ def DoNEB(path, calculator, neb, optimizer, second_run=False):
                                      startci, remove_extern_force,
                                      path.GetPBC(), path.GetCell(), path.IsTwoDee())
 
+
         # =======================================================
         # Compute maximum abs. and RMS force
         # =======================================================
@@ -367,30 +372,60 @@ def DoNEB(path, calculator, neb, optimizer, second_run=False):
             maxf_noci = np.max(abs(freal_noci))
             rmsf_ci = RMS(path.GetNDofIm(), path.GetF()[ci * path.GetNDofIm():(ci + 1) * path.GetNDofIm()])
             maxf_ci = np.max(abs(path.GetF()[ci * path.GetNDofIm():(ci + 1) * path.GetNDofIm()]))
+            print("CI is active")
+            #print(f"Current freal_noci: {freal_noci}")
+            #print(f"Current rmsf_noci: {rmsf_noci} (tol_rms_fci: {tol_rms_fci})")
+            #print(f"Current maxf_noci: {maxf_noci} (tol_max_fci: {tol_max_fci})")
+            #print(f"Current rmsf_ci: {rmsf_ci} (tol_rms_f: {tol_rms_f})")
+            #print(f"Current maxf_ci: {maxf_ci} (tol_max_f: {tol_max_f})")
+
         else:
             rmsf = RMS(path.GetNDof(), freal_perp)
             maxf = np.max(abs(freal_perp))
+            #print("CI is NOT active")
+            #print(' %4ls %4s  %9ls %5ls %7ls %9ls %8ls' %('it', 'dS', 'Energy', 'HEI', 'RMSF', 'MaxF', 'step'))
+            #print(f"Current RMS-F: {rmsf} (tol_rms_f: {tol_rms_f})")
+            #print(f"Current Max-F: {maxf} (tol_max_f: {tol_max_f})")
 
         # =======================================================
         # Output print
         # =======================================================
         if startci:
-            print ("%4i %6.2lf  % 6.6lf %3li %8.4lf  %8.4lf %8.4lf %8.4lf %8.4lf"
-                   % (it, s[-1], path.GetEnergy()[ci] - Ereactant, ci, rmsf_noci,
+            print("HEI: Highest energy image")
+            print("ΔE: Relative energy of HIE in kcal/mol (w.r.t. image 0)")
+            print("Forces in eV/Ang.")
+            print("RMSF/MaxF: RMS/Max force on all images.")
+            print("RMSF_CI/MaxF_CI: RMS/Max force on climbing image.")
+            print("-"*80)
+            print('%4ls %6s %8ls %5ls %8ls %8ls %8ls %8ls %8ls' %
+                    ('it', 'dS', 'ΔE', 'CI', 'RMSF', 'MaxF', 'RMSF_CI', 'MaxF_CI', 'step'))
+            print(f"Thresholds:                {tol_rms_f:8.4f} {tol_max_f:8.4f} {tol_rms_fci:8.4f} {tol_max_fci:8.4f}")
+            print ("%4i %6.2lf %8.3lf %5li %8.4lf %8.4lf %8.4lf %8.4lf %8.4lf"
+                   % (it, s[-1], 23.060541945329334*(path.GetEnergy()[ci] - Ereactant), ci, rmsf_noci,
                       maxf_noci, rmsf_ci, maxf_ci, np.max(abs(step))))
-
+            print("-"*80)
         else:
             hei = np.argmax(path.GetEnergy())
-            print ("%4i %6.2lf  % 6.6lf %3li  %8.4lf  %8.4lf %8.4lf"
-                   % (it, s[-1], path.GetEnergy()[hei] - Ereactant, hei, rmsf, maxf, np.max(abs(step))))
-
+            print("HEI: Highest energy image")
+            print("ΔE: Relative energy of HIE in kcal/mol (w.r.t. image 0)")
+            print("Forces in eV/Ang")
+            print("RMSF/MaxF: RMS/Max force on all images.")
+            print("-"*70)
+            print('%4ls %6s %10ls %5ls %9ls %9ls %9ls' %
+                ('it', 'dS', 'ΔE', 'HEI', 'RMSF', 'MaxF', 'step'))
+            print(f"Switch-on CI:{tol_turn_on_ci:>36.4f}")
+            print ("%4i %6.2lf %10.6lf %5li %9.4lf  %9.4lf %9.4lf"
+                   % (it, s[-1], 23.060541945329334*(path.GetEnergy()[hei] - Ereactant), hei, rmsf, maxf, np.max(abs(step))))
+            print("-"*70)
         PiecewiseCubicEnergyInterpolation(basename + ".interp", path.GetNim(), s, path.GetEnergy(), freal_paral, it)
 
         # =======================================================
         # Check if calculation is converged...
         # =======================================================
         if doci:
+            #print("Now checking if calculation is converged. conv_type:", conv_type)
             if conv_type == 1:
+                #print("convtype 1")
                 if startci:
                     if tol_max_fci > maxf_ci and tol_rms_fci > rmsf_ci:
                         converged = True
@@ -398,12 +433,15 @@ def DoNEB(path, calculator, neb, optimizer, second_run=False):
                     if tol_max_fci > maxf and tol_rms_f > rmsf:
                         converged = True
             else:
+                #print("convtype diff")
+                #print("startci:", startci)
                 if startci:
                     if (tol_max_fci > maxf_ci and tol_rms_fci > rmsf_ci) and \
                             (tol_max_f > maxf_noci and tol_rms_f > rmsf_noci):
                         converged = True
                 else:
                     if (tol_max_fci > maxf and tol_rms_fci > rmsf):
+                        print("Now signalling convergence")
                         converged = True
         else:
             if (tol_max_f > maxf and tol_rms_f > rmsf):
@@ -429,10 +467,9 @@ def DoNEB(path, calculator, neb, optimizer, second_run=False):
                     ci = checkmax
                     if restart_on_ci:
                         reset_opt = True
-
+                    #print(f"maxf:{maxf} < tol_turn_on_ci:{tol_turn_on_ci}")
                     print ('        Starting climbing image as image %i.\n' % ci),
-                    print('%4ls  %4s  %9ls %5ls %6ls %9ls %9ls %9ls %6ls' %
-                          ('it', 'dS', 'Energy', 'HEI', 'RMSF', 'MaxF', 'RMSF_CI', 'MaxF_CI', 'step'))
+
                     # print CI header here.
                     # print '%6s %4s %2s %10s %8s %13s %5s %11s  %11s %11s %13s' \
                     # % ("Optim.", "iter", "FC", "Objf", "dS", "maxE", "CI", "rmsF'(i)", "rmsF(CI)", "maxF'",
@@ -445,7 +482,8 @@ def DoNEB(path, calculator, neb, optimizer, second_run=False):
                     ci = newci
                     if restart_on_ci:
                         reset_opt = True
-
+        if startci != True:
+            print("CI not switched on yet (MaxF treshold not reached).")
         # =======================================================
         # Optimization block
         # =======================================================
@@ -536,7 +574,6 @@ def DoNEB(path, calculator, neb, optimizer, second_run=False):
         else:
             raise RuntimeError(
                 "Choosen optimization method  %s is not available in structural opt." % method_string)
-
         if reset_on_scaling and was_scaled:
             reset_opt = True
             if lbfgs_reparam_on_restart:
@@ -544,22 +581,32 @@ def DoNEB(path, calculator, neb, optimizer, second_run=False):
 
         path.SetR(path.GetR() + step)
         path.UpdateCoords()
-        path.MIC()
 
     # ---------------------------------------------------------------------------------
     # END NEB OPTIMIZATION - Write output
     # ---------------------------------------------------------------------------------
     CI = np.argmax(path.GetEnergy())
+
+
+
     if converged:
-        PrintConverged(it, path.GetFC())
+        PrintConverged(it+1, path.GetFC())
         PrintDivider()
         print('Summary:')
         PrintDivider()
-        print('%4ls %4ls %5ls %9ls %9ls' % ('Img.', 'dS', 'E', 'dE', 'MaxF'))
+        #print('%4ls %4ls %5ls %9ls %9ls' % ('Img.', 'dS', 'E(eV)', 'ΔE(kcal/mol)', 'MaxF'))
+        #for i in range(path.GetNim()):
+        #    print('% 2i % 6.2f % 6.5f % 6.4f % 6.6f' % (
+        #        i, s[i], path.GetEnergy()[i], 23.060541945329334*(path.GetEnergy()[i] - Ereactant),
+        #        np.max(abs(freal_perp[i * path.GetNDofIm():(i + 1) * path.GetNDofIm()]))))
+        print('%4ls %6ls %12ls %12ls %12ls' % ('Img.', 'dS', 'E(Eh)', 'ΔE(kcal/mol)', 'MaxF(eV/Ang)'))
         for i in range(path.GetNim()):
-            print('% 2i % 6.2f % 6.4f % 6.4f % 6.6f' % (
-                i, s[i], path.GetEnergy()[i], path.GetEnergy()[i] - Ereactant,
-                np.max(abs(freal_perp[i * path.GetNDofIm():(i + 1) * path.GetNDofIm()]))))
+            if i == ci:
+                extra="CI"
+            else: extra=""
+            print('%4i %6.2f %12.5f %12.4f %12.6f %6s' % (
+                i, s[i], 0.03674930495120813*path.GetEnergy()[i], 23.060541945329334*(path.GetEnergy()[i] - Ereactant),
+                np.max(abs(freal_perp[i * path.GetNDofIm():(i + 1) * path.GetNDofIm()])),extra))
 
         WritePath(basename + "_MEP.xyz", path.GetNDimIm(), path.GetNim(), path.GetCoords(),
                   path.GetSymbols(), path.GetEnergy())
@@ -567,11 +614,11 @@ def DoNEB(path, calculator, neb, optimizer, second_run=False):
         if os.path.isfile(basename + "_current.xyz"):
             os.remove(basename + "_current.xyz")
 
-        PrintAtomMatrix("\nSaddle point configuration:", path.GetNDimIm(),
+        PrintAtomMatrix("\nSaddle point geometry (Å):", path.GetNDimIm(),
                         path.GetCoords()[CI * path.GetNDimIm():(CI + 1) * path.GetNDimIm()],
                         path.GetSymbols())
 
-        PrintAtomMatrix("Atomic forces:", path.GetNDofIm(),
+        PrintAtomMatrix("Atomic forces(eV/Å):", path.GetNDofIm(),
                         path.GetForces()[CI * path.GetNDofIm():(CI + 1) * path.GetNDofIm()],
                         path.GetSymbols())
 
@@ -601,7 +648,8 @@ def DoNEB(path, calculator, neb, optimizer, second_run=False):
                      path.GetSymbols()[CI * path.GetNDimIm():(CI + 1) * path.GetNDimIm()],
                      path.GetCell(),
                      path.GetConstraints()[CI * path.GetNDimIm():(CI + 1) * path.GetNDimIm()])
-
+    else:
+        print("NEB is not yet converged. Doing next NEB iteration")
     if stop_neb:
         PrintMaxIter(maxiter)
         WritePath(basename + "_last_iter.xyz", path.GetNDimIm(), path.GetNim(), path.GetCoords(),

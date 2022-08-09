@@ -13,20 +13,23 @@ from ash.modules.module_coords import check_charge_mult
 #Stripped down version of Singlepoint functffragment_fileion for Singlepoint_parallel.
 #NOTE: Version intended for apply_async
 #TODO: This function may still be a bit ORCA-centric. Needs to be generalized 
-def Single_par(fragment=None, fragmentfile=None, theory=None, label=None, mofilesdir=None, event=None, charge=None, mult=None):
+def Single_par(fragment=None, fragmentfile=None, theory=None, label=None, mofilesdir=None, event=None, charge=None, mult=None, Grad=False, printlevel=2):
 
     #Creating new copy of theory to prevent Brokensym feature from being deactivated by each run
     #NOTE: Alternatively we can add an if-statement inside orca.run
     theory=copy.deepcopy(theory)
 
-    print("Fragment:", fragment)
-    print("fragmentfile:", fragmentfile)
+    if printlevel >= 2:
+        print("Fragment:", fragment)
+        print("fragmentfile:", fragmentfile)
     if fragmentfile != None:
-        print("Reading fragmentfile from disk")
+        if printlevel >= 2:
+            print("Reading fragmentfile from disk")
         fragment=ash.Fragment(fragfile=fragmentfile)
 
     #Making label flexible. Can be tuple but inputfilename is converted to string below
-    print("label: {} (type {})".format(label,type(label)))
+    if printlevel >= 2:
+        print("label: {} (type {})".format(label,type(label)))
     if label == None:
         print("No label provided to fragment or theory objects. This is required to distinguish between calculations ")
         print("Exiting.")
@@ -42,13 +45,15 @@ def Single_par(fragment=None, fragmentfile=None, theory=None, label=None, mofile
             labelstring=str(str(label[0])+'_'+str(label[1])).replace('.','_')
         else:
             labelstring=str(str(label[0])).replace('.','_')
-        print("Labelstring:", labelstring)
+        if printlevel >= 2:
+            print("Labelstring:", labelstring)
         #RC1_0.9-RC2_170.0.xyz
         #orca_RC1_0.9RC2_170.0.gbw
         #TODO: what if tuple is only a single number???
 
         if mofilesdir != None:
-            print("Mofilesdir option.")
+            if printlevel >= 2:
+                print("Mofilesdir option.")
             if len(label) == 2:
                 moreadfile_path=mofilesdir+'/'+theory.filename+'_'+'RC1_'+str(label[0])+'-'+'RC2_'+str(label[1])
             else:
@@ -56,20 +61,22 @@ def Single_par(fragment=None, fragmentfile=None, theory=None, label=None, mofile
 
     #Label is not tuple. Not coming from calc_surface funcitons
     elif type(label) == float or type(label) == int:
-        print("Label is float or int")
+        if printlevel >= 2:
+            print("Label is float or int")
         #
         #Label is float or int. 
         if mofilesdir != None:
-            print("Mofilesdir option.")
+            if printlevel >= 2:
+                print("Mofilesdir option.")
             moreadfile_path=mofilesdir+'/'+theory.filename+'_'+'RC1_'+str(label[0])
     else:
-        print("Here. label.", label)
+        #print("Here. label.", label)
         #Label is not tuple. String or single number
         labelstring=str(label).replace('.','_')
 
 
     #Check charge/mult.
-    charge,mult = check_charge_mult(charge, mult, theory.theorytype, fragment, "Single_par", theory=theory)
+    charge,mult = check_charge_mult(charge, mult, theory.theorytype, fragment, "Single_par", theory=theory, printlevel=printlevel)
 
     #Creating separate inputfilename using label
     #Removing . in inputfilename as ORCA can get confused
@@ -80,7 +87,8 @@ def Single_par(fragment=None, fragmentfile=None, theory=None, label=None, mofile
         #theory.filename=labelstring
         if mofilesdir != None:
             theory.moreadfile=moreadfile_path+'.gbw'
-            print("Setting moreadfile to:", theory.moreadfile)
+            if printlevel >= 2:
+                print("Setting moreadfile to:", theory.moreadfile)
     elif theory.__class__.__name__ == "MRCCTheory":
         if mofilesdir != None:
             print("Case MRCC MOREADfile parallel")
@@ -93,12 +101,21 @@ def Single_par(fragment=None, fragmentfile=None, theory=None, label=None, mofile
             raise Exception()
 
     #Creating new dir and running calculation inside
-    os.mkdir('Pooljob_'+labelstring)
+    try:
+        os.mkdir('Pooljob_'+labelstring)
+    except:
+        if printlevel >= 2:
+            print("Dir exists. continuing")
+        pass
     os.chdir('Pooljob_'+labelstring)
-    print(BC.WARNING,"Doing single-point Energy job on fragment. Formula: {} Label: {} ".format(fragment.prettyformula,fragment.label), BC.END)
-    print("\n\nProcess ID {} is running calculation with label: {} \n\n".format(mp.current_process(),label))
+    if printlevel >= 2:
+        print(BC.WARNING,"Doing single-point Energy job on fragment. Formula: {} Label: {} ".format(fragment.prettyformula,fragment.label), BC.END)
+        print("\n\nProcess ID {} is running calculation with label: {} \n\n".format(mp.current_process(),label))
 
-    energy = theory.run(current_coords=fragment.coords, elems=fragment.elems, label=label, charge=charge, mult=mult)
+    if Grad == True:
+        energy,gradient = theory.run(current_coords=fragment.coords, elems=fragment.elems, label=label, charge=charge, mult=mult, Grad=Grad)
+    else:
+        energy = theory.run(current_coords=fragment.coords, elems=fragment.elems, label=label, charge=charge, mult=mult)
 
     #Some theories like CC_CBS_Theory may return both energy and energy componentsdict as a tuple
     #TODO: avoid this nasty fix
@@ -107,17 +124,21 @@ def Single_par(fragment=None, fragmentfile=None, theory=None, label=None, mofile
         energy=energy[0]
 
     os.chdir('..')
-    print("Energy: ", energy)
+    if printlevel >= 2:
+        print("Energy: ", energy)
     # Now adding total energy to fragment
     fragment.energy = energy
-    return (label,energy)
+    if Grad == True:
+        return (label,energy,gradient)
+    else:
+        return (label,energy)
 
 
 
 #PARALLEL Single-point energy function
 #will run over fragments or fragmentfiles, over theories or both
 #mofilesdir. Directory containing MO-files (GBW files for ORCA). Usef for multiple fragment option
-def Singlepoint_parallel(fragments=None, fragmentfiles=None, theories=None, numcores=None, mofilesdir=None, allow_theory_parallelization=False):
+def Singlepoint_parallel(fragments=None, fragmentfiles=None, theories=None, numcores=None, mofilesdir=None, allow_theory_parallelization=False, Grad=False, printlevel=2):
     print("")
     '''
     The Singlepoint_parallel function carries out multiple single-point calculations in a parallel fashion
@@ -139,22 +160,26 @@ def Singlepoint_parallel(fragments=None, fragmentfiles=None, theories=None, numc
         print(BC.FAIL,"Singlepoint_parallel requires a theory object and a numcores value",BC.END)
         ashexit()
 
-    blankline()
-    print_line_with_subheader1("Singlepoint_parallel function")
-    print("Number of CPU cores available: ", numcores)
+    print()
+    if printlevel >= 2:
+        print_line_with_subheader1("Singlepoint_parallel function")
+        print("Number of CPU cores available: ", numcores)
     if fragments != None:
-        print("Number of fragments:", len(fragments))
+        if printlevel >= 2:
+            print("Number of fragments:", len(fragments))
     else:
         fragments=[]
     if fragmentfiles != None:
-        print("Number of fragmentfiles:", len(fragmentfiles))
+        if printlevel >= 2:
+            print("Number of fragmentfiles:", len(fragmentfiles))
     else:
         fragmentfiles=[]
-    print("Number of theories:", len(theories))
-    print("Running single-point calculations in parallel")
-    print("Mofilesdir:", mofilesdir)
-    print(BC.WARNING, "Warning: Output from Singlepoint_parallel will be erratic due to simultaneous output from multiple workers", BC.END)
-    print("Launching multiprocessing and passing list of ASH fragments")
+    if printlevel >= 2:
+        print("Number of theories:", len(theories))
+        print("Running single-point calculations in parallel")
+        print("Mofilesdir:", mofilesdir)
+        print(BC.WARNING, "Warning: Output from Singlepoint_parallel will be erratic due to simultaneous output from multiple workers", BC.END)
+        print("Launching multiprocessing and passing list of ASH fragments")
     pool = mp.Pool(numcores)
     manager = mp.Manager()
     event = manager.Event()
@@ -177,9 +202,6 @@ def Singlepoint_parallel(fragments=None, fragmentfiles=None, theories=None, numc
         #event.set()
 
 
-
-
-
     #NOTE: Python 3.8 and higher use spawn in MacOS. Leads to ash import problems
     #NOTE: Unix/Linux uses fork which seems better behaved
 
@@ -188,53 +210,69 @@ def Singlepoint_parallel(fragments=None, fragmentfiles=None, theories=None, numc
     results=[]
     if len(theories) == 1:
         theory = theories[0]
-        print("Case: Multiple fragments but one theory")
-        print("")
-        print("Launching multiprocessing pool.apply_async:")
+        if printlevel >= 2:
+            print("Case: Multiple fragments but one theory")
+            print("")
+            print("Launching multiprocessing pool.apply_async:")
 
-        print(BC.WARNING,"Singlepoint_parallel numcores set to:", numcores, BC.END)
-        print(BC.WARNING,f"ASH will run {numcores} jobs simultaneously", BC.END)
+            print(BC.WARNING,"Singlepoint_parallel numcores set to:", numcores, BC.END)
+            print(BC.WARNING,f"ASH will run {numcores} jobs simultaneously", BC.END)
 
         #Whether to allow theory parallelization or not
         if theory.numcores != 1:
-            print(BC.WARNING,"WARNING: Theory numcores set to:", theory.numcores, BC.END)
+            if printlevel >= 2:
+                print(BC.WARNING,"WARNING: Theory numcores set to:", theory.numcores, BC.END)
             if allow_theory_parallelization is True:
                 totnumcores=numcores*theory.numcores
-                print(BC.WARNING,"allow_theory_parallelization is True.", BC.END)
-                print(BC.WARNING,f"Each job can use {theory.numcores} CPU cores, thus up to {totnumcores} CPU cores can be running simultaneously. Make sure that many slots are available.", BC.END)
+                if printlevel >= 2:
+                    print(BC.WARNING,"allow_theory_parallelization is True.", BC.END)
+                    print(BC.WARNING,f"Each job can use {theory.numcores} CPU cores, thus up to {totnumcores} CPU cores can be running simultaneously. Make sure that that's how many slots are available.", BC.END)
             else:
-                print(BC.WARNING,"allow_theory_parallelization is False. Now turning off theory.parallelization (setting theory numcores to 1)", BC.END)
-                print(BC.WARNING,"This can be overriden by: Singlepoint_parallel(allow_theory_parallelization=True)\n", BC.END)
+                if printlevel >= 2:
+                    print(BC.WARNING,"allow_theory_parallelization is False. Now turning off theory.parallelization (setting theory numcores to 1)", BC.END)
+                    print(BC.WARNING,"This can be overriden by: Singlepoint_parallel(allow_theory_parallelization=True)\n", BC.END)
                 theory.numcores=1
 
 
         #Passing list of fragments
         if len(fragments) > 0:
-            print("fragments:", fragments)
+            if printlevel >= 2:
+                print("fragments:", fragments)
             for fragment in fragments:
-                print("fragment:", fragment)
-                results.append(pool.apply_async(Single_par, kwds=dict(theory=theory,fragment=fragment,label=fragment.label,mofilesdir=mofilesdir,event=event), error_callback=Terminate_Pool_processes))
+                if printlevel >= 2:
+                    print("fragment:", fragment)
+                results.append(pool.apply_async(Single_par, kwds=dict(theory=theory,fragment=fragment,label=fragment.label,mofilesdir=mofilesdir,event=event, Grad=Grad, printlevel=printlevel), 
+                    error_callback=Terminate_Pool_processes))
         #Passing list of fragment files
         elif len(fragmentfiles) > 0:
-            print("Launching multiprocessing and passing list of ASH fragmentfiles")
+            if printlevel >= 2:
+                print("Launching multiprocessing and passing list of ASH fragmentfiles")
             for fragmentfile in fragmentfiles:
-                print("fragmentfile:", fragmentfile)
-                results.append(pool.apply_async(Single_par, kwds=dict(theory=theory,fragmentfile=fragmentfile,label=fragmentfile,mofilesdir=mofilesdir,event=event), error_callback=Terminate_Pool_processes))
+                if printlevel >= 2:
+                    print("fragmentfile:", fragmentfile)
+                results.append(pool.apply_async(Single_par, kwds=dict(theory=theory,fragmentfile=fragmentfile,label=fragmentfile,mofilesdir=mofilesdir,event=event, Grad=Grad, printlevel=printlevel), 
+                    error_callback=Terminate_Pool_processes))
     # Case: Multiple theories, 1 fragment
     elif len(fragments) == 1:
-        print("Case: Multiple theories but one fragment")
+        if printlevel >= 2:
+            print("Case: Multiple theories but one fragment")
         fragment = fragments[0]
         #results = pool.map(Single_par, [[theory,fragment, theory.label, event] for theory in theories])
         for theory in theories:
-            print("theory:", theory)
-            results.append(pool.apply_async(Single_par, kwds=dict(theory=theory,fragment=fragment,label=fragment.label,mofilesdir=mofilesdir,event=event), error_callback=Terminate_Pool_processes))
+            if printlevel >= 2:
+                print("theory:", theory)
+            results.append(pool.apply_async(Single_par, kwds=dict(theory=theory,fragment=fragment,label=fragment.label,mofilesdir=mofilesdir,event=event, Grad=Grad, printlevel=printlevel), 
+                error_callback=Terminate_Pool_processes))
     # Case: Multiple theories, 1 fragmentfile
     elif len(fragmentfiles) == 1:
-        print("Case: Multiple theories but one fragmentfile")
+        if printlevel >= 2:
+            print("Case: Multiple theories but one fragmentfile")
         fragmentfile = fragmentfiles[0]
         for theory in theories:
-            print("theory:", theory)
-            results.append(pool.apply_async(Single_par, kwds=dict(theory=theory,fragmentfile=fragmentfile,label=fragmentfile,mofilesdir=mofilesdir,event=event), error_callback=Terminate_Pool_processes))
+            if printlevel >= 2:
+                print("theory:", theory)
+            results.append(pool.apply_async(Single_par, kwds=dict(theory=theory,fragmentfile=fragmentfile,label=fragmentfile,mofilesdir=mofilesdir,event=event, Grad=Grad, printlevel=printlevel), 
+                error_callback=Terminate_Pool_processes))
     else:
         print("Multiple theories and multiple fragments provided.")
         print("This is not supported. Exiting...")
@@ -246,26 +284,33 @@ def Singlepoint_parallel(fragments=None, fragmentfiles=None, theories=None, numc
 
     #While loop that is only terminated if processes finished or exception occurred
     while True:
-        print("Pool multiprocessing underway....")
+        if printlevel >= 2:
+            print("Pool multiprocessing underway....")
         time.sleep(3)
         if event.is_set():
-            print("Event has been set! Now terminating Pool processes")
+            if printlevel >= 2:
+                print("Event has been set! Now terminating Pool processes")
             pool.terminate()
             break
 
     #Going through each result-object and adding to energy_dict if ready
     #This prevents hanging for ApplyResult.get() if Pool did not finish correctly
     energy_dict={}
-    for i,r in enumerate(results):
-        print("Result {} ready: {}".format(i, r.ready()))
-        if r.ready() == True:
-            energy_dict[r.get()[0]] = r.get()[1]
 
-    #Dict comprehension to get results from list of Pool-ApplyResult objects
-    #energy_dict = {result.get()[0]: result.get()[1] for result in results}
-    #print("energy_dict:", energy_dict)
+    if Grad == True:
+        gradient_dict={}
+        for i,r in enumerate(results):
+            if r.ready() == True:
+                energy_dict[r.get()[0]] = r.get()[1]
+                gradient_dict[r.get()[0]] = r.get()[2]
+        return energy_dict,gradient_dict
+    else:
+        for i,r in enumerate(results):
+            #print("Result {} ready: {}".format(i, r.ready()))
+            if r.ready() == True:
+                energy_dict[r.get()[0]] = r.get()[1]
+        return energy_dict
 
-    return energy_dict
 
 
 #Functions to run each displacement in parallel NumFreq run.
@@ -278,12 +323,14 @@ def displacement_QMrun(arglist):
     numcores = arglist[2]
     theory = arglist[3]
     label = arglist[4]
+    charge = arglist[5]
+    mult = arglist[6]
     dispdir=label.replace(' ','')
     os.mkdir(dispdir)
     os.chdir(dispdir)
     #Todo: Copy previous GBW file in here if ORCA, xtbrestart if xtb, etc.
     print("Running displacement: {}".format(label))
-    energy, gradient = theory.run(current_coords=geo, elems=elems, Grad=True, numcores=numcores)
+    energy, gradient = theory.run(current_coords=geo, elems=elems, Grad=True, numcores=numcores, charge=charge, mult=mult)
     print("Energy: ", energy)
     os.chdir('..')
     #Delete dir?

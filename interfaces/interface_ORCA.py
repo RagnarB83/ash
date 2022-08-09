@@ -6,7 +6,7 @@ import multiprocessing as mp
 import numpy as np
 
 import ash.modules.module_coords
-from ash.functions.functions_general import ashexit, blankline,insert_line_into_file,BC,print_time_rel, print_line_with_mainheader, pygrep2, pygrep, search_list_of_lists_for_index
+from ash.functions.functions_general import ashexit,insert_line_into_file,BC,print_time_rel, print_line_with_mainheader, pygrep2, pygrep, search_list_of_lists_for_index
 from ash.modules.module_singlepoint import Singlepoint
 from ash.modules.module_coords import check_charge_mult
 from ash.functions.functions_elstructure import xdm_run, calc_cm5
@@ -18,7 +18,8 @@ import ash.settings_ash
 #ORCA Theory object.
 class ORCATheory:
     def __init__(self, orcadir=None, orcasimpleinput='', printlevel=2, extrabasisatoms=None, extrabasis=None, TDDFT=False, TDDFTroots=5, FollowRoot=1,
-                 orcablocks='', extraline='', first_iteration_input=None, brokensym=None, HSmult=None, atomstoflip=None, numcores=1, nprocs=None, label=None, moreadfile=None, 
+                 orcablocks='', extraline='', first_iteration_input=None, brokensym=None, HSmult=None, atomstoflip=None, numcores=1, nprocs=None, label=None, 
+                 moreadfile=None, moreadfile_always=False,
                  autostart=True, propertyblock=None, keep_each_run_output=False, print_population_analysis=False, filename="orca", check_for_errors=True, check_for_warnings=True,
                  fragment_indices=None, xdm=False, xdm_a1=None, xdm_a2=None, xdm_func=None):
         print_line_with_mainheader("ORCATheory initialization")
@@ -33,7 +34,7 @@ class ORCATheory:
         check_ORCAbinary(self.orcadir)
         #Checking OpenMPI
         if numcores != 1:
-            print("ORCA parallel job requested. Make sure that the correct OpenMPI version (for the ORCA version) is available in your environment")
+            print(f"ORCA parallel job requested with numcores: {numcores} . Make sure that the correct OpenMPI version (for the ORCA version) is available in your environment")
             check_OpenMPI()
 
         #Checking if user added Opt, Freq keywords
@@ -65,6 +66,7 @@ class ORCATheory:
 
         #MOREAD-file
         self.moreadfile=moreadfile
+        self.moreadfile_always=moreadfile_always
         #Autostart
         self.autostart=autostart
 
@@ -233,7 +235,8 @@ class ORCATheory:
         print(BC.OKGREEN, "ORCA Calculation done.", BC.END)
 
         outfile=self.filename+'.out'
-        if checkORCAfinished(outfile) == True:
+        ORCAfinished,iter = checkORCAfinished(outfile)
+        if ORCAfinished == True:
             print("ORCA job finished")
             if checkORCAOptfinished(outfile) ==  True:
                 print("ORCA geometry optimization finished")
@@ -267,7 +270,8 @@ class ORCATheory:
             elems=None, Grad=False, Hessian=False, PC=False, numcores=None, label=None):
         module_init_time=time.time()
         self.runcalls+=1
-        print(BC.OKBLUE,BC.BOLD, "------------RUNNING ORCA INTERFACE-------------", BC.END)
+        if self.printlevel >= 2:
+            print(BC.OKBLUE,BC.BOLD, "------------RUNNING ORCA INTERFACE-------------", BC.END)
 
         #Coords provided to run
         if current_coords is not None:
@@ -317,8 +321,10 @@ class ORCATheory:
         
         if numcores==None:
             numcores=self.numcores
-        print("Running ORCA object with {} cores available".format(numcores))
-        print("Job label:", label)
+        
+        if self.printlevel >= 2:
+            print("Running ORCA object with {} cores available".format(numcores))
+            print("Job label:", label)
 
         #TDDFT option
         #If gradient requested by Singlepoint(Grad=True) or Optimizer then TDDFT gradient is calculated instead
@@ -338,16 +344,17 @@ class ORCATheory:
         else:
             extraline=self.extraline
 
-
-        print("Creating inputfile:", self.filename+'.inp')
-        print("ORCA input:")
-        print(self.orcasimpleinput)
-        print(extraline)
-        print(self.orcablocks)
-        print("Charge: {}  Mult: {}".format(charge, mult))
+        if self.printlevel >= 2:
+            print("Creating inputfile:", self.filename+'.inp')
+            print("ORCA input:")
+            print(self.orcasimpleinput)
+            print(extraline)
+            print(self.orcablocks)
+            print("Charge: {}  Mult: {}".format(charge, mult))
         #Printing extra options chosen:
         if self.brokensym==True:
-            print("Brokensymmetry SpinFlipping on! HSmult: {}.".format(self.HSmult))
+            if self.printlevel >= 2:
+                print("Brokensymmetry SpinFlipping on! HSmult: {}.".format(self.HSmult))
             if self.HSmult == None:
                 print("Error:HSmult keyword in ORCATheory has not been set. This is required. Exiting.")
                 ashexit()
@@ -356,17 +363,23 @@ class ORCATheory:
                 ashexit()
 
             for flipatom,qmflipatom in zip(self.atomstoflip,qmatomstoflip):
-                print("Flipping atom: {} QMregionindex: {} Element: {}".format(flipatom, qmflipatom, qm_elems[qmflipatom]))
+                if self.printlevel >= 2:
+                    print("Flipping atom: {} QMregionindex: {} Element: {}".format(flipatom, qmflipatom, qm_elems[qmflipatom]))
         if self.extrabasis != "":
-            print("Using extra basis ({}) on QM-region indices : {}".format(self.extrabasis,qmatoms_extrabasis))
+            if self.printlevel >= 2:
+                print("Using extra basis ({}) on QM-region indices : {}".format(self.extrabasis,qmatoms_extrabasis))
         if self.dummyatoms:
-            print("Dummy atoms defined:", self.dummyatoms)
+            if self.printlevel >= 2:
+                print("Dummy atoms defined:", self.dummyatoms)
         if self.ghostatoms:
-            print("Ghost atoms defined:", self.ghostatoms)
+            if self.printlevel >= 2:
+                print("Ghost atoms defined:", self.ghostatoms)
         if self.fragment_indices:
-            print("List of fragment indices defined:", fragment_indices)
+            if self.printlevel >= 2:
+                print("List of fragment indices defined:", fragment_indices)
         if PC==True:
-            print("Pointcharge embedding is on!")
+            if self.printlevel >= 2:
+                print("Pointcharge embedding is on!")
             create_orca_pcfile(self.filename, current_MM_coords, MMcharges)
             if self.brokensym == True:
                 create_orca_input_pc(self.filename, qm_elems, current_coords, self.orcasimpleinput, self.orcablocks,
@@ -394,20 +407,30 @@ class ORCATheory:
 
         #Run inputfile using ORCA parallelization. Take numcores argument.
         #print(BC.OKGREEN, "------------Running ORCA calculation-------------", BC.END)
-        print(BC.OKGREEN, "ORCA Calculation started.", BC.END)
-        # Doing gradient or not. Disabling, doing above instead.
-        #if Grad == True:
-        #    run_orca_SP_ORCApar(self.orcadir, self.filename + '.inp', numcores=numcores, Grad=True)
-        #else:
+        if self.printlevel >= 2:
+            print(BC.OKGREEN, "ORCA Calculation starting.", BC.END)
+
         run_orca_SP_ORCApar(self.orcadir, self.filename + '.inp', numcores=numcores, check_for_errors=self.check_for_errors, check_for_warnings=self.check_for_warnings)
-        print(BC.OKGREEN, "ORCA Calculation done.", BC.END)
+        if self.printlevel >= 1:
+            print(BC.OKGREEN, "ORCA Calculation done.", BC.END)
 
         #Now that we have possibly run a BS-DFT calculation, turning Brokensym off for future calcs (opt, restart, etc.)
         # using this theory object
         #TODO: Possibly use different flag for this???
         if self.brokensym==True:
-            print("ORCA Flipspin calculation done. Now turning off brokensym in ORCA object for possible future calculations")
+            if self.printlevel >= 2:
+                print("ORCA Flipspin calculation done. Now turning off brokensym in ORCA object for possible future calculations")
             self.brokensym=False
+
+        #Now that we have possibly run a ORCA job with moreadfile we now turn the moreadfile option off as we probably want to use the 
+        if self.moreadfile != None:
+            print("First ORCATheory calculation finished.")
+            #Now either keeping moreadfile or removing it. Default: removing
+            if self.moreadfile_always == False:
+                print("Now turning moreadfile option off.")
+                self.moreadfile=None
+
+
 
         #Check if finished. Grab energy and gradient
         outfile=self.filename+'.out'
@@ -423,27 +446,32 @@ class ORCATheory:
         #Always make copy of last output file
         shutil.copy(self.filename+'.out', self.filename+'_last.out')
 
+        ORCAfinished,numiterations = checkORCAfinished(outfile)
         #Check if ORCA finished or not. Exiting if so
-        if checkORCAfinished(outfile) is False:
+        if ORCAfinished is False:
             print(BC.FAIL,"Problem with ORCA run", BC.END)
             print(BC.OKBLUE,BC.BOLD, "------------ENDING ORCA-INTERFACE-------------", BC.END)
             print_time_rel(module_init_time, modulename='ORCA run', moduleindex=2)
             ashexit()
+        if self.printlevel >= 1:
+            print(f"ORCA converged in {numiterations} iterations")
 
         #Print population analysis in each run if requested
         if self.print_population_analysis is True:
-            print("\nPrinting Population analysis:")
-            print("-"*30)
-            print("Spin populations:")
-            charges = grabatomcharges_ORCA("Mulliken",self.filename+'.out')
-            spinpops = grabspinpop_ORCA("Mulliken",self.filename+'.out')
-            print("{:<2} {:<2}  {:>10} {:>10}".format(" ", " ", "Charge", "Spinpop"))
-            for i,(el, ch, sp) in enumerate(zip(qm_elems,charges, spinpops)):
-                print("{:<2} {:<2}: {:>10} {:>10}".format(i,el,ch,sp))
+            if self.printlevel >= 2:
+                print("\nPrinting Population analysis:")
+                print("-"*30)
+                print("Spin populations:")
+                charges = grabatomcharges_ORCA("Mulliken",self.filename+'.out')
+                spinpops = grabspinpop_ORCA("Mulliken",self.filename+'.out')
+                print("{:<2} {:<2}  {:>10} {:>10}".format(" ", " ", "Charge", "Spinpop"))
+                for i,(el, ch, sp) in enumerate(zip(qm_elems,charges, spinpops)):
+                    print("{:<2} {:<2}: {:>10} {:>10}".format(i,el,ch,sp))
 
         #Grab energy
         self.energy=ORCAfinalenergygrab(outfile)
-        print("\nORCA energy:", self.energy)
+        if self.printlevel >= 1:
+            print("ORCA energy:", self.energy)
 
         #Grab timings from ORCA output
         orca_timings = ORCAtimingsgrab(outfile)
@@ -454,32 +482,40 @@ class ORCATheory:
         #XDM option: WFX file should have been created.
         if self.xdm == True:
             dispE,dispgrad = xdm_run(wfxfile=self.filename+'.wfx', a1=self.xdm_a1, a2=self.xdm_a2,functional=self.xdm_func)
-            print("XDM dispersion energy:", dispE)
+            if self.printlevel >= 2:
+                print("XDM dispersion energy:", dispE)
             self.energy = self.energy + dispE
-            print("DFT+XDM energy:", self.energy )
+            if self.printlevel >= 2:
+                print("DFT+XDM energy:", self.energy )
             #TODO: dispgrad not yet done
             self.grad = self.grad + dispgrad
+
+
+
         if Grad == True:
             grad =ORCAgradientgrab(engradfile)
             self.grad = self.grad + grad
             if PC == True:
                 #Print time to calculate ORCA QM-PC gradient
                 if "pc_gradient" in orca_timings:
-                    print("Time calculating QM-Pointcharge gradient: {} seconds".format(orca_timings["pc_gradient"]))
+                    if self.printlevel >= 2:
+                        print("Time calculating QM-Pointcharge gradient: {} seconds".format(orca_timings["pc_gradient"]))
                 #Grab pointcharge gradient. i.e. gradient on MM atoms from QM-MM elstat interaction.
                 self.pcgrad=ORCApcgradientgrab(pcgradfile)
                 print(BC.OKBLUE,BC.BOLD,"------------ENDING ORCA-INTERFACE-------------", BC.END)
-                print_time_rel(module_init_time, modulename='ORCA run', moduleindex=2)
+                print_time_rel(module_init_time, modulename='ORCA run', moduleindex=2, currprintlevel=self.printlevel, currthreshold=1)
                 return self.energy, self.grad, self.pcgrad
             else:
-                print(BC.OKBLUE,BC.BOLD,"------------ENDING ORCA-INTERFACE-------------", BC.END)
-                print_time_rel(module_init_time, modulename='ORCA run', moduleindex=2)
+                if self.printlevel >= 2:
+                    print(BC.OKBLUE,BC.BOLD,"------------ENDING ORCA-INTERFACE-------------", BC.END)
+                print_time_rel(module_init_time, modulename='ORCA run', moduleindex=2, currprintlevel=self.printlevel, currthreshold=1)
                 return self.energy, self.grad
 
         else:
-            print("Single-point ORCA energy:", self.energy)
-            print(BC.OKBLUE,BC.BOLD,"------------ENDING ORCA-INTERFACE-------------", BC.END)
-            print_time_rel(module_init_time, modulename='ORCA run', moduleindex=2)
+            if self.printlevel >= 2:
+                print("Single-point ORCA energy:", self.energy)
+                print(BC.OKBLUE,BC.BOLD,"------------ENDING ORCA-INTERFACE-------------", BC.END)
+            print_time_rel(module_init_time, modulename='ORCA run', moduleindex=2, currprintlevel=self.printlevel, currthreshold=1)
             return self.energy
 
 
@@ -567,8 +603,7 @@ def run_inputfiles_in_parallel(orcadir, inpfiles, numcores):
     :param numcores: number of cores to use (integer)
     ;return: returns nothing. Outputfiles on disk parsed separately
     """
-    blankline()
-    print("Number of CPU cores: ", numcores)
+    print("\nNumber of CPU cores: ", numcores)
     print("Number of inputfiles:", len(inpfiles))
     print("Running snapshots in parallel")
     pool = mp.Pool(numcores)
@@ -601,11 +636,8 @@ def run_orca_SP_ORCApar(orcadir, inpfile, numcores=1, check_for_warnings=True, c
     basename = inpfile.replace('.inp','')
     with open(basename+'.out', 'w') as ofile:
         #process = sp.run([orcadir + '/orca', basename+'.inp'], check=True, stdout=ofile, stderr=ofile, universal_newlines=True)
-        print("Calling ORCA as Python subprocess")
         try:
             process = sp.run([orcadir + '/orca', inpfile], check=True, stdout=ofile, stderr=ofile, universal_newlines=True)
-            print("ORCA run completed.")
-            print()
             if check_for_errors:
                 grab_ORCA_errors(basename+'.out')
             if check_for_warnings:
@@ -634,7 +666,8 @@ def grab_ORCA_warnings(filename):
 
     warnings=[]
     #Lines that are not useful warnings
-    ignore_lines=['                       Please study these wa','                                        WARNINGS']
+    ignore_lines=['                       Please study these wa','                                        WARNINGS', 
+        ' Warning: in a DFT calculation', 'WARNING: Old DensityContainer' ]
     for warn in warning_lines:
         false_positive = any(warn.startswith(ign) for ign in ignore_lines)
         if false_positive is False:
@@ -657,7 +690,8 @@ def grab_ORCA_errors(filename):
 
     errors=[]
     #Lines that are not errors
-    ignore_lines=['   Startup', ' DIIS', 'sum of PNO error', '  Last DIIS Error', '    DIIS-Error', ' Sum of total truncation errors', '  Sum of total UMP2 truncation', ' Warning: in a DFT calculation' ]
+    ignore_lines=['   Startup', ' DIIS', 'sum of PNO error', '  Last DIIS Error', '    DIIS-Error', ' Sum of total truncation errors', 
+        '  Sum of total UMP2 truncation', ]
     for err in error_lines:
         false_positive = any(err.startswith(ign) for ign in ignore_lines)
         if false_positive is False:
@@ -669,13 +703,14 @@ def grab_ORCA_errors(filename):
 #Check if ORCA finished.
 #Todo: Use reverse-read instead to speed up?
 def checkORCAfinished(file):
+    iter=None
     with open(file) as f:
         for line in f:
             if 'SCF CONVERGED AFTER' in line:
                 iter=line.split()[-3]
-                print("ORCA converged in {} iterations".format(iter))
             if 'TOTAL RUN TIME:' in line:
-                return True
+                return True,iter
+    return False,None
 def checkORCAOptfinished(file):
     converged=False
     with open(file) as f:
@@ -2127,7 +2162,8 @@ def ORCA_External_Optimizer(fragment=None, theory=None, orcadir=None, charge=Non
         process = sp.run(['orca', basename+'.inp'], check=True, stdout=ofile, stderr=ofile, universal_newlines=True)
 
     #Check if ORCA finished
-    if checkORCAfinished(basename+'.out') is not True:
+    ORCAfinished, iter = checkORCAfinished(basename+'.out')
+    if ORCAfinished is not True:
         print("Something failed about external ORCA job")
         ashexit()
     #Check if optimization completed

@@ -56,7 +56,7 @@ no_kb = False
 global energystring, forcestring
 
 energystring = 'eV'
-forcestring = 'eV/A'
+forcestring = 'eV/Ang'
 lengthstring = 'A'
 
 global printlevel, output_extension

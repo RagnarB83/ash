@@ -301,7 +301,7 @@ class xTBTheory:
                     if self.printlevel >= 2:
                         print("xtb energy :", self.energy)
                         print("------------ENDING XTB-INTERFACE-------------")
-                    print_time_rel(module_init_time, modulename='xTB run', moduleindex=2)
+                    print_time_rel(module_init_time, modulename='xTB run', moduleindex=2, currprintlevel=self.printlevel, currthreshold=1)
                     return self.energy, self.grad
             else:
                 outfile=self.filename+'.out'
@@ -309,7 +309,7 @@ class xTBTheory:
                 if self.printlevel >= 2:
                     print("xtb energy :", self.energy)
                     print("------------ENDING XTB-INTERFACE-------------")
-                print_time_rel(module_init_time, modulename='xTB run', moduleindex=2)
+                print_time_rel(module_init_time, modulename='xTB run', moduleindex=2, currprintlevel=self.printlevel, currthreshold=1)
                 return self.energy
         
         elif self.runmode =='library':

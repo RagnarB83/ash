@@ -51,7 +51,7 @@ def DoPathInterpolation(path, parameters):
             # =======================================
             # Minimize RMSD
             # =======================================
-            if not path.IsConstrained() and not path.GetPBC() and not path.IsTwoDee():
+            if not path.IsConstrained() and not path.GetPBC() and not path.twodee:
                 print('Minimization of RMSD (R-to-P):')
                 rmsdbefore = RMS3(path.GetNDimIm(), path.GetConfig1() - path.GetConfig2())
                 prod_coords, atom_coords = MinimizeRotation(path.GetNDimIm(), path.GetConfig1(),
@@ -74,7 +74,8 @@ def DoPathInterpolation(path, parameters):
         # Perform linear interpolation with insertion
         # ================================================
         else:
-            if not path.IsConstrained() and not path.GetPBC() and not path.IsTwodee():
+            print("Insertion of TS geometry is active")
+            if not path.IsConstrained() and not path.GetPBC() and not path.twodee:
                 print('Minimzation of RMSD (R-to-I):')
                 rmsdbefore = RMS3(path.GetNDimIm(), path.GetConfig1() - path.GetInsertionConfig())
                 insertion_coords, atom_coords = MinimizeRotation(path.GetNDimIm(), path.GetConfig1(),

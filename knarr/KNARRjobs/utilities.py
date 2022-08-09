@@ -433,7 +433,13 @@ def IntermImprovedTangent(ndim, nim, r, energy, pbc=False, cell=False):
                 rtang = drplus * Vmax + drminus * Vmin
             else:
                 rtang = drplus * Vmin + drminus * Vmax
-
+        #print("np.linalg.norm(rtang):", np.linalg.norm(rtang))
+        #print("rtang:", rtang)
+        #print("ndim:", ndim)
+        #print("i:",i)
+        #print("rtang / np.linalg.norm(rtang):", rtang / np.linalg.norm(rtang))
+        #print("---")
+        #TODO: Need to fix when np.linalg.norm(rtang) is 0 because rtang is zero vector
         keeptang[i * ndim:(i + 1) * ndim] = rtang / np.linalg.norm(rtang)
     return keeptang
 
