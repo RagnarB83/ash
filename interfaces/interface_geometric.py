@@ -16,16 +16,19 @@ from ash.modules.module_coords import check_charge_mult
 ################################################
 
 #Wrapper function around GeomeTRICOptimizerClass
-def geomeTRICOptimizer(theory=None, fragment=None, charge=None, mult=None, coordsystem='tric', frozenatoms=None, constraintsinputfile=None, constraints=None, 
-                       constrainvalue=False, maxiter=50, ActiveRegion=False, actatoms=None, convergence_setting=None, conv_criteria=None,
-                       print_atoms_list=None):
+def geomeTRICOptimizer(theory=None, fragment=None, charge=None, mult=None, coordsystem='tric', frozenatoms=None, constraints=None, 
+                       constrainvalue=False, constraintsinputfile=None, maxiter=100, ActiveRegion=False, actatoms=None, 
+                       convergence_setting=None, conv_criteria=None, print_atoms_list=None):
+    """
+    Wrapper function around GeomeTRICOptimizerClass
+    """
     print_line_with_mainheader("geomeTRICOptimizer")
     timeA=time.time()
     optimizer=GeomeTRICOptimizerClass(theory=theory, fragment=fragment, charge=charge, mult=mult, coordsystem=coordsystem, frozenatoms=frozenatoms, 
-                        constraintsinputfile=constraintsinputfile, constraints=constraints, 
-                       constrainvalue=constrainvalue, maxiter=maxiter, ActiveRegion=ActiveRegion, actatoms=actatoms, 
-                       convergence_setting=convergence_setting, conv_criteria=conv_criteria,
-                       print_atoms_list=print_atoms_list)
+                        constraints=constraints, constrainvalue=constrainvalue, constraintsinputfile=constraintsinputfile, maxiter=maxiter,
+                         ActiveRegion=ActiveRegion, actatoms=actatoms, 
+                        convergence_setting=convergence_setting, conv_criteria=conv_criteria,
+                        print_atoms_list=print_atoms_list)
     finalenergy = optimizer.run()
     print_time_rel(timeA, modulename='geomeTRIC', moduleindex=1)
     return finalenergy
@@ -37,7 +40,7 @@ class GeomeTRICOptimizerClass:
                        constrainvalue=False, maxiter=50, ActiveRegion=False, actatoms=None, convergence_setting=None, conv_criteria=None,
                        print_atoms_list=None):
             """
-            Wrapper function around geomeTRIC code. Take theory and fragment info from ASH
+            Wrapper class around geomeTRIC code. Take theory and fragment info from ASH
             Supports frozen atoms and bond/angle/dihedral constraints in native code. Use frozenatoms and bondconstraints etc. for this.
             New feature: Active Region for huge systems. Use ActiveRegion=True and provide actatoms list.
             Active-atom coords (e.g. only QM region) are only provided to geomeTRIC during optimization while rest is frozen.
@@ -327,7 +330,8 @@ class GeomeTRICOptimizerClass:
                     print("Truncated PC approximation was active. Doing final energy calculation with full PC environment")
                     self.theory.TruncatedPC=False
                     self.finalenergy, self.finalgrad = self.theory.run(current_coords=self.ashengine.full_current_coords, elems=self.fragment.elems, 
-                        Grad=True, label='FinalIter', charge=self.charge, mult=self.mult)
+                        Grad=True,  charge=self.charge, mult=self.mult)
+                        #label='FinalIter',
                 else:
                     self.finalenergy=self.ashengine.energy
             else:
@@ -487,7 +491,8 @@ class ASHengineclass:
             print("Note: Only print_atoms_list region printed above")
             #Request Engrad calc for full system
 
-            E, Grad = self.theory.run(current_coords=self.full_current_coords, elems=self.fragment.elems, charge=self.charge, mult=self.mult, Grad=True, label='Iter'+str(self.iteration_count))
+            E, Grad = self.theory.run(current_coords=self.full_current_coords, elems=self.fragment.elems, charge=self.charge, mult=self.mult, Grad=True)
+            #label='Iter'+str(self.iteration_count)
             #print_time_rel(timeA, modulename='geometric ASHcalc.calc theory.run', moduleindex=2)
             timeA=time.time()
             #Trim Full gradient down to only act-atoms gradient
@@ -527,7 +532,8 @@ class ASHengineclass:
             print("")
             print("Note: printed only print_atoms_list (this is not necessary all atoms) ")
             E,Grad=self.theory.run(current_coords=currcoords, elems=self.M.elem, charge=self.charge, mult=self.mult,
-                                Grad=True, label='Iter'+str(self.iteration_count))
+                                Grad=True)
+            #label='Iter'+str(self.iteration_count)
             self.iteration_count += 1
             self.energy = E
             return {'energy': E, 'gradient': Grad.flatten()}

@@ -14,7 +14,7 @@ import ash.interfaces.interface_geometric
 import ash.interfaces.interface_crest
 from ash.functions.functions_general import BC,print_time_rel,print_line_with_mainheader,pygrep, ashexit,n_max_values
 #from ash.modules.module_singlepoint import Singlepoint_fragments
-from ash.modules.module_highlevel_workflows import CC_CBS_Theory
+from ash.modules.module_highlevel_workflows import ORCA_CC_CBS_Theory
 from ash.modules.module_coords import read_xyzfiles
 import ash.functions.functions_elstructure
 from ash.modules.module_plotting import ASH_plot
@@ -181,7 +181,7 @@ def thermochemprotocol_single(fragment=None, Opt_theory=None, SP_theory=None, nu
 
     FinalE = ash.Singlepoint(fragment=fragment, theory=SP_theory, charge=charge, mult=mult)
     #Get energy components
-    if isinstance(SP_theory,CC_CBS_Theory):
+    if isinstance(SP_theory,ORCA_CC_CBS_Theory):
         componentsdict=SP_theory.energy_components
     else:
         componentsdict={}
@@ -673,7 +673,7 @@ def Reaction_Highlevel_Analysis(fraglist=None, stoichiometry=None, numcores=1, m
             label=cardinal
             CCSDT_def2_bases_proj.labels.append(label)
             #Define theory level
-            cc = CC_CBS_Theory(elements=elements_involved, cardinals = [cardinal], basisfamily="def2", DLPNO=DLPNO, numcores=numcores, memory=memory)
+            cc = ORCA_CC_CBS_Theory(elements=elements_involved, cardinals = [cardinal], basisfamily="def2", DLPNO=DLPNO, numcores=numcores, memory=memory)
             #Single-point calcs on all fragments
             energies=ash.Singlepoint_fragments(fragments=specieslist, theory=cc)
             for species,e in zip(specieslist,energies):
@@ -716,7 +716,7 @@ def Reaction_Highlevel_Analysis(fraglist=None, stoichiometry=None, numcores=1, m
             label=cardinal
             CCSDT_cc_bases_proj.labels.append(label)
             #Define theory level
-            cc = CC_CBS_Theory(elements=elements_involved, cardinals = [cardinal], basisfamily="cc", DLPNO=DLPNO, numcores=numcores, memory=memory)
+            cc = ORCA_CC_CBS_Theory(elements=elements_involved, cardinals = [cardinal], basisfamily="cc", DLPNO=DLPNO, numcores=numcores, memory=memory)
             #Single-point calcs on all fragments
             energies=ash.Singlepoint_fragments(fragments=specieslist, theory=cc)
             for species,e in zip(specieslist,energies):
@@ -759,7 +759,7 @@ def Reaction_Highlevel_Analysis(fraglist=None, stoichiometry=None, numcores=1, m
             label=cardinal
             CCSDT_aug_cc_bases_proj.labels.append(label)
             #Define theory level
-            cc = CC_CBS_Theory(elements=elements_involved, cardinals = [cardinal], basisfamily="aug-cc", DLPNO=DLPNO, numcores=numcores, memory=memory)
+            cc = ORCA_CC_CBS_Theory(elements=elements_involved, cardinals = [cardinal], basisfamily="aug-cc", DLPNO=DLPNO, numcores=numcores, memory=memory)
             #Single-point calcs on all fragments
             energies=ash.Singlepoint_fragments(fragments=specieslist, theory=cc)
             for species,e in zip(specieslist,energies):
@@ -805,7 +805,7 @@ def Reaction_Highlevel_Analysis(fraglist=None, stoichiometry=None, numcores=1, m
             label=str(cardinal)
             CCSDTF12_bases_proj.labels.append(label)
             #Define theory level
-            cc = CC_CBS_Theory(elements=elements_involved, cardinals = [cardinal], basisfamily="cc-f12", F12=True, DLPNO=DLPNO, numcores=numcores, memory=memory)
+            cc = ORCA_CC_CBS_Theory(elements=elements_involved, cardinals = [cardinal], basisfamily="cc-f12", F12=True, DLPNO=DLPNO, numcores=numcores, memory=memory)
             #Single-point calcs on all fragments
             energies=ash.Singlepoint_fragments(fragments=specieslist, theory=cc)
             for species,e in zip(specieslist,energies):
@@ -854,7 +854,7 @@ def Reaction_Highlevel_Analysis(fraglist=None, stoichiometry=None, numcores=1, m
             label=str(cardinal)
             CCSDTextrap_proj.labels.append(label)
             #Define theory level
-            cc = CC_CBS_Theory(elements=elements_involved, cardinals = cardinals, basisfamily="cc", DLPNO=DLPNO, numcores=numcores, memory=memory)
+            cc = ORCA_CC_CBS_Theory(elements=elements_involved, cardinals = cardinals, basisfamily="cc", DLPNO=DLPNO, numcores=numcores, memory=memory)
             #Single-point calcs on all fragments
             energies=ash.Singlepoint_fragments(fragments=specieslist, theory=cc)
             for species,e in zip(specieslist,energies):
@@ -905,7 +905,7 @@ def Reaction_Highlevel_Analysis(fraglist=None, stoichiometry=None, numcores=1, m
                 label=str(cardinal)
                 CCSDTextrapaugcc_proj.labels.append(label)
                 #Define theory level
-                cc = CC_CBS_Theory(elements=elements_involved, cardinals = cardinals, basisfamily="aug-cc", DLPNO=DLPNO, numcores=numcores, memory=memory)
+                cc = ORCA_CC_CBS_Theory(elements=elements_involved, cardinals = cardinals, basisfamily="aug-cc", DLPNO=DLPNO, numcores=numcores, memory=memory)
                 #Single-point calcs on all fragments
                 energies=ash.Singlepoint_fragments(fragments=specieslist, theory=cc)
                 for species,e in zip(specieslist,energies):
@@ -952,7 +952,7 @@ def Reaction_Highlevel_Analysis(fraglist=None, stoichiometry=None, numcores=1, m
             label=str(cardinal)
             CCSDTextrapdef2_proj.labels.append(label)
             #Define theory level
-            cc = CC_CBS_Theory(elements=elements_involved, cardinals = cardinals, basisfamily="def2", DLPNO=DLPNO, numcores=numcores, memory=memory)
+            cc = ORCA_CC_CBS_Theory(elements=elements_involved, cardinals = cardinals, basisfamily="def2", DLPNO=DLPNO, numcores=numcores, memory=memory)
             #Single-point calcs on all fragments
             energies=ash.Singlepoint_fragments(fragments=specieslist, theory=cc)
             for species,e in zip(specieslist,energies):

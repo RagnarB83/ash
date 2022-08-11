@@ -59,6 +59,8 @@ import ash.interfaces.interface_multiwfn
 from ash.interfaces.interface_multiwfn import multiwfn_run
 # Spinprojection
 from ash.modules.module_spinprojection import SpinProjectionTheory
+#DualTheory
+from ash.modules.module_dualtheory import DualTheory
 
 # Surface
 from ash.modules.module_surface import calc_surface, calc_surface_fromXYZ, read_surfacedict_from_file, \
@@ -106,7 +108,8 @@ from ash.modules.module_molcrys import molcrys, Fragmenttype
 # Geometry optimization
 from ash.functions.functions_optimization import SimpleOpt, BernyOpt
 from ash.interfaces.interface_geometric import geomeTRICOptimizer
-
+Optimizer = geomeTRICOptimizer
+Opt = geomeTRICOptimizer
 # PES
 import ash.modules.module_PES
 from ash.modules.module_PES import PhotoElectronSpectrum, potential_adjustor_DFT
@@ -114,7 +117,9 @@ from ash.modules.module_PES import PhotoElectronSpectrum, potential_adjustor_DFT
 # Workflows, benchmarking etc
 import ash.modules.module_workflows
 import ash.modules.module_highlevel_workflows
-from ash.modules.module_highlevel_workflows import CC_CBS_Theory, ORCA_CC_CBS_Theory
+from ash.modules.module_highlevel_workflows import ORCA_CC_CBS_Theory
+CC_CBS_Theory = ORCA_CC_CBS_Theory #TODO: Temporary alias
+
 from ash.modules.module_workflows import ReactionEnergy, thermochemprotocol_reaction, thermochemprotocol_single, \
     confsampler_protocol, auto_active_space, calc_xyzfiles, ProjectResults, Reaction_Highlevel_Analysis, FormationEnthalpy, \
     AutoNonAufbau, ExcitedStateSCFOptimizer

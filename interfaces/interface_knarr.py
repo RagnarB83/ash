@@ -492,7 +492,7 @@ class KnarrCalculator:
 
                     #EnGrad calculation on full system
                     En_image, Grad_image_full = self.theory.run(current_coords=full_current_image_coords, charge=self.charge, mult=self.mult,
-                                                                elems=self.full_fragment_reactant.elems, Grad=True)
+                                                                elems=self.full_fragment_reactant.elems, Grad=True, label="image_"+str(image_number))
 
                     if self.ORCAused == True:
                         if self.printlevel >= 1:
@@ -508,7 +508,8 @@ class KnarrCalculator:
 
                 else:
                     
-                    En_image, Grad_image = self.theory.run(current_coords=image_coords, elems=self.fragment1.elems, Grad=True, charge=self.charge, mult=self.mult,)
+                    En_image, Grad_image = self.theory.run(current_coords=image_coords, elems=self.fragment1.elems, Grad=True, charge=self.charge, mult=self.mult,
+                        label="image_"+str(image_number))
                     
                     if self.ORCAused == True:
                         if self.printlevel >= 1:

@@ -1030,10 +1030,6 @@ maxiter 150\nend
         #TODO: remove E_dict
         return E_FINAL
 
-
-#NOTE: Temporary alias to maintain current compatibility. Will be changed when we introduce MRCC_CC_CBS_Theory 
-CC_CBS_Theory = ORCA_CC_CBS_Theory
-
 #MRCC version
 class MRCC_CC_CBS_Theory:
     def __init__(self, elements=None, scfsetting='TightSCF', extrainputkeyword='', extrablocks='', memory=5000, numcores=1, 

@@ -614,6 +614,9 @@ def DoNEB(path, calculator, neb, optimizer, second_run=False):
         if os.path.isfile(basename + "_current.xyz"):
             os.remove(basename + "_current.xyz")
 
+        E_barrier=(path.GetEnergy()[CI][0] - path.GetEnergy()[0][0])*23.060541945329334
+        print(f"\nBarrier energy: {E_barrier} kcal/mol")
+
         PrintAtomMatrix("\nSaddle point geometry (Å):", path.GetNDimIm(),
                         path.GetCoords()[CI * path.GetNDimIm():(CI + 1) * path.GetNDimIm()],
                         path.GetSymbols())
