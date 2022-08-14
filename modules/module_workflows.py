@@ -168,7 +168,7 @@ def thermochemprotocol_single(fragment=None, Opt_theory=None, SP_theory=None, nu
             else:
                 thermochem = ash.NumFreq(fragment=fragment, theory=Opt_theory, npoint=2, runmode='serial', charge=charge, mult=mult)
         else:
-            print("Opt_theory is None. Skipping optimization and frequency calculation.\n")
+            print("Opt_theory is set to None. Skipping optimization and frequency calculation.\n")
             #If Opt_theory == None => No Opt, no freq
             thermochem={'ZPVE':0.0,'Gcorr':0.0,'Hcorr':0.0}
     else:
@@ -218,9 +218,9 @@ def thermochemprotocol_reaction(Opt_theory=None, SP_theory=None, reaction=None, 
         fraglist = reaction.fragments
         stoichiometry = reaction.stoichiometry
 
-    print("Running thermochemprotocol function for fragment list:")
+    print("Running thermochemprotocol function for fragments:")
     for i,frag in enumerate(fraglist):
-        print("Fragment {} Formula: {}  Label: {}".format(i,frag.prettyformula,frag.label))
+        print(f"Fragment {i} Formula: {frag.prettyformula}  Label: {frag.label} Charge: {frag.charge} Mult: {frag.mult}")
     print("Stoichiometry:", stoichiometry)
     print("")
     FinalEnergies_el = []; FinalEnergies_zpve = []; FinalEnthalpies = []; FinalFreeEnergies = []; list_of_dicts = []; ZPVE_Energies=[]
