@@ -179,6 +179,11 @@ def read_referencedata_property_file(benchmarksetpath):
 def get_reaction_string(filenames, stoichiometry):
     string =""
     
+    def convert_stoich_to_string(i):
+        if abs(i) == 1:
+            return ""
+        else:
+            return str(abs(i))
     #Check index for sign change from reactant to product or vice versa
     for i,file in enumerate(filenames):
         #Current index
@@ -191,14 +196,18 @@ def get_reaction_string(filenames, stoichiometry):
         
         #Sign changed => First right-hand side case
         if is_same_sign(currindex,beforeindex) is False:
-            string+=" ⟶   " + file
+            string+=" ⟶   "
+            stoich = convert_stoich_to_string(stoichiometry[i])
+            string+=stoich + " " + file
         else:
             #First reactant
             if i == 0:
-                string=file
+                stoich = convert_stoich_to_string(stoichiometry[i])
+                string=stoich + " " + file
             #Everything else
             else:
-                string+=" + " + file
+                stoich = convert_stoich_to_string(stoichiometry[i])
+                string+=" + "+stoich + " " + file
     return string
 
 
