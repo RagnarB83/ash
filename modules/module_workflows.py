@@ -194,7 +194,7 @@ def thermochemprotocol_single(fragment=None, Opt_theory=None, SP_theory=None, nu
 #Thermochemistry protocol. Take list of fragments, stoichiometry, and 2 theory levels
 #Requires orcadir, and Opt_theory level (typically an ORCATheory object), SP_theory (either ORCATTheory or workflow.
 def thermochemprotocol_reaction(Opt_theory=None, SP_theory=None, reaction=None, fraglist=None, stoichiometry=None, numcores=1, memory=5000,
-                       analyticHessian=True, temp=298.15, pressure=1.0):
+                       analyticHessian=True, temp=298.15, pressure=1.0, unit='kcal/mol'):
     """[summary]
 
     Args:
@@ -255,51 +255,51 @@ def thermochemprotocol_reaction(Opt_theory=None, SP_theory=None, reaction=None, 
     print("FINAL REACTION ENERGY:")
     print("Enthalpy and Gibbs Energies for  T={} and P={}".format(temp,pressure))
     print("-"*80)
-    deltaE=ReactionEnergy(stoichiometry=stoichiometry, list_of_fragments=fraglist, list_of_energies=FinalEnergies_el, unit='kcal/mol', label='Total ΔE_el')[0]
-    deltaE_0=ReactionEnergy(stoichiometry=stoichiometry, list_of_fragments=fraglist, list_of_energies=FinalEnergies_zpve, unit='kcal/mol', label='Total Δ(E+ZPVE)')[0]
-    deltaH=ReactionEnergy(stoichiometry=stoichiometry, list_of_fragments=fraglist, list_of_energies=FinalEnthalpies, unit='kcal/mol', label='Total ΔH(T={}'.format(temp))[0]
-    deltaG=ReactionEnergy(stoichiometry=stoichiometry, list_of_fragments=fraglist, list_of_energies=FinalFreeEnergies, unit='kcal/mol', label='Total ΔG(T={}'.format(temp))[0]
+    deltaE=ReactionEnergy(stoichiometry=stoichiometry, list_of_fragments=fraglist, list_of_energies=FinalEnergies_el, unit=unit, label='Total ΔE_el')[0]
+    deltaE_0=ReactionEnergy(stoichiometry=stoichiometry, list_of_fragments=fraglist, list_of_energies=FinalEnergies_zpve, unit=unit, label='Total Δ(E+ZPVE)')[0]
+    deltaH=ReactionEnergy(stoichiometry=stoichiometry, list_of_fragments=fraglist, list_of_energies=FinalEnthalpies, unit=unit, label='Total ΔH(T={}'.format(temp))[0]
+    deltaG=ReactionEnergy(stoichiometry=stoichiometry, list_of_fragments=fraglist, list_of_energies=FinalFreeEnergies, unit=unit, label='Total ΔG(T={}'.format(temp))[0]
     print("-"*80)
     print("Individual contributions")
     #Print individual contributions if available
     #ZPVE, Hcorr, gcorr
-    deltaZPVE=ReactionEnergy(stoichiometry=stoichiometry, list_of_fragments=fraglist, list_of_energies=ZPVE_Energies, unit='kcal/mol', label='ΔZPVE')[0]
-    deltaHcorr=ReactionEnergy(stoichiometry=stoichiometry, list_of_fragments=fraglist, list_of_energies=Hcorr_Energies, unit='kcal/mol', label='ΔHcorr')[0]
-    deltaGcorr=ReactionEnergy(stoichiometry=stoichiometry, list_of_fragments=fraglist, list_of_energies=Gcorr_Energies, unit='kcal/mol', label='ΔGcorr')[0]
+    deltaZPVE=ReactionEnergy(stoichiometry=stoichiometry, list_of_fragments=fraglist, list_of_energies=ZPVE_Energies, unit=unit, label='ΔZPVE')[0]
+    deltaHcorr=ReactionEnergy(stoichiometry=stoichiometry, list_of_fragments=fraglist, list_of_energies=Hcorr_Energies, unit=unit, label='ΔHcorr')[0]
+    deltaGcorr=ReactionEnergy(stoichiometry=stoichiometry, list_of_fragments=fraglist, list_of_energies=Gcorr_Energies, unit=unit, label='ΔGcorr')[0]
     print("-"*80)
     finaldict={'deltaE':deltaE, 'deltaE_0':deltaE_0, 'deltaH':deltaH, 'deltaG':deltaG, 'deltaZPVE':deltaZPVE, 'deltaHcorr':deltaHcorr, 'deltaGcorr':deltaGcorr}
     #Contributions to CCSD(T) energies
     if 'E_SCF_CBS' in componentsdict:
         scf_parts=[dict['E_SCF_CBS'] for dict in list_of_dicts]
-        deltaSCF=ReactionEnergy(stoichiometry=stoichiometry, list_of_fragments=fraglist, list_of_energies=scf_parts, unit='kcal/mol', label='ΔSCF')[0]
+        deltaSCF=ReactionEnergy(stoichiometry=stoichiometry, list_of_fragments=fraglist, list_of_energies=scf_parts, unit=unit, label='ΔSCF')[0]
         finaldict['deltaSCF']=deltaSCF
     if 'E_corrCCSD_CBS' in componentsdict:
         ccsd_parts=[dict['E_corrCCSD_CBS'] for dict in list_of_dicts]
-        delta_CCSDcorr=ReactionEnergy(stoichiometry=stoichiometry, list_of_fragments=fraglist, list_of_energies=ccsd_parts, unit='kcal/mol', label='ΔCCSD')[0]
+        delta_CCSDcorr=ReactionEnergy(stoichiometry=stoichiometry, list_of_fragments=fraglist, list_of_energies=ccsd_parts, unit=unit, label='ΔCCSD')[0]
         finaldict['delta_CCSDcorr']=delta_CCSDcorr
     if 'E_corrCCT_CBS' in componentsdict:
         triples_parts=[dict['E_corrCCT_CBS'] for dict in list_of_dicts]
-        delta_Tcorr=ReactionEnergy(stoichiometry=stoichiometry, list_of_fragments=fraglist, list_of_energies=triples_parts, unit='kcal/mol', label='Δ(T)')[0]
+        delta_Tcorr=ReactionEnergy(stoichiometry=stoichiometry, list_of_fragments=fraglist, list_of_energies=triples_parts, unit=unit, label='Δ(T)')[0]
         finaldict['delta_Tcorr']=delta_Tcorr
     if 'E_corr_CBS' in componentsdict:
         valencecorr_parts=[dict['E_corr_CBS'] for dict in list_of_dicts]
-        delta_CC_corr=ReactionEnergy(stoichiometry=stoichiometry, list_of_fragments=fraglist, list_of_energies=valencecorr_parts, unit='kcal/mol', label='ΔCCSD+Δ(T) corr')[0]
+        delta_CC_corr=ReactionEnergy(stoichiometry=stoichiometry, list_of_fragments=fraglist, list_of_energies=valencecorr_parts, unit=unit, label='ΔCCSD+Δ(T) corr')[0]
         finaldict['delta_CC_corr']=delta_CC_corr
     if 'E_SO' in componentsdict:
         SO_parts=[dict['E_SO'] for dict in list_of_dicts]
-        delta_SO_corr=ReactionEnergy(stoichiometry=stoichiometry, list_of_fragments=fraglist, list_of_energies=SO_parts, unit='kcal/mol', label='ΔSO')[0]
+        delta_SO_corr=ReactionEnergy(stoichiometry=stoichiometry, list_of_fragments=fraglist, list_of_energies=SO_parts, unit=unit, label='ΔSO')[0]
         finaldict['delta_SO_corr']=delta_SO_corr
     if 'E_corecorr_and_SR' in componentsdict:
         CV_SR_parts=[dict['E_corecorr_and_SR'] for dict in list_of_dicts]
-        delta_CVSR_corr=ReactionEnergy(stoichiometry=stoichiometry, list_of_fragments=fraglist, list_of_energies=CV_SR_parts, unit='kcal/mol', label='ΔCV+SR')[0]
+        delta_CVSR_corr=ReactionEnergy(stoichiometry=stoichiometry, list_of_fragments=fraglist, list_of_energies=CV_SR_parts, unit=unit, label='ΔCV+SR')[0]
         finaldict['delta_CVSR_corr']=delta_CVSR_corr
     if 'T1energycorr' in componentsdict:
         T1corr_parts=[dict['T1energycorr'] for dict in list_of_dicts]
-        delta_T1_corr=ReactionEnergy(stoichiometry=stoichiometry, list_of_fragments=fraglist, list_of_energies=T1corr_parts, unit='kcal/mol', label='ΔΔT1corr')[0]
+        delta_T1_corr=ReactionEnergy(stoichiometry=stoichiometry, list_of_fragments=fraglist, list_of_energies=T1corr_parts, unit=unit, label='ΔΔT1corr')[0]
         finaldict['delta_T1_corr']=delta_T1_corr
     if 'E_FCIcorrection' in componentsdict:
         fcicorr_parts=[dict['E_FCIcorrection'] for dict in list_of_dicts]
-        delta_FCI_corr=ReactionEnergy(stoichiometry=stoichiometry, list_of_fragments=fraglist, list_of_energies=fcicorr_parts, unit='kcal/mol', label='ΔFCIcorr')[0]
+        delta_FCI_corr=ReactionEnergy(stoichiometry=stoichiometry, list_of_fragments=fraglist, list_of_energies=fcicorr_parts, unit=unit, label='ΔFCIcorr')[0]
         finaldict['delta_FCI_corr']=delta_FCI_corr
     print("-"*80)
     print("")
