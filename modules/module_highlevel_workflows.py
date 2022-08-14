@@ -148,6 +148,12 @@ class ORCA_CC_CBS_Theory:
                 print("PNO extrapolation parameters:", self.pnoextrapolation)
             #Setting Full LMP2 to false in general for DLPNO
             dlpno_line="UseFullLMP2Guess {}".format(str(self.FullLMP2Guess).lower())
+        else:
+            if self.T1correction == True or self.T1 == True:
+                print("T1/T1correction is only available for DLPNO=True")
+                print("Ignoring T1 input")
+                self.T1=False
+                self.T1correction=False
         print("")
 
 
