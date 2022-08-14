@@ -471,10 +471,10 @@ def run_benchmark(set=None, theory=None, numcores=None, reuseorbs=False, correct
         
         if property=='energy':
             reactionstring=get_reaction_string(r.filenames, r.stoichiometry)
-            print(" {:<7} {:<55s}  {:<13.4f} {:<13.4f} {:<13.4f}{} {:>8.4f}{}".format(rindex, reactionstring, r.refenergy, r.calcenergy, r.calcenergy_corrected, colorcode, r.error,BC.END))
+            print(" {:<7} {:<80s}  {:<13.4f} {:<13.4f} {:<13.4f}{} {:>8.4f}{}".format(rindex, reactionstring, r.refenergy, r.calcenergy, r.calcenergy_corrected, colorcode, r.error,BC.END))
         else:
             #print(" {:<10} {:<40s}  {:<13.4f} {:<13.4f}{} {:<13.4f}{}".format(rindex, ' '.join(r.filenames), r.refenergy, r.calcenergy, colorcode, r.error,BC.END))
-            print(" {:<7} {:<55}  {:<13.4f} {:<13.4f} {:<13.4f}{} {:>8.4f}{}".format(rindex, str(r.filename), r.refvalue, r.calcvalue, r.calcvalue_corrected, colorcode, r.error,BC.END))
+            print(" {:<7} {:<80s}  {:<13.4f} {:<13.4f} {:<13.4f}{} {:>8.4f}{}".format(rindex, str(r.filename), r.refvalue, r.calcvalue, r.calcvalue_corrected, colorcode, r.error,BC.END))
         
     print("-"*120)
     print(" {:<10s} {:13.4f} {:<10s} ".format("MAE", MAE, unit))
