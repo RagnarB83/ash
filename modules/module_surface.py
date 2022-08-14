@@ -20,8 +20,8 @@ from ash.modules.module_coords import check_charge_mult
 
 # TODO: Finish parallelize surfacepoint calculations
 def calc_surface(fragment=None, theory=None, charge=None, mult=None, scantype='Unrelaxed', resultfile='surface_results.txt', keepoutputfiles=True, keepmofiles=False,
-                 runmode='serial', coordsystem='dlc', maxiter=50, extraconstraints=None, convergence_setting=None, 
-                 ActiveRegion=False, actatoms=None, **kwargs):
+                 runmode='serial', coordsystem='dlc', maxiter=50, extraconstraints=None, convergence_setting=None, numcores=1,
+                 ActiveRegion=False, actatoms=None, RC1_range=None, RC1_type=None, RC1_indices=None, RC2_range=None, RC2_type=None, RC2_indices=None):
     """Calculate 1D/2D surface
 
     Args:
@@ -46,38 +46,34 @@ def calc_surface(fragment=None, theory=None, charge=None, mult=None, scantype='U
     #Check charge/mult
     charge,mult = check_charge_mult(charge, mult, theory.theorytype, fragment, "calc_surface", theory=theory)
 
-    if 'numcores' in kwargs:
-        numcores = kwargs['numcores']
+    #Checking if everything provided and exiting early if so
+    if RC1_indices == None or RC1_type == None or RC1_range == None:
+        print("Error: You must provide RC1_indices, RC1_type and RC1_range")
+        ashexit()
+
     #Getting reaction coordinates and checking if 1D or 2D
-    if 'RC1_range' in kwargs:
-        RC1_range=kwargs['RC1_range']
-        RC1_type=kwargs['RC1_type']
-        RC1_indices=kwargs['RC1_indices']
-        #Checking if list of lists. If so then we apply multiple constraints for this reaction coordinate (e.g. symmetric bonds)
-        #Here making list of list in case only a single list was provided
-        if any(isinstance(el, list) for el in RC1_indices) is False:
-            RC1_indices=[RC1_indices]
-        print("RC1_type:", RC1_type)
-        print("RC1_indices:", RC1_indices)
-        print("RC1_range:", RC1_range)
-        
-    if 'RC2_range' in kwargs:
-        dimension=2
-        RC2_range=kwargs['RC2_range']
-        RC2_type=kwargs['RC2_type']
-        RC2_indices=kwargs['RC2_indices']
+    if RC2_type == None:
+        print("Found no RC2_type. This is a 1D scan.")
+        dimension = 1
+    else:
+        print("Found RC2_type keyword. This is a SD scan.")
+        dimension = 2
+        if RC2_indices == None or RC2_type == None or RC2_range == None:
+            print("Error: You must provide RC2_indices, RC2_type and RC2_range")
+            ashexit()
+    
+    #Checking if list of lists. If so then we apply multiple constraints for this reaction coordinate (e.g. symmetric bonds)
+    #Here making list of list in case only a single list was provided
+    if any(isinstance(el, list) for el in RC1_indices) is False:
+        RC1_indices=[RC1_indices]
+
+    #2D SCAN
+    if dimension == 2:
         if any(isinstance(el, list) for el in RC2_indices) is False:
             RC2_indices=[RC2_indices]
-        print("RC2_type:", RC2_type)
-        print("RC2_indices:", RC2_indices)
-        print("RC2_range:", RC2_range)
-    else:
-        dimension=1
-    
-    #Calc number of surfacepoints
-    if dimension==2:
+
+        #Calc number of surfacepoints
         range2=math.ceil(abs((RC2_range[0]-RC2_range[1])/RC2_range[2]))
-        #print("range2", range2)
         range1=math.ceil(abs((RC1_range[0]-RC1_range[1])/RC1_range[2]))
 
         #Create lists of point-values
@@ -88,9 +84,8 @@ def calc_surface(fragment=None, theory=None, charge=None, mult=None, scantype='U
         print("RCvalue1_list: ", RCvalue1_list)
         print("RCvalue2_list: ", RCvalue2_list)
         totalnumpoints=len(RCvalue1_list)*len(RCvalue2_list)
-
-    elif dimension==1:
-        #totalnumpoints=math.ceil(abs((RC1_range[0]-RC1_range[1])/RC1_range[2]))
+    #1D SCAN
+    elif dimension == 1:
         #Create lists of point-values
         RCvalue1_list=list(frange(RC1_range[0],RC1_range[1],RC1_range[2]))
         RCvalue1_list.append(float(RC1_range[1]))    #Adding last specified value to list also
@@ -111,12 +106,11 @@ def calc_surface(fragment=None, theory=None, charge=None, mult=None, scantype='U
     print("keepmofiles: ", keepmofiles)
 
 
-
-
-
     pointcount=0
     
-    #Create directory to keep track of surface XYZ files
+    #Create directories to keep track of surface XYZ files, outputfiles, fragmentfiles, MOfiles
+
+    #Deleting old directories first
     try:
         shutil.rmtree("surface_xyzfiles")
     except:
@@ -137,15 +131,7 @@ def calc_surface(fragment=None, theory=None, charge=None, mult=None, scantype='U
     os.mkdir('surface_outfiles')
     os.mkdir('surface_fragfiles')
     os.mkdir('surface_mofiles')
-    #try:
-    #    os.mkdir('surface_xyzfiles') 
-    #    os.mkdir('surface_outfiles')
-    #    os.mkdir('surface_fragfiles')
-    #    os.mkdir('surface_mofiles')
-    #except FileExistsError:
-    #    print("")
-    #    print(BC.FAIL,"surface_xyzfiles, surface_fragfiles, surface_mofiles and surface_outfiles directories exist already in dir. Please remove them", BC.END)
-     #   ashexit()
+
 
     #PARALLEL CALCULATION
     if runmode=='parallel':
@@ -195,8 +181,38 @@ def calc_surface(fragment=None, theory=None, charge=None, mult=None, scantype='U
                     print("len surfacedictionary:", len(surfacedictionary))
                     print("totalnumpoints:", totalnumpoints)
             elif dimension == 1:
-                print("not ready")
-                ashexit()
+                zerotheory = ash.ZeroTheory()
+                for RCvalue1 in RCvalue1_list:
+                    pointcount+=1
+                    print("=======================================")
+                    print("Surfacepoint: {} / {}".format(pointcount,totalnumpoints))
+                    print("RCvalue1: {} ".format(RCvalue1))
+                    print("=======================================")
+                    pointlabel='RC1_'+str(RCvalue1)
+                    if (RCvalue1) not in surfacedictionary:
+                        #Now setting constraints
+                        allconstraints = set_constraints(dimension=2, RCvalue1=RCvalue1, extraconstraints=extraconstraints,
+                                                            RC1_type=RC1_type, RC1_indices=RC1_indices)
+                        print("allconstraints:", allconstraints)
+                        #Running zero-theory with optimizer just to set geometry
+                        ash.interfaces.interface_geometric.geomeTRICOptimizer(fragment=fragment, theory=zerotheory, maxiter=maxiter, coordsystem=coordsystem, 
+                        constraints=allconstraints, constrainvalue=True, convergence_setting=convergence_setting,
+                        ActiveRegion=ActiveRegion, actatoms=actatoms)
+                        #Shallow copy of fragment
+                        newfrag = copy.copy(fragment)
+                        #newfrag.label = str(RCvalue1)+"_"+str(RCvalue2)
+                        #Label can be tuple
+                        newfrag.label = (RCvalue1)
+                        
+                        newfrag.write_xyzfile(xyzfilename="RC1_"+str(RCvalue1))
+                        shutil.move("RC1_"+str(RCvalue1), "surface_xyzfiles/RC1_"+str(RCvalue1))
+                        surfacepointfragments[(RCvalue1)] = newfrag
+                print("surfacepointfragments:", surfacepointfragments)
+                #TODO: sort this list??
+                surfacepointfragments_lists = list(surfacepointfragments.values())
+                print("surfacepointfragments_lists: ", surfacepointfragments_lists)
+                surfacedictionary = ash.functions.functions_parallel.Singlepoint_parallel(fragments=surfacepointfragments_lists, theories=[theory], numcores=numcores)
+
         elif scantype=="Relaxed":
             print("not ready")
             if dimension == 2:
@@ -374,28 +390,6 @@ def calc_surface_fromXYZ(xyzdir=None, theory=None, charge=None, mult=None, dimen
                          coordsystem='dlc', maxiter=50, extraconstraints=None, convergence_setting=None, numcores=None,
                          RC1_type=None, RC2_type=None, RC1_indices=None, RC2_indices=None, keepoutputfiles=True, keepmofiles=False,
                          read_mofiles=False, mofilesdir=None):
-    """Calculate 1D/2D surface from XYZ files
-
-    Args:
-        xyzdir (str, optional): Path to directory with XYZ files. Defaults to None.
-        theory (ASH theory, optional): ASH theory object. Defaults to None.
-        dimension (int, optional): Dimension of surface. Defaults to None.
-        resultfile (str, optional): Name of resultfile. Defaults to None.
-        scantype (str, optional): Type of scan: 'Unrelaxed' or 'Relaxed' Defaults to 'Unrelaxed'.
-        runmode (str, optional): Runmode: 'serial' or 'parallel'. Defaults to 'serial'.
-        coordsystem (str, optional): Coordinate system for geomeTRICOptimizer. Defaults to 'dlc'.
-        maxiter (int, optional): Max number of iterations for geomeTRICOptimizer. Defaults to 50.
-        extraconstraints (dict, optional): Dictionary of constraints for geomeTRICOptimizer. Defaults to None.
-        convergence_setting (str, optional): Convergence setting for geomeTRICOptimizer. Defaults to None.
-        numcores (float, optional): Number of cores. Defaults to None.
-        RC1_type (str, optional):  Reaction-coordinate type (bond,angle,dihedral). Defaults to None.
-        RC2_type (str, optional): Reaction-coordinate type (bond,angle,dihedral). Defaults to None.
-        RC1_indices (list, optional):  List of atom-indices involved for RC1. Defaults to None.
-        RC2_indices (list, optional): List of atom-indices involved for RC2. Defaults to None.
-
-    Returns:
-        [type]: [description]
-    """
     module_init_time=time.time()
     print_line_with_mainheader("CALC_SURFACE_FROMXYZ FUNCTION")
 
