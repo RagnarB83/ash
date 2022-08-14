@@ -590,6 +590,8 @@ def DoNEB(path, calculator, neb, optimizer, second_run=False):
 
 
     if converged:
+        #RB: adding to 
+        calculator.status(converged=True)
         PrintConverged(it+1, path.GetFC())
         PrintDivider()
         print('Summary:')
