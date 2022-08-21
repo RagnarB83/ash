@@ -33,7 +33,7 @@ class ORCA_CC_CBS_Theory:
     def __init__(self, elements=None, scfsetting='TightSCF', extrainputkeyword='', extrablocks='', guessmode='Cmatrix', memory=5000, numcores=1, 
             cardinals=None, basisfamily=None, Triplesextrapolation=False, SCFextrapolation=True, alpha=None, beta=None, 
             stabilityanalysis=False, CVSR=False, CVbasis="W1-mtsmall", F12=False, Openshellreference=None, DFTreference=None, DFT_RI=False, auxbasis="autoaux-max",
-            DLPNO=False, pnosetting='extrapolation', pnoextrapolation=[1e-6,3.33e-7,2.38,'NormalPNO'], FullLMP2Guess=False, 
+            DLPNO=False, pnosetting='extrapolation', pnoextrapolation=[1e-6,3.33e-7,2.38,'NormalPNO'], FullLMP2Guess=False, OOCC=True,
             T1=False, T1correction=False, T1corrbasis_size='Small', T1corrpnosetting='NormalPNOreduced', 
             relativity=None, orcadir=None, FCI=False, atomicSOcorrection=False):
 
@@ -63,7 +63,13 @@ class ORCA_CC_CBS_Theory:
         if F12 is True and len(cardinals) != 1:
             print(BC.FAIL,"For F12 calculations, set cardinals=[X] i.e. a list of one integer.", BC.END)
             ashexit()
-
+        #OOCC
+        if OOCC is True and DLPNO==True:
+            print(BC.FAIL,"OO-CC calculations can only be done with DLPNO=False.", BC.END)
+            ashexit()
+        if OOCC is True and F12==True:
+            print(BC.FAIL,"OO-CC calculations can only be done with F12=False.", BC.END)
+            ashexit()
         #Check if only 1 cardinal was chosen: meaning no extrapolation and just a single 
         if len(cardinals) == 1:
             print(BC.WARNING, "Only a single cardinal was chosen. This means that no extrapolation will be carried out", BC.END)
@@ -87,6 +93,7 @@ class ORCA_CC_CBS_Theory:
         self.CVSR=CVSR
         self.CVbasis=CVbasis
         self.F12=F12
+        self.OOCC=OOCC
         self.DFTreference=DFTreference
         self.DFT_RI=DFT_RI
         self.DLPNO=DLPNO
@@ -106,6 +113,7 @@ class ORCA_CC_CBS_Theory:
         self.atomicSOcorrection=atomicSOcorrection
         #ECP-flag may be set to True later
         self.ECPflag=False
+
         print("-----------------------------")
         print("ORCA_CC_CBS PROTOCOL")
         print("-----------------------------")
@@ -130,6 +138,8 @@ class ORCA_CC_CBS_Theory:
         print("Maxcore setting: ", self.memory, "MB")
         print("SCF setting: ", self.scfsetting)
         print("Relativity: ", self.relativity)
+        print("F12:", self.F12)
+        print("OOCC:", self.OOCC)
         print("Stability analysis:", self.stabilityanalysis)
         print("Core-Valence Scalar Relativistic correction (CVSR): ", self.CVSR)
         print("")
@@ -202,7 +212,6 @@ maxiter 150\nend
             finalauxbasis="auxc \"{}\"".format(auxbasis)
 
         #Getting basis sets and ECPs for each element for a given basis-family and cardinal
-        
         #Distinguish between 3 cardinal calculations (Separate triples), 2 cardinal and 1 cardinal calculations
         if len(self.cardinals) == 3:
             #We now have 3 cardinals.
@@ -385,6 +394,8 @@ maxiter 150\nend
             #F12 or not
             if self.F12 is True:
                 self.ccsdtkeyword='CCSD(T)-F12/RI'
+            elif self.OOCC is True:
+                self.ccsdtkeyword='OOCCD(T)'
             else:
                 self.ccsdtkeyword='CCSD(T)'
         
@@ -409,8 +420,6 @@ maxiter 150\nend
         else:
             #For regular calculation we do not set a mainbasis-keyword
             self.mainbasiskeyword=""
-
-
 
         #CCSD or CCSD(T) simple input line
         #In case of separate triples we also define a CCSD line
