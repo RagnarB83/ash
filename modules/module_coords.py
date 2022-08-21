@@ -3062,11 +3062,11 @@ def check_charge_mult(charge, mult, theorytype, fragment, jobtype, theory=None, 
     if theorytype == "QM":
         if charge == None or mult == None:
             if printlevel >= 2:
-                print(BC.WARNING,f"Warning: Charge/mult was not provided to {jobtype}",BC.END)
+                print(BC.WARNING,f"Charge/mult was not provided to {jobtype}",BC.END)
             if fragment.charge != None and fragment.mult != None:
                 if printlevel >= 2:
-                    print(BC.WARNING,"Fragment contains charge/mult information: Charge: {} Mult: {} Using this instead".format(fragment.charge,fragment.mult), BC.END)
-                    print(BC.WARNING,"Make sure this is what you want!", BC.END)
+                    print(BC.WARNING,"Fragment contains charge/mult information: Charge: {} Mult: {} Using this: ".format(fragment.charge,fragment.mult), BC.END)
+                    #print(BC.WARNING,"Make sure this is what you want!", BC.END)
                 charge=fragment.charge; mult=fragment.mult
             else:
                 print(BC.FAIL,"No charge/mult information present in fragment either. Exiting.",BC.END)

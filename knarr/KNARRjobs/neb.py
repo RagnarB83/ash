@@ -281,7 +281,6 @@ def DoNEB(path, calculator, neb, optimizer, second_run=False):
     print('\nStarting nudged elastic band optimization:')
     #print(' %4ls %4s  %9ls %5ls %7ls %9ls %8ls' %
     #      ('it', 'dS', 'Energy', 'HEI', 'RMSF', 'MaxF', 'step'))
-
     for it in range(maxiter):
         # =======================================================
         # Reparametrization and minimization of rmsd
@@ -588,7 +587,6 @@ def DoNEB(path, calculator, neb, optimizer, second_run=False):
     CI = np.argmax(path.GetEnergy())
 
 
-
     if converged:
         #RB: adding to 
         calculator.status(converged=True)
@@ -633,6 +631,9 @@ def DoNEB(path, calculator, neb, optimizer, second_run=False):
         PrintAtomMatrix("Tangent to path:", path.GetNDofIm(),
                         tang[CI * path.GetNDofIm():(CI + 1) * path.GetNDofIm()],
                         path.GetSymbols())
+        #RB addition: Provide final tangent to calculator
+        tang_2d_CI = np.reshape(tang[CI * path.GetNDofIm():(CI + 1) * path.GetNDofIm()],(int(path.ndofIm/3),3))
+        calculator.tangent = tang_2d_CI
 
         WriteEnergyFile(basename + '.energy', path.GetEnergy(), path.GetNim())
 

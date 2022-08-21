@@ -821,7 +821,7 @@ class QMMMTheory:
             #print(" qmcount+pccount:", qmcount+pccount)
             #print("len(self.allatoms):", len(self.allatoms))
             #print("len self.QM_PC_gradient", len(self.QM_PC_gradient))
-            ash.modules.module_coords.write_coords_all(self.QM_PC_gradient, self.elems, indices=self.allatoms, file="QM_PC_gradient", description="QM_PC_gradient (au/Bohr):")
+            #ash.modules.module_coords.write_coords_all(self.QM_PC_gradient, self.elems, indices=self.allatoms, file="QM_PC_gradient", description="QM_PC_gradient (au/Bohr):")
 
             #if self.printlevel >= 2:
             #    ash.modules.module_coords.write_coords_all(self.PCgradient, self.mmatoms, indices=self.allatoms, file="PCgradient", description="PC gradient (au/Bohr):")

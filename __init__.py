@@ -89,7 +89,7 @@ from ash.modules.module_QMMM import QMMMTheory, actregiondefine
 from ash.modules.module_polembed import PolEmbedTheory
 
 # Knarr
-from ash.interfaces.interface_knarr import NEB
+from ash.interfaces.interface_knarr import NEB, NEBTS
 
 # ASE-Dynamics
 from ash.interfaces.interface_ASE import Dynamics_ASE

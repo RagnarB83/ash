@@ -110,6 +110,9 @@ def NumFreq(fragment=None, theory=None, charge=None, mult=None, npoint=2, displa
     print("Hessian atoms:", hessatoms)
     if hessatoms != allatoms:
         print("This is a partial Hessian job.")
+        if len(hessatoms) == 0:
+            print("hessatoms list is empty. Exiting.")
+            ashexit()
     if npoint ==  1:
         print("One-point formula used (forward difference)")
     elif npoint == 2:
@@ -468,17 +471,9 @@ def NumFreq(fragment=None, theory=None, charge=None, mult=None, npoint=2, displa
     else:
         freqoutputdict = thermochemcalc(frequencies,hessatoms, fragment, mult, temp=temp,pressure=pressure)
 
-
-
-
     #Write Hessian to file
-    with open("Hessian", 'w') as hfile:
-        hfile.write(str(hesslength)+' '+str(hesslength)+'\n')
-        for row in hessian:
-            rowline=' '.join(map(str, row))
-            hfile.write(str(rowline)+'\n')
-        blankline()
-        print("Wrote Hessian to file: Hessian")
+    write_hessian(hessian,hessfile="Hessian")
+
     #Write ORCA-style Hessian file. Hardcoded filename here. Change?
     #Note: Passing hesscords here instead of coords. Change?
     ash.interfaces.interface_ORCA.write_ORCA_Hessfile(hessian, hesscoords, hesselems, hessmasses, hessatoms, "orcahessfile.hess")
@@ -489,7 +484,6 @@ def NumFreq(fragment=None, theory=None, charge=None, mult=None, npoint=2, displa
     print("Wrote dummy ORCA outputfile with frequencies and normal modes: orcahessfile.hess_dummy.out")
     print("Can be used for visualization")
 
-    #TODO: https://pages.mtu.edu/~msgocken/ma5630spring2003/lectures/diff/diff/node6.html
     blankline()
     print(BC.WARNING, BC.BOLD, "------------NUMERICAL FREQUENCIES END-------------", BC.END)
 
@@ -1116,7 +1110,6 @@ def calc_rotational_constants(frag, printlevel=2):
 
 def calc_model_Hessian_ORCA(fragment,model='Almloef'):
 
-
     #Run ORCA dummy job to get Almloef/Lindh/Schlegel Hessian
     orcasimple="! hf"
     extraline="!noiter opt"
@@ -1127,7 +1120,7 @@ def calc_model_Hessian_ORCA(fragment,model='Almloef'):
     end
 """.format(model)
     orcadummycalc=ash.interfaces.interface_ORCA.ORCATheory(orcasimpleinput=orcasimple,orcablocks=orcablocks, extraline=extraline)
-    ash.Singlepoint(theory=orcadummycalc, fragment=fragment, charge=0, mult=1)
+    ash.Singlepoint(theory=orcadummycalc, fragment=fragment, charge=fragment.charge, mult=fragment.mult)
     #Read orca-input.opt containing Hessian under hessian_approx
     hesstake=False
     j=0
@@ -1169,23 +1162,43 @@ def calc_model_Hessian_ORCA(fragment,model='Almloef'):
                 grabsize = True
     fragment.hessian=hessarray2d
 
+    return np.array(hessarray2d)
 
 
 #Function to approximate large Hessian from smaller subsystem Hessian
-def approximate_full_Hessian_from_smaller(fragment_small,fragment_large,hessian_small,capping_atoms,restHessian='Almloef'):
+#fragment is the large fragment
+#atomindices refer to what atoms in the large fragment the small partial Hessian was generated for
+#NOTE: Capping atom option is now disabled. Best made into a separate function
+def approximate_full_Hessian_from_smaller(fragment,hessian_small,atomindices,capping_atoms=None,restHessian='Almloef'):
     #Capping atom Hessian indices are skipped
-    capping_atom_hessian_indices=[3*i+j for i in capping_atoms for j in [0,1,2]]
-    fragment_large.hessian=np.zeros((fragment_large.numatoms*3,fragment_large.numatoms*3))
-
-    #Fill up hessian_large with Almlöf approximation from ORCA  here?
-    calc_model_Hessian_ORCA(fragment_large,model=restHessian)
-
-    for i in range(len(hessian_small)):
-        for j in range(len(hessian_small)):
-            #Only modifying full-Hessian if not capping atom
-            if i not in capping_atom_hessian_indices or j not in capping_atom_hessian_indices:
-                fragment_large.hessian[i,j]=hessian_small[i,j]
-    return fragment_large.hessian
+    #if capping_atoms != None:
+    #    capping_atom_hessian_indices=[3*i+j for i in capping_atoms for j in [0,1,2]]
+    #else:
+    #    capping_atom_hessian_indices=[]
+    
+    #Initializing full Hessian
+    fragment.hessian=np.zeros((fragment.numatoms*3,fragment.numatoms*3))
+    #Making sure hessian_small is np array
+    hessian_small = np.array(hessian_small)
+    #Fill up hessian_large with model approximation from ORCA
+    if restHessian == 'Almloef' or restHessian == 'Lindh' or restHessian == 'Schlegel' or restHessian == 'Swart':
+        print("restHessian:", restHessian)
+        calc_model_Hessian_ORCA(fragment,model=restHessian)
+    #Or with unit matrix
+    elif restHessian == 'unit' or restHessian == 'identity':
+        print("restHessian is unit/identity")
+        fragment.hessian = np.identity(fragment.numatoms*3)
+    #Keep matrix at zero
+    elif restHessian==None or restHessian=='Zero':
+        print("RestHessian is zero.") 
+    
+    #Large Hessian indices
+    athessindices = [3*i+j for i in atomindices for j in [0,1,2]]
+    #Looping over and assigning small Hessian values to large
+    for s_i,i in enumerate(athessindices):
+        for s_j, j in enumerate(athessindices):
+            fragment.hessian[i,j] = hessian_small[s_i,s_j]
+    return fragment.hessian
 
 
 #Change isotopes of Hessian. Read-in hessian array or hessfile
@@ -1638,3 +1651,24 @@ def S_vib(freqs,T):
     #print(f"TS_vib: {TS_vib} Eh")
     #print(f"TS_vib: {TS_vib*ash.constants.hartokcal} kcal/mol")
     return TS_vib
+
+#Write Hessian to file
+def write_hessian(hessian,hessfile="Hessian"):
+    with open(hessfile, 'w') as hfile:
+        #RB note: Skipping header to be compatible with geometric format
+        #hfile.write(str(hesslength)+' '+str(hesslength)+'\n')
+        for row in hessian:
+            rowline=' '.join(map(str, row))
+            hfile.write(str(rowline)+'\n')
+        blankline()
+        print(f"Wrote Hessian to file: {hessfile}")
+
+#Read tangent file
+def read_tangent(tangentfile):
+    tang=[]
+    with open(tangentfile) as f:
+        for line in f:
+            if len(line) > 10:
+                x=float(line.split()[1]);y=float(line.split()[2]);z=float(line.split()[3])
+                tang.append([x,y,z])
+    return np.array(tang)

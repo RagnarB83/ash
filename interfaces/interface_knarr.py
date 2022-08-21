@@ -10,8 +10,8 @@ import time
 
 import ash
 from ash.functions.functions_general import ashexit,print_time_rel,print_line_with_mainheader, BC,print_line_with_subheader1,print_line_with_subheader2
-from ash.modules.module_coords import check_charge_mult
-
+from ash.modules.module_coords import check_charge_mult, write_xyzfile
+from ash.modules.module_freq import write_hessian, approximate_full_Hessian_from_smaller, calc_model_Hessian_ORCA, read_tangent
 #This makes Knarr part of python path
 #Recommended way?
 ashpath = os.path.dirname(ash.__file__)
@@ -65,7 +65,128 @@ optimizer = {"OPTIM_METHOD": "LBFGS", "MAX_ITER": 200, "TOL_MAX_FORCE": 0.01,
              "FD_STEP": 0.001,
              "LINESEARCH": None}
 
+#NEB-TS: NEB-CI + OptTS
+#Threshold settings for CI-NEB part are the same as in the NEB-TS of ORCA
+def NEBTS(reactant=None, product=None, theory=None, images=8, CI=True, OptTS=True, free_end=False, maxiter=100,
+        conv_type="ALL", tol_scale=10, tol_max_fci=0.10, tol_rms_fci=0.05, tol_max_f=1.03, tol_rms_f=0.51,
+        tol_turn_on_ci=1.0,  runmode='serial', numcores=1, charge=None, mult=None, printlevel=0, ActiveRegion=False, actatoms=None,
+        interpolation="IDPP", idpp_maxiter=300, restart_file=None, TS_guess_file=None, mofilesdir=None, 
+        OptTS_maxiter=100, OptTS_print_atoms_list=None, OptTS_convergence_setting=None, OptTS_conv_criteria=None, OptTS_coordsystem='tric',
+        hessian_for_TS=None, modelhessian='unit', tsmode_tangent_threshold=0.1):
 
+    print_line_with_mainheader("NEB+TS")
+
+    #Will use maximum number of CPU cores provided to either NEBTS or theory object
+    #cores_for_TSopt=max([numcores,theory.numcores])
+    cores_for_TSopt=numcores*theory.numcores
+
+    #Printing parallelization info
+    print("Will first perform loose NEB-CI job, followed by TSOpt job using geomeTRIC optimizer.")
+    print(f"{numcores} CPU cores provided to parallelize the {images}-image NEB band optimization.")
+    print(f"{theory.numcores} CPU cores will be used to parallelize theory level for each image during NEB.")
+    print(f"{cores_for_TSopt} CPU cores will be used simultaneously during NEB.")
+    print(f"{cores_for_TSopt} CPU cores will be used to parallize theory during Opt-TS part.")
+    #CI-NEB step
+    SP = NEB(reactant=reactant, product=product, theory=theory, images=images, CI=CI, free_end=free_end, maxiter=maxiter,
+            conv_type=conv_type, tol_scale=tol_scale, tol_max_fci=tol_max_fci, tol_rms_fci=tol_rms_fci, tol_max_f=tol_max_f, tol_rms_f=tol_rms_f,
+            tol_turn_on_ci=tol_turn_on_ci,  runmode=runmode, numcores=numcores, 
+            charge=charge, mult=mult,printlevel=printlevel, ActiveRegion=ActiveRegion, actatoms=actatoms,
+            interpolation=interpolation, idpp_maxiter=idpp_maxiter, 
+            restart_file=restart_file, TS_guess_file=TS_guess_file, mofilesdir=mofilesdir)
+
+    print("NEB-CI job is complete.")
+    print("Evaluating Hessian option.")
+
+    #Prepare Hessian option
+    #Hessianfile should be a simple text file with 1 row per line, values space-separated and no header.
+    #Default: 
+    if hessian_for_TS == None:
+        print("Using default hessian_for_TS option")
+        #If dualtheory we just do a Numfreq in regular mode
+        if isinstance(theory,ash.DualTheory):
+            print("Dualtheory active. Doing Numfreq using regular mode.")
+            #NOTE: Regular mode might involve a theory 2 correction. We could switch to theory1 solely instead here
+            freqdict = ash.NumFreq(theory=theory, fragment=SP, printlevel=0)
+            hessianfile="Hessian_from_dualtheory"
+            shutil.copyfile("Numfreq_dir/Hessian",hessianfile)
+            hessianoption='file:'+str(hessianfile)
+        else:
+            print("Will calculate exact Hessian in the beginning of OptTS job.")
+            hessianoption="first"
+    # Tell geomeTRIC to calculate exact Hessian in the beginning
+    elif hessian_for_TS == 'first':
+        hessianoption="first"
+    # Tell geomeTRIC to calculate exact Hessian in eachianfile="Hessian_from_xt step
+    elif hessian_for_TS == 'each':
+        hessianoption="each"
+    elif hessian_for_TS == 'xtb':
+        print("hessian_for_TS option: xtb")
+        print("Will now calculate xTB Hessian")
+        #NOTE: here using ASH-Numfreq. Could also be done faster using xTB directly ?
+        xtb = ash.xTBTheory(xtbmethod='GFN1')
+        freqdict = ash.NumFreq(theory=xtb, fragment=SP, printlevel=0)
+        hessianfile="Hessian_from_xtb"
+        shutil.copyfile("Numfreq_dir/Hessian",hessianfile)
+        hessianoption='file:'+str(hessianfile)
+    #Cheap model Hessian
+    #NOTE: None of these work well. 
+    #TODO: Need to use tangent to modify
+    elif hessian_for_TS == 'model':
+        print("hessian_for_TS option: model")
+        print("Calling ORCA to get model Hessian")
+        print(f"modelhessian: {modelhessian}")
+        #Calling ORCA to get model Hessian (default Swart) for SP geometry
+        hessian = calc_model_Hessian_ORCA(SP,model=modelhessian)
+
+        #TODO: We can do overlap of eigenvectors but we can currently not change what geometric does
+        #Write Hessian to file
+        hessianfile="Hessian_from_ORCA_model"
+        write_hessian(hessian,hessfile=hessianfile)
+        #Creating string 
+        hessianoption='file:'+str(hessianfile)
+    #Finding atoms that contribute the most to saddlepoint mode according to CI-NEB. Perform partial Hessian optimization
+    elif hessian_for_TS == 'partial':
+        print("hessian_for_TS option: partial")
+        print(f"Using climbing image tangent to find dominant atoms in approximate TS mode (tsmode_tangent_threshold={tsmode_tangent_threshold})")
+
+        #Getting tangent and atoms that contribute at least X to tangent where X is tsmode_tangent_threshold=0.1 (default)
+        tangent = read_tangent("CItangent.xyz")
+        TSmodeatoms = list(np.where(np.any(abs(tangent)>tsmode_tangent_threshold, axis=1))[0])
+
+        print(f"Performing partial Hessian calculation using atoms: {TSmodeatoms}")
+        #TODO: Option to run this in parallel ?
+        #Or just enable theory parallelization 
+        #if isinstance(theory,ash.DualTheory): theory.switch_to_theory(2)
+        freqdict = ash.NumFreq(theory=theory, fragment=SP, printlevel=0, npoint=2, hessatoms=TSmodeatoms)
+
+        #Combine partial exact Hessian with model Hessian(Almloef, Lindh, Schlegel or unit)
+        combined_hessian = approximate_full_Hessian_from_smaller(SP,freqdict["hessian"],TSmodeatoms,restHessian=modelhessian)
+
+        #Write combined Hessian to disk
+        hessianfile="Hessian_from_partial"
+        write_hessian(combined_hessian,hessfile=hessianfile)
+        #Creating string 
+        hessianoption='file:'+str(hessianfile)
+
+    else:
+        print("Unknown hessian_for_TS option")
+        ashexit()
+
+    #if Dualtheory switch to theory2 before TSOpt
+    if isinstance(theory,ash.DualTheory): theory.switch_to_theory(2)
+
+    #TSopt
+    print(f"Now starting Optimizer job from NEB-CI saddlepoint with TSOpt=True with hessian option: {hessianoption}")
+    print(f"Changing number of cores of Theory object from : {theory.numcores} cores ", end="")
+    theory.numcores=cores_for_TSopt
+    print(f"to: {cores_for_TSopt} cores")
+
+    ash.Optimizer(theory=theory, fragment=SP, charge=charge, mult=mult, coordsystem=OptTS_coordsystem, maxiter=OptTS_maxiter, 
+                ActiveRegion=ActiveRegion, actatoms=actatoms, convergence_setting=OptTS_convergence_setting, 
+                conv_criteria=OptTS_conv_criteria, print_atoms_list=OptTS_print_atoms_list, TSOpt=True,
+                hessian=hessianoption)
+
+    return SP
 
 #ASH NEB function. Calls Knarr
 def NEB(reactant=None, product=None, theory=None, images=8, CI=True, free_end=False, maxiter=100,
@@ -277,6 +398,10 @@ def NEB(reactant=None, product=None, theory=None, images=8, CI=True, free_end=Fa
         print()
         #Getting saddlepoint-structure and energy if CI-NEB
         if neb_settings["CLIMBING"] is True:
+
+            #Writing tangent to disk            
+            write_xyzfile(reactant.elems, calculator.tangent, "CItangent", printlevel=2, writemode='w')
+
             if ActiveRegion == True:
                 print("Getting saddlepoint geometry and creating new fragment for Full system")
                 print("Has not been confirmed to work...")
@@ -284,7 +409,7 @@ def NEB(reactant=None, product=None, theory=None, images=8, CI=True, free_end=Fa
                 CI = np.argmax(path.GetEnergy())
                 saddle_coords_1d=path.GetCoords()[CI * path.GetNDimIm():(CI + 1) * path.GetNDimIm()]
                 saddle_coords=np.reshape(saddle_coords_1d, (numatoms, 3))
-                saddle_energy = path.GetEnergy()[CI][0]*23.060541945329334
+                saddle_energy = path.GetEnergy()[CI][0]*27.211399
 
                 #Combinining frozen region with optimized active-region for saddle-point
                 # Defining full_coords as original coords temporarily
@@ -312,7 +437,7 @@ def NEB(reactant=None, product=None, theory=None, images=8, CI=True, free_end=Fa
                 CI = np.argmax(path.GetEnergy())
                 saddle_coords_1d=path.GetCoords()[CI * path.GetNDimIm():(CI + 1) * path.GetNDimIm()]
                 saddle_coords=np.reshape(saddle_coords_1d, (numatoms, 3))
-                saddle_energy = path.GetEnergy()[CI][0]/23.060541945329334
+                saddle_energy = path.GetEnergy()[CI][0]/27.211399
                 print("Creating new ASH fragment for saddlepoint geometry")
                 #Creating new ASH fragment
                 Saddlepoint_fragment = ash.Fragment(coords=saddle_coords, elems=reactant.elems, connectivity=reactant.connectivity, charge=charge, mult=mult)
@@ -415,6 +540,8 @@ class KnarrCalculator:
         elif isinstance(self.theory, ash.QMMMTheory):
             if isinstance(self.theory.qm_theory, ash.ORCATheory):
                 self.ORCAused = True
+        #Final tangent of saddlepoint. Will be available if job converges
+        self.tangent=None
     #Function that Knarr will use to signal convergence and set self.converged to True. Otherwise it is False
     def status(self,converged):
         self.converged=converged

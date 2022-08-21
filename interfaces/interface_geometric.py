@@ -18,7 +18,7 @@ from ash.modules.module_coords import check_charge_mult
 #Wrapper function around GeomeTRICOptimizerClass
 def geomeTRICOptimizer(theory=None, fragment=None, charge=None, mult=None, coordsystem='tric', frozenatoms=None, constraints=None, 
                        constrainvalue=False, constraintsinputfile=None, maxiter=100, ActiveRegion=False, actatoms=None, 
-                       convergence_setting=None, conv_criteria=None, print_atoms_list=None):
+                       convergence_setting=None, conv_criteria=None, print_atoms_list=None, TSOpt=False, hessian=None):
     """
     Wrapper function around GeomeTRICOptimizerClass
     """
@@ -26,7 +26,7 @@ def geomeTRICOptimizer(theory=None, fragment=None, charge=None, mult=None, coord
     timeA=time.time()
     optimizer=GeomeTRICOptimizerClass(theory=theory, fragment=fragment, charge=charge, mult=mult, coordsystem=coordsystem, frozenatoms=frozenatoms, 
                         constraints=constraints, constrainvalue=constrainvalue, constraintsinputfile=constraintsinputfile, maxiter=maxiter,
-                         ActiveRegion=ActiveRegion, actatoms=actatoms, 
+                         ActiveRegion=ActiveRegion, actatoms=actatoms, TSOpt=TSOpt, hessian=hessian,
                         convergence_setting=convergence_setting, conv_criteria=conv_criteria,
                         print_atoms_list=print_atoms_list)
     finalenergy = optimizer.run()
@@ -37,7 +37,7 @@ def geomeTRICOptimizer(theory=None, fragment=None, charge=None, mult=None, coord
 # Class for optimization. Used to be standalone function. Made into class for more flexibility: micro-iterative QM/MM Opt, TruncPC QM/MM Opt, Excited-state optimizer etc.
 class GeomeTRICOptimizerClass:
         def __init__(self,theory=None, fragment=None, charge=None, mult=None, coordsystem='tric', frozenatoms=None, constraintsinputfile=None, constraints=None, 
-                       constrainvalue=False, maxiter=50, ActiveRegion=False, actatoms=None, convergence_setting=None, conv_criteria=None,
+                       constrainvalue=False, maxiter=50, ActiveRegion=False, actatoms=None, convergence_setting=None, conv_criteria=None, TSOpt=False, hessian=None,
                        print_atoms_list=None):
             """
             Wrapper class around geomeTRIC code. Take theory and fragment info from ASH
@@ -93,6 +93,8 @@ class GeomeTRICOptimizerClass:
             self.coordsystem=coordsystem
             self.fragment=fragment
             self.ActiveRegion=ActiveRegion
+            self.TSOpt=TSOpt
+            self.hessian=hessian
             ######################
 
             ######################
@@ -171,7 +173,6 @@ class GeomeTRICOptimizerClass:
                 #Print-atoms list not specified. What to do: 
                 if self.ActiveRegion == True:
                     #If QM/MM object then QM-region:
-                    #if theory.__class__.__name__ == "QMMMTheory":
                     if isinstance(theory,QMMMTheory):
                         print("Theory class: QMMMTheory")
                         print("Will by default print only QM-region in output (use print_atoms_list option to change)")
@@ -210,7 +211,8 @@ class GeomeTRICOptimizerClass:
                 #Write coordinates from ASH fragment to disk as XYZ-file and reading into geomeTRIC
                 fragment.write_xyzfile("initialxyzfiletric.xyz")
                 mol_geometric_frag=self.geometric.molecule.Molecule("initialxyzfiletric.xyz")
-                    
+            #Removing temporary file
+            os.remove('initialxyzfiletric.xyz')
                     
             ########################################
             # CONSTRAINTS
@@ -306,18 +308,23 @@ class GeomeTRICOptimizerClass:
 
             print("User convergence_setting:", convergence_setting)
             print("Convergence criteria:", self.conv_criteria)
-
+            print("Hessian option:", self.hessian)
+            
             #Defining ASHengineclass engine object containing geometry and theory. ActiveRegion boolean passed.
             #Also now passing list of atoms to print in each step.
             self.ashengine = ASHengineclass(mol_geometric_frag,theory, ActiveRegion=self.ActiveRegion, actatoms=self.actatoms, print_atoms_list=self.print_atoms_list, 
                 charge=self.charge, mult=self.mult, conv_criteria=self.conv_criteria, fragment=self.fragment)
             #Defining args object, containing engine object
-            self.final_geometric_args=geomeTRICArgsObject(self.ashengine,self.constraintsfile,coordsys=self.coordsystem, maxiter=self.maxiter, conv_criteria=self.conv_criteria)
+            self.final_geometric_args=geomeTRICArgsObject(self.ashengine,self.constraintsfile,coordsys=self.coordsystem, maxiter=self.maxiter, 
+                conv_criteria=self.conv_criteria, transition=self.TSOpt, hessian=hessian)
 
             print("")
         #Starting geomeTRIC run
         def run(self):
-            print("Starting optimization")
+            if self.TSOpt == True:
+                print("Starting saddlepoint optimization")
+            else:
+                print("Starting optimization")
             self.geometric.optimize.run_optimizer(**vars(self.final_geometric_args))
             time.sleep(1)
             blankline()
@@ -348,8 +355,12 @@ class GeomeTRICOptimizerClass:
             #Writing out fragment file and XYZ file
             self.fragment.print_system(filename='Fragment-optimized.ygg')
             self.fragment.write_xyzfile(xyzfilename='Fragment-optimized.xyz')
+            #Active region XYZ-file
             if self.ActiveRegion==True:
                 write_XYZ_for_atoms(self.fragment.coords, self.fragment.elems, self.actatoms, "Fragment-optimized_Active")
+            #QM-region XYZ-file
+            if isinstance(self.theory,QMMMTheory):
+                write_XYZ_for_atoms(self.fragment.coords, self.fragment.elems, self.theory.qmatoms, "Fragment-optimized_QMregion")
 
             #Printing internal coordinate table
             print_internal_coordinate_table(self.fragment,actatoms=self.print_atoms_list)
@@ -360,10 +371,11 @@ class GeomeTRICOptimizerClass:
             return self.finalenergy
 
 class geomeTRICArgsObject:
-    def __init__(self,eng,constraintsfile, coordsys, maxiter, conv_criteria):
+    def __init__(self,eng,constraintsfile, coordsys, maxiter, conv_criteria, transition,hessian):
         self.coordsys=coordsys
         self.maxiter=maxiter
-
+        self.transition=transition
+        self.hessian=hessian
         #self.convergence_criteria=conv_criteria
         #self.converge=conv_criteria
         #Setting these to be part of kwargs that geometric reads
@@ -446,10 +458,12 @@ class ASHengineclass:
         newpos = state.getPositions()
         self.theory.mm_theory.openmm.app.PDBFile.writeFile(self.theory.mm_theory.topology, newpos, file=open(pdbtrajectoryfile, 'a'))
 
-    #Defining calculator
-    def calc(self,coords,tmp, read_data=None):
+    #Defining calculator.
+    #Read_data and copydir not used (dummy variables)
+    def calc(self,coords,tmp, read_data=None, copydir=None):
         #Note: tmp and read_data not used. Needed for geomeTRIC version compatibility
         print("Convergence criteria:", self.conv_criteria)
+
         print()
         #Updating coords in object
         #Need to combine with rest of full-system coords
