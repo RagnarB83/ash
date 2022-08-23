@@ -67,7 +67,7 @@ optimizer = {"OPTIM_METHOD": "LBFGS", "MAX_ITER": 200, "TOL_MAX_FORCE": 0.01,
 
 #NEB-TS: NEB-CI + OptTS
 #Threshold settings for CI-NEB part are the same as in the NEB-TS of ORCA
-def NEBTS(reactant=None, product=None, theory=None, images=8, CI=True, OptTS=True, free_end=False, maxiter=100,
+def NEBTS(reactant=None, product=None, theory=None, images=8, CI=True, free_end=False, maxiter=100, IDPPonly=False,
         conv_type="ALL", tol_scale=10, tol_max_fci=0.10, tol_rms_fci=0.05, tol_max_f=1.03, tol_rms_f=0.51,
         tol_turn_on_ci=1.0,  runmode='serial', numcores=1, charge=None, mult=None, printlevel=0, ActiveRegion=False, actatoms=None,
         interpolation="IDPP", idpp_maxiter=300, restart_file=None, TS_guess_file=None, mofilesdir=None, 
@@ -87,7 +87,7 @@ def NEBTS(reactant=None, product=None, theory=None, images=8, CI=True, OptTS=Tru
     print(f"{cores_for_TSopt} CPU cores will be used simultaneously during NEB.")
     print(f"{cores_for_TSopt} CPU cores will be used to parallize theory during Opt-TS part.")
     #CI-NEB step
-    SP = NEB(reactant=reactant, product=product, theory=theory, images=images, CI=CI, free_end=free_end, maxiter=maxiter,
+    SP = NEB(reactant=reactant, product=product, theory=theory, images=images, CI=CI, free_end=free_end, maxiter=maxiter, IDPPonly=IDPPonly,
             conv_type=conv_type, tol_scale=tol_scale, tol_max_fci=tol_max_fci, tol_rms_fci=tol_rms_fci, tol_max_f=tol_max_f, tol_rms_f=tol_rms_f,
             tol_turn_on_ci=tol_turn_on_ci,  runmode=runmode, numcores=numcores, 
             charge=charge, mult=mult,printlevel=printlevel, ActiveRegion=ActiveRegion, actatoms=actatoms,
@@ -191,7 +191,7 @@ def NEBTS(reactant=None, product=None, theory=None, images=8, CI=True, OptTS=Tru
 #ASH NEB function. Calls Knarr
 def NEB(reactant=None, product=None, theory=None, images=8, CI=True, free_end=False, maxiter=100,
         conv_type="ALL", tol_scale=10, tol_max_fci=0.026, tol_rms_fci=0.013, tol_max_f=0.26, tol_rms_f=0.13,
-        tol_turn_on_ci=1.0,  runmode='serial', numcores=1, 
+        tol_turn_on_ci=1.0,  runmode='serial', numcores=1, IDPPonly=False,
         charge=None, mult=None,printlevel=0, ActiveRegion=False, actatoms=None,
         interpolation="IDPP", idpp_maxiter=300, 
         restart_file=None, TS_guess_file=None, mofilesdir=None):
@@ -383,7 +383,12 @@ def NEB(reactant=None, product=None, theory=None, images=8, CI=True, free_end=Fa
     #############################
     # CALLING NEB
     #############################
-    DoNEB(path, calculator, neb_settings, optimizer)
+    
+    if IDPPonly == True:
+        print("IDPPonly is not yet ready")
+        ashexit()
+    else:
+        DoNEB(path, calculator, neb_settings, optimizer)
     
     if calculator.converged == False:
         print()
