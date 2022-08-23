@@ -172,8 +172,8 @@ class DualTheory:
                     print("------------------")
                     #End-gradient threshold.
                     #Using default geometric gradient convergence criteria times factor
-                    endgradient_threshold_RMS=1e-4*10
-                    endgradient_threshold_Max=3e-4*10
+                    endgradient_threshold_RMS=1e-4
+                    endgradient_threshold_Max=3e-4
                     if self.correction_dict[label].combined_RMSgrad[-1] < endgradient_threshold_RMS:
                         print("Below threshold")
                         print("Switching to Theory2 active")
