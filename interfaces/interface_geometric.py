@@ -418,10 +418,25 @@ class ASHengineclass:
         self.conv_criteria=conv_criteria
         self.fragment=fragment
 
+    def load_guess_files(self,dirname):
+        print("geometric called load_guess_files option for ASHengineclass.")
+        print("This option is currently unsupported in ASH. Continuing.")
+    def save_guess_files(self,dirname):
+        print("geometric called save_guess_files option option for ASHengineclass.")
+        print("This option is currently unsupported in ASH. Continuing.")
+    #Optimizer may call this to see if the engine class is doing DFT with grid to print warning
+    def detect_dft(self):
+        print("geometric called detect_dft option option for ASHengineclass.")
+        #TODO: Return True or False
+        return True
+    #geometric checks if calc_bondorder method is implemented for the ASHengine. Disabled until we implement this
+    #def calc_bondorder(self,coords,dirname):
+    #    print("geometric called calc_bondorder option option for ASHengineclass.")
+    #    print("This option is currently unsupported in ASH. Continuing.")
     #TODO: geometric will regularly do ClearCalcs in an optimization
     def clearCalcs(self):
-        print("geomeTRIC: ClearCalcs.")
-
+        print("geometric called clearCalcs option for ASHengineclass.")
+        print("This option is currently unsupported in ASH. Continuing.")
     #Writing out trajectory file for full system in case of ActiveRegion. Note: Actregion coordinates are done done by GeomeTRIC
     def write_trajectory_full(self):
         print("Writing trajectory for Full system to file: geometric_OPTtraj_Full.xyz")
@@ -461,6 +476,7 @@ class ASHengineclass:
     #Defining calculator.
     #Read_data and copydir not used (dummy variables)
     def calc(self,coords,tmp, read_data=None, copydir=None):
+        #print("read_data:", read_data)
         #Note: tmp and read_data not used. Needed for geomeTRIC version compatibility
         print("Convergence criteria:", self.conv_criteria)
 

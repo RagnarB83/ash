@@ -94,8 +94,12 @@ def NEBTS(reactant=None, product=None, theory=None, images=8, CI=True, free_end=
             interpolation=interpolation, idpp_maxiter=idpp_maxiter, 
             restart_file=restart_file, TS_guess_file=TS_guess_file, mofilesdir=mofilesdir)
 
-    print("NEB-CI job is complete.")
-    print("Evaluating Hessian option.")
+    if SP == None:
+        print("NEB-CI job failed. Exiting NEBTS.")
+        return None
+        #ashexit()
+
+    print("NEB-CI job is complete. Now choosing Hessian option to use for NEB-TS job.")
 
     #Prepare Hessian option
     #Hessianfile should be a simple text file with 1 row per line, values space-separated and no header.

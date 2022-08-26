@@ -49,11 +49,7 @@ class DualTheory:
         self.correctiontype=correctiontype
         self.theory1.filename=self.filename+"theory1"
         self.theory2.filename=self.filename+"theory2"
-        #Gradient and energy correction ad sicts
-        self.gradient_correction={}
-        self.energy_correction={}
-        #Keep track of total number of run calls
-        self.totalruncalls = 0
+
         #Type of update schedule (default='frequency). Options: 'Robust_start',
         self.update_schedule=update_schedule
         #Minimum number of steps for 
@@ -62,16 +58,26 @@ class DualTheory:
         self.Maxthreshold=Maxthreshold
         #At which iteration do we update correction
         self.update_freq=update_freq
-        #Dictionary that keeps track of how often each calculation label has been run
-        self.update_freq_dict={}
-        #i
-        self.correction_dict=defaultdict(Correction_handler)
+
+        #Set inital mode of object
+        self.set_to_initial_mode()
+    #Method that sets the initial mode. Can be called to reset object
+    def set_to_initial_mode(self):
         #Booleans to switch modes.
         self.theory1_active=False #Unused for now
         self.theory2_active=False #Used for switching to performing only theory 2
-        
         #Flag for correction. Only used by Robust_start for now
-        self.correction_off=False    
+        self.correction_off=False
+
+        #Keep track of total number of run calls
+        self.totalruncalls = 0
+        #Dictionary that keeps track of how often each calculation label has been run
+        self.update_freq_dict={}
+        self.correction_dict=defaultdict(Correction_handler)
+
+        #Gradient and energy correction
+        self.gradient_correction={}
+        self.energy_correction={}
 
     #First storing RMS/Max Grad info for both theory levels
     def store_gradient_info(self,G, label,type=None):

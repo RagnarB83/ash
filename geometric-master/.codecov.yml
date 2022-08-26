@@ -1,0 +1,16 @@
+coverage:
+  ignore:
+    - geometric/tests/.*
+    - geometric/PDB.py
+    - geometric/_version.py
+    - docs/*
+    - setup.py
+  status:
+    patch: false
+comment:
+  layout: "header"
+  require_changes: false
+  branches: null
+  behavior: default
+  flags: null
+  paths: null

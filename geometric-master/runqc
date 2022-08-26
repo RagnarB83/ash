@@ -1,0 +1,7 @@
+#!/bin/bash
+
+# Simple driver script for Q-Chem, modify for your environment
+# Currently it simply runs Q-Chem with two threads
+
+qchem -nt 2 $@
+

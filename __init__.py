@@ -21,6 +21,10 @@ import ash
 
 # Adding modules,interfaces directories to sys.path
 ashpath = os.path.dirname(ash.__file__)
+
+#Add local geometric dir to syspath
+sys.path.insert(0, ashpath+"/geometric-master")
+
 # sys.path.insert(1, ashpath+'/modules')
 # sys.path.insert(1, ashpath+'/interfaces')
 # sys.path.insert(1, ashpath+'/functions')
