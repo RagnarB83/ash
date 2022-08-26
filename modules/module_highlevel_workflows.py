@@ -714,7 +714,7 @@ maxiter 150\nend
                 E_SCF_CBS, E_corrCCSD_CBS, E_corrCCT_CBS,E_corr_CBS = self.PNOExtrapolationStep(elems=elems, current_coords=current_coords, theory=self.ccsdt_1, calc_label=calc_label+'cardinal1', 
                     numcores=numcores, charge=charge, mult=mult)
 
-            #REGULAR EXTRAPOLATION WITH 2 THEORIES
+            #EXTRAPOLATION WITH 2 BASIS SETS
             else:
                 if self.Triplesextrapolation==True:
                     print("Case: PNO extrapolation with separate CCSD and triples extrapolations")
@@ -757,15 +757,15 @@ maxiter 150\nend
 
                     #BASIS SET EXTRAPOLATION
                     #SCF extrapolation. WIll be overridden inside function if self.SCFextrapolation==True
-                    print("SCF extrapolation:")
+                    print("\nSCF extrapolation:")
                     E_SCF_CBS = Extrapolation_twopoint_SCF(scf_energies, [self.cardinals[1],self.cardinals[2]], self.basisfamily, 
                         alpha=self.alpha, SCFextrapolation=self.SCFextrapolation) #2-point SCF extrapolation
 
                     #Separate CCSD, (T) and full-corr CBS energies
-                    print("CCSD corr. extrapolation:")
+                    print("\nCCSD corr. extrapolation:")
                     E_corrCCSD_CBS = Extrapolation_twopoint_corr(ccsdcorr_energies, [self.cardinals[1],self.cardinals[2]], self.basisfamily, 
                         beta=self.beta) #2-point extrapolation using smaller cardinals
-                    print("(T) corr. extrapolation:")
+                    print("\n(T) corr. extrapolation:")
                     E_corrCCT_CBS = Extrapolation_twopoint_corr(triplescorr_energies, [self.cardinals[0],self.cardinals[1]], self.basisfamily, 
                         beta=self.beta) #2-point extrapolation
                     E_corr_CBS = E_corrCCSD_CBS + E_corrCCT_CBS
@@ -790,15 +790,16 @@ maxiter 150\nend
         
                     #BASIS SET EXTRAPOLATION
                     #SCF extrapolation. WIll be overridden inside function if self.SCFextrapolation==True
-                    print("SCF extrapolation:")
+                    print("\nSCF extrapolation:")
                     E_SCF_CBS = Extrapolation_twopoint_SCF(scf_energies, self.cardinals, self.basisfamily, 
                         alpha=self.alpha, SCFextrapolation=self.SCFextrapolation) #2-point SCF extrapolation
 
-                    #Separate CCSD, (T) and full-corr CBS energies
-                    print("CCSD corr. extrapolation:")
+                    #Separate CCSDcorr extrapolation
+                    print("\nCCSD corr. extrapolation:")
                     E_corrCCSD_CBS = Extrapolation_twopoint_corr(ccsdcorr_energies, self.cardinals, self.basisfamily, 
                         beta=self.beta) #2-point extrapolation
-                    print("(T) corr. extrapolation:")
+                    #(T) extrapolation
+                    print("\n(T) corr. extrapolation:")
                     E_corrCCT_CBS = Extrapolation_twopoint_corr(triplescorr_energies, self.cardinals, self.basisfamily, 
                         beta=self.beta) #2-point extrapolation
                     E_corr_CBS = E_corrCCSD_CBS + E_corrCCT_CBS
@@ -871,14 +872,14 @@ maxiter 150\nend
                     print("triplescorr_energies :", triplescorr_energies)
                     #BASIS SET EXTRAPOLATION
                     #SCF extrapolation. WIll be overridden inside function if self.SCFextrapolation==True
-                    print("SCF extrapolation:")
+                    print("\nSCF extrapolation:")
                     E_SCF_CBS = Extrapolation_twopoint_SCF(scf_energies, [self.cardinals[1],self.cardinals[2]], self.basisfamily, 
                         alpha=self.alpha, SCFextrapolation=self.SCFextrapolation) #2-point SCF extrapolation
                     #Separate CCSD, (T) and full-corr CBS energies
-                    print("CCSD corr. extrapolation:")
+                    print("\nCCSD corr. extrapolation:")
                     E_corrCCSD_CBS = Extrapolation_twopoint_corr(ccsdcorr_energies, [self.cardinals[1],self.cardinals[2]], self.basisfamily, 
                         beta=self.beta) #2-point extrapolation using smaller cardinals
-                    print("(T) corr. extrapolation:")
+                    print("\n(T) corr. extrapolation:")
                     E_corrCCT_CBS = Extrapolation_twopoint_corr(triplescorr_energies, [self.cardinals[0],self.cardinals[1]], self.basisfamily, 
                         beta=self.beta) #2-point extrapolation
                     E_corr_CBS = E_corrCCSD_CBS + E_corrCCT_CBS
@@ -908,15 +909,15 @@ maxiter 150\nend
                     print("triplescorr_energies :", triplescorr_energies)
                     #BASIS SET EXTRAPOLATION
                     #SCF extrapolation. WIll be overridden inside function if self.SCFextrapolation==True
-                    print("SCF extrapolation:")
+                    print("\nSCF extrapolation:")
                     E_SCF_CBS = Extrapolation_twopoint_SCF(scf_energies, self.cardinals, self.basisfamily, 
                         alpha=self.alpha, SCFextrapolation=self.SCFextrapolation) #2-point SCF extrapolation
 
                     #Separate CCSD, (T) and full-corr CBS energies
-                    print("CCSD corr. extrapolation:")
+                    print("\nCCSD corr. extrapolation:")
                     E_corrCCSD_CBS = Extrapolation_twopoint_corr(ccsdcorr_energies, self.cardinals, self.basisfamily, 
                         beta=self.beta) #2-point extrapolation
-                    print("(T) corr. extrapolation:")
+                    print("\n(T) corr. extrapolation:")
                     E_corrCCT_CBS = Extrapolation_twopoint_corr(triplescorr_energies, self.cardinals, self.basisfamily, 
                         beta=self.beta) #2-point extrapolation        
                     E_corr_CBS = E_corrCCSD_CBS + E_corrCCT_CBS
@@ -1600,7 +1601,7 @@ def Extrapolation_twopoint_SCF(scf_energies, cardinals, basis_family, alpha=None
             #For 3/4 extrapolations or higher we are close to 3.0 theoretical value
             #'default' : [3.9,3.0],
             extrap_dict_key='default'
-        print("Using settings: alpha: {} ".format(extrapolation_parameters_dict[extrap_dict_key][0]))
+        #print("alpha setting: {} ".format(extrapolation_parameters_dict[extrap_dict_key][0]))
 
     #Override settings if desired
     # If alpha/beta have not been set then we define based on basisfamily and cardinals

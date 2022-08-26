@@ -143,8 +143,6 @@ class xTBTheory:
         #Check charge/mult
         charge,mult = check_charge_mult(charge, mult, self.theorytype, fragment, "xTBTheory.Opt", theory=self)
 
-
-
         if numcores==None:
             numcores=self.numcores
 
@@ -166,7 +164,7 @@ class xTBTheory:
 
             run_xtb_SP_serial(self.xtbdir, self.xtbmethod, self.filename + '.xyz', charge, mult, 
                                     Opt=True, maxiter=self.maxiter, electronic_temp=self.electronic_temp, 
-                                    accuracy=self.accuracy, printlevel=self.printlevel)
+                                    accuracy=self.accuracy, printlevel=self.printlevel, numcores=numcores)
 
             if self.printlevel >= 2:
                 print("------------xTB calculation done-----")
@@ -271,18 +269,18 @@ class xTBTheory:
                     #print("PC is true")
                     create_xtb_pcfile_general(current_MM_coords, MMcharges, hardness=self.hardness)
                     run_xtb_SP_serial(self.xtbdir, self.xtbmethod, self.filename + '.xyz', charge, mult, printlevel=self.printlevel,
-                                      Grad=True, maxiter=self.maxiter, electronic_temp=self.electronic_temp, accuracy=self.accuracy)
+                                      Grad=True, maxiter=self.maxiter, electronic_temp=self.electronic_temp, accuracy=self.accuracy, numcores=numcores)
                 else:
                     run_xtb_SP_serial(self.xtbdir, self.xtbmethod, self.filename + '.xyz', charge, mult, maxiter=self.maxiter, printlevel=self.printlevel,
-                                  Grad=True, electronic_temp=self.electronic_temp, accuracy=self.accuracy, solvent=self.solvent_line)
+                                  Grad=True, electronic_temp=self.electronic_temp, accuracy=self.accuracy, solvent=self.solvent_line, numcores=numcores)
             else:
                 if PC==True:
                     create_xtb_pcfile_general(current_MM_coords, MMcharges, hardness=self.hardness)
                     run_xtb_SP_serial(self.xtbdir, self.xtbmethod, self.filename + '.xyz', charge, mult, maxiter=self.maxiter, printlevel=self.printlevel,
-                                      electronic_temp=self.electronic_temp, accuracy=self.accuracy, solvent=self.solvent_line)
+                                      electronic_temp=self.electronic_temp, accuracy=self.accuracy, solvent=self.solvent_line, numcores=numcores)
                 else:
                     run_xtb_SP_serial(self.xtbdir, self.xtbmethod, self.filename + '.xyz', charge, mult, maxiter=self.maxiter, printlevel=self.printlevel,
-                                      electronic_temp=self.electronic_temp, accuracy=self.accuracy, solvent=self.solvent_line)
+                                      electronic_temp=self.electronic_temp, accuracy=self.accuracy, solvent=self.solvent_line, numcores=numcores)
 
             if self.printlevel >= 2:
                 print("------------xTB calculation done-----")
@@ -523,7 +521,7 @@ def xtbVEAgrab(file):
     return VEA
 
 # Run xTB single-point job
-def run_xtb_SP_serial(xtbdir, xtbmethod, xyzfile, charge, mult, Grad=False, Opt=False, maxiter=500, electronic_temp=300, accuracy=0.1, solvent=None, printlevel=2):
+def run_xtb_SP_serial(xtbdir, xtbmethod, xyzfile, charge, mult, Grad=False, Opt=False, maxiter=500, electronic_temp=300, accuracy=0.1, solvent=None, printlevel=2, numcores=1):
     
     if solvent != None:
         solvent_line=""
@@ -549,7 +547,7 @@ def run_xtb_SP_serial(xtbdir, xtbmethod, xyzfile, charge, mult, Grad=False, Opt=
     
     if Grad==True:
         command_list=[xtbdir + '/xtb', basename+'.xyz', '--gfn', str(xtbflag), '--grad', '--chrg', str(charge), '--uhf', str(uhf), '--iterations', str(maxiter),
-                              '--etemp', str(electronic_temp), '--acc', str(accuracy), '--input', 'xtbinput', str(solvent_line)  ]
+                              '--etemp', str(electronic_temp), '--acc', str(accuracy), '--parallel', str(numcores), '--input', 'xtbinput', str(solvent_line)  ]
     elif Opt == True:
         command_list=[xtbdir + '/xtb', basename+'.xyz', '--gfn', str(xtbflag), '--opt', '--chrg', str(charge), '--uhf', str(uhf), '--iterations', str(maxiter),
                               '--etemp', str(electronic_temp), '--acc', str(accuracy), '--input', 'xtbinput', str(solvent_line)  ]    

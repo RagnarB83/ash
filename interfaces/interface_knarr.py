@@ -78,7 +78,11 @@ def NEBTS(reactant=None, product=None, theory=None, images=8, CI=True, free_end=
 
     #Will use maximum number of CPU cores provided to either NEBTS or theory object
     #cores_for_TSopt=max([numcores,theory.numcores])
-    cores_for_TSopt=numcores*theory.numcores
+    numcores=int(numcores)
+    theory.numcores=int(theory.numcores)
+    #Keeping original setting
+    original_theory_numcores=copy.copy(theory.numcores)
+    cores_for_TSopt=int(numcores*theory.numcores)
 
     #Printing parallelization info
     print("Will first perform loose NEB-CI job, followed by TSOpt job using geomeTRIC optimizer.")
@@ -110,7 +114,7 @@ def NEBTS(reactant=None, product=None, theory=None, images=8, CI=True, free_end=
         if isinstance(theory,ash.DualTheory):
             print("Dualtheory active. Doing Numfreq using regular mode.")
             #NOTE: Regular mode might involve a theory 2 correction. We could switch to theory1 solely instead here
-            freqdict = ash.NumFreq(theory=theory, fragment=SP, printlevel=0)
+            freqdict = ash.NumFreq(theory=theory, fragment=SP, printlevel=0, runmode=runmode, numcores=numcores)
             hessianfile="Hessian_from_dualtheory"
             shutil.copyfile("Numfreq_dir/Hessian",hessianfile)
             hessianoption='file:'+str(hessianfile)
@@ -128,7 +132,7 @@ def NEBTS(reactant=None, product=None, theory=None, images=8, CI=True, free_end=
         print("Will now calculate xTB Hessian")
         #NOTE: here using ASH-Numfreq. Could also be done faster using xTB directly ?
         xtb = ash.xTBTheory(xtbmethod='GFN1')
-        freqdict = ash.NumFreq(theory=xtb, fragment=SP, printlevel=0)
+        freqdict = ash.NumFreq(theory=xtb, fragment=SP, printlevel=0, runmode=runmode, numcores=numcores)
         hessianfile="Hessian_from_xtb"
         shutil.copyfile("Numfreq_dir/Hessian",hessianfile)
         hessianoption='file:'+str(hessianfile)
@@ -161,7 +165,7 @@ def NEBTS(reactant=None, product=None, theory=None, images=8, CI=True, free_end=
         #TODO: Option to run this in parallel ?
         #Or just enable theory parallelization 
         #if isinstance(theory,ash.DualTheory): theory.switch_to_theory(2)
-        freqdict = ash.NumFreq(theory=theory, fragment=SP, printlevel=0, npoint=2, hessatoms=TSmodeatoms)
+        freqdict = ash.NumFreq(theory=theory, fragment=SP, printlevel=0, npoint=2, hessatoms=TSmodeatoms, runmode=runmode, numcores=numcores)
 
         #Combine partial exact Hessian with model Hessian(Almloef, Lindh, Schlegel or unit)
         combined_hessian = approximate_full_Hessian_from_smaller(SP,freqdict["hessian"],TSmodeatoms,restHessian=modelhessian)
@@ -190,6 +194,8 @@ def NEBTS(reactant=None, product=None, theory=None, images=8, CI=True, free_end=
                 conv_criteria=OptTS_conv_criteria, print_atoms_list=OptTS_print_atoms_list, TSOpt=True,
                 hessian=hessianoption)
 
+    #Changing numcores back in case theory is reused
+    theory.numcores=original_theory_numcores
     return SP
 
 #ASH NEB function. Calls Knarr
@@ -218,7 +224,7 @@ def NEB(reactant=None, product=None, theory=None, images=8, CI=True, free_end=Fa
         print(BC.WARNING,f"Runmode is 'parallel' and numcores == {numcores}.")
         print(BC.WARNING,f"Will launch Energy+gradient calculations using Singlepoint_parallel using {numcores} cores.", BC.END)
         if theory.numcores > 1:
-            print(BC.WARNING,f"Warning: Theory parallelization is active and will utilize: {theory.numcores}", BC.END)
+            print(BC.WARNING,f"Warning: Theory parallelization is active and will utilize: {theory.numcores} cores.", BC.END)
             print(BC.WARNING,f"The NEB images will run in parallel by Python multiprocessing (using {numcores} cores) while each image E+Grad calculation is parallelized as well ({theory.numcores} per image)", BC.END)
             print(BC.WARNING,f"Make sure that you have {numcores} x {theory.numcores} = {numcores*theory.numcores} CPU cores available to this ASH job on the computing node", BC.END)
     elif runmode == 'serial' and numcores == 1:
