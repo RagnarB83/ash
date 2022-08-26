@@ -609,17 +609,17 @@ class KnarrCalculator:
                     if os.path.exists(current_image_file):
                         if self.printlevel >= 1:
                             print(f"File: {current_image_file} exists.")
-                            print(f"Copying {current_image_file} to {self.theory.inputfile+".gbw"} to be used.")
+                            print(f"Copying {current_image_file} to {self.theory.inputfile}.gbw to be used.")
                         shutil.copyfile(current_image_file,self.theory.inputfile+".gbw")
                     else:
                         if self.printlevel >= 1:
                             print(f"current_image_file {current_image_file} DOES NOT exist")
                         if os.path.exists(self.theory.inputfile+".gbw"):
                             if self.printlevel >= 1:
-                                print(f"A file {self.theory.inputfile+".gbw"} file does exist. Will use.")
+                                print(f"A file {self.theory.inputfile}.gbw file does exist. Will use.")
                         else:
                             if self.printlevel >= 1:
-                                print(f"A file {self.theory.inputfile+".gbw"} file DOES NOT exist. Will use ORCA/ORCATheory settings.")
+                                print(f"A file {self.theory.inputfile}.gbw file DOES NOT exist. Will use ORCA/ORCATheory settings.")
 
 
                 if self.ActiveRegion == True:
@@ -649,7 +649,7 @@ class KnarrCalculator:
 
                     if self.ORCAused == True:
                         if self.printlevel >= 1:
-                            print(f"ORCA run done. Copying {self.theory.inputfile+".gbw"} to {current_image_file} for next time")
+                            print(f"ORCA run done. Copying {self.theory.inputfile}.gbw to {current_image_file} for next time")
                         shutil.copyfile(self.theory.inputfile+".gbw",current_image_file)
                     if self.printlevel >= 2:
                         print("Energy of image {} is : {}".format(image_number,En_image))
@@ -666,7 +666,7 @@ class KnarrCalculator:
                     
                     if self.ORCAused == True:
                         if self.printlevel >= 1:
-                            print(f"ORCA run done. Copying {self.theory.inputfile+".gbw"} to {current_image_file} for next time")
+                            print(f"ORCA run done. Copying {self.theory.inputfile}.gbw to {current_image_file} for next time")
                         shutil.copyfile(self.theory.inputfile+".gbw",current_image_file)
                     
                     #Keeping track of energies for each image in a dict
@@ -711,7 +711,7 @@ class KnarrCalculator:
                             if os.path.exists(path_to_imagefile):
                                 if self.printlevel >= 1:
                                     print(f"File {path_to_imagefile} DOES exist")
-                                    print(f"Copying file {path_to_imagefile} to dir {workerdir} as {self.theory.inputfile+".gbw"}")
+                                    print(f"Copying file {path_to_imagefile} to dir {workerdir} as {self.theory.inputfile}.gbw")
                                 shutil.copyfile(path_to_imagefile,workerdir+"/"+self.theory.inputfile+".gbw") #Copying to Pooljob_image_X as orca.gbw
                             else:
                                 if self.printlevel >= 1:
