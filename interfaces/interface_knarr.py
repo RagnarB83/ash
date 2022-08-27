@@ -75,7 +75,7 @@ def NEBTS(reactant=None, product=None, theory=None, images=8, CI=True, free_end=
         hessian_for_TS=None, modelhessian='unit', tsmode_tangent_threshold=0.1):
 
     print_line_with_mainheader("NEB+TS")
-
+    module_init_time=time.time()
     #Will use maximum number of CPU cores provided to either NEBTS or theory object
     #cores_for_TSopt=max([numcores,theory.numcores])
     numcores=int(numcores)
@@ -196,6 +196,7 @@ def NEBTS(reactant=None, product=None, theory=None, images=8, CI=True, free_end=
 
     #Changing numcores back in case theory is reused
     theory.set_numcores(original_theory_numcores)
+    print_time_rel(module_init_time, modulename='NEB-TS run', moduleindex=1)
     return SP
 
 #ASH NEB function. Calls Knarr
