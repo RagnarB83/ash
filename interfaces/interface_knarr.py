@@ -34,7 +34,7 @@ import KNARRatom.atom
 #RB modified springconst from 10 to 5
 # Changed "IDPP_RMS_F": 0.005    and "IDPP_MAX_F": 0.01
 path_parameters = {"METHOD": "DOUBLE", "INTERPOLATION": "IDPP", "NIMAGES": 8,
-              "INSERT_CONFIG": None, "IDPP_MAX_ITER": 300,
+              "INSERT_CONFIG": None, "IDPP_MAX_ITER": 700,
               "IDPP_SPRINGCONST": 5.0, "IDPP_TIME_STEP": 0.01,
               "IDPP_MAX_MOVE": 0.1, "IDPP_MAX_F": 0.03, "IDPP_RMS_F": 0.005}
 
@@ -70,7 +70,7 @@ optimizer = {"OPTIM_METHOD": "LBFGS", "MAX_ITER": 200, "TOL_MAX_FORCE": 0.01,
 def NEBTS(reactant=None, product=None, theory=None, images=8, CI=True, free_end=False, maxiter=100, IDPPonly=False,
         conv_type="ALL", tol_scale=10, tol_max_fci=0.10, tol_rms_fci=0.05, tol_max_f=1.03, tol_rms_f=0.51,
         tol_turn_on_ci=1.0,  runmode='serial', numcores=1, charge=None, mult=None, printlevel=0, ActiveRegion=False, actatoms=None,
-        interpolation="IDPP", idpp_maxiter=300, restart_file=None, TS_guess_file=None, mofilesdir=None, 
+        interpolation="IDPP", idpp_maxiter=700, restart_file=None, TS_guess_file=None, mofilesdir=None, 
         OptTS_maxiter=100, OptTS_print_atoms_list=None, OptTS_convergence_setting=None, OptTS_conv_criteria=None, OptTS_coordsystem='tric',
         hessian_for_TS=None, modelhessian='unit', tsmode_tangent_threshold=0.1):
 
@@ -209,7 +209,7 @@ def NEB(reactant=None, product=None, theory=None, images=8, CI=True, free_end=Fa
         conv_type="ALL", tol_scale=10, tol_max_fci=0.026, tol_rms_fci=0.013, tol_max_f=0.26, tol_rms_f=0.13,
         tol_turn_on_ci=1.0,  runmode='serial', numcores=1, IDPPonly=False,
         charge=None, mult=None,printlevel=0, ActiveRegion=False, actatoms=None,
-        interpolation="IDPP", idpp_maxiter=300, 
+        interpolation="IDPP", idpp_maxiter=700, 
         restart_file=None, TS_guess_file=None, mofilesdir=None):
 
     print_line_with_mainheader("Nudged elastic band calculation (via interface to KNARR)")
