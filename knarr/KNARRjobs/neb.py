@@ -391,13 +391,13 @@ def DoNEB(path, calculator, neb, optimizer, second_run=False):
         # =======================================================
         if startci:
             print("HEI: Highest energy image")
-            print("ΔE: Relative energy of HIE in kcal/mol (w.r.t. image 0)")
+            print("dE: Relative energy of HIE in kcal/mol (w.r.t. image 0)")
             print("Forces in eV/Ang.")
             print("RMSF/MaxF: RMS/Max force on all images.")
             print("RMSF_CI/MaxF_CI: RMS/Max force on climbing image.")
             print("-"*80)
             print('%4ls %6s %8ls %5ls %8ls %8ls %8ls %8ls %8ls' %
-                    ('it', 'dS', 'ΔE', 'CI', 'RMSF', 'MaxF', 'RMSF_CI', 'MaxF_CI', 'step'))
+                    ('it', 'dS', 'dE', 'CI', 'RMSF', 'MaxF', 'RMSF_CI', 'MaxF_CI', 'step'))
             print(f"Thresholds:                {tol_rms_f:8.4f} {tol_max_f:8.4f} {tol_rms_fci:8.4f} {tol_max_fci:8.4f}")
             print ("%4i %6.2lf %8.3lf %5li %8.4lf %8.4lf %8.4lf %8.4lf %8.4lf"
                    % (it, s[-1], 23.060541945329334*(path.GetEnergy()[ci] - Ereactant), ci, rmsf_noci,
@@ -406,12 +406,12 @@ def DoNEB(path, calculator, neb, optimizer, second_run=False):
         else:
             hei = np.argmax(path.GetEnergy())
             print("HEI: Highest energy image")
-            print("ΔE: Relative energy of HIE in kcal/mol (w.r.t. image 0)")
+            print("dE: Relative energy of HIE in kcal/mol (w.r.t. image 0)")
             print("Forces in eV/Ang")
             print("RMSF/MaxF: RMS/Max force on all images.")
             print("-"*70)
             print('%4ls %6s %10ls %5ls %9ls %9ls %9ls' %
-                ('it', 'dS', 'ΔE', 'HEI', 'RMSF', 'MaxF', 'step'))
+                ('it', 'dS', 'dE', 'HEI', 'RMSF', 'MaxF', 'step'))
             print(f"Switch-on CI:{tol_turn_on_ci:>36.4f}")
             print ("%4i %6.2lf %10.6lf %5li %9.4lf  %9.4lf %9.4lf"
                    % (it, s[-1], 23.060541945329334*(path.GetEnergy()[hei] - Ereactant), hei, rmsf, maxf, np.max(abs(step))))
@@ -599,7 +599,7 @@ def DoNEB(path, calculator, neb, optimizer, second_run=False):
         #    print('% 2i % 6.2f % 6.5f % 6.4f % 6.6f' % (
         #        i, s[i], path.GetEnergy()[i], 23.060541945329334*(path.GetEnergy()[i] - Ereactant),
         #        np.max(abs(freal_perp[i * path.GetNDofIm():(i + 1) * path.GetNDofIm()]))))
-        print('%4ls %6ls %12ls %12ls %12ls' % ('Img.', 'dS', 'E(Eh)', 'ΔE(kcal/mol)', 'MaxF(eV/Ang)'))
+        print('%4ls %6ls %12ls %12ls %12ls' % ('Img.', 'dS', 'E(Eh)', 'dE(kcal/mol)', 'MaxF(eV/Ang)'))
         for i in range(path.GetNim()):
             if i == ci:
                 extra="CI"
