@@ -363,6 +363,7 @@ def NumFreq(fragment=None, theory=None, charge=None, mult=None, npoint=2, displa
         print("Missing gradients for displacement.")
         print("Something went wrong in Numfreq displacement calculations.")
         ashexit()
+    print("Length of displacement_grad_dictionary", len(displacement_grad_dictionary))
     #Initialize empty Hessian
     hesslength=3*len(hessatoms)
     hessian=np.zeros((hesslength,hesslength))
