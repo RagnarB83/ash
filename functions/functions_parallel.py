@@ -10,14 +10,18 @@ from ash.modules.module_coords import check_charge_mult
 #Various calculation-functions run in parallel
 
 
-#Stripped down version of Singlepoint functffragment_fileion for Singlepoint_parallel.
+#Stripped down version of Singlepoint functffragment_file ion for Singlepoint_parallel.
 #NOTE: Version intended for apply_async
 #TODO: This function may still be a bit ORCA-centric. Needs to be generalized 
-def Single_par(fragment=None, fragmentfile=None, theory=None, label=None, mofilesdir=None, event=None, charge=None, mult=None, Grad=False, printlevel=2):
+def Single_par(fragment=None, fragmentfile=None, theory=None, label=None, mofilesdir=None, event=None, charge=None, mult=None, Grad=False, printlevel=2, copytheory=False):
 
     #Creating new copy of theory to prevent Brokensym feature from being deactivated by each run
     #NOTE: Alternatively we can add an if-statement inside orca.run
-    theory=copy.deepcopy(theory)
+    #NOTE: Not compatible with Dualtheory
+    if copytheory == True:
+        theory=copy.deepcopy(theory)
+
+
 
     if printlevel >= 2:
         print("Fragment:", fragment)
@@ -138,7 +142,8 @@ def Single_par(fragment=None, fragmentfile=None, theory=None, label=None, mofile
 #PARALLEL Single-point energy function
 #will run over fragments or fragmentfiles, over theories or both
 #mofilesdir. Directory containing MO-files (GBW files for ORCA). Usef for multiple fragment option
-def Singlepoint_parallel(fragments=None, fragmentfiles=None, theories=None, numcores=None, mofilesdir=None, allow_theory_parallelization=False, Grad=False, printlevel=2):
+#NOTE: Experimental copytheory option
+def Singlepoint_parallel(fragments=None, fragmentfiles=None, theories=None, numcores=None, mofilesdir=None, allow_theory_parallelization=False, Grad=False, printlevel=2, copytheory=False):
     print("")
     '''
     The Singlepoint_parallel function carries out multiple single-point calculations in a parallel fashion
@@ -241,7 +246,7 @@ def Singlepoint_parallel(fragments=None, fragmentfiles=None, theories=None, numc
             for fragment in fragments:
                 if printlevel >= 2:
                     print("fragment:", fragment)
-                results.append(pool.apply_async(Single_par, kwds=dict(theory=theory,fragment=fragment,label=fragment.label,mofilesdir=mofilesdir,event=event, Grad=Grad, printlevel=printlevel), 
+                results.append(pool.apply_async(Single_par, kwds=dict(theory=theory,fragment=fragment,label=fragment.label,mofilesdir=mofilesdir,event=event, Grad=Grad, printlevel=printlevel, copytheory=copytheory), 
                     error_callback=Terminate_Pool_processes))
         #Passing list of fragment files
         elif len(fragmentfiles) > 0:
@@ -250,7 +255,7 @@ def Singlepoint_parallel(fragments=None, fragmentfiles=None, theories=None, numc
             for fragmentfile in fragmentfiles:
                 if printlevel >= 2:
                     print("fragmentfile:", fragmentfile)
-                results.append(pool.apply_async(Single_par, kwds=dict(theory=theory,fragmentfile=fragmentfile,label=fragmentfile,mofilesdir=mofilesdir,event=event, Grad=Grad, printlevel=printlevel), 
+                results.append(pool.apply_async(Single_par, kwds=dict(theory=theory,fragmentfile=fragmentfile,label=fragmentfile,mofilesdir=mofilesdir,event=event, Grad=Grad, printlevel=printlevel, copytheory=copytheory), 
                     error_callback=Terminate_Pool_processes))
     # Case: Multiple theories, 1 fragment
     elif len(fragments) == 1:
@@ -261,7 +266,7 @@ def Singlepoint_parallel(fragments=None, fragmentfiles=None, theories=None, numc
         for theory in theories:
             if printlevel >= 2:
                 print("theory:", theory)
-            results.append(pool.apply_async(Single_par, kwds=dict(theory=theory,fragment=fragment,label=fragment.label,mofilesdir=mofilesdir,event=event, Grad=Grad, printlevel=printlevel), 
+            results.append(pool.apply_async(Single_par, kwds=dict(theory=theory,fragment=fragment,label=fragment.label,mofilesdir=mofilesdir,event=event, Grad=Grad, printlevel=printlevel, copytheory=copytheory), 
                 error_callback=Terminate_Pool_processes))
     # Case: Multiple theories, 1 fragmentfile
     elif len(fragmentfiles) == 1:
@@ -271,7 +276,7 @@ def Singlepoint_parallel(fragments=None, fragmentfiles=None, theories=None, numc
         for theory in theories:
             if printlevel >= 2:
                 print("theory:", theory)
-            results.append(pool.apply_async(Single_par, kwds=dict(theory=theory,fragmentfile=fragmentfile,label=fragmentfile,mofilesdir=mofilesdir,event=event, Grad=Grad, printlevel=printlevel), 
+            results.append(pool.apply_async(Single_par, kwds=dict(theory=theory,fragmentfile=fragmentfile,label=fragmentfile,mofilesdir=mofilesdir,event=event, Grad=Grad, printlevel=printlevel, copytheory=copytheory), 
                 error_callback=Terminate_Pool_processes))
     else:
         print("Multiple theories and multiple fragments provided.")
