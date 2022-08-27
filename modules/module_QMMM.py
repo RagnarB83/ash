@@ -534,7 +534,10 @@ class QMMMTheory:
                 new_full_PC_gradient[i] = self.original_PCcorrection_gradient[i]
 
         return newQMgradient_wo_linkatoms, new_full_PC_gradient
-
+    def set_numcores(self,numcores):
+        print(f"Setting new numcores {numcores}for QMtheory and MMtheory")
+        self.qm_theory.set_numcores(numcores)
+        self.mm_theory.set_numcores(numcores)
     def run(self, current_coords=None, elems=None, Grad=False, numcores=1, exit_after_customexternalforce_update=False, label=None, charge=None, mult=None):
         module_init_time=time.time()
         CheckpointTime = time.time()

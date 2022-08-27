@@ -737,6 +737,13 @@ class OpenMMTheory:
         # timeA = time.time()
         print_time_rel(module_init_time, modulename="OpenMM object creation")
 
+    #Set numcores method: currently inactive. Included for completeness
+    def set_numcores(self,numcores):
+        self.numcores=numcores
+    #Set numcores method
+    def cleanup(self):
+        print("Cleanup for OpenMMTheory called")
+
     # add force that restrains atoms to a fixed point:
     # https://github.com/openmm/openmm/issues/2568
 

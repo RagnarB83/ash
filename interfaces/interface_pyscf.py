@@ -28,6 +28,9 @@ class PySCFTheory:
 
         self.pyscfbasis=pyscfbasis
         self.pyscffunctional=pyscffunctional
+    #Set numcores method
+    def set_numcores(self,numcores):
+        self.numcores=numcores
     #Cleanup after run.
     def cleanup(self):
         print("Cleaning up old PySCF files")

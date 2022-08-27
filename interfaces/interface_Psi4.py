@@ -72,7 +72,9 @@ class Psi4Theory:
         #self.psi4functional=psi4functional
 
 
-
+    #Set numcores method
+    def set_numcores(self,numcores):
+        self.numcores=numcores
     #Cleanup after run.
     def cleanup(self):
         print("Cleaning up old Psi4 files")

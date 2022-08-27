@@ -114,7 +114,9 @@ class xTBTheory:
         else:
             print("unknown runmode. exiting")
             ashexit()
-
+    #Set numcores method
+    def set_numcores(self,numcores):
+        self.numcores=numcores
     #Cleanup after run.
     def cleanup(self):
         if self.printlevel >= 2:

@@ -136,6 +136,14 @@ class DualTheory:
     #    self.correction_dict[label].Maxcorr.append(max_correction)
     #    self.correction_dict[label].Ecorr.append(self.energy_correction[label])
 
+    def set_numcores(self,numcores):
+        print(f"Setting new numcores {numcores}for theory 1 and theory2")
+        self.theory1.set_numcores(numcores)
+        self.theory2.set_numcores(numcores)
+    #Cleanup after run.
+    def cleanup(self):
+        self.theory1.cleanup()
+        self.theory2.cleanup()
     #Run function. Takes coords, elems etc. arguments and computes E or E+G.
     def run(self, current_coords=None, elems=None, Grad=False, numcores=None, label=None, charge=None, mult=None, run_both_theories=False ):
         print(BC.OKBLUE,BC.BOLD, "------------RUNNING DUALTHEORY INTERFACE-------------", BC.END)

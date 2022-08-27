@@ -158,6 +158,9 @@ class ORCATheory:
             print(self.orcasimpleinput)
             print(self.orcablocks)
         print("\nORCATheory object created!")
+    #Set numcores method
+    def set_numcores(self,numcores):
+        self.numcores=numcores
     #Cleanup after run.
     def cleanup(self):
         print("Cleaning up old ORCA files")

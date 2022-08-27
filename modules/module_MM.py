@@ -10,7 +10,7 @@ import ash.constants
 # Simple nonbonded MM theory. Charges and LJ-potentials
 class NonBondedTheory:
     def __init__(self, atomtypes=None, forcefield=None, charges = None, LJcombrule='geometric',
-                 codeversion=None, printlevel=2):
+                 codeversion=None, printlevel=2, numcores=1):
 
         #Indicate that this is a MMtheory
         self.theorytype="MM"
@@ -29,6 +29,8 @@ class NonBondedTheory:
         #Read MM forcefield.
         self.forcefield=forcefield
 
+        #Inactive but included for completeness
+        self.numcores=numcores
         #
         self.numatoms = len(self.atomtypes)
         self.LJcombrule=LJcombrule
@@ -51,6 +53,12 @@ class NonBondedTheory:
         self.epsij=np.zeros((self.numatoms, self.numatoms))
         self.pairarrays_assigned = False
 
+    #Set numcores method
+    def set_numcores(self,numcores):
+        self.numcores=numcores
+    #Set numcores method
+    def cleanup(self):
+        print("Cleanup for NonbondedTheory called")
     #Todo: Need to make active-region version of pyarray version here.
     def calculate_LJ_pairpotentials(self, qmatoms=None, actatoms=None, frozenatoms=None):
         module_init_time=time.time()
