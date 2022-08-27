@@ -137,7 +137,7 @@ class DualTheory:
     #    self.correction_dict[label].Ecorr.append(self.energy_correction[label])
 
     def set_numcores(self,numcores):
-        print(f"Setting new numcores {numcores}for theory 1 and theory2")
+        print(f"Setting new numcores {numcores} for theory 1 and theory2")
         self.theory1.set_numcores(numcores)
         self.theory2.set_numcores(numcores)
     #Cleanup after run.
