@@ -19,8 +19,10 @@ def Single_par(fragment=None, fragmentfile=None, theory=None, label=None, mofile
     #NOTE: Alternatively we can add an if-statement inside orca.run
     #NOTE: Not compatible with Dualtheory
     if copytheory == True:
+        print("copytheory True")
         theory=copy.deepcopy(theory)
-
+    else:
+        print("copytheory False")
 
 
     if printlevel >= 2:
