@@ -243,7 +243,7 @@ def NumFreq(fragment=None, theory=None, charge=None, mult=None, npoint=2, displa
             ashexit()
             #NOTE: Because OpenMM can not be pickled. Possibly try enabling for MMTheory = NonbondedTheory
         
-        print("Starting Numfreq calculations in parallel mode using Singlepoint_parallel")
+        print(f"Starting Numfreq calculations in parallel mode (numcores={numcores}) using Singlepoint_parallel")
 
         #Launching multiple ASH E+Grad calculations in parallel on list of ASH fragments: all_image_fragments
         en_dict,gradient_dict = ash.Singlepoint_parallel(fragments=all_disp_fragments, theories=[theory], numcores=numcores, 
