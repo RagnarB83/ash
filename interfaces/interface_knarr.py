@@ -79,7 +79,7 @@ def NEBTS(reactant=None, product=None, theory=None, images=8, CI=True, free_end=
     #Will use maximum number of CPU cores provided to either NEBTS or theory object
     #cores_for_TSopt=max([numcores,theory.numcores])
     numcores=int(numcores)
-    theory.numcores=int(theory.numcores)
+    theory.set_numcores(int(theory.numcores))
     #Keeping original setting
     original_theory_numcores=copy.copy(theory.numcores)
     cores_for_TSopt=int(numcores*theory.numcores)
@@ -186,7 +186,7 @@ def NEBTS(reactant=None, product=None, theory=None, images=8, CI=True, free_end=
     #TSopt
     print(f"Now starting Optimizer job from NEB-CI saddlepoint with TSOpt=True with hessian option: {hessianoption}")
     print(f"Changing number of cores of Theory object from : {theory.numcores} cores ", end="")
-    theory.numcores=cores_for_TSopt
+    theory.set_numcores(cores_for_TSopt)
     print(f"to: {cores_for_TSopt} cores")
 
     ash.Optimizer(theory=theory, fragment=SP, charge=charge, mult=mult, coordsystem=OptTS_coordsystem, maxiter=OptTS_maxiter, 
@@ -195,7 +195,7 @@ def NEBTS(reactant=None, product=None, theory=None, images=8, CI=True, free_end=
                 hessian=hessianoption)
 
     #Changing numcores back in case theory is reused
-    theory.numcores=original_theory_numcores
+    theory.set_numcores(original_theory_numcores)
     return SP
 
 #ASH NEB function. Calls Knarr
