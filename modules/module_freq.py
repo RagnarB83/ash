@@ -343,11 +343,7 @@ def NumFreq(fragment=None, theory=None, charge=None, mult=None, npoint=2, displa
                                                         theory.frozenatoms] for label,filelabel in zip(list_of_labels,list_of_filelabels)])
         #Passing QM theory directly
         else:
-
-
             results = pool.map(ash.functions.functions_parallel.displacement_QMrun, [[geo, elems, numcoresQM, theory, label, charge, mult] for geo,label in zip(list_of_displaced_geos,list_of_labels)])
-        
-        
         pool.close()
 
         #Gathering results in dictionary
@@ -363,7 +359,7 @@ def NumFreq(fragment=None, theory=None, charge=None, mult=None, npoint=2, displa
     
     ############################################
     print("Displacement calculations done.")
-
+    print("displacement_grad_dictionary:", displacement_grad_dictionary)
     #Initialize empty Hessian
     hesslength=3*len(hessatoms)
     hessian=np.zeros((hesslength,hesslength))
