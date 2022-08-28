@@ -121,7 +121,7 @@ def NEBTS(reactant=None, product=None, theory=None, images=8, CI=True, free_end=
         else:
             print("Doing Numfreq")
             freqdict = ash.NumFreq(theory=theory, fragment=SP, printlevel=0, runmode=runmode, numcores=numcores)
-            hessianfile="Hessian_from_heory"
+            hessianfile="Hessian_from_theory"
             shutil.copyfile("Numfreq_dir/Hessian",hessianfile)
             hessianoption='file:'+str(hessianfile)
             #print("Will calculate exact Hessian in the beginning of OptTS job.")
