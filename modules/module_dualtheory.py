@@ -31,7 +31,7 @@ class DualTheory:
     Combines two theory levels to give a modified energy and modified gradient
     """
     def __init__(self, theory1=None, theory2=None, printlevel=1, label=None, correctiontype="Difference", 
-            update_schedule='frequency', update_freq=5, numcores=1, Maxthreshold=3e-5, minimum_steps=7):
+            update_schedule='frequency', update_freq=5, max_updates=100, numcores=1, Maxthreshold=3e-5, minimum_steps=7):
         print("Creating DualTheory object. Correctiontype: ", correctiontype)
         self.theorytype="QM"
         self.theory1=theory1
@@ -58,6 +58,9 @@ class DualTheory:
         self.Maxthreshold=Maxthreshold
         #At which iteration do we update correction
         self.update_freq=update_freq
+
+        #Max number of correction updates
+        self.max_updates=max_updates
 
         #Set inital mode of object
         self.set_to_initial_mode()
@@ -233,6 +236,12 @@ class DualTheory:
                     run_both_theories=True
                 elif label in self.update_freq_dict:
                     print("")
+
+                    #Checking if we have reached max_updates
+                    print(f"Number of corrections {self.update_freq_dict[label][2]} for label: {label}")
+                    if  self.update_freq_dict[label][2] == self.max_updates:
+                        print("Max number of corrections reached. Skipping correction (theory2 calc)")
+
                     #If runcalls for label mataches update_freq
                     if self.update_freq_dict[label][0] % self.update_freq == 0:
                         run_both_theories=True
