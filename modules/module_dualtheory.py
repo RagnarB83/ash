@@ -147,6 +147,18 @@ class DualTheory:
     def cleanup(self):
         self.theory1.cleanup()
         self.theory2.cleanup()
+    def print_status(self,label):
+        print("Theory1 Max grad", self.correction_dict[label].theory1_Maxgrad)
+        print("Theory1 RMS grad", self.correction_dict[label].theory1_RMSgrad)
+        print("Theory2 Max grad", self.correction_dict[label].theory2_Maxgrad)
+        print("Theory2 RMS grad", self.correction_dict[label].theory2_RMSgrad)
+        print("Combined Max grad", self.correction_dict[label].combined_Maxgrad)
+        print("Combined RMS grad", self.correction_dict[label].combined_RMSgrad)
+        print("Correction stats:")
+        print("self.correction_dict[label].Ecorr:", self.correction_dict[label].correction_E)
+        print("self.correction_dict[label].correction_RMSgrad:", self.correction_dict[label].correction_RMSgrad)
+        print("self.correction_dict[label].correction_Maxgrad:", self.correction_dict[label].correction_Maxgrad)
+
     #Run function. Takes coords, elems etc. arguments and computes E or E+G.
     def run(self, current_coords=None, elems=None, Grad=False, numcores=None, label=None, charge=None, mult=None, run_both_theories=False ):
         print(BC.OKBLUE,BC.BOLD, "------------RUNNING DUALTHEORY INTERFACE-------------", BC.END)
@@ -277,6 +289,10 @@ class DualTheory:
             gradient = T1_grad + self.gradient_correction[label]
             
             self.store_gradient_info(gradient, label,type="combined")
+
+            #Print stuff
+            if self.printlevel > 2:
+                self.print_status(label)
 
             return energy,gradient
         else:
