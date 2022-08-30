@@ -251,8 +251,8 @@ class DualTheory:
 
                     #Checking if we have reached max_updates
                     print(f"Number of corrections {self.update_freq_dict[label][2]} for label: {label}")
-                    if  self.update_freq_dict[label][2] == self.max_updates:
-                        print("Max number of corrections reached. Skipping correction (theory2 calc)")
+                    if  self.update_freq_dict[label][2] > self.max_updates:
+                        print("Max number of corrections reached. Skipping correction (theory2 calc) in this step")
 
                     #If runcalls for label mataches update_freq
                     if self.update_freq_dict[label][0] % self.update_freq == 0:
