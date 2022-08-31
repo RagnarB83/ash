@@ -562,6 +562,25 @@ def run_xtb_SP_serial(xtbdir, xtbmethod, xyzfile, charge, mult, Grad=False, Opt=
     with open(basename+'.out', 'w') as ofile:
         process = sp.run(command_list, check=True, stdout=ofile, stderr=ofile, universal_newlines=True)
 
+    print("process:", process)
+    print("process returncode", process.returncode)
+
+    #Checking if xtb succeeded or not. Restarting without xtbrestart (in case a bad one) and trying again.
+    if process.returncode == 0:
+        return
+    else:
+        print("Something went wrong with xTB. ")
+        print("Removing xtbrestart MO-file and trying to run again")
+        os.remove("xtbrestart")
+        shutil.copyfile(basename+'.out', basename+'_firstrun.out')
+        with open(basename+'.out', 'w') as ofile:
+            process = sp.run(command_list, check=True, stdout=ofile, stderr=ofile, universal_newlines=True)
+        if process.returncode == 0:
+            return
+        else:
+            print("Still an xtb problem. Exiting. Check xtb outputfile")
+            ashexit()
+
 # Run GFN-xTB single-point job (for multiprocessing execution) for both state A and B (e.g. VIE calc)
 #Takes 1 argument: line with xyzfilename and the xtb options.
 #Runs inside separate dir

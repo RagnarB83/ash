@@ -9,6 +9,7 @@ import time
 
 
 import ash
+import ash.constants as constants
 from ash.functions.functions_general import ashexit,print_time_rel,print_line_with_mainheader, BC,print_line_with_subheader1,print_line_with_subheader2
 from ash.modules.module_coords import check_charge_mult, write_xyzfile
 from ash.modules.module_freq import write_hessian, approximate_full_Hessian_from_smaller, calc_model_Hessian_ORCA, read_tangent
