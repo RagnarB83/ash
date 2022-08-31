@@ -994,7 +994,6 @@ def print_coords_for_atoms(coords, elems, members, labels=None):
 
 
 # From lists of coords,elems and atom indices, write XYZ file coords with elem
-# Todo: make part of Fragment class
 
 def write_XYZ_for_atoms(coords, elems, members, name):
     subset_elems = [elems[i] for i in members]

@@ -657,6 +657,10 @@ class KnarrCalculator:
 
                     self.full_coords_images_dict[image_number] = copy.deepcopy(full_current_image_coords)
 
+                    #Write full and active geometry to disk
+                    write_xyzfile(self.full_fragment_reactant.elems, full_current_image_coords, "image_"+str(image_number)+"_Full", printlevel=self.printlevel, writemode='w')
+                    write_xyzfile(self.fragment1.elems, image_coords, "image_"+str(image_number)+"_active", printlevel=self.printlevel, writemode='w')
+
                     #EnGrad calculation on full system
                     En_image, Grad_image_full = self.theory.run(current_coords=full_current_image_coords, charge=self.charge, mult=self.mult,
                                                                 elems=self.full_fragment_reactant.elems, Grad=True, label="image_"+str(image_number))
@@ -674,7 +678,10 @@ class KnarrCalculator:
                     self.energies_dict[image_number] = En_image
 
                 else:
-                    
+
+                    #Write geometry to disk
+                    write_xyzfile(self.fragment1.elems, image_coords, "image_"+str(image_number), printlevel=self.printlevel, writemode='w')
+
                     En_image, Grad_image = self.theory.run(current_coords=image_coords, elems=self.fragment1.elems, Grad=True, charge=self.charge, mult=self.mult,
                         label="image_"+str(image_number))
                     
