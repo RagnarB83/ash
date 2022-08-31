@@ -430,7 +430,7 @@ def NEB(reactant=None, product=None, theory=None, images=8, CI=True, free_end=Fa
                 CI = np.argmax(path.GetEnergy())
                 saddle_coords_1d=path.GetCoords()[CI * path.GetNDimIm():(CI + 1) * path.GetNDimIm()]
                 saddle_coords=np.reshape(saddle_coords_1d, (numatoms, 3))
-                saddle_energy = path.GetEnergy()[CI][0]*27.211399
+                saddle_energy = path.GetEnergy()[CI][0]*constants.hartoeV
 
                 #Combinining frozen region with optimized active-region for saddle-point
                 # Defining full_coords as original coords temporarily
@@ -458,7 +458,7 @@ def NEB(reactant=None, product=None, theory=None, images=8, CI=True, free_end=Fa
                 CI = np.argmax(path.GetEnergy())
                 saddle_coords_1d=path.GetCoords()[CI * path.GetNDimIm():(CI + 1) * path.GetNDimIm()]
                 saddle_coords=np.reshape(saddle_coords_1d, (numatoms, 3))
-                saddle_energy = path.GetEnergy()[CI][0]/27.211399
+                saddle_energy = path.GetEnergy()[CI][0]/constants.hartoeV
                 print("Creating new ASH fragment for saddlepoint geometry")
                 #Creating new ASH fragment
                 Saddlepoint_fragment = ash.Fragment(coords=saddle_coords, elems=reactant.elems, connectivity=reactant.connectivity, charge=charge, mult=mult)
@@ -707,7 +707,7 @@ class KnarrCalculator:
                 
                 counter += 1
                 #Energies array for all images
-                En_eV=En_image*27.211399
+                En_eV=En_image*constants.hartoeV
                 E[image_number]=En_eV
                 #Forces array for all images
                 #Convert ASH gradient to force and convert to ev/Ang instead of Eh/Bohr
@@ -797,7 +797,7 @@ class KnarrCalculator:
                 #Keeping track of images in Eh
                 self.energies_dict[im] = En_image
                 #Knarr energy array for all images in eV
-                E[im]=En_image*27.211399
+                E[im]=En_image*constants.hartoeV
 
                 #Forces array for all images
                 #ActiveRegion: Trim Full gradient down to only act-atoms gradient
@@ -820,11 +820,16 @@ class KnarrCalculator:
         print("NEB iteration calculations done\n")
 
         #Printing table of energies
+        print("Current energies of all images (in Eh and kcal/mol)")
+        print("-"*70)
         for i in sorted(self.energies_dict.keys()):
             if self.FreeEnd == False and (i == 0 or i == self.numimages-1):
-                print(f"Image: {i:<4}Energy:{self.energies_dict[i]:12.6f} (frozen)")
+                relenergy=(self.energies_dict[i]-self.energies_dict[0])*ash.constants.hartokcal
+                print(f"Image: {i:<4}Energy:{self.energies_dict[i]:12.6f}  {relenergy:8.2f} (frozen)")
             else:
-                print(f"Image: {i:<4}Energy:{self.energies_dict[i]:12.6f}")
+                relenergy=(self.energies_dict[i]-self.energies_dict[0])*ash.constants.hartokcal
+                print(f"Image: {i:<4}Energy:{self.energies_dict[i]:12.6f}  {relenergy:8.2f}")
+        print("-"*70)
         print()
 
         #Write out full MEP path in each NEB iteration.
