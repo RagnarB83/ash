@@ -657,11 +657,12 @@ def run_xtb_SP_serial(xtbdir, xtbmethod, xyzfile, charge, mult, Grad=False, Opt=
             print("Removing xtbrestart MO-file and trying to run again")
             os.remove("xtbrestart")
             shutil.copyfile(basename+'.out', basename+'_firstrun.out')
-            with open(basename+'.out', 'w') as ofile:
-                process = sp.run(command_list, check=True, stdout=ofile, stderr=ofile, universal_newlines=True)
-            if process.returncode == 0:
-                return
-            else:
+            try:
+                with open(basename+'.out', 'w') as ofile:
+                    process = sp.run(command_list, check=True, stdout=ofile, stderr=ofile, universal_newlines=True)
+                if process.returncode == 0:
+                    return
+            except:
                 print("Still an xtb problem. Exiting. Check xtb outputfile")
                 ashexit()
     else:

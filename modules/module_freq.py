@@ -1693,7 +1693,7 @@ def calc_hessian_xtb(fragment=None, runmode='serial', actatoms=None, numcores=1,
         origfragment=copy.copy(fragment)
         #Create new fragment from actatoms
         subcoords, subelems = fragment.get_coords_for_atoms(actatoms)
-        fragment = ash.Fragment(elems=subelems,coords=subcoords)
+        fragment = ash.Fragment(elems=subelems,coords=subcoords, printlevel=0)
     print("Will now calculate xTB Hessian")
     #Creating xtb theory object
     xtb = ash.xTBTheory(xtbmethod='GFN1', numcores=numcores)
