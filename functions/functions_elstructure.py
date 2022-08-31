@@ -919,18 +919,17 @@ def check_cores_vs_electrons(elems,numcores,charge):
         print("Number of total electrons :", numelectrons)
         print("Number of valence electrons :", valence_electrons )
         print("Number of valence electron pairs :", electronpairs )
-
         if isodd(electronpairs):
             if electronpairs > 1:
                 #Changed from subtracting 1 to 3 after DLPNO-CC of NaH calculation failed (MB16-43)
-                print("Setting numcores to: ", electronpairs-3)
-                return electronpairs-3
+                numcores=electronpairs-3
             else:
-                print("Setting numcores to: ", electronpairs)
-                return electronpairs
+                numcores=electronpairs
         else:
-            print("Setting numcores to:", electronpairs)
-            return int(electronpairs)
+            numcores=electronpairs
+    if numcores == 0:
+        numcores=1
+    print("Setting numcores to:", numcores)
     return numcores
 
 
