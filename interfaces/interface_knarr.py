@@ -588,6 +588,14 @@ class KnarrCalculator:
             print("Starting NEB calculations in serial mode")
             for image_number in list_to_compute:
                 print("Computing image: ", image_number)
+
+                #Creating dir 
+                try:
+                    os.mkdir(f"image_{image_number}")
+                except FileExistsError:
+                    pass
+                os.chdir(f"image_{image_number}")
+                
                 image_coords_1d = path.GetCoords()[image_number * path.ndimIm : (image_number + 1) * path.ndimIm]
                 image_coords=np.reshape(image_coords_1d, (numatoms, 3))
 
@@ -678,7 +686,7 @@ class KnarrCalculator:
                     #Keeping track of energies for each image in a dict
                     self.energies_dict[image_number] = En_image
 
-
+                
                 counter += 1
                 #Energies array for all images
                 En_eV=En_image*27.211399
@@ -687,6 +695,10 @@ class KnarrCalculator:
                 #Convert ASH gradient to force and convert to ev/Ang instead of Eh/Bohr
                 force = -1 * np.reshape(Grad_image,(int(path.ndofIm),1)) * 51.42210665240553
                 F[image_number* path.ndimIm : (image_number + 1) * path.ndimIm] = force
+
+                #Going up from image dir
+                os.chdir('..')
+
         #PARALLEL
         elif self.runmode=='parallel':
             print("Starting NEB calculations in parallel mode")
