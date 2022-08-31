@@ -622,6 +622,10 @@ def run_xtb_SP_serial(xtbdir, xtbmethod, xyzfile, charge, mult, Grad=False, Opt=
         command_list=[xtbdir + '/xtb', basename+'.xyz', '--gfn', str(xtbflag), '--opt', '--chrg', str(charge), '--uhf', str(uhf), '--iterations', str(maxiter),
                               '--etemp', str(electronic_temp), '--acc', str(accuracy), '--parallel', str(numcores), '--input', 'xtbinput', str(solvent_line)  ]    
     elif Hessian == True:
+        try:
+            os.remove("hessian")
+        except:
+            pass
         command_list=[xtbdir + '/xtb', basename+'.xyz', '--gfn', str(xtbflag), '--hess', '--chrg', str(charge), '--uhf', str(uhf), '--iterations', str(maxiter),
                               '--etemp', str(electronic_temp), '--acc', str(accuracy), '--parallel', str(numcores), '--input', 'xtbinput', str(solvent_line)  ]    
     else:
@@ -629,33 +633,44 @@ def run_xtb_SP_serial(xtbdir, xtbmethod, xyzfile, charge, mult, Grad=False, Opt=
                       '--etemp', str(electronic_temp), '--acc', str(accuracy), '--parallel', str(numcores), '--input', 'xtbinput', str(solvent_line)]
     if printlevel > 1:
         print("Running xtb with these arguments:", command_list)
-    
+
+    #Catching errors best we can
     try:
         with open(basename+'.out', 'w') as ofile:
             process = sp.run(command_list, check=True, stdout=ofile, stderr=ofile, universal_newlines=True)
-    except subprocess.CalledProcessError:
-        print("subprocess.CalledProcessError")
+            if process.returncode == 0:
+                print("xTB job succeeded.")
+                return
+    except sp.CalledProcessError:
+        print("xTB subprocess gave error.")
+        if Hessian == True:
+            if os.path.exists("hessian"):
+                print("Hessian file was still created, ignoring error and continuing.")
+                return
+            else:
+                print("Hessian file was not created. Check xtb output for error")
+                ashexit()
+        else:
+            #Some other error. Restarting without xtbrestart (in case a bad one) and trying again.
+            print("Something went wrong with xTB. ")
+            #TODO: Check for SCF convergence?
+            print("Removing xtbrestart MO-file and trying to run again")
+            os.remove("xtbrestart")
+            shutil.copyfile(basename+'.out', basename+'_firstrun.out')
+            with open(basename+'.out', 'w') as ofile:
+                process = sp.run(command_list, check=True, stdout=ofile, stderr=ofile, universal_newlines=True)
+            if process.returncode == 0:
+                return
+            else:
+                print("Still an xtb problem. Exiting. Check xtb outputfile")
+                ashexit()
     else:
         print("some other error")
+        print("process:", process)
+        print("process returncode", process.returncode)
         ashexit()
-    print("process:", process)
-    print("process returncode", process.returncode)
 
-    #Checking if xtb succeeded or not. Restarting without xtbrestart (in case a bad one) and trying again.
-    if process.returncode == 0:
-        return
-    else:
-        print("Something went wrong with xTB. ")
-        print("Removing xtbrestart MO-file and trying to run again")
-        os.remove("xtbrestart")
-        shutil.copyfile(basename+'.out', basename+'_firstrun.out')
-        with open(basename+'.out', 'w') as ofile:
-            process = sp.run(command_list, check=True, stdout=ofile, stderr=ofile, universal_newlines=True)
-        if process.returncode == 0:
-            return
-        else:
-            print("Still an xtb problem. Exiting. Check xtb outputfile")
-            ashexit()
+
 
 # Run GFN-xTB single-point job (for multiprocessing execution) for both state A and B (e.g. VIE calc)
 #Takes 1 argument: line with xyzfilename and the xtb options.
