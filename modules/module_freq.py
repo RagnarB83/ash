@@ -1679,10 +1679,14 @@ def read_tangent(tangentfile):
 #Calculate Hessian in various ways.
 
 #Calculate Hessian (GFN1) for a fragment.
-def calc_hessian_xtb(fragment=None, runmode='serial', actatoms=None, numcores=1, use_xtb_feature=True):
-    
+def calc_hessian_xtb(fragment=None, runmode='serial', actatoms=None, numcores=1, use_xtb_feature=True,
+    charge=None, mult=None):
+
     print_line_with_mainheader("calc_hessian_xtb")
-    
+
+    #Check charge/mult
+    charge,mult = check_charge_mult(charge, mult, "QM", fragment, "calc_hessian_xtb")
+
     if actatoms != None:
         print("Creating subfragment")
         #Keep original fragment
@@ -1697,7 +1701,7 @@ def calc_hessian_xtb(fragment=None, runmode='serial', actatoms=None, numcores=1,
     #Get Hessian from xTB directly (avoiding ASH NumFreq)
     if use_xtb_feature == True:
         print("xTB program will calculate Hessian")
-        hessian = xtb.Hessian(fragment=fragment)
+        hessian = xtb.Hessian(fragment=fragment, charge=charge, mult=mult)
         write_hessian(hessian,hessfile="Hessian_from_xtb")
         hessianfile="Hessian_from_xtb"
     #ASH NumFreq. Not sure how much we will use this one
