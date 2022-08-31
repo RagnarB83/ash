@@ -85,7 +85,9 @@ class GeomeTRICOptimizerClass:
                 print("hessian option: xtb")
                 #Calling xtb to get Hessian, written to disk. Returns name of Hessianfile
                 hessianfile = calc_hessian_xtb(fragment=fragment, actatoms=actatoms, numcores=theory.numcores, use_xtb_feature=True, charge=self.charge, mult=self.mult)
+                print("hessianfile:", hessianfile)
                 self.hessian="file:"+hessianfile
+                print("self.hessian:", self.hessian)
             else:
                 #Other hessian option: 'first','file:<path>', 'each' etc.
                 self.hessian=hessian
@@ -105,7 +107,6 @@ class GeomeTRICOptimizerClass:
             self.fragment=fragment
             self.ActiveRegion=ActiveRegion
             self.TSOpt=TSOpt
-            self.hessian=hessian
             ######################
 
             ######################
