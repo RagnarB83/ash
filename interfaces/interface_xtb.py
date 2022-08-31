@@ -620,13 +620,13 @@ def run_xtb_SP_serial(xtbdir, xtbmethod, xyzfile, charge, mult, Grad=False, Opt=
                               '--etemp', str(electronic_temp), '--acc', str(accuracy), '--parallel', str(numcores), '--input', 'xtbinput', str(solvent_line)  ]
     elif Opt == True:
         command_list=[xtbdir + '/xtb', basename+'.xyz', '--gfn', str(xtbflag), '--opt', '--chrg', str(charge), '--uhf', str(uhf), '--iterations', str(maxiter),
-                              '--etemp', str(electronic_temp), '--acc', str(accuracy), '--input', 'xtbinput', str(solvent_line)  ]    
+                              '--etemp', str(electronic_temp), '--acc', str(accuracy), '--parallel', str(numcores), '--input', 'xtbinput', str(solvent_line)  ]    
     elif Hessian == True:
         command_list=[xtbdir + '/xtb', basename+'.xyz', '--gfn', str(xtbflag), '--hess', '--chrg', str(charge), '--uhf', str(uhf), '--iterations', str(maxiter),
-                              '--etemp', str(electronic_temp), '--acc', str(accuracy), '--input', 'xtbinput', str(solvent_line)  ]    
+                              '--etemp', str(electronic_temp), '--acc', str(accuracy), '--parallel', str(numcores), '--input', 'xtbinput', str(solvent_line)  ]    
     else:
         command_list=[xtbdir + '/xtb', basename + '.xyz', '--gfn', str(xtbflag), '--chrg', str(charge), '--uhf', str(uhf), '--iterations', str(maxiter),
-                      '--etemp', str(electronic_temp), '--acc', str(accuracy), '--input', 'xtbinput', str(solvent_line)]
+                      '--etemp', str(electronic_temp), '--acc', str(accuracy), '--parallel', str(numcores), '--input', 'xtbinput', str(solvent_line)]
     if printlevel > 1:
         print("Running xtb with these arguments:", command_list)
     

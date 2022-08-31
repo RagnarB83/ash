@@ -1706,7 +1706,7 @@ def calc_hessian_xtb(fragment=None, runmode='serial', actatoms=None, numcores=1,
         hessianfile="Hessian_from_xtb"
     #ASH NumFreq. Not sure how much we will use this one
     else:
-        freqdict = ash.NumFreq(theory=xtb, fragment=fragment, printlevel=0, runmode=runmode, numcores=numcores)
+        freqdict = ash.NumFreq(theory=xtb, fragment=fragment, printlevel=0, runmode=runmode, numcores=1)
         hessianfile="Hessian_from_xtb"
         shutil.copyfile("Numfreq_dir/Hessian",hessianfile)
     #Returning name of Hessian-file
