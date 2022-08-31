@@ -615,7 +615,7 @@ class KnarrCalculator:
                                 if self.printlevel >= 1:
                                     print(f"File {path_to_imagefile} does NOT exist. Continuing.")
                 
-                #Handling GBW files for ORCATheory
+                #Handling GBW files for ORCATheory and QMMMTheory (if using ORCA)
                 if self.ORCAused == True:
                     if self.printlevel >= 1:
                         print("ORCATheory is being used")
@@ -623,18 +623,29 @@ class KnarrCalculator:
                     if os.path.exists(current_image_file):
                         if self.printlevel >= 1:
                             print(f"File: {current_image_file} exists.")
+                        if isinstance(self.theory,ash.QMMMTheory):
+                            print(f"Copying {current_image_file} to {self.theory.qm_theory.filename}.gbw to be used.")
+                            shutil.copyfile(current_image_file,self.theory.qm_theory.filename+".gbw")                        
+                        else:
                             print(f"Copying {current_image_file} to {self.theory.filename}.gbw to be used.")
-                        shutil.copyfile(current_image_file,self.theory.filename+".gbw")
+                            shutil.copyfile(current_image_file,self.theory.filename+".gbw")
                     else:
                         if self.printlevel >= 1:
                             print(f"current_image_file {current_image_file} DOES NOT exist")
-                        if os.path.exists(self.theory.filename+".gbw"):
-                            if self.printlevel >= 1:
-                                print(f"A file {self.theory.filename}.gbw file does exist. Will use.")
+                        if isinstance(self.theory,ash.QMMMTheory):
+                            if os.path.exists(self.theory.qm_theory.filename+".gbw"):
+                                if self.printlevel >= 1:
+                                    print(f"A file {self.theory.qm_theory.filename}.gbw file does exist. Will use.")
+                            else:
+                                if self.printlevel >= 1:
+                                    print(f"A file {self.theory.qm_theory.filename}.gbw file DOES NOT exist. Will use ORCA/ORCATheory settings.")
                         else:
-                            if self.printlevel >= 1:
-                                print(f"A file {self.theory.filename}.gbw file DOES NOT exist. Will use ORCA/ORCATheory settings.")
-
+                            if os.path.exists(self.theory.filename+".gbw"):
+                                if self.printlevel >= 1:
+                                    print(f"A file {self.theory.filename}.gbw file does exist. Will use.")
+                            else:
+                                if self.printlevel >= 1:
+                                    print(f"A file {self.theory.filename}.gbw file DOES NOT exist. Will use ORCA/ORCATheory settings.")
 
                 if self.ActiveRegion == True:
                     currcoords=image_coords
