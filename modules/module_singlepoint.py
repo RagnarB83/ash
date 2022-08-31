@@ -7,9 +7,10 @@
     """
 import numpy as np
 import time
-#import ash
+import ash
 from ash.functions.functions_general import ashexit, BC,print_time_rel,print_line_with_mainheader
 from ash.modules.module_coords import check_charge_mult
+#from ash.modules.module_highlevel_workflows import ORCA_CC_CBS_Theory
 
 #Single-point energy function
 def Singlepoint_gradient(fragment=None, theory=None, charge=None, mult=None):
@@ -216,7 +217,10 @@ def Singlepoint_reaction(theory=None, reaction=None, unit='kcal/mol'):
     print("Will run single-point calculation on each fragment defined in reaction and return the reaction energy")
     print("Theory:", theory.__class__.__name__)
 
+
     #Looping through fragments defined in Reaction object
+    list_of_componentsdicts=[]
+    componentsdict={}
     for frag in reaction.fragments:
         
         #Running single-point
@@ -224,6 +228,10 @@ def Singlepoint_reaction(theory=None, reaction=None, unit='kcal/mol'):
         print("Fragment {} . Label: {} Energy: {} Eh".format(frag.formula, frag.label, energy))
         theory.cleanup()
         reaction.energies.append(energy)
+        # Keeping CC components if using ORCA_CC_CBS_Theory
+        if isinstance(theory,ash.ORCA_CC_CBS_Theory):
+            componentsdict=theory.energy_components
+            list_of_componentsdicts.append(componentsdict)
         #Adding energy as the fragment attribute
         frag.set_energy(energy)
         print("")
@@ -232,7 +240,47 @@ def Singlepoint_reaction(theory=None, reaction=None, unit='kcal/mol'):
     print_fragments_table(reaction.fragments,reaction.energies, tabletitle="Singlepoint_reaction: ")
 
     reaction.calculate_reaction_energy(unit=unit)
-    
+
+    if isinstance(theory,ash.ORCA_CC_CBS_Theory):
+        print("-"*70)
+        print("CCSD(T)/CBS components")
+        print("-"*70)
+        finaldict={}
+        #Contributions to CCSD(T) energies
+        if 'E_SCF_CBS' in componentsdict:
+            scf_parts=[d['E_SCF_CBS'] for d in list_of_componentsdicts]
+            deltaSCF=ReactionEnergy(stoichiometry=reaction.stoichiometry, list_of_fragments=reaction.fragments, list_of_energies=scf_parts, unit=unit, label='ΔSCF')[0]
+            finaldict['deltaSCF']=deltaSCF
+        if 'E_corrCCSD_CBS' in componentsdict:
+            ccsd_parts=[d['E_corrCCSD_CBS'] for d in list_of_componentsdicts]
+            delta_CCSDcorr=ReactionEnergy(stoichiometry=reaction.stoichiometry, list_of_fragments=reaction.fragments, list_of_energies=ccsd_parts, unit=unit, label='ΔCCSD')[0]
+            finaldict['delta_CCSDcorr']=delta_CCSDcorr
+        if 'E_corrCCT_CBS' in componentsdict:
+            triples_parts=[d['E_corrCCT_CBS'] for d in list_of_componentsdicts]
+            delta_Tcorr=ReactionEnergy(stoichiometry=reaction.stoichiometry, list_of_fragments=reaction.fragments, list_of_energies=triples_parts, unit=unit, label='Δ(T)')[0]
+            finaldict['delta_Tcorr']=delta_Tcorr
+        if 'E_corr_CBS' in componentsdict:
+            valencecorr_parts=[d['E_corr_CBS'] for d in list_of_componentsdicts]
+            delta_CC_corr=ReactionEnergy(stoichiometry=reaction.stoichiometry, list_of_fragments=reaction.fragments, list_of_energies=valencecorr_parts, unit=unit, label='ΔCCSD+Δ(T) corr')[0]
+            finaldict['delta_CC_corr']=delta_CC_corr
+        if 'E_SO' in componentsdict:
+            SO_parts=[d['E_SO'] for d in list_of_componentsdicts]
+            delta_SO_corr=ReactionEnergy(stoichiometry=reaction.stoichiometry, list_of_fragments=reaction.fragments, list_of_energies=SO_parts, unit=unit, label='ΔSO')[0]
+            finaldict['delta_SO_corr']=delta_SO_corr
+        if 'E_corecorr_and_SR' in componentsdict:
+            CV_SR_parts=[d['E_corecorr_and_SR'] for d in list_of_componentsdicts]
+            delta_CVSR_corr=ReactionEnergy(stoichiometry=reaction.stoichiometry, list_of_fragments=reaction.fragments, list_of_energies=CV_SR_parts, unit=unit, label='ΔCV+SR')[0]
+            finaldict['delta_CVSR_corr']=delta_CVSR_corr
+        if 'T1energycorr' in componentsdict:
+            T1corr_parts=[d['T1energycorr'] for d in list_of_componentsdicts]
+            delta_T1_corr=ReactionEnergy(stoichiometry=reaction.stoichiometry, list_of_fragments=reaction.fragments, list_of_energies=T1corr_parts, unit=unit, label='ΔΔT1corr')[0]
+            finaldict['delta_T1_corr']=delta_T1_corr
+        if 'E_FCIcorrection' in componentsdict:
+            fcicorr_parts=[d['E_FCIcorrection'] for d in list_of_componentsdicts]
+            delta_FCI_corr=ReactionEnergy(stoichiometry=reaction.stoichiometry, list_of_fragments=reaction.fragments, list_of_energies=fcicorr_parts, unit=unit, label='ΔFCIcorr')[0]
+            finaldict['delta_FCI_corr']=delta_FCI_corr
+        #print("finaldict:", finaldict)
+        #TODO: Return finaldict or not?
     return reaction.reaction_energy
 
 
