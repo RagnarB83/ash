@@ -10,6 +10,7 @@ from ash.modules.module_coords import print_coords_all,print_coords_for_atoms,pr
 from ash.functions.functions_general import ashexit, blankline,BC,print_time_rel,print_line_with_mainheader
 #import ash
 from ash.modules.module_coords import check_charge_mult
+from ash.modules.module_freq import calc_hessian_xtb
 
 ################################################
 # Interface to geomeTRIC Optimization Library
@@ -78,6 +79,16 @@ class GeomeTRICOptimizerClass:
                 print("Activeregion true and coordsystem = tric are not compatible")
                 print("Switching to HDLC")
                 coordsystem='hdlc'
+            
+            #Do xtB Hessian to get Hessian file if requestd
+            if hessian == "xtb":
+                print("hessian option: xtb")
+                #Calling xtb to get Hessian, written to disk. Returns name of Hessianfile
+                hessianfile = calc_hessian_xtb(fragment=fragment, actatoms=actatoms, numcores=theory.numcores, use_xtb_feature=True, charge=self.charge, mult=self.mult)
+                self.hessian="file:"+hessianfile
+            else:
+                #Other hessian option: 'first','file:<path>', 'each' etc.
+                self.hessian=hessian
 
             if actatoms==None:
                 actatoms=[]
@@ -310,13 +321,14 @@ class GeomeTRICOptimizerClass:
             print("Convergence criteria:", self.conv_criteria)
             print("Hessian option:", self.hessian)
             
+
             #Defining ASHengineclass engine object containing geometry and theory. ActiveRegion boolean passed.
             #Also now passing list of atoms to print in each step.
             self.ashengine = ASHengineclass(mol_geometric_frag,theory, ActiveRegion=self.ActiveRegion, actatoms=self.actatoms, print_atoms_list=self.print_atoms_list, 
                 charge=self.charge, mult=self.mult, conv_criteria=self.conv_criteria, fragment=self.fragment)
             #Defining args object, containing engine object
             self.final_geometric_args=geomeTRICArgsObject(self.ashengine,self.constraintsfile,coordsys=self.coordsystem, maxiter=self.maxiter, 
-                conv_criteria=self.conv_criteria, transition=self.TSOpt, hessian=hessian)
+                conv_criteria=self.conv_criteria, transition=self.TSOpt, hessian=self.hessian)
 
             print("")
         #Starting geomeTRIC run

@@ -630,9 +630,14 @@ def run_xtb_SP_serial(xtbdir, xtbmethod, xyzfile, charge, mult, Grad=False, Opt=
     if printlevel > 1:
         print("Running xtb with these arguments:", command_list)
     
-    with open(basename+'.out', 'w') as ofile:
-        process = sp.run(command_list, check=True, stdout=ofile, stderr=ofile, universal_newlines=True)
-
+    try:
+        with open(basename+'.out', 'w') as ofile:
+            process = sp.run(command_list, check=True, stdout=ofile, stderr=ofile, universal_newlines=True)
+    except subprocess.CalledProcessError:
+        print("subprocess.CalledProcessError")
+    else:
+        print("some other error")
+        ashexit()
     print("process:", process)
     print("process returncode", process.returncode)
 
