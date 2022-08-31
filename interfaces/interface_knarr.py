@@ -12,7 +12,7 @@ import ash
 import ash.constants as constants
 from ash.functions.functions_general import ashexit,print_time_rel,print_line_with_mainheader, BC,print_line_with_subheader1,print_line_with_subheader2
 from ash.modules.module_coords import check_charge_mult, write_xyzfile
-from ash.modules.module_freq import write_hessian, approximate_full_Hessian_from_smaller, calc_model_Hessian_ORCA, read_tangent
+from ash.modules.module_freq import write_hessian, approximate_full_Hessian_from_smaller, calc_model_Hessian_ORCA, read_tangent, calc_hessian_xtb
 #This makes Knarr part of python path
 #Recommended way?
 ashpath = os.path.dirname(ash.__file__)
@@ -83,7 +83,8 @@ def NEBTS(reactant=None, product=None, theory=None, images=8, CI=True, free_end=
     theory.set_numcores(int(theory.numcores))
     #Keeping original setting
     original_theory_numcores=copy.copy(theory.numcores)
-    cores_for_TSopt=int(numcores*theory.numcores)
+    max_cores=int(numcores*theory.numcores)
+    cores_for_TSopt=max_cores
 
     #Printing parallelization info
     print("Will first perform loose NEB-CI job, followed by TSOpt job using geomeTRIC optimizer.")
@@ -133,26 +134,19 @@ def NEBTS(reactant=None, product=None, theory=None, images=8, CI=True, free_end=
     # Tell geomeTRIC to calculate exact Hessian in eachianfile="Hessian_from_xt step
     elif hessian_for_TS == 'each':
         hessianoption="each"
+    #xTB Hessian option
     elif hessian_for_TS == 'xtb':
-        print("hessian_for_TS option: xtb")
-        print("Will now calculate xTB Hessian")
-        #NOTE: here using ASH-Numfreq. Could also be done faster using xTB directly ?
-        xtb = ash.xTBTheory(xtbmethod='GFN1')
-        freqdict = ash.NumFreq(theory=xtb, fragment=SP, printlevel=0, runmode=runmode, numcores=numcores)
-        hessianfile="Hessian_from_xtb"
-        shutil.copyfile("Numfreq_dir/Hessian",hessianfile)
+        hessianfile = calc_hessian_xtb(fragment=SP, runmode='serial', numcores=max_cores, use_xtb_feature=True)
         hessianoption='file:'+str(hessianfile)
     #Cheap model Hessian
-    #NOTE: None of these work well. 
-    #TODO: Need to use tangent to modify
+    #NOTE: None of these work well.  Need to use tangent to modify
     elif hessian_for_TS == 'model':
         print("hessian_for_TS option: model")
         print("Calling ORCA to get model Hessian")
         print(f"modelhessian: {modelhessian}")
         #Calling ORCA to get model Hessian (default Swart) for SP geometry
         hessian = calc_model_Hessian_ORCA(SP,model=modelhessian)
-
-        #TODO: We can do overlap of eigenvectors but we can currently not change what geometric does
+        #NOTE: We can do overlap of eigenvectors but we can currently not change what geometric does
         #Write Hessian to file
         hessianfile="Hessian_from_ORCA_model"
         write_hessian(hessian,hessfile=hessianfile)

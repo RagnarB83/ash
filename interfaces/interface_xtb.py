@@ -128,6 +128,58 @@ class xTBTheory:
                 os.remove(file)
             except:
                 pass
+
+    #Do an xTB-Numfreq Hessian instead of ASH optimization. Useful for gas-phase chemistry (avoids too much ASH printout
+    def Hessian(self, fragment=None, Hessian=None, numcores=None, label=None, charge=None, mult=None):
+        module_init_time=time.time()
+        print(BC.OKBLUE,BC.BOLD, "------------RUNNING INTERNAL xTB Hessian-------------", BC.END)
+
+        if fragment == None:
+            print("No fragment provided to xTB Hessian. Exiting")
+            ashexit()
+        else:
+            print("Fragment provided to Hessian")
+        #
+        current_coords=fragment.coords
+        elems=fragment.elems
+
+        #Check charge/mult
+        charge,mult = check_charge_mult(charge, mult, self.theorytype, fragment, "xTBTheory.Hessian", theory=self)
+
+        if numcores==None:
+            numcores=self.numcores
+
+
+        if self.printlevel >= 2:
+            print("Creating inputfile:", self.filename+'.xyz')
+
+        #Check if mult is sensible
+        check_multiplicity(elems,charge,mult)
+        if self.runmode=='inputfile':
+            #Write xyz_file
+            ash.modules.module_coords.write_xyzfile(elems, current_coords, self.filename, printlevel=self.printlevel)
+
+            #Run inputfile.
+            if self.printlevel >= 2:
+                print("------------Running xTB-------------")
+                print("Running xtB using {} cores".format(numcores))
+                print("...")
+
+            run_xtb_SP_serial(self.xtbdir, self.xtbmethod, self.filename + '.xyz', charge, mult, 
+                                    Hessian=True, maxiter=self.maxiter, electronic_temp=self.electronic_temp, 
+                                    accuracy=self.accuracy, printlevel=self.printlevel, numcores=numcores)
+            if self.printlevel >= 2:
+                print("------------xTB calculation done-----")
+
+            print("xtb Hessian calculation done")
+            hessian = xtbhessiangrab(len(elems))
+            print_time_rel(module_init_time, modulename='xtB Hessian-run', moduleindex=2)
+            return hessian
+            
+        else:
+            print("Only runmode='inputfile allowed for xTBTheory.Opt(). Exiting")
+            ashexit()
+
     #Do an xTB-optimization instead of ASH optimization. Useful for gas-phase chemistry (avoids too much ASH printout
     def Opt(self, fragment=None, Grad=None, Hessian=None, numcores=None, label=None, charge=None, mult=None):
         module_init_time=time.time()
@@ -176,7 +228,7 @@ class xTBTheory:
             opt_elems,opt_coords = ash.modules.module_coords.read_xyzfile("xtbopt.xyz")
             fragment.replace_coords(fragment.elems,opt_coords)
 
-            return
+            #return
             #TODO: Check if xtB properly converged or not 
             #Regardless take coordinates and go on. Possibly abort if xtb completely
         else:
@@ -482,6 +534,22 @@ def xtbfinalenergygrab(file):
                 Energy=float(line.split()[-3])
     return Energy
 
+
+#Grab Hessian from xtb Hessian file
+def xtbhessiangrab(numatoms):
+    hessdim=numatoms*3
+    hessarray2d=np.zeros((hessdim, hessdim))
+    i=0; j=0
+    with open('hessian') as f:
+        for line in f:
+            if '$hessian' not in line:
+                l = line.split()
+                if j == hessdim:
+                    i+=1;j=0
+                for val in l:
+                    hessarray2d[i,j] = val
+                    j+=1
+    return hessarray2d
 #Grab gradient and energy from gradient file
 def xtbgradientgrab(numatoms):
     grab=False
@@ -523,7 +591,7 @@ def xtbVEAgrab(file):
     return VEA
 
 # Run xTB single-point job
-def run_xtb_SP_serial(xtbdir, xtbmethod, xyzfile, charge, mult, Grad=False, Opt=False, maxiter=500, electronic_temp=300, accuracy=0.1, solvent=None, printlevel=2, numcores=1):
+def run_xtb_SP_serial(xtbdir, xtbmethod, xyzfile, charge, mult, Grad=False, Opt=False, Hessian=False, maxiter=500, electronic_temp=300, accuracy=0.1, solvent=None, printlevel=2, numcores=1):
     
     if solvent != None:
         solvent_line=""
@@ -552,6 +620,9 @@ def run_xtb_SP_serial(xtbdir, xtbmethod, xyzfile, charge, mult, Grad=False, Opt=
                               '--etemp', str(electronic_temp), '--acc', str(accuracy), '--parallel', str(numcores), '--input', 'xtbinput', str(solvent_line)  ]
     elif Opt == True:
         command_list=[xtbdir + '/xtb', basename+'.xyz', '--gfn', str(xtbflag), '--opt', '--chrg', str(charge), '--uhf', str(uhf), '--iterations', str(maxiter),
+                              '--etemp', str(electronic_temp), '--acc', str(accuracy), '--input', 'xtbinput', str(solvent_line)  ]    
+    elif Hessian == True:
+        command_list=[xtbdir + '/xtb', basename+'.xyz', '--gfn', str(xtbflag), '--hess', '--chrg', str(charge), '--uhf', str(uhf), '--iterations', str(maxiter),
                               '--etemp', str(electronic_temp), '--acc', str(accuracy), '--input', 'xtbinput', str(solvent_line)  ]    
     else:
         command_list=[xtbdir + '/xtb', basename + '.xyz', '--gfn', str(xtbflag), '--chrg', str(charge), '--uhf', str(uhf), '--iterations', str(maxiter),

@@ -1674,3 +1674,36 @@ def read_tangent(tangentfile):
                 x=float(line.split()[1]);y=float(line.split()[2]);z=float(line.split()[3])
                 tang.append([x,y,z])
     return np.array(tang)
+
+
+#Calculate Hessian in various ways.
+
+#Calculate Hessian (GFN1) for a fragment.
+def calc_hessian_xtb(fragment=None, runmode='serial', actatoms=None, numcores=1, use_xtb_feature=True):
+    
+    print_line_with_mainheader("calc_hessian_xtb")
+    
+    if actatoms != None:
+        print("Creating subfragment")
+        #Keep original fragment
+        origfragment=copy.copy(fragment)
+        #Create new fragment from actatoms
+        subcoords, subelems = fragment.get_coords_for_atoms(actatoms)
+        fragment = Fragment(elems=subelems,coords=subcoords)
+    print("Will now calculate xTB Hessian")
+    #Creating xtb theory object
+    xtb = ash.xTBTheory(xtbmethod='GFN1', numcores=numcores)
+    
+    #Get Hessian from xTB directly (avoiding ASH NumFreq)
+    if use_xtb_feature == True:
+        print("xTB program will calculate Hessian")
+        hessian = xtb.Hessian(fragment=fragment)
+        write_hessian(hessian,hessfile="Hessian_from_xtb")
+        hessianfile="Hessian_from_xtb"
+    #ASH NumFreq. Not sure how much we will use this one
+    else:
+        freqdict = ash.NumFreq(theory=xtb, fragment=fragment, printlevel=0, runmode=runmode, numcores=numcores)
+        hessianfile="Hessian_from_xtb"
+        shutil.copyfile("Numfreq_dir/Hessian",hessianfile)
+    #Returning name of Hessian-file
+    return hessianfile
