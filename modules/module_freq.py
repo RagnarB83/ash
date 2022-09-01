@@ -163,7 +163,8 @@ def NumFreq(fragment=None, theory=None, charge=None, mult=None, npoint=2, displa
         list_of_displaced_geos.append(current_coords_array)
         list_of_displacements.append('Originalgeo')
 
-    print("List of displacements:", list_of_displacements)
+    if printlevel > 1:
+        print("List of displacements:", list_of_displacements)
 
     #Creating displacement labels
     list_of_labels=[]
@@ -193,7 +194,7 @@ def NumFreq(fragment=None, theory=None, charge=None, mult=None, npoint=2, displa
     for label, dispgeo,disp in zip(list_of_labels,list_of_displaced_geos,list_of_displacements):
         filelabel=label.replace(' ','').replace(':','')
         list_of_filelabels.append(filelabel)
-        ash.modules.module_coords.write_xyzfile(elems=elems, coords=dispgeo,name=filelabel)
+        ash.modules.module_coords.write_xyzfile(elems=elems, coords=dispgeo,name=filelabel, printlevel=printlevel)
 
         #Creating ASH fragments with label
         frag=ash.Fragment(coords=dispgeo, elems=elems,label=disp, printlevel=printlevel, charge=charge, mult=mult)
