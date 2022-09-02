@@ -169,7 +169,8 @@ def NEBTS(reactant=None, product=None, theory=None, images=8, CI=True, free_end=
         freqdict = ash.NumFreq(theory=theory, fragment=SP, printlevel=0, npoint=2, hessatoms=TSmodeatoms, runmode=runmode, numcores=numcores)
 
         #Combine partial exact Hessian with model Hessian(Almloef, Lindh, Schlegel or unit)
-        combined_hessian = approximate_full_Hessian_from_smaller(SP,freqdict["hessian"],TSmodeatoms,restHessian=modelhessian)
+        #Large Hessian is the actatoms Hessian if actatoms provided
+        combined_hessian = approximate_full_Hessian_from_smaller(SP,freqdict["hessian"],TSmodeatoms, large_atomindices=actatoms, restHessian=modelhessian)
 
         #Write combined Hessian to disk
         hessianfile="Hessian_from_partial"

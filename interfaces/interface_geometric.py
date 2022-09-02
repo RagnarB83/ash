@@ -19,7 +19,8 @@ from ash.modules.module_freq import calc_hessian_xtb
 #Wrapper function around GeomeTRICOptimizerClass
 def geomeTRICOptimizer(theory=None, fragment=None, charge=None, mult=None, coordsystem='tric', frozenatoms=None, constraints=None, 
                        constrainvalue=False, constraintsinputfile=None, maxiter=100, ActiveRegion=False, actatoms=None, 
-                       convergence_setting=None, conv_criteria=None, print_atoms_list=None, TSOpt=False, hessian=None):
+                       convergence_setting=None, conv_criteria=None, print_atoms_list=None, TSOpt=False, hessian=None, partial_hessian_atoms=None,
+                       modelhessian=None):
     """
     Wrapper function around GeomeTRICOptimizerClass
     """
@@ -27,8 +28,8 @@ def geomeTRICOptimizer(theory=None, fragment=None, charge=None, mult=None, coord
     timeA=time.time()
     optimizer=GeomeTRICOptimizerClass(theory=theory, fragment=fragment, charge=charge, mult=mult, coordsystem=coordsystem, frozenatoms=frozenatoms, 
                         constraints=constraints, constrainvalue=constrainvalue, constraintsinputfile=constraintsinputfile, maxiter=maxiter,
-                         ActiveRegion=ActiveRegion, actatoms=actatoms, TSOpt=TSOpt, hessian=hessian,
-                        convergence_setting=convergence_setting, conv_criteria=conv_criteria,
+                         ActiveRegion=ActiveRegion, actatoms=actatoms, TSOpt=TSOpt, hessian=hessian, partial_hessian_atoms=partial_hessian_atoms,
+                        convergence_setting=convergence_setting, conv_criteria=conv_criteria, modelhessian=modelhessian,
                         print_atoms_list=print_atoms_list)
     finalenergy = optimizer.run()
     print_time_rel(timeA, modulename='geomeTRIC', moduleindex=1)
@@ -39,7 +40,7 @@ def geomeTRICOptimizer(theory=None, fragment=None, charge=None, mult=None, coord
 class GeomeTRICOptimizerClass:
         def __init__(self,theory=None, fragment=None, charge=None, mult=None, coordsystem='tric', frozenatoms=None, constraintsinputfile=None, constraints=None, 
                        constrainvalue=False, maxiter=50, ActiveRegion=False, actatoms=None, convergence_setting=None, conv_criteria=None, TSOpt=False, hessian=None,
-                       print_atoms_list=None):
+                       print_atoms_list=None, partial_hessian_atoms=None, partial_hessian_atoms=None, modelhessian=None):
             """
             Wrapper class around geomeTRIC code. Take theory and fragment info from ASH
             Supports frozen atoms and bond/angle/dihedral constraints in native code. Use frozenatoms and bondconstraints etc. for this.
@@ -85,6 +86,24 @@ class GeomeTRICOptimizerClass:
                 print("xTB Hessian option requested")
                 #Calling xtb to get Hessian, written to disk. Returns name of Hessianfile
                 hessianfile = calc_hessian_xtb(fragment=fragment, actatoms=actatoms, numcores=theory.numcores, use_xtb_feature=True, charge=self.charge, mult=self.mult)
+                self.hessian="file:"+hessianfile
+            elif hessian == "partial":
+                print("Partial Hessian option requested")
+                
+                if partial_hessian_atoms is None:
+                    print("hessian='partial' option requires setting the partial_hessian_atoms option. Exiting.")
+                    ashexit()
+                #
+                print("Now doing partial Hessian calculation using atoms:", partial_hessian_atoms)
+                freqdict = ash.NumFreq(theory=theory, fragment=fragment, printlevel=0, npoint=1, hessatoms=partial_hessian_atoms, runmode=runmode, numcores=numcores)
+
+                #Combine partial exact Hessian with model Hessian(Almloef, Lindh, Schlegel or unit)
+                #Large Hessian is the actatoms Hessian if actatoms provided
+                combined_hessian = approximate_full_Hessian_from_smaller(fragment,freqdict["hessian"], partial_hessian_atoms, large_atomindices=actatoms, restHessian=modelhessian)
+
+                #Write combined Hessian to disk
+                hessianfile="Hessian_from_partial"
+                write_hessian(combined_hessian,hessfile=hessianfile)
                 self.hessian="file:"+hessianfile
             else:
                 #Other hessian option: 'first','file:<path>', 'each' etc.

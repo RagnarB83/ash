@@ -5,7 +5,7 @@ import os
 import copy
 import time
 
-from ash.functions.functions_general import ashexit, listdiff, clean_number,blankline,BC,print_time_rel, print_line_with_mainheader
+from ash.functions.functions_general import ashexit, listdiff, clean_number,blankline,BC,print_time_rel, print_line_with_mainheader,isodd
 import ash.modules.module_coords
 from ash.modules.module_coords import check_charge_mult
 import ash.interfaces.interface_ORCA
@@ -1163,7 +1163,7 @@ def calc_model_Hessian_ORCA(fragment,model='Almloef'):
             if '$hessian_approx' in line:
                 hesstake = True
                 grabsize = True
-    fragment.hessian=hessarray2d
+    #fragment.hessian=hessarray2d
 
     return np.array(hessarray2d)
 
@@ -1172,36 +1172,80 @@ def calc_model_Hessian_ORCA(fragment,model='Almloef'):
 #fragment is the large fragment
 #atomindices refer to what atoms in the large fragment the small partial Hessian was generated for
 #NOTE: Capping atom option is now disabled. Best made into a separate function
-def approximate_full_Hessian_from_smaller(fragment,hessian_small,atomindices,capping_atoms=None,restHessian='Almloef'):
     #Capping atom Hessian indices are skipped
     #if capping_atoms != None:
     #    capping_atom_hessian_indices=[3*i+j for i in capping_atoms for j in [0,1,2]]
     #else:
     #    capping_atom_hessian_indices=[]
+def approximate_full_Hessian_from_smaller(fragment,hessian_small,small_atomindices,large_atomindices=None,restHessian='Almloef'):
+
+    write_hessian(hessian_small,hessfile="smallhessian")
+
+    #If hessatoms provided then that is the size of the actual large Hessian
+    if large_atomindices is not None:
+        print("small_atomindices:", small_atomindices)
+        print("large_atomindices:", large_atomindices)
+        hess_size=len(large_atomindices)*3
+        #Initializing full Hessian using hessatoms size
+        fullhessian=np.zeros((hess_size,hess_size))
+
+        #Check that atomindices (for small) are all part of hessatom
+        if all(item in large_atomindices for item in small_atomindices) is False:
+            print(f"small_atomindices: {small_atomindices} are not all present in large_atomindices: {large_atomindices}")
+            print("This does not make sense. Exiting")
+            ashexit()
+        #If large Hessian is a partial Hessian of the full systemthen we need to change small Hessian atomindices
+        correct_small_atomindices=[large_atomindices.index(i) for i in small_atomindices]
+        print("correct_small_atomindices:", correct_small_atomindices)
+        #Create new fragment from large_atomindices
+        subcoords, subelems = fragment.get_coords_for_atoms(large_atomindices)
+        usedfragment = ash.Fragment(elems=subelems,coords=subcoords, printlevel=0)
+        #Dummy charge/mult
+        usedfragment.charge=0
+        if isodd(usedfragment.nuccharge): 
+            usedfragment.mult=2
+        else:
+            usedfragment.mult=1
+    else:
+        #Size of Hessian as big as fragment
+        hess_size=fragment.numatoms*3
+        #If Hessian is for full fragment then we use the input atomindices directly
+        correct_small_atomindices=small_atomindices
+        usedfragment=fragment
     
-    #Initializing full Hessian
-    fragment.hessian=np.zeros((fragment.numatoms*3,fragment.numatoms*3))
+    print("Initializing full size Hessian of dimension:", hess_size)
+    fullhessian=np.zeros((hess_size,hess_size))
+    print("Initial fullhessian:", fullhessian)
+    print("Size:", fullhessian.size)
+    write_hessian(fullhessian,hessfile="initialfullhessian")
     #Making sure hessian_small is np array
     hessian_small = np.array(hessian_small)
     #Fill up hessian_large with model approximation from ORCA
     if restHessian == 'Almloef' or restHessian == 'Lindh' or restHessian == 'Schlegel' or restHessian == 'Swart':
         print("restHessian:", restHessian)
-        calc_model_Hessian_ORCA(fragment,model=restHessian)
+        fullhessian = calc_model_Hessian_ORCA(usedfragment,model=restHessian)
     #Or with unit matrix
     elif restHessian == 'unit' or restHessian == 'identity':
         print("restHessian is unit/identity")
-        fragment.hessian = np.identity(fragment.numatoms*3)
+        fullhessian = np.identity(hess_size)
     #Keep matrix at zero
     elif restHessian==None or restHessian=='Zero':
-        print("RestHessian is zero.") 
-    
+        print("RestHessian is zero.")
+    else:
+        print("RestHessian is zero.")
+    print("Intermediate fullhessian:", fullhessian)
+    print("Size:", fullhessian.size)
+    write_hessian(fullhessian,hessfile="intermedfullhessian")
     #Large Hessian indices
-    athessindices = [3*i+j for i in atomindices for j in [0,1,2]]
+    athessindices = [3*i+j for i in correct_small_atomindices for j in [0,1,2]]
     #Looping over and assigning small Hessian values to large
     for s_i,i in enumerate(athessindices):
         for s_j, j in enumerate(athessindices):
-            fragment.hessian[i,j] = hessian_small[s_i,s_j]
-    return fragment.hessian
+            fullhessian[i,j] = hessian_small[s_i,s_j]
+    print("Final fullhessian:", fullhessian)
+    print("Size:", fullhessian.size)
+    write_hessian(fullhessian,hessfile="Finalfullhessian")
+    return fullhessian
 
 
 #Change isotopes of Hessian. Read-in hessian array or hessfile
