@@ -40,7 +40,7 @@ def geomeTRICOptimizer(theory=None, fragment=None, charge=None, mult=None, coord
 class GeomeTRICOptimizerClass:
         def __init__(self,theory=None, fragment=None, charge=None, mult=None, coordsystem='tric', frozenatoms=None, constraintsinputfile=None, constraints=None, 
                        constrainvalue=False, maxiter=50, ActiveRegion=False, actatoms=None, convergence_setting=None, conv_criteria=None, TSOpt=False, hessian=None,
-                       print_atoms_list=None, partial_hessian_atoms=None, partial_hessian_atoms=None, modelhessian=None):
+                       print_atoms_list=None, partial_hessian_atoms=None, modelhessian=None):
             """
             Wrapper class around geomeTRIC code. Take theory and fragment info from ASH
             Supports frozen atoms and bond/angle/dihedral constraints in native code. Use frozenatoms and bondconstraints etc. for this.
