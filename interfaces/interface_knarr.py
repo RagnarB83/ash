@@ -86,6 +86,9 @@ def NEBTS(reactant=None, product=None, theory=None, images=8, CI=True, free_end=
     max_cores=int(numcores*theory.numcores)
     cores_for_TSopt=max_cores
 
+    #Check charge/mult
+    charge,mult = check_charge_mult(charge, mult, theory.theorytype, reactant, "NEBTS", theory=theory)
+
     #Printing parallelization info
     print("Will first perform loose NEB-CI job, followed by TSOpt job using geomeTRIC optimizer.")
     print(f"{numcores} CPU cores provided to parallelize the {images}-image NEB band optimization.")

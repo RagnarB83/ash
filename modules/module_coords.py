@@ -3039,7 +3039,7 @@ def getwaterconstraintslist(openmmtheoryobject=None, atomlist=None, watermodel='
 
 
 #Check whether spin multiplicity is consistent with the nuclear charge and total charge
-def check_multiplicity(elems,charge,mult):
+def check_multiplicity(elems,charge,mult, exit=True):
     def is_even(number):
         if number % 2 == 0:
             return True
@@ -3051,9 +3051,11 @@ def check_multiplicity(elems,charge,mult):
     result = list(map(is_even, (num_electrons,unpaired_electrons)))
     if result[0] != result[1]:
         print("The spin multiplicity {} ({} unpaired electrons) is incompatible with the total number of electrons {}".format(mult,unpaired_electrons,num_electrons))
-        print("Now exiting!")
-        ashexit()
-
+        if exit == True:
+            print("Now exiting!")
+            ashexit()
+        else:
+            return False
 #Check if charge/mult variables are not None. If None check fragment
 #Only done for QM theories not MM. Passing theorytype string (e.g. from theory.theorytype if available)
 def check_charge_mult(charge, mult, theorytype, fragment, jobtype, theory=None, printlevel=2):
