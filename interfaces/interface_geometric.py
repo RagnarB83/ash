@@ -95,7 +95,8 @@ class GeomeTRICOptimizerClass:
                     ashexit()
                 #
                 print("Now doing partial Hessian calculation using atoms:", partial_hessian_atoms)
-                freqdict = ash.NumFreq(theory=theory, fragment=fragment, printlevel=0, npoint=1, hessatoms=partial_hessian_atoms, runmode=runmode, numcores=numcores)
+                #Note: hardcoding runmode='serial' for now
+                freqdict = ash.NumFreq(theory=theory, fragment=fragment, printlevel=0, npoint=1, hessatoms=partial_hessian_atoms, runmode='serial', numcores=1)
 
                 #Combine partial exact Hessian with model Hessian(Almloef, Lindh, Schlegel or unit)
                 #Large Hessian is the actatoms Hessian if actatoms provided
