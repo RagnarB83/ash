@@ -136,7 +136,7 @@ def NEBTS(reactant=None, product=None, theory=None, images=8, CI=True, free_end=
         hessianoption="each"
     #xTB Hessian option
     elif hessian_for_TS == 'xtb':
-        hessianfile = calc_hessian_xtb(fragment=SP, runmode='serial', numcores=max_cores, use_xtb_feature=True)
+        hessianfile = calc_hessian_xtb(fragment=SP, runmode='serial', actatoms=actatoms, numcores=max_cores, use_xtb_feature=True)
         hessianoption='file:'+str(hessianfile)
     #Cheap model Hessian
     #NOTE: None of these work well.  Need to use tangent to modify
@@ -162,6 +162,7 @@ def NEBTS(reactant=None, product=None, theory=None, images=8, CI=True, free_end=
         TSmodeatoms = list(np.where(np.any(abs(tangent)>tsmode_tangent_threshold, axis=1))[0])
 
         print(f"Performing partial Hessian calculation using atoms: {TSmodeatoms}")
+        #TODO: Make this work for QMMMTheory
         #TODO: Option to run this in parallel ?
         #Or just enable theory parallelization 
         #if isinstance(theory,ash.DualTheory): theory.switch_to_theory(2)
