@@ -157,7 +157,7 @@ def NEBTS(reactant=None, product=None, theory=None, images=8, CI=True, free_end=
     #NOTE: None of these work well.  Need to use tangent to modify
     elif hessian_for_TS == 'model':
         print("hessian_for_TS option: model")
-        if model == 'Zero':
+        if modelhessian == 'Zero':
             hess_size=SP.numatoms*3
             hessian=np.zeros((hess_size,hess_size))
             hessianfile="Hessian_Zero"
