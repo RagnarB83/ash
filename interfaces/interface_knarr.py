@@ -77,6 +77,11 @@ def NEBTS(reactant=None, product=None, theory=None, images=8, CI=True, free_end=
 
     print_line_with_mainheader("NEB+TS")
     module_init_time=time.time()
+    if IDPPonly is True:
+        print("Will first perform IDPP-only NEB job, followed by TSOpt job using geomeTRIC optimizer.")
+    else:
+        print("Will first perform loose NEB-CI job, followed by TSOpt job using geomeTRIC optimizer.")
+    print("Hessian option:", hessian_for_TS)
     #Will use maximum number of CPU cores provided to either NEBTS or theory object
     #cores_for_TSopt=max([numcores,theory.numcores])
     numcores=int(numcores)
@@ -90,11 +95,11 @@ def NEBTS(reactant=None, product=None, theory=None, images=8, CI=True, free_end=
     charge,mult = check_charge_mult(charge, mult, theory.theorytype, reactant, "NEBTS", theory=theory)
 
     #Printing parallelization info
-    print("Will first perform loose NEB-CI job, followed by TSOpt job using geomeTRIC optimizer.")
     print(f"{numcores} CPU cores provided to parallelize the {images}-image NEB band optimization.")
     print(f"{theory.numcores} CPU cores will be used to parallelize theory level for each image during NEB.")
     print(f"{cores_for_TSopt} CPU cores will be used simultaneously during NEB.")
     print(f"{cores_for_TSopt} CPU cores will be used to parallize theory during Opt-TS part.")
+
     #CI-NEB step
     SP = NEB(reactant=reactant, product=product, theory=theory, images=images, CI=CI, free_end=free_end, maxiter=maxiter, IDPPonly=IDPPonly,
             conv_type=conv_type, tol_scale=tol_scale, tol_max_fci=tol_max_fci, tol_rms_fci=tol_rms_fci, tol_max_f=tol_max_f, tol_rms_f=tol_rms_f,
