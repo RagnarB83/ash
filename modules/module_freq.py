@@ -7,7 +7,7 @@ import time
 
 from ash.functions.functions_general import ashexit, listdiff, clean_number,blankline,BC,print_time_rel, print_line_with_mainheader,isodd
 import ash.modules.module_coords
-from ash.modules.module_coords import check_charge_mult
+from ash.modules.module_coords import check_charge_mult, check_multiplicity
 import ash.interfaces.interface_ORCA
 import ash.constants
 
