@@ -1227,7 +1227,9 @@ def approximate_full_Hessian_from_smaller(fragment,hessian_small,small_atomindic
     if restHessian == 'Almloef' or restHessian == 'Lindh' or restHessian == 'Schlegel' or restHessian == 'Swart':
         print("restHessian:", restHessian)
         fullhessian = calc_model_Hessian_ORCA(usedfragment,model=restHessian)
+    #GFN1-xTB restHessian
     elif restHessian == 'xtb':
+        xtb = ash.xTBTheory(xtbmethod='GFN1')
         fullhessian = xtb.Hessian(fragment=usedfragment, charge=usedfragment.charge, mult=usedfragment.mult)
     #Or with unit matrix
     elif restHessian == 'unit' or restHessian == 'identity':
