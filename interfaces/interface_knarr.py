@@ -108,7 +108,7 @@ def NEBTS(reactant=None, product=None, theory=None, images=8, CI=True, free_end=
         return None
         #ashexit()
 
-    print("NEB-CI job is complete. Now choosing Hessian option to use for NEB-TS job.")
+    print("NEB-CI job is complete. Now choosing Hessian option to use for Opt-TS job.")
 
     #Prepare Hessian option
     #Hessianfile should be a simple text file with 1 row per line, values space-separated and no header.
@@ -409,92 +409,60 @@ def NEB(reactant=None, product=None, theory=None, images=8, CI=True, free_end=Fa
         theory.qm_theory.printlevel = printlevel
         theory.mm_theory.printlevel = printlevel
 
-    #Now starting NEB from path object, using neb_settings and optimizer settings
-    print("neb_settings:", neb_settings)
-    print("optimizer:", optimizer)
+
 
     #############################
     # CALLING NEB
     #############################
     
     if IDPPonly == True:
-        print("IDPPonly is not yet ready")
-        ashexit()
-    else:
+        print("IDPPonly option will do one NEB iteration on the IDPP path and then stop NEB part")
+        optimizer["MAX_ITER"] = 1
+        #Now starting NEB from path object, using neb_settings and optimizer settings
+        print("neb_settings:", neb_settings)
+        print("optimizer:", optimizer)
         DoNEB(path, calculator, neb_settings, optimizer)
-    
-    if calculator.converged == False:
-        print()
-        print(f"Knarr failed to converge during the maxiter={maxiter} given.")
-        print("Try restarting with different settings.")
+
+        #Now finding highest energy image
+        Saddlepoint_fragment = prepare_saddlepoint(path,neb_settings,reactant,calculator,ActiveRegion,actatoms,charge,mult, numatoms, "IDPP", write_tangent=False)
+        print("WARNING: This is a highly approximate guess for the saddlepoint, based on the highest energy image from a single-iteration NEB.")
+        return Saddlepoint_fragment
+    #REGULAR NEB
+    else:
+        #Now starting NEB from path object, using neb_settings and optimizer settings
+        print("neb_settings:", neb_settings)
+        print("optimizer:", optimizer)
+        DoNEB(path, calculator, neb_settings, optimizer)
+
+        ###########################################################
+        # CHECKING CONVERGENCE AND PREPARING FINAL OUTPUT
+        ###########################################################
+        if calculator.converged == False:
+            print()
+            print(f"Knarr failed to converge during the maxiter={maxiter} given.")
+            print("Try restarting with different settings.")
+
+            print_time_rel(module_init_time, modulename='Knarr-NEB run', moduleindex=1)
+            return None
+        else:
+            print()
+            print('KNARR successfully terminated')
+            print()
+            Saddlepoint_fragment = prepare_saddlepoint(path,neb_settings,reactant,calculator,ActiveRegion,actatoms,charge,mult, numatoms, "optimized")
+
+            print()
+
+        print("\nThe Knarr-NEB code is based on work described in the following article. Please consider citing it:")
+        print("Nudged elastic band method for molecular reactions using energy-weighted springs combined with eigenvector following\n \
+    V. Ásgeirsson, B. Birgisson, R. Bjornsson, U. Becker, F. Neese, C: Riplinger,  H. Jónsson, J. Chem. Theory Comput. 2021,17, 4929–4945.\
+    DOI: 10.1021/acs.jctc.1c00462")
 
         print_time_rel(module_init_time, modulename='Knarr-NEB run', moduleindex=1)
-        return None
-    else:
-        print()
-        print('KNARR successfully terminated')
-        print()
-        #Getting saddlepoint-structure and energy if CI-NEB
+
         if neb_settings["CLIMBING"] is True:
+            return Saddlepoint_fragment
 
-            #Writing tangent to disk            
-            write_xyzfile(reactant.elems, calculator.tangent, "CItangent", printlevel=2, writemode='w')
 
-            if ActiveRegion == True:
-                print("Getting saddlepoint geometry and creating new fragment for Full system")
-                print("Has not been confirmed to work...")
-                #Finding CI coords and energy
-                CI = np.argmax(path.GetEnergy())
-                saddle_coords_1d=path.GetCoords()[CI * path.GetNDimIm():(CI + 1) * path.GetNDimIm()]
-                saddle_coords=np.reshape(saddle_coords_1d, (numatoms, 3))
-                saddle_energy = path.GetEnergy()[CI][0]*constants.hartoeV
-
-                #Combinining frozen region with optimized active-region for saddle-point
-                # Defining full_coords as original coords temporarily
-                full_saddleimage_coords = copy.deepcopy(reactant.coords)
-                # Replacing act-region coordinates with coords from currcoords
-                for i, c in enumerate(saddle_coords):
-                    if i in actatoms:
-                        # Silly. Pop-ing first coord from currcoords until done
-                        curr_c, saddle_coords = saddle_coords[0], saddle_coords[1:]
-                        full_saddleimage_coords[i] = curr_c
-
-                #Creating new ASH fragment for Full Saddle-point geometry
-                Saddlepoint_fragment = ash.Fragment(coords=full_saddleimage_coords, elems=reactant.elems, connectivity=reactant.connectivity, charge=charge, mult=mult)
-                Saddlepoint_fragment.set_energy(saddle_energy)
-                #Adding atomtypes and charges if present.
-                Saddlepoint_fragment.update_atomcharges(reactant.atomcharges)
-                Saddlepoint_fragment.update_atomtypes(reactant.atomtypes)
-
-                #Writing out Saddlepoint fragment file and XYZ file
-                Saddlepoint_fragment.print_system(filename='Saddlepoint-optimized.ygg')
-                Saddlepoint_fragment.write_xyzfile(xyzfilename='Saddlepoint-optimized.xyz')
-
-            else:
-                #Finding CI coords and energy
-                CI = np.argmax(path.GetEnergy())
-                saddle_coords_1d=path.GetCoords()[CI * path.GetNDimIm():(CI + 1) * path.GetNDimIm()]
-                saddle_coords=np.reshape(saddle_coords_1d, (numatoms, 3))
-                saddle_energy = path.GetEnergy()[CI][0]/constants.hartoeV
-                print("Creating new ASH fragment for saddlepoint geometry")
-                #Creating new ASH fragment
-                Saddlepoint_fragment = ash.Fragment(coords=saddle_coords, elems=reactant.elems, connectivity=reactant.connectivity, charge=charge, mult=mult)
-                Saddlepoint_fragment.set_energy(saddle_energy)
-                #Writing out Saddlepoint fragment file and XYZ file
-                Saddlepoint_fragment.print_system(filename='Saddlepoint-optimized.ygg')
-                Saddlepoint_fragment.write_xyzfile(xyzfilename='Saddlepoint-optimized.xyz')
-            print(f"Saddlepoint energy: {saddle_energy} Eh")
-        print()
-
-    print("\nThe Knarr-NEB code is based on work described in the following article. Please consider citing it:")
-    print("Nudged elastic band method for molecular reactions using energy-weighted springs combined with eigenvector following\n \
-V. Ásgeirsson, B. Birgisson, R. Bjornsson, U. Becker, F. Neese, C: Riplinger,  H. Jónsson, J. Chem. Theory Comput. 2021,17, 4929–4945.\
-DOI: 10.1021/acs.jctc.1c00462")
-
-    print_time_rel(module_init_time, modulename='Knarr-NEB run', moduleindex=1)
-
-    if neb_settings["CLIMBING"] is True:
-        return Saddlepoint_fragment
 
 #Path generator
 def Knarr_pathgenerator(nebsettings,path_parameters,react,prod,ActiveRegion):
@@ -886,3 +854,60 @@ class KnarrCalculator:
                     trajfile.write("Image {} Energy: {} \n".format(self.numimages-1,self.energies_dict[self.numimages-1]))
                     for el, corp in zip(self.full_fragment_product.elems, self.full_fragment_product.coords):
                         trajfile.write(el + "  " + str(corp[0]) + " " + str(corp[1]) + " " + str(corp[2]) + "\n")
+
+
+def prepare_saddlepoint(path,neb_settings,reactant,calculator,ActiveRegion,actatoms,charge,mult, numatoms, label, write_tangent=True):
+    #Getting saddlepoint-structure and energy if CI-NEB
+    if neb_settings["CLIMBING"] is True:
+
+        if write_tangent is True:
+            #Writing tangent to disk 
+            write_xyzfile(reactant.elems, calculator.tangent, "CItangent", printlevel=2, writemode='w')
+
+        if ActiveRegion == True:
+            print("Getting saddlepoint geometry and creating new fragment for Full system")
+            print("Has not been confirmed to work...")
+            #Finding CI coords and energy
+            CI = np.argmax(path.GetEnergy())
+            print("Saddlepoint assumed to be image no.", CI)
+            saddle_coords_1d=path.GetCoords()[CI * path.GetNDimIm():(CI + 1) * path.GetNDimIm()]
+            saddle_coords=np.reshape(saddle_coords_1d, (numatoms, 3))
+            saddle_energy = path.GetEnergy()[CI][0]*constants.hartoeV
+
+            #Combinining frozen region with optimized active-region for saddle-point
+            # Defining full_coords as original coords temporarily
+            full_saddleimage_coords = copy.deepcopy(reactant.coords)
+            # Replacing act-region coordinates with coords from currcoords
+            for i, c in enumerate(saddle_coords):
+                if i in actatoms:
+                    # Silly. Pop-ing first coord from currcoords until done
+                    curr_c, saddle_coords = saddle_coords[0], saddle_coords[1:]
+                    full_saddleimage_coords[i] = curr_c
+
+            #Creating new ASH fragment for Full Saddle-point geometry
+            Saddlepoint_fragment = ash.Fragment(coords=full_saddleimage_coords, elems=reactant.elems, connectivity=reactant.connectivity, charge=charge, mult=mult)
+            Saddlepoint_fragment.set_energy(saddle_energy)
+            #Adding atomtypes and charges if present.
+            Saddlepoint_fragment.update_atomcharges(reactant.atomcharges)
+            Saddlepoint_fragment.update_atomtypes(reactant.atomtypes)
+
+            #Writing out Saddlepoint fragment file and XYZ file
+            Saddlepoint_fragment.print_system(filename=f'Saddlepoint-{label}.ygg')
+            Saddlepoint_fragment.write_xyzfile(xyzfilename=f'Saddlepoint-{label}.xyz')
+
+        else:
+            #Finding CI coords and energy
+            CI = np.argmax(path.GetEnergy())
+            print("Saddlepoint assumed to be image no.", CI)
+            saddle_coords_1d=path.GetCoords()[CI * path.GetNDimIm():(CI + 1) * path.GetNDimIm()]
+            saddle_coords=np.reshape(saddle_coords_1d, (reactant.numatoms, 3))
+            saddle_energy = path.GetEnergy()[CI][0]/constants.hartoeV
+            print(f"Creating new ASH fragment for {label} saddlepoint geometry")
+            #Creating new ASH fragment
+            Saddlepoint_fragment = ash.Fragment(coords=saddle_coords, elems=reactant.elems, connectivity=reactant.connectivity, charge=charge, mult=mult)
+            Saddlepoint_fragment.set_energy(saddle_energy)
+            #Writing out Saddlepoint fragment file and XYZ file
+            Saddlepoint_fragment.print_system(filename=f'Saddlepoint-{label}.ygg')
+            Saddlepoint_fragment.write_xyzfile(xyzfilename=f'Saddlepoint-{label}.xyz')
+        print(f"{label} Saddlepoint energy: {saddle_energy} Eh")
+        return Saddlepoint_fragment

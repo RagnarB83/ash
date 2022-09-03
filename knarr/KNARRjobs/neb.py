@@ -452,7 +452,7 @@ def DoNEB(path, calculator, neb, optimizer, second_run=False):
 
         if converged or stop_neb:
             break
-
+            #return
         # =======================================================
         # Climbing image block
         # =======================================================
@@ -660,7 +660,6 @@ def DoNEB(path, calculator, neb, optimizer, second_run=False):
         PrintMaxIter(maxiter)
         WritePath(basename + "_last_iter.xyz", path.GetNDimIm(), path.GetNim(), path.GetCoords(),
                   path.GetSymbols(), path.GetEnergy())
-
         if os.path.isfile(basename + "_current.xyz"):
             os.remove(basename + "_current.xyz")
 
