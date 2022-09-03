@@ -157,13 +157,18 @@ def NEBTS(reactant=None, product=None, theory=None, images=8, CI=True, free_end=
     #NOTE: None of these work well.  Need to use tangent to modify
     elif hessian_for_TS == 'model':
         print("hessian_for_TS option: model")
-        print("Calling ORCA to get model Hessian")
-        print(f"modelhessian: {modelhessian}")
-        #Calling ORCA to get model Hessian (default Swart) for SP geometry
-        hessian = calc_model_Hessian_ORCA(SP,model=modelhessian)
-        #NOTE: We can do overlap of eigenvectors but we can currently not change what geometric does
+        if model == 'Zero':
+            hess_size=SP.numatoms*3
+            hessian=np.zeros((hess_size,hess_size))
+            hessianfile="Hessian_Zero"
+        else:
+            print("Calling ORCA to get model Hessian")
+            print(f"modelhessian: {modelhessian}")
+            #Calling ORCA to get model Hessian (default Swart) for SP geometry
+            hessian = calc_model_Hessian_ORCA(SP,model=modelhessian)
+            #NOTE: We can do overlap of eigenvectors but we can currently not change what geometric does
+            hessianfile="Hessian_from_ORCA_model"
         #Write Hessian to file
-        hessianfile="Hessian_from_ORCA_model"
         write_hessian(hessian,hessfile=hessianfile)
         #Creating string 
         hessianoption='file:'+str(hessianfile)
