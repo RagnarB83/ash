@@ -330,9 +330,10 @@ def NEB(reactant=None, product=None, theory=None, images=8, CI=True, free_end=Fa
         new_product = ash.Fragment(coords=P_actcoords, elems=P_actelems)
 
         #TSguess fragment provided
-        TS_actcoords, TS_actelems = TS_guess.get_coords_for_atoms(actatoms)
-        new_TSguess = ash.Fragment(coords=TS_actcoords, elems=TS_actelems, printlevel=0)
-        new_TSguess.write_xyzfile(xyzfilename="TSguess.xyz")
+        if TS_guess != None:
+            TS_actcoords, TS_actelems = TS_guess.get_coords_for_atoms(actatoms)
+            new_TSguess = ash.Fragment(coords=TS_actcoords, elems=TS_actelems, printlevel=0)
+            new_TSguess.write_xyzfile(xyzfilename="TSguess.xyz")
         #Create Knarr calculator from ASH theory.
         calculator = KnarrCalculator(theory, fragment1=new_reactant, fragment2=new_product, runmode=runmode, numcores=numcores,
                                      ActiveRegion=True, actatoms=actatoms, full_fragment_reactant=reactant,
@@ -354,8 +355,9 @@ def NEB(reactant=None, product=None, theory=None, images=8, CI=True, free_end=Fa
 
 
     else:
-        #Writing XYZ-file for TSguess
-        TS_guess.write_xyzfile(xyzfilename="TSguess.xyz")
+        if TS_guess != None:
+            #Writing XYZ-file for TSguess
+            TS_guess.write_xyzfile(xyzfilename="TSguess.xyz")
 
         #Create Knarr calculator from ASH theory
         calculator = KnarrCalculator(theory, fragment1=reactant, fragment2=product, numcores=numcores,
@@ -375,7 +377,8 @@ def NEB(reactant=None, product=None, theory=None, images=8, CI=True, free_end=Fa
     #Set Knarr settings in dictionary
     path_parameters["INTERPOLATION"]=interpolation
     path_parameters["IDPP_MAX_ITER"] = idpp_maxiter
-    path_parameters["INSERT_CONFIG"] = "TSguess.xyz"
+    if TS_guess != None:
+        path_parameters["INSERT_CONFIG"] = "TSguess.xyz"
     neb_settings["CLIMBING"]=CI
     neb_settings["FREE_END"] = free_end
     neb_settings["CONV_TYPE"] = conv_type
