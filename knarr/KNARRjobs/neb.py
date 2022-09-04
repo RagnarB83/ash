@@ -599,13 +599,15 @@ def DoNEB(path, calculator, neb, optimizer, second_run=False):
         #    print('% 2i % 6.2f % 6.5f % 6.4f % 6.6f' % (
         #        i, s[i], path.GetEnergy()[i], 23.060541945329334*(path.GetEnergy()[i] - Ereactant),
         #        np.max(abs(freal_perp[i * path.GetNDofIm():(i + 1) * path.GetNDofIm()]))))
+
         print('%4ls %6ls %12ls %12ls %12ls' % ('Img.', 'dS', 'E(Eh)', 'dE(kcal/mol)', 'MaxF(eV/Ang)'))
         for i in range(path.GetNim()):
+            #print("path.GetEnergy()[i]", path.GetEnergy()[i])
             if i == ci:
                 extra="CI"
             else: extra=""
-            print('%4i %6.2f %12.5f %12.4f %12.6f %6s' % (
-                i, s[i], 0.03674930495120813*path.GetEnergy()[i], 23.060541945329334*(path.GetEnergy()[i] - Ereactant),
+            print('%4i %6.2f %12.6f %12.4f %12.6f %6s' % (
+                i, s[i], 1/(27.211386245988)*path.GetEnergy()[i], 23.060541945329334*(path.GetEnergy()[i] - Ereactant),
                 np.max(abs(freal_perp[i * path.GetNDofIm():(i + 1) * path.GetNDofIm()])),extra))
 
         WritePath(basename + "_MEP.xyz", path.GetNDimIm(), path.GetNim(), path.GetCoords(),

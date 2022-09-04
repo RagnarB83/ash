@@ -101,7 +101,7 @@ def NEBTS(reactant=None, product=None, theory=None, images=8, CI=True, free_end=
     print(f"{cores_for_TSopt} CPU cores will be used to parallize theory during Opt-TS part.")
 
     #CI-NEB step
-    SP = NEB(reactant=reactant, product=product, theory=theory, images=images, CI=CI, free_end=free_end, maxiter=maxiter, IDPPonly=IDPPonly,
+    SP,energies_dict = NEB(reactant=reactant, product=product, theory=theory, images=images, CI=CI, free_end=free_end, maxiter=maxiter, IDPPonly=IDPPonly,
             conv_type=conv_type, tol_scale=tol_scale, tol_max_fci=tol_max_fci, tol_rms_fci=tol_rms_fci, tol_max_f=tol_max_f, tol_rms_f=tol_rms_f,
             tol_turn_on_ci=tol_turn_on_ci,  runmode=runmode, numcores=numcores, 
             charge=charge, mult=mult,printlevel=printlevel, ActiveRegion=ActiveRegion, actatoms=actatoms,
@@ -113,6 +113,7 @@ def NEBTS(reactant=None, product=None, theory=None, images=8, CI=True, free_end=
         return None
         #ashexit()
 
+    #SP.write_xyzfile(xyzfilename='Saddlepoint-NEBCI-approx.xyz')
     print("NEB-CI job is complete. Now choosing Hessian option to use for Opt-TS job.")
 
     #Prepare Hessian option
@@ -220,6 +221,44 @@ def NEBTS(reactant=None, product=None, theory=None, images=8, CI=True, free_end=
                 ActiveRegion=ActiveRegion, actatoms=actatoms, convergence_setting=OptTS_convergence_setting, 
                 conv_criteria=OptTS_conv_criteria, print_atoms_list=OptTS_print_atoms_list, TSOpt=True,
                 hessian=hessianoption)
+
+    #TODO: Test if Optimizer converged or not. Currently there would be an error from geometric.
+    # 
+    # Finalprintout here with energies of all images, CI image pointed out and TS image also.
+    #Also write-out NEB-CI image as Saddlepoint-NEBCI-approx.xyz and Saddlepoint-OptTS.xyz
+
+
+    #Printing table of energies
+    CI_num = max(energies_dict, key=energies_dict.get) #Getting CI number as HEI
+    #Add TS geometry to energies_dict as -1
+    energies_dict[-1] = SP.energy
+    print("\n\nFinal energies of all NEB-CI images and final saddlepoint (in Eh and kcal/mol)")
+    print("-"*80)
+
+    for i in range(0,images+2):
+        label="Image:"
+        if free_end == False and (i == 0 or i == images+1):
+            #If image was frozen
+            relenergy=(energies_dict[i]-energies_dict[0])*ash.constants.hartokcal
+            print(f"{label:<8} {i:<4}Energy:{energies_dict[i]:12.6f}  {relenergy:8.2f} (frozen)")
+        elif i == CI_num:
+            #Printing CI
+            relenergy=(energies_dict[i]-energies_dict[0])*ash.constants.hartokcal
+            print(f"{label:<8} {i:<4}Energy:{energies_dict[i]:12.6f}  {relenergy:8.2f} (CI)")
+            #Printing TS
+            label="TS"
+            relenergy=(energies_dict[-1]-energies_dict[0])*ash.constants.hartokcal
+            print(f"{label:<8} {label:<4}Energy:{energies_dict[-1]:12.6f}  {relenergy:8.2f} (TS)")
+        else:
+            #If regular image
+            relenergy=(energies_dict[i]-energies_dict[0])*ash.constants.hartokcal
+            print(f"{label:<8} {i:<4}Energy:{energies_dict[i]:12.6f}  {relenergy:8.2f}")            
+    
+    print("-"*80)
+    print()
+
+    #Writing final geometries for clarity
+    SP.write_xyzfile(xyzfilename='Saddlepoint-OptTS.xyz')
 
     #Changing numcores back in case theory is reused
     theory.set_numcores(original_theory_numcores)
@@ -431,7 +470,7 @@ def NEB(reactant=None, product=None, theory=None, images=8, CI=True, free_end=Fa
         #Now finding highest energy image
         Saddlepoint_fragment = prepare_saddlepoint(path,neb_settings,reactant,calculator,ActiveRegion,actatoms,charge,mult, numatoms, "IDPP", write_tangent=False)
         print("WARNING: This is a highly approximate guess for the saddlepoint, based on the highest energy image from a single-iteration NEB.")
-        return Saddlepoint_fragment
+        return Saddlepoint_fragment, calculator.energies_dict
     #REGULAR NEB
     else:
         #Now starting NEB from path object, using neb_settings and optimizer settings
@@ -453,8 +492,8 @@ def NEB(reactant=None, product=None, theory=None, images=8, CI=True, free_end=Fa
             print()
             print('KNARR successfully terminated')
             print()
-            Saddlepoint_fragment = prepare_saddlepoint(path,neb_settings,reactant,calculator,ActiveRegion,actatoms,charge,mult, numatoms, "optimized")
-
+            Saddlepoint_fragment = prepare_saddlepoint(path,neb_settings,reactant,calculator,ActiveRegion,actatoms,charge,mult, numatoms, "NEBCIapprox")
+            print("WARNING: The NEB-CI saddlepoint is usually close to the true saddlepoint. Needs confirmation by Hessian.")
             print()
 
         print("\nThe Knarr-NEB code is based on work described in the following article. Please consider citing it:")
@@ -465,7 +504,7 @@ def NEB(reactant=None, product=None, theory=None, images=8, CI=True, free_end=Fa
         print_time_rel(module_init_time, modulename='Knarr-NEB run', moduleindex=1)
 
         if neb_settings["CLIMBING"] is True:
-            return Saddlepoint_fragment
+            return Saddlepoint_fragment, calculator.energies_dict
 
 
 
@@ -897,7 +936,7 @@ def prepare_saddlepoint(path,neb_settings,reactant,calculator,ActiveRegion,actat
             Saddlepoint_fragment.update_atomtypes(reactant.atomtypes)
 
             #Writing out Saddlepoint fragment file and XYZ file
-            Saddlepoint_fragment.print_system(filename=f'Saddlepoint-{label}.ygg')
+            #Saddlepoint_fragment.print_system(filename=f'Saddlepoint-{label}.ygg')
             Saddlepoint_fragment.write_xyzfile(xyzfilename=f'Saddlepoint-{label}.xyz')
 
         else:
@@ -912,7 +951,7 @@ def prepare_saddlepoint(path,neb_settings,reactant,calculator,ActiveRegion,actat
             Saddlepoint_fragment = ash.Fragment(coords=saddle_coords, elems=reactant.elems, connectivity=reactant.connectivity, charge=charge, mult=mult)
             Saddlepoint_fragment.set_energy(saddle_energy)
             #Writing out Saddlepoint fragment file and XYZ file
-            Saddlepoint_fragment.print_system(filename=f'Saddlepoint-{label}.ygg')
+            #Saddlepoint_fragment.print_system(filename=f'Saddlepoint-{label}.ygg')
             Saddlepoint_fragment.write_xyzfile(xyzfilename=f'Saddlepoint-{label}.xyz')
         print(f"{label} Saddlepoint energy: {saddle_energy} Eh")
         return Saddlepoint_fragment

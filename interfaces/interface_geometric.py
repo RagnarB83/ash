@@ -360,6 +360,9 @@ class GeomeTRICOptimizerClass:
                 print("Starting optimization")
             self.geometric.optimize.run_optimizer(**vars(self.final_geometric_args))
             time.sleep(1)
+
+            #TODO: Check for convergence here
+
             blankline()
             print("geomeTRIC Geometry optimization converged in {} steps!".format(self.ashengine.iteration_count))
             blankline()
