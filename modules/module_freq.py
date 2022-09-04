@@ -848,24 +848,6 @@ def printdummyORCAfile(elems,coords,vfreq,evectors,nmodes,hessfile):
 
            --- An Ab Initio, DFT and Semiempirical electronic structure package ---
 
-                  #######################################################
-                  #                        -***-                        #
-                  #  Department of molecular theory and spectroscopy    #
-                  #              Directorship: Frank Neese              #
-                  # Max Planck Institute for Chemical Energy Conversion #
-                  #                  D-45470 Muelheim/Ruhr              #
-                  #                       Germany                       #
-                  #                                                     #
-                  #                  All rights reserved                #
-                  #                        -***-                        #
-                  #######################################################
-
-
-                         Program Version 3.0.3 - RELEASE   -
-
-
-
-
                        *****************************
                        * Geometry Optimization Run *
                        *****************************
@@ -913,9 +895,9 @@ CARTESIAN COORDINATES (ANGSTROEM)
             else:
                 complexflag=False
         if complexflag==True:
-            line= "  {0:>3s}{1:13.2f} cm**-1 ***imaginary mode***".format(smode, imagfreq)
+            line= "{0:>5s}{1:13.2f} cm**-1 ***imaginary mode***".format(smode, imagfreq)
         else:
-            line= "  {0:>3s}{1:13.2f} cm**-1".format(smode, freq)
+            line= "{0:>5s}{1:13.2f} cm**-1".format(smode, freq)
         outfile.write(line+'\n')
 
 
@@ -1040,16 +1022,21 @@ Thus, these vectors are normalized but *not* orthogonal"""
             chunkheader = ""
         index += 6
 
-    endstring="""
+    irtable="""
 
 -----------
 IR SPECTRUM
 -----------
 
- Mode    freq (cm**-1)   T**2         TX         TY         TZ"""
-    outfile.write(endstring)
+ Mode   freq       eps      Int      T**2         TX        TY        TZ
+DUMMY NUMBERS BELOW
+----------------------------------------------------------------------------
 
-
+ """
+    outfile.write(irtable)
+    for i in range(6,3*numatoms):
+        d=str(i)+":"
+        outfile.write(f"{d:>4s}   1606.67   0.009763   49.34  0.001896  ( 0.000000 -0.000000 -0.043546)\n")
 
     outfile.close()
     print("Created dummy ORCA outputfile: ", hessfile+'_dummy.out')
