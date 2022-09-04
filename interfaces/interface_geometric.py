@@ -67,11 +67,12 @@ class GeomeTRICOptimizerClass:
 
             #Check charge/mult
             self.charge, self.mult = check_charge_mult(charge, mult, theory.theorytype, fragment, "geomeTRICOptimizer", theory=theory)
-
+            fragment.charge=self.charge
+            fragment.mult=self.mult
             if fragment.numatoms == 1:
                 print("System has 1 atoms.")
                 print("Doing single-point energy calculation instead")
-                energy = ash.Singlepoint(fragment=fragment, theory=theory, charge=charge, mult=mult)
+                energy = ash.Singlepoint(fragment=fragment, theory=theory, charge=self.charge, mult=self.mult)
                 return energy
 
             #Active region and coordsystem
@@ -100,6 +101,7 @@ class GeomeTRICOptimizerClass:
 
                 #Combine partial exact Hessian with model Hessian(Almloef, Lindh, Schlegel or unit)
                 #Large Hessian is the actatoms Hessian if actatoms provided
+                
                 combined_hessian = approximate_full_Hessian_from_smaller(fragment,freqdict["hessian"], partial_hessian_atoms, large_atomindices=actatoms, restHessian=modelhessian)
 
                 #Write combined Hessian to disk
