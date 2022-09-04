@@ -71,7 +71,7 @@ optimizer = {"OPTIM_METHOD": "LBFGS", "MAX_ITER": 200, "TOL_MAX_FORCE": 0.01,
 def NEBTS(reactant=None, product=None, theory=None, images=8, CI=True, free_end=False, maxiter=100, IDPPonly=False,
         conv_type="ALL", tol_scale=10, tol_max_fci=0.10, tol_rms_fci=0.05, tol_max_f=1.03, tol_rms_f=0.51,
         tol_turn_on_ci=1.0,  runmode='serial', numcores=1, charge=None, mult=None, printlevel=0, ActiveRegion=False, actatoms=None,
-        interpolation="IDPP", idpp_maxiter=700, restart_file=None, TS_guess_file=None, mofilesdir=None, 
+        interpolation="IDPP", idpp_maxiter=700, restart_file=None, TS_guess=None, mofilesdir=None, 
         OptTS_maxiter=100, OptTS_print_atoms_list=None, OptTS_convergence_setting=None, OptTS_conv_criteria=None, OptTS_coordsystem='tric',
         hessian_for_TS=None, modelhessian='unit', tsmode_tangent_threshold=0.1):
 
@@ -106,7 +106,7 @@ def NEBTS(reactant=None, product=None, theory=None, images=8, CI=True, free_end=
             tol_turn_on_ci=tol_turn_on_ci,  runmode=runmode, numcores=numcores, 
             charge=charge, mult=mult,printlevel=printlevel, ActiveRegion=ActiveRegion, actatoms=actatoms,
             interpolation=interpolation, idpp_maxiter=idpp_maxiter, 
-            restart_file=restart_file, TS_guess_file=TS_guess_file, mofilesdir=mofilesdir)
+            restart_file=restart_file, TS_guess=TS_guess, mofilesdir=mofilesdir)
 
     if SP == None:
         print("NEB-CI job failed. Exiting NEBTS.")
@@ -271,7 +271,7 @@ def NEB(reactant=None, product=None, theory=None, images=8, CI=True, free_end=Fa
         tol_turn_on_ci=1.0,  runmode='serial', numcores=1, IDPPonly=False,
         charge=None, mult=None,printlevel=0, ActiveRegion=False, actatoms=None,
         interpolation="IDPP", idpp_maxiter=700, 
-        restart_file=None, TS_guess_file=None, mofilesdir=None):
+        restart_file=None, TS_guess=None, mofilesdir=None):
 
     print_line_with_mainheader("Nudged elastic band calculation (via interface to KNARR)")
     module_init_time=time.time()
@@ -313,10 +313,69 @@ def NEB(reactant=None, product=None, theory=None, images=8, CI=True, free_end=Fa
     
 
 
+    
+
+    #Zero-valued constraints list. We probably won't use constraints for now
+    constr = np.zeros(shape=(numatoms * 3, 1))
+
+    #ActiveRegion feature
+    if ActiveRegion==True:
+        print("Active Region option Active. Passing only active-region coordinates to Knarr.")
+        if actatoms is None:
+            print("You must include actatoms keyword (with list of atom indices) to NEB for ActiveRegion True")
+            ashexit()
+        R_actcoords, R_actelems = reactant.get_coords_for_atoms(actatoms)
+        P_actcoords, P_actelems = product.get_coords_for_atoms(actatoms)
+        new_reactant = ash.Fragment(coords=R_actcoords, elems=R_actelems)
+        new_product = ash.Fragment(coords=P_actcoords, elems=P_actelems)
+
+        #TSguess fragment provided
+        TS_actcoords, TS_actelems = TS_guess.get_coords_for_atoms(actatoms)
+        new_TSguess = ash.Fragment(coords=TS_actcoords, elems=TS_actelems, printlevel=0)
+        new_TSguess.write_xyzfile(xyzfilename="TSguess.xyz")
+        #Create Knarr calculator from ASH theory.
+        calculator = KnarrCalculator(theory, fragment1=new_reactant, fragment2=new_product, runmode=runmode, numcores=numcores,
+                                     ActiveRegion=True, actatoms=actatoms, full_fragment_reactant=reactant,
+                                     full_fragment_product=product,numimages=total_num_images, charge=charge, mult=mult,
+                                     FreeEnd=free_end, printlevel=printlevel,mofilesdir=mofilesdir)
+
+        # Symbols list for Knarr
+        Knarr_symbols = [y for y in new_reactant.elems for i in range(3)]
+
+        # New numatoms and constraints for active-region system
+        numatoms = new_reactant.numatoms
+        constr = np.zeros(shape=(numatoms * 3, 1))
+
+        # Create KNARR Atom objects. Used in path generation
+        react = KNARRatom.atom.Atom(coords=coords_to_Knarr(new_reactant.coords), symbols=Knarr_symbols, ndim=numatoms * 3,
+                                    ndof=numatoms * 3, constraints=constr, pbc=False)
+        prod = KNARRatom.atom.Atom(coords=coords_to_Knarr(new_product.coords), symbols=Knarr_symbols, ndim=numatoms * 3,
+                                   ndof=numatoms * 3, constraints=constr, pbc=False)
+
+
+    else:
+        #Writing XYZ-file for TSguess
+        TS_guess.write_xyzfile(xyzfilename="TSguess.xyz")
+
+        #Create Knarr calculator from ASH theory
+        calculator = KnarrCalculator(theory, fragment1=reactant, fragment2=product, numcores=numcores,
+                                     ActiveRegion=False, runmode=runmode,numimages=total_num_images, charge=charge, mult=mult,
+                                     FreeEnd=free_end, printlevel=printlevel,mofilesdir=mofilesdir)
+
+        # Symbols list for Knarr
+        Knarr_symbols = [y for y in reactant.elems for i in range(3)]
+
+        # Create KNARR Atom objects. Used in path generation
+        react = KNARRatom.atom.Atom(coords=coords_to_Knarr(reactant.coords), symbols=Knarr_symbols, ndim=numatoms * 3,
+                                    ndof=numatoms * 3, constraints=constr, pbc=False)
+        prod = KNARRatom.atom.Atom(coords=coords_to_Knarr(product.coords), symbols=Knarr_symbols, ndim=numatoms * 3,
+                                   ndof=numatoms * 3, constraints=constr, pbc=False)
+
+
     #Set Knarr settings in dictionary
     path_parameters["INTERPOLATION"]=interpolation
     path_parameters["IDPP_MAX_ITER"] = idpp_maxiter
-    path_parameters["INSERT_CONFIG"] = TS_guess_file
+    path_parameters["INSERT_CONFIG"] = "TSguess.xyz"
     neb_settings["CLIMBING"]=CI
     neb_settings["FREE_END"] = free_end
     neb_settings["CONV_TYPE"] = conv_type
@@ -351,7 +410,7 @@ def NEB(reactant=None, product=None, theory=None, images=8, CI=True, free_end=Fa
         print(f"There are {total_num_images} images including the frozen endpoints.")
 
     print("Restart file:", restart_file)
-    print("TS guess insertion file:", TS_guess_file)
+    print("TS guess insertion :", TS_guess)
 
     print()
     print("Interpolation path parameters:\n", path_parameters)
@@ -361,54 +420,10 @@ def NEB(reactant=None, product=None, theory=None, images=8, CI=True, free_end=Fa
     print("Optimizer parameters:\n", optimizer)
     print()
 
-    #Zero-valued constraints list. We probably won't use constraints for now
-    constr = np.zeros(shape=(numatoms * 3, 1))
-
-    #ActiveRegion feature
-    if ActiveRegion==True:
-        print("Active Region option Active. Passing only active-region coordinates to Knarr.")
-        if actatoms is None:
-            print("You must include actatoms keyword (with list of atom indices) to NEB for ActiveRegion True")
-            ashexit()
-        R_actcoords, R_actelems = reactant.get_coords_for_atoms(actatoms)
-        P_actcoords, P_actelems = product.get_coords_for_atoms(actatoms)
-        new_reactant = ash.Fragment(coords=R_actcoords, elems=R_actelems)
-        new_product = ash.Fragment(coords=P_actcoords, elems=P_actelems)
-
-        #Create Knarr calculator from ASH theory.
-        calculator = KnarrCalculator(theory, fragment1=new_reactant, fragment2=new_product, runmode=runmode, numcores=numcores,
-                                     ActiveRegion=True, actatoms=actatoms, full_fragment_reactant=reactant,
-                                     full_fragment_product=product,numimages=total_num_images, charge=charge, mult=mult,
-                                     FreeEnd=free_end, printlevel=printlevel,mofilesdir=mofilesdir)
-
-        # Symbols list for Knarr
-        Knarr_symbols = [y for y in new_reactant.elems for i in range(3)]
-
-        # New numatoms and constraints for active-region system
-        numatoms = new_reactant.numatoms
-        constr = np.zeros(shape=(numatoms * 3, 1))
-
-        # Create KNARR Atom objects. Used in path generation
-        react = KNARRatom.atom.Atom(coords=coords_to_Knarr(new_reactant.coords), symbols=Knarr_symbols, ndim=numatoms * 3,
-                                    ndof=numatoms * 3, constraints=constr, pbc=False)
-        prod = KNARRatom.atom.Atom(coords=coords_to_Knarr(new_product.coords), symbols=Knarr_symbols, ndim=numatoms * 3,
-                                   ndof=numatoms * 3, constraints=constr, pbc=False)
 
 
-    else:
-        #Create Knarr calculator from ASH theory
-        calculator = KnarrCalculator(theory, fragment1=reactant, fragment2=product, numcores=numcores,
-                                     ActiveRegion=False, runmode=runmode,numimages=total_num_images, charge=charge, mult=mult,
-                                     FreeEnd=free_end, printlevel=printlevel,mofilesdir=mofilesdir)
 
-        # Symbols list for Knarr
-        Knarr_symbols = [y for y in reactant.elems for i in range(3)]
 
-        # Create KNARR Atom objects. Used in path generation
-        react = KNARRatom.atom.Atom(coords=coords_to_Knarr(reactant.coords), symbols=Knarr_symbols, ndim=numatoms * 3,
-                                    ndof=numatoms * 3, constraints=constr, pbc=False)
-        prod = KNARRatom.atom.Atom(coords=coords_to_Knarr(product.coords), symbols=Knarr_symbols, ndim=numatoms * 3,
-                                   ndof=numatoms * 3, constraints=constr, pbc=False)
 
 
     print("\nLaunching Knarr")
@@ -423,9 +438,9 @@ def NEB(reactant=None, product=None, theory=None, images=8, CI=True, free_end=Fa
     if restart_file == None:
         print("Creating interpolated path.")
 
-        if TS_guess_file != None:
-            print(f"A TS guess file: {TS_guess_file} was provided")
-            print("Will create in")
+        if TS_guess != None:
+            print(f"A TS guess : {TS_guess} was provided")
+            print("Will use intermediate geometry in interpolation")
 
         # Generate path via Knarr_pathgenerator. ActiveRegion used to prevent RMSD alignment if doing actregion QM/MM etc.
         Knarr_pathgenerator(neb_settings, path_parameters, react, prod, ActiveRegion)
