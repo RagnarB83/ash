@@ -390,12 +390,21 @@ def NumFreq(fragment=None, theory=None, charge=None, mult=None, npoint=2, displa
             #Iterate over x,y,z components
             for crd in [0,1,2]:
                 #Looking up each gradient for atomindex, crd-component(x=0,y=1 or z=2) and '+' 
+                timeA = time.time()
                 grad_pos=displacement_grad_dictionary[(atomindex,crd,'+')]
+                print_time_rel(timeA, modulename="grad_pos make", currprintlevel=1, currthreshold=1)
+                timeA = time.time()
                  #Getting grad as numpy matrix and converting to 1d
                 # If partial Hessian remove non-hessatoms part of gradient:
                 grad_pos = get_partial_matrix(allatoms, hessatoms, grad_pos)
+                print_time_rel(timeA, modulename="get_partial_matrix", currprintlevel=1, currthreshold=1)
+                timeA = time.time()
                 grad_pos_1d = np.ravel(grad_pos)
+                print_time_rel(timeA, modulename="np ravel", currprintlevel=1, currthreshold=1)
+                timeA = time.time()
                 Hessrow=(grad_pos_1d - original_grad_1d)/displacement_bohr
+                print_time_rel(timeA, modulename="Hessrow subtraction", currprintlevel=1, currthreshold=1)
+                timeA = time.time()
                 hessian[hessindex,:]=Hessrow
                 grad_pos_1d=0
                 hessindex+=1
