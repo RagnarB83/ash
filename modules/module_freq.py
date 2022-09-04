@@ -378,13 +378,15 @@ def NumFreq(fragment=None, theory=None, charge=None, mult=None, npoint=2, displa
         #If partial Hessian remove non-hessatoms part of gradient:
         #Get partial matrix by deleting atoms not present in list.
         original_grad=get_partial_matrix(allatoms, hessatoms, displacement_grad_dictionary['Originalgeo'])
+        print("Debugging 1b")
         original_grad_1d = np.ravel(original_grad)
-        
+        print("Debugging 1c")
         #Starting index for Hessian array
         hessindex=0
         #Loop over Hessian atoms and grab each gradient component. Calculate Hessian component and add to matrix
         #for atomindex in range(0,len(hessatoms)):
         for atomindex in hessatoms:
+            print("Debugging 2x")
             #Iterate over x,y,z components
             for crd in [0,1,2]:
                 #Looking up each gradient for atomindex, crd-component(x=0,y=1 or z=2) and '+' 
@@ -397,6 +399,7 @@ def NumFreq(fragment=None, theory=None, charge=None, mult=None, npoint=2, displa
                 hessian[hessindex,:]=Hessrow
                 grad_pos_1d=0
                 hessindex+=1
+        print("Debugging 3")
     #Twopoint-formula Hessian. pos and negative directions come in order
     elif npoint == 2:
         print("Assembling the two-point Hessian")
@@ -422,11 +425,12 @@ def NumFreq(fragment=None, theory=None, charge=None, mult=None, npoint=2, displa
                 grad_pos_1d=0
                 grad_neg_1d=0
                 hessindex+=1
-
+    print("Debugging 4")
     print()
 
     #Symmetrize Hessian by taking average of matrix and transpose
     symm_hessian=(hessian+hessian.transpose())/2
+    print("Debugging 5")
     hessian=symm_hessian
 
 
@@ -437,14 +441,15 @@ def NumFreq(fragment=None, theory=None, charge=None, mult=None, npoint=2, displa
 
     #Diagonalize mass-weighted Hessian
     # Get partial matrix by deleting atoms not present in list.
+    print("Debugging 6")
     hesselems = ash.modules.module_coords.get_partial_list(allatoms, hessatoms, elems)
-
+    print("Debugging 7")
     #Use input masses if given, otherwise take from frament
     if hessatoms_masses == None:
         hessmasses = ash.modules.module_coords.get_partial_list(allatoms, hessatoms, fragment.list_of_masses)
     else:
         hessmasses=hessatoms_masses
-    
+    print("Debugging 8")
     hesscoords = [fragment.coords[i] for i in hessatoms]
     print("Elements:", hesselems)
     print("Masses used:", hessmasses)
