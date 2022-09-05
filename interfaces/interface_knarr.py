@@ -726,7 +726,11 @@ class KnarrCalculator:
                     if self.ORCAused == True:
                         if self.printlevel >= 1:
                             print(f"ORCA run done. Copying {self.theory.filename}.gbw to {current_image_file} for next time")
-                        shutil.copyfile(self.theory.filename+".gbw",current_image_file)
+                        
+                        if isinstance(self.theory,ash.QMMMTheory):
+                            shutil.copyfile(self.theory.qm_theory.filename+".gbw",current_image_file)
+                        else:
+                            shutil.copyfile(self.theory.filename+".gbw",current_image_file)
                     if self.printlevel >= 2:
                         print("Energy of image {} is : {}".format(image_number,En_image))
                     #Trim Full gradient down to only act-atoms gradient
@@ -746,7 +750,10 @@ class KnarrCalculator:
                     if self.ORCAused == True:
                         if self.printlevel >= 1:
                             print(f"ORCA run done. Copying {self.theory.filename}.gbw to {current_image_file} for next time")
-                        shutil.copyfile(self.theory.filename+".gbw",current_image_file)
+                        if isinstance(self.theory,ash.QMMMTheory):
+                            shutil.copyfile(self.theory.qm_theory.filename+".gbw",current_image_file)
+                        else:
+                            shutil.copyfile(self.theory.filename+".gbw",current_image_file)
                     
                     #Keeping track of energies for each image in a dict
                     self.energies_dict[image_number] = En_image
