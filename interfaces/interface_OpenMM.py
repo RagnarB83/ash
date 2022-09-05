@@ -2679,7 +2679,7 @@ class OpenMM_MDclass:
                  enforcePeriodicBox=True, dummyatomrestraint=False, center_on_atoms=None, solute_indices=None,
                  datafilename=None, dummy_MM=False, plumed_object=None, add_center_force=False,
                  center_force_atoms=None, centerforce_constant=1.0,
-                 barostat_frequency=25, specialbox=False):
+                 barostat_frequency=25, specialbox=False,):
         module_init_time = time.time()
 
         print_line_with_mainheader("OpenMM Molecular Dynamics Initialization")
@@ -3013,7 +3013,7 @@ class OpenMM_MDclass:
             print_time_rel(module_init_time, modulename="OpenMM_MD setup", moduleindex=1)
 
     # Simulation loop
-    def run(self, simulation_steps=None, simulation_time=None):
+    def run(self, simulation_steps=None, simulation_time=None, metadynamics=False, meta_object=None):
         module_init_time = time.time()
         print_line_with_mainheader("OpenMM Molecular Dynamics Run")
         if simulation_steps is None and simulation_time is None:
@@ -3212,11 +3212,15 @@ class OpenMM_MDclass:
                 print_time_rel(checkpoint, modulename="OpenMM sim step", moduleindex=2)
                 print_time_rel(checkpoint_begin_step, modulename="Total sim step", moduleindex=2)
         else:
-            print("Regular classical OpenMM MD option chosen.")
-            #This is the fastest option as getState is never called in each loop iteration like above
-            # Running all steps in one go
-            # TODO: If we wanted to support plumed then we would have to do step 1-by-1 instead
-            self.openmmobject.simulation.step(simulation_steps)
+            #OpenMM metadynamics
+            if metadynamics == True:
+                meta_object.step(self.openmmobject.simulation, simulation_steps)
+            else:
+                print("Regular classical OpenMM MD option chosen.")
+                #This is the fastest option as getState is never called in each loop iteration like above
+                # Running all steps in one go
+                # TODO: If we wanted to support plumed then we would have to do step 1-by-1 instead
+                self.openmmobject.simulation.step(simulation_steps)
 
         print_line_with_subheader2("OpenMM MD simulation finished!")
 
@@ -3572,3 +3576,73 @@ def write_nonbonded_FF_for_ligand(fragment=None, xyzfile=None, charge=None, mult
                                         sigmas_per_res=[sigmas], epsilons_per_res=[epsilons], filename=resname+".xml",
                                         coulomb14scale=coulomb14scale, lj14scale=lj14scale, charmm=charmm)
     return xmlfile
+
+
+
+################################
+# Native OpenMM metadynamics
+################################
+
+# Metadynamics written as a wrapper function around OpenMM_MDclass
+def OpenMM_metadynamics(fragment=None, theory=None, timestep=0.004, simulation_steps=None, simulation_time=None,
+              traj_frequency=1000, temperature=300, integrator='LangevinMiddleIntegrator',
+              barostat=None, pressure=1, trajectory_file_option='DCD', trajfilename='trajectory',
+              coupling_frequency=1, charge=None, mult=None,
+              anderson_thermostat=False,
+              enforcePeriodicBox=True, dummyatomrestraint=False, center_on_atoms=None, solute_indices=None,
+              datafilename=None, dummy_MM=False, plumed_object=None, add_center_force=False,
+              center_force_atoms=None, centerforce_constant=1.0, barostat_frequency=25, specialbox=False,
+              CV1_atoms=None, CV2_atoms=None, CV1_type=None, CV2_type=None, 
+              ):
+    print_line_with_mainheader("OpenMM metadynamics")
+
+    #Creating MDclass
+    md = OpenMM_MDclass(fragment=fragment, theory=theory, charge=charge, mult=mult, timestep=timestep,
+                        traj_frequency=traj_frequency, temperature=temperature, integrator=integrator,
+                        barostat=barostat, pressure=pressure, trajectory_file_option=trajectory_file_option,
+                        coupling_frequency=coupling_frequency, anderson_thermostat=anderson_thermostat,
+                        enforcePeriodicBox=enforcePeriodicBox, dummyatomrestraint=dummyatomrestraint, center_on_atoms=center_on_atoms, solute_indices=solute_indices,
+                        datafilename=datafilename, dummy_MM=dummy_MM,
+                        plumed_object=plumed_object, add_center_force=add_center_force,trajfilename=trajfilename,
+                        center_force_atoms=center_force_atoms, centerforce_constant=centerforce_constant,
+                        barostat_frequency=barostat_frequency, specialbox=specialbox)
+
+    #Access to system object via md (if QM theory then it was created)
+    system = md.openmmobject.system
+
+    # Define collective variables for phi and psi.
+    if CV1_type == "dihedral":
+        cv1 = md.openmmobject.openmm.CustomTorsionForce('theta')
+        cv1.addTorsion(*CV1_atoms)
+        phi = md.openmmobject.openmm_app.BiasVariable(cv1, -np.pi, np.pi, 0.5, True)
+    else:
+        print("unsupported CV1_type")
+        ashexit()
+    if CV2_type == "dihedral":
+        cv2 = md.openmmobject.openmm.CustomTorsionForce('theta')
+        cv2.addTorsion(*CV2_atoms)
+        psi = md.openmmobject.openmm_app.BiasVariable(cv2, -np.pi, np.pi, 0.5, True)
+    else:
+        print("unsupported CV2_type")
+        ashexit()
+
+    # Create metadynamics object
+    meta = md.openmmobject.openmm_app.Metadynamics(system, [phi, psi], 300, 5, 1, 1)
+    
+    #Updating simulation context as the CustomCVForce needs to be added
+    md.openmmobject.update_simulation()
+    if simulation_steps is not None:
+        md.run(simulation_steps=simulation_steps, metadynamics=True, meta_object=meta)
+    elif simulation_time is not None:
+        md.run(simulation_time=simulation_time, metadynamics=True, meta_object=meta)
+    else:
+        print("Either simulation_steps or simulation_time need to be defined (not both).")
+        ashexit()
+    
+    CV_data = meta.getCollectiveVariables(md.openmmobject.simulation)
+    print("CV_data", CV_data)
+    print("len of CV_data", len(CV_data))
+    free_energy = meta.getFreeEnergy()
+    print("free_energy:", free_energy)
+    print("len free energy", len(free_energy))
+    
