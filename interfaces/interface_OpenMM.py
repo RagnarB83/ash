@@ -3631,6 +3631,8 @@ def OpenMM_metadynamics(fragment=None, theory=None, timestep=0.004, simulation_s
     
     #Updating simulation context as the CustomCVForce needs to be added
     md.openmmobject.update_simulation()
+
+    #Call md.run with metadynamics option
     if simulation_steps is not None:
         md.run(simulation_steps=simulation_steps, metadynamics=True, meta_object=meta)
     elif simulation_time is not None:

@@ -377,7 +377,8 @@ def NumFreq(fragment=None, theory=None, charge=None, mult=None, npoint=2, displa
         #First, grab original geometry gradient
         #If partial Hessian remove non-hessatoms part of gradient:
         #Get partial matrix by deleting atoms not present in list.
-        original_grad=get_partial_matrix(allatoms, hessatoms, displacement_grad_dictionary['Originalgeo'])
+        original_grad=get_partial_matrix(displacement_grad_dictionary['Originalgeo'],hessatoms)
+        #original_grad=get_partial_matrix(allatoms, hessatoms, displacement_grad_dictionary['Originalgeo'])
         print("Debugging 1b")
         original_grad_1d = np.ravel(original_grad)
         print("Debugging 1c")
@@ -396,7 +397,8 @@ def NumFreq(fragment=None, theory=None, charge=None, mult=None, npoint=2, displa
                 timeA = time.time()
                  #Getting grad as numpy matrix and converting to 1d
                 # If partial Hessian remove non-hessatoms part of gradient:
-                grad_pos = get_partial_matrix(allatoms, hessatoms, grad_pos)
+                #grad_pos = get_partial_matrix(allatoms, hessatoms, grad_pos)
+                grad_pos = get_partial_matrix(grad_pos,hessatoms)
                 print_time_rel(timeA, modulename="get_partial_matrix", currprintlevel=1, currthreshold=1)
                 timeA = time.time()
                 grad_pos_1d = np.ravel(grad_pos)
@@ -425,9 +427,11 @@ def NumFreq(fragment=None, theory=None, charge=None, mult=None, npoint=2, displa
                 grad_neg=displacement_grad_dictionary[(atomindex,crd,'-')]
                  #Getting grad as numpy matrix and converting to 1d
                 # If partial Hessian remove non-hessatoms part of gradient:
-                grad_pos = get_partial_matrix(allatoms, hessatoms, grad_pos)
+                #grad_pos = get_partial_matrix(allatoms, hessatoms, grad_pos)
+                grad_pos = get_partial_matrix(grad_pos, hessatoms)
                 grad_pos_1d = np.ravel(grad_pos)
-                grad_neg = get_partial_matrix(allatoms, hessatoms, grad_neg)
+                #grad_neg = get_partial_matrix(allatoms, hessatoms, grad_neg)
+                grad_neg = get_partial_matrix(grad_neg, hessatoms)
                 grad_neg_1d = np.ravel(grad_neg)
                 Hessrow=(grad_pos_1d - grad_neg_1d)/(2*displacement_bohr)
                 hessian[hessindex,:]=Hessrow
@@ -526,13 +530,17 @@ def NumFreq(fragment=None, theory=None, charge=None, mult=None, npoint=2, displa
 
 
 #Get partial matrix by deleting rows not present in list of indices.
-#Deletes numpy rows
-def get_partial_matrix(allatoms,hessatoms,matrix):
+#Deletes numpy rows, stupid and slow, to be deleted
+def old_get_partial_matrix(allatoms,hessatoms,matrix):
     nonhessatoms=listdiff(allatoms,hessatoms)
     nonhessatoms.reverse()
     for at in nonhessatoms:
         matrix=np.delete(matrix, at, 0)
     return matrix
+
+#Get partial matrix properly
+def get_partial_matrix(matrix,hessatoms):
+    return np.take(matrix,hessatoms, axis=0)
 
 
 # Open-source project in Fortran:
