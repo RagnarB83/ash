@@ -505,7 +505,7 @@ def NEB(reactant=None, product=None, theory=None, images=8, CI=True, free_end=Fa
             print("Try restarting with different settings.")
 
             print_time_rel(module_init_time, modulename='Knarr-NEB run', moduleindex=1)
-            return None
+            return None,None
         else:
             print()
             print('KNARR successfully terminated')
