@@ -14,7 +14,6 @@ import ash.constants
 import ash.settings_ash
 
 
-
 #ORCA Theory object.
 class ORCATheory:
     def __init__(self, orcadir=None, orcasimpleinput='', printlevel=2, extrabasisatoms=None, extrabasis=None, TDDFT=False, TDDFTroots=5, FollowRoot=1,
