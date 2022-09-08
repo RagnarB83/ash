@@ -669,7 +669,7 @@ def grab_ORCA_warnings(filename):
     warnings=[]
     #Lines that are not useful warnings
     ignore_lines=['                       Please study these wa','                                        WARNINGS', 
-        ' Warning: in a DFT calculation', 'WARNING: Old DensityContainer' ]
+        'Warning: in a DFT calculation', 'WARNING: Old DensityContainer', 'WARNING: your system is open-shell' ]
     for warn in warning_lines:
         false_positive = any(warn.startswith(ign) for ign in ignore_lines)
         if false_positive is False:
