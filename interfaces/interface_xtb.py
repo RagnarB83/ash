@@ -292,10 +292,7 @@ class xTBTheory:
                 qm_elems = elems
 
         #Since xTB will stupidly run even when number of unp. electrons and num-electrons don't match
-        #we wil this little test here
-        timeA=time.time()
         check_multiplicity(qm_elems,charge,mult)
-        print_time_rel(timeA, modulename='check_multiplicity', moduleindex=2, currprintlevel=self.printlevel, currthreshold=1)
         if self.runmode=='inputfile':
             if self.printlevel >=2:
                 print("Using inputfile-based xTB interface")
