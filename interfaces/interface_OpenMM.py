@@ -3215,6 +3215,7 @@ class OpenMM_MDclass:
         else:
             #OpenMM metadynamics
             if metadynamics == True:
+                print("Now calling OpenMM native metadynamics")
                 meta_object.step(self.openmmobject.simulation, simulation_steps)
             else:
                 print("Regular classical OpenMM MD option chosen.")
@@ -3594,7 +3595,9 @@ def OpenMM_metadynamics(fragment=None, theory=None, timestep=0.004, simulation_s
               datafilename=None, dummy_MM=False, plumed_object=None, add_center_force=False,
               center_force_atoms=None, centerforce_constant=1.0, barostat_frequency=25, specialbox=False,
               use_plumed=False,
-              CV1_atoms=None, CV2_atoms=None, CV1_type=None, CV2_type=None, biasfactor=6, height=1, frequency=1, savefrequency=None,
+              CV1_atoms=None, CV2_atoms=None, CV1_type=None, CV2_type=None, biasfactor=6, height=1, 
+              biaswidth_cv1=0.5, biaswidth_cv2=0.5,
+              frequency=1, savefrequency=10,
               biasdir=None,
               ):
     print_line_with_mainheader("OpenMM metadynamics")
@@ -3628,24 +3631,26 @@ def OpenMM_metadynamics(fragment=None, theory=None, timestep=0.004, simulation_s
 
     #Setting up collective variables for native case or plumed case
     if use_plumed is False:
-        # Define collective variables for phi and psi.
+        # Define collective variables for CV1 and CV2.
         if CV1_type == "dihedral":
+            periodic_var=True
             cv1 = md.openmmobject.openmm.CustomTorsionForce('theta')
             cv1.addTorsion(*CV1_atoms)
-            phi = md.openmmobject.openmm_app.BiasVariable(cv1, -np.pi, np.pi, 0.5, True)
+            CV1_bias = md.openmmobject.openmm_app.BiasVariable(cv1, -np.pi, np.pi, biaswidth_cv1, periodic=periodic_var, gridWidth=None)
         else:
             print("unsupported CV1_type")
             ashexit()
         if CV2_type == "dihedral":
+            periodic_var=True
             cv2 = md.openmmobject.openmm.CustomTorsionForce('theta')
             cv2.addTorsion(*CV2_atoms)
-            psi = md.openmmobject.openmm_app.BiasVariable(cv2, -np.pi, np.pi, 0.5, True)
+            CV2_bias = md.openmmobject.openmm_app.BiasVariable(cv2, -np.pi, np.pi, biaswidth_cv2, periodic=periodic_var, gridWidth=None)
         else:
             print("unsupported CV2_type")
             ashexit()
         # Create metadynamics object
         native_MTD=True
-        meta_object = md.openmmobject.openmm_app.Metadynamics(system, [phi, psi], temperature, biasfactor, height, frequency, saveFrequency=savefrequency, biasDir=biasdir)
+        meta_object = md.openmmobject.openmm_app.Metadynamics(system, [CV1_bias, CV2_bias], temperature, biasfactor, height, frequency, saveFrequency=savefrequency, biasDir=biasdir)
     else:
         print("plumed stuff")
         #TODO: pi ?
@@ -3657,13 +3662,17 @@ def OpenMM_metadynamics(fragment=None, theory=None, timestep=0.004, simulation_s
             grid_max2="pi"
 
         #Defining inputscript
-        #TODO: STRIDE and PACE ?
-        #SIGMA ??
+        #NOTE: SIGMA. Possible unit conversion needed here?
+        sigma_cv1=biaswidth_cv1
+        sigma_cv2=biaswidth_cv2
+        strideval=savefrequency #allow different thap ride
+        paceval=savefrequency # allow different than stride?
         plumedinput = f"""
 CV1: TORSION ATOMS={CV1_atoms[0]+1},{CV1_atoms[1]+1},{CV1_atoms[2]+1},{CV1_atoms[3]+1} 
 CV2: TORSION ATOMS={CV2_atoms[0]+1},{CV2_atoms[1]+1},{CV2_atoms[2]+1},{CV2_atoms[3]+1} 
-PRINT ARG=* STRIDE=10 FILE=colvar
-METAD  LABEL=bias ARG=CV1,CV2 SIGMA=0.2,0.2 GRID_MIN=-{grid_min1},-{grid_min2} GRID_MAX={grid_max1},{grid_max2} HEIGHT={height} PACE=10 TEMP={temperature} BIASFACTOR={biasfactor} FMT=%14.6f
+
+metad: METAD ARG=CV1,CV2 SIGMA={sigma_cv1},{sigma_cv2} GRID_MIN=-{grid_min1},-{grid_min2} GRID_MAX={grid_max1},{grid_max2} HEIGHT={height} PACE={paceval} TEMP={temperature} BIASFACTOR={biasfactor} FMT=%14.6f
+PRINT STRIDE={strideval} ARG=CV1,CV2,metad.bias FILE=COLVAR
         """
         writestringtofile(plumedinput,"plumedinput.in")
         system.addForce(openmmplumed.PlumedForce(plumedinput))
@@ -3691,19 +3700,28 @@ METAD  LABEL=bias ARG=CV1,CV2 SIGMA=0.2,0.2 GRID_MIN=-{grid_min1},-{grid_min2} G
 
     #Getting data
     if use_plumed is False:
+        print("Now analyzing data")
         CV_data = meta_object.getCollectiveVariables(md.openmmobject.simulation)
         print("CV_data", CV_data)
         print("len of CV_data", len(CV_data))
+        print("CV1_bias gridWidth:", CV1_bias.gridWidth)
+        print("CV2_bias gridWidth:", CV2_bias.gridWidth)
+        print("CV1_bias biasWidth:", CV1_bias.biasWidth)
+        print("CV2_bias biasWidth:", CV2_bias.biasWidth)
         free_energy = meta_object.getFreeEnergy()
         print("free_energy:", free_energy)
         print("len free energy", len(free_energy))
+
+        np.savetxt("MTD_free_energy.txt", free_energy)
+
+        import matplotlib.pyplot as plot
+        plot.imshow(free_energy)
+        plot.show()
     else:
-        print("plumed")
-        print(openmmplumed.mm.pluginLoadedLibNames[0])
+        print("Now calling MTD_analyze to analyze data")
         path_to_plumed=os.path.dirname(os.path.dirname(os.path.dirname(openmmplumed.mm.pluginLoadedLibNames[0])))
-        print("path_to_plumed:", path_to_plumed)
+        print("Finding path to plumed:", path_to_plumed)
         MTD_analyze(plumed_ash_object=None, path_to_plumed=path_to_plumed, Plot_To_Screen=False, CV1_type=CV1_type, CV2_type=CV2_type, temperature=temperature,
                 CV1_indices=CV1_atoms, CV2_indices=CV2_atoms, plumed_energy_unit='kj/mol')
-
 
     return

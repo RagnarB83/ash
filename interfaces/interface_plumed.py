@@ -494,36 +494,25 @@ def MTD_analyze(plumed_ash_object=None, path_to_plumed=None, Plot_To_Screen=Fals
     for colvarfile in COLVARFILELIST:
         with open(colvarfile) as colvarf:
             for line in colvarf:
-                print("line:", line)
                 if 'FIELDS' in line:
                     fields=line.split()[2:]
                     number_of_fields=len(fields)
                 #    biascolnum = [i for i, s in enumerate(line.split()) if 'bias' in s][0]
                 if '#' not in line:
-                    print("line:", line)
-                    print("CVnum:", CVnum)
-                    #try:
-                        #1 CVs
-                        #if biascolnum==4:
                     if CVnum == 1:
                         time.append(float(line.split()[0]))
                         colvar_value.append(float(line.split()[1]))
-                        if number_of_fields >= 2:
+                        if number_of_fields >= 3:
                             biaspot_value.append(float(line.split()[2]))
-                    #2 CVs
-                    #elif biascolnum==5:
                     if CVnum == 2:
                         time.append(float(line.split()[0]))
-                        print("time:", time)
                         colvar_value.append(float(line.split()[1]))
                         colvar2_value.append(float(line.split()[2]))
-                        if number_of_fields >= 3:
+                        if number_of_fields >= 4:
                             biaspot_value.append(float(line.split()[3]))
                     else:
                         print("unknown format of COLVAR file. More than 2 CVs ??")
                         ashexit()
-                    #except:
-                    #    pass
 
         #convert to deg if torsion/angle
         if CV1_type.upper()=='TORSION' or CV1_type.upper()=='ANGLE' or CV1_type.upper()=='DIHEDRAL':
@@ -712,7 +701,6 @@ def MTD_analyze(plumed_ash_object=None, path_to_plumed=None, Plot_To_Screen=Fals
         plt.legend(fontsize=3, bbox_to_anchor=(1.2, 0.0), loc='lower right')
 
     #Saving figure
-    print("time_list:", time_list)
     maxtime=int(max(time_list[0]))
     plt.savefig("MTD_Plot-"+str(maxtime)+"ps"+".png",
                 dpi=300,
