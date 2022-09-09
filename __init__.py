@@ -84,7 +84,8 @@ from ash.interfaces.interface_xtb import xTBTheory
 
 # MM: external and internal
 from ash.interfaces.interface_OpenMM import OpenMMTheory, OpenMM_MD, OpenMM_MDclass, OpenMM_Opt, OpenMM_Modeller, \
-    MDtraj_imagetraj, solvate_small_molecule, MDAnalysis_transform, OpenMM_box_relaxation, write_nonbonded_FF_for_ligand
+    MDtraj_imagetraj, solvate_small_molecule, MDAnalysis_transform, OpenMM_box_relaxation, write_nonbonded_FF_for_ligand, \
+        OpenMM_metadynamics
 from ash.modules.module_MM import NonBondedTheory, UFFdict, UFF_modH_dict, LJCoulpy, coulombcharge, LennardJones, \
     LJCoulombv2, LJCoulomb, MMforcefield_read
 

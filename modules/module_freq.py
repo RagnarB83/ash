@@ -893,15 +893,15 @@ CARTESIAN COORDINATES (ANGSTROEM)
     complexflag=False
     for mode in range(3*numatoms):
         smode = str(mode) + ':'
-        if mode < TRmodenum:
-            freq=0.00
+        #if mode < TRmodenum:
+        #    freq=0.00
+        #else:
+        freq=clean_number(vfreq[mode])
+        if np.iscomplex(freq):
+            imagfreq=-1*abs(freq)
+            complexflag=True
         else:
-            freq=clean_number(vfreq[mode])
-            if np.iscomplex(freq):
-                imagfreq=-1*abs(freq)
-                complexflag=True
-            else:
-                complexflag=False
+            complexflag=False
         if complexflag==True:
             line= "{0:>5s}{1:13.2f} cm**-1 ***imaginary mode***".format(smode, imagfreq)
         else:

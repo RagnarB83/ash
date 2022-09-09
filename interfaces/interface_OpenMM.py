@@ -12,7 +12,7 @@ import ash.constants
 
 ashpath = os.path.dirname(ash.__file__)
 from ash.functions.functions_general import ashexit, BC, print_time_rel, listdiff, printdebug, print_line_with_mainheader, \
-    print_line_with_subheader1, print_line_with_subheader2, isint, writelisttofile
+    print_line_with_subheader1, print_line_with_subheader2, isint, writelisttofile, writestringtofile
 from ash.functions.functions_elstructure import DDEC_calc, DDEC_to_LJparameters
 from ash.modules.module_coords import Fragment, write_pdbfile, distance_between_atoms, list_of_masses, write_xyzfile, \
     change_origin_to_centroid, get_centroid, check_charge_mult
@@ -20,7 +20,7 @@ from ash.modules.module_MM import UFF_modH_dict, MMforcefield_read
 from ash.interfaces.interface_xtb import xTBTheory, grabatomcharges_xTB
 from ash.interfaces.interface_ORCA import ORCATheory, grabatomcharges_ORCA, chargemodel_select
 from ash.modules.module_singlepoint import Singlepoint
-
+from ash.interfaces.interface_plumed import MTD_analyze
 
 class OpenMMTheory:
     def __init__(self, printlevel=2, platform='CPU', numcores=None, topoforce=False, forcefield=None, topology=None,
@@ -199,7 +199,8 @@ class OpenMMTheory:
             if use_parmed is True:
                 print("Using Parmed.")
                 self.psf = parmed.charmm.CharmmPsfFile(psffile)
-                self.params = parmed.charmm.CharmmParameterSet(charmmtopfile, charmmprmfile)
+                #Permissive True means less restrictive about atomtypes
+                self.params = parmed.charmm.CharmmParameterSet(charmmtopfile, charmmprmfile, permissive=True)
                 # Grab resnames from psf-object. Different for parmed object
                 # Note: OpenMM uses 0-indexing
                 self.resnames = [self.psf.atoms[i].residue.name for i in range(0, len(self.psf.atoms))]
@@ -216,7 +217,7 @@ class OpenMMTheory:
             else:
                 # Load CHARMM PSF files via native routine.
                 self.psf = openmm.app.CharmmPsfFile(psffile)
-                self.params = openmm.app.CharmmParameterSet(charmmtopfile, charmmprmfile)
+                self.params = openmm.app.CharmmParameterSet(charmmtopfile, charmmprmfile, permissive=True)
                 # Grab resnames from psf-object
                 self.resnames = [self.psf.atom_list[i].residue.resname for i in range(0, len(self.psf.atom_list))]
                 self.resids = [self.psf.atom_list[i].residue.idx for i in range(0, len(self.psf.atom_list))]
@@ -3592,9 +3593,24 @@ def OpenMM_metadynamics(fragment=None, theory=None, timestep=0.004, simulation_s
               enforcePeriodicBox=True, dummyatomrestraint=False, center_on_atoms=None, solute_indices=None,
               datafilename=None, dummy_MM=False, plumed_object=None, add_center_force=False,
               center_force_atoms=None, centerforce_constant=1.0, barostat_frequency=25, specialbox=False,
-              CV1_atoms=None, CV2_atoms=None, CV1_type=None, CV2_type=None, 
+              use_plumed=False,
+              CV1_atoms=None, CV2_atoms=None, CV1_type=None, CV2_type=None, biasfactor=6, height=1, frequency=1, savefrequency=None,
+              biasdir=None,
               ):
     print_line_with_mainheader("OpenMM metadynamics")
+    if use_plumed is True:
+        print("Using metadynamics via OpenMM Plumed plugin (use_plumed=True)")
+
+        #TODO: Trying to load plumed, test for plugin and also plumed package
+        try:
+            #from openmmplumed import PlumedForce
+            import openmmplumed
+        except ModuleNotFoundError:
+            print("openmmplumed module plugin not found. See https://github.com/openmm/openmm-plumed \nYou can install via conda: \nconda install -c conda-forge openmm-plumed")
+            ashexit()
+    else:
+        print("Using OpenMM built-in metadynamics option (use_plumed=False)")
+
 
     #Creating MDclass
     md = OpenMM_MDclass(fragment=fragment, theory=theory, charge=charge, mult=mult, timestep=timestep,
@@ -3610,41 +3626,84 @@ def OpenMM_metadynamics(fragment=None, theory=None, timestep=0.004, simulation_s
     #Access to system object via md (if QM theory then it was created)
     system = md.openmmobject.system
 
-    # Define collective variables for phi and psi.
-    if CV1_type == "dihedral":
-        cv1 = md.openmmobject.openmm.CustomTorsionForce('theta')
-        cv1.addTorsion(*CV1_atoms)
-        phi = md.openmmobject.openmm_app.BiasVariable(cv1, -np.pi, np.pi, 0.5, True)
+    #Setting up collective variables for native case or plumed case
+    if use_plumed is False:
+        # Define collective variables for phi and psi.
+        if CV1_type == "dihedral":
+            cv1 = md.openmmobject.openmm.CustomTorsionForce('theta')
+            cv1.addTorsion(*CV1_atoms)
+            phi = md.openmmobject.openmm_app.BiasVariable(cv1, -np.pi, np.pi, 0.5, True)
+        else:
+            print("unsupported CV1_type")
+            ashexit()
+        if CV2_type == "dihedral":
+            cv2 = md.openmmobject.openmm.CustomTorsionForce('theta')
+            cv2.addTorsion(*CV2_atoms)
+            psi = md.openmmobject.openmm_app.BiasVariable(cv2, -np.pi, np.pi, 0.5, True)
+        else:
+            print("unsupported CV2_type")
+            ashexit()
+        # Create metadynamics object
+        native_MTD=True
+        meta_object = md.openmmobject.openmm_app.Metadynamics(system, [phi, psi], temperature, biasfactor, height, frequency, saveFrequency=savefrequency, biasDir=biasdir)
     else:
-        print("unsupported CV1_type")
-        ashexit()
-    if CV2_type == "dihedral":
-        cv2 = md.openmmobject.openmm.CustomTorsionForce('theta')
-        cv2.addTorsion(*CV2_atoms)
-        psi = md.openmmobject.openmm_app.BiasVariable(cv2, -np.pi, np.pi, 0.5, True)
-    else:
-        print("unsupported CV2_type")
-        ashexit()
+        print("plumed stuff")
+        #TODO: pi ?
+        if CV1_type == "dihedral":
+            grid_min1="pi"
+            grid_max1="pi"
+        if CV2_type == "dihedral":
+            grid_min2="pi"
+            grid_max2="pi"
 
-    # Create metadynamics object
-    meta = md.openmmobject.openmm_app.Metadynamics(system, [phi, psi], 300, 5, 1, 1)
-    
+        #Defining inputscript
+        #TODO: STRIDE and PACE ?
+        #SIGMA ??
+        plumedinput = f"""
+CV1: TORSION ATOMS={CV1_atoms[0]+1},{CV1_atoms[1]+1},{CV1_atoms[2]+1},{CV1_atoms[3]+1} 
+CV2: TORSION ATOMS={CV2_atoms[0]+1},{CV2_atoms[1]+1},{CV2_atoms[2]+1},{CV2_atoms[3]+1} 
+PRINT ARG=* STRIDE=10 FILE=colvar
+METAD  LABEL=bias ARG=CV1,CV2 SIGMA=0.2,0.2 GRID_MIN=-{grid_min1},-{grid_min2} GRID_MAX={grid_max1},{grid_max2} HEIGHT={height} PACE=10 TEMP={temperature} BIASFACTOR={biasfactor} FMT=%14.6f
+        """
+        writestringtofile(plumedinput,"plumedinput.in")
+        system.addForce(openmmplumed.PlumedForce(plumedinput))
+
+        #Setting native_MTD Boolean to False and metaobject to None
+        native_MTD=False
+        meta_object=None
+
+
+
+
     #Updating simulation context as the CustomCVForce needs to be added
     md.openmmobject.update_simulation()
 
-    #Call md.run with metadynamics option
+    #Calling md.run with either native option active or false
+    print("Now starting metadynamics simulation")
     if simulation_steps is not None:
-        md.run(simulation_steps=simulation_steps, metadynamics=True, meta_object=meta)
+        md.run(simulation_steps=simulation_steps, metadynamics=native_MTD, meta_object=meta_object)
     elif simulation_time is not None:
-        md.run(simulation_time=simulation_time, metadynamics=True, meta_object=meta)
+        md.run(simulation_time=simulation_time, metadynamics=native_MTD, meta_object=meta_object)
     else:
         print("Either simulation_steps or simulation_time need to be defined (not both).")
         ashexit()
-    
-    CV_data = meta.getCollectiveVariables(md.openmmobject.simulation)
-    print("CV_data", CV_data)
-    print("len of CV_data", len(CV_data))
-    free_energy = meta.getFreeEnergy()
-    print("free_energy:", free_energy)
-    print("len free energy", len(free_energy))
-    
+    print("Metadynamics simulation done")
+
+    #Getting data
+    if use_plumed is False:
+        CV_data = meta_object.getCollectiveVariables(md.openmmobject.simulation)
+        print("CV_data", CV_data)
+        print("len of CV_data", len(CV_data))
+        free_energy = meta_object.getFreeEnergy()
+        print("free_energy:", free_energy)
+        print("len free energy", len(free_energy))
+    else:
+        print("plumed")
+        print(openmmplumed.mm.pluginLoadedLibNames[0])
+        path_to_plumed=os.path.dirname(os.path.dirname(os.path.dirname(openmmplumed.mm.pluginLoadedLibNames[0])))
+        print("path_to_plumed:", path_to_plumed)
+        MTD_analyze(plumed_ash_object=None, path_to_plumed=path_to_plumed, Plot_To_Screen=False, CV1_type=CV1_type, CV2_type=CV2_type, temperature=temperature,
+                CV1_indices=CV1_atoms, CV2_indices=CV2_atoms, plumed_energy_unit='kj/mol')
+
+
+    return
