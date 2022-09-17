@@ -20,7 +20,7 @@ from ash.modules.module_freq import write_hessian,calc_hessian_xtb, approximate_
 def geomeTRICOptimizer(theory=None, fragment=None, charge=None, mult=None, coordsystem='tric', frozenatoms=None, constraints=None, 
                        constrainvalue=False, constraintsinputfile=None, maxiter=100, ActiveRegion=False, actatoms=None, 
                        convergence_setting=None, conv_criteria=None, print_atoms_list=None, TSOpt=False, hessian=None, partial_hessian_atoms=None,
-                       modelhessian=None):
+                       modelhessian=None, subfrctor=1):
     """
     Wrapper function around GeomeTRICOptimizerClass
     """
@@ -30,7 +30,7 @@ def geomeTRICOptimizer(theory=None, fragment=None, charge=None, mult=None, coord
                         constraints=constraints, constrainvalue=constrainvalue, constraintsinputfile=constraintsinputfile, maxiter=maxiter,
                          ActiveRegion=ActiveRegion, actatoms=actatoms, TSOpt=TSOpt, hessian=hessian, partial_hessian_atoms=partial_hessian_atoms,
                         convergence_setting=convergence_setting, conv_criteria=conv_criteria, modelhessian=modelhessian,
-                        print_atoms_list=print_atoms_list)
+                        print_atoms_list=print_atoms_list, subfrctor=subfrctor)
     finalenergy = optimizer.run()
     print_time_rel(timeA, modulename='geomeTRIC', moduleindex=1)
     return finalenergy
@@ -40,7 +40,7 @@ def geomeTRICOptimizer(theory=None, fragment=None, charge=None, mult=None, coord
 class GeomeTRICOptimizerClass:
         def __init__(self,theory=None, fragment=None, charge=None, mult=None, coordsystem='tric', frozenatoms=None, constraintsinputfile=None, constraints=None, 
                        constrainvalue=False, maxiter=50, ActiveRegion=False, actatoms=None, convergence_setting=None, conv_criteria=None, TSOpt=False, hessian=None,
-                       print_atoms_list=None, partial_hessian_atoms=None, modelhessian=None):
+                       print_atoms_list=None, partial_hessian_atoms=None, modelhessian=None, subfrctor=1):
             """
             Wrapper class around geomeTRIC code. Take theory and fragment info from ASH
             Supports frozen atoms and bond/angle/dihedral constraints in native code. Use frozenatoms and bondconstraints etc. for this.
@@ -127,6 +127,7 @@ class GeomeTRICOptimizerClass:
             self.fragment=fragment
             self.ActiveRegion=ActiveRegion
             self.TSOpt=TSOpt
+            self.subfrctor=subfrctor
             ######################
 
             ######################
@@ -345,11 +346,12 @@ class GeomeTRICOptimizerClass:
 
             #Defining ASHengineclass engine object containing geometry and theory. ActiveRegion boolean passed.
             #Also now passing list of atoms to print in each step.
-            self.ashengine = ASHengineclass(mol_geometric_frag,theory, ActiveRegion=self.ActiveRegion, actatoms=self.actatoms, print_atoms_list=self.print_atoms_list, 
+            self.ashengine = ASHengineclass(mol_geometric_frag,theory, ActiveRegion=self.ActiveRegion, actatoms=self.actatoms, 
+                print_atoms_list=self.print_atoms_list,
                 charge=self.charge, mult=self.mult, conv_criteria=self.conv_criteria, fragment=self.fragment)
             #Defining args object, containing engine object
-            self.final_geometric_args=geomeTRICArgsObject(self.ashengine,self.constraintsfile,coordsys=self.coordsystem, maxiter=self.maxiter, 
-                conv_criteria=self.conv_criteria, transition=self.TSOpt, hessian=self.hessian)
+            self.final_geometric_args=geomeTRICArgsObject(self.ashengine,self.constraintsfile,coordsys=self.coordsystem, 
+                maxiter=self.maxiter, conv_criteria=self.conv_criteria, transition=self.TSOpt, hessian=self.hessian, subfrctor=self.subfrctor)
 
             print("")
         #Starting geomeTRIC run
@@ -407,11 +409,12 @@ class GeomeTRICOptimizerClass:
             return self.finalenergy
 
 class geomeTRICArgsObject:
-    def __init__(self,eng,constraintsfile, coordsys, maxiter, conv_criteria, transition,hessian):
+    def __init__(self,eng,constraintsfile, coordsys, maxiter, conv_criteria, transition,hessian,subfrctor):
         self.coordsys=coordsys
         self.maxiter=maxiter
         self.transition=transition
         self.hessian=hessian
+        self.subfrctor=subfrctor
         #self.convergence_criteria=conv_criteria
         #self.converge=conv_criteria
         #Setting these to be part of kwargs that geometric reads
