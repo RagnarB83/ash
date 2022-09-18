@@ -208,12 +208,12 @@ class plumed_ASH():
 def call_plumed_sum_hills(path_to_plumed,hillsfile):
         print("Running plumed sum_hills on hills file")
         print("path_to_plumed:", path_to_plumed)
-        print("HILLS file is:", hillsfile)
-        print("Will create fes.dat")
+        print("HILLS file:", hillsfile)
+        print("Plumed will create fes.dat")
         #Either run plumed binary, requiring to st
         os.environ['PATH'] = path_to_plumed+'/bin'+os.pathsep+os.environ['PATH']
         os.environ['LD_LIBRARY_PATH'] = path_to_plumed+'/lib'+os.pathsep+os.environ['LD_LIBRARY_PATH']
-        os.system('plumed sum_hills --hills {}'.format(hillsfile))
+        os.system(f'plumed sum_hills --hills {hillsfile}')
         
 #Metadynamics visualization tool
 
@@ -304,7 +304,7 @@ def MTD_analyze(plumed_ash_object=None, path_to_plumed=None, Plot_To_Screen=Fals
     if CV2_type == None or CV2_type == "None":
         print("1D MTD")
         CVnum=1
-        if CV1_type.upper() =='TORSION' or CV1_type.upper()=='ANGLE':
+        if CV1_type.upper() =='TORSION' or CV1_type.upper()=='ANGLE' or CV1_type.upper()=='DIHEDRAL':
             finalcvunit_1='°'
         elif CV1_type.upper() == 'RMSD' or CV1_type.upper()=='DISTANCE':
             finalcvunit_1='Å'
@@ -392,6 +392,7 @@ def MTD_analyze(plumed_ash_object=None, path_to_plumed=None, Plot_To_Screen=Fals
         #plumed_ash_object.run_sum_hills("HILLS.ALL")
         #os.system('plumed sum_hills --hills HILLS.ALL')
     else:
+        print("Calling call_plumed_sum_hills")
         call_plumed_sum_hills(path_to_plumed,"HILLS")
         #plumed_ash_object.run_sum_hills("HILLS")
         #os.system('plumed sum_hills --hills HILLS')
@@ -468,11 +469,13 @@ def MTD_analyze(plumed_ash_object=None, path_to_plumed=None, Plot_To_Screen=Fals
                         biasfcolnum=int(line.split().index('biasf'))
                     if '#' not in line:
                         if biasfcolnum==6:
-                            time_hills.append(float(line.split()[0]))
-                            gaussheight.append(float(line.split()[3]))
+                            if len(line) > 25:
+                                time_hills.append(float(line.split()[0]))
+                                gaussheight.append(float(line.split()[3]))
                         if biasfcolnum==8:
-                            time_hills.append(float(line.split()[0]))
-                            gaussheight.append(float(line.split()[5]))
+                            if len(line) > 25:
+                                time_hills.append(float(line.split()[0]))
+                                gaussheight.append(float(line.split()[5]))
             gaussheight_kcal=np.array(gaussheight)/energy_scaling
             time_hills_list.append(time_hills)
             gaussheightkcal_list.append(gaussheight_kcal)
@@ -491,6 +494,7 @@ def MTD_analyze(plumed_ash_object=None, path_to_plumed=None, Plot_To_Screen=Fals
     finalcolvar_value_list=[]
     finalcolvar2_value_list=[]
 
+    print("CVnum:", CVnum)
     for colvarfile in COLVARFILELIST:
         with open(colvarfile) as colvarf:
             for line in colvarf:
@@ -500,16 +504,18 @@ def MTD_analyze(plumed_ash_object=None, path_to_plumed=None, Plot_To_Screen=Fals
                 #    biascolnum = [i for i, s in enumerate(line.split()) if 'bias' in s][0]
                 if '#' not in line:
                     if CVnum == 1:
-                        time.append(float(line.split()[0]))
-                        colvar_value.append(float(line.split()[1]))
                         if number_of_fields >= 3:
-                            biaspot_value.append(float(line.split()[2]))
-                    if CVnum == 2:
-                        time.append(float(line.split()[0]))
-                        colvar_value.append(float(line.split()[1]))
-                        colvar2_value.append(float(line.split()[2]))
+                            if len(line) > 25:
+                                time.append(float(line.split()[0]))
+                                colvar_value.append(float(line.split()[1]))
+                                biaspot_value.append(float(line.split()[2]))
+                    elif CVnum == 2:
                         if number_of_fields >= 4:
-                            biaspot_value.append(float(line.split()[3]))
+                            if len(line) > 10:
+                                time.append(float(line.split()[0]))
+                                colvar_value.append(float(line.split()[1]))
+                                colvar2_value.append(float(line.split()[2]))
+                                biaspot_value.append(float(line.split()[3]))
                     else:
                         print("unknown format of COLVAR file. More than 2 CVs ??")
                         ashexit()
@@ -616,6 +622,8 @@ def MTD_analyze(plumed_ash_object=None, path_to_plumed=None, Plot_To_Screen=Fals
         #elif CV=='RMSD':
         #    plt.xlim([min(),180])
         for num,(cv,biaspot) in enumerate(zip(finalcolvar_value_list,biaspot_value_kcal_list)):
+            print("len cv:", len(cv))
+            print("len biaspot:", len(biaspot))
             plt.scatter(cv, biaspot, marker='o', linestyle='-', s=3, linewidth=1, label='Walker'+str(num))
         #lg2 = plt.legend(shadow=True, fontsize='xx-small', bbox_to_anchor=(0.0, 0.0), loc='lower left')
 
