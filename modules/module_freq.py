@@ -29,7 +29,6 @@ def AnFreq(fragment=None, theory=None, charge=None, mult=None, numcores=1, temp=
         fragment.hessian=hessian
         
         #TODO: diagonalize it ourselves. Need to finish projection
-        
         # For now, we grab frequencies from ORCA Hessian file
         frequencies = ash.interfaces.interface_ORCA.ORCAfrequenciesgrab(theory.filename+".hess")
         
@@ -961,10 +960,6 @@ Thus, these vectors are normalized but *not* orthogonal"""
         for i in range(0, hessdim):
             firstcolumnindex=6*chunk
             j=firstcolumnindex
-            #print("firstcolumnindex j is:", firstcolumnindex)
-            #print("i is", i)
-            #print("nmodes[i]", nmodes[i])
-            #print("hessdim:", hessdim)
             #If chunk = 0 then we are dealing with TR modes in first 6 columns
             #NOTE: RB note: but TS mode should also be here. Let's not set anything to zero
             #Disabling zero-val setting below
@@ -990,12 +985,7 @@ Thus, these vectors are normalized but *not* orthogonal"""
                 ashexit()
 
             if chunk == chunks - 1:
-                #print("b last chunk is", chunk)
-                # print("index is", index)
-                # print("index+orcahesscoldim-left is", index+orcahesscoldim-left)
                 for k in range(index, index + left):
-                    #print("i is", i, "and k is", k)
-                    #print("left:", left)
                     if left == 6:
                         line = "{:>6d} {:>14.6f} {:>10.6f} {:>10.6f} {:>10.6f} {:>10.6f} {:>10.6f}".format(i, val1, val2, val3, val4, val5, val6)
                     elif left == 5:
@@ -1010,10 +1000,7 @@ Thus, these vectors are normalized but *not* orthogonal"""
                         line = "{:>6d} {:>14.6f}".format(i, val1)
             else:
                 for k in range(index, index + orcahesscoldim):
-                    #print("i is", i, "and k is", k)
                     line = "{:>6d} {:>14.6f} {:>10.6f} {:>10.6f} {:>10.6f} {:>10.6f} {:>10.6f}".format(i, val1, val2, val3, val4, val5, val6)
-            #print(line)
-            #outfile.write("    " + str(i) + "   " + str(line) + "\n")
             outfile.write(" " + str(line) + "\n")
             line = "";
             chunkheader = ""
