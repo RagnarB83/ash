@@ -640,7 +640,6 @@ def thermochemcalc(vfreq,atoms,fragment, multiplicity, temp=298.15,pressure=1.0)
         print("System size N > 2, assumed to be nonlinear")
         moltype="nonlinear"
         TRmodenum=6
-    
     coords=fragment.coords
     elems=fragment.elems
 
@@ -961,26 +960,28 @@ Thus, these vectors are normalized but *not* orthogonal"""
             #print("nmodes[i]", nmodes[i])
             #print("hessdim:", hessdim)
             #If chunk = 0 then we are dealing with TR modes in first 6 columns
-            if chunk == 0:
-                val1 = 0.0; val2 = 0.0;val3 = 0.0; val4 = 0.0; val5 = 0.0;val6 = 0.0
-            else :
-                #TODO: Here defning values to print based on values in nmodes matrix. TO be confiremd that this is correct. TODO.
-                if hessdim - j == 1:
-                    val1 = nmodes[j][i]
-                elif hessdim - j == 2:
-                    val1 = nmodes[j][j]; val2 = nmodes[j+1][i]
-                elif hessdim - j == 3:
-                    val1 = nmodes[j][i]; val2 = nmodes[j+1][i];val3 = nmodes[j+2][i]
-                elif hessdim - j == 4:
-                    val1 = nmodes[j][i]; val2 = nmodes[j+1][i];val3 = nmodes[j+2][i];val4 = nmodes[j+3][i]
-                elif hessdim - j == 5:
-                    val1 = nmodes[j][i]; val2 = nmodes[j+1][i];val3 = nmodes[j+2][i];val4 = nmodes[j+3][i];val5 = nmodes[j+4][i]
-                elif hessdim - j >= 6:
-                    val1 = nmodes[j][i]; val2 = nmodes[j+1][i];val3 = nmodes[j+2][i];val4 = nmodes[j+3][i];val5 = nmodes[j+4][i];val6 = nmodes[j+5][i]
-                else:
-                    print("problem")
-                    print("hessdim - j : ", hessdim - j)
-                    ashexit()
+            #NOTE: RB note: but TS mode should also be here. Let's not set anything to zero
+            #Disabling zero-val setting below
+            #if chunk == 0:
+            #    val1 = 0.0; val2 = 0.0;val3 = 0.0; val4 = 0.0; val5 = 0.0;val6 = 0.0
+            #else :
+            #TODO: Here defning values to print based on values in nmodes matrix. TO be confiremd that this is correct. TODO.
+            if hessdim - j == 1:
+                val1 = nmodes[j][i]
+            elif hessdim - j == 2:
+                val1 = nmodes[j][j]; val2 = nmodes[j+1][i]
+            elif hessdim - j == 3:
+                val1 = nmodes[j][i]; val2 = nmodes[j+1][i];val3 = nmodes[j+2][i]
+            elif hessdim - j == 4:
+                val1 = nmodes[j][i]; val2 = nmodes[j+1][i];val3 = nmodes[j+2][i];val4 = nmodes[j+3][i]
+            elif hessdim - j == 5:
+                val1 = nmodes[j][i]; val2 = nmodes[j+1][i];val3 = nmodes[j+2][i];val4 = nmodes[j+3][i];val5 = nmodes[j+4][i]
+            elif hessdim - j >= 6:
+                val1 = nmodes[j][i]; val2 = nmodes[j+1][i];val3 = nmodes[j+2][i];val4 = nmodes[j+3][i];val5 = nmodes[j+4][i];val6 = nmodes[j+5][i]
+            else:
+                print("problem")
+                print("hessdim - j : ", hessdim - j)
+                ashexit()
 
             if chunk == chunks - 1:
                 #print("b last chunk is", chunk)
