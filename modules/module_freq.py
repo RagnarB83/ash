@@ -632,14 +632,20 @@ def thermochemcalc(vfreq,atoms,fragment, multiplicity, temp=298.15,pressure=1.0)
         print("System is an atom.")
         moltype="atom"
     elif len(atoms) == 2:
-        print("System is 2-atomic and thus linear")
+        print("System contains 2 atoms and thus linear.")
         moltype="linear"
         TRmodenum=5
     else:
-        #TODO: Need to detect linearity properly
-        print("System size N > 2, assumed to be nonlinear")
-        moltype="nonlinear"
-        TRmodenum=6
+        print("System size > 2, checking if linear")
+        linearcheck = detect_linear(fragment)
+        if linearcheck is True:
+            print("Structure is linear. 5 translational+rotational modes present")
+            moltype="linear"
+            TRmodenum=5
+        else:
+            print("Structure is non-linear. 6 translational+rotational modes present")
+            moltype="nonlinear"
+            TRmodenum=6
     coords=fragment.coords
     elems=fragment.elems
 
@@ -847,9 +853,9 @@ def printdummyORCAfile(elems,coords,vfreq,evectors,nmodes,hessfile):
 ---------------------------------
 CARTESIAN COORDINATES (ANGSTROEM)
 ---------------------------------"""
-    #Very simple check for 2-atom linear molecule
-    #Todo: Need to add support for n-atom linear molecule (HCN e.g.)
-    if len(elems) == 2:
+
+    #Checking for linearity here. 
+    if detect_linear(coords=coords) == True:
         TRmodenum=5
     else:
         TRmodenum=6
@@ -1755,3 +1761,28 @@ def calc_hessian_xtb(fragment=None, runmode='serial', actatoms=None, numcores=1,
         shutil.copyfile("Numfreq_dir/Hessian",hessianfile)
     #Returning name of Hessian-file
     return hessianfile
+
+
+#Detect if geometry is linear, either via fragment or coords array
+#Threshold set so that H2O with 179.9° angle is assigned as linear (smaller angles fail)
+def detect_linear(fragment=None, coords=None, threshold=1e-4):
+    if fragment == None:
+        numatoms=len(coords)
+    else:
+        coords=fragment.coords
+        numatoms=fragment.numatoms
+    #Returning True if atom
+    if numatoms == 1:
+        return True
+    #Returning True if diatomic
+    if numatoms == 2:
+        return True
+    for i in range(1,numatoms-1,1):
+        AB = np.cross(coords[0],coords[i])
+        AC = np.cross(coords[0],coords[i+1])
+        cross_AB_AC = np.cross(AB,AC)
+        if any(abs(i) >= threshold for i in cross_AB_AC) is True:
+            #print("Found high value. Set of 3 points must be non-linear")
+            return False
+    #Returning True if no-nonlinearity detected
+    return True
