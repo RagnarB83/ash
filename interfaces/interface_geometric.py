@@ -88,6 +88,19 @@ class GeomeTRICOptimizerClass:
                 #Calling xtb to get Hessian, written to disk. Returns name of Hessianfile
                 hessianfile = calc_hessian_xtb(fragment=fragment, actatoms=actatoms, numcores=theory.numcores, use_xtb_feature=True, charge=self.charge, mult=self.mult)
                 self.hessian="file:"+hessianfile
+            #NumFreq 1 and 2-point Hessians
+            elif hessian == "1point":
+                print("Requested Hessian from Numfreq 1-point approximation (running in serial)")
+                freqdict = ash.NumFreq(theory=theory, fragment=fragment, printlevel=0, npoint=1, runmode='serial', numcores=theory.numcores)
+                hessianfile="Hessian_from_theory"
+                shutil.copyfile("Numfreq_dir/Hessian",hessianfile)
+                self.hessian='file:'+str(hessianfile)
+            elif hessian == "2point":
+                print("Requested Hessian from Numfreq 2-point approximation (running in serial)")
+                freqdict = ash.NumFreq(theory=theory, fragment=fragment, printlevel=0, npoint=2, runmode='serial', numcores=theory.numcores)
+                hessianfile="Hessian_from_theory"
+                shutil.copyfile("Numfreq_dir/Hessian",hessianfile)
+                self.hessian='file:'+str(hessianfile)
             elif hessian == "partial":
                 print("Partial Hessian option requested")
                 
