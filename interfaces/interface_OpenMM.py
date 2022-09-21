@@ -22,6 +22,7 @@ from ash.interfaces.interface_ORCA import ORCATheory, grabatomcharges_ORCA, char
 from ash.modules.module_singlepoint import Singlepoint
 from ash.interfaces.interface_plumed import MTD_analyze
 
+
 class OpenMMTheory:
     def __init__(self, printlevel=2, platform='CPU', numcores=None, topoforce=False, forcefield=None, topology=None,
                  CHARMMfiles=False, psffile=None, charmmtopfile=None, charmmprmfile=None,
@@ -3769,3 +3770,31 @@ CV1_indices={CV1_atoms}, CV2_indices={CV2_atoms}, plumed_energy_unit='kj/mol', P
         #print("Disabled MTD_analyze call as HILLS/COLVAR  files may not have been flushed")
 
     return
+
+#
+def Gentle_warm_up_MD(theory=None, fragment=None, time_steps=[0.0005,0.001,0.004], steps=[10,50,10000], temperatures=[1,10,300]):
+
+    print_line_with_mainheader("Gentle_warm_up_MD")
+    if theory is None or fragment is None:
+        print("Gentle_warm_up_MD requires theory (OpenMM object) and fragment")
+        ashexit()
+
+    if len(time_steps) != len(steps) or len(time_steps) != len(temperatures):
+        print("Error: Lists time_steps, steps and temperatures all need to be the same length. Exiting")
+        ashexit()
+
+    print(f"{len(steps)} MD-runs have been defined")
+    for num, (ts, step, temp) in enumerate(zip(time_steps, steps, temperatures)):
+        print(f"MD-step {num} Number of simulation steps: {step} with timestep:{ts} and temperature:{temp}")
+
+    #Gentle heating up protocol
+    for num, (ts, step, temp) in enumerate(zip(time_steps, steps, temperatures)):
+        print(f"Now running MD-run {num}. Number of steps: {step} with timestep:{ts} and temperature:{temp}")
+        print("Will write trajectory to file:", 'NVTtrajectorystep_'+str(num)+'.dcd')
+        OpenMM_MD(fragment=fragment, theory=theory, timestep=ts, simulation_steps=step, traj_frequency=1, temperature=temp,
+            integrator='LangevinMiddleIntegrator', coupling_frequency=1, trajfilename='NVTtrajectorystep_'+str(num), trajectory_file_option='DCD')
+    
+    print("Gentle_warm_up_MD finished successfully!")
+
+    return
+
