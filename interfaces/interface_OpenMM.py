@@ -3785,11 +3785,12 @@ def Gentle_warm_up_MD(theory=None, fragment=None, time_steps=[0.0005,0.001,0.004
 
     print(f"{len(steps)} MD-runs have been defined")
     for num, (ts, step, temp) in enumerate(zip(time_steps, steps, temperatures)):
-        print(f"MD-step {num} Number of simulation steps: {step} with timestep:{ts} and temperature:{temp}")
+        print(f"MD-step {num} Number of simulation steps: {step} with timestep:{ts} and temperature: {temp} K")
 
+    print();print()
     #Gentle heating up protocol
     for num, (ts, step, temp) in enumerate(zip(time_steps, steps, temperatures)):
-        print(f"Now running MD-run {num}. Number of steps: {step} with timestep:{ts} and temperature:{temp}")
+        print(f"Now running MD-run {num}. Number of steps: {step} with timestep:{ts} and temperature: {temp} K")
         print("Will write trajectory to file:", 'NVTtrajectorystep_'+str(num)+'.dcd')
         OpenMM_MD(fragment=fragment, theory=theory, timestep=ts, simulation_steps=step, traj_frequency=1, temperature=temp,
             integrator='LangevinMiddleIntegrator', coupling_frequency=1, trajfilename='NVTtrajectorystep_'+str(num), trajectory_file_option='DCD')
