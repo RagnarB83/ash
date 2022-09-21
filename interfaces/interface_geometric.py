@@ -6,9 +6,8 @@ import time
 import ash.constants
 from ash.modules.module_QMMM import QMMMTheory
 from ash.interfaces.interface_OpenMM import OpenMMTheory
-from ash.modules.module_coords import print_coords_all,print_coords_for_atoms,print_internal_coordinate_table,write_XYZ_for_atoms,write_xyzfile
+from ash.modules.module_coords import print_coords_for_atoms,print_internal_coordinate_table,write_XYZ_for_atoms,write_xyzfile
 from ash.functions.functions_general import ashexit, blankline,BC,print_time_rel,print_line_with_mainheader
-#import ash
 from ash.modules.module_coords import check_charge_mult
 from ash.modules.module_freq import write_hessian,calc_hessian_xtb, approximate_full_Hessian_from_smaller
 
@@ -36,7 +35,7 @@ def geomeTRICOptimizer(theory=None, fragment=None, charge=None, mult=None, coord
     return finalenergy
 
 
-# Class for optimization. Used to be standalone function. Made into class for more flexibility: micro-iterative QM/MM Opt, TruncPC QM/MM Opt, Excited-state optimizer etc.
+# Class for optimization. Used to be standalone function. Made into class for potential more flexibility: micro-iterative QM/MM Opt, TruncPC QM/MM Opt, Excited-state optimizer etc.
 class GeomeTRICOptimizerClass:
         def __init__(self,theory=None, fragment=None, charge=None, mult=None, coordsystem='tric', frozenatoms=None, constraintsinputfile=None, constraints=None, 
                        constrainvalue=False, maxiter=50, ActiveRegion=False, actatoms=None, convergence_setting=None, conv_criteria=None, TSOpt=False, hessian=None,
@@ -44,8 +43,7 @@ class GeomeTRICOptimizerClass:
             """
             Wrapper class around geomeTRIC code. Take theory and fragment info from ASH
             Supports frozen atoms and bond/angle/dihedral constraints in native code. Use frozenatoms and bondconstraints etc. for this.
-            New feature: Active Region for huge systems. Use ActiveRegion=True and provide actatoms list.
-            Active-atom coords (e.g. only QM region) are only provided to geomeTRIC during optimization while rest is frozen.
+            Active Region feature for very large systems (non-frozen region only provided to geomeTRIC). Use ActiveRegion=True and provide actatoms list.
             Needed as discussed here: https://github.com/leeping/geomeTRIC/commit/584869707aca1dbeabab6fe873fdf139d384ca66#diff-2af7dd72b77dac63cea64c052a549fe0
             """
             print("Creating optimizer object")
@@ -75,6 +73,9 @@ class GeomeTRICOptimizerClass:
                 energy = ash.Singlepoint(fragment=fragment, theory=theory, charge=self.charge, mult=self.mult)
                 return energy
 
+            ###############################
+            #Going through options
+            ###############################
             #Active region and coordsystem
             if ActiveRegion == True and coordsystem == "tric":
                 #TODO: Look into this more
@@ -436,8 +437,6 @@ class geomeTRICArgsObject:
         self.convergence_gmax = conv_criteria['convergence_gmax']
         self.convergence_drms = conv_criteria['convergence_drms']
         self.convergence_dmax = conv_criteria['convergence_dmax']
-        
-        
         self.prefix='geometric_OPTtraj'
         self.input='dummyinputname'
         self.constraints=constraintsfile
@@ -609,7 +608,6 @@ class ASHengineclass:
             #print("Current geometry (Å) in step {}".format(self.iteration_count))
             print("Current geometry (Å) in step {} (print_atoms_list region)".format(self.iteration_count))
             print("---------------------------------------------------")
-            #Disabled: print_coords_all(currcoords, fragment.elems)
             print_coords_for_atoms(currcoords, self.fragment.elems, self.print_atoms_list)
             print("")
             print("Note: printed only print_atoms_list (this is not necessary all atoms) ")
@@ -651,9 +649,7 @@ def constraints_indices_convert(con,actatoms):
         dc[3]=fullindex_to_actindex(dc[3],actatoms)
     return con
 
-
-#Function to convert atom indices from full system to Active region. Used in case of QM/MM
-#Single index case
+#Simple function to convert atom indices from full system to Active region. Single index case
 def fullindex_to_actindex(fullindex,actatoms):
     actindex=actatoms.index(fullindex)
     return actindex
