@@ -73,7 +73,7 @@ def NEBTS(reactant=None, product=None, theory=None, images=8, CI=True, free_end=
         tol_turn_on_ci=1.0,  runmode='serial', numcores=1, charge=None, mult=None, printlevel=0, ActiveRegion=False, actatoms=None,
         interpolation="IDPP", idpp_maxiter=700, restart_file=None, TS_guess=None, mofilesdir=None, 
         OptTS_maxiter=100, OptTS_print_atoms_list=None, OptTS_convergence_setting=None, OptTS_conv_criteria=None, OptTS_coordsystem='tric',
-        hessian_for_TS=None, modelhessian='unit', tsmode_tangent_threshold=0.1):
+        hessian_for_TS=None, modelhessian='unit', tsmode_tangent_threshold=0.1, subfrctor=1):
 
     print_line_with_mainheader("NEB+TS")
     module_init_time=time.time()
@@ -220,7 +220,7 @@ def NEBTS(reactant=None, product=None, theory=None, images=8, CI=True, free_end=
     ash.Optimizer(theory=theory, fragment=SP, charge=charge, mult=mult, coordsystem=OptTS_coordsystem, maxiter=OptTS_maxiter, 
                 ActiveRegion=ActiveRegion, actatoms=actatoms, convergence_setting=OptTS_convergence_setting, 
                 conv_criteria=OptTS_conv_criteria, print_atoms_list=OptTS_print_atoms_list, TSOpt=True,
-                hessian=hessianoption)
+                hessian=hessianoption, subfrctor=subfrctor)
 
     #TODO: Test if Optimizer converged or not. Currently there would be an error from geometric.
     # 
