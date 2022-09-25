@@ -71,7 +71,7 @@ class OpenMMTheory:
         print_line_with_subheader1("Defining OpenMM object")
         # Printlevel
         self.printlevel = printlevel
-        print("self.printlevel:", self.printlevel)
+        print("Printlevel:", self.printlevel)
         # Initialize system
         self.system = None
         
