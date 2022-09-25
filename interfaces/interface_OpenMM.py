@@ -15,7 +15,7 @@ from ash.functions.functions_general import ashexit, BC, print_time_rel, listdif
     print_line_with_subheader1, print_line_with_subheader2, isint, writelisttofile, writestringtofile
 from ash.functions.functions_elstructure import DDEC_calc, DDEC_to_LJparameters
 from ash.modules.module_coords import Fragment, write_pdbfile, distance_between_atoms, list_of_masses, write_xyzfile, \
-    change_origin_to_centroid, get_centroid, check_charge_mult
+    change_origin_to_centroid, get_centroid, check_charge_mult, check_gradient_for_bad_atoms
 from ash.modules.module_MM import UFF_modH_dict, MMforcefield_read
 from ash.interfaces.interface_xtb import xTBTheory, grabatomcharges_xTB
 from ash.interfaces.interface_ORCA import ORCATheory, grabatomcharges_ORCA, chargemodel_select
@@ -2217,6 +2217,17 @@ def OpenMM_Modeller(pdbfile=None, forcefield=None, xmlfile=None, waterxmlfile=No
 
     print(BC.OKMAGENTA,"2. Use full system XML-file (USUALLY NOT RECOMMENDED ):\n",BC.END, \
         "omm = OpenMMTheory(xmlsystemfile=\"system_full.xml\", pdbfile=\"finalsystem.pdb\", periodic=True)\n",BC.END)
+    print()
+    print()
+    #Check system for atoms with large gradient and print warning
+    #TODO: Can we avoid re-creating the omm object ?
+    print("Now running single-point MM job to check for bad contacts")
+    omm =OpenMMTheory(platform=platform, forcefield=forcefield, topoforce=True,
+                        topology=modeller.topology, pdbfile=None, periodic=True,
+                        autoconstraints=None, rigidwater=False, printlevel=0)
+    en,gradient = Singlepoint(theory=omm, fragment=fragment, Grad=True)
+    check_gradient_for_bad_atoms(fragment=fragment,gradient=gradient, threshold=45000)
+    
     print_time_rel(module_init_time, modulename="OpenMM_Modeller", moduleindex=1)
     
     #Return openmmobject. Could be used directly

@@ -3109,6 +3109,5 @@ def check_gradient_for_bad_atoms(fragment=None,gradient=None, threshold=45000):
             print(f"{i:7} {fragment.elems[i]:>5} {fragment.coords[i][0]:>12.6f} {fragment.coords[i][2]:>12.6f} {fragment.coords[i][2]:>12.6f}      {k[0]:>6.3f} {k[1]:>6.3f} {k[2]:>6.3f}")
             indices.append(i)
     print()
-    print("These atoms either need to be constrained (e.g. if metal-cofactor) or atom positions need to be fixed before starting simulation")
-    print("Returning bad atom indices as list")
+    print("These atoms may need to be constrained (e.g. if metal-cofactor) or atom positions need to be corrected before starting simulation")
     return indices
