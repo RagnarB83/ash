@@ -854,7 +854,7 @@ CARTESIAN COORDINATES (ANGSTROEM)
 ---------------------------------"""
 
     #Checking for linearity here. 
-    if detect_linear(coords=coords) == True:
+    if detect_linear(coords=coords,elems=elems) == True:
         TRmodenum=5
     else:
         TRmodenum=6
@@ -1751,11 +1751,12 @@ def calc_hessian_xtb(fragment=None, runmode='serial', actatoms=None, numcores=1,
 
 
 #Detect if geometry is linear, either via fragment or coords array
-def detect_linear(fragment=None, coords=None, threshold=1e-4):
+def detect_linear(fragment=None, coords=None, elems=None, threshold=1e-4):
     if fragment == None:
         numatoms=len(coords)
     else:
         coords=fragment.coords
+        elems=fragment.elems
         numatoms=fragment.numatoms
     #Returning True if atom
     if numatoms == 1:
@@ -1765,8 +1766,8 @@ def detect_linear(fragment=None, coords=None, threshold=1e-4):
         return True
     
     #Linear check via moments of inertia
-    center = get_center(fragment.elems,fragment.coords)
-    rinertia = list(inertia(fragment.elems,fragment.coords,center))
+    center = get_center(elems,coords)
+    rinertia = list(inertia(elems,coords,center))
     #print("rinertia:", rinertia)
     #Checking if rinertia contains an almost zero-value
     if any([abs(i) < threshold for i in rinertia]) is True:
