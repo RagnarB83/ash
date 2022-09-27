@@ -1751,7 +1751,6 @@ def calc_hessian_xtb(fragment=None, runmode='serial', actatoms=None, numcores=1,
 
 
 #Detect if geometry is linear, either via fragment or coords array
-#Threshold set so that H2O with 179.9° angle is assigned as linear (smaller angles fail)
 def detect_linear(fragment=None, coords=None, threshold=1e-4):
     if fragment == None:
         numatoms=len(coords)
@@ -1764,12 +1763,42 @@ def detect_linear(fragment=None, coords=None, threshold=1e-4):
     #Returning True if diatomic
     if numatoms == 2:
         return True
-    for i in range(1,numatoms-1,1):
-        AB = np.cross(coords[0],coords[i])
-        AC = np.cross(coords[0],coords[i+1])
-        cross_AB_AC = np.cross(AB,AC)
-        if any(abs(i) >= threshold for i in cross_AB_AC) is True:
-            #print("Found high value. Set of 3 points must be non-linear")
-            return False
+    
+    #Linear check via moments of inertia
+    center = get_center(fragment.elems,fragment.coords)
+    rinertia = list(inertia(fragment.elems,fragment.coords,center))
+    #print("rinertia:", rinertia)
+    #Checking if rinertia contains an almost zero-value
+    if any([abs(i) < threshold for i in rinertia]) is True:
+        #print("Small value detected: ", rinertia)
+        #print("Molecule is linear")
+        return True
+    else:
+        #print("nothing detected")
+        #print("Molecule must be non-linear")
+        return False
+    #TODO: delete below
+    #print("Moments of inertia (amu Å^2):", rinertia)
+    #print(coords)
+    #for i in range(1,numatoms-1,1):
+    #    print("i:", i)
+    #    print("i+1",i+1)
+    #    AB = np.cross(coords[0],coords[i])
+    #    print("AB:", AB)
+    #    print("coord0:", coords[0])
+    #    print("coordi:", coords[i])
+    #    AC = np.cross(coords[0],coords[i+1])
+    #    print("AC:", AC)
+    #    print("coord0:", coords[0])
+    #    print("coordi+1:", coords[i+1])
+    #    print()
+    #    cross_AB_AC = np.cross(AB,AC)
+    #    print("cross_AB_AC:", cross_AB_AC)
+    #
+    #    bla = abs(np.dot(AB,AC)/(np.dot(abs(AB),abs(AC))))
+    #    print("bla:", bla)
+    #    if any(abs(i) >= threshold for i in cross_AB_AC) is True:
+    #        print("Found high value. Set of 3 points must be non-linear")
+    #        return False
     #Returning True if no-nonlinearity detected
-    return True
+    #return True
