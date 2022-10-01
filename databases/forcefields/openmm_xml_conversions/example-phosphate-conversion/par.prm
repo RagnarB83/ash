@@ -1,0 +1,22 @@
+!Parameter file containing the needed atom definitions and nonbonded parameters
+ATOMS
+!hydrogens
+MASS  -1  HGP1       1.00800 ! polar H
+!oxygens
+MASS  -1  OG2P1     15.99940 ! =O in phosphate or sulfate
+MASS  -1  OG311     15.99940 ! hydroxyl oxygen
+!miscellaneous
+MASS  -1  PG0       30.97380 ! neutral phosphate
+MASS  -1  PG1       30.97380 ! phosphate -1
+MASS  -1  PG2       30.97380 ! phosphate -2
+
+NONBONDED nbxmod  5 atom cdiel fshift vatom vdistance vfswitch -
+cutnb 14.0 ctofnb 12.0 ctonnb 10.0 eps 1.0 e14fac 1.0 wmin 1.5
+
+PG2      0.0       -0.5850     2.1500 ! phosphate -2
+OG2P1    0.0       -0.1200     1.7000 ! NA
+OG311    0.0       -0.1921     1.7650 ! og MeOH and EtOH 1/06 (was -0.1521 1.7682)
+HGP1     0.0       -0.0460     0.2245 ! polar H
+PG0      0.0       -0.5850     2.1500 ! neutral phosphate
+PG1      0.0       -0.5850     2.1500 ! phosphate -1
+PG2      0.0       -0.5850     2.1500 ! phosphate -2

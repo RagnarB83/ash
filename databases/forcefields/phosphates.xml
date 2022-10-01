@@ -1,0 +1,91 @@
+<?xml version="1.0" ?>
+<ForceField>
+  <Info>
+    <DateGenerated>2022-10-01</DateGenerated>
+  </Info>
+  <AtomTypes>
+    <Type element="H" name="HGP1" class="HGP1" mass="1.008"/>
+    <Type element="O" name="OG2P1" class="OG2P1" mass="15.9994"/>
+    <Type element="O" name="OG311" class="OG311" mass="15.9994"/>
+    <Type element="P" name="PG0" class="PG0" mass="30.9738"/>
+    <Type element="P" name="PG1" class="PG1" mass="30.9738"/>
+    <Type element="P" name="PG2" class="PG2" mass="30.9738"/>
+  </AtomTypes>
+  <Residues>
+    <Residue name="PO4">
+      <Atom name="P" type="PG2" charge="0.68"/>
+      <Atom name="O1" type="OG2P1" charge="-0.92"/>
+      <Atom name="O2" type="OG2P1" charge="-0.92"/>
+      <Atom name="O4" type="OG2P1" charge="-0.92"/>
+      <Atom name="O3" type="OG2P1" charge="-0.92"/>
+      <Bond atomName1="P" atomName2="O1"/>
+      <Bond atomName1="P" atomName2="O2"/>
+      <Bond atomName1="P" atomName2="O4"/>
+      <Bond atomName1="P" atomName2="O3"/>
+    </Residue>
+    <Residue name="HPO4">
+      <Atom name="P" type="PG2" charge="1.095"/>
+      <Atom name="O4" type="OG311" charge="-0.722"/>
+      <Atom name="O1" type="OG2P1" charge="-0.908"/>
+      <Atom name="O2" type="OG2P1" charge="-0.908"/>
+      <Atom name="O3" type="OG2P1" charge="-0.908"/>
+      <Atom name="H" type="HGP1" charge="0.351"/>
+      <Bond atomName1="P" atomName2="O1"/>
+      <Bond atomName1="P" atomName2="O2"/>
+      <Bond atomName1="P" atomName2="O3"/>
+      <Bond atomName1="P" atomName2="O4"/>
+      <Bond atomName1="O4" atomName2="H"/>
+    </Residue>
+    <Residue name="H2PO4">
+      <Atom name="P" type="PG1" charge="1.464"/>
+      <Atom name="O1" type="OG311" charge="-0.707"/>
+      <Atom name="O2" type="OG2P1" charge="-0.863"/>
+      <Atom name="O3" type="OG2P1" charge="-0.863"/>
+      <Atom name="H2" type="HGP1" charge="0.338"/>
+      <Atom name="O4" type="OG311" charge="-0.707"/>
+      <Atom name="H1" type="HGP1" charge="0.338"/>
+      <Bond atomName1="P" atomName2="O1"/>
+      <Bond atomName1="P" atomName2="O2"/>
+      <Bond atomName1="P" atomName2="O3"/>
+      <Bond atomName1="P" atomName2="O4"/>
+      <Bond atomName1="O4" atomName2="H1"/>
+      <Bond atomName1="O1" atomName2="H2"/>
+    </Residue>
+    <Residue name="H3PO4">
+      <Atom name="P" type="PG0" charge="1.377"/>
+      <Atom name="O2" type="OG311" charge="-0.671"/>
+      <Atom name="O1" type="OG2P1" charge="-0.621"/>
+      <Atom name="H1" type="HGP1" charge="0.419"/>
+      <Atom name="O3" type="OG311" charge="-0.671"/>
+      <Atom name="H2" type="HGP1" charge="0.419"/>
+      <Atom name="O4" type="OG311" charge="-0.671"/>
+      <Atom name="H3" type="HGP1" charge="0.419"/>
+      <Bond atomName1="P" atomName2="O1"/>
+      <Bond atomName1="P" atomName2="O2"/>
+      <Bond atomName1="P" atomName2="O3"/>
+      <Bond atomName1="P" atomName2="O4"/>
+      <Bond atomName1="O2" atomName2="H1"/>
+      <Bond atomName1="O3" atomName2="H2"/>
+      <Bond atomName1="O4" atomName2="H3"/>
+    </Residue>
+  </Residues>
+  <HarmonicAngleForce>
+    <Angle class1="OG311" class2="PG1" class3="OG311" angle="1.8849555921538759" k="402.5008"/>
+    <Angle class1="OG2P1" class2="PG2" class3="OG311" angle="1.9373154697137058" k="743.9152"/>
+  </HarmonicAngleForce>
+  <!--Urey-Bradley terms-->
+  <AmoebaUreyBradleyForce/>
+  <PeriodicTorsionForce>
+    <Proper class1="HGP1" class2="OG311" class3="PG1" class4="OG311" periodicity1="1" phase1="3.141592653589793" k1="6.694400000000001" periodicity2="2" phase2="0.0" k2="3.7656"/>
+    <Proper class1="HGP1" class2="OG311" class3="PG2" class4="OG2P1" periodicity1="3" phase1="0.0" k1="1.2552"/>
+  </PeriodicTorsionForce>
+  <NonbondedForce coulomb14scale="1.0" lj14scale="1.0">
+    <UseAttributeFromResidue name="charge"/>
+    <Atom class="HGP1" sigma="0.04000135244450124" epsilon="0.192464"/>
+    <Atom class="OG2P1" sigma="0.30290556416771536" epsilon="0.50208"/>
+    <Atom class="OG311" sigma="0.3144872475035398" epsilon="0.8037464"/>
+    <Atom class="PG0" sigma="0.38308644880034587" epsilon="2.44764"/>
+    <Atom class="PG1" sigma="0.38308644880034587" epsilon="2.44764"/>
+    <Atom class="PG2" sigma="0.38308644880034587" epsilon="2.44764"/>
+  </NonbondedForce>
+</ForceField>
