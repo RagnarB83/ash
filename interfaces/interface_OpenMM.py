@@ -2329,16 +2329,19 @@ def MDtraj_slice(trajectory, pdbtopology, format='PDB', frames=None):
     print("Slicing trajectory using frame selection:", frames)
     tslice = traj[frames[0]:frames[1]]
     print(f"Trajectory slice contains {tslice.n_frames} frames")
+    if tslice.n_frames == 0:
+        print(f"0 frames found when slicing. You probably should do: frames=[{frames[0]}{frames[1]+1}]")
+
+
     # Save trajectory in format
     if format == 'DCD':
-        tslice.save(traj_basename + '.dcd')
-        print("Saved sliced trajectory:", traj_basename + '.dcd')
+        tslice.save(traj_basename + f'frame{frames[0]}_{frames[1]}.dcd')
+        print("Saved sliced trajectory:", f'frame{frames[0]}_{frames[1]}.dcd')
     elif format == 'PDB':
-        tslice.save(traj_basename + '.pdb')
-        print("Saved sliced trajectory:", traj_basename + '.pdb')
+        tslice.save(traj_basename + f'frame{frames[0]}_{frames[1]}.pdb')
+        print("Saved sliced trajectory:", f'frame{frames[0]}_{frames[1]}.pdb')
     else:
         print("Unknown trajectory format.")
-
     return
 
 def MDAnalysis_transform(topfile, trajfile, solute_indices=None, trajoutputformat='PDB', trajname="MDAnalysis_traj"):
