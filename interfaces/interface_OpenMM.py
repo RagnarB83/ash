@@ -2330,16 +2330,17 @@ def MDtraj_slice(trajectory, pdbtopology, format='PDB', frames=None):
     tslice = traj[frames[0]:frames[1]]
     print(f"Trajectory slice contains {tslice.n_frames} frames")
     if tslice.n_frames == 0:
-        print(f"0 frames found when slicing. You probably should do: frames=[{frames[0]}{frames[1]+1}]")
-
+        print(f"0 frames found when slicing. You probably should do: frames=[{frames[0]},{frames[1]+1}] instead")
+        print("Exiting")
+        ashexit()
 
     # Save trajectory in format
     if format == 'DCD':
-        tslice.save(traj_basename + f'frame{frames[0]}_{frames[1]}.dcd')
-        print("Saved sliced trajectory:", f'frame{frames[0]}_{frames[1]}.dcd')
+        tslice.save(traj_basename + f'_frame{frames[0]}_{frames[1]}.dcd')
+        print("Saved sliced trajectory:", traj_basename + f'_frame{frames[0]}_{frames[1]}.dcd')
     elif format == 'PDB':
-        tslice.save(traj_basename + f'frame{frames[0]}_{frames[1]}.pdb')
-        print("Saved sliced trajectory:", f'frame{frames[0]}_{frames[1]}.pdb')
+        tslice.save(traj_basename + f'_frame{frames[0]}_{frames[1]}.pdb')
+        print("Saved sliced trajectory:", traj_basename + f'_frame{frames[0]}_{frames[1]}.pdb')
     else:
         print("Unknown trajectory format.")
     return
