@@ -32,6 +32,9 @@ sys.path.insert(0, ashpath+"/geometric-master")
 from ash.functions.functions_general import blankline, BC, listdiff, print_time_rel, print_time_rel_and_tot, pygrep, \
     printdebug, read_intlist_from_file, frange, writelisttofile, load_julia_interface, read_datafile, write_datafile
 
+#Results dataclass 
+from ash.modules.module_results import ASH_Results
+
 # Fragment class and coordinate functions
 import ash.modules.module_coords
 from ash.modules.module_coords import get_molecules_from_trajectory, eldict_covrad, write_pdbfile, Fragment, read_xyzfile, \
