@@ -2307,6 +2307,40 @@ def MDtraj_imagetraj(trajectory, pdbtopology, format='DCD', unitcell_lengths=Non
     return lastframe
 
 
+# Slicing trajectory. Mostly to grab specific snapshot
+#TODO: allow option to grab by ps? Requires information about timestep and traj-frequency
+def MDtraj_slice(trajectory, pdbtopology, format='PDB', frames=None):
+
+    if frames is None:
+        print("frames needs to be set")
+        ashexit()
+
+    #Trajectory basename
+    traj_basename = os.path.splitext(trajectory)[0]
+    
+    #Import mdtraj library
+    mdtraj = MDtraj_import_()
+
+    # Load trajectory
+    print("Loading trajectory using mdtraj.")
+    traj = mdtraj.load(trajectory, top=pdbtopology)
+    print(f"This trajectory contains {traj.n_frames} frames")
+    #Slicing trajectory
+    print("Slicing trajectory using frame selection:", frames)
+    tslice = traj[frames[0]:frames[1]]
+    print(f"Trajectory slice contains {tslice.n_frames} frames")
+    # Save trajectory in format
+    if format == 'DCD':
+        tslice.save(traj_basename + '.dcd')
+        print("Saved sliced trajectory:", traj_basename + '.dcd')
+    elif format == 'PDB':
+        tslice.save(traj_basename + '.pdb')
+        print("Saved sliced trajectory:", traj_basename + '.pdb')
+    else:
+        print("Unknown trajectory format.")
+
+    return
+
 def MDAnalysis_transform(topfile, trajfile, solute_indices=None, trajoutputformat='PDB', trajname="MDAnalysis_traj"):
     # Load traj
     print("MDAnalysis interface: transform")
