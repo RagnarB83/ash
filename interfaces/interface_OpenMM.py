@@ -1977,6 +1977,8 @@ def OpenMM_Modeller(pdbfile=None, forcefield=None, xmlfile=None, waterxmlfile=No
     if watermodel == "tip3p":
         # Possible Problem: this only has water, no ions.
         waterxmlfile = "tip3p.xml"
+    elif watermodel == "tip3p_charmm":
+        waterxmlfile = "charmm36/water.xml"
     elif waterxmlfile is not None:
         # Problem: we need to define watermodel also
         print("Using waterxmlfile:", waterxmlfile)
