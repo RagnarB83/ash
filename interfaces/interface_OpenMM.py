@@ -2022,16 +2022,27 @@ def OpenMM_Modeller(pdbfile=None, forcefield=None, xmlfile=None, waterxmlfile=No
     print("pH:", pH)
 
     print("User-provided dictionary of residue_variants:", residue_variants)
-    # Define a forcefield
-    if extraxmlfile is None:
-        forcefield = openmm_app.forcefield.ForceField(xmlfile, waterxmlfile)
-    else:
+    #Basic checks
+    if extraxmlfile is not None:
         print("Using extra XML file:", extraxmlfile)
-        #Checking if file exists first
+        #Checking if file exists first before continuing
         if os.path.isfile(extraxmlfile) is not True:
             print(BC.FAIL,"File {} can not be found. Exiting.".format(extraxmlfile),BC.END)
             ashexit()
-        forcefield = openmm_app.forcefield.ForceField(xmlfile, waterxmlfile, extraxmlfile)
+     if xmlfile is None:
+        print("xmlfile is none. Something went wrong. Exiting")
+        ashexit()
+
+    ############
+    # Define a forcefield based on defined xml-files
+    if extraxmlfile is None and waterxmlfile is None:
+        forcefield = openmm_app.forcefield.ForceField(xmlfile)
+    elif extraxmlfile is not None and waterxmlfile is None:
+        forcefield = openmm_app.forcefield.ForceField(xmlfile,extraxmlfile)
+    elif extraxmlfile is None and waterxmlfile is not None:
+        forcefield = openmm_app.forcefield.ForceField(xmlfile,waterxmlfile)
+    elif extraxmlfile is not None and waterxmlfile is not None:
+        forcefield = openmm_app.forcefield.ForceField(xmlfile,extraxmlfile,waterxmlfile)
 
 
     print("\nNow checking PDB-file for alternate locations, i.e. multiple occupancies:\n")
