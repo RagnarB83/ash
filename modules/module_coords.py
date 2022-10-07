@@ -3103,7 +3103,6 @@ def check_gradient_for_bad_atoms(fragment=None,gradient=None, threshold=45000):
     print("Gradient threshold setting:", threshold)
     for i,k in enumerate(gradient):
         if any(abs(k) > threshold):
-                  {k[0]:>6.3f} {k[1]:>6.3f} {k[2]:>6.3f}")
             indices.append(i)
     if len(indices) > 0:
         print("The following atoms have abnormally high values, probably due to bad atom positions:")
