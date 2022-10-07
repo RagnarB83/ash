@@ -2250,7 +2250,7 @@ def OpenMM_Modeller(pdbfile=None, forcefield=None, xmlfile=None, waterxmlfile=No
     print("Creating OpenMMTheory object")
     openmmobject =OpenMMTheory(platform=platform, forcefield=forcefield, topoforce=True,
                         topology=modeller.topology, pdbfile=None, periodic=True,
-                        autoconstraints='HBonds', rigidwater=True)
+                        autoconstraints='HBonds', rigidwater=True, printlevel=0)
     #Write out System XMLfile
     #TODO: Disable ?
     systemxmlfile="system_full.xml"
