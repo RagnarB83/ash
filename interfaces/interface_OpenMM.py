@@ -2029,7 +2029,7 @@ def OpenMM_Modeller(pdbfile=None, forcefield=None, xmlfile=None, waterxmlfile=No
         if os.path.isfile(extraxmlfile) is not True:
             print(BC.FAIL,"File {} can not be found. Exiting.".format(extraxmlfile),BC.END)
             ashexit()
-     if xmlfile is None:
+    if xmlfile is None:
         print("xmlfile is none. Something went wrong. Exiting")
         ashexit()
 
