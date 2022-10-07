@@ -3479,7 +3479,6 @@ def find_alternate_locations_residues(pdbfile, use_higher_occupancy=False):
     #Looping through PDB-file
     with open(pdbfile) as pfile:
         for line in pfile:
-            #Only keep ATOM/HETATM lines
             if line.startswith("ATOM") or line.startswith("HETATM"):
                 altloc=line[16]
                 #Adding info to dicts and adding marker if alternate location info present for atom
@@ -3506,6 +3505,9 @@ def find_alternate_locations_residues(pdbfile, use_higher_occupancy=False):
                 #Use unmodifed ATOM line
                 else:
                     pdb_atomlines.append(line)
+            else:
+                #Still keeping all lines
+                pdb_atomlines.append(line)
     #For debugging
     #for k,v in altloc_dict.items():
     #    print(k, v)
