@@ -40,8 +40,10 @@ class OpenMMTheory:
                  constraints=None, restraints=None, frozen_atoms=None, fragment=None, dummysystem=False,
                  autoconstraints='HBonds', hydrogenmass=1.5, rigidwater=True, changed_masses=None):
 
-        print_line_with_mainheader("OpenMM Theory")
+
         self.printlevel=printlevel
+        if self.printlevel > 0:
+            print_line_with_mainheader("OpenMM Theory")
         module_init_time = time.time()
         timeA = time.time()
         #Indicate that this is a MMtheory
@@ -68,7 +70,6 @@ class OpenMMTheory:
         self.Vec3 = openmm.Vec3
 
         # print(BC.WARNING, BC.BOLD, "------------Defining OpenMM object-------------", BC.END)
-        self.printlevel = printlevel
         if self.printlevel > 0:
             print_line_with_subheader1("Defining OpenMM object")
             print("Printlevel:", self.printlevel)
@@ -769,7 +770,7 @@ class OpenMMTheory:
         if self.printlevel >= 3:
             for i in range(0, self.system.getNumConstraints()):
                 print("Defined constraints:", self.system.getConstraintParameters(i))
-        print_time_rel(timeA, modulename="system create")
+        #print_time_rel(timeA, modulename="system create")
         timeA = time.time()
 
         # Platform
@@ -784,7 +785,7 @@ class OpenMMTheory:
         # NOTE: If self.system is modified then we have to remake self.simulation
         # self.simulation = simtk.openmm.app.simulation.Simulation(self.topology, self.system, self.integrator,self.platform)
         # self.simulation = self.simulationclass(self.topology, self.system, self.integrator,self.platform)
-        print_time_rel(timeA, modulename="simulation setup")
+        #print_time_rel(timeA, modulename="simulation setup")
         # timeA = time.time()
         print_time_rel(module_init_time, modulename="OpenMM object creation")
 
@@ -1134,13 +1135,14 @@ class OpenMMTheory:
     def update_simulation(self):
         #Keeping variables
         timeA = time.time()
-        print_line_with_subheader1("Creating/updating OpenMM simulation object")
-        print("Integrator name:", self.integrator_name)
-        print("Timestep:", self.timestep)
-        print("Temperature:", self.temperature)
-        print("Coupling frequency:", self.coupling_frequency)
-        print("Properties:", self.properties)
-        print("Topology:", self.topology)
+        if self.printlevel > 0:
+            print_line_with_subheader1("Creating/updating OpenMM simulation object")
+            print("Integrator name:", self.integrator_name)
+            print("Timestep:", self.timestep)
+            print("Temperature:", self.temperature)
+            print("Coupling frequency:", self.coupling_frequency)
+            print("Properties:", self.properties)
+            print("Topology:", self.topology)
         printdebug("self.system.getForces() ", self.system.getForces())
         #NOTE: Integrator definition has to be here (instead of set_simulation_parameters) as it has to be recreated for each updated simulation
         # Integrators: LangevinIntegrator, LangevinMiddleIntegrator, NoseHooverIntegrator, VerletIntegrator,
@@ -1181,7 +1183,7 @@ class OpenMMTheory:
         #Now calling function to compute the actual degrees of freedom.
         #NOTE: Better place for this? Just needs to be called once, after constraints and frozen atoms are done.
         self.compute_DOF()
-        print_time_rel(timeA, modulename="creating/updating simulation")
+        #print_time_rel(timeA, modulename="creating/updating simulation")
 
     # Functions for energy decompositions
     def forcegroupify(self):
