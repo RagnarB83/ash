@@ -41,7 +41,7 @@ class OpenMMTheory:
                  autoconstraints='HBonds', hydrogenmass=1.5, rigidwater=True, changed_masses=None):
 
         print_line_with_mainheader("OpenMM Theory")
-
+        self.printlevel=printlevel
         module_init_time = time.time()
         timeA = time.time()
         #Indicate that this is a MMtheory
