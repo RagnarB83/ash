@@ -1977,8 +1977,10 @@ def OpenMM_Modeller(pdbfile=None, forcefield=None, xmlfile=None, waterxmlfile=No
     if watermodel == "tip3p":
         # Possible Problem: this only has water, no ions.
         waterxmlfile = "tip3p.xml"
+        modeller_solvent_name="tip3p" #Used when adding solvent
     elif watermodel == "tip3p_charmm":
         waterxmlfile = "charmm36/water.xml"
+        modeller_solvent_name="tip3p" #Used when adding solvent
     elif waterxmlfile is not None:
         # Problem: we need to define watermodel also
         print("Using waterxmlfile:", waterxmlfile)
@@ -2164,14 +2166,14 @@ def OpenMM_Modeller(pdbfile=None, forcefield=None, xmlfile=None, waterxmlfile=No
     print_systemsize()
 
     # Adding Solvent
-    print("Adding solvent, watermodel:", watermodel)
+    print("Adding solvent, modeller_solvent_name:", modeller_solvent_name)
     if solvent_boxdims is not None:
         print("Solvent boxdimension provided: {} Å".format(solvent_boxdims))
         modeller.addSolvent(forcefield, neutralize=False, boxSize=openmm.Vec3(solvent_boxdims[0], solvent_boxdims[1],
                                                             solvent_boxdims[2]) * openmm_unit.angstrom)
     else:
         print("Using solvent padding (solvent_padding=X keyword): {} Å".format(solvent_padding))
-        modeller.addSolvent(forcefield, neutralize=False, padding=solvent_padding * openmm_unit.angstrom, model=watermodel)
+        modeller.addSolvent(forcefield, neutralize=False, padding=solvent_padding * openmm_unit.angstrom, model=modeller_solvent_name)
     write_pdbfile_openMM(modeller.topology, modeller.positions, "system_aftersolvent.pdb")
     print_systemsize()
 
