@@ -2018,7 +2018,7 @@ def OpenMM_Modeller(pdbfile=None, forcefield=None, xmlfile=None, waterxmlfile=No
     print("Forcefield:", forcefield)
     print("XMfile:", xmlfile)
     print("Water model:", watermodel)
-    print("Xmlfile:", waterxmlfile)
+    print("Water xmlfile:", waterxmlfile)
     print("pH:", pH)
 
     print("User-provided dictionary of residue_variants:", residue_variants)
