@@ -143,7 +143,7 @@ class ASH_plot():
 
     def addseries(self,subplot, surfacedictionary=None, x_list=None, y_list=None, x_labels=None, label='Series', color='blue', pointsize=40, 
                     scatter=True, line=True, scatter_linewidth=2, line_linewidth=1, marker='o', legend=True, x_scaling=1.0,y_scaling=1.0,
-                    xticklabelrotation=80):
+                    xticklabelrotation=80, x_scale_log=False, y_scale_log=False):
         print("Adding new series to ASH_plot object")
         self.addplotcount+=1
         curraxes=self.axs[subplot]
@@ -185,7 +185,11 @@ class ASH_plot():
             #curraxes.xticks(x,x_labels)
             curraxes.set_xticks(x, minor=False)
             curraxes.set_xticklabels(x_labels, fontdict=None, minor=False, rotation=xticklabelrotation)
-
+        #Log scale
+        if x_scale_log is True:
+            curraxes.set_xscale('log')
+        if y_scale_log is True:
+            curraxes.set_yscale('log')
 
         #Title/axis options for 1 vs multiple subplots
         if self.num_subplots == 1:
