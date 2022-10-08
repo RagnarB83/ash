@@ -103,7 +103,7 @@ class ASH_plot():
                     self.fig.tight_layout()
                 #Subplot padding
                 if padding is not None:
-                    plt.subplots_adjust(hspace=padding)
+                    plt.subplots_adjust(wspace=padding)
 
             else:
                 self.fig, self.axs = matplotlib.pyplot.subplots(2, 1, figsize=figsize)
