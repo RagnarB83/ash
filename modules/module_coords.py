@@ -3101,13 +3101,18 @@ def check_gradient_for_bad_atoms(fragment=None,gradient=None, threshold=45000):
     indices=[]
     print("Checking system total gradient for bad atoms")
     print("Gradient threshold setting:", threshold)
-    print("The following atoms have abnormally high values, probably due to bad atom positions:")
-    print()
-    print("Index    Element           Coordinates                              Gradient")
     for i,k in enumerate(gradient):
         if any(abs(k) > threshold):
-            print(f"{i:7} {fragment.elems[i]:>5} {fragment.coords[i][0]:>12.6f} {fragment.coords[i][2]:>12.6f} {fragment.coords[i][2]:>12.6f}      {k[0]:>6.3f} {k[1]:>6.3f} {k[2]:>6.3f}")
             indices.append(i)
-    print()
-    print("These atoms may need to be constrained (e.g. if metal-cofactor) or atom positions need to be corrected before starting simulation")
+    if len(indices) > 0:
+        print("The following atoms have abnormally high values, probably due to bad atom positions:")
+        print()
+        print("Index    Element           Coordinates                              Gradient")
+        for i in indices:
+            print(f"{i:7} {fragment.elems[i]:>5} {fragment.coords[i][0]:>12.6f} {fragment.coords[i][2]:>12.6f} {fragment.coords[i][2]:>12.6f}      {k[0]:>6.3f} {k[1]:>6.3f} {k[2]:>6.3f}")
+        print()
+        print("These atoms may need to be constrained (e.g. if metal-cofactor) or atom positions need to be corrected before starting simulation")
+    else:
+        print()
+        print(f"No atoms with gradients larger than threshold: {threshold}")
     return indices
