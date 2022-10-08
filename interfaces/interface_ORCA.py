@@ -699,7 +699,7 @@ def grab_ORCA_errors(filename):
         if false_positive is False:
             errors.append(err)
     if len(errors):
-        print("Found error messages in ORCA outputfile:")
+        print("Found possible error messages in ORCA outputfile:")
         print(*errors)
 
 #Check if ORCA finished.
