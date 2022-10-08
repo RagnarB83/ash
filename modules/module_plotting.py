@@ -96,6 +96,7 @@ class ASH_plot():
 
         elif self.num_subplots == 2:
             if horizontal is True:
+                print("Horizontal plot is true")
                 self.fig, self.axs = matplotlib.pyplot.subplots(1, 2, figsize=figsize)
             else:
                 self.fig, self.axs = matplotlib.pyplot.subplots(2, 1, figsize=figsize)
