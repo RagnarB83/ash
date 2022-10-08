@@ -1896,6 +1896,7 @@ def QRO_occ_energies_grab(filename):
             if 'Orbital Energies of Quasi-Restricted' in line:
                 occgrab=True
 
+#Grab ICE-WF info from CASSCF job
 def ICE_WF_size(filename):
     after_SD_numCFGs=0
     num_genCFGs=0
@@ -1907,6 +1908,22 @@ def ICE_WF_size(filename):
                 num_genCFGs=int(line.split()[-1])
             if 'Final CASSCF energy       :' in line:
                 return num_genCFGs,after_SD_numCFGs
+
+#Grab ICE-WF CFG info from CI job
+def ICE_WF_CFG_CI_size(filename):
+    num_after_SD_CFGs=0
+    num_genCFGs=0
+    num_selected_CFGs=0
+    with open(filename) as g:
+        for line in g:
+            if '# of configurations after S+D' in line:
+                num_after_SD_CFGs=int(line.split()[-1])
+            if '# of configurations after Selection' in line:
+                num_selected_CFGs=int(line.split()[-1])
+            if ' # of generator configurations' in line:
+                num_genCFGs=int(line.split()[5])
+    return num_genCFGs,num_selected_CFGs,num_after_SD_CFGs
+
 
 
 def grab_EFG_from_ORCA_output(filename):
