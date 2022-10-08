@@ -150,7 +150,8 @@ class ASH_plot():
         
         #Add labels to x-axis if
         if x_labels is not None:
-            curraxes.xticks(x,x_labels)
+            #curraxes.xticks(x,x_labels)
+            curraxes.set_xticklabels(x_labels, fontdict=None, minor=False)
 
         #Title/axis options for 1 vs multiple subplots
         if self.num_subplots == 1:
