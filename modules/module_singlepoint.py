@@ -216,7 +216,8 @@ def Singlepoint_reaction(theory=None, reaction=None, unit='kcal/mol'):
 
     print("Will run single-point calculation on each fragment defined in reaction and return the reaction energy")
     print("Theory:", theory.__class__.__name__)
-
+    print("Resetting energies in reaction object")
+    reaction.energies=[]
 
     #Looping through fragments defined in Reaction object
     list_of_componentsdicts=[]
