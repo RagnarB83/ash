@@ -46,7 +46,7 @@ class ASH_plot():
     def __init__(self, figuretitle='Plottyplot', num_subplots=1, dpi=200, imageformat='png', figsize=(9,5),
         x_axislabel='X-axis', y_axislabel='Energy (X)', x_axislabels=None, y_axislabels=None, title='Plot-title', 
         subplot_titles=None, invert_x_axis=False, invert_y_axis=False, xlimit=None, ylimit=None,
-        legend_pos=None, horizontal=False):
+        legend_pos=None, horizontal=False, tight_layout=True, padding=None):
         print_line_with_mainheader("ASH_energy_plot")
 
         load_matplotlib() #Load Matplotlib
@@ -98,8 +98,22 @@ class ASH_plot():
             if horizontal is True:
                 print("Horizontal plot is true")
                 self.fig, self.axs = matplotlib.pyplot.subplots(1, 2, figsize=figsize)
+                if tight_layout is True:
+                    print("Tight layout True")
+                    self.fig.tight_layout()
+                #Subplot padding
+                if padding is not None:
+                    plt.subplots_adjust(hspace=padding)
+
             else:
                 self.fig, self.axs = matplotlib.pyplot.subplots(2, 1, figsize=figsize)
+                if tight_layout is True:
+                    print("Tight layout True")
+                    self.fig.tight_layout()
+                #Subplot padding
+                if padding is not None:
+                    plt.subplots_adjust(hspace=padding)
+
             self.axiscount=0
             
             #X-limit and y-limit
@@ -110,6 +124,7 @@ class ASH_plot():
             if ylimit != None:
                 self.axs[0].set_ylim(ylimit[0], ylimit[1])
                 self.axs[1].set_ylim(ylimit[0], ylimit[1])
+
 
 
         elif self.num_subplots == 3:
@@ -127,7 +142,8 @@ class ASH_plot():
         
 
     def addseries(self,subplot, surfacedictionary=None, x_list=None, y_list=None, x_labels=None, label='Series', color='blue', pointsize=40, 
-                    scatter=True, line=True, scatter_linewidth=2, line_linewidth=1, marker='o', legend=True, x_scaling=1.0,y_scaling=1.0):
+                    scatter=True, line=True, scatter_linewidth=2, line_linewidth=1, marker='o', legend=True, x_scaling=1.0,y_scaling=1.0,
+                    xticklabelrotation=80):
         print("Adding new series to ASH_plot object")
         self.addplotcount+=1
         curraxes=self.axs[subplot]
@@ -167,7 +183,7 @@ class ASH_plot():
         if x_labels is not None:
             #curraxes.xticks(x,x_labels)
             curraxes.set_xticks(x, minor=False)
-            curraxes.set_xticklabels(x_labels, fontdict=None, minor=False)
+            curraxes.set_xticklabels(x_labels, fontdict=None, minor=False, rotation=xticklabelrotation)
 
 
         #Title/axis options for 1 vs multiple subplots
