@@ -97,6 +97,17 @@ class ASH_plot():
         elif self.num_subplots == 2:
             self.fig, self.axs = matplotlib.pyplot.subplots(2, 1, figsize=figsize)
             self.axiscount=0
+            
+            #X-limit and y-limit
+            #TODO: Allow different limits for each subplot
+            if xlimit != None:
+                self.axs[0].set_xlim(xlimit[0], xlimit[1])
+                self.axs[1].set_xlim(xlimit[0], xlimit[1])
+            if ylimit != None:
+                self.axs[0].set_ylim(ylimit[0], ylimit[1])
+                self.axs[1].set_ylim(ylimit[0], ylimit[1])
+
+
         elif self.num_subplots == 3:
             self.plotlistnames=['upleft','upright','low']
             self.fig, axs_dict = matplotlib.pyplot.subplot_mosaic([['upleft', 'upright'],
@@ -152,6 +163,7 @@ class ASH_plot():
         if x_labels is not None:
             #curraxes.xticks(x,x_labels)
             curraxes.set_xticklabels(x_labels, fontdict=None, minor=False)
+
 
         #Title/axis options for 1 vs multiple subplots
         if self.num_subplots == 1:
