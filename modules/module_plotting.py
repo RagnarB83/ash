@@ -181,6 +181,7 @@ class ASH_plot():
         
         #Add labels to x-axis if
         if x_labels is not None:
+            print("Adding xticks labels using rotation parameter:", xticklabelrotation)
             #curraxes.xticks(x,x_labels)
             curraxes.set_xticks(x, minor=False)
             curraxes.set_xticklabels(x_labels, fontdict=None, minor=False, rotation=xticklabelrotation)
