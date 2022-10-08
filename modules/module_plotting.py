@@ -111,7 +111,7 @@ class ASH_plot():
         self.addplotcount=0
         
 
-    def addseries(self,subplot, surfacedictionary=None, x_list=None, y_list=None, label='Series', color='blue', pointsize=40, 
+    def addseries(self,subplot, surfacedictionary=None, x_list=None, y_list=None, x_labels=None, label='Series', color='blue', pointsize=40, 
                     scatter=True, line=True, scatter_linewidth=2, line_linewidth=1, marker='o', legend=True, x_scaling=1.0,y_scaling=1.0):
         print("Adding new series to ASH_plot object")
         self.addplotcount+=1
@@ -148,6 +148,10 @@ class ASH_plot():
         if line is True:
             curraxes.plot(x, y, linestyle='-', color=color, linewidth=line_linewidth, label=label)
         
+        #Add labels to x-axis if
+        if x_labels is not None:
+            curraxes.xticks(x,x_labels)
+
         #Title/axis options for 1 vs multiple subplots
         if self.num_subplots == 1:
             curraxes.set_xlabel(self.x_axislabel)  # Add an x-label to the axes.
