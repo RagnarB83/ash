@@ -45,7 +45,7 @@ def Gaussian(x, mu, strength, sigma):
 class ASH_plot():
     def __init__(self, figuretitle='Plottyplot', num_subplots=1, dpi=200, imageformat='png', figsize=(9,5),
         x_axislabel='X-axis', y_axislabel='Energy (X)', x_axislabels=None, y_axislabels=None, title='Plot-title', 
-        subplot_titles=None, invert_x_axis=False, invert_y_axis=False, xlimit=None, ylimit=None,
+        subplot_titles=None, xlimit=None, ylimit=None,
         legend_pos=None, horizontal=False, tight_layout=True, padding=None):
         print_line_with_mainheader("ASH_energy_plot")
 
@@ -83,10 +83,10 @@ class ASH_plot():
             self.y_axislabels=y_axislabels
 
             #Invert axis if requested
-            if invert_x_axis:
-                self.axs[0].invert_xaxis()
-            if invert_y_axis:
-                self.axs[0].invert_yaxis()
+            #if invert_x_axis:
+            #    self.axs[0].invert_xaxis()
+            #if invert_y_axis:
+            #    self.axs[0].invert_yaxis()
 
             #X-limit and y-limit
             if xlimit != None:
@@ -143,7 +143,7 @@ class ASH_plot():
 
     def addseries(self,subplot, surfacedictionary=None, x_list=None, y_list=None, x_labels=None, label='Series', color='blue', pointsize=40, 
                     scatter=True, line=True, scatter_linewidth=2, line_linewidth=1, marker='o', legend=True, x_scaling=1.0,y_scaling=1.0,
-                    xticklabelrotation=80, x_scale_log=False, y_scale_log=False):
+                    xticklabelrotation=80, x_scale_log=False, y_scale_log=False, invert_x_axis=False, invert_y_axis=False):
         print("Adding new series to ASH_plot object")
         self.addplotcount+=1
         curraxes=self.axs[subplot]
@@ -190,6 +190,13 @@ class ASH_plot():
             curraxes.set_xscale('log')
         if y_scale_log is True:
             curraxes.set_yscale('log')
+
+        #Invert axis if requested
+        if invert_x_axis:
+            self.axs[subplot].invert_xaxis()
+        if invert_y_axis:
+            self.axs[subplot].invert_yaxis()
+
 
         #Title/axis options for 1 vs multiple subplots
         if self.num_subplots == 1:
