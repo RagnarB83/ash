@@ -46,7 +46,7 @@ class ASH_plot():
     def __init__(self, figuretitle='Plottyplot', num_subplots=1, dpi=200, imageformat='png', figsize=(9,5),
         x_axislabel='X-axis', y_axislabel='Energy (X)', x_axislabels=None, y_axislabels=None, title='Plot-title', 
         subplot_titles=None, invert_x_axis=False, invert_y_axis=False, xlimit=None, ylimit=None,
-        legend_pos=None):
+        legend_pos=None, horizontal=False):
         print_line_with_mainheader("ASH_energy_plot")
 
         load_matplotlib() #Load Matplotlib
@@ -95,7 +95,10 @@ class ASH_plot():
                 self.axs[0].set_ylim(ylimit[0], ylimit[1])
 
         elif self.num_subplots == 2:
-            self.fig, self.axs = matplotlib.pyplot.subplots(2, 1, figsize=figsize)
+            if horizontal is True:
+                self.fig, self.axs = matplotlib.pyplot.subplots(1, 2, figsize=figsize)
+            else:
+                self.fig, self.axs = matplotlib.pyplot.subplots(2, 1, figsize=figsize)
             self.axiscount=0
             
             #X-limit and y-limit
