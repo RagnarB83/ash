@@ -75,7 +75,7 @@ from ash.modules.module_surface import calc_surface, calc_surface_fromXYZ, read_
 
 # QMcode interfaces
 from ash.interfaces.interface_ORCA import ORCATheory, counterpoise_calculation_ORCA, ORCA_External_Optimizer, run_orca_plot, \
-        run_orca_mapspc, make_molden_file_ORCA, grab_coordinates_from_ORCA_output
+        run_orca_mapspc, make_molden_file_ORCA, grab_coordinates_from_ORCA_output, ICE_WF_CFG_CI_size
 import ash.interfaces.interface_ORCA
 
 from ash.interfaces.interface_Psi4 import Psi4Theory

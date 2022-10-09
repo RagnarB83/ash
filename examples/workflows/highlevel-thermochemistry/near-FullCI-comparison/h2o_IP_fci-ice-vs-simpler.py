@@ -10,36 +10,62 @@ from ash import *
 
 numcores = 16
 
+####################################################################################
 #Defining reaction: Vertical IP of H2O 
 h2o_n = Fragment(xyzfile="h2o.xyz", charge=0, mult=1)
 h2o_o = Fragment(xyzfile="h2o.xyz", charge=1, mult=2)
-IE = Reaction(fragments=[h2o_n, h2o_o], stoichiometry=[-1,1])
+reaction = Reaction(fragments=[h2o_n, h2o_o], stoichiometry=[-1,1])
+reaction_energy_unit='eV'
+reaction_label='H2O_IP'
+
+#Plotting options
+y_axis_label='IP'
+# To specify the y-axis limits either define ylimits like this: ylimits=[11.5,12.0] or use yshift. 
+# ylimits=[11.5,12.0] #Values of y-axis
+# yshift will define y-axis limits based on last ICE-CI energy
+yshift=0.3 #Shift (in reaction_energy_unit) in + and - direction of the last ICE-CI energy calculated 
+
+#Basis set to use
+basis = "cc-pVDZ"
+#ORCA maxcore setting in MB
+maxcorememory = 11000
+#What single-reference methods to do
+DoHF = True
+DoMP2 = True
+DoCC = True
+
+#What Tgen thresholds to calculate in ICE-CI?
+tgen_thresholds=[1e-1,1e-2,1e-3,1e-4,1e-5,1e-6,1e-7,1e-8]
+#ICE thresholds for selecting active space 
+ice_nmin = 1.999 #Good value for getting O 1s frozen-core for H2O
+ice_nmax = 0 #All virtual orbitals
+
+####################################################################################
 
 #Looping over TGen thresholds in ICE-CI
 results_ice = {}
 results_ice_genCFGs={}
 results_ice_selCFGs={}
 results_ice_SDCFGs={}
-for tgen in [1e-1,1e-2,1e-3,1e-4,1e-5,1e-6,1e-7,1e-8]:
+for tgen in tgen_thresholds:
     print("="*100)
     print(f"Now doing tgen: {tgen}")
-    input="! Auto-ICE cc-pVDZ tightscf"
+    input=f"! Auto-ICE {basis} tightscf"
     #Setting ICE-CI so that frozen-core is applied (1s oxygen frozen). Note: Auto-ICE also required.
     blocks=f"""
-    %maxcore 11000
+    %maxcore {maxcorememory}
     %ice
-    nmin 1.999
-    nmax 0
+    nmin {ice_nmin}
+    nmax {ice_nmax}
     tgen {tgen}
     useMP2nat true
     end
     """
     ice = ORCATheory(orcasimpleinput=input, orcablocks=blocks, numcores=numcores)
-    IP_energy = Singlepoint_reaction(reaction=IE, theory=ice, unit='eV')
-    #Grabbing wavefunction compositions
+    rel_energy_ICE = Singlepoint_reaction(reaction=reaction, theory=ice, unit=reaction_energy_unit)
     num_genCFGs,num_selected_CFGs,num_after_SD_CFGs = ash.interfaces.interface_ORCA.ICE_WF_CFG_CI_size(ice.filename+'_last.out')
     #Keeping in dict
-    results_ice[tgen] = IP_energy
+    results_ice[tgen] = rel_energy_ICE
     results_ice_genCFGs[tgen] = num_genCFGs
     results_ice_selCFGs[tgen] = num_selected_CFGs
     results_ice_SDCFGs[tgen] = num_after_SD_CFGs
@@ -50,78 +76,113 @@ for tgen in [1e-1,1e-2,1e-3,1e-4,1e-5,1e-6,1e-7,1e-8]:
 results_cc={}
 blocks=f"""
 %maxcore 11000
+%mdci
+maxiter	300
+end
 """
 brucknerblocks=f"""
 %maxcore 11000
 %mdci
+maxiter 300
 Brueckner true
 end
 """
-hf = ORCATheory(orcasimpleinput="! HF cc-pVDZ tightscf", orcablocks=blocks, numcores=4)
-mp2 = ORCATheory(orcasimpleinput="! MP2 cc-pVDZ tightscf", orcablocks=blocks, numcores=4)
-scsmp2 = ORCATheory(orcasimpleinput="! SCS-MP2 cc-pVDZ tightscf", orcablocks=blocks, numcores=4)
-oomp2 = ORCATheory(orcasimpleinput="! OO-RI-MP2 autoaux cc-pVDZ tightscf", orcablocks=blocks, numcores=4)
-scsoomp2 = ORCATheory(orcasimpleinput="! OO-RI-SCS-MP2 cc-pVDZ autoaux tightscf", orcablocks=blocks, numcores=4)
 
-ccsd = ORCATheory(orcasimpleinput="! CCSD cc-pVDZ tightscf", orcablocks=blocks, numcores=4)
-bccd = ORCATheory(orcasimpleinput="! CCSD cc-pVDZ tightscf", orcablocks=brucknerblocks, numcores=4)
-ooccd = ORCATheory(orcasimpleinput="! OOCCD cc-pVDZ tightscf", orcablocks=blocks, numcores=4)
-pccsd_1a = ORCATheory(orcasimpleinput="! pCCSD/1a cc-pVDZ tightscf", orcablocks=blocks, numcores=4)
-pccsd_2a = ORCATheory(orcasimpleinput="! pCCSD/2a cc-pVDZ tightscf", orcablocks=blocks, numcores=4)
+if DoHF is True:
+    hf = ORCATheory(orcasimpleinput=f"! HF {basis} tightscf", orcablocks=blocks, numcores=4)
+    relE_HF = Singlepoint_reaction(reaction=reaction, theory=hf, unit=reaction_energy_unit)
+    results_cc['HF'] = relE_HF
+if DoMP2 is True:
+    mp2 = ORCATheory(orcasimpleinput=f"! MP2 {basis} tightscf", orcablocks=blocks, numcores=4)
+    scsmp2 = ORCATheory(orcasimpleinput=f"! SCS-MP2 {basis} tightscf", orcablocks=blocks, numcores=4)
+    oomp2 = ORCATheory(orcasimpleinput=f"! OO-RI-MP2 autoaux {basis} tightscf", orcablocks=blocks, numcores=4)
+    scsoomp2 = ORCATheory(orcasimpleinput=f"! OO-RI-SCS-MP2 {basis} autoaux tightscf", orcablocks=blocks, numcores=4)
 
-ccsdt = ORCATheory(orcasimpleinput="! CCSD(T) cc-pVDZ tightscf", orcablocks=blocks, numcores=4)
-ooccd = ORCATheory(orcasimpleinput="! OOCCD cc-pVDZ tightscf", orcablocks=blocks, numcores=4)
-ooccdt = ORCATheory(orcasimpleinput="! OOCCD(T) cc-pVDZ tightscf", orcablocks=blocks, numcores=4)
-bccdt = ORCATheory(orcasimpleinput="! CCSD(T) cc-pVDZ tightscf", orcablocks=brucknerblocks, numcores=4)
-ccsdt_bp = ORCATheory(orcasimpleinput="! CCSD(T) BP86 cc-pVDZ tightscf", orcablocks=blocks, numcores=4)
+    relE_MP2 = Singlepoint_reaction(reaction=reaction, theory=mp2, unit=reaction_energy_unit)
+    relE_SCSMP2 = Singlepoint_reaction(reaction=reaction, theory=scsmp2, unit=reaction_energy_unit)
+    relE_OOMP2 = Singlepoint_reaction(reaction=reaction, theory=oomp2, unit=reaction_energy_unit)
+    relE_SCSOOMP2 = Singlepoint_reaction(reaction=reaction, theory=scsoomp2, unit=reaction_energy_unit)
 
-IP_HF = Singlepoint_reaction(reaction=IE, theory=hf, unit='eV')
-IP_MP2 = Singlepoint_reaction(reaction=IE, theory=mp2, unit='eV')
-IP_SCSMP2 = Singlepoint_reaction(reaction=IE, theory=scsmp2, unit='eV')
-IP_OOMP2 = Singlepoint_reaction(reaction=IE, theory=oomp2, unit='eV')
-IP_SCSOOMP2 = Singlepoint_reaction(reaction=IE, theory=scsoomp2, unit='eV')
+    results_cc['MP2'] = relE_MP2
+    results_cc['SCS-MP2'] = relE_SCSMP2
+    results_cc['OO-MP2'] = relE_OOMP2
+    results_cc['OO-SCS-MP2'] = relE_SCSOOMP2
+if DoHF is True:
+    hf = ORCATheory(orcasimpleinput=f"! HF {basis} tightscf", orcablocks=blocks, numcores=4)
+    relE_HF = Singlepoint_reaction(reaction=reaction, theory=hf, unit=reaction_energy_unit)
+    results_cc['HF'] = relE_HF
+if DoMP2 is True:
+    mp2 = ORCATheory(orcasimpleinput=f"! MP2 {basis} tightscf", orcablocks=blocks, numcores=4)
+    scsmp2 = ORCATheory(orcasimpleinput=f"! SCS-MP2 {basis} tightscf", orcablocks=blocks, numcores=4)
+    oomp2 = ORCATheory(orcasimpleinput=f"! OO-RI-MP2 autoaux {basis} tightscf", orcablocks=blocks, numcores=4)
+    scsoomp2 = ORCATheory(orcasimpleinput=f"! OO-RI-SCS-MP2 {basis} autoaux tightscf", orcablocks=blocks, numcores=4)
 
-IP_CCSD = Singlepoint_reaction(reaction=IE, theory=ccsd, unit='eV')
-IP_OOCCD = Singlepoint_reaction(reaction=IE, theory=ooccd, unit='eV')
-IP_BCCD = Singlepoint_reaction(reaction=IE, theory=bccd, unit='eV')
-IP_pCCSD1a = Singlepoint_reaction(reaction=IE, theory=pccsd_1a, unit='eV')
-IP_pCCSD2a = Singlepoint_reaction(reaction=IE, theory=pccsd_2a, unit='eV')
+    relE_MP2 = Singlepoint_reaction(reaction=reaction, theory=mp2, unit=reaction_energy_unit)
+    relE_SCSMP2 = Singlepoint_reaction(reaction=reaction, theory=scsmp2, unit=reaction_energy_unit)
+    relE_OOMP2 = Singlepoint_reaction(reaction=reaction, theory=oomp2, unit=reaction_energy_unit)
+    relE_SCSOOMP2 = Singlepoint_reaction(reaction=reaction, theory=scsoomp2, unit=reaction_energy_unit)
 
-IP_CCSDT = Singlepoint_reaction(reaction=IE, theory=ccsdt, unit='eV')
-IP_OOCCDT = Singlepoint_reaction(reaction=IE, theory=ooccdt, unit='eV')
-IP_BCCDT = Singlepoint_reaction(reaction=IE, theory=bccdt, unit='eV')
-IP_CCSDT_BP = Singlepoint_reaction(reaction=IE, theory=ccsdt_bp, unit='eV')
+    results_cc['MP2'] = relE_MP2
+    results_cc['SCS-MP2'] = relE_SCSMP2
+    results_cc['OO-MP2'] = relE_OOMP2
+    results_cc['OO-SCS-MP2'] = relE_SCSOOMP2
+if DoCC is True:
+    ccsd = ORCATheory(orcasimpleinput=f"! CCSD {basis} tightscf", orcablocks=blocks, numcores=4)
+    bccd = ORCATheory(orcasimpleinput=f"! CCSD {basis} tightscf", orcablocks=brucknerblocks, numcores=4)
+    ooccd = ORCATheory(orcasimpleinput=f"! OOCCD {basis} tightscf", orcablocks=blocks, numcores=4)
+    pccsd_1a = ORCATheory(orcasimpleinput=f"! pCCSD/1a {basis} tightscf", orcablocks=blocks, numcores=4)
+    pccsd_2a = ORCATheory(orcasimpleinput=f"! pCCSD/2a {basis} tightscf", orcablocks=blocks, numcores=4)
+    ccsdt = ORCATheory(orcasimpleinput=f"! CCSD(T) {basis} tightscf", orcablocks=blocks, numcores=4)
+    ccsdt_qro = ORCATheory(orcasimpleinput=f"! CCSD(T) {basis} UNO tightscf", orcablocks=blocks, numcores=4)
+    ooccd = ORCATheory(orcasimpleinput=f"! OOCCD {basis} tightscf", orcablocks=blocks, numcores=4)
+    ooccdt = ORCATheory(orcasimpleinput=f"! OOCCD(T) {basis} tightscf", orcablocks=blocks, numcores=4)
+    bccdt = ORCATheory(orcasimpleinput=f"! CCSD(T) {basis} tightscf", orcablocks=brucknerblocks, numcores=4)
+    ccsdt_bp = ORCATheory(orcasimpleinput=f"! CCSD(T) BP86 {basis} tightscf", orcablocks=blocks, numcores=4)
 
-results_cc['HF'] = IP_HF
-results_cc['MP2'] = IP_MP2
-results_cc['SCS-MP2'] = IP_SCSMP2
-results_cc['OO-MP2'] = IP_OOMP2
-results_cc['OO-SCS-MP2'] = IP_SCSOOMP2
-results_cc['CCSD'] = IP_CCSD
-results_cc['BCCD'] = IP_BCCD
-results_cc['pCCSD/1a'] = IP_pCCSD1a
-results_cc['pCCSD/2a'] = IP_pCCSD2a
-results_cc['OOCCD'] = IP_OOCCD
+    relE_CCSD = Singlepoint_reaction(reaction=reaction, theory=ccsd, unit=reaction_energy_unit)
+    relE_OOCCD = Singlepoint_reaction(reaction=reaction, theory=ooccd, unit=reaction_energy_unit)
+    relE_BCCD = Singlepoint_reaction(reaction=reaction, theory=bccd, unit=reaction_energy_unit)
+    relE_pCCSD1a = Singlepoint_reaction(reaction=reaction, theory=pccsd_1a, unit=reaction_energy_unit)
+    relE_pCCSD2a = Singlepoint_reaction(reaction=reaction, theory=pccsd_2a, unit=reaction_energy_unit)
+    relE_CCSDT = Singlepoint_reaction(reaction=reaction, theory=ccsdt, unit=reaction_energy_unit)
+    relE_CCSDT_QRO = Singlepoint_reaction(reaction=reaction, theory=ccsdt_qro, unit=reaction_energy_unit)
+    relE_OOCCDT = Singlepoint_reaction(reaction=reaction, theory=ooccdt, unit=reaction_energy_unit)
+    relE_BCCDT = Singlepoint_reaction(reaction=reaction, theory=bccdt, unit=reaction_energy_unit)
+    relE_CCSDT_BP = Singlepoint_reaction(reaction=reaction, theory=ccsdt_bp, unit=reaction_energy_unit)
 
-results_cc['CCSD(T)'] = IP_CCSDT
-results_cc['OOCCD(T)'] = IP_OOCCDT
-results_cc['BCCD(T)'] = IP_BCCDT
-results_cc['CCSD(T)-BP'] = IP_CCSDT_BP
+    results_cc['CCSD'] = relE_CCSD
+    results_cc['BCCD'] = relE_BCCD
+    results_cc['OOCCD'] = relE_OOCCD
+    results_cc['pCCSD/1a'] = relE_pCCSD1a
+    results_cc['pCCSD/2a'] = relE_pCCSD2a
+    results_cc['CCSD(T)'] = relE_CCSDT
+    results_cc['CCSD(T)-QRO'] = relE_CCSDT_QRO
+    results_cc['OOCCD(T)'] = relE_OOCCDT
+    results_cc['BCCD(T)'] = relE_BCCDT
+    results_cc['CCSD(T)-BP'] = relE_CCSDT_BP
 
 
 ##########################################
-#Printing and plotting final results
+#Printing final results
 ##########################################
 #Create ASH_plot object named edplot
-eplot = ASH_plot("Plotname", num_subplots=2, x_axislabels=["TGen", "Method"], y_axislabels=['IP(eV)','IP(eV)'], subplot_titles=["ICE-CI TGen calc.","WFs"],
-    ylimit=[10.5,12.0], horizontal=True)
+
+#y-limits based on last ICE calculation rel energy
+if 'ylimits' in locals():
+    print(f"Using y-limits: {ylimits} {reaction_energy_unit} in plot")
+else:
+    ylimits = [rel_energy_ICE+yshift,rel_energy_ICE-yshift]
+    print(f"Using y-limits: {ylimits} {reaction_energy_unit} in plot")
+
+eplot = ASH_plot("Plotname", num_subplots=2, x_axislabels=["TGen", "Method"], y_axislabels=[f'{y_axis_label} ({reaction_energy_unit})',f'{y_axis_label} ({reaction_energy_unit})'], subplot_titles=["ICE-CI","Single ref. methods"],
+    ylimit=ylimits, horizontal=True)
 xvals=[];yvals=[]
 x2vals=[];y2vals=[];labels=[]
 
 print()
 print()
 print("ICE-CI CIPSI wavefunction")
-print(" Tgen      Energy (eV)        # gen. CFGs       # sel. CFGs     # max S+D CFGs")
+print(f" Tgen      Energy ({reaction_energy_unit})        # gen. CFGs       # sel. CFGs     # max S+D CFGs")
 print("---------------------------------------------------------------------------------")
 for t, e in results_ice.items():
     gen_cfg=results_ice_genCFGs[t]
@@ -134,23 +195,19 @@ for t, e in results_ice.items():
 print()
 print()
 print("Other methods:")
-print(" WF   Energy (eV)")
+print(f" WF   Energy ({reaction_energy_unit})")
 print("----------------------------")
 for i,(w, e) in enumerate(results_cc.items()):
-    print(f"i:{i} w:{w} e:{e}")
     print("{:<10} {:13.10f}".format(w,e))
-    #Add a dataseries to subplot 0 (the only subplot)
     x2vals.append(i)
     y2vals.append(e)
     labels.append(w)
 
-print("x2vals:", x2vals)
-print("y2vals:", y2vals)
-print("labels:", labels)
-
-#Add a dataseries to subplot 0 (the only subplot)
-eplot.addseries(0, x_list=xvals, y_list=yvals, label='IP', color='blue', line=True, scatter=True)
-eplot.addseries(1, x_list=x2vals, y_list=y2vals, x_labels=labels, label='IP', color='red', line=True, scatter=True)
+#Add dataseries to subplot 0
+#Inverting x-axis and using log-scale for ICE-CI data
+eplot.addseries(0, x_list=xvals, y_list=yvals, label=reaction_label, color='blue', line=True, scatter=True, x_scale_log=True, invert_x_axis=True)
+#Plotting method labels on x-axis with rotation to make things fit
+eplot.addseries(1, x_list=x2vals, y_list=y2vals, x_labels=labels, label=reaction_label, color='red', line=True, scatter=True, xticklabelrotation=80)
 
 #Save figure
-eplot.savefig('H2O_IP_WF')
+eplot.savefig(f'{reaction_label}_FCI')
