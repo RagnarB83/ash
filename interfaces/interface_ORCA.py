@@ -447,7 +447,7 @@ class ORCATheory:
 
         #Optional save ORCA output with filename according to label
         if self.save_output_with_label is True:
-            shutil.copy(self.filename+'.out', self.filename+f'{self.label}.out')
+            shutil.copy(self.filename+'.out', self.filename+f'_{self.label}_{charge}_{mult}.out')
 
         #Keep outputfile from each run if requested
         if self.keep_each_run_output is True:
