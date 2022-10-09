@@ -61,9 +61,9 @@ for tgen in tgen_thresholds:
     useMP2nat true
     end
     """
-    ice = ORCATheory(orcasimpleinput=input, orcablocks=blocks, numcores=numcores)
+    ice = ORCATheory(orcasimpleinput=input, orcablocks=blocks, numcores=numcores, label=f'ICE_{tgen}_', save_output_with_label=True)
     rel_energy_ICE = Singlepoint_reaction(reaction=reaction, theory=ice, unit=reaction_energy_unit)
-    num_genCFGs,num_selected_CFGs,num_after_SD_CFGs = ash.interfaces.interface_ORCA.ICE_WF_CFG_CI_size(ice.filename+'_last.out')
+    num_genCFGs,num_selected_CFGs,num_after_SD_CFGs = ICE_WF_CFG_CI_size(ice.filename+'_last.out')
     #Keeping in dict
     results_ice[tgen] = rel_energy_ICE
     results_ice_genCFGs[tgen] = num_genCFGs
@@ -89,14 +89,14 @@ end
 """
 
 if DoHF is True:
-    hf = ORCATheory(orcasimpleinput=f"! HF {basis} tightscf", orcablocks=blocks, numcores=4)
+    hf = ORCATheory(orcasimpleinput=f"! HF {basis} tightscf", orcablocks=blocks, numcores=4, label='HF', save_output_with_label=True)
     relE_HF = Singlepoint_reaction(reaction=reaction, theory=hf, unit=reaction_energy_unit)
     results_cc['HF'] = relE_HF
 if DoMP2 is True:
-    mp2 = ORCATheory(orcasimpleinput=f"! MP2 {basis} tightscf", orcablocks=blocks, numcores=4)
-    scsmp2 = ORCATheory(orcasimpleinput=f"! SCS-MP2 {basis} tightscf", orcablocks=blocks, numcores=4)
-    oomp2 = ORCATheory(orcasimpleinput=f"! OO-RI-MP2 autoaux {basis} tightscf", orcablocks=blocks, numcores=4)
-    scsoomp2 = ORCATheory(orcasimpleinput=f"! OO-RI-SCS-MP2 {basis} autoaux tightscf", orcablocks=blocks, numcores=4)
+    mp2 = ORCATheory(orcasimpleinput=f"! MP2 {basis} tightscf", orcablocks=blocks, numcores=4, label='MP2', save_output_with_label=True)
+    scsmp2 = ORCATheory(orcasimpleinput=f"! SCS-MP2 {basis} tightscf", orcablocks=blocks, numcores=4, label='SCSMP2', save_output_with_label=True)
+    oomp2 = ORCATheory(orcasimpleinput=f"! OO-RI-MP2 autoaux {basis} tightscf", orcablocks=blocks, numcores=4, label='OOMP2', save_output_with_label=True)
+    scsoomp2 = ORCATheory(orcasimpleinput=f"! OO-RI-SCS-MP2 {basis} autoaux tightscf", orcablocks=blocks, numcores=4, label='OOSCSMP2', save_output_with_label=True)
 
     relE_MP2 = Singlepoint_reaction(reaction=reaction, theory=mp2, unit=reaction_energy_unit)
     relE_SCSMP2 = Singlepoint_reaction(reaction=reaction, theory=scsmp2, unit=reaction_energy_unit)
@@ -107,37 +107,19 @@ if DoMP2 is True:
     results_cc['SCS-MP2'] = relE_SCSMP2
     results_cc['OO-MP2'] = relE_OOMP2
     results_cc['OO-SCS-MP2'] = relE_SCSOOMP2
-if DoHF is True:
-    hf = ORCATheory(orcasimpleinput=f"! HF {basis} tightscf", orcablocks=blocks, numcores=4)
-    relE_HF = Singlepoint_reaction(reaction=reaction, theory=hf, unit=reaction_energy_unit)
-    results_cc['HF'] = relE_HF
-if DoMP2 is True:
-    mp2 = ORCATheory(orcasimpleinput=f"! MP2 {basis} tightscf", orcablocks=blocks, numcores=4)
-    scsmp2 = ORCATheory(orcasimpleinput=f"! SCS-MP2 {basis} tightscf", orcablocks=blocks, numcores=4)
-    oomp2 = ORCATheory(orcasimpleinput=f"! OO-RI-MP2 autoaux {basis} tightscf", orcablocks=blocks, numcores=4)
-    scsoomp2 = ORCATheory(orcasimpleinput=f"! OO-RI-SCS-MP2 {basis} autoaux tightscf", orcablocks=blocks, numcores=4)
 
-    relE_MP2 = Singlepoint_reaction(reaction=reaction, theory=mp2, unit=reaction_energy_unit)
-    relE_SCSMP2 = Singlepoint_reaction(reaction=reaction, theory=scsmp2, unit=reaction_energy_unit)
-    relE_OOMP2 = Singlepoint_reaction(reaction=reaction, theory=oomp2, unit=reaction_energy_unit)
-    relE_SCSOOMP2 = Singlepoint_reaction(reaction=reaction, theory=scsoomp2, unit=reaction_energy_unit)
-
-    results_cc['MP2'] = relE_MP2
-    results_cc['SCS-MP2'] = relE_SCSMP2
-    results_cc['OO-MP2'] = relE_OOMP2
-    results_cc['OO-SCS-MP2'] = relE_SCSOOMP2
 if DoCC is True:
-    ccsd = ORCATheory(orcasimpleinput=f"! CCSD {basis} tightscf", orcablocks=blocks, numcores=4)
-    bccd = ORCATheory(orcasimpleinput=f"! CCSD {basis} tightscf", orcablocks=brucknerblocks, numcores=4)
-    ooccd = ORCATheory(orcasimpleinput=f"! OOCCD {basis} tightscf", orcablocks=blocks, numcores=4)
-    pccsd_1a = ORCATheory(orcasimpleinput=f"! pCCSD/1a {basis} tightscf", orcablocks=blocks, numcores=4)
-    pccsd_2a = ORCATheory(orcasimpleinput=f"! pCCSD/2a {basis} tightscf", orcablocks=blocks, numcores=4)
-    ccsdt = ORCATheory(orcasimpleinput=f"! CCSD(T) {basis} tightscf", orcablocks=blocks, numcores=4)
-    ccsdt_qro = ORCATheory(orcasimpleinput=f"! CCSD(T) {basis} UNO tightscf", orcablocks=blocks, numcores=4)
-    ooccd = ORCATheory(orcasimpleinput=f"! OOCCD {basis} tightscf", orcablocks=blocks, numcores=4)
-    ooccdt = ORCATheory(orcasimpleinput=f"! OOCCD(T) {basis} tightscf", orcablocks=blocks, numcores=4)
-    bccdt = ORCATheory(orcasimpleinput=f"! CCSD(T) {basis} tightscf", orcablocks=brucknerblocks, numcores=4)
-    ccsdt_bp = ORCATheory(orcasimpleinput=f"! CCSD(T) BP86 {basis} tightscf", orcablocks=blocks, numcores=4)
+    ccsd = ORCATheory(orcasimpleinput=f"! CCSD {basis} tightscf", orcablocks=blocks, numcores=4, label='CCSD', save_output_with_label=True)
+    bccd = ORCATheory(orcasimpleinput=f"! CCSD {basis} tightscf", orcablocks=brucknerblocks, numcores=4, label='BCCD', save_output_with_label=True)
+    ooccd = ORCATheory(orcasimpleinput=f"! OOCCD {basis} tightscf", orcablocks=blocks, numcores=4, label='OOCCD', save_output_with_label=True)
+    pccsd_1a = ORCATheory(orcasimpleinput=f"! pCCSD/1a {basis} tightscf", orcablocks=blocks, numcores=4, label='pCCSD1a', save_output_with_label=True)
+    pccsd_2a = ORCATheory(orcasimpleinput=f"! pCCSD/2a {basis} tightscf", orcablocks=blocks, numcores=4, label='pCCSD2a', save_output_with_label=True)
+    ccsdt = ORCATheory(orcasimpleinput=f"! CCSD(T) {basis} tightscf", orcablocks=blocks, numcores=4, label='CCSDT', save_output_with_label=True)
+    ccsdt_qro = ORCATheory(orcasimpleinput=f"! CCSD(T) {basis} UNO tightscf", orcablocks=blocks, numcores=4, label='CCSDT_QRO', save_output_with_label=True)
+    ooccd = ORCATheory(orcasimpleinput=f"! OOCCD {basis} tightscf", orcablocks=blocks, numcores=4, label='OOCCD', save_output_with_label=True)
+    ooccdt = ORCATheory(orcasimpleinput=f"! OOCCD(T) {basis} tightscf", orcablocks=blocks, numcores=4, label='OOCCDT', save_output_with_label=True)
+    bccdt = ORCATheory(orcasimpleinput=f"! CCSD(T) {basis} tightscf", orcablocks=brucknerblocks, numcores=4, label='BCCDT', save_output_with_label=True)
+    ccsdt_bp = ORCATheory(orcasimpleinput=f"! CCSD(T) BP86 {basis} tightscf", orcablocks=blocks, numcores=4, label='CCSDT_BP', save_output_with_label=True)
 
     relE_CCSD = Singlepoint_reaction(reaction=reaction, theory=ccsd, unit=reaction_energy_unit)
     relE_OOCCD = Singlepoint_reaction(reaction=reaction, theory=ooccd, unit=reaction_energy_unit)

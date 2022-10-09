@@ -19,7 +19,7 @@ class ORCATheory:
     def __init__(self, orcadir=None, orcasimpleinput='', printlevel=2, extrabasisatoms=None, extrabasis=None, TDDFT=False, TDDFTroots=5, FollowRoot=1,
                  orcablocks='', extraline='', first_iteration_input=None, brokensym=None, HSmult=None, atomstoflip=None, numcores=1, nprocs=None, label=None, 
                  moreadfile=None, moreadfile_always=False,
-                 autostart=True, propertyblock=None, keep_each_run_output=False, print_population_analysis=False, filename="orca", check_for_errors=True, check_for_warnings=True,
+                 autostart=True, propertyblock=None, save_output_with_label=False, keep_each_run_output=False, print_population_analysis=False, filename="orca", check_for_errors=True, check_for_warnings=True,
                  fragment_indices=None, xdm=False, xdm_a1=None, xdm_a2=None, xdm_func=None):
         print_line_with_mainheader("ORCATheory initialization")
 
@@ -51,8 +51,14 @@ class ORCATheory:
         #Counter for how often ORCATheory.run is called
         self.runcalls=0
 
-        #Whether to keep the ORCA outputfile for each run
+        #Whether to keep the ORCA outputfile for each run as orca_runX.out
         self.keep_each_run_output=keep_each_run_output
+        #Whether to save ORCA outputfile with given label
+        if save_output_with_label is True and label is None:
+            print("Error: save_output_with_label option requires a label keyword also")
+            ashexit()
+        else:
+            self.save_output_with_label=save_output_with_label
 
         #Print population_analysis in each run
         self.print_population_analysis=print_population_analysis
@@ -438,6 +444,10 @@ class ORCATheory:
         outfile=self.filename+'.out'
         engradfile=self.filename+'.engrad'
         pcgradfile=self.filename+'.pcgrad'
+
+        #Optional save ORCA output with filename according to label
+        if self.save_output_with_label is True:
+            shutil.copy(self.filename+'.out', self.filename+f'{self.label}.out')
 
         #Keep outputfile from each run if requested
         if self.keep_each_run_output is True:
