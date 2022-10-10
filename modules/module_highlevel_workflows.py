@@ -2256,7 +2256,7 @@ def basis_for_element(element,basisfamily,cardinal):
 #Function to do ICE-CI FCI with multiple thresholds and simpler WF method comparison and plotting
 def Reaction_FCI_Analysis(reaction=None, basis=None, tgen_thresholds=None, ice_nmin=1.999, ice_nmax=0,
                 DoHF=True,DoMP2=True, DoCC=True, maxcorememory=10000, numcores=1,
-                plot=True, y_axis_label='None', yshift=0.3):
+                plot=True, y_axis_label='None', yshift=0.3, ylimits=None):
     
     #Looping over TGen thresholds in ICE-CI
     results_ice = {}
@@ -2374,19 +2374,9 @@ def Reaction_FCI_Analysis(reaction=None, basis=None, tgen_thresholds=None, ice_n
     ##########################################
     #Printing final results
     ##########################################
-    #Create ASH_plot object named edplot
-    if plot is True:
-        #y-limits based on last ICE calculation rel energy
-        if 'ylimits' in locals():
-            print(f"Using y-limits: {ylimits} {reaction.unit} in plot")
-        else:
-            ylimits = [rel_energy_ICE-yshift,rel_energy_ICE+yshift]
-            print(f"Using y-limits: {ylimits} {reaction.unit} in plot")
-
-        eplot = ASH_plot("Plotname", num_subplots=2, x_axislabels=["TGen", "Method"], y_axislabels=[f'{y_axis_label} ({reaction.unit})',f'{y_axis_label} ({reaction.unit})'], subplot_titles=["ICE-CI","Single ref. methods"],
-            ylimit=ylimits, horizontal=True, padding=0.2)
-        xvals=[];yvals=[]
-        x2vals=[];y2vals=[];labels=[]
+    #Initializing lists for plotting
+    xvals=[];yvals=[]
+    x2vals=[];y2vals=[];labels=[]
 
     print()
     print()
@@ -2413,9 +2403,20 @@ def Reaction_FCI_Analysis(reaction=None, basis=None, tgen_thresholds=None, ice_n
             x2vals.append(i)
             y2vals.append(e)
             labels.append(w)
+    print();print()
 
     #Plotting if plot is True and if matplotlib worked
+    #Create ASH_plot object named edplot
     if plot is True:
+        #y-limits based on last ICE calculation rel energy
+        if ylimits == None:
+            print(f"Using y-limits: {ylimits} {reaction.unit} in plot")
+        else:
+            ylimits = [rel_energy_ICE-yshift,rel_energy_ICE+yshift]
+            print(f"Using y-limits: {ylimits} {reaction.unit} in plot")
+
+        eplot = ASH_plot("Plotname", num_subplots=2, x_axislabels=["TGen", "Method"], y_axislabels=[f'{y_axis_label} ({reaction.unit})',f'{y_axis_label} ({reaction.unit})'], subplot_titles=["ICE-CI","Single ref. methods"],
+            ylimit=ylimits, horizontal=True, padding=0.2)
         if eplot != None:
             #Add dataseries to subplot 0
             #Inverting x-axis and using log-scale for ICE-CI data
