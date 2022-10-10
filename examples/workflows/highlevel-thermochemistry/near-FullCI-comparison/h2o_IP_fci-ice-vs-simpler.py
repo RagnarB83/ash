@@ -19,6 +19,7 @@ reaction_energy_unit='eV'
 reaction_label='H2O_IP'
 
 #Plotting options
+plot = True #Whether to plot data or not (required matplotlib installed)
 y_axis_label='IP'
 # To specify the y-axis limits either define ylimits like this: ylimits=[11.5,12.0] or use yshift. 
 # ylimits=[11.5,12.0] #Values of y-axis
@@ -35,7 +36,7 @@ DoMP2 = True
 DoCC = True
 
 #What Tgen thresholds to calculate in ICE-CI?
-tgen_thresholds=[1e-1,1e-2,1e-3,1e-4,1e-5,1e-6,1e-7,1e-8]
+tgen_thresholds=[1e-1,5e-2,1e-2,5e-3, 1e-3,5e-4,1e-4,5e-5,1e-5,5e-6,1e-6,5e-7,1e-7,5e-8,1e-8]
 #ICE thresholds for selecting active space 
 ice_nmin = 1.999 #Good value for getting O 1s frozen-core for H2O
 ice_nmax = 0 #All virtual orbitals
@@ -74,29 +75,23 @@ for tgen in tgen_thresholds:
 
 #Running regular single-reference WF methods
 results_cc={}
-blocks=f"""
-%maxcore 11000
-%mdci
-maxiter	300
-end
-"""
-brucknerblocks=f"""
-%maxcore 11000
-%mdci
-maxiter 300
-Brueckner true
-end
-"""
+
 
 if DoHF is True:
-    hf = ORCATheory(orcasimpleinput=f"! HF {basis} tightscf", orcablocks=blocks, numcores=4, label='HF', save_output_with_label=True)
+    hfblocks=f"""
+    %maxcore 11000
+    """
+    hf = ORCATheory(orcasimpleinput=f"! HF {basis} tightscf", orcablocks=hfblocks, numcores=4, label='HF', save_output_with_label=True)
     relE_HF = Singlepoint_reaction(reaction=reaction, theory=hf, unit=reaction_energy_unit)
     results_cc['HF'] = relE_HF
 if DoMP2 is True:
-    mp2 = ORCATheory(orcasimpleinput=f"! MP2 {basis} tightscf", orcablocks=blocks, numcores=4, label='MP2', save_output_with_label=True)
-    scsmp2 = ORCATheory(orcasimpleinput=f"! SCS-MP2 {basis} tightscf", orcablocks=blocks, numcores=4, label='SCSMP2', save_output_with_label=True)
-    oomp2 = ORCATheory(orcasimpleinput=f"! OO-RI-MP2 autoaux {basis} tightscf", orcablocks=blocks, numcores=4, label='OOMP2', save_output_with_label=True)
-    scsoomp2 = ORCATheory(orcasimpleinput=f"! OO-RI-SCS-MP2 {basis} autoaux tightscf", orcablocks=blocks, numcores=4, label='OOSCSMP2', save_output_with_label=True)
+    mp2blocks=f"""
+    %maxcore 11000
+    """
+    mp2 = ORCATheory(orcasimpleinput=f"! MP2 {basis} tightscf", orcablocks=mp2blocks, numcores=4, label='MP2', save_output_with_label=True)
+    scsmp2 = ORCATheory(orcasimpleinput=f"! SCS-MP2 {basis} tightscf", orcablocks=mp2blocks, numcores=4, label='SCSMP2', save_output_with_label=True)
+    oomp2 = ORCATheory(orcasimpleinput=f"! OO-RI-MP2 autoaux {basis} tightscf", orcablocks=mp2blocks, numcores=4, label='OOMP2', save_output_with_label=True)
+    scsoomp2 = ORCATheory(orcasimpleinput=f"! OO-RI-SCS-MP2 {basis} autoaux tightscf", orcablocks=mp2blocks, numcores=4, label='OOSCSMP2', save_output_with_label=True)
 
     relE_MP2 = Singlepoint_reaction(reaction=reaction, theory=mp2, unit=reaction_energy_unit)
     relE_SCSMP2 = Singlepoint_reaction(reaction=reaction, theory=scsmp2, unit=reaction_energy_unit)
@@ -109,17 +104,33 @@ if DoMP2 is True:
     results_cc['OO-SCS-MP2'] = relE_SCSOOMP2
 
 if DoCC is True:
-    ccsd = ORCATheory(orcasimpleinput=f"! CCSD {basis} tightscf", orcablocks=blocks, numcores=4, label='CCSD', save_output_with_label=True)
+    ccblocks=f"""
+    %maxcore 11000
+    %mdci
+    maxiter	300
+    end
+    """
+    brucknerblocks=f"""
+    %maxcore 11000
+    %mdci
+    maxiter 300
+    Brueckner true
+    end
+    """
+    ccsd = ORCATheory(orcasimpleinput=f"! CCSD {basis} tightscf", orcablocks=ccblocks, numcores=4, label='CCSD', save_output_with_label=True)
     bccd = ORCATheory(orcasimpleinput=f"! CCSD {basis} tightscf", orcablocks=brucknerblocks, numcores=4, label='BCCD', save_output_with_label=True)
-    ooccd = ORCATheory(orcasimpleinput=f"! OOCCD {basis} tightscf", orcablocks=blocks, numcores=4, label='OOCCD', save_output_with_label=True)
-    pccsd_1a = ORCATheory(orcasimpleinput=f"! pCCSD/1a {basis} tightscf", orcablocks=blocks, numcores=4, label='pCCSD1a', save_output_with_label=True)
-    pccsd_2a = ORCATheory(orcasimpleinput=f"! pCCSD/2a {basis} tightscf", orcablocks=blocks, numcores=4, label='pCCSD2a', save_output_with_label=True)
-    ccsdt = ORCATheory(orcasimpleinput=f"! CCSD(T) {basis} tightscf", orcablocks=blocks, numcores=4, label='CCSDT', save_output_with_label=True)
-    ccsdt_qro = ORCATheory(orcasimpleinput=f"! CCSD(T) {basis} UNO tightscf", orcablocks=blocks, numcores=4, label='CCSDT_QRO', save_output_with_label=True)
-    ooccd = ORCATheory(orcasimpleinput=f"! OOCCD {basis} tightscf", orcablocks=blocks, numcores=4, label='OOCCD', save_output_with_label=True)
-    ooccdt = ORCATheory(orcasimpleinput=f"! OOCCD(T) {basis} tightscf", orcablocks=blocks, numcores=4, label='OOCCDT', save_output_with_label=True)
+    ooccd = ORCATheory(orcasimpleinput=f"! OOCCD {basis} tightscf", orcablocks=ccblocks, numcores=4, label='OOCCD', save_output_with_label=True)
+    pccsd_1a = ORCATheory(orcasimpleinput=f"! pCCSD/1a {basis} tightscf", orcablocks=ccblocks, numcores=4, label='pCCSD1a', save_output_with_label=True)
+    pccsd_2a = ORCATheory(orcasimpleinput=f"! pCCSD/2a {basis} tightscf", orcablocks=ccblocks, numcores=4, label='pCCSD2a', save_output_with_label=True)
+    ccsdt = ORCATheory(orcasimpleinput=f"! CCSD(T) {basis} tightscf", orcablocks=ccblocks, numcores=4, label='CCSDT', save_output_with_label=True)
+    ccsdt_qro = ORCATheory(orcasimpleinput=f"! CCSD(T) {basis} UNO tightscf", orcablocks=ccblocks, numcores=4, label='CCSDT_QRO', save_output_with_label=True)
+    ooccd = ORCATheory(orcasimpleinput=f"! OOCCD {basis} tightscf", orcablocks=ccblocks, numcores=4, label='OOCCD', save_output_with_label=True)
+    ooccdt = ORCATheory(orcasimpleinput=f"! OOCCD(T) {basis} tightscf", orcablocks=ccblocks, numcores=4, label='OOCCDT', save_output_with_label=True)
     bccdt = ORCATheory(orcasimpleinput=f"! CCSD(T) {basis} tightscf", orcablocks=brucknerblocks, numcores=4, label='BCCDT', save_output_with_label=True)
-    ccsdt_bp = ORCATheory(orcasimpleinput=f"! CCSD(T) BP86 {basis} tightscf", orcablocks=blocks, numcores=4, label='CCSDT_BP', save_output_with_label=True)
+    ccsdt_bp = ORCATheory(orcasimpleinput=f"! CCSD(T) BP86 {basis} tightscf", orcablocks=ccblocks, numcores=4, label='CCSDT_BP', save_output_with_label=True)
+
+    #CCSD(T) extrapolated to FCI
+    ccsdt_fci_extrap = ORCA_CC_CBS_Theory(elements=reaction.fragments[0].elems, cardinals = [2], basisfamily="cc", numcores=1, FCI=True)
 
     relE_CCSD = Singlepoint_reaction(reaction=reaction, theory=ccsd, unit=reaction_energy_unit)
     relE_OOCCD = Singlepoint_reaction(reaction=reaction, theory=ooccd, unit=reaction_energy_unit)
@@ -131,6 +142,7 @@ if DoCC is True:
     relE_OOCCDT = Singlepoint_reaction(reaction=reaction, theory=ooccdt, unit=reaction_energy_unit)
     relE_BCCDT = Singlepoint_reaction(reaction=reaction, theory=bccdt, unit=reaction_energy_unit)
     relE_CCSDT_BP = Singlepoint_reaction(reaction=reaction, theory=ccsdt_bp, unit=reaction_energy_unit)
+    relE_CCSDT_FCI_extrap = Singlepoint_reaction(reaction=reaction, theory=ccsdt_fci_extrap, unit=reaction_energy_unit)
 
     results_cc['CCSD'] = relE_CCSD
     results_cc['BCCD'] = relE_BCCD
@@ -142,24 +154,24 @@ if DoCC is True:
     results_cc['OOCCD(T)'] = relE_OOCCDT
     results_cc['BCCD(T)'] = relE_BCCDT
     results_cc['CCSD(T)-BP'] = relE_CCSDT_BP
-
+    results_cc['CCSD(T)-FCI-extrap'] = relE_CCSDT_FCI_extrap
 
 ##########################################
 #Printing final results
 ##########################################
 #Create ASH_plot object named edplot
+if plot is True:
+    #y-limits based on last ICE calculation rel energy
+    if 'ylimits' in locals():
+        print(f"Using y-limits: {ylimits} {reaction_energy_unit} in plot")
+    else:
+        ylimits = [rel_energy_ICE-yshift,rel_energy_ICE+yshift]
+        print(f"Using y-limits: {ylimits} {reaction_energy_unit} in plot")
 
-#y-limits based on last ICE calculation rel energy
-if 'ylimits' in locals():
-    print(f"Using y-limits: {ylimits} {reaction_energy_unit} in plot")
-else:
-    ylimits = [rel_energy_ICE+yshift,rel_energy_ICE-yshift]
-    print(f"Using y-limits: {ylimits} {reaction_energy_unit} in plot")
-
-eplot = ASH_plot("Plotname", num_subplots=2, x_axislabels=["TGen", "Method"], y_axislabels=[f'{y_axis_label} ({reaction_energy_unit})',f'{y_axis_label} ({reaction_energy_unit})'], subplot_titles=["ICE-CI","Single ref. methods"],
-    ylimit=ylimits, horizontal=True)
-xvals=[];yvals=[]
-x2vals=[];y2vals=[];labels=[]
+    eplot = ASH_plot("Plotname", num_subplots=2, x_axislabels=["TGen", "Method"], y_axislabels=[f'{y_axis_label} ({reaction_energy_unit})',f'{y_axis_label} ({reaction_energy_unit})'], subplot_titles=["ICE-CI","Single ref. methods"],
+        ylimit=ylimits, horizontal=True, padding=0.2)
+    xvals=[];yvals=[]
+    x2vals=[];y2vals=[];labels=[]
 
 print()
 print()
@@ -171,9 +183,10 @@ for t, e in results_ice.items():
     sel_cg=results_ice_selCFGs[t]
     sd_cfg=results_ice_SDCFGs[t]
     print("{:<10.2e} {:13.10f} {:15} {:15} {:15}".format(t,e,gen_cfg,sel_cg, sd_cfg))
-    #Add data to lists for plotting
-    xvals.append(t)
-    yvals.append(e)
+    if plot is True:
+        #Add data to lists for plotting
+        xvals.append(t)
+        yvals.append(e)
 print()
 print()
 print("Other methods:")
@@ -181,15 +194,21 @@ print(f" WF   Energy ({reaction_energy_unit})")
 print("----------------------------")
 for i,(w, e) in enumerate(results_cc.items()):
     print("{:<10} {:13.10f}".format(w,e))
-    x2vals.append(i)
-    y2vals.append(e)
-    labels.append(w)
+    if plot is True:
+        x2vals.append(i)
+        y2vals.append(e)
+        labels.append(w)
 
-#Add dataseries to subplot 0
-#Inverting x-axis and using log-scale for ICE-CI data
-eplot.addseries(0, x_list=xvals, y_list=yvals, label=reaction_label, color='blue', line=True, scatter=True, x_scale_log=True, invert_x_axis=True)
-#Plotting method labels on x-axis with rotation to make things fit
-eplot.addseries(1, x_list=x2vals, y_list=y2vals, x_labels=labels, label=reaction_label, color='red', line=True, scatter=True, xticklabelrotation=80)
+#Plotting if plot is True and if matplotlib worked
+if plot is True:
+    if eplot != None:
+        #Add dataseries to subplot 0
+        #Inverting x-axis and using log-scale for ICE-CI data
+        eplot.addseries(0, x_list=xvals, y_list=yvals, label=reaction_label, color='blue', line=True, scatter=True, x_scale_log=True, invert_x_axis=True)
+        #Plotting method labels on x-axis with rotation to make things fit
+        eplot.addseries(1, x_list=x2vals, y_list=y2vals, x_labels=labels, label=reaction_label, color='red', line=True, scatter=True, xticklabelrotation=80)
 
-#Save figure
-eplot.savefig(f'{reaction_label}_FCI')
+        #Save figure
+        eplot.savefig(f'{reaction_label}_FCI')
+    else:
+        print("Could not plot data due to ASH_plot problem.")

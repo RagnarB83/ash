@@ -9,9 +9,11 @@ import copy
 import ash.constants
 import ash.dictionaries_lists
 import ash.interfaces.interface_ORCA
+from ash.interfaces.interface_ORCA import ICE_WF_CFG_CI_size
 from ash.functions.functions_elstructure import num_core_electrons, check_cores_vs_electrons
 from ash.functions.functions_general import ashexit, BC, print_line_with_mainheader, pygrep2, pygrep
 from ash.modules.module_coords import elemlisttoformula, nucchargelist,elematomnumbers
+from ash.modules.module_plotting import ASH_plot
 
 # Allowed basis set families. Accessed by function basis_for_element and extrapolation
 basisfamilies=['cc','aug-cc','cc-dkh','cc-dk','aug-cc-dkh','aug-cc-dk','def2','ma-def2','def2-zora', 'def2-dkh', 'def2-dk', 
@@ -2251,18 +2253,178 @@ def basis_for_element(element,basisfamily,cardinal):
     ashexit()
 
 
-#OLd ideas:
-#elements_basis_sets_ORCA = {1:["cc-pVDZ", "cc-pVTZ", "cc-pVTZ", "cc-pVQZ", "cc-pV5Z", "cc-pV6Z", 
-#                        "aug-cc-pVDZ", "aug-cc-pVTZ", "aug-cc-pVTZ", "aug-cc-pVQZ", "aug-cc-pV5Z", "aug-cc-pV6Z",
-#                        "def2-SV(P)", "def2-SVP", "def2-TZVP", "def2-TZVPP", "def2-QZVP", "def2-QZVPP",
-#                        "dhf-SV(P)", "dhf-SVP", "dhf-TZVP", "dhf-TZVPP", "dhf-QZVP", "dhf-QZVPP",
-#                        "x2c-SV(P)all", "x2c-SVPall", "x2c-TZVPall", "x2c-TZVPPall", "x2c-QZVPall", "x2c-QZVPPall",
-#                        "ma-def2-SV(P)", "ma-def2-SVP", "ma-def2-TZVP", "ma-def2-TZVPP", "ma-def2-QZVP", "ma-def2-QZVPP",
-#                        "def2-SVPD", "def2-TZVPD", "def2-TZVPPD", "def2-QZVPD", "def2-QZVPPD",
-#                       "ZORA-def2-SV(P)", "ZORA-def2-SVP", "ZORA-def2-TZVP", "ZORA-def2-TZVP(-f)", "ZORA-def2-TZVPP", "ZORA-def2-QZVPP",
-#                       "DKH-def2-SV(P)", "DKH-def2-SVP", "DKH-def2-TZVP", "DKH-def2-TZVP(-f)", "DKH-def2-TZVPP", "DKH-def2-QZVPP", 
-#                       "ma-ZORA-def2-SV(P)", "ma-ZORA-def2-SVP", "ma-ZORA-def2-TZVP", "ma-ZORA-def2-TZVPP", "ma-ZORA-def2-QZVPP",
-#                      "ma-DKH-def2-SV(P)", "ma-DKH-def2-SVP", "ma-DKH-def2-TZVP", "ma-DKH-def2-TZVPP", "ma-DKH-def2-QZVPP",
-#                       ]}
-#Get hydrogen cc-pVDZ basis
-#elements_basis_sets[1].ccpVDZ
+#Function to do ICE-CI FCI with multiple thresholds and simpler WF method comparison and plotting
+def Reaction_FCI_Analysis(reaction=None, basis=None, tgen_thresholds=None, ice_nmin=1.999, ice_nmax=0,
+                DoHF=True,DoMP2=True, DoCC=True, maxcorememory=10000, numcores=1,
+                plot=True, y_axis_label='None', yshift=0.3):
+    
+    #Looping over TGen thresholds in ICE-CI
+    results_ice = {}
+    results_ice_genCFGs={}
+    results_ice_selCFGs={}
+    results_ice_SDCFGs={}
+    for tgen in tgen_thresholds:
+        print("="*100)
+        print(f"Now doing tgen: {tgen}")
+        input=f"! Auto-ICE {basis} tightscf"
+        #Setting ICE-CI so that frozen-core is applied (1s oxygen frozen). Note: Auto-ICE also required.
+        blocks=f"""
+        %maxcore {maxcorememory}
+        %ice
+        nmin {ice_nmin}
+        nmax {ice_nmax}
+        tgen {tgen}
+        useMP2nat true
+        end
+        """
+        ice = ash.ORCATheory(orcasimpleinput=input, orcablocks=blocks, numcores=numcores, label=f'ICE_{tgen}_', save_output_with_label=True)
+        rel_energy_ICE = ash.Singlepoint_reaction(reaction=reaction, theory=ice, unit=reaction.unit)
+        num_genCFGs,num_selected_CFGs,num_after_SD_CFGs = ICE_WF_CFG_CI_size(ice.filename+'_last.out')
+        #Keeping in dict
+        results_ice[tgen] = rel_energy_ICE
+        results_ice_genCFGs[tgen] = num_genCFGs
+        results_ice_selCFGs[tgen] = num_selected_CFGs
+        results_ice_SDCFGs[tgen] = num_after_SD_CFGs
+
+
+
+    #Running regular single-reference WF methods
+    results_cc={}
+
+
+    if DoHF is True:
+        hfblocks=f"""
+        %maxcore 11000
+        """
+        hf = ash.ORCATheory(orcasimpleinput=f"! HF {basis} tightscf", orcablocks=hfblocks, numcores=4, label='HF', save_output_with_label=True)
+        relE_HF = ash.Singlepoint_reaction(reaction=reaction, theory=hf, unit=reaction.unit)
+        results_cc['HF'] = relE_HF
+    if DoMP2 is True:
+        mp2blocks=f"""
+        %maxcore 11000
+        """
+        mp2 = ash.ORCATheory(orcasimpleinput=f"! MP2 {basis} tightscf", orcablocks=mp2blocks, numcores=4, label='MP2', save_output_with_label=True)
+        scsmp2 = ash.ORCATheory(orcasimpleinput=f"! SCS-MP2 {basis} tightscf", orcablocks=mp2blocks, numcores=4, label='SCSMP2', save_output_with_label=True)
+        oomp2 = ash.ORCATheory(orcasimpleinput=f"! OO-RI-MP2 autoaux {basis} tightscf", orcablocks=mp2blocks, numcores=4, label='OOMP2', save_output_with_label=True)
+        scsoomp2 = ash.ORCATheory(orcasimpleinput=f"! OO-RI-SCS-MP2 {basis} autoaux tightscf", orcablocks=mp2blocks, numcores=4, label='OOSCSMP2', save_output_with_label=True)
+
+        relE_MP2 = ash.Singlepoint_reaction(reaction=reaction, theory=mp2, unit=reaction.unit)
+        relE_SCSMP2 = ash.Singlepoint_reaction(reaction=reaction, theory=scsmp2, unit=reaction.unit)
+        relE_OOMP2 = ash.Singlepoint_reaction(reaction=reaction, theory=oomp2, unit=reaction.unit)
+        relE_SCSOOMP2 = ash.Singlepoint_reaction(reaction=reaction, theory=scsoomp2, unit=reaction.unit)
+
+        results_cc['MP2'] = relE_MP2
+        results_cc['SCS-MP2'] = relE_SCSMP2
+        results_cc['OO-MP2'] = relE_OOMP2
+        results_cc['OO-SCS-MP2'] = relE_SCSOOMP2
+
+    if DoCC is True:
+        ccblocks=f"""
+        %maxcore 11000
+        %mdci
+        maxiter	300
+        end
+        """
+        brucknerblocks=f"""
+        %maxcore 11000
+        %mdci
+        maxiter 300
+        Brueckner true
+        end
+        """
+        ccsd = ash.ORCATheory(orcasimpleinput=f"! CCSD {basis} tightscf", orcablocks=ccblocks, numcores=4, label='CCSD', save_output_with_label=True)
+        bccd = ash.ORCATheory(orcasimpleinput=f"! CCSD {basis} tightscf", orcablocks=brucknerblocks, numcores=4, label='BCCD', save_output_with_label=True)
+        ooccd = ash.ORCATheory(orcasimpleinput=f"! OOCCD {basis} tightscf", orcablocks=ccblocks, numcores=4, label='OOCCD', save_output_with_label=True)
+        pccsd_1a = ash.ORCATheory(orcasimpleinput=f"! pCCSD/1a {basis} tightscf", orcablocks=ccblocks, numcores=4, label='pCCSD1a', save_output_with_label=True)
+        pccsd_2a = ash.ORCATheory(orcasimpleinput=f"! pCCSD/2a {basis} tightscf", orcablocks=ccblocks, numcores=4, label='pCCSD2a', save_output_with_label=True)
+        ccsdt = ash.ORCATheory(orcasimpleinput=f"! CCSD(T) {basis} tightscf", orcablocks=ccblocks, numcores=4, label='CCSDT', save_output_with_label=True)
+        ccsdt_qro = ash.ORCATheory(orcasimpleinput=f"! CCSD(T) {basis} UNO tightscf", orcablocks=ccblocks, numcores=4, label='CCSDT_QRO', save_output_with_label=True)
+        ooccd = ash.ORCATheory(orcasimpleinput=f"! OOCCD {basis} tightscf", orcablocks=ccblocks, numcores=4, label='OOCCD', save_output_with_label=True)
+        ooccdt = ash.ORCATheory(orcasimpleinput=f"! OOCCD(T) {basis} tightscf", orcablocks=ccblocks, numcores=4, label='OOCCDT', save_output_with_label=True)
+        bccdt = ash.ORCATheory(orcasimpleinput=f"! CCSD(T) {basis} tightscf", orcablocks=brucknerblocks, numcores=4, label='BCCDT', save_output_with_label=True)
+        ccsdt_bp = ash.ORCATheory(orcasimpleinput=f"! CCSD(T) BP86 {basis} tightscf", orcablocks=ccblocks, numcores=4, label='CCSDT_BP', save_output_with_label=True)
+
+        #CCSD(T) extrapolated to FCI
+        ccsdt_fci_extrap = ORCA_CC_CBS_Theory(elements=reaction.fragments[0].elems, cardinals = [2], basisfamily="cc", numcores=1, FCI=True)
+
+        relE_CCSD = ash.Singlepoint_reaction(reaction=reaction, theory=ccsd, unit=reaction.unit)
+        relE_OOCCD = ash.Singlepoint_reaction(reaction=reaction, theory=ooccd, unit=reaction.unit)
+        relE_BCCD = ash.Singlepoint_reaction(reaction=reaction, theory=bccd, unit=reaction.unit)
+        relE_pCCSD1a = ash.Singlepoint_reaction(reaction=reaction, theory=pccsd_1a, unit=reaction.unit)
+        relE_pCCSD2a = ash.Singlepoint_reaction(reaction=reaction, theory=pccsd_2a, unit=reaction.unit)
+        relE_CCSDT = ash.Singlepoint_reaction(reaction=reaction, theory=ccsdt, unit=reaction.unit)
+        relE_CCSDT_QRO = ash.Singlepoint_reaction(reaction=reaction, theory=ccsdt_qro, unit=reaction.unit)
+        relE_OOCCDT = ash.Singlepoint_reaction(reaction=reaction, theory=ooccdt, unit=reaction.unit)
+        relE_BCCDT = ash.Singlepoint_reaction(reaction=reaction, theory=bccdt, unit=reaction.unit)
+        relE_CCSDT_BP = ash.Singlepoint_reaction(reaction=reaction, theory=ccsdt_bp, unit=reaction.unit)
+        relE_CCSDT_FCI_extrap = ash.Singlepoint_reaction(reaction=reaction, theory=ccsdt_fci_extrap, unit=reaction.unit)
+
+        results_cc['CCSD'] = relE_CCSD
+        results_cc['BCCD'] = relE_BCCD
+        results_cc['OOCCD'] = relE_OOCCD
+        results_cc['pCCSD/1a'] = relE_pCCSD1a
+        results_cc['pCCSD/2a'] = relE_pCCSD2a
+        results_cc['CCSD(T)'] = relE_CCSDT
+        results_cc['CCSD(T)-QRO'] = relE_CCSDT_QRO
+        results_cc['OOCCD(T)'] = relE_OOCCDT
+        results_cc['BCCD(T)'] = relE_BCCDT
+        results_cc['CCSD(T)-BP'] = relE_CCSDT_BP
+        results_cc['CCSD(T)-FCI-extrap'] = relE_CCSDT_FCI_extrap
+
+    ##########################################
+    #Printing final results
+    ##########################################
+    #Create ASH_plot object named edplot
+    if plot is True:
+        #y-limits based on last ICE calculation rel energy
+        if 'ylimits' in locals():
+            print(f"Using y-limits: {ylimits} {reaction.unit} in plot")
+        else:
+            ylimits = [rel_energy_ICE-yshift,rel_energy_ICE+yshift]
+            print(f"Using y-limits: {ylimits} {reaction.unit} in plot")
+
+        eplot = ASH_plot("Plotname", num_subplots=2, x_axislabels=["TGen", "Method"], y_axislabels=[f'{y_axis_label} ({reaction.unit})',f'{y_axis_label} ({reaction.unit})'], subplot_titles=["ICE-CI","Single ref. methods"],
+            ylimit=ylimits, horizontal=True, padding=0.2)
+        xvals=[];yvals=[]
+        x2vals=[];y2vals=[];labels=[]
+
+    print()
+    print()
+    print("ICE-CI CIPSI wavefunction")
+    print(f" Tgen      Energy ({reaction.unit})        # gen. CFGs       # sel. CFGs     # max S+D CFGs")
+    print("---------------------------------------------------------------------------------")
+    for t, e in results_ice.items():
+        gen_cfg=results_ice_genCFGs[t]
+        sel_cg=results_ice_selCFGs[t]
+        sd_cfg=results_ice_SDCFGs[t]
+        print("{:<10.2e} {:13.10f} {:15} {:15} {:15}".format(t,e,gen_cfg,sel_cg, sd_cfg))
+        if plot is True:
+            #Add data to lists for plotting
+            xvals.append(t)
+            yvals.append(e)
+    print()
+    print()
+    print("Other methods:")
+    print(f" WF   Energy ({reaction.unit})")
+    print("----------------------------")
+    for i,(w, e) in enumerate(results_cc.items()):
+        print("{:<10} {:13.10f}".format(w,e))
+        if plot is True:
+            x2vals.append(i)
+            y2vals.append(e)
+            labels.append(w)
+
+    #Plotting if plot is True and if matplotlib worked
+    if plot is True:
+        if eplot != None:
+            #Add dataseries to subplot 0
+            #Inverting x-axis and using log-scale for ICE-CI data
+            eplot.addseries(0, x_list=xvals, y_list=yvals, label=reaction.label, color='blue', line=True, scatter=True, x_scale_log=True, invert_x_axis=True)
+            #Plotting method labels on x-axis with rotation to make things fit
+            eplot.addseries(1, x_list=x2vals, y_list=y2vals, x_labels=labels, label=reaction.label, color='red', line=True, scatter=True, xticklabelrotation=80)
+
+            #Save figure
+            eplot.savefig(f'{reaction.label}_FCI')
+        else:
+            print("Could not plot data due to ASH_plot problem.")
+

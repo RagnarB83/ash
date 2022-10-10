@@ -211,7 +211,7 @@ def Singlepoint_fragments_and_theories(theories=None, fragments=None, stoichiome
 
 #Single-point energy function that runs calculations on an ASH reaction object
 #Assuming fragments have charge,mult info defined.
-def Singlepoint_reaction(theory=None, reaction=None, unit='kcal/mol'):
+def Singlepoint_reaction(theory=None, reaction=None, unit=None):
     print_line_with_mainheader("Singlepoint_reaction function")
 
     print("Will run single-point calculation on each fragment defined in reaction and return the reaction energy")
@@ -240,7 +240,12 @@ def Singlepoint_reaction(theory=None, reaction=None, unit='kcal/mol'):
     #Print table
     print_fragments_table(reaction.fragments,reaction.energies, tabletitle="Singlepoint_reaction: ")
 
-    reaction.calculate_reaction_energy(unit=unit)
+    #Setting unit of reaction if given (will override reaction.unit definition)
+    #NOTE: Needed?
+    if unit is not None:
+        reaction.unit=unit
+    
+    reaction.calculate_reaction_energy()
 
     if isinstance(theory,ash.ORCA_CC_CBS_Theory):
         print("-"*70)

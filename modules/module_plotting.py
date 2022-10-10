@@ -22,7 +22,8 @@ def load_matplotlib():
         import matplotlib
     except:
         print("Loading MatplotLib failed. Probably not installed. Please install using conda: conda install matplotlib or pip: pip install matplotlib")
-        ashexit()
+        return None
+        #ashexit()
     print("Matplotlib loaded")
     matplotlib.use('Agg')
     import matplotlib.pyplot as plt 
@@ -49,7 +50,11 @@ class ASH_plot():
         legend_pos=None, horizontal=False, tight_layout=True, padding=None):
         print_line_with_mainheader("ASH_energy_plot")
 
-        load_matplotlib() #Load Matplotlib
+        plt = load_matplotlib() #Load Matplotlib
+        
+        if plt == None:
+            print("Matplotlib failed to load. Exiting ASH_plot")
+            return None
         self.num_subplots=num_subplots
         self.imageformat=imageformat
         self.dpi=dpi

@@ -29,7 +29,7 @@ ashpath = os.path.dirname(ash.__file__)
 # Optimizer ? Probably not
 
 class Reaction:
-    def __init__(self, fragments, stoichiometry, label=None):
+    def __init__(self, fragments, stoichiometry, label=None, unit='eV'):
         print_line_with_subheader1("New ASH reaction")
 
         #Reading fragments and checking for charge/mult
@@ -41,6 +41,8 @@ class Reaction:
 
         self.label=label
 
+        self.unit=unit
+
         #List of energies for each fragment
         self.energies = []
         #Reaction energy
@@ -51,9 +53,10 @@ class Reaction:
             if frag.charge == None or frag.mult == None:
                 print("Error: Missing charge/mult information in fragment:",frag.formula)
                 ashexit()
-    def calculate_reaction_energy(self, unit='kcal/mol'):
+    def calculate_reaction_energy(self):
         if len(self.energies) == len(self.fragments):
-            self.reaction_energy = ash.ReactionEnergy(list_of_energies=self.energies, stoichiometry=self.stoichiometry, unit=unit, silent=False, label=self.label)[0]
+            self.reaction_energy = ash.ReactionEnergy(list_of_energies=self.energies, stoichiometry=self.stoichiometry, unit=self.unit, silent=False, 
+                label=self.label)[0]
         else:
             print("Warning. Could not calculate reaction energy as we are missing energies for fragments")
 
