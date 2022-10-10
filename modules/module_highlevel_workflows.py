@@ -2255,7 +2255,9 @@ def basis_for_element(element,basisfamily,cardinal):
 
 #Function to do ICE-CI FCI with multiple thresholds and simpler WF method comparison and plotting
 def Reaction_FCI_Analysis(reaction=None, basis=None, tgen_thresholds=None, ice_nmin=1.999, ice_nmax=0,
-                DoHF=True,DoMP2=True, DoCC=True, maxcorememory=10000, numcores=1,
+                DoHF=True,DoMP2=True, DoCC=True, DoCC_CCSD=True, DoCC_CCSDT=True, 
+                DoCC_DFTorbs=True, KS_functionals=['BP86','BHLYP'],
+                maxcorememory=10000, numcores=1,
                 plot=True, y_axis_label='None', yshift=0.3, ylimits=None):
     
     #Looping over TGen thresholds in ICE-CI
@@ -2299,17 +2301,17 @@ def Reaction_FCI_Analysis(reaction=None, basis=None, tgen_thresholds=None, ice_n
         hfblocks=f"""
         %maxcore 11000
         """
-        hf = ash.ORCATheory(orcasimpleinput=f"! HF {basis} tightscf", orcablocks=hfblocks, numcores=4, label='HF', save_output_with_label=True)
+        hf = ash.ORCATheory(orcasimpleinput=f"! HF {basis} tightscf", orcablocks=hfblocks, numcores=numcores, label='HF', save_output_with_label=True)
         relE_HF = ash.Singlepoint_reaction(reaction=reaction, theory=hf, unit=reaction.unit)
         results_cc['HF'] = relE_HF
     if DoMP2 is True:
         mp2blocks=f"""
         %maxcore 11000
         """
-        mp2 = ash.ORCATheory(orcasimpleinput=f"! MP2 {basis} tightscf", orcablocks=mp2blocks, numcores=4, label='MP2', save_output_with_label=True)
-        scsmp2 = ash.ORCATheory(orcasimpleinput=f"! SCS-MP2 {basis} tightscf", orcablocks=mp2blocks, numcores=4, label='SCSMP2', save_output_with_label=True)
-        oomp2 = ash.ORCATheory(orcasimpleinput=f"! OO-RI-MP2 autoaux {basis} tightscf", orcablocks=mp2blocks, numcores=4, label='OOMP2', save_output_with_label=True)
-        scsoomp2 = ash.ORCATheory(orcasimpleinput=f"! OO-RI-SCS-MP2 {basis} autoaux tightscf", orcablocks=mp2blocks, numcores=4, label='OOSCSMP2', save_output_with_label=True)
+        mp2 = ash.ORCATheory(orcasimpleinput=f"! MP2 {basis} tightscf", orcablocks=mp2blocks, numcores=numcores, label='MP2', save_output_with_label=True)
+        scsmp2 = ash.ORCATheory(orcasimpleinput=f"! SCS-MP2 {basis} tightscf", orcablocks=mp2blocks, numcores=numcores, label='SCSMP2', save_output_with_label=True)
+        oomp2 = ash.ORCATheory(orcasimpleinput=f"! OO-RI-MP2 autoaux {basis} tightscf", orcablocks=mp2blocks, numcores=numcores, label='OOMP2', save_output_with_label=True)
+        scsoomp2 = ash.ORCATheory(orcasimpleinput=f"! OO-RI-SCS-MP2 {basis} autoaux tightscf", orcablocks=mp2blocks, numcores=numcores, label='OOSCSMP2', save_output_with_label=True)
 
         relE_MP2 = ash.Singlepoint_reaction(reaction=reaction, theory=mp2, unit=reaction.unit)
         relE_SCSMP2 = ash.Singlepoint_reaction(reaction=reaction, theory=scsmp2, unit=reaction.unit)
@@ -2322,6 +2324,10 @@ def Reaction_FCI_Analysis(reaction=None, basis=None, tgen_thresholds=None, ice_n
         results_cc['OO-SCS-MP2'] = relE_SCSOOMP2
 
     if DoCC is True:
+        #TODO: Reduce numcores here for small systems. CC-code complains if numcores exceeds pairs.
+        #  Do it for smallest fragment?
+        #numcores = check_cores_vs_electrons(reaction.fragments[0].elems,numcores,charge)
+
         ccblocks=f"""
         %maxcore 11000
         %mdci
@@ -2335,44 +2341,50 @@ def Reaction_FCI_Analysis(reaction=None, basis=None, tgen_thresholds=None, ice_n
         Brueckner true
         end
         """
-        ccsd = ash.ORCATheory(orcasimpleinput=f"! CCSD {basis} tightscf", orcablocks=ccblocks, numcores=4, label='CCSD', save_output_with_label=True)
-        bccd = ash.ORCATheory(orcasimpleinput=f"! CCSD {basis} tightscf", orcablocks=brucknerblocks, numcores=4, label='BCCD', save_output_with_label=True)
-        ooccd = ash.ORCATheory(orcasimpleinput=f"! OOCCD {basis} tightscf", orcablocks=ccblocks, numcores=4, label='OOCCD', save_output_with_label=True)
-        pccsd_1a = ash.ORCATheory(orcasimpleinput=f"! pCCSD/1a {basis} tightscf", orcablocks=ccblocks, numcores=4, label='pCCSD1a', save_output_with_label=True)
-        pccsd_2a = ash.ORCATheory(orcasimpleinput=f"! pCCSD/2a {basis} tightscf", orcablocks=ccblocks, numcores=4, label='pCCSD2a', save_output_with_label=True)
-        ccsdt = ash.ORCATheory(orcasimpleinput=f"! CCSD(T) {basis} tightscf", orcablocks=ccblocks, numcores=4, label='CCSDT', save_output_with_label=True)
-        ccsdt_qro = ash.ORCATheory(orcasimpleinput=f"! CCSD(T) {basis} UNO tightscf", orcablocks=ccblocks, numcores=4, label='CCSDT_QRO', save_output_with_label=True)
-        ooccd = ash.ORCATheory(orcasimpleinput=f"! OOCCD {basis} tightscf", orcablocks=ccblocks, numcores=4, label='OOCCD', save_output_with_label=True)
-        ooccdt = ash.ORCATheory(orcasimpleinput=f"! OOCCD(T) {basis} tightscf", orcablocks=ccblocks, numcores=4, label='OOCCDT', save_output_with_label=True)
-        bccdt = ash.ORCATheory(orcasimpleinput=f"! CCSD(T) {basis} tightscf", orcablocks=brucknerblocks, numcores=4, label='BCCDT', save_output_with_label=True)
-        ccsdt_bp = ash.ORCATheory(orcasimpleinput=f"! CCSD(T) BP86 {basis} tightscf", orcablocks=ccblocks, numcores=4, label='CCSDT_BP', save_output_with_label=True)
-
-        #CCSD(T) extrapolated to FCI
-        ccsdt_fci_extrap = ORCA_CC_CBS_Theory(elements=reaction.fragments[0].elems, cardinals = [2], basisfamily="cc", numcores=1, FCI=True)
-
-        relE_CCSD = ash.Singlepoint_reaction(reaction=reaction, theory=ccsd, unit=reaction.unit)
-        relE_OOCCD = ash.Singlepoint_reaction(reaction=reaction, theory=ooccd, unit=reaction.unit)
-        relE_BCCD = ash.Singlepoint_reaction(reaction=reaction, theory=bccd, unit=reaction.unit)
-        relE_pCCSD1a = ash.Singlepoint_reaction(reaction=reaction, theory=pccsd_1a, unit=reaction.unit)
-        relE_pCCSD2a = ash.Singlepoint_reaction(reaction=reaction, theory=pccsd_2a, unit=reaction.unit)
-        relE_CCSDT = ash.Singlepoint_reaction(reaction=reaction, theory=ccsdt, unit=reaction.unit)
-        relE_CCSDT_QRO = ash.Singlepoint_reaction(reaction=reaction, theory=ccsdt_qro, unit=reaction.unit)
-        relE_OOCCDT = ash.Singlepoint_reaction(reaction=reaction, theory=ooccdt, unit=reaction.unit)
-        relE_BCCDT = ash.Singlepoint_reaction(reaction=reaction, theory=bccdt, unit=reaction.unit)
-        relE_CCSDT_BP = ash.Singlepoint_reaction(reaction=reaction, theory=ccsdt_bp, unit=reaction.unit)
-        relE_CCSDT_FCI_extrap = ash.Singlepoint_reaction(reaction=reaction, theory=ccsdt_fci_extrap, unit=reaction.unit)
-
-        results_cc['CCSD'] = relE_CCSD
-        results_cc['BCCD'] = relE_BCCD
-        results_cc['OOCCD'] = relE_OOCCD
-        results_cc['pCCSD/1a'] = relE_pCCSD1a
-        results_cc['pCCSD/2a'] = relE_pCCSD2a
-        results_cc['CCSD(T)'] = relE_CCSDT
-        results_cc['CCSD(T)-QRO'] = relE_CCSDT_QRO
-        results_cc['OOCCD(T)'] = relE_OOCCDT
-        results_cc['BCCD(T)'] = relE_BCCDT
-        results_cc['CCSD(T)-BP'] = relE_CCSDT_BP
-        results_cc['CCSD(T)-FCI-extrap'] = relE_CCSDT_FCI_extrap
+        if DoCC_CCSD is True:
+            ccsd = ash.ORCATheory(orcasimpleinput=f"! CCSD {basis} tightscf", orcablocks=ccblocks, numcores=numcores, label='CCSD', save_output_with_label=True)
+            bccd = ash.ORCATheory(orcasimpleinput=f"! CCSD {basis} tightscf", orcablocks=brucknerblocks, numcores=numcores, label='BCCD', save_output_with_label=True)
+            ooccd = ash.ORCATheory(orcasimpleinput=f"! OOCCD {basis} tightscf", orcablocks=ccblocks, numcores=numcores, label='OOCCD', save_output_with_label=True)
+            pccsd_1a = ash.ORCATheory(orcasimpleinput=f"! pCCSD/1a {basis} tightscf", orcablocks=ccblocks, numcores=numcores, label='pCCSD1a', save_output_with_label=True)
+            pccsd_2a = ash.ORCATheory(orcasimpleinput=f"! pCCSD/2a {basis} tightscf", orcablocks=ccblocks, numcores=numcores, label='pCCSD2a', save_output_with_label=True)
+            relE_CCSD = ash.Singlepoint_reaction(reaction=reaction, theory=ccsd, unit=reaction.unit)
+            relE_OOCCD = ash.Singlepoint_reaction(reaction=reaction, theory=ooccd, unit=reaction.unit)
+            relE_BCCD = ash.Singlepoint_reaction(reaction=reaction, theory=bccd, unit=reaction.unit)
+            relE_pCCSD1a = ash.Singlepoint_reaction(reaction=reaction, theory=pccsd_1a, unit=reaction.unit)
+            relE_pCCSD2a = ash.Singlepoint_reaction(reaction=reaction, theory=pccsd_2a, unit=reaction.unit)
+            results_cc['CCSD'] = relE_CCSD
+            results_cc['BCCD'] = relE_BCCD
+            results_cc['OOCCD'] = relE_OOCCD
+            results_cc['pCCSD/1a'] = relE_pCCSD1a
+            results_cc['pCCSD/2a'] = relE_pCCSD2a
+        if DoCC_CCSDT is True:
+            ccsdt = ash.ORCATheory(orcasimpleinput=f"! CCSD(T) {basis} tightscf", orcablocks=ccblocks, numcores=numcores, label='CCSDT', save_output_with_label=True)
+            ccsdt_qro = ash.ORCATheory(orcasimpleinput=f"! CCSD(T) {basis} UNO tightscf", orcablocks=ccblocks, numcores=numcores, label='CCSDT_QRO', save_output_with_label=True)
+            ooccd = ash.ORCATheory(orcasimpleinput=f"! OOCCD {basis} tightscf", orcablocks=ccblocks, numcores=numcores, label='OOCCD', save_output_with_label=True)
+            ooccdt = ash.ORCATheory(orcasimpleinput=f"! OOCCD(T) {basis} tightscf", orcablocks=ccblocks, numcores=numcores, label='OOCCDT', save_output_with_label=True)
+            bccdt = ash.ORCATheory(orcasimpleinput=f"! CCSD(T) {basis} tightscf", orcablocks=brucknerblocks, numcores=numcores, label='BCCDT', save_output_with_label=True)
+            #CCSD(T) extrapolated to FCI
+            ccsdt_fci_extrap = ORCA_CC_CBS_Theory(elements=reaction.fragments[0].elems, cardinals = [2], basisfamily="cc", numcores=1, FCI=True)
+            #Run
+            relE_CCSDT = ash.Singlepoint_reaction(reaction=reaction, theory=ccsdt, unit=reaction.unit)
+            relE_CCSDT_QRO = ash.Singlepoint_reaction(reaction=reaction, theory=ccsdt_qro, unit=reaction.unit)
+            relE_OOCCDT = ash.Singlepoint_reaction(reaction=reaction, theory=ooccdt, unit=reaction.unit)
+            relE_BCCDT = ash.Singlepoint_reaction(reaction=reaction, theory=bccdt, unit=reaction.unit)
+            relE_CCSDT_FCI_extrap = ash.Singlepoint_reaction(reaction=reaction, theory=ccsdt_fci_extrap, unit=reaction.unit)
+            results_cc['CCSD(T)'] = relE_CCSDT
+            results_cc['CCSD(T)-QRO'] = relE_CCSDT_QRO
+            results_cc['OOCCD(T)'] = relE_OOCCDT
+            results_cc['BCCD(T)'] = relE_BCCDT
+            results_cc['CCSD(T)-FCI-extrap'] = relE_CCSDT_FCI_extrap
+            #CCSD(T) with multiple DFT orbitals
+            if DoCC_DFTorbs is True:
+                print("Running CCSD(T) with multiple functionals")
+                for functional in KS_functionals:
+                    print("Doing orbitals from:", functional)
+                    #Hybrid KS reference requires auxC basis (singles term) so adding autoaux
+                    ccsdt_dft = ash.ORCATheory(orcasimpleinput=f"! CCSD(T) {functional} {basis} autoaux tightscf", orcablocks=ccblocks, numcores=numcores, label=f'CCSDT_{functional}', save_output_with_label=True)
+                    relE_CCSDT_DFT = ash.Singlepoint_reaction(reaction=reaction, theory=ccsdt_dft, unit=reaction.unit)
+                    results_cc[f'CCSD(T)-{functional}'] = relE_CCSDT_DFT
 
     ##########################################
     #Printing final results
