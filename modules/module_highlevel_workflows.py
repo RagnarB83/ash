@@ -2278,7 +2278,13 @@ def Reaction_FCI_Analysis(reaction=None, basis=None, tgen_thresholds=None, ice_n
         end
         """
         ice = ash.ORCATheory(orcasimpleinput=input, orcablocks=blocks, numcores=numcores, label=f'ICE_{tgen}_', save_output_with_label=True)
-        rel_energy_ICE = ash.Singlepoint_reaction(reaction=reaction, theory=ice, unit=reaction.unit)
+        try:
+            rel_energy_ICE = ash.Singlepoint_reaction(reaction=reaction, theory=ice, unit=reaction.unit)
+        except:
+            print(f"ORCA ICE-CI calculation failed for tgen:{tgen} The calculation may have been too big.")
+            print(f"Check ORCA output for this calculation to see what happened.")
+            print("Now stopping ICE-CI calculations")
+            break
         num_genCFGs,num_selected_CFGs,num_after_SD_CFGs = ICE_WF_CFG_CI_size(ice.filename+'_last.out')
         #Keeping in dict
         results_ice[tgen] = rel_energy_ICE
@@ -2287,11 +2293,8 @@ def Reaction_FCI_Analysis(reaction=None, basis=None, tgen_thresholds=None, ice_n
         results_ice_SDCFGs[tgen] = num_after_SD_CFGs
 
 
-
     #Running regular single-reference WF methods
     results_cc={}
-
-
     if DoHF is True:
         hfblocks=f"""
         %maxcore 11000
