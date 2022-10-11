@@ -2289,6 +2289,10 @@ def Reaction_FCI_Analysis(reaction=None, basis=None, tgen_thresholds=None, ice_n
             print(f"Check ORCA output for this calculation to see what happened.")
             print("Now stopping ICE-CI calculations")
             break
+        #Save GBW files for orbitals used 
+        shutil.copyfile(ice.filename+'.mp2nat', './ICEcalc_MP2natorbs.mp2nat')
+        shutil.copyfile(ice.filename+'.gbw', './ICEcalc_ICEnatorbs.gbw')
+
         num_genCFGs,num_selected_CFGs,num_after_SD_CFGs = ICE_WF_CFG_CI_size(ice.filename+'_last.out')
         #Keeping in dict
         results_ice[tgen] = rel_energy_ICE
@@ -2367,17 +2371,26 @@ def Reaction_FCI_Analysis(reaction=None, basis=None, tgen_thresholds=None, ice_n
             bccdt = ash.ORCATheory(orcasimpleinput=f"! CCSD(T) {basis} tightscf", orcablocks=brucknerblocks, numcores=numcores, label='BCCDT', save_output_with_label=True)
             #CCSD(T) extrapolated to FCI
             ccsdt_fci_extrap = ORCA_CC_CBS_Theory(elements=reaction.fragments[0].elems, cardinals = [2], basisfamily="cc", numcores=1, FCI=True)
+            #CCSD(T) with MP2 and ICE orbitals
+            ccsdt_mp2nat = ash.ORCATheory(orcasimpleinput=f"! CCSD(T) {basis} tightscf", orcablocks=ccblocks, numcores=numcores, label='CCSDT_mp2nat', save_output_with_label=True, moreadfile="ICEcalc_MP2natorbs.mp2nat")
+            ccsdt_icecinat = ash.ORCATheory(orcasimpleinput=f"! CCSD(T) {basis} tightscf", orcablocks=ccblocks, numcores=numcores, label='CCSDT_icecinat', save_output_with_label=True, moreadfile="ICEcalc_ICEnatorbs.gbw")
             #Run
             relE_CCSDT = ash.Singlepoint_reaction(reaction=reaction, theory=ccsdt, unit=reaction.unit)
             relE_CCSDT_QRO = ash.Singlepoint_reaction(reaction=reaction, theory=ccsdt_qro, unit=reaction.unit)
             relE_OOCCDT = ash.Singlepoint_reaction(reaction=reaction, theory=ooccdt, unit=reaction.unit)
             relE_BCCDT = ash.Singlepoint_reaction(reaction=reaction, theory=bccdt, unit=reaction.unit)
             relE_CCSDT_FCI_extrap = ash.Singlepoint_reaction(reaction=reaction, theory=ccsdt_fci_extrap, unit=reaction.unit)
+            relE_CCSDT_mp2nat = ash.Singlepoint_reaction(reaction=reaction, theory=ccsdt_mp2nat, unit=reaction.unit)
+            relE_CCSDT_icecinat = ash.Singlepoint_reaction(reaction=reaction, theory=ccsdt_icecinat, unit=reaction.unit)
+
             results_cc['CCSD(T)'] = relE_CCSDT
             results_cc['CCSD(T)-QRO'] = relE_CCSDT_QRO
             results_cc['OOCCD(T)'] = relE_OOCCDT
             results_cc['BCCD(T)'] = relE_BCCDT
             results_cc['CCSD(T)-FCI-extrap'] = relE_CCSDT_FCI_extrap
+            results_cc['CCSD(T)_MP2nat'] = relE_CCSDT_mp2nat
+            results_cc['CCSD(T)_ICECInat'] = relE_CCSDT_icecinat
+
             #CCSD(T) with multiple DFT orbitals
             if DoCC_DFTorbs is True:
                 print("Running CCSD(T) with multiple functionals")
