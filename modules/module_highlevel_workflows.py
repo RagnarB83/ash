@@ -2254,6 +2254,7 @@ def basis_for_element(element,basisfamily,cardinal):
 
 
 #Function to do ICE-CI FCI with multiple thresholds and simpler WF method comparison and plotting
+#TODO: add second y-axis to ICE-CI plot (plot CFGs). Or maybe add info as point-label?
 def Reaction_FCI_Analysis(reaction=None, basis=None, tgen_thresholds=None, ice_nmin=1.999, ice_nmax=0,
                 DoHF=True,DoMP2=True, DoCC=True, DoCC_CCSD=True, DoCC_CCSDT=True, 
                 DoCC_DFTorbs=True, KS_functionals=['BP86','BHLYP'],
@@ -2277,6 +2278,7 @@ def Reaction_FCI_Analysis(reaction=None, basis=None, tgen_thresholds=None, ice_n
         nmax {ice_nmax}
         tgen {tgen}
         useMP2nat true
+        maxiter 20
         end
         """
         ice = ash.ORCATheory(orcasimpleinput=input, orcablocks=blocks, numcores=numcores, label=f'ICE_{tgen}_', save_output_with_label=True)
