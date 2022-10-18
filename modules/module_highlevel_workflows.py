@@ -5,6 +5,8 @@ import shutil
 import math
 import copy
 
+from collections import defaultdict
+
 #import ash
 import ash.constants
 import ash.dictionaries_lists
@@ -2253,84 +2255,355 @@ def basis_for_element(element,basisfamily,cardinal):
     print(BC.FAIL,"There is probably no {} {}Z basis set available for element {} in ORCA. Exiting.".format(basisfamily, cardinal, element), BC.END)
     ashexit()
 
+#Make ORCATHeory object for ICE-CI
+def make_ICE_theory(basis,tgen, tvar, numcores, nel=None, norb=None, nmin_nmax=False, ice_nmin=None,ice_nmax=None, autoice=False, basis_per_element=None, maxcorememory=10000, maxiter=20, etol=1e-6,
+            moreadfile=None):
+    icekeyword="noiter"
+    mp2nat_option="false"
+    moreadoption="";moreadblockoption=""
+    #Setting basis keyword to nothing if basis set dict provided
+    if basis_per_element is not None:
+        basis=""
+    if autoice is True:
+        icekeyword="Auto-ICE"
+        mp2nat_option="true"
+    if nmin_nmax is True:
+        CAS_space_line=f"""nmin {ice_nmin}
+nmax {ice_nmax}"""
+    else:
+        CAS_space_line=f"""nel {nel}
+norb {norb}"""
+    if moreadfile is not None:
+        moreadoption="MOREAD"
+        moreadblockoption=f"%moinp \"{moreadfile}\""
+    input=f"! {icekeyword} {basis} {moreadoption} tightscf"
+    #Setting ICE-CI so that frozen-core is applied (1s oxygen frozen). Note: Auto-ICE also required.
+    blocks=f"""
+{moreadblockoption}
+%maxcore {maxcorememory}
+%ice
+{CAS_space_line}
+tgen {tgen}
+tvar {tvar}
+useMP2nat {mp2nat_option}
+maxiter {maxiter}
+etol {etol}
+end
+"""
+    icetheory = ash.ORCATheory(orcasimpleinput=input, orcablocks=blocks, numcores=numcores, basis_per_element=basis_per_element, label=f'ICE_tgen{tgen}_tvar_{tvar}', save_output_with_label=True)
+    return icetheory
 
 #Function to do ICE-CI FCI with multiple thresholds and simpler WF method comparison and plotting
 #TODO: add second y-axis to ICE-CI plot (plot CFGs). Or maybe add info as point-label?
-def Reaction_FCI_Analysis(reaction=None, basis=None, tgen_thresholds=None, ice_nmin=1.999, ice_nmax=0,
-                DoHF=True,DoMP2=True, DoCC=True, DoCC_CCSD=True, DoCC_CCSDT=True, 
+#TODO: MP2 and ICE-CI natural orbitals for CCSD(T) wf options
+#TODO: Test MRCC and CFour
+def Reaction_FCI_Analysis(reaction=None, basis=None, basisfile=None, basis_per_element=None,
+                Do_TGen_fixed_series=True, fixed_tvar=1e-11, Do_Tau3_series=True, Do_Tau7_series=True, Do_EP_series=True,
+                tgen_thresholds=None, ice_nmin=1.999, ice_nmax=0, 
+                DoHF=True,DoMP2=True, DoCC=True, DoCC_CCSD=True, DoCC_CCSDT=True, DoCC_MRCC=False, DoCC_CFour=False,
                 DoCC_DFTorbs=True, KS_functionals=['BP86','BHLYP'],
-                maxcorememory=10000, numcores=1,
-                plot=True, y_axis_label='None', yshift=0.3, ylimits=None):
+                maxcorememory=10000, numcores=1, ice_ci_maxiter=30, ice_etol=1e-6,
+                upper_sel_threshold=1.999, lower_sel_threshold=0,
+                plot=True, y_axis_label='None', yshift=0.3, ylimits=None, padding=0.4):
     
+    #Dealing with different basis sets on atoms.
+    #TODO: basisfile. Common basis-file for ORCA and other codes?
+    #basis: string keyword for name of basis
+    #basisfile: ORCA basis-file that will be read in, in each ORCA alculation. basisfile="combined_SVP_on_C_ccDZ_on_H.basis"
+    #basisdict: dictionary with elements as keys as basisname as value. Example: basisdict={'C':'SVP','H':'cc-pVDZ'}
+    if basis_per_element != None:
+        basis=""
+
     #Looping over TGen thresholds in ICE-CI
-    results_ice = {}
-    results_ice_genCFGs={}
-    results_ice_selCFGs={}
-    results_ice_SDCFGs={}
-    for tgen in tgen_thresholds:
-        print("="*100)
-        print(f"Now doing tgen: {tgen}")
-        input=f"! Auto-ICE {basis} tightscf"
-        #Setting ICE-CI so that frozen-core is applied (1s oxygen frozen). Note: Auto-ICE also required.
-        blocks=f"""
-        %maxcore {maxcorememory}
-        %ice
-        nmin {ice_nmin}
-        nmax {ice_nmax}
-        tgen {tgen}
-        useMP2nat true
-        maxiter 20
+    #results_ice = {}
+    #results_ice_genCFGs={}
+    #results_ice_selCFGs={}
+    #results_ice_SDCFGs={}
+    #Dicts with tgen,tvar combos
+    results_ice_tgen_tvar={} # (1e-4,1e-11) = -1.322
+    results_ice_tgen_tvar_Evar=defaultdict(lambda: []) #Variational ICE-CI energies
+    results_ice_tgen_tvar_EPT2=defaultdict(lambda: []) #EPT2 rest energies
+    results_ice_tgen_tvar_genCFGs=defaultdict(lambda: [])
+    results_ice_tgen_tvar_selCFGs=defaultdict(lambda: [])
+    results_ice_tgen_tvar_SDCFGs=defaultdict(lambda: [])
+
+    tgen_thresholds=[round(i,20) for i in tgen_thresholds]
+
+    ################
+    separate_MP2_nat_initial_orbitals=True
+    #TODO: Not working properly yet
+    if separate_MP2_nat_initial_orbitals is True:
+        print("Running MP2 natural orbital calculation")
+        #TODO
+        #Do MP2-natural orbital calculation here
+        mp2blocks=f"""
+        %maxcore 11000
+        %mp2
+        natorbs true
+        density unrelaxed
         end
         """
-        ice = ash.ORCATheory(orcasimpleinput=input, orcablocks=blocks, numcores=numcores, label=f'ICE_{tgen}_', save_output_with_label=True)
-        #More verbose as we want to keep track of orbital files
-        try:
-            #rel_energy_ICE = ash.Singlepoint_reaction(reaction=reaction, theory=ice, unit=reaction.unit)
-            for frag in reaction.fragments:
-                formula=elemlisttoformula(frag.elems)
-                frag_label = "Frag_" + str(formula) + "_" + str(frag.charge) + "_" + str(frag.mult) + "_"
-                energy = ash.Singlepoint(theory=ice, fragment=frag, charge=frag.charge, mult=frag.mult)
-                print("Fragment {} . Label: {} Energy: {} Eh".format(frag.formula, frag.label, energy))
-                #Save GBW files for orbitals used 
-                shutil.copyfile(ice.filename+'.mp2nat', f'./{frag_label}_ICEcalc_MP2natorbs.mp2nat')
-                shutil.copyfile(ice.filename+'.gbw', f'./{frag_label}_ICEcalc_ICEnatorbs.gbw')
-                num_genCFGs,num_selected_CFGs,num_after_SD_CFGs = ICE_WF_CFG_CI_size(ice.filename+'.out')
-                ice.cleanup()
-                reaction.energies.append(energy)
-                print_fragments_table(reaction.fragments,reaction.energies, tabletitle="Singlepoint_reaction: ")
-            reaction.calculate_reaction_energy()
-        except:
-            print(f"ORCA ICE-CI calculation failed for tgen:{tgen} The calculation may have been too big.")
-            print(f"Check ORCA output for this calculation to see what happened.")
-            print("Now stopping ICE-CI calculations")
-            break
-        #TODO: Take this down for all fragments or last fragment or what?
-        num_genCFGs,num_selected_CFGs,num_after_SD_CFGs = ICE_WF_CFG_CI_size(ice.filename+'_last.out')
-        #Keeping in dict
-        results_ice[tgen] = reaction.reaction_energy
-        results_ice_genCFGs[tgen] = num_genCFGs
-        results_ice_selCFGs[tgen] = num_selected_CFGs
-        results_ice_SDCFGs[tgen] = num_after_SD_CFGs
+        natmp2 = ash.ORCATheory(orcasimpleinput=f"! MP2 {basis} autoaux tightscf", orcablocks=mp2blocks, basis_per_element=basis_per_element,numcores=numcores, label='MP2', save_output_with_label=True)
+        for frag in reaction.fragments:
+            print("frag.label:", frag.label)
+            frag_label = "Frag_" + str(frag.formula) + "_" + str(frag.charge) + "_" + str(frag.mult) + "_"
+            ash.Singlepoint(fragment=frag, theory=natmp2)
+            shutil.copyfile(natmp2.filename+'.mp2nat', f'./{frag_label}MP2natorbs.mp2nat')
+            #Determine CAS space based on thresholds
+            step1occupations=ash.interfaces.interface_ORCA.MP2_natocc_grab(natmp2.filename+'.out')
+            print("MP2natoccupations:", step1occupations)
+            nel,norb=ash.functions.functions_elstructure.select_space_from_occupations(step1occupations, selection_thresholds=[upper_sel_threshold,lower_sel_threshold])
+            print(f"Selecting CAS({nel},{norb}) based on thresholds: upper_sel_threshold={upper_sel_threshold} and lower_sel_threshold={lower_sel_threshold}")
+            reaction.properties["CAS"].append([nel,norb])
+            print("reaction.properties CAS:", reaction.properties["CAS"])
 
-        #Last best ICE-CI energy
-        rel_energy_ICE=reaction.reaction_energy
+            #Adding to orbital dictionary of Reaction
+            #NOTE: Keep info in reaction object or fragment object?
+            reaction.orbital_dictionary["MP2nat"].append(f'./{frag_label}MP2natorbs.mp2nat')
+    #Determining frag that has largest number of active electrons
+    largest_fragindex=[i[0] for i in reaction.properties["CAS"]].index(max([i[0] for i in reaction.properties["CAS"]]))
+
+    #Frag_H2O1_1_2_MP2natorbs.mp2nat
+    print("reaction.orbital_dictionary:", reaction.orbital_dictionary)
+    ################
+    #Iterating over TGen thresholds with fixed default TVar =
+    #Not using Singlepoint_reaction as we need more flexibility due to orbital-info in theory object etc.
+    if Do_Tau3_series is True:
+        tau3_e_series=[]
+        print("Do_Tau3_series True")
+        for tgen in tgen_thresholds:
+            print("tgen:", tgen)
+            tvar=round(tgen*1E-3,20)
+            print("tvar determined to be:",tvar)
+            #Creating ICE-CI theory
+            if (tgen,tvar) not in results_ice_tgen_tvar:
+                for i,frag in enumerate(reaction.fragments):
+                    ice = make_ICE_theory(basis, tgen, tvar,numcores, nel=reaction.properties["CAS"][i][0], norb=reaction.properties["CAS"][i][1], basis_per_element=basis_per_element, 
+                        maxcorememory=maxcorememory, maxiter=ice_ci_maxiter, etol=ice_etol, moreadfile=reaction.orbital_dictionary["MP2nat"][i])
+                    energy_ICE = ash.Singlepoint(fragment=frag, theory=ice)
+                    reaction.energies.append(energy_ICE)
+                    #WF info
+                    #print("ice.properties E_var:", ice.properties["E_var"])
+                    results_ice_tgen_tvar_Evar[(tgen,tvar)].append(ice.properties["E_var"])
+                    #print("results_ice_tgen_tvar_Evar", results_ice_tgen_tvar_Evar)
+                    results_ice_tgen_tvar_EPT2[(tgen,tvar)].append(ice.properties["E_PT2_rest"])
+                    results_ice_tgen_tvar_genCFGs[(tgen,tvar)].append(ice.properties["num_genCFGs"])
+                    results_ice_tgen_tvar_selCFGs[(tgen,tvar)].append(ice.properties["num_selected_CFGs"])
+                    results_ice_tgen_tvar_SDCFGs[(tgen,tvar)].append(ice.properties["num_after_SD_CFGs"])
+                    print("results_ice_tgen_tvar_Evar", results_ice_tgen_tvar_Evar)
+                    print("results_ice_tgen_tvar_genCFGs:", results_ice_tgen_tvar_genCFGs)
+                    #exit()
+                reaction.calculate_reaction_energy()
+                rel_energy_ICE = reaction.reaction_energy
+                results_ice_tgen_tvar[(tgen,tvar)] = rel_energy_ICE
+                tau3_e_series.append(rel_energy_ICE)
+                reaction.reset_energies()
+            else:
+                print(f"Tgen/Tvar ({tgen}/{tvar}) combo already calculated")
+                tau3_e_series.append(results_ice_tgen_tvar[(tgen,tvar)])
+
+    #print("results_ice_tgen_tvar:", results_ice_tgen_tvar)
+    #print("results_ice_tgen_tvar_EPT2:", results_ice_tgen_tvar_EPT2)
+    print("results_ice_tgen_tvar_genCFGs:", results_ice_tgen_tvar_genCFGs)
+    if Do_Tau7_series is True:
+        tau7_e_series=[]
+        print("Do_Tau7_series True")
+        for tgen in tgen_thresholds:
+            print("tgen:", tgen)
+            tvar=round(tgen*1E-7,20)
+            print("tvar determined to be:",tvar)
+            #Creating ICE-CI theory
+            if (tgen,tvar) not in results_ice_tgen_tvar:
+                for i,frag in enumerate(reaction.fragments):
+                    ice = make_ICE_theory(basis, tgen, tvar,numcores, nel=reaction.properties["CAS"][i][0], norb=reaction.properties["CAS"][i][1], basis_per_element=basis_per_element, 
+                        maxcorememory=maxcorememory, maxiter=ice_ci_maxiter, etol=ice_etol, moreadfile=reaction.orbital_dictionary["MP2nat"][i])
+                    energy_ICE = ash.Singlepoint(fragment=frag, theory=ice)
+                    print("energy_ICE:", energy_ICE)
+                    reaction.energies.append(energy_ICE)
+                    print("reaction.energies:", reaction.energies)
+                    #WF info
+                    results_ice_tgen_tvar_Evar[(tgen,tvar)].append(ice.properties["E_var"])
+                    results_ice_tgen_tvar_EPT2[(tgen,tvar)].append(ice.properties["E_PT2_rest"])
+                    results_ice_tgen_tvar_genCFGs[(tgen,tvar)].append(ice.properties["num_genCFGs"])
+                    results_ice_tgen_tvar_selCFGs[(tgen,tvar)].append(ice.properties["num_selected_CFGs"])
+                    results_ice_tgen_tvar_SDCFGs[(tgen,tvar)].append(ice.properties["num_after_SD_CFGs"])
+                reaction.calculate_reaction_energy()
+                rel_energy_ICE = reaction.reaction_energy
+                results_ice_tgen_tvar[(tgen,tvar)] = rel_energy_ICE
+                tau7_e_series.append(rel_energy_ICE)
+                reaction.reset_energies()
+            else:
+                print(f"Tgen/Tvar ({tgen}/{tvar}) combo already calculated")
+                tau7_e_series.append(results_ice_tgen_tvar[(tgen,tvar)])
+
+    if Do_TGen_fixed_series is True:
+        taufixed_e_series=[]
+        print("Do_TGen_fixed_series True")
+        tvar=round(fixed_tvar,20)
+        print("Fixed Tvar :", tvar)
+        for tgen in tgen_thresholds:
+            print("tgen:", tgen)
+            #Creating ICE-CI theory
+            if (tgen,tvar) not in results_ice_tgen_tvar:
+                for i,frag in enumerate(reaction.fragments):
+                    ice = make_ICE_theory(basis, tgen, tvar,numcores, nel=reaction.properties["CAS"][i][0], norb=reaction.properties["CAS"][i][1], basis_per_element=basis_per_element, 
+                        maxcorememory=maxcorememory, maxiter=ice_ci_maxiter, etol=ice_etol, moreadfile=reaction.orbital_dictionary["MP2nat"][i])
+                    energy_ICE = ash.Singlepoint(fragment=frag, theory=ice)
+                    reaction.energies.append(energy_ICE)
+                    #WF info
+                    results_ice_tgen_tvar_Evar[(tgen,tvar)].append(ice.properties["E_var"])
+                    results_ice_tgen_tvar_EPT2[(tgen,tvar)].append(ice.properties["E_PT2_rest"])
+                    results_ice_tgen_tvar_genCFGs[(tgen,tvar)].append(ice.properties["num_genCFGs"])
+                    results_ice_tgen_tvar_selCFGs[(tgen,tvar)].append(ice.properties["num_selected_CFGs"])
+                    results_ice_tgen_tvar_SDCFGs[(tgen,tvar)].append(ice.properties["num_after_SD_CFGs"])
+                reaction.calculate_reaction_energy()
+                rel_energy_ICE = reaction.reaction_energy
+                results_ice_tgen_tvar[(tgen,tvar)] = rel_energy_ICE
+                taufixed_e_series.append(rel_energy_ICE)
+                reaction.reset_energies()
+            else:
+                print(f"Tgen/Tvar ({tgen}/{tvar}) combo already calculated")
+                taufixed_e_series.append(results_ice_tgen_tvar[(tgen,tvar)])
+
+    #Determining best ICE_CI value to center y-axis zoom on
+    #NOTE: For now using last value
+    rel_energy_ICE_last=rel_energy_ICE
+
+    if Do_EP_series is True:
+        #tau3_EP_series=[]
+        #tau7_EP_series=[]
+        
+        #List of lists of [[1,2],[1,2]]
+        E_extrap_tau3_2p=[[] for i in reaction.fragments]
+        E_extrap_tau3_3p=[[] for i in reaction.fragments]
+        #E_extrap_tau7=[[] for i in reaction.fragments]
+
+        print("ICE-CI extrapolations series")
+        print("results_ice_tgen_tvar_Evar:", results_ice_tgen_tvar_Evar)
+        print("results_ice_tgen_tvar_EPT2:", results_ice_tgen_tvar_EPT2)
+        print("results_ice_tgen_tvar:", results_ice_tgen_tvar)
+
+        print("reaction.fragments:", reaction.fragments)
+        for i,frag in enumerate(reaction.fragments):
+            E_pt2_tau3=[]
+            E_var_tau3=[]
+            E_tot_tau3=[]
+            #E_pt2_tau7=[]
+            #E_var_tau7=[]
+            #E_tot_tau7=[]
+            for tgen in tgen_thresholds:
+                if Do_Tau3_series:
+                    tvar = round(tgen*1e-3,20)
+                    E_v = results_ice_tgen_tvar_Evar[(tgen,tvar)][i]
+                    E_pt2 = results_ice_tgen_tvar_EPT2[(tgen,tvar)][i]
+                    E_var_tau3.append(E_v)
+                    E_pt2_tau3.append(E_pt2)
+                    E_tot_tau3.append(E_v+E_pt2)
+                    if len(E_tot_tau3) > 1:
+                        #2-point extrap. with last 2 points
+                        twop_slope, twop_E_extrap = np.polyfit([abs(j) for j in E_pt2_tau3[-2:]],E_tot_tau3[-2:],1)
+                        #3-point extrap. with last 3 points
+                        threep_slope, threep_E_extrap = np.polyfit([abs(j) for j in E_pt2_tau3[-3:]],E_tot_tau3[-3:],1)
+                        #if extrapolation == 'twopoint':
+                        #    print("Choosing twpoint extrapolation:", twop_E_extrap)
+                        #    slope=twop_slope
+                        #    E_extrap=twop_E_extrap
+                        #elif extrapolation =='threepoint':
+                        #    print("Choosing twpoint extrapolation:", twop_E_extrap)
+                        #    slope=threep_slope
+                        #    E_extrap=threep_E_extrap
+                        #print("slope:", slope)
+                        #print("E_extrap:", E_extrap)
+                        #tau3_EP_series.append(E_extrap)
+                        E_extrap_tau3_2p[i].append(twop_E_extrap)
+                        E_extrap_tau3_3p[i].append(threep_E_extrap)
+                #TAU7 EXTRAPOLATION DISABLED
+                #DOES NOT REALLY WORK
+                # if Do_Tau7_series:
+                #     tvar = round(tgen*1e-7,20)
+                #     E_v = results_ice_tgen_tvar_Evar[(tgen,tvar)][i]
+                #     E_pt2 = results_ice_tgen_tvar_EPT2[(tgen,tvar)][i]
+                #     E_var_tau7.append(E_v)
+                #     E_pt2_tau7.append(E_pt2)
+                #     E_tot_tau7.append(E_v+E_pt2)
+                #     if len(E_tot_tau7) > 1:
+                #         print("E_pt2_tau7:", E_pt2_tau7)
+                #         print("E_var_tau7:", E_var_tau7)
+                #         print("E_tot_tau7:", E_tot_tau7)
+                #         #2-point extrap. with last 2 points
+                #         twop_slope, twop_E_extrap = np.polyfit([abs(j) for j in E_pt2_tau7[-2:]],E_tot_tau7[-2:],1)
+                #         #3-point extrap. with last 3 points
+                #         threep_slope, threep_E_extrap = np.polyfit([abs(j) for j in E_pt2_tau7[-3:]],E_tot_tau7[-3:],1)
+                #         print("2-point extrapolated value:", twop_E_extrap)
+                #         print("3-point extrapolated value:", threep_E_extrap)
+                #         if extrapolation == 'twopoint':
+                #             print("Choosing twpoint extrapolation:", twop_E_extrap)
+                #             slope=twop_slope
+                #             E_extrap=twop_E_extrap
+                #         elif extrapolation =='threepoint':
+                #             print("Choosing twpoint extrapolation:", twop_E_extrap)
+                #             slope=threep_slope
+                #             E_extrap=threep_E_extrap
+                #         print("slope:", slope)
+                #         print("E_extrap:", E_extrap)
+                #         #tau3_EP_series.append(E_extrap)
+                #         E_extrap_tau7[i].append(E_extrap)
+
+
+
+        #Extrapolated Reaction energies 
+        if Do_Tau3_series:
+            tau3_EP_series_2p=[]
+            tau3_EP_series_3p=[]
+            for i,tgen in enumerate(E_extrap_tau3_2p[0]):
+                print("i:", i)
+                list_of_energies_2p=[E_extrap_tau3_2p[f][i] for f,l in enumerate(E_extrap_tau3_2p)]
+                list_of_energies_3p=[E_extrap_tau3_3p[f][i] for f,l in enumerate(E_extrap_tau3_3p)]
+                print("list_of_energies_2p:", list_of_energies_2p)
+                print("list_of_energies_3p:", list_of_energies_3p)
+                reaction_energy_2p = ash.ReactionEnergy(list_of_energies=list_of_energies_2p, stoichiometry=reaction.stoichiometry, unit=reaction.unit, silent=False)[0]
+                reaction_energy_3p = ash.ReactionEnergy(list_of_energies=list_of_energies_3p, stoichiometry=reaction.stoichiometry, unit=reaction.unit, silent=False)[0]
+                print("reaction_energy_2p:", reaction_energy_2p)
+                print("reaction_energy_3p:", reaction_energy_3p)
+                tau3_EP_series_2p.append(reaction_energy_2p)
+                tau3_EP_series_3p.append(reaction_energy_3p)
+            print("tau3_EP_series_2p:", tau3_EP_series_2p)
+            print("tau3_EP_series_3p:", tau3_EP_series_3p)
+        # if Do_Tau7_series:
+        #     tau7_EP_series=[]
+        #     for i,tgen in enumerate(E_extrap_tau7[0]):
+        #         print("i:", i)
+        #         list_of_energies=[E_extrap_tau7[f][i] for f,l in enumerate(E_extrap_tau7)]
+        #         print("list_of_energies:", list_of_energies)
+        #         reaction_energy = ash.ReactionEnergy(list_of_energies=list_of_energies, stoichiometry=reaction.stoichiometry, unit=reaction.unit, silent=False, 
+        #             label=f"Label:Tau7-EP{i}")[0]
+        #         print("reaction_energy:", reaction_energy)
+        #         tau7_EP_series.append(reaction_energy)
+        #     print("tau7_EP_series:", tau7_EP_series)
+
+        #Confidence interval
+        #TODO
+
+
+    print("results_ice_tgen_tvar:", results_ice_tgen_tvar)
+    
     #Running regular single-reference WF methods
     results_cc={}
     if DoHF is True:
         hfblocks=f"""
         %maxcore 11000
         """
-        hf = ash.ORCATheory(orcasimpleinput=f"! HF {basis} tightscf", orcablocks=hfblocks, numcores=numcores, label='HF', save_output_with_label=True)
+        hf = ash.ORCATheory(orcasimpleinput=f"! HF {basis} tightscf", orcablocks=hfblocks, basis_per_element=basis_per_element,numcores=numcores, label='HF', save_output_with_label=True)
         relE_HF = ash.Singlepoint_reaction(reaction=reaction, theory=hf, unit=reaction.unit)
         results_cc['HF'] = relE_HF
     if DoMP2 is True:
         mp2blocks=f"""
         %maxcore 11000
         """
-        mp2 = ash.ORCATheory(orcasimpleinput=f"! MP2 {basis} tightscf", orcablocks=mp2blocks, numcores=numcores, label='MP2', save_output_with_label=True)
-        scsmp2 = ash.ORCATheory(orcasimpleinput=f"! SCS-MP2 {basis} tightscf", orcablocks=mp2blocks, numcores=numcores, label='SCSMP2', save_output_with_label=True)
-        oomp2 = ash.ORCATheory(orcasimpleinput=f"! OO-RI-MP2 autoaux {basis} tightscf", orcablocks=mp2blocks, numcores=numcores, label='OOMP2', save_output_with_label=True)
-        scsoomp2 = ash.ORCATheory(orcasimpleinput=f"! OO-RI-SCS-MP2 {basis} autoaux tightscf", orcablocks=mp2blocks, numcores=numcores, label='OOSCSMP2', save_output_with_label=True)
+        mp2 = ash.ORCATheory(orcasimpleinput=f"! MP2 {basis} tightscf", orcablocks=mp2blocks, basis_per_element=basis_per_element,numcores=numcores, label='MP2', save_output_with_label=True)
+        scsmp2 = ash.ORCATheory(orcasimpleinput=f"! SCS-MP2 {basis} tightscf", orcablocks=mp2blocks, basis_per_element=basis_per_element,numcores=numcores, label='SCSMP2', save_output_with_label=True)
+        oomp2 = ash.ORCATheory(orcasimpleinput=f"! OO-RI-MP2 autoaux {basis} tightscf", orcablocks=mp2blocks, basis_per_element=basis_per_element,numcores=numcores, label='OOMP2', save_output_with_label=True)
+        scsoomp2 = ash.ORCATheory(orcasimpleinput=f"! OO-RI-SCS-MP2 {basis} autoaux tightscf", orcablocks=mp2blocks, basis_per_element=basis_per_element,numcores=numcores, label='OOSCSMP2', save_output_with_label=True)
 
         relE_MP2 = ash.Singlepoint_reaction(reaction=reaction, theory=mp2, unit=reaction.unit)
         relE_SCSMP2 = ash.Singlepoint_reaction(reaction=reaction, theory=scsmp2, unit=reaction.unit)
@@ -2361,11 +2634,11 @@ def Reaction_FCI_Analysis(reaction=None, basis=None, tgen_thresholds=None, ice_n
         end
         """
         if DoCC_CCSD is True:
-            ccsd = ash.ORCATheory(orcasimpleinput=f"! CCSD {basis} tightscf", orcablocks=ccblocks, numcores=numcores, label='CCSD', save_output_with_label=True)
-            bccd = ash.ORCATheory(orcasimpleinput=f"! CCSD {basis} tightscf", orcablocks=brucknerblocks, numcores=numcores, label='BCCD', save_output_with_label=True)
-            ooccd = ash.ORCATheory(orcasimpleinput=f"! OOCCD {basis} tightscf", orcablocks=ccblocks, numcores=numcores, label='OOCCD', save_output_with_label=True)
-            pccsd_1a = ash.ORCATheory(orcasimpleinput=f"! pCCSD/1a {basis} tightscf", orcablocks=ccblocks, numcores=numcores, label='pCCSD1a', save_output_with_label=True)
-            pccsd_2a = ash.ORCATheory(orcasimpleinput=f"! pCCSD/2a {basis} tightscf", orcablocks=ccblocks, numcores=numcores, label='pCCSD2a', save_output_with_label=True)
+            ccsd = ash.ORCATheory(orcasimpleinput=f"! CCSD {basis} tightscf", orcablocks=ccblocks, basis_per_element=basis_per_element,numcores=numcores, label='CCSD', save_output_with_label=True)
+            bccd = ash.ORCATheory(orcasimpleinput=f"! CCSD {basis} tightscf", orcablocks=brucknerblocks, basis_per_element=basis_per_element,numcores=numcores, label='BCCD', save_output_with_label=True)
+            ooccd = ash.ORCATheory(orcasimpleinput=f"! OOCCD {basis} tightscf", orcablocks=ccblocks, basis_per_element=basis_per_element,numcores=numcores, label='OOCCD', save_output_with_label=True)
+            pccsd_1a = ash.ORCATheory(orcasimpleinput=f"! pCCSD/1a {basis} tightscf", orcablocks=ccblocks, basis_per_element=basis_per_element,numcores=numcores, label='pCCSD1a', save_output_with_label=True)
+            pccsd_2a = ash.ORCATheory(orcasimpleinput=f"! pCCSD/2a {basis} tightscf", orcablocks=ccblocks, basis_per_element=basis_per_element,numcores=numcores, label='pCCSD2a', save_output_with_label=True)
             relE_CCSD = ash.Singlepoint_reaction(reaction=reaction, theory=ccsd, unit=reaction.unit)
             relE_OOCCD = ash.Singlepoint_reaction(reaction=reaction, theory=ooccd, unit=reaction.unit)
             relE_BCCD = ash.Singlepoint_reaction(reaction=reaction, theory=bccd, unit=reaction.unit)
@@ -2377,13 +2650,18 @@ def Reaction_FCI_Analysis(reaction=None, basis=None, tgen_thresholds=None, ice_n
             results_cc['pCCSD/1a'] = relE_pCCSD1a
             results_cc['pCCSD/2a'] = relE_pCCSD2a
         if DoCC_CCSDT is True:
-            ccsdt = ash.ORCATheory(orcasimpleinput=f"! CCSD(T) {basis} tightscf", orcablocks=ccblocks, numcores=numcores, label='CCSDT', save_output_with_label=True)
-            ccsdt_qro = ash.ORCATheory(orcasimpleinput=f"! CCSD(T) {basis} UNO tightscf", orcablocks=ccblocks, numcores=numcores, label='CCSDT_QRO', save_output_with_label=True)
-            ooccd = ash.ORCATheory(orcasimpleinput=f"! OOCCD {basis} tightscf", orcablocks=ccblocks, numcores=numcores, label='OOCCD', save_output_with_label=True)
-            ooccdt = ash.ORCATheory(orcasimpleinput=f"! OOCCD(T) {basis} tightscf", orcablocks=ccblocks, numcores=numcores, label='OOCCDT', save_output_with_label=True)
-            bccdt = ash.ORCATheory(orcasimpleinput=f"! CCSD(T) {basis} tightscf", orcablocks=brucknerblocks, numcores=numcores, label='BCCDT', save_output_with_label=True)
+            ccsdt = ash.ORCATheory(orcasimpleinput=f"! CCSD(T) {basis} tightscf", orcablocks=ccblocks, basis_per_element=basis_per_element,numcores=numcores, label='CCSDT', save_output_with_label=True)
+            ccsdt_qro = ash.ORCATheory(orcasimpleinput=f"! CCSD(T) {basis} UNO tightscf", orcablocks=ccblocks, basis_per_element=basis_per_element,numcores=numcores, label='CCSDT_QRO', save_output_with_label=True)
+            ooccd = ash.ORCATheory(orcasimpleinput=f"! OOCCD {basis} tightscf", orcablocks=ccblocks, basis_per_element=basis_per_element,numcores=numcores, label='OOCCD', save_output_with_label=True)
+            ooccdt = ash.ORCATheory(orcasimpleinput=f"! OOCCD(T) {basis} tightscf", orcablocks=ccblocks, basis_per_element=basis_per_element,numcores=numcores, label='OOCCDT', save_output_with_label=True)
+            bccdt = ash.ORCATheory(orcasimpleinput=f"! CCSD(T) {basis} tightscf", orcablocks=brucknerblocks, basis_per_element=basis_per_element,numcores=numcores, label='BCCDT', save_output_with_label=True)
             #CCSD(T) extrapolated to FCI
-            ccsdt_fci_extrap = ORCA_CC_CBS_Theory(elements=reaction.fragments[0].elems, cardinals = [2], basisfamily="cc", numcores=1, FCI=True)
+            if basis_per_element ==None:
+                ccsdt_fci_extrap = ORCA_CC_CBS_Theory(elements=reaction.fragments[0].elems, cardinals = [2], basisfamily="cc", numcores=1, FCI=True)
+                relE_CCSDT_FCI_extrap = ash.Singlepoint_reaction(reaction=reaction, theory=ccsdt_fci_extrap, unit=reaction.unit)
+                results_cc['CCSD(T)-FCI-extrap'] = relE_CCSDT_FCI_extrap
+            else:
+                print("Warning: Basisdict per element provided. Can currently not do CCSD(T) FCI ORCA_CC_CBS_Theory job. SKipping")
             #CCSD(T) with MP2 and ICE orbitals
             #TODO: Need to figure out
             #ccsdt_mp2nat = ash.ORCATheory(orcasimpleinput=f"! CCSD(T) {basis} tightscf", orcablocks=ccblocks, numcores=numcores, label='CCSDT_mp2nat', save_output_with_label=True, moreadfile="ICEcalc_MP2natorbs.mp2nat")
@@ -2393,7 +2671,6 @@ def Reaction_FCI_Analysis(reaction=None, basis=None, tgen_thresholds=None, ice_n
             relE_CCSDT_QRO = ash.Singlepoint_reaction(reaction=reaction, theory=ccsdt_qro, unit=reaction.unit)
             relE_OOCCDT = ash.Singlepoint_reaction(reaction=reaction, theory=ooccdt, unit=reaction.unit)
             relE_BCCDT = ash.Singlepoint_reaction(reaction=reaction, theory=bccdt, unit=reaction.unit)
-            relE_CCSDT_FCI_extrap = ash.Singlepoint_reaction(reaction=reaction, theory=ccsdt_fci_extrap, unit=reaction.unit)
             #relE_CCSDT_mp2nat = ash.Singlepoint_reaction(reaction=reaction, theory=ccsdt_mp2nat, unit=reaction.unit)
             #relE_CCSDT_icecinat = ash.Singlepoint_reaction(reaction=reaction, theory=ccsdt_icecinat, unit=reaction.unit)
 
@@ -2401,10 +2678,7 @@ def Reaction_FCI_Analysis(reaction=None, basis=None, tgen_thresholds=None, ice_n
             results_cc['CCSD(T)-QRO'] = relE_CCSDT_QRO
             results_cc['OOCCD(T)'] = relE_OOCCDT
             results_cc['BCCD(T)'] = relE_BCCDT
-            results_cc['CCSD(T)-FCI-extrap'] = relE_CCSDT_FCI_extrap
-            #results_cc['CCSD(T)_MP2nat'] = relE_CCSDT_mp2nat
-            #results_cc['CCSD(T)_ICECInat'] = relE_CCSDT_icecinat
-
+            
             #CCSD(T) with multiple DFT orbitals
             if DoCC_DFTorbs is True:
                 print("Running CCSD(T) with multiple functionals")
@@ -2414,28 +2688,96 @@ def Reaction_FCI_Analysis(reaction=None, basis=None, tgen_thresholds=None, ice_n
                     ccsdt_dft = ash.ORCATheory(orcasimpleinput=f"! CCSD(T) {functional} {basis} autoaux tightscf", orcablocks=ccblocks, numcores=numcores, label=f'CCSDT_{functional}', save_output_with_label=True)
                     relE_CCSDT_DFT = ash.Singlepoint_reaction(reaction=reaction, theory=ccsdt_dft, unit=reaction.unit)
                     results_cc[f'CCSD(T)-{functional}'] = relE_CCSDT_DFT
+        
+        if DoCC_MRCC is True:
+            print("CC calculations using MRCC")
+            print("not ready")
+            #TODO: Define frozen core to be consistent with above
+            ccsdt_mrccinput="""
+            basis={basis}
+            calc=CCSD(T)
+            mem=9000MB
+            scftype=UHF
+            ccmaxit=150
+            core=frozen
+            """
+            ccsd_t = ash.MRCCTheory(mrccinput=ccsdt_mrccinput,numcores=numcores, label='MRCC-CCSD(T)')
+            ccsdt_mrccinput="""
+            basis={basis}
+            calc=CCSDT
+            mem=9000MB
+            scftype=UHF
+            ccmaxit=150
+            core=frozen
+            """
+            ccsdt = ash.MRCCTheory(mrccinput=ccsdt_mrccinput,numcores=numcores, label='MRCC-CCSDT')
+
+            relE_CCSD_T = ash.Singlepoint_reaction(reaction=reaction, theory=ccsd_t, unit=reaction.unit)
+            relE_CCSDT = ash.Singlepoint_reaction(reaction=reaction, theory=ccsdt, unit=reaction.unit)
+            results_cc['MRCC-CCSD(T)'] = relE_CCSD_T
+            results_cc['MRCC-CCSDT'] = relE_CCSDT
+        if DoCC_CFour is True:
+            print("CC calculations using CFour")
+            print("not ready")
+            #TODO: Define frozen core to be consistent with above
+            cfouroptions = {
+            'CALC':'CCSD(T)',
+            'BASIS':'PVDZ',
+            'REF':'RHF',
+            'FROZEN_CORE':'ON',
+            'MEM_UNIT':'MB',
+            'MEMORY':3100,
+            'PROP':'FIRST_ORDER',
+            'CC_PROG':'ECC',
+            'SCF_CONV':10,
+            'LINEQ_CONV':10,
+            'CC_MAXCYC':300,
+            'SYMMETRY':'OFF',
+            'HFSTABILITY':'OFF'
+            }
+            ccsd_t = ash.CFourTheory(cfouroptions=cfouroptions,numcores=numcores, label='CFour-CCSD(T)')
+            cfouroptions = {
+            'CALC':'CCSDT',
+            'BASIS':'PVDZ',
+            'REF':'RHF',
+            'FROZEN_CORE':'ON',
+            'MEM_UNIT':'MB',
+            'MEMORY':3100,
+            'PROP':'FIRST_ORDER',
+            'CC_PROG':'ECC',
+            'SCF_CONV':10,
+            'LINEQ_CONV':10,
+            'CC_MAXCYC':300,
+            'SYMMETRY':'OFF',
+            'HFSTABILITY':'OFF'
+            }
+            ccsdt = ash.CFourTheory(cfouroptions=cfouroptions,numcores=numcores, label='CFour-CCSDT')
+
+            relE_CCSD_T = ash.Singlepoint_reaction(reaction=reaction, theory=ccsd_t, unit=reaction.unit)
+            relE_CCSDT = ash.Singlepoint_reaction(reaction=reaction, theory=ccsdt, unit=reaction.unit)
+            results_cc['C4-CCSD(T)'] = relE_CCSD_T
+            results_cc['C4-CCSDT'] = relE_CCSDT
+
+
 
     ##########################################
     #Printing final results
     ##########################################
-    #Initializing lists for plotting
-    xvals=[];yvals=[]
-    x2vals=[];y2vals=[];labels=[]
+    SR_WF_indices=[];SR_WF_energies=[];SR_WF_labels=[]
 
     print()
     print()
+    
     print("ICE-CI CIPSI wavefunction")
-    print(f" Tgen      Energy ({reaction.unit})        # gen. CFGs       # sel. CFGs     # max S+D CFGs")
-    print("---------------------------------------------------------------------------------")
-    for t, e in results_ice.items():
-        gen_cfg=results_ice_genCFGs[t]
-        sel_cg=results_ice_selCFGs[t]
-        sd_cfg=results_ice_SDCFGs[t]
-        print("{:<10.2e} {:13.10f} {:15} {:15} {:15}".format(t,e,gen_cfg,sel_cg, sd_cfg))
-        if plot is True:
-            #Add data to lists for plotting
-            xvals.append(t)
-            yvals.append(e)
+    print("Note: # CFGs refer to largest fragment calculated")
+    print(f" TGen      TVar      Energy ({reaction.unit})        # gen. CFGs       # sel. CFGs     # max S+D CFGs")
+    print("---------------------------------------------------------------------------------------------------------")
+    for t, e in results_ice_tgen_tvar.items():
+        gen_cfg=results_ice_tgen_tvar_genCFGs[(t[0],t[1])][largest_fragindex]
+        sel_cg=results_ice_tgen_tvar_selCFGs[(t[0],t[1])][largest_fragindex]
+        sd_cfg=results_ice_tgen_tvar_SDCFGs[(t[0],t[1])][largest_fragindex]
+        tg=t[0]; tv=t[1]
+        print("{:<9.1e} {:<9.1e} {:13.7f} {:15} {:15} {:15}".format(tg,tv,e,gen_cfg,sel_cg, sd_cfg))
     print()
     print()
     print("Other methods:")
@@ -2444,30 +2786,48 @@ def Reaction_FCI_Analysis(reaction=None, basis=None, tgen_thresholds=None, ice_n
     for i,(w, e) in enumerate(results_cc.items()):
         print("{:<10} {:13.10f}".format(w,e))
         if plot is True:
-            x2vals.append(i)
-            y2vals.append(e)
-            labels.append(w)
+            SR_WF_indices.append(i)
+            SR_WF_energies.append(e)
+            SR_WF_labels.append(w)
     print();print()
 
     #Plotting if plot is True and if matplotlib worked
     #Create ASH_plot object named edplot
     if plot is True:
+        
+        if basis_per_element is not None:
+            basislabel=""
+            for i,j in basis_per_element.items():
+                basislabel+=f" {i}({j})"
+            basislabel=','.join(basis_per_element.values())
+            print("basislabel:", basislabel)
+        else:
+            basislabel=basis
+
         #y-limits based on last ICE calculation rel energy
         if ylimits == None:
-            ylimits = [rel_energy_ICE-yshift,rel_energy_ICE+yshift]
+            ylimits = [rel_energy_ICE_last-yshift,rel_energy_ICE_last+yshift]
         print(f"Using y-limits: {ylimits} {reaction.unit} in plot")
 
-        eplot = ASH_plot("Plotname", num_subplots=2, x_axislabels=["TGen", "Method"], y_axislabels=[f'{y_axis_label} ({reaction.unit})',f'{y_axis_label} ({reaction.unit})'], subplot_titles=["ICE-CI","Single ref. methods"],
-            ylimit=ylimits, horizontal=True, padding=0.2)
+        eplot = ASH_plot("Plotname", num_subplots=2, x_axislabels=["TGen", "Method"], y_axislabels=[f'{y_axis_label} ({reaction.unit})',f'{y_axis_label} ({reaction.unit})'], subplot_titles=[f"ICE-CI/{basislabel}",f"Single ref. methods/{basislabel}"],
+            ylimit=ylimits, horizontal=True, padding=padding)
         if eplot != None:
-            #Add dataseries to subplot 0
-            #Inverting x-axis and using log-scale for ICE-CI data
-            eplot.addseries(0, x_list=xvals, y_list=yvals, label=reaction.label, color='blue', line=True, scatter=True, x_scale_log=True, invert_x_axis=True)
+            #Inverting x-axis on subplot 0
+            eplot.invert_x_axis(0) #
+            #Add dataseries to subplot 0 and using log-scale for ICE-CI data
+            if Do_Tau3_series:
+                eplot.addseries(0, x_list=tgen_thresholds, y_list=tau3_e_series, label="Tau3", color='blue', line=True, scatter=True, x_scale_log=True)
+            if Do_Tau7_series:
+                eplot.addseries(0, x_list=tgen_thresholds, y_list=tau7_e_series, label="Tau7", color='orange', line=True, scatter=True, x_scale_log=True)
+            if Do_TGen_fixed_series:
+                eplot.addseries(0, x_list=tgen_thresholds, y_list=taufixed_e_series, label=f"Tvar:{fixed_tvar}", color='green', line=True, scatter=True, x_scale_log=True)
+            if Do_EP_series:
+                if Do_Tau3_series:
+                    eplot.addseries(0, x_list=tgen_thresholds[1:], y_list=tau3_EP_series_2p, label=f"EP-Tau3-2point", color='black', line=True, scatter=True, x_scale_log=True)
+                    eplot.addseries(0, x_list=tgen_thresholds[1:], y_list=tau3_EP_series_3p, label=f"EP-Tau3-3point", color='purple', line=True, scatter=True, x_scale_log=True)
             #Plotting method labels on x-axis with rotation to make things fit
-            eplot.addseries(1, x_list=x2vals, y_list=y2vals, x_labels=labels, label=reaction.label, color='red', line=True, scatter=True, xticklabelrotation=80)
-
+            eplot.addseries(1, x_list=SR_WF_indices, y_list=SR_WF_energies, x_labels=SR_WF_labels, label=reaction.label, color='red', line=True, scatter=True, xticklabelrotation=80)
             #Save figure
             eplot.savefig(f'{reaction.label}_FCI')
         else:
             print("Could not plot data due to ASH_plot problem.")
-

@@ -16,7 +16,7 @@ import ash.settings_ash
 
 #ORCA Theory object.
 class ORCATheory:
-    def __init__(self, orcadir=None, orcasimpleinput='', printlevel=2, extrabasisatoms=None, extrabasis=None, TDDFT=False, TDDFTroots=5, FollowRoot=1,
+    def __init__(self, orcadir=None, orcasimpleinput='', printlevel=2, basis_per_element=None, extrabasisatoms=None, extrabasis=None, TDDFT=False, TDDFTroots=5, FollowRoot=1,
                  orcablocks='', extraline='', first_iteration_input=None, brokensym=None, HSmult=None, atomstoflip=None, numcores=1, nprocs=None, label=None, 
                  moreadfile=None, moreadfile_always=False,
                  autostart=True, propertyblock=None, save_output_with_label=False, keep_each_run_output=False, print_population_analysis=False, filename="orca", check_for_errors=True, check_for_warnings=True,
@@ -101,6 +101,9 @@ class ORCATheory:
         #Property block. Added after coordinates unless None
         self.propertyblock=propertyblock
 
+        #Store optional properties of ORCA run job in a dict
+        self.properties ={}
+
         
         #Adding NoAutostart keyword to extraline if requested
         if self.autostart == False:
@@ -128,6 +131,10 @@ class ORCATheory:
             self.atomstoflip=atomstoflip
         else:
             self.atomstoflip=[]
+        #Basis sets per element
+        self.basis_per_element=basis_per_element
+        if self.basis_per_element != None:
+            print("Basis set dictionary for each element provided:", basis_per_element)
         #Extrabasis
         if extrabasisatoms != None:
             self.extrabasisatoms=extrabasisatoms
@@ -330,6 +337,17 @@ class ORCATheory:
         if numcores==None:
             numcores=self.numcores
         
+        #Basis set definition per element from input dict
+        if self.basis_per_element != None:
+            basisstring=""
+            for el,b in self.basis_per_element.items():
+                basisstring += f"newgto {el} \"{b}\" end\n"
+            basisblock=f"""
+%basis
+{basisstring} 
+end"""
+            self.orcablocks = self.orcablocks + basisblock
+
         if self.printlevel >= 2:
             print("Running ORCA object with {} cores available".format(numcores))
             print("Job label:", label)
@@ -476,6 +494,8 @@ class ORCATheory:
                 print("Spin populations:")
                 charges = grabatomcharges_ORCA("Mulliken",self.filename+'.out')
                 spinpops = grabspinpop_ORCA("Mulliken",self.filename+'.out')
+                self.properties["Mulliken_charges"] = charges
+                self.properties["Mulliken_spinpops"] = spinpops
                 print("{:<2} {:<2}  {:>10} {:>10}".format(" ", " ", "Charge", "Spinpop"))
                 for i,(el, ch, sp) in enumerate(zip(qm_elems,charges, spinpops)):
                     print("{:<2} {:<2}: {:>10} {:>10}".format(i,el,ch,sp))
@@ -484,6 +504,19 @@ class ORCATheory:
         self.energy=ORCAfinalenergygrab(outfile)
         if self.printlevel >= 1:
             print("ORCA energy:", self.energy)
+
+        #Grab possible properties
+        #ICE-CI
+        try:
+            E_PT2_rest = float(pygrep("\'rest\' energy", self.filename+'.out')[-1])
+            num_genCFGs,num_selected_CFGs,num_after_SD_CFGs = ICE_WF_CFG_CI_size(self.filename+'.out')
+            self.properties["E_var"] = self.energy
+            self.properties["E_PT2_rest"] = E_PT2_rest
+            self.properties["num_genCFGs"] = num_genCFGs
+            self.properties["num_selected_CFGs"] = num_selected_CFGs
+            self.properties["num_after_SD_CFGs"] = num_after_SD_CFGs
+        except:
+            pass
 
         #Grab timings from ORCA output
         orca_timings = ORCAtimingsgrab(outfile)

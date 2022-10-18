@@ -211,24 +211,41 @@ def Singlepoint_fragments_and_theories(theories=None, fragments=None, stoichiome
 
 #Single-point energy function that runs calculations on an ASH reaction object
 #Assuming fragments have charge,mult info defined.
-def Singlepoint_reaction(theory=None, reaction=None, unit=None):
+def Singlepoint_reaction(theory=None, reaction=None, unit=None, orbitals_stored=None):
     print_line_with_mainheader("Singlepoint_reaction function")
 
     print("Will run single-point calculation on each fragment defined in reaction and return the reaction energy")
     print("Theory:", theory.__class__.__name__)
     print("Resetting energies in reaction object")
     reaction.energies=[]
+    reaction.reset_energies()
 
     #Looping through fragments defined in Reaction object
     list_of_componentsdicts=[]
     componentsdict={}
-    for frag in reaction.fragments:
-        
+    for i,frag in enumerate(reaction.fragments):
+        #Orbital file for ORCATheory
+        try:
+            theory.moreadfile=reaction.orbital_dictionary[orbitals_stored][i]
+        except:
+            pass
         #Running single-point
         energy = Singlepoint(theory=theory, fragment=frag, charge=frag.charge, mult=frag.mult)
         print("Fragment {} . Label: {} Energy: {} Eh".format(frag.formula, frag.label, energy))
         theory.cleanup()
         reaction.energies.append(energy)
+        #Check if ORCATheory object contains ICE-CI info
+        if isinstance(theory,ash.ORCATheory):
+            print("theory.properties:", theory.properties)
+            #Add selected properties to Reaction object
+            try:
+                reaction.properties["E_var"].append(theory.properties["E_var"])
+                reaction.properties["E_PT2_rest"].append(theory.properties["E_PT2_rest"])
+                reaction.properties["num_genCFGs"].append(theory.properties["num_genCFGs"])
+                reaction.properties["num_selected_CFGs"].append(theory.properties["num_selected_CFGs"])
+                reaction.properties["num_after_SD_CFGs"].append(theory.properties["num_after_SD_CFGs"])
+            except:
+                pass
         # Keeping CC components if using ORCA_CC_CBS_Theory
         if isinstance(theory,ash.ORCA_CC_CBS_Theory):
             componentsdict=theory.energy_components

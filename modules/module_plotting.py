@@ -87,12 +87,6 @@ class ASH_plot():
             self.x_axislabels=x_axislabels
             self.y_axislabels=y_axislabels
 
-            #Invert axis if requested
-            #if invert_x_axis:
-            #    self.axs[0].invert_xaxis()
-            #if invert_y_axis:
-            #    self.axs[0].invert_yaxis()
-
             #X-limit and y-limit
             if xlimit != None:
                 self.axs[0].set_xlim(xlimit[0], xlimit[1])
@@ -144,11 +138,13 @@ class ASH_plot():
             self.axiscount=0
 
         self.addplotcount=0
-        
-
+    def invert_x_axis(self,subplot):
+        self.axs[subplot].invert_xaxis()
+    def invert_y_axis(self,subplot):
+        self.axs[subplot].invert_yaxis()
     def addseries(self,subplot, surfacedictionary=None, x_list=None, y_list=None, x_labels=None, label='Series', color='blue', pointsize=40, 
                     scatter=True, line=True, scatter_linewidth=2, line_linewidth=1, marker='o', legend=True, x_scaling=1.0,y_scaling=1.0,
-                    xticklabelrotation=80, x_scale_log=False, y_scale_log=False, invert_x_axis=False, invert_y_axis=False):
+                    xticklabelrotation=80, x_scale_log=False, y_scale_log=False):
         print("Adding new series to ASH_plot object")
         self.addplotcount+=1
         curraxes=self.axs[subplot]
@@ -182,6 +178,11 @@ class ASH_plot():
             curraxes.scatter(x,y, color=color, marker = marker,  s=pointsize, linewidth=scatter_linewidth, label=label)
         #Lineplot
         if line is True:
+            #Avoid legend for line if scatter is enabled
+            if scatter is True:
+                label='_nolegend_'
+            else:
+                legendlabel=label
             curraxes.plot(x, y, linestyle='-', color=color, linewidth=line_linewidth, label=label)
         
         #Add labels to x-axis if
@@ -195,13 +196,6 @@ class ASH_plot():
             curraxes.set_xscale('log')
         if y_scale_log is True:
             curraxes.set_yscale('log')
-
-        #Invert axis if requested
-        if invert_x_axis:
-            self.axs[subplot].invert_xaxis()
-        if invert_y_axis:
-            self.axs[subplot].invert_yaxis()
-
 
         #Title/axis options for 1 vs multiple subplots
         if self.num_subplots == 1:

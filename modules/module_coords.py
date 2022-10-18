@@ -7,6 +7,8 @@ import time
 import numpy as np
 import os
 import subprocess as sp
+#Defaultdict used by Reaction
+from collections import defaultdict
 
 from ash.functions.functions_general import ashexit, isint, listdiff, print_time_rel, BC, printdebug, print_line_with_mainheader, \
     print_line_with_subheader1, print_line_with_subheader1_end, print_line_with_subheader2, writelisttofile, pygrep2, load_julia_interface
@@ -14,6 +16,7 @@ from ash.functions.functions_general import ashexit, isint, listdiff, print_time
 import ash.dictionaries_lists
 import ash.settings_ash
 import ash.constants
+
 #import ash
 
 ashpath = os.path.dirname(ash.__file__)
@@ -47,6 +50,21 @@ class Reaction:
         self.energies = []
         #Reaction energy
         self.reaction_energy=None
+
+        #Keeping track of orbital-files: key: 'SCF':["frag1.gbw","frag2.gbw","frag3.gbw"], 'MP2nat':["frag1.gbw","frag2.gbw","frag3.gbw"]
+        self.orbital_dictionary=defaultdict(lambda: [])
+        #Keep track of various properties calculated
+        self.properties=defaultdict(lambda: [])
+    def reset_energies(self):
+        #Reset energies etc
+        self.energies = []
+        self.reaction_energy=None
+    def reset_all(self):
+        #Reset energies etc
+        self.energies = []
+        self.reaction_energy=None
+        self.properties=defaultdict(lambda: [])
+
 
     def check_fragments(self):
         for frag in self.fragments:
