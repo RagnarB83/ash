@@ -2302,7 +2302,7 @@ def Reaction_FCI_Analysis(reaction=None, basis=None, basisfile=None, basis_per_e
                 Do_TGen_fixed_series=True, fixed_tvar=1e-11, Do_Tau3_series=True, Do_Tau7_series=True, Do_EP_series=True,
                 tgen_thresholds=None, ice_nmin=1.999, ice_nmax=0, 
                 DoHF=True,DoMP2=True, DoCC=True, DoCC_CCSD=True, DoCC_CCSDT=True, DoCC_MRCC=False, DoCC_CFour=False,
-                DoCC_DFTorbs=True, KS_functionals=['BP86','BHLYP'],
+                DoCC_DFTorbs=True, KS_functionals=['BP86','BHLYP'], Do_OOCC=True,
                 maxcorememory=10000, numcores=1, ice_ci_maxiter=30, ice_etol=1e-6,
                 upper_sel_threshold=1.999, lower_sel_threshold=0,
                 plot=True, y_axis_label='None', yshift=0.3, ylimits=None, padding=0.4):
@@ -2632,7 +2632,7 @@ def Reaction_FCI_Analysis(reaction=None, basis=None, basisfile=None, basis_per_e
             relE_pCCSD2a = ash.Singlepoint_reaction(reaction=reaction, theory=pccsd_2a, unit=reaction.unit)
             results_cc['CCSD'] = relE_CCSD
             results_cc['BCCD'] = relE_BCCD
-            if OOCC is True:
+            if Do_OOCC is True:
                 ooccd = ash.ORCATheory(orcasimpleinput=f"! OOCCD {basis} tightscf", orcablocks=ccblocks, basis_per_element=basis_per_element,numcores=numcores, label='OOCCD', save_output_with_label=True)
                 relE_OOCCD = ash.Singlepoint_reaction(reaction=reaction, theory=ooccd, unit=reaction.unit)
                 results_cc['OOCCD'] = relE_OOCCD
@@ -2641,10 +2641,6 @@ def Reaction_FCI_Analysis(reaction=None, basis=None, basisfile=None, basis_per_e
         if DoCC_CCSDT is True:
             ccsdt = ash.ORCATheory(orcasimpleinput=f"! CCSD(T) {basis} tightscf", orcablocks=ccblocks, basis_per_element=basis_per_element,numcores=numcores, label='CCSDT', save_output_with_label=True)
             ccsdt_qro = ash.ORCATheory(orcasimpleinput=f"! CCSD(T) {basis} UNO tightscf", orcablocks=ccblocks, basis_per_element=basis_per_element,numcores=numcores, label='CCSDT_QRO', save_output_with_label=True)
-            if OOCC is True:
-                ooccdt = ash.ORCATheory(orcasimpleinput=f"! OOCCD(T) {basis} tightscf", orcablocks=ccblocks, basis_per_element=basis_per_element,numcores=numcores, label='OOCCDT', save_output_with_label=True)
-                relE_OOCCDT = ash.Singlepoint_reaction(reaction=reaction, theory=ooccdt, unit=reaction.unit)
-                results_cc['OOCCD(T)'] = relE_OOCCDT
             bccdt = ash.ORCATheory(orcasimpleinput=f"! CCSD(T) {basis} tightscf", orcablocks=brucknerblocks, basis_per_element=basis_per_element,numcores=numcores, label='BCCDT', save_output_with_label=True)
             #CCSD(T) extrapolated to FCI
             if basis_per_element ==None:
@@ -2666,7 +2662,7 @@ def Reaction_FCI_Analysis(reaction=None, basis=None, basisfile=None, basis_per_e
             #relE_CCSDT_icecinat = ash.Singlepoint_reaction(reaction=reaction, theory=ccsdt_icecinat, unit=reaction.unit)
             results_cc['CCSD(T)'] = relE_CCSDT
             results_cc['CCSD(T)-QRO'] = relE_CCSDT_QRO
-            if OOCC is True:
+            if Do_OOCC is True:
                 ooccdt = ash.ORCATheory(orcasimpleinput=f"! OOCCD(T) {basis} tightscf", orcablocks=ccblocks, basis_per_element=basis_per_element,numcores=numcores, label='OOCCDT', save_output_with_label=True)
                 relE_OOCCDT = ash.Singlepoint_reaction(reaction=reaction, theory=ooccdt, unit=reaction.unit)
                 results_cc['OOCCD(T)'] = relE_OOCCDT
