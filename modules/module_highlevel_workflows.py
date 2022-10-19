@@ -2360,6 +2360,9 @@ def Reaction_FCI_Analysis(reaction=None, basis=None, basisfile=None, basis_per_e
             #Adding to orbital dictionary of Reaction
             #NOTE: Keep info in reaction object or fragment object?
             reaction.orbital_dictionary["MP2nat"].append(f'./{frag_label}MP2natorbs.mp2nat')
+            #Cleanup
+            natmp2.cleanup()
+            
     #Determining frag that has largest number of active electrons
     largest_fragindex=[i[0] for i in reaction.properties["CAS"]].index(max([i[0] for i in reaction.properties["CAS"]]))
 
