@@ -47,6 +47,7 @@ def Singlepoint(fragment=None, theory=None, Grad=False, charge=None, mult=None):
 
     # Run a single-point energy job with gradient
     if Grad ==True:
+        print()
         print(BC.WARNING,"Doing single-point Energy+Gradient job on fragment. Formula: {} Label: {} ".format(fragment.prettyformula,fragment.label), BC.END)
         # An Energy+Gradient calculation where we change the number of cores to 12
         energy,gradient= theory.run(current_coords=coords, elems=elems, Grad=True, charge=charge, mult=mult)
@@ -55,6 +56,7 @@ def Singlepoint(fragment=None, theory=None, Grad=False, charge=None, mult=None):
         return energy,gradient
     # Run a single-point energy job without gradient (default)
     else:
+        print()
         print("Doing single-point Energy job on fragment. Formula: {} Label: {} ".format(fragment.prettyformula,fragment.label))
         #Run
         energy = theory.run(current_coords=coords, elems=elems, charge=charge, mult=mult)
