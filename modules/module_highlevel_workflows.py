@@ -2297,6 +2297,7 @@ end
 #TODO: add second y-axis to ICE-CI plot (plot CFGs). Or maybe add info as point-label?
 #TODO: MP2 and ICE-CI natural orbitals for CCSD(T) wf options
 #TODO: Test MRCC and CFour
+#TODO: Fix for 1-electron systems
 def Reaction_FCI_Analysis(reaction=None, basis=None, basisfile=None, basis_per_element=None,
                 Do_TGen_fixed_series=True, fixed_tvar=1e-11, Do_Tau3_series=True, Do_Tau7_series=True, Do_EP_series=True,
                 tgen_thresholds=None, ice_nmin=1.999, ice_nmax=0, 
@@ -2362,7 +2363,7 @@ def Reaction_FCI_Analysis(reaction=None, basis=None, basisfile=None, basis_per_e
             reaction.orbital_dictionary["MP2nat"].append(f'./{frag_label}MP2natorbs.mp2nat')
             #Cleanup
             natmp2.cleanup()
-            
+
     #Determining frag that has largest number of active electrons
     largest_fragindex=[i[0] for i in reaction.properties["CAS"]].index(max([i[0] for i in reaction.properties["CAS"]]))
 

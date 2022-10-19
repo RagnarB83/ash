@@ -252,7 +252,7 @@ def print_line_with_mainheader(line):
     print(inner_line.center(80))
     print(midline.center(80))
     print(outer_line.center(80))
-    print("\n")
+    #print("\n")
 
 
 # Submodule header
