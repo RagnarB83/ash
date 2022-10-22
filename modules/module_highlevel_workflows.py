@@ -2827,3 +2827,112 @@ def Reaction_FCI_Analysis(reaction=None, basis=None, basisfile=None, basis_per_e
             eplot.savefig(f'{reaction.label}_FCI')
         else:
             print("Could not plot data due to ASH_plot problem.")
+
+#Simple FCI correction. Not working yet
+def Reaction_FCI_correction(reaction=None, basis=None, basis_per_element=None, numcores=1, maxcorememory=4000,
+        upper_sel_threshold=1.999, lower_sel_threshold=0.01 ):
+
+    ice_ci_maxiter=30
+    ice_etol=1e-6
+
+    print("upper_sel_threshold:", upper_sel_threshold)
+    print("lower_sel_threshold:", lower_sel_threshold)
+
+    separate_MP2_nat_initial_orbitals=True
+    if separate_MP2_nat_initial_orbitals is True:
+        print("Running MP2 natural orbital calculation")
+        #TODO
+        #Do MP2-natural orbital calculation here
+        mp2blocks=f"""
+        %maxcore {maxcorememory}
+        %mp2
+        natorbs true
+        density unrelaxed
+        end
+        """
+        natmp2 = ash.ORCATheory(orcasimpleinput=f"! MP2 {basis} autoaux tightscf", orcablocks=mp2blocks, basis_per_element=basis_per_element,numcores=numcores, label='MP2', save_output_with_label=True)
+        for frag in reaction.fragments:
+            print("frag.label:", frag.label)
+            frag_label = "Frag_" + str(frag.formula) + "_" + str(frag.charge) + "_" + str(frag.mult) + "_"
+            ash.Singlepoint(fragment=frag, theory=natmp2)
+            shutil.copyfile(natmp2.filename+'.mp2nat', f'./{frag_label}MP2natorbs.mp2nat')
+            #Determine CAS space based on thresholds
+            step1occupations=ash.interfaces.interface_ORCA.MP2_natocc_grab(natmp2.filename+'.out')
+            print("MP2natoccupations:", step1occupations)
+            nel,norb=ash.functions.functions_elstructure.select_space_from_occupations(step1occupations, selection_thresholds=[upper_sel_threshold,lower_sel_threshold])
+            print(f"Selecting CAS({nel},{norb}) based on thresholds: upper_sel_threshold={upper_sel_threshold} and lower_sel_threshold={lower_sel_threshold}")
+            reaction.properties["CAS"].append([nel,norb])
+            print("reaction.properties CAS:", reaction.properties["CAS"])
+
+            #Adding to orbital dictionary of Reaction
+            #NOTE: Keep info in reaction object or fragment object?
+            reaction.orbital_dictionary["MP2nat"].append(f'./{frag_label}MP2natorbs.mp2nat')
+            #Cleanup
+            natmp2.cleanup()
+
+            #exit()
+
+    #Determining frag that has largest number of active electrons
+    largest_fragindex=[i[0] for i in reaction.properties["CAS"]].index(max([i[0] for i in reaction.properties["CAS"]]))
+
+    #Frag_H2O1_1_2_MP2natorbs.mp2nat
+    print("reaction.orbital_dictionary:", reaction.orbital_dictionary)
+
+
+    tgen=1e-4
+    tvar=1e-11
+
+    ice_energies=[]
+    ccsdt_energies_orca=[]
+    ccsdt_energies_mrcc=[]
+    for i,frag in enumerate(reaction.fragments):
+        print("frag")
+
+        #ICE-CI
+        ice = make_ICE_theory(basis, tgen, tvar,numcores, nel=reaction.properties["CAS"][i][0], 
+                        norb=reaction.properties["CAS"][i][1], basis_per_element=basis_per_element, 
+                        maxcorememory=maxcorememory, maxiter=ice_ci_maxiter, etol=ice_etol, 
+                        moreadfile=reaction.orbital_dictionary["MP2nat"][i])
+        energy_ICE = ash.Singlepoint(fragment=frag, theory=ice)
+        ice_energies.append(energy_ICE)
+        ice.cleanup()
+        #CC
+        ccline=f"! CCSD(T) {basis} autoaux tightscf"
+        virtorb_nat_threshold=lower_sel_threshold
+        ccblocks=f"""
+        %maxcore 11000
+        %mdci
+        maxiter	300
+        Tnat {virtorb_nat_threshold}
+        end
+        """
+        #ORCA-CCSD(T)
+        ccsdt_orca = ash.ORCATheory(orcasimpleinput=ccline, orcablocks=ccblocks, basis_per_element=basis_per_element,numcores=numcores, label='CCSDT', save_output_with_label=True)
+        e_ccsdt_orca = ash.Singlepoint(theory=ccsdt_orca, fragment=frag)
+        ccsdt_energies_orca.append(e_ccsdt_orca)
+        #MCC-CCSD(T)
+        #https://www.mrcc.hu/MRCC/manual/html/single/manual_sp.xhtml
+        #lnoepsv thresh
+        ccsdt_mrccinput=f"""
+        basis={basis}
+        calc=FNO-CCSD(T)
+        mem=9000MB
+        scftype=UHF
+        ccmaxit=150
+        core=frozen
+        ovirt=MP2
+        lnoepsv={virtorb_nat_threshold}
+        """
+        ccsdt_mrcc = ash.MRCCTheory(mrccinput=ccsdt_mrccinput,numcores=numcores, label='CCSDT', save_output_with_label=True)
+        e_ccsdt_mrcc = ash.Singlepoint(theory=ccsdt_mrcc, fragment=frag)
+        ccsdt_energies_mrcc.append(e_ccsdt_mrcc)
+
+    print("ice_energies:", ice_energies)
+    print("ccsdt_energies_orca:", ccsdt_energies_orca)
+    print("ccsdt_energies_mrcc:", ccsdt_energies_mrcc)
+    reaction_energy_ice = ash.ReactionEnergy(list_of_energies=ice_energies, stoichiometry=reaction.stoichiometry, unit=reaction.unit, silent=False)[0]
+    reaction_energy_cc_orca = ash.ReactionEnergy(list_of_energies=ccsdt_energies_orca, stoichiometry=reaction.stoichiometry, unit=reaction.unit, silent=False)[0]
+    reaction_energy_cc_mrcc = ash.ReactionEnergy(list_of_energies=ccsdt_energies_mrcc, stoichiometry=reaction.stoichiometry, unit=reaction.unit, silent=False)[0]
+
+    #delta_A=reaction_energy_ice-reaction_energy_cc
+    #print(f"delta_A: {delta_A} {reaction.unit}")

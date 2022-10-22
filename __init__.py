@@ -84,6 +84,7 @@ from ash.interfaces.interface_pyscf import PySCFTheory
 from ash.interfaces.interface_MRCC import MRCCTheory
 from ash.interfaces.interface_CFour import CFourTheory
 from ash.interfaces.interface_xtb import xTBTheory
+from ash.interfaces.interface_PyMBE import PyMBETheory
 
 # MM: external and internal
 from ash.interfaces.interface_OpenMM import OpenMMTheory, OpenMM_MD, OpenMM_MDclass, OpenMM_Opt, OpenMM_Modeller, \
