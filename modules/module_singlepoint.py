@@ -419,7 +419,8 @@ def ReactionEnergy(list_of_energies=None, stoichiometry=None, list_of_fragments=
 
         if len(list_of_energies) != len(stoichiometry):
             print("Number of energies not equal to number of stoichiometry values")
-            print("Check ")
+            print("Exiting.")
+            ashexit()
 
         for i,stoich in enumerate(stoichiometry):
             if stoich < 0:

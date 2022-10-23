@@ -2300,9 +2300,13 @@ end
 #TODO: MP2 and ICE-CI natural orbitals for CCSD(T) wf options
 #TODO: Test MRCC and CFour
 #TODO: Fix for 1-electron systems
+#TODO: Finish MBE
 def Reaction_FCI_Analysis(reaction=None, basis=None, basisfile=None, basis_per_element=None,
+                Do_ICE_CI=True, 
+                MBE_FCI=False, pymbedir=None, mbe_thres_inc=1e-5, mbe_orbs_choice='ccsd', mbe_ref_orblist=[],
                 Do_TGen_fixed_series=True, fixed_tvar=1e-11, Do_Tau3_series=True, Do_Tau7_series=True, Do_EP_series=True,
-                tgen_thresholds=None, ice_nmin=1.999, ice_nmax=0, 
+                tgen_thresholds=None, ice_nmin=1.999, ice_nmax=0,
+                separate_MP2_nat_initial_orbitals=True,
                 DoHF=True,DoMP2=True, DoCC=True, DoCC_CCSD=True, DoCC_CCSDT=True, DoCC_MRCC=False, DoCC_CFour=False,
                 DoCC_DFTorbs=True, KS_functionals=['BP86','BHLYP'], Do_OOCC=True,
                 maxcorememory=10000, numcores=1, ice_ci_maxiter=30, ice_etol=1e-6,
@@ -2333,8 +2337,6 @@ def Reaction_FCI_Analysis(reaction=None, basis=None, basisfile=None, basis_per_e
     tgen_thresholds=[round(i,20) for i in tgen_thresholds]
 
     ################
-    separate_MP2_nat_initial_orbitals=True
-    #TODO: Not working properly yet
     if separate_MP2_nat_initial_orbitals is True:
         print("Running MP2 natural orbital calculation")
         #TODO
@@ -2366,217 +2368,193 @@ def Reaction_FCI_Analysis(reaction=None, basis=None, basisfile=None, basis_per_e
             #Cleanup
             natmp2.cleanup()
 
-    #Determining frag that has largest number of active electrons
-    largest_fragindex=[i[0] for i in reaction.properties["CAS"]].index(max([i[0] for i in reaction.properties["CAS"]]))
+        #Determining frag that has largest number of active electrons
+        largest_fragindex=[i[0] for i in reaction.properties["CAS"]].index(max([i[0] for i in reaction.properties["CAS"]]))
 
-    #Frag_H2O1_1_2_MP2natorbs.mp2nat
-    print("reaction.orbital_dictionary:", reaction.orbital_dictionary)
+
     ################
     #Iterating over TGen thresholds with fixed default TVar =
     #Not using Singlepoint_reaction as we need more flexibility due to orbital-info in theory object etc.
-    if Do_Tau3_series is True:
-        tau3_e_series=[]
-        print("Do_Tau3_series True")
-        for tgen in tgen_thresholds:
-            print("tgen:", tgen)
-            tvar=round(tgen*1E-3,20)
-            print("tvar determined to be:",tvar)
-            #Creating ICE-CI theory
-            if (tgen,tvar) not in results_ice_tgen_tvar:
-                for i,frag in enumerate(reaction.fragments):
-                    ice = make_ICE_theory(basis, tgen, tvar,numcores, nel=reaction.properties["CAS"][i][0], norb=reaction.properties["CAS"][i][1], basis_per_element=basis_per_element, 
-                        maxcorememory=maxcorememory, maxiter=ice_ci_maxiter, etol=ice_etol, moreadfile=reaction.orbital_dictionary["MP2nat"][i])
-                    energy_ICE = ash.Singlepoint(fragment=frag, theory=ice)
-                    reaction.energies.append(energy_ICE)
-                    #WF info
-                    #print("ice.properties E_var:", ice.properties["E_var"])
-                    results_ice_tgen_tvar_Evar[(tgen,tvar)].append(ice.properties["E_var"])
-                    #print("results_ice_tgen_tvar_Evar", results_ice_tgen_tvar_Evar)
-                    results_ice_tgen_tvar_EPT2[(tgen,tvar)].append(ice.properties["E_PT2_rest"])
-                    results_ice_tgen_tvar_genCFGs[(tgen,tvar)].append(ice.properties["num_genCFGs"])
-                    results_ice_tgen_tvar_selCFGs[(tgen,tvar)].append(ice.properties["num_selected_CFGs"])
-                    results_ice_tgen_tvar_SDCFGs[(tgen,tvar)].append(ice.properties["num_after_SD_CFGs"])
-                    print("results_ice_tgen_tvar_Evar", results_ice_tgen_tvar_Evar)
-                    print("results_ice_tgen_tvar_genCFGs:", results_ice_tgen_tvar_genCFGs)
-                    #exit()
-                reaction.calculate_reaction_energy()
-                rel_energy_ICE = reaction.reaction_energy
-                results_ice_tgen_tvar[(tgen,tvar)] = rel_energy_ICE
-                tau3_e_series.append(rel_energy_ICE)
-                reaction.reset_energies()
-            else:
-                print(f"Tgen/Tvar ({tgen}/{tvar}) combo already calculated")
-                tau3_e_series.append(results_ice_tgen_tvar[(tgen,tvar)])
+    if Do_ICE_CI is True:
+        if Do_Tau3_series is True:
+            tau3_e_series=[]
+            print("Do_Tau3_series True")
+            for tgen in tgen_thresholds:
+                print("tgen:", tgen)
+                tvar=round(tgen*1E-3,20)
+                print("tvar determined to be:",tvar)
+                #Creating ICE-CI theory
+                if (tgen,tvar) not in results_ice_tgen_tvar:
+                    for i,frag in enumerate(reaction.fragments):
+                        ice = make_ICE_theory(basis, tgen, tvar,numcores, nel=reaction.properties["CAS"][i][0], norb=reaction.properties["CAS"][i][1], basis_per_element=basis_per_element, 
+                            maxcorememory=maxcorememory, maxiter=ice_ci_maxiter, etol=ice_etol, moreadfile=reaction.orbital_dictionary["MP2nat"][i])
+                        energy_ICE = ash.Singlepoint(fragment=frag, theory=ice)
+                        reaction.energies.append(energy_ICE)
+                        #WF info
+                        #print("ice.properties E_var:", ice.properties["E_var"])
+                        results_ice_tgen_tvar_Evar[(tgen,tvar)].append(ice.properties["E_var"])
+                        #print("results_ice_tgen_tvar_Evar", results_ice_tgen_tvar_Evar)
+                        results_ice_tgen_tvar_EPT2[(tgen,tvar)].append(ice.properties["E_PT2_rest"])
+                        results_ice_tgen_tvar_genCFGs[(tgen,tvar)].append(ice.properties["num_genCFGs"])
+                        results_ice_tgen_tvar_selCFGs[(tgen,tvar)].append(ice.properties["num_selected_CFGs"])
+                        results_ice_tgen_tvar_SDCFGs[(tgen,tvar)].append(ice.properties["num_after_SD_CFGs"])
+                        print("results_ice_tgen_tvar_Evar", results_ice_tgen_tvar_Evar)
+                        print("results_ice_tgen_tvar_genCFGs:", results_ice_tgen_tvar_genCFGs)
+                        #exit()
+                    reaction.calculate_reaction_energy()
+                    rel_energy_ICE = reaction.reaction_energy
+                    results_ice_tgen_tvar[(tgen,tvar)] = rel_energy_ICE
+                    tau3_e_series.append(rel_energy_ICE)
+                    reaction.reset_energies()
+                else:
+                    print(f"Tgen/Tvar ({tgen}/{tvar}) combo already calculated")
+                    tau3_e_series.append(results_ice_tgen_tvar[(tgen,tvar)])
 
-    #print("results_ice_tgen_tvar:", results_ice_tgen_tvar)
-    #print("results_ice_tgen_tvar_EPT2:", results_ice_tgen_tvar_EPT2)
-    print("results_ice_tgen_tvar_genCFGs:", results_ice_tgen_tvar_genCFGs)
-    if Do_Tau7_series is True:
-        tau7_e_series=[]
-        print("Do_Tau7_series True")
-        for tgen in tgen_thresholds:
-            print("tgen:", tgen)
-            tvar=round(tgen*1E-7,20)
-            print("tvar determined to be:",tvar)
-            #Creating ICE-CI theory
-            if (tgen,tvar) not in results_ice_tgen_tvar:
-                for i,frag in enumerate(reaction.fragments):
-                    ice = make_ICE_theory(basis, tgen, tvar,numcores, nel=reaction.properties["CAS"][i][0], norb=reaction.properties["CAS"][i][1], basis_per_element=basis_per_element, 
-                        maxcorememory=maxcorememory, maxiter=ice_ci_maxiter, etol=ice_etol, moreadfile=reaction.orbital_dictionary["MP2nat"][i])
-                    energy_ICE = ash.Singlepoint(fragment=frag, theory=ice)
-                    print("energy_ICE:", energy_ICE)
-                    reaction.energies.append(energy_ICE)
-                    print("reaction.energies:", reaction.energies)
-                    #WF info
-                    results_ice_tgen_tvar_Evar[(tgen,tvar)].append(ice.properties["E_var"])
-                    results_ice_tgen_tvar_EPT2[(tgen,tvar)].append(ice.properties["E_PT2_rest"])
-                    results_ice_tgen_tvar_genCFGs[(tgen,tvar)].append(ice.properties["num_genCFGs"])
-                    results_ice_tgen_tvar_selCFGs[(tgen,tvar)].append(ice.properties["num_selected_CFGs"])
-                    results_ice_tgen_tvar_SDCFGs[(tgen,tvar)].append(ice.properties["num_after_SD_CFGs"])
-                reaction.calculate_reaction_energy()
-                rel_energy_ICE = reaction.reaction_energy
-                results_ice_tgen_tvar[(tgen,tvar)] = rel_energy_ICE
-                tau7_e_series.append(rel_energy_ICE)
-                reaction.reset_energies()
-            else:
-                print(f"Tgen/Tvar ({tgen}/{tvar}) combo already calculated")
-                tau7_e_series.append(results_ice_tgen_tvar[(tgen,tvar)])
+        #print("results_ice_tgen_tvar:", results_ice_tgen_tvar)
+        #print("results_ice_tgen_tvar_EPT2:", results_ice_tgen_tvar_EPT2)
+        print("results_ice_tgen_tvar_genCFGs:", results_ice_tgen_tvar_genCFGs)
+        if Do_Tau7_series is True:
+            tau7_e_series=[]
+            print("Do_Tau7_series True")
+            for tgen in tgen_thresholds:
+                print("tgen:", tgen)
+                tvar=round(tgen*1E-7,20)
+                print("tvar determined to be:",tvar)
+                #Creating ICE-CI theory
+                if (tgen,tvar) not in results_ice_tgen_tvar:
+                    for i,frag in enumerate(reaction.fragments):
+                        ice = make_ICE_theory(basis, tgen, tvar,numcores, nel=reaction.properties["CAS"][i][0], norb=reaction.properties["CAS"][i][1], basis_per_element=basis_per_element, 
+                            maxcorememory=maxcorememory, maxiter=ice_ci_maxiter, etol=ice_etol, moreadfile=reaction.orbital_dictionary["MP2nat"][i])
+                        energy_ICE = ash.Singlepoint(fragment=frag, theory=ice)
+                        print("energy_ICE:", energy_ICE)
+                        reaction.energies.append(energy_ICE)
+                        print("reaction.energies:", reaction.energies)
+                        #WF info
+                        results_ice_tgen_tvar_Evar[(tgen,tvar)].append(ice.properties["E_var"])
+                        results_ice_tgen_tvar_EPT2[(tgen,tvar)].append(ice.properties["E_PT2_rest"])
+                        results_ice_tgen_tvar_genCFGs[(tgen,tvar)].append(ice.properties["num_genCFGs"])
+                        results_ice_tgen_tvar_selCFGs[(tgen,tvar)].append(ice.properties["num_selected_CFGs"])
+                        results_ice_tgen_tvar_SDCFGs[(tgen,tvar)].append(ice.properties["num_after_SD_CFGs"])
+                    reaction.calculate_reaction_energy()
+                    rel_energy_ICE = reaction.reaction_energy
+                    results_ice_tgen_tvar[(tgen,tvar)] = rel_energy_ICE
+                    tau7_e_series.append(rel_energy_ICE)
+                    reaction.reset_energies()
+                else:
+                    print(f"Tgen/Tvar ({tgen}/{tvar}) combo already calculated")
+                    tau7_e_series.append(results_ice_tgen_tvar[(tgen,tvar)])
 
-    if Do_TGen_fixed_series is True:
-        taufixed_e_series=[]
-        print("Do_TGen_fixed_series True")
-        tvar=round(fixed_tvar,20)
-        print("Fixed Tvar :", tvar)
-        for tgen in tgen_thresholds:
-            print("tgen:", tgen)
-            #Creating ICE-CI theory
-            if (tgen,tvar) not in results_ice_tgen_tvar:
-                for i,frag in enumerate(reaction.fragments):
-                    ice = make_ICE_theory(basis, tgen, tvar,numcores, nel=reaction.properties["CAS"][i][0], norb=reaction.properties["CAS"][i][1], basis_per_element=basis_per_element, 
-                        maxcorememory=maxcorememory, maxiter=ice_ci_maxiter, etol=ice_etol, moreadfile=reaction.orbital_dictionary["MP2nat"][i])
-                    energy_ICE = ash.Singlepoint(fragment=frag, theory=ice)
-                    reaction.energies.append(energy_ICE)
-                    #WF info
-                    results_ice_tgen_tvar_Evar[(tgen,tvar)].append(ice.properties["E_var"])
-                    results_ice_tgen_tvar_EPT2[(tgen,tvar)].append(ice.properties["E_PT2_rest"])
-                    results_ice_tgen_tvar_genCFGs[(tgen,tvar)].append(ice.properties["num_genCFGs"])
-                    results_ice_tgen_tvar_selCFGs[(tgen,tvar)].append(ice.properties["num_selected_CFGs"])
-                    results_ice_tgen_tvar_SDCFGs[(tgen,tvar)].append(ice.properties["num_after_SD_CFGs"])
-                reaction.calculate_reaction_energy()
-                rel_energy_ICE = reaction.reaction_energy
-                results_ice_tgen_tvar[(tgen,tvar)] = rel_energy_ICE
-                taufixed_e_series.append(rel_energy_ICE)
-                reaction.reset_energies()
-            else:
-                print(f"Tgen/Tvar ({tgen}/{tvar}) combo already calculated")
-                taufixed_e_series.append(results_ice_tgen_tvar[(tgen,tvar)])
+        if Do_TGen_fixed_series is True:
+            taufixed_e_series=[]
+            print("Do_TGen_fixed_series True")
+            tvar=round(fixed_tvar,20)
+            print("Fixed Tvar :", tvar)
+            for tgen in tgen_thresholds:
+                print("tgen:", tgen)
+                #Creating ICE-CI theory
+                if (tgen,tvar) not in results_ice_tgen_tvar:
+                    for i,frag in enumerate(reaction.fragments):
+                        ice = make_ICE_theory(basis, tgen, tvar,numcores, nel=reaction.properties["CAS"][i][0], norb=reaction.properties["CAS"][i][1], basis_per_element=basis_per_element, 
+                            maxcorememory=maxcorememory, maxiter=ice_ci_maxiter, etol=ice_etol, moreadfile=reaction.orbital_dictionary["MP2nat"][i])
+                        energy_ICE = ash.Singlepoint(fragment=frag, theory=ice)
+                        reaction.energies.append(energy_ICE)
+                        #WF info
+                        results_ice_tgen_tvar_Evar[(tgen,tvar)].append(ice.properties["E_var"])
+                        results_ice_tgen_tvar_EPT2[(tgen,tvar)].append(ice.properties["E_PT2_rest"])
+                        results_ice_tgen_tvar_genCFGs[(tgen,tvar)].append(ice.properties["num_genCFGs"])
+                        results_ice_tgen_tvar_selCFGs[(tgen,tvar)].append(ice.properties["num_selected_CFGs"])
+                        results_ice_tgen_tvar_SDCFGs[(tgen,tvar)].append(ice.properties["num_after_SD_CFGs"])
+                    reaction.calculate_reaction_energy()
+                    rel_energy_ICE = reaction.reaction_energy
+                    results_ice_tgen_tvar[(tgen,tvar)] = rel_energy_ICE
+                    taufixed_e_series.append(rel_energy_ICE)
+                    reaction.reset_energies()
+                else:
+                    print(f"Tgen/Tvar ({tgen}/{tvar}) combo already calculated")
+                    taufixed_e_series.append(results_ice_tgen_tvar[(tgen,tvar)])
 
-    #Determining best ICE_CI value to center y-axis zoom on
-    #NOTE: For now using last value
-    rel_energy_ICE_last=rel_energy_ICE
+        #Determining best ICE_CI value to center y-axis zoom on
+        #NOTE: For now using last value
+        rel_energy_ICE_last=rel_energy_ICE
 
-    if Do_EP_series is True:
-        #tau3_EP_series=[]
-        #tau7_EP_series=[]
-        
-        #List of lists of [[1,2],[1,2]]
-        E_extrap_tau3_2p=[[] for i in reaction.fragments]
-        E_extrap_tau3_3p=[[] for i in reaction.fragments]
-        #E_extrap_tau7=[[] for i in reaction.fragments]
+        if Do_EP_series is True:
+            #List of lists of [[1,2],[1,2]]
+            E_extrap_tau3_2p=[[] for i in reaction.fragments]
+            E_extrap_tau3_3p=[[] for i in reaction.fragments]
 
-        print("ICE-CI extrapolations series")
-        print("results_ice_tgen_tvar_Evar:", results_ice_tgen_tvar_Evar)
-        print("results_ice_tgen_tvar_EPT2:", results_ice_tgen_tvar_EPT2)
+            print("ICE-CI extrapolations series")
+            print("results_ice_tgen_tvar_Evar:", results_ice_tgen_tvar_Evar)
+            print("results_ice_tgen_tvar_EPT2:", results_ice_tgen_tvar_EPT2)
+            print("results_ice_tgen_tvar:", results_ice_tgen_tvar)
+
+            print("reaction.fragments:", reaction.fragments)
+            for i,frag in enumerate(reaction.fragments):
+                E_pt2_tau3=[]
+                E_var_tau3=[]
+                E_tot_tau3=[]
+                for tgen in tgen_thresholds:
+                    if Do_Tau3_series:
+                        tvar = round(tgen*1e-3,20)
+                        E_v = results_ice_tgen_tvar_Evar[(tgen,tvar)][i]
+                        E_pt2 = results_ice_tgen_tvar_EPT2[(tgen,tvar)][i]
+                        E_var_tau3.append(E_v)
+                        E_pt2_tau3.append(E_pt2)
+                        E_tot_tau3.append(E_v+E_pt2)
+                        if len(E_tot_tau3) > 1:
+                            #2-point extrap. with last 2 points
+                            twop_slope, twop_E_extrap = np.polyfit([abs(j) for j in E_pt2_tau3[-2:]],E_tot_tau3[-2:],1)
+                            #3-point extrap. with last 3 points
+                            threep_slope, threep_E_extrap = np.polyfit([abs(j) for j in E_pt2_tau3[-3:]],E_tot_tau3[-3:],1)
+                            E_extrap_tau3_2p[i].append(twop_E_extrap)
+                            if len(E_tot_tau3) > 2:
+                                E_extrap_tau3_3p[i].append(threep_E_extrap)
+
+
+
+
+            #Extrapolated Reaction energies 
+            if Do_Tau3_series:
+                tau3_EP_series_2p=[]
+                tau3_EP_series_3p=[]
+                for i,tgen in enumerate(E_extrap_tau3_2p[0]):
+                    list_of_energies_2p=[E_extrap_tau3_2p[f][i] for f,l in enumerate(E_extrap_tau3_2p)]
+                    reaction_energy_2p = ash.ReactionEnergy(list_of_energies=list_of_energies_2p, stoichiometry=reaction.stoichiometry, unit=reaction.unit, silent=False)[0]
+                    tau3_EP_series_2p.append(reaction_energy_2p)
+                for i,tgen in enumerate(E_extrap_tau3_3p[0]):
+                    list_of_energies_3p=[E_extrap_tau3_3p[f][i] for f,l in enumerate(E_extrap_tau3_3p)]
+                    reaction_energy_3p = ash.ReactionEnergy(list_of_energies=list_of_energies_3p, stoichiometry=reaction.stoichiometry, unit=reaction.unit, silent=False)[0]
+                    tau3_EP_series_3p.append(reaction_energy_3p)
+                #print("tau3_EP_series_2p:", tau3_EP_series_2p)
+                #print("tau3_EP_series_3p:", tau3_EP_series_3p)
+            
+            #Confidence interval
+            #TODO
         print("results_ice_tgen_tvar:", results_ice_tgen_tvar)
 
-        print("reaction.fragments:", reaction.fragments)
-        for i,frag in enumerate(reaction.fragments):
-            E_pt2_tau3=[]
-            E_var_tau3=[]
-            E_tot_tau3=[]
-            #E_pt2_tau7=[]
-            #E_var_tau7=[]
-            #E_tot_tau7=[]
-            for tgen in tgen_thresholds:
-                if Do_Tau3_series:
-                    tvar = round(tgen*1e-3,20)
-                    E_v = results_ice_tgen_tvar_Evar[(tgen,tvar)][i]
-                    E_pt2 = results_ice_tgen_tvar_EPT2[(tgen,tvar)][i]
-                    E_var_tau3.append(E_v)
-                    E_pt2_tau3.append(E_pt2)
-                    E_tot_tau3.append(E_v+E_pt2)
-                    if len(E_tot_tau3) > 1:
-                        #2-point extrap. with last 2 points
-                        twop_slope, twop_E_extrap = np.polyfit([abs(j) for j in E_pt2_tau3[-2:]],E_tot_tau3[-2:],1)
-                        #3-point extrap. with last 3 points
-                        threep_slope, threep_E_extrap = np.polyfit([abs(j) for j in E_pt2_tau3[-3:]],E_tot_tau3[-3:],1)
-                        #if extrapolation == 'twopoint':
-                        #    print("Choosing twpoint extrapolation:", twop_E_extrap)
-                        #    slope=twop_slope
-                        #    E_extrap=twop_E_extrap
-                        #elif extrapolation =='threepoint':
-                        #    print("Choosing twpoint extrapolation:", twop_E_extrap)
-                        #    slope=threep_slope
-                        #    E_extrap=threep_E_extrap
-                        #print("slope:", slope)
-                        #print("E_extrap:", E_extrap)
-                        #tau3_EP_series.append(E_extrap)
-                        E_extrap_tau3_2p[i].append(twop_E_extrap)
-                        if len(E_tot_tau3) > 2:
-                            E_extrap_tau3_3p[i].append(threep_E_extrap)
-                #TAU7 EXTRAPOLATION DISABLED
-                #DOES NOT REALLY WORK
-                # if Do_Tau7_series:
-                #     tvar = round(tgen*1e-7,20)
-                #     E_v = results_ice_tgen_tvar_Evar[(tgen,tvar)][i]
-                #     E_pt2 = results_ice_tgen_tvar_EPT2[(tgen,tvar)][i]
-                #     E_var_tau7.append(E_v)
-                #     E_pt2_tau7.append(E_pt2)
-                #     E_tot_tau7.append(E_v+E_pt2)
-                #     if len(E_tot_tau7) > 1:
-                #         print("E_pt2_tau7:", E_pt2_tau7)
-                #         print("E_var_tau7:", E_var_tau7)
-                #         print("E_tot_tau7:", E_tot_tau7)
-                #         #2-point extrap. with last 2 points
-                #         twop_slope, twop_E_extrap = np.polyfit([abs(j) for j in E_pt2_tau7[-2:]],E_tot_tau7[-2:],1)
-                #         #3-point extrap. with last 3 points
-                #         threep_slope, threep_E_extrap = np.polyfit([abs(j) for j in E_pt2_tau7[-3:]],E_tot_tau7[-3:],1)
-                #         print("2-point extrapolated value:", twop_E_extrap)
-                #         print("3-point extrapolated value:", threep_E_extrap)
-                #         if extrapolation == 'twopoint':
-                #             print("Choosing twpoint extrapolation:", twop_E_extrap)
-                #             slope=twop_slope
-                #             E_extrap=twop_E_extrap
-                #         elif extrapolation =='threepoint':
-                #             print("Choosing twpoint extrapolation:", twop_E_extrap)
-                #             slope=threep_slope
-                #             E_extrap=threep_E_extrap
-                #         print("slope:", slope)
-                #         print("E_extrap:", E_extrap)
-                #         #tau3_EP_series.append(E_extrap)
-                #         E_extrap_tau7[i].append(E_extrap)
+    #MBE-FCI via PyMBE
+    if MBE_FCI is True:
+        print("MBE_FCI is True")
+        print("mbe_thres_inc:", mbe_thres_inc)
+        print("mbe_orbs_choice:", mbe_orbs_choice)
+        print("mbe_ref_orblist:", mbe_ref_orblist)
 
+        ref_orblist=[0,1, 2, 3, 4, 5, 6]
+        #symmetry: 'symmetry': 'c2v'
+        #'base' : {'method': 'ccsd(t)'},
+        pymbedict={ 'system' : {'basis': basis, },
+'model' : {'method': 'fci'},
+'target' : {'energy': True},
+'ref' : {'method': 'casci', 'select': mbe_ref_orblist},
+'orbs' : {'type': mbe_orbs_choice},
+'thres' : {'inc': mbe_thres_inc}
+}
 
+        pymbe = PyMBETheory(pymbedict=pymbedict, pymbedir=pymbedir, numcores=numcores)
+        for frag in reaction.fragments:
+            e = Singlepoint(theory=pymbe, fragment=frag)
+            print("e:", e)
+            ashexit()
 
-        #Extrapolated Reaction energies 
-        if Do_Tau3_series:
-            tau3_EP_series_2p=[]
-            tau3_EP_series_3p=[]
-            for i,tgen in enumerate(E_extrap_tau3_2p[0]):
-                list_of_energies_2p=[E_extrap_tau3_2p[f][i] for f,l in enumerate(E_extrap_tau3_2p)]
-                reaction_energy_2p = ash.ReactionEnergy(list_of_energies=list_of_energies_2p, stoichiometry=reaction.stoichiometry, unit=reaction.unit, silent=False)[0]
-                tau3_EP_series_2p.append(reaction_energy_2p)
-            for i,tgen in enumerate(E_extrap_tau3_3p[0]):
-                list_of_energies_3p=[E_extrap_tau3_3p[f][i] for f,l in enumerate(E_extrap_tau3_3p)]
-                reaction_energy_3p = ash.ReactionEnergy(list_of_energies=list_of_energies_3p, stoichiometry=reaction.stoichiometry, unit=reaction.unit, silent=False)[0]
-                tau3_EP_series_3p.append(reaction_energy_3p)
-            #print("tau3_EP_series_2p:", tau3_EP_series_2p)
-            #print("tau3_EP_series_3p:", tau3_EP_series_3p)
-        
-        #Confidence interval
-        #TODO
-    print("results_ice_tgen_tvar:", results_ice_tgen_tvar)
-    
     #Running regular single-reference WF methods
     results_cc={}
     if DoHF is True:
@@ -2758,25 +2736,31 @@ def Reaction_FCI_Analysis(reaction=None, basis=None, basisfile=None, basis_per_e
 
     print()
     print()
-    
-    print("ICE-CI CIPSI wavefunction")
-    print("Note: # CFGs refer to largest fragment calculated")
-    print(f" TGen      TVar         Energy ({reaction.unit})        # gen. CFGs      # sel. CFGs    # max S+D CFGs")
-    print("---------------------------------------------------------------------------------------------------------")
-    for t, e in results_ice_tgen_tvar.items():
-        gen_cfg=results_ice_tgen_tvar_genCFGs[(t[0],t[1])][largest_fragindex]
-        sel_cg=results_ice_tgen_tvar_selCFGs[(t[0],t[1])][largest_fragindex]
-        sd_cfg=results_ice_tgen_tvar_SDCFGs[(t[0],t[1])][largest_fragindex]
-        tg=t[0]; tv=t[1]
-        print("{:<9.1e} {:<9.1e} {:15.7f} {:15} {:15} {:15}".format(tg,tv,e,gen_cfg,sel_cg, sd_cfg))
-    # Extrapolated values
-    print("------------")
-    for tg,e_2p in zip(tgen_thresholds[1:],tau3_EP_series_2p):
-        print("{:<9.1e} {:<9} {:15.7f}".format(tg,"Tau3-EP(2p)",e_2p))
-    for tg,e_3p in zip(tgen_thresholds[2:],tau3_EP_series_3p):
-        print("{:<9.1e} {:<9} {:15.7f}".format(tg,"Tau3-EP(3p)",e_3p))
-    print()
-    print()
+    if Do_ICE_CI is True:
+        print("ICE-CI CIPSI wavefunction")
+        print("Note: # CFGs refer to largest fragment calculated")
+        print(f" TGen      TVar         Energy ({reaction.unit})        # gen. CFGs      # sel. CFGs    # max S+D CFGs")
+        print("---------------------------------------------------------------------------------------------------------")
+        for t, e in results_ice_tgen_tvar.items():
+            gen_cfg=results_ice_tgen_tvar_genCFGs[(t[0],t[1])][largest_fragindex]
+            sel_cg=results_ice_tgen_tvar_selCFGs[(t[0],t[1])][largest_fragindex]
+            sd_cfg=results_ice_tgen_tvar_SDCFGs[(t[0],t[1])][largest_fragindex]
+            tg=t[0]; tv=t[1]
+            print("{:<9.1e} {:<9.1e} {:15.7f} {:15} {:15} {:15}".format(tg,tv,e,gen_cfg,sel_cg, sd_cfg))
+        # Extrapolated values
+        print("------------")
+        for tg,e_2p in zip(tgen_thresholds[1:],tau3_EP_series_2p):
+            print("{:<9.1e} {:<9} {:15.7f}".format(tg,"Tau3-EP(2p)",e_2p))
+        for tg,e_3p in zip(tgen_thresholds[2:],tau3_EP_series_3p):
+            print("{:<9.1e} {:<9} {:15.7f}".format(tg,"Tau3-EP(3p)",e_3p))
+        print()
+        print()
+
+        #y-limits based on last ICE calculation rel energy
+        if ylimits == None:
+            ylimits = [rel_energy_ICE_last-yshift,rel_energy_ICE_last+yshift]
+        print(f"Using y-limits: {ylimits} {reaction.unit} in plot")
+
     print("Other methods:")
     print(f" WF           Energy ({reaction.unit})")
     print("-------------------------------------------------")
@@ -2801,10 +2785,7 @@ def Reaction_FCI_Analysis(reaction=None, basis=None, basisfile=None, basis_per_e
         else:
             basislabel=basis
 
-        #y-limits based on last ICE calculation rel energy
-        if ylimits == None:
-            ylimits = [rel_energy_ICE_last-yshift,rel_energy_ICE_last+yshift]
-        print(f"Using y-limits: {ylimits} {reaction.unit} in plot")
+
 
         eplot = ASH_plot("Plotname", num_subplots=2, x_axislabels=["TGen", "Method"], y_axislabels=[f'{y_axis_label} ({reaction.unit})',f'{y_axis_label} ({reaction.unit})'], subplot_titles=[f"ICE-CI/{basislabel}",f"Single ref. methods/{basislabel}"],
             ylimit=ylimits, horizontal=True, padding=padding)
@@ -2812,17 +2793,18 @@ def Reaction_FCI_Analysis(reaction=None, basis=None, basisfile=None, basis_per_e
         if eplot is not None:
             #Inverting x-axis on subplot 0
             eplot.invert_x_axis(0) #
-            #Add dataseries to subplot 0 and using log-scale for ICE-CI data
-            if Do_Tau3_series:
-                eplot.addseries(0, x_list=tgen_thresholds, y_list=tau3_e_series, label="Tau3", color='blue', line=True, scatter=True, x_scale_log=True)
-            if Do_Tau7_series:
-                eplot.addseries(0, x_list=tgen_thresholds, y_list=tau7_e_series, label="Tau7", color='orange', line=True, scatter=True, x_scale_log=True)
-            if Do_TGen_fixed_series:
-                eplot.addseries(0, x_list=tgen_thresholds, y_list=taufixed_e_series, label=f"Tvar:{fixed_tvar}", color='green', line=True, scatter=True, x_scale_log=True)
-            if Do_EP_series:
+            if Do_ICE_CI is True:
+                #Add dataseries to subplot 0 and using log-scale for ICE-CI data
                 if Do_Tau3_series:
-                    eplot.addseries(0, x_list=tgen_thresholds[1:], y_list=tau3_EP_series_2p, label=f"EP-Tau3-2point", color='black', line=True, scatter=True, x_scale_log=True)
-                    eplot.addseries(0, x_list=tgen_thresholds[2:], y_list=tau3_EP_series_3p, label=f"EP-Tau3-3point", color='purple', line=True, scatter=True, x_scale_log=True)
+                    eplot.addseries(0, x_list=tgen_thresholds, y_list=tau3_e_series, label="Tau3", color='blue', line=True, scatter=True, x_scale_log=True)
+                if Do_Tau7_series:
+                    eplot.addseries(0, x_list=tgen_thresholds, y_list=tau7_e_series, label="Tau7", color='orange', line=True, scatter=True, x_scale_log=True)
+                if Do_TGen_fixed_series:
+                    eplot.addseries(0, x_list=tgen_thresholds, y_list=taufixed_e_series, label=f"Tvar:{fixed_tvar}", color='green', line=True, scatter=True, x_scale_log=True)
+                if Do_EP_series:
+                    if Do_Tau3_series:
+                        eplot.addseries(0, x_list=tgen_thresholds[1:], y_list=tau3_EP_series_2p, label=f"EP-Tau3-2point", color='black', line=True, scatter=True, x_scale_log=True)
+                        eplot.addseries(0, x_list=tgen_thresholds[2:], y_list=tau3_EP_series_3p, label=f"EP-Tau3-3point", color='purple', line=True, scatter=True, x_scale_log=True)
             #Plotting method labels on x-axis with rotation to make things fit
             eplot.addseries(1, x_list=SR_WF_indices, y_list=SR_WF_energies, x_labels=SR_WF_labels, label=reaction.label, color='red', line=True, scatter=True, xticklabelrotation=80)
             #Save figure

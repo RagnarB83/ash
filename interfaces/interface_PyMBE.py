@@ -4,18 +4,19 @@ import shutil
 import time
 import re
 import pprint
+import json
 
 from ash.functions.functions_general import ashexit, BC, print_time_rel,print_line_with_mainheader
 
 #PyMBE Theory object.
 class PyMBETheory:
     def __init__(self, pymbedir=None, filename='pymbe_', printlevel=2,
-                pymbeinput=None, numcores=1):
+                pymbedict=None,pymbeinput=None, numcores=1):
 
         print_line_with_mainheader("PyMBETheory initialization")
 
-        if pymbeinput is None:
-            print("PyMBTheory requires a pymbeinput keyword")
+        if pymbeinput is None and pymbedict is None:
+            print("PyMBTheory requires a pymbeinput or pymbedict keyword")
             ashexit()
 
         if pymbedir == None:
@@ -62,6 +63,7 @@ class PyMBETheory:
         self.printlevel=printlevel
         self.filename=filename
         self.pymbeinput=pymbeinput
+        self.pymbedict=pymbedict
         self.numcores=numcores
 
     #Set numcores method
@@ -91,8 +93,11 @@ class PyMBETheory:
         print("Job label:", label)
         print("Creating inputfile: input")
         print("PyMBE input:")
-        print(self.pymbeinput)
-
+        if self.pymbeinput is not None:
+            print(self.pymbeinput)
+        if self.pymbedict is not None:
+            print(self.pymbedict)
+        
         #Coords provided to run
         if current_coords is not None:
             pass
@@ -109,8 +114,9 @@ class PyMBETheory:
                 qm_elems = elems
         
         #Write inputfile
-        write_pymbe_input(self.pymbeinput,charge,mult,qm_elems,current_coords)
-        
+        write_pymbe_input(pymbeinput=self.pymbeinput,pymbedict=self.pymbedict,
+                charge=charge,mult=mult,elems=qm_elems,coords=current_coords)
+
         #Needed for PyMBE run
         print("Setting environment variable PYTHONHASHSEED to 0.")
         os.environ["PYTHONHASHSEED"] = "0"
@@ -152,7 +158,7 @@ def run_pymbe(pymbedir,filename, numcores=1):
             process = sp.run(['mpiexec','-np', str(numcores), pymbedir + '/src/main.py'], check=True, stdout=ofile, stderr=ofile, universal_newlines=True)
 #Silly: Writing Python-script inputfile to disk
 #TODO: Make it better
-def write_pymbe_input(pymbeinput,charge,mult,elems,coords):
+def write_pymbe_input(coords=None, elems=None, pymbeinput=None, pymbedict=None,charge=None,mult=None,):
     with open("input", 'w') as inpfile:
         inpfile.write("#!/usr/bin/env python\n")
         inpfile.write("# -*- coding: utf-8 -*\n\n")
@@ -160,7 +166,13 @@ def write_pymbe_input(pymbeinput,charge,mult,elems,coords):
         for el,c in zip(elems,coords):
             inpfile.write('{}   {} {} {}\n'.format(el,c[0],c[1],c[2]))
         inpfile.write("'''\n")
-        inpfile.write(pymbeinput + '\n')
+        #Write inputstring 
+        if pymbeinput is not None:
+            inpfile.write(pymbeinput + '\n')
+        #Write dictionary to file input
+        if pymbedict is not None:
+            for subd_key,subd_val in pymbedict.items():
+                inpfile.write(str(subd_key)+' = '+str(subd_val) + '\n')
         inpfile.write('\n')
 
 
