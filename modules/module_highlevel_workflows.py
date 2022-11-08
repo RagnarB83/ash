@@ -2790,7 +2790,7 @@ def Reaction_FCI_Analysis(reaction=None, basis=None, basisfile=None, basis_per_e
         eplot = ASH_plot("Plotname", num_subplots=2, x_axislabels=["TGen", "Method"], y_axislabels=[f'{y_axis_label} ({reaction.unit})',f'{y_axis_label} ({reaction.unit})'], subplot_titles=[f"ICE-CI/{basislabel}",f"Single ref. methods/{basislabel}"],
             ylimit=ylimits, horizontal=True, padding=padding)
         print("eplot:", eplot)
-        if eplot is not None:
+        if eplot.working is not False:
             #Inverting x-axis on subplot 0
             eplot.invert_x_axis(0) #
             if Do_ICE_CI is True:

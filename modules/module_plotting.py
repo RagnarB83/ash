@@ -51,10 +51,14 @@ class ASH_plot():
         print_line_with_mainheader("ASH_energy_plot")
 
         plt = load_matplotlib() #Load Matplotlib
-        
+        print("plt:", plt)
         if plt == None:
             print("Matplotlib failed to load. Exiting ASH_plot")
+            #Making working attribute False so that we can check if ASH_plot instance is useful or not
+            self.working=False
             return None
+        #If matplotlib loaded then all is good
+        self.working=True
         self.num_subplots=num_subplots
         self.imageformat=imageformat
         self.dpi=dpi
@@ -154,6 +158,8 @@ class ASH_plot():
             #If Python lists
             if (type(x_list) != list and type(x_list) != np.ndarray) or ((type(y_list) != list and type(y_list) != np.ndarray)):
                 print(BC.FAIL,"Please provide either a valid x_list and y_list (can be Python lists or Numpy arrays) or a surfacedictionary (Python dict)", BC.END)
+                print(f"x_list: {x_list}")
+                print(f"y_list: {y_list}")
                 ashexit()
             else:
                 x=list(x_list);y=list(y_list)

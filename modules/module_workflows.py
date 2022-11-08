@@ -615,16 +615,13 @@ def calc_xyzfiles(xyzdir=None, theory=None, HL_theory=None, Opt=False, Freq=Fals
     return energies
 
 
-def Reaction_Highlevel_Analysis(fraglist=None, stoichiometry=None, numcores=1, memory=7000, reactionlabel='Reactionlabel', energy_unit='kcal/mol',
+def Reaction_Highlevel_Analysis(reaction=None, fraglist=None, stoichiometry=None, reactionlabel='Reactionlabel', numcores=1, memory=7000, energy_unit='kcal/mol',
                                 def2_family=True, cc_family=True, aug_cc_family=False, F12_family=True, DLPNO=False, extrapolation=True, highest_cardinal=6,
                                 plot=True ):
     """Function to perform high-level CCSD(T) calculations for a reaction with associated plots.
        Performs CCSD(T) with cc and def2 basis sets, CCSD(T)-F12 and CCSD(T)/CBS extrapolations
 
-    Args:
-        fragment ([type], optional): [description]. Defaults to None.
-        fraglist ([type], optional): [description]. Defaults to None.
-        stoichiometry ([type], optional): [description]. Defaults to None.
+    Args: 
         numcores (int, optional): [description]. Defaults to 1.
         memory (int, optional): [description]. Defaults to 7000.
         reactionlabel (str, optional): [description]. Defaults to 'Reactionlabel'.
@@ -636,6 +633,12 @@ def Reaction_Highlevel_Analysis(fraglist=None, stoichiometry=None, numcores=1, m
         plot (Boolean): whether to plot the results or not (requires Matplotlib). Defaults to True. 
     """
     elements_involved=[]
+
+    if reaction != None:
+        fraglist=reaction.fragments
+        stoichiometry=reaction.stoichiometry
+        reactionlabel=reaction.label
+
     for frag in fraglist:
         if frag.charge ==None or frag.mult ==None or frag.label == None:
             print("All fragments provided must have charge, mult defined and a label.")
@@ -980,6 +983,11 @@ def Reaction_Highlevel_Analysis(fraglist=None, stoichiometry=None, numcores=1, m
         for species in specieslist:
             specieslabel=species.label
             eplot = ASH_plot('{} energy plot'.format(specieslabel), num_subplots=1, x_axislabel="Cardinal", y_axislabel='Energy (Eh)', title='{} Energy'.format(specieslabel))
+            print("eplot:", eplot)
+            if eplot.working is False:
+                print("ASH_plot not working. Exiting")
+                ashexit()
+            
             if cc_family is True:
                 eplot.addseries(0, x_list=CCSDT_cc_bases_proj.cardinals, y_list=CCSDT_cc_bases_proj.species_energies_dict[specieslabel], label='cc-pVnZ', color='blue')
             if aug_cc_family is True:
@@ -989,21 +997,21 @@ def Reaction_Highlevel_Analysis(fraglist=None, stoichiometry=None, numcores=1, m
             if F12_family is True:
                 eplot.addseries(0, x_list=CCSDTF12_bases_proj.cardinals, y_list=CCSDTF12_bases_proj.species_energies_dict[specieslabel], label='cc-pVnZ-F12', color='purple')
             if extrapolation is True:
-                eplot.addseries(0, x_list=[2.5], y_list=CCSDTextrap_proj.species_energies_dict[specieslabel][0], label='CBS-cc-23', line=False,  marker='x', color='gray')
-                eplot.addseries(0, x_list=[3.5], y_list=CCSDTextrap_proj.species_energies_dict[specieslabel][1], label='CBS-cc-34', line=False, marker='x', color='green')
+                eplot.addseries(0, x_list=[2.5], y_list=[CCSDTextrap_proj.species_energies_dict[specieslabel][0]], label='CBS-cc-23', line=False,  marker='x', color='gray')
+                eplot.addseries(0, x_list=[3.5], y_list=[CCSDTextrap_proj.species_energies_dict[specieslabel][1]], label='CBS-cc-34', line=False, marker='x', color='green')
                 if aug_cc_family is True:
-                    eplot.addseries(0, x_list=[2.5], y_list=CCSDTextrapaugcc_proj.species_energies_dict[specieslabel][0], label='CBS-aug-cc-23', line=False,  marker='x', color='brown')
-                    eplot.addseries(0, x_list=[3.5], y_list=CCSDTextrapaugcc_proj.species_energies_dict[specieslabel][1], label='CBS-aug-cc-34', line=False, marker='x', color='lightgreen') 
+                    eplot.addseries(0, x_list=[2.5], y_list=[CCSDTextrapaugcc_proj.species_energies_dict[specieslabel][0]], label='CBS-aug-cc-23', line=False,  marker='x', color='brown')
+                    eplot.addseries(0, x_list=[3.5], y_list=[CCSDTextrapaugcc_proj.species_energies_dict[specieslabel][1]], label='CBS-aug-cc-34', line=False, marker='x', color='lightgreen') 
                 if highest_cardinal > 4:
-                    eplot.addseries(0, x_list=[4.5], y_list=CCSDTextrap_proj.species_energies_dict[specieslabel][2], label='CBS-cc-45', line=False, marker='x', color='black')
+                    eplot.addseries(0, x_list=[4.5], y_list=[CCSDTextrap_proj.species_energies_dict[specieslabel][2]], label='CBS-cc-45', line=False, marker='x', color='black')
                     if aug_cc_family is True:
-                        eplot.addseries(0, x_list=[4.5], y_list=CCSDTextrapaugcc_proj.species_energies_dict[specieslabel][2], label='CBS-aug-cc-45', line=False, marker='x', color='silver')
+                        eplot.addseries(0, x_list=[4.5], y_list=[CCSDTextrapaugcc_proj.species_energies_dict[specieslabel][2]], label='CBS-aug-cc-45', line=False, marker='x', color='silver')
                     if highest_cardinal > 5:
-                        eplot.addseries(0, x_list=[5.5], y_list=CCSDTextrap_proj.species_energies_dict[specieslabel][3], label='CBS-cc-56', line=False, marker='x', color='orange')
+                        eplot.addseries(0, x_list=[5.5], y_list=[CCSDTextrap_proj.species_energies_dict[specieslabel][3]], label='CBS-cc-56', line=False, marker='x', color='orange')
                         if aug_cc_family is True:
-                            eplot.addseries(0, x_list=[5.5], y_list=CCSDTextrapaugcc_proj.species_energies_dict[specieslabel][3], label='CBS-aug-cc-56', line=False, marker='x', color='maroon')
-                eplot.addseries(0, x_list=[2.5], y_list=CCSDTextrapdef2_proj.species_energies_dict[specieslabel][0], label='CBS-def2-23', line=False,  marker='x', color='cyan')
-                eplot.addseries(0, x_list=[3.5], y_list=CCSDTextrapdef2_proj.species_energies_dict[specieslabel][1], label='CBS-def2-34', line=False, marker='x', color='pink')
+                            eplot.addseries(0, x_list=[5.5], y_list=[CCSDTextrapaugcc_proj.species_energies_dict[specieslabel][3]], label='CBS-aug-cc-56', line=False, marker='x', color='maroon')
+                eplot.addseries(0, x_list=[2.5], y_list=[CCSDTextrapdef2_proj.species_energies_dict[specieslabel][0]], label='CBS-def2-23', line=False,  marker='x', color='cyan')
+                eplot.addseries(0, x_list=[3.5], y_list=[CCSDTextrapdef2_proj.species_energies_dict[specieslabel][1]], label='CBS-def2-34', line=False, marker='x', color='pink')
             eplot.savefig('{}_Energy'.format(specieslabel))
 
         #Reaction energy plot
@@ -1017,21 +1025,21 @@ def Reaction_Highlevel_Analysis(fraglist=None, stoichiometry=None, numcores=1, m
         if F12_family is True:
             reactionenergyplot.addseries(0, x_list = CCSDTF12_bases_proj.cardinals, y_list=CCSDTF12_bases_proj.reaction_energy_list, label='cc-pVnZ-F12', color='purple')
         if extrapolation is True:
-            reactionenergyplot.addseries(0, x_list=[2.5], y_list=CCSDTextrap_proj.reaction_energy_list[0], label='CBS-cc-23', line=False,  marker='x', color='gray')
-            reactionenergyplot.addseries(0, x_list=[3.5], y_list=CCSDTextrap_proj.reaction_energy_list[1], label='CBS-cc-34', line=False, marker='x', color='green')
+            reactionenergyplot.addseries(0, x_list=[2.5], y_list=[CCSDTextrap_proj.reaction_energy_list[0]], label='CBS-cc-23', line=False,  marker='x', color='gray')
+            reactionenergyplot.addseries(0, x_list=[3.5], y_list=[CCSDTextrap_proj.reaction_energy_list[1]], label='CBS-cc-34', line=False, marker='x', color='green')
             if aug_cc_family is True:
-                reactionenergyplot.addseries(0, x_list=[2.5], y_list=CCSDTextrapaugcc_proj.reaction_energy_list[0], label='CBS-aug-cc-23', line=False,  marker='x', color='brown')
-                reactionenergyplot.addseries(0, x_list=[3.5], y_list=CCSDTextrapaugcc_proj.reaction_energy_list[1], label='CBS-aug-cc-34', line=False, marker='x', color='lightgreen')
+                reactionenergyplot.addseries(0, x_list=[2.5], y_list=[CCSDTextrapaugcc_proj.reaction_energy_list[0]], label='CBS-aug-cc-23', line=False,  marker='x', color='brown')
+                reactionenergyplot.addseries(0, x_list=[3.5], y_list=[CCSDTextrapaugcc_proj.reaction_energy_list[1]], label='CBS-aug-cc-34', line=False, marker='x', color='lightgreen')
             if highest_cardinal > 4:
-                reactionenergyplot.addseries(0, x_list=[4.5], y_list=CCSDTextrap_proj.reaction_energy_list[2], label='CBS-cc-45', line=False, marker='x', color='black')
+                reactionenergyplot.addseries(0, x_list=[4.5], y_list=[CCSDTextrap_proj.reaction_energy_list[2]], label='CBS-cc-45', line=False, marker='x', color='black')
                 if aug_cc_family is True:
-                    reactionenergyplot.addseries(0, x_list=[4.5], y_list=CCSDTextrapaugcc_proj.reaction_energy_list[2], label='CBS-aug-cc-45', line=False, marker='x', color='silver')
+                    reactionenergyplot.addseries(0, x_list=[4.5], y_list=[CCSDTextrapaugcc_proj.reaction_energy_list[2]], label='CBS-aug-cc-45', line=False, marker='x', color='silver')
                 if highest_cardinal > 5:
-                    reactionenergyplot.addseries(0, x_list=[5.5], y_list=CCSDTextrap_proj.reaction_energy_list[3], label='CBS-cc-56', line=False, marker='x', color='orange')
+                    reactionenergyplot.addseries(0, x_list=[5.5], y_list=[CCSDTextrap_proj.reaction_energy_list[3]], label='CBS-cc-56', line=False, marker='x', color='orange')
                     if aug_cc_family is True:
-                        reactionenergyplot.addseries(0, x_list=[5.5], y_list=CCSDTextrapaugcc_proj.reaction_energy_list[3], label='CBS-aug-cc-56', line=False, marker='x', color='maroon')
-            reactionenergyplot.addseries(0, x_list=[2.5], y_list=CCSDTextrapdef2_proj.reaction_energy_list[0], label='CBS-def2-23', line=False, marker='x', color='cyan')
-            reactionenergyplot.addseries(0, x_list=[3.5], y_list=CCSDTextrapdef2_proj.reaction_energy_list[1], label='CBS-def2-34', line=False, marker='x', color='pink')
+                        reactionenergyplot.addseries(0, x_list=[5.5], y_list=[CCSDTextrapaugcc_proj.reaction_energy_list[3]], label='CBS-aug-cc-56', line=False, marker='x', color='maroon')
+            reactionenergyplot.addseries(0, x_list=[2.5], y_list=[CCSDTextrapdef2_proj.reaction_energy_list[0]], label='CBS-def2-23', line=False, marker='x', color='cyan')
+            reactionenergyplot.addseries(0, x_list=[3.5], y_list=[CCSDTextrapdef2_proj.reaction_energy_list[1]], label='CBS-def2-34', line=False, marker='x', color='pink')
         reactionenergyplot.savefig('Reaction energy')
 
 
