@@ -615,17 +615,16 @@ def calc_xyzfiles(xyzdir=None, theory=None, HL_theory=None, Opt=False, Freq=Fals
     return energies
 
 
-def Reaction_Highlevel_Analysis(reaction=None, fraglist=None, stoichiometry=None, reactionlabel='Reactionlabel', numcores=1, memory=7000, energy_unit='kcal/mol',
-                                def2_family=True, cc_family=True, aug_cc_family=False, F12_family=True, DLPNO=False, extrapolation=True, highest_cardinal=6,
-                                plot=True ):
+def Reaction_Highlevel_Analysis(reaction=None, numcores=1, memory=7000, plot=True,
+                                def2_family=True, cc_family=True, aug_cc_family=False, 
+                                F12_family=True, DLPNO=False, extrapolation=True, highest_cardinal=6):
     """Function to perform high-level CCSD(T) calculations for a reaction with associated plots.
        Performs CCSD(T) with cc and def2 basis sets, CCSD(T)-F12 and CCSD(T)/CBS extrapolations
 
-    Args: 
+    Args:
+        reaction (ASH Reaction): ASH Reaction object. 
         numcores (int, optional): [description]. Defaults to 1.
         memory (int, optional): [description]. Defaults to 7000.
-        reactionlabel (str, optional): [description]. Defaults to 'Reactionlabel'.
-        energy_unit (str): Energy unit for ReactionEnergy. Options: 'kcal/mol', 'kJ/mol', 'eV', 'cm-1'. Default: 'kcal/mol'
         def2_family (bool, optional): [description]. Defaults to True.
         cc_family (bool, optional): [description]. Defaults to True.
         F12_family (bool, optional): [description]. Defaults to True.
@@ -634,10 +633,14 @@ def Reaction_Highlevel_Analysis(reaction=None, fraglist=None, stoichiometry=None
     """
     elements_involved=[]
 
-    if reaction != None:
-        fraglist=reaction.fragments
-        stoichiometry=reaction.stoichiometry
-        reactionlabel=reaction.label
+    if reaction is None:
+        print("Error: No ASH reaction object given")
+        ashexit()
+    
+    fraglist=reaction.fragments
+    stoichiometry=reaction.stoichiometry
+    reactionlabel=reaction.label
+    energy_unit=reaction.unit
 
     for frag in fraglist:
         if frag.charge ==None or frag.mult ==None or frag.label == None:

@@ -51,7 +51,6 @@ class ASH_plot():
         print_line_with_mainheader("ASH_energy_plot")
 
         plt = load_matplotlib() #Load Matplotlib
-        print("plt:", plt)
         if plt == None:
             print("Matplotlib failed to load. Exiting ASH_plot")
             #Making working attribute False so that we can check if ASH_plot instance is useful or not
