@@ -34,10 +34,11 @@ import KNARRatom.atom
 #These will be the reasonable defaults that can be overridden by special keywords in ASH NEB object
 #RB modified springconst from 10 to 5
 # Changed "IDPP_RMS_F": 0.005    and "IDPP_MAX_F": 0.01
+#Changed again: was: "IDPP_MAX_F": 0.03, "IDPP_RMS_F": 0.005
 path_parameters = {"METHOD": "DOUBLE", "INTERPOLATION": "IDPP", "NIMAGES": 8,
               "INSERT_CONFIG": None, "IDPP_MAX_ITER": 700,
               "IDPP_SPRINGCONST": 5.0, "IDPP_TIME_STEP": 0.01,
-              "IDPP_MAX_MOVE": 0.1, "IDPP_MAX_F": 0.03, "IDPP_RMS_F": 0.005}
+              "IDPP_MAX_MOVE": 0.1, "IDPP_MAX_F": 0.07, "IDPP_RMS_F": 0.009}
 
 neb_settings = {"PATH": "neb.xyz",
               "CLIMBING": True,
