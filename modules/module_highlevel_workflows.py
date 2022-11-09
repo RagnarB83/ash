@@ -2308,7 +2308,7 @@ def Reaction_FCI_Analysis(reaction=None, basis=None, basisfile=None, basis_per_e
                 tgen_thresholds=None, ice_nmin=1.999, ice_nmax=0,
                 separate_MP2_nat_initial_orbitals=True,
                 DoHF=True,DoMP2=True, DoCC=True, DoCC_CCSD=True, DoCC_CCSDT=True, DoCC_MRCC=False, DoCC_CFour=False,
-                DoCC_DFTorbs=True, KS_functionals=['BP86','BHLYP'], Do_OOCC=True,
+                DoCC_DFTorbs=True, KS_functionals=['BP86','BHLYP'], Do_OOCC=True, Do_OOMP2=True,
                 maxcorememory=10000, numcores=1, ice_ci_maxiter=30, ice_etol=1e-6,
                 upper_sel_threshold=1.999, lower_sel_threshold=0,
                 plot=True, y_axis_label='None', yshift=0.3, ylimits=None, padding=0.4):
@@ -2477,7 +2477,7 @@ def Reaction_FCI_Analysis(reaction=None, basis=None, basisfile=None, basis_per_e
         #NOTE: For now using last value
         rel_energy_ICE_last=rel_energy_ICE
 
-        if Do_EP_series is True:
+        if Do_EP_series is True and Do_Tau3_series is True:
             #List of lists of [[1,2],[1,2]]
             E_extrap_tau3_2p=[[] for i in reaction.fragments]
             E_extrap_tau3_3p=[[] for i in reaction.fragments]
@@ -2570,18 +2570,17 @@ def Reaction_FCI_Analysis(reaction=None, basis=None, basisfile=None, basis_per_e
         """
         mp2 = ash.ORCATheory(orcasimpleinput=f"! MP2 {basis} tightscf", orcablocks=mp2blocks, basis_per_element=basis_per_element,numcores=numcores, label='MP2', save_output_with_label=True)
         scsmp2 = ash.ORCATheory(orcasimpleinput=f"! SCS-MP2 {basis} tightscf", orcablocks=mp2blocks, basis_per_element=basis_per_element,numcores=numcores, label='SCSMP2', save_output_with_label=True)
-        oomp2 = ash.ORCATheory(orcasimpleinput=f"! OO-RI-MP2 autoaux {basis} tightscf", orcablocks=mp2blocks, basis_per_element=basis_per_element,numcores=numcores, label='OOMP2', save_output_with_label=True)
-        scsoomp2 = ash.ORCATheory(orcasimpleinput=f"! OO-RI-SCS-MP2 {basis} autoaux tightscf", orcablocks=mp2blocks, basis_per_element=basis_per_element,numcores=numcores, label='OOSCSMP2', save_output_with_label=True)
-
         relE_MP2 = ash.Singlepoint_reaction(reaction=reaction, theory=mp2, unit=reaction.unit)
         relE_SCSMP2 = ash.Singlepoint_reaction(reaction=reaction, theory=scsmp2, unit=reaction.unit)
-        relE_OOMP2 = ash.Singlepoint_reaction(reaction=reaction, theory=oomp2, unit=reaction.unit)
-        relE_SCSOOMP2 = ash.Singlepoint_reaction(reaction=reaction, theory=scsoomp2, unit=reaction.unit)
-
         results_cc['MP2'] = relE_MP2
         results_cc['SCS-MP2'] = relE_SCSMP2
-        results_cc['OO-MP2'] = relE_OOMP2
-        results_cc['OO-SCS-MP2'] = relE_SCSOOMP2
+        if Do_OOMP2 is True:
+            oomp2 = ash.ORCATheory(orcasimpleinput=f"! OO-RI-MP2 autoaux {basis} tightscf", orcablocks=mp2blocks, basis_per_element=basis_per_element,numcores=numcores, label='OOMP2', save_output_with_label=True)
+            scsoomp2 = ash.ORCATheory(orcasimpleinput=f"! OO-RI-SCS-MP2 {basis} autoaux tightscf", orcablocks=mp2blocks, basis_per_element=basis_per_element,numcores=numcores, label='OOSCSMP2', save_output_with_label=True)
+            relE_OOMP2 = ash.Singlepoint_reaction(reaction=reaction, theory=oomp2, unit=reaction.unit)
+            relE_SCSOOMP2 = ash.Singlepoint_reaction(reaction=reaction, theory=scsoomp2, unit=reaction.unit)
+            results_cc['OO-MP2'] = relE_OOMP2
+            results_cc['OO-SCS-MP2'] = relE_SCSOOMP2
 
     if DoCC is True:
         #TODO: Reduce numcores here for small systems. CC-code complains if numcores exceeds pairs.
@@ -2748,11 +2747,12 @@ def Reaction_FCI_Analysis(reaction=None, basis=None, basisfile=None, basis_per_e
             tg=t[0]; tv=t[1]
             print("{:<9.1e} {:<9.1e} {:15.7f} {:15} {:15} {:15}".format(tg,tv,e,gen_cfg,sel_cg, sd_cfg))
         # Extrapolated values
-        print("------------")
-        for tg,e_2p in zip(tgen_thresholds[1:],tau3_EP_series_2p):
-            print("{:<9.1e} {:<9} {:15.7f}".format(tg,"Tau3-EP(2p)",e_2p))
-        for tg,e_3p in zip(tgen_thresholds[2:],tau3_EP_series_3p):
-            print("{:<9.1e} {:<9} {:15.7f}".format(tg,"Tau3-EP(3p)",e_3p))
+        if Do_EP_series:
+            print("------------")
+            for tg,e_2p in zip(tgen_thresholds[1:],tau3_EP_series_2p):
+                print("{:<9.1e} {:<9} {:15.7f}".format(tg,"Tau3-EP(2p)",e_2p))
+            for tg,e_3p in zip(tgen_thresholds[2:],tau3_EP_series_3p):
+                print("{:<9.1e} {:<9} {:15.7f}".format(tg,"Tau3-EP(3p)",e_3p))
         print()
         print()
 
