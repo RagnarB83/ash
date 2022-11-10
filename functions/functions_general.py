@@ -115,7 +115,7 @@ def load_julia_interface(julia_library=None):
                 print("Problem loading pyjulia")
                 ashexit()
         else:
-            print("Unknown Julia library")
+            print("Unknown Julia library:", julia_library)
             ashexit()
         julia_loaded = True  #Means an attempt was made to load Julia.
         print_time_rel(currtime, modulename='loading julia interface', moduleindex=4)

@@ -1042,6 +1042,8 @@ def reordercluster(fragment,fragmenttype,code_version='py'):
             import scipy.optimize
         except:
             print("Problem importing scipy library. This part of the code requires scipy")
+            print("Exiting.")
+            ashexit()
         #print(fragmenttype.clusterfraglist[5])
         elems_frag_ref = np.array([fragment.elems[i] for i in fraglists[0]])
         coords_frag_ref = np.array([fragment.coords[i] for i in fraglists[0]])
