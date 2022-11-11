@@ -2258,23 +2258,55 @@ def basis_for_element(element,basisfamily,cardinal):
 #Make ORCATHeory object for ICE-CI
 #TODO: Allow basis-set element dictionary
 #TODO: Allow external basis set file
-def make_ICE_theory(basis,tgen, tvar, numcores, nel=None, norb=None, nmin_nmax=False, ice_nmin=None,ice_nmax=None, autoice=False, basis_per_element=None, maxcorememory=10000, maxiter=20, etol=1e-6,
+def make_ICE_theory(basis,tgen, tvar, numcores, nel=None, norb=None, nmin_nmax=False, ice_nmin=None,ice_nmax=None, 
+    autoice=False, basis_per_element=None, maxcorememory=10000, maxiter=20, etol=1e-6,
             moreadfile=None):
+    print_line_with_mainheader("make_ICE_theory")
+    print("Simple function to create ICE-CI ORCATheory object")
+    print()
+    print("Basis:", basis)
+    print("Tgen:", tgen)
+    print("Tvar:", tvar)
+    print("numcores:", numcores)
+    print("nel:", nel)
+    print("norb:", norb)
+    print("nmin_nmax:", nmin_nmax)
+    print("ice_nmin:", ice_nmin)
+    print("ice_nmax:", ice_nmax)
+    print("autoice:", autoice)
+    print("basis_per_element:", basis_per_element)
+    print("maxcorememory:", maxcorememory)
+    print("maxiter:", maxiter)
+    print("etol:", etol)
+    print("moreadfile:", moreadfile)
+    print()
     icekeyword="noiter"
     mp2nat_option="false"
     moreadoption="";moreadblockoption=""
     #Setting basis keyword to nothing if basis set dict provided
     if basis_per_element is not None:
         basis=""
+    #If AutoICE is True then set keyword and request MP2 nat orbs
     if autoice is True:
         icekeyword="Auto-ICE"
         mp2nat_option="true"
+    # if nmin_nmax is True then CAS selected by e.g. nmax=1.999 and nmax=0.001
     if nmin_nmax is True:
+        print("nmin_nmax is active. Will select CAS based on ice_nmin and ice_nmin keywords")
+        if ice_nmin is None or ice_nmax is None:
+            print("Error: ice_nmin and ice_nmax need to be set.")
+            ashexit()
         CAS_space_line=f"""nmin {ice_nmin}
 nmax {ice_nmax}"""
+    #Otherwise we selcect by nel and norb
     else:
+        print("nmin_nmax is NOT active. Will select CAS based on nel and norb keywords")
+        if nel is None or norb is None:
+            print("Error: nel and norb need to be set.")
+            ashexit()
         CAS_space_line=f"""nel {nel}
 norb {norb}"""
+    #Optional MO read
     if moreadfile is not None:
         moreadoption="MOREAD"
         moreadblockoption=f"%moinp \"{moreadfile}\""
