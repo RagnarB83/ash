@@ -201,7 +201,7 @@ def frag_define(orthogcoords,elems,cell_vectors,fragments,cell_angles=None, cell
     #Sorting and trimming unassigned list of fragments
     unassigned = np.array(unassigned, dtype=object) #Changed due to numpy deprecation warning
     unassigned = np.unique(unassigned).tolist()
-    print("Unassigned members", unassigned)
+    print("Unassigned members size", len(unassigned))
     print("unassigned_formulas:", unassigned_formulas)
     #Systemlist with remaining atoms
     #print("systemlist:", systemlist)
@@ -726,7 +726,7 @@ def fill_unitcell(cell_length,cell_angles,atomlabels,elems,coords,symmops):
     for i in symmops:
         #Making symmop lowercase just in case
         symmop_i=i.lower()
-        print("symmop i:", symmop_i)
+        #print("symmop i:", symmop_i)
         operations_x=[];operations_y=[];operations_z=[]
         #Multoperations are unity by default. Sumoperations are 0 by default
         multoperation_x=1;sumoperation_x=0
@@ -736,7 +736,7 @@ def fill_unitcell(cell_length,cell_angles,atomlabels,elems,coords,symmops):
         op_x=symmop_i.split(',')[0].replace(",","").replace(" ","")
         op_y=symmop_i.split(',')[1].replace(",","").replace(" ","")
         op_z = symmop_i.split(',')[2].replace(",", "").replace(" ","")
-        print("op_x: {} op_y: {} op_z: {}".format(op_x,op_y,op_z))
+        #print("op_x: {} op_y: {} op_z: {}".format(op_x,op_y,op_z))
         #op_z=i.split(',')[2].replace(",","").replace(" ","").replace("\n","")
         if len(op_x)==1 and len(op_y)==1 and len(op_z)==1:
             for c in coords:
