@@ -2,16 +2,19 @@ import time
 
 from ash.functions.functions_general import ashexit, BC,print_time_rel, print_line_with_mainheader
 import ash.modules.module_coords
-import scipy 
+#import scipy 
 
 #PySCF Theory object.
 #PySCF runmode: Library only
 # PE: Polarizable embedding (CPPE). Not completely active in PySCF 1.7.1. Bugfix required I think
+
 class PySCFTheory:
-    def __init__(self, printsetting=False, printlevel=2, scf_type=None, basis=None, functional=None,
-                 pe=False, potfile='', CC=False, filename='pyscf', pyscfmemory=3100, numcores=1, conv_tol=1e-8,
-                 verbose_setting=4, gridlevel=5, frozen_core_setting='Auto', CCmethod=None, CC_direct=False,
-                 frozen_virtuals=None, FNO=False, FNO_thresh=None):
+    def __init__(self, printsetting=False, printlevel=2, numcores=1, 
+                  scf_type=None, basis=None, functional=None, gridlevel=5, 
+                  pe=False, potfile='', filename='pyscf', memory=3100, conv_tol=1e-8, verbose_setting=4, 
+                  CC=False, CCmethod=None, CC_direct=False, frozen_core_setting='Auto', 
+                  frozen_virtuals=None, FNO=False, FNO_thresh=None):
+
         self.theorytype="QM"
         print_line_with_mainheader("PySCFTheory initialization")
         #Exit early if no SCF-type
@@ -35,7 +38,7 @@ class PySCFTheory:
             ashexit()
         #Printlevel
         self.printlevel=printlevel
-        self.pyscfmemory=pyscfmemory
+        self.memory=memory
         self.filename=filename
         self.printsetting=printsetting
         #CPPE Polarizable Embedding options
@@ -186,7 +189,7 @@ class PySCFTheory:
         #Object can be string ('def2-SVP') or a dict with element-specific keys and values
         mol.basis=self.basis
         #Memory settings
-        mol.max_memory = self.pyscfmemory
+        mol.max_memory = self.memory
         #BUILD mol object
         mol.build()
         ###########
@@ -344,7 +347,6 @@ class PySCFTheory:
             if self.scf_type == "RHF":
                 cc = self.pyscf_cc.CCSD(mf, self.frozen_orbital_indices,mo_coeff=mo_coefficients)
             elif self.scf_type == "UHF":
-                print("here")
                 cc = self.pyscf_cc.UCCSD(mf,self.frozen_orbital_indices,mo_coeff=mo_coefficients)
                 
             elif self.scf_type == "RKS":

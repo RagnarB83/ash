@@ -5,7 +5,6 @@ class DualTheory
 
 """
 from ash.functions.functions_general import BC, ashexit, print_time_rel
-import ash.interfaces.interface_ORCA
 import ash.constants
 import ash.functions.functions_elstructure
 import time
