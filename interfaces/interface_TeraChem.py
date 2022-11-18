@@ -85,7 +85,7 @@ class TeraChemTheory:
                 qm_elems = elems
 
         #Write coordinates to disk as XYZ-file
-        write_xyzfile(elems, current_coords, "terachem", printlevel=1)
+        write_xyzfile(qm_elems, current_coords, "terachem", printlevel=1)
 
         #Write PC to disk
         if PC is True:
