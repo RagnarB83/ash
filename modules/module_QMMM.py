@@ -683,7 +683,7 @@ class QMMMTheory:
         print_time_rel(CheckpointTime, modulename='QM/MM run prep', moduleindex=2, currprintlevel=self.printlevel, currthreshold=1)
         if self.printlevel > 1: print("Number of PCs provided to QM-program:", len(self.pointcharges))
         #TODO: Remove checking for QMTheory here. Just run and have QM-interface complain if something not implemented
-        if self.qm_theory_name=="ORCATheory" or self.qm_theory_name == "xTBTheory":
+        if self.qm_theory_name=="ORCATheory" or self.qm_theory_name == "xTBTheory" or self.qm_theory_name == "TeraChemTheory":
             #Calling ORCA theory, providing current QM and MM coordinates.
             if Grad==True:
                 if PC==True:

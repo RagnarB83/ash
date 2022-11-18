@@ -104,7 +104,7 @@ class TeraChemTheory:
 
             self.energy=grab_energy_terachem(self.filename+'.out')
             if PC is True:
-                self.gradient,pcgradient = grab_gradient_terachem(self.filename+'.out',len(current_coords), numpc=len(MMcharges))
+                self.gradient,self.pcgradient = grab_gradient_terachem(self.filename+'.out',len(current_coords), numpc=len(MMcharges))
             else:
                 self.gradient,self.pcgradient = grab_gradient_terachem(self.filename+'.out',len(current_coords))
             print("self.gradient", self.gradient)
