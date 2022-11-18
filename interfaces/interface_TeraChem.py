@@ -89,13 +89,13 @@ class TeraChemTheory:
 
         #Write PC to disk
         if PC is True:
-            create_terachem_pcfile_general(current_MM_coords,MMcharges)
+            create_terachem_pcfile_general(current_MM_coords,MMcharges, filename=self.filename)
 
         #Grab energy and gradient
         if Grad==True:
             if PC is True:
                 write_terachem_input(self.teracheminput,charge,mult,qm_elems,current_coords,
-                    Grad=True, pc_coords=current_MM_coords,pc_values=MMcharges, filename=self.filename)
+                    Grad=True, PCfile=self.filename+'.pc', xyzfilename=self.filename+'.xyz',filename=self.filename)
             else:
                 write_terachem_input(self.teracheminput,charge,mult,qm_elems,current_coords,Grad=True, filename=self.filename)
             
@@ -110,8 +110,14 @@ class TeraChemTheory:
             print("self.gradient", self.gradient)
             print("pcgradient:", self.pcgradient)
         else:
-            write_terachem_input(self.teracheminput,charge,mult,qm_elems,current_coords,Grad=False)
+            if PC is True:
+                write_terachem_input(self.teracheminput,charge,mult,qm_elems,current_coords,Grad=False, PCfile=self.filename+'.pc')
+            else:
+                write_terachem_input(self.teracheminput,charge,mult,qm_elems,current_coords,Grad=False)
+            
+            #Run Terachem
             run_terachem(self.terachemdir,self.filename)
+            
             self.energy=grab_energy_terachem(self.filename+'.out')
 
         #TODO: write in error handling here
@@ -208,8 +214,8 @@ def grab_gradient_terachem(outfile,numatoms,numpc=None):
 
 
 # pc-coords in Å
-def create_terachem_pcfile_general(coords,pchargelist):
-    with open('pcharge', 'w') as pcfile:
+def create_terachem_pcfile_general(coords,pchargelist,filename='terachem'):
+    with open(filename+'.pc', 'w') as pcfile:
         pcfile.write(str(len(pchargelist))+'\n')
         pcfile.write('\n')
         for p,c in zip(pchargelist,coords):
