@@ -107,8 +107,6 @@ class TeraChemTheory:
                 self.gradient,self.pcgradient = grab_gradient_terachem(self.filename+'.out',len(current_coords), numpc=len(MMcharges))
             else:
                 self.gradient,self.pcgradient = grab_gradient_terachem(self.filename+'.out',len(current_coords))
-            print("self.gradient", self.gradient)
-            print("pcgradient:", self.pcgradient)
         else:
             if PC is True:
                 write_terachem_input(self.teracheminput,charge,mult,qm_elems,current_coords,Grad=False, PCfile=self.filename+'.pc')
@@ -171,7 +169,6 @@ def grab_energy_terachem(outfile):
         for line in f:
             if 'FINAL ENERGY:' in line:
                 energy=float(line.split()[2])
-                print(energy)
     return energy
 
 
