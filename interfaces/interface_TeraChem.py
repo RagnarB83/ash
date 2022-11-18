@@ -206,7 +206,7 @@ def grab_gradient_terachem(outfile,numatoms,numpc=None):
                     pcgrad_grab=False
             if 'dE/dX' in line:
                 grad_grab=True
-            if 'MM / Point charge part' in line:
+            if '------- MM / Point charge part' in line:
                 pcgrad_grab=True
             if atomcount == numatoms:
                  grad_grab=False

@@ -352,7 +352,7 @@ class QMMMTheory:
                     self.pointcharges[MMx] += MM1charge_fract
                     #print("New charge : ", self.charges_qmregionzeroed[MMx])
                     #exit()
-        print_time_rel(timeA, modulename="ShiftMMCharges", currprintlevel=self.printlevel, currthreshold=1)
+        #print_time_rel(timeA, modulename="ShiftMMCharges", currprintlevel=self.printlevel, currthreshold=1)
     #Create dipole charge (twice) for each MM2 atom that gets fraction of MM1 charge
     def get_dipole_charge(self,delq,direction,mm1index,mm2index):
         #timeA=time.time()
@@ -408,7 +408,7 @@ class QMMMTheory:
                 self.dipole_charges.append(q_d2)
                 self.dipole_coords.append(pos_d1)
                 self.dipole_coords.append(pos_d2)
-        print_time_rel(timeA, modulename="SetDipoleCharges", currprintlevel=self.printlevel, currthreshold=1)
+        #print_time_rel(timeA, modulename="SetDipoleCharges", currprintlevel=self.printlevel, currthreshold=1)
 
     #TruncatedPCfunction control flow for pointcharge field passed to QM program
     def TruncatedPCfunction(self):
@@ -680,7 +680,7 @@ class QMMMTheory:
             self.qm_theory_name="None"
             self.QMenergy=0.0
         
-        print_time_rel(CheckpointTime, modulename='QM/MM run prep', moduleindex=2, currprintlevel=self.printlevel, currthreshold=1)
+        #print_time_rel(CheckpointTime, modulename='QM/MM run prep', moduleindex=2, currprintlevel=self.printlevel, currthreshold=1)
         if self.printlevel > 1: print("Number of PCs provided to QM-program:", len(self.pointcharges))
         #TODO: Remove checking for QMTheory here. Just run and have QM-interface complain if something not implemented
         if self.qm_theory_name=="ORCATheory" or self.qm_theory_name == "xTBTheory" or self.qm_theory_name == "TeraChemTheory":
