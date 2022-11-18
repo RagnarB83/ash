@@ -111,7 +111,7 @@ class TeraChemTheory:
             print("pcgradient:", self.pcgradient)
         else:
             write_terachem_input(self.teracheminput,charge,mult,qm_elems,current_coords,Grad=False)
-            run_terachem(self.terachemdir,self.filename+'.out')
+            run_terachem(self.terachemdir,self.filename)
             self.energy=grab_energy_terachem(self.filename+'.out')
 
         #TODO: write in error handling here
