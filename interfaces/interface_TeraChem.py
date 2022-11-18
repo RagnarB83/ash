@@ -100,7 +100,7 @@ class TeraChemTheory:
                 write_terachem_input(self.teracheminput,charge,mult,qm_elems,current_coords,Grad=True, filename=self.filename)
             
             #Run Terachem
-            run_terachem(self.terachemdir,self.filename+'.out')
+            run_terachem(self.terachemdir,self.filename)
 
             self.energy=grab_energy_terachem(self.filename+'.out')
             if PC is True:
