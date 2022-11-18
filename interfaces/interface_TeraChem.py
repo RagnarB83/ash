@@ -199,9 +199,9 @@ def grab_gradient_terachem(outfile,numatoms,numpc=None):
                     continue
             if pcgrad_grab is True:
                 if len(line.split()) == 3:
-                    gradient[pccount,0] = float(line.split()[0])
-                    gradient[pccount,1] = float(line.split()[1])
-                    gradient[pccount,2] = float(line.split()[2])
+                    pc_gradient[pccount,0] = float(line.split()[0])
+                    pc_gradient[pccount,1] = float(line.split()[1])
+                    pc_gradient[pccount,2] = float(line.split()[2])
                 if pccount == numpc:
                     pcgrad_grab=False
             if 'dE/dX' in line:
