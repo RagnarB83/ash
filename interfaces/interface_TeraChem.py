@@ -65,7 +65,7 @@ class TeraChemTheory:
             ashexit()
 
         print("Job label:", label)
-        print("Creating inputfile: MINP")
+        print(f"Creating inputfile: {self.filename}.in")
         print(f"{self.theorynamelabel} input:")
         print(self.teracheminput)
 
@@ -94,9 +94,10 @@ class TeraChemTheory:
         #Grab energy and gradient
         if Grad==True:
             if PC is True:
-                write_terachem_input(self.teracheminput,charge,mult,qm_elems,current_coords,Grad=True, pc_coords=current_MM_coords,pc_values=MMcharges)
+                write_terachem_input(self.teracheminput,charge,mult,qm_elems,current_coords,
+                    Grad=True, pc_coords=current_MM_coords,pc_values=MMcharges, filename=self.filename)
             else:
-                write_terachem_input(self.teracheminput,charge,mult,qm_elems,current_coords,Grad=True)
+                write_terachem_input(self.teracheminput,charge,mult,qm_elems,current_coords,Grad=True, filename=self.filename)
             
             #Run Terachem
             run_terachem(self.terachemdir,self.filename+'.out')
@@ -129,10 +130,12 @@ class TeraChemTheory:
 
 #NOT tested
 def run_terachem(terachemdir,filename):
-    process = sp.run([terachemdir + '/terachem'], check=True, stdout=ofile, stderr=ofile, universal_newlines=True)
+    print("x. terachemdir:", terachemdir)
+    with open(filename, 'w') as ofile:
+        process = sp.run([terachemdir + '/terachem'], check=True, stdout=ofile, stderr=ofile, universal_newlines=True)
 
 #functional,basis,charge,mult,elems,coords,cutoff=1e-8,Grad=True
-def write_terachem_input(teracheminput,charge,mult,elems,coords,xyzfilename="terachem.xyz",
+def write_terachem_input(teracheminput,charge,mult,elems,coords,xyzfilename="terachem.xyz", filename='terachem',
     PCfile=None, Grad=True):
     pckeyword="no"
     if PCfile is not None:
@@ -140,7 +143,7 @@ def write_terachem_input(teracheminput,charge,mult,elems,coords,xyzfilename="ter
     joboption="energy"
     if Grad is True:
         joboption="gradient"
-    with open("terachem.in", 'w') as inpfile:
+    with open(f"{filename}.in", 'w') as inpfile:
         inpfile.write('#Terachem input\n')
         inpfile.write(f'coordinates {xyzfilename}\n')
         inpfile.write(f'charge {charge}\n')
