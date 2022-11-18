@@ -128,10 +128,8 @@ class TeraChemTheory:
             print_time_rel(module_init_time, modulename=f'{self.theorynamelabel} run', moduleindex=2)
             return self.energy
 
-#NOT tested
 def run_terachem(terachemdir,filename):
-    print("x. terachemdir:", terachemdir)
-    with open(filename, 'w') as ofile:
+    with open(filename+'.out', 'w') as ofile:
         process = sp.run([terachemdir + '/terachem', filename+'.in'], check=True, stdout=ofile, stderr=ofile, universal_newlines=True)
 
 #functional,basis,charge,mult,elems,coords,cutoff=1e-8,Grad=True
