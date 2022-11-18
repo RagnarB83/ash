@@ -28,8 +28,6 @@ class TeraChemTheory:
                 print(BC.WARNING,"Found no terachemdir variable in settings_ash module either.",BC.END)
                 try:
                     self.terachemdir = os.path.dirname(shutil.which('terachem'))
-                    print("os.path.dirname(shutil.which('terachem')):", os.path.dirname(shutil.which('terachem')))
-                    print("self.tearchemdir:", self.terachemdir)
                     print(BC.OKGREEN,"Found terachem in PATH. Setting terachemdir to:", self.terachemdir, BC.END)
                 except:
                     print(BC.FAIL,"Found no terachem executable in PATH. Exiting... ", BC.END)
@@ -134,7 +132,7 @@ class TeraChemTheory:
 def run_terachem(terachemdir,filename):
     print("x. terachemdir:", terachemdir)
     with open(filename, 'w') as ofile:
-        process = sp.run([terachemdir + '/terachem'], check=True, stdout=ofile, stderr=ofile, universal_newlines=True)
+        process = sp.run([terachemdir + '/terachem', filename+'.in'], check=True, stdout=ofile, stderr=ofile, universal_newlines=True)
 
 #functional,basis,charge,mult,elems,coords,cutoff=1e-8,Grad=True
 def write_terachem_input(teracheminput,charge,mult,elems,coords,xyzfilename="terachem.xyz", filename='terachem',
