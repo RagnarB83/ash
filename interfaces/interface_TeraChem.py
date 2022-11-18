@@ -202,8 +202,12 @@ def grab_gradient_terachem(outfile,numatoms,numpc=None):
                     pc_gradient[pccount,0] = float(line.split()[0])
                     pc_gradient[pccount,1] = float(line.split()[1])
                     pc_gradient[pccount,2] = float(line.split()[2])
+                    pccount+=1
                 if pccount == numpc:
                     pcgrad_grab=False
+            if 'Net gradient' in line:
+                grad_grab=False
+                pcgrad_grab=False
             if 'dE/dX' in line:
                 grad_grab=True
             if '------- MM / Point charge part' in line:
