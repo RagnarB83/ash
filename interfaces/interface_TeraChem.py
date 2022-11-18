@@ -89,7 +89,7 @@ class TeraChemTheory:
 
         #Write PC to disk
         if PC is True:
-            create_terachem_pcfile_general(pc_coords=current_MM_coords,pc_values=MMcharges)
+            create_terachem_pcfile_general(current_MM_coords,pc_values)
 
         #Grab energy and gradient
         if Grad==True:
