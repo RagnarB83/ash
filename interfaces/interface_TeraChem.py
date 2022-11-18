@@ -192,22 +192,15 @@ def grab_gradient_terachem(outfile,numatoms,numpc=None):
                 else:
                     continue
             if pcgrad_grab is True:
-                if ' COORDINATE    XYZ            GRADIENT' in line:
-                    continue
-                if 'X' in line:
-                    pc_gradient[pccount,0] = float(line.split()[-1])
-                elif 'Y' in line:
-                    pc_gradient[pccount,1] = float(line.split()[-1])
-                elif 'Z' in line:
-                    pc_gradient[pccount,2] = float(line.split()[-1])
-                    pccount+=1
-                else:
-                    continue
+                if len(line.split()) == 3:
+                    gradient[pccount,0] = float(line.split()[0])
+                    gradient[pccount,1] = float(line.split()[1])
+                    gradient[pccount,2] = float(line.split()[2])
                 if pccount == numpc:
                     pcgrad_grab=False
             if 'dE/dX' in line:
                 grad_grab=True
-            if ' POINT CHARGE GRADIENT:' in line:
+            if 'MM / Point charge part' in line:
                 pcgrad_grab=True
             if atomcount == numatoms:
                  grad_grab=False
@@ -218,6 +211,7 @@ def grab_gradient_terachem(outfile,numatoms,numpc=None):
 def create_terachem_pcfile_general(coords,pchargelist):
     with open('pcharge', 'w') as pcfile:
         pcfile.write(str(len(pchargelist))+'\n')
+        pcfile.write('\n')
         for p,c in zip(pchargelist,coords):
             line = "{} {} {} {}".format(p, c[0], c[1], c[2])
             pcfile.write(line+'\n')
