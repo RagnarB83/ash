@@ -182,14 +182,12 @@ def grab_gradient_terachem(outfile,numatoms,numpc=None):
     with open(outfile) as o:
         for i,line in enumerate(o):
             if grad_grab is True:
-                if ' COORDINATE    XYZ            GRADIENT' in line:
+                if '------' in line:
                     continue
-                if 'X' in line:
-                    gradient[atomcount,0] = float(line.split()[-1])
-                elif 'Y' in line:
-                    gradient[atomcount,1] = float(line.split()[-1])
-                elif 'Z' in line:
-                    gradient[atomcount,2] = float(line.split()[-1])
+                if len(line.split()) == 3:
+                    gradient[atomcount,0] = float(line.split()[0])
+                    gradient[atomcount,1] = float(line.split()[1])
+                    gradient[atomcount,2] = float(line.split()[2])
                     atomcount+=1
                 else:
                     continue
@@ -207,7 +205,7 @@ def grab_gradient_terachem(outfile,numatoms,numpc=None):
                     continue
                 if pccount == numpc:
                     pcgrad_grab=False
-            if ' ANALYTICAL GRADIENT:' in line:
+            if 'dE/dX' in line:
                 grad_grab=True
             if ' POINT CHARGE GRADIENT:' in line:
                 pcgrad_grab=True
