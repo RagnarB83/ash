@@ -27,7 +27,9 @@ class TeraChemTheory:
             except:
                 print(BC.WARNING,"Found no terachemdir variable in settings_ash module either.",BC.END)
                 try:
-                    self.tearchemdir = os.path.dirname(shutil.which('terachem'))
+                    self.terachemdir = os.path.dirname(shutil.which('terachem'))
+                    print("os.path.dirname(shutil.which('terachem')):", os.path.dirname(shutil.which('terachem')))
+                    print("self.tearchemdir:", self.terachemdir)
                     print(BC.OKGREEN,"Found terachem in PATH. Setting terachemdir to:", self.terachemdir, BC.END)
                 except:
                     print(BC.FAIL,"Found no terachem executable in PATH. Exiting... ", BC.END)
