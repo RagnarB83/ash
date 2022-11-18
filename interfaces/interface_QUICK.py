@@ -31,7 +31,7 @@ class QUICKTheory:
                     print(BC.OKGREEN,"Found quick.cuda in PATH. Setting quickdir to:", self.quickdir, BC.END)
                 except:
                     print(BC.FAIL,"Found no quick.cuda executable in PATH. Exiting... ", BC.END)
-                    #ashexit()
+                    ashexit()
         else:
             self.quickdir = quickdir
 
