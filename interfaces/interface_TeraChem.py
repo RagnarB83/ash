@@ -6,8 +6,8 @@ import numpy as np
 
 from ash.functions.functions_general import ashexit, BC, print_time_rel,print_line_with_mainheader
 from ash.modules.module_coords import write_xyzfile
+
 #TeraChem Theory object.
-#TODO: Add pointcharges to input and grab PC gradients
 class TeraChemTheory:
     def __init__(self, terachemdir=None, filename='terachem', printlevel=2,
                 teracheminput=None, numcores=1):

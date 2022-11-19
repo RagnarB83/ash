@@ -682,27 +682,13 @@ class QMMMTheory:
         
         #print_time_rel(CheckpointTime, modulename='QM/MM run prep', moduleindex=2, currprintlevel=self.printlevel, currthreshold=1)
         if self.printlevel > 1: print("Number of PCs provided to QM-program:", len(self.pointcharges))
-        #TODO: Remove checking for QMTheory here. Just run and have QM-interface complain if something not implemented
-        if self.qm_theory_name=="ORCATheory" or self.qm_theory_name == "xTBTheory" or self.qm_theory_name == "TeraChemTheory":
-            #Calling ORCA theory, providing current QM and MM coordinates.
-            if Grad==True:
-                if PC==True:
 
-                    QMenergy, QMgradient, PCgradient = self.qm_theory.run(current_coords=self.qmcoords,
-                                                                                         current_MM_coords=self.pointchargecoords,
-                                                                                         MMcharges=self.pointcharges,
-                                                                                         qm_elems=current_qmelems, charge=charge, mult=mult,
-                                                                                         Grad=True, PC=True, numcores=numcores)
-                    
-                    shutil.copyfile(self.qm_theory.filename+'.out', self.qm_theory.filename+'_full'+'.out')
-                else:
-                    QMenergy, QMgradient = self.qm_theory.run(current_coords=self.qmcoords,
-                                                      current_MM_coords=self.pointchargecoords, MMcharges=self.pointcharges,
-                                                      qm_elems=current_qmelems, Grad=True, PC=False, numcores=numcores, charge=charge, mult=mult)
-            else:
-                QMenergy = self.qm_theory.run(current_coords=self.qmcoords,
-                                                      current_MM_coords=self.pointchargecoords, MMcharges=self.pointcharges,
-                                                      qm_elems=current_qmelems, Grad=False, PC=PC, numcores=numcores, charge=charge, mult=mult)
+        #QM-part
+        if self.qm_theory_name == "None" or self.qm_theory_name == "ZeroTheory":
+            print("No QMtheory. Skipping QM calc")
+            QMenergy=0.0;self.linkatoms=False;PCgradient=np.array([0.0, 0.0, 0.0])
+            QMgradient=np.array([0.0, 0.0, 0.0])
+        #TODO: Revisit Psi4 and remove this is pointcharge gradients have been implemented
         elif self.qm_theory_name == "Psi4Theory":
             #Calling Psi4 theory, providing current QM and MM coordinates.
             if Grad==True:
@@ -730,15 +716,31 @@ class QMMMTheory:
                                                       current_MM_coords=self.pointchargecoords, MMcharges=self.pointcharges, charge=charge, mult=mult,
                                                       qm_elems=current_qmelems, Grad=False, PC=PC, numcores=numcores)
                 else:
-                    print("mech true", not ready)
+                    print("mech true, not ready")
                     ashexit()
-        elif self.qm_theory_name == "None" or self.qm_theory_name == "ZeroTheory":
-            print("No QMtheory. Skipping QM calc")
-            QMenergy=0.0;self.linkatoms=False;PCgradient=np.array([0.0, 0.0, 0.0])
-            QMgradient=np.array([0.0, 0.0, 0.0])
+        #General QM-code energy+gradient call.
+        #TODO: Add check whether QM-code supports both pointcharges and pointcharge-gradient?
         else:
-            print("invalid QM theory")
-            ashexit()
+            #Calling QM theory, providing current QM and MM coordinates.
+            if Grad==True:
+                if PC==True:
+
+                    QMenergy, QMgradient, PCgradient = self.qm_theory.run(current_coords=self.qmcoords,
+                                                                                         current_MM_coords=self.pointchargecoords,
+                                                                                         MMcharges=self.pointcharges,
+                                                                                         qm_elems=current_qmelems, charge=charge, mult=mult,
+                                                                                         Grad=True, PC=True, numcores=numcores)
+                    
+                    shutil.copyfile(self.qm_theory.filename+'.out', self.qm_theory.filename+'_full'+'.out')
+                else:
+                    QMenergy, QMgradient = self.qm_theory.run(current_coords=self.qmcoords,
+                                                      current_MM_coords=self.pointchargecoords, MMcharges=self.pointcharges,
+                                                      qm_elems=current_qmelems, Grad=True, PC=False, numcores=numcores, charge=charge, mult=mult)
+            else:
+                QMenergy = self.qm_theory.run(current_coords=self.qmcoords,
+                                                      current_MM_coords=self.pointchargecoords, MMcharges=self.pointcharges,
+                                                      qm_elems=current_qmelems, Grad=False, PC=PC, numcores=numcores, charge=charge, mult=mult)
+
         print_time_rel(CheckpointTime, modulename='QM step', moduleindex=2,currprintlevel=self.printlevel, currthreshold=1)
         CheckpointTime = time.time()
 
