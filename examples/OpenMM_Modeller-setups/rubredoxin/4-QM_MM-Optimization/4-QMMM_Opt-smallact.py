@@ -23,5 +23,5 @@ qmmm = QMMMTheory(qm_theory=orca, mm_theory=omm, fragment=fragment,
 # QM/MM geometry optimization
 #Defining active region as QM-region
 actatoms=qmatoms
-geomeTRICOptimizer(fragment=fragment, theory=qmmm, ActiveRegion=True, actatoms=actatoms, maxiter=200,
+Optimizer(fragment=fragment, theory=qmmm, ActiveRegion=True, actatoms=actatoms, maxiter=200,
         charge=-1, mult=6)

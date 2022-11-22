@@ -24,7 +24,7 @@ Psi4SPcalculation = Psi4Theory(fragment=HF_frag, charge=0, mult=1, psi4settings=
 
 
 #Using geomeTRIC optimization from Github
-geomeTRICOptimizer(Psi4SPcalculation,HF_frag)
+Optimizer(Psi4SPcalculation,HF_frag)
 
 
 

@@ -78,7 +78,7 @@ QMMMobject = QMMMTheory(fragment=Cluster, qm_theory=xtbcalc, mm_theory=MMpart,
     qmatoms=Centralmainfrag, charges=Cluster.atomcharges, embedding='Elstat', numcores=numcores)
 
 
-geomeTRICOptimizer(theory=QMMMobject, fragment=Cluster, maxiter=70, ActiveRegion=True, actatoms=Centralmainfrag )
+Optimizer(theory=QMMMobject, fragment=Cluster, maxiter=70, ActiveRegion=True, actatoms=Centralmainfrag )
 
 #Update charges??
 

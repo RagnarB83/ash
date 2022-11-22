@@ -99,7 +99,7 @@ QMMM_object = QMMMTheory(
         numcores=numcores,
         )
 
-geomeTRICOptimizer(
+Optimizer(
         theory=QMMM_object,
         fragment=Cluster,
         coordsystem='tric',

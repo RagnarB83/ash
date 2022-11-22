@@ -29,7 +29,7 @@ QMMMobject = QMMMTheory(fragment=H2O_MeOH, qm_theory=ORCAQMpart,
                                        embedding='Elstat')
 
 #QM/MM optimization with geomeTRIC and frozen atoms. Using ActiveRegion option for QM/MM. Only QMatoms active here.
-geomeTRICOptimizer(fragment=H2O_MeOH, theory=QMMMobject, coordsystem='tric', ActiveRegion=True, actatoms=[3,4,5,6,7,8])
+Optimizer(fragment=H2O_MeOH, theory=QMMMobject, coordsystem='tric', ActiveRegion=True, actatoms=[3,4,5,6,7,8])
 
 
 

@@ -17,4 +17,4 @@ ORCAcalc = ORCATheory(charge=0, mult=1,
 ORCAcalc.cleanup()
 
 #Basic Cartesian optimization
-geomeTRICOptimizer(fragment=H2Ofragment, theory=ORCAcalc, coordsystem='tric')
+Optimizer(fragment=H2Ofragment, theory=ORCAcalc, coordsystem='tric')

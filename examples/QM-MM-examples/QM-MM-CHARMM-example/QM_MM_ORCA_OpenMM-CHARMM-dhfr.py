@@ -39,5 +39,5 @@ qmmmobject = QMMMTheory(qm_theory=orcaobject, mm_theory=openmmobject, printlevel
                         fragment=frag, embedding="Elstat", qmatoms=qmatoms)
 
 #Run geometry optimization using geomeTRIC optimizer and HDLC coordinates. Using active region.
-geomeTRICOptimizer(theory=qmmmobject, fragment=frag, ActiveRegion=True, actatoms=actatoms,
+Optimizer(theory=qmmmobject, fragment=frag, ActiveRegion=True, actatoms=actatoms,
                     maxiter=500, coordsystem='hdlc', charge=0,mult=1)

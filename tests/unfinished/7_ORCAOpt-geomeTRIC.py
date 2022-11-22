@@ -20,7 +20,7 @@ ORCAcalc = ORCATheory(orcadir=orcadir, fragment=HF_frag, charge=0, mult=1,
 
 
 #Using geomeTRIC optimization from Github
-geomeTRICOptimizer(ORCAcalc,HF_frag)
+Optimizer(ORCAcalc,HF_frag)
 
 
 ORCAcalc.cleanup()

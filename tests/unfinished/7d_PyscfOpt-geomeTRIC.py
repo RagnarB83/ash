@@ -14,7 +14,7 @@ PySCFTheorycalculation = PySCFTheory(fragment=HF_frag, charge=0, mult=1,
     pyscfbasis='def2-SVP', pyscffunctional='bp86', printsetting=False)
 
 #Using geomeTRIC optimization from Github
-geomeTRICOptimizer(PySCFTheorycalculation,HF_frag, coordsystem='tric')
+Optimizer(PySCFTheorycalculation,HF_frag, coordsystem='tric')
 
 
 

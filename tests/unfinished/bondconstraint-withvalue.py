@@ -16,6 +16,6 @@ ORCAcalc = ORCATheory(orcadir=orcadir, charge=-1, mult=6,
 
 #Geometry optimization of the ORCA using geomeTRIC optimizer
 geoconstraints = { 'bond' : [[0,1, 2.1]]}
-geomeTRICOptimizer(fragment=HF_frag, theory=ORCAcalc, coordsystem='tric', constraints=geoconstraints, constrainvalue=True, convergence_setting='ORCA')
+Optimizer(fragment=HF_frag, theory=ORCAcalc, coordsystem='tric', constraints=geoconstraints, constrainvalue=True, convergence_setting='ORCA')
 
 ORCAcalc.cleanup()

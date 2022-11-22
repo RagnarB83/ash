@@ -50,7 +50,7 @@ blocks="%scf maxiter 200 end"
 ORCAcalc = ORCATheory(orcasimpleinput=input, orcablocks=blocks)
 
 #Call optimizer with ORCAtheory object and fragment as input
-geomeTRICOptimizer(theory=ORCAcalc,fragment=HF_frag)
+Optimizer(theory=ORCAcalc,fragment=HF_frag)
 
 
 

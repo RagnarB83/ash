@@ -1,11 +1,11 @@
 from ash import *
 numcores = 8
 
-forcefielddir="/Users/bjornsson/ownCloud/ASH-tests/testsuite/OpenMM-files-for-tests/dhfr/charmm/"
+forcefielddir="./"
 psffile=forcefielddir+"step3_pbcsetup.psf"
 topfile=forcefielddir+"top_all36_prot.rtf"
 prmfile=forcefielddir+"par_all36_prot.prm"
-xyzfile=forcefielddir+"file.xyz"
+xyzfile=forcefielddir+"coordinates.xyz"
 
 frag = Fragment(xyzfile=xyzfile, conncalc=False)
 

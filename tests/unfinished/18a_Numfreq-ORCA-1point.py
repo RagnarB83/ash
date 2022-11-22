@@ -20,7 +20,7 @@ Reactant=Fragment(coordsstring=reactstring)
 ORCAcalc = ORCATheory(orcadir=orcadir, charge=0, mult=1, orcasimpleinput=orcasimpleinput, orcablocks=orcablocks)
 ORCAcalc.cleanup()
 #Using geomeTRIC optimization
-geomeTRICOptimizer(theory=ORCAcalc,fragment=Reactant)
+Optimizer(theory=ORCAcalc,fragment=Reactant)
 
 
 #Numfreq

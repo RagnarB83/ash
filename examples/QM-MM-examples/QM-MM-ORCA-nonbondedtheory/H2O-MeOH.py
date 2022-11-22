@@ -29,5 +29,5 @@ energy = Singlepoint(theory=QMMMobject, fragment=H2O_MeOH, charge=0, mult=1)
 print("Single-point QM/MM energy:", energy)
 
 #Geometry optimization of QM/MM object (this may not converge)
-energy2 = geomeTRICOptimizer(fragment=H2O_MeOH, theory=QMMMobject, coordsystem='tric', ActiveRegion=True, actatoms=[3,4,5,6,7,8], charge=0, mult=1)
+energy2 = Optimizer(fragment=H2O_MeOH, theory=QMMMobject, coordsystem='tric', ActiveRegion=True, actatoms=[3,4,5,6,7,8], charge=0, mult=1)
 print("Optimized QM/MM energy:", energy2)

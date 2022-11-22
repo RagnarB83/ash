@@ -48,5 +48,5 @@ qmmmobject = QMMMTheory(qm_theory=orcaobject, mm_theory=openmmobject,
     fragment=ashfragment, embedding="Elstat", qmatoms=qmatomlist, printlevel=2)
 
 # QM/MM geometry optimization
-geomeTRICOptimizer(theory=qmmmobject, fragment=ashfragment, ActiveRegion=True, actatoms=qmatomlist, maxiter=500,
+Optimizer(theory=qmmmobject, fragment=ashfragment, ActiveRegion=True, actatoms=qmatomlist, maxiter=500,
     charge=-1,mult=1)
