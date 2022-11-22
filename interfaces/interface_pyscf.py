@@ -5,8 +5,7 @@ import ash.modules.module_coords
 #import scipy 
 
 #PySCF Theory object.
-#PySCF runmode: Library only
-# PE: Polarizable embedding (CPPE). Not completely active in PySCF 1.7.1. Bugfix required I think
+# TODO: PE: Polarizable embedding (CPPE). Not completely active in PySCF 1.7.1. Bugfix required I think
 
 class PySCFTheory:
     def __init__(self, printsetting=False, printlevel=2, numcores=1, 
@@ -62,8 +61,10 @@ class PySCFTheory:
         self.conv_tol=conv_tol
         self.verbose_setting=verbose_setting
 
+        #Attempting to load pyscf
         self.load_pyscf()
         self.set_numcores(numcores)
+        
         #PySCF scratch dir. Todo: Need to adapt
         #print("Setting PySCF scratchdir to ", os.getcwd())
 
