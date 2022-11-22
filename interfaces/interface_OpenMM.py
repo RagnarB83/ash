@@ -2049,6 +2049,7 @@ def OpenMM_Modeller(pdbfile=None, forcefield=None, xmlfile=None, waterxmlfile=No
             xmlfile = "amber14-all.xml"
             # Using specific Amber FB version of TIP3P
             if watermodel == "tip3p":
+                modeller_solvent_name="tip3p" #Used when adding solvent
                 waterxmlfile = "amber14/tip3pfb.xml"
         elif forcefield == 'Amber96':
             xmlfile = "amber96.xml"
@@ -2056,6 +2057,7 @@ def OpenMM_Modeller(pdbfile=None, forcefield=None, xmlfile=None, waterxmlfile=No
             xmlfile = "charmm36.xml"
             # Using specific CHARMM36 version of TIP3P
             watermodel="tip3p"
+            modeller_solvent_name="tip3p" #Used when adding solvent
             waterxmlfile = "charmm36/water.xml"
         elif forcefield == 'CHARMM2013':
             xmlfile = "charmm_polar_2013.xml"

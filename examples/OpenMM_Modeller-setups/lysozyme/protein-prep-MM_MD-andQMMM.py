@@ -12,16 +12,20 @@ residue_variants={}
 
 #Setting up new system, adding hydrogens, solvent, ions and defining forcefield, topology
 openmmobject, ashfragment = OpenMM_Modeller(pdbfile=pdbfile, forcefield='CHARMM36', watermodel="tip3p", pH=7.0, 
-    solvent_padding=10.0, ionicstrength=0.1, iontype="Na+", residue_variants=residue_variants)
+    solvent_padding=10.0, ionicstrength=0.1, residue_variants=residue_variants)
 
 #Alternatively: openmmobject can be recreated like this:
 #openmmobject = OpenMMTheory(xmlfiles=[charmm36.xml, charmm36/water.xml], pdbfile="finalsystem.pdb", periodic=True)
 
 #MM minimization for 100 steps
-OpenMM_Opt(fragment=ashfragment, openmmobject=openmmobject, maxiter=100, tolerance=1)
+OpenMM_Opt(fragment=ashfragment, theory=openmmobject, maxiter=100, tolerance=1)
+
+#Gentle heating-up protocol
+Gentle_warm_up_MD(theory=openmmobject, fragment=ashfragment, 
+    time_steps=[0.0005,0.001,0.004], steps=[10,50,10000], temperatures=[1,10,300])
 
 #Classical MD simulation for 10 ps
-OpenMM_MD(fragment=ashfragment, openmmobject=openmmobject, timestep=0.001, simulation_time=10, traj_frequency=100, temperature=300,
+OpenMM_MD(fragment=ashfragment, theory=openmmobject, timestep=0.001, simulation_time=10, traj_frequency=100, temperature=300,
     integrator='LangevinMiddleIntegrator', coupling_frequency=1, trajectory_file_option='DCD')
 
 #Setting up QM/MM model
