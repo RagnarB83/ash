@@ -66,7 +66,7 @@ class QUICKTheory:
             ashexit()
 
         print("Job label:", label)
-        print("Creating inputfile: quick.inp")
+        print(f"Creating inputfile: {self.filename.in")
         print("QUICK input:")
         print(self.quickinput)
 
@@ -89,12 +89,13 @@ class QUICKTheory:
         #Grab energy and gradient
         if Grad==True:
             if PC is True:
-                write_quick_input(self.quickinput,charge,mult,qm_elems,current_coords,Grad=True, pc_coords=current_MM_coords,pc_values=MMcharges)
+                write_quick_input(self.quickinput,charge,mult,qm_elems,current_coords,Grad=True, 
+                        pc_coords=current_MM_coords,pc_values=MMcharges,filename=self.filename)
             else:
-                write_quick_input(self.quickinput,charge,mult,qm_elems,current_coords,Grad=True)
+                write_quick_input(self.quickinput,charge,mult,qm_elems,current_coords,Grad=True,filename=self.filename)
             
             #Run QUICK
-            run_quick(self.quickdir,self.filename+'.out')
+            run_quick(self.quickdir,self.filename+'.in')
 
             self.energy=grab_energy_quick(self.filename+'.out')
             if PC is True:
@@ -105,7 +106,7 @@ class QUICKTheory:
             print("pcgradient:", self.pcgradient)
         else:
             write_quick_input(self.quickinput,charge,mult,qm_elems,current_coords,Grad=False)
-            run_quick(self.quickdir,self.filename+'.out')
+            run_quick(self.quickdir,self.filename+'.in')
             self.energy=grab_energy_quick(self.filename+'.out')
 
         #TODO: write in error handling here
@@ -125,18 +126,18 @@ class QUICKTheory:
 #NOT tested
 def run_quick(quickdir,filename):
     #stdout=ofile, stderr=ofile, 
-    process = sp.run([quickdir + '/quick.cuda'], check=True, universal_newlines=True)
+    process = sp.run([quickdir + '/quick.cuda',filename], check=True, universal_newlines=True)
 
 #functional,basis,charge,mult,elems,coords,cutoff=1e-8,Grad=True
 #NOTE: No UHF/UKS in QUICK yet ?
-def write_quick_input(quickinputline,charge,mult,elems,coords,pc_coords=None, pc_values=None, Grad=True):
+def write_quick_input(quickinputline,charge,mult,elems,coords,pc_coords=None, pc_values=None, Grad=True,filename="quick"):
     pckeyword=""
     gradkeyword=""
     if Grad is True:
         gradkeyword="GRADIENT"
     if pc_coords is not None:
         pckeyword="EXTCHARGES"
-    with open("quick.in", 'w') as inpfile:
+    with open(f"{filename}.in", 'w') as inpfile:
         #inpfile.write(f"{functional} BASIS={basis} {gradkeyword} CHARGE={charge} cutoff={cutoff}" + '\n')
         inpfile.write(f"{quickinputline} {gradkeyword} CHARGE={charge} {pckeyword}")
         inpfile.write('\n')
