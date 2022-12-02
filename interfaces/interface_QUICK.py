@@ -66,7 +66,7 @@ class QUICKTheory:
             ashexit()
 
         print("Job label:", label)
-        print(f"Creating inputfile: {self.filename.in")
+        print(f"Creating inputfile: {self.filename.in}")
         print("QUICK input:")
         print(self.quickinput)
 
