@@ -10,7 +10,7 @@ from ash.functions.functions_general import ashexit, BC, print_time_rel,print_li
 #TODO: Add pointcharges to input and grab PC gradients
 class QUICKTheory:
     def __init__(self, quickdir=None, filename='quick', printlevel=2,
-                quickinput=None, numcores=1):
+                quickinput=None, numcores=1, quickbinary="quick.cuda"):
 
         self.theorynamelabel="QUICK"
         print_line_with_mainheader("QUICKTheory initialization")
@@ -43,6 +43,7 @@ class QUICKTheory:
         self.filename=filename
         self.quickinput=quickinput
         self.numcores=numcores
+        self.quickbinary=quickbinary
     #Set numcores method
     def set_numcores(self,numcores):
         self.numcores=numcores
@@ -95,7 +96,7 @@ class QUICKTheory:
                 write_quick_input(self.quickinput,charge,mult,qm_elems,current_coords,Grad=True,filename=self.filename)
             
             #Run QUICK
-            run_quick(self.quickdir,self.filename+'.in')
+            run_quick(self.quickdir,self.filename+'.in',quickbinary=self.quickbinary)
 
             self.energy=grab_energy_quick(self.filename+'.out')
             if PC is True:
@@ -106,7 +107,7 @@ class QUICKTheory:
             print("pcgradient:", self.pcgradient)
         else:
             write_quick_input(self.quickinput,charge,mult,qm_elems,current_coords,Grad=False)
-            run_quick(self.quickdir,self.filename+'.in')
+            run_quick(self.quickdir,self.filename+'.in',quickbinary=self.quickbinary)
             self.energy=grab_energy_quick(self.filename+'.out')
 
         #TODO: write in error handling here
@@ -123,10 +124,9 @@ class QUICKTheory:
             print_time_rel(module_init_time, modulename='QUICK run', moduleindex=2)
             return self.energy
 
-#NOT tested
-def run_quick(quickdir,filename):
+def run_quick(quickdir,filename, quickbinary="quick.cuda"):
     #stdout=ofile, stderr=ofile, 
-    process = sp.run([quickdir + '/quick.cuda',filename], check=True, universal_newlines=True)
+    process = sp.run([quickdir + '/' + quickbinary,filename], check=True, universal_newlines=True)
 
 #functional,basis,charge,mult,elems,coords,cutoff=1e-8,Grad=True
 #NOTE: No UHF/UKS in QUICK yet ?
