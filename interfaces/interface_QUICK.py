@@ -124,9 +124,11 @@ class QUICKTheory:
 
 #NOT tested
 def run_quick(quickdir,filename):
-    process = sp.run([quickdir + '/quick.cuda'], check=True, stdout=ofile, stderr=ofile, universal_newlines=True)
+    #stdout=ofile, stderr=ofile, 
+    process = sp.run([quickdir + '/quick.cuda'], check=True, universal_newlines=True)
 
 #functional,basis,charge,mult,elems,coords,cutoff=1e-8,Grad=True
+#NOTE: No UHF/UKS in QUICK yet ?
 def write_quick_input(quickinputline,charge,mult,elems,coords,pc_coords=None, pc_values=None, Grad=True):
     pckeyword=""
     gradkeyword=""
