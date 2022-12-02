@@ -99,7 +99,7 @@ class QUICKTheory:
 
             self.energy=grab_energy_quick(self.filename+'.out')
             if PC is True:
-                self.gradient,pcgradient = grab_gradient_quick(self.filename+'.out',len(current_coords), numpc=len(MMcharges))
+                self.gradient,self.pcgradient = grab_gradient_quick(self.filename+'.out',len(current_coords), numpc=len(MMcharges))
             else:
                 self.gradient,self.pcgradient = grab_gradient_quick(self.filename+'.out',len(current_coords))
             print("self.gradient", self.gradient)
@@ -138,7 +138,6 @@ def write_quick_input(quickinputline,charge,mult,elems,coords,pc_coords=None, pc
     if pc_coords is not None:
         pckeyword="EXTCHARGES"
     with open(f"{filename}.in", 'w') as inpfile:
-        #inpfile.write(f"{functional} BASIS={basis} {gradkeyword} CHARGE={charge} cutoff={cutoff}" + '\n')
         inpfile.write(f"{quickinputline} {gradkeyword} CHARGE={charge} {pckeyword}")
         inpfile.write('\n')
         inpfile.write('\n')
@@ -151,14 +150,11 @@ def write_quick_input(quickinputline,charge,mult,elems,coords,pc_coords=None, pc
         inpfile.write('\n')
 
 def grab_energy_quick(outfile):
-    #Option 1. Grabbing all lines containing energy in outputfile. Take last entry.
-    # CURRENT Option 2: grab energy from iface file. Higher level WF entry should be last
     energy=None
     with open(outfile) as f:
         for line in f:
             if ' TOTAL ENERGY' in line:
                 energy=float(line.split()[-1])
-                print(energy)
     return energy
 
 
