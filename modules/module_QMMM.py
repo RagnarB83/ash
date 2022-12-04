@@ -255,20 +255,23 @@ class QMMMTheory:
                 #NOTE: For QM-MM interactions Coulomb charges are zeroed below (update_charges and delete_exceptions)
                 print("Removing nonbonded terms for QM-region in MMtheory (QM-QM interactions)")
                 self.mm_theory.addexceptions(self.qmatoms)
-                
-            #Change charges
+            
+            ########################
+            #CHANGE CHARGES
+            ########################
             # Keeping self.charges as originally defined.
             #Setting QM charges to 0 since electrostatic embedding
             #and Charge-shift QM-MM boundary
                 
-            #Zero QM charges
+            #Zero QM charges for electrostatic embedding
             #TODO: DO here or inside run instead?? Needed for MM code.
-            self.ZeroQMCharges() #Modifies self.charges_qmregionzeroed
-            #print("length of self.charges_qmregionzeroed :", len(self.charges_qmregionzeroed))
-                
-            #TODO: make sure this works for OpenMM and for NonBondedTheory
-            # Updating charges in MM object. 
-            self.mm_theory.update_charges(self.qmatoms,[0.0 for i in self.qmatoms])
+            if self.embedding=="Elstat":
+                print("Charges of QM atoms set to 0 (since Electrostatic Embedding):")
+                self.ZeroQMCharges() #Modifies self.charges_qmregionzeroed
+                #print("length of self.charges_qmregionzeroed :", len(self.charges_qmregionzeroed))
+                #TODO: make sure this works for OpenMM and for NonBondedTheory
+                # Updating charges in MM object. 
+                self.mm_theory.update_charges(self.qmatoms,[0.0 for i in self.qmatoms])
 
             if self.mm_theory_name == "OpenMMTheory":
                 #Deleting Coulomb exception interactions involving QM and MM atoms
@@ -279,19 +282,26 @@ class QMMMTheory:
                     print("Creating new OpenMM custom external force")
                     self.openmm_externalforceobject = self.mm_theory.add_custom_external_force()
 
-            print("Charges of QM atoms set to 0 (since Electrostatic Embedding):")
-            if self.printlevel > 3:
+            #Printing charges: all or only QM
+            if self.printlevel > 2:
                 for i in self.allatoms:
                     if i in self.qmatoms:
-                        print("QM atom {} ({}) charge: {}".format(i, self.elems[i], self.charges_qmregionzeroed[i]))
+                        if self.embedding=="Elstat":
+                            print("QM atom {} ({}) charge: {}".format(i, self.elems[i], self.charges_qmregionzeroed[i]))
+                        else:
+                            print("QM atom {} ({}) charge: {}".format(i, self.elems[i], self.charges[i]))
                     else:
-                        print("MM atom {} ({}) charge: {}".format(i, self.elems[i], self.charges_qmregionzeroed[i]))
+                        if self.printlevel > 3:
+                            print("MM atom {} ({}) charge: {}".format(i, self.elems[i], self.charges_qmregionzeroed[i]))
             blankline()
         else:
             #Case: No actual MM theory but we still want to zero charges for QM elstate embedding calculation
             #TODO: Remove option for no MM theory or keep this ??
-            self.ZeroQMCharges() #Modifies self.charges_qmregionzeroed
+            if self.embedding=="Elstat":
+                self.ZeroQMCharges() #Modifies self.charges_qmregionzeroed
         print_time_rel(module_init_time, modulename='QM/MM object creation', moduleindex=2)
+    
+    
     #From QM1:MM1 boundary dict, get MM1:MMx boundary dict (atoms connected to MM1)
     def get_MMboundary(self,scale,tol):
         timeA=time.time()
@@ -623,19 +633,20 @@ class QMMMTheory:
             #print("")
             #print("current_qmelems :", current_qmelems)
             
-            #Charge-shifting + Dipole thing
-            if self.printlevel > 1: print("Doing charge-shifting...")
-            #print("Before: self.pointcharges are: ", self.pointcharges)
             #Do Charge-shifting. MM1 charge distributed to MM2 atoms
             
-            self.ShiftMMCharges() # Creates self.pointcharges
-            #print("After: self.pointcharges are: ", self.pointcharges)
+            if self.embedding=="Elstat":
+                if self.printlevel > 1: print("Doing charge-shifting...")
+                #print("Before: self.pointcharges are: ", self.pointcharges)
+                self.ShiftMMCharges() # Creates self.pointcharges
+                #print("After: self.pointcharges are: ", self.pointcharges)
             if self.printlevel > 1: print("Number of pointcharges defined for whole system: ", len(self.pointcharges))
 
             #TODO: Code alternative to Charge-shifting: L2 scheme which deletes whole charge-group that MM1 belongs to
             
             # Defining pointcharges as only containing MM atoms
             if self.printlevel > 1: print("Number of MM atoms:", len(self.mmatoms))
+
             self.pointcharges=[self.pointcharges[i] for i in self.mmatoms]
             #print("After: self.pointcharges are: ", self.pointcharges)
             if self.printlevel > 1: print("Number of pointcharges defined for MM region: ", len(self.pointcharges))
@@ -805,7 +816,8 @@ class QMMMTheory:
                 self.QMenergy = QMenergy
                 #No TruncPC approximation active. No change to original QM and PCgradient from QMcode
                 self.QMgradient_wo_linkatoms = QMgradient_wo_linkatoms
-                self.PCgradient = PCgradient
+                if self.embedding=="Elstat":
+                    self.PCgradient = PCgradient
 
             #Initialize QM_PC gradient (has full system size) and fill up
             #TODO: This can be made more efficient

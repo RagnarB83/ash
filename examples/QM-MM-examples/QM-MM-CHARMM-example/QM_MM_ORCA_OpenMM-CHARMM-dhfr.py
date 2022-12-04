@@ -36,7 +36,7 @@ actatoms = qmatoms
 
 # Create QM/MM OBJECT by combining QM and MM objects above
 qmmmobject = QMMMTheory(qm_theory=orcaobject, mm_theory=openmmobject, printlevel=2,
-                        fragment=frag, embedding="Elstat", qmatoms=qmatoms)
+                        fragment=frag, embedding="Elstat", qmatoms=qmatoms, qm_charge=0, qm_mult=1)
 
 #Run geometry optimization using geomeTRIC optimizer and HDLC coordinates. Using active region.
 Optimizer(theory=qmmmobject, fragment=frag, ActiveRegion=True, actatoms=actatoms,
