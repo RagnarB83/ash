@@ -12,7 +12,8 @@ class PySCFTheory:
                   scf_type=None, basis=None, functional=None, gridlevel=5, 
                   pe=False, potfile='', filename='pyscf', memory=3100, conv_tol=1e-8, verbose_setting=4, 
                   CC=False, CCmethod=None, CC_direct=False, frozen_core_setting='Auto', 
-                  frozen_virtuals=None, FNO=False, FNO_thresh=None):
+                  frozen_virtuals=None, FNO=False, FNO_thresh=None,
+                  PyQMC=False, PyQMC_nconfig=1, PyQMC_method='DMC'):
 
         self.theorytype="QM"
         print_line_with_mainheader("PySCFTheory initialization")
@@ -60,6 +61,13 @@ class PySCFTheory:
 
         self.conv_tol=conv_tol
         self.verbose_setting=verbose_setting
+
+        #PyQMC
+        self.PyQMC=PyQMC
+        self.PyQMC_nconfig=PyQMC_nconfig #integer. number of configurations in guess
+        self.PyQMC_method=PyQMC_method # DMC or VMC
+        if self.PyQMC is True:
+            self.load_pyqmc()
 
         #Attempting to load pyscf
         self.load_pyscf()
@@ -127,7 +135,13 @@ class PySCFTheory:
             #import pyscf.solvent as solvent
             #from pyscf.solvent import pol_embed
             import cppe
-
+    def load_pyqmc(self):
+        try:
+            import pyqmc.api as pyq
+            self.pyqmc=pyq
+        except:
+            print(BC.FAIL, "Problem importing pyqmc.api. Make sure pyqmc has been installed: pip install pyqmc", BC.END)
+            ashexit(code=9)
     #Set numcores method
     def set_numcores(self,numcores):
         self.numcores=numcores
@@ -270,6 +284,8 @@ class PySCFTheory:
             else:
                 self.frozen_orbital_indices=self.frozen_core_orbital_indices
             print("Final frozen-orbital list (core and virtuals):", self.frozen_orbital_indices)
+        
+        
         ############
         #RUNNING
         ############
@@ -370,6 +386,20 @@ class PySCFTheory:
                 print("Triples energy:", et)
                 self.energy = result.e_tot + et
                 print("Final CCSD(T) energy:", self.energy)
+        #PyQMC
+        elif self.PyQMC is True:
+            configs = self.pyqmc.initial_guess(mol,self.PyQMC_nconfig)
+            wf, to_opt = self.pyqmc.generate_wf(mol,mf)
+            pgrad_acc = self.pyqmc.gradient_generator(mol,wf, to_opt)
+            wf, optimization_data = self.pyqmc.line_minimization(wf, configs, pgrad_acc)
+            #DMC, untested
+            if self.PyQMC_method is 'DMC':
+                configs, dmc_data = self.pyqmc.rundmc(wf, configs)
+            #VMC. untested
+            elif self.PyQMC_method is 'VMC':
+                #More options possible
+                df, configs = vmc(wf,configs)
+        
         #SCF RUN
         else:
             scf_result = mf.run()
