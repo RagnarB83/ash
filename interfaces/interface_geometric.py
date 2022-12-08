@@ -17,19 +17,20 @@ from ash.modules.module_freq import write_hessian,calc_hessian_xtb, approximate_
 
 #Wrapper function around GeomeTRICOptimizerClass
 def geomeTRICOptimizer(theory=None, fragment=None, charge=None, mult=None, coordsystem='tric', frozenatoms=None, constraints=None, 
-                       constrainvalue=False, constraintsinputfile=None, maxiter=100, ActiveRegion=False, actatoms=None, 
+                       constrainvalue=False, constraintsinputfile=None, maxiter=100, ActiveRegion=False, actatoms=None,
                        convergence_setting=None, conv_criteria=None, print_atoms_list=None, TSOpt=False, hessian=None, partial_hessian_atoms=None,
-                       modelhessian=None, subfrctor=1):
+                       modelhessian=None, subfrctor=1, MM_PDB_traj_write=False):
     """
     Wrapper function around GeomeTRICOptimizerClass
     """
+
     print_line_with_mainheader("geomeTRICOptimizer")
     timeA=time.time()
     optimizer=GeomeTRICOptimizerClass(theory=theory, fragment=fragment, charge=charge, mult=mult, coordsystem=coordsystem, frozenatoms=frozenatoms, 
                         constraints=constraints, constrainvalue=constrainvalue, constraintsinputfile=constraintsinputfile, maxiter=maxiter,
                          ActiveRegion=ActiveRegion, actatoms=actatoms, TSOpt=TSOpt, hessian=hessian, partial_hessian_atoms=partial_hessian_atoms,
                         convergence_setting=convergence_setting, conv_criteria=conv_criteria, modelhessian=modelhessian,
-                        print_atoms_list=print_atoms_list, subfrctor=subfrctor)
+                        print_atoms_list=print_atoms_list, subfrctor=subfrctor, MM_PDB_traj_write=MM_PDB_traj_write)
     finalenergy = optimizer.run()
     print_time_rel(timeA, modulename='geomeTRIC', moduleindex=1)
     return finalenergy
@@ -39,7 +40,8 @@ def geomeTRICOptimizer(theory=None, fragment=None, charge=None, mult=None, coord
 class GeomeTRICOptimizerClass:
         def __init__(self,theory=None, fragment=None, charge=None, mult=None, coordsystem='tric', frozenatoms=None, constraintsinputfile=None, constraints=None, 
                        constrainvalue=False, maxiter=50, ActiveRegion=False, actatoms=None, convergence_setting=None, conv_criteria=None, TSOpt=False, hessian=None,
-                       print_atoms_list=None, partial_hessian_atoms=None, modelhessian=None, subfrctor=1):
+                       print_atoms_list=None, partial_hessian_atoms=None, modelhessian=None, subfrctor=1,
+                       MM_PDB_traj_write=False):
             """
             Wrapper class around geomeTRIC code. Take theory and fragment info from ASH
             Supports frozen atoms and bond/angle/dihedral constraints in native code. Use frozenatoms and bondconstraints etc. for this.
@@ -76,6 +78,7 @@ class GeomeTRICOptimizerClass:
             ###############################
             #Going through options
             ###############################
+
             #Active region and coordsystem
             if ActiveRegion == True and coordsystem == "tric":
                 #TODO: Look into this more
@@ -142,6 +145,8 @@ class GeomeTRICOptimizerClass:
             self.ActiveRegion=ActiveRegion
             self.TSOpt=TSOpt
             self.subfrctor=subfrctor
+            #For MM or QM/MM whether to write PDB-trajectory or not
+            self.MM_PDB_traj_write=MM_PDB_traj_write
             ######################
 
             ######################
@@ -361,7 +366,7 @@ class GeomeTRICOptimizerClass:
             #Defining ASHengineclass engine object containing geometry and theory. ActiveRegion boolean passed.
             #Also now passing list of atoms to print in each step.
             self.ashengine = ASHengineclass(mol_geometric_frag,theory, ActiveRegion=self.ActiveRegion, actatoms=self.actatoms, 
-                print_atoms_list=self.print_atoms_list,
+                print_atoms_list=self.print_atoms_list, MM_PDB_traj_write=self.MM_PDB_traj_write,
                 charge=self.charge, mult=self.mult, conv_criteria=self.conv_criteria, fragment=self.fragment)
             #Defining args object, containing engine object
             self.final_geometric_args=geomeTRICArgsObject(self.ashengine,self.constraintsfile,coordsys=self.coordsystem, 
@@ -448,7 +453,10 @@ class geomeTRICArgsObject:
 
 #Defining ASH engine class used to communicate with geomeTRIC
 class ASHengineclass:
-    def __init__(self,geometric_molf, theory, ActiveRegion=False, actatoms=None,print_atoms_list=None, charge=None, mult=None, conv_criteria=None, fragment=None):
+    def __init__(self,geometric_molf, theory, ActiveRegion=False, actatoms=None,print_atoms_list=None, charge=None, mult=None, conv_criteria=None, fragment=None,
+        MM_PDB_traj_write=False):
+        #MM_PDB_traj_write on/off. Can be pretty big files
+        self.MM_PDB_traj_write=MM_PDB_traj_write
         #Defining M attribute of engine object as geomeTRIC Molecule object
         self.M=geometric_molf
         #Defining theory from argument
@@ -596,7 +604,8 @@ class ASHengineclass:
 
                 #Case MMtheory is OpenMM: Write out PDB-trajectory via OpenMM
                 if isinstance(self.theory.mm_theory,OpenMMTheory):
-                    self.write_pdbtrajectory()
+                    if self.MM_PDB_traj_write is True:
+                        self.write_pdbtrajectory()
 
             #print_time_rel(timeA, modulename='geometric ASHcalc.calc writetraj full', moduleindex=2)
             timeA=time.time()
