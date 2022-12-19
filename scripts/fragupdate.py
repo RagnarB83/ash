@@ -131,11 +131,11 @@ with open(fragfile, 'w') as newfile:
                 at=int(line.split()[0])
                 el=line.split()[1]
                 charge=float(line.split()[5])
-                label=int(line.split()[6])
+                label=line.split()[6]
                 atomtype=line.split()[7]
                 newcoords=xyz_coords.pop(0)
                 #print("newcoords:", newcoords)
-                line = "{:>6} {:>6}  {:12.6f}  {:12.6f}  {:12.6f}  {:12.6f} {:12d} {:>21}\n".format(at, el, newcoords[0],
+                line = "{:>6} {:>6}  {:12.6f}  {:12.6f}  {:12.6f}  {:12.6f} {:12} {:>21}\n".format(at, el, newcoords[0],
                                                                                                     newcoords[1], newcoords[2],
                                                                                                     charge, label, atomtype)
         if '-----------------------' in line:

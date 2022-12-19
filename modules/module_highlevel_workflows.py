@@ -2259,8 +2259,7 @@ def basis_for_element(element,basisfamily,cardinal):
 #TODO: Allow basis-set element dictionary
 #TODO: Allow external basis set file
 def make_ICE_theory(basis,tgen, tvar, numcores, nel=None, norb=None, nmin_nmax=False, ice_nmin=None,ice_nmax=None, 
-    autoice=False, basis_per_element=None, maxcorememory=10000, maxiter=20, etol=1e-6,
-            moreadfile=None):
+    autoice=False, basis_per_element=None, maxcorememory=10000, maxiter=20, etol=1e-6, moreadfile=None):
     print_line_with_mainheader("make_ICE_theory")
     print("Simple function to create ICE-CI ORCATheory object")
     print()
