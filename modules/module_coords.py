@@ -2520,9 +2520,13 @@ def get_boundary_atoms(qmatoms, coords, elems, scale, tol, excludeboundaryatomli
             print(BC.FAIL,
                   "Problem. Found more than 1 boundaryatom for QM-atom {} . This is not allowed".format(qmatom),
                   BC.END)
+            print("This typically either happens when your QM-region is badly defined or a QM-atom is clashing with an MM atom")
             print("QM atom : ", qmatom)
-            print("Boundaryatoms : ", boundaryatom)
+            print("MM Boundaryatoms (connected to QM-atom based on distance) : ", boundaryatom)
             print("Please define the QM-region so that only 1 linkatom would be required.")
+            print("MM Boundary atom coordinates (for debugging):")
+            for b in boundaryatom:
+                print(f"{b} {elems[b]} {coords[b][0]} {coords[b][1]} {coords[b][2]}")
             ashexit()
         elif len(boundaryatom) == 1:
 
