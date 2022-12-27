@@ -3718,16 +3718,15 @@ def OpenMM_metadynamics(fragment=None, theory=None, timestep=0.004, simulation_s
               CV1_atoms=None, CV2_atoms=None, CV1_type=None, CV2_type=None, biasfactor=6, height=1, 
               biaswidth_cv1=0.5, biaswidth_cv2=0.5,
               frequency=1, savefrequency=10,
-              biasdir='.',
-              ):
+              biasdir='.'):
     print_line_with_mainheader("OpenMM metadynamics")
     
     if CV1_atoms == None or CV1_type == None:
-        print("You must specify both CV1_atoms and CV1_type keywords")
+        print("Error: You must specify both CV1_atoms and CV1_type keywords")
         ashexit()
 
     if CV2_atoms == None or CV2_type == None:
-        print("CV2 not specified. Assuming only 1 CV.")
+        print("CV2 not specified. Assuming only 1 CV in simulation.")
         numCVs=1
     else:
         numCVs=2
@@ -3757,44 +3756,23 @@ def OpenMM_metadynamics(fragment=None, theory=None, timestep=0.004, simulation_s
                         center_force_atoms=center_force_atoms, centerforce_constant=centerforce_constant,
                         barostat_frequency=barostat_frequency, specialbox=specialbox)
 
-
-
-
     #Access to system object via md (if QM theory then it was created)
     system = md.openmmobject.system
 
     #Setting up collective variables for native case or plumed case
     if use_plumed is False:
         native_MTD=True
-        # Define collective variables for CV1 and CV2.
-        if CV1_type == "dihedral":
-            periodic_var=True
-            cv1 = md.openmmobject.openmm.CustomTorsionForce('theta')
-            cv1.addTorsion(*CV1_atoms)
-            CV1_bias = md.openmmobject.openmm_app.BiasVariable(cv1, -np.pi, np.pi, biaswidth_cv1, periodic=periodic_var, gridWidth=None)
-
-        else:
-            print("unsupported CV1_type")
-            ashexit()
         if numCVs == 1:
             # Create metadynamics object for 1 CV
+            CV1_bias = create_CV_bias(CV1_type,CV1_atoms,biaswidth_cv1,md)
             meta_object = md.openmmobject.openmm_app.Metadynamics(system, [CV1_bias], temperature, biasfactor, height, frequency, saveFrequency=savefrequency, biasDir=biasdir)
         elif numCVs == 2:
-            if CV2_type == None:
-                pass
-            elif CV2_type == "dihedral":
-                periodic_var=True
-                cv2 = md.openmmobject.openmm.CustomTorsionForce('theta')
-                cv2.addTorsion(*CV2_atoms)
-                CV2_bias = md.openmmobject.openmm_app.BiasVariable(cv2, -np.pi, np.pi, biaswidth_cv2, periodic=periodic_var, gridWidth=None)
-
-            else:
-                print("unsupported CV2_type")
-                ashexit()
             # Create metadynamics object for 2 CVs
+            CV1_bias = create_CV_bias(CV1_type,CV1_atoms,biaswidth_cv1,md)
+            CV2_bias = create_CV_bias(CV2_type,CV2_atoms,biaswidth_cv2,md)
             meta_object = md.openmmobject.openmm_app.Metadynamics(system, [CV1_bias, CV2_bias], temperature, biasfactor, height, frequency, saveFrequency=savefrequency, biasDir=biasdir)
     else:
-        print("Setting up PLumed")
+        print("Setting up Plumed")
         #Setting native_MTD Boolean to False and metaobject to None
         native_MTD=False
         meta_object=None
@@ -3809,23 +3787,38 @@ def OpenMM_metadynamics(fragment=None, theory=None, timestep=0.004, simulation_s
             #TODO: pi ?
             #Defining inputscript
             #NOTE: SIGMA. Possible unit conversion needed here?
-            strideval=savefrequency #allow different thap ride
-            paceval=savefrequency # allow different than stride?
-            if CV1_type == "dihedral":
-                grid_min1="pi"
-                grid_max1="pi"
-                sigma_cv1=biaswidth_cv1
+            strideval=savefrequency #allow different ?
+            paceval=savefrequency # allow different ?
+
             #1 CVs
             if numCVs == 1:
+                if CV1_type == "dihedral" or CV1_type == "torsion":
+                    cvlabel="TORSION"
+                    grid_min1="pi"; grid_max1="pi"; sigma_cv1=biaswidth_cv1
+                    atom_defsline=str(CV1_atoms[0]+1)+","+str(CV1_atoms[1]+1)+","+str(CV1_atoms[2]+1)+","+str(CV1_atoms[3]+1)
+                elif CV1_type == "angle":
+                    cvlabel="ANGLE"
+                    ashexit()
+                    grid_min1="pi"; grid_max1="pi"; sigma_cv1=biaswidth_cv1
+                    atom_defsline=str(CV1_atoms[0]+1)+","+str(CV1_atoms[1]+1)+","+str(CV1_atoms[2]+1)
+                elif CV1_type == "bond" or CV1_type == "distance":
+                    bond="DISTANCE"
+                    ashexit()
+                    grid_min1="pi"; grid_max1="pi"; sigma_cv1=biaswidth_cv1
+                    atom_defsline=str(CV1_atoms[0]+1)+","+str(CV1_atoms[1]+1)
+                else:
+                    print("Error:Unknown CV1_type option")
+                    ashexit()
+
                 plumedinput = f"""
-        CV1: TORSION ATOMS={CV1_atoms[0]+1},{CV1_atoms[1]+1},{CV1_atoms[2]+1},{CV1_atoms[3]+1} 
+        CV1: {cvlabel} ATOMS={atom_defsline}
 
         metad: METAD ARG=CV1 SIGMA={sigma_cv1} GRID_MIN=-{grid_min1} GRID_MAX={grid_max1} HEIGHT={height} PACE={paceval} TEMP={temperature} BIASFACTOR={biasfactor} FMT=%14.6f
         PRINT STRIDE={strideval} ARG=CV1,metad.bias FILE=COLVAR
                 """
             #2 CVs
             elif numCVs == 2:
-                if CV2_type == "dihedral":
+                if CV2_type == "dihedral" or CV2_type == "torsion":
                     grid_min2="pi"
                     grid_max2="pi"
                     sigma_cv2=biaswidth_cv2
@@ -3871,10 +3864,14 @@ def OpenMM_metadynamics(fragment=None, theory=None, timestep=0.004, simulation_s
         print("len free energy", len(free_energy))
 
         np.savetxt("MTD_free_energy.txt", free_energy)
+        print("Attemping to plot:")
+        try:
+            import matplotlib.pyplot as plot
+            plot.imshow(free_energy)
+            plot.show()
+        except ModuleNotFoundError:
+            print("Matplotlib module not available. Please install first")
 
-        import matplotlib.pyplot as plot
-        plot.imshow(free_energy)
-        plot.show()
     else:
         path_to_plumed=os.path.dirname(os.path.dirname(os.path.dirname(openmmplumed.mm.pluginLoadedLibNames[0])))
         print("You can now call MTD_analyze in a separate ASH script to analyze/plot data (requires presence of HILLS and COLVAR files in directory)")
@@ -3892,7 +3889,6 @@ CV1_indices={CV1_atoms}, CV2_indices={CV2_atoms}, plumed_energy_unit='kj/mol', P
 
 #
 def Gentle_warm_up_MD(theory=None, fragment=None, time_steps=[0.0005,0.001,0.004], steps=[10,50,10000], temperatures=[1,10,300]):
-
     print_line_with_mainheader("Gentle_warm_up_MD")
     if theory is None or fragment is None:
         print("Gentle_warm_up_MD requires theory (OpenMM object) and fragment")
@@ -3918,3 +3914,32 @@ def Gentle_warm_up_MD(theory=None, fragment=None, time_steps=[0.0005,0.001,0.004
 
     return
 
+#Function to create CV biases in native OpenMM metadynamics
+def create_CV_bias(CV_type,CV_atoms,biaswidth_cv, md):
+    # Define collective variables for CV1 and CV2.
+    if CV_type == "dihedral" or CV_type == "torsion":
+        if len(CV_atoms) != 4:
+            print("Error: CV_atoms list must contain 4 atom indices")
+            ashexit()
+        cv = md.openmmobject.openmm.CustomTorsionForce('theta')
+        cv.addTorsion(*CV_atoms)
+        CV_bias = md.openmmobject.openmm_app.BiasVariable(cv, -np.pi, np.pi, biaswidth_cv, periodic=False, gridWidth=None)
+    elif CV_type == "angle":
+        if len(CV_atoms) != 3:
+            print("Error: CV_atoms list must contain 3 atom indices")
+            ashexit()
+        cv = md.openmmobject.openmm.CustomAngleForce('theta')
+        cv.addAngle(*CV_atoms)
+        CV_bias = md.openmmobject.openmm_app.BiasVariable(cv, 0, 180, biaswidth_cv, periodic=False, gridWidth=None)
+    elif CV_type == "distance" or CV_type == "bond":
+        if len(CV_atoms) != 2:
+            print("Error: CV_atoms list must contain 2 atom indices")
+            ashexit()
+        cv = md.openmmobject.openmm.CustomBondForce('r')
+        cv.addBond(*CV_atoms)
+        #NOTE: not sure about distances:
+        CV_bias = md.openmmobject.openmm_app.BiasVariable(cv, 0, 100, biaswidth_cv, periodic=False, gridWidth=None)
+    else:
+        print("unsupported CV_type for native OpenMM metadynamics implementation")
+        ashexit()
+    return CV_bias
