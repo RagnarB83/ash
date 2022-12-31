@@ -50,9 +50,9 @@ def ashexit(errormessage=None, code=1):
 
 def load_pythoncall():
     print("Now trying pythoncall/juliacall package. This will fail if :\n\
-            - Juliacall Python package has not been installed (via pip)\n\
-            - PythonCall julia packages has not been installed (via Julia Pkg)\n\
-            - Julia Hungarian package has not been installed")
+            - Juliacall Python package has not been installed (via pip)\n")
+            #- PythonCall julia packages has not been installed (via Julia Pkg)\n")
+            #- Julia Hungarian package has not been installed")
     from juliacall import Main as JuliaMain
     JuliaMain.include(ashpath + "/functions/functions_julia.jl")
     return JuliaMain
@@ -61,8 +61,8 @@ def load_pyjulia():
     print("Now loading PyJulia. This will fail if :\n\
         - PyJulia Python package has not been installed\n\
         - Julia PyCall package has not been installed\n\
-        - python-jl/python3_ash interpreter not used (necessary for static libpython)\n\
-        - Julia Hungarian package has not been installed")
+        - python-jl/python3_ash interpreter not used (necessary for static libpython)\n")
+        #- Julia Hungarian package has not been installed")
 
     from julia import Main as JuliaMain
     #NOTE: Reading old Pyjulia function file here instead.

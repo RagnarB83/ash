@@ -2293,8 +2293,8 @@ def OpenMM_Modeller(pdbfile=None, forcefield=None, xmlfile=None, waterxmlfile=No
     omm =OpenMMTheory(platform=platform, forcefield=forcefield, topoforce=True,
                         topology=modeller.topology, pdbfile=None, periodic=True,
                         autoconstraints=None, rigidwater=False, printlevel=0)
-    en,gradient = Singlepoint(theory=omm, fragment=fragment, Grad=True)
-    check_gradient_for_bad_atoms(fragment=fragment,gradient=gradient, threshold=45000)
+    SP_result = Singlepoint(theory=omm, fragment=fragment, Grad=True)
+    check_gradient_for_bad_atoms(fragment=fragment,gradient=SP_result.gradient, threshold=45000)
     
     print_time_rel(module_init_time, modulename="OpenMM_Modeller", moduleindex=1)
     

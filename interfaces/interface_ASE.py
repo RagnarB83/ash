@@ -118,7 +118,9 @@ def Dynamics_ASE(fragment=None, PBC=False, theory=None, temperature=300, timeste
             self.fragment.coords=copy.copy(atomsobj.positions)
             #print("Current coordinates:", self.fragment.coords)
             #Calculate E+G
-            energy, gradient = Singlepoint(theory=self.theory, fragment=self.fragment, Grad=True, charge=self.charge, mult=self.mult)
+            result = Singlepoint(theory=self.theory, fragment=self.fragment, Grad=True, charge=self.charge, mult=self.mult)
+            energy = result.energy
+            gradient = result.gradient
             #Converting E and G from Eh and Eh/Bohr to ASE units: eV and eV/Angstrom
             self.potenergy=energy*ash.constants.hartoeV
             print("units.Hartree:", units.Hartree)

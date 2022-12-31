@@ -63,7 +63,8 @@ for tgen in tgen_thresholds:
     end
     """
     ice = ORCATheory(orcasimpleinput=input, orcablocks=blocks, numcores=numcores, label=f'ICE_{tgen}_', save_output_with_label=True)
-    rel_energy_ICE = Singlepoint_reaction(reaction=reaction, theory=ice, unit=reaction_energy_unit)
+    result_ICE = Singlepoint_reaction(reaction=reaction, theory=ice, unit=reaction_energy_unit)
+    rel_energy_ICE = result_ICE.reaction_energy
     num_genCFGs,num_selected_CFGs,num_after_SD_CFGs = ICE_WF_CFG_CI_size(ice.filename+'_last.out')
     #Keeping in dict
     results_ice[tgen] = rel_energy_ICE
@@ -82,8 +83,8 @@ if DoHF is True:
     %maxcore 11000
     """
     hf = ORCATheory(orcasimpleinput=f"! HF {basis} tightscf", orcablocks=hfblocks, numcores=4, label='HF', save_output_with_label=True)
-    relE_HF = Singlepoint_reaction(reaction=reaction, theory=hf, unit=reaction_energy_unit)
-    results_cc['HF'] = relE_HF
+    result_HF = Singlepoint_reaction(reaction=reaction, theory=hf, unit=reaction_energy_unit)
+    results_cc['HF'] = result_HF.reaction_energy
 if DoMP2 is True:
     mp2blocks=f"""
     %maxcore 11000
@@ -93,15 +94,15 @@ if DoMP2 is True:
     oomp2 = ORCATheory(orcasimpleinput=f"! OO-RI-MP2 autoaux {basis} tightscf", orcablocks=mp2blocks, numcores=4, label='OOMP2', save_output_with_label=True)
     scsoomp2 = ORCATheory(orcasimpleinput=f"! OO-RI-SCS-MP2 {basis} autoaux tightscf", orcablocks=mp2blocks, numcores=4, label='OOSCSMP2', save_output_with_label=True)
 
-    relE_MP2 = Singlepoint_reaction(reaction=reaction, theory=mp2, unit=reaction_energy_unit)
-    relE_SCSMP2 = Singlepoint_reaction(reaction=reaction, theory=scsmp2, unit=reaction_energy_unit)
-    relE_OOMP2 = Singlepoint_reaction(reaction=reaction, theory=oomp2, unit=reaction_energy_unit)
-    relE_SCSOOMP2 = Singlepoint_reaction(reaction=reaction, theory=scsoomp2, unit=reaction_energy_unit)
+    result_MP2 = Singlepoint_reaction(reaction=reaction, theory=mp2, unit=reaction_energy_unit)
+    result_SCSMP2 = Singlepoint_reaction(reaction=reaction, theory=scsmp2, unit=reaction_energy_unit)
+    result_OOMP2 = Singlepoint_reaction(reaction=reaction, theory=oomp2, unit=reaction_energy_unit)
+    result_SCSOOMP2 = Singlepoint_reaction(reaction=reaction, theory=scsoomp2, unit=reaction_energy_unit)
 
-    results_cc['MP2'] = relE_MP2
-    results_cc['SCS-MP2'] = relE_SCSMP2
-    results_cc['OO-MP2'] = relE_OOMP2
-    results_cc['OO-SCS-MP2'] = relE_SCSOOMP2
+    results_cc['MP2'] = result_MP2.reaction_energy
+    results_cc['SCS-MP2'] = result_SCSMP2.reaction_energy
+    results_cc['OO-MP2'] = result_OOMP2.reaction_energy
+    results_cc['OO-SCS-MP2'] = result_SCSOOMP2.reaction_energy
 
 if DoCC is True:
     ccblocks=f"""
@@ -132,29 +133,29 @@ if DoCC is True:
     #CCSD(T) extrapolated to FCI
     ccsdt_fci_extrap = ORCA_CC_CBS_Theory(elements=reaction.fragments[0].elems, cardinals = [2], basisfamily="cc", numcores=1, FCI=True)
 
-    relE_CCSD = Singlepoint_reaction(reaction=reaction, theory=ccsd, unit=reaction_energy_unit)
-    relE_OOCCD = Singlepoint_reaction(reaction=reaction, theory=ooccd, unit=reaction_energy_unit)
-    relE_BCCD = Singlepoint_reaction(reaction=reaction, theory=bccd, unit=reaction_energy_unit)
-    relE_pCCSD1a = Singlepoint_reaction(reaction=reaction, theory=pccsd_1a, unit=reaction_energy_unit)
-    relE_pCCSD2a = Singlepoint_reaction(reaction=reaction, theory=pccsd_2a, unit=reaction_energy_unit)
-    relE_CCSDT = Singlepoint_reaction(reaction=reaction, theory=ccsdt, unit=reaction_energy_unit)
-    relE_CCSDT_QRO = Singlepoint_reaction(reaction=reaction, theory=ccsdt_qro, unit=reaction_energy_unit)
-    relE_OOCCDT = Singlepoint_reaction(reaction=reaction, theory=ooccdt, unit=reaction_energy_unit)
-    relE_BCCDT = Singlepoint_reaction(reaction=reaction, theory=bccdt, unit=reaction_energy_unit)
-    relE_CCSDT_BP = Singlepoint_reaction(reaction=reaction, theory=ccsdt_bp, unit=reaction_energy_unit)
-    relE_CCSDT_FCI_extrap = Singlepoint_reaction(reaction=reaction, theory=ccsdt_fci_extrap, unit=reaction_energy_unit)
+    result_CCSD = Singlepoint_reaction(reaction=reaction, theory=ccsd, unit=reaction_energy_unit)
+    result_OOCCD = Singlepoint_reaction(reaction=reaction, theory=ooccd, unit=reaction_energy_unit)
+    result_BCCD = Singlepoint_reaction(reaction=reaction, theory=bccd, unit=reaction_energy_unit)
+    result_pCCSD1a = Singlepoint_reaction(reaction=reaction, theory=pccsd_1a, unit=reaction_energy_unit)
+    result_pCCSD2a = Singlepoint_reaction(reaction=reaction, theory=pccsd_2a, unit=reaction_energy_unit)
+    result_CCSDT = Singlepoint_reaction(reaction=reaction, theory=ccsdt, unit=reaction_energy_unit)
+    result_CCSDT_QRO = Singlepoint_reaction(reaction=reaction, theory=ccsdt_qro, unit=reaction_energy_unit)
+    result_OOCCDT = Singlepoint_reaction(reaction=reaction, theory=ooccdt, unit=reaction_energy_unit)
+    result_BCCDT = Singlepoint_reaction(reaction=reaction, theory=bccdt, unit=reaction_energy_unit)
+    result_CCSDT_BP = Singlepoint_reaction(reaction=reaction, theory=ccsdt_bp, unit=reaction_energy_unit)
+    result_CCSDT_FCI_extrap = Singlepoint_reaction(reaction=reaction, theory=ccsdt_fci_extrap, unit=reaction_energy_unit)
 
-    results_cc['CCSD'] = relE_CCSD
-    results_cc['BCCD'] = relE_BCCD
-    results_cc['OOCCD'] = relE_OOCCD
-    results_cc['pCCSD/1a'] = relE_pCCSD1a
-    results_cc['pCCSD/2a'] = relE_pCCSD2a
-    results_cc['CCSD(T)'] = relE_CCSDT
-    results_cc['CCSD(T)-QRO'] = relE_CCSDT_QRO
-    results_cc['OOCCD(T)'] = relE_OOCCDT
-    results_cc['BCCD(T)'] = relE_BCCDT
-    results_cc['CCSD(T)-BP'] = relE_CCSDT_BP
-    results_cc['CCSD(T)-FCI-extrap'] = relE_CCSDT_FCI_extrap
+    results_cc['CCSD'] = result_CCSD.reaction_energy
+    results_cc['BCCD'] = result_BCCD.reaction_energy
+    results_cc['OOCCD'] = result_OOCCD.reaction_energy
+    results_cc['pCCSD/1a'] = result_pCCSD1a.reaction_energy
+    results_cc['pCCSD/2a'] = result_pCCSD2a.reaction_energy
+    results_cc['CCSD(T)'] = result_CCSDT.reaction_energy
+    results_cc['CCSD(T)-QRO'] = result_CCSDT_QRO.reaction_energy
+    results_cc['OOCCD(T)'] = result_OOCCDT.reaction_energy
+    results_cc['BCCD(T)'] = result_BCCDT.reaction_energy
+    results_cc['CCSD(T)-BP'] = result_CCSDT_BP.reaction_energy
+    results_cc['CCSD(T)-FCI-extrap'] = result_CCSDT_FCI_extrap.reaction_energy
 
 ##########################################
 #Printing final results

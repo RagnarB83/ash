@@ -23,6 +23,7 @@ from ash.modules.module_coords import check_charge_mult
 from ash.modules.module_freq import thermochemcalc
 
 #Simple class to keep track of results. To be extended
+#Deprecated?. Use ASH_Results instead?
 class ProjectResults():
     def __init__(self,name=None):
         self.name=name
@@ -96,8 +97,8 @@ def confsampler_protocol(fragment=None, crestdir=None, xtbmethod='GFN2-xTB', MLt
     for index,conformer in enumerate(list_conformer_frags):
         print("")
         print("Performing High-level calculation for ML-optimized Conformer ", index)
-        HLenergy = ash.Singlepoint(theory=HLtheory, fragment=conformer, charge=charge, mult=mult)
-
+        HLresult = ash.Singlepoint(theory=HLtheory, fragment=conformer, charge=charge, mult=mult)
+        HLenergy = HLresult.energy
         HL_energies.append(HLenergy)
 
 
@@ -164,9 +165,11 @@ def thermochemprotocol_single(fragment=None, Opt_theory=None, SP_theory=None, nu
 
             #DFT-FREQ
             if analyticHessian == True:
-                thermochem = ash.AnFreq(fragment=fragment, theory=Opt_theory, numcores=numcores, charge=charge, mult=mult)                
+                freq_result = ash.AnFreq(fragment=fragment, theory=Opt_theory, numcores=numcores, charge=charge, mult=mult)
+                thermochem = freq_result.thermochemistry              
             else:
-                thermochem = ash.NumFreq(fragment=fragment, theory=Opt_theory, npoint=2, runmode='serial', charge=charge, mult=mult)
+                freq_result = ash.NumFreq(fragment=fragment, theory=Opt_theory, npoint=2, runmode='serial', charge=charge, mult=mult)
+                thermochem = freq_result.thermochemistry     
         else:
             print("Opt_theory is set to None. Skipping optimization and frequency calculation.\n")
             #If Opt_theory == None => No Opt, no freq
@@ -179,7 +182,8 @@ def thermochemprotocol_single(fragment=None, Opt_theory=None, SP_theory=None, nu
     print("THERMOCHEM PROTOCOL-single: Step 3. High-level single-point calculation")
     print("-------------------------------------------------------------------------")
 
-    FinalE = ash.Singlepoint(fragment=fragment, theory=SP_theory, charge=charge, mult=mult)
+    result_step3 = ash.Singlepoint(fragment=fragment, theory=SP_theory, charge=charge, mult=mult)
+    FinalE = result_step3.energy
     #Get energy components
     if isinstance(SP_theory,ORCA_CC_CBS_Theory):
         componentsdict=SP_theory.energy_components
@@ -586,12 +590,14 @@ def calc_xyzfiles(xyzdir=None, theory=None, HL_theory=None, Opt=False, Freq=Fals
                 theory.cleanup()
             if Highlevel is True:
                 print("Performing Highlevel on Optimized fragment.")
-                hlenergy = ash.Singlepoint(theory=HL_theory, fragment=fragment, charge=fragment.charge, mult=fragment.mult)
+                hl_result = ash.Singlepoint(theory=HL_theory, fragment=fragment, charge=fragment.charge, mult=fragment.mult)
+                hlenergy = hl_result.energy
                 energy=hlenergy
                 hlenergies.append(hlenergy)
                 HL_theory.cleanup()
         else:
-            energy = ash.Singlepoint(theory=theory, fragment=fragment, charge=fragment.charge, mult=fragment.mult)
+            result_reg = ash.Singlepoint(theory=theory, fragment=fragment, charge=fragment.charge, mult=fragment.mult)
+            energy = result_reg.energy
             theory.cleanup()
         
         energies.append(energy)
@@ -681,7 +687,8 @@ def Reaction_Highlevel_Analysis(reaction=None, numcores=1, memory=7000, plot=Tru
             #Define theory level
             cc = ORCA_CC_CBS_Theory(elements=elements_involved, cardinals = [cardinal], basisfamily="def2", DLPNO=DLPNO, numcores=numcores, memory=memory)
             #Single-point calcs on all fragments
-            energies=ash.Singlepoint_fragments(fragments=specieslist, theory=cc)
+            result_def2_basis=ash.Singlepoint_fragments(fragments=specieslist, theory=cc)
+            energies = result_def2_basis.energies
             for species,e in zip(specieslist,energies):
                 CCSDT_def2_bases_proj.species_energies_dict[species.label].append(e)
 
@@ -724,7 +731,8 @@ def Reaction_Highlevel_Analysis(reaction=None, numcores=1, memory=7000, plot=Tru
             #Define theory level
             cc = ORCA_CC_CBS_Theory(elements=elements_involved, cardinals = [cardinal], basisfamily="cc", DLPNO=DLPNO, numcores=numcores, memory=memory)
             #Single-point calcs on all fragments
-            energies=ash.Singlepoint_fragments(fragments=specieslist, theory=cc)
+            result_cc_basis=ash.Singlepoint_fragments(fragments=specieslist, theory=cc)
+            energies = result_cc_basis.energies
             for species,e in zip(specieslist,energies):
                 CCSDT_cc_bases_proj.species_energies_dict[species.label].append(e)
 
@@ -767,7 +775,8 @@ def Reaction_Highlevel_Analysis(reaction=None, numcores=1, memory=7000, plot=Tru
             #Define theory level
             cc = ORCA_CC_CBS_Theory(elements=elements_involved, cardinals = [cardinal], basisfamily="aug-cc", DLPNO=DLPNO, numcores=numcores, memory=memory)
             #Single-point calcs on all fragments
-            energies=ash.Singlepoint_fragments(fragments=specieslist, theory=cc)
+            result_augcc_basis=ash.Singlepoint_fragments(fragments=specieslist, theory=cc)
+            energies = result_cc_basis.energies
             for species,e in zip(specieslist,energies):
                 CCSDT_aug_cc_bases_proj.species_energies_dict[species.label].append(e)
 
@@ -813,7 +822,8 @@ def Reaction_Highlevel_Analysis(reaction=None, numcores=1, memory=7000, plot=Tru
             #Define theory level
             cc = ORCA_CC_CBS_Theory(elements=elements_involved, cardinals = [cardinal], basisfamily="cc-f12", F12=True, DLPNO=DLPNO, numcores=numcores, memory=memory)
             #Single-point calcs on all fragments
-            energies=ash.Singlepoint_fragments(fragments=specieslist, theory=cc)
+            result_f12 = ash.Singlepoint_fragments(fragments=specieslist, theory=cc)
+            energies = result_f12.energies
             for species,e in zip(specieslist,energies):
                 CCSDTF12_bases_proj.species_energies_dict[species.label].append(e)
 
@@ -862,7 +872,8 @@ def Reaction_Highlevel_Analysis(reaction=None, numcores=1, memory=7000, plot=Tru
             #Define theory level
             cc = ORCA_CC_CBS_Theory(elements=elements_involved, cardinals = cardinals, basisfamily="cc", DLPNO=DLPNO, numcores=numcores, memory=memory)
             #Single-point calcs on all fragments
-            energies=ash.Singlepoint_fragments(fragments=specieslist, theory=cc)
+            result_cc_extrap = ash.Singlepoint_fragments(fragments=specieslist, theory=cc)
+            energies = result_cc_extrap.energies
             for species,e in zip(specieslist,energies):
                 CCSDTextrap_proj.species_energies_dict[species.label].append(e)
 
@@ -913,7 +924,8 @@ def Reaction_Highlevel_Analysis(reaction=None, numcores=1, memory=7000, plot=Tru
                 #Define theory level
                 cc = ORCA_CC_CBS_Theory(elements=elements_involved, cardinals = cardinals, basisfamily="aug-cc", DLPNO=DLPNO, numcores=numcores, memory=memory)
                 #Single-point calcs on all fragments
-                energies=ash.Singlepoint_fragments(fragments=specieslist, theory=cc)
+                result_augcc_extrap = ash.Singlepoint_fragments(fragments=specieslist, theory=cc)
+                energies = result_augcc_extrap.energies
                 for species,e in zip(specieslist,energies):
                     CCSDTextrapaugcc_proj.species_energies_dict[species.label].append(e)
 
@@ -960,7 +972,8 @@ def Reaction_Highlevel_Analysis(reaction=None, numcores=1, memory=7000, plot=Tru
             #Define theory level
             cc = ORCA_CC_CBS_Theory(elements=elements_involved, cardinals = cardinals, basisfamily="def2", DLPNO=DLPNO, numcores=numcores, memory=memory)
             #Single-point calcs on all fragments
-            energies=ash.Singlepoint_fragments(fragments=specieslist, theory=cc)
+            result_def2_extrap = ash.Singlepoint_fragments(fragments=specieslist, theory=cc)
+            energies = result_def2_extrap.energies
             for species,e in zip(specieslist,energies):
                 CCSDTextrapdef2_proj.species_energies_dict[species.label].append(e)
 
@@ -1195,8 +1208,8 @@ def AutoNonAufbau(fragment=None, theory=None, num_occ_orbs=1, num_virt_orbs=3, s
     #If stability_analysis_GS is True then do on GroundState
     if stability_analysis_GS == True:
         theory.orcablocks=theory.orcablocks+"%scf stabperform true end"
-    E_GS=ash.Singlepoint(fragment=fragment, theory=theory)
-
+    result_GS = ash.Singlepoint(fragment=fragment, theory=theory)
+    E_GS = result_GS.energy
     #Keep copy of GS file
     GS_GBW=theory.filename+'_GS.gbw'
     shutil.copy(theory.filename+'.gbw', GS_GBW)
@@ -1409,7 +1422,8 @@ def AutoNonAufbau(fragment=None, theory=None, num_occ_orbs=1, num_virt_orbs=3, s
         #Now new SP with previous orbitals, SCF rotation and levelshift
         theory.moreadfile=GS_GBW
         print("Now doing SCF calculation with rotated MOs and levelshift")
-        E_ES=ash.Singlepoint(fragment=fragment, theory=theory, charge=cfg.charge, mult=cfg.mult)
+        result_ES = ash.Singlepoint(fragment=fragment, theory=theory, charge=cfg.charge, mult=cfg.mult)
+        E_ES = result_ES.energy
         print("GS/ES state energy gap: {:3.2f} eV".format((E_ES-E_GS)*27.211399))
         if abs((E_ES-E_GS)*27.211399) > 0.04:
             print("Found something different than ground state")
@@ -1499,9 +1513,9 @@ def ExcitedStateSCFOptimizer(theory=None, fragment=None, autononaufbaudict=None,
         """.format(maxiter, lshift )
     print("Will now run optimization on excited state no:", state)
 
-    optenergy = ash.geomeTRICOptimizer(theory=theory, fragment=fragment, charge=charge, mult=mult)
-
+    result_opt = ash.geomeTRICOptimizer(theory=theory, fragment=fragment, charge=charge, mult=mult)
+    optenergy = result_opt.energy
     #Excited state frequencies
     if Freq:
         print("Freq true. Doing excited state numerical frequencies")
-        thermochem = ash.NumFreq(fragment=fragment, theory=theory, npoint=2, runmode='serial', charge=charge, mult=mult)
+        result_freq = ash.NumFreq(fragment=fragment, theory=theory, npoint=2, runmode='serial', charge=charge, mult=mult)

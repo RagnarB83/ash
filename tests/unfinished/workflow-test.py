@@ -27,8 +27,8 @@ for functional in functionals:
     ORCAcalc = ORCATheory(orcadir=orcadir, orcasimpleinput=input, orcablocks=blocks, numcores=1, charge=0, mult=1)
     ORCAcalc.cleanup()
     # Run single-point job
-    energy = Singlepoint(theory=ORCAcalc, fragment=h2)
-    energies_dict[functional] = energy    
+    result = Singlepoint(theory=ORCAcalc, fragment=h2)
+    energies_dict[functional] = result.energy    
 
     #Cleaning up after each job
     ORCAcalc.cleanup()

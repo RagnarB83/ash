@@ -7,6 +7,8 @@ import time
 #import ash
 from ash.functions.functions_general import ashexit, BC,blankline,print_line_with_mainheader,print_line_with_subheader1
 from ash.modules.module_coords import check_charge_mult
+from ash.modules.module_results import ASH_Results
+
 #Various calculation-functions run in parallel
 
 
@@ -304,20 +306,29 @@ def Singlepoint_parallel(fragments=None, fragmentfiles=None, theories=None, numc
     #This prevents hanging for ApplyResult.get() if Pool did not finish correctly
     energy_dict={}
 
+    result = ASH_Results(label="Singlepoint_parallel", energies=[], gradients=[])
     if Grad == True:
         gradient_dict={}
         for i,r in enumerate(results):
             if r.ready() == True:
                 energy_dict[r.get()[0]] = r.get()[1]
                 gradient_dict[r.get()[0]] = r.get()[2]
-        return energy_dict,gradient_dict
+                result.energies.append(r.get()[1])
+                result.gradients.append(r.get()[2])
+        #return energy_dict,gradient_dict
+        result.gradients_dict = gradient_dict
     else:
         for i,r in enumerate(results):
             #print("Result {} ready: {}".format(i, r.ready()))
             if r.ready() == True:
                 energy_dict[r.get()[0]] = r.get()[1]
-        return energy_dict
+                result.energies.append(r.get()[1])
+        #return energy_dict
 
+    #Adding dictionary also
+    result.energies_dict = energy_dict
+
+    return result
 
 
 #Functions to run each displacement in parallel NumFreq run.

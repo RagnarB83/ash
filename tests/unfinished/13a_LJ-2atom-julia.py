@@ -23,12 +23,16 @@ for atomtype,property in MM_forcefield.items():
 #PointchargeMMtheory = Theory( atom_types=atomtypes force_field=MMdefinition)
 MyMMtheory = NonBondedTheory(charges = atomcharges, atomtypes=atomtypes, forcefield=MM_forcefield, LJcombrule='mixed_geoepsilon', codeversion='py')
 timestampA=time.time()
-epy,gradpy = Singlepoint(theory=MyMMtheory,fragment=waterfrag)
+result_py = Singlepoint(theory=MyMMtheory,fragment=waterfrag)
+epy = result_py.energy
+gradpy = result_py.gradient
 print_time_rel(timestampA,modulename='py')
 
 timestampA=time.time()
 MyMMtheory = NonBondedTheory(charges = atomcharges, atomtypes=atomtypes, forcefield=MM_forcefield, LJcombrule='mixed_geoepsilon', codeversion='julia')
-ejulia,gradjulia = Singlepoint(theory=MyMMtheory,fragment=waterfrag)
+result_jul = Singlepoint(theory=MyMMtheory,fragment=waterfrag)
+ejulia = result_jul.energy
+gradjulia = result_jul.gradient
 print_time_rel(timestampA,modulename='julia')
 
 print("")

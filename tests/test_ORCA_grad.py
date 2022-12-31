@@ -28,6 +28,12 @@ def test_ORCA_SP():
     threshold=1e-9
     assert abs(result.energy-ref) < threshold, "Energy-error above threshold"
 
+    #Singlepoint gradient
+    result2 = Singlepoint(theory=ORCASPcalculation, fragment=HF_frag, Grad=True)
+
+    print("Gradient:", result2.gradient)
+    assert abs(result2.energy-ref) < threshold, "Energy-error above threshold"
+
 def test_ORCA_SP2():
     """
     Simple Singlepoint ORCA calculation with charge/mult in Singlepoint function

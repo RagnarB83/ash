@@ -19,7 +19,8 @@ openmmobject = OpenMMTheory(psffile=psffile, CHARMMfiles=True, charmmtopfile=top
     PMEparameters=[1.0/0.34, 90, 90, 90], use_parmed=True)
 
 
-energy = Singlepoint(theory=openmmobject, fragment=frag)
+result = Singlepoint(theory=openmmobject, fragment=frag)
+energy = result.energy
 print("openmmobject.energy_components:", openmmobject.energy_components)
 
 

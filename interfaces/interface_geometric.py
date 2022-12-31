@@ -10,6 +10,7 @@ from ash.modules.module_coords import print_coords_for_atoms,print_internal_coor
 from ash.functions.functions_general import ashexit, blankline,BC,print_time_rel,print_line_with_mainheader
 from ash.modules.module_coords import check_charge_mult
 from ash.modules.module_freq import write_hessian,calc_hessian_xtb, approximate_full_Hessian_from_smaller
+from ash.modules.module_results import ASH_Results
 
 ################################################
 # Interface to geomeTRIC Optimization Library
@@ -31,9 +32,11 @@ def geomeTRICOptimizer(theory=None, fragment=None, charge=None, mult=None, coord
                          ActiveRegion=ActiveRegion, actatoms=actatoms, TSOpt=TSOpt, hessian=hessian, partial_hessian_atoms=partial_hessian_atoms,
                         convergence_setting=convergence_setting, conv_criteria=conv_criteria, modelhessian=modelhessian,
                         print_atoms_list=print_atoms_list, subfrctor=subfrctor, MM_PDB_traj_write=MM_PDB_traj_write)
-    finalenergy = optimizer.run()
+    result = optimizer.run()
     print_time_rel(timeA, modulename='geomeTRIC', moduleindex=1)
-    return finalenergy
+
+    return result
+    #return finalenergy
 
 
 # Class for optimization. Used to be standalone function. Made into class for potential more flexibility: micro-iterative QM/MM Opt, TruncPC QM/MM Opt, Excited-state optimizer etc.
@@ -72,8 +75,8 @@ class GeomeTRICOptimizerClass:
             if fragment.numatoms == 1:
                 print("System has 1 atoms.")
                 print("Doing single-point energy calculation instead")
-                energy = ash.Singlepoint(fragment=fragment, theory=theory, charge=self.charge, mult=self.mult)
-                return energy
+                result = ash.Singlepoint(fragment=fragment, theory=theory, charge=self.charge, mult=self.mult)
+                return result.energy
 
             ###############################
             #Going through options
@@ -95,13 +98,13 @@ class GeomeTRICOptimizerClass:
             #NumFreq 1 and 2-point Hessians
             elif hessian == "1point":
                 print("Requested Hessian from Numfreq 1-point approximation (running in serial)")
-                freqdict = ash.NumFreq(theory=theory, fragment=fragment, printlevel=0, npoint=1, runmode='serial', numcores=theory.numcores)
+                result_freq = ash.NumFreq(theory=theory, fragment=fragment, printlevel=0, npoint=1, runmode='serial', numcores=theory.numcores)
                 hessianfile="Hessian_from_theory"
                 shutil.copyfile("Numfreq_dir/Hessian",hessianfile)
                 self.hessian='file:'+str(hessianfile)
             elif hessian == "2point":
                 print("Requested Hessian from Numfreq 2-point approximation (running in serial)")
-                freqdict = ash.NumFreq(theory=theory, fragment=fragment, printlevel=0, npoint=2, runmode='serial', numcores=theory.numcores)
+                result_freq = ash.NumFreq(theory=theory, fragment=fragment, printlevel=0, npoint=2, runmode='serial', numcores=theory.numcores)
                 hessianfile="Hessian_from_theory"
                 shutil.copyfile("Numfreq_dir/Hessian",hessianfile)
                 self.hessian='file:'+str(hessianfile)
@@ -114,12 +117,11 @@ class GeomeTRICOptimizerClass:
                 #
                 print("Now doing partial Hessian calculation using atoms:", partial_hessian_atoms)
                 #Note: hardcoding runmode='serial' for now
-                freqdict = ash.NumFreq(theory=theory, fragment=fragment, printlevel=0, npoint=1, hessatoms=partial_hessian_atoms, runmode='serial', numcores=1)
-
+                result_freq = ash.NumFreq(theory=theory, fragment=fragment, printlevel=0, npoint=1, hessatoms=partial_hessian_atoms, runmode='serial', numcores=1)
                 #Combine partial exact Hessian with model Hessian(Almloef, Lindh, Schlegel or unit)
                 #Large Hessian is the actatoms Hessian if actatoms provided
                 
-                combined_hessian = approximate_full_Hessian_from_smaller(fragment,freqdict["hessian"], partial_hessian_atoms, large_atomindices=actatoms, restHessian=modelhessian)
+                combined_hessian = approximate_full_Hessian_from_smaller(fragment,result_freq.hessian, partial_hessian_atoms, large_atomindices=actatoms, restHessian=modelhessian)
 
                 #Write combined Hessian to disk
                 hessianfile="Hessian_from_partial"
@@ -424,8 +426,11 @@ class GeomeTRICOptimizerClass:
             blankline()
             #Now returning final energy
             #TODO: Return dictionary of energy, gradient, coordinates etc, coordinates along trajectory ??
-            
-            return self.finalenergy
+
+            result = ASH_Results(label="Optimizer", energy=self.finalenergy, initial_geometry=None, 
+                    geometry=self.fragment.coords)
+            return result
+            #return self.finalenergy
 
 class geomeTRICArgsObject:
     def __init__(self,eng,constraintsfile, coordsys, maxiter, conv_criteria, transition,hessian,subfrctor):

@@ -21,6 +21,7 @@ print(fragmentfiles)
 
 #xtbcalc=xTBTheory(charge=0,mult=1, xtbmethod='GFN2-xTB', numcores=1)
 orcacalc=ORCATheory(charge=0,mult=1, orcasimpleinput="! HF def2-SVP")
-energydict = Singlepoint_parallel(theories=[orcacalc], fragmentfiles=fragmentfiles, numcores=numcores)
+result = Singlepoint_parallel(theories=[orcacalc], fragmentfiles=fragmentfiles, numcores=numcores)
 
-print("Final energydict:", energydict)
+print("Results object:", result)
+print("Final energydict:", result.energies_dict)

@@ -329,8 +329,8 @@ def run_benchmark(set=None, theory=None, numcores=None, reuseorbs=False, correct
             if property == 'EFG':
                 Proptype='EFG'
                 theory.propertyblock="\n%eprnmr\nnuclei = {} {{ fgrad }} \nend\n".format(system.atomindex+1)
-                energy = ash.Singlepoint(fragment=frag, theory=theory, charge=charge, mult=mult)
-
+                result = ash.Singlepoint(fragment=frag, theory=theory, charge=charge, mult=mult)
+                energy = result.energy
                 efg =grab_EFG_from_ORCA_output(theory.filename+'.out')
                 print("efg:", efg)
                 propertyvalue=max(efg, key=abs)
@@ -340,8 +340,8 @@ def run_benchmark(set=None, theory=None, numcores=None, reuseorbs=False, correct
                 Proptype='Mossbauer'
                 theory.propertyblock="\n%eprnmr\nnuclei = all Fe {rho,fgrad}\n"
                 
-                energy = ash.Singlepoint(fragment=frag, theory=theory, charge=charge, mult=mult)
-
+                result = ash.Singlepoint(fragment=frag, theory=theory, charge=charge, mult=mult)
+                energy = result.energy
                 #grab_Mossbauer_from_ORCA_output(theory.filename)
 
             elif property == 'NMR':
@@ -349,8 +349,8 @@ def run_benchmark(set=None, theory=None, numcores=None, reuseorbs=False, correct
                 Proptype='NMR'
                 theory.propertyblock="\n%eprnmr\nnuclei = all {} {fgrad}\n".format(property_element)
 
-                energy = ash.Singlepoint(fragment=frag, theory=theory, charge=charge, mult=mult)
-
+                result = ash.Singlepoint(fragment=frag, theory=theory, charge=charge, mult=mult)
+                energy = result.energy
                 #grab_NMRshielding_from_ORCA_output(theory.filename)
             else:
                 print("Unrecognized property")
@@ -413,8 +413,8 @@ def run_benchmark(set=None, theory=None, numcores=None, reuseorbs=False, correct
                     #Reducing numcores if few electrons, otherwise original value
                     theory.numcores = check_cores_vs_electrons(frag.elems,numcores,charge)
                     
-                    energy = ash.Singlepoint(fragment=frag, theory=theory, charge=charge, mult=mult)
-                    
+                    result = ash.Singlepoint(fragment=frag, theory=theory, charge=charge, mult=mult)
+                    energy = result.energy
                     all_calc_energies[file] = energy
                     reaction.totalenergies.append(energy)
 

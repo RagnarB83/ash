@@ -15,7 +15,8 @@ openmmobject = OpenMMTheory(Amberfiles=True, amberprmtopfile=prmtopfile,
     periodic=True, do_energy_decomposition=True,
     applyconstraints=False, dispersion_correction=True, periodic_nonbonded_cutoff=10)
 
-energy = Singlepoint(theory=openmmobject, fragment=frag)
+result = Singlepoint(theory=openmmobject, fragment=frag)
+energy = result.energy
 print("openmmobject.energy_components:", openmmobject.energy_components)
 
 

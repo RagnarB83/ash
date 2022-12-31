@@ -10,12 +10,13 @@ import time
 import ash
 from ash.functions.functions_general import ashexit, BC,print_time_rel,print_line_with_mainheader
 from ash.modules.module_coords import check_charge_mult
+from ash.modules.module_results import ASH_Results
 #from ash.modules.module_highlevel_workflows import ORCA_CC_CBS_Theory
 
 #Single-point energy function
 def Singlepoint_gradient(fragment=None, theory=None, charge=None, mult=None):
-    energy, gradient = Singlepoint(fragment=fragment, theory=theory, Grad=True, charge=charge, mult=mult)
-    return energy, gradient
+    result = Singlepoint(fragment=fragment, theory=theory, Grad=True, charge=charge, mult=mult)
+    return result
 
 #Single-point energy function
 def Singlepoint(fragment=None, theory=None, Grad=False, charge=None, mult=None):
@@ -53,7 +54,8 @@ def Singlepoint(fragment=None, theory=None, Grad=False, charge=None, mult=None):
         energy,gradient= theory.run(current_coords=coords, elems=elems, Grad=True, charge=charge, mult=mult)
         print("Energy: ", energy)
         print_time_rel(module_init_time, modulename='Singlepoint', moduleindex=1)
-        return energy,gradient
+        result = ASH_Results(label="Singlepoint", energy=energy, gradient=gradient, charge=charge, mult=mult)
+        return result
     # Run a single-point energy job without gradient (default)
     else:
         print()
@@ -71,7 +73,8 @@ def Singlepoint(fragment=None, theory=None, Grad=False, charge=None, mult=None):
         #Now adding total energy to fragment
         fragment.set_energy(energy)
         print_time_rel(module_init_time, modulename='Singlepoint', moduleindex=1)
-        return energy
+        result = ASH_Results(label="Singlepoint", energy=energy, charge=charge, mult=mult)
+        return result
 
 
 
@@ -90,15 +93,16 @@ def Singlepoint_theories(theories=None, fragment=None, charge=None, mult=None):
         charge,mult = check_charge_mult(charge, mult, theory.theorytype, fragment, "Singlepoint_theories", theory=theory)
 
         #Running single-point. 
-        energy = Singlepoint(theory=theory, fragment=fragment, charge=charge, mult=mult)
+        result = Singlepoint(theory=theory, fragment=fragment, charge=charge, mult=mult)
         
-        print("Theory Label: {} Energy: {} Eh".format(theory.label, energy))
+        print("Theory Label: {} Energy: {} Eh".format(theory.label, result.energy))
         theory.cleanup()
-        energies.append(energy)
+        energies.append(result.energy)
 
     #Printing final table
     print_theories_table(theories,energies,fragment)
-    return energies
+    result = ASH_Results(label="Singlepoint_theories", energies=energies, charge=charge, mult=mult)
+    return result
 
 #Pretty table of fragments and theories
 def print_theories_table(theories,energies,fragment):
@@ -150,23 +154,26 @@ def Singlepoint_fragments(theory=None, fragments=None, stoichiometry=None):
         charge=frag.charge; mult=frag.mult
         
         #Running single-point
-        energy = Singlepoint(theory=theory, fragment=frag, charge=charge, mult=mult)
+        result = Singlepoint(theory=theory, fragment=frag, charge=charge, mult=mult)
         
-        print("Fragment {} . Label: {} Energy: {} Eh".format(frag.formula, frag.label, energy))
+        print("Fragment {} . Label: {} Energy: {} Eh".format(frag.formula, frag.label, result.energy))
         theory.cleanup()
-        energies.append(energy)
+        energies.append(result.energy)
         #Adding energy as the fragment attribute
-        frag.set_energy(energy)
+        frag.set_energy(result.energy)
         print("")
 
     #Print table
     print_fragments_table(fragments,energies)
-    
+
+    result = ASH_Results(label="Singlepoint_fragments", energies=energies, charge=charge, mult=mult)    
     #Printing reaction energy if stoichiometry was provided
     if stoichiometry != None:
         print("Stoichiometry provided:", stoichiometry)
-        ReactionEnergy(list_of_energies=energies, stoichiometry=stoichiometry, list_of_fragments=fragments, unit='kcal/mol', label='ΔE')
-    return energies
+        r = ReactionEnergy(list_of_energies=energies, stoichiometry=stoichiometry, list_of_fragments=fragments, unit='kcal/mol', label='ΔE')
+        result.reaction_energy = r[0]
+
+    return result
 
 
 #Single-point energy function that runs calculations on multiple fragments. Returns a list of energies.
@@ -203,19 +210,21 @@ def Singlepoint_fragments_and_theories(theories=None, fragments=None, stoichiome
             print("_"*60)
     print("\nFinal list of list of total energies:", all_energies)
 
+    result = ASH_Results(label="Singlepoint_fragments_and_theories", energies=all_energies)
     if stoichiometry != None:
         print("Final reaction energies:")
         for elist,t in zip(all_energies,theories):
-            ReactionEnergy(list_of_energies=elist, stoichiometry=stoichiometry, list_of_fragments=fragments, unit='kcal/mol', label='{}'.format(t.label))
+            r = ReactionEnergy(list_of_energies=elist, stoichiometry=stoichiometry, list_of_fragments=fragments, unit='kcal/mol', label='{}'.format(t.label))
+            result.reaction_energies.append(r[0])
     print()
-    return all_energies
+    #return all_energies
+    return result
 
 
 #Single-point energy function that runs calculations on an ASH reaction object
 #Assuming fragments have charge,mult info defined.
 def Singlepoint_reaction(theory=None, reaction=None, unit=None, orbitals_stored=None):
     print_line_with_mainheader("Singlepoint_reaction function")
-
     print("Will run single-point calculation on each fragment defined in reaction and return the reaction energy")
     print("Theory:", theory.__class__.__name__)
     print("Resetting energies in reaction object")
@@ -232,7 +241,8 @@ def Singlepoint_reaction(theory=None, reaction=None, unit=None, orbitals_stored=
         except:
             pass
         #Running single-point
-        energy = Singlepoint(theory=theory, fragment=frag, charge=frag.charge, mult=frag.mult)
+        result = Singlepoint(theory=theory, fragment=frag, charge=frag.charge, mult=frag.mult)
+        energy = result.energy
         print("Fragment {} . Label: {} Energy: {} Eh".format(frag.formula, frag.label, energy))
         theory.cleanup()
         reaction.energies.append(energy)
@@ -265,6 +275,9 @@ def Singlepoint_reaction(theory=None, reaction=None, unit=None, orbitals_stored=
         reaction.unit=unit
     
     reaction.calculate_reaction_energy()
+    
+    result = ASH_Results(label="Singlepoint_reaction", energies=reaction.energies,
+        reaction_energy=reaction.reaction_energy)
 
     if isinstance(theory,ash.ORCA_CC_CBS_Theory):
         print("-"*70)
@@ -306,7 +319,10 @@ def Singlepoint_reaction(theory=None, reaction=None, unit=None, orbitals_stored=
             finaldict['delta_FCI_corr']=delta_FCI_corr
         #print("finaldict:", finaldict)
         #TODO: Return finaldict or not?
-    return reaction.reaction_energy
+        result.energy_contributions = finaldict
+    
+    return result
+    #return reaction.reaction_energy
 
 
 #Single-point energy function that communicates via fragment

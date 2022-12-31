@@ -2058,25 +2058,29 @@ H    2.453295744  -1.445998564  -1.389381355
     
     #Run dimer
     print("\nRunning dimer calculation")
-    dimer_energy=Singlepoint(theory=theory,fragment=dimer)
+    dimer_result=Singlepoint(theory=theory,fragment=dimer)
+    dimer_energy = dimer_result.energy
     theory.cleanup()
     #Run monomers
     print("\nRunning monomer1 calculation")
-    monomer1_energy=Singlepoint(theory=theory,fragment=monomer1)
+    monomer1_result=Singlepoint(theory=theory,fragment=monomer1)
+    monomer1_energy = monomer1_result.energy
     theory.cleanup()
     print("\nRunning monomer2 calculation")
-    monomer2_energy=Singlepoint(theory=theory,fragment=monomer2)
+    monomer2_result=Singlepoint(theory=theory,fragment=monomer2)
+    monomer2_energy = monomer2_result.energy
     theory.cleanup()
     print("\nUncorrected binding energy: {} kcal/mol".format((dimer_energy - monomer1_energy-monomer2_energy)*ash.constants.hartokcal))
     
     #Monomer calcs at dimer geometry
     print("\nRunning monomers at dimer geometry via dummy atoms")
     theory.dummyatoms=monomer1_indices
-    monomer1_in_dimergeo_energy=Singlepoint(theory=theory,fragment=dimer)
-
+    monomer1_in_dimergeo_result=Singlepoint(theory=theory,fragment=dimer)
+    monomer1_in_dimergeo_energy = monomer1_in_dimergeo_result.energy
     theory.cleanup()
     theory.dummyatoms=monomer2_indices
-    monomer2_in_dimergeo_energy=Singlepoint(theory=theory,fragment=dimer)
+    monomer2_in_dimergeo_result=Singlepoint(theory=theory,fragment=dimer)
+    monomer2_in_dimergeo_energy = monomer2_in_dimergeo_result.energy
     theory.cleanup()
 
     #Removing dummyatoms
@@ -2087,10 +2091,12 @@ H    2.453295744  -1.445998564  -1.389381355
     print("\nRunning monomers at dimer geometry with dimer basis set via ghostatoms")
     theory.ghostatoms=monomer1_indices
 
-    monomer1_in_dimer_dimerbasis_energy=Singlepoint(theory=theory,fragment=dimer)
+    monomer1_in_dimer_dimerbasis_result=Singlepoint(theory=theory,fragment=dimer)
+    monomer1_in_dimer_dimerbasis_energy = monomer1_in_dimer_dimerbasis_result.energy
     theory.cleanup()
     theory.ghostatoms=monomer2_indices
-    monomer2_in_dimer_dimerbasis_energy=Singlepoint(theory=theory,fragment=dimer)
+    monomer2_in_dimer_dimerbasis_result=Singlepoint(theory=theory,fragment=dimer)
+    monomer2_in_dimer_dimerbasis_energy = monomer2_in_dimer_dimerbasis_result.energy
     theory.cleanup()
 
     #Removing ghost atoms
@@ -2161,7 +2167,9 @@ def create_ASH_otool(basename=None, theoryfile=None, scriptlocation=None, charge
         otool.write("theory = pickle.load(open(\"{}\", \"rb\" ))\n".format(theoryfile))
         #otool.write("theory=ZeroTheory()\n")
         #otool.write("theory=ZeroTheory()\n")
-        otool.write("energy,gradient=Singlepoint(theory=theory,fragment=frag,Grad=True, charge={}, mult={})\n".format(charge,mult))
+        otool.write("result=Singlepoint(theory=theory,fragment=frag,Grad=True, charge={}, mult={})\n".format(charge,mult))
+        otool.write("energy = result.energy")
+        otool.write("gradient = result.gradient")
         otool.write("print(gradient)\n")
         otool.write("ash.interfaces.interface_ORCA.print_gradient_in_ORCAformat(energy,gradient,\"{}\")\n".format(basename))
     st = os.stat(scriptlocation+"/otool_external")

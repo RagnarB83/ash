@@ -10,16 +10,16 @@ xtbpath="/opt/xtb-6.3.0/bin"
 xtbcalc=xTBTheory(xtbmethod="GFN2", charge=0, mult=1, xtbdir=xtbpath)
 hybrid=QMMMTheory(fragment=frag, qm_theory=xtbcalc,  embedding='Elstat', qmatoms=qmatoms, charges=atomcharges)
 
-en=Singlepoint(fragment=frag, theory=hybrid)
+result=Singlepoint(fragment=frag, theory=hybrid)
 xtbcalc.cleanup()
 
 
 
 reference=-20.0354357
 print("Reference energy:", reference)
-print("Actual energy:", en)
-print("Deviation:", en-reference)
-if en-reference >0.000001:
+print("Actual energy:", result.energy)
+print("Deviation:", result.energy-reference)
+if result.energy-reference >0.000001:
     print("FAIL. Bad deviation beteween xtB/MM and reference. Did xTB version change??")
     sys.exit(1)
 else:

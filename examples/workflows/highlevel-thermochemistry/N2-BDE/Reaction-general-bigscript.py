@@ -50,7 +50,8 @@ for cardinal in CCSDT_def2_bases_proj.cardinals:
     #Single-point calcs on all fragments
     energies=[]
     for species in specieslist:
-        e = Singlepoint(theory=cc, fragment=species)
+        result = Singlepoint(theory=cc, fragment=species)
+        e = result.energy
         cc.cleanup()
         energies.append(e)
         #Store energy for each species
@@ -102,7 +103,8 @@ for cardinal in CCSDT_cc_bases_proj.cardinals:
     #Single-point calcs on all fragments
     energies=[]
     for species in specieslist:
-        e = Singlepoint(theory=cc, fragment=species)
+        result = Singlepoint(theory=cc, fragment=species)
+        e = result.energy
         cc.cleanup()
         energies.append(e)
         #Store energy for each species
@@ -153,7 +155,8 @@ for cardinal in CCSDTF12_bases_proj.cardinals:
     #Single-point calcs on all fragments
     energies=[]
     for species in specieslist:
-        e = Singlepoint(theory=cc, fragment=species)
+        result = Singlepoint(theory=cc, fragment=species)
+        e = result.energy
         cc.cleanup()
         energies.append(e)
         #Store energy for each species
@@ -204,7 +207,8 @@ for cardinals in CCSDTextrap_proj.cardinals:
     #Single-point calcs on all fragments
     energies=[]
     for species in specieslist:
-        e = Singlepoint(theory=cc, fragment=species)
+        result = Singlepoint(theory=cc, fragment=species)
+        e = result.energy
         cc.cleanup()
         energies.append(e)
         #Store energy for each species
@@ -256,7 +260,8 @@ for cardinals in CCSDTextrapdef2_proj.cardinals:
     #Single-point calcs on all fragments
     energies=[]
     for species in specieslist:
-        e = Singlepoint(theory=cc, fragment=species)
+        result = Singlepoint(theory=cc, fragment=species)
+        e = result.energy
         cc.cleanup()
         energies.append(e)
         #Store energy for each species

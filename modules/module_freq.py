@@ -8,6 +8,7 @@ import time
 from ash.functions.functions_general import ashexit, listdiff, clean_number,blankline,BC,print_time_rel, print_line_with_mainheader,isodd
 import ash.modules.module_coords
 from ash.modules.module_coords import check_charge_mult, check_multiplicity
+from ash.modules.module_results import ASH_Results
 import ash.interfaces.interface_ORCA
 import ash.constants
 
@@ -33,10 +34,10 @@ def AnFreq(fragment=None, theory=None, charge=None, mult=None, numcores=1, temp=
         frequencies = ash.interfaces.interface_ORCA.ORCAfrequenciesgrab(theory.filename+".hess")
         
         hessatoms=list(range(0,fragment.numatoms))
-        freqoutputdict = thermochemcalc(frequencies,hessatoms, fragment, mult, temp=temp,pressure=pressure, QRRHO_omega_0=QRRHO_omega_0)
+        thermodict = thermochemcalc(frequencies,hessatoms, fragment, mult, temp=temp,pressure=pressure, QRRHO_omega_0=QRRHO_omega_0)
 
         #freqoutputdict object. Should contain frequencies, zero-point energy, enthalpycorr, gibbscorr, etc.
-        freqoutputdict['hessian'] = hessian
+        #freqoutputdict['hessian'] = hessian
         
         #TODO: To add once we diagonalize 
         #freqoutputdict['evectors'] = evectors
@@ -45,7 +46,10 @@ def AnFreq(fragment=None, theory=None, charge=None, mult=None, numcores=1, temp=
 
         print(BC.WARNING, BC.BOLD, "------------ANALYTICAL FREQUENCIES END-------------", BC.END)
         print_time_rel(module_init_time, modulename='AnFreq', moduleindex=1)
-        return freqoutputdict
+        
+        result = ASH_Results(label="Anfreq", hessian=None, frequencies=frequencies, 
+            normal_modes=None, thermochemistry=thermodict)        
+        return result
         
     else:
         print("Analytical frequencies not available for theory. Exiting.")
@@ -246,9 +250,10 @@ def NumFreq(fragment=None, theory=None, charge=None, mult=None, npoint=2, displa
         print(f"Starting Numfreq calculations in parallel mode (numcores={numcores}) using Singlepoint_parallel")
 
         #Launching multiple ASH E+Grad calculations in parallel on list of ASH fragments: all_image_fragments
-        en_dict,gradient_dict = ash.Singlepoint_parallel(fragments=all_disp_fragments, theories=[theory], numcores=numcores, 
+        result = ash.Singlepoint_parallel(fragments=all_disp_fragments, theories=[theory], numcores=numcores, 
             allow_theory_parallelization=True, Grad=True, printlevel=printlevel)
-
+        en_dict = result.energies_dict
+        gradient_dict = result.gradients_dict
         #Gradient_dict is already correctly formatted
         displacement_grad_dictionary = gradient_dict
 
@@ -469,9 +474,9 @@ def NumFreq(fragment=None, theory=None, charge=None, mult=None, npoint=2, displa
 
     #Get and print out thermochemistry
     if theory.__class__.__name__ == "QMMMTheory":
-        freqoutputdict = thermochemcalc(frequencies,hessatoms, fragment, mult, temp=temp,pressure=pressure, QRRHO_omega_0=QRRHO_omega_0)
+        thermodict = thermochemcalc(frequencies,hessatoms, fragment, mult, temp=temp,pressure=pressure, QRRHO_omega_0=QRRHO_omega_0)
     else:
-        freqoutputdict = thermochemcalc(frequencies,hessatoms, fragment, mult, temp=temp,pressure=pressure, QRRHO_omega_0=QRRHO_omega_0)
+        thermodict = thermochemcalc(frequencies,hessatoms, fragment, mult, temp=temp,pressure=pressure, QRRHO_omega_0=QRRHO_omega_0)
 
     #Write Hessian to file
     write_hessian(hessian,hessfile="Hessian")
@@ -490,10 +495,10 @@ def NumFreq(fragment=None, theory=None, charge=None, mult=None, npoint=2, displa
     print(BC.WARNING, BC.BOLD, "------------NUMERICAL FREQUENCIES END-------------", BC.END)
 
     #freqoutputdict object. Should contain frequencies, zero-point energy, enthalpycorr, gibbscorr, etc.
-    freqoutputdict['hessian'] = hessian
-    freqoutputdict['evectors'] = evectors
-    freqoutputdict['nmodes'] = nmodes
-    freqoutputdict['hessatoms'] = hessatoms
+    #freqoutputdict['hessian'] = hessian
+    #freqoutputdict['evectors'] = evectors
+    #freqoutputdict['nmodes'] = nmodes
+    #freqoutputdict['hessatoms'] = hessatoms
 
     #Add things to fragment
     fragment.hessian=hessian #Hessian
@@ -502,7 +507,12 @@ def NumFreq(fragment=None, theory=None, charge=None, mult=None, npoint=2, displa
     #Return to ..
     os.chdir('..')
     print_time_rel(module_init_time, modulename='NumFreq', moduleindex=1)
-    return freqoutputdict
+
+    result = ASH_Results(label="Numfreq", hessian=hessian, vib_eigenvectors=evectors,
+        frequencies=frequencies, 
+        normal_modes=nmodes, thermochemistry=thermodict)        
+    return result
+    #return freqoutputdict
 
 
 
@@ -1766,7 +1776,7 @@ def calc_hessian_xtb(fragment=None, runmode='serial', actatoms=None, numcores=1,
         hessianfile="Hessian_from_xtb"
     #ASH NumFreq. Not sure how much we will use this one
     else:
-        freqdict = ash.NumFreq(theory=xtb, fragment=fragment, printlevel=0, runmode=runmode, numcores=1)
+        freqresult = ash.NumFreq(theory=xtb, fragment=fragment, printlevel=0, runmode=runmode, numcores=1)
         hessianfile="Hessian_from_xtb"
         shutil.copyfile("Numfreq_dir/Hessian",hessianfile)
     #Returning name of Hessian-file

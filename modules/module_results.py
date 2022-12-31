@@ -1,5 +1,6 @@
 from dataclasses import dataclass
 import numpy as np
+from ash.modules.module_coords import Fragment
 
 #Dataclasses https://realpython.com/python-data-classes/
 
@@ -7,20 +8,39 @@ import numpy as np
 @dataclass
 class ASH_Results:
     label: str = ''
-    #Energy and gradient
+    #Single-job: Energy and gradient
     energy: int = None
     gradient: np.array = None
-    #Geometry
+    reaction_energy: float = None
+    #Energy contributions if e.g. ORCA_CC_CBS_Theory
+    energy_contributions: dict = None
+
+    #Multi-energy job: Lists of energies and gradients
+    energies: list = None
+    reaction_energies: list = None
+    gradients: list = None
+    energies_dict: dict = None
+    gradients_dict: dict = None
+    #Geometry informaiton
     geometry: np.array = None
     initial_geometry: np.array = None
-    #Frequency
+    charge: int = None
+    mult: int = None
+    #Frequency information
     hessian: np.array = None
+    frequencies: np.array = None
     normal_modes: np.array = None
-    thermochemistry: np.array = None
-    #NEB
+    vib_eigenvectors: np.array = None
+    thermochemistry: dict = None
+    #Surface-scan job
+    surfacepoints: dict = None
+    #NEB-type job
     reactant_geometry: np.array = None
     product_geometry: np.array = None
     saddlepoint_geometry: np.array = None
+    saddlepoint_fragment: Fragment = None
+    MEP_energies_dict: dict = None
+    barrier_energy: float = None
 
 #Example: r2 = Results(label="SPjob", energy=900.1, geometry=[[24.3,43.4,433.43]])
 

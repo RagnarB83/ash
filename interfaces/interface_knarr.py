@@ -13,6 +13,8 @@ import ash.constants as constants
 from ash.functions.functions_general import ashexit,print_time_rel,print_line_with_mainheader, BC,print_line_with_subheader1,print_line_with_subheader2
 from ash.modules.module_coords import check_charge_mult, write_xyzfile
 from ash.modules.module_freq import write_hessian, approximate_full_Hessian_from_smaller, calc_model_Hessian_ORCA, read_tangent, calc_hessian_xtb
+from ash.modules.module_results import ASH_Results
+
 #This makes Knarr part of python path
 #Recommended way?
 ashpath = os.path.dirname(ash.__file__)
@@ -126,13 +128,13 @@ def NEBTS(reactant=None, product=None, theory=None, images=8, CI=True, free_end=
         if isinstance(theory,ash.DualTheory):
             print("Dualtheory active. Doing Numfreq using regular mode.")
             #NOTE: Regular will probably involve a theory 2 correction. We could switch to theory1 solely instead here
-            freqdict = ash.NumFreq(theory=theory, fragment=SP, printlevel=0, runmode=runmode, numcores=numcores)
+            result_freq = ash.NumFreq(theory=theory, fragment=SP, printlevel=0, runmode=runmode, numcores=numcores)
             hessianfile="Hessian_from_dualtheory"
             shutil.copyfile("Numfreq_dir/Hessian",hessianfile)
             hessianoption='file:'+str(hessianfile)
         else:
             print("Doing Numfreq")
-            freqdict = ash.NumFreq(theory=theory, fragment=SP, printlevel=0, npoint='1', runmode=runmode, numcores=numcores)
+            result_freq = ash.NumFreq(theory=theory, fragment=SP, printlevel=0, npoint='1', runmode=runmode, numcores=numcores)
             hessianfile="Hessian_from_theory"
             shutil.copyfile("Numfreq_dir/Hessian",hessianfile)
             hessianoption='file:'+str(hessianfile)
@@ -141,13 +143,13 @@ def NEBTS(reactant=None, product=None, theory=None, images=8, CI=True, free_end=
     # Tell geomeTRIC to calculate exact Hessian in the beginning
     elif hessian_for_TS == '2point':
             print("Doing Numfreq 2-point approximation")
-            freqdict = ash.NumFreq(theory=theory, fragment=SP, printlevel=0, npoint=2, runmode=runmode, numcores=numcores)
+            result_freq = ash.NumFreq(theory=theory, fragment=SP, printlevel=0, npoint=2, runmode=runmode, numcores=numcores)
             hessianfile="Hessian_from_theory"
             shutil.copyfile("Numfreq_dir/Hessian",hessianfile)
             hessianoption='file:'+str(hessianfile)
     elif hessian_for_TS == '1point':
             print("Doing Numfreq 1-point approximation")
-            freqdict = ash.NumFreq(theory=theory, fragment=SP, printlevel=0, npoint=1, runmode=runmode, numcores=numcores)
+            result_freq = ash.NumFreq(theory=theory, fragment=SP, printlevel=0, npoint=1, runmode=runmode, numcores=numcores)
             hessianfile="Hessian_from_theory"
             shutil.copyfile("Numfreq_dir/Hessian",hessianfile)
             hessianoption='file:'+str(hessianfile)
@@ -193,11 +195,11 @@ def NEBTS(reactant=None, product=None, theory=None, images=8, CI=True, free_end=
         #TODO: Option to run this in parallel ?
         #Or just enable theory parallelization 
         #if isinstance(theory,ash.DualTheory): theory.switch_to_theory(2)
-        freqdict = ash.NumFreq(theory=theory, fragment=SP, printlevel=0, npoint=2, hessatoms=TSmodeatoms, runmode=runmode, numcores=numcores)
+        result_freq = ash.NumFreq(theory=theory, fragment=SP, printlevel=0, npoint=2, hessatoms=TSmodeatoms, runmode=runmode, numcores=numcores)
 
         #Combine partial exact Hessian with model Hessian(Almloef, Lindh, Schlegel or unit)
         #Large Hessian is the actatoms Hessian if actatoms provided
-        combined_hessian = approximate_full_Hessian_from_smaller(SP,freqdict["hessian"],TSmodeatoms, large_atomindices=actatoms, restHessian=modelhessian)
+        combined_hessian = approximate_full_Hessian_from_smaller(SP,result_freq.hessian,TSmodeatoms, large_atomindices=actatoms, restHessian=modelhessian)
 
         #Write combined Hessian to disk
         hessianfile="Hessian_from_partial"
@@ -250,6 +252,7 @@ def NEBTS(reactant=None, product=None, theory=None, images=8, CI=True, free_end=
             label="TS"
             relenergy=(energies_dict[-1]-energies_dict[0])*ash.constants.hartokcal
             print(f"{label:<8} {label:<4}Energy:{energies_dict[-1]:12.6f}  {relenergy:8.2f} (TS)")
+            SP_relenergy=relenergy
         else:
             #If regular image
             relenergy=(energies_dict[i]-energies_dict[0])*ash.constants.hartokcal
@@ -264,7 +267,13 @@ def NEBTS(reactant=None, product=None, theory=None, images=8, CI=True, free_end=
     #Changing numcores back in case theory is reused
     theory.set_numcores(original_theory_numcores)
     print_time_rel(module_init_time, modulename='NEB-TS run', moduleindex=1)
-    return SP
+    
+    #Returning result object
+    result = ASH_Results(label="NEBTS calc", energy=SP.energy, geometry=SP.coords,
+        saddlepoint_fragment=SP, charge=charge, mult=mult, MEP_energies_dict=energies_dict,
+        barrier_energy=SP_relenergy)
+    return result
+    #return SP
 
 #ASH NEB function. Calls Knarr
 def NEB(reactant=None, product=None, theory=None, images=8, CI=True, free_end=False, maxiter=100,
@@ -492,7 +501,14 @@ def NEB(reactant=None, product=None, theory=None, images=8, CI=True, free_end=Fa
         #Now finding highest energy image
         Saddlepoint_fragment = prepare_saddlepoint(path,neb_settings,reactant,calculator,ActiveRegion,actatoms,charge,mult, numatoms, "IDPP", write_tangent=False)
         print("WARNING: This is a highly approximate guess for the saddlepoint, based on the highest energy image from a single-iteration NEB.")
-        return Saddlepoint_fragment, calculator.energies_dict
+        #return Saddlepoint_fragment, calculator.energies_dict
+
+        #Returning result object
+        result = ASH_Results(label="NEB-IDPPonly calc", energy=Saddlepoint_fragment.energy, geometry=Saddlepoint_fragment.coords,
+            saddlepoint_fragment=Saddlepoint_fragment, charge=charge, mult=mult, MEP_energies_dict=calculator.energies_dict,
+            barrier_energy=None)
+        return result
+
     #REGULAR NEB
     else:
         #Now starting NEB from path object, using neb_settings and optimizer settings
@@ -509,7 +525,11 @@ def NEB(reactant=None, product=None, theory=None, images=8, CI=True, free_end=Fa
             print("Try restarting with different settings.")
 
             print_time_rel(module_init_time, modulename='Knarr-NEB run', moduleindex=1)
-            return None,None
+
+            #Returning result object with all attributes None
+            result = ASH_Results(label="NEB-CI calc (fail)")
+            return result
+
         else:
             print()
             print('KNARR successfully terminated')
@@ -526,7 +546,16 @@ def NEB(reactant=None, product=None, theory=None, images=8, CI=True, free_end=Fa
         print_time_rel(module_init_time, modulename='Knarr-NEB run', moduleindex=1)
 
         if neb_settings["CLIMBING"] is True:
-            return Saddlepoint_fragment, calculator.energies_dict
+            #return Saddlepoint_fragment, calculator.energies_dict
+            #Returning result object
+            result = ASH_Results(label="NEB-CI calc", energy=Saddlepoint_fragment.energy, geometry=Saddlepoint_fragment.coords,
+                saddlepoint_fragment=Saddlepoint_fragment, charge=charge, mult=mult, MEP_energies_dict=calculator.energies_dict,
+                barrier_energy=None)
+            return result
+        else:
+            #Returning result object
+            result = ASH_Results(label="NEB calc", charge=charge, mult=mult, MEP_energies_dict=calculator.energies_dict)
+            return result
 
 
 
@@ -841,8 +870,10 @@ class KnarrCalculator:
                     all_image_fragments.append(frag)
 
             #Launching multiple ASH E+Grad calculations in parallel on list of ASH fragments: all_image_fragments
-            en_dict,gradient_dict = ash.Singlepoint_parallel(fragments=all_image_fragments, theories=[self.theory], numcores=self.numcores, 
+            result_par = ash.Singlepoint_parallel(fragments=all_image_fragments, theories=[self.theory], numcores=self.numcores, 
                 allow_theory_parallelization=True, Grad=True, printlevel=self.printlevel)
+            en_dict = result_par.energies_dict
+            gradient_dict = result_par.gradients_dict
 
             #Keeping track of energies for each image in a dict
             for i in en_dict.keys():
