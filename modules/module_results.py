@@ -7,9 +7,9 @@ from ash.modules.module_coords import Fragment
 #Results dataclass that ASH job-functions return
 @dataclass
 class ASH_Results:
-    label: str = ''
+    label: str = None
     #Single-job: Energy and gradient
-    energy: int = None
+    energy: float = None
     gradient: np.array = None
     reaction_energy: float = None
     #Energy contributions if e.g. ORCA_CC_CBS_Theory
@@ -28,7 +28,7 @@ class ASH_Results:
     mult: int = None
     #Frequency information
     hessian: np.array = None
-    frequencies: np.array = None
+    frequencies: list = None
     normal_modes: np.array = None
     vib_eigenvectors: np.array = None
     thermochemistry: dict = None
