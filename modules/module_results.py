@@ -42,6 +42,13 @@ class ASH_Results:
     MEP_energies_dict: dict = None
     barrier_energy: float = None
 
+    #Print only defined attributes
+    def print_defined(self):
+        print("\nPrinting defined attributes of ASH_Results dataclass")
+        for k,v in self.__dict__.items():
+            if v is not None:
+                print(f"{k}: {v}")
+
 #Example: r2 = Results(label="SPjob", energy=900.1, geometry=[[24.3,43.4,433.43]])
 
 
