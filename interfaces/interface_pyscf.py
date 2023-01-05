@@ -398,10 +398,10 @@ class PySCFTheory:
             pgrad_acc = self.pyqmc.gradient_generator(mol,wf, to_opt)
             wf, optimization_data = self.pyqmc.line_minimization(wf, configs, pgrad_acc)
             #DMC, untested
-            if self.PyQMC_method is 'DMC':
+            if self.PyQMC_method == 'DMC':
                 configs, dmc_data = self.pyqmc.rundmc(wf, configs)
             #VMC. untested
-            elif self.PyQMC_method is 'VMC':
+            elif self.PyQMC_method == 'VMC':
                 #More options possible
                 df, configs = vmc(wf,configs)
         
