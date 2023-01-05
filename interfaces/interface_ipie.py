@@ -10,14 +10,10 @@ from ash.functions.functions_parallel import check_OpenMPI
 
 class ipieTheory:
     def __init__(self, pyscftheoryobject=None, filename='input.json', printlevel=2,
-                method=None, numcores=1, numblocks_skip=5, dt=0.005, nwalkers=800, nsteps=25, blocks=7):
+                numcores=1, numblocks_skip=5, dt=0.005, nwalkers=800, nsteps=25, blocks=7):
 
         self.theorynamelabel="ipie"
         print_line_with_mainheader(f"{self.theorynamelabel}Theory initialization")
-
-        #if method is None:
-        #    print(f"{self.theorynamelabel}Theory requires a method keyword")
-        #    ashexit()
         
         try:
             self.ipie_exe = os.path.dirname(shutil.which('ipie'))+'/ipie'
@@ -44,7 +40,6 @@ class ipieTheory:
         #Printlevel
         self.printlevel=printlevel
         self.filename=filename
-        self.method=method
         self.numcores=numcores
         self.pyscftheoryobject=pyscftheoryobject
 
@@ -54,6 +49,12 @@ class ipieTheory:
         self.nwalkers=nwalkers
         self.nsteps=nsteps
         self.blocks=blocks
+        print("AFQMC settings:")
+        print("Num walkers:", self.nwalkers)
+        print("Num blocks:", self.blocks)
+        print("Num steps:", self.nsteps)
+        print("Timestep:", self.dt)
+        print("Number of blocks to skip:", self.numblocks_skip)
 
     #Set numcores method
     def set_numcores(self,numcores):

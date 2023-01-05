@@ -122,6 +122,7 @@ class PySCFTheory:
             print(BC.FAIL, "Problem importing pyscf. Make sure pyscf has been installed: pip install pyscf", BC.END)
             ashexit(code=9)
         self.pyscf=pyscf
+        print("PySCF version:", self.pyscf.__version__)
         from pyscf.tools import molden
         self.pyscf_molden=molden
         if self.CC is True:
@@ -249,7 +250,7 @@ class PySCFTheory:
             #np.set_printoptions(linewidth=500) TODO: not sure
         else:
             print("Printsetting = False. Printing to:", self.filename )
-            mf.stdout = open(self.filename, 'w')
+            mf.stdout = open(self.filename+'.out', 'w')
 
         #DFT
         if self.functional is not None:
