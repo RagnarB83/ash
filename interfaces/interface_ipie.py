@@ -59,7 +59,7 @@ class ipieTheory:
     #Set numcores method
     def set_numcores(self,numcores):
         self.numcores=numcores
-    def cleanup():
+    def cleanup(self):
         print(f"{self.theorynamelabel} cleanup not yet implemented.")
 
     # Run function. Takes coords, elems etc. arguments and computes E or E+G.
