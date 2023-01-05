@@ -1,13 +1,51 @@
 import copy
 import multiprocessing as mp
+import subprocess as sp
 import os
 import sys
 import time
+import shutil
 
 #import ash
 from ash.functions.functions_general import ashexit, BC,blankline,print_line_with_mainheader,print_line_with_subheader1
 from ash.modules.module_coords import check_charge_mult
 from ash.modules.module_results import ASH_Results
+
+#OPENMPI
+###############################################
+#CHECKS FOR OPENMPI
+#NOTE: Perhaps to be moved to other location
+###############################################
+def check_OpenMPI():
+    #Find mpirun and take path
+    try:
+        openmpibindir = os.path.dirname(shutil.which('mpirun'))
+    except:
+        print(BC.FAIL,"No mpirun found in PATH. Make sure to add OpenMPI to PATH in your environment/jobscript", BC.END)
+        ashexit()
+    print("OpenMPI binary directory found:", openmpibindir)
+    #Test that mpirun is executable and grab OpenMPI version number for printout
+    test_OpenMPI()
+    #NOTE: Not sure if we should do more here
+    #Inspect LD_LIBRARY_PATH
+    #openmpilibdir= os.environ.get("LD_LIBRARY_PATH")
+    #print("OpenMPI library directory:", openmpilibdir)
+    return
+
+def test_OpenMPI():
+    print("Testing that mpirun is executable...", end="")
+    p = sp.Popen(["mpirun", "-V"], stdout = sp.PIPE)
+    out, err = p.communicate()
+    mpiversion=out.split()[3].decode()
+    print(BC.OKGREEN,"yes",BC.END)
+    print("OpenMPI version:", mpiversion)
+
+
+
+
+
+
+
 
 #Various calculation-functions run in parallel
 

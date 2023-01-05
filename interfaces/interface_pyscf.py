@@ -12,7 +12,7 @@ class PySCFTheory:
                   scf_type=None, basis=None, functional=None, gridlevel=5, 
                   pe=False, potfile='', filename='pyscf', memory=3100, conv_tol=1e-8, verbose_setting=4, 
                   CC=False, CCmethod=None, CC_direct=False, frozen_core_setting='Auto', 
-                  frozen_virtuals=None, FNO=False, FNO_thresh=None,
+                  frozen_virtuals=None, FNO=False, FNO_thresh=None, checkpointfile=True,
                   PyQMC=False, PyQMC_nconfig=1, PyQMC_method='DMC'):
 
         self.theorytype="QM"
@@ -61,7 +61,7 @@ class PySCFTheory:
 
         self.conv_tol=conv_tol
         self.verbose_setting=verbose_setting
-
+        self.checkpointfile=checkpointfile
         #PyQMC
         self.PyQMC=PyQMC
         self.PyQMC_nconfig=PyQMC_nconfig #integer. number of configurations in guess
@@ -265,6 +265,11 @@ class PySCFTheory:
         mf.conv_tol = self.conv_tol
         #Control printing here. TOdo: make variable
         mf.verbose = self.verbose_setting
+
+        #Checkpointfile
+        if self.checkpointfile is True:
+            mf.chkfile = 'scf.chk'
+
 
         #FROZEN ORBITALS in CC
         if self.CC:
