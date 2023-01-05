@@ -10,7 +10,7 @@ from ash.functions.functions_parallel import check_OpenMPI
 
 class ipieTheory:
     def __init__(self, pyscftheoryobject=None, filename='input.json', printlevel=2,
-                numcores=1, numblocks_skip=5, dt=0.005, nwalkers=800, nsteps=25, blocks=7):
+                numcores=1, numblocks_skip=5, dt=0.005, nwalkers=800, nsteps=25, blocks=20):
 
         self.theorynamelabel="ipie"
         print_line_with_mainheader(f"{self.theorynamelabel}Theory initialization")
