@@ -385,6 +385,8 @@ class PySCFTheory:
             
             result = cc.run()
             print("Reference energy:", result.e_hf)
+            #CCSD energy
+            self.energy = result.e_tot
             #(T) part
             if self.CCmethod == 'CCSD(T)':
                 print("Calculating triples ")
