@@ -63,11 +63,13 @@ class ipieTheory:
     def set_numcores(self,numcores):
         self.numcores=numcores
     def cleanup(self):
-        print("Deleting old checkpoint file")
-        try:
-            os.remove(self.checkpointfilename)
-        except:
-            pass
+        print(f"Deleting old checkpoint file: {self.checkpointfilename}")
+        files=[self.checkpointfilename]
+        for file in files:
+            try:
+                os.remove(file)
+            except:
+                pass
     def determine_frozen_core(self,elems):
         print("Determining frozen core")
         #Main elements 
@@ -152,7 +154,7 @@ class ipieTheory:
 
         #Parallel
         if self.numcores > 1:
-            print("Running ipie with MPI parallelization")
+            print(f"Running ipie with MPI parallelization ({self.numcores} MPI processes)")
             with open('output.dat', "w") as outfile:
                 sp.call(['mpirun', '-np', str(self.numcores), self.ipie_exe, self.filename], stdout=outfile)
         #Serial
