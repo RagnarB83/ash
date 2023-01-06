@@ -11,7 +11,7 @@ from ash.functions.functions_parallel import check_OpenMPI
 class ipieTheory:
     def __init__(self, pyscftheoryobject=None, filename='input.json', printlevel=2,
                 numcores=1, numblocks_skip=5, dt=0.005, nwalkers=800, nsteps=25, blocks=20,
-                frozencore=False):
+                frozencore=False, checkpointfilename='scf.chk'):
 
         self.theorynamelabel="ipie"
         print_line_with_mainheader(f"{self.theorynamelabel}Theory initialization")
@@ -51,6 +51,7 @@ class ipieTheory:
         self.nsteps=nsteps
         self.blocks=blocks
         self.frozencore=frozencore
+        self.checkpointfilename=checkpointfilename
         print("AFQMC settings:")
         print("Num walkers:", self.nwalkers)
         print("Num blocks:", self.blocks)
@@ -62,8 +63,11 @@ class ipieTheory:
     def set_numcores(self,numcores):
         self.numcores=numcores
     def cleanup(self):
-        print(f"{self.theorynamelabel} cleanup not yet implemented.")
-
+        print("Deleting old checkpoint file")
+        try:
+            os.remove(self.checkpointfilename)
+        except:
+            pass
     def determine_frozen_core(self,elems):
         print("Determining frozen core")
         #Main elements 
@@ -111,8 +115,10 @@ class ipieTheory:
             else:
                 qm_elems = elems
 
-        #Creating objects
-        #Geometry for pyscf
+        #Cleanup before run.
+        #Delete old PySCF checkpointfile, otherwise checkpointfile might contain multiple stuff
+        self.cleanup()
+
 
         #Run PySCF to get integrals
         self.pyscftheoryobject.run(current_coords=current_coords, elems=qm_elems, charge=charge, mult=mult)
@@ -120,9 +126,9 @@ class ipieTheory:
         #Read PySCF checkpointfile and create ipie inputfile
         if self.frozencore is True:
             self.determine_frozen_core(qm_elems)
-            sp.call([self.pyscf_to_ipie_exe ,'-i', 'scf.chk', '-j', self.filename, '--frozen-core', str(self.frozen_core_orbs)])
+            sp.call([self.pyscf_to_ipie_exe ,'-i', self.checkpointfilename, '-j', self.filename, '--frozen-core', str(self.frozen_core_orbs)])
         else:
-            sp.call([self.pyscf_to_ipie_exe ,'-i', 'scf.chk', '-j', self.filename])
+            sp.call([self.pyscf_to_ipie_exe ,'-i', self.checkpointfilename, '-j', self.filename])
 
         #Modify inputfile
         f = open(self.filename,'r')
