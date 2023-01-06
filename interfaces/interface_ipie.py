@@ -10,7 +10,8 @@ from ash.functions.functions_parallel import check_OpenMPI
 
 class ipieTheory:
     def __init__(self, pyscftheoryobject=None, filename='input.json', printlevel=2,
-                numcores=1, numblocks_skip=5, dt=0.005, nwalkers=800, nsteps=25, blocks=20):
+                numcores=1, numblocks_skip=5, dt=0.005, nwalkers=800, nsteps=25, blocks=20,
+                frozencore=False):
 
         self.theorynamelabel="ipie"
         print_line_with_mainheader(f"{self.theorynamelabel}Theory initialization")
@@ -49,6 +50,7 @@ class ipieTheory:
         self.nwalkers=nwalkers
         self.nsteps=nsteps
         self.blocks=blocks
+        self.frozencore=frozencore
         print("AFQMC settings:")
         print("Num walkers:", self.nwalkers)
         print("Num blocks:", self.blocks)
@@ -61,6 +63,22 @@ class ipieTheory:
         self.numcores=numcores
     def cleanup(self):
         print(f"{self.theorynamelabel} cleanup not yet implemented.")
+
+    def determine_frozen_core(self,elems):
+        print("Determining frozen core")
+        #Main elements 
+        FC_elems={'H':0,'He':0,'Li':0,'Be':0,'B':2,'C':2,'N':2,'O':2,'F':2,'Ne':2,
+        'Na':2,'Mg':2,'Al':10,'Si':10,'P':10,'S':10,'Cl':10,'Ar':10,
+        'K':10,'Ca':10,'Sc':10,'Ti':10,'V':10,'Cr':10,'Mn':10,'Fe':10,'Co':10,'Ni':10,'Cu':10,'Zn':10,
+        'Ga':18,'Ge':18,'As':18,'Se':18, 'Br':18, 'Kr':18}
+        #NOTE: To be updated for 4d TM row etc
+        num_el=0
+        for el in elems:
+            num_el+=FC_elems[el]
+        self.frozen_core_el=num_el
+        self.frozen_core_orbs=int(num_el/2)
+        print("Total frozen electrons in system:", self.frozen_core_el)
+        print("Total frozen orbitals in system:", self.frozen_core_orbs)
 
     # Run function. Takes coords, elems etc. arguments and computes E or E+G.
     def run(self, current_coords=None, current_MM_coords=None, MMcharges=None, qm_elems=None,
@@ -97,10 +115,14 @@ class ipieTheory:
         #Geometry for pyscf
 
         #Run PySCF to get integrals
-        self.pyscftheoryobject.run(current_coords=current_coords, elems=elems, charge=charge, mult=mult)
+        self.pyscftheoryobject.run(current_coords=current_coords, elems=qm_elems, charge=charge, mult=mult)
 
-        #Read PySCF checkpointfile and create ipie inputfile 
-        sp.call([self.pyscf_to_ipie_exe ,'-i', 'scf.chk', '-j', self.filename])
+        #Read PySCF checkpointfile and create ipie inputfile
+        if self.frozencore is True:
+            self.determine_frozen_core(qm_elems)
+            sp.call([self.pyscf_to_ipie_exe ,'-i', 'scf.chk', '-j', self.filename, '--frozen-core', str(self.frozen_core_orbs)])
+        else:
+            sp.call([self.pyscf_to_ipie_exe ,'-i', 'scf.chk', '-j', self.filename])
 
         #Modify inputfile
         f = open(self.filename,'r')
@@ -149,6 +171,7 @@ class ipieTheory:
         print(f"Single-point {self.theorynamelabel} energy:", self.energy)
         print_time_rel(module_init_time, modulename=f'{self.theorynamelabel} run', moduleindex=2)
         return self.energy
+
 
 def grab_ipie_energy(outputfile):
     grab=False
