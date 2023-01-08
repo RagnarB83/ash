@@ -11,7 +11,8 @@ class PySCFTheory:
     def __init__(self, printsetting=False, printlevel=2, numcores=1, 
                   scf_type=None, basis=None, functional=None, gridlevel=5, symmetry=False,
                   pe=False, potfile='', filename='pyscf', memory=3100, conv_tol=1e-8, verbose_setting=4, 
-                  CC=False, CCmethod=None, CC_direct=False, frozen_core_setting='Auto', 
+                  CC=False, CCmethod=None, CC_direct=False, frozen_core_setting='Auto',
+                  CAS=False, CASSCF=False, active_space=None, CAS_nocc_a=None, CAS_nocc_b=None,
                   frozen_virtuals=None, FNO=False, FNO_thresh=None, checkpointfile=True,
                   PyQMC=False, PyQMC_nconfig=1, PyQMC_method='DMC'):
 
@@ -63,6 +64,20 @@ class PySCFTheory:
         self.verbose_setting=verbose_setting
         self.checkpointfile=checkpointfile
         self.symmetry=symmetry
+        #CAS
+        self.CAS=CAS
+        self.CASSCF=CASSCF
+        self.active_space=active_space
+        self.CAS_nocc_a=CAS_nocc_a
+        self.CAS_nocc_b=CAS_nocc_b
+
+        if self.CAS is True:
+            if self.active_space == None or len(self.active_space) != 2:
+                print("active_space must be defined as a list of 2 numbers (M electrons in N orbitals)")
+                ashexit()
+            print("CAS_nocc_a:", self.CAS_nocc_a)
+            print("CAS_nocc_b:", self.CAS_nocc_b)
+
         #PyQMC
         self.PyQMC=PyQMC
         self.PyQMC_nconfig=PyQMC_nconfig #integer. number of configurations in guess
@@ -94,6 +109,9 @@ class PySCFTheory:
         print("Frozen_core_setting:", self.frozen_core_setting)
         print("Frozen_virtual orbitals:",self.frozen_virtuals)
         print("Polarizable embedding:", self.pe)
+        print()
+        print("CAS:", self.CAS)
+        print("CASSCF:", self.CASSCF)
         #TODO: Restart settings for PySCF
 
 
@@ -132,7 +150,9 @@ class PySCFTheory:
             self.pyscf_cc=cc
             from pyscf.mp.dfump2_native import DFMP2
             self.pyscf_dmp2=DFMP2
-
+        if self.CAS is True:
+            from pyscf import mcscf
+            self.mcscf=mcscf
         #TODO: Needs to be revisited
         if self.pe==True:
             #import pyscf.solvent as solvent
@@ -301,10 +321,7 @@ class PySCFTheory:
         print()
         #COUPLED CLUSTER RUN
         if self.CC is True:
-            print("Now running CC job")
-
-
-
+            print("Coupled cluster is on !")
             #SCF-part
             print("First running SCF")
             scf_result = mf.run()
@@ -399,6 +416,7 @@ class PySCFTheory:
                 print("Final CCSD(T) energy:", self.energy)
         #PyQMC
         elif self.PyQMC is True:
+            print("PyQMC is on!")
             configs = self.pyqmc.initial_guess(mol,self.PyQMC_nconfig)
             wf, to_opt = self.pyqmc.generate_wf(mol,mf)
             pgrad_acc = self.pyqmc.gradient_generator(mol,wf, to_opt)
@@ -410,9 +428,37 @@ class PySCFTheory:
             elif self.PyQMC_method == 'VMC':
                 #More options possible
                 df, configs = vmc(wf,configs)
-        
-        #SCF RUN
+        #CAS or CASSCF run
+        elif self.CAS is True:
+            print("CASSCF SCF run is on!")
+            #First run SCF
+            scf_result = mf.run()
+            print(f"Now running CAS job with active space of {self.active_space[0]} electrons in {self.active_space[1]} orbitals")
+            mc = self.mcscf.CASSCF(mf, self.active_space[0], self.active_space[1])
+            mc.chkfile = "scf.chk"
+            e_tot, e_cas, fcivec, mo, mo_energy = mc.kernel()
+            print("CASSCF run done")
+            print("e_tot:", e_tot)
+            print("e_cas:", e_cas)
+            self.energy = e_tot
+            #################
+            # for ipie
+            #################
+            print("CAS_nocc_a:", self.CAS_nocc_a)
+            print("CAS_nocc_b:", self.CAS_nocc_b)
+            #Write to checkpoint file
+            coeff, occa, occb = zip(*self.pyscf.fci.addons.large_ci(fcivec, self.active_space[0], (self.CAS_nocc_a, self.CAS_nocc_a), 
+                tol=1e-8, return_strs=False))
+            # Need to write wavefunction to checkpoint file.
+            import h5py
+            with h5py.File("scf.chk", 'r+') as fh5:
+                fh5['mcscf/ci_coeffs'] = coeff
+                fh5['mcscf/occs_alpha'] = occa
+                fh5['mcscf/occs_beta'] = occb
+
+        #REGULAR SCF RUN
         else:
+            print("Regular SCF run is on!")
             scf_result = mf.run()
             #Get SCFenergy as energy
             self.energy = scf_result.e_tot

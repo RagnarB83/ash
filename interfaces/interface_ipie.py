@@ -4,14 +4,14 @@ import numpy as np
 import os
 import shutil
 from ash.modules.module_coords import elematomnumbers, check_charge_mult
-from ash.constants import ang2bohr
+from ash.constants import ang2bohr, harkcal
 from ash.functions.functions_general import ashexit, BC, print_time_rel,print_line_with_mainheader
 from ash.functions.functions_parallel import check_OpenMPI
 
 class ipieTheory:
     def __init__(self, pyscftheoryobject=None, filename='input.json', printlevel=2,
                 numcores=1, numblocks_skip=5, dt=0.005, nwalkers=800, nsteps=25, blocks=20,
-                frozencore=False, checkpointfilename='scf.chk'):
+                frozencore=False, checkpointfilename='scf.chk', mcscf=False):
 
         self.theorynamelabel="ipie"
         print_line_with_mainheader(f"{self.theorynamelabel}Theory initialization")
@@ -52,7 +52,9 @@ class ipieTheory:
         self.blocks=blocks
         self.frozencore=frozencore
         self.checkpointfilename=checkpointfilename
+        self.mcscf=mcscf
         print("AFQMC settings:")
+        print("MCSCF:", self.mcscf)
         print("Num walkers:", self.nwalkers)
         print("Num blocks:", self.blocks)
         print("Num steps:", self.nsteps)
@@ -129,9 +131,17 @@ class ipieTheory:
         if self.frozencore is True:
             self.determine_frozen_core(qm_elems)
             print("Calling pyscf_to_ipie_exe")
-            sp.call([self.pyscf_to_ipie_exe ,'-i', self.checkpointfilename, '-j', self.filename, '--frozen-core', str(self.frozen_core_orbs)])
+            if self.mcscf is True:
+                print("MCSCF option true.")
+                sp.call([self.pyscf_to_ipie_exe ,'-i', self.checkpointfilename, '-j', self.filename, '--mcscf', '--frozen-core', str(self.frozen_core_orbs)])
+            else:
+                sp.call([self.pyscf_to_ipie_exe ,'-i', self.checkpointfilename, '-j', self.filename, '--frozen-core', str(self.frozen_core_orbs)])
         else:
-            sp.call([self.pyscf_to_ipie_exe ,'-i', self.checkpointfilename, '-j', self.filename])
+            if self.mcscf is True:
+                print("MCSCF option true.")
+                sp.call([self.pyscf_to_ipie_exe ,'-i', self.checkpointfilename, '-j', self.filename, '--mcscf'])
+            else:
+                sp.call([self.pyscf_to_ipie_exe ,'-i', self.checkpointfilename, '-j', self.filename])
 
         #Modify inputfile
         f = open(self.filename,'r')
@@ -145,6 +155,9 @@ class ipieTheory:
                 new.append(f"\"dt\": {self.dt},\n")
             elif 'nsteps' in line:
                 new.append(f"\"nsteps\": {self.nsteps},\n")
+            elif 'trial' in line:
+                new.append(line)
+                new.append(f"\"calculate_variational_energy\": true,\n")
             else:
                 new.append(line)
         f.close()
@@ -172,9 +185,10 @@ class ipieTheory:
         E_final, error, nsamp_ac = grab_ipie_energy('output.dat')
 
         print("Final ipie AFQMC energy:", E_final)
-        print("Error:", error)
+        print(f"Error: {error} Eh ({error*harkcal:.2f} kcal/mol)")
         print("nsamp_ac:", nsamp_ac)
         self.energy=E_final
+        self.error=error
 
         print(BC.OKBLUE, BC.BOLD, f"------------ENDING {self.theorynamelabel} INTERFACE-------------", BC.END)
         print(f"Single-point {self.theorynamelabel} energy:", self.energy)
