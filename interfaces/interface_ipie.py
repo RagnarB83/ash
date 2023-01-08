@@ -128,6 +128,7 @@ class ipieTheory:
         #Read PySCF checkpointfile and create ipie inputfile
         if self.frozencore is True:
             self.determine_frozen_core(qm_elems)
+            print("Calling pyscf_to_ipie_exe")
             sp.call([self.pyscf_to_ipie_exe ,'-i', self.checkpointfilename, '-j', self.filename, '--frozen-core', str(self.frozen_core_orbs)])
         else:
             sp.call([self.pyscf_to_ipie_exe ,'-i', self.checkpointfilename, '-j', self.filename])

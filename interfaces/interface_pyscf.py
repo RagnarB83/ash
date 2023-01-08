@@ -9,7 +9,7 @@ import ash.modules.module_coords
 
 class PySCFTheory:
     def __init__(self, printsetting=False, printlevel=2, numcores=1, 
-                  scf_type=None, basis=None, functional=None, gridlevel=5, 
+                  scf_type=None, basis=None, functional=None, gridlevel=5, symmetry=False,
                   pe=False, potfile='', filename='pyscf', memory=3100, conv_tol=1e-8, verbose_setting=4, 
                   CC=False, CCmethod=None, CC_direct=False, frozen_core_setting='Auto', 
                   frozen_virtuals=None, FNO=False, FNO_thresh=None, checkpointfile=True,
@@ -62,6 +62,7 @@ class PySCFTheory:
         self.conv_tol=conv_tol
         self.verbose_setting=verbose_setting
         self.checkpointfile=checkpointfile
+        self.symmetry=symmetry
         #PyQMC
         self.PyQMC=PyQMC
         self.PyQMC_nconfig=PyQMC_nconfig #integer. number of configurations in guess
@@ -78,6 +79,7 @@ class PySCFTheory:
 
         #Print the options
         print("SCF-type:", self.scf_type)
+        print("Symmetry:", self.symmetry)
         print("conv_tol:", self.conv_tol)
         print("Grid level:", self.gridlevel)
         print("verbose_setting:", self.verbose_setting)
@@ -200,7 +202,8 @@ class PySCFTheory:
         mol.verbose = 3
         coords_string=ash.modules.module_coords.create_coords_string(qm_elems,current_coords)
         mol.atom = coords_string
-        mol.symmetry = 1;  mol.charge = charge; mol.spin = mult-1
+        mol.symmetry = self.symmetry
+        mol.charge = charge; mol.spin = mult-1
         #PYSCF basis object: https://sunqm.github.io/pyscf/tutorial.html
         #Object can be string ('def2-SVP') or a dict with element-specific keys and values
         mol.basis=self.basis
