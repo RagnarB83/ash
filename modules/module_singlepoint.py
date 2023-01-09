@@ -118,12 +118,12 @@ def print_theories_table(theories,energies,fragment):
     print()
 
 #Pretty table of fragments and energies
-def print_fragments_table(fragments,energies,tabletitle="Singlepoint_fragments: "):
+def print_fragments_table(fragments,energies,tabletitle="Singlepoint_fragments: ", unit='Eh'):
     print()
     print("="*70)
     print("{}Table of energies of each fragment:".format(tabletitle))
     print("="*70)
-    print("{:10} {:<20} {:>7} {:>7} {:>20}".format("Formula", "Label", "Charge","Mult", "Energy(Eh)"))
+    print("{:10} {:<20} {:>7} {:>7} {:>20}".format("Formula", "Label", "Charge","Mult", f"Energy({unit})"))
     print("-"*70)
     for frag, e in zip(fragments,energies):
         if frag.label==None:
@@ -136,7 +136,7 @@ def print_fragments_table(fragments,energies,tabletitle="Singlepoint_fragments: 
 #Single-point energy function that runs calculations on multiple fragments. Returns a list of energies.
 #Assuming fragments have charge,mult info defined.
 #If stoichiometry provided then print reaction energy
-def Singlepoint_fragments(theory=None, fragments=None, stoichiometry=None):
+def Singlepoint_fragments(theory=None, fragments=None, stoichiometry=None, relative_energies=False):
     print_line_with_mainheader("Singlepoint_fragments function")
 
     print("Will run single-point calculation on each fragment and return a list of energies")
@@ -163,10 +163,20 @@ def Singlepoint_fragments(theory=None, fragments=None, stoichiometry=None):
         frag.set_energy(result.energy)
         print("")
 
+    #Create Results object
+    result = ASH_Results(label="Singlepoint_fragments", energies=energies, charge=charge, mult=mult)   
+
     #Print table
     print_fragments_table(fragments,energies)
 
-    result = ASH_Results(label="Singlepoint_fragments", energies=energies, charge=charge, mult=mult)    
+    #Print table
+    if relative_energies is True:
+        print()
+        print("relative_energies option is True!")
+        relenergies=[(i - min(energies)) * ash.constants.hartokcal for i in energies]
+        print_fragments_table(fragments,relenergies, unit='kcal/mol')
+        result.relative_energies = relenergies
+ 
     #Printing reaction energy if stoichiometry was provided
     if stoichiometry != None:
         print("Stoichiometry provided:", stoichiometry)

@@ -6,8 +6,8 @@ import subprocess as sp
 
 from ash.modules.module_coords import split_multimolxyzfile
 from ash.functions.functions_general import ashexit, BC, int_ranges, listdiff, print_line_with_subheader1,print_time_rel, pygrep
-#import ash
-from ash.modules.module_coords import check_charge_mult
+from ash.modules.module_coords import check_charge_mult, Fragment
+
 
 #Very simple crest interface
 def call_crest(fragment=None, xtbmethod=None, crestdir=None, charge=None, mult=None, solvent=None, energywindow=6, numcores=1, 
@@ -178,9 +178,10 @@ def get_crest_conformers(crest_calcdir='crest-calc',conf_file="crest_conformers.
         en=float(i)
         list_xtb_energies.append(en)
 
-    for els,cs in zip(all_elems,all_coords):
-        conf = ash.Fragment(elems=els, coords=cs, charge=charge, mult=mult)
+    for (els,cs,eny) in zip(all_elems,all_coords,list_xtb_energies):
+        conf = Fragment(elems=els, coords=cs, charge=charge, mult=mult)
         list_conformers.append(conf)
+        conf.energy=eny
 
     os.chdir('..')
     print("")

@@ -18,6 +18,7 @@ class ASH_Results:
     #Multi-energy job: Lists of energies and gradients
     energies: list = None
     reaction_energies: list = None
+    relative_energies: list = None
     gradients: list = None
     energies_dict: dict = None
     gradients_dict: dict = None

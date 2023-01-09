@@ -499,7 +499,7 @@ end"""
                 self.properties["Mulliken_spinpops"] = spinpops
                 print("{:<2} {:<2}  {:>10} {:>10}".format(" ", " ", "Charge", "Spinpop"))
                 for i,(el, ch, sp) in enumerate(zip(qm_elems,charges, spinpops)):
-                    print("{:<2} {:<2}: {:>10} {:>10}".format(i,el,ch,sp))
+                    print("{:<2} {:<2}: {:>10.4f} {:>10.4f}".format(i,el,ch,sp))
 
         #Grab energy
         self.energy=ORCAfinalenergygrab(outfile)

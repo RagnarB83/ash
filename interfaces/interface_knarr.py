@@ -73,7 +73,7 @@ optimizer = {"OPTIM_METHOD": "LBFGS", "MAX_ITER": 200, "TOL_MAX_FORCE": 0.01,
 #Threshold settings for CI-NEB part are the same as in the NEB-TS of ORCA
 def NEBTS(reactant=None, product=None, theory=None, images=8, CI=True, free_end=False, maxiter=100, IDPPonly=False,
         conv_type="ALL", tol_scale=10, tol_max_fci=0.10, tol_rms_fci=0.05, tol_max_f=1.03, tol_rms_f=0.51,
-        tol_turn_on_ci=1.0,  runmode='serial', numcores=1, charge=None, mult=None, printlevel=0, ActiveRegion=False, actatoms=None,
+        tol_turn_on_ci=1.0,  runmode='serial', numcores=1, charge=None, mult=None, printlevel=1, ActiveRegion=False, actatoms=None,
         interpolation="IDPP", idpp_maxiter=700, restart_file=None, TS_guess=None, mofilesdir=None, 
         OptTS_maxiter=100, OptTS_print_atoms_list=None, OptTS_convergence_setting=None, OptTS_conv_criteria=None, OptTS_coordsystem='tric',
         hessian_for_TS=None, modelhessian='unit', tsmode_tangent_threshold=0.1, subfrctor=1):
@@ -689,7 +689,7 @@ class KnarrCalculator:
                                 print(f"mofilesdir option active for iteration {self.iterations}. Looking inside {self.mofilesdir} for imagefile: {imagefile_name}")
                             if os.path.exists(path_to_imagefile):
                                 if self.printlevel >= 1:
-                                    print(f"File {path_to_imagefile} DOES exist")
+                                    print(f"File {path_to_imagefile} DOES exist. Will copy to image dir.")
                                 shutil.copyfile(path_to_imagefile,"./"+imagefile_name)
                             else:
                                 if self.printlevel >= 1:
@@ -718,15 +718,34 @@ class KnarrCalculator:
                                     print(f"A file {self.theory.qm_theory.filename}.gbw file does exist. Will use.")
                             else:
                                 if self.printlevel >= 1:
-                                    print(f"A file {self.theory.qm_theory.filename}.gbw file DOES NOT exist. Will use ORCA/ORCATheory settings.")
+                                    print(f"A file {self.theory.qm_theory.filename}.gbw file DOES NOT exist.")
+                                    #If not image_0 let's try to copy GBW file from image_0 dir first
+                                    if image_number != 0:
+                                        print("Will try to copy GBW file from image_0 dir first")
+                                        try:
+                                            shutil.copyfile(f"../image_0/{self.qm_theory.filename}.gbw",f"./{self.qm_theory.filename}.gbw")
+                                            print(f"Found a file : ../image_0/{self.qm_theory.filename}.gbw  Copying to dir: image_{image_number}")
+                                        except:
+                                            print(f"No {self.qm_theory.filename}.gbw file found in image_0 dir. Will use ORCATheory settings.")
+                                    else:
+                                        print("Will use ORCATheory settings")
                         else:
                             if os.path.exists(self.theory.filename+".gbw"):
                                 if self.printlevel >= 1:
                                     print(f"A file {self.theory.filename}.gbw file does exist. Will use.")
                             else:
                                 if self.printlevel >= 1:
-                                    print(f"A file {self.theory.filename}.gbw file DOES NOT exist. Will use ORCA/ORCATheory settings.")
-
+                                    print(f"A file {self.theory.filename}.gbw file DOES NOT exist.")
+                                    #If not image_0 let's try to copy GBW file from image_0 dir first
+                                    if image_number != 0:
+                                        print("Will try to copy GBW file from image_0 dir first")
+                                        try:
+                                            shutil.copyfile(f"../image_0/{self.theory.filename}.gbw",f"./{self.theory.filename}.gbw")
+                                            print(f"Found a file in : ../image_0/{self.theory.filename}.gbw  Copying to dir: image_{image_number}")
+                                        except:
+                                            print(f"No {self.theory.filename}.gbw file found in image_0 dir. Will use ORCATheory settings.")
+                                    else:
+                                        print("Will use ORCATheory settings")
                 if self.ActiveRegion == True:
                     currcoords=image_coords
                     # Defining full_coords as original coords temporarily
@@ -757,6 +776,7 @@ class KnarrCalculator:
                                                                 elems=self.full_fragment_reactant.elems, Grad=True, label="image_"+str(image_number))
 
                     if self.ORCAused == True:
+
                         if self.printlevel >= 1:
                             print(f"ORCA run done. Copying {self.theory.filename}.gbw to {current_image_file} for next time")
                         
