@@ -69,7 +69,7 @@ class PyMBETheory:
     #Set numcores method
     def set_numcores(self,numcores):
         self.numcores=numcores
-    def cleanup():
+    def cleanup(self):
         print("PyMBE cleanup not yet implemented.")
     # Run function. Takes coords, elems etc. arguments and computes E or E+G.
     def run(self, current_coords=None, current_MM_coords=None, MMcharges=None, qm_elems=None,
