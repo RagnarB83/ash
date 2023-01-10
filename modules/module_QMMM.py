@@ -22,6 +22,11 @@ class QMMMTheory:
         print_line_with_mainheader("QM/MM Theory")
         #print(BC.WARNING,BC.BOLD,"------------Defining QM/MM object-------------", BC.END)
 
+        #Check for necessary keywords
+        if qm_theory is None or qmatoms is None:
+            print("Error: QMMMTheory requires defining: qm_theory, qmatoms, fragment")
+            ashexit()
+
         #Defining charge/mult of QM-region
         self.qm_charge=qm_charge
         self.qm_mult=qm_mult
@@ -107,7 +112,7 @@ class QMMMTheory:
             #   elif i in self.mmatoms:
             #        self.hybridatomlabels.append('MM')
         else:
-            print("Fragment has not been defined for QM/MM. Exiting")
+            print("fragment= keyword has not been defined for QM/MM. Exiting")
             ashexit()
 
         #Setting QM/MM qmatoms in QMtheory also (used for Spin-flipping currently)

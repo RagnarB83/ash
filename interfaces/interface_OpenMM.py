@@ -434,6 +434,9 @@ class OpenMMTheory:
             if self.printlevel > 0:
                 print("Reading OpenMM XML forcefield files and PDB file")
                 print("xmlfiles:", str(xmlfiles).strip("[]"))
+                if pdbfile == None:
+                    print("Error:No pdbfile input provided")
+                    ashexit()
             # This would be regular OpenMM Forcefield definition requiring XML file
             # Topology from PDBfile annoyingly enough
             pdb = openmm.app.PDBFile(pdbfile)
