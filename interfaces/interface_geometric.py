@@ -155,7 +155,7 @@ class GeomeTRICOptimizerClass:
             #SOME PRINTING
             ######################
             blankline()
-            print(BC.WARNING, "Doing geometry optimization on fragment. Formula: {} Label: {} ".format(fragment.prettyformula,fragment.label), BC.END)
+            print(BC.WARNING, f"Doing geometry optimization on fragment. Formula: {fragment.prettyformula} Label: {fragment.label} ", BC.END)
             print("Coordinate system: ", self.coordsystem)
             print("Max iterations: ", self.maxiter)
             print("Constraints: ", self.constraints)
@@ -282,7 +282,7 @@ class GeomeTRICOptimizerClass:
                     for frozat in frozenatoms:
                         #Changing from zero-indexing (ASH) to 1-indexing (geomeTRIC)
                         frozenatomindex=frozat+1
-                        confile.write('xyz {}\n'.format(frozenatomindex))
+                        confile.write(f'xyz {frozenatomindex}\n')
             #Bond constraints
             if bondconstraints is not None :
                 self.constraintsfile='constraints.txt'
@@ -295,9 +295,9 @@ class GeomeTRICOptimizerClass:
                         #Changing from zero-indexing (ASH) to 1-indexing (geomeTRIC)
                         #print("bondpair", bondpair)
                         if constrainvalue is True:
-                            confile.write('distance {} {} {}\n'.format(bondpair[0]+1,bondpair[1]+1, bondpair[2] ))                    
+                            confile.write(f'distance {bondpair[0]+1} {bondpair[1]+1} {bondpair[2]}\n')                    
                         else:    
-                            confile.write('distance {} {}\n'.format(bondpair[0]+1,bondpair[1]+1))
+                            confile.write(f'distance {bondpair[0]+1} {bondpair[1]+1}\n')
             #Angle constraints
             if angleconstraints is not None :
                 self.constraintsfile='constraints.txt'
@@ -310,9 +310,9 @@ class GeomeTRICOptimizerClass:
                         #Changing from zero-indexing (ASH) to 1-indexing (geomeTRIC)
                         #print("angleentry", angleentry)
                         if constrainvalue is True:
-                            confile.write('angle {} {} {} {}\n'.format(angleentry[0]+1,angleentry[1]+1,angleentry[2]+1,angleentry[3] ))
+                            confile.write(f'angle {angleentry[0]+1} {angleentry[1]+1} {angleentry[2]+1} {angleentry[3]}\n')
                         else:
-                            confile.write('angle {} {} {}\n'.format(angleentry[0]+1,angleentry[1]+1,angleentry[2]+1))
+                            confile.write(f'angle {angleentry[0]+1} {angleentry[1]+1} {angleentry[2]+1}\n')
             if dihedralconstraints is not None:
                 self.constraintsfile='constraints.txt'
                 with open("constraints.txt", 'a') as confile:
@@ -324,9 +324,9 @@ class GeomeTRICOptimizerClass:
                         #Changing from zero-indexing (ASH) to 1-indexing (geomeTRIC)
                         #print("dihedralentry", dihedralentry)
                         if constrainvalue is True:
-                            confile.write('dihedral {} {} {} {} {}\n'.format(dihedralentry[0]+1,dihedralentry[1]+1,dihedralentry[2]+1,dihedralentry[3]+1, dihedralentry[4] ))
+                            confile.write(f'dihedral {dihedralentry[0]+1} {dihedralentry[1]+1} {dihedralentry[2]+1} {dihedralentry[3]+1} {dihedralentry[4]}\n')
                         else:
-                            confile.write('dihedral {} {} {} {}\n'.format(dihedralentry[0]+1,dihedralentry[1]+1,dihedralentry[2]+1,dihedralentry[3]+1))
+                            confile.write(f'dihedral {dihedralentry[0]+1} {dihedralentry[1]+1} {dihedralentry[2]+1} {dihedralentry[3]+1}\n')
             if constraintsinputfile is not None:
                 self.constraintsfile=constraintsinputfile
 
@@ -387,7 +387,7 @@ class GeomeTRICOptimizerClass:
             #TODO: Check for convergence here
 
             blankline()
-            print("geomeTRIC Geometry optimization converged in {} steps!".format(self.ashengine.iteration_count))
+            print(f"geomeTRIC Geometry optimization converged in {self.ashengine.iteration_count} steps!")
             blankline()
 
             #QM/MM: Doing final energy evaluation if Truncated PC option was on
@@ -506,7 +506,7 @@ class ASHengineclass:
         print("Writing trajectory for Full system to file: geometric_OPTtraj_Full.xyz")
         with open("geometric_OPTtraj_Full.xyz", "a") as trajfile:
             trajfile.write(str(self.fragment.numatoms)+"\n")
-            trajfile.write("Iteration {} Energy {} \n".format(self.iteration_count,self.energy))
+            trajfile.write(f"Iteration {self.iteration_count} Energy {self.energy} \n")
             for el,cor in zip(self.fragment.elems,self.full_current_coords):
                 trajfile.write(el + "  " + str(cor[0]) + " " + str(cor[1]) + " " + str(cor[2]) +
                             "\n")
@@ -515,7 +515,7 @@ class ASHengineclass:
         print("Writing trajectory for QM-region to file: geometric_OPTtraj_QMregion.xyz")
         with open("geometric_OPTtraj_QMregion.xyz", "a") as trajfile:
             trajfile.write(str(len(self.theory.qmatoms))+"\n")
-            trajfile.write("Iteration {} Energy {} \n".format(self.iteration_count,self.energy))
+            trajfile.write(f"Iteration {self.iteration_count} Energy {self.energy} \n")
             qm_coords, qm_elems = self.fragment.get_coords_for_atoms(self.theory.qmatoms)
             for el,cor in zip(qm_elems,qm_coords):
                 trajfile.write(el + "  " + str(cor[0]) + " " + str(cor[1]) + " " + str(cor[2]) +
@@ -573,7 +573,7 @@ class ASHengineclass:
             timeA=time.time()
 
             #PRINTING TO OUTPUT SPECIFIC GEOMETRY IN EACH GEOMETRIC ITERATION (now: self.print_atoms_list)
-            print("Current geometry (Å) in step {} (print_atoms_list region)".format(self.iteration_count))
+            print(f"Current geometry (Å) in step {self.iteration_count} (print_atoms_list region)")
             
             print("-------------------------------------------------")
             
@@ -620,7 +620,7 @@ class ASHengineclass:
             self.full_current_coords=currcoords
             #PRINTING ACTIVE GEOMETRY IN EACH GEOMETRIC ITERATION
             #print("Current geometry (Å) in step {}".format(self.iteration_count))
-            print("Current geometry (Å) in step {} (print_atoms_list region)".format(self.iteration_count))
+            print(f"Current geometry (Å) in step {self.iteration_count} (print_atoms_list region)")
             print("---------------------------------------------------")
             print_coords_for_atoms(currcoords, self.fragment.elems, self.print_atoms_list)
             print("")
