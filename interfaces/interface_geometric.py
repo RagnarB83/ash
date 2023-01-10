@@ -238,7 +238,7 @@ class GeomeTRICOptimizerClass:
                     #No act-region. Print all atoms
                     print_atoms_list=fragment.allatoms
             self.print_atoms_list=print_atoms_list
-            print("Atomlist to print in output:", self.print_atoms_list)
+            #print("Atomlist to print in output:", self.print_atoms_list)
 
 
             #ActiveRegion option where geomeTRIC only sees the QM part that is being optimized
