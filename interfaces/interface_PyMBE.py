@@ -159,7 +159,6 @@ def run_pymbe(pymbedir,filename, numcores=1):
 
 #Silly: Writing Python-script inputfile to disk
 def write_pymbe_input(coords=None, elems=None, pymbeinput=None, pymbedict=None,charge=None,mult=None,):
-    print("hd")
     with open("input", 'w') as inpfile:
         inpfile.write("#!/usr/bin/env python\n")
         inpfile.write("# -*- coding: utf-8 -*\n\n")
