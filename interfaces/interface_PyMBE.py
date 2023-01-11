@@ -39,13 +39,13 @@ class PyMBETheory:
         #Checking if pyscf is present
         #TODO: Avoid importing since PyMBE 
         print("Checking if pyscf exists")
-        try:
-            import pyscf
-            print("PySCF is present")
-        except:
-            print("PyMBE requires installation of pyscf")
-            print("Try e.g. : pip install pyscf")
-            ashexit()
+        #try:
+        #    import pyscf
+        #    print("PySCF is present")
+        #except:
+        #    print("PyMBE requires installation of pyscf")
+        #    print("Try e.g. : pip install pyscf")
+        #    ashexit()
         #Checking if mpi4py is present
         print("Checking if mpi4py exists")
         try:
@@ -156,9 +156,10 @@ def run_pymbe(pymbedir,filename, numcores=1):
         else:
             print(f"Running PyMBE using {numcores} cores using external MPI4PY mpiexec command")
             process = sp.run(['mpiexec','-np', str(numcores), pymbedir + '/src/main.py'], check=True, stdout=ofile, stderr=ofile, universal_newlines=True)
+
 #Silly: Writing Python-script inputfile to disk
-#TODO: Make it better
 def write_pymbe_input(coords=None, elems=None, pymbeinput=None, pymbedict=None,charge=None,mult=None,):
+    print("hd")
     with open("input", 'w') as inpfile:
         inpfile.write("#!/usr/bin/env python\n")
         inpfile.write("# -*- coding: utf-8 -*\n\n")
@@ -166,13 +167,25 @@ def write_pymbe_input(coords=None, elems=None, pymbeinput=None, pymbedict=None,c
         for el,c in zip(elems,coords):
             inpfile.write('{}   {} {} {}\n'.format(el,c[0],c[1],c[2]))
         inpfile.write("'''\n")
-        #Write inputstring 
+        #Write inputstring
+        unpaired_els=mult-1
         if pymbeinput is not None:
-            inpfile.write(pymbeinput + '\n')
+            for inpline in pymbeinput.split('\n'):
+                if 'system' in inpline:
+                    #Adding spin info
+                    systemline=inpline.replace('}',f', \'charge\':{charge}, \'spin\':{unpaired_els} }}')
+                    inpfile.write(systemline + '\n')
+                else:
+                    inpfile.write(inpline + '\n')
         #Write dictionary to file input
         if pymbedict is not None:
             for subd_key,subd_val in pymbedict.items():
-                inpfile.write(str(subd_key)+' = '+str(subd_val) + '\n')
+                if 'system' in subd_key:
+                    #Adding spin info
+                    systemline=str(subd_val).replace('}',f', \'charge\':{charge}, \'spin\':{unpaired_els} }}')
+                    inpfile.write(str(subd_key)+' = '+systemline + '\n')
+                else:
+                    inpfile.write(str(subd_key)+' = '+str(subd_val) + '\n')
         inpfile.write('\n')
 
 
