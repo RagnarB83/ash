@@ -2890,7 +2890,7 @@ def remove_atoms_from_system_CHARMM(fragment=None, psffile=None, topfile=None, a
     print("remove_atoms_from_system_CHARMM: Done!")
 
 
-def add_atoms_to_PSF(resgroup=None, topfile=None, psffile=None, psfgendir=None, num_added_atoms=None, dummysegname="ADD"):
+def add_atoms_to_PSF(resgroup=None, topfile=None, psffile=None, psfgendir=None, num_added_atoms=None):
     print("Finding resgroup {} in topfile {} ".format(resgroup, topfile))
     # Checking if resgroup present in topfile
     resgroup_in_topfile = False
@@ -2922,9 +2922,13 @@ def add_atoms_to_PSF(resgroup=None, topfile=None, psffile=None, psfgendir=None, 
         ashexit()
 
     # Dummy segmentname. Can't be something existing. Using ADD1, ADD2 etc.
-    matches = pygrep2(dummysegname, psffile)
-    segname = dummysegname + str(len(matches) + 1)
-    print("segname:", segname)
+    import random
+    import string
+    dummysegname="AD" + random.choice(string.ascii_uppercase) + str(random.randint(0, 9))
+    #matches = pygrep2(dummysegname, psffile)
+    #segname = dummysegname + str(len(matches) + 1)
+    #print("segname:", segname)
+    print("dummysegname:", dummysegname)
     psf_script = """
     topology {}
     readpsf {}
@@ -2935,7 +2939,7 @@ def add_atoms_to_PSF(resgroup=None, topfile=None, psffile=None, psfgendir=None, 
     writepsf x-plor cmap newsystem_XPLOR.psf
     #writepsf charmm cmap newsystem_CHARMM.psf
     writepdb new-system.pdb
-        """.format(topfile, psffile, segname, resgroup)
+        """.format(topfile, psffile, dummysegname, resgroup)
 
     # Creating PSF inputfile
     with open("psfinput.tcl", 'w') as f:
@@ -2948,7 +2952,7 @@ def add_atoms_to_PSF(resgroup=None, topfile=None, psffile=None, psfgendir=None, 
 
 
 def add_atoms_to_system_CHARMM(fragment=None, added_atoms_coordstring=None, resgroup=None, psffile=None, topfile=None,
-                               psfgendir=None, qmatoms=None, actatoms=None, offset_atom_indices=0, dummysegname="ADD"):
+                               psfgendir=None, qmatoms=None, actatoms=None, offset_atom_indices=0):
     print_line_with_mainheader("add_atoms_to_system")
     if fragment is None or psffile is None or topfile is None or added_atoms_coordstring is None or resgroup is None:
         print("Error: add_atoms_to_system_CHARMM requires keyword arguments:")
@@ -2980,7 +2984,7 @@ def add_atoms_to_system_CHARMM(fragment=None, added_atoms_coordstring=None, resg
     fragment.add_coords(added_elems, added_coords, conn=False)
 
     # Adding atoms to PSF-file
-    add_atoms_to_PSF(resgroup, topfile, psffile, psfgendir, num_added_atoms, dummysegname=dummysegname)
+    add_atoms_to_PSF(resgroup, topfile, psffile, psfgendir, num_added_atoms)
     print("")
     print("Added atoms to PSF.")
     print("Wrote new PSF-file: 'newsystem_XPLOR.psf'.")
