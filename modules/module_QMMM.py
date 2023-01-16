@@ -70,6 +70,10 @@ class QMMMTheory:
             print("All atoms in fragment:", len(self.allatoms))
             #Sorting qmatoms list
             self.qmatoms = sorted(qmatoms)
+
+            if len(self.qmatoms) == 0:
+                print("Error: List of qmatoms provided is empty. This is not allowed.")
+                ashexit()
             self.mmatoms=listdiff(self.allatoms,self.qmatoms)
 
             # FROZEN AND ACTIVE ATOM REGIONS for NonbondedTheory

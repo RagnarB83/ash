@@ -245,7 +245,7 @@ class GeomeTRICOptimizerClass:
             if self.ActiveRegion == True:
 
                 if len(self.actatoms) == 0:
-                    print("Error:List of active atoms (actatoms) provided is empty.")
+                    print("Error: List of active atoms (actatoms) provided is empty. This is not allowed.")
                     ashexit()
 
                 #Sorting list, otherwise trouble
