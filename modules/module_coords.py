@@ -1873,15 +1873,17 @@ def write_pdbfile(fragment, outputname="ASHfragment", openmmobject=None, atomnam
         segmentlabels = openmmobject.segmentnames
 
     # What to choose if keyword arguments not given
-    if atomnames is None:
+    if atomnames is None or len(atomnames) == 0:
+        print("Warning: using elements as atomnames")
         # Elements instead. Means VMD will display atoms properly at least
         atomnames = fragment.elems
-    if resnames is None:
+    if resnames is None or len(resnames) == 0:
         resnames = fragment.numatoms * [dummyname]
-    if residlabels is None:
+    if residlabels is None or len(residlabels) == 0:
         residlabels = fragment.numatoms * [1]
     # Note: choosing to make segment ID 3-letter-string (and then space)
     if segmentlabels is None or len(segmentlabels) == 0:
+        print("Warning: no segment labels")
         segmentlabels = fragment.numatoms * ['   ']
         #segmentlabels = fragment.numatoms * ['SEG']
 
