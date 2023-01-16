@@ -243,6 +243,11 @@ class GeomeTRICOptimizerClass:
 
             #ActiveRegion option where geomeTRIC only sees the QM part that is being optimized
             if self.ActiveRegion == True:
+
+                if len(self.actatoms) == 0:
+                    print("Error:List of active atoms (actatoms) provided is empty.")
+                    ashexit()
+
                 #Sorting list, otherwise trouble
                 self.actatoms.sort()
                 print("Active Region option Active. Passing only active-region coordinates to geomeTRIC.")
