@@ -1881,7 +1881,7 @@ def write_pdbfile(fragment, outputname="ASHfragment", openmmobject=None, atomnam
     if residlabels is None:
         residlabels = fragment.numatoms * [1]
     # Note: choosing to make segment ID 3-letter-string (and then space)
-    if segmentlabels is None:
+    if segmentlabels is None or len(segmentlabels) == 0:
         segmentlabels = fragment.numatoms * ['   ']
         #segmentlabels = fragment.numatoms * ['SEG']
 
