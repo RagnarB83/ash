@@ -2,7 +2,7 @@ import time
 
 from ash.functions.functions_general import ashexit, BC,print_time_rel, print_line_with_mainheader
 import ash.modules.module_coords
-#import scipy 
+import os
 
 #PySCF Theory object.
 # TODO: PE: Polarizable embedding (CPPE). Not completely active in PySCF 1.7.1. Bugfix required I think
@@ -518,6 +518,12 @@ class PySCFTheory:
 
             #Run
             self.energy = mch.mc1step()[0]
+
+            #Cleanup Dice stuff immediately
+            bkpfiles=glob.glob('*.bkp')
+            for bkpfile in bkpfiles:
+                os.remove(wffile)
+
 
         elif self.CAS is True:
             print("CAS run is on!")
