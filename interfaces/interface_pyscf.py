@@ -430,11 +430,16 @@ class PySCFTheory:
                 df, configs = vmc(wf,configs)
         #CAS or CASSCF run
         elif self.CAS is True:
-            print("CASSCF SCF run is on!")
+            print("CAS  run is on!")
             #First run SCF
             scf_result = mf.run()
             print(f"Now running CAS job with active space of {self.active_space[0]} electrons in {self.active_space[1]} orbitals")
-            mc = self.mcscf.CASSCF(mf, self.active_space[0], self.active_space[1])
+            
+            if self.CASSCF is True:
+                print("Doing CASSCF (orbital optimization)")
+                mc = self.mcscf.CASSCF(mf, self.active_space[0], self.active_space[1])
+            else:
+                print("Doing CAS-CI (no orbital optimization)")
             mc.chkfile = "scf.chk"
             e_tot, e_cas, fcivec, mo, mo_energy = mc.kernel()
             print("CASSCF run done")
