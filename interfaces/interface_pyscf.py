@@ -501,7 +501,7 @@ class PySCFTheory:
                 norb = len(nat_occs_for_thresholds)
                 nelec = round(sum(nat_occs_for_thresholds))
             else:
-                print("Active space gives as input: active_space=", self.self.active_space)
+                print("Active space given as input: active_space=", self.active_space)
                 # Number of orbital and electrons from active_space keyword!
                 nelec=self.active_space[0]
                 norb=self.active_space[1]
