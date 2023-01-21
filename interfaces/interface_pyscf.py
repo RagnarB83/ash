@@ -14,7 +14,9 @@ class PySCFTheory:
                   CC=False, CCmethod=None, CC_direct=False, frozen_core_setting='Auto',
                   CAS=False, CASSCF=False, active_space=None, CAS_nocc_a=None, CAS_nocc_b=None,
                   frozen_virtuals=None, FNO=False, FNO_thresh=None, checkpointfile=True,
-                  PyQMC=False, PyQMC_nconfig=1, PyQMC_method='DMC'):
+                  PyQMC=False, PyQMC_nconfig=1, PyQMC_method='DMC',
+                  Dice_CAS=False, Dice_stochastic=True, Dice_PTiter=200, Dice_sweep_iter= [0,3],
+                  Dice_DoRDM=True, Dice_sweep_epsilon = [ 5e-3, 1e-3 ], Dice_macroiter=0):
 
         self.theorytype="QM"
         print_line_with_mainheader("PySCFTheory initialization")
@@ -37,6 +39,7 @@ class PySCFTheory:
         if CC is True and CCmethod is None:
             print("Error: Need to choose CCmethod, e.g. 'CCSD', 'CCSD(T)")
             ashexit()
+        
         #Printlevel
         self.printlevel=printlevel
         self.memory=memory
@@ -71,29 +74,50 @@ class PySCFTheory:
         self.CAS_nocc_a=CAS_nocc_a
         self.CAS_nocc_b=CAS_nocc_b
 
-        if self.CAS is True:
-            if self.active_space == None or len(self.active_space) != 2:
-                print("active_space must be defined as a list of 2 numbers (M electrons in N orbitals)")
-                ashexit()
-            print("CAS_nocc_a:", self.CAS_nocc_a)
-            print("CAS_nocc_b:", self.CAS_nocc_b)
-
         #PyQMC
         self.PyQMC=PyQMC
         self.PyQMC_nconfig=PyQMC_nconfig #integer. number of configurations in guess
         self.PyQMC_method=PyQMC_method # DMC or VMC
         if self.PyQMC is True:
+            self.postSCF=True
             self.load_pyqmc()
+        #Dice CAS
+        self.Dice_CAS=Dice_CAS
+        if self.Dice_CAS is True:
+            self.Dice_CAS=Dice_CAS
+            self.Dice_stochastic=Dice_stochastic
+            self.Dice_PTiter=Dice_PTiter
+            self.Dice_sweep_iter=Dice_sweep_iter
+            self.Dice_DoRDM=Dice_DoRDM
+            self.Dice_sweep_epsilon = Dice_sweep_epsilon
+            self.Dice_macroiter=Dice_macroiter
+        #Whether job is SCF (HF/DFT) only or a post-SCF method like CC or CAS 
+        self.postSCF=False
+        if self.CAS is True or self.Dice_CAS is True:
+            self.postSCF=True
+            if self.active_space == None or len(self.active_space) != 2:
+                print("active_space must be defined as a list of 2 numbers (M electrons in N orbitals)")
+                ashexit()
+            #print("CAS_nocc_a:", self.CAS_nocc_a)
+            #print("CAS_nocc_b:", self.CAS_nocc_b)
+        if self.CC is True:
+            self.postSCF=True
 
-        #Attempting to load pyscf
-        self.load_pyscf()
-        self.set_numcores(numcores)
-        
+        #Are we doing an initialSCF calculation or not
+        #Generally yes, unless PyQMC, More options will come here
+        if self.PyQMC is True:
+            self.SCF=False
+            self.postSCF=True
+        else:
+            self.SCF=True
+
         #PySCF scratch dir. Todo: Need to adapt
         #print("Setting PySCF scratchdir to ", os.getcwd())
 
         #Print the options
+        print("SCF:", self.SCF)
         print("SCF-type:", self.scf_type)
+        print("Post-SCF:", self.postSCF)
         print("Symmetry:", self.symmetry)
         print("conv_tol:", self.conv_tol)
         print("Grid level:", self.gridlevel)
@@ -112,8 +136,21 @@ class PySCFTheory:
         print()
         print("CAS:", self.CAS)
         print("CASSCF:", self.CASSCF)
+        print("PyQMC:", self.PyQMC)
+        print("Dice_CAS:", self.Dice_CAS)
+        if self.Dice_CAS is True:
+            print("Dice_stochastic", self.Dice_stochastic)
+            print("Dice_PTiter", self.Dice_PTiter)
+            print("Dice_sweep_iter", self.Dice_sweep_iter)
+            print("Dice_DoRDM", self.Dice_DoRDM)
+            print("Dice_sweep_epsilon", self.Dice_sweep_epsilon)
+            print("Dice_macroiter", self.Dice_macroiter)
+        
         #TODO: Restart settings for PySCF
 
+        #Attempting to load pyscf
+        self.load_pyscf()
+        self.set_numcores(numcores)
 
     def determine_frozen_core(self,elems):
         print("Determining frozen core")
@@ -153,6 +190,13 @@ class PySCFTheory:
         if self.CAS is True:
             from pyscf import mcscf
             self.mcscf=mcscf
+            from pyscf.mp.dfump2_native import DFMP2
+            self.pyscf_dmp2=DFMP2
+        if self.Dice_CAS is True:
+            from pyscf.shciscf import shci
+            self.shci=shci
+            from pyscf.mp.dfump2_native import DFMP2
+            self.pyscf_dmp2=DFMP2
         #TODO: Needs to be revisited
         if self.pe==True:
             #import pyscf.solvent as solvent
@@ -179,6 +223,25 @@ class PySCFTheory:
             os.remove(self.filename+'.dat')
         except:
             pass
+    def write_orbitals_to_Moldenfile(self,mol, orbitals, occupations, label="orbs"):
+        print("Writing orbitals to disk as Molden file")
+        self.pyscf_molden.from_mo(mol, f'pyscf_{label}.molden', orbitals, occ=occupations)
+
+    def calculate_MP2_natural_orbitals(self,mol, mf):
+        #ALTERNATIVE: https://github.com/pyscf/pyscf/issues/466
+        # MP2 natural occupation numbers and natural orbitals
+        natocc, natorb = self.pyscf_dmp2(mf.to_uhf()).make_natorbs()
+
+        print("MP2 natural orbital occupations:", natocc)
+        #Writing to disk as Molden file
+        self.write_orbitals_to_Moldenfile(mol, natorb,natocc, label="MP2nat")
+
+        #Choosing MO-coeffients to be
+        if self.scf_type == 'RHF' or self.scf_type == 'RKS':
+            mo_coefficients=natorb              
+        else:
+            mo_coefficients=[natorb,natorb]
+        return natocc, mo_coefficients
     #Run function. Takes coords, elems etc. arguments and computes E or E+G.
     def run(self, current_coords=None, current_MM_coords=None, MMcharges=None, qm_elems=None,
             elems=None, Grad=False, PC=False, numcores=None, pe=False, potfile=None, restart=False, label=None,
@@ -215,11 +278,10 @@ class PySCFTheory:
                 qm_elems = elems
 
         #MOL OBJECT
-        #NOTE: Simplify
         #Defining pyscf mol object and populating 
         mol = self.pyscf.gto.Mole()
-        #Not very verbose system printing
-        mol.verbose = 3
+        #Mol system printing. Hardcoding to 3 as otherwise too much PySCF printing
+        mol.verbose = 3 
         coords_string=ash.modules.module_coords.create_coords_string(qm_elems,current_coords)
         mol.atom = coords_string
         mol.symmetry = self.symmetry
@@ -285,7 +347,6 @@ class PySCFTheory:
             #Grid setting
             mf.grids.level = self.gridlevel
 
-        
         mf.conv_tol = self.conv_tol
         #Control printing here. TOdo: make variable
         mf.verbose = self.verbose_setting
@@ -293,7 +354,6 @@ class PySCFTheory:
         #Checkpointfile
         if self.checkpointfile is True:
             mf.chkfile = 'scf.chk'
-
 
         #FROZEN ORBITALS in CC
         if self.CC:
@@ -315,15 +375,15 @@ class PySCFTheory:
             print("Final frozen-orbital list (core and virtuals):", self.frozen_orbital_indices)
         
         
-        ############
+        ##############################
         #RUNNING
-        ############
+        ##############################
         print()
-        #COUPLED CLUSTER RUN
-        if self.CC is True:
-            print("Coupled cluster is on !")
-            #SCF-part
-            print("First running SCF")
+        #####################
+        #SCF STEP
+        #####################
+        if self.SCF is True:
+            print("Running SCF")
             scf_result = mf.run()
             print("SCF energy:", scf_result.e_tot)
             print("SCF energy components:", scf_result.scf_summary)
@@ -334,6 +394,13 @@ class PySCFTheory:
                 num_scf_orbitals_alpha=len(scf_result.mo_occ[0])
                 print("Total num. orbitals:", num_scf_orbitals_alpha)
 
+            #Get SCFenergy as initial total energy
+            self.energy = scf_result.e_tot
+        #####################
+        #COUPLED CLUSTER
+        #####################
+        if self.CC is True:
+            print("Coupled cluster is on !")
             #Default MO coefficients None (unless MP2natorbs option below)
             mo_coefficients=None
 
@@ -341,32 +408,8 @@ class PySCFTheory:
             if self.FNO is True:
                 print("FNO is True")
                 print("MP2 natural orbitals on!")
-                print("Will calculate MP2 natural orbitals use as input in CC job")
-                #ALTERNATIVE: https://github.com/pyscf/pyscf/issues/466
-                #pt = self.pyscf.mp.MP2(mf)
-                #mp2_E, t2 = pt.kernel(mf.mo_energy, mf.mo_coeff)
-                # form the one body density matrix
-                #rdm1 = pt.make_rdm1()
-                #print("rdm1:", rdm1)
-                # diagonalize to yield the NOs and NO occupation #s
-                #occ, no = scipy.linalg.eigh(rdm1)
-                # eigenvalues are sorted in ascending order so reorder
-                #occ = occ[::-1]
-                #no = no[:, ::-1]
-                #print("no:", no)
-                #ashexit()
-                # MP2 natural occupation numbers and natural orbitals
-                natocc, natorb = self.pyscf_dmp2(mf.to_uhf()).make_natorbs()
-                print("MP2 natural orbital occupations:", natocc)
-                print("Writing MP2 natural orbitals to disk as Molden file")
-                self.pyscf_molden.from_mo(mol, 'pyscf_mp2nat.molden', natorb, occ=natocc)
-
-
-                #Choosing MO-coeffients to be
-                if self.scf_type == 'RHF' or self.scf_type == 'RKS':
-                    mo_coefficients=natorb              
-                else:
-                    mo_coefficients=[natorb,natorb]
+                print("Will calculate MP2 natural orbitals to use as input in CC job")
+                natocc, mo_coefficients = self.calculate_MP2_natural_orbitals(mol,mf)
 
                 #Optional natorb truncation if FNO_thresh is chosen
                 if self.FNO_thresh is not None:
@@ -414,7 +457,9 @@ class PySCFTheory:
                 print("Triples energy:", et)
                 self.energy = result.e_tot + et
                 print("Final CCSD(T) energy:", self.energy)
+        #####################
         #PyQMC
+        #####################
         elif self.PyQMC is True:
             print("PyQMC is on!")
             configs = self.pyqmc.initial_guess(mol,self.PyQMC_nconfig)
@@ -428,59 +473,108 @@ class PySCFTheory:
             elif self.PyQMC_method == 'VMC':
                 #More options possible
                 df, configs = vmc(wf,configs)
-        #CAS or CASSCF run
+        #####################
+        #CAS-CI and CASSCF
+        #####################
+
+        elif self.Dice_CAS is True:
+            print("Will calculate MP2 natural orbitals to use as input in Dice CAS job")
+            natocc, mo_coefficients = self.calculate_MP2_natural_orbitals(mol,mf)
+
+            #Updating mf object with MP2-nat MO coefficients
+            mf.mo_coeff=mo_coefficients
+            #Updating mo-occupations with MP2-nat occupations (pointless?)
+            mf.mo_occ=natocc
+
+            # Number of orbital and electrons
+            nelec=self.active_space[0]
+            norb=self.active_space[1]
+            print(f"Doing Dice CAS calculation with {nelec} electrons in {norb} orbitals!")
+            print("Dice_macroiter:", self.Dice_macroiter)
+            mch = self.shci.SHCISCF( mf, norb, nelec )
+            mch.fcisolver.mpiprefix = f'mpirun -np {self.numcores}'
+            mch.fcisolver.stochastic = self.Dice_stochastic
+            mch.fcisolver.nPTiter = self.Dice_PTiter
+            mch.fcisolver.sweep_iter = self.Dice_sweep_iter
+            mch.fcisolver.DoRDM = self.Dice_DoRDM
+            mch.fcisolver.sweep_epsilon = self.Dice_sweep_epsilon
+            #CASSCF iterations
+            mch.max_cycle_macro = self.Dice_macroiter
+
+            #Run
+            self.energy = mch.mc1step()[0]
+
         elif self.CAS is True:
-            print("CAS  run is on!")
+            print("CAS run is on!")
             #First run SCF
             scf_result = mf.run()
             print(f"Now running CAS job with active space of {self.active_space[0]} electrons in {self.active_space[1]} orbitals")
             
+            #Initial orbitals for CAS-CI or CASSCF
+            #Default MP2 natural orbitals
+            # TODO: Override this with other options: 
+            print("Will calculate MP2 natural orbitals to use as input in CAS job")
+            natocc, natorbs = self.calculate_MP2_natural_orbitals(mol,mf)
+            
             if self.CASSCF is True:
                 print("Doing CASSCF (orbital optimization)")
-                mc = self.mcscf.CASSCF(mf, self.active_space[0], self.active_space[1])
+                #TODO: Orbital option for starting CASSCF calculation
+                casscf = self.mcscf.CASSCF(mf, self.active_space[0], self.active_space[1])
+                casscf.kernel(natorbs)
+                casscf.chkfile = "scf.chk"
+                e_tot, e_cas, fcivec, mo, mo_energy = casscf.kernel()
+                print("CASSCF run done")
             else:
                 print("Doing CAS-CI (no orbital optimization)")
-            mc.chkfile = "scf.chk"
-            e_tot, e_cas, fcivec, mo, mo_energy = mc.kernel()
-            print("CASSCF run done")
+                casci = self.mcscf.CASCI(mf, self.active_space[0], self.active_space[1])
+                casci.kernel(natorbs)
+                casci.chkfile = "casci.chk"
+                e_tot, e_cas, fcivec, mo, mo_energy = casci.kernel()
+                print("CAS-CI run done")
+
             print("e_tot:", e_tot)
             print("e_cas:", e_cas)
             self.energy = e_tot
+
             #################
             # for ipie
             #################
-            print("CAS_nocc_a:", self.CAS_nocc_a)
-            print("CAS_nocc_b:", self.CAS_nocc_b)
+            #print("CAS_nocc_a:", self.CAS_nocc_a)
+            #print("CAS_nocc_b:", self.CAS_nocc_b)
             #Write to checkpoint file
-            coeff, occa, occb = zip(*self.pyscf.fci.addons.large_ci(fcivec, self.active_space[0], (self.CAS_nocc_a, self.CAS_nocc_a), 
-                tol=1e-8, return_strs=False))
+            #coeff, occa, occb = zip(*self.pyscf.fci.addons.large_ci(fcivec, self.active_space[0], (self.CAS_nocc_a, self.CAS_nocc_a), 
+            #    tol=1e-8, return_strs=False))
             # Need to write wavefunction to checkpoint file.
-            import h5py
-            with h5py.File("scf.chk", 'r+') as fh5:
-                fh5['mcscf/ci_coeffs'] = coeff
-                fh5['mcscf/occs_alpha'] = occa
-                fh5['mcscf/occs_beta'] = occb
-
-        #REGULAR SCF RUN
+            #import h5py
+            #with h5py.File("scf.chk", 'r+') as fh5:
+            #    fh5['mcscf/ci_coeffs'] = coeff
+            #    fh5['mcscf/occs_alpha'] = occa
+            #    fh5['mcscf/occs_beta'] = occb
         else:
-            print("Regular SCF run is on!")
-            scf_result = mf.run()
-            #Get SCFenergy as energy
-            self.energy = scf_result.e_tot
-            print("SCF energy components:", scf_result.scf_summary)
+            print("No post-SCF job.")
         
-        #Grab energy and gradient
+        ##############
+        #GRADIENT
+        ##############
         #NOTE: only SCF supported for now
         if Grad==True:
+            print("Gradient requested")
+            if self.postSCF is True:
+                print("Gradient for postSCF methods is not implemented in ASH interface")
+                ashexit()
             if PC is True:
-                print("THIS IS NOT CONFIRMED TO WORK!!!!!!!!!!!!")
+                print("Gradient with PC is not quite ready")
                 print("Units need to be checked.")
+                ashexit()
                 hfg = mm_charge_grad(grad.dft.RKS(mf), current_MM_coords, MMcharges)
                 #                grad = mf.nuc_grad_method()
                 self.gradient = hfg.kernel()
             else:
+                print("Calculating regular SCF gradient")
+                #Doing regular SCF gradeitn
                 grad = mf.nuc_grad_method()
                 self.gradient = grad.kernel()
+                print("Gradient calculation done")
 
 
         #TODO: write in error handling here
