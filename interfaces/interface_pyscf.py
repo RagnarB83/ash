@@ -16,7 +16,8 @@ class PySCFTheory:
                   frozen_virtuals=None, FNO=False, FNO_thresh=None, checkpointfile=True,
                   PyQMC=False, PyQMC_nconfig=1, PyQMC_method='DMC',
                   Dice_CAS=False, Dice_stochastic=True, Dice_PTiter=200, Dice_sweep_iter= [0,3],
-                  Dice_DoRDM=True, Dice_sweep_epsilon = [ 5e-3, 1e-3 ], Dice_macroiter=0):
+                  Dice_DoRDM=True, Dice_sweep_epsilon = [ 5e-3, 1e-3 ], Dice_macroiter=0,
+                  cas_nmin=1.999, cas_nmax=0.0):
 
         self.theorytype="QM"
         print_line_with_mainheader("PySCFTheory initialization")
@@ -91,9 +92,14 @@ class PySCFTheory:
             self.Dice_DoRDM=Dice_DoRDM
             self.Dice_sweep_epsilon = Dice_sweep_epsilon
             self.Dice_macroiter=Dice_macroiter
+        
+        #Natural orbital threshold parameterds to determined active space
+        # Currently only used by Dice. Could also be used for DMRG and other near-FCI-type methods
+        self.cas_nmin=cas_nmin
+        self.cas_nmax=cas_nmax
         #Whether job is SCF (HF/DFT) only or a post-SCF method like CC or CAS 
         self.postSCF=False
-        if self.CAS is True or self.Dice_CAS is True:
+        if self.CAS is True:
             self.postSCF=True
             if self.active_space == None or len(self.active_space) != 2:
                 print("active_space must be defined as a list of 2 numbers (M electrons in N orbitals)")
@@ -145,7 +151,8 @@ class PySCFTheory:
             print("Dice_DoRDM", self.Dice_DoRDM)
             print("Dice_sweep_epsilon", self.Dice_sweep_epsilon)
             print("Dice_macroiter", self.Dice_macroiter)
-        
+            print("CAS NO nmin", self.cas_nmin)
+            print("CAS NO nmax", self.cas_nmax)
         #TODO: Restart settings for PySCF
 
         #Attempting to load pyscf
@@ -179,7 +186,7 @@ class PySCFTheory:
             print(BC.FAIL, "Problem importing pyscf. Make sure pyscf has been installed: pip install pyscf", BC.END)
             ashexit(code=9)
         self.pyscf=pyscf
-        print("PySCF version:", self.pyscf.__version__)
+        print("\nPySCF version:", self.pyscf.__version__)
         from pyscf.tools import molden
         self.pyscf_molden=molden
         if self.CC is True:
@@ -486,9 +493,18 @@ class PySCFTheory:
             #Updating mo-occupations with MP2-nat occupations (pointless?)
             mf.mo_occ=natocc
 
-            # Number of orbital and electrons
-            nelec=self.active_space[0]
-            norb=self.active_space[1]
+            if self.active_space is not None:
+                print(f"SHCI Active space determined from MP2 NO threshold parameters: cas_nmin={self.cas_nmin} and cas_nmax={self.cas_nmax}")
+                print("Note: Use active_space keyword if you want to select active space manually instead")
+                # Determing active space from natorb thresholds
+                nat_occs_for_thresholds=[i for i in natocc if i < self.cas_nmin and i > self.cas_nmax]
+                norb = len(nat_occs_for_thresholds)
+                nelec = round(sum(nat_occs_for_thresholds))
+            else:
+                print("Active space gives as input: active_space=", self.self.active_space)
+                # Number of orbital and electrons from active_space keyword!
+                nelec=self.active_space[0]
+                norb=self.active_space[1]
             print(f"Doing Dice CAS calculation with {nelec} electrons in {norb} orbitals!")
             print("Dice_macroiter:", self.Dice_macroiter)
             mch = self.shci.SHCISCF( mf, norb, nelec )
