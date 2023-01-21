@@ -523,7 +523,7 @@ class PySCFTheory:
             #Cleanup Dice stuff immediately
             bkpfiles=glob.glob('*.bkp')
             for bkpfile in bkpfiles:
-                os.remove(wffile)
+                os.remove(bkpfile)
 
 
         elif self.CAS is True:
