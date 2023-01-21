@@ -492,8 +492,7 @@ class PySCFTheory:
             mf.mo_coeff=mo_coefficients
             #Updating mo-occupations with MP2-nat occupations (pointless?)
             mf.mo_occ=natocc
-
-            if self.active_space is not None:
+            if self.active_space == None:
                 print(f"SHCI Active space determined from MP2 NO threshold parameters: cas_nmin={self.cas_nmin} and cas_nmax={self.cas_nmax}")
                 print("Note: Use active_space keyword if you want to select active space manually instead")
                 # Determing active space from natorb thresholds
