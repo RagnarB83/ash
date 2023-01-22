@@ -94,12 +94,12 @@ class MRCCTheory:
         if Grad==True:
             print("Grad not ready")
             ashexit()
-            write_mrcc_input(self.mrccinput,charge,mult,qm_elems,current_coords)
+            write_mrcc_input(self.mrccinput,charge,mult,qm_elems,current_coords,numcores)
             run_mrcc(self.mrccdir,self.filename+'.out')
             self.energy=grab_energy_mrcc(self.filename+'.out')
             self.gradient = grab_gradient_mrcc()
         else:
-            write_mrcc_input(self.mrccinput,charge,mult,qm_elems,current_coords)
+            write_mrcc_input(self.mrccinput,charge,mult,qm_elems,current_coords,numcores)
             run_mrcc(self.mrccdir,self.filename+'.out')
             self.energy=grab_energy_mrcc(self.filename+'.out')
 
@@ -122,9 +122,12 @@ def run_mrcc(mrccdir,filename):
         process = sp.run([mrccdir + '/dmrcc'], check=True, stdout=ofile, stderr=ofile, universal_newlines=True)
 
 #TODO: Gradient option
-def write_mrcc_input(mrccinput,charge,mult,elems,coords):
+#NOTE: Now setting ccsdthreads and ptthreads to number of cores
+def write_mrcc_input(mrccinput,charge,mult,elems,coords,numcores):
     with open("MINP", 'w') as inpfile:
         inpfile.write(mrccinput + '\n')
+        inpfile.write(f'ccsdthreads={numcores}\n')
+        inpfile.write(f'ptthreads={numcores}\n')
         inpfile.write('unit=angs\n')
         inpfile.write('charge={}\n'.format(charge))
         inpfile.write('mult={}\n'.format(mult))
