@@ -83,7 +83,7 @@ def Singlepoint(fragment=None, theory=None, Grad=False, charge=None, mult=None):
 def Singlepoint_theories(theories=None, fragment=None, charge=None, mult=None):
     print_line_with_mainheader("Singlepoint_theories function")
 
-    print("Will run single-point calculation on the fragment with multiple theories and return a list of energies")
+    print("Will run single-point calculation on the fragment with multiple theories")
 
     energies=[]
 
@@ -139,7 +139,7 @@ def print_fragments_table(fragments,energies,tabletitle="Singlepoint_fragments: 
 def Singlepoint_fragments(theory=None, fragments=None, stoichiometry=None, relative_energies=False):
     print_line_with_mainheader("Singlepoint_fragments function")
 
-    print("Will run single-point calculation on each fragment and return a list of energies")
+    print("Will run single-point calculation on each fragment")
     print("Theory:", theory.__class__.__name__)
 
     energies=[];filenames=[]
@@ -235,7 +235,7 @@ def Singlepoint_fragments_and_theories(theories=None, fragments=None, stoichiome
 #Assuming fragments have charge,mult info defined.
 def Singlepoint_reaction(theory=None, reaction=None, unit=None, orbitals_stored=None):
     print_line_with_mainheader("Singlepoint_reaction function")
-    print("Will run single-point calculation on each fragment defined in reaction and return the reaction energy")
+    print("Will run single-point calculation on each fragment defined in reaction")
     print("Theory:", theory.__class__.__name__)
     print("Resetting energies in reaction object")
     reaction.energies=[]
