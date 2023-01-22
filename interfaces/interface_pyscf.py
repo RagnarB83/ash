@@ -93,6 +93,7 @@ class PySCFTheory:
             self.Dice_DoRDM=Dice_DoRDM
             self.Dice_sweep_epsilon = Dice_sweep_epsilon
             self.Dice_macroiter=Dice_macroiter
+            #TODO: davidsonTol, dE, maxiter, epsilon2, epsilon2Large, targetError, sampleN, nroots?
         
         #Natural orbital threshold parameterds to determined active space
         # Currently only used by Dice. Could also be used for DMRG and other near-FCI-type methods

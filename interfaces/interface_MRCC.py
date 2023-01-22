@@ -114,9 +114,6 @@ class MRCCTheory:
             print_time_rel(module_init_time, modulename='MRCC run', moduleindex=2)
             return self.energy
 
-
-
-
 def run_mrcc(mrccdir,filename):
     with open(filename, 'w') as ofile:
         process = sp.run([mrccdir + '/dmrcc'], check=True, stdout=ofile, stderr=ofile, universal_newlines=True)
@@ -146,18 +143,6 @@ def grab_energy_mrcc(outfile):
         for line in f:
             if 'ENERGY' in line:
                 energy=float(line.split()[5])
-    
-    #linetograb="energy"
-    #with open(outfile) as f:
-    #    for line in f:
-    #        if linetograb.upper() in line.upper():
-    #            final=line
-    #print(final)
-    #try:
-    #    energy=float(final.split()[-1])
-    #except:
-    #    print("Problem reading energy from MRCC outputfile. Check:", outfile)
-    #    ashexit()
     return energy
 
 
