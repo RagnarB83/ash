@@ -18,7 +18,10 @@ class PySCFTheory:
                   PyQMC=False, PyQMC_nconfig=1, PyQMC_method='DMC',
                   Dice_CAS=False, Dice_stochastic=True, Dice_PTiter=200, Dice_sweep_iter= [0,3],
                   Dice_DoRDM=True, Dice_sweep_epsilon = [ 5e-3, 1e-3 ], Dice_macroiter=0,
+                  Dice_davidsonTol=5e-05, Dice_dE=1e-08, Dice_maxiter=9, Dice_epsilon2=1e-07, Dice_epsilon2Large=1000,
+                  Dice_targetError=0.0001, Dice_sampleN=200, Dice_nroots=1,
                   cas_nmin=1.999, cas_nmax=0.0):
+
 
         self.theorytype="QM"
         print_line_with_mainheader("PySCFTheory initialization")
@@ -93,8 +96,15 @@ class PySCFTheory:
             self.Dice_DoRDM=Dice_DoRDM
             self.Dice_sweep_epsilon = Dice_sweep_epsilon
             self.Dice_macroiter=Dice_macroiter
-            #TODO: davidsonTol, dE, maxiter, epsilon2, epsilon2Large, targetError, sampleN, nroots?
-        
+            self.Dice_davidsonTol=Dice_davidsonTol
+            self.Dice_dE=Dice_dE
+            self.Dice_maxiter=Dice_maxiter
+            self.Dice_epsilon2=Dice_epsilon2
+            self.Dice_epsilon2Large=Dice_epsilon2Large
+            self.Dice_targetError=Dice_targetError
+            self.Dice_sampleN=Dice_sampleN
+            self.Dice_nroots=Dice_nroots
+
         #Natural orbital threshold parameterds to determined active space
         # Currently only used by Dice. Could also be used for DMRG and other near-FCI-type methods
         self.cas_nmin=cas_nmin
@@ -515,6 +525,15 @@ class PySCFTheory:
             mch.fcisolver.sweep_iter = self.Dice_sweep_iter
             mch.fcisolver.DoRDM = self.Dice_DoRDM
             mch.fcisolver.sweep_epsilon = self.Dice_sweep_epsilon
+            mch.fcisolver.davidsonTol = self.Dice_davidsonTol
+            mch.fcisolver.dE = self.Dice_dE
+            mch.fcisolver.maxiter = self.Dice_maxiter
+            mch.fcisolver.epsilon2 = self.Dice_epsilon2
+            mch.fcisolver.epsilon2Large = self.Dice_epsilon2Large
+            mch.fcisolver.targetError = self.Dice_targetError
+            mch.fcisolver.sampleN = self.Dice_sampleN
+            mch.fcisolver.nroots = self.Dice_nroots
+
             #CASSCF iterations
             mch.max_cycle_macro = self.Dice_macroiter
 
