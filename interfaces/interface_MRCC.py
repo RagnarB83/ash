@@ -20,7 +20,7 @@ class MRCCTheory:
         if mrccdir == None:
             print(BC.WARNING, "No mrccdir argument passed to MRCCTheory. Attempting to find mrccdir variable inside settings_ash", BC.END)
             try:
-                print("settings_ash.settings_dict:", settings_ash.settings_dict)
+                print("settings_ash.settings_dict:", ash.settings_ash.settings_dict)
                 self.mrccdir=ash.settings_ash.settings_dict["mrccdir"]
             except:
                 print(BC.WARNING,"Found no mrccdir variable in settings_ash module either.",BC.END)
