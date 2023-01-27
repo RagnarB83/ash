@@ -1,5 +1,6 @@
 
 import os
+import sys
 import numpy as np
 import time
 from functools import wraps
@@ -45,7 +46,8 @@ def ashexit(errormessage=None, code=1):
     print(BC.FAIL,"ASH exiting with code:", code, BC.END)
     if errormessage != None:
         print(BC.FAIL,"Error message:", errormessage, BC.END)
-    raise SystemExit(code)
+    #raise SystemExit(code)
+    sys.exit(1)
 
 
 def load_pythoncall():

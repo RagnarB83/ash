@@ -597,13 +597,17 @@ def check_ORCAbinary(orcadir):
         orcadir ([type]): [description]
     """
     print("Checking if ORCA binary works...",end="")
-    p = sp.Popen([orcadir+"/orca"], stdout = sp.PIPE)
-    out, err = p.communicate()
-    if 'This program requires the name of a parameterfile' in str(out):
-        print(BC.OKGREEN,"yes", BC.END)
-        return True
-    else:
-        print(BC.FAIL,"Problem: ORCA binary: {} does not work. Exiting!".format(orcadir+'/orca'), BC.END)
+    try:
+        p = sp.Popen([orcadir+"/orca"], stdout = sp.PIPE)
+        out, err = p.communicate()
+        if 'This program requires the name of a parameterfile' in str(out):
+            print(BC.OKGREEN,"yes", BC.END)
+            return True
+        else:
+            print(BC.FAIL,"Problem: ORCA binary: {} does not work. Exiting!".format(orcadir+'/orca'), BC.END)
+            ashexit()
+    except FileNotFoundError:
+        print("ORCA binary was not found")
         ashexit()
 
 

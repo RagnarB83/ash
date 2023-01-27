@@ -22,7 +22,7 @@ class MRCCTheory:
             try:
                 print("settings_ash.settings_dict:", ash.settings_ash.settings_dict)
                 self.mrccdir=ash.settings_ash.settings_dict["mrccdir"]
-            except:
+            except KeyError:
                 print(BC.WARNING,"Found no mrccdir variable in settings_ash module either.",BC.END)
                 try:
                     self.mrccdir = os.path.dirname(shutil.which('dmrcc'))
