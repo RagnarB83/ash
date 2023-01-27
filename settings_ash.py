@@ -73,6 +73,7 @@ def try_read_setting(stringvalue, datatype):
 #NOTE: Warning. If user added quotation marks around string then things go awry. Look into
 # Keywords to look up in ash_user_settings.ini
 try_read_setting("orcadir", "string")
+try_read_setting("mrccdir", "string")
 try_read_setting("daltondir", "string")
 try_read_setting("xtbdir", "string")
 try_read_setting("psi4dir", "string")
