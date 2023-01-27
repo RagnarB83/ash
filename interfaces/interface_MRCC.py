@@ -3,6 +3,7 @@ import os
 import shutil
 import time
 
+import ash.settings_ash
 from ash.functions.functions_general import ashexit, BC, print_time_rel,print_line_with_mainheader
 
 #MRCC Theory object.
@@ -20,7 +21,7 @@ class MRCCTheory:
             print(BC.WARNING, "No mrccdir argument passed to MRCCTheory. Attempting to find mrccdir variable inside settings_ash", BC.END)
             try:
                 print("settings_ash.settings_dict:", settings_ash.settings_dict)
-                self.mrccdir=settings_ash.settings_dict["mrccdir"]
+                self.mrccdir=ash.settings_ash.settings_dict["mrccdir"]
             except:
                 print(BC.WARNING,"Found no mrccdir variable in settings_ash module either.",BC.END)
                 try:
