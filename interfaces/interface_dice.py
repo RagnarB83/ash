@@ -117,8 +117,9 @@ class DiceTheory:
         self.cleanup()
 
         #Run PySCF to get integrals
-        #self.pyscftheoryobject.run(current_coords=current_coords, elems=qm_elems, charge=charge, mult=mult)
-
+        print("XX")
+        self.pyscftheoryobject.run(current_coords=current_coords, elems=qm_elems, charge=charge, mult=mult)
+        print("pyscftheoryobject:", self.pyscftheoryobject)
         #Read PySCF checkpointfile and create ipie inputfile
         if self.frozencore is True:
             self.determine_frozen_core(qm_elems)
@@ -126,6 +127,8 @@ class DiceTheory:
 
         #NEVPT2 or AFQMC
         if self.NEVPT2 is True:
+            print("Running Dice NEVPT2 calculation on multiconfigurational WF")
+            mc=self.pyscftheoryobject.mc
             self.QMCUtils.run_nevpt2(mc, nelecAct=None, numAct=None, norbFrozen=None,
                integrals="FCIDUMP.h5", nproc=None, seed=None,
                fname="nevpt2.json", foutname='nevpt2.out', nroot=0,
@@ -135,9 +138,11 @@ class DiceTheory:
                determCCVV=True, SCEnergiesBurnIn=50, SCNormsBurnIn=50,
                vmc_root=None, diceoutfile="dice.out")
         elif self.AFQMC is True:
+            print("Running Dice AFQMC")
             #QMCUtils.run_afqmc(mc, ndets = 100, norb_frozen = norb_frozen)
             if self.trialWF == 'SHCI':
-                #mc=
+                print("Using multiconfigurational WF")
+                mc=self.pyscftheoryobject.mc
                 #Phaseless AFQMC with hci trial
                 self.QMCUtils.run_afqmc_mc(mc, vmc_root=None, mpi_prefix=None,
                                 norb_frozen=0, nproc=None, chol_cut=1e-5,
@@ -148,7 +153,8 @@ class DiceTheory:
                                 run_dir=None, scratch_dir=None, use_eri=False,
                                 dry_run=False)
             else:
-                #mf=
+                print("Using single-determinant WF")
+                mf=self.pyscftheoryobject.mf
                 #Phaseless AFQMC with simple mf trial
                 self.QMCUtils.run_afqmc_mf(mf, vmc_root=None, mpi_prefix=None,
                     mo_coeff=None, norb_frozen=0, nproc=None,
@@ -157,15 +163,6 @@ class DiceTheory:
                     ortho_steps=20, burn_in=50, cholesky_threshold=1.0e-3,
                     weight_cap=None, write_one_rdm=False, run_dir=None,
                     scratch_dir=None, dry_run=False)
-                #General??
-                #self.QMCUtils.run_afqmc(mf_or_mc, vmc_root=None, mpi_prefix=None,
-                #        mo_coeff=None, ndets=100, nroot=0,
-                #        norb_frozen=0, nproc=None, chol_cut=1e-5,
-                #        seed=None, dt=0.005, steps_per_block=50,
-                #        nwalk_per_proc=5, nblocks=1000, ortho_steps=20,
-                #        burn_in=50, cholesky_threshold=1.0e-3, weight_cap=None,
-                #        write_one_rdm=False, run_dir=None, scratch_dir=None, 
-                #        use_eri=False, dry_run=False)
         else:
             print("Unknown Dice run option")
             ashexit()
