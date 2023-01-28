@@ -327,26 +327,26 @@ class PySCFTheory:
             except:
                 ashexit()
             # TODO: Adapt to RKS vs. UKS etc.
-            mf = self.pyscf.solvent.PE(self.pyscf.scf.RKS(mol), self.potfile)
+            self.mf = self.pyscf.solvent.PE(self.pyscf.scf.RKS(mol), self.potfile)
         #Regular job
         else:
             if PC is True:
                 # QM/MM pointcharge embedding
                 #mf = mm_charge(dft.RKS(mol), [(0.5, 0.6, 0.8)], MMcharges)
                 if self.scf_type == 'RKS':
-                    mf = self.pyscf.qmmm.mm_charge(dft.RKS(mol), current_MM_coords, MMcharges)
+                    self.mf = self.pyscf.qmmm.mm_charge(dft.RKS(mol), current_MM_coords, MMcharges)
                 else:
                     print("Error. scf_type other than RKS and PC True not ready")
                     ashexit()
             else:
                 if self.scf_type == 'RKS':
-                    mf = self.pyscf.scf.RKS(mol)
+                    self.mf = self.pyscf.scf.RKS(mol)
                 elif self.scf_type == 'UKS':
-                    mf = self.pyscf.scf.UKS(mol)
+                    self.mf = self.pyscf.scf.UKS(mol)
                 elif self.scf_type == 'RHF':
-                    mf = self.pyscf.scf.RHF(mol)
+                    self.mf = self.pyscf.scf.RHF(mol)
                 elif self.scf_type == 'UHF':
-                    mf = self.pyscf.scf.UHF(mol)
+                    self.mf = self.pyscf.scf.UHF(mol)
 
         #Printing settings.
         if self.printsetting==True:
@@ -354,25 +354,25 @@ class PySCFTheory:
             #np.set_printoptions(linewidth=500) TODO: not sure
         else:
             print("Printsetting = False. Printing to:", self.filename )
-            mf.stdout = open(self.filename+'.out', 'w')
+            self.mf.stdout = open(self.filename+'.out', 'w')
 
         #DFT
         if self.functional is not None:
             #Setting functional
-            mf.xc = self.functional
+            self.mf.xc = self.functional
             #TODO: libxc vs. xcfun interface control here
             #mf._numint.libxc = xcfun
 
             #Grid setting
-            mf.grids.level = self.gridlevel
+            self.mf.grids.level = self.gridlevel
 
-        mf.conv_tol = self.conv_tol
+        self.mf.conv_tol = self.conv_tol
         #Control printing here. TOdo: make variable
-        mf.verbose = self.verbose_setting
+        self.mf.verbose = self.verbose_setting
 
         #Checkpointfile
         if self.checkpointfile is True:
-            mf.chkfile = 'scf.chk'
+            self.mf.chkfile = 'scf.chk'
 
         #FROZEN ORBITALS in CC
         if self.CC:
@@ -403,7 +403,7 @@ class PySCFTheory:
         #####################
         if self.SCF is True:
             print("Running SCF")
-            scf_result = mf.run()
+            scf_result = self.mf.run()
             print("SCF energy:", scf_result.e_tot)
             print("SCF energy components:", scf_result.scf_summary)
             if self.scf_type == 'RHF' or self.scf_type == 'RKS':
@@ -428,7 +428,7 @@ class PySCFTheory:
                 print("FNO is True")
                 print("MP2 natural orbitals on!")
                 print("Will calculate MP2 natural orbitals to use as input in CC job")
-                natocc, mo_coefficients = self.calculate_MP2_natural_orbitals(mol,mf)
+                natocc, mo_coefficients = self.calculate_MP2_natural_orbitals(mol,self.mf)
 
                 #Optional natorb truncation if FNO_thresh is chosen
                 if self.FNO_thresh is not None:
@@ -450,16 +450,16 @@ class PySCFTheory:
             print()
             print("Now starting CCSD calculation")
             if self.scf_type == "RHF":
-                cc = self.pyscf_cc.CCSD(mf, self.frozen_orbital_indices,mo_coeff=mo_coefficients)
+                cc = self.pyscf_cc.CCSD(self.mf, self.frozen_orbital_indices,mo_coeff=mo_coefficients)
             elif self.scf_type == "UHF":
-                cc = self.pyscf_cc.UCCSD(mf,self.frozen_orbital_indices,mo_coeff=mo_coefficients)
+                cc = self.pyscf_cc.UCCSD(self.mf,self.frozen_orbital_indices,mo_coeff=mo_coefficients)
                 
             elif self.scf_type == "RKS":
                 print("Warning: CCSD on top of RKS determinant")
-                cc = self.pyscf_cc.CCSD(mf.to_rhf(), self.frozen_orbital_indices,mo_coeff=mo_coefficients)
+                cc = self.pyscf_cc.CCSD(self.mf.to_rhf(), self.frozen_orbital_indices,mo_coeff=mo_coefficients)
             elif self.scf_type == "UKS":
                 print("Warning: CCSD on top of UKS determinant")
-                cc = self.pyscf_cc.UCCSD(mf.to_uhf(),self.frozen_orbital_indices,mo_coeff=mo_coefficients)
+                cc = self.pyscf_cc.UCCSD(self.mf.to_uhf(),self.frozen_orbital_indices,mo_coeff=mo_coefficients)
             
             #Switch to integral-direct CC if user-requested
             #NOTE: Faster but only possible for small/medium systems
@@ -482,7 +482,7 @@ class PySCFTheory:
         elif self.PyQMC is True:
             print("PyQMC is on!")
             configs = self.pyqmc.initial_guess(mol,self.PyQMC_nconfig)
-            wf, to_opt = self.pyqmc.generate_wf(mol,mf)
+            wf, to_opt = self.pyqmc.generate_wf(mol,self.mf)
             pgrad_acc = self.pyqmc.gradient_generator(mol,wf, to_opt)
             wf, optimization_data = self.pyqmc.line_minimization(wf, configs, pgrad_acc)
             #DMC, untested
@@ -498,12 +498,12 @@ class PySCFTheory:
 
         elif self.Dice_CAS is True:
             print("Will calculate MP2 natural orbitals to use as input in Dice CAS job")
-            natocc, mo_coefficients = self.calculate_MP2_natural_orbitals(mol,mf)
+            natocc, mo_coefficients = self.calculate_MP2_natural_orbitals(mol,self.mf)
 
             #Updating mf object with MP2-nat MO coefficients
-            mf.mo_coeff=mo_coefficients
+            self.mf.mo_coeff=mo_coefficients
             #Updating mo-occupations with MP2-nat occupations (pointless?)
-            mf.mo_occ=natocc
+            self.mf.mo_occ=natocc
             if self.active_space == None:
                 print(f"SHCI Active space determined from MP2 NO threshold parameters: cas_nmin={self.cas_nmin} and cas_nmax={self.cas_nmax}")
                 print("Note: Use active_space keyword if you want to select active space manually instead")
@@ -518,27 +518,27 @@ class PySCFTheory:
                 norb=self.active_space[1]
             print(f"Doing Dice CAS calculation with {nelec} electrons in {norb} orbitals!")
             print("Dice_macroiter:", self.Dice_macroiter)
-            mch = self.shci.SHCISCF( mf, norb, nelec )
-            mch.fcisolver.mpiprefix = f'mpirun -np {self.numcores}'
-            mch.fcisolver.stochastic = self.Dice_stochastic
-            mch.fcisolver.nPTiter = self.Dice_PTiter
-            mch.fcisolver.sweep_iter = self.Dice_sweep_iter
-            mch.fcisolver.DoRDM = self.Dice_DoRDM
-            mch.fcisolver.sweep_epsilon = self.Dice_sweep_epsilon
-            mch.fcisolver.davidsonTol = self.Dice_davidsonTol
-            mch.fcisolver.dE = self.Dice_dE
-            mch.fcisolver.maxiter = self.Dice_maxiter
-            mch.fcisolver.epsilon2 = self.Dice_epsilon2
-            mch.fcisolver.epsilon2Large = self.Dice_epsilon2Large
-            mch.fcisolver.targetError = self.Dice_targetError
-            mch.fcisolver.sampleN = self.Dice_sampleN
-            mch.fcisolver.nroots = self.Dice_nroots
+            self.mch = self.shci.SHCISCF( self.mf, norb, nelec )
+            self.mch.fcisolver.mpiprefix = f'mpirun -np {self.numcores}'
+            self.mch.fcisolver.stochastic = self.Dice_stochastic
+            self.mch.fcisolver.nPTiter = self.Dice_PTiter
+            self.mch.fcisolver.sweep_iter = self.Dice_sweep_iter
+            self.mch.fcisolver.DoRDM = self.Dice_DoRDM
+            self.mch.fcisolver.sweep_epsilon = self.Dice_sweep_epsilon
+            self.mch.fcisolver.davidsonTol = self.Dice_davidsonTol
+            self.mch.fcisolver.dE = self.Dice_dE
+            self.mch.fcisolver.maxiter = self.Dice_maxiter
+            self.mch.fcisolver.epsilon2 = self.Dice_epsilon2
+            self.mch.fcisolver.epsilon2Large = self.Dice_epsilon2Large
+            self.mch.fcisolver.targetError = self.Dice_targetError
+            self.mch.fcisolver.sampleN = self.Dice_sampleN
+            self.mch.fcisolver.nroots = self.Dice_nroots
 
             #CASSCF iterations
-            mch.max_cycle_macro = self.Dice_macroiter
+            self.mch.max_cycle_macro = self.Dice_macroiter
 
             #Run SHCISCF (ususually only 1 iteration, so CAS-CI)
-            self.energy = mch.mc1step()[0]
+            self.energy = self.mch.mc1step()[0]
 
             #Cleanup Dice stuff immediately
             bkpfiles=glob.glob('*.bkp')
@@ -549,26 +549,26 @@ class PySCFTheory:
         elif self.CAS is True:
             print("CAS run is on!")
             #First run SCF
-            scf_result = mf.run()
+            scf_result = self.mf.run()
             print(f"Now running CAS job with active space of {self.active_space[0]} electrons in {self.active_space[1]} orbitals")
             
             #Initial orbitals for CAS-CI or CASSCF
             #Default MP2 natural orbitals
             # TODO: Override this with other options: 
             print("Will calculate MP2 natural orbitals to use as input in CAS job")
-            natocc, natorbs = self.calculate_MP2_natural_orbitals(mol,mf)
+            natocc, natorbs = self.calculate_MP2_natural_orbitals(mol,self.mf)
             
             if self.CASSCF is True:
                 print("Doing CASSCF (orbital optimization)")
                 #TODO: Orbital option for starting CASSCF calculation
-                casscf = self.mcscf.CASSCF(mf, self.active_space[0], self.active_space[1])
+                casscf = self.mcscf.CASSCF(self.mf, self.active_space[0], self.active_space[1])
                 casscf.kernel(natorbs)
                 casscf.chkfile = "scf.chk"
                 e_tot, e_cas, fcivec, mo, mo_energy = casscf.kernel()
                 print("CASSCF run done")
             else:
                 print("Doing CAS-CI (no orbital optimization)")
-                casci = self.mcscf.CASCI(mf, self.active_space[0], self.active_space[1])
+                casci = self.mcscf.CASCI(self.mf, self.active_space[0], self.active_space[1])
                 casci.kernel(natorbs)
                 casci.chkfile = "casci.chk"
                 e_tot, e_cas, fcivec, mo, mo_energy = casci.kernel()
@@ -608,13 +608,13 @@ class PySCFTheory:
                 print("Gradient with PC is not quite ready")
                 print("Units need to be checked.")
                 ashexit()
-                hfg = mm_charge_grad(grad.dft.RKS(mf), current_MM_coords, MMcharges)
-                #                grad = mf.nuc_grad_method()
+                hfg = mm_charge_grad(grad.dft.RKS(self.mf), current_MM_coords, MMcharges)
+                #                grad = self.mf.nuc_grad_method()
                 self.gradient = hfg.kernel()
             else:
                 print("Calculating regular SCF gradient")
                 #Doing regular SCF gradeitn
-                grad = mf.nuc_grad_method()
+                grad = self.mf.nuc_grad_method()
                 self.gradient = grad.kernel()
                 print("Gradient calculation done")
 

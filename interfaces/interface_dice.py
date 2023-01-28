@@ -117,9 +117,8 @@ class DiceTheory:
         self.cleanup()
 
         #Run PySCF to get integrals
-        print("XX")
         self.pyscftheoryobject.run(current_coords=current_coords, elems=qm_elems, charge=charge, mult=mult)
-        print("pyscftheoryobject:", self.pyscftheoryobject)
+        print("pyscftheoryobject:", self.pyscftheoryobject.__dict__)
         #Read PySCF checkpointfile and create ipie inputfile
         if self.frozencore is True:
             self.determine_frozen_core(qm_elems)
@@ -128,7 +127,7 @@ class DiceTheory:
         #NEVPT2 or AFQMC
         if self.NEVPT2 is True:
             print("Running Dice NEVPT2 calculation on multiconfigurational WF")
-            mc=self.pyscftheoryobject.mc
+            mc=self.pyscftheoryobject.mch
             self.QMCUtils.run_nevpt2(mc, nelecAct=None, numAct=None, norbFrozen=None,
                integrals="FCIDUMP.h5", nproc=None, seed=None,
                fname="nevpt2.json", foutname='nevpt2.out', nroot=0,
@@ -142,7 +141,7 @@ class DiceTheory:
             #QMCUtils.run_afqmc(mc, ndets = 100, norb_frozen = norb_frozen)
             if self.trialWF == 'SHCI':
                 print("Using multiconfigurational WF")
-                mc=self.pyscftheoryobject.mc
+                mc=self.pyscftheoryobject.mch
                 #Phaseless AFQMC with hci trial
                 self.QMCUtils.run_afqmc_mc(mc, vmc_root=None, mpi_prefix=None,
                                 norb_frozen=0, nproc=None, chol_cut=1e-5,
