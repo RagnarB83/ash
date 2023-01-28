@@ -540,6 +540,7 @@ class PySCFTheory:
             #Run SHCISCF (ususually only 1 iteration, so CAS-CI)
             self.energy = self.mch.mc1step()[0]
 
+
             #Cleanup Dice stuff immediately
             bkpfiles=glob.glob('*.bkp')
             for bkpfile in bkpfiles:

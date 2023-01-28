@@ -30,11 +30,24 @@ class DiceTheory:
         else:
             self.dicedir = dicedir
 
+        #Path to Dice binary
+        self.dice_binary=self.dicedir+"/bin/Dice"
         #Put Dice script dir in path
         sys.path.insert(0, dicedir+"/scripts")
-        #Import various functionality 
-        import QMCUtils
-        self.QMCUtils=QMCUtils
+        #Import various functionality
+        try:
+            import QMCUtils
+            self.QMCUtils=QMCUtils
+        except:
+            print("Problem import QMCUtils. Dice directory is probably incorrect")
+            ashexit()
+        #SHCI pyscf plugin
+        try:
+            from pyscf.shciscf import shci
+            self.shci=shci
+        except:
+            print("Problem importing pyscf.sciscf")
+            ashexit()
 
         if numcores > 1:
             try:
@@ -81,6 +94,17 @@ class DiceTheory:
         self.frozen_core_orbs=int(num_el/2)
         print("Total frozen electrons in system:", self.frozen_core_el)
         print("Total frozen orbitals in system:", self.frozen_core_orbs)
+
+    #Write dets.bin file. Requires running SHCI once more to get determinants
+    def write_dets(self):
+        print("Writing dets")
+        #Run once more 
+        self.shci.dryrun(self.mch)
+        self.shci.writeSHCIConfFile(self.mch.fcisolver, self.mch.nelecas, False)
+        with open(self.mch.fcisolver.configFile, 'a') as f:
+            f.write('writebestdeterminants 1000000\n\n')
+            self.shci.executeSHCI(self.mch.fcisolver)
+
 
     # Run function. Takes coords, elems etc. arguments and computes E or E+G.
     def run(self, current_coords=None, current_MM_coords=None, MMcharges=None, qm_elems=None,
@@ -146,6 +170,14 @@ class DiceTheory:
             if self.trialWF == 'SHCI':
                 print("Using multiconfigurational WF")
                 mc=self.pyscftheoryobject.mch
+
+                #Write dets.bin file
+                self.write_dets()
+                #command = f"mv input.dat dice.dat; mpirun {self.dice_binary} dice.dat > dice_b2u.out; rm -f shci.e"
+                #os.system(command)
+
+                print("XX")
+
                 #Phaseless AFQMC with hci trial
                 e_afqmc, err_afqmc = self.QMCUtils.run_afqmc_mc(mc, vmc_root=None, mpi_prefix=None,
                                 norb_frozen=0, nproc=None, chol_cut=1e-5,
