@@ -96,15 +96,17 @@ class DiceTheory:
         print("Total frozen orbitals in system:", self.frozen_core_orbs)
 
     #Write dets.bin file. Requires running SHCI once more to get determinants
-    def write_dets(self):
+    def run_and_write_dets(self):
         print("Writing dets")
         #Run once more 
         self.shci.dryrun(self.pyscftheoryobject.mch)
         self.shci.writeSHCIConfFile(self.pyscftheoryobject.mch.fcisolver, self.pyscftheoryobject.mch.nelecas, False)
         with open(self.pyscftheoryobject.mch.fcisolver.configFile, 'a') as f:
             f.write('writebestdeterminants 1000000\n\n')
-            self.shci.executeSHCI(self.pyscftheoryobject.mch.fcisolver)
-
+        self.shci.executeSHCI(self.pyscftheoryobject.mch.fcisolver)
+    #def run_dice(self):
+        #For calling Dice directly when needed
+        #mpirun -np  /users/home/ragnarbj/pyscf-dice/Dice-repo/Dice/bin/Dice ./input.dat > ./output.dat 2>&1
 
     # Run function. Takes coords, elems etc. arguments and computes E or E+G.
     def run(self, current_coords=None, current_MM_coords=None, MMcharges=None, qm_elems=None,
@@ -172,11 +174,11 @@ class DiceTheory:
                 mc=self.pyscftheoryobject.mch
 
                 #Write dets.bin file
-                self.write_dets()
+                self.run_and_write_dets()
                 #command = f"mv input.dat dice.dat; mpirun {self.dice_binary} dice.dat > dice_b2u.out; rm -f shci.e"
                 #os.system(command)
 
-                print("XX")
+                print("Here")
 
                 #Phaseless AFQMC with hci trial
                 e_afqmc, err_afqmc = self.QMCUtils.run_afqmc_mc(mc, vmc_root=None, mpi_prefix=None,
