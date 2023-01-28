@@ -537,7 +537,7 @@ class PySCFTheory:
             #CASSCF iterations
             mch.max_cycle_macro = self.Dice_macroiter
 
-            #Run
+            #Run SHCISCF (ususually only 1 iteration, so CAS-CI)
             self.energy = mch.mc1step()[0]
 
             #Cleanup Dice stuff immediately

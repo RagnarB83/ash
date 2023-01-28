@@ -6,7 +6,7 @@ import numpy as np
 
 from ash.functions.functions_general import ashexit, BC, print_time_rel,print_line_with_mainheader
 from ash.modules.module_coords import write_xyzfile
-
+import ash.settings_ash
 #TeraChem Theory object.
 class TeraChemTheory:
     def __init__(self, terachemdir=None, filename='terachem', printlevel=2,
@@ -22,8 +22,8 @@ class TeraChemTheory:
         if terachemdir == None:
             print(BC.WARNING, f"No terachemdir argument passed to {self.theorynamelabel}Theory. Attempting to find terachemdir variable inside settings_ash", BC.END)
             try:
-                print("settings_ash.settings_dict:", settings_ash.settings_dict)
-                self.terachemdir=settings_ash.settings_dict["terachemdir"]
+                print("settings_ash.settings_dict:", ash.settings_ash.settings_dict)
+                self.terachemdir=ash.settings_ash.settings_dict["terachemdir"]
             except:
                 print(BC.WARNING,"Found no terachemdir variable in settings_ash module either.",BC.END)
                 try:
