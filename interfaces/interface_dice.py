@@ -136,6 +136,10 @@ class DiceTheory:
                fixedResTimeNEVPT_Ene=False, epsilon=1.0e-8, efficientNEVPT_2=True,
                determCCVV=True, SCEnergiesBurnIn=50, SCNormsBurnIn=50,
                vmc_root=None, diceoutfile="dice.out")
+
+            #TODO: Grab energy from function call
+            self.energy=0.0
+
         elif self.AFQMC is True:
             print("Running Dice AFQMC")
             #QMCUtils.run_afqmc(mc, ndets = 100, norb_frozen = norb_frozen)
@@ -143,7 +147,7 @@ class DiceTheory:
                 print("Using multiconfigurational WF")
                 mc=self.pyscftheoryobject.mch
                 #Phaseless AFQMC with hci trial
-                self.QMCUtils.run_afqmc_mc(mc, vmc_root=None, mpi_prefix=None,
+                e_afqmc, err_afqmc = self.QMCUtils.run_afqmc_mc(mc, vmc_root=None, mpi_prefix=None,
                                 norb_frozen=0, nproc=None, chol_cut=1e-5,
                                 ndets=100, nroot=0, seed=None,
                                 dt=0.005, steps_per_block=50, nwalk_per_proc=5,
@@ -155,38 +159,23 @@ class DiceTheory:
                 print("Using single-determinant WF")
                 mf=self.pyscftheoryobject.mf
                 #Phaseless AFQMC with simple mf trial
-                self.QMCUtils.run_afqmc_mf(mf, vmc_root=None, mpi_prefix=None,
+                e_afqmc, err_afqmc = self.QMCUtils.run_afqmc_mf(mf, vmc_root=None, mpi_prefix=None,
                     mo_coeff=None, norb_frozen=0, nproc=None,
                     chol_cut=1e-5, seed=None, dt=0.005,
                     steps_per_block=50, nwalk_per_proc=5, nblocks=1000,
                     ortho_steps=20, burn_in=50, cholesky_threshold=1.0e-3,
                     weight_cap=None, write_one_rdm=False, run_dir=None,
                     scratch_dir=None, dry_run=False)
+            self.energy=e_afqmc
+            self.error=err_afqmc
+            ##Analysis
+            print("Final Dice AFQMC energy:", self.energy)
+            print(f"Error: {self.error} Eh ({self.error*harkcal:.2f} kcal/mol)")
         else:
             print("Unknown Dice run option")
             ashexit()
-        #Parallel
-        if self.numcores > 1:
-            print(f"Running Dice with MPI parallelization ({self.numcores} MPI processes)")
 
-
-
-
-
-
-        else:
-            print("bla")
-            exit()
-
-        print("Dice finished")
-        ##Analysis
-        
-
-        print("Final Dice energy:", E_final)
-        print(f"Error: {error} Eh ({error*harkcal:.2f} kcal/mol)")
-        print("nsamp_ac:", nsamp_ac)
-        self.energy=E_final
-        self.error=error
+        print("Dice is finished")
 
         print(BC.OKBLUE, BC.BOLD, f"------------ENDING {self.theorynamelabel} INTERFACE-------------", BC.END)
         print(f"Single-point {self.theorynamelabel} energy:", self.energy)
