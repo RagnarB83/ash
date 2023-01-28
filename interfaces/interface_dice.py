@@ -204,7 +204,8 @@ class DiceTheory:
             self.error=err_afqmc
             ##Analysis
             print("Final Dice AFQMC energy:", self.energy)
-            print(f"Error: {self.error} Eh ({self.error*harkcal:.2f} kcal/mol)")
+            print("error:", self.error)
+            print(f"Error: {self.error} Eh ({self.error*harkcal} kcal/mol)")
         else:
             print("Unknown Dice run option")
             ashexit()
