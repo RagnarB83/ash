@@ -12,7 +12,7 @@ import ash.settings_ash
 #Interface to Dice: QMC and NEVPT2
 class DiceTheory:
     def __init__(self, dicedir=None, pyscftheoryobject=None, filename='input.json', printlevel=2,
-                numcores=1, nevpt2=False, AFQMC=False, trialWF=None, frozencore=False):
+                numcores=1, NEVPT2=False, AFQMC=False, trialWF=None, frozencore=False):
 
         self.theorynamelabel="Dice"
         self.theorytype="QM"
@@ -49,7 +49,7 @@ class DiceTheory:
         self.filename=filename
         self.numcores=numcores
         self.pyscftheoryobject=pyscftheoryobject
-        self.nevpt2=nevpt2
+        self.NEVPT2=nevpt2
         self.AFQMC=AFQMC
         self.trialWF=trialWF
         self.frozencore=frozencore
