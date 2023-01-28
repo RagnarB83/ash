@@ -12,7 +12,8 @@ import ash.settings_ash
 #Interface to Dice: QMC and NEVPT2
 class DiceTheory:
     def __init__(self, dicedir=None, pyscftheoryobject=None, filename='input.json', printlevel=2,
-                numcores=1, NEVPT2=False, AFQMC=False, trialWF=None, frozencore=False):
+                numcores=1, NEVPT2=False, AFQMC=False, trialWF=None, frozencore=False,
+                SHCI_numdets=1):
 
         self.theorynamelabel="Dice"
         self.theorytype="QM"
@@ -65,7 +66,9 @@ class DiceTheory:
         self.NEVPT2=NEVPT2
         self.AFQMC=AFQMC
         self.trialWF=trialWF
+        self.SHCI_numdets=SHCI_numdets
         self.frozencore=frozencore
+        
 
     #Set numcores method
     def set_numcores(self,numcores):
@@ -96,13 +99,13 @@ class DiceTheory:
         print("Total frozen orbitals in system:", self.frozen_core_orbs)
 
     #Write dets.bin file. Requires running SHCI once more to get determinants
-    def run_and_write_dets(self):
+    def run_and_write_dets(self,numdets):
         print("Writing dets")
         #Run once more 
         self.shci.dryrun(self.pyscftheoryobject.mch)
         self.shci.writeSHCIConfFile(self.pyscftheoryobject.mch.fcisolver, self.pyscftheoryobject.mch.nelecas, False)
         with open(self.pyscftheoryobject.mch.fcisolver.configFile, 'a') as f:
-            f.write('writebestdeterminants 1000000\n\n')
+            f.write(f'writebestdeterminants {numdets}\n\n')
         self.shci.executeSHCI(self.pyscftheoryobject.mch.fcisolver)
     #def run_dice(self):
         #For calling Dice directly when needed
@@ -174,7 +177,8 @@ class DiceTheory:
                 mc=self.pyscftheoryobject.mch
 
                 #Write dets.bin file
-                self.run_and_write_dets()
+                print("Running SHCI once again to write dets.bin")
+                self.run_and_write_dets(self.SHCI_numdets)
                 #command = f"mv input.dat dice.dat; mpirun {self.dice_binary} dice.dat > dice_b2u.out; rm -f shci.e"
                 #os.system(command)
 
@@ -189,6 +193,8 @@ class DiceTheory:
                                 cholesky_threshold=1.0e-3, weight_cap=None, write_one_rdm=False,
                                 run_dir=None, scratch_dir=None, use_eri=False,
                                 dry_run=False)
+                print("e_afqmc:", e_afqmc)
+                print("err_afqmc:", err_afqmc)
             else:
                 print("Using single-determinant WF")
                 mf=self.pyscftheoryobject.mf
