@@ -99,11 +99,11 @@ class DiceTheory:
     def write_dets(self):
         print("Writing dets")
         #Run once more 
-        self.shci.dryrun(self.mch)
-        self.shci.writeSHCIConfFile(self.mch.fcisolver, self.mch.nelecas, False)
-        with open(self.mch.fcisolver.configFile, 'a') as f:
+        self.shci.dryrun(self.pyscftheoryobject.mch)
+        self.shci.writeSHCIConfFile(self.pyscftheoryobject.mch.fcisolver, self.pyscftheoryobject.mch.nelecas, False)
+        with open(self.pyscftheoryobject.mch.fcisolver.configFile, 'a') as f:
             f.write('writebestdeterminants 1000000\n\n')
-            self.shci.executeSHCI(self.mch.fcisolver)
+            self.shci.executeSHCI(self.pyscftheoryobject.mch.fcisolver)
 
 
     # Run function. Takes coords, elems etc. arguments and computes E or E+G.
