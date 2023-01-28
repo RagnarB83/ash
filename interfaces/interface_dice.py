@@ -49,7 +49,7 @@ class DiceTheory:
         self.filename=filename
         self.numcores=numcores
         self.pyscftheoryobject=pyscftheoryobject
-        self.nevpt2=nevpts
+        self.nevpt2=nevpt2
         self.AFQMC=AFQMC
         self.trialWF=trialWF
         self.frozencore=frozencore
