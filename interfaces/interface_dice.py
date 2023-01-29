@@ -201,6 +201,7 @@ class DiceTheory:
     def run_shci_directly(self):
         print("Calling SHCI PySCF interface")
         #Running Dice via SHCI-PySCF interface
+        print("Dice output can be monitored in output.dat on local scratch")
         self.shci.executeSHCI(self.mch.fcisolver)
 
     # run_dice_directly: In case we need to. Currently unused
@@ -254,6 +255,7 @@ class DiceTheory:
         self.mch.max_cycle_macro = self.SHCI_macroiter
 
         #Run SHCISCF (ususually only 1 iteration, so CAS-CI)
+        print("Dice output can be monitored in output.dat on local scratch")
         self.energy = self.mch.mc1step()[0]
 
 
@@ -357,8 +359,10 @@ class DiceTheory:
             self.error=err_afqmc
             ##Analysis
             print("Final Dice AFQMC energy:", self.energy)
-            print(f"Error: {self.error} Eh ({self.error*harkcal} kcal/mol)")
-
+            if self.error != None:
+                print(f"Error: {self.error} Eh ({self.error*harkcal} kcal/mol)")
+            else:
+                print(f"Error: Not available (problem with blocking?)")
         #Just SHCI 
         else:
             if self.SHCI is True:
