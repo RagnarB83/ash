@@ -320,7 +320,7 @@ class DiceTheory:
                nIterFindInitDets=100, numSCSamples=10000, stochasticIterEachSC=100,
                fixedResTimeNEVPT_Ene=False, epsilon=1.0e-8, efficientNEVPT_2=True,
                determCCVV=True, SCEnergiesBurnIn=50, SCNormsBurnIn=50,
-               diceoutfile="dice.out")
+               diceoutfile="output.dat")
 
             #TODO: Grab energy from function call
             self.energy=0.0
