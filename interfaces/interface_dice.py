@@ -94,7 +94,7 @@ class DiceTheory:
             print("dt:", self.dt)
             print("Number of steps per block (nsteps):", self.nsteps)
             print("Number of blocks (nblocks):", self.nblocks)
-            print("Number of walkers per proc:", self.self.nwalkers_per_proc)
+            print("Number of walkers per proc:", self.nwalkers_per_proc)
     #Set numcores method
     def set_numcores(self,numcores):
         self.numcores=numcores
