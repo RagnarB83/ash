@@ -52,6 +52,10 @@ class DiceTheory:
         if QMC_trialWF == 'SHCI' and SHCI is False:
             print("QMC_trialWF='SHCI' requires SHCI to be True, turning on.")
             SHCI=True
+        if SHCI is True and AFQMC is True and QMC_trialWF != 'SHCI':
+            print("SHCI and AFQMC True but QMC_trialWF != \'SHCI\'.")
+            print("Probably not what you wanted. Either set SHCI to False or QMC_trialWF=\'SHCI\' ")
+            ashexit()
         #Path to Dice binary
         self.dice_binary=self.dicedir+"/bin/Dice"
         #Put Dice script dir in path
