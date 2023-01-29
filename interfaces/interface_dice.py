@@ -9,12 +9,16 @@ from ash.functions.functions_general import ashexit, BC, print_time_rel,print_li
 from ash.functions.functions_parallel import check_OpenMPI
 import ash.settings_ash
 
-#Interface to Dice: QMC and NEVPT2
+#Interface to Dice: SHCI, QMC (single-det or SHCI multi-det) and NEVPT2
 class DiceTheory:
-    def __init__(self, dicedir=None, pyscftheoryobject=None, filename='input.dat', printlevel=2,
-                numcores=1, NEVPT2=False, AFQMC=False, trialWF=None, frozencore=True,
-                SHCI_numdets=1000,
-                dt=0.005, nsteps=50, nblocks=1000, nwalkers_per_proc=5):
+    def __init__(self, dicedir=None, pyscftheoryobject=None, filename='input.dat', printlevel=2, numcores=1, 
+                SHCI=False, NEVPT2=False, AFQMC=False, QMC_trialWF=None, frozencore=True,
+                SHCI_stochastic=True, SHCI_PTiter=200, SHCI_sweep_iter= [0,3],
+                SHCI_DoRDM=True, SHCI_sweep_epsilon = [ 5e-3, 1e-3 ], SHCI_macroiter=0,
+                SHCI_davidsonTol=5e-05, SHCI_dE=1e-08, SHCI_maxiter=9, SHCI_epsilon2=1e-07, SHCI_epsilon2Large=1000,
+                SHCI_targetError=0.0001, SHCI_sampleN=200, SHCI_nroots=1,
+                SHCI_cas_nmin=1.999, SHCI_cas_nmax=0.0, SHCI_active_space=None,
+                QMC_SHCI_numdets=1000, dt=0.005, nsteps=50, nblocks=1000, nwalkers_per_proc=5):
 
         self.theorynamelabel="Dice"
         self.theorytype="QM"
@@ -37,24 +41,23 @@ class DiceTheory:
             print("Error:No pyscftheoryobject was provided. This is required")
             ashexit()
         
+        #Check if conflicting options selected
+        if NEVPT2 is True and AFQMC is True:
+            print("NEVPT2 and AFQMC can not both be True")
+            ashexit()
+        if QMC_trialWF == 'SHCI' and SHCI is False:
+            print("QMC_trialWF='SHCI' requires SHCI to be True, turning on.")
+            SHCI=True
         #Path to Dice binary
         self.dice_binary=self.dicedir+"/bin/Dice"
         #Put Dice script dir in path
         sys.path.insert(0, dicedir+"/scripts")
-        #Import various functionality
-        try:
-            import QMCUtils
-            self.QMCUtils=QMCUtils
-        except:
-            print("Problem import QMCUtils. Dice directory is probably incorrect")
-            ashexit()
-        #SHCI pyscf plugin
-        try:
-            from pyscf.shciscf import shci
-            self.shci=shci
-        except:
-            print("Problem importing pyscf.sciscf")
-            ashexit()
+
+        #Now import pyscf, shciscf (plugin), qmcutils (Dice dir scripts)
+        self.load_pyscf()
+        self.load_shciscf()
+        self.load_qmcutils()
+
 
         if numcores > 1:
             try:
@@ -71,8 +74,29 @@ class DiceTheory:
         self.pyscftheoryobject=pyscftheoryobject
         self.NEVPT2=NEVPT2
         self.AFQMC=AFQMC
-        self.trialWF=trialWF
-        self.SHCI_numdets=SHCI_numdets
+        self.SHCI=SHCI
+        #SHCI options
+        if self.SHCI is True:
+            self.SHCI_stochastic=SHCI_stochastic
+            self.SHCI_PTiter=SHCI_PTiter
+            self.SHCI_sweep_iter=SHCI_sweep_iter
+            self.SHCI_DoRDM=SHCI_DoRDM
+            self.SHCI_sweep_epsilon = SHCI_sweep_epsilon
+            self.SHCI_macroiter=SHCI_macroiter
+            self.SHCI_davidsonTol=SHCI_davidsonTol
+            self.SHCI_dE=SHCI_dE
+            self.SHCI_maxiter=SHCI_maxiter
+            self.SHCI_epsilon2=SHCI_epsilon2
+            self.SHCI_epsilon2Large=SHCI_epsilon2Large
+            self.SHCI_targetError=SHCI_targetError
+            self.SHCI_sampleN=SHCI_sampleN
+            self.SHCI_nroots=SHCI_nroots
+            self.SHCI_cas_nmin=SHCI_cas_nmin
+            self.SHCI_cas_nmax=SHCI_cas_nmax
+            self.SHCI_active_space=SHCI_active_space #Alternative to SHCI_cas_nmin/SHCI_cas_nmax
+        #QMC options
+        self.QMC_trialWF=QMC_trialWF
+        self.QMC_SHCI_numdets=QMC_SHCI_numdets
         self.frozencore=frozencore
         self.dt=dt
         self.nsteps=nsteps
@@ -83,30 +107,65 @@ class DiceTheory:
         print("Printlevel:", self.printlevel)
         print("Num cores:", self.numcores)
         print("PySCF object:", self.pyscftheoryobject)
+        print("SHCI:", self.SHCI)
         print("NEVPT2:", self.NEVPT2)
         print("AFQMC:", self.AFQMC)
         print("Frozencore:", self.frozencore)
+        if self.SHCI is True:
+            print("SHCI_stochastic", self.SHCI_stochastic)
+            print("SHCI_PTiter", self.SHCI_PTiter)
+            print("SHCI_sweep_iter", self.SHCI_sweep_iter)
+            print("SHCI_DoRDM", self.SHCI_DoRDM)
+            print("SHCI_sweep_epsilon", self.SHCI_sweep_epsilon)
+            print("SHCI_macroiter", self.SHCI_macroiter)
+            print("CAS NO nmin", self.cas_nmin)
+            print("CAS NO nmax", self.cas_nmax)
         if self.AFQMC is True:
-            print("trialWF:", self.trialWF)
-            if self.trialWF is 'SHCI':
-                print("SHCI_numdets:", self.SHCI_numdets)
+            print("QMC_trialWF:", self.QMC_trialWF)
+            if self.QMC_trialWF is 'SHCI':
+                print("QMC_SHCI_numdets:", self.QMC_SHCI_numdets)
             print("QMC settings:")
             print("dt:", self.dt)
             print("Number of steps per block (nsteps):", self.nsteps)
             print("Number of blocks (nblocks):", self.nblocks)
             print("Number of walkers per proc:", self.nwalkers_per_proc)
+    
+    def load_pyscf(self):
+        try:
+            import pyscf
+        except:
+            print(BC.FAIL, "Problem importing pyscf. Make sure pyscf has been installed: pip install pyscf", BC.END)
+            ashexit(code=9)
+        self.pyscf=pyscf
+        from pyscf.mp.dfump2_native import DFMP2
+        self.pyscf_dmp2=DFMP2
+        print("\nPySCF version:", self.pyscf.__version__)
+    def load_shciscf(self):
+        #SHCI pyscf plugin
+        try:
+            from pyscf.shciscf import shci
+            self.shci=shci
+        except:
+            print("Problem importing pyscf.sciscf")
+            ashexit()
+    def load_qmcutils(self):
+        try:
+            import QMCUtils
+            self.QMCUtils=QMCUtils
+        except:
+            print("Problem import QMCUtils. Dice directory is probably incorrect")
+            ashexit()
+        
     #Set numcores method
     def set_numcores(self,numcores):
         self.numcores=numcores
     def cleanup(self):
-        print("not ready")
-        #print(f"Deleting old checkpoint file: {self.checkpointfilename}")
-        #files=[self.checkpointfilename]
-        #for file in files:
-        #    try:
-        #        os.remove(file)
-        #    except:
-        #        pass
+        print("Cleaning up Dice stuff")
+        #TODO: add more here
+        if self.SHCI is True:
+            bkpfiles=glob.glob('*.bkp')
+            for bkpfile in bkpfiles:
+                os.remove(bkpfile)
     def determine_frozen_core(self,elems):
         print("Determining frozen core based on system list of elements")
         #Main elements 
@@ -127,16 +186,17 @@ class DiceTheory:
     def run_and_write_dets(self,numdets):
         print("Calling run_and_write_dets")
         #Run once more 
-        self.shci.dryrun(self.pyscftheoryobject.mch)
-        self.shci.writeSHCIConfFile(self.pyscftheoryobject.mch.fcisolver, self.pyscftheoryobject.mch.nelecas, False)
-        with open(self.pyscftheoryobject.mch.fcisolver.configFile, 'a') as f:
+        self.shci.dryrun(self.mch)
+        self.shci.writeSHCIConfFile(self.mch.fcisolver, self.mch.nelecas, False)
+        with open(self.mch.fcisolver.configFile, 'a') as f:
             f.write(f'writebestdeterminants {numdets}\n\n')
         self.run_shci_directly()
 
     def run_shci_directly(self):
         print("Calling SHCI PySCF interface")
         #Running Dice via SHCI-PySCF interface
-        self.shci.executeSHCI(self.pyscftheoryobject.mch.fcisolver)
+        self.shci.executeSHCI(self.mch.fcisolver)
+
     # run_dice_directly: In case we need to. Currently unused
     def run_dice_directly(self):
         print("Calling Dice executable directly")
@@ -144,6 +204,52 @@ class DiceTheory:
         print(f"Running Dice with ({self.numcores} MPI processes)")
         with open('output.dat', "w") as outfile:
             sp.call(['mpirun', '-np', str(self.numcores), self.dice_binary, self.filename], stdout=outfile)
+
+    #Run a SHCI CAS-CI or CASSCF job using the SHCI-PySCF interface 
+    def run_SHCI(self):
+        print("Will calculate PySCF MP2 natural orbitals to use as input in Dice CAS job")
+        natocc, mo_coefficients = self.pyscftheoryobject.calculate_MP2_natural_orbitals(self.pyscftheoryobject.mol,
+                                                                                            self.pyscftheoryobject.mf)
+        #Updating mf object with MP2-nat MO coefficients
+        self.pyscftheoryobject.mf.mo_coeff=mo_coefficients
+        #Updating mo-occupations with MP2-nat occupations (pointless?)
+        self.pyscftheoryobject.mf.mo_occ=natocc
+        if self.active_space == None:
+            print(f"SHCI Active space determined from MP2 NO threshold parameters: cas_nmin={self.cas_nmin} and cas_nmax={self.cas_nmax}")
+            print("Note: Use active_space keyword if you want to select active space manually instead")
+            # Determing active space from natorb thresholds
+            nat_occs_for_thresholds=[i for i in natocc if i < self.cas_nmin and i > self.cas_nmax]
+            norb = len(nat_occs_for_thresholds)
+            nelec = round(sum(nat_occs_for_thresholds))
+        else:
+            print("Active space given as input: active_space=", self.active_space)
+            # Number of orbital and electrons from active_space keyword!
+            nelec=self.active_space[0]
+            norb=self.active_space[1]
+        print(f"Doing Dice CAS calculation with {nelec} electrons in {norb} orbitals!")
+        print("Dice_macroiter:", self.Dice_macroiter)
+        self.mch = self.shci.SHCISCF( self.pyscftheoryobject.mf, norb, nelec )
+        self.mch.fcisolver.mpiprefix = f'mpirun -np {self.numcores}'
+        self.mch.fcisolver.stochastic = self.Dice_stochastic
+        self.mch.fcisolver.nPTiter = self.Dice_PTiter
+        self.mch.fcisolver.sweep_iter = self.Dice_sweep_iter
+        self.mch.fcisolver.DoRDM = self.Dice_DoRDM
+        self.mch.fcisolver.sweep_epsilon = self.Dice_sweep_epsilon
+        self.mch.fcisolver.davidsonTol = self.Dice_davidsonTol
+        self.mch.fcisolver.dE = self.Dice_dE
+        self.mch.fcisolver.maxiter = self.Dice_maxiter
+        self.mch.fcisolver.epsilon2 = self.Dice_epsilon2
+        self.mch.fcisolver.epsilon2Large = self.Dice_epsilon2Large
+        self.mch.fcisolver.targetError = self.Dice_targetError
+        self.mch.fcisolver.sampleN = self.Dice_sampleN
+        self.mch.fcisolver.nroots = self.Dice_nroots
+
+        #CASSCF iterations
+        self.mch.max_cycle_macro = self.Dice_macroiter
+
+        #Run SHCISCF (ususually only 1 iteration, so CAS-CI)
+        self.energy = self.mch.mc1step()[0]
+
 
     # Run function. Takes coords, elems etc. arguments and computes E or E+G.
     def run(self, current_coords=None, current_MM_coords=None, MMcharges=None, qm_elems=None,
@@ -179,8 +285,7 @@ class DiceTheory:
         #Cleanup before run.
         self.cleanup()
 
-        #Run PySCF to get integrals
-
+        #Run PySCF to get integrals and MOs. This would probably only be an SCF
         self.pyscftheoryobject.run(current_coords=current_coords, elems=qm_elems, charge=charge, mult=mult)
         print("pyscftheoryobject:", self.pyscftheoryobject.__dict__)
 
@@ -190,12 +295,13 @@ class DiceTheory:
         else:
             self.frozen_core_orbs=0
 
-
-        #NEVPT2 or AFQMC
+        # NOW RUNNING
+        #NEVPT2
         if self.NEVPT2 is True:
             print("Running Dice NEVPT2 calculation on multiconfigurational WF")
             print("Not ready")
-            mc=self.pyscftheoryobject.mch
+            ashexit()
+            #mc=self.pmch
             self.QMCUtils.run_nevpt2(mc, nelecAct=None, numAct=None, norbFrozen=self.frozen_core_orbs,
                integrals="FCIDUMP.h5", nproc=numcores, seed=None,
                fname="nevpt2.json", foutname='nevpt2.out', nroot=0,
@@ -207,33 +313,37 @@ class DiceTheory:
 
             #TODO: Grab energy from function call
             self.energy=0.0
-
+            print("Final Dice NEVPT2 energy:", self.energy)
+        #AFQMC
         elif self.AFQMC is True:
             print("Running Dice AFQMC")
-            #QMCUtils.run_afqmc(mc, ndets = 100, norb_frozen = norb_frozen)
-            if self.trialWF == 'SHCI':
+            #SHCI trial wavefunction AFQMC
+            if self.QMC_trialWF == 'SHCI':
                 print("Using multiconfigurational WF via SHCI")
+                
+                #Calling SHCI run to get 
+                self.run_SHCI()
                 mc=self.pyscftheoryobject.mch
                 
                 #Get dets.bin file
                 print("Running SHCI (via PySCFTheory object) once again to write dets.bin")
-                self.run_and_write_dets(self.SHCI_numdets)
+                self.run_and_write_dets(self.QMC_SHCI_numdets)
 
                 #Phaseless AFQMC with hci trial
                 e_afqmc, err_afqmc = self.QMCUtils.run_afqmc_mc(mc, mpi_prefix=f"mpirun -np {numcores}",
                                 norb_frozen=self.frozen_core_orbs, chol_cut=1e-5,
-                                ndets=self.SHCI_numdets, nroot=0, seed=None,
+                                ndets=self.QMC_SHCI_numdets, nroot=0, seed=None,
                                 dt=self.dt, steps_per_block=self.nsteps, nwalk_per_proc=self.nwalkers_per_proc,
                                 nblocks=self.nblocks, ortho_steps=20, burn_in=50,
                                 cholesky_threshold=1.0e-3, weight_cap=None, write_one_rdm=False,
                                 use_eri=False, dry_run=False)
                 e_afqmc=e_afqmc[0] 
                 err_afqmc=err_afqmc[0]
+            #Single determinant trial wavefunction
             else:
                 print("Using single-determinant WF from PySCF object")
-                mf=self.pyscftheoryobject.mf
                 #Phaseless AFQMC with simple mf trial
-                e_afqmc, err_afqmc = self.QMCUtils.run_afqmc_mf(mf, mpi_prefix=f"mpirun -np {numcores}",
+                e_afqmc, err_afqmc = self.QMCUtils.run_afqmc_mf(self.pyscftheoryobject.mf, mpi_prefix=f"mpirun -np {numcores}",
                     norb_frozen=self.frozen_core_orbs, chol_cut=1e-5, seed=None, dt=self.dt,
                     steps_per_block=self.nsteps, nwalk_per_proc=self.nwalkers_per_proc, nblocks=self.nblocks,
                     ortho_steps=20, burn_in=50, cholesky_threshold=1.0e-3,
@@ -242,13 +352,18 @@ class DiceTheory:
             self.error=err_afqmc
             ##Analysis
             print("Final Dice AFQMC energy:", self.energy)
-            print("error:", self.error)
             print(f"Error: {self.error} Eh ({self.error*harkcal} kcal/mol)")
+
+        #Just SHCI 
         else:
-            print("Unknown Dice run option")
-            ashexit()
+            if self.SHCI is True:
+                print("Standalone SHCI option is active.")
+                self.run_SHCI()
+                print("Final Dice SHCI energy:", self.energy)
 
         print("Dice is finished")
+        #Cleanup Dice scratch stuff (big files)
+        self.cleanup()
 
         print(BC.OKBLUE, BC.BOLD, f"------------ENDING {self.theorynamelabel} INTERFACE-------------", BC.END)
         print(f"Single-point {self.theorynamelabel} energy:", self.energy)

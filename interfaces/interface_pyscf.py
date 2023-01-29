@@ -15,13 +15,7 @@ class PySCFTheory:
                   CC=False, CCmethod=None, CC_direct=False, frozen_core_setting='Auto',
                   CAS=False, CASSCF=False, active_space=None, CAS_nocc_a=None, CAS_nocc_b=None,
                   frozen_virtuals=None, FNO=False, FNO_thresh=None, checkpointfile=True,
-                  PyQMC=False, PyQMC_nconfig=1, PyQMC_method='DMC',
-                  Dice_CAS=False, Dice_stochastic=True, Dice_PTiter=200, Dice_sweep_iter= [0,3],
-                  Dice_DoRDM=True, Dice_sweep_epsilon = [ 5e-3, 1e-3 ], Dice_macroiter=0,
-                  Dice_davidsonTol=5e-05, Dice_dE=1e-08, Dice_maxiter=9, Dice_epsilon2=1e-07, Dice_epsilon2Large=1000,
-                  Dice_targetError=0.0001, Dice_sampleN=200, Dice_nroots=1,
-                  cas_nmin=1.999, cas_nmax=0.0):
-
+                  PyQMC=False, PyQMC_nconfig=1, PyQMC_method='DMC'):
 
         self.theorytype="QM"
         print_line_with_mainheader("PySCFTheory initialization")
@@ -86,29 +80,11 @@ class PySCFTheory:
         if self.PyQMC is True:
             self.postSCF=True
             self.load_pyqmc()
-        #Dice CAS
-        self.Dice_CAS=Dice_CAS
-        if self.Dice_CAS is True:
-            self.Dice_CAS=Dice_CAS
-            self.Dice_stochastic=Dice_stochastic
-            self.Dice_PTiter=Dice_PTiter
-            self.Dice_sweep_iter=Dice_sweep_iter
-            self.Dice_DoRDM=Dice_DoRDM
-            self.Dice_sweep_epsilon = Dice_sweep_epsilon
-            self.Dice_macroiter=Dice_macroiter
-            self.Dice_davidsonTol=Dice_davidsonTol
-            self.Dice_dE=Dice_dE
-            self.Dice_maxiter=Dice_maxiter
-            self.Dice_epsilon2=Dice_epsilon2
-            self.Dice_epsilon2Large=Dice_epsilon2Large
-            self.Dice_targetError=Dice_targetError
-            self.Dice_sampleN=Dice_sampleN
-            self.Dice_nroots=Dice_nroots
 
         #Natural orbital threshold parameterds to determined active space
-        # Currently only used by Dice. Could also be used for DMRG and other near-FCI-type methods
-        self.cas_nmin=cas_nmin
-        self.cas_nmax=cas_nmax
+        # Was used by Dice. Could also be used for DMRG and other near-FCI-type methods
+        #self.cas_nmin=cas_nmin
+        #self.cas_nmax=cas_nmax
         #Whether job is SCF (HF/DFT) only or a post-SCF method like CC or CAS 
         self.postSCF=False
         if self.CAS is True:
@@ -160,16 +136,6 @@ class PySCFTheory:
         print("CASSCF:", self.CASSCF)
         print("PyQMC:", self.PyQMC)
         print()
-        print("Dice_CAS:", self.Dice_CAS)
-        if self.Dice_CAS is True:
-            print("Dice_stochastic", self.Dice_stochastic)
-            print("Dice_PTiter", self.Dice_PTiter)
-            print("Dice_sweep_iter", self.Dice_sweep_iter)
-            print("Dice_DoRDM", self.Dice_DoRDM)
-            print("Dice_sweep_epsilon", self.Dice_sweep_epsilon)
-            print("Dice_macroiter", self.Dice_macroiter)
-            print("CAS NO nmin", self.cas_nmin)
-            print("CAS NO nmax", self.cas_nmax)
         #TODO: Restart settings for PySCF
 
     def determine_frozen_core(self,elems):
@@ -210,11 +176,6 @@ class PySCFTheory:
         if self.CAS is True:
             from pyscf import mcscf
             self.mcscf=mcscf
-            from pyscf.mp.dfump2_native import DFMP2
-            self.pyscf_dmp2=DFMP2
-        if self.Dice_CAS is True:
-            from pyscf.shciscf import shci
-            self.shci=shci
             from pyscf.mp.dfump2_native import DFMP2
             self.pyscf_dmp2=DFMP2
         #TODO: Needs to be revisited
@@ -299,20 +260,20 @@ class PySCFTheory:
 
         #MOL OBJECT
         #Defining pyscf mol object and populating 
-        mol = self.pyscf.gto.Mole()
+        self.mol = self.pyscf.gto.Mole()
         #Mol system printing. Hardcoding to 3 as otherwise too much PySCF printing
-        mol.verbose = 3 
+        self.mol.verbose = 3 
         coords_string=ash.modules.module_coords.create_coords_string(qm_elems,current_coords)
-        mol.atom = coords_string
-        mol.symmetry = self.symmetry
-        mol.charge = charge; mol.spin = mult-1
+        self.mol.atom = coords_string
+        self.mol.symmetry = self.symmetry
+        self.mol.charge = charge; self.mol.spin = mult-1
         #PYSCF basis object: https://sunqm.github.io/pyscf/tutorial.html
         #Object can be string ('def2-SVP') or a dict with element-specific keys and values
-        mol.basis=self.basis
+        self.mol.basis=self.basis
         #Memory settings
-        mol.max_memory = self.memory
+        self.mol.max_memory = self.memory
         #BUILD mol object
-        mol.build()
+        self.mol.build()
         ###########
 
         #Polarizable embedding option
@@ -328,26 +289,26 @@ class PySCFTheory:
             except:
                 ashexit()
             # TODO: Adapt to RKS vs. UKS etc.
-            self.mf = self.pyscf.solvent.PE(self.pyscf.scf.RKS(mol), self.potfile)
+            self.mf = self.pyscf.solvent.PE(self.pyscf.scf.RKS(self.mol), self.potfile)
         #Regular job
         else:
             if PC is True:
                 # QM/MM pointcharge embedding
                 #mf = mm_charge(dft.RKS(mol), [(0.5, 0.6, 0.8)], MMcharges)
                 if self.scf_type == 'RKS':
-                    self.mf = self.pyscf.qmmm.mm_charge(dft.RKS(mol), current_MM_coords, MMcharges)
+                    self.mf = self.pyscf.qmmm.mm_charge(dft.RKS(self.mol), current_MM_coords, MMcharges)
                 else:
                     print("Error. scf_type other than RKS and PC True not ready")
                     ashexit()
             else:
                 if self.scf_type == 'RKS':
-                    self.mf = self.pyscf.scf.RKS(mol)
+                    self.mf = self.pyscf.scf.RKS(self.mol)
                 elif self.scf_type == 'UKS':
-                    self.mf = self.pyscf.scf.UKS(mol)
+                    self.mf = self.pyscf.scf.UKS(self.mol)
                 elif self.scf_type == 'RHF':
-                    self.mf = self.pyscf.scf.RHF(mol)
+                    self.mf = self.pyscf.scf.RHF(self.mol)
                 elif self.scf_type == 'UHF':
-                    self.mf = self.pyscf.scf.UHF(mol)
+                    self.mf = self.pyscf.scf.UHF(self.mol)
 
         #Printing settings.
         if self.printsetting==True:
@@ -429,7 +390,7 @@ class PySCFTheory:
                 print("FNO is True")
                 print("MP2 natural orbitals on!")
                 print("Will calculate MP2 natural orbitals to use as input in CC job")
-                natocc, mo_coefficients = self.calculate_MP2_natural_orbitals(mol,self.mf)
+                natocc, mo_coefficients = self.calculate_MP2_natural_orbitals(self.mol,self.mf)
 
                 #Optional natorb truncation if FNO_thresh is chosen
                 if self.FNO_thresh is not None:
@@ -482,9 +443,9 @@ class PySCFTheory:
         #####################
         elif self.PyQMC is True:
             print("PyQMC is on!")
-            configs = self.pyqmc.initial_guess(mol,self.PyQMC_nconfig)
-            wf, to_opt = self.pyqmc.generate_wf(mol,self.mf)
-            pgrad_acc = self.pyqmc.gradient_generator(mol,wf, to_opt)
+            configs = self.pyqmc.initial_guess(self.mol,self.PyQMC_nconfig)
+            wf, to_opt = self.pyqmc.generate_wf(self.mol,self.mf)
+            pgrad_acc = self.pyqmc.gradient_generator(self.mol,wf, to_opt)
             wf, optimization_data = self.pyqmc.line_minimization(wf, configs, pgrad_acc)
             #DMC, untested
             if self.PyQMC_method == 'DMC':
@@ -497,57 +458,6 @@ class PySCFTheory:
         #CAS-CI and CASSCF
         #####################
 
-        elif self.Dice_CAS is True:
-            print("Will calculate MP2 natural orbitals to use as input in Dice CAS job")
-            natocc, mo_coefficients = self.calculate_MP2_natural_orbitals(mol,self.mf)
-
-            #Updating mf object with MP2-nat MO coefficients
-            self.mf.mo_coeff=mo_coefficients
-            #Updating mo-occupations with MP2-nat occupations (pointless?)
-            self.mf.mo_occ=natocc
-            if self.active_space == None:
-                print(f"SHCI Active space determined from MP2 NO threshold parameters: cas_nmin={self.cas_nmin} and cas_nmax={self.cas_nmax}")
-                print("Note: Use active_space keyword if you want to select active space manually instead")
-                # Determing active space from natorb thresholds
-                nat_occs_for_thresholds=[i for i in natocc if i < self.cas_nmin and i > self.cas_nmax]
-                norb = len(nat_occs_for_thresholds)
-                nelec = round(sum(nat_occs_for_thresholds))
-            else:
-                print("Active space given as input: active_space=", self.active_space)
-                # Number of orbital and electrons from active_space keyword!
-                nelec=self.active_space[0]
-                norb=self.active_space[1]
-            print(f"Doing Dice CAS calculation with {nelec} electrons in {norb} orbitals!")
-            print("Dice_macroiter:", self.Dice_macroiter)
-            self.mch = self.shci.SHCISCF( self.mf, norb, nelec )
-            self.mch.fcisolver.mpiprefix = f'mpirun -np {self.numcores}'
-            self.mch.fcisolver.stochastic = self.Dice_stochastic
-            self.mch.fcisolver.nPTiter = self.Dice_PTiter
-            self.mch.fcisolver.sweep_iter = self.Dice_sweep_iter
-            self.mch.fcisolver.DoRDM = self.Dice_DoRDM
-            self.mch.fcisolver.sweep_epsilon = self.Dice_sweep_epsilon
-            self.mch.fcisolver.davidsonTol = self.Dice_davidsonTol
-            self.mch.fcisolver.dE = self.Dice_dE
-            self.mch.fcisolver.maxiter = self.Dice_maxiter
-            self.mch.fcisolver.epsilon2 = self.Dice_epsilon2
-            self.mch.fcisolver.epsilon2Large = self.Dice_epsilon2Large
-            self.mch.fcisolver.targetError = self.Dice_targetError
-            self.mch.fcisolver.sampleN = self.Dice_sampleN
-            self.mch.fcisolver.nroots = self.Dice_nroots
-
-            #CASSCF iterations
-            self.mch.max_cycle_macro = self.Dice_macroiter
-
-            #Run SHCISCF (ususually only 1 iteration, so CAS-CI)
-            self.energy = self.mch.mc1step()[0]
-
-
-            #Cleanup Dice stuff immediately
-            bkpfiles=glob.glob('*.bkp')
-            for bkpfile in bkpfiles:
-                os.remove(bkpfile)
-
-
         elif self.CAS is True:
             print("CAS run is on!")
             #First run SCF
@@ -558,7 +468,7 @@ class PySCFTheory:
             #Default MP2 natural orbitals
             # TODO: Override this with other options: 
             print("Will calculate MP2 natural orbitals to use as input in CAS job")
-            natocc, natorbs = self.calculate_MP2_natural_orbitals(mol,self.mf)
+            natocc, natorbs = self.calculate_MP2_natural_orbitals(self.mol,self.mf)
             
             if self.CASSCF is True:
                 print("Doing CASSCF (orbital optimization)")
