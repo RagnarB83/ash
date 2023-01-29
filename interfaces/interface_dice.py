@@ -52,6 +52,9 @@ class DiceTheory:
         if QMC_trialWF == 'SHCI' and SHCI is False:
             print("QMC_trialWF='SHCI' requires SHCI to be True, turning on.")
             SHCI=True
+        if NEVPT2 == True and SHCI is False:
+            print("NEVPT2 requires SHCI to be True, turning on.")
+            SHCI=True
         if SHCI is True and AFQMC is True and QMC_trialWF != 'SHCI':
             print("SHCI and AFQMC True but QMC_trialWF != \'SHCI\'.")
             print("Probably not what you wanted. Either set SHCI to False or QMC_trialWF=\'SHCI\' ")
