@@ -138,8 +138,6 @@ class DiceTheory:
             print(BC.FAIL, "Problem importing pyscf. Make sure pyscf has been installed: pip install pyscf", BC.END)
             ashexit(code=9)
         self.pyscf=pyscf
-        from pyscf.mp.dfump2_native import DFMP2
-        self.pyscf_dmp2=DFMP2
         print("\nPySCF version:", self.pyscf.__version__)
     def load_shciscf(self):
         #SHCI pyscf plugin

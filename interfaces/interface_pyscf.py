@@ -168,16 +168,15 @@ class PySCFTheory:
         print("\nPySCF version:", self.pyscf.__version__)
         from pyscf.tools import molden
         self.pyscf_molden=molden
+        #Always importing MP2 for convenience
+        from pyscf.mp.dfump2_native import DFMP2
+        self.pyscf_dmp2=DFMP2
         if self.CC is True:
             from pyscf import cc
             self.pyscf_cc=cc
-            from pyscf.mp.dfump2_native import DFMP2
-            self.pyscf_dmp2=DFMP2
         if self.CAS is True:
             from pyscf import mcscf
             self.mcscf=mcscf
-            from pyscf.mp.dfump2_native import DFMP2
-            self.pyscf_dmp2=DFMP2
         #TODO: Needs to be revisited
         if self.pe==True:
             #import pyscf.solvent as solvent
