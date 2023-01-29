@@ -46,6 +46,9 @@ class DiceTheory:
         if NEVPT2 is True and AFQMC is True:
             print("NEVPT2 and AFQMC can not both be True")
             ashexit()
+        if NEVPT2 is False and AFQMC is False and SHCI is False:
+            print("Either NEVPT2, SHCI or AFQMC option needs to be True")
+            ashexit()
         if QMC_trialWF == 'SHCI' and SHCI is False:
             print("QMC_trialWF='SHCI' requires SHCI to be True, turning on.")
             SHCI=True
