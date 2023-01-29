@@ -118,8 +118,8 @@ class DiceTheory:
             print("SHCI_DoRDM", self.SHCI_DoRDM)
             print("SHCI_sweep_epsilon", self.SHCI_sweep_epsilon)
             print("SHCI_macroiter", self.SHCI_macroiter)
-            print("CAS NO nmin", self.cas_nmin)
-            print("CAS NO nmax", self.cas_nmax)
+            print("SHCI CAS NO nmin", self.SHCI_cas_nmin)
+            print("SHCI CAS NO nmax", self.SHCI_cas_nmax)
         if self.AFQMC is True:
             print("QMC_trialWF:", self.QMC_trialWF)
             if self.QMC_trialWF is 'SHCI':
@@ -215,10 +215,10 @@ class DiceTheory:
         #Updating mo-occupations with MP2-nat occupations (pointless?)
         self.pyscftheoryobject.mf.mo_occ=natocc
         if self.active_space == None:
-            print(f"SHCI Active space determined from MP2 NO threshold parameters: cas_nmin={self.cas_nmin} and cas_nmax={self.cas_nmax}")
+            print(f"SHCI Active space determined from MP2 NO threshold parameters: SHCI_cas_nmin={self.SHCI_cas_nmin} and SHCI_cas_nmax={self.SHCI_cas_nmax}")
             print("Note: Use active_space keyword if you want to select active space manually instead")
             # Determing active space from natorb thresholds
-            nat_occs_for_thresholds=[i for i in natocc if i < self.cas_nmin and i > self.cas_nmax]
+            nat_occs_for_thresholds=[i for i in natocc if i < self.SHCI_cas_nmin and i > self.SHCI_cas_nmax]
             norb = len(nat_occs_for_thresholds)
             nelec = round(sum(nat_occs_for_thresholds))
         else:
