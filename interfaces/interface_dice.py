@@ -3,6 +3,7 @@ import time
 import numpy as np
 import os
 import sys
+import glob
 from ash.modules.module_coords import elematomnumbers, check_charge_mult
 from ash.constants import ang2bohr, harkcal
 from ash.functions.functions_general import ashexit, BC, print_time_rel,print_line_with_mainheader
