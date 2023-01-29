@@ -326,16 +326,15 @@ class DiceTheory:
             if self.QMC_trialWF == 'SHCI':
                 print("Using multiconfigurational WF via SHCI")
                 
-                #Calling SHCI run to get 
+                #Calling SHCI run to get the self.mch object
                 self.run_SHCI()
-                mc=self.pyscftheoryobject.mch
                 
                 #Get dets.bin file
                 print("Running SHCI (via PySCFTheory object) once again to write dets.bin")
                 self.run_and_write_dets(self.QMC_SHCI_numdets)
                 print(f"{self.QMC_SHCI_numdets} determinants will be used")
                 #Phaseless AFQMC with hci trial
-                e_afqmc, err_afqmc = self.QMCUtils.run_afqmc_mc(mc, mpi_prefix=f"mpirun -np {numcores}",
+                e_afqmc, err_afqmc = self.QMCUtils.run_afqmc_mc(self.mch, mpi_prefix=f"mpirun -np {numcores}",
                                 norb_frozen=self.frozen_core_orbs, chol_cut=1e-5,
                                 ndets=self.QMC_SHCI_numdets, nroot=0, seed=None,
                                 dt=self.dt, steps_per_block=self.nsteps, nwalk_per_proc=self.nwalkers_per_proc,
