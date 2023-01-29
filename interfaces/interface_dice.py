@@ -213,7 +213,7 @@ class DiceTheory:
         self.pyscftheoryobject.mf.mo_coeff=mo_coefficients
         #Updating mo-occupations with MP2-nat occupations (pointless?)
         self.pyscftheoryobject.mf.mo_occ=natocc
-        if self.active_space == None:
+        if self.SHCI_active_space == None:
             print(f"SHCI Active space determined from MP2 NO threshold parameters: SHCI_cas_nmin={self.SHCI_cas_nmin} and SHCI_cas_nmax={self.SHCI_cas_nmax}")
             print("Note: Use active_space keyword if you want to select active space manually instead")
             # Determing active space from natorb thresholds
@@ -221,10 +221,10 @@ class DiceTheory:
             norb = len(nat_occs_for_thresholds)
             nelec = round(sum(nat_occs_for_thresholds))
         else:
-            print("Active space given as input: active_space=", self.active_space)
+            print("Active space given as input: active_space=", self.SHCI_active_space)
             # Number of orbital and electrons from active_space keyword!
-            nelec=self.active_space[0]
-            norb=self.active_space[1]
+            nelec=self.SHCI_active_space[0]
+            norb=self.SHCI_active_space[1]
         print(f"Doing Dice CAS calculation with {nelec} electrons in {norb} orbitals!")
         print("Dice_macroiter:", self.Dice_macroiter)
         self.mch = self.shci.SHCISCF( self.pyscftheoryobject.mf, norb, nelec )
