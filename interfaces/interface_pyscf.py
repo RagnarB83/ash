@@ -44,7 +44,11 @@ class PySCFTheory:
         if CC is True and CCmethod is None:
             print("Error: Need to choose CCmethod, e.g. 'CCSD', 'CCSD(T)")
             ashexit()
-        
+
+        #Attempting to load pyscf
+        self.load_pyscf()
+        self.set_numcores(numcores)
+
         #Printlevel
         self.printlevel=printlevel
         self.memory=memory
@@ -155,6 +159,7 @@ class PySCFTheory:
         print("CAS:", self.CAS)
         print("CASSCF:", self.CASSCF)
         print("PyQMC:", self.PyQMC)
+        print()
         print("Dice_CAS:", self.Dice_CAS)
         if self.Dice_CAS is True:
             print("Dice_stochastic", self.Dice_stochastic)
@@ -166,10 +171,6 @@ class PySCFTheory:
             print("CAS NO nmin", self.cas_nmin)
             print("CAS NO nmax", self.cas_nmax)
         #TODO: Restart settings for PySCF
-
-        #Attempting to load pyscf
-        self.load_pyscf()
-        self.set_numcores(numcores)
 
     def determine_frozen_core(self,elems):
         print("Determining frozen core")
