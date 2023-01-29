@@ -226,16 +226,16 @@ class DiceTheory:
             print("Note: Use active_space keyword if you want to select active space manually instead")
             # Determing active space from natorb thresholds
             nat_occs_for_thresholds=[i for i in natocc if i < self.SHCI_cas_nmin and i > self.SHCI_cas_nmax]
-            norb = len(nat_occs_for_thresholds)
-            nelec = round(sum(nat_occs_for_thresholds))
+            self.norb = len(nat_occs_for_thresholds)
+            self.nelec = round(sum(nat_occs_for_thresholds))
         else:
             print("Active space given as input: active_space=", self.SHCI_active_space)
             # Number of orbital and electrons from active_space keyword!
-            nelec=self.SHCI_active_space[0]
-            norb=self.SHCI_active_space[1]
-        print(f"Doing SHCI-CAS calculation with {nelec} electrons in {norb} orbitals!")
+            self.nelec=self.SHCI_active_space[0]
+            self.norb=self.SHCI_active_space[1]
+        print(f"Doing SHCI-CAS calculation with {self.nelec} electrons in {self.norb} orbitals!")
         print("SHCI_macroiter:", self.SHCI_macroiter)
-        self.mch = self.shci.SHCISCF( self.pyscftheoryobject.mf, norb, nelec )
+        self.mch = self.shci.SHCISCF( self.pyscftheoryobject.mf, self.norb, self.nelec )
         self.mch.fcisolver.mpiprefix = f'mpirun -np {self.numcores}'
         self.mch.fcisolver.stochastic = self.SHCI_stochastic
         self.mch.fcisolver.nPTiter = self.SHCI_PTiter
@@ -306,10 +306,11 @@ class DiceTheory:
         #NEVPT2
         if self.NEVPT2 is True:
             print("Running Dice NEVPT2 calculation on multiconfigurational WF")
-            print("Not ready")
-            ashexit()
-            #mc=self.pmch
-            self.QMCUtils.run_nevpt2(mc, nelecAct=None, numAct=None, norbFrozen=self.frozen_core_orbs,
+            #Calling SHCI run to get the self.mch object
+            print("First running SHCI CAS-CI/CASSCF step")
+            self.run_SHCI()
+            print(f"Now running NEVPT2 on SHCI reference WF (CAS({self.nelec},{self.norb}))")
+            self.QMCUtils.run_nevpt2(self.mch, nelecAct=self.nelec, numAct=self.norb, norbFrozen=self.frozen_core_orbs,
                integrals="FCIDUMP.h5", nproc=numcores, seed=None,
                fname="nevpt2.json", foutname='nevpt2.out', nroot=0,
                spatialRDMfile=None, spinRDMfile=None, stochasticIterNorms=1000,
