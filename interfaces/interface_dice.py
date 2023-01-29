@@ -289,7 +289,6 @@ class DiceTheory:
 
         #Run PySCF to get integrals and MOs. This would probably only be an SCF
         self.pyscftheoryobject.run(current_coords=current_coords, elems=qm_elems, charge=charge, mult=mult)
-        print("pyscftheoryobject:", self.pyscftheoryobject.__dict__)
 
         #Get frozen-core
         if self.frozencore is True:
@@ -330,7 +329,7 @@ class DiceTheory:
                 #Get dets.bin file
                 print("Running SHCI (via PySCFTheory object) once again to write dets.bin")
                 self.run_and_write_dets(self.QMC_SHCI_numdets)
-
+                print(f"{self.QMC_SHCI_numdets} determinants will be used")
                 #Phaseless AFQMC with hci trial
                 e_afqmc, err_afqmc = self.QMCUtils.run_afqmc_mc(mc, mpi_prefix=f"mpirun -np {numcores}",
                                 norb_frozen=self.frozen_core_orbs, chol_cut=1e-5,
