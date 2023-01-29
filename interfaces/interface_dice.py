@@ -225,26 +225,26 @@ class DiceTheory:
             # Number of orbital and electrons from active_space keyword!
             nelec=self.SHCI_active_space[0]
             norb=self.SHCI_active_space[1]
-        print(f"Doing Dice CAS calculation with {nelec} electrons in {norb} orbitals!")
-        print("Dice_macroiter:", self.Dice_macroiter)
+        print(f"Doing SHCI-CAS calculation with {nelec} electrons in {norb} orbitals!")
+        print("SHCI_macroiter:", self.SHCI_macroiter)
         self.mch = self.shci.SHCISCF( self.pyscftheoryobject.mf, norb, nelec )
         self.mch.fcisolver.mpiprefix = f'mpirun -np {self.numcores}'
-        self.mch.fcisolver.stochastic = self.Dice_stochastic
-        self.mch.fcisolver.nPTiter = self.Dice_PTiter
-        self.mch.fcisolver.sweep_iter = self.Dice_sweep_iter
-        self.mch.fcisolver.DoRDM = self.Dice_DoRDM
-        self.mch.fcisolver.sweep_epsilon = self.Dice_sweep_epsilon
-        self.mch.fcisolver.davidsonTol = self.Dice_davidsonTol
-        self.mch.fcisolver.dE = self.Dice_dE
-        self.mch.fcisolver.maxiter = self.Dice_maxiter
-        self.mch.fcisolver.epsilon2 = self.Dice_epsilon2
-        self.mch.fcisolver.epsilon2Large = self.Dice_epsilon2Large
-        self.mch.fcisolver.targetError = self.Dice_targetError
-        self.mch.fcisolver.sampleN = self.Dice_sampleN
-        self.mch.fcisolver.nroots = self.Dice_nroots
+        self.mch.fcisolver.stochastic = self.SHCI_stochastic
+        self.mch.fcisolver.nPTiter = self.SHCI_PTiter
+        self.mch.fcisolver.sweep_iter = self.SHCI_sweep_iter
+        self.mch.fcisolver.DoRDM = self.SHCI_DoRDM
+        self.mch.fcisolver.sweep_epsilon = self.SHCI_sweep_epsilon
+        self.mch.fcisolver.davidsonTol = self.SHCI_davidsonTol
+        self.mch.fcisolver.dE = self.SHCI_dE
+        self.mch.fcisolver.maxiter = self.SHCI_maxiter
+        self.mch.fcisolver.epsilon2 = self.SHCI_epsilon2
+        self.mch.fcisolver.epsilon2Large = self.SHCI_epsilon2Large
+        self.mch.fcisolver.targetError = self.SHCI_targetError
+        self.mch.fcisolver.sampleN = self.SHCI_sampleN
+        self.mch.fcisolver.nroots = self.SHCI_nroots
 
         #CASSCF iterations
-        self.mch.max_cycle_macro = self.Dice_macroiter
+        self.mch.max_cycle_macro = self.SHCI_macroiter
 
         #Run SHCISCF (ususually only 1 iteration, so CAS-CI)
         self.energy = self.mch.mc1step()[0]
