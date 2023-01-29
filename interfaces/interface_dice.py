@@ -77,7 +77,7 @@ class DiceTheory:
         self.dt=dt
         self.nsteps=nsteps
         self.nblocks=nblocks
-        self.self.nwalkers_per_proc=self.nwalkers_per_proc
+        self.nwalkers_per_proc=nwalkers_per_proc
 
         #Print stuff
         print("Printlevel:", self.printlevel)
