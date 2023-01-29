@@ -45,10 +45,6 @@ class PySCFTheory:
             print("Error: Need to choose CCmethod, e.g. 'CCSD', 'CCSD(T)")
             ashexit()
 
-        #Attempting to load pyscf
-        self.load_pyscf()
-        self.set_numcores(numcores)
-
         #Printlevel
         self.printlevel=printlevel
         self.memory=memory
@@ -132,6 +128,10 @@ class PySCFTheory:
             self.postSCF=True
         else:
             self.SCF=True
+
+        #Attempting to load pyscf
+        self.load_pyscf()
+        self.set_numcores(numcores)
 
         #PySCF scratch dir. Todo: Need to adapt
         #print("Setting PySCF scratchdir to ", os.getcwd())
