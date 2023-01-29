@@ -312,9 +312,9 @@ class DiceTheory:
             #Calling SHCI run to get the self.mch object
             print("First running SHCI CAS-CI/CASSCF step")
             self.run_SHCI()
-            print(f"Now running NEVPT2 on SHCI reference WF (CAS({self.nelec},{self.norb}))")
+            print(f"Now running NEVPT2 on SHCI reference WF: CAS({self.nelec},{self.norb})")
             self.QMCUtils.run_nevpt2(self.mch, nelecAct=self.nelec, numAct=self.norb, norbFrozen=self.frozen_core_orbs,
-               integrals="FCIDUMP.h5", nproc=numcores, seed=None,
+               integrals="FCIDUMP.h5", nproc=numcores, seed=None, vmc_root=self.dicedir,
                fname="nevpt2.json", foutname='nevpt2.out', nroot=0,
                spatialRDMfile=None, spinRDMfile=None, stochasticIterNorms=1000,
                nIterFindInitDets=100, numSCSamples=10000, stochasticIterEachSC=100,
