@@ -308,6 +308,8 @@ class DiceTheory:
         # NOW RUNNING
         #NEVPT2
         if self.NEVPT2 is True:
+            #NOTE: Requires fixes to getDets function in QMCUtils.py
+            #TODO: Look at example. https://github.com/sanshar/Dice/blob/master/examples/NEVPT2/N2/n2nevpt.py
             print("Running Dice NEVPT2 calculation on multiconfigurational WF")
             #Calling SHCI run to get the self.mch object
             print("First running SHCI CAS-CI/CASSCF step")
