@@ -397,7 +397,7 @@ MPIPREFIX=""
                 print("SHCI trial wavefunction prep complete.")
                 if self.QMC_SHCI_numdets > self.num_var_determinants:
                     print(f"Error: QMC_SHCI_numdets ({self.QMC_SHCI_numdets}) larger than SHCI-calculated determinants ({self.num_var_determinants})")
-                    print("Increase SHCI-WF size: e.g. by SHCI_cas_nmin, SHCI_cas_nmax or SHCI_active_space keywords")
+                    print("Increase SHCI-WF size: e.g. by increasing active space(SHCI_cas_nmin, SHCI_cas_nmax or SHCI_active_space) or reducing thresholds (SHCI_sweep_epsilon)")
                     ashexit()
                 print(f"{self.num_var_determinants} variational determinants were calculated by SHCI")
                 print(f"{self.QMC_SHCI_numdets} variational determinants were written to disk (dets.bin)")
