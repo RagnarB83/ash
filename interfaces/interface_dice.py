@@ -231,7 +231,7 @@ MPIPREFIX=""
         self.num_var_determinants= self.grab_num_dets()
         print("Number of variational determinants:", self.num_var_determinants)
     def grab_num_dets(self):
-        grab=True
+        grab=False
         numdet=0
         with open("output.dat") as f:
             for line in f:
