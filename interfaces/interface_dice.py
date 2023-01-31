@@ -169,6 +169,7 @@ class DiceTheory:
             print("Create settings.py file (see path in pyscf import error message, probably above) and add this:")
             m=f"""
 SHCIEXE = "{self.dicedir}/bin/Dice"
+SHCISCRATCHDIR= "."
             """
             print(m)
             ashexit()
