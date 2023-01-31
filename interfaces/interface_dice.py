@@ -227,6 +227,23 @@ MPIPREFIX=""
         print("Dice output can be monitored in output.dat on local scratch")
         self.shci.executeSHCI(self.mch.fcisolver)
 
+        #Grab number of
+        self.num_var_determinants= self.grab_num_dets()
+        print("Number of variational determinants:", self.num_var_determinants)
+    def grab_num_dets(self):
+        grab=True
+        numdet=0
+        with open("output.dat") as f:
+            for line in f:
+                if 'Performing final tigh' in line:
+                    grab=False
+                if grab is True:
+                    if len(line.split()) == 7:
+                        numdet=int(line.split()[3])
+                if 'Iter Root       Eps1   #Var. Det.               Ener' in line:
+                    grab=True
+        return numdet
+
     # run_dice_directly: In case we need to. Currently unused
     def run_dice_directly(self):
         print("Calling Dice executable directly")
@@ -277,7 +294,7 @@ MPIPREFIX=""
         #CASSCF iterations
         self.mch.max_cycle_macro = self.SHCI_macroiter
 
-        #Run SHCISCF (ususually only 1 iteration, so CAS-CI)
+        #Run SHCISCF (ususually only 1 iteration CAS-CI, unless self.SHCI_macroiter > 0)
         print("Dice output can be monitored in output.dat on local scratch")
         self.energy = self.mch.mc1step()[0]
 
