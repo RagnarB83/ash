@@ -170,6 +170,7 @@ class DiceTheory:
             m=f"""
 SHCIEXE = "{self.dicedir}/bin/Dice"
 SHCISCRATCHDIR= "."
+MPIPREFIX=""
             """
             print(m)
             ashexit()
