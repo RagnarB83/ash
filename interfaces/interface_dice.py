@@ -46,7 +46,7 @@ class DiceTheory:
         if os.path.exists(self.dicedir):
             print("Dice directory:", self.dicedir)
         else:
-            print("Chosen Dice directory : {self.dicedir} does not exist. Exiting...")
+            print(f"Chosen Dice directory : {self.dicedir} does not exist. Exiting...")
             ashexit()
         #Check for PySCFTheory object 
         if pyscftheoryobject is None:
@@ -398,6 +398,12 @@ MPIPREFIX=""
                 print(f"{self.num_var_determinants} variational determinants were calculated by SHCI")
                 print(f"{self.QMC_SHCI_numdets} variational determinants were written to disk (dets.bin)")
                 print(f"{self.QMC_SHCI_numdets} determinants will be used in multi-determinant AFQMC job")
+
+                if self.QMC_SHCI_numdets > self.num_var_determinants:
+                    print(f"Error: QMC_SHCI_numdets ({self.QMC_SHCI_numdets}) larger than SHCI-calculated determinants ({self.num_var_determinants})")
+                    print("Increase SHCI-WF size: e.g. by SHCI_cas_nmin, SHCI_cas_nmax or SHCI_active_space keywords")
+                    ashexit()
+
                 #Phaseless AFQMC with hci trial
                 module_init_time=time.time()
                 e_afqmc, err_afqmc = self.QMCUtils.run_afqmc_mc(self.mch, mpi_prefix=f"mpirun -np {numcores}",
