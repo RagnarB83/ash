@@ -395,14 +395,13 @@ MPIPREFIX=""
                 print("\nRunning SHCI (via PySCFTheory object) once again to write dets.bin")
                 self.run_and_write_dets(self.QMC_SHCI_numdets)
                 print("SHCI trial wavefunction prep complete.")
-                print(f"{self.num_var_determinants} variational determinants were calculated by SHCI")
-                print(f"{self.QMC_SHCI_numdets} variational determinants were written to disk (dets.bin)")
-                print(f"{self.QMC_SHCI_numdets} determinants will be used in multi-determinant AFQMC job")
-
                 if self.QMC_SHCI_numdets > self.num_var_determinants:
                     print(f"Error: QMC_SHCI_numdets ({self.QMC_SHCI_numdets}) larger than SHCI-calculated determinants ({self.num_var_determinants})")
                     print("Increase SHCI-WF size: e.g. by SHCI_cas_nmin, SHCI_cas_nmax or SHCI_active_space keywords")
                     ashexit()
+                print(f"{self.num_var_determinants} variational determinants were calculated by SHCI")
+                print(f"{self.QMC_SHCI_numdets} variational determinants were written to disk (dets.bin)")
+                print(f"{self.QMC_SHCI_numdets} determinants will be used in multi-determinant AFQMC job")
 
                 #Phaseless AFQMC with hci trial
                 module_init_time=time.time()
