@@ -1,4 +1,5 @@
 import subprocess as sp
+import shutil
 import time
 import numpy as np
 import os
@@ -25,6 +26,7 @@ class DiceTheory:
         self.theorytype="QM"
         print_line_with_mainheader(f"{self.theorynamelabel}Theory initialization")
         
+
         if dicedir == None:
             print(BC.WARNING, f"No dicedir argument passed to {self.theorynamelabel}Theory. Attempting to find dicedir variable inside settings_ash", BC.END)
             try:
