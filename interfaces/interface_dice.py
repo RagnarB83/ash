@@ -68,7 +68,7 @@ class DiceTheory:
         #Path to Dice binary
         self.dice_binary=self.dicedir+"/bin/Dice"
         #Put Dice script dir in path
-        sys.path.insert(0, dicedir+"/scripts")
+        sys.path.insert(0, self.dicedir+"/scripts")
 
         #Now import pyscf, shciscf (plugin), qmcutils (Dice dir scripts)
         self.load_pyscf()
