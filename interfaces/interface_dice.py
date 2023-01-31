@@ -235,6 +235,7 @@ MPIPREFIX=""
         numdet=0
         with open("output.dat") as f:
             for line in f:
+                print(line)
                 if 'Performing final tigh' in line:
                     grab=False
                 if grab is True:
