@@ -415,7 +415,7 @@ MPIPREFIX=""
                     steps_per_block=self.nsteps, nwalk_per_proc=self.nwalkers_per_proc, nblocks=self.nblocks,
                     ortho_steps=20, burn_in=50, cholesky_threshold=1.0e-3,
                     weight_cap=None, write_one_rdm=False, dry_run=False)
-                    print_time_rel(module_init_time, modulename='Dice-AFQMC-run', moduleindex=2)
+                print_time_rel(module_init_time, modulename='Dice-AFQMC-run', moduleindex=2)
             self.energy=e_afqmc
             self.error=err_afqmc
             ##Analysis
