@@ -166,7 +166,12 @@ class DiceTheory:
             print("Most likely: pip install git+https://github.com/pyscf/shciscf")
             ashexit()
         except ImportError:
-            print("sesdf")
+            print("Create settings.py file (see path in line above) and add this:")
+            m=f"""
+SHCIEXE = "{self.dicedir}/bin/Dice"
+            """
+            print(m)
+            ashexit()
     def load_qmcutils(self):
         try:
             import QMCUtils
