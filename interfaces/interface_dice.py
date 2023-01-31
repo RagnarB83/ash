@@ -42,7 +42,12 @@ class DiceTheory:
                     ashexit()
         else:
             self.dicedir = dicedir
-
+        #Check if dir exists
+        if os.path.exists(self.dicedir):
+            print("Dice directory:", self.dicedir)
+        else:
+            print("Chosen Dice directory : {self.dicedir} does not exist. Exiting...")
+            ashexit()
         #Check for PySCFTheory object 
         if pyscftheoryobject is None:
             print("Error:No pyscftheoryobject was provided. This is required")
