@@ -176,7 +176,9 @@ SHCIEXE = "{self.dicedir}/bin/Dice"
         try:
             import QMCUtils
             self.QMCUtils=QMCUtils
-        except ModuleNotFoundError:
+        except ModuleNotFoundError as me:
+            print("ModuleNotFoundError:")
+            print("Exception message:", me)
             print("Either: QMCUtils requires another module (pandas?). Please install it via conda or pip.")
             print("or: Problem importing QMCUtils. Dice directory is probably incorrectly set")
             ashexit()
