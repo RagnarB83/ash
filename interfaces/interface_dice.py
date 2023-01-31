@@ -35,7 +35,7 @@ class DiceTheory:
             except KeyError:
                 print(BC.WARNING,"Found no dicedir variable in settings_ash module either.",BC.END)
                 try:
-                    self.dicedir = os.path.dirname(shutil.which('Dice'))
+                    self.dicedir = os.path.dirname(os.path.dirname(shutil.which('Dice')))
                     print(BC.OKGREEN,"Found Dice in PATH. Setting dicedir to:", self.dicedir, BC.END)
                 except:
                     print(BC.FAIL,"Found no Dice executable in PATH. Exiting... ", BC.END)
