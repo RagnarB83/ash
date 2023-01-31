@@ -160,11 +160,13 @@ class DiceTheory:
         try:
             from pyscf.shciscf import shci
             self.shci=shci
-        except:
-            print("Problem importing pyscf.shciscf")
+        except ModuleNotFoundError:
+            print("Problem importing pyscf.shciscf (PySCF interface module to Dice)")
             print("See: https://github.com/pyscf/shciscf on how to install shciscf module for pyscf")
             print("Most likely: pip install git+https://github.com/pyscf/shciscf")
             ashexit()
+        except ImportError:
+            print("sesdf")
     def load_qmcutils(self):
         try:
             import QMCUtils
