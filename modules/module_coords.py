@@ -147,7 +147,7 @@ class Fragment:
                 ashexit()
             self.elems=molformulatolist(diatomic)
             if len(self.elems) != 2:
-                print("Problem with molecular formula diatomic= string!")
+                print(f"Problem with molecular formula diatomic={diatomic} string!")
                 ashexit()
             self.coords = reformat_list_to_array([[0.0,0.0,0.0],[0.0,0.0,float(diatomic_bondlength)]])
             #self.update_attributes()
