@@ -227,7 +227,7 @@ MPIPREFIX=""
         print("Dice output can be monitored in output.dat on local scratch")
         self.shci.executeSHCI(self.mch.fcisolver)
 
-        #Grab number of
+        #Grab number of determinants
         self.num_var_determinants= self.grab_num_dets()
         print("Number of variational determinants:", self.num_var_determinants)
     def grab_num_dets(self):
@@ -298,6 +298,9 @@ MPIPREFIX=""
         print("Dice output can be monitored in output.dat on local scratch")
         self.energy = self.mch.mc1step()[0]
 
+        #Grab number of determinants
+        self.num_var_determinants= self.grab_num_dets()
+        print("Number of variational determinants:", self.num_var_determinants)
 
     # Run function. Takes coords, elems etc. arguments and computes E or E+G.
     def run(self, current_coords=None, current_MM_coords=None, MMcharges=None, qm_elems=None,
