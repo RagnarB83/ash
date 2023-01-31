@@ -213,6 +213,7 @@ MPIPREFIX=""
 
     #Write dets.bin file. Requires running SHCI once more to get determinants
     def run_and_write_dets(self,numdets):
+        module_init_time=time.time()
         print("Calling run_and_write_dets")
         #Run once more 
         self.shci.dryrun(self.mch)
@@ -220,6 +221,8 @@ MPIPREFIX=""
         with open(self.mch.fcisolver.configFile, 'a') as f:
             f.write(f'writebestdeterminants {numdets}\n\n')
         self.run_shci_directly()
+
+        print_time_rel(module_init_time, modulename='Dice-extra-step', moduleindex=2)
 
     def run_shci_directly(self):
         print("Calling SHCI PySCF interface")
@@ -230,6 +233,8 @@ MPIPREFIX=""
         #Grab number of determinants
         self.num_var_determinants= self.grab_num_dets()
         print("Number of variational determinants:", self.num_var_determinants)
+
+        
     def grab_num_dets(self):
         grab=False
         numdet=0
@@ -254,6 +259,7 @@ MPIPREFIX=""
 
     #Run a SHCI CAS-CI or CASSCF job using the SHCI-PySCF interface 
     def run_SHCI(self):
+        module_init_time=time.time()
         print("Will calculate PySCF MP2 natural orbitals to use as input in Dice CAS job")
         natocc, mo_coefficients = self.pyscftheoryobject.calculate_MP2_natural_orbitals(self.pyscftheoryobject.mol,
                                                                                             self.pyscftheoryobject.mf)
@@ -301,6 +307,8 @@ MPIPREFIX=""
         #Grab number of determinants
         self.num_var_determinants= self.grab_num_dets()
         print("Number of variational determinants:", self.num_var_determinants)
+
+        print_time_rel(module_init_time, modulename='Dice-SHCI-run', moduleindex=2)
 
     # Run function. Takes coords, elems etc. arguments and computes E or E+G.
     def run(self, current_coords=None, current_MM_coords=None, MMcharges=None, qm_elems=None,
@@ -355,6 +363,7 @@ MPIPREFIX=""
             print("First running SHCI CAS-CI/CASSCF step")
             self.run_SHCI()
             print(f"Now running NEVPT2 on SHCI reference WF: CAS({self.nelec},{self.norb})")
+            module_init_time=time.time()
             self.QMCUtils.run_nevpt2(self.mch, nelecAct=self.nelec, numAct=self.norb, norbFrozen=self.frozen_core_orbs,
                integrals="FCIDUMP.h5", nproc=numcores, seed=None, vmc_root=self.dicedir,
                fname="nevpt2.json", foutname='nevpt2.out', nroot=0,
@@ -363,7 +372,7 @@ MPIPREFIX=""
                fixedResTimeNEVPT_Ene=False, epsilon=1.0e-8, efficientNEVPT_2=True,
                determCCVV=True, SCEnergiesBurnIn=50, SCNormsBurnIn=50,
                diceoutfile="output.dat")
-
+            print_time_rel(module_init_time, modulename='Dice-NEVPT2-run', moduleindex=2)
             #TODO: Grab energy from function call
             self.energy=0.0
             print("Final Dice NEVPT2 energy:", self.energy)
@@ -385,6 +394,7 @@ MPIPREFIX=""
                 print(f"{self.QMC_SHCI_numdets} variational determinants were written to disk (dets.bin)")
                 print(f"{self.QMC_SHCI_numdets} determinants will be used in multi-determinant AFQMC job")
                 #Phaseless AFQMC with hci trial
+                module_init_time=time.time()
                 e_afqmc, err_afqmc = self.QMCUtils.run_afqmc_mc(self.mch, mpi_prefix=f"mpirun -np {numcores}",
                                 norb_frozen=self.frozen_core_orbs, chol_cut=1e-5,
                                 ndets=self.QMC_SHCI_numdets, nroot=0, seed=None,
@@ -394,15 +404,18 @@ MPIPREFIX=""
                                 use_eri=False, dry_run=False)
                 e_afqmc=e_afqmc[0] 
                 err_afqmc=err_afqmc[0]
+                print_time_rel(module_init_time, modulename='Dice-AFQMC-run', moduleindex=2)
             #Single determinant trial wavefunction
             else:
                 print("Using single-determinant WF from PySCF object")
                 #Phaseless AFQMC with simple mf trial
+                module_init_time=time.time()
                 e_afqmc, err_afqmc = self.QMCUtils.run_afqmc_mf(self.pyscftheoryobject.mf, mpi_prefix=f"mpirun -np {numcores}",
                     norb_frozen=self.frozen_core_orbs, chol_cut=1e-5, seed=None, dt=self.dt,
                     steps_per_block=self.nsteps, nwalk_per_proc=self.nwalkers_per_proc, nblocks=self.nblocks,
                     ortho_steps=20, burn_in=50, cholesky_threshold=1.0e-3,
                     weight_cap=None, write_one_rdm=False, dry_run=False)
+                    print_time_rel(module_init_time, modulename='Dice-AFQMC-run', moduleindex=2)
             self.energy=e_afqmc
             self.error=err_afqmc
             ##Analysis
