@@ -137,7 +137,7 @@ class DiceTheory:
             print("SHCI CAS NO nmax", self.SHCI_cas_nmax)
         if self.AFQMC is True:
             print("QMC_trialWF:", self.QMC_trialWF)
-            if self.QMC_trialWF is 'SHCI':
+            if self.QMC_trialWF == 'SHCI':
                 print("QMC_SHCI_numdets:", self.QMC_SHCI_numdets)
             print("QMC settings:")
             print("dt:", self.dt)
