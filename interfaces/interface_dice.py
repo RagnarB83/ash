@@ -161,7 +161,9 @@ class DiceTheory:
             from pyscf.shciscf import shci
             self.shci=shci
         except:
-            print("Problem importing pyscf.sciscf")
+            print("Problem importing pyscf.shciscf")
+            print("See: https://github.com/pyscf/shciscf on how to install shciscf module for pyscf")
+            print("Most likely: pip install git+https://github.com/pyscf/shciscf")
             ashexit()
     def load_qmcutils(self):
         try:
