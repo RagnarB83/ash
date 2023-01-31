@@ -146,6 +146,9 @@ class Fragment:
                 print(BC.FAIL,"diatomic option requires diatomic_bondlength to be set. Exiting!", BC.END)
                 ashexit()
             self.elems=molformulatolist(diatomic)
+            if len(self.elems) != 2:
+                print("Problem with molecular formula diatomic= string!")
+                ashexit()
             self.coords = reformat_list_to_array([[0.0,0.0,0.0],[0.0,0.0,float(diatomic_bondlength)]])
             #self.update_attributes()
         # If coordsstring given, read elems and coords from it
