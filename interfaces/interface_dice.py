@@ -235,7 +235,6 @@ MPIPREFIX=""
         numdet=0
         with open("output.dat") as f:
             for line in f:
-                print(line)
                 if 'Performing final tigh' in line:
                     grab=False
                 if grab is True:
@@ -382,6 +381,8 @@ MPIPREFIX=""
                 print("\nRunning SHCI (via PySCFTheory object) once again to write dets.bin")
                 self.run_and_write_dets(self.QMC_SHCI_numdets)
                 print("SHCI trial wavefunction prep complete.")
+                print(f"{self.num_var_determinants} variational determinants were calculated by SHCI")
+                print(f"{self.QMC_SHCI_numdets} variational determinants were written to disk (dets.bin)")
                 print(f"{self.QMC_SHCI_numdets} determinants will be used in multi-determinant AFQMC job")
                 #Phaseless AFQMC with hci trial
                 e_afqmc, err_afqmc = self.QMCUtils.run_afqmc_mc(self.mch, mpi_prefix=f"mpirun -np {numcores}",
