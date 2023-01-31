@@ -166,7 +166,7 @@ class DiceTheory:
             print("Most likely: pip install git+https://github.com/pyscf/shciscf")
             ashexit()
         except ImportError:
-            print("Create settings.py file (see path in line above) and add this:")
+            print("Create settings.py file (see path in pyscf import error message, probably above) and add this:")
             m=f"""
 SHCIEXE = "{self.dicedir}/bin/Dice"
             """
