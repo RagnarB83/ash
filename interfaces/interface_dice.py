@@ -12,11 +12,16 @@ from ash.functions.functions_parallel import check_OpenMPI
 import ash.settings_ash
 
 #Interface to Dice: SHCI, QMC (single-det or SHCI multi-det) and NEVPT2
+
+#TODO: Remove need for second-iteration print-det
+#TODO: fix nevpt2
+#TODO: turn pt2 stage on/off in SHCI
+
 class DiceTheory:
     def __init__(self, dicedir=None, pyscftheoryobject=None, filename='input.dat', printlevel=2, numcores=1, 
                 SHCI=False, NEVPT2=False, AFQMC=False, QMC_trialWF=None, frozencore=True,
                 SHCI_stochastic=True, SHCI_PTiter=200, SHCI_sweep_iter= [0,3],
-                SHCI_DoRDM=True, SHCI_sweep_epsilon = [ 5e-3, 1e-3 ], SHCI_macroiter=0,
+                SHCI_DoRDM=False, SHCI_sweep_epsilon = [ 5e-3, 1e-3 ], SHCI_macroiter=0,
                 SHCI_davidsonTol=5e-05, SHCI_dE=1e-08, SHCI_maxiter=9, SHCI_epsilon2=1e-07, SHCI_epsilon2Large=1000,
                 SHCI_targetError=0.0001, SHCI_sampleN=200, SHCI_nroots=1,
                 SHCI_cas_nmin=1.999, SHCI_cas_nmax=0.0, SHCI_active_space=None,
@@ -124,7 +129,11 @@ class DiceTheory:
         self.nsteps=nsteps
         self.nblocks=nblocks
         self.nwalkers_per_proc=nwalkers_per_proc
-
+        #If SHCI is used as trial WF we turn off PT stage (timeconsuming)
+        if self.AFQMC is True and self.QMC_trialWF == 'SHCI':
+            print("AFQMC with SHCI trial WF. Turning off PT stage")
+                self.SHCI_stochastic=True #otherwise deterministic PT happens
+                self.SHCI_PTiter=0 # PT skipped with this
         #Print stuff
         print("Printlevel:", self.printlevel)
         print("Num cores:", self.numcores)
@@ -264,7 +273,7 @@ MPIPREFIX=""
 
     #Run a SHCI CAS-CI or CASSCF job using the SHCI-PySCF interface
     #TODO: Turn perturbation stage off if only using SHCI as trial WF? Need only do variational part
-    def run_SHCI(self):
+    def run_SHCI(self,verbose=5):
         module_init_time=time.time()
         print("Will calculate PySCF MP2 natural orbitals to use as input in Dice CAS job")
         natocc, mo_coefficients = self.pyscftheoryobject.calculate_MP2_natural_orbitals(self.pyscftheoryobject.mol,
@@ -302,7 +311,7 @@ MPIPREFIX=""
         self.mch.fcisolver.targetError = self.SHCI_targetError
         self.mch.fcisolver.sampleN = self.SHCI_sampleN
         self.mch.fcisolver.nroots = self.SHCI_nroots
-
+        self.mch.verbose=verbose
         #CASSCF iterations
         self.mch.max_cycle_macro = self.SHCI_macroiter
 
