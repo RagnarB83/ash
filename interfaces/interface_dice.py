@@ -132,8 +132,8 @@ class DiceTheory:
         #If SHCI is used as trial WF we turn off PT stage (timeconsuming)
         if self.AFQMC is True and self.QMC_trialWF == 'SHCI':
             print("AFQMC with SHCI trial WF. Turning off PT stage")
-                self.SHCI_stochastic=True #otherwise deterministic PT happens
-                self.SHCI_PTiter=0 # PT skipped with this
+            self.SHCI_stochastic=True #otherwise deterministic PT happens
+            self.SHCI_PTiter=0 # PT skipped with this
         #Print stuff
         print("Printlevel:", self.printlevel)
         print("Num cores:", self.numcores)
