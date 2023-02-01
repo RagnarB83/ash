@@ -261,7 +261,7 @@ class PySCFTheory:
         #Defining pyscf mol object and populating 
         self.mol = self.pyscf.gto.Mole()
         #Mol system printing. Hardcoding to 3 as otherwise too much PySCF printing
-        self.mol.verbose = self.verbosity 
+        self.mol.verbose = 3
         coords_string=ash.modules.module_coords.create_coords_string(qm_elems,current_coords)
         self.mol.atom = coords_string
         self.mol.symmetry = self.symmetry
