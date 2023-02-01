@@ -262,7 +262,8 @@ MPIPREFIX=""
         with open('output.dat', "w") as outfile:
             sp.call(['mpirun', '-np', str(self.numcores), self.dice_binary, self.filename], stdout=outfile)
 
-    #Run a SHCI CAS-CI or CASSCF job using the SHCI-PySCF interface 
+    #Run a SHCI CAS-CI or CASSCF job using the SHCI-PySCF interface
+    #TODO: Turn perturbation stage off if only using SHCI as trial WF? Need only do variational part
     def run_SHCI(self):
         module_init_time=time.time()
         print("Will calculate PySCF MP2 natural orbitals to use as input in Dice CAS job")
