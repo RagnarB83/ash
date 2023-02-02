@@ -363,6 +363,7 @@ class PySCFTheory:
         #####################
         if self.SCF is True:
             print("Running SCF")
+            self.mf.verbose=self.verbose_setting
             if self.write_chkfile_name != None:
                 self.mf.chkfile = self.write_chkfile_name
             else:
