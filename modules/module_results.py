@@ -19,6 +19,7 @@ class ASH_Results:
     energies: list = None
     reaction_energies: list = None
     relative_energies: list = None
+    labels: list = None
     gradients: list = None
     energies_dict: dict = None
     gradients_dict: dict = None

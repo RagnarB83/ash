@@ -176,6 +176,7 @@ def Singlepoint_fragments(theory=None, fragments=None, stoichiometry=None, relat
         relenergies=[(i - min(energies)) * ash.constants.hartokcal for i in energies]
         print_fragments_table(fragments,relenergies, unit='kcal/mol')
         result.relative_energies = relenergies
+        result.labels = [f.label for f in fragments]
  
     #Printing reaction energy if stoichiometry was provided
     if stoichiometry != None:
