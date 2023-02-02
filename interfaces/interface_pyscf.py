@@ -15,7 +15,7 @@ class PySCFTheory:
                   CC=False, CCmethod=None, CC_direct=False, frozen_core_setting='Auto',
                   CAS=False, CASSCF=False, active_space=None, CAS_nocc_a=None, CAS_nocc_b=None,
                   frozen_virtuals=None, FNO=False, FNO_thresh=None, checkpointfile=True,
-                  read_chkfile_name=None,
+                  read_chkfile_name=None, write_chkfile_name=None,
                   PyQMC=False, PyQMC_nconfig=1, PyQMC_method='DMC'):
 
         self.theorytype="QM"
@@ -68,6 +68,7 @@ class PySCFTheory:
         self.verbose_setting=verbose_setting
         self.checkpointfile=checkpointfile
         self.read_chkfile_name=read_chkfile_name
+        self.write_chkfile_name=write_chkfile_name
         self.symmetry=symmetry
         #CAS
         self.CAS=CAS
@@ -480,7 +481,10 @@ class PySCFTheory:
                 #TODO: Orbital option for starting CASSCF calculation
                 casscf = self.mcscf.CASSCF(self.mf, self.active_space[1], self.active_space[0])
                 casscf.verbose=self.verbose_setting
-                casscf.chkfile = "casscf.chk"
+                if self.write_chkfile_name != None:
+                    casscf.chkfile = self.write_chkfile_name
+                else:
+                    casscf.chkfile = "casscf.chk"
 
                 #CASSCF from chkpointfile orbitals if specfied
                 if self.read_chkfile_name != None:
@@ -496,6 +500,10 @@ class PySCFTheory:
                 casci = self.mcscf.CASCI(self.mf, self.active_space[1], self.active_space[0])
                 casci.verbose=self.verbose_setting
                 casci.chkfile = "casci.chk"
+                if self.write_chkfile_name != None:
+                    casci.chkfile = self.write_chkfile_name
+                else:
+                    casci.chkfile = "casci.chk"
 
                 #CAS-CI from chkpointfile orbitals if specfied
                 if self.read_chkfile_name != None:
