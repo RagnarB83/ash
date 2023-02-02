@@ -38,7 +38,8 @@ class PySCFTheory:
         if CC is True and CCmethod is None:
             print("Error: Need to choose CCmethod, e.g. 'CCSD', 'CCSD(T)")
             ashexit()
-
+        if CASSCF is True and CAS is False:
+            CAS=True
         #Printlevel
         self.printlevel=printlevel
         self.memory=memory
