@@ -500,13 +500,8 @@ class PySCFTheory:
                 print("Doing CAS-CI (no orbital optimization)")
                 casci = self.mcscf.CASCI(self.mf, self.active_space[1], self.active_space[0])
                 casci.verbose=self.verbose_setting
-                casci.chkfile = "casci.chk"
-                if self.write_chkfile_name != None:
-                    casci.chkfile = self.write_chkfile_name
-                else:
-                    casci.chkfile = "casci.chk"
-                print("Will write checkpointfile:", casci.chkfile )
                 #CAS-CI from chkpointfile orbitals if specfied
+                print("casci: dict", casci.__dict__)
                 if self.read_chkfile_name != None:
                     prevmos = self.pyscf.lib.chkfile.load(self.read_chkfile_name, 'mcscf/mo_coeff')
                     e_tot, e_cas, fcivec, mo, mo_energy = casci.kernel(prevmos)
