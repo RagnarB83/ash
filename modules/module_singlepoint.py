@@ -136,7 +136,7 @@ def print_fragments_table(fragments,energies,tabletitle="Singlepoint_fragments: 
 #Single-point energy function that runs calculations on multiple fragments. Returns a list of energies.
 #Assuming fragments have charge,mult info defined.
 #If stoichiometry provided then print reaction energy
-def Singlepoint_fragments(theory=None, fragments=None, stoichiometry=None, relative_energies=False):
+def Singlepoint_fragments(theory=None, fragments=None, stoichiometry=None, relative_energies=False, unit='kcal/mol'):
     print_line_with_mainheader("Singlepoint_fragments function")
 
     print("Will run single-point calculation on each fragment")
@@ -173,8 +173,11 @@ def Singlepoint_fragments(theory=None, fragments=None, stoichiometry=None, relat
     if relative_energies is True:
         print()
         print("relative_energies option is True!")
-        relenergies=[(i - min(energies)) * ash.constants.hartokcal for i in energies]
-        print_fragments_table(fragments,relenergies, unit='kcal/mol')
+        conversionfactor = { 'kcal/mol' : 627.50946900, 'kcalpermol' : 627.50946900, 'kJ/mol' : 2625.499638, 'kJpermol' : 2625.499638, 
+                        'eV' : 27.211386245988, 'cm-1' : 219474.6313702, 'Eh' : 1.0, 'mEh' : 1000, 'meV' : 27211.386245988 }
+        convfactor=conversionfactor[unit]
+        relenergies=[(i - min(energies)) * convfactor for i in energies]
+        print_fragments_table(fragments,relenergies, unit=unit)
         result.relative_energies = relenergies
         result.labels = [f.label for f in fragments]
  
