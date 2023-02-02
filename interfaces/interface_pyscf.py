@@ -479,8 +479,6 @@ class PySCFTheory:
                 casscf.chkfile = "scf.chk"
                 e_tot, e_cas, fcivec, mo, mo_energy = casscf.kernel()
                 print("CASSCF run done")
-                print("mo:", mo)
-                print("casscf mo_occ:", casscf.mo_occ)
             else:
                 print("Doing CAS-CI (no orbital optimization)")
                 casci = self.mcscf.CASCI(self.mf, self.active_space[1], self.active_space[0])
@@ -489,8 +487,6 @@ class PySCFTheory:
                 casci.chkfile = "casci.chk"
                 e_tot, e_cas, fcivec, mo, mo_energy = casci.kernel()
                 print("CAS-CI run done")
-                print("mo:", mo)
-                print("casci mo_occ:", casci.mo_occ)
                 print("")
 
             print("e_tot:", e_tot)
