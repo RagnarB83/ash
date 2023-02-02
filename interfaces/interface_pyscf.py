@@ -14,7 +14,7 @@ class PySCFTheory:
                   pe=False, potfile='', filename='pyscf', memory=3100, conv_tol=1e-8, verbose_setting=4, 
                   CC=False, CCmethod=None, CC_direct=False, frozen_core_setting='Auto',
                   CAS=False, CASSCF=False, active_space=None, CAS_nocc_a=None, CAS_nocc_b=None,
-                  frozen_virtuals=None, FNO=False, FNO_thresh=None, checkpointfile=True,
+                  frozen_virtuals=None, FNO=False, FNO_thresh=None, 
                   read_chkfile_name=None, write_chkfile_name=None,
                   PyQMC=False, PyQMC_nconfig=1, PyQMC_method='DMC'):
 
@@ -66,7 +66,6 @@ class PySCFTheory:
 
         self.conv_tol=conv_tol
         self.verbose_setting=verbose_setting
-        self.checkpointfile=checkpointfile
         self.read_chkfile_name=read_chkfile_name
         self.write_chkfile_name=write_chkfile_name
         self.symmetry=symmetry
@@ -335,10 +334,6 @@ class PySCFTheory:
         #Control printing here. TOdo: make variable
         self.mf.verbose = self.verbose_setting
 
-        #Checkpointfile
-        if self.checkpointfile is True:
-            self.mf.chkfile = 'scf.chk'
-
         #FROZEN ORBITALS in CC
         if self.CC:
             #Frozen-core settings
@@ -368,7 +363,24 @@ class PySCFTheory:
         #####################
         if self.SCF is True:
             print("Running SCF")
-            scf_result = self.mf.run()
+            if self.write_chkfile_name != None:
+                self.mf.chkfile = self.write_chkfile_name
+            else:
+                self.mf.chkfile = "scf.chk"
+            print("Will write checkpointfile:", self.mf.chkfile )
+
+            #SCF from chkpointfile orbitals if specfied
+            if self.read_chkfile_name != None:
+                print("Will read guess orbitals from checkpointfile:", self.read_chkfile_name)
+                dm = self.pyscf.scf.hf.from_chk(self.mol, self.read_chkfile_name)
+                #e_tot, e_cas, fcivec, mo, mo_energy = casscf.kernel(prevmos)
+                scf_result = self.mf.run(dm)
+            else:
+                #SCF starting from default guess orbitals
+                scf_result = self.mf.run()
+
+
+            
             print("SCF energy:", scf_result.e_tot)
             print("SCF energy components:", scf_result.scf_summary)
             if self.scf_type == 'RHF' or self.scf_type == 'RKS':
@@ -501,7 +513,6 @@ class PySCFTheory:
                 casci = self.mcscf.CASCI(self.mf, self.active_space[1], self.active_space[0])
                 casci.verbose=self.verbose_setting
                 #CAS-CI from chkpointfile orbitals if specfied
-                print("casci: dict", casci.__dict__)
                 if self.read_chkfile_name != None:
                     prevmos = self.pyscf.lib.chkfile.load(self.read_chkfile_name, 'mcscf/mo_coeff')
                     e_tot, e_cas, fcivec, mo, mo_energy = casci.kernel(prevmos)
