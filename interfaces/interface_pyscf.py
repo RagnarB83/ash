@@ -372,10 +372,11 @@ class PySCFTheory:
             #SCF from chkpointfile orbitals if specfied
             if self.read_chkfile_name != None:
                 print("Will read guess orbitals from checkpointfile:", self.read_chkfile_name)
-                dm = self.pyscf.scf.hf.from_chk(self.mol, self.read_chkfile_name)
+                dm = self.mf.from_chk(self.mol, self.read_chkfile_name)
                 #e_tot, e_cas, fcivec, mo, mo_energy = casscf.kernel(prevmos)
                 scf_result = self.mf.run(dm)
             else:
+                print("Starting SCF from default guess orbitals")
                 #SCF starting from default guess orbitals
                 scf_result = self.mf.run()
 
