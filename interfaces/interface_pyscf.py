@@ -15,6 +15,7 @@ class PySCFTheory:
                   CC=False, CCmethod=None, CC_direct=False, frozen_core_setting='Auto',
                   CAS=False, CASSCF=False, active_space=None, CAS_nocc_a=None, CAS_nocc_b=None,
                   frozen_virtuals=None, FNO=False, FNO_thresh=None, checkpointfile=True,
+                  read_chkfile_name=None,
                   PyQMC=False, PyQMC_nconfig=1, PyQMC_method='DMC'):
 
         self.theorytype="QM"
@@ -66,6 +67,7 @@ class PySCFTheory:
         self.conv_tol=conv_tol
         self.verbose_setting=verbose_setting
         self.checkpointfile=checkpointfile
+        self.read_chkfile_name=read_chkfile_name
         self.symmetry=symmetry
         #CAS
         self.CAS=CAS
@@ -465,27 +467,44 @@ class PySCFTheory:
             print(f"Now running CAS job with active space of {self.active_space[0]} electrons in {self.active_space[1]} orbitals")
             
             #Initial orbitals for CAS-CI or CASSCF
-            #Default MP2 natural orbitals
-            # TODO: Override this with other options: 
-            print("Will calculate MP2 natural orbitals to use as input in CAS job")
-            natocc, natorbs = self.calculate_MP2_natural_orbitals(self.mol,self.mf)
+            #Default MP2 natural orbitals unless we read-in chkfile
+            if self.read_chkfile_name == None:
+                print("Will calculate MP2 natural orbitals to use as input in CAS job")
+                natocc, natorbs = self.calculate_MP2_natural_orbitals(self.mol,self.mf)
+            else:
+                print("read_chkfile_name option was specified")
+                print("This means that SCF-orbitals are ignored and we will read MO coefficients from file:", self.read_chkfile_name)
             
             if self.CASSCF is True:
                 print("Doing CASSCF (orbital optimization)")
                 #TODO: Orbital option for starting CASSCF calculation
                 casscf = self.mcscf.CASSCF(self.mf, self.active_space[1], self.active_space[0])
                 casscf.verbose=self.verbose_setting
-                casscf.kernel(natorbs)
-                casscf.chkfile = "scf.chk"
-                e_tot, e_cas, fcivec, mo, mo_energy = casscf.kernel()
+                casscf.chkfile = "casscf.chk"
+
+                #CASSCF from chkpointfile orbitals if specfied
+                if self.read_chkfile_name != None:
+                    prevmos = self.pyscf.lib.chkfile.load(self.read_chkfile_name, 'mcscf/mo_coeff')
+                    e_tot, e_cas, fcivec, mo, mo_energy = casscf.kernel(prevmos)
+                else:
+                    #CASSCF starting from MP2 natural orbitals
+                    e_tot, e_cas, fcivec, mo, mo_energy = casscf.kernel(natorbs)
+
                 print("CASSCF run done")
             else:
                 print("Doing CAS-CI (no orbital optimization)")
                 casci = self.mcscf.CASCI(self.mf, self.active_space[1], self.active_space[0])
                 casci.verbose=self.verbose_setting
-                casci.kernel(natorbs)
                 casci.chkfile = "casci.chk"
-                e_tot, e_cas, fcivec, mo, mo_energy = casci.kernel()
+
+                #CAS-CI from chkpointfile orbitals if specfied
+                if self.read_chkfile_name != None:
+                    prevmos = self.pyscf.lib.chkfile.load(self.read_chkfile_name, 'mcscf/mo_coeff')
+                    e_tot, e_cas, fcivec, mo, mo_energy = casci.kernel(prevmos)
+                else:
+                    #CAS-CI starting from MP2 natural orbitals
+                    e_tot, e_cas, fcivec, mo, mo_energy = casci.kernel(natorbs)
+
                 print("CAS-CI run done")
                 print("")
 
