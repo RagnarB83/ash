@@ -363,20 +363,24 @@ class PySCFTheory:
         #####################
         if self.SCF is True:
             print("Running SCF")
-            #if self.write_chkfile_name != None:
-            #    self.mf.chkfile = self.write_chkfile_name
-            #else:
-            #    self.mf.chkfile = "scf.chk"
+            if self.write_chkfile_name != None:
+                self.mf.chkfile = self.write_chkfile_name
+            else:
+                self.mf.chkfile = "scf.chk"
             print("Will write checkpointfile:", self.mf.chkfile )
 
             #SCF from chkpointfile orbitals if specfied
             if self.read_chkfile_name != None:
                 print("Will read guess orbitals from checkpointfile:", self.read_chkfile_name)
-                self.mf.chkfile = self.read_chkfile_name
-                self.mf.init_guess = 'chk'
+                #self.mf.chkfile = self.read_chkfile_name
+                #self.mf.init_guess = 'chk'
                 #dm = self.mf.from_chk(self.mol, self.read_chkfile_name)
                 #e_tot, e_cas, fcivec, mo, mo_energy = casscf.kernel(prevmos)
-                scf_result = self.mf.run()
+                #scf_result = self.mf.run()
+                self.mf.__dict__.update(self.pyscf.scf.chkfile.load(self.read_chkfile_name, 'scf'))
+                dm = self.mf.make_rdm1()
+                scf_result = self.mf.kernel(dm)
+                
             else:
                 print("Starting SCF from default guess orbitals")
                 #SCF starting from default guess orbitals
