@@ -473,14 +473,14 @@ class PySCFTheory:
             if self.CASSCF is True:
                 print("Doing CASSCF (orbital optimization)")
                 #TODO: Orbital option for starting CASSCF calculation
-                casscf = self.mcscf.CASSCF(self.mf, self.active_space[0], self.active_space[1])
+                casscf = self.mcscf.CASSCF(self.mf, self.active_space[1], self.active_space[0])
                 casscf.kernel(natorbs)
                 casscf.chkfile = "scf.chk"
                 e_tot, e_cas, fcivec, mo, mo_energy = casscf.kernel()
                 print("CASSCF run done")
             else:
                 print("Doing CAS-CI (no orbital optimization)")
-                casci = self.mcscf.CASCI(self.mf, self.active_space[0], self.active_space[1])
+                casci = self.mcscf.CASCI(self.mf, self.active_space[1], self.active_space[0])
                 casci.kernel(natorbs)
                 casci.chkfile = "casci.chk"
                 e_tot, e_cas, fcivec, mo, mo_energy = casci.kernel()
