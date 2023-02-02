@@ -379,7 +379,7 @@ class PySCFTheory:
                 #scf_result = self.mf.run()
                 self.mf.__dict__.update(self.pyscf.scf.chkfile.load(self.read_chkfile_name, 'scf'))
                 dm = self.mf.make_rdm1()
-                scf_result = self.mf.kernel(dm)
+                scf_result = self.mf.run(dm)
                 
             else:
                 print("Starting SCF from default guess orbitals")
