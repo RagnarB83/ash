@@ -485,6 +485,7 @@ class PySCFTheory:
                     casscf.chkfile = self.write_chkfile_name
                 else:
                     casscf.chkfile = "casscf.chk"
+                print("Will write checkpointfile:", casscf.chkfile )
 
                 #CASSCF from chkpointfile orbitals if specfied
                 if self.read_chkfile_name != None:
@@ -504,7 +505,7 @@ class PySCFTheory:
                     casci.chkfile = self.write_chkfile_name
                 else:
                     casci.chkfile = "casci.chk"
-
+                print("Will write checkpointfile:", casci.chkfile )
                 #CAS-CI from chkpointfile orbitals if specfied
                 if self.read_chkfile_name != None:
                     prevmos = self.pyscf.lib.chkfile.load(self.read_chkfile_name, 'mcscf/mo_coeff')
