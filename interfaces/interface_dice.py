@@ -442,7 +442,8 @@ noio
         self.cleanup()
 
         #Run PySCF to get integrals and MOs. This would probably only be an SCF
-        self.pyscftheoryobject.run(current_coords=current_coords, elems=qm_elems, charge=charge, mult=mult)
+        if self.Dice_SHCI_direct != True:
+            self.pyscftheoryobject.run(current_coords=current_coords, elems=qm_elems, charge=charge, mult=mult)
 
         #Get frozen-core
         if self.frozencore is True:
