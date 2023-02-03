@@ -7,7 +7,7 @@ import sys
 import glob
 from ash.modules.module_coords import elematomnumbers, check_charge_mult
 from ash.constants import ang2bohr, harkcal
-from ash.functions.functions_general import ashexit, BC, print_time_rel,print_line_with_mainheader,pygrep2
+from ash.functions.functions_general import ashexit, BC, print_time_rel,print_line_with_mainheader,pygrep
 from ash.functions.functions_parallel import check_OpenMPI
 import ash.settings_ash
 
@@ -321,7 +321,8 @@ noio
         self.run_dice_directly()
 
         #Read energy and determinants from outputfile: output.dat
-        enresult = pygrep2("PTEnergy:","output.dat")
+        enresult = pygrep("PTEnergy:","output.dat")
+        print("enresult:", enresult)
         self.energy = enresult[1]
         self.error = enresult[-1]
         self.num_var_determinants = self.grab_num_dets()
