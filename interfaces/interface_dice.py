@@ -55,7 +55,7 @@ class DiceTheory:
             ashexit()
         #Check for PySCFTheory object 
         if pyscftheoryobject is None:
-            if self.Dice_SHCI_direct == None:
+            if Dice_SHCI_direct == None:
                 print("Error:No pyscftheoryobject was provided. This is required")
                 ashexit()
         
