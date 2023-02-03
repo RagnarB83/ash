@@ -283,7 +283,8 @@ MPIPREFIX=""
             ashexit()
         sweepschedule=""
         for it,eps in zip(self.SHCI_sweep_iter,self.SHCI_sweep_epsilon):
-            sweepschedule=sweepschedule+f"\n{it} {eps}"
+            sweepschedule=sweepschedule+f"{it} {eps}\n"
+        sweepschedule.replace("\n\n","")
         #Inputfile creation
         inputstring=f"""
 
