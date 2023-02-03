@@ -83,8 +83,9 @@ class DiceTheory:
         sys.path.insert(0, self.dicedir+"/scripts")
 
         #Now import pyscf, shciscf (plugin), qmcutils (Dice dir scripts)
-        self.load_pyscf()
-        self.load_shciscf()
+        if SHCI == True and Dice_SHCI_direct != True:
+            self.load_pyscf()
+            self.load_shciscf()
         self.load_qmcutils()
 
 
