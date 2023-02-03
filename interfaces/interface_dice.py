@@ -458,7 +458,7 @@ noio
         #Get frozen-core
         if self.frozencore is True:
             if self.Dice_SHCI_direct == None:
-            self.determine_frozen_core(qm_elems)
+                self.determine_frozen_core(qm_elems)
         else:
             self.frozen_core_orbs=0
 
