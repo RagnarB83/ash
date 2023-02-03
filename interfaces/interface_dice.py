@@ -15,7 +15,6 @@ import ash.settings_ash
 
 #TODO: Remove need for second-iteration print-det
 #TODO: fix nevpt2
-#TODO: Check canonicalization setting for CASSCF CASCI part. Probably turn off
 
 class DiceTheory:
     def __init__(self, dicedir=None, pyscftheoryobject=None, filename='input.dat', printlevel=2, numcores=1, 
