@@ -55,8 +55,9 @@ class DiceTheory:
             ashexit()
         #Check for PySCFTheory object 
         if pyscftheoryobject is None:
-            print("Error:No pyscftheoryobject was provided. This is required")
-            ashexit()
+            if self.Dice_SHCI_direct == None:
+                print("Error:No pyscftheoryobject was provided. This is required")
+                ashexit()
         
         #Check if conflicting options selected
         if NEVPT2 is True and AFQMC is True:
