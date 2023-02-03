@@ -272,7 +272,7 @@ MPIPREFIX=""
         return numdet
 
     #Run Dice-SHCI job without pyscf
-    def run_Dice_SHCI(self,fcidumpfile):
+    def run_Dice_SHCI(self):
         #Create inputfile input.dat
         nocc=self.SHCI_active_space[0] #how many electrons in active space
         #refdeterminant="0 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20 21 22 23 24 25 26 27"
