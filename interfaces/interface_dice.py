@@ -292,7 +292,7 @@ orbitals {self.fcidumpfile}
 
 # Variational
 schedule
-sweepschedule}
+{sweepschedule}
 end
 davidsontol {self.SHCI_davidsonTol}
 dE {self.SHCI_dE}
