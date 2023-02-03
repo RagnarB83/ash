@@ -7,7 +7,7 @@ import sys
 import glob
 from ash.modules.module_coords import elematomnumbers, check_charge_mult
 from ash.constants import ang2bohr, harkcal
-from ash.functions.functions_general import ashexit, BC, print_time_rel,print_line_with_mainheader
+from ash.functions.functions_general import ashexit, BC, print_time_rel,print_line_with_mainheader,pygrep2
 from ash.functions.functions_parallel import check_OpenMPI
 import ash.settings_ash
 
@@ -321,7 +321,11 @@ noio
         self.run_dice_directly()
 
         #Read energy and determinants from outputfile: output.dat
-        #TODO
+        enresult = pygrep2("PTEnergy:","output.dat")
+        self.energy = enresult[1]
+        self.error = enresult[-1]
+        self.num_var_determinants = self.grab_num_dets()
+        print("Number of variational determinants:", self.num_var_determinants)
 
 
     # run_dice_directly: In case we need to. Currently unused
@@ -408,7 +412,7 @@ noio
         self.energy = self.mch.mc1step()[0]
 
         #Grab number of determinants
-        self.num_var_determinants= self.grab_num_dets()
+        self.num_var_determinants = self.grab_num_dets()
         print("Number of variational determinants:", self.num_var_determinants)
 
         print_time_rel(module_init_time, modulename='Dice-SHCI-run', moduleindex=2)
@@ -453,6 +457,7 @@ noio
 
         #Get frozen-core
         if self.frozencore is True:
+            if self.Dice_SHCI_direct == None:
             self.determine_frozen_core(qm_elems)
         else:
             self.frozen_core_orbs=0
@@ -537,7 +542,8 @@ noio
         elif self.Dice_SHCI_direct is True:
             print("Running SHCI option via Dice without pyscf")
             self.run_Dice_SHCI()
-            #TODO: Grab energy
+            print("Final Dice SHCI energy:", self.energy)
+            print("Final Dice SHCI PT error:", self.error)
         #Just SHCI via PySCF
         else:
             if self.SHCI is True:
