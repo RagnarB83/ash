@@ -25,7 +25,8 @@ class DiceTheory:
                 SHCI_targetError=0.0001, SHCI_sampleN=200, SHCI_nroots=1,
                 SHCI_cas_nmin=1.999, SHCI_cas_nmax=0.0, SHCI_active_space=None,
                 read_chkfile_name=None, Dice_SHCI_direct=None, fcidumpfile=None, refdeterminant=None,
-                QMC_SHCI_numdets=1000, dt=0.005, nsteps=50, nblocks=1000, nwalkers_per_proc=5):
+                QMC_SHCI_numdets=1000, dt=0.005, nsteps=50, nblocks=1000, nwalkers_per_proc=5,
+                memory=20000):
 
         self.theorynamelabel="Dice"
         self.theorytype="QM"
@@ -109,6 +110,7 @@ class DiceTheory:
         self.read_chkfile_name=read_chkfile_name
         self.fcidumpfile=fcidumpfile
         self.refdeterminant=refdeterminant
+        self.memory=memory #Memory in MB (total) assigned to PySCF mcscf object 
         #SHCI options
         if self.SHCI is True:
             self.SHCI_stochastic=SHCI_stochastic
@@ -400,6 +402,8 @@ noio
         self.mch.fcisolver.sampleN = self.SHCI_sampleN
         self.mch.fcisolver.nroots = self.SHCI_nroots
         self.mch.verbose=verbose
+        #Setting memory
+        self.mch.max_memoryfloat=self.memory
         #
         if self.SHCI_macroiter == 0:
             print("SHCI_macroiter: 0. This means CAS-CI.")
