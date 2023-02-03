@@ -15,7 +15,7 @@ import ash.settings_ash
 
 #TODO: Remove need for second-iteration print-det
 #TODO: fix nevpt2
-#TODO: Check canonicalization setting for CASSCF part. Probably turn off
+#TODO: Check canonicalization setting for CASSCF CASCI part. Probably turn off
 
 class DiceTheory:
     def __init__(self, dicedir=None, pyscftheoryobject=None, filename='input.dat', printlevel=2, numcores=1, 
@@ -25,6 +25,7 @@ class DiceTheory:
                 SHCI_davidsonTol=5e-05, SHCI_dE=1e-08, SHCI_maxiter=9, SHCI_epsilon2=1e-07, SHCI_epsilon2Large=1000,
                 SHCI_targetError=0.0001, SHCI_sampleN=200, SHCI_nroots=1,
                 SHCI_cas_nmin=1.999, SHCI_cas_nmax=0.0, SHCI_active_space=None,
+                read_chkfile_name=None,
                 QMC_SHCI_numdets=1000, dt=0.005, nsteps=50, nblocks=1000, nwalkers_per_proc=5):
 
         self.theorynamelabel="Dice"
@@ -102,6 +103,7 @@ class DiceTheory:
         self.NEVPT2=NEVPT2
         self.AFQMC=AFQMC
         self.SHCI=SHCI
+        self.read_chkfile_name=read_chkfile_name
         #SHCI options
         if self.SHCI is True:
             self.SHCI_stochastic=SHCI_stochastic
@@ -142,6 +144,7 @@ class DiceTheory:
         print("NEVPT2:", self.NEVPT2)
         print("AFQMC:", self.AFQMC)
         print("Frozencore:", self.frozencore)
+        print("read_chkfile_name:", self.read_chkfile_name)
         if self.SHCI is True:
             print("SHCI_stochastic", self.SHCI_stochastic)
             print("SHCI_PTiter", self.SHCI_PTiter)
@@ -272,28 +275,50 @@ MPIPREFIX=""
             sp.call(['mpirun', '-np', str(self.numcores), self.dice_binary, self.filename], stdout=outfile)
 
     #Run a SHCI CAS-CI or CASSCF job using the SHCI-PySCF interface
-    #TODO: Turn perturbation stage off if only using SHCI as trial WF? Need only do variational part
     def run_SHCI(self,verbose=5):
         module_init_time=time.time()
-        print("Will calculate PySCF MP2 natural orbitals to use as input in Dice CAS job")
-        natocc, mo_coefficients = self.pyscftheoryobject.calculate_MP2_natural_orbitals(self.pyscftheoryobject.mol,
+        self.nelec=None
+        self.norb=None
+        #READ ORBITALS OR DO MP2 natural orbitals
+        if self.read_chkfile_name == None:
+            print("No checkpoint file given.")
+            print("Will calculate PySCF MP2 natural orbitals to use as input in Dice CAS job")
+            natocc, mo_coefficients = self.pyscftheoryobject.calculate_MP2_natural_orbitals(self.pyscftheoryobject.mol,
                                                                                             self.pyscftheoryobject.mf)
-        #Updating mf object with MP2-nat MO coefficients
-        self.pyscftheoryobject.mf.mo_coeff=mo_coefficients
-        #Updating mo-occupations with MP2-nat occupations (pointless?)
-        self.pyscftheoryobject.mf.mo_occ=natocc
-        if self.SHCI_active_space == None:
+            #Updating mf object with MP2-nat MO coefficients
+            self.pyscftheoryobject.mf.mo_coeff=mo_coefficients
+            #Updating mo-occupations with MP2-nat occupations (pointless?)
+            self.pyscftheoryobject.mf.mo_occ=natocc
             print(f"SHCI Active space determined from MP2 NO threshold parameters: SHCI_cas_nmin={self.SHCI_cas_nmin} and SHCI_cas_nmax={self.SHCI_cas_nmax}")
             print("Note: Use active_space keyword if you want to select active space manually instead")
             # Determing active space from natorb thresholds
             nat_occs_for_thresholds=[i for i in natocc if i < self.SHCI_cas_nmin and i > self.SHCI_cas_nmax]
             self.norb = len(nat_occs_for_thresholds)
             self.nelec = round(sum(nat_occs_for_thresholds))
+            print(f"To get this same active space in another calculation you can also do: SHCI_active_space=[{self.nelec},{self.norb}]")
         else:
+            print("Will read MOs from checkpoint file")
+            prevmos = self.pyscf.lib.chkfile.load(self.read_chkfile_name, 'mcscf/mo_coeff')
+            #Updating mf object with MP2-nat MO coefficients
+            self.pyscftheoryobject.mf.mo_coeff=prevmos
+            #Updating mo-occupations with MP2-nat occupations (pointless?)
+            #self.pyscftheoryobject.mf.mo_occ=natocc
+
+        #This will override norb/nelec if defined by MP2nat orbs above
+        if self.SHCI_active_space != None:
             print("Active space given as input: active_space=", self.SHCI_active_space)
             # Number of orbital and electrons from active_space keyword!
             self.nelec=self.SHCI_active_space[0]
             self.norb=self.SHCI_active_space[1]
+
+        #Check if checkpointfile provided but active space not defined. 
+        #We don't have occupations to use so an active needs to be defined
+        if self.norb == None:
+            print("No active space has been defined!")
+            print("You probably need to provied SHCI_active_space keyword!")
+            ashexit()
+
+        
         print(f"Doing SHCI-CAS calculation with {self.nelec} electrons in {self.norb} orbitals!")
         print("SHCI_macroiter:", self.SHCI_macroiter)
         self.mch = self.shci.SHCISCF( self.pyscftheoryobject.mf, self.norb, self.nelec )
@@ -312,6 +337,11 @@ MPIPREFIX=""
         self.mch.fcisolver.sampleN = self.SHCI_sampleN
         self.mch.fcisolver.nroots = self.SHCI_nroots
         self.mch.verbose=verbose
+        #
+        if self.SHCI_macroiter == 0:
+            print("SHCI_macroiter: 0. This means CAS-CI.")
+            print("Turning off canonicalization step in mcscf object")
+            self.mch.canonicalization = False
         #CASSCF iterations
         self.mch.max_cycle_macro = self.SHCI_macroiter
 

@@ -7,6 +7,8 @@ import glob
 
 #PySCF Theory object.
 # TODO: PE: Polarizable embedding (CPPE). Not completely active in PySCF 1.7.1. Bugfix required I think
+#TODO: Add support for AVAS
+
 
 class PySCFTheory:
     def __init__(self, printsetting=False, printlevel=2, numcores=1, 
