@@ -278,7 +278,7 @@ MPIPREFIX=""
         #refdeterminant="0 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20 21 22 23 24 25 26 27"
         #what orbital indices the electrons occupy in the set of MOs in the FCIDUMP file
         sweepschedule=""
-        for it,eps in zip(self.SHCI_sweep_iter,SHCI_sweep_epsilon):
+        for it,eps in zip(self.SHCI_sweep_iter,self.SHCI_sweep_epsilon):
             sweepschedule=sweepschedule+f"{it} {eps}\n"
         #Inputfile creation
         inputstring=f"""
