@@ -24,7 +24,7 @@ class DiceTheory:
                 SHCI_davidsonTol=5e-05, SHCI_dE=1e-08, SHCI_maxiter=9, SHCI_epsilon2=1e-07, SHCI_epsilon2Large=1000,
                 SHCI_targetError=0.0001, SHCI_sampleN=200, SHCI_nroots=1,
                 SHCI_cas_nmin=1.999, SHCI_cas_nmax=0.0, SHCI_active_space=None,
-                read_chkfile_name=None, Dice_SHCI_direct=None, fcidumpfile=None, refdeterminant=None
+                read_chkfile_name=None, Dice_SHCI_direct=None, fcidumpfile=None, refdeterminant=None,
                 QMC_SHCI_numdets=1000, dt=0.005, nsteps=50, nblocks=1000, nwalkers_per_proc=5):
 
         self.theorynamelabel="Dice"
@@ -75,6 +75,7 @@ class DiceTheory:
             print("SHCI and AFQMC True but QMC_trialWF != \'SHCI\'.")
             print("Probably not what you wanted. Either set SHCI to False or QMC_trialWF=\'SHCI\' ")
             ashexit()
+
         #Path to Dice binary
         self.dice_binary=self.dicedir+"/bin/Dice"
         #Put Dice script dir in path
