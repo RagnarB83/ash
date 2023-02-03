@@ -299,8 +299,8 @@ dE {self.SHCI_dE}
 maxiter {self.SHCI_maxiter}
 
 # PT
-epsilon2 {self.self.SHCI_epsilon2}
-epsilon2large {self.self.SHCI_epsilon2Large}
+epsilon2 {self.SHCI_epsilon2}
+epsilon2large {self.SHCI_epsilon2Large}
 sampleN {self.SHCI_sampleN}
 seed 200
 targeterror {self.SHCI_targetError}
