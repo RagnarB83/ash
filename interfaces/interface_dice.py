@@ -24,7 +24,7 @@ class DiceTheory:
                 SHCI_davidsonTol=5e-05, SHCI_dE=1e-08, SHCI_maxiter=9, SHCI_epsilon2=1e-07, SHCI_epsilon2Large=1000,
                 SHCI_targetError=0.0001, SHCI_sampleN=200, SHCI_nroots=1,
                 SHCI_cas_nmin=1.999, SHCI_cas_nmax=0.0, SHCI_active_space=None,
-                read_chkfile_name=None,
+                read_chkfile_name=None, Dice_SHCI_direct=None, fcidumpfile=None, refdeterminant=None
                 QMC_SHCI_numdets=1000, dt=0.005, nsteps=50, nblocks=1000, nwalkers_per_proc=5):
 
         self.theorynamelabel="Dice"
@@ -102,7 +102,10 @@ class DiceTheory:
         self.NEVPT2=NEVPT2
         self.AFQMC=AFQMC
         self.SHCI=SHCI
+        self.Dice_SHCI_direct=Dice_SHCI_direct
         self.read_chkfile_name=read_chkfile_name
+        self.fcidumpfile=fcidumpfile
+        self.refdeterminant=refdeterminant
         #SHCI options
         if self.SHCI is True:
             self.SHCI_stochastic=SHCI_stochastic
@@ -144,6 +147,9 @@ class DiceTheory:
         print("AFQMC:", self.AFQMC)
         print("Frozencore:", self.frozencore)
         print("read_chkfile_name:", self.read_chkfile_name)
+        print("Dice_SHCI_direct:", self.Dice_SHCI_direct)
+        print("FCIDUMP file:", self.fcidumpfile)
+        print("Reference det. string:", self.refdeterminant)
         if self.SHCI is True:
             print("SHCI_stochastic", self.SHCI_stochastic)
             print("SHCI_PTiter", self.SHCI_PTiter)
@@ -250,7 +256,6 @@ MPIPREFIX=""
         self.num_var_determinants= self.grab_num_dets()
         print("Number of variational determinants:", self.num_var_determinants)
 
-        
     def grab_num_dets(self):
         grab=False
         numdet=0
@@ -264,6 +269,53 @@ MPIPREFIX=""
                 if 'Iter Root       Eps1   #Var. Det.               Ener' in line:
                     grab=True
         return numdet
+
+    #Run Dice-SHCI job without pyscf
+    def run_Dice_SHCI(self,fcidumpfile):
+        #Create inputfile input.dat
+        nocc=self.SHCI_active_space[0] #how many electrons in active space
+        #refdeterminant="0 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20 21 22 23 24 25 26 27"
+        #what orbital indices the electrons occupy in the set of MOs in the FCIDUMP file
+        sweepschedule=""
+        for it,eps in zip(self.SHCI_sweep_iter,SHCI_sweep_epsilon):
+            sweepschedule=sweepschedule+f"{it} {eps}\n"
+        #Inputfile creation
+        inputstring=f"""
+
+# reference determinant
+nocc {nocc}
+{self.refdeterminant} 
+end
+
+orbitals {self.fcidumpfile}
+
+# Variational
+schedule
+sweepschedule}
+end
+davidsontol {self.SHCI_davidsonTol}
+dE {self.SHCI_dE}
+maxiter {self.SHCI_maxiter}
+
+# PT
+epsilon2 {self.self.SHCI_epsilon2}
+epsilon2large {self.self.SHCI_epsilon2Large}
+sampleN {self.SHCI_sampleN}
+seed 200
+targeterror {self.SHCI_targetError}
+
+# Misc
+noio
+        """
+        with open("input.dat", 'w') as f:
+            f.write(inputstring)
+        
+        # Call Dice directly
+        self.run_dice_directly()
+
+        #Read energy and determinants from outputfile: output.dat
+        #TODO
+
 
     # run_dice_directly: In case we need to. Currently unused
     def run_dice_directly(self):
@@ -318,7 +370,7 @@ MPIPREFIX=""
             ashexit()
 
         
-        print(f"Doing SHCI-CAS calculation with {self.nelec} electrons in {self.norb} orbitals!")
+        print(f"\nDoing SHCI-CAS calculation with {self.nelec} electrons in {self.norb} orbitals!")
         print("SHCI_macroiter:", self.SHCI_macroiter)
         self.mch = self.shci.SHCISCF( self.pyscftheoryobject.mf, self.norb, self.nelec )
         self.mch.fcisolver.mpiprefix = f'mpirun -np {self.numcores}'
@@ -473,7 +525,12 @@ MPIPREFIX=""
                 print(f"Error: {self.error} Eh ({self.error*harkcal} kcal/mol)")
             else:
                 print(f"Error: Not available (problem with blocking?)")
-        #Just SHCI 
+        #Dice-SHCI without pyscf interface. Can be useful
+        elif self.Dice_SHCI_direct is True:
+            print("Running SHCI option via Dice without pyscf")
+            self.run_Dice_SHCI()
+            #TODO: Grab energy
+        #Just SHCI via PySCF
         else:
             if self.SHCI is True:
                 print("Standalone SHCI option is active.")
