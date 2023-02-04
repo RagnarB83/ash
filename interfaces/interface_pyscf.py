@@ -227,22 +227,8 @@ class PySCFTheory:
         print("Writing orbitals to disk as Molden file")
         self.pyscf_molden.from_mo(mol, f'pyscf_{label}.molden', orbitals, occ=occupations)
 
-    #Deprecated
-    #def calculate_MP2_natural_orbitals(self,mol, mf):
-        
-        # MP2 natural occupation numbers and natural orbitals
-    #    natocc, natorb = self.pyscf_dmp2(mf.to_uhf()).make_natorbs()
-    #    print("MP2 natural orbital occupations:", natocc)
-        #Writing to disk as Molden file
-    #    self.write_orbitals_to_Moldenfile(mol, natorb,natocc, label="MP2nat")
-
-        #Choosing MO-coeffients to be
-    #    if self.scf_type == 'RHF' or self.scf_type == 'RKS':
-    #        mo_coefficients=natorb              
-    #    else:
-    #        mo_coefficients=[natorb,natorb]
-    #    return natocc, mo_coefficients
-    def calculate_natural_orbitals(self,mol, mf, method='CCSD'):
+    def calculate_natural_orbitals(self,mol, mf, method='MP2'):
+        module_init_time=time.time()
         #ALTERNATIVE: https://github.com/pyscf/pyscf/issues/466
         #https://github.com/pyscf/pyscf/blob/7f4f66b37337c5c3a9c2ff94de44861266394032/pyscf/mcscf/test/test_addons.py
 
@@ -315,6 +301,7 @@ class PySCFTheory:
             mo_coefficients=natorb              
         else:
             mo_coefficients=[natorb,natorb]
+        print_time_rel(module_init_time, modulename='calculate_natural_orbitals', moduleindex=2)
         return natocc, mo_coefficients
 
     #Run function. Takes coords, elems etc. arguments and computes E or E+G.
@@ -505,7 +492,7 @@ class PySCFTheory:
                 print("FNO is True")
                 print("MP2 natural orbitals on!")
                 print("Will calculate MP2 natural orbitals to use as input in CC job")
-                natocc, mo_coefficients = self.calculate_MP2_natural_orbitals(self.mol,self.mf)
+                natocc, mo_coefficients = self.calculate_natural_orbitals(self.mol,self.mf, method='MP2')
 
                 #Optional natorb truncation if FNO_thresh is chosen
                 if self.FNO_thresh is not None:
@@ -583,7 +570,7 @@ class PySCFTheory:
             #Default MP2 natural orbitals unless we read-in chkfile
             if self.read_chkfile_name == None:
                 print("Will calculate MP2 natural orbitals to use as input in CAS job")
-                natocc, natorbs = self.calculate_MP2_natural_orbitals(self.mol,self.mf)
+                natocc, natorbs = self.calculate_natural_orbitals(self.mol,self.mf, method='MP2')
             else:
                 print("read_chkfile_name option was specified")
                 print("This means that SCF-orbitals are ignored and we will read MO coefficients from file:", self.read_chkfile_name)
