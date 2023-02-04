@@ -190,9 +190,13 @@ class PySCFTheory:
         from pyscf import cc
         self.pyscf_cc=cc
         from pyscf.cc import ccsd_t_lambda_slow as ccsd_t_lambda
+        from pyscf.cc import uccsd_t_lambda
         from pyscf.cc import ccsd_t_rdm_slow as ccsd_t_rdm
+        from pyscf.cc import uccsd_t_rdm
         self.ccsd_t_lambda=ccsd_t_lambda
+        self.uccsd_t_lambda=uccsd_t_lambda
         self.ccsd_t_rdm=ccsd_t_rdm
+        self.uccsd_t_rdm=uccsd_t_rdm
         #TODO: Needs to be revisited
         if self.pe==True:
             #import pyscf.solvent as solvent
@@ -243,11 +247,13 @@ class PySCFTheory:
         #https://github.com/pyscf/pyscf/blob/7f4f66b37337c5c3a9c2ff94de44861266394032/pyscf/mcscf/test/test_addons.py
 
         if method =='MP2':
+            print("Running MP2 natural orbital calculation")
             # MP2 natural occupation numbers and natural orbitals
             #natocc, natorb = self.pyscf_dmp2(mf.to_uhf()).make_natorbs() Old
             mp2 = self.pyscf.mp.MP2(mf).run()
             natocc, natorb = self.mcscf.addons.make_natural_orbitals(mp2)
         elif method =='FCI':
+            print("Running FCI natural orbital calculation")
             #TODO: FCI https://github.com/pyscf/pyscf/blob/master/examples/fci/14-density_matrix.py
             # FCI solver
             cisolver = self.pyscf.fci.FCI(mol, myhf.mo_coeff)
@@ -259,17 +265,24 @@ class PySCFTheory:
             nelec_b = 4
             dm1 = cisolver.make_rdm1(fcivec, norb, (nelec_a,nelec_b))
         elif method == 'CCSD':
+            print("Running CCSD natural orbital calculation")
             ccsd = self.pyscf_cc.CCSD(mf)
-            print("Running CCSD")
             ccsd.run()
             natocc, natorb = self.mcscf.addons.make_natural_orbitals(ccsd)
         elif method == 'CCSD(T)':
-            #No CCSD(T) object in pyscf. So manual approach.
+            print("Running CCSD(T) natural orbital calculation")
+            #No CCSD(T) object in pyscf. So manual approach. Slower algorithms
             mycc = self.pyscf_cc.CCSD(mf).run()
             eris = mycc.ao2mo()
-            #Make rdm for ccsd(t)
-            conv, l1, l2 = self.ccsd_t_lambda.kernel(mycc, eris, mycc.t1, mycc.t2)
-            rdm1 = self.ccsd_t_rdm.make_rdm1(mycc, mycc.t1, mycc.t2, l1, l2, eris=eris, ao_repr=True)
+            #Make RDMs for ccsd(t) RHF and UHF
+            if self.scf_type == 'RHF' or self.scf_type == 'RKS':
+                print("CCSD(T) lambda RHF")
+                conv, l1, l2 = self.ccsd_t_lambda.kernel(mycc, eris, mycc.t1, mycc.t2)
+                rdm1 = self.ccsd_t_rdm.make_rdm1(mycc, mycc.t1, mycc.t2, l1, l2, eris=eris, ao_repr=True)
+            else:
+                print("CCSD(T) lambda UHF")
+                conv, l1, l2 = self.uccsd_t_lambda.kernel(mycc, eris, mycc.t1, mycc.t2)
+                rdm1 = self.uccsd_t_rdm.make_rdm1(mycc, mycc.t1, mycc.t2, l1, l2, eris=eris, ao_repr=True)
             S = mf.get_ovlp()
             # Slight difference for restricted vs. unrestriced case
             if isinstance(rdm1, tuple):
