@@ -263,7 +263,7 @@ class PySCFTheory:
             #Make RDMs for ccsd(t) RHF and UHF
             #Note: Checking type of CCSD object because if ROHF object then was automatically converted to UHF
             # and hence UCCSD
-            if type(mycc) == pyscf.cc.uccsd.UCCSD:
+            if type(mycc) == self.pyscf.cc.uccsd.UCCSD:
                 print("CCSD(T) lambda UHF")
                 conv, l1, l2 = self.uccsd_t_lambda.kernel(mycc, eris, mycc.t1, mycc.t2)
                 rdm1 = self.uccsd_t_rdm.make_rdm1(mycc, mycc.t1, mycc.t2, l1, l2, eris=eris, ao_repr=True)
