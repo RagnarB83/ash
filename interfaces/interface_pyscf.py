@@ -258,7 +258,6 @@ class PySCFTheory:
             nelec_a = 6
             nelec_b = 4
             dm1 = cisolver.make_rdm1(fcivec, norb, (nelec_a,nelec_b))
-
         elif method == 'CCSD':
             ccsd = self.pyscf_cc.CCSD(mf)
             print("Running CCSD")
