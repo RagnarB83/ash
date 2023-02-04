@@ -26,7 +26,7 @@ class DiceTheory:
                 SHCI_cas_nmin=1.999, SHCI_cas_nmax=0.0, SHCI_active_space=None,
                 read_chkfile_name=None, Dice_SHCI_direct=None, fcidumpfile=None, refdeterminant=None,
                 QMC_SHCI_numdets=1000, dt=0.005, nsteps=50, nblocks=1000, nwalkers_per_proc=5,
-                memory=20000):
+                memory=20000, initial_orbitals='MP2'):
 
         self.theorynamelabel="Dice"
         self.theorytype="QM"
@@ -89,7 +89,6 @@ class DiceTheory:
             self.load_shciscf()
         self.load_qmcutils()
 
-
         if numcores > 1:
             try:
                 print(f"MPI-parallel job requested with numcores: {numcores} . Make sure that the correct OpenMPI version is available in your environment")
@@ -110,7 +109,8 @@ class DiceTheory:
         self.read_chkfile_name=read_chkfile_name
         self.fcidumpfile=fcidumpfile
         self.refdeterminant=refdeterminant
-        self.memory=memory #Memory in MB (total) assigned to PySCF mcscf object 
+        self.memory=memory #Memory in MB (total) assigned to PySCF mcscf object
+        self.initial_orbitals=initial_orbitals #Initial orbitals to be used (unless chkfile option)
         #SHCI options
         if self.SHCI is True:
             self.SHCI_stochastic=SHCI_stochastic
@@ -216,8 +216,7 @@ MPIPREFIX=""
     def set_numcores(self,numcores):
         self.numcores=numcores
     def cleanup(self):
-        print("Cleaning up Dice stuff")
-        #TODO: add more here
+        print("Cleaning up Dice temporary files")
         if self.SHCI is True:
             bkpfiles=glob.glob('*.bkp')
             for bkpfile in bkpfiles:
@@ -321,7 +320,6 @@ noio
         
         # Call Dice directly
         self.run_dice_directly()
-
         #Read energy and determinants from outputfile: output.dat
         enresult = pygrep("PTEnergy:","output.dat")
         print("enresult:", enresult)
@@ -333,12 +331,13 @@ noio
 
     # run_dice_directly: In case we need to. Currently unused
     def run_dice_directly(self):
+        module_init_time=time.time()
         print("Calling Dice executable directly")
         #For calling Dice directly when needed
         print(f"Running Dice with ({self.numcores} MPI processes)")
         with open('output.dat', "w") as outfile:
             sp.call(['mpirun', '-np', str(self.numcores), self.dice_binary, self.filename], stdout=outfile)
-
+        print_time_rel(module_init_time, modulename='Dice-SHCI-direct-run', moduleindex=2)
     #Run a SHCI CAS-CI or CASSCF job using the SHCI-PySCF interface
     def run_SHCI(self,verbose=5):
         module_init_time=time.time()
@@ -347,9 +346,25 @@ noio
         #READ ORBITALS OR DO MP2 natural orbitals
         if self.read_chkfile_name == None:
             print("No checkpoint file given.")
-            print("Will calculate PySCF MP2 natural orbitals to use as input in Dice CAS job")
-            natocc, mo_coefficients = self.pyscftheoryobject.calculate_MP2_natural_orbitals(self.pyscftheoryobject.mol,
-                                                                                            self.pyscftheoryobject.mf)
+            print(f"Will calculate PySCF {self.initial_orbitals} natural orbitals to use as input in Dice CAS job")
+            if self.initial_orbitals not in ['MP2','CCSD','CCSD(T)']:
+                print("Error: Unknown initial_orbitals choice. Exiting.")
+                ashexit()
+            print("Options are: MP2, CCSD, CCSD(T), FCI")
+            natocc, mo_coefficients = self.pyscftheoryobject.calculate_natural_orbitals(self.pyscftheoryobject.mol,
+                                                                self.pyscftheoryobject.mf, method=self.initial_orbitals)
+
+            if self.initial_orbitals=='MP2':
+
+            elif self.initial_orbitals=='CCSD':
+                print("Will calculate PySCF CCSD natural orbitals to use as input in Dice CAS job")
+                natocc, mo_coefficients = self.pyscftheoryobject.calculate_CC_natural_orbitals(self.pyscftheoryobject.mol,
+                                                                                                self.pyscftheoryobject.mf, CCmethod='CCSD')
+            #elif self.initial_orbitals=='CCSD(T)':
+            #    print("Will calculate PySCF CCSD(T) natural orbitals to use as input in Dice CAS job")
+            #    natocc, mo_coefficients = self.pyscftheoryobject.calculate_CCSDT_natural_orbitals(self.pyscftheoryobject.mol,
+            #                                                                                    self.pyscftheoryobject.mf)
+
             #Updating mf object with MP2-nat MO coefficients
             self.pyscftheoryobject.mf.mo_coeff=mo_coefficients
             #Updating mo-occupations with MP2-nat occupations (pointless?)

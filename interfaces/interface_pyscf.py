@@ -4,6 +4,9 @@ from ash.functions.functions_general import ashexit, BC,print_time_rel, print_li
 import ash.modules.module_coords
 import os
 import glob
+import numpy as np
+from functools import reduce
+import scipy
 
 #PySCF Theory object.
 # TODO: PE: Polarizable embedding (CPPE). Not completely active in PySCF 1.7.1. Bugfix required I think
@@ -26,6 +29,9 @@ class PySCFTheory:
         #Exit early if no SCF-type
         if scf_type is None:
             print("Error: You must select an scf_type, e.g. 'RHF', 'UHF', 'RKS', 'UKS'")
+            ashexit()
+        if basis is None:
+            print("Error: You must give a basis set (basis keyword)")
             ashexit()
         if functional is not None:
             print(f"Functional keyword: {functional} chosen. DFT is on!")
@@ -177,12 +183,16 @@ class PySCFTheory:
         #Always importing MP2 for convenience
         from pyscf.mp.dfump2_native import DFMP2
         self.pyscf_dmp2=DFMP2
-        if self.CC is True:
-            from pyscf import cc
-            self.pyscf_cc=cc
-        if self.CAS is True:
-            from pyscf import mcscf
-            self.mcscf=mcscf
+        #And mcsdcf (natural orbitals creation)
+        from pyscf import mcscf
+        self.mcscf=mcscf
+        #And CC
+        from pyscf import cc
+        self.pyscf_cc=cc
+        from pyscf.cc import ccsd_t_lambda_slow as ccsd_t_lambda
+        from pyscf.cc import ccsd_t_rdm_slow as ccsd_t_rdm
+        self.ccsd_t_lambda=ccsd_t_lambda
+        self.ccsd_t_rdm=ccsd_t_rdm
         #TODO: Needs to be revisited
         if self.pe==True:
             #import pyscf.solvent as solvent
@@ -213,21 +223,88 @@ class PySCFTheory:
         print("Writing orbitals to disk as Molden file")
         self.pyscf_molden.from_mo(mol, f'pyscf_{label}.molden', orbitals, occ=occupations)
 
-    def calculate_MP2_natural_orbitals(self,mol, mf):
-        #ALTERNATIVE: https://github.com/pyscf/pyscf/issues/466
+    #Deprecated
+    #def calculate_MP2_natural_orbitals(self,mol, mf):
+        
         # MP2 natural occupation numbers and natural orbitals
-        natocc, natorb = self.pyscf_dmp2(mf.to_uhf()).make_natorbs()
-
-        print("MP2 natural orbital occupations:", natocc)
+    #    natocc, natorb = self.pyscf_dmp2(mf.to_uhf()).make_natorbs()
+    #    print("MP2 natural orbital occupations:", natocc)
         #Writing to disk as Molden file
-        self.write_orbitals_to_Moldenfile(mol, natorb,natocc, label="MP2nat")
+    #    self.write_orbitals_to_Moldenfile(mol, natorb,natocc, label="MP2nat")
 
+        #Choosing MO-coeffients to be
+    #    if self.scf_type == 'RHF' or self.scf_type == 'RKS':
+    #        mo_coefficients=natorb              
+    #    else:
+    #        mo_coefficients=[natorb,natorb]
+    #    return natocc, mo_coefficients
+    def calculate_natural_orbitals(self,mol, mf, method='CCSD'):
+        #ALTERNATIVE: https://github.com/pyscf/pyscf/issues/466
+        #https://github.com/pyscf/pyscf/blob/7f4f66b37337c5c3a9c2ff94de44861266394032/pyscf/mcscf/test/test_addons.py
+
+        if method =='MP2':
+            # MP2 natural occupation numbers and natural orbitals
+            #natocc, natorb = self.pyscf_dmp2(mf.to_uhf()).make_natorbs() Old
+            mp2 = self.pyscf.mp.MP2(mf).run()
+            natocc, natorb = self.mcscf.addons.make_natural_orbitals(mp2)
+        elif method =='FCI':
+        #TODO: FCI https://github.com/pyscf/pyscf/blob/master/examples/fci/14-density_matrix.py
+        # FCI solver
+        cisolver = self.pyscf.fci.FCI(mol, myhf.mo_coeff)
+        e, fcivec = cisolver.kernel()
+        # Spin-traced 1-particle density matrix
+        norb = myhf.mo_coeff.shape[1]
+        # 6 alpha electrons, 4 beta electrons because spin = nelec_a-nelec_b = 2
+        nelec_a = 6
+        nelec_b = 4
+        dm1 = cisolver.make_rdm1(fcivec, norb, (nelec_a,nelec_b))
+
+        elif method == 'CCSD':
+            ccsd = self.pyscf_cc.CCSD(mf)
+            print("Running CCSD")
+            ccsd.run()
+            natocc, natorb = self.mcscf.addons.make_natural_orbitals(ccsd)
+        elif method == 'CCSD(T)':
+            #No CCSD(T) object in pyscf. So manual approach.
+            mycc = self.pyscf_cc.CCSD(mf).run()
+            eris = mycc.ao2mo()
+            #Make rdm for ccsd(t)
+            conv, l1, l2 = self.ccsd_t_lambda.kernel(mycc, eris, mycc.t1, mycc.t2)
+            rdm1 = self.ccsd_t_rdm.make_rdm1(mycc, mycc.t1, mycc.t2, l1, l2, eris=eris, ao_repr=True)
+            S = mf.get_ovlp()
+            # Slight difference for restricted vs. unrestriced case
+            if isinstance(rdm1, tuple):
+                Dm = rdm1[0]+rdm1[1]
+            elif isinstance(rdm1, np.ndarray):
+                if np.ndim(rdm1) == 3:
+                    Dm = rdm1[0]+rdm1[1]
+                elif np.ndim(rdm1) == 2:
+                    Dm = rdm1
+                else:
+                    raise ValueError(
+                        "rdm1 passed to is a numpy array," +
+                        "but it has the wrong number of dimensions: {}".format(np.ndim(rdm1)))
+            else:
+                raise ValueError(
+                    "\n\tThe rdm1 generated by method_obj.make_rdm1() was a {}."
+                    "\n\tThis type is not supported, please select a different method and/or "
+                    "open an issue at https://github.com/pyscf/pyscf/issues".format(type(rdm1))
+                )
+            # Diagonalize the DM in AO (using Eqn. (1) referenced above)
+            A = reduce(np.dot, (S, Dm, S))
+            w, v = scipy.linalg.eigh(A, b=S)
+            # Flip NOONs (and NOs) since they're in increasing order
+            natocc = np.flip(w)
+            natorb = np.flip(v, axis=1)
+
+        print(f"{method} natural orbital occupations:", natocc)
         #Choosing MO-coeffients to be
         if self.scf_type == 'RHF' or self.scf_type == 'RKS':
             mo_coefficients=natorb              
         else:
             mo_coefficients=[natorb,natorb]
         return natocc, mo_coefficients
+
     #Run function. Takes coords, elems etc. arguments and computes E or E+G.
     def run(self, current_coords=None, current_MM_coords=None, MMcharges=None, qm_elems=None,
             elems=None, Grad=False, PC=False, numcores=None, pe=False, potfile=None, restart=False, label=None,
