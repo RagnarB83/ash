@@ -13,7 +13,7 @@ import ash.settings_ash
 
 #Interface to Dice: SHCI, QMC (single-det or SHCI multi-det) and NEVPT2
 
-#TODO: Remove need for second-iteration print-det
+#TODO: Remove need for second-iteration print-det in AFQMC-SHCI
 #TODO: fix nevpt2
 
 class DiceTheory:
@@ -343,7 +343,7 @@ noio
         module_init_time=time.time()
         self.nelec=None
         self.norb=None
-        #READ ORBITALS OR DO MP2 natural orbitals
+        #READ ORBITALS OR DO natural orbitals with MP2/CCSD/CCSD(T)
         if self.read_chkfile_name == None:
             print("No checkpoint file given.")
             print(f"Will calculate PySCF {self.initial_orbitals} natural orbitals to use as input in Dice CAS job")
@@ -354,22 +354,11 @@ noio
             natocc, mo_coefficients = self.pyscftheoryobject.calculate_natural_orbitals(self.pyscftheoryobject.mol,
                                                                 self.pyscftheoryobject.mf, method=self.initial_orbitals)
 
-            if self.initial_orbitals=='MP2':
-
-            elif self.initial_orbitals=='CCSD':
-                print("Will calculate PySCF CCSD natural orbitals to use as input in Dice CAS job")
-                natocc, mo_coefficients = self.pyscftheoryobject.calculate_CC_natural_orbitals(self.pyscftheoryobject.mol,
-                                                                                                self.pyscftheoryobject.mf, CCmethod='CCSD')
-            #elif self.initial_orbitals=='CCSD(T)':
-            #    print("Will calculate PySCF CCSD(T) natural orbitals to use as input in Dice CAS job")
-            #    natocc, mo_coefficients = self.pyscftheoryobject.calculate_CCSDT_natural_orbitals(self.pyscftheoryobject.mol,
-            #                                                                                    self.pyscftheoryobject.mf)
-
-            #Updating mf object with MP2-nat MO coefficients
+            #Updating mf object with natorb MO coefficients
             self.pyscftheoryobject.mf.mo_coeff=mo_coefficients
-            #Updating mo-occupations with MP2-nat occupations (pointless?)
+            #Updating mo-occupations with natorb occupations (pointless?)
             self.pyscftheoryobject.mf.mo_occ=natocc
-            print(f"SHCI Active space determined from MP2 NO threshold parameters: SHCI_cas_nmin={self.SHCI_cas_nmin} and SHCI_cas_nmax={self.SHCI_cas_nmax}")
+            print(f"SHCI Active space determined from {self.initial_orbitals} NO threshold parameters: SHCI_cas_nmin={self.SHCI_cas_nmin} and SHCI_cas_nmax={self.SHCI_cas_nmax}")
             print("Note: Use active_space keyword if you want to select active space manually instead")
             # Determing active space from natorb thresholds
             nat_occs_for_thresholds=[i for i in natocc if i < self.SHCI_cas_nmin and i > self.SHCI_cas_nmax]
@@ -379,12 +368,12 @@ noio
         else:
             print("Will read MOs from checkpoint file")
             prevmos = self.pyscf.lib.chkfile.load(self.read_chkfile_name, 'mcscf/mo_coeff')
-            #Updating mf object with MP2-nat MO coefficients
+            #Updating mf object with natorb MO coefficients
             self.pyscftheoryobject.mf.mo_coeff=prevmos
-            #Updating mo-occupations with MP2-nat occupations (pointless?)
+            #Updating mo-occupations with natorb occupations (pointless?)
             #self.pyscftheoryobject.mf.mo_occ=natocc
 
-        #This will override norb/nelec if defined by MP2nat orbs above
+        #This will override norb/nelec if defined by natorb option above
         if self.SHCI_active_space != None:
             print("Active space given as input: active_space=", self.SHCI_active_space)
             # Number of orbital and electrons from active_space keyword!
