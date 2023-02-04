@@ -248,16 +248,16 @@ class PySCFTheory:
             mp2 = self.pyscf.mp.MP2(mf).run()
             natocc, natorb = self.mcscf.addons.make_natural_orbitals(mp2)
         elif method =='FCI':
-        #TODO: FCI https://github.com/pyscf/pyscf/blob/master/examples/fci/14-density_matrix.py
-        # FCI solver
-        cisolver = self.pyscf.fci.FCI(mol, myhf.mo_coeff)
-        e, fcivec = cisolver.kernel()
-        # Spin-traced 1-particle density matrix
-        norb = myhf.mo_coeff.shape[1]
-        # 6 alpha electrons, 4 beta electrons because spin = nelec_a-nelec_b = 2
-        nelec_a = 6
-        nelec_b = 4
-        dm1 = cisolver.make_rdm1(fcivec, norb, (nelec_a,nelec_b))
+            #TODO: FCI https://github.com/pyscf/pyscf/blob/master/examples/fci/14-density_matrix.py
+            # FCI solver
+            cisolver = self.pyscf.fci.FCI(mol, myhf.mo_coeff)
+            e, fcivec = cisolver.kernel()
+            # Spin-traced 1-particle density matrix
+            norb = myhf.mo_coeff.shape[1]
+            # 6 alpha electrons, 4 beta electrons because spin = nelec_a-nelec_b = 2
+            nelec_a = 6
+            nelec_b = 4
+            dm1 = cisolver.make_rdm1(fcivec, norb, (nelec_a,nelec_b))
 
         elif method == 'CCSD':
             ccsd = self.pyscf_cc.CCSD(mf)
