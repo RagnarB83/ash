@@ -417,9 +417,9 @@ noio
         self.mch.fcisolver.nroots = self.SHCI_nroots
         self.mch.verbose=verbose
         #Setting memory
-        print("self.mch.max_memory:", self.mch.max_memory)
+
         self.mch.max_memory=self.memory
-        print("self.mch.max_memory:", self.mch.max_memory)
+        print("Memory in pyscf object set to:", self.mch.max_memory)
         #CASSCF iterations
         self.mch.max_cycle_macro = self.SHCI_macroiter
 
