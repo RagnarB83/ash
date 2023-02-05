@@ -425,10 +425,15 @@ noio
 
         #Run SHCISCF (ususually only 1 iteration CAS-CI, unless self.SHCI_macroiter > 0)
         print("Dice output can be monitored in output.dat on local scratch")
-        if self.SHCI_macroiter == 0:
-            self.energy = self.mch.run()
-        else:
-            self.energy = self.mch.mc1step()[0]
+        #if self.SHCI_macroiter == 0:
+        
+        #Run CAS-CI/CASSCF object
+        self.mch.run()
+
+        #Get final energy
+        self.energy = self.mch.e_tot
+
+        #Old call: self.energy = self.mch.mc1step()[0]
 
         #Grab number of determinants
         self.num_var_determinants = self.grab_num_dets()
