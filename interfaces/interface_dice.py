@@ -400,7 +400,7 @@ noio
             #self.mch = self.shci.SHCISCF(self.pyscftheoryobject.mf, self.norb, self.nelec)
             self.mch = self.pyscf.mcscf.CASSCF(self.pyscftheoryobject.mf,self.norb, self.nelec)
         #
-        self.mch.fcisolver = self.shci.SHCI(mol)
+        self.mch.fcisolver = self.shci.SHCI(self.pyscftheoryobject.mol)
         self.mch.fcisolver.mpiprefix = f'mpirun -np {self.numcores}'
         self.mch.fcisolver.stochastic = self.SHCI_stochastic
         self.mch.fcisolver.nPTiter = self.SHCI_PTiter
