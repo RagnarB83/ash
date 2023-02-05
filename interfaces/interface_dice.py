@@ -391,13 +391,14 @@ noio
         print("SHCI_macroiter:", self.SHCI_macroiter)
         if self.SHCI_macroiter == 0:
             print("This is single-iteration CAS-CI via pyscf and SHCI")
-            self.mch = self.pyscf.mcscf.CASCI(self.pyscftheoryobject,self.norb, self.nelec)
+
+            self.mch = self.pyscf.mcscf.CASCI(self.pyscftheoryobject.mf,self.norb, self.nelec)
             print("Turning off canonicalization step in mcscf object")
             self.mch.canonicalization = False
         else:
             print("This is CASSCF via pyscf and SHCI")
             #self.mch = self.shci.SHCISCF(self.pyscftheoryobject.mf, self.norb, self.nelec)
-            self.mch = self.pyscf.mcscf.CASSCF(self.pyscftheoryobject,self.norb, self.nelec)
+            self.mch = self.pyscf.mcscf.CASSCF(self.pyscftheoryobject.mf,self.norb, self.nelec)
         #
         self.mch.fcisolver = self.shci.SHCI(mol)
         self.mch.fcisolver.mpiprefix = f'mpirun -np {self.numcores}'
@@ -416,8 +417,9 @@ noio
         self.mch.fcisolver.nroots = self.SHCI_nroots
         self.mch.verbose=verbose
         #Setting memory
-        self.mch.max_memoryfloat=self.memory
-
+        print("self.mch.max_memory:", self.mch.max_memory)
+        self.mch.max_memory=self.memory
+        print("self.mch.max_memory:", self.mch.max_memory)
         #CASSCF iterations
         self.mch.max_cycle_macro = self.SHCI_macroiter
 
