@@ -416,8 +416,7 @@ noio
 
     #This sets MO coefficients of mch object unless None (then)
     def SHCI_object_set_mos(self,mo_coeffs=None):
-        if mo_coeffs != None:
-            self.mch=mo_coeffs
+        self.mch=mo_coeffs
 
     #Run the defined pyscf mch object
     def SHCI_object_run(self, write_det_CASCI=False):
