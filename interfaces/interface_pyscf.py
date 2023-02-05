@@ -241,6 +241,8 @@ class PySCFTheory:
             natocc, natorb = self.mcscf.addons.make_natural_orbitals(mp2)
         elif method =='FCI':
             print("Running FCI natural orbital calculation")
+            print("not ready")
+            exit()
             #TODO: FCI https://github.com/pyscf/pyscf/blob/master/examples/fci/14-density_matrix.py
             # FCI solver
             cisolver = self.pyscf.fci.FCI(mol, myhf.mo_coeff)

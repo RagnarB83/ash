@@ -211,7 +211,6 @@ MPIPREFIX=""
             print("Either: QMCUtils requires another module (pandas?). Please install it via conda or pip.")
             print("or: Problem importing QMCUtils. Dice directory is probably incorrectly set")
             ashexit()
-        
     #Set numcores method
     def set_numcores(self,numcores):
         self.numcores=numcores
@@ -237,29 +236,6 @@ MPIPREFIX=""
         print("Total frozen electrons in system:", self.frozen_core_el)
         print("Total frozen orbitals in system:", self.frozen_core_orbs)
 
-    #Write dets.bin file. Requires running SHCI once more to get determinants
-    def run_and_write_dets(self,numdets):
-        module_init_time=time.time()
-        print("Calling run_and_write_dets")
-        #Run once more 
-        self.shci.dryrun(self.mch)
-        self.shci.writeSHCIConfFile(self.mch.fcisolver, self.mch.nelecas, False)
-        with open(self.mch.fcisolver.configFile, 'a') as f:
-            f.write(f'writebestdeterminants {numdets}\n\n')
-        self.run_shci_directly()
-
-        print_time_rel(module_init_time, modulename='Dice-extra-step', moduleindex=2)
-
-    def run_shci_directly(self):
-        print("Calling SHCI PySCF interface")
-        #Running Dice via SHCI-PySCF interface
-        print("Dice output can be monitored in output.dat on local scratch")
-        self.shci.executeSHCI(self.mch.fcisolver)
-
-        #Grab number of determinants
-        self.num_var_determinants= self.grab_num_dets()
-        print("Number of variational determinants:", self.num_var_determinants)
-
     def grab_num_dets(self):
         grab=False
         numdet=0
@@ -274,8 +250,10 @@ MPIPREFIX=""
                     grab=True
         return numdet
 
-    #Run Dice-SHCI job without pyscf
-    def run_Dice_SHCI(self):
+    #Run Dice-SHCI from FCIDUMP job without pyscf
+    #Assumes you have an external FCIDUMP file
+    #TODO: Currently the refdeterminant string has to be set manually. TO FIX
+    def run_Dice_SHCI_from_FCIDUMP(self):
         #Create inputfile input.dat
         nocc=self.SHCI_active_space[0] #how many electrons in active space
         #refdeterminant="0 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20 21 22 23 24 25 26 27"
@@ -319,7 +297,7 @@ noio
             f.write(inputstring)
         
         # Call Dice directly
-        self.run_dice_directly()
+        self.call_dice_directly()
         #Read energy and determinants from outputfile: output.dat
         enresult = pygrep("PTEnergy:","output.dat")
         print("enresult:", enresult)
@@ -328,9 +306,8 @@ noio
         self.num_var_determinants = self.grab_num_dets()
         print("Number of variational determinants:", self.num_var_determinants)
 
-
-    # run_dice_directly: In case we need to. Currently unused
-    def run_dice_directly(self):
+    # call_dice_directly : Calls Dice directly if inputfile and FCIDUMP file exists
+    def call_dice_directly(self):
         module_init_time=time.time()
         print("Calling Dice executable directly")
         #For calling Dice directly when needed
@@ -338,55 +315,70 @@ noio
         with open('output.dat', "w") as outfile:
             sp.call(['mpirun', '-np', str(self.numcores), self.dice_binary, self.filename], stdout=outfile)
         print_time_rel(module_init_time, modulename='Dice-SHCI-direct-run', moduleindex=2)
-    #Run a SHCI CAS-CI or CASSCF job using the SHCI-PySCF interface
-    def run_SHCI(self,verbose=5):
-        module_init_time=time.time()
-        self.nelec=None
-        self.norb=None
+    
+    #Set up initial orbitals
+    #This returns a set of MO-coeffs and occupations either from checkpointfile or from MP2/CC/SHCI job
+    def setup_initial_orbitals(self):
         #READ ORBITALS OR DO natural orbitals with MP2/CCSD/CCSD(T)
         if self.read_chkfile_name == None:
             print("No checkpoint file given.")
             print(f"Will calculate PySCF {self.initial_orbitals} natural orbitals to use as input in Dice CAS job")
-            if self.initial_orbitals not in ['MP2','CCSD','CCSD(T)']:
+            if self.initial_orbitals not in ['MP2','CCSD','CCSD(T)', 'SHCI']:
                 print("Error: Unknown initial_orbitals choice. Exiting.")
                 ashexit()
-            print("Options are: MP2, CCSD, CCSD(T), FCI")
-            natocc, mo_coefficients = self.pyscftheoryobject.calculate_natural_orbitals(self.pyscftheoryobject.mol,
+            print("Options are: MP2, CCSD, CCSD(T), SHCI")
+            #Option to do small-eps SHCI step 
+            if self.initial_orbitals == 'SHCI':
+                print("SHCI initial orbital option")
+                print("First calculating MP2 natural orbitals, then doing SHCI-job")
+                #Call pyscftheory method for MP2,CCSD and CCSD(T)
+                occupations, mo_coefficients = self.pyscftheoryobject.calculate_natural_orbitals(self.pyscftheoryobject.mol,
+                                                                self.pyscftheoryobject.mf, method=self.initial_orbitals)
+                self.setup_SHCI_job() #Creates the self.mch CAS-CI/CASSCF object
+                self.SHCI_object_set_mos(mo_coeffs=mo_coefficients) #Sets the MO coeffs of mch object              
+                self.SHCI_object_run() #Runs the self.mch object
+                #NOTE: Only worry is that we create self.mch object here and then again later
+                #TODO: Control eps and PT for SHCI job
+                #????
+                occupations, mo_coefficients = self.mcscf.addons.make_natural_orbitals(self.mch)
+            else:
+                print("Calling nat-orb option in pyscftheory")
+                #Call pyscftheory method for MP2,CCSD and CCSD(T)
+                occupations, mo_coefficients = self.pyscftheoryobject.calculate_natural_orbitals(self.pyscftheoryobject.mol,
                                                                 self.pyscftheoryobject.mf, method=self.initial_orbitals)
 
-            #Updating mf object with natorb MO coefficients
-            self.pyscftheoryobject.mf.mo_coeff=mo_coefficients
-            #Updating mo-occupations with natorb occupations (pointless?)
-            self.pyscftheoryobject.mf.mo_occ=natocc
-            print(f"SHCI Active space determined from {self.initial_orbitals} NO threshold parameters: SHCI_cas_nmin={self.SHCI_cas_nmin} and SHCI_cas_nmax={self.SHCI_cas_nmax}")
-            print("Note: Use active_space keyword if you want to select active space manually instead")
-            # Determing active space from natorb thresholds
-            nat_occs_for_thresholds=[i for i in natocc if i < self.SHCI_cas_nmin and i > self.SHCI_cas_nmax]
-            self.norb = len(nat_occs_for_thresholds)
-            self.nelec = round(sum(nat_occs_for_thresholds))
-            print(f"To get this same active space in another calculation you can also do: SHCI_active_space=[{self.nelec},{self.norb}]")
         else:
             print("Will read MOs from checkpoint file")
-            prevmos = self.pyscf.lib.chkfile.load(self.read_chkfile_name, 'mcscf/mo_coeff')
-            #Updating mf object with natorb MO coefficients
-            self.pyscftheoryobject.mf.mo_coeff=prevmos
-            #Updating mo-occupations with natorb occupations (pointless?)
-            #self.pyscftheoryobject.mf.mo_occ=natocc
+            mo_coefficients = self.pyscf.lib.chkfile.load(self.read_chkfile_name, 'mcscf/mo_coeff')
+            occupations = self.pyscf.lib.chkfile.load(self.read_chkfile_name, 'mcscf/mo_occ')
 
-        #This will override norb/nelec if defined by natorb option above
+        return mo_coefficients, occupations
+
+    #Determine active space based on either natural occupations of initial orbitals or 
+    def setup_active_space(self, occupations=None):
+        # If SHCI_active_space defined then this takes priority over natural occupations
         if self.SHCI_active_space != None:
-            print("Active space given as input: active_space=", self.SHCI_active_space)
+            print("Active space given as user-input: active_space=", self.SHCI_active_space)
             # Number of orbital and electrons from active_space keyword!
             self.nelec=self.SHCI_active_space[0]
             self.norb=self.SHCI_active_space[1]
+        else:
+            print(f"SHCI Active space determined from {self.initial_orbitals} NO threshold parameters: SHCI_cas_nmin={self.SHCI_cas_nmin} and SHCI_cas_nmax={self.SHCI_cas_nmax}")
+            print("Note: Use active_space keyword if you want to select active space manually instead")
+            # Determing active space from natorb thresholds
+            nat_occs_for_thresholds=[i for i in occupations if i < self.SHCI_cas_nmin and i > self.SHCI_cas_nmax]
+            self.norb = len(nat_occs_for_thresholds)
+            self.nelec = round(sum(nat_occs_for_thresholds))
+            print(f"To get this same active space in another calculation you can also do: SHCI_active_space=[{self.nelec},{self.norb}]")
 
-        #Check if checkpointfile provided but active space not defined. 
-        #We don't have occupations to use so an active needs to be defined
+        #Check if active space still not defined and exit if so
         if self.norb == None:
             print("No active space has been defined!")
-            print("You probably need to provied SHCI_active_space keyword!")
+            print("You probably need to provide SHCI_active_space keyword!")
             ashexit()
 
+    #Setup a SHCI CAS-CI or CASSCF job using the SHCI-PySCF interface
+    def setup_SHCI_job(self,verbose=5):
         print(f"\nDoing SHCI-CAS calculation with {self.nelec} electrons in {self.norb} orbitals!")
         print("SHCI_macroiter:", self.SHCI_macroiter)
         if self.SHCI_macroiter == 0:
@@ -396,10 +388,10 @@ noio
             print("Turning off canonicalization step in mcscf object")
             self.mch.canonicalization = False
         else:
-            print("This is CASSCF via pyscf and SHCI")
+            print("This is CASSCF via pyscf and SHCI (orbital optimization)")
             #self.mch = self.shci.SHCISCF(self.pyscftheoryobject.mf, self.norb, self.nelec)
             self.mch = self.pyscf.mcscf.CASSCF(self.pyscftheoryobject.mf,self.norb, self.nelec)
-        #
+        #Settings
         self.mch.fcisolver = self.shci.SHCI(self.pyscftheoryobject.mol)
         self.mch.fcisolver.mpiprefix = f'mpirun -np {self.numcores}'
         self.mch.fcisolver.stochastic = self.SHCI_stochastic
@@ -417,29 +409,71 @@ noio
         self.mch.fcisolver.nroots = self.SHCI_nroots
         self.mch.verbose=verbose
         #Setting memory
-
         self.mch.max_memory=self.memory
         print("Memory in pyscf object set to:", self.mch.max_memory)
         #CASSCF iterations
-        self.mch.max_cycle_macro = self.SHCI_macroiter
+        self.mch.max_cycle_macro = self.SHCI_macroiter        
 
-        #Run SHCISCF (ususually only 1 iteration CAS-CI, unless self.SHCI_macroiter > 0)
+    #This sets MO coefficients of mch object unless None (then)
+    def SHCI_object_set_mos(self,mo_coeff=None):
+        if mo_coeff != None:
+            self.mch=mo_coeff
+
+    #Run the defined pyscf mch object
+    def SHCI_object_run(self, write_det_CASCI=False):
+        module_init_time=time.time()
+        #Run SHCISCF object created above
+        print("Running Dice via SHCISCF interface in pyscf")
         print("Dice output can be monitored in output.dat on local scratch")
-        #if self.SHCI_macroiter == 0:
-        
         #Run CAS-CI/CASSCF object
-        self.mch.run()
 
-        #Get final energy
-        self.energy = self.mch.e_tot
+        # For SHCI-AFQMC we need dets.bin file so instead of calling
+        # we do a dryrun, write inputfile, add to Dice inputfile and then run
+        if write_det_CASCI is True:
+            #Do Dryrun here where we write out Dice input file and then run
+            self.shci.dryrun(self.mch)
+            self.shci.writeSHCIConfFile(self.mch.fcisolver, self.mch.nelecas, False)
+            with open(self.mch.fcisolver.configFile, 'a') as f:
+                f.write(f'writebestdeterminants {numdets}\n\n')
+            #Run dice
+            self.shci.executeSHCI(self.mch.fcisolver)
+            #Energy
+            self.energy = self.mch.e_tot
+        else:
+            #Run like normal
+            self.mch.run()
+            #Get final energy
+            self.energy = self.mch.e_tot
 
-        #Old call: self.energy = self.mch.mc1step()[0]
-
-        #Grab number of determinants
+        #Grab number of determinants from Dice output
         self.num_var_determinants = self.grab_num_dets()
         print("Number of variational determinants:", self.num_var_determinants)
-
         print_time_rel(module_init_time, modulename='Dice-SHCI-run', moduleindex=2)
+
+    #Runs the SHCI-MCSCF object (calls Dice)
+    #NOTE: energy not set
+    #def run_shci_directly(self):
+    #    print("Calling SHCI PySCF interface")
+    #    #Running Dice via SHCI-PySCF interface
+    #    print("Dice output can be monitored in output.dat on local scratch")
+    #    self.shci.executeSHCI(self.mch.fcisolver)
+    #    #Grab number of determinants
+    #    self.num_var_determinants= self.grab_num_dets()
+    #    print("Number of variational determinants:", self.num_var_determinants)
+
+    #Write dets.bin file. Requires running SHCI once more to get determinants
+    #NOTE: energy not set
+    #def run_and_write_dets(self,numdets):
+        #module_init_time=time.time()
+        #print("Calling run_and_write_dets")
+        #Run once more 
+        #self.shci.dryrun(self.mch)
+        #self.shci.writeSHCIConfFile(self.mch.fcisolver, self.mch.nelecas, False)
+        #with open(self.mch.fcisolver.configFile, 'a') as f:
+        #    f.write(f'writebestdeterminants {numdets}\n\n')
+        #self.run_shci_directly()
+
+        #print_time_rel(module_init_time, modulename='Dice-extra-step', moduleindex=2)
 
     # Run function. Takes coords, elems etc. arguments and computes E or E+G.
     def run(self, current_coords=None, current_MM_coords=None, MMcharges=None, qm_elems=None,
@@ -492,9 +526,16 @@ noio
             #NOTE: Requires fixes to getDets function in QMCUtils.py
             #TODO: Look at example. https://github.com/sanshar/Dice/blob/master/examples/NEVPT2/N2/n2nevpt.py
             print("Running Dice NEVPT2 calculation on multiconfigurational WF")
+
             #Calling SHCI run to get the self.mch object
             print("First running SHCI CAS-CI/CASSCF step")
-            self.run_SHCI()
+            mo_coeffs, occupations = self.setup_initial_orbitals() #Returns mo-coeffs and occupations of initial orbitals
+            self.setup_active_space(occupations=occupations) #This will define self.norb and self.nelec active space
+            self.setup_SHCI_job() #Creates the self.mch CAS-CI/CASSCF object
+            self.SHCI_object_set_mos(mo_coeffs=mo_coeffs) #Sets the MO coeffs of mch object              
+            self.SHCI_object_run() #Runs the self.mch object
+            #NOTE: Pretty sure we have to do full CASSCF here
+            
             print(f"Now running NEVPT2 on SHCI reference WF: CAS({self.nelec},{self.norb})")
             module_init_time=time.time()
             self.QMCUtils.run_nevpt2(self.mch, nelecAct=self.nelec, numAct=self.norb, norbFrozen=self.frozen_core_orbs,
@@ -515,13 +556,16 @@ noio
             #SHCI trial wavefunction AFQMC
             if self.QMC_trialWF == 'SHCI':
                 print("Multi-determinant trial WF option via SHCI is on!")
-                
-                #Calling SHCI run to get the self.mch object
-                self.run_SHCI()
+
+                mo_coeffs, occupations = self.setup_initial_orbitals() #Returns mo-coeffs and occupations of initial orbitals
+                self.setup_active_space(occupations=occupations) #This will define self.norb and self.nelec active space
+                self.setup_SHCI_job() #Creates the self.mch CAS-CI/CASSCF object
+                self.SHCI_object_set_mos(mo_coeffs=mo_coeffs) #Sets the MO coeffs of mch object              
+                self.SHCI_object_run(write_det_CASCI=True) #Runs the self.mch object
 
                 #Get dets.bin file
-                print("\nRunning SHCI (via PySCFTheory object) once again to write dets.bin")
-                self.run_and_write_dets(self.QMC_SHCI_numdets)
+                #print("\nRunning SHCI (via PySCFTheory object) once again to write dets.bin")
+                #self.run_and_write_dets(self.QMC_SHCI_numdets)
                 print("SHCI trial wavefunction prep complete.")
                 if self.QMC_SHCI_numdets > self.num_var_determinants:
                     print(f"Error: QMC_SHCI_numdets ({self.QMC_SHCI_numdets}) larger than SHCI-calculated determinants ({self.num_var_determinants})")
@@ -564,15 +608,19 @@ noio
                 print(f"Error: Not available (problem with blocking?)")
         #Dice-SHCI without pyscf interface. Can be useful
         elif self.Dice_SHCI_direct is True:
-            print("Running SHCI option via Dice without pyscf")
-            self.run_Dice_SHCI()
+            print("Running SHCI option via Dice without pyscf and SHCI plugin")
+            self.run_Dice_SHCI_from_FCIDUMP()
             print("Final Dice SHCI energy:", self.energy)
             print("Final Dice SHCI PT error:", self.error)
         #Just SHCI via PySCF
         else:
             if self.SHCI is True:
-                print("Standalone SHCI option is active.")
-                self.run_SHCI()
+                print("Regular SHCI option is active.")
+                mo_coeffs, occupations = self.setup_initial_orbitals() #Returns mo-coeffs and occupations of initial orbitals
+                self.setup_active_space(occupations=occupations) #This will define self.norb and self.nelec active space
+                self.setup_SHCI_job() #Creates the self.mch CAS-CI/CASSCF object
+                self.SHCI_object_set_mos(mo_coeffs=mo_coeffs) #Sets the MO coeffs of mch object              
+                self.SHCI_object_run() #Runs the self.mch object
                 print("Final Dice SHCI energy:", self.energy)
 
         print("Dice is finished")
