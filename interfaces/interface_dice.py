@@ -387,10 +387,19 @@ noio
             print("You probably need to provied SHCI_active_space keyword!")
             ashexit()
 
-        
         print(f"\nDoing SHCI-CAS calculation with {self.nelec} electrons in {self.norb} orbitals!")
         print("SHCI_macroiter:", self.SHCI_macroiter)
-        self.mch = self.shci.SHCISCF( self.pyscftheoryobject.mf, self.norb, self.nelec )
+        if self.SHCI_macroiter == 0:
+            print("This is single-iteration CAS-CI via pyscf and SHCI")
+            self.mch = self.pyscf.mcscf.CASCI(self.pyscftheoryobject,self.norb, self.nelec)
+            print("Turning off canonicalization step in mcscf object")
+            self.mch.canonicalization = False
+        else:
+            print("This is CASSCF via pyscf and SHCI")
+            #self.mch = self.shci.SHCISCF(self.pyscftheoryobject.mf, self.norb, self.nelec)
+            self.mch = self.pyscf.mcscf.CASSCF(self.pyscftheoryobject,self.norb, self.nelec)
+        #
+        self.mch.fcisolver = self.shci.SHCI(mol)
         self.mch.fcisolver.mpiprefix = f'mpirun -np {self.numcores}'
         self.mch.fcisolver.stochastic = self.SHCI_stochastic
         self.mch.fcisolver.nPTiter = self.SHCI_PTiter
@@ -408,17 +417,16 @@ noio
         self.mch.verbose=verbose
         #Setting memory
         self.mch.max_memoryfloat=self.memory
-        #
-        if self.SHCI_macroiter == 0:
-            print("SHCI_macroiter: 0. This means CAS-CI.")
-            print("Turning off canonicalization step in mcscf object")
-            self.mch.canonicalization = False
+
         #CASSCF iterations
         self.mch.max_cycle_macro = self.SHCI_macroiter
 
         #Run SHCISCF (ususually only 1 iteration CAS-CI, unless self.SHCI_macroiter > 0)
         print("Dice output can be monitored in output.dat on local scratch")
-        self.energy = self.mch.mc1step()[0]
+        if self.SHCI_macroiter == 0:
+            self.energy = self.mch.run()
+        else:
+            self.energy = self.mch.mc1step()[0]
 
         #Grab number of determinants
         self.num_var_determinants = self.grab_num_dets()
