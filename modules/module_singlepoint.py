@@ -239,7 +239,7 @@ def Singlepoint_fragments_and_theories(theories=None, fragments=None, stoichiome
 
 #Single-point energy function that runs calculations on an ASH reaction object
 #Assuming fragments have charge,mult info defined.
-def Singlepoint_reaction(theory=None, reaction=None, unit=None, orbitals_stored=None):
+def Singlepoint_reaction(theory=None, reaction=None, orbitals_stored=None):
     print_line_with_mainheader("Singlepoint_reaction function")
     module_init_time=time.time()
 
@@ -289,9 +289,9 @@ def Singlepoint_reaction(theory=None, reaction=None, unit=None, orbitals_stored=
 
     #Setting unit of reaction if given (will override reaction.unit definition)
     #NOTE: Needed?
-    if unit is not None:
-        reaction.unit=unit
-    
+    #NOTE: Now just setting unit equal to reaction.unit. Used for components below
+    unit=reaction.unit
+
     reaction.calculate_reaction_energy()
     
     result = ASH_Results(label="Singlepoint_reaction", energies=reaction.energies,
