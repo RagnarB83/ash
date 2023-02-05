@@ -13,14 +13,13 @@ import scipy
 #TODO: Add support for AVAS
 #TODO: Support for creating mf object from FCIDUMP: https://pyscf.org/_modules/pyscf/tools/fcidump.html
 
-
 class PySCFTheory:
     def __init__(self, printsetting=False, printlevel=2, numcores=1, 
                   scf_type=None, basis=None, functional=None, gridlevel=5, symmetry=False,
                   pe=False, potfile='', filename='pyscf', memory=3100, conv_tol=1e-8, verbose_setting=4, 
                   CC=False, CCmethod=None, CC_direct=False, frozen_core_setting='Auto',
                   CAS=False, CASSCF=False, active_space=None, CAS_nocc_a=None, CAS_nocc_b=None,
-                  frozen_virtuals=None, FNO=False, FNO_thresh=None, 
+                  frozen_virtuals=None, FNO=False, FNO_thresh=None, x2c=False,
                   read_chkfile_name=None, write_chkfile_name=None,
                   PyQMC=False, PyQMC_nconfig=1, PyQMC_method='DMC'):
 
@@ -64,6 +63,7 @@ class PySCFTheory:
         self.scf_type=scf_type
         self.basis=basis
         self.functional=functional
+        self.x2c=x2c
         self.CC=CC
         self.CCmethod=CCmethod
         self.CC_direct=CC_direct
@@ -127,6 +127,7 @@ class PySCFTheory:
         #Print the options
         print("SCF:", self.SCF)
         print("SCF-type:", self.scf_type)
+        print("x2c:", self.x2c)
         print("Post-SCF:", self.postSCF)
         print("Symmetry:", self.symmetry)
         print("conv_tol:", self.conv_tol)
@@ -393,6 +394,11 @@ class PySCFTheory:
                     self.mf = self.pyscf.scf.RHF(self.mol)
                 elif self.scf_type == 'UHF':
                     self.mf = self.pyscf.scf.UHF(self.mol)
+
+        #Convert non-relativistic mf object to spin-free x2c if self.x2c is True
+        if self.x2c is True:
+            print("x2c is True. Changing SCF object to relativistic x2c Hamiltonian")
+            self.mf = self.mf.sfx2c1e()
 
         #Printing settings.
         if self.printsetting==True:
