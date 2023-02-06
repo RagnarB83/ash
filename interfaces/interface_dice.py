@@ -321,6 +321,7 @@ noio
     #Set up initial orbitals
     #This returns a set of MO-coeffs and occupations either from checkpointfile or from MP2/CC/SHCI job
     def setup_initial_orbitals(self):
+        print("\n INITIAL ORBITAL OPTION")
         #READ ORBITALS OR DO natural orbitals with MP2/CCSD/CCSD(T)
         if self.read_chkfile_name == None:
             print("No checkpoint file given.")
@@ -342,6 +343,8 @@ noio
                 self.SHCI_object_run() #Runs the self.mch object
                 #NOTE: Only worry is that we create self.mch object here and then again later
                 #TODO: Control eps and PT for SHCI job
+                #TODO: We probably want SHCI-var+PT for an accurate RDM. Too expensive?
+                #TODO: No RDM for stochastic so we have to switch to deterministic RDM
                 #????
                 print("Done with SHCI-run for initial orbital step")
                 print("Now making natural orbitals from SHCI WF")
@@ -397,6 +400,7 @@ noio
         else:
             #Probably from initial-orbitals call (RDM True)
             dordm=rdmoption
+            print("RDM option:", dordm)
 
         if self.SHCI_macroiter == 0:
             print("This is single-iteration CAS-CI via pyscf and SHCI")
