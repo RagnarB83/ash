@@ -308,7 +308,7 @@ noio
         self.num_var_determinants = self.grab_num_dets()
         print("Number of variational determinants:", self.num_var_determinants)
 
-    # call_dice_directly : Calls Dice directly if inputfile and FCIDUMP file exists
+    # call_dice_directly : Call Dice directly if inputfile and FCIDUMP file already exists
     def call_dice_directly(self):
         module_init_time=time.time()
         print("Calling Dice executable directly")
@@ -334,10 +334,10 @@ noio
                 print("SHCI initial orbital option")
                 print("First calculating MP2 natural orbitals, then doing SHCI-job")
                 #Call pyscftheory method for MP2,CCSD and CCSD(T)
-                occupations, mo_coefficients = self.pyscftheoryobject.calculate_natural_orbitals(self.pyscftheoryobject.mol,
-                                                                self.pyscftheoryobject.mf, method=self.initial_orbitals)
+                MP2nat_occupations, MP2nat_mo_coefficients = self.pyscftheoryobject.calculate_natural_orbitals(self.pyscftheoryobject.mol,
+                                                                self.pyscftheoryobject.mf, method='MP2')
                 self.setup_SHCI_job() #Creates the self.mch CAS-CI/CASSCF object
-                self.SHCI_object_set_mos(mo_coeffs=mo_coefficients) #Sets the MO coeffs of mch object              
+                self.SHCI_object_set_mos(mo_coeffs=MP2nat_mo_coefficients) #Sets the MO coeffs of mch object              
                 self.SHCI_object_run() #Runs the self.mch object
                 #NOTE: Only worry is that we create self.mch object here and then again later
                 #TODO: Control eps and PT for SHCI job
