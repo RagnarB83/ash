@@ -337,7 +337,7 @@ noio
                 MP2nat_occupations, MP2nat_mo_coefficients = self.pyscftheoryobject.calculate_natural_orbitals(self.pyscftheoryobject.mol,
                                                                 self.pyscftheoryobject.mf, method='MP2')
                 self.setup_active_space(occupations=MP2nat_occupations)
-                self.setup_SHCI_job() #Creates the self.mch CAS-CI/CASSCF object
+                self.setup_SHCI_job(verbose=5) #Creates the self.mch CAS-CI/CASSCF object
                 self.SHCI_object_set_mos(mo_coeffs=MP2nat_mo_coefficients) #Sets the MO coeffs of mch object              
                 self.SHCI_object_run() #Runs the self.mch object
                 #NOTE: Only worry is that we create self.mch object here and then again later
@@ -345,7 +345,7 @@ noio
                 #????
                 print("Done with SHCI-run for initial orbital step")
                 print("Now making natural orbitals from SHCI WF")
-                occupations, mo_coefficients = self.mcscf.addons.make_natural_orbitals(self.mch)
+                occupations, mo_coefficients = self.pyscf.mcscf.addons.make_natural_orbitals(self.mch)
             else:
                 print("Calling nat-orb option in pyscftheory")
                 #Call pyscftheory method for MP2,CCSD and CCSD(T)
