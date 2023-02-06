@@ -337,7 +337,7 @@ noio
                 MP2nat_occupations, MP2nat_mo_coefficients = self.pyscftheoryobject.calculate_natural_orbitals(self.pyscftheoryobject.mol,
                                                                 self.pyscftheoryobject.mf, method='MP2')
                 self.setup_active_space(occupations=MP2nat_occupations)
-                self.setup_SHCI_job(verbose=5) #Creates the self.mch CAS-CI/CASSCF object
+                self.setup_SHCI_job(verbose=5, rdmoption=True) #Creates the self.mch CAS-CI/CASSCF object with RDM True
                 self.SHCI_object_set_mos(mo_coeffs=MP2nat_mo_coefficients) #Sets the MO coeffs of mch object              
                 self.SHCI_object_run() #Runs the self.mch object
                 #NOTE: Only worry is that we create self.mch object here and then again later
@@ -357,7 +357,9 @@ noio
             print("Will read MOs from checkpoint file")
             mo_coefficients = self.pyscf.lib.chkfile.load(self.read_chkfile_name, 'mcscf/mo_coeff')
             occupations = self.pyscf.lib.chkfile.load(self.read_chkfile_name, 'mcscf/mo_occ')
-
+        print("Initial orbital step complete")
+        print("----------------------------------")
+        print()
         return mo_coefficients, occupations
 
     #Determine active space based on either natural occupations of initial orbitals or 
@@ -384,9 +386,18 @@ noio
             ashexit()
 
     #Setup a SHCI CAS-CI or CASSCF job using the SHCI-PySCF interface
-    def setup_SHCI_job(self,verbose=5):
+    def setup_SHCI_job(self,verbose=5, rdmoption=None):
         print(f"\nDoing SHCI-CAS calculation with {self.nelec} electrons in {self.norb} orbitals!")
         print("SHCI_macroiter:", self.SHCI_macroiter)
+
+        #Turn RDM creation on or off
+        if rdmoption is False:
+            #Pick user-selected (default: False)
+            dordm=self.SHCI_DoRDM
+        else:
+            #Probably from initial-orbitals call (RDM True)
+            dordm=rdmoption
+
         if self.SHCI_macroiter == 0:
             print("This is single-iteration CAS-CI via pyscf and SHCI")
 
@@ -403,7 +414,7 @@ noio
         self.mch.fcisolver.stochastic = self.SHCI_stochastic
         self.mch.fcisolver.nPTiter = self.SHCI_PTiter
         self.mch.fcisolver.sweep_iter = self.SHCI_sweep_iter
-        self.mch.fcisolver.DoRDM = self.SHCI_DoRDM
+        self.mch.fcisolver.DoRDM = dordm
         self.mch.fcisolver.sweep_epsilon = self.SHCI_sweep_epsilon
         self.mch.fcisolver.davidsonTol = self.SHCI_davidsonTol
         self.mch.fcisolver.dE = self.SHCI_dE
