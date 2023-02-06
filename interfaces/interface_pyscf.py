@@ -12,6 +12,7 @@ import scipy
 # TODO: PE: Polarizable embedding (CPPE). Not completely active in PySCF 1.7.1. Bugfix required I think
 #TODO: Add support for AVAS
 #TODO: Support for creating mf object from FCIDUMP: https://pyscf.org/_modules/pyscf/tools/fcidump.html
+#TODO: Remove PyQMC from pyscftheory. 
 
 class PySCFTheory:
     def __init__(self, printsetting=False, printlevel=2, numcores=1, 
@@ -93,10 +94,6 @@ class PySCFTheory:
             self.postSCF=True
             self.load_pyqmc()
 
-        #Natural orbital threshold parameterds to determined active space
-        # Was used by Dice. Could also be used for DMRG and other near-FCI-type methods
-        #self.cas_nmin=cas_nmin
-        #self.cas_nmax=cas_nmax
         #Whether job is SCF (HF/DFT) only or a post-SCF method like CC or CAS 
         self.postSCF=False
         if self.CAS is True:
@@ -230,9 +227,6 @@ class PySCFTheory:
 
     def calculate_natural_orbitals(self,mol, mf, method='MP2'):
         module_init_time=time.time()
-        #ALTERNATIVE: https://github.com/pyscf/pyscf/issues/466
-        #https://github.com/pyscf/pyscf/blob/7f4f66b37337c5c3a9c2ff94de44861266394032/pyscf/mcscf/test/test_addons.py
-
         if method =='MP2':
             print("Running MP2 natural orbital calculation")
             # MP2 natural occupation numbers and natural orbitals

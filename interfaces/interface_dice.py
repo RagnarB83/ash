@@ -14,6 +14,8 @@ import ash.settings_ash
 #Interface to Dice: SHCI, QMC (single-det or SHCI multi-det) and NEVPT2
 
 #TODO: Remove need for second-iteration print-det in AFQMC-SHCI
+#Should be fixed but need to check
+#TODO: Test SHCI initial orbitals option, requires parameter options 
 #TODO: fix nevpt2
 
 class DiceTheory:
@@ -140,7 +142,7 @@ class DiceTheory:
         self.nwalkers_per_proc=nwalkers_per_proc
         #If SHCI is used as trial WF we turn off PT stage (timeconsuming)
         if self.AFQMC is True and self.QMC_trialWF == 'SHCI':
-            print("AFQMC with SHCI trial WF. Turning off PT stage")
+            print("AFQMC with SHCI trial WF. Turning off PT stage (not needed)")
             self.SHCI_stochastic=True #otherwise deterministic PT happens
             self.SHCI_PTiter=0 # PT skipped with this
         #Print stuff
@@ -420,7 +422,7 @@ noio
         self.mch.mo_coeffs=mo_coeffs
 
     #Run the defined pyscf mch object
-    def SHCI_object_run(self, write_det_CASCI=False):
+    def SHCI_object_run(self, write_det_CASCI=False,numdets=None):
         module_init_time=time.time()
         #Run SHCISCF object created above
         print("Running Dice via SHCISCF interface in pyscf")
@@ -561,7 +563,7 @@ noio
                 self.setup_active_space(occupations=occupations) #This will define self.norb and self.nelec active space
                 self.setup_SHCI_job() #Creates the self.mch CAS-CI/CASSCF object
                 self.SHCI_object_set_mos(mo_coeffs=mo_coeffs) #Sets the MO coeffs of mch object              
-                self.SHCI_object_run(write_det_CASCI=True) #Runs the self.mch object
+                self.SHCI_object_run(write_det_CASCI=True, numdets=self.QMC_SHCI_numdets) #Runs the self.mch object with dets-printout
 
                 #Get dets.bin file
                 #print("\nRunning SHCI (via PySCFTheory object) once again to write dets.bin")
