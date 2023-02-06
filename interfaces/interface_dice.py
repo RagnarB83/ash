@@ -432,15 +432,19 @@ noio
         # For SHCI-AFQMC we need dets.bin file so instead of calling
         # we do a dryrun, write inputfile, add to Dice inputfile and then run
         if write_det_CASCI is True:
+            print("Doing dryun")
             #Do Dryrun here where we write out Dice input file and then run
             self.shci.dryrun(self.mch)
+            print("Writing SHCIConfFile")
             self.shci.writeSHCIConfFile(self.mch.fcisolver, self.mch.nelecas, False)
+            print("Adding dets printout")
             with open(self.mch.fcisolver.configFile, 'a') as f:
                 f.write(f'writebestdeterminants {numdets}\n\n')
             #Run dice
+            print("Executing SHCI")
             self.shci.executeSHCI(self.mch.fcisolver)
-            #Energy
-            self.energy = self.mch.e_tot
+            print("SHCI-step done")
+            print("SHCI-trial WF energy (variational-stage only):", self.mch.e_tot)
         else:
             #Run like normal
             self.mch.run()
