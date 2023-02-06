@@ -346,6 +346,7 @@ noio
                 print("Done with SHCI-run for initial orbital step")
                 print("Now making natural orbitals from SHCI WF")
                 occupations, mo_coefficients = self.pyscf.mcscf.addons.make_natural_orbitals(self.mch)
+                print("SHCI natural orbital occupations:", occupations)
             else:
                 print("Calling nat-orb option in pyscftheory")
                 #Call pyscftheory method for MP2,CCSD and CCSD(T)
